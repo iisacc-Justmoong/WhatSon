@@ -956,6 +956,17 @@ Item {
     function queueCalloutShortcutInsertion() {
         return editorTypingController.queueCalloutShortcutInsertion();
     }
+    function focusStructuredBlockSourceOffset(sourceOffset) {
+        const logicalOffset = editorTypingController.logicalOffsetForSourceOffset(
+                    Math.max(0, Math.floor(Number(sourceOffset) || 0)));
+        contentEditor.forceActiveFocus();
+        if (contentEditor.setCursorPositionPreservingInputMethod !== undefined) {
+            contentEditor.setCursorPositionPreservingInputMethod(logicalOffset);
+            return;
+        }
+        if (contentEditor.cursorPosition !== undefined)
+            contentEditor.cursorPosition = logicalOffset;
+    }
     function setAgendaTaskDone(taskOpenTagStart, taskOpenTagEnd, checked) {
         const currentSourceText = contentsView.editorText === undefined || contentsView.editorText === null
                 ? ""
@@ -1721,13 +1732,14 @@ Item {
                                            ? (Number(printPaperColumn.y) || 0) + contentsView.printGuideVerticalInset
                                            : contentsView.editorDocumentStartY)
                         renderedAgendas: structuredBlockRenderer.renderedAgendas
+                        blockFocusHandler: function (sourceOffset) {
+                            contentsView.focusStructuredBlockSourceOffset(sourceOffset);
+                        }
                         sourceOffsetYResolver: function (sourceOffset) {
                             const logicalOffset = editorTypingController.logicalOffsetForSourceOffset(
                                         Math.max(0, Math.floor(Number(sourceOffset) || 0)));
                             const documentY = Math.max(0, Number(contentsView.documentYForOffset(logicalOffset)) || 0);
-                            if (contentsView.showPrintEditorLayout)
-                                return (Number(printPaperColumn.y) || 0) + contentsView.printGuideVerticalInset + documentY;
-                            return contentsView.editorDocumentStartY + documentY + contentsView.editorContentOffsetY;
+                            return documentY;
                         }
                         taskToggleHandler: function (taskOpenTagStart, taskOpenTagEnd, checked) {
                             contentsView.setAgendaTaskDone(taskOpenTagStart, taskOpenTagEnd, checked);
@@ -1761,13 +1773,14 @@ Item {
                                            ? (Number(printPaperColumn.y) || 0) + contentsView.printGuideVerticalInset
                                            : contentsView.editorDocumentStartY
                         renderedCallouts: structuredBlockRenderer.renderedCallouts
+                        blockFocusHandler: function (sourceOffset) {
+                            contentsView.focusStructuredBlockSourceOffset(sourceOffset);
+                        }
                         sourceOffsetYResolver: function (sourceOffset) {
                             const logicalOffset = editorTypingController.logicalOffsetForSourceOffset(
                                         Math.max(0, Math.floor(Number(sourceOffset) || 0)));
                             const documentY = Math.max(0, Number(contentsView.documentYForOffset(logicalOffset)) || 0);
-                            if (contentsView.showPrintEditorLayout)
-                                return (Number(printPaperColumn.y) || 0) + contentsView.printGuideVerticalInset + documentY;
-                            return contentsView.editorDocumentStartY + documentY + contentsView.editorContentOffsetY;
+                            return documentY;
                         }
                         visible: contentsView.hasSelectedNote
                                  && !contentsView.showDedicatedResourceViewer

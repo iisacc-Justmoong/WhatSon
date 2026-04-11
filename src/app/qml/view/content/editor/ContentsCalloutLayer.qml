@@ -8,6 +8,7 @@ Item {
 
     property var renderedCallouts: []
     property var sourceOffsetYResolver: null
+    property var blockFocusHandler: null
     readonly property color calloutColor: "#262728"
     readonly property color dividerColor: "#D9D9D9"
     readonly property color textColor: "#FFFFFF"
@@ -72,6 +73,7 @@ Item {
 
             readonly property var calloutEntry: modelData && typeof modelData === "object" ? modelData : ({})
             readonly property string calloutText: calloutEntry.text !== undefined ? String(calloutEntry.text) : ""
+            readonly property int focusSourceOffset: Math.max(0, Number(calloutEntry.focusSourceOffset) || 0)
 
             color: calloutLayer.calloutColor
             implicitHeight: Math.max(calloutLayer.dividerMinimumHeight, calloutTextLabel.implicitHeight)
@@ -110,6 +112,17 @@ Item {
                 text: calloutFrame.calloutText
                 textFormat: Text.PlainText
                 wrapMode: Text.Wrap
+            }
+
+            TapHandler {
+                acceptedButtons: Qt.LeftButton
+
+                onTapped: {
+                    if (calloutLayer.blockFocusHandler !== undefined
+                            && calloutLayer.blockFocusHandler !== null) {
+                        calloutLayer.blockFocusHandler(calloutFrame.focusSourceOffset);
+                    }
+                }
             }
         }
     }

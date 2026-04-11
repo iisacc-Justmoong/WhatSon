@@ -151,6 +151,10 @@
   from renderer-provided canonical `<callout>...</callout>` models.
 - Agenda/callout layers now consume parser-returned `sourceStart` offsets and host `sourceOffsetYResolver(...)`
   callbacks, so structured cards are placed at authored source-tag positions in the editor viewport.
+- Those render models now also expose `focusSourceOffset`, and desktop/mobile hosts route card taps back into the
+  live editor cursor path so empty agenda/callout cards remain editable as soon as the underlying RAW tag exists.
+- Agenda/callout placement now resolves against editor-content-relative document Y only, preventing double-counted top
+  offsets from pushing cards out of view after tag insertion.
 - Empty continued markdown list items now also break back to a plain blank line on `Enter`, so repeated list newlines do
   not get stuck in an endless empty-list state.
 - `Page` / `Print` now mount the live RichText editor inside an outer paper-document viewport, so the paper grows with

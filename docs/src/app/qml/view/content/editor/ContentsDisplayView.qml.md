@@ -63,6 +63,11 @@ that sit directly inside the editor viewport.
 - Agenda/callout overlay layers are now positioned by tag source offset through
   `sourceOffsetYResolver(sourceStart)`, so cards appear at authored tag locations in editor flow instead of only
   fixed top stacking.
+- That resolver now returns editor-content-relative document Y only; host margins stay outside the resolver so agenda
+  and callout cards no longer double-count top/paper offsets and disappear below the viewport.
+- Desktop now also routes card taps back into the live editor through
+  `focusStructuredBlockSourceOffset(sourceOffset)`, so empty agenda/callout cards remain immediately editable as long
+  as their RAW tags exist.
 - Direct `.wsresource` selections still switch the surface to the dedicated in-editor resource viewer.
 - Context-menu formatting, keyboard shortcuts, gutter refresh, and minimap snapshot refresh all remain rooted in this
   file.
@@ -187,8 +192,11 @@ that sit directly inside the editor viewport.
     `ContentsPagePrintLayoutRenderer`; QML must not reintroduce duplicate local page-math state.
   - In non-Plain modes, `<agenda>/<task>` blocks must render as agenda cards with checkbox rows, and toggling a task
     must persist canonical `done=true|false` in source.
+  - Even an empty `<agenda>` block with one empty `<task>` body anchor must still render one visible agenda card.
   - In non-Plain modes, `<callout>...</callout>` blocks must render as Figma-aligned callout rows, and `Cmd+Opt+C` must insert one
     canonical callout wrapper at the current cursor in RAW source.
+  - Even an empty `<callout></callout>` block must still render one visible callout row.
+  - Tapping an agenda/callout card must move editor focus back into the corresponding RAW source body.
   - `Ctrl+Alt+T` / `Ctrl+Alt+C` fallback chords must trigger the same agenda/callout insertions as
     `Cmd+Opt+T` / `Cmd+Opt+C` when the runtime maps Command to `ControlModifier`.
   - RAW-safe entity text such as `&lt;bold&gt;` or `Tom &amp; Jerry` must display as visible glyphs in the editor while

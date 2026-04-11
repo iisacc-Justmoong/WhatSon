@@ -4,7 +4,7 @@
 Implements callout source parsing and insertion helpers shared by desktop/mobile editor surfaces.
 
 ## Key Behaviors
-- Parses `<callout ...>...</callout>` blocks into QML-friendly entries (`text`, `sourceStart`).
+- Parses `<callout ...>...</callout>` blocks into QML-friendly entries (`text`, `sourceStart`, `focusSourceOffset`).
 - Canonicalizes callout display text for rendering:
   - normalizes line endings
   - preserves source line breaks (`\n`) and maps `<br>` aliases to line breaks
@@ -18,6 +18,8 @@ Implements callout source parsing and insertion helpers shared by desktop/mobile
 - Detects callout-exit `Enter` behavior:
   - when the user presses `Enter` on a trailing empty line inside `<callout>...</callout>`
   - rewrites that span so editing exits the callout block (`</callout>\n`) instead of stacking extra empty lines.
+- Emits `focusSourceOffset` at callout-body start, so renderer-hosted callout cards can send cursor focus back into the
+  underlying RAW source body when tapped.
 
 ## Architectural Notes
 - Callout parsing/mutation regex and entity handling are intentionally localized here so QML controllers only manage
@@ -26,6 +28,8 @@ Implements callout source parsing and insertion helpers shared by desktop/mobile
 
 ## Regression Checklist
 - `<callout>Message</callout>` must parse as one callout entry.
+- `<callout></callout>` or `<callout> </callout>` must still parse as one visible callout entry even when body text is
+  empty.
 - `buildCalloutInsertionPayload("abc")` must return canonical source `<callout>abc</callout>` with cursor inside
   the callout body.
 - `buildCalloutInsertionPayload("")` must include a one-space body anchor and place cursor at callout-body start.

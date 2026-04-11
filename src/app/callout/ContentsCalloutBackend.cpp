@@ -156,10 +156,18 @@ QVariantList ContentsCalloutBackend::parseCallouts(const QString& sourceText) co
             continue;
         }
 
+        const int calloutStart = std::max(0, boundedQSizeToInt(match.capturedStart(0)));
+        const QString calloutToken = match.captured(0);
+        const int openTokenEndOffset = calloutToken.indexOf(QLatin1Char('>'));
+        const int openTokenLength = openTokenEndOffset >= 0 ? openTokenEndOffset + 1 : 0;
+
         QVariantMap entry;
         entry.insert(
             QStringLiteral("sourceStart"),
-            std::max(0, boundedQSizeToInt(match.capturedStart(0))));
+            calloutStart);
+        entry.insert(
+            QStringLiteral("focusSourceOffset"),
+            calloutStart + openTokenLength);
         entry.insert(
             QStringLiteral("text"),
             visibleCalloutText(match.captured(1)));

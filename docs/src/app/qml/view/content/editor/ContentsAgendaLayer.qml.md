@@ -7,6 +7,7 @@
 The layer is now a renderer-fed view:
 - input: renderer-owned agenda models (`renderedAgendas`)
 - output: LVRS card + `LV.CheckBox` task rows
+- focus hook: `blockFocusHandler(focusSourceOffset)`
 - mutation hook: `taskToggleHandler(taskOpenTagStart, taskOpenTagEnd, checked)`
 - placement hook: `sourceOffsetYResolver(sourceStart)` (host-provided source-offset -> viewport-y resolver)
 
@@ -27,8 +28,10 @@ The layer is now a renderer-fed view:
 
 - Source parsing rules are now owned by `src/app/editor/renderer/ContentsStructuredBlockRenderer.cpp`.
 - This QML layer consumes only renderer-provided agenda entries and does not parse RAW source locally.
-- Parse entries include `sourceStart`; cards are positioned by source order/location, not by a fixed top-stacked
-  column only.
+- Parse entries include `sourceStart` and `focusSourceOffset`; cards are positioned by source order/location and can
+  restore editor focus to the first task body.
+- The host-provided `sourceOffsetYResolver(...)` now resolves editor-internal document Y, so card positioning stays in
+  the same coordinate space as the live editor content instead of double-counting outer viewport margins.
 - The layer still normalizes `QVariantList`-like values into JS arrays so C++ renderer properties remain QML-safe.
 
 ## Mutation Hook
@@ -37,6 +40,8 @@ The layer is now a renderer-fed view:
   - open-tag source start offset
   - open-tag source end offset
   - next checked state
+- On card tap, the layer calls `blockFocusHandler(focusSourceOffset)` so empty agenda cards can immediately route the
+  cursor back into RAW task scope.
 - The host view owns actual source rewrite/persistence; this layer does not mutate source directly.
 
 ## Regression Checks
@@ -46,3 +51,4 @@ The layer is now a renderer-fed view:
 - Multiple task rows in one agenda must preserve source order.
 - Agenda cards must be placed at the resolved source location (`sourceOffsetYResolver`) so cards appear where tags are
   authored in note flow.
+- Tapping an agenda card must route focus back to the first task body source offset.

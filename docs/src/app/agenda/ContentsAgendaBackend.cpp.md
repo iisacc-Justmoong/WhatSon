@@ -5,7 +5,7 @@ Implements agenda source parsing and mutation helpers shared by desktop/mobile e
 
 ## Key Behaviors
 - Parses `<agenda ...>...</agenda>` blocks and nested `<task ...>...</task>` rows into QML-friendly `QVariantList`
-  entries (`date`, `sourceStart`, `tasks`, `done`, `text`, source open-tag offsets).
+  entries (`date`, `sourceStart`, `focusSourceOffset`, `tasks`, `done`, `text`, source open-tag offsets).
 - Rewrites one task open-tag `done` attribute while preserving the rest of the source.
 - Builds canonical agenda insertion payloads:
   - `<agenda date="YYYY-MM-DD"><task done="true|false">...</task></agenda>`
@@ -21,6 +21,8 @@ Implements agenda source parsing and mutation helpers shared by desktop/mobile e
     block to keep source body clean
 - Normalizes modification placeholder date tokens (`yyyy-mm-dd`) to current local ISO date.
 - Decodes safe entities (`&lt;`, `&gt;`, `&amp;`, `&quot;`, `&#39;`, `&nbsp;`) for agenda render text projection.
+- Emits one agenda-level `focusSourceOffset` that points at the first task body, so renderer-hosted cards can return
+  the editor cursor to the correct RAW insertion slot when the user taps the card.
 - Uses explicit `qsizetype` -> `int` bounding helpers before `std::clamp/std::max` calls, preventing libc++
   template-deduction failures on macOS toolchains where `QString::size()` and regex capture offsets are `qsizetype`.
 - Uses a custom raw-string delimiter for the `done`-attribute regex, preventing accidental raw-literal early
@@ -33,6 +35,7 @@ Implements agenda source parsing and mutation helpers shared by desktop/mobile e
 
 ## Regression Checklist
 - `<agenda date="2026-04-11"><task done="false">A</task></agenda>` must parse as one agenda + one unchecked task.
+- Empty agendas that still contain one empty `<task>` body anchor must still parse into one visible agenda card model.
 - Task toggle rewrite must only mutate the targeted open-tag `done` value.
 - Typing `[] task` / `[x] task` must produce canonical agenda/task source replacement payloads.
 - Empty agenda insertion payloads must include a one-space task anchor and place cursor at task-body start.

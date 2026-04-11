@@ -68,6 +68,8 @@ suppression local to this file.
   the mobile overlay layers.
 - Mobile also routes agenda/callout overlay placement through `sourceOffsetYResolver(sourceStart)`, so cards/rows are
   placed at authored source-tag locations in note flow.
+- That resolver now returns editor-content-relative document Y only, so mobile agenda/callout cards no longer
+  double-count outer top/paper offsets.
 - `ContentsAgendaBackend` is shared with desktop for task-toggle rewrite and agenda shortcut mutation payloads.
 - `ContentsCalloutBackend` is shared with desktop for callout insertion payload generation.
 - `ContentsMinimapSnapshotSupport.js` is shared with desktop so the minimap diff/range-splice policy stays identical
@@ -98,6 +100,8 @@ suppression local to this file.
   input item owns focus.
 - Agenda/callout shortcut insertions now write canonical tags directly into RAW source at cursor (with line-boundary
   newline normalization), then let `ContentsStructuredBlockRenderer` project those blocks into overlay-layer models.
+- Mobile also routes agenda/callout card taps through `focusStructuredBlockSourceOffset(sourceOffset)`, so empty cards
+  can immediately return the cursor to their underlying RAW source body.
 - Mobile window-level agenda/callout shortcuts now run with `autoRepeat: false` and are routed through the selection
   controller shortcut queue to avoid duplicate same-chord insertion bursts.
 - Mobile note selection/body echo changes now also route through `ContentsEditorSession.requestSyncEditorTextFromSelection(...)`,
@@ -180,8 +184,11 @@ suppression local to this file.
     `ContentsPagePrintLayoutRenderer`; local duplicate page-math state must not be reintroduced.
   - In non-Plain modes, agenda/task source blocks must render through `ContentsAgendaLayer` with checkbox rows, and
     checkbox toggles must persist canonical `done=true|false`.
+  - Even an empty `<agenda>` block with one empty task body anchor must still render one visible agenda card.
   - In non-Plain modes, callout source blocks must render through `ContentsCalloutLayer` as Figma-aligned callout rows, and `Cmd+Opt+C` must insert
     canonical `<callout>...</callout>` wrappers at current cursor in RAW source.
+  - Even an empty `<callout></callout>` block must still render one visible callout row.
+  - Tapping an agenda/callout card must move mobile editor focus back into the corresponding RAW source body.
   - `Ctrl+Alt+T` / `Ctrl+Alt+C` fallback chords must trigger the same agenda/callout insertions as
     `Cmd+Opt+T` / `Cmd+Opt+C` when the runtime maps Command to `ControlModifier`.
   - Mobile hardware-keyboard markdown list shortcuts (`Cmd+Shift+7/8` on macOS, `Alt+Shift+7/8` on Windows/Linux)

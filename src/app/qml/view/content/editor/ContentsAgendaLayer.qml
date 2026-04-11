@@ -9,6 +9,7 @@ Item {
 
     property var renderedAgendas: []
     property var sourceOffsetYResolver: null
+    property var blockFocusHandler: null
     property var taskToggleHandler: null
     readonly property color frameBorderColor: "#343536"
     readonly property int frameBorderWidth: 1
@@ -75,6 +76,7 @@ Item {
             readonly property var agendaEntry: modelData && typeof modelData === "object" ? modelData : ({})
             readonly property var agendaTasks: agendaLayer.normalizedList(agendaEntry.tasks)
             readonly property string dateText: agendaEntry.date !== undefined ? String(agendaEntry.date) : "yyyy-mm-dd"
+            readonly property int focusSourceOffset: Math.max(0, Number(agendaEntry.focusSourceOffset) || 0)
 
             border.color: agendaLayer.frameBorderColor
             border.width: agendaLayer.frameBorderWidth
@@ -131,6 +133,17 @@ Item {
                                 }
                             }
                         }
+                    }
+                }
+            }
+
+            TapHandler {
+                acceptedButtons: Qt.LeftButton
+
+                onTapped: {
+                    if (agendaLayer.blockFocusHandler !== undefined
+                            && agendaLayer.blockFocusHandler !== null) {
+                        agendaLayer.blockFocusHandler(agendaCard.focusSourceOffset);
                     }
                 }
             }

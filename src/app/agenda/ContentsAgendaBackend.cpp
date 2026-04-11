@@ -298,6 +298,7 @@ QVariantList ContentsAgendaBackend::parseAgendas(const QString& sourceText) cons
             normalizedAgendaDateForDisplay(tagAttributeValue(agendaMatch.captured(1), QStringLiteral("date"))));
 
         QVariantList tasks;
+        int focusSourceOffset = -1;
         const QString innerSource = agendaMatch.captured(2);
         const int innerSourceStart = std::max(0, boundedQSizeToInt(agendaMatch.capturedStart(2)));
         QRegularExpressionMatchIterator taskIterator = taskPattern.globalMatch(innerSource);
@@ -330,8 +331,16 @@ QVariantList ContentsAgendaBackend::parseAgendas(const QString& sourceText) cons
                 QStringLiteral("text"),
                 decodeSourceEntities(taskMatch.captured(2)));
             tasks.push_back(taskEntry);
+
+            if (focusSourceOffset < 0)
+            {
+                focusSourceOffset = taskOpenTagEnd;
+            }
         }
 
+        agendaEntry.insert(
+            QStringLiteral("focusSourceOffset"),
+            std::max(0, focusSourceOffset));
         agendaEntry.insert(QStringLiteral("tasks"), tasks);
         agendas.push_back(agendaEntry);
     }
