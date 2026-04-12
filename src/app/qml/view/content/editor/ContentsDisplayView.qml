@@ -237,7 +237,6 @@ Item {
     property var resourcesImportViewModel: null
     readonly property string richTextHighlightOpenTag: "<span style=\"background-color:#8A4B00;color:#D6AE58;font-weight:600;\">"
     readonly property bool preferNativeInputHandling: false
-    readonly property bool deferImmediateEditorPersistence: false
     readonly property int editorIdleSyncThresholdMs: 1000
     readonly property string selectedNoteBodyText: selectionBridge.selectedNoteBodyText
     readonly property string selectedNoteBodyNoteId: selectionBridge.selectedNoteBodyNoteId
@@ -707,9 +706,8 @@ Item {
         contentsView.editorText = nextText;
         contentsView.commitDocumentPresentationRefresh();
         editorSession.markLocalEditorAuthority();
-        const saved = contentsView.persistEditorTextImmediately(nextText);
-        if (!saved)
-            editorSession.scheduleEditorPersistence();
+        if (contentsView.persistEditorTextImmediately !== undefined)
+            contentsView.persistEditorTextImmediately(nextText);
         if (contentEditor && contentEditor.setCursorPositionPreservingInputMethod !== undefined)
             contentEditor.setCursorPositionPreservingInputMethod(cursorPosition + insertionText.length);
         else if (contentEditor && contentEditor.cursorPosition !== undefined)
@@ -1101,21 +1099,8 @@ Item {
                 structuredDocumentFlow.requestFocus(requestedFocus);
             });
         }
-        if (contentsView.deferImmediateEditorPersistence
-                && editorSession
-                && editorSession.scheduleEditorPersistence !== undefined) {
-            editorSession.scheduleEditorPersistence();
-            contentsView.editorTextEdited(normalizedNextSourceText);
-            return true;
-        }
-        const saved = contentsView.persistEditorTextImmediately !== undefined
-                ? !!contentsView.persistEditorTextImmediately(normalizedNextSourceText)
-                : false;
-        if (!saved
-                && editorSession
-                && editorSession.scheduleEditorPersistence !== undefined) {
-            editorSession.scheduleEditorPersistence();
-        }
+        if (contentsView.persistEditorTextImmediately !== undefined)
+            contentsView.persistEditorTextImmediately(normalizedNextSourceText);
         contentsView.editorTextEdited(normalizedNextSourceText);
         return true;
     }
@@ -1471,6 +1456,14 @@ Item {
     }
     onSelectedNoteBodyTextChanged: {
         contentsView.scheduleSelectionModelSync({});
+    }
+    onSelectedNoteBodyLoadingChanged: {
+        // Empty-body notes keep the same text payload across load completion, so loading state must also re-arm sync.
+        if (!contentsView.selectedNoteBodyLoading) {
+            contentsView.scheduleSelectionModelSync({
+                                                       "fallbackRefresh": true
+                                                   });
+        }
     }
     onSelectedNoteIdChanged: {
         contentsView.structuredDocumentFlowActivatedNoteId = "";

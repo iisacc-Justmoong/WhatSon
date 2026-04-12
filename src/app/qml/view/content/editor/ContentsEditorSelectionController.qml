@@ -876,9 +876,11 @@ QtObject {
         return true;
     }
     function persistEditorTextImmediately(nextText) {
-        if (!controller.view || !controller.editorSession || controller.editorSession.scheduleEditorPersistence === undefined)
+        if (!controller.view
+                || !controller.editorSession
+                || controller.editorSession.persistEditorTextImmediately === undefined)
             return false;
-        return !!controller.editorSession.scheduleEditorPersistence();
+        return !!controller.editorSession.persistEditorTextImmediately(nextText);
     }
     function queueInlineFormatWrap(tagName) {
         if (!controller.view || !controller.view.hasSelectedNote || controller.view.showDedicatedResourceViewer || controller.view.showFormattedTextRenderer)
@@ -996,9 +998,7 @@ QtObject {
         controller.refreshPresentationStateAfterProgrammaticChange();
         if (controller.editorSession && controller.editorSession.markLocalEditorAuthority !== undefined)
             controller.editorSession.markLocalEditorAuthority();
-        const saved = controller.persistEditorTextImmediately(nextText);
-        if (!saved && controller.editorSession && controller.editorSession.scheduleEditorPersistence !== undefined)
-            controller.editorSession.scheduleEditorPersistence();
+        controller.persistEditorTextImmediately(nextText);
         if (lineContext.hasSelection) {
             controller.scheduleEditorSelection(
                         lineStates[0].entry.logicalStart,
@@ -1151,9 +1151,7 @@ QtObject {
         controller.refreshPresentationStateAfterProgrammaticChange();
         if (controller.editorSession && controller.editorSession.markLocalEditorAuthority !== undefined)
             controller.editorSession.markLocalEditorAuthority();
-        const saved = controller.persistEditorTextImmediately(nextText);
-        if (!saved && controller.editorSession && controller.editorSession.scheduleEditorPersistence !== undefined)
-            controller.editorSession.scheduleEditorPersistence();
+        controller.persistEditorTextImmediately(nextText);
         controller.resetEditorSelectionCache();
         controller.view.editorTextEdited(nextText);
         return true;

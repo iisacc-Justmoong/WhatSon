@@ -22,6 +22,9 @@
 ## Recent Notes
 - `TagsHierarchyViewModel` now owns both the hierarchy rows and the tag-projected `LibraryNoteListModel`,
   so the Tags sidebar domain can return notes directly.
+- Tag-projected editor sessions now also have a concrete body persistence contract, so note edits
+  made while the active hierarchy is Tags flush back into `.wsnbody` instead of remaining trapped in
+  the editor session cache.
 - Detail-panel tag writes now re-synchronize the tags viewmodel cache through
   `reloadNoteMetadataForNoteId(...)`, avoiding stale tag note lists when the current active domain
   is not Tags.

@@ -34,8 +34,7 @@ Item {
             return false;
         }
         const rawBodyText = editorSession.editorText === undefined || editorSession.editorText === null ? "" : String(editorSession.editorText);
-        const bodyText = editorSession.normalizeModifiedEditorText(rawBodyText);
-        return editorSession.enqueueEditorPersistence(noteId, bodyText, true);
+        return editorSession.persistEditorTextImmediately(rawBodyText);
     }
     function currentTimestampMs() {
         return Date.now();
@@ -99,7 +98,7 @@ Item {
         if (currentNoteId === nextNoteId && currentText === nextText)
             return false;
         if (currentNoteId === nextNoteId && !editorSession.shouldAcceptModelBodyText(nextNoteId, nextText)) {
-            editorSession.scheduleEditorPersistence();
+            editorSession.persistEditorTextImmediately(currentText);
             return false;
         }
         editorSession.syncEditorTextFromSelection(nextNoteId, nextText);
@@ -138,6 +137,21 @@ Item {
         const rawBodyText = editorSession.editorText === undefined || editorSession.editorText === null ? "" : String(editorSession.editorText);
         const bodyText = editorSession.normalizeModifiedEditorText(rawBodyText);
         return editorSession.enqueueEditorPersistence(noteId, bodyText, false);
+    }
+    function persistEditorTextImmediately(text) {
+        const noteId = editorSession.editorBoundNoteId === undefined || editorSession.editorBoundNoteId === null
+                ? ""
+                : String(editorSession.editorBoundNoteId).trim();
+        if (noteId.length === 0) {
+            editorSession.pendingBodySave = false;
+            return false;
+        }
+        editorSession.pendingBodySave = true;
+        const rawBodyText = text === undefined || text === null
+                ? (editorSession.editorText === undefined || editorSession.editorText === null ? "" : String(editorSession.editorText))
+                : String(text);
+        const bodyText = editorSession.normalizeModifiedEditorText(rawBodyText);
+        return editorSession.enqueueEditorPersistence(noteId, bodyText, true);
     }
     function shouldAcceptModelBodyText(noteId, text) {
         const nextNoteId = noteId === undefined || noteId === null ? "" : String(noteId);

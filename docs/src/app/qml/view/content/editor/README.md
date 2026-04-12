@@ -72,9 +72,11 @@
   - keyboard hidden: touch `press`/drag stays scroll-first and does not immediately move cursor/focus
   - single tap: places cursor at the tapped point and opens the keyboard
   - keyboard visible: normal cursor placement/selection remains enabled
-- Mobile editor hosts now opt into native-input priority rules, so active mobile typing defers synchronous persistence,
-  pauses note snapshot polling, delays app-driven RichText surface reinjection until the OS input session settles, and
-  uses a plain logical-text input surface instead of the RichText editor projection.
+- Mobile editor hosts now opt into native-input priority rules, pause note snapshot polling, delay app-driven
+  RichText surface reinjection until the OS input session settles, and use a plain logical-text input surface instead
+  of the RichText editor projection.
+  Native-input priority no longer carries a deferred-persistence exception; mobile shares the same immediate
+  `.wsnbody` flush contract as desktop.
 - Desktop editor hosts now also pause note snapshot polling while the live editor owns focus, so the periodic
   selected-note snapshot refresh cannot overwrite the active buffer with a stale same-note payload mid-typing.
 - `MobileContentsDisplayView.qml` also removes the mobile live-editor horizontal inset, so the content view spans the
@@ -112,6 +114,8 @@
   - `ContentsEditorSelectionBridge` exposes `selectedNoteBodyLoading` while the selected note body is read on a worker
     thread
   - desktop/mobile hosts defer `requestSyncEditorTextFromSelection(...)` until that body read completes
+  - desktop/mobile hosts also schedule one more selection-sync pass when that loading flag returns to `false`, so
+    empty-body notes still clear the previous session even when `selectedNoteBodyText` remains `""`
   - a large note-open therefore no longer requires the note-list model, the selection bridge, and the editor session to
     all duplicate the same full body text at once
 - Desktop/mobile note transitions now also project any still-live `TextEdit` delta through
@@ -132,17 +136,20 @@
 - `ContentsEditorTypingController.qml` now rebuilds post-edit logical line-start offsets from the resulting logical
   text each mutation, fixing stale line-count growth where gutter/minimap lines could increase but not decrease after
   newline removal or line-wrap collapse.
-- Editor body persistence is now split into buffered fetch staging vs background completion:
+- Editor body persistence is now split into immediate-flush requests plus buffered retry/completion:
   - `ContentsEditorSession.qml` owns pending/in-flight state only
   - `ContentsEditorSelectionBridge` stays as the QML-facing adapter
   - `file/sync/ContentsEditorIdleSyncController` owns the note-scoped buffered snapshot cache and recurring `1000ms`
     fetch clock
   - `ContentsNoteManagementCoordinator` serializes direct `.wsnote` writes plus open-count/stat follow-up work on the
     downstream management side
-  - selection/typing controllers now treat persistence as eventual filesystem sync of the latest buffered note body,
-    not as an "all changes must land on this exact idle turn" guarantee
+  - selection/typing controllers now default to immediate `.wsnbody` flush requests for live editor mutations, while
+    the buffered fetch clock remains the retry/drain path for dirty note snapshots that were already accepted into the
+    persistence controller
   - each successful queued write now also triggers one reconcile verify(fetch) against filesystem RAW, so the visible
     note snapshot converges even when downstream body serialization canonicalizes markup/escaping.
+  - when desktop/mobile hosts call `persistEditorTextImmediately(...)`, that path now issues one immediate fetch enqueue
+    attempt for the current note payload instead of silently downgrading to deferred-only staging
 - The RichText editor surface now decodes one safe-entity layer for display, so RAW-preserving source escapes like
   `&lt;` / `&gt;` / `&amp;` render as visible glyphs without changing the canonical note-body source contract.
 - Gutter/minimap/editor default geometry now routes through LVRS `gap`, `stroke`, theme-color, and `scaleMetric(...)`

@@ -123,12 +123,10 @@ structured-block projection do not re-enter the normal typing path.
 - A committed `textEdited` turn is now always treated as user-authoritative typing input.
   The controller no longer drops that turn only because `syncingEditorTextFromModel` happened to still be true from a
   previous model-sync tick.
-- Hosts may opt into deferred persistence through `view.deferImmediateEditorPersistence`.
-  - when that flag is enabled, ordinary typing skips synchronous `persistEditorTextImmediately(...)`
-  - the controller arms `editorSession.scheduleEditorPersistence()` instead, so the OS input session is not blocked by
-    note-store writes on every committed mobile keystroke
-- It tries `view.persistEditorTextImmediately(...)` first.
-- If immediate persistence is unavailable or fails, it falls back to `editorSession.scheduleEditorPersistence()`.
+- Committed typing now always requests `view.persistEditorTextImmediately(...)` for the rewritten RAW note body.
+- The controller no longer exposes or honors a host-level deferred-persistence escape hatch for ordinary typing.
+- Any later retry or dirty-snapshot draining remains owned by the downstream bridge/idle-sync controller after that
+  immediate flush request is accepted.
 - The host view still emits `editorTextEdited(...)` for the broader editor-shell lifecycle.
 
 ## Normalization Rules
@@ -185,8 +183,8 @@ structured-block projection do not re-enter the normal typing path.
   model-sync guard bit from a prior same-note sync cycle.
 - Post-`Enter` list-continuation cursor restore must not land on the wrong logical offset because multiple nested
   cursor objects were rewritten out of order.
-- when `view.deferImmediateEditorPersistence` is enabled, committed typing must not synchronously hit the content store
-  on each keystroke
+- Committed typing must not route through a host-level deferred-persistence flag; the default contract is now
+  write-through `.wsnbody` sync.
 - Typing `- item` or `1. item` should persist the literal markdown marker text in source rather than an already-expanded
   bullet/number glyph representation.
 - Pressing `Enter` on an unordered markdown list that is visually rendered with a bullet glyph in the editor must still

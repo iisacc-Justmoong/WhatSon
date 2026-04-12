@@ -15,8 +15,11 @@
 - The session no longer owns a debounce timer.
 - `pendingBodySave` now only tracks whether the currently bound editor buffer still has a staged-but-not-yet-confirmed
   filesystem persistence result for that same note/text pair.
-- `scheduleEditorPersistence()` stages the latest editor snapshot immediately into the bridge's buffered fetch-sync
-  boundary and now returns whether that staging request was actually accepted.
+- `scheduleEditorPersistence()` now exists as the explicit buffered-retry entrypoint for the session and returns
+  whether that staging request was actually accepted by the bridge.
+- `persistEditorTextImmediately(text)` now marks the current note dirty and forwards that explicit payload through
+  `enqueueEditorPersistence(noteId, bodyText, true)`, requesting one immediate fetch enqueue attempt instead of
+  waiting for the periodic fetch clock.
 - During that staging turn, session now treats `date="yyyy-mm-dd"` in `<agenda ...>` as a modified-time placeholder
   and rewrites it to the current local `YYYY-MM-DD` token before enqueueing persistence.
 - That placeholder normalization is delegated to `ContentsAgendaBackend.normalizeAgendaModifiedDate(...)`.
@@ -27,11 +30,16 @@
 - The session no longer blocks note swaps on an immediate save acceptance path.
 - `flushPendingEditorText()` remains a best-effort immediate fetch request and is now also reused by note-switch
   control flow when the current note still has a pending body save.
+- Ordinary typing and source-rewrite helpers now also use that explicit immediate fetch path by default, so the live
+  editor session can push `.wsnbody` updates without waiting for a host-side deferred-persistence escape hatch.
 - If a note switch arrives while `pendingBodySave` is still true, `requestSyncEditorTextFromSelection(...)` now issues
   `flushPendingEditorText()` first and refuses to bind the next note unless that current-note snapshot was accepted into
   the persistence queue.
 - `requestSyncEditorTextFromSelection(...)` now also refuses to bind incoming model text when the supplied body owner
   note id does not match the selected note id.
+- When a mismatched same-note model snapshot is rejected, that same entrypoint now re-issues
+  `persistEditorTextImmediately(currentText)` for the live buffer instead of downgrading the current note back to
+  deferred staging.
 - That entrypoint no longer falls back to any session-stored selected note id when callers omit one.
   Callers must pass explicit note ownership now.
 
@@ -99,11 +107,15 @@
   accepted by the persistence bridge.
 - Leaving a note with pending edits should attempt the immediate fetch path before the new note binds, reducing the
   window where the old note exists only in the in-memory buffer.
+- Immediate session persistence must forward the caller-provided text payload into the flush path, not ignore it and
+  downgrade the write to deferred staging only.
 - The session must not bind model text for note `B` unless the upstream bridge explicitly proves that the incoming body
   payload also belongs to note `B`.
 - The session must not infer a note id for model-sync requests from prior selection state when the caller omitted it.
 - If filesystem/body lookup cannot provide note-owned text for the current selection, the session must still be able to
   bind an explicit empty-body fallback for that selected note.
+- Rejecting a mismatched same-note model snapshot must not quietly push the live editor buffer back onto the deferred
+  staging path; the session must request an immediate `.wsnbody` flush for that current text instead.
 - If the editor buffer contains `<agenda date="yyyy-mm-dd">`, the first local persistence-staging turn after
   modification must rewrite that placeholder to current `YYYY-MM-DD`.
 - If model/body sync includes empty `<task>` or empty `<callout>` blocks, editor session normalization must expose

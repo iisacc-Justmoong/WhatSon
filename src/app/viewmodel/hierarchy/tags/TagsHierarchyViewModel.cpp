@@ -6,6 +6,7 @@
 #include "file/hierarchy/tags/WhatSonTagsHierarchyParser.hpp"
 #include "file/note/WhatSonBookmarkColorPalette.hpp"
 #include "file/note/WhatSonNoteFolderBindingRepository.hpp"
+#include "file/note/WhatSonNoteBodyPersistence.hpp"
 #include "viewmodel/hierarchy/tags/TagsHierarchyViewModelSupport.hpp"
 
 #include <QDir>
@@ -801,6 +802,90 @@ void TagsHierarchyViewModel::deleteSelectedFolder()
                               QStringLiteral("deleteSelectedFolder.success"),
                               QStringLiteral("startIndex=%1 removeCount=%2 itemCount=%3").arg(startIndex).
                               arg(removeCount).arg(m_entries.size()));
+}
+
+bool TagsHierarchyViewModel::applyPersistedBodyStateForNote(
+    const QString& noteId,
+    const QString& normalizedBodyText,
+    const QString& normalizedBodySourceText,
+    const QString& lastModifiedAt)
+{
+    const QString normalizedNoteId = noteId.trimmed();
+    if (normalizedNoteId.isEmpty())
+    {
+        return false;
+    }
+
+    const int noteIndex = indexOfNoteRecordById(m_allNotes, normalizedNoteId);
+    if (noteIndex < 0 || noteIndex >= m_allNotes.size())
+    {
+        return false;
+    }
+
+    LibraryNoteRecord& note = m_allNotes[noteIndex];
+    note.bodyPlainText = WhatSon::NoteBodyPersistence::normalizeBodyPlainText(normalizedBodyText);
+    note.bodySourceText = WhatSon::NoteBodyPersistence::normalizeBodyPlainText(normalizedBodySourceText);
+    if (note.bodySourceText.isEmpty())
+    {
+        note.bodySourceText = note.bodyPlainText;
+    }
+    note.bodyFirstLine = WhatSon::NoteBodyPersistence::firstLineFromBodyPlainText(note.bodyPlainText);
+    if (!lastModifiedAt.trimmed().isEmpty())
+    {
+        note.lastModifiedAt = lastModifiedAt.trimmed();
+    }
+
+    refreshNoteListForSelection();
+    emit hierarchyModelChanged();
+    return true;
+}
+
+bool TagsHierarchyViewModel::saveBodyTextForNote(const QString& noteId, const QString& text)
+{
+    const QString normalizedNoteId = noteId.trimmed();
+    if (normalizedNoteId.isEmpty())
+    {
+        return false;
+    }
+
+    const int noteIndex = indexOfNoteRecordById(m_allNotes, normalizedNoteId);
+    if (noteIndex < 0 || noteIndex >= m_allNotes.size())
+    {
+        return false;
+    }
+
+    const LibraryNoteRecord& note = m_allNotes.at(noteIndex);
+    QString normalizedBodyText;
+    QString normalizedBodySourceText;
+    QString lastModifiedAt;
+    QString saveError;
+    if (!WhatSon::NoteBodyPersistence::persistBodyPlainText(
+            note.noteId,
+            note.noteDirectoryPath,
+            note.noteHeaderPath,
+            text,
+            &normalizedBodyText,
+            &normalizedBodySourceText,
+            &lastModifiedAt,
+            &saveError))
+    {
+        WhatSon::Debug::traceSelf(this,
+                                  QString::fromLatin1(kScope),
+                                  QStringLiteral("saveCurrentBodyText.failed"),
+                                  QStringLiteral("noteId=%1 error=%2").arg(normalizedNoteId, saveError));
+        return false;
+    }
+
+    return applyPersistedBodyStateForNote(
+        normalizedNoteId,
+        normalizedBodyText,
+        normalizedBodySourceText,
+        lastModifiedAt);
+}
+
+bool TagsHierarchyViewModel::saveCurrentBodyText(const QString& text)
+{
+    return saveBodyTextForNote(m_noteListModel.currentNoteId(), text);
 }
 
 QString TagsHierarchyViewModel::noteDirectoryPathForNoteId(const QString& noteId) const

@@ -113,17 +113,17 @@ It also owns keyboard-driven markdown block toggles for the list types the rende
 
 - Mutations call `editorSession.markLocalEditorAuthority()` before persistence.
 - Immediate editor mutations no longer bypass the fetch-sync boundary.
-- `persistEditorTextImmediately(...)` now only stages the current editor buffer through `ContentsEditorSession`, which
-  forwards it into the buffered fetch-sync controller under `file/sync`.
-- That helper now returns the actual queue-acceptance result from `ContentsEditorSession.scheduleEditorPersistence()`
-  instead of always reporting success.
-- The typing controller still uses that boolean to decide whether one staging request already succeeded for the current
-  turn.
+- `persistEditorTextImmediately(...)` now routes through `ContentsEditorSession.persistEditorTextImmediately(...)`,
+  which forwards the current note snapshot into the buffered fetch-sync controller as one immediate flush request.
+- That helper now returns the actual queue-acceptance result from
+  `ContentsEditorSession.persistEditorTextImmediately(...)` instead of always reporting success.
+- Callers can still inspect that boolean when they need queue-acceptance information, but the controller's own
+  formatting/list mutations no longer downgrade rejected immediate writes back into deferred staging.
 - The save pipeline canonicalizes the edited RichText surface back into `.wsnbody` source tags, so shortcut/context
   formatting persists as semantic tags such as `<bold>...</bold>` and `<italic>...</italic>` instead of raw span CSS.
 - Ordinary typing no longer goes through this controller or its whole-document RichText normalization helper.
-- If immediate persistence is unavailable or fails, the controller falls back to
-  `editorSession.scheduleEditorPersistence()`.
+- Inline-format wraps and markdown-list rewrites now always request the immediate persistence path for the rewritten RAW
+  source; the controller does not silently fall back to `editorSession.scheduleEditorPersistence()`.
 - The host view still emits `editorTextEdited(...)`; the controller owns the mutation decision but not the broader
   editor-shell lifecycle.
 - Hosts that expose `preferNativeInputHandling` can now override the editor surface policy:
@@ -179,9 +179,11 @@ It also owns keyboard-driven markdown block toggles for the list types the rende
   toggles to misfire as if the proprietary `.wsnbody` style was already present.
 - Applying `Strikethrough` through shortcut/context-menu on indented markdown lines must keep line indentation and
   structural list/heading prefixes intact after the source rewrite.
-- Immediate typing saves must return `true` once the snapshot is accepted into the buffered fetch-sync stage so the
+- Immediate typing saves must return `true` once the snapshot is accepted into the buffered fetch-sync flush path so the
   typing controller does not schedule a redundant second staging request on the same turn.
 - Immediate persistence helpers must not report success when the staging request was rejected, because selection or
   correction flows may otherwise continue as if the current note snapshot were safe.
+- Immediate persistence helpers must not silently downgrade to deferred-only staging, because the editor host now
+  treats formatting/list rewrites as write-through `.wsnbody` updates by default.
 - A host with `preferNativeInputHandling` enabled must not be re-forced into `TextEdit.RichText` by the selection
   controller after note changes, surface syncs, or shortcut handling.

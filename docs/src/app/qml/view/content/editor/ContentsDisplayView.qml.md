@@ -38,6 +38,10 @@ Desktop content editor host.
   While that lazy load is pending, the host keeps the previous editor buffer intact, can request an immediate fetch
   attempt for the previously bound note, disables the editor viewport, and shows a loading overlay instead of pushing
   an empty interim body into the editor.
+- Desktop note-open now also re-queues `scheduleSelectionModelSync(...)` when
+  `selectedNoteBodyLoading` flips back to `false`, even if the loaded body text is still the empty string.
+  Empty-body notes therefore clear the stale previous note session instead of leaving the old body mounted just because
+  `selectedNoteBodyTextChanged` had no new payload to emit.
 - The host now also requires `selectionBridge.selectedNoteBodyNoteId == selectedNoteId` before syncing the body into
   the session or restoring editor focus.
   This prevents one note's stale body text from being rebound under another note id after a failed or superseded lazy
@@ -49,6 +53,9 @@ Desktop content editor host.
 - Desktop inline-editor `onTextEdited()` now only notifies the typing controller to read the live `TextEdit` state.
   The host no longer treats the rendered RichText surface payload itself as a recovery source for RAW note text, so
   agenda/callout projection cannot push the note-open session snapshot back over newer visible edits.
+- Desktop host-side RAW mutations such as imported-resource tag insertion or structured source rewrites now also issue
+  immediate persistence requests directly; the host no longer keeps a local deferred-persistence override for those
+  editor mutations.
 - When the selection bridge can already expose a buffered dirty body for the newly selected note, the desktop host now
   consumes that note-owned payload through the ordinary selection-sync path instead of waiting for a stale filesystem
   read to arrive first.

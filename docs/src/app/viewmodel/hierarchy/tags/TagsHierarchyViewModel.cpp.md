@@ -49,6 +49,10 @@ as a passive notification only.
 - `reloadNoteMetadataForNoteId(...)` re-reads one note document and immediately re-applies the tag
   projection, which is what lets detail-panel tag writes show up in the Tags domain without a full
   hub reload.
+- `saveBodyTextForNote(...)` now persists the selected projected note through
+  `WhatSon::NoteBodyPersistence::persistBodyPlainText(...)`, and
+  `applyPersistedBodyStateForNote(...)` rehydrates the in-memory tag note cache with the normalized
+  body payload so editor sessions in the Tags domain no longer stop at the list-model snapshot.
 
 ## Expansion Ownership
 
@@ -72,6 +76,9 @@ as a passive notification only.
 - Expansion and selection are keyed by stable tag identity rather than by row index.
 - A successful snapshot reload may refresh both note metadata and load-state metadata without
   forcing a visual reset.
+- Tag-projected note editing is no longer editor-local: when the shared editor bridge targets the
+  Tags domain, successful saves now reach the underlying `.wsnbody` and then reflow back through
+  `reloadNoteMetadataForNoteId(...)` for metadata/stat refresh follow-up.
 
 ## Count Role Compatibility
 

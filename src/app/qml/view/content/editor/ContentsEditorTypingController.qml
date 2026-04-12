@@ -17,14 +17,6 @@ QtObject {
     property var liveLogicalToSourceOffsets: [0]
     property string liveSnapshotSourceText: ""
 
-    function shouldDeferImmediatePersistence() {
-        return !!(controller.view
-                  && controller.view.deferImmediateEditorPersistence !== undefined
-                  && controller.view.deferImmediateEditorPersistence
-                  && controller.editorSession
-                  && controller.editorSession.scheduleEditorPersistence !== undefined);
-    }
-
     function markerOnlyListBreakInsertion(logicalLineStart, logicalLineEnd) {
         const replacementStart = Math.max(0, Math.floor(Number(logicalLineStart) || 0));
         const replacementEnd = Math.max(replacementStart, Math.floor(Number(logicalLineEnd) || 0));
@@ -729,16 +721,8 @@ QtObject {
 
         if (controller.editorSession && controller.editorSession.markLocalEditorAuthority !== undefined)
             controller.editorSession.markLocalEditorAuthority();
-        if (controller.shouldDeferImmediatePersistence()) {
-            controller.editorSession.scheduleEditorPersistence();
-            controller.view.editorTextEdited(nextSourceText);
-            return true;
-        }
-        const saved = controller.view.persistEditorTextImmediately !== undefined
-                ? !!controller.view.persistEditorTextImmediately(nextSourceText)
-                : false;
-        if (!saved && controller.editorSession && controller.editorSession.scheduleEditorPersistence !== undefined)
-            controller.editorSession.scheduleEditorPersistence();
+        if (controller.view.persistEditorTextImmediately !== undefined)
+            controller.view.persistEditorTextImmediately(nextSourceText);
         controller.view.editorTextEdited(nextSourceText);
         return true;
     }
@@ -1004,16 +988,8 @@ QtObject {
 
         if (controller.editorSession && controller.editorSession.markLocalEditorAuthority !== undefined)
             controller.editorSession.markLocalEditorAuthority();
-        if (controller.shouldDeferImmediatePersistence()) {
-            controller.editorSession.scheduleEditorPersistence();
-            controller.view.editorTextEdited(nextSourceText);
-            return true;
-        }
-        const saved = controller.view.persistEditorTextImmediately !== undefined
-                ? !!controller.view.persistEditorTextImmediately(nextSourceText)
-                : false;
-        if (!saved && controller.editorSession && controller.editorSession.scheduleEditorPersistence !== undefined)
-            controller.editorSession.scheduleEditorPersistence();
+        if (controller.view.persistEditorTextImmediately !== undefined)
+            controller.view.persistEditorTextImmediately(nextSourceText);
         controller.view.editorTextEdited(nextSourceText);
         return true;
     }

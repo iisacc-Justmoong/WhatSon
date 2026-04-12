@@ -320,18 +320,18 @@ WhatSon is an LVRS-based Qt Quick application.
   markdown-aware preview HTML, and hidden preview paths no longer regenerate on every edit.
 - `ContentsEditorSelectionBridge` now forwards editor persistence into
   `src/app/file/sync/ContentsEditorIdleSyncController.*`.
-  QML/editor code stages only `{noteId, bodyText}` snapshots; the sync controller decides editor idle asynchronously
-  after `1000ms` with a worker-thread timer and then forwards the approved snapshot into the downstream direct-save
-  session. The background note-management lane re-reads the current `.wsnote`, writes `.wsnbody` / `.wsnhead`
+  QML/editor code now requests immediate `{noteId, bodyText}` flushes for live user mutations, and the sync
+  controller keeps the buffered `1000ms` fetch clock only as the retry/drain path for already accepted dirty note
+  snapshots. The background note-management lane re-reads the current `.wsnote`, writes `.wsnbody` / `.wsnhead`
   through `WhatSonLocalNoteFileStore`, mirrors normalized body state back into the active editable hierarchy
   viewmodel, and defers hub-wide `.wsnbody` backlink/open-count scans to a later
   `requestTrackedStatisticsRefreshForNote(...)` pass owned by that viewmodel.
 - Note selection transitions no longer pay that hub-wide `.wsnbody` rescan. The selection bridge now resolves
   `{noteId, noteDirectoryPath}` from `.wsnhead`-backed metadata and increments `openCount` through a header-only
   rewrite path, so selecting another note stays decoupled from backlink recalculation.
-- Editor body persistence is now decoupled from live editing: staged snapshots wait behind the async `1000ms` idle
-  gate or an explicit note-exit flush, and QML editor sessions only react to queued/completed async events when
-  deciding whether to clear or retry pending body saves.
+- Editor body persistence now treats live editing as write-through by default: ordinary typing, formatting, and
+  programmatic source rewrites request immediate `.wsnbody` flushes first, and QML editor sessions use the buffered
+  fetch clock only to drain or retry note snapshots that were already accepted into the persistence lane.
 - The same save path now short-circuits when the normalized plain-text body is unchanged, so a no-op save no longer
   rewrites `.wsnbody` or strips existing empty/custom body tags that the editor did not modify.
 - When no note is selected, `ContentsDisplayView.qml` no longer pretends that an unsaved draft exists and does not

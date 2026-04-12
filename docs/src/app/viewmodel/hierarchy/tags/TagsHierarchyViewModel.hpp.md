@@ -22,6 +22,10 @@ expansion hooks for the tag tree.
   `applyRuntimeSnapshot(...)`.
 - Exposes `requestViewModelHook()` to trigger a file-backed `Tags.wstags` reload through the same
   snapshot-application path.
+- Exposes `saveBodyTextForNote(...)`, `saveCurrentBodyText(...)`, and
+  `applyPersistedBodyStateForNote(...)` so the shared editor persistence bridge can flush
+  tag-projected note edits back into the owning `.wsnbody` instead of treating the Tags domain as a
+  read-only in-memory projection.
 - Declares inherited capability methods with explicit `override` markers so compiler diagnostics
   catch interface drift immediately and builds stay warning-clean.
 
@@ -48,7 +52,8 @@ expansion hooks for the tag tree.
 ## QML Integration
 
 QML callers should treat `selectedIndex` and `setItemExpanded(...)` as the only supported mutable
-view-state entry points. `noteDirectoryPathForNoteId(...)` and `reloadNoteMetadataForNoteId(...)`
-also exist as cross-panel synchronization hooks so the detail panel can refresh the tag projection
-after it mutates `.wsnhead` tags. Direct row reconstruction in QML would bypass the viewmodel's
-persistence and refresh constraints.
+view-state entry points. `noteDirectoryPathForNoteId(...)`, `reloadNoteMetadataForNoteId(...)`, and
+the body-persistence hook trio also exist as cross-panel synchronization hooks so the shared editor
+bridge can write `.wsnbody` changes and the detail panel can refresh the tag projection after it
+mutates `.wsnhead` tags. Direct row reconstruction in QML would bypass the viewmodel's persistence
+and refresh constraints.

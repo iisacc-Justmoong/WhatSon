@@ -39,6 +39,10 @@ Mobile content editor host.
   While loading is pending, mobile disables the editor viewport, keeps the previous buffer intact, can request an
   immediate fetch attempt for the previously bound note, and shows the same loading overlay contract as desktop instead
   of syncing an empty placeholder body.
+- Mobile note-open now also re-queues `scheduleSelectionModelSync(...)` when
+  `selectedNoteBodyLoading` returns to `false`, even if the selected note still resolves to an empty string body.
+  Empty-body notes therefore clear the stale previous note session instead of silently inheriting the last visible
+  editor contents.
 - Mobile also now requires `selectedNoteBodyNoteId == selectedNoteId` before syncing selection state into the session
   or restoring editor focus, so a stale body payload cannot be rebound under a different note id.
 - During a note-selection transition, the mobile host now projects any still-live `TextEdit` delta through
@@ -48,6 +52,8 @@ Mobile content editor host.
 - Mobile inline-editor `onTextEdited()` now only notifies the typing controller to read the live `TextEdit` state.
   The host no longer treats the rendered RichText surface payload itself as a recovery source for RAW note text, so
   agenda/callout projection cannot push the note-open session snapshot back over newer visible edits.
+- Mobile host-side RAW mutations such as imported-resource tag insertion or structured source rewrites now also issue
+  immediate persistence requests directly; native-input preference no longer implies a deferred-persistence exception.
 - When the selection bridge can already expose a buffered dirty body for the newly selected note, the mobile host now
   consumes that note-owned payload through the ordinary selection-sync path instead of waiting for a stale filesystem
   read to arrive first.
