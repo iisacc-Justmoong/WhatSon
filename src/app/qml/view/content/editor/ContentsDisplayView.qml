@@ -2113,8 +2113,8 @@ Item {
                                 contentsView.flushEditorStateAfterInputSettles(0);
                                 contentsView.scheduleDocumentPresentationRefresh(true);
                             }
-                            onTextEdited: function (_text) {
-                                editorTypingController.handleEditorTextEdited();
+                            onTextEdited: function (surfaceText) {
+                                editorTypingController.handleEditorTextEdited(surfaceText);
                             }
                         }
                     }

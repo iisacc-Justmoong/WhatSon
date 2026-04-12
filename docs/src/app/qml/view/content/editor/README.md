@@ -118,6 +118,10 @@
   `ContentsEditorTypingController.handleEditorTextEdited()` before flushing the previously bound note.
   Combined with the bridge-side pending-body adoption path, this keeps large deletions from being dropped or replaced
   by a stale package read when the user briefly visits another note and comes back.
+- Desktop/mobile inline-editor `onTextEdited(...)` callbacks now also pass the current editor surface payload into
+  `ContentsEditorTypingController`.
+  When incremental plain-text delta extraction stalls, the controller can still rebuild RAW from that full surface and
+  keep the session source advancing instead of letting visible deletions die inside the editor widget.
 - `ContentsEditorTypingController.qml` now rebuilds post-edit logical line-start offsets from the resulting logical
   text each mutation, fixing stale line-count growth where gutter/minimap lines could increase but not decrease after
   newline removal or line-wrap collapse.

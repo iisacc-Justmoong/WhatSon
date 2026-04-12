@@ -43,6 +43,10 @@ Mobile content editor host.
   `ContentsEditorTypingController.handleEditorTextEdited()` before deciding whether to flush the previously bound note.
   This keeps large deletions or other last-turn edits from being dropped just because the selection id changed before
   the session buffer had caught up.
+- Mobile inline-editor `onTextEdited(surfaceText)` now also forwards the edited surface payload into the typing
+  controller.
+  This gives the controller one whole-surface recovery path when incremental plain-text delta extraction fails to move
+  the session source even though the live RichText editor already changed.
 - When the selection bridge can already expose a buffered dirty body for the newly selected note, the mobile host now
   consumes that note-owned payload through the ordinary selection-sync path instead of waiting for a stale filesystem
   read to arrive first.
