@@ -626,6 +626,154 @@ namespace WhatSon::Android::Storage
             return activeBridge().writeBytes(WhatSon::HubPath::normalizePath(uri), bytes, errorMessage);
         }
 
+        bool findChildEntry(
+            const QString& parentUri,
+            const QString& name,
+            EntryMetadata* outEntry,
+            QString* errorMessage)
+        {
+            if (outEntry != nullptr)
+            {
+                *outEntry = EntryMetadata();
+            }
+            if (errorMessage != nullptr)
+            {
+                errorMessage->clear();
+            }
+
+            QVector<EntryMetadata> children;
+            if (!listChildren(parentUri, &children, errorMessage))
+            {
+                return false;
+            }
+
+            const QString trimmedName = name.trimmed();
+            for (const EntryMetadata& child : children)
+            {
+                if (child.name.compare(trimmedName, Qt::CaseInsensitive) != 0)
+                {
+                    continue;
+                }
+
+                if (outEntry != nullptr)
+                {
+                    *outEntry = child;
+                }
+                return true;
+            }
+
+            return false;
+        }
+
+        bool ensureDirectoryEntry(
+            const QString& parentUri,
+            const QString& name,
+            QString* outChildUri,
+            QString* errorMessage)
+        {
+            EntryMetadata existingChild;
+            QString lookupError;
+            if (findChildEntry(parentUri, name, &existingChild, &lookupError))
+            {
+                if (!existingChild.directory)
+                {
+                    if (errorMessage != nullptr)
+                    {
+                        *errorMessage = QStringLiteral("Existing Android document is not a directory: %1").arg(name);
+                    }
+                    return false;
+                }
+
+                if (outChildUri != nullptr)
+                {
+                    *outChildUri = existingChild.uri;
+                }
+                return true;
+            }
+            if (!lookupError.trimmed().isEmpty())
+            {
+                if (errorMessage != nullptr)
+                {
+                    *errorMessage = lookupError;
+                }
+                return false;
+            }
+
+            return createDirectoryEntry(parentUri, name, outChildUri, errorMessage);
+        }
+
+        bool ensureFileEntry(
+            const QString& parentUri,
+            const QString& name,
+            QString* outChildUri,
+            QString* errorMessage)
+        {
+            EntryMetadata existingChild;
+            QString lookupError;
+            if (findChildEntry(parentUri, name, &existingChild, &lookupError))
+            {
+                if (!existingChild.file)
+                {
+                    if (errorMessage != nullptr)
+                    {
+                        *errorMessage = QStringLiteral("Existing Android document is not a file: %1").arg(name);
+                    }
+                    return false;
+                }
+
+                if (outChildUri != nullptr)
+                {
+                    *outChildUri = existingChild.uri;
+                }
+                return true;
+            }
+            if (!lookupError.trimmed().isEmpty())
+            {
+                if (errorMessage != nullptr)
+                {
+                    *errorMessage = lookupError;
+                }
+                return false;
+            }
+
+            return createFileEntry(parentUri, name, outChildUri, errorMessage);
+        }
+
+        bool writeLocalFileToSource(
+            const QString& localFilePath,
+            const QString& sourceParentUri,
+            QString* errorMessage)
+        {
+            const QFileInfo fileInfo(localFilePath);
+            if (!fileInfo.exists() || !fileInfo.isFile())
+            {
+                if (errorMessage != nullptr)
+                {
+                    *errorMessage = QStringLiteral("Local file does not exist: %1").arg(localFilePath);
+                }
+                return false;
+            }
+
+            QString childFileUri;
+            if (!ensureFileEntry(sourceParentUri, fileInfo.fileName(), &childFileUri, errorMessage))
+            {
+                return false;
+            }
+
+            QFile file(localFilePath);
+            if (!file.open(QIODevice::ReadOnly))
+            {
+                if (errorMessage != nullptr)
+                {
+                    *errorMessage = QStringLiteral("Failed to read local hub file: %1 (%2)")
+                                        .arg(localFilePath, file.errorString());
+                }
+                return false;
+            }
+
+            return writeBytes(childFileUri, file.readAll(), errorMessage);
+        }
+
         bool syncSourceDirectoryToLocal(
             const QString& sourceUri,
             const QString& localDirectoryPath,
@@ -683,6 +831,52 @@ namespace WhatSon::Android::Storage
                         *errorMessage = QStringLiteral("Failed to write mounted file bytes: %1 (%2)")
                                             .arg(childLocalPath, file.errorString());
                     }
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        bool syncLocalDirectoryToSource(
+            const QString& localDirectoryPath,
+            const QString& sourceDirectoryUri,
+            QString* errorMessage)
+        {
+            const QFileInfo localInfo(localDirectoryPath);
+            if (!localInfo.exists() || !localInfo.isDir())
+            {
+                if (errorMessage != nullptr)
+                {
+                    *errorMessage = QStringLiteral("Local hub directory does not exist: %1").arg(localDirectoryPath);
+                }
+                return false;
+            }
+
+            const QDir localDirectory(localDirectoryPath);
+            const QFileInfoList entries = localDirectory.entryInfoList(
+                QDir::Dirs | QDir::Files | QDir::NoDotAndDotDot,
+                QDir::Name);
+            for (const QFileInfo& entryInfo : entries)
+            {
+                const QString entryName = entryInfo.fileName();
+                if (entryInfo.isDir())
+                {
+                    QString childDirectoryUri;
+                    if (!ensureDirectoryEntry(sourceDirectoryUri, entryName, &childDirectoryUri, errorMessage))
+                    {
+                        return false;
+                    }
+
+                    if (!syncLocalDirectoryToSource(entryInfo.absoluteFilePath(), childDirectoryUri, errorMessage))
+                    {
+                        return false;
+                    }
+                    continue;
+                }
+
+                if (!writeLocalFileToSource(entryInfo.absoluteFilePath(), sourceDirectoryUri, errorMessage))
+                {
                     return false;
                 }
             }
@@ -751,6 +945,38 @@ namespace WhatSon::Android::Storage
             }
 
             return true;
+        }
+
+        QString mountedHubRootForLocalPath(const QString& localPath)
+        {
+            QString currentPath = WhatSon::HubPath::normalizeAbsolutePath(localPath);
+            if (currentPath.isEmpty())
+            {
+                return {};
+            }
+
+            const QFileInfo currentInfo(currentPath);
+            if (currentInfo.exists() && currentInfo.isFile())
+            {
+                currentPath = currentInfo.absolutePath();
+            }
+
+            while (!currentPath.isEmpty())
+            {
+                if (isMountedHubPath(currentPath))
+                {
+                    return currentPath;
+                }
+
+                const QString parentPath = QFileInfo(currentPath).absolutePath();
+                if (parentPath.isEmpty() || parentPath == currentPath)
+                {
+                    break;
+                }
+                currentPath = parentPath;
+            }
+
+            return {};
         }
     } // namespace
 
@@ -1080,6 +1306,93 @@ namespace WhatSon::Android::Storage
             *outMountedHubPath = WhatSon::HubPath::normalizeAbsolutePath(mountedHubPath);
         }
         return true;
+    }
+
+    bool syncLocalPathToSource(
+        const QString& localPath,
+        QString* errorMessage)
+    {
+        const QString normalizedLocalPath = WhatSon::HubPath::normalizeAbsolutePath(localPath);
+        if (normalizedLocalPath.isEmpty())
+        {
+            if (errorMessage != nullptr)
+            {
+                *errorMessage = QStringLiteral("Local path must not be empty.");
+            }
+            return false;
+        }
+
+        const QString mountedHubPath = mountedHubRootForLocalPath(normalizedLocalPath);
+        if (mountedHubPath.isEmpty())
+        {
+            if (errorMessage != nullptr)
+            {
+                errorMessage->clear();
+            }
+            return true;
+        }
+
+        const QString sourceHubUri = mountedHubSourceUri(mountedHubPath);
+        if (sourceHubUri.trimmed().isEmpty())
+        {
+            if (errorMessage != nullptr)
+            {
+                *errorMessage = QStringLiteral("Mounted Android WhatSon Hub is missing its source URI.");
+            }
+            return false;
+        }
+
+        const QFileInfo localInfo(normalizedLocalPath);
+        if (!localInfo.exists())
+        {
+            if (errorMessage != nullptr)
+            {
+                *errorMessage = QStringLiteral("Local path does not exist: %1").arg(normalizedLocalPath);
+            }
+            return false;
+        }
+
+        if (normalizedLocalPath == mountedHubPath)
+        {
+            return syncLocalDirectoryToSource(normalizedLocalPath, sourceHubUri, errorMessage);
+        }
+
+        const QString relativePath = QDir(mountedHubPath).relativeFilePath(normalizedLocalPath);
+        if (relativePath.startsWith(QStringLiteral("../")))
+        {
+            if (errorMessage != nullptr)
+            {
+                *errorMessage = QStringLiteral("Local path is outside the mounted Android hub: %1").arg(
+                    normalizedLocalPath);
+            }
+            return false;
+        }
+
+        const QStringList segments = relativePath.split(QLatin1Char('/'), Qt::SkipEmptyParts);
+        QString sourceDirectoryUri = sourceHubUri;
+        const qsizetype parentSegmentCount = std::max<qsizetype>(0, segments.size() - 1);
+        for (qsizetype index = 0; index < parentSegmentCount; ++index)
+        {
+            if (!ensureDirectoryEntry(sourceDirectoryUri, segments.at(index), &sourceDirectoryUri, errorMessage))
+            {
+                return false;
+            }
+        }
+
+        if (localInfo.isDir())
+        {
+            QString targetDirectoryUri = sourceDirectoryUri;
+            if (!segments.isEmpty())
+            {
+                if (!ensureDirectoryEntry(sourceDirectoryUri, segments.constLast(), &targetDirectoryUri, errorMessage))
+                {
+                    return false;
+                }
+            }
+            return syncLocalDirectoryToSource(normalizedLocalPath, targetDirectoryUri, errorMessage);
+        }
+
+        return writeLocalFileToSource(normalizedLocalPath, sourceDirectoryUri, errorMessage);
     }
 
     bool isMountedHubPath(const QString& path)

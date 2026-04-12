@@ -19,6 +19,9 @@ Mobile content editor host.
   when the fallback plain-text path becomes active again.
 - Mobile keeps a lightweight proxy object behind the shared `contentEditor` reference so existing geometry/focus helpers
   remain null-safe while the legacy editor instance is absent.
+- Mobile host-side selection and typing controllers now bind to `contentsView.contentEditor` explicitly instead of
+  relying on a self-referential `contentEditor: contentEditor` assignment that produced runtime binding loops under
+  bound-component semantics.
 - Mobile note-open reconcile now also uses a deferred request/complete cycle:
   - selection changes queue one reconcile attempt per note
   - `selectionBridge.viewSessionSnapshotReconciled(...)` closes that pending state
@@ -66,3 +69,5 @@ Mobile content editor host.
 - Mobile no longer auto-mounts `ContentsStructuredTagValidator` as a parser-driven direct-write path.
   Structured note open and editing therefore stay on the same session persistence line as desktop instead of adding a
   second validator-owned file update turn.
+- The print-document `Repeater` delegate now declares `required property int index`, and the inline editor host uses a
+  literal `shapeStyle: 0`, removing runtime `ReferenceError` noise seen during live mobile-host execution.

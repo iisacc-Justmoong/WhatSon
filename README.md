@@ -29,7 +29,8 @@ WhatSon is an LVRS-based Qt Quick application.
 - Android onboarding now routes `content://` SAF hub selections and destination directories through
   `src/app/platform/Android/WhatSonAndroidStorageBackend.*`. The backend keeps the OS-provided document URI as the
   source of truth, materializes the selected `.wshub` package into a deterministic app-local mount directory under app
-  data, and refreshes that mounted copy again from the stored source URI before startup runtime bootstrap.
+  data, refreshes that mounted copy again from the stored source URI before startup runtime bootstrap, and now mirrors
+  successful note-package writes from that mounted working copy back into the original SAF document tree.
 - iOS onboarding now follows the same direct-filesystem vault principle used by Obsidian mobile inside the active app
   session: once Files grants access to a `.wshub`, `src/app/platform/Apple/AppleSecurityScopedResourceAccess.*`
   opens a security-scoped resource session and the runtime reads and writes the real `.wshub` directory in place
@@ -324,7 +325,8 @@ WhatSon is an LVRS-based Qt Quick application.
   controller keeps the buffered `1000ms` fetch clock only as the retry/drain path for already accepted dirty note
   snapshots. The background note-management lane re-reads the current `.wsnote`, writes `.wsnbody` / `.wsnhead`
   through `WhatSonLocalNoteFileStore`, mirrors normalized body state back into the active editable hierarchy
-  viewmodel, and defers hub-wide `.wsnbody` backlink/open-count scans to a later
+  viewmodel, mirrors mounted-Android note writes back into the original source package before reporting success, and
+  defers hub-wide `.wsnbody` backlink/open-count scans to a later
   `requestTrackedStatisticsRefreshForNote(...)` pass owned by that viewmodel.
 - Note selection transitions no longer pay that hub-wide `.wsnbody` rescan. The selection bridge now resolves
   `{noteId, noteDirectoryPath}` from `.wsnhead`-backed metadata and increments `openCount` through a header-only
@@ -332,6 +334,8 @@ WhatSon is an LVRS-based Qt Quick application.
 - Editor body persistence now treats live editing as write-through by default: ordinary typing, formatting, and
   programmatic source rewrites request immediate `.wsnbody` flushes first, and QML editor sessions use the buffered
   fetch clock only to drain or retry note snapshots that were already accepted into the persistence lane.
+- Immediate editor flush requests now fail fast when the persistence lane rejects the current snapshot, instead of
+  silently reporting acceptance while the note remains dirty only in memory.
 - The same save path now short-circuits when the normalized plain-text body is unchanged, so a no-op save no longer
   rewrites `.wsnbody` or strips existing empty/custom body tags that the editor did not modify.
 - When no note is selected, `ContentsDisplayView.qml` no longer pretends that an unsaved draft exists and does not

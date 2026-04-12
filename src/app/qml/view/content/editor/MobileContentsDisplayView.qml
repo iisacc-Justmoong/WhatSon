@@ -1522,7 +1522,7 @@ Item {
     ContentsEditorSelectionController {
         id: editorSelectionController
 
-        contentEditor: contentEditor
+        contentEditor: contentsView.contentEditor
         editorSession: editorSession
         editorViewport: editorViewport
         selectionBridge: selectionBridge
@@ -1542,7 +1542,7 @@ Item {
 
         agendaBackend: contentsAgendaBackend
         calloutBackend: contentsCalloutBackend
-        contentEditor: contentEditor
+        contentEditor: contentsView.contentEditor
         editorSession: editorSession
         textFormatRenderer: textFormatRenderer
         textMetricsBridge: textMetricsBridge
@@ -1821,6 +1821,8 @@ Item {
                                 model: contentsView.printDocumentPageCount
 
                                 delegate: Item {
+                                    required property int index
+
                                     x: printPaperColumn.x
                                     y: printPaperColumn.y + index * contentsView.printPaperTextHeight
                                     width: printPaperColumn.width
@@ -2089,7 +2091,7 @@ Item {
                             selectByMouse: true
                             selectedTextColor: LV.Theme.textPrimary
                             selectionColor: LV.Theme.accent
-                            shapeStyle: shapeRoundRect
+                            shapeStyle: 0
                             shortcutKeyPressHandler: function (event) {
                                 return contentsView.handleInlineFormatShortcutKeyPress(event);
                             }

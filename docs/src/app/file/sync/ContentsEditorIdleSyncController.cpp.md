@@ -20,6 +20,8 @@
   hierarchy/content-view-model transition.
 - Explicit flush requests no longer mean "persist synchronously now"; they only request one immediate fetch-cycle
   enqueue attempt on top of the same buffered state.
+- That immediate flush path now returns the real enqueue result for the current snapshot instead of always reporting
+  success after buffering.
 - Entry-time session/filesystem reconcile requests are forwarded as a dedicated pass-through operation to
   `ContentsNoteManagementCoordinator`; this controller does not reimplement RAW comparison logic locally.
 - Selected-note body reads are also forwarded as pass-through operations to `ContentsNoteManagementCoordinator`.
@@ -48,6 +50,8 @@
 - The controller must accept buffered editor text even while the downstream persistence contract is temporarily absent.
 - `editorTextPersistenceQueued(...)` must still mean "accepted into the downstream persistence queue", not merely
   "buffered in memory".
+- An immediate flush call must not report success when `enqueueNextBufferedPersistenceIfNeeded()` rejected the
+  snapshot.
 - A later fetch turn must still write the newest buffered text after an earlier async completion or failure.
 - The controller must not depend on a worker-thread idle monitor or revision bookkeeping to preserve the latest editor
   buffer.

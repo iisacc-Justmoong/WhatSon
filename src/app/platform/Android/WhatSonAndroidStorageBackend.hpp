@@ -61,6 +61,10 @@ namespace WhatSon::Android::Storage
         QString* outMountedHubPath,
         QString* errorMessage = nullptr);
 
+    bool syncLocalPathToSource(
+        const QString& localPath,
+        QString* errorMessage = nullptr);
+
     [[nodiscard]] bool isMountedHubPath(const QString& path);
     [[nodiscard]] QString mountedHubSourceUri(const QString& mountedHubPath);
 } // namespace WhatSon::Android::Storage

@@ -67,6 +67,9 @@
   editor body while a background reload for that selected note is still in flight.
 - Note-list `currentNoteIdChanged()` still queues one deferred bridge refresh per event-loop turn instead of running
   `refreshNoteSelectionState()` immediately, so one logical selection transition stays coalesced before QML reacts.
+- Note-list count observation now connects to `itemCountChanged(int)` explicitly.
+  The older parameterless signal signature no longer matched the actual note-list-model contract and produced a runtime
+  QObject connect warning during live app startup.
 
 ### Classes and Structs
 - None detected during scaffold generation.

@@ -63,6 +63,9 @@ Desktop content editor host.
   instead of remaining alive behind `visible: false`.
 - The host keeps a lightweight proxy object under the existing `contentEditor` reference so shared geometry/focus helpers
   can keep null-safe access patterns even while the legacy editor instance is absent.
+- Host-side selection and typing controllers now bind to `contentsView.contentEditor` explicitly instead of relying on a
+  self-referential `contentEditor: contentEditor` assignment that produced runtime binding loops under bound-component
+  semantics.
 - Desktop note-open now keeps the legacy inline editor path alive until the first settled structured render confirms
   that the currently selected note actually owns agenda/callout/break blocks.
 - After that first same-note activation, later async reparses keep the structured-flow surface mounted instead of
@@ -72,6 +75,8 @@ Desktop content editor host.
 - Desktop no longer auto-mounts `ContentsStructuredTagValidator` as a parser-driven write path.
   Renderer-side correction suggestions may still exist internally, but note-open and typing now stay on the single
   editor-session persistence path instead of opening an extra validator-triggered file write + note-list refresh turn.
+- The print-document `Repeater` delegate now declares `required property int index`, and the inline editor host uses a
+  literal `shapeStyle: 0`, removing runtime `ReferenceError` noise seen during desktop app execution.
 
 ## Legacy Surface
 - The single `ContentsInlineFormatEditor` and overlay layers still remain the fallback path for notes without any

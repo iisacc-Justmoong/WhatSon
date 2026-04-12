@@ -24,7 +24,8 @@ later fetch turn does not have to rediscover that path through a different activ
 - When the direct persistence lane is available during that staging call, the controller also snapshots the resolved
   note-directory path for that note.
 - `flushEditorTextForNote(noteId, text)`: compatibility path that still stores the same buffered snapshot, but also
-  asks the controller to attempt one immediate fetch-cycle enqueue when possible.
+  asks the controller to attempt one immediate fetch-cycle enqueue when possible. The return value now reflects whether
+  that immediate enqueue was actually accepted.
 - `persistEditorTextForNote(noteId, text)`: compatibility alias for the buffered stage path.
 - `pendingEditorTextForNote(noteId, &text)`: exposes the newest dirty or in-flight editor snapshot for one note
   without forcing a filesystem read, so selection/open flows can prefer the unsaved local body over stale package IO.
@@ -65,6 +66,8 @@ later fetch turn does not have to rediscover that path through a different activ
 - The newest dirty note snapshot must still reach the async persistence queue on a later fetch turn even if one earlier
   fetch cycle missed it.
 - Switching notes must not depend on a synchronous or immediate-save success path before the old note buffer stays safe.
+- Immediate flush callers must not treat a merely buffered snapshot as if it had already entered the downstream
+  persistence queue.
 - Failed persistence completion must keep that note dirty so a later fetch turn can retry the latest buffered text.
 - Delayed persistence must stay attached to the note directory that was resolved when the edit was staged; a later
   hierarchy/content-view-model swap must not silently redirect that buffered text through a different runtime model.

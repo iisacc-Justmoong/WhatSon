@@ -79,7 +79,7 @@ void ContentsEditorSelectionBridge::setNoteListModel(QObject* model)
             SLOT(handleNoteListSelectionChanged()));
         m_itemCountChangedConnection = connect(
             m_noteListModel,
-            SIGNAL(itemCountChanged()),
+            SIGNAL(itemCountChanged(int)),
             this,
             SLOT(handleNoteListCountChanged()));
     }

@@ -299,7 +299,7 @@ bool ContentsEditorIdleSyncController::stageEditorSnapshot(
 
     if (requestImmediateFetch)
     {
-        enqueueNextBufferedPersistenceIfNeeded();
+        return enqueueNextBufferedPersistenceIfNeeded();
     }
 
     return true;

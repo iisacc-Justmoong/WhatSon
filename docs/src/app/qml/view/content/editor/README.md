@@ -103,6 +103,11 @@
   (`reconcileViewSessionAndRefreshSnapshotForNote(noteId, editorSession.editorText)`) instead of only running
   model-side snapshot reload ticks.
   This shifts sync balance toward RAW fetch verification while still keeping write staging eventual.
+- Desktop/mobile hosts now also bind `ContentsEditorSelectionController` and
+  `ContentsEditorTypingController` to `contentsView.contentEditor` explicitly.
+  The previous self-referential `contentEditor: contentEditor` assignment created runtime binding loops under
+  `pragma ComponentBehavior: Bound`, which could leave selection/typing/save orchestration detached from the real
+  editor surface.
 - That reconcile path is now request/complete based rather than synchronous:
   - desktop/mobile hosts queue one note-entry reconcile per selected note
   - `ContentsEditorSelectionBridge` exposes completion through `viewSessionSnapshotReconciled(...)`
@@ -146,12 +151,19 @@
   - selection/typing controllers now default to immediate `.wsnbody` flush requests for live editor mutations, while
     the buffered fetch clock remains the retry/drain path for dirty note snapshots that were already accepted into the
     persistence controller
+  - immediate flush calls now return `false` when the persistence lane rejects the current snapshot, so note-switch
+    flows no longer treat a rejected enqueue as if the note had already been durably accepted
   - each successful queued write now also triggers one reconcile verify(fetch) against filesystem RAW, so the visible
     note snapshot converges even when downstream body serialization canonicalizes markup/escaping.
+  - on Android SAF-mounted hubs, the successful note-management path now mirrors the locally written note package back
+    into the original source document tree before the editor receives a final save success signal
   - when desktop/mobile hosts call `persistEditorTextImmediately(...)`, that path now issues one immediate fetch enqueue
     attempt for the current note payload instead of silently downgrading to deferred-only staging
 - The RichText editor surface now decodes one safe-entity layer for display, so RAW-preserving source escapes like
   `&lt;` / `&gt;` / `&amp;` render as visible glyphs without changing the canonical note-body source contract.
+- The print-page `Repeater` delegates now declare `required property int index`, and the inline editor host now uses a
+  concrete `shapeStyle: 0` value instead of an undefined `shapeRoundRect` symbol, removing two runtime
+  `ReferenceError` classes observed during live app execution.
 - Gutter/minimap/editor default geometry now routes through LVRS `gap`, `stroke`, theme-color, and `scaleMetric(...)`
   tokens instead of scattered local editor pixel literals.
 - The desktop gutter layout is now hard-clamped to its resolved token width, so markdown-list relayouts cannot make the

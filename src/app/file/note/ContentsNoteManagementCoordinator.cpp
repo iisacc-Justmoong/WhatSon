@@ -4,6 +4,7 @@
 #include "WhatSonLocalNoteFileStore.hpp"
 #include "WhatSonNoteBodyPersistence.hpp"
 #include "file/statistic/WhatSonNoteFileStatSupport.hpp"
+#include "platform/Android/WhatSonAndroidStorageBackend.hpp"
 
 #include <QCoreApplication>
 #include <QDir>
@@ -19,6 +20,24 @@ namespace
     constexpr auto kReloadNoteMetadataForNoteIdSignature = "reloadNoteMetadataForNoteId(QString)";
     constexpr auto kSaveBodyTextForNoteSignature = "saveBodyTextForNote(QString,QString)";
     constexpr auto kSaveCurrentBodyTextSignature = "saveCurrentBodyText(QString)";
+} // namespace
+
+namespace
+{
+    bool syncMountedNotePathToSource(const QString& localPath, QString* errorMessage)
+    {
+        const QString normalizedPath = QDir::cleanPath(localPath.trimmed());
+        if (normalizedPath.isEmpty())
+        {
+            if (errorMessage != nullptr)
+            {
+                errorMessage->clear();
+            }
+            return true;
+        }
+
+        return WhatSon::Android::Storage::syncLocalPathToSource(normalizedPath, errorMessage);
+    }
 } // namespace
 
 ContentsNoteManagementCoordinator::ContentsNoteManagementCoordinator(QObject* parent)
@@ -737,7 +756,24 @@ void ContentsNoteManagementCoordinator::handleRequestFinished(const Result& resu
     }
     else if (result.kind == RequestKind::DirectPersistBody)
     {
-        if (result.success)
+        bool success = result.success;
+        QString errorMessage = result.errorMessage;
+        const QString syncNotePath =
+            !result.persistedDocument.noteDirectoryPath.trimmed().isEmpty()
+                ? result.persistedDocument.noteDirectoryPath.trimmed()
+                : result.noteDirectoryPath.trimmed();
+
+        if (success && !syncMountedNotePathToSource(syncNotePath, &errorMessage))
+        {
+            success = false;
+            WhatSon::Debug::traceSelf(
+                this,
+                QStringLiteral("content.note.management"),
+                QStringLiteral("persistBody.sourceSyncFailed"),
+                QStringLiteral("noteId=%1 path=%2 error=%3").arg(result.noteId, syncNotePath, errorMessage));
+        }
+
+        if (success)
         {
             const QString persistedDirectoryPath = result.persistedDocument.noteDirectoryPath.trimmed();
             if (m_boundNoteId == result.noteId
@@ -772,18 +808,31 @@ void ContentsNoteManagementCoordinator::handleRequestFinished(const Result& resu
                 this,
                 QStringLiteral("content.note.management"),
                 QStringLiteral("persistBody.failed"),
-                QStringLiteral("noteId=%1 error=%2").arg(result.noteId, result.errorMessage));
+                QStringLiteral("noteId=%1 error=%2").arg(result.noteId, errorMessage));
         }
 
         emit editorTextPersistenceFinished(
             result.noteId,
             result.text,
-            result.success,
-            result.errorMessage);
+            success,
+            errorMessage);
     }
     else if (result.kind == RequestKind::ViewModelPersistBody)
     {
-        if (result.success)
+        bool success = result.success;
+        QString errorMessage = result.errorMessage;
+
+        if (success && !syncMountedNotePathToSource(result.noteDirectoryPath, &errorMessage))
+        {
+            success = false;
+            WhatSon::Debug::traceSelf(
+                this,
+                QStringLiteral("content.note.management"),
+                QStringLiteral("fallbackPersistBody.sourceSyncFailed"),
+                QStringLiteral("noteId=%1 path=%2 error=%3").arg(result.noteId, result.noteDirectoryPath, errorMessage));
+        }
+
+        if (success)
         {
             const QString statsDirectoryPath =
                 !result.noteDirectoryPath.isEmpty()
@@ -797,29 +846,45 @@ void ContentsNoteManagementCoordinator::handleRequestFinished(const Result& resu
                 this,
                 QStringLiteral("content.note.management"),
                 QStringLiteral("fallbackPersistBody.failed"),
-                QStringLiteral("noteId=%1 error=%2").arg(result.noteId, result.errorMessage));
+                QStringLiteral("noteId=%1 error=%2").arg(result.noteId, errorMessage));
         }
 
         emit editorTextPersistenceFinished(
             result.noteId,
             result.text,
-            result.success,
-            result.errorMessage);
+            success,
+            errorMessage);
     }
     else if (result.kind == RequestKind::IncrementOpenCount)
     {
-        if (!result.success)
+        bool success = result.success;
+        QString errorMessage = result.errorMessage;
+
+        if (success && !syncMountedNotePathToSource(result.noteDirectoryPath, &errorMessage))
+        {
+            success = false;
+        }
+
+        if (!success)
         {
             WhatSon::Debug::traceSelf(
                 this,
                 QStringLiteral("content.note.management"),
                 QStringLiteral("incrementOpenCount.failed"),
-                QStringLiteral("noteId=%1 error=%2").arg(result.noteId, result.errorMessage));
+                QStringLiteral("noteId=%1 error=%2").arg(result.noteId, errorMessage));
         }
     }
     else if (result.kind == RequestKind::RefreshTrackedStatistics)
     {
-        if (result.success)
+        bool success = result.success;
+        QString errorMessage = result.errorMessage;
+
+        if (success && !syncMountedNotePathToSource(result.noteDirectoryPath, &errorMessage))
+        {
+            success = false;
+        }
+
+        if (success)
         {
             reloadNoteMetadataForNote(result.noteId);
         }
@@ -829,7 +894,7 @@ void ContentsNoteManagementCoordinator::handleRequestFinished(const Result& resu
                 this,
                 QStringLiteral("content.note.management"),
                 QStringLiteral("refreshTrackedStatistics.failed"),
-                QStringLiteral("noteId=%1 error=%2").arg(result.noteId, result.errorMessage));
+                QStringLiteral("noteId=%1 error=%2").arg(result.noteId, errorMessage));
         }
     }
     else if (result.kind == RequestKind::ReconcileViewSessionSnapshot)

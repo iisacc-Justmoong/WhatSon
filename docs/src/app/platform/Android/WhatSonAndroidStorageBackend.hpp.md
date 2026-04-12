@@ -1,38 +1,47 @@
 # `src/app/platform/Android/WhatSonAndroidStorageBackend.hpp`
 
 ## Status
-- Documentation phase: scaffold generated from the live source tree.
-- Detail level: structural placeholder prepared for a later deep pass.
+- Documentation updated for the mounted-hub write-back flow.
 
 ## Source Metadata
 - Source path: `src/app/platform/Android/WhatSonAndroidStorageBackend.hpp`
 - Source kind: C++ header
 - File name: `WhatSonAndroidStorageBackend.hpp`
-- Approximate line count: 66
+- Approximate line count: 70
 
-## Extracted Symbols
-- Declared namespaces present: yes
-- QObject macro present: no
+## Declared Role
+- Defines the Android SAF storage façade used by onboarding, startup hub resolution, and mounted-hub persistence.
+- Keeps platform-specific document-tree IO behind the `Bridge` interface so JNI-backed production code and test doubles
+  can share the same higher-level synchronization logic.
 
-### Classes and Structs
+## Public Types
 - `EntryMetadata`
+  Normalized SAF entry metadata used across stat/list/create/read/write helpers.
 - `Bridge`
+  Abstract document-tree bridge for stat/list/create/read/write primitives.
 
-### Enums
-- None detected during scaffold generation.
+## Public API
+- `resolveHubSelection(...)`
+  Resolves a picker target into one or more mountable `.wshub` document URIs.
+- `mountHub(...)`
+  Materializes a source URI into a deterministic app-local mounted working copy and persists mount metadata that links
+  the local path back to the source URI.
+- `exportLocalHubToDirectory(...)`
+  Creates a new SAF-backed hub from a local scaffold, then turns that result into the mounted working copy.
+- `syncLocalPathToSource(...)`
+  Maps a mounted local file or directory back to its original SAF subtree and mirrors the local bytes into the source
+  tree. This is the key API that closes the previous one-way mount gap.
+- `isMountedHubPath(...)` / `mountedHubSourceUri(...)`
+  Recover mount metadata so higher layers can distinguish a mounted Android hub from an ordinary desktop filesystem
+  path.
 
-## Intended Detailed Sections
-- Responsibility and business role
-- Ownership and lifecycle
-- Public API or externally observed bindings
-- Collaborators and dependency direction
-- Data flow and state transitions
-- Error handling and recovery paths
-- Threading, scheduling, or UI affinity constraints when relevant
-- Extension points, invariants, and known complexity hotspots
-- Test coverage and missing verification
+## Invariants
+- The Android document URI stays the source of truth.
+- The mounted local `.wshub` is a runtime working copy only.
+- `syncLocalPathToSource(...)` succeeds as a no-op for non-mounted local paths, so shared higher-level persistence code
+  can call it without branching per platform first.
 
-## Authoring Notes For Next Pass
-- Read the real implementation and adjacent headers before replacing this scaffold.
-- Document concrete signals, slots, invokables, persistence side effects, and LVRS/QML bindings where applicable.
-- Cross-link this file with peer modules in the same directory once the detailed pass begins.
+## Main Collaborators
+- `src/app/viewmodel/onboarding/OnboardingHubController.*`
+- `src/app/runtime/startup/WhatSonStartupHubResolver.*`
+- `src/app/file/note/ContentsNoteManagementCoordinator.*`
