@@ -31,6 +31,8 @@ structured document-flow editor changes.
   the first editor frame becomes interactive.
 - While that first structured render is still pending, the host must keep the structured-flow surface mounted instead of
   waking the legacy hidden full-document editor again.
+- While structured-flow mode remains active, the fallback full-document inline editor must stay unloaded rather than
+  remaining mounted off-screen behind `visible: false`.
 - If a structured correction is applied during note-open stabilization, the selected hierarchy must not
   rebuild the same note list twice in immediate succession when it already supports in-memory
   `applyPersistedBodyStateForNote(...)`.

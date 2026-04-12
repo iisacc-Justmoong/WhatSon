@@ -30,14 +30,14 @@ Desktop content editor host.
 - Initial mount and `selectedNoteIdChanged` now both keep the selection-sync result in a local gate before scheduling
   fallback presentation refresh, which preserves the deferred sync behavior without relying on parser-hostile QML
   identifier names.
-- While structured-flow mode is active, the hidden `ContentsInlineFormatEditor` is now effectively idled:
-  - its `text` binding is cleared
-  - its `enabled`/`visible` state is gated by `legacyInlineEditorActive`
-  - content-height / line-count / cursor `Connections` detach from the hidden surface
+- While structured-flow mode is active, the legacy `ContentsInlineFormatEditor` now unloads entirely through a `Loader`
+  instead of remaining alive behind `visible: false`.
+- The host keeps a lightweight proxy object under the existing `contentEditor` reference so shared geometry/focus helpers
+  can keep null-safe access patterns even while the legacy editor instance is absent.
 - Desktop note-open/model sync now also keeps the structured-flow surface mounted while
   `ContentsStructuredBlockRenderer.renderPending` is true, allowing agenda/callout projection to finish on a worker
   thread instead of blocking the first note-open frame on the UI thread.
 
 ## Legacy Surface
-- The single `ContentsInlineFormatEditor` and overlay layers still exist as the fallback path for notes without any
-  structured blocks.
+- The single `ContentsInlineFormatEditor` and overlay layers still remain the fallback path for notes without any
+  structured blocks, but the inline editor instance is now created only while that fallback path is active.

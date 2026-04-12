@@ -166,9 +166,11 @@
 - Structured-flow source edits no longer force `ContentsDisplayView.qml` / `MobileContentsDisplayView.qml` to rebuild
   the whole legacy presentation snapshot on each keystroke; those hosts now only repopulate the fallback RichText
   surface when the document leaves structured mode again.
-- While structured-flow mode is active, both hosts now also idle the hidden `ContentsInlineFormatEditor` by clearing
-  its text binding and disconnecting its layout/cursor `Connections`, so note-open and block-edit turns do not pay for
-  a second off-screen editor layout pass.
+- While structured-flow mode is active, both hosts now unload the legacy `ContentsInlineFormatEditor` through a
+  `Loader`, so note-open and block-edit turns no longer keep a second full-document editor instance alive behind
+  `visible: false`.
+- Those hosts keep a lightweight proxy object under the shared `contentEditor` reference, preserving existing
+  geometry/focus helper call sites without requiring the hidden editor instance to stay mounted.
 - Desktop/mobile hosts now also treat `editorSession.editorTextSynchronized` as the main post-sync refresh boundary,
   which removes duplicate minimap/presentation/gutter refresh scheduling after model sync, reconcile completion, and
   structured correction apply.

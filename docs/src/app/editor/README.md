@@ -28,8 +28,8 @@
 - The current UI-thread hotspot priority is note-open behavior, not steady-state typing.
 - Note-open reconcile and structured-tag correction now route file I/O through worker-thread queues before the result
   is mirrored back onto the main thread.
-- Structured-flow block edits now also stop short of rebuilding the hidden legacy editor presentation on every
-  keystroke; the fallback inline editor is only repopulated when the note exits structured mode.
+- Structured-flow block edits now also stop short of rebuilding the legacy full-document editor presentation on every
+  keystroke, and the fallback inline editor instance now unloads entirely while the note stays in structured mode.
 - Structured-flow focus restoration now targets one reparsed block per request instead of fanning out through the whole
   document tree, which reduces per-mutation main-thread work on longer structured notes.
 - The remaining focus path in `ContentsStructuredDocumentFlow.qml` is now also tokenless and request-driven, trimming the

@@ -13,8 +13,10 @@ Mobile content editor host.
   editing remains active.
 - While structured-flow mode is active, mobile also disconnects the hidden legacy agenda/callout overlay models so note
   open does not pay for both rendering paths at once.
-- The hidden mobile `ContentsInlineFormatEditor` is now also idled during structured-flow editing by clearing its
-  document binding, disabling the control, and disconnecting its layout/cursor observers until fallback mode returns.
+- The legacy mobile `ContentsInlineFormatEditor` now unloads entirely during structured-flow editing and is recreated only
+  when the fallback plain-text path becomes active again.
+- Mobile keeps a lightweight proxy object behind the shared `contentEditor` reference so existing geometry/focus helpers
+  remain null-safe while the legacy editor instance is absent.
 - Mobile note-open reconcile now also uses a deferred request/complete cycle:
   - selection changes queue one reconcile attempt per note
   - `selectionBridge.viewSessionSnapshotReconciled(...)` closes that pending state

@@ -21,6 +21,7 @@ Item {
     readonly property color activeLineNumberColor: LV.Theme.accentGray
     readonly property bool contentPersistenceContractAvailable: selectionBridge.contentPersistenceContractAvailable
     property var contentViewModel: null
+    readonly property var contentEditor: contentEditorLoader.item ? contentEditorLoader.item : contentEditorProxy
     property alias contextMenuSelectionEnd: editorSelectionController.contextMenuSelectionEnd
     property alias contextMenuSelectionStart: editorSelectionController.contextMenuSelectionStart
     readonly property int currentCursorLineNumber: contentsView.showStructuredDocumentFlow
@@ -1976,65 +1977,92 @@ Item {
                         enabled: visible
                         z: 0
                     }
-                    ContentsInlineFormatEditor {
-                        id: contentEditor
+                    QtObject {
+                        id: contentEditorProxy
 
-                        autoFocusOnPress: true
-                        backgroundColor: "transparent"
-                        backgroundColorDisabled: "transparent"
-                        backgroundColorFocused: "transparent"
-                        backgroundColorHover: "transparent"
-                        backgroundColorPressed: "transparent"
-                        centeredTextHeight: contentsView.editorTextLineBoxHeight
-                        cornerRadius: 0
-                        editorHeight: contentsView.showPrintEditorLayout ? contentsView.printDocumentPageCount * contentsView.printPaperTextHeight : contentsView.editorSurfaceHeight
-                        enforceModeDefaults: false
-                        externalScroll: contentsView.showPrintEditorLayout
-                        externalScrollViewport: contentsView.showPrintEditorLayout ? printDocumentViewport : null
-                        fieldMinHeight: contentsView.showPrintEditorLayout ? contentsView.printDocumentPageCount * contentsView.printPaperTextHeight : Math.max(contentsView.minEditorHeight, contentsView.editorSurfaceHeight)
-                        fontFamily: LV.Theme.fontBody
-                        fontLetterSpacing: 0
-                        fontPixelSize: contentsView.effectiveEditorFontPixelSize
-                        fontWeight: contentsView.desktopEditorFontWeight
-                        enabled: contentsView.legacyInlineEditorActive
-                        insetHorizontal: contentsView.showPrintEditorLayout ? 0 : contentsView.editorHorizontalInset
-                        insetVertical: contentsView.showPrintEditorLayout ? 0 : contentsView.editorBottomInset
-                        placeholderText: ""
-                        selectByMouse: true
-                        selectedTextColor: LV.Theme.textPrimary
-                        selectionColor: LV.Theme.accent
-                        shapeStyle: shapeRoundRect
-                        shortcutKeyPressHandler: function (event) {
-                            return contentsView.handleInlineFormatShortcutKeyPress(event);
+                        property int cursorPosition: 0
+                        property real contentOffsetY: 0
+                        property real contentHeight: 0
+                        property var editorItem: null
+                        property bool focused: false
+                        property bool activeFocus: false
+                        property real inputContentHeight: 0
+                        property bool inputMethodComposing: false
+                        property int length: 0
+                        property string preeditText: ""
+                        property var resolvedFlickable: null
+                        property real width: 0
+
+                        function forceActiveFocus() {
                         }
-                        showRenderedOutput: contentsView.legacyInlineEditorActive && !contentsView.preferNativeInputHandling
-                        showScrollBar: false
-                        text: contentsView.legacyInlineEditorActive
-                              ? (contentsView.preferNativeInputHandling ? String(textMetricsBridge.logicalText) : contentsView.renderedEditorText)
-                              : ""
-                        textColor: contentsView.showPrintEditorLayout ? contentsView.printPaperTextColor : LV.Theme.bodyColor
-                        textFormat: contentsView.preferNativeInputHandling ? TextEdit.PlainText : TextEdit.RichText
-                        visible: contentsView.legacyInlineEditorActive
-                        wrapMode: TextEdit.Wrap
+
+                        function setCursorPositionPreservingInputMethod(_cursorPosition) {
+                        }
+                    }
+                    Component {
+                        id: contentEditorComponent
+
+                        ContentsInlineFormatEditor {
+                            autoFocusOnPress: true
+                            anchors.fill: parent
+                            backgroundColor: "transparent"
+                            backgroundColorDisabled: "transparent"
+                            backgroundColorFocused: "transparent"
+                            backgroundColorHover: "transparent"
+                            backgroundColorPressed: "transparent"
+                            centeredTextHeight: contentsView.editorTextLineBoxHeight
+                            cornerRadius: 0
+                            editorHeight: contentsView.showPrintEditorLayout ? contentsView.printDocumentPageCount * contentsView.printPaperTextHeight : contentsView.editorSurfaceHeight
+                            enforceModeDefaults: false
+                            externalScroll: contentsView.showPrintEditorLayout
+                            externalScrollViewport: contentsView.showPrintEditorLayout ? printDocumentViewport : null
+                            fieldMinHeight: contentsView.showPrintEditorLayout ? contentsView.printDocumentPageCount * contentsView.printPaperTextHeight : Math.max(contentsView.minEditorHeight, contentsView.editorSurfaceHeight)
+                            fontFamily: LV.Theme.fontBody
+                            fontLetterSpacing: 0
+                            fontPixelSize: contentsView.effectiveEditorFontPixelSize
+                            fontWeight: contentsView.desktopEditorFontWeight
+                            insetHorizontal: contentsView.showPrintEditorLayout ? 0 : contentsView.editorHorizontalInset
+                            insetVertical: contentsView.showPrintEditorLayout ? 0 : contentsView.editorBottomInset
+                            placeholderText: ""
+                            selectByMouse: true
+                            selectedTextColor: LV.Theme.textPrimary
+                            selectionColor: LV.Theme.accent
+                            shapeStyle: shapeRoundRect
+                            shortcutKeyPressHandler: function (event) {
+                                return contentsView.handleInlineFormatShortcutKeyPress(event);
+                            }
+                            showRenderedOutput: !contentsView.preferNativeInputHandling
+                            showScrollBar: false
+                            text: contentsView.preferNativeInputHandling ? String(textMetricsBridge.logicalText) : contentsView.renderedEditorText
+                            textColor: contentsView.showPrintEditorLayout ? contentsView.printPaperTextColor : LV.Theme.bodyColor
+                            textFormat: contentsView.preferNativeInputHandling ? TextEdit.PlainText : TextEdit.RichText
+                            wrapMode: TextEdit.Wrap
+
+                            onFocusedChanged: {
+                                if (focused) {
+                                    if (documentPresentationRefreshTimer.running)
+                                        documentPresentationRefreshTimer.stop();
+                                    return;
+                                }
+                                contentsView.flushEditorStateAfterInputSettles(0);
+                                contentsView.scheduleDocumentPresentationRefresh(true);
+                            }
+                            onTextEdited: function (_text) {
+                                editorTypingController.handleEditorTextEdited();
+                            }
+                        }
+                    }
+                    Loader {
+                        id: contentEditorLoader
+
+                        active: contentsView.legacyInlineEditorActive
+                        sourceComponent: contentEditorComponent
                         x: contentsView.showPrintEditorLayout ? (Number(printPaperColumn.x) || 0) + contentsView.printGuideHorizontalInset : 0
                         y: contentsView.showPrintEditorLayout ? (Number(printPaperColumn.y) || 0) + contentsView.printGuideVerticalInset : contentsView.editorDocumentStartY
                         width: contentsView.showPrintEditorLayout ? contentsView.printPaperTextWidth : (parent ? parent.width : 0)
                         height: contentsView.showPrintEditorLayout ? contentsView.printDocumentPageCount * contentsView.printPaperTextHeight : (parent ? Math.max(0, parent.height - contentsView.editorDocumentStartY) : 0)
                         z: contentsView.showPrintEditorLayout ? 2 : 1
                         parent: contentsView.showPrintEditorLayout ? printDocumentSurface : editorViewport
-
-                        onFocusedChanged: {
-                            if (focused) {
-                                if (documentPresentationRefreshTimer.running)
-                                    documentPresentationRefreshTimer.stop();
-                                return;
-                            }
-                            contentsView.flushEditorStateAfterInputSettles(0);
-                            contentsView.scheduleDocumentPresentationRefresh(true);
-                        }
-                        onTextEdited: function (_text) {
-                            editorTypingController.handleEditorTextEdited();
-                        }
                     }
                     ContentsAgendaLayer {
                         id: agendaRenderLayer
