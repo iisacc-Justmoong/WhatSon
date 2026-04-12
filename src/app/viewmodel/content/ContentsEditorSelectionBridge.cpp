@@ -189,13 +189,19 @@ bool ContentsEditorSelectionBridge::refreshSelectedNoteSnapshot()
 {
     const bool reloaded = m_idleSyncController != nullptr
         && m_idleSyncController->refreshNoteSnapshotForNote(m_selectedNoteId);
-    refreshNoteSelectionState();
+    scheduleNoteSelectionRefresh();
     refreshNoteCountState();
     return reloaded;
 }
 
 void ContentsEditorSelectionBridge::handleNoteListSelectionChanged()
 {
+    scheduleNoteSelectionRefresh();
+}
+
+void ContentsEditorSelectionBridge::flushPendingNoteSelectionRefresh()
+{
+    m_noteSelectionRefreshQueued = false;
     refreshNoteSelectionState();
 }
 
@@ -209,6 +215,7 @@ void ContentsEditorSelectionBridge::handleNoteListDestroyed()
     disconnectNoteListModel();
     m_noteListModel = nullptr;
     emit noteListModelChanged();
+    m_noteSelectionRefreshQueued = false;
     refreshNoteSelectionState();
     refreshNoteCountState();
 }
@@ -258,6 +265,20 @@ int ContentsEditorSelectionBridge::readIntProperty(const QObject* object, const 
     }
 
     return std::max(0, object->property(propertyName).toInt());
+}
+
+void ContentsEditorSelectionBridge::scheduleNoteSelectionRefresh()
+{
+    if (m_noteSelectionRefreshQueued)
+    {
+        return;
+    }
+
+    m_noteSelectionRefreshQueued = true;
+    QMetaObject::invokeMethod(
+        this,
+        &ContentsEditorSelectionBridge::flushPendingNoteSelectionRefresh,
+        Qt::QueuedConnection);
 }
 
 void ContentsEditorSelectionBridge::refreshNoteSelectionState()

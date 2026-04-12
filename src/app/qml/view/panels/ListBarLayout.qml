@@ -65,6 +65,8 @@ Rectangle {
     property string displayedNoteListEntriesSignature: "[]"
     property bool displayedNoteListEntriesSyncDeferred: false
     property bool displayedNoteListEntriesForceRefreshDeferred: false
+    property bool displayedNoteListEntriesSyncQueued: false
+    property bool displayedNoteListEntriesForceRefreshQueued: false
     readonly property int noteListScrollTick: LV.Theme.gap2
     readonly property bool noteListSearchContractAvailable: listBarLayout.hasNoteListModel && (listBarLayout.noteListModel.searchText !== undefined || listBarLayout.noteListModel.setSearchText !== undefined)
     property bool noteListViewportRestorePending: false
@@ -533,6 +535,20 @@ Rectangle {
         }
         return listBarLayout.syncDisplayedNoteListEntries(requestedForceRefresh);
     }
+    function scheduleDisplayedNoteListEntriesSync(forceRefresh) {
+        const requestedForceRefresh = Boolean(forceRefresh);
+        listBarLayout.displayedNoteListEntriesForceRefreshQueued = listBarLayout.displayedNoteListEntriesForceRefreshQueued || requestedForceRefresh;
+        if (listBarLayout.displayedNoteListEntriesSyncQueued)
+            return false;
+        listBarLayout.displayedNoteListEntriesSyncQueued = true;
+        Qt.callLater(function () {
+            const scheduledForceRefresh = listBarLayout.displayedNoteListEntriesForceRefreshQueued;
+            listBarLayout.displayedNoteListEntriesSyncQueued = false;
+            listBarLayout.displayedNoteListEntriesForceRefreshQueued = false;
+            listBarLayout.requestDisplayedNoteListEntriesSync(scheduledForceRefresh);
+        });
+        return true;
+    }
     function syncFocusedNoteDeletionState() {
         const bridgeNoteId = noteListContractBridge.currentNoteId;
         if (bridgeNoteId.length > 0) {
@@ -608,6 +624,8 @@ Rectangle {
         listBarLayout.noteDragActive = false;
         listBarLayout.noteListViewportRestorePending = false;
         listBarLayout.preservedNoteListContentY = 0;
+        listBarLayout.displayedNoteListEntriesSyncQueued = false;
+        listBarLayout.displayedNoteListEntriesForceRefreshQueued = false;
         listBarLayout.clearInternalNoteDropPreview();
         listBarLayout.clearNoteDragPreview(null);
         if (noteContextMenu.opened)
@@ -1099,31 +1117,30 @@ Rectangle {
                 listBarLayout.syncSelectionFromCommittedState();
         }
         function onItemsChanged() {
-            listBarLayout.requestDisplayedNoteListEntriesSync(false);
+            listBarLayout.scheduleDisplayedNoteListEntriesSync(false);
         }
         function onModelAboutToBeReset() {
             listBarLayout.captureNoteListViewport();
         }
         function onModelReset() {
-            listBarLayout.requestDisplayedNoteListEntriesSync(false);
             Qt.callLater(function () {
                 listBarLayout.restoreNoteListViewport();
             });
         }
         function onRowsInserted() {
-            listBarLayout.requestDisplayedNoteListEntriesSync(false);
+            listBarLayout.scheduleDisplayedNoteListEntriesSync(false);
         }
         function onRowsMoved() {
-            listBarLayout.requestDisplayedNoteListEntriesSync(false);
+            listBarLayout.scheduleDisplayedNoteListEntriesSync(false);
         }
         function onRowsRemoved() {
-            listBarLayout.requestDisplayedNoteListEntriesSync(false);
+            listBarLayout.scheduleDisplayedNoteListEntriesSync(false);
         }
         function onDataChanged() {
-            listBarLayout.requestDisplayedNoteListEntriesSync(false);
+            listBarLayout.scheduleDisplayedNoteListEntriesSync(false);
         }
         function onLayoutChanged() {
-            listBarLayout.requestDisplayedNoteListEntriesSync(false);
+            listBarLayout.scheduleDisplayedNoteListEntriesSync(false);
         }
 
         ignoreUnknownSignals: true

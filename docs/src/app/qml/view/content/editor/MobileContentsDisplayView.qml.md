@@ -26,8 +26,13 @@ Mobile content editor host.
 - Mobile body-sync and correction/reconcile refresh work now also routes through
   `editorSession.editorTextSynchronized`, removing duplicate minimap/presentation/gutter refresh scheduling from
   multiple completion handlers.
-- Mobile initial mount and `selectedNoteIdChanged` also keep the selection-sync result in a local gate before fallback
-  refresh scheduling, matching the desktop deferred sync path while staying within QML parser identifier constraints.
+- Mobile selection-driven editor sync now also collapses initial mount, `selectedNoteIdChanged`, and
+  `selectedNoteBodyTextChanged` into one queued `scheduleSelectionModelSync(...)` pass per event-loop turn, and mobile
+  visibility re-entry now reuses that same helper instead of scheduling a parallel note-open refresh path. One
+  note-open transition therefore no longer replays the same editor/session refresh logic twice from separate handlers.
+- The shared mobile selection-sync helper also keeps the `requestSyncEditorTextFromSelection(...)` result in one local
+  gate before fallback refresh scheduling, matching the desktop deferred sync path while staying within QML parser
+  identifier constraints.
 - Mobile note-open/model sync now also keeps the structured-flow surface mounted while
   `ContentsStructuredBlockRenderer.renderPending` is true, allowing agenda/callout projection to finish on a worker
   thread instead of blocking the first note-open frame on the UI thread.

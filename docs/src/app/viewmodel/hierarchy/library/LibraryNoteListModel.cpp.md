@@ -11,6 +11,10 @@ latest-modified-first sort for library notes.
 `setItems(...)` now normalizes `createdAt` and `lastModifiedAt` before the filtered source cache is
 stored.
 
+Before the sanitized source cache is replaced, the model now compares the full normalized item list
+against the existing source cache and returns early when nothing actually changed. That keeps
+equivalent library refresh turns from forcing another full list reset.
+
 The model then performs a stable descending sort using:
 
 1. `lastModifiedAt`

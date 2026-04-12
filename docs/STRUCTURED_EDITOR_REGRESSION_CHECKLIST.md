@@ -36,3 +36,9 @@ structured document-flow editor changes.
 - If a structured correction is applied during note-open stabilization, the selected hierarchy must not
   rebuild the same note list twice in immediate succession when it already supports in-memory
   `applyPersistedBodyStateForNote(...)`.
+- One note-open transition must not cause duplicate editor host selection sync passes just because the note-list bridge
+  emitted both note-id and body-text updates in the same event loop turn.
+- Showing the editor again for the already-selected note must reuse the same queued note-open sync path rather than
+  scheduling a second independent minimap/presentation/gutter refresh sequence.
+- One note-list rebuild must not trigger two immediate visible list snapshot refreshes from `modelReset` plus a second
+  `itemsChanged()`-driven snapshot apply.

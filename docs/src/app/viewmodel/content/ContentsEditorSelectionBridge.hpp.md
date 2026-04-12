@@ -35,6 +35,9 @@
   "the fetch boundary accepted one buffered snapshot into the persistence queue" from "the write already finished".
 - `editorTextPersistenceFinished(noteId, text, success, errorMessage)` is still the completion signal consumed by QML
   editor sessions, but the bridge now only forwards the sync/controller result.
+- Internal note-list selection refresh now follows a queued-coalesced contract: one event-loop turn can schedule at
+  most one pending note-selection refresh, even if the underlying list model emits both note-id and body-text change
+  signals.
 
 ### Classes and Structs
 - `ContentsEditorSelectionBridge`
@@ -69,3 +72,5 @@
 - Mobile entry-time reconciliation must be available through
   `reconcileViewSessionAndRefreshSnapshotForNote(...)`, so QML can compare a live editor session snapshot against
   filesystem RAW and only then request a refresh.
+- Note-list adapters must still be free to emit separate `currentNoteIdChanged()` and `currentBodyTextChanged()`
+  signals, but the bridge itself must collapse them into one observable selection refresh turn for downstream QML.

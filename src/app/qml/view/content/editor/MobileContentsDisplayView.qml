@@ -184,6 +184,12 @@ Item {
     property string editorEntrySnapshotComparedNoteId: ""
     property string editorEntrySnapshotPendingNoteId: ""
     property bool editorEntrySnapshotReconcileQueued: false
+    property bool selectionModelSyncQueued: false
+    property bool selectionModelSyncResetSnapshotPending: false
+    property bool selectionModelSyncReconcilePending: false
+    property bool selectionModelSyncFocusEditorPending: false
+    property bool selectionModelSyncFallbackRefreshPending: false
+    property bool selectionModelSyncForceVisualRefreshPending: false
     property string pendingEditorFocusNoteId: ""
     readonly property int plainEditorViewModeValue: 0
     readonly property color printCanvasColor: pagePrintLayoutRenderer.canvasColor
@@ -1300,6 +1306,57 @@ Item {
             contentsView.refreshMinimapSnapshot();
         });
     }
+    function flushSelectionModelSync() {
+        const shouldResetSnapshot = contentsView.selectionModelSyncResetSnapshotPending;
+        const shouldScheduleReconcile = contentsView.selectionModelSyncReconcilePending;
+        const shouldFocusEditor = contentsView.selectionModelSyncFocusEditorPending;
+        const shouldFallbackRefresh = contentsView.selectionModelSyncFallbackRefreshPending;
+        const shouldForceVisualRefresh = contentsView.selectionModelSyncForceVisualRefreshPending;
+        contentsView.selectionModelSyncQueued = false;
+        contentsView.selectionModelSyncResetSnapshotPending = false;
+        contentsView.selectionModelSyncReconcilePending = false;
+        contentsView.selectionModelSyncFocusEditorPending = false;
+        contentsView.selectionModelSyncFallbackRefreshPending = false;
+        contentsView.selectionModelSyncForceVisualRefreshPending = false;
+
+        if (shouldResetSnapshot) {
+            contentsView.editorEntrySnapshotComparedNoteId = "";
+            contentsView.editorEntrySnapshotPendingNoteId = "";
+            contentsView.resetEditorSelectionCache();
+        }
+
+        const selectionSynced = editorSession.requestSyncEditorTextFromSelection(
+                    contentsView.selectedNoteId,
+                    contentsView.selectedNoteBodyText);
+        if (shouldScheduleReconcile)
+            contentsView.scheduleEditorEntrySnapshotReconcile();
+        if (shouldForceVisualRefresh || (!selectionSynced && shouldFallbackRefresh)) {
+            contentsView.scheduleMinimapSnapshotRefresh(true);
+            contentsView.scheduleDocumentPresentationRefresh(true);
+            contentsView.scheduleGutterRefresh(4);
+        }
+        if (shouldFocusEditor)
+            contentsView.focusEditorForPendingNote();
+    }
+    function scheduleSelectionModelSync(options) {
+        const syncOptions = options && typeof options === "object" ? options : ({});
+        if (syncOptions.resetSnapshot)
+            contentsView.selectionModelSyncResetSnapshotPending = true;
+        if (syncOptions.scheduleReconcile)
+            contentsView.selectionModelSyncReconcilePending = true;
+        if (syncOptions.focusEditor)
+            contentsView.selectionModelSyncFocusEditorPending = true;
+        if (syncOptions.fallbackRefresh)
+            contentsView.selectionModelSyncFallbackRefreshPending = true;
+        if (syncOptions.forceVisualRefresh)
+            contentsView.selectionModelSyncForceVisualRefreshPending = true;
+        if (contentsView.selectionModelSyncQueued)
+            return;
+        contentsView.selectionModelSyncQueued = true;
+        Qt.callLater(function () {
+            contentsView.flushSelectionModelSync();
+        });
+    }
     function scrollEditorViewportToMinimapPosition(localY) {
         const flickable = contentsView.editorFlickable;
         if (!flickable)
@@ -1326,15 +1383,11 @@ Item {
     clip: true
 
     Component.onCompleted: {
-        contentsView.resetEditorSelectionCache();
-        const selectionSynced = editorSession.requestSyncEditorTextFromSelection(
-                    contentsView.selectedNoteId,
-                    contentsView.selectedNoteBodyText);
-        contentsView.scheduleEditorEntrySnapshotReconcile();
-        if (!selectionSynced) {
-            contentsView.scheduleDocumentPresentationRefresh(true);
-            contentsView.scheduleGutterRefresh(4);
-        }
+        contentsView.scheduleSelectionModelSync({
+                                                   "resetSnapshot": true,
+                                                   "scheduleReconcile": true,
+                                                   "fallbackRefresh": true
+                                               });
     }
     Component.onDestruction: {
         editorTypingController.handleEditorTextEdited();
@@ -1369,27 +1422,15 @@ Item {
         contentsView.scheduleDocumentPresentationRefresh(true);
     }
     onSelectedNoteBodyTextChanged: {
-        const normalizedBodyText = contentsView.selectedNoteBodyText;
-        if (editorSession.shouldAcceptModelBodyText(contentsView.selectedNoteId, normalizedBodyText)) {
-            editorSession.requestSyncEditorTextFromSelection(contentsView.selectedNoteId, normalizedBodyText);
-        } else {
-            editorSession.scheduleEditorPersistence();
-        }
+        contentsView.scheduleSelectionModelSync({});
     }
     onSelectedNoteIdChanged: {
-        contentsView.editorEntrySnapshotComparedNoteId = "";
-        contentsView.editorEntrySnapshotPendingNoteId = "";
-        contentsView.resetEditorSelectionCache();
-        const selectionSynced = editorSession.requestSyncEditorTextFromSelection(
-                    contentsView.selectedNoteId,
-                    contentsView.selectedNoteBodyText);
-        contentsView.scheduleEditorEntrySnapshotReconcile();
-        if (!selectionSynced) {
-            contentsView.scheduleMinimapSnapshotRefresh(true);
-            contentsView.scheduleDocumentPresentationRefresh(true);
-            contentsView.scheduleGutterRefresh(4);
-        }
-        contentsView.focusEditorForPendingNote();
+        contentsView.scheduleSelectionModelSync({
+                                                   "resetSnapshot": true,
+                                                   "scheduleReconcile": true,
+                                                   "fallbackRefresh": true,
+                                                   "focusEditor": true
+                                               });
     }
     onPendingBodySaveChanged: {
         if (!contentsView.pendingBodySave) {
@@ -1405,10 +1446,10 @@ Item {
     }
     onVisibleChanged: {
         if (visible) {
-            contentsView.scheduleEditorEntrySnapshotReconcile();
-            contentsView.scheduleMinimapSnapshotRefresh(true);
-            contentsView.scheduleDocumentPresentationRefresh(true);
-            contentsView.scheduleGutterRefresh(4);
+            contentsView.scheduleSelectionModelSync({
+                                                       "scheduleReconcile": true,
+                                                       "forceVisualRefresh": true
+                                                   });
         }
     }
     onWidthChanged: {

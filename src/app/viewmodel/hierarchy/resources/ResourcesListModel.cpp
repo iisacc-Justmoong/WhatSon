@@ -120,6 +120,49 @@ namespace
         return -1;
     }
 
+    bool sameResourceListItem(const ResourcesListItem& lhs, const ResourcesListItem& rhs)
+    {
+        return lhs.id == rhs.id
+            && lhs.primaryText == rhs.primaryText
+            && lhs.searchableText == rhs.searchableText
+            && lhs.bodyText == rhs.bodyText
+            && lhs.displayDate == rhs.displayDate
+            && lhs.folders == rhs.folders
+            && lhs.tags == rhs.tags
+            && lhs.image == rhs.image
+            && lhs.imageSource == rhs.imageSource
+            && lhs.bookmarked == rhs.bookmarked
+            && lhs.bookmarkColor == rhs.bookmarkColor
+            && lhs.type == rhs.type
+            && lhs.format == rhs.format
+            && lhs.resourcePath == rhs.resourcePath
+            && lhs.resolvedPath == rhs.resolvedPath
+            && lhs.source == rhs.source
+            && lhs.renderMode == rhs.renderMode
+            && lhs.displayName == rhs.displayName
+            && lhs.previewText == rhs.previewText;
+    }
+
+    bool sameResourceListItems(
+        const QVector<ResourcesListItem>& lhs,
+        const QVector<ResourcesListItem>& rhs)
+    {
+        if (lhs.size() != rhs.size())
+        {
+            return false;
+        }
+
+        for (int index = 0; index < lhs.size(); ++index)
+        {
+            if (!sameResourceListItem(lhs.at(index), rhs.at(index)))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     QString fallbackSearchableText(const ResourcesListItem& item)
     {
         QStringList parts;
@@ -394,9 +437,13 @@ void ResourcesListModel::setItems(QVector<ResourcesListItem> items)
         sanitized.push_back(std::move(item));
     }
 
+    if (sameResourceListItems(m_sourceItems, sanitized))
+    {
+        return;
+    }
+
     m_sourceItems = std::move(sanitized);
     applySearchFilter();
-    emit itemsChanged();
 }
 
 const QVector<ResourcesListItem>& ResourcesListModel::items() const noexcept

@@ -174,6 +174,11 @@
 - Desktop/mobile hosts now also treat `editorSession.editorTextSynchronized` as the main post-sync refresh boundary,
   which removes duplicate minimap/presentation/gutter refresh scheduling after model sync, reconcile completion, and
   structured correction apply.
+- Desktop/mobile hosts now also merge note-open selection work through one queued selection-sync helper per event-loop
+  turn, so `selectedNoteId` and `selectedNoteBodyText` updates for the same selected note no longer replay the same
+  session-sync and fallback-refresh work twice.
+- Desktop/mobile hosts now also route visibility re-entry through that same queued selection-sync helper, so reopening
+  the editor surface does not schedule a second parallel note-open refresh path next to the selected-note handlers.
 - Desktop/mobile hosts now also bind `ContentsStructuredBlockRenderer.backgroundRefreshEnabled` to the note-open/model
   sync window, not only to the unfocused state. Structured notes therefore keep the document-flow surface mounted
   through `renderPending` while the expensive agenda/callout parse + canonicalization pass runs off the UI thread.

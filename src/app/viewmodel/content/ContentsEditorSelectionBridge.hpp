@@ -89,6 +89,7 @@ private
 
 
     void handleNoteListSelectionChanged();
+    void flushPendingNoteSelectionRefresh();
     void handleNoteListCountChanged();
     void handleNoteListDestroyed();
     void handleContentViewModelDestroyed();
@@ -97,6 +98,7 @@ private:
     static bool hasReadableProperty(const QObject* object, const char* propertyName);
     static QString readStringProperty(const QObject* object, const char* propertyName);
     static int readIntProperty(const QObject* object, const char* propertyName);
+    void scheduleNoteSelectionRefresh();
     void refreshNoteSelectionState();
     void refreshNoteCountState();
     void disconnectNoteListModel();
@@ -107,6 +109,7 @@ private:
     QPointer<ContentsEditorIdleSyncController> m_idleSyncController;
     bool m_noteSelectionContractAvailable = false;
     bool m_noteCountContractAvailable = false;
+    bool m_noteSelectionRefreshQueued = false;
     QString m_selectedNoteId;
     QString m_selectedNoteBodyText;
     int m_visibleNoteCount = 0;

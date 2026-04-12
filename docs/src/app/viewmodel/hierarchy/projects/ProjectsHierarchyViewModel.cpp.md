@@ -59,6 +59,10 @@ flat, the footer menu stays disabled because no row advertises `showChevron: tru
   preview, and `lastModifiedAt` directly into the cached `m_allNotes` record, then refreshes the
   selected projects note list in memory. Structured correction paths use this to avoid an immediate
   second disk-backed metadata reload for the same note.
+- Those body-only refresh paths now call `refreshNoteListForSelection(false)`, which reuses the
+  already-cached per-note project labels instead of rescanning every `.wsnhead` file. Full header
+  synchronization remains enabled for ordinary selection changes and full snapshot refreshes where
+  project membership may actually have changed.
 - That same lightweight apply path now also emits `hubFilesystemMutated()`, aligning Projects with the
   existing mutation notification contract used by other note-list-backed hierarchies.
 - `requestTrackedStatisticsRefreshForNote(...)` now owns the `.wsnbody` scan previously triggered by the editor

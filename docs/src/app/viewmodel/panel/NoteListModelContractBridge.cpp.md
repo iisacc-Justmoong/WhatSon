@@ -13,8 +13,9 @@ heterogeneous note-list model objects.
   - readable `currentNoteId` property
 - Reads per-row note ids through the generic `QAbstractItemModel` role map (`noteId`, then `id`) so QML multi-selection
   can batch actions without knowing the concrete list-model type.
-- Exports `readAllRows()` snapshots by walking every role name on each row and serializing them into `QVariantMap`
-  payloads. `ListBarLayout.qml` uses this to keep a stable render snapshot across model reset cycles.
+- Exports `readAllRows()` snapshots by walking row role names into `QVariantMap` payloads, but intentionally skips the
+  full `bodyText` role. `ListBarLayout.qml` only renders note-card/resource-card summary fields, so body-only editor
+  mutations no longer perturb the visible row signature or trigger avoidable list snapshot churn.
 - Connects to `currentIndexChanged()` and `currentNoteIdChanged()` when available to keep QML bindings reactive.
 - Clears capability flags automatically when the bound model is destroyed.
 
@@ -26,4 +27,5 @@ Automated test files were removed from this repository; keep these bridge contra
 - model-destroy lifecycle reset behavior
 - multi-selection index -> note-id resolution against every note-list model that feeds `ListBarLayout.qml`
 - `readAllRows()` must preserve role-name keyed row snapshots for library/bookmarks/resources note-list models so the
-  QML list surface can suppress equivalent refresh flicker
+  QML list surface can suppress equivalent refresh flicker while continuing to omit non-visible payload like
+  `bodyText`

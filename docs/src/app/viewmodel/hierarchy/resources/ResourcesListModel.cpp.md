@@ -8,6 +8,8 @@ Implements filtering and selection state for the Resources right-panel list mode
 
 - Accepts resource-domain list items through `setItems(...)`.
 - Normalizes list payload fields (`id`, metadata lists, image sources, searchable text).
+- Compares the sanitized incoming source cache against the existing cache before replacing it, so identical resource
+  list refreshes stop before `beginResetModel()/endResetModel()` and `itemsChanged()` churn.
 - Supports search filtering via `searchText` (case-folded term matching).
 - Preserves selection by `currentNoteId` across filter and reset operations when possible.
 - Retains the selected resource id when the item payload is replaced and the same id still exists.

@@ -138,6 +138,43 @@ namespace
         return std::numeric_limits<qint64>::min();
     }
 
+    bool sameNoteListItem(const BookmarksNoteListItem& lhs, const BookmarksNoteListItem& rhs)
+    {
+        return lhs.id == rhs.id
+            && lhs.primaryText == rhs.primaryText
+            && lhs.searchableText == rhs.searchableText
+            && lhs.bodyText == rhs.bodyText
+            && lhs.createdAt == rhs.createdAt
+            && lhs.lastModifiedAt == rhs.lastModifiedAt
+            && lhs.image == rhs.image
+            && lhs.imageSource == rhs.imageSource
+            && lhs.displayDate == rhs.displayDate
+            && lhs.folders == rhs.folders
+            && lhs.tags == rhs.tags
+            && lhs.bookmarked == rhs.bookmarked
+            && lhs.bookmarkColor == rhs.bookmarkColor;
+    }
+
+    bool sameNoteListItems(
+        const QVector<BookmarksNoteListItem>& lhs,
+        const QVector<BookmarksNoteListItem>& rhs)
+    {
+        if (lhs.size() != rhs.size())
+        {
+            return false;
+        }
+
+        for (int index = 0; index < lhs.size(); ++index)
+        {
+            if (!sameNoteListItem(lhs.at(index), rhs.at(index)))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     QString normalizeImageSource(QString value)
     {
         value = value.trimmed();
@@ -615,6 +652,11 @@ void BookmarksNoteListModel::setItems(QVector<BookmarksNoteListItem> items)
         throw std::runtime_error(first.message.toStdString());
     }
 
+    if (sameNoteListItems(m_sourceItems, sanitized))
+    {
+        return;
+    }
+
     WhatSon::Debug::traceSelf(this,
                               QStringLiteral("bookmarks.notelist.model"),
                               QStringLiteral("setItems"),
@@ -633,7 +675,6 @@ void BookmarksNoteListModel::setItems(QVector<BookmarksNoteListItem> items)
             emit itemCorrected(issue.code, issue.context);
         }
     }
-    emit itemsChanged();
 }
 
 const QVector<BookmarksNoteListItem>& BookmarksNoteListModel::items() const noexcept

@@ -40,6 +40,10 @@ namespace
             {
                 continue;
             }
+            if (roleName == QByteArrayLiteral("bodyText"))
+            {
+                continue;
+            }
             snapshot.insert(QString::fromUtf8(roleName), modelIndex.data(iterator.key()));
         }
 

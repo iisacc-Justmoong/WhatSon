@@ -110,7 +110,7 @@ private:
     void updateItemCount();
     void updateLoadState(bool succeeded, QString errorMessage = QString());
     LibraryNoteListItem buildNoteListItem(const LibraryNoteRecord& note) const;
-    void refreshNoteListForSelection();
+    void refreshNoteListForSelection(bool synchronizeProjectHeaders = true);
     bool refreshIndexedNotesFromWshub(const QString& wshubPath, QString* errorMessage = nullptr);
     bool refreshIndexedNotesFromProjectsFilePath(QString* errorMessage = nullptr);
     void syncModel();

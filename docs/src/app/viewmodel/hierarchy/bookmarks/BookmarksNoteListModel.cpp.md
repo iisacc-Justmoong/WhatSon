@@ -17,6 +17,10 @@ The bookmark note list uses the same stable descending ordering as the library n
 That keeps the bookmark list deterministic while still promoting the note that was modified most
 recently.
 
+`setItems(...)` now also short-circuits before replacing the normalized source cache when the
+incoming bookmark payload is identical to the current one, so redundant bookmarked-note refreshes do
+not trigger another reset/selection replay cycle.
+
 ## Source Metadata
 - Source path: `src/app/viewmodel/hierarchy/bookmarks/BookmarksNoteListModel.cpp`
 - Source kind: C++ implementation

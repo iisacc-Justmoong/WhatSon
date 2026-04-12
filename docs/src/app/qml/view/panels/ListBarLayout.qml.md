@@ -66,6 +66,17 @@ selection state machine lives in a sibling controller file.
 - `syncDisplayedNoteListEntries()` compares the new row snapshot to the previous one and only replaces the visible
   array when the actual row content changed. Periodic model resets with identical content therefore no longer tear down
   and rebuild every visible row.
+- Visible row snapshots now omit `bodyText`, so editor-side same-note body rewrites no longer change the list snapshot
+  signature unless another rendered field actually changed.
+- Snapshot refresh requests from `itemsChanged()`, row insert/remove/move, `dataChanged`, and `layoutChanged` now
+  funnel through one queued helper per event-loop turn, so one logical list refresh no longer rereads and reapplies the
+  same row snapshot multiple times in immediate succession.
+- `modelReset` is now treated as viewport-lifecycle only inside this view. The actual visible-row resync is driven by
+  the model's post-refresh `itemsChanged()` signal, eliminating one more duplicate snapshot-consumption path from the
+  reset turn.
+- The note/resource list models now emit one `itemsChanged()` per filtered-content refresh instead of emitting a second
+  redundant `itemsChanged()` after `setItems()`, so `ListBarLayout.qml` no longer receives duplicate "list changed"
+  notifications for the same model-reset turn.
 - The note list now splits viewport motion by target form factor:
   - desktop keeps `Flickable.StopAtBounds` and still cancels inertial carry on `onFlickStarted`, so wheel/drag motion
     stays quantized to the existing narrow-step panel contract.
@@ -154,6 +165,8 @@ selection state machine lives in a sibling controller file.
 - While a note drag is active, visible note-row snapshot refreshes are now deferred through
   `requestDisplayedNoteListEntriesSync(...)` instead of immediately replacing `displayedNoteListEntries`.
   This prevents `itemsChanged()` / `dataChanged()` churn from tearing down the source delegate mid-drag.
+- That deferred drag path now composes with the queued snapshot scheduler above, so repeated model notifications during
+  the same turn still collapse into one post-drag visible snapshot apply.
 - `reuseItems` is now disabled during active drag, so `ListView` does not recycle the grabbed delegate while the drag
   handler still owns pointer state.
 - The note-id helper functions used by drag payload construction now return concrete arrays/booleans again, removing
@@ -174,6 +187,8 @@ selection state machine lives in a sibling controller file.
     payload.
   - Periodic note-list refreshes with unchanged row content must not visibly blink, because `displayedNoteListEntries`
     remains stable across equivalent model resets.
+  - One logical note-list rebuild must not cause two immediate `displayedNoteListEntries` resync passes through
+    `modelReset` plus a second post-reset `itemsChanged()` consumption path.
   - Periodic note-list refreshes that arrive during an active drag must be applied only after the drag ends, so the
     source delegate is not recycled out from under `noteDragHandler`.
   - On mobile, the shared note/resource list must keep inertial scrolling after touch release instead of stopping on

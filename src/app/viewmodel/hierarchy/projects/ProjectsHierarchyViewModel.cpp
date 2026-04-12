@@ -781,7 +781,7 @@ bool ProjectsHierarchyViewModel::reloadNoteMetadataForNoteId(const QString& note
         m_allNotes[noteIndex].project.clear();
         const bool projectMembershipChanged =
             previousProjectLabel.compare(m_allNotes.at(noteIndex).project.trimmed(), Qt::CaseInsensitive) != 0;
-        refreshNoteListForSelection();
+        refreshNoteListForSelection(false);
         emit hierarchyModelChanged();
         if (projectMembershipChanged && !m_projectsFilePath.trimmed().isEmpty())
         {
@@ -801,7 +801,7 @@ bool ProjectsHierarchyViewModel::reloadNoteMetadataForNoteId(const QString& note
     syncNoteRecordFromDocument(&m_allNotes[noteIndex], noteDocument);
     const bool projectMembershipChanged =
         previousProjectLabel.compare(m_allNotes.at(noteIndex).project.trimmed(), Qt::CaseInsensitive) != 0;
-    refreshNoteListForSelection();
+    refreshNoteListForSelection(false);
     emit hierarchyModelChanged();
     if (projectMembershipChanged && !m_projectsFilePath.trimmed().isEmpty())
     {
@@ -882,7 +882,7 @@ bool ProjectsHierarchyViewModel::applyPersistedBodyStateForNote(
         note.lastModifiedAt = lastModifiedAt.trimmed();
     }
 
-    refreshNoteListForSelection();
+    refreshNoteListForSelection(false);
     emit hubFilesystemMutated();
     return true;
 }
@@ -1677,11 +1677,15 @@ LibraryNoteListItem ProjectsHierarchyViewModel::buildNoteListItem(const LibraryN
     return item;
 }
 
-void ProjectsHierarchyViewModel::refreshNoteListForSelection()
+void ProjectsHierarchyViewModel::refreshNoteListForSelection(const bool synchronizeProjectHeaders)
 {
-    // Keep project projection strictly aligned with live `.wsnhead` values.
-    // This prevents stale index/cache labels from leaking into project buckets.
-    synchronizeIndexedProjectLabelsFromHeaders(&m_allNotes);
+    // Keep project projection strictly aligned with live `.wsnhead` values when the caller is
+    // explicitly refreshing project membership. Body-only note updates reuse the current in-memory
+    // labels so the list path does not re-read every note header on each editor mutation.
+    if (synchronizeProjectHeaders)
+    {
+        synchronizeIndexedProjectLabelsFromHeaders(&m_allNotes);
+    }
 
     const QString selectedProject =
         (m_selectedIndex >= 0 && m_selectedIndex < m_items.size()) ? m_items.at(m_selectedIndex).label.trimmed() : QString();

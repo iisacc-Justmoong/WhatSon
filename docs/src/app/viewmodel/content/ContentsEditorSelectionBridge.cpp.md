@@ -35,6 +35,9 @@
 - `refreshNoteSelectionState()` now applies `selectedNoteId` and `selectedNoteBodyText` as one atomic state update
   before either property-change signal is emitted, so `onSelectedNoteIdChanged` observers can no longer see the next
   note id paired with the previous note body.
+- Note-list `currentNoteIdChanged()` and `currentBodyTextChanged()` signals now queue one deferred bridge refresh per
+  event-loop turn instead of running `refreshNoteSelectionState()` immediately on both signals. This keeps one logical
+  selection transition from re-reading the same note-list properties twice before QML observers react.
 
 ### Classes and Structs
 - None detected during scaffold generation.
@@ -67,3 +70,5 @@
 - The bridge must not reintroduce note-switch blocking logic on top of the controller's buffered fetch model.
 - Reconciliation requests must not reintroduce synchronous UI-thread RAW reads, and post-reconcile
   `selectedNoteBodyText` must stay aligned with the note-list model snapshot consumed by QML.
+- A note-list selection turn that emits both `currentNoteIdChanged()` and `currentBodyTextChanged()` must only refresh
+  bridge state once before QML editor hosts react.
