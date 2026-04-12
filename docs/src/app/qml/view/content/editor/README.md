@@ -105,6 +105,8 @@
   - desktop/mobile hosts queue one note-entry reconcile per selected note
   - `ContentsEditorSelectionBridge` exposes completion through `viewSessionSnapshotReconciled(...)`
   - note-open and timer-driven reconciliation no longer perform RAW note reads on the UI thread
+  - timer-driven polling now also respects one in-flight reconcile per selected note instead of enqueueing overlapping
+    duplicate fetches
 - `ContentsEditorTypingController.qml` now rebuilds post-edit logical line-start offsets from the resulting logical
   text each mutation, fixing stale line-count growth where gutter/minimap lines could increase but not decrease after
   newline removal or line-wrap collapse.
@@ -165,6 +167,9 @@
 - While structured-flow mode is active, both hosts now also idle the hidden `ContentsInlineFormatEditor` by clearing
   its text binding and disconnecting its layout/cursor `Connections`, so note-open and block-edit turns do not pay for
   a second off-screen editor layout pass.
+- Desktop/mobile hosts now also treat `editorSession.editorTextSynchronized` as the main post-sync refresh boundary,
+  which removes duplicate minimap/presentation/gutter refresh scheduling after model sync, reconcile completion, and
+  structured correction apply.
 - Structured shortcut insertion now also resolves out of existing proprietary wrappers before writing:
   - invoking agenda/callout insertion while the cursor is already inside an existing agenda/callout moves the new RAW
     block to the enclosing wrapper end first

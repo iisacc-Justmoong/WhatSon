@@ -22,6 +22,11 @@ Desktop content editor host.
   `selectionBridge.viewSessionSnapshotReconciled(...)` before marking that note's entry snapshot as compared.
 - Timer-driven snapshot polling now treats reconcile as an asynchronous request; the eventual `selectedNoteBodyText`
   echo and reconcile-complete signal drive follow-up UI refresh work.
+- Timer-driven polling now also reuses that pending note-entry id, so one selected note does not enqueue overlapping
+  reconcile requests while a previous worker fetch is still in flight.
+- Model-to-editor body sync, structured correction apply, and reconcile-complete handling now funnel heavy UI refresh
+  work through `editorSession.editorTextSynchronized` instead of scheduling the same minimap/presentation/gutter refresh
+  sequence from multiple handlers.
 - While structured-flow mode is active, the hidden `ContentsInlineFormatEditor` is now effectively idled:
   - its `text` binding is cleared
   - its `enabled`/`visible` state is gated by `legacyInlineEditorActive`

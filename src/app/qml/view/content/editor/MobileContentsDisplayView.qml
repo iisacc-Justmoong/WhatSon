@@ -961,6 +961,8 @@ Item {
         const normalizedNoteId = contentsView.selectedNoteId === undefined || contentsView.selectedNoteId === null
                 ? ""
                 : String(contentsView.selectedNoteId).trim();
+        if (contentsView.editorEntrySnapshotPendingNoteId === normalizedNoteId)
+            return;
         if (selectionBridge
                 && selectionBridge.reconcileViewSessionAndRefreshSnapshotForNote !== undefined
                 && normalizedNoteId.length > 0) {
@@ -969,8 +971,10 @@ Item {
                     : String(editorSession.editorText);
             if (selectionBridge.reconcileViewSessionAndRefreshSnapshotForNote(
                         normalizedNoteId,
-                        sessionText))
+                        sessionText)) {
+                contentsView.editorEntrySnapshotPendingNoteId = normalizedNoteId;
                 return;
+            }
         }
         if (!selectionBridge || selectionBridge.refreshSelectedNoteSnapshot === undefined)
             return;
@@ -1321,10 +1325,14 @@ Item {
 
     Component.onCompleted: {
         contentsView.resetEditorSelectionCache();
-        editorSession.requestSyncEditorTextFromSelection(contentsView.selectedNoteId, contentsView.selectedNoteBodyText);
+        const synchronized = editorSession.requestSyncEditorTextFromSelection(
+                    contentsView.selectedNoteId,
+                    contentsView.selectedNoteBodyText);
         contentsView.scheduleEditorEntrySnapshotReconcile();
-        contentsView.scheduleDocumentPresentationRefresh(true);
-        contentsView.scheduleGutterRefresh(4);
+        if (!synchronized) {
+            contentsView.scheduleDocumentPresentationRefresh(true);
+            contentsView.scheduleGutterRefresh(4);
+        }
     }
     Component.onDestruction: {
         editorTypingController.handleEditorTextEdited();
@@ -1365,20 +1373,21 @@ Item {
         } else {
             editorSession.scheduleEditorPersistence();
         }
-        contentsView.scheduleMinimapSnapshotRefresh(true);
-        contentsView.scheduleDocumentPresentationRefresh(true);
-        contentsView.scheduleGutterRefresh(4);
     }
     onSelectedNoteIdChanged: {
         contentsView.editorEntrySnapshotComparedNoteId = "";
         contentsView.editorEntrySnapshotPendingNoteId = "";
         contentsView.resetEditorSelectionCache();
-        editorSession.requestSyncEditorTextFromSelection(contentsView.selectedNoteId, contentsView.selectedNoteBodyText);
+        const synchronized = editorSession.requestSyncEditorTextFromSelection(
+                    contentsView.selectedNoteId,
+                    contentsView.selectedNoteBodyText);
         contentsView.scheduleEditorEntrySnapshotReconcile();
-        contentsView.scheduleMinimapSnapshotRefresh(true);
-        contentsView.scheduleDocumentPresentationRefresh(true);
+        if (!synchronized) {
+            contentsView.scheduleMinimapSnapshotRefresh(true);
+            contentsView.scheduleDocumentPresentationRefresh(true);
+            contentsView.scheduleGutterRefresh(4);
+        }
         contentsView.focusEditorForPendingNote();
-        contentsView.scheduleGutterRefresh(4);
     }
     onPendingBodySaveChanged: {
         if (!contentsView.pendingBodySave) {
@@ -1556,11 +1565,6 @@ Item {
                 return;
             if (success)
                 contentsView.editorEntrySnapshotComparedNoteId = normalizedNoteId;
-            if (refreshed) {
-                contentsView.scheduleMinimapSnapshotRefresh(true);
-                contentsView.scheduleDocumentPresentationRefresh(true);
-                contentsView.scheduleGutterRefresh(4);
-            }
         }
 
         target: selectionBridge
@@ -1587,9 +1591,6 @@ Item {
             editorSession.syncEditorTextFromSelection(normalizedNoteId, correctedSourceText);
             if (selectionBridge && selectionBridge.stageEditorTextForIdleSync !== undefined)
                 selectionBridge.stageEditorTextForIdleSync(normalizedNoteId, correctedSourceText);
-            contentsView.scheduleMinimapSnapshotRefresh(true);
-            contentsView.scheduleDocumentPresentationRefresh(true);
-            contentsView.scheduleGutterRefresh(4);
         }
 
         ignoreUnknownSignals: true

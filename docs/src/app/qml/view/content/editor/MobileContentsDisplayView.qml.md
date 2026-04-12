@@ -19,3 +19,8 @@ Mobile content editor host.
   - selection changes queue one reconcile attempt per note
   - `selectionBridge.viewSessionSnapshotReconciled(...)` closes that pending state
   - timer-driven snapshot polling no longer performs synchronous RAW note reads on the UI thread
+- Mobile polling now also skips overlapping reconcile requests for the same selected note while one worker fetch is
+  already pending.
+- Mobile body-sync and correction/reconcile refresh work now also routes through
+  `editorSession.editorTextSynchronized`, removing duplicate minimap/presentation/gutter refresh scheduling from
+  multiple completion handlers.

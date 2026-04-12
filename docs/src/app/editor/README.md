@@ -32,5 +32,7 @@
   keystroke; the fallback inline editor is only repopulated when the note exits structured mode.
 - Structured-flow focus restoration now targets one reparsed block per request instead of fanning out through the whole
   document tree, which reduces per-mutation main-thread work on longer structured notes.
+- Editor snapshot reconcile and correction-complete paths now also avoid overlapping same-note fetches and duplicate
+  post-sync UI refresh scheduling, further reducing repeated main-thread work after note open and background sync.
 - The repository still does not provide an in-repo automated editor test suite; regression coverage for this area is
   documented through per-file notes rather than executable tests.
