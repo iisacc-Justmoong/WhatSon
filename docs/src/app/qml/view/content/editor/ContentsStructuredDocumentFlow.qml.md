@@ -14,5 +14,9 @@ Hosts the document-native block editor for structured `.wsnbody` content.
   and the block-local cursor position in focus requests.
 - Owns structured shortcut insertion once a document has entered block-flow mode and now asks the active delegate for
   the insertion source offset before falling back to the block end.
-- Large block lists now load delegate instances asynchronously, and each late-loaded delegate immediately replays the
-  latest focus request so note open does not stall on one synchronous block-instantiation burst.
+- Resolves each pending focus request to one target block index before dispatch:
+  - agenda task focus prefers `taskOpenTagStart`
+  - otherwise the host falls back to the reparsed `sourceOffset`
+  - only the resolved delegate receives `applyFocusRequest(...)`
+- Large block lists still load delegate instances asynchronously, but late-loaded delegates now replay focus only when
+  they are the resolved target block instead of rebroadcasting the request through the whole block tree.

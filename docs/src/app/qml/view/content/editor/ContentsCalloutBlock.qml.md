@@ -9,6 +9,8 @@ Renders one callout card as a native document block inside the editor flow.
 - Edits callout body text directly inside the card instead of through a detached overlay.
 - Restores the local callout caret after a RAW rewrite by converting the reparsed source offset back into the plain-text
   editor cursor position.
+- Exposes `applyFocusRequest(...)` for direct targeted calls from `ContentsStructuredDocumentFlow.qml`; the block no
+  longer re-evaluates every global focus token change itself.
 - Keeps agenda/callout shortcut insertion block-scoped so new proprietary wrappers are inserted after the current
   callout instead of nesting inside callout body content.
 - Treats Enter on an already-empty trailing line as the "exit callout" gesture.

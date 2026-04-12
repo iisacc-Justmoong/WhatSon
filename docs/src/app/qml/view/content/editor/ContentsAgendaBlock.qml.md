@@ -13,6 +13,8 @@ Renders one agenda card as a native document block inside the editor flow.
   - Enter handling for task continuation / agenda exit
 - Restores task focus by matching either the reparsed task tag or the reparsed RAW content offset, so typing keeps the
   caret in the edited task instead of snapping back to the first row.
+- Exposes `applyFocusRequest(...)` as a direct hook for `ContentsStructuredDocumentFlow.qml`; the block no longer
+  watches global focus-request property churn on its own.
 - Keeps shortcut-created proprietary wrappers block-scoped by reporting the agenda boundary, not an in-task insertion
   point, for agenda/callout shortcut routing.
 - Keeps empty tasks visible so RAW `<agenda>` tags always materialize into a card.

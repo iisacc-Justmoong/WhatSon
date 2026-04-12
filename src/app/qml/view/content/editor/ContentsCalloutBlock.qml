@@ -9,7 +9,6 @@ FocusScope {
     id: calloutBlock
 
     required property var blockData
-    property var focusRequest: ({})
 
     signal activated()
     signal enterExitRequested(var blockData)
@@ -143,11 +142,5 @@ FocusScope {
                 }
             }
         }
-    }
-
-    onFocusRequestChanged: {
-        Qt.callLater(function () {
-            calloutBlock.applyFocusRequest(calloutBlock.focusRequest)
-        })
     }
 }

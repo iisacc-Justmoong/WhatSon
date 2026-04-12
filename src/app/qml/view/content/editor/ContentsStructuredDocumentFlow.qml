@@ -14,6 +14,9 @@ FocusScope {
     property string sourceText: ""
     property int activeBlockIndex: -1
     property var pendingFocusRequest: ({ "token": 0 })
+    property int pendingFocusBlockIndex: -1
+    property int appliedFocusToken: 0
+    property bool pendingFocusApplyQueued: false
     readonly property bool focused: activeFocus
 
     signal sourceMutationRequested(string nextSourceText, var focusRequest)
@@ -55,16 +58,112 @@ FocusScope {
                                                          })
     }
 
-    function applyPendingFocus() {
-        for (let index = 0; index < blockRepeater.count; ++index) {
-            const host = blockRepeater.itemAt(index)
-            const loader = host && host.delegateLoader ? host.delegateLoader : null
-            if (!loader || !loader.item || loader.item.applyFocusRequest === undefined)
-                continue
-            if (loader.item.applyFocusRequest(documentFlow.pendingFocusRequest))
+    function normalizedFocusToken(request) {
+        const safeRequest = request && typeof request === "object" ? request : ({})
+        return Math.max(0, Math.floor(Number(safeRequest.token) || 0))
+    }
+
+    function normalizedFocusTaskOpenTagStart(request) {
+        const safeRequest = request && typeof request === "object" ? request : ({})
+        const taskOpenTagStart = Number(safeRequest.taskOpenTagStart)
+        if (!isFinite(taskOpenTagStart))
+            return NaN
+        return Math.floor(taskOpenTagStart)
+    }
+
+    function normalizedFocusSourceOffset(request) {
+        const safeRequest = request && typeof request === "object" ? request : ({})
+        const sourceOffset = Number(safeRequest.sourceOffset)
+        if (!isFinite(sourceOffset))
+            return NaN
+        return Math.max(0, Math.floor(sourceOffset))
+    }
+
+    function blockContainsTaskOpenTagStart(blockEntry, taskOpenTagStart) {
+        if (!isFinite(taskOpenTagStart))
+            return false
+        const safeBlock = blockEntry && typeof blockEntry === "object" ? blockEntry : ({})
+        const rawTasks = safeBlock.tasks
+        if (!rawTasks || rawTasks.length === undefined)
+            return false
+        for (let index = 0; index < rawTasks.length; ++index) {
+            const taskData = rawTasks[index] && typeof rawTasks[index] === "object" ? rawTasks[index] : ({})
+            if (Math.floor(Number(taskData.openTagStart) || -1) === taskOpenTagStart)
                 return true
         }
         return false
+    }
+
+    function blockContainsSourceOffset(blockEntry, sourceOffset) {
+        if (!isFinite(sourceOffset))
+            return false
+        const safeBlock = blockEntry && typeof blockEntry === "object" ? blockEntry : ({})
+        const sourceStart = Math.max(0, Math.floor(Number(safeBlock.sourceStart) || 0))
+        const sourceEnd = Math.max(sourceStart, Math.floor(Number(safeBlock.sourceEnd) || sourceStart))
+        return sourceOffset >= sourceStart && sourceOffset <= sourceEnd
+    }
+
+    function focusTargetBlockIndex(request) {
+        const blocks = documentFlow.normalizedBlocks()
+        if (blocks.length === 0)
+            return -1
+        const taskOpenTagStart = documentFlow.normalizedFocusTaskOpenTagStart(request)
+        if (isFinite(taskOpenTagStart)) {
+            for (let index = 0; index < blocks.length; ++index) {
+                if (documentFlow.blockContainsTaskOpenTagStart(blocks[index], taskOpenTagStart))
+                    return index
+            }
+        }
+        const sourceOffset = documentFlow.normalizedFocusSourceOffset(request)
+        if (isFinite(sourceOffset)) {
+            for (let index = 0; index < blocks.length; ++index) {
+                if (documentFlow.blockContainsSourceOffset(blocks[index], sourceOffset))
+                    return index
+            }
+        }
+        if (documentFlow.activeBlockIndex >= 0 && documentFlow.activeBlockIndex < blocks.length)
+            return documentFlow.activeBlockIndex
+        return -1
+    }
+
+    function refreshPendingFocusBlockIndex() {
+        const nextIndex = documentFlow.focusTargetBlockIndex(documentFlow.pendingFocusRequest)
+        if (documentFlow.pendingFocusBlockIndex !== nextIndex)
+            documentFlow.pendingFocusBlockIndex = nextIndex
+        return nextIndex
+    }
+
+    function applyFocusToBlockIndex(blockIndex) {
+        const focusToken = documentFlow.normalizedFocusToken(documentFlow.pendingFocusRequest)
+        if (focusToken <= 0 || focusToken === documentFlow.appliedFocusToken)
+            return false
+        const safeIndex = Math.max(-1, Math.floor(Number(blockIndex) || -1))
+        if (safeIndex < 0 || safeIndex >= blockRepeater.count)
+            return false
+        const host = blockRepeater.itemAt(safeIndex)
+        const loader = host && host.delegateLoader ? host.delegateLoader : null
+        const delegateItem = loader && loader.item ? loader.item : null
+        if (!delegateItem || delegateItem.applyFocusRequest === undefined)
+            return false
+        if (!delegateItem.applyFocusRequest(documentFlow.pendingFocusRequest))
+            return false
+        documentFlow.appliedFocusToken = focusToken
+        documentFlow.activeBlockIndex = safeIndex
+        return true
+    }
+
+    function schedulePendingFocusApply() {
+        if (documentFlow.pendingFocusApplyQueued)
+            return
+        documentFlow.pendingFocusApplyQueued = true
+        Qt.callLater(function () {
+            documentFlow.pendingFocusApplyQueued = false
+            documentFlow.applyPendingFocus()
+        })
+    }
+
+    function applyPendingFocus() {
+        return documentFlow.applyFocusToBlockIndex(documentFlow.refreshPendingFocusBlockIndex())
     }
 
     function replaceSourceRange(start, end, replacementText, focusRequest) {
@@ -289,11 +388,9 @@ FocusScope {
                                          : textBlockDelegate
 
                     onLoaded: {
-                        if (!item || item.applyFocusRequest === undefined)
+                        if (!item || blockHost.blockIndex !== documentFlow.pendingFocusBlockIndex)
                             return
-                        Qt.callLater(function () {
-                            item.applyFocusRequest(documentFlow.pendingFocusRequest)
-                        })
+                        documentFlow.schedulePendingFocusApply()
                     }
                 }
 
@@ -302,7 +399,6 @@ FocusScope {
 
                     ContentsDocumentTextBlock {
                         blockData: blockHost.blockEntry
-                        focusRequest: documentFlow.pendingFocusRequest
                         width: blockHost.width
 
                         onActivated: documentFlow.activeBlockIndex = blockHost.blockIndex
@@ -317,7 +413,6 @@ FocusScope {
 
                     ContentsAgendaBlock {
                         blockData: blockHost.blockEntry
-                        focusRequest: documentFlow.pendingFocusRequest
                         width: blockHost.width
 
                         onActivated: documentFlow.activeBlockIndex = blockHost.blockIndex
@@ -338,7 +433,6 @@ FocusScope {
 
                     ContentsCalloutBlock {
                         blockData: blockHost.blockEntry
-                        focusRequest: documentFlow.pendingFocusRequest
                         width: blockHost.width
 
                         onActivated: documentFlow.activeBlockIndex = blockHost.blockIndex
@@ -363,9 +457,6 @@ FocusScope {
         }
     }
 
-    onPendingFocusRequestChanged: {
-        Qt.callLater(function () {
-            documentFlow.applyPendingFocus()
-        })
-    }
+    onDocumentBlocksChanged: documentFlow.schedulePendingFocusApply()
+    onPendingFocusRequestChanged: documentFlow.schedulePendingFocusApply()
 }

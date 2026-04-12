@@ -101,6 +101,10 @@
   (`reconcileViewSessionAndRefreshSnapshotForNote(noteId, editorSession.editorText)`) instead of only running
   model-side snapshot reload ticks.
   This shifts sync balance toward RAW fetch verification while still keeping write staging eventual.
+- That reconcile path is now request/complete based rather than synchronous:
+  - desktop/mobile hosts queue one note-entry reconcile per selected note
+  - `ContentsEditorSelectionBridge` exposes completion through `viewSessionSnapshotReconciled(...)`
+  - note-open and timer-driven reconciliation no longer perform RAW note reads on the UI thread
 - `ContentsEditorTypingController.qml` now rebuilds post-edit logical line-start offsets from the resulting logical
   text each mutation, fixing stale line-count growth where gutter/minimap lines could increase but not decrease after
   newline removal or line-wrap collapse.
@@ -153,6 +157,14 @@
   rendering path does not instantiate off-screen delegates alongside the document-native flow.
 - `ContentsStructuredDocumentFlow.qml` now also loads larger block lists asynchronously and replays pending focus once a
   delegate becomes available, reducing synchronous note-open stalls.
+- Structured-flow focus restoration now resolves one target block index per request and calls that delegate directly,
+  replacing the earlier whole-tree focus fan-out across every block, loader, and nested editor.
+- Structured-flow source edits no longer force `ContentsDisplayView.qml` / `MobileContentsDisplayView.qml` to rebuild
+  the whole legacy presentation snapshot on each keystroke; those hosts now only repopulate the fallback RichText
+  surface when the document leaves structured mode again.
+- While structured-flow mode is active, both hosts now also idle the hidden `ContentsInlineFormatEditor` by clearing
+  its text binding and disconnecting its layout/cursor `Connections`, so note-open and block-edit turns do not pay for
+  a second off-screen editor layout pass.
 - Structured shortcut insertion now also resolves out of existing proprietary wrappers before writing:
   - invoking agenda/callout insertion while the cursor is already inside an existing agenda/callout moves the new RAW
     block to the enclosing wrapper end first

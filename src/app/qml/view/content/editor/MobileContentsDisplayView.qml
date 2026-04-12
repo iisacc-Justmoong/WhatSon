@@ -181,6 +181,8 @@ Item {
     property var panelViewModel: null
     property alias pendingBodySave: editorSession.pendingBodySave
     property string editorEntrySnapshotComparedNoteId: ""
+    property string editorEntrySnapshotPendingNoteId: ""
+    property bool editorEntrySnapshotReconcileQueued: false
     property string pendingEditorFocusNoteId: ""
     readonly property int plainEditorViewModeValue: 0
     readonly property color printCanvasColor: pagePrintLayoutRenderer.canvasColor
@@ -251,6 +253,9 @@ Item {
         return entry && typeof entry === "object" ? entry : ({});
     }
     readonly property bool showCurrentLineMarker: contentsView.hasSelectedNote || contentsView.editorText.length > 0 || contentsView.editorInputFocused
+    readonly property bool legacyInlineEditorActive: !contentsView.showStructuredDocumentFlow
+                                                     && !contentsView.showDedicatedResourceViewer
+                                                     && !contentsView.showFormattedTextRenderer
     readonly property bool showDedicatedResourceViewer: contentsView.selectedNoteIsResourcePackage
     readonly property bool showEditorGutter: false
     readonly property bool showFormattedTextRenderer: false
@@ -941,6 +946,15 @@ Item {
     function persistEditorTextImmediately(nextText) {
         return editorSelectionController.persistEditorTextImmediately(nextText);
     }
+    function scheduleEditorEntrySnapshotReconcile() {
+        if (contentsView.editorEntrySnapshotReconcileQueued)
+            return;
+        contentsView.editorEntrySnapshotReconcileQueued = true;
+        Qt.callLater(function () {
+            contentsView.editorEntrySnapshotReconcileQueued = false;
+            contentsView.reconcileEditorEntrySnapshotOnce();
+        });
+    }
     function pollSelectedNoteSnapshot() {
         if (contentsView.typingSessionSyncProtected || contentsView.pendingBodySave)
             return;
@@ -950,26 +964,13 @@ Item {
         if (selectionBridge
                 && selectionBridge.reconcileViewSessionAndRefreshSnapshotForNote !== undefined
                 && normalizedNoteId.length > 0) {
-            const previousBodyText = contentsView.selectedNoteBodyText === undefined || contentsView.selectedNoteBodyText === null
-                    ? ""
-                    : String(contentsView.selectedNoteBodyText);
             const sessionText = editorSession.editorText === undefined || editorSession.editorText === null
                     ? ""
                     : String(editorSession.editorText);
-            const reconciled = !!selectionBridge.reconcileViewSessionAndRefreshSnapshotForNote(
-                                   normalizedNoteId,
-                                   sessionText);
-            if (!reconciled)
+            if (selectionBridge.reconcileViewSessionAndRefreshSnapshotForNote(
+                        normalizedNoteId,
+                        sessionText))
                 return;
-            const refreshedBodyText = contentsView.selectedNoteBodyText === undefined || contentsView.selectedNoteBodyText === null
-                    ? ""
-                    : String(contentsView.selectedNoteBodyText);
-            if (refreshedBodyText !== previousBodyText) {
-                contentsView.scheduleMinimapSnapshotRefresh(true);
-                contentsView.scheduleDocumentPresentationRefresh(true);
-                contentsView.scheduleGutterRefresh(4);
-            }
-            return;
         }
         if (!selectionBridge || selectionBridge.refreshSelectedNoteSnapshot === undefined)
             return;
@@ -986,6 +987,8 @@ Item {
             return false;
         if (contentsView.editorEntrySnapshotComparedNoteId === normalizedNoteId)
             return false;
+        if (contentsView.editorEntrySnapshotPendingNoteId === normalizedNoteId)
+            return false;
         if (contentsView.editorInputFocused || contentsView.pendingBodySave || contentsView.typingSessionSyncProtected)
             return false;
         if (!selectionBridge
@@ -995,12 +998,11 @@ Item {
         const sessionText = editorSession.editorText === undefined || editorSession.editorText === null
                 ? ""
                 : String(editorSession.editorText);
-        const reconciled = !!selectionBridge.reconcileViewSessionAndRefreshSnapshotForNote(
-                               normalizedNoteId,
-                               sessionText);
-        if (!reconciled)
+        if (!selectionBridge.reconcileViewSessionAndRefreshSnapshotForNote(
+                    normalizedNoteId,
+                    sessionText))
             return false;
-        contentsView.editorEntrySnapshotComparedNoteId = normalizedNoteId;
+        contentsView.editorEntrySnapshotPendingNoteId = normalizedNoteId;
         return true;
     }
     function queueInlineFormatWrap(tagName) {
@@ -1063,8 +1065,15 @@ Item {
             return false;
         if (contentsView.editorText !== normalizedNextSourceText)
             contentsView.editorText = normalizedNextSourceText;
-        if (contentsView.commitDocumentPresentationRefresh !== undefined)
+        if (!contentsView.showStructuredDocumentFlow
+                && contentsView.commitDocumentPresentationRefresh !== undefined) {
+            contentsView.documentPresentationRefreshPendingWhileFocused = false;
             contentsView.commitDocumentPresentationRefresh();
+        } else {
+            contentsView.documentPresentationRefreshPendingWhileFocused = true;
+            if (documentPresentationRefreshTimer.running)
+                documentPresentationRefreshTimer.stop();
+        }
         if (editorSession && editorSession.markLocalEditorAuthority !== undefined)
             editorSession.markLocalEditorAuthority();
         if (focusRequest && structuredDocumentFlow && structuredDocumentFlow.requestFocus !== undefined) {
@@ -1313,7 +1322,7 @@ Item {
     Component.onCompleted: {
         contentsView.resetEditorSelectionCache();
         editorSession.requestSyncEditorTextFromSelection(contentsView.selectedNoteId, contentsView.selectedNoteBodyText);
-        contentsView.reconcileEditorEntrySnapshotOnce();
+        contentsView.scheduleEditorEntrySnapshotReconcile();
         contentsView.scheduleDocumentPresentationRefresh(true);
         contentsView.scheduleGutterRefresh(4);
     }
@@ -1327,7 +1336,19 @@ Item {
     }
     onEditorTextChanged: {
         contentsView.scheduleMinimapSnapshotRefresh(false);
-        contentsView.scheduleDocumentPresentationRefresh(false);
+        if (!contentsView.showStructuredDocumentFlow)
+            contentsView.scheduleDocumentPresentationRefresh(false);
+    }
+    onShowStructuredDocumentFlowChanged: {
+        if (contentsView.showStructuredDocumentFlow) {
+            contentsView.documentPresentationRefreshPendingWhileFocused = true;
+            if (documentPresentationRefreshTimer.running)
+                documentPresentationRefreshTimer.stop();
+            if (contentsView.renderedEditorText !== "")
+                contentsView.renderedEditorText = "";
+            return;
+        }
+        contentsView.scheduleDocumentPresentationRefresh(true);
     }
     onHeightChanged: {
         contentsView.scheduleMinimapSnapshotRefresh(true);
@@ -1350,9 +1371,10 @@ Item {
     }
     onSelectedNoteIdChanged: {
         contentsView.editorEntrySnapshotComparedNoteId = "";
+        contentsView.editorEntrySnapshotPendingNoteId = "";
         contentsView.resetEditorSelectionCache();
         editorSession.requestSyncEditorTextFromSelection(contentsView.selectedNoteId, contentsView.selectedNoteBodyText);
-        contentsView.reconcileEditorEntrySnapshotOnce();
+        contentsView.scheduleEditorEntrySnapshotReconcile();
         contentsView.scheduleMinimapSnapshotRefresh(true);
         contentsView.scheduleDocumentPresentationRefresh(true);
         contentsView.focusEditorForPendingNote();
@@ -1361,18 +1383,18 @@ Item {
     onPendingBodySaveChanged: {
         if (!contentsView.pendingBodySave) {
             contentsView.editorEntrySnapshotComparedNoteId = "";
-            contentsView.reconcileEditorEntrySnapshotOnce();
+            contentsView.scheduleEditorEntrySnapshotReconcile();
         }
     }
     onTypingSessionSyncProtectedChanged: {
         if (!contentsView.typingSessionSyncProtected) {
             contentsView.editorEntrySnapshotComparedNoteId = "";
-            contentsView.reconcileEditorEntrySnapshotOnce();
+            contentsView.scheduleEditorEntrySnapshotReconcile();
         }
     }
     onVisibleChanged: {
         if (visible) {
-            contentsView.reconcileEditorEntrySnapshotOnce();
+            contentsView.scheduleEditorEntrySnapshotReconcile();
             contentsView.scheduleMinimapSnapshotRefresh(true);
             contentsView.scheduleDocumentPresentationRefresh(true);
             contentsView.scheduleGutterRefresh(4);
@@ -1526,6 +1548,24 @@ Item {
         target: contentsView.libraryHierarchyViewModel
     }
     Connections {
+        function onViewSessionSnapshotReconciled(noteId, refreshed, success, _errorMessage) {
+            const normalizedNoteId = noteId === undefined || noteId === null ? "" : String(noteId).trim();
+            if (contentsView.editorEntrySnapshotPendingNoteId === normalizedNoteId)
+                contentsView.editorEntrySnapshotPendingNoteId = "";
+            if (normalizedNoteId.length === 0 || normalizedNoteId !== contentsView.selectedNoteId)
+                return;
+            if (success)
+                contentsView.editorEntrySnapshotComparedNoteId = normalizedNoteId;
+            if (refreshed) {
+                contentsView.scheduleMinimapSnapshotRefresh(true);
+                contentsView.scheduleDocumentPresentationRefresh(true);
+                contentsView.scheduleGutterRefresh(4);
+            }
+        }
+
+        target: selectionBridge
+    }
+    Connections {
         function onStructuredCorrectionSuggested(sourceText, correctedSourceText, verification) {
             if (!contentsView.hasSelectedNote)
                 return;
@@ -1584,7 +1624,7 @@ Item {
         }
 
         ignoreUnknownSignals: true
-        target: contentEditor
+        target: contentsView.legacyInlineEditorActive ? contentEditor : null
     }
     Connections {
         function onContentYChanged() {
@@ -1602,7 +1642,7 @@ Item {
         }
 
         ignoreUnknownSignals: true
-        target: contentEditor && contentEditor.editorItem ? contentEditor.editorItem : null
+        target: contentsView.legacyInlineEditorActive && contentEditor && contentEditor.editorItem ? contentEditor.editorItem : null
     }
     Connections {
         function onCursorPositionChanged() {
@@ -1610,7 +1650,7 @@ Item {
         }
 
         ignoreUnknownSignals: true
-        target: contentEditor && contentEditor.editorItem && contentEditor.editorItem.inputItem ? contentEditor.editorItem.inputItem : null
+        target: contentsView.legacyInlineEditorActive && contentEditor && contentEditor.editorItem && contentEditor.editorItem.inputItem ? contentEditor.editorItem.inputItem : null
     }
     Connections {
         function onContentYChanged() {
@@ -1951,6 +1991,7 @@ Item {
                         fontLetterSpacing: 0
                         fontPixelSize: contentsView.effectiveEditorFontPixelSize
                         fontWeight: Font.Medium
+                        enabled: contentsView.legacyInlineEditorActive
                         insetHorizontal: contentsView.showPrintEditorLayout ? 0 : contentsView.editorHorizontalInset
                         insetVertical: contentsView.showPrintEditorLayout ? 0 : contentsView.editorBottomInset
                         placeholderText: ""
@@ -1962,14 +2003,14 @@ Item {
                         shortcutKeyPressHandler: function (event) {
                             return contentsView.handleInlineFormatShortcutKeyPress(event);
                         }
-                        showRenderedOutput: !contentsView.preferNativeInputHandling
+                        showRenderedOutput: contentsView.legacyInlineEditorActive && !contentsView.preferNativeInputHandling
                         showScrollBar: false
-                        text: contentsView.preferNativeInputHandling ? contentsView.mobileEditorDisplayText : contentsView.renderedEditorText
+                        text: contentsView.legacyInlineEditorActive
+                              ? (contentsView.preferNativeInputHandling ? contentsView.mobileEditorDisplayText : contentsView.renderedEditorText)
+                              : ""
                         textColor: contentsView.showPrintEditorLayout ? contentsView.printPaperTextColor : LV.Theme.bodyColor
                         textFormat: contentsView.preferNativeInputHandling ? TextEdit.PlainText : TextEdit.RichText
-                        visible: !contentsView.showStructuredDocumentFlow
-                                 && !contentsView.showDedicatedResourceViewer
-                                 && !contentsView.showFormattedTextRenderer
+                        visible: contentsView.legacyInlineEditorActive
                         wrapMode: TextEdit.Wrap
                         x: contentsView.showPrintEditorLayout ? (Number(printPaperColumn.x) || 0) + contentsView.printGuideHorizontalInset : 0
                         y: contentsView.showPrintEditorLayout ? (Number(printPaperColumn.y) || 0) + contentsView.printGuideVerticalInset : contentsView.editorDocumentStartY

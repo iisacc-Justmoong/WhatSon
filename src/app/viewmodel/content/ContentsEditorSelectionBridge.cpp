@@ -25,6 +25,11 @@ ContentsEditorSelectionBridge::ContentsEditorSelectionBridge(QObject* parent)
         &ContentsEditorIdleSyncController::editorTextPersistenceFinished,
         this,
         &ContentsEditorSelectionBridge::editorTextPersistenceFinished);
+    connect(
+        m_idleSyncController,
+        &ContentsEditorIdleSyncController::viewSessionSnapshotReconciled,
+        this,
+        &ContentsEditorSelectionBridge::viewSessionSnapshotReconciled);
 }
 
 ContentsEditorSelectionBridge::~ContentsEditorSelectionBridge() = default;
@@ -168,13 +173,10 @@ bool ContentsEditorSelectionBridge::reconcileViewSessionAndRefreshSnapshotForNot
     const QString normalizedNoteId = noteId.trimmed().isEmpty()
         ? m_selectedNoteId
         : noteId.trimmed();
-    const bool refreshed = m_idleSyncController != nullptr
+    return m_idleSyncController != nullptr
         && m_idleSyncController->reconcileViewSessionAndRefreshSnapshotForNote(
             normalizedNoteId,
             viewSessionText);
-    refreshNoteSelectionState();
-    refreshNoteCountState();
-    return refreshed;
 }
 
 bool ContentsEditorSelectionBridge::directPersistenceAvailable() const noexcept
@@ -285,12 +287,24 @@ void ContentsEditorSelectionBridge::refreshNoteSelectionState()
                 m_idleSyncController->bindSelectedNote(nextNoteId);
             }
         }
-        m_selectedNoteId = nextNoteId;
+    }
+
+    const bool noteIdChanged = m_selectedNoteId != nextNoteId;
+    const bool noteBodyTextChanged = m_selectedNoteBodyText != nextBodyText;
+    if (!noteIdChanged && !noteBodyTextChanged)
+    {
+        return;
+    }
+
+    m_selectedNoteId = nextNoteId;
+    m_selectedNoteBodyText = nextBodyText;
+
+    if (noteIdChanged)
+    {
         emit selectedNoteIdChanged();
     }
-    if (m_selectedNoteBodyText != nextBodyText)
+    if (noteBodyTextChanged)
     {
-        m_selectedNoteBodyText = nextBodyText;
         emit selectedNoteBodyTextChanged();
     }
 }

@@ -8,7 +8,6 @@ FocusScope {
     id: textBlock
 
     required property var blockData
-    property var focusRequest: ({})
 
     signal activated()
     signal sourceMutationRequested(string nextBlockSourceText, var focusRequest)
@@ -96,11 +95,5 @@ FocusScope {
                             "sourceOffset": textBlock.sourceStart + Math.max(0, Number(blockEditor.cursorPosition) || 0)
                         })
         }
-    }
-
-    onFocusRequestChanged: {
-        Qt.callLater(function () {
-            textBlock.applyFocusRequest(textBlock.focusRequest)
-        })
     }
 }

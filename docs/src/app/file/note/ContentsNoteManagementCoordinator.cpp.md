@@ -24,9 +24,10 @@
 - The fallback persistence lane, when used, is also deferred behind the coordinator queue so the editor hot path still
   only observes enqueue acceptance rather than immediate management work.
 - The coordinator now also provides one-shot session/filesystem reconciliation for editor entry:
-  - loads note RAW through `WhatSonLocalNoteFileStore::readNote(...)`
-  - compares normalized session text with normalized RAW source text
-  - triggers `refreshNoteSnapshotForNote(...)` only when mismatch is detected.
+  - resolves note/session metadata on the UI thread only
+  - queues RAW-read comparison work onto the same coordinator-owned worker lane
+  - emits `viewSessionSnapshotReconciled(noteId, refreshed, success, errorMessage)` back to QML-facing adapters
+  - triggers `refreshNoteSnapshotForNote(...)` on the main thread only when the worker reports a mismatch.
 
 ## Queue Semantics
 
@@ -35,6 +36,8 @@
   still running.
 - Pending tracked-stat refresh requests are coalesced per note id.
 - Header open-count requests deduplicate while the same note already has one such request in flight or pending.
+- Reconcile requests are also coalesced by note id plus normalized session text so note-open and timer-driven snapshot
+  probes do not stack duplicate RAW reads on the UI thread.
 
 ## Regression Checks
 
@@ -48,4 +51,4 @@
 - Fallback/direct body persistence for a Tags-selected note must still cause the active tags hierarchy view-model to
   re-read `Tags.wstags`, so newly promoted `#label` tags appear in the hierarchy without a manual app restart.
 - Session/filesystem reconciliation must return success without reload when RAW already matches the current view
-  session snapshot.
+  session snapshot, and that check must not perform note reads on the UI thread anymore.

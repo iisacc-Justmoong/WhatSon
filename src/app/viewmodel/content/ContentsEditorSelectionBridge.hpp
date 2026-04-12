@@ -59,13 +59,18 @@ public:
         const QString& viewSessionText);
     Q_INVOKABLE bool refreshSelectedNoteSnapshot();
 
-    signals  :
+signals  :
 
     void editorTextPersistenceQueued(const QString& noteId, const QString& text);
 
     void editorTextPersistenceFinished(
         const QString& noteId,
         const QString& text,
+        bool success,
+        const QString& errorMessage);
+    void viewSessionSnapshotReconciled(
+        const QString& noteId,
+        bool refreshed,
         bool success,
         const QString& errorMessage);
 

@@ -51,6 +51,11 @@ signals:
         const QString& text,
         bool success,
         const QString& errorMessage);
+    void viewSessionSnapshotReconciled(
+        const QString& noteId,
+        bool refreshed,
+        bool success,
+        const QString& errorMessage);
 
 private slots:
     void handleFetchTimerTimeout();

@@ -38,6 +38,11 @@ signals:
         const QString& text,
         bool success,
         const QString& errorMessage);
+    void viewSessionSnapshotReconciled(
+        const QString& noteId,
+        bool refreshed,
+        bool success,
+        const QString& errorMessage);
 
 private slots:
     void handleContentViewModelDestroyed();
@@ -48,7 +53,8 @@ private:
         DirectPersistBody,
         ViewModelPersistBody,
         IncrementOpenCount,
-        RefreshTrackedStatistics
+        RefreshTrackedStatistics,
+        ReconcileViewSessionSnapshot
     };
 
     struct Request final
@@ -71,6 +77,7 @@ private:
         WhatSonLocalNoteDocument persistedDocument;
         QString errorMessage;
         bool incrementOpenCount = false;
+        bool snapshotRefreshRequested = false;
         bool success = false;
     };
 

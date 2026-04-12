@@ -9,7 +9,6 @@ FocusScope {
     id: agendaBlock
 
     required property var blockData
-    property var focusRequest: ({})
 
     signal activated()
     signal taskDoneToggled(int openTagStart, int openTagEnd, bool checked)
@@ -259,11 +258,5 @@ FocusScope {
                 }
             }
         }
-    }
-
-    onFocusRequestChanged: {
-        Qt.callLater(function () {
-            agendaBlock.applyFocusRequest(agendaBlock.focusRequest)
-        })
     }
 }

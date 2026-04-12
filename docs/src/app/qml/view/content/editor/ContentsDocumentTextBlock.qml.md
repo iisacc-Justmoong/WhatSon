@@ -9,5 +9,7 @@ Renders one plain-text document segment inside the structured document-flow edit
 - Converts edited rich-text surface content back into canonical source with
   `ContentsTextFormatRenderer.normalizeEditorSurfaceTextToSource(...)`.
 - Accepts focus restoration requests by source offset so source rewrites can re-focus the same block after reparsing.
+- Focus restoration is now invoked directly by `ContentsStructuredDocumentFlow.qml` on the targeted block instance,
+  rather than by rebroadcasting one request through every text block.
 - Reports shortcut insertion offsets from the live rich-text cursor by normalizing only the rendered prefix back into
   canonical source, so structured shortcuts can insert at the active text caret instead of always using the block end.

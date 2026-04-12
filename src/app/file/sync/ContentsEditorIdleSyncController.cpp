@@ -27,6 +27,11 @@ ContentsEditorIdleSyncController::ContentsEditorIdleSyncController(QObject* pare
         &ContentsNoteManagementCoordinator::editorTextPersistenceFinished,
         this,
         &ContentsEditorIdleSyncController::handlePersistenceFinished);
+    connect(
+        m_noteManagementCoordinator,
+        &ContentsNoteManagementCoordinator::viewSessionSnapshotReconciled,
+        this,
+        &ContentsEditorIdleSyncController::viewSessionSnapshotReconciled);
 
     m_fetchTimer.setInterval(kEditorPersistenceFetchIntervalMs);
     m_fetchTimer.setSingleShot(false);

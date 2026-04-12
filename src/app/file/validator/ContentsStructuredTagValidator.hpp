@@ -1,11 +1,13 @@
 #pragma once
 
+#include "file/note/WhatSonLocalNoteDocument.hpp"
+
 #include <QObject>
 #include <QPointer>
 #include <QString>
 #include <QVariantMap>
-
-struct WhatSonLocalNoteDocument;
+#include <QVector>
+#include <QtTypes>
 
 class ContentsStructuredTagValidator : public QObject
 {
@@ -64,8 +66,36 @@ signals:
         const QVariantMap& verification);
 
 private:
+    struct Request final
+    {
+        quint64 sequence = 0;
+        QString noteId;
+        QString noteDirectoryPath;
+        QString sourceText;
+        QString correctedSourceText;
+        QVariantMap verification;
+    };
+
+    struct Result final
+    {
+        quint64 sequence = 0;
+        QString noteId;
+        QString noteDirectoryPath;
+        QString sourceText;
+        QString correctedSourceText;
+        QVariantMap verification;
+        WhatSonLocalNoteDocument persistedDocument;
+        QString errorMessage;
+        QString statisticsError;
+        bool success = false;
+    };
+
     static bool hasInvokableMethod(const QObject* object, const char* methodSignature);
 
+    bool enqueueCorrectionRequest(Request request);
+    void dispatchNextCorrectionRequest();
+    static Result performCorrectionRequest(const Request& request);
+    void handleCorrectionRequestFinished(const Result& result);
     QString resolveNoteDirectoryPathForNote(const QString& noteId) const;
     bool applyPersistedBodyStateToContentViewModel(
         const QString& noteId,
@@ -83,4 +113,8 @@ private:
     QString m_lastCorrectionError;
     QString m_lastCorrectionNoteId;
     QString m_lastCorrectionSourceText;
+    bool m_requestInFlight = false;
+    quint64 m_nextRequestSequence = 1;
+    Request m_activeRequest;
+    QVector<Request> m_pendingRequests;
 };

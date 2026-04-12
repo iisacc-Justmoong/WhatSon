@@ -8,8 +8,8 @@ Implements the structured-tag validator's direct-write correction authority.
    QML hosts use the explicit-note entrypoint `requestStructuredCorrectionForNote(...)` so the correction target note
    is fixed at the moment the signal is handled.
 2. Resolve the selected note directory from `contentViewModel.noteDirectoryPathForNoteId(...)`.
-3. Read the materialized note package through `WhatSonLocalNoteFileStore`.
-4. Persist the canonical corrected RAW source back into `.wsnbody` immediately through `updateNote(...)`.
+3. Queue the file read/write correction work onto a worker thread instead of running it inline on the QML signal turn.
+4. Persist the canonical corrected RAW source back into `.wsnbody` through `updateNote(...)`.
 5. Apply the updated body snapshot back into the bound content view model when possible.
 6. Refresh tracked note statistics and reload note metadata so the UI/runtime state converges on the corrected file.
 
@@ -26,7 +26,11 @@ Implements the structured-tag validator's direct-write correction authority.
   - no note directory path can be resolved
   - the corrected source text is empty or identical to the current source
 - Successful identical repeated requests are deduplicated by note/source/corrected-source tuple.
+- While one correction is already running, later identical requests are absorbed into the pending queue instead of
+  opening another file I/O turn on the UI thread.
 
 ## UI Synchronization
 - On success, the validator emits `correctionApplied(...)` so QML can immediately replace the in-editor RAW buffer with
   the canonical corrected source and avoid re-saving stale malformed text back over the fixed file.
+- The emitted success/failure signals now represent completion of a worker-thread correction request, not synchronous
+  completion inside the parser callback turn.

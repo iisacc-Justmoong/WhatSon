@@ -8,6 +8,7 @@
 #include "file/statistic/WhatSonNoteFileStatSupport.hpp"
 
 #include <QMetaObject>
+#include <QThreadPool>
 
 namespace
 {
@@ -156,26 +157,115 @@ bool ContentsStructuredTagValidator::requestStructuredCorrectionForNote(
         return false;
     }
 
+    Request request;
+    request.sequence = m_nextRequestSequence++;
+    request.noteId = normalizedNoteId;
+    request.noteDirectoryPath = noteDirectoryPath;
+    request.sourceText = normalizedSourceText;
+    request.correctedSourceText = normalizedCorrectedSourceText;
+    request.verification = verification;
+    return enqueueCorrectionRequest(std::move(request));
+}
+
+bool ContentsStructuredTagValidator::enqueueCorrectionRequest(Request request)
+{
+    if (request.noteId.isEmpty()
+        || request.sourceText.isEmpty()
+        || request.correctedSourceText.isEmpty())
+    {
+        return false;
+    }
+
+    if (m_requestInFlight
+        && m_activeRequest.noteId == request.noteId
+        && m_activeRequest.sourceText == request.sourceText
+        && m_activeRequest.correctedSourceText == request.correctedSourceText)
+    {
+        return true;
+    }
+
+    for (int index = m_pendingRequests.size() - 1; index >= 0; --index)
+    {
+        const Request& pendingRequest = m_pendingRequests.at(index);
+        if (pendingRequest.noteId == request.noteId
+            && pendingRequest.sourceText == request.sourceText
+            && pendingRequest.correctedSourceText == request.correctedSourceText)
+        {
+            return true;
+        }
+    }
+
+    if (m_requestInFlight)
+    {
+        m_pendingRequests.push_back(std::move(request));
+        return true;
+    }
+
+    m_activeRequest = std::move(request);
+    m_requestInFlight = true;
+    dispatchNextCorrectionRequest();
+    return true;
+}
+
+void ContentsStructuredTagValidator::dispatchNextCorrectionRequest()
+{
+    if (!m_requestInFlight)
+    {
+        if (m_pendingRequests.isEmpty())
+        {
+            return;
+        }
+        m_activeRequest = m_pendingRequests.takeFirst();
+        m_requestInFlight = true;
+    }
+
+    const Request request = m_activeRequest;
+    QPointer<ContentsStructuredTagValidator> validatorGuard(this);
+    QThreadPool::globalInstance()->start([validatorGuard, request]()
+    {
+        const Result result = ContentsStructuredTagValidator::performCorrectionRequest(request);
+        if (validatorGuard != nullptr)
+        {
+            QMetaObject::invokeMethod(
+                validatorGuard,
+                [validatorGuard, result]()
+                {
+                    if (validatorGuard != nullptr)
+                    {
+                        validatorGuard->handleCorrectionRequestFinished(result);
+                    }
+                },
+                Qt::QueuedConnection);
+        }
+    });
+}
+
+ContentsStructuredTagValidator::Result
+ContentsStructuredTagValidator::performCorrectionRequest(const Request& request)
+{
+    Result result;
+    result.sequence = request.sequence;
+    result.noteId = request.noteId;
+    result.noteDirectoryPath = request.noteDirectoryPath;
+    result.sourceText = request.sourceText;
+    result.correctedSourceText = request.correctedSourceText;
+    result.verification = request.verification;
+
     WhatSonLocalNoteFileStore noteFileStore;
     WhatSonLocalNoteDocument document;
     WhatSonLocalNoteFileStore::ReadRequest readRequest;
-    readRequest.noteId = normalizedNoteId;
-    readRequest.noteDirectoryPath = noteDirectoryPath;
+    readRequest.noteId = request.noteId;
+    readRequest.noteDirectoryPath = request.noteDirectoryPath;
 
-    QString readError;
-    if (!noteFileStore.readNote(readRequest, &document, &readError))
+    if (!noteFileStore.readNote(readRequest, &document, &result.errorMessage))
     {
-        updateLastCorrectionVerification(verification);
-        updateLastCorrectedSourceText(normalizedCorrectedSourceText);
-        updateLastCorrectionError(readError);
-        emit correctionFailed(normalizedNoteId, normalizedSourceText, readError, verification);
-        return false;
+        return result;
     }
 
     WhatSonLocalNoteFileStore::UpdateRequest updateRequest;
     updateRequest.document = std::move(document);
-    updateRequest.document.bodyPlainText = normalizedCorrectedSourceText;
-    updateRequest.document.bodySourceText = normalizedCorrectedSourceText;
+    updateRequest.document.bodyPlainText = request.correctedSourceText;
+    updateRequest.document.bodySourceText = request.correctedSourceText;
     updateRequest.persistHeader = false;
     updateRequest.persistBody = true;
     updateRequest.touchLastModified = true;
@@ -183,62 +273,91 @@ bool ContentsStructuredTagValidator::requestStructuredCorrectionForNote(
     updateRequest.refreshIncomingBacklinkStatistics = false;
     updateRequest.refreshAffectedBacklinkTargets = false;
 
-    WhatSonLocalNoteDocument persistedDocument;
-    QString writeError;
-    if (!noteFileStore.updateNote(updateRequest, &persistedDocument, &writeError))
+    if (!noteFileStore.updateNote(updateRequest, &result.persistedDocument, &result.errorMessage))
     {
-        updateLastCorrectionVerification(verification);
-        updateLastCorrectedSourceText(normalizedCorrectedSourceText);
-        updateLastCorrectionError(writeError);
-        emit correctionFailed(normalizedNoteId, normalizedSourceText, writeError, verification);
-        return false;
+        return result;
     }
 
-    const QString persistedDirectoryPath = persistedDocument.noteDirectoryPath.trimmed().isEmpty()
-        ? noteDirectoryPath
-        : persistedDocument.noteDirectoryPath.trimmed();
-    const bool appliedToContentViewModel =
-        applyPersistedBodyStateToContentViewModel(normalizedNoteId, persistedDocument);
+    const QString persistedDirectoryPath = result.persistedDocument.noteDirectoryPath.trimmed().isEmpty()
+        ? request.noteDirectoryPath
+        : result.persistedDocument.noteDirectoryPath.trimmed();
+    result.noteDirectoryPath = persistedDirectoryPath;
 
-    QString statsError;
     if (!persistedDirectoryPath.isEmpty()
         && !WhatSon::NoteFileStatSupport::refreshTrackedStatisticsForNote(
-            normalizedNoteId,
+            request.noteId,
             persistedDirectoryPath,
             false,
-            &statsError))
+            &result.statisticsError))
     {
-        WhatSon::Debug::traceSelf(
-            this,
+        WhatSon::Debug::trace(
             QStringLiteral("content.structuredTag.validator"),
             QStringLiteral("refreshTrackedStatistics.failed"),
-            QStringLiteral("noteId=%1 error=%2").arg(normalizedNoteId, statsError));
+            QStringLiteral("noteId=%1 error=%2").arg(request.noteId, result.statisticsError));
     }
 
-    if (!appliedToContentViewModel)
+    result.success = true;
+    return result;
+}
+
+void ContentsStructuredTagValidator::handleCorrectionRequestFinished(const Result& result)
+{
+    if (!result.success)
     {
-        if (!reloadNoteMetadataForNote(normalizedNoteId)
-            && m_contentViewModel != nullptr
-            && hasInvokableMethod(m_contentViewModel, kRequestViewModelHookSignature))
-        {
-            QMetaObject::invokeMethod(
-                m_contentViewModel,
-                "requestViewModelHook",
-                Qt::QueuedConnection);
-        }
+        updateLastCorrectionVerification(result.verification);
+        updateLastCorrectedSourceText(result.correctedSourceText);
+        updateLastCorrectionError(result.errorMessage);
+        emit correctionFailed(result.noteId, result.sourceText, result.errorMessage, result.verification);
     }
     else
     {
-        reloadNoteMetadataForNote(normalizedNoteId);
+        const bool appliedToContentViewModel =
+            applyPersistedBodyStateToContentViewModel(result.noteId, result.persistedDocument);
+
+        if (!result.statisticsError.isEmpty())
+        {
+            WhatSon::Debug::traceSelf(
+                this,
+                QStringLiteral("content.structuredTag.validator"),
+                QStringLiteral("refreshTrackedStatistics.failed"),
+                QStringLiteral("noteId=%1 error=%2").arg(result.noteId, result.statisticsError));
+        }
+
+        if (!appliedToContentViewModel)
+        {
+            if (!reloadNoteMetadataForNote(result.noteId)
+                && m_contentViewModel != nullptr
+                && hasInvokableMethod(m_contentViewModel, kRequestViewModelHookSignature))
+            {
+                QMetaObject::invokeMethod(
+                    m_contentViewModel,
+                    "requestViewModelHook",
+                    Qt::QueuedConnection);
+            }
+        }
+        else
+        {
+            reloadNoteMetadataForNote(result.noteId);
+        }
+
+        m_lastCorrectionNoteId = result.noteId;
+        m_lastCorrectionSourceText = result.sourceText;
+        updateLastCorrectionVerification(result.verification);
+        updateLastCorrectedSourceText(result.correctedSourceText);
+        updateLastCorrectionError(QString());
+        emit correctionApplied(result.noteId, result.correctedSourceText, result.verification);
     }
 
-    m_lastCorrectionNoteId = normalizedNoteId;
-    m_lastCorrectionSourceText = normalizedSourceText;
-    updateLastCorrectionVerification(verification);
-    updateLastCorrectedSourceText(normalizedCorrectedSourceText);
-    updateLastCorrectionError(QString());
-    emit correctionApplied(normalizedNoteId, normalizedCorrectedSourceText, verification);
-    return true;
+    if (!m_pendingRequests.isEmpty())
+    {
+        m_activeRequest = m_pendingRequests.takeFirst();
+        m_requestInFlight = true;
+        dispatchNextCorrectionRequest();
+        return;
+    }
+
+    m_activeRequest = Request();
+    m_requestInFlight = false;
 }
 
 bool ContentsStructuredTagValidator::hasInvokableMethod(

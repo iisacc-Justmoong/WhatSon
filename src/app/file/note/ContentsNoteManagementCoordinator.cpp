@@ -98,33 +98,13 @@ bool ContentsNoteManagementCoordinator::reconcileViewSessionAndRefreshSnapshotFo
         return false;
     }
 
-    WhatSonLocalNoteFileStore noteFileStore;
-    WhatSonLocalNoteFileStore::ReadRequest readRequest;
-    readRequest.noteId = normalizedNoteId;
-    readRequest.noteDirectoryPath = noteDirectoryPath;
-
-    WhatSonLocalNoteDocument document;
-    QString readError;
-    if (!noteFileStore.readNote(readRequest, &document, &readError))
-    {
-        WhatSon::Debug::traceSelf(
-            this,
-            QStringLiteral("content.note.management"),
-            QStringLiteral("reconcileViewSessionAndRefreshSnapshotForNote.read.failed"),
-            QStringLiteral("noteId=%1 error=%2").arg(normalizedNoteId, readError));
-        return false;
-    }
-
-    const QString normalizedSessionText =
-        WhatSon::NoteBodyPersistence::normalizeBodyPlainText(viewSessionText);
-    const QString normalizedRawSourceText = WhatSon::NoteBodyPersistence::normalizeBodyPlainText(
-        document.bodySourceText.isEmpty() ? document.bodyPlainText : document.bodySourceText);
-    if (normalizedSessionText == normalizedRawSourceText)
-    {
-        return true;
-    }
-
-    return refreshNoteSnapshotForNote(normalizedNoteId);
+    Request request;
+    request.kind = RequestKind::ReconcileViewSessionSnapshot;
+    request.sequence = m_nextRequestSequence++;
+    request.noteId = normalizedNoteId;
+    request.noteDirectoryPath = noteDirectoryPath;
+    request.text = WhatSon::NoteBodyPersistence::normalizeBodyPlainText(viewSessionText);
+    return enqueueRequest(std::move(request));
 }
 
 bool ContentsNoteManagementCoordinator::refreshNoteSnapshotForNote(const QString& noteId)
@@ -377,7 +357,8 @@ bool ContentsNoteManagementCoordinator::enqueueRequest(Request request)
         && m_activeRequest.noteId == request.noteId)
     {
         if ((request.kind == RequestKind::DirectPersistBody
-             || request.kind == RequestKind::ViewModelPersistBody)
+             || request.kind == RequestKind::ViewModelPersistBody
+             || request.kind == RequestKind::ReconcileViewSessionSnapshot)
             && m_activeRequest.text == request.text)
         {
             return true;
@@ -394,7 +375,8 @@ bool ContentsNoteManagementCoordinator::enqueueRequest(Request request)
     {
         Request& pendingRequest = m_pendingRequests[pendingIndex];
         if (request.kind == RequestKind::DirectPersistBody
-            || request.kind == RequestKind::ViewModelPersistBody)
+            || request.kind == RequestKind::ViewModelPersistBody
+            || request.kind == RequestKind::ReconcileViewSessionSnapshot)
         {
             if (pendingRequest.text == request.text)
             {
@@ -535,6 +517,26 @@ ContentsNoteManagementCoordinator::performWorkerRequest(const Request& request)
             return result;
         }
 
+        result.success = true;
+        return result;
+    }
+
+    if (request.kind == RequestKind::ReconcileViewSessionSnapshot)
+    {
+        WhatSonLocalNoteFileStore noteFileStore;
+        WhatSonLocalNoteFileStore::ReadRequest readRequest;
+        readRequest.noteId = request.noteId;
+        readRequest.noteDirectoryPath = request.noteDirectoryPath;
+
+        WhatSonLocalNoteDocument document;
+        if (!noteFileStore.readNote(readRequest, &document, &result.errorMessage))
+        {
+            return result;
+        }
+
+        const QString normalizedRawSourceText = WhatSon::NoteBodyPersistence::normalizeBodyPlainText(
+            document.bodySourceText.isEmpty() ? document.bodyPlainText : document.bodySourceText);
+        result.snapshotRefreshRequested = request.text != normalizedRawSourceText;
         result.success = true;
         return result;
     }
@@ -712,6 +714,37 @@ void ContentsNoteManagementCoordinator::handleRequestFinished(const Result& resu
                 QStringLiteral("refreshTrackedStatistics.failed"),
                 QStringLiteral("noteId=%1 error=%2").arg(result.noteId, result.errorMessage));
         }
+    }
+    else if (result.kind == RequestKind::ReconcileViewSessionSnapshot)
+    {
+        bool refreshed = false;
+        bool success = result.success;
+        QString errorMessage = result.errorMessage;
+
+        if (result.success && result.snapshotRefreshRequested)
+        {
+            refreshed = refreshNoteSnapshotForNote(result.noteId);
+            if (!refreshed)
+            {
+                success = false;
+                errorMessage = QStringLiteral("Failed to refresh note snapshot after reconcile.");
+            }
+        }
+
+        if (!success)
+        {
+            WhatSon::Debug::traceSelf(
+                this,
+                QStringLiteral("content.note.management"),
+                QStringLiteral("reconcileViewSession.failed"),
+                QStringLiteral("noteId=%1 error=%2").arg(result.noteId, errorMessage));
+        }
+
+        emit viewSessionSnapshotReconciled(
+            result.noteId,
+            refreshed,
+            success,
+            errorMessage);
     }
 
     if (!m_pendingRequests.isEmpty())
