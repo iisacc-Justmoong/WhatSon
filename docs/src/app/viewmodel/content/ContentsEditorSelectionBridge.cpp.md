@@ -38,6 +38,10 @@
   If so, the bridge reuses that pending body immediately and skips the stale file-backed adoption path.
 - The same pending-body check also runs when a lazy body-read completion arrives, so an older file read cannot reclaim
   the selected body after the user already restaged newer local text for that note.
+- The bridge now also updates `selectedNoteBodyText` immediately on successful
+  `editorTextPersistenceFinished(noteId, text, success, ...)` for the currently visible note body.
+  This closes the stale same-note gap where persistence could succeed, reconcile could report "no refresh needed", and
+  QML would still keep the note-open body snapshot as the last selected-body value.
 - When the bridge cannot produce note-owned body text for the current selection, it now falls back to an explicit empty
   body that is still tagged with that selected note id.
 - `startSelectedNoteBodyLoad(...)` now keeps body ownership explicit during loading and fallback transitions instead of
@@ -105,3 +109,5 @@
   resolved.
 - Reopening a recently edited note must prefer the buffered editor snapshot over a stale package read until queued
   persistence catches up.
+- A same-note successful save must advance `selectedNoteBodyText` even when filesystem reconcile reports that no extra
+  snapshot refresh is needed.

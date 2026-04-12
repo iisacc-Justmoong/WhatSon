@@ -86,6 +86,11 @@ signals:
 
 private slots:
     void handleNoteListSelectionChanged();
+    void handleEditorTextPersistenceFinishedInternal(
+        const QString& noteId,
+        const QString& text,
+        bool success,
+        const QString& errorMessage);
     void handleNoteBodyTextLoaded(
         quint64 sequence,
         const QString& noteId,

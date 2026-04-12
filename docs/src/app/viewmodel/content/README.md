@@ -27,6 +27,8 @@
   buffered note snapshot cache, recurring `1000ms` fetch clock, and best-effort lifecycle flush path.
 - `ContentsEditorSelectionBridge` now also prefers that sync-owned dirty snapshot cache when reopening a recently edited
   note, so selection can reuse the newest local body before lazy file IO completes.
+- The same bridge now also advances its selected-note body cache on successful same-note persistence completion, so the
+  note-open body snapshot cannot keep reclaiming the editor after a save that required no extra filesystem refresh.
 - Downstream note-management work still lives under the `file/note` domain in `ContentsNoteManagementCoordinator`,
   which performs actual persistence, open-count maintenance, and tracked-stat follow-up later.
 - Note-selection changes now reuse the same `{noteId, noteDirectoryPath}` metadata session and no longer trigger a

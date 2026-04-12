@@ -39,7 +39,8 @@
 - The bridge now also forwards `editorTextPersistenceQueued(...)` so QML sessions can distinguish
   "the fetch boundary accepted one buffered snapshot into the persistence queue" from "the write already finished".
 - `editorTextPersistenceFinished(noteId, text, success, errorMessage)` is still the completion signal consumed by QML
-  editor sessions, but the bridge now only forwards the sync/controller result.
+  editor sessions, and the bridge now also uses successful same-note completion to advance its own
+  `selectedNoteBodyText` cache.
 - Internal note-list selection refresh now follows a queued-coalesced contract: one event-loop turn can schedule at
   most one pending note-selection refresh.
 - Note-list-model replacement and content-view-model replacement now both funnel through that same queued refresh turn.
@@ -91,6 +92,7 @@
 - Stale same-note body-read completions must not reclaim the selected note body after a newer request was issued.
 - Stale filesystem text must not reclaim the selected note body while the sync controller still owns a newer dirty or
   in-flight editor snapshot for that note.
+- A successful same-note persistence completion must not leave `selectedNoteBodyText` behind at the note-open snapshot.
 - A same-turn note-list/content-view-model swap must not bind the old note id to the new content view-model or the new
   note id to the old content view-model as an intermediate side effect.
 - QML/session code must be able to tell which note owns the currently exposed body text without inferring from timing or
