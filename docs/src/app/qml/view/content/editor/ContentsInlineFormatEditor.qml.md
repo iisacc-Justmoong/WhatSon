@@ -50,15 +50,12 @@ plain `QtQuick.TextEdit` as the actual rendering and input engine.
   `Qt.inputMethod` together with the logical cursor move.
   Host controllers should use that wrapper-level path instead of writing `cursorPosition` into the wrapper,
   `editorItem`, and `inputItem` separately.
-- The wrapper no longer keeps a separate `0ms` queued committed-edit timer for ordinary typing.
-  Ordinary edits now prefer the native `TextEdit` edited signal when that path exists, and older runtimes only fall
-  back to one deferred `textChanged` re-check after the platform input session settles.
-  The wrapper no longer keeps its own synthetic `_compositionEditPending` commit state.
-- Native `TextEdit.onTextEdited` is now also guarded against programmatic RichText surface replacement re-entry:
-  - when the host pushes a new rendered surface into `text`
-  - the wrapper marks that exact payload as a pending programmatic native-edit suppression
-  - if Qt echoes one native `textEdited` for that same payload, the wrapper drops it instead of forwarding it to host
-    mutation controllers as if the user had typed it
+- The wrapper no longer keeps ordinary typing behind a native-`textEdited` vs deferred-fallback split.
+  It now treats `TextEdit.onTextChanged` as the primary committed-edit trigger whenever:
+  - the change is not inside `_programmaticTextSyncDepth`
+  - no IME preedit/composition session is active
+  This makes the host session track the visible editor buffer immediately instead of leaving the note-open snapshot as
+  the last authoritative text until a later fallback turn arrives.
 - Exposes a `textEdited(string text)` signal as a change event for the host controllers.
 - The host no longer persists that whole-document RichText payload directly for ordinary typing.
 - Instead, the typing controller treats the signal as a notification and derives the actual mutation from
@@ -90,8 +87,8 @@ plain `QtQuick.TextEdit` as the actual rendering and input engine.
   - `editorItem.inputItem`
   - `editorItem.inputItem.activeFocus`
   - `editorItem.positionToRectangle(...)`
-- Falls back to `TextEdit.onTextChanged` dispatch when a native `textEdited` signal is unavailable, while suppressing
-  programmatic text-sync loops.
+- Ordinary committed typing is now emitted directly from `TextEdit.onTextChanged`, while IME/preedit sessions still
+  defer dispatch until composition settles.
 - Programmatic text-sync now preserves the pre-sync logical cursor/selection range when the visible plain-text payload is
   unchanged and only the RichText markup wrapper changed (for example after inline formatting wraps).
 - Selection/formatting controllers should prefer these wrapper-level Qt helpers over re-walking nested `editorItem` /
@@ -123,8 +120,8 @@ plain `QtQuick.TextEdit` as the actual rendering and input engine.
 - Hangul IME composition must not leave split jamo behind after the committed syllable lands
 - Hangul IME composition and desktop RichText typing must not receive a programmatic `text` reinjection while
   preedit/composition is still active
-- The wrapper must prefer the native `TextEdit` edited-signal path over app-synthesized composition commit state when
-  the runtime provides that signal.
+- the host `editorSession` must not stay pinned to the note-open body snapshot after visible user typing has already
+  changed the nested `TextEdit` buffer
 - when `preferNativeInputHandling` is enabled, live typing/focus must not trigger whole-surface programmatic text
   reinjection before the native input session settles
 - wrapper-driven cursor restore must go through one cursor path only; the app must not fight itself by rewriting the

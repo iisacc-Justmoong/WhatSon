@@ -23,9 +23,10 @@ This controller exists to keep plain typing separate from inline-format applicat
   - logical line-start offsets
   - the logical-to-source offset table needed to splice `.wsnbody`
 - Reads the live edited plain text from `contentEditor.getText(0, length)`.
-- When the wrapper already has a richer edited surface snapshot than that plain-text getter can safely expose, the
-  controller can also normalize the whole editor surface back into RAW source through
-  `ContentsTextFormatRenderer.normalizeEditorSurfaceTextToSource(...)`.
+- The controller now treats that plain-text delta path as the only authoritative edit path for ordinary typing.
+  It no longer reverse-normalizes the whole RichText surface back into RAW source during same-note typing because the
+  rendered agenda/callout surface is intentionally lossy and can collapse the note back to the note-open session
+  snapshot.
 - Receives committed edit notifications only after the native `TextEdit` input-method session settles, so diffing is
   based on stable plain-text snapshots instead of transient Hangul/Japanese preedit fragments.
 - Programmatic RichText surface replacement from the host wrapper is no longer allowed to re-enter this path as a fake
@@ -102,17 +103,14 @@ This controller exists to keep plain typing separate from inline-format applicat
   This keeps line-count shrink cases (line-wrap collapse, newline deletion, paragraph merge) from leaving stale line
   starts behind in gutter/minimap geometry.
 - Delegates the final source splice to `ContentsTextFormatRenderer.applyPlainTextReplacementToSource(...)`.
-- If the incremental delta path produces no RAW mutation even though the edited surface already differs from the
-  current session source, the controller now falls back to that whole-surface normalization path instead of dropping the
-  edit turn.
 - List-continuation cursor restoration now also waits for IME preedit to finish and then moves the cursor through the
   wrapper-level cursor setter only.
   The controller no longer writes the same logical cursor offset into the wrapper, `editorItem`, and `inputItem`
   in parallel.
 
-This means ordinary typing no longer round-trips the entire RichText surface through
-`normalizeEditorSurfaceTextToSource(...)`, so fragment scaffold/comment markup from whole-document HTML export is no
-longer part of the normal typing path.
+This means ordinary typing stays on the logical plain-text/source-offset bridge and does not round-trip the rendered
+RichText surface through `normalizeEditorSurfaceTextToSource(...)`, so fragment scaffold/comment markup and lossy
+structured-block projection do not re-enter the normal typing path.
 
 ## Persistence Rules
 
@@ -164,8 +162,8 @@ longer part of the normal typing path.
 - Markdown-list continuation is now tracked as a documented behavior contract only; this repository no longer maintains
   a dedicated scripted test for it.
 - Typing ordinary letters should update raw `.wsnbody` without serializing the whole RichText document.
-- A committed delete/backspace turn must not disappear solely because the plain-text getter failed to produce a usable
-  incremental delta for that edit; the whole-surface normalization fallback must still push the session source forward.
+- A committed delete/backspace turn must update the session through the plain-text/source-offset bridge itself; the
+  controller must not depend on whole-surface RichText reserialization to rescue the edit.
 - The typing controller must not treat `selectedNoteBodyText` as authoritative unless the host also proves that the
   body payload belongs to the currently selected note.
 - Typing ordinary letters must not require a full `ContentsLogicalTextBridge` rebuild or full logical/source offset-map
@@ -176,6 +174,8 @@ longer part of the normal typing path.
   both growth and shrink directions; deleting a line break must reduce line count immediately without leaving stale
   extra gutter lines.
 - `Space`, `Enter`, `Backspace`, and selection replacement should update the correct source span.
+- Typing inside notes that already contain `<agenda>`, `<task>`, `<callout>`, or `</break>` must not rebuild RAW by
+  reserializing the rendered RichText surface, because that surface omits proprietary wrapper tags by design.
 - Direct typing must not leak fragment comment markup such as `<!--StartFragment-->`.
 - Typing literal `<bold>` text should persist as literal text, not as an executable inline tag.
 - Hangul IME composition must mutate `.wsnbody` only once per committed syllable/result, not once per preedit step.

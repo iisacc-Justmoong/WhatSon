@@ -118,10 +118,17 @@
   `ContentsEditorTypingController.handleEditorTextEdited()` before flushing the previously bound note.
   Combined with the bridge-side pending-body adoption path, this keeps large deletions from being dropped or replaced
   by a stale package read when the user briefly visits another note and comes back.
-- Desktop/mobile inline-editor `onTextEdited(...)` callbacks now also pass the current editor surface payload into
-  `ContentsEditorTypingController`.
-  When incremental plain-text delta extraction stalls, the controller can still rebuild RAW from that full surface and
-  keep the session source advancing instead of letting visible deletions die inside the editor widget.
+- Agenda/callout/break are currently treated as `.wsnbody` body tags first, not as an automatic editor-mode switch.
+  Desktop/mobile hosts therefore keep `structuredDocumentFlowEnabled: false` and stay on the legacy note body editor
+  even when the structured renderer can parse those tags.
+- `ContentsInlineFormatEditor.qml` now emits committed typing directly from the nested `TextEdit.onTextChanged` path
+  whenever the change is not programmatic and IME composition has already settled.
+  That keeps `ContentsEditorSession.editorText` moving with the visible buffer instead of leaving the note-open body
+  snapshot as the last authoritative session text.
+- `ContentsEditorTypingController.qml` no longer reverse-normalizes the whole rendered RichText surface back into RAW
+  during ordinary typing.
+  Agenda/callout rendering is intentionally lossy at the surface layer, so rebuilding source from that HTML could let
+  a stale note-open session snapshot overwrite later visible edits.
 - `ContentsEditorTypingController.qml` now rebuilds post-edit logical line-start offsets from the resulting logical
   text each mutation, fixing stale line-count growth where gutter/minimap lines could increase but not decrease after
   newline removal or line-wrap collapse.

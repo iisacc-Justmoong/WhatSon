@@ -347,66 +347,6 @@ QtObject {
         return controller.normalizePlainText(controller.contentEditor.getText(0, editorLength));
     }
 
-    function currentEditorSurfaceText() {
-        if (!controller.contentEditor)
-            return "";
-        const editorLength = controller.contentEditor.length !== undefined
-                ? Math.max(0, Number(controller.contentEditor.length) || 0)
-                : 0;
-        if (controller.contentEditor.getFormattedText !== undefined)
-            return String(controller.contentEditor.getFormattedText(0, editorLength) || "");
-        if (controller.contentEditor.text !== undefined)
-            return String(controller.contentEditor.text || "");
-        return "";
-    }
-
-    function normalizedSourceTextFromEditorSurface(surfaceText) {
-        if (!controller.textFormatRenderer
-                || controller.textFormatRenderer.normalizeEditorSurfaceTextToSource === undefined) {
-            return "";
-        }
-        const normalizedSurfaceText = surfaceText === undefined || surfaceText === null
-                ? ""
-                : String(surfaceText);
-        return String(controller.textFormatRenderer.normalizeEditorSurfaceTextToSource(normalizedSurfaceText) || "");
-    }
-
-    function commitWholeSurfaceSourceText(nextSourceText) {
-        if (!controller.view)
-            return false;
-
-        const normalizedNextSourceText = nextSourceText === undefined || nextSourceText === null
-                ? ""
-                : String(nextSourceText);
-        const currentSourceText = controller.view.editorText === undefined || controller.view.editorText === null
-                ? ""
-                : String(controller.view.editorText);
-        if (normalizedNextSourceText === currentSourceText)
-            return false;
-
-        if (controller.view.editorText !== normalizedNextSourceText)
-            controller.view.editorText = normalizedNextSourceText;
-        if (controller.view.commitDocumentPresentationRefresh !== undefined)
-            controller.view.commitDocumentPresentationRefresh();
-        else
-            controller.synchronizeLiveEditingStateFromPresentation();
-
-        if (controller.editorSession && controller.editorSession.markLocalEditorAuthority !== undefined)
-            controller.editorSession.markLocalEditorAuthority();
-        if (controller.shouldDeferImmediatePersistence()) {
-            controller.editorSession.scheduleEditorPersistence();
-            controller.view.editorTextEdited(normalizedNextSourceText);
-            return true;
-        }
-        const saved = controller.view.persistEditorTextImmediately !== undefined
-                ? !!controller.view.persistEditorTextImmediately(normalizedNextSourceText)
-                : false;
-        if (!saved && controller.editorSession && controller.editorSession.scheduleEditorPersistence !== undefined)
-            controller.editorSession.scheduleEditorPersistence();
-        controller.view.editorTextEdited(normalizedNextSourceText);
-        return true;
-    }
-
     function scheduleCursorPosition(position, attempt) {
         const targetPosition = Math.max(0, Math.floor(Number(position) || 0));
         const retryCount = Math.max(0, Math.floor(Number(attempt) || 0));
@@ -916,7 +856,7 @@ QtObject {
         controller.liveLogicalToSourceOffsets = nextOffsets;
     }
 
-    function handleEditorTextEdited(editedSurfaceText) {
+    function handleEditorTextEdited() {
         if (!controller.view
                 || !controller.view.hasSelectedNote
                 || controller.view.showDedicatedResourceViewer
@@ -932,22 +872,14 @@ QtObject {
         const currentSourceText = controller.view.editorText === undefined || controller.view.editorText === null
                 ? ""
                 : String(controller.view.editorText);
-        const resolvedSurfaceText = editedSurfaceText === undefined
-                ? controller.currentEditorSurfaceText()
-                : String(editedSurfaceText === null ? "" : editedSurfaceText);
-        const surfaceDerivedSourceText = controller.normalizedSourceTextFromEditorSurface(resolvedSurfaceText);
         const previousPlainText = controller.authoritativeSourcePlainText();
         const nextPlainText = controller.currentEditorPlainText();
         if (previousPlainText === nextPlainText) {
-            if (surfaceDerivedSourceText !== currentSourceText)
-                return controller.commitWholeSurfaceSourceText(surfaceDerivedSourceText);
             return false;
         }
 
         const replacementDelta = controller.computePlainTextReplacementDelta(previousPlainText, nextPlainText);
         if (!replacementDelta.valid) {
-            if (surfaceDerivedSourceText !== currentSourceText)
-                return controller.commitWholeSurfaceSourceText(surfaceDerivedSourceText);
             return false;
         }
         const continuedListInsertion = controller.continuedListInsertion(replacementDelta, currentSourceText, nextPlainText);
@@ -1049,8 +981,8 @@ QtObject {
                         sourceEnd);
         }
 
-        if (nextSourceText === currentSourceText && surfaceDerivedSourceText !== currentSourceText)
-            return controller.commitWholeSurfaceSourceText(surfaceDerivedSourceText);
+        if (nextSourceText === currentSourceText)
+            return false;
 
         if (controller.view.editorText !== nextSourceText)
             controller.view.editorText = nextSourceText;

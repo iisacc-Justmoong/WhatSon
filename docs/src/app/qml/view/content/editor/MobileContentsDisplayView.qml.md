@@ -4,10 +4,12 @@
 Mobile content editor host.
 
 ## Structured Document Flow
-- Mobile now mirrors the desktop structured-flow editor path for notes that contain `agenda`, `callout`, or `break`
-  blocks.
-- `ContentsStructuredDocumentFlow.qml` becomes the visible editor surface for those notes, while the legacy inline
-  editor remains the fallback for purely plain-text notes.
+- `agenda`, `callout`, and `break` remain `.wsnbody` body tags and no longer auto-promote the note into a separate
+  structured editor surface.
+- Mobile currently keeps `structuredDocumentFlowEnabled: false`, so shortcut insertion and note-open stay on the
+  legacy single-editor/body-overlay path even when `ContentsStructuredBlockRenderer` detects structured tags.
+- `ContentsStructuredDocumentFlow.qml` remains in the tree as an experimental surface, but it is not the default note
+  editing presentation.
 - Structured block rewrites route through `applyDocumentSourceMutation(...)` so mobile keeps the same RAW persistence
   contract as desktop, but they no longer force an immediate full legacy presentation rebuild while structured-flow
   editing remains active.
@@ -43,10 +45,9 @@ Mobile content editor host.
   `ContentsEditorTypingController.handleEditorTextEdited()` before deciding whether to flush the previously bound note.
   This keeps large deletions or other last-turn edits from being dropped just because the selection id changed before
   the session buffer had caught up.
-- Mobile inline-editor `onTextEdited(surfaceText)` now also forwards the edited surface payload into the typing
-  controller.
-  This gives the controller one whole-surface recovery path when incremental plain-text delta extraction fails to move
-  the session source even though the live RichText editor already changed.
+- Mobile inline-editor `onTextEdited()` now only notifies the typing controller to read the live `TextEdit` state.
+  The host no longer treats the rendered RichText surface payload itself as a recovery source for RAW note text, so
+  agenda/callout projection cannot push the note-open session snapshot back over newer visible edits.
 - When the selection bridge can already expose a buffered dirty body for the newly selected note, the mobile host now
   consumes that note-owned payload through the ordinary selection-sync path instead of waiting for a stale filesystem
   read to arrive first.

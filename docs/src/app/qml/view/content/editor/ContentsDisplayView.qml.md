@@ -4,13 +4,12 @@
 Desktop content editor host.
 
 ## Structured Document Flow
-- Structured notes now switch from the legacy overlay composition into `ContentsStructuredDocumentFlow.qml`.
-- The flow renderer is activated whenever `ContentsStructuredBlockRenderer` reports a non-text block
-  (`agenda`, `callout`, or `break`).
-- In that mode, agenda/callout cards are rendered as document-owned blocks inside the scroll flow instead of being
-  painted above/below a single `TextEdit`.
-- Desktop structured shortcuts (`Cmd+Opt+T`, `Cmd+Opt+C`, `Cmd+Shift+H`) now dispatch through the view so they can
-  target either the legacy single-editor path or the new structured flow path.
+- `agenda`, `callout`, and `break` remain `.wsnbody` body tags and no longer auto-promote the note into a separate
+  structured editor surface.
+- Desktop currently keeps `structuredDocumentFlowEnabled: false`, so shortcut insertion and note-open stay on the
+  legacy single-editor/body-overlay path even when `ContentsStructuredBlockRenderer` detects structured tags.
+- `ContentsStructuredDocumentFlow.qml` remains in the tree as an experimental surface, but it is not the default note
+  editing presentation.
 - Source persistence for block edits now runs through `applyDocumentSourceMutation(...)`, which updates the RAW body,
   marks local authority, optionally restores focus inside the reparsed block, and only forces a full legacy
   presentation rebuild when the note actually falls back out of structured-flow mode.
@@ -47,10 +46,9 @@ Desktop content editor host.
   `ContentsEditorTypingController.handleEditorTextEdited()` before deciding whether to flush the previously bound note.
   This keeps large deletions or other last-turn edits from being dropped just because the selection id changed before
   the session buffer had caught up.
-- Desktop inline-editor `onTextEdited(surfaceText)` now also forwards the edited surface payload into the typing
-  controller.
-  This gives the controller one whole-surface recovery path when incremental plain-text delta extraction fails to move
-  the session source even though the live RichText editor already changed.
+- Desktop inline-editor `onTextEdited()` now only notifies the typing controller to read the live `TextEdit` state.
+  The host no longer treats the rendered RichText surface payload itself as a recovery source for RAW note text, so
+  agenda/callout projection cannot push the note-open session snapshot back over newer visible edits.
 - When the selection bridge can already expose a buffered dirty body for the newly selected note, the desktop host now
   consumes that note-owned payload through the ordinary selection-sync path instead of waiting for a stale filesystem
   read to arrive first.

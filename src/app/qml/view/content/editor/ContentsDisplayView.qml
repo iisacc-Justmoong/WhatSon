@@ -263,16 +263,18 @@ Item {
         return entry && typeof entry === "object" ? entry : ({});
     }
     readonly property bool showCurrentLineMarker: contentsView.hasSelectedNote || contentsView.editorText.length > 0 || contentsView.editorInputFocused
+    readonly property bool structuredDocumentFlowEnabled: false
     readonly property bool legacyInlineEditorActive: !contentsView.showStructuredDocumentFlow
                                                      && !contentsView.showDedicatedResourceViewer
                                                      && !contentsView.showFormattedTextRenderer
     readonly property bool showDedicatedResourceViewer: contentsView.selectedNoteIsResourcePackage
     readonly property bool showEditorGutter: contentsView.legacyInlineEditorActive
     readonly property bool showFormattedTextRenderer: false
-    readonly property bool showStructuredDocumentFlow: (structuredBlockRenderer.hasRenderedBlocks
-                                                        || (structuredBlockRenderer.renderPending
-                                                            && contentsView.structuredDocumentFlowActivatedNoteId === contentsView.selectedNoteId
-                                                            && contentsView.selectedNoteId.length > 0))
+    readonly property bool showStructuredDocumentFlow: contentsView.structuredDocumentFlowEnabled
+                                                       && (structuredBlockRenderer.hasRenderedBlocks
+                                                           || (structuredBlockRenderer.renderPending
+                                                               && contentsView.structuredDocumentFlowActivatedNoteId === contentsView.selectedNoteId
+                                                               && contentsView.selectedNoteId.length > 0))
                                                        && !contentsView.showDedicatedResourceViewer
                                                        && !contentsView.showFormattedTextRenderer
     readonly property bool showPageEditorLayout: pagePrintLayoutRenderer.showPageEditorLayout
@@ -2113,8 +2115,8 @@ Item {
                                 contentsView.flushEditorStateAfterInputSettles(0);
                                 contentsView.scheduleDocumentPresentationRefresh(true);
                             }
-                            onTextEdited: function (surfaceText) {
-                                editorTypingController.handleEditorTextEdited(surfaceText);
+                            onTextEdited: function () {
+                                editorTypingController.handleEditorTextEdited();
                             }
                         }
                     }

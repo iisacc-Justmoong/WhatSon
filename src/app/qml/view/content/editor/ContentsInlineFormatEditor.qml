@@ -77,9 +77,7 @@ FocusScope {
     property bool _hasDeferredProgrammaticText: false
     property string _deferredProgrammaticText: ""
     property bool _fallbackTextEditedDispatchQueued: false
-    property int _nativeTextEditedSerial: 0
-    property bool _pendingProgrammaticNativeTextSuppression: false
-    property string _pendingProgrammaticNativeTextValue: ""
+    property int _fallbackTextEditedDispatchRevision: 0
 
     signal textEdited(string text)
 
@@ -298,8 +296,6 @@ FocusScope {
         const previousSelectionEnd = Number(textInput.selectionEnd);
         const hadSelection = isFinite(previousSelectionStart) && isFinite(previousSelectionEnd)
                 && previousSelectionEnd > previousSelectionStart;
-        control._pendingProgrammaticNativeTextSuppression = true;
-        control._pendingProgrammaticNativeTextValue = normalizedText;
         control._programmaticTextSyncDepth += 1;
         textInput.text = normalizedText;
         if (hadSelection && previousSelectionEnd > previousSelectionStart) {
@@ -321,11 +317,12 @@ FocusScope {
             return;
         if (control._fallbackTextEditedDispatchQueued)
             return;
-        const scheduledNativeTextEditedSerial = control._nativeTextEditedSerial;
+        const scheduledRevision = control._fallbackTextEditedDispatchRevision + 1;
+        control._fallbackTextEditedDispatchRevision = scheduledRevision;
         control._fallbackTextEditedDispatchQueued = true;
         Qt.callLater(function () {
             control._fallbackTextEditedDispatchQueued = false;
-            if (control._nativeTextEditedSerial !== scheduledNativeTextEditedSerial)
+            if (control._fallbackTextEditedDispatchRevision !== scheduledRevision)
                 return;
             control.dispatchCommittedTextEditedIfReady();
         });
@@ -484,8 +481,15 @@ FocusScope {
                     control.notifyInputMethod(control.inputMethodSelectionQueryMask());
                 }
                 onTextChanged: {
-                    control.scheduleCommittedTextEditedDispatch();
                     control.notifyInputMethod(control.inputMethodSelectionQueryMask());
+                    if (control._programmaticTextSyncDepth > 0)
+                        return;
+                    if (control.inputMethodSessionActive()) {
+                        control.scheduleCommittedTextEditedDispatch();
+                        return;
+                    }
+                    control._fallbackTextEditedDispatchRevision += 1;
+                    control.dispatchCommittedTextEditedIfReady();
                 }
                 Keys.onPressed: function (event) {
                     if (control.shortcutKeyPressHandler
@@ -568,22 +572,6 @@ FocusScope {
                 control.scheduleCommittedTextEditedDispatch();
                 control.flushDeferredProgrammaticText(false);
             }
-        }
-
-        function onTextEdited() {
-            const currentText = textInput.text === undefined || textInput.text === null
-                    ? ""
-                    : String(textInput.text);
-            if (control._pendingProgrammaticNativeTextSuppression
-                    && currentText === control._pendingProgrammaticNativeTextValue) {
-                control._pendingProgrammaticNativeTextSuppression = false;
-                control._pendingProgrammaticNativeTextValue = "";
-                return;
-            }
-            control._pendingProgrammaticNativeTextSuppression = false;
-            control._pendingProgrammaticNativeTextValue = "";
-            control._nativeTextEditedSerial += 1;
-            control.dispatchCommittedTextEditedIfReady();
         }
 
         ignoreUnknownSignals: true
