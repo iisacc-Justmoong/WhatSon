@@ -34,6 +34,6 @@
 
 ## Current Domain Notes
 - `WhatSonStructuredTagLinter` owns proprietary body-tag lint/canonicalization for `break`, `agenda`, `task`, and `callout`.
-- `ContentsStructuredTagValidator` consumes parser/renderer correction signals and rewrites note files directly when a
-  safe canonical fix is available.
+- `ContentsStructuredTagValidator` remains available as an opt-in direct-correction helper, but editor hosts no longer
+  auto-wire parser/renderer suggestions into direct note writes during ordinary note-open or typing.
 - The validator layer now serves both filesystem package normalization and note-body structured-tag normalization.

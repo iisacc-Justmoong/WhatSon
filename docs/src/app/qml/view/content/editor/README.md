@@ -114,6 +114,10 @@
   - desktop/mobile hosts defer `requestSyncEditorTextFromSelection(...)` until that body read completes
   - a large note-open therefore no longer requires the note-list model, the selection bridge, and the editor session to
     all duplicate the same full body text at once
+- Desktop/mobile note transitions now also project any still-live `TextEdit` delta through
+  `ContentsEditorTypingController.handleEditorTextEdited()` before flushing the previously bound note.
+  Combined with the bridge-side pending-body adoption path, this keeps large deletions from being dropped or replaced
+  by a stale package read when the user briefly visits another note and comes back.
 - `ContentsEditorTypingController.qml` now rebuilds post-edit logical line-start offsets from the resulting logical
   text each mutation, fixing stale line-count growth where gutter/minimap lines could increase but not decrease after
   newline removal or line-wrap collapse.
@@ -187,8 +191,10 @@
 - Desktop/mobile hosts now also route visibility re-entry through that same queued selection-sync helper, so reopening
   the editor surface does not schedule a second parallel note-open refresh path next to the selected-note handlers.
 - Desktop/mobile hosts now also bind `ContentsStructuredBlockRenderer.backgroundRefreshEnabled` to the note-open/model
-  sync window, not only to the unfocused state. Structured notes therefore keep the document-flow surface mounted
-  through `renderPending` while the expensive agenda/callout parse + canonicalization pass runs off the UI thread.
+  sync window, not only to the unfocused state.
+- Newly selected notes stay on the legacy editor/session path until the first settled structured render confirms block
+  ownership, then later same-note async reparses keep the structured surface mounted while agenda/callout parsing runs
+  off the UI thread.
 - Structured shortcut insertion now also resolves out of existing proprietary wrappers before writing:
   - invoking agenda/callout insertion while the cursor is already inside an existing agenda/callout moves the new RAW
     block to the enclosing wrapper end first

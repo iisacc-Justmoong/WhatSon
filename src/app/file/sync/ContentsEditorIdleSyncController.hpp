@@ -36,6 +36,7 @@ public:
     Q_INVOKABLE bool persistEditorTextForNote(const QString& noteId, const QString& text);
     Q_INVOKABLE bool stageEditorTextForIdleSync(const QString& noteId, const QString& text);
     Q_INVOKABLE bool flushEditorTextForNote(const QString& noteId, const QString& text);
+    bool pendingEditorTextForNote(const QString& noteId, QString* text = nullptr) const;
     quint64 loadNoteBodyTextForNote(const QString& noteId);
     bool reconcileViewSessionAndRefreshSnapshotForNote(
         const QString& noteId,
@@ -74,6 +75,13 @@ private slots:
         const QString& errorMessage);
 
 private:
+    struct BufferedSnapshot final
+    {
+        QString text;
+        QString noteDirectoryPath;
+        bool directPersistenceReady = false;
+    };
+
     bool stageEditorSnapshot(const QString& noteId, const QString& text, bool requestImmediateFetch);
     bool enqueueNextBufferedPersistenceIfNeeded();
     void ensureFetchTimerRunning();
@@ -82,7 +90,7 @@ private:
 
     QPointer<ContentsNoteManagementCoordinator> m_noteManagementCoordinator;
     QTimer m_fetchTimer;
-    QHash<QString, QString> m_bufferedTextByNote;
+    QHash<QString, BufferedSnapshot> m_bufferedSnapshotsByNote;
     QHash<QString, QString> m_lastPersistedTextByNote;
     QStringList m_dirtyNoteOrder;
     QString m_inFlightNoteId;

@@ -24,6 +24,13 @@ public:
     bool directPersistenceAvailable() const noexcept;
 
     bool persistEditorTextForNote(const QString& noteId, const QString& text);
+    bool persistEditorTextForNoteAtPath(
+        const QString& noteId,
+        const QString& noteDirectoryPath,
+        const QString& text);
+    bool captureDirectPersistenceContextForNote(
+        const QString& noteId,
+        QString* noteDirectoryPath) const;
     quint64 loadNoteBodyTextForNote(const QString& noteId);
     bool reconcileViewSessionAndRefreshSnapshotForNote(
         const QString& noteId,

@@ -329,7 +329,11 @@ QtObject {
         }
         if (controller.textMetricsBridge && controller.textMetricsBridge.logicalText !== undefined)
             return controller.normalizePlainText(controller.textMetricsBridge.logicalText);
-        if (controller.view && controller.view.selectedNoteBodyText !== undefined)
+        if (controller.view
+                && controller.view.selectedNoteBodyText !== undefined
+                && controller.view.selectedNoteBodyNoteId !== undefined
+                && controller.view.selectedNoteId !== undefined
+                && String(controller.view.selectedNoteBodyNoteId) === String(controller.view.selectedNoteId))
             return controller.normalizePlainText(controller.view.selectedNoteBodyText);
         return "";
     }

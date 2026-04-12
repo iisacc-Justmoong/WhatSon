@@ -1,7 +1,7 @@
 # `src/app/file/validator/ContentsStructuredTagValidator.hpp`
 
 ## Role
-`ContentsStructuredTagValidator` is the QML-facing structured-tag correction authority.
+`ContentsStructuredTagValidator` is an opt-in QML-facing structured-tag direct-correction helper.
 
 ## Public Contract
 - `contentViewModel`
@@ -10,6 +10,7 @@
   - Identifies which note the validator is allowed to rewrite.
 - `correctionAuthorityEnabled`
   - Gates whether parser-side correction suggestions may trigger direct file writes.
+  - Defaults to `false` so editor hosts do not implicitly open a second persistence lane during note-open or typing.
 - `lastCorrectionVerification`
   - Exposes the last parser/renderer verification payload that led to a correction attempt.
 - `lastCorrectedSourceText`

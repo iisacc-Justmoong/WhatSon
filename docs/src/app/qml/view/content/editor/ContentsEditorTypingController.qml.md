@@ -14,6 +14,10 @@ This controller exists to keep plain typing separate from inline-format applicat
 - Seeds its authoritative plain-text snapshot and logical-to-source offset table from
   `ContentsLogicalTextBridge.logicalText` plus `logicalToSourceOffsets()` only when the host editor view commits a
   new `documentPresentationSourceText` snapshot.
+- When it must fall back to `view.selectedNoteBodyText`, it now only accepts that payload if
+  `view.selectedNoteBodyNoteId == view.selectedNoteId`.
+  The typing controller therefore no longer treats a stray selected-body string as authoritative plain text without an
+  explicit ownership match.
 - Between those presentation commits, it keeps an incremental live cache of:
   - the previous authoritative plain text
   - logical line-start offsets
@@ -154,6 +158,8 @@ longer part of the normal typing path.
 - Markdown-list continuation is now tracked as a documented behavior contract only; this repository no longer maintains
   a dedicated scripted test for it.
 - Typing ordinary letters should update raw `.wsnbody` without serializing the whole RichText document.
+- The typing controller must not treat `selectedNoteBodyText` as authoritative unless the host also proves that the
+  body payload belongs to the currently selected note.
 - Typing ordinary letters must not require a full `ContentsLogicalTextBridge` rebuild or full logical/source offset-map
   regeneration on every committed keystroke.
 - Typing ordinary letters should keep `ContentsLogicalTextBridge.logicalLineCount`, line-start offsets, and

@@ -16,7 +16,7 @@
 - `pendingBodySave` now only tracks whether the currently bound editor buffer still has a staged-but-not-yet-confirmed
   filesystem persistence result for that same note/text pair.
 - `scheduleEditorPersistence()` stages the latest editor snapshot immediately into the bridge's buffered fetch-sync
-  boundary.
+  boundary and now returns whether that staging request was actually accepted.
 - During that staging turn, session now treats `date="yyyy-mm-dd"` in `<agenda ...>` as a modified-time placeholder
   and rewrites it to the current local `YYYY-MM-DD` token before enqueueing persistence.
 - That placeholder normalization is delegated to `ContentsAgendaBackend.normalizeAgendaModifiedDate(...)`.
@@ -25,8 +25,15 @@
   - `<callout></callout>` -> `<callout> </callout>`
   - this keeps existing empty agenda/callout tags editable through logical/source offset mapping.
 - The session no longer blocks note swaps on an immediate save acceptance path.
-- `flushPendingEditorText()` is now only a best-effort final fetch request; it is no longer part of ordinary note-switch
-  control flow.
+- `flushPendingEditorText()` remains a best-effort immediate fetch request and is now also reused by note-switch
+  control flow when the current note still has a pending body save.
+- If a note switch arrives while `pendingBodySave` is still true, `requestSyncEditorTextFromSelection(...)` now issues
+  `flushPendingEditorText()` first and refuses to bind the next note unless that current-note snapshot was accepted into
+  the persistence queue.
+- `requestSyncEditorTextFromSelection(...)` now also refuses to bind incoming model text when the supplied body owner
+  note id does not match the selected note id.
+- That entrypoint no longer falls back to any session-stored selected note id when callers omit one.
+  Callers must pass explicit note ownership now.
 
 ## QML Surface Snapshot
 - Root type: `Item`
@@ -61,11 +68,16 @@
   - the current local note body is still pending persistence completion
 - `requestSyncEditorTextFromSelection(...)` now short-circuits same-note no-op sync requests and blocks same-note
   mismatched model snapshot application unless `shouldAcceptModelBodyText(...)` allows it.
+- The same entrypoint also now rejects body payloads whose ownership note id does not match the selected note.
+  The session therefore no longer has to guess whether a given body string belongs to the note the user just picked.
+- Because the session no longer carries an alternate selected-note fallback for that API, a missing note id is treated
+  as a hard rejection instead of being silently rebound to whatever note happened to be current.
 - `syncEditorTextFromSelection(...)` now arms `syncingEditorTextFromModel` only when the body text actually changes, so
   same-note same-text sync turns no longer open a short-lived guard window.
 - Note-selection changes now enter through `requestSyncEditorTextFromSelection(...)`. When the user leaves a note with a
   pending staged body, the session simply re-stages the latest current-note text and then binds the next note
-  immediately. The previous note stays buffered in the fetch-sync controller instead of blocking the UI.
+  immediately once that staging request is accepted. The previous note stays buffered in the fetch-sync controller
+  instead of blocking the UI.
 - Same-note model echoes that exactly match the current editor buffer now leave `pendingBodySave` untouched; only an
   actual success completion for that same note/text pair clears it.
 
@@ -83,6 +95,15 @@
   `editorText`.
 - Non-changing same-note model snapshots must not arm a temporary model-sync guard that can suppress the next user
   `textEdited` processing turn.
+- A note switch must not clear `pendingBodySave` and bind the next note when the current-note staging request was not
+  accepted by the persistence bridge.
+- Leaving a note with pending edits should attempt the immediate fetch path before the new note binds, reducing the
+  window where the old note exists only in the in-memory buffer.
+- The session must not bind model text for note `B` unless the upstream bridge explicitly proves that the incoming body
+  payload also belongs to note `B`.
+- The session must not infer a note id for model-sync requests from prior selection state when the caller omitted it.
+- If filesystem/body lookup cannot provide note-owned text for the current selection, the session must still be able to
+  bind an explicit empty-body fallback for that selected note.
 - If the editor buffer contains `<agenda date="yyyy-mm-dd">`, the first local persistence-staging turn after
   modification must rewrite that placeholder to current `YYYY-MM-DD`.
 - If model/body sync includes empty `<task>` or empty `<callout>` blocks, editor session normalization must expose

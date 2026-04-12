@@ -115,6 +115,8 @@ It also owns keyboard-driven markdown block toggles for the list types the rende
 - Immediate editor mutations no longer bypass the fetch-sync boundary.
 - `persistEditorTextImmediately(...)` now only stages the current editor buffer through `ContentsEditorSession`, which
   forwards it into the buffered fetch-sync controller under `file/sync`.
+- That helper now returns the actual queue-acceptance result from `ContentsEditorSession.scheduleEditorPersistence()`
+  instead of always reporting success.
 - The typing controller still uses that boolean to decide whether one staging request already succeeded for the current
   turn.
 - The save pipeline canonicalizes the edited RichText surface back into `.wsnbody` source tags, so shortcut/context
@@ -179,5 +181,7 @@ It also owns keyboard-driven markdown block toggles for the list types the rende
   structural list/heading prefixes intact after the source rewrite.
 - Immediate typing saves must return `true` once the snapshot is accepted into the buffered fetch-sync stage so the
   typing controller does not schedule a redundant second staging request on the same turn.
+- Immediate persistence helpers must not report success when the staging request was rejected, because selection or
+  correction flows may otherwise continue as if the current note snapshot were safe.
 - A host with `preferNativeInputHandling` enabled must not be re-forced into `TextEdit.RichText` by the selection
   controller after note changes, surface syncs, or shortcut handling.

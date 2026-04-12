@@ -33,15 +33,9 @@ Item {
             editorSession.pendingBodySave = false;
             return false;
         }
-        if (!editorSession.selectionBridge)
-            return false;
         const rawBodyText = editorSession.editorText === undefined || editorSession.editorText === null ? "" : String(editorSession.editorText);
         const bodyText = editorSession.normalizeModifiedEditorText(rawBodyText);
-        if (editorSession.selectionBridge.flushEditorTextForNote !== undefined)
-            return !!editorSession.selectionBridge.flushEditorTextForNote(noteId, bodyText);
-        if (editorSession.selectionBridge.stageEditorTextForIdleSync !== undefined)
-            return !!editorSession.selectionBridge.stageEditorTextForIdleSync(noteId, bodyText);
-        return false;
+        return editorSession.enqueueEditorPersistence(noteId, bodyText, true);
     }
     function currentTimestampMs() {
         return Date.now();
@@ -90,13 +84,17 @@ Item {
             return true;
         return elapsedMs < thresholdMs;
     }
-    function requestSyncEditorTextFromSelection(noteId, text) {
+    function requestSyncEditorTextFromSelection(noteId, text, bodyNoteId) {
         const nextNoteId = noteId === undefined || noteId === null ? "" : String(noteId);
+        const nextBodyNoteId = bodyNoteId === undefined || bodyNoteId === null ? "" : String(bodyNoteId);
         const nextText = editorSession.normalizedEditorText(text);
         const currentNoteId = editorSession.editorBoundNoteId === undefined || editorSession.editorBoundNoteId === null ? "" : String(editorSession.editorBoundNoteId);
         const currentText = editorSession.editorText === undefined || editorSession.editorText === null ? "" : String(editorSession.editorText);
+        if (nextNoteId.length === 0 || nextBodyNoteId !== nextNoteId)
+            return false;
         if (currentNoteId !== nextNoteId && editorSession.pendingBodySave) {
-            editorSession.scheduleEditorPersistence();
+            if (!editorSession.flushPendingEditorText())
+                return false;
         }
         if (currentNoteId === nextNoteId && currentText === nextText)
             return false;
@@ -116,22 +114,30 @@ Item {
         editorSession.localEditorAuthority = true;
         editorSession.lastLocalEditTimestampMs = editorSession.currentTimestampMs();
     }
+    function enqueueEditorPersistence(noteId, bodyText, immediateFlush) {
+        const normalizedNoteId = noteId === undefined || noteId === null ? "" : String(noteId).trim();
+        if (normalizedNoteId.length === 0)
+            return false;
+        if (!editorSession.selectionBridge)
+            return false;
+        if (immediateFlush && editorSession.selectionBridge.flushEditorTextForNote !== undefined)
+            return !!editorSession.selectionBridge.flushEditorTextForNote(normalizedNoteId, bodyText);
+        if (editorSession.selectionBridge.stageEditorTextForIdleSync !== undefined)
+            return !!editorSession.selectionBridge.stageEditorTextForIdleSync(normalizedNoteId, bodyText);
+        return false;
+    }
     function scheduleEditorPersistence() {
         const noteId = editorSession.editorBoundNoteId === undefined || editorSession.editorBoundNoteId === null
                 ? ""
                 : String(editorSession.editorBoundNoteId).trim();
         if (noteId.length === 0) {
             editorSession.pendingBodySave = false;
-            return;
+            return false;
         }
         editorSession.pendingBodySave = true;
-        if (!editorSession.selectionBridge
-                || editorSession.selectionBridge.stageEditorTextForIdleSync === undefined) {
-            return;
-        }
         const rawBodyText = editorSession.editorText === undefined || editorSession.editorText === null ? "" : String(editorSession.editorText);
         const bodyText = editorSession.normalizeModifiedEditorText(rawBodyText);
-        editorSession.selectionBridge.stageEditorTextForIdleSync(noteId, bodyText);
+        return editorSession.enqueueEditorPersistence(noteId, bodyText, false);
     }
     function shouldAcceptModelBodyText(noteId, text) {
         const nextNoteId = noteId === undefined || noteId === null ? "" : String(noteId);

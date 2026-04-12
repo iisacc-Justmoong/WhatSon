@@ -27,6 +27,7 @@ class ContentsEditorSelectionBridge : public QObject
             directPersistenceContractAvailable READ directPersistenceAvailable
                 NOTIFY contentPersistenceContractAvailableChanged)
     Q_PROPERTY(QString selectedNoteId READ selectedNoteId NOTIFY selectedNoteIdChanged)
+    Q_PROPERTY(QString selectedNoteBodyNoteId READ selectedNoteBodyNoteId NOTIFY selectedNoteBodyNoteIdChanged)
     Q_PROPERTY(QString selectedNoteBodyText READ selectedNoteBodyText NOTIFY selectedNoteBodyTextChanged)
     Q_PROPERTY(bool selectedNoteBodyLoading READ selectedNoteBodyLoading NOTIFY selectedNoteBodyLoadingChanged)
     Q_PROPERTY(int visibleNoteCount READ visibleNoteCount NOTIFY visibleNoteCountChanged)
@@ -46,6 +47,7 @@ public:
     bool contentPersistenceContractAvailable() const noexcept;
     bool directPersistenceAvailable() const noexcept;
     QString selectedNoteId() const;
+    QString selectedNoteBodyNoteId() const;
     QString selectedNoteBodyText() const;
     bool selectedNoteBodyLoading() const noexcept;
     int visibleNoteCount() const noexcept;
@@ -77,6 +79,7 @@ signals:
     void noteCountContractAvailableChanged();
     void contentPersistenceContractAvailableChanged();
     void selectedNoteIdChanged();
+    void selectedNoteBodyNoteIdChanged();
     void selectedNoteBodyTextChanged();
     void selectedNoteBodyLoadingChanged();
     void visibleNoteCountChanged();
@@ -103,7 +106,8 @@ private:
     static bool hasReadableProperty(const QObject* object, const char* propertyName);
     static QString readStringProperty(const QObject* object, const char* propertyName);
     static int readIntProperty(const QObject* object, const char* propertyName);
-    void setSelectedNoteBodyState(QString bodyText, bool loading);
+    bool adoptPendingEditorBodyText(const QString& noteId);
+    void setSelectedNoteBodyState(QString noteId, QString bodyText, bool loading);
     void startSelectedNoteBodyLoad(const QString& noteId, bool clearCachedBody);
     void scheduleNoteSelectionRefresh();
     void refreshNoteSelectionState();
@@ -117,7 +121,9 @@ private:
     bool m_noteSelectionContractAvailable = false;
     bool m_noteCountContractAvailable = false;
     bool m_noteSelectionRefreshQueued = false;
+    bool m_noteSelectionRefreshRequiresRebind = false;
     QString m_selectedNoteId;
+    QString m_selectedNoteBodyNoteId;
     QString m_selectedNoteBodyText;
     QString m_selectedNoteBodySnapshotNoteId;
     quint64 m_selectedNoteBodyRequestSequence = 0;

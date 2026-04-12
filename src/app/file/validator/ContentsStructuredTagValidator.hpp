@@ -107,7 +107,7 @@ private:
 
     QPointer<QObject> m_contentViewModel;
     QString m_noteId;
-    bool m_correctionAuthorityEnabled = true;
+    bool m_correctionAuthorityEnabled = false;
     QVariantMap m_lastCorrectionVerification;
     QString m_lastCorrectedSourceText;
     QString m_lastCorrectionError;

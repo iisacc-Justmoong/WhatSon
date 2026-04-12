@@ -10,6 +10,10 @@
   `file/sync/ContentsEditorIdleSyncController`.
 - Direct body persistence still uses `WhatSonLocalNoteFileStore`, but that worker request is now just one request kind
   inside the coordinator.
+- The coordinator now also exposes one direct-context capture path for the upstream idle-sync controller:
+  - resolve `noteDirectoryPathForNoteId(noteId)` while the correct content view-model is still bound
+  - allow a later buffered fetch turn to enqueue `DirectPersistBody` with that frozen note-directory path
+  - avoid re-routing stale buffered editor text through whichever hierarchy view-model happens to be active later
 - Non-editing maintenance work also lives here:
   - `WhatSonNoteFileStatSupport::incrementOpenCountForNoteHeader(...)`
   - `WhatSonNoteFileStatSupport::refreshTrackedStatisticsForNote(...)`
@@ -57,6 +61,8 @@
 - A failed tracked-stat refresh or open-count update must not break the editor save completion signal for the body write
   that already finished.
 - Destroying the bound content view-model during an in-flight request must not crash queued completion handling.
+- A buffered editor save that already captured its direct note-directory path must not be lost merely because the active
+  content view-model changed before the next fetch turn.
 - Fallback/direct body persistence for a Tags-selected note must still cause the active tags hierarchy view-model to
   re-read `Tags.wstags`, so newly promoted `#label` tags appear in the hierarchy without a manual app restart.
 - Session/filesystem reconciliation must return success without reload when RAW already matches the current view

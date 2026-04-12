@@ -91,6 +91,53 @@ bool ContentsEditorIdleSyncController::flushEditorTextForNote(const QString& not
     return stageEditorSnapshot(noteId, text, true);
 }
 
+bool ContentsEditorIdleSyncController::pendingEditorTextForNote(
+    const QString& noteId,
+    QString* text) const
+{
+    if (text != nullptr)
+    {
+        text->clear();
+    }
+
+    const QString normalizedNoteId = noteId.trimmed();
+    if (normalizedNoteId.isEmpty())
+    {
+        return false;
+    }
+
+    if (m_persistenceInFlight && m_inFlightNoteId == normalizedNoteId)
+    {
+        if (text != nullptr)
+        {
+            *text = m_inFlightText;
+        }
+        return true;
+    }
+
+    const auto bufferedSnapshotIt = m_bufferedSnapshotsByNote.constFind(normalizedNoteId);
+    if (bufferedSnapshotIt == m_bufferedSnapshotsByNote.cend())
+    {
+        return false;
+    }
+
+    const BufferedSnapshot& bufferedSnapshot = bufferedSnapshotIt.value();
+    const bool pendingPersistence =
+        m_dirtyNoteOrder.contains(normalizedNoteId)
+        || !m_lastPersistedTextByNote.contains(normalizedNoteId)
+        || m_lastPersistedTextByNote.value(normalizedNoteId) != bufferedSnapshot.text;
+    if (!pendingPersistence)
+    {
+        return false;
+    }
+
+    if (text != nullptr)
+    {
+        *text = bufferedSnapshot.text;
+    }
+    return true;
+}
+
 quint64 ContentsEditorIdleSyncController::loadNoteBodyTextForNote(const QString& noteId)
 {
     if (m_noteManagementCoordinator == nullptr)
@@ -163,7 +210,7 @@ void ContentsEditorIdleSyncController::handlePersistenceFinished(
     if (success)
     {
         m_lastPersistedTextByNote.insert(normalizedNoteId, completedText);
-        if (m_bufferedTextByNote.value(normalizedNoteId) == completedText)
+        if (m_bufferedSnapshotsByNote.value(normalizedNoteId).text == completedText)
         {
             removeNoteFromDirtyOrder(normalizedNoteId);
         }
@@ -213,7 +260,20 @@ bool ContentsEditorIdleSyncController::stageEditorSnapshot(
     }
 
     const QString normalizedText = text;
-    m_bufferedTextByNote.insert(normalizedNoteId, normalizedText);
+    BufferedSnapshot bufferedSnapshot;
+    bufferedSnapshot.text = normalizedText;
+    if (m_noteManagementCoordinator != nullptr)
+    {
+        QString noteDirectoryPath;
+        if (m_noteManagementCoordinator->captureDirectPersistenceContextForNote(
+                normalizedNoteId,
+                &noteDirectoryPath))
+        {
+            bufferedSnapshot.noteDirectoryPath = noteDirectoryPath.trimmed();
+            bufferedSnapshot.directPersistenceReady = !bufferedSnapshot.noteDirectoryPath.isEmpty();
+        }
+    }
+    m_bufferedSnapshotsByNote.insert(normalizedNoteId, bufferedSnapshot);
 
     const bool matchesInFlight =
         m_persistenceInFlight
@@ -258,19 +318,15 @@ bool ContentsEditorIdleSyncController::enqueueNextBufferedPersistenceIfNeeded()
         return true;
     }
 
-    if (!contentPersistenceContractAvailable())
-    {
-        ensureFetchTimerRunning();
-        return true;
-    }
-
     QString candidateNoteId;
     QString candidateText;
+    BufferedSnapshot candidateSnapshot;
     const int dirtyNoteCount = m_dirtyNoteOrder.size();
     for (int index = 0; index < dirtyNoteCount; ++index)
     {
         const QString currentNoteId = m_dirtyNoteOrder.takeFirst();
-        const QString currentText = m_bufferedTextByNote.value(currentNoteId);
+        const BufferedSnapshot currentSnapshot = m_bufferedSnapshotsByNote.value(currentNoteId);
+        const QString currentText = currentSnapshot.text;
         const bool alreadyPersisted =
             m_lastPersistedTextByNote.contains(currentNoteId)
             && m_lastPersistedTextByNote.value(currentNoteId) == currentText;
@@ -281,6 +337,7 @@ bool ContentsEditorIdleSyncController::enqueueNextBufferedPersistenceIfNeeded()
 
         candidateNoteId = currentNoteId;
         candidateText = currentText;
+        candidateSnapshot = currentSnapshot;
         m_dirtyNoteOrder.append(currentNoteId);
         break;
     }
@@ -291,7 +348,30 @@ bool ContentsEditorIdleSyncController::enqueueNextBufferedPersistenceIfNeeded()
         return true;
     }
 
-    if (!m_noteManagementCoordinator->persistEditorTextForNote(candidateNoteId, candidateText))
+    if (!candidateSnapshot.directPersistenceReady
+        && !contentPersistenceContractAvailable())
+    {
+        ensureFetchTimerRunning();
+        return true;
+    }
+
+    bool accepted = false;
+    if (candidateSnapshot.directPersistenceReady
+        && !candidateSnapshot.noteDirectoryPath.isEmpty())
+    {
+        accepted = m_noteManagementCoordinator->persistEditorTextForNoteAtPath(
+            candidateNoteId,
+            candidateSnapshot.noteDirectoryPath,
+            candidateText);
+    }
+    if (!accepted)
+    {
+        accepted = m_noteManagementCoordinator->persistEditorTextForNote(
+            candidateNoteId,
+            candidateText);
+    }
+
+    if (!accepted)
     {
         WhatSon::Debug::traceSelf(
             this,

@@ -29,19 +29,19 @@ structured document-flow editor changes.
   should appear, and the editor must not instantiate legacy structured overlays in parallel with the plain-text path.
 - Opening a long structured note must populate the document-native block flow without one large synchronous stall before
   the first editor frame becomes interactive.
-- While that first structured render is still pending, the host must keep the structured-flow surface mounted instead of
-  waking the legacy hidden full-document editor again.
+- While the first structured render for a newly selected note is still pending, note-open must stay on the legacy
+  editor/session path instead of switching into the structured host before block ownership is known.
+- Once a selected note has already activated structured-flow mode, later async reparses must keep that structured
+  surface mounted instead of bouncing back through the legacy editor.
 - While structured-flow mode remains active, the fallback full-document inline editor must stay unloaded rather than
   remaining mounted off-screen behind `visible: false`.
-- If a structured correction is applied during note-open stabilization, the selected hierarchy must not
-  rebuild the same note list twice in immediate succession when it already supports in-memory
-  `applyPersistedBodyStateForNote(...)`.
 - One note-open transition must not cause duplicate editor host selection sync passes just because the note-list bridge
   emitted both note-id and body-text updates in the same event loop turn.
 - Showing the editor again for the already-selected note must reuse the same queued note-open sync path rather than
   scheduling a second independent minimap/presentation/gutter refresh sequence.
 - One note-list rebuild must not trigger two immediate visible list snapshot refreshes from `modelReset` plus a second
   `itemsChanged()`-driven snapshot apply.
+- Parser-side structured correction suggestions must not trigger direct note writes during ordinary note-open or typing.
 
 ## Large Note Lazy Load
 - Selecting a very large note must not freeze the app before the editor becomes interactive.
@@ -53,3 +53,18 @@ structured document-flow editor changes.
 - When the selected note is refreshed in place after reconcile or metadata reload, the host may keep the existing body
   visible while the replacement body is fetched asynchronously.
 - If two lazy body reads for the same selected note overlap, only the newest request may update the selected note body.
+- If a same-note lazy body read fails, the current selected-note body must remain intact instead of being replaced by an
+  empty snapshot.
+- If the current note still has `pendingBodySave`, a note switch must not proceed as if that save succeeded unless the
+  persistence bridge accepted the staged snapshot first.
+- Leaving a note with `pendingBodySave` should prefer the immediate fetch path rather than only a deferred stage request.
+- A buffered editor save must remain attached to the note directory that was resolved when the edit was staged, even if
+  the active hierarchy/content-view-model changes before the next fetch turn.
+- Replacing `noteListModel` and `contentViewModel` in the same event-loop turn must trigger only one settled selection
+  refresh/rebind pass.
+- The editor session must always know:
+  - which note the user currently selected
+  - which note owns the currently exposed body payload
+  - whether an empty body is an explicit fallback for that selected note rather than a stale carry-over
+- Editor/bridge APIs must not replace omitted `noteId` arguments with whichever note happens to be selected at that
+  moment.

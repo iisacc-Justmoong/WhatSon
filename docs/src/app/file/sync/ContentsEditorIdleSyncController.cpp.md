@@ -7,13 +7,17 @@
 ## Runtime Notes
 
 - The implementation now keeps all editor-owned persistence state on the main-thread controller:
-  - `m_bufferedTextByNote`: latest editor snapshot per note
+  - `m_bufferedSnapshotsByNote`: latest editor snapshot per note, including any direct note-directory context captured
+    at staging time
   - `m_lastPersistedTextByNote`: latest successfully persisted payload per note
   - `m_dirtyNoteOrder`: round-robin fetch order for dirty notes
   - `m_inFlightNoteId` / `m_inFlightText`: the async request currently owned by the downstream coordinator
 - A recurring `1000ms` `QTimer` acts as the fetch clock.
 - Each fetch turn asks for the newest buffered snapshot of one dirty note and forwards it into
   `ContentsNoteManagementCoordinator::persistEditorTextForNote(...)`.
+- If that buffered snapshot already carries a direct note-directory path, the fetch turn now prefers
+  `persistEditorTextForNoteAtPath(...)` so the delayed save stays attached to the original note package even after a
+  hierarchy/content-view-model transition.
 - Explicit flush requests no longer mean "persist synchronously now"; they only request one immediate fetch-cycle
   enqueue attempt on top of the same buffered state.
 - Entry-time session/filesystem reconcile requests are forwarded as a dedicated pass-through operation to
@@ -21,6 +25,9 @@
 - Selected-note body reads are also forwarded as pass-through operations to `ContentsNoteManagementCoordinator`.
   This controller emits `noteBodyTextLoaded(sequence, ...)` back toward the selection bridge without mutating the
   dirty-save buffer state.
+- The controller now also provides one read-only "pending editor text" query that reports dirty or in-flight note
+  bodies back to the selection layer.
+  This lets note-open prefer the newest unsaved local snapshot instead of immediately trusting filesystem text.
 - Successful async persistence completion now also runs one post-write filesystem reconcile step:
   - compares the persisted editor snapshot against note RAW through
     `ContentsNoteManagementCoordinator::reconcileViewSessionAndRefreshSnapshotForNote(...)`
@@ -32,6 +39,7 @@
 
 - Buffering is note-scoped rather than revision-scoped.
 - Multiple edits to the same note before the next fetch turn collapse into one latest buffered payload.
+- The same collapse also keeps the newest resolved direct note-directory path captured for that note.
 - If the filesystem misses one intermediate fetch turn, the following fetch turn still sees the latest buffered text and
   persists that instead.
 
@@ -51,3 +59,7 @@
   extra save scheduling by themselves.
 - A newer same-note lazy body-read request must still be observable upstream after an older same-note read is already
   in flight.
+- A buffered note save must not become blocked solely because the active content view-model changed, as long as the
+  staged snapshot already captured a direct note-directory path.
+- A selected note must not reopen from filesystem text while the controller still owns a newer dirty or in-flight
+  editor snapshot for that same note.

@@ -1,12 +1,12 @@
 # `src/app/file/validator/ContentsStructuredTagValidator.cpp`
 
 ## Responsibility
-Implements the structured-tag validator's direct-write correction authority.
+Implements the structured-tag validator's opt-in direct-write correction helper.
 
 ## Direct Correction Flow
 1. Receive a parser/renderer correction suggestion (`sourceText`, `correctedSourceText`, `verification`).
-   QML hosts use the explicit-note entrypoint `requestStructuredCorrectionForNote(...)` so the correction target note
-   is fixed at the moment the signal is handled.
+   An opting-in QML host may use the explicit-note entrypoint `requestStructuredCorrectionForNote(...)` so the
+   correction target note is fixed at the moment the signal is handled.
 2. Resolve the selected note directory from `contentViewModel.noteDirectoryPathForNoteId(...)`.
 3. Queue the file read/write correction work onto a worker thread instead of running it inline on the QML signal turn.
 4. Persist the canonical corrected RAW source back into `.wsnbody` through `updateNote(...)`.
@@ -15,10 +15,11 @@ Implements the structured-tag validator's direct-write correction authority.
    cannot absorb the persisted body snapshot directly.
 
 ## Authority Rule
-- This validator is intentionally not read-only.
+- This validator is intentionally not read-only when enabled.
+- Authority is opt-in and disabled by default so editor hosts can keep note-open and typing on the single
+  editor-session persistence path.
 - Once a correction suggestion reaches this object and authority is enabled, the validator writes the file directly
   instead of merely reporting lint issues.
-- The validator therefore acts as the file-layer owner of structured-tag correction, not as a passive warning sink.
 
 ## Safety Rules
 - The validator refuses to write when:
@@ -34,7 +35,7 @@ Implements the structured-tag validator's direct-write correction authority.
   note-list refreshes for the same note.
 
 ## UI Synchronization
-- On success, the validator emits `correctionApplied(...)` so QML can immediately replace the in-editor RAW buffer with
-  the canonical corrected source and avoid re-saving stale malformed text back over the fixed file.
-- The emitted success/failure signals now represent completion of a worker-thread correction request, not synchronous
+- On success, the validator emits `correctionApplied(...)` so a host that explicitly opted into authority can replace
+  the in-editor RAW buffer with the canonical corrected source.
+- The emitted success/failure signals represent completion of a worker-thread correction request, not synchronous
   completion inside the parser callback turn.

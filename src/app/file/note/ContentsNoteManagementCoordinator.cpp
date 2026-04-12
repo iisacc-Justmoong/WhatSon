@@ -82,6 +82,55 @@ bool ContentsNoteManagementCoordinator::persistEditorTextForNote(const QString& 
     return enqueuePersistenceRequest(normalizedNoteId, text);
 }
 
+bool ContentsNoteManagementCoordinator::persistEditorTextForNoteAtPath(
+    const QString& noteId,
+    const QString& noteDirectoryPath,
+    const QString& text)
+{
+    const QString normalizedNoteId = noteId.trimmed();
+    const QString normalizedNoteDirectoryPath = noteDirectoryPath.trimmed();
+    if (normalizedNoteId.isEmpty() || normalizedNoteDirectoryPath.isEmpty())
+    {
+        return false;
+    }
+
+    Request request;
+    request.kind = RequestKind::DirectPersistBody;
+    request.sequence = m_nextRequestSequence++;
+    request.noteId = normalizedNoteId;
+    request.noteDirectoryPath = normalizedNoteDirectoryPath;
+    request.text = text;
+    return enqueueRequest(std::move(request));
+}
+
+bool ContentsNoteManagementCoordinator::captureDirectPersistenceContextForNote(
+    const QString& noteId,
+    QString* noteDirectoryPath) const
+{
+    if (noteDirectoryPath != nullptr)
+    {
+        noteDirectoryPath->clear();
+    }
+
+    const QString normalizedNoteId = noteId.trimmed();
+    if (normalizedNoteId.isEmpty() || !m_directPersistenceContractAvailable)
+    {
+        return false;
+    }
+
+    const QString resolvedNoteDirectoryPath = resolveNoteDirectoryPathForNote(normalizedNoteId);
+    if (resolvedNoteDirectoryPath.isEmpty())
+    {
+        return false;
+    }
+
+    if (noteDirectoryPath != nullptr)
+    {
+        *noteDirectoryPath = resolvedNoteDirectoryPath;
+    }
+    return true;
+}
+
 quint64 ContentsNoteManagementCoordinator::loadNoteBodyTextForNote(const QString& noteId)
 {
     const QString normalizedNoteId = noteId.trimmed();

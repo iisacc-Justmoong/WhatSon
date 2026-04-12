@@ -25,19 +25,38 @@
   out of the note-list model.
 - The bridge therefore owns one extra QML-facing state flag, `selectedNoteBodyLoading`, so editor hosts can defer
   note-open sync until the selected note body actually arrives.
+- The bridge now also exposes `selectedNoteBodyNoteId`, making the owner of the current body payload explicit for QML.
 - Lazy body reads now also track one request sequence per selected-note fetch.
   The bridge only accepts `noteBodyTextLoaded(sequence, ...)` for the latest requested sequence of the currently
   selected note, so an older in-flight read can no longer overwrite a newer same-note body after local edits,
   persistence, or reconcile-triggered reloads.
+- Failed lazy body reads now clear only the loading state.
+  They no longer replace the current selected-note body with an empty string, so a transient read failure cannot wipe
+  the live editor through a same-note model sync.
+- Before a selected-note lazy load adopts file-backed text, the bridge now asks the idle-sync controller whether that
+  same note still has a dirty or in-flight editor snapshot.
+  If so, the bridge reuses that pending body immediately and skips the stale file-backed adoption path.
+- The same pending-body check also runs when a lazy body-read completion arrives, so an older file read cannot reclaim
+  the selected body after the user already restaged newer local text for that note.
+- When the bridge cannot produce note-owned body text for the current selection, it now falls back to an explicit empty
+  body that is still tagged with that selected note id.
+- `startSelectedNoteBodyLoad(...)` now keeps body ownership explicit during loading and fallback transitions instead of
+  leaving QML to infer whether the current body text still belongs to the previous note.
 - `refreshNoteSelectionState()` now delegates note-id transitions into the sync controller through
   `bindSelectedNote(...)` / `clearSelectedNote()`, so open-count maintenance also left the bridge.
-- `setContentViewModel(...)` now rebinds the same content view-model into the sync controller and re-seeds the
-  currently selected note session there.
+- `setContentViewModel(...)` now only swaps the downstream content-view-model dependency immediately.
+  The actual selected-note rebind is deferred into the existing queued selection refresh, so note-list-model and
+  content-view-model replacements share one settled refresh turn instead of creating an intermediate mismatched pair.
+- `setNoteListModel(...)` now also uses that same queued selection refresh path after model replacement, while
+  `refreshNoteCountState()` still updates immediately for count-only consumers.
+- `refreshNoteSelectionState()` now honors one `requiresRebind` flag, so the bridge can rebind the current selected
+  note into a newly replaced content view-model even when the selected note id itself did not change.
 - Persistence requests forwarded through the bridge now follow buffered fetch semantics rather than worker-thread idle
   semantics, so the bridge remains a pure adapter while the controller owns eventual filesystem sync.
 - The bridge now also exposes `reconcileViewSessionAndRefreshSnapshotForNote(noteId, viewSessionText)`:
   - delegates session-vs-filesystem comparison to the sync layer
   - now treats reconciliation as an asynchronous request/notification boundary
+  - now requires an explicit non-empty `noteId` instead of falling back to the bridge's current selected note
   - forwards `viewSessionSnapshotReconciled(...)` back to QML so note-open hosts can finish their one-shot reconcile
     bookkeeping without blocking the UI thread
 - Same-note snapshot refresh now also reuses the same lazy-load path, allowing the bridge to keep the currently visible
@@ -76,6 +95,13 @@
 - The bridge must not reintroduce note-switch blocking logic on top of the controller's buffered fetch model.
 - Reconciliation requests must not reintroduce synchronous UI-thread RAW reads, and post-reconcile
   `selectedNoteBodyText` must stay aligned with the async note-body load result consumed by QML.
+- Reconciliation requests must not infer their target note from current bridge state when the caller omitted `noteId`.
 - Large-note selection must not depend on note-list `currentBodyText` carrying the full note body.
 - A note-open turn must not push an empty interim body into the editor before the lazy body load completes.
 - An older same-note lazy body-read completion must not overwrite a newer selected-note body request.
+- A failed same-note lazy body-read completion must not replace the current selected-note body with `""`.
+- A same-turn note-list-model swap and content-view-model swap must collapse into one selected-note refresh/rebind turn.
+- The bridge must provide an explicit empty-body fallback for the selected note when no note-owned body payload can be
+  resolved.
+- Reopening a recently edited note must prefer the buffered editor snapshot over a stale package read until queued
+  persistence catches up.

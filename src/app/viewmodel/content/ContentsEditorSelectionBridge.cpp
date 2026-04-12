@@ -80,7 +80,8 @@ void ContentsEditorSelectionBridge::setNoteListModel(QObject* model)
     }
 
     emit noteListModelChanged();
-    refreshNoteSelectionState();
+    m_noteSelectionRefreshRequiresRebind = true;
+    scheduleNoteSelectionRefresh();
     refreshNoteCountState();
 }
 
@@ -111,21 +112,11 @@ void ContentsEditorSelectionBridge::setContentViewModel(QObject* model)
     if (m_idleSyncController != nullptr)
     {
         m_idleSyncController->setContentViewModel(m_contentViewModel);
-        if (!m_selectedNoteId.trimmed().isEmpty())
-        {
-            m_idleSyncController->bindSelectedNote(m_selectedNoteId);
-            if (m_selectedNoteBodySnapshotNoteId != m_selectedNoteId && !m_selectedNoteBodyLoading)
-            {
-                startSelectedNoteBodyLoad(m_selectedNoteId, m_selectedNoteBodyText.isEmpty());
-            }
-        }
-        else
-        {
-            m_idleSyncController->clearSelectedNote();
-        }
     }
 
     emit contentViewModelChanged();
+    m_noteSelectionRefreshRequiresRebind = true;
+    scheduleNoteSelectionRefresh();
 }
 
 bool ContentsEditorSelectionBridge::noteSelectionContractAvailable() const noexcept
@@ -147,6 +138,11 @@ bool ContentsEditorSelectionBridge::contentPersistenceContractAvailable() const 
 QString ContentsEditorSelectionBridge::selectedNoteId() const
 {
     return m_selectedNoteId;
+}
+
+QString ContentsEditorSelectionBridge::selectedNoteBodyNoteId() const
+{
+    return m_selectedNoteBodyNoteId;
 }
 
 QString ContentsEditorSelectionBridge::selectedNoteBodyText() const
@@ -185,10 +181,9 @@ bool ContentsEditorSelectionBridge::reconcileViewSessionAndRefreshSnapshotForNot
     const QString& noteId,
     const QString& viewSessionText)
 {
-    const QString normalizedNoteId = noteId.trimmed().isEmpty()
-        ? m_selectedNoteId
-        : noteId.trimmed();
+    const QString normalizedNoteId = noteId.trimmed();
     return m_idleSyncController != nullptr
+        && !normalizedNoteId.isEmpty()
         && m_idleSyncController->reconcileViewSessionAndRefreshSnapshotForNote(
             normalizedNoteId,
             viewSessionText);
@@ -237,8 +232,23 @@ void ContentsEditorSelectionBridge::handleNoteBodyTextLoaded(
     }
 
     m_selectedNoteBodyRequestSequence = 0;
+    if (adoptPendingEditorBodyText(normalizedNoteId))
+    {
+        return;
+    }
+
+    if (!success)
+    {
+        m_selectedNoteBodySnapshotNoteId = normalizedNoteId;
+        const QString fallbackText = m_selectedNoteBodyNoteId == normalizedNoteId
+            ? m_selectedNoteBodyText
+            : QString();
+        setSelectedNoteBodyState(normalizedNoteId, fallbackText, false);
+        return;
+    }
+
     m_selectedNoteBodySnapshotNoteId = normalizedNoteId;
-    setSelectedNoteBodyState(success ? text : QString(), false);
+    setSelectedNoteBodyState(normalizedNoteId, text, false);
 }
 
 void ContentsEditorSelectionBridge::handleViewSessionSnapshotReconciledInternal(
@@ -330,14 +340,43 @@ int ContentsEditorSelectionBridge::readIntProperty(const QObject* object, const 
     return std::max(0, object->property(propertyName).toInt());
 }
 
-void ContentsEditorSelectionBridge::setSelectedNoteBodyState(QString bodyText, const bool loading)
+bool ContentsEditorSelectionBridge::adoptPendingEditorBodyText(const QString& noteId)
 {
+    const QString normalizedNoteId = noteId.trimmed();
+    if (normalizedNoteId.isEmpty() || m_idleSyncController == nullptr)
+    {
+        return false;
+    }
+
+    QString pendingEditorText;
+    if (!m_idleSyncController->pendingEditorTextForNote(normalizedNoteId, &pendingEditorText))
+    {
+        return false;
+    }
+
+    m_selectedNoteBodySnapshotNoteId = normalizedNoteId;
+    m_selectedNoteBodyRequestSequence = 0;
+    setSelectedNoteBodyState(normalizedNoteId, pendingEditorText, false);
+    return true;
+}
+
+void ContentsEditorSelectionBridge::setSelectedNoteBodyState(
+    QString noteId,
+    QString bodyText,
+    const bool loading)
+{
+    const bool noteIdChanged = m_selectedNoteBodyNoteId != noteId;
     const bool loadingChanged = m_selectedNoteBodyLoading != loading;
     const bool bodyTextChanged = m_selectedNoteBodyText != bodyText;
 
+    m_selectedNoteBodyNoteId = std::move(noteId);
     m_selectedNoteBodyLoading = loading;
     m_selectedNoteBodyText = std::move(bodyText);
 
+    if (noteIdChanged)
+    {
+        emit selectedNoteBodyNoteIdChanged();
+    }
     if (loadingChanged)
     {
         emit selectedNoteBodyLoadingChanged();
@@ -357,7 +396,7 @@ void ContentsEditorSelectionBridge::startSelectedNoteBodyLoad(
     {
         m_selectedNoteBodySnapshotNoteId.clear();
         m_selectedNoteBodyRequestSequence = 0;
-        setSelectedNoteBodyState(QString(), false);
+        setSelectedNoteBodyState(QString(), QString(), false);
         return;
     }
 
@@ -367,9 +406,19 @@ void ContentsEditorSelectionBridge::startSelectedNoteBodyLoad(
         m_selectedNoteBodyRequestSequence = 0;
     }
 
+    if (adoptPendingEditorBodyText(normalizedNoteId))
+    {
+        return;
+    }
+
+    const bool noteBodyOwnedBySelection = m_selectedNoteBodyNoteId == normalizedNoteId;
+    const QString currentBodyText = clearCachedBody || !noteBodyOwnedBySelection
+        ? QString()
+        : m_selectedNoteBodyText;
     const bool shouldShowLoading = clearCachedBody
-        || (m_selectedNoteBodyText.isEmpty() && m_selectedNoteBodySnapshotNoteId != normalizedNoteId);
-    setSelectedNoteBodyState(clearCachedBody ? QString() : m_selectedNoteBodyText, shouldShowLoading);
+        || !noteBodyOwnedBySelection
+        || (currentBodyText.isEmpty() && m_selectedNoteBodySnapshotNoteId != normalizedNoteId);
+    setSelectedNoteBodyState(normalizedNoteId, currentBodyText, shouldShowLoading);
 
     const quint64 requestSequence = m_idleSyncController != nullptr
         ? m_idleSyncController->loadNoteBodyTextForNote(normalizedNoteId)
@@ -382,7 +431,7 @@ void ContentsEditorSelectionBridge::startSelectedNoteBodyLoad(
 
     m_selectedNoteBodyRequestSequence = 0;
     m_selectedNoteBodySnapshotNoteId = normalizedNoteId;
-    setSelectedNoteBodyState(clearCachedBody ? QString() : m_selectedNoteBodyText, false);
+    setSelectedNoteBodyState(normalizedNoteId, currentBodyText, false);
 }
 
 void ContentsEditorSelectionBridge::scheduleNoteSelectionRefresh()
@@ -403,24 +452,24 @@ void ContentsEditorSelectionBridge::refreshNoteSelectionState()
 {
     const bool nextContractAvailable = hasReadableProperty(m_noteListModel, "currentNoteId");
     const QString nextNoteId = nextContractAvailable ? readStringProperty(m_noteListModel, "currentNoteId") : QString();
+    const bool requiresRebind = m_noteSelectionRefreshRequiresRebind;
+    m_noteSelectionRefreshRequiresRebind = false;
 
     if (m_noteSelectionContractAvailable != nextContractAvailable)
     {
         m_noteSelectionContractAvailable = nextContractAvailable;
         emit noteSelectionContractAvailableChanged();
     }
-    if (m_selectedNoteId != nextNoteId)
+    if (m_idleSyncController != nullptr
+        && (m_selectedNoteId != nextNoteId || requiresRebind))
     {
-        if (m_idleSyncController != nullptr)
+        if (nextNoteId.trimmed().isEmpty())
         {
-            if (nextNoteId.trimmed().isEmpty())
-            {
-                m_idleSyncController->clearSelectedNote();
-            }
-            else
-            {
-                m_idleSyncController->bindSelectedNote(nextNoteId);
-            }
+            m_idleSyncController->clearSelectedNote();
+        }
+        else
+        {
+            m_idleSyncController->bindSelectedNote(nextNoteId);
         }
     }
 
@@ -428,7 +477,7 @@ void ContentsEditorSelectionBridge::refreshNoteSelectionState()
     if (!noteIdChanged)
     {
         if (!m_selectedNoteId.trimmed().isEmpty()
-            && m_selectedNoteBodySnapshotNoteId != m_selectedNoteId
+            && (m_selectedNoteBodySnapshotNoteId != m_selectedNoteId || requiresRebind)
             && !m_selectedNoteBodyLoading)
         {
             startSelectedNoteBodyLoad(m_selectedNoteId, m_selectedNoteBodyText.isEmpty());
@@ -443,7 +492,7 @@ void ContentsEditorSelectionBridge::refreshNoteSelectionState()
     {
         m_selectedNoteBodySnapshotNoteId.clear();
         m_selectedNoteBodyRequestSequence = 0;
-        setSelectedNoteBodyState(QString(), false);
+        setSelectedNoteBodyState(QString(), QString(), false);
         return;
     }
 

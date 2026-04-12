@@ -878,8 +878,7 @@ QtObject {
     function persistEditorTextImmediately(nextText) {
         if (!controller.view || !controller.editorSession || controller.editorSession.scheduleEditorPersistence === undefined)
             return false;
-        controller.editorSession.scheduleEditorPersistence();
-        return true;
+        return !!controller.editorSession.scheduleEditorPersistence();
     }
     function queueInlineFormatWrap(tagName) {
         if (!controller.view || !controller.view.hasSelectedNote || controller.view.showDedicatedResourceViewer || controller.view.showFormattedTextRenderer)

@@ -23,9 +23,8 @@ Mobile content editor host.
   - timer-driven snapshot polling no longer performs synchronous RAW note reads on the UI thread
 - Mobile polling now also skips overlapping reconcile requests for the same selected note while one worker fetch is
   already pending.
-- Mobile body-sync and correction/reconcile refresh work now also routes through
-  `editorSession.editorTextSynchronized`, removing duplicate minimap/presentation/gutter refresh scheduling from
-  multiple completion handlers.
+- Mobile body-sync and reconcile refresh work now also routes through `editorSession.editorTextSynchronized`, removing
+  duplicate minimap/presentation/gutter refresh scheduling from multiple completion handlers.
 - Mobile selection-driven editor sync now also collapses initial mount, `selectedNoteIdChanged`, and
   `selectedNoteBodyTextChanged` into one queued `scheduleSelectionModelSync(...)` pass per event-loop turn, and mobile
   visibility re-entry now reuses that same helper instead of scheduling a parallel note-open refresh path. One
@@ -35,10 +34,24 @@ Mobile content editor host.
   identifier constraints.
 - Mobile note-open now also waits for the selected note body lazy-load to finish before pushing selection state into
   the live editor session.
-  While loading is pending, mobile disables the editor viewport, keeps the previous buffer intact, and shows the same
-  loading overlay contract as desktop instead of syncing an empty placeholder body.
-- Mobile note-open/model sync now also keeps the structured-flow surface mounted while
-  `ContentsStructuredBlockRenderer.renderPending` is true, allowing agenda/callout projection to finish on a worker
-  thread instead of blocking the first note-open frame on the UI thread.
+  While loading is pending, mobile disables the editor viewport, keeps the previous buffer intact, can request an
+  immediate fetch attempt for the previously bound note, and shows the same loading overlay contract as desktop instead
+  of syncing an empty placeholder body.
+- Mobile also now requires `selectedNoteBodyNoteId == selectedNoteId` before syncing selection state into the session
+  or restoring editor focus, so a stale body payload cannot be rebound under a different note id.
+- During a note-selection transition, the mobile host now projects any still-live `TextEdit` delta through
+  `ContentsEditorTypingController.handleEditorTextEdited()` before deciding whether to flush the previously bound note.
+  This keeps large deletions or other last-turn edits from being dropped just because the selection id changed before
+  the session buffer had caught up.
+- When the selection bridge can already expose a buffered dirty body for the newly selected note, the mobile host now
+  consumes that note-owned payload through the ordinary selection-sync path instead of waiting for a stale filesystem
+  read to arrive first.
+- Mobile note-open now also keeps the legacy inline editor path alive until the first settled structured render confirms
+  that the current selected note actually owns agenda/callout/break blocks.
+- Once structured mode has activated for that same note, later async reparses keep the structured surface mounted
+  instead of bouncing through the legacy editor again.
 - Mobile note snapshot polling also pauses during `selectedNoteBodyLoading`, so the first lazy note-open read is not
   interleaved with a second same-note refresh probe.
+- Mobile no longer auto-mounts `ContentsStructuredTagValidator` as a parser-driven direct-write path.
+  Structured note open and editing therefore stay on the same session persistence line as desktop instead of adding a
+  second validator-owned file update turn.

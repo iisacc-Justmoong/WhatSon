@@ -21,6 +21,8 @@
 ## Current Notes
 
 - `ContentsEditorIdleSyncController` owns the editor-side buffered fetch-sync boundary under the `file/sync` domain.
+- That controller now also exposes the newest dirty or in-flight note body back to the selection layer, so note-open
+  can prefer unsaved local text over a stale package read.
 - `WhatSonHubSyncController` was moved from `src/app/sync` into this directory so sync responsibilities are now
   fully consolidated under `file/sync`.
 - Runtime hub synchronization and editor idle synchronization now share the same domain root while preserving their

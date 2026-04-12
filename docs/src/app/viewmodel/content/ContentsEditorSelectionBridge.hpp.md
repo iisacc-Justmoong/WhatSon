@@ -16,7 +16,8 @@
 
 ## Current Implementation Notes
 - `ContentsEditorSelectionBridge` is now selection-facing only:
-  - exports `selectedNoteId`, `selectedNoteBodyText`, `selectedNoteBodyLoading`, and `visibleNoteCount`
+  - exports `selectedNoteId`, `selectedNoteBodyNoteId`, `selectedNoteBodyText`, `selectedNoteBodyLoading`, and
+    `visibleNoteCount`
   - keeps the note-list selection/count property wiring for QML
   - forwards persistence and note-management requests to `file/sync/ContentsEditorIdleSyncController`
 - The note-list contract no longer requires `currentBodyText`.
@@ -31,6 +32,8 @@
 - Those invokables no longer imply an idle-threshold or immediate-save guarantee:
   - staging means "buffer this latest note snapshot for a later fetch turn"
   - flush means "buffer it and request one immediate fetch attempt if possible"
+- `reconcileViewSessionAndRefreshSnapshotForNote(...)` now also requires an explicit note id; it no longer falls back
+  to whichever note the bridge currently marks as selected.
 - The bridge still exposes `directPersistenceContractAvailable` and `contentPersistenceContractAvailable`, but those
   values now come from the sync-owned downstream management boundary.
 - The bridge now also forwards `editorTextPersistenceQueued(...)` so QML sessions can distinguish
@@ -39,8 +42,16 @@
   editor sessions, but the bridge now only forwards the sync/controller result.
 - Internal note-list selection refresh now follows a queued-coalesced contract: one event-loop turn can schedule at
   most one pending note-selection refresh.
+- Note-list-model replacement and content-view-model replacement now both funnel through that same queued refresh turn.
+  The bridge keeps one `requiresRebind` flag so the downstream sync controller rebinds the selected note only after the
+  final note-list/content-view-model pair for that event-loop turn has settled.
 - The selected-note lazy-load contract now also keeps one latest request sequence, allowing the bridge to ignore stale
   same-note body-read completions.
+- The bridge now also keeps one internal pending-body adoption helper so selected-note lazy loads can reuse a dirty or
+  in-flight editor snapshot from `ContentsEditorIdleSyncController` before falling back to package IO.
+- `selectedNoteBodyNoteId` now makes body ownership explicit for QML/session consumers.
+  An empty body string is therefore no longer ambiguous: it can still be attached to a specific selected note as an
+  explicit empty-body fallback.
 
 ### Classes and Structs
 - `ContentsEditorSelectionBridge`
@@ -68,8 +79,8 @@
 
 - Selection refresh must not directly execute note-file persistence, stat refresh, or open-count maintenance logic.
 - `persistEditorTextForNote(...)` must stay as a buffered-stage contract for QML even after the sync split.
-- Binding a new content view-model must also rebind the current selected note into the sync controller so note-path
-  resolution remains valid after model replacement.
+- Binding a new content view-model must request one coalesced selected-note rebind into the sync controller so note-path
+  resolution uses the settled note-list/content-view-model pair rather than an intermediate mismatch.
 - QML must still be able to request a best-effort immediate fetch through `flushEditorTextForNote(...)` when the editor
   lifecycle is ending, but ordinary note switches must not depend on that path.
 - Mobile entry-time reconciliation must be available through
@@ -78,3 +89,10 @@
 - The selected-note loading flag must stay aligned with the asynchronous note-body read lifecycle.
 - Large notes must not be mirrored into note-list `currentBodyText` just to support editor note-open.
 - Stale same-note body-read completions must not reclaim the selected note body after a newer request was issued.
+- Stale filesystem text must not reclaim the selected note body while the sync controller still owns a newer dirty or
+  in-flight editor snapshot for that note.
+- A same-turn note-list/content-view-model swap must not bind the old note id to the new content view-model or the new
+  note id to the old content view-model as an intermediate side effect.
+- QML/session code must be able to tell which note owns the currently exposed body text without inferring from timing or
+  previous selection state.
+- Bridge APIs that target one note must not silently replace a missing `noteId` with the currently selected note.
