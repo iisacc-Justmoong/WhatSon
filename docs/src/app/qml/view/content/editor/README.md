@@ -175,6 +175,15 @@
     block to the enclosing wrapper end first
   - newline padding is then applied around that resolved point so proprietary blocks remain standalone instead of
     nesting inside one another
+- Agenda Enter handling now distinguishes empty trailing tasks from empty middle tasks:
+  - trailing empty task exits the agenda as before
+  - empty middle task removes only that task instead of deleting later sibling tasks
+- Agenda empty-body detection now decodes visible text consistently, so entity-only task bodies such as `&amp;` do not
+  get treated as blank and removed by the empty-task exit path.
+- The plain agenda overlay checkbox path now ignores renderer-echo `checked` changes, preventing redundant `done`
+  rewrites when renderer models refresh after a toggle.
+- Callout block focus restoration now also refreshes the flow host's active-block pointer on cursor-only programmatic
+  focus moves, keeping subsequent structured shortcuts scoped to the active callout.
 - Agenda parsing and source-mutation backend logic used by those shortcuts now lives in
   `src/app/agenda/ContentsAgendaBackend.*`, while QML controllers keep event/cursor orchestration only.
 - Callout parsing and insertion payload backend logic now lives in

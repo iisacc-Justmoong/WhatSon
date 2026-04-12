@@ -1325,11 +1325,11 @@ Item {
 
     Component.onCompleted: {
         contentsView.resetEditorSelectionCache();
-        const synchronized = editorSession.requestSyncEditorTextFromSelection(
+        const selectionSynced = editorSession.requestSyncEditorTextFromSelection(
                     contentsView.selectedNoteId,
                     contentsView.selectedNoteBodyText);
         contentsView.scheduleEditorEntrySnapshotReconcile();
-        if (!synchronized) {
+        if (!selectionSynced) {
             contentsView.scheduleDocumentPresentationRefresh(true);
             contentsView.scheduleGutterRefresh(4);
         }
@@ -1378,11 +1378,11 @@ Item {
         contentsView.editorEntrySnapshotComparedNoteId = "";
         contentsView.editorEntrySnapshotPendingNoteId = "";
         contentsView.resetEditorSelectionCache();
-        const synchronized = editorSession.requestSyncEditorTextFromSelection(
+        const selectionSynced = editorSession.requestSyncEditorTextFromSelection(
                     contentsView.selectedNoteId,
                     contentsView.selectedNoteBodyText);
         contentsView.scheduleEditorEntrySnapshotReconcile();
-        if (!synchronized) {
+        if (!selectionSynced) {
             contentsView.scheduleMinimapSnapshotRefresh(true);
             contentsView.scheduleDocumentPresentationRefresh(true);
             contentsView.scheduleGutterRefresh(4);

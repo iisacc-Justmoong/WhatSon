@@ -8,10 +8,13 @@ structured document-flow editor changes.
   task start.
 - Pressing `Enter` inside an agenda task must still create the next task or exit the agenda according to the existing
   backend rule.
+- Pressing `Enter` on an empty middle agenda task must not delete later sibling tasks.
+- A task body whose visible text is only an escaped entity like `&amp;` must still count as non-empty.
 
 ## Callout Typing
 - Typing continuously inside a callout must keep the caret at the edited position after each RAW rewrite/reparse.
 - Pressing `Enter` twice on a trailing empty callout line must still exit the callout block.
+- After a callout cursor restore, the next structured shortcut must still resolve relative to that active callout block.
 
 ## Structured Shortcuts
 - In structured-flow mode, `Cmd+Opt+T`, `Cmd+Opt+C`, and `Cmd+Shift+H` invoked from the middle of a text block must

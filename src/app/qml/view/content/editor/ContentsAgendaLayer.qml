@@ -175,6 +175,8 @@ Item {
                                 onToggled: {
                                     if (!hasSourceTag)
                                         return;
+                                    if (checked === !!taskEntry.done)
+                                        return;
                                     if (agendaLayer.taskToggleHandler !== undefined
                                             && agendaLayer.taskToggleHandler !== null) {
                                         agendaLayer.taskToggleHandler(

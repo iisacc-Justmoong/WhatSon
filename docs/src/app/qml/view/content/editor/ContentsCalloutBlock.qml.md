@@ -11,6 +11,8 @@ Renders one callout card as a native document block inside the editor flow.
   editor cursor position.
 - Exposes `applyFocusRequest(...)` for direct targeted calls from `ContentsStructuredDocumentFlow.qml`; the block no
   longer re-evaluates every global focus token change itself.
+- Programmatic focus restoration now also emits `activated()`, keeping the flow host's active-block tracking aligned
+  even when the same callout editor already owned focus and only the cursor moved.
 - Keeps agenda/callout shortcut insertion block-scoped so new proprietary wrappers are inserted after the current
   callout instead of nesting inside callout body content.
 - Treats Enter on an already-empty trailing line as the "exit callout" gesture.

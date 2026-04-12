@@ -34,5 +34,9 @@
   document tree, which reduces per-mutation main-thread work on longer structured notes.
 - Editor snapshot reconcile and correction-complete paths now also avoid overlapping same-note fetches and duplicate
   post-sync UI refresh scheduling, further reducing repeated main-thread work after note open and background sync.
+- Agenda/callout edge handling is now tighter:
+  - empty middle agenda tasks no longer truncate later siblings on Enter
+  - entity-only agenda task bodies no longer count as blank
+  - callout cursor-only focus restores now keep active-block tracking in sync
 - The repository still does not provide an in-repo automated editor test suite; regression coverage for this area is
   documented through per-file notes rather than executable tests.

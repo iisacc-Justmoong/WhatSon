@@ -66,6 +66,8 @@ The layer is now a renderer-fed view:
   - open-tag source start offset
   - open-tag source end offset
   - next checked state
+- Checkbox toggles now guard against model-echo transitions (`checked === task.done`) before calling the host callback,
+  so renderer refreshes do not re-trigger the same `done` mutation loop.
 - On card tap, the layer calls `blockFocusHandler(focusSourceOffset)` so empty agenda cards can immediately route the
   cursor back into RAW task scope.
 - The host view owns actual source rewrite/persistence; this layer does not mutate source directly.

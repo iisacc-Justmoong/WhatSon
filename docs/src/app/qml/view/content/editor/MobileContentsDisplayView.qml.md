@@ -24,3 +24,5 @@ Mobile content editor host.
 - Mobile body-sync and correction/reconcile refresh work now also routes through
   `editorSession.editorTextSynchronized`, removing duplicate minimap/presentation/gutter refresh scheduling from
   multiple completion handlers.
+- Mobile initial mount and `selectedNoteIdChanged` also keep the selection-sync result in a local gate before fallback
+  refresh scheduling, matching the desktop deferred sync path while staying within QML parser identifier constraints.

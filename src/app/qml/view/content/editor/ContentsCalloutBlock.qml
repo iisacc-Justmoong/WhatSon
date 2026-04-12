@@ -34,6 +34,7 @@ FocusScope {
             calloutEditor.setCursorPositionPreservingInputMethod(targetCursorPosition)
         else if (calloutEditor.cursorPosition !== undefined)
             calloutEditor.cursorPosition = targetCursorPosition
+        calloutBlock.activated()
     }
 
     function applyFocusRequest(request) {

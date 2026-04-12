@@ -27,6 +27,9 @@ Desktop content editor host.
 - Model-to-editor body sync, structured correction apply, and reconcile-complete handling now funnel heavy UI refresh
   work through `editorSession.editorTextSynchronized` instead of scheduling the same minimap/presentation/gutter refresh
   sequence from multiple handlers.
+- Initial mount and `selectedNoteIdChanged` now both keep the selection-sync result in a local gate before scheduling
+  fallback presentation refresh, which preserves the deferred sync behavior without relying on parser-hostile QML
+  identifier names.
 - While structured-flow mode is active, the hidden `ContentsInlineFormatEditor` is now effectively idled:
   - its `text` binding is cleared
   - its `enabled`/`visible` state is gated by `legacyInlineEditorActive`

@@ -262,8 +262,6 @@ namespace
         static const QRegularExpression taskPattern(
             QStringLiteral(R"(<task\b[^>]*>([\s\S]*?)</task>)"),
             QRegularExpression::CaseInsensitiveOption);
-        static const QRegularExpression tagPattern(QStringLiteral(R"(<[^>]*>)"));
-        static const QRegularExpression entityPattern(QStringLiteral(R"(&[^;]+;)"));
 
         QRegularExpressionMatchIterator taskIterator = taskPattern.globalMatch(agendaInnerSourceText);
         while (taskIterator.hasNext())
@@ -274,10 +272,7 @@ namespace
                 continue;
             }
 
-            QString normalizedTaskVisibleText = taskMatch.captured(1);
-            normalizedTaskVisibleText.replace(tagPattern, QString());
-            normalizedTaskVisibleText.replace(entityPattern, QStringLiteral(" "));
-            if (!normalizedTaskVisibleText.trimmed().isEmpty())
+            if (!visibleAgendaTaskText(taskMatch.captured(1)).isEmpty())
             {
                 return true;
             }
@@ -293,6 +288,29 @@ namespace
                 QRegularExpression::CaseInsensitiveOption));
         agendaInnerSourceText.replace(QRegularExpression(QStringLiteral("\\s+")), QString());
         return agendaInnerSourceText.isEmpty();
+    }
+
+    int nextTaskContentStartWithinAgenda(
+        const QString& sourceText,
+        const int from,
+        const int agendaCloseStart)
+    {
+        const int nextTaskOpenStart = firstPatternStartAtOrAfter(
+            sourceText,
+            kTaskOpenTagPattern,
+            from);
+        if (nextTaskOpenStart < 0 || nextTaskOpenStart >= agendaCloseStart)
+        {
+            return -1;
+        }
+
+        const int nextTaskOpenEnd = sourceText.indexOf(QLatin1Char('>'), nextTaskOpenStart);
+        if (nextTaskOpenEnd < 0 || nextTaskOpenEnd >= agendaCloseStart)
+        {
+            return -1;
+        }
+
+        return nextTaskOpenEnd + 1;
     }
 
     QString normalizedAgendaDateForDisplay(const QString& rawDate)
@@ -664,10 +682,7 @@ QVariantMap ContentsAgendaBackend::detectAgendaTaskEnterReplacement(
     const int normalizedInsertedTextSize = boundedQStringSize(normalizedInsertedText);
     const QString insertedWithoutNewline =
         normalizedInsertedText.left(std::max(0, normalizedInsertedTextSize - 1));
-    QString normalizedTaskVisibleText = taskContext->taskInnerSourceText;
-    normalizedTaskVisibleText.replace(QRegularExpression(QStringLiteral("<[^>]*>")), QString());
-    normalizedTaskVisibleText.replace(QRegularExpression(QStringLiteral("&[^;]+;")), QStringLiteral(" "));
-    normalizedTaskVisibleText = normalizedTaskVisibleText.trimmed();
+    const QString normalizedTaskVisibleText = visibleAgendaTaskText(taskContext->taskInnerSourceText);
     const bool taskIsEffectivelyEmpty =
         normalizedTaskVisibleText.isEmpty() && insertedWithoutNewline.trimmed().isEmpty();
 
@@ -701,6 +716,20 @@ QVariantMap ContentsAgendaBackend::detectAgendaTaskEnterReplacement(
 
         QVariantMap replacementPayload;
         replacementPayload.insert(QStringLiteral("applied"), true);
+        if (!agendaAfterCurrentTask.isEmpty())
+        {
+            const int nextTaskContentStart = nextTaskContentStartWithinAgenda(
+                normalizedSourceText,
+                taskContext->taskCloseEnd,
+                taskContext->agendaCloseStart);
+            replacementPayload.insert(
+                QStringLiteral("cursorSourceOffsetFromReplacementStart"),
+                std::max(0, nextTaskContentStart - taskContext->taskCloseEnd));
+            replacementPayload.insert(QStringLiteral("replacementSourceStart"), taskContext->taskOpenStart);
+            replacementPayload.insert(QStringLiteral("replacementSourceEnd"), taskContext->taskCloseEnd);
+            replacementPayload.insert(QStringLiteral("replacementSourceText"), QString());
+            return replacementPayload;
+        }
         if (agendaBeforeCurrentTask.isEmpty() && agendaAfterCurrentTask.isEmpty())
         {
             replacementPayload.insert(QStringLiteral("cursorSourceOffsetFromReplacementStart"), 1);
