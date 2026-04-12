@@ -22,6 +22,8 @@ The live editor buffer remains authoritative; filesystem persistence is eventual
 - `flushEditorTextForNote(noteId, text)`: compatibility path that still stores the same buffered snapshot, but also
   asks the controller to attempt one immediate fetch-cycle enqueue when possible.
 - `persistEditorTextForNote(noteId, text)`: compatibility alias for the buffered stage path.
+- `loadNoteBodyTextForNote(noteId)`: forwards one selected-note lazy body read to the downstream coordinator and
+  returns its request sequence while later forwarding completion through `noteBodyTextLoaded(sequence, ...)`.
 - `refreshNoteSnapshotForNote(noteId)`, `bindSelectedNote(noteId)`, `clearSelectedNote()`: forward selection/session
   work to the downstream coordinator while keeping the sync boundary in `file/sync`.
 - `reconcileViewSessionAndRefreshSnapshotForNote(noteId, viewSessionText)`: compares one editor session snapshot
@@ -43,6 +45,7 @@ The live editor buffer remains authoritative; filesystem persistence is eventual
   - the next fetch tick simply writes the latest buffered snapshot
 - Persistence itself remains asynchronous because actual `.wsnote` IO still runs through
   `ContentsNoteManagementCoordinator`.
+- Lazy selected-note body reads also remain asynchronous, but they do not participate in dirty-note save ordering.
 - After each successful queued persistence completion, the controller also performs one reconcile fetch verify against
   filesystem RAW to keep editor-visible note snapshots aligned without forcing unconditional reloads.
 
@@ -58,3 +61,6 @@ The live editor buffer remains authoritative; filesystem persistence is eventual
   mismatch.
 - Successful persistence completion must include one reconcile verify pass so the latest visible snapshot can converge
   with canonicalized filesystem RAW.
+- Lazy selected-note body reads must not require list-model `currentBodyText` as an alternate transport for the full
+  note body.
+- The body-read completion contract must preserve per-request sequence identity so stale completions can be ignored.

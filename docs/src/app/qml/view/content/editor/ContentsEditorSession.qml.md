@@ -53,8 +53,8 @@
 - Successful writes still do not revoke `localEditorAuthority` immediately. The session keeps that authority until the
   bound note itself changes.
 - `syncEditorTextFromSelection(...)` now drops local authority only when the note changes.
-  Same-note echo payloads no longer clear that authority, so a later stale `currentBodyText` refresh cannot reclaim
-  the live editor buffer one polling cycle after the correct body text already echoed back once.
+  Same-note echo payloads no longer clear that authority, so a later stale selected-note snapshot cannot reclaim the
+  live editor buffer one polling cycle after the correct body text already echoed back once.
 - `typingIdleThresholdMs` and `lastLocalEditTimestampMs` now define a non-idle typing window.
 - `shouldAcceptModelBodyText(...)` now rejects mismatched same-note model text while either:
   - that typing window is still active

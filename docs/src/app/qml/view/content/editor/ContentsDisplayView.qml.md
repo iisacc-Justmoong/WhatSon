@@ -34,6 +34,11 @@ Desktop content editor host.
 - The queued selection-sync helper keeps the `requestSyncEditorTextFromSelection(...)` result in one local gate before
   scheduling fallback presentation refresh, preserving the deferred sync behavior without relying on parser-hostile QML
   identifier names.
+- Desktop note-open now also waits for `selectionBridge.selectedNoteBodyLoading == false` before syncing the selected
+  body into `ContentsEditorSession`.
+  While that lazy load is pending, the host keeps the previous editor buffer intact, can request persistence for the
+  previously bound note, disables the editor viewport, and shows a loading overlay instead of pushing an empty interim
+  body into the editor.
 - While structured-flow mode is active, the legacy `ContentsInlineFormatEditor` now unloads entirely through a `Loader`
   instead of remaining alive behind `visible: false`.
 - The host keeps a lightweight proxy object under the existing `contentEditor` reference so shared geometry/focus helpers
@@ -41,6 +46,8 @@ Desktop content editor host.
 - Desktop note-open/model sync now also keeps the structured-flow surface mounted while
   `ContentsStructuredBlockRenderer.renderPending` is true, allowing agenda/callout projection to finish on a worker
   thread instead of blocking the first note-open frame on the UI thread.
+- Timer-driven note snapshot polling now also pauses while the selected note body is still loading, so note-open does
+  not compete with an overlapping same-note refresh probe.
 
 ## Legacy Surface
 - The single `ContentsInlineFormatEditor` and overlay layers still remain the fallback path for notes without any

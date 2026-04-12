@@ -177,7 +177,7 @@ Item {
     property var noteListModel: null
     readonly property bool noteSelectionContractAvailable: selectionBridge.noteSelectionContractAvailable
     readonly property bool typingSessionSyncProtected: editorSession && editorSession.isTypingSessionActive !== undefined && editorSession.isTypingSessionActive()
-    readonly property bool noteSnapshotRefreshEnabled: contentsView.visible && contentsView.hasSelectedNote && !contentsView.showDedicatedResourceViewer && !contentsView.showFormattedTextRenderer && contentsView.noteSelectionContractAvailable && !contentsView.editorInputFocused && !contentsView.typingSessionSyncProtected && !contentsView.pendingBodySave
+    readonly property bool noteSnapshotRefreshEnabled: contentsView.visible && contentsView.hasSelectedNote && !contentsView.selectedNoteBodyLoading && !contentsView.showDedicatedResourceViewer && !contentsView.showFormattedTextRenderer && contentsView.noteSelectionContractAvailable && !contentsView.editorInputFocused && !contentsView.typingSessionSyncProtected && !contentsView.pendingBodySave
     readonly property int noteSnapshotRefreshIntervalMs: 1200
     readonly property int pageEditorViewModeValue: pagePrintLayoutRenderer.pageViewModeValue
     property var panelViewModel: null
@@ -239,6 +239,7 @@ Item {
     readonly property bool deferImmediateEditorPersistence: false
     readonly property int editorIdleSyncThresholdMs: 1000
     readonly property string selectedNoteBodyText: selectionBridge.selectedNoteBodyText
+    readonly property bool selectedNoteBodyLoading: selectionBridge.selectedNoteBodyLoading
     readonly property string selectedNoteId: selectionBridge.selectedNoteId
     readonly property bool selectedNoteIsResourcePackage: contentsView.selectedNoteId.trim().toLowerCase().endsWith(".wsresource")
     readonly property var selectedResourceEntry: {
@@ -1325,6 +1326,18 @@ Item {
             contentsView.resetEditorSelectionCache();
         }
 
+        if (shouldFocusEditor)
+            contentsView.pendingEditorFocusNoteId = contentsView.selectedNoteId;
+
+        if (contentsView.selectedNoteBodyLoading && contentsView.selectedNoteId.length > 0) {
+            if (editorSession.editorBoundNoteId !== contentsView.selectedNoteId
+                    && editorSession.pendingBodySave
+                    && editorSession.scheduleEditorPersistence !== undefined) {
+                editorSession.scheduleEditorPersistence();
+            }
+            return;
+        }
+
         const selectionSynced = editorSession.requestSyncEditorTextFromSelection(
                     contentsView.selectedNoteId,
                     contentsView.selectedNoteBodyText);
@@ -1335,7 +1348,7 @@ Item {
             contentsView.scheduleDocumentPresentationRefresh(true);
             contentsView.scheduleGutterRefresh(4);
         }
-        if (shouldFocusEditor)
+        if (contentsView.pendingEditorFocusNoteId === contentsView.selectedNoteId)
             contentsView.focusEditorForPendingNote();
     }
     function scheduleSelectionModelSync(options) {
@@ -1762,6 +1775,7 @@ Item {
                 Layout.fillHeight: true
                 Layout.fillWidth: true
                 Layout.minimumHeight: contentsView.minEditorHeight
+                enabled: !contentsView.selectedNoteBodyLoading
                 clip: true
 
                 Flickable {
@@ -2434,6 +2448,19 @@ Item {
                         resourceEntry: contentsView.selectedResourceEntry
                         visible: contentsView.showDedicatedResourceViewer
                         z: 3
+                    }
+                    Rectangle {
+                        anchors.fill: parent
+                        color: Qt.rgba(0.10, 0.11, 0.13, 0.78)
+                        visible: contentsView.hasSelectedNote && contentsView.selectedNoteBodyLoading
+                        z: 4
+
+                        LV.Label {
+                            anchors.centerIn: parent
+                            color: LV.Theme.descriptionColor
+                            style: caption
+                            text: "Loading note..."
+                        }
                     }
                     Item {
                         id: bodyResourceRenderLayer

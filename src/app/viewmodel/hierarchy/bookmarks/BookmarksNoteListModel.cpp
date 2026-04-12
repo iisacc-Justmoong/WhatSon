@@ -523,6 +523,10 @@ void BookmarksNoteListModel::setItems(QVector<BookmarksNoteListItem> items)
             item.searchableText = normalizeSearchableText(buildFallbackSearchableText(item));
         }
 
+        // Full note bodies are loaded lazily through the editor selection bridge.
+        // The bookmark list keeps only the searchable summary cache.
+        item.bodyText.clear();
+
         if (item.primaryText.isEmpty())
         {
             WhatSon::Debug::traceSelf(this,

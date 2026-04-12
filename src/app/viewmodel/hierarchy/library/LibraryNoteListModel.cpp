@@ -520,6 +520,10 @@ void LibraryNoteListModel::setItems(QVector<LibraryNoteListItem> items)
             item.searchableText = normalizeSearchableText(buildFallbackSearchableText(item));
         }
 
+        // Full note bodies are loaded lazily through the editor selection bridge.
+        // The note-list model keeps only the searchable summary cache.
+        item.bodyText.clear();
+
         if (item.primaryText.isEmpty())
         {
             WhatSon::Debug::traceSelf(this,

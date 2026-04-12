@@ -28,6 +28,13 @@
   - queues RAW-read comparison work onto the same coordinator-owned worker lane
   - emits `viewSessionSnapshotReconciled(noteId, refreshed, success, errorMessage)` back to QML-facing adapters
   - triggers `refreshNoteSnapshotForNote(...)` on the main thread only when the worker reports a mismatch.
+- The same queue now also owns selected-note lazy body reads:
+  - `loadNoteBodyTextForNote(noteId)` resolves the note path on the main thread
+  - the actual `.wsnote` read runs on the worker lane
+  - each load keeps its own request sequence
+  - `noteBodyTextLoaded(sequence, noteId, text, success, errorMessage)` returns the normalized source/plain body back
+    to the selection bridge without requiring note-list models to hold the full note body in memory
+  - a newer same-note lazy read can therefore supersede an older in-flight read instead of being silently dropped
 
 ## Queue Semantics
 
@@ -36,6 +43,8 @@
   still running.
 - Pending tracked-stat refresh requests are coalesced per note id.
 - Header open-count requests deduplicate while the same note already has one such request in flight or pending.
+- Pending lazy note-body load requests keep only the newest queued request per note id while still preserving request
+  sequence ordering across in-flight completions.
 - Reconcile requests are also coalesced by note id plus normalized session text so note-open and timer-driven snapshot
   probes do not stack duplicate RAW reads on the UI thread.
 
@@ -52,3 +61,7 @@
   re-read `Tags.wstags`, so newly promoted `#label` tags appear in the hierarchy without a manual app restart.
 - Session/filesystem reconciliation must return success without reload when RAW already matches the current view
   session snapshot, and that check must not perform note reads on the UI thread anymore.
+- Lazy selected-note body reads must execute on the worker lane and must not require the note-list model to carry the
+  same full body text as selection state.
+- A newer same-note body-read request must not be discarded merely because an older body-read for that note is already
+  in flight.

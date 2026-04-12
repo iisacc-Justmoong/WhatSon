@@ -33,6 +33,12 @@ Mobile content editor host.
 - The shared mobile selection-sync helper also keeps the `requestSyncEditorTextFromSelection(...)` result in one local
   gate before fallback refresh scheduling, matching the desktop deferred sync path while staying within QML parser
   identifier constraints.
+- Mobile note-open now also waits for the selected note body lazy-load to finish before pushing selection state into
+  the live editor session.
+  While loading is pending, mobile disables the editor viewport, keeps the previous buffer intact, and shows the same
+  loading overlay contract as desktop instead of syncing an empty placeholder body.
 - Mobile note-open/model sync now also keeps the structured-flow surface mounted while
   `ContentsStructuredBlockRenderer.renderPending` is true, allowing agenda/callout projection to finish on a worker
   thread instead of blocking the first note-open frame on the UI thread.
+- Mobile note snapshot polling also pauses during `selectedNoteBodyLoading`, so the first lazy note-open read is not
+  interleaved with a second same-note refresh probe.

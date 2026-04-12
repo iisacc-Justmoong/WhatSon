@@ -30,6 +30,9 @@ materializing the matching note list from `.wsnhead` metadata.
 
 - `noteListModel()` exposes a `LibraryNoteListModel` so the progress domain can drive the shared
   note list and editor selection bridge.
+- Progress-filtered note rows no longer carry full note bodies inside that shared note-list model.
+  The progress domain keeps summary/search metadata only and relies on editor-side lazy loading for the selected note
+  body.
 - `selectedIndex` is treated as the canonical progress enum value because the sidebar rows are fixed
   to the current ten-item product taxonomy.
 - `refreshNoteListForSelection()` keeps only notes whose `.wsnhead` `progress` integer matches the

@@ -24,6 +24,7 @@ public:
     bool directPersistenceAvailable() const noexcept;
 
     bool persistEditorTextForNote(const QString& noteId, const QString& text);
+    quint64 loadNoteBodyTextForNote(const QString& noteId);
     bool reconcileViewSessionAndRefreshSnapshotForNote(
         const QString& noteId,
         const QString& viewSessionText);
@@ -34,6 +35,12 @@ public:
 signals:
     void contentPersistenceContractAvailableChanged();
     void editorTextPersistenceFinished(
+        const QString& noteId,
+        const QString& text,
+        bool success,
+        const QString& errorMessage);
+    void noteBodyTextLoaded(
+        quint64 sequence,
         const QString& noteId,
         const QString& text,
         bool success,
@@ -50,6 +57,7 @@ private slots:
 private:
     enum class RequestKind
     {
+        LoadNoteBodyText,
         DirectPersistBody,
         ViewModelPersistBody,
         IncrementOpenCount,

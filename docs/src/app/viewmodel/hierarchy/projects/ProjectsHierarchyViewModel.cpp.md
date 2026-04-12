@@ -40,6 +40,9 @@ flat, the footer menu stays disabled because no row advertises `showChevron: tru
 
 - `noteListModel()` now returns a `LibraryNoteListModel` owned by the projects viewmodel instead of
   the inherited null default.
+- Project-filtered note rows no longer pass the full note body into that shared note-list model.
+  The model only receives preview/search metadata, while the editor fetches the selected note body lazily after
+  selection changes.
 - The note list is rebuilt from indexed `LibraryNoteRecord` entries, but project membership is
   synchronized again by reading each note header file before filtering.
 - This keeps `.wsnhead <project>` as the only source of truth for Projects filtering, even when

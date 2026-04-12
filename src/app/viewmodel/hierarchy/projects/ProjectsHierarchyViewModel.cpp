@@ -1664,7 +1664,7 @@ LibraryNoteListItem ProjectsHierarchyViewModel::buildNoteListItem(const LibraryN
     item.id = note.noteId.trimmed();
     item.primaryText = notePrimaryText(note);
     item.searchableText = noteSearchableText(note, folderLabels);
-    item.bodyText = note.bodySourceText.isEmpty() ? note.bodyPlainText : note.bodySourceText;
+    item.bodyText.clear();
     item.createdAt = note.createdAt;
     item.lastModifiedAt = note.lastModifiedAt;
     item.image = note.bodyHasResource;

@@ -18,6 +18,9 @@
   enqueue attempt on top of the same buffered state.
 - Entry-time session/filesystem reconcile requests are forwarded as a dedicated pass-through operation to
   `ContentsNoteManagementCoordinator`; this controller does not reimplement RAW comparison logic locally.
+- Selected-note body reads are also forwarded as pass-through operations to `ContentsNoteManagementCoordinator`.
+  This controller emits `noteBodyTextLoaded(sequence, ...)` back toward the selection bridge without mutating the
+  dirty-save buffer state.
 - Successful async persistence completion now also runs one post-write filesystem reconcile step:
   - compares the persisted editor snapshot against note RAW through
     `ContentsNoteManagementCoordinator::reconcileViewSessionAndRefreshSnapshotForNote(...)`
@@ -44,3 +47,7 @@
   mutation).
 - A successful persistence completion must still verify note RAW/session alignment once, so editor-visible snapshots
   can self-heal if downstream body serialization canonicalizes the source text.
+- Lazy selected-note body reads must stay side-effect free for the dirty-note persistence queue and must not trigger
+  extra save scheduling by themselves.
+- A newer same-note lazy body-read request must still be observable upstream after an older same-note read is already
+  in flight.

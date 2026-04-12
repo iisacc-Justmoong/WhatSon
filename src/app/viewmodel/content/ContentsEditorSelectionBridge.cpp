@@ -5,6 +5,7 @@
 #include <QMetaProperty>
 
 #include <algorithm>
+#include <utility>
 
 ContentsEditorSelectionBridge::ContentsEditorSelectionBridge(QObject* parent)
     : QObject(parent)
@@ -27,9 +28,19 @@ ContentsEditorSelectionBridge::ContentsEditorSelectionBridge(QObject* parent)
         &ContentsEditorSelectionBridge::editorTextPersistenceFinished);
     connect(
         m_idleSyncController,
+        &ContentsEditorIdleSyncController::noteBodyTextLoaded,
+        this,
+        &ContentsEditorSelectionBridge::handleNoteBodyTextLoaded);
+    connect(
+        m_idleSyncController,
         &ContentsEditorIdleSyncController::viewSessionSnapshotReconciled,
         this,
         &ContentsEditorSelectionBridge::viewSessionSnapshotReconciled);
+    connect(
+        m_idleSyncController,
+        &ContentsEditorIdleSyncController::viewSessionSnapshotReconciled,
+        this,
+        &ContentsEditorSelectionBridge::handleViewSessionSnapshotReconciledInternal);
 }
 
 ContentsEditorSelectionBridge::~ContentsEditorSelectionBridge() = default;
@@ -59,11 +70,6 @@ void ContentsEditorSelectionBridge::setNoteListModel(QObject* model)
         m_currentNoteIdChangedConnection = connect(
             m_noteListModel,
             SIGNAL(currentNoteIdChanged()),
-            this,
-            SLOT(handleNoteListSelectionChanged()));
-        m_currentBodyTextChangedConnection = connect(
-            m_noteListModel,
-            SIGNAL(currentBodyTextChanged()),
             this,
             SLOT(handleNoteListSelectionChanged()));
         m_itemCountChangedConnection = connect(
@@ -108,6 +114,10 @@ void ContentsEditorSelectionBridge::setContentViewModel(QObject* model)
         if (!m_selectedNoteId.trimmed().isEmpty())
         {
             m_idleSyncController->bindSelectedNote(m_selectedNoteId);
+            if (m_selectedNoteBodySnapshotNoteId != m_selectedNoteId && !m_selectedNoteBodyLoading)
+            {
+                startSelectedNoteBodyLoad(m_selectedNoteId, m_selectedNoteBodyText.isEmpty());
+            }
         }
         else
         {
@@ -142,6 +152,11 @@ QString ContentsEditorSelectionBridge::selectedNoteId() const
 QString ContentsEditorSelectionBridge::selectedNoteBodyText() const
 {
     return m_selectedNoteBodyText;
+}
+
+bool ContentsEditorSelectionBridge::selectedNoteBodyLoading() const noexcept
+{
+    return m_selectedNoteBodyLoading;
 }
 
 int ContentsEditorSelectionBridge::visibleNoteCount() const noexcept
@@ -189,6 +204,10 @@ bool ContentsEditorSelectionBridge::refreshSelectedNoteSnapshot()
 {
     const bool reloaded = m_idleSyncController != nullptr
         && m_idleSyncController->refreshNoteSnapshotForNote(m_selectedNoteId);
+    if (reloaded)
+    {
+        startSelectedNoteBodyLoad(m_selectedNoteId, false);
+    }
     scheduleNoteSelectionRefresh();
     refreshNoteCountState();
     return reloaded;
@@ -197,6 +216,47 @@ bool ContentsEditorSelectionBridge::refreshSelectedNoteSnapshot()
 void ContentsEditorSelectionBridge::handleNoteListSelectionChanged()
 {
     scheduleNoteSelectionRefresh();
+}
+
+void ContentsEditorSelectionBridge::handleNoteBodyTextLoaded(
+    const quint64 sequence,
+    const QString& noteId,
+    const QString& text,
+    const bool success,
+    const QString& errorMessage)
+{
+    Q_UNUSED(errorMessage)
+
+    const QString normalizedNoteId = noteId.trimmed();
+    if (sequence == 0
+        || normalizedNoteId.isEmpty()
+        || normalizedNoteId != m_selectedNoteId.trimmed()
+        || sequence != m_selectedNoteBodyRequestSequence)
+    {
+        return;
+    }
+
+    m_selectedNoteBodyRequestSequence = 0;
+    m_selectedNoteBodySnapshotNoteId = normalizedNoteId;
+    setSelectedNoteBodyState(success ? text : QString(), false);
+}
+
+void ContentsEditorSelectionBridge::handleViewSessionSnapshotReconciledInternal(
+    const QString& noteId,
+    const bool refreshed,
+    const bool success,
+    const QString& errorMessage)
+{
+    Q_UNUSED(errorMessage)
+
+    const QString normalizedNoteId = noteId.trimmed();
+    if (!success || !refreshed || normalizedNoteId.isEmpty()
+        || normalizedNoteId != m_selectedNoteId.trimmed())
+    {
+        return;
+    }
+
+    startSelectedNoteBodyLoad(normalizedNoteId, false);
 }
 
 void ContentsEditorSelectionBridge::flushPendingNoteSelectionRefresh()
@@ -216,6 +276,8 @@ void ContentsEditorSelectionBridge::handleNoteListDestroyed()
     m_noteListModel = nullptr;
     emit noteListModelChanged();
     m_noteSelectionRefreshQueued = false;
+    m_selectedNoteBodySnapshotNoteId.clear();
+    m_selectedNoteBodyRequestSequence = 0;
     refreshNoteSelectionState();
     refreshNoteCountState();
 }
@@ -228,6 +290,7 @@ void ContentsEditorSelectionBridge::handleContentViewModelDestroyed()
     {
         m_idleSyncController->setContentViewModel(nullptr);
     }
+    m_selectedNoteBodyRequestSequence = 0;
     emit contentViewModelChanged();
 }
 
@@ -267,6 +330,61 @@ int ContentsEditorSelectionBridge::readIntProperty(const QObject* object, const 
     return std::max(0, object->property(propertyName).toInt());
 }
 
+void ContentsEditorSelectionBridge::setSelectedNoteBodyState(QString bodyText, const bool loading)
+{
+    const bool loadingChanged = m_selectedNoteBodyLoading != loading;
+    const bool bodyTextChanged = m_selectedNoteBodyText != bodyText;
+
+    m_selectedNoteBodyLoading = loading;
+    m_selectedNoteBodyText = std::move(bodyText);
+
+    if (loadingChanged)
+    {
+        emit selectedNoteBodyLoadingChanged();
+    }
+    if (bodyTextChanged)
+    {
+        emit selectedNoteBodyTextChanged();
+    }
+}
+
+void ContentsEditorSelectionBridge::startSelectedNoteBodyLoad(
+    const QString& noteId,
+    const bool clearCachedBody)
+{
+    const QString normalizedNoteId = noteId.trimmed();
+    if (normalizedNoteId.isEmpty())
+    {
+        m_selectedNoteBodySnapshotNoteId.clear();
+        m_selectedNoteBodyRequestSequence = 0;
+        setSelectedNoteBodyState(QString(), false);
+        return;
+    }
+
+    if (clearCachedBody)
+    {
+        m_selectedNoteBodySnapshotNoteId.clear();
+        m_selectedNoteBodyRequestSequence = 0;
+    }
+
+    const bool shouldShowLoading = clearCachedBody
+        || (m_selectedNoteBodyText.isEmpty() && m_selectedNoteBodySnapshotNoteId != normalizedNoteId);
+    setSelectedNoteBodyState(clearCachedBody ? QString() : m_selectedNoteBodyText, shouldShowLoading);
+
+    const quint64 requestSequence = m_idleSyncController != nullptr
+        ? m_idleSyncController->loadNoteBodyTextForNote(normalizedNoteId)
+        : 0;
+    if (requestSequence != 0)
+    {
+        m_selectedNoteBodyRequestSequence = requestSequence;
+        return;
+    }
+
+    m_selectedNoteBodyRequestSequence = 0;
+    m_selectedNoteBodySnapshotNoteId = normalizedNoteId;
+    setSelectedNoteBodyState(clearCachedBody ? QString() : m_selectedNoteBodyText, false);
+}
+
 void ContentsEditorSelectionBridge::scheduleNoteSelectionRefresh()
 {
     if (m_noteSelectionRefreshQueued)
@@ -283,12 +401,8 @@ void ContentsEditorSelectionBridge::scheduleNoteSelectionRefresh()
 
 void ContentsEditorSelectionBridge::refreshNoteSelectionState()
 {
-    const bool nextContractAvailable = hasReadableProperty(m_noteListModel, "currentNoteId")
-        && hasReadableProperty(m_noteListModel, "currentBodyText");
+    const bool nextContractAvailable = hasReadableProperty(m_noteListModel, "currentNoteId");
     const QString nextNoteId = nextContractAvailable ? readStringProperty(m_noteListModel, "currentNoteId") : QString();
-    const QString nextBodyText = nextContractAvailable
-                                     ? readStringProperty(m_noteListModel, "currentBodyText")
-                                     : QString();
 
     if (m_noteSelectionContractAvailable != nextContractAvailable)
     {
@@ -311,23 +425,29 @@ void ContentsEditorSelectionBridge::refreshNoteSelectionState()
     }
 
     const bool noteIdChanged = m_selectedNoteId != nextNoteId;
-    const bool noteBodyTextChanged = m_selectedNoteBodyText != nextBodyText;
-    if (!noteIdChanged && !noteBodyTextChanged)
+    if (!noteIdChanged)
     {
+        if (!m_selectedNoteId.trimmed().isEmpty()
+            && m_selectedNoteBodySnapshotNoteId != m_selectedNoteId
+            && !m_selectedNoteBodyLoading)
+        {
+            startSelectedNoteBodyLoad(m_selectedNoteId, m_selectedNoteBodyText.isEmpty());
+        }
         return;
     }
 
     m_selectedNoteId = nextNoteId;
-    m_selectedNoteBodyText = nextBodyText;
+    emit selectedNoteIdChanged();
 
-    if (noteIdChanged)
+    if (nextNoteId.trimmed().isEmpty())
     {
-        emit selectedNoteIdChanged();
+        m_selectedNoteBodySnapshotNoteId.clear();
+        m_selectedNoteBodyRequestSequence = 0;
+        setSelectedNoteBodyState(QString(), false);
+        return;
     }
-    if (noteBodyTextChanged)
-    {
-        emit selectedNoteBodyTextChanged();
-    }
+
+    startSelectedNoteBodyLoad(nextNoteId, true);
 }
 
 void ContentsEditorSelectionBridge::refreshNoteCountState()
@@ -358,11 +478,6 @@ void ContentsEditorSelectionBridge::disconnectNoteListModel()
     {
         disconnect(m_currentNoteIdChangedConnection);
         m_currentNoteIdChangedConnection = QMetaObject::Connection();
-    }
-    if (m_currentBodyTextChangedConnection)
-    {
-        disconnect(m_currentBodyTextChangedConnection);
-        m_currentBodyTextChangedConnection = QMetaObject::Connection();
     }
     if (m_itemCountChangedConnection)
     {

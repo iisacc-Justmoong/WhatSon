@@ -20,6 +20,8 @@ should synchronize to disk.
 - `directPersistenceAvailable()`: reports whether the fast direct `.wsnote` lane is available.
 - `persistEditorTextForNote(noteId, text)`: accepts an already-approved sync snapshot and enqueues it onto the
   coordinator-owned management queue instead of performing save/stat work inline on the editor path.
+- `loadNoteBodyTextForNote(noteId)`: enqueues one worker-thread note read for the selected note body and returns the
+  resulting request sequence for `noteBodyTextLoaded(...)`.
 - `reconcileViewSessionAndRefreshSnapshotForNote(noteId, viewSessionText)`: reads the current note RAW body source
   from filesystem, compares it against the provided view-session text, and only requests snapshot refresh when they
   differ.
@@ -32,6 +34,7 @@ should synchronize to disk.
 ## Internal Queue Notes
 
 - The coordinator owns the serialized request queue for:
+  - lazy selected-note body reads
   - direct `.wsnote` body persistence
   - fallback view-model persistence requests
   - open-count header updates
@@ -39,6 +42,7 @@ should synchronize to disk.
 - Editor/QML code only asks for enqueue acceptance; the coordinator performs file IO and follow-up management later.
 - Repeated autosaves for the same note coalesce to the newest pending persistence payload.
 - Repeated pending tracked-stat refresh requests for the same note coalesce into one pending request.
+- Repeated selected-note body load requests for the same note keep only the newest pending worker read for that note.
 
 ## Regression Checks
 
@@ -52,3 +56,7 @@ should synchronize to disk.
   of letting QML assume the write succeeded.
 - Session/filesystem reconciliation must not force a metadata reload when the session text already matches filesystem
   RAW.
+- Selected note body reads must stay asynchronous and must not be satisfied by mirroring full note bodies through the
+  note-list model contract.
+- The selected-note body-read signal contract must preserve request sequencing so the selection bridge can ignore stale
+  completions.

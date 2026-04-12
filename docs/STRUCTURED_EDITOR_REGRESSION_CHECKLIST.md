@@ -42,3 +42,14 @@ structured document-flow editor changes.
   scheduling a second independent minimap/presentation/gutter refresh sequence.
 - One note-list rebuild must not trigger two immediate visible list snapshot refreshes from `modelReset` plus a second
   `itemsChanged()`-driven snapshot apply.
+
+## Large Note Lazy Load
+- Selecting a very large note must not freeze the app before the editor becomes interactive.
+- While the selected note body is still loading, desktop/mobile editor hosts must show the loading overlay and keep
+  editor input disabled.
+- A note-open turn must not sync an empty placeholder body into the editor before the lazy body read completes.
+- Library/bookmarks/projects/progress note-list rows must not carry the full note body as a secondary transport just to
+  support editor note-open.
+- When the selected note is refreshed in place after reconcile or metadata reload, the host may keep the existing body
+  visible while the replacement body is fetched asynchronously.
+- If two lazy body reads for the same selected note overlap, only the newest request may update the selected note body.

@@ -16,9 +16,11 @@
 
 ## Current Implementation Notes
 - `ContentsEditorSelectionBridge` is now selection-facing only:
-  - exports `selectedNoteId`, `selectedNoteBodyText`, and `visibleNoteCount`
+  - exports `selectedNoteId`, `selectedNoteBodyText`, `selectedNoteBodyLoading`, and `visibleNoteCount`
   - keeps the note-list selection/count property wiring for QML
   - forwards persistence and note-management requests to `file/sync/ContentsEditorIdleSyncController`
+- The note-list contract no longer requires `currentBodyText`.
+  Selected note bodies are now loaded lazily through the sync/note-management boundary after the note id changes.
 - Public invokables remain:
   - `persistEditorTextForNote(noteId, text)`
   - `stageEditorTextForIdleSync(noteId, text)`
@@ -36,8 +38,9 @@
 - `editorTextPersistenceFinished(noteId, text, success, errorMessage)` is still the completion signal consumed by QML
   editor sessions, but the bridge now only forwards the sync/controller result.
 - Internal note-list selection refresh now follows a queued-coalesced contract: one event-loop turn can schedule at
-  most one pending note-selection refresh, even if the underlying list model emits both note-id and body-text change
-  signals.
+  most one pending note-selection refresh.
+- The selected-note lazy-load contract now also keeps one latest request sequence, allowing the bridge to ignore stale
+  same-note body-read completions.
 
 ### Classes and Structs
 - `ContentsEditorSelectionBridge`
@@ -72,5 +75,6 @@
 - Mobile entry-time reconciliation must be available through
   `reconcileViewSessionAndRefreshSnapshotForNote(...)`, so QML can compare a live editor session snapshot against
   filesystem RAW and only then request a refresh.
-- Note-list adapters must still be free to emit separate `currentNoteIdChanged()` and `currentBodyTextChanged()`
-  signals, but the bridge itself must collapse them into one observable selection refresh turn for downstream QML.
+- The selected-note loading flag must stay aligned with the asynchronous note-body read lifecycle.
+- Large notes must not be mirrored into note-list `currentBodyText` just to support editor note-open.
+- Stale same-note body-read completions must not reclaim the selected note body after a newer request was issued.

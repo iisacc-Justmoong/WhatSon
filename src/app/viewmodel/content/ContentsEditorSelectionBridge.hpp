@@ -4,6 +4,7 @@
 #include <QObject>
 #include <QPointer>
 #include <QString>
+#include <QtTypes>
 
 class ContentsEditorIdleSyncController;
 
@@ -16,21 +17,18 @@ class ContentsEditorSelectionBridge : public QObject
     Q_PROPERTY(
         bool
             noteSelectionContractAvailable READ noteSelectionContractAvailable NOTIFY noteSelectionContractAvailableChanged)
-
-
-
     Q_PROPERTY(bool noteCountContractAvailable READ noteCountContractAvailable NOTIFY noteCountContractAvailableChanged)
     Q_PROPERTY(
         bool
-            contentPersistenceContractAvailable READ contentPersistenceContractAvailable NOTIFY contentPersistenceContractAvailableChanged)
+            contentPersistenceContractAvailable READ contentPersistenceContractAvailable
+                NOTIFY contentPersistenceContractAvailableChanged)
     Q_PROPERTY(
         bool
-            directPersistenceContractAvailable READ directPersistenceAvailable NOTIFY contentPersistenceContractAvailableChanged)
-
-
-
+            directPersistenceContractAvailable READ directPersistenceAvailable
+                NOTIFY contentPersistenceContractAvailableChanged)
     Q_PROPERTY(QString selectedNoteId READ selectedNoteId NOTIFY selectedNoteIdChanged)
     Q_PROPERTY(QString selectedNoteBodyText READ selectedNoteBodyText NOTIFY selectedNoteBodyTextChanged)
+    Q_PROPERTY(bool selectedNoteBodyLoading READ selectedNoteBodyLoading NOTIFY selectedNoteBodyLoadingChanged)
     Q_PROPERTY(int visibleNoteCount READ visibleNoteCount NOTIFY visibleNoteCountChanged)
 
 public:
@@ -49,6 +47,7 @@ public:
     bool directPersistenceAvailable() const noexcept;
     QString selectedNoteId() const;
     QString selectedNoteBodyText() const;
+    bool selectedNoteBodyLoading() const noexcept;
     int visibleNoteCount() const noexcept;
 
     Q_INVOKABLE bool persistEditorTextForNote(const QString& noteId, const QString& text);
@@ -59,10 +58,8 @@ public:
         const QString& viewSessionText);
     Q_INVOKABLE bool refreshSelectedNoteSnapshot();
 
-signals  :
-
+signals:
     void editorTextPersistenceQueued(const QString& noteId, const QString& text);
-
     void editorTextPersistenceFinished(
         const QString& noteId,
         const QString& text,
@@ -81,14 +78,22 @@ signals  :
     void contentPersistenceContractAvailableChanged();
     void selectedNoteIdChanged();
     void selectedNoteBodyTextChanged();
+    void selectedNoteBodyLoadingChanged();
     void visibleNoteCountChanged();
 
-private
-    slots  :
-
-
-
+private slots:
     void handleNoteListSelectionChanged();
+    void handleNoteBodyTextLoaded(
+        quint64 sequence,
+        const QString& noteId,
+        const QString& text,
+        bool success,
+        const QString& errorMessage);
+    void handleViewSessionSnapshotReconciledInternal(
+        const QString& noteId,
+        bool refreshed,
+        bool success,
+        const QString& errorMessage);
     void flushPendingNoteSelectionRefresh();
     void handleNoteListCountChanged();
     void handleNoteListDestroyed();
@@ -98,6 +103,8 @@ private:
     static bool hasReadableProperty(const QObject* object, const char* propertyName);
     static QString readStringProperty(const QObject* object, const char* propertyName);
     static int readIntProperty(const QObject* object, const char* propertyName);
+    void setSelectedNoteBodyState(QString bodyText, bool loading);
+    void startSelectedNoteBodyLoad(const QString& noteId, bool clearCachedBody);
     void scheduleNoteSelectionRefresh();
     void refreshNoteSelectionState();
     void refreshNoteCountState();
@@ -112,10 +119,12 @@ private:
     bool m_noteSelectionRefreshQueued = false;
     QString m_selectedNoteId;
     QString m_selectedNoteBodyText;
+    QString m_selectedNoteBodySnapshotNoteId;
+    quint64 m_selectedNoteBodyRequestSequence = 0;
+    bool m_selectedNoteBodyLoading = false;
     int m_visibleNoteCount = 0;
     QMetaObject::Connection m_noteListDestroyedConnection;
     QMetaObject::Connection m_currentNoteIdChangedConnection;
-    QMetaObject::Connection m_currentBodyTextChangedConnection;
     QMetaObject::Connection m_itemCountChangedConnection;
     QMetaObject::Connection m_contentViewModelDestroyedConnection;
 };

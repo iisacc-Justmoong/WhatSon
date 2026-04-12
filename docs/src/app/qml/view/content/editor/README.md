@@ -76,7 +76,7 @@
   pauses note snapshot polling, delays app-driven RichText surface reinjection until the OS input session settles, and
   uses a plain logical-text input surface instead of the RichText editor projection.
 - Desktop editor hosts now also pause note snapshot polling while the live editor owns focus, so the periodic
-  `currentBodyText` refresh cannot overwrite the active buffer with a stale same-note snapshot mid-typing.
+  selected-note snapshot refresh cannot overwrite the active buffer with a stale same-note payload mid-typing.
 - `MobileContentsDisplayView.qml` also removes the mobile live-editor horizontal inset, so the content view spans the
   full routed mobile width.
 - `ContentsEditorSelectionController.qml` now also owns common markdown list shortcuts (`Cmd+Shift+7/8` on macOS,
@@ -107,6 +107,13 @@
   - note-open and timer-driven reconciliation no longer perform RAW note reads on the UI thread
   - timer-driven polling now also respects one in-flight reconcile per selected note instead of enqueueing overlapping
     duplicate fetches
+- Selected note bodies are now also lazy-loaded:
+  - library/bookmarks/projects/progress note-list rows carry preview/search metadata, not the full note body
+  - `ContentsEditorSelectionBridge` exposes `selectedNoteBodyLoading` while the selected note body is read on a worker
+    thread
+  - desktop/mobile hosts defer `requestSyncEditorTextFromSelection(...)` until that body read completes
+  - a large note-open therefore no longer requires the note-list model, the selection bridge, and the editor session to
+    all duplicate the same full body text at once
 - `ContentsEditorTypingController.qml` now rebuilds post-edit logical line-start offsets from the resulting logical
   text each mutation, fixing stale line-count growth where gutter/minimap lines could increase but not decrease after
   newline removal or line-wrap collapse.

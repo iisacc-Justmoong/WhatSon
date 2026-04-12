@@ -29,6 +29,11 @@ ContentsEditorIdleSyncController::ContentsEditorIdleSyncController(QObject* pare
         &ContentsEditorIdleSyncController::handlePersistenceFinished);
     connect(
         m_noteManagementCoordinator,
+        &ContentsNoteManagementCoordinator::noteBodyTextLoaded,
+        this,
+        &ContentsEditorIdleSyncController::noteBodyTextLoaded);
+    connect(
+        m_noteManagementCoordinator,
         &ContentsNoteManagementCoordinator::viewSessionSnapshotReconciled,
         this,
         &ContentsEditorIdleSyncController::viewSessionSnapshotReconciled);
@@ -84,6 +89,15 @@ bool ContentsEditorIdleSyncController::stageEditorTextForIdleSync(const QString&
 bool ContentsEditorIdleSyncController::flushEditorTextForNote(const QString& noteId, const QString& text)
 {
     return stageEditorSnapshot(noteId, text, true);
+}
+
+quint64 ContentsEditorIdleSyncController::loadNoteBodyTextForNote(const QString& noteId)
+{
+    if (m_noteManagementCoordinator == nullptr)
+    {
+        return 0;
+    }
+    return m_noteManagementCoordinator->loadNoteBodyTextForNote(noteId);
 }
 
 bool ContentsEditorIdleSyncController::reconcileViewSessionAndRefreshSnapshotForNote(

@@ -82,6 +82,33 @@ bool ContentsNoteManagementCoordinator::persistEditorTextForNote(const QString& 
     return enqueuePersistenceRequest(normalizedNoteId, text);
 }
 
+quint64 ContentsNoteManagementCoordinator::loadNoteBodyTextForNote(const QString& noteId)
+{
+    const QString normalizedNoteId = noteId.trimmed();
+    if (normalizedNoteId.isEmpty())
+    {
+        return 0;
+    }
+
+    const QString noteDirectoryPath = resolveNoteDirectoryPathForNote(normalizedNoteId);
+    if (noteDirectoryPath.isEmpty())
+    {
+        return 0;
+    }
+
+    Request request;
+    request.kind = RequestKind::LoadNoteBodyText;
+    request.sequence = m_nextRequestSequence++;
+    request.noteId = normalizedNoteId;
+    request.noteDirectoryPath = noteDirectoryPath;
+    const quint64 requestSequence = request.sequence;
+    if (!enqueueRequest(std::move(request)))
+    {
+        return 0;
+    }
+    return requestSequence;
+}
+
 bool ContentsNoteManagementCoordinator::reconcileViewSessionAndRefreshSnapshotForNote(
     const QString& noteId,
     const QString& viewSessionText)
@@ -391,6 +418,11 @@ bool ContentsNoteManagementCoordinator::enqueueRequest(Request request)
                 pendingRequest.incrementOpenCount || request.incrementOpenCount;
             return true;
         }
+        if (request.kind == RequestKind::LoadNoteBodyText)
+        {
+            pendingRequest = std::move(request);
+            return true;
+        }
         return true;
     }
 
@@ -488,6 +520,24 @@ ContentsNoteManagementCoordinator::performWorkerRequest(const Request& request)
     result.noteDirectoryPath = request.noteDirectoryPath;
     result.text = request.text;
     result.incrementOpenCount = request.incrementOpenCount;
+
+    if (request.kind == RequestKind::LoadNoteBodyText)
+    {
+        WhatSonLocalNoteFileStore noteFileStore;
+        WhatSonLocalNoteDocument document;
+        WhatSonLocalNoteFileStore::ReadRequest readRequest;
+        readRequest.noteId = request.noteId;
+        readRequest.noteDirectoryPath = request.noteDirectoryPath;
+        if (!noteFileStore.readNote(readRequest, &document, &result.errorMessage))
+        {
+            return result;
+        }
+
+        result.text = WhatSon::NoteBodyPersistence::normalizeBodyPlainText(
+            document.bodySourceText.isEmpty() ? document.bodyPlainText : document.bodySourceText);
+        result.success = true;
+        return result;
+    }
 
     if (request.kind == RequestKind::DirectPersistBody)
     {
@@ -618,7 +668,25 @@ ContentsNoteManagementCoordinator::performViewModelPersistence(const Request& re
 
 void ContentsNoteManagementCoordinator::handleRequestFinished(const Result& result)
 {
-    if (result.kind == RequestKind::DirectPersistBody)
+    if (result.kind == RequestKind::LoadNoteBodyText)
+    {
+        if (!result.success)
+        {
+            WhatSon::Debug::traceSelf(
+                this,
+                QStringLiteral("content.note.management"),
+                QStringLiteral("loadNoteBodyText.failed"),
+                QStringLiteral("noteId=%1 error=%2").arg(result.noteId, result.errorMessage));
+        }
+
+        emit noteBodyTextLoaded(
+            result.sequence,
+            result.noteId,
+            result.text,
+            result.success,
+            result.errorMessage);
+    }
+    else if (result.kind == RequestKind::DirectPersistBody)
     {
         if (result.success)
         {

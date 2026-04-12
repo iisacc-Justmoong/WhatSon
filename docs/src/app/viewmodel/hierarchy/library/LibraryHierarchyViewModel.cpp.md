@@ -25,6 +25,10 @@
 - `activateNoteById(...)` is now the canonical cross-surface note-open path. It first searches the currently visible
   library note list, then clears any active search filter, then falls back to the implicit `All Library` selection
   before selecting the requested note row.
+- Library note-list row projection no longer carries the full note body.
+  The viewmodel still derives `primaryText` / `searchableText` from indexed note metadata, but `bodyText` is now
+  cleared before rows are pushed into the shared note-list model so large notes do not get duplicated into selection
+  state.
 - Editor persistence is now split into two viewmodel-facing phases:
   - `applyPersistedBodyStateForNote(...)` mutates only the in-memory indexed note/body preview immediately after a
     successful direct file-store write.
@@ -57,3 +61,5 @@
   - An active library search filter must be cleared automatically when it hides the requested note.
   - A folder-scoped library selection must fall back to `All Library` before the activation path reports failure.
   - Failed activation must not switch the current note to an unrelated item.
+  - Large library notes must not be duplicated into note-list row `bodyText`; the editor must lazy-load the selected
+    note body separately.

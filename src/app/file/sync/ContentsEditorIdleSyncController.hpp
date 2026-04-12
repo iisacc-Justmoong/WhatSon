@@ -36,6 +36,7 @@ public:
     Q_INVOKABLE bool persistEditorTextForNote(const QString& noteId, const QString& text);
     Q_INVOKABLE bool stageEditorTextForIdleSync(const QString& noteId, const QString& text);
     Q_INVOKABLE bool flushEditorTextForNote(const QString& noteId, const QString& text);
+    quint64 loadNoteBodyTextForNote(const QString& noteId);
     bool reconcileViewSessionAndRefreshSnapshotForNote(
         const QString& noteId,
         const QString& viewSessionText);
@@ -47,6 +48,12 @@ signals:
     void contentPersistenceContractAvailableChanged();
     void editorTextPersistenceQueued(const QString& noteId, const QString& text);
     void editorTextPersistenceFinished(
+        const QString& noteId,
+        const QString& text,
+        bool success,
+        const QString& errorMessage);
+    void noteBodyTextLoaded(
+        quint64 sequence,
         const QString& noteId,
         const QString& text,
         bool success,
