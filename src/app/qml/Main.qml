@@ -70,6 +70,7 @@ LV.ApplicationWindow {
         const _ = applicationWindow.registeredViewModelKeys;
         return LV.ViewModels.get("sidebarHierarchyViewModel");
     }
+    readonly property var rootResourcesImportViewModel: typeof resourcesImportViewModel !== "undefined" ? resourcesImportViewModel : null
     readonly property var rootAgendaViewModel: typeof agendaViewModel !== "undefined" ? agendaViewModel : null
     readonly property var rootDayCalendarViewModel: typeof dayCalendarViewModel !== "undefined" ? dayCalendarViewModel : null
     readonly property var rootMonthCalendarViewModel: typeof monthCalendarViewModel !== "undefined" ? monthCalendarViewModel : null
@@ -632,7 +633,7 @@ LV.ApplicationWindow {
         onLoaded: {
             if (item) {
                 item.hostWindow = applicationWindow
-                item.resourcesImportViewModel = resourcesImportViewModel
+                item.resourcesImportViewModel = applicationWindow.rootResourcesImportViewModel
             }
         }
     }
@@ -745,7 +746,7 @@ LV.ApplicationWindow {
                     noteDeletionViewModel: applicationWindow.rootLibraryNoteMutationViewModel
                     rightPanelColor: applicationWindow.desktopPanelSurfaceColor
                     rightPanelWidth: applicationWindow.rightPanelWidth
-                    resourcesImportViewModel: resourcesImportViewModel
+                    resourcesImportViewModel: applicationWindow.rootResourcesImportViewModel
                     sidebarColor: applicationWindow.desktopPanelSurfaceColor
                     sidebarHierarchyViewModel: applicationWindow.rootSidebarHierarchyViewModel
                     sidebarHorizontalInset: applicationWindow.hierarchyHorizontalInset
@@ -809,7 +810,7 @@ LV.ApplicationWindow {
             sidebarHierarchyViewModel: applicationWindow.rootSidebarHierarchyViewModel
             statusPlaceholderText: ""
             toolbarIconNames: applicationWindow.hierarchyToolbarIconNames
-            resourcesImportViewModel: resourcesImportViewModel
+            resourcesImportViewModel: applicationWindow.rootResourcesImportViewModel
             windowInteractions: windowInteractions
             agendaOverlayVisible: applicationWindow.agendaOverlayVisible
             agendaViewModel: applicationWindow.rootAgendaViewModel

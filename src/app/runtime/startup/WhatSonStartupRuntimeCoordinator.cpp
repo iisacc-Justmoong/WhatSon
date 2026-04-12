@@ -115,6 +115,27 @@ bool WhatSonStartupRuntimeCoordinator::loadHubIntoRuntimeWithRequestedDomains(
             QStringLiteral("domain=%1 reason=%2").arg(result.domain, domainErrorMessage));
     }
 
+    if (!loadSucceeded)
+    {
+        if (errorMessage != nullptr)
+        {
+            *errorMessage = failedDomains.isEmpty()
+                                ? QStringLiteral("Failed to load the selected WhatSon Hub.")
+                                : QStringLiteral("Failed to load .wshub domains: %1")
+                                      .arg(failedDomains.join(QStringLiteral(", ")));
+        }
+        return false;
+    }
+
+    if (hubRuntimeRequested && !hubRuntimeLoadSucceeded)
+    {
+        if (errorMessage != nullptr)
+        {
+            *errorMessage = QStringLiteral("Failed to load the selected WhatSon Hub runtime state.");
+        }
+        return false;
+    }
+
     if (hubRuntimeLoadSucceeded)
     {
         m_targets.libraryViewModel->setHubStore(m_targets.hubRuntimeStore->hub(normalizedHubPath));
@@ -141,27 +162,6 @@ bool WhatSonStartupRuntimeCoordinator::loadHubIntoRuntimeWithRequestedDomains(
             QStringLiteral("startup.runtime"),
             QStringLiteral("applyTagsDepthEntries.skipped"),
             QStringLiteral("reason=hub.runtime load failed"));
-    }
-
-    if (!loadSucceeded)
-    {
-        if (errorMessage != nullptr)
-        {
-            *errorMessage = failedDomains.isEmpty()
-                                ? QStringLiteral("Failed to load the selected WhatSon Hub.")
-                                : QStringLiteral("Failed to load .wshub domains: %1")
-                                      .arg(failedDomains.join(QStringLiteral(", ")));
-        }
-        return false;
-    }
-
-    if (hubRuntimeRequested && !hubRuntimeLoadSucceeded)
-    {
-        if (errorMessage != nullptr)
-        {
-            *errorMessage = QStringLiteral("Failed to load the selected WhatSon Hub runtime state.");
-        }
-        return false;
     }
 
     m_currentLoadedHubPath = normalizedHubPath;

@@ -49,6 +49,7 @@ Item {
             "stateValue": 5
         }
     ]
+    readonly property int defaultPanelWidth: Math.max(0, Math.round(LV.Theme.scaleMetric(194)))
     readonly property int detailContentsHeight: Math.max(0, detailPanel.height - detailPanel.headerToolbarHeight - detailPanel.panelSpacing)
     readonly property int detailContentsWidth: detailPanel.width
     readonly property var registeredViewModelKeys: LV.ViewModels.keys
@@ -163,7 +164,7 @@ Item {
 
     objectName: "DetailPanel"
     state: detailPanel.resolvedPanelStateName
-    implicitWidth: detailPanel.detailContentsWidth > 0 ? detailPanel.detailContentsWidth : 194
+    implicitWidth: detailPanel.defaultPanelWidth
 
     Column {
         anchors.fill: parent

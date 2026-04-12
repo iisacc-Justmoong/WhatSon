@@ -90,6 +90,9 @@ These signals make the file a reusable visual surface instead of a hard-coded on
   still tracks the primary routed folder.
 - Because LVRS hierarchy rows expose only one native active item, additional selections are rendered by
   `hierarchySelectionOverlayLayer` through `selectedHierarchyOverlayRects`.
+- `collectSelectedHierarchyOverlayRects()` must always return an array. If that helper falls through
+  without `return overlayRects;`, the overlay layer will read `.length` from `undefined` and the
+  sidebar loses multi-selection presentation at runtime.
 
 ## Footer View Options
 

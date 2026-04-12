@@ -111,6 +111,7 @@ bool WhatSonRuntimeParallelLoader::loadFromWshub(
     WhatSonRuntimeDomainSnapshots::ProgressSnapshot progressSnapshot;
     WhatSonRuntimeDomainSnapshots::StringListSnapshot eventSnapshot;
     WhatSonRuntimeDomainSnapshots::StringListSnapshot presetSnapshot;
+    WhatSonRuntimeDomainSnapshots::HubRuntimeSnapshot hubRuntimeSnapshot;
 
     bool hasLibraryTask = false;
     bool hasProjectsTask = false;
@@ -345,9 +346,14 @@ bool WhatSonRuntimeParallelLoader::loadFromWshub(
                 QStringLiteral("hub.runtime"),
                 normalizedPath,
                 hubResult,
-                [&targets](const QString& path, QString* error)
+                [&hubRuntimeSnapshot](const QString& path, QString* error)
                 {
-                    return WhatSonRuntimeDomainSnapshots::loadHubRuntime(path, targets.hubRuntimeStore, error);
+                    hubRuntimeSnapshot = WhatSonRuntimeDomainSnapshots::loadHubRuntime(path);
+                    if (!hubRuntimeSnapshot.succeeded && error != nullptr)
+                    {
+                        *error = hubRuntimeSnapshot.error;
+                    }
+                    return hubRuntimeSnapshot.succeeded;
                 });
 
             if (hubThread == nullptr)
@@ -430,6 +436,40 @@ bool WhatSonRuntimeParallelLoader::loadFromWshub(
         }
     }
 
+    bool allSucceeded = true;
+    int failedCount = 0;
+    for (const DomainLoadResult& result : results)
+    {
+        if (!result.succeeded)
+        {
+            allSucceeded = false;
+            ++failedCount;
+        }
+    }
+
+    if (outResults != nullptr)
+    {
+        *outResults = results;
+    }
+
+    if (!allSucceeded)
+    {
+        WhatSon::Debug::traceSelf(this,
+                                  QStringLiteral("runtime.parallel"),
+                                  QStringLiteral("loadFromWshub.failed"),
+                                  QStringLiteral("path=%1 totalDomains=%2 failedDomains=%3 elapsedMs=%4 applySkipped=1")
+                                      .arg(normalizedPath)
+                                      .arg(results.size())
+                                      .arg(failedCount)
+                                      .arg(totalElapsedTimer.elapsed()));
+        return false;
+    }
+
+    if (requestedDomains.hubRuntimeStore && targets.hubRuntimeStore != nullptr)
+    {
+        *targets.hubRuntimeStore = hubRuntimeSnapshot.store;
+    }
+
     if (hasLibraryTask)
     {
         targets.libraryViewModel->applyRuntimeSnapshot(
@@ -506,31 +546,13 @@ bool WhatSonRuntimeParallelLoader::loadFromWshub(
             std::move(presetSnapshot.error));
     }
 
-    if (outResults != nullptr)
-    {
-        *outResults = results;
-    }
-
-    bool allSucceeded = true;
-    int failedCount = 0;
-    for (const DomainLoadResult& result : results)
-    {
-        if (!result.succeeded)
-        {
-            allSucceeded = false;
-            ++failedCount;
-        }
-    }
-
     WhatSon::Debug::traceSelf(this,
                               QStringLiteral("runtime.parallel"),
-                              allSucceeded
-                                  ? QStringLiteral("loadFromWshub.success")
-                                  : QStringLiteral("loadFromWshub.failed"),
+                              QStringLiteral("loadFromWshub.success"),
                               QStringLiteral("path=%1 totalDomains=%2 failedDomains=%3 elapsedMs=%4")
                               .arg(normalizedPath)
                               .arg(results.size())
                               .arg(failedCount)
                               .arg(totalElapsedTimer.elapsed()));
-    return allSucceeded;
+    return true;
 }

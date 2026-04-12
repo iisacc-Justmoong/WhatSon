@@ -13,6 +13,9 @@
   resolve projected note items even before an explicit projection reload has populated the cache.
 - Bookmark/progress-originated note mutations still use the disk reindex fallback path so calendar projection remains
   aligned even when those domains mutate note metadata outside the library viewmodel's in-memory note list.
+- Project-domain mutations now join the same `hubFilesystemMutated() -> acknowledgeLocalMutation()`
+  wiring path as library/bookmark/progress mutations, so local project edits are not misclassified
+  as foreign hub changes.
 - Hub selection wiring now updates sync/import state directly without a background write-lease heartbeat timer.
 - Permission startup wiring now consumes `permissions/WhatSonPermissionBootstrapper.hpp` after consolidating
   permission bootstrap code under `src/app/permissions`.

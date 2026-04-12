@@ -226,7 +226,7 @@ Rectangle {
     property alias selectedHierarchyIndices: hierarchySelectionController.selectedIndices
     readonly property var selectedHierarchyOverlayRects: {
         const revision = sidebarHierarchyView.hierarchySelectionVisualRevision;
-        return sidebarHierarchyView.collectSelectedHierarchyOverlayRects();
+        return sidebarHierarchyView.collectSelectedHierarchyOverlayRects() || [];
     }
     readonly property var standardHierarchyModel: sidebarHierarchyView.displayedHierarchyModel
     readonly property int toolbarButtonSize: LV.Theme.gap20
@@ -339,7 +339,7 @@ Rectangle {
                 "y": Number(point.y) || 0
             });
         }
-
+        return overlayRects;
     }
     function commitHierarchyRename() {
         return renameController.commitHierarchyRename();

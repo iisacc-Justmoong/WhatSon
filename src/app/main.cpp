@@ -308,6 +308,7 @@ int main(int argc, char* argv[])
             &app,
             {
                 &libraryHierarchyViewModel,
+                &projectsHierarchyViewModel,
                 &bookmarksHierarchyViewModel,
                 &progressHierarchyViewModel
             });

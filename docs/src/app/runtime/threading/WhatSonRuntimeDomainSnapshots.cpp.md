@@ -33,6 +33,11 @@ If the snapshot loader detects that UUID migration is required but cannot rewrit
 marks the snapshot as failed and propagates the write error. This avoids silently continuing with a
 session-local identity map.
 
+Hub runtime loading now follows the same staging rule. `loadHubRuntime(...)` materializes a
+temporary `WhatSonHubRuntimeStore` inside `HubRuntimeSnapshot` and hands that staged copy back to
+`WhatSonRuntimeParallelLoader`. The live runtime store is updated only after every requested domain
+finished successfully.
+
 ## Resource Snapshot Fallback
 
 리소스 스냅샷 로더는 먼저 `.wscontents/Resources.wsresources`를 읽는다.

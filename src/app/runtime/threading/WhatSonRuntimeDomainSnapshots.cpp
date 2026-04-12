@@ -536,18 +536,10 @@ WhatSonRuntimeDomainSnapshots::TagsSnapshot WhatSonRuntimeDomainSnapshots::loadT
     return snapshot;
 }
 
-bool WhatSonRuntimeDomainSnapshots::loadHubRuntime(
-    const QString& wshubPath,
-    WhatSonHubRuntimeStore* store,
-    QString* errorMessage)
+WhatSonRuntimeDomainSnapshots::HubRuntimeSnapshot WhatSonRuntimeDomainSnapshots::loadHubRuntime(
+    const QString& wshubPath)
 {
-    if (store == nullptr)
-    {
-        if (errorMessage != nullptr)
-        {
-            *errorMessage = QStringLiteral("Target runtime store is null.");
-        }
-        return false;
-    }
-    return store->loadFromWshub(wshubPath, errorMessage);
+    HubRuntimeSnapshot snapshot;
+    snapshot.succeeded = snapshot.store.loadFromWshub(wshubPath, &snapshot.error);
+    return snapshot;
 }

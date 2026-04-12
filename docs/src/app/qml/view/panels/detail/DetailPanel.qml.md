@@ -20,6 +20,9 @@
 - The toolbar remains horizontally centered regardless of panel width.
 - Header height is derived from `DetailPanelHeaderToolbar.qml`'s implicit height instead of a fixed `20px` clamp.
 - The panel must not force the toolbar back to the legacy `145x20` frame on mobile or desktop.
+- The panel's implicit width is now a fixed LVRS-scaled default width, not a reflection of its own
+  current `width`. This avoids the `RightPanel -> DetailPanel` implicitWidth binding loop that could
+  destabilize the desktop detail column.
 
 ## Toolbar Metadata
 The file keeps a Figma-scoped toolbar spec and uses its icon names as the canonical source even when C++ toolbar items are present.

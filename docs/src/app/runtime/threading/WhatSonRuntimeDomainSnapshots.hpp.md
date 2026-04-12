@@ -12,6 +12,8 @@ bootstrap and hub reload.
 - `buildBookmarks(...)`: derives the bookmarks snapshot from an already indexed library note set.
 - `loadBookmarks(...)`: fallback path used only when the bookmarks domain is requested without the
   library domain.
+- `loadHubRuntime(...)`: now returns a dedicated `HubRuntimeSnapshot` that stages a fully loaded
+  `WhatSonHubRuntimeStore` copy instead of mutating the live runtime store from a worker thread.
 
 ## Architectural Note
 

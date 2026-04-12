@@ -1,5 +1,6 @@
 #pragma once
 
+#include "hub/WhatSonHubRuntimeStore.hpp"
 #include "file/hierarchy/WhatSonFolderDepthEntry.hpp"
 #include "file/hierarchy/library/LibraryNoteRecord.hpp"
 #include "file/hierarchy/tags/WhatSonTagDepthEntry.hpp"
@@ -7,8 +8,6 @@
 #include <QString>
 #include <QStringList>
 #include <QVector>
-
-class WhatSonHubRuntimeStore;
 
 class WhatSonRuntimeDomainSnapshots final
 {
@@ -69,6 +68,13 @@ public:
         QVector<WhatSonTagDepthEntry> entries;
     };
 
+    struct HubRuntimeSnapshot
+    {
+        bool succeeded = false;
+        QString error;
+        WhatSonHubRuntimeStore store;
+    };
+
     static LibrarySnapshot loadLibrary(const QString& wshubPath);
     static BookmarksSnapshot buildBookmarks(const QVector<LibraryNoteRecord>& allNotes);
     static BookmarksSnapshot loadBookmarks(const QString& wshubPath);
@@ -78,6 +84,5 @@ public:
     static StringListSnapshot loadEvent(const QString& wshubPath);
     static StringListSnapshot loadPreset(const QString& wshubPath);
     static TagsSnapshot loadTags(const QString& wshubPath);
-
-    static bool loadHubRuntime(const QString& wshubPath, WhatSonHubRuntimeStore* store, QString* errorMessage);
+    static HubRuntimeSnapshot loadHubRuntime(const QString& wshubPath);
 };
