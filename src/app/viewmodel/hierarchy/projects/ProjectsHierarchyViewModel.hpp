@@ -64,6 +64,11 @@ public:
     Q_INVOKABLE bool applyHierarchyNodes(
         const QVariantList& hierarchyNodes,
         const QString& activeItemKey = QString()) override;
+    Q_INVOKABLE bool applyPersistedBodyStateForNote(
+        const QString& noteId,
+        const QString& normalizedBodyText,
+        const QString& normalizedBodySourceText,
+        const QString& lastModifiedAt);
     Q_INVOKABLE bool requestTrackedStatisticsRefreshForNote(const QString& noteId, bool incrementOpenCount);
     Q_INVOKABLE QString noteDirectoryPathForNoteId(const QString& noteId) const;
     Q_INVOKABLE bool reloadNoteMetadataForNoteId(const QString& noteId);
@@ -90,7 +95,7 @@ public
 
     void requestViewModelHook();
 
-    signals  :
+signals  :
 
 
 
@@ -98,6 +103,7 @@ public
     void hierarchyModelChanged();
     void itemCountChanged();
     void loadStateChanged();
+    void hubFilesystemMutated();
     void viewModelHookRequested();
 
 private:

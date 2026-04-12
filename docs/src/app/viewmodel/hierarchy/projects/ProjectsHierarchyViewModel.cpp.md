@@ -55,6 +55,12 @@ flat, the footer menu stays disabled because no row advertises `showChevron: tru
 - `reloadNoteMetadataForNoteId(...)` now re-reads a single note document from disk and rebuilds the
   filtered projection immediately, so project assignment writes do not require a later hub reload
   before the projects note list catches up.
+- `applyPersistedBodyStateForNote(...)` now mirrors normalized body text, RAW source text, first-line
+  preview, and `lastModifiedAt` directly into the cached `m_allNotes` record, then refreshes the
+  selected projects note list in memory. Structured correction paths use this to avoid an immediate
+  second disk-backed metadata reload for the same note.
+- That same lightweight apply path now also emits `hubFilesystemMutated()`, aligning Projects with the
+  existing mutation notification contract used by other note-list-backed hierarchies.
 - `requestTrackedStatisticsRefreshForNote(...)` now owns the `.wsnbody` scan previously triggered by the editor
   selection bridge for project-scoped note opens, then reuses `reloadNoteMetadataForNoteId(...)` to rehydrate the
   updated header fields back into the projects projection.

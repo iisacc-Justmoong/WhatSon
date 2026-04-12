@@ -1,8 +1,13 @@
 #include "ContentsStructuredBlockRenderer.hpp"
 
+#include "agenda/ContentsAgendaBackend.hpp"
+#include "callout/ContentsCalloutBackend.hpp"
 #include "file/validator/WhatSonStructuredTagLinter.hpp"
 
+#include <QMetaObject>
+#include <QPointer>
 #include <QRegularExpression>
+#include <QThreadPool>
 #include <QVariantMap>
 
 #include <algorithm>
@@ -174,14 +179,86 @@ namespace
 
         return renderedBlocks;
     }
+
+    struct StructuredRenderSnapshot final
+    {
+        QVariantMap agendaParseVerification;
+        QString correctedSourceText;
+        QVariantMap calloutParseVerification;
+        QVariantList renderedAgendas;
+        QVariantList renderedCallouts;
+        QVariantList renderedDocumentBlocks;
+        QVariantMap structuredParseVerification;
+    };
+
+    StructuredRenderSnapshot buildRenderSnapshot(const QString& sourceText)
+    {
+        const bool agendaBlocksPossible = mayContainAgendaBlock(sourceText);
+        const bool calloutBlocksPossible = mayContainCalloutBlock(sourceText);
+        const bool breakBlocksPossible = mayContainBreakBlock(sourceText);
+        const WhatSonStructuredTagLinter tagLinter;
+        ContentsAgendaBackend agendaBackend;
+        ContentsCalloutBackend calloutBackend;
+
+        StructuredRenderSnapshot snapshot;
+
+        if (agendaBlocksPossible)
+        {
+            snapshot.renderedAgendas = agendaBackend.parseAgendas(sourceText);
+            snapshot.agendaParseVerification = agendaBackend.lastParseVerification();
+        }
+        else
+        {
+            snapshot.agendaParseVerification = tagLinter.buildAgendaVerification(sourceText, 0, 0, 0);
+        }
+
+        if (calloutBlocksPossible)
+        {
+            snapshot.renderedCallouts = calloutBackend.parseCallouts(sourceText);
+            snapshot.calloutParseVerification = calloutBackend.lastParseVerification();
+        }
+        else
+        {
+            snapshot.calloutParseVerification = tagLinter.buildCalloutVerification(sourceText, 0);
+        }
+
+        snapshot.correctedSourceText = tagLinter.normalizeStructuredSourceText(sourceText);
+        snapshot.structuredParseVerification = tagLinter.buildStructuredVerification(
+            snapshot.agendaParseVerification,
+            snapshot.calloutParseVerification,
+            sourceText);
+        snapshot.renderedDocumentBlocks = buildRenderedDocumentBlocks(
+            sourceText,
+            snapshot.renderedAgendas,
+            snapshot.renderedCallouts,
+            breakBlocksPossible);
+        return snapshot;
+    }
 } // namespace
+
+struct ContentsStructuredBlockRenderer::RenderResult final
+{
+    QVariantMap agendaParseVerification;
+    QString correctedSourceText;
+    QVariantMap calloutParseVerification;
+    QVariantList renderedAgendas;
+    QVariantList renderedCallouts;
+    QVariantList renderedDocumentBlocks;
+    quint64 sequence = 0;
+    QString sourceText;
+    QVariantMap structuredParseVerification;
+};
 
 ContentsStructuredBlockRenderer::ContentsStructuredBlockRenderer(QObject* parent)
     : QObject(parent)
     , m_agendaParseVerification(defaultParseVerification(QStringLiteral("agenda")))
     , m_calloutParseVerification(defaultParseVerification(QStringLiteral("callout")))
 {
-    refreshStructuredParseVerification();
+    const WhatSonStructuredTagLinter tagLinter;
+    m_structuredParseVerification = tagLinter.buildStructuredVerification(
+        m_agendaParseVerification,
+        m_calloutParseVerification,
+        QString());
 }
 
 ContentsStructuredBlockRenderer::~ContentsStructuredBlockRenderer() = default;
@@ -198,14 +275,9 @@ void ContentsStructuredBlockRenderer::setSourceText(const QString& sourceText)
         return;
     }
 
-    const bool previousCorrectionSuggested = correctionSuggested();
     m_sourceText = sourceText;
     emit sourceTextChanged();
     refreshRenderedBlocks();
-    if (previousCorrectionSuggested != correctionSuggested())
-    {
-        emit correctionSuggestedChanged();
-    }
 }
 
 QVariantList ContentsStructuredBlockRenderer::renderedAgendas() const
@@ -248,6 +320,33 @@ bool ContentsStructuredBlockRenderer::correctionSuggested() const noexcept
     return !m_correctedSourceText.isEmpty() && m_correctedSourceText != m_sourceText;
 }
 
+bool ContentsStructuredBlockRenderer::backgroundRefreshEnabled() const noexcept
+{
+    return m_backgroundRefreshEnabled;
+}
+
+void ContentsStructuredBlockRenderer::setBackgroundRefreshEnabled(const bool enabled)
+{
+    if (m_backgroundRefreshEnabled == enabled)
+    {
+        return;
+    }
+
+    m_backgroundRefreshEnabled = enabled;
+    emit backgroundRefreshEnabledChanged();
+
+    if (!m_backgroundRefreshEnabled && m_renderPending)
+    {
+        m_activeRenderSequence = 0;
+        refreshRenderedBlocks();
+    }
+}
+
+bool ContentsStructuredBlockRenderer::renderPending() const noexcept
+{
+    return m_renderPending;
+}
+
 int ContentsStructuredBlockRenderer::agendaCount() const noexcept
 {
     return m_renderedAgendas.size();
@@ -278,102 +377,28 @@ void ContentsStructuredBlockRenderer::requestRenderRefresh()
 
 void ContentsStructuredBlockRenderer::refreshRenderedBlocks()
 {
-    const bool agendaBlocksPossible = mayContainAgendaBlock(m_sourceText);
-    const bool calloutBlocksPossible = mayContainCalloutBlock(m_sourceText);
-    const bool breakBlocksPossible = mayContainBreakBlock(m_sourceText);
-    const bool anyStructuredBlocksPossible = agendaBlocksPossible || calloutBlocksPossible || breakBlocksPossible;
-    const WhatSonStructuredTagLinter tagLinter;
-
-    QVariantList nextRenderedAgendas;
-    QVariantList nextRenderedCallouts;
-
-    if (agendaBlocksPossible)
+    if (shouldRenderInBackground())
     {
-        nextRenderedAgendas = m_agendaBackend.parseAgendas(m_sourceText);
-        updateAgendaParseVerification(m_agendaBackend.lastParseVerification());
-    }
-    else
-    {
-        updateAgendaParseVerification(tagLinter.buildAgendaVerification(m_sourceText, 0, 0, 0));
-    }
-
-    if (calloutBlocksPossible)
-    {
-        nextRenderedCallouts = m_calloutBackend.parseCallouts(m_sourceText);
-        updateCalloutParseVerification(m_calloutBackend.lastParseVerification());
-    }
-    else
-    {
-        updateCalloutParseVerification(tagLinter.buildCalloutVerification(m_sourceText, 0));
-    }
-
-    refreshStructuredParseVerification();
-
-    const QVariantList nextRenderedDocumentBlocks = buildRenderedDocumentBlocks(
-        m_sourceText,
-        nextRenderedAgendas,
-        nextRenderedCallouts,
-        breakBlocksPossible);
-    if (!anyStructuredBlocksPossible
-        && nextRenderedDocumentBlocks.size() == 1
-        && m_renderedAgendas == nextRenderedAgendas
-        && m_renderedCallouts == nextRenderedCallouts
-        && m_renderedDocumentBlocks == nextRenderedDocumentBlocks)
-    {
-        return;
-    }
-    if (m_renderedAgendas == nextRenderedAgendas
-        && m_renderedCallouts == nextRenderedCallouts
-        && m_renderedDocumentBlocks == nextRenderedDocumentBlocks)
-    {
+        updateRenderPending(true);
+        publishPlaceholderDocumentBlocks();
+        dispatchAsyncRender();
         return;
     }
 
-    m_renderedAgendas = nextRenderedAgendas;
-    m_renderedCallouts = nextRenderedCallouts;
-    m_renderedDocumentBlocks = nextRenderedDocumentBlocks;
-    emit renderedBlocksChanged();
-}
+    updateRenderPending(false);
+    m_activeRenderSequence = 0;
 
-void ContentsStructuredBlockRenderer::refreshStructuredParseVerification()
-{
-    const WhatSonStructuredTagLinter tagLinter;
-    const QString nextCorrectedSourceText = tagLinter.normalizeStructuredSourceText(m_sourceText);
-    if (m_correctedSourceText != nextCorrectedSourceText)
-    {
-        m_correctedSourceText = nextCorrectedSourceText;
-        emit correctedSourceTextChanged();
-    }
-
-    const QVariantMap nextStructuredVerification = tagLinter.buildStructuredVerification(
-        m_agendaParseVerification,
-        m_calloutParseVerification,
-        m_sourceText);
-    if (m_structuredParseVerification != nextStructuredVerification)
-    {
-        m_structuredParseVerification = nextStructuredVerification;
-        emit structuredParseVerificationChanged();
-        emit structuredParseVerificationReported(m_structuredParseVerification);
-    }
-
-    if (correctionSuggested())
-    {
-        if (m_lastCorrectionSuggestionSourceText != m_sourceText
-            || m_lastCorrectionSuggestionCorrectedText != m_correctedSourceText)
-        {
-            m_lastCorrectionSuggestionSourceText = m_sourceText;
-            m_lastCorrectionSuggestionCorrectedText = m_correctedSourceText;
-            emit structuredCorrectionSuggested(
-                m_sourceText,
-                m_correctedSourceText,
-                m_structuredParseVerification);
-        }
-    }
-    else
-    {
-        m_lastCorrectionSuggestionSourceText.clear();
-        m_lastCorrectionSuggestionCorrectedText.clear();
-    }
+    const StructuredRenderSnapshot snapshot = buildRenderSnapshot(m_sourceText);
+    RenderResult result;
+    result.agendaParseVerification = snapshot.agendaParseVerification;
+    result.correctedSourceText = snapshot.correctedSourceText;
+    result.calloutParseVerification = snapshot.calloutParseVerification;
+    result.renderedAgendas = snapshot.renderedAgendas;
+    result.renderedCallouts = snapshot.renderedCallouts;
+    result.renderedDocumentBlocks = snapshot.renderedDocumentBlocks;
+    result.sourceText = m_sourceText;
+    result.structuredParseVerification = snapshot.structuredParseVerification;
+    applyRenderResult(result);
 }
 
 void ContentsStructuredBlockRenderer::updateAgendaParseVerification(const QVariantMap& verification)
@@ -394,4 +419,188 @@ void ContentsStructuredBlockRenderer::updateCalloutParseVerification(const QVari
         emit calloutParseVerificationChanged();
     }
     emit calloutParseVerificationReported(verification);
+}
+
+void ContentsStructuredBlockRenderer::updateStructuredParseVerification(const QVariantMap& verification)
+{
+    if (m_structuredParseVerification != verification)
+    {
+        m_structuredParseVerification = verification;
+        emit structuredParseVerificationChanged();
+    }
+    emit structuredParseVerificationReported(verification);
+}
+
+void ContentsStructuredBlockRenderer::updateCorrectedSourceText(const QString& correctedSourceText)
+{
+    if (m_correctedSourceText == correctedSourceText)
+    {
+        return;
+    }
+
+    m_correctedSourceText = correctedSourceText;
+    emit correctedSourceTextChanged();
+}
+
+void ContentsStructuredBlockRenderer::updateRenderPending(const bool pending)
+{
+    if (m_renderPending == pending)
+    {
+        return;
+    }
+
+    m_renderPending = pending;
+    emit renderPendingChanged();
+}
+
+bool ContentsStructuredBlockRenderer::shouldRenderInBackground() const noexcept
+{
+    return m_backgroundRefreshEnabled
+        && (mayContainAgendaBlock(m_sourceText)
+            || mayContainCalloutBlock(m_sourceText)
+            || mayContainBreakBlock(m_sourceText));
+}
+
+void ContentsStructuredBlockRenderer::applyRenderResult(const RenderResult& result)
+{
+    const bool previousCorrectionSuggested = correctionSuggested();
+
+    updateAgendaParseVerification(result.agendaParseVerification);
+    updateCalloutParseVerification(result.calloutParseVerification);
+    updateCorrectedSourceText(result.correctedSourceText);
+    updateStructuredParseVerification(result.structuredParseVerification);
+
+    const bool renderPayloadChanged =
+        m_renderedAgendas != result.renderedAgendas
+        || m_renderedCallouts != result.renderedCallouts
+        || m_renderedDocumentBlocks != result.renderedDocumentBlocks;
+    if (renderPayloadChanged)
+    {
+        m_renderedAgendas = result.renderedAgendas;
+        m_renderedCallouts = result.renderedCallouts;
+        m_renderedDocumentBlocks = result.renderedDocumentBlocks;
+        emit renderedBlocksChanged();
+    }
+
+    if (correctionSuggested())
+    {
+        if (m_lastCorrectionSuggestionSourceText != m_sourceText
+            || m_lastCorrectionSuggestionCorrectedText != m_correctedSourceText)
+        {
+            m_lastCorrectionSuggestionSourceText = m_sourceText;
+            m_lastCorrectionSuggestionCorrectedText = m_correctedSourceText;
+            emit structuredCorrectionSuggested(
+                m_sourceText,
+                m_correctedSourceText,
+                m_structuredParseVerification);
+        }
+    }
+    else
+    {
+        m_lastCorrectionSuggestionSourceText.clear();
+        m_lastCorrectionSuggestionCorrectedText.clear();
+    }
+
+    if (previousCorrectionSuggested != correctionSuggested())
+    {
+        emit correctionSuggestedChanged();
+    }
+}
+
+void ContentsStructuredBlockRenderer::dispatchAsyncRender()
+{
+    if (m_renderRequestInFlight)
+    {
+        return;
+    }
+
+    const QString sourceText = m_sourceText;
+    const quint64 sequence = m_nextRenderSequence++;
+    m_activeRenderSequence = sequence;
+    m_renderRequestInFlight = true;
+
+    QPointer<ContentsStructuredBlockRenderer> rendererGuard(this);
+    QThreadPool::globalInstance()->start([rendererGuard, sequence, sourceText]()
+    {
+        const StructuredRenderSnapshot snapshot = buildRenderSnapshot(sourceText);
+        RenderResult result;
+        result.agendaParseVerification = snapshot.agendaParseVerification;
+        result.correctedSourceText = snapshot.correctedSourceText;
+        result.calloutParseVerification = snapshot.calloutParseVerification;
+        result.renderedAgendas = snapshot.renderedAgendas;
+        result.renderedCallouts = snapshot.renderedCallouts;
+        result.renderedDocumentBlocks = snapshot.renderedDocumentBlocks;
+        result.sequence = sequence;
+        result.sourceText = sourceText;
+        result.structuredParseVerification = snapshot.structuredParseVerification;
+        if (rendererGuard != nullptr)
+        {
+            QMetaObject::invokeMethod(
+                rendererGuard,
+                [rendererGuard, result]()
+                {
+                    if (rendererGuard != nullptr)
+                    {
+                        rendererGuard->handleAsyncRenderFinished(result);
+                    }
+                },
+                Qt::QueuedConnection);
+        }
+    });
+}
+
+void ContentsStructuredBlockRenderer::handleAsyncRenderFinished(const RenderResult& result)
+{
+    const bool sequenceMatches = result.sequence != 0 && result.sequence == m_activeRenderSequence;
+    m_renderRequestInFlight = false;
+    if (sequenceMatches)
+    {
+        m_activeRenderSequence = 0;
+    }
+
+    if (!sequenceMatches || result.sourceText != m_sourceText)
+    {
+        if (shouldRenderInBackground())
+        {
+            dispatchAsyncRender();
+            return;
+        }
+        if (m_renderPending)
+        {
+            refreshRenderedBlocks();
+        }
+        return;
+    }
+
+    updateRenderPending(false);
+    applyRenderResult(result);
+}
+
+void ContentsStructuredBlockRenderer::publishPlaceholderDocumentBlocks()
+{
+    const QVariantList placeholderBlocks = QVariantList {
+        textBlockPayload(m_sourceText, 0, m_sourceText.size())
+    };
+
+    const bool previousCorrectionSuggested = correctionSuggested();
+    updateCorrectedSourceText(QString());
+
+    const bool renderPayloadChanged =
+        !m_renderedAgendas.isEmpty()
+        || !m_renderedCallouts.isEmpty()
+        || m_renderedDocumentBlocks != placeholderBlocks;
+    if (renderPayloadChanged)
+    {
+        m_renderedAgendas.clear();
+        m_renderedCallouts.clear();
+        m_renderedDocumentBlocks = placeholderBlocks;
+        emit renderedBlocksChanged();
+    }
+
+    m_lastCorrectionSuggestionSourceText.clear();
+    m_lastCorrectionSuggestionCorrectedText.clear();
+    if (previousCorrectionSuggested != correctionSuggested())
+    {
+        emit correctionSuggestedChanged();
+    }
 }

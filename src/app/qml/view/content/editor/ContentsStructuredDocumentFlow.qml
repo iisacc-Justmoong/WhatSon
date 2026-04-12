@@ -13,9 +13,8 @@ FocusScope {
     property var documentBlocks: []
     property string sourceText: ""
     property int activeBlockIndex: -1
-    property var pendingFocusRequest: ({ "token": 0 })
+    property var pendingFocusRequest: null
     property int pendingFocusBlockIndex: -1
-    property int appliedFocusToken: 0
     property bool pendingFocusApplyQueued: false
     readonly property bool focused: activeFocus
 
@@ -53,14 +52,9 @@ FocusScope {
 
     function requestFocus(request) {
         const baseRequest = request && typeof request === "object" ? request : ({})
-        documentFlow.pendingFocusRequest = Object.assign({}, baseRequest, {
-                                                             "token": Math.max(0, Number(documentFlow.pendingFocusRequest.token) || 0) + 1
-                                                         })
-    }
-
-    function normalizedFocusToken(request) {
-        const safeRequest = request && typeof request === "object" ? request : ({})
-        return Math.max(0, Math.floor(Number(safeRequest.token) || 0))
+        documentFlow.pendingFocusRequest = Object.assign({}, baseRequest)
+        documentFlow.pendingFocusBlockIndex = documentFlow.focusTargetBlockIndex(documentFlow.pendingFocusRequest)
+        documentFlow.schedulePendingFocusApply()
     }
 
     function normalizedFocusTaskOpenTagStart(request) {
@@ -127,6 +121,11 @@ FocusScope {
     }
 
     function refreshPendingFocusBlockIndex() {
+        if (!documentFlow.pendingFocusRequest || typeof documentFlow.pendingFocusRequest !== "object") {
+            if (documentFlow.pendingFocusBlockIndex !== -1)
+                documentFlow.pendingFocusBlockIndex = -1
+            return -1
+        }
         const nextIndex = documentFlow.focusTargetBlockIndex(documentFlow.pendingFocusRequest)
         if (documentFlow.pendingFocusBlockIndex !== nextIndex)
             documentFlow.pendingFocusBlockIndex = nextIndex
@@ -134,8 +133,8 @@ FocusScope {
     }
 
     function applyFocusToBlockIndex(blockIndex) {
-        const focusToken = documentFlow.normalizedFocusToken(documentFlow.pendingFocusRequest)
-        if (focusToken <= 0 || focusToken === documentFlow.appliedFocusToken)
+        const request = documentFlow.pendingFocusRequest
+        if (!request || typeof request !== "object")
             return false
         const safeIndex = Math.max(-1, Math.floor(Number(blockIndex) || -1))
         if (safeIndex < 0 || safeIndex >= blockRepeater.count)
@@ -145,25 +144,33 @@ FocusScope {
         const delegateItem = loader && loader.item ? loader.item : null
         if (!delegateItem || delegateItem.applyFocusRequest === undefined)
             return false
-        if (!delegateItem.applyFocusRequest(documentFlow.pendingFocusRequest))
+        if (!delegateItem.applyFocusRequest(request))
             return false
-        documentFlow.appliedFocusToken = focusToken
+        documentFlow.pendingFocusRequest = null
+        documentFlow.pendingFocusBlockIndex = -1
         documentFlow.activeBlockIndex = safeIndex
         return true
     }
 
     function schedulePendingFocusApply() {
+        if (!documentFlow.pendingFocusRequest || typeof documentFlow.pendingFocusRequest !== "object")
+            return
         if (documentFlow.pendingFocusApplyQueued)
             return
         documentFlow.pendingFocusApplyQueued = true
         Qt.callLater(function () {
             documentFlow.pendingFocusApplyQueued = false
+            if (!documentFlow.pendingFocusRequest || typeof documentFlow.pendingFocusRequest !== "object")
+                return
             documentFlow.applyPendingFocus()
         })
     }
 
     function applyPendingFocus() {
-        return documentFlow.applyFocusToBlockIndex(documentFlow.refreshPendingFocusBlockIndex())
+        const targetBlockIndex = documentFlow.pendingFocusBlockIndex >= 0
+                               ? documentFlow.pendingFocusBlockIndex
+                               : documentFlow.refreshPendingFocusBlockIndex()
+        return documentFlow.applyFocusToBlockIndex(targetBlockIndex)
     }
 
     function replaceSourceRange(start, end, replacementText, focusRequest) {
@@ -457,6 +464,10 @@ FocusScope {
         }
     }
 
-    onDocumentBlocksChanged: documentFlow.schedulePendingFocusApply()
-    onPendingFocusRequestChanged: documentFlow.schedulePendingFocusApply()
+    onDocumentBlocksChanged: {
+        if (!documentFlow.pendingFocusRequest || typeof documentFlow.pendingFocusRequest !== "object")
+            return
+        documentFlow.refreshPendingFocusBlockIndex()
+        documentFlow.schedulePendingFocusApply()
+    }
 }

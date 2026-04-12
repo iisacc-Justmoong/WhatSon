@@ -14,12 +14,16 @@ Declares the editor-side structured-block renderer that projects proprietary blo
   normalized by the file-layer linter.
 - `correctedSourceText`: canonical RAW source projection suggested by the file-layer structured-tag linter.
 - `correctionSuggested`: convenience bit telling QML whether the current source differs from that canonical projection.
+- `backgroundRefreshEnabled`: lets QML move structured parse/canonicalization work off the UI thread when the editor is
+  not actively focused.
+- `renderPending`: tells QML that a worker-thread structured render is still in flight.
 - `agendaCount` / `calloutCount` / `hasRenderedBlocks`: cheap QML visibility helpers.
 - `requestRenderRefresh()`: explicit recompute hook for hosts that need a forced refresh after external state changes.
 
 ## Signals
 - `agendaParseVerificationChanged()` / `calloutParseVerificationChanged()` / `structuredParseVerificationChanged()`
 - `correctedSourceTextChanged()` / `correctionSuggestedChanged()`
+- `backgroundRefreshEnabledChanged()` / `renderPendingChanged()`
 - `agendaParseVerificationReported(verification)` / `calloutParseVerificationReported(verification)` /
   `structuredParseVerificationReported(verification)`
 - `structuredCorrectionSuggested(sourceText, correctedSourceText, verification)`

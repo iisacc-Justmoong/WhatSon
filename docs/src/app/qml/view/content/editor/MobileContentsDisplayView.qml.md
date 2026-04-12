@@ -26,3 +26,6 @@ Mobile content editor host.
   multiple completion handlers.
 - Mobile initial mount and `selectedNoteIdChanged` also keep the selection-sync result in a local gate before fallback
   refresh scheduling, matching the desktop deferred sync path while staying within QML parser identifier constraints.
+- Mobile note-open/model sync now also keeps the structured-flow surface mounted while
+  `ContentsStructuredBlockRenderer.renderPending` is true, allowing agenda/callout projection to finish on a worker
+  thread instead of blocking the first note-open frame on the UI thread.

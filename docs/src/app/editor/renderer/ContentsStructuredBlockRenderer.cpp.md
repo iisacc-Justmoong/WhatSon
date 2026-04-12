@@ -18,7 +18,17 @@ Builds canonical structured render data from `.wsnbody` source text.
   once per source refresh.
 - Notes that do not contain any proprietary structured tags now skip agenda/callout backend parsing entirely and fall
   back to one plain text block plus linter-only verification.
+- When the host enables `backgroundRefreshEnabled`, notes that may contain agenda/callout/break blocks now publish a
+  cheap single-text-block placeholder immediately and compute the expensive structured render snapshot on a worker
+  thread.
+- Async render results are sequence-checked before apply so stale note-open parses cannot overwrite newer source text
+  after selection changes or live edits.
+- Both the async apply path and the placeholder publish path now compare render payload deltas first, then emit
+  `renderedBlocksChanged()` from that distinct delta flag. This keeps the signal contract intact without shadowing the
+  signal name in local state.
 
 ## Why It Changed
 Agenda/callout cards now render as document-owned flow blocks instead of offset-projected overlay layers. The QML host
-needs one ordered block stream rather than two independent overlay lists.
+needs one ordered block stream rather than two independent overlay lists. The latest regression also showed that
+running agenda/callout parsing plus structured canonicalization synchronously during note-open could block the UI thread
+long enough to surface as `Not responding`.

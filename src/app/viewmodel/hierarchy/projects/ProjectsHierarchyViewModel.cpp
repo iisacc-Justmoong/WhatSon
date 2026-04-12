@@ -851,6 +851,42 @@ bool ProjectsHierarchyViewModel::requestTrackedStatisticsRefreshForNote(
     return reloadNoteMetadataForNoteId(normalizedNoteId);
 }
 
+bool ProjectsHierarchyViewModel::applyPersistedBodyStateForNote(
+    const QString& noteId,
+    const QString& normalizedBodyText,
+    const QString& normalizedBodySourceText,
+    const QString& lastModifiedAt)
+{
+    const QString normalizedNoteId = noteId.trimmed();
+    if (normalizedNoteId.isEmpty())
+    {
+        return false;
+    }
+
+    const int noteIndex = indexOfNoteRecordById(m_allNotes, normalizedNoteId);
+    if (noteIndex < 0 || noteIndex >= m_allNotes.size())
+    {
+        return false;
+    }
+
+    LibraryNoteRecord& note = m_allNotes[noteIndex];
+    note.bodyPlainText = WhatSon::NoteBodyPersistence::normalizeBodyPlainText(normalizedBodyText);
+    note.bodySourceText = WhatSon::NoteBodyPersistence::normalizeBodyPlainText(normalizedBodySourceText);
+    if (note.bodySourceText.isEmpty())
+    {
+        note.bodySourceText = note.bodyPlainText;
+    }
+    note.bodyFirstLine = WhatSon::NoteBodyPersistence::firstLineFromBodyPlainText(note.bodyPlainText);
+    if (!lastModifiedAt.trimmed().isEmpty())
+    {
+        note.lastModifiedAt = lastModifiedAt.trimmed();
+    }
+
+    refreshNoteListForSelection();
+    emit hubFilesystemMutated();
+    return true;
+}
+
 QString ProjectsHierarchyViewModel::noteDirectoryPathForNoteId(const QString& noteId) const
 {
     const QString normalizedNoteId = noteId.trimmed();

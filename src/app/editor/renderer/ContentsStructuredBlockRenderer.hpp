@@ -1,8 +1,5 @@
 #pragma once
 
-#include "agenda/ContentsAgendaBackend.hpp"
-#include "callout/ContentsCalloutBackend.hpp"
-
 #include <QObject>
 #include <QString>
 #include <QVariantMap>
@@ -21,6 +18,8 @@ class ContentsStructuredBlockRenderer : public QObject
     Q_PROPERTY(QVariantMap structuredParseVerification READ structuredParseVerification NOTIFY structuredParseVerificationChanged)
     Q_PROPERTY(QString correctedSourceText READ correctedSourceText NOTIFY correctedSourceTextChanged)
     Q_PROPERTY(bool correctionSuggested READ correctionSuggested NOTIFY correctionSuggestedChanged)
+    Q_PROPERTY(bool backgroundRefreshEnabled READ backgroundRefreshEnabled WRITE setBackgroundRefreshEnabled NOTIFY backgroundRefreshEnabledChanged)
+    Q_PROPERTY(bool renderPending READ renderPending NOTIFY renderPendingChanged)
     Q_PROPERTY(int agendaCount READ agendaCount NOTIFY renderedBlocksChanged)
     Q_PROPERTY(int calloutCount READ calloutCount NOTIFY renderedBlocksChanged)
     Q_PROPERTY(bool hasRenderedBlocks READ hasRenderedBlocks NOTIFY renderedBlocksChanged)
@@ -40,6 +39,9 @@ public:
     QVariantMap structuredParseVerification() const;
     QString correctedSourceText() const;
     bool correctionSuggested() const noexcept;
+    bool backgroundRefreshEnabled() const noexcept;
+    void setBackgroundRefreshEnabled(bool enabled);
+    bool renderPending() const noexcept;
     int agendaCount() const noexcept;
     int calloutCount() const noexcept;
     bool hasRenderedBlocks() const noexcept;
@@ -55,6 +57,8 @@ signals:
     void structuredParseVerificationChanged();
     void correctedSourceTextChanged();
     void correctionSuggestedChanged();
+    void backgroundRefreshEnabledChanged();
+    void renderPendingChanged();
     void agendaParseVerificationReported(const QVariantMap& verification);
     void calloutParseVerificationReported(const QVariantMap& verification);
     void structuredParseVerificationReported(const QVariantMap& verification);
@@ -64,13 +68,20 @@ signals:
         const QVariantMap& verification);
 
 private:
+    struct RenderResult;
+
+    void applyRenderResult(const RenderResult& result);
+    void dispatchAsyncRender();
+    void handleAsyncRenderFinished(const RenderResult& result);
+    void publishPlaceholderDocumentBlocks();
     void refreshRenderedBlocks();
-    void refreshStructuredParseVerification();
     void updateAgendaParseVerification(const QVariantMap& verification);
     void updateCalloutParseVerification(const QVariantMap& verification);
+    void updateStructuredParseVerification(const QVariantMap& verification);
+    void updateCorrectedSourceText(const QString& correctedSourceText);
+    void updateRenderPending(bool pending);
+    bool shouldRenderInBackground() const noexcept;
 
-    ContentsAgendaBackend m_agendaBackend;
-    ContentsCalloutBackend m_calloutBackend;
     QString m_sourceText;
     QVariantList m_renderedAgendas;
     QVariantList m_renderedCallouts;
@@ -81,4 +92,9 @@ private:
     QString m_correctedSourceText;
     QString m_lastCorrectionSuggestionSourceText;
     QString m_lastCorrectionSuggestionCorrectedText;
+    bool m_backgroundRefreshEnabled = false;
+    bool m_renderPending = false;
+    bool m_renderRequestInFlight = false;
+    quint64 m_activeRenderSequence = 0;
+    quint64 m_nextRenderSequence = 1;
 };

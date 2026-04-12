@@ -15,6 +15,8 @@ structured document-flow editor changes.
 - Typing continuously inside a callout must keep the caret at the edited position after each RAW rewrite/reparse.
 - Pressing `Enter` twice on a trailing empty callout line must still exit the callout block.
 - After a callout cursor restore, the next structured shortcut must still resolve relative to that active callout block.
+- Repeating edits inside one agenda/callout block of a long structured note must not visibly degrade as unrelated blocks
+  are added elsewhere in the same document.
 
 ## Structured Shortcuts
 - In structured-flow mode, `Cmd+Opt+T`, `Cmd+Opt+C`, and `Cmd+Shift+H` invoked from the middle of a text block must
@@ -27,3 +29,8 @@ structured document-flow editor changes.
   should appear, and the editor must not instantiate legacy structured overlays in parallel with the plain-text path.
 - Opening a long structured note must populate the document-native block flow without one large synchronous stall before
   the first editor frame becomes interactive.
+- While that first structured render is still pending, the host must keep the structured-flow surface mounted instead of
+  waking the legacy hidden full-document editor again.
+- If a structured correction is applied during note-open stabilization, the selected hierarchy must not
+  rebuild the same note list twice in immediate succession when it already supports in-memory
+  `applyPersistedBodyStateForNote(...)`.

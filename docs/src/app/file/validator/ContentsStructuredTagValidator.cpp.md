@@ -11,7 +11,8 @@ Implements the structured-tag validator's direct-write correction authority.
 3. Queue the file read/write correction work onto a worker thread instead of running it inline on the QML signal turn.
 4. Persist the canonical corrected RAW source back into `.wsnbody` through `updateNote(...)`.
 5. Apply the updated body snapshot back into the bound content view model when possible.
-6. Refresh tracked note statistics and reload note metadata so the UI/runtime state converges on the corrected file.
+6. Refresh tracked note statistics, then reload note metadata only when the bound content view model
+   cannot absorb the persisted body snapshot directly.
 
 ## Authority Rule
 - This validator is intentionally not read-only.
@@ -28,6 +29,9 @@ Implements the structured-tag validator's direct-write correction authority.
 - Successful identical repeated requests are deduplicated by note/source/corrected-source tuple.
 - While one correction is already running, later identical requests are absorbed into the pending queue instead of
   opening another file I/O turn on the UI thread.
+- When the active hierarchy view model implements `applyPersistedBodyStateForNote(...)`, a successful
+  correction skips the extra immediate `reloadNoteMetadataForNote(...)` round-trip to avoid back-to-back
+  note-list refreshes for the same note.
 
 ## UI Synchronization
 - On success, the validator emits `correctionApplied(...)` so QML can immediately replace the in-editor RAW buffer with

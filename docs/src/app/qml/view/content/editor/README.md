@@ -161,6 +161,8 @@
   delegate becomes available, reducing synchronous note-open stalls.
 - Structured-flow focus restoration now resolves one target block index per request and calls that delegate directly,
   replacing the earlier whole-tree focus fan-out across every block, loader, and nested editor.
+- That focus path no longer keeps an incrementing replay token or a generic `pendingFocusRequestChanged` watcher; it now
+  recalculates the target block only when a focus request enters or the reparsed block list actually changes.
 - Structured-flow source edits no longer force `ContentsDisplayView.qml` / `MobileContentsDisplayView.qml` to rebuild
   the whole legacy presentation snapshot on each keystroke; those hosts now only repopulate the fallback RichText
   surface when the document leaves structured mode again.
@@ -170,6 +172,9 @@
 - Desktop/mobile hosts now also treat `editorSession.editorTextSynchronized` as the main post-sync refresh boundary,
   which removes duplicate minimap/presentation/gutter refresh scheduling after model sync, reconcile completion, and
   structured correction apply.
+- Desktop/mobile hosts now also bind `ContentsStructuredBlockRenderer.backgroundRefreshEnabled` to the note-open/model
+  sync window, not only to the unfocused state. Structured notes therefore keep the document-flow surface mounted
+  through `renderPending` while the expensive agenda/callout parse + canonicalization pass runs off the UI thread.
 - Structured shortcut insertion now also resolves out of existing proprietary wrappers before writing:
   - invoking agenda/callout insertion while the cursor is already inside an existing agenda/callout moves the new RAW
     block to the enclosing wrapper end first

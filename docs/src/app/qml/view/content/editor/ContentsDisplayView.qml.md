@@ -34,6 +34,9 @@ Desktop content editor host.
   - its `text` binding is cleared
   - its `enabled`/`visible` state is gated by `legacyInlineEditorActive`
   - content-height / line-count / cursor `Connections` detach from the hidden surface
+- Desktop note-open/model sync now also keeps the structured-flow surface mounted while
+  `ContentsStructuredBlockRenderer.renderPending` is true, allowing agenda/callout projection to finish on a worker
+  thread instead of blocking the first note-open frame on the UI thread.
 
 ## Legacy Surface
 - The single `ContentsInlineFormatEditor` and overlay layers still exist as the fallback path for notes without any

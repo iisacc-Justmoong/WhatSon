@@ -335,10 +335,6 @@ void ContentsStructuredTagValidator::handleCorrectionRequestFinished(const Resul
                     Qt::QueuedConnection);
             }
         }
-        else
-        {
-            reloadNoteMetadataForNote(result.noteId);
-        }
 
         m_lastCorrectionNoteId = result.noteId;
         m_lastCorrectionSourceText = result.sourceText;

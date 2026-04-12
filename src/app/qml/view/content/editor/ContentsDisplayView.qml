@@ -259,7 +259,8 @@ Item {
     readonly property bool showDedicatedResourceViewer: contentsView.selectedNoteIsResourcePackage
     readonly property bool showEditorGutter: contentsView.legacyInlineEditorActive
     readonly property bool showFormattedTextRenderer: false
-    readonly property bool showStructuredDocumentFlow: structuredBlockRenderer.hasRenderedBlocks
+    readonly property bool showStructuredDocumentFlow: (structuredBlockRenderer.renderPending
+                                                        || structuredBlockRenderer.hasRenderedBlocks)
                                                        && !contentsView.showDedicatedResourceViewer
                                                        && !contentsView.showFormattedTextRenderer
     readonly property bool showPageEditorLayout: pagePrintLayoutRenderer.showPageEditorLayout
@@ -1479,6 +1480,9 @@ Item {
     ContentsStructuredBlockRenderer {
         id: structuredBlockRenderer
 
+        backgroundRefreshEnabled: (!contentsView.editorInputFocused
+                                   || contentsView.syncingEditorTextFromModel)
+                                  && !contentsView.typingSessionSyncProtected
         sourceText: contentsView.editorText
     }
     ContentsStructuredTagValidator {

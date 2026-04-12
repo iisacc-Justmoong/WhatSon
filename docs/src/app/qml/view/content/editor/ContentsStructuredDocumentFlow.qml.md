@@ -18,5 +18,9 @@ Hosts the document-native block editor for structured `.wsnbody` content.
   - agenda task focus prefers `taskOpenTagStart`
   - otherwise the host falls back to the reparsed `sourceOffset`
   - only the resolved delegate receives `applyFocusRequest(...)`
+- The pending focus channel is now single-shot and tokenless:
+  - `requestFocus(...)` stores one cloned request plus its current target block index
+  - `documentBlocksChanged` is the only later point that re-resolves that target after reparsing
+  - successful application clears the pending request instead of retaining an incrementing replay token
 - Large block lists still load delegate instances asynchronously, but late-loaded delegates now replay focus only when
   they are the resolved target block instead of rebroadcasting the request through the whole block tree.

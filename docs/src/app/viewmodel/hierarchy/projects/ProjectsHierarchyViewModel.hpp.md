@@ -26,8 +26,12 @@
   can refresh one note's project membership without rebuilding the whole hub snapshot.
 - Exposes `noteDirectoryPathForNoteId(...)` for detail-panel note-header writes, with an expected
   canonical directory resolution contract (indexed path first, `.wsnhead` directory fallback).
+- Exposes `applyPersistedBodyStateForNote(...)` so body-only editor/validator writes can update the
+  selected projects note projection in memory without forcing a second immediate metadata re-read.
 - Exposes `requestTrackedStatisticsRefreshForNote(...)` so note-open stat refresh can move out of the editor bridge
   and into the projects-owned note projection path.
+- Emits `hubFilesystemMutated()` on successful in-memory note-body projection updates so downstream mutation listeners
+  observe the same contract already used by the library/bookmarks/progress hierarchy viewmodels.
 - Exposes both `setItemExpanded(int, bool)` and `setAllItemsExpanded(bool)` so any future expandable
   projects rows can share the same projects-owned expansion state as the sidebar footer context menu.
 - Declares inherited capability methods with explicit `override` so the reorder/rename/crud
