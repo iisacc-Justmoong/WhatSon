@@ -6,8 +6,9 @@ Desktop content editor host.
 ## Structured Document Flow
 - `agenda`, `callout`, `resource`, and `break` remain `.wsnbody` body tags, and desktop now promotes the note into the
   structured document-flow surface as soon as canonical body-level resource markup is present in the active source.
-- Desktop now treats a canonical live `<resource ... />` tag in either the live editor buffer or the current
-  presentation snapshot as an immediate structured-flow activation request.
+- Desktop now treats a canonical live `<resource ... />` tag in the live editor buffer, the current presentation
+  snapshot, or the selection-bridge body-source snapshot used during non-authoritative reload turns and the
+  resource-drop surface-guard turn as an immediate structured-flow activation request.
   `bodyResourceRenderer.resourceCount` still keeps already-resolved notes active, but the host no longer waits for a
   later resource-resolution turn before leaving the legacy single-editor path.
 - `ContentsStructuredDocumentFlow.qml` is therefore no longer dormant: notes with inline resource tags now render
@@ -112,10 +113,10 @@ Desktop content editor host.
 - Once the selected note has entered structured-flow mode, desktop now stops relying on that RichText image upgrade
   path for inline resource display and instead renders `<resource ... />` through `ContentsResourceBlock.qml` inside
   `ContentsStructuredDocumentFlow.qml`.
-- `ContentsBodyResourceRenderer` now follows the live `editorText` buffer not only after structured-flow is already
-  visible, but also during the activation turn where a canonical live `<resource ... />` tag first appears.
-  Mixed prose + image notes therefore resolve the actual `.wsresource` payload from the same RAW source that just
-  received the drop insertion, instead of waiting for one more presentation snapshot cycle.
+- `ContentsBodyResourceRenderer`, `ContentsStructuredBlockRenderer`, and `ContentsStructuredDocumentFlow` now share one
+  `structuredFlowSourceText` contract.
+  Resource-block activation therefore stays aligned even when the live editor surface, the deferred presentation
+  snapshot, and the selection-bridge body source are temporarily catching up with each other.
 - When `ContentsBodyResourceRenderer` resolves an inline image resource successfully, the placeholder block is now
   rewritten into a real RichText `<img>` paragraph so the bitmap becomes part of the editor's own document flow rather
   than only a body-aligned overlay.
@@ -178,15 +179,21 @@ Desktop content editor host.
 - The desktop drop handler now also prefers `drop.acceptProposedAction()` when Qt exposes it, then sets
   `drop.accepted = inserted`, so the file drop is consumed as an editor-import gesture instead of being left for the
   nested `TextEdit` to interpret as ordinary editable content.
-- The desktop minimap slot is now also pinned to a fixed layout width while visible.
-  The right-side minimap therefore keeps its column even when the central editor viewport expands aggressively inside
-  the shared `RowLayout`.
-- The desktop editor `RowLayout` now also declares `layoutDirection: Qt.LeftToRight` explicitly and disables
-  `LayoutMirroring` inheritance on that row.
-  Gutter -> editor viewport -> minimap ordering therefore stays stable even if ambient layout mirroring or inherited
-  direction settings change elsewhere in the shell.
-- The minimap delegate itself now also declares `Layout.alignment: Qt.AlignRight | Qt.AlignTop`, reinforcing that the
-  fixed-width minimap rail belongs to the rightmost editor column.
+- The desktop editor row now reserves right-side space for the minimap rail, but the visible minimap itself is no
+  longer a `RowLayout` child.
+  The active minimap is now a sibling rail anchored directly to the editor surface's right edge, while the legacy row
+  slot is reduced to a zero-width spacer so existing bindings can stay stable.
+- That reserved right margin now stays expressed as one parenthesized arithmetic binding, so QML cache compilation
+  keeps treating the editor-body inset and the optional minimap-rail width as one margin value instead of splitting
+  the rail reservation across statement boundaries.
+- That anchored-right rail removes the last dependency on inherited row mirroring or layout-direction state for minimap
+  placement.
+  Gutter stays on the left, the editor viewport stays in the center, and the minimap rail stays on the right because
+  the visible minimap now binds to the editor surface edges instead of row-order heuristics.
+- The ordinary structured document viewport is now also restored as a sibling of the print-preview `Flickable`
+  instead of being nested underneath it.
+  Screen-mode editor flow and the anchored-right minimap rail therefore keep their own parent surface even after the
+  print-preview branch is mounted.
 - When that structured-flow tail-click lands on a note whose last block is a non-text node, the desktop host now lets
   `ContentsStructuredDocumentFlow.qml` append one trailing newline before restoring focus, so typing can begin
   immediately after an ending resource/divider block.

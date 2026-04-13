@@ -6,8 +6,9 @@ Mobile content editor host.
 ## Structured Document Flow
 - `agenda`, `callout`, `resource`, and `break` remain `.wsnbody` body tags, and mobile now promotes the note into the
   structured document-flow surface as soon as canonical body-level resource markup is present in the active source.
-- Mobile now treats a canonical live `<resource ... />` tag in either the live editor buffer or the current
-  presentation snapshot as an immediate structured-flow activation request.
+- Mobile now treats a canonical live `<resource ... />` tag in the live editor buffer, the current presentation
+  snapshot, or the selection-bridge body-source snapshot used during non-authoritative reload turns and the
+  resource-drop surface-guard turn as an immediate structured-flow activation request.
   `bodyResourceRenderer.resourceCount` still keeps already-resolved notes active, but mobile no longer waits for a
   later resource-resolution turn before leaving the legacy editor path.
 - `ContentsStructuredDocumentFlow.qml` is therefore active for resource-bearing notes as well, so mobile uses the same
@@ -106,10 +107,10 @@ Mobile content editor host.
 - Mobile now also carries the same `whatson-resource-block` upgrade helper as desktop.
 - Once the selected note has entered structured-flow mode, mobile now prefers `ContentsResourceBlock.qml` in the shared
   structured document host for inline resource display instead of depending on the RichText placeholder upgrade path.
-- `ContentsBodyResourceRenderer` now follows the live `editorText` source both in visible structured-flow mode and in
-  the activation turn where a canonical live `<resource ... />` tag first appears.
-  Mixed text + image note bodies therefore resolve their `.wsresource` payload from the just-mutated RAW source
-  instead of waiting for a deferred presentation snapshot.
+- `ContentsBodyResourceRenderer`, `ContentsStructuredBlockRenderer`, and `ContentsStructuredDocumentFlow` now share one
+  `structuredFlowSourceText` contract.
+  Mobile resource-block activation therefore stays aligned even when the live editor surface, deferred presentation
+  snapshot, and selection-bridge source are briefly out of step.
 - When mobile later enters the RichText projection path, resolved image resources can be rewritten into real RichText
   `<img>` paragraphs using the renderer-resolved resource URL, without the old trailing blank placeholder paragraphs.
 - The current default mobile native-input path still keeps actual image paint on the source-aligned resource layer.
@@ -147,14 +148,19 @@ Mobile content editor host.
   `ContentsEditorTypingController.qml` to ignore any same-turn late surface edit notification, and finally reapplies
   the canonical rendered editor surface so native `TextEdit` drop mutations cannot survive as literalized
   `resource`-attribute fragments in the editor buffer.
-- The shared minimap slot now also keeps a fixed layout width while visible.
-  This matches the desktop contract and prevents sibling editor content from collapsing the minimap column to zero
-  width if the mobile host ever enables that rail.
-- The mobile editor host likewise pins its inner `RowLayout` to `Qt.LeftToRight` and disables inherited
-  `LayoutMirroring` on that row, so the shared gutter/editor/minimap column order cannot flip under inherited
-  layout-direction changes.
-- The minimap delegate now also uses `Layout.alignment: Qt.AlignRight | Qt.AlignTop`, keeping the fixed-width minimap
-  rail anchored to the right edge of the editor row.
+- The shared editor row now reserves right-side space for a minimap rail, but the visible minimap itself is no longer
+  hosted inside that `RowLayout`.
+  A sibling rail is anchored directly to the editor surface's right edge, while the old row slot is reduced to a
+  zero-width spacer so shared bindings remain stable.
+- That reserved right margin now also stays as one parenthesized arithmetic binding, so QML cache compilation keeps
+  the editor-body inset and the optional minimap width in one margin expression instead of parsing the rail
+  reservation as separate statements.
+- This matches the desktop contract and removes minimap placement from row-order or mirroring side effects.
+  If mobile ever enables the rail again, gutter/editor/minimap ordering will still resolve left/center/right from
+  surface-edge anchors instead of inherited row layout state.
+- The ordinary structured document viewport is now also kept as a sibling of the print-preview `Flickable` rather than
+  a child below that print branch.
+  Mobile screen-mode flow and the anchored minimap rail therefore keep their own stable editor-surface parent.
 - If the current structured note ends with a non-text block, the mobile host now also allows
   `ContentsStructuredDocumentFlow.qml` to append one trailing newline before focus restore, so typing can resume
   directly after a terminal resource/divider block.

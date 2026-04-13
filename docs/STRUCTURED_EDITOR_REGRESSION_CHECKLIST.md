@@ -88,6 +88,10 @@ structured document-flow editor changes.
 - Dropping an image into a note that already contains ordinary paragraphs must switch that same note into the
   structured resource path immediately.
   The editor must not leave one legacy frame alive that renders the literal `<resource ... />` tag as visible text.
+- If the live editor surface briefly lags behind note-load or drop-import source state, the selection-bridge
+  `selectedNoteBodyText` snapshot must still be able to keep the note on the structured resource path.
+  A same-note image block must not fall back to the legacy resource overlay just because one intermediate presentation
+  source is behind by a turn.
 - The same mixed-content note must remain an ordinary note editor surface.
   Inline images must render between surrounding paragraphs in the authored body column and must not replace the whole
   editor with the dedicated resource-package viewer.
@@ -146,12 +150,23 @@ structured document-flow editor changes.
 - The same imported-file drop must not rewrite neighboring structured tags into broken paragraph text.
   For example, an existing `<callout>...</callout>` block around the drop context must remain literal source markup
   instead of degrading into plain paragraph text plus escaped resource-tail fragments.
+- During the resource-drop surface-guard turn, a same-note selection snapshot that already contains canonical
+  `<resource ... />` markup must promote the editor into document-block rendering instead of leaving the image on the
+  legacy overlay layer until a later authority handoff completes.
 - Backspace/Delete while the caret is at a raw tag boundary must remove the whole tag token in one step.
   Deleting across `<resource ... />`, `<callout>`, `</callout>`, `<agenda ...>`, `</agenda>`, or inline-style tags
   must not leave partial source remnants behind.
+- When the visible caret is placed immediately after an inline-style run, the next typed character must stay outside
+  the closing style tag.
+  The typing bridge must not map that collapsed logical boundary back in front of `</bold>`, `</italic>`,
+  `</underline>`, `</strikethrough>`, or `</highlight>`.
 - The right-side editor minimap must remain visible after note open and after later layout mutations.
   Adjacent editor/resource/detail content must not compress the minimap rail to zero width.
 - The editor column order must remain gutter on the left, editor in the center, minimap on the right.
   Inherited layout mirroring or direction changes elsewhere in the app must not flip that order.
 - The right-side minimap rail must stay right-aligned even when the editor row inherits other shell direction or
   mirroring settings; the fixed minimap column must not drift to the left edge.
+- The visible minimap rail must be anchored to the editor surface edge, not only implied by `RowLayout` child order.
+  Central editor growth or overlay content must not pull the live minimap back into the row interior.
+- The ordinary structured document viewport must remain a sibling of the print-preview `Flickable`.
+  Toggling or mounting print-preview surfaces must not re-parent the screen editor flow or its right-edge minimap rail.

@@ -44,7 +44,9 @@ QtObject {
             return ({ "applied": false, "cursorPosition": -1, "insertedText": "", "replacementEnd": -1, "replacementStart": -1 });
 
         const insertionStart = Math.max(0, Math.floor(Number(replacementDelta.start) || 0));
-        const sourceInsertionStart = controller.sourceOffsetForLogicalOffset(insertionStart);
+        const sourceInsertionStart = replacementDelta.previousEnd === replacementDelta.start
+                ? controller.sourceOffsetForCollapsedLogicalInsertion(sourceText, insertionStart)
+                : controller.sourceOffsetForLogicalOffset(insertionStart);
         const sourceLineStart = sourceInsertionStart > 0 ? sourceText.lastIndexOf("\n", sourceInsertionStart - 1) + 1 : 0;
         const sourceLinePrefix = sourceText.slice(sourceLineStart, sourceInsertionStart);
         const sourceLineEnd = sourceText.indexOf("\n", sourceInsertionStart);
@@ -511,6 +513,72 @@ QtObject {
             return "";
         return String(match[1] || "").trim().toLowerCase();
     }
+    function isClosingSourceTagToken(tagToken) {
+        const normalizedToken = tagToken === undefined || tagToken === null ? "" : String(tagToken);
+        return /^<\s*\//.test(normalizedToken);
+    }
+    function isInlineStyleTagName(tagName) {
+        const normalizedTagName = tagName === undefined || tagName === null ? "" : String(tagName).trim().toLowerCase();
+        return normalizedTagName === "bold"
+                || normalizedTagName === "b"
+                || normalizedTagName === "strong"
+                || normalizedTagName === "italic"
+                || normalizedTagName === "i"
+                || normalizedTagName === "em"
+                || normalizedTagName === "underline"
+                || normalizedTagName === "u"
+                || normalizedTagName === "strikethrough"
+                || normalizedTagName === "strike"
+                || normalizedTagName === "s"
+                || normalizedTagName === "del"
+                || normalizedTagName === "highlight"
+                || normalizedTagName === "mark";
+    }
+    function sourceTagRangeStartingAt(sourceText, sourceOffset) {
+        const normalizedSourceText = sourceText === undefined || sourceText === null ? "" : String(sourceText);
+        const boundedOffset = Math.max(
+                    0,
+                    Math.min(
+                        normalizedSourceText.length,
+                        Math.floor(Number(sourceOffset) || 0)));
+        if (boundedOffset >= normalizedSourceText.length || normalizedSourceText.charAt(boundedOffset) !== "<")
+            return null;
+        const tagEnd = normalizedSourceText.indexOf(">", boundedOffset + 1);
+        if (tagEnd <= boundedOffset)
+            return null;
+        return {
+            "end": tagEnd + 1,
+            "start": boundedOffset,
+            "token": normalizedSourceText.slice(boundedOffset, tagEnd + 1)
+        };
+    }
+    function advanceSourceOffsetPastClosingInlineStyleTags(sourceText, sourceOffset) {
+        const normalizedSourceText = sourceText === undefined || sourceText === null ? "" : String(sourceText);
+        let nextOffset = Math.max(
+                    0,
+                    Math.min(
+                        normalizedSourceText.length,
+                        Math.floor(Number(sourceOffset) || 0)));
+        while (nextOffset < normalizedSourceText.length) {
+            const tagRange = controller.sourceTagRangeStartingAt(normalizedSourceText, nextOffset);
+            if (!tagRange)
+                break;
+            const normalizedTagName = controller.normalizedSourceTagName(tagRange.token);
+            if (!controller.isClosingSourceTagToken(tagRange.token)
+                    || !controller.isInlineStyleTagName(normalizedTagName)) {
+                break;
+            }
+            nextOffset = Math.max(nextOffset, Number(tagRange.end) || nextOffset);
+        }
+        return nextOffset;
+    }
+    function sourceOffsetForCollapsedLogicalInsertion(sourceText, logicalOffset) {
+        const normalizedSourceText = sourceText === undefined || sourceText === null ? "" : String(sourceText);
+        const baseSourceOffset = controller.sourceOffsetForLogicalOffset(logicalOffset);
+        return controller.advanceSourceOffsetPastClosingInlineStyleTags(
+                    normalizedSourceText,
+                    baseSourceOffset);
+    }
 
     function sourceRangeTouchesNamedTag(sourceTagRanges, sourceStart, sourceEnd, normalizedTagName) {
         const ranges = Array.isArray(sourceTagRanges) ? sourceTagRanges : [];
@@ -933,7 +1001,9 @@ QtObject {
                     0,
                     Math.min(
                         currentSourceText.length,
-                        Math.floor(Number(controller.sourceOffsetForLogicalOffset(logicalCursor)) || 0)));
+                        Math.floor(Number(controller.sourceOffsetForCollapsedLogicalInsertion(
+                                             currentSourceText,
+                                             logicalCursor)) || 0)));
         const sourceCursorOffset = controller.resolveStructuredShortcutInsertionSourceOffset(
                     currentSourceText,
                     rawSourceCursorOffset);
@@ -1167,8 +1237,15 @@ QtObject {
             rawReplacementEnabled = true;
             cursorLogicalOverride = Math.max(0, Math.floor(Number(breakShortcut.cursorPosition) || 0));
         }
-        const sourceStart = controller.sourceOffsetForLogicalOffset(logicalReplacementStart);
-        const sourceEnd = controller.sourceOffsetForLogicalOffset(logicalReplacementEnd);
+        const collapsedLogicalInsertion = logicalReplacementEnd === logicalReplacementStart;
+        const sourceStart = collapsedLogicalInsertion
+                ? controller.sourceOffsetForCollapsedLogicalInsertion(
+                    currentSourceText,
+                    logicalReplacementStart)
+                : controller.sourceOffsetForLogicalOffset(logicalReplacementStart);
+        const sourceEnd = collapsedLogicalInsertion
+                ? sourceStart
+                : controller.sourceOffsetForLogicalOffset(logicalReplacementEnd);
         const currentSourceTagRanges = controller.sourceTagRanges(currentSourceText);
         const targetsVirtualSourceOnly = controller.logicalRangeCollapsesToSingleSourceOffset(
                     logicalReplacementStart,

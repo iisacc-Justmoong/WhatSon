@@ -174,6 +174,11 @@ Item {
     readonly property color minimapViewportFillColor: LV.Theme.accentTransparent
     readonly property int minimapViewportMinHeight: Math.max(0, Math.round(LV.Theme.scaleMetric(28)))
     property bool minimapVisible: true
+    readonly property bool showMinimapRail: contentsView.minimapVisible
+                                           && !contentsView.showDedicatedResourceViewer
+                                           && !contentsView.showPrintEditorLayout
+                                           && !contentsView.showFormattedTextRenderer
+                                           && !contentsView.showStructuredDocumentFlow
     readonly property bool minimapRefreshEnabled: contentsView.minimapVisible
                                                   && !contentsView.showDedicatedResourceViewer
                                                   && !contentsView.showPrintEditorLayout
@@ -279,8 +284,23 @@ Item {
     readonly property bool showCurrentLineMarker: contentsView.hasSelectedNote || contentsView.editorText.length > 0 || contentsView.editorInputFocused
     readonly property bool liveEditorSourceContainsResourceTag: contentsView.sourceContainsCanonicalResourceTag(contentsView.editorText)
     readonly property bool presentationSourceContainsResourceTag: contentsView.sourceContainsCanonicalResourceTag(contentsView.documentPresentationSourceText)
+    readonly property bool selectionSourceContainsResourceTag: (!editorSession.localEditorAuthority
+                                                                || contentsView.resourceDropEditorSurfaceGuardActive)
+                                                               && !contentsView.selectedNoteBodyLoading
+                                                               && contentsView.selectedNoteBodyNoteId === contentsView.selectedNoteId
+                                                               && contentsView.sourceContainsCanonicalResourceTag(contentsView.selectedNoteBodyText)
+    readonly property string structuredFlowSourceText: {
+        if (contentsView.liveEditorSourceContainsResourceTag)
+            return contentsView.editorText;
+        if (contentsView.presentationSourceContainsResourceTag)
+            return contentsView.documentPresentationSourceText;
+        if (contentsView.selectionSourceContainsResourceTag)
+            return contentsView.selectedNoteBodyText;
+        return contentsView.editorText;
+    }
     readonly property bool liveResourceStructuredFlowRequested: contentsView.liveEditorSourceContainsResourceTag
                                                                 || contentsView.presentationSourceContainsResourceTag
+                                                                || contentsView.selectionSourceContainsResourceTag
     readonly property bool structuredDocumentFlowEnabled: contentsView.liveResourceStructuredFlowRequested
                                                           || bodyResourceRenderer.resourceCount > 0
     readonly property bool resourceResolverNeedsLiveEditorSource: contentsView.showStructuredDocumentFlow
@@ -1824,9 +1844,7 @@ Item {
         id: bodyResourceRenderer
 
         bodySourceText: contentsView.selectedNoteBodyNoteId === contentsView.selectedNoteId
-                        ? (contentsView.resourceResolverNeedsLiveEditorSource
-                               ? contentsView.editorText
-                               : contentsView.documentPresentationSourceText)
+                        ? contentsView.structuredFlowSourceText
                         : ""
         contentViewModel: contentsView.contentViewModel
         fallbackContentViewModel: contentsView.libraryHierarchyViewModel
@@ -1857,7 +1875,7 @@ Item {
         backgroundRefreshEnabled: (!contentsView.editorInputFocused
                                    || contentsView.syncingEditorTextFromModel)
                                   && !contentsView.typingSessionSyncProtected
-        sourceText: contentsView.editorText
+        sourceText: contentsView.structuredFlowSourceText
     }
     ContentsTextFormatRenderer {
         id: textFormatRenderer
@@ -2030,7 +2048,8 @@ Item {
         RowLayout {
             anchors.fill: parent
             anchors.leftMargin: contentsView.effectiveFrameHorizontalInset
-            anchors.rightMargin: contentsView.effectiveFrameHorizontalInset
+            anchors.rightMargin: (contentsView.effectiveFrameHorizontalInset
+                                  + (contentsView.showMinimapRail ? contentsView.minimapOuterWidth : 0))
             LayoutMirroring.childrenInherit: false
             LayoutMirroring.enabled: false
             layoutDirection: Qt.LeftToRight
@@ -2249,7 +2268,7 @@ Item {
                         documentBlocks: structuredBlockRenderer.renderedDocumentBlocks
                         parent: contentsView.showPrintEditorLayout ? printDocumentSurface : structuredDocumentViewport.contentItem
                         renderedResources: bodyResourceRenderer.renderedResources
-                        sourceText: contentsView.editorText
+                        sourceText: contentsView.structuredFlowSourceText
                         width: contentsView.showPrintEditorLayout
                                ? contentsView.printPaperTextWidth
                                : Math.max(0, structuredDocumentViewport.width - contentsView.editorHorizontalInset * 2)
@@ -2520,6 +2539,7 @@ Item {
                                  && !contentsView.showStructuredDocumentFlow
                                  && !contentsView.showDedicatedResourceViewer
                                  && !contentsView.showFormattedTextRenderer
+                                 && !contentsView.liveResourceStructuredFlowRequested
                                  && resourceRenderLayer.resourceCount > 0
                         enabled: visible
                         z: 3
@@ -2839,13 +2859,13 @@ Item {
                 }
             }
             ContentsMinimapLayer {
-                id: minimapLayer
+                id: minimapSpacer
 
                 Layout.alignment: Qt.AlignRight | Qt.AlignTop
                 Layout.fillHeight: true
-                Layout.maximumWidth: visible ? contentsView.minimapOuterWidth : 0
-                Layout.minimumWidth: visible ? contentsView.minimapOuterWidth : 0
-                Layout.preferredWidth: visible ? contentsView.minimapOuterWidth : 0
+                Layout.maximumWidth: 0
+                Layout.minimumWidth: 0
+                Layout.preferredWidth: 0
                 editorFlickable: contentsView.editorFlickable
                 minimapBarWidthResolver: function (characterCount) {
                     return contentsView.minimapBarWidth(characterCount);
@@ -2872,7 +2892,44 @@ Item {
                 scrollToMinimapPositionHandler: function (localY) {
                     contentsView.scrollEditorViewportToMinimapPosition(localY);
                 }
-                visible: contentsView.minimapVisible && !contentsView.showDedicatedResourceViewer && !contentsView.showPrintEditorLayout && !contentsView.showFormattedTextRenderer
+                visible: false
             }
         }
+        ContentsMinimapLayer {
+            id: minimapLayer
+
+            anchors.bottom: parent.bottom
+            anchors.right: parent.right
+            anchors.rightMargin: contentsView.effectiveFrameHorizontalInset
+            anchors.top: parent.top
+            editorFlickable: contentsView.editorFlickable
+            minimapBarWidthResolver: function (characterCount) {
+                return contentsView.minimapBarWidth(characterCount);
+            }
+            minimapCurrentLineColor: contentsView.minimapCurrentLineColor
+            minimapCurrentLineHeight: contentsView.minimapResolvedCurrentLineHeight
+            minimapCurrentLineWidth: contentsView.minimapResolvedCurrentLineWidth
+            minimapCurrentLineY: contentsView.minimapResolvedCurrentLineY
+            minimapLineColor: contentsView.minimapLineColor
+            minimapScrollable: contentsView.minimapScrollable
+            minimapSilhouetteHeight: contentsView.minimapResolvedSilhouetteHeight
+            minimapTrackInset: contentsView.minimapTrackInset
+            minimapTrackWidth: contentsView.minimapTrackWidth
+            minimapViewportFillColor: contentsView.minimapViewportFillColor
+            minimapViewportHeight: contentsView.minimapResolvedViewportHeight
+            minimapViewportY: contentsView.minimapResolvedViewportY
+            minimapVisualRowPaintHeightResolver: function (row) {
+                return contentsView.minimapVisualRowPaintHeight(row);
+            }
+            minimapVisualRowPaintYResolver: function (row) {
+                return contentsView.minimapVisualRowPaintY(row);
+            }
+            minimapVisualRows: contentsView.minimapVisualRows
+            scrollToMinimapPositionHandler: function (localY) {
+                contentsView.scrollEditorViewportToMinimapPosition(localY);
+            }
+            visible: contentsView.showMinimapRail
+            width: visible ? contentsView.minimapOuterWidth : 0
+        }
     }
+}

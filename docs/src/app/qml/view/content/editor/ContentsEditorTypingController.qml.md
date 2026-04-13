@@ -42,6 +42,10 @@ This controller exists to keep plain typing separate from inline-format applicat
   existing `<resource ... />` token at the source layer.
   This protects inline resource placeholders from being reserialized as partial escaped tail fragments when the
   RichText surface reports a lossy post-render delta.
+- Collapsed-caret insertion now also advances past any consecutive closing inline-style tags that sit exactly at the
+  mapped RAW boundary.
+  A visible caret placed after a bold/italic/underline/strikethrough/highlight run therefore resolves to the source
+  offset after the corresponding closing tags rather than to the interior edge before them.
 - The controller now also owns tag-aware raw deletion before `TextEdit` default handling runs.
   Backspace/Delete no longer has to land as one-character plain-text diffs first and then hope the source bridge can
   reconstruct the intended tag boundary afterward.
@@ -72,6 +76,7 @@ This controller exists to keep plain typing separate from inline-format applicat
 - The same raw-source insertion helper is now also reused by editor resource-drop linking:
   - `insertRawSourceTextAtCursor(...)` resolves the live logical caret back into a RAW `.wsnbody` source offset
   - newline padding is normalized around the inserted RAW fragment
+  - collapsed-caret insertions also skip immediately adjacent closing inline-style tags before splicing source
   - local-authority marking, cursor restore, same-note persistence, and host `editorTextEdited(...)` signaling stay on
     the exact same contract already used by agenda/callout/break shortcut insertion
 - Backspace/Delete now also has a tag-aware raw-source fast path:
@@ -200,6 +205,9 @@ structured-block projection do not re-enter the normal typing path.
 - Markdown-list continuation is now tracked as a documented behavior contract only; this repository no longer maintains
   a dedicated scripted test for it.
 - Typing ordinary letters should update raw `.wsnbody` without serializing the whole RichText document.
+- Typing with the visible caret immediately after `<bold>...</bold>`, `<italic>...</italic>`, `<underline>...</underline>`,
+  `<strikethrough>...</strikethrough>`, or `<highlight>...</highlight>` must keep the next inserted text outside that
+  styled run instead of splicing it before the closing tag.
 - A committed delete/backspace turn must update the session through the plain-text/source-offset bridge itself; the
   controller must not depend on whole-surface RichText reserialization to rescue the edit.
 - Backspace/Delete while the logical/source cursor touches `<resource ... />`, `<callout>`, `</callout>`,
