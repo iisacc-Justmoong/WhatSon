@@ -79,6 +79,9 @@ Implements inline-format rendering from note-editor text to RichText HTML.
     editor surface
 - Exposes `normalizeEditorSurfaceTextToSource(...)` so formatting-driven `QTextDocument` mutations can still be
   canonicalized back into inline `.wsnbody` tags when the whole RichText surface genuinely changed.
+- That helper is no longer the ordinary live-typing path.
+  Desktop/mobile whole-note typing and structured text-block typing now mutate RAW source ranges directly and only use
+  reparsed RAW snapshots for the next render pass.
 - That whole-surface normalization also converts rendered unordered-list bullet glyphs (`• `) back into source markdown
   markers (`- `), so selection-format round-trips do not silently replace markdown list syntax with literal bullets.
   That canonical `-` marker is now an explicit shared policy.

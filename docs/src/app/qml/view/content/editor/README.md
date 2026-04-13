@@ -53,6 +53,10 @@
   replacing the editor surface.
 - `ContentsEditorTypingController.qml` now owns ordinary text-entry mutation routing so typing no longer reserializes
   the whole RichText surface on every edit.
+- The editor directory now follows one write direction for live note editing:
+  RAW `.wsnote/.wsnbody` source is the only write authority, parsers/builders derive presentation state from that RAW
+  source, and RichText/DOM editor surfaces are no longer allowed to serialize themselves back into stored source
+  during ordinary typing.
 - Desktop/mobile editor views now keep a separate presentation timer for whole-document markdown/RichText refresh, so
   `ContentsTextFormatRenderer` and full minimap resampling no longer run directly on every committed keystroke.
 - Desktop/mobile editor views now also keep `documentPresentationSourceText` as the single whole-document presentation
@@ -204,6 +208,9 @@
   - pressing `Enter` twice on a trailing empty callout line exits the callout block on the second `Enter`
 - `ContentsStructuredCursorSupport.js` now centralizes plain-text cursor/source-offset mapping for agenda/callout block
   reparses, so local caret restoration survives entity-escaped RAW rewrites.
+- `ContentsStructuredCursorSupport.js` now also carries inline-tag-aware text-block cursor/source mapping, letting
+  structured text blocks edit RAW source spans directly from plain-text deltas instead of round-tripping rendered HTML
+  through a DOM-to-source normalization step.
 - `ContentsStructuredDocumentFlow.qml` now asks the active block delegate for structured shortcut insertion offsets,
   which restores live-caret insertion for text blocks while still keeping agenda/callout shortcuts block-scoped.
 - `ContentsStructuredBlockRenderer.*` now also short-circuits notes that contain no proprietary structured tags and

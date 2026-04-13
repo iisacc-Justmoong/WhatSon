@@ -160,6 +160,13 @@ structured document-flow editor changes.
   the closing style tag.
   The typing bridge must not map that collapsed logical boundary back in front of `</bold>`, `</italic>`,
   `</underline>`, `</strikethrough>`, or `</highlight>`.
+- Pressing `Enter` repeatedly around text that is wrapped by an inline-style tag such as `<highlight>...</highlight>`
+  must keep the remaining prose as one contiguous paragraph tail.
+  Structured-flow reparsing must not re-focus inside the closing style tag and peel the tail into one-character
+  `<paragraph>` nodes such as `이`, `제`, `안`, `그`, `러`.
+- Ordinary typing inside a structured text block must not reconstruct RAW from RichText DOM/HTML.
+  The saved `.wsnbody` must come only from RAW-source range replacement plus reparsing, not from serializing the
+  rendered editor surface.
 - The right-side editor minimap must remain visible after note open and after later layout mutations.
   Adjacent editor/resource/detail content must not compress the minimap rail to zero width.
 - The editor column order must remain gutter on the left, editor in the center, minimap on the right.

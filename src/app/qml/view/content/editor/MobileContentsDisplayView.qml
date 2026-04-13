@@ -2933,4 +2933,3 @@ Item {
             width: visible ? contentsView.minimapOuterWidth : 0
         }
     }
-}

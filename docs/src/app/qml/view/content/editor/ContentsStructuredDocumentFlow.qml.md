@@ -15,6 +15,10 @@ Hosts the document-native block editor for structured `.wsnbody` content.
   structured-flow surface, keeping inline resource frames aligned with surrounding text content.
 - Rewrites the authoritative RAW source string on every block edit, then asks the parent view to persist the new
   source.
+- Text-block delegates now obey the same one-way edit contract as the main editor host:
+  user input is interpreted as a RAW-source mutation request, the flow host replaces only the affected RAW range, and
+  the next visible block tree comes only from reparsing that new RAW source.
+  The host no longer treats any delegate RichText/DOM surface as a write-authoritative document snapshot.
 - Keeps a lightweight focus request channel so shortcut insertion and backend-driven Enter rules can move focus into the
   newly materialized block after reparsing.
 - Preserves agenda/callout local caret positions across whole-document reparses by forwarding both the RAW source offset

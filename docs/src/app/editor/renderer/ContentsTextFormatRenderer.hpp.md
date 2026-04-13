@@ -34,6 +34,8 @@ embedded in the generic inline-tag parser.
   spans for editing.
 - `normalizeEditorSurfaceTextToSource(surfaceText)`
   Converts RichText editor output back into canonical `.wsnbody` inline source tags.
+  This remains an explicit conversion helper for tooling/import-like paths only; ordinary typing and structured
+  text-block editing no longer treat rendered RichText DOM as a write-authoritative source snapshot.
 - `applyPlainTextReplacementToSource(sourceText, sourceStart, sourceEnd, replacementText)`
   Replaces one source span with escaped plain text directly in canonical `.wsnbody`.
   Source bounds are clamped against an `int`-safe `QString` length before stitching.

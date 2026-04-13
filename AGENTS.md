@@ -76,6 +76,18 @@ every turn.
 - Shared helpers are allowed only when multiple domains genuinely reuse them and when extracting them does not pull
   business rules out of the domain that owns those rules.
 
+### Editor Source of Truth (Critical)
+
+- `.wsnote` and embedded `.wsnbody` content are the only write-authoritative editor state.
+- Live typing, shortcuts, Enter handling, paste, and drop-driven document mutations must be translated into RAW source
+  edits first.
+- Parser and renderer layers may only derive presentation state from RAW source snapshots; they must not become a
+  write-authoritative document model.
+- RichText/DOM/QML editor surfaces must never serialize themselves back into persisted note source as the primary save
+  path.
+- Focus restoration, caret movement, and block re-materialization must always be computed against RAW source offsets or
+  parser-derived block coordinates, not against incidental DOM structure.
+
 ## Codex Init (`/init`) Procedure
 
 Initialization guidance in this section is reference material only.
