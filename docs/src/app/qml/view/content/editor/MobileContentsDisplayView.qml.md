@@ -75,16 +75,20 @@ Mobile content editor host.
 - Mobile host-side RAW mutations such as imported-resource tag insertion or structured source rewrites now also issue
   immediate persistence requests directly; native-input preference no longer implies a deferred-persistence exception.
 - Mobile editor drop handling now also accepts native file-manager drags without a `DropArea.keys` MIME gate, parses
-  both `drop.urls` and `text/uri-list`, imports those files through `ResourcesImportViewModel`, injects canonical
-  `<resource ...>` calls into the active note source, and feeds the current presentation snapshot into
+  `drop.urls` first and then falls back through string-based payloads such as `drop.text`, `text/uri-list`,
+  `text/plain`, and platform file-url MIME values, imports those files through `ResourcesImportViewModel`, injects
+  canonical `<resource ...>` calls into the active note source, and feeds the current presentation snapshot into
   `ContentsBodyResourceRenderer` so the dropped resource card appears in the body overlay before the worker-thread note
   flush finishes.
 - Mobile now also rescans the live `editorText` buffer for canonical `<resource ... />` markup on each edit turn.
   A dropped image inside an already text-bearing note therefore promotes that note into the structured resource path
   immediately instead of leaving the raw tag visible on the legacy plain/RichText surface for one extra frame.
-- Figma node `294:7923` is also the mixed-content reference for mobile-hosted note bodies:
+- Figma node `294:7933` is also the mixed-content reference for mobile-hosted note bodies:
   text and image frames share one authored document column, so inline images must not replace the entire editor with a
   dedicated resource viewer unless the user is directly browsing a resource package from the Resources hierarchy.
+- That same reference now also governs the shared body rhythm:
+  - mixed prose/image blocks keep visible spacing between siblings
+  - paragraph text keeps the denser 12px medium-weight note-body feel instead of a tall field-like minimum height
 - The post-import insertion path now normalizes `importUrlsForEditor(...)` results from either a real JS array or a
   Qt-provided list-like `QVariantList`, so successful hub imports cannot silently skip body-tag insertion just because
   the invokable return value is not tagged as `Array.isArray(...)` in QML.
@@ -155,6 +159,9 @@ Mobile content editor host.
   `resourceDropActive || resourceDropEditorSurfaceGuardActive`, so the nested `TextEdit` turns read-only as soon as a
   valid external file drag is hovering over the editor and stays frozen until the dedicated resource-drop turn
   finishes.
+- While that hover-phase file drag is valid, mobile now also prefers `drag.acceptProposedAction()` before marking the
+  drag accepted, so the nested editor does not get to keep the platform file drop on Qt's default content-insertion
+  path.
 - Mobile drop handling now also prefers `drop.acceptProposedAction()` when the Qt drop event exposes it, then sets
   `drop.accepted = inserted`, keeping file import/linking on the dedicated resource-drop path instead of leaving the
   nested editor free to reinterpret the drop as editable text content.

@@ -67,10 +67,10 @@ FocusScope {
         backgroundColorPressed: "transparent"
         centeredTextHeight: Math.max(0, Math.round(LV.Theme.scaleMetric(12)))
         cornerRadius: 0
-        fieldMinHeight: Math.max(Math.round(LV.Theme.scaleMetric(28)), inputContentHeight)
+        fieldMinHeight: Math.max(Math.round(LV.Theme.scaleMetric(12)), inputContentHeight)
         fontFamily: LV.Theme.fontBody
         fontPixelSize: Math.max(0, Math.round(LV.Theme.scaleMetric(12)))
-        fontWeight: Font.Normal
+        fontWeight: Font.Medium
         insetHorizontal: 0
         insetVertical: 0
         placeholderText: ""

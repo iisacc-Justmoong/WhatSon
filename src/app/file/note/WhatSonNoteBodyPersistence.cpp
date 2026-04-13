@@ -440,7 +440,7 @@ namespace
 
         static const QRegularExpression standaloneStructuredLinePattern(
             QStringLiteral(
-                R"(^(?:</break>|<callout\b[^>]*>[\s\S]*</callout>|<agenda\b[^>]*>[\s\S]*</agenda>)$)"),
+                R"(^(?:</break>|<resource\b[^>]*?/?>|<callout\b[^>]*>[\s\S]*</callout>|<agenda\b[^>]*>[\s\S]*</agenda>)$)"),
             QRegularExpression::CaseInsensitiveOption);
         return standaloneStructuredLinePattern.match(trimmedLine).hasMatch();
     }
@@ -473,7 +473,7 @@ namespace
 
         static const QRegularExpression structuredBlockPattern(
             QStringLiteral(
-                R"((</break>|<callout\b[^>]*>[\s\S]*?</callout>|<agenda\b[^>]*>[\s\S]*?</agenda>))"),
+                R"((</break>|<resource\b[^>]*?/?>|<callout\b[^>]*>[\s\S]*?</callout>|<agenda\b[^>]*>[\s\S]*?</agenda>))"),
             QRegularExpression::CaseInsensitiveOption);
 
         QString output;

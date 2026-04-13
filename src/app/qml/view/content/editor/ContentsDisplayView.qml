@@ -578,6 +578,27 @@ Item {
         contentsView.logicalLineDocumentYCacheRevision = refreshRevision;
         contentsView.logicalLineDocumentYCacheLineCount = lineCount;
     }
+    function appendResourceDropPayloadLines(rawText, urls) {
+        if (!Array.isArray(urls))
+            return;
+        const normalizedText = rawText === undefined || rawText === null ? "" : String(rawText).trim();
+        if (normalizedText.length === 0)
+            return;
+        const payloadLines = normalizedText.split(/\r?\n|\u0000/g);
+        for (let lineIndex = 0; lineIndex < payloadLines.length; ++lineIndex) {
+            const line = String(payloadLines[lineIndex] || "").trim();
+            if (line.length === 0 || line.charAt(0) === "#")
+                continue;
+            urls.push(line);
+        }
+    }
+    function appendResourceDropMimePayload(drop, mimeType, urls) {
+        if (!drop
+                || drop.getDataAsString === undefined
+                || !Array.isArray(urls))
+            return;
+        contentsView.appendResourceDropPayloadLines(drop.getDataAsString(mimeType), urls);
+    }
     function extractResourceDropUrls(drop) {
         const urls = [];
         if (drop && drop.urls !== undefined && drop.urls !== null) {
@@ -593,18 +614,16 @@ Item {
         }
         if (urls.length > 0)
             return urls;
-        if (!drop || drop.getDataAsString === undefined)
-            return urls;
-        const rawUriList = String(drop.getDataAsString("text/uri-list") || "").trim();
-        if (rawUriList.length === 0)
-            return urls;
-        const uriLines = rawUriList.split(/\r?\n/);
-        for (let lineIndex = 0; lineIndex < uriLines.length; ++lineIndex) {
-            const line = String(uriLines[lineIndex] || "").trim();
-            if (line.length === 0 || line.charAt(0) === "#")
-                continue;
-            urls.push(line);
-        }
+        contentsView.appendResourceDropPayloadLines(drop && drop.text !== undefined ? drop.text : "", urls);
+        const mimeTypes = [
+            "text/uri-list",
+            "text/plain",
+            "public.file-url",
+            "public.url",
+            "text/x-moz-url"
+        ];
+        for (let index = 0; index < mimeTypes.length; ++index)
+            contentsView.appendResourceDropMimePayload(drop, mimeTypes[index], urls);
         return urls;
     }
     function firstVisibleLogicalLine() {
@@ -2583,6 +2602,8 @@ Item {
                         onEntered: function (drag) {
                             const dropUrls = contentsView.extractResourceDropUrls(drag);
                             const accepted = contentsView.canAcceptResourceDropUrls(dropUrls);
+                            if (drag && accepted && drag.acceptProposedAction !== undefined)
+                                drag.acceptProposedAction();
                             if (drag)
                                 drag.accepted = accepted;
                             contentsView.resourceDropActive = accepted;
@@ -2593,6 +2614,8 @@ Item {
                         onPositionChanged: function (drag) {
                             const dropUrls = contentsView.extractResourceDropUrls(drag);
                             const accepted = contentsView.canAcceptResourceDropUrls(dropUrls);
+                            if (drag && accepted && drag.acceptProposedAction !== undefined)
+                                drag.acceptProposedAction();
                             if (drag)
                                 drag.accepted = accepted;
                             contentsView.resourceDropActive = accepted;

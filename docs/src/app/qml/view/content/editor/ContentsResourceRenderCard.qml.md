@@ -36,6 +36,9 @@ Shared desktop/mobile resource card for `<resource ...>` note entries.
   - non-inline resource presentation surfaces that keep the previous freer vertical sizing
 - The inline image path now follows the Figma `292:50` resource frame more closely:
   - outer frame stays transparent and keeps only the border
-  - the image frame stretches to the full available body width only
+  - the outer image frame stretches to the full available body width only
   - it must not treat gutter/minimap space or raw viewport overhang as part of that width contract
+  - the inner bitmap viewport stays centered and does not upscale beyond the natural bitmap width hint
+  - in note-body inline mode, the inner bitmap now renders with `PreserveAspectCrop` so the frame reads like the Figma
+    mixed prose/image example instead of letterboxing inside the centered media slot
   - the image area height tracks the real bitmap aspect ratio instead of a fixed 480px-wide sample card

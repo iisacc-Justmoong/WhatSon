@@ -8,6 +8,8 @@ Hosts the document-native block editor for structured `.wsnbody` content.
 - Also consumes `ContentsBodyResourceRenderer.renderedResources` so `type=resource` blocks can resolve from the
   canonical `<resource ... />` source tag to the real asset file inside the `.wsresource` package.
 - Renders text/agenda/callout/resource/break as one ordered document column.
+- The ordered document column now keeps a `10px` inter-block gap so mixed prose + image notes read like a markdown/
+  HTML body rather than one collapsed zero-gap stack.
 - That document column is expected to receive the host's effective note-body width, not the raw editor viewport width.
   On desktop/mobile screen editor surfaces, the host therefore subtracts its body insets before passing width into the
   structured-flow surface, keeping inline resource frames aligned with surrounding text content.

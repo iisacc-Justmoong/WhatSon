@@ -76,18 +76,23 @@ Desktop content editor host.
 - Desktop host-side RAW mutations such as imported-resource tag insertion or structured source rewrites now also issue
   immediate persistence requests directly; the host no longer keeps a local deferred-persistence override for those
   editor mutations.
-- Desktop editor drop handling now accepts native file-manager drags without a `DropArea.keys` MIME gate, parses both
-  `drop.urls` and `text/uri-list`, imports those files through `ResourcesImportViewModel`, injects canonical
-  `<resource ...>` calls into the active note source, and feeds the current presentation snapshot into
+- Desktop editor drop handling now accepts native file-manager drags without a `DropArea.keys` MIME gate, parses
+  `drop.urls` first and then falls back through string-based payloads such as `drop.text`, `text/uri-list`,
+  `text/plain`, and platform file-url MIME values, imports those files through `ResourcesImportViewModel`, injects
+  canonical `<resource ...>` calls into the active note source, and feeds the current presentation snapshot into
   `ContentsBodyResourceRenderer` so the dropped resource card appears in the body overlay before the worker-thread note
   flush finishes.
 - Desktop now also rescans the live `editorText` buffer for canonical `<resource ... />` markup on each edit turn.
   Dropping an image into a note that already contains paragraphs therefore switches that same note into the structured
   resource path immediately instead of leaving a legacy RichText/plain-text frame alive long enough to expose the raw
   tag as visible prose.
-- Figma node `294:7923` is now the mixed-content reference for this path:
+- Figma node `294:7933` is now the mixed-content reference for this path:
   one text-editor column contains prose above the image frame and prose below it.
   Inline image blocks therefore behave like authored body elements, not like a full-surface resource takeover.
+- That mixed-content reference also means the structured-flow document column should read like an ordinary markdown/HTML
+  note body:
+  - text/resource blocks keep visible vertical breathing room between siblings
+  - body prose keeps the denser 12px medium-weight paragraph feel instead of oversized editor-field spacing
 - The post-import insertion path now normalizes `importUrlsForEditor(...)` results from either a real JS array or a
   Qt-provided list-like `QVariantList`, so successful hub imports cannot silently skip body-tag insertion just because
   the invokable return value is not tagged as `Array.isArray(...)` in QML.
@@ -167,6 +172,9 @@ Desktop content editor host.
   `resourceDropActive || resourceDropEditorSurfaceGuardActive`, so the nested `TextEdit` turns read-only from drag
   hover through drop finalization and cannot corrupt adjacent `<callout>` / `<resource>` source by handling the same
   OS file drop as ordinary editable content.
+- While that hover-phase resource drop is considered valid, desktop now also calls `drag.acceptProposedAction()`
+  before setting `drag.accepted = true`, reducing the chance that the nested `TextEdit` keeps the OS file drag alive
+  long enough to fall back to Qt's default image-object insertion path.
 - The desktop drop handler now also prefers `drop.acceptProposedAction()` when Qt exposes it, then sets
   `drop.accepted = inserted`, so the file drop is consumed as an editor-import gesture instead of being left for the
   nested `TextEdit` to interpret as ordinary editable content.

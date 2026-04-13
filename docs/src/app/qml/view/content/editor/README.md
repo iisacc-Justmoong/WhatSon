@@ -45,7 +45,8 @@
   resource previews, so file/image/audio/pdf/document presentation no longer duplicates the same card scaffolding in
   both hosts.
 - Inline image resources now compose through `ContentsImageResourceFrame.qml` as transparent border-only cards whose
-  runtime width follows the editor block width and whose height follows the loaded bitmap aspect ratio.
+  runtime outer width follows the editor block width, whose inner bitmap viewport stays centered at natural size until
+  the body column forces it smaller, and whose height follows the loaded bitmap aspect ratio.
 - The dedicated `ContentsResourceViewer.qml` full-surface mode is now reserved for direct resource-package browsing
   from the Resources hierarchy.
   Inline `<resource ... />` tags inside ordinary note bodies must stay inside the authored document flow instead of

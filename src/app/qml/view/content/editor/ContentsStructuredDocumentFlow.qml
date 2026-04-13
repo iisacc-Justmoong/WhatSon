@@ -441,7 +441,7 @@ FocusScope {
 
         anchors.left: parent.left
         anchors.right: parent.right
-        spacing: 0
+        spacing: Math.max(0, Math.round(LV.Theme.scaleMetric(10)))
 
         Repeater {
             id: blockRepeater

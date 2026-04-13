@@ -9,7 +9,10 @@ Dedicated image-body frame container derived from Figma node `292:50`.
   - right 3-dot menu affordance
 - Center media slot
   - uses `8px` horizontal inset from the outer frame
-  - stretches to the available frame width instead of staying at the original Figma sample width
+  - keeps the outer frame at the available editor-body width while centering the actual media viewport inside it
+  - clamps the media viewport to the smaller of:
+    - the available frame width after the 8px left/right inset
+    - the media's natural width hint
   - derives its height from the effective media aspect ratio, falling back to the original `338 x 352` design sample
   - exposed as a default-content slot so image/video viewers can be mounted inside it later
 - Bottom `resourceToolbar`
@@ -31,10 +34,11 @@ Dedicated image-body frame container derived from Figma node `292:50`.
 
 ## Styling
 - Uses LVRS labels and theme colors instead of React/Tailwind output.
-- Keeps the Figma frame chrome while adapting it to the note body width contract:
+- Keeps the Figma frame chrome while adapting it to the mixed-content note-body contract shown by Figma node `294:7933`:
   - no background fill on the outer frame, only border chrome
   - design-time reference width `480` remains only as the implicit-width hint
-  - runtime width follows the parent/editor block width
+  - runtime outer width follows the parent/editor block width
+  - runtime media width stays centered and does not upscale past the bitmap's natural width hint
   - 8px horizontal header/footer/media padding
   - 4px vertical header/footer padding
   - 12px rounded outer border

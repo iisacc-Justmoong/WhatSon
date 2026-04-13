@@ -98,6 +98,8 @@ structured document-flow editor changes.
   The inline bitmap viewer must never try to open the `.wsresource` directory path itself as if it were the payload.
 - Later text in that same note must flow below the inline resource frame; the card must not overlap subsequent
   paragraphs just because the tag itself is zero-width source markup.
+- Mixed prose/image note bodies should keep visible block spacing between the paragraph above, the inline image frame,
+  and the paragraph below, matching the markdown-style reference flow instead of collapsing every block together.
 - In RichText editor mode, dropping an image must render at the authored body slot as part of the RichText document
   itself, and later paragraphs must remain below that image in ordinary body flow.
 - Inline image rendering must still work when the active hierarchy view-model does not expose
@@ -111,9 +113,9 @@ structured document-flow editor changes.
   editor, and it must occupy real document height in the block column rather than an overlay aligned on top of text.
 - The inline image frame must keep a transparent background. Only the border chrome from the image-resource frame may
   remain; no extra dark fill from the wrapper card should sit behind the bitmap.
-- Inline image resource blocks must stretch to the available editor body width and recompute their height from the
-  actual bitmap aspect ratio, instead of staying capped at the original 480px sample width or cropping to a fixed
-  viewport ratio.
+- Inline image resource blocks must stretch only with their outer frame to the available editor body width.
+  The inner bitmap viewport must stay centered and keep the natural bitmap width hint until the body column forces it
+  smaller, while still recomputing height from the actual bitmap aspect ratio.
 - "Fill width" for inline images must mean the note body column width only.
   The frame must not consume gutter space, minimap rail space, or any extra viewport overhang outside the body insets.
 - The dedicated resource viewer may appear only when the user is directly browsing a `.wsresource` package from the
@@ -135,6 +137,12 @@ structured document-flow editor changes.
 - A file drop that imports a resource must not leave escaped tail fragments such as
   `&quot;image&quot; format=&quot;...&quot; ... /&gt;` or `e=&quot;image&quot; ... /&gt;` inside `.wsnbody`.
   The saved body must contain canonical literal `<resource ... />` tags only.
+- After any save/load round-trip, a standalone `<resource ... />` source line must remain a direct body-level resource
+  block instead of being rewrapped into `<paragraph>` content or glued back onto the previous prose line.
+- The same file-system drag must still import correctly when the OS exposes the payload as plain text or a platform
+  file-url string instead of populating `drop.urls`.
+  In that case the editor must still create the `.wsresource` package, insert the canonical `<resource ... />` tag,
+  and must not fall back to Qt's default inline image-object drop behavior.
 - The same imported-file drop must not rewrite neighboring structured tags into broken paragraph text.
   For example, an existing `<callout>...</callout>` block around the drop context must remain literal source markup
   instead of degrading into plain paragraph text plus escaped resource-tail fragments.

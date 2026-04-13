@@ -29,9 +29,13 @@ Rectangle {
     readonly property real designBarHeight: 19
     readonly property real horizontalPadding: 8
     readonly property real resolvedFrameWidth: Math.max(120, Number(imageFrame.width) || imageFrame.implicitWidth)
+    readonly property real availableMediaWidth: Math.max(
+                                                    120,
+                                                    imageFrame.resolvedFrameWidth - imageFrame.horizontalPadding * 2)
+    readonly property real naturalMediaWidth: Math.max(120, Number(imageFrame.mediaWidthHint) || 338)
     readonly property real resolvedMediaWidth: Math.max(
                                                    120,
-                                                   imageFrame.resolvedFrameWidth - imageFrame.horizontalPadding * 2)
+                                                   Math.min(imageFrame.availableMediaWidth, imageFrame.naturalMediaWidth))
     readonly property real resolvedMediaHeight: Math.max(
                                                     120,
                                                     Math.round(
@@ -119,8 +123,11 @@ Rectangle {
         Item {
             id: mediaViewport
 
-            anchors.fill: parent
+            anchors.horizontalCenter: parent.horizontalCenter
+            anchors.top: parent.top
             clip: true
+            height: imageFrame.resolvedMediaHeight
+            width: imageFrame.resolvedMediaWidth
         }
     }
 
