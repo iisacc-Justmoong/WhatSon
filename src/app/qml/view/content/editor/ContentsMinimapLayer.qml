@@ -26,8 +26,12 @@ Item {
     property var minimapVisualRows: []
     property var scrollToMinimapPositionHandler: null
     readonly property int minimapCurrentLineRadius: Math.max(0, Math.round(LV.Theme.scaleMetric(1)))
+    readonly property int minimapImplicitWidth: Math.max(
+                                                    minimapTrackWidth + minimapTrackInset * 2,
+                                                    Math.round(LV.Theme.scaleMetric(56)))
     readonly property real trackHeight: minimapTrack.height
     readonly property real trackWidth: minimapTrack.width
+    implicitWidth: minimapImplicitWidth
 
     function resolveNumericResolverValue(resolver, fallbackValue, argument) {
         const numericFallbackValue = Number(fallbackValue);

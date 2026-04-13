@@ -38,6 +38,10 @@ This controller exists to keep plain typing separate from inline-format applicat
 - The controller now also exits early while `view.resourceDropEditorSurfaceGuardActive == true`.
   External file drops can therefore import/link `.wsresource` packages without letting a same-turn native `TextEdit`
   drop mutation serialize the visible RichText surface back into `.wsnbody` as escaped attribute text.
+- The controller now also rejects plain-text deltas that collapse onto a zero-width RAW source span or that touch an
+  existing `<resource ... />` token at the source layer.
+  This protects inline resource placeholders from being reserialized as partial escaped tail fragments when the
+  RichText surface reports a lossy post-render delta.
 - The controller now also owns tag-aware raw deletion before `TextEdit` default handling runs.
   Backspace/Delete no longer has to land as one-character plain-text diffs first and then hope the source bridge can
   reconstruct the intended tag boundary afterward.
@@ -187,6 +191,9 @@ structured-block projection do not re-enter the normal typing path.
     note already contained structured or resource tags
   - later typing around those inline RichText image blocks still ignores the editor's internal object glyphs, so one
     ordinary keystroke does not look like a whole-resource plain-text mutation
+  - if the RichText surface later reports a replacement that resolves only to the virtual placeholder span for that
+    resource block, the controller now drops that replacement and restores the editor surface from authoritative RAW
+    source instead of persisting a broken resource-tail fragment
 
 ## Regression Checks
 
@@ -218,6 +225,8 @@ structured-block projection do not re-enter the normal typing path.
   reserializing the rendered RichText surface, because that surface omits proprietary wrapper tags by design.
 - Typing inside notes that already contain inline RichText image/resource blocks must not treat those rendered document
   objects as inserted plain-text characters during diffing.
+- A plain-text delta that resolves to the same RAW source offset for both its logical start and end must be treated as
+  a virtual placeholder mismatch, not as a real `.wsnbody` replacement candidate.
 - Direct typing must not leak fragment comment markup such as `<!--StartFragment-->`.
 - Typing literal `<bold>` text should persist as literal text, not as an executable inline tag.
 - Hangul IME composition must mutate `.wsnbody` only once per committed syllable/result, not once per preedit step.

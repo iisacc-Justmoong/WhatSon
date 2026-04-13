@@ -117,6 +117,9 @@ Mobile content editor host.
   `ContentsEditorTypingController.qml` to ignore any same-turn late surface edit notification, and finally reapplies
   the canonical rendered editor surface so native `TextEdit` drop mutations cannot survive as literalized
   `resource`-attribute fragments in the editor buffer.
+- The shared minimap slot now also keeps a fixed layout width while visible.
+  This matches the desktop contract and prevents sibling editor content from collapsing the minimap column to zero
+  width if the mobile host ever enables that rail.
 - Mobile now also drives `ContentsInlineFormatEditor.blockExternalDropMutation` from
   `resourceDropActive || resourceDropEditorSurfaceGuardActive`, so the nested `TextEdit` turns read-only as soon as a
   valid external file drag is hovering over the editor and stays frozen until the dedicated resource-drop turn

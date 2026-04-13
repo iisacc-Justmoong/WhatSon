@@ -100,6 +100,9 @@ structured document-flow editor changes.
   must not treat the RichText image object itself as a new plain-text character during diffing or persistence.
 - A programmatic resource/body presentation rebuild must not persist the superseded placeholder surface back into
   `.wsnbody`; queued fallback `textEdited(...)` dispatch from the older RichText surface must be cancelled or ignored.
+- If the RichText surface later emits a plain-text delta whose logical span collapses back to one RAW source offset
+  inside a resource placeholder zone, that delta must be ignored and the surface must be restored from canonical
+  source instead of rewriting the resource tag.
 - A file drop that imports a resource must not leave escaped tail fragments such as
   `&quot;image&quot; format=&quot;...&quot; ... /&gt;` or `e=&quot;image&quot; ... /&gt;` inside `.wsnbody`.
   The saved body must contain canonical literal `<resource ... />` tags only.
@@ -109,3 +112,5 @@ structured document-flow editor changes.
 - Backspace/Delete while the caret is at a raw tag boundary must remove the whole tag token in one step.
   Deleting across `<resource ... />`, `<callout>`, `</callout>`, `<agenda ...>`, `</agenda>`, or inline-style tags
   must not leave partial source remnants behind.
+- The right-side editor minimap must remain visible after note open and after later layout mutations.
+  Adjacent editor/resource/detail content must not compress the minimap rail to zero width.

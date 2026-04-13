@@ -2749,7 +2749,9 @@ Item {
                 id: minimapLayer
 
                 Layout.fillHeight: true
-                Layout.preferredWidth: contentsView.minimapOuterWidth
+                Layout.maximumWidth: visible ? contentsView.minimapOuterWidth : 0
+                Layout.minimumWidth: visible ? contentsView.minimapOuterWidth : 0
+                Layout.preferredWidth: visible ? contentsView.minimapOuterWidth : 0
                 editorFlickable: contentsView.editorFlickable
                 minimapBarWidthResolver: function (characterCount) {
                     return contentsView.minimapBarWidth(characterCount);

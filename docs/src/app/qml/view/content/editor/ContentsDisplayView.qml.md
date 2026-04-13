@@ -140,6 +140,9 @@ Desktop content editor host.
 - The desktop drop handler now also prefers `drop.acceptProposedAction()` when Qt exposes it, then sets
   `drop.accepted = inserted`, so the file drop is consumed as an editor-import gesture instead of being left for the
   nested `TextEdit` to interpret as ordinary editable content.
+- The desktop minimap slot is now also pinned to a fixed layout width while visible.
+  The right-side minimap therefore keeps its column even when the central editor viewport expands aggressively inside
+  the shared `RowLayout`.
 
 ## Legacy Surface
 - The single `ContentsInlineFormatEditor` and overlay layers still remain the fallback path for notes without any

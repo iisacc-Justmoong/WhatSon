@@ -27,6 +27,10 @@ parent view and paints them without re-entering editor layout state.
 - Track inset/width and thumb radii now come from `LV.Theme.gap8` and `LV.Theme.scaleMetric(...)`, and the minimap
   colors now resolve from LVRS theme tokens (`accentGray`, `descriptionColor`, `accentTransparent`) instead of local
   hex literals.
+- The layer now also exposes an explicit implicit width derived from the track width plus horizontal insets, with a
+  56px floor.
+  Parent `RowLayout` containers therefore keep a real slot reserved for the minimap instead of opportunistically
+  collapsing the right-side column to zero width under sibling layout pressure.
 - The viewport thumb and current-line highlight consume numeric snapshot properties directly, not resolver callbacks.
   This breaks the old cycle where the minimap could reopen editor layout computations while binding its own rectangles.
 - `minimapScrollable`, `minimapViewportHeight`, and `minimapViewportY` are expected to arrive as parent-owned snapshot
@@ -42,5 +46,7 @@ parent view and paints them without re-entering editor layout state.
 ## Regression Checks
 
 - Opening a note should no longer emit repeated binding-loop warnings for minimap `scrollable`, `height`, or `y`.
+- The minimap column should remain visibly present on the editor's right edge; expanding sibling editor/panel content
+  must not compress the minimap layout slot away.
 - Dragging or clicking the minimap should still reposition the shared editor viewport.
 - The viewport thumb should disappear when the document fits entirely inside the editor viewport.

@@ -502,6 +502,63 @@ QtObject {
         return ranges;
     }
 
+    function normalizedSourceTagName(tagToken) {
+        const normalizedToken = tagToken === undefined || tagToken === null ? "" : String(tagToken);
+        if (normalizedToken.length === 0)
+            return "";
+        const match = normalizedToken.match(/^<\s*\/?\s*([A-Za-z_][A-Za-z0-9_.:-]*)\b/i);
+        if (!match || match.length < 2)
+            return "";
+        return String(match[1] || "").trim().toLowerCase();
+    }
+
+    function sourceRangeTouchesNamedTag(sourceTagRanges, sourceStart, sourceEnd, normalizedTagName) {
+        const ranges = Array.isArray(sourceTagRanges) ? sourceTagRanges : [];
+        const targetTagName = normalizedTagName === undefined || normalizedTagName === null
+                ? ""
+                : String(normalizedTagName).trim().toLowerCase();
+        if (targetTagName.length === 0)
+            return false;
+        const safeStart = Math.max(0, Math.floor(Number(sourceStart) || 0));
+        const safeEnd = Math.max(safeStart, Math.floor(Number(sourceEnd) || 0));
+        for (let index = 0; index < ranges.length; ++index) {
+            const range = ranges[index];
+            if (controller.normalizedSourceTagName(range.token) !== targetTagName)
+                continue;
+            const rangeStart = Math.max(0, Math.floor(Number(range.start) || 0));
+            const rangeEnd = Math.max(rangeStart, Math.floor(Number(range.end) || 0));
+            if (safeEnd > safeStart) {
+                if (rangeEnd > safeStart && rangeStart < safeEnd)
+                    return true;
+                continue;
+            }
+            if (safeStart > rangeStart && safeStart < rangeEnd)
+                return true;
+        }
+        return false;
+    }
+
+    function logicalRangeCollapsesToSingleSourceOffset(logicalStart, logicalEnd) {
+        const safeLogicalStart = Math.max(0, Math.floor(Number(logicalStart) || 0));
+        const safeLogicalEnd = Math.max(safeLogicalStart, Math.floor(Number(logicalEnd) || 0));
+        if (safeLogicalEnd <= safeLogicalStart)
+            return false;
+        return controller.sourceOffsetForLogicalOffset(safeLogicalStart)
+                === controller.sourceOffsetForLogicalOffset(safeLogicalEnd);
+    }
+
+    function restoreEditorSurfaceFromSourcePresentation() {
+        if (controller.view && controller.view.restoreEditorSurfaceFromPresentation !== undefined) {
+            controller.view.restoreEditorSurfaceFromPresentation();
+        } else if (controller.view && controller.view.commitDocumentPresentationRefresh !== undefined) {
+            controller.view.commitDocumentPresentationRefresh();
+        } else {
+            controller.synchronizeLiveEditingStateFromPresentation();
+            return;
+        }
+        controller.synchronizeLiveEditingStateFromPresentation();
+    }
+
     function collapsedDeletionTagRange(sourceTagRanges, sourceOffset, deleteForward) {
         const ranges = Array.isArray(sourceTagRanges) ? sourceTagRanges : [];
         const safeOffset = Math.max(0, Math.floor(Number(sourceOffset) || 0));
@@ -1112,6 +1169,10 @@ QtObject {
         }
         const sourceStart = controller.sourceOffsetForLogicalOffset(logicalReplacementStart);
         const sourceEnd = controller.sourceOffsetForLogicalOffset(logicalReplacementEnd);
+        const currentSourceTagRanges = controller.sourceTagRanges(currentSourceText);
+        const targetsVirtualSourceOnly = controller.logicalRangeCollapsesToSingleSourceOffset(
+                    logicalReplacementStart,
+                    logicalReplacementEnd);
 
         const agendaTaskEnter = controller.agendaTaskEnterInsertion(
                     currentSourceText,
@@ -1142,6 +1203,16 @@ QtObject {
             rawReplacementEnabled = true;
             cursorSourceOffsetOverride = Math.max(0, Math.floor(Number(calloutEnter.cursorSourceOffsetFromReplacementStart) || 0));
             cursorLogicalOverride = NaN;
+        }
+
+        const touchesResourceTag = controller.sourceRangeTouchesNamedTag(
+                    currentSourceTagRanges,
+                    replacementSourceStart,
+                    replacementSourceEnd,
+                    "resource");
+        if (touchesResourceTag || targetsVirtualSourceOnly) {
+            controller.restoreEditorSurfaceFromSourcePresentation();
+            return false;
         }
 
         let nextSourceText = "";
