@@ -12,12 +12,9 @@
 
 ## Runtime Line-Metric Contract
 
-- The bridge now normalizes incoming editor source through the canonical `.wsnbody` serializer /
-  parser path (`serializeBodyDocument(...)` + `plainTextFromBodyDocument(...)`) before deriving
-  logical offsets.
-- This keeps logical text identical to the same plain-text projection used by editor persistence,
-  so gutter/minimap/selection geometry cannot drift when RichText whitespace or block markup is
-  interpreted differently from the note-body parser.
+- The bridge now normalizes incoming editor source through one editor-local scanner that preserves RAW markdown
+  markers, decodes safe entities, skips proprietary tags, and expands proprietary block tags into the same logical
+  line structure that the live editor surface exposes.
 - The bridge no longer rewrites markdown list markers (`- ` / `* ` / `+ `) into `• `.
   Logical text now preserves raw markdown markers so the source editor and `.wsnbody` format stay aligned.
 - `logicalLineCharacterCountAt(...)` uses normalized plain-text length (`m_logicalText`) instead of
@@ -30,6 +27,9 @@
   - `<br>`, canonical `</break>`, and legacy `<hr>` each count as one logical line-break character
   - inside `<agenda>`, each later `<task>` start now also emits one synthetic logical line-break step before that
     task body, matching the plain-text projection produced by `NoteBodyPersistence`
+  - `<resource ... />` now emits the same fixed placeholder-line span that the editor RichText/native surfaces reserve
+    for the inline resource frame
+  - `<tag>` emits one logical `#` glyph so tag markers still occupy cursor space
   - common HTML entities (`&lt;`, `&amp;`, `&#39;`, etc.) collapse to one logical character
 - That entity-collapse rule now intentionally matches the editor RichText surface, which renders RAW-safe entity tokens
   as their real glyphs instead of exposing the literal escape strings.
@@ -73,6 +73,8 @@
 - When source contains multiple `<task>` children inside one `<agenda>`, `logicalToSourceOffsets()` must expose one
   logical line-break step between adjacent task bodies so cursor restoration and source splices can land inside the
   intended task instead of drifting to surrounding text.
+- When source contains `<resource ... />`, `logicalText` and `logicalToSourceOffsets()` must reserve the same fixed
+  blank-line slot so mobile plain-text editing and desktop overlay positioning both align to the authored resource tag.
 
 ## Extracted Symbols
 - Declared namespaces present: no

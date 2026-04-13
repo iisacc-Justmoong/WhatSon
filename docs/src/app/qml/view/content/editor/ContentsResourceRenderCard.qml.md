@@ -1,13 +1,16 @@
 # `src/app/qml/view/content/editor/ContentsResourceRenderCard.qml`
 
 ## Responsibility
-Shared desktop/mobile body-overlay resource card for `<resource ...>` note entries.
+Shared desktop/mobile resource card for `<resource ...>` note entries.
 
 ## Inputs
 - `resourceEntry`
   Normalized renderer payload from `ContentsBodyResourceRenderer`.
 - `borderColor`, `cardColor`
   Host-supplied tone overrides so desktop/mobile can keep their existing overlay palette.
+- `inlinePresentation`
+  Switches the card into the compact in-editor block mode used by `ContentsResourceLayer.qml`, where metadata stays
+  single-line and the card height matches the reserved editor placeholder slot.
 
 ## Render Modes
 - `image`
@@ -20,3 +23,6 @@ Shared desktop/mobile body-overlay resource card for `<resource ...>` note entri
 ## Reuse Rule
 - Desktop `ContentsDisplayView.qml` and mobile `MobileContentsDisplayView.qml` must both compose this shared card
   instead of reintroducing duplicated per-host resource-card markup.
+- The same card now serves both:
+  - inline note-body rendering through `ContentsResourceLayer.qml`
+  - non-inline resource presentation surfaces that keep the previous freer vertical sizing

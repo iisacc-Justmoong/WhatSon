@@ -38,7 +38,9 @@ Implements inline-format rendering from note-editor text to RichText HTML.
 - Converts `<br>` style tags and newline characters to `<br/>`.
 - Converts the canonical single divider tag `</break>` (and legacy `<hr ...>` aliases) into rendered divider HTML
   (`<hr/>`) on both the live editor surface and preview HTML.
-- Drops `<resource ...>` tags from text rendering so resource metadata is handled by dedicated resource renderers.
+- The live editor surface no longer drops `<resource ...>` tags as zero-height markup.
+  Instead it emits a fixed blank block placeholder for each resource tag so the inline resource layer can occupy real
+  vertical space inside the note body without subsequent text overlapping that frame.
 - The live editor surface now also projects proprietary structured blocks into editor-owned RichText flow instead of
   treating them as zero-height skipped markup:
   - `<agenda ...><task ...>...</task>...</agenda>` emits one padded editor block that contains only task body text,
@@ -142,4 +144,6 @@ Implements inline-format rendering from note-editor text to RichText HTML.
   text must render inside that reserved slot instead of continuing in the surrounding paragraph stream.
 - A stored `<callout>...</callout>` block must reserve real editor text-flow height at the authored location, and the
   callout body text must render inside that reserved slot instead of continuing in the surrounding paragraph stream.
+- A stored `<resource ... />` tag must likewise reserve a stable inline editor slot instead of disappearing from the
+  RichText flow while the visual resource card is rendered elsewhere.
 - When preview is disabled, mutating `sourceText` must not recompute markdown-aware preview HTML.

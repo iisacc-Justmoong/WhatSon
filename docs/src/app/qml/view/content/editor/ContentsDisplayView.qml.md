@@ -69,9 +69,16 @@ Desktop content editor host.
 - Desktop no longer splices that imported resource tag block by the raw `TextEdit.cursorPosition` integer. Instead it
   routes the RAW insertion through `ContentsEditorTypingController.insertRawSourceTextAtCursor(...)`, so logical/plain
   caret positions are mapped back into `.wsnbody` source offsets before persistence.
+- Desktop now also normalizes that inserted resource block onto standalone source lines when the drop happened in the
+  middle of an existing paragraph, so the inline resource frame owns its own body slot instead of being embedded into
+  adjacent prose.
 - Desktop now requests the resources runtime reload only after the same drop turn finishes its RAW note-link attempt.
   Import therefore no longer reloads the resources hierarchy midway through the editor-linking step, but successful
   `.wsresource` registration still refreshes the runtime even when the note-link step fails.
+- Desktop resource rendering no longer lives in one bottom-anchored card rail.
+  `ContentsResourceLayer.qml` now resolves each rendered resource tag back into document Y coordinates and mounts the
+  framed card inline at the authored source slot, while the RichText surface keeps a blank placeholder block under that
+  card so later text flows below the resource instead of overlapping it.
 - When the selection bridge can already expose a buffered dirty body for the newly selected note, the desktop host now
   consumes that note-owned payload through the ordinary selection-sync path instead of waiting for a stale filesystem
   read to arrive first.

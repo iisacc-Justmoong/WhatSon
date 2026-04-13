@@ -83,5 +83,9 @@ structured document-flow editor changes.
   unchanged.
 - Native file-manager drops that surface only `text/uri-list` must still be accepted; desktop/mobile hosts must not
   rely solely on `drop.urls`.
-- After the tag insertion completes, the same selected note must show the new resource card in the body overlay before
-  a later manual note reopen or explicit filesystem refresh.
+- Dropping a file while the caret sits in the middle of a paragraph must still insert the canonical `<resource ... />`
+  call as its own source block instead of embedding the tag inline inside adjacent prose text.
+- After the tag insertion completes, the same selected note must show the new resource frame at the authored body slot
+  before a later manual note reopen or explicit filesystem refresh.
+- Later text in that same note must flow below the inline resource frame; the card must not overlap subsequent
+  paragraphs just because the tag itself is zero-width source markup.

@@ -1,5 +1,4 @@
 #include "ContentsLogicalTextBridge.hpp"
-#include "file/note/WhatSonNoteBodyPersistence.hpp"
 
 #include <QChar>
 #include <QStringList>
@@ -9,6 +8,8 @@
 
 namespace
 {
+    constexpr int kResourcePlaceholderLineCount = 6;
+
     int boundedContainerSize(const qsizetype size) noexcept
     {
         constexpr qsizetype maxIntSize = static_cast<qsizetype>(std::numeric_limits<int>::max());
@@ -122,6 +123,80 @@ namespace
         }
 
         return 0;
+    }
+
+    QString normalizeLineEndings(QString text)
+    {
+        text.replace(QStringLiteral("\r\n"), QStringLiteral("\n"));
+        text.replace(QLatin1Char('\r'), QLatin1Char('\n'));
+        return text;
+    }
+
+    QString resourceLogicalPlaceholderText()
+    {
+        if (kResourcePlaceholderLineCount <= 1)
+        {
+            return {};
+        }
+        return QString(kResourcePlaceholderLineCount - 1, QLatin1Char('\n'));
+    }
+
+    QString decodedHtmlEntityText(const QStringView entityToken)
+    {
+        const QString normalizedToken = entityToken.toString().toCaseFolded();
+        if (normalizedToken == QStringLiteral("&amp;"))
+        {
+            return QStringLiteral("&");
+        }
+        if (normalizedToken == QStringLiteral("&lt;"))
+        {
+            return QStringLiteral("<");
+        }
+        if (normalizedToken == QStringLiteral("&gt;"))
+        {
+            return QStringLiteral(">");
+        }
+        if (normalizedToken == QStringLiteral("&quot;"))
+        {
+            return QStringLiteral("\"");
+        }
+        if (normalizedToken == QStringLiteral("&apos;")
+            || normalizedToken == QStringLiteral("&#39;"))
+        {
+            return QStringLiteral("'");
+        }
+        if (normalizedToken == QStringLiteral("&nbsp;"))
+        {
+            return QStringLiteral(" ");
+        }
+
+        bool ok = false;
+        uint codePoint = 0;
+        if (normalizedToken.startsWith(QStringLiteral("&#x")))
+        {
+            codePoint = normalizedToken.mid(3, normalizedToken.size() - 4).toUInt(&ok, 16);
+        }
+        else if (normalizedToken.startsWith(QStringLiteral("&#")))
+        {
+            codePoint = normalizedToken.mid(2, normalizedToken.size() - 3).toUInt(&ok, 10);
+        }
+
+        if (!ok || codePoint == 0 || codePoint > 0x10FFFFU)
+        {
+            return entityToken.toString();
+        }
+
+        if (!QChar::requiresSurrogates(codePoint))
+        {
+            QString decoded;
+            decoded += QChar(static_cast<char16_t>(codePoint));
+            return decoded;
+        }
+
+        QString decoded;
+        decoded += QChar::highSurrogate(codePoint);
+        decoded += QChar::lowSurrogate(codePoint);
+        return decoded;
     }
 
 } // namespace
@@ -308,9 +383,96 @@ int ContentsLogicalTextBridge::sourceOffsetForLogicalOffset(int logicalOffset) c
 
 QString ContentsLogicalTextBridge::normalizeLogicalText(const QString& text)
 {
-    const QString serializedBodyDocument =
-        WhatSon::NoteBodyPersistence::serializeBodyDocument(QStringLiteral("note"), text);
-    return WhatSon::NoteBodyPersistence::plainTextFromBodyDocument(serializedBodyDocument);
+    const QString normalizedText = normalizeLineEndings(text);
+    QString logicalText;
+    logicalText.reserve(normalizedText.size());
+
+    bool insideAgenda = false;
+    int agendaTaskCount = 0;
+    int sourceOffset = 0;
+    while (sourceOffset < normalizedText.size())
+    {
+        const QChar ch = normalizedText.at(sourceOffset);
+        if (ch == QLatin1Char('<'))
+        {
+            const int tagEnd = normalizedText.indexOf(QLatin1Char('>'), sourceOffset + 1);
+            if (tagEnd > sourceOffset)
+            {
+                const QStringView tagToken(normalizedText.constData() + sourceOffset, tagEnd - sourceOffset + 1);
+                const QString normalizedTagName = normalizedHtmlTagName(tagToken);
+                const bool closingTag = isClosingHtmlTagToken(tagToken);
+
+                if (normalizedTagName == QStringLiteral("agenda"))
+                {
+                    insideAgenda = !closingTag;
+                    if (!insideAgenda)
+                    {
+                        agendaTaskCount = 0;
+                    }
+                    sourceOffset = tagEnd + 1;
+                    continue;
+                }
+
+                if (insideAgenda && normalizedTagName == QStringLiteral("task"))
+                {
+                    if (!closingTag)
+                    {
+                        if (agendaTaskCount > 0)
+                        {
+                            logicalText += QLatin1Char('\n');
+                        }
+                        ++agendaTaskCount;
+                    }
+                    sourceOffset = tagEnd + 1;
+                    continue;
+                }
+
+                if (normalizedTagName == QStringLiteral("resource"))
+                {
+                    if (!closingTag)
+                    {
+                        logicalText += resourceLogicalPlaceholderText();
+                    }
+                    sourceOffset = tagEnd + 1;
+                    continue;
+                }
+
+                if (normalizedTagName == QStringLiteral("tag"))
+                {
+                    if (!closingTag)
+                    {
+                        logicalText += QLatin1Char('#');
+                    }
+                    sourceOffset = tagEnd + 1;
+                    continue;
+                }
+
+                if (htmlTagProducesLogicalBreak(tagToken))
+                {
+                    logicalText += QLatin1Char('\n');
+                    sourceOffset = tagEnd + 1;
+                    continue;
+                }
+
+                sourceOffset = tagEnd + 1;
+                continue;
+            }
+        }
+
+        const int entityLength = htmlEntityLengthAt(normalizedText, sourceOffset);
+        if (entityLength > 0)
+        {
+            logicalText += decodedHtmlEntityText(
+                QStringView(normalizedText.constData() + sourceOffset, entityLength));
+            sourceOffset += entityLength;
+            continue;
+        }
+
+        logicalText += ch;
+        ++sourceOffset;
+    }
+
+    return logicalText;
 }
 
 QVariantList ContentsLogicalTextBridge::buildLogicalLineOffsets(const QString& text)
@@ -342,6 +504,7 @@ QVector<int> ContentsLogicalTextBridge::buildIntVector(const QVariantList& value
 
 QVector<int> ContentsLogicalTextBridge::buildLogicalToSourceOffsets(const QString& text, const int logicalTextLength)
 {
+    const QString normalizedText = normalizeLineEndings(text);
     QVector<int> offsets;
     const int safeLogicalTextLength = std::max(0, logicalTextLength);
     offsets.reserve(safeLogicalTextLength + 1);
@@ -351,15 +514,15 @@ QVector<int> ContentsLogicalTextBridge::buildLogicalToSourceOffsets(const QStrin
     int agendaTaskCount = 0;
     int logicalOffset = 0;
     int sourceOffset = 0;
-    while (sourceOffset < text.size() && logicalOffset < safeLogicalTextLength)
+    while (sourceOffset < normalizedText.size() && logicalOffset < safeLogicalTextLength)
     {
-        const QChar ch = text.at(sourceOffset);
+        const QChar ch = normalizedText.at(sourceOffset);
         if (ch == QLatin1Char('<'))
         {
-            const int tagEnd = text.indexOf(QLatin1Char('>'), sourceOffset + 1);
+            const int tagEnd = normalizedText.indexOf(QLatin1Char('>'), sourceOffset + 1);
             if (tagEnd > sourceOffset)
             {
-                const QStringView tagToken(text.constData() + sourceOffset, tagEnd - sourceOffset + 1);
+                const QStringView tagToken(normalizedText.constData() + sourceOffset, tagEnd - sourceOffset + 1);
                 const QString normalizedTagName = normalizedHtmlTagName(tagToken);
                 const bool closingTag = isClosingHtmlTagToken(tagToken);
 
@@ -389,6 +552,33 @@ QVector<int> ContentsLogicalTextBridge::buildLogicalToSourceOffsets(const QStrin
                     continue;
                 }
 
+                if (normalizedTagName == QStringLiteral("resource"))
+                {
+                    if (!closingTag)
+                    {
+                        for (int lineIndex = 0;
+                             lineIndex < kResourcePlaceholderLineCount - 1 && logicalOffset < safeLogicalTextLength;
+                             ++lineIndex)
+                        {
+                            ++logicalOffset;
+                            offsets.push_back(tagEnd + 1);
+                        }
+                    }
+                    sourceOffset = tagEnd + 1;
+                    continue;
+                }
+
+                if (normalizedTagName == QStringLiteral("tag"))
+                {
+                    if (!closingTag && logicalOffset < safeLogicalTextLength)
+                    {
+                        ++logicalOffset;
+                        offsets.push_back(tagEnd + 1);
+                    }
+                    sourceOffset = tagEnd + 1;
+                    continue;
+                }
+
                 if (htmlTagProducesLogicalBreak(tagToken))
                 {
                     ++logicalOffset;
@@ -399,7 +589,7 @@ QVector<int> ContentsLogicalTextBridge::buildLogicalToSourceOffsets(const QStrin
             }
         }
 
-        const int entityLength = htmlEntityLengthAt(text, sourceOffset);
+        const int entityLength = htmlEntityLengthAt(normalizedText, sourceOffset);
         if (entityLength > 0)
         {
             sourceOffset += entityLength;
@@ -415,7 +605,7 @@ QVector<int> ContentsLogicalTextBridge::buildLogicalToSourceOffsets(const QStrin
 
     while (offsets.size() < safeLogicalTextLength + 1)
     {
-        offsets.push_back(text.size());
+        offsets.push_back(normalizedText.size());
     }
 
     if (offsets.size() > safeLogicalTextLength + 1)

@@ -70,9 +70,15 @@ Mobile content editor host.
 - Mobile no longer inserts those resource tags by treating the visible editor cursor as a direct `.wsnbody` source
   offset. The drop path now reuses `ContentsEditorTypingController.insertRawSourceTextAtCursor(...)` so logical caret
   positions are translated back into RAW source offsets before save.
+- Mobile now also normalizes that inserted resource block onto standalone source lines when the drop happens inside an
+  existing paragraph, keeping the inline resource slot block-owned instead of sharing one prose line with adjacent
+  text.
 - Mobile now likewise defers the resources runtime reload until after the drop turn finishes its same-note
   `<resource ... />` link attempt, keeping `.wsresource` package creation and `.wsnbody` linking on one stable editor
   turn while still refreshing the runtime for successful package registration.
+- Mobile resource rendering now also uses `ContentsResourceLayer.qml` instead of the old bottom overlay stack.
+  The plain-text logical projection reserves a fixed blank block for each resource tag, and the inline resource frame
+  is anchored back onto that authored source position so the note body itself owns the rendered media slot.
 - When the selection bridge can already expose a buffered dirty body for the newly selected note, the mobile host now
   consumes that note-owned payload through the ordinary selection-sync path instead of waiting for a stale filesystem
   read to arrive first.

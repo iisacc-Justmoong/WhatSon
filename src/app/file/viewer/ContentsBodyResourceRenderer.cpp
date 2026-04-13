@@ -474,7 +474,9 @@ namespace
         const QString& resourcePath,
         const QString& resolvedResourceLocation,
         const QString& sourceUrl,
-        const QString& resourceId = QString())
+        const QString& resourceId = QString(),
+        const int sourceStart = 0,
+        const int sourceEnd = 0)
     {
         const QString renderMode = renderModeForResource(type, format, resolvedResourceLocation, resourcePath, sourceUrl);
         QVariantMap resource;
@@ -486,6 +488,9 @@ namespace
         resource.insert(QStringLiteral("source"), sourceUrl);
         resource.insert(QStringLiteral("renderMode"), renderMode);
         resource.insert(QStringLiteral("resourceId"), resourceId);
+        resource.insert(QStringLiteral("sourceStart"), std::max(0, sourceStart));
+        resource.insert(QStringLiteral("sourceEnd"), std::max(std::max(0, sourceStart), sourceEnd));
+        resource.insert(QStringLiteral("focusSourceOffset"), std::max(std::max(0, sourceStart), sourceEnd));
         resource.insert(
             QStringLiteral("displayName"),
             displayNameFromResourcePaths(resolvedResourceLocation, resourcePath, resourceId));
@@ -499,13 +504,10 @@ namespace
         const QString& sourceText,
         const QStringList& basePaths)
     {
-        QString normalizedSourceText = sourceText;
-        normalizedSourceText.remove(QRegularExpression(QStringLiteral(R"(<!--[\s\S]*?-->)")));
-
-        static const QRegularExpression resourceTagPattern(
-            QStringLiteral(R"(<resource\b[^>]*?/?>)"),
+        static const QRegularExpression resourceTokenPattern(
+            QStringLiteral(R"(<!--[\s\S]*?-->|<resource\b[^>]*?/?>)"),
             QRegularExpression::CaseInsensitiveOption);
-        QRegularExpressionMatchIterator iterator = resourceTagPattern.globalMatch(normalizedSourceText);
+        QRegularExpressionMatchIterator iterator = resourceTokenPattern.globalMatch(sourceText);
 
         QVariantList resources;
         int resourceIndex = 0;
@@ -513,6 +515,10 @@ namespace
         {
             const QRegularExpressionMatch match = iterator.next();
             const QString resourceTagText = match.captured(0);
+            if (resourceTagText.startsWith(QStringLiteral("<!--")))
+            {
+                continue;
+            }
 
             const QString type = extractXmlAttributeValue(
                 resourceTagText,
@@ -529,6 +535,9 @@ namespace
                     QStringLiteral("href"),
                     QStringLiteral("url")
                 });
+            const QString resourceId = extractXmlAttributeValue(
+                resourceTagText,
+                {QStringLiteral("id"), QStringLiteral("resourceId")});
             const QString resolvedResourceLocation = WhatSon::Resources::resolveAssetLocationFromReference(
                 resourcePath,
                 basePaths);
@@ -540,7 +549,10 @@ namespace
                     format,
                     resourcePath,
                     resolvedResourceLocation,
-                    sourceUrl));
+                    sourceUrl,
+                    resourceId,
+                    std::max(0, static_cast<int>(match.capturedStart(0))),
+                    std::max(0, static_cast<int>(match.capturedEnd(0)))));
             ++resourceIndex;
         }
 

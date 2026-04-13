@@ -8,6 +8,7 @@ Rectangle {
     id: resourceCard
 
     property var resourceEntry: ({})
+    property bool inlinePresentation: false
     property color borderColor: "#334E5157"
     property color cardColor: "#E61A1D22"
 
@@ -43,9 +44,13 @@ Rectangle {
             return "File";
         return resourceCard.resourceModeTitle;
     }
+    readonly property real previewHeight: resourceCard.inlinePresentation
+                                          ? 88
+                                          : (resourceCard.resourceRenderMode === "text" ? 96 : 72)
 
     border.color: resourceCard.borderColor
     border.width: Math.max(1, Math.round(LV.Theme.strokeThin))
+    clip: resourceCard.inlinePresentation
     color: resourceCard.cardColor
     implicitHeight: resourceRow.implicitHeight + LV.Theme.gap2 * 2
     radius: LV.Theme.radiusSm
@@ -59,7 +64,8 @@ Rectangle {
         spacing: LV.Theme.gap2
 
         Rectangle {
-            Layout.preferredHeight: resourceCard.resourceRenderMode === "text" ? 96 : 72
+            Layout.alignment: Qt.AlignTop
+            Layout.preferredHeight: resourceCard.previewHeight
             Layout.preferredWidth: 120
             color: "#CC0F141A"
             radius: LV.Theme.radiusSm
@@ -90,28 +96,36 @@ Rectangle {
         }
         LV.VStack {
             Layout.fillWidth: true
+            Layout.alignment: Qt.AlignTop
             spacing: LV.Theme.gap2
 
             LV.Label {
                 color: LV.Theme.textPrimary
+                elide: resourceCard.inlinePresentation ? Text.ElideRight : Text.ElideNone
                 style: body
                 text: resourceCard.resourceDisplayName.length > 0 ? resourceCard.resourceDisplayName : resourceCard.resourceModeTitle
+                wrapMode: resourceCard.inlinePresentation ? Text.NoWrap : Text.Wrap
             }
             LV.Label {
                 color: LV.Theme.textSecondary
+                elide: resourceCard.inlinePresentation ? Text.ElideRight : Text.ElideNone
                 style: body
                 text: resourceCard.resourceModeTitle
+                wrapMode: resourceCard.inlinePresentation ? Text.NoWrap : Text.Wrap
             }
             LV.Label {
                 color: LV.Theme.textSecondary
+                elide: resourceCard.inlinePresentation ? Text.ElideRight : Text.ElideNone
                 style: body
                 text: "type=" + resourceCard.resourceType + "  format=" + resourceCard.resourceFormat
+                wrapMode: resourceCard.inlinePresentation ? Text.NoWrap : Text.Wrap
             }
             LV.Label {
                 color: LV.Theme.textTertiary
                 elide: Text.ElideMiddle
                 style: body
                 text: resourceCard.resourcePath
+                wrapMode: resourceCard.inlinePresentation ? Text.NoWrap : Text.Wrap
             }
             LV.IconButton {
                 iconName: "generalshow"

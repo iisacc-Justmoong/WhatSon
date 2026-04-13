@@ -10,7 +10,7 @@ Declares the body-resource renderer bridge that maps note-local `<resource ...>`
   `.wsnbody` flush finishes.
 - `maxRenderCount`: caps the number of rendered resource cards.
 - `renderedResources`: normalized `QVariantList` model (`type`, `format`, `resourcePath`, `renderMode`, `source`,
-  `displayName`, `previewText`).
+  `displayName`, `previewText`, `sourceStart`, `sourceEnd`, `focusSourceOffset`).
 - Type declaration must stay **non-final** because `qmlRegisterType<T>()` instantiates an internal wrapper class that
   derives from `T`.
 

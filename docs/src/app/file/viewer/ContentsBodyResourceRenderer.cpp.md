@@ -11,6 +11,8 @@ Implements note-body resource rendering data extraction for the editor surface.
   `<resource ...>` tags, falling back to the active `.wsnbody` file only when the host has no same-note presentation
   snapshot yet.
 - Supports quoted and unquoted attribute values (including package paths with `/`).
+- Scans comments and resource tags in one pass so comment text does not rewrite the authoring buffer before source-span
+  offsets are recorded.
 - Resolves `.wsresource` references through `WhatSon::Resources::resolveAssetLocationFromReference(...)`.
 - Produces render entries with:
   - `renderMode = "image"` for image resources
@@ -19,6 +21,8 @@ Implements note-body resource rendering data extraction for the editor surface.
   - `renderMode = "pdf"` for pdf resources
   - `renderMode = "text"` for previewable text resources (`previewText` snippet included)
   - `renderMode = "document"` fallback for remaining resource types
+- Exposes source-span metadata (`sourceStart`, `sourceEnd`, `focusSourceOffset`) for each note-body tag so QML can
+  place resource cards at the authored inline position instead of pinning them to one bottom overlay rail.
 - Rebuilds the render model when the selected note changes or when `hubFilesystemMutated()` is emitted by the content view-model.
 - Rebuilds the render model immediately when `bodySourceText` changes, which lets drag-inserted resource tags render
   before the background note-persistence worker finishes.

@@ -697,6 +697,22 @@ Item {
             normalizedEntries.push(importedEntries[index]);
         return normalizedEntries;
     }
+    function resourceBlockSourceText(tagTexts) {
+        if (!Array.isArray(tagTexts) || tagTexts.length === 0)
+            return "";
+        const blockSourceText = tagTexts.join("\n");
+        const currentSourceText = contentsView.editorText !== undefined && contentsView.editorText !== null
+                ? String(contentsView.editorText)
+                : "";
+        const cursorSourceOffset = editorTypingController.sourceOffsetForLogicalOffset(
+                    contentsView.currentEditorCursorPosition());
+        const boundedCursorOffset = Math.max(0, Math.min(currentSourceText.length, Number(cursorSourceOffset) || 0));
+        const previousCharacter = boundedCursorOffset > 0 ? currentSourceText.charAt(boundedCursorOffset - 1) : "";
+        const nextCharacter = boundedCursorOffset < currentSourceText.length ? currentSourceText.charAt(boundedCursorOffset) : "";
+        const leadingBreak = currentSourceText.length > 0 && previousCharacter !== "\n" ? "\n" : "";
+        const trailingBreak = nextCharacter !== "\n" ? "\n" : "";
+        return leadingBreak + blockSourceText + trailingBreak;
+    }
     function insertImportedResourceTags(importedEntries) {
         const normalizedImportedEntries = contentsView.normalizedImportedResourceEntries(importedEntries);
         if (normalizedImportedEntries.length === 0)
@@ -709,7 +725,7 @@ Item {
         }
         if (tagTexts.length === 0)
             return false;
-        const insertedSourceText = tagTexts.join("\n");
+        const insertedSourceText = contentsView.resourceBlockSourceText(tagTexts);
         const inserted = editorTypingController.insertRawSourceTextAtCursor(
                     insertedSourceText,
                     insertedSourceText.length);
@@ -2192,6 +2208,46 @@ Item {
                         enabled: visible
                         z: 3
                     }
+                    ContentsResourceLayer {
+                        id: resourceRenderLayer
+
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+                        anchors.top: parent.top
+                        anchors.leftMargin: contentsView.showPrintEditorLayout
+                                            ? (Number(printPaperColumn.x) || 0) + contentsView.printGuideHorizontalInset
+                                            : contentsView.editorHorizontalInset
+                        anchors.rightMargin: contentsView.showPrintEditorLayout
+                                             ? Math.max(
+                                                   0,
+                                                   (parent ? Number(parent.width) || 0 : 0)
+                                                   - ((Number(printPaperColumn.x) || 0)
+                                                      + contentsView.printGuideHorizontalInset
+                                                      + contentsView.printPaperTextWidth))
+                                             : contentsView.editorHorizontalInset
+                        anchors.topMargin: contentsView.showPrintEditorLayout
+                                           ? (Number(printPaperColumn.y) || 0) + contentsView.printGuideVerticalInset
+                                           : contentsView.editorDocumentStartY
+                        blockFocusHandler: function (sourceOffset) {
+                            contentsView.focusStructuredBlockSourceOffset(sourceOffset);
+                        }
+                        borderColor: contentsView.resourceRenderBorderColor
+                        cardColor: contentsView.resourceRenderCardColor
+                        renderedResources: contentsView.showStructuredDocumentFlow ? [] : bodyResourceRenderer.renderedResources
+                        sourceOffsetYResolver: function (sourceOffset) {
+                            const logicalOffset = editorTypingController.logicalOffsetForSourceOffset(
+                                        Math.max(0, Math.floor(Number(sourceOffset) || 0)));
+                            const documentY = Math.max(0, Number(contentsView.documentYForOffset(logicalOffset)) || 0);
+                            return documentY;
+                        }
+                        visible: contentsView.hasSelectedNote
+                                 && !contentsView.showStructuredDocumentFlow
+                                 && !contentsView.showDedicatedResourceViewer
+                                 && !contentsView.showFormattedTextRenderer
+                                 && resourceRenderLayer.resourceCount > 0
+                        enabled: visible
+                        z: 3
+                    }
                     Flickable {
                         id: formattedPreviewViewport
 
@@ -2495,35 +2551,6 @@ Item {
                             text: "Loading note..."
                         }
                     }
-                    Item {
-                        id: bodyResourceRenderLayer
-
-                        anchors.bottom: parent.bottom
-                        anchors.bottomMargin: contentsView.editorBottomInset
-                        anchors.left: parent.left
-                        anchors.leftMargin: contentsView.editorHorizontalInset
-                        anchors.right: parent.right
-                        anchors.rightMargin: contentsView.editorHorizontalInset
-                        enabled: visible
-                        visible: contentsView.hasSelectedNote && bodyResourceRenderer.resourceCount > 0 && !contentsView.showPrintEditorLayout && !contentsView.showDedicatedResourceViewer
-                        z: 2
-
-                        LV.VStack {
-                            anchors.bottom: parent.bottom
-                            anchors.left: parent.left
-                            anchors.right: parent.right
-                            spacing: LV.Theme.gap2
-
-                            Repeater {
-                                model: bodyResourceRenderer.renderedResources
-
-                                delegate: ContentsResourceRenderCard {
-                                    borderColor: contentsView.resourceRenderBorderColor
-                                    cardColor: contentsView.resourceRenderCardColor
-                                    resourceEntry: modelData && typeof modelData === "object" ? modelData : ({})
-                                }
-                            }
-                        }
                 }
             }
             ContentsMinimapLayer {

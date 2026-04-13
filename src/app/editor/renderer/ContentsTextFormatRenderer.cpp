@@ -19,6 +19,8 @@
 
 namespace
 {
+    constexpr int kResourceEditorPlaceholderLineCount = 6;
+
     constexpr int kSupportedInlineStyleCount = 5;
 
     using InlineStyleCoverageMap = std::array<QVector<bool>, kSupportedInlineStyleCount>;
@@ -1423,6 +1425,18 @@ namespace
                 renderMode));
     }
 
+    QString renderResourceEditorBlockToHtml()
+    {
+        QStringList placeholderLines;
+        placeholderLines.reserve(kResourceEditorPlaceholderLineCount);
+        for (int index = 0; index < kResourceEditorPlaceholderLineCount; ++index)
+        {
+            placeholderLines.push_back(QStringLiteral("&nbsp;"));
+        }
+        return QStringLiteral("<div style=\"margin:0;padding:0;\">%1</div>")
+            .arg(placeholderLines.join(QStringLiteral("<br/>")));
+    }
+
     QString renderInlineTaggedTextFragmentToHtml(
         const QString& sourceText,
         const LiteralRenderMode renderMode = LiteralRenderMode::MarkdownAware)
@@ -1469,6 +1483,10 @@ namespace
 
             if (normalizedTagName == QStringLiteral("resource"))
             {
+                if (!closingTag)
+                {
+                    html += renderResourceEditorBlockToHtml();
+                }
                 cursor = tagEnd;
                 continue;
             }

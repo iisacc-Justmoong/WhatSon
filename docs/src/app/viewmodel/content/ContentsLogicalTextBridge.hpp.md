@@ -39,6 +39,8 @@
   normalized before clamping against `QString::size()`.
 - Logical break mapping now treats canonical divider tokens (`</break>`) the same as `<br>`/`<hr>` so QML offset
   conversions keep divider rows addressable in one logical step.
+- Resource tags now also expand into a fixed multi-line logical placeholder block so editor geometry and source-offset
+  mapping can reserve visible inline space for resource frames.
 
 ### Classes and Structs
 - `ContentsLogicalTextBridge`
@@ -75,3 +77,5 @@
   tables that already reflect the latest live keystroke, instead of rebuilding those tables from the whole note again.
 - When source text includes `</break>`, the exported logical/source offset table must still include one logical
   position for that divider token.
+- When source text includes `<resource ... />`, the exported logical/source offset table must include the same fixed
+  placeholder-line span that the editor surface uses for inline resource rendering.
