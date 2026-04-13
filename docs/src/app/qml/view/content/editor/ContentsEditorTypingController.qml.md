@@ -174,14 +174,10 @@ structured-block projection do not re-enter the normal typing path.
 - Plain-text comparison normalizes:
   - CRLF / CR -> LF
   - `U+2028` / `U+2029` -> LF
-  - invisible resource sentinels (`U+2063`) -> LF
   - RichText object-replacement glyphs (`U+FFFC`) -> removed
   - NBSP -> regular space
 - That object-replacement normalization lets the live RichText surface contain real inline image/resource objects while
   the typing diff path still compares only canonical logical `.wsnbody` text.
-- The same normalization now also treats the invisible RichText resource sentinel as one logical line break.
-  Inline image blocks can therefore keep the same placeholder-length contract as `ContentsLogicalTextBridge` without
-  exposing those bookkeeping characters on screen.
 - The source-side splice path escapes literal text before inserting it into `.wsnbody`, so ordinary typing cannot
   inject raw inline tags accidentally.
 - Markdown-style prefixes such as `1. `, `- `, `# `, `> `, and `` ``` `` still enter the source as literal typed text;

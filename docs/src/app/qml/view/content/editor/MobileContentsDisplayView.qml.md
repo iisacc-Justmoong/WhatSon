@@ -116,15 +116,12 @@ Mobile content editor host.
   `structuredFlowSourceText` contract.
   Mobile resource-block activation therefore stays aligned even when the live editor surface, deferred presentation
   snapshot, and selection-bridge source are briefly out of step.
-- When mobile later enters the RichText projection path, resolved image resources can be rewritten into real RichText
-  inline-image blocks using the renderer-resolved resource URL, without the old trailing blank placeholder paragraphs.
-- That mobile RichText image rewrite now also scopes centering inside a dedicated one-cell table block instead of a
-  centered paragraph node.
-  Inline image alignment must not leak into the paragraph that follows the image slot.
-- Mobile now also appends the same invisible U+2063 sentinel span after an inline RichText image block.
-  The hidden tail preserves the RAW resource block's fixed logical placeholder length so follow-up typing still maps
-  after `<resource ... />` instead of being cancelled as a virtual-only edit.
-- The current default mobile native-input path still keeps actual image paint on the source-aligned resource layer.
+- The current default mobile editable note surface also keeps RichText inline-image upgrading disabled.
+  Resolved bitmap resources therefore stay on the same parser-owned placeholder/overlay path as desktop:
+  - the editor surface keeps the RAW-derived logical placeholder slot
+  - `ContentsResourceLayer.qml` paints the visible centered image frame at that authored body position
+  Follow-up typing after `<resource ... />` no longer depends on a mutable RichText image object living inside the
+  editor document.
 - `ContentsBodyResourceRenderer` on mobile now also receives `libraryHierarchyViewModel` as a fallback note-directory
   resolver so body resource rendering survives hierarchy-switch lag and active domains that do not expose
   `noteDirectoryPathForNoteId(QString)`.

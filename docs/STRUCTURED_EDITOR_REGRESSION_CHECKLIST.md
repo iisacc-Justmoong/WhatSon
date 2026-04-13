@@ -109,10 +109,9 @@ structured document-flow editor changes.
   paragraphs just because the tag itself is zero-width source markup.
 - Mixed prose/image note bodies should keep visible block spacing between the paragraph above, the inline image frame,
   and the paragraph below, matching the markdown-style reference flow instead of collapsing every block together.
-- In RichText editor mode, dropping an image must render at the authored body slot as part of the RichText document
-  itself, and later paragraphs must remain below that image in ordinary body flow.
-- In RichText editor mode, centering used for the inline image block must stay local to that image slot.
-  Paragraphs rendered or typed below the image must return to the ordinary left-aligned note-body column.
+- In the editable note surface, dropping an image must render at the authored body slot while keeping ordinary typing
+  on the RAW-placeholder/editor-overlay path.
+  Later paragraphs must remain below that image in ordinary body flow and must not inherit image-only centering state.
 - Typing immediately after an inline image resource must keep both the `<resource ... />` RAW token and the newly
   typed prose.
   The editor must neither erase the finished word nor drop the resource block into memory-only presentation state.

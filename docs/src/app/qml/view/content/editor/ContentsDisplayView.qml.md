@@ -120,19 +120,13 @@ Desktop content editor host.
   `structuredFlowSourceText` contract.
   Resource-block activation therefore stays aligned even when the live editor surface, the deferred presentation
   snapshot, and the selection-bridge body source are temporarily catching up with each other.
-- When `ContentsBodyResourceRenderer` resolves an inline image resource successfully, the placeholder block is now
-  rewritten into a real RichText inline-image block so the bitmap becomes part of the editor's own document flow
-  rather than only a body-aligned overlay.
-- The RichText-side image rewrite now prefers the renderer's resolved resource URL and no longer appends extra blank
-  placeholder paragraphs after successful inline image injection.
-- That RichText-side image rewrite now scopes centering through a dedicated one-cell table block instead of a
-  `p align="center"` paragraph.
-  The bitmap may stay horizontally centered inside its own body slot, but any paragraph typed or rendered after that
-  block must return to the ordinary left-aligned note-body flow.
-- The same RichText image block now also appends an invisible U+2063 sentinel span after the table.
-  That hidden tail restores the fixed logical placeholder length already owned by the RAW `<resource ... />` token, so
-  follow-up typing after the image still resolves to RAW source offsets after the resource block instead of collapsing
-  into a virtual zero-width edit span.
+- The desktop editable note surface now keeps RichText inline-image upgrading disabled by default.
+  Even resolved bitmap resources stay on the parser-owned placeholder/overlay path:
+  - the editor surface keeps the logical placeholder slot produced from RAW
+  - `ContentsResourceLayer.qml` + `ContentsResourceRenderCard.qml` paint the visible centered image frame at that
+    authored body offset
+  This prevents follow-up typing after `<resource ... />` from depending on editable DOM-side image objects or
+  placeholder-only virtual offsets.
 - `ContentsBodyResourceRenderer` now also receives `libraryHierarchyViewModel` as a fallback note-directory resolver,
   so note-body resource rendering survives hierarchy-switch lag or active domains that do not implement
   `noteDirectoryPathForNoteId(QString)`.
