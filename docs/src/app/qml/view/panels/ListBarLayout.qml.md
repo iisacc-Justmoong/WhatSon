@@ -71,6 +71,10 @@ selection state machine lives in a sibling controller file.
 - Snapshot refresh requests from `itemsChanged()`, row insert/remove/move, `dataChanged`, and `layoutChanged` now
   funnel through one queued helper per event-loop turn, so one logical list refresh no longer rereads and reapplies the
   same row snapshot multiple times in immediate succession.
+- When the bound `noteListModel` instance itself changes, the view now clears `displayedNoteListEntries`
+  immediately and performs the first resync on the next event-loop turn. This prevents one-frame
+  stale-row reuse from the previous hierarchy's model while `NoteListModelContractBridge` and
+  `Connections.target` are still rebinding to the new domain model.
 - `modelReset` is now treated as viewport-lifecycle only inside this view. The actual visible-row resync is driven by
   the model's post-refresh `itemsChanged()` signal, eliminating one more duplicate snapshot-consumption path from the
   reset turn.
@@ -189,6 +193,8 @@ selection state machine lives in a sibling controller file.
     remains stable across equivalent model resets.
   - One logical note-list rebuild must not cause two immediate `displayedNoteListEntries` resync passes through
     `modelReset` plus a second post-reset `itemsChanged()` consumption path.
+  - Switching from one hierarchy domain to another must not show the previous hierarchy's row snapshot for one frame
+    while the new note-list model is being rebound.
   - Periodic note-list refreshes that arrive during an active drag must be applied only after the drag ends, so the
     source delegate is not recycled out from under `noteDragHandler`.
   - On mobile, the shared note/resource list must keep inertial scrolling after touch release instead of stopping on

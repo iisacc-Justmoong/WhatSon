@@ -701,8 +701,6 @@ Item {
         const normalizedImportedEntries = contentsView.normalizedImportedResourceEntries(importedEntries);
         if (normalizedImportedEntries.length === 0)
             return false;
-        const currentText = contentsView.editorText === undefined || contentsView.editorText === null ? "" : String(contentsView.editorText);
-        const cursorPosition = Math.max(0, Math.min(currentText.length, contentEditor && contentEditor.cursorPosition !== undefined ? Number(contentEditor.cursorPosition) || 0 : currentText.length));
         const tagTexts = [];
         for (let index = 0; index < normalizedImportedEntries.length; ++index) {
             const tagText = contentsView.resourceTagTextForImportedEntry(normalizedImportedEntries[index]);
@@ -711,22 +709,14 @@ Item {
         }
         if (tagTexts.length === 0)
             return false;
-        const prefix = cursorPosition > 0 && currentText.charAt(cursorPosition - 1) !== "\n" ? "\n" : "";
-        const suffix = cursorPosition < currentText.length && currentText.charAt(cursorPosition) !== "\n" ? "\n" : "";
-        const insertionText = prefix + tagTexts.join("\n") + suffix;
-        const nextText = currentText.slice(0, cursorPosition) + insertionText + currentText.slice(cursorPosition);
-        contentsView.editorText = nextText;
-        contentsView.commitDocumentPresentationRefresh();
-        editorSession.markLocalEditorAuthority();
-        if (contentsView.persistEditorTextImmediately !== undefined)
-            contentsView.persistEditorTextImmediately(nextText);
-        if (contentEditor && contentEditor.setCursorPositionPreservingInputMethod !== undefined)
-            contentEditor.setCursorPositionPreservingInputMethod(cursorPosition + insertionText.length);
-        else if (contentEditor && contentEditor.cursorPosition !== undefined)
-            contentEditor.cursorPosition = cursorPosition + insertionText.length;
-        contentsView.editorTextEdited(nextText);
+        const insertedSourceText = tagTexts.join("\n");
+        const inserted = editorTypingController.insertRawSourceTextAtCursor(
+                    insertedSourceText,
+                    insertedSourceText.length);
+        if (!inserted)
+            return false;
         bodyResourceRenderer.requestRenderRefresh();
-        return true;
+        return inserted;
     }
     function isMinimapScrollable() {
         const flickable = contentsView.editorFlickable;
@@ -949,6 +939,15 @@ Item {
     }
     function normalizeInlineStyleTag(tagName) {
         return editorSelectionController.normalizeInlineStyleTag(tagName);
+    }
+    function encodeXmlAttributeValue(value) {
+        let encodedValue = value === undefined || value === null ? "" : String(value);
+        encodedValue = encodedValue.replace(/&/g, "&amp;");
+        encodedValue = encodedValue.replace(/"/g, "&quot;");
+        encodedValue = encodedValue.replace(/'/g, "&apos;");
+        encodedValue = encodedValue.replace(/</g, "&lt;");
+        encodedValue = encodedValue.replace(/>/g, "&gt;");
+        return encodedValue;
     }
     function normalizeResourceFormat(formatValue) {
         let normalizedFormat = formatValue === undefined || formatValue === null ? "" : String(formatValue).trim().toLowerCase();
@@ -1212,8 +1211,14 @@ Item {
             return "";
         const resourceType = contentsView.normalizeResourceType(resourceEntry.type);
         const resourceFormat = contentsView.normalizeResourceFormat(resourceEntry.format);
-        const pathExpression = /\s/.test(resourcePath) ? "path=\"" + resourcePath + "\"" : "path=" + resourcePath;
-        return "<resource type=\"" + resourceType + "\" format=\"" + resourceFormat + "\" " + pathExpression + ">";
+        const resourceId = resourceEntry.resourceId !== undefined ? String(resourceEntry.resourceId).trim() : "";
+        let tagText = "<resource type=\"" + contentsView.encodeXmlAttributeValue(resourceType)
+                + "\" format=\"" + contentsView.encodeXmlAttributeValue(resourceFormat)
+                + "\" path=\"" + contentsView.encodeXmlAttributeValue(resourcePath) + "\"";
+        if (resourceId.length > 0)
+            tagText += " id=\"" + contentsView.encodeXmlAttributeValue(resourceId) + "\"";
+        tagText += " />";
+        return tagText;
     }
     function scheduleEditorFocusForNote(noteId) {
         const normalizedNoteId = noteId === undefined || noteId === null ? "" : String(noteId).trim();
@@ -2248,7 +2253,13 @@ Item {
                                 return;
                             }
                             const importedEntries = contentsView.resourcesImportViewModel.importUrlsForEditor(dropUrls);
+                            const importedEntryCount = contentsView.normalizedImportedResourceEntries(importedEntries).length;
                             const inserted = contentsView.insertImportedResourceTags(importedEntries);
+                            if (importedEntryCount > 0
+                                    && contentsView.resourcesImportViewModel
+                                    && contentsView.resourcesImportViewModel.reloadImportedResources !== undefined) {
+                                contentsView.resourcesImportViewModel.reloadImportedResources();
+                            }
                             if (drop)
                                 drop.accepted = inserted;
                             contentsView.resourceDropActive = false;

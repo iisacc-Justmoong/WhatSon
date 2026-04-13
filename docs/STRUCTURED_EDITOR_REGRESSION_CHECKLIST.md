@@ -74,6 +74,13 @@ structured document-flow editor changes.
   directories under the active hub `*.wsresources` root and append those package paths into `Resources.wsresources`.
 - The same drop must inject canonical `<resource ...>` source tags into the selected note body instead of only adding
   filesystem packages out-of-band.
+- The injected resource call must be canonical self-closing source with quoted attribute values:
+  `<resource type="..." format="..." path=".../.wsresource" />`.
+- Relative resource paths that contain `/` but no spaces must still survive the editor insert/save round-trip intact;
+  they must not be truncated just because the original import path omitted attribute quotes.
+- Resource-drop note linking must complete before the resources hierarchy runtime reload rebinds the editor session.
+  A successful `.wsresource` import must not stop after `Resources.wsresources` persistence while leaving `.wsnbody`
+  unchanged.
 - Native file-manager drops that surface only `text/uri-list` must still be accepted; desktop/mobile hosts must not
   rely solely on `drop.urls`.
 - After the tag insertion completes, the same selected note must show the new resource card in the body overlay before

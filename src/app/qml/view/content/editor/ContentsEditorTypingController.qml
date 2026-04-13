@@ -591,7 +591,7 @@ QtObject {
         const insertionSpec = controller.completeStructuredShortcutInsertionSpec(shortcutKind);
         if (!insertionSpec.applied)
             return false;
-        return controller.insertRawShortcutSourceAtCursor(
+        return controller.insertRawSourceTextAtCursor(
                     String(insertionSpec.insertionSourceText || ""),
                     Math.max(0, Math.floor(Number(insertionSpec.cursorSourceOffsetFromInsertionStart) || 0)));
     }
@@ -672,7 +672,7 @@ QtObject {
         return safeSourceOffset;
     }
 
-    function insertRawShortcutSourceAtCursor(rawSourceText, cursorSourceOffsetFromInsertionStart) {
+    function insertRawSourceTextAtCursor(rawSourceText, cursorSourceOffsetFromInsertionStart) {
         if (!controller.view)
             return false;
         const normalizedRawSourceText = controller.normalizePlainText(rawSourceText);

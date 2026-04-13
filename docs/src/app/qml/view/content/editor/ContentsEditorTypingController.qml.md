@@ -55,6 +55,11 @@ This controller exists to keep plain typing separate from inline-format applicat
 - The controller now also owns divider source shortcuts:
   - `queueBreakShortcutInsertion()` inserts canonical `</break>` source directly into RAW at the current cursor.
   - insertion is routed through the same line-boundary normalization used by other raw-structure shortcuts.
+- The same raw-source insertion helper is now also reused by editor resource-drop linking:
+  - `insertRawSourceTextAtCursor(...)` resolves the live logical caret back into a RAW `.wsnbody` source offset
+  - newline padding is normalized around the inserted RAW fragment
+  - local-authority marking, cursor restore, same-note persistence, and host `editorTextEdited(...)` signaling stay on
+    the exact same contract already used by agenda/callout/break shortcut insertion
 - Structured shortcut insertion now resolves the actual RAW insertion point before writing:
   - if the logical cursor is already inside an existing `<agenda>...</agenda>` or `<callout>...</callout>`, the new
     shortcut block is moved to the end of that enclosing block instead of being nested into it
@@ -154,6 +159,11 @@ structured-block projection do not re-enter the normal typing path.
 - Divider insertion is another source-side shortcut exception:
   - `Cmd+Shift+H` inserts canonical `</break>` source tags at the current cursor
   - `Ctrl+Shift+H` fallback is also accepted when runtime Command mapping resolves as `ControlModifier`
+- Resource drop linking is now another raw-source insertion exception:
+  - dropped files are imported first, then the editor injects canonical self-closing `<resource ... />` RAW source at
+    the live logical caret by routing through `insertRawSourceTextAtCursor(...)`
+  - this path no longer splices by raw `TextEdit.cursorPosition`, which could drift from `.wsnbody` offsets once the
+    note already contained structured or resource tags
 
 ## Regression Checks
 
@@ -218,6 +228,9 @@ structured-block projection do not re-enter the normal typing path.
   `ControlModifier`.
 - Triggering a new agenda/callout shortcut while the cursor already sits inside an existing agenda/callout must place
   the new block after the enclosing closing tag, not inside the existing block body.
+- Dropping a file into a note that already contains earlier proprietary tags must still insert the new
+  `<resource ... />` at the correct RAW source position instead of counting visible plain-text cursor offsets as direct
+  `.wsnbody` offsets.
 - Pressing `Enter` twice at the end of `<callout>...</callout>` must move the cursor out of the callout on the second
   `Enter` and must not duplicate closing `</callout>` tags.
 - Typing `[] task` must persist canonical `<agenda date="..."><task done="false">task</task></agenda>`.

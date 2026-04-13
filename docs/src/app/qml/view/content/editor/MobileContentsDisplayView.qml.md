@@ -65,6 +65,14 @@ Mobile content editor host.
 - The post-import insertion path now normalizes `importUrlsForEditor(...)` results from either a real JS array or a
   Qt-provided list-like `QVariantList`, so successful hub imports cannot silently skip body-tag insertion just because
   the invokable return value is not tagged as `Array.isArray(...)` in QML.
+- Mobile resource-drop insertion now also writes canonical self-closing `<resource ... />` RAW source with quoted,
+  XML-escaped attributes.
+- Mobile no longer inserts those resource tags by treating the visible editor cursor as a direct `.wsnbody` source
+  offset. The drop path now reuses `ContentsEditorTypingController.insertRawSourceTextAtCursor(...)` so logical caret
+  positions are translated back into RAW source offsets before save.
+- Mobile now likewise defers the resources runtime reload until after the drop turn finishes its same-note
+  `<resource ... />` link attempt, keeping `.wsresource` package creation and `.wsnbody` linking on one stable editor
+  turn while still refreshing the runtime for successful package registration.
 - When the selection bridge can already expose a buffered dirty body for the newly selected note, the mobile host now
   consumes that note-owned payload through the ordinary selection-sync path instead of waiting for a stale filesystem
   read to arrive first.

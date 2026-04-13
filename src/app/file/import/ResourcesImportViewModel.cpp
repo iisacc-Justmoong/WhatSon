@@ -542,20 +542,23 @@ bool ResourcesImportViewModel::canImportDroppedUrls(const QVariantList& urls) co
 
 bool ResourcesImportViewModel::importUrls(const QVariantList& urls)
 {
-    return importUrlsInternal(urls, nullptr);
+    return importUrlsInternal(urls, nullptr, true);
 }
 
 QVariantList ResourcesImportViewModel::importUrlsForEditor(const QVariantList& urls)
 {
     QVariantList importedEntries;
-    if (!importUrlsInternal(urls, &importedEntries))
+    if (!importUrlsInternal(urls, &importedEntries, false))
     {
         return {};
     }
     return importedEntries;
 }
 
-bool ResourcesImportViewModel::importUrlsInternal(const QVariantList& urls, QVariantList* importedEntries)
+bool ResourcesImportViewModel::importUrlsInternal(
+    const QVariantList& urls,
+    QVariantList* importedEntries,
+    const bool reloadRuntime)
 {
     WhatSon::Debug::traceSelf(
         this,
@@ -746,7 +749,7 @@ bool ResourcesImportViewModel::importUrlsInternal(const QVariantList& urls, QVar
     }
     wroteResourcesFile = true;
 
-    if (m_reloadResourcesCallback)
+    if (reloadRuntime && m_reloadResourcesCallback)
     {
         QString reloadError;
         if (!m_reloadResourcesCallback(m_currentHubPath, &reloadError))
@@ -795,6 +798,54 @@ bool ResourcesImportViewModel::importUrlsInternal(const QVariantList& urls, QVar
 bool ResourcesImportViewModel::importDroppedUrls(const QVariantList& urls)
 {
     return importUrls(urls);
+}
+
+bool ResourcesImportViewModel::reloadImportedResources()
+{
+    if (!m_reloadResourcesCallback)
+    {
+        return true;
+    }
+
+    if (m_busy)
+    {
+        const QString errorMessage = QStringLiteral("Resource import is already running.");
+        setLastError(errorMessage);
+        emit operationFailed(errorMessage);
+        return false;
+    }
+
+    if (m_currentHubPath.trimmed().isEmpty())
+    {
+        const QString errorMessage = QStringLiteral("Current hub path is empty.");
+        setLastError(errorMessage);
+        emit operationFailed(errorMessage);
+        return false;
+    }
+
+    QString reloadError;
+    if (!m_reloadResourcesCallback(m_currentHubPath, &reloadError))
+    {
+        const QString errorMessage = reloadError.trimmed().isEmpty()
+            ? QStringLiteral("Failed to refresh imported resources.")
+            : QStringLiteral("Failed to refresh imported resources: %1").arg(reloadError.trimmed());
+        setLastError(errorMessage);
+        emit operationFailed(errorMessage);
+        WhatSon::Debug::traceSelf(
+            this,
+            QString::fromLatin1(kScope),
+            QStringLiteral("reloadImportedResources.failed"),
+            QStringLiteral("reason=%1").arg(errorMessage));
+        return false;
+    }
+
+    setLastError(QString());
+    WhatSon::Debug::traceSelf(
+        this,
+        QString::fromLatin1(kScope),
+        QStringLiteral("reloadImportedResources.success"),
+        QStringLiteral("hubPath=%1").arg(m_currentHubPath));
+    return true;
 }
 
 void ResourcesImportViewModel::setBusy(const bool busy)

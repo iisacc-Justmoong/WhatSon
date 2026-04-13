@@ -67,6 +67,7 @@ Rectangle {
     property bool displayedNoteListEntriesForceRefreshDeferred: false
     property bool displayedNoteListEntriesSyncQueued: false
     property bool displayedNoteListEntriesForceRefreshQueued: false
+    property int noteListModelTransitionRevision: 0
     readonly property int noteListScrollTick: LV.Theme.gap2
     readonly property bool noteListSearchContractAvailable: listBarLayout.hasNoteListModel && (listBarLayout.noteListModel.searchText !== undefined || listBarLayout.noteListModel.setSearchText !== undefined)
     property bool noteListViewportRestorePending: false
@@ -432,6 +433,12 @@ Rectangle {
     function requestNoteSelection(index, noteId, modifiers) {
         noteSelectionController.requestNoteSelection(index, noteId, modifiers);
     }
+    function resetDisplayedNoteListEntries() {
+        listBarLayout.displayedNoteListEntries = [];
+        listBarLayout.displayedNoteListEntriesSignature = "[]";
+        listBarLayout.displayedNoteListEntriesSyncDeferred = false;
+        listBarLayout.displayedNoteListEntriesForceRefreshDeferred = false;
+    }
     function requestViewHook(reason) {
         const hookReason = reason !== undefined ? String(reason) : "manual";
         if (panelViewModel && panelViewModel.requestViewModelHook)
@@ -549,6 +556,22 @@ Rectangle {
         });
         return true;
     }
+    function scheduleNoteListModelTransitionSync() {
+        const transitionRevision = listBarLayout.noteListModelTransitionRevision + 1;
+        const expectedModel = listBarLayout.resolvedNoteListModel;
+        listBarLayout.noteListModelTransitionRevision = transitionRevision;
+        Qt.callLater(function () {
+            if (listBarLayout.noteListModelTransitionRevision !== transitionRevision)
+                return;
+            if (listBarLayout.resolvedNoteListModel !== expectedModel)
+                return;
+            listBarLayout.applySearchTextToModel();
+            listBarLayout.syncDisplayedNoteListEntries(true);
+            listBarLayout.syncCurrentIndexFromModel();
+            listBarLayout.syncSelectionFromCommittedState();
+            listBarLayout.syncFocusedNoteDeletionState();
+        });
+    }
     function syncFocusedNoteDeletionState() {
         const bridgeNoteId = noteListContractBridge.currentNoteId;
         if (bridgeNoteId.length > 0) {
@@ -626,6 +649,7 @@ Rectangle {
         listBarLayout.preservedNoteListContentY = 0;
         listBarLayout.displayedNoteListEntriesSyncQueued = false;
         listBarLayout.displayedNoteListEntriesForceRefreshQueued = false;
+        listBarLayout.resetDisplayedNoteListEntries();
         listBarLayout.clearInternalNoteDropPreview();
         listBarLayout.clearNoteDragPreview(null);
         if (noteContextMenu.opened)
@@ -636,11 +660,7 @@ Rectangle {
         listBarLayout.setSelectedNoteIndices([]);
         listBarLayout.pressedNoteIndex = -1;
         noteSelectionState.requestRevision += 1;
-        listBarLayout.applySearchTextToModel();
-        listBarLayout.syncDisplayedNoteListEntries(true);
-        listBarLayout.syncCurrentIndexFromModel();
-        listBarLayout.syncSelectionFromCommittedState();
-        listBarLayout.syncFocusedNoteDeletionState();
+        listBarLayout.scheduleNoteListModelTransitionSync();
     }
     onSearchTextChanged: applySearchTextToModel()
     onNoteDragActiveChanged: {

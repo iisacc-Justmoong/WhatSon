@@ -64,6 +64,14 @@ Desktop content editor host.
 - The post-import insertion path now normalizes `importUrlsForEditor(...)` results from either a real JS array or a
   Qt-provided list-like `QVariantList`, so successful hub imports cannot silently skip body-tag insertion just because
   the invokable return value is not tagged as `Array.isArray(...)` in QML.
+- Desktop resource-drop insertion now always emits canonical self-closing `<resource ... />` source with quoted,
+  XML-escaped attributes, including quoted relative `path=".../.wsresource"` values.
+- Desktop no longer splices that imported resource tag block by the raw `TextEdit.cursorPosition` integer. Instead it
+  routes the RAW insertion through `ContentsEditorTypingController.insertRawSourceTextAtCursor(...)`, so logical/plain
+  caret positions are mapped back into `.wsnbody` source offsets before persistence.
+- Desktop now requests the resources runtime reload only after the same drop turn finishes its RAW note-link attempt.
+  Import therefore no longer reloads the resources hierarchy midway through the editor-linking step, but successful
+  `.wsresource` registration still refreshes the runtime even when the note-link step fails.
 - When the selection bridge can already expose a buffered dirty body for the newly selected note, the desktop host now
   consumes that note-owned payload through the ordinary selection-sync path instead of waiting for a stale filesystem
   read to arrive first.
