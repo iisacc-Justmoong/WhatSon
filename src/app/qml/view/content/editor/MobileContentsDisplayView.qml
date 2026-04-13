@@ -237,6 +237,9 @@ Item {
     property var resourcesImportViewModel: null
     readonly property string richTextHighlightOpenTag: "<span style=\"background-color:#8A4B00;color:#D6AE58;font-weight:600;\">"
     readonly property bool preferNativeInputHandling: true
+    readonly property bool richTextInlineImageRenderingEnabled: false
+    readonly property int resourceEditorPlaceholderLineCount: 6
+    property int programmaticEditorSurfaceSyncDepth: 0
     readonly property int editorIdleSyncThresholdMs: 1000
     readonly property string selectedNoteBodyText: selectionBridge.selectedNoteBodyText
     readonly property string selectedNoteBodyNoteId: selectionBridge.selectedNoteBodyNoteId
@@ -266,6 +269,9 @@ Item {
     readonly property bool legacyInlineEditorActive: !contentsView.showStructuredDocumentFlow
                                                      && !contentsView.showDedicatedResourceViewer
                                                      && !contentsView.showFormattedTextRenderer
+    readonly property bool resourceBlocksRenderedInlineByRichTextEditor: contentsView.legacyInlineEditorActive
+                                                                        && !contentsView.preferNativeInputHandling
+    readonly property bool programmaticEditorSurfaceSyncActive: contentsView.programmaticEditorSurfaceSyncDepth > 0
     readonly property bool showDedicatedResourceViewer: contentsView.selectedNoteIsResourcePackage
     readonly property bool showEditorGutter: false
     readonly property bool showFormattedTextRenderer: false
@@ -652,8 +658,13 @@ Item {
         const nextRenderedText = textFormatRenderer && textFormatRenderer.editorSurfaceHtml !== undefined && textFormatRenderer.editorSurfaceHtml !== null
                 ? String(textFormatRenderer.editorSurfaceHtml)
                 : "";
-        if (contentsView.renderedEditorText !== nextRenderedText)
-            contentsView.renderedEditorText = nextRenderedText;
+        const editorRenderedText = contentsView.resourceBlocksRenderedInlineByRichTextEditor
+                ? contentsView.renderEditorSurfaceHtmlWithInlineResources(nextRenderedText)
+                : nextRenderedText;
+        if (contentsView.renderedEditorText !== editorRenderedText) {
+            contentsView.markProgrammaticEditorSurfaceSync();
+            contentsView.renderedEditorText = editorRenderedText;
+        }
         contentsView.scheduleEditorRichTextSurfaceSync();
         contentsView.scheduleMinimapSnapshotRefresh(false);
         if (minimapLayer && contentsView.minimapRefreshEnabled)
@@ -678,7 +689,10 @@ Item {
         const rendererRenderedText = textFormatRenderer && textFormatRenderer.editorSurfaceHtml !== undefined && textFormatRenderer.editorSurfaceHtml !== null
                 ? String(textFormatRenderer.editorSurfaceHtml)
                 : "";
-        return contentsView.renderedEditorText !== rendererRenderedText;
+        const expectedRenderedText = contentsView.resourceBlocksRenderedInlineByRichTextEditor
+                ? contentsView.renderEditorSurfaceHtmlWithInlineResources(rendererRenderedText)
+                : rendererRenderedText;
+        return contentsView.renderedEditorText !== expectedRenderedText;
     }
     function inferSelectionRangeFromSelectedText(selectedText, cursorPosition) {
         return editorSelectionController.inferSelectionRangeFromSelectedText(selectedText, cursorPosition);
@@ -712,6 +726,105 @@ Item {
         const leadingBreak = currentSourceText.length > 0 && previousCharacter !== "\n" ? "\n" : "";
         const trailingBreak = nextCharacter !== "\n" ? "\n" : "";
         return leadingBreak + blockSourceText + trailingBreak;
+    }
+    function inlineResourcePreviewWidth() {
+        if (contentsView.showPrintEditorLayout)
+            return Math.max(120, Math.floor(contentsView.printPaperTextWidth));
+        const editorWidth = contentEditor && contentEditor.width !== undefined
+                ? Number(contentEditor.width) || 0
+                : 0;
+        const viewportWidth = editorViewport ? Number(editorViewport.width) || 0 : 0;
+        const availableWidth = Math.max(editorWidth, viewportWidth) - contentsView.editorHorizontalInset * 2;
+        return Math.max(120, Math.min(480, Math.floor(Math.max(120, availableWidth))));
+    }
+    function richTextParagraphHtml(innerHtml) {
+        const paragraphBody = innerHtml === undefined || innerHtml === null || String(innerHtml).length === 0
+                ? "&nbsp;"
+                : String(innerHtml);
+        return "<p style=\"margin-top:0px;margin-bottom:0px;\">" + paragraphBody + "</p>";
+    }
+    function inlineResourcePlaceholderHtml(lineCount) {
+        const lines = [];
+        const placeholderLineCount = Math.max(0, Math.floor(Number(lineCount) || 0));
+        for (let index = 0; index < placeholderLineCount; ++index)
+            lines.push(contentsView.richTextParagraphHtml("&nbsp;"));
+        return lines.join("");
+    }
+    function resourcePlaceholderBlockHtml() {
+        return contentsView.inlineResourcePlaceholderHtml(contentsView.resourceEditorPlaceholderLineCount);
+    }
+    function inlineResourceBlockHtml(resourceEntry) {
+        const safeEntry = resourceEntry && typeof resourceEntry === "object" ? resourceEntry : ({});
+        const renderMode = safeEntry.renderMode !== undefined ? String(safeEntry.renderMode).trim().toLowerCase() : "";
+        const sourceUrl = safeEntry.source !== undefined ? String(safeEntry.source).trim() : "";
+        const encodedSourceUrl = contentsView.encodeXmlAttributeValue(sourceUrl);
+        const previewWidth = contentsView.inlineResourcePreviewWidth();
+        if (renderMode === "image" && encodedSourceUrl.length > 0) {
+            return "<p align=\"center\" style=\"margin-top:0px;margin-bottom:0px;\">"
+                    + "<img src=\"" + encodedSourceUrl + "\" width=\"" + String(previewWidth) + "\" />"
+                    + "</p>"
+                    + contentsView.inlineResourcePlaceholderHtml(Math.max(0, contentsView.resourceEditorPlaceholderLineCount - 1));
+        }
+        return contentsView.resourcePlaceholderBlockHtml();
+    }
+    function resourceEntryCanRenderInlineInRichText(resourceEntry) {
+        const safeEntry = resourceEntry && typeof resourceEntry === "object" ? resourceEntry : ({});
+        const renderMode = safeEntry.renderMode !== undefined ? String(safeEntry.renderMode).trim().toLowerCase() : "";
+        const sourceUrl = safeEntry.source !== undefined ? String(safeEntry.source).trim() : "";
+        return contentsView.richTextInlineImageRenderingEnabled
+                && renderMode === "image"
+                && sourceUrl.length > 0;
+    }
+    function overlayRenderedResources() {
+        const renderedResources = contentsView.normalizedImportedResourceEntries(bodyResourceRenderer.renderedResources);
+        if (!contentsView.resourceBlocksRenderedInlineByRichTextEditor)
+            return renderedResources;
+        const overlayEntries = [];
+        for (let index = 0; index < renderedResources.length; ++index) {
+            if (contentsView.resourceEntryCanRenderInlineInRichText(renderedResources[index]))
+                continue;
+            overlayEntries.push(renderedResources[index]);
+        }
+        return overlayEntries;
+    }
+    function renderEditorSurfaceHtmlWithInlineResources(editorHtml) {
+        const baseEditorHtml = editorHtml === undefined || editorHtml === null ? "" : String(editorHtml);
+        const renderedResources = contentsView.normalizedImportedResourceEntries(bodyResourceRenderer.renderedResources);
+        return baseEditorHtml.replace(
+                    /<!--whatson-resource-block:(\d+)-->[\s\S]*?<!--\/whatson-resource-block:\1-->/g,
+                    function (_match, resourceIndexText) {
+                        const resourceIndex = Math.max(0, Math.floor(Number(resourceIndexText) || 0));
+                        const entry = resourceIndex < renderedResources.length ? renderedResources[resourceIndex] : null;
+                        // Keep the rich-text document responsible only for reserving flow height.
+                        // The actual bitmap paint stays on the source-aligned resource layer so
+                        // file-backed images do not depend on TextEdit's RichText image support.
+                        return contentsView.resourceEntryCanRenderInlineInRichText(entry)
+                                ? contentsView.inlineResourceBlockHtml(entry)
+                                : contentsView.resourcePlaceholderBlockHtml();
+                    });
+    }
+    function refreshInlineResourcePresentation() {
+        if (!contentsView.resourceBlocksRenderedInlineByRichTextEditor)
+            return;
+        const rendererRenderedText = textFormatRenderer && textFormatRenderer.editorSurfaceHtml !== undefined && textFormatRenderer.editorSurfaceHtml !== null
+                ? String(textFormatRenderer.editorSurfaceHtml)
+                : "";
+        const nextRenderedText = contentsView.renderEditorSurfaceHtmlWithInlineResources(rendererRenderedText);
+        if (contentsView.renderedEditorText !== nextRenderedText) {
+            contentsView.markProgrammaticEditorSurfaceSync();
+            contentsView.renderedEditorText = nextRenderedText;
+        }
+        contentsView.scheduleEditorRichTextSurfaceSync();
+    }
+    function markProgrammaticEditorSurfaceSync() {
+        contentsView.programmaticEditorSurfaceSyncDepth += 1;
+        Qt.callLater(function () {
+            Qt.callLater(function () {
+                contentsView.programmaticEditorSurfaceSyncDepth = Math.max(
+                            0,
+                            (Number(contentsView.programmaticEditorSurfaceSyncDepth) || 0) - 1);
+            });
+        });
     }
     function insertImportedResourceTags(importedEntries) {
         const normalizedImportedEntries = contentsView.normalizedImportedResourceEntries(importedEntries);
@@ -1591,6 +1704,18 @@ Item {
         maxRenderCount: contentsView.resourceRenderDisplayLimit
         noteId: contentsView.selectedNoteId
     }
+    Connections {
+        target: bodyResourceRenderer
+
+        function onRenderedResourcesChanged() {
+            if (!contentsView.resourceBlocksRenderedInlineByRichTextEditor)
+                return;
+            contentsView.refreshInlineResourcePresentation();
+            contentsView.scheduleGutterRefresh(2);
+        }
+
+        ignoreUnknownSignals: true
+    }
     ContentsAgendaBackend {
         id: contentsAgendaBackend
     }
@@ -2234,7 +2359,9 @@ Item {
                         }
                         borderColor: contentsView.resourceRenderBorderColor
                         cardColor: contentsView.resourceRenderCardColor
-                        renderedResources: contentsView.showStructuredDocumentFlow ? [] : bodyResourceRenderer.renderedResources
+                        renderedResources: contentsView.showStructuredDocumentFlow
+                                           ? []
+                                           : contentsView.overlayRenderedResources()
                         sourceOffsetYResolver: function (sourceOffset) {
                             const logicalOffset = editorTypingController.logicalOffsetForSourceOffset(
                                         Math.max(0, Math.floor(Number(sourceOffset) || 0)));
@@ -2589,4 +2716,3 @@ Item {
             }
         }
     }
-}

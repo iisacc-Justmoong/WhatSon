@@ -835,6 +835,8 @@ QtObject {
         normalizedText = normalizedText.replace(/\r/g, "\n");
         normalizedText = normalizedText.replace(/\u2028/g, "\n");
         normalizedText = normalizedText.replace(/\u2029/g, "\n");
+        normalizedText = normalizedText.replace(/\uFFFC/g, "");
+        normalizedText = normalizedText.replace(/\u00a0/g, " ");
         return normalizedText;
     }
     function openEditorSelectionContextMenu(localX, localY) {

@@ -31,6 +31,10 @@ This controller exists to keep plain typing separate from inline-format applicat
   based on stable plain-text snapshots instead of transient Hangul/Japanese preedit fragments.
 - Programmatic RichText surface replacement from the host wrapper is no longer allowed to re-enter this path as a fake
   committed edit notification; only real post-sync user edits should reach this controller.
+- The controller now explicitly exits early while the host marks
+  `view.programmaticEditorSurfaceSyncActive == true` or while `editorSession.syncingEditorTextFromModel` is still
+  raised for the current model-driven body sync.
+  Resource/body presentation rebuilds therefore cannot be diffed as if the user had typed the placeholder surface.
 - Computes a single contiguous replacement delta (`start`, `previousEnd`, `insertedText`) from those two plain-text
   projections.
 - When that delta is a single `Enter` insertion on a markdown list line, the controller now expands the inserted text
@@ -139,7 +143,10 @@ structured-block projection do not re-enter the normal typing path.
 - Plain-text comparison normalizes:
   - CRLF / CR -> LF
   - `U+2028` / `U+2029` -> LF
+  - RichText object-replacement glyphs (`U+FFFC`) -> removed
   - NBSP -> regular space
+- That object-replacement normalization lets the live RichText surface contain real inline image/resource objects while
+  the typing diff path still compares only canonical logical `.wsnbody` text.
 - The source-side splice path escapes literal text before inserting it into `.wsnbody`, so ordinary typing cannot
   inject raw inline tags accidentally.
 - Markdown-style prefixes such as `1. `, `- `, `# `, `> `, and `` ``` `` still enter the source as literal typed text;
@@ -164,6 +171,8 @@ structured-block projection do not re-enter the normal typing path.
     the live logical caret by routing through `insertRawSourceTextAtCursor(...)`
   - this path no longer splices by raw `TextEdit.cursorPosition`, which could drift from `.wsnbody` offsets once the
     note already contained structured or resource tags
+  - later typing around those inline RichText image blocks still ignores the editor's internal object glyphs, so one
+    ordinary keystroke does not look like a whole-resource plain-text mutation
 
 ## Regression Checks
 
@@ -174,6 +183,9 @@ structured-block projection do not re-enter the normal typing path.
   controller must not depend on whole-surface RichText reserialization to rescue the edit.
 - The typing controller must not treat `selectedNoteBodyText` as authoritative unless the host also proves that the
   body payload belongs to the currently selected note.
+- A host-driven RichText/resource presentation refresh must not re-enter this controller while
+  `programmaticEditorSurfaceSyncActive` is raised, even if the nested `TextEdit` emits a late fallback
+  `textEdited(...)` notification for the superseded surface.
 - Typing ordinary letters must not require a full `ContentsLogicalTextBridge` rebuild or full logical/source offset-map
   regeneration on every committed keystroke.
 - Typing ordinary letters should keep `ContentsLogicalTextBridge.logicalLineCount`, line-start offsets, and
@@ -184,6 +196,8 @@ structured-block projection do not re-enter the normal typing path.
 - `Space`, `Enter`, `Backspace`, and selection replacement should update the correct source span.
 - Typing inside notes that already contain `<agenda>`, `<task>`, `<callout>`, or `</break>` must not rebuild RAW by
   reserializing the rendered RichText surface, because that surface omits proprietary wrapper tags by design.
+- Typing inside notes that already contain inline RichText image/resource blocks must not treat those rendered document
+  objects as inserted plain-text characters during diffing.
 - Direct typing must not leak fragment comment markup such as `<!--StartFragment-->`.
 - Typing literal `<bold>` text should persist as literal text, not as an executable inline tag.
 - Hangul IME composition must mutate `.wsnbody` only once per committed syllable/result, not once per preedit step.

@@ -296,6 +296,9 @@ FocusScope {
         const previousSelectionEnd = Number(textInput.selectionEnd);
         const hadSelection = isFinite(previousSelectionStart) && isFinite(previousSelectionEnd)
                 && previousSelectionEnd > previousSelectionStart;
+        // Cancel any deferred committed-text dispatch that was queued for the previous surface.
+        control._fallbackTextEditedDispatchRevision += 1;
+        control._fallbackTextEditedDispatchQueued = false;
         control._programmaticTextSyncDepth += 1;
         textInput.text = normalizedText;
         if (hadSelection && previousSelectionEnd > previousSelectionStart) {

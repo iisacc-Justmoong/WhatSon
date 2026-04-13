@@ -75,10 +75,24 @@ Desktop content editor host.
 - Desktop now requests the resources runtime reload only after the same drop turn finishes its RAW note-link attempt.
   Import therefore no longer reloads the resources hierarchy midway through the editor-linking step, but successful
   `.wsresource` registration still refreshes the runtime even when the note-link step fails.
-- Desktop resource rendering no longer lives in one bottom-anchored card rail.
-  `ContentsResourceLayer.qml` now resolves each rendered resource tag back into document Y coordinates and mounts the
-  framed card inline at the authored source slot, while the RichText surface keeps a blank placeholder block under that
-  card so later text flows below the resource instead of overlapping it.
+- Desktop RichText editor presentation still upgrades `whatson-resource-block` placeholders into paragraph-oriented
+  document blocks before that HTML is bound into `ContentsInlineFormatEditor`, but bitmap images no longer depend on
+  `TextEdit` RichText `<img>` support.
+- The editor document now owns only the reserved paragraph height for each resource slot, while
+  `ContentsResourceLayer.qml` paints the actual image at the same source offset.
+  The result stays in body flow, but the bitmap itself is no longer filtered out just because the host is using the
+  RichText editor projection.
+- That RichText placeholder path now intentionally stays on Qt's simpler paragraph-only subset:
+  - ordinary body text is rendered as paragraph-style document blocks
+  - resource placeholders are reserved as paragraph blocks rather than hidden overlay-only spans
+  - actual bitmap paint is delegated to the source-aligned resource layer, which avoids relying on lossy or
+    platform-dependent RichText image-object support inside `QtQuick.TextEdit`
+- RichText dirtiness checks now compare against the already-upgraded inline-resource HTML, so the desktop host no
+  longer treats every resource-bearing note as permanently dirty just because `editorSurfaceHtml` still contains the
+  placeholder marker payload.
+- `ContentsResourceLayer.qml` now remains only for resource types that are not upgraded into RichText-inline media
+  blocks yet, or for native/plain-input routes where the host is not using the RichText editor surface projection.
+  Desktop bitmap image resources are now explicitly included in that layer even during RichText editing.
 - When the selection bridge can already expose a buffered dirty body for the newly selected note, the desktop host now
   consumes that note-owned payload through the ordinary selection-sync path instead of waiting for a stale filesystem
   read to arrive first.
@@ -100,6 +114,13 @@ Desktop content editor host.
   editor-session persistence path instead of opening an extra validator-triggered file write + note-list refresh turn.
 - The print-document `Repeater` delegate now declares `required property int index`, and the inline editor host uses a
   literal `shapeStyle: 0`, removing runtime `ReferenceError` noise seen during desktop app execution.
+- When `ContentsBodyResourceRenderer` refreshes after a drop/import or same-note reload, the desktop host now reapplies
+  the resolved resource payload back into the current RichText editor HTML, keeps the paragraph-sized placeholder slot
+  in sync, and schedules a gutter refresh so the source-aligned resource renderer can repaint that body slot without
+  waiting for another note-open turn.
+- Programmatic RichText surface refresh now also raises `programmaticEditorSurfaceSyncActive` around that host-driven
+  repaint window, so the rendered placeholder surface cannot re-enter the typing diff path as a fake user edit while
+  resource/body presentation is being rebuilt.
 
 ## Legacy Surface
 - The single `ContentsInlineFormatEditor` and overlay layers still remain the fallback path for notes without any

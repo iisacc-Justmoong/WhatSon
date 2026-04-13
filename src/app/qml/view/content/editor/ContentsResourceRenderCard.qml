@@ -44,17 +44,40 @@ Rectangle {
             return "File";
         return resourceCard.resourceModeTitle;
     }
+    readonly property bool inlineImagePresentation: resourceCard.inlinePresentation
+                                                   && resourceCard.resourceRenderMode === "image"
+                                                   && resourceCard.resourceSource.length > 0
+    readonly property real inlineImageViewportHeight: Math.max(
+                                                          104,
+                                                          Math.min(
+                                                              148,
+                                                              Math.round((Number(resourceCard.width) || 0) * 0.22)))
     readonly property real previewHeight: resourceCard.inlinePresentation
                                           ? 88
                                           : (resourceCard.resourceRenderMode === "text" ? 96 : 72)
 
-    border.color: resourceCard.borderColor
-    border.width: Math.max(1, Math.round(LV.Theme.strokeThin))
-    clip: resourceCard.inlinePresentation
-    color: resourceCard.cardColor
-    implicitHeight: resourceRow.implicitHeight + LV.Theme.gap2 * 2
-    radius: LV.Theme.radiusSm
+    border.color: resourceCard.inlineImagePresentation ? "transparent" : resourceCard.borderColor
+    border.width: resourceCard.inlineImagePresentation ? 0 : Math.max(1, Math.round(LV.Theme.strokeThin))
+    clip: false
+    color: resourceCard.inlineImagePresentation ? "transparent" : resourceCard.cardColor
+    implicitHeight: resourceCard.inlineImagePresentation
+                    ? resourceCard.inlineImageViewportHeight
+                    : resourceRow.implicitHeight + LV.Theme.gap2 * 2
+    height: implicitHeight
+    radius: resourceCard.inlineImagePresentation ? 0 : LV.Theme.radiusSm
     width: parent ? parent.width : 0
+
+    Item {
+        id: inlineImageViewport
+
+        anchors.fill: parent
+        visible: resourceCard.inlineImagePresentation
+
+        ContentsResourceViewer {
+            anchors.fill: parent
+            resourceEntry: resourceCard.resourceEntry
+        }
+    }
 
     RowLayout {
         id: resourceRow
@@ -62,6 +85,7 @@ Rectangle {
         anchors.fill: parent
         anchors.margins: LV.Theme.gap2
         spacing: LV.Theme.gap2
+        visible: !resourceCard.inlineImagePresentation
 
         Rectangle {
             Layout.alignment: Qt.AlignTop

@@ -49,6 +49,8 @@ It also owns keyboard-driven markdown block toggles for the list types the rende
 - The primed context-menu snapshot now prefers raw `selectionStart` / `selectionEnd` offsets and reconstructs the full
   selected plain text from `contentEditor.getText(...)`, so one stale/truncated `selectedText` fragment does not shrink
   a multi-block selection down to a single inline tag.
+- Selection text normalization now also strips RichText object-replacement glyphs (`U+FFFC`) and normalizes NBSP back
+  to ordinary spaces, so inline image/resource objects do not pollute plain-text selection inference.
 - Explicit numeric offsets are only accepted when `contentEditor.getText(start, end)` matches the currently highlighted
   `selectedText`.
 - When numeric offsets disagree with the actual highlighted substring, the controller falls back to selected-text
@@ -165,6 +167,8 @@ It also owns keyboard-driven markdown block toggles for the list types the rende
 - Applying a markdown list toggle to a line whose body already contains inline tags or `<resource ...>` source tokens
   must keep the restored cursor and any rewritten selection anchored to the rendered logical text, not to the longer
   canonical source-token length.
+- Selecting text near an inline RichText image/resource block must not include the editor's internal object glyph in
+  inferred plain-text selection comparisons or context-menu range resolution.
 - Reapplying a selection after inline/list mutations must preserve the active selection edge, so iOS keyboard-based
   range expansion or shrink does not collapse to only the newest traversed text fragment.
 - Formatting should apply to the exact rendered fragment under the current selection even when the note body already

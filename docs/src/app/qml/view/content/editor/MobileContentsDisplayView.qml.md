@@ -76,9 +76,19 @@ Mobile content editor host.
 - Mobile now likewise defers the resources runtime reload until after the drop turn finishes its same-note
   `<resource ... />` link attempt, keeping `.wsresource` package creation and `.wsnbody` linking on one stable editor
   turn while still refreshing the runtime for successful package registration.
-- Mobile resource rendering now also uses `ContentsResourceLayer.qml` instead of the old bottom overlay stack.
-  The plain-text logical projection reserves a fixed blank block for each resource tag, and the inline resource frame
-  is anchored back onto that authored source position so the note body itself owns the rendered media slot.
+- Mobile now also carries the same `whatson-resource-block` placeholder upgrade path as desktop, but the host keeps
+  bitmap rendering out of `TextEdit` RichText `<img>` support.
+  The RichText surface reserves paragraph-sized body slots while `ContentsResourceLayer.qml` paints the actual image at
+  the matching source offset.
+- That placeholder upgrade path therefore stays on Qt's simpler paragraph-only subset instead of depending on inline
+  bitmap object rendering inside `QtQuick.TextEdit`.
+- RichText dirtiness checks now compare against the already-upgraded inline-resource HTML instead of the unresolved
+  placeholder payload, preventing resource-bearing notes from staying permanently dirty while the RichText surface is
+  active.
+- `ContentsResourceLayer.qml` remains only for resource types that are not upgraded into RichText-inline media blocks
+  yet, or for native/plain-input mobile routes that are not using the RichText editor surface projection.
+  Bitmap image resources are now intentionally kept on that source-aligned layer even when the host is rebuilding the
+  RichText placeholder surface.
 - When the selection bridge can already expose a buffered dirty body for the newly selected note, the mobile host now
   consumes that note-owned payload through the ordinary selection-sync path instead of waiting for a stale filesystem
   read to arrive first.
@@ -93,3 +103,8 @@ Mobile content editor host.
   second validator-owned file update turn.
 - The print-document `Repeater` delegate now declares `required property int index`, and the inline editor host uses a
   literal `shapeStyle: 0`, removing runtime `ReferenceError` noise seen during live mobile-host execution.
+- When `ContentsBodyResourceRenderer` refreshes after import or same-note reload, mobile now reapplies that resource
+  payload back into the current RichText editor HTML, keeps the placeholder body slot in sync, and schedules a gutter
+  refresh so the source-aligned resource renderer can repaint that slot without waiting for another note-open turn.
+- Programmatic RichText surface refresh now also raises `programmaticEditorSurfaceSyncActive` around that host-driven
+  repaint window, so the rebuilt placeholder surface cannot re-enter the typing diff path as a fake committed edit.

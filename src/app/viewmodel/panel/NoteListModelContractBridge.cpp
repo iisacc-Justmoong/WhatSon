@@ -54,6 +54,24 @@ namespace
 
         return snapshot;
     }
+
+    QVariantList rowSnapshotsForModelObject(const QObject* modelObject)
+    {
+        QVariantList rows;
+        const auto* model = qobject_cast<const QAbstractItemModel*>(modelObject);
+        if (model == nullptr)
+        {
+            return rows;
+        }
+
+        const int rowCount = model->rowCount();
+        rows.reserve(std::max(0, rowCount));
+        for (int row = 0; row < rowCount; ++row)
+        {
+            rows.push_back(rowSnapshotAt(model, row));
+        }
+        return rows;
+    }
 }
 
 NoteListModelContractBridge::NoteListModelContractBridge(QObject* parent)
@@ -195,20 +213,12 @@ QString NoteListModelContractBridge::readNoteIdAt(int index) const
 
 QVariantList NoteListModelContractBridge::readAllRows() const
 {
-    QVariantList rows;
-    const auto* model = qobject_cast<QAbstractItemModel*>(m_noteListModel.data());
-    if (model == nullptr)
-    {
-        return rows;
-    }
+    return rowSnapshotsForModelObject(m_noteListModel.data());
+}
 
-    const int rowCount = model->rowCount();
-    rows.reserve(std::max(0, rowCount));
-    for (int row = 0; row < rowCount; ++row)
-    {
-        rows.push_back(rowSnapshotAt(model, row));
-    }
-    return rows;
+QVariantList NoteListModelContractBridge::readAllRowsForModel(QObject* model) const
+{
+    return rowSnapshotsForModelObject(model);
 }
 
 bool NoteListModelContractBridge::pushCurrentIndex(int index)

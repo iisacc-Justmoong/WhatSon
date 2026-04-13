@@ -143,6 +143,82 @@ namespace
         return html;
     }
 
+    QString editorDocumentParagraphHtml(const QString& innerHtml)
+    {
+        const QString paragraphBody = innerHtml.isEmpty()
+                                          ? QStringLiteral("<br/>")
+                                          : innerHtml;
+        return QStringLiteral("<p style=\"margin-top:0px;margin-bottom:0px;\">%1</p>")
+            .arg(paragraphBody);
+    }
+
+    QString editorBlankParagraphHtml()
+    {
+        return editorDocumentParagraphHtml(QStringLiteral("&nbsp;"));
+    }
+
+    void trimOneLeadingStructuralLineBreak(QString* text)
+    {
+        if (text == nullptr
+            || text->isEmpty()
+            || !text->startsWith(QLatin1Char('\n')))
+        {
+            return;
+        }
+
+        text->remove(0, 1);
+    }
+
+    void trimOneTrailingStructuralLineBreak(QString* text)
+    {
+        if (text == nullptr
+            || text->isEmpty()
+            || !text->endsWith(QLatin1Char('\n')))
+        {
+            return;
+        }
+
+        text->chop(1);
+    }
+
+    bool richTextFragmentOwnsBlockFlow(const QString& htmlFragment)
+    {
+        const QString trimmedFragment = htmlFragment.trimmed();
+        return trimmedFragment.startsWith(QStringLiteral("<!--whatson-resource-block:"))
+            || trimmedFragment.startsWith(QStringLiteral("<div"))
+            || trimmedFragment.startsWith(QStringLiteral("<hr"))
+            || trimmedFragment.startsWith(QStringLiteral("<p"))
+            || trimmedFragment.startsWith(QStringLiteral("<table"))
+            || trimmedFragment.startsWith(QStringLiteral("<ul"))
+            || trimmedFragment.startsWith(QStringLiteral("<ol"))
+            || trimmedFragment.startsWith(QStringLiteral("<blockquote"))
+            || trimmedFragment.startsWith(QStringLiteral("<pre"));
+    }
+
+    QString joinRichTextDocumentFragments(const QStringList& fragments)
+    {
+        if (fragments.isEmpty())
+        {
+            return {};
+        }
+
+        QString html;
+        for (const QString& fragment : fragments)
+        {
+            if (richTextFragmentOwnsBlockFlow(fragment))
+            {
+                html += fragment;
+                continue;
+            }
+
+            html += fragment.isEmpty()
+                        ? editorBlankParagraphHtml()
+                        : editorDocumentParagraphHtml(fragment);
+        }
+
+        return html;
+    }
+
     int markdownLinkTokenLengthAt(const QString& text, const int startOffset)
     {
         if (startOffset < 0
@@ -1425,16 +1501,17 @@ namespace
                 renderMode));
     }
 
-    QString renderResourceEditorBlockToHtml()
+    QString renderResourceEditorBlockToHtml(const int resourceIndex)
     {
-        QStringList placeholderLines;
-        placeholderLines.reserve(kResourceEditorPlaceholderLineCount);
+        QStringList placeholderParagraphs;
+        placeholderParagraphs.reserve(kResourceEditorPlaceholderLineCount);
         for (int index = 0; index < kResourceEditorPlaceholderLineCount; ++index)
         {
-            placeholderLines.push_back(QStringLiteral("&nbsp;"));
+            placeholderParagraphs.push_back(editorBlankParagraphHtml());
         }
-        return QStringLiteral("<div style=\"margin:0;padding:0;\">%1</div>")
-            .arg(placeholderLines.join(QStringLiteral("<br/>")));
+        const QString placeholderHtml = placeholderParagraphs.join(QString());
+        return QStringLiteral("<!--whatson-resource-block:%1-->%2<!--/whatson-resource-block:%1-->")
+            .arg(QString::number(std::max(0, resourceIndex)), placeholderHtml);
     }
 
     QString renderInlineTaggedTextFragmentToHtml(
@@ -1453,6 +1530,7 @@ namespace
         QString html;
         QStringList openStyleTags;
         QVector<QStringList> spanStyleStack;
+        int resourceIndex = 0;
         qsizetype cursor = 0;
 
         QRegularExpressionMatchIterator iterator = tagPattern.globalMatch(normalizedText);
@@ -1485,7 +1563,8 @@ namespace
             {
                 if (!closingTag)
                 {
-                    html += renderResourceEditorBlockToHtml();
+                    html += renderResourceEditorBlockToHtml(resourceIndex);
+                    ++resourceIndex;
                 }
                 cursor = tagEnd;
                 continue;
@@ -1750,9 +1829,167 @@ namespace
 
     QString renderInlineStyleEditingSurfaceHtml(const QString& sourceText)
     {
-        QString html = renderInlineTaggedTextFragmentToHtml(sourceText, LiteralRenderMode::SourceEditing);
-        html.replace(QLatin1Char('\n'), QStringLiteral("<br/>"));
-        return html;
+        const QString normalizedText = normalizeLineEndings(sourceText);
+        if (normalizedText.isEmpty())
+        {
+            return {};
+        }
+
+        static const QRegularExpression tagPattern(
+            QStringLiteral(R"(<\s*/?\s*([A-Za-z_][A-Za-z0-9_.:-]*)\b[^>]*>)"));
+
+        auto flushBufferedSourceText =
+            [](QString* bufferedSourceText, QStringList* documentFragments) {
+                if (bufferedSourceText == nullptr
+                    || documentFragments == nullptr
+                    || bufferedSourceText->isNull())
+                {
+                    return;
+                }
+
+                const QString bufferedBodyDocument =
+                    WhatSon::NoteBodyPersistence::serializeBodyDocument(
+                        QStringLiteral("note"),
+                        *bufferedSourceText);
+                const QString bufferedRichText =
+                    WhatSon::NoteBodyPersistence::richTextFromBodyDocument(bufferedBodyDocument);
+                const QStringList bufferedLines =
+                    bufferedRichText.split(QStringLiteral("<br/>"), Qt::KeepEmptyParts);
+                for (const QString& bufferedLine : bufferedLines)
+                {
+                    documentFragments->push_back(bufferedLine);
+                }
+                bufferedSourceText->clear();
+            };
+
+        QStringList documentFragments;
+        QString bufferedSourceText;
+        int resourceIndex = 0;
+        bool previousFragmentOwnsBlockFlow = false;
+        qsizetype cursor = 0;
+
+        QRegularExpressionMatchIterator iterator = tagPattern.globalMatch(normalizedText);
+        while (iterator.hasNext())
+        {
+            const QRegularExpressionMatch match = iterator.next();
+            const qsizetype tagStart = match.capturedStart(0);
+            const qsizetype tagEnd = match.capturedEnd(0);
+            if (tagStart < cursor)
+            {
+                continue;
+            }
+            if (tagStart < 0 || tagEnd <= tagStart)
+            {
+                continue;
+            }
+
+            if (tagStart > cursor)
+            {
+                QString sourceSegment = normalizedText.mid(cursor, tagStart - cursor);
+                if (previousFragmentOwnsBlockFlow)
+                {
+                    trimOneLeadingStructuralLineBreak(&sourceSegment);
+                    previousFragmentOwnsBlockFlow = false;
+                }
+                bufferedSourceText += sourceSegment;
+            }
+
+            const QString fullTagToken = match.captured(0);
+            const QString rawTagName = match.captured(1);
+            const QString normalizedTagName = rawTagName.trimmed().toCaseFolded();
+            const bool closingTag = isClosingTagToken(fullTagToken);
+
+            if (normalizedTagName == QStringLiteral("resource") && !closingTag)
+            {
+                trimOneTrailingStructuralLineBreak(&bufferedSourceText);
+                flushBufferedSourceText(&bufferedSourceText, &documentFragments);
+                documentFragments.push_back(renderResourceEditorBlockToHtml(resourceIndex));
+                ++resourceIndex;
+                previousFragmentOwnsBlockFlow = true;
+                cursor = tagEnd;
+                continue;
+            }
+
+            if (!closingTag
+                && normalizedTagName == QStringLiteral("agenda"))
+            {
+                trimOneTrailingStructuralLineBreak(&bufferedSourceText);
+                flushBufferedSourceText(&bufferedSourceText, &documentFragments);
+                documentFragments.push_back(
+                    renderAgendaEditorBlockToHtml(
+                        normalizedText,
+                        tagEnd,
+                        LiteralRenderMode::SourceEditing));
+                previousFragmentOwnsBlockFlow = true;
+                cursor = structuredBlockRange(
+                    normalizedText,
+                    tagEnd,
+                    QStringLiteral("</agenda>"),
+                    {
+                        QStringLiteral("<agenda"),
+                        QStringLiteral("<callout")
+                    }).blockEnd;
+                continue;
+            }
+
+            if (!closingTag
+                && normalizedTagName == QStringLiteral("callout"))
+            {
+                trimOneTrailingStructuralLineBreak(&bufferedSourceText);
+                flushBufferedSourceText(&bufferedSourceText, &documentFragments);
+                documentFragments.push_back(
+                    renderCalloutEditorBlockToHtml(
+                        normalizedText,
+                        tagEnd,
+                        LiteralRenderMode::SourceEditing));
+                previousFragmentOwnsBlockFlow = true;
+                cursor = structuredBlockRange(
+                    normalizedText,
+                    tagEnd,
+                    QStringLiteral("</callout>"),
+                    {
+                        QStringLiteral("<callout"),
+                        QStringLiteral("<agenda")
+                    }).blockEnd;
+                continue;
+            }
+
+            if (normalizedTagName == QStringLiteral("break")
+                || normalizedTagName == QStringLiteral("hr"))
+            {
+                trimOneTrailingStructuralLineBreak(&bufferedSourceText);
+                flushBufferedSourceText(&bufferedSourceText, &documentFragments);
+                documentFragments.push_back(breakDividerHtml());
+                previousFragmentOwnsBlockFlow = true;
+                cursor = tagEnd;
+                continue;
+            }
+
+            if (normalizedTagName == QStringLiteral("br"))
+            {
+                bufferedSourceText += QLatin1Char('\n');
+                previousFragmentOwnsBlockFlow = false;
+                cursor = tagEnd;
+                continue;
+            }
+
+            bufferedSourceText += fullTagToken;
+            previousFragmentOwnsBlockFlow = false;
+            cursor = tagEnd;
+        }
+
+        if (cursor < normalizedText.size())
+        {
+            QString trailingSourceSegment = normalizedText.mid(cursor);
+            if (previousFragmentOwnsBlockFlow)
+            {
+                trimOneLeadingStructuralLineBreak(&trailingSourceSegment);
+            }
+            bufferedSourceText += trailingSourceSegment;
+        }
+
+        flushBufferedSourceText(&bufferedSourceText, &documentFragments);
+        return joinRichTextDocumentFragments(documentFragments);
     }
 
 } // namespace

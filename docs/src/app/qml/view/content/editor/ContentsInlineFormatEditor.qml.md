@@ -50,6 +50,10 @@ plain `QtQuick.TextEdit` as the actual rendering and input engine.
   `Qt.inputMethod` together with the logical cursor move.
   Host controllers should use that wrapper-level path instead of writing `cursorPosition` into the wrapper,
   `editorItem`, and `inputItem` separately.
+- When a fresh host-driven RichText surface is synced programmatically, the wrapper now also invalidates any already
+  queued fallback `textEdited(...)` dispatch for the previous surface revision.
+  This prevents one stale placeholder-only RichText body from being emitted after the next programmatic resource/body
+  rebuild has already landed.
 - The wrapper no longer keeps ordinary typing behind a native-`textEdited` vs deferred-fallback split.
   It now treats `TextEdit.onTextChanged` as the primary committed-edit trigger whenever:
   - the change is not inside `_programmaticTextSyncDepth`
@@ -114,6 +118,8 @@ plain `QtQuick.TextEdit` as the actual rendering and input engine.
   - cursor/selection updates still drive gutter and minimap geometry
 - programmatic note switches do not emit duplicate save mutations
 - programmatic rendered-surface refresh must not loop back into host typing mutation handling as a fake user edit
+- when one programmatic surface refresh supersedes another, any queued fallback `textEdited(...)` dispatch for the
+  older surface must be cancelled before it reaches the typing controller
 - the live note editor remains backed by `QtQuick.TextEdit`; no `LV.TextEditor` dependency should be reintroduced
 - direct typing must not surface fragment comment markup such as `<!--StartFragment-->`
 - Hangul IME composition must not delete previously committed text when a syllable block is assembled

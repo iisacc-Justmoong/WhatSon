@@ -13,6 +13,12 @@ Implements inline-format rendering from note-editor text to RichText HTML.
   - list markers, headings, blockquotes, fenced code fences, inline code, and markdown links remain literal text in
     `editorSurfaceHtml`
   - only proprietary inline tags such as `<bold>` / `<italic>` / `<highlight>` are promoted into styled HTML spans
+- The live editor surface no longer flattens ordinary body text into one `<br/>`-stitched HTML run.
+  It now projects non-structured body text as paragraph-like RichText document blocks (`<p ...>...</p>`), which keeps
+  the desktop/mobile `TextEdit.RichText` layout closer to Qt's native raw rich-text flow and gives inline media/image
+  blocks a real document slot instead of an overlay-only approximation.
+- Single structural line breaks that only separate a proprietary block (`resource`, `agenda`, `callout`, `break`) from
+  the next body fragment are consumed as block boundaries rather than re-rendered as extra blank paragraphs.
 - The preview path still recognizes markdown-style block prefixes without rewriting the stored source text:
     - unordered list markers (`- ` / `* ` / `+ `) render as bullet-list lines
     - leading literal bullet markers (`• `) also render through the same unordered-list role so pasted or legacy source
@@ -39,8 +45,10 @@ Implements inline-format rendering from note-editor text to RichText HTML.
 - Converts the canonical single divider tag `</break>` (and legacy `<hr ...>` aliases) into rendered divider HTML
   (`<hr/>`) on both the live editor surface and preview HTML.
 - The live editor surface no longer drops `<resource ...>` tags as zero-height markup.
-  Instead it emits a fixed blank block placeholder for each resource tag so the inline resource layer can occupy real
-  vertical space inside the note body without subsequent text overlapping that frame.
+  Instead it emits a fixed placeholder block for each resource tag, wrapped in stable
+  `<!--whatson-resource-block:N--> ... <!--/whatson-resource-block:N-->` markers.
+  The editor host can then replace those exact slots with resolved inline media HTML while keeping one canonical
+  logical-placeholder contract for typing and source-offset mapping.
 - The live editor surface now also projects proprietary structured blocks into editor-owned RichText flow instead of
   treating them as zero-height skipped markup:
   - `<agenda ...><task ...>...</task>...</agenda>` emits one padded editor block that contains only task body text,
@@ -63,7 +71,8 @@ Implements inline-format rendering from note-editor text to RichText HTML.
 - Exposes `normalizeInlineStyleAliasesForEditor(...)` for editor-surface normalization:
   - rewrites inline aliases into editable RichText tags (`bold` -> `<strong style="font-weight:900;">`, etc.)
   - preserves non-style tags such as `<resource ...>` unchanged
-  - promotes canonical source LF characters to explicit `<br/>` tags before binding into `TextEdit.RichText`
+  - normalizes canonical source LF-delimited text into paragraph-style RichText document fragments instead of one flat
+    `<br/>` chain
   - renders escaped safe text such as `&lt;bold&gt;...&lt;/bold&gt;` as visible `<bold>...</bold>` glyphs without
     promoting it into authoritative inline-style tags
   - deliberately stops promoting markdown syntax into list/heading/blockquote/code/link preview spans on the live
@@ -144,6 +153,8 @@ Implements inline-format rendering from note-editor text to RichText HTML.
   text must render inside that reserved slot instead of continuing in the surrounding paragraph stream.
 - A stored `<callout>...</callout>` block must reserve real editor text-flow height at the authored location, and the
   callout body text must render inside that reserved slot instead of continuing in the surrounding paragraph stream.
-- A stored `<resource ... />` tag must likewise reserve a stable inline editor slot instead of disappearing from the
-  RichText flow while the visual resource card is rendered elsewhere.
+- A stored `<resource ... />` tag must likewise reserve a stable inline editor slot, and image resources must render
+  inside that same RichText body flow instead of depending on a second overlay-only card layer.
+- The live editor surface should now expose ordinary prose as paragraph-style RichText document blocks instead of one
+  flat `<br/>` chain, so inline media can share the same native document flow as surrounding text.
 - When preview is disabled, mutating `sourceText` must not recompute markdown-aware preview HTML.

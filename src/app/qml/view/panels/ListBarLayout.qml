@@ -374,10 +374,17 @@ Rectangle {
             return listBarLayout.clampNoteListContentY(value);
         return listBarLayout.quantizedNoteListContentY(value);
     }
-    function readDisplayedNoteListEntriesFromModel() {
-        if (!noteListContractBridge || noteListContractBridge.readAllRows === undefined)
+    function readDisplayedNoteListEntriesFromModel(noteListModelOverride) {
+        const targetModel = noteListModelOverride !== undefined
+                ? noteListModelOverride
+                : listBarLayout.resolvedNoteListModel;
+        if (!targetModel || !noteListContractBridge)
             return [];
-        const rows = noteListContractBridge.readAllRows();
+        let rows = [];
+        if (noteListContractBridge.readAllRowsForModel !== undefined)
+            rows = noteListContractBridge.readAllRowsForModel(targetModel);
+        else if (targetModel === listBarLayout.resolvedNoteListModel && noteListContractBridge.readAllRows !== undefined)
+            rows = noteListContractBridge.readAllRows();
         if (Array.isArray(rows))
             return rows;
         if (rows && rows.length !== undefined)
@@ -524,14 +531,19 @@ Rectangle {
             noteListView.currentIndex = normalizedIndex;
         listBarLayout.syncingCurrentIndexFromModel = false;
     }
-    function syncDisplayedNoteListEntries(forceRefresh) {
-        const nextEntries = listBarLayout.readDisplayedNoteListEntriesFromModel();
+    function syncDisplayedNoteListEntriesForModel(noteListModel, forceRefresh) {
+        const nextEntries = listBarLayout.readDisplayedNoteListEntriesFromModel(noteListModel);
         const nextSignature = listBarLayout.noteListEntriesSignature(nextEntries);
         if (!Boolean(forceRefresh) && nextSignature === listBarLayout.displayedNoteListEntriesSignature)
             return false;
         listBarLayout.displayedNoteListEntries = nextEntries;
         listBarLayout.displayedNoteListEntriesSignature = nextSignature;
         return true;
+    }
+    function syncDisplayedNoteListEntries(forceRefresh) {
+        return listBarLayout.syncDisplayedNoteListEntriesForModel(
+                    listBarLayout.resolvedNoteListModel,
+                    forceRefresh);
     }
     function requestDisplayedNoteListEntriesSync(forceRefresh) {
         const requestedForceRefresh = Boolean(forceRefresh);
@@ -566,7 +578,7 @@ Rectangle {
             if (listBarLayout.resolvedNoteListModel !== expectedModel)
                 return;
             listBarLayout.applySearchTextToModel();
-            listBarLayout.syncDisplayedNoteListEntries(true);
+            listBarLayout.syncDisplayedNoteListEntriesForModel(expectedModel, true);
             listBarLayout.syncCurrentIndexFromModel();
             listBarLayout.syncSelectionFromCommittedState();
             listBarLayout.syncFocusedNoteDeletionState();
@@ -660,6 +672,7 @@ Rectangle {
         listBarLayout.setSelectedNoteIndices([]);
         listBarLayout.pressedNoteIndex = -1;
         noteSelectionState.requestRevision += 1;
+        listBarLayout.syncDisplayedNoteListEntriesForModel(listBarLayout.resolvedNoteListModel, true);
         listBarLayout.scheduleNoteListModelTransitionSync();
     }
     onSearchTextChanged: applySearchTextToModel()
@@ -1160,6 +1173,9 @@ Rectangle {
             listBarLayout.scheduleDisplayedNoteListEntriesSync(false);
         }
         function onLayoutChanged() {
+            listBarLayout.scheduleDisplayedNoteListEntriesSync(false);
+        }
+        function onItemCountChanged() {
             listBarLayout.scheduleDisplayedNoteListEntriesSync(false);
         }
 

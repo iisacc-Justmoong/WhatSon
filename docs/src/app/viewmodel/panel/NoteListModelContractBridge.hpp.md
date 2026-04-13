@@ -18,6 +18,8 @@
   - `readNoteIdAt(int)` for turning visual multi-selection row indexes back into stable note ids
   - `readAllRows()` for exporting the current list rows as role-name keyed snapshots that QML can diff without binding
     directly to a resetting `QAbstractItemModel`
+  - `readAllRowsForModel(QObject*)` for exporting the same snapshot contract against an explicit model object during
+    hierarchy transitions, before the bridge's own `noteListModel` binding has necessarily settled
 - Exposes write helpers:
   - `applySearchText(QString)`
   - `pushCurrentIndex(int)`

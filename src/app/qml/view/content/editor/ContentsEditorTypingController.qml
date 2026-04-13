@@ -119,6 +119,7 @@ QtObject {
         normalizedText = normalizedText.replace(/\r/g, "\n");
         normalizedText = normalizedText.replace(/\u2028/g, "\n");
         normalizedText = normalizedText.replace(/\u2029/g, "\n");
+        normalizedText = normalizedText.replace(/\uFFFC/g, "");
         normalizedText = normalizedText.replace(/\u00a0/g, " ");
         return normalizedText;
     }
@@ -845,6 +846,13 @@ QtObject {
                 || !controller.view.hasSelectedNote
                 || controller.view.showDedicatedResourceViewer
                 || controller.view.showFormattedTextRenderer) {
+            return false;
+        }
+        if ((controller.view.programmaticEditorSurfaceSyncActive !== undefined
+             && controller.view.programmaticEditorSurfaceSyncActive)
+                || (controller.editorSession
+                    && controller.editorSession.syncingEditorTextFromModel !== undefined
+                    && controller.editorSession.syncingEditorTextFromModel)) {
             return false;
         }
         if (!controller.contentEditor
