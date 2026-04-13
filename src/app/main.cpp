@@ -310,6 +310,7 @@ int main(int argc, char* argv[])
                 &libraryHierarchyViewModel,
                 &projectsHierarchyViewModel,
                 &bookmarksHierarchyViewModel,
+                &resourcesHierarchyViewModel,
                 &progressHierarchyViewModel
             });
     QObject::connect(

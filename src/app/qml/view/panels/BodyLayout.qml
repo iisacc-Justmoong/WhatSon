@@ -24,6 +24,17 @@ Item {
     property int minRightPanelWidth: Math.max(0, Math.round(LV.Theme.scaleMetric(145)))
     property int minSidebarWidth: LV.Theme.gap20 * 7 + LV.Theme.gap12
     property var noteDeletionViewModel: null
+    readonly property var resolvedNoteDeletionViewModel: {
+        const activeViewModel = hStack.activeHierarchyViewModel;
+        if (activeViewModel
+                && (activeViewModel.deleteNotesByIds !== undefined
+                    || activeViewModel.deleteNoteById !== undefined
+                    || activeViewModel.clearNoteFoldersByIds !== undefined
+                    || activeViewModel.clearNoteFoldersById !== undefined)) {
+            return activeViewModel;
+        }
+        return hStack.noteDeletionViewModel;
+    }
     readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("BodyLayout") : null
     property var resourcesImportViewModel: null
     property color rightPanelColor: "transparent"
@@ -163,7 +174,7 @@ Item {
                 ListBarLayout {
                     activeToolbarIndex: hStack.activeHierarchyIndex
                     anchors.fill: parent
-                    noteDeletionViewModel: hStack.noteDeletionViewModel
+                    noteDeletionViewModel: hStack.resolvedNoteDeletionViewModel
                     noteListModel: hStack.activeNoteListModel
                     noteDropTarget: sideBar.noteDropTargetView
                     panelColor: hStack.listViewColor

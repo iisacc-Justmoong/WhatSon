@@ -16,6 +16,8 @@ inspecting trial/auth and resource-import changes.
 ## Resources Import
 - If package creation fails mid-import, all created `.wsresource` packages from that turn must be removed.
 - If the runtime refresh callback fails after `Resources.wsresources` is written, the importer must restore the previous `Resources.wsresources` contents and remove created packages.
+- Editor drag/drop imports must keep using the same rollback path as menu imports; the drag entrypoint must not append
+  `Resources.wsresources` or create `.wsresource` packages through a bypass path.
 
 ## Hub Mutation Path
 - Hub mutations must not create or refresh `.whatson/write-lease.json`; the repository no longer uses a write-lease side channel.

@@ -16,12 +16,18 @@ metadata-driven LVRS hierarchy while tracking the current resource-path payload 
   snapshot loads.
 - Exposes `noteDirectoryPathForNoteId(...)` for editor-side resource rendering: when a list item id
   points to a `.wsresource` package, the renderer can resolve that package directory directly.
+- Exposes `deleteNoteById(...)` / `deleteNotesByIds(...)` so the shared `ListBarLayout` delete
+  shortcuts can remove selected `.wsresource` packages from the resources domain without routing
+  through the library-note mutation path.
 - Exposes `requestViewModelHook()` as a file-backed refresh hook that re-reads
   `Resources.wsresources` (and fallback package scans) when the source path is known.
 - Still exposes rename/create/delete entry points because it conforms to the shared hierarchy
-  surface, but resources remains functionally read-only.
+  surface, but the hierarchy taxonomy remains read-only even though concrete resource packages are
+  now deletable from the right-panel list.
 - Declares the inherited rename/crud/expansion entry points with explicit `override` markers so the
   shared hierarchy contract remains warning-clean.
+- Emits `hubFilesystemMutated()` after successful package deletion so hub-sync wiring can continue
+  to classify the change as a local mutation.
 
 ## Refresh Rules
 

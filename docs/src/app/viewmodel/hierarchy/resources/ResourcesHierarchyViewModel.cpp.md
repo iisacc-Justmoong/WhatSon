@@ -40,6 +40,21 @@ Each projected row carries:
 
 This is the bridge that fixes the previous `No list data` behavior in the resources domain.
 
+## Resource Deletion Contract
+
+`deleteNoteById(...)` / `deleteNotesByIds(...)` now treat right-panel list ids as resource-package
+targets.
+
+- Each id is resolved back to the owning `.wsresource` directory.
+- The matching `Resources.wsresources` entry is removed before the package directory is deleted.
+- If directory removal fails, the hierarchy file write is rolled back to the previous resource-path
+  list.
+- Successful deletions emit `hubFilesystemMutated()` so hub sync continues to mark the edit as a
+  local mutation.
+
+This is the path used by `ListBarLayout` when the active note list belongs to the resources domain,
+including `Delete` / `Backspace` keyboard deletion.
+
 ## Idempotent Update Guard
 
 `setResourcePaths(...)` is idempotent. After sanitizing paths and rebuilding hierarchy rows, it
@@ -56,6 +71,10 @@ stable (for example repeated `rawCount=0` reloads).
 
 During rebuild, the previous `key -> expanded` state is restored so runtime snapshot updates do not
 collapse already opened type/format rows.
+
+`setResourcePaths(...)` also preserves the currently selected hierarchy row by `key` when that row
+still exists after a resource-path rebuild. This keeps the right-panel resource list alive after
+package deletion or import instead of dropping back to an empty `selectedIndex = -1` state.
 
 ## Load Fallback
 

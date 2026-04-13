@@ -334,6 +334,12 @@ WhatSon is an LVRS-based Qt Quick application.
 - Editor body persistence now treats live editing as write-through by default: ordinary typing, formatting, and
   programmatic source rewrites request immediate `.wsnbody` flushes first, and QML editor sessions use the buffered
   fetch clock only to drain or retry note snapshots that were already accepted into the persistence lane.
+- Desktop/mobile editor hosts now also accept native file drags directly over the note surface without a MIME-key
+  prefilter, route those drops through `ResourcesImportViewModel`, create flat `.wsresource` packages under the
+  active hub `*.wsresources` root, append the package paths into `Resources.wsresources`, inject canonical
+  `<resource type="..." format="..." path="...">` calls into the live note source, and rebuild the in-editor
+  resource-card overlay from the current presentation snapshot so the dropped asset appears immediately instead of
+  waiting for a later filesystem reread.
 - Immediate editor flush requests now fail fast when the persistence lane rejects the current snapshot, instead of
   silently reporting acceptance while the note remains dirty only in memory.
 - The same save path now short-circuits when the normalized plain-text body is unchanged, so a no-op save no longer

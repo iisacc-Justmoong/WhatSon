@@ -233,7 +233,7 @@ Item {
     property bool resourceDropActive: false
     readonly property color resourceRenderBorderColor: "#334E5157"
     readonly property color resourceRenderCardColor: "#E61A1D22"
-    readonly property int resourceRenderDisplayLimit: 3
+    readonly property int resourceRenderDisplayLimit: 0
     property var resourcesImportViewModel: null
     readonly property string richTextHighlightOpenTag: "<span style=\"background-color:#8A4B00;color:#D6AE58;font-weight:600;\">"
     readonly property bool preferNativeInputHandling: false
@@ -578,7 +578,7 @@ Item {
                 continue;
             urls.push(line);
         }
-
+        return urls;
     }
     function firstVisibleLogicalLine() {
         const refreshRevision = contentsView.gutterRefreshRevision;
@@ -686,14 +686,26 @@ Item {
     function inlineStyleWrapTags(styleTag) {
         return editorSelectionController.inlineStyleWrapTags(styleTag);
     }
+    function normalizedImportedResourceEntries(importedEntries) {
+        if (Array.isArray(importedEntries))
+            return importedEntries;
+        if (!importedEntries || importedEntries.length === undefined)
+            return [];
+        const normalizedEntries = [];
+        const entryCount = Math.max(0, Number(importedEntries.length) || 0);
+        for (let index = 0; index < entryCount; ++index)
+            normalizedEntries.push(importedEntries[index]);
+        return normalizedEntries;
+    }
     function insertImportedResourceTags(importedEntries) {
-        if (!Array.isArray(importedEntries) || importedEntries.length === 0)
+        const normalizedImportedEntries = contentsView.normalizedImportedResourceEntries(importedEntries);
+        if (normalizedImportedEntries.length === 0)
             return false;
         const currentText = contentsView.editorText === undefined || contentsView.editorText === null ? "" : String(contentsView.editorText);
         const cursorPosition = Math.max(0, Math.min(currentText.length, contentEditor && contentEditor.cursorPosition !== undefined ? Number(contentEditor.cursorPosition) || 0 : currentText.length));
         const tagTexts = [];
-        for (let index = 0; index < importedEntries.length; ++index) {
-            const tagText = contentsView.resourceTagTextForImportedEntry(importedEntries[index]);
+        for (let index = 0; index < normalizedImportedEntries.length; ++index) {
+            const tagText = contentsView.resourceTagTextForImportedEntry(normalizedImportedEntries[index]);
             if (tagText.length > 0)
                 tagTexts.push(tagText);
         }
@@ -1551,6 +1563,9 @@ Item {
     ContentsBodyResourceRenderer {
         id: bodyResourceRenderer
 
+        bodySourceText: contentsView.selectedNoteBodyNoteId === contentsView.selectedNoteId
+                        ? contentsView.documentPresentationSourceText
+                        : ""
         contentViewModel: contentsView.contentViewModel
         maxRenderCount: contentsView.resourceRenderDisplayLimit
         noteId: contentsView.selectedNoteId
@@ -2222,7 +2237,6 @@ Item {
                     DropArea {
                         anchors.fill: parent
                         enabled: !contentsView.showDedicatedResourceViewer && !contentsView.showFormattedTextRenderer
-                        keys: ["text/uri-list"]
                         z: 5
 
                         onDropped: function (drop) {
@@ -2492,107 +2506,10 @@ Item {
                             Repeater {
                                 model: bodyResourceRenderer.renderedResources
 
-                                delegate: Rectangle {
-                                    id: resourceRenderCard
-
-                                    readonly property string resourceDisplayName: resourceEntry.displayName !== undefined ? String(resourceEntry.displayName) : ""
-                                    readonly property var resourceEntry: modelData && typeof modelData === "object" ? modelData : ({})
-                                    readonly property string resourceFormat: resourceEntry.format !== undefined ? String(resourceEntry.format) : ""
-                                    readonly property string resourceModeTitle: {
-                                        if (resourceRenderCard.resourceRenderMode === "image")
-                                            return "Image Resource";
-                                        if (resourceRenderCard.resourceRenderMode === "video")
-                                            return "Video Resource";
-                                        if (resourceRenderCard.resourceRenderMode === "audio")
-                                            return "Audio Resource";
-                                        if (resourceRenderCard.resourceRenderMode === "pdf")
-                                            return "PDF Resource";
-                                        if (resourceRenderCard.resourceRenderMode === "text")
-                                            return "Text Resource";
-                                        return "Document Resource";
-                                    }
-                                    readonly property bool resourceOpenable: resourceRenderCard.resourceSource.length > 0
-                                    readonly property string resourcePath: resourceEntry.resourcePath !== undefined ? String(resourceEntry.resourcePath) : ""
-                                    readonly property string resourcePreviewText: resourceEntry.previewText !== undefined ? String(resourceEntry.previewText) : ""
-                                    readonly property string resourceRenderMode: resourceEntry.renderMode !== undefined ? String(resourceEntry.renderMode) : ""
-                                    readonly property string resourceSource: resourceEntry.source !== undefined ? String(resourceEntry.source) : ""
-                                    readonly property string resourceType: resourceEntry.type !== undefined ? String(resourceEntry.type) : ""
-
-                                    border.color: contentsView.resourceRenderBorderColor
-                                    border.width: Math.max(1, Math.round(LV.Theme.strokeThin))
-                                    color: contentsView.resourceRenderCardColor
-                                    implicitHeight: resourceRow.implicitHeight + LV.Theme.gap2 * 2
-                                    radius: LV.Theme.radiusSm
-                                    width: parent ? parent.width : 0
-
-                                    RowLayout {
-                                        id: resourceRow
-
-                                        anchors.fill: parent
-                                        anchors.margins: LV.Theme.gap2
-                                        spacing: LV.Theme.gap2
-
-                                        Rectangle {
-                                            Layout.preferredHeight: resourceRenderCard.resourceRenderMode === "text" ? 96 : 72
-                                            Layout.preferredWidth: 120
-                                            color: "#CC0F141A"
-                                            radius: LV.Theme.radiusSm
-                                            visible: resourceRenderCard.resourceRenderMode === "image" || resourceRenderCard.resourceRenderMode === "text"
-
-                                            Image {
-                                                anchors.fill: parent
-                                                anchors.margins: 1
-                                                asynchronous: true
-                                                cache: true
-                                                fillMode: Image.PreserveAspectFit
-                                                source: resourceRenderCard.resourceSource
-                                                visible: resourceRenderCard.resourceRenderMode === "image" && resourceRenderCard.resourceSource.length > 0
-                                            }
-                                            LV.Label {
-                                                anchors.fill: parent
-                                                anchors.margins: LV.Theme.gap2
-                                                color: LV.Theme.textSecondary
-                                                elide: Text.ElideRight
-                                                style: body
-                                                text: resourceRenderCard.resourcePreviewText.length > 0 ? resourceRenderCard.resourcePreviewText : "No text preview"
-                                                visible: resourceRenderCard.resourceRenderMode === "text"
-                                                wrapMode: Text.Wrap
-                                            }
-                                        }
-                                        LV.VStack {
-                                            Layout.fillWidth: true
-                                            spacing: LV.Theme.gap2
-
-                                            LV.Label {
-                                                color: LV.Theme.textPrimary
-                                                style: body
-                                                text: resourceRenderCard.resourceDisplayName.length > 0 ? resourceRenderCard.resourceDisplayName : resourceRenderCard.resourceModeTitle
-                                            }
-                                            LV.Label {
-                                                color: LV.Theme.textSecondary
-                                                style: body
-                                                text: resourceRenderCard.resourceModeTitle
-                                            }
-                                            LV.Label {
-                                                color: LV.Theme.textSecondary
-                                                style: body
-                                                text: "type=" + resourceRenderCard.resourceType + "  format=" + resourceRenderCard.resourceFormat
-                                            }
-                                            LV.Label {
-                                                color: LV.Theme.textTertiary
-                                                elide: Text.ElideMiddle
-                                                style: body
-                                                text: resourceRenderCard.resourcePath
-                                            }
-                                            LV.IconButton {
-                                                iconName: "generalshow"
-                                                iconSize: 14
-                                                visible: resourceRenderCard.resourceOpenable
-
-                                                onClicked: Qt.openUrlExternally(resourceRenderCard.resourceSource)
-                                            }
-                                        }
-                                    }
+                                delegate: ContentsResourceRenderCard {
+                                    borderColor: contentsView.resourceRenderBorderColor
+                                    cardColor: contentsView.resourceRenderCardColor
+                                    resourceEntry: modelData && typeof modelData === "object" ? modelData : ({})
                                 }
                             }
                         }

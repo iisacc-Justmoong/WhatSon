@@ -224,6 +224,9 @@ Rectangle {
     property string searchText: ""
     readonly property int selectedFolderIndex: hierarchyViewModel ? hierarchyViewModel.hierarchySelectedIndex : -1
     property alias selectedHierarchyIndices: hierarchySelectionController.selectedIndices
+    readonly property var safeSelectedHierarchyIndices: Array.isArray(sidebarHierarchyView.selectedHierarchyIndices)
+                                                     ? sidebarHierarchyView.selectedHierarchyIndices
+                                                     : []
     readonly property var selectedHierarchyOverlayRects: {
         const revision = sidebarHierarchyView.hierarchySelectionVisualRevision;
         return sidebarHierarchyView.collectSelectedHierarchyOverlayRects() || [];
@@ -775,7 +778,7 @@ Rectangle {
     onSelectedFolderIndexChanged: {
         if (sidebarHierarchyView.renameEditingActive && sidebarHierarchyView.selectedFolderIndex !== sidebarHierarchyView.editingHierarchyIndex)
             sidebarHierarchyView.cancelHierarchyRename();
-        if (sidebarHierarchyView.selectedHierarchyIndices.length === 0 || !sidebarHierarchyView.hierarchySelectionContainsIndex(sidebarHierarchyView.selectedFolderIndex))
+        if (sidebarHierarchyView.safeSelectedHierarchyIndices.length === 0 || !sidebarHierarchyView.hierarchySelectionContainsIndex(sidebarHierarchyView.selectedFolderIndex))
             sidebarHierarchyView.syncHierarchySelectionFromSelectedFolder();
         syncSelectedHierarchyItem(true);
     }
@@ -824,7 +827,7 @@ Rectangle {
                 sidebarHierarchyView.cancelHierarchyRename();
             sidebarHierarchyView.clearNoteDropPreview();
             Qt.callLater(function () {
-                if (sidebarHierarchyView.selectedHierarchyIndices.length === 0 || !sidebarHierarchyView.hierarchySelectionContainsIndex(sidebarHierarchyView.selectedFolderIndex))
+                if (sidebarHierarchyView.safeSelectedHierarchyIndices.length === 0 || !sidebarHierarchyView.hierarchySelectionContainsIndex(sidebarHierarchyView.selectedFolderIndex))
                     sidebarHierarchyView.syncHierarchySelectionFromSelectedFolder();
                 sidebarHierarchyView.syncSelectedHierarchyItem(false);
                 if (sidebarHierarchyView.renameEditingActive)

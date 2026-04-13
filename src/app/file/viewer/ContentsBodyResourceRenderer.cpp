@@ -107,6 +107,27 @@ namespace
         return {};
     }
 
+    QString extractBodyInnerText(const QString& bodyDocumentText)
+    {
+        if (bodyDocumentText.isEmpty())
+        {
+            return {};
+        }
+
+        static const QRegularExpression bodyPattern(
+            QStringLiteral(R"(<body\b[^>]*>([\s\S]*?)</body>)"),
+            QRegularExpression::CaseInsensitiveOption);
+        const QRegularExpressionMatch bodyMatch = bodyPattern.match(bodyDocumentText);
+        if (!bodyMatch.hasMatch())
+        {
+            return {};
+        }
+
+        QString bodyInnerText = bodyMatch.captured(1);
+        bodyInnerText.remove(QRegularExpression(QStringLiteral(R"(<!--[\s\S]*?-->)")));
+        return bodyInnerText;
+    }
+
     QString findAncestorDirectoryWithSuffix(const QString& startPath, const QString& suffix)
     {
         if (startPath.trimmed().isEmpty())
@@ -473,6 +494,58 @@ namespace
             previewTextForResource(renderMode, resolvedResourceLocation));
         return resource;
     }
+
+    QVariantList buildRenderedResourcesFromSourceText(
+        const QString& sourceText,
+        const QStringList& basePaths)
+    {
+        QString normalizedSourceText = sourceText;
+        normalizedSourceText.remove(QRegularExpression(QStringLiteral(R"(<!--[\s\S]*?-->)")));
+
+        static const QRegularExpression resourceTagPattern(
+            QStringLiteral(R"(<resource\b[^>]*?/?>)"),
+            QRegularExpression::CaseInsensitiveOption);
+        QRegularExpressionMatchIterator iterator = resourceTagPattern.globalMatch(normalizedSourceText);
+
+        QVariantList resources;
+        int resourceIndex = 0;
+        while (iterator.hasNext())
+        {
+            const QRegularExpressionMatch match = iterator.next();
+            const QString resourceTagText = match.captured(0);
+
+            const QString type = extractXmlAttributeValue(
+                resourceTagText,
+                {QStringLiteral("type"), QStringLiteral("kind"), QStringLiteral("mime")}).toCaseFolded();
+            const QString format = normalizedFormat(extractXmlAttributeValue(
+                resourceTagText,
+                {QStringLiteral("format"), QStringLiteral("ext"), QStringLiteral("extension")}));
+            const QString resourcePath = extractXmlAttributeValue(
+                resourceTagText,
+                {
+                    QStringLiteral("resourcePath"),
+                    QStringLiteral("path"),
+                    QStringLiteral("src"),
+                    QStringLiteral("href"),
+                    QStringLiteral("url")
+                });
+            const QString resolvedResourceLocation = WhatSon::Resources::resolveAssetLocationFromReference(
+                resourcePath,
+                basePaths);
+            const QString sourceUrl = normalizeSourceUrl(resolvedResourceLocation);
+            resources.push_back(
+                buildRenderedResourceMap(
+                    resourceIndex,
+                    type,
+                    format,
+                    resourcePath,
+                    resolvedResourceLocation,
+                    sourceUrl));
+            ++resourceIndex;
+        }
+
+        return resources;
+    }
 } // namespace
 
 ContentsBodyResourceRenderer::ContentsBodyResourceRenderer(QObject* parent)
@@ -534,6 +607,23 @@ void ContentsBodyResourceRenderer::setNoteId(const QString& noteId)
 
     m_noteId = normalizedNoteId;
     emit noteIdChanged();
+    refreshRenderedResources();
+}
+
+QString ContentsBodyResourceRenderer::bodySourceText() const
+{
+    return m_bodySourceText;
+}
+
+void ContentsBodyResourceRenderer::setBodySourceText(const QString& bodySourceText)
+{
+    if (m_bodySourceText == bodySourceText)
+    {
+        return;
+    }
+
+    m_bodySourceText = bodySourceText;
+    emit bodySourceTextChanged();
     refreshRenderedResources();
 }
 
@@ -604,7 +694,7 @@ void ContentsBodyResourceRenderer::refreshRenderedResources()
     const QString noteDirectoryPath = resolveNoteDirectoryPath();
     if (!noteDirectoryPath.isEmpty())
     {
-        nextRenderedResources = buildRenderedResources(noteDirectoryPath);
+        nextRenderedResources = buildRenderedResources(noteDirectoryPath, m_bodySourceText);
     }
 
     if (m_maxRenderCount > 0 && nextRenderedResources.size() > m_maxRenderCount)
@@ -621,7 +711,9 @@ void ContentsBodyResourceRenderer::refreshRenderedResources()
     emit renderedResourcesChanged();
 }
 
-QVariantList ContentsBodyResourceRenderer::buildRenderedResources(const QString& noteDirectoryPath) const
+QVariantList ContentsBodyResourceRenderer::buildRenderedResources(
+    const QString& noteDirectoryPath,
+    const QString& bodySourceText) const
 {
     const QString normalizedNoteDirectoryPath = normalizePath(noteDirectoryPath);
     if (normalizedNoteDirectoryPath.isEmpty())
@@ -671,6 +763,18 @@ QVariantList ContentsBodyResourceRenderer::buildRenderedResources(const QString&
         };
     }
 
+    const QString hubRootPath = findAncestorDirectoryWithSuffix(normalizedNoteDirectoryPath, QStringLiteral(".wshub"));
+    const QStringList basePaths = WhatSon::Resources::resourceReferenceBasePathsForContext(
+        normalizedNoteDirectoryPath,
+        QString(),
+        hubRootPath);
+
+    const QString normalizedBodySourceText = bodySourceText.trimmed();
+    if (!normalizedBodySourceText.isEmpty())
+    {
+        return buildRenderedResourcesFromSourceText(normalizedBodySourceText, basePaths);
+    }
+
     const QString bodyPath = resolveBodyPathFromNoteDirectory(normalizedNoteDirectoryPath);
     if (bodyPath.isEmpty())
     {
@@ -683,67 +787,7 @@ QVariantList ContentsBodyResourceRenderer::buildRenderedResources(const QString&
         return {};
     }
 
-    static const QRegularExpression bodyPattern(
-        QStringLiteral(R"(<body\b[^>]*>([\s\S]*?)</body>)"),
-        QRegularExpression::CaseInsensitiveOption);
-    const QRegularExpressionMatch bodyMatch = bodyPattern.match(bodyDocumentText);
-    if (!bodyMatch.hasMatch())
-    {
-        return {};
-    }
-
-    QString bodyInnerText = bodyMatch.captured(1);
-    bodyInnerText.remove(QRegularExpression(QStringLiteral(R"(<!--[\s\S]*?-->)")));
-
-    const QString hubRootPath = findAncestorDirectoryWithSuffix(normalizedNoteDirectoryPath, QStringLiteral(".wshub"));
-    const QStringList basePaths = WhatSon::Resources::resourceReferenceBasePathsForContext(
-        normalizedNoteDirectoryPath,
-        QString(),
-        hubRootPath);
-
-    static const QRegularExpression resourceTagPattern(
-        QStringLiteral(R"(<resource\b[^>]*?/?>)"),
-        QRegularExpression::CaseInsensitiveOption);
-    QRegularExpressionMatchIterator iterator = resourceTagPattern.globalMatch(bodyInnerText);
-
-    QVariantList resources;
-    int resourceIndex = 0;
-    while (iterator.hasNext())
-    {
-        const QRegularExpressionMatch match = iterator.next();
-        const QString resourceTagText = match.captured(0);
-
-        const QString type = extractXmlAttributeValue(
-            resourceTagText,
-            {QStringLiteral("type"), QStringLiteral("kind"), QStringLiteral("mime")}).toCaseFolded();
-        const QString format = normalizedFormat(extractXmlAttributeValue(
-            resourceTagText,
-            {QStringLiteral("format"), QStringLiteral("ext"), QStringLiteral("extension")}));
-        const QString resourcePath = extractXmlAttributeValue(
-            resourceTagText,
-            {
-                QStringLiteral("resourcePath"),
-                QStringLiteral("path"),
-                QStringLiteral("src"),
-                QStringLiteral("href"),
-                QStringLiteral("url")
-            });
-        const QString resolvedResourceLocation = WhatSon::Resources::resolveAssetLocationFromReference(
-            resourcePath,
-            basePaths);
-        const QString sourceUrl = normalizeSourceUrl(resolvedResourceLocation);
-        resources.push_back(
-            buildRenderedResourceMap(
-                resourceIndex,
-                type,
-                format,
-                resourcePath,
-                resolvedResourceLocation,
-                sourceUrl));
-        ++resourceIndex;
-    }
-
-    return resources;
+    return buildRenderedResourcesFromSourceText(extractBodyInnerText(bodyDocumentText), basePaths);
 }
 
 QString ContentsBodyResourceRenderer::resolveNoteDirectoryPath() const

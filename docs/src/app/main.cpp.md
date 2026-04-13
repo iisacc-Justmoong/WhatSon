@@ -16,6 +16,8 @@
 - Project-domain mutations now join the same `hubFilesystemMutated() -> acknowledgeLocalMutation()`
   wiring path as library/bookmark/progress mutations, so local project edits are not misclassified
   as foreign hub changes.
+- Resource-domain mutations now join that same local-mutation wiring path as well, so deleting
+  `.wsresource` packages from the resources list is acknowledged as a local hub edit immediately.
 - Hub selection wiring now updates sync/import state directly without a background write-lease heartbeat timer.
 - Permission startup wiring now consumes `permissions/WhatSonPermissionBootstrapper.hpp` after consolidating
   permission bootstrap code under `src/app/permissions`.

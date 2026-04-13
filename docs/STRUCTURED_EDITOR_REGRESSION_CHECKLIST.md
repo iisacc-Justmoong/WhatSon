@@ -68,3 +68,13 @@ structured document-flow editor changes.
   - whether an empty body is an explicit fallback for that selected note rather than a stale carry-over
 - Editor/bridge APIs must not replace omitted `noteId` arguments with whichever note happens to be selected at that
   moment.
+
+## Resource Drop Import
+- Dropping one or more local files onto the desktop/mobile editor must create matching `.wsresource` package
+  directories under the active hub `*.wsresources` root and append those package paths into `Resources.wsresources`.
+- The same drop must inject canonical `<resource ...>` source tags into the selected note body instead of only adding
+  filesystem packages out-of-band.
+- Native file-manager drops that surface only `text/uri-list` must still be accepted; desktop/mobile hosts must not
+  rely solely on `drop.urls`.
+- After the tag insertion completes, the same selected note must show the new resource card in the body overlay before
+  a later manual note reopen or explicit filesystem refresh.

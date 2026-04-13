@@ -6,6 +6,8 @@ Declares the body-resource renderer bridge that maps note-local `<resource ...>`
 ## Public Contract
 - `contentViewModel`: expects a view-model that exposes `noteDirectoryPathForNoteId(QString)`.
 - `noteId`: selected note id whose `.wsnbody` resource tags should be rendered.
+- `bodySourceText`: optional live editor/presentation snapshot used to resolve `<resource ...>` tags before the latest
+  `.wsnbody` flush finishes.
 - `maxRenderCount`: caps the number of rendered resource cards.
 - `renderedResources`: normalized `QVariantList` model (`type`, `format`, `resourcePath`, `renderMode`, `source`,
   `displayName`, `previewText`).
@@ -16,7 +18,8 @@ Declares the body-resource renderer bridge that maps note-local `<resource ...>`
 
 The renderer supports two selection sources through the same `noteId` contract:
 
-- regular note selection: resolve note directory -> parse `<resource ...>` tags in `.wsnbody`
+- regular note selection: resolve note directory -> prefer live `bodySourceText` when present -> otherwise parse
+  `<resource ...>` tags in `.wsnbody`
 - direct resource-package selection: resolve `.wsresource` directory directly and render that package as a single entry
 
 ## Signals

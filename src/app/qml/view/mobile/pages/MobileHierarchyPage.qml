@@ -76,10 +76,26 @@ Item {
     property var agendaViewModel: null
     property bool monthCalendarOverlayVisible: false
     property var monthCalendarViewModel: null
+    property var noteDeletionViewModel: null
     property bool weekCalendarOverlayVisible: false
     property var weekCalendarViewModel: null
     property bool yearCalendarOverlayVisible: false
     property var yearCalendarViewModel: null
+    readonly property var resolvedNoteDeletionViewModel: {
+        const activeViewModel = mobileHierarchyPage.activeContentViewModel;
+        if (activeViewModel
+                && (activeViewModel.deleteNotesByIds !== undefined
+                    || activeViewModel.deleteNoteById !== undefined
+                    || activeViewModel.clearNoteFoldersByIds !== undefined
+                    || activeViewModel.clearNoteFoldersById !== undefined)) {
+            return activeViewModel;
+        }
+        if (mobileHierarchyPage.noteDeletionViewModel)
+            return mobileHierarchyPage.noteDeletionViewModel;
+        if (LV.ViewModels && LV.ViewModels.get !== undefined)
+            return LV.ViewModels.get("libraryNoteMutationViewModel");
+        return null;
+    }
     signal agendaRequested
     signal agendaOverlayDismissRequested
     signal dayCalendarRequested
@@ -775,6 +791,7 @@ Item {
         PanelView.ListBarLayout {
             activeToolbarIndex: mobileHierarchyPage.activeToolbarIndex
             headerVisible: false
+            noteDeletionViewModel: mobileHierarchyPage.resolvedNoteDeletionViewModel
             noteListModel: mobileHierarchyPage.activeNoteListModel
             panelColor: mobileHierarchyPage.canvasColor
             searchText: mobileHierarchyPage.statusSearchText

@@ -7,7 +7,7 @@
 ## Scope
 - Mirrored source directory: `src/app/qml/view/content/editor`
 - Child directories: 0
-- Child files: 18
+- Child files: 19
 
 ## Child Directories
 - No child directories.
@@ -29,6 +29,7 @@
 - `ContentsMinimapSnapshotSupport.js`
 - `MobileContentsDisplayView.qml`
 - `ContentsResourceViewer.qml`
+- `ContentsResourceRenderCard.qml`
 - `ContentsStructuredCursorSupport.js`
 - `ContentsStructuredDocumentFlow.qml`
 
@@ -40,6 +41,9 @@
 - The shared live editor engine is already `QtQuick.TextEdit` wrapped by `ContentsInlineFormatEditor.qml`; this
   directory no longer depends on an LVRS `LV.TextEditor` implementation.
 - The editor, gutter, minimap, and resource overlays now fill the entire `ContentsView` slot.
+- `ContentsResourceRenderCard.qml` now centralizes the shared desktop/mobile body-overlay card used for inline note
+  resource previews, so file/image/audio/pdf/document presentation no longer duplicates the same card scaffolding in
+  both hosts.
 - `ContentsEditorTypingController.qml` now owns ordinary text-entry mutation routing so typing no longer reserializes
   the whole RichText surface on every edit.
 - Desktop/mobile editor views now keep a separate presentation timer for whole-document markdown/RichText refresh, so

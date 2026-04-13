@@ -20,6 +20,10 @@ The implementation completes three steps in order.
   maps so the editor can insert `<resource ...>` tags without reparsing `Resources.wsresources`.
 - URL extraction accepts both flat URL arrays and nested picker payload variants (for example a
   `QVariantList` that wraps a file-dialog URL list), then flattens them into unique local files.
+- The editor drag/drop path also consumes native `drop.urls` payloads plus `text/uri-list` fallback lines, so Finder,
+  Explorer, and other host file managers stay on the same rollback-safe import pipeline as menu/file-picker imports.
+- QML callers should still treat the `QVariantList` return from `importUrlsForEditor(...)` as a Qt list-like value,
+  not only as a strict JS `Array`, because post-import body insertion may otherwise skip valid imported entries.
 
 ## Failure Rule
 
@@ -30,4 +34,6 @@ packages and restores the previous `Resources.wsresources` contents before emitt
 ## Current Callers
 
 - The macOS global menu bar `File > Import File...` action.
+- Desktop/mobile editor drop surfaces, which import the files and then inject `<resource ...>` source tags into the
+  current note.
 - The compatibility wrappers that keep older drag/drop-style callers on the same code path.

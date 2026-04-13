@@ -8,6 +8,7 @@
 
 #include <QDir>
 #include <QFileInfo>
+#include <QSet>
 #include <QUrl>
 #include <algorithm>
 #include <utility>
@@ -304,6 +305,119 @@ namespace
 
         return listItems;
     }
+
+    QStringList normalizedUniqueResourceNoteIds(const QVariantList& noteIds)
+    {
+        QStringList normalized;
+        normalized.reserve(noteIds.size());
+        for (const QVariant& noteIdValue : noteIds)
+        {
+            const QString normalizedNoteId = WhatSon::Resources::normalizePath(noteIdValue.toString().trimmed());
+            if (normalizedNoteId.isEmpty() || normalized.contains(normalizedNoteId))
+            {
+                continue;
+            }
+            normalized.push_back(normalizedNoteId);
+        }
+        return normalized;
+    }
+
+    int indexOfHierarchyItemByKey(const QVector<ResourcesHierarchyItem>& items, const QString& key)
+    {
+        const QString normalizedKey = key.trimmed();
+        if (normalizedKey.isEmpty())
+        {
+            return -1;
+        }
+
+        for (int index = 0; index < items.size(); ++index)
+        {
+            if (items.at(index).key.trimmed() == normalizedKey)
+            {
+                return index;
+            }
+        }
+
+        return -1;
+    }
+
+    QString selectedHierarchyItemKey(const QVector<ResourcesHierarchyItem>& items, int selectedIndex)
+    {
+        if (selectedIndex < 0 || selectedIndex >= items.size())
+        {
+            return {};
+        }
+        return items.at(selectedIndex).key.trimmed();
+    }
+
+    QString resolveResourcePackagePathForNoteId(const QString& noteId, const QStringList& resolutionBasePaths)
+    {
+        const QString normalizedNoteId = WhatSon::Resources::normalizePath(noteId.trimmed());
+        if (normalizedNoteId.isEmpty())
+        {
+            return {};
+        }
+
+        const QFileInfo directInfo(normalizedNoteId);
+        if (directInfo.isDir() && WhatSon::Resources::isResourcePackageDirectoryName(directInfo.fileName()))
+        {
+            return directInfo.absoluteFilePath();
+        }
+
+        return WhatSon::Resources::resolvePackageDirectoryFromReference(
+            normalizedNoteId,
+            resolutionBasePaths);
+    }
+
+    QStringList resourceRemovalCandidates(
+        const QString& noteId,
+        const QString& packagePath,
+        const WhatSon::Resources::ResourcePackageMetadata& metadata)
+    {
+        QStringList candidates;
+        const auto appendCandidate = [&candidates](const QString& value)
+        {
+            const QString normalizedValue = WhatSon::Resources::normalizePath(value.trimmed());
+            if (normalizedValue.isEmpty() || candidates.contains(normalizedValue))
+            {
+                return;
+            }
+            candidates.push_back(normalizedValue);
+        };
+
+        appendCandidate(noteId);
+        appendCandidate(metadata.resourcePath);
+        appendCandidate(WhatSon::Resources::resourcePathForPackageDirectory(packagePath));
+        return candidates;
+    }
+
+    QStringList filteredResourcePathsAfterRemoval(
+        const QStringList& existingResourcePaths,
+        const QStringList& removalCandidates)
+    {
+        QSet<QString> removalSet;
+        for (const QString& removalCandidate : removalCandidates)
+        {
+            const QString normalizedCandidate = WhatSon::Resources::normalizePath(removalCandidate.trimmed());
+            if (!normalizedCandidate.isEmpty())
+            {
+                removalSet.insert(normalizedCandidate);
+            }
+        }
+
+        QStringList filtered;
+        filtered.reserve(existingResourcePaths.size());
+        for (const QString& existingResourcePath : existingResourcePaths)
+        {
+            const QString normalizedPath = WhatSon::Resources::normalizePath(existingResourcePath.trimmed());
+            if (normalizedPath.isEmpty() || removalSet.contains(normalizedPath) || filtered.contains(normalizedPath))
+            {
+                continue;
+            }
+            filtered.push_back(normalizedPath);
+        }
+        return filtered;
+    }
 }
 
 ResourcesHierarchyViewModel::ResourcesHierarchyViewModel(QObject* parent)
@@ -493,6 +607,142 @@ void ResourcesHierarchyViewModel::deleteSelectedFolder()
                                   startIndex));
 }
 
+bool ResourcesHierarchyViewModel::deleteNoteById(const QString& noteId)
+{
+    QVariantList noteIds;
+    noteIds.push_back(noteId);
+    return deleteNotesByIds(noteIds);
+}
+
+bool ResourcesHierarchyViewModel::deleteNotesByIds(const QVariantList& noteIds)
+{
+    const QStringList normalizedNoteIds = normalizedUniqueResourceNoteIds(noteIds);
+    if (normalizedNoteIds.isEmpty())
+    {
+        return false;
+    }
+
+    WhatSon::Debug::traceSelf(this,
+                              QString::fromLatin1(kScope),
+                              QStringLiteral("deleteNotesByIds.begin"),
+                              QStringLiteral("count=%1").arg(normalizedNoteIds.size()));
+
+    QStringList resolvedPackagePaths;
+    resolvedPackagePaths.reserve(normalizedNoteIds.size());
+    QStringList removalCandidates;
+    removalCandidates.reserve(normalizedNoteIds.size() * 3);
+
+    for (const QString& normalizedNoteId : normalizedNoteIds)
+    {
+        const QString resolvedPackagePath = resolveResourcePackagePathForNoteId(
+            normalizedNoteId,
+            m_resourceResolutionBasePaths);
+        if (resolvedPackagePath.isEmpty())
+        {
+            WhatSon::Debug::traceSelf(this,
+                                      QString::fromLatin1(kScope),
+                                      QStringLiteral("deleteNotesByIds.failed"),
+                                      QStringLiteral("reason=unresolvedPackage noteId=%1").arg(normalizedNoteId));
+            return false;
+        }
+
+        WhatSon::Resources::ResourcePackageMetadata metadata;
+        QString metadataError;
+        if (!WhatSon::Resources::loadResourcePackageMetadata(resolvedPackagePath, &metadata, &metadataError))
+        {
+            WhatSon::Debug::traceSelf(this,
+                                      QString::fromLatin1(kScope),
+                                      QStringLiteral("deleteNotesByIds.failed"),
+                                      QStringLiteral("reason=metadataLoadFailed noteId=%1 error=%2")
+                                          .arg(normalizedNoteId, metadataError));
+            return false;
+        }
+
+        if (!resolvedPackagePaths.contains(resolvedPackagePath))
+        {
+            resolvedPackagePaths.push_back(resolvedPackagePath);
+        }
+
+        const QStringList candidateValues = resourceRemovalCandidates(
+            normalizedNoteId,
+            resolvedPackagePath,
+            metadata);
+        for (const QString& candidateValue : candidateValues)
+        {
+            if (!removalCandidates.contains(candidateValue))
+            {
+                removalCandidates.push_back(candidateValue);
+            }
+        }
+    }
+
+    const QString normalizedResourcesFilePath = m_resourcesFilePath.trimmed();
+    if (normalizedResourcesFilePath.isEmpty())
+    {
+        WhatSon::Debug::traceSelf(this,
+                                  QString::fromLatin1(kScope),
+                                  QStringLiteral("deleteNotesByIds.failed"),
+                                  QStringLiteral("reason=resourcesFilePathEmpty"));
+        return false;
+    }
+
+    const QStringList previousResourcePaths = m_resourcePaths;
+    const QStringList nextResourcePaths = filteredResourcePathsAfterRemoval(
+        previousResourcePaths,
+        removalCandidates);
+
+    WhatSonResourcesHierarchyStore stagedStore;
+    stagedStore.setResourcePaths(nextResourcePaths);
+
+    QString writeError;
+    if (!stagedStore.writeToFile(normalizedResourcesFilePath, &writeError))
+    {
+        WhatSon::Debug::traceSelf(this,
+                                  QString::fromLatin1(kScope),
+                                  QStringLiteral("deleteNotesByIds.failed"),
+                                  QStringLiteral("reason=resourcesFileWriteFailed error=%1").arg(writeError));
+        return false;
+    }
+
+    for (const QString& resolvedPackagePath : resolvedPackagePaths)
+    {
+        if (QFileInfo(resolvedPackagePath).exists() && !QDir(resolvedPackagePath).removeRecursively())
+        {
+            WhatSonResourcesHierarchyStore rollbackStore;
+            rollbackStore.setResourcePaths(previousResourcePaths);
+            QString rollbackError;
+            rollbackStore.writeToFile(normalizedResourcesFilePath, &rollbackError);
+
+            const QString combinedError = rollbackError.trimmed().isEmpty()
+                                              ? QString()
+                                              : QStringLiteral(" rollback=%1").arg(rollbackError.trimmed());
+            WhatSon::Debug::traceSelf(this,
+                                      QString::fromLatin1(kScope),
+                                      QStringLiteral("deleteNotesByIds.failed"),
+                                      QStringLiteral("reason=packageDeleteFailed path=%1%2")
+                                          .arg(resolvedPackagePath, combinedError));
+            return false;
+        }
+    }
+
+    setResourcePaths(nextResourcePaths);
+    updateLoadState(true);
+
+    for (const QString& resolvedPackagePath : resolvedPackagePaths)
+    {
+        emit resourceDeleted(resolvedPackagePath);
+    }
+    emit hubFilesystemMutated();
+
+    WhatSon::Debug::traceSelf(this,
+                              QString::fromLatin1(kScope),
+                              QStringLiteral("deleteNotesByIds.success"),
+                              QStringLiteral("deleted=%1 remaining=%2")
+                                  .arg(resolvedPackagePaths.size())
+                                  .arg(m_resourcePaths.size()));
+    return true;
+}
+
 QString ResourcesHierarchyViewModel::noteDirectoryPathForNoteId(const QString& noteId) const
 {
     const QString normalizedNoteId = WhatSon::Resources::normalizePath(noteId.trimmed());
@@ -524,6 +774,7 @@ void ResourcesHierarchyViewModel::setResourcePaths(QStringList resourcePaths)
         sanitizedPaths,
         m_resourceResolutionBasePaths,
         m_items);
+    const QString previousSelectedKey = selectedHierarchyItemKey(m_items, m_selectedIndex);
 
     if (m_resourcePaths == sanitizedPaths
         && WhatSon::Hierarchy::ResourcesSupport::hierarchyItemsEqual(m_items, nextItems))
@@ -540,8 +791,11 @@ void ResourcesHierarchyViewModel::setResourcePaths(QStringList resourcePaths)
     m_items = std::move(nextItems);
     syncModel();
     const int previousSelectedIndex = m_selectedIndex;
-    setSelectedIndex(-1);
-    if (previousSelectedIndex == -1)
+    const int nextSelectedIndex = previousSelectedKey.isEmpty()
+                                      ? -1
+                                      : indexOfHierarchyItemByKey(m_items, previousSelectedKey);
+    setSelectedIndex(nextSelectedIndex);
+    if (previousSelectedIndex == nextSelectedIndex)
     {
         refreshNoteListForSelection();
     }

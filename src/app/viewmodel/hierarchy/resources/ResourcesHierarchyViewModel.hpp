@@ -51,6 +51,8 @@ public:
     Q_INVOKABLE bool setItemExpanded(int index, bool expanded) override;
     Q_INVOKABLE void createFolder() override;
     Q_INVOKABLE void deleteSelectedFolder() override;
+    Q_INVOKABLE bool deleteNoteById(const QString& noteId);
+    Q_INVOKABLE bool deleteNotesByIds(const QVariantList& noteIds);
     Q_INVOKABLE QString noteDirectoryPathForNoteId(const QString& noteId) const;
 
     void setResourcePaths(QStringList resourcePaths);
@@ -82,6 +84,8 @@ public
     void hierarchyModelChanged();
     void itemCountChanged();
     void loadStateChanged();
+    void resourceDeleted(const QString& noteId);
+    void hubFilesystemMutated();
     void viewModelHookRequested();
 
 private:

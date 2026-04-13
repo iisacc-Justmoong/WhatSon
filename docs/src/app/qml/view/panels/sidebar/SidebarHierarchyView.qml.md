@@ -90,6 +90,11 @@ These signals make the file a reusable visual surface instead of a hard-coded on
   still tracks the primary routed folder.
 - Because LVRS hierarchy rows expose only one native active item, additional selections are rendered by
   `hierarchySelectionOverlayLayer` through `selectedHierarchyOverlayRects`.
+- `selectedHierarchyIndices` is an alias into `SidebarHierarchySelectionController.selectedIndices`, so startup binding
+  churn can briefly expose it as `undefined` before the controller republishes its default `[]` value.
+- Direct `.length` checks in change handlers must therefore route through `safeSelectedHierarchyIndices`, which
+  normalizes the alias back to an array and prevents `undefined.length` runtime exceptions during startup or domain
+  swaps.
 - `collectSelectedHierarchyOverlayRects()` must always return an array. If that helper falls through
   without `return overlayRects;`, the overlay layer will read `.length` from `undefined` and the
   sidebar loses multi-selection presentation at runtime.

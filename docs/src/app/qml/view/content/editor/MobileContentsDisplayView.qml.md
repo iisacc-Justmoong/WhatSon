@@ -57,6 +57,14 @@ Mobile content editor host.
   agenda/callout projection cannot push the note-open session snapshot back over newer visible edits.
 - Mobile host-side RAW mutations such as imported-resource tag insertion or structured source rewrites now also issue
   immediate persistence requests directly; native-input preference no longer implies a deferred-persistence exception.
+- Mobile editor drop handling now also accepts native file-manager drags without a `DropArea.keys` MIME gate, parses
+  both `drop.urls` and `text/uri-list`, imports those files through `ResourcesImportViewModel`, injects canonical
+  `<resource ...>` calls into the active note source, and feeds the current presentation snapshot into
+  `ContentsBodyResourceRenderer` so the dropped resource card appears in the body overlay before the worker-thread note
+  flush finishes.
+- The post-import insertion path now normalizes `importUrlsForEditor(...)` results from either a real JS array or a
+  Qt-provided list-like `QVariantList`, so successful hub imports cannot silently skip body-tag insertion just because
+  the invokable return value is not tagged as `Array.isArray(...)` in QML.
 - When the selection bridge can already expose a buffered dirty body for the newly selected note, the mobile host now
   consumes that note-owned payload through the ordinary selection-sync path instead of waiting for a stale filesystem
   read to arrive first.

@@ -17,6 +17,9 @@ It does not own the domain data itself. Its job is to keep the mobile `LV.PageRo
 - Keep the mobile detail route-aware: the compact navigation only exposes the detail affordance on `/mobile/editor`,
   and that affordance pushes a real routed page instead of toggling overlay chrome.
 - Own the mobile panel hook directly through the `mobile.MobileHierarchyPage` panel key instead of routing that hook through a wrapper component, while keeping note creation on the dedicated `windowInteractions` shortcut path so generic route hooks never create files.
+- Resolve the effective list-deletion contract from the active hierarchy first, then fall back to
+  the shared library-note mutation viewmodel (or the global LV viewmodel registry) when the active
+  hierarchy does not own deletion itself.
 
 ## Routing Model
 The file defines four route constants:
@@ -139,6 +142,9 @@ This keeps mobile back navigation local to the page and avoids stealing editor t
 - `MobileNoteCreationCoordinator.qml`: owns create-note dispatch plus pending-note promotion into the editor route.
 - `HierarchySidebarLayout.qml`: renders the hierarchy route body.
 - `ListBarLayout.qml`: renders the folder-scoped note list route body.
+- The routed `ListBarLayout.qml` now receives `resolvedNoteDeletionViewModel`, so hardware-keyboard
+  `Delete` / `Backspace` in the mobile note list can remove resource packages when the resources
+  hierarchy owns the active list.
 - `ContentViewLayout.qml`: renders the editor route body and now selects `MobileContentsDisplayView.qml` for mobile.
 - The mobile editor route no longer relies on desktop editor code plus mobile suppression flags:
   - gutter is removed by the mobile-only editor file itself
@@ -167,3 +173,5 @@ This keeps mobile back navigation local to the page and avoids stealing editor t
   mobile.
 - Calendar note taps from the mobile editor route must keep using the shared library selection state instead of
   introducing a mobile-only note activation store.
+- Mobile note-list deletion must continue to prefer the active hierarchy's own delete contract when
+  one is available, so resource-package deletion does not fall back to library-note deletion.

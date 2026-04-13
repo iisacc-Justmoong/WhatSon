@@ -29,6 +29,10 @@ right detail panel.
   surface.
 - `sidebarHierarchyViewModel` is also forwarded to the central content surface so calendar note taps can switch the
   active domain back to `Library` before the editor becomes visible again.
+- The desktop shell now resolves the effective deletion target for `ListBarLayout` from the active
+  hierarchy first. If the active hierarchy publishes its own delete/clear-folder contract
+  (`deleteNoteById`, `deleteNotesByIds`, `clearNoteFoldersById`, or `clearNoteFoldersByIds`), that
+  contract is used; otherwise the shell falls back to the shared library-note mutation viewmodel.
 - The contents surface now fills the center panel directly without an additional bottom-partition contract.
 - Sidebar, list, and right-panel splitters continue to own the desktop width-resize flow.
 - Desktop default/min right-panel widths and sidebar horizontal inset now come from `LV.Theme.scaleMetric(...)` /
@@ -44,3 +48,5 @@ right detail panel.
   - A year-calendar month/day tap from the center content surface must still bubble up as a month-overlay open request.
   - A calendar note tap from the center content surface must still be able to switch the active hierarchy back to
     `Library`.
+  - `Delete` / `Backspace` from `ListBarLayout` must still route to the active resources-domain
+    deletion contract when the resources hierarchy owns the current list.
