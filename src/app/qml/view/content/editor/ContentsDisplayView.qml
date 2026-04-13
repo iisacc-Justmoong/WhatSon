@@ -635,8 +635,11 @@ Item {
     function handleInlineFormatShortcutKeyPress(event) {
         if (editorTypingController && editorTypingController.handleTagAwareDeleteKeyPress !== undefined) {
             const deleteHandled = editorTypingController.handleTagAwareDeleteKeyPress(event);
-            if (deleteHandled)
+            if (deleteHandled) {
+                if (event)
+                    event.accepted = true;
                 return true;
+            }
         }
         return editorSelectionController.handleInlineFormatShortcutKeyPress(event);
     }

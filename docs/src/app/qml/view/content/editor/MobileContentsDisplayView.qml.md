@@ -55,6 +55,9 @@ Mobile content editor host.
 - Mobile inline-editor `onTextEdited()` now only notifies the typing controller to read the live `TextEdit` state.
   The host no longer treats the rendered RichText surface payload itself as a recovery source for RAW note text, so
   agenda/callout projection cannot push the note-open session snapshot back over newer visible edits.
+- Mobile now likewise routes Backspace/Delete through `ContentsEditorTypingController.handleTagAwareDeleteKeyPress(...)`
+  before the generic shortcut controller and before `TextEdit` default deletion.
+  When the source cursor touches a proprietary tag token, mobile now removes that whole token in one RAW mutation.
 - Mobile host-side RAW mutations such as imported-resource tag insertion or structured source rewrites now also issue
   immediate persistence requests directly; native-input preference no longer implies a deferred-persistence exception.
 - Mobile editor drop handling now also accepts native file-manager drags without a `DropArea.keys` MIME gate, parses

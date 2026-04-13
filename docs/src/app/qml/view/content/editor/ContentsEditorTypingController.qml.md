@@ -38,6 +38,9 @@ This controller exists to keep plain typing separate from inline-format applicat
 - The controller now also exits early while `view.resourceDropEditorSurfaceGuardActive == true`.
   External file drops can therefore import/link `.wsresource` packages without letting a same-turn native `TextEdit`
   drop mutation serialize the visible RichText surface back into `.wsnbody` as escaped attribute text.
+- The controller now also owns tag-aware raw deletion before `TextEdit` default handling runs.
+  Backspace/Delete no longer has to land as one-character plain-text diffs first and then hope the source bridge can
+  reconstruct the intended tag boundary afterward.
 - Computes a single contiguous replacement delta (`start`, `previousEnd`, `insertedText`) from those two plain-text
   projections.
 - When that delta is a single `Enter` insertion on a markdown list line, the controller now expands the inserted text
@@ -67,6 +70,14 @@ This controller exists to keep plain typing separate from inline-format applicat
   - newline padding is normalized around the inserted RAW fragment
   - local-authority marking, cursor restore, same-note persistence, and host `editorTextEdited(...)` signaling stay on
     the exact same contract already used by agenda/callout/break shortcut insertion
+- Backspace/Delete now also has a tag-aware raw-source fast path:
+  - when the pending delete span intersects an XML-like token such as `<resource ... />`, `<callout>`, `</callout>`,
+    `<agenda ...>`, `</agenda>`, inline-style tags, or comment-like editor markers, the controller expands the delete
+    range to the full token boundary before mutating `.wsnbody`
+  - caret-only Backspace removes the whole tag immediately behind the source cursor, and caret-only Delete removes the
+    whole tag immediately at or under the source cursor
+  - selection delete likewise expands to cover any partially intersected tag tokens so a raw source edit cannot leave
+    half-deleted tag fragments behind
 - Structured shortcut insertion now resolves the actual RAW insertion point before writing:
   - if the logical cursor is already inside an existing `<agenda>...</agenda>` or `<callout>...</callout>`, the new
     shortcut block is moved to the end of that enclosing block instead of being nested into it
@@ -184,6 +195,10 @@ structured-block projection do not re-enter the normal typing path.
 - Typing ordinary letters should update raw `.wsnbody` without serializing the whole RichText document.
 - A committed delete/backspace turn must update the session through the plain-text/source-offset bridge itself; the
   controller must not depend on whole-surface RichText reserialization to rescue the edit.
+- Backspace/Delete while the logical/source cursor touches `<resource ... />`, `<callout>`, `</callout>`,
+  `<agenda ...>`, `</agenda>`, or inline-style tags must remove the full tag token, not only one source character.
+- A selection delete that partially covers a source tag must expand to the tag boundary before persistence; `.wsnbody`
+  must not retain broken tail fragments such as `resource ... />`, `/callout>`, or `&quot;image&quot; ... /&gt;`.
 - The typing controller must not treat `selectedNoteBodyText` as authoritative unless the host also proves that the
   body payload belongs to the currently selected note.
 - A host-driven RichText/resource presentation refresh must not re-enter this controller while

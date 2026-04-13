@@ -106,3 +106,6 @@ structured document-flow editor changes.
 - The same imported-file drop must not rewrite neighboring structured tags into broken paragraph text.
   For example, an existing `<callout>...</callout>` block around the drop context must remain literal source markup
   instead of degrading into plain paragraph text plus escaped resource-tail fragments.
+- Backspace/Delete while the caret is at a raw tag boundary must remove the whole tag token in one step.
+  Deleting across `<resource ... />`, `<callout>`, `</callout>`, `<agenda ...>`, `</agenda>`, or inline-style tags
+  must not leave partial source remnants behind.
