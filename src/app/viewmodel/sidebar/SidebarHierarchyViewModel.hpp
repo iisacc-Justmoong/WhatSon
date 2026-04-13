@@ -39,10 +39,8 @@ public:
     IHierarchyViewModelProvider* viewModelProvider() const noexcept;
     void setViewModelProvider(IHierarchyViewModelProvider* provider);
 
-    signals  :
-
-
-
+signals:
+    void activeBindingsChanged();
     void activeHierarchyIndexChanged();
     void activeHierarchyViewModelChanged();
     void activeNoteListModelChanged();

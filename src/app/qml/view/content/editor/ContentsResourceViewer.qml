@@ -17,6 +17,24 @@ Item {
                                           && resourceViewer.resourceOpenTarget.length > 0
     readonly property bool resourceRenderable: resourceViewer.imageRenderable || resourceViewer.pdfRenderable
     readonly property string renderFailureReason: bitmapViewer.incompatibilityReason
+    readonly property real imagePixelWidth: {
+        const sourceWidth = Number(resourceImageViewer.sourceSize.width) || 0
+        if (sourceWidth > 0)
+            return sourceWidth
+        const implicitWidth = Number(resourceImageViewer.implicitWidth) || 0
+        return implicitWidth > 0 ? implicitWidth : 0
+    }
+    readonly property real imagePixelHeight: {
+        const sourceHeight = Number(resourceImageViewer.sourceSize.height) || 0
+        if (sourceHeight > 0)
+            return sourceHeight
+        const implicitHeight = Number(resourceImageViewer.implicitHeight) || 0
+        return implicitHeight > 0 ? implicitHeight : 0
+    }
+    readonly property real imageAspectRatio: resourceViewer.imagePixelWidth > 0
+                                             && resourceViewer.imagePixelHeight > 0
+                                             ? resourceViewer.imagePixelWidth / resourceViewer.imagePixelHeight
+                                             : 0
 
     clip: true
 

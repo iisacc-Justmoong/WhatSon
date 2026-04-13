@@ -85,6 +85,12 @@ structured document-flow editor changes.
   rely solely on `drop.urls`.
 - Dropping a file while the caret sits in the middle of a paragraph must still insert the canonical `<resource ... />`
   call as its own source block instead of embedding the tag inline inside adjacent prose text.
+- Dropping an image into a note that already contains ordinary paragraphs must switch that same note into the
+  structured resource path immediately.
+  The editor must not leave one legacy frame alive that renders the literal `<resource ... />` tag as visible text.
+- The same mixed-content note must remain an ordinary note editor surface.
+  Inline images must render between surrounding paragraphs in the authored body column and must not replace the whole
+  editor with the dedicated resource-package viewer.
 - After the tag insertion completes, the same selected note must show the new resource frame at the authored body slot
   before a later manual note reopen or explicit filesystem refresh.
 - A `<resource ... path=".../.wsresource" />` body slot must resolve through that package's `resource.xml` metadata to
@@ -103,6 +109,22 @@ structured document-flow editor changes.
   the first settled same-note parse instead of keeping that resource on a legacy overlay-only path.
 - In structured-flow mode, a `type=resource` block must render through the same image frame card used elsewhere in the
   editor, and it must occupy real document height in the block column rather than an overlay aligned on top of text.
+- The inline image frame must keep a transparent background. Only the border chrome from the image-resource frame may
+  remain; no extra dark fill from the wrapper card should sit behind the bitmap.
+- Inline image resource blocks must stretch to the available editor body width and recompute their height from the
+  actual bitmap aspect ratio, instead of staying capped at the original 480px sample width or cropping to a fixed
+  viewport ratio.
+- "Fill width" for inline images must mean the note body column width only.
+  The frame must not consume gutter space, minimap rail space, or any extra viewport overhang outside the body insets.
+- The dedicated resource viewer may appear only when the user is directly browsing a `.wsresource` package from the
+  Resources hierarchy.
+  A selected note from Library/Bookmarks/Projects/Progress/Tags/Event/Preset that contains `<resource ... />` body
+  tags must not trigger the same full-surface viewer path.
+- When structured-flow mode is active and the last visible block is a resource or break block, a plain left click in
+  the note body must reopen editing at the document end instead of leaving focus trapped on a non-editable block.
+- The same click-to-append path must materialize exactly one trailing text block when the note currently ends in a
+  non-text block, so the next typed character appears after the resource/divider instead of being lost or inserted
+  into an earlier paragraph.
 - After an inline image resource is present in the editor body, typing one additional character elsewhere in that note
   must not treat the RichText image object itself as a new plain-text character during diffing or persistence.
 - A programmatic resource/body presentation rebuild must not persist the superseded placeholder surface back into

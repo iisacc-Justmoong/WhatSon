@@ -36,8 +36,11 @@ into the selected editor surface.
 
 - A `StackLayout` selects either the editor surface or the active calendar surface.
 - The active note-list model still closes any visible calendar surface when note selection changes.
-- `resourcesImportViewModel`, `editorViewModeViewModel`, and the resolved note-list/content viewmodels are forwarded
-  into both editor variants.
+- `resourcesImportViewModel`, `editorViewModeViewModel`, `sidebarHierarchyViewModel`, and the resolved
+  note-list/content viewmodels are forwarded into both editor variants.
+- That sidebar-hierarchy forwarding is now part of the editor contract so desktop/mobile surfaces can distinguish:
+  - direct resource-package browsing inside the Resources hierarchy
+  - ordinary notes from other hierarchies whose `.wsnbody` happens to contain inline `<resource ... />` blocks
 - `isMobilePlatform` still decides which editor file is instantiated.
 - `requestOpenLibraryNote(noteId)` now uses `libraryHierarchyViewModel.activateNoteById(...)` together with
   `sidebarHierarchyViewModel.setActiveHierarchyIndex(...)` so a calendar note tap can switch the active hierarchy back

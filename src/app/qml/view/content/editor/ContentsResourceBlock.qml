@@ -9,6 +9,7 @@ FocusScope {
     property var resourceEntry: ({})
 
     signal activated()
+    signal documentEndEditRequested()
 
     readonly property var normalizedBlock: blockData && typeof blockData === "object" ? blockData : ({})
     readonly property var normalizedResourceEntry: resourceEntry && typeof resourceEntry === "object" ? resourceEntry : ({})
@@ -91,8 +92,7 @@ FocusScope {
         acceptedButtons: Qt.LeftButton
 
         onTapped: {
-            resourceBlock.forceActiveFocus()
-            resourceBlock.activated()
+            resourceBlock.documentEndEditRequested()
         }
     }
 }

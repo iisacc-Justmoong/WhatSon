@@ -18,19 +18,25 @@ Rectangle {
     property bool menuButtonEnabled: true
     property real mediaWidthHint: 338
     property real mediaHeightHint: 352
+    readonly property real mediaAspectRatio: {
+        const normalizedWidth = Number(imageFrame.mediaWidthHint) || 0
+        const normalizedHeight = Number(imageFrame.mediaHeightHint) || 0
+        if (normalizedWidth <= 0 || normalizedHeight <= 0)
+            return 1
+        return normalizedWidth / normalizedHeight
+    }
     readonly property real designFrameWidth: 480
     readonly property real designBarHeight: 19
     readonly property real horizontalPadding: 8
     readonly property real resolvedFrameWidth: Math.max(120, Number(imageFrame.width) || imageFrame.implicitWidth)
-    readonly property real resolvedMediaWidth: Math.min(
-                                                   imageFrame.mediaWidthHint,
-                                                   Math.max(120, imageFrame.resolvedFrameWidth - imageFrame.horizontalPadding * 2))
+    readonly property real resolvedMediaWidth: Math.max(
+                                                   120,
+                                                   imageFrame.resolvedFrameWidth - imageFrame.horizontalPadding * 2)
     readonly property real resolvedMediaHeight: Math.max(
                                                     120,
                                                     Math.round(
                                                         imageFrame.resolvedMediaWidth
-                                                        * imageFrame.mediaHeightHint
-                                                        / Math.max(1, imageFrame.mediaWidthHint)))
+                                                        / Math.max(0.01, imageFrame.mediaAspectRatio)))
     default property alias contentData: mediaViewport.data
 
     signal menuRequested()
@@ -42,7 +48,7 @@ Rectangle {
     implicitHeight: imageFrame.designBarHeight * 2 + imageFrame.resolvedMediaHeight
     height: implicitHeight
     radius: imageFrame.frameCornerRadius
-    width: implicitWidth
+    width: parent ? parent.width : implicitWidth
 
     Item {
         id: headerBar
@@ -103,10 +109,12 @@ Rectangle {
     Item {
         id: mediaSlot
 
-        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.left: parent.left
+        anchors.leftMargin: imageFrame.horizontalPadding
+        anchors.right: parent.right
+        anchors.rightMargin: imageFrame.horizontalPadding
         anchors.top: headerBar.bottom
         height: imageFrame.resolvedMediaHeight
-        width: imageFrame.resolvedMediaWidth
 
         Item {
             id: mediaViewport

@@ -4,11 +4,12 @@
 Desktop content editor host.
 
 ## Structured Document Flow
-- `agenda`, `callout`, `resource`, and `break` remain `.wsnbody` body tags, but desktop now only promotes the note
-  into the structured document-flow surface when the same note also owns at least one resolved body resource slot.
-- Desktop now gates `structuredDocumentFlowEnabled` off `bodyResourceRenderer.resourceCount > 0`, so plain notes and
-  non-resource structured tags stay on the legacy single-editor path while inline-resource notes get the richer body
-  block presentation.
+- `agenda`, `callout`, `resource`, and `break` remain `.wsnbody` body tags, and desktop now promotes the note into the
+  structured document-flow surface as soon as canonical body-level resource markup is present in the active source.
+- Desktop now treats a canonical live `<resource ... />` tag in either the live editor buffer or the current
+  presentation snapshot as an immediate structured-flow activation request.
+  `bodyResourceRenderer.resourceCount` still keeps already-resolved notes active, but the host no longer waits for a
+  later resource-resolution turn before leaving the legacy single-editor path.
 - `ContentsStructuredDocumentFlow.qml` is therefore no longer dormant: notes with inline resource tags now render
   those resources as body-owned QML blocks instead of RichText placeholders or offset overlays.
 - Source persistence for block edits now runs through `applyDocumentSourceMutation(...)`, which updates the RAW body,
@@ -19,6 +20,17 @@ Desktop content editor host.
 - The same structured-flow surface now also receives `bodyResourceRenderer.renderedResources`, so a `<resource ... />`
   block can resolve the actual asset path from inside the referenced `.wsresource` bundle and paint the existing
   `ContentsImageResourceFrame` card inline in document order.
+- In screen editor mode, that structured-flow column now uses the same effective body width contract as ordinary note
+  text: viewport width minus the editor's left/right body inset.
+  Inline image resources therefore fill the note body column itself, not the whole editor viewport, and do not intrude
+  into gutter/minimap-adjacent space.
+- The dedicated full-surface `ContentsResourceViewer` is now reserved for direct resource-package browsing from the
+  Resources hierarchy only.
+  A note opened from Library, Bookmarks, Projects, Tags, Progress, Event, or Preset must stay on the ordinary note
+  editor surface even if its `.wsnbody` contains inline `<resource ... />` blocks.
+- While structured-flow mode is active, a desktop left-click anywhere in the structured document viewport now routes
+  through `requestStructuredDocumentEndEdit()`. That click re-enters editing at the document tail instead of leaving
+  the user on a non-editable resource/break block focus.
 - Note-open reconcile is now scheduled through a deferred one-shot helper instead of running synchronously in the
   `selectedNoteIdChanged` turn.
 - The host now tracks one pending note-entry reconcile id and waits for
@@ -69,6 +81,13 @@ Desktop content editor host.
   `<resource ...>` calls into the active note source, and feeds the current presentation snapshot into
   `ContentsBodyResourceRenderer` so the dropped resource card appears in the body overlay before the worker-thread note
   flush finishes.
+- Desktop now also rescans the live `editorText` buffer for canonical `<resource ... />` markup on each edit turn.
+  Dropping an image into a note that already contains paragraphs therefore switches that same note into the structured
+  resource path immediately instead of leaving a legacy RichText/plain-text frame alive long enough to expose the raw
+  tag as visible prose.
+- Figma node `294:7923` is now the mixed-content reference for this path:
+  one text-editor column contains prose above the image frame and prose below it.
+  Inline image blocks therefore behave like authored body elements, not like a full-surface resource takeover.
 - The post-import insertion path now normalizes `importUrlsForEditor(...)` results from either a real JS array or a
   Qt-provided list-like `QVariantList`, so successful hub imports cannot silently skip body-tag insertion just because
   the invokable return value is not tagged as `Array.isArray(...)` in QML.
@@ -88,9 +107,10 @@ Desktop content editor host.
 - Once the selected note has entered structured-flow mode, desktop now stops relying on that RichText image upgrade
   path for inline resource display and instead renders `<resource ... />` through `ContentsResourceBlock.qml` inside
   `ContentsStructuredDocumentFlow.qml`.
-- In structured-flow mode, `ContentsBodyResourceRenderer` now reads directly from the live `editorText` buffer rather
-  than the lagging RichText presentation snapshot, so inline resource blocks can re-resolve immediately after RAW
-  mutations without waiting for the legacy presentation timer.
+- `ContentsBodyResourceRenderer` now follows the live `editorText` buffer not only after structured-flow is already
+  visible, but also during the activation turn where a canonical live `<resource ... />` tag first appears.
+  Mixed prose + image notes therefore resolve the actual `.wsresource` payload from the same RAW source that just
+  received the drop insertion, instead of waiting for one more presentation snapshot cycle.
 - When `ContentsBodyResourceRenderer` resolves an inline image resource successfully, the placeholder block is now
   rewritten into a real RichText `<img>` paragraph so the bitmap becomes part of the editor's own document flow rather
   than only a body-aligned overlay.
@@ -156,6 +176,9 @@ Desktop content editor host.
 - The desktop editor `RowLayout` now also declares `layoutDirection: Qt.LeftToRight` explicitly.
   Gutter -> editor viewport -> minimap ordering therefore stays stable even if ambient layout mirroring or inherited
   direction settings change elsewhere in the shell.
+- When that structured-flow tail-click lands on a note whose last block is a non-text node, the desktop host now lets
+  `ContentsStructuredDocumentFlow.qml` append one trailing newline before restoring focus, so typing can begin
+  immediately after an ending resource/divider block.
 
 ## Legacy Surface
 - The single `ContentsInlineFormatEditor` and overlay layers still remain the fallback path for notes without any

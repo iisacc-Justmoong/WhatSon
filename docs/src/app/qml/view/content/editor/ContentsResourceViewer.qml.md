@@ -28,10 +28,16 @@
 - Internal bridge:
   - `ResourceBitmapViewer` projects `resourceEntry` into bitmap-specific viewer state
     (`viewerSource`, `bitmapRenderable`, `incompatibilityReason`).
+  - The inline image path now also exposes `imagePixelWidth`, `imagePixelHeight`, and `imageAspectRatio`
+    from the loaded bitmap so parent layout containers can size the resource frame from the real asset ratio instead
+    of a fixed placeholder viewport.
 
 ## Interaction
 
 - Renders only the resource viewport itself (bitmap image or PDF surface) with no extra metadata strip, button, or fallback card scaffold.
+- For bitmap resources, the viewer remains presentation-neutral: parent frames decide whether the image should crop,
+  fit, or drive outer height. The structured note-body path now uses those intrinsic bitmap dimensions to derive
+  full-width, auto-height image blocks.
 
 ## Tests
 
@@ -42,3 +48,5 @@
   - selecting the same PDF entry on iOS must not uncover a second-stage missing-plugin failure from the shared QML runtime or controls/dialog implementation chain
   - `pdfRenderable` must stay false when the resolved open target is empty so the PDF document does not bind an invalid source during note/resource transitions
   - `image` render mode must continue to render through `ResourceBitmapViewer` without being affected by the PDF dependency wiring
+  - a loaded inline image must publish stable intrinsic pixel dimensions so the parent resource frame can keep body
+    height in sync with the actual bitmap aspect ratio

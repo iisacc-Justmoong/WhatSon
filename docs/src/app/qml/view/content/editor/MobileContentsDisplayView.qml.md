@@ -4,11 +4,12 @@
 Mobile content editor host.
 
 ## Structured Document Flow
-- `agenda`, `callout`, `resource`, and `break` remain `.wsnbody` body tags, but mobile now only promotes the note into
-  the structured document-flow surface when that note also owns at least one resolved body resource slot.
-- Mobile now gates `structuredDocumentFlowEnabled` off `bodyResourceRenderer.resourceCount > 0`, so plain notes and
-  non-resource structured tags stay on the legacy editor path while inline-resource notes switch into the shared block
-  flow.
+- `agenda`, `callout`, `resource`, and `break` remain `.wsnbody` body tags, and mobile now promotes the note into the
+  structured document-flow surface as soon as canonical body-level resource markup is present in the active source.
+- Mobile now treats a canonical live `<resource ... />` tag in either the live editor buffer or the current
+  presentation snapshot as an immediate structured-flow activation request.
+  `bodyResourceRenderer.resourceCount` still keeps already-resolved notes active, but mobile no longer waits for a
+  later resource-resolution turn before leaving the legacy editor path.
 - `ContentsStructuredDocumentFlow.qml` is therefore active for resource-bearing notes as well, so mobile uses the same
   body-owned QML block path as desktop instead of leaving inline resources to a detached overlay.
 - Structured block rewrites route through `applyDocumentSourceMutation(...)` so mobile keeps the same RAW persistence
@@ -19,6 +20,15 @@ Mobile content editor host.
 - The same structured-flow surface now also receives `bodyResourceRenderer.renderedResources`, letting mobile resource
   blocks resolve from `<resource ... />` to the actual asset file inside the referenced `.wsresource` package before
   `ContentsResourceRenderCard` paints the inline frame.
+- In screen editor mode, that structured-flow column now uses the same effective body width contract as ordinary note
+  text: viewport width minus the editor's left/right body inset.
+  Inline image resources therefore fill the note body column itself rather than the entire editor viewport.
+- The dedicated full-surface `ContentsResourceViewer` is now reserved for direct resource-package browsing from the
+  Resources hierarchy only.
+  Notes opened from other hierarchies must remain on the ordinary note editor surface even when their body contains
+  inline `<resource ... />` tags.
+- While structured-flow mode is active, a mobile left-tap in the structured document viewport now routes through
+  `requestStructuredDocumentEndEdit()` so inline resource notes can always reopen an editable tail position.
 - The legacy mobile `ContentsInlineFormatEditor` now unloads entirely during structured-flow editing and is recreated only
   when the fallback plain-text path becomes active again.
 - Mobile keeps a lightweight proxy object behind the shared `contentEditor` reference so existing geometry/focus helpers
@@ -69,6 +79,12 @@ Mobile content editor host.
   `<resource ...>` calls into the active note source, and feeds the current presentation snapshot into
   `ContentsBodyResourceRenderer` so the dropped resource card appears in the body overlay before the worker-thread note
   flush finishes.
+- Mobile now also rescans the live `editorText` buffer for canonical `<resource ... />` markup on each edit turn.
+  A dropped image inside an already text-bearing note therefore promotes that note into the structured resource path
+  immediately instead of leaving the raw tag visible on the legacy plain/RichText surface for one extra frame.
+- Figma node `294:7923` is also the mixed-content reference for mobile-hosted note bodies:
+  text and image frames share one authored document column, so inline images must not replace the entire editor with a
+  dedicated resource viewer unless the user is directly browsing a resource package from the Resources hierarchy.
 - The post-import insertion path now normalizes `importUrlsForEditor(...)` results from either a real JS array or a
   Qt-provided list-like `QVariantList`, so successful hub imports cannot silently skip body-tag insertion just because
   the invokable return value is not tagged as `Array.isArray(...)` in QML.
@@ -86,8 +102,10 @@ Mobile content editor host.
 - Mobile now also carries the same `whatson-resource-block` upgrade helper as desktop.
 - Once the selected note has entered structured-flow mode, mobile now prefers `ContentsResourceBlock.qml` in the shared
   structured document host for inline resource display instead of depending on the RichText placeholder upgrade path.
-- In structured-flow mode, `ContentsBodyResourceRenderer` now follows the live `editorText` source directly so resource
-  blocks can refresh against the current RAW note text without waiting for the legacy presentation snapshot.
+- `ContentsBodyResourceRenderer` now follows the live `editorText` source both in visible structured-flow mode and in
+  the activation turn where a canonical live `<resource ... />` tag first appears.
+  Mixed text + image note bodies therefore resolve their `.wsresource` payload from the just-mutated RAW source
+  instead of waiting for a deferred presentation snapshot.
 - When mobile later enters the RichText projection path, resolved image resources can be rewritten into real RichText
   `<img>` paragraphs using the renderer-resolved resource URL, without the old trailing blank placeholder paragraphs.
 - The current default mobile native-input path still keeps actual image paint on the source-aligned resource layer.
@@ -130,6 +148,9 @@ Mobile content editor host.
   width if the mobile host ever enables that rail.
 - The mobile editor host likewise pins its inner `RowLayout` to `Qt.LeftToRight`, so the shared gutter/editor/minimap
   column order cannot flip under inherited layout-direction changes.
+- If the current structured note ends with a non-text block, the mobile host now also allows
+  `ContentsStructuredDocumentFlow.qml` to append one trailing newline before focus restore, so typing can resume
+  directly after a terminal resource/divider block.
 - Mobile now also drives `ContentsInlineFormatEditor.blockExternalDropMutation` from
   `resourceDropActive || resourceDropEditorSurfaceGuardActive`, so the nested `TextEdit` turns read-only as soon as a
   valid external file drag is hovering over the editor and stays frozen until the dedicated resource-drop turn

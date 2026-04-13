@@ -5,9 +5,22 @@ import LVRS 1.0 as LV
 Item {
     id: hStack
 
-    readonly property int activeHierarchyIndex: hStack.sidebarHierarchyViewModel ? hStack.sidebarHierarchyViewModel.resolvedActiveHierarchyIndex : 0
-    readonly property var activeHierarchyViewModel: hStack.sidebarHierarchyViewModel ? hStack.sidebarHierarchyViewModel.resolvedHierarchyViewModel : null
-    readonly property var activeNoteListModel: hStack.sidebarHierarchyViewModel ? hStack.sidebarHierarchyViewModel.resolvedNoteListModel : null
+    property var activeHierarchyBindingSnapshot: ({
+        "index": 0,
+        "noteListModel": null,
+        "viewModel": null
+    })
+    readonly property int activeHierarchyIndex: {
+        const snapshot = hStack.activeHierarchyBindingSnapshot;
+        const numericIndex = Number(snapshot && snapshot.index !== undefined ? snapshot.index : 0);
+        return isFinite(numericIndex) ? Math.floor(numericIndex) : 0;
+    }
+    readonly property var activeHierarchyViewModel: hStack.activeHierarchyBindingSnapshot
+                                                  ? hStack.activeHierarchyBindingSnapshot.viewModel
+                                                  : null
+    readonly property var activeNoteListModel: hStack.activeHierarchyBindingSnapshot
+                                             ? hStack.activeHierarchyBindingSnapshot.noteListModel
+                                             : null
     property color compactCanvasColor: LV.Theme.panelBackground01
     property bool compactMode: false
     property color contentsDisplayColor: "transparent"
@@ -79,6 +92,23 @@ Item {
         const maxWidth = Math.max(hStack.minListViewWidth, hStack.width - occupiedWidth);
         return Math.max(hStack.minListViewWidth, Math.min(maxWidth, Math.floor(resolvedValue)));
     }
+    function syncActiveHierarchyBindings() {
+        const sidebarViewModel = hStack.sidebarHierarchyViewModel;
+        if (!sidebarViewModel) {
+            hStack.activeHierarchyBindingSnapshot = {
+                "index": 0,
+                "noteListModel": null,
+                "viewModel": null
+            };
+            return;
+        }
+        const numericIndex = Number(sidebarViewModel.resolvedActiveHierarchyIndex);
+        hStack.activeHierarchyBindingSnapshot = {
+            "index": isFinite(numericIndex) ? Math.floor(numericIndex) : 0,
+            "noteListModel": sidebarViewModel.resolvedNoteListModel,
+            "viewModel": sidebarViewModel.resolvedHierarchyViewModel
+        };
+    }
     function clampRightPanelWidth(value) {
         const numericValue = Number(value);
         const resolvedValue = isFinite(numericValue) ? numericValue : hStack.rightPanelWidth;
@@ -114,6 +144,17 @@ Item {
     Layout.fillHeight: true
     Layout.fillWidth: true
     clip: true
+    Component.onCompleted: hStack.syncActiveHierarchyBindings()
+    onSidebarHierarchyViewModelChanged: hStack.syncActiveHierarchyBindings()
+
+    Connections {
+        target: hStack.sidebarHierarchyViewModel
+        ignoreUnknownSignals: true
+
+        function onActiveBindingsChanged() {
+            hStack.syncActiveHierarchyBindings();
+        }
+    }
 
     Item {
         anchors.fill: parent

@@ -11,3 +11,6 @@ Renders one structured document-flow block for a canonical `<resource ... />` so
   still keeps a visible block slot instead of collapsing back into plain text.
 - Implements the same `applyFocusRequest(...)` and `shortcutInsertionSourceOffset()` contract as other structured
   delegates, which lets the document-flow host keep block focus and shortcut insertion deterministic across reparses.
+- A left click on the resource block no longer traps focus inside the block-only frame.
+  Instead it emits `documentEndEditRequested()`, allowing the host to reopen plain text input at the document tail so
+  typing can continue after a terminal resource block.

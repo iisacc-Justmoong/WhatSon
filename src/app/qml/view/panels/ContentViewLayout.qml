@@ -214,6 +214,7 @@ Item {
             noteListModel: contentViewLayout.resolvedNoteListModel
             panelViewModel: contentViewLayout.panelViewModel
             resourcesImportViewModel: contentViewLayout.resourcesImportViewModel
+            sidebarHierarchyViewModel: contentViewLayout.sidebarHierarchyViewModel
 
             onEditorTextEdited: function (text) {
                 contentViewLayout.editorTextEdited(text);
@@ -243,6 +244,7 @@ Item {
             noteListModel: contentViewLayout.resolvedNoteListModel
             panelViewModel: contentViewLayout.panelViewModel
             resourcesImportViewModel: contentViewLayout.resourcesImportViewModel
+            sidebarHierarchyViewModel: contentViewLayout.sidebarHierarchyViewModel
 
             onEditorTextEdited: function (text) {
                 contentViewLayout.editorTextEdited(text);

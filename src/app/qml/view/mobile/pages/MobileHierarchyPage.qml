@@ -9,15 +9,22 @@ import "../../panels" as PanelView
 Item {
     id: mobileHierarchyPage
 
-    readonly property var activeContentViewModel: mobileHierarchyPage.sidebarHierarchyViewModel
-        ? mobileHierarchyPage.sidebarHierarchyViewModel.resolvedHierarchyViewModel
+    property var activeHierarchyBindingSnapshot: ({
+        "index": 0,
+        "noteListModel": null,
+        "viewModel": null
+    })
+    readonly property var activeContentViewModel: mobileHierarchyPage.activeHierarchyBindingSnapshot
+        ? mobileHierarchyPage.activeHierarchyBindingSnapshot.viewModel
         : null
-    readonly property var activeNoteListModel: mobileHierarchyPage.sidebarHierarchyViewModel
-        ? mobileHierarchyPage.sidebarHierarchyViewModel.resolvedNoteListModel
+    readonly property var activeNoteListModel: mobileHierarchyPage.activeHierarchyBindingSnapshot
+        ? mobileHierarchyPage.activeHierarchyBindingSnapshot.noteListModel
         : null
-    readonly property int activeToolbarIndex: mobileHierarchyPage.sidebarHierarchyViewModel
-        ? mobileHierarchyPage.sidebarHierarchyViewModel.resolvedActiveHierarchyIndex
-        : 0
+    readonly property int activeToolbarIndex: {
+        const snapshot = mobileHierarchyPage.activeHierarchyBindingSnapshot;
+        const numericIndex = Number(snapshot && snapshot.index !== undefined ? snapshot.index : 0);
+        return isFinite(numericIndex) ? Math.floor(numericIndex) : 0;
+    }
     readonly property bool backNavigationAvailable: mobileScaffold.activePageRouter
         ? mobileScaffold.activePageRouter.canGoBack
         : false
@@ -111,6 +118,23 @@ Item {
 
     function backSwipeViewportWidth() {
         return Math.max(1, Math.round(Number(mobileScaffold.bodyWidth) || 0));
+    }
+    function syncActiveHierarchyBindings() {
+        const sidebarViewModel = mobileHierarchyPage.sidebarHierarchyViewModel;
+        if (!sidebarViewModel) {
+            mobileHierarchyPage.activeHierarchyBindingSnapshot = {
+                "index": 0,
+                "noteListModel": null,
+                "viewModel": null
+            };
+            return;
+        }
+        const numericIndex = Number(sidebarViewModel.resolvedActiveHierarchyIndex);
+        mobileHierarchyPage.activeHierarchyBindingSnapshot = {
+            "index": isFinite(numericIndex) ? Math.floor(numericIndex) : 0,
+            "noteListModel": sidebarViewModel.resolvedNoteListModel,
+            "viewModel": sidebarViewModel.resolvedHierarchyViewModel
+        };
     }
     function normalizedInteger(value, fallbackValue) {
         const numericValue = Number(value);
@@ -603,6 +627,8 @@ Item {
                 });
     }
 
+    Component.onCompleted: mobileHierarchyPage.syncActiveHierarchyBindings()
+    onSidebarHierarchyViewModelChanged: mobileHierarchyPage.syncActiveHierarchyBindings()
     onActiveContentViewModelChanged: noteCreationCoordinator.routePendingCreatedNoteToEditor()
     onActiveNoteListModelChanged: {
         if (mobileHierarchyPage.activeNoteListModel) {
@@ -622,6 +648,14 @@ Item {
 
         onOpenEditorRequested: function (noteId, index) {
             mobileHierarchyPage.requestOpenEditor(noteId, index);
+        }
+    }
+    Connections {
+        target: mobileHierarchyPage.sidebarHierarchyViewModel
+        ignoreUnknownSignals: true
+
+        function onActiveBindingsChanged() {
+            mobileHierarchyPage.syncActiveHierarchyBindings();
         }
     }
     Connections {

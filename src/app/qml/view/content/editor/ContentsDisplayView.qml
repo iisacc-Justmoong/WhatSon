@@ -119,6 +119,14 @@ Item {
     property int gutterWidthOverride: -1
     readonly property bool hasSelectedNote: contentsView.selectedNoteId.length > 0
     property var libraryHierarchyViewModel: null
+    readonly property int resourcesHierarchyIndexValue: 4
+    readonly property int resolvedSidebarHierarchyIndex: {
+        const sidebarViewModel = contentsView.sidebarHierarchyViewModel;
+        if (!sidebarViewModel || sidebarViewModel.resolvedActiveHierarchyIndex === undefined)
+            return 0;
+        const rawIndex = Number(sidebarViewModel.resolvedActiveHierarchyIndex);
+        return isFinite(rawIndex) ? Math.floor(rawIndex) : 0;
+    }
     readonly property color lineNumberColor: LV.Theme.descriptionColor
     readonly property int lineNumberColumnLeft: Math.max(0, Math.round(LV.Theme.scaleMetric(14)))
     property int lineNumberColumnLeftOverride: -1
@@ -237,6 +245,7 @@ Item {
     readonly property color resourceRenderCardColor: "#E61A1D22"
     readonly property int resourceRenderDisplayLimit: 0
     property var resourcesImportViewModel: null
+    property var sidebarHierarchyViewModel: null
     readonly property string richTextHighlightOpenTag: "<span style=\"background-color:#8A4B00;color:#D6AE58;font-weight:600;\">"
     readonly property bool preferNativeInputHandling: false
     readonly property bool richTextInlineImageRenderingEnabled: true
@@ -247,6 +256,7 @@ Item {
     readonly property string selectedNoteBodyNoteId: selectionBridge.selectedNoteBodyNoteId
     readonly property bool selectedNoteBodyLoading: selectionBridge.selectedNoteBodyLoading
     readonly property string selectedNoteId: selectionBridge.selectedNoteId
+    readonly property bool selectedNoteComesFromResourcesHierarchy: contentsView.resolvedSidebarHierarchyIndex === contentsView.resourcesHierarchyIndexValue
     readonly property bool selectedNoteIsResourcePackage: contentsView.selectedNoteId.trim().toLowerCase().endsWith(".wsresource")
     readonly property var selectedResourceEntry: {
         if (contentsView.showDedicatedResourceViewer && contentsView.noteListModel && contentsView.noteListModel.currentResourceEntry !== undefined) {
@@ -267,18 +277,27 @@ Item {
         return entry && typeof entry === "object" ? entry : ({});
     }
     readonly property bool showCurrentLineMarker: contentsView.hasSelectedNote || contentsView.editorText.length > 0 || contentsView.editorInputFocused
-    readonly property bool structuredDocumentFlowEnabled: bodyResourceRenderer.resourceCount > 0
+    readonly property bool liveEditorSourceContainsResourceTag: contentsView.sourceContainsCanonicalResourceTag(contentsView.editorText)
+    readonly property bool presentationSourceContainsResourceTag: contentsView.sourceContainsCanonicalResourceTag(contentsView.documentPresentationSourceText)
+    readonly property bool liveResourceStructuredFlowRequested: contentsView.liveEditorSourceContainsResourceTag
+                                                                || contentsView.presentationSourceContainsResourceTag
+    readonly property bool structuredDocumentFlowEnabled: contentsView.liveResourceStructuredFlowRequested
+                                                          || bodyResourceRenderer.resourceCount > 0
+    readonly property bool resourceResolverNeedsLiveEditorSource: contentsView.showStructuredDocumentFlow
+                                                                  || contentsView.liveResourceStructuredFlowRequested
     readonly property bool legacyInlineEditorActive: !contentsView.showStructuredDocumentFlow
                                                      && !contentsView.showDedicatedResourceViewer
                                                      && !contentsView.showFormattedTextRenderer
     readonly property bool resourceBlocksRenderedInlineByRichTextEditor: contentsView.legacyInlineEditorActive
                                                                         && !contentsView.preferNativeInputHandling
     readonly property bool programmaticEditorSurfaceSyncActive: contentsView.programmaticEditorSurfaceSyncDepth > 0
-    readonly property bool showDedicatedResourceViewer: contentsView.selectedNoteIsResourcePackage
+    readonly property bool showDedicatedResourceViewer: contentsView.selectedNoteComesFromResourcesHierarchy
+                                                        && contentsView.selectedNoteIsResourcePackage
     readonly property bool showEditorGutter: contentsView.legacyInlineEditorActive
     readonly property bool showFormattedTextRenderer: false
     readonly property bool showStructuredDocumentFlow: contentsView.structuredDocumentFlowEnabled
-                                                       && (structuredBlockRenderer.hasRenderedBlocks
+                                                       && (contentsView.liveResourceStructuredFlowRequested
+                                                           || structuredBlockRenderer.hasRenderedBlocks
                                                            || (structuredBlockRenderer.renderPending
                                                                && contentsView.structuredDocumentFlowActivatedNoteId === contentsView.selectedNoteId
                                                                && contentsView.selectedNoteId.length > 0))
@@ -736,6 +755,14 @@ Item {
         const leadingBreak = currentSourceText.length > 0 && previousCharacter !== "\n" ? "\n" : "";
         const trailingBreak = nextCharacter !== "\n" ? "\n" : "";
         return leadingBreak + blockSourceText + trailingBreak;
+    }
+    function sourceContainsCanonicalResourceTag(sourceText) {
+        const normalizedSourceText = sourceText === undefined || sourceText === null
+                ? ""
+                : String(sourceText);
+        if (normalizedSourceText.length === 0)
+            return false;
+        return /<resource\b[^>]*\/?>/i.test(normalizedSourceText);
     }
     function inlineResourcePreviewWidth() {
         if (contentsView.showPrintEditorLayout)
@@ -1248,6 +1275,24 @@ Item {
         }
         return editorTypingController.queueBreakShortcutInsertion();
     }
+    function requestStructuredDocumentEndEdit() {
+        if (contentsView.showStructuredDocumentFlow
+                && structuredDocumentFlow
+                && structuredDocumentFlow.requestDocumentEndEdit !== undefined) {
+            return structuredDocumentFlow.requestDocumentEndEdit();
+        }
+        const logicalOffset = Math.max(0, contentsView.logicalTextLength());
+        contentEditor.forceActiveFocus();
+        if (contentEditor.setCursorPositionPreservingInputMethod !== undefined) {
+            contentEditor.setCursorPositionPreservingInputMethod(logicalOffset);
+            return true;
+        }
+        if (contentEditor.cursorPosition !== undefined) {
+            contentEditor.cursorPosition = logicalOffset;
+            return true;
+        }
+        return false;
+    }
     function focusStructuredBlockSourceOffset(sourceOffset) {
         if (contentsView.showStructuredDocumentFlow
                 && structuredDocumentFlow
@@ -1582,6 +1627,11 @@ Item {
                 contentsView.structuredDocumentFlowActivatedNoteId = "";
             return;
         }
+        if (contentsView.liveResourceStructuredFlowRequested) {
+            if (contentsView.structuredDocumentFlowActivatedNoteId !== normalizedSelectedNoteId)
+                contentsView.structuredDocumentFlowActivatedNoteId = normalizedSelectedNoteId;
+            return;
+        }
         if (structuredBlockRenderer && structuredBlockRenderer.hasRenderedBlocks) {
             if (contentsView.structuredDocumentFlowActivatedNoteId !== normalizedSelectedNoteId)
                 contentsView.structuredDocumentFlowActivatedNoteId = normalizedSelectedNoteId;
@@ -1633,6 +1683,7 @@ Item {
         contentsView.scheduleGutterRefresh(2);
     }
     onEditorTextChanged: {
+        contentsView.refreshStructuredDocumentFlowActivation();
         contentsView.scheduleMinimapSnapshotRefresh(false);
         if (!contentsView.showStructuredDocumentFlow)
             contentsView.scheduleDocumentPresentationRefresh(false);
@@ -1754,7 +1805,7 @@ Item {
         id: bodyResourceRenderer
 
         bodySourceText: contentsView.selectedNoteBodyNoteId === contentsView.selectedNoteId
-                        ? (contentsView.showStructuredDocumentFlow
+                        ? (contentsView.resourceResolverNeedsLiveEditorSource
                                ? contentsView.editorText
                                : contentsView.documentPresentationSourceText)
                         : ""
@@ -2157,6 +2208,17 @@ Item {
                         interactive: !contentsView.showPrintEditorLayout && contentHeight > height
                         visible: contentsView.showStructuredDocumentFlow && !contentsView.showPrintEditorLayout
                         z: 1
+
+                        TapHandler {
+                            acceptedButtons: Qt.LeftButton
+                            enabled: structuredDocumentViewport.visible
+
+                            onTapped: {
+                                Qt.callLater(function () {
+                                    contentsView.requestStructuredDocumentEndEdit();
+                                });
+                            }
+                        }
                     }
                     ContentsStructuredDocumentFlow {
                         id: structuredDocumentFlow
@@ -2167,7 +2229,9 @@ Item {
                         parent: contentsView.showPrintEditorLayout ? printDocumentSurface : structuredDocumentViewport.contentItem
                         renderedResources: bodyResourceRenderer.renderedResources
                         sourceText: contentsView.editorText
-                        width: contentsView.showPrintEditorLayout ? contentsView.printPaperTextWidth : structuredDocumentViewport.width
+                        width: contentsView.showPrintEditorLayout
+                               ? contentsView.printPaperTextWidth
+                               : Math.max(0, structuredDocumentViewport.width - contentsView.editorHorizontalInset * 2)
                         x: contentsView.showPrintEditorLayout ? (Number(printPaperColumn.x) || 0) + contentsView.printGuideHorizontalInset : contentsView.editorHorizontalInset
                         y: contentsView.showPrintEditorLayout ? (Number(printPaperColumn.y) || 0) + contentsView.printGuideVerticalInset : contentsView.editorDocumentStartY
                         visible: contentsView.showStructuredDocumentFlow

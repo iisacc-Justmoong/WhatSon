@@ -21,6 +21,35 @@ FocusScope {
 
     signal sourceMutationRequested(string nextSourceText, var focusRequest)
 
+    function requestDocumentEndEdit() {
+        const blocks = documentFlow.normalizedBlocks()
+        const currentSourceText = documentFlow.normalizedSourceText(documentFlow.sourceText)
+        if (blocks.length === 0) {
+            documentFlow.requestFocus({ "sourceOffset": currentSourceText.length })
+            return true
+        }
+        const lastBlock = blocks[blocks.length - 1] && typeof blocks[blocks.length - 1] === "object"
+                ? blocks[blocks.length - 1]
+                : ({})
+        const lastBlockType = lastBlock.type !== undefined ? String(lastBlock.type) : "text"
+        if (lastBlockType === "text") {
+            documentFlow.requestFocus({
+                                          "sourceOffset": Math.max(
+                                                              0,
+                                                              Math.floor(Number(lastBlock.sourceEnd) || currentSourceText.length))
+                                      })
+            return true
+        }
+        if (currentSourceText.length > 0 && currentSourceText.charAt(currentSourceText.length - 1) === "\n") {
+            documentFlow.requestFocus({ "sourceOffset": currentSourceText.length })
+            return true
+        }
+        documentFlow.sourceMutationRequested(
+                    currentSourceText + "\n",
+                    { "sourceOffset": currentSourceText.length + 1 })
+        return true
+    }
+
     function normalizedBlocks() {
         if (Array.isArray(documentBlocks))
             return documentBlocks
@@ -510,6 +539,8 @@ FocusScope {
                     ContentsBreakBlock {
                         blockData: blockHost.blockEntry
                         width: blockHost.width
+
+                        onDocumentEndEditRequested: documentFlow.requestDocumentEndEdit()
                     }
                 }
 
@@ -522,6 +553,7 @@ FocusScope {
                         width: blockHost.width
 
                         onActivated: documentFlow.activeBlockIndex = blockHost.blockIndex
+                        onDocumentEndEditRequested: documentFlow.requestDocumentEndEdit()
                     }
                 }
             }

@@ -8,6 +8,9 @@ Hosts the document-native block editor for structured `.wsnbody` content.
 - Also consumes `ContentsBodyResourceRenderer.renderedResources` so `type=resource` blocks can resolve from the
   canonical `<resource ... />` source tag to the real asset file inside the `.wsresource` package.
 - Renders text/agenda/callout/resource/break as one ordered document column.
+- That document column is expected to receive the host's effective note-body width, not the raw editor viewport width.
+  On desktop/mobile screen editor surfaces, the host therefore subtracts its body insets before passing width into the
+  structured-flow surface, keeping inline resource frames aligned with surrounding text content.
 - Rewrites the authoritative RAW source string on every block edit, then asks the parent view to persist the new
   source.
 - Keeps a lightweight focus request channel so shortcut insertion and backend-driven Enter rules can move focus into the
@@ -32,3 +35,9 @@ Hosts the document-native block editor for structured `.wsnbody` content.
   - finally by `resourceId` or `resourcePath`
   This keeps inline resource frames stable even when the note reparse and the resource resolver refresh land on
   adjacent event-loop turns.
+- The host now also exposes `requestDocumentEndEdit()` for editor-shell click-to-append behavior.
+  When the document already ends in a text block, it focuses that block at its end source offset.
+  When the document ends in a non-text block such as `<resource ... />` or `</break>`, it appends one trailing newline
+  to materialize a new text block and then restores focus at that new end-of-document insertion point.
+  If the RAW source has already received that trailing newline but the block parser has not yet caught up, the helper
+  reuses the pending end offset instead of appending a second newline.

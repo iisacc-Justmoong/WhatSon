@@ -57,11 +57,6 @@ Rectangle {
     }
     readonly property bool inlineImagePresentation: resourceCard.inlinePresentation
                                                    && resourceCard.resourceRenderMode === "image"
-    readonly property real inlineImageFrameWidth: Math.max(
-                                                      120,
-                                                      Math.min(
-                                                          Number(resourceCard.width) || 0,
-                                                          Number(inlineImageFrame.implicitWidth) || 480))
     readonly property real previewHeight: resourceCard.inlinePresentation
                                           ? 88
                                           : (resourceCard.resourceRenderMode === "text" ? 96 : 72)
@@ -86,12 +81,16 @@ Rectangle {
         ContentsImageResourceFrame {
             id: inlineImageFrame
 
-            anchors.horizontalCenter: parent.horizontalCenter
             fileNameText: resourceCard.resourceFileName
+            mediaHeightHint: inlineResourceViewer.imagePixelHeight > 0
+                             ? inlineResourceViewer.imagePixelHeight
+                             : 352
+            mediaWidthHint: inlineResourceViewer.imagePixelWidth > 0
+                            ? inlineResourceViewer.imagePixelWidth
+                            : 338
             menuButtonEnabled: resourceCard.resourceOpenable
-            panelColor: resourceCard.cardColor
+            panelColor: "transparent"
             resourceTitle: "Image"
-            width: resourceCard.inlineImageFrameWidth
 
             onMenuRequested: {
                 if (resourceCard.resourceOpenable)
@@ -102,7 +101,7 @@ Rectangle {
                 id: inlineResourceViewer
 
                 anchors.fill: parent
-                imageFillMode: Image.PreserveAspectCrop
+                imageFillMode: Image.PreserveAspectFit
                 resourceEntry: resourceCard.resourceEntry
             }
 

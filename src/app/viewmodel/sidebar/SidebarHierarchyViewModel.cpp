@@ -161,6 +161,7 @@ void SidebarHierarchyViewModel::setViewModelProvider(IHierarchyViewModelProvider
             {
                 emit activeHierarchyViewModelChanged();
                 emit activeNoteListModelChanged();
+                emit activeBindingsChanged();
             });
     }
     else
@@ -171,6 +172,7 @@ void SidebarHierarchyViewModel::setViewModelProvider(IHierarchyViewModelProvider
     emit viewModelProviderChanged();
     emit activeHierarchyViewModelChanged();
     emit activeNoteListModelChanged();
+    emit activeBindingsChanged();
 }
 
 void SidebarHierarchyViewModel::emitActiveBindingsChanged()
@@ -178,4 +180,5 @@ void SidebarHierarchyViewModel::emitActiveBindingsChanged()
     emit activeHierarchyIndexChanged();
     emit activeHierarchyViewModelChanged();
     emit activeNoteListModelChanged();
+    emit activeBindingsChanged();
 }

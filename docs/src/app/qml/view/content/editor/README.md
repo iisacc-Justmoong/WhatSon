@@ -44,6 +44,12 @@
 - `ContentsResourceRenderCard.qml` now centralizes the shared desktop/mobile body-overlay card used for inline note
   resource previews, so file/image/audio/pdf/document presentation no longer duplicates the same card scaffolding in
   both hosts.
+- Inline image resources now compose through `ContentsImageResourceFrame.qml` as transparent border-only cards whose
+  runtime width follows the editor block width and whose height follows the loaded bitmap aspect ratio.
+- The dedicated `ContentsResourceViewer.qml` full-surface mode is now reserved for direct resource-package browsing
+  from the Resources hierarchy.
+  Inline `<resource ... />` tags inside ordinary note bodies must stay inside the authored document flow instead of
+  replacing the editor surface.
 - `ContentsEditorTypingController.qml` now owns ordinary text-entry mutation routing so typing no longer reserializes
   the whole RichText surface on every edit.
 - Desktop/mobile editor views now keep a separate presentation timer for whole-document markdown/RichText refresh, so

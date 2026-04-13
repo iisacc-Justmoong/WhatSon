@@ -33,6 +33,11 @@ right detail panel.
   hierarchy first. If the active hierarchy publishes its own delete/clear-folder contract
   (`deleteNoteById`, `deleteNotesByIds`, `clearNoteFoldersById`, or `clearNoteFoldersByIds`), that
   contract is used; otherwise the shell falls back to the shared library-note mutation viewmodel.
+- The desktop shell no longer reads the active hierarchy index, active hierarchy viewmodel, and active
+  note-list model as three unrelated live bindings. Instead it snapshots those values together when
+  `SidebarHierarchyViewModel.activeBindingsChanged()` fires, then fans that coherent snapshot out to
+  `ListBarLayout.qml` and `ContentViewLayout.qml`. This prevents library note-list rows from lingering
+  for one frame after the user switches into resources or another hierarchy domain.
 - The contents surface now fills the center panel directly without an additional bottom-partition contract.
 - Sidebar, list, and right-panel splitters continue to own the desktop width-resize flow.
 - Desktop default/min right-panel widths and sidebar horizontal inset now come from `LV.Theme.scaleMetric(...)` /
@@ -50,3 +55,5 @@ right detail panel.
     `Library`.
   - `Delete` / `Backspace` from `ListBarLayout` must still route to the active resources-domain
     deletion contract when the resources hierarchy owns the current list.
+  - Switching between library and resources must swap the list/content bindings from one shared snapshot, so the
+    previous hierarchy's note-list rows do not remain visible during the transition turn.
