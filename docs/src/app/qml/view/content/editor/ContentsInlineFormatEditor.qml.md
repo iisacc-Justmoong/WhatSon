@@ -83,6 +83,7 @@ plain `QtQuick.TextEdit` as the actual rendering and input engine.
     replaying intermediate Hangul jamo assembly steps back into the host mutation pipeline
 - Exposes direct Qt-style selection/text helpers on the wrapper itself:
   - `selectionSnapshot()`
+  - `currentPlainText()`
   - `getText(start, end)`
   - `getFormattedText(start, end)`
   - `length`
@@ -131,6 +132,8 @@ plain `QtQuick.TextEdit` as the actual rendering and input engine.
   older surface must be cancelled before it reaches the typing controller
 - the live note editor remains backed by `QtQuick.TextEdit`; no `LV.TextEditor` dependency should be reintroduced
 - direct typing must not surface fragment comment markup such as `<!--StartFragment-->`
+- any controller that needs the current visible plain-text buffer should prefer `currentPlainText()` over rebuilding the
+  same full-surface snapshot ad hoc from nested `TextEdit` state
 - Hangul IME composition must not delete previously committed text when a syllable block is assembled
 - Hangul IME composition must not leave split jamo behind after the committed syllable lands
 - Hangul IME composition and desktop RichText typing must not receive a programmatic `text` reinjection while

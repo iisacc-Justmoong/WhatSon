@@ -35,6 +35,10 @@
   as their real glyphs instead of exposing the literal escape strings.
 - `sourceOffsetForLogicalOffset(...)` exposes that table to QML so selection/context-menu formatting can mutate the
   correct source slice even when the editor cursor operates on rendered plain-text offsets.
+- Those logical offsets now also advance past any immediately adjacent closing proprietary inline-style tags
+  (`</bold>`, `</italic>`, `</underline>`, `</strikethrough>`, `</highlight>`).
+  A visible boundary that sits after the last styled glyph therefore resolves to the RAW position after the zero-width
+  closing tag instead of to the interior edge just before it.
 - `logicalToSourceOffsets()` now exports the cached table in one QML-visible array so the typing controller can reseed
   its incremental mapping state after each idle/blur presentation commit instead of asking C++ for one offset per
   keystroke.
@@ -75,6 +79,9 @@
   intended task instead of drifting to surrounding text.
 - When source contains `<resource ... />`, `logicalText` and `logicalToSourceOffsets()` must reserve the same fixed
   blank-line slot so mobile plain-text editing and desktop overlay positioning both align to the authored resource tag.
+- When the visible caret sits just after a proprietary inline-style run, `sourceOffsetForLogicalOffset(...)` must not
+  point back in front of that closing style tag.
+  Pressing `Enter` or typing more prose there must not split `</highlight>` or expose RAW tag tails in the editor.
 
 ## Extracted Symbols
 - Declared namespaces present: no

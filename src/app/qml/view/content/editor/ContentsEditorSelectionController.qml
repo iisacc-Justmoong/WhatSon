@@ -146,6 +146,8 @@ QtObject {
     }
     function currentEditorPlainText() {
         const surfaceLength = controller.currentEditorSurfaceLength();
+        if (controller.contentEditor && controller.contentEditor.currentPlainText !== undefined)
+            return controller.normalizeSelectionTextValue(controller.contentEditor.currentPlainText());
         if (controller.contentEditor && controller.contentEditor.getText !== undefined)
             return controller.normalizeSelectionTextValue(controller.contentEditor.getText(0, surfaceLength));
         const inputItem = controller.currentEditorInputItem();
@@ -835,6 +837,7 @@ QtObject {
         normalizedText = normalizedText.replace(/\r/g, "\n");
         normalizedText = normalizedText.replace(/\u2028/g, "\n");
         normalizedText = normalizedText.replace(/\u2029/g, "\n");
+        normalizedText = normalizedText.replace(/\u2063/g, "\n");
         normalizedText = normalizedText.replace(/\uFFFC/g, "");
         normalizedText = normalizedText.replace(/\u00a0/g, " ");
         return normalizedText;

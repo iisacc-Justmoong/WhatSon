@@ -44,13 +44,16 @@ It also owns keyboard-driven markdown block toggles for the list types the rende
 ## Range Mapping Rules
 
 - The controller first prefers the live `TextEdit` selection snapshot exposed by `contentEditor.selectionSnapshot()`.
+- When the wrapper exposes `currentPlainText()`, the controller now prefers that single helper for whole-surface
+  plain-text inspection before falling back to direct `getText(...)` calls.
 - Right-click context-menu flows now prime their selection snapshot on mouse press and reuse that cached range when the
   menu opens one event-loop turn later.
 - The primed context-menu snapshot now prefers raw `selectionStart` / `selectionEnd` offsets and reconstructs the full
   selected plain text from `contentEditor.getText(...)`, so one stale/truncated `selectedText` fragment does not shrink
   a multi-block selection down to a single inline tag.
-- Selection text normalization now also strips RichText object-replacement glyphs (`U+FFFC`) and normalizes NBSP back
-  to ordinary spaces, so inline image/resource objects do not pollute plain-text selection inference.
+- Selection text normalization now also strips RichText object-replacement glyphs (`U+FFFC`), converts invisible
+  resource sentinels (`U+2063`) back to logical line breaks, and normalizes NBSP back to ordinary spaces, so inline
+  image/resource objects do not pollute plain-text selection inference.
 - Explicit numeric offsets are only accepted when `contentEditor.getText(start, end)` matches the currently highlighted
   `selectedText`.
 - When numeric offsets disagree with the actual highlighted substring, the controller falls back to selected-text

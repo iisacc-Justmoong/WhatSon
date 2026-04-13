@@ -121,6 +121,7 @@ QtObject {
         normalizedText = normalizedText.replace(/\r/g, "\n");
         normalizedText = normalizedText.replace(/\u2028/g, "\n");
         normalizedText = normalizedText.replace(/\u2029/g, "\n");
+        normalizedText = normalizedText.replace(/\u2063/g, "\n");
         normalizedText = normalizedText.replace(/\uFFFC/g, "");
         normalizedText = normalizedText.replace(/\u00a0/g, " ");
         return normalizedText;
@@ -147,6 +148,18 @@ QtObject {
                     ? ""
                     : String(controller.view.editorText);
         return "";
+    }
+
+    function currentSourceTextSnapshot() {
+        if (controller.view && controller.view.editorText !== undefined)
+            return controller.view.editorText === undefined || controller.view.editorText === null
+                    ? ""
+                    : String(controller.view.editorText);
+        return controller.presentationSourceText();
+    }
+
+    function presentationSnapshotStale() {
+        return controller.currentSourceTextSnapshot() !== controller.presentationSourceText();
     }
 
     function identityOffsetArray(sourceLength) {
@@ -268,6 +281,7 @@ QtObject {
     }
 
     function adoptLiveStateIntoBridge(sourceText) {
+        controller.liveSnapshotSourceText = sourceText === undefined || sourceText === null ? "" : String(sourceText);
         if (!controller.textMetricsBridge
                 || controller.textMetricsBridge.adoptIncrementalState === undefined) {
             return;
@@ -309,9 +323,17 @@ QtObject {
         const currentLineStartOffsets = Array.isArray(controller.liveLogicalLineStartOffsets)
                 ? controller.liveLogicalLineStartOffsets
                 : [];
+        const liveStateValid = currentOffsets.length === controller.liveAuthoritativePlainText.length + 1
+                && currentLineStartOffsets.length > 0;
+        if (controller.presentationSnapshotStale()
+                && liveStateValid
+                && controller.editorSession
+                && controller.editorSession.localEditorAuthority !== undefined
+                && controller.editorSession.localEditorAuthority) {
+            return;
+        }
         if (controller.liveSnapshotSourceText !== snapshotSourceText
-                || currentOffsets.length !== controller.liveAuthoritativePlainText.length + 1
-                || currentLineStartOffsets.length === 0) {
+                || !liveStateValid) {
             controller.synchronizeLiveEditingStateFromPresentation();
         }
     }
@@ -334,7 +356,11 @@ QtObject {
     }
 
     function currentEditorPlainText() {
-        if (!controller.contentEditor || controller.contentEditor.getText === undefined)
+        if (!controller.contentEditor)
+            return controller.authoritativeSourcePlainText();
+        if (controller.contentEditor.currentPlainText !== undefined)
+            return controller.normalizePlainText(controller.contentEditor.currentPlainText());
+        if (controller.contentEditor.getText === undefined)
             return controller.authoritativeSourcePlainText();
         const editorLength = controller.contentEditor.length !== undefined
                 ? Math.max(0, Number(controller.contentEditor.length) || 0)

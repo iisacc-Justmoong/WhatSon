@@ -832,6 +832,12 @@ Item {
             lines.push(contentsView.richTextParagraphHtml("&nbsp;"));
         return lines.join("");
     }
+    function inlineResourcePlaceholderSentinelHtml(lineCount) {
+        const placeholderLineCount = Math.max(0, Math.floor(Number(lineCount) || 0));
+        if (placeholderLineCount <= 1)
+            return "";
+        return Array(placeholderLineCount).join("&#8291;");
+    }
     function resourcePlaceholderBlockHtml() {
         return contentsView.inlineResourcePlaceholderHtml(contentsView.resourceEditorPlaceholderLineCount);
     }
@@ -841,10 +847,16 @@ Item {
         const sourceUrl = contentsView.resourceEntryOpenTarget(safeEntry);
         const encodedSourceUrl = contentsView.encodeXmlAttributeValue(sourceUrl);
         const previewWidth = contentsView.inlineResourcePreviewWidth();
+        const logicalPlaceholderSentinel = contentsView.inlineResourcePlaceholderSentinelHtml(
+                    contentsView.resourceEditorPlaceholderLineCount);
         if (renderMode === "image" && encodedSourceUrl.length > 0) {
-            return "<p align=\"center\" style=\"margin-top:0px;margin-bottom:0px;\">"
+            return "<table width=\"100%\" cellspacing=\"0\" cellpadding=\"0\" style=\"margin-top:0px;margin-bottom:0px;\">"
+                    + "<tr><td align=\"center\">"
                     + "<img src=\"" + encodedSourceUrl + "\" width=\"" + String(previewWidth) + "\" />"
-                    + "</p>";
+                    + "</td></tr></table>"
+                    + "<span style=\"font-size:0px;line-height:0px;color:transparent;\">"
+                    + logicalPlaceholderSentinel
+                    + "</span>";
         }
         return contentsView.resourcePlaceholderBlockHtml();
     }

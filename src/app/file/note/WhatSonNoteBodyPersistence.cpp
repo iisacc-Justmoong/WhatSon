@@ -1679,6 +1679,15 @@ namespace WhatSon::NoteBodyPersistence
                 return fallbackSourceText;
             }
         }
+        if (normalizedSourceText.isEmpty())
+        {
+            const QString plainTextFallback = structuredTagLinter.normalizeStructuredSourceText(
+                plainTextFromBodyDocument(bodyDocumentText));
+            if (!plainTextFallback.isEmpty())
+            {
+                return plainTextFallback;
+            }
+        }
         return normalizedSourceText;
     }
 

@@ -22,7 +22,8 @@ This controller exists to keep plain typing separate from inline-format applicat
   - the previous authoritative plain text
   - logical line-start offsets
   - the logical-to-source offset table needed to splice `.wsnbody`
-- Reads the live edited plain text from `contentEditor.getText(0, length)`.
+- Reads the live edited plain text from `contentEditor.currentPlainText()` when the wrapper exposes it, falling back to
+  `contentEditor.getText(0, length)` only for legacy editor surfaces.
 - The controller now treats that plain-text delta path as the only authoritative edit path for ordinary typing.
   It no longer reverse-normalizes the whole RichText surface back into RAW source during same-note typing because the
   rendered agenda/callout surface is intentionally lossy and can collapse the note back to the note-open session
@@ -130,6 +131,13 @@ This controller exists to keep plain typing separate from inline-format applicat
 - After each accepted typing mutation, the controller now pushes that incremental logical-text / line-start /
   logical-to-source state back into `ContentsLogicalTextBridge` through `adoptIncrementalState(...)`, so gutter,
   selection, and cursor helpers do not need a whole-note bridge rebuild to stay current while the user is typing.
+- That bridge-adoption step now also advances the controller's own `liveSnapshotSourceText` to the just-written RAW
+  source snapshot.
+- While `editorSession.localEditorAuthority` is still active and `documentPresentationSourceText` lags behind the live
+  RAW `editorText`, the controller now keeps trusting that incremental live cache instead of reseeding from the stale
+  presentation snapshot.
+  This prevents one deferred RichText/presentation refresh from rolling the typing diff base back to an older note
+  snapshot and duplicating already committed prose into RAW.
 - Line-start offsets are now rebuilt from the post-edit logical text on every accepted mutation instead of splice-
   merging prior offsets.
   This keeps line-count shrink cases (line-wrap collapse, newline deletion, paragraph merge) from leaving stale line
@@ -166,10 +174,14 @@ structured-block projection do not re-enter the normal typing path.
 - Plain-text comparison normalizes:
   - CRLF / CR -> LF
   - `U+2028` / `U+2029` -> LF
+  - invisible resource sentinels (`U+2063`) -> LF
   - RichText object-replacement glyphs (`U+FFFC`) -> removed
   - NBSP -> regular space
 - That object-replacement normalization lets the live RichText surface contain real inline image/resource objects while
   the typing diff path still compares only canonical logical `.wsnbody` text.
+- The same normalization now also treats the invisible RichText resource sentinel as one logical line break.
+  Inline image blocks can therefore keep the same placeholder-length contract as `ContentsLogicalTextBridge` without
+  exposing those bookkeeping characters on screen.
 - The source-side splice path escapes literal text before inserting it into `.wsnbody`, so ordinary typing cannot
   inject raw inline tags accidentally.
 - Markdown-style prefixes such as `1. `, `- `, `# `, `> `, and `` ``` `` still enter the source as literal typed text;
@@ -258,6 +270,10 @@ structured-block projection do not re-enter the normal typing path.
   when the committed edit batch includes both the final typed characters and the newline.
 - Pressing the first `Enter` on a newly typed unordered markdown line must still persist a real source marker and the
   continued next marker even when the committed edit batch contains the whole logical line plus newline.
+- Leaving a note and reopening it after same-note typing must not blank the editor just because the RichText
+  presentation cache had not caught up to the latest RAW snapshot yet.
+- Ordinary prose typing must not duplicate previously committed text into RAW when `documentPresentationSourceText`
+  is one or more turns behind the live `editorText`.
 - Pressing `Enter` on a non-empty ordered markdown list line should persist the incremented next prefix (`1.` -> `2.`,
   `3)` -> `4)`).
 - Pressing `Enter` on an empty continued ordered markdown list item (`1. ` / `1) ` with no body text) should remove the

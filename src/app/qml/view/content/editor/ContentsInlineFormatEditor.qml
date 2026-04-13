@@ -91,6 +91,13 @@ FocusScope {
         return textInput.getText(start, end);
     }
 
+    function currentPlainText() {
+        const maximumLength = Number(textInput.length) || 0;
+        if (textInput.getText !== undefined)
+            return textInput.getText(0, maximumLength);
+        return textInput.text === undefined || textInput.text === null ? "" : String(textInput.text);
+    }
+
     function getFormattedText(start, end) {
         return textInput.getFormattedText(start, end);
     }

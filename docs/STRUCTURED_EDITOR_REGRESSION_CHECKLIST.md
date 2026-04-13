@@ -68,6 +68,11 @@ structured document-flow editor changes.
   - whether an empty body is an explicit fallback for that selected note rather than a stale carry-over
 - Editor/bridge APIs must not replace omitted `noteId` arguments with whichever note happens to be selected at that
   moment.
+- After typing in one note, switching away, and returning to that same note, the editor body must rehydrate from the
+  saved RAW snapshot instead of reopening as blank.
+- Note-list preview text, loaded editor text, and the saved RAW paragraph text must remain the same logical content.
+  One stale presentation snapshot must not cause repeated prose duplication in RAW while the editor surface still looks
+  normal.
 
 ## Resource Drop Import
 - Dropping one or more local files onto the desktop/mobile editor must create matching `.wsresource` package
@@ -106,6 +111,11 @@ structured document-flow editor changes.
   and the paragraph below, matching the markdown-style reference flow instead of collapsing every block together.
 - In RichText editor mode, dropping an image must render at the authored body slot as part of the RichText document
   itself, and later paragraphs must remain below that image in ordinary body flow.
+- In RichText editor mode, centering used for the inline image block must stay local to that image slot.
+  Paragraphs rendered or typed below the image must return to the ordinary left-aligned note-body column.
+- Typing immediately after an inline image resource must keep both the `<resource ... />` RAW token and the newly
+  typed prose.
+  The editor must neither erase the finished word nor drop the resource block into memory-only presentation state.
 - Inline image rendering must still work when the active hierarchy view-model does not expose
   `noteDirectoryPathForNoteId(QString)` or when hierarchy switching momentarily leaves the content surface bound to the
   previous domain view-model.
@@ -166,6 +176,8 @@ structured document-flow editor changes.
   must keep the remaining prose as one contiguous paragraph tail.
   Structured-flow reparsing must not re-focus inside the closing style tag and peel the tail into one-character
   `<paragraph>` nodes such as `이`, `제`, `안`, `그`, `러`.
+- Pressing `Enter` at the end of a highlighted run and then continuing to type plain prose must not expose literal
+  RAW tails such as `/highlight>` or `</highlight>` on the editor surface.
 - Ordinary typing inside a structured text block must not reconstruct RAW from RichText DOM/HTML.
   The saved `.wsnbody` must come only from RAW-source range replacement plus reparsing, not from serializing the
   rendered editor surface.

@@ -195,7 +195,7 @@ function sourceOffsetForInlineTaggedLogicalOffset(value, logicalOffset) {
         sourceOffset += 1
         visibleCursor += 1
     }
-    return sourceOffset
+    return advanceSourceOffsetPastClosingInlineStyleTags(sourceText, sourceOffset)
 }
 
 function advanceSourceOffsetPastClosingInlineStyleTags(value, sourceOffset) {

@@ -26,7 +26,11 @@ FocusScope {
     }
 
     function currentEditorPlainText() {
-        if (!blockEditor || blockEditor.getText === undefined)
+        if (!blockEditor)
+            return textBlock.authoritativePlainText()
+        if (blockEditor.currentPlainText !== undefined)
+            return StructuredCursorSupport.normalizedPlainText(blockEditor.currentPlainText())
+        if (blockEditor.getText === undefined)
             return textBlock.authoritativePlainText()
         const editorLength = blockEditor.length !== undefined
                 ? Math.max(0, Number(blockEditor.length) || 0)

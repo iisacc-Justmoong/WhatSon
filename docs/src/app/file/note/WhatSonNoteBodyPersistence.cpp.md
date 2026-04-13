@@ -25,6 +25,11 @@ The file now also contains the shared XML-to-plain-text extraction path used by 
   editor-facing inline tags such as `<bold>...</bold>` and `<resource ... />`, instead of returning RichText spans.
   Stored `<tag>label</tag>` elements are intentionally projected back to visible editor text as `#label` so the
   user keeps editing the hashtag they originally typed instead of raw XML.
+- If that canonical source projection unexpectedly collapses to an empty string for a non-empty body, the read path now
+  falls back to the parsed plain-text projection from the same `.wsnbody` payload instead of returning a blank editor
+  buffer.
+  This keeps note reopen/load behavior aligned with the saved RAW body text even when the source extractor cannot fully
+  recover a malformed or partially canonicalized document.
 - The canonical single divider token `</break>` is now preserved end-to-end:
   - editor/source projection keeps `</break>`
   - `.wsnbody` body XML stores `<break/>` (valid XML)
@@ -113,3 +118,5 @@ text projections still show `#label`.
   editor lines on load so renderer-owned cards can be rebuilt immediately from the RAW tags.
 - Legacy/self-closing/non-canonical structured tags must rehydrate into canonical editor RAW source whenever the linter
   can repair them safely.
+- Reopening a note whose saved `.wsnbody` still contains visible paragraph text must not yield an empty editor body
+  solely because canonical inline-tag source extraction returned `""`.

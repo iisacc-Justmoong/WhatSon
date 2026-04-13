@@ -89,6 +89,47 @@ namespace
             || normalizedTagName == QStringLiteral("hr");
     }
 
+    bool isInlineStyleTagName(const QString& tagName)
+    {
+        return tagName == QStringLiteral("bold")
+            || tagName == QStringLiteral("b")
+            || tagName == QStringLiteral("strong")
+            || tagName == QStringLiteral("italic")
+            || tagName == QStringLiteral("i")
+            || tagName == QStringLiteral("em")
+            || tagName == QStringLiteral("underline")
+            || tagName == QStringLiteral("u")
+            || tagName == QStringLiteral("strikethrough")
+            || tagName == QStringLiteral("strike")
+            || tagName == QStringLiteral("s")
+            || tagName == QStringLiteral("del")
+            || tagName == QStringLiteral("highlight")
+            || tagName == QStringLiteral("mark");
+    }
+
+    int advanceSourceOffsetPastClosingInlineStyleTags(const QString& text, int sourceOffset)
+    {
+        int boundedOffset = std::clamp(sourceOffset, 0, boundedQStringSize(text));
+        while (boundedOffset < text.size() && text.at(boundedOffset) == QLatin1Char('<'))
+        {
+            const int tagEnd = text.indexOf(QLatin1Char('>'), boundedOffset + 1);
+            if (tagEnd <= boundedOffset)
+            {
+                break;
+            }
+
+            const QStringView tagToken(text.constData() + boundedOffset, tagEnd - boundedOffset + 1);
+            const QString normalizedTagName = normalizedHtmlTagName(tagToken);
+            if (!isClosingHtmlTagToken(tagToken) || !isInlineStyleTagName(normalizedTagName))
+            {
+                break;
+            }
+
+            boundedOffset = tagEnd + 1;
+        }
+        return boundedOffset;
+    }
+
     int htmlEntityLengthAt(const QString& text, const int sourceOffset)
     {
         if (sourceOffset < 0
@@ -544,7 +585,10 @@ QVector<int> ContentsLogicalTextBridge::buildLogicalToSourceOffsets(const QStrin
                         if (agendaTaskCount > 0 && logicalOffset < safeLogicalTextLength)
                         {
                             ++logicalOffset;
-                            offsets.push_back(tagEnd + 1);
+                            offsets.push_back(
+                                advanceSourceOffsetPastClosingInlineStyleTags(
+                                    normalizedText,
+                                    tagEnd + 1));
                         }
                         ++agendaTaskCount;
                     }
@@ -561,7 +605,10 @@ QVector<int> ContentsLogicalTextBridge::buildLogicalToSourceOffsets(const QStrin
                              ++lineIndex)
                         {
                             ++logicalOffset;
-                            offsets.push_back(tagEnd + 1);
+                            offsets.push_back(
+                                advanceSourceOffsetPastClosingInlineStyleTags(
+                                    normalizedText,
+                                    tagEnd + 1));
                         }
                     }
                     sourceOffset = tagEnd + 1;
@@ -573,7 +620,10 @@ QVector<int> ContentsLogicalTextBridge::buildLogicalToSourceOffsets(const QStrin
                     if (!closingTag && logicalOffset < safeLogicalTextLength)
                     {
                         ++logicalOffset;
-                        offsets.push_back(tagEnd + 1);
+                        offsets.push_back(
+                            advanceSourceOffsetPastClosingInlineStyleTags(
+                                normalizedText,
+                                tagEnd + 1));
                     }
                     sourceOffset = tagEnd + 1;
                     continue;
@@ -582,7 +632,10 @@ QVector<int> ContentsLogicalTextBridge::buildLogicalToSourceOffsets(const QStrin
                 if (htmlTagProducesLogicalBreak(tagToken))
                 {
                     ++logicalOffset;
-                    offsets.push_back(tagEnd + 1);
+                    offsets.push_back(
+                        advanceSourceOffsetPastClosingInlineStyleTags(
+                            normalizedText,
+                            tagEnd + 1));
                 }
                 sourceOffset = tagEnd + 1;
                 continue;
@@ -594,13 +647,19 @@ QVector<int> ContentsLogicalTextBridge::buildLogicalToSourceOffsets(const QStrin
         {
             sourceOffset += entityLength;
             ++logicalOffset;
-            offsets.push_back(sourceOffset);
+            offsets.push_back(
+                advanceSourceOffsetPastClosingInlineStyleTags(
+                    normalizedText,
+                    sourceOffset));
             continue;
         }
 
         ++sourceOffset;
         ++logicalOffset;
-        offsets.push_back(sourceOffset);
+        offsets.push_back(
+            advanceSourceOffsetPastClosingInlineStyleTags(
+                normalizedText,
+                sourceOffset));
     }
 
     while (offsets.size() < safeLogicalTextLength + 1)

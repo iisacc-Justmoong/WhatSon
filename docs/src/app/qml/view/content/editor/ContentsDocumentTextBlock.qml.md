@@ -6,6 +6,8 @@ Renders one plain-text document segment inside the structured document-flow edit
 ## Key Behavior
 - Uses `ContentsTextFormatRenderer.editorSurfaceHtml` so inline style tags still render as styled text instead of raw
   markup.
+- When the shared inline-editor wrapper exposes `currentPlainText()`, the block now uses that helper as its current
+  visible plain-text snapshot before diffing RAW block source.
 - The live block-edit path no longer converts edited RichText surface HTML back into canonical source.
   It now derives a plain-text delta from the previous RAW block source vs the current visible text, maps that delta
   back into source offsets with `ContentsStructuredCursorSupport.js`, and applies the replacement directly to the RAW
