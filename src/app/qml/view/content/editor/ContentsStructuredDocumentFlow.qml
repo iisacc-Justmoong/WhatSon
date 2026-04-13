@@ -11,6 +11,7 @@ FocusScope {
     property var agendaBackend: null
     property var calloutBackend: null
     property var documentBlocks: []
+    property var renderedResources: []
     property string sourceText: ""
     property int activeBlockIndex: -1
     property var pendingFocusRequest: null
@@ -27,6 +28,18 @@ FocusScope {
             const normalized = []
             for (let index = 0; index < documentBlocks.length; ++index)
                 normalized.push(documentBlocks[index])
+            return normalized
+        }
+        return []
+    }
+
+    function normalizedResourceEntries() {
+        if (Array.isArray(renderedResources))
+            return renderedResources
+        if (renderedResources && renderedResources.length !== undefined) {
+            const normalized = []
+            for (let index = 0; index < renderedResources.length; ++index)
+                normalized.push(renderedResources[index])
             return normalized
         }
         return []
@@ -95,6 +108,43 @@ FocusScope {
         const sourceStart = Math.max(0, Math.floor(Number(safeBlock.sourceStart) || 0))
         const sourceEnd = Math.max(sourceStart, Math.floor(Number(safeBlock.sourceEnd) || sourceStart))
         return sourceOffset >= sourceStart && sourceOffset <= sourceEnd
+    }
+
+    function resourceEntryForBlock(blockEntry) {
+        const safeBlock = blockEntry && typeof blockEntry === "object" ? blockEntry : ({})
+        const blockResourceIndex = Math.floor(Number(safeBlock.resourceIndex) || -1)
+        const blockSourceStart = Math.max(0, Math.floor(Number(safeBlock.sourceStart) || 0))
+        const blockSourceEnd = Math.max(blockSourceStart, Math.floor(Number(safeBlock.sourceEnd) || blockSourceStart))
+        const blockResourceId = safeBlock.resourceId !== undefined ? String(safeBlock.resourceId).trim() : ""
+        const blockResourcePath = safeBlock.resourcePath !== undefined ? String(safeBlock.resourcePath).trim() : ""
+        const resourceEntries = documentFlow.normalizedResourceEntries()
+
+        for (let index = 0; index < resourceEntries.length; ++index) {
+            const entry = resourceEntries[index] && typeof resourceEntries[index] === "object" ? resourceEntries[index] : ({})
+            const entryIndex = Math.floor(Number(entry.index) || -1)
+            if (blockResourceIndex >= 0 && entryIndex === blockResourceIndex)
+                return entry
+        }
+
+        for (let index = 0; index < resourceEntries.length; ++index) {
+            const entry = resourceEntries[index] && typeof resourceEntries[index] === "object" ? resourceEntries[index] : ({})
+            const entrySourceStart = Math.max(0, Math.floor(Number(entry.sourceStart) || 0))
+            const entrySourceEnd = Math.max(entrySourceStart, Math.floor(Number(entry.sourceEnd) || entrySourceStart))
+            if (entrySourceStart === blockSourceStart && entrySourceEnd === blockSourceEnd)
+                return entry
+        }
+
+        for (let index = 0; index < resourceEntries.length; ++index) {
+            const entry = resourceEntries[index] && typeof resourceEntries[index] === "object" ? resourceEntries[index] : ({})
+            const entryResourceId = entry.resourceId !== undefined ? String(entry.resourceId).trim() : ""
+            const entryResourcePath = entry.resourcePath !== undefined ? String(entry.resourcePath).trim() : ""
+            if (blockResourceId.length > 0 && entryResourceId === blockResourceId)
+                return entry
+            if (blockResourcePath.length > 0 && entryResourcePath === blockResourcePath)
+                return entry
+        }
+
+        return ({})
     }
 
     function focusTargetBlockIndex(request) {
@@ -390,6 +440,8 @@ FocusScope {
                                      ? agendaBlockDelegate
                                      : blockHost.blockType === "callout"
                                        ? calloutBlockDelegate
+                                       : blockHost.blockType === "resource"
+                                         ? resourceBlockDelegate
                                        : blockHost.blockType === "break"
                                          ? breakBlockDelegate
                                          : textBlockDelegate
@@ -458,6 +510,18 @@ FocusScope {
                     ContentsBreakBlock {
                         blockData: blockHost.blockEntry
                         width: blockHost.width
+                    }
+                }
+
+                Component {
+                    id: resourceBlockDelegate
+
+                    ContentsResourceBlock {
+                        blockData: blockHost.blockEntry
+                        resourceEntry: documentFlow.resourceEntryForBlock(blockHost.blockEntry)
+                        width: blockHost.width
+
+                        onActivated: documentFlow.activeBlockIndex = blockHost.blockIndex
                     }
                 }
             }

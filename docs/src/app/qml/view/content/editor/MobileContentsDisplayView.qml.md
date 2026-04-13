@@ -4,17 +4,21 @@
 Mobile content editor host.
 
 ## Structured Document Flow
-- `agenda`, `callout`, and `break` remain `.wsnbody` body tags and no longer auto-promote the note into a separate
-  structured editor surface.
-- Mobile currently keeps `structuredDocumentFlowEnabled: false`, so shortcut insertion and note-open stay on the
-  legacy single-editor/body-overlay path even when `ContentsStructuredBlockRenderer` detects structured tags.
-- `ContentsStructuredDocumentFlow.qml` remains in the tree as an experimental surface, but it is not the default note
-  editing presentation.
+- `agenda`, `callout`, `resource`, and `break` remain `.wsnbody` body tags, but mobile now only promotes the note into
+  the structured document-flow surface when that note also owns at least one resolved body resource slot.
+- Mobile now gates `structuredDocumentFlowEnabled` off `bodyResourceRenderer.resourceCount > 0`, so plain notes and
+  non-resource structured tags stay on the legacy editor path while inline-resource notes switch into the shared block
+  flow.
+- `ContentsStructuredDocumentFlow.qml` is therefore active for resource-bearing notes as well, so mobile uses the same
+  body-owned QML block path as desktop instead of leaving inline resources to a detached overlay.
 - Structured block rewrites route through `applyDocumentSourceMutation(...)` so mobile keeps the same RAW persistence
   contract as desktop, but they no longer force an immediate full legacy presentation rebuild while structured-flow
   editing remains active.
 - While structured-flow mode is active, mobile also disconnects the hidden legacy agenda/callout overlay models so note
   open does not pay for both rendering paths at once.
+- The same structured-flow surface now also receives `bodyResourceRenderer.renderedResources`, letting mobile resource
+  blocks resolve from `<resource ... />` to the actual asset file inside the referenced `.wsresource` package before
+  `ContentsResourceRenderCard` paints the inline frame.
 - The legacy mobile `ContentsInlineFormatEditor` now unloads entirely during structured-flow editing and is recreated only
   when the fallback plain-text path becomes active again.
 - Mobile keeps a lightweight proxy object behind the shared `contentEditor` reference so existing geometry/focus helpers
@@ -80,6 +84,10 @@ Mobile content editor host.
   `<resource ... />` link attempt, keeping `.wsresource` package creation and `.wsnbody` linking on one stable editor
   turn while still refreshing the runtime for successful package registration.
 - Mobile now also carries the same `whatson-resource-block` upgrade helper as desktop.
+- Once the selected note has entered structured-flow mode, mobile now prefers `ContentsResourceBlock.qml` in the shared
+  structured document host for inline resource display instead of depending on the RichText placeholder upgrade path.
+- In structured-flow mode, `ContentsBodyResourceRenderer` now follows the live `editorText` source directly so resource
+  blocks can refresh against the current RAW note text without waiting for the legacy presentation snapshot.
 - When mobile later enters the RichText projection path, resolved image resources can be rewritten into real RichText
   `<img>` paragraphs using the renderer-resolved resource URL, without the old trailing blank placeholder paragraphs.
 - The current default mobile native-input path still keeps actual image paint on the source-aligned resource layer.
@@ -120,6 +128,8 @@ Mobile content editor host.
 - The shared minimap slot now also keeps a fixed layout width while visible.
   This matches the desktop contract and prevents sibling editor content from collapsing the minimap column to zero
   width if the mobile host ever enables that rail.
+- The mobile editor host likewise pins its inner `RowLayout` to `Qt.LeftToRight`, so the shared gutter/editor/minimap
+  column order cannot flip under inherited layout-direction changes.
 - Mobile now also drives `ContentsInlineFormatEditor.blockExternalDropMutation` from
   `resourceDropActive || resourceDropEditorSurfaceGuardActive`, so the nested `TextEdit` turns read-only as soon as a
   valid external file drag is hovering over the editor and stays frozen until the dedicated resource-drop turn

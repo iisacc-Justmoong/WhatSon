@@ -87,6 +87,9 @@ structured document-flow editor changes.
   call as its own source block instead of embedding the tag inline inside adjacent prose text.
 - After the tag insertion completes, the same selected note must show the new resource frame at the authored body slot
   before a later manual note reopen or explicit filesystem refresh.
+- A `<resource ... path=".../.wsresource" />` body slot must resolve through that package's `resource.xml` metadata to
+  the actual internal asset file before image rendering.
+  The inline bitmap viewer must never try to open the `.wsresource` directory path itself as if it were the payload.
 - Later text in that same note must flow below the inline resource frame; the card must not overlap subsequent
   paragraphs just because the tag itself is zero-width source markup.
 - In RichText editor mode, dropping an image must render at the authored body slot as part of the RichText document
@@ -96,6 +99,10 @@ structured document-flow editor changes.
   previous domain view-model.
 - In RichText editor mode, the rendered body should stay on paragraph/image document flow that is close to Qt raw
   RichText/RTF layout, rather than one flat `<br/>` chain plus hidden spacer overlays.
+- Once a note contains at least one body `<resource ... />` tag, the structured document-flow host must activate after
+  the first settled same-note parse instead of keeping that resource on a legacy overlay-only path.
+- In structured-flow mode, a `type=resource` block must render through the same image frame card used elsewhere in the
+  editor, and it must occupy real document height in the block column rather than an overlay aligned on top of text.
 - After an inline image resource is present in the editor body, typing one additional character elsewhere in that note
   must not treat the RichText image object itself as a new plain-text character during diffing or persistence.
 - A programmatic resource/body presentation rebuild must not persist the superseded placeholder surface back into
@@ -114,3 +121,5 @@ structured document-flow editor changes.
   must not leave partial source remnants behind.
 - The right-side editor minimap must remain visible after note open and after later layout mutations.
   Adjacent editor/resource/detail content must not compress the minimap rail to zero width.
+- The editor column order must remain gutter on the left, editor in the center, minimap on the right.
+  Inherited layout mirroring or direction changes elsewhere in the app must not flip that order.

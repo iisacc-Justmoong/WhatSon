@@ -131,9 +131,10 @@
   `ContentsEditorTypingController.handleEditorTextEdited()` before flushing the previously bound note.
   Combined with the bridge-side pending-body adoption path, this keeps large deletions from being dropped or replaced
   by a stale package read when the user briefly visits another note and comes back.
-- Agenda/callout/break are currently treated as `.wsnbody` body tags first, not as an automatic editor-mode switch.
-  Desktop/mobile hosts therefore keep `structuredDocumentFlowEnabled: false` and stay on the legacy note body editor
-  even when the structured renderer can parse those tags.
+- Agenda/callout/break still stay on the legacy editor path by default, but body `<resource ... />` tags now activate
+  the structured document-flow host once the same note has at least one resolved resource slot.
+  Desktop/mobile hosts therefore gate `structuredDocumentFlowEnabled` off `bodyResourceRenderer.resourceCount > 0`,
+  keeping ordinary notes on the legacy editor while moving inline-resource notes into the document-owned block flow.
 - `ContentsInlineFormatEditor.qml` now emits committed typing directly from the nested `TextEdit.onTextChanged` path
   whenever the change is not programmatic and IME composition has already settled.
   That keeps `ContentsEditorSession.editorText` moving with the visible buffer instead of leaving the note-open body

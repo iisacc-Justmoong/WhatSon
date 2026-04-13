@@ -7,6 +7,7 @@
 #include <QMetaObject>
 #include <QPointer>
 #include <QRegularExpression>
+#include <QStringList>
 #include <QThreadPool>
 #include <QVariantMap>
 
@@ -38,6 +39,11 @@ namespace
             || containsIgnoreCase(sourceText, QStringLiteral("</hr"));
     }
 
+    bool mayContainResourceBlock(const QString& sourceText)
+    {
+        return containsIgnoreCase(sourceText, QStringLiteral("<resource"));
+    }
+
     struct DocumentBlockSpan final
     {
         int end = 0;
@@ -60,6 +66,42 @@ namespace
         return std::clamp(index, 0, static_cast<int>(text.size()));
     }
 
+    QString decodeXmlEntities(QString text)
+    {
+        text.replace(QStringLiteral("&lt;"), QStringLiteral("<"));
+        text.replace(QStringLiteral("&gt;"), QStringLiteral(">"));
+        text.replace(QStringLiteral("&quot;"), QStringLiteral("\""));
+        text.replace(QStringLiteral("&apos;"), QStringLiteral("'"));
+        text.replace(QStringLiteral("&amp;"), QStringLiteral("&"));
+        return text;
+    }
+
+    QString extractXmlAttributeValue(const QString& tagText, const QStringList& attributeNames)
+    {
+        for (const QString& attributeName : attributeNames)
+        {
+            const QRegularExpression attributePattern(
+                QStringLiteral(R"ATTR(\b%1\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+?)(?=\s|/?>)))ATTR")
+                    .arg(QRegularExpression::escape(attributeName)),
+                QRegularExpression::CaseInsensitiveOption);
+            const QRegularExpressionMatch match = attributePattern.match(tagText);
+            if (!match.hasMatch())
+            {
+                continue;
+            }
+
+            for (int captureIndex = 1; captureIndex <= 3; ++captureIndex)
+            {
+                const QString value = decodeXmlEntities(match.captured(captureIndex)).trimmed();
+                if (!value.isEmpty())
+                {
+                    return value;
+                }
+            }
+        }
+        return {};
+    }
+
     QVariantMap textBlockPayload(const QString& sourceText, const int sourceStart, const int sourceEnd)
     {
         const int boundedStart = boundedTextIndex(sourceText, sourceStart);
@@ -75,10 +117,71 @@ namespace
         return payload;
     }
 
+    QVariantList buildRenderedResourceBlocks(const QString& sourceText)
+    {
+        static const QRegularExpression resourceTokenPattern(
+            QStringLiteral(R"(<!--[\s\S]*?-->|<resource\b[^>]*?/?>)"),
+            QRegularExpression::CaseInsensitiveOption);
+
+        QVariantList renderedResources;
+        int resourceIndex = 0;
+        QRegularExpressionMatchIterator iterator = resourceTokenPattern.globalMatch(sourceText);
+        while (iterator.hasNext())
+        {
+            const QRegularExpressionMatch match = iterator.next();
+            const QString resourceTagText = match.captured(0);
+            if (resourceTagText.startsWith(QStringLiteral("<!--")))
+            {
+                continue;
+            }
+
+            const int sourceStart = std::max(0, static_cast<int>(match.capturedStart(0)));
+            const int sourceEnd = std::max(sourceStart, static_cast<int>(match.capturedEnd(0)));
+
+            QVariantMap payload;
+            payload.insert(QStringLiteral("type"), QStringLiteral("resource"));
+            payload.insert(QStringLiteral("sourceStart"), sourceStart);
+            payload.insert(QStringLiteral("sourceEnd"), sourceEnd);
+            payload.insert(QStringLiteral("sourceText"), sourceText.mid(sourceStart, sourceEnd - sourceStart));
+            payload.insert(QStringLiteral("resourceIndex"), resourceIndex);
+            payload.insert(
+                QStringLiteral("resourceType"),
+                extractXmlAttributeValue(
+                    resourceTagText,
+                    {QStringLiteral("type"), QStringLiteral("kind"), QStringLiteral("mime")}).toCaseFolded());
+            payload.insert(
+                QStringLiteral("resourceFormat"),
+                extractXmlAttributeValue(
+                    resourceTagText,
+                    {QStringLiteral("format"), QStringLiteral("ext"), QStringLiteral("extension")}).toCaseFolded());
+            payload.insert(
+                QStringLiteral("resourcePath"),
+                extractXmlAttributeValue(
+                    resourceTagText,
+                    {
+                        QStringLiteral("resourcePath"),
+                        QStringLiteral("path"),
+                        QStringLiteral("src"),
+                        QStringLiteral("href"),
+                        QStringLiteral("url")
+                    }));
+            payload.insert(
+                QStringLiteral("resourceId"),
+                extractXmlAttributeValue(
+                    resourceTagText,
+                    {QStringLiteral("id"), QStringLiteral("resourceId")}));
+            renderedResources.push_back(payload);
+            ++resourceIndex;
+        }
+
+        return renderedResources;
+    }
+
     QVariantList buildRenderedDocumentBlocks(
         const QString& sourceText,
         const QVariantList& agendas,
         const QVariantList& callouts,
+        const QVariantList& resources,
         const bool includeBreakBlocks)
     {
         static const QRegularExpression breakTagPattern(
@@ -89,6 +192,7 @@ namespace
         spans.reserve(
             static_cast<std::size_t>(agendas.size())
             + static_cast<std::size_t>(callouts.size())
+            + static_cast<std::size_t>(resources.size())
             + 8U);
 
         const auto appendStructuredBlocks = [&](const QVariantList& sourceEntries, const QString& typeName) {
@@ -113,6 +217,7 @@ namespace
 
         appendStructuredBlocks(agendas, QStringLiteral("agenda"));
         appendStructuredBlocks(callouts, QStringLiteral("callout"));
+        appendStructuredBlocks(resources, QStringLiteral("resource"));
 
         if (includeBreakBlocks)
         {
@@ -196,6 +301,7 @@ namespace
         const bool agendaBlocksPossible = mayContainAgendaBlock(sourceText);
         const bool calloutBlocksPossible = mayContainCalloutBlock(sourceText);
         const bool breakBlocksPossible = mayContainBreakBlock(sourceText);
+        const bool resourceBlocksPossible = mayContainResourceBlock(sourceText);
         const WhatSonStructuredTagLinter tagLinter;
         ContentsAgendaBackend agendaBackend;
         ContentsCalloutBackend calloutBackend;
@@ -227,10 +333,14 @@ namespace
             snapshot.agendaParseVerification,
             snapshot.calloutParseVerification,
             sourceText);
+        const QVariantList renderedResources = resourceBlocksPossible
+                                                   ? buildRenderedResourceBlocks(sourceText)
+                                                   : QVariantList();
         snapshot.renderedDocumentBlocks = buildRenderedDocumentBlocks(
             sourceText,
             snapshot.renderedAgendas,
             snapshot.renderedCallouts,
+            renderedResources,
             breakBlocksPossible);
         return snapshot;
     }
@@ -458,6 +568,7 @@ bool ContentsStructuredBlockRenderer::shouldRenderInBackground() const noexcept
     return m_backgroundRefreshEnabled
         && (mayContainAgendaBlock(m_sourceText)
             || mayContainCalloutBlock(m_sourceText)
+            || mayContainResourceBlock(m_sourceText)
             || mayContainBreakBlock(m_sourceText));
 }
 

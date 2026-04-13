@@ -267,7 +267,7 @@ Item {
         return entry && typeof entry === "object" ? entry : ({});
     }
     readonly property bool showCurrentLineMarker: contentsView.hasSelectedNote || contentsView.editorText.length > 0 || contentsView.editorInputFocused
-    readonly property bool structuredDocumentFlowEnabled: false
+    readonly property bool structuredDocumentFlowEnabled: bodyResourceRenderer.resourceCount > 0
     readonly property bool legacyInlineEditorActive: !contentsView.showStructuredDocumentFlow
                                                      && !contentsView.showDedicatedResourceViewer
                                                      && !contentsView.showFormattedTextRenderer
@@ -1754,7 +1754,9 @@ Item {
         id: bodyResourceRenderer
 
         bodySourceText: contentsView.selectedNoteBodyNoteId === contentsView.selectedNoteId
-                        ? contentsView.documentPresentationSourceText
+                        ? (contentsView.showStructuredDocumentFlow
+                               ? contentsView.editorText
+                               : contentsView.documentPresentationSourceText)
                         : ""
         contentViewModel: contentsView.contentViewModel
         fallbackContentViewModel: contentsView.libraryHierarchyViewModel
@@ -1959,6 +1961,7 @@ Item {
             anchors.fill: parent
             anchors.leftMargin: contentsView.effectiveFrameHorizontalInset
             anchors.rightMargin: contentsView.effectiveFrameHorizontalInset
+            layoutDirection: Qt.LeftToRight
             spacing: 0
             visible: contentsView.hasSelectedNote
 
@@ -2162,6 +2165,7 @@ Item {
                         calloutBackend: contentsCalloutBackend
                         documentBlocks: structuredBlockRenderer.renderedDocumentBlocks
                         parent: contentsView.showPrintEditorLayout ? printDocumentSurface : structuredDocumentViewport.contentItem
+                        renderedResources: bodyResourceRenderer.renderedResources
                         sourceText: contentsView.editorText
                         width: contentsView.showPrintEditorLayout ? contentsView.printPaperTextWidth : structuredDocumentViewport.width
                         x: contentsView.showPrintEditorLayout ? (Number(printPaperColumn.x) || 0) + contentsView.printGuideHorizontalInset : contentsView.editorHorizontalInset

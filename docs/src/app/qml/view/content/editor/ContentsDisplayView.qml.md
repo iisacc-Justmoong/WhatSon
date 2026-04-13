@@ -4,17 +4,21 @@
 Desktop content editor host.
 
 ## Structured Document Flow
-- `agenda`, `callout`, and `break` remain `.wsnbody` body tags and no longer auto-promote the note into a separate
-  structured editor surface.
-- Desktop currently keeps `structuredDocumentFlowEnabled: false`, so shortcut insertion and note-open stay on the
-  legacy single-editor/body-overlay path even when `ContentsStructuredBlockRenderer` detects structured tags.
-- `ContentsStructuredDocumentFlow.qml` remains in the tree as an experimental surface, but it is not the default note
-  editing presentation.
+- `agenda`, `callout`, `resource`, and `break` remain `.wsnbody` body tags, but desktop now only promotes the note
+  into the structured document-flow surface when the same note also owns at least one resolved body resource slot.
+- Desktop now gates `structuredDocumentFlowEnabled` off `bodyResourceRenderer.resourceCount > 0`, so plain notes and
+  non-resource structured tags stay on the legacy single-editor path while inline-resource notes get the richer body
+  block presentation.
+- `ContentsStructuredDocumentFlow.qml` is therefore no longer dormant: notes with inline resource tags now render
+  those resources as body-owned QML blocks instead of RichText placeholders or offset overlays.
 - Source persistence for block edits now runs through `applyDocumentSourceMutation(...)`, which updates the RAW body,
   marks local authority, optionally restores focus inside the reparsed block, and only forces a full legacy
   presentation rebuild when the note actually falls back out of structured-flow mode.
 - While structured-flow mode is active, legacy agenda/callout overlay layers now receive empty models so hidden fallback
   delegates do not instantiate in parallel with the document-native block flow.
+- The same structured-flow surface now also receives `bodyResourceRenderer.renderedResources`, so a `<resource ... />`
+  block can resolve the actual asset path from inside the referenced `.wsresource` bundle and paint the existing
+  `ContentsImageResourceFrame` card inline in document order.
 - Note-open reconcile is now scheduled through a deferred one-shot helper instead of running synchronously in the
   `selectedNoteIdChanged` turn.
 - The host now tracks one pending note-entry reconcile id and waits for
@@ -81,6 +85,12 @@ Desktop content editor host.
   `.wsresource` registration still refreshes the runtime even when the note-link step fails.
 - Desktop RichText editor presentation still upgrades `whatson-resource-block` placeholders into paragraph-oriented
   document blocks before that HTML is bound into `ContentsInlineFormatEditor`.
+- Once the selected note has entered structured-flow mode, desktop now stops relying on that RichText image upgrade
+  path for inline resource display and instead renders `<resource ... />` through `ContentsResourceBlock.qml` inside
+  `ContentsStructuredDocumentFlow.qml`.
+- In structured-flow mode, `ContentsBodyResourceRenderer` now reads directly from the live `editorText` buffer rather
+  than the lagging RichText presentation snapshot, so inline resource blocks can re-resolve immediately after RAW
+  mutations without waiting for the legacy presentation timer.
 - When `ContentsBodyResourceRenderer` resolves an inline image resource successfully, the placeholder block is now
   rewritten into a real RichText `<img>` paragraph so the bitmap becomes part of the editor's own document flow rather
   than only a body-aligned overlay.
@@ -143,6 +153,9 @@ Desktop content editor host.
 - The desktop minimap slot is now also pinned to a fixed layout width while visible.
   The right-side minimap therefore keeps its column even when the central editor viewport expands aggressively inside
   the shared `RowLayout`.
+- The desktop editor `RowLayout` now also declares `layoutDirection: Qt.LeftToRight` explicitly.
+  Gutter -> editor viewport -> minimap ordering therefore stays stable even if ambient layout mirroring or inherited
+  direction settings change elsewhere in the shell.
 
 ## Legacy Surface
 - The single `ContentsInlineFormatEditor` and overlay layers still remain the fallback path for notes without any

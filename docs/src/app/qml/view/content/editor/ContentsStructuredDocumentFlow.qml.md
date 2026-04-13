@@ -5,7 +5,9 @@ Hosts the document-native block editor for structured `.wsnbody` content.
 
 ## Key Behavior
 - Consumes `ContentsStructuredBlockRenderer.renderedDocumentBlocks`.
-- Renders text/agenda/callout/break as one ordered document column.
+- Also consumes `ContentsBodyResourceRenderer.renderedResources` so `type=resource` blocks can resolve from the
+  canonical `<resource ... />` source tag to the real asset file inside the `.wsresource` package.
+- Renders text/agenda/callout/resource/break as one ordered document column.
 - Rewrites the authoritative RAW source string on every block edit, then asks the parent view to persist the new
   source.
 - Keeps a lightweight focus request channel so shortcut insertion and backend-driven Enter rules can move focus into the
@@ -24,3 +26,9 @@ Hosts the document-native block editor for structured `.wsnbody` content.
   - successful application clears the pending request instead of retaining an incrementing replay token
 - Large block lists still load delegate instances asynchronously, but late-loaded delegates now replay focus only when
   they are the resolved target block instead of rebroadcasting the request through the whole block tree.
+- Resource blocks resolve their render payload in three passes:
+  - first by shared `resourceIndex`
+  - then by matching `sourceStart/sourceEnd`
+  - finally by `resourceId` or `resourcePath`
+  This keeps inline resource frames stable even when the note reparse and the resource resolver refresh land on
+  adjacent event-loop turns.
