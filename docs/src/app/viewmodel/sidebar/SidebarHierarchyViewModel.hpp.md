@@ -6,3 +6,5 @@
 ## Interface Alignment
 - Now implements `IActiveHierarchySource`.
 - This allows startup runtime coordination to observe activation changes without depending on the full sidebar implementation type.
+- `activeHierarchyIndex() const noexcept` is now explicitly marked `override`, keeping the declaration aligned with the
+  pure virtual interface contract and removing compiler warning noise during generated-moc builds.

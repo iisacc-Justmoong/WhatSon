@@ -58,6 +58,9 @@ The file now also contains the shared XML-to-plain-text extraction path used by 
   - `highlight` / `mark` -> styled `span` (`background-color:#8A4B00; color:#D6AE58; font-weight:600`)
   - divider block tags (`<break/>` and legacy `<hr/>`) -> `<hr/>`
 - Before XML parsing, resource tags are normalized into strict empty-element form (`<resource ... />`), so the body parser still works when notes contain shorthand resource tags such as `<resource ...>` or unquoted attribute values.
+- The resource-preserving fallback source extractor now reuses the same shared anonymous-namespace whitespace and
+  standalone-block normalization helpers as the canonical parser path, so those normalization rules stay defined in
+  one place inside this translation unit.
 - Rich HTML `<span style=...>` runs are reduced into canonical inline tags before writing. This keeps storage format stable while still accepting LV text editor RichText output.
 - Markdown-presentation spans are matched against `WhatSonNoteMarkdownStyleObject` before the generic CSS heuristics
   run. This makes heading/blockquote/link/code promotion intentional and lets marker-only spans suppress generic style

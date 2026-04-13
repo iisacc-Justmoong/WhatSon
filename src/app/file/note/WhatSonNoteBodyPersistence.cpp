@@ -22,6 +22,9 @@ namespace
         QStringList blockRichLines;
     };
 
+    QString removeInterTagFormattingWhitespace(QString text);
+    QString normalizeStructuredBlocksToStandaloneLines(const QString& sourceText);
+
     QString escapeXmlAttributeValue(QString value)
     {
         value.replace(QStringLiteral("&"), QStringLiteral("&amp;"));

@@ -24,7 +24,7 @@ public:
     explicit SidebarHierarchyViewModel(QObject* parent = nullptr);
     ~SidebarHierarchyViewModel() override;
 
-    int activeHierarchyIndex() const noexcept;
+    int activeHierarchyIndex() const noexcept override;
     Q_INVOKABLE void setActiveHierarchyIndex(int index);
 
     QObject* activeHierarchyViewModel() const;
