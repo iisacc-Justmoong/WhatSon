@@ -79,12 +79,18 @@ every turn.
 ### Editor Source of Truth (Critical)
 
 - `.wsnote` and embedded `.wsnbody` content are the only write-authoritative editor state.
+- Every edit path must preserve this order exactly:
+  1. mutate RAW `.wsnote/.wsnbody` source;
+  2. let the always-on parser reparse the latest RAW snapshot;
+  3. render the editor surface only from that parsed projection.
 - Live typing, shortcuts, Enter handling, paste, and drop-driven document mutations must be translated into RAW source
   edits first.
 - Parser and renderer layers may only derive presentation state from RAW source snapshots; they must not become a
   write-authoritative document model.
 - RichText/DOM/QML editor surfaces must never serialize themselves back into persisted note source as the primary save
   path.
+- Temporary RichText fragments, DOM splits, and editor-surface HTML are read-side projection details only; they must
+  not be used as an alternate persistence or formatting authority.
 - Focus restoration, caret movement, and block re-materialization must always be computed against RAW source offsets or
   parser-derived block coordinates, not against incidental DOM structure.
 

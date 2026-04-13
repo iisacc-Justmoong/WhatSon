@@ -25,17 +25,11 @@ public:
 
     Q_INVOKABLE QString renderRichText(const QString& sourceText) const;
     Q_INVOKABLE QString normalizeInlineStyleAliasesForEditor(const QString& sourceText) const;
-    Q_INVOKABLE QString normalizeEditorSurfaceTextToSource(const QString& surfaceText) const;
     Q_INVOKABLE QString applyPlainTextReplacementToSource(
         const QString& sourceText,
         int sourceStart,
         int sourceEnd,
         const QString& replacementText) const;
-    Q_INVOKABLE QString applyInlineStyleToSelectionSource(
-        const QString& surfaceText,
-        int selectionStart,
-        int selectionEnd,
-        const QString& styleTag) const;
     Q_INVOKABLE QString applyInlineStyleToLogicalSelectionSource(
         const QString& sourceText,
         int selectionStart,

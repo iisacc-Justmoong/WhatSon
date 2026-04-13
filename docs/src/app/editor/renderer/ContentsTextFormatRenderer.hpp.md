@@ -32,27 +32,17 @@ embedded in the generic inline-tag parser.
   Builds the cheaper source-editing HTML surface.
   Markdown glyphs remain literal source text here; only proprietary `.wsnbody` inline tags are promoted into styled
   spans for editing.
-- `normalizeEditorSurfaceTextToSource(surfaceText)`
-  Converts RichText editor output back into canonical `.wsnbody` inline source tags.
-  This remains an explicit conversion helper for tooling/import-like paths only; ordinary typing and structured
-  text-block editing no longer treat rendered RichText DOM as a write-authoritative source snapshot.
 - `applyPlainTextReplacementToSource(sourceText, sourceStart, sourceEnd, replacementText)`
   Replaces one source span with escaped plain text directly in canonical `.wsnbody`.
   Source bounds are clamped against an `int`-safe `QString` length before stitching.
   This is the ordinary typing path and intentionally does not reserialize the entire RichText surface.
-- `applyInlineStyleToSelectionSource(surfaceText, selectionStart, selectionEnd, styleTag)`
-  Applies the requested inline style to the current RichText selection with `QTextDocument/QTextCursor`, then
-  canonicalizes the result back into `.wsnbody` source tags.
-  When the full selection already carries the same style, the renderer removes formatting from that range and writes
-  plain text back instead of nesting duplicate tags, so the matching inline source tags are also removed from
-  `.wsnbody`.
-  The same entrypoint also accepts `plain` / `clear` / `none` to strip all supported inline styling from the selected
-  range explicitly.
 - `applyInlineStyleToLogicalSelectionSource(sourceText, selectionStart, selectionEnd, styleTag)`
   Applies inline formatting from canonical source text plus logical editor offsets by rebuilding proprietary inline
   source tags directly from RAW-source style coverage.
   Logical selection offsets are now resolved against the stored source text itself, and the opening/closing proprietary
   tags become the authoritative formatting boundaries instead of any transient `QTextDocument` fragment split.
+  Surface HTML is intentionally outside this write path so inline-format commands cannot promote the rendered editor
+  projection into a second source of truth.
 - `requestRenderRefresh()`
   Slot entrypoint for explicit refresh requests from QML when immediate recompute is needed.
 

@@ -6,15 +6,8 @@
 #include <array>
 #include <algorithm>
 #include <limits>
-#include <QColor>
-#include <QFont>
 #include <QRegularExpression>
 #include <QStringList>
-#include <QTextBlock>
-#include <QTextCharFormat>
-#include <QTextCursor>
-#include <QTextDocument>
-#include <QTextFragment>
 #include <QVector>
 
 namespace
@@ -318,53 +311,6 @@ namespace
     }
 
     QString renderInlineStyleEditingSurfaceHtml(const QString& sourceText);
-
-    QString normalizeRenderedMarkdownGlyphsToSource(QString text)
-    {
-        text = normalizeLineEndings(text);
-        if (text.isEmpty())
-        {
-            return {};
-        }
-
-        QStringList lines = text.split(QLatin1Char('\n'), Qt::KeepEmptyParts);
-        bool insideCodeFence = false;
-        for (QString& line : lines)
-        {
-            int cursor = 0;
-            while (cursor < line.size()
-                   && (line.at(cursor) == QLatin1Char(' ')
-                       || line.at(cursor) == QLatin1Char('\t')))
-            {
-                ++cursor;
-            }
-
-            if (line.mid(cursor).startsWith(QStringLiteral("```")))
-            {
-                insideCodeFence = !insideCodeFence;
-                continue;
-            }
-
-            if (insideCodeFence)
-            {
-                continue;
-            }
-
-            if (cursor + 1 < line.size()
-                && line.at(cursor) == QChar(0x2022)
-                && line.at(cursor + 1).isSpace())
-            {
-                const QString canonicalMarker =
-                    WhatSon::WhatSonNoteMarkdownStyleObject::canonicalUnorderedListSourceMarker();
-                if (!canonicalMarker.isEmpty())
-                {
-                    line.replace(cursor, 1, canonicalMarker);
-                }
-            }
-        }
-
-        return lines.join(QLatin1Char('\n'));
-    }
 
     QString canonicalInlineStyleTagName(const QString& elementName)
     {
@@ -1129,134 +1075,6 @@ namespace
             desiredCoverage,
             logicalLength);
         return output;
-    }
-
-    QTextCharFormat textCharFormatForInlineStyle(const QString& normalizedStyleTag)
-    {
-        QTextCharFormat format;
-        if (normalizedStyleTag == QStringLiteral("bold"))
-        {
-            format.setFontWeight(QFont::Black);
-        }
-        else if (normalizedStyleTag == QStringLiteral("italic"))
-        {
-            format.setFontItalic(true);
-        }
-        else if (normalizedStyleTag == QStringLiteral("underline"))
-        {
-            format.setFontUnderline(true);
-        }
-        else if (normalizedStyleTag == QStringLiteral("strikethrough"))
-        {
-            format.setFontStrikeOut(true);
-        }
-        else if (normalizedStyleTag == QStringLiteral("highlight"))
-        {
-            format.setBackground(QColor(QStringLiteral("#8A4B00")));
-            format.setForeground(QColor(QStringLiteral("#D6AE58")));
-            format.setFontWeight(QFont::DemiBold);
-        }
-        return format;
-    }
-
-    QTextCharFormat plainTextCharFormat()
-    {
-        QTextCharFormat format;
-        format.setFontWeight(QFont::Normal);
-        format.setFontItalic(false);
-        format.setFontUnderline(false);
-        format.setFontStrikeOut(false);
-        format.clearProperty(QTextFormat::ForegroundBrush);
-        format.clearProperty(QTextFormat::BackgroundBrush);
-        return format;
-    }
-
-    bool textCharFormatHasInlineStyle(const QTextCharFormat& format, const QString& normalizedStyleTag)
-    {
-        if (normalizedStyleTag == QStringLiteral("bold"))
-        {
-            return format.fontWeight() >= QFont::DemiBold;
-        }
-        if (normalizedStyleTag == QStringLiteral("italic"))
-        {
-            return format.fontItalic();
-        }
-        if (normalizedStyleTag == QStringLiteral("underline"))
-        {
-            return format.fontUnderline();
-        }
-        if (normalizedStyleTag == QStringLiteral("strikethrough"))
-        {
-            return format.fontStrikeOut();
-        }
-        if (normalizedStyleTag == QStringLiteral("highlight"))
-        {
-            const QColor backgroundColor = format.background().color();
-            return format.background().style() != Qt::NoBrush
-                && backgroundColor.isValid()
-                && backgroundColor.alpha() > 0
-                && backgroundColor != Qt::transparent;
-        }
-        return false;
-    }
-
-    bool selectionFullyHasInlineStyle(const QTextCursor& selectionCursor, const QString& normalizedStyleTag)
-    {
-        if (!selectionCursor.hasSelection() || normalizedStyleTag.isEmpty())
-        {
-            return false;
-        }
-
-        const int selectionStart = selectionCursor.selectionStart();
-        const int selectionEnd = selectionCursor.selectionEnd();
-        if (selectionEnd <= selectionStart)
-        {
-            return false;
-        }
-
-        bool sawOverlappingFragment = false;
-        for (QTextBlock block = selectionCursor.document()->findBlock(selectionStart);
-             block.isValid() && block.position() < selectionEnd;
-             block = block.next())
-        {
-            for (QTextBlock::iterator it = block.begin(); !it.atEnd(); ++it)
-            {
-                const QTextFragment fragment = it.fragment();
-                if (!fragment.isValid())
-                {
-                    continue;
-                }
-
-                const int fragmentStart = fragment.position();
-                const int fragmentEnd = fragmentStart + fragment.length();
-                if (fragmentEnd <= selectionStart || fragmentStart >= selectionEnd)
-                {
-                    continue;
-                }
-
-                sawOverlappingFragment = true;
-                if (!textCharFormatHasInlineStyle(fragment.charFormat(), normalizedStyleTag))
-                {
-                    return false;
-                }
-            }
-        }
-
-        return sawOverlappingFragment;
-    }
-
-    QString plainSelectedText(const QTextCursor& selectionCursor)
-    {
-        QString selectedText = selectionCursor.selectedText();
-        selectedText.replace(QChar::ParagraphSeparator, QLatin1Char('\n'));
-        selectedText.replace(QChar::LineSeparator, QLatin1Char('\n'));
-        return selectedText;
-    }
-
-    int boundedDocumentSelectionPosition(const QTextDocument& document, int position) noexcept
-    {
-        const int maxPosition = std::max(0, document.characterCount() - 1);
-        return std::clamp(position, 0, maxPosition);
     }
 
     bool isClosingTagToken(const QString& token)
@@ -2055,19 +1873,6 @@ QString ContentsTextFormatRenderer::normalizeInlineStyleAliasesForEditor(const Q
     return renderInlineStyleEditingSurfaceHtml(sourceText);
 }
 
-QString ContentsTextFormatRenderer::normalizeEditorSurfaceTextToSource(const QString& surfaceText) const
-{
-    if (surfaceText.isEmpty())
-    {
-        return {};
-    }
-
-    const QString serializedBodyDocument =
-        WhatSon::NoteBodyPersistence::serializeBodyDocument(QStringLiteral("note"), surfaceText);
-    return normalizeRenderedMarkdownGlyphsToSource(
-        WhatSon::NoteBodyPersistence::sourceTextFromBodyDocument(serializedBodyDocument));
-}
-
 QString ContentsTextFormatRenderer::applyPlainTextReplacementToSource(
     const QString& sourceText,
     int sourceStart,
@@ -2082,63 +1887,6 @@ QString ContentsTextFormatRenderer::applyPlainTextReplacementToSource(
     return normalizedSourceText.left(boundedStart)
         + escapeHtmlText(normalizedReplacementText)
         + normalizedSourceText.mid(boundedEnd);
-}
-
-QString ContentsTextFormatRenderer::applyInlineStyleToSelectionSource(
-    const QString& surfaceText,
-    int selectionStart,
-    int selectionEnd,
-    const QString& styleTag) const
-{
-    if (surfaceText.isEmpty())
-    {
-        return {};
-    }
-
-    const QString normalizedStyleTag = normalizeSupportedInlineStyleTag(styleTag);
-    if (normalizedStyleTag.isEmpty())
-    {
-        return normalizeEditorSurfaceTextToSource(surfaceText);
-    }
-
-    QTextDocument document;
-    document.setHtml(surfaceText);
-
-    const int boundedStart = boundedDocumentSelectionPosition(document, std::min(selectionStart, selectionEnd));
-    const int boundedEnd = boundedDocumentSelectionPosition(document, std::max(selectionStart, selectionEnd));
-    if (boundedEnd <= boundedStart)
-    {
-        return normalizeEditorSurfaceTextToSource(surfaceText);
-    }
-
-    QTextCursor cursor(&document);
-    cursor.setPosition(boundedStart);
-    cursor.setPosition(boundedEnd, QTextCursor::KeepAnchor);
-    if (!cursor.hasSelection())
-    {
-        return normalizeEditorSurfaceTextToSource(surfaceText);
-    }
-
-    cursor.beginEditBlock();
-    if (normalizedStyleTag == QStringLiteral("plain"))
-    {
-        const QString replacementText = plainSelectedText(cursor);
-        cursor.removeSelectedText();
-        cursor.insertText(replacementText, plainTextCharFormat());
-    }
-    else if (selectionFullyHasInlineStyle(cursor, normalizedStyleTag))
-    {
-        const QString replacementText = plainSelectedText(cursor);
-        cursor.removeSelectedText();
-        cursor.insertText(replacementText, plainTextCharFormat());
-    }
-    else
-    {
-        cursor.mergeCharFormat(textCharFormatForInlineStyle(normalizedStyleTag));
-    }
-    cursor.endEditBlock();
-
-    return normalizeEditorSurfaceTextToSource(document.toHtml());
 }
 
 QString ContentsTextFormatRenderer::applyInlineStyleToLogicalSelectionSource(

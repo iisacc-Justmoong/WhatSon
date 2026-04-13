@@ -169,6 +169,9 @@ structured document-flow editor changes.
 - Ordinary typing inside a structured text block must not reconstruct RAW from RichText DOM/HTML.
   The saved `.wsnbody` must come only from RAW-source range replacement plus reparsing, not from serializing the
   rendered editor surface.
+- Inline formatting shortcuts and context-menu actions must also stay on the same pipeline.
+  They must rebuild proprietary RAW tags from logical/source ranges and then re-render from reparsed RAW, not from a
+  serialized `QTextDocument` or editor-surface DOM snapshot.
 - The right-side editor minimap must remain visible after note open and after later layout mutations.
   Adjacent editor/resource/detail content must not compress the minimap rail to zero width.
 - The editor column order must remain gutter on the left, editor in the center, minimap on the right.

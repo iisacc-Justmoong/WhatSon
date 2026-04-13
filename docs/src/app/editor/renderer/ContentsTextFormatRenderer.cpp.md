@@ -77,32 +77,15 @@ Implements inline-format rendering from note-editor text to RichText HTML.
     promoting it into authoritative inline-style tags
   - deliberately stops promoting markdown syntax into list/heading/blockquote/code/link preview spans on the live
     editor surface
-- Exposes `normalizeEditorSurfaceTextToSource(...)` so formatting-driven `QTextDocument` mutations can still be
-  canonicalized back into inline `.wsnbody` tags when the whole RichText surface genuinely changed.
-- That helper is no longer the ordinary live-typing path.
-  Desktop/mobile whole-note typing and structured text-block typing now mutate RAW source ranges directly and only use
-  reparsed RAW snapshots for the next render pass.
-- That whole-surface normalization also converts rendered unordered-list bullet glyphs (`• `) back into source markdown
-  markers (`- `), so selection-format round-trips do not silently replace markdown list syntax with literal bullets.
-  That canonical `-` marker is now an explicit shared policy.
 - Exposes `applyPlainTextReplacementToSource(...)` so ordinary typing can mutate only the affected raw source span:
   - accepts canonical source text plus source start/end offsets
   - normalizes plain-text line endings
   - clamps source offsets against an `int`-safe `QString` length before replacement
   - escapes inserted literal text before stitching it back into `.wsnbody`
   - avoids whole-document RichText export for normal typing/backspace/delete/paste
-- Exposes `applyInlineStyleToSelectionSource(...)` so inline formatting no longer depends on QML string splicing:
-  - loads the current editor RichText surface into `QTextDocument`
-  - resolves the selected range with `QTextCursor`
-  - accepts `plain` / `clear` / `none` as explicit remove-formatting commands for context-menu usage
-  - if the entire selection already has the requested style, replaces that selection with an explicit plain-text
-    `QTextCharFormat`, so the matching inline source tags are removed from canonical `.wsnbody` output instead of
-    surviving as hidden markup
-  - otherwise merges `QTextCharFormat` for `bold` / `italic` / `underline` / `strikethrough` / `highlight`
-  - serializes the updated document back into canonical `.wsnbody`
 - Exposes `applyInlineStyleToLogicalSelectionSource(...)` for shortcut/context-menu formatting that must ignore markdown
   presentation roles:
-    - no longer routes the selection through `QTextDocument` fragment formatting as the source of truth
+    - no longer permits any whole-surface `QTextDocument`/RichText serialization path to become the source of truth
     - reuses the same local tag-token and entity classifiers as the rest of the renderer pipeline, so RAW-source
       coverage scans and HTML/source parsing stay aligned
     - instead scans the RAW editor source, computes logical character coverage for each proprietary inline style, and
@@ -147,6 +130,9 @@ Implements inline-format rendering from note-editor text to RichText HTML.
 - Applying proprietary inline formatting to a selection that spans multiple existing proprietary tags or multiple
   logical paragraphs must rebuild the target RAW source tags over the whole selected range, not only the first RichText
   fragment that happened to survive the context-menu click.
+- No editor command path should require serializing the rendered RichText surface back into `.wsnbody`.
+  Formatting, typing, paste, and delete flows must all start from RAW-source ranges and finish with a re-render from
+  reparsed RAW.
 - Applying `Bold`/`Italic`/`Underline`/`Highlight` shortcuts to heading, blockquote, link-literal, or code-literal text
   must still add/remove proprietary `.wsnbody` tags instead of misreading markdown presentation styling as an
   already-applied shortcut format.
