@@ -150,8 +150,11 @@ Mobile content editor host.
 - The shared minimap slot now also keeps a fixed layout width while visible.
   This matches the desktop contract and prevents sibling editor content from collapsing the minimap column to zero
   width if the mobile host ever enables that rail.
-- The mobile editor host likewise pins its inner `RowLayout` to `Qt.LeftToRight`, so the shared gutter/editor/minimap
-  column order cannot flip under inherited layout-direction changes.
+- The mobile editor host likewise pins its inner `RowLayout` to `Qt.LeftToRight` and disables inherited
+  `LayoutMirroring` on that row, so the shared gutter/editor/minimap column order cannot flip under inherited
+  layout-direction changes.
+- The minimap delegate now also uses `Layout.alignment: Qt.AlignRight | Qt.AlignTop`, keeping the fixed-width minimap
+  rail anchored to the right edge of the editor row.
 - If the current structured note ends with a non-text block, the mobile host now also allows
   `ContentsStructuredDocumentFlow.qml` to append one trailing newline before focus restore, so typing can resume
   directly after a terminal resource/divider block.

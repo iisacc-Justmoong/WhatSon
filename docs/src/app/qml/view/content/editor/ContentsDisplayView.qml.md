@@ -181,9 +181,12 @@ Desktop content editor host.
 - The desktop minimap slot is now also pinned to a fixed layout width while visible.
   The right-side minimap therefore keeps its column even when the central editor viewport expands aggressively inside
   the shared `RowLayout`.
-- The desktop editor `RowLayout` now also declares `layoutDirection: Qt.LeftToRight` explicitly.
+- The desktop editor `RowLayout` now also declares `layoutDirection: Qt.LeftToRight` explicitly and disables
+  `LayoutMirroring` inheritance on that row.
   Gutter -> editor viewport -> minimap ordering therefore stays stable even if ambient layout mirroring or inherited
   direction settings change elsewhere in the shell.
+- The minimap delegate itself now also declares `Layout.alignment: Qt.AlignRight | Qt.AlignTop`, reinforcing that the
+  fixed-width minimap rail belongs to the rightmost editor column.
 - When that structured-flow tail-click lands on a note whose last block is a non-text node, the desktop host now lets
   `ContentsStructuredDocumentFlow.qml` append one trailing newline before restoring focus, so typing can begin
   immediately after an ending resource/divider block.

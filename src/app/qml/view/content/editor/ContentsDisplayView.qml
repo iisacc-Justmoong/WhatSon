@@ -2031,6 +2031,8 @@ Item {
             anchors.fill: parent
             anchors.leftMargin: contentsView.effectiveFrameHorizontalInset
             anchors.rightMargin: contentsView.effectiveFrameHorizontalInset
+            LayoutMirroring.childrenInherit: false
+            LayoutMirroring.enabled: false
             layoutDirection: Qt.LeftToRight
             spacing: 0
             visible: contentsView.hasSelectedNote
@@ -2839,6 +2841,7 @@ Item {
             ContentsMinimapLayer {
                 id: minimapLayer
 
+                Layout.alignment: Qt.AlignRight | Qt.AlignTop
                 Layout.fillHeight: true
                 Layout.maximumWidth: visible ? contentsView.minimapOuterWidth : 0
                 Layout.minimumWidth: visible ? contentsView.minimapOuterWidth : 0

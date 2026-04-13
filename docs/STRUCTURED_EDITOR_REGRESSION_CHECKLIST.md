@@ -153,3 +153,5 @@ structured document-flow editor changes.
   Adjacent editor/resource/detail content must not compress the minimap rail to zero width.
 - The editor column order must remain gutter on the left, editor in the center, minimap on the right.
   Inherited layout mirroring or direction changes elsewhere in the app must not flip that order.
+- The right-side minimap rail must stay right-aligned even when the editor row inherits other shell direction or
+  mirroring settings; the fixed minimap column must not drift to the left edge.
