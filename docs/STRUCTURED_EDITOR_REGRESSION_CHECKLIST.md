@@ -111,8 +111,8 @@ structured document-flow editor changes.
   previous domain view-model.
 - In RichText editor mode, the rendered body should stay on paragraph/image document flow that is close to Qt raw
   RichText/RTF layout, rather than one flat `<br/>` chain plus hidden spacer overlays.
-- Once a note contains at least one body `<resource ... />` tag, the structured document-flow host must activate after
-  the first settled same-note parse instead of keeping that resource on a legacy overlay-only path.
+- A note that only contains prose plus body `<resource ... />` tags must stay on the legacy inline editor host.
+  Resource presence alone must not swap the active editor implementation into `ContentsStructuredDocumentFlow.qml`.
 - In structured-flow mode, a `type=resource` block must render through the same image frame card used elsewhere in the
   editor, and it must occupy real document height in the block column rather than an overlay aligned on top of text.
 - The inline image frame must keep a transparent background. Only the border chrome from the image-resource frame may
@@ -150,9 +150,11 @@ structured document-flow editor changes.
 - The same imported-file drop must not rewrite neighboring structured tags into broken paragraph text.
   For example, an existing `<callout>...</callout>` block around the drop context must remain literal source markup
   instead of degrading into plain paragraph text plus escaped resource-tail fragments.
-- During the resource-drop surface-guard turn, a same-note selection snapshot that already contains canonical
-  `<resource ... />` markup must promote the editor into document-block rendering instead of leaving the image on the
-  legacy overlay layer until a later authority handoff completes.
+- Dropping an image into an ordinary prose note must not swap the active editor implementation from the legacy inline
+  editor into `ContentsStructuredDocumentFlow.qml` solely because `<resource ... />` markup appeared in RAW.
+- If the note is already in structured-flow mode because of agenda/callout/break blocks, dropping an image/resource
+  must insert the new `<resource ... />` block at the active structured-block caret position rather than appending it
+  to EOF through the legacy inline-editor cursor bridge.
 - Backspace/Delete while the caret is at a raw tag boundary must remove the whole tag token in one step.
   Deleting across `<resource ... />`, `<callout>`, `</callout>`, `<agenda ...>`, `</agenda>`, or inline-style tags
   must not leave partial source remnants behind.

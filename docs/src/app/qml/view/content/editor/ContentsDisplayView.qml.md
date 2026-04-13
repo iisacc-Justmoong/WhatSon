@@ -4,15 +4,15 @@
 Desktop content editor host.
 
 ## Structured Document Flow
-- `agenda`, `callout`, `resource`, and `break` remain `.wsnbody` body tags, and desktop now promotes the note into the
-  structured document-flow surface as soon as canonical body-level resource markup is present in the active source.
-- Desktop now treats a canonical live `<resource ... />` tag in the live editor buffer, the current presentation
-  snapshot, or the selection-bridge body-source snapshot used during non-authoritative reload turns and the
-  resource-drop surface-guard turn as an immediate structured-flow activation request.
-  `bodyResourceRenderer.resourceCount` still keeps already-resolved notes active, but the host no longer waits for a
-  later resource-resolution turn before leaving the legacy single-editor path.
-- `ContentsStructuredDocumentFlow.qml` is therefore no longer dormant: notes with inline resource tags now render
-  those resources as body-owned QML blocks instead of RichText placeholders or offset overlays.
+- `agenda`, `callout`, `resource`, and `break` remain `.wsnbody` body tags, but desktop now limits structured-flow
+  activation to non-resource block types.
+  A note that only gained `<resource ... />` tags must stay on the legacy inline editor surface so the active editor
+  implementation does not swap out mid-edit.
+- Canonical live `<resource ... />` markup is still tracked through the live editor buffer, presentation snapshot, and
+  selection-bridge snapshot so `ContentsBodyResourceRenderer` can resolve inline resources against the freshest RAW
+  source, but that resource presence alone no longer activates `ContentsStructuredDocumentFlow.qml`.
+- `ContentsStructuredDocumentFlow.qml` therefore remains the host for agenda/callout/break notes and for mixed notes
+  that already entered block-flow mode for some non-resource reason.
 - Source persistence for block edits now runs through `applyDocumentSourceMutation(...)`, which updates the RAW body,
   marks local authority, optionally restores focus inside the reparsed block, and only forces a full legacy
   presentation rebuild when the note actually falls back out of structured-flow mode.
@@ -84,9 +84,8 @@ Desktop content editor host.
   `ContentsBodyResourceRenderer` so the dropped resource card appears in the body overlay before the worker-thread note
   flush finishes.
 - Desktop now also rescans the live `editorText` buffer for canonical `<resource ... />` markup on each edit turn.
-  Dropping an image into a note that already contains paragraphs therefore switches that same note into the structured
-  resource path immediately instead of leaving a legacy RichText/plain-text frame alive long enough to expose the raw
-  tag as visible prose.
+  That keeps resource resolution tied to the latest RAW source without forcing a same-turn host swap out of the legacy
+  inline editor for resource-only notes.
 - Figma node `294:7933` is now the mixed-content reference for this path:
   one text-editor column contains prose above the image frame and prose below it.
   Inline image blocks therefore behave like authored body elements, not like a full-surface resource takeover.
@@ -99,9 +98,13 @@ Desktop content editor host.
   the invokable return value is not tagged as `Array.isArray(...)` in QML.
 - Desktop resource-drop insertion now always emits canonical self-closing `<resource ... />` source with quoted,
   XML-escaped attributes, including quoted relative `path=".../.wsresource"` values.
-- Desktop no longer splices that imported resource tag block by the raw `TextEdit.cursorPosition` integer. Instead it
-  routes the RAW insertion through `ContentsEditorTypingController.insertRawSourceTextAtCursor(...)`, so logical/plain
-  caret positions are mapped back into `.wsnbody` source offsets before persistence.
+- Desktop no longer splices that imported resource tag block by the raw `TextEdit.cursorPosition` integer.
+  On the legacy inline editor path it routes insertion through
+  `ContentsEditorTypingController.insertRawSourceTextAtCursor(...)`, so logical/plain caret positions are mapped back
+  into `.wsnbody` source offsets before persistence.
+- When the note is already in `ContentsStructuredDocumentFlow.qml` because of agenda/callout/break blocks, desktop now
+  inserts dropped resource tags through the structured-flow host's active-block insertion path instead of falling back
+  to the legacy inline-editor cursor bridge.
 - Desktop now also normalizes that inserted resource block onto standalone source lines when the drop happened in the
   middle of an existing paragraph, so the inline resource frame owns its own body slot instead of being embedded into
   adjacent prose.

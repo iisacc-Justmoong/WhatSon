@@ -23,6 +23,7 @@ class ContentsStructuredBlockRenderer : public QObject
     Q_PROPERTY(int agendaCount READ agendaCount NOTIFY renderedBlocksChanged)
     Q_PROPERTY(int calloutCount READ calloutCount NOTIFY renderedBlocksChanged)
     Q_PROPERTY(bool hasRenderedBlocks READ hasRenderedBlocks NOTIFY renderedBlocksChanged)
+    Q_PROPERTY(bool hasNonResourceRenderedBlocks READ hasNonResourceRenderedBlocks NOTIFY renderedBlocksChanged)
 
 public:
     explicit ContentsStructuredBlockRenderer(QObject* parent = nullptr);
@@ -45,6 +46,7 @@ public:
     int agendaCount() const noexcept;
     int calloutCount() const noexcept;
     bool hasRenderedBlocks() const noexcept;
+    bool hasNonResourceRenderedBlocks() const noexcept;
 
 public slots:
     void requestRenderRefresh();

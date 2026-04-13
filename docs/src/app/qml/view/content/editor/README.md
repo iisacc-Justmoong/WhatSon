@@ -51,6 +51,9 @@
   from the Resources hierarchy.
   Inline `<resource ... />` tags inside ordinary note bodies must stay inside the authored document flow instead of
   replacing the editor surface.
+- Resource-only note bodies now keep the legacy inline editor host mounted.
+  Desktop/mobile only activate `ContentsStructuredDocumentFlow.qml` for non-resource block types such as
+  `agenda`, `callout`, and `break`, so dropping an image into prose does not swap the active editor implementation.
 - `ContentsEditorTypingController.qml` now owns ordinary text-entry mutation routing so typing no longer reserializes
   the whole RichText surface on every edit.
 - The editor directory now follows one write direction for live note editing:
@@ -142,10 +145,11 @@
   `ContentsEditorTypingController.handleEditorTextEdited()` before flushing the previously bound note.
   Combined with the bridge-side pending-body adoption path, this keeps large deletions from being dropped or replaced
   by a stale package read when the user briefly visits another note and comes back.
-- Agenda/callout/break still stay on the legacy editor path by default, but body `<resource ... />` tags now activate
-  the structured document-flow host once the same note has at least one resolved resource slot.
-  Desktop/mobile hosts therefore gate `structuredDocumentFlowEnabled` off `bodyResourceRenderer.resourceCount > 0`,
-  keeping ordinary notes on the legacy editor while moving inline-resource notes into the document-owned block flow.
+- Agenda/callout/break notes enter the structured document-flow host, but resource-only notes now stay on the legacy
+  inline editor path even after body `<resource ... />` tags resolve.
+  Desktop/mobile hosts therefore gate `structuredDocumentFlowEnabled` off non-resource block presence rather than
+  `bodyResourceRenderer.resourceCount > 0`, keeping image/resource drops inside the same editor implementation unless
+  the note already contains a true structured block type.
 - `ContentsInlineFormatEditor.qml` now emits committed typing directly from the nested `TextEdit.onTextChanged` path
   whenever the change is not programmatic and IME composition has already settled.
   That keeps `ContentsEditorSession.editorText` moving with the visible buffer instead of leaving the note-open body
@@ -213,6 +217,8 @@
   through a DOM-to-source normalization step.
 - `ContentsStructuredDocumentFlow.qml` now asks the active block delegate for structured shortcut insertion offsets,
   which restores live-caret insertion for text blocks while still keeping agenda/callout shortcuts block-scoped.
+- That same structured-flow insertion bridge now also accepts dropped resource-tag batches, so resource imports inside
+  agenda/callout/break notes insert next to the active block instead of appending through the legacy cursor bridge.
 - `ContentsStructuredBlockRenderer.*` now also short-circuits notes that contain no proprietary structured tags and
   computes combined structured verification only once per source refresh, shrinking note-open parse overhead.
 - In structured-flow mode, desktop/mobile hosts now stop feeding legacy agenda/callout overlay layers, so the fallback

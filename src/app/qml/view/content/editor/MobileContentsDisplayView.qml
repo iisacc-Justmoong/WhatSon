@@ -301,8 +301,11 @@ Item {
     readonly property bool liveResourceStructuredFlowRequested: contentsView.liveEditorSourceContainsResourceTag
                                                                 || contentsView.presentationSourceContainsResourceTag
                                                                 || contentsView.selectionSourceContainsResourceTag
-    readonly property bool structuredDocumentFlowEnabled: contentsView.liveResourceStructuredFlowRequested
-                                                          || bodyResourceRenderer.resourceCount > 0
+    readonly property bool nonResourceStructuredFlowRequested: structuredBlockRenderer.hasNonResourceRenderedBlocks
+    readonly property bool structuredDocumentFlowEnabled: contentsView.nonResourceStructuredFlowRequested
+                                                          || (structuredBlockRenderer.renderPending
+                                                              && contentsView.structuredDocumentFlowActivatedNoteId === contentsView.selectedNoteId
+                                                              && contentsView.selectedNoteId.length > 0)
     readonly property bool resourceResolverNeedsLiveEditorSource: contentsView.showStructuredDocumentFlow
                                                                   || contentsView.liveResourceStructuredFlowRequested
     readonly property bool legacyInlineEditorActive: !contentsView.showStructuredDocumentFlow
@@ -316,11 +319,6 @@ Item {
     readonly property bool showEditorGutter: false
     readonly property bool showFormattedTextRenderer: false
     readonly property bool showStructuredDocumentFlow: contentsView.structuredDocumentFlowEnabled
-                                                       && (contentsView.liveResourceStructuredFlowRequested
-                                                           || structuredBlockRenderer.hasRenderedBlocks
-                                                           || (structuredBlockRenderer.renderPending
-                                                               && contentsView.structuredDocumentFlowActivatedNoteId === contentsView.selectedNoteId
-                                                               && contentsView.selectedNoteId.length > 0))
                                                        && !contentsView.showDedicatedResourceViewer
                                                        && !contentsView.showFormattedTextRenderer
     readonly property bool showPageEditorLayout: pagePrintLayoutRenderer.showPageEditorLayout
@@ -960,10 +958,17 @@ Item {
         }
         if (tagTexts.length === 0)
             return false;
-        const insertedSourceText = contentsView.resourceBlockSourceText(tagTexts);
-        const inserted = editorTypingController.insertRawSourceTextAtCursor(
-                    insertedSourceText,
-                    insertedSourceText.length);
+        let inserted = false;
+        if (contentsView.showStructuredDocumentFlow
+                && structuredDocumentFlow
+                && structuredDocumentFlow.insertResourceBlocksAtActivePosition !== undefined) {
+            inserted = structuredDocumentFlow.insertResourceBlocksAtActivePosition(tagTexts);
+        } else {
+            const insertedSourceText = contentsView.resourceBlockSourceText(tagTexts);
+            inserted = editorTypingController.insertRawSourceTextAtCursor(
+                        insertedSourceText,
+                        insertedSourceText.length);
+        }
         if (!inserted)
             return false;
         bodyResourceRenderer.requestRenderRefresh();
@@ -1666,12 +1671,7 @@ Item {
                 contentsView.structuredDocumentFlowActivatedNoteId = "";
             return;
         }
-        if (contentsView.liveResourceStructuredFlowRequested) {
-            if (contentsView.structuredDocumentFlowActivatedNoteId !== normalizedSelectedNoteId)
-                contentsView.structuredDocumentFlowActivatedNoteId = normalizedSelectedNoteId;
-            return;
-        }
-        if (structuredBlockRenderer && structuredBlockRenderer.hasRenderedBlocks) {
+        if (contentsView.nonResourceStructuredFlowRequested) {
             if (contentsView.structuredDocumentFlowActivatedNoteId !== normalizedSelectedNoteId)
                 contentsView.structuredDocumentFlowActivatedNoteId = normalizedSelectedNoteId;
             return;
@@ -2540,7 +2540,6 @@ Item {
                                  && !contentsView.showStructuredDocumentFlow
                                  && !contentsView.showDedicatedResourceViewer
                                  && !contentsView.showFormattedTextRenderer
-                                 && !contentsView.liveResourceStructuredFlowRequested
                                  && resourceRenderLayer.resourceCount > 0
                         enabled: visible
                         z: 3

@@ -18,6 +18,10 @@ Declares the editor-side structured-block renderer that projects proprietary blo
   not actively focused.
 - `renderPending`: tells QML that a worker-thread structured render is still in flight.
 - `agendaCount` / `calloutCount` / `hasRenderedBlocks`: cheap QML visibility helpers.
+- `hasNonResourceRenderedBlocks`: tells QML whether the parsed document contains block-flow structures that truly
+  require the structured document host to replace the legacy inline editor.
+  `resource` blocks are excluded so inline image/resource notes can stay on the ordinary editor surface unless some
+  other block type such as `agenda`, `callout`, or `break` is present.
 - `requestRenderRefresh()`: explicit recompute hook for hosts that need a forced refresh after external state changes.
 
 ## Signals

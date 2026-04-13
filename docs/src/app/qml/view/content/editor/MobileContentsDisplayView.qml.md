@@ -4,15 +4,15 @@
 Mobile content editor host.
 
 ## Structured Document Flow
-- `agenda`, `callout`, `resource`, and `break` remain `.wsnbody` body tags, and mobile now promotes the note into the
-  structured document-flow surface as soon as canonical body-level resource markup is present in the active source.
-- Mobile now treats a canonical live `<resource ... />` tag in the live editor buffer, the current presentation
-  snapshot, or the selection-bridge body-source snapshot used during non-authoritative reload turns and the
-  resource-drop surface-guard turn as an immediate structured-flow activation request.
-  `bodyResourceRenderer.resourceCount` still keeps already-resolved notes active, but mobile no longer waits for a
-  later resource-resolution turn before leaving the legacy editor path.
-- `ContentsStructuredDocumentFlow.qml` is therefore active for resource-bearing notes as well, so mobile uses the same
-  body-owned QML block path as desktop instead of leaving inline resources to a detached overlay.
+- `agenda`, `callout`, `resource`, and `break` remain `.wsnbody` body tags, but mobile now limits structured-flow
+  activation to non-resource block types.
+  A note that only gained `<resource ... />` tags must stay on the legacy editor surface so the active editor
+  implementation does not swap mid-edit.
+- Canonical live `<resource ... />` markup is still tracked through the live editor buffer, presentation snapshot, and
+  selection-bridge body-source snapshot so `ContentsBodyResourceRenderer` can resolve against the freshest RAW source,
+  but that resource presence alone no longer activates `ContentsStructuredDocumentFlow.qml`.
+- `ContentsStructuredDocumentFlow.qml` therefore remains the shared block-flow host for agenda/callout/break notes and
+  for notes that already entered structured-flow mode for some non-resource reason.
 - Structured block rewrites route through `applyDocumentSourceMutation(...)` so mobile keeps the same RAW persistence
   contract as desktop, but they no longer force an immediate full legacy presentation rebuild while structured-flow
   editing remains active.
@@ -82,8 +82,8 @@ Mobile content editor host.
   `ContentsBodyResourceRenderer` so the dropped resource card appears in the body overlay before the worker-thread note
   flush finishes.
 - Mobile now also rescans the live `editorText` buffer for canonical `<resource ... />` markup on each edit turn.
-  A dropped image inside an already text-bearing note therefore promotes that note into the structured resource path
-  immediately instead of leaving the raw tag visible on the legacy plain/RichText surface for one extra frame.
+  That keeps resource resolution tied to the newest RAW source without forcing a same-turn host swap for resource-only
+  notes.
 - Figma node `294:7933` is also the mixed-content reference for mobile-hosted note bodies:
   text and image frames share one authored document column, so inline images must not replace the entire editor with a
   dedicated resource viewer unless the user is directly browsing a resource package from the Resources hierarchy.
@@ -96,8 +96,13 @@ Mobile content editor host.
 - Mobile resource-drop insertion now also writes canonical self-closing `<resource ... />` RAW source with quoted,
   XML-escaped attributes.
 - Mobile no longer inserts those resource tags by treating the visible editor cursor as a direct `.wsnbody` source
-  offset. The drop path now reuses `ContentsEditorTypingController.insertRawSourceTextAtCursor(...)` so logical caret
-  positions are translated back into RAW source offsets before save.
+  offset.
+  On the legacy inline-editor path the drop handler reuses
+  `ContentsEditorTypingController.insertRawSourceTextAtCursor(...)` so logical caret positions are translated back
+  into RAW source offsets before save.
+- When the note is already inside `ContentsStructuredDocumentFlow.qml` because of agenda/callout/break blocks, mobile
+  now inserts dropped resource tags through the structured-flow host's active-block insertion path instead of falling
+  back to the legacy inline-editor cursor bridge.
 - Mobile now also normalizes that inserted resource block onto standalone source lines when the drop happens inside an
   existing paragraph, keeping the inline resource slot block-owned instead of sharing one prose line with adjacent
   text.

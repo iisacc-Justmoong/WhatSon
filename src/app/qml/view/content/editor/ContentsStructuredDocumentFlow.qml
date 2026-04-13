@@ -433,6 +433,36 @@ FocusScope {
         return true
     }
 
+    function insertResourceBlocksAtActivePosition(tagTexts) {
+        if (!Array.isArray(tagTexts) || tagTexts.length === 0)
+            return false
+        const normalizedTagTexts = []
+        for (let index = 0; index < tagTexts.length; ++index) {
+            const tagText = tagTexts[index] === undefined || tagTexts[index] === null ? "" : String(tagTexts[index]).trim()
+            if (tagText.length > 0)
+                normalizedTagTexts.push(tagText)
+        }
+        if (normalizedTagTexts.length === 0)
+            return false
+
+        const currentSourceText = documentFlow.normalizedSourceText(documentFlow.sourceText)
+        const insertionOffset = Math.max(0, Math.min(currentSourceText.length, documentFlow.shortcutInsertionSourceOffset()))
+        const prefixNewline = insertionOffset > 0 && currentSourceText.charAt(insertionOffset - 1) !== "\n" ? "\n" : ""
+        const blockSourceText = normalizedTagTexts.join("\n")
+        const suffixOffset = insertionOffset < currentSourceText.length ? insertionOffset : currentSourceText.length
+        const suffixNewline = suffixOffset < currentSourceText.length && currentSourceText.charAt(suffixOffset) !== "\n" ? "\n" : ""
+        const insertionSourceText = prefixNewline + blockSourceText + suffixNewline
+
+        documentFlow.replaceSourceRange(
+                    insertionOffset,
+                    insertionOffset,
+                    insertionSourceText,
+                    {
+                        "sourceOffset": insertionOffset + prefixNewline.length + blockSourceText.length
+                    })
+        return true
+    }
+
     implicitHeight: documentColumn.implicitHeight
     width: parent ? parent.width : implicitWidth
 

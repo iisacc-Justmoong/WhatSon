@@ -25,6 +25,9 @@ Hosts the document-native block editor for structured `.wsnbody` content.
   and the block-local cursor position in focus requests.
 - Owns structured shortcut insertion once a document has entered block-flow mode and now asks the active delegate for
   the insertion source offset before falling back to the block end.
+- The same active-block insertion bridge now also accepts imported resource-tag batches from the parent host.
+  A note that is already in structured-flow mode therefore inserts dropped `<resource ... />` blocks next to the
+  active block instead of falling back to the legacy inline-editor cursor path or appending at EOF.
 - Resolves each pending focus request to one target block index before dispatch:
   - agenda task focus prefers `taskOpenTagStart`
   - otherwise the host falls back to the reparsed `sourceOffset`

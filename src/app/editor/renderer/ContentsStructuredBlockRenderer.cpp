@@ -480,6 +480,21 @@ bool ContentsStructuredBlockRenderer::hasRenderedBlocks() const noexcept
     return false;
 }
 
+bool ContentsStructuredBlockRenderer::hasNonResourceRenderedBlocks() const noexcept
+{
+    for (const QVariant& blockValue : m_renderedDocumentBlocks)
+    {
+        const QVariantMap block = blockValue.toMap();
+        const QString blockType = block.value(QStringLiteral("type")).toString();
+        if (blockType != QStringLiteral("text")
+            && blockType != QStringLiteral("resource"))
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
 void ContentsStructuredBlockRenderer::requestRenderRefresh()
 {
     refreshRenderedBlocks();

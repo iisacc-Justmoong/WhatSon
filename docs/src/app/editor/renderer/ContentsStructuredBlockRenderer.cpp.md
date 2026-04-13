@@ -17,7 +17,10 @@ Builds canonical structured render data from `.wsnbody` source text.
   `resourcePath`, `resourceType`, `resourceFormat`) so the structured QML host can match the block back to
   `ContentsBodyResourceRenderer`'s resolved asset entry and paint the real package payload instead of the
   `.wsresource` directory path itself.
-- `hasRenderedBlocks` now reflects any non-text block, including standalone `</break>`.
+- `hasRenderedBlocks` now reflects any non-text block, including standalone `</break>` and `<resource ... />`.
+- `hasNonResourceRenderedBlocks` now gives QML the narrower activation signal used by the editor host:
+  resource-only notes do not force a host swap from the legacy inline editor into `ContentsStructuredDocumentFlow`,
+  but notes containing agenda/callout/break blocks still do.
 - Source refresh no longer runs the full structured verification pass once per backend signal. The renderer now parses the
   needed backends first, pulls their cached verification snapshots, and computes the combined structured verification
   once per source refresh.
