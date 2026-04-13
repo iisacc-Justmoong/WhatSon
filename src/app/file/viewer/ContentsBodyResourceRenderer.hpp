@@ -11,6 +11,10 @@ class ContentsBodyResourceRenderer : public QObject
     Q_OBJECT
 
     Q_PROPERTY(QObject* contentViewModel READ contentViewModel WRITE setContentViewModel NOTIFY contentViewModelChanged)
+    Q_PROPERTY(QObject* fallbackContentViewModel
+                   READ fallbackContentViewModel
+                   WRITE setFallbackContentViewModel
+                   NOTIFY fallbackContentViewModelChanged)
     Q_PROPERTY(QString noteId READ noteId WRITE setNoteId NOTIFY noteIdChanged)
     Q_PROPERTY(QString bodySourceText READ bodySourceText WRITE setBodySourceText NOTIFY bodySourceTextChanged)
     Q_PROPERTY(int maxRenderCount READ maxRenderCount WRITE setMaxRenderCount NOTIFY maxRenderCountChanged)
@@ -24,6 +28,8 @@ public:
 
     QObject* contentViewModel() const noexcept;
     void setContentViewModel(QObject* model);
+    QObject* fallbackContentViewModel() const noexcept;
+    void setFallbackContentViewModel(QObject* model);
 
     QString noteId() const;
     void setNoteId(const QString& noteId);
@@ -42,6 +48,7 @@ public:
 
 signals:
     void contentViewModelChanged();
+    void fallbackContentViewModelChanged();
     void noteIdChanged();
     void bodySourceTextChanged();
     void maxRenderCountChanged();
@@ -49,6 +56,7 @@ signals:
 
 private slots:
     void handleContentViewModelDestroyed();
+    void handleFallbackContentViewModelDestroyed();
     void handleContentFilesystemMutated();
 
 private:
@@ -56,14 +64,19 @@ private:
 
     void refreshRenderedResources();
     QVariantList buildRenderedResources(const QString& noteDirectoryPath, const QString& bodySourceText) const;
+    QString resolveNoteDirectoryPathFromViewModel(QObject* viewModel) const;
     QString resolveNoteDirectoryPath() const;
     void disconnectContentViewModel();
+    void disconnectFallbackContentViewModel();
 
     QPointer<QObject> m_contentViewModel;
+    QPointer<QObject> m_fallbackContentViewModel;
     QString m_noteId;
     QString m_bodySourceText;
     int m_maxRenderCount = 3;
     QVariantList m_renderedResources;
     QMetaObject::Connection m_contentViewModelDestroyedConnection;
     QMetaObject::Connection m_hubFilesystemMutatedConnection;
+    QMetaObject::Connection m_fallbackContentViewModelDestroyedConnection;
+    QMetaObject::Connection m_fallbackHubFilesystemMutatedConnection;
 };

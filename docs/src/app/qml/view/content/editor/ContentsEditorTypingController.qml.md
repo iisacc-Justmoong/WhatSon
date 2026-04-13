@@ -35,6 +35,9 @@ This controller exists to keep plain typing separate from inline-format applicat
   `view.programmaticEditorSurfaceSyncActive == true` or while `editorSession.syncingEditorTextFromModel` is still
   raised for the current model-driven body sync.
   Resource/body presentation rebuilds therefore cannot be diffed as if the user had typed the placeholder surface.
+- The controller now also exits early while `view.resourceDropEditorSurfaceGuardActive == true`.
+  External file drops can therefore import/link `.wsresource` packages without letting a same-turn native `TextEdit`
+  drop mutation serialize the visible RichText surface back into `.wsnbody` as escaped attribute text.
 - Computes a single contiguous replacement delta (`start`, `previousEnd`, `insertedText`) from those two plain-text
   projections.
 - When that delta is a single `Enter` insertion on a markdown list line, the controller now expands the inserted text
@@ -186,6 +189,8 @@ structured-block projection do not re-enter the normal typing path.
 - A host-driven RichText/resource presentation refresh must not re-enter this controller while
   `programmaticEditorSurfaceSyncActive` is raised, even if the nested `TextEdit` emits a late fallback
   `textEdited(...)` notification for the superseded surface.
+- A file-drop import/link turn must not re-enter this controller while `resourceDropEditorSurfaceGuardActive` is
+  raised, even if Qt mutates the nested `TextEdit` surface as part of native drop handling.
 - Typing ordinary letters must not require a full `ContentsLogicalTextBridge` rebuild or full logical/source offset-map
   regeneration on every committed keystroke.
 - Typing ordinary letters should keep `ContentsLogicalTextBridge.logicalLineCount`, line-start offsets, and

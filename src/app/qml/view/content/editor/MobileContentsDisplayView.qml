@@ -231,13 +231,15 @@ Item {
         return null;
     }
     property bool resourceDropActive: false
+    property bool resourceDropEditorSurfaceGuardActive: false
+    property int resourceDropEditorSurfaceGuardToken: 0
     readonly property color resourceRenderBorderColor: "#334E5157"
     readonly property color resourceRenderCardColor: "#E61A1D22"
     readonly property int resourceRenderDisplayLimit: 0
     property var resourcesImportViewModel: null
     readonly property string richTextHighlightOpenTag: "<span style=\"background-color:#8A4B00;color:#D6AE58;font-weight:600;\">"
     readonly property bool preferNativeInputHandling: true
-    readonly property bool richTextInlineImageRenderingEnabled: false
+    readonly property bool richTextInlineImageRenderingEnabled: true
     readonly property int resourceEditorPlaceholderLineCount: 6
     property int programmaticEditorSurfaceSyncDepth: 0
     readonly property int editorIdleSyncThresholdMs: 1000
@@ -631,6 +633,11 @@ Item {
         });
     }
     function handleInlineFormatShortcutKeyPress(event) {
+        if (editorTypingController && editorTypingController.handleTagAwareDeleteKeyPress !== undefined) {
+            const deleteHandled = editorTypingController.handleTagAwareDeleteKeyPress(event);
+            if (deleteHandled)
+                return true;
+        }
         return editorSelectionController.handleInlineFormatShortcutKeyPress(event);
     }
     function handleSelectionContextMenuEvent(eventName) {
@@ -737,6 +744,14 @@ Item {
         const availableWidth = Math.max(editorWidth, viewportWidth) - contentsView.editorHorizontalInset * 2;
         return Math.max(120, Math.min(480, Math.floor(Math.max(120, availableWidth))));
     }
+    function resourceEntryOpenTarget(resourceEntry) {
+        const safeEntry = resourceEntry && typeof resourceEntry === "object" ? resourceEntry : ({});
+        const sourceUrl = safeEntry.source !== undefined ? String(safeEntry.source).trim() : "";
+        if (sourceUrl.length > 0)
+            return sourceUrl;
+        const resolvedPath = safeEntry.resolvedPath !== undefined ? String(safeEntry.resolvedPath).trim() : "";
+        return resolvedPath;
+    }
     function richTextParagraphHtml(innerHtml) {
         const paragraphBody = innerHtml === undefined || innerHtml === null || String(innerHtml).length === 0
                 ? "&nbsp;"
@@ -756,21 +771,20 @@ Item {
     function inlineResourceBlockHtml(resourceEntry) {
         const safeEntry = resourceEntry && typeof resourceEntry === "object" ? resourceEntry : ({});
         const renderMode = safeEntry.renderMode !== undefined ? String(safeEntry.renderMode).trim().toLowerCase() : "";
-        const sourceUrl = safeEntry.source !== undefined ? String(safeEntry.source).trim() : "";
+        const sourceUrl = contentsView.resourceEntryOpenTarget(safeEntry);
         const encodedSourceUrl = contentsView.encodeXmlAttributeValue(sourceUrl);
         const previewWidth = contentsView.inlineResourcePreviewWidth();
         if (renderMode === "image" && encodedSourceUrl.length > 0) {
             return "<p align=\"center\" style=\"margin-top:0px;margin-bottom:0px;\">"
                     + "<img src=\"" + encodedSourceUrl + "\" width=\"" + String(previewWidth) + "\" />"
-                    + "</p>"
-                    + contentsView.inlineResourcePlaceholderHtml(Math.max(0, contentsView.resourceEditorPlaceholderLineCount - 1));
+                    + "</p>";
         }
         return contentsView.resourcePlaceholderBlockHtml();
     }
     function resourceEntryCanRenderInlineInRichText(resourceEntry) {
         const safeEntry = resourceEntry && typeof resourceEntry === "object" ? resourceEntry : ({});
         const renderMode = safeEntry.renderMode !== undefined ? String(safeEntry.renderMode).trim().toLowerCase() : "";
-        const sourceUrl = safeEntry.source !== undefined ? String(safeEntry.source).trim() : "";
+        const sourceUrl = contentsView.resourceEntryOpenTarget(safeEntry);
         return contentsView.richTextInlineImageRenderingEnabled
                 && renderMode === "image"
                 && sourceUrl.length > 0;
@@ -795,9 +809,8 @@ Item {
                     function (_match, resourceIndexText) {
                         const resourceIndex = Math.max(0, Math.floor(Number(resourceIndexText) || 0));
                         const entry = resourceIndex < renderedResources.length ? renderedResources[resourceIndex] : null;
-                        // Keep the rich-text document responsible only for reserving flow height.
-                        // The actual bitmap paint stays on the source-aligned resource layer so
-                        // file-backed images do not depend on TextEdit's RichText image support.
+                        // Resolved image resources now become real RichText document blocks.
+                        // Unresolved or non-image resources still keep a reserved placeholder slot.
                         return contentsView.resourceEntryCanRenderInlineInRichText(entry)
                                 ? contentsView.inlineResourceBlockHtml(entry)
                                 : contentsView.resourcePlaceholderBlockHtml();
@@ -816,6 +829,11 @@ Item {
         }
         contentsView.scheduleEditorRichTextSurfaceSync();
     }
+    function activateResourceDropEditorSurfaceGuard() {
+        contentsView.resourceDropEditorSurfaceGuardToken += 1;
+        if (!contentsView.resourceDropEditorSurfaceGuardActive)
+            contentsView.resourceDropEditorSurfaceGuardActive = true;
+    }
     function markProgrammaticEditorSurfaceSync() {
         contentsView.programmaticEditorSurfaceSyncDepth += 1;
         Qt.callLater(function () {
@@ -823,6 +841,41 @@ Item {
                 contentsView.programmaticEditorSurfaceSyncDepth = Math.max(
                             0,
                             (Number(contentsView.programmaticEditorSurfaceSyncDepth) || 0) - 1);
+            });
+        });
+    }
+    function restoreEditorSurfaceFromPresentation() {
+        if (!contentEditor)
+            return;
+        const nextSurfaceText = contentsView.preferNativeInputHandling
+                ? String(textMetricsBridge.logicalText === undefined || textMetricsBridge.logicalText === null
+                             ? ""
+                             : textMetricsBridge.logicalText)
+                : contentsView.renderedEditorText;
+        contentsView.markProgrammaticEditorSurfaceSync();
+        if (contentEditor.setProgrammaticText !== undefined) {
+            contentEditor.setProgrammaticText(nextSurfaceText);
+            return;
+        }
+        if (contentEditor.text !== undefined && contentEditor.text !== nextSurfaceText)
+            contentEditor.text = nextSurfaceText;
+    }
+    function releaseResourceDropEditorSurfaceGuard(restoreSurface) {
+        const scheduledToken = Math.max(0, Number(contentsView.resourceDropEditorSurfaceGuardToken) || 0);
+        if (!restoreSurface) {
+            contentsView.resourceDropEditorSurfaceGuardActive = false;
+            return;
+        }
+        Qt.callLater(function () {
+            Qt.callLater(function () {
+                if (contentsView.resourceDropEditorSurfaceGuardToken !== scheduledToken)
+                    return;
+                contentsView.restoreEditorSurfaceFromPresentation();
+                Qt.callLater(function () {
+                    if (contentsView.resourceDropEditorSurfaceGuardToken !== scheduledToken)
+                        return;
+                    contentsView.resourceDropEditorSurfaceGuardActive = false;
+                });
             });
         });
     }
@@ -1701,6 +1754,7 @@ Item {
                         ? contentsView.documentPresentationSourceText
                         : ""
         contentViewModel: contentsView.contentViewModel
+        fallbackContentViewModel: contentsView.libraryHierarchyViewModel
         maxRenderCount: contentsView.resourceRenderDisplayLimit
         noteId: contentsView.selectedNoteId
     }
@@ -2256,8 +2310,11 @@ Item {
                             shortcutKeyPressHandler: function (event) {
                                 return contentsView.handleInlineFormatShortcutKeyPress(event);
                             }
+                            blockExternalDropMutation: contentsView.resourceDropActive
+                                                       || contentsView.resourceDropEditorSurfaceGuardActive
                             showRenderedOutput: !contentsView.preferNativeInputHandling
                             showScrollBar: false
+                            suppressCommittedTextEditedDispatch: contentsView.resourceDropEditorSurfaceGuardActive
                             text: contentsView.preferNativeInputHandling ? contentsView.mobileEditorDisplayText : contentsView.renderedEditorText
                             textColor: contentsView.showPrintEditorLayout ? contentsView.printPaperTextColor : LV.Theme.bodyColor
                             textFormat: contentsView.preferNativeInputHandling ? TextEdit.PlainText : TextEdit.RichText
@@ -2433,9 +2490,13 @@ Item {
                             if (!contentsView.canAcceptResourceDropUrls(dropUrls)) {
                                 if (drop)
                                     drop.accepted = false;
+                                contentsView.releaseResourceDropEditorSurfaceGuard(false);
                                 contentsView.resourceDropActive = false;
                                 return;
                             }
+                            contentsView.activateResourceDropEditorSurfaceGuard();
+                            if (drop && drop.acceptProposedAction !== undefined)
+                                drop.acceptProposedAction();
                             const importedEntries = contentsView.resourcesImportViewModel.importUrlsForEditor(dropUrls);
                             const importedEntryCount = contentsView.normalizedImportedResourceEntries(importedEntries).length;
                             const inserted = contentsView.insertImportedResourceTags(importedEntries);
@@ -2446,6 +2507,7 @@ Item {
                             }
                             if (drop)
                                 drop.accepted = inserted;
+                            contentsView.releaseResourceDropEditorSurfaceGuard(inserted);
                             contentsView.resourceDropActive = false;
                         }
                         onEntered: function (drag) {

@@ -54,6 +54,15 @@ plain `QtQuick.TextEdit` as the actual rendering and input engine.
   queued fallback `textEdited(...)` dispatch for the previous surface revision.
   This prevents one stale placeholder-only RichText body from being emitted after the next programmatic resource/body
   rebuild has already landed.
+- Hosts can now also raise `suppressCommittedTextEditedDispatch` for one editor turn when an external file drop is
+  being consumed by a higher-level resource-import path.
+  While that flag is true, `TextEdit.onTextChanged` still updates native cursor/input-method bookkeeping, but the
+  wrapper cancels any queued fallback `textEdited(...)` dispatch so a drop-side RichText mutation cannot be mistaken
+  for an authored note-body edit.
+- Hosts can now also raise `blockExternalDropMutation` while an accepted file drag/drop is hovering or being finalized.
+  While that flag is true, the inner `TextEdit` becomes temporarily read-only and refuses committed-edit dispatch, so
+  Qt cannot reinterpret the same file drop as editable RichText/plain-text content in parallel with the higher-level
+  resource import path.
 - The wrapper no longer keeps ordinary typing behind a native-`textEdited` vs deferred-fallback split.
   It now treats `TextEdit.onTextChanged` as the primary committed-edit trigger whenever:
   - the change is not inside `_programmaticTextSyncDepth`
@@ -130,6 +139,8 @@ plain `QtQuick.TextEdit` as the actual rendering and input engine.
   changed the nested `TextEdit` buffer
 - when `preferNativeInputHandling` is enabled, live typing/focus must not trigger whole-surface programmatic text
   reinjection before the native input session settles
+- while an accepted external file drag is hovering above the editor, the nested `TextEdit` must not mutate its
+  document buffer on its own; only the dedicated resource-drop path may write the resulting `<resource ... />` source
 - wrapper-driven cursor restore must go through one cursor path only; the app must not fight itself by rewriting the
   same cursor position into multiple nested editor objects on the same turn
 - clicking to move the cursor immediately after typing must not drop the newest word/chunk because ordinary committed

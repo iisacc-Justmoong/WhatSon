@@ -76,23 +76,22 @@ Desktop content editor host.
   Import therefore no longer reloads the resources hierarchy midway through the editor-linking step, but successful
   `.wsresource` registration still refreshes the runtime even when the note-link step fails.
 - Desktop RichText editor presentation still upgrades `whatson-resource-block` placeholders into paragraph-oriented
-  document blocks before that HTML is bound into `ContentsInlineFormatEditor`, but bitmap images no longer depend on
-  `TextEdit` RichText `<img>` support.
-- The editor document now owns only the reserved paragraph height for each resource slot, while
-  `ContentsResourceLayer.qml` paints the actual image at the same source offset.
-  The result stays in body flow, but the bitmap itself is no longer filtered out just because the host is using the
-  RichText editor projection.
-- That RichText placeholder path now intentionally stays on Qt's simpler paragraph-only subset:
-  - ordinary body text is rendered as paragraph-style document blocks
-  - resource placeholders are reserved as paragraph blocks rather than hidden overlay-only spans
-  - actual bitmap paint is delegated to the source-aligned resource layer, which avoids relying on lossy or
-    platform-dependent RichText image-object support inside `QtQuick.TextEdit`
+  document blocks before that HTML is bound into `ContentsInlineFormatEditor`.
+- When `ContentsBodyResourceRenderer` resolves an inline image resource successfully, the placeholder block is now
+  rewritten into a real RichText `<img>` paragraph so the bitmap becomes part of the editor's own document flow rather
+  than only a body-aligned overlay.
+- The RichText-side image rewrite now prefers the renderer's resolved resource URL and no longer appends extra blank
+  placeholder paragraphs after successful inline image injection.
+- `ContentsBodyResourceRenderer` now also receives `libraryHierarchyViewModel` as a fallback note-directory resolver,
+  so note-body resource rendering survives hierarchy-switch lag or active domains that do not implement
+  `noteDirectoryPathForNoteId(QString)`.
 - RichText dirtiness checks now compare against the already-upgraded inline-resource HTML, so the desktop host no
   longer treats every resource-bearing note as permanently dirty just because `editorSurfaceHtml` still contains the
   placeholder marker payload.
 - `ContentsResourceLayer.qml` now remains only for resource types that are not upgraded into RichText-inline media
   blocks yet, or for native/plain-input routes where the host is not using the RichText editor surface projection.
-  Desktop bitmap image resources are now explicitly included in that layer even during RichText editing.
+  Desktop non-image or unresolved resources still use that layer, while resolved bitmap images now stay in the
+  RichText document body.
 - When the selection bridge can already expose a buffered dirty body for the newly selected note, the desktop host now
   consumes that note-owned payload through the ordinary selection-sync path instead of waiting for a stale filesystem
   read to arrive first.
@@ -121,6 +120,22 @@ Desktop content editor host.
 - Programmatic RichText surface refresh now also raises `programmaticEditorSurfaceSyncActive` around that host-driven
   repaint window, so the rendered placeholder surface cannot re-enter the typing diff path as a fake user edit while
   resource/body presentation is being rebuilt.
+- Desktop file-drop linking now also raises a dedicated `resourceDropEditorSurfaceGuardActive` window around the drop
+  turn.
+  During that guard:
+  - `ContentsInlineFormatEditor.qml` suppresses fallback `textEdited(...)` dispatch from any native RichText
+    drop-side mutation that Qt may apply to the visible `TextEdit`
+  - `ContentsEditorTypingController.qml` ignores any late edit notification that still escapes that wrapper-level
+    suppression
+  - after the drop turn settles, the host reapplies the canonical rendered editor surface from `renderedEditorText`
+    so the nested `TextEdit` cannot keep a stray literalized `resource`-attribute fragment in its internal buffer
+- Desktop now also drives `ContentsInlineFormatEditor.blockExternalDropMutation` from
+  `resourceDropActive || resourceDropEditorSurfaceGuardActive`, so the nested `TextEdit` turns read-only from drag
+  hover through drop finalization and cannot corrupt adjacent `<callout>` / `<resource>` source by handling the same
+  OS file drop as ordinary editable content.
+- The desktop drop handler now also prefers `drop.acceptProposedAction()` when Qt exposes it, then sets
+  `drop.accepted = inserted`, so the file drop is consumed as an editor-import gesture instead of being left for the
+  nested `TextEdit` to interpret as ordinary editable content.
 
 ## Legacy Surface
 - The single `ContentsInlineFormatEditor` and overlay layers still remain the fallback path for notes without any

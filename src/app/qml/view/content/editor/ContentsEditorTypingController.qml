@@ -479,6 +479,194 @@ QtObject {
             });
     }
 
+    function sourceTagRanges(sourceText) {
+        const normalizedSourceText = sourceText === undefined || sourceText === null ? "" : String(sourceText);
+        const ranges = [];
+        const tagPattern = /<!--[\s\S]*?-->|<\s*\/?\s*[A-Za-z_][A-Za-z0-9_.:-]*\b[^>]*?>/g;
+        let match = tagPattern.exec(normalizedSourceText);
+        while (match) {
+            const token = String(match[0] || "");
+            const start = Math.max(0, Number(match.index) || 0);
+            const end = start + token.length;
+            if (end > start) {
+                ranges.push({
+                        "end": end,
+                        "start": start,
+                        "token": token
+                    });
+            }
+            if (tagPattern.lastIndex === match.index)
+                tagPattern.lastIndex = match.index + Math.max(1, token.length);
+            match = tagPattern.exec(normalizedSourceText);
+        }
+        return ranges;
+    }
+
+    function collapsedDeletionTagRange(sourceTagRanges, sourceOffset, deleteForward) {
+        const ranges = Array.isArray(sourceTagRanges) ? sourceTagRanges : [];
+        const safeOffset = Math.max(0, Math.floor(Number(sourceOffset) || 0));
+        if (deleteForward) {
+            for (let index = 0; index < ranges.length; ++index) {
+                const range = ranges[index];
+                const rangeStart = Math.max(0, Math.floor(Number(range.start) || 0));
+                const rangeEnd = Math.max(rangeStart, Math.floor(Number(range.end) || 0));
+                if (safeOffset >= rangeStart && safeOffset < rangeEnd)
+                    return range;
+            }
+            return null;
+        }
+        for (let index = ranges.length - 1; index >= 0; --index) {
+            const range = ranges[index];
+            const rangeStart = Math.max(0, Math.floor(Number(range.start) || 0));
+            const rangeEnd = Math.max(rangeStart, Math.floor(Number(range.end) || 0));
+            if (safeOffset > rangeStart && safeOffset <= rangeEnd)
+                return range;
+        }
+        return null;
+    }
+
+    function expandedDeletionSourceRange(sourceTagRanges, sourceStart, sourceEnd) {
+        const ranges = Array.isArray(sourceTagRanges) ? sourceTagRanges : [];
+        let expandedStart = Math.max(0, Math.floor(Number(sourceStart) || 0));
+        let expandedEnd = Math.max(expandedStart, Math.floor(Number(sourceEnd) || 0));
+        if (expandedEnd <= expandedStart) {
+            return ({
+                    "start": expandedStart,
+                    "end": expandedEnd
+                });
+        }
+
+        let changed = true;
+        while (changed) {
+            changed = false;
+            for (let index = 0; index < ranges.length; ++index) {
+                const range = ranges[index];
+                const rangeStart = Math.max(0, Math.floor(Number(range.start) || 0));
+                const rangeEnd = Math.max(rangeStart, Math.floor(Number(range.end) || 0));
+                const intersects = rangeEnd > expandedStart && rangeStart < expandedEnd;
+                if (!intersects)
+                    continue;
+                if (rangeStart < expandedStart) {
+                    expandedStart = rangeStart;
+                    changed = true;
+                }
+                if (rangeEnd > expandedEnd) {
+                    expandedEnd = rangeEnd;
+                    changed = true;
+                }
+            }
+        }
+
+        return ({
+                "start": expandedStart,
+                "end": expandedEnd
+            });
+    }
+
+    function applyDirectRawSourceReplacement(sourceStart, sourceEnd, replacementSourceText, cursorSourceOffsetFromReplacementStart) {
+        if (!controller.view)
+            return false;
+        const currentSourceText = controller.view.editorText === undefined || controller.view.editorText === null
+                ? ""
+                : String(controller.view.editorText);
+        const safeSourceLength = currentSourceText.length;
+        const boundedStart = Math.max(0, Math.min(safeSourceLength, Math.floor(Number(sourceStart) || 0)));
+        const boundedEnd = Math.max(boundedStart, Math.min(safeSourceLength, Math.floor(Number(sourceEnd) || 0)));
+        const normalizedReplacementSourceText = controller.normalizePlainText(replacementSourceText);
+        const nextSourceText = controller.spliceSourceText(
+                    currentSourceText,
+                    boundedStart,
+                    boundedEnd,
+                    normalizedReplacementSourceText);
+        if (nextSourceText === currentSourceText)
+            return false;
+
+        if (controller.view.editorText !== nextSourceText)
+            controller.view.editorText = nextSourceText;
+        if (controller.view.commitDocumentPresentationRefresh !== undefined)
+            controller.view.commitDocumentPresentationRefresh();
+        else
+            controller.synchronizeLiveEditingStateFromPresentation();
+
+        const cursorOffsetInsideReplacement = Math.max(
+                    0,
+                    Math.min(
+                        normalizedReplacementSourceText.length,
+                        Math.floor(Number(cursorSourceOffsetFromReplacementStart) || 0)));
+        controller.scheduleCursorPosition(
+                    controller.logicalOffsetForSourceOffset(boundedStart + cursorOffsetInsideReplacement));
+
+        if (controller.editorSession && controller.editorSession.markLocalEditorAuthority !== undefined)
+            controller.editorSession.markLocalEditorAuthority();
+        if (controller.view.persistEditorTextImmediately !== undefined)
+            controller.view.persistEditorTextImmediately(nextSourceText);
+        controller.view.editorTextEdited(nextSourceText);
+        return true;
+    }
+
+    function handleTagAwareDeleteKeyPress(event) {
+        if (!event
+                || !controller.view
+                || !controller.view.hasSelectedNote
+                || controller.view.showDedicatedResourceViewer
+                || controller.view.showFormattedTextRenderer) {
+            return false;
+        }
+
+        const key = Number(event.key);
+        const deleteBackward = key === Qt.Key_Backspace;
+        const deleteForward = key === Qt.Key_Delete;
+        if (!deleteBackward && !deleteForward)
+            return false;
+
+        const modifiers = Number(event.modifiers) || 0;
+        if ((modifiers & (Qt.ControlModifier | Qt.AltModifier | Qt.MetaModifier)) !== 0)
+            return false;
+
+        controller.ensureLiveEditingStateReady();
+        const currentSourceText = controller.view.editorText === undefined || controller.view.editorText === null
+                ? ""
+                : String(controller.view.editorText);
+        if (currentSourceText.length === 0)
+            return false;
+
+        const tagRanges = controller.sourceTagRanges(currentSourceText);
+        if (tagRanges.length === 0)
+            return false;
+
+        const selectionRange = controller.currentRawEditorSelectionRange();
+        if (selectionRange.end > selectionRange.start) {
+            const selectionSourceStart = controller.sourceOffsetForLogicalOffset(selectionRange.start);
+            const selectionSourceEnd = controller.sourceOffsetForLogicalOffset(selectionRange.end);
+            const expandedRange = controller.expandedDeletionSourceRange(
+                        tagRanges,
+                        selectionSourceStart,
+                        selectionSourceEnd);
+            if (expandedRange.end <= expandedRange.start)
+                return false;
+            return controller.applyDirectRawSourceReplacement(expandedRange.start, expandedRange.end, "", 0);
+        }
+
+        const logicalCursor = controller.currentLogicalCursorOffsetForShortcutInsertion();
+        const sourceCursorOffset = Math.max(
+                    0,
+                    Math.min(
+                        currentSourceText.length,
+                        Math.floor(Number(controller.sourceOffsetForLogicalOffset(logicalCursor)) || 0)));
+        const tagRange = controller.collapsedDeletionTagRange(
+                    tagRanges,
+                    sourceCursorOffset,
+                    deleteForward);
+        if (!tagRange)
+            return false;
+
+        return controller.applyDirectRawSourceReplacement(
+                    Math.max(0, Math.floor(Number(tagRange.start) || 0)),
+                    Math.max(0, Math.floor(Number(tagRange.end) || 0)),
+                    "",
+                    0);
+    }
+
     function queueAgendaShortcutInsertion() {
         if (!controller.view
                 || !controller.view.hasSelectedNote
@@ -846,6 +1034,10 @@ QtObject {
                 || !controller.view.hasSelectedNote
                 || controller.view.showDedicatedResourceViewer
                 || controller.view.showFormattedTextRenderer) {
+            return false;
+        }
+        if (controller.view.resourceDropEditorSurfaceGuardActive !== undefined
+                && controller.view.resourceDropEditorSurfaceGuardActive) {
             return false;
         }
         if ((controller.view.programmaticEditorSurfaceSyncActive !== undefined

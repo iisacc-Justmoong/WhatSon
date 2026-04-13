@@ -89,13 +89,20 @@ structured document-flow editor changes.
   before a later manual note reopen or explicit filesystem refresh.
 - Later text in that same note must flow below the inline resource frame; the card must not overlap subsequent
   paragraphs just because the tag itself is zero-width source markup.
-- In RichText editor mode, dropping an image must render at the authored body slot and remain vertically in flow with
-  later paragraphs.
-  The implementation may use the source-aligned `ContentsResourceLayer.qml` bitmap renderer rather than a direct
-  `QtQuick.TextEdit` RichText `<img>` object, but the user-visible result must still behave like an inline body asset.
+- In RichText editor mode, dropping an image must render at the authored body slot as part of the RichText document
+  itself, and later paragraphs must remain below that image in ordinary body flow.
+- Inline image rendering must still work when the active hierarchy view-model does not expose
+  `noteDirectoryPathForNoteId(QString)` or when hierarchy switching momentarily leaves the content surface bound to the
+  previous domain view-model.
 - In RichText editor mode, the rendered body should stay on paragraph/image document flow that is close to Qt raw
   RichText/RTF layout, rather than one flat `<br/>` chain plus hidden spacer overlays.
 - After an inline image resource is present in the editor body, typing one additional character elsewhere in that note
   must not treat the RichText image object itself as a new plain-text character during diffing or persistence.
 - A programmatic resource/body presentation rebuild must not persist the superseded placeholder surface back into
   `.wsnbody`; queued fallback `textEdited(...)` dispatch from the older RichText surface must be cancelled or ignored.
+- A file drop that imports a resource must not leave escaped tail fragments such as
+  `&quot;image&quot; format=&quot;...&quot; ... /&gt;` or `e=&quot;image&quot; ... /&gt;` inside `.wsnbody`.
+  The saved body must contain canonical literal `<resource ... />` tags only.
+- The same imported-file drop must not rewrite neighboring structured tags into broken paragraph text.
+  For example, an existing `<callout>...</callout>` block around the drop context must remain literal source markup
+  instead of degrading into plain paragraph text plus escaped resource-tail fragments.

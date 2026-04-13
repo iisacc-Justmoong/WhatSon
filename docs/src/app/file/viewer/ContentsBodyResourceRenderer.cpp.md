@@ -5,6 +5,10 @@ Implements note-body resource rendering data extraction for the editor surface.
 
 ## Key Behavior
 - Resolves the selected note directory from `contentViewModel.noteDirectoryPathForNoteId(noteId)`.
+- If the active hierarchy view-model cannot resolve that note directory, it retries through
+  `fallbackContentViewModel.noteDirectoryPathForNoteId(noteId)`.
+  Desktop/mobile bind this fallback to `LibraryHierarchyViewModel` so inline resource rendering survives hierarchy
+  transition lag and domains such as tags that do not own their own note-directory resolver.
 - If the resolved path is a `.wsresource` directory, it renders that package directly as a single
   resource card.
 - Otherwise it prefers the live `bodySourceText` snapshot supplied by the editor host and scans that RAW source for
@@ -24,6 +28,7 @@ Implements note-body resource rendering data extraction for the editor surface.
 - Exposes source-span metadata (`sourceStart`, `sourceEnd`, `focusSourceOffset`) for each note-body tag so QML can
   place resource cards at the authored inline position instead of pinning them to one bottom overlay rail.
 - Rebuilds the render model when the selected note changes or when `hubFilesystemMutated()` is emitted by the content view-model.
+- Rebuilds the render model when either the primary or fallback resolver emits `hubFilesystemMutated()`.
 - Rebuilds the render model immediately when `bodySourceText` changes, which lets drag-inserted resource tags render
   before the background note-persistence worker finishes.
 

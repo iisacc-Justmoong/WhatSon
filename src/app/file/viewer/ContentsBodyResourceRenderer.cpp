@@ -572,6 +572,11 @@ QObject* ContentsBodyResourceRenderer::contentViewModel() const noexcept
     return m_contentViewModel;
 }
 
+QObject* ContentsBodyResourceRenderer::fallbackContentViewModel() const noexcept
+{
+    return m_fallbackContentViewModel;
+}
+
 void ContentsBodyResourceRenderer::setContentViewModel(QObject* model)
 {
     if (m_contentViewModel == model)
@@ -601,6 +606,38 @@ void ContentsBodyResourceRenderer::setContentViewModel(QObject* model)
     }
 
     emit contentViewModelChanged();
+    refreshRenderedResources();
+}
+
+void ContentsBodyResourceRenderer::setFallbackContentViewModel(QObject* model)
+{
+    if (m_fallbackContentViewModel == model)
+    {
+        return;
+    }
+
+    disconnectFallbackContentViewModel();
+    m_fallbackContentViewModel = model;
+
+    if (m_fallbackContentViewModel != nullptr)
+    {
+        m_fallbackContentViewModelDestroyedConnection = connect(
+            m_fallbackContentViewModel,
+            &QObject::destroyed,
+            this,
+            &ContentsBodyResourceRenderer::handleFallbackContentViewModelDestroyed);
+
+        if (m_fallbackContentViewModel->metaObject()->indexOfSignal("hubFilesystemMutated()") >= 0)
+        {
+            m_fallbackHubFilesystemMutatedConnection = connect(
+                m_fallbackContentViewModel,
+                SIGNAL(hubFilesystemMutated()),
+                this,
+                SLOT(handleContentFilesystemMutated()));
+        }
+    }
+
+    emit fallbackContentViewModelChanged();
     refreshRenderedResources();
 }
 
@@ -682,6 +719,14 @@ void ContentsBodyResourceRenderer::handleContentViewModelDestroyed()
     disconnectContentViewModel();
     m_contentViewModel = nullptr;
     emit contentViewModelChanged();
+    refreshRenderedResources();
+}
+
+void ContentsBodyResourceRenderer::handleFallbackContentViewModelDestroyed()
+{
+    disconnectFallbackContentViewModel();
+    m_fallbackContentViewModel = nullptr;
+    emit fallbackContentViewModelChanged();
     refreshRenderedResources();
 }
 
@@ -802,21 +847,21 @@ QVariantList ContentsBodyResourceRenderer::buildRenderedResources(
     return buildRenderedResourcesFromSourceText(extractBodyInnerText(bodyDocumentText), basePaths);
 }
 
-QString ContentsBodyResourceRenderer::resolveNoteDirectoryPath() const
+QString ContentsBodyResourceRenderer::resolveNoteDirectoryPathFromViewModel(QObject* viewModel) const
 {
-    if (m_contentViewModel == nullptr || m_noteId.trimmed().isEmpty())
+    if (viewModel == nullptr || m_noteId.trimmed().isEmpty())
     {
         return {};
     }
 
-    if (!hasInvokableMethod(m_contentViewModel, kNoteDirectoryPathForNoteIdSignature))
+    if (!hasInvokableMethod(viewModel, kNoteDirectoryPathForNoteIdSignature))
     {
         return {};
     }
 
     QString noteDirectoryPath;
     const bool invoked = QMetaObject::invokeMethod(
-        m_contentViewModel,
+        viewModel,
         "noteDirectoryPathForNoteId",
         Qt::DirectConnection,
         Q_RETURN_ARG(QString, noteDirectoryPath),
@@ -827,6 +872,27 @@ QString ContentsBodyResourceRenderer::resolveNoteDirectoryPath() const
     }
 
     return normalizePath(noteDirectoryPath);
+}
+
+QString ContentsBodyResourceRenderer::resolveNoteDirectoryPath() const
+{
+    if (m_noteId.trimmed().isEmpty())
+    {
+        return {};
+    }
+
+    const QString primaryPath = resolveNoteDirectoryPathFromViewModel(m_contentViewModel);
+    if (!primaryPath.isEmpty())
+    {
+        return primaryPath;
+    }
+
+    if (m_fallbackContentViewModel != nullptr
+        && m_fallbackContentViewModel != m_contentViewModel)
+    {
+        return resolveNoteDirectoryPathFromViewModel(m_fallbackContentViewModel);
+    }
+    return {};
 }
 
 void ContentsBodyResourceRenderer::disconnectContentViewModel()
@@ -840,5 +906,19 @@ void ContentsBodyResourceRenderer::disconnectContentViewModel()
     {
         disconnect(m_hubFilesystemMutatedConnection);
         m_hubFilesystemMutatedConnection = QMetaObject::Connection();
+    }
+}
+
+void ContentsBodyResourceRenderer::disconnectFallbackContentViewModel()
+{
+    if (m_fallbackContentViewModelDestroyedConnection)
+    {
+        disconnect(m_fallbackContentViewModelDestroyedConnection);
+        m_fallbackContentViewModelDestroyedConnection = QMetaObject::Connection();
+    }
+    if (m_fallbackHubFilesystemMutatedConnection)
+    {
+        disconnect(m_fallbackHubFilesystemMutatedConnection);
+        m_fallbackHubFilesystemMutatedConnection = QMetaObject::Connection();
     }
 }

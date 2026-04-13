@@ -8,12 +8,15 @@ Item {
     id: resourceViewer
 
     property var resourceEntry: ({})
+    property int imageFillMode: Image.PreserveAspectFit
     readonly property string resourceRenderMode: resourceEntry.renderMode !== undefined ? String(resourceEntry.renderMode) : ""
     readonly property string resourceOpenTarget: bitmapViewer.openTarget
     readonly property bool imageRenderable: resourceViewer.resourceRenderMode === "image"
                                             && bitmapViewer.bitmapRenderable
     readonly property bool pdfRenderable: resourceViewer.resourceRenderMode === "pdf"
                                           && resourceViewer.resourceOpenTarget.length > 0
+    readonly property bool resourceRenderable: resourceViewer.imageRenderable || resourceViewer.pdfRenderable
+    readonly property string renderFailureReason: bitmapViewer.incompatibilityReason
 
     clip: true
 
@@ -35,7 +38,7 @@ Item {
         anchors.fill: parent
         asynchronous: true
         cache: true
-        fillMode: Image.PreserveAspectFit
+        fillMode: resourceViewer.imageFillMode
         mipmap: true
         source: resourceViewer.imageRenderable ? bitmapViewer.viewerSource : ""
         visible: resourceViewer.imageRenderable

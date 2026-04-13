@@ -76,19 +76,20 @@ Mobile content editor host.
 - Mobile now likewise defers the resources runtime reload until after the drop turn finishes its same-note
   `<resource ... />` link attempt, keeping `.wsresource` package creation and `.wsnbody` linking on one stable editor
   turn while still refreshing the runtime for successful package registration.
-- Mobile now also carries the same `whatson-resource-block` placeholder upgrade path as desktop, but the host keeps
-  bitmap rendering out of `TextEdit` RichText `<img>` support.
-  The RichText surface reserves paragraph-sized body slots while `ContentsResourceLayer.qml` paints the actual image at
-  the matching source offset.
-- That placeholder upgrade path therefore stays on Qt's simpler paragraph-only subset instead of depending on inline
-  bitmap object rendering inside `QtQuick.TextEdit`.
+- Mobile now also carries the same `whatson-resource-block` upgrade helper as desktop.
+- When mobile later enters the RichText projection path, resolved image resources can be rewritten into real RichText
+  `<img>` paragraphs using the renderer-resolved resource URL, without the old trailing blank placeholder paragraphs.
+- The current default mobile native-input path still keeps actual image paint on the source-aligned resource layer.
+- `ContentsBodyResourceRenderer` on mobile now also receives `libraryHierarchyViewModel` as a fallback note-directory
+  resolver so body resource rendering survives hierarchy-switch lag and active domains that do not expose
+  `noteDirectoryPathForNoteId(QString)`.
 - RichText dirtiness checks now compare against the already-upgraded inline-resource HTML instead of the unresolved
   placeholder payload, preventing resource-bearing notes from staying permanently dirty while the RichText surface is
   active.
 - `ContentsResourceLayer.qml` remains only for resource types that are not upgraded into RichText-inline media blocks
   yet, or for native/plain-input mobile routes that are not using the RichText editor surface projection.
-  Bitmap image resources are now intentionally kept on that source-aligned layer even when the host is rebuilding the
-  RichText placeholder surface.
+  On the current default mobile route, bitmap images still use the source-aligned layer while non-image resources do
+  the same.
 - When the selection bridge can already expose a buffered dirty body for the newly selected note, the mobile host now
   consumes that note-owned payload through the ordinary selection-sync path instead of waiting for a stale filesystem
   read to arrive first.
@@ -108,3 +109,15 @@ Mobile content editor host.
   refresh so the source-aligned resource renderer can repaint that slot without waiting for another note-open turn.
 - Programmatic RichText surface refresh now also raises `programmaticEditorSurfaceSyncActive` around that host-driven
   repaint window, so the rebuilt placeholder surface cannot re-enter the typing diff path as a fake committed edit.
+- Mobile file-drop linking now also raises `resourceDropEditorSurfaceGuardActive` for the drop turn itself.
+  That guard suppresses wrapper-level fallback `textEdited(...)` dispatch, tells
+  `ContentsEditorTypingController.qml` to ignore any same-turn late surface edit notification, and finally reapplies
+  the canonical rendered editor surface so native `TextEdit` drop mutations cannot survive as literalized
+  `resource`-attribute fragments in the editor buffer.
+- Mobile now also drives `ContentsInlineFormatEditor.blockExternalDropMutation` from
+  `resourceDropActive || resourceDropEditorSurfaceGuardActive`, so the nested `TextEdit` turns read-only as soon as a
+  valid external file drag is hovering over the editor and stays frozen until the dedicated resource-drop turn
+  finishes.
+- Mobile drop handling now also prefers `drop.acceptProposedAction()` when the Qt drop event exposes it, then sets
+  `drop.accepted = inserted`, keeping file import/linking on the dedicated resource-drop path instead of leaving the
+  nested editor free to reinterpret the drop as editable text content.

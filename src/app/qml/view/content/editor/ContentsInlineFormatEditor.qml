@@ -34,6 +34,8 @@ FocusScope {
     property var shortcutKeyPressHandler: null
     property bool showRenderedOutput: true
     property bool showScrollBar: false
+    property bool blockExternalDropMutation: false
+    property bool suppressCommittedTextEditedDispatch: false
     property int tabIndentSpaceCount: 4
     property string text: ""
     property color textColor: LV.Theme.bodyColor
@@ -281,6 +283,10 @@ FocusScope {
     function dispatchCommittedTextEditedIfReady() {
         if (control._programmaticTextSyncDepth > 0)
             return false;
+        if (control.blockExternalDropMutation)
+            return false;
+        if (control.suppressCommittedTextEditedDispatch)
+            return false;
         if (control.inputMethodSessionActive())
             return false;
         control.textEdited(textInput.text);
@@ -451,7 +457,7 @@ FocusScope {
                 font.weight: control.fontWeight
                 leftPadding: control.insetHorizontal
                 persistentSelection: true
-                readOnly: false
+                readOnly: control.blockExternalDropMutation
                 rightPadding: control.insetHorizontal
                 selectByMouse: control.selectByMouse
                                && (!control.preferNativeInputHandling || control.inputMethodVisible)
@@ -487,6 +493,12 @@ FocusScope {
                     control.notifyInputMethod(control.inputMethodSelectionQueryMask());
                     if (control._programmaticTextSyncDepth > 0)
                         return;
+                    if (control.blockExternalDropMutation
+                            || control.suppressCommittedTextEditedDispatch) {
+                        control._fallbackTextEditedDispatchRevision += 1;
+                        control._fallbackTextEditedDispatchQueued = false;
+                        return;
+                    }
                     if (control.inputMethodSessionActive()) {
                         control.scheduleCommittedTextEditedDispatch();
                         return;

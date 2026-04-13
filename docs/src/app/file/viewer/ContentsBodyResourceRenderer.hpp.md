@@ -5,6 +5,9 @@ Declares the body-resource renderer bridge that maps note-local `<resource ...>`
 
 ## Public Contract
 - `contentViewModel`: expects a view-model that exposes `noteDirectoryPathForNoteId(QString)`.
+- `fallbackContentViewModel`: optional second resolver, typically `LibraryHierarchyViewModel`, used when the active
+  hierarchy view-model has not switched yet or does not expose the note-directory resolver contract for the currently
+  selected note.
 - `noteId`: selected note id whose `.wsnbody` resource tags should be rendered.
 - `bodySourceText`: optional live editor/presentation snapshot used to resolve `<resource ...>` tags before the latest
   `.wsnbody` flush finishes.
@@ -24,3 +27,4 @@ The renderer supports two selection sources through the same `noteId` contract:
 
 ## Signals
 - Emits `renderedResourcesChanged()` whenever note selection or filesystem-backed resource payload changes.
+- Emits `fallbackContentViewModelChanged()` when the secondary resolver changes.

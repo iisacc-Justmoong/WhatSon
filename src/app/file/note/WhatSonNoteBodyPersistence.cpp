@@ -203,6 +203,59 @@ namespace
         return QStringLiteral("<resource %1 />").arg(attributes.join(QLatin1Char(' ')));
     }
 
+    bool textContainsResourceTag(const QString& text)
+    {
+        static const QRegularExpression resourceTagPattern(
+            QStringLiteral(R"(<\s*resource\b[^>]*?/?>)"),
+            QRegularExpression::CaseInsensitiveOption);
+        return resourceTagPattern.match(text).hasMatch();
+    }
+
+    QString fallbackSourceTextFromBodyDocumentPreservingResources(const QString& bodyDocumentText)
+    {
+        if (!textContainsResourceTag(bodyDocumentText))
+        {
+            return {};
+        }
+
+        static const QRegularExpression bodyPattern(
+            QStringLiteral(R"(<body\b[^>]*>([\s\S]*?)</body>)"),
+            QRegularExpression::CaseInsensitiveOption);
+        const QRegularExpressionMatch bodyMatch = bodyPattern.match(bodyDocumentText);
+        if (!bodyMatch.hasMatch())
+        {
+            return {};
+        }
+
+        QString bodyInnerText = bodyMatch.captured(1);
+        bodyInnerText.remove(QRegularExpression(QStringLiteral(R"(<!--[\s\S]*?-->)")));
+        bodyInnerText = removeInterTagFormattingWhitespace(bodyInnerText);
+
+        static const QRegularExpression textBlockBoundaryPattern(
+            QStringLiteral(
+                R"(</\s*(?:paragraph|p|div|li|blockquote|pre|h1|h2|h3|h4|h5|h6)\s*>\s*<\s*(?:paragraph|p|div|li|blockquote|pre|h1|h2|h3|h4|h5|h6)\b[^>]*>)"),
+            QRegularExpression::CaseInsensitiveOption);
+        static const QRegularExpression textBlockOpenPattern(
+            QStringLiteral(
+                R"(<\s*(?:paragraph|p|div|li|blockquote|pre|h1|h2|h3|h4|h5|h6)\b[^>]*>)"),
+            QRegularExpression::CaseInsensitiveOption);
+        static const QRegularExpression textBlockClosePattern(
+            QStringLiteral(
+                R"(</\s*(?:paragraph|p|div|li|blockquote|pre|h1|h2|h3|h4|h5|h6)\s*>)"),
+            QRegularExpression::CaseInsensitiveOption);
+        static const QRegularExpression brPattern(
+            QStringLiteral(R"(<\s*br\b[^>]*?/?>)"),
+            QRegularExpression::CaseInsensitiveOption);
+
+        bodyInnerText.replace(textBlockBoundaryPattern, QStringLiteral("\n"));
+        bodyInnerText.replace(brPattern, QStringLiteral("\n"));
+        bodyInnerText.remove(textBlockOpenPattern);
+        bodyInnerText.remove(textBlockClosePattern);
+        bodyInnerText = normalizeStructuredBlocksToStandaloneLines(
+            WhatSon::NoteBodyPersistence::normalizeBodyPlainText(decodeXmlEntities(bodyInnerText)));
+        return WhatSon::NoteBodyPersistence::normalizeBodyPlainText(bodyInnerText);
+    }
+
     QString normalizeResourceTagsForXmlParser(QString bodyDocumentText)
     {
         if (bodyDocumentText.trimmed().isEmpty())
@@ -1611,9 +1664,19 @@ namespace WhatSon::NoteBodyPersistence
     QString sourceTextFromBodyDocument(const QString& bodyDocumentText)
     {
         const WhatSonStructuredTagLinter structuredTagLinter;
-        return structuredTagLinter.normalizeStructuredSourceText(
+        const QString normalizedSourceText = structuredTagLinter.normalizeStructuredSourceText(
             editorSourceTextFromCanonicalInlineTaggedText(
                 normalizeEditorSourceToInlineTaggedText(bodyDocumentText)));
+        if (textContainsResourceTag(bodyDocumentText) && !textContainsResourceTag(normalizedSourceText))
+        {
+            const QString fallbackSourceText = structuredTagLinter.normalizeStructuredSourceText(
+                fallbackSourceTextFromBodyDocumentPreservingResources(bodyDocumentText));
+            if (textContainsResourceTag(fallbackSourceText))
+            {
+                return fallbackSourceText;
+            }
+        }
+        return normalizedSourceText;
     }
 
     QString richTextFromBodyDocument(const QString& bodyDocumentText)
