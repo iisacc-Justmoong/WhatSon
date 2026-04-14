@@ -167,6 +167,9 @@ structured document-flow editor changes.
 - Typing immediately after an inline image resource must keep both the `<resource ... />` RAW token and the newly
   typed prose.
   The editor must neither erase the finished word nor drop the resource block into memory-only presentation state.
+- Typing below an inline image resource with an IME composition still in progress, then blurring the editor before
+  pressing space, must keep both the image block and the newly authored body text.
+  Focus loss must not collapse the note back to an image-only body by replaying an older deferred editor surface.
 - Pressing `Tab` in an ordinary paragraph must mutate RAW source with visible indentation spaces and keep that
   indentation rendered after the editor refresh.
   The live surface must not collapse the stored spaces so that only the cursor appears to move.

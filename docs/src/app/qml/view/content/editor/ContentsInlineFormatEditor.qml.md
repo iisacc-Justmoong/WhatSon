@@ -54,6 +54,12 @@ plain `QtQuick.TextEdit` as the actual rendering and input engine.
   active.
   During that fallback the wrapper snapshots the current visible plain text into the nested `TextEdit`, allowing the
   platform preedit string itself to render live instead of staying invisible until the next commit key such as space.
+- When the user mutates the nested editor buffer locally, the wrapper now also discards any older deferred
+  host-projected surface payload that was waiting behind focus/IME guards.
+  A later blur or IME-settle turn therefore cannot reapply a stale RichText snapshot over the just-authored text.
+- Blur-side deferred surface flush now also waits for any active IME preedit/composition session to settle first.
+  Focus loss during a not-yet-space-committed Hangul word therefore gives the native input path a chance to emit the
+  real committed text before any queued host surface is considered again.
 - The wrapper now exposes a single cursor setter (`setCursorPositionPreservingInputMethod(...)`) that updates
   `Qt.inputMethod` together with the logical cursor move.
   Host controllers should use that wrapper-level path instead of writing `cursorPosition` into the wrapper,
@@ -155,6 +161,8 @@ plain `QtQuick.TextEdit` as the actual rendering and input engine.
   preedit/composition is still active
 - Hangul or other IME preedit text on the desktop RichText host must remain visibly painted before the commit key is
   pressed; the word must not stay invisible until space or another explicit commit gesture lands
+- Blur immediately after such an IME composition must not restore an older deferred RichText surface and erase the
+  just-authored paragraph
 - the host `editorSession` must not stay pinned to the note-open body snapshot after visible user typing has already
   changed the nested `TextEdit` buffer
 - when `preferNativeInputHandling` is enabled, live typing/focus must not trigger whole-surface programmatic text

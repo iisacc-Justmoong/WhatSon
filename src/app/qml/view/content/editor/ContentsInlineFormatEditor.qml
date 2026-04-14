@@ -295,6 +295,11 @@ FocusScope {
         control.setProgrammaticText(deferredText);
     }
 
+    function clearDeferredProgrammaticText() {
+        control._hasDeferredProgrammaticText = false;
+        control._deferredProgrammaticText = "";
+    }
+
     function dispatchCommittedTextEditedIfReady() {
         if (control._programmaticTextSyncDepth > 0)
             return false;
@@ -359,7 +364,6 @@ FocusScope {
             return;
 
         control._richTextImeFallbackSurfaceActive = false;
-        control.flushDeferredProgrammaticText(false);
     }
 
     function scheduleCommittedTextEditedDispatch() {
@@ -411,6 +415,13 @@ FocusScope {
 
     onFocusedChanged: {
         control.notifyInputMethod(Qt.ImQueryAll);
+        if (!focused && control.inputMethodSessionActive()) {
+            Qt.callLater(function () {
+                if (!control.focused && !control.inputMethodSessionActive())
+                    control.flushDeferredProgrammaticText(true);
+            });
+            return;
+        }
         if (!focused)
             control.flushDeferredProgrammaticText(true);
     }
@@ -531,6 +542,7 @@ FocusScope {
                     control.notifyInputMethod(control.inputMethodSelectionQueryMask());
                     if (control._programmaticTextSyncDepth > 0)
                         return;
+                    control.clearDeferredProgrammaticText();
                     if (control.blockExternalDropMutation
                             || control.suppressCommittedTextEditedDispatch) {
                         control._fallbackTextEditedDispatchRevision += 1;
