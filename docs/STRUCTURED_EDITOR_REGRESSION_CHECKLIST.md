@@ -69,6 +69,10 @@ structured document-flow editor changes.
 - Selecting a very large note must not freeze the app before the editor becomes interactive.
 - While the selected note body is still loading, desktop/mobile editor hosts must show the loading overlay and keep
   editor input disabled.
+- After the user selects a different note-list item, the previously rendered note body must not remain mounted once the
+  host has recognized that the editor session is no longer bound to that old note.
+  Structured-flow visibility must follow the currently bound selected-note session, not the previous note's cached
+  parser result.
 - A note-open turn must not sync an empty placeholder body into the editor before the lazy body read completes.
 - Library/bookmarks/projects/progress note-list rows must not carry the full note body as a secondary transport just to
   support editor note-open.
@@ -80,6 +84,10 @@ structured document-flow editor changes.
 - If the current note still has `pendingBodySave`, a note switch must not proceed as if that save succeeded unless the
   persistence bridge accepted the staged snapshot first.
 - Leaving a note with `pendingBodySave` should prefer the immediate fetch path rather than only a deferred stage request.
+- A blur-side deferred editor flush captured while note `A` was focused must not execute after the session has already
+  rebound to note `B`.
+  Selecting `B` must never persist `A`'s stale surface text into `B` just because the editor focus change settled one
+  turn later.
 - A buffered editor save must remain attached to the note directory that was resolved when the edit was staged, even if
   the active hierarchy/content-view-model changes before the next fetch turn.
 - Replacing `noteListModel` and `contentViewModel` in the same event-loop turn must trigger only one settled selection
@@ -95,10 +103,17 @@ structured document-flow editor changes.
 - Note-list preview text, loaded editor text, and the saved RAW paragraph text must remain the same logical content.
   One stale presentation snapshot must not cause repeated prose duplication in RAW while the editor surface still looks
   normal.
+- A newly created note must enter the visible note list with the same normalized preview metadata that a later
+  file-store read of that note would return.
+  Note creation must not fabricate a partial runtime record that leaves the note-list preview blank until some later
+  reload path repairs it.
 
 ## Resource Drop Import
 - Dropping one or more local files onto the desktop/mobile editor must create matching `.wsresource` package
   directories under the active hub `*.wsresources` root and append those package paths into `Resources.wsresources`.
+- If an imported file name already exists in the current resources store, desktop/mobile must open an explicit
+  duplicate-import decision alert instead of silently auto-numbering the package.
+  The user must be able to choose `Overwrite`, `Keep Both`, or `Cancel Import`.
 - The same drop must inject canonical `<resource ...>` source tags into the selected note body instead of only adding
   filesystem packages out-of-band.
 - The injected resource call must be canonical self-closing source with quoted attribute values:
@@ -145,6 +160,13 @@ structured document-flow editor changes.
 - Typing immediately after an inline image resource must keep both the `<resource ... />` RAW token and the newly
   typed prose.
   The editor must neither erase the finished word nor drop the resource block into memory-only presentation state.
+- Pressing `Tab` in an ordinary paragraph must mutate RAW source with visible indentation spaces and keep that
+  indentation rendered after the editor refresh.
+  The live surface must not collapse the stored spaces so that only the cursor appears to move.
+- Pressing plain `Enter` in the middle of a paragraph that already has following text must split the line and preserve
+  the following-line suffix.
+  The editor must not delete the next line's text or rely on a transient RichText paragraph rewrite that diverges from
+  RAW source.
 - Inline image rendering must still work when the active hierarchy view-model does not expose
   `noteDirectoryPathForNoteId(QString)` or when hierarchy switching momentarily leaves the content surface bound to the
   previous domain view-model.
@@ -159,6 +181,14 @@ structured document-flow editor changes.
   best-effort legacy overlay fallback.
 - In structured-flow mode, a `type=resource` block must render through the same image frame card used elsewhere in the
   editor, and it must occupy real document height in the block column rather than an overlay aligned on top of text.
+- A note whose RAW body contains semantic prose blocks such as `<paragraph>...</paragraph>` before or after
+  `<resource ... />` must still paint those prose blocks inside the same structured-flow column.
+  Entering a resource-bearing note must not leave the editor on a resource-only frame while the authored text becomes
+  blank.
+- If the RAW body still carries explicit semantic text tags such as `paragraph`, `title`, `subTitle`, or `eventTitle`,
+  the parser must materialize each top-level tag as its own document block instead of collapsing them back into one
+  generic raw text gap.
+  The structured-flow host must treat those semantic blocks as editable text blocks at the document tail.
 - The first structured resource block in a note must still resolve its inline asset payload.
   A `resourceIndex` or focus target value of `0` must not collapse to a sentinel fallback that downgrades the block to
   a fabricated generic document summary tile.
@@ -174,6 +204,13 @@ structured document-flow editor changes.
   with the real bitmap payload path, the block must prefer that resolved payload.
   The same body slot must not remain stuck on a fabricated generic document summary surface because an earlier partial match
   shared the same `resourceIndex`, source span, `resourceId`, or `resourcePath`.
+- While the note is still on the legacy inline-editor surface for any transient reason, no plain-text/list/style/delete
+  rewrite may reduce the number of canonical `<resource ... />` body tokens in RAW.
+  The host must restore the surface from authoritative RAW instead of silently deleting one or more resource tags.
+- The same protection must also hold for any host-level RAW source mutation path that bypasses the legacy typing or
+  selection controllers.
+  A direct `applyDocumentSourceMutation(...)` call on the legacy inline-editor surface must reject resource-tag loss
+  and restore from authoritative RAW instead of persisting the damaged body.
 - The inline image frame must keep a transparent background. Only the border chrome from the image-resource frame may
   remain; no extra dark fill from the wrapper card should sit behind the bitmap.
 - Inline image resource blocks must stretch only with their outer frame to the available editor body width.
@@ -203,6 +240,9 @@ structured document-flow editor changes.
 - Pasting an image from the system clipboard into the note body must follow the same pipeline as file drop:
   create a `.wsresource` package, insert a canonical `<resource ... />` tag into RAW, and render the new inline
   resource block in the current note without falling back to Qt's native inline-image document mutation.
+- That clipboard-image import path must also honor the duplicate-name alert contract.
+  Repeating a `clipboard-image.png` import must not silently create a numbered package unless the user explicitly chose
+  `Keep Both` in the alert.
 - After any save/load round-trip, a standalone `<resource ... />` source line must remain a direct body-level resource
   block instead of being rewrapped into `<paragraph>` content or glued back onto the previous prose line.
 - The same file-system drag must still import correctly when the OS exposes the payload as plain text or a platform

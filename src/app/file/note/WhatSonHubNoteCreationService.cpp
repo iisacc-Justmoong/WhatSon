@@ -155,24 +155,35 @@ bool WhatSonHubNoteCreationService::createNote(Request request, Result* outResul
     }
 
     QVector<LibraryNoteRecord> nextAllNotes = request.notes;
-    LibraryNoteRecord newNote;
-    newNote.noteId = noteId;
-    newNote.storageKind = QStringLiteral("wsnote");
-    newNote.createdAt = createdTimestamp;
-    newNote.lastModifiedAt = createdNoteDocument.headerStore.lastModifiedAt().isEmpty()
-                                 ? createdTimestamp
-                                 : createdNoteDocument.headerStore.lastModifiedAt();
-    newNote.author = profileName;
-    newNote.modifiedBy = profileName;
-    newNote.folders = assignedFolders;
-    newNote.folderUuids = headerStore.folderUuids();
-    newNote.progress = -1;
-    newNote.bookmarked = false;
-    newNote.preset = false;
-    newNote.bodyPlainText = createdNoteDocument.bodyPlainText;
-    newNote.bodySourceText = createdNoteDocument.bodySourceText;
-    newNote.noteDirectoryPath = noteDirectoryPath;
-    newNote.noteHeaderPath = headerPath;
+    LibraryNoteRecord newNote = createdNoteDocument.toLibraryNoteRecord();
+    if (newNote.noteId.trimmed().isEmpty())
+    {
+        newNote.noteId = noteId;
+    }
+    if (newNote.createdAt.trimmed().isEmpty())
+    {
+        newNote.createdAt = createdTimestamp;
+    }
+    if (newNote.lastModifiedAt.trimmed().isEmpty())
+    {
+        newNote.lastModifiedAt = createdTimestamp;
+    }
+    if (newNote.author.trimmed().isEmpty())
+    {
+        newNote.author = profileName;
+    }
+    if (newNote.modifiedBy.trimmed().isEmpty())
+    {
+        newNote.modifiedBy = profileName;
+    }
+    if (newNote.noteDirectoryPath.trimmed().isEmpty())
+    {
+        newNote.noteDirectoryPath = noteDirectoryPath;
+    }
+    if (newNote.noteHeaderPath.trimmed().isEmpty())
+    {
+        newNote.noteHeaderPath = headerPath;
+    }
     nextAllNotes.push_back(newNote);
 
     const QString indexPath = QDir(libraryPath).filePath(QStringLiteral("index.wsnindex"));

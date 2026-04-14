@@ -259,6 +259,19 @@ QtObject {
             return "";
         return String(controller.view.editorText);
     }
+    function resourceTagLossDetectedForMutation(currentSourceText, nextSourceText) {
+        if (!controller.view || controller.view.resourceTagLossDetected === undefined)
+            return false;
+        return !!controller.view.resourceTagLossDetected(currentSourceText, nextSourceText);
+    }
+    function restoreEditorSurfaceFromSourcePresentation() {
+        if (controller.view && controller.view.restoreEditorSurfaceFromPresentation !== undefined) {
+            controller.view.restoreEditorSurfaceFromPresentation();
+            return;
+        }
+        if (controller.view && controller.view.commitDocumentPresentationRefresh !== undefined)
+            controller.view.commitDocumentPresentationRefresh();
+    }
     function clampLogicalPosition(position, maximumLength) {
         const numericPosition = Number(position);
         if (!isFinite(numericPosition))
@@ -997,6 +1010,10 @@ QtObject {
         const nextText = currentSourceText.slice(0, blockSourceStart)
                 + nextBlockText
                 + currentSourceText.slice(blockSourceEnd);
+        if (controller.resourceTagLossDetectedForMutation(currentSourceText, nextText)) {
+            controller.restoreEditorSurfaceFromSourcePresentation();
+            return false;
+        }
         if (controller.view.editorText !== nextText)
             controller.view.editorText = nextText;
         controller.refreshPresentationStateAfterProgrammaticChange();
@@ -1150,6 +1167,10 @@ QtObject {
         const nextText = controller.textFormatRenderer.applyInlineStyleToLogicalSelectionSource(currentText, boundedStart, boundedEnd, normalizedTagName);
         if (nextText.length === 0 && currentText.length > 0)
             return false;
+        if (controller.resourceTagLossDetectedForMutation(currentText, nextText)) {
+            controller.restoreEditorSurfaceFromSourcePresentation();
+            return false;
+        }
         if (controller.view.editorText !== nextText)
             controller.view.editorText = nextText;
         controller.refreshPresentationStateAfterProgrammaticChange();

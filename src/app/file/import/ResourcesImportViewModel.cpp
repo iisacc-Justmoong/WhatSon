@@ -12,6 +12,7 @@
 #include <QFileInfo>
 #include <QGuiApplication>
 #include <QImage>
+#include <QHash>
 #include <QMetaType>
 #include <QMimeData>
 #include <QPixmap>
@@ -19,6 +20,7 @@
 #include <QSaveFile>
 #include <QSequentialIterable>
 #include <QSet>
+#include <QUuid>
 #include <QTemporaryDir>
 #include <QUrl>
 #include <QVariantMap>
@@ -28,6 +30,85 @@
 namespace
 {
     constexpr auto kScope = "resources.import";
+
+    enum class ImportConflictPolicyValue
+    {
+        Abort = 0,
+        Overwrite = 1,
+        KeepBoth = 2
+    };
+
+    struct ExistingResourcePackageEntry final
+    {
+        QString assetFileName;
+        WhatSon::Resources::ResourcePackageMetadata metadata;
+        QString packageDirectoryPath;
+        QString resourcePath;
+    };
+
+    struct ImportConflictDescriptor final
+    {
+        QString existingAssetFileName;
+        WhatSon::Resources::ResourcePackageMetadata existingMetadata;
+        QString packageDirectoryPath;
+        QString resourcePath;
+        QString sourceFileName;
+        QString sourceFilePath;
+
+        bool valid() const
+        {
+            return !existingAssetFileName.trimmed().isEmpty()
+                && !packageDirectoryPath.trimmed().isEmpty()
+                && !sourceFileName.trimmed().isEmpty();
+        }
+    };
+
+    struct OverwrittenPackageBackup final
+    {
+        QString backupDirectoryPath;
+        QString packageDirectoryPath;
+    };
+
+    ImportConflictPolicyValue normalizedImportConflictPolicy(const int conflictPolicy)
+    {
+        switch (conflictPolicy)
+        {
+        case ResourcesImportViewModel::ConflictPolicyOverwrite:
+            return ImportConflictPolicyValue::Overwrite;
+        case ResourcesImportViewModel::ConflictPolicyKeepBoth:
+            return ImportConflictPolicyValue::KeepBoth;
+        default:
+            return ImportConflictPolicyValue::Abort;
+        }
+    }
+
+    QVariantMap emptyImportConflictMap()
+    {
+        return QVariantMap {
+            {QStringLiteral("conflict"), false}
+        };
+    }
+
+    QVariantMap importConflictMap(const ImportConflictDescriptor& descriptor)
+    {
+        if (!descriptor.valid())
+        {
+            return emptyImportConflictMap();
+        }
+
+        QVariantMap result;
+        result.insert(QStringLiteral("conflict"), true);
+        result.insert(QStringLiteral("sourceFileName"), descriptor.sourceFileName);
+        result.insert(QStringLiteral("sourceFilePath"), descriptor.sourceFilePath);
+        result.insert(QStringLiteral("existingAssetFileName"), descriptor.existingAssetFileName);
+        result.insert(QStringLiteral("existingPackageDirectoryPath"), descriptor.packageDirectoryPath);
+        result.insert(QStringLiteral("existingResourcePath"), descriptor.resourcePath);
+        result.insert(QStringLiteral("existingResourceId"), descriptor.existingMetadata.resourceId.trimmed());
+        result.insert(QStringLiteral("existingAssetPath"), descriptor.existingMetadata.assetPath.trimmed());
+        result.insert(QStringLiteral("existingType"), descriptor.existingMetadata.type.trimmed());
+        result.insert(QStringLiteral("existingFormat"), descriptor.existingMetadata.format.trimmed());
+        return result;
+    }
 
     QString resolvePrimaryHubDirectory(
         const QString& hubPath,
@@ -182,6 +263,138 @@ namespace
         return candidateId;
     }
 
+    bool loadExistingResourcePackageEntries(
+        const QString& resourcesDirectoryPath,
+        QList<ExistingResourcePackageEntry>* outEntries,
+        QString* errorMessage = nullptr)
+    {
+        if (outEntries == nullptr)
+        {
+            if (errorMessage != nullptr)
+            {
+                *errorMessage = QStringLiteral("outEntries must not be null.");
+            }
+            return false;
+        }
+
+        outEntries->clear();
+        const QFileInfoList packageDirectories = QDir(resourcesDirectoryPath).entryInfoList(
+            QStringList{QStringLiteral("*.wsresource")},
+            QDir::Dirs | QDir::NoDotAndDotDot,
+            QDir::Name);
+
+        for (const QFileInfo& packageDirectoryInfo : packageDirectories)
+        {
+            ExistingResourcePackageEntry entry;
+            entry.packageDirectoryPath = WhatSon::Resources::normalizePath(packageDirectoryInfo.absoluteFilePath());
+            entry.resourcePath = WhatSon::Resources::resourcePathForPackageDirectory(entry.packageDirectoryPath);
+            QString metadataError;
+            if (!WhatSon::Resources::loadResourcePackageMetadata(
+                entry.packageDirectoryPath,
+                &entry.metadata,
+                &metadataError))
+            {
+                if (errorMessage != nullptr)
+                {
+                    *errorMessage = metadataError;
+                }
+                return false;
+            }
+
+            if (entry.metadata.resourcePath.trimmed().isEmpty())
+            {
+                entry.metadata.resourcePath = entry.resourcePath;
+            }
+            entry.assetFileName = QFileInfo(entry.metadata.assetPath.trimmed()).fileName().trimmed();
+            if (entry.assetFileName.isEmpty())
+            {
+                entry.assetFileName = QFileInfo(entry.packageDirectoryPath).fileName().trimmed();
+            }
+            outEntries->push_back(entry);
+        }
+
+        return true;
+    }
+
+    bool findFirstImportConflict(
+        const QStringList& sourceFileNames,
+        const QStringList& sourceFilePaths,
+        const QString& resourcesDirectoryPath,
+        ImportConflictDescriptor* outDescriptor,
+        QString* errorMessage = nullptr)
+    {
+        if (outDescriptor != nullptr)
+        {
+            *outDescriptor = {};
+        }
+
+        QList<ExistingResourcePackageEntry> existingEntries;
+        if (!loadExistingResourcePackageEntries(resourcesDirectoryPath, &existingEntries, errorMessage))
+        {
+            return false;
+        }
+
+        QHash<QString, ExistingResourcePackageEntry> entriesByFileName;
+        for (const ExistingResourcePackageEntry& entry : std::as_const(existingEntries))
+        {
+            const QString lookupKey = entry.assetFileName.trimmed().toCaseFolded();
+            if (lookupKey.isEmpty() || entriesByFileName.contains(lookupKey))
+            {
+                continue;
+            }
+            entriesByFileName.insert(lookupKey, entry);
+        }
+
+        const int entryCount = std::min(sourceFileNames.size(), sourceFilePaths.size());
+        for (int index = 0; index < entryCount; ++index)
+        {
+            const QString sourceFileName = sourceFileNames.at(index).trimmed();
+            const QString lookupKey = sourceFileName.toCaseFolded();
+            if (lookupKey.isEmpty() || !entriesByFileName.contains(lookupKey))
+            {
+                continue;
+            }
+
+            const ExistingResourcePackageEntry existingEntry = entriesByFileName.value(lookupKey);
+            if (outDescriptor != nullptr)
+            {
+                outDescriptor->existingAssetFileName = existingEntry.assetFileName;
+                outDescriptor->existingMetadata = existingEntry.metadata;
+                outDescriptor->packageDirectoryPath = existingEntry.packageDirectoryPath;
+                outDescriptor->resourcePath = existingEntry.resourcePath;
+                outDescriptor->sourceFileName = sourceFileName;
+                outDescriptor->sourceFilePath = sourceFilePaths.at(index).trimmed();
+            }
+            return true;
+        }
+
+        return true;
+    }
+
+    bool findFirstImportConflict(
+        const QStringList& sourceFiles,
+        const QString& resourcesDirectoryPath,
+        ImportConflictDescriptor* outDescriptor,
+        QString* errorMessage = nullptr)
+    {
+        QStringList sourceFileNames;
+        QStringList normalizedSourcePaths;
+        sourceFileNames.reserve(sourceFiles.size());
+        normalizedSourcePaths.reserve(sourceFiles.size());
+        for (const QString& sourceFilePath : sourceFiles)
+        {
+            const QString sourceFileName = QFileInfo(sourceFilePath).fileName().trimmed();
+            sourceFileNames.push_back(sourceFileName);
+            normalizedSourcePaths.push_back(WhatSon::HubPath::normalizeAbsolutePath(sourceFilePath));
+        }
+        return findFirstImportConflict(
+            sourceFileNames,
+            normalizedSourcePaths,
+            resourcesDirectoryPath,
+            outDescriptor,
+            errorMessage);
+    }
+
     bool writeUtf8FileAtomically(const QString& filePath, const QString& text, QString* errorMessage = nullptr)
     {
         const QString directoryPath = QFileInfo(filePath).absolutePath();
@@ -224,6 +437,16 @@ namespace
         }
 
         return true;
+    }
+
+    QString duplicateImportResolutionRequiredMessage(const ImportConflictDescriptor& descriptor)
+    {
+        const QString fileName = descriptor.sourceFileName.trimmed().isEmpty()
+            ? descriptor.existingAssetFileName.trimmed()
+            : descriptor.sourceFileName.trimmed();
+        return QStringLiteral(
+                   "A resource named \"%1\" already exists. Choose overwrite, keep both, or cancel from the duplicate import alert.")
+            .arg(fileName);
     }
 
     bool readUtf8FileText(const QString& filePath, QString* outText, QString* errorMessage = nullptr)
@@ -473,6 +696,123 @@ namespace
         return true;
     }
 
+    bool overwriteSingleFile(
+        const QString& sourceFilePath,
+        const ImportConflictDescriptor& conflictDescriptor,
+        const QString& resourcesDirectoryPath,
+        QString* outResourcePath,
+        QString* outCreatedPackagePath,
+        WhatSon::Resources::ResourcePackageMetadata* outMetadata,
+        QString* outBackupDirectoryPath,
+        QString* errorMessage = nullptr)
+    {
+        if (outResourcePath == nullptr
+            || outCreatedPackagePath == nullptr
+            || outMetadata == nullptr
+            || outBackupDirectoryPath == nullptr)
+        {
+            if (errorMessage != nullptr)
+            {
+                *errorMessage = QStringLiteral("Output pointers must not be null.");
+            }
+            return false;
+        }
+
+        *outResourcePath = QString();
+        *outCreatedPackagePath = QString();
+        *outMetadata = {};
+        *outBackupDirectoryPath = QString();
+
+        const QFileInfo sourceFileInfo(sourceFilePath);
+        if (!sourceFileInfo.exists() || !sourceFileInfo.isFile())
+        {
+            if (errorMessage != nullptr)
+            {
+                *errorMessage = QStringLiteral("Dropped file does not exist: %1").arg(sourceFilePath);
+            }
+            return false;
+        }
+
+        const QString packageDirectoryPath =
+            WhatSon::Resources::normalizePath(conflictDescriptor.packageDirectoryPath);
+        if (!QFileInfo(packageDirectoryPath).isDir())
+        {
+            if (errorMessage != nullptr)
+            {
+                *errorMessage = QStringLiteral("Existing resource package is missing: %1").arg(packageDirectoryPath);
+            }
+            return false;
+        }
+
+        const QString backupDirectoryPath = QDir(resourcesDirectoryPath).filePath(
+            QStringLiteral(".import-backup-%1").arg(QUuid::createUuid().toString(QUuid::WithoutBraces)));
+        if (!QDir().rename(packageDirectoryPath, backupDirectoryPath))
+        {
+            if (errorMessage != nullptr)
+            {
+                *errorMessage = QStringLiteral("Failed to stage the existing resource package for overwrite: %1").arg(
+                    packageDirectoryPath);
+            }
+            return false;
+        }
+
+        const auto restoreBackupAndFail = [&](const QString& failureText)
+        {
+            if (QFileInfo(packageDirectoryPath).exists())
+            {
+                QDir(packageDirectoryPath).removeRecursively();
+            }
+            QDir().rename(backupDirectoryPath, packageDirectoryPath);
+            if (errorMessage != nullptr)
+            {
+                *errorMessage = failureText;
+            }
+            return false;
+        };
+
+        if (!QDir().mkpath(packageDirectoryPath))
+        {
+            return restoreBackupAndFail(
+                QStringLiteral("Failed to recreate overwritten resource package directory: %1").arg(
+                    packageDirectoryPath));
+        }
+
+        const QString destinationAssetPath = QDir(packageDirectoryPath).filePath(sourceFileInfo.fileName());
+        if (!QFile::copy(sourceFilePath, destinationAssetPath))
+        {
+            return restoreBackupAndFail(
+                QStringLiteral("Failed to copy dropped file into overwritten resource package: %1").arg(
+                    sourceFilePath));
+        }
+
+        WhatSon::Resources::ResourcePackageMetadata metadata =
+            WhatSon::Resources::buildMetadataForAssetFile(
+                sourceFileInfo.fileName(),
+                conflictDescriptor.existingMetadata.resourceId.trimmed(),
+                conflictDescriptor.resourcePath.trimmed());
+        if (metadata.resourcePath.trimmed().isEmpty())
+        {
+            metadata.resourcePath = conflictDescriptor.resourcePath.trimmed();
+        }
+
+        QString writeError;
+        if (!writeUtf8FileAtomically(
+            QDir(packageDirectoryPath).filePath(WhatSon::Resources::metadataFileName()),
+            WhatSon::Resources::createResourcePackageMetadataXml(metadata),
+            &writeError))
+        {
+            return restoreBackupAndFail(writeError);
+        }
+
+        *outResourcePath = metadata.resourcePath.trimmed().isEmpty()
+            ? conflictDescriptor.resourcePath.trimmed()
+            : metadata.resourcePath.trimmed();
+        *outCreatedPackagePath = packageDirectoryPath;
+        *outMetadata = metadata;
+        *outBackupDirectoryPath = WhatSon::Resources::normalizePath(backupDirectoryPath);
+        return true;
+    }
+
     QVariantMap importedEntryFromMetadata(const WhatSon::Resources::ResourcePackageMetadata& metadata)
     {
         QVariantMap entry;
@@ -645,15 +985,121 @@ bool ResourcesImportViewModel::canImportDroppedUrls(const QVariantList& urls) co
     return canImportUrls(urls);
 }
 
+QVariantMap ResourcesImportViewModel::inspectImportConflictForUrls(const QVariantList& urls) const
+{
+    if (m_busy || m_currentHubPath.trimmed().isEmpty())
+    {
+        return emptyImportConflictMap();
+    }
+
+    const QStringList sourceFiles = extractDroppedLocalFiles(urls);
+    if (sourceFiles.isEmpty())
+    {
+        return emptyImportConflictMap();
+    }
+
+    QString resolveError;
+    QStringList existingResourcePaths;
+    const QString contentsDirectoryPath = resolveContentsDirectory(m_currentHubPath, &resolveError);
+    if (contentsDirectoryPath.isEmpty())
+    {
+        return emptyImportConflictMap();
+    }
+
+    const QString resourcesFilePath = QDir(contentsDirectoryPath).filePath(QStringLiteral("Resources.wsresources"));
+    if (!loadExistingResourcePaths(resourcesFilePath, &existingResourcePaths, &resolveError))
+    {
+        return emptyImportConflictMap();
+    }
+
+    const QString resourcesDirectoryPath =
+        resolveResourcesDirectory(m_currentHubPath, existingResourcePaths, &resolveError);
+    if (resourcesDirectoryPath.isEmpty())
+    {
+        return emptyImportConflictMap();
+    }
+
+    ImportConflictDescriptor descriptor;
+    if (!findFirstImportConflict(sourceFiles, resourcesDirectoryPath, &descriptor, &resolveError))
+    {
+        return emptyImportConflictMap();
+    }
+    return importConflictMap(descriptor);
+}
+
+QVariantMap ResourcesImportViewModel::inspectClipboardImageImportConflict() const
+{
+    if (m_busy || m_currentHubPath.trimmed().isEmpty())
+    {
+        return emptyImportConflictMap();
+    }
+
+    if (!clipboardContainsImportableImage())
+    {
+        return emptyImportConflictMap();
+    }
+
+    QString resolveError;
+    QStringList existingResourcePaths;
+    const QString contentsDirectoryPath = resolveContentsDirectory(m_currentHubPath, &resolveError);
+    if (contentsDirectoryPath.isEmpty())
+    {
+        return emptyImportConflictMap();
+    }
+
+    const QString resourcesFilePath = QDir(contentsDirectoryPath).filePath(QStringLiteral("Resources.wsresources"));
+    if (!loadExistingResourcePaths(resourcesFilePath, &existingResourcePaths, &resolveError))
+    {
+        return emptyImportConflictMap();
+    }
+
+    const QString resourcesDirectoryPath =
+        resolveResourcesDirectory(m_currentHubPath, existingResourcePaths, &resolveError);
+    if (resourcesDirectoryPath.isEmpty())
+    {
+        return emptyImportConflictMap();
+    }
+
+    ImportConflictDescriptor descriptor;
+    if (!findFirstImportConflict(
+        QStringList{QStringLiteral("clipboard-image.png")},
+        QStringList{QStringLiteral("clipboard-image.png")},
+        resourcesDirectoryPath,
+        &descriptor,
+        &resolveError))
+    {
+        return emptyImportConflictMap();
+    }
+
+    return importConflictMap(descriptor);
+}
+
 bool ResourcesImportViewModel::importUrls(const QVariantList& urls)
 {
-    return importUrlsInternal(urls, nullptr, true);
+    return importUrlsInternal(urls, nullptr, true, ConflictPolicyAbort);
+}
+
+bool ResourcesImportViewModel::importUrlsWithConflictPolicy(const QVariantList& urls, const int conflictPolicy)
+{
+    return importUrlsInternal(urls, nullptr, true, conflictPolicy);
 }
 
 QVariantList ResourcesImportViewModel::importUrlsForEditor(const QVariantList& urls)
 {
     QVariantList importedEntries;
-    if (!importUrlsInternal(urls, &importedEntries, false))
+    if (!importUrlsInternal(urls, &importedEntries, false, ConflictPolicyAbort))
+    {
+        return {};
+    }
+    return importedEntries;
+}
+
+QVariantList ResourcesImportViewModel::importUrlsForEditorWithConflictPolicy(
+    const QVariantList& urls,
+    const int conflictPolicy)
+{
+    QVariantList importedEntries;
+    if (!importUrlsInternal(urls, &importedEntries, false, conflictPolicy))
     {
         return {};
     }
@@ -662,13 +1108,28 @@ QVariantList ResourcesImportViewModel::importUrlsForEditor(const QVariantList& u
 
 bool ResourcesImportViewModel::importClipboardImage()
 {
-    return importClipboardImageInternal(nullptr, true);
+    return importClipboardImageInternal(nullptr, true, ConflictPolicyAbort);
+}
+
+bool ResourcesImportViewModel::importClipboardImageWithConflictPolicy(const int conflictPolicy)
+{
+    return importClipboardImageInternal(nullptr, true, conflictPolicy);
 }
 
 QVariantList ResourcesImportViewModel::importClipboardImageForEditor()
 {
     QVariantList importedEntries;
-    if (!importClipboardImageInternal(&importedEntries, false))
+    if (!importClipboardImageInternal(&importedEntries, false, ConflictPolicyAbort))
+    {
+        return {};
+    }
+    return importedEntries;
+}
+
+QVariantList ResourcesImportViewModel::importClipboardImageForEditorWithConflictPolicy(const int conflictPolicy)
+{
+    QVariantList importedEntries;
+    if (!importClipboardImageInternal(&importedEntries, false, conflictPolicy))
     {
         return {};
     }
@@ -678,7 +1139,8 @@ QVariantList ResourcesImportViewModel::importClipboardImageForEditor()
 bool ResourcesImportViewModel::importUrlsInternal(
     const QVariantList& urls,
     QVariantList* importedEntries,
-    const bool reloadRuntime)
+    const bool reloadRuntime,
+    const int conflictPolicy)
 {
     WhatSon::Debug::traceSelf(
         this,
@@ -748,11 +1210,29 @@ bool ResourcesImportViewModel::importUrlsInternal(
         return false;
     }
 
+    ImportConflictDescriptor conflictDescriptor;
+    if (!findFirstImportConflict(sourceFiles, resourcesDirectoryPath, &conflictDescriptor, &resolveError))
+    {
+        setLastError(resolveError);
+        emit operationFailed(resolveError);
+        return false;
+    }
+
+    const ImportConflictPolicyValue normalizedConflictPolicy = normalizedImportConflictPolicy(conflictPolicy);
+    if (conflictDescriptor.valid() && normalizedConflictPolicy == ImportConflictPolicyValue::Abort)
+    {
+        const QString errorMessage = duplicateImportResolutionRequiredMessage(conflictDescriptor);
+        setLastError(errorMessage);
+        emit operationFailed(errorMessage);
+        return false;
+    }
+
     setBusy(true);
     setLastError(QString());
 
     QStringList importedResourcePaths;
     QStringList createdPackagePaths;
+    QList<OverwrittenPackageBackup> overwrittenPackageBackups;
     importedResourcePaths.reserve(sourceFiles.size());
     createdPackagePaths.reserve(sourceFiles.size());
     QVariantList localImportedEntries;
@@ -777,6 +1257,27 @@ bool ResourcesImportViewModel::importUrlsInternal(
             {
                 rollbackErrors.push_back(
                     QStringLiteral("Failed to remove imported resource package: %1").arg(createdPackagePath));
+            }
+        }
+
+        for (const OverwrittenPackageBackup& backup : std::as_const(overwrittenPackageBackups))
+        {
+            if (!backup.packageDirectoryPath.trimmed().isEmpty()
+                && QFileInfo(backup.packageDirectoryPath).exists()
+                && !QDir(backup.packageDirectoryPath).removeRecursively())
+            {
+                rollbackErrors.push_back(
+                    QStringLiteral("Failed to clear overwritten resource package: %1").arg(
+                        backup.packageDirectoryPath));
+            }
+
+            if (!backup.backupDirectoryPath.trimmed().isEmpty()
+                && QFileInfo(backup.backupDirectoryPath).exists()
+                && !QDir().rename(backup.backupDirectoryPath, backup.packageDirectoryPath))
+            {
+                rollbackErrors.push_back(
+                    QStringLiteral("Failed to restore overwritten resource package: %1").arg(
+                        backup.packageDirectoryPath));
             }
         }
 
@@ -806,17 +1307,44 @@ bool ResourcesImportViewModel::importUrlsInternal(
 
     for (const QString& sourceFilePath : sourceFiles)
     {
+        ImportConflictDescriptor sourceFileConflictDescriptor;
+        if (!findFirstImportConflict(QStringList{sourceFilePath}, resourcesDirectoryPath, &sourceFileConflictDescriptor, &resolveError))
+        {
+            rollbackImportedResources(false, nullptr);
+
+            setBusy(false);
+            setLastError(resolveError);
+            emit operationFailed(resolveError);
+            return false;
+        }
+
         QString resourcePath;
         QString packagePath;
         WhatSon::Resources::ResourcePackageMetadata importedMetadata;
+        QString backupDirectoryPath;
         QString importError;
-        if (!importSingleFile(
-            sourceFilePath,
-            resourcesDirectoryPath,
-            &resourcePath,
-            &packagePath,
-            &importedMetadata,
-            &importError))
+        const bool shouldOverwrite =
+            sourceFileConflictDescriptor.valid()
+            && normalizedConflictPolicy == ImportConflictPolicyValue::Overwrite;
+        const bool imported =
+            shouldOverwrite
+                ? overwriteSingleFile(
+                    sourceFilePath,
+                    sourceFileConflictDescriptor,
+                    resourcesDirectoryPath,
+                    &resourcePath,
+                    &packagePath,
+                    &importedMetadata,
+                    &backupDirectoryPath,
+                    &importError)
+                : importSingleFile(
+                    sourceFilePath,
+                    resourcesDirectoryPath,
+                    &resourcePath,
+                    &packagePath,
+                    &importedMetadata,
+                    &importError);
+        if (!imported)
         {
             rollbackImportedResources(false, nullptr);
 
@@ -832,7 +1360,37 @@ bool ResourcesImportViewModel::importUrlsInternal(
         }
 
         importedResourcePaths.push_back(resourcePath);
-        createdPackagePaths.push_back(packagePath);
+        if (shouldOverwrite)
+        {
+            bool existingBackupTracked = false;
+            for (const OverwrittenPackageBackup& backup : std::as_const(overwrittenPackageBackups))
+            {
+                if (backup.packageDirectoryPath == packagePath)
+                {
+                    existingBackupTracked = true;
+                    break;
+                }
+            }
+
+            if (existingBackupTracked)
+            {
+                if (!backupDirectoryPath.trimmed().isEmpty() && QFileInfo(backupDirectoryPath).exists())
+                {
+                    QDir(backupDirectoryPath).removeRecursively();
+                }
+            }
+            else
+            {
+                overwrittenPackageBackups.push_back(OverwrittenPackageBackup{
+                    backupDirectoryPath,
+                    packagePath
+                });
+            }
+        }
+        else
+        {
+            createdPackagePaths.push_back(packagePath);
+        }
         if (importedEntries != nullptr)
         {
             localImportedEntries.push_back(importedEntryFromMetadata(importedMetadata));
@@ -900,6 +1458,13 @@ bool ResourcesImportViewModel::importUrlsInternal(
 
     setBusy(false);
     setLastError(QString());
+    for (const OverwrittenPackageBackup& backup : std::as_const(overwrittenPackageBackups))
+    {
+        if (!backup.backupDirectoryPath.trimmed().isEmpty() && QFileInfo(backup.backupDirectoryPath).exists())
+        {
+            QDir(backup.backupDirectoryPath).removeRecursively();
+        }
+    }
     emit importCompleted(importedResourcePaths.size());
     WhatSon::Debug::traceSelf(
         this,
@@ -917,7 +1482,8 @@ bool ResourcesImportViewModel::importUrlsInternal(
 
 bool ResourcesImportViewModel::importClipboardImageInternal(
     QVariantList* importedEntries,
-    const bool reloadRuntime)
+    const bool reloadRuntime,
+    const int conflictPolicy)
 {
     const QClipboard* clipboard = QGuiApplication::clipboard();
     if (clipboard == nullptr)
@@ -957,14 +1523,14 @@ bool ResourcesImportViewModel::importClipboardImageInternal(
     }
 
     const QVariantList temporaryUrls = {QUrl::fromLocalFile(temporaryImagePath)};
-    const bool imported = importUrlsInternal(temporaryUrls, importedEntries, reloadRuntime);
+    const bool imported = importUrlsInternal(temporaryUrls, importedEntries, reloadRuntime, conflictPolicy);
     refreshClipboardImageAvailability();
     return imported;
 }
 
 bool ResourcesImportViewModel::importDroppedUrls(const QVariantList& urls)
 {
-    return importUrls(urls);
+    return importUrlsWithConflictPolicy(urls, ConflictPolicyAbort);
 }
 
 bool ResourcesImportViewModel::reloadImportedResources()

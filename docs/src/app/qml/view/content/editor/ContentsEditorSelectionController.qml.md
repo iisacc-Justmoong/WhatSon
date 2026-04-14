@@ -93,6 +93,10 @@ It also owns keyboard-driven markdown block toggles for the list types the rende
   source-text character counts. This keeps post-toggle selection spans and collapsed-cursor restoration aligned even
   when the touched line body contains inline tags, escaped entities, or `<resource ...>` tags that are wider in source
   than on the live logical editor surface.
+- If one of those legacy inline-editor selection rewrites would reduce the total number of canonical
+  `<resource ... />` tokens while the host is still outside structured-flow mode, the controller now aborts that
+  rewrite and restores the surface from authoritative RAW presentation.
+  Inline list/style commands therefore cannot silently strip body resource tags during a stale legacy-surface turn.
 - The controller no longer mutates the live markdown-rendered RichText surface directly for shortcut formatting.
 - It delegates to `ContentsTextFormatRenderer.applyInlineStyleToLogicalSelectionSource(...)`, which builds a
   markdown-neutral source-editing contract from the canonical `.wsnbody` text and now rebuilds proprietary RAW source
@@ -130,6 +134,10 @@ It also owns keyboard-driven markdown block toggles for the list types the rende
   source; the controller does not silently fall back to `editorSession.scheduleEditorPersistence()`.
 - The host view still emits `editorTextEdited(...)`; the controller owns the mutation decision but not the broader
   editor-shell lifecycle.
+- That immediate persistence path is now skipped when the candidate rewrite would drop one or more canonical
+  `<resource ... />` tags from RAW while the host is still on the legacy inline-editor surface.
+  In that failure case the controller restores the rendered editor surface from the last authoritative RAW projection
+  instead of writing the damaged source.
 - Hosts that expose `preferNativeInputHandling` can now override the editor surface policy:
   - desktop keeps the RichText editing surface
   - mobile/native-priority hosts force the live `TextEdit` surface back to `PlainText` so OS-native composition and

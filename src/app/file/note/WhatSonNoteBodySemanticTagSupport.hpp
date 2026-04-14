@@ -5,6 +5,8 @@
 namespace WhatSon::NoteBodySemanticTagSupport
 {
     QString canonicalInlineStyleTagName(const QString& elementName);
+    QString canonicalRenderedTextBlockTagName(const QString& elementName);
+    QString canonicalDocumentBlockTypeName(const QString& elementName);
 
     bool isHashtagTagName(const QString& elementName);
     bool isBreakDividerTagName(const QString& elementName);
@@ -18,6 +20,8 @@ namespace WhatSon::NoteBodySemanticTagSupport
 
     bool isSourceProjectionTextBlockElement(const QString& elementName);
     bool isRenderedTextBlockElement(const QString& elementName);
+    bool isTextualDocumentBlockTypeName(const QString& typeName);
+    bool isExplicitDocumentBlockTypeName(const QString& typeName);
 
     bool isTransparentContainerTagName(const QString& elementName);
     bool isSourceSemanticPassThroughTagName(const QString& elementName);

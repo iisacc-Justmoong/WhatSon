@@ -96,6 +96,56 @@ QString canonicalInlineStyleTagName(const QString& elementName)
     return {};
 }
 
+QString canonicalRenderedTextBlockTagName(const QString& elementName)
+{
+    const QString normalizedName = normalizedTagName(elementName);
+    if (normalizedName.isEmpty())
+    {
+        return {};
+    }
+
+    if (normalizedName == QStringLiteral("p")
+        || normalizedName == QStringLiteral("paragraph")
+        || normalizedName == QStringLiteral("div")
+        || normalizedName == QStringLiteral("li")
+        || normalizedName == QStringLiteral("blockquote")
+        || normalizedName == QStringLiteral("pre")
+        || normalizedName == QStringLiteral("h1")
+        || normalizedName == QStringLiteral("h2")
+        || normalizedName == QStringLiteral("h3")
+        || normalizedName == QStringLiteral("h4")
+        || normalizedName == QStringLiteral("h5")
+        || normalizedName == QStringLiteral("h6")
+        || isLegacySemanticTextBlockTag(normalizedName))
+    {
+        return normalizedName;
+    }
+    return {};
+}
+
+QString canonicalDocumentBlockTypeName(const QString& elementName)
+{
+    const QString normalizedName = normalizedTagName(elementName);
+    if (normalizedName == QStringLiteral("agenda"))
+    {
+        return QStringLiteral("agenda");
+    }
+    if (normalizedName == QStringLiteral("callout"))
+    {
+        return QStringLiteral("callout");
+    }
+    if (normalizedName == QStringLiteral("resource"))
+    {
+        return QStringLiteral("resource");
+    }
+    if (normalizedName == QStringLiteral("break")
+        || normalizedName == QStringLiteral("hr"))
+    {
+        return QStringLiteral("break");
+    }
+    return canonicalRenderedTextBlockTagName(elementName);
+}
+
 bool isHashtagTagName(const QString& elementName)
 {
     return normalizedTagName(elementName) == QStringLiteral("tag");
@@ -159,8 +209,19 @@ bool isSourceProjectionTextBlockElement(const QString& elementName)
 
 bool isRenderedTextBlockElement(const QString& elementName)
 {
-    return isSourceProjectionTextBlockElement(elementName)
-        || isLegacySemanticTextBlockTag(elementName);
+    return !canonicalRenderedTextBlockTagName(elementName).isEmpty();
+}
+
+bool isTextualDocumentBlockTypeName(const QString& typeName)
+{
+    const QString normalizedName = normalizedTagName(typeName);
+    return normalizedName == QStringLiteral("text")
+        || !canonicalRenderedTextBlockTagName(normalizedName).isEmpty();
+}
+
+bool isExplicitDocumentBlockTypeName(const QString& typeName)
+{
+    return !canonicalDocumentBlockTypeName(typeName).isEmpty();
 }
 
 bool isTransparentContainerTagName(const QString& elementName)

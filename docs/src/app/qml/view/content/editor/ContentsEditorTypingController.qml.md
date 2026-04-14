@@ -43,6 +43,11 @@ This controller exists to keep plain typing separate from inline-format applicat
   existing `<resource ... />` token at the source layer.
   This protects inline resource placeholders from being reserialized as partial escaped tail fragments when the
   RichText surface reports a lossy post-render delta.
+- Legacy inline-editor mutation paths now also reject any candidate RAW rewrite whose `<resource ... />` count is lower
+  than the current source snapshot while `view.showStructuredDocumentFlow == false`.
+  If a stale RichText/plain-text surface delta, delete key path, or explicit plain-text rewrite would silently drop a
+  resource tag, the controller restores the editor surface from authoritative RAW presentation instead of persisting
+  the damaged source.
 - Collapsed-caret insertion now also advances past any consecutive closing inline-style tags that sit exactly at the
   mapped RAW boundary.
   A visible caret placed after a bold/italic/underline/strikethrough/highlight run therefore resolves to the source
@@ -80,6 +85,14 @@ This controller exists to keep plain typing separate from inline-format applicat
   - collapsed-caret insertions also skip immediately adjacent closing inline-style tags before splicing source
   - local-authority marking, cursor restore, same-note persistence, and host `editorTextEdited(...)` signaling stay on
     the exact same contract already used by agenda/callout/break shortcut insertion
+- Plain `Enter` / `Return` on the legacy inline editor now also has a RAW-first path:
+  - `handlePlainEnterKeyPress(event)` intercepts unmodified Enter before Qt RichText mutates the live document on its
+    own
+  - the controller replaces the current logical selection/caret with `\n` directly against RAW source, then commits
+    that source mutation through the same same-note persistence/surface-refresh contract used elsewhere
+  - list continuation, divider rewrite, agenda task exit, and callout exit still reuse the existing source-aware enter
+    transforms on top of that explicit newline replacement
+  - IME composition turns are excluded so Enter can still finalize the platform input-method session first
 - Backspace/Delete now also has a tag-aware raw-source fast path:
   - when the pending delete span intersects an XML-like token such as `<resource ... />`, `<callout>`, `</callout>`,
     `<agenda ...>`, `</agenda>`, inline-style tags, or comment-like editor markers, the controller expands the delete
@@ -126,6 +139,8 @@ This controller exists to keep plain typing separate from inline-format applicat
     the list source does not collapse into display glyphs
   - marker-only empty list lines do not auto-continue; pressing `Enter` on that empty continued list item now removes
     the list marker and leaves a plain blank line, breaking the repeated list-continuation chain
+- Pressing plain Enter in the middle of prose that already has a following line must therefore split the line without
+  deleting the next line's text; the next-line suffix remains in RAW and only the newline boundary changes.
 - Resolves the delta back into source offsets through the incremental live offset cache first, only reseeding from
   `ContentsLogicalTextBridge` when the presentation snapshot is refreshed.
 - After each accepted typing mutation, the controller now pushes that incremental logical-text / line-start /
@@ -207,6 +222,9 @@ structured-block projection do not re-enter the normal typing path.
   - if the RichText surface later reports a replacement that resolves only to the virtual placeholder span for that
     resource block, the controller now drops that replacement and restores the editor surface from authoritative RAW
     source instead of persisting a broken resource-tail fragment
+  - if a legacy inline-editor rewrite would reduce the total number of canonical `<resource ... />` tokens in RAW, the
+    controller now treats that rewrite as invalid and restores the surface from the last authoritative RAW projection
+    instead of letting the resource tag disappear
 
 ## Regression Checks
 

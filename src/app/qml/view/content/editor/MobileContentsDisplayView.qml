@@ -247,6 +247,16 @@ Item {
     property bool resourceDropActive: false
     property bool resourceDropEditorSurfaceGuardActive: false
     property int resourceDropEditorSurfaceGuardToken: 0
+    readonly property int resourceImportConflictPolicyAbort: 0
+    readonly property int resourceImportConflictPolicyOverwrite: 1
+    readonly property int resourceImportConflictPolicyKeepBoth: 2
+    readonly property int resourceImportModeNone: 0
+    readonly property int resourceImportModeUrls: 1
+    readonly property int resourceImportModeClipboard: 2
+    property var pendingResourceImportConflict: ({})
+    property int pendingResourceImportMode: contentsView.resourceImportModeNone
+    property var pendingResourceImportUrls: []
+    property bool resourceImportConflictAlertOpen: false
     readonly property color resourceRenderBorderColor: "#334E5157"
     readonly property color resourceRenderCardColor: "#E61A1D22"
     readonly property int resourceRenderDisplayLimit: 0
@@ -303,9 +313,11 @@ Item {
     readonly property bool liveResourceStructuredFlowRequested: contentsView.liveEditorSourceContainsResourceTag
                                                                 || contentsView.presentationSourceContainsResourceTag
                                                                 || contentsView.selectionSourceContainsResourceTag
-    readonly property bool parsedStructuredFlowRequested: structuredBlockRenderer.hasRenderedBlocks
+    readonly property bool parsedStructuredFlowRequested: contentsView.editorSessionBoundToSelectedNote
+                                                          && structuredBlockRenderer.hasRenderedBlocks
     readonly property bool structuredDocumentFlowEnabled: contentsView.parsedStructuredFlowRequested
-                                                          || (structuredBlockRenderer.renderPending
+                                                          || (contentsView.editorSessionBoundToSelectedNote
+                                                              && structuredBlockRenderer.renderPending
                                                               && contentsView.structuredDocumentFlowActivatedNoteId === contentsView.selectedNoteId
                                                               && contentsView.selectedNoteId.length > 0)
     readonly property bool resourceResolverNeedsLiveEditorSource: contentsView.showStructuredDocumentFlow
@@ -490,6 +502,100 @@ Item {
             return false;
         return !!contentsView.resourcesImportViewModel.canImportUrls(urls);
     }
+    function clearPendingResourceImportConflict() {
+        contentsView.pendingResourceImportConflict = ({});
+        contentsView.pendingResourceImportMode = contentsView.resourceImportModeNone;
+        contentsView.pendingResourceImportUrls = [];
+        contentsView.resourceImportConflictAlertOpen = false;
+    }
+    function normalizedResourceImportConflict(conflict) {
+        return conflict && typeof conflict === "object" ? conflict : ({});
+    }
+    function resourceImportConflictAlertMessage() {
+        const conflict = contentsView.normalizedResourceImportConflict(contentsView.pendingResourceImportConflict);
+        const fileName = conflict.sourceFileName !== undefined ? String(conflict.sourceFileName).trim() : "";
+        const resourcePath = conflict.existingResourcePath !== undefined ? String(conflict.existingResourcePath).trim() : "";
+        if (fileName.length === 0)
+            return "A resource with the same name already exists. Choose how to continue.";
+        if (resourcePath.length === 0)
+            return "A resource named \"" + fileName + "\" already exists. Choose whether to overwrite it, keep both copies, or cancel the import.";
+        return "A resource named \"" + fileName + "\" already exists at \"" + resourcePath + "\". Choose whether to overwrite it, keep both copies, or cancel the import.";
+    }
+    function scheduleResourceImportConflictPrompt(importMode, urls, conflict) {
+        contentsView.activateResourceDropEditorSurfaceGuard();
+        contentsView.pendingResourceImportMode = importMode;
+        contentsView.pendingResourceImportUrls = Array.isArray(urls) ? urls.slice(0) : [];
+        contentsView.pendingResourceImportConflict = contentsView.normalizedResourceImportConflict(conflict);
+        contentsView.resourceDropActive = false;
+        contentsView.resourceImportConflictAlertOpen = true;
+        return true;
+    }
+    function finalizeInsertedImportedResources(importedEntries) {
+        const importedEntryCount = contentsView.normalizedImportedResourceEntries(importedEntries).length;
+        const inserted = contentsView.insertImportedResourceTags(importedEntries);
+        if (importedEntryCount > 0
+                && contentsView.resourcesImportViewModel
+                && contentsView.resourcesImportViewModel.reloadImportedResources !== undefined) {
+            contentsView.resourcesImportViewModel.reloadImportedResources();
+        }
+        contentsView.releaseResourceDropEditorSurfaceGuard(inserted);
+        contentsView.resourceDropActive = false;
+        contentsView.clearPendingResourceImportConflict();
+        return inserted;
+    }
+    function cancelPendingResourceImportConflict() {
+        contentsView.releaseResourceDropEditorSurfaceGuard(false);
+        contentsView.resourceDropActive = false;
+        contentsView.clearPendingResourceImportConflict();
+    }
+    function executePendingResourceImportWithPolicy(conflictPolicy) {
+        if (!contentsView.resourcesImportViewModel) {
+            contentsView.cancelPendingResourceImportConflict();
+            return false;
+        }
+
+        contentsView.resourceImportConflictAlertOpen = false;
+        let importedEntries = [];
+        if (contentsView.pendingResourceImportMode === contentsView.resourceImportModeUrls) {
+            if (contentsView.resourcesImportViewModel.importUrlsForEditorWithConflictPolicy === undefined) {
+                contentsView.cancelPendingResourceImportConflict();
+                return false;
+            }
+            importedEntries = contentsView.resourcesImportViewModel.importUrlsForEditorWithConflictPolicy(
+                        contentsView.pendingResourceImportUrls,
+                        conflictPolicy);
+        } else if (contentsView.pendingResourceImportMode === contentsView.resourceImportModeClipboard) {
+            if (contentsView.resourcesImportViewModel.importClipboardImageForEditorWithConflictPolicy === undefined) {
+                contentsView.cancelPendingResourceImportConflict();
+                return false;
+            }
+            importedEntries = contentsView.resourcesImportViewModel.importClipboardImageForEditorWithConflictPolicy(
+                        conflictPolicy);
+        } else {
+            contentsView.cancelPendingResourceImportConflict();
+            return false;
+        }
+
+        return contentsView.finalizeInsertedImportedResources(importedEntries);
+    }
+    function importUrlsAsResourcesWithPrompt(urls) {
+        if (!contentsView.resourcesImportViewModel
+                || contentsView.resourcesImportViewModel.importUrlsForEditorWithConflictPolicy === undefined) {
+            return false;
+        }
+
+        const conflict = contentsView.resourcesImportViewModel.inspectImportConflictForUrls !== undefined
+                ? contentsView.resourcesImportViewModel.inspectImportConflictForUrls(urls)
+                : ({});
+        if (conflict && conflict.conflict)
+            return contentsView.scheduleResourceImportConflictPrompt(contentsView.resourceImportModeUrls, urls, conflict);
+
+        contentsView.activateResourceDropEditorSurfaceGuard();
+        const importedEntries = contentsView.resourcesImportViewModel.importUrlsForEditorWithConflictPolicy(
+                    urls,
+                    contentsView.resourceImportConflictPolicyAbort);
+        return contentsView.finalizeInsertedImportedResources(importedEntries);
+    }
     function clampUnit(value) {
         return Math.max(0, Math.min(1, Number(value) || 0));
     }
@@ -665,14 +771,28 @@ Item {
         const firstVisibleDocumentY = Math.max(0, contentY - contentsView.editorDocumentStartY);
         return Math.max(1, Math.min(contentsView.logicalLineCount, contentsView.logicalLineNumberForDocumentY(firstVisibleDocumentY)));
     }
-    function flushEditorStateAfterInputSettles(attempt) {
+    function flushEditorStateAfterInputSettles(attempt, scheduledNoteId) {
         const retryCount = Math.max(0, Number(attempt) || 0);
+        const normalizedScheduledNoteId = scheduledNoteId === undefined || scheduledNoteId === null
+                ? ""
+                : String(scheduledNoteId).trim();
         const activePreeditText = contentEditor && contentEditor.preeditText !== undefined ? String(contentEditor.preeditText === undefined || contentEditor.preeditText === null ? "" : contentEditor.preeditText) : "";
         const inputMethodBusy = !!(contentEditor && ((contentEditor.inputMethodComposing !== undefined && contentEditor.inputMethodComposing) || activePreeditText.length > 0));
         if (inputMethodBusy && retryCount < 6) {
             Qt.callLater(function () {
-                contentsView.flushEditorStateAfterInputSettles(retryCount + 1);
+                contentsView.flushEditorStateAfterInputSettles(retryCount + 1, normalizedScheduledNoteId);
             });
+            return;
+        }
+        const currentBoundNoteId = editorSession && editorSession.editorBoundNoteId !== undefined && editorSession.editorBoundNoteId !== null
+                ? String(editorSession.editorBoundNoteId).trim()
+                : "";
+        const currentSelectedNoteId = contentsView.selectedNoteId === undefined || contentsView.selectedNoteId === null
+                ? ""
+                : String(contentsView.selectedNoteId).trim();
+        if (normalizedScheduledNoteId.length > 0
+                && (currentBoundNoteId !== normalizedScheduledNoteId
+                    || currentSelectedNoteId !== normalizedScheduledNoteId)) {
             return;
         }
         editorTypingController.handleEditorTextEdited();
@@ -701,6 +821,14 @@ Item {
         });
     }
     function handleInlineFormatShortcutKeyPress(event) {
+        if (editorTypingController && editorTypingController.handlePlainEnterKeyPress !== undefined) {
+            const enterHandled = editorTypingController.handlePlainEnterKeyPress(event);
+            if (enterHandled) {
+                if (event)
+                    event.accepted = true;
+                return true;
+            }
+        }
         if (editorTypingController && editorTypingController.handleTagAwareDeleteKeyPress !== undefined) {
             const deleteHandled = editorTypingController.handleTagAwareDeleteKeyPress(event);
             if (deleteHandled) {
@@ -836,6 +964,28 @@ Item {
         if (normalizedSourceText.length === 0)
             return false;
         return /<resource\b[^>]*\/?>/i.test(normalizedSourceText);
+    }
+    function canonicalResourceTagCount(sourceText) {
+        const normalizedSourceText = sourceText === undefined || sourceText === null
+                ? ""
+                : String(sourceText);
+        if (normalizedSourceText.length === 0)
+            return 0;
+        const matches = normalizedSourceText.match(/<resource\b[^>]*\/?>/gi);
+        return matches ? matches.length : 0;
+    }
+    function resourceTagLossDetected(previousSourceText, nextSourceText) {
+        if (contentsView.showStructuredDocumentFlow)
+            return false;
+        const selectedBodyCount = (!editorSession.localEditorAuthority
+                                   && contentsView.selectedNoteBodyNoteId === contentsView.selectedNoteId)
+                ? contentsView.canonicalResourceTagCount(contentsView.selectedNoteBodyText)
+                : 0;
+        const baselineCount = Math.max(
+                    contentsView.canonicalResourceTagCount(previousSourceText),
+                    contentsView.canonicalResourceTagCount(contentsView.documentPresentationSourceText),
+                    selectedBodyCount);
+        return baselineCount > contentsView.canonicalResourceTagCount(nextSourceText);
     }
     function inlineResourcePreviewWidth() {
         if (contentsView.showPrintEditorLayout)
@@ -1030,16 +1180,19 @@ Item {
             return false;
         }
 
+        const conflict = contentsView.resourcesImportViewModel.inspectClipboardImageImportConflict !== undefined
+                ? contentsView.resourcesImportViewModel.inspectClipboardImageImportConflict()
+                : ({});
+        if (conflict && conflict.conflict)
+            return contentsView.scheduleResourceImportConflictPrompt(contentsView.resourceImportModeClipboard, [], conflict);
+
+        if (contentsView.resourcesImportViewModel.importClipboardImageForEditorWithConflictPolicy === undefined)
+            return false;
+
         contentsView.activateResourceDropEditorSurfaceGuard();
-        const importedEntries = contentsView.resourcesImportViewModel.importClipboardImageForEditor();
-        const importedEntryCount = contentsView.normalizedImportedResourceEntries(importedEntries).length;
-        const inserted = contentsView.insertImportedResourceTags(importedEntries);
-        if (importedEntryCount > 0
-                && contentsView.resourcesImportViewModel.reloadImportedResources !== undefined) {
-            contentsView.resourcesImportViewModel.reloadImportedResources();
-        }
-        contentsView.releaseResourceDropEditorSurfaceGuard(inserted);
-        return inserted;
+        const importedEntries = contentsView.resourcesImportViewModel.importClipboardImageForEditorWithConflictPolicy(
+                    contentsView.resourceImportConflictPolicyAbort);
+        return contentsView.finalizeInsertedImportedResources(importedEntries);
     }
     function isMinimapScrollable() {
         const flickable = contentsView.editorFlickable;
@@ -1432,6 +1585,10 @@ Item {
                 : String(contentsView.editorText);
         if (normalizedNextSourceText === currentSourceText)
             return false;
+        if (contentsView.resourceTagLossDetected(currentSourceText, normalizedNextSourceText)) {
+            contentsView.restoreEditorSurfaceFromPresentation();
+            return false;
+        }
         if (contentsView.editorText !== normalizedNextSourceText)
             contentsView.editorText = normalizedNextSourceText;
         if (!contentsView.showStructuredDocumentFlow
@@ -1757,7 +1914,14 @@ Item {
                 contentsView.structuredDocumentFlowActivatedNoteId = "";
             return;
         }
-        if (contentsView.nonResourceStructuredFlowRequested) {
+        if (!contentsView.editorSessionBoundToSelectedNote) {
+            if (!structuredBlockRenderer || !structuredBlockRenderer.renderPending) {
+                if (contentsView.structuredDocumentFlowActivatedNoteId !== "")
+                    contentsView.structuredDocumentFlowActivatedNoteId = "";
+            }
+            return;
+        }
+        if (contentsView.parsedStructuredFlowRequested) {
             if (contentsView.structuredDocumentFlowActivatedNoteId !== normalizedSelectedNoteId)
                 contentsView.structuredDocumentFlowActivatedNoteId = normalizedSelectedNoteId;
             return;
@@ -2526,7 +2690,7 @@ Item {
                                         documentPresentationRefreshTimer.stop();
                                     return;
                                 }
-                                contentsView.flushEditorStateAfterInputSettles(0);
+                                contentsView.flushEditorStateAfterInputSettles(0, editorSession.editorBoundNoteId);
                                 contentsView.scheduleDocumentPresentationRefresh(true);
                             }
                             onTextEdited: function () {
@@ -2694,21 +2858,11 @@ Item {
                                 contentsView.resourceDropActive = false;
                                 return;
                             }
-                            contentsView.activateResourceDropEditorSurfaceGuard();
                             if (drop && drop.acceptProposedAction !== undefined)
                                 drop.acceptProposedAction();
-                            const importedEntries = contentsView.resourcesImportViewModel.importUrlsForEditor(dropUrls);
-                            const importedEntryCount = contentsView.normalizedImportedResourceEntries(importedEntries).length;
-                            const inserted = contentsView.insertImportedResourceTags(importedEntries);
-                            if (importedEntryCount > 0
-                                    && contentsView.resourcesImportViewModel
-                                    && contentsView.resourcesImportViewModel.reloadImportedResources !== undefined) {
-                                contentsView.resourcesImportViewModel.reloadImportedResources();
-                            }
+                            const inserted = contentsView.importUrlsAsResourcesWithPrompt(dropUrls);
                             if (drop)
                                 drop.accepted = inserted;
-                            contentsView.releaseResourceDropEditorSurfaceGuard(inserted);
-                            contentsView.resourceDropActive = false;
                         }
                         onEntered: function (drag) {
                             const dropUrls = contentsView.extractResourceDropUrls(drag);
@@ -2730,8 +2884,36 @@ Item {
                             if (drag)
                                 drag.accepted = accepted;
                             contentsView.resourceDropActive = accepted;
-                        }
-                    }
+    }
+    LV.Alert {
+        id: resourceImportConflictAlert
+
+        parent: contentsView
+        buttonCount: 3
+        dismissOnBackground: false
+        message: contentsView.resourceImportConflictAlertMessage()
+        open: contentsView.resourceImportConflictAlertOpen
+        primaryText: "Overwrite"
+        secondaryText: "Keep Both"
+        tertiaryText: "Cancel Import"
+        title: "Duplicate Resource Import"
+
+        onPrimaryClicked: {
+            contentsView.executePendingResourceImportWithPolicy(
+                        contentsView.resourceImportConflictPolicyOverwrite);
+        }
+        onSecondaryClicked: {
+            contentsView.executePendingResourceImportWithPolicy(
+                        contentsView.resourceImportConflictPolicyKeepBoth);
+        }
+        onTertiaryClicked: {
+            contentsView.cancelPendingResourceImportConflict();
+        }
+        onDismissed: {
+            contentsView.cancelPendingResourceImportConflict();
+        }
+    }
+}
                     MouseArea {
                         property real lastPressX: 0
                         property real lastPressY: 0

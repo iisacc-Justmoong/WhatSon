@@ -12,15 +12,21 @@ Builds canonical structured render data from `.wsnbody` source text.
   - callout blocks: `type=callout`
   - resource blocks: `type=resource`
   - divider tags: `type=break`
-- Each non-text block carries the backend-owned source geometry so QML can rewrite RAW in place.
+- Canonical semantic body elements such as `paragraph`, `p`, `title`, `subTitle`, `eventTitle`, and
+  `eventDescription` now materialize as explicit block spans whose `type` is the canonical tag name itself
+  (for example `type=paragraph`, `type=title`, `type=subtitle`, `type=eventtitle`).
+  Resource-bearing notes therefore keep their authored prose blocks visible in the structured document flow instead of
+  relying on one monolithic pre-resource text fragment.
+- Each explicit block, including semantic text-tag blocks, carries the backend-owned source geometry so QML can rewrite
+  RAW in place.
 - Resource blocks also carry a stable `resourceIndex` plus the canonical tag attributes (`resourceId`,
   `resourcePath`, `resourceType`, `resourceFormat`) so the structured QML host can match the block back to
   `ContentsBodyResourceRenderer`'s resolved asset entry and paint the real package payload instead of the
   `.wsresource` directory path itself.
-- `hasRenderedBlocks` now reflects any non-text block, including standalone `</break>` and `<resource ... />`.
-- `hasNonResourceRenderedBlocks` now gives QML the narrower activation signal used by the editor host:
-  resource-only notes do not force a host swap from the legacy inline editor into `ContentsStructuredDocumentFlow`,
-  but notes containing agenda/callout/break blocks still do.
+- `hasRenderedBlocks` now reflects any explicit document block, including semantic text-tag blocks, standalone
+  `</break>`, and `<resource ... />`.
+- `hasNonResourceRenderedBlocks` now likewise includes semantic text-tag blocks in addition to agenda/callout/break,
+  letting hosts distinguish resource-only notes from notes that still own editable prose blocks.
 - Source refresh no longer runs the full structured verification pass once per backend signal. The renderer now parses the
   needed backends first, pulls their cached verification snapshots, and computes the combined structured verification
   once per source refresh.
@@ -43,3 +49,5 @@ Agenda/callout/resource cards now render as document-owned flow blocks instead o
 QML host needs one ordered block stream rather than multiple independent overlay lists. The latest regression also
 showed that running structured parsing plus canonicalization synchronously during note-open could block the UI thread
 long enough to surface as `Not responding`.
+The newest regression also showed that resource-bearing notes could mount the structured flow yet fail to paint their
+ordinary prose when semantic body tags were left inside raw gap text instead of becoming parser-owned text blocks.

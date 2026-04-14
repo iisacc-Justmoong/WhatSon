@@ -80,6 +80,58 @@ namespace
         return text;
     }
 
+    QString visibleWhitespaceHtml(const QString& text)
+    {
+        QString html;
+        html.reserve(text.size() * 6);
+
+        bool lineStart = true;
+        qsizetype cursor = 0;
+        while (cursor < text.size())
+        {
+            const QChar ch = text.at(cursor);
+            if (ch == QLatin1Char('\n'))
+            {
+                html += QLatin1Char('\n');
+                lineStart = true;
+                ++cursor;
+                continue;
+            }
+
+            if (ch == QLatin1Char('\t'))
+            {
+                html += QStringLiteral("&nbsp;&nbsp;&nbsp;&nbsp;");
+                lineStart = false;
+                ++cursor;
+                continue;
+            }
+
+            if (ch != QLatin1Char(' '))
+            {
+                html += escapeHtmlText(QString(ch));
+                lineStart = false;
+                ++cursor;
+                continue;
+            }
+
+            const qsizetype runStart = cursor;
+            while (cursor < text.size() && text.at(cursor) == QLatin1Char(' '))
+            {
+                ++cursor;
+            }
+
+            const qsizetype runLength = cursor - runStart;
+            for (qsizetype runIndex = 0; runIndex < runLength; ++runIndex)
+            {
+                const bool preserveAsNbsp = lineStart || ((runLength - runIndex) % 2 == 0);
+                html += preserveAsNbsp ? QStringLiteral("&nbsp;") : QStringLiteral(" ");
+                lineStart = false;
+            }
+        }
+
+        return html;
+    }
+
     int htmlEntityLengthAt(const QString& text, const int sourceOffset)
     {
         if (sourceOffset < 0
@@ -279,7 +331,7 @@ namespace
         }
 
         QString html;
-        html.reserve(displayText.size() * 2);
+        html.reserve(displayText.size() * 6);
 
         int cursor = 0;
         while (cursor < displayText.size())
@@ -306,8 +358,20 @@ namespace
                 continue;
             }
 
-            html += escapeHtmlText(QString(displayText.at(cursor)));
-            ++cursor;
+            const int literalRunStart = cursor;
+            while (cursor < displayText.size())
+            {
+                if (renderMode == LiteralRenderMode::MarkdownAware)
+                {
+                    if (inlineCodeTokenLengthAt(displayText, cursor) > 0
+                        || markdownLinkTokenLengthAt(displayText, cursor) > 0)
+                    {
+                        break;
+                    }
+                }
+                ++cursor;
+            }
+            html += visibleWhitespaceHtml(displayText.mid(literalRunStart, cursor - literalRunStart));
         }
 
         return html;

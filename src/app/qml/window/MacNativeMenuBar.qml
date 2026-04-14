@@ -3,11 +3,18 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Dialogs
 import Qt.labs.platform as Platform
+import LVRS 1.0 as LV
 
 Platform.MenuBar {
     id: root
 
+    readonly property int resourceImportConflictPolicyAbort: 0
+    readonly property int resourceImportConflictPolicyOverwrite: 1
+    readonly property int resourceImportConflictPolicyKeepBoth: 2
     property var hostWindow: null
+    property var pendingDuplicateImportConflict: ({})
+    property var pendingDuplicateImportUrls: []
+    property bool duplicateImportAlertOpen: false
     property var resourcesImportViewModel: null
     property string importFailureText: ""
 
@@ -35,6 +42,62 @@ Platform.MenuBar {
 
         return urls;
     }
+    function clearPendingDuplicateImport() {
+        root.pendingDuplicateImportConflict = ({});
+        root.pendingDuplicateImportUrls = [];
+        root.duplicateImportAlertOpen = false;
+    }
+    function normalizedDuplicateImportConflict(conflict) {
+        return conflict && typeof conflict === "object" ? conflict : ({});
+    }
+    function duplicateImportAlertMessage() {
+        const conflict = root.normalizedDuplicateImportConflict(root.pendingDuplicateImportConflict);
+        const fileName = conflict.sourceFileName !== undefined ? String(conflict.sourceFileName).trim() : "";
+        const resourcePath = conflict.existingResourcePath !== undefined ? String(conflict.existingResourcePath).trim() : "";
+        if (fileName.length === 0)
+            return "A resource with the same name already exists. Choose how to continue.";
+        if (resourcePath.length === 0)
+            return "A resource named \"" + fileName + "\" already exists. Choose whether to overwrite it, keep both copies, or cancel the import.";
+        return "A resource named \"" + fileName + "\" already exists at \"" + resourcePath + "\". Choose whether to overwrite it, keep both copies, or cancel the import.";
+    }
+    function openImportFailureDialog() {
+        const failureText = root.resourcesImportViewModel && root.resourcesImportViewModel.lastError !== undefined
+            ? String(root.resourcesImportViewModel.lastError).trim()
+            : "";
+        root.importFailureText = failureText.length > 0
+            ? failureText
+            : qsTr("WhatSon could not import the selected files.");
+        importFailureDialog.open();
+    }
+    function importSelectedFilesWithConflictPolicy(selectedFiles, conflictPolicy) {
+        if (!root.resourcesImportViewModel
+                || root.resourcesImportViewModel.importUrlsWithConflictPolicy === undefined)
+            return false;
+        const succeeded = root.resourcesImportViewModel.importUrlsWithConflictPolicy(selectedFiles, conflictPolicy);
+        if (!succeeded)
+            root.openImportFailureDialog();
+        return succeeded;
+    }
+    function handleSelectedImportUrls(selectedFiles) {
+        if (!root.resourcesImportViewModel)
+            return;
+        const conflict = root.resourcesImportViewModel.inspectImportConflictForUrls !== undefined
+            ? root.resourcesImportViewModel.inspectImportConflictForUrls(selectedFiles)
+            : ({});
+        if (conflict && conflict.conflict) {
+            root.pendingDuplicateImportUrls = Array.isArray(selectedFiles) ? selectedFiles.slice(0) : [];
+            root.pendingDuplicateImportConflict = root.normalizedDuplicateImportConflict(conflict);
+            root.duplicateImportAlertOpen = true;
+            return;
+        }
+        root.importSelectedFilesWithConflictPolicy(selectedFiles, root.resourceImportConflictPolicyAbort);
+    }
+    function resolvePendingDuplicateImport(conflictPolicy) {
+        const selectedFiles = Array.isArray(root.pendingDuplicateImportUrls) ? root.pendingDuplicateImportUrls.slice(0) : [];
+        root.duplicateImportAlertOpen = false;
+        root.importSelectedFilesWithConflictPolicy(selectedFiles, conflictPolicy);
+        root.clearPendingDuplicateImport();
+    }
 
     MessageDialog {
         id: importFailureDialog
@@ -55,16 +118,7 @@ Platform.MenuBar {
                 return;
 
             const selectedFiles = root.selectedImportUrls();
-            const succeeded = root.resourcesImportViewModel.importUrls(selectedFiles);
-            if (!succeeded) {
-                const failureText = root.resourcesImportViewModel.lastError !== undefined
-                    ? String(root.resourcesImportViewModel.lastError).trim()
-                    : "";
-                root.importFailureText = failureText.length > 0
-                    ? failureText
-                    : qsTr("WhatSon could not import the selected files.");
-                importFailureDialog.open();
-            }
+            root.handleSelectedImportUrls(selectedFiles);
         }
     }
     Platform.Menu {
@@ -114,6 +168,32 @@ Platform.MenuBar {
         Platform.MenuItem {
             enabled: false
             text: root.hostWindow ? root.hostWindow.nativeMenuPlaceholderText() : " "
+        }
+    }
+    LV.Alert {
+        id: duplicateImportAlert
+
+        parent: root.hostWindow ? root.hostWindow.contentItem : null
+        buttonCount: 3
+        dismissOnBackground: false
+        message: root.duplicateImportAlertMessage()
+        open: root.duplicateImportAlertOpen
+        primaryText: "Overwrite"
+        secondaryText: "Keep Both"
+        tertiaryText: "Cancel Import"
+        title: "Duplicate Resource Import"
+
+        onPrimaryClicked: {
+            root.resolvePendingDuplicateImport(root.resourceImportConflictPolicyOverwrite);
+        }
+        onSecondaryClicked: {
+            root.resolvePendingDuplicateImport(root.resourceImportConflictPolicyKeepBoth);
+        }
+        onTertiaryClicked: {
+            root.clearPendingDuplicateImport();
+        }
+        onDismissed: {
+            root.clearPendingDuplicateImport();
         }
     }
 }

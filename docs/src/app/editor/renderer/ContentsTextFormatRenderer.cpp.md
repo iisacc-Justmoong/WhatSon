@@ -74,6 +74,13 @@ Implements inline-format rendering from note-editor text to RichText HTML.
 - Decodes one entity layer from safe literal text fragments (`&amp;`, `&lt;`, `&gt;`, `&quot;`, `&#39;`, `&nbsp;`)
   before emitting RichText HTML, so RAW-safe source escapes render as their real glyphs in the editor while the
   canonical source can still keep escaped tokens.
+- Literal-text rendering now preserves visible horizontal whitespace too:
+  - leading indentation in ordinary paragraph lines is emitted as `&nbsp;` so a typed Tab-space run survives the next
+    editor-surface refresh instead of collapsing back to zero-width HTML spacing
+  - repeated interior spaces alternate plain spaces and `&nbsp;`, keeping the authored gap width without forcing every
+    word separator into a non-breaking span
+  - the same whitespace policy is reused by markdown preview and structured block literal rendering, so callout/agenda
+    lines do not disagree with plain paragraph lines about how inserted indentation should look
 - Exposes `normalizeInlineStyleAliasesForEditor(...)` for editor-surface normalization:
   - rewrites inline aliases into editable RichText tags (`bold` -> `<strong style="font-weight:900;">`, etc.)
   - preserves non-style tags such as `<resource ...>` unchanged
@@ -117,6 +124,8 @@ Implements inline-format rendering from note-editor text to RichText HTML.
 
 - Typing `- item` in the note body must keep `- ` visible on the live editor surface; the source marker must not be
   replaced by a rendered bullet glyph in that editing path.
+- Pressing `Tab` at the start of an ordinary paragraph line must keep the inserted indent visibly rendered after the
+  editor surface reparses RAW source; the cursor must not be the only thing that moves.
 - A stored source line that already begins with `• ` must render with the same unordered-list marker styling as `- `
   instead of falling back to plain black text in markdown preview views.
 - Typing `1. item` should re-render as a numbered-list line.

@@ -4,15 +4,23 @@
 Mobile content editor host.
 
 ## Structured Document Flow
-- `agenda`, `callout`, `resource`, and `break` remain `.wsnbody` body tags, and mobile now lets any parsed non-text
-  block, including `resource`, activate `ContentsStructuredDocumentFlow.qml`.
+- `agenda`, `callout`, `resource`, and `break` remain `.wsnbody` body tags, and mobile now lets any parsed explicit
+  document block, including semantic text-tag blocks and `resource`, activate `ContentsStructuredDocumentFlow.qml`.
   A note whose RAW body contains `<resource ... />` therefore renders that block through parser-owned document flow
   instead of depending on the legacy editor overlay path.
 - Canonical live `<resource ... />` markup is still tracked through the live editor buffer, presentation snapshot, and
   selection-bridge body-source snapshot so `ContentsBodyResourceRenderer` can resolve against the freshest RAW source,
   and that same parsed resource presence now activates `ContentsStructuredDocumentFlow.qml`.
 - `ContentsStructuredDocumentFlow.qml` therefore becomes the shared block-flow host for agenda/callout/break/resource
-  notes whenever the parser reports non-text document blocks.
+  notes and for notes whose RAW still carries explicit semantic text tags whenever the parser reports explicit
+  document blocks.
+- That block-flow stream now also includes parser-owned semantic text blocks for `paragraph` / `title` / `subTitle` /
+  `event*` body markup.
+  Mobile notes that mix prose with `<resource ... />` tags therefore keep their authored text visible in the same
+  document flow as the inline image frame instead of collapsing into a resource-only surface.
+- Structured-flow visibility is now additionally gated by `editorSession.editorBoundNoteId == selectedNoteId`.
+  A previously rendered structured note therefore cannot remain mounted after the user selects a different note-list
+  item; the host hides stale block content until the newly selected note session is actually bound.
 - Structured block rewrites route through `applyDocumentSourceMutation(...)` so mobile keeps the same RAW persistence
   contract as desktop, but they no longer force an immediate full legacy presentation rebuild while structured-flow
   editing remains active.
@@ -78,6 +86,10 @@ Mobile content editor host.
   `ContentsEditorTypingController.handleEditorTextEdited()` before deciding whether to flush the previously bound note.
   This keeps large deletions or other last-turn edits from being dropped just because the selection id changed before
   the session buffer had caught up.
+- That deferred blur-side flush now also captures the note id that owned the editor when focus was lost and refuses to
+  run after the session has rebound to a different selected note.
+  Tapping from note `A` to note `B` therefore cannot reinterpret `A`'s stale editor surface as a late edit for `B`
+  and overwrite the newly selected note body during the transition.
 - Mobile inline-editor `onTextEdited()` now only notifies the typing controller to read the live `TextEdit` state.
   The host no longer treats the rendered RichText surface payload itself as a recovery source for RAW note text, so
   agenda/callout projection cannot push the note-open session snapshot back over newer visible edits.
@@ -92,9 +104,22 @@ Mobile content editor host.
   canonical `<resource ...>` calls into the active note source, and feeds the current presentation snapshot into
   `ContentsBodyResourceRenderer` so the dropped resource card appears in the body overlay before the worker-thread note
   flush finishes.
+- Before that import actually runs, mobile now asks `ResourcesImportViewModel.inspectImportConflictForUrls(...)`
+  or `inspectClipboardImageImportConflict()` whether the incoming asset name already exists.
+  If it does, mobile opens the same `LV.Alert` decision surface as desktop with `Overwrite`, `Keep Both`, and
+  `Cancel Import` actions instead of silently auto-numbering the duplicate.
 - Mobile now also rescans the live `editorText` buffer for canonical `<resource ... />` markup on each edit turn.
   That keeps resource resolution tied to the newest RAW source while still allowing parser-owned resource blocks to
   activate the structured document flow on the same selected note.
+- The mobile host now also exposes the same canonical resource-tag counting/loss-detection helpers as desktop.
+  That loss check compares candidate rewrites against the strongest currently known RAW baseline
+  (`editorText`, `documentPresentationSourceText`, and the selected-note body snapshot only when that snapshot still
+  belongs to the selected note and the host has not taken local editor authority), so stale legacy-surface rewrites
+  cannot erase `<resource ... />` tokens from `.wsnbody` just because one buffer had already drifted without letting an
+  older model snapshot override a newly accepted local edit.
+- `applyDocumentSourceMutation(...)` now also runs that same loss check before it mutates `editorText` or persists.
+  Any mobile caller that bypasses the typing/selection controllers therefore still cannot silently delete
+  `<resource ... />` from RAW while the host remains on the legacy inline-editor surface.
 - Figma node `294:7933` is also the mixed-content reference for mobile-hosted note bodies:
   text and image frames share one authored document column, so inline images must not replace the entire editor with a
   dedicated resource viewer unless the user is directly browsing a resource package from the Resources hierarchy.
@@ -111,6 +136,10 @@ Mobile content editor host.
   On the legacy inline-editor path the drop handler reuses
   `ContentsEditorTypingController.insertRawSourceTextAtCursor(...)` so logical caret positions are translated back
   into RAW source offsets before save.
+- Mobile now also routes plain `Enter` / `Return` through
+  `ContentsEditorTypingController.handlePlainEnterKeyPress(...)` before falling back to delete/formatting shortcuts.
+  The legacy inline editor therefore splits lines by mutating RAW source directly instead of trusting a transient
+  RichText paragraph rewrite.
 - When the note is already inside `ContentsStructuredDocumentFlow.qml` because of agenda/callout/break blocks, mobile
   now inserts dropped resource tags through the structured-flow host's active-block insertion path instead of falling
   back to the legacy inline-editor cursor bridge.
@@ -155,7 +184,8 @@ Mobile content editor host.
   consumes that note-owned payload through the ordinary selection-sync path instead of waiting for a stale filesystem
   read to arrive first.
 - Mobile note-open now also keeps the legacy inline editor path alive only until the first settled structured render confirms
-  that the current selected note actually owns parsed non-text blocks such as agenda/callout/break/resource.
+  that the current selected note actually owns parsed explicit document blocks such as agenda/callout/break/resource or
+  semantic text-tag blocks.
 - Once structured mode has activated for that same note, later async reparses keep the structured surface mounted
   instead of bouncing through the legacy editor again.
 - Mobile note snapshot polling also pauses during `selectedNoteBodyLoading`, so the first lazy note-open read is not
@@ -178,6 +208,9 @@ Mobile content editor host.
 - Mobile now also binds `StandardKey.Paste` to the same resource-import path while the clipboard contains image data.
   Hardware-keyboard image paste therefore lands in `.wsresource` packaging plus canonical `<resource ... />` RAW
   insertion, while non-image clipboard paste still stays on the ordinary native text-input path.
+- That same paste path now also routes through the duplicate-name alert flow.
+  Repeated `clipboard-image.png` imports therefore require an explicit overwrite/keep-both decision instead of
+  silently creating another numbered package.
 - Mobile resource cards now also let the shared bitmap viewer recover image presentation from the resolved asset
   path/format itself.
   A resource that arrives as `document` in the renderer payload but still resolves to a compatible bitmap file now

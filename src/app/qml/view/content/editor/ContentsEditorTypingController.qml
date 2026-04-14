@@ -651,6 +651,11 @@ QtObject {
         }
         controller.synchronizeLiveEditingStateFromPresentation();
     }
+    function resourceTagLossDetectedForMutation(currentSourceText, nextSourceText) {
+        if (!controller.view || controller.view.resourceTagLossDetected === undefined)
+            return false;
+        return !!controller.view.resourceTagLossDetected(currentSourceText, nextSourceText);
+    }
 
     function collapsedDeletionTagRange(sourceTagRanges, sourceOffset, deleteForward) {
         const ranges = Array.isArray(sourceTagRanges) ? sourceTagRanges : [];
@@ -730,6 +735,10 @@ QtObject {
                     normalizedReplacementSourceText);
         if (nextSourceText === currentSourceText)
             return false;
+        if (controller.resourceTagLossDetectedForMutation(currentSourceText, nextSourceText)) {
+            controller.restoreEditorSurfaceFromSourcePresentation();
+            return false;
+        }
 
         if (controller.view.editorText !== nextSourceText)
             controller.view.editorText = nextSourceText;
@@ -1104,6 +1113,248 @@ QtObject {
                     insertedText);
     }
 
+    function commitExplicitSourceMutation(nextSourceText) {
+        if (!controller.view)
+            return false;
+        if (controller.view.applyDocumentSourceMutation !== undefined)
+            return controller.view.applyDocumentSourceMutation(nextSourceText);
+
+        const normalizedNextSourceText = nextSourceText === undefined || nextSourceText === null
+                ? ""
+                : String(nextSourceText);
+        const currentSourceText = controller.view.editorText === undefined || controller.view.editorText === null
+                ? ""
+                : String(controller.view.editorText);
+        if (normalizedNextSourceText === currentSourceText)
+            return false;
+        if (controller.resourceTagLossDetectedForMutation(currentSourceText, normalizedNextSourceText)) {
+            controller.restoreEditorSurfaceFromSourcePresentation();
+            return false;
+        }
+
+        if (controller.view.editorText !== normalizedNextSourceText)
+            controller.view.editorText = normalizedNextSourceText;
+        if (controller.view.commitDocumentPresentationRefresh !== undefined)
+            controller.view.commitDocumentPresentationRefresh();
+        else
+            controller.synchronizeLiveEditingStateFromPresentation();
+
+        if (controller.editorSession && controller.editorSession.markLocalEditorAuthority !== undefined)
+            controller.editorSession.markLocalEditorAuthority();
+        if (controller.view.persistEditorTextImmediately !== undefined)
+            controller.view.persistEditorTextImmediately(normalizedNextSourceText);
+        controller.view.editorTextEdited(normalizedNextSourceText);
+        return true;
+    }
+
+    function applyExplicitPlainTextLogicalReplacement(logicalReplacementStart, logicalReplacementEnd, insertedText) {
+        if (!controller.view
+                || !controller.view.hasSelectedNote
+                || controller.view.showDedicatedResourceViewer
+                || controller.view.showFormattedTextRenderer) {
+            return false;
+        }
+        if (!controller.contentEditor
+                || !controller.textFormatRenderer
+                || controller.textFormatRenderer.applyPlainTextReplacementToSource === undefined) {
+            return false;
+        }
+
+        const currentSourceText = controller.view.editorText === undefined || controller.view.editorText === null
+                ? ""
+                : String(controller.view.editorText);
+        const previousPlainText = controller.authoritativeSourcePlainText();
+        const plainTextLength = previousPlainText.length;
+        const boundedLogicalStart = Math.max(
+                    0,
+                    Math.min(
+                        plainTextLength,
+                        Math.floor(Number(logicalReplacementStart) || 0)));
+        const boundedLogicalEnd = Math.max(
+                    boundedLogicalStart,
+                    Math.min(
+                        plainTextLength,
+                        Math.floor(Number(logicalReplacementEnd) || 0)));
+        const normalizedRequestedText = controller.normalizePlainText(insertedText);
+        const syntheticNextPlainText = previousPlainText.slice(0, boundedLogicalStart)
+                + normalizedRequestedText
+                + previousPlainText.slice(boundedLogicalEnd);
+        const syntheticReplacementDelta = {
+            "insertedText": normalizedRequestedText,
+            "previousEnd": boundedLogicalEnd,
+            "start": boundedLogicalStart,
+            "valid": true
+        };
+
+        const continuedListInsertion = controller.continuedListInsertion(
+                    syntheticReplacementDelta,
+                    currentSourceText,
+                    syntheticNextPlainText);
+        let normalizedInsertedText = continuedListInsertion.applied
+                ? continuedListInsertion.insertedText
+                : normalizedRequestedText;
+        let resolvedLogicalReplacementStart = continuedListInsertion.applied
+                && continuedListInsertion.replacementStart !== undefined
+                && Number(continuedListInsertion.replacementStart) >= 0
+                ? Math.floor(Number(continuedListInsertion.replacementStart))
+                : boundedLogicalStart;
+        let resolvedLogicalReplacementEnd = continuedListInsertion.applied
+                && continuedListInsertion.replacementEnd !== undefined
+                && Number(continuedListInsertion.replacementEnd) >= 0
+                ? Math.floor(Number(continuedListInsertion.replacementEnd))
+                : boundedLogicalEnd;
+
+        let rawSourceReplacementText = "";
+        let rawReplacementEnabled = false;
+        let cursorLogicalOverride = Math.max(
+                    0,
+                    Math.min(
+                        syntheticNextPlainText.length,
+                        resolvedLogicalReplacementStart + normalizedInsertedText.length));
+        let cursorSourceOffsetOverride = NaN;
+
+        const breakShortcut = controller.breakShortcutInsertion(
+                    previousPlainText,
+                    resolvedLogicalReplacementStart,
+                    resolvedLogicalReplacementEnd,
+                    normalizedInsertedText);
+        if (!rawReplacementEnabled && breakShortcut.applied) {
+            normalizedInsertedText = breakShortcut.insertedText;
+            resolvedLogicalReplacementStart = Math.max(0, Math.floor(Number(breakShortcut.replacementStart) || 0));
+            resolvedLogicalReplacementEnd = Math.max(
+                        resolvedLogicalReplacementStart,
+                        Math.floor(Number(breakShortcut.replacementEnd) || 0));
+            rawSourceReplacementText = normalizedInsertedText;
+            rawReplacementEnabled = true;
+            cursorLogicalOverride = Math.max(0, Math.floor(Number(breakShortcut.cursorPosition) || 0));
+        }
+
+        const collapsedLogicalInsertion = resolvedLogicalReplacementEnd === resolvedLogicalReplacementStart;
+        const sourceStart = collapsedLogicalInsertion
+                ? controller.sourceOffsetForCollapsedLogicalInsertion(
+                    currentSourceText,
+                    resolvedLogicalReplacementStart)
+                : controller.sourceOffsetForLogicalOffset(resolvedLogicalReplacementStart);
+        const sourceEnd = collapsedLogicalInsertion
+                ? sourceStart
+                : controller.sourceOffsetForLogicalOffset(resolvedLogicalReplacementEnd);
+        const currentSourceTagRanges = controller.sourceTagRanges(currentSourceText);
+        const targetsVirtualSourceOnly = controller.logicalRangeCollapsesToSingleSourceOffset(
+                    resolvedLogicalReplacementStart,
+                    resolvedLogicalReplacementEnd);
+
+        const agendaTaskEnter = controller.agendaTaskEnterInsertion(
+                    currentSourceText,
+                    sourceStart,
+                    sourceEnd,
+                    normalizedInsertedText);
+        let replacementSourceStart = sourceStart;
+        let replacementSourceEnd = sourceEnd;
+        if (agendaTaskEnter.applied) {
+            replacementSourceStart = Math.max(0, Math.floor(Number(agendaTaskEnter.replacementSourceStart) || 0));
+            replacementSourceEnd = Math.max(
+                        replacementSourceStart,
+                        Math.floor(Number(agendaTaskEnter.replacementSourceEnd) || 0));
+            rawSourceReplacementText = String(agendaTaskEnter.replacementSourceText || "");
+            rawReplacementEnabled = true;
+            cursorSourceOffsetOverride = Math.max(
+                        0,
+                        Math.floor(Number(agendaTaskEnter.cursorSourceOffsetFromReplacementStart) || 0));
+            cursorLogicalOverride = NaN;
+        }
+
+        const calloutEnter = agendaTaskEnter.applied
+                ? ({ "applied": false })
+                : controller.calloutEnterInsertion(
+                    currentSourceText,
+                    sourceStart,
+                    sourceEnd,
+                    normalizedInsertedText);
+        if (calloutEnter.applied) {
+            replacementSourceStart = Math.max(0, Math.floor(Number(calloutEnter.replacementSourceStart) || 0));
+            replacementSourceEnd = Math.max(
+                        replacementSourceStart,
+                        Math.floor(Number(calloutEnter.replacementSourceEnd) || 0));
+            rawSourceReplacementText = String(calloutEnter.replacementSourceText || "");
+            rawReplacementEnabled = true;
+            cursorSourceOffsetOverride = Math.max(
+                        0,
+                        Math.floor(Number(calloutEnter.cursorSourceOffsetFromReplacementStart) || 0));
+            cursorLogicalOverride = NaN;
+        }
+
+        const touchesResourceTag = controller.sourceRangeTouchesNamedTag(
+                    currentSourceTagRanges,
+                    replacementSourceStart,
+                    replacementSourceEnd,
+                    "resource");
+        if (touchesResourceTag || targetsVirtualSourceOnly) {
+            controller.restoreEditorSurfaceFromSourcePresentation();
+            return false;
+        }
+
+        let nextSourceText = "";
+        if (rawReplacementEnabled) {
+            nextSourceText = controller.spliceSourceText(
+                        currentSourceText,
+                        replacementSourceStart,
+                        replacementSourceEnd,
+                        rawSourceReplacementText);
+        } else {
+            nextSourceText = String(controller.textFormatRenderer.applyPlainTextReplacementToSource(
+                                        currentSourceText,
+                                        sourceStart,
+                                        sourceEnd,
+                                        normalizedInsertedText));
+        }
+        if (nextSourceText === currentSourceText)
+            return false;
+
+        const committed = controller.commitExplicitSourceMutation(nextSourceText);
+        if (!committed)
+            return false;
+
+        if (continuedListInsertion.applied && !rawReplacementEnabled)
+            controller.scheduleCursorPosition(continuedListInsertion.cursorPosition);
+        else if (rawReplacementEnabled && isFinite(cursorSourceOffsetOverride))
+            controller.scheduleCursorPosition(
+                        controller.logicalOffsetForSourceOffset(replacementSourceStart + cursorSourceOffsetOverride));
+        else if (isFinite(cursorLogicalOverride))
+            controller.scheduleCursorPosition(cursorLogicalOverride);
+        return true;
+    }
+
+    function handlePlainEnterKeyPress(event) {
+        if (!event
+                || !controller.view
+                || !controller.view.hasSelectedNote
+                || controller.view.showDedicatedResourceViewer
+                || controller.view.showFormattedTextRenderer) {
+            return false;
+        }
+
+        const key = Number(event.key);
+        if (key !== Qt.Key_Return && key !== Qt.Key_Enter)
+            return false;
+
+        const modifiers = Number(event.modifiers) || 0;
+        if ((modifiers & (Qt.ControlModifier | Qt.AltModifier | Qt.MetaModifier)) !== 0)
+            return false;
+        if (controller.contentEditor
+                && ((controller.contentEditor.inputMethodComposing !== undefined
+                     && controller.contentEditor.inputMethodComposing)
+                    || (controller.contentEditor.preeditText !== undefined
+                        && String(controller.contentEditor.preeditText || "").length > 0))) {
+            return false;
+        }
+
+        const selectionRange = controller.currentRawEditorSelectionRange();
+        return controller.applyExplicitPlainTextLogicalReplacement(
+                    Math.max(0, Number(selectionRange.start)),
+                    Math.max(0, Number(selectionRange.end)),
+                    "\n");
+    }
+
     function sourceOffsetForLogicalOffset(logicalOffset) {
         controller.ensureLiveEditingStateReady();
         const safeOffset = Math.max(0, Math.floor(Number(logicalOffset) || 0));
@@ -1340,6 +1591,10 @@ QtObject {
 
         if (nextSourceText === currentSourceText)
             return false;
+        if (controller.resourceTagLossDetectedForMutation(currentSourceText, nextSourceText)) {
+            controller.restoreEditorSurfaceFromSourcePresentation();
+            return false;
+        }
 
         if (controller.view.editorText !== nextSourceText)
             controller.view.editorText = nextSourceText;

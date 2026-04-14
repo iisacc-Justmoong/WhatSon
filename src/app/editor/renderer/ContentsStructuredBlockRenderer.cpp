@@ -2,6 +2,7 @@
 
 #include "agenda/ContentsAgendaBackend.hpp"
 #include "callout/ContentsCalloutBackend.hpp"
+#include "file/note/WhatSonNoteBodySemanticTagSupport.hpp"
 #include "file/validator/WhatSonStructuredTagLinter.hpp"
 
 #include <QMetaObject>
@@ -10,12 +11,15 @@
 #include <QStringList>
 #include <QThreadPool>
 #include <QVariantMap>
+#include <QVector>
 
 #include <algorithm>
 #include <vector>
 
 namespace
 {
+    namespace SemanticTags = WhatSon::NoteBodySemanticTagSupport;
+
     bool containsIgnoreCase(const QString& text, const QString& token)
     {
         return text.indexOf(token, 0, Qt::CaseInsensitive) >= 0;
@@ -102,18 +106,33 @@ namespace
         return {};
     }
 
-    QVariantMap textBlockPayload(const QString& sourceText, const int sourceStart, const int sourceEnd)
+    QVariantMap documentBlockPayload(
+        const QString& sourceText,
+        const int sourceStart,
+        const int sourceEnd,
+        const QString& typeName = QString())
     {
         const int boundedStart = boundedTextIndex(sourceText, sourceStart);
         const int boundedEnd = boundedTextIndex(sourceText, std::max(boundedStart, sourceEnd));
+        const QString normalizedTypeName = typeName.trimmed().toCaseFolded();
 
         QVariantMap payload;
-        payload.insert(QStringLiteral("type"), QStringLiteral("text"));
+        payload.insert(
+            QStringLiteral("type"),
+            normalizedTypeName.isEmpty() ? QStringLiteral("text") : normalizedTypeName);
         payload.insert(QStringLiteral("sourceStart"), boundedStart);
         payload.insert(QStringLiteral("sourceEnd"), boundedEnd);
         payload.insert(
             QStringLiteral("sourceText"),
             sourceText.mid(boundedStart, boundedEnd - boundedStart));
+        if (!normalizedTypeName.isEmpty())
+        {
+            payload.insert(QStringLiteral("explicitBlock"), true);
+            if (SemanticTags::isRenderedTextBlockElement(normalizedTypeName))
+            {
+                payload.insert(QStringLiteral("semanticTagName"), normalizedTypeName);
+            }
+        }
         return payload;
     }
 
@@ -177,6 +196,132 @@ namespace
         return renderedResources;
     }
 
+    QVariantList buildRenderedSemanticTextBlocks(const QString& sourceText)
+    {
+        static const QRegularExpression tagPattern(
+            QStringLiteral(R"(<\s*/?\s*([A-Za-z_][A-Za-z0-9_.:-]*)\b[^>]*>)"));
+
+        QVariantList renderedTextBlocks;
+        QVector<int> textBlockStack;
+        int structuredContainerDepth = 0;
+        int topLevelTextBlockStart = -1;
+        QString topLevelTextBlockTypeName;
+
+        QRegularExpressionMatchIterator iterator = tagPattern.globalMatch(sourceText);
+        while (iterator.hasNext())
+        {
+            const QRegularExpressionMatch match = iterator.next();
+            if (!match.hasMatch())
+            {
+                continue;
+            }
+
+            const QString fullTagToken = match.captured(0);
+            const QString rawTagName = match.captured(1);
+            const QString normalizedTagName = rawTagName.trimmed().toCaseFolded();
+            const bool closingTag = fullTagToken.contains(
+                QRegularExpression(QStringLiteral(R"(^<\s*/)")));
+            const bool selfClosingTag = fullTagToken.trimmed().endsWith(QStringLiteral("/>"));
+            const int tagStart = std::max(0, static_cast<int>(match.capturedStart(0)));
+            const int tagEnd = std::max(tagStart, static_cast<int>(match.capturedEnd(0)));
+
+            if (normalizedTagName == QStringLiteral("agenda")
+                || normalizedTagName == QStringLiteral("callout"))
+            {
+                if (!closingTag && !selfClosingTag)
+                {
+                    ++structuredContainerDepth;
+                }
+                else if (closingTag && structuredContainerDepth > 0)
+                {
+                    --structuredContainerDepth;
+                }
+                continue;
+            }
+
+            if (structuredContainerDepth > 0 || SemanticTags::isTransparentContainerTagName(rawTagName))
+            {
+                continue;
+            }
+
+            if (!SemanticTags::isRenderedTextBlockElement(rawTagName))
+            {
+                continue;
+            }
+
+            if (!closingTag)
+            {
+                if (textBlockStack.isEmpty())
+                {
+                    topLevelTextBlockStart = tagStart;
+                    topLevelTextBlockTypeName =
+                        SemanticTags::canonicalRenderedTextBlockTagName(rawTagName);
+                }
+                textBlockStack.push_back(tagStart);
+
+                if (!selfClosingTag)
+                {
+                    continue;
+                }
+            }
+            else
+            {
+                if (textBlockStack.isEmpty())
+                {
+                    continue;
+                }
+
+                textBlockStack.removeLast();
+                if (!textBlockStack.isEmpty())
+                {
+                    continue;
+                }
+            }
+
+            const int blockSourceStart = topLevelTextBlockStart >= 0 ? topLevelTextBlockStart : tagStart;
+            const int blockSourceEnd = tagEnd;
+            const QString blockSourceText =
+                sourceText.mid(blockSourceStart, std::max(0, blockSourceEnd - blockSourceStart));
+            if (mayContainAgendaBlock(blockSourceText)
+                || mayContainCalloutBlock(blockSourceText)
+                || mayContainResourceBlock(blockSourceText)
+                || mayContainBreakBlock(blockSourceText))
+            {
+                if (selfClosingTag)
+                    textBlockStack.clear();
+                if (textBlockStack.isEmpty())
+                {
+                    topLevelTextBlockStart = -1;
+                    topLevelTextBlockTypeName.clear();
+                }
+                continue;
+            }
+
+            QVariantMap payload = documentBlockPayload(
+                sourceText,
+                blockSourceStart,
+                blockSourceEnd,
+                topLevelTextBlockTypeName);
+            renderedTextBlocks.push_back(payload);
+            textBlockStack.clear();
+            topLevelTextBlockStart = -1;
+            topLevelTextBlockTypeName.clear();
+        }
+
+        return renderedTextBlocks;
+    }
+
+    bool isFormattingWhitespaceBetweenExplicitBlocks(const QString& sourceText, const int sourceStart, const int sourceEnd)
+    {
+        if (sourceEnd <= sourceStart)
+        {
+            return false;
+        }
+
+        const QString gapText = sourceText.mid(sourceStart, sourceEnd - sourceStart);
+        return gapText.trimmed().isEmpty();
+    }
+
     QVariantList buildRenderedDocumentBlocks(
         const QString& sourceText,
         const QVariantList& agendas,
@@ -207,7 +352,10 @@ namespace
                 }
 
                 QVariantMap payload = entry;
-                payload.insert(QStringLiteral("type"), typeName);
+                if (!typeName.trimmed().isEmpty())
+                {
+                    payload.insert(QStringLiteral("type"), typeName);
+                }
                 payload.insert(
                     QStringLiteral("sourceText"),
                     sourceText.mid(sourceStart, sourceEnd - sourceStart));
@@ -218,6 +366,7 @@ namespace
         appendStructuredBlocks(agendas, QStringLiteral("agenda"));
         appendStructuredBlocks(callouts, QStringLiteral("callout"));
         appendStructuredBlocks(resources, QStringLiteral("resource"));
+        appendStructuredBlocks(buildRenderedSemanticTextBlocks(sourceText), QString());
 
         if (includeBreakBlocks)
         {
@@ -265,7 +414,10 @@ namespace
 
             if (cursor < boundedStart)
             {
-                renderedBlocks.push_back(textBlockPayload(sourceText, cursor, boundedStart));
+                if (!isFormattingWhitespaceBetweenExplicitBlocks(sourceText, cursor, boundedStart))
+                {
+                    renderedBlocks.push_back(documentBlockPayload(sourceText, cursor, boundedStart));
+                }
             }
 
             renderedBlocks.push_back(span.payload);
@@ -274,12 +426,12 @@ namespace
 
         if (cursor < sourceText.size())
         {
-            renderedBlocks.push_back(textBlockPayload(sourceText, cursor, sourceText.size()));
+            renderedBlocks.push_back(documentBlockPayload(sourceText, cursor, sourceText.size()));
         }
 
         if (renderedBlocks.isEmpty())
         {
-            renderedBlocks.push_back(textBlockPayload(sourceText, 0, sourceText.size()));
+            renderedBlocks.push_back(documentBlockPayload(sourceText, 0, sourceText.size()));
         }
 
         return renderedBlocks;
@@ -472,7 +624,8 @@ bool ContentsStructuredBlockRenderer::hasRenderedBlocks() const noexcept
     for (const QVariant& blockValue : m_renderedDocumentBlocks)
     {
         const QVariantMap block = blockValue.toMap();
-        if (block.value(QStringLiteral("type")).toString() != QStringLiteral("text"))
+        const QString blockType = block.value(QStringLiteral("type")).toString().trimmed().toCaseFolded();
+        if (SemanticTags::isExplicitDocumentBlockTypeName(blockType))
         {
             return true;
         }
@@ -485,9 +638,9 @@ bool ContentsStructuredBlockRenderer::hasNonResourceRenderedBlocks() const noexc
     for (const QVariant& blockValue : m_renderedDocumentBlocks)
     {
         const QVariantMap block = blockValue.toMap();
-        const QString blockType = block.value(QStringLiteral("type")).toString();
-        if (blockType != QStringLiteral("text")
-            && blockType != QStringLiteral("resource"))
+        const QString blockType = block.value(QStringLiteral("type")).toString().trimmed().toCaseFolded();
+        if (SemanticTags::isExplicitDocumentBlockTypeName(blockType)
+            && !SemanticTags::isResourceTagName(blockType))
         {
             return true;
         }
@@ -705,7 +858,7 @@ void ContentsStructuredBlockRenderer::handleAsyncRenderFinished(const RenderResu
 void ContentsStructuredBlockRenderer::publishPlaceholderDocumentBlocks()
 {
     const QVariantList placeholderBlocks = QVariantList {
-        textBlockPayload(m_sourceText, 0, m_sourceText.size())
+        documentBlockPayload(m_sourceText, 0, m_sourceText.size())
     };
 
     const bool previousCorrectionSuggested = correctionSuggested();

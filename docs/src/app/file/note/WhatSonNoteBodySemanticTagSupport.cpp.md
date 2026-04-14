@@ -5,10 +5,14 @@ Implements the shared semantic-tag lookup used by note-body persistence and edit
 
 ## Key Behavior
 - Normalizes tag-name checks through one case-folded path.
+- Exposes canonical document-block lookup helpers so parser, renderer, and QML host code can agree on when one source
+  tag should become its own document block.
 - Maps legacy title-like tags onto heading-style HTML spans using the same visual scale as the markdown heading preview:
   - `title` / `h1`
   - `subTitle` / `subtitle` / `h2`
   - `eventTitle` / `h3`
+- The same registry now also distinguishes generic gap text (`type=text`) from explicit semantic text-tag blocks such
+  as `paragraph`, `title`, `subtitle`, and `eventtitle`.
 - Treats `next` as a rendered line-break alias without forcing the save path to drop that legacy source token.
 - Marks `event` as a transparent semantic container so read-side renderers can consume its children without painting the
   wrapper tag literally.

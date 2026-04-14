@@ -21,6 +21,15 @@ FocusScope {
 
     signal sourceMutationRequested(string nextSourceText, var focusRequest)
 
+    function blockUsesTextDelegate(blockEntry) {
+        const safeBlock = blockEntry && typeof blockEntry === "object" ? blockEntry : ({})
+        const blockType = safeBlock.type !== undefined ? String(safeBlock.type).toLowerCase() : "text"
+        return blockType !== "agenda"
+                && blockType !== "callout"
+                && blockType !== "resource"
+                && blockType !== "break"
+    }
+
     function requestDocumentEndEdit() {
         const blocks = documentFlow.normalizedBlocks()
         const currentSourceText = documentFlow.normalizedSourceText(documentFlow.sourceText)
@@ -31,8 +40,7 @@ FocusScope {
         const lastBlock = blocks[blocks.length - 1] && typeof blocks[blocks.length - 1] === "object"
                 ? blocks[blocks.length - 1]
                 : ({})
-        const lastBlockType = lastBlock.type !== undefined ? String(lastBlock.type) : "text"
-        if (lastBlockType === "text") {
+        if (documentFlow.blockUsesTextDelegate(lastBlock)) {
             documentFlow.requestFocus({
                                           "sourceOffset": Math.max(
                                                               0,

@@ -60,6 +60,58 @@ namespace
         return value;
     }
 
+    QString escapeHtmlTextPreservingVisibleWhitespace(const QString& text)
+    {
+        QString html;
+        html.reserve(text.size() * 6);
+
+        bool lineStart = true;
+        qsizetype cursor = 0;
+        while (cursor < text.size())
+        {
+            const QChar ch = text.at(cursor);
+            if (ch == QLatin1Char('\n'))
+            {
+                html += QLatin1Char('\n');
+                lineStart = true;
+                ++cursor;
+                continue;
+            }
+
+            if (ch == QLatin1Char('\t'))
+            {
+                html += QStringLiteral("&nbsp;&nbsp;&nbsp;&nbsp;");
+                lineStart = false;
+                ++cursor;
+                continue;
+            }
+
+            if (ch != QLatin1Char(' '))
+            {
+                html += escapeHtmlText(QString(ch));
+                lineStart = false;
+                ++cursor;
+                continue;
+            }
+
+            const qsizetype runStart = cursor;
+            while (cursor < text.size() && text.at(cursor) == QLatin1Char(' '))
+            {
+                ++cursor;
+            }
+
+            const qsizetype runLength = cursor - runStart;
+            for (qsizetype runIndex = 0; runIndex < runLength; ++runIndex)
+            {
+                const bool preserveAsNbsp = lineStart || ((runLength - runIndex) % 2 == 0);
+                html += preserveAsNbsp ? QStringLiteral("&nbsp;") : QStringLiteral(" ");
+                lineStart = false;
+            }
+        }
+
+        return html;
+    }
+
     struct InlineStyleHtmlTag final
     {
         QString openingTag;
@@ -1446,12 +1498,12 @@ namespace
                 if (blockDepth > 0)
                 {
                     currentBlockText += text;
-                    currentBlockRichText += escapeHtmlText(text);
+                    currentBlockRichText += escapeHtmlTextPreservingVisibleWhitespace(text);
                 }
                 else if (!whitespaceOnlyText)
                 {
                     fragments.fallbackText += text;
-                    fragments.fallbackRichText += escapeHtmlText(text);
+                    fragments.fallbackRichText += escapeHtmlTextPreservingVisibleWhitespace(text);
                 }
                 continue;
             }

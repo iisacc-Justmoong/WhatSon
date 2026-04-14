@@ -56,7 +56,9 @@ Hosts the document-native block editor for structured `.wsnbody` content.
   finite-number helper instead of `Number(value) || -1`, which previously broke the first resource block and the first
   block-focus target by collapsing index `0` to the fallback sentinel.
 - The host now also exposes `requestDocumentEndEdit()` for editor-shell click-to-append behavior.
-  When the document already ends in a text block, it focuses that block at its end source offset.
+  When the document already ends in a text-delegate block, it focuses that block at its end source offset.
+  Explicit semantic text-tag blocks such as `paragraph`, `title`, or `subtitle` therefore keep the same editable tail
+  behavior as a generic `type=text` gap block.
   When the document ends in a non-text block such as `<resource ... />` or `</break>`, it appends one trailing newline
   to materialize a new text block and then restores focus at that new end-of-document insertion point.
   If the RAW source has already received that trailing newline but the block parser has not yet caught up, the helper

@@ -26,16 +26,28 @@ This ViewModel translates external local file URLs into resource package imports
 - `canImportUrls(...)`
   Returns whether a file-picker-style URL list can be imported into the current hub. The input may
   be flat or nested (for example picker payloads wrapped inside one `QVariant` entry).
+- `inspectImportConflictForUrls(...)`, `inspectClipboardImageImportConflict()`
+  Return the first same-name import conflict against the current `*.wsresources` store as a small map
+  (`conflict`, `sourceFileName`, `existingResourcePath`, `existingResourceId`, ...).
+  Visual callers use that payload to open an `LV.Alert` before they decide whether the import should overwrite the
+  existing package, keep both copies, or stop.
 - `importUrls(...)`
-  The main file import entrypoint. It still performs the import and same-turn runtime reload as one operation.
+  The main file import entrypoint. It now aborts same-name conflicts unless a caller has already chosen a conflict
+  policy explicitly.
+- `importUrlsWithConflictPolicy(...)`, `importUrlsForEditorWithConflictPolicy(...)`
+  Policy-aware variants of the file import path. Callers pass `Abort`, `Overwrite`, or `KeepBoth` after an explicit UI
+  decision.
 - `importUrlsForEditor(...)`
   Imports files and returns per-resource metadata entries (`resourcePath`, `type`, `format`, `bucket`, `assetPath`) so
-  the note editor can inject `<resource ... />` links immediately after a drop. This path now skips the automatic
-  runtime reload so the editor can finish RAW `.wsnbody` insertion first.
+  the note editor can inject `<resource ... />` links immediately after a drop.
+  This compatibility entrypoint now also aborts same-name conflicts unless the caller switches to the policy-aware
+  variant after user confirmation.
 - `importClipboardImage()`, `importClipboardImageForEditor()`
   Clipboard-image variants of the same pipeline. They materialize the clipboard bitmap as a temporary PNG file, then
   reuse the ordinary URL import path so resource package creation, metadata generation, and rollback semantics stay
   identical to drag/drop imports.
+- `importClipboardImageWithConflictPolicy(...)`, `importClipboardImageForEditorWithConflictPolicy(...)`
+  Clipboard-image variants of the same explicit conflict-policy flow.
 - `reloadImportedResources()`
   Runs the deferred resources runtime reload for editor-drop callers after they finish `<resource ... />` insertion and
   same-note persistence.
@@ -50,7 +62,10 @@ This ViewModel translates external local file URLs into resource package imports
 
 Each input file is written into the current hub `*.wsresources` store with these rules.
 
-- Generate a unique `resourceId`.
+- If no same-name conflict exists, generate a unique `resourceId`.
+- If a same-name conflict exists and the caller selects `Overwrite`, reuse the existing package path/resource id and
+  replace that package contents in-place.
+- If a same-name conflict exists and the caller selects `KeepBoth`, fall back to the numbered `resourceId` path.
 - Create a flat `resourceId.wsresource` directory.
 - Copy the source file name unchanged.
 - Write `resource.xml` using `buildMetadataForAssetFile(...)`.

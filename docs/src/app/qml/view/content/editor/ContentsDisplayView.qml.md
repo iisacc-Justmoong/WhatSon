@@ -4,15 +4,22 @@
 Desktop content editor host.
 
 ## Structured Document Flow
-- `agenda`, `callout`, `resource`, and `break` remain `.wsnbody` body tags, and desktop now lets any parsed non-text
-  block, including `resource`, activate `ContentsStructuredDocumentFlow.qml`.
+- `agenda`, `callout`, `resource`, and `break` remain `.wsnbody` body tags, and desktop now lets any parsed explicit
+  document block, including semantic text-tag blocks and `resource`, activate `ContentsStructuredDocumentFlow.qml`.
   A note whose RAW body contains `<resource ... />` therefore renders that block through the parser-owned document flow
   instead of relying on the legacy inline-editor overlay path.
 - Canonical live `<resource ... />` markup is still tracked through the live editor buffer, presentation snapshot, and
   selection-bridge snapshot so `ContentsBodyResourceRenderer` can resolve inline resources against the freshest RAW
   source, and that same parsed resource presence now activates `ContentsStructuredDocumentFlow.qml`.
-- `ContentsStructuredDocumentFlow.qml` therefore becomes the host for agenda/callout/break/resource notes whenever the
-  parser reports non-text document blocks.
+- `ContentsStructuredDocumentFlow.qml` therefore becomes the host for agenda/callout/break/resource notes and for notes
+  whose RAW still carries explicit semantic text tags whenever the parser reports explicit document blocks.
+- That block stream now also includes parser-owned semantic text blocks for `paragraph` / `title` / `subTitle` /
+  `event*` body markup.
+  A note that mixes prose paragraphs with `<resource ... />` tags therefore keeps both the prose and the inline image
+  frame in the same document-owned flow, instead of swapping to a resource-only surface that leaves the text empty.
+- Structured-flow visibility is now additionally gated by `editorSession.editorBoundNoteId == selectedNoteId`.
+  A previously rendered structured note therefore cannot remain mounted after the user selects a different note-list
+  item; the host hides stale block content until the newly selected note session is actually bound.
 - Source persistence for block edits now runs through `applyDocumentSourceMutation(...)`, which updates the RAW body,
   marks local authority, optionally restores focus inside the reparsed block, and only forces a full legacy
   presentation rebuild when the note actually falls back out of structured-flow mode.
@@ -79,6 +86,10 @@ Desktop content editor host.
   `ContentsEditorTypingController.handleEditorTextEdited()` before deciding whether to flush the previously bound note.
   This keeps large deletions or other last-turn edits from being dropped just because the selection id changed before
   the session buffer had caught up.
+- That deferred blur-side flush now also captures the note id that owned the editor when focus was lost and refuses to
+  run after the session has rebound to a different selected note.
+  Clicking from note `A` to note `B` therefore cannot reinterpret `A`'s stale editor surface as a late edit for `B`
+  and overwrite the newly selected note body during the transition.
 - Desktop inline-editor `onTextEdited()` now only notifies the typing controller to read the live `TextEdit` state.
   The host no longer treats the rendered RichText surface payload itself as a recovery source for RAW note text, so
   agenda/callout projection cannot push the note-open session snapshot back over newer visible edits.
@@ -95,9 +106,23 @@ Desktop content editor host.
   canonical `<resource ...>` calls into the active note source, and feeds the current presentation snapshot into
   `ContentsBodyResourceRenderer` so the dropped resource card appears in the body overlay before the worker-thread note
   flush finishes.
+- Before that import actually mutates storage, desktop now asks `ResourcesImportViewModel.inspectImportConflictForUrls(...)`
+  or `inspectClipboardImageImportConflict()` whether the incoming asset name already exists.
+  If it does, the editor opens an `LV.Alert` with `Overwrite`, `Keep Both`, and `Cancel Import` actions instead of
+  silently auto-numbering the new package.
 - Desktop now also rescans the live `editorText` buffer for canonical `<resource ... />` markup on each edit turn.
   That keeps resource resolution tied to the latest RAW source while still allowing parser-owned resource blocks to
   activate the structured document flow on the same selected note.
+- The host now also exposes one helper that counts canonical `<resource ... />` tokens in a RAW snapshot and another
+  helper that flags resource-tag loss while the note is still on the legacy inline editor.
+  That loss check compares the candidate rewrite against the strongest currently known RAW baseline
+  (`editorText`, `documentPresentationSourceText`, and the selected-note body snapshot only when that snapshot still
+  belongs to the selected note and the host has not taken local editor authority), so a stale surface rewrite is
+  rejected even if one buffer had already drifted once without treating an older model snapshot as newer than a just-
+  accepted local edit.
+- `applyDocumentSourceMutation(...)` now also runs that same loss check before it mutates `editorText` or persists.
+  Any caller that bypasses the typing/selection controllers therefore still cannot silently delete `<resource ... />`
+  from RAW while the host remains on the legacy inline-editor surface.
 - Figma node `294:7933` is now the mixed-content reference for this path:
   one text-editor column contains prose above the image frame and prose below it.
   Inline image blocks therefore behave like authored body elements, not like a full-surface resource takeover.
@@ -114,6 +139,10 @@ Desktop content editor host.
   On the legacy inline editor path it routes insertion through
   `ContentsEditorTypingController.insertRawSourceTextAtCursor(...)`, so logical/plain caret positions are mapped back
   into `.wsnbody` source offsets before persistence.
+- Desktop now also routes plain `Enter` / `Return` through
+  `ContentsEditorTypingController.handlePlainEnterKeyPress(...)` before falling back to delete/formatting shortcuts.
+  Line splits on the legacy inline editor therefore mutate RAW source directly instead of trusting a transient
+  RichText paragraph rewrite.
 - When the note is already in `ContentsStructuredDocumentFlow.qml` because of agenda/callout/break blocks, desktop now
   inserts dropped resource tags through the structured-flow host's active-block insertion path instead of falling back
   to the legacy inline-editor cursor bridge.
@@ -168,7 +197,8 @@ Desktop content editor host.
   self-referential `contentEditor: contentEditor` assignment that produced runtime binding loops under bound-component
   semantics.
 - Desktop note-open now keeps the legacy inline editor path alive only until the first settled structured render confirms
-  that the currently selected note actually owns parsed non-text blocks such as agenda/callout/break/resource.
+  that the currently selected note actually owns parsed explicit document blocks such as agenda/callout/break/resource
+  or semantic text-tag blocks.
 - After that first same-note activation, later async reparses keep the structured-flow surface mounted instead of
   bouncing back through the legacy editor during in-block editing.
 - Timer-driven note snapshot polling now also pauses while the selected note body is still loading, so note-open does
@@ -202,6 +232,9 @@ Desktop content editor host.
   true.
   Image paste therefore reuses the exact same guard + resource-import + `<resource ... />` insertion + deferred reload
   path as drag/drop, while ordinary text clipboard paste still falls through to the native `TextEdit` implementation.
+- That same paste path now also reuses the duplicate-name alert flow.
+  Repeated `clipboard-image.png` imports therefore require an explicit overwrite/keep-both decision instead of
+  silently creating another numbered package.
 - Desktop resource cards now also allow the shared bitmap viewer bridge to recover image presentation from the resolved
   asset path/format itself.
   When a renderer payload still reaches QML as `document` but points at a compatible bitmap file, the note body now

@@ -75,6 +75,12 @@ The file now also contains the shared XML-to-plain-text extraction path used by 
   - `strikethrough` / `strike` / `s` / `del` -> `<span style="text-decoration: line-through;">`
   - `highlight` / `mark` -> styled `span` (`background-color:#8A4B00; color:#D6AE58; font-weight:600`)
   - divider block tags (`<break/>` and legacy `<hr/>`) -> `<hr/>`
+- The same rich-text projection now preserves visible horizontal whitespace inside text nodes:
+  - leading paragraph indentation is emitted as `&nbsp;`, so a Tab-authored space run stays visible after the
+    `.wsnbody` parse/read path regenerates the editor RichText
+  - repeated interior spaces alternate plain spaces and `&nbsp;`, keeping authored spacing without turning every gap
+    into a non-breaking run
+  - tabs are projected as a four-space `&nbsp;` run, matching the editor-side tab-indent contract
 - The same read-side parser now also resolves legacy semantic body tags through the shared semantic-tag registry:
   - `<next/>` behaves like a line break in plain/rich projections
   - `<title>`, `<subTitle>`, and `<eventTitle>` render as heading-style text instead of literal XML
@@ -118,6 +124,8 @@ text projections still show `#label`.
 - Editor autosave must not inflate `fileStat.modifiedCount` while the user types.
 - Body hashtags must survive a full save/load round-trip as visible `#label` text while still persisting as canonical
   `<tag>` nodes inside `.wsnbody`.
+- A paragraph that starts with Tab-inserted indentation spaces must still display that indentation after a
+  save/load or parse/re-render round-trip; the projection must not collapse the stored spaces back into one HTML gap.
 - A style applied across multiple logical paragraphs must still render on every touched paragraph after save/load, even
   though the serializer has to split that logical span into paragraph-local reopened canonical tags.
 - A typed `</break>` token must survive save/load as `</break>` in editor source while `.wsnbody` persists it as
