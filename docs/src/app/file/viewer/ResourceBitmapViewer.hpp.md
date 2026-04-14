@@ -12,10 +12,12 @@ Declares the QML bridge that projects a resource-entry payload into bitmap-viewe
   Bitmap source URL used by `Image` when in-app preview is renderable.
 - `normalizedFormat`
   Canonical bitmap format token resolved from entry metadata/path.
+- `bitmapPreviewCandidate`
+  True when the entry either explicitly declares `renderMode == "image"` or can still be identified as a bitmap from
+  its resolved path/format metadata.
 - `bitmapFormatCompatible`
   Whether the format is compatible with the current runtime bitmap decoders.
 - `bitmapRenderable`
-  True only when render mode is `image`, source exists, and format compatibility is confirmed.
+  True when the entry is a bitmap preview candidate, source exists, and format compatibility is confirmed.
 - `incompatibilityReason`
   Failure reason used by fallback UI when bitmap preview cannot render inline.
-

@@ -6,6 +6,9 @@ Shared desktop/mobile resource card for `<resource ...>` note entries.
 ## Inputs
 - `resourceEntry`
   Normalized renderer payload from `ContentsBodyResourceRenderer`.
+- Internal bitmap fallback:
+  - also instantiates `ResourceBitmapViewer` locally so the shared card can recognize resolved bitmap assets even when
+    the upstream payload forgot to keep `renderMode == "image"`
 - `borderColor`, `cardColor`
   Host-supplied tone overrides so desktop/mobile can keep their existing overlay palette.
 - `inlinePresentation`
@@ -23,6 +26,10 @@ Shared desktop/mobile resource card for `<resource ...>` note entries.
 - `image`
   Shows either an inline bitmap preview card or, in inline note-body mode, a full-slot bitmap viewer without metadata
   chrome.
+- `document` plus bitmap fallback
+  If the renderer payload downgraded an actual bitmap resource to `document` but still resolved a compatible bitmap
+  file path, the shared card now still promotes that entry into the same Figma `292:50` image-frame treatment instead
+  of falling back to the empty metadata summary tile.
 - `text`
   Shows a trimmed text snippet preview.
 - `video`, `audio`, `pdf`, `document`

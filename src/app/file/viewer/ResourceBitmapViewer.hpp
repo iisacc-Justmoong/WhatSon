@@ -13,6 +13,7 @@ class ResourceBitmapViewer : public QObject
     Q_PROPERTY(QString openTarget READ openTarget NOTIFY viewerStateChanged)
     Q_PROPERTY(QString viewerSource READ viewerSource NOTIFY viewerStateChanged)
     Q_PROPERTY(QString normalizedFormat READ normalizedFormat NOTIFY viewerStateChanged)
+    Q_PROPERTY(bool bitmapPreviewCandidate READ bitmapPreviewCandidate NOTIFY viewerStateChanged)
     Q_PROPERTY(bool bitmapFormatCompatible READ bitmapFormatCompatible NOTIFY viewerStateChanged)
     Q_PROPERTY(bool bitmapRenderable READ bitmapRenderable NOTIFY viewerStateChanged)
     Q_PROPERTY(QString incompatibilityReason READ incompatibilityReason NOTIFY viewerStateChanged)
@@ -27,6 +28,7 @@ public:
     QString openTarget() const;
     QString viewerSource() const;
     QString normalizedFormat() const;
+    bool bitmapPreviewCandidate() const noexcept;
     bool bitmapFormatCompatible() const noexcept;
     bool bitmapRenderable() const noexcept;
     QString incompatibilityReason() const;
@@ -53,6 +55,7 @@ private:
     QString m_openTarget;
     QString m_viewerSource;
     QString m_normalizedFormat;
+    bool m_bitmapPreviewCandidate = false;
     bool m_bitmapFormatCompatible = false;
     bool m_bitmapRenderable = false;
     QString m_incompatibilityReason;

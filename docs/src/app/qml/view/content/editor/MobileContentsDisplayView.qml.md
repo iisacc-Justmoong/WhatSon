@@ -28,6 +28,10 @@ Mobile content editor host.
   Resources hierarchy only.
   Notes opened from other hierarchies must remain on the ordinary note editor surface even when their body contains
   inline `<resource ... />` tags.
+- The dedicated-resource selection path now also normalizes `bodyResourceRenderer.renderedResources` through the same
+  Qt-list-compatible helper used elsewhere in the editor host.
+  Mobile therefore no longer drops the first resolved resource entry just because the renderer returned a
+  `QVariantList` instead of a native JS array.
 - While structured-flow mode is active, a mobile left-tap in the structured document viewport now routes through
   `requestStructuredDocumentEndEdit()` so inline resource notes can always reopen an editable tail position.
 - The legacy mobile `ContentsInlineFormatEditor` now unloads entirely during structured-flow editing and is recreated only
@@ -160,6 +164,13 @@ Mobile content editor host.
   `ContentsEditorTypingController.qml` to ignore any same-turn late surface edit notification, and finally reapplies
   the canonical rendered editor surface so native `TextEdit` drop mutations cannot survive as literalized
   `resource`-attribute fragments in the editor buffer.
+- Mobile now also binds `StandardKey.Paste` to the same resource-import path while the clipboard contains image data.
+  Hardware-keyboard image paste therefore lands in `.wsresource` packaging plus canonical `<resource ... />` RAW
+  insertion, while non-image clipboard paste still stays on the ordinary native text-input path.
+- Mobile resource cards now also let the shared bitmap viewer recover image presentation from the resolved asset
+  path/format itself.
+  A resource that arrives as `document` in the renderer payload but still resolves to a compatible bitmap file now
+  promotes back into the Figma `292:50` image frame instead of staying on the `Document Resource` metadata card.
 - The shared editor row now reserves right-side space for a minimap rail, but the visible minimap itself is no longer
   hosted inside that `RowLayout`.
   A sibling rail is anchored directly to the editor surface's right edge, while the old row slot is reduced to a

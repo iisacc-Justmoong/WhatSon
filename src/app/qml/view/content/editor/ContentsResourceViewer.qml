@@ -11,8 +11,7 @@ Item {
     property int imageFillMode: Image.PreserveAspectFit
     readonly property string resourceRenderMode: resourceEntry.renderMode !== undefined ? String(resourceEntry.renderMode) : ""
     readonly property string resourceOpenTarget: bitmapViewer.openTarget
-    readonly property bool imageRenderable: resourceViewer.resourceRenderMode === "image"
-                                            && bitmapViewer.bitmapRenderable
+    readonly property bool imageRenderable: bitmapViewer.bitmapRenderable
     readonly property bool pdfRenderable: resourceViewer.resourceRenderMode === "pdf"
                                           && resourceViewer.resourceOpenTarget.length > 0
     readonly property bool resourceRenderable: resourceViewer.imageRenderable || resourceViewer.pdfRenderable

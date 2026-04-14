@@ -11,6 +11,9 @@ The implementation now supports two closely related sequences.
 3. Editor drop path (`importUrlsForEditor(...)`):
    Return normalized imported-entry metadata first, let the editor insert canonical `<resource ... />` RAW source into
    `.wsnbody`, and only then call `reloadImportedResources()` from QML.
+4. Clipboard-image path (`importClipboardImage(...)` / `importClipboardImageForEditor(...)`):
+   Read the current clipboard image, serialize it as a temporary `clipboard-image.png`, and then hand that local file
+   back into the same import pipeline used by drag/drop.
 
 ## Import Semantics
 
@@ -23,6 +26,9 @@ The implementation now supports two closely related sequences.
 - `importUrlsForEditor(...)` reuses the same import pipeline as `importUrls(...)` but also returns normalized metadata
   maps so the editor can insert canonical self-closing `<resource ... />` tags without reparsing
   `Resources.wsresources`.
+- Clipboard-image import intentionally does not create a second bespoke packaging path.
+  Temporary PNG materialization means package-id generation, `resource.xml` creation, rollback, and later runtime
+  reload all stay on the same battle-tested import path as ordinary file drops.
 - That editor-return path intentionally defers the runtime reload callback until the view finishes RAW note mutation.
   This avoids editor rebind/reconcile churn between `.wsresource` package creation and the `.wsnbody` insertion turn
   that links those packages into the note.
@@ -30,6 +36,8 @@ The implementation now supports two closely related sequences.
   `QVariantList` that wraps a file-dialog URL list), then flattens them into unique local files.
 - The editor drag/drop path also consumes native `drop.urls` payloads plus `text/uri-list` fallback lines, so Finder,
   Explorer, and other host file managers stay on the same rollback-safe import pipeline as menu/file-picker imports.
+- Clipboard availability is tracked as a live property by listening to `QClipboard::dataChanged()`, so the editor can
+  enable image-paste interception only while the clipboard still contains image data.
 - QML callers should still treat the `QVariantList` return from `importUrlsForEditor(...)` as a Qt list-like value,
   not only as a strict JS `Array`, because post-import body insertion may otherwise skip valid imported entries.
 

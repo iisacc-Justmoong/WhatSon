@@ -3,6 +3,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Layouts
 import LVRS 1.0 as LV
+import WhatSon.App.Internal 1.0
 
 Rectangle {
     id: resourceCard
@@ -20,10 +21,10 @@ Rectangle {
     readonly property string resourceResolvedPath: resourceEntry.resolvedPath !== undefined ? String(resourceEntry.resolvedPath) : ""
     readonly property string resourceSource: resourceEntry.source !== undefined ? String(resourceEntry.source) : ""
     readonly property string resourceType: resourceEntry.type !== undefined ? String(resourceEntry.type) : ""
-    readonly property string resourceOpenTarget: resourceCard.resourceSource.length > 0
-                                               ? resourceCard.resourceSource
-                                               : resourceCard.resourceResolvedPath
+    readonly property string resourceOpenTarget: resourceBitmapState.openTarget
     readonly property bool resourceOpenable: resourceCard.resourceOpenTarget.length > 0
+    readonly property bool resourceBitmapCandidate: resourceBitmapState.bitmapPreviewCandidate
+    readonly property bool resourceBitmapRenderable: resourceBitmapState.bitmapRenderable
     readonly property string resourceFileName: {
         if (resourceCard.resourceDisplayName.length > 0)
             return resourceCard.resourceDisplayName;
@@ -32,6 +33,8 @@ Rectangle {
         return resourceCard.resourceModeTitle;
     }
     readonly property string resourceModeTitle: {
+        if (resourceCard.resourceBitmapCandidate)
+            return "Image Resource";
         if (resourceCard.resourceRenderMode === "image")
             return "Image Resource";
         if (resourceCard.resourceRenderMode === "video")
@@ -45,6 +48,8 @@ Rectangle {
         return "Document Resource";
     }
     readonly property string resourcePreviewTitle: {
+        if (resourceCard.resourceBitmapCandidate)
+            return "Image";
         if (resourceCard.resourceRenderMode === "video")
             return "Video";
         if (resourceCard.resourceRenderMode === "audio")
@@ -56,7 +61,8 @@ Rectangle {
         return resourceCard.resourceModeTitle;
     }
     readonly property bool inlineImagePresentation: resourceCard.inlinePresentation
-                                                   && resourceCard.resourceRenderMode === "image"
+                                                   && resourceCard.resourceBitmapCandidate
+                                                   && resourceCard.resourceOpenable
     readonly property real previewHeight: resourceCard.inlinePresentation
                                           ? 88
                                           : (resourceCard.resourceRenderMode === "text" ? 96 : 72)
@@ -71,6 +77,12 @@ Rectangle {
     height: implicitHeight
     radius: resourceCard.inlineImagePresentation ? 0 : LV.Theme.radiusSm
     width: parent ? parent.width : 0
+
+    ResourceBitmapViewer {
+        id: resourceBitmapState
+
+        resourceEntry: resourceCard.resourceEntry
+    }
 
     Item {
         id: inlineImageViewport
@@ -142,8 +154,8 @@ Rectangle {
                 asynchronous: true
                 cache: true
                 fillMode: Image.PreserveAspectFit
-                source: resourceCard.resourceOpenTarget
-                visible: resourceCard.resourceRenderMode === "image" && resourceCard.resourceOpenTarget.length > 0
+                source: resourceBitmapState.viewerSource
+                visible: resourceCard.resourceBitmapRenderable
             }
             LV.Label {
                 anchors.fill: parent
@@ -156,7 +168,7 @@ Rectangle {
                           ? (resourceCard.resourcePreviewText.length > 0 ? resourceCard.resourcePreviewText : "No text preview")
                           : resourceCard.resourcePreviewTitle
                 verticalAlignment: resourceCard.resourceRenderMode === "text" ? Text.AlignTop : Text.AlignVCenter
-                visible: resourceCard.resourceRenderMode !== "image"
+                visible: !resourceCard.resourceBitmapRenderable
                 wrapMode: Text.Wrap
             }
         }

@@ -53,6 +53,11 @@ QString ResourceBitmapViewer::normalizedFormat() const
     return m_normalizedFormat;
 }
 
+bool ResourceBitmapViewer::bitmapPreviewCandidate() const noexcept
+{
+    return m_bitmapPreviewCandidate;
+}
+
 bool ResourceBitmapViewer::bitmapFormatCompatible() const noexcept
 {
     return m_bitmapFormatCompatible;
@@ -132,16 +137,19 @@ void ResourceBitmapViewer::refreshState()
 
     const QString nextNormalizedFormat =
         WhatSon::Viewer::ImageFormatCompatibilityLayer::normalizedBitmapFormat(formatProbe);
+    const bool nextBitmapPreviewCandidate =
+        renderMode == QStringLiteral("image")
+        || !nextNormalizedFormat.isEmpty();
     const bool nextBitmapFormatCompatible =
         WhatSon::Viewer::ImageFormatCompatibilityLayer::isBitmapFormatCompatible(nextNormalizedFormat);
     const bool nextBitmapRenderable =
-        renderMode == QStringLiteral("image")
+        nextBitmapPreviewCandidate
         && !nextOpenTarget.isEmpty()
         && nextBitmapFormatCompatible;
     const QString nextViewerSource = nextBitmapRenderable ? nextOpenTarget : QString();
 
     QString nextIncompatibilityReason;
-    if (renderMode == QStringLiteral("image"))
+    if (nextBitmapPreviewCandidate)
     {
         if (nextOpenTarget.isEmpty())
         {
@@ -157,6 +165,7 @@ void ResourceBitmapViewer::refreshState()
     if (m_openTarget == nextOpenTarget
         && m_viewerSource == nextViewerSource
         && m_normalizedFormat == nextNormalizedFormat
+        && m_bitmapPreviewCandidate == nextBitmapPreviewCandidate
         && m_bitmapFormatCompatible == nextBitmapFormatCompatible
         && m_bitmapRenderable == nextBitmapRenderable
         && m_incompatibilityReason == nextIncompatibilityReason)
@@ -167,9 +176,9 @@ void ResourceBitmapViewer::refreshState()
     m_openTarget = nextOpenTarget;
     m_viewerSource = nextViewerSource;
     m_normalizedFormat = nextNormalizedFormat;
+    m_bitmapPreviewCandidate = nextBitmapPreviewCandidate;
     m_bitmapFormatCompatible = nextBitmapFormatCompatible;
     m_bitmapRenderable = nextBitmapRenderable;
     m_incompatibilityReason = nextIncompatibilityReason;
     emit viewerStateChanged();
 }
-

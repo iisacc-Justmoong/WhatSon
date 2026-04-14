@@ -15,6 +15,9 @@ This ViewModel translates external local file URLs into resource package imports
   The current import target hub. Import is rejected while this path is empty.
 - `busy`
   Indicates that import is in progress. Deferred editor-owned runtime reloads run after import completes.
+- `clipboardImageAvailable`
+  Reflects whether the system clipboard currently exposes an importable image payload. Editor paste shortcuts can bind
+  to this flag so image paste is intercepted only when the clipboard actually contains image data.
 - `lastError`
   Stores the last failure message.
 
@@ -29,6 +32,10 @@ This ViewModel translates external local file URLs into resource package imports
   Imports files and returns per-resource metadata entries (`resourcePath`, `type`, `format`, `bucket`, `assetPath`) so
   the note editor can inject `<resource ... />` links immediately after a drop. This path now skips the automatic
   runtime reload so the editor can finish RAW `.wsnbody` insertion first.
+- `importClipboardImage()`, `importClipboardImageForEditor()`
+  Clipboard-image variants of the same pipeline. They materialize the clipboard bitmap as a temporary PNG file, then
+  reuse the ordinary URL import path so resource package creation, metadata generation, and rollback semantics stay
+  identical to drag/drop imports.
 - `reloadImportedResources()`
   Runs the deferred resources runtime reload for editor-drop callers after they finish `<resource ... />` insertion and
   same-note persistence.

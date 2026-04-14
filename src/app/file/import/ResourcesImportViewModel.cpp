@@ -6,14 +6,20 @@
 #include "file/hierarchy/resources/WhatSonResourcesHierarchyStore.hpp"
 #include "file/hub/WhatSonHubPathUtils.hpp"
 
+#include <QClipboard>
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
+#include <QGuiApplication>
+#include <QImage>
 #include <QMetaType>
+#include <QMimeData>
+#include <QPixmap>
 #include <QRegularExpression>
 #include <QSaveFile>
 #include <QSequentialIterable>
 #include <QSet>
+#include <QTemporaryDir>
 #include <QUrl>
 #include <QVariantMap>
 
@@ -478,12 +484,106 @@ namespace
         entry.insert(QStringLiteral("format"), WhatSon::Resources::normalizeFormat(metadata.format).toCaseFolded());
         return entry;
     }
+
+    bool extractClipboardImage(const QMimeData* mimeData, QImage* outImage)
+    {
+        if (outImage != nullptr)
+        {
+            *outImage = QImage();
+        }
+
+        if (mimeData == nullptr)
+        {
+            return false;
+        }
+
+        auto tryLoadImageData = [&](const QByteArray& imageData)
+        {
+            if (imageData.isEmpty())
+            {
+                return false;
+            }
+
+            QImage image;
+            if (!image.loadFromData(imageData) || image.isNull())
+            {
+                return false;
+            }
+
+            if (outImage != nullptr)
+            {
+                *outImage = image;
+            }
+            return true;
+        };
+
+        const QStringList mimeFormats = mimeData->formats();
+        for (const QString& mimeFormat : mimeFormats)
+        {
+            if (!mimeFormat.startsWith(QStringLiteral("image/"), Qt::CaseInsensitive))
+            {
+                continue;
+            }
+
+            if (tryLoadImageData(mimeData->data(mimeFormat)))
+            {
+                return true;
+            }
+        }
+
+        if (!mimeData->hasImage())
+        {
+            return false;
+        }
+
+        const QVariant imageVariant = mimeData->imageData();
+        QImage image;
+        if (imageVariant.canConvert<QImage>())
+        {
+            image = qvariant_cast<QImage>(imageVariant);
+        }
+        else if (imageVariant.canConvert<QPixmap>())
+        {
+            image = qvariant_cast<QPixmap>(imageVariant).toImage();
+        }
+
+        if (image.isNull())
+        {
+            return false;
+        }
+
+        if (outImage != nullptr)
+        {
+            *outImage = image;
+        }
+        return true;
+    }
+
+    bool clipboardContainsImportableImage()
+    {
+        const QClipboard* clipboard = QGuiApplication::clipboard();
+        if (clipboard == nullptr)
+        {
+            return false;
+        }
+
+        return extractClipboardImage(clipboard->mimeData(), nullptr);
+    }
 }
 
 ResourcesImportViewModel::ResourcesImportViewModel(QObject* parent)
     : QObject(parent)
 {
     WhatSon::Debug::traceSelf(this, QString::fromLatin1(kScope), QStringLiteral("ctor"));
+    if (QClipboard* clipboard = QGuiApplication::clipboard())
+    {
+        connect(
+            clipboard,
+            &QClipboard::dataChanged,
+            this,
+            &ResourcesImportViewModel::refreshClipboardImageAvailability);
+    }
+    refreshClipboardImageAvailability();
 }
 
 QString ResourcesImportViewModel::currentHubPath() const
@@ -513,6 +613,11 @@ void ResourcesImportViewModel::setCurrentHubPath(QString hubPath)
 bool ResourcesImportViewModel::busy() const noexcept
 {
     return m_busy;
+}
+
+bool ResourcesImportViewModel::clipboardImageAvailable() const noexcept
+{
+    return m_clipboardImageAvailable;
 }
 
 QString ResourcesImportViewModel::lastError() const
@@ -549,6 +654,21 @@ QVariantList ResourcesImportViewModel::importUrlsForEditor(const QVariantList& u
 {
     QVariantList importedEntries;
     if (!importUrlsInternal(urls, &importedEntries, false))
+    {
+        return {};
+    }
+    return importedEntries;
+}
+
+bool ResourcesImportViewModel::importClipboardImage()
+{
+    return importClipboardImageInternal(nullptr, true);
+}
+
+QVariantList ResourcesImportViewModel::importClipboardImageForEditor()
+{
+    QVariantList importedEntries;
+    if (!importClipboardImageInternal(&importedEntries, false))
     {
         return {};
     }
@@ -795,6 +915,53 @@ bool ResourcesImportViewModel::importUrlsInternal(
     return true;
 }
 
+bool ResourcesImportViewModel::importClipboardImageInternal(
+    QVariantList* importedEntries,
+    const bool reloadRuntime)
+{
+    const QClipboard* clipboard = QGuiApplication::clipboard();
+    if (clipboard == nullptr)
+    {
+        const QString errorMessage = QStringLiteral("Clipboard service is unavailable.");
+        setLastError(errorMessage);
+        emit operationFailed(errorMessage);
+        return false;
+    }
+
+    QImage clipboardImage;
+    if (!extractClipboardImage(clipboard->mimeData(), &clipboardImage) || clipboardImage.isNull())
+    {
+        const QString errorMessage = QStringLiteral("Clipboard does not contain an importable image.");
+        setLastError(errorMessage);
+        emit operationFailed(errorMessage);
+        refreshClipboardImageAvailability();
+        return false;
+    }
+
+    QTemporaryDir temporaryDirectory;
+    if (!temporaryDirectory.isValid())
+    {
+        const QString errorMessage = QStringLiteral("Failed to create a temporary directory for clipboard import.");
+        setLastError(errorMessage);
+        emit operationFailed(errorMessage);
+        return false;
+    }
+
+    const QString temporaryImagePath = temporaryDirectory.filePath(QStringLiteral("clipboard-image.png"));
+    if (!clipboardImage.save(temporaryImagePath, "PNG"))
+    {
+        const QString errorMessage = QStringLiteral("Failed to write the clipboard image into a temporary PNG file.");
+        setLastError(errorMessage);
+        emit operationFailed(errorMessage);
+        return false;
+    }
+
+    const QVariantList temporaryUrls = {QUrl::fromLocalFile(temporaryImagePath)};
+    const bool imported = importUrlsInternal(temporaryUrls, importedEntries, reloadRuntime);
+    refreshClipboardImageAvailability();
+    return imported;
+}
+
 bool ResourcesImportViewModel::importDroppedUrls(const QVariantList& urls)
 {
     return importUrls(urls);
@@ -857,6 +1024,18 @@ void ResourcesImportViewModel::setBusy(const bool busy)
 
     m_busy = busy;
     emit busyChanged();
+}
+
+void ResourcesImportViewModel::refreshClipboardImageAvailability()
+{
+    const bool nextValue = clipboardContainsImportableImage();
+    if (m_clipboardImageAvailable == nextValue)
+    {
+        return;
+    }
+
+    m_clipboardImageAvailable = nextValue;
+    emit clipboardImageAvailableChanged();
 }
 
 void ResourcesImportViewModel::setLastError(QString errorMessage)

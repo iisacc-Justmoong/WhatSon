@@ -140,6 +140,10 @@ structured document-flow editor changes.
 - The first structured resource block in a note must still resolve its inline asset payload.
   A `resourceIndex` or focus target value of `0` must not collapse to a sentinel fallback that downgrades the block to
   the empty `Document Resource` metadata card.
+- A resolved bitmap resource must still upgrade into the Figma `292:50` image frame even if the renderer payload
+  reaches QML with `renderMode=document`.
+  Real bitmap paths/formats must win over that downgraded metadata state; the editor must not fall back to the empty
+  `Document Resource` summary card while the asset itself is resolvable.
 - The inline image frame must keep a transparent background. Only the border chrome from the image-resource frame may
   remain; no extra dark fill from the wrapper card should sit behind the bitmap.
 - Inline image resource blocks must stretch only with their outer frame to the available editor body width.
@@ -166,6 +170,9 @@ structured document-flow editor changes.
 - A file drop that imports a resource must not leave escaped tail fragments such as
   `&quot;image&quot; format=&quot;...&quot; ... /&gt;` or `e=&quot;image&quot; ... /&gt;` inside `.wsnbody`.
   The saved body must contain canonical literal `<resource ... />` tags only.
+- Pasting an image from the system clipboard into the note body must follow the same pipeline as file drop:
+  create a `.wsresource` package, insert a canonical `<resource ... />` tag into RAW, and render the new inline
+  resource block in the current note without falling back to Qt's native inline-image document mutation.
 - After any save/load round-trip, a standalone `<resource ... />` source line must remain a direct body-level resource
   block instead of being rewrapped into `<paragraph>` content or glued back onto the previous prose line.
 - The same file-system drag must still import correctly when the OS exposes the payload as plain text or a platform

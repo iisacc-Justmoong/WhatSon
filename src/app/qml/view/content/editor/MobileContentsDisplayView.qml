@@ -276,8 +276,8 @@ Item {
             }
         }
 
-        const resources = bodyResourceRenderer.renderedResources;
-        if (!Array.isArray(resources) || resources.length === 0)
+        const resources = contentsView.normalizedImportedResourceEntries(bodyResourceRenderer.renderedResources);
+        if (resources.length === 0)
             return ({});
         const entry = resources[0];
         return entry && typeof entry === "object" ? entry : ({});
@@ -984,6 +984,36 @@ Item {
         if (!inserted)
             return false;
         bodyResourceRenderer.requestRenderRefresh();
+        return inserted;
+    }
+    function pasteClipboardImageAsResource() {
+        if (!contentsView.hasSelectedNote
+                || contentsView.showDedicatedResourceViewer
+                || contentsView.showFormattedTextRenderer) {
+            return false;
+        }
+        if (!contentsView.resourcesImportViewModel
+                || contentsView.resourcesImportViewModel.importClipboardImageForEditor === undefined) {
+            return false;
+        }
+        if (contentsView.resourcesImportViewModel.busy !== undefined
+                && contentsView.resourcesImportViewModel.busy) {
+            return false;
+        }
+        if (contentsView.resourcesImportViewModel.clipboardImageAvailable !== undefined
+                && !contentsView.resourcesImportViewModel.clipboardImageAvailable) {
+            return false;
+        }
+
+        contentsView.activateResourceDropEditorSurfaceGuard();
+        const importedEntries = contentsView.resourcesImportViewModel.importClipboardImageForEditor();
+        const importedEntryCount = contentsView.normalizedImportedResourceEntries(importedEntries).length;
+        const inserted = contentsView.insertImportedResourceTags(importedEntries);
+        if (importedEntryCount > 0
+                && contentsView.resourcesImportViewModel.reloadImportedResources !== undefined) {
+            contentsView.resourcesImportViewModel.reloadImportedResources();
+        }
+        contentsView.releaseResourceDropEditorSurfaceGuard(inserted);
         return inserted;
     }
     function isMinimapScrollable() {
@@ -2702,6 +2732,19 @@ Item {
                             lastPressY = mouse.y;
                             contentsView.primeEditorSelectionContextMenuSnapshot();
                         }
+                    }
+                    Shortcut {
+                        autoRepeat: false
+                        context: Qt.WindowShortcut
+                        enabled: contentsView.hasSelectedNote
+                                 && !contentsView.showDedicatedResourceViewer
+                                 && !contentsView.showFormattedTextRenderer
+                                 && contentsView.resourcesImportViewModel
+                                 && (!contentsView.resourcesImportViewModel.busy)
+                                 && contentsView.resourcesImportViewModel.clipboardImageAvailable
+                        sequence: StandardKey.Paste
+
+                        onActivated: contentsView.pasteClipboardImageAsResource()
                     }
                     Shortcut {
                         context: Qt.WindowShortcut

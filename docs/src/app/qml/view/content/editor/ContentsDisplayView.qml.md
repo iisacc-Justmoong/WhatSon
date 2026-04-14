@@ -29,6 +29,10 @@ Desktop content editor host.
   Resources hierarchy only.
   A note opened from Library, Bookmarks, Projects, Tags, Progress, Event, or Preset must stay on the ordinary note
   editor surface even if its `.wsnbody` contains inline `<resource ... />` blocks.
+- The dedicated-resource selection path now also normalizes `bodyResourceRenderer.renderedResources` through the same
+  Qt-list-compatible helper used by import results.
+  Resource-package browsing therefore no longer drops the first resolved entry just because the renderer exposed a
+  `QVariantList` that is not tagged as a native JS array in QML.
 - While structured-flow mode is active, a desktop left-click anywhere in the structured document viewport now routes
   through `requestStructuredDocumentEndEdit()`. That click re-enters editing at the document tail instead of leaving
   the user on a non-editable resource/break block focus.
@@ -183,6 +187,15 @@ Desktop content editor host.
   `resourceDropActive || resourceDropEditorSurfaceGuardActive`, so the nested `TextEdit` turns read-only from drag
   hover through drop finalization and cannot corrupt adjacent `<callout>` / `<resource>` source by handling the same
   OS file drop as ordinary editable content.
+- Desktop now also intercepts `StandardKey.Paste` only while `ResourcesImportViewModel.clipboardImageAvailable` is
+  true.
+  Image paste therefore reuses the exact same guard + resource-import + `<resource ... />` insertion + deferred reload
+  path as drag/drop, while ordinary text clipboard paste still falls through to the native `TextEdit` implementation.
+- Desktop resource cards now also allow the shared bitmap viewer bridge to recover image presentation from the resolved
+  asset path/format itself.
+  When a renderer payload still reaches QML as `document` but points at a compatible bitmap file, the note body now
+  promotes that resource back into the Figma `292:50` image frame instead of showing the `Document Resource` metadata
+  card.
 - While that hover-phase resource drop is considered valid, desktop now also calls `drag.acceptProposedAction()`
   before setting `drag.accepted = true`, reducing the chance that the nested `TextEdit` keeps the OS file drag alive
   long enough to fall back to Qt's default image-object insertion path.
