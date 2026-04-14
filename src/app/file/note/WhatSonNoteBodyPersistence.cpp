@@ -451,12 +451,50 @@ namespace
         return QStringLiteral("<callout>");
     }
 
+    QString canonicalStandaloneResourceSourceLine(const QString& lineText)
+    {
+        QString normalizedLine = WhatSon::NoteBodyPersistence::normalizeBodyPlainText(lineText);
+        if (normalizedLine.isEmpty())
+        {
+            return {};
+        }
+
+        QString decodedLine = decodeXmlEntities(normalizedLine).trimmed();
+        if (decodedLine.isEmpty())
+        {
+            return {};
+        }
+
+        static const QRegularExpression canonicalResourceLinePattern(
+            QStringLiteral(R"(^<\s*resource\b[^>]*?/?>$)"),
+            QRegularExpression::CaseInsensitiveOption);
+        if (canonicalResourceLinePattern.match(decodedLine).hasMatch())
+        {
+            return normalizeResourceStartTag(decodedLine);
+        }
+
+        static const QRegularExpression truncatedResourceLinePattern(
+            QStringLiteral(R"(^<\s*resource\b[^>]*?/\s*$)"),
+            QRegularExpression::CaseInsensitiveOption);
+        if (truncatedResourceLinePattern.match(decodedLine).hasMatch())
+        {
+            return normalizeResourceStartTag(decodedLine.trimmed() + QLatin1Char('>'));
+        }
+
+        return {};
+    }
+
     bool isStandaloneStructuredSourceLine(const QString& lineText)
     {
         const QString trimmedLine = lineText.trimmed();
         if (trimmedLine.isEmpty())
         {
             return false;
+        }
+
+        if (!canonicalStandaloneResourceSourceLine(trimmedLine).isEmpty())
+        {
+            return true;
         }
 
         static const QRegularExpression standaloneStructuredLinePattern(
@@ -486,11 +524,22 @@ namespace
 
     QString normalizeStructuredBlocksToStandaloneLines(const QString& sourceText)
     {
-        const QString normalizedSourceText = WhatSon::NoteBodyPersistence::normalizeBodyPlainText(sourceText);
+        QString normalizedSourceText = WhatSon::NoteBodyPersistence::normalizeBodyPlainText(sourceText);
         if (normalizedSourceText.isEmpty())
         {
             return {};
         }
+
+        QStringList normalizedLines = normalizedSourceText.split(QLatin1Char('\n'), Qt::KeepEmptyParts);
+        for (QString& line : normalizedLines)
+        {
+            const QString canonicalResourceLine = canonicalStandaloneResourceSourceLine(line);
+            if (!canonicalResourceLine.isEmpty())
+            {
+                line = canonicalResourceLine;
+            }
+        }
+        normalizedSourceText = normalizedLines.join(QLatin1Char('\n'));
 
         static const QRegularExpression structuredBlockPattern(
             QStringLiteral(
@@ -1641,6 +1690,16 @@ namespace WhatSon::NoteBodyPersistence
         for (const QString& line : lines)
         {
             const QString trimmedLine = line.trimmed();
+            const QString canonicalResourceLine = canonicalStandaloneResourceSourceLine(trimmedLine);
+            if (!canonicalResourceLine.isEmpty())
+            {
+                carriedOpenStyleTags.clear();
+                text += QStringLiteral("    ");
+                text += serializeInlineTaggedLine(canonicalResourceLine, {}, nullptr);
+                text += QLatin1Char('\n');
+                continue;
+            }
+
             if (isStandaloneStructuredSourceLine(trimmedLine))
             {
                 carriedOpenStyleTags.clear();

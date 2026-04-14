@@ -895,13 +895,15 @@ bool WhatSonLocalNoteFileStore::updateNote(
     {
         request.document.headerStore.setNoteId(resolvedNoteId);
     }
+    const WhatSonLocalNoteDocument unchangedDocument = request.document;
     QString serializedBodyDocument;
     QString bodyDocumentForStats;
+    QString existingBodyDocument;
     QStringList previousBacklinkTargets;
     if ((persistHeader || persistBody) && !bodyPath.isEmpty() && QFileInfo(bodyPath).isFile())
     {
         QString existingBodyReadError;
-        const QString existingBodyDocument = [this, &bodyPath, &existingBodyReadError]()
+        existingBodyDocument = [this, &bodyPath, &existingBodyReadError]()
         {
             QString rawText;
             if (!m_ioGateway.readUtf8File(bodyPath, &rawText, &existingBodyReadError))
@@ -944,6 +946,19 @@ bool WhatSonLocalNoteFileStore::updateNote(
         // Keep the editor-authored RAW source authoritative; the serializer only materializes `.wsnbody`.
         request.document.bodySourceText = bodySourceText;
         bodyDocumentForStats = serializedBodyDocument;
+
+        // Selection/reconcile paths may attempt a direct persist even when the effective body payload is unchanged.
+        // In that case, skip the write entirely so note-open/note-selection cannot bump lastModifiedAt or reorder the list.
+        if (!request.persistHeader
+            && !existingBodyDocument.isEmpty()
+            && existingBodyDocument == serializedBodyDocument)
+        {
+            if (outDocument != nullptr)
+            {
+                *outDocument = unchangedDocument;
+            }
+            return true;
+        }
     }
     else
     {

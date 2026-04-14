@@ -10,7 +10,7 @@ Desktop content editor host.
   instead of relying on the legacy inline-editor overlay path.
 - Canonical live `<resource ... />` markup is still tracked through the live editor buffer, presentation snapshot, and
   selection-bridge snapshot so `ContentsBodyResourceRenderer` can resolve inline resources against the freshest RAW
-  source, and that same parsed resource presence now activates `ContentsStructuredDocumentFlow.qml`.
+  source.
 - `ContentsStructuredDocumentFlow.qml` therefore becomes the host for agenda/callout/break/resource notes and for notes
   whose RAW still carries explicit semantic text tags whenever the parser reports explicit document blocks.
 - That block stream now also includes parser-owned semantic text blocks for `paragraph` / `title` / `subTitle` /
@@ -20,6 +20,9 @@ Desktop content editor host.
 - Structured-flow visibility is now additionally gated by `editorSession.editorBoundNoteId == selectedNoteId`.
   A previously rendered structured note therefore cannot remain mounted after the user selects a different note-list
   item; the host hides stale block content until the newly selected note session is actually bound.
+- Structured-flow activation is now also gated by `structuredBlockRenderer.hasRenderedBlocks` only.
+  A live `<resource ... />` token by itself no longer flips the host into block mode before the parser has produced the
+  full mixed-content document block list, so prose paragraphs are not displaced by a premature image-only surface.
 - Source persistence for block edits now runs through `applyDocumentSourceMutation(...)`, which updates the RAW body,
   marks local authority, optionally restores focus inside the reparsed block, and only forces a full legacy
   presentation rebuild when the note actually falls back out of structured-flow mode.
@@ -78,6 +81,9 @@ Desktop content editor host.
   `ContentsEditorTypingController.handleEditorTextEdited()` before deciding whether to flush the previously bound note.
   This keeps large deletions or other last-turn edits from being dropped just because the selection id changed before
   the session buffer had caught up.
+- That selection-change preflush is now additionally gated by `editorInputFocused`.
+  Simply clicking a different note after the editor has already left focus therefore no longer reinterprets the stale
+  inline editor surface as a fresh edit and no longer triggers a no-op save on note selection alone.
 - That deferred blur-side flush now also captures the note id that owned the editor when focus was lost and refuses to
   run after the session has rebound to a different selected note.
   Clicking from note `A` to note `B` therefore cannot reinterpret `A`'s stale editor surface as a late edit for `B`

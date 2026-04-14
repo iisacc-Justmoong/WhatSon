@@ -18,6 +18,7 @@ Rectangle {
     property bool menuButtonEnabled: true
     property real mediaWidthHint: 338
     property real mediaHeightHint: 352
+    property real maxMediaHeight: 352
     readonly property real mediaAspectRatio: {
         const normalizedWidth = Number(imageFrame.mediaWidthHint) || 0
         const normalizedHeight = Number(imageFrame.mediaHeightHint) || 0
@@ -32,15 +33,23 @@ Rectangle {
     readonly property real availableMediaWidth: Math.max(
                                                     120,
                                                     imageFrame.resolvedFrameWidth - imageFrame.horizontalPadding * 2)
-    readonly property real naturalMediaWidth: Math.max(120, Number(imageFrame.mediaWidthHint) || 338)
+    readonly property real availableMediaHeight: Math.max(120, Number(imageFrame.maxMediaHeight) || 352)
+    readonly property real naturalMediaWidth: Math.max(1, Number(imageFrame.mediaWidthHint) || 338)
+    readonly property real naturalMediaHeight: Math.max(1, Number(imageFrame.mediaHeightHint) || 352)
+    readonly property real resolvedMediaScale: {
+        const widthScale = imageFrame.availableMediaWidth / imageFrame.naturalMediaWidth
+        const heightScale = imageFrame.availableMediaHeight / imageFrame.naturalMediaHeight
+        const fittedScale = Math.min(widthScale, heightScale)
+        if (!isFinite(fittedScale) || fittedScale <= 0)
+            return 1
+        return Math.min(1, fittedScale)
+    }
     readonly property real resolvedMediaWidth: Math.max(
-                                                   120,
-                                                   Math.min(imageFrame.availableMediaWidth, imageFrame.naturalMediaWidth))
+                                                   1,
+                                                   Math.round(imageFrame.naturalMediaWidth * imageFrame.resolvedMediaScale))
     readonly property real resolvedMediaHeight: Math.max(
-                                                    120,
-                                                    Math.round(
-                                                        imageFrame.resolvedMediaWidth
-                                                        / Math.max(0.01, imageFrame.mediaAspectRatio)))
+                                                    1,
+                                                    Math.round(imageFrame.naturalMediaHeight * imageFrame.resolvedMediaScale))
     default property alias contentData: mediaViewport.data
 
     signal menuRequested()

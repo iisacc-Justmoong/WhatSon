@@ -115,6 +115,9 @@ plain `QtQuick.TextEdit` as the actual rendering and input engine.
   the same runtime font metrics used by the editor surface.
 - The wrapper now also overrides direct `Tab` key insertion to write spaces (`tabIndentSpaceCount`, default 4) instead
   of a literal `\t`, so indent width stays consistent in both plain/rich editor modes.
+- The wrapper now publishes its own `implicitHeight` from the live text-content height contract.
+  Structured block hosts such as `ContentsDocumentTextBlock.qml` therefore receive a real block height instead of `0`,
+  so prose blocks remain visible in the same column as inline resource/image blocks.
 - The wrapper now exposes `shortcutKeyPressHandler(event)`:
   - hosts can inject a key-routing callback that runs from the inner `TextEdit.Keys.onPressed`
   - when that callback accepts the event, the wrapper stops local key fallback processing
@@ -174,5 +177,8 @@ plain `QtQuick.TextEdit` as the actual rendering and input engine.
   tab column
 - pressing `Tab` must insert four literal spaces by default (not `\t`) so RAW/renderer mode switches do not inflate
   indentation width
+- mixed text + `<resource ... />` note bodies must keep text blocks visible before and after inline image blocks; a
+  structured text block host must never collapse to `0` height just because the inline editor wrapper omitted its own
+  `implicitHeight`
 - injected host shortcut handlers must still fire when the nested `TextEdit` has focus, and accepted shortcut events
   must not fall through into literal character insertion.

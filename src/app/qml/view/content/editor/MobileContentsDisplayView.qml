@@ -288,8 +288,7 @@ Item {
                                                                 || contentsView.presentationSourceContainsResourceTag
                                                                 || contentsView.selectionSourceContainsResourceTag
     readonly property bool parsedStructuredFlowRequested: contentsView.editorSessionBoundToSelectedNote
-                                                          && (structuredBlockRenderer.hasRenderedBlocks
-                                                              || contentsView.liveResourceStructuredFlowRequested)
+                                                          && structuredBlockRenderer.hasRenderedBlocks
     readonly property bool structuredDocumentFlowEnabled: contentsView.parsedStructuredFlowRequested
                                                           || (contentsView.editorSessionBoundToSelectedNote
                                                               && structuredBlockRenderer.renderPending
@@ -1817,6 +1816,7 @@ Item {
             contentsView.pendingEditorFocusNoteId = contentsView.selectedNoteId;
 
         if (editorSession.editorBoundNoteId !== contentsView.selectedNoteId
+                && contentsView.editorInputFocused
                 && editorTypingController
                 && editorTypingController.handleEditorTextEdited !== undefined) {
             editorTypingController.handleEditorTextEdited();

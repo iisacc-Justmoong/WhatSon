@@ -59,6 +59,10 @@ The current contract preserves editor-authored RAW source across save/load turns
 - Agenda/callout/resource/divider source blocks are now normalized onto standalone editor lines before save/load
   projection. Adjacent text is split away from the proprietary block so block cards do not remain embedded in ordinary
   paragraph text on round-trip.
+- The same standalone normalization now also repairs resource lines that were accidentally persisted as visible
+  paragraph text such as `&lt;resource ... /&gt;` or a truncated `&lt;resource ... /`.
+  When one paragraph line decodes to a standalone resource tag, read/write normalization upgrades it back to the
+  canonical `<resource ... />` body block instead of preserving it as escaped prose.
 - `serializeBodyDocument(...)` now writes standalone agenda/callout/resource/divider lines directly under `<body>`
   instead of wrapping them back into `<paragraph>...</paragraph>`.
 - The same standalone normalization now applies to `<resource ... />` tags during read-back too, so a saved resource
@@ -143,6 +147,8 @@ rewriting `bodySourceText` RAW just because the body document was read and repar
 - A typed `<callout>message</callout>` block must survive save/load without escaping wrapper tags.
 - A standalone `<agenda>...</agenda>`, `<callout>...</callout>`, `<resource ... />`, or `</break>` source line must
   round-trip as a direct `<body>` child instead of being rewrapped into `<paragraph>`.
+- A paragraph line that already contains only an escaped resource tag from an earlier bad save must recover to a direct
+  `<resource ... />` body child on the next read/write turn instead of staying escaped forever.
 - A saved legacy semantic body block such as `<title>`, `<subTitle>`, `<eventTitle>`, `<eventDescription>`, or
   `<next/>` must not degrade into escaped literal text on the next autosave.
 - Legacy notes that already embedded agenda/callout blocks inside paragraph content must rehydrate into standalone

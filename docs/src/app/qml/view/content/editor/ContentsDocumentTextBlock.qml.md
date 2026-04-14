@@ -20,6 +20,9 @@ Renders one plain-text document segment inside the structured document-flow edit
 - The inline editor now uses a paragraph-like minimum height that tracks the actual text content instead of keeping the
   previous 28px floor. This keeps mixed text/image note bodies visually closer to the Figma `294:7933` markdown-style
   reference.
+- The block now depends on `ContentsInlineFormatEditor.qml` publishing a real `implicitHeight` from live text content.
+  That keeps text delegates materially present inside `ContentsStructuredDocumentFlow.qml` instead of collapsing to
+  zero height while neighboring resource/image blocks remain visible.
 - The block body text now renders with `Font.Medium` at the existing 12px size, matching the current note-body visual
   spec more closely than the previous normal-weight fallback.
 - Accepts focus restoration requests by source offset so source rewrites can re-focus the same block after reparsing.

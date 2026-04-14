@@ -35,6 +35,10 @@ It creates notes, reads materialized note directories, updates persisted body/he
 - During update, the store still recomputes `bodyPlainText` from the serialized `.wsnbody`, but it now keeps the
   incoming editor-authored `bodySourceText` as the authoritative RAW source instead of round-tripping that source back
   through another read-side projection first.
+- The update path now also short-circuits direct body persists when the newly serialized `.wsnbody` payload is bytewise
+  identical to the file already on disk and the caller did not explicitly request a separate header mutation.
+  Note selection/reconcile therefore cannot bump `lastModifiedAt` or reorder list items merely by re-saving an
+  unchanged body snapshot.
 - Body writes now also extract inline body hashtags from the editor-visible source, merge those values into the note
   header tag list, and ensure `Tags.wstags` contains matching hierarchy entries for any new tags by parsing and
   rewriting the tracked tags hierarchy file in the same transaction.
@@ -75,6 +79,8 @@ It creates notes, reads materialized note directories, updates persisted body/he
     header timestamp, and non-hub-derived counters
   - non-editor file read/reconcile turns must not regenerate a different `bodySourceText` RAW snapshot solely because
     `.wsnbody` was reparsed
+  - note selection with no effective body change must not touch `.wsnhead` / `.wsnbody`, must not advance
+    `lastModifiedAt`, and must not reorder the note list
   - a saved body hashtag such as `#label` must materialize in three places together:
     - `.wsnbody` as `<tag>label</tag>`
     - `.wsnhead` inside the note tag list

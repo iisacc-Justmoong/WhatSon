@@ -48,4 +48,5 @@ Shared desktop/mobile resource card for `<resource ...>` note entries.
   - it must not treat gutter/minimap space or raw viewport overhang as part of that width contract
   - the inner bitmap viewport stays centered and does not upscale beyond the natural bitmap size
   - in note-body inline mode, the bitmap may shrink to fit the frame but must never enlarge past actual size
-  - the image area height tracks the real bitmap aspect ratio instead of a fixed 480px-wide sample card
+  - the image area still respects the real bitmap aspect ratio, but the inline frame now caps the body-block media
+    height to the Figma `292:50` reference budget so a tall image cannot monopolize the whole editor surface

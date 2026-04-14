@@ -43,6 +43,13 @@ FocusScope {
     property int wrapMode: TextEdit.NoWrap
     property bool preferNativeInputHandling: false
     readonly property int effectiveTabIndentSpaceCount: Math.max(1, Math.floor(Number(control.tabIndentSpaceCount) || 4))
+    readonly property real editorVisualHeight: Math.max(
+                                                   1,
+                                                   Math.max(
+                                                       Number(control.fieldMinHeight) || 0,
+                                                       Number(control.editorHeight) || 0,
+                                                       Number(textInput.contentHeight) || 0))
+    implicitHeight: control.editorVisualHeight
 
     readonly property real contentHeight: control.externalScroll ? editorShell.height : editorFlickable.contentHeight
     readonly property real contentOffsetY: {
@@ -420,12 +427,7 @@ FocusScope {
 
             parent: editorFlickable.contentItem
             width: editorFlickable.width
-            height: Math.max(
-                        1,
-                        Math.max(
-                            Number(control.fieldMinHeight) || 0,
-                            Number(control.editorHeight) || 0,
-                            Number(textInput.contentHeight) || 0))
+            height: control.editorVisualHeight
 
             property alias cursorPosition: textInput.cursorPosition
             readonly property bool focused: textInput.activeFocus

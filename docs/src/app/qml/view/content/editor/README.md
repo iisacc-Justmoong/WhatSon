@@ -47,7 +47,8 @@
   both hosts.
 - Inline image resources now compose through `ContentsImageResourceFrame.qml` as transparent border-only cards whose
   runtime outer width follows the editor block width, whose inner bitmap viewport stays centered at natural size until
-  the body column forces it smaller, and whose height follows the loaded bitmap aspect ratio.
+  the body column forces it smaller, and whose inline media height is capped to the Figma note-block budget so tall
+  images remain ordinary document blocks instead of taking over the whole editor column.
 - `ContentsResourceViewer.qml` remains the low-level bitmap/PDF viewport component used by resource cards, but note
   hosts no longer swap the whole editor surface into a dedicated resource viewer.
 - Resource-bearing note bodies now activate `ContentsStructuredDocumentFlow.qml` so `<resource ... />` stays in the
@@ -143,9 +144,16 @@
   `ContentsEditorTypingController.handleEditorTextEdited()` before flushing the previously bound note.
   Combined with the bridge-side pending-body adoption path, this keeps large deletions from being dropped or replaced
   by a stale package read when the user briefly visits another note and comes back.
+- That selection-change preflush now runs only while the editor still owns focus, and unchanged direct body persists
+  now short-circuit in `WhatSonLocalNoteFileStore`.
+  Selecting a note without editing it therefore must not touch `lastModifiedAt`, must not look like a save, and must
+  not move the note to the top of the list.
 - Agenda/callout/break/resource notes enter the structured document-flow host.
   Desktop/mobile hosts therefore keep image/resource drops on the parser-owned block renderer instead of reintroducing
   a dedicated resource surface or body-overlay fallback.
+- That structured document-flow host now activates only after the parser has produced actual rendered document blocks.
+  A raw `<resource ... />` token alone therefore cannot prematurely displace surrounding prose with an image-first
+  fallback surface.
 - `ContentsEditorTypingController.qml` now also refuses to run its legacy whole-editor diff pass while
   `ContentsStructuredDocumentFlow.qml` is active.
   Structured notes therefore no longer risk `<resource ... />` damage when note-switch cleanup tries to flush the old
