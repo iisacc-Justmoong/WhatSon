@@ -122,6 +122,8 @@ FocusScope {
         const blockEntry = blockEntryOverride && typeof blockEntryOverride === "object"
                 ? blockEntryOverride
                 : (host && host.blockEntry && typeof host.blockEntry === "object" ? host.blockEntry : ({ }))
+        const safeBlockEntry = blockEntry && typeof blockEntry === "object" ? blockEntry : ({})
+        const blockType = safeBlockEntry.type !== undefined ? String(safeBlockEntry.type).toLowerCase() : "text"
         const plainText = documentFlow.visiblePlainTextForBlock(blockEntry)
         const logicalLines = plainText.length > 0 ? plainText.split("\n") : [""]
         const blockHeight = Math.max(
@@ -138,10 +140,17 @@ FocusScope {
                     ? baseY + (blockHeight * (index + 1) / lineCount)
                     : baseY + blockHeight
             const lineHeight = Math.max(1, lineBottom - lineTop)
+            const gutterCollapsed = blockType === "resource" || blockType === "break"
+            const minimapVisualKind = blockType === "resource" ? "block" : "text"
+            const minimapRowCharCount = blockType === "resource" ? 160 : 0
             entries.push({
                 "charCount": documentFlow.visualLineCharCount(blockEntry, logicalLines, lineCount, index),
                 "contentHeight": lineHeight,
                 "contentY": lineTop,
+                "gutterCollapsed": gutterCollapsed,
+                "gutterContentHeight": gutterCollapsed ? Math.max(1, documentFlow.lineHeightHint) : lineHeight,
+                "minimapRowCharCount": minimapRowCharCount,
+                "minimapVisualKind": minimapVisualKind,
                 "rowCount": Math.max(1, Math.round(lineHeight / Math.max(1, documentFlow.lineHeightHint)))
             })
         }
@@ -152,6 +161,7 @@ FocusScope {
     function logicalLineEntries() {
         const entries = []
         const blocks = documentFlow.normalizedBlocks()
+        let nextGutterContentY = 0
         for (let blockIndex = 0; blockIndex < blockRepeater.count; ++blockIndex) {
             const blockHost = blockRepeater.itemAt(blockIndex)
             const blockEntry = blocks[blockIndex] && typeof blocks[blockIndex] === "object" ? blocks[blockIndex] : ({})
@@ -164,9 +174,21 @@ FocusScope {
                     "charCount": Math.max(0, Number(lineEntry.charCount) || 0),
                     "contentHeight": Math.max(1, Number(lineEntry.contentHeight) || documentFlow.lineHeightHint),
                     "contentY": Math.max(0, Number(lineEntry.contentY) || 0),
+                    "gutterCollapsed": !!lineEntry.gutterCollapsed,
+                    "gutterContentHeight": Math.max(
+                                               1,
+                                               Number(lineEntry.gutterContentHeight) || documentFlow.lineHeightHint),
+                    "gutterContentY": nextGutterContentY,
                     "lineNumber": entries.length + 1,
+                    "minimapRowCharCount": Math.max(0, Number(lineEntry.minimapRowCharCount) || 0),
+                    "minimapVisualKind": lineEntry.minimapVisualKind !== undefined
+                                         ? String(lineEntry.minimapVisualKind)
+                                         : "text",
                     "rowCount": Math.max(1, Number(lineEntry.rowCount) || 1)
                 })
+                nextGutterContentY += Math.max(
+                            1,
+                            Number(lineEntry.gutterContentHeight) || documentFlow.lineHeightHint)
             }
         }
 
@@ -175,7 +197,12 @@ FocusScope {
                 "charCount": 0,
                 "contentHeight": Math.max(1, documentFlow.lineHeightHint),
                 "contentY": 0,
+                "gutterCollapsed": false,
+                "gutterContentHeight": Math.max(1, documentFlow.lineHeightHint),
+                "gutterContentY": 0,
                 "lineNumber": 1,
+                "minimapRowCharCount": 0,
+                "minimapVisualKind": "text",
                 "rowCount": 1
             })
         }

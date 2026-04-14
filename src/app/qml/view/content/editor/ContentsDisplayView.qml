@@ -361,6 +361,59 @@ Item {
 
         return [];
     }
+    function structuredLogicalLineEntryAt(lineNumber) {
+        const lineEntries = contentsView.normalizedStructuredLogicalLineEntries();
+        if (lineEntries.length === 0)
+            return null;
+        const safeLineNumber = Math.floor(Number(lineNumber) || 0);
+        if (safeLineNumber < 1 || safeLineNumber > lineEntries.length)
+            return null;
+        const entry = lineEntries[safeLineNumber - 1];
+        return entry && typeof entry === "object" ? entry : null;
+    }
+    function structuredGutterDocumentYForActualDocumentY(documentY) {
+        const lineEntries = contentsView.normalizedStructuredLogicalLineEntries();
+        if (lineEntries.length === 0)
+            return Math.max(0, Number(documentY) || 0);
+
+        const safeDocumentY = Math.max(0, Number(documentY) || 0);
+        for (let index = 0; index < lineEntries.length; ++index) {
+            const entry = lineEntries[index] && typeof lineEntries[index] === "object"
+                    ? lineEntries[index]
+                    : ({});
+            const actualStartY = Math.max(0, Number(entry.contentY) || 0);
+            const actualHeight = Math.max(contentsView.editorLineHeight, Number(entry.contentHeight) || contentsView.editorLineHeight);
+            const actualEndY = actualStartY + actualHeight;
+            const gutterStartY = Math.max(0, Number(entry.gutterContentY) || 0);
+            const gutterHeight = Math.max(1, Number(entry.gutterContentHeight) || contentsView.editorLineHeight);
+            if (safeDocumentY <= actualEndY) {
+                const progress = actualHeight > 0
+                        ? Math.max(0, Math.min(1, (safeDocumentY - actualStartY) / actualHeight))
+                        : 0;
+                return gutterStartY + gutterHeight * progress;
+            }
+        }
+
+        const lastEntry = lineEntries[lineEntries.length - 1] && typeof lineEntries[lineEntries.length - 1] === "object"
+                ? lineEntries[lineEntries.length - 1]
+                : ({});
+        const lastActualEndY = Math.max(0, Number(lastEntry.contentY) || 0)
+                + Math.max(contentsView.editorLineHeight, Number(lastEntry.contentHeight) || contentsView.editorLineHeight);
+        const lastGutterEndY = Math.max(0, Number(lastEntry.gutterContentY) || 0)
+                + Math.max(1, Number(lastEntry.gutterContentHeight) || contentsView.editorLineHeight);
+        return lastGutterEndY + Math.max(0, safeDocumentY - lastActualEndY);
+    }
+    function currentStructuredGutterScrollDocumentY() {
+        if (!contentsView.showStructuredDocumentFlow)
+            return Math.max(0, Number(contentsView.editorContentOffsetY) || 0);
+        const flickable = contentsView.editorFlickable;
+        if (!flickable)
+            return 0;
+        const actualTopDocumentY = Math.max(
+                    0,
+                    (Number(flickable.contentY) || 0) - contentsView.editorDocumentStartY);
+        return contentsView.structuredGutterDocumentYForActualDocumentY(actualTopDocumentY);
+    }
     function buildStructuredMinimapLineGroupsForRange(startLineNumber, endLineNumber) {
         const lineEntries = contentsView.normalizedStructuredLogicalLineEntries();
         if (lineEntries.length === 0)
@@ -379,6 +432,10 @@ Item {
                 "contentHeight": Math.max(contentsView.editorLineHeight, Number(entry.contentHeight) || contentsView.editorLineHeight),
                 "contentY": textStartY + Math.max(0, Number(entry.contentY) || 0),
                 "lineNumber": lineIndex + 1,
+                "minimapRowCharCount": Math.max(0, Number(entry.minimapRowCharCount) || 0),
+                "minimapVisualKind": entry.minimapVisualKind !== undefined
+                                     ? String(entry.minimapVisualKind)
+                                     : "text",
                 "rowCount": Math.max(1, Number(entry.rowCount) || 1)
             });
         }
@@ -494,6 +551,31 @@ Item {
         return mergedGroups;
     }
     function buildVisibleGutterLineEntries() {
+        if (contentsView.showStructuredDocumentFlow) {
+            const visibleLines = [];
+            const firstVisibleLine = contentsView.firstVisibleLogicalLine();
+            for (let lineNumber = firstVisibleLine; lineNumber <= contentsView.logicalLineCount; ++lineNumber) {
+                const gutterY = contentsView.gutterLineY(lineNumber);
+                const gutterHeight = contentsView.gutterLineVisualHeight(lineNumber, 1);
+                if (gutterY > contentsView.gutterViewportHeight)
+                    break;
+                if (gutterY + gutterHeight < 0)
+                    continue;
+                visibleLines.push({
+                    "height": gutterHeight,
+                    "lineNumber": lineNumber,
+                    "y": gutterY
+                });
+            }
+            if (visibleLines.length === 0) {
+                visibleLines.push({
+                    "height": contentsView.gutterLineVisualHeight(firstVisibleLine, 1),
+                    "lineNumber": firstVisibleLine,
+                    "y": contentsView.gutterLineY(firstVisibleLine)
+                });
+            }
+            return visibleLines;
+        }
         const visibleLines = [];
         const firstVisibleLine = contentsView.firstVisibleLogicalLine();
         for (let lineNumber = firstVisibleLine; lineNumber <= contentsView.logicalLineCount; ++lineNumber) {
@@ -648,9 +730,23 @@ Item {
         const rect = contentsView.currentCursorVisualRowRect();
         return Math.max(1, Number(rect.height) || contentsView.editorLineHeight);
     }
+    function currentCursorGutterLineHeight() {
+        if (contentsView.showStructuredDocumentFlow) {
+            const safeLineNumber = Math.max(1, Math.min(contentsView.logicalLineCount, contentsView.currentCursorLineNumber));
+            return contentsView.gutterLineVisualHeight(safeLineNumber, 1);
+        }
+        return contentsView.currentCursorVisualLineHeight();
+    }
     function currentCursorVisualLineY() {
         const rect = contentsView.currentCursorVisualRowRect();
         return contentsView.editorViewportYForDocumentY(Number(rect.y) || 0);
+    }
+    function currentCursorGutterLineY() {
+        if (contentsView.showStructuredDocumentFlow) {
+            const safeLineNumber = Math.max(1, Math.min(contentsView.logicalLineCount, contentsView.currentCursorLineNumber));
+            return contentsView.gutterLineY(safeLineNumber);
+        }
+        return contentsView.currentCursorVisualLineY();
     }
     function currentCursorVisualRowRect() {
         const refreshRevision = contentsView.gutterRefreshRevision;
@@ -1266,6 +1362,14 @@ Item {
         }
         return Math.max(0, (safeLineNumber - 1) * contentsView.editorLineHeight);
     }
+    function gutterLineDocumentY(lineNumber) {
+        if (contentsView.showStructuredDocumentFlow) {
+            const structuredEntry = contentsView.structuredLogicalLineEntryAt(lineNumber);
+            if (structuredEntry && structuredEntry.gutterContentY !== undefined)
+                return Math.max(0, Number(structuredEntry.gutterContentY) || 0);
+        }
+        return contentsView.lineDocumentY(lineNumber);
+    }
     function lineVisualHeight(startLine, lineSpan) {
         const safeStartLine = Math.max(1, Math.min(contentsView.logicalLineCount, Number(startLine) || 1));
         const safeLineSpan = Math.max(1, Number(lineSpan) || 1);
@@ -1284,8 +1388,34 @@ Item {
         }
         return Math.max(contentsView.editorLineHeight, endDocumentY - startDocumentY);
     }
+    function gutterLineVisualHeight(startLine, lineSpan) {
+        const safeStartLine = Math.max(1, Math.min(contentsView.logicalLineCount, Number(startLine) || 1));
+        const safeLineSpan = Math.max(1, Number(lineSpan) || 1);
+        if (contentsView.showStructuredDocumentFlow) {
+            const structuredEntry = contentsView.structuredLogicalLineEntryAt(safeStartLine);
+            if (safeLineSpan === 1 && structuredEntry && structuredEntry.gutterContentHeight !== undefined)
+                return Math.max(1, Number(structuredEntry.gutterContentHeight) || contentsView.editorLineHeight);
+            const nextStructuredEntry = contentsView.structuredLogicalLineEntryAt(safeStartLine + safeLineSpan);
+            const startGutterY = structuredEntry && structuredEntry.gutterContentY !== undefined
+                    ? Math.max(0, Number(structuredEntry.gutterContentY) || 0)
+                    : Math.max(0, (safeStartLine - 1) * contentsView.editorLineHeight);
+            const endGutterY = nextStructuredEntry && nextStructuredEntry.gutterContentY !== undefined
+                    ? Math.max(startGutterY + contentsView.editorLineHeight, Number(nextStructuredEntry.gutterContentY) || 0)
+                    : startGutterY + safeLineSpan * contentsView.editorLineHeight;
+            return Math.max(contentsView.editorLineHeight, endGutterY - startGutterY);
+        }
+        return contentsView.lineVisualHeight(safeStartLine, safeLineSpan);
+    }
     function lineY(lineNumber) {
         return contentsView.editorViewportYForDocumentY(contentsView.lineDocumentY(lineNumber));
+    }
+    function gutterLineY(lineNumber) {
+        if (contentsView.showStructuredDocumentFlow) {
+            return contentsView.editorDocumentStartY
+                    + contentsView.gutterLineDocumentY(lineNumber)
+                    - contentsView.currentStructuredGutterScrollDocumentY();
+        }
+        return contentsView.editorViewportYForDocumentY(contentsView.gutterLineDocumentY(lineNumber));
     }
     function logicalLineNumberForDocumentY(documentY) {
         if (contentsView.logicalLineCount <= 0)
@@ -1355,19 +1485,19 @@ Item {
     function markerHeight(markerSpec) {
         const markerType = markerSpec && markerSpec.type !== undefined ? String(markerSpec.type).toLowerCase() : "";
         if (markerType === "current")
-            return contentsView.currentCursorVisualLineHeight();
+            return contentsView.currentCursorGutterLineHeight();
         if (!markerSpec)
             return contentsView.editorLineHeight;
-        return Math.max(1, contentsView.lineVisualHeight(markerSpec.startLine, markerSpec.lineSpan));
+        return Math.max(1, contentsView.gutterLineVisualHeight(markerSpec.startLine, markerSpec.lineSpan));
     }
     function markerY(markerSpec) {
         const markerType = markerSpec && markerSpec.type !== undefined ? String(markerSpec.type).toLowerCase() : "";
         if (markerType === "current")
-            return contentsView.currentCursorVisualLineY();
+            return contentsView.currentCursorGutterLineY();
         if (!markerSpec)
             return contentsView.editorDocumentStartY;
         const startLine = Math.max(1, Number(markerSpec.startLine) || 1);
-        return contentsView.lineY(startLine);
+        return contentsView.gutterLineY(startLine);
     }
     function minimapBarWidth(characterCount) {
         const safeCount = Math.max(0, Number(characterCount) || 0);
@@ -2418,7 +2548,7 @@ Item {
                 lineNumberColumnLeft: contentsView.effectiveLineNumberColumnLeft
                 lineNumberColumnTextWidth: contentsView.effectiveLineNumberColumnTextWidth
                 lineYResolver: function (lineNumber) {
-                    return contentsView.lineY(lineNumber);
+                    return contentsView.gutterLineY(lineNumber);
                 }
                 markerHeightResolver: function (markerSpec) {
                     return contentsView.markerHeight(markerSpec);

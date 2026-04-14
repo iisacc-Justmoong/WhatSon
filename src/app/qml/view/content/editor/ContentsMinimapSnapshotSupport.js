@@ -77,6 +77,10 @@ function cloneLineGroup(group) {
         "contentHeight": Math.max(1, Number(group && group.contentHeight) || 1),
         "contentY": Number(group && group.contentY) || 0,
         "lineNumber": Math.max(1, Number(group && group.lineNumber) || 1),
+        "minimapRowCharCount": Math.max(0, Number(group && group.minimapRowCharCount) || 0),
+        "minimapVisualKind": group && group.minimapVisualKind !== undefined
+                             ? String(group.minimapVisualKind)
+                             : "text",
         "rowCount": Math.max(1, Number(group && group.rowCount) || 1)
     };
 }
@@ -135,6 +139,10 @@ function flattenLineGroups(lineGroups, fallbackLineHeight) {
         const contentY = Number(group.contentY) || 0;
         const contentHeight = Math.max(safeLineHeight, Number(group.contentHeight) || safeLineHeight);
         const lineNumber = Math.max(1, Number(group.lineNumber) || 1);
+        const minimapRowCharCount = Math.max(0, Number(group.minimapRowCharCount) || 0);
+        const minimapVisualKind = group && group.minimapVisualKind !== undefined
+                ? String(group.minimapVisualKind)
+                : "text";
         const rowCount = Math.max(1, Math.floor(Number(group.rowCount) || 1));
 
         for (let rowIndex = 0; rowIndex < rowCount; ++rowIndex) {
@@ -145,10 +153,13 @@ function flattenLineGroups(lineGroups, fallbackLineHeight) {
                     ? contentY + (contentHeight * (rowIndex + 1) / rowCount)
                     : contentY + contentHeight;
             rows.push({
-                "charCount": Math.max(0, segmentEnd - segmentStart),
+                "charCount": minimapRowCharCount > 0
+                             ? minimapRowCharCount
+                             : Math.max(0, segmentEnd - segmentStart),
                 "contentHeight": Math.max(1, rowEndY - rowStartY),
                 "contentY": rowStartY,
                 "lineNumber": lineNumber,
+                "minimapVisualKind": minimapVisualKind,
                 "visualIndex": rows.length
             });
         }

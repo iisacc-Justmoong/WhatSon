@@ -195,6 +195,16 @@ structured document-flow editor changes.
   best-effort legacy overlay fallback.
 - In structured-flow mode, a `type=resource` block must render through the same image frame card used elsewhere in the
   editor, and it must occupy real document height in the block column rather than an overlay aligned on top of text.
+- The same structured image/divider block must count as exactly one visible gutter row.
+  Scrolling through a tall image must not make the desktop gutter expand that one body block into several apparent line
+  slots or a multi-row current-line marker.
+- While the viewport scrolls through the middle of that tall image, the gutter Y positions must still move
+  continuously in the compressed coordinate space.
+  Line numbers below the image must neither stay pinned at one fixed packed Y nor jump only after the image fully
+  leaves the viewport.
+- That same structured image block must also appear in the minimap as a wide filled block silhouette.
+  The right rail must not render one tall image as several narrow text-like bars whose widths come from sliced label
+  characters instead of the block card itself.
 - A note whose RAW body contains semantic prose blocks such as `<paragraph>...</paragraph>` before or after
   `<resource ... />` must still paint those prose blocks inside the same structured-flow column.
   Entering a resource-bearing note must not leave the editor on a resource-only frame while the authored text becomes

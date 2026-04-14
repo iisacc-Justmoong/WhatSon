@@ -23,7 +23,13 @@ Hosts the document-native block editor for structured `.wsnbody` content.
   mode.
 - Those line entries are synthesized from the mounted block hosts themselves:
   text/callout/agenda blocks contribute visible plain-text line counts, while resource/break blocks still contribute at
-  least one logical editor line backed by the block's actual rendered height.
+  least one logical editor line even when their rendered card is much taller than one editor row.
+- Each logical line entry now also carries gutter-specific collapse metadata alongside its real document geometry.
+  Desktop gutter packing can therefore keep a tall image/divider block to one visible gutter row without flattening the
+  actual document height that the structured column and minimap still depend on.
+- Resource-block line entries now also expose minimap block-style metadata.
+  A tall inline image can therefore keep several minimap rows for its document height while each row still paints as a
+  consistent wide block instead of being split into short text-like segments.
 - For wrapped prose blocks, the flow now also upgrades a single semantic text line into multiple gutter/minimap lines
   when the rendered block height spans several editor line-heights.
   Structured paragraphs therefore keep the same visual line-number density as the ordinary text editor instead of

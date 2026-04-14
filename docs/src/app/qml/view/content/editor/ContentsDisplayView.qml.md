@@ -182,9 +182,15 @@ Desktop content editor host.
   The host no longer treats `<resource ... />` notes as a special full-surface rendering mode that must disable editor
   chrome; instead it asks `ContentsStructuredDocumentFlow.qml` for block-derived logical line entries and feeds those
   lines back into the existing gutter/minimap pipeline.
-- Because those rails now consume structured block geometry, an imported image block behaves like any other body block:
-  it contributes line height and minimap silhouette inside the shared editor surface rather than forcing the note out of
-  the normal `ContentsDisplayView.qml` editor-view scaffolding.
+- The desktop gutter now packs only the currently visible structured lines into one editor-row-per-line gutter slots.
+  Tall image/divider blocks therefore keep their real document height and minimap silhouette, but the left gutter no
+  longer expands one bitmap card into several apparent line-number rows.
+- That gutter path now also maps the live scroll position from actual document Y into the compressed gutter Y space.
+  Scrolling through the middle of a tall image therefore moves the gutter rows continuously instead of freezing them at
+  one packed slot until the block leaves the viewport.
+- The structured minimap path now also preserves block-style rows for inline images.
+  A resource card's minimap silhouette therefore reads like one tall filled body block instead of many narrow
+  text-width bars.
 - Desktop note transitions now also keep structured-flow notes off the legacy whole-editor typing diff path.
   Switching away from a note whose body contains parser-owned `resource` blocks therefore no longer lets the fallback
   inline-editor serializer rewrite or damage `<resource ... />` source during blur/selection-change cleanup.
