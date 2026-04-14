@@ -6,6 +6,8 @@ structured document-flow editor changes.
 ## Agenda Typing
 - Typing continuously inside an existing agenda task must keep the caret in that same task instead of snapping to the
   task start.
+- While an agenda task editor or checkbox still owns focus, idle note-snapshot refresh and background structured
+  reparse work must remain suppressed; the caret must not disappear after the host misclassifies the card as unfocused.
 - Pressing `Enter` inside an agenda task must still create the next task or exit the agenda according to the existing
   backend rule.
 - Pressing `Enter` on an empty middle agenda task must not delete later sibling tasks.
@@ -13,6 +15,8 @@ structured document-flow editor changes.
 
 ## Callout Typing
 - Typing continuously inside a callout must keep the caret at the edited position after each RAW rewrite/reparse.
+- While a callout editor still owns focus, host-level idle refresh paths must not reactivate and blur the live caret
+  out from under the card between typing turns.
 - Pressing `Enter` twice on a trailing empty callout line must still exit the callout block.
 - After a callout cursor restore, the next structured shortcut must still resolve relative to that active callout block.
 - Repeating edits inside one agenda/callout block of a long structured note must not visibly degrade as unrelated blocks
@@ -52,6 +56,9 @@ structured document-flow editor changes.
   editor/session path instead of switching into the structured host before block ownership is known.
 - Once a selected note has already activated structured-flow mode, later async reparses must keep that structured
   surface mounted instead of bouncing back through the legacy editor.
+- Any nested structured-block editor focus must propagate back to the host note editor's "input focused" guards.
+  A focused paragraph/task/callout block must not let snapshot polling or background reparsing restart just because the
+  outer structured-flow `FocusScope` itself is not the direct `activeFocus` item.
 - Each note-entry transition must reset gutter line-number geometry and recompute it from the newly bound note body.
   Line numbers from the previously selected note must not persist until a later scroll, resize, or incidental cursor
   move happens to refresh the gutter.
@@ -163,6 +170,8 @@ structured document-flow editor changes.
 - Pressing `Tab` in an ordinary paragraph must mutate RAW source with visible indentation spaces and keep that
   indentation rendered after the editor refresh.
   The live surface must not collapse the stored spaces so that only the cursor appears to move.
+- In the legacy inline-editor path, the visible caret must remain painted whenever the nested `TextEdit` still owns
+  focus, even if the wrapper `FocusScope` is not the direct `activeFocus` item.
 - Pressing plain `Enter` in the middle of a paragraph that already has following text must split the line and preserve
   the following-line suffix.
   The editor must not delete the next line's text or rely on a transient RichText paragraph rewrite that diverges from

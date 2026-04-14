@@ -76,17 +76,24 @@ Mobile content editor host.
   editor contents.
 - Mobile also now requires `selectedNoteBodyNoteId == selectedNoteId` before syncing selection state into the session
   or restoring editor focus, so a stale body payload cannot be rebound under a different note id.
-- During a note-selection transition, the mobile host now projects any still-live `TextEdit` delta through
-  `ContentsEditorTypingController.handleEditorTextEdited()` before deciding whether to flush the previously bound note.
-  This keeps large deletions or other last-turn edits from being dropped just because the selection id changed before
-  the session buffer had caught up.
-- That selection-change preflush is now additionally gated by `editorInputFocused`.
-  Merely selecting another note after focus has already left the editor therefore no longer turns the stale inline
-  surface into a fake edit or triggers a no-op save on note selection alone.
+- During a note-selection transition, the mobile host no longer asks
+  `ContentsEditorTypingController.handleEditorTextEdited()` to diff the editor surface after `selectedNoteId` has
+  already changed.
+  Once the bound session note and selected note diverge, the host waits for same-note rebinding before any further
+  diff/persist work, preventing one note's stale editor surface from being serialized into another note.
 - That deferred blur-side flush now also captures the note id that owned the editor when focus was lost and refuses to
   run after the session has rebound to a different selected note.
   Tapping from note `A` to note `B` therefore cannot reinterpret `A`'s stale editor surface as a late edit for `B`
   and overwrite the newly selected note body during the transition.
+- That same blur-side flush now also requires an active local authoring session or a pending body-save on the same
+  bound note before it runs.
+  Mobile note-list selection alone therefore cannot escalate an untouched selected note into a persistence turn just
+  because the editor lost focus.
+- Timer-driven snapshot polling and one-shot entry reconcile now also require both of these same-note ownership checks
+  before sending `editorSession.editorText` to the selection bridge:
+  - `editorSession.editorBoundNoteId == selectedNoteId`
+  - `selectionBridge.selectedNoteBodyNoteId == selectedNoteId`
+  A newly selected note therefore cannot be reconciled against the previously bound note's stale session text.
 - Mobile inline-editor `onTextEdited()` now only notifies the typing controller to read the live `TextEdit` state.
   The host no longer treats the rendered RichText surface payload itself as a recovery source for RAW note text, so
   agenda/callout projection cannot push the note-open session snapshot back over newer visible edits.

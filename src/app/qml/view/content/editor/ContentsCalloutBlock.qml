@@ -15,6 +15,7 @@ FocusScope {
     signal textChanged(string text, int cursorPosition)
 
     readonly property var normalizedBlock: blockData && typeof blockData === "object" ? blockData : ({})
+    readonly property bool focused: calloutEditor.focused
     readonly property int contentStart: Math.max(0, Number(normalizedBlock.contentStart) || 0)
     readonly property int contentEnd: Math.max(contentStart, Number(normalizedBlock.contentEnd) || contentStart)
     readonly property int sourceStart: Math.max(0, Number(normalizedBlock.sourceStart) || 0)

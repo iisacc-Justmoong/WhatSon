@@ -13,6 +13,9 @@ Renders one callout card as a native document block inside the editor flow.
   longer re-evaluates every global focus token change itself.
 - Programmatic focus restoration now also emits `activated()`, keeping the flow host's active-block tracking aligned
   even when the same callout editor already owned focus and only the cursor moved.
+- The block now also exposes whether its nested editor currently owns focus.
+  Structured-flow hosts can therefore keep idle note-refresh guards disabled while the user is still typing inside a
+  callout card.
 - Keeps agenda/callout shortcut insertion block-scoped so new proprietary wrappers are inserted after the current
   callout instead of nesting inside callout body content.
 - Treats Enter on an already-empty trailing line as the "exit callout" gesture.

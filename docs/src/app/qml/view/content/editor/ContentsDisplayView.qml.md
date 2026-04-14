@@ -77,17 +77,24 @@ Desktop content editor host.
   the session or restoring editor focus.
   This prevents one note's stale body text from being rebound under another note id after a failed or superseded lazy
   body fetch.
-- During a note-selection transition, the desktop host now projects any still-live `TextEdit` delta through
-  `ContentsEditorTypingController.handleEditorTextEdited()` before deciding whether to flush the previously bound note.
-  This keeps large deletions or other last-turn edits from being dropped just because the selection id changed before
-  the session buffer had caught up.
-- That selection-change preflush is now additionally gated by `editorInputFocused`.
-  Simply clicking a different note after the editor has already left focus therefore no longer reinterprets the stale
-  inline editor surface as a fresh edit and no longer triggers a no-op save on note selection alone.
+- During a note-selection transition, the desktop host no longer asks
+  `ContentsEditorTypingController.handleEditorTextEdited()` to diff the editor surface after `selectedNoteId` has
+  already changed.
+  Once the bound session note and selected note diverge, the host waits for same-note rebinding before any further
+  diff/persist work, preventing one note's stale editor surface from being serialized into another note.
 - That deferred blur-side flush now also captures the note id that owned the editor when focus was lost and refuses to
   run after the session has rebound to a different selected note.
   Clicking from note `A` to note `B` therefore cannot reinterpret `A`'s stale editor surface as a late edit for `B`
   and overwrite the newly selected note body during the transition.
+- The same blur-side flush now additionally requires an active local authoring session or a pending body-save for that
+  same bound note before it runs at all.
+  A plain note-list selection click on an untouched note therefore cannot promote the freshly selected note into a
+  persistence turn just because focus left the editor.
+- Timer-driven snapshot polling and one-shot entry reconcile now also require both of these same-note ownership checks
+  before sending `editorSession.editorText` to the selection bridge:
+  - `editorSession.editorBoundNoteId == selectedNoteId`
+  - `selectionBridge.selectedNoteBodyNoteId == selectedNoteId`
+  A newly selected note therefore cannot be reconciled against the previously bound note's stale session text.
 - Desktop inline-editor `onTextEdited()` now only notifies the typing controller to read the live `TextEdit` state.
   The host no longer treats the rendered RichText surface payload itself as a recovery source for RAW note text, so
   agenda/callout projection cannot push the note-open session snapshot back over newer visible edits.
@@ -171,6 +178,13 @@ Desktop content editor host.
   Resolved bitmap resources therefore render only through parser-owned document blocks inside
   `ContentsStructuredDocumentFlow.qml`, which keeps authored prose and image frames in one block stream and avoids
   editor-surface overlays entirely.
+- Desktop gutter and minimap rails now stay mounted for structured-flow notes as well.
+  The host no longer treats `<resource ... />` notes as a special full-surface rendering mode that must disable editor
+  chrome; instead it asks `ContentsStructuredDocumentFlow.qml` for block-derived logical line entries and feeds those
+  lines back into the existing gutter/minimap pipeline.
+- Because those rails now consume structured block geometry, an imported image block behaves like any other body block:
+  it contributes line height and minimap silhouette inside the shared editor surface rather than forcing the note out of
+  the normal `ContentsDisplayView.qml` editor-view scaffolding.
 - Desktop note transitions now also keep structured-flow notes off the legacy whole-editor typing diff path.
   Switching away from a note whose body contains parser-owned `resource` blocks therefore no longer lets the fallback
   inline-editor serializer rewrite or damage `<resource ... />` source during blur/selection-change cleanup.

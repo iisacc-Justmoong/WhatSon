@@ -744,11 +744,35 @@ Item {
         const firstVisibleDocumentY = Math.max(0, contentY - contentsView.editorDocumentStartY);
         return Math.max(1, Math.min(contentsView.logicalLineCount, contentsView.logicalLineNumberForDocumentY(firstVisibleDocumentY)));
     }
+    function shouldFlushBlurredEditorState(scheduledNoteId) {
+        const normalizedScheduledNoteId = scheduledNoteId === undefined || scheduledNoteId === null
+                ? ""
+                : String(scheduledNoteId).trim();
+        if (normalizedScheduledNoteId.length === 0 || !editorSession)
+            return false;
+        const currentBoundNoteId = editorSession.editorBoundNoteId !== undefined && editorSession.editorBoundNoteId !== null
+                ? String(editorSession.editorBoundNoteId).trim()
+                : "";
+        const currentSelectedNoteId = contentsView.selectedNoteId === undefined || contentsView.selectedNoteId === null
+                ? ""
+                : String(contentsView.selectedNoteId).trim();
+        if (currentBoundNoteId !== normalizedScheduledNoteId
+                || currentSelectedNoteId !== normalizedScheduledNoteId) {
+            return false;
+        }
+        const hasLocalEditorAuthority = editorSession.localEditorAuthority !== undefined
+                && !!editorSession.localEditorAuthority;
+        const hasPendingBodySave = editorSession.pendingBodySave !== undefined
+                && !!editorSession.pendingBodySave;
+        return hasLocalEditorAuthority || hasPendingBodySave;
+    }
     function flushEditorStateAfterInputSettles(attempt, scheduledNoteId) {
         const retryCount = Math.max(0, Number(attempt) || 0);
         const normalizedScheduledNoteId = scheduledNoteId === undefined || scheduledNoteId === null
                 ? ""
                 : String(scheduledNoteId).trim();
+        if (!contentsView.shouldFlushBlurredEditorState(normalizedScheduledNoteId))
+            return;
         const activePreeditText = contentEditor && contentEditor.preeditText !== undefined ? String(contentEditor.preeditText === undefined || contentEditor.preeditText === null ? "" : contentEditor.preeditText) : "";
         const inputMethodBusy = !!(contentEditor && ((contentEditor.inputMethodComposing !== undefined && contentEditor.inputMethodComposing) || activePreeditText.length > 0));
         if (inputMethodBusy && retryCount < 6) {
@@ -1419,9 +1443,14 @@ Item {
     function pollSelectedNoteSnapshot() {
         if (contentsView.typingSessionSyncProtected || contentsView.pendingBodySave)
             return;
+        if (!contentsView.editorSessionBoundToSelectedNote)
+            return;
         const normalizedNoteId = contentsView.selectedNoteId === undefined || contentsView.selectedNoteId === null
                 ? ""
                 : String(contentsView.selectedNoteId).trim();
+        if (normalizedNoteId.length > 0
+                && contentsView.selectedNoteBodyNoteId !== normalizedNoteId)
+            return;
         if (contentsView.editorEntrySnapshotPendingNoteId === normalizedNoteId)
             return;
         if (selectionBridge
@@ -1445,10 +1474,14 @@ Item {
     function reconcileEditorEntrySnapshotOnce() {
         if (!contentsView.visible || !contentsView.hasSelectedNote)
             return false;
+        if (!contentsView.editorSessionBoundToSelectedNote)
+            return false;
         const normalizedNoteId = contentsView.selectedNoteId === undefined || contentsView.selectedNoteId === null
                 ? ""
                 : String(contentsView.selectedNoteId).trim();
         if (normalizedNoteId.length === 0)
+            return false;
+        if (contentsView.selectedNoteBodyNoteId !== normalizedNoteId)
             return false;
         if (contentsView.editorEntrySnapshotComparedNoteId === normalizedNoteId)
             return false;
@@ -1814,13 +1847,6 @@ Item {
 
         if (shouldFocusEditor)
             contentsView.pendingEditorFocusNoteId = contentsView.selectedNoteId;
-
-        if (editorSession.editorBoundNoteId !== contentsView.selectedNoteId
-                && contentsView.editorInputFocused
-                && editorTypingController
-                && editorTypingController.handleEditorTextEdited !== undefined) {
-            editorTypingController.handleEditorTextEdited();
-        }
 
         if (contentsView.selectedNoteBodyLoading && contentsView.selectedNoteId.length > 0) {
             if (editorSession.editorBoundNoteId !== contentsView.selectedNoteId
@@ -2652,7 +2678,10 @@ Item {
                                         documentPresentationRefreshTimer.stop();
                                     return;
                                 }
-                                contentsView.flushEditorStateAfterInputSettles(0, editorSession.editorBoundNoteId);
+                                const blurredNoteId = editorSession && editorSession.editorBoundNoteId !== undefined
+                                        ? editorSession.editorBoundNoteId
+                                        : "";
+                                contentsView.flushEditorStateAfterInputSettles(0, blurredNoteId);
                                 contentsView.scheduleDocumentPresentationRefresh(true);
                             }
                             onTextEdited: function () {

@@ -16,6 +16,7 @@ FocusScope {
     signal taskTextChanged(var taskData, string text, int cursorPosition)
 
     readonly property var normalizedBlock: blockData && typeof blockData === "object" ? blockData : ({})
+    readonly property bool focused: agendaBlock.activeFocus || agendaBlock.hasFocusedTaskRow()
     readonly property var tasks: {
         const rawTasks = normalizedBlock.tasks
         if (Array.isArray(rawTasks))
@@ -34,6 +35,15 @@ FocusScope {
 
     implicitHeight: agendaFrame.implicitHeight
     width: parent ? parent.width : implicitWidth
+
+    function hasFocusedTaskRow() {
+        for (let index = 0; index < taskRepeater.count; ++index) {
+            const item = taskRepeater.itemAt(index)
+            if (item && item.focused !== undefined && item.focused)
+                return true
+        }
+        return false
+    }
 
     function focusFirstTask() {
         for (let index = 0; index < taskRepeater.count; ++index) {
@@ -153,6 +163,8 @@ FocusScope {
                         readonly property int taskOpenTagEnd: Math.floor(Number(taskData.openTagEnd) || -1)
                         readonly property int taskContentStart: Math.floor(Number(taskData.contentStart) || 0)
                         readonly property int taskContentEnd: Math.max(taskContentStart, Math.floor(Number(taskData.contentEnd) || taskContentStart))
+                        readonly property bool focused: taskEditor.focused
+                                                         || (taskToggle.activeFocus !== undefined && taskToggle.activeFocus)
                         readonly property string taskText: taskData.text !== undefined ? String(taskData.text) : ""
 
                         Layout.fillWidth: true

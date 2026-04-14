@@ -1452,6 +1452,20 @@ QtObject {
                     && controller.editorSession.syncingEditorTextFromModel)) {
             return false;
         }
+        const boundNoteId = controller.editorSession
+                && controller.editorSession.editorBoundNoteId !== undefined
+                && controller.editorSession.editorBoundNoteId !== null
+                ? String(controller.editorSession.editorBoundNoteId).trim()
+                : "";
+        const selectedNoteId = controller.view.selectedNoteId !== undefined
+                && controller.view.selectedNoteId !== null
+                ? String(controller.view.selectedNoteId).trim()
+                : "";
+        if (boundNoteId.length > 0
+                && selectedNoteId.length > 0
+                && boundNoteId !== selectedNoteId) {
+            return false;
+        }
         const hasReadableEditorSurface = controller.contentEditor
                 && (controller.contentEditor.currentPlainText !== undefined
                     || controller.contentEditor.getText !== undefined);

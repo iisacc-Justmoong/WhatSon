@@ -11,13 +11,15 @@ FocusScope {
     property var agendaBackend: null
     property var calloutBackend: null
     property var documentBlocks: []
+    property int lineHeightHint: Math.max(1, Math.round(LV.Theme.scaleMetric(12)))
     property var renderedResources: []
     property string sourceText: ""
     property int activeBlockIndex: -1
     property var pendingFocusRequest: null
     property int pendingFocusBlockIndex: -1
     property bool pendingFocusApplyQueued: false
-    readonly property bool focused: activeFocus
+    readonly property bool focused: documentFlow.activeFocus || documentFlow.hasFocusedBlock()
+    readonly property int currentLogicalLineNumber: documentFlow.activeLogicalLineNumber()
 
     signal sourceMutationRequested(string nextSourceText, var focusRequest)
 
@@ -28,6 +30,179 @@ FocusScope {
                 && blockType !== "callout"
                 && blockType !== "resource"
                 && blockType !== "break"
+    }
+
+    function normalizedAgendaTasks(blockEntry) {
+        const safeBlock = blockEntry && typeof blockEntry === "object" ? blockEntry : ({})
+        const rawTasks = safeBlock.tasks
+        if (Array.isArray(rawTasks))
+            return rawTasks
+        if (rawTasks && rawTasks.length !== undefined) {
+            const normalized = []
+            for (let index = 0; index < rawTasks.length; ++index)
+                normalized.push(rawTasks[index])
+            return normalized
+        }
+        return []
+    }
+
+    function visiblePlainTextForBlock(blockEntry) {
+        const safeBlock = blockEntry && typeof blockEntry === "object" ? blockEntry : ({})
+        const blockType = safeBlock.type !== undefined ? String(safeBlock.type).toLowerCase() : "text"
+        if (blockType === "agenda") {
+            const tasks = documentFlow.normalizedAgendaTasks(safeBlock)
+            const taskLines = []
+            for (let index = 0; index < tasks.length; ++index) {
+                const taskData = tasks[index] && typeof tasks[index] === "object" ? tasks[index] : ({})
+                taskLines.push(StructuredCursorSupport.normalizedPlainText(String(taskData.text || "")))
+            }
+            return taskLines.join("\n")
+        }
+        if (blockType === "callout")
+            return StructuredCursorSupport.normalizedPlainText(String(safeBlock.text || ""))
+        if (blockType === "resource" || blockType === "break")
+            return ""
+        return StructuredCursorSupport.plainTextFromInlineTaggedSource(String(safeBlock.sourceText || ""))
+    }
+
+    function blockRepresentativeCharCount(blockEntry, lineText) {
+        const safeBlock = blockEntry && typeof blockEntry === "object" ? blockEntry : ({})
+        const blockType = safeBlock.type !== undefined ? String(safeBlock.type).toLowerCase() : "text"
+        const normalizedLineText = lineText === undefined || lineText === null ? "" : String(lineText)
+        if (normalizedLineText.length > 0)
+            return normalizedLineText.length
+        if (blockType === "resource") {
+            const resourceLabel = safeBlock.resourceId !== undefined && String(safeBlock.resourceId).trim().length > 0
+                    ? String(safeBlock.resourceId).trim()
+                    : (safeBlock.resourcePath !== undefined && String(safeBlock.resourcePath).trim().length > 0
+                       ? String(safeBlock.resourcePath).trim()
+                       : "resource")
+            return Math.max(12, resourceLabel.length)
+        }
+        if (blockType === "break")
+            return 8
+        return 0
+    }
+
+    function estimatedVisualLineCount(blockEntry, blockHeight, logicalLines) {
+        const safeBlock = blockEntry && typeof blockEntry === "object" ? blockEntry : ({})
+        const blockType = safeBlock.type !== undefined ? String(safeBlock.type).toLowerCase() : "text"
+        const logicalLineCount = Math.max(1, Array.isArray(logicalLines) ? logicalLines.length : 1)
+        if (blockType === "resource" || blockType === "break")
+            return 1
+        if (blockType === "agenda")
+            return logicalLineCount
+
+        const estimatedWrappedLineCount = Math.max(
+                    1,
+                    Math.round(Math.max(1, Number(blockHeight) || 0) / Math.max(1, documentFlow.lineHeightHint)))
+        return Math.max(logicalLineCount, estimatedWrappedLineCount)
+    }
+
+    function visualLineCharCount(blockEntry, logicalLines, visualLineCount, visualLineIndex) {
+        const safeLogicalLines = Array.isArray(logicalLines) && logicalLines.length > 0 ? logicalLines : [""]
+        const safeVisualLineCount = Math.max(1, Math.floor(Number(visualLineCount) || 1))
+        const safeVisualLineIndex = Math.max(0, Math.min(safeVisualLineCount - 1, Math.floor(Number(visualLineIndex) || 0)))
+        if (safeVisualLineCount === safeLogicalLines.length)
+            return Math.max(0, documentFlow.blockRepresentativeCharCount(blockEntry, safeLogicalLines[safeVisualLineIndex]))
+
+        let totalCharCount = 0
+        for (let index = 0; index < safeLogicalLines.length; ++index)
+            totalCharCount += Math.max(0, String(safeLogicalLines[index] || "").length)
+        if (totalCharCount <= 0)
+            return Math.max(0, documentFlow.blockRepresentativeCharCount(blockEntry, ""))
+
+        const baseCount = Math.floor(totalCharCount / safeVisualLineCount)
+        const remainder = totalCharCount % safeVisualLineCount
+        return Math.max(1, baseCount + (safeVisualLineIndex < remainder ? 1 : 0))
+    }
+
+    function blockLogicalLineEntries(blockHost, blockEntryOverride) {
+        const host = blockHost && typeof blockHost === "object" ? blockHost : null
+        const blockEntry = blockEntryOverride && typeof blockEntryOverride === "object"
+                ? blockEntryOverride
+                : (host && host.blockEntry && typeof host.blockEntry === "object" ? host.blockEntry : ({ }))
+        const plainText = documentFlow.visiblePlainTextForBlock(blockEntry)
+        const logicalLines = plainText.length > 0 ? plainText.split("\n") : [""]
+        const blockHeight = Math.max(
+                    1,
+                    host ? (Number(host.implicitHeight) || Number(host.height) || 0) : 0,
+                    documentFlow.lineHeightHint * Math.max(1, logicalLines.length))
+        const baseY = Math.max(0, host ? (Number(host.y) || 0) : 0)
+        const entries = []
+        const lineCount = documentFlow.estimatedVisualLineCount(blockEntry, blockHeight, logicalLines)
+
+        for (let index = 0; index < lineCount; ++index) {
+            const lineTop = baseY + (blockHeight * index / lineCount)
+            const lineBottom = index + 1 < lineCount
+                    ? baseY + (blockHeight * (index + 1) / lineCount)
+                    : baseY + blockHeight
+            const lineHeight = Math.max(1, lineBottom - lineTop)
+            entries.push({
+                "charCount": documentFlow.visualLineCharCount(blockEntry, logicalLines, lineCount, index),
+                "contentHeight": lineHeight,
+                "contentY": lineTop,
+                "rowCount": Math.max(1, Math.round(lineHeight / Math.max(1, documentFlow.lineHeightHint)))
+            })
+        }
+
+        return entries
+    }
+
+    function logicalLineEntries() {
+        const entries = []
+        const blocks = documentFlow.normalizedBlocks()
+        for (let blockIndex = 0; blockIndex < blockRepeater.count; ++blockIndex) {
+            const blockHost = blockRepeater.itemAt(blockIndex)
+            const blockEntry = blocks[blockIndex] && typeof blocks[blockIndex] === "object" ? blocks[blockIndex] : ({})
+            const blockEntries = documentFlow.blockLogicalLineEntries(blockHost, blockEntry)
+            for (let lineIndex = 0; lineIndex < blockEntries.length; ++lineIndex) {
+                const lineEntry = blockEntries[lineIndex] && typeof blockEntries[lineIndex] === "object"
+                        ? blockEntries[lineIndex]
+                        : ({})
+                entries.push({
+                    "charCount": Math.max(0, Number(lineEntry.charCount) || 0),
+                    "contentHeight": Math.max(1, Number(lineEntry.contentHeight) || documentFlow.lineHeightHint),
+                    "contentY": Math.max(0, Number(lineEntry.contentY) || 0),
+                    "lineNumber": entries.length + 1,
+                    "rowCount": Math.max(1, Number(lineEntry.rowCount) || 1)
+                })
+            }
+        }
+
+        if (entries.length === 0) {
+            entries.push({
+                "charCount": 0,
+                "contentHeight": Math.max(1, documentFlow.lineHeightHint),
+                "contentY": 0,
+                "lineNumber": 1,
+                "rowCount": 1
+            })
+        }
+
+        return entries
+    }
+
+    function activeLogicalLineNumber() {
+        const blocks = documentFlow.normalizedBlocks()
+        const safeActiveBlockIndex = Math.max(0, Math.min(blocks.length - 1, Number(documentFlow.activeBlockIndex) || 0))
+        if (blocks.length === 0)
+            return 1
+        let lineNumber = 1
+        for (let blockIndex = 0; blockIndex < safeActiveBlockIndex; ++blockIndex) {
+            const blockHost = blockRepeater.itemAt(blockIndex)
+            lineNumber += documentFlow.blockLogicalLineEntries(blockHost, blocks[blockIndex]).length
+        }
+        return Math.max(1, lineNumber)
+    }
+
+    function hasFocusedBlock() {
+        for (let index = 0; index < blockRepeater.count; ++index) {
+            const host = blockRepeater.itemAt(index)
+            if (host && host.delegateFocused !== undefined && host.delegateFocused)
+                return true
+        }
+        return false
     }
 
     function requestDocumentEndEdit() {
@@ -343,6 +518,18 @@ FocusScope {
                     focusRequest && typeof focusRequest === "object" ? focusRequest : ({ }))
     }
 
+    function nextEditableSourceOffsetAfterBlock(sourceText, blockEndOffset) {
+        const normalizedText = documentFlow.normalizedSourceText(sourceText)
+        const boundedBlockEndOffset = Math.max(
+                    0,
+                    Math.min(normalizedText.length, Math.floor(Number(blockEndOffset) || 0)))
+        if (boundedBlockEndOffset < normalizedText.length
+                && normalizedText.charAt(boundedBlockEndOffset) === "\n") {
+            return boundedBlockEndOffset + 1
+        }
+        return boundedBlockEndOffset
+    }
+
     function replaceTextBlock(blockData, nextBlockSourceText, focusRequest) {
         const safeBlock = blockData && typeof blockData === "object" ? blockData : ({})
         documentFlow.replaceSourceRange(
@@ -537,15 +724,23 @@ FocusScope {
         const prefixNewline = insertionOffset > 0 && currentSourceText.charAt(insertionOffset - 1) !== "\n" ? "\n" : ""
         const blockSourceText = normalizedTagTexts.join("\n")
         const suffixOffset = insertionOffset < currentSourceText.length ? insertionOffset : currentSourceText.length
-        const suffixNewline = suffixOffset < currentSourceText.length && currentSourceText.charAt(suffixOffset) !== "\n" ? "\n" : ""
+        const suffixNewline = suffixOffset >= currentSourceText.length
+                || currentSourceText.charAt(suffixOffset) !== "\n"
+                ? "\n"
+                : ""
         const insertionSourceText = prefixNewline + blockSourceText + suffixNewline
+        const nextSourceText = documentFlow.spliceSourceRange(
+                    insertionOffset,
+                    insertionOffset,
+                    insertionSourceText)
+        const insertedBlockEndOffset = insertionOffset + prefixNewline.length + blockSourceText.length
 
-        documentFlow.replaceSourceRange(
-                    insertionOffset,
-                    insertionOffset,
-                    insertionSourceText,
+        documentFlow.sourceMutationRequested(
+                    nextSourceText,
                     {
-                        "sourceOffset": insertionOffset + prefixNewline.length + blockSourceText.length
+                        "sourceOffset": documentFlow.nextEditableSourceOffsetAfterBlock(
+                                            nextSourceText,
+                                            insertedBlockEndOffset)
                     })
         return true
     }
@@ -572,6 +767,14 @@ FocusScope {
                 property alias delegateLoader: blockLoader
                 readonly property int blockIndex: index
                 readonly property var blockEntry: modelData && typeof modelData === "object" ? modelData : ({})
+                readonly property bool delegateFocused: {
+                    const delegateItem = blockLoader.item
+                    if (!delegateItem)
+                        return false
+                    if (delegateItem.focused !== undefined)
+                        return !!delegateItem.focused
+                    return delegateItem.activeFocus !== undefined && !!delegateItem.activeFocus
+                }
                 readonly property string blockType: blockEntry.type !== undefined ? String(blockEntry.type) : "text"
                 implicitHeight: blockLoader.item ? Math.max(0, Number(blockLoader.item.implicitHeight) || Number(blockLoader.item.height) || 0) : 0
                 width: documentColumn.width

@@ -27,6 +27,10 @@ plain `QtQuick.TextEdit` as the actual rendering and input engine.
 - When the wrapper must reapply an existing selection after a programmatic text sync, it now prefers
   `TextEdit.moveCursorSelection(...)` over `select(start, end)` so the active cursor edge is preserved together with
   the selected range.
+- The visible caret now follows the wrapper's full `focused` contract instead of the narrower FocusScope-only
+  `activeFocus` flag.
+  If the nested `TextEdit` still owns input focus after one host-side surface sync, the caret therefore stays visible
+  instead of disappearing until the wrapper FocusScope also becomes active again.
 - On native-input mobile paths the wrapper also adds a passive touch `TapHandler` on top of `TextEdit`:
   - when the software keyboard is hidden, touch `press` no longer immediately focuses `TextEdit` or moves selection
   - a single tap (`tapCount === 1`) now activates input at the tapped cursor position and explicitly requests keyboard
@@ -180,5 +184,7 @@ plain `QtQuick.TextEdit` as the actual rendering and input engine.
 - mixed text + `<resource ... />` note bodies must keep text blocks visible before and after inline image blocks; a
   structured text block host must never collapse to `0` height just because the inline editor wrapper omitted its own
   `implicitHeight`
+- the visible caret must remain painted whenever the nested `TextEdit` still owns keyboard focus, even if the wrapper
+  FocusScope itself is not the current `activeFocus` item
 - injected host shortcut handlers must still fire when the nested `TextEdit` has focus, and accepted shortcut events
   must not fall through into literal character insertion.

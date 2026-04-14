@@ -36,6 +36,9 @@ This controller exists to keep plain typing separate from inline-format applicat
   `view.programmaticEditorSurfaceSyncActive == true` or while `editorSession.syncingEditorTextFromModel` is still
   raised for the current model-driven body sync.
   Resource/body presentation rebuilds therefore cannot be diffed as if the user had typed the placeholder surface.
+- The controller now also exits early whenever `editorSession.editorBoundNoteId != view.selectedNoteId`.
+  Once note selection has moved on, the typing controller must not reinterpret the previously bound note's editor
+  surface as a fresh edit for another note.
 - The controller now also exits early while `view.resourceDropEditorSurfaceGuardActive == true`.
   External file drops can therefore import/link `.wsresource` packages without letting a same-turn native `TextEdit`
   drop mutation serialize the visible RichText surface back into `.wsnbody` as escaped attribute text.

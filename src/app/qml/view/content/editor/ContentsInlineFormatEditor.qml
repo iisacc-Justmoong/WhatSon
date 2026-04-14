@@ -459,7 +459,7 @@ FocusScope {
                                     && (!control.preferNativeInputHandling || control.inputMethodVisible)
                 bottomPadding: control.insetVertical
                 color: control.textColor
-                cursorVisible: control.activeFocus
+                cursorVisible: control.focused
                 font.family: control.fontFamily
                 font.letterSpacing: control.fontLetterSpacing
                 font.pixelSize: control.fontPixelSize

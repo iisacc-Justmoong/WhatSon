@@ -17,6 +17,17 @@ Hosts the document-native block editor for structured `.wsnbody` content.
 - That document column is expected to receive the host's effective note-body width, not the raw editor viewport width.
   On desktop/mobile screen editor surfaces, the host therefore subtracts its body insets before passing width into the
   structured-flow surface, keeping inline resource frames aligned with surrounding text content.
+- The flow now also exposes block-derived logical line entries for the desktop editor host.
+  `ContentsDisplayView.qml` can therefore treat `resource` / `break` / semantic text blocks as ordinary editor
+  document lines for gutter and minimap purposes instead of disabling those rails whenever the note enters structured
+  mode.
+- Those line entries are synthesized from the mounted block hosts themselves:
+  text/callout/agenda blocks contribute visible plain-text line counts, while resource/break blocks still contribute at
+  least one logical editor line backed by the block's actual rendered height.
+- For wrapped prose blocks, the flow now also upgrades a single semantic text line into multiple gutter/minimap lines
+  when the rendered block height spans several editor line-heights.
+  Structured paragraphs therefore keep the same visual line-number density as the ordinary text editor instead of
+  collapsing one wrapped paragraph into one oversized gutter row.
 - Rewrites the authoritative RAW source string on every block edit, then asks the parent view to persist the new
   source.
 - Text-block delegates now obey the same one-way edit contract as the main editor host:
@@ -25,6 +36,10 @@ Hosts the document-native block editor for structured `.wsnbody` content.
   The host no longer treats any delegate RichText/DOM surface as a write-authoritative document snapshot.
 - Keeps a lightweight focus request channel so shortcut insertion and backend-driven Enter rules can move focus into the
   newly materialized block after reparsing.
+- The flow-level `focused` state is now aggregated from mounted block delegates instead of relying only on the
+  `FocusScope.activeFocus` flag of the host itself.
+  When a nested paragraph/task/callout editor owns keyboard focus, desktop/mobile hosts therefore continue to treat the
+  whole structured note editor as focused and do not re-enable idle snapshot/reparse paths underneath the live caret.
 - Preserves agenda/callout local caret positions across whole-document reparses by forwarding both the RAW source offset
   and the block-local cursor position in focus requests.
 - Owns structured shortcut insertion once a document has entered block-flow mode and now asks the active delegate for
@@ -32,6 +47,12 @@ Hosts the document-native block editor for structured `.wsnbody` content.
 - The same active-block insertion bridge now also accepts imported resource-tag batches from the parent host.
   A note that is already in structured-flow mode therefore inserts dropped `<resource ... />` blocks next to the
   active block instead of falling back to the legacy inline-editor cursor path or appending at EOF.
+- That imported-resource insertion path now also guarantees one trailing newline after the inserted
+  `<resource ... />` block when the insertion lands at EOF or before a non-newline character, then resolves the
+  post-insert focus offset one source character past that block boundary.
+  Focus therefore lands in the editable text slot after the image block instead of staying on the resource block's
+  inclusive `sourceEnd` boundary, which previously swallowed the next user keystrokes without emitting a RAW-source
+  mutation.
 - Resolves each pending focus request to one target block index before dispatch:
   - agenda task focus prefers `taskOpenTagStart`
   - otherwise the host falls back to the reparsed `sourceOffset`
@@ -42,6 +63,9 @@ Hosts the document-native block editor for structured `.wsnbody` content.
   - successful application clears the pending request instead of retaining an incrementing replay token
 - Large block lists still load delegate instances asynchronously, but late-loaded delegates now replay focus only when
   they are the resolved target block instead of rebroadcasting the request through the whole block tree.
+- Each mounted block host now also surfaces a `delegateFocused` view over its loaded editor delegate.
+  The flow host uses that to detect descendant input focus without introducing a separate cross-block focus bus or
+  polling timer.
 - Resource blocks resolve their render payload in three passes:
   - first by shared `resourceIndex`
   - then by matching `sourceStart/sourceEnd`

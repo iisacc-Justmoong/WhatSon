@@ -23,6 +23,9 @@ Renders one plain-text document segment inside the structured document-flow edit
 - The block now depends on `ContentsInlineFormatEditor.qml` publishing a real `implicitHeight` from live text content.
   That keeps text delegates materially present inside `ContentsStructuredDocumentFlow.qml` instead of collapsing to
   zero height while neighboring resource/image blocks remain visible.
+- The block now also exposes whether its nested inline editor currently owns focus.
+  `ContentsStructuredDocumentFlow.qml` uses that signal-free focus state to keep host-level idle refresh guards from
+  treating an actively edited structured paragraph as unfocused.
 - The block body text now renders with `Font.Medium` at the existing 12px size, matching the current note-body visual
   spec more closely than the previous normal-weight fallback.
 - Accepts focus restoration requests by source offset so source rewrites can re-focus the same block after reparsing.

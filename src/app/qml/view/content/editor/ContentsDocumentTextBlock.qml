@@ -14,6 +14,7 @@ FocusScope {
     signal sourceMutationRequested(string nextBlockSourceText, var focusRequest)
 
     readonly property var normalizedBlock: blockData && typeof blockData === "object" ? blockData : ({})
+    readonly property bool focused: blockEditor.focused
     readonly property int sourceStart: Math.max(0, Number(normalizedBlock.sourceStart) || 0)
     readonly property int sourceEnd: Math.max(sourceStart, Number(normalizedBlock.sourceEnd) || 0)
     readonly property string sourceText: normalizedBlock.sourceText !== undefined ? String(normalizedBlock.sourceText) : ""

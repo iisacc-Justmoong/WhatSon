@@ -25,7 +25,9 @@ Item {
     property alias contextMenuSelectionEnd: editorSelectionController.contextMenuSelectionEnd
     property alias contextMenuSelectionStart: editorSelectionController.contextMenuSelectionStart
     readonly property int currentCursorLineNumber: contentsView.showStructuredDocumentFlow
-                                                   ? 1
+                                                   ? (structuredDocumentFlow && structuredDocumentFlow.currentLogicalLineNumber !== undefined
+                                                      ? Math.max(1, Number(structuredDocumentFlow.currentLogicalLineNumber) || 1)
+                                                      : 1)
                                                    : contentsView.logicalLineNumberForOffset(Number(contentEditor.cursorPosition) || 0)
     readonly property color decorativeMarkerYellow: LV.Theme.warning
     readonly property int desktopEditorFontPixelSize: Math.max(0, Math.round(LV.Theme.scaleMetric(12)))
@@ -140,7 +142,6 @@ Item {
                                       : 0
     readonly property bool lineGeometryRefreshEnabled: !contentsView.showDedicatedResourceViewer
                                                        && !contentsView.showFormattedTextRenderer
-                                                       && !contentsView.showStructuredDocumentFlow
     readonly property int minEditorHeight: LV.Theme.gap20 * 12
     readonly property real minimapAvailableTrackHeight: Math.max(1, contentsView.editorViewportHeight - contentsView.minimapTrackInset * 2)
     readonly property color minimapCurrentLineColor: contentsView.activeLineNumberColor
@@ -170,12 +171,10 @@ Item {
                                            && !contentsView.showDedicatedResourceViewer
                                            && !contentsView.showPrintEditorLayout
                                            && !contentsView.showFormattedTextRenderer
-                                           && !contentsView.showStructuredDocumentFlow
     readonly property bool minimapRefreshEnabled: contentsView.minimapVisible
                                                   && !contentsView.showDedicatedResourceViewer
                                                   && !contentsView.showPrintEditorLayout
                                                   && !contentsView.showFormattedTextRenderer
-                                                  && !contentsView.showStructuredDocumentFlow
     property var minimapVisualRows: []
     readonly property var normalizedExternalGutterMarkers: gutterMarkerBridge.normalizedExternalGutterMarkers
     readonly property bool noteCountContractAvailable: selectionBridge.noteCountContractAvailable
@@ -303,7 +302,8 @@ Item {
                                                                         && !contentsView.preferNativeInputHandling
     readonly property bool programmaticEditorSurfaceSyncActive: contentsView.programmaticEditorSurfaceSyncDepth > 0
     readonly property bool showDedicatedResourceViewer: false
-    readonly property bool showEditorGutter: contentsView.legacyInlineEditorActive
+    readonly property bool showEditorGutter: !contentsView.showDedicatedResourceViewer
+                                             && !contentsView.showFormattedTextRenderer
     readonly property bool showFormattedTextRenderer: false
     readonly property bool showStructuredDocumentFlow: contentsView.structuredDocumentFlowEnabled
                                                        && !contentsView.showDedicatedResourceViewer
@@ -340,6 +340,51 @@ Item {
             return String(textMetricsBridge.logicalText);
         return "";
     }
+    function normalizedStructuredLogicalLineEntries() {
+        if (!contentsView.showStructuredDocumentFlow
+                || !structuredDocumentFlow
+                || structuredDocumentFlow.logicalLineEntries === undefined) {
+            return [];
+        }
+
+        const rawEntries = structuredDocumentFlow.logicalLineEntries();
+        if (Array.isArray(rawEntries))
+            return rawEntries;
+
+        const explicitLength = Number(rawEntries && rawEntries.length);
+        if (isFinite(explicitLength) && explicitLength >= 0) {
+            const normalized = [];
+            for (let index = 0; index < Math.floor(explicitLength); ++index)
+                normalized.push(rawEntries[index]);
+            return normalized;
+        }
+
+        return [];
+    }
+    function buildStructuredMinimapLineGroupsForRange(startLineNumber, endLineNumber) {
+        const lineEntries = contentsView.normalizedStructuredLogicalLineEntries();
+        if (lineEntries.length === 0)
+            return contentsView.buildFallbackMinimapLineGroupsForRange(startLineNumber, endLineNumber);
+
+        const safeStartLine = Math.max(1, Math.min(lineEntries.length, Number(startLineNumber) || 1));
+        const safeEndLine = Math.max(safeStartLine, Math.min(lineEntries.length, Number(endLineNumber) || safeStartLine));
+        const groups = [];
+        const textStartY = contentsView.editorDocumentStartY;
+        for (let lineIndex = safeStartLine - 1; lineIndex < safeEndLine; ++lineIndex) {
+            const entry = lineEntries[lineIndex] && typeof lineEntries[lineIndex] === "object"
+                    ? lineEntries[lineIndex]
+                    : ({});
+            groups.push({
+                "charCount": Math.max(0, Number(entry.charCount) || 0),
+                "contentHeight": Math.max(contentsView.editorLineHeight, Number(entry.contentHeight) || contentsView.editorLineHeight),
+                "contentY": textStartY + Math.max(0, Number(entry.contentY) || 0),
+                "lineNumber": lineIndex + 1,
+                "rowCount": Math.max(1, Number(entry.rowCount) || 1)
+            });
+        }
+
+        return groups.length > 0 ? groups : contentsView.buildFallbackMinimapLineGroupsForRange(startLineNumber, endLineNumber);
+    }
     function buildFallbackMinimapLineGroupsForRange(startLineNumber, endLineNumber) {
         const groups = [];
         const safeStartLine = Math.max(1, Math.min(contentsView.logicalLineCount, Number(startLineNumber) || 1));
@@ -369,6 +414,8 @@ Item {
     function buildMinimapLineGroupsForRange(startLineNumber, endLineNumber) {
         const safeStartLine = Math.max(1, Math.min(contentsView.logicalLineCount, Number(startLineNumber) || 1));
         const safeEndLine = Math.max(safeStartLine, Math.min(contentsView.logicalLineCount, Number(endLineNumber) || safeStartLine));
+        if (contentsView.showStructuredDocumentFlow)
+            return contentsView.buildStructuredMinimapLineGroupsForRange(safeStartLine, safeEndLine);
         const editorItem = contentEditor ? contentEditor.editorItem : null;
         const editorWidth = Number(contentEditor ? contentEditor.width : 0) || 0;
         const editorContentHeight = Number(contentEditor ? contentEditor.contentHeight : 0) || 0;
@@ -417,9 +464,13 @@ Item {
         return groups.length > 0 ? groups : contentsView.buildFallbackMinimapLineGroupsForRange(safeStartLine, safeEndLine);
     }
     function currentMinimapSourceText() {
+        if (contentsView.showStructuredDocumentFlow)
+            return contentsView.structuredFlowSourceText === undefined || contentsView.structuredFlowSourceText === null ? "" : String(contentsView.structuredFlowSourceText);
         return contentsView.editorText === undefined || contentsView.editorText === null ? "" : String(contentsView.editorText);
     }
     function nextMinimapLineGroupsForCurrentState(currentSourceText) {
+        if (contentsView.showStructuredDocumentFlow)
+            return contentsView.buildStructuredMinimapLineGroupsForRange(1, contentsView.logicalLineCount);
         if (contentsView.minimapSnapshotForceFullRefresh
                 || !Array.isArray(contentsView.minimapLineGroups)
                 || contentsView.minimapLineGroups.length !== contentsView.logicalLineCount
@@ -603,6 +654,14 @@ Item {
     }
     function currentCursorVisualRowRect() {
         const refreshRevision = contentsView.gutterRefreshRevision;
+        if (contentsView.showStructuredDocumentFlow) {
+            const safeLineNumber = Math.max(1, Math.min(contentsView.logicalLineCount, contentsView.currentCursorLineNumber));
+            return {
+                "height": Math.max(1, contentsView.lineVisualHeight(safeLineNumber, 1)),
+                "width": 0,
+                "y": contentsView.lineDocumentY(safeLineNumber)
+            };
+        }
         const safeOffset = Math.max(0, Math.min(contentsView.logicalTextLength(), Number(contentEditor.cursorPosition) || 0));
         if (contentEditor.editorItem && contentEditor.editorItem.positionToRectangle !== undefined) {
             const rect = contentEditor.editorItem.positionToRectangle(safeOffset);
@@ -626,6 +685,12 @@ Item {
     }
     function documentOccupiedBottomY() {
         const refreshRevision = contentsView.gutterRefreshRevision;
+        if (contentsView.showStructuredDocumentFlow) {
+            const lastLineNumber = Math.max(1, contentsView.logicalLineCount);
+            return Math.max(
+                        contentsView.editorLineHeight,
+                        contentsView.lineDocumentY(lastLineNumber) + contentsView.lineVisualHeight(lastLineNumber, 1));
+        }
         contentsView.ensureLogicalLineDocumentYCache();
         const cachedLastLineDocumentY = contentsView.logicalLineCount > 0 ? contentsView.lineDocumentY(contentsView.logicalLineCount) : 0;
         const cachedBottom = Math.max(contentsView.editorLineHeight, cachedLastLineDocumentY + contentsView.editorLineHeight);
@@ -642,6 +707,8 @@ Item {
     function documentYForOffset(offset) {
         const refreshRevision = contentsView.gutterRefreshRevision;
         const safeOffset = Math.max(0, Number(offset) || 0);
+        if (contentsView.showStructuredDocumentFlow)
+            return contentsView.lineDocumentY(contentsView.logicalLineNumberForOffset(safeOffset));
         if (!contentEditor.editorItem || contentEditor.editorItem.positionToRectangle === undefined) {
             const fallbackLineNumber = contentsView.logicalLineNumberForOffset(safeOffset);
             return (fallbackLineNumber - 1) * contentsView.editorLineHeight;
@@ -744,11 +811,35 @@ Item {
         const firstVisibleDocumentY = Math.max(0, contentY - contentsView.editorDocumentStartY);
         return Math.max(1, Math.min(contentsView.logicalLineCount, contentsView.logicalLineNumberForDocumentY(firstVisibleDocumentY)));
     }
+    function shouldFlushBlurredEditorState(scheduledNoteId) {
+        const normalizedScheduledNoteId = scheduledNoteId === undefined || scheduledNoteId === null
+                ? ""
+                : String(scheduledNoteId).trim();
+        if (normalizedScheduledNoteId.length === 0 || !editorSession)
+            return false;
+        const currentBoundNoteId = editorSession.editorBoundNoteId !== undefined && editorSession.editorBoundNoteId !== null
+                ? String(editorSession.editorBoundNoteId).trim()
+                : "";
+        const currentSelectedNoteId = contentsView.selectedNoteId === undefined || contentsView.selectedNoteId === null
+                ? ""
+                : String(contentsView.selectedNoteId).trim();
+        if (currentBoundNoteId !== normalizedScheduledNoteId
+                || currentSelectedNoteId !== normalizedScheduledNoteId) {
+            return false;
+        }
+        const hasLocalEditorAuthority = editorSession.localEditorAuthority !== undefined
+                && !!editorSession.localEditorAuthority;
+        const hasPendingBodySave = editorSession.pendingBodySave !== undefined
+                && !!editorSession.pendingBodySave;
+        return hasLocalEditorAuthority || hasPendingBodySave;
+    }
     function flushEditorStateAfterInputSettles(attempt, scheduledNoteId) {
         const retryCount = Math.max(0, Number(attempt) || 0);
         const normalizedScheduledNoteId = scheduledNoteId === undefined || scheduledNoteId === null
                 ? ""
                 : String(scheduledNoteId).trim();
+        if (!contentsView.shouldFlushBlurredEditorState(normalizedScheduledNoteId))
+            return;
         const activePreeditText = contentEditor && contentEditor.preeditText !== undefined ? String(contentEditor.preeditText === undefined || contentEditor.preeditText === null ? "" : contentEditor.preeditText) : "";
         const inputMethodBusy = !!(contentEditor && ((contentEditor.inputMethodComposing !== undefined && contentEditor.inputMethodComposing) || activePreeditText.length > 0));
         if (inputMethodBusy && retryCount < 6) {
@@ -1419,9 +1510,14 @@ Item {
     function pollSelectedNoteSnapshot() {
         if (contentsView.typingSessionSyncProtected || contentsView.pendingBodySave)
             return;
+        if (!contentsView.editorSessionBoundToSelectedNote)
+            return;
         const normalizedNoteId = contentsView.selectedNoteId === undefined || contentsView.selectedNoteId === null
                 ? ""
                 : String(contentsView.selectedNoteId).trim();
+        if (normalizedNoteId.length > 0
+                && contentsView.selectedNoteBodyNoteId !== normalizedNoteId)
+            return;
         if (contentsView.editorEntrySnapshotPendingNoteId === normalizedNoteId)
             return;
         if (selectionBridge
@@ -1445,10 +1541,14 @@ Item {
     function reconcileEditorEntrySnapshotOnce() {
         if (!contentsView.visible || !contentsView.hasSelectedNote)
             return false;
+        if (!contentsView.editorSessionBoundToSelectedNote)
+            return false;
         const normalizedNoteId = contentsView.selectedNoteId === undefined || contentsView.selectedNoteId === null
                 ? ""
                 : String(contentsView.selectedNoteId).trim();
         if (normalizedNoteId.length === 0)
+            return false;
+        if (contentsView.selectedNoteBodyNoteId !== normalizedNoteId)
             return false;
         if (contentsView.editorEntrySnapshotComparedNoteId === normalizedNoteId)
             return false;
@@ -1741,6 +1841,26 @@ Item {
         contentsView.scheduleDeferredDocumentPresentationRefresh();
     }
     function refreshLiveLogicalLineMetrics() {
+        if (contentsView.showStructuredDocumentFlow) {
+            const lineEntries = contentsView.normalizedStructuredLogicalLineEntries();
+            const nextLineStartOffsets = [0];
+            let logicalLength = 0;
+            for (let lineIndex = 0; lineIndex < lineEntries.length; ++lineIndex) {
+                const entry = lineEntries[lineIndex] && typeof lineEntries[lineIndex] === "object"
+                        ? lineEntries[lineIndex]
+                        : ({});
+                const lineCharCount = Math.max(0, Number(entry.charCount) || 0);
+                if (lineIndex > 0)
+                    nextLineStartOffsets.push(logicalLength);
+                logicalLength += lineCharCount;
+                if (lineIndex + 1 < lineEntries.length)
+                    logicalLength += 1;
+            }
+            contentsView.liveLogicalTextLength = logicalLength;
+            contentsView.liveLogicalLineStartOffsets = nextLineStartOffsets;
+            contentsView.liveLogicalLineCount = Math.max(1, lineEntries.length);
+            return;
+        }
         const normalizedLogicalText = contentsView.activeLogicalTextSnapshot().replace(/\r\n/g, "\n").replace(/\r/g, "\n");
         const nextLineStartOffsets = [0];
         for (let characterIndex = 0; characterIndex < normalizedLogicalText.length; ++characterIndex) {
@@ -1814,13 +1934,6 @@ Item {
 
         if (shouldFocusEditor)
             contentsView.pendingEditorFocusNoteId = contentsView.selectedNoteId;
-
-        if (editorSession.editorBoundNoteId !== contentsView.selectedNoteId
-                && contentsView.editorInputFocused
-                && editorTypingController
-                && editorTypingController.handleEditorTextEdited !== undefined) {
-            editorTypingController.handleEditorTextEdited();
-        }
 
         if (contentsView.selectedNoteBodyLoading && contentsView.selectedNoteId.length > 0) {
             if (editorSession.editorBoundNoteId !== contentsView.selectedNoteId
@@ -2179,9 +2292,23 @@ Item {
         }
         function onRenderedBlocksChanged() {
             contentsView.refreshStructuredDocumentFlowActivation();
+            contentsView.scheduleMinimapSnapshotRefresh(true);
+            contentsView.scheduleGutterRefresh(2);
         }
 
         target: structuredBlockRenderer
+    }
+    Connections {
+        function onCurrentLogicalLineNumberChanged() {
+            contentsView.scheduleCursorDrivenUiRefresh();
+        }
+        function onImplicitHeightChanged() {
+            contentsView.scheduleMinimapSnapshotRefresh(true);
+            contentsView.scheduleGutterRefresh(2);
+        }
+
+        ignoreUnknownSignals: true
+        target: structuredDocumentFlow
     }
     Connections {
         function onEditorTextSynchronized() {
@@ -2481,6 +2608,7 @@ Item {
                         agendaBackend: contentsAgendaBackend
                         calloutBackend: contentsCalloutBackend
                         documentBlocks: structuredBlockRenderer.renderedDocumentBlocks
+                        lineHeightHint: contentsView.editorLineHeight
                         parent: contentsView.showPrintEditorLayout ? printDocumentSurface : structuredDocumentViewport.contentItem
                         renderedResources: bodyResourceRenderer.renderedResources
                         sourceText: contentsView.structuredFlowSourceText
@@ -2651,7 +2779,10 @@ Item {
                                         documentPresentationRefreshTimer.stop();
                                     return;
                                 }
-                                contentsView.flushEditorStateAfterInputSettles(0, editorSession.editorBoundNoteId);
+                                const blurredNoteId = editorSession && editorSession.editorBoundNoteId !== undefined
+                                        ? editorSession.editorBoundNoteId
+                                        : "";
+                                contentsView.flushEditorStateAfterInputSettles(0, blurredNoteId);
                                 contentsView.scheduleDocumentPresentationRefresh(true);
                             }
                             onTextEdited: function () {
