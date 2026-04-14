@@ -192,12 +192,15 @@ Desktop content editor host.
   The host no longer treats `<resource ... />` notes as a special full-surface rendering mode that must disable editor
   chrome; instead it asks `ContentsStructuredDocumentFlow.qml` for block-derived logical line entries and feeds those
   lines back into the existing gutter/minimap pipeline.
-- The desktop gutter now packs only the currently visible structured lines into one editor-row-per-line gutter slots.
-  Tall image/divider blocks therefore keep their real document height and minimap silhouette, but the left gutter no
-  longer expands one bitmap card into several apparent line-number rows.
-- That gutter path now also maps the live scroll position from actual document Y into the compressed gutter Y space.
-  Scrolling through the middle of a tall image therefore moves the gutter rows continuously instead of freezing them at
-  one packed slot until the block leaves the viewport.
+- The desktop gutter now anchors each structured logical line to that block's real document `contentY`.
+  Tall image/divider blocks therefore keep the same vertical offset relationship as the rendered document itself, so
+  line numbers after an inline image do not overlap the bitmap while it is still on screen.
+- Structured gutter numbering now also comes from parser/text logical lines first, not from block height heuristics.
+  A single wrapped paragraph below an image therefore remains one gutter line unless the authored source actually
+  contains another newline-delimited line.
+- Resource and divider blocks still count as exactly one visible gutter row.
+  The gutter marker height stays at one editor line even when the underlying block is much taller, while viewport
+  culling still uses the real block height so the row remains visible throughout the image's on-screen span.
 - The structured minimap path now also preserves block-style rows for inline images.
   A resource card's minimap silhouette therefore reads like one tall filled body block instead of many narrow
   text-width bars.

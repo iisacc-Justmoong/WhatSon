@@ -25,6 +25,9 @@ Renders one plain-text document segment inside the structured document-flow edit
 - The block now depends on `ContentsInlineFormatEditor.qml` publishing a real `implicitHeight` from live text content.
   That keeps text delegates materially present inside `ContentsStructuredDocumentFlow.qml` instead of collapsing to
   zero height while neighboring resource/image blocks remain visible.
+- That live `implicitHeight` is geometry only, not logical line authority.
+  Structured gutter numbering must come from the block's authored plain-text newline structure, with height applied
+  only afterward to position the already-determined logical lines in the viewport/minimap.
 - The block now also exposes whether its nested inline editor currently owns focus.
   `ContentsStructuredDocumentFlow.qml` uses that signal-free focus state to keep host-level idle refresh guards from
   treating an actively edited structured paragraph as unfocused.

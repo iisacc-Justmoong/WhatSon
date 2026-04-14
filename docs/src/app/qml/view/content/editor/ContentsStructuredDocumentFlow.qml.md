@@ -24,16 +24,15 @@ Hosts the document-native block editor for structured `.wsnbody` content.
 - Those line entries are synthesized from the mounted block hosts themselves:
   text/callout/agenda blocks contribute visible plain-text line counts, while resource/break blocks still contribute at
   least one logical editor line even when their rendered card is much taller than one editor row.
-- Each logical line entry now also carries gutter-specific collapse metadata alongside its real document geometry.
-  Desktop gutter packing can therefore keep a tall image/divider block to one visible gutter row without flattening the
-  actual document height that the structured column and minimap still depend on.
+- Each logical line entry keeps the block's real document geometry alongside its logical line identity.
+  Desktop gutter Y calculations can therefore stay aligned with the rendered block column while resource/break blocks
+  still contribute only one logical gutter row.
 - Resource-block line entries now also expose minimap block-style metadata.
   A tall inline image can therefore keep several minimap rows for its document height while each row still paints as a
   consistent wide block instead of being split into short text-like segments.
-- For wrapped prose blocks, the flow now also upgrades a single semantic text line into multiple gutter/minimap lines
-  when the rendered block height spans several editor line-heights.
-  Structured paragraphs therefore keep the same visual line-number density as the ordinary text editor instead of
-  collapsing one wrapped paragraph into one oversized gutter row.
+- For prose/callout text blocks, logical line count now comes from the authored plain-text newline structure first.
+  Rendered block height is then applied only as geometry over those already-fixed logical lines, so one wrapped
+  paragraph line does not silently become two or three extra gutter numbers just because the delegate is taller.
 - Rewrites the authoritative RAW source string on every block edit, then asks the parent view to persist the new
   source.
 - Text-block delegates now obey the same one-way edit contract as the main editor host:

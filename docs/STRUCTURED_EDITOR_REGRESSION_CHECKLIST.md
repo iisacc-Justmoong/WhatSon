@@ -198,10 +198,13 @@ structured document-flow editor changes.
 - The same structured image/divider block must count as exactly one visible gutter row.
   Scrolling through a tall image must not make the desktop gutter expand that one body block into several apparent line
   slots or a multi-row current-line marker.
-- While the viewport scrolls through the middle of that tall image, the gutter Y positions must still move
-  continuously in the compressed coordinate space.
-  Line numbers below the image must neither stay pinned at one fixed packed Y nor jump only after the image fully
-  leaves the viewport.
+- While the viewport scrolls through the middle of that tall image, the gutter Y positions for later lines must stay
+  aligned with the image block's real document height.
+  Line numbers below the image must not overlap the bitmap, remain pinned near the top of the gutter, or jump only
+  after the image fully leaves the viewport.
+- A prose block below an inline image that contains only one authored newline-delimited line must contribute only one
+  gutter number even when the rendered paragraph wraps or its delegate becomes taller than one editor line.
+  Block height must not fabricate extra logical lines such as `4` when the authored note body still stops at line `3`.
 - That same structured image block must also appear in the minimap as a wide filled block silhouette.
   The right rail must not render one tall image as several narrow text-like bars whose widths come from sliced label
   characters instead of the block card itself.

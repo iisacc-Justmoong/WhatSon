@@ -84,19 +84,13 @@ FocusScope {
         return 0
     }
 
-    function estimatedVisualLineCount(blockEntry, blockHeight, logicalLines) {
+    function logicalLineCountForBlock(blockEntry, logicalLines) {
         const safeBlock = blockEntry && typeof blockEntry === "object" ? blockEntry : ({})
         const blockType = safeBlock.type !== undefined ? String(safeBlock.type).toLowerCase() : "text"
         const logicalLineCount = Math.max(1, Array.isArray(logicalLines) ? logicalLines.length : 1)
         if (blockType === "resource" || blockType === "break")
             return 1
-        if (blockType === "agenda")
-            return logicalLineCount
-
-        const estimatedWrappedLineCount = Math.max(
-                    1,
-                    Math.round(Math.max(1, Number(blockHeight) || 0) / Math.max(1, documentFlow.lineHeightHint)))
-        return Math.max(logicalLineCount, estimatedWrappedLineCount)
+        return logicalLineCount
     }
 
     function visualLineCharCount(blockEntry, logicalLines, visualLineCount, visualLineIndex) {
@@ -132,7 +126,7 @@ FocusScope {
                     documentFlow.lineHeightHint * Math.max(1, logicalLines.length))
         const baseY = Math.max(0, host ? (Number(host.y) || 0) : 0)
         const entries = []
-        const lineCount = documentFlow.estimatedVisualLineCount(blockEntry, blockHeight, logicalLines)
+        const lineCount = documentFlow.logicalLineCountForBlock(blockEntry, logicalLines)
 
         for (let index = 0; index < lineCount; ++index) {
             const lineTop = baseY + (blockHeight * index / lineCount)
