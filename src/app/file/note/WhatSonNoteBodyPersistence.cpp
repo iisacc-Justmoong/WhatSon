@@ -3,8 +3,6 @@
 #include "WhatSonNoteBodySemanticTagSupport.hpp"
 #include "WhatSonNoteMarkdownStyleObject.hpp"
 #include "WhatSonLocalNoteFileStore.hpp"
-#include "file/validator/WhatSonStructuredTagLinter.hpp"
-
 #include <QDir>
 #include <QDate>
 #include <QFileInfo>
@@ -1619,14 +1617,12 @@ namespace WhatSon::NoteBodyPersistence
 
     QString serializeBodyDocument(const QString& noteId, const QString& bodySourceText)
     {
-        const WhatSonStructuredTagLinter structuredTagLinter;
         const QString normalizedId = noteId.trimmed().isEmpty()
                                          ? QStringLiteral("note")
                                          : escapeXmlAttributeValue(noteId.trimmed());
         const QString inlineTaggedText =
             normalizeStructuredBlocksToStandaloneLines(
-                structuredTagLinter.normalizeStructuredSourceText(
-                    normalizeEditorSourceToInlineTaggedText(bodySourceText)));
+                normalizeEditorSourceToInlineTaggedText(bodySourceText));
 
         QString text;
         text += QStringLiteral("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
@@ -1714,14 +1710,13 @@ namespace WhatSon::NoteBodyPersistence
 
     QString sourceTextFromBodyDocument(const QString& bodyDocumentText)
     {
-        const WhatSonStructuredTagLinter structuredTagLinter;
-        const QString normalizedSourceText = structuredTagLinter.normalizeStructuredSourceText(
+        const QString normalizedSourceText = WhatSon::NoteBodyPersistence::normalizeBodyPlainText(
             editorSourceTextFromCanonicalInlineTaggedText(
                 normalizeEditorSourceToInlineTaggedText(bodyDocumentText)));
         if (textContainsResourceTag(bodyDocumentText) && !textContainsResourceTag(normalizedSourceText))
         {
-            const QString fallbackSourceText = structuredTagLinter.normalizeStructuredSourceText(
-                fallbackSourceTextFromBodyDocumentPreservingResources(bodyDocumentText));
+            const QString fallbackSourceText =
+                fallbackSourceTextFromBodyDocumentPreservingResources(bodyDocumentText);
             if (textContainsResourceTag(fallbackSourceText))
             {
                 return fallbackSourceText;
@@ -1729,8 +1724,9 @@ namespace WhatSon::NoteBodyPersistence
         }
         if (normalizedSourceText.isEmpty())
         {
-            const QString plainTextFallback = structuredTagLinter.normalizeStructuredSourceText(
-                plainTextFromBodyDocument(bodyDocumentText));
+            const QString plainTextFallback =
+                WhatSon::NoteBodyPersistence::normalizeBodyPlainText(
+                    plainTextFromBodyDocument(bodyDocumentText));
             if (!plainTextFallback.isEmpty())
             {
                 return plainTextFallback;
@@ -1938,7 +1934,11 @@ namespace WhatSon::NoteBodyPersistence
 
         const QString serializedBodyDocument = serializeBodyDocument(noteId, bodyPlainText);
         const QString normalizedBodyText = plainTextFromBodyDocument(serializedBodyDocument);
-        const QString normalizedBodySourceText = sourceTextFromBodyDocument(serializedBodyDocument);
+        QString normalizedBodySourceText = normalizeBodyPlainText(bodyPlainText);
+        if (normalizedBodySourceText.isEmpty())
+        {
+            normalizedBodySourceText = normalizedBodyText;
+        }
         if (normalizedBodyText == document.bodyPlainText
             && normalizedBodySourceText == document.bodySourceText)
         {

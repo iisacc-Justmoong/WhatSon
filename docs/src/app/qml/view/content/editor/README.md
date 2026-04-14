@@ -40,20 +40,18 @@
   gated through one shared desktop/mobile file.
 - The shared live editor engine is already `QtQuick.TextEdit` wrapped by `ContentsInlineFormatEditor.qml`; this
   directory no longer depends on an LVRS `LV.TextEditor` implementation.
-- The editor, gutter, minimap, and resource overlays now fill the entire `ContentsView` slot.
-- `ContentsResourceRenderCard.qml` now centralizes the shared desktop/mobile body-overlay card used for inline note
-  resource previews, so file/image/audio/pdf/document presentation no longer duplicates the same card scaffolding in
+- The editor, gutter, and minimap fill the `ContentsView` slot; note-body resources no longer use a separate overlay
+  host above the editor.
+- `ContentsResourceRenderCard.qml` now centralizes the shared desktop/mobile inline resource card used inside parsed
+  note-body blocks, so file/image/audio/pdf/document presentation no longer duplicates the same card scaffolding in
   both hosts.
 - Inline image resources now compose through `ContentsImageResourceFrame.qml` as transparent border-only cards whose
   runtime outer width follows the editor block width, whose inner bitmap viewport stays centered at natural size until
   the body column forces it smaller, and whose height follows the loaded bitmap aspect ratio.
-- The dedicated `ContentsResourceViewer.qml` full-surface mode is now reserved for direct resource-package browsing
-  from the Resources hierarchy.
-  Inline `<resource ... />` tags inside ordinary note bodies must stay inside the authored document flow instead of
-  replacing the editor surface.
-- Resource-only note bodies now keep the legacy inline editor host mounted.
-  Desktop/mobile only activate `ContentsStructuredDocumentFlow.qml` for non-resource block types such as
-  `agenda`, `callout`, and `break`, so dropping an image into prose does not swap the active editor implementation.
+- `ContentsResourceViewer.qml` remains the low-level bitmap/PDF viewport component used by resource cards, but note
+  hosts no longer swap the whole editor surface into a dedicated resource viewer.
+- Resource-bearing note bodies now activate `ContentsStructuredDocumentFlow.qml` so `<resource ... />` stays in the
+  same authored block stream as surrounding text.
 - `ContentsEditorTypingController.qml` now owns ordinary text-entry mutation routing so typing no longer reserializes
   the whole RichText surface on every edit.
 - The editor directory now follows one write direction for live note editing:
@@ -145,11 +143,16 @@
   `ContentsEditorTypingController.handleEditorTextEdited()` before flushing the previously bound note.
   Combined with the bridge-side pending-body adoption path, this keeps large deletions from being dropped or replaced
   by a stale package read when the user briefly visits another note and comes back.
-- Agenda/callout/break notes enter the structured document-flow host, but resource-only notes now stay on the legacy
-  inline editor path even after body `<resource ... />` tags resolve.
-  Desktop/mobile hosts therefore gate `structuredDocumentFlowEnabled` off non-resource block presence rather than
-  `bodyResourceRenderer.resourceCount > 0`, keeping image/resource drops inside the same editor implementation unless
-  the note already contains a true structured block type.
+- Agenda/callout/break/resource notes enter the structured document-flow host.
+  Desktop/mobile hosts therefore keep image/resource drops on the parser-owned block renderer instead of reintroducing
+  a dedicated resource surface or body-overlay fallback.
+- `ContentsEditorTypingController.qml` now also refuses to run its legacy whole-editor diff pass while
+  `ContentsStructuredDocumentFlow.qml` is active.
+  Structured notes therefore no longer risk `<resource ... />` damage when note-switch cleanup tries to flush the old
+  editor surface.
+- That same legacy diff path now also requires a real mounted inline editor surface.
+  When the host has already fallen back to the proxy object during note switching, the controller no longer treats that
+  proxy as editable input and no longer rewrites the old note body from a non-existent editor snapshot.
 - `ContentsInlineFormatEditor.qml` now emits committed typing directly from the nested `TextEdit.onTextChanged` path
   whenever the change is not programmatic and IME composition has already settled.
   That keeps `ContentsEditorSession.editorText` moving with the visible buffer instead of leaving the note-open body

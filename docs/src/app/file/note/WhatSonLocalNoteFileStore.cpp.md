@@ -20,7 +20,7 @@ It creates notes, reads materialized note directories, updates persisted body/he
 - The decoder still detects `<resource ...>` tags for thumbnail metadata.
 - It now projects both:
   - `bodyPlainText` (search/list summary text)
-  - `bodySourceText` (editor-facing canonical inline-tag source from `.wsnbody`)
+  - `bodySourceText` (editor-facing RAW source projection from `.wsnbody`)
 - The read path also derives `bodyFirstLine` from `WhatSon::NoteBodyPersistence::firstLineFromBodyDocument(...)` so inline titles before the first paragraph survive indexing and editor reads consistently.
 - This means empty paragraphs and whitespace-only paragraphs survive file reads instead of being normalized away.
 - Formatting whitespace from an otherwise empty `<body>` no longer survives file reads, so a newly created empty note
@@ -32,7 +32,9 @@ It creates notes, reads materialized note directories, updates persisted body/he
 ## Update Contract
 - `updateNote(...)` now canonicalizes body writes through `WhatSon::NoteBodyPersistence::serializeBodyDocument(...)`.
 - This allows RichText editor payloads to be accepted while still writing canonical `.wsnbody` inline tags.
-- During update, the store keeps `bodyPlainText` and `bodySourceText` synchronized from the serialized body so viewmodel/list binding and search/index projections do not drift.
+- During update, the store still recomputes `bodyPlainText` from the serialized `.wsnbody`, but it now keeps the
+  incoming editor-authored `bodySourceText` as the authoritative RAW source instead of round-tripping that source back
+  through another read-side projection first.
 - Body writes now also extract inline body hashtags from the editor-visible source, merge those values into the note
   header tag list, and ensure `Tags.wstags` contains matching hierarchy entries for any new tags by parsing and
   rewriting the tracked tags hierarchy file in the same transaction.
@@ -71,6 +73,8 @@ It creates notes, reads materialized note directories, updates persisted body/he
   - each captured snapshot must include unified patch metadata for both header and body payloads
   - editor hot-path writes that disable backlink refresh must still rewrite the current note's normalized body text,
     header timestamp, and non-hub-derived counters
+  - non-editor file read/reconcile turns must not regenerate a different `bodySourceText` RAW snapshot solely because
+    `.wsnbody` was reparsed
   - a saved body hashtag such as `#label` must materialize in three places together:
     - `.wsnbody` as `<tag>label</tag>`
     - `.wsnhead` inside the note tag list

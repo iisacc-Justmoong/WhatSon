@@ -108,11 +108,6 @@ bool ContentsStructuredTagValidator::requestStructuredCorrectionForNote(
     const QString& correctedSourceText,
     const QVariantMap& verification)
 {
-    if (!m_correctionAuthorityEnabled)
-    {
-        return false;
-    }
-
     const QString normalizedNoteId = noteId.trimmed().isEmpty()
         ? m_noteId.trimmed()
         : noteId.trimmed();
@@ -138,33 +133,15 @@ bool ContentsStructuredTagValidator::requestStructuredCorrectionForNote(
         return false;
     }
 
-    if (m_lastCorrectionNoteId == normalizedNoteId
-        && m_lastCorrectionSourceText == normalizedSourceText
-        && m_lastCorrectedSourceText == normalizedCorrectedSourceText
-        && m_lastCorrectionError.isEmpty())
-    {
-        return true;
-    }
-
-    const QString noteDirectoryPath = resolveNoteDirectoryPathForNote(normalizedNoteId);
-    if (noteDirectoryPath.isEmpty())
-    {
-        const QString errorMessage = QStringLiteral("Failed to resolve note directory path for correction.");
-        updateLastCorrectionVerification(verification);
-        updateLastCorrectedSourceText(normalizedCorrectedSourceText);
-        updateLastCorrectionError(errorMessage);
-        emit correctionFailed(normalizedNoteId, normalizedSourceText, errorMessage, verification);
-        return false;
-    }
-
-    Request request;
-    request.sequence = m_nextRequestSequence++;
-    request.noteId = normalizedNoteId;
-    request.noteDirectoryPath = noteDirectoryPath;
-    request.sourceText = normalizedSourceText;
-    request.correctedSourceText = normalizedCorrectedSourceText;
-    request.verification = verification;
-    return enqueueCorrectionRequest(std::move(request));
+    const QString errorMessage =
+        QStringLiteral("Automatic RAW correction is disabled. Note body source may only change through editor-driven mutations.");
+    m_lastCorrectionNoteId = normalizedNoteId;
+    m_lastCorrectionSourceText = normalizedSourceText;
+    updateLastCorrectionVerification(verification);
+    updateLastCorrectedSourceText(normalizedCorrectedSourceText);
+    updateLastCorrectionError(errorMessage);
+    emit correctionFailed(normalizedNoteId, normalizedSourceText, errorMessage, verification);
+    return false;
 }
 
 bool ContentsStructuredTagValidator::enqueueCorrectionRequest(Request request)

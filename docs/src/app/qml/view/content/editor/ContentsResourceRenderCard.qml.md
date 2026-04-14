@@ -46,7 +46,6 @@ Shared desktop/mobile resource card for `<resource ...>` note entries.
   - outer frame stays transparent and keeps only the border
   - the outer image frame stretches to the full available body width only
   - it must not treat gutter/minimap space or raw viewport overhang as part of that width contract
-  - the inner bitmap viewport stays centered and does not upscale beyond the natural bitmap width hint
-  - in note-body inline mode, the inner bitmap now renders with `PreserveAspectCrop` so the frame reads like the Figma
-    mixed prose/image example instead of letterboxing inside the centered media slot
+  - the inner bitmap viewport stays centered and does not upscale beyond the natural bitmap size
+  - in note-body inline mode, the bitmap may shrink to fit the frame but must never enlarge past actual size
   - the image area height tracks the real bitmap aspect ratio instead of a fixed 480px-wide sample card

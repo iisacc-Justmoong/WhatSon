@@ -1,30 +1,34 @@
 # `src/app/file/validator/ContentsStructuredTagValidator.hpp`
 
 ## Role
-`ContentsStructuredTagValidator` is an opt-in QML-facing structured-tag direct-correction helper.
+`ContentsStructuredTagValidator` is a QML-facing structured-tag correction advisory helper.
 
 ## Public Contract
 - `contentViewModel`
-  - Provides the resolver hooks needed to find the current note directory and refresh the note snapshot after a direct correction write.
+  - Preserved for compatibility with existing QML wiring, even though automatic direct correction writes are disabled.
 - `noteId`
-  - Identifies which note the validator is allowed to rewrite.
+  - Identifies which note the validator is reporting against.
 - `correctionAuthorityEnabled`
-  - Gates whether parser-side correction suggestions may trigger direct file writes.
-  - Defaults to `false` so editor hosts do not implicitly open a second persistence lane during note-open or typing.
+  - Preserved as a compatibility flag only.
+  - Automatic parser-side file rewrites remain disabled so note RAW changes stay on the editor mutation path.
 - `lastCorrectionVerification`
-  - Exposes the last parser/renderer verification payload that led to a correction attempt.
+  - Exposes the last parser/renderer verification payload that led to a rejected automatic correction attempt.
 - `lastCorrectedSourceText`
-  - Exposes the last canonical RAW source text the validator attempted to persist.
+  - Exposes the last canonical RAW source text that was suggested but not auto-persisted.
 - `lastCorrectionError`
-  - Exposes the last direct-correction failure message.
+  - Exposes the last advisory rejection message.
 - `requestStructuredCorrection(sourceText, correctedSourceText, verification)`
-  - Slot/QML-callable entry that accepts a parser-side correction suggestion for the currently bound `noteId`.
+  - Slot/QML-callable entry that accepts a parser-side correction suggestion for the currently bound `noteId` and rejects automatic RAW mutation.
 - `requestStructuredCorrectionForNote(noteId, sourceText, correctedSourceText, verification)`
-  - Explicit-note variant used by QML hosts so note switches cannot race correction requests onto the wrong file.
+  - Explicit-note variant used by QML hosts so note switches cannot race advisory correction requests onto the wrong file.
 
 ## Signals
 - `correctionApplied(noteId, correctedSourceText, verification)`
 - `correctionFailed(noteId, sourceText, errorMessage, verification)`
+
+## Runtime Constraint
+- The current implementation emits `correctionFailed(...)` for parser-side auto-correction attempts instead of writing
+  note RAW directly.
 
 ## Registration Constraint
 - This QObject type is registered via `qmlRegisterType<ContentsStructuredTagValidator>()`.

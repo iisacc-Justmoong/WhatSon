@@ -32,17 +32,9 @@ Mobile content editor host.
 - In screen editor mode, that structured-flow column now uses the same effective body width contract as ordinary note
   text: viewport width minus the editor's left/right body inset.
   Inline image resources therefore fill the note body column itself rather than the entire editor viewport.
-- The dedicated full-surface `ContentsResourceViewer` is now reserved for direct resource-package browsing from the
-  Resources hierarchy only.
-  Notes opened from other hierarchies must remain on the ordinary note editor surface even when their body contains
-  inline `<resource ... />` tags.
-- The dedicated-resource selection path now also normalizes `bodyResourceRenderer.renderedResources` through the same
-  Qt-list-compatible helper used elsewhere in the editor host.
-  Mobile therefore no longer drops the first resolved resource entry just because the renderer returned a
-  `QVariantList` instead of a native JS array.
-- That same helper now also accepts sequence wrappers that expose `length`, `count`, or only numeric object keys.
-  Inline body resources therefore keep their real overlay/render payload on mobile as well when the renderer reaches
-  QML as a non-Array list façade.
+- Mobile host no longer mounts a dedicated `ContentsResourceViewer` surface for note editing.
+  Inline `<resource ... />` tags must stay inside `ContentsStructuredDocumentFlow.qml` as ordinary document blocks,
+  and note hosts no longer switch to a resource-only surface or resource overlay layer.
 - While structured-flow mode is active, a mobile left-tap in the structured document viewport now routes through
   `requestStructuredDocumentEndEdit()` so inline resource notes can always reopen an editable tail position.
 - The legacy mobile `ContentsInlineFormatEditor` now unloads entirely during structured-flow editing and is recreated only
@@ -165,21 +157,22 @@ Mobile content editor host.
   Inline resource rendering therefore reuses the mounted editor session's resolved note package path instead of
   depending only on the currently active hierarchy view-model resolver.
 - The current default mobile editable note surface also keeps RichText inline-image upgrading disabled.
-  Resolved bitmap resources therefore stay on the same parser-owned placeholder/overlay path as desktop:
-  - the editor surface keeps the RAW-derived logical placeholder slot
-  - `ContentsResourceLayer.qml` paints the visible centered image frame at that authored body position
-  Follow-up typing after `<resource ... />` no longer depends on a mutable RichText image object living inside the
-  editor document.
+  Resolved bitmap resources therefore render only through parser-owned document blocks inside
+  `ContentsStructuredDocumentFlow.qml`, keeping authored text and image frames in one flow without a second overlay
+  surface.
+- Mobile note transitions now also keep structured-flow notes off the legacy whole-editor typing diff path.
+  Leaving a note whose body contains parser-owned `resource` blocks therefore no longer lets the fallback inline-editor
+  serializer rewrite or damage `<resource ... />` source during transition cleanup.
+  The same cleanup path now also aborts when the legacy inline editor is not actually mounted, so selection changes
+  cannot diff against the proxy editor object and accidentally rewrite the previously bound note source.
 - `ContentsBodyResourceRenderer` on mobile now also receives `libraryHierarchyViewModel` as a fallback note-directory
   resolver so body resource rendering survives hierarchy-switch lag and active domains that do not expose
   `noteDirectoryPathForNoteId(QString)`.
 - RichText dirtiness checks now compare against the already-upgraded inline-resource HTML instead of the unresolved
   placeholder payload, preventing resource-bearing notes from staying permanently dirty while the RichText surface is
   active.
-- `ContentsResourceLayer.qml` remains only for resource types that are not upgraded into RichText-inline media blocks
-  yet, or for native/plain-input mobile routes that are not using the RichText editor surface projection.
-  On the current default mobile route, bitmap images still use the source-aligned layer while non-image resources do
-  the same.
+- Mobile host no longer uses `ContentsResourceLayer.qml` for note-body rendering.
+  Resource visibility now depends on parsed document blocks, not on an overlay pass above the editor surface.
 - When the selection bridge can already expose a buffered dirty body for the newly selected note, the mobile host now
   consumes that note-owned payload through the ordinary selection-sync path instead of waiting for a stale filesystem
   read to arrive first.

@@ -4,17 +4,17 @@
 This implementation owns the reusable note-body normalization and save workflow.
 
 The file now also contains the shared XML-to-plain-text extraction path used by both the local note file store and the library runtime indexer.
+The current contract preserves editor-authored RAW source across save/load turns instead of re-linting that source on every persistence bounce.
 
 ## Key Behaviors
 - `normalizeBodyPlainText(...)` normalizes `CRLF` / `CR` into `LF`, converts Qt line/paragraph separator characters
   into plain `LF`, and converts non-breaking spaces back into ordinary spaces before `.wsnbody` canonicalization.
-- `serializeBodyDocument(...)` is the single write-side serializer. It normalizes three editor-source shapes into `.wsnbody`:
+- `serializeBodyDocument(...)` is the single write-side serializer. It materializes three editor-source shapes into `.wsnbody`:
   - plain text with newlines
   - inline `.wsnbody` style/resource tags
   - Qt Rich HTML fragments/documents
-- Before standalone block splitting and XML emission, the serializer now passes proprietary structured tags through
-  `WhatSonStructuredTagLinter`, so safe canonical repairs happen in the file/domain layer instead of being left to
-  ad-hoc editor code.
+- The serializer still reduces those inputs into XML-safe body markup, but it no longer runs a separate structured-tag
+  linter pass that rewrites RAW source simply because a persistence turn happened.
 - When inline proprietary styles remain open across a source newline, the serializer now carries those open style tags
   forward and reopens them at the start of the next `<paragraph>`. This keeps multi-paragraph formatting alive in a
   paragraph-based XML document instead of silently truncating it at the first line boundary.
@@ -35,6 +35,9 @@ The file now also contains the shared XML-to-plain-text extraction path used by 
   editor-facing inline tags such as `<bold>...</bold>` and `<resource ... />`, instead of returning RichText spans.
   Stored `<tag>label</tag>` elements are intentionally projected back to visible editor text as `#label` so the
   user keeps editing the hashtag they originally typed instead of raw XML.
+- That read-side source projection now stays on the parser/serializer projection only. It no longer runs a second
+  structured-tag linter normalization pass, so note-open or note-switch cannot silently rewrite the editor RAW shape
+  just because the note body was reparsed.
 - If that canonical source projection unexpectedly collapses to an empty string for a non-empty body, the read path now
   falls back to the parsed plain-text projection from the same `.wsnbody` payload instead of returning a blank editor
   buffer.
@@ -104,7 +107,9 @@ The file now also contains the shared XML-to-plain-text extraction path used by 
   whitespace that belongs to actual paragraph/block content.
 - `persistBodyPlainText(...)` now canonicalizes incoming editor text through `serializeBodyDocument(...)` before no-op comparison, then returns:
   - plain text for indexing/search/list summaries
-  - inline-tag editor source text for editor binding (`<bold>`, `<italic>`, `<underline>`, `<strikethrough>`, `<highlight>`)
+  - newline-normalized editor RAW source text for editor binding (`<bold>`, `<italic>`, `<underline>`, `<strikethrough>`, `<highlight>`)
+- The no-op comparison and returned `bodySourceText` now treat the editor-provided RAW text as authoritative instead of
+  round-tripping it back through `sourceTextFromBodyDocument(...)` first.
 - When `persistBodyPlainText(...)` does perform a filesystem write, it now opts out of `modifiedCount` increments.
   The editor autosave path still updates the persisted body/header material and `lastModifiedAt`, but it no longer
   treats each autosaved typing burst as a separate modification-count event.
@@ -117,6 +122,8 @@ The same rule now prevents empty-note body indentation from surfacing as a phant
 creation.
 The hashtag projection rule also keeps note text human-readable after save: storage uses `<tag>`, but the editor and
 text projections still show `#label`.
+The same persistence boundary now also prevents note-open, note-switch, and other non-editor flows from quietly
+rewriting `bodySourceText` RAW just because the body document was read and reparsed.
 
 ## Regression Notes
 - Empty-note `<body>` whitespace handling is now a documented behavior contract only; this repository no longer
@@ -140,7 +147,8 @@ text projections still show `#label`.
   `<next/>` must not degrade into escaped literal text on the next autosave.
 - Legacy notes that already embedded agenda/callout blocks inside paragraph content must rehydrate into standalone
   editor lines on load so renderer-owned cards can be rebuilt immediately from the RAW tags.
-- Legacy/self-closing/non-canonical structured tags must rehydrate into canonical editor RAW source whenever the linter
-  can repair them safely.
+- Legacy/self-closing/non-canonical structured tags may still be normalized by the serializer/parser projection that
+  the editor explicitly invoked, but passive load/save turns must not introduce an extra RAW rewrite layer on top of
+  that projection.
 - Reopening a note whose saved `.wsnbody` still contains visible paragraph text must not yield an empty editor body
   solely because canonical inline-tag source extraction returned `""`.

@@ -1435,6 +1435,8 @@ QtObject {
     function handleEditorTextEdited() {
         if (!controller.view
                 || !controller.view.hasSelectedNote
+                || (controller.view.showStructuredDocumentFlow !== undefined
+                    && controller.view.showStructuredDocumentFlow)
                 || controller.view.showDedicatedResourceViewer
                 || controller.view.showFormattedTextRenderer) {
             return false;
@@ -1448,6 +1450,12 @@ QtObject {
                 || (controller.editorSession
                     && controller.editorSession.syncingEditorTextFromModel !== undefined
                     && controller.editorSession.syncingEditorTextFromModel)) {
+            return false;
+        }
+        const hasReadableEditorSurface = controller.contentEditor
+                && (controller.contentEditor.currentPlainText !== undefined
+                    || controller.contentEditor.getText !== undefined);
+        if (!hasReadableEditorSurface) {
             return false;
         }
         if (!controller.contentEditor

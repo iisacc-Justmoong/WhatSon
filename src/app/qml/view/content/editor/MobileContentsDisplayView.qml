@@ -118,14 +118,6 @@ Item {
     property int gutterWidthOverride: -1
     readonly property bool hasSelectedNote: contentsView.selectedNoteId.length > 0
     property var libraryHierarchyViewModel: null
-    readonly property int resourcesHierarchyIndexValue: 4
-    readonly property int resolvedSidebarHierarchyIndex: {
-        const sidebarViewModel = contentsView.sidebarHierarchyViewModel;
-        if (!sidebarViewModel || sidebarViewModel.resolvedActiveHierarchyIndex === undefined)
-            return 0;
-        const rawIndex = Number(sidebarViewModel.resolvedActiveHierarchyIndex);
-        return isFinite(rawIndex) ? Math.floor(rawIndex) : 0;
-    }
     readonly property color lineNumberColor: LV.Theme.descriptionColor
     readonly property int lineNumberColumnLeft: Math.max(0, Math.round(LV.Theme.scaleMetric(14)))
     property int lineNumberColumnLeftOverride: -1
@@ -272,30 +264,12 @@ Item {
     readonly property string selectedNoteBodyNoteId: selectionBridge.selectedNoteBodyNoteId
     readonly property bool selectedNoteBodyLoading: selectionBridge.selectedNoteBodyLoading
     readonly property string selectedNoteId: selectionBridge.selectedNoteId
-    readonly property bool selectedNoteComesFromResourcesHierarchy: contentsView.resolvedSidebarHierarchyIndex === contentsView.resourcesHierarchyIndexValue
-    readonly property bool selectedNoteIsResourcePackage: contentsView.selectedNoteId.trim().toLowerCase().endsWith(".wsresource")
-    readonly property var selectedResourceEntry: {
-        if (contentsView.showDedicatedResourceViewer && contentsView.noteListModel && contentsView.noteListModel.currentResourceEntry !== undefined) {
-            const currentEntry = contentsView.noteListModel.currentResourceEntry;
-            if (currentEntry && typeof currentEntry === "object") {
-                const entrySource = currentEntry.source !== undefined ? String(currentEntry.source).trim() : "";
-                const entryResolvedPath = currentEntry.resolvedPath !== undefined ? String(currentEntry.resolvedPath).trim() : "";
-                const entryRenderMode = currentEntry.renderMode !== undefined ? String(currentEntry.renderMode).trim() : "";
-                if (entrySource.length > 0 || entryResolvedPath.length > 0 || entryRenderMode.length > 0)
-                    return currentEntry;
-            }
-        }
-
-        const resources = contentsView.normalizedImportedResourceEntries(bodyResourceRenderer.renderedResources);
-        if (resources.length === 0)
-            return ({});
-        const entry = resources[0];
-        return entry && typeof entry === "object" ? entry : ({});
-    }
     readonly property bool showCurrentLineMarker: contentsView.hasSelectedNote || contentsView.editorText.length > 0 || contentsView.editorInputFocused
     readonly property bool editorSessionBoundToSelectedNote: editorSession.editorBoundNoteId === contentsView.selectedNoteId
-    readonly property bool liveEditorSourceContainsResourceTag: contentsView.sourceContainsCanonicalResourceTag(contentsView.editorText)
-    readonly property bool presentationSourceContainsResourceTag: contentsView.sourceContainsCanonicalResourceTag(contentsView.documentPresentationSourceText)
+    readonly property bool liveEditorSourceContainsResourceTag: contentsView.editorSessionBoundToSelectedNote
+                                                                && contentsView.sourceContainsCanonicalResourceTag(contentsView.editorText)
+    readonly property bool presentationSourceContainsResourceTag: contentsView.editorSessionBoundToSelectedNote
+                                                                  && contentsView.sourceContainsCanonicalResourceTag(contentsView.documentPresentationSourceText)
     readonly property bool selectionSourceContainsResourceTag: (!editorSession.localEditorAuthority
                                                                 || contentsView.resourceDropEditorSurfaceGuardActive)
                                                                && !contentsView.selectedNoteBodyLoading
@@ -314,7 +288,8 @@ Item {
                                                                 || contentsView.presentationSourceContainsResourceTag
                                                                 || contentsView.selectionSourceContainsResourceTag
     readonly property bool parsedStructuredFlowRequested: contentsView.editorSessionBoundToSelectedNote
-                                                          && structuredBlockRenderer.hasRenderedBlocks
+                                                          && (structuredBlockRenderer.hasRenderedBlocks
+                                                              || contentsView.liveResourceStructuredFlowRequested)
     readonly property bool structuredDocumentFlowEnabled: contentsView.parsedStructuredFlowRequested
                                                           || (contentsView.editorSessionBoundToSelectedNote
                                                               && structuredBlockRenderer.renderPending
@@ -328,8 +303,7 @@ Item {
     readonly property bool resourceBlocksRenderedInlineByRichTextEditor: contentsView.legacyInlineEditorActive
                                                                         && !contentsView.preferNativeInputHandling
     readonly property bool programmaticEditorSurfaceSyncActive: contentsView.programmaticEditorSurfaceSyncDepth > 0
-    readonly property bool showDedicatedResourceViewer: contentsView.selectedNoteComesFromResourcesHierarchy
-                                                        && contentsView.selectedNoteIsResourcePackage
+    readonly property bool showDedicatedResourceViewer: false
     readonly property bool showEditorGutter: false
     readonly property bool showFormattedTextRenderer: false
     readonly property bool showStructuredDocumentFlow: contentsView.structuredDocumentFlowEnabled
@@ -1042,18 +1016,6 @@ Item {
         return contentsView.richTextInlineImageRenderingEnabled
                 && renderMode === "image"
                 && sourceUrl.length > 0;
-    }
-    function overlayRenderedResources() {
-        const renderedResources = contentsView.normalizedImportedResourceEntries(bodyResourceRenderer.renderedResources);
-        if (!contentsView.resourceBlocksRenderedInlineByRichTextEditor)
-            return renderedResources;
-        const overlayEntries = [];
-        for (let index = 0; index < renderedResources.length; ++index) {
-            if (contentsView.resourceEntryCanRenderInlineInRichText(renderedResources[index]))
-                continue;
-            overlayEntries.push(renderedResources[index]);
-        }
-        return overlayEntries;
     }
     function renderEditorSurfaceHtmlWithInlineResources(editorHtml) {
         const baseEditorHtml = editorHtml === undefined || editorHtml === null ? "" : String(editorHtml);
@@ -2755,48 +2717,6 @@ Item {
                         enabled: visible
                         z: 3
                     }
-                    ContentsResourceLayer {
-                        id: resourceRenderLayer
-
-                        anchors.left: parent.left
-                        anchors.right: parent.right
-                        anchors.top: parent.top
-                        anchors.leftMargin: contentsView.showPrintEditorLayout
-                                            ? (Number(printPaperColumn.x) || 0) + contentsView.printGuideHorizontalInset
-                                            : contentsView.editorHorizontalInset
-                        anchors.rightMargin: contentsView.showPrintEditorLayout
-                                             ? Math.max(
-                                                   0,
-                                                   (parent ? Number(parent.width) || 0 : 0)
-                                                   - ((Number(printPaperColumn.x) || 0)
-                                                      + contentsView.printGuideHorizontalInset
-                                                      + contentsView.printPaperTextWidth))
-                                             : contentsView.editorHorizontalInset
-                        anchors.topMargin: contentsView.showPrintEditorLayout
-                                           ? (Number(printPaperColumn.y) || 0) + contentsView.printGuideVerticalInset
-                                           : contentsView.editorDocumentStartY
-                        blockFocusHandler: function (sourceOffset) {
-                            contentsView.focusStructuredBlockSourceOffset(sourceOffset);
-                        }
-                        borderColor: contentsView.resourceRenderBorderColor
-                        cardColor: contentsView.resourceRenderCardColor
-                        renderedResources: contentsView.showStructuredDocumentFlow
-                                           ? []
-                                           : contentsView.overlayRenderedResources()
-                        sourceOffsetYResolver: function (sourceOffset) {
-                            const logicalOffset = editorTypingController.logicalOffsetForSourceOffset(
-                                        Math.max(0, Math.floor(Number(sourceOffset) || 0)));
-                            const documentY = Math.max(0, Number(contentsView.documentYForOffset(logicalOffset)) || 0);
-                            return documentY;
-                        }
-                        visible: contentsView.hasSelectedNote
-                                 && !contentsView.showStructuredDocumentFlow
-                                 && !contentsView.showDedicatedResourceViewer
-                                 && !contentsView.showFormattedTextRenderer
-                                 && resourceRenderLayer.resourceCount > 0
-                        enabled: visible
-                        z: 3
-                    }
                     Flickable {
                         id: formattedPreviewViewport
 
@@ -3118,14 +3038,6 @@ Item {
                         property: "topPadding"
                         target: contentEditor.editorItem
                         value: contentsView.editorDocumentTopPadding
-                    }
-                    ContentsResourceViewer {
-                        id: dedicatedResourceViewer
-
-                        anchors.fill: parent
-                        resourceEntry: contentsView.selectedResourceEntry
-                        visible: contentsView.showDedicatedResourceViewer
-                        z: 3
                     }
                     Rectangle {
                         anchors.fill: parent

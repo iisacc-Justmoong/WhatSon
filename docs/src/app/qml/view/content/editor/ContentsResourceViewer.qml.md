@@ -2,8 +2,8 @@
 
 ## Responsibility
 
-`ContentsResourceViewer.qml` is the dedicated in-editor resource viewer surface used when a selected item is a direct
-`.wsresource` package.
+`ContentsResourceViewer.qml` is the low-level bitmap/PDF viewport used by note-body resource cards and other resource
+presentation surfaces.
 
 ## Rendering Contract
 
@@ -38,6 +38,9 @@
 - For bitmap resources, the viewer remains presentation-neutral: parent frames decide whether the image should crop,
   fit, or drive outer height. The structured note-body path now uses those intrinsic bitmap dimensions to derive
   full-width, auto-height image blocks.
+- Parent surfaces may now disable image upscaling.
+  In the note-body image-frame path the bitmap is centered, may shrink to fit the available frame, and must never grow
+  beyond its actual pixel size.
 
 ## Tests
 

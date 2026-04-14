@@ -32,17 +32,9 @@ Desktop content editor host.
   text: viewport width minus the editor's left/right body inset.
   Inline image resources therefore fill the note body column itself, not the whole editor viewport, and do not intrude
   into gutter/minimap-adjacent space.
-- The dedicated full-surface `ContentsResourceViewer` is now reserved for direct resource-package browsing from the
-  Resources hierarchy only.
-  A note opened from Library, Bookmarks, Projects, Tags, Progress, Event, or Preset must stay on the ordinary note
-  editor surface even if its `.wsnbody` contains inline `<resource ... />` blocks.
-- The dedicated-resource selection path now also normalizes `bodyResourceRenderer.renderedResources` through the same
-  Qt-list-compatible helper used by import results.
-  Resource-package browsing therefore no longer drops the first resolved entry just because the renderer exposed a
-  `QVariantList` that is not tagged as a native JS array in QML.
-- That same helper now also accepts sequence wrappers that expose `length`, `count`, or only numeric object keys.
-  Inline body resources therefore keep their real overlay/render payload even when the C++ renderer reaches QML as a
-  non-Array list façade.
+- Desktop host no longer mounts a dedicated `ContentsResourceViewer` surface for note editing.
+  Inline `<resource ... />` tags must stay inside `ContentsStructuredDocumentFlow.qml` as ordinary document blocks,
+  and note hosts no longer switch to a resource-only surface or resource overlay layer.
 - While structured-flow mode is active, a desktop left-click anywhere in the structured document viewport now routes
   through `requestStructuredDocumentEndEdit()`. That click re-enters editing at the document tail instead of leaving
   the user on a non-editable resource/break block focus.
@@ -170,22 +162,22 @@ Desktop content editor host.
   Inline resource rendering therefore uses the same resolved note package path as the mounted editor session instead of
   depending solely on the active hierarchy view-model to answer `noteDirectoryPathForNoteId(...)` again.
 - The desktop editable note surface now keeps RichText inline-image upgrading disabled by default.
-  Even resolved bitmap resources stay on the parser-owned placeholder/overlay path:
-  - the editor surface keeps the logical placeholder slot produced from RAW
-  - `ContentsResourceLayer.qml` + `ContentsResourceRenderCard.qml` paint the visible centered image frame at that
-    authored body offset
-  This prevents follow-up typing after `<resource ... />` from depending on editable DOM-side image objects or
-  placeholder-only virtual offsets.
+  Resolved bitmap resources therefore render only through parser-owned document blocks inside
+  `ContentsStructuredDocumentFlow.qml`, which keeps authored prose and image frames in one block stream and avoids
+  editor-surface overlays entirely.
+- Desktop note transitions now also keep structured-flow notes off the legacy whole-editor typing diff path.
+  Switching away from a note whose body contains parser-owned `resource` blocks therefore no longer lets the fallback
+  inline-editor serializer rewrite or damage `<resource ... />` source during blur/selection-change cleanup.
+  The same cleanup path now also aborts when the legacy inline editor is not actually mounted, so selection changes
+  cannot diff against the null-safe proxy object and accidentally rewrite the previously bound note source.
 - `ContentsBodyResourceRenderer` now also receives `libraryHierarchyViewModel` as a fallback note-directory resolver,
   so note-body resource rendering survives hierarchy-switch lag or active domains that do not implement
   `noteDirectoryPathForNoteId(QString)`.
 - RichText dirtiness checks now compare against the already-upgraded inline-resource HTML, so the desktop host no
   longer treats every resource-bearing note as permanently dirty just because `editorSurfaceHtml` still contains the
   placeholder marker payload.
-- `ContentsResourceLayer.qml` now remains only for resource types that are not upgraded into RichText-inline media
-  blocks yet, or for native/plain-input routes where the host is not using the RichText editor surface projection.
-  Desktop non-image or unresolved resources still use that layer, while resolved bitmap images now stay in the
-  RichText document body.
+- Desktop host no longer uses `ContentsResourceLayer.qml` for note-body rendering.
+  Resource visibility now depends on parsed document blocks, not on a second overlay pass above the editor surface.
 - When the selection bridge can already expose a buffered dirty body for the newly selected note, the desktop host now
   consumes that note-owned payload through the ordinary selection-sync path instead of waiting for a stale filesystem
   read to arrive first.
@@ -267,5 +259,5 @@ Desktop content editor host.
   immediately after an ending resource/divider block.
 
 ## Legacy Surface
-- The single `ContentsInlineFormatEditor` and overlay layers still remain the fallback path for notes without any
-  structured blocks, but the inline editor instance is now created only while that fallback path is active.
+- The single `ContentsInlineFormatEditor` remains the fallback path for notes without any structured blocks, but the
+  inline editor instance is now created only while that fallback path is active.

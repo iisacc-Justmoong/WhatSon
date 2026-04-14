@@ -941,7 +941,8 @@ bool WhatSonLocalNoteFileStore::updateNote(
 
         serializedBodyDocument = serializeBodyDocument(request.document.headerStore.noteId(), bodySourceText);
         request.document.bodyPlainText = WhatSon::NoteBodyPersistence::plainTextFromBodyDocument(serializedBodyDocument);
-        request.document.bodySourceText = WhatSon::NoteBodyPersistence::sourceTextFromBodyDocument(serializedBodyDocument);
+        // Keep the editor-authored RAW source authoritative; the serializer only materializes `.wsnbody`.
+        request.document.bodySourceText = bodySourceText;
         bodyDocumentForStats = serializedBodyDocument;
     }
     else

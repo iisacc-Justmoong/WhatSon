@@ -9,6 +9,7 @@ Item {
 
     property var resourceEntry: ({})
     property int imageFillMode: Image.PreserveAspectFit
+    property bool imageAllowUpscale: true
     readonly property string resourceRenderMode: resourceEntry.renderMode !== undefined ? String(resourceEntry.renderMode) : ""
     readonly property string resourceOpenTarget: bitmapViewer.openTarget
     readonly property bool imageRenderable: bitmapViewer.bitmapRenderable
@@ -34,6 +35,32 @@ Item {
                                              && resourceViewer.imagePixelHeight > 0
                                              ? resourceViewer.imagePixelWidth / resourceViewer.imagePixelHeight
                                              : 0
+    readonly property real resolvedImageScale: {
+        const naturalWidth = Number(resourceViewer.imagePixelWidth) || 0
+        const naturalHeight = Number(resourceViewer.imagePixelHeight) || 0
+        const availableWidth = Number(resourceViewer.width) || 0
+        const availableHeight = Number(resourceViewer.height) || 0
+        if (naturalWidth <= 0 || naturalHeight <= 0 || availableWidth <= 0 || availableHeight <= 0)
+            return 0
+        const fittedScale = Math.min(availableWidth / naturalWidth, availableHeight / naturalHeight)
+        if (!isFinite(fittedScale) || fittedScale <= 0)
+            return 0
+        return resourceViewer.imageAllowUpscale ? fittedScale : Math.min(1, fittedScale)
+    }
+    readonly property real resolvedImageWidth: {
+        const naturalWidth = Number(resourceViewer.imagePixelWidth) || 0
+        if (naturalWidth <= 0)
+            return 0
+        const resolvedScale = Number(resourceViewer.resolvedImageScale) || 0
+        return resolvedScale > 0 ? naturalWidth * resolvedScale : 0
+    }
+    readonly property real resolvedImageHeight: {
+        const naturalHeight = Number(resourceViewer.imagePixelHeight) || 0
+        if (naturalHeight <= 0)
+            return 0
+        const resolvedScale = Number(resourceViewer.resolvedImageScale) || 0
+        return resolvedScale > 0 ? naturalHeight * resolvedScale : 0
+    }
 
     clip: true
 
@@ -49,16 +76,25 @@ Item {
         source: resourceViewer.pdfRenderable ? resourceViewer.resourceOpenTarget : ""
     }
 
-    Image {
-        id: resourceImageViewer
+    Item {
+        id: imageViewport
 
-        anchors.fill: parent
-        asynchronous: true
-        cache: true
-        fillMode: resourceViewer.imageFillMode
-        mipmap: true
-        source: resourceViewer.imageRenderable ? bitmapViewer.viewerSource : ""
+        anchors.centerIn: parent
+        height: resourceViewer.resolvedImageHeight
         visible: resourceViewer.imageRenderable
+        width: resourceViewer.resolvedImageWidth
+
+        Image {
+            id: resourceImageViewer
+
+            anchors.fill: parent
+            asynchronous: true
+            cache: true
+            fillMode: resourceViewer.imageFillMode
+            mipmap: true
+            source: resourceViewer.imageRenderable ? bitmapViewer.viewerSource : ""
+            visible: resourceViewer.imageRenderable
+        }
     }
 
     PdfMultiPageView {

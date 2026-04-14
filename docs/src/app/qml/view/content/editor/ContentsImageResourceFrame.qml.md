@@ -38,7 +38,9 @@ Dedicated image-body frame container derived from Figma node `292:50`.
   - no background fill on the outer frame, only border chrome
   - design-time reference width `480` remains only as the implicit-width hint
   - runtime outer width follows the parent/editor block width
-  - runtime media width stays centered and does not upscale past the bitmap's natural width hint
+  - runtime media viewport stays centered
+  - runtime media width/height may shrink to fit the frame
+  - runtime media width/height must not upscale past the bitmap's natural pixel size
   - 8px horizontal header/footer/media padding
   - 4px vertical header/footer padding
   - 12px rounded outer border
