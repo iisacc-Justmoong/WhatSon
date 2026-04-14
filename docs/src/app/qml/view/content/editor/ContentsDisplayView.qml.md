@@ -43,6 +43,11 @@ Desktop content editor host.
 - Model-to-editor body sync and reconcile-complete handling now funnel heavy UI refresh work through
   `editorSession.editorTextSynchronized` instead of scheduling the same minimap/presentation/gutter refresh sequence
   from multiple handlers.
+- Desktop note entry now also treats gutter recomputation as a first-class note-open step.
+  `selectedNoteIdChanged` immediately clears the previous note's visible gutter-line model and line-geometry cache,
+  then `editorSession.editorTextSynchronized` forces a fresh gutter rebuild for the newly bound note body.
+  Gutter line numbers and Y positions therefore no longer wait for incidental scroll/resize/editor metrics changes
+  before leaving the previous note's geometry behind.
 - Selection-driven editor sync now also funnels through one queued `scheduleSelectionModelSync(...)` helper:
   `selectedNoteIdChanged`, `selectedNoteBodyTextChanged`, initial mount, and visibility re-entry all merge into one
   `requestSyncEditorTextFromSelection(...)` turn with shared snapshot-reset, reconcile, fallback-refresh, and

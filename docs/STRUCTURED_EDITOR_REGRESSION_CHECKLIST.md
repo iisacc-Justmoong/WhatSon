@@ -43,6 +43,9 @@ structured document-flow editor changes.
   editor/session path instead of switching into the structured host before block ownership is known.
 - Once a selected note has already activated structured-flow mode, later async reparses must keep that structured
   surface mounted instead of bouncing back through the legacy editor.
+- Each note-entry transition must reset gutter line-number geometry and recompute it from the newly bound note body.
+  Line numbers from the previously selected note must not persist until a later scroll, resize, or incidental cursor
+  move happens to refresh the gutter.
 - While structured-flow mode remains active, the fallback full-document inline editor must stay unloaded rather than
   remaining mounted off-screen behind `visible: false`.
 - One note-open transition must not cause duplicate editor host selection sync passes just because the note-list bridge

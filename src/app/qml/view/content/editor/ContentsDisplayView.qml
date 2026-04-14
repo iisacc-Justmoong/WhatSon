@@ -204,6 +204,7 @@ Item {
     property bool selectionModelSyncFocusEditorPending: false
     property bool selectionModelSyncFallbackRefreshPending: false
     property bool selectionModelSyncForceVisualRefreshPending: false
+    property string pendingNoteEntryGutterRefreshNoteId: ""
     property string structuredDocumentFlowActivatedNoteId: ""
     property string pendingEditorFocusNoteId: ""
     readonly property int plainEditorViewModeValue: 0
@@ -490,6 +491,16 @@ Item {
     }
     function clampUnit(value) {
         return Math.max(0, Math.min(1, Number(value) || 0));
+    }
+    function consumePendingNoteEntryGutterRefresh(noteId) {
+        const normalizedNoteId = noteId === undefined || noteId === null ? "" : String(noteId).trim();
+        if (normalizedNoteId.length > 0
+                && contentsView.pendingNoteEntryGutterRefreshNoteId === normalizedNoteId) {
+            contentsView.pendingNoteEntryGutterRefreshNoteId = "";
+            contentsView.resetGutterRefreshState();
+            return true;
+        }
+        return false;
     }
     function commitGutterRefresh() {
         contentsView.refreshLiveLogicalLineMetrics();
@@ -1461,6 +1472,17 @@ Item {
             panelViewModel.requestViewModelHook(hookReason);
         viewHookRequested();
     }
+    function resetGutterRefreshState() {
+        contentsView.visibleGutterLineEntries = [
+                    {
+                        "lineNumber": 1,
+                        "y": 0
+                    }
+                ];
+        contentsView.logicalLineDocumentYCache = [];
+        contentsView.logicalLineDocumentYCacheRevision = -1;
+        contentsView.logicalLineDocumentYCacheLineCount = 0;
+    }
     function resetEditorSelectionCache() {
         editorSelectionController.resetEditorSelectionCache();
     }
@@ -1561,6 +1583,14 @@ Item {
         contentsView.gutterRefreshPassesRemaining = Math.max(contentsView.gutterRefreshPassesRemaining, requestedPassCount);
         if (!gutterRefreshTimer.running)
             gutterRefreshTimer.start();
+    }
+    function scheduleNoteEntryGutterRefresh(noteId) {
+        const normalizedNoteId = noteId === undefined || noteId === null ? "" : String(noteId).trim();
+        contentsView.pendingNoteEntryGutterRefreshNoteId = normalizedNoteId;
+        contentsView.resetGutterRefreshState();
+        if (normalizedNoteId.length === 0)
+            return;
+        contentsView.scheduleGutterRefresh(4);
     }
     function scheduleCursorDrivenUiRefresh() {
         if (!contentsView.minimapRefreshEnabled && contentsView.preferNativeInputHandling)
@@ -1760,6 +1790,7 @@ Item {
     }
     onSelectedNoteIdChanged: {
         contentsView.structuredDocumentFlowActivatedNoteId = "";
+        contentsView.scheduleNoteEntryGutterRefresh(contentsView.selectedNoteId);
         contentsView.scheduleSelectionModelSync({
                                                    "resetSnapshot": true,
                                                    "scheduleReconcile": true,
@@ -1974,6 +2005,7 @@ Item {
         function onEditorTextSynchronized() {
             contentsView.scheduleMinimapSnapshotRefresh(true);
             contentsView.scheduleDocumentPresentationRefresh(true);
+            contentsView.consumePendingNoteEntryGutterRefresh(editorSession.editorBoundNoteId);
             contentsView.scheduleGutterRefresh(4);
         }
 

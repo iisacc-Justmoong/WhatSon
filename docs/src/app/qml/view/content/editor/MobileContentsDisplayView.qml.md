@@ -45,6 +45,10 @@ Mobile content editor host.
   already pending.
 - Mobile body-sync and reconcile refresh work now also routes through `editorSession.editorTextSynchronized`, removing
   duplicate minimap/presentation/gutter refresh scheduling from multiple completion handlers.
+- Mobile note entry now also resets the shared gutter-line model and line-geometry cache as soon as the selected note
+  changes, then rebuilds them again when `editorSession.editorTextSynchronized` binds the new note body.
+  Even though the current mobile shell does not expose the gutter rail, the shared line-geometry state now refreshes
+  per note entry instead of carrying the previous note's cached positions until another incidental layout event.
 - Mobile selection-driven editor sync now also collapses initial mount, `selectedNoteIdChanged`, and
   `selectedNoteBodyTextChanged` into one queued `scheduleSelectionModelSync(...)` pass per event-loop turn, and mobile
   visibility re-entry now reuses that same helper instead of scheduling a parallel note-open refresh path. One
