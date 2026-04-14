@@ -44,6 +44,10 @@ Hosts the document-native block editor for structured `.wsnbody` content.
   - finally by `resourceId` or `resourcePath`
   This keeps inline resource frames stable even when the note reparse and the resource resolver refresh land on
   adjacent event-loop turns.
+- Numeric block identity inside the flow must treat `0` as a valid value, not as "missing".
+  The host therefore normalizes `resourceIndex`, focus target indices, and agenda-task tag starts with an explicit
+  finite-number helper instead of `Number(value) || -1`, which previously broke the first resource block and the first
+  block-focus target by collapsing index `0` to the fallback sentinel.
 - The host now also exposes `requestDocumentEndEdit()` for editor-shell click-to-append behavior.
   When the document already ends in a text block, it focuses that block at its end source offset.
   When the document ends in a non-text block such as `<resource ... />` or `</break>`, it appends one trailing newline

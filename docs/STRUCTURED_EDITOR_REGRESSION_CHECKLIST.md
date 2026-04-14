@@ -134,6 +134,9 @@ structured document-flow editor changes.
   Resource presence alone must not swap the active editor implementation into `ContentsStructuredDocumentFlow.qml`.
 - In structured-flow mode, a `type=resource` block must render through the same image frame card used elsewhere in the
   editor, and it must occupy real document height in the block column rather than an overlay aligned on top of text.
+- The first structured resource block in a note must still resolve its inline asset payload.
+  A `resourceIndex` or focus target value of `0` must not collapse to a sentinel fallback that downgrades the block to
+  the empty `Document Resource` metadata card.
 - The inline image frame must keep a transparent background. Only the border chrome from the image-resource frame may
   remain; no extra dark fill from the wrapper card should sit behind the bitmap.
 - Inline image resource blocks must stretch only with their outer frame to the available editor body width.

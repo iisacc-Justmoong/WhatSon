@@ -115,6 +115,13 @@ FocusScope {
         return Math.max(0, Math.floor(sourceOffset))
     }
 
+    function floorNumberOrFallback(value, fallbackValue) {
+        const numericValue = Number(value)
+        if (!isFinite(numericValue))
+            return fallbackValue
+        return Math.floor(numericValue)
+    }
+
     function blockContainsTaskOpenTagStart(blockEntry, taskOpenTagStart) {
         if (!isFinite(taskOpenTagStart))
             return false
@@ -124,7 +131,7 @@ FocusScope {
             return false
         for (let index = 0; index < rawTasks.length; ++index) {
             const taskData = rawTasks[index] && typeof rawTasks[index] === "object" ? rawTasks[index] : ({})
-            if (Math.floor(Number(taskData.openTagStart) || -1) === taskOpenTagStart)
+            if (documentFlow.floorNumberOrFallback(taskData.openTagStart, -1) === taskOpenTagStart)
                 return true
         }
         return false
@@ -141,7 +148,7 @@ FocusScope {
 
     function resourceEntryForBlock(blockEntry) {
         const safeBlock = blockEntry && typeof blockEntry === "object" ? blockEntry : ({})
-        const blockResourceIndex = Math.floor(Number(safeBlock.resourceIndex) || -1)
+        const blockResourceIndex = documentFlow.floorNumberOrFallback(safeBlock.resourceIndex, -1)
         const blockSourceStart = Math.max(0, Math.floor(Number(safeBlock.sourceStart) || 0))
         const blockSourceEnd = Math.max(blockSourceStart, Math.floor(Number(safeBlock.sourceEnd) || blockSourceStart))
         const blockResourceId = safeBlock.resourceId !== undefined ? String(safeBlock.resourceId).trim() : ""
@@ -150,7 +157,7 @@ FocusScope {
 
         for (let index = 0; index < resourceEntries.length; ++index) {
             const entry = resourceEntries[index] && typeof resourceEntries[index] === "object" ? resourceEntries[index] : ({})
-            const entryIndex = Math.floor(Number(entry.index) || -1)
+            const entryIndex = documentFlow.floorNumberOrFallback(entry.index, -1)
             if (blockResourceIndex >= 0 && entryIndex === blockResourceIndex)
                 return entry
         }
@@ -215,7 +222,7 @@ FocusScope {
         const request = documentFlow.pendingFocusRequest
         if (!request || typeof request !== "object")
             return false
-        const safeIndex = Math.max(-1, Math.floor(Number(blockIndex) || -1))
+        const safeIndex = Math.max(-1, documentFlow.floorNumberOrFallback(blockIndex, -1))
         if (safeIndex < 0 || safeIndex >= blockRepeater.count)
             return false
         const host = blockRepeater.itemAt(safeIndex)
@@ -282,7 +289,7 @@ FocusScope {
                     {
                         "localCursorPosition": localCursorPosition,
                         "sourceOffset": StructuredCursorSupport.sourceOffsetForPlainCursor(normalizedText, localCursorPosition, contentStart),
-                        "taskOpenTagStart": Math.floor(Number(safeTask.openTagStart) || -1)
+                        "taskOpenTagStart": documentFlow.floorNumberOrFallback(safeTask.openTagStart, -1)
                     })
         return true
     }
@@ -298,7 +305,9 @@ FocusScope {
                                           !!checked))
         if (nextSourceText === currentSourceText)
             return false
-        documentFlow.sourceMutationRequested(nextSourceText, { "taskOpenTagStart": Math.floor(Number(openTagStart) || -1) })
+        documentFlow.sourceMutationRequested(nextSourceText, {
+                        "taskOpenTagStart": documentFlow.floorNumberOrFallback(openTagStart, -1)
+                    })
         return true
     }
 
