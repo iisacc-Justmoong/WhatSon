@@ -172,6 +172,8 @@ structured document-flow editor changes.
   The live surface must not collapse the stored spaces so that only the cursor appears to move.
 - In the legacy inline-editor path, the visible caret must remain painted whenever the nested `TextEdit` still owns
   focus, even if the wrapper `FocusScope` is not the direct `activeFocus` item.
+- On the desktop RichText editor path, IME preedit text must remain visible while the word is still being composed.
+  Typing a Korean word must not keep the glyphs hidden until the user presses space or another explicit commit key.
 - Pressing plain `Enter` in the middle of a paragraph that already has following text must split the line and preserve
   the following-line suffix.
   The editor must not delete the next line's text or rely on a transient RichText paragraph rewrite that diverges from

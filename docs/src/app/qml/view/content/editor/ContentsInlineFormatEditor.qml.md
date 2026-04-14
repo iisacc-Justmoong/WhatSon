@@ -50,6 +50,10 @@ plain `QtQuick.TextEdit` as the actual rendering and input engine.
 - IME preedit/composition now always outranks app-driven surface resync even on the desktop RichText host:
   - any active `inputMethodComposing` / `preeditText` session defers `text` reinjection
   - this prevents Hangul jamo assembly or backspace from being interrupted by a late programmatic note-body refresh
+- The same desktop RichText path now also falls back to a temporary PlainText input surface while IME preedit is
+  active.
+  During that fallback the wrapper snapshots the current visible plain text into the nested `TextEdit`, allowing the
+  platform preedit string itself to render live instead of staying invisible until the next commit key such as space.
 - The wrapper now exposes a single cursor setter (`setCursorPositionPreservingInputMethod(...)`) that updates
   `Qt.inputMethod` together with the logical cursor move.
   Host controllers should use that wrapper-level path instead of writing `cursorPosition` into the wrapper,
@@ -149,6 +153,8 @@ plain `QtQuick.TextEdit` as the actual rendering and input engine.
 - Hangul IME composition must not leave split jamo behind after the committed syllable lands
 - Hangul IME composition and desktop RichText typing must not receive a programmatic `text` reinjection while
   preedit/composition is still active
+- Hangul or other IME preedit text on the desktop RichText host must remain visibly painted before the commit key is
+  pressed; the word must not stay invisible until space or another explicit commit gesture lands
 - the host `editorSession` must not stay pinned to the note-open body snapshot after visible user typing has already
   changed the nested `TextEdit` buffer
 - when `preferNativeInputHandling` is enabled, live typing/focus must not trigger whole-surface programmatic text

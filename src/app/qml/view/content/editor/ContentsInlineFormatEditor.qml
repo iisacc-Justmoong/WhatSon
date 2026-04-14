@@ -87,6 +87,7 @@ FocusScope {
     property string _deferredProgrammaticText: ""
     property bool _fallbackTextEditedDispatchQueued: false
     property int _fallbackTextEditedDispatchRevision: 0
+    property bool _richTextImeFallbackSurfaceActive: false
 
     signal textEdited(string text)
 
@@ -335,6 +336,32 @@ FocusScope {
         control.notifyInputMethod(control.inputMethodGeometryQueryMask());
     }
 
+    function richTextImeFallbackRequested() {
+        return control.textFormat === TextEdit.RichText
+                && control.inputMethodSessionActive();
+    }
+
+    function synchronizeRichTextImeSurface() {
+        const fallbackRequested = control.richTextImeFallbackRequested();
+        if (fallbackRequested) {
+            if (textInput.textFormat !== TextEdit.PlainText)
+                textInput.textFormat = TextEdit.PlainText;
+            if (!control._richTextImeFallbackSurfaceActive) {
+                control._richTextImeFallbackSurfaceActive = true;
+                control.setProgrammaticText(control.currentPlainText());
+            }
+            return;
+        }
+
+        if (textInput.textFormat !== control.textFormat)
+            textInput.textFormat = control.textFormat;
+        if (!control._richTextImeFallbackSurfaceActive)
+            return;
+
+        control._richTextImeFallbackSurfaceActive = false;
+        control.flushDeferredProgrammaticText(false);
+    }
+
     function scheduleCommittedTextEditedDispatch() {
         if (control._programmaticTextSyncDepth > 0)
             return;
@@ -387,6 +414,7 @@ FocusScope {
         if (!focused)
             control.flushDeferredProgrammaticText(true);
     }
+    onTextFormatChanged: control.synchronizeRichTextImeSurface()
     onTextChanged: {
         const normalizedText = text === undefined || text === null ? "" : String(text);
         if (control.canDeferProgrammaticTextSync()) {
@@ -485,6 +513,7 @@ FocusScope {
 
                 onActiveFocusChanged: {
                     control.notifyInputMethod(Qt.ImQueryAll);
+                    control.synchronizeRichTextImeSurface();
                 }
                 onCursorPositionChanged: {
                     control.notifyInputMethod(control.inputMethodSelectionQueryMask());
@@ -585,6 +614,7 @@ FocusScope {
 
     Connections {
         function onInputMethodComposingChanged() {
+            control.synchronizeRichTextImeSurface();
             if (!textInput.inputMethodComposing) {
                 control.scheduleCommittedTextEditedDispatch();
                 control.flushDeferredProgrammaticText(false);
@@ -592,6 +622,7 @@ FocusScope {
         }
 
         function onPreeditTextChanged() {
+            control.synchronizeRichTextImeSurface();
             if (!textInput.inputMethodComposing && control.preeditText.length === 0) {
                 control.scheduleCommittedTextEditedDispatch();
                 control.flushDeferredProgrammaticText(false);
@@ -604,6 +635,7 @@ FocusScope {
 
     Component.onCompleted: {
         setProgrammaticText(text);
+        control.synchronizeRichTextImeSurface();
         control.notifyInputMethod(Qt.ImQueryAll);
     }
 }
