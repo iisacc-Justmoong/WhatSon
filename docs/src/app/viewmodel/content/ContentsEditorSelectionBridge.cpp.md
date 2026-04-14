@@ -26,6 +26,9 @@
 - The bridge therefore owns one extra QML-facing state flag, `selectedNoteBodyLoading`, so editor hosts can defer
   note-open sync until the selected note body actually arrives.
 - The bridge now also exposes `selectedNoteBodyNoteId`, making the owner of the current body payload explicit for QML.
+- The bridge now also exposes `selectedNoteDirectoryPath`, resolved through the idle-sync/controller boundary.
+  This gives QML renderers one stable note-package path for inline `<resource ...>` resolution even while hierarchy
+  view-model bindings are switching.
 - Lazy body reads now also track one request sequence per selected-note fetch.
   The bridge only accepts `noteBodyTextLoaded(sequence, ...)` for the latest requested sequence of the currently
   selected note, so an older in-flight read can no longer overwrite a newer same-note body after local edits,
@@ -36,6 +39,8 @@
 - Before a selected-note lazy load adopts file-backed text, the bridge now asks the idle-sync controller whether that
   same note still has a dirty or in-flight editor snapshot.
   If so, the bridge reuses that pending body immediately and skips the stale file-backed adoption path.
+- That same bridge refresh path now also re-resolves `selectedNoteDirectoryPath` for the current selected note on each
+  settled selection/rebind turn and after same-note successful persistence completion.
 - The same pending-body check also runs when a lazy body-read completion arrives, so an older file read cannot reclaim
   the selected body after the user already restaged newer local text for that note.
 - The bridge now also updates `selectedNoteBodyText` immediately on successful

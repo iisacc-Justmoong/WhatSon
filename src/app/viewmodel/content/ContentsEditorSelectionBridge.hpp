@@ -27,6 +27,7 @@ class ContentsEditorSelectionBridge : public QObject
             directPersistenceContractAvailable READ directPersistenceAvailable
                 NOTIFY contentPersistenceContractAvailableChanged)
     Q_PROPERTY(QString selectedNoteId READ selectedNoteId NOTIFY selectedNoteIdChanged)
+    Q_PROPERTY(QString selectedNoteDirectoryPath READ selectedNoteDirectoryPath NOTIFY selectedNoteDirectoryPathChanged)
     Q_PROPERTY(QString selectedNoteBodyNoteId READ selectedNoteBodyNoteId NOTIFY selectedNoteBodyNoteIdChanged)
     Q_PROPERTY(QString selectedNoteBodyText READ selectedNoteBodyText NOTIFY selectedNoteBodyTextChanged)
     Q_PROPERTY(bool selectedNoteBodyLoading READ selectedNoteBodyLoading NOTIFY selectedNoteBodyLoadingChanged)
@@ -47,6 +48,7 @@ public:
     bool contentPersistenceContractAvailable() const noexcept;
     bool directPersistenceAvailable() const noexcept;
     QString selectedNoteId() const;
+    QString selectedNoteDirectoryPath() const;
     QString selectedNoteBodyNoteId() const;
     QString selectedNoteBodyText() const;
     bool selectedNoteBodyLoading() const noexcept;
@@ -79,6 +81,7 @@ signals:
     void noteCountContractAvailableChanged();
     void contentPersistenceContractAvailableChanged();
     void selectedNoteIdChanged();
+    void selectedNoteDirectoryPathChanged();
     void selectedNoteBodyNoteIdChanged();
     void selectedNoteBodyTextChanged();
     void selectedNoteBodyLoadingChanged();
@@ -111,6 +114,8 @@ private:
     static bool hasReadableProperty(const QObject* object, const char* propertyName);
     static QString readStringProperty(const QObject* object, const char* propertyName);
     static int readIntProperty(const QObject* object, const char* propertyName);
+    QString resolveSelectedNoteDirectoryPath(const QString& noteId) const;
+    void setSelectedNoteDirectoryPath(QString noteDirectoryPath);
     bool adoptPendingEditorBodyText(const QString& noteId);
     void setSelectedNoteBodyState(QString noteId, QString bodyText, bool loading);
     void startSelectedNoteBodyLoad(const QString& noteId, bool clearCachedBody);
@@ -128,6 +133,7 @@ private:
     bool m_noteSelectionRefreshQueued = false;
     bool m_noteSelectionRefreshRequiresRebind = false;
     QString m_selectedNoteId;
+    QString m_selectedNoteDirectoryPath;
     QString m_selectedNoteBodyNoteId;
     QString m_selectedNoteBodyText;
     QString m_selectedNoteBodySnapshotNoteId;

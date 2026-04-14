@@ -150,6 +150,11 @@ bool ContentsNoteManagementCoordinator::captureDirectPersistenceContextForNote(
     return true;
 }
 
+QString ContentsNoteManagementCoordinator::noteDirectoryPathForNote(const QString& noteId) const
+{
+    return resolveNoteDirectoryPathForNote(noteId.trimmed());
+}
+
 quint64 ContentsNoteManagementCoordinator::loadNoteBodyTextForNote(const QString& noteId)
 {
     const QString normalizedNoteId = noteId.trimmed();

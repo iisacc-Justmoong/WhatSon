@@ -283,6 +283,7 @@ Item {
         return entry && typeof entry === "object" ? entry : ({});
     }
     readonly property bool showCurrentLineMarker: contentsView.hasSelectedNote || contentsView.editorText.length > 0 || contentsView.editorInputFocused
+    readonly property bool editorSessionBoundToSelectedNote: editorSession.editorBoundNoteId === contentsView.selectedNoteId
     readonly property bool liveEditorSourceContainsResourceTag: contentsView.sourceContainsCanonicalResourceTag(contentsView.editorText)
     readonly property bool presentationSourceContainsResourceTag: contentsView.sourceContainsCanonicalResourceTag(contentsView.documentPresentationSourceText)
     readonly property bool selectionSourceContainsResourceTag: (!editorSession.localEditorAuthority
@@ -1905,13 +1906,14 @@ Item {
     ContentsBodyResourceRenderer {
         id: bodyResourceRenderer
 
-        bodySourceText: contentsView.selectedNoteBodyNoteId === contentsView.selectedNoteId
+        bodySourceText: contentsView.editorSessionBoundToSelectedNote
                         ? contentsView.structuredFlowSourceText
                         : ""
         contentViewModel: contentsView.contentViewModel
         fallbackContentViewModel: contentsView.libraryHierarchyViewModel
         maxRenderCount: contentsView.resourceRenderDisplayLimit
         noteId: contentsView.selectedNoteId
+        noteDirectoryPath: selectionBridge.selectedNoteDirectoryPath
     }
     Connections {
         target: bodyResourceRenderer

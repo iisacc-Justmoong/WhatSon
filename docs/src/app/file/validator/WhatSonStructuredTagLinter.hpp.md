@@ -22,6 +22,8 @@ well-formedness verification for the supported semantic/body XML projection.
     renderer-friendly structured verification map.
   - The merged payload now includes an `xml` child verification for supported semantic/body tags such as `paragraph`,
     `title`, `subTitle`, `event*`, `resource`, `next`, hashtag tags, and inline style aliases.
+  - XML parse issues also include parser location context and an approximate `sourceLineNumber` derived from preserved
+    source line breaks in the synthetic body document.
 
 ## Layer Placement
 - This type lives in `file/validator` because the rules describe canonical `.wsnbody` source validity, not editor-widget behavior.

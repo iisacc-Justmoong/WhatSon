@@ -31,6 +31,7 @@ public:
     bool captureDirectPersistenceContextForNote(
         const QString& noteId,
         QString* noteDirectoryPath) const;
+    QString noteDirectoryPathForNote(const QString& noteId) const;
     quint64 loadNoteBodyTextForNote(const QString& noteId);
     bool reconcileViewSessionAndRefreshSnapshotForNote(
         const QString& noteId,

@@ -19,6 +19,8 @@ semantic/body tags still form a well-formed XML projection.
 - The synthetic XML projection recognizes the same supported body semantics as note-body persistence: resource tags,
   `paragraph`/`p`/heading-style block tags, `next`, `event` wrappers, `eventTitle`/`eventDescription`, hashtag tags,
   and inline style aliases.
+- The synthetic XML projection now preserves source line breaks so parser error line numbers stay useful for malformed
+  multi-line `.wsnbody` input instead of collapsing back to one synthetic line.
 
 ## Verification Payloads
 - `buildAgendaVerification(...)` reports:
@@ -37,7 +39,8 @@ semantic/body tags still form a well-formed XML projection.
 - `buildStructuredVerification(...)` merges agenda/callout/break verification with a synthetic XML well-formedness
   report exposed under `xml`.
 - The `xml` verification fails when supported semantic/body tags cannot be parsed into one well-formed body document
-  after safe normalization, and reports `body_xml_not_well_formed` with parser line/column context.
+  after safe normalization, and reports `body_xml_not_well_formed` with parser line/column context plus an approximate
+  `sourceLineNumber`.
 - `buildStructuredVerification(...)` still exposes `canonicalizationSuggested` when the source differs from the
   linter-normalized projection.
 

@@ -146,6 +146,13 @@ FocusScope {
         return sourceOffset >= sourceStart && sourceOffset <= sourceEnd
     }
 
+    function resourceEntryHasResolvedPayload(entry) {
+        const safeEntry = entry && typeof entry === "object" ? entry : ({})
+        const entrySource = safeEntry.source !== undefined ? String(safeEntry.source).trim() : ""
+        const entryResolvedPath = safeEntry.resolvedPath !== undefined ? String(safeEntry.resolvedPath).trim() : ""
+        return entrySource.length > 0 || entryResolvedPath.length > 0
+    }
+
     function resourceEntryForBlock(blockEntry) {
         const safeBlock = blockEntry && typeof blockEntry === "object" ? blockEntry : ({})
         const blockResourceIndex = documentFlow.floorNumberOrFallback(safeBlock.resourceIndex, -1)
@@ -154,33 +161,46 @@ FocusScope {
         const blockResourceId = safeBlock.resourceId !== undefined ? String(safeBlock.resourceId).trim() : ""
         const blockResourcePath = safeBlock.resourcePath !== undefined ? String(safeBlock.resourcePath).trim() : ""
         const resourceEntries = documentFlow.normalizedResourceEntries()
+        let fallbackMatch = null
 
         for (let index = 0; index < resourceEntries.length; ++index) {
             const entry = resourceEntries[index] && typeof resourceEntries[index] === "object" ? resourceEntries[index] : ({})
             const entryIndex = documentFlow.floorNumberOrFallback(entry.index, -1)
-            if (blockResourceIndex >= 0 && entryIndex === blockResourceIndex)
+            if (blockResourceIndex < 0 || entryIndex !== blockResourceIndex)
+                continue
+            if (documentFlow.resourceEntryHasResolvedPayload(entry))
                 return entry
+            if (!fallbackMatch)
+                fallbackMatch = entry
         }
 
         for (let index = 0; index < resourceEntries.length; ++index) {
             const entry = resourceEntries[index] && typeof resourceEntries[index] === "object" ? resourceEntries[index] : ({})
             const entrySourceStart = Math.max(0, Math.floor(Number(entry.sourceStart) || 0))
             const entrySourceEnd = Math.max(entrySourceStart, Math.floor(Number(entry.sourceEnd) || entrySourceStart))
-            if (entrySourceStart === blockSourceStart && entrySourceEnd === blockSourceEnd)
+            if (entrySourceStart !== blockSourceStart || entrySourceEnd !== blockSourceEnd)
+                continue
+            if (documentFlow.resourceEntryHasResolvedPayload(entry))
                 return entry
+            if (!fallbackMatch)
+                fallbackMatch = entry
         }
 
         for (let index = 0; index < resourceEntries.length; ++index) {
             const entry = resourceEntries[index] && typeof resourceEntries[index] === "object" ? resourceEntries[index] : ({})
             const entryResourceId = entry.resourceId !== undefined ? String(entry.resourceId).trim() : ""
             const entryResourcePath = entry.resourcePath !== undefined ? String(entry.resourcePath).trim() : ""
-            if (blockResourceId.length > 0 && entryResourceId === blockResourceId)
+            const idMatched = blockResourceId.length > 0 && entryResourceId === blockResourceId
+            const pathMatched = blockResourcePath.length > 0 && entryResourcePath === blockResourcePath
+            if (!idMatched && !pathMatched)
+                continue
+            if (documentFlow.resourceEntryHasResolvedPayload(entry))
                 return entry
-            if (blockResourcePath.length > 0 && entryResourcePath === blockResourcePath)
-                return entry
+            if (!fallbackMatch)
+                fallbackMatch = entry
         }
 
-        return ({})
+        return fallbackMatch ? fallbackMatch : ({})
     }
 
     function focusTargetBlockIndex(request) {

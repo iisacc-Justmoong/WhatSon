@@ -145,6 +145,11 @@ QString ContentsEditorSelectionBridge::selectedNoteId() const
     return m_selectedNoteId;
 }
 
+QString ContentsEditorSelectionBridge::selectedNoteDirectoryPath() const
+{
+    return m_selectedNoteDirectoryPath;
+}
+
 QString ContentsEditorSelectionBridge::selectedNoteBodyNoteId() const
 {
     return m_selectedNoteBodyNoteId;
@@ -242,6 +247,11 @@ void ContentsEditorSelectionBridge::handleEditorTextPersistenceFinishedInternal(
     if (normalizedNoteId != selectedNoteId && normalizedNoteId != selectedBodyNoteId)
     {
         return;
+    }
+
+    if (normalizedNoteId == selectedNoteId)
+    {
+        setSelectedNoteDirectoryPath(resolveSelectedNoteDirectoryPath(normalizedNoteId));
     }
 
     m_selectedNoteBodySnapshotNoteId = normalizedNoteId;
@@ -396,6 +406,27 @@ bool ContentsEditorSelectionBridge::adoptPendingEditorBodyText(const QString& no
     return true;
 }
 
+QString ContentsEditorSelectionBridge::resolveSelectedNoteDirectoryPath(const QString& noteId) const
+{
+    const QString normalizedNoteId = noteId.trimmed();
+    if (normalizedNoteId.isEmpty() || m_idleSyncController == nullptr)
+    {
+        return {};
+    }
+    return m_idleSyncController->noteDirectoryPathForNote(normalizedNoteId).trimmed();
+}
+
+void ContentsEditorSelectionBridge::setSelectedNoteDirectoryPath(QString noteDirectoryPath)
+{
+    noteDirectoryPath = noteDirectoryPath.trimmed();
+    if (m_selectedNoteDirectoryPath == noteDirectoryPath)
+    {
+        return;
+    }
+    m_selectedNoteDirectoryPath = std::move(noteDirectoryPath);
+    emit selectedNoteDirectoryPathChanged();
+}
+
 void ContentsEditorSelectionBridge::setSelectedNoteBodyState(
     QString noteId,
     QString bodyText,
@@ -512,6 +543,7 @@ void ContentsEditorSelectionBridge::refreshNoteSelectionState()
     const bool noteIdChanged = m_selectedNoteId != nextNoteId;
     if (!noteIdChanged)
     {
+        setSelectedNoteDirectoryPath(resolveSelectedNoteDirectoryPath(m_selectedNoteId));
         if (!m_selectedNoteId.trimmed().isEmpty()
             && (m_selectedNoteBodySnapshotNoteId != m_selectedNoteId || requiresRebind)
             && !m_selectedNoteBodyLoading)
@@ -523,6 +555,7 @@ void ContentsEditorSelectionBridge::refreshNoteSelectionState()
 
     m_selectedNoteId = nextNoteId;
     emit selectedNoteIdChanged();
+    setSelectedNoteDirectoryPath(resolveSelectedNoteDirectoryPath(nextNoteId));
 
     if (nextNoteId.trimmed().isEmpty())
     {

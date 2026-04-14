@@ -28,11 +28,12 @@ Shared desktop/mobile resource card for `<resource ...>` note entries.
   chrome.
 - `document` plus bitmap fallback
   If the renderer payload downgraded an actual bitmap resource to `document` but still resolved a compatible bitmap
-  file path, the shared card now still promotes that entry into the same Figma `292:50` image-frame treatment instead
-  of falling back to the empty metadata summary tile.
+  file path, the shared card now still promotes that entry into the same Figma `292:50` image-frame treatment.
+  The generic `Document Resource` summary card itself no longer exists; unsupported `document` entries now collapse
+  instead of inventing a metadata tile that is not part of the design.
 - `text`
   Shows a trimmed text snippet preview.
-- `video`, `audio`, `pdf`, `document`
+- `video`, `audio`, `pdf`
   Show a typed placeholder tile plus metadata and an external-open action.
 
 ## Reuse Rule

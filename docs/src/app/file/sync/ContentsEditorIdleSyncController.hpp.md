@@ -27,6 +27,8 @@ later fetch turn does not have to rediscover that path through a different activ
   asks the controller to attempt one immediate fetch-cycle enqueue when possible. The return value now reflects whether
   that immediate enqueue was actually accepted.
 - `persistEditorTextForNote(noteId, text)`: compatibility alias for the buffered stage path.
+- `noteDirectoryPathForNote(noteId)`: exposes the freshest known note-directory path for one note, preferring a
+  buffered snapshot's captured path and otherwise falling back to the downstream coordinator's live resolution.
 - `pendingEditorTextForNote(noteId, &text)`: exposes the newest dirty or in-flight editor snapshot for one note
   without forcing a filesystem read, so selection/open flows can prefer the unsaved local body over stale package IO.
 - `loadNoteBodyTextForNote(noteId)`: forwards one selected-note lazy body read to the downstream coordinator and

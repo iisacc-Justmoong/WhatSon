@@ -129,6 +129,14 @@ Desktop content editor host.
   `structuredFlowSourceText` contract.
   Resource-block activation therefore stays aligned even when the live editor surface, the deferred presentation
   snapshot, and the selection-bridge body source are temporarily catching up with each other.
+- Desktop now also gates `ContentsBodyResourceRenderer.bodySourceText` by
+  `editorSession.editorBoundNoteId == selectedNoteId` instead of by the selection-bridge body-note echo alone.
+  A same-note drag/drop or clipboard image insert therefore resolves the just-inserted `<resource ... />` tag from the
+  live bound editor RAW immediately, without waiting for the persisted-body snapshot to catch up first.
+- Desktop now also binds `ContentsBodyResourceRenderer.noteDirectoryPath` from
+  `selectionBridge.selectedNoteDirectoryPath`.
+  Inline resource rendering therefore uses the same resolved note package path as the mounted editor session instead of
+  depending solely on the active hierarchy view-model to answer `noteDirectoryPathForNoteId(...)` again.
 - The desktop editable note surface now keeps RichText inline-image upgrading disabled by default.
   Even resolved bitmap resources stay on the parser-owned placeholder/overlay path:
   - the editor surface keeps the logical placeholder slot produced from RAW
@@ -194,8 +202,9 @@ Desktop content editor host.
 - Desktop resource cards now also allow the shared bitmap viewer bridge to recover image presentation from the resolved
   asset path/format itself.
   When a renderer payload still reaches QML as `document` but points at a compatible bitmap file, the note body now
-  promotes that resource back into the Figma `292:50` image frame instead of showing the `Document Resource` metadata
-  card.
+  promotes that resource back into the Figma `292:50` image frame.
+  The old synthetic `Document Resource` metadata card path is removed entirely, so desktop no longer invents a
+  summary tile for unsupported generic `document` entries.
 - While that hover-phase resource drop is considered valid, desktop now also calls `drag.acceptProposedAction()`
   before setting `drag.accepted = true`, reducing the chance that the nested `TextEdit` keeps the OS file drag alive
   long enough to fall back to Qt's default image-object insertion path.

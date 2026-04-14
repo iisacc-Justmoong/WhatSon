@@ -91,6 +91,32 @@ bool ContentsEditorIdleSyncController::flushEditorTextForNote(const QString& not
     return stageEditorSnapshot(noteId, text, true);
 }
 
+QString ContentsEditorIdleSyncController::noteDirectoryPathForNote(const QString& noteId) const
+{
+    const QString normalizedNoteId = noteId.trimmed();
+    if (normalizedNoteId.isEmpty())
+    {
+        return {};
+    }
+
+    const auto bufferedSnapshotIt = m_bufferedSnapshotsByNote.constFind(normalizedNoteId);
+    if (bufferedSnapshotIt != m_bufferedSnapshotsByNote.cend())
+    {
+        const QString bufferedPath = bufferedSnapshotIt.value().noteDirectoryPath.trimmed();
+        if (!bufferedPath.isEmpty())
+        {
+            return bufferedPath;
+        }
+    }
+
+    if (m_noteManagementCoordinator == nullptr)
+    {
+        return {};
+    }
+
+    return m_noteManagementCoordinator->noteDirectoryPathForNote(normalizedNoteId).trimmed();
+}
+
 bool ContentsEditorIdleSyncController::pendingEditorTextForNote(
     const QString& noteId,
     QString* text) const

@@ -25,12 +25,18 @@ Rectangle {
     readonly property bool resourceOpenable: resourceCard.resourceOpenTarget.length > 0
     readonly property bool resourceBitmapCandidate: resourceBitmapState.bitmapPreviewCandidate
     readonly property bool resourceBitmapRenderable: resourceBitmapState.bitmapRenderable
+    readonly property bool metadataCardVisible: !resourceCard.inlineImagePresentation
+                                                 && (resourceCard.resourceBitmapRenderable
+                                                     || resourceCard.resourceRenderMode === "text"
+                                                     || resourceCard.resourceRenderMode === "video"
+                                                     || resourceCard.resourceRenderMode === "audio"
+                                                     || resourceCard.resourceRenderMode === "pdf")
     readonly property string resourceFileName: {
         if (resourceCard.resourceDisplayName.length > 0)
             return resourceCard.resourceDisplayName;
         if (resourceCard.resourcePath.length > 0)
             return resourceCard.resourcePath;
-        return resourceCard.resourceModeTitle;
+        return resourceCard.resourceModeTitle.length > 0 ? resourceCard.resourceModeTitle : "Resource";
     }
     readonly property string resourceModeTitle: {
         if (resourceCard.resourceBitmapCandidate)
@@ -45,7 +51,7 @@ Rectangle {
             return "PDF Resource";
         if (resourceCard.resourceRenderMode === "text")
             return "Text Resource";
-        return "Document Resource";
+        return "";
     }
     readonly property string resourcePreviewTitle: {
         if (resourceCard.resourceBitmapCandidate)
@@ -56,8 +62,6 @@ Rectangle {
             return "Audio";
         if (resourceCard.resourceRenderMode === "pdf")
             return "PDF";
-        if (resourceCard.resourceRenderMode === "document")
-            return "File";
         return resourceCard.resourceModeTitle;
     }
     readonly property bool inlineImagePresentation: resourceCard.inlinePresentation
@@ -67,15 +71,24 @@ Rectangle {
                                           ? 88
                                           : (resourceCard.resourceRenderMode === "text" ? 96 : 72)
 
-    border.color: resourceCard.inlineImagePresentation ? "transparent" : resourceCard.borderColor
-    border.width: resourceCard.inlineImagePresentation ? 0 : Math.max(1, Math.round(LV.Theme.strokeThin))
+    border.color: resourceCard.inlineImagePresentation || !resourceCard.metadataCardVisible
+                  ? "transparent"
+                  : resourceCard.borderColor
+    border.width: resourceCard.inlineImagePresentation || !resourceCard.metadataCardVisible
+                  ? 0
+                  : Math.max(1, Math.round(LV.Theme.strokeThin))
     clip: false
-    color: resourceCard.inlineImagePresentation ? "transparent" : resourceCard.cardColor
+    color: resourceCard.inlineImagePresentation || !resourceCard.metadataCardVisible
+           ? "transparent"
+           : resourceCard.cardColor
     implicitHeight: resourceCard.inlineImagePresentation
                     ? inlineImageFrame.implicitHeight
-                    : resourceRow.implicitHeight + LV.Theme.gap2 * 2
+                    : (resourceCard.metadataCardVisible
+                       ? resourceRow.implicitHeight + LV.Theme.gap2 * 2
+                       : 0)
     height: implicitHeight
-    radius: resourceCard.inlineImagePresentation ? 0 : LV.Theme.radiusSm
+    radius: resourceCard.inlineImagePresentation || !resourceCard.metadataCardVisible ? 0 : LV.Theme.radiusSm
+    visible: resourceCard.inlineImagePresentation || resourceCard.metadataCardVisible
     width: parent ? parent.width : 0
 
     ResourceBitmapViewer {
@@ -139,7 +152,7 @@ Rectangle {
         anchors.fill: parent
         anchors.margins: LV.Theme.gap2
         spacing: LV.Theme.gap2
-        visible: !resourceCard.inlineImagePresentation
+        visible: resourceCard.metadataCardVisible
 
         Rectangle {
             Layout.alignment: Qt.AlignTop

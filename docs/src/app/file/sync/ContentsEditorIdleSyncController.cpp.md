@@ -30,6 +30,10 @@
 - The controller now also provides one read-only "pending editor text" query that reports dirty or in-flight note
   bodies back to the selection layer.
   This lets note-open prefer the newest unsaved local snapshot instead of immediately trusting filesystem text.
+- The controller now also provides one read-only note-directory query per note.
+  That query prefers the note-directory path captured into the buffered snapshot at stage time, then falls back to the
+  downstream coordinator's current resolution. The selection bridge uses it to keep body resource rendering anchored to
+  the same mounted note package even if hierarchy view-model wiring is in flux.
 - Successful async persistence completion now also runs one post-write filesystem reconcile step:
   - compares the persisted editor snapshot against note RAW through
     `ContentsNoteManagementCoordinator::reconcileViewSessionAndRefreshSnapshotForNote(...)`

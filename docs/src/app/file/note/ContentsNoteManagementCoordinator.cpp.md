@@ -14,6 +14,9 @@
   - resolve `noteDirectoryPathForNoteId(noteId)` while the correct content view-model is still bound
   - allow a later buffered fetch turn to enqueue `DirectPersistBody` with that frozen note-directory path
   - avoid re-routing stale buffered editor text through whichever hierarchy view-model happens to be active later
+- The coordinator now also exposes a read-side `noteDirectoryPathForNote(noteId)` helper.
+  `ContentsEditorIdleSyncController` and the selection bridge use that helper to surface the currently selected note's
+  resolved package directory back to body resource rendering without depending on the editor's current hierarchy shell.
 - Non-editing maintenance work also lives here:
   - `WhatSonNoteFileStatSupport::incrementOpenCountForNoteHeader(...)`
   - `WhatSonNoteFileStatSupport::refreshTrackedStatisticsForNote(...)`

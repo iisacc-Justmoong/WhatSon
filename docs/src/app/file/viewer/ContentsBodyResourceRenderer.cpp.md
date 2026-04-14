@@ -4,6 +4,10 @@
 Implements note-body resource rendering data extraction for the editor surface.
 
 ## Key Behavior
+- Prefers an explicit `noteDirectoryPath` from the editor-selection bridge when QML provides it.
+  This lets the renderer resolve `.wsresource` package references from the same note directory that the editor session
+  already bound, instead of waiting for the currently active hierarchy view-model to answer
+  `noteDirectoryPathForNoteId(...)` again.
 - Resolves the selected note directory from `contentViewModel.noteDirectoryPathForNoteId(noteId)`.
 - If the active hierarchy view-model cannot resolve that note directory, it retries through
   `fallbackContentViewModel.noteDirectoryPathForNoteId(noteId)`.

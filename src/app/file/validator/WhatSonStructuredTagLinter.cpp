@@ -3,6 +3,7 @@
 
 #include <QDate>
 #include <QRegularExpression>
+#include <QStringList>
 #include <QVariantList>
 #include <QXmlStreamReader>
 
@@ -722,10 +723,10 @@ namespace
     QString xmlLintDocumentFromSourceText(const QString& sourceText)
     {
         const QString normalizedSourceText = normalizePlainText(sourceText);
-        QString xmlDocument = QStringLiteral("<contents id=\"lint\"><body>");
+        QString xmlDocument = QStringLiteral("<contents id=\"lint\">\n<body>\n");
         if (normalizedSourceText.isEmpty())
         {
-            xmlDocument += QStringLiteral("</body></contents>");
+            xmlDocument += QStringLiteral("</body>\n</contents>");
             return xmlDocument;
         }
 
@@ -738,6 +739,7 @@ namespace
             {
                 carriedOpenStyleTags.clear();
                 xmlDocument += serializeXmlLintLine(trimmedLine, {}, nullptr);
+                xmlDocument += QLatin1Char('\n');
                 continue;
             }
 
@@ -745,10 +747,10 @@ namespace
             QStringList nextCarriedOpenStyleTags;
             xmlDocument += serializeXmlLintLine(line, carriedOpenStyleTags, &nextCarriedOpenStyleTags);
             carriedOpenStyleTags = nextCarriedOpenStyleTags;
-            xmlDocument += QStringLiteral("</paragraph>");
+            xmlDocument += QStringLiteral("</paragraph>\n");
         }
 
-        xmlDocument += QStringLiteral("</body></contents>");
+        xmlDocument += QStringLiteral("</body>\n</contents>");
         return xmlDocument;
     }
 
@@ -769,6 +771,8 @@ namespace
         QVariantList issues;
         if (reader.hasError())
         {
+            const int xmlLineNumber = static_cast<int>(reader.lineNumber());
+            const int xmlColumnNumber = static_cast<int>(reader.columnNumber());
             issues.push_back(issueMap(
                 QStringLiteral("body_xml_not_well_formed"),
                 reader.errorString().trimmed().isEmpty()
@@ -776,8 +780,9 @@ namespace
                     : QStringLiteral("Body semantic/source tags do not form a well-formed XML projection: %1")
                           .arg(reader.errorString().trimmed()),
                 {
-                    {QStringLiteral("columnNumber"), static_cast<int>(reader.columnNumber())},
-                    {QStringLiteral("lineNumber"), static_cast<int>(reader.lineNumber())}
+                    {QStringLiteral("columnNumber"), xmlColumnNumber},
+                    {QStringLiteral("lineNumber"), xmlLineNumber},
+                    {QStringLiteral("sourceLineNumber"), std::max(1, xmlLineNumber - 2)}
                 }));
         }
 

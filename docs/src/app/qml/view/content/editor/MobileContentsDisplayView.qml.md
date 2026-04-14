@@ -124,6 +124,14 @@ Mobile content editor host.
   `structuredFlowSourceText` contract.
   Mobile resource-block activation therefore stays aligned even when the live editor surface, deferred presentation
   snapshot, and selection-bridge source are briefly out of step.
+- Mobile now also gates `ContentsBodyResourceRenderer.bodySourceText` by
+  `editorSession.editorBoundNoteId == selectedNoteId` instead of by the selection-bridge body-note echo alone.
+  A same-note drag/drop or clipboard image insert therefore resolves the newly inserted `<resource ... />` tag from
+  the live bound editor RAW immediately, even before the saved-body snapshot finishes catching up.
+- Mobile now also binds `ContentsBodyResourceRenderer.noteDirectoryPath` from
+  `selectionBridge.selectedNoteDirectoryPath`.
+  Inline resource rendering therefore reuses the mounted editor session's resolved note package path instead of
+  depending only on the currently active hierarchy view-model resolver.
 - The current default mobile editable note surface also keeps RichText inline-image upgrading disabled.
   Resolved bitmap resources therefore stay on the same parser-owned placeholder/overlay path as desktop:
   - the editor surface keeps the RAW-derived logical placeholder slot
@@ -170,7 +178,9 @@ Mobile content editor host.
 - Mobile resource cards now also let the shared bitmap viewer recover image presentation from the resolved asset
   path/format itself.
   A resource that arrives as `document` in the renderer payload but still resolves to a compatible bitmap file now
-  promotes back into the Figma `292:50` image frame instead of staying on the `Document Resource` metadata card.
+  promotes back into the Figma `292:50` image frame.
+  The old synthetic `Document Resource` metadata card path is removed entirely on mobile as well, so unsupported
+  generic `document` entries no longer fabricate a summary tile.
 - The shared editor row now reserves right-side space for a minimap rail, but the visible minimap itself is no longer
   hosted inside that `RowLayout`.
   A sibling rail is anchored directly to the editor surface's right edge, while the old row slot is reduced to a

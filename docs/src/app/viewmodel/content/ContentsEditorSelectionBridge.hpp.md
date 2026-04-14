@@ -16,8 +16,8 @@
 
 ## Current Implementation Notes
 - `ContentsEditorSelectionBridge` is now selection-facing only:
-  - exports `selectedNoteId`, `selectedNoteBodyNoteId`, `selectedNoteBodyText`, `selectedNoteBodyLoading`, and
-    `visibleNoteCount`
+  - exports `selectedNoteId`, `selectedNoteDirectoryPath`, `selectedNoteBodyNoteId`, `selectedNoteBodyText`,
+    `selectedNoteBodyLoading`, and `visibleNoteCount`
   - keeps the note-list selection/count property wiring for QML
   - forwards persistence and note-management requests to `file/sync/ContentsEditorIdleSyncController`
 - The note-list contract no longer requires `currentBodyText`.
@@ -50,6 +50,10 @@
   same-note body-read completions.
 - The bridge now also keeps one internal pending-body adoption helper so selected-note lazy loads can reuse a dirty or
   in-flight editor snapshot from `ContentsEditorIdleSyncController` before falling back to package IO.
+- The bridge now also exposes `selectedNoteDirectoryPath`, resolved through the idle-sync boundary.
+  QML body-resource rendering can therefore resolve `.wsresource` package references against the same note directory
+  that the editor session is currently bound to, instead of re-deriving that path through whichever hierarchy
+  view-model happens to be active.
 - `selectedNoteBodyNoteId` now makes body ownership explicit for QML/session consumers.
   An empty body string is therefore no longer ambiguous: it can still be attached to a specific selected note as an
   explicit empty-body fallback.
@@ -97,4 +101,7 @@
   note id to the old content view-model as an intermediate side effect.
 - QML/session code must be able to tell which note owns the currently exposed body text without inferring from timing or
   previous selection state.
+- QML body-resource rendering must also be able to read the selected note's resolved package directory from the bridge,
+  so inline image/resource rendering does not disappear merely because the hierarchy view-model resolver is between
+  rebinds.
 - Bridge APIs that target one note must not silently replace a missing `noteId` with the currently selected note.

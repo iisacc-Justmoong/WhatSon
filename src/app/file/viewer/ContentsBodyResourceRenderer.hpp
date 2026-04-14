@@ -16,6 +16,7 @@ class ContentsBodyResourceRenderer : public QObject
                    WRITE setFallbackContentViewModel
                    NOTIFY fallbackContentViewModelChanged)
     Q_PROPERTY(QString noteId READ noteId WRITE setNoteId NOTIFY noteIdChanged)
+    Q_PROPERTY(QString noteDirectoryPath READ noteDirectoryPath WRITE setNoteDirectoryPath NOTIFY noteDirectoryPathChanged)
     Q_PROPERTY(QString bodySourceText READ bodySourceText WRITE setBodySourceText NOTIFY bodySourceTextChanged)
     Q_PROPERTY(int maxRenderCount READ maxRenderCount WRITE setMaxRenderCount NOTIFY maxRenderCountChanged)
     Q_PROPERTY(QVariantList renderedResources READ renderedResources NOTIFY renderedResourcesChanged)
@@ -34,6 +35,9 @@ public:
     QString noteId() const;
     void setNoteId(const QString& noteId);
 
+    QString noteDirectoryPath() const;
+    void setNoteDirectoryPath(const QString& noteDirectoryPath);
+
     QString bodySourceText() const;
     void setBodySourceText(const QString& bodySourceText);
 
@@ -50,6 +54,7 @@ signals:
     void contentViewModelChanged();
     void fallbackContentViewModelChanged();
     void noteIdChanged();
+    void noteDirectoryPathChanged();
     void bodySourceTextChanged();
     void maxRenderCountChanged();
     void renderedResourcesChanged();
@@ -72,6 +77,7 @@ private:
     QPointer<QObject> m_contentViewModel;
     QPointer<QObject> m_fallbackContentViewModel;
     QString m_noteId;
+    QString m_noteDirectoryPath;
     QString m_bodySourceText;
     int m_maxRenderCount = 3;
     QVariantList m_renderedResources;

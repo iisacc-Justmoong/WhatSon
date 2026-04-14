@@ -44,6 +44,9 @@ Hosts the document-native block editor for structured `.wsnbody` content.
   - finally by `resourceId` or `resourcePath`
   This keeps inline resource frames stable even when the note reparse and the resource resolver refresh land on
   adjacent event-loop turns.
+- When several candidates match the same block, the flow now prefers the entry that already carries a real payload path
+  (`source` or `resolvedPath`) over metadata-only partial matches. This prevents one early placeholder match from
+  pinning the block to a non-designed generic document summary surface after the actual asset path has resolved.
 - Numeric block identity inside the flow must treat `0` as a valid value, not as "missing".
   The host therefore normalizes `resourceIndex`, focus target indices, and agenda-task tag starts with an explicit
   finite-number helper instead of `Number(value) || -1`, which previously broke the first resource block and the first

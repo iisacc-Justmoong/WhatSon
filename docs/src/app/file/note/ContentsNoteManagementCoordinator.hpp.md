@@ -24,6 +24,9 @@ should synchronize to disk.
   already captured the destination note directory.
 - `captureDirectPersistenceContextForNote(noteId, &noteDirectoryPath)`: allows the upstream sync boundary to snapshot
   the current direct persistence target before a later hierarchy transition can change the active view-model.
+- `noteDirectoryPathForNote(noteId)`: exposes the current best-effort note-directory resolution without requiring the
+  direct-persistence lane to be active, so read-side consumers can keep resource/package resolution tied to the same
+  note package as the editor session.
 - `loadNoteBodyTextForNote(noteId)`: enqueues one worker-thread note read for the selected note body and returns the
   resulting request sequence for `noteBodyTextLoaded(...)`.
 - `reconcileViewSessionAndRefreshSnapshotForNote(noteId, viewSessionText)`: reads the current note RAW body source

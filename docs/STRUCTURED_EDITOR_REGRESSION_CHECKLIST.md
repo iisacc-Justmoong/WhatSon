@@ -33,6 +33,9 @@ structured document-flow editor changes.
 - Malformed `<resource ... />` body markup must also fail that `xml` verification path with parser location context;
   the validator must not accept a partial semantic projection just because agenda/callout/break counts still look
   balanced.
+- A malformed multi-line semantic body such as `<event>` on one line and a broken closing `</title>` on a later line
+  must keep `structuredParseVerification.xml.issues[*].context.sourceLineNumber` near the authored source line rather
+  than collapsing every XML parse error back to one synthetic line.
 
 ## Structured Shortcuts
 - In structured-flow mode, `Cmd+Opt+T`, `Cmd+Opt+C`, and `Cmd+Shift+H` invoked from the middle of a text block must
@@ -121,6 +124,9 @@ structured document-flow editor changes.
   editor with the dedicated resource-package viewer.
 - After the tag insertion completes, the same selected note must show the new resource frame at the authored body slot
   before a later manual note reopen or explicit filesystem refresh.
+- Right after drag/drop or clipboard-image insertion, the same selected note must resolve the new `<resource ... />`
+  block from the currently bound editor RAW buffer.
+  The body image must not wait for `selectedNoteBodyText` or a later save/reopen cycle before appearing.
 - A `<resource ... path=".../.wsresource" />` body slot must resolve through that package's `resource.xml` metadata to
   the actual internal asset file before image rendering.
   The inline bitmap viewer must never try to open the `.wsresource` directory path itself as if it were the payload.
@@ -137,6 +143,9 @@ structured document-flow editor changes.
 - Inline image rendering must still work when the active hierarchy view-model does not expose
   `noteDirectoryPathForNoteId(QString)` or when hierarchy switching momentarily leaves the content surface bound to the
   previous domain view-model.
+- The same inline image rendering must also continue to work when the selected note directory is already known to the
+  editor session but the hierarchy resolver has not yet rebound.
+  The body renderer must prefer that mounted note-directory path instead of dropping the image frame for one turn.
 - In RichText editor mode, the rendered body should stay on paragraph/image document flow that is close to Qt raw
   RichText/RTF layout, rather than one flat `<br/>` chain plus hidden spacer overlays.
 - A note that only contains prose plus body `<resource ... />` tags must stay on the legacy inline editor host.
@@ -145,11 +154,15 @@ structured document-flow editor changes.
   editor, and it must occupy real document height in the block column rather than an overlay aligned on top of text.
 - The first structured resource block in a note must still resolve its inline asset payload.
   A `resourceIndex` or focus target value of `0` must not collapse to a sentinel fallback that downgrades the block to
-  the empty `Document Resource` metadata card.
+  a fabricated generic document summary tile.
 - A resolved bitmap resource must still upgrade into the Figma `292:50` image frame even if the renderer payload
   reaches QML with `renderMode=document`.
-  Real bitmap paths/formats must win over that downgraded metadata state; the editor must not fall back to the empty
-  `Document Resource` summary card while the asset itself is resolvable.
+  Real bitmap paths/formats must win over that downgraded metadata state; the editor must not fabricate any generic
+  document summary card while the asset itself is resolvable.
+- If one structured resource block first matches a metadata-only placeholder entry and later matches a resolved entry
+  with the real bitmap payload path, the block must prefer that resolved payload.
+  The same body slot must not remain stuck on a fabricated generic document summary surface because an earlier partial match
+  shared the same `resourceIndex`, source span, `resourceId`, or `resourcePath`.
 - The inline image frame must keep a transparent background. Only the border chrome from the image-resource frame may
   remain; no extra dark fill from the wrapper card should sit behind the bitmap.
 - Inline image resource blocks must stretch only with their outer frame to the available editor body width.

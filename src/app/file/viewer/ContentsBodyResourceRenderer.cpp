@@ -659,6 +659,24 @@ void ContentsBodyResourceRenderer::setNoteId(const QString& noteId)
     refreshRenderedResources();
 }
 
+QString ContentsBodyResourceRenderer::noteDirectoryPath() const
+{
+    return m_noteDirectoryPath;
+}
+
+void ContentsBodyResourceRenderer::setNoteDirectoryPath(const QString& noteDirectoryPath)
+{
+    const QString normalizedNoteDirectoryPath = normalizePath(noteDirectoryPath);
+    if (m_noteDirectoryPath == normalizedNoteDirectoryPath)
+    {
+        return;
+    }
+
+    m_noteDirectoryPath = normalizedNoteDirectoryPath;
+    emit noteDirectoryPathChanged();
+    refreshRenderedResources();
+}
+
 QString ContentsBodyResourceRenderer::bodySourceText() const
 {
     return m_bodySourceText;
@@ -876,6 +894,11 @@ QString ContentsBodyResourceRenderer::resolveNoteDirectoryPathFromViewModel(QObj
 
 QString ContentsBodyResourceRenderer::resolveNoteDirectoryPath() const
 {
+    if (!m_noteDirectoryPath.trimmed().isEmpty())
+    {
+        return normalizePath(m_noteDirectoryPath);
+    }
+
     if (m_noteId.trimmed().isEmpty())
     {
         return {};

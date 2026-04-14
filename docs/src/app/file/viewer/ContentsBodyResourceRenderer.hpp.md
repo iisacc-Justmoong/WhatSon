@@ -9,6 +9,9 @@ Declares the body-resource renderer bridge that maps note-local `<resource ...>`
   hierarchy view-model has not switched yet or does not expose the note-directory resolver contract for the currently
   selected note.
 - `noteId`: selected note id whose `.wsnbody` resource tags should be rendered.
+- `noteDirectoryPath`: optional explicit selected-note directory path supplied by the selection bridge.
+  When present, this path wins over view-model note-directory lookups so body resource resolution stays bound to the
+  note package that is already mounted in the editor session.
 - `bodySourceText`: optional live editor/presentation snapshot used to resolve `<resource ...>` tags before the latest
   `.wsnbody` flush finishes.
 - `maxRenderCount`: caps the number of rendered resource cards.
