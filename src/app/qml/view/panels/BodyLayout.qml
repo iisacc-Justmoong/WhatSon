@@ -103,10 +103,17 @@ Item {
             return;
         }
         const numericIndex = Number(sidebarViewModel.resolvedActiveHierarchyIndex);
+        const resolvedIndex = isFinite(numericIndex) ? Math.floor(numericIndex) : 0;
+        const resolvedHierarchyViewModel = sidebarViewModel.hierarchyViewModelForIndex !== undefined
+                ? sidebarViewModel.hierarchyViewModelForIndex(resolvedIndex)
+                : sidebarViewModel.resolvedHierarchyViewModel;
+        const resolvedNoteListModel = sidebarViewModel.noteListModelForIndex !== undefined
+                ? sidebarViewModel.noteListModelForIndex(resolvedIndex)
+                : sidebarViewModel.resolvedNoteListModel;
         hStack.activeHierarchyBindingSnapshot = {
-            "index": isFinite(numericIndex) ? Math.floor(numericIndex) : 0,
-            "noteListModel": sidebarViewModel.resolvedNoteListModel,
-            "viewModel": sidebarViewModel.resolvedHierarchyViewModel
+            "index": resolvedIndex,
+            "noteListModel": resolvedNoteListModel,
+            "viewModel": resolvedHierarchyViewModel
         };
     }
     function clampRightPanelWidth(value) {

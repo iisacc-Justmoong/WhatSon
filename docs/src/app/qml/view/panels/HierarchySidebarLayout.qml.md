@@ -19,9 +19,11 @@ It then maps the current sidebar hierarchy index to a root registry key such as:
 
 `syncHierarchyViewBinding()` binds that key into `LV.ViewModels` with write ownership. This means the sidebar can always talk to the active hierarchy through a stable per-view binding even though the actual concrete domain changes.
 
-`resolvedHierarchyViewModel` now resolves from `sidebarHierarchyViewModel.resolvedHierarchyViewModel` first and only
-falls back to `LV.ViewModels.getForView(...)` when the provider path is unavailable. This keeps mobile and desktop
-aligned to the same active domain object even when routed mobile pages reuse or restore sidebar bindings.
+`resolvedHierarchyViewModel` now resolves from
+`sidebarHierarchyViewModel.hierarchyViewModelForIndex(currentHierarchy)` first, then falls back through
+`sidebarHierarchyViewModel.resolvedHierarchyViewModel`, and only then to `LV.ViewModels.getForView(...)`.
+This keeps mobile and desktop aligned to the same active domain object even when the active hierarchy index changes
+slightly earlier than one previously-resolved provider object or when routed mobile pages reuse sidebar bindings.
 
 ## Hosted Bridges
 - `HierarchyDragDropBridge`: reorder and note-drop bridge.

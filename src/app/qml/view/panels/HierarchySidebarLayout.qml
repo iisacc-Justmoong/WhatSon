@@ -16,8 +16,14 @@ Item {
     property color panelColor: "transparent"
     readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("HierarchySidebarLayout") : null
     readonly property var resolvedHierarchyViewModel: {
-        const activeHierarchyViewModel = hierarchyView.sidebarHierarchyViewModel
-            ? hierarchyView.sidebarHierarchyViewModel.resolvedHierarchyViewModel
+        const sidebarViewModel = hierarchyView.sidebarHierarchyViewModel;
+        if (sidebarViewModel && sidebarViewModel.hierarchyViewModelForIndex !== undefined) {
+            const directHierarchyViewModel = sidebarViewModel.hierarchyViewModelForIndex(hierarchyView.currentHierarchy);
+            if (directHierarchyViewModel)
+                return directHierarchyViewModel;
+        }
+        const activeHierarchyViewModel = sidebarViewModel
+            ? sidebarViewModel.resolvedHierarchyViewModel
             : null;
         if (activeHierarchyViewModel)
             return activeHierarchyViewModel;
