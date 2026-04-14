@@ -303,8 +303,8 @@ Item {
     readonly property bool liveResourceStructuredFlowRequested: contentsView.liveEditorSourceContainsResourceTag
                                                                 || contentsView.presentationSourceContainsResourceTag
                                                                 || contentsView.selectionSourceContainsResourceTag
-    readonly property bool nonResourceStructuredFlowRequested: structuredBlockRenderer.hasNonResourceRenderedBlocks
-    readonly property bool structuredDocumentFlowEnabled: contentsView.nonResourceStructuredFlowRequested
+    readonly property bool parsedStructuredFlowRequested: structuredBlockRenderer.hasRenderedBlocks
+    readonly property bool structuredDocumentFlowEnabled: contentsView.parsedStructuredFlowRequested
                                                           || (structuredBlockRenderer.renderPending
                                                               && contentsView.structuredDocumentFlowActivatedNoteId === contentsView.selectedNoteId
                                                               && contentsView.selectedNoteId.length > 0)
@@ -781,12 +781,36 @@ Item {
     function normalizedImportedResourceEntries(importedEntries) {
         if (Array.isArray(importedEntries))
             return importedEntries;
-        if (!importedEntries || importedEntries.length === undefined)
+        if (!importedEntries)
             return [];
+
+        const explicitLength = Number(importedEntries.length);
+        if (isFinite(explicitLength) && explicitLength >= 0) {
+            const normalizedEntries = [];
+            for (let index = 0; index < Math.floor(explicitLength); ++index)
+                normalizedEntries.push(importedEntries[index]);
+            return normalizedEntries;
+        }
+
+        const explicitCount = Number(importedEntries.count);
+        if (isFinite(explicitCount) && explicitCount >= 0) {
+            const normalizedEntries = [];
+            for (let index = 0; index < Math.floor(explicitCount); ++index)
+                normalizedEntries.push(importedEntries[index]);
+            return normalizedEntries;
+        }
+
+        const indexedKeys = Object.keys(importedEntries).filter(function (key) {
+            return /^\d+$/.test(key);
+        }).sort(function (lhs, rhs) {
+            return Number(lhs) - Number(rhs);
+        });
+        if (indexedKeys.length === 0)
+            return [];
+
         const normalizedEntries = [];
-        const entryCount = Math.max(0, Number(importedEntries.length) || 0);
-        for (let index = 0; index < entryCount; ++index)
-            normalizedEntries.push(importedEntries[index]);
+        for (let index = 0; index < indexedKeys.length; ++index)
+            normalizedEntries.push(importedEntries[indexedKeys[index]]);
         return normalizedEntries;
     }
     function resourceBlockSourceText(tagTexts) {

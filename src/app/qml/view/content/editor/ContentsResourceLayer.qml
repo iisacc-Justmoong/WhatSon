@@ -18,13 +18,35 @@ Item {
             return [];
         if (Array.isArray(value))
             return value;
-        const length = Number(value.length);
-        if (isFinite(length) && length >= 0) {
+
+        const explicitLength = Number(value.length);
+        if (isFinite(explicitLength) && explicitLength >= 0) {
             const normalized = [];
-            for (let index = 0; index < Math.floor(length); ++index)
+            for (let index = 0; index < Math.floor(explicitLength); ++index)
                 normalized.push(value[index]);
             return normalized;
         }
+
+        const explicitCount = Number(value.count);
+        if (isFinite(explicitCount) && explicitCount >= 0) {
+            const normalized = [];
+            for (let index = 0; index < Math.floor(explicitCount); ++index)
+                normalized.push(value[index]);
+            return normalized;
+        }
+
+        const indexedKeys = Object.keys(value).filter(function (key) {
+            return /^\d+$/.test(key);
+        }).sort(function (lhs, rhs) {
+            return Number(lhs) - Number(rhs);
+        });
+        if (indexedKeys.length > 0) {
+            const normalized = [];
+            for (let index = 0; index < indexedKeys.length; ++index)
+                normalized.push(value[indexedKeys[index]]);
+            return normalized;
+        }
+
         return [];
     }
     readonly property var resourceEntries: resourceLayer.normalizedList(renderedResources)

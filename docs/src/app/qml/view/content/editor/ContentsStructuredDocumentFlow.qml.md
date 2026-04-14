@@ -7,6 +7,10 @@ Hosts the document-native block editor for structured `.wsnbody` content.
 - Consumes `ContentsStructuredBlockRenderer.renderedDocumentBlocks`.
 - Also consumes `ContentsBodyResourceRenderer.renderedResources` so `type=resource` blocks can resolve from the
   canonical `<resource ... />` source tag to the real asset file inside the `.wsresource` package.
+- The flow now also normalizes non-Array Qt sequence wrappers for both `renderedDocumentBlocks` and
+  `renderedResources`, accepting `length`, `count`, or numeric object keys.
+  Structured resource blocks therefore do not lose their resolved payload just because the backing `QVariantList`
+  reaches QML through a wrapper object instead of a native JS array.
 - Renders text/agenda/callout/resource/break as one ordered document column.
 - The ordered document column now keeps a `10px` inter-block gap so mixed prose + image notes read like a markdown/
   HTML body rather than one collapsed zero-gap stack.

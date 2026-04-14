@@ -130,6 +130,11 @@ structured document-flow editor changes.
 - A `<resource ... path=".../.wsresource" />` body slot must resolve through that package's `resource.xml` metadata to
   the actual internal asset file before image rendering.
   The inline bitmap viewer must never try to open the `.wsresource` directory path itself as if it were the payload.
+- The same body `<resource ... />` package reference must still resolve when the authored `path="..."` is expressed
+  relative to any of these contexts:
+  the mounted note directory, one of that note's ancestor folders, the owning `.wscontents`, the owning `.wshub`, the
+  parent directory of that `.wshub`, or a discovered `*.wsresources` root.
+  Read paths must not disagree about which bitmap file the tag points at.
 - Later text in that same note must flow below the inline resource frame; the card must not overlap subsequent
   paragraphs just because the tag itself is zero-width source markup.
 - Mixed prose/image note bodies should keep visible block spacing between the paragraph above, the inline image frame,
@@ -148,8 +153,10 @@ structured document-flow editor changes.
   The body renderer must prefer that mounted note-directory path instead of dropping the image frame for one turn.
 - In RichText editor mode, the rendered body should stay on paragraph/image document flow that is close to Qt raw
   RichText/RTF layout, rather than one flat `<br/>` chain plus hidden spacer overlays.
-- A note that only contains prose plus body `<resource ... />` tags must stay on the legacy inline editor host.
-  Resource presence alone must not swap the active editor implementation into `ContentsStructuredDocumentFlow.qml`.
+- A note that contains prose plus body `<resource ... />` tags must still let the parser activate
+  `ContentsStructuredDocumentFlow.qml` for that selected note.
+  The inline image/resource frame must come from the parser-owned document block at the authored slot, not from a
+  best-effort legacy overlay fallback.
 - In structured-flow mode, a `type=resource` block must render through the same image frame card used elsewhere in the
   editor, and it must occupy real document height in the block column rather than an overlay aligned on top of text.
 - The first structured resource block in a note must still resolve its inline asset payload.
@@ -159,6 +166,10 @@ structured document-flow editor changes.
   reaches QML with `renderMode=document`.
   Real bitmap paths/formats must win over that downgraded metadata state; the editor must not fabricate any generic
   document summary card while the asset itself is resolvable.
+- The same resolved resource payload must still survive when the C++ renderer reaches QML as a wrapped `QVariantList`
+  instead of a native JS array.
+  `length`, `count`, or numeric-key object façades must all preserve the inline image/resource card rather than leaving
+  only the reserved placeholder lines in the editor body.
 - If one structured resource block first matches a metadata-only placeholder entry and later matches a resolved entry
   with the real bitmap payload path, the block must prefer that resolved payload.
   The same body slot must not remain stuck on a fabricated generic document summary surface because an earlier partial match

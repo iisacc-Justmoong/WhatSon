@@ -151,6 +151,117 @@ namespace
         return {};
     }
 
+    QString resolvePrimaryHubChildDirectory(
+        const QString& hubRootPath,
+        const QString& fixedDirectoryName,
+        const QString& wildcardPattern)
+    {
+        const QString normalizedHubRootPath = normalizePath(hubRootPath);
+        if (normalizedHubRootPath.isEmpty() || !QFileInfo(normalizedHubRootPath).isDir())
+        {
+            return {};
+        }
+
+        const QDir hubDir(normalizedHubRootPath);
+        const QString fixedPath = hubDir.filePath(fixedDirectoryName);
+        if (QFileInfo(fixedPath).isDir())
+        {
+            return normalizePath(fixedPath);
+        }
+
+        const QStringList candidates = hubDir.entryList(
+            QStringList{wildcardPattern},
+            QDir::Dirs | QDir::NoDotAndDotDot,
+            QDir::Name);
+        if (candidates.isEmpty())
+        {
+            return {};
+        }
+
+        return normalizePath(hubDir.filePath(candidates.constFirst()));
+    }
+
+    void appendExistingDirectoryPath(QStringList* candidateBasePaths, const QString& path)
+    {
+        if (candidateBasePaths == nullptr)
+        {
+            return;
+        }
+
+        const QString normalizedPath = normalizePath(path);
+        if (normalizedPath.isEmpty() || !QFileInfo(normalizedPath).isDir())
+        {
+            return;
+        }
+
+        if (!candidateBasePaths->contains(normalizedPath))
+        {
+            candidateBasePaths->push_back(normalizedPath);
+        }
+    }
+
+    QStringList resourceReferenceBasePathsForNoteDirectory(const QString& noteDirectoryPath)
+    {
+        QStringList candidateBasePaths;
+
+        const QString normalizedNoteDirectoryPath = normalizePath(noteDirectoryPath);
+        if (!normalizedNoteDirectoryPath.isEmpty())
+        {
+            appendExistingDirectoryPath(&candidateBasePaths, normalizedNoteDirectoryPath);
+        }
+
+        const QString hubRootPath = findAncestorDirectoryWithSuffix(
+            normalizedNoteDirectoryPath,
+            QStringLiteral(".wshub"));
+        candidateBasePaths.append(
+            WhatSon::Resources::resourceReferenceBasePathsForContext(
+                normalizedNoteDirectoryPath,
+                QString(),
+                hubRootPath));
+        candidateBasePaths.removeAll(QString());
+        candidateBasePaths.removeDuplicates();
+
+        QFileInfo noteLocationInfo(normalizedNoteDirectoryPath);
+        QDir currentDirectory = noteLocationInfo.isDir()
+            ? QDir(noteLocationInfo.absoluteFilePath())
+            : noteLocationInfo.absoluteDir();
+        const QString normalizedHubRootPath = normalizePath(hubRootPath);
+        while (currentDirectory.exists())
+        {
+            appendExistingDirectoryPath(&candidateBasePaths, currentDirectory.absolutePath());
+            if (!normalizedHubRootPath.isEmpty()
+                && normalizePath(currentDirectory.absolutePath()) == normalizedHubRootPath)
+            {
+                break;
+            }
+            if (!currentDirectory.cdUp())
+            {
+                break;
+            }
+        }
+
+        if (!normalizedHubRootPath.isEmpty())
+        {
+            appendExistingDirectoryPath(
+                &candidateBasePaths,
+                resolvePrimaryHubChildDirectory(
+                    normalizedHubRootPath,
+                    QStringLiteral(".wscontents"),
+                    QStringLiteral("*.wscontents")));
+
+            const QStringList resourceRootDirectories =
+                WhatSon::Resources::resolveResourceRootDirectories(normalizedHubRootPath);
+            for (const QString& resourceRootDirectory : resourceRootDirectories)
+            {
+                appendExistingDirectoryPath(&candidateBasePaths, resourceRootDirectory);
+            }
+        }
+
+        candidateBasePaths.removeAll(QString());
+        candidateBasePaths.removeDuplicates();
+        return candidateBasePaths;
+    }
+
     QString extractXmlAttributeValue(const QString& tagText, const QStringList& attributeNames)
     {
         for (const QString& attributeName : attributeNames)
@@ -538,19 +649,70 @@ namespace
             const QString resourceId = extractXmlAttributeValue(
                 resourceTagText,
                 {QStringLiteral("id"), QStringLiteral("resourceId")});
-            const QString resolvedResourceLocation = WhatSon::Resources::resolveAssetLocationFromReference(
+            QString effectiveType = type;
+            QString effectiveFormat = format;
+            QString effectiveResourceId = resourceId;
+            QString effectiveResourcePath = resourcePath;
+            QString resolvedResourceLocation = WhatSon::Resources::resolveAssetLocationFromReference(
                 resourcePath,
                 basePaths);
+
+            const QString resolvedPackagePath = WhatSon::Resources::resolvePackageDirectoryFromReference(
+                resourcePath,
+                basePaths);
+            if (!resolvedPackagePath.isEmpty())
+            {
+                WhatSon::Resources::ResourcePackageMetadata metadata;
+                QString metadataError;
+                if (WhatSon::Resources::loadResourcePackageMetadata(
+                    resolvedPackagePath,
+                    &metadata,
+                    &metadataError))
+                {
+                    if (!metadata.resourceId.trimmed().isEmpty())
+                    {
+                        effectiveResourceId = metadata.resourceId.trimmed();
+                    }
+                    if (!metadata.resourcePath.trimmed().isEmpty())
+                    {
+                        effectiveResourcePath = normalizePath(metadata.resourcePath);
+                    }
+
+                    const QString metadataType =
+                        WhatSon::Resources::normalizedTypeFromBucketAndFormat(
+                            metadata.type,
+                            metadata.bucket,
+                            metadata.format);
+                    const QString metadataFormat = normalizedFormat(metadata.format);
+                    if (!metadataType.isEmpty())
+                    {
+                        effectiveType = metadataType;
+                    }
+                    if (!metadataFormat.isEmpty())
+                    {
+                        effectiveFormat = metadataFormat;
+                    }
+
+                    if (resolvedResourceLocation.isEmpty())
+                    {
+                        resolvedResourceLocation = normalizePath(
+                            WhatSon::Resources::resolveAssetPathFromMetadata(
+                                resolvedPackagePath,
+                                metadata));
+                    }
+                }
+            }
+
             const QString sourceUrl = normalizeSourceUrl(resolvedResourceLocation);
             resources.push_back(
                 buildRenderedResourceMap(
                     resourceIndex,
-                    type,
-                    format,
-                    resourcePath,
+                    effectiveType,
+                    effectiveFormat,
+                    effectiveResourcePath,
                     resolvedResourceLocation,
                     sourceUrl,
-                    resourceId,
+                    effectiveResourceId,
                     std::max(0, static_cast<int>(match.capturedStart(0))),
                     std::max(0, static_cast<int>(match.capturedEnd(0)))));
             ++resourceIndex;
@@ -838,11 +1000,7 @@ QVariantList ContentsBodyResourceRenderer::buildRenderedResources(
         };
     }
 
-    const QString hubRootPath = findAncestorDirectoryWithSuffix(normalizedNoteDirectoryPath, QStringLiteral(".wshub"));
-    const QStringList basePaths = WhatSon::Resources::resourceReferenceBasePathsForContext(
-        normalizedNoteDirectoryPath,
-        QString(),
-        hubRootPath);
+    const QStringList basePaths = resourceReferenceBasePathsForNoteDirectory(normalizedNoteDirectoryPath);
 
     const QString normalizedBodySourceText = bodySourceText.trimmed();
     if (!normalizedBodySourceText.isEmpty())

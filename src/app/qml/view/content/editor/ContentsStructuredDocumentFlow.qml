@@ -53,24 +53,74 @@ FocusScope {
     function normalizedBlocks() {
         if (Array.isArray(documentBlocks))
             return documentBlocks
-        if (documentBlocks && documentBlocks.length !== undefined) {
+
+        const explicitLength = documentBlocks ? Number(documentBlocks.length) : NaN
+        if (isFinite(explicitLength) && explicitLength >= 0) {
             const normalized = []
-            for (let index = 0; index < documentBlocks.length; ++index)
+            for (let index = 0; index < Math.floor(explicitLength); ++index)
                 normalized.push(documentBlocks[index])
             return normalized
         }
+
+        const explicitCount = documentBlocks ? Number(documentBlocks.count) : NaN
+        if (isFinite(explicitCount) && explicitCount >= 0) {
+            const normalized = []
+            for (let index = 0; index < Math.floor(explicitCount); ++index)
+                normalized.push(documentBlocks[index])
+            return normalized
+        }
+
+        if (documentBlocks) {
+            const indexedKeys = Object.keys(documentBlocks).filter(function (key) {
+                return /^\d+$/.test(key)
+            }).sort(function (lhs, rhs) {
+                return Number(lhs) - Number(rhs)
+            })
+            if (indexedKeys.length > 0) {
+                const normalized = []
+                for (let index = 0; index < indexedKeys.length; ++index)
+                    normalized.push(documentBlocks[indexedKeys[index]])
+                return normalized
+            }
+        }
+
         return []
     }
 
     function normalizedResourceEntries() {
         if (Array.isArray(renderedResources))
             return renderedResources
-        if (renderedResources && renderedResources.length !== undefined) {
+
+        const explicitLength = renderedResources ? Number(renderedResources.length) : NaN
+        if (isFinite(explicitLength) && explicitLength >= 0) {
             const normalized = []
-            for (let index = 0; index < renderedResources.length; ++index)
+            for (let index = 0; index < Math.floor(explicitLength); ++index)
                 normalized.push(renderedResources[index])
             return normalized
         }
+
+        const explicitCount = renderedResources ? Number(renderedResources.count) : NaN
+        if (isFinite(explicitCount) && explicitCount >= 0) {
+            const normalized = []
+            for (let index = 0; index < Math.floor(explicitCount); ++index)
+                normalized.push(renderedResources[index])
+            return normalized
+        }
+
+        if (renderedResources) {
+            const indexedKeys = Object.keys(renderedResources).filter(function (key) {
+                return /^\d+$/.test(key)
+            }).sort(function (lhs, rhs) {
+                return Number(lhs) - Number(rhs)
+            })
+            if (indexedKeys.length > 0) {
+                const normalized = []
+                for (let index = 0; index < indexedKeys.length; ++index)
+                    normalized.push(renderedResources[indexedKeys[index]])
+                return normalized
+            }
+        }
+
         return []
     }
 

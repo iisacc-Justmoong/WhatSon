@@ -22,6 +22,16 @@ Implements note-body resource rendering data extraction for the editor surface.
 - Scans comments and resource tags in one pass so comment text does not rewrite the authoring buffer before source-span
   offsets are recorded.
 - Resolves `.wsresource` references through `WhatSon::Resources::resolveAssetLocationFromReference(...)`.
+- Expands resource-reference base paths beyond the mounted note directory itself:
+  note-directory ancestors up to the owning `.wshub`, the resolved `.wscontents` directory, the hub parent for
+  legacy `Hub.wshub/...` references, and every discovered `*.wsresources` root now participate in path resolution.
+  Body `<resource ... />` tags therefore resolve consistently whether they were authored relative to the note package,
+  a contents-level directory, the hub root, or a resource-root directory.
+- When a `<resource ... />` tag points at a `.wsresource` package, the renderer now reloads that package's
+  `resource.xml` metadata during body rendering and promotes `resourceId`, `resourcePath`, `type`, and `format` from
+  metadata before building the QML-facing entry.
+  Inline image promotion therefore no longer depends solely on the literal tag attributes staying perfectly in sync
+  with package metadata.
 - Produces render entries with:
   - `renderMode = "image"` for image resources
   - `renderMode = "video"` for video resources

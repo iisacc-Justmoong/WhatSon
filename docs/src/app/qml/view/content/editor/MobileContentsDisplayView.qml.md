@@ -4,15 +4,15 @@
 Mobile content editor host.
 
 ## Structured Document Flow
-- `agenda`, `callout`, `resource`, and `break` remain `.wsnbody` body tags, but mobile now limits structured-flow
-  activation to non-resource block types.
-  A note that only gained `<resource ... />` tags must stay on the legacy editor surface so the active editor
-  implementation does not swap mid-edit.
+- `agenda`, `callout`, `resource`, and `break` remain `.wsnbody` body tags, and mobile now lets any parsed non-text
+  block, including `resource`, activate `ContentsStructuredDocumentFlow.qml`.
+  A note whose RAW body contains `<resource ... />` therefore renders that block through parser-owned document flow
+  instead of depending on the legacy editor overlay path.
 - Canonical live `<resource ... />` markup is still tracked through the live editor buffer, presentation snapshot, and
   selection-bridge body-source snapshot so `ContentsBodyResourceRenderer` can resolve against the freshest RAW source,
-  but that resource presence alone no longer activates `ContentsStructuredDocumentFlow.qml`.
-- `ContentsStructuredDocumentFlow.qml` therefore remains the shared block-flow host for agenda/callout/break notes and
-  for notes that already entered structured-flow mode for some non-resource reason.
+  and that same parsed resource presence now activates `ContentsStructuredDocumentFlow.qml`.
+- `ContentsStructuredDocumentFlow.qml` therefore becomes the shared block-flow host for agenda/callout/break/resource
+  notes whenever the parser reports non-text document blocks.
 - Structured block rewrites route through `applyDocumentSourceMutation(...)` so mobile keeps the same RAW persistence
   contract as desktop, but they no longer force an immediate full legacy presentation rebuild while structured-flow
   editing remains active.
@@ -32,6 +32,9 @@ Mobile content editor host.
   Qt-list-compatible helper used elsewhere in the editor host.
   Mobile therefore no longer drops the first resolved resource entry just because the renderer returned a
   `QVariantList` instead of a native JS array.
+- That same helper now also accepts sequence wrappers that expose `length`, `count`, or only numeric object keys.
+  Inline body resources therefore keep their real overlay/render payload on mobile as well when the renderer reaches
+  QML as a non-Array list façade.
 - While structured-flow mode is active, a mobile left-tap in the structured document viewport now routes through
   `requestStructuredDocumentEndEdit()` so inline resource notes can always reopen an editable tail position.
 - The legacy mobile `ContentsInlineFormatEditor` now unloads entirely during structured-flow editing and is recreated only
@@ -90,8 +93,8 @@ Mobile content editor host.
   `ContentsBodyResourceRenderer` so the dropped resource card appears in the body overlay before the worker-thread note
   flush finishes.
 - Mobile now also rescans the live `editorText` buffer for canonical `<resource ... />` markup on each edit turn.
-  That keeps resource resolution tied to the newest RAW source without forcing a same-turn host swap for resource-only
-  notes.
+  That keeps resource resolution tied to the newest RAW source while still allowing parser-owned resource blocks to
+  activate the structured document flow on the same selected note.
 - Figma node `294:7933` is also the mixed-content reference for mobile-hosted note bodies:
   text and image frames share one authored document column, so inline images must not replace the entire editor with a
   dedicated resource viewer unless the user is directly browsing a resource package from the Resources hierarchy.
@@ -151,8 +154,8 @@ Mobile content editor host.
 - When the selection bridge can already expose a buffered dirty body for the newly selected note, the mobile host now
   consumes that note-owned payload through the ordinary selection-sync path instead of waiting for a stale filesystem
   read to arrive first.
-- Mobile note-open now also keeps the legacy inline editor path alive until the first settled structured render confirms
-  that the current selected note actually owns agenda/callout/break blocks.
+- Mobile note-open now also keeps the legacy inline editor path alive only until the first settled structured render confirms
+  that the current selected note actually owns parsed non-text blocks such as agenda/callout/break/resource.
 - Once structured mode has activated for that same note, later async reparses keep the structured surface mounted
   instead of bouncing through the legacy editor again.
 - Mobile note snapshot polling also pauses during `selectedNoteBodyLoading`, so the first lazy note-open read is not

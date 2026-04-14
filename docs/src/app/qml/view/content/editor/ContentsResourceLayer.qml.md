@@ -16,6 +16,10 @@ tag location when that resource is still using the overlay/fallback presentation
 
 ## Behavior
 - Reuses `ContentsResourceRenderCard.qml` in `inlinePresentation` mode instead of duplicating resource-card markup.
+- Normalizes rendered-resource lists from native JS arrays, Qt sequence wrappers with `length`/`count`, and numeric-key
+  object façades.
+  The overlay layer therefore still paints inline resource frames when the renderer payload reaches QML as a wrapped
+  `QVariantList` instead of a native array.
 - Computes each card Y position from `sourceStart`, matching the same overlay contract already used by agenda/callout
   layers.
 - Exposes `resourceCount` and `implicitHeight` so the host can gate visibility without a second list transform.

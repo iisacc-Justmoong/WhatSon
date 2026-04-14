@@ -4,15 +4,15 @@
 Desktop content editor host.
 
 ## Structured Document Flow
-- `agenda`, `callout`, `resource`, and `break` remain `.wsnbody` body tags, but desktop now limits structured-flow
-  activation to non-resource block types.
-  A note that only gained `<resource ... />` tags must stay on the legacy inline editor surface so the active editor
-  implementation does not swap out mid-edit.
+- `agenda`, `callout`, `resource`, and `break` remain `.wsnbody` body tags, and desktop now lets any parsed non-text
+  block, including `resource`, activate `ContentsStructuredDocumentFlow.qml`.
+  A note whose RAW body contains `<resource ... />` therefore renders that block through the parser-owned document flow
+  instead of relying on the legacy inline-editor overlay path.
 - Canonical live `<resource ... />` markup is still tracked through the live editor buffer, presentation snapshot, and
   selection-bridge snapshot so `ContentsBodyResourceRenderer` can resolve inline resources against the freshest RAW
-  source, but that resource presence alone no longer activates `ContentsStructuredDocumentFlow.qml`.
-- `ContentsStructuredDocumentFlow.qml` therefore remains the host for agenda/callout/break notes and for mixed notes
-  that already entered block-flow mode for some non-resource reason.
+  source, and that same parsed resource presence now activates `ContentsStructuredDocumentFlow.qml`.
+- `ContentsStructuredDocumentFlow.qml` therefore becomes the host for agenda/callout/break/resource notes whenever the
+  parser reports non-text document blocks.
 - Source persistence for block edits now runs through `applyDocumentSourceMutation(...)`, which updates the RAW body,
   marks local authority, optionally restores focus inside the reparsed block, and only forces a full legacy
   presentation rebuild when the note actually falls back out of structured-flow mode.
@@ -33,6 +33,9 @@ Desktop content editor host.
   Qt-list-compatible helper used by import results.
   Resource-package browsing therefore no longer drops the first resolved entry just because the renderer exposed a
   `QVariantList` that is not tagged as a native JS array in QML.
+- That same helper now also accepts sequence wrappers that expose `length`, `count`, or only numeric object keys.
+  Inline body resources therefore keep their real overlay/render payload even when the C++ renderer reaches QML as a
+  non-Array list façade.
 - While structured-flow mode is active, a desktop left-click anywhere in the structured document viewport now routes
   through `requestStructuredDocumentEndEdit()`. That click re-enters editing at the document tail instead of leaving
   the user on a non-editable resource/break block focus.
@@ -93,8 +96,8 @@ Desktop content editor host.
   `ContentsBodyResourceRenderer` so the dropped resource card appears in the body overlay before the worker-thread note
   flush finishes.
 - Desktop now also rescans the live `editorText` buffer for canonical `<resource ... />` markup on each edit turn.
-  That keeps resource resolution tied to the latest RAW source without forcing a same-turn host swap out of the legacy
-  inline editor for resource-only notes.
+  That keeps resource resolution tied to the latest RAW source while still allowing parser-owned resource blocks to
+  activate the structured document flow on the same selected note.
 - Figma node `294:7933` is now the mixed-content reference for this path:
   one text-editor column contains prose above the image frame and prose below it.
   Inline image blocks therefore behave like authored body elements, not like a full-surface resource takeover.
@@ -164,8 +167,8 @@ Desktop content editor host.
 - Host-side selection and typing controllers now bind to `contentsView.contentEditor` explicitly instead of relying on a
   self-referential `contentEditor: contentEditor` assignment that produced runtime binding loops under bound-component
   semantics.
-- Desktop note-open now keeps the legacy inline editor path alive until the first settled structured render confirms
-  that the currently selected note actually owns agenda/callout/break blocks.
+- Desktop note-open now keeps the legacy inline editor path alive only until the first settled structured render confirms
+  that the currently selected note actually owns parsed non-text blocks such as agenda/callout/break/resource.
 - After that first same-note activation, later async reparses keep the structured-flow surface mounted instead of
   bouncing back through the legacy editor during in-block editing.
 - Timer-driven note snapshot polling now also pauses while the selected note body is still loading, so note-open does
