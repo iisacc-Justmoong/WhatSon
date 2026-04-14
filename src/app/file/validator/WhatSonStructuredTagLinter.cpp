@@ -1,11 +1,15 @@
 #include "WhatSonStructuredTagLinter.hpp"
+#include "file/note/WhatSonNoteBodySemanticTagSupport.hpp"
 
 #include <QDate>
 #include <QRegularExpression>
 #include <QVariantList>
+#include <QXmlStreamReader>
 
 namespace
 {
+    namespace SemanticTags = WhatSon::NoteBodySemanticTagSupport;
+
     const QRegularExpression kAgendaOpenPattern(
         QStringLiteral(R"(<agenda\b[^>]*>)"),
         QRegularExpression::CaseInsensitiveOption);
@@ -51,6 +55,8 @@ namespace
     const QRegularExpression kTagAttributePattern(
         QStringLiteral(R"ATTR(\b([A-Za-z_][A-Za-z0-9_.:-]*)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+)))ATTR"),
         QRegularExpression::CaseInsensitiveOption);
+    const QRegularExpression kXmlLikeTagPattern(
+        QStringLiteral(R"(<\s*/?\s*([A-Za-z_][A-Za-z0-9_.:-]*)\b[^>]*>)"));
 
     QString normalizePlainText(QString text)
     {
@@ -82,6 +88,11 @@ namespace
         value.replace(QStringLiteral("\""), QStringLiteral("&quot;"));
         value.replace(QStringLiteral("'"), QStringLiteral("&apos;"));
         return value;
+    }
+
+    QString normalizedTagName(const QString& rawTagName)
+    {
+        return rawTagName.trimmed().toCaseFolded();
     }
 
     int regexMatchCount(const QString& text, const QRegularExpression& pattern)
@@ -163,6 +174,25 @@ namespace
         return count;
     }
 
+    bool isClosingTagToken(const QString& token)
+    {
+        for (int index = 1; index < token.size(); ++index)
+        {
+            const QChar ch = token.at(index);
+            if (!ch.isSpace())
+            {
+                return ch == QLatin1Char('/');
+            }
+        }
+        return false;
+    }
+
+    bool isSelfClosingTagToken(QString token)
+    {
+        token = token.trimmed();
+        return token.endsWith(QStringLiteral("/>"));
+    }
+
     bool hasCanonicalIsoDate(const QString& rawDate)
     {
         const QString decodedDate = decodeXmlEntities(rawDate).trimmed();
@@ -211,6 +241,64 @@ namespace
     QString canonicalCalloutStartTag()
     {
         return QStringLiteral("<callout>");
+    }
+
+    QString normalizedXmlStartTag(
+        const QString& rawTagText,
+        const QString& tagName,
+        const bool selfClosing)
+    {
+        const QString normalizedName = normalizedTagName(tagName);
+        if (normalizedName.isEmpty())
+        {
+            return {};
+        }
+
+        QStringList attributes;
+        QRegularExpressionMatchIterator iterator = kTagAttributePattern.globalMatch(rawTagText);
+        while (iterator.hasNext())
+        {
+            const QRegularExpressionMatch match = iterator.next();
+            const QString attributeName = match.captured(1).trimmed();
+            if (attributeName.isEmpty())
+            {
+                continue;
+            }
+
+            QString value;
+            if (match.capturedStart(2) >= 0)
+            {
+                value = match.captured(2);
+            }
+            else if (match.capturedStart(3) >= 0)
+            {
+                value = match.captured(3);
+            }
+            else if (match.capturedStart(4) >= 0)
+            {
+                value = match.captured(4);
+            }
+
+            attributes.push_back(
+                QStringLiteral("%1=\"%2\"")
+                    .arg(attributeName, escapeXmlAttributeValue(decodeXmlEntities(value))));
+        }
+
+        if (attributes.isEmpty())
+        {
+            return selfClosing
+                ? QStringLiteral("<%1/>").arg(normalizedName)
+                : QStringLiteral("<%1>").arg(normalizedName);
+        }
+
+        return selfClosing
+            ? QStringLiteral("<%1 %2/>").arg(normalizedName, attributes.join(QLatin1Char(' ')))
+            : QStringLiteral("<%1 %2>").arg(normalizedName, attributes.join(QLatin1Char(' ')));
+    }
+
+    QString normalizeResourceStartTag(const QString& rawTagText)
+    {
+        return normalizedXmlStartTag(rawTagText, QStringLiteral("resource"), true);
     }
 
     QString canonicalEmptyTask()
@@ -419,6 +507,287 @@ namespace
             {QStringLiteral("wellFormed"), true},
             {QStringLiteral("sourceLength"), 0},
             {QStringLiteral("issues"), QVariantList()}
+        };
+    }
+
+    bool isStandaloneStructuredSourceLine(const QString& lineText)
+    {
+        const QString trimmedLine = normalizePlainText(lineText).trimmed();
+        if (trimmedLine.isEmpty())
+        {
+            return false;
+        }
+
+        static const QRegularExpression standaloneStructuredLinePattern(
+            QStringLiteral(
+                R"(^(?:</break>|<resource\b[^>]*?/?>|<callout\b[^>]*>[\s\S]*</callout>|<agenda\b[^>]*>[\s\S]*</agenda>|<event\b[^>]*>|</event>)$)"),
+            QRegularExpression::CaseInsensitiveOption);
+        return standaloneStructuredLinePattern.match(trimmedLine).hasMatch();
+    }
+
+    QString serializeXmlLintLine(
+        const QString& lineText,
+        const QStringList& carriedOpenStyleTags,
+        QStringList* nextCarriedOpenStyleTags)
+    {
+        if (nextCarriedOpenStyleTags != nullptr)
+        {
+            nextCarriedOpenStyleTags->clear();
+        }
+
+        if (lineText.isEmpty() && carriedOpenStyleTags.isEmpty())
+        {
+            return {};
+        }
+
+        QString output;
+        QStringList openStyleTags = carriedOpenStyleTags;
+        for (const QString& openStyleTag : carriedOpenStyleTags)
+        {
+            output += QStringLiteral("<%1>").arg(openStyleTag);
+        }
+
+        qsizetype cursor = 0;
+        QRegularExpressionMatchIterator iterator = kXmlLikeTagPattern.globalMatch(lineText);
+        while (iterator.hasNext())
+        {
+            const QRegularExpressionMatch match = iterator.next();
+            const qsizetype tagStart = match.capturedStart(0);
+            const qsizetype tagEnd = match.capturedEnd(0);
+            if (tagStart < 0 || tagEnd <= tagStart)
+            {
+                continue;
+            }
+
+            if (tagStart > cursor)
+            {
+                output += escapeXmlAttributeValue(lineText.mid(cursor, tagStart - cursor));
+            }
+
+            const QString fullTagToken = match.captured(0);
+            const QString rawTagName = match.captured(1);
+            const QString normalizedName = normalizedTagName(rawTagName);
+            const bool closingTag = isClosingTagToken(fullTagToken);
+            const bool selfClosingTag = isSelfClosingTagToken(fullTagToken);
+
+            if (SemanticTags::isBreakDividerTagName(rawTagName))
+            {
+                output += QStringLiteral("<break/>");
+                cursor = tagEnd;
+                continue;
+            }
+
+            if (SemanticTags::isResourceTagName(rawTagName))
+            {
+                if (!closingTag)
+                {
+                    output += normalizeResourceStartTag(fullTagToken);
+                }
+                cursor = tagEnd;
+                continue;
+            }
+
+            if (SemanticTags::isAgendaTagName(rawTagName))
+            {
+                if (closingTag)
+                {
+                    output += QStringLiteral("</agenda>");
+                }
+                else
+                {
+                    output += canonicalAgendaStartTag(fullTagToken);
+                    if (selfClosingTag)
+                    {
+                        output += QStringLiteral("</agenda>");
+                    }
+                }
+                cursor = tagEnd;
+                continue;
+            }
+
+            if (SemanticTags::isTaskTagName(rawTagName))
+            {
+                if (closingTag)
+                {
+                    output += QStringLiteral("</task>");
+                }
+                else
+                {
+                    output += canonicalTaskStartTag(fullTagToken);
+                    if (selfClosingTag)
+                    {
+                        output += QStringLiteral("</task>");
+                    }
+                }
+                cursor = tagEnd;
+                continue;
+            }
+
+            if (SemanticTags::isCalloutTagName(rawTagName))
+            {
+                if (closingTag)
+                {
+                    output += QStringLiteral("</callout>");
+                }
+                else
+                {
+                    output += canonicalCalloutStartTag();
+                    if (selfClosingTag)
+                    {
+                        output += QStringLiteral("</callout>");
+                    }
+                }
+                cursor = tagEnd;
+                continue;
+            }
+
+            if (normalizedName == QStringLiteral("br"))
+            {
+                output += QStringLiteral("<br/>");
+                cursor = tagEnd;
+                continue;
+            }
+
+            if (SemanticTags::isSourceSemanticPassThroughTagName(rawTagName)
+                || SemanticTags::isSourceProjectionTextBlockElement(rawTagName)
+                || SemanticTags::isHashtagTagName(rawTagName))
+            {
+                const QString canonicalName =
+                    SemanticTags::isHashtagTagName(rawTagName)
+                    ? QStringLiteral("tag")
+                    : normalizedName;
+                if (closingTag)
+                {
+                    output += QStringLiteral("</%1>").arg(canonicalName);
+                }
+                else if (normalizedName == QStringLiteral("next"))
+                {
+                    output += QStringLiteral("<next/>");
+                }
+                else
+                {
+                    output += normalizedXmlStartTag(fullTagToken, canonicalName, selfClosingTag);
+                }
+                cursor = tagEnd;
+                continue;
+            }
+
+            const QString inlineStyleTag = SemanticTags::canonicalInlineStyleTagName(rawTagName);
+            if (!inlineStyleTag.isEmpty())
+            {
+                if (closingTag)
+                {
+                    for (int index = openStyleTags.size() - 1; index >= 0; --index)
+                    {
+                        output += QStringLiteral("</%1>").arg(openStyleTags.at(index));
+                        if (openStyleTags.at(index) == inlineStyleTag)
+                        {
+                            openStyleTags.removeAt(index);
+                            break;
+                        }
+                        openStyleTags.removeAt(index);
+                    }
+                }
+                else if (!selfClosingTag)
+                {
+                    output += QStringLiteral("<%1>").arg(inlineStyleTag);
+                    openStyleTags.push_back(inlineStyleTag);
+                }
+                cursor = tagEnd;
+                continue;
+            }
+
+            output += escapeXmlAttributeValue(fullTagToken);
+            cursor = tagEnd;
+        }
+
+        if (cursor < lineText.size())
+        {
+            output += escapeXmlAttributeValue(lineText.mid(cursor));
+        }
+
+        if (nextCarriedOpenStyleTags != nullptr)
+        {
+            *nextCarriedOpenStyleTags = openStyleTags;
+        }
+
+        for (int index = openStyleTags.size() - 1; index >= 0; --index)
+        {
+            output += QStringLiteral("</%1>").arg(openStyleTags.at(index));
+        }
+
+        return output;
+    }
+
+    QString xmlLintDocumentFromSourceText(const QString& sourceText)
+    {
+        const QString normalizedSourceText = normalizePlainText(sourceText);
+        QString xmlDocument = QStringLiteral("<contents id=\"lint\"><body>");
+        if (normalizedSourceText.isEmpty())
+        {
+            xmlDocument += QStringLiteral("</body></contents>");
+            return xmlDocument;
+        }
+
+        const QStringList lines = normalizedSourceText.split(QLatin1Char('\n'), Qt::KeepEmptyParts);
+        QStringList carriedOpenStyleTags;
+        for (const QString& line : lines)
+        {
+            const QString trimmedLine = line.trimmed();
+            if (isStandaloneStructuredSourceLine(trimmedLine))
+            {
+                carriedOpenStyleTags.clear();
+                xmlDocument += serializeXmlLintLine(trimmedLine, {}, nullptr);
+                continue;
+            }
+
+            xmlDocument += QStringLiteral("<paragraph>");
+            QStringList nextCarriedOpenStyleTags;
+            xmlDocument += serializeXmlLintLine(line, carriedOpenStyleTags, &nextCarriedOpenStyleTags);
+            carriedOpenStyleTags = nextCarriedOpenStyleTags;
+            xmlDocument += QStringLiteral("</paragraph>");
+        }
+
+        xmlDocument += QStringLiteral("</body></contents>");
+        return xmlDocument;
+    }
+
+    QVariantMap buildGenericXmlVerification(const QString& sourceText)
+    {
+        const QString xmlDocument = xmlLintDocumentFromSourceText(sourceText);
+        QXmlStreamReader reader(xmlDocument);
+        int startElementCount = 0;
+        while (!reader.atEnd())
+        {
+            reader.readNext();
+            if (reader.isStartElement())
+            {
+                ++startElementCount;
+            }
+        }
+
+        QVariantList issues;
+        if (reader.hasError())
+        {
+            issues.push_back(issueMap(
+                QStringLiteral("body_xml_not_well_formed"),
+                reader.errorString().trimmed().isEmpty()
+                    ? QStringLiteral("Body semantic/source tags do not form a well-formed XML projection.")
+                    : QStringLiteral("Body semantic/source tags do not form a well-formed XML projection: %1")
+                          .arg(reader.errorString().trimmed()),
+                {
+                    {QStringLiteral("columnNumber"), static_cast<int>(reader.columnNumber())},
+                    {QStringLiteral("lineNumber"), static_cast<int>(reader.lineNumber())}
+                }));
+        }
+
+        return QVariantMap {
+            {QStringLiteral("tagName"), QStringLiteral("xml")},
+            {QStringLiteral("wellFormed"), issues.isEmpty()},
+            {QStringLiteral("sourceLength"), sourceText.size()},
+            {QStringLiteral("syntheticXmlLength"), xmlDocument.size()},
+            {QStringLiteral("startElementCount"), startElementCount},
+            {QStringLiteral("issues"), issues}
         };
     }
 }
@@ -699,22 +1068,26 @@ QVariantMap WhatSonStructuredTagLinter::buildStructuredVerification(
     const QVariantMap normalizedCalloutVerification =
         normalizedVerificationFallback(calloutVerification, QStringLiteral("callout"));
     const QVariantMap breakVerification = buildBreakVerification(sourceText);
+    const QString normalizedSourceText = normalizeStructuredSourceText(sourceText);
+    const QVariantMap xmlVerification = buildGenericXmlVerification(normalizedSourceText);
     const QVariantList issues = mergedIssues(
         normalizedAgendaVerification.value(QStringLiteral("issues")).toList(),
         normalizedCalloutVerification.value(QStringLiteral("issues")).toList(),
-        breakVerification.value(QStringLiteral("issues")).toList());
-
-    const QString normalizedSourceText = normalizeStructuredSourceText(sourceText);
+        mergedIssues(
+            breakVerification.value(QStringLiteral("issues")).toList(),
+            xmlVerification.value(QStringLiteral("issues")).toList()));
     return QVariantMap {
         {QStringLiteral("agenda"), normalizedAgendaVerification},
         {QStringLiteral("callout"), normalizedCalloutVerification},
         {QStringLiteral("break"), breakVerification},
+        {QStringLiteral("xml"), xmlVerification},
         {QStringLiteral("sourceLength"), sourceText.size()},
         {QStringLiteral("canonicalizationSuggested"), normalizedSourceText != normalizePlainText(sourceText)},
         {QStringLiteral("wellFormed"),
          normalizedAgendaVerification.value(QStringLiteral("wellFormed")).toBool()
              && normalizedCalloutVerification.value(QStringLiteral("wellFormed")).toBool()
-             && breakVerification.value(QStringLiteral("wellFormed")).toBool()},
+             && breakVerification.value(QStringLiteral("wellFormed")).toBool()
+             && xmlVerification.value(QStringLiteral("wellFormed")).toBool()},
         {QStringLiteral("issues"), issues}
     };
 }

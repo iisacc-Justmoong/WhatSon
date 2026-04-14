@@ -10,8 +10,9 @@ Declares the editor-side structured-block renderer that projects proprietary blo
 - `agendaParseVerification`: latest agenda parser verification report forwarded from `ContentsAgendaBackend`.
 - `calloutParseVerification`: latest callout parser verification report forwarded from `ContentsCalloutBackend`.
 - `structuredParseVerification`: merged renderer-level verification report that bundles agenda/callout/break
-  verification, a top-level `wellFormed` bit, and `canonicalizationSuggested` when the RAW source can be safely
-  normalized by the file-layer linter.
+  verification plus the linter's synthetic XML/body well-formedness report for supported semantic tags.
+  It exposes a top-level `wellFormed` bit, an `xml` child verification payload, and `canonicalizationSuggested` when
+  the RAW source can be safely normalized by the file-layer linter.
 - `correctedSourceText`: canonical RAW source projection suggested by the file-layer structured-tag linter.
 - `correctionSuggested`: convenience bit telling QML whether the current source differs from that canonical projection.
 - `backgroundRefreshEnabled`: lets QML move structured parse/canonicalization work off the UI thread when the editor is

@@ -24,6 +24,9 @@ Builds canonical structured render data from `.wsnbody` source text.
 - Source refresh no longer runs the full structured verification pass once per backend signal. The renderer now parses the
   needed backends first, pulls their cached verification snapshots, and computes the combined structured verification
   once per source refresh.
+- That combined verification now includes the file-layer synthetic XML/body validation for supported semantic tags, so
+  renderer consumers can see malformed `paragraph`/`title`/`subTitle`/`event*`/`resource` source through the same
+  `structuredParseVerification` payload instead of only agenda/callout/break-specific lint.
 - Notes that do not contain any proprietary structured tags now skip agenda/callout backend parsing entirely and fall
   back to one plain text block plus linter-only verification.
 - When the host enables `backgroundRefreshEnabled`, notes that may contain agenda/callout/resource/break blocks now

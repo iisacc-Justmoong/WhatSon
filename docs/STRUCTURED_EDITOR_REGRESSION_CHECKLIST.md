@@ -27,6 +27,12 @@ structured document-flow editor changes.
   still surface their text content in order.
 - Autosaving a note that already contains `<title>`, `<subTitle>`, `<eventTitle>`, `<eventDescription>`, `<event>`, or
   `<next/>` must not rewrite those tags into escaped literal text.
+- Malformed semantic/body markup such as mismatched `<title>`, `<subTitle>`, `<event>`, inline-style, or
+  `<paragraph>` wrappers must flip `structuredParseVerification.wellFormed` to `false` and surface an `xml` issue
+  instead of silently passing lint and degrading later read projections.
+- Malformed `<resource ... />` body markup must also fail that `xml` verification path with parser location context;
+  the validator must not accept a partial semantic projection just because agenda/callout/break counts still look
+  balanced.
 
 ## Structured Shortcuts
 - In structured-flow mode, `Cmd+Opt+T`, `Cmd+Opt+C`, and `Cmd+Shift+H` invoked from the middle of a text block must

@@ -1,7 +1,8 @@
 # `src/app/file/validator/WhatSonStructuredTagLinter.hpp`
 
 ## Role
-`WhatSonStructuredTagLinter` owns note-body proprietary structured-tag linting and safe canonicalization.
+`WhatSonStructuredTagLinter` owns note-body proprietary structured-tag linting, safe canonicalization, and
+well-formedness verification for the supported semantic/body XML projection.
 
 ## Public API
 - `normalizeStructuredSourceText(const QString&)`
@@ -17,7 +18,10 @@
 - `buildCalloutVerification(const QString&, int parsedCalloutCount)`
   - Builds callout verification payloads for parser callers.
 - `buildStructuredVerification(const QVariantMap&, const QVariantMap&, const QString&)`
-  - Merges agenda/callout verification with break-tag lint into one renderer-friendly structured verification map.
+  - Merges agenda/callout verification with break-tag lint and synthetic XML well-formedness verification into one
+    renderer-friendly structured verification map.
+  - The merged payload now includes an `xml` child verification for supported semantic/body tags such as `paragraph`,
+    `title`, `subTitle`, `event*`, `resource`, `next`, hashtag tags, and inline style aliases.
 
 ## Layer Placement
 - This type lives in `file/validator` because the rules describe canonical `.wsnbody` source validity, not editor-widget behavior.
