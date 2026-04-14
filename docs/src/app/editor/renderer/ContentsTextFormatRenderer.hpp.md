@@ -32,6 +32,10 @@ embedded in the generic inline-tag parser.
   Builds the cheaper source-editing HTML surface.
   Markdown glyphs remain literal source text here; only proprietary `.wsnbody` inline tags are promoted into styled
   spans for editing.
+- `plainTextFromEditorSurfaceHtml(richTextHtml)`
+  Normalizes one Qt RichText editor-surface HTML snapshot back into visible plain text.
+  This is a read-side helper only; QML uses it to recover the user-visible text from Qt's serialized
+  `<!DOCTYPE HTML ... qrichtext ...>` payload without ever treating that HTML document as writable `.wsnbody` source.
 - `applyPlainTextReplacementToSource(sourceText, sourceStart, sourceEnd, replacementText)`
   Replaces one source span with escaped plain text directly in canonical `.wsnbody`.
   Source bounds are clamped against an `int`-safe `QString` length before stitching.

@@ -25,6 +25,7 @@ public:
 
     Q_INVOKABLE QString renderRichText(const QString& sourceText) const;
     Q_INVOKABLE QString normalizeInlineStyleAliasesForEditor(const QString& sourceText) const;
+    Q_INVOKABLE QString plainTextFromEditorSurfaceHtml(const QString& richTextHtml) const;
     Q_INVOKABLE QString applyPlainTextReplacementToSource(
         const QString& sourceText,
         int sourceStart,

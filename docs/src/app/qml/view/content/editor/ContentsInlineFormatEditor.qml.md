@@ -54,6 +54,10 @@ plain `QtQuick.TextEdit` as the actual rendering and input engine.
   active.
   During that fallback the wrapper snapshots the current visible plain text into the nested `TextEdit`, allowing the
   platform preedit string itself to render live instead of staying invisible until the next commit key such as space.
+- When the nested `TextEdit` is still in RichText mode, the wrapper now treats any Qt-serialized
+  `<!DOCTYPE HTML ... qrichtext ...>` payload as a presentation-only document snapshot.
+  It recovers visible plain text through `ContentsTextFormatRenderer.plainTextFromEditorSurfaceHtml(...)` before that
+  value is reused for IME fallback, diffing, or `textEdited(...)` dispatch.
 - When the user mutates the nested editor buffer locally, the wrapper now also discards any older deferred
   host-projected surface payload that was waiting behind focus/IME guards.
   A later blur or IME-settle turn therefore cannot reapply a stale RichText snapshot over the just-authored text.
@@ -87,9 +91,10 @@ plain `QtQuick.TextEdit` as the actual rendering and input engine.
 - The host no longer persists that whole-document RichText payload directly for ordinary typing.
 - Instead, the typing controller treats the signal as a notification and derives the actual mutation from
   `getText(...)` plus the current source/plain-text bridges.
-- The editor still emits the live `TextEdit.text` payload for formatting-oriented consumers. The earlier
-  fragment-based `getFormattedText(...)` save path was removed because it leaked `StartFragment`/fragment-scaffold
-  markup into note editing.
+- The editor now emits the wrapper's visible plain-text snapshot through `textEdited(...)`, even when the nested
+  `TextEdit.text` property currently contains Qt's serialized RichText document HTML.
+  The earlier fragment-based `getFormattedText(...)` save path was removed because it leaked
+  `StartFragment`/fragment-scaffold markup into note editing.
 - IME composition is now treated as a first-class input state:
   - wrapper-level `inputMethodComposing` / `preeditText` surface the native `TextEdit` composition state
   - app-driven persistence/mutation dispatch is suppressed while preedit text is active
@@ -155,6 +160,8 @@ plain `QtQuick.TextEdit` as the actual rendering and input engine.
 - direct typing must not surface fragment comment markup such as `<!--StartFragment-->`
 - any controller that needs the current visible plain-text buffer should prefer `currentPlainText()` over rebuilding the
   same full-surface snapshot ad hoc from nested `TextEdit` state
+- `currentPlainText()` and `textEdited(...)` must never return Qt's serialized RichText document scaffold
+  (`<!DOCTYPE HTML ... qrichtext ...>`) as if it were authored note text
 - Hangul IME composition must not delete previously committed text when a syllable block is assembled
 - Hangul IME composition must not leave split jamo behind after the committed syllable lands
 - Hangul IME composition and desktop RichText typing must not receive a programmatic `text` reinjection while

@@ -3,6 +3,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Controls as Controls
 import LVRS 1.0 as LV
+import WhatSon.App.Internal 1.0
 
 FocusScope {
     id: control
@@ -91,6 +92,28 @@ FocusScope {
 
     signal textEdited(string text)
 
+    function looksLikeQtRichTextDocument(serializedText) {
+        const normalizedText = serializedText === undefined || serializedText === null ? "" : String(serializedText)
+        if (normalizedText.length === 0)
+            return false
+        if (/<meta\s+name=["']qrichtext["']/i.test(normalizedText))
+            return true
+        return /<!DOCTYPE\s+HTML/i.test(normalizedText)
+                && /<html[\s>]/i.test(normalizedText)
+                && /<body[\s>]/i.test(normalizedText)
+    }
+
+    function plainTextFromSerializedRichText(serializedText) {
+        const normalizedText = serializedText === undefined || serializedText === null ? "" : String(serializedText)
+        if (normalizedText.length === 0)
+            return ""
+        if (!editorSurfaceTextBridge
+                || editorSurfaceTextBridge.plainTextFromEditorSurfaceHtml === undefined) {
+            return normalizedText
+        }
+        return String(editorSurfaceTextBridge.plainTextFromEditorSurfaceHtml(normalizedText))
+    }
+
     function forceActiveFocus() {
         textInput.forceActiveFocus();
     }
@@ -100,10 +123,17 @@ FocusScope {
     }
 
     function currentPlainText() {
-        const maximumLength = Number(textInput.length) || 0;
+        const maximumLength = Number(textInput.length) || 0
         if (textInput.getText !== undefined)
-            return textInput.getText(0, maximumLength);
-        return textInput.text === undefined || textInput.text === null ? "" : String(textInput.text);
+        {
+            const extractedText = textInput.getText(0, maximumLength)
+            if (!control.looksLikeQtRichTextDocument(extractedText))
+                return extractedText
+        }
+        const serializedText = textInput.text === undefined || textInput.text === null ? "" : String(textInput.text)
+        if (textInput.textFormat === TextEdit.RichText)
+            return control.plainTextFromSerializedRichText(serializedText)
+        return serializedText
     }
 
     function getFormattedText(start, end) {
@@ -302,15 +332,15 @@ FocusScope {
 
     function dispatchCommittedTextEditedIfReady() {
         if (control._programmaticTextSyncDepth > 0)
-            return false;
+            return false
         if (control.blockExternalDropMutation)
-            return false;
+            return false
         if (control.suppressCommittedTextEditedDispatch)
-            return false;
+            return false
         if (control.inputMethodSessionActive())
-            return false;
-        control.textEdited(textInput.text);
-        return true;
+            return false
+        control.textEdited(control.currentPlainText())
+        return true
     }
 
     function setProgrammaticText(nextText) {
@@ -448,6 +478,10 @@ FocusScope {
             return control.backgroundColor;
         }
         radius: control.cornerRadius
+    }
+
+    ContentsTextFormatRenderer {
+        id: editorSurfaceTextBridge
     }
 
     Flickable {

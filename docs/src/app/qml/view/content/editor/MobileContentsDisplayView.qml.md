@@ -3,6 +3,11 @@
 ## Responsibility
 Mobile content editor host.
 
+## Editor Input Mode
+- The mobile note editor now keeps its mounted `ContentsInlineFormatEditor.qml` on the plain-text input path while the
+  renderer layer continues to receive the latest RAW source for HTML conversion on each presentation refresh turn.
+  The editable `TextEdit` itself is therefore no longer asked to host RichText document state.
+
 ## Structured Document Flow
 - `agenda`, `callout`, `resource`, and `break` remain `.wsnbody` body tags, and mobile now lets any parsed explicit
   document block, including semantic text-tag blocks and `resource`, activate `ContentsStructuredDocumentFlow.qml`.

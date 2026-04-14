@@ -3,6 +3,16 @@
 ## Responsibility
 Desktop content editor host.
 
+## Editor Input Mode
+- The desktop note editor now runs its mounted `ContentsInlineFormatEditor.qml` in plain-text mode only.
+  `editorSession.editorText` / `textMetricsBridge.logicalText` remain the live editable surface, while HTML conversion
+  stays in the renderer layer and is no longer rebound into the editable `TextEdit` itself.
+- This removes the last active desktop `TextEdit.RichText` dependency from note typing, which prevents Qt RichText
+  document scaffolds from becoming part of the write path during ordinary editing.
+- `commitDocumentPresentationRefresh()` still updates `ContentsTextFormatRenderer.sourceText` on the same turn, so the
+  render-layer HTML projection keeps following RAW source immediately even though the editable `TextEdit` itself now
+  stays plain text.
+
 ## Structured Document Flow
 - `agenda`, `callout`, `resource`, and `break` remain `.wsnbody` body tags, and desktop now lets any parsed explicit
   document block, including semantic text-tag blocks and `resource`, activate `ContentsStructuredDocumentFlow.qml`.

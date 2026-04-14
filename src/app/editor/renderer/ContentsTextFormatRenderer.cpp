@@ -9,6 +9,7 @@
 #include <limits>
 #include <QRegularExpression>
 #include <QStringList>
+#include <QTextDocument>
 #include <QVector>
 
 namespace
@@ -1928,6 +1929,19 @@ QString ContentsTextFormatRenderer::renderRichText(const QString& sourceText) co
 QString ContentsTextFormatRenderer::normalizeInlineStyleAliasesForEditor(const QString& sourceText) const
 {
     return renderInlineStyleEditingSurfaceHtml(sourceText);
+}
+
+QString ContentsTextFormatRenderer::plainTextFromEditorSurfaceHtml(const QString& richTextHtml) const
+{
+    const QString normalizedHtml = normalizeLineEndings(richTextHtml);
+    if (normalizedHtml.isEmpty())
+    {
+        return {};
+    }
+
+    QTextDocument document;
+    document.setHtml(normalizedHtml);
+    return normalizeLineEndings(document.toPlainText());
 }
 
 QString ContentsTextFormatRenderer::applyPlainTextReplacementToSource(

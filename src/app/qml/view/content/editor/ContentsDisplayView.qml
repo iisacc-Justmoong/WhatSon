@@ -254,7 +254,7 @@ Item {
     property var resourcesImportViewModel: null
     property var sidebarHierarchyViewModel: null
     readonly property string richTextHighlightOpenTag: "<span style=\"background-color:#8A4B00;color:#D6AE58;font-weight:600;\">"
-    readonly property bool preferNativeInputHandling: false
+    readonly property bool preferNativeInputHandling: true
     readonly property bool richTextInlineImageRenderingEnabled: false
     readonly property int resourceEditorPlaceholderLineCount: 6
     property int programmaticEditorSurfaceSyncDepth: 0
@@ -1009,6 +1009,8 @@ Item {
         const presentationSourceText = contentsView.documentPresentationSourceText;
         if (textMetricsBridge && textMetricsBridge.text !== undefined && textMetricsBridge.text !== presentationSourceText)
             textMetricsBridge.text = presentationSourceText;
+        if (textFormatRenderer && textFormatRenderer.sourceText !== undefined && textFormatRenderer.sourceText !== presentationSourceText)
+            textFormatRenderer.sourceText = presentationSourceText;
         const needsRichTextProjection = !contentsView.preferNativeInputHandling || contentsView.showFormattedTextRenderer;
         if (!needsRichTextProjection) {
             if (contentsView.renderedEditorText !== "")
@@ -1019,8 +1021,6 @@ Item {
             editorTypingController.synchronizeLiveEditingStateFromPresentation();
             return;
         }
-        if (textFormatRenderer && textFormatRenderer.sourceText !== undefined && textFormatRenderer.sourceText !== presentationSourceText)
-            textFormatRenderer.sourceText = presentationSourceText;
         const nextRenderedText = textFormatRenderer && textFormatRenderer.editorSurfaceHtml !== undefined && textFormatRenderer.editorSurfaceHtml !== null
                 ? String(textFormatRenderer.editorSurfaceHtml)
                 : "";

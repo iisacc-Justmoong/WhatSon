@@ -90,6 +90,10 @@ Implements inline-format rendering from note-editor text to RichText HTML.
     promoting it into authoritative inline-style tags
   - deliberately stops promoting markdown syntax into list/heading/blockquote/code/link preview spans on the live
     editor surface
+- Exposes `plainTextFromEditorSurfaceHtml(...)` as the inverse read-side helper for the QML editor wrapper:
+  - feeds one serialized Qt RichText document into `QTextDocument`
+  - returns the visible plain text after Qt removes the `<!DOCTYPE HTML ... qrichtext ...>` scaffold
+  - keeps that conversion strictly read-only so whole-document RichText HTML still cannot become `.wsnbody` source
 - Exposes `applyPlainTextReplacementToSource(...)` so ordinary typing can mutate only the affected raw source span:
   - accepts canonical source text plus source start/end offsets
   - normalizes plain-text line endings
@@ -148,6 +152,8 @@ Implements inline-format rendering from note-editor text to RichText HTML.
 - No editor command path should require serializing the rendered RichText surface back into `.wsnbody`.
   Formatting, typing, paste, and delete flows must all start from RAW-source ranges and finish with a re-render from
   reparsed RAW.
+- If Qt hands the editor wrapper a serialized RichText document payload that begins with `<!DOCTYPE HTML` /
+  `qrichtext`, the read-side plain-text bridge must strip that scaffold back to the same visible text the user saw.
 - Applying `Bold`/`Italic`/`Underline`/`Highlight` shortcuts to heading, blockquote, link-literal, or code-literal text
   must still add/remove proprietary `.wsnbody` tags instead of misreading markdown presentation styling as an
   already-applied shortcut format.

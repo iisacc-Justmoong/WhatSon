@@ -4,8 +4,10 @@
 Renders one plain-text document segment inside the structured document-flow editor.
 
 ## Key Behavior
-- Uses `ContentsTextFormatRenderer.editorSurfaceHtml` so inline style tags still render as styled text instead of raw
-  markup.
+- The structured paragraph editor now binds plain visible text (`authoritativePlainText()`) into
+  `ContentsInlineFormatEditor.qml` and keeps that nested `TextEdit` in `TextEdit.PlainText` mode.
+  Inline block editing therefore no longer depends on Qt RichText document state while the RAW-source mutation bridge
+  still remains authoritative.
 - When the shared inline-editor wrapper exposes `currentPlainText()`, the block now uses that helper as its current
   visible plain-text snapshot before diffing RAW block source.
 - The live block-edit path no longer converts edited RichText surface HTML back into canonical source.
@@ -32,4 +34,4 @@ Renders one plain-text document segment inside the structured document-flow edit
 - Focus restoration is now invoked directly by `ContentsStructuredDocumentFlow.qml` on the targeted block instance,
   rather than by rebroadcasting one request through every text block.
 - Reports shortcut insertion offsets from the live plain cursor through the same RAW-source bridge, so structured
-  shortcuts can insert at the active text caret without consulting rendered RichText HTML as a source authority.
+  shortcuts can insert at the active text caret without consulting any rendered HTML payload as a source authority.

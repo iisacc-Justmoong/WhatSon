@@ -141,11 +141,11 @@ FocusScope {
         selectByMouse: true
         selectedTextColor: LV.Theme.textPrimary
         selectionColor: LV.Theme.accent
-        showRenderedOutput: true
+        showRenderedOutput: false
         showScrollBar: false
-        text: blockRenderer.editorSurfaceHtml
+        text: textBlock.authoritativePlainText()
         textColor: LV.Theme.bodyColor
-        textFormat: TextEdit.RichText
+        textFormat: TextEdit.PlainText
         wrapMode: TextEdit.Wrap
 
         onFocusedChanged: {

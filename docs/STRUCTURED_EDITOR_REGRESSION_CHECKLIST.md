@@ -258,6 +258,11 @@ structured document-flow editor changes.
 - If the RichText surface later emits a plain-text delta whose logical span collapses back to one RAW source offset
   inside a resource placeholder zone, that delta must be ignored and the surface must be restored from canonical
   source instead of rewriting the resource tag.
+- Typing in a paragraph below an inline image/resource block must never serialize Qt's RichText document scaffold
+  (`<!DOCTYPE HTML ... qrichtext ...>`) into the visible note body or canonical `.wsnbody` source.
+- Starting IME typing after noticing a misaligned image gutter must not let the next committed edit collapse the note
+  into literal HTML markup; the body must stay prose + image blocks, and the editor must not fatal due to document
+  corruption.
 - A file drop that imports a resource must not leave escaped tail fragments such as
   `&quot;image&quot; format=&quot;...&quot; ... /&gt;` or `e=&quot;image&quot; ... /&gt;` inside `.wsnbody`.
   The saved body must contain canonical literal `<resource ... />` tags only.
@@ -295,6 +300,9 @@ structured document-flow editor changes.
 - Pressing `Enter` at the end of a highlighted run and then continuing to type plain prose must not expose literal
   RAW tails such as `/highlight>` or `</highlight>` on the editor surface.
 - Ordinary typing inside a structured text block must not reconstruct RAW from RichText DOM/HTML.
+- Ordinary typing inside a structured text block must now stay on a plain-text `TextEdit` path.
+  The active paragraph editor must not require `TextEdit.RichText` just to keep prose visible around inline image
+  blocks.
   The saved `.wsnbody` must come only from RAW-source range replacement plus reparsing, not from serializing the
   rendered editor surface.
 - Inline formatting shortcuts and context-menu actions must also stay on the same pipeline.

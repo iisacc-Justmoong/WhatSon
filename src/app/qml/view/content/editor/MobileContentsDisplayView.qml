@@ -846,6 +846,8 @@ Item {
         const presentationSourceText = contentsView.documentPresentationSourceText;
         if (textMetricsBridge && textMetricsBridge.text !== undefined && textMetricsBridge.text !== presentationSourceText)
             textMetricsBridge.text = presentationSourceText;
+        if (textFormatRenderer && textFormatRenderer.sourceText !== undefined && textFormatRenderer.sourceText !== presentationSourceText)
+            textFormatRenderer.sourceText = presentationSourceText;
         const needsRichTextProjection = !contentsView.preferNativeInputHandling || contentsView.showFormattedTextRenderer;
         if (!needsRichTextProjection) {
             if (contentsView.renderedEditorText !== "")
@@ -856,8 +858,6 @@ Item {
             editorTypingController.synchronizeLiveEditingStateFromPresentation();
             return;
         }
-        if (textFormatRenderer && textFormatRenderer.sourceText !== undefined && textFormatRenderer.sourceText !== presentationSourceText)
-            textFormatRenderer.sourceText = presentationSourceText;
         const nextRenderedText = textFormatRenderer && textFormatRenderer.editorSurfaceHtml !== undefined && textFormatRenderer.editorSurfaceHtml !== null
                 ? String(textFormatRenderer.editorSurfaceHtml)
                 : "";
