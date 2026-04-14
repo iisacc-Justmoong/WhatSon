@@ -42,6 +42,11 @@ Implements inline-format rendering from note-editor text to RichText HTML.
 - Proprietary formatting remains authoritative for bold/italic/underline/strikethrough/highlight; markdown emphasis
   tokens are intentionally not promoted into those styles.
 - Converts `<br>` style tags and newline characters to `<br/>`.
+- The renderer now also resolves legacy semantic body tags through the same note-body semantic registry used by
+  persistence:
+  - `<next/>` renders as a real line break instead of literal tag text
+  - `<title>`, `<subTitle>`, and `<eventTitle>` render as heading-style text spans
+  - `<event>` becomes a transparent wrapper in read-side HTML instead of painting literal open/close tags
 - Converts the canonical single divider tag `</break>` (and legacy `<hr ...>` aliases) into rendered divider HTML
   (`<hr/>`) on both the live editor surface and preview HTML.
 - The live editor surface no longer drops `<resource ...>` tags as zero-height markup.
@@ -61,6 +66,7 @@ Implements inline-format rendering from note-editor text to RichText HTML.
     reachable immediately after insertion
 - Proprietary `<task ...>` wrapper tags still stay out of the editor text flow as raw literal markup.
 - Escapes unsupported tags as literal text instead of executing arbitrary markup.
+  Legacy tags that are part of the shared semantic registry no longer fall into that unsupported bucket.
 - Recognizes supported `<span style=...>` runs and folds them back into the same canonical style stack, so stored
   `.wsnbody` aliases and editor-generated HTML spans render through one path.
 - Auto-closes unmatched open style tags at end-of-input to keep emitted HTML structurally valid.
@@ -144,6 +150,8 @@ Implements inline-format rendering from note-editor text to RichText HTML.
   callout body text must render inside that reserved slot instead of continuing in the surrounding paragraph stream.
 - A stored `<resource ... />` tag must likewise reserve a stable inline editor slot, and image resources must render
   inside that same RichText body flow instead of depending on a second overlay-only card layer.
+- A stored legacy semantic block such as `<title>`, `<subTitle>`, `<eventTitle>`, `<eventDescription>`, or `<next/>`
+  must render as semantic content, not as escaped literal XML text.
 - The live editor surface should now expose ordinary prose as paragraph-style RichText document blocks instead of one
   flat `<br/>` chain, so inline media can share the same native document flow as surrounding text.
 - When preview is disabled, mutating `sourceText` must not recompute markdown-aware preview HTML.

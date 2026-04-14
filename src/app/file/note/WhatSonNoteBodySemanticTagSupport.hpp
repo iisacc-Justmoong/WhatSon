@@ -1,0 +1,27 @@
+#pragma once
+
+#include <QString>
+
+namespace WhatSon::NoteBodySemanticTagSupport
+{
+    QString canonicalInlineStyleTagName(const QString& elementName);
+
+    bool isHashtagTagName(const QString& elementName);
+    bool isBreakDividerTagName(const QString& elementName);
+    bool isResourceTagName(const QString& elementName);
+    bool isAgendaTagName(const QString& elementName);
+    bool isTaskTagName(const QString& elementName);
+    bool isCalloutTagName(const QString& elementName);
+
+    bool isSourceProjectionLineBreakTagName(const QString& elementName);
+    bool isRenderedLineBreakTagName(const QString& elementName);
+
+    bool isSourceProjectionTextBlockElement(const QString& elementName);
+    bool isRenderedTextBlockElement(const QString& elementName);
+
+    bool isTransparentContainerTagName(const QString& elementName);
+    bool isSourceSemanticPassThroughTagName(const QString& elementName);
+
+    QString semanticTextOpeningHtml(const QString& elementName);
+    QString semanticTextClosingHtml(const QString& elementName);
+} // namespace WhatSon::NoteBodySemanticTagSupport

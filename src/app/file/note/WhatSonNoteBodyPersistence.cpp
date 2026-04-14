@@ -1,5 +1,6 @@
 #include "WhatSonNoteBodyPersistence.hpp"
 
+#include "WhatSonNoteBodySemanticTagSupport.hpp"
 #include "WhatSonNoteMarkdownStyleObject.hpp"
 #include "WhatSonLocalNoteFileStore.hpp"
 #include "file/validator/WhatSonStructuredTagLinter.hpp"
@@ -14,6 +15,8 @@
 
 namespace
 {
+    namespace SemanticTags = WhatSon::NoteBodySemanticTagSupport;
+
     struct BodyDocumentTextFragments final
     {
         QString fallbackText;
@@ -70,37 +73,7 @@ namespace
 
     QString canonicalInlineStyleTagName(const QString& elementName)
     {
-        const QString normalizedName = elementName.trimmed().toCaseFolded();
-        if (normalizedName == QStringLiteral("bold")
-            || normalizedName == QStringLiteral("b")
-            || normalizedName == QStringLiteral("strong"))
-        {
-            return QStringLiteral("bold");
-        }
-        if (normalizedName == QStringLiteral("italic")
-            || normalizedName == QStringLiteral("i")
-            || normalizedName == QStringLiteral("em"))
-        {
-            return QStringLiteral("italic");
-        }
-        if (normalizedName == QStringLiteral("underline")
-            || normalizedName == QStringLiteral("u"))
-        {
-            return QStringLiteral("underline");
-        }
-        if (normalizedName == QStringLiteral("strikethrough")
-            || normalizedName == QStringLiteral("strike")
-            || normalizedName == QStringLiteral("s")
-            || normalizedName == QStringLiteral("del"))
-        {
-            return QStringLiteral("strikethrough");
-        }
-        if (normalizedName == QStringLiteral("highlight")
-            || normalizedName == QStringLiteral("mark"))
-        {
-            return QStringLiteral("highlight");
-        }
-        return {};
+        return SemanticTags::canonicalInlineStyleTagName(elementName);
     }
 
     InlineStyleHtmlTag inlineStyleHtmlTagForElement(const QString& elementName)
@@ -321,14 +294,12 @@ namespace
 
     bool isTagElementName(const QString& elementName)
     {
-        return elementName.trimmed().compare(QStringLiteral("tag"), Qt::CaseInsensitive) == 0;
+        return SemanticTags::isHashtagTagName(elementName);
     }
 
     bool isBreakDividerTagName(const QString& elementName)
     {
-        const QString normalizedName = elementName.trimmed().toCaseFolded();
-        return normalizedName == QStringLiteral("break")
-            || normalizedName == QStringLiteral("hr");
+        return SemanticTags::isBreakDividerTagName(elementName);
     }
 
     QString canonicalBreakDividerSourceTag()
@@ -343,17 +314,17 @@ namespace
 
     bool isAgendaTagName(const QString& elementName)
     {
-        return elementName.trimmed().compare(QStringLiteral("agenda"), Qt::CaseInsensitive) == 0;
+        return SemanticTags::isAgendaTagName(elementName);
     }
 
     bool isTaskTagName(const QString& elementName)
     {
-        return elementName.trimmed().compare(QStringLiteral("task"), Qt::CaseInsensitive) == 0;
+        return SemanticTags::isTaskTagName(elementName);
     }
 
     bool isCalloutTagName(const QString& elementName)
     {
-        return elementName.trimmed().compare(QStringLiteral("callout"), Qt::CaseInsensitive) == 0;
+        return SemanticTags::isCalloutTagName(elementName);
     }
 
     QString tagAttributeValue(const QString& rawTagText, const QString& attributeName)
@@ -440,7 +411,7 @@ namespace
 
         static const QRegularExpression standaloneStructuredLinePattern(
             QStringLiteral(
-                R"(^(?:</break>|<resource\b[^>]*?/?>|<callout\b[^>]*>[\s\S]*</callout>|<agenda\b[^>]*>[\s\S]*</agenda>)$)"),
+                R"(^(?:</break>|<resource\b[^>]*?/?>|<callout\b[^>]*>[\s\S]*</callout>|<agenda\b[^>]*>[\s\S]*</agenda>|<event\b[^>]*>|</event>)$)"),
             QRegularExpression::CaseInsensitiveOption);
         return standaloneStructuredLinePattern.match(trimmedLine).hasMatch();
     }
@@ -473,7 +444,7 @@ namespace
 
         static const QRegularExpression structuredBlockPattern(
             QStringLiteral(
-                R"((</break>|<resource\b[^>]*?/?>|<callout\b[^>]*>[\s\S]*?</callout>|<agenda\b[^>]*>[\s\S]*?</agenda>))"),
+                R"((</break>|<resource\b[^>]*?/?>|<callout\b[^>]*>[\s\S]*?</callout>|<agenda\b[^>]*>[\s\S]*?</agenda>|<event\b[^>]*>|</event>))"),
             QRegularExpression::CaseInsensitiveOption);
 
         QString output;
@@ -1170,6 +1141,15 @@ namespace
                 continue;
             }
 
+            if (SemanticTags::isSourceSemanticPassThroughTagName(rawTagName))
+            {
+                output += normalizedTagName == QStringLiteral("next")
+                    ? QStringLiteral("<next/>")
+                    : fullTagToken;
+                cursor = tagEnd;
+                continue;
+            }
+
             if (normalizedTagName == QStringLiteral("br"))
             {
                 output += QStringLiteral("<br/>");
@@ -1302,19 +1282,7 @@ namespace
 
     bool isTextBlockElement(const QString& elementName)
     {
-        const QString normalizedName = elementName.trimmed().toCaseFolded();
-        return normalizedName == QStringLiteral("p")
-            || normalizedName == QStringLiteral("paragraph")
-            || normalizedName == QStringLiteral("div")
-            || normalizedName == QStringLiteral("li")
-            || normalizedName == QStringLiteral("blockquote")
-            || normalizedName == QStringLiteral("pre")
-            || normalizedName == QStringLiteral("h1")
-            || normalizedName == QStringLiteral("h2")
-            || normalizedName == QStringLiteral("h3")
-            || normalizedName == QStringLiteral("h4")
-            || normalizedName == QStringLiteral("h5")
-            || normalizedName == QStringLiteral("h6");
+        return SemanticTags::isSourceProjectionTextBlockElement(elementName);
     }
 
     BodyDocumentTextFragments parseBodyDocumentTextFragments(const QString& bodyDocumentText)
@@ -1383,7 +1351,7 @@ namespace
                     continue;
                 }
 
-                if (elementName.compare(QStringLiteral("br"), Qt::CaseInsensitive) == 0)
+                if (SemanticTags::isRenderedLineBreakTagName(elementName))
                 {
                     if (blockDepth > 0)
                     {
@@ -1395,6 +1363,11 @@ namespace
                         fragments.fallbackText += QLatin1Char('\n');
                         fragments.fallbackRichText += QLatin1Char('\n');
                     }
+                    continue;
+                }
+
+                if (SemanticTags::isTransparentContainerTagName(elementName))
+                {
                     continue;
                 }
 
@@ -1443,8 +1416,9 @@ namespace
                     continue;
                 }
 
-                if (isTextBlockElement(elementName))
+                if (SemanticTags::isRenderedTextBlockElement(elementName))
                 {
+                    const QString semanticTextOpeningHtml = SemanticTags::semanticTextOpeningHtml(elementName);
                     encounteredBlockElement = true;
                     if (blockDepth == 0)
                     {
@@ -1452,6 +1426,10 @@ namespace
                         currentBlockRichText.clear();
                     }
                     ++blockDepth;
+                    if (!semanticTextOpeningHtml.isEmpty())
+                    {
+                        currentBlockRichText += semanticTextOpeningHtml;
+                    }
                 }
                 continue;
             }
@@ -1498,9 +1476,27 @@ namespace
                 continue;
             }
 
+            const QString semanticTextClosingHtml = SemanticTags::semanticTextClosingHtml(elementName);
+            if (!semanticTextClosingHtml.isEmpty())
+            {
+                if (blockDepth > 0)
+                {
+                    currentBlockRichText += semanticTextClosingHtml;
+                }
+                else if (!encounteredBlockElement)
+                {
+                    fragments.fallbackRichText += semanticTextClosingHtml;
+                }
+            }
+
             if (elementName.compare(QStringLiteral("body"), Qt::CaseInsensitive) == 0)
             {
                 break;
+            }
+
+            if (SemanticTags::isTransparentContainerTagName(elementName))
+            {
+                continue;
             }
 
             if (activeStructuredBlockName == QStringLiteral("agenda")
@@ -1530,7 +1526,7 @@ namespace
                 continue;
             }
 
-            if (!isTextBlockElement(elementName) || blockDepth <= 0)
+            if (!SemanticTags::isRenderedTextBlockElement(elementName) || blockDepth <= 0)
             {
                 continue;
             }

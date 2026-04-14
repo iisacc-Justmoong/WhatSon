@@ -344,6 +344,9 @@ WhatSon is an LVRS-based Qt Quick application.
   silently reporting acceptance while the note remains dirty only in memory.
 - The same save path now short-circuits when the normalized plain-text body is unchanged, so a no-op save no longer
   rewrites `.wsnbody` or strips existing empty/custom body tags that the editor did not modify.
+- Legacy `.wsnbody` semantic tags now resolve through one shared registry across persistence and editor HTML read paths,
+  so tags such as `<next/>`, `<title>`, `<subTitle>`, and `<eventTitle>` no longer render as literal XML in one path
+  while being interpreted semantically in another.
 - When no note is selected, `ContentsDisplayView.qml` no longer pretends that an unsaved draft exists and does not
   return a synthetic editor prompt. The center surface simply stays empty until a concrete note selection exists.
 - Full `bodyText` is preserved as normalized plain text rather than trimmed display text, so leading/trailing blank

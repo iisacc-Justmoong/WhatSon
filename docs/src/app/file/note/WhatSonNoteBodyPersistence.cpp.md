@@ -20,6 +20,16 @@ The file now also contains the shared XML-to-plain-text extraction path used by 
   paragraph-based XML document instead of silently truncating it at the first line boundary.
 - During that write-side normalization, visible inline hashtags such as `#label` are promoted into canonical body tags
   as `<tag>label</tag>`.
+- Semantic passthrough tags that the live note source must keep verbatim now round-trip through the same serializer
+  instead of being escaped into literal text:
+  - `next`
+  - `event`
+  - `title`
+  - `subTitle` / `subtitle`
+  - `eventTitle`
+  - `eventDescription`
+- Standalone `event` wrapper lines now stay direct `<body>` children during serialization, so nested legacy semantic
+  blocks do not reopen as stray blank paragraphs on the next read.
 - `plainTextFromBodyDocument(...)` parses the `.wsnbody` XML with `QXmlStreamReader` and treats paragraph-like block elements as explicit text lines.
 - `sourceTextFromBodyDocument(...)` is the canonical read-side source extractor. It converts `.wsnbody` back into
   editor-facing inline tags such as `<bold>...</bold>` and `<resource ... />`, instead of returning RichText spans.
@@ -65,6 +75,10 @@ The file now also contains the shared XML-to-plain-text extraction path used by 
   - `strikethrough` / `strike` / `s` / `del` -> `<span style="text-decoration: line-through;">`
   - `highlight` / `mark` -> styled `span` (`background-color:#8A4B00; color:#D6AE58; font-weight:600`)
   - divider block tags (`<break/>` and legacy `<hr/>`) -> `<hr/>`
+- The same read-side parser now also resolves legacy semantic body tags through the shared semantic-tag registry:
+  - `<next/>` behaves like a line break in plain/rich projections
+  - `<title>`, `<subTitle>`, and `<eventTitle>` render as heading-style text instead of literal XML
+  - `<event>` is treated as a transparent wrapper while its child semantic blocks still materialize into content lines
 - Before XML parsing, resource tags are normalized into strict empty-element form (`<resource ... />`), so the body parser still works when notes contain shorthand resource tags such as `<resource ...>` or unquoted attribute values.
 - The resource-preserving fallback source extractor now reuses the same shared anonymous-namespace whitespace and
   standalone-block normalization helpers as the canonical parser path, so those normalization rules stay defined in
@@ -114,6 +128,8 @@ text projections still show `#label`.
 - A typed `<callout>message</callout>` block must survive save/load without escaping wrapper tags.
 - A standalone `<agenda>...</agenda>`, `<callout>...</callout>`, `<resource ... />`, or `</break>` source line must
   round-trip as a direct `<body>` child instead of being rewrapped into `<paragraph>`.
+- A saved legacy semantic body block such as `<title>`, `<subTitle>`, `<eventTitle>`, `<eventDescription>`, or
+  `<next/>` must not degrade into escaped literal text on the next autosave.
 - Legacy notes that already embedded agenda/callout blocks inside paragraph content must rehydrate into standalone
   editor lines on load so renderer-owned cards can be rebuilt immediately from the RAW tags.
 - Legacy/self-closing/non-canonical structured tags must rehydrate into canonical editor RAW source whenever the linter

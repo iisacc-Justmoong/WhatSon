@@ -18,6 +18,16 @@ structured document-flow editor changes.
 - Repeating edits inside one agenda/callout block of a long structured note must not visibly degrade as unrelated blocks
   are added elsewhere in the same document.
 
+## Semantic Tags
+- A stored legacy `<next/>` tag must render as a real line break in both note-body read projections and editor HTML
+  rendering; it must not paint literal `<next/>` text in one path while becoming a break in another.
+- A stored `<title>`, `<subTitle>`, or `<eventTitle>` block must render as heading-style text in both the body
+  persistence read path and the editor renderer.
+- A stored `<event>...</event>` wrapper must stay transparent in read-side rendering while its child semantic blocks
+  still surface their text content in order.
+- Autosaving a note that already contains `<title>`, `<subTitle>`, `<eventTitle>`, `<eventDescription>`, `<event>`, or
+  `<next/>` must not rewrite those tags into escaped literal text.
+
 ## Structured Shortcuts
 - In structured-flow mode, `Cmd+Opt+T`, `Cmd+Opt+C`, and `Cmd+Shift+H` invoked from the middle of a text block must
   insert at the live caret position, not only after the whole block.

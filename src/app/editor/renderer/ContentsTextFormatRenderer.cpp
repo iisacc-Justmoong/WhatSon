@@ -1,5 +1,6 @@
 #include "ContentsTextFormatRenderer.hpp"
 #include "ContentsTextHighlightRenderer.hpp"
+#include "file/note/WhatSonNoteBodySemanticTagSupport.hpp"
 #include "file/note/WhatSonNoteBodyPersistence.hpp"
 #include "file/note/WhatSonNoteMarkdownStyleObject.hpp"
 
@@ -12,6 +13,8 @@
 
 namespace
 {
+    namespace SemanticTags = WhatSon::NoteBodySemanticTagSupport;
+
     constexpr int kResourceEditorPlaceholderLineCount = 6;
 
     constexpr int kSupportedInlineStyleCount = 5;
@@ -314,32 +317,7 @@ namespace
 
     QString canonicalInlineStyleTagName(const QString& elementName)
     {
-        const QString normalizedName = elementName.trimmed().toCaseFolded();
-        if (normalizedName == QStringLiteral("bold")
-            || normalizedName == QStringLiteral("b")
-            || normalizedName == QStringLiteral("strong"))
-        {
-            return QStringLiteral("bold");
-        }
-        if (normalizedName == QStringLiteral("italic")
-            || normalizedName == QStringLiteral("i")
-            || normalizedName == QStringLiteral("em"))
-        {
-            return QStringLiteral("italic");
-        }
-        if (normalizedName == QStringLiteral("underline")
-            || normalizedName == QStringLiteral("u"))
-        {
-            return QStringLiteral("underline");
-        }
-        if (normalizedName == QStringLiteral("strikethrough")
-            || normalizedName == QStringLiteral("strike")
-            || normalizedName == QStringLiteral("s")
-            || normalizedName == QStringLiteral("del"))
-        {
-            return QStringLiteral("strikethrough");
-        }
-        return {};
+        return SemanticTags::canonicalInlineStyleTagName(elementName);
     }
 
     QString normalizedTagElementName(const QString& tagToken)
@@ -1098,7 +1076,7 @@ namespace
 
     bool isLogicalBreakTagName(const QString& normalizedTagName)
     {
-        return normalizedTagName == QStringLiteral("br")
+        return SemanticTags::isRenderedLineBreakTagName(normalizedTagName)
             || normalizedTagName == QStringLiteral("break")
             || normalizedTagName == QStringLiteral("hr");
     }
@@ -1424,6 +1402,21 @@ namespace
                 continue;
             }
 
+            if (SemanticTags::isTransparentContainerTagName(rawTagName)
+                || SemanticTags::isRenderedTextBlockElement(rawTagName))
+            {
+                if (closingTag)
+                {
+                    html += SemanticTags::semanticTextClosingHtml(rawTagName);
+                }
+                else if (!selfClosingTag)
+                {
+                    html += SemanticTags::semanticTextOpeningHtml(rawTagName);
+                }
+                cursor = tagEnd;
+                continue;
+            }
+
             if (normalizedTagName == QStringLiteral("break")
                 || normalizedTagName == QStringLiteral("hr"))
             {
@@ -1432,7 +1425,7 @@ namespace
                 continue;
             }
 
-            if (normalizedTagName == QStringLiteral("br"))
+            if (SemanticTags::isRenderedLineBreakTagName(rawTagName))
             {
                 html += QStringLiteral("<br/>");
                 cursor = tagEnd;

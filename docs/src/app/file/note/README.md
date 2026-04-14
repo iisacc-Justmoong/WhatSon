@@ -7,7 +7,7 @@
 ## Scope
 - Mirrored source directory: `src/app/file/note`
 - Child directories: 0
-- Child files: 31
+- Child files: 33
 
 ## Child Directories
 - No child directories.
@@ -31,6 +31,8 @@
 - `WhatSonNoteBodyCreator.hpp`
 - `WhatSonNoteBodyPersistence.cpp`
 - `WhatSonNoteBodyPersistence.hpp`
+- `WhatSonNoteBodySemanticTagSupport.cpp`
+- `WhatSonNoteBodySemanticTagSupport.hpp`
 - `WhatSonNoteCreator.cpp`
 - `WhatSonNoteCreator.hpp`
 - `WhatSonNoteFolderBindingRepository.cpp`
@@ -71,6 +73,8 @@
   - new tags are inserted into `Tags.wstags` so the tags hierarchy can reload them as first-class entries
 - Body-save normalization now also preserves proprietary inline formatting across paragraph boundaries by reopening any
   still-active style tags at the next serialized `<paragraph>`.
+- `.wsnbody` semantic tag classification is now owned by `WhatSonNoteBodySemanticTagSupport.*` so the note-body save
+  path and the editor HTML read paths resolve legacy body tags through the same registry.
 - `fileStat.modifiedCount` is now the local commit counter for note package history.
   - whenever it advances, `.wsnversion` appends a snapshot with the matching `commitModifiedCount`
   - snapshot/diff persistence is delegated to `src/app/file/diff/WhatSonLocalNoteVersionStore.*`
