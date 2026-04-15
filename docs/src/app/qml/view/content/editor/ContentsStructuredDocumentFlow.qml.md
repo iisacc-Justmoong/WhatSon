@@ -22,7 +22,7 @@ Hosts the parsed `.wsnbody` block stream as one ordered document editor and forw
   - `minimapRepresentativeCharCount`
 - The common contracts handled at flow level are:
   - `sourceMutationRequested(...)`
-  - `blockDeletionRequested()`
+  - `blockDeletionRequested(direction)`
   - `boundaryNavigationRequested(axis, side)`
   - `documentEndEditRequested()`
   - agenda/callout backend mutation signals
@@ -32,6 +32,9 @@ Hosts the parsed `.wsnbody` block stream as one ordered document editor and forw
   text block.
   Blank lines below an inline resource therefore materialize as actual empty text blocks that arrow navigation and
   focus restoration can target directly.
+- Those zero-length paragraph blocks are now also deletable.
+  When the block has wrapper source (`<paragraph></paragraph>`), the flow removes that wrapper span; when it is an
+  implicit blank line between prose blocks, the flow removes the adjacent newline token that created the empty line.
 - Atomic block focus no longer branches through `interactionMode: "before" / "after"`.
   Resource and break blocks are re-entered by source offsets inside their span and resolve to whole-block selection.
 - Atomic-block target focus now also carries an explicit `targetBlockIndex`.

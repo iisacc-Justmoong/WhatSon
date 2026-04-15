@@ -231,7 +231,7 @@ Item {
     readonly property real printPaperResolvedHeight: pagePrintLayoutRenderer.paperResolvedHeight
     readonly property real printPaperResolvedWidth: pagePrintLayoutRenderer.paperResolvedWidth
     readonly property int documentPresentationRefreshIntervalMs: 120
-    property string documentPresentationSourceText: ""
+    readonly property string documentPresentationSourceText: contentsView.resolvedDocumentPresentationSourceText()
     property bool documentPresentationRefreshPendingWhileFocused: false
     property string renderedEditorText: ""
     readonly property var resolvedEditorViewModeViewModel: {
@@ -261,6 +261,8 @@ Item {
     property var sidebarHierarchyViewModel: null
     readonly property string richTextHighlightOpenTag: "<span style=\"background-color:#8A4B00;color:#D6AE58;font-weight:600;\">"
     readonly property bool preferNativeInputHandling: contentsView.parsedStructuredFlowRequested
+    readonly property bool documentPresentationProjectionEnabled: !contentsView.preferNativeInputHandling
+                                                                    || contentsView.showFormattedTextRenderer
     readonly property bool richTextInlineImageRenderingEnabled: !contentsView.preferNativeInputHandling
     readonly property int resourceEditorPlaceholderLineCount: 6
     property int programmaticEditorSurfaceSyncDepth: 0
@@ -271,19 +273,9 @@ Item {
     readonly property string selectedNoteId: selectionBridge.selectedNoteId
     readonly property bool showCurrentLineMarker: contentsView.hasSelectedNote || contentsView.editorText.length > 0 || contentsView.editorInputFocused
     readonly property bool editorSessionBoundToSelectedNote: editorSession.editorBoundNoteId === contentsView.selectedNoteId
-    readonly property bool liveEditorSourceContainsResourceTag: contentsView.editorSessionBoundToSelectedNote
-                                                                && contentsView.sourceContainsCanonicalResourceTag(contentsView.editorText)
-    readonly property bool presentationSourceContainsResourceTag: contentsView.editorSessionBoundToSelectedNote
-                                                                  && contentsView.sourceContainsCanonicalResourceTag(contentsView.documentPresentationSourceText)
-    readonly property bool selectionSourceContainsResourceTag: (!editorSession.localEditorAuthority
-                                                                || contentsView.resourceDropEditorSurfaceGuardActive)
-                                                               && !contentsView.selectedNoteBodyLoading
-                                                               && contentsView.selectedNoteBodyNoteId === contentsView.selectedNoteId
-                                                               && contentsView.sourceContainsCanonicalResourceTag(contentsView.selectedNoteBodyText)
-    property string structuredFlowSourceText: ""
-    readonly property bool liveResourceStructuredFlowRequested: contentsView.liveEditorSourceContainsResourceTag
-                                                                || contentsView.presentationSourceContainsResourceTag
-                                                                || contentsView.selectionSourceContainsResourceTag
+    readonly property string structuredFlowSourceText: contentsView.documentPresentationSourceText
+    readonly property bool liveResourceStructuredFlowRequested: contentsView.sourceContainsCanonicalResourceTag(
+                                                                    contentsView.documentPresentationSourceText)
     readonly property bool parsedStructuredFlowRequested: contentsView.editorSessionBoundToSelectedNote
     readonly property bool structuredDocumentFlowEnabled: contentsView.parsedStructuredFlowRequested
     readonly property bool resourceResolverNeedsLiveEditorSource: contentsView.showStructuredDocumentFlow
@@ -322,19 +314,16 @@ Item {
     function applyEditorRichTextSurface() {
         editorSelectionController.applyEditorRichTextSurface();
     }
-    function resolvedStructuredFlowSourceText() {
+    function resolvedDocumentPresentationSourceText() {
         if (contentsView.editorSessionBoundToSelectedNote)
             return contentsView.editorText === undefined || contentsView.editorText === null ? "" : String(contentsView.editorText)
-        if (contentsView.selectionSourceContainsResourceTag)
-            return contentsView.selectedNoteBodyText === undefined || contentsView.selectedNoteBodyText === null ? "" : String(contentsView.selectedNoteBodyText)
-        if (contentsView.presentationSourceContainsResourceTag)
-            return contentsView.documentPresentationSourceText === undefined || contentsView.documentPresentationSourceText === null ? "" : String(contentsView.documentPresentationSourceText)
+        if (!contentsView.selectedNoteBodyLoading
+                && contentsView.selectedNoteBodyNoteId === contentsView.selectedNoteId) {
+            return contentsView.selectedNoteBodyText === undefined || contentsView.selectedNoteBodyText === null
+                    ? ""
+                    : String(contentsView.selectedNoteBodyText)
+        }
         return contentsView.editorText === undefined || contentsView.editorText === null ? "" : String(contentsView.editorText)
-    }
-    function refreshStructuredFlowSourceText() {
-        const nextSourceText = contentsView.resolvedStructuredFlowSourceText()
-        if (contentsView.structuredFlowSourceText !== nextSourceText)
-            contentsView.structuredFlowSourceText = nextSourceText
     }
     function activeLogicalTextSnapshot() {
         if (editorTypingController && editorTypingController.currentEditorPlainText !== undefined) {
@@ -1050,15 +1039,7 @@ Item {
         editorSelectionController.handleSelectionContextMenuEvent(eventName);
     }
     function commitDocumentPresentationRefresh() {
-        const currentSourceText = contentsView.editorText === undefined || contentsView.editorText === null ? "" : String(contentsView.editorText);
-        if (contentsView.documentPresentationSourceText !== currentSourceText)
-            contentsView.documentPresentationSourceText = currentSourceText;
-        const presentationSourceText = contentsView.documentPresentationSourceText;
-        if (textMetricsBridge && textMetricsBridge.text !== undefined && textMetricsBridge.text !== presentationSourceText)
-            textMetricsBridge.text = presentationSourceText;
-        if (textFormatRenderer && textFormatRenderer.sourceText !== undefined && textFormatRenderer.sourceText !== presentationSourceText)
-            textFormatRenderer.sourceText = presentationSourceText;
-        const needsRichTextProjection = !contentsView.preferNativeInputHandling || contentsView.showFormattedTextRenderer;
+        const needsRichTextProjection = contentsView.documentPresentationProjectionEnabled;
         if (!needsRichTextProjection) {
             if (contentsView.renderedEditorText !== "")
                 contentsView.renderedEditorText = "";
@@ -1085,20 +1066,9 @@ Item {
         editorTypingController.synchronizeLiveEditingStateFromPresentation();
     }
     function documentPresentationRenderDirty() {
-        const currentSourceText = contentsView.editorText === undefined || contentsView.editorText === null ? "" : String(contentsView.editorText);
-        const presentationSourceText = contentsView.documentPresentationSourceText === undefined || contentsView.documentPresentationSourceText === null
-                ? ""
-                : String(contentsView.documentPresentationSourceText);
-        if (presentationSourceText !== currentSourceText)
-            return true;
-        const needsRichTextProjection = !contentsView.preferNativeInputHandling || contentsView.showFormattedTextRenderer;
+        const needsRichTextProjection = contentsView.documentPresentationProjectionEnabled;
         if (!needsRichTextProjection)
-            return false;
-        const rendererSourceText = textFormatRenderer && textFormatRenderer.sourceText !== undefined && textFormatRenderer.sourceText !== null
-                ? String(textFormatRenderer.sourceText)
-                : "";
-        if (rendererSourceText !== presentationSourceText)
-            return true;
+            return contentsView.renderedEditorText !== "";
         const rendererRenderedText = textFormatRenderer && textFormatRenderer.editorSurfaceHtml !== undefined && textFormatRenderer.editorSurfaceHtml !== null
                 ? String(textFormatRenderer.editorSurfaceHtml)
                 : "";
@@ -2026,7 +1996,7 @@ Item {
             contentsView.documentPresentationRefreshPendingWhileFocused = false;
             contentsView.commitDocumentPresentationRefresh();
         } else {
-            contentsView.documentPresentationRefreshPendingWhileFocused = true;
+            contentsView.documentPresentationRefreshPendingWhileFocused = false;
             if (documentPresentationRefreshTimer.running)
                 documentPresentationRefreshTimer.stop();
         }
@@ -2168,9 +2138,17 @@ Item {
         contentsView.focusEditorForPendingNote();
     }
     function scheduleEditorRichTextSurfaceSync() {
+        if (!contentsView.documentPresentationProjectionEnabled)
+            return;
         editorSelectionController.scheduleEditorRichTextSurfaceSync();
     }
     function scheduleDeferredDocumentPresentationRefresh() {
+        if (!contentsView.documentPresentationProjectionEnabled) {
+            contentsView.documentPresentationRefreshPendingWhileFocused = false;
+            if (documentPresentationRefreshTimer.running)
+                documentPresentationRefreshTimer.stop();
+            return;
+        }
         if (contentsView.editorInputFocused || contentsView.typingSessionSyncProtected) {
             contentsView.documentPresentationRefreshPendingWhileFocused = true;
             if (documentPresentationRefreshTimer.running)
@@ -2183,6 +2161,17 @@ Item {
     }
     function scheduleDocumentPresentationRefresh(forceImmediate) {
         const immediate = !!forceImmediate;
+        if (!contentsView.documentPresentationProjectionEnabled) {
+            contentsView.documentPresentationRefreshPendingWhileFocused = false;
+            if (documentPresentationRefreshTimer.running)
+                documentPresentationRefreshTimer.stop();
+            if (contentsView.renderedEditorText !== "")
+                contentsView.renderedEditorText = "";
+            contentsView.scheduleMinimapSnapshotRefresh(false);
+            if (minimapLayer && contentsView.minimapRefreshEnabled)
+                minimapLayer.requestRepaint();
+            return;
+        }
         if (!contentsView.documentPresentationRenderDirty()) {
             contentsView.documentPresentationRefreshPendingWhileFocused = false;
             if (documentPresentationRefreshTimer.running)
@@ -2434,7 +2423,6 @@ Item {
     clip: true
 
     Component.onCompleted: {
-        contentsView.refreshStructuredFlowSourceText();
         contentsView.scheduleSelectionModelSync({
                                                    "resetSnapshot": true,
                                                    "scheduleReconcile": true,
@@ -2450,27 +2438,17 @@ Item {
         contentsView.scheduleGutterRefresh(2);
     }
     onEditorTextChanged: {
-        contentsView.refreshStructuredFlowSourceText();
         contentsView.refreshStructuredDocumentFlowActivation();
         contentsView.scheduleMinimapSnapshotRefresh(false);
         if (!contentsView.showStructuredDocumentFlow)
             contentsView.scheduleDocumentPresentationRefresh(false);
     }
     onEditorBoundNoteIdChanged: {
-        contentsView.refreshStructuredFlowSourceText();
         contentsView.refreshStructuredDocumentFlowActivation();
-    }
-    onDocumentPresentationSourceTextChanged: {
-        if (!contentsView.editorSessionBoundToSelectedNote)
-            contentsView.refreshStructuredFlowSourceText();
-    }
-    onResourceDropEditorSurfaceGuardActiveChanged: {
-        if (!contentsView.editorSessionBoundToSelectedNote)
-            contentsView.refreshStructuredFlowSourceText();
     }
     onShowStructuredDocumentFlowChanged: {
         if (contentsView.showStructuredDocumentFlow) {
-            contentsView.documentPresentationRefreshPendingWhileFocused = true;
+            contentsView.documentPresentationRefreshPendingWhileFocused = false;
             if (documentPresentationRefreshTimer.running)
                 documentPresentationRefreshTimer.stop();
             if (contentsView.renderedEditorText !== "")
@@ -2488,11 +2466,9 @@ Item {
         contentsView.scheduleDocumentPresentationRefresh(true);
     }
     onSelectedNoteBodyTextChanged: {
-        contentsView.refreshStructuredFlowSourceText();
         contentsView.scheduleSelectionModelSync({});
     }
     onSelectedNoteBodyLoadingChanged: {
-        contentsView.refreshStructuredFlowSourceText();
         // Empty-body notes keep the same text payload across load completion, so loading state must also re-arm sync.
         if (!contentsView.selectedNoteBodyLoading) {
             contentsView.scheduleSelectionModelSync({
@@ -2501,7 +2477,6 @@ Item {
         }
     }
     onSelectedNoteIdChanged: {
-        contentsView.refreshStructuredFlowSourceText();
         contentsView.structuredDocumentFlowActivatedNoteId = "";
         contentsView.scheduleNoteEntryGutterRefresh(contentsView.selectedNoteId);
         contentsView.scheduleSelectionModelSync({
@@ -2589,7 +2564,7 @@ Item {
         id: bodyResourceRenderer
 
         bodySourceText: contentsView.editorSessionBoundToSelectedNote
-                        ? contentsView.structuredFlowSourceText
+                        ? contentsView.documentPresentationSourceText
                         : ""
         contentViewModel: contentsView.contentViewModel
         fallbackContentViewModel: contentsView.libraryHierarchyViewModel
@@ -2619,15 +2594,20 @@ Item {
         id: structuredBlockRenderer
 
         backgroundRefreshEnabled: false
-        sourceText: contentsView.structuredFlowSourceText
+        sourceText: contentsView.documentPresentationSourceText
     }
     ContentsTextFormatRenderer {
         id: textFormatRenderer
 
         previewEnabled: contentsView.showFormattedTextRenderer
+        sourceText: contentsView.documentPresentationProjectionEnabled
+                    ? contentsView.documentPresentationSourceText
+                    : ""
     }
     ContentsLogicalTextBridge {
         id: textMetricsBridge
+
+        text: contentsView.documentPresentationSourceText
     }
     ContentsGutterMarkerBridge {
         id: gutterMarkerBridge
@@ -2648,6 +2628,13 @@ Item {
         repeat: false
 
         onTriggered: {
+            if (!contentsView.documentPresentationProjectionEnabled) {
+                contentsView.documentPresentationRefreshPendingWhileFocused = false;
+                if (contentsView.renderedEditorText !== "")
+                    contentsView.renderedEditorText = "";
+                stop();
+                return;
+            }
             if (contentsView.editorInputFocused || contentsView.typingSessionSyncProtected) {
                 contentsView.documentPresentationRefreshPendingWhileFocused = true;
                 stop();

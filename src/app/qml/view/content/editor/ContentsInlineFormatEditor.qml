@@ -122,11 +122,14 @@ FocusScope {
         const normalizedText = serializedText === undefined || serializedText === null ? "" : String(serializedText)
         if (normalizedText.length === 0)
             return ""
-        if (!editorSurfaceTextBridge
-                || editorSurfaceTextBridge.plainTextFromEditorSurfaceHtml === undefined) {
+        const richTextBridge = richTextTextBridgeLoader && richTextTextBridgeLoader.item
+                ? richTextTextBridgeLoader.item
+                : null
+        if (!richTextBridge
+                || richTextBridge.plainTextFromEditorSurfaceHtml === undefined) {
             return normalizedText
         }
-        return String(editorSurfaceTextBridge.plainTextFromEditorSurfaceHtml(normalizedText))
+        return String(richTextBridge.plainTextFromEditorSurfaceHtml(normalizedText))
     }
 
     function forceActiveFocus() {
@@ -398,7 +401,9 @@ FocusScope {
 
     function canDeferProgrammaticTextSync() {
         return control.inputMethodSessionActive()
-                || (!!control.preferNativeInputHandling && control.focused);
+                || (control.textFormat === TextEdit.RichText
+                    && !!control.preferNativeInputHandling
+                    && control.focused);
     }
 
     function flushDeferredProgrammaticText(force) {
@@ -570,8 +575,18 @@ FocusScope {
         radius: control.cornerRadius
     }
 
-    ContentsTextFormatRenderer {
-        id: editorSurfaceTextBridge
+    Loader {
+        id: richTextTextBridgeLoader
+
+        active: control.textFormat === TextEdit.RichText
+        sourceComponent: richTextTextBridgeComponent
+    }
+
+    Component {
+        id: richTextTextBridgeComponent
+
+        ContentsTextFormatRenderer {
+        }
     }
 
     Flickable {

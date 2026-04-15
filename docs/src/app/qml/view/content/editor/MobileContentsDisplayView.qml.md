@@ -124,8 +124,8 @@ Mobile content editor host.
   activate the structured document flow on the same selected note.
 - The mobile host now also exposes the same canonical resource-tag counting/loss-detection helpers as desktop.
   That loss check compares candidate rewrites against the strongest currently known RAW baseline
-  (`editorText`, `documentPresentationSourceText`, and the selected-note body snapshot only when that snapshot still
-  belongs to the selected note and the host has not taken local editor authority), so stale legacy-surface rewrites
+  (`editorText`, the derived `documentPresentationSourceText`, and the selected-note body snapshot only when that
+  snapshot still belongs to the selected note and the host has not taken local editor authority), so stale legacy-surface rewrites
   cannot erase `<resource ... />` tokens from `.wsnbody` just because one buffer had already drifted without letting an
   older model snapshot override a newly accepted local edit.
 - `applyDocumentSourceMutation(...)` now also runs that same loss check before it mutates `editorText` or persists.
@@ -170,12 +170,12 @@ Mobile content editor host.
   text, agenda, callout, and break blocks.
 - `ContentsBodyResourceRenderer`, `ContentsStructuredBlockRenderer`, and `ContentsStructuredDocumentFlow` now share one
   `structuredFlowSourceText` contract.
-  Mobile resource-block activation therefore stays aligned even when the live editor surface, deferred presentation
-  snapshot, and selection-bridge source are briefly out of step.
-- That shared `structuredFlowSourceText` is now also refreshed imperatively from session-selection state instead of
-  remaining a reactive multi-source binding.
-  While mobile is bound to the selected note, parser/renderer inputs always come from `editorSession.editorText`;
-  selection/presentation fallbacks are reserved for pre-bind transitions only.
+  That source is now a read-only derivation of the authoritative note body instead of a second mutable cache.
+  Mobile therefore no longer copies the same `.wsnbody` string through separate parser/presentation source slots.
+- `documentPresentationSourceText`, `structuredFlowSourceText`, `ContentsTextFormatRenderer.sourceText`, and
+  `ContentsLogicalTextBridge.text` now all resolve from that one derived RAW source.
+  Parser/resource/text-metric consumers therefore observe one value directly instead of depending on imperative
+  host-side source refresh turns.
 - Structured-flow enablement now also depends only on the bound editor session itself, not on
   `ContentsStructuredBlockRenderer.renderPending`.
   Mobile therefore avoids re-entering the renderer while deciding whether the structured parser host should stay
@@ -195,6 +195,16 @@ Mobile content editor host.
   Resource-bearing notes therefore no longer fall back through the renderer's single placeholder block while a
   background parse is pending, keeping inline image edits and block-local focus stable during tail re-entry and the
   first typed character below a resource.
+- Legacy RichText dirtiness checks now also compare only the final rendered surface against the renderer's already-bound
+  RAW projection.
+  Mobile therefore no longer carries a second mutable source-text snapshot just to decide whether the fallback surface
+  is stale.
+- The legacy document-presentation refresh timer and RichText surface-sync path are now also gated behind one explicit
+  `documentPresentationProjectionEnabled` contract.
+  When the structured/plain-text document flow owns the note surface, mobile no longer keeps a pending presentation
+  refresh flag alive or re-arms the legacy refresh timer after ordinary RAW mutations.
+- The host-level `ContentsTextFormatRenderer` also stops consuming note RAW while that projection contract is disabled.
+  Structured editing therefore avoids one otherwise-unused HTML render pass per source mutation on mobile as well.
 - Mobile now also gates `ContentsBodyResourceRenderer.bodySourceText` by
   `editorSession.editorBoundNoteId == selectedNoteId` instead of by the selection-bridge body-note echo alone.
   A same-note drag/drop or clipboard image insert therefore resolves the newly inserted `<resource ... />` tag from

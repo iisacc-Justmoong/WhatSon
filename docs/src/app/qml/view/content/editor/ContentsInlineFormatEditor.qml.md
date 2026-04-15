@@ -135,6 +135,12 @@ plain `QtQuick.TextEdit` as the actual rendering and input engine.
   editor text color.
   Paragraph/block editors can therefore hide the duplicate plain-text glyphs without accidentally making the live caret
   disappear as well.
+- The helper `ContentsTextFormatRenderer` bridge used for RichText-document plain-text recovery is now loaded only
+  when the wrapper itself is actually in `TextEdit.RichText` mode.
+  Structured plain-text block editors therefore no longer instantiate one unused renderer helper per paragraph.
+- Programmatic text-sync defer now also distinguishes plain-text structured editing from the legacy RichText host.
+  A plain-text block editor no longer defers host text reinjection merely because the field is focused; only active
+  IME/preedit sessions and focused native RichText mode can keep that defer window open.
 - That rendered overlay is automatically suppressed while an IME preedit/composition session is active.
   Hangul or other native composition text therefore remains visibly painted from the real `TextEdit` instead of being
   hidden behind one stale rendered-html snapshot.

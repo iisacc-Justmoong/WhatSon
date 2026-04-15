@@ -987,6 +987,48 @@ FocusScope {
         }
     }
 
+    function normalizedDeletionDirection(direction) {
+        const normalizedDirection = direction === undefined || direction === null
+                ? ""
+                : String(direction).trim().toLowerCase()
+        return normalizedDirection === "forward" ? "forward" : "backward"
+    }
+
+    function emptyTextBlockDeletionRange(blockData, direction, sourceText) {
+        const safeBlock = blockData && typeof blockData === "object" ? blockData : ({})
+        const currentSourceText = documentFlow.normalizedSourceText(sourceText)
+        const anchorOffset = Math.max(
+                    0,
+                    Math.min(
+                        currentSourceText.length,
+                        Math.floor(Number(safeBlock.sourceStart) || 0)))
+        const previousNewlineStart = anchorOffset > 0 && currentSourceText.charAt(anchorOffset - 1) === "\n"
+                ? anchorOffset - 1
+                : -1
+        const nextNewlineStart = anchorOffset < currentSourceText.length && currentSourceText.charAt(anchorOffset) === "\n"
+                ? anchorOffset
+                : -1
+        const normalizedDirection = documentFlow.normalizedDeletionDirection(direction)
+
+        let deletionStart = -1
+        if (normalizedDirection === "forward")
+            deletionStart = nextNewlineStart >= 0 ? nextNewlineStart : previousNewlineStart
+        else
+            deletionStart = previousNewlineStart >= 0 ? previousNewlineStart : nextNewlineStart
+
+        if (deletionStart < 0)
+            return null
+
+        return {
+            "end": deletionStart + 1,
+            "focusRequest": {
+                "preferNearestTextBlock": true,
+                "sourceOffset": deletionStart
+            },
+            "start": deletionStart
+        }
+    }
+
     function previousEditableBlockFocusSourceOffset(blockIndex) {
         const blocks = documentFlow.normalizedBlocks()
         const safeBlockIndex = Math.max(0, Math.min(blocks.length - 1, Math.floor(Number(blockIndex) || 0)))
@@ -1023,17 +1065,55 @@ FocusScope {
         return boundedBlockEndOffset
     }
 
-    function deleteBlock(blockData) {
+    function deleteBlock(blockData, direction) {
         const safeBlock = blockData && typeof blockData === "object" ? blockData : ({})
         const currentSourceText = documentFlow.normalizedSourceText(documentFlow.sourceText)
         const blockSourceStart = Math.max(0, Math.min(currentSourceText.length, Math.floor(Number(safeBlock.sourceStart) || 0)))
         const blockSourceEnd = Math.max(blockSourceStart, Math.min(currentSourceText.length, Math.floor(Number(safeBlock.sourceEnd) || blockSourceStart)))
-        if (blockSourceEnd <= blockSourceStart)
+        let deletionStart = blockSourceStart
+        let deletionEnd = blockSourceEnd
+        let focusRequest = null
+
+        if (deletionEnd <= deletionStart) {
+            const blockWrapperStart = Math.max(
+                        0,
+                        Math.min(
+                            currentSourceText.length,
+                            Math.floor(Number(safeBlock.blockSourceStart) || 0)))
+            const blockWrapperEnd = Math.max(
+                        blockWrapperStart,
+                        Math.min(
+                            currentSourceText.length,
+                            Math.floor(Number(safeBlock.blockSourceEnd) || blockWrapperStart)))
+            if (blockWrapperEnd > blockWrapperStart) {
+                deletionStart = blockWrapperStart
+                deletionEnd = blockWrapperEnd
+            } else {
+                const emptyDeletionRange = documentFlow.emptyTextBlockDeletionRange(
+                            safeBlock,
+                            direction,
+                            currentSourceText)
+                if (!emptyDeletionRange)
+                    return false
+                deletionStart = Math.max(0, Math.floor(Number(emptyDeletionRange.start) || 0))
+                deletionEnd = Math.max(deletionStart, Math.floor(Number(emptyDeletionRange.end) || deletionStart))
+                focusRequest = emptyDeletionRange.focusRequest && typeof emptyDeletionRange.focusRequest === "object"
+                        ? emptyDeletionRange.focusRequest
+                        : null
+            }
+        }
+
+        if (deletionEnd <= deletionStart)
             return false
-        const nextSourceText = documentFlow.spliceSourceRange(blockSourceStart, blockSourceEnd, "")
+        const nextSourceText = documentFlow.spliceSourceRange(deletionStart, deletionEnd, "")
         documentFlow.sourceMutationRequested(
                     nextSourceText,
-                    documentFlow.focusRequestAfterBlockDeletion(safeBlock, nextSourceText))
+                    focusRequest && typeof focusRequest === "object"
+                    ? focusRequest
+                    : documentFlow.focusRequestAfterBlockDeletion({
+                                                                       "sourceEnd": deletionEnd,
+                                                                       "sourceStart": deletionStart
+                                                                   }, nextSourceText))
         return true
     }
 
@@ -1481,7 +1561,9 @@ FocusScope {
                         onBoundaryNavigationRequested: function (axis, side) {
                             documentFlow.navigateDocumentBoundary(blockHost.blockIndex, axis, side)
                         }
-                        onBlockDeletionRequested: documentFlow.deleteBlock(blockHost.blockEntry)
+                        onBlockDeletionRequested: function (direction) {
+                            documentFlow.deleteBlock(blockHost.blockEntry, direction)
+                        }
                         onDocumentEndEditRequested: documentFlow.requestDocumentEndEdit()
                         onSourceMutationRequested: function (nextBlockSourceText, focusRequest) {
                             documentFlow.replaceTextBlock(blockHost.blockEntry, nextBlockSourceText, focusRequest)

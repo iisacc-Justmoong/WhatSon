@@ -17,7 +17,7 @@ FocusScope {
     signal activated()
     signal adjacentAtomicBlockDeleteRequested(string side)
     signal boundaryNavigationRequested(string axis, string side)
-    signal blockDeletionRequested()
+    signal blockDeletionRequested(string direction)
     signal documentEndEditRequested()
     signal sourceMutationRequested(string nextBlockSourceText, var focusRequest)
     signal taskDoneToggled(int openTagStart, int openTagEnd, bool checked)
@@ -126,7 +126,10 @@ FocusScope {
             if (!event)
                 return false
             if (event.key === Qt.Key_Backspace || event.key === Qt.Key_Delete) {
-                documentBlock.blockDeletionRequested()
+                documentBlock.blockDeletionRequested(
+                            event.key === Qt.Key_Delete
+                            ? "forward"
+                            : "backward")
                 event.accepted = true
                 return true
             }
@@ -267,8 +270,8 @@ FocusScope {
             documentBlock.boundaryNavigationRequested(axis, side)
         }
 
-        function onBlockDeletionRequested() {
-            documentBlock.blockDeletionRequested()
+        function onBlockDeletionRequested(direction) {
+            documentBlock.blockDeletionRequested(direction)
         }
 
         function onDocumentEndEditRequested() {

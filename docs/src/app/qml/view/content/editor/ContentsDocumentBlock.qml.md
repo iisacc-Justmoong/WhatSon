@@ -14,7 +14,7 @@ Provides the single document-block adapter that keeps `ContentsStructuredDocumen
   - `ContentsBreakBlock.qml`
 - The outer API deliberately stays generic:
   - focus / current-line / cursor-row geometry queries
-  - delete-key forwarding
+  - delete-key forwarding, including delete direction for empty-line removal
   - host-owned shortcut forwarding
   - inline-format selection snapshot + apply helpers
   - shortcut insertion offset lookup

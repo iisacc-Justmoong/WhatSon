@@ -130,8 +130,8 @@ Desktop content editor host.
 - The host now also exposes one helper that counts canonical `<resource ... />` tokens in a RAW snapshot and another
   helper that flags resource-tag loss while the note is still on the legacy inline editor.
   That loss check compares the candidate rewrite against the strongest currently known RAW baseline
-  (`editorText`, `documentPresentationSourceText`, and the selected-note body snapshot only when that snapshot still
-  belongs to the selected note and the host has not taken local editor authority), so a stale surface rewrite is
+  (`editorText`, the derived `documentPresentationSourceText`, and the selected-note body snapshot only when that
+  snapshot still belongs to the selected note and the host has not taken local editor authority), so a stale surface rewrite is
   rejected even if one buffer had already drifted once without treating an older model snapshot as newer than a just-
   accepted local edit.
 - `applyDocumentSourceMutation(...)` now also runs that same loss check before it mutates `editorText` or persists.
@@ -176,12 +176,13 @@ Desktop content editor host.
   text, agenda, callout, and break blocks.
 - `ContentsBodyResourceRenderer`, `ContentsStructuredBlockRenderer`, and `ContentsStructuredDocumentFlow` now share one
   `structuredFlowSourceText` contract.
-  Resource-block activation therefore stays aligned even when the live editor surface, the deferred presentation
-  snapshot, and the selection-bridge body source are temporarily catching up with each other.
-- That shared `structuredFlowSourceText` is now refreshed imperatively from note-session ownership changes instead of
-  staying as a reactive multi-branch binding.
-  While the structured editor is bound to the selected note, desktop always feeds the parser/renderer from
-  `editorSession.editorText`; selection/presentation fallbacks are only used before the bound RAW session exists.
+  That source is now a read-only derivation of the current authoritative note body instead of a second mutable cache.
+  Desktop therefore stops copying the same `.wsnbody` string through separate parser/presentation source slots just to
+  keep renderers in sync.
+- `documentPresentationSourceText`, `structuredFlowSourceText`, `ContentsTextFormatRenderer.sourceText`, and
+  `ContentsLogicalTextBridge.text` now all resolve from that same derived RAW source contract.
+  Parser/resource/text-metric consumers therefore observe one source string directly instead of being re-armed through
+  a second host-owned mutable source cache.
 - Structured-flow enablement now also depends only on the bound editor session itself, not on
   `ContentsStructuredBlockRenderer.renderPending`.
   The desktop host therefore no longer re-enters the renderer's own state while evaluating whether the structured
@@ -285,6 +286,15 @@ Desktop content editor host.
 - RichText dirtiness checks now compare against the already-upgraded inline-resource HTML, so the desktop host no
   longer treats every resource-bearing note as permanently dirty just because `editorSurfaceHtml` still contains the
   placeholder marker payload.
+- Those dirtiness checks no longer keep a second mutable source-text snapshot either.
+  The desktop host now only compares the current rendered legacy surface against the renderer's already-bound RAW
+  projection, which removes one more host-side re-entry layer from ordinary editing.
+- The legacy document-presentation refresh timer and RichText surface-sync path are now gated behind one explicit
+  `documentPresentationProjectionEnabled` contract.
+  When the structured/plain-text document flow owns the note surface, desktop stops carrying a pending presentation
+  refresh state and no longer re-arms the legacy surface-sync timer just because RAW source changed.
+- The host-level `ContentsTextFormatRenderer` also stops receiving note RAW while that projection contract is disabled.
+  Structured editing therefore no longer keeps one unused HTML renderer hot on every source mutation.
 - Desktop host no longer uses `ContentsResourceLayer.qml` for note-body rendering.
   Resource visibility now depends on parsed document blocks, not on a second overlay pass above the editor surface.
 - When the selection bridge can already expose a buffered dirty body for the newly selected note, the desktop host now

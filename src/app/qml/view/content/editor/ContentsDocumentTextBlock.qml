@@ -14,6 +14,7 @@ FocusScope {
     signal activated()
     signal adjacentAtomicBlockDeleteRequested(string side)
     signal boundaryNavigationRequested(string axis, string side)
+    signal blockDeletionRequested(string direction)
     signal sourceMutationRequested(string nextBlockSourceText, var focusRequest)
 
     readonly property var normalizedBlock: blockData && typeof blockData === "object" ? blockData : ({})
@@ -31,6 +32,8 @@ FocusScope {
     readonly property int sourceStart: Math.max(0, Number(normalizedBlock.sourceStart) || 0)
     readonly property int sourceEnd: Math.max(sourceStart, Number(normalizedBlock.sourceEnd) || 0)
     readonly property string sourceText: normalizedBlock.sourceText !== undefined ? String(normalizedBlock.sourceText) : ""
+    readonly property bool inlineStyleOverlayVisible: /<\s*\/?\s*(?:bold|italic|underline|strikethrough|highlight)\b/i.test(
+                                                         textBlock.sourceText)
     readonly property string authoritativePlainText: StructuredCursorSupport.plainTextFromInlineTaggedSource(
                                                         textBlock.authoritativeSourceText())
 
@@ -335,6 +338,10 @@ FocusScope {
         return true
     }
 
+    function handleDeleteKeyPress(event) {
+        return textBlock.handleAtomicBlockBoundaryKeyPress(event)
+    }
+
     function handleAtomicBlockBoundaryKeyPress(event) {
         if (!event)
             return false
@@ -374,6 +381,11 @@ FocusScope {
                     blockEditor.length !== undefined
                     ? Math.floor(Number(blockEditor.length) || 0)
                     : textBlock.currentEditorPlainText().length)
+        if ((deleteBackward || deleteForward) && plainTextLength === 0) {
+            textBlock.blockDeletionRequested(deleteForward ? "forward" : "backward")
+            event.accepted = true
+            return true
+        }
         if (deleteBackward && cursorPosition === 0 && textBlock.hasAdjacentAtomicBlockBefore) {
             textBlock.adjacentAtomicBlockDeleteRequested("before")
             event.accepted = true
@@ -421,7 +433,7 @@ FocusScope {
     ContentsTextFormatRenderer {
         id: inlineStyleRenderer
 
-        sourceText: textBlock.authoritativeSourceText()
+        sourceText: textBlock.inlineStyleOverlayVisible ? textBlock.authoritativeSourceText() : ""
     }
 
     ContentsInlineFormatEditor {
@@ -443,11 +455,11 @@ FocusScope {
         insetHorizontal: 0
         insetVertical: 0
         placeholderText: ""
-        renderedText: inlineStyleRenderer.editorSurfaceHtml
+        renderedText: textBlock.inlineStyleOverlayVisible ? inlineStyleRenderer.editorSurfaceHtml : ""
         selectByMouse: true
         selectedTextColor: LV.Theme.textPrimary
         selectionColor: LV.Theme.accent
-        showRenderedOutput: true
+        showRenderedOutput: textBlock.inlineStyleOverlayVisible
         showScrollBar: false
         shortcutKeyPressHandler: function (event) {
             if (textBlock.shortcutKeyPressHandler

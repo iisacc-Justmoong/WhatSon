@@ -10,6 +10,9 @@ tags as visible formatted text.
 - Inline tags such as `<bold>`, `<italic>`, `<underline>`, `<strikethrough>`, and `<highlight>` therefore no longer
   appear literally in the visible editor surface after a formatting command, but the editable buffer itself still
   stays plain text instead of a serialized Qt RichText document.
+- That formatted overlay is now mounted only when the block source actually contains inline style tags.
+  Ordinary plain paragraphs therefore no longer pay for one extra rich-text overlay paint path when they are just
+  plain text.
 - Live typing is still source-driven:
   - compare previous visible plain text with current editor plain text
   - compute the changed logical range
@@ -29,6 +32,9 @@ tags as visible formatted text.
 - The nested inline editor now also runs one host-owned shortcut handler before its local boundary-navigation logic.
   Note-wide shortcuts such as clipboard-image paste can therefore be intercepted while focus is inside a structured
   paragraph editor, without reintroducing legacy whole-note editing authority.
+- An empty text block now treats plain `Backspace` / `Delete` as "remove this line" before it tries adjacent atomic
+  block deletion.
+  Zero-length paragraph blocks therefore no longer become undeletable cursor anchors.
 
 ## Shared Block Contract
 - `textEditable = true`
