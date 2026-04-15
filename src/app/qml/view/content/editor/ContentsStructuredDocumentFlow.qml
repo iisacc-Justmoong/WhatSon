@@ -351,17 +351,69 @@ FocusScope {
         documentFlow.activeBlockCursorRevision += 1
     }
 
-    function applyInlineFormatToActiveSelection(tagName) {
+    function selectionSnapshotIsValid(selectionSnapshot) {
+        if (!selectionSnapshot || typeof selectionSnapshot !== "object")
+            return false
+        const selectionStart = Number(selectionSnapshot.selectionStart)
+        const selectionEnd = Number(selectionSnapshot.selectionEnd)
+        return isFinite(selectionStart)
+                && isFinite(selectionEnd)
+                && Math.floor(selectionEnd) > Math.floor(selectionStart)
+    }
+
+    function inlineFormatTargetState() {
         const blocks = documentFlow.normalizedBlocks()
         if (blocks.length === 0)
-            return false
+            return ({ "valid": false })
         const resolvedActiveBlockIndex = Math.max(-1, Number(documentFlow.resolvedInteractiveBlockIndexValue) || -1)
         const safeActiveBlockIndex = Math.max(0, Math.min(blocks.length - 1, resolvedActiveBlockIndex))
         const activeBlockHost = blockRepeater.itemAt(safeActiveBlockIndex)
         const delegateItem = documentFlow.delegateItemForBlockHost(activeBlockHost)
+        if (!delegateItem)
+            return ({
+                        "blockIndex": safeActiveBlockIndex,
+                        "selectionSnapshot": ({ }),
+                        "valid": false
+                    })
+        const selectionSnapshot = delegateItem.inlineFormatSelectionSnapshot !== undefined
+                ? delegateItem.inlineFormatSelectionSnapshot()
+                : delegateItem.selectionSnapshot !== undefined
+                  ? delegateItem.selectionSnapshot()
+                  : ({})
+        return {
+            "blockIndex": safeActiveBlockIndex,
+            "selectionSnapshot": selectionSnapshot,
+            "valid": documentFlow.selectionSnapshotIsValid(selectionSnapshot)
+        }
+    }
+
+    function applyInlineFormatToBlockSelection(blockIndex, tagName, selectionSnapshot) {
+        const blocks = documentFlow.normalizedBlocks()
+        if (blocks.length === 0)
+            return false
+        const numericBlockIndex = Number(blockIndex)
+        if (!isFinite(numericBlockIndex))
+            return false
+        const safeActiveBlockIndex = Math.max(
+                    0,
+                    Math.min(
+                        blocks.length - 1,
+                        Math.floor(numericBlockIndex)))
+        const activeBlockHost = blockRepeater.itemAt(safeActiveBlockIndex)
+        const delegateItem = documentFlow.delegateItemForBlockHost(activeBlockHost)
         if (!delegateItem || delegateItem.applyInlineFormatToSelection === undefined)
             return false
-        return !!delegateItem.applyInlineFormatToSelection(tagName)
+        return !!delegateItem.applyInlineFormatToSelection(tagName, selectionSnapshot)
+    }
+
+    function applyInlineFormatToActiveSelection(tagName) {
+        const targetState = documentFlow.inlineFormatTargetState()
+        if (!targetState.valid)
+            return false
+        return documentFlow.applyInlineFormatToBlockSelection(
+                    targetState.blockIndex,
+                    tagName,
+                    targetState.selectionSnapshot)
     }
 
     function hasFocusedBlock() {

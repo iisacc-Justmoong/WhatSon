@@ -201,6 +201,16 @@ FocusScope {
         return !!blockEditor.restoreSelectionRange(selectionStart, selectionEnd, cursorPosition)
     }
 
+    function inlineFormatSelectionSnapshot() {
+        if (!blockEditor)
+            return ({})
+        if (blockEditor.inlineFormatSelectionSnapshot !== undefined)
+            return blockEditor.inlineFormatSelectionSnapshot()
+        if (blockEditor.selectionSnapshot !== undefined)
+            return blockEditor.selectionSnapshot()
+        return ({})
+    }
+
     function applyFocusRequest(request) {
         const safeRequest = request && typeof request === "object" ? request : ({})
         const localCursorPosition = Number(safeRequest.localCursorPosition)
@@ -227,15 +237,15 @@ FocusScope {
         return true
     }
 
-    function applyInlineFormatToSelection(tagName) {
+    function applyInlineFormatToSelection(tagName, explicitSelectionSnapshot) {
         const normalizedTagName = textBlock.normalizeInlineStyleTag(tagName)
         if (normalizedTagName.length === 0)
             return false
         if (!blockRenderer || blockRenderer.applyInlineStyleToLogicalSelectionSource === undefined)
             return false
-        const selectionSnapshot = blockEditor && blockEditor.selectionSnapshot !== undefined
-                ? blockEditor.selectionSnapshot()
-                : ({})
+        const selectionSnapshot = explicitSelectionSnapshot && typeof explicitSelectionSnapshot === "object"
+                ? explicitSelectionSnapshot
+                : textBlock.inlineFormatSelectionSnapshot()
         const plainText = textBlock.currentEditorPlainText()
         const selectionStart = Math.max(0, Math.min(plainText.length, Math.floor(Number(selectionSnapshot.selectionStart) || 0)))
         const selectionEnd = Math.max(selectionStart, Math.min(plainText.length, Math.floor(Number(selectionSnapshot.selectionEnd) || 0)))

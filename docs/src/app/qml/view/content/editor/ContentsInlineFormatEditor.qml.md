@@ -102,11 +102,18 @@ plain `QtQuick.TextEdit` as the actual rendering and input engine.
     replaying intermediate Hangul jamo assembly steps back into the host mutation pipeline
 - Exposes direct Qt-style selection/text helpers on the wrapper itself:
   - `selectionSnapshot()`
+  - `inlineFormatSelectionSnapshot()`
   - `currentPlainText()`
   - `getText(start, end)`
   - `getFormattedText(start, end)`
   - `length`
   - `hasSelection`
+- The wrapper now also keeps a short-lived cache of the latest non-empty selection range.
+  `inlineFormatSelectionSnapshot()` prefers the live `TextEdit` range, but if a host shortcut briefly collapses that
+  range onto one selection edge during the same focus turn, the wrapper can still hand the formatting path the last
+  valid selection snapshot instead of reporting an empty range.
+- That cached formatting selection is discarded as soon as focus leaves, text changes, or the caret moves away from the
+  cached selection boundary, so ordinary caret-only editing does not inherit a stale format target.
 - Keeps the scroll contract compatible with the existing gutter/minimap code:
   - `editorItem.parent.y` follows the `Flickable.contentItem` offset
   - `editorItem.parent.parent` resolves back to the owning `Flickable`
@@ -209,3 +216,6 @@ plain `QtQuick.TextEdit` as the actual rendering and input engine.
   FocusScope itself is not the current `activeFocus` item
 - injected host shortcut handlers must still fire when the nested `TextEdit` has focus, and accepted shortcut events
   must not fall through into literal character insertion.
+- Immediately after a host shortcut such as `Cmd/Ctrl+B`, `Cmd/Ctrl+I`, or highlight formatting, the wrapper must not
+  report an empty selection just because the live `TextEdit` momentarily collapsed the range to one edge while the
+  shortcut handler was still running.

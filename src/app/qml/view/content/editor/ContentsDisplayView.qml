@@ -198,6 +198,7 @@ Item {
     property bool selectionModelSyncFocusEditorPending: false
     property bool selectionModelSyncFallbackRefreshPending: false
     property bool selectionModelSyncForceVisualRefreshPending: false
+    property var queuedStructuredInlineFormatWrapKeys: ({})
     property string pendingNoteEntryGutterRefreshNoteId: ""
     property string structuredDocumentFlowActivatedNoteId: ""
     property string pendingEditorFocusNoteId: ""
@@ -1695,13 +1696,66 @@ Item {
         return true;
     }
     function queueStructuredInlineFormatWrap(tagName) {
-        if (contentsView.showStructuredDocumentFlow
-                && structuredDocumentFlow
-                && structuredDocumentFlow.applyInlineFormatToActiveSelection !== undefined
-                && structuredDocumentFlow.applyInlineFormatToActiveSelection(tagName)) {
-            return true;
+        if (!contentsView.showStructuredDocumentFlow
+                || !structuredDocumentFlow)
+            return false;
+        if (structuredDocumentFlow.inlineFormatTargetState === undefined
+                || structuredDocumentFlow.applyInlineFormatToBlockSelection === undefined) {
+            if (structuredDocumentFlow.applyInlineFormatToActiveSelection !== undefined)
+                return structuredDocumentFlow.applyInlineFormatToActiveSelection(tagName);
+            return false;
         }
-        return false;
+        const targetState = structuredDocumentFlow.inlineFormatTargetState();
+        if (!targetState || !targetState.valid)
+            return false;
+        const normalizedNoteId = contentsView.selectedNoteId === undefined || contentsView.selectedNoteId === null
+                ? ""
+                : String(contentsView.selectedNoteId).trim();
+        if (normalizedNoteId.length === 0)
+            return false;
+        const blockIndex = Math.max(0, Math.floor(Number(targetState.blockIndex) || 0));
+        const selectionSnapshot = targetState.selectionSnapshot && typeof targetState.selectionSnapshot === "object"
+                ? ({
+                       "cursorPosition": Number(targetState.selectionSnapshot.cursorPosition),
+                       "selectedText": targetState.selectionSnapshot.selectedText === undefined
+                                       || targetState.selectionSnapshot.selectedText === null
+                                       ? ""
+                                       : String(targetState.selectionSnapshot.selectedText),
+                       "selectionEnd": Number(targetState.selectionSnapshot.selectionEnd),
+                       "selectionStart": Number(targetState.selectionSnapshot.selectionStart)
+                   })
+                : ({});
+        const queueKey = normalizedNoteId
+                + "::"
+                + String(tagName)
+                + "::"
+                + String(blockIndex)
+                + "::"
+                + String(selectionSnapshot.selectionStart)
+                + "::"
+                + String(selectionSnapshot.selectionEnd)
+                + "::"
+                + String(selectionSnapshot.cursorPosition);
+        if (contentsView.queuedStructuredInlineFormatWrapKeys[queueKey])
+            return true;
+        contentsView.queuedStructuredInlineFormatWrapKeys[queueKey] = true;
+        Qt.callLater(function () {
+            delete contentsView.queuedStructuredInlineFormatWrapKeys[queueKey];
+            if (!contentsView.showStructuredDocumentFlow
+                    || !structuredDocumentFlow
+                    || !contentsView.hasSelectedNote)
+                return;
+            const currentNoteId = contentsView.selectedNoteId === undefined || contentsView.selectedNoteId === null
+                    ? ""
+                    : String(contentsView.selectedNoteId).trim();
+            if (currentNoteId !== normalizedNoteId)
+                return;
+            structuredDocumentFlow.applyInlineFormatToBlockSelection(
+                        blockIndex,
+                        tagName,
+                        selectionSnapshot);
+        });
+        return true;
     }
     function queueInlineFormatWrap(tagName) {
         if (contentsView.queueStructuredInlineFormatWrap(tagName))

@@ -61,3 +61,7 @@ Renders one plain-text document segment inside the structured document-flow edit
   and emits a block-scoped RAW mutation request with both caret and selection restore metadata.
   Inline-format shortcuts inside structured paragraphs therefore no longer depend on the legacy whole-document editor
   selection path.
+- The block now also accepts an explicit captured selection snapshot for that formatting rewrite instead of always
+  re-reading the nested editor selection live.
+  Structured-flow hosts can therefore capture the active selection before a shortcut turn settles and still rewrite the
+  correct RAW paragraph range one event-loop turn later.

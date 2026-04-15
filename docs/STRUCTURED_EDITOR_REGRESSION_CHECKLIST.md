@@ -238,6 +238,10 @@ structured document-flow editor changes.
   highlight shortcut must rewrite the selected block-local RAW source immediately.
   The same shortcut must not fail just because the legacy whole-note editor surface is not mounted in structured-flow
   mode.
+- The same structured formatting shortcuts must still rewrite the selected RAW range when the visible selection briefly
+  collapses to one boundary during shortcut dispatch.
+  A block-local selection captured on the shortcut turn must remain the rewrite target until the queued RAW mutation
+  applies.
   The structured-flow host must treat those semantic blocks as editable text blocks at the document tail.
 - The first structured resource block in a note must still resolve its inline asset payload.
   A `resourceIndex` or focus target value of `0` must not collapse to a sentinel fallback that downgrades the block to

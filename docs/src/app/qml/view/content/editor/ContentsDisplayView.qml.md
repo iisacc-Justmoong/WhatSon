@@ -215,6 +215,10 @@ Desktop content editor host.
   Selecting text inside a parser-owned paragraph block and pressing `Bold`, `Highlight`, or the other inline-format
   shortcuts therefore rewrites the owning block's RAW source directly instead of failing because the legacy full-note
   editor is not mounted.
+- That structured inline-format bridge is now also queued with a captured block index plus selection snapshot instead
+  of mutating the active block immediately during the shortcut signal turn.
+  Desktop formatting shortcuts therefore no longer depend on the structured editor still exposing the same live
+  selection range after Qt's shortcut dispatch has started to settle focus/selection state.
 - The current-line gutter indicator for structured notes now follows the active block's local logical line number, not
   only the first logical line of that block.
   Moving the caret between authored lines inside one paragraph/callout/agenda block therefore moves the blue gutter

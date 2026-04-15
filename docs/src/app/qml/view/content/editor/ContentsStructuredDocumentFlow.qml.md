@@ -80,6 +80,11 @@ Hosts the document-native block editor for structured `.wsnbody` content.
   currently active delegate when that delegate supports block-local selection rewriting.
   Paragraph-level shortcut formatting can therefore stay inside structured flow instead of depending on the legacy
   whole-note editor surface.
+- The same formatting bridge now also exposes `inlineFormatTargetState()` and
+  `applyInlineFormatToBlockSelection(blockIndex, tagName, selectionSnapshot)`.
+  Parent hosts can capture the active block-local selection range first, queue the shortcut rewrite for the next turn,
+  and then apply the rewrite back to that same block without trusting whatever live focus/selection state survived the
+  shortcut event itself.
 - The same active-block insertion bridge now also accepts imported resource-tag batches from the parent host.
   A note that is already in structured-flow mode therefore inserts dropped `<resource ... />` blocks next to the
   active block instead of falling back to the legacy inline-editor cursor path or appending at EOF.

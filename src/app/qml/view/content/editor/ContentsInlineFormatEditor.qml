@@ -89,6 +89,10 @@ FocusScope {
     property bool _fallbackTextEditedDispatchQueued: false
     property int _fallbackTextEditedDispatchRevision: 0
     property bool _richTextImeFallbackSurfaceActive: false
+    property string _cachedSelectedText: ""
+    property int _cachedSelectionCursorPosition: -1
+    property int _cachedSelectionEnd: -1
+    property int _cachedSelectionStart: -1
 
     signal textEdited(string text)
 
@@ -146,6 +150,79 @@ FocusScope {
             "selectedText": textInput.selectedText,
             "selectionEnd": Number(textInput.selectionEnd),
             "selectionStart": Number(textInput.selectionStart)
+        };
+    }
+
+    function clearCachedSelectionSnapshot() {
+        control._cachedSelectedText = "";
+        control._cachedSelectionCursorPosition = -1;
+        control._cachedSelectionEnd = -1;
+        control._cachedSelectionStart = -1;
+    }
+
+    function cacheCurrentSelectionSnapshot() {
+        const selectionStart = Math.max(0, Math.floor(Number(textInput.selectionStart) || 0));
+        const selectionEnd = Math.max(selectionStart, Math.floor(Number(textInput.selectionEnd) || 0));
+        if (selectionEnd <= selectionStart)
+            return false;
+        control._cachedSelectedText = textInput.selectedText === undefined || textInput.selectedText === null
+                ? ""
+                : String(textInput.selectedText);
+        control._cachedSelectionCursorPosition = Math.max(
+                    0,
+                    Math.floor(Number(textInput.cursorPosition) || selectionEnd));
+        control._cachedSelectionEnd = selectionEnd;
+        control._cachedSelectionStart = selectionStart;
+        return true;
+    }
+
+    function maybeDiscardCachedSelectionSnapshot() {
+        const selectionStart = Math.max(0, Math.floor(Number(textInput.selectionStart) || 0));
+        const selectionEnd = Math.max(selectionStart, Math.floor(Number(textInput.selectionEnd) || 0));
+        if (selectionEnd > selectionStart) {
+            control.cacheCurrentSelectionSnapshot();
+            return;
+        }
+
+        const cachedStart = Math.max(0, Math.floor(Number(control._cachedSelectionStart) || 0));
+        const cachedEnd = Math.max(cachedStart, Math.floor(Number(control._cachedSelectionEnd) || 0));
+        if (cachedEnd <= cachedStart) {
+            control.clearCachedSelectionSnapshot();
+            return;
+        }
+
+        if (!control.focused) {
+            control.clearCachedSelectionSnapshot();
+            return;
+        }
+
+        const currentCursorPosition = Math.max(0, Math.floor(Number(textInput.cursorPosition) || 0));
+        if (currentCursorPosition !== cachedStart && currentCursorPosition !== cachedEnd)
+            control.clearCachedSelectionSnapshot();
+    }
+
+    function inlineFormatSelectionSnapshot() {
+        if (control.cacheCurrentSelectionSnapshot())
+            return control.selectionSnapshot();
+
+        const cachedStart = Math.max(0, Math.floor(Number(control._cachedSelectionStart) || 0));
+        const cachedEnd = Math.max(cachedStart, Math.floor(Number(control._cachedSelectionEnd) || 0));
+        if (cachedEnd <= cachedStart)
+            return control.selectionSnapshot();
+
+        const currentCursorPosition = Math.max(0, Math.floor(Number(textInput.cursorPosition) || 0));
+        if (!control.focused
+                || (currentCursorPosition !== cachedStart && currentCursorPosition !== cachedEnd)) {
+            return control.selectionSnapshot();
+        }
+
+        return {
+            "cursorPosition": Math.max(
+                                  0,
+                                  Math.floor(Number(control._cachedSelectionCursorPosition) || cachedEnd)),
+            "selectedText": control._cachedSelectedText,
+            "selectionEnd": cachedEnd,
+            "selectionStart": cachedStart
         };
     }
 
@@ -357,6 +434,7 @@ FocusScope {
         control._fallbackTextEditedDispatchQueued = false;
         control._programmaticTextSyncDepth += 1;
         textInput.text = normalizedText;
+        control.clearCachedSelectionSnapshot();
         if (hadSelection && previousSelectionEnd > previousSelectionStart) {
             control.restoreSelectionRange(previousSelectionStart, previousSelectionEnd, previousCursorPosition);
         } else {
@@ -452,6 +530,7 @@ FocusScope {
             });
             return;
         }
+        control.maybeDiscardCachedSelectionSnapshot();
         if (!focused)
             control.flushDeferredProgrammaticText(true);
     }
@@ -559,21 +638,26 @@ FocusScope {
                 onActiveFocusChanged: {
                     control.notifyInputMethod(Qt.ImQueryAll);
                     control.synchronizeRichTextImeSurface();
+                    control.maybeDiscardCachedSelectionSnapshot();
                 }
                 onCursorPositionChanged: {
                     control.notifyInputMethod(control.inputMethodSelectionQueryMask());
+                    control.maybeDiscardCachedSelectionSnapshot();
                 }
                 onCursorRectangleChanged: {
                     control.notifyInputMethod(control.inputMethodGeometryQueryMask());
                 }
                 onSelectionEndChanged: {
                     control.notifyInputMethod(control.inputMethodSelectionQueryMask());
+                    control.maybeDiscardCachedSelectionSnapshot();
                 }
                 onSelectionStartChanged: {
                     control.notifyInputMethod(control.inputMethodSelectionQueryMask());
+                    control.maybeDiscardCachedSelectionSnapshot();
                 }
                 onTextChanged: {
                     control.notifyInputMethod(control.inputMethodSelectionQueryMask());
+                    control.clearCachedSelectionSnapshot();
                     if (control._programmaticTextSyncDepth > 0)
                         return;
                     control.clearDeferredProgrammaticText();
