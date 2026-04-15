@@ -22,19 +22,18 @@ Renders one structured document-flow block for a canonical `<resource ... />` so
   The left/right edge caret anchors open only when a caller explicitly requests
   `interactionMode: "before"` or `interactionMode: "after"`, so routine focus recovery no longer degrades into one
   accidental edge caret.
-- The block now treats the resource frame itself as a three-zone interaction surface, but only narrow edge hot zones
-  on each side may leave whole-block selection:
-  - left edge hot zone: move editing to the nearest preceding text block, or open a transient before-boundary editor
-    when no preceding text block exists
-  - center/default click area: select the resource block itself as one atomic document block
-  - right edge hot zone: move editing to the nearest following text block, or open a transient after-boundary editor
-    when no following text block exists
-  Ordinary clicks on the attachment therefore stay on the same default path as mainstream notes apps: the block
-  itself becomes selected unless the user intentionally targets one edge.
-- Those transient boundary editors feed committed plain text back into RAW through
-  `adjacentPlainTextInsertionRequested(side, text, cursorPosition)`.
-  Typing on the left/right edge of an image block therefore materializes canonical prose before or after the
-  `<resource ... />` tag instead of collapsing back to one fixed block-end insertion point.
+- The block now treats the resource row itself as one Apple Notes-like three-state token:
+  - left caret lane: the `before` insertion point for the `<resource ... />` RAW span
+  - center/default click area: whole-block selection of the resource token itself
+  - right caret lane: the `after` insertion point for the same RAW span
+  Clicking the left or right lane no longer jumps directly into surrounding prose.
+  It first enters the resource token's own boundary caret state, so the attachment behaves like one document atom with
+  two cursor positions plus one selected state.
+- Those transient boundary editors now live in dedicated left/right caret lanes beside the frame instead of above or
+  below it.
+  They still feed committed plain text back into RAW through
+  `adjacentPlainTextInsertionRequested(side, text, cursorPosition)`, which means typing from the left lane inserts a
+  new paragraph before the `<resource ... />` tag and typing from the right lane inserts after it.
 - The resource block now also exposes a visible selected state for center-click block selection, so image frames can be
   targeted as atomic structured blocks instead of behaving like untouchable display-only cards.
 - That same whole-block focus chrome now stays visible while one of the transient left/right boundary caret anchors is
@@ -49,9 +48,14 @@ Renders one structured document-flow block for a canonical `<resource ... />` so
   - right boundary caret: `Backspace` removes the resource block, `Left` enters block selection
   Resource blocks therefore behave more like one cursor-addressable token during keyboard traversal instead of one
   isolated display card plus two unrelated empty editors.
-- Those boundary anchors now keep their native text caret hidden and rely on whole-block focus chrome for visual state.
-  Inline image/resource focus therefore reads like one selected attachment block rather than one tiny caret painted
-  inside the image frame edge.
+- A center-selected resource token now consumes `Left` / `Right` itself before yielding to adjacent prose.
+  Keyboard traversal therefore becomes:
+  preceding prose -> left caret lane -> selected resource token -> right caret lane -> following prose
+  instead of skipping straight from the selected image block to one neighboring text block.
+- Those boundary anchors now keep one visible native caret at the resource row boundary while the same whole-block
+  focus chrome remains active.
+  Inline image/resource focus therefore reads like one selected attachment token with explicit before/after caret
+  positions, which matches mainstream notes-app interaction more closely than a detached top/bottom insertion lane.
 - That selected outline now uses a neutral panel border instead of Accent so the interactive block state remains
   visually consistent with the Figma image-frame chrome.
 - Parent viewport background taps are now filtered through the structured document flow hit-test helpers before the

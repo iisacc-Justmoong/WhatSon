@@ -4,30 +4,30 @@
 Mobile content editor host.
 
 ## Editor Input Mode
-- The mobile note editor now keeps its mounted `ContentsInlineFormatEditor.qml` on the plain-text input path while the
-  renderer layer continues to receive the latest RAW source for HTML conversion on each presentation refresh turn.
-  The editable `TextEdit` itself is therefore no longer asked to host RichText document state.
+- Once the note session is bound, mobile now treats `ContentsStructuredDocumentFlow.qml` as the canonical whole-note
+  document host.
+- The RAW note body remains authoritative, but prose, semantic text blocks, `<resource ... />`, `agenda`, `callout`,
+  and `break` now all stay inside that same document host instead of using mode-specific editor routing.
+- The legacy whole-note `ContentsInlineFormatEditor.qml` path is now transitional fallback only while no bound note
+  session exists yet; it is no longer the ordinary mobile note-editing mode.
 
 ## Structured Document Flow
-- `agenda`, `callout`, `resource`, and `break` remain `.wsnbody` body tags, and mobile now lets any parsed explicit
-  document block, including semantic text-tag blocks and `resource`, activate `ContentsStructuredDocumentFlow.qml`.
-  A note whose RAW body contains `<resource ... />` therefore renders that block through parser-owned document flow
-  instead of depending on the legacy editor overlay path.
+- `agenda`, `callout`, `resource`, `break`, semantic text tags, and plain text now all share the same mobile
+  document-flow host.
 - Canonical live `<resource ... />` markup is still tracked through the live editor buffer, presentation snapshot, and
   selection-bridge body-source snapshot so `ContentsBodyResourceRenderer` can resolve against the freshest RAW source.
-- `ContentsStructuredDocumentFlow.qml` therefore becomes the shared block-flow host for agenda/callout/break/resource
-  notes and for notes whose RAW still carries explicit semantic text tags whenever the parser reports explicit
-  document blocks.
+- `ContentsStructuredDocumentFlow.qml` is therefore no longer a special-mode host only for some block families.
+  It is the ordinary note-body host for the bound mobile editor session.
 - That block-flow stream now also includes parser-owned semantic text blocks for `paragraph` / `title` / `subTitle` /
   `event*` body markup.
-  Mobile notes that mix prose with `<resource ... />` tags therefore keep their authored text visible in the same
-  document flow as the inline image frame instead of collapsing into a resource-only surface.
+  Mobile notes that mix prose with `<resource ... />`, `agenda`, `callout`, or `break` therefore keep all of those
+  blocks in one note-owned document flow.
 - Structured-flow visibility is now additionally gated by `editorSession.editorBoundNoteId == selectedNoteId`.
   A previously rendered structured note therefore cannot remain mounted after the user selects a different note-list
   item; the host hides stale block content until the newly selected note session is actually bound.
-- Structured-flow activation is now also gated by `structuredBlockRenderer.hasRenderedBlocks` only.
-  A live `<resource ... />` token alone therefore cannot replace the mobile editor with an early image-only block
-  surface before the parser has emitted the full document block sequence.
+- Structured-flow activation now follows note-session binding itself rather than a special subset of body tags.
+  `agenda`, `callout`, `break`, `resource`, and ordinary prose are all treated as ordinary note-body blocks under the
+  same host.
 - Structured block rewrites route through `applyDocumentSourceMutation(...)` so mobile keeps the same RAW persistence
   contract as desktop, but they no longer force an immediate full legacy presentation rebuild while structured-flow
   editing remains active.
@@ -44,8 +44,8 @@ Mobile content editor host.
   and note hosts no longer switch to a resource-only surface or resource overlay layer.
 - While structured-flow mode is active, a mobile left-tap in the structured document viewport now routes through
   `requestStructuredDocumentEndEdit()` so inline resource notes can always reopen an editable tail position.
-- The legacy mobile `ContentsInlineFormatEditor` now unloads entirely during structured-flow editing and is recreated only
-  when the fallback plain-text path becomes active again.
+- The legacy mobile `ContentsInlineFormatEditor` now unloads entirely during bound note editing and is recreated only
+  when the fallback inline whole-note path becomes active again.
 - Mobile keeps a lightweight proxy object behind the shared `contentEditor` reference so existing geometry/focus helpers
   remain null-safe while the legacy editor instance is absent.
 - Mobile host-side selection and typing controllers now bind to `contentsView.contentEditor` explicitly instead of
@@ -159,8 +159,10 @@ Mobile content editor host.
   `<resource ... />` link attempt, keeping `.wsresource` package creation and `.wsnbody` linking on one stable editor
   turn while still refreshing the runtime for successful package registration.
 - Mobile now also carries the same `whatson-resource-block` upgrade helper as desktop.
-- Once the selected note has entered structured-flow mode, mobile now prefers `ContentsResourceBlock.qml` in the shared
-  structured document host for inline resource display instead of depending on the RichText placeholder upgrade path.
+- Mobile keeps the RichText placeholder-upgrade path only as fallback presentation support for the unloaded legacy
+  editor.
+  The bound note session itself now renders inline resource blocks through the canonical document host together with
+  text, agenda, callout, and break blocks.
 - `ContentsBodyResourceRenderer`, `ContentsStructuredBlockRenderer`, and `ContentsStructuredDocumentFlow` now share one
   `structuredFlowSourceText` contract.
   Mobile resource-block activation therefore stays aligned even when the live editor surface, deferred presentation
@@ -173,10 +175,9 @@ Mobile content editor host.
   `selectionBridge.selectedNoteDirectoryPath`.
   Inline resource rendering therefore reuses the mounted editor session's resolved note package path instead of
   depending only on the currently active hierarchy view-model resolver.
-- The current default mobile editable note surface also keeps RichText inline-image upgrading disabled.
-  Resolved bitmap resources therefore render only through parser-owned document blocks inside
-  `ContentsStructuredDocumentFlow.qml`, keeping authored text and image frames in one flow without a second overlay
-  surface.
+- The current default mobile editable note surface no longer distinguishes “ordinary prose notes” from
+  “agenda/callout/resource notes” at the host level.
+  All of them now stay in one Apple Notes-like document host backed by `.wsnbody`.
 - Mobile now also exposes the same structured inline-format shortcut bridge as desktop.
   Inline-format commands first ask the active structured block to rewrite its own RAW source selection and only fall
   back to the legacy selection-controller path when no structured block can handle the request.

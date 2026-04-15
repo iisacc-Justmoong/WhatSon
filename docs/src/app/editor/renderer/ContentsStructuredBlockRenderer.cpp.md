@@ -32,7 +32,7 @@ Builds canonical structured render data from `.wsnbody` source text.
 - `hasRenderedBlocks` now reflects any explicit document block, including semantic text-tag blocks, standalone
   `</break>`, and `<resource ... />`.
 - `hasNonResourceRenderedBlocks` now likewise includes semantic text-tag blocks in addition to agenda/callout/break,
-  letting hosts distinguish resource-only notes from notes that still own editable prose blocks.
+  letting hosts distinguish resource-only block sequences from notes that still own explicit editable prose blocks.
 - Source refresh no longer runs the full structured verification pass once per backend signal. The renderer now parses the
   needed backends first, pulls their cached verification snapshots, and computes the combined structured verification
   once per source refresh.

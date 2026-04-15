@@ -260,8 +260,8 @@ Item {
     property var resourcesImportViewModel: null
     property var sidebarHierarchyViewModel: null
     readonly property string richTextHighlightOpenTag: "<span style=\"background-color:#8A4B00;color:#D6AE58;font-weight:600;\">"
-    readonly property bool preferNativeInputHandling: true
-    readonly property bool richTextInlineImageRenderingEnabled: false
+    readonly property bool preferNativeInputHandling: contentsView.parsedStructuredFlowRequested
+    readonly property bool richTextInlineImageRenderingEnabled: !contentsView.preferNativeInputHandling
     readonly property int resourceEditorPlaceholderLineCount: 6
     property int programmaticEditorSurfaceSyncDepth: 0
     readonly property int editorIdleSyncThresholdMs: 1000
@@ -293,7 +293,6 @@ Item {
                                                                 || contentsView.presentationSourceContainsResourceTag
                                                                 || contentsView.selectionSourceContainsResourceTag
     readonly property bool parsedStructuredFlowRequested: contentsView.editorSessionBoundToSelectedNote
-                                                          && structuredBlockRenderer.hasRenderedBlocks
     readonly property bool structuredDocumentFlowEnabled: contentsView.parsedStructuredFlowRequested
                                                           || (contentsView.editorSessionBoundToSelectedNote
                                                               && structuredBlockRenderer.renderPending
@@ -305,7 +304,6 @@ Item {
                                                      && !contentsView.showDedicatedResourceViewer
                                                      && !contentsView.showFormattedTextRenderer
     readonly property bool resourceBlocksRenderedInlineByRichTextEditor: contentsView.legacyInlineEditorActive
-                                                                        && !contentsView.preferNativeInputHandling
     readonly property bool programmaticEditorSurfaceSyncActive: contentsView.programmaticEditorSurfaceSyncDepth > 0
     readonly property bool showDedicatedResourceViewer: false
     readonly property bool showEditorGutter: !contentsView.showDedicatedResourceViewer

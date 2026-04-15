@@ -93,6 +93,13 @@ every turn.
   not be used as an alternate persistence or formatting authority.
 - Focus restoration, caret movement, and block re-materialization must always be computed against RAW source offsets or
   parser-derived block coordinates, not against incidental DOM structure.
+- Ordinary note editing should be treated as an Apple Notes-like document surface whose persisted backing store happens
+  to be `.wsnbody`.
+- The note editor should treat all note-body elements as ordinary blocks in one document host, including plain prose,
+  semantic text blocks, `<resource ... />`, `agenda`, `callout`, and `break`.
+- `ContentsStructuredDocumentFlow.qml` is the canonical note document host once a note session is bound.
+- Specialized block delegates may change presentation, but they must not split the note into a separate editor mode or
+  a different persistence authority.
 
 ## Codex Init (`/init`) Procedure
 

@@ -4,35 +4,32 @@
 Desktop content editor host.
 
 ## Editor Input Mode
-- The desktop note editor now runs its mounted `ContentsInlineFormatEditor.qml` in plain-text mode only.
-  `editorSession.editorText` / `textMetricsBridge.logicalText` remain the live editable surface, while HTML conversion
-  stays in the renderer layer and is no longer rebound into the editable `TextEdit` itself.
-- This removes the last active desktop `TextEdit.RichText` dependency from note typing, which prevents Qt RichText
-  document scaffolds from becoming part of the write path during ordinary editing.
-- `commitDocumentPresentationRefresh()` still updates `ContentsTextFormatRenderer.sourceText` on the same turn, so the
-  render-layer HTML projection keeps following RAW source immediately even though the editable `TextEdit` itself now
-  stays plain text.
+- Once the note session is bound, desktop now treats `ContentsStructuredDocumentFlow.qml` as the canonical whole-note
+  document host.
+- `editorSession.editorText` remains the RAW authority, but prose, semantic text blocks, `<resource ... />`,
+  `agenda`, `callout`, and `break` now all stay inside that same document host instead of using mode-specific editor
+  routing.
+- The legacy whole-note `ContentsInlineFormatEditor.qml` path is now transitional fallback only while no bound note
+  session exists yet; it is no longer the ordinary note-editing mode.
 
 ## Structured Document Flow
-- `agenda`, `callout`, `resource`, and `break` remain `.wsnbody` body tags, and desktop now lets any parsed explicit
-  document block, including semantic text-tag blocks and `resource`, activate `ContentsStructuredDocumentFlow.qml`.
-  A note whose RAW body contains `<resource ... />` therefore renders that block through the parser-owned document flow
-  instead of relying on the legacy inline-editor overlay path.
+- `agenda`, `callout`, `resource`, `break`, semantic text tags, and plain text now all share the same desktop
+  document-flow host.
 - Canonical live `<resource ... />` markup is still tracked through the live editor buffer, presentation snapshot, and
   selection-bridge snapshot so `ContentsBodyResourceRenderer` can resolve inline resources against the freshest RAW
   source.
-- `ContentsStructuredDocumentFlow.qml` therefore becomes the host for agenda/callout/break/resource notes and for notes
-  whose RAW still carries explicit semantic text tags whenever the parser reports explicit document blocks.
+- `ContentsStructuredDocumentFlow.qml` is therefore no longer a special-mode host only for some block families.
+  It is the ordinary note-body host for the bound desktop editor session.
 - That block stream now also includes parser-owned semantic text blocks for `paragraph` / `title` / `subTitle` /
   `event*` body markup.
-  A note that mixes prose paragraphs with `<resource ... />` tags therefore keeps both the prose and the inline image
-  frame in the same document-owned flow, instead of swapping to a resource-only surface that leaves the text empty.
+  A note that mixes prose paragraphs with `<resource ... />`, `agenda`, `callout`, or `break` therefore keeps all of
+  those blocks in one note-owned document flow.
 - Structured-flow visibility is now additionally gated by `editorSession.editorBoundNoteId == selectedNoteId`.
   A previously rendered structured note therefore cannot remain mounted after the user selects a different note-list
   item; the host hides stale block content until the newly selected note session is actually bound.
-- Structured-flow activation is now also gated by `structuredBlockRenderer.hasRenderedBlocks` only.
-  A live `<resource ... />` token by itself no longer flips the host into block mode before the parser has produced the
-  full mixed-content document block list, so prose paragraphs are not displaced by a premature image-only surface.
+- Structured-flow activation now follows note-session binding itself rather than a special subset of body tags.
+  `agenda`, `callout`, `break`, `resource`, and ordinary prose are all treated as ordinary note-body blocks under the
+  same host.
 - Source persistence for block edits now runs through `applyDocumentSourceMutation(...)`, which updates the RAW body,
   marks local authority, optionally restores focus inside the reparsed block, and only forces a full legacy
   presentation rebuild when the note actually falls back out of structured-flow mode.
@@ -169,9 +166,9 @@ Desktop content editor host.
   `.wsresource` registration still refreshes the runtime even when the note-link step fails.
 - Desktop RichText editor presentation still upgrades `whatson-resource-block` placeholders into paragraph-oriented
   document blocks before that HTML is bound into `ContentsInlineFormatEditor`.
-- Once the selected note has entered structured-flow mode, desktop now stops relying on that RichText image upgrade
-  path for inline resource display and instead renders `<resource ... />` through `ContentsResourceBlock.qml` inside
-  `ContentsStructuredDocumentFlow.qml`.
+- Desktop keeps the RichText image-upgrade path only as fallback presentation support for the unloaded legacy editor.
+  The bound note session itself now renders inline resource blocks through the canonical document host together with
+  text, agenda, callout, and break blocks.
 - `ContentsBodyResourceRenderer`, `ContentsStructuredBlockRenderer`, and `ContentsStructuredDocumentFlow` now share one
   `structuredFlowSourceText` contract.
   Resource-block activation therefore stays aligned even when the live editor surface, the deferred presentation
@@ -184,10 +181,9 @@ Desktop content editor host.
   `selectionBridge.selectedNoteDirectoryPath`.
   Inline resource rendering therefore uses the same resolved note package path as the mounted editor session instead of
   depending solely on the active hierarchy view-model to answer `noteDirectoryPathForNoteId(...)` again.
-- The desktop editable note surface now keeps RichText inline-image upgrading disabled by default.
-  Resolved bitmap resources therefore render only through parser-owned document blocks inside
-  `ContentsStructuredDocumentFlow.qml`, which keeps authored prose and image frames in one block stream and avoids
-  editor-surface overlays entirely.
+- The desktop editable note surface no longer distinguishes “ordinary prose notes” from “agenda/callout/resource
+  notes” at the host level.
+  All of them now stay in one Apple Notes-like document host backed by `.wsnbody`.
 - Desktop gutter and minimap rails now stay mounted for structured-flow notes as well.
   The host no longer treats `<resource ... />` notes as a special full-surface rendering mode that must disable editor
   chrome; instead it asks `ContentsStructuredDocumentFlow.qml` for block-derived logical line entries and feeds those

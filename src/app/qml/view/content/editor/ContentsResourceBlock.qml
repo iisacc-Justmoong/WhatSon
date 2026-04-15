@@ -23,9 +23,9 @@ FocusScope {
     readonly property real boundaryEditorHeight: Math.max(Math.round(LV.Theme.scaleMetric(18)), Math.round(LV.Theme.scaleMetric(12)))
     readonly property real boundaryEditorInset: Math.max(0, Math.round(LV.Theme.scaleMetric(6)))
     readonly property real boundaryEditorWidth: Math.max(Math.round(LV.Theme.scaleMetric(24)), Math.round(LV.Theme.scaleMetric(18)))
-    readonly property real edgeSelectionHotzoneWidth: Math.max(
-                                                          boundaryEditorWidth + boundaryEditorInset,
-                                                          Math.round(LV.Theme.scaleMetric(18)))
+    readonly property real boundaryCaretLaneWidth: Math.max(
+                                                       boundaryEditorWidth + boundaryEditorInset * 2,
+                                                       Math.round(LV.Theme.scaleMetric(18)))
     readonly property bool focused: resourceBlock.activeFocus || beforeBoundaryEditor.focused || afterBoundaryEditor.focused
     readonly property int sourceStart: Math.max(0, Number(normalizedBlock.sourceStart) || 0)
     readonly property int sourceEnd: Math.max(sourceStart, Number(normalizedBlock.sourceEnd) || 0)
@@ -231,14 +231,9 @@ FocusScope {
     function tapInteractionMode(localX) {
         const blockWidth = Math.max(1, Number(resourceBlock.width) || Number(resourceCard.width) || 1)
         const normalizedX = Math.max(0, Math.min(blockWidth, Number(localX) || 0))
-        const edgeHotzoneWidth = Math.max(
-                    0,
-                    Math.min(
-                        Math.floor(blockWidth / 3),
-                        Math.round(Number(resourceBlock.edgeSelectionHotzoneWidth) || 0)))
-        if (edgeHotzoneWidth > 0 && normalizedX <= edgeHotzoneWidth)
+        if (normalizedX <= resourceBlock.boundaryCaretLaneWidth)
             return "before"
-        if (edgeHotzoneWidth > 0 && normalizedX >= blockWidth - edgeHotzoneWidth)
+        if (normalizedX >= blockWidth - resourceBlock.boundaryCaretLaneWidth)
             return "after"
         return "selected"
     }
@@ -297,7 +292,10 @@ FocusScope {
         id: resourceCard
 
         anchors.left: parent.left
+        anchors.leftMargin: resourceBlock.boundaryCaretLaneWidth
         anchors.right: parent.right
+        anchors.rightMargin: resourceBlock.boundaryCaretLaneWidth
+        anchors.top: parent.top
         inlinePresentation: true
         resourceEntry: resourceBlock.effectiveResourceEntry
     }
@@ -315,7 +313,7 @@ FocusScope {
     ContentsInlineFormatEditor {
         id: beforeBoundaryEditor
 
-        anchors.left: resourceCard.left
+        anchors.left: parent.left
         anchors.leftMargin: resourceBlock.boundaryEditorInset
         anchors.verticalCenter: resourceCard.verticalCenter
         autoFocusOnPress: false
@@ -326,7 +324,7 @@ FocusScope {
         backgroundColorPressed: "transparent"
         centeredTextHeight: Math.max(0, Math.round(LV.Theme.scaleMetric(12)))
         cornerRadius: 0
-        cursorVisibleWhenFocused: false
+        cursorVisibleWhenFocused: true
         fieldMinHeight: resourceBlock.boundaryEditorHeight
         fontFamily: LV.Theme.fontBody
         fontPixelSize: Math.max(0, Math.round(LV.Theme.scaleMetric(12)))
@@ -375,7 +373,7 @@ FocusScope {
     ContentsInlineFormatEditor {
         id: afterBoundaryEditor
 
-        anchors.right: resourceCard.right
+        anchors.right: parent.right
         anchors.rightMargin: resourceBlock.boundaryEditorInset
         anchors.verticalCenter: resourceCard.verticalCenter
         autoFocusOnPress: false
@@ -386,7 +384,7 @@ FocusScope {
         backgroundColorPressed: "transparent"
         centeredTextHeight: Math.max(0, Math.round(LV.Theme.scaleMetric(12)))
         cornerRadius: 0
-        cursorVisibleWhenFocused: false
+        cursorVisibleWhenFocused: true
         fieldMinHeight: resourceBlock.boundaryEditorHeight
         fontFamily: LV.Theme.fontBody
         fontPixelSize: Math.max(0, Math.round(LV.Theme.scaleMetric(12)))
@@ -438,11 +436,21 @@ FocusScope {
         if (resourceBlock.handleDeleteKeyPress(event))
             return
         if (event.key === Qt.Key_Left) {
+            if (resourceBlock.blockSelected) {
+                resourceBlock.activateBoundaryEditor("before")
+                event.accepted = true
+                return
+            }
             if (resourceBlock.focusAdjacentTextOrBoundary("before"))
                 event.accepted = true
             return
         }
         if (event.key === Qt.Key_Right) {
+            if (resourceBlock.blockSelected) {
+                resourceBlock.activateBoundaryEditor("after")
+                event.accepted = true
+                return
+            }
             if (resourceBlock.focusAdjacentTextOrBoundary("after"))
                 event.accepted = true
             return
@@ -456,11 +464,11 @@ FocusScope {
             const interactionMode = resourceBlock.tapInteractionMode(
                         eventPoint && eventPoint.position ? eventPoint.position.x : 0)
             if (interactionMode === "before") {
-                resourceBlock.focusAdjacentTextOrBoundary("before")
+                resourceBlock.activateBoundaryEditor("before")
                 return
             }
             if (interactionMode === "after") {
-                resourceBlock.focusAdjacentTextOrBoundary("after")
+                resourceBlock.activateBoundaryEditor("after")
                 return
             }
             resourceBlock.selectResourceBlock()

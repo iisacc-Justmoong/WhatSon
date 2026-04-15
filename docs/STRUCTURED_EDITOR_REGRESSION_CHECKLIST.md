@@ -49,7 +49,8 @@ structured document-flow editor changes.
 
 ## Note Open Cost
 - Opening a note that contains no proprietary structured tags must stay on the fast path: no agenda/callout cards
-  should appear, and the editor must not instantiate legacy structured overlays in parallel with the plain-text path.
+  should appear, and the editor must not instantiate duplicate legacy overlays in parallel with the canonical
+  document-flow host.
 - Opening a long structured note must populate the document-native block flow without one large synchronous stall before
   the first editor frame becomes interactive.
 - While the first structured render for a newly selected note is still pending, note-open must stay on the legacy
@@ -192,10 +193,17 @@ structured document-flow editor changes.
   The body renderer must prefer that mounted note-directory path instead of dropping the image frame for one turn.
 - In RichText editor mode, the rendered body should stay on paragraph/image document flow that is close to Qt raw
   RichText/RTF layout, rather than one flat `<br/>` chain plus hidden spacer overlays.
-- A note that contains prose plus body `<resource ... />` tags must still let the parser activate
-  `ContentsStructuredDocumentFlow.qml` for that selected note.
-  The inline image/resource frame must come from the parser-owned document block at the authored slot, not from a
-  best-effort legacy overlay fallback.
+- A note that contains prose plus body `<resource ... />` tags and also includes `agenda`, `callout`, or `break`
+  blocks must still let the parser activate `ContentsStructuredDocumentFlow.qml` for that selected note.
+  In that mixed structured case, the inline image/resource frame must come from the parser-owned document block at the
+  authored slot, not from a best-effort legacy overlay fallback.
+- A note whose explicit body blocks are only `<resource ... />` plus ordinary prose paragraphs must still stay inside
+  `ContentsStructuredDocumentFlow.qml`.
+  That note must not be diverted into a second legacy whole-note editor mode just because it has no `agenda`,
+  `callout`, or `break`.
+- The same rule now applies to `agenda`, `callout`, and `break` as well.
+  Those tags are still ordinary note-body blocks and must remain in the same canonical document host as prose and
+  resources.
 - In structured-flow mode, a `type=resource` block must render through the same image frame card used elsewhere in the
   editor, and it must occupy real document height in the block column rather than an overlay aligned on top of text.
 - The same structured image/divider block must count as exactly one visible gutter row.
@@ -204,6 +212,10 @@ structured document-flow editor changes.
 - For a note whose first authored body block is a `resource`, gutter line `1` must remain visible at the top of that
   image block.
   Later prose lines must not start from `2` because the resource row was skipped during visible-line detection.
+- When the first authored body block is a `resource`, clicking that resource token's left caret lane and typing must
+  create a real prose block before the `<resource ... />` tag.
+  A leading image must expose a real `before` caret position on its own row instead of forcing the first typed text to
+  appear only after the resource block.
 - While the user types on an existing logical line without adding or removing a newline, the gutter must not visibly
   oscillate between stale and recomputed positions on each keystroke.
   Line-structure-triggered gutter refresh is expected only when the current edit actually changes newline structure.
@@ -255,8 +267,9 @@ structured document-flow editor changes.
   that resource block immediately.
 - While either left/right boundary anchor owns focus, the resource block must still render as one focused atomic block
   rather than looking like only a tiny edge caret is active.
-- The hidden boundary-anchor implementation must not leak a visible miniature text caret inside the image frame.
-  Attachment focus should read as whole-block selection/focus, consistent with standard notes-app attachment behavior.
+- The before/after caret for an attachment must stay outside the image frame itself, in dedicated left/right lanes.
+  Attachment focus should read as one selected token with explicit boundary carets, not as a miniature caret painted
+  over the bitmap.
 - After deleting a selected inline image/resource block, focus recovery must move to the nearest surviving prose block
   when one exists.
   The caret must not disappear into an unmapped newline gap between reparsed blocks just because the removed resource
@@ -313,10 +326,14 @@ structured document-flow editor changes.
 - The first structured resource block in a note must still resolve its inline asset payload.
   A `resourceIndex` or focus target value of `0` must not collapse to a sentinel fallback that downgrades the block to
   a fabricated generic document summary tile.
-- Clicking the left edge of an inline image/resource block must move editing to the nearest preceding prose position.
+- Clicking the left edge of an inline image/resource block must first enter that resource token's own `before` caret
+  position.
   If no preceding prose block exists, the next committed text must materialize before that resource block in RAW.
-- Clicking the right edge of an inline image/resource block must move editing to the nearest following prose position.
+- Clicking the right edge of an inline image/resource block must first enter that resource token's own `after` caret
+  position.
   If no following prose block exists, the next committed text must materialize after that resource block in RAW.
+- When an inline image/resource block itself is selected, pressing plain `Left` or `Right` must move to the same
+  resource token's before/after caret lane before traversing outward to adjacent prose.
 - Clicking the center of an inline image/resource block must select the block itself as one atomic structured item.
   The frame must expose a visible selected state instead of behaving like a display-only card with no block targeting.
 - A generic focus restore that lands on one `<resource ... />` source span must also reselect the whole attachment
