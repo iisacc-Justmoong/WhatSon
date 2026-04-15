@@ -133,6 +133,8 @@ Item {
     property var logicalLineDocumentYCache: []
     property int logicalLineDocumentYCacheLineCount: 0
     property int logicalLineDocumentYCacheRevision: -1
+    property var structuredLogicalLineEntriesCache: []
+    property int structuredLogicalLineEntriesCacheLineCount: 0
     property var liveLogicalLineStartOffsets: Array.isArray(textMetricsBridge.logicalLineStartOffsets) && textMetricsBridge.logicalLineStartOffsets.length > 0
                                            ? textMetricsBridge.logicalLineStartOffsets
                                            : [0]
@@ -160,6 +162,7 @@ Item {
     property bool minimapScrollable: false
     property bool minimapSnapshotForceFullRefresh: true
     property bool cursorDrivenUiRefreshQueued: false
+    property bool viewportGutterRefreshQueued: false
     property bool minimapSnapshotRefreshQueued: false
     property string minimapSnapshotSourceText: ""
     readonly property int minimapTrackInset: LV.Theme.gap8
@@ -362,7 +365,7 @@ Item {
         return [];
     }
     function structuredLogicalLineEntryAt(lineNumber) {
-        const lineEntries = contentsView.normalizedStructuredLogicalLineEntries();
+        const lineEntries = contentsView.effectiveStructuredLogicalLineEntries();
         if (lineEntries.length === 0)
             return null;
         const safeLineNumber = Math.floor(Number(lineNumber) || 0);
@@ -371,8 +374,42 @@ Item {
         const entry = lineEntries[safeLineNumber - 1];
         return entry && typeof entry === "object" ? entry : null;
     }
+    function cacheStructuredLogicalLineEntries() {
+        const liveEntries = contentsView.normalizedStructuredLogicalLineEntries();
+        const snapshot = [];
+        for (let index = 0; index < liveEntries.length; ++index) {
+            const entry = liveEntries[index] && typeof liveEntries[index] === "object"
+                    ? liveEntries[index]
+                    : ({});
+            snapshot.push({
+                "charCount": Math.max(0, Number(entry.charCount) || 0),
+                "contentHeight": Math.max(1, Number(entry.contentHeight) || contentsView.editorLineHeight),
+                "contentY": Math.max(0, Number(entry.contentY) || 0),
+                "gutterCollapsed": !!entry.gutterCollapsed,
+                "gutterContentHeight": Math.max(1, Number(entry.gutterContentHeight) || contentsView.editorLineHeight),
+                "gutterContentY": Math.max(0, Number(entry.gutterContentY) || 0),
+                "lineNumber": Math.max(1, Number(entry.lineNumber) || index + 1),
+                "minimapRowCharCount": Math.max(0, Number(entry.minimapRowCharCount) || 0),
+                "minimapVisualKind": entry.minimapVisualKind !== undefined
+                                     ? String(entry.minimapVisualKind)
+                                     : "text",
+                "rowCount": Math.max(1, Number(entry.rowCount) || 1)
+            });
+        }
+        contentsView.structuredLogicalLineEntriesCache = snapshot;
+        contentsView.structuredLogicalLineEntriesCacheLineCount = snapshot.length;
+        return snapshot;
+    }
+    function effectiveStructuredLogicalLineEntries() {
+        if (Array.isArray(contentsView.structuredLogicalLineEntriesCache)
+                && contentsView.structuredLogicalLineEntriesCache.length > 0
+                && contentsView.structuredLogicalLineEntriesCache.length === contentsView.structuredLogicalLineEntriesCacheLineCount) {
+            return contentsView.structuredLogicalLineEntriesCache;
+        }
+        return contentsView.normalizedStructuredLogicalLineEntries();
+    }
     function buildStructuredMinimapLineGroupsForRange(startLineNumber, endLineNumber) {
-        const lineEntries = contentsView.normalizedStructuredLogicalLineEntries();
+        const lineEntries = contentsView.effectiveStructuredLogicalLineEntries();
         if (lineEntries.length === 0)
             return contentsView.buildFallbackMinimapLineGroupsForRange(startLineNumber, endLineNumber);
 
@@ -674,12 +711,17 @@ Item {
         return false;
     }
     function commitGutterRefresh() {
+        if (contentsView.showStructuredDocumentFlow)
+            contentsView.cacheStructuredLogicalLineEntries();
         contentsView.refreshLiveLogicalLineMetrics();
         contentsView.gutterRefreshRevision += 1;
         contentsView.refreshMinimapSnapshot();
         contentsView.visibleGutterLineEntries = contentsView.buildVisibleGutterLineEntries();
         if (minimapLayer)
             minimapLayer.requestRepaint();
+    }
+    function refreshVisibleGutterEntries() {
+        contentsView.visibleGutterLineEntries = contentsView.buildVisibleGutterLineEntries();
     }
     function contextMenuEditorSelectionRange() {
         return editorSelectionController.contextMenuEditorSelectionRange();
@@ -1652,7 +1694,18 @@ Item {
         contentsView.editorEntrySnapshotPendingNoteId = normalizedNoteId;
         return true;
     }
+    function queueStructuredInlineFormatWrap(tagName) {
+        if (contentsView.showStructuredDocumentFlow
+                && structuredDocumentFlow
+                && structuredDocumentFlow.applyInlineFormatToActiveSelection !== undefined
+                && structuredDocumentFlow.applyInlineFormatToActiveSelection(tagName)) {
+            return true;
+        }
+        return false;
+    }
     function queueInlineFormatWrap(tagName) {
+        if (contentsView.queueStructuredInlineFormatWrap(tagName))
+            return true;
         return editorSelectionController.queueInlineFormatWrap(tagName);
     }
     function queueMarkdownListMutation(listKind) {
@@ -1837,6 +1890,8 @@ Item {
         contentsView.logicalLineDocumentYCache = [];
         contentsView.logicalLineDocumentYCacheRevision = -1;
         contentsView.logicalLineDocumentYCacheLineCount = 0;
+        contentsView.structuredLogicalLineEntriesCache = [];
+        contentsView.structuredLogicalLineEntriesCacheLineCount = 0;
     }
     function resetEditorSelectionCache() {
         editorSelectionController.resetEditorSelectionCache();
@@ -1924,7 +1979,7 @@ Item {
     }
     function refreshLiveLogicalLineMetrics() {
         if (contentsView.showStructuredDocumentFlow) {
-            const lineEntries = contentsView.normalizedStructuredLogicalLineEntries();
+            const lineEntries = contentsView.effectiveStructuredLogicalLineEntries();
             const nextLineStartOffsets = [0];
             let logicalLength = 0;
             for (let lineIndex = 0; lineIndex < lineEntries.length; ++lineIndex) {
@@ -1953,7 +2008,31 @@ Item {
         contentsView.liveLogicalLineStartOffsets = nextLineStartOffsets;
         contentsView.liveLogicalLineCount = Math.max(1, nextLineStartOffsets.length);
     }
-    function scheduleGutterRefresh(passCount) {
+    function activeLogicalLineCountSnapshot() {
+        if (contentsView.showStructuredDocumentFlow
+                && structuredDocumentFlow
+                && structuredDocumentFlow.logicalLineCount !== undefined) {
+            return Math.max(1, Number(structuredDocumentFlow.logicalLineCount()) || 1);
+        }
+        const normalizedLogicalText = contentsView.activeLogicalTextSnapshot().replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+        let lineCount = 1;
+        for (let characterIndex = 0; characterIndex < normalizedLogicalText.length; ++characterIndex) {
+            if (normalizedLogicalText.charAt(characterIndex) === "\n")
+                lineCount += 1;
+        }
+        return Math.max(1, lineCount);
+    }
+    function shouldScheduleGutterRefreshForReason(reason) {
+        const normalizedReason = reason === undefined || reason === null ? "force" : String(reason).trim().toLowerCase();
+        if (normalizedReason !== "line-structure")
+            return true;
+        if (!contentsView.editorInputFocused)
+            return true;
+        return contentsView.activeLogicalLineCountSnapshot() !== Math.max(1, Number(contentsView.liveLogicalLineCount) || 1);
+    }
+    function scheduleGutterRefresh(passCount, reason) {
+        if (!contentsView.shouldScheduleGutterRefreshForReason(reason))
+            return;
         const requestedPassCount = Math.max(1, Number(passCount) || 1);
         contentsView.gutterRefreshPassesRemaining = Math.max(contentsView.gutterRefreshPassesRemaining, requestedPassCount);
         if (!gutterRefreshTimer.running)
@@ -1980,6 +2059,15 @@ Item {
                 minimapLayer.requestRepaint();
             if (!contentsView.preferNativeInputHandling)
                 contentsView.scheduleEditorRichTextSurfaceSync();
+        });
+    }
+    function scheduleViewportGutterRefresh() {
+        if (contentsView.viewportGutterRefreshQueued)
+            return;
+        contentsView.viewportGutterRefreshQueued = true;
+        Qt.callLater(function () {
+            contentsView.viewportGutterRefreshQueued = false;
+            contentsView.refreshVisibleGutterEntries();
         });
     }
     function scheduleMinimapSnapshotRefresh(forceFull) {
@@ -2267,7 +2355,7 @@ Item {
             if (!contentsView.resourceBlocksRenderedInlineByRichTextEditor)
                 return;
             contentsView.refreshInlineResourcePresentation();
-            contentsView.scheduleGutterRefresh(2);
+            contentsView.scheduleGutterRefresh(2, "line-structure");
         }
 
         ignoreUnknownSignals: true
@@ -2375,7 +2463,7 @@ Item {
         function onRenderedBlocksChanged() {
             contentsView.refreshStructuredDocumentFlowActivation();
             contentsView.scheduleMinimapSnapshotRefresh(true);
-            contentsView.scheduleGutterRefresh(2);
+            contentsView.scheduleGutterRefresh(2, "line-structure");
         }
 
         target: structuredBlockRenderer
@@ -2386,7 +2474,7 @@ Item {
         }
         function onImplicitHeightChanged() {
             contentsView.scheduleMinimapSnapshotRefresh(true);
-            contentsView.scheduleGutterRefresh(2);
+            contentsView.scheduleGutterRefresh(2, "line-structure");
         }
 
         ignoreUnknownSignals: true
@@ -2408,7 +2496,7 @@ Item {
                 contentsView.scheduleDeferredDocumentPresentationRefresh();
             else
                 contentsView.scheduleMinimapSnapshotRefresh(false);
-            contentsView.scheduleGutterRefresh(2);
+            contentsView.scheduleGutterRefresh(2, "line-structure");
         }
         function onCursorPositionChanged() {
             contentsView.scheduleCursorDrivenUiRefresh();
@@ -2418,7 +2506,7 @@ Item {
                 contentsView.scheduleDeferredDocumentPresentationRefresh();
             else
                 contentsView.scheduleMinimapSnapshotRefresh(false);
-            contentsView.scheduleGutterRefresh(2);
+            contentsView.scheduleGutterRefresh(2, "line-structure");
         }
 
         ignoreUnknownSignals: true
@@ -2452,10 +2540,10 @@ Item {
     }
     Connections {
         function onContentYChanged() {
-            contentsView.scheduleGutterRefresh(1);
+            contentsView.scheduleViewportGutterRefresh();
         }
         function onHeightChanged() {
-            contentsView.scheduleGutterRefresh(2);
+            contentsView.scheduleViewportGutterRefresh();
         }
         function onWidthChanged() {
             contentsView.scheduleGutterRefresh(2);

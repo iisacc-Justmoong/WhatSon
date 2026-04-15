@@ -15,6 +15,7 @@ FocusScope {
     property var renderedResources: []
     property string sourceText: ""
     property int activeBlockIndex: -1
+    property int activeBlockCursorRevision: 0
     property var pendingFocusRequest: null
     property int pendingFocusBlockIndex: -1
     property bool pendingFocusApplyQueued: false
@@ -93,6 +94,19 @@ FocusScope {
         return logicalLineCount
     }
 
+    function logicalLineCount() {
+        const blocks = documentFlow.normalizedBlocks()
+        if (blocks.length === 0)
+            return 1
+        let lineCount = 0
+        for (let index = 0; index < blocks.length; ++index) {
+            const plainText = documentFlow.visiblePlainTextForBlock(blocks[index])
+            const logicalLines = plainText.length > 0 ? plainText.split("\n") : [""]
+            lineCount += documentFlow.logicalLineCountForBlock(blocks[index], logicalLines)
+        }
+        return Math.max(1, lineCount)
+    }
+
     function visualLineCharCount(blockEntry, logicalLines, visualLineCount, visualLineIndex) {
         const safeLogicalLines = Array.isArray(logicalLines) && logicalLines.length > 0 ? logicalLines : [""]
         const safeVisualLineCount = Math.max(1, Math.floor(Number(visualLineCount) || 1))
@@ -132,6 +146,21 @@ FocusScope {
         return normalized
     }
 
+    function delegateItemForBlockHost(blockHost) {
+        return blockHost && blockHost.delegateLoader && blockHost.delegateLoader.item
+                ? blockHost.delegateLoader.item
+                : null
+    }
+
+    function currentLocalLogicalLineNumberForBlockHost(blockHost, blockEntry) {
+        const delegateItem = documentFlow.delegateItemForBlockHost(blockHost)
+        if (delegateItem && delegateItem.currentLogicalLineNumber !== undefined)
+            return Math.max(1, Number(delegateItem.currentLogicalLineNumber) || 1)
+        const plainText = documentFlow.visiblePlainTextForBlock(blockEntry)
+        const logicalLines = plainText.length > 0 ? plainText.split("\n") : [""]
+        return Math.max(1, documentFlow.logicalLineCountForBlock(blockEntry, logicalLines))
+    }
+
     function blockLogicalLineEntries(blockHost, blockEntryOverride) {
         const host = blockHost && typeof blockHost === "object" ? blockHost : null
         const blockEntry = blockEntryOverride && typeof blockEntryOverride === "object"
@@ -148,7 +177,7 @@ FocusScope {
         const baseY = Math.max(0, host ? (Number(host.y) || 0) : 0)
         const entries = []
         const lineCount = documentFlow.logicalLineCountForBlock(blockEntry, logicalLines)
-        const delegateItem = host && host.delegateLoader && host.delegateLoader.item ? host.delegateLoader.item : null
+        const delegateItem = documentFlow.delegateItemForBlockHost(host)
         const delegateLineLayoutEntries = documentFlow.normalizedDelegateLineLayoutEntries(delegateItem, lineCount)
 
         for (let index = 0; index < lineCount; ++index) {
@@ -241,6 +270,7 @@ FocusScope {
     }
 
     function activeLogicalLineNumber() {
+        const cursorRevision = documentFlow.activeBlockCursorRevision
         const blocks = documentFlow.normalizedBlocks()
         const safeActiveBlockIndex = Math.max(0, Math.min(blocks.length - 1, Number(documentFlow.activeBlockIndex) || 0))
         if (blocks.length === 0)
@@ -250,7 +280,33 @@ FocusScope {
             const blockHost = blockRepeater.itemAt(blockIndex)
             lineNumber += documentFlow.blockLogicalLineEntries(blockHost, blocks[blockIndex]).length
         }
-        return Math.max(1, lineNumber)
+        const activeBlockHost = blockRepeater.itemAt(safeActiveBlockIndex)
+        const activeBlockLineCount = Math.max(1, documentFlow.blockLogicalLineEntries(activeBlockHost, blocks[safeActiveBlockIndex]).length)
+        const localLineNumber = Math.max(1, Math.min(
+                                             activeBlockLineCount,
+                                             documentFlow.currentLocalLogicalLineNumberForBlockHost(
+                                                 activeBlockHost,
+                                                 blocks[safeActiveBlockIndex])))
+        return Math.max(1, lineNumber + localLineNumber - 1)
+    }
+
+    function noteActiveBlockInteraction(blockIndex) {
+        const safeBlockIndex = Math.max(-1, Math.floor(Number(blockIndex) || -1))
+        if (documentFlow.activeBlockIndex !== safeBlockIndex)
+            documentFlow.activeBlockIndex = safeBlockIndex
+        documentFlow.activeBlockCursorRevision += 1
+    }
+
+    function applyInlineFormatToActiveSelection(tagName) {
+        const blocks = documentFlow.normalizedBlocks()
+        const safeActiveBlockIndex = Math.max(0, Math.min(blocks.length - 1, Number(documentFlow.activeBlockIndex) || 0))
+        if (blocks.length === 0)
+            return false
+        const activeBlockHost = blockRepeater.itemAt(safeActiveBlockIndex)
+        const delegateItem = documentFlow.delegateItemForBlockHost(activeBlockHost)
+        if (!delegateItem || delegateItem.applyInlineFormatToSelection === undefined)
+            return false
+        return !!delegateItem.applyInlineFormatToSelection(tagName)
     }
 
     function hasFocusedBlock() {
@@ -866,7 +922,7 @@ FocusScope {
                         blockData: blockHost.blockEntry
                         width: blockHost.width
 
-                        onActivated: documentFlow.activeBlockIndex = blockHost.blockIndex
+                        onActivated: documentFlow.noteActiveBlockInteraction(blockHost.blockIndex)
                         onSourceMutationRequested: function (nextBlockSourceText, focusRequest) {
                             documentFlow.replaceTextBlock(blockHost.blockEntry, nextBlockSourceText, focusRequest)
                         }
@@ -880,7 +936,7 @@ FocusScope {
                         blockData: blockHost.blockEntry
                         width: blockHost.width
 
-                        onActivated: documentFlow.activeBlockIndex = blockHost.blockIndex
+                        onActivated: documentFlow.noteActiveBlockInteraction(blockHost.blockIndex)
                         onTaskDoneToggled: function (openTagStart, openTagEnd, checked) {
                             documentFlow.toggleAgendaTaskDone(openTagStart, openTagEnd, checked)
                         }
@@ -900,7 +956,7 @@ FocusScope {
                         blockData: blockHost.blockEntry
                         width: blockHost.width
 
-                        onActivated: documentFlow.activeBlockIndex = blockHost.blockIndex
+                        onActivated: documentFlow.noteActiveBlockInteraction(blockHost.blockIndex)
                         onEnterExitRequested: function (blockData) {
                             documentFlow.exitCallout(blockData)
                         }

@@ -198,6 +198,11 @@ structured document-flow editor changes.
 - The same structured image/divider block must count as exactly one visible gutter row.
   Scrolling through a tall image must not make the desktop gutter expand that one body block into several apparent line
   slots or a multi-row current-line marker.
+- While the user types on an existing logical line without adding or removing a newline, the gutter must not visibly
+  oscillate between stale and recomputed positions on each keystroke.
+  Line-structure-triggered gutter refresh is expected only when the current edit actually changes newline structure.
+- The same-line typing path must not temporarily replace the last stable structured gutter geometry with a top-packed
+  fallback snapshot just because one intermediate content-offset or transient relayout event fired during editing.
 - While the viewport scrolls through the middle of that tall image, the gutter Y positions for later lines must stay
   aligned with the image block's real document height.
   Line numbers below the image must not overlap the bitmap, remain pinned near the top of the gutter, or jump only
@@ -208,6 +213,12 @@ structured document-flow editor changes.
 - For a multi-line prose block below an inline image, each visible gutter number must align with the actual rendered
   text row that starts that authored line.
   The gutter must not keep a uniform equal-gap ladder that visibly drifts away from the text baseline positions.
+- The blue current-line gutter indicator must follow the caret's actual authored line inside multi-line paragraph,
+  callout, and agenda blocks.
+  Focusing a lower logical line inside one structured block must not leave the current-line marker pinned to that
+  block's first gutter row.
+- Moving the caret with arrow keys or a mouse click inside the same focused structured paragraph/callout block must
+  update the blue current-line indicator immediately without requiring a focus change to another block first.
 - That same structured image block must also appear in the minimap as a wide filled block silhouette.
   The right rail must not render one tall image as several narrow text-like bars whose widths come from sliced label
   characters instead of the block card itself.
@@ -218,6 +229,10 @@ structured document-flow editor changes.
 - If the RAW body still carries explicit semantic text tags such as `paragraph`, `title`, `subTitle`, or `eventTitle`,
   the parser must materialize each top-level tag as its own document block instead of collapsing them back into one
   generic raw text gap.
+- Selecting text inside the active structured paragraph below an inline image and pressing `Cmd/Ctrl+B` or the
+  highlight shortcut must rewrite the selected block-local RAW source immediately.
+  The same shortcut must not fail just because the legacy whole-note editor surface is not mounted in structured-flow
+  mode.
   The structured-flow host must treat those semantic blocks as editable text blocks at the document tail.
 - The first structured resource block in a note must still resolve its inline asset payload.
   A `resourceIndex` or focus target value of `0` must not collapse to a sentinel fallback that downgrades the block to

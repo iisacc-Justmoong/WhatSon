@@ -16,6 +16,7 @@ FocusScope {
     signal taskTextChanged(var taskData, string text, int cursorPosition)
 
     readonly property var normalizedBlock: blockData && typeof blockData === "object" ? blockData : ({})
+    readonly property int currentLogicalLineNumber: agendaBlock.currentFocusedTaskLineNumber()
     readonly property bool focused: agendaBlock.activeFocus || agendaBlock.hasFocusedTaskRow()
     readonly property var tasks: {
         const rawTasks = normalizedBlock.tasks
@@ -43,6 +44,15 @@ FocusScope {
                 return true
         }
         return false
+    }
+
+    function currentFocusedTaskLineNumber() {
+        for (let index = 0; index < taskRepeater.count; ++index) {
+            const item = taskRepeater.itemAt(index)
+            if (item && item.focused !== undefined && item.focused)
+                return index + 1
+        }
+        return 1
     }
 
     function focusFirstTask() {

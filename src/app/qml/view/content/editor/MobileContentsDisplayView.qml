@@ -1503,7 +1503,18 @@ Item {
         contentsView.editorEntrySnapshotPendingNoteId = normalizedNoteId;
         return true;
     }
+    function queueStructuredInlineFormatWrap(tagName) {
+        if (contentsView.showStructuredDocumentFlow
+                && structuredDocumentFlow
+                && structuredDocumentFlow.applyInlineFormatToActiveSelection !== undefined
+                && structuredDocumentFlow.applyInlineFormatToActiveSelection(tagName)) {
+            return true;
+        }
+        return false;
+    }
     function queueInlineFormatWrap(tagName) {
+        if (contentsView.queueStructuredInlineFormatWrap(tagName))
+            return true;
         return editorSelectionController.queueInlineFormatWrap(tagName);
     }
     function queueMarkdownListMutation(listKind) {
@@ -1784,7 +1795,31 @@ Item {
         contentsView.liveLogicalLineStartOffsets = nextLineStartOffsets;
         contentsView.liveLogicalLineCount = Math.max(1, nextLineStartOffsets.length);
     }
-    function scheduleGutterRefresh(passCount) {
+    function activeLogicalLineCountSnapshot() {
+        if (contentsView.showStructuredDocumentFlow
+                && structuredDocumentFlow
+                && structuredDocumentFlow.logicalLineCount !== undefined) {
+            return Math.max(1, Number(structuredDocumentFlow.logicalLineCount()) || 1);
+        }
+        const normalizedLogicalText = contentsView.activeLogicalTextSnapshot().replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+        let lineCount = 1;
+        for (let characterIndex = 0; characterIndex < normalizedLogicalText.length; ++characterIndex) {
+            if (normalizedLogicalText.charAt(characterIndex) === "\n")
+                lineCount += 1;
+        }
+        return Math.max(1, lineCount);
+    }
+    function shouldScheduleGutterRefreshForReason(reason) {
+        const normalizedReason = reason === undefined || reason === null ? "force" : String(reason).trim().toLowerCase();
+        if (normalizedReason !== "line-structure")
+            return true;
+        if (!contentsView.editorInputFocused)
+            return true;
+        return contentsView.activeLogicalLineCountSnapshot() !== Math.max(1, Number(contentsView.liveLogicalLineCount) || 1);
+    }
+    function scheduleGutterRefresh(passCount, reason) {
+        if (!contentsView.shouldScheduleGutterRefreshForReason(reason))
+            return;
         const requestedPassCount = Math.max(1, Number(passCount) || 1);
         contentsView.gutterRefreshPassesRemaining = Math.max(contentsView.gutterRefreshPassesRemaining, requestedPassCount);
         if (!gutterRefreshTimer.running)
@@ -2098,7 +2133,7 @@ Item {
             if (!contentsView.resourceBlocksRenderedInlineByRichTextEditor)
                 return;
             contentsView.refreshInlineResourcePresentation();
-            contentsView.scheduleGutterRefresh(2);
+            contentsView.scheduleGutterRefresh(2, "line-structure");
         }
 
         ignoreUnknownSignals: true
@@ -2225,7 +2260,7 @@ Item {
                 contentsView.scheduleDeferredDocumentPresentationRefresh();
             else
                 contentsView.scheduleMinimapSnapshotRefresh(false);
-            contentsView.scheduleGutterRefresh(2);
+            contentsView.scheduleGutterRefresh(2, "line-structure");
         }
         function onCursorPositionChanged() {
             contentsView.scheduleCursorDrivenUiRefresh();
@@ -2235,7 +2270,7 @@ Item {
                 contentsView.scheduleDeferredDocumentPresentationRefresh();
             else
                 contentsView.scheduleMinimapSnapshotRefresh(false);
-            contentsView.scheduleGutterRefresh(2);
+            contentsView.scheduleGutterRefresh(2, "line-structure");
         }
 
         ignoreUnknownSignals: true

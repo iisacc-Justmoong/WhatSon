@@ -177,6 +177,13 @@ Mobile content editor host.
   Resolved bitmap resources therefore render only through parser-owned document blocks inside
   `ContentsStructuredDocumentFlow.qml`, keeping authored text and image frames in one flow without a second overlay
   surface.
+- Mobile now also exposes the same structured inline-format shortcut bridge as desktop.
+  Inline-format commands first ask the active structured block to rewrite its own RAW source selection and only fall
+  back to the legacy selection-controller path when no structured block can handle the request.
+- The shared mobile gutter/minimap geometry state now also suppresses line-structure-triggered refresh work while the
+  user is focused and the current edit did not change logical newline count.
+  Even though the present mobile shell does not show the gutter rail, the shared editor geometry no longer churns on
+  every same-line keystroke.
 - Mobile note transitions now also keep structured-flow notes off the legacy whole-editor typing diff path.
   Leaving a note whose body contains parser-owned `resource` blocks therefore no longer lets the fallback inline-editor
   serializer rewrite or damage `<resource ... />` source during transition cleanup.

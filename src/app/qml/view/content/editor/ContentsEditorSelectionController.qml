@@ -905,6 +905,10 @@ QtObject {
         const normalizedTagName = controller.normalizeInlineStyleTag(tagName);
         if (normalizedTagName.length === 0)
             return false;
+        if (controller.view.queueStructuredInlineFormatWrap !== undefined
+                && controller.view.queueStructuredInlineFormatWrap(normalizedTagName)) {
+            return true;
+        }
         let selectionRange = controller.selectedEditorRange();
         const selectedText = controller.currentSelectedEditorText();
         const selectionSnapshot = {

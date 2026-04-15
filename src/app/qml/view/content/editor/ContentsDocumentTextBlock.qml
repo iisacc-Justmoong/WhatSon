@@ -14,6 +14,7 @@ FocusScope {
     signal sourceMutationRequested(string nextBlockSourceText, var focusRequest)
 
     readonly property var normalizedBlock: blockData && typeof blockData === "object" ? blockData : ({})
+    readonly property int currentLogicalLineNumber: textBlock.currentEditorLogicalLineNumber()
     readonly property bool focused: blockEditor.focused
     readonly property int sourceStart: Math.max(0, Number(normalizedBlock.sourceStart) || 0)
     readonly property int sourceEnd: Math.max(sourceStart, Number(normalizedBlock.sourceEnd) || 0)
@@ -92,6 +93,38 @@ FocusScope {
         return entries
     }
 
+    function currentEditorLogicalLineNumber() {
+        const plainText = textBlock.currentEditorPlainText()
+        const cursorPosition = Math.max(
+                    0,
+                    Math.min(
+                        plainText.length,
+                        Number(blockEditor && blockEditor.cursorPosition !== undefined ? blockEditor.cursorPosition : 0) || 0))
+        let lineNumber = 1
+        for (let index = 0; index < cursorPosition; ++index) {
+            if (plainText.charAt(index) === "\n")
+                lineNumber += 1
+        }
+        return Math.max(1, lineNumber)
+    }
+
+    function normalizeInlineStyleTag(tagName) {
+        const normalizedTagName = tagName === undefined || tagName === null ? "" : String(tagName).trim().toLowerCase()
+        if (normalizedTagName === "bold" || normalizedTagName === "b" || normalizedTagName === "strong")
+            return "bold"
+        if (normalizedTagName === "italic" || normalizedTagName === "i" || normalizedTagName === "em")
+            return "italic"
+        if (normalizedTagName === "underline" || normalizedTagName === "u")
+            return "underline"
+        if (normalizedTagName === "strikethrough" || normalizedTagName === "strike" || normalizedTagName === "s" || normalizedTagName === "del")
+            return "strikethrough"
+        if (normalizedTagName === "highlight" || normalizedTagName === "mark")
+            return "highlight"
+        if (normalizedTagName === "plain" || normalizedTagName === "clear" || normalizedTagName === "none")
+            return "plain"
+        return ""
+    }
+
     function computePlainTextReplacementDelta(previousText, nextText) {
         const previous = previousText === undefined || previousText === null ? "" : String(previousText)
         const next = nextText === undefined || nextText === null ? "" : String(nextText)
@@ -139,12 +172,22 @@ FocusScope {
         textBlock.activated()
     }
 
+    function restoreEditorSelection(selectionStart, selectionEnd, cursorPosition) {
+        if (!blockEditor || blockEditor.restoreSelectionRange === undefined)
+            return false
+        return !!blockEditor.restoreSelectionRange(selectionStart, selectionEnd, cursorPosition)
+    }
+
     function applyFocusRequest(request) {
         const safeRequest = request && typeof request === "object" ? request : ({})
         const localCursorPosition = Number(safeRequest.localCursorPosition)
+        const selectionStart = Number(safeRequest.selectionStart)
+        const selectionEnd = Number(safeRequest.selectionEnd)
         const sourceOffset = Number(safeRequest.sourceOffset)
         if (isFinite(localCursorPosition) && !isFinite(sourceOffset)) {
             textBlock.focusEditor(localCursorPosition)
+            if (isFinite(selectionStart) && isFinite(selectionEnd) && selectionEnd > selectionStart)
+                textBlock.restoreEditorSelection(selectionStart, selectionEnd, localCursorPosition)
             return true
         }
         if (!isFinite(sourceOffset))
@@ -152,10 +195,53 @@ FocusScope {
         if (sourceOffset < textBlock.sourceStart || sourceOffset > textBlock.sourceEnd)
             return false
 
-        textBlock.focusEditor(
-                    StructuredCursorSupport.plainCursorForInlineTaggedSourceOffset(
-                        textBlock.sourceText,
-                        Math.floor(sourceOffset - textBlock.sourceStart)))
+        const resolvedCursorPosition = StructuredCursorSupport.plainCursorForInlineTaggedSourceOffset(
+                    textBlock.sourceText,
+                    Math.floor(sourceOffset - textBlock.sourceStart))
+        textBlock.focusEditor(resolvedCursorPosition)
+        if (isFinite(selectionStart) && isFinite(selectionEnd) && selectionEnd > selectionStart)
+            textBlock.restoreEditorSelection(selectionStart, selectionEnd, resolvedCursorPosition)
+        return true
+    }
+
+    function applyInlineFormatToSelection(tagName) {
+        const normalizedTagName = textBlock.normalizeInlineStyleTag(tagName)
+        if (normalizedTagName.length === 0)
+            return false
+        if (!blockRenderer || blockRenderer.applyInlineStyleToLogicalSelectionSource === undefined)
+            return false
+        const selectionSnapshot = blockEditor && blockEditor.selectionSnapshot !== undefined
+                ? blockEditor.selectionSnapshot()
+                : ({})
+        const plainText = textBlock.currentEditorPlainText()
+        const selectionStart = Math.max(0, Math.min(plainText.length, Math.floor(Number(selectionSnapshot.selectionStart) || 0)))
+        const selectionEnd = Math.max(selectionStart, Math.min(plainText.length, Math.floor(Number(selectionSnapshot.selectionEnd) || 0)))
+        if (selectionEnd <= selectionStart)
+            return false
+        const nextBlockSourceText = blockRenderer.applyInlineStyleToLogicalSelectionSource(
+                    textBlock.sourceText,
+                    selectionStart,
+                    selectionEnd,
+                    normalizedTagName)
+        if (nextBlockSourceText === undefined || nextBlockSourceText === null)
+            return false
+        const normalizedNextBlockSourceText = String(nextBlockSourceText)
+        const cursorPosition = Math.max(
+                    selectionStart,
+                    Math.min(
+                        selectionEnd,
+                        Math.floor(Number(selectionSnapshot.cursorPosition) || selectionEnd)))
+        textBlock.sourceMutationRequested(
+                    normalizedNextBlockSourceText,
+                    {
+                        "localCursorPosition": cursorPosition,
+                        "selectionEnd": selectionEnd,
+                        "selectionStart": selectionStart,
+                        "sourceOffset": StructuredCursorSupport.sourceOffsetForInlineTaggedCursor(
+                                            normalizedNextBlockSourceText,
+                                            cursorPosition,
+                                            textBlock.sourceStart)
+                    })
         return true
     }
 
@@ -202,6 +288,10 @@ FocusScope {
         wrapMode: TextEdit.Wrap
 
         onFocusedChanged: {
+            if (focused)
+                textBlock.activated()
+        }
+        onCursorPositionChanged: {
             if (focused)
                 textBlock.activated()
         }

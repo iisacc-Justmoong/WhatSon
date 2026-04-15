@@ -102,6 +102,11 @@ It also owns keyboard-driven markdown block toggles for the list types the rende
   markdown-neutral source-editing contract from the canonical `.wsnbody` text and now rebuilds proprietary RAW source
   tags directly from logical selection coverage instead of trusting `QTextDocument` fragment formatting as the
   authoritative boundary.
+- Before the legacy whole-editor selection path runs, the controller now first asks
+  `view.queueStructuredInlineFormatWrap(...)` whether the active structured-flow delegate can handle the inline-format
+  request locally.
+  Shortcut formatting inside parser-owned paragraph blocks therefore uses the block-scoped RAW rewrite path instead of
+  failing when the hidden fallback editor has no live selection.
 - Because ordinary typing now keeps `ContentsLogicalTextBridge` current through incremental adoption, explicit
   formatting/list actions no longer need a pre-mutation whole-document bridge commit.
 - After a programmatic source rewrite finishes, the controller does trigger one immediate
@@ -150,6 +155,8 @@ It also owns keyboard-driven markdown block toggles for the list types the rende
 
 - Re-selecting a different span and pressing `Cmd/Ctrl+B` / `I` / `U` / `Shift+X` / `Shift+E` should wrap the latest
   visible selection from the live `TextEdit`, not an older fallback snapshot.
+- The same inline-format shortcuts must also work while the selected text lives inside the active structured paragraph
+  delegate rather than the legacy whole-note editor surface.
 - Pressing `Cmd+Shift+8` on macOS or `Alt+Shift+8` on Windows/Linux with a collapsed cursor on a plain line should
   insert/remove a canonical unordered list prefix for that line without needing a mouse selection first.
 - Pressing `Cmd+Shift+7` on macOS or `Alt+Shift+7` on Windows/Linux with a collapsed cursor on a plain line should

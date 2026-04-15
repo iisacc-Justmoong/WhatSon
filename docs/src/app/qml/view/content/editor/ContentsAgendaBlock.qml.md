@@ -18,6 +18,9 @@ Renders one agenda card as a native document block inside the editor flow.
 - The block now also exposes a derived focus state that stays true while any task editor or its checkbox owns focus.
   That lets the structured-flow host suppress idle snapshot/reparse work for the whole agenda card while one task is
   still actively being edited.
+- The block now also exposes the currently focused task row as its local logical line number.
+  Structured-flow hosts use that row index for current-line indicator placement so the blue gutter marker follows the
+  focused agenda task rather than the card header or first task unconditionally.
 - Keeps shortcut-created proprietary wrappers block-scoped by reporting the agenda boundary, not an in-task insertion
   point, for agenda/callout shortcut routing.
 - Keeps empty tasks visible so RAW `<agenda>` tags always materialize into a card.

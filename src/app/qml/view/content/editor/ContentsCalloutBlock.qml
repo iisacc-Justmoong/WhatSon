@@ -14,6 +14,7 @@ FocusScope {
     signal enterExitRequested(var blockData)
     signal textChanged(string text, int cursorPosition)
 
+    readonly property int currentLogicalLineNumber: calloutBlock.currentEditorLogicalLineNumber()
     readonly property var normalizedBlock: blockData && typeof blockData === "object" ? blockData : ({})
     readonly property bool focused: calloutEditor.focused
     readonly property int contentStart: Math.max(0, Number(normalizedBlock.contentStart) || 0)
@@ -24,6 +25,21 @@ FocusScope {
 
     implicitHeight: calloutFrame.implicitHeight
     width: parent ? parent.width : implicitWidth
+
+    function currentEditorLogicalLineNumber() {
+        const textValue = StructuredCursorSupport.normalizedPlainText(calloutBlock.calloutText)
+        const cursorPosition = Math.max(
+                    0,
+                    Math.min(
+                        textValue.length,
+                        Number(calloutEditor && calloutEditor.cursorPosition !== undefined ? calloutEditor.cursorPosition : 0) || 0))
+        let lineNumber = 1
+        for (let index = 0; index < cursorPosition; ++index) {
+            if (textValue.charAt(index) === "\n")
+                lineNumber += 1
+        }
+        return Math.max(1, lineNumber)
+    }
 
     function focusEditor(cursorPosition) {
         calloutEditor.forceActiveFocus()
@@ -134,6 +150,10 @@ FocusScope {
                 wrapMode: TextEdit.Wrap
 
                 onFocusedChanged: {
+                    if (focused)
+                        calloutBlock.activated()
+                }
+                onCursorPositionChanged: {
                     if (focused)
                         calloutBlock.activated()
                 }

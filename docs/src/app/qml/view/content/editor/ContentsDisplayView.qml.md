@@ -201,6 +201,24 @@ Desktop content editor host.
 - Structured text-line `y` placement now also comes from delegate-sampled rendered line rectangles where available.
   The gutter no longer keeps an artificial equal-gap rhythm inside one tall text block when the actual text rows sit
   closer to the top or bottom after wrapping.
+- While the user is actively typing, desktop now treats gutter refresh as a logical-line-structure concern rather than
+  a per-keystroke repaint duty.
+  If the latest edit did not add or remove a newline-delimited logical line, line-structure-triggered gutter refresh
+  requests are ignored so the visible gutter no longer jitters between stale and recomputed positions on every
+  character.
+- Desktop now also freezes structured gutter geometry onto an explicit snapshot during approved full gutter refresh
+  turns.
+  Viewport-only updates such as content offset and viewport height changes then rebuild the visible line-number list
+  against that last stable snapshot instead of re-sampling transient structured block layout on every movement.
+- The desktop host now also routes inline-format shortcuts through the active structured block before falling back to
+  the legacy whole-editor selection controller.
+  Selecting text inside a parser-owned paragraph block and pressing `Bold`, `Highlight`, or the other inline-format
+  shortcuts therefore rewrites the owning block's RAW source directly instead of failing because the legacy full-note
+  editor is not mounted.
+- The current-line gutter indicator for structured notes now follows the active block's local logical line number, not
+  only the first logical line of that block.
+  Moving the caret between authored lines inside one paragraph/callout/agenda block therefore moves the blue gutter
+  marker to the matching global document line without forcing a whole gutter geometry rebuild.
 - Resource and divider blocks still count as exactly one visible gutter row.
   The gutter marker height stays at one editor line even when the underlying block is much taller, while viewport
   culling still uses the real block height so the row remains visible throughout the image's on-screen span.

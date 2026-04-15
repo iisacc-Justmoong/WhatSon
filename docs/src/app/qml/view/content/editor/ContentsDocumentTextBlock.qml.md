@@ -32,6 +32,13 @@ Renders one plain-text document segment inside the structured document-flow edit
   `positionToRectangle(...)`.
   Structured gutter Y placement can therefore align each authored line number with the line's actual rendered text row
   instead of evenly dividing the whole paragraph block height.
+- The block now also exposes its current local logical line number by counting newline-delimited rows before the live
+  caret position in the nested plain-text editor.
+  `ContentsStructuredDocumentFlow.qml` uses that value to place current-line indicators on the actual authored line
+  inside a multi-line paragraph block.
+- While the editor stays focused, the block now also emits `activated()` on cursor moves.
+  Structured-flow hosts therefore re-evaluate current-line indicator placement when the caret moves between logical
+  lines inside the same paragraph block.
 - The block now also exposes whether its nested inline editor currently owns focus.
   `ContentsStructuredDocumentFlow.qml` uses that signal-free focus state to keep host-level idle refresh guards from
   treating an actively edited structured paragraph as unfocused.
@@ -40,5 +47,13 @@ Renders one plain-text document segment inside the structured document-flow edit
 - Accepts focus restoration requests by source offset so source rewrites can re-focus the same block after reparsing.
 - Focus restoration is now invoked directly by `ContentsStructuredDocumentFlow.qml` on the targeted block instance,
   rather than by rebroadcasting one request through every text block.
+- Focus restoration requests may now also carry block-local `selectionStart` / `selectionEnd` values.
+  After a formatting rewrite reparses the block, the same visible selection can be restored around the newly rewritten
+  text instead of collapsing to a caret-only position.
 - Reports shortcut insertion offsets from the live plain cursor through the same RAW-source bridge, so structured
   shortcuts can insert at the active text caret without consulting any rendered HTML payload as a source authority.
+- The block now also exposes `applyInlineFormatToSelection(tagName)`, which resolves the live plain-text selection,
+  rewrites canonical block source through `ContentsTextFormatRenderer.applyInlineStyleToLogicalSelectionSource(...)`,
+  and emits a block-scoped RAW mutation request with both caret and selection restore metadata.
+  Inline-format shortcuts inside structured paragraphs therefore no longer depend on the legacy whole-document editor
+  selection path.

@@ -33,9 +33,21 @@ Hosts the document-native block editor for structured `.wsnbody` content.
 - For prose/callout text blocks, logical line count now comes from the authored plain-text newline structure first.
   Rendered block height is then applied only as geometry over those already-fixed logical lines, so one wrapped
   paragraph line does not silently become two or three extra gutter numbers just because the delegate is taller.
+- The flow now also exposes a lightweight `logicalLineCount()` helper that derives the current structured logical line
+  total from parser blocks and delegate plain-text projections without requiring a geometry walk.
+  Editor hosts use that cheaper count to decide whether a live typing turn actually changed line structure before
+  scheduling another gutter rebuild.
 - When a mounted text delegate can expose live logical-line layout entries, the flow now uses those sampled line-start
   rectangles for `contentY` / `contentHeight` instead of evenly partitioning the whole block height.
   Gutter numbers therefore track the actual rendered text rows rather than inheriting a uniform spacing grid.
+- The flow's `currentLogicalLineNumber` now includes the active delegate's local logical line number inside the active
+  block.
+  Structured hosts can therefore align current-line chrome to the real paragraph/task/callout row instead of pinning
+  every focused block to its first logical line.
+- The flow now also keeps an explicit active-block cursor revision that is bumped whenever the active block reports a
+  cursor-local interaction.
+  Current-line gutter indicators therefore refresh even when the active block itself did not change and only the caret
+  moved to another logical line inside that same block.
 - Rewrites the authoritative RAW source string on every block edit, then asks the parent view to persist the new
   source.
 - Text-block delegates now obey the same one-way edit contract as the main editor host:
@@ -52,6 +64,10 @@ Hosts the document-native block editor for structured `.wsnbody` content.
   and the block-local cursor position in focus requests.
 - Owns structured shortcut insertion once a document has entered block-flow mode and now asks the active delegate for
   the insertion source offset before falling back to the block end.
+- The flow now also exposes `applyInlineFormatToActiveSelection(tagName)`, forwarding inline-format requests to the
+  currently active delegate when that delegate supports block-local selection rewriting.
+  Paragraph-level shortcut formatting can therefore stay inside structured flow instead of depending on the legacy
+  whole-note editor surface.
 - The same active-block insertion bridge now also accepts imported resource-tag batches from the parent host.
   A note that is already in structured-flow mode therefore inserts dropped `<resource ... />` blocks next to the
   active block instead of falling back to the legacy inline-editor cursor path or appending at EOF.

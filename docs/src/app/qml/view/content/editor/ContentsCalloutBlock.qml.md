@@ -16,6 +16,12 @@ Renders one callout card as a native document block inside the editor flow.
 - The block now also exposes whether its nested editor currently owns focus.
   Structured-flow hosts can therefore keep idle note-refresh guards disabled while the user is still typing inside a
   callout card.
+- The block now also exposes its current local logical line number based on the live callout editor cursor.
+  Structured-flow hosts use that to align current-line indicators with the actual authored callout row instead of the
+  card's first line only.
+- While the callout editor keeps focus, cursor moves now also re-emit `activated()`.
+  The host therefore refreshes current-line indicator placement when the caret moves to another authored callout line
+  inside the same card.
 - Keeps agenda/callout shortcut insertion block-scoped so new proprietary wrappers are inserted after the current
   callout instead of nesting inside callout body content.
 - Treats Enter on an already-empty trailing line as the "exit callout" gesture.
