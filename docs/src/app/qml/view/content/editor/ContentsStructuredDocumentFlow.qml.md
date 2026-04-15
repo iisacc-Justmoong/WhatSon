@@ -33,6 +33,9 @@ Hosts the document-native block editor for structured `.wsnbody` content.
 - For prose/callout text blocks, logical line count now comes from the authored plain-text newline structure first.
   Rendered block height is then applied only as geometry over those already-fixed logical lines, so one wrapped
   paragraph line does not silently become two or three extra gutter numbers just because the delegate is taller.
+- When a mounted text delegate can expose live logical-line layout entries, the flow now uses those sampled line-start
+  rectangles for `contentY` / `contentHeight` instead of evenly partitioning the whole block height.
+  Gutter numbers therefore track the actual rendered text rows rather than inheriting a uniform spacing grid.
 - Rewrites the authoritative RAW source string on every block edit, then asks the parent view to persist the new
   source.
 - Text-block delegates now obey the same one-way edit contract as the main editor host:

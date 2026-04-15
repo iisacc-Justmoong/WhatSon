@@ -198,6 +198,9 @@ Desktop content editor host.
 - Structured gutter numbering now also comes from parser/text logical lines first, not from block height heuristics.
   A single wrapped paragraph below an image therefore remains one gutter line unless the authored source actually
   contains another newline-delimited line.
+- Structured text-line `y` placement now also comes from delegate-sampled rendered line rectangles where available.
+  The gutter no longer keeps an artificial equal-gap rhythm inside one tall text block when the actual text rows sit
+  closer to the top or bottom after wrapping.
 - Resource and divider blocks still count as exactly one visible gutter row.
   The gutter marker height stays at one editor line even when the underlying block is much taller, while viewport
   culling still uses the real block height so the row remains visible throughout the image's on-screen span.

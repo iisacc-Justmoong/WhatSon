@@ -39,6 +39,59 @@ FocusScope {
         return StructuredCursorSupport.normalizedPlainText(blockEditor.getText(0, editorLength))
     }
 
+    function logicalLineLayoutEntries() {
+        const plainText = textBlock.currentEditorPlainText()
+        const logicalLines = plainText.length > 0 ? plainText.split("\n") : [""]
+        const editorItem = blockEditor && blockEditor.editorItem ? blockEditor.editorItem : null
+        const blockHeight = Math.max(
+                    1,
+                    Number(textBlock.implicitHeight) || 0,
+                    Number(blockEditor ? blockEditor.implicitHeight : 0) || 0,
+                    Number(blockEditor ? blockEditor.height : 0) || 0)
+        const entries = []
+        let lineStartOffset = 0
+
+        for (let index = 0; index < logicalLines.length; ++index) {
+            const lineText = String(logicalLines[index] || "")
+            const startRect = editorItem && editorItem.positionToRectangle !== undefined
+                    ? editorItem.positionToRectangle(lineStartOffset)
+                    : ({})
+            const fallbackStartY = blockHeight * index / Math.max(1, logicalLines.length)
+            const startY = Math.max(
+                        0,
+                        startRect && startRect.y !== undefined
+                        ? Number(startRect.y) || 0
+                        : fallbackStartY)
+            const startHeight = Math.max(
+                        1,
+                        startRect && startRect.height !== undefined
+                        ? Number(startRect.height) || 0
+                        : 0)
+            const nextLineStartOffset = index + 1 < logicalLines.length
+                    ? Math.min(plainText.length, lineStartOffset + lineText.length + 1)
+                    : plainText.length
+            let endY = Math.max(startY + startHeight, blockHeight)
+            if (index + 1 < logicalLines.length) {
+                const nextRect = editorItem && editorItem.positionToRectangle !== undefined
+                        ? editorItem.positionToRectangle(nextLineStartOffset)
+                        : ({})
+                const fallbackEndY = blockHeight * (index + 1) / Math.max(1, logicalLines.length)
+                endY = Math.max(
+                            startY + startHeight,
+                            nextRect && nextRect.y !== undefined
+                            ? Number(nextRect.y) || 0
+                            : fallbackEndY)
+            }
+            entries.push({
+                "contentHeight": Math.max(1, endY - startY),
+                "contentY": startY
+            })
+            lineStartOffset = nextLineStartOffset
+        }
+
+        return entries
+    }
+
     function computePlainTextReplacementDelta(previousText, nextText) {
         const previous = previousText === undefined || previousText === null ? "" : String(previousText)
         const next = nextText === undefined || nextText === null ? "" : String(nextText)

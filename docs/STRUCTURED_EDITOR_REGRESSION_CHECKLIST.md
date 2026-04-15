@@ -205,6 +205,9 @@ structured document-flow editor changes.
 - A prose block below an inline image that contains only one authored newline-delimited line must contribute only one
   gutter number even when the rendered paragraph wraps or its delegate becomes taller than one editor line.
   Block height must not fabricate extra logical lines such as `4` when the authored note body still stops at line `3`.
+- For a multi-line prose block below an inline image, each visible gutter number must align with the actual rendered
+  text row that starts that authored line.
+  The gutter must not keep a uniform equal-gap ladder that visibly drifts away from the text baseline positions.
 - That same structured image block must also appear in the minimap as a wide filled block silhouette.
   The right rail must not render one tall image as several narrow text-like bars whose widths come from sliced label
   characters instead of the block card itself.

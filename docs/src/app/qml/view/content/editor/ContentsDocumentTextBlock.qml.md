@@ -28,6 +28,10 @@ Renders one plain-text document segment inside the structured document-flow edit
 - That live `implicitHeight` is geometry only, not logical line authority.
   Structured gutter numbering must come from the block's authored plain-text newline structure, with height applied
   only afterward to position the already-determined logical lines in the viewport/minimap.
+- The block now also exposes logical line layout entries sampled from the live plain-text `TextEdit` through
+  `positionToRectangle(...)`.
+  Structured gutter Y placement can therefore align each authored line number with the line's actual rendered text row
+  instead of evenly dividing the whole paragraph block height.
 - The block now also exposes whether its nested inline editor currently owns focus.
   `ContentsStructuredDocumentFlow.qml` uses that signal-free focus state to keep host-level idle refresh guards from
   treating an actively edited structured paragraph as unfocused.

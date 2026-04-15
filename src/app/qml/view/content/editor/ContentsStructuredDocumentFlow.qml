@@ -111,6 +111,27 @@ FocusScope {
         return Math.max(1, baseCount + (safeVisualLineIndex < remainder ? 1 : 0))
     }
 
+    function normalizedDelegateLineLayoutEntries(delegateItem, expectedLineCount) {
+        const safeExpectedLineCount = Math.max(1, Math.floor(Number(expectedLineCount) || 1))
+        if (!delegateItem || delegateItem.logicalLineLayoutEntries === undefined)
+            return []
+        const rawEntries = delegateItem.logicalLineLayoutEntries()
+        const normalized = []
+        if (Array.isArray(rawEntries)) {
+            for (let index = 0; index < rawEntries.length; ++index)
+                normalized.push(rawEntries[index])
+        } else {
+            const explicitLength = Number(rawEntries && rawEntries.length)
+            if (isFinite(explicitLength) && explicitLength >= 0) {
+                for (let index = 0; index < Math.floor(explicitLength); ++index)
+                    normalized.push(rawEntries[index])
+            }
+        }
+        if (normalized.length !== safeExpectedLineCount)
+            return []
+        return normalized
+    }
+
     function blockLogicalLineEntries(blockHost, blockEntryOverride) {
         const host = blockHost && typeof blockHost === "object" ? blockHost : null
         const blockEntry = blockEntryOverride && typeof blockEntryOverride === "object"
@@ -127,12 +148,27 @@ FocusScope {
         const baseY = Math.max(0, host ? (Number(host.y) || 0) : 0)
         const entries = []
         const lineCount = documentFlow.logicalLineCountForBlock(blockEntry, logicalLines)
+        const delegateItem = host && host.delegateLoader && host.delegateLoader.item ? host.delegateLoader.item : null
+        const delegateLineLayoutEntries = documentFlow.normalizedDelegateLineLayoutEntries(delegateItem, lineCount)
 
         for (let index = 0; index < lineCount; ++index) {
-            const lineTop = baseY + (blockHeight * index / lineCount)
-            const lineBottom = index + 1 < lineCount
-                    ? baseY + (blockHeight * (index + 1) / lineCount)
-                    : baseY + blockHeight
+            const delegateLineLayout = delegateLineLayoutEntries[index] && typeof delegateLineLayoutEntries[index] === "object"
+                    ? delegateLineLayoutEntries[index]
+                    : null
+            const fallbackLineTop = blockHeight * index / lineCount
+            const fallbackLineBottom = index + 1 < lineCount
+                    ? blockHeight * (index + 1) / lineCount
+                    : blockHeight
+            const localLineTop = delegateLineLayout && delegateLineLayout.contentY !== undefined
+                    ? Math.max(0, Number(delegateLineLayout.contentY) || 0)
+                    : fallbackLineTop
+            const localLineBottom = delegateLineLayout && delegateLineLayout.contentHeight !== undefined
+                    ? Math.max(
+                          localLineTop + documentFlow.lineHeightHint,
+                          localLineTop + (Number(delegateLineLayout.contentHeight) || 0))
+                    : fallbackLineBottom
+            const lineTop = baseY + localLineTop
+            const lineBottom = baseY + Math.max(localLineTop + documentFlow.lineHeightHint, localLineBottom)
             const lineHeight = Math.max(1, lineBottom - lineTop)
             const gutterCollapsed = blockType === "resource" || blockType === "break"
             const minimapVisualKind = blockType === "resource" ? "block" : "text"
