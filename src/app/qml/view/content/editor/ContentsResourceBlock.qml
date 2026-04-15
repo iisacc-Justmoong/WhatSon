@@ -9,12 +9,10 @@ FocusScope {
 
     required property var blockData
     property var resourceEntry: ({})
-    property int afterTextFocusSourceOffset: -1
-    property int beforeTextFocusSourceOffset: -1
 
     signal activated()
     signal adjacentPlainTextInsertionRequested(string side, string text, int cursorPosition)
-    signal adjacentTextFocusRequested(int sourceOffset)
+    signal boundaryNavigationRequested(string axis, string side)
     signal blockDeletionRequested()
     signal documentEndEditRequested()
 
@@ -196,14 +194,14 @@ FocusScope {
                 return true
             }
             if (event.key === Qt.Key_Up) {
-                if (resourceBlock.focusAdjacentText("before"))
-                    event.accepted = true
-                return event.accepted
+                resourceBlock.boundaryNavigationRequested("vertical", "before")
+                event.accepted = true
+                return true
             }
             if (event.key === Qt.Key_Down) {
-                if (resourceBlock.focusAdjacentText("after"))
-                    event.accepted = true
-                return event.accepted
+                resourceBlock.boundaryNavigationRequested("vertical", "after")
+                event.accepted = true
+                return true
             }
             if (event.key === Qt.Key_Right) {
                 resourceBlock.selectResourceBlock()
@@ -211,9 +209,9 @@ FocusScope {
                 return true
             }
             if (event.key === Qt.Key_Left) {
-                if (resourceBlock.focusAdjacentTextOrBoundary("before"))
-                    event.accepted = true
-                return event.accepted
+                resourceBlock.boundaryNavigationRequested("horizontal", "before")
+                event.accepted = true
+                return true
             }
             return false
         }
@@ -224,14 +222,14 @@ FocusScope {
                 return true
             }
             if (event.key === Qt.Key_Up) {
-                if (resourceBlock.focusAdjacentText("before"))
-                    event.accepted = true
-                return event.accepted
+                resourceBlock.boundaryNavigationRequested("vertical", "before")
+                event.accepted = true
+                return true
             }
             if (event.key === Qt.Key_Down) {
-                if (resourceBlock.focusAdjacentText("after"))
-                    event.accepted = true
-                return event.accepted
+                resourceBlock.boundaryNavigationRequested("vertical", "after")
+                event.accepted = true
+                return true
             }
             if (event.key === Qt.Key_Left) {
                 resourceBlock.selectResourceBlock()
@@ -239,9 +237,9 @@ FocusScope {
                 return true
             }
             if (event.key === Qt.Key_Right) {
-                if (resourceBlock.focusAdjacentTextOrBoundary("after"))
-                    event.accepted = true
-                return event.accepted
+                resourceBlock.boundaryNavigationRequested("horizontal", "after")
+                event.accepted = true
+                return true
             }
             return false
         }
@@ -256,30 +254,6 @@ FocusScope {
         if (normalizedX >= blockWidth - resourceBlock.boundaryCaretLaneWidth)
             return "after"
         return "selected"
-    }
-
-    function focusAdjacentTextOrBoundary(mode) {
-        const normalizedMode = resourceBlock.normalizedInteractionMode(mode)
-        const adjacentSourceOffset = normalizedMode === "before"
-                ? Math.max(-1, Math.floor(Number(resourceBlock.beforeTextFocusSourceOffset) || -1))
-                : Math.max(-1, Math.floor(Number(resourceBlock.afterTextFocusSourceOffset) || -1))
-        if (adjacentSourceOffset >= 0) {
-            resourceBlock.adjacentTextFocusRequested(adjacentSourceOffset)
-            return true
-        }
-        resourceBlock.activateBoundaryEditor(normalizedMode)
-        return true
-    }
-
-    function focusAdjacentText(mode) {
-        const normalizedMode = resourceBlock.normalizedInteractionMode(mode)
-        const adjacentSourceOffset = normalizedMode === "before"
-                ? Math.max(-1, Math.floor(Number(resourceBlock.beforeTextFocusSourceOffset) || -1))
-                : Math.max(-1, Math.floor(Number(resourceBlock.afterTextFocusSourceOffset) || -1))
-        if (adjacentSourceOffset < 0)
-            return false
-        resourceBlock.adjacentTextFocusRequested(adjacentSourceOffset)
-        return true
     }
 
     function commitBoundaryPlainText(mode, text, cursorPosition) {
@@ -465,13 +439,13 @@ FocusScope {
         if (resourceBlock.handleDeleteKeyPress(event))
             return
         if (event.key === Qt.Key_Up) {
-            if (resourceBlock.focusAdjacentText("before"))
-                event.accepted = true
+            resourceBlock.boundaryNavigationRequested("vertical", "before")
+            event.accepted = true
             return
         }
         if (event.key === Qt.Key_Down) {
-            if (resourceBlock.focusAdjacentText("after"))
-                event.accepted = true
+            resourceBlock.boundaryNavigationRequested("vertical", "after")
+            event.accepted = true
             return
         }
         if (event.key === Qt.Key_Left) {
@@ -480,8 +454,8 @@ FocusScope {
                 event.accepted = true
                 return
             }
-            if (resourceBlock.focusAdjacentTextOrBoundary("before"))
-                event.accepted = true
+            resourceBlock.boundaryNavigationRequested("horizontal", "before")
+            event.accepted = true
             return
         }
         if (event.key === Qt.Key_Right) {
@@ -490,8 +464,8 @@ FocusScope {
                 event.accepted = true
                 return
             }
-            if (resourceBlock.focusAdjacentTextOrBoundary("after"))
-                event.accepted = true
+            resourceBlock.boundaryNavigationRequested("horizontal", "after")
+            event.accepted = true
             return
         }
     }

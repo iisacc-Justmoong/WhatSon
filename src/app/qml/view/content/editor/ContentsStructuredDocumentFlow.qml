@@ -1088,7 +1088,7 @@ FocusScope {
     function blockEntryIsAtomicFocusTarget(blockEntry) {
         const safeBlock = blockEntry && typeof blockEntry === "object" ? blockEntry : ({})
         const blockType = safeBlock.type !== undefined ? String(safeBlock.type).trim().toLowerCase() : ""
-        return blockType === "resource"
+        return blockType === "resource" || blockType === "break"
     }
 
     function blockHasAdjacentAtomicDeletionTarget(blockIndex, side) {
@@ -1105,18 +1105,68 @@ FocusScope {
         return documentFlow.blockEntryIsAtomicDeletionTarget(blocks[adjacentBlockIndex])
     }
 
-    function blockHasAdjacentAtomicFocusTarget(blockIndex, side) {
+    function adjacentBlockIndex(blockIndex, side) {
+        const blocks = documentFlow.normalizedBlocks()
+        if (blocks.length === 0)
+            return -1
+        const safeBlockIndex = Math.max(0, Math.min(blocks.length - 1, Math.floor(Number(blockIndex) || 0)))
+        const normalizedSide = side === undefined || side === null ? "" : String(side).trim().toLowerCase()
+        if (normalizedSide !== "before" && normalizedSide !== "after")
+            return -1
+        const resolvedAdjacentBlockIndex = normalizedSide === "before" ? safeBlockIndex - 1 : safeBlockIndex + 1
+        if (resolvedAdjacentBlockIndex < 0 || resolvedAdjacentBlockIndex >= blocks.length)
+            return -1
+        return resolvedAdjacentBlockIndex
+    }
+
+    function requestAtomicBlockFocus(blockIndex, interactionMode) {
         const blocks = documentFlow.normalizedBlocks()
         if (blocks.length === 0)
             return false
         const safeBlockIndex = Math.max(0, Math.min(blocks.length - 1, Math.floor(Number(blockIndex) || 0)))
-        const normalizedSide = side === undefined || side === null ? "" : String(side).trim().toLowerCase()
-        if (normalizedSide !== "before" && normalizedSide !== "after")
+        const blockEntry = blocks[safeBlockIndex] && typeof blocks[safeBlockIndex] === "object"
+                ? blocks[safeBlockIndex]
+                : ({})
+        if (!documentFlow.blockEntryIsAtomicFocusTarget(blockEntry))
             return false
-        const adjacentBlockIndex = normalizedSide === "before" ? safeBlockIndex - 1 : safeBlockIndex + 1
-        if (adjacentBlockIndex < 0 || adjacentBlockIndex >= blocks.length)
+        const requestedMode = documentFlow.normalizedRequestedInteractionMode({
+                                                                              "interactionMode": interactionMode
+                                                                          })
+        const focusSourceOffset = Math.max(
+                    0,
+                    documentFlow.floorNumberOrFallback(
+                        blockEntry.sourceStart,
+                        documentFlow.floorNumberOrFallback(blockEntry.focusSourceOffset, 0)))
+        documentFlow.requestFocus({
+                                      "interactionMode": requestedMode.length > 0 ? requestedMode : "selected",
+                                      "sourceOffset": focusSourceOffset
+                                  })
+        return true
+    }
+
+    function requestBoundaryFocusForBlock(blockIndex, boundarySide) {
+        const blocks = documentFlow.normalizedBlocks()
+        if (blocks.length === 0)
             return false
-        return documentFlow.blockEntryIsAtomicFocusTarget(blocks[adjacentBlockIndex])
+        const safeBlockIndex = Math.max(0, Math.min(blocks.length - 1, Math.floor(Number(blockIndex) || 0)))
+        const normalizedBoundarySide = boundarySide === undefined || boundarySide === null
+                ? ""
+                : String(boundarySide).trim().toLowerCase()
+        if (normalizedBoundarySide !== "before" && normalizedBoundarySide !== "after")
+            return false
+        const blockEntry = blocks[safeBlockIndex] && typeof blocks[safeBlockIndex] === "object"
+                ? blocks[safeBlockIndex]
+                : ({})
+        if (documentFlow.blockEntryIsAtomicFocusTarget(blockEntry))
+            return documentFlow.requestAtomicBlockFocus(safeBlockIndex, "selected")
+        const focusSourceOffset = normalizedBoundarySide === "before"
+                ? Math.max(0, documentFlow.floorNumberOrFallback(blockEntry.sourceStart, 0))
+                : Math.max(0, documentFlow.floorNumberOrFallback(blockEntry.sourceEnd, 0))
+        documentFlow.requestFocus({
+                                      "entryBoundary": normalizedBoundarySide,
+                                      "sourceOffset": Math.max(0, focusSourceOffset)
+                                  })
+        return true
     }
 
     function deleteAdjacentAtomicBlock(blockIndex, side) {
@@ -1158,32 +1208,22 @@ FocusScope {
         return true
     }
 
-    function focusAdjacentAtomicBlock(blockIndex, side) {
+    function navigateDocumentBoundary(blockIndex, axis, side) {
         const blocks = documentFlow.normalizedBlocks()
         if (blocks.length === 0)
             return false
         const safeBlockIndex = Math.max(0, Math.min(blocks.length - 1, Math.floor(Number(blockIndex) || 0)))
+        const normalizedAxis = axis === undefined || axis === null ? "" : String(axis).trim().toLowerCase()
         const normalizedSide = side === undefined || side === null ? "" : String(side).trim().toLowerCase()
-        if (normalizedSide !== "before" && normalizedSide !== "after")
+        if ((normalizedAxis !== "horizontal" && normalizedAxis !== "vertical")
+                || (normalizedSide !== "before" && normalizedSide !== "after")) {
             return false
-        const adjacentBlockIndex = normalizedSide === "before" ? safeBlockIndex - 1 : safeBlockIndex + 1
-        if (adjacentBlockIndex < 0 || adjacentBlockIndex >= blocks.length)
+        }
+        const targetBlockIndex = documentFlow.adjacentBlockIndex(safeBlockIndex, normalizedSide)
+        if (targetBlockIndex < 0)
             return false
-        const adjacentBlock = blocks[adjacentBlockIndex] && typeof blocks[adjacentBlockIndex] === "object"
-                ? blocks[adjacentBlockIndex]
-                : ({})
-        if (!documentFlow.blockEntryIsAtomicFocusTarget(adjacentBlock))
-            return false
-        const focusSourceOffset = Math.max(
-                    0,
-                    documentFlow.floorNumberOrFallback(
-                        adjacentBlock.sourceStart,
-                        documentFlow.floorNumberOrFallback(adjacentBlock.focusSourceOffset, 0)))
-        documentFlow.requestFocus({
-                                      "interactionMode": "selected",
-                                      "sourceOffset": focusSourceOffset
-                                  })
-        return true
+        const targetBoundarySide = normalizedSide === "before" ? "after" : "before"
+        return documentFlow.requestBoundaryFocusForBlock(targetBlockIndex, targetBoundarySide)
     }
 
     function replaceTextBlock(blockData, nextBlockSourceText, focusRequest) {
@@ -1471,16 +1511,16 @@ FocusScope {
                         blockData: blockHost.blockEntry
                         hasAdjacentAtomicBlockAfter: documentFlow.blockHasAdjacentAtomicDeletionTarget(blockHost.blockIndex, "after")
                         hasAdjacentAtomicBlockBefore: documentFlow.blockHasAdjacentAtomicDeletionTarget(blockHost.blockIndex, "before")
-                        hasAdjacentAtomicFocusAfter: documentFlow.blockHasAdjacentAtomicFocusTarget(blockHost.blockIndex, "after")
-                        hasAdjacentAtomicFocusBefore: documentFlow.blockHasAdjacentAtomicFocusTarget(blockHost.blockIndex, "before")
+                        hasAdjacentBlockAfter: documentFlow.adjacentBlockIndex(blockHost.blockIndex, "after") >= 0
+                        hasAdjacentBlockBefore: documentFlow.adjacentBlockIndex(blockHost.blockIndex, "before") >= 0
                         width: blockHost.width
 
                         onActivated: documentFlow.noteActiveBlockInteraction(blockHost.blockIndex)
                         onAdjacentAtomicBlockDeleteRequested: function (side) {
                             documentFlow.deleteAdjacentAtomicBlock(blockHost.blockIndex, side)
                         }
-                        onAdjacentAtomicBlockFocusRequested: function (side) {
-                            documentFlow.focusAdjacentAtomicBlock(blockHost.blockIndex, side)
+                        onBoundaryNavigationRequested: function (axis, side) {
+                            documentFlow.navigateDocumentBoundary(blockHost.blockIndex, axis, side)
                         }
                         onSourceMutationRequested: function (nextBlockSourceText, focusRequest) {
                             documentFlow.replaceTextBlock(blockHost.blockEntry, nextBlockSourceText, focusRequest)
@@ -1496,6 +1536,9 @@ FocusScope {
                         width: blockHost.width
 
                         onActivated: documentFlow.noteActiveBlockInteraction(blockHost.blockIndex)
+                        onBoundaryNavigationRequested: function (axis, side) {
+                            documentFlow.navigateDocumentBoundary(blockHost.blockIndex, axis, side)
+                        }
                         onTaskDoneToggled: function (openTagStart, openTagEnd, checked) {
                             documentFlow.toggleAgendaTaskDone(openTagStart, openTagEnd, checked)
                         }
@@ -1516,6 +1559,9 @@ FocusScope {
                         width: blockHost.width
 
                         onActivated: documentFlow.noteActiveBlockInteraction(blockHost.blockIndex)
+                        onBoundaryNavigationRequested: function (axis, side) {
+                            documentFlow.navigateDocumentBoundary(blockHost.blockIndex, axis, side)
+                        }
                         onEnterExitRequested: function (blockData) {
                             documentFlow.exitCallout(blockData)
                         }
@@ -1532,6 +1578,11 @@ FocusScope {
                         blockData: blockHost.blockEntry
                         width: blockHost.width
 
+                        onActivated: documentFlow.noteActiveBlockInteraction(blockHost.blockIndex)
+                        onBlockDeletionRequested: documentFlow.deleteBlock(blockHost.blockEntry)
+                        onBoundaryNavigationRequested: function (axis, side) {
+                            documentFlow.navigateDocumentBoundary(blockHost.blockIndex, axis, side)
+                        }
                         onDocumentEndEditRequested: documentFlow.requestDocumentEndEdit()
                     }
                 }
@@ -1540,9 +1591,7 @@ FocusScope {
                     id: resourceBlockDelegate
 
                     ContentsResourceBlock {
-                        afterTextFocusSourceOffset: documentFlow.nextEditableBlockFocusSourceOffset(blockHost.blockIndex)
                         blockData: blockHost.blockEntry
-                        beforeTextFocusSourceOffset: documentFlow.previousEditableBlockFocusSourceOffset(blockHost.blockIndex)
                         resourceEntry: documentFlow.resourceEntryForBlock(blockHost.blockEntry)
                         width: blockHost.width
 
@@ -1554,12 +1603,8 @@ FocusScope {
                                         text,
                                         cursorPosition)
                         }
-                        onAdjacentTextFocusRequested: function (sourceOffset) {
-                            documentFlow.requestFocus({
-                                                          "sourceOffset": Math.max(
-                                                                              0,
-                                                                              Math.floor(Number(sourceOffset) || 0))
-                                                      })
+                        onBoundaryNavigationRequested: function (axis, side) {
+                            documentFlow.navigateDocumentBoundary(blockHost.blockIndex, axis, side)
                         }
                         onBlockDeletionRequested: documentFlow.deleteBlock(blockHost.blockEntry)
                         onDocumentEndEditRequested: documentFlow.requestDocumentEndEdit()

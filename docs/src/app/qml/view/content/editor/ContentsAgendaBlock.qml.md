@@ -24,6 +24,13 @@ Renders one agenda card as a native document block inside the editor flow.
 - The agenda block now also exposes `currentCursorRowRect()` for the currently focused task editor.
   Structured-flow hosts use that row rectangle to align current-line gutter indicators with the actual visual caret row
   inside wrapped agenda task text.
+- Agenda task editors now also participate in the shared block-boundary keyboard contract.
+  Plain `Left` / `Right` at a task edge and plain `Up` / `Down` on the first/last visual row either move focus to the
+  adjacent task inside the same card or emit one generic boundary-navigation request for
+  `ContentsStructuredDocumentFlow.qml` when the caret has reached the card's outer boundary.
+- Focus restoration now also accepts `entryBoundary: "before" | "after"` hints from the flow host.
+  Sequential block traversal can therefore enter the agenda at its first task head or its last task tail instead of
+  always collapsing back to the first task on reparsed focus restore.
 - Keeps shortcut-created proprietary wrappers block-scoped by reporting the agenda boundary, not an in-task insertion
   point, for agenda/callout shortcut routing.
 - Keeps empty tasks visible so RAW `<agenda>` tags always materialize into a card.

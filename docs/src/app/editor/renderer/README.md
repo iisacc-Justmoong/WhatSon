@@ -25,8 +25,10 @@
 ## Current Notes
 - `ContentsTextFormatRenderer.cpp` now treats proprietary inline source tags as the authoritative formatting basis for
   logical-selection formatting.
-- `ContentsStructuredBlockRenderer.cpp` now owns agenda/callout tag detection for editor overlay render models, so QML
-  layers no longer parse RAW source directly.
+- `ContentsStructuredBlockRenderer.cpp` now consumes `parser/ContentsWsnBodyBlockParser` as its single `.wsnbody`
+  read-path source and republishes that parser result to QML.
+- Agenda/callout compatibility lists still exist, but they are now side projections over the same unified parser pass
+  rather than separate read-side backend merges.
 - Shortcut/context-menu formatting no longer depends on a transient `QTextDocument` fragment merge to decide where a
   RAW source style starts or ends.
 - Page/Print paper-preview mode gating and A4 paper geometry calculations are now centralized in

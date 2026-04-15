@@ -6,5 +6,11 @@ Renders `</break>` as a native divider block inside the structured document flow
 ## Key Behavior
 - Fills the editor width.
 - Keeps divider presentation in the same block stream as text, agenda, and callout nodes.
-- A left click on the divider now emits `documentEndEditRequested()`, so users can resume typing after a terminal
-  break block without needing an already-existing trailing text paragraph.
+- `</break>` is now also a focusable atomic document block instead of a click-only decoration.
+  The divider exposes `applyFocusRequest(...)`, block selection chrome, delete handling, and document-boundary
+  navigation so it can participate in the same keyboard stream as resource blocks.
+- Left/right/up/down navigation from the divider now delegates back into
+  `ContentsStructuredDocumentFlow.qml` through one generic boundary-navigation signal.
+  Break blocks therefore no longer sit outside the document cursor model.
+- A left click on the divider selects the block itself, while `documentEndEditRequested()` remains available for host
+  surfaces that want to resume typing after a terminal break block.

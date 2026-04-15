@@ -19,6 +19,10 @@ Renders one plain-text document segment inside the structured document-flow edit
   It now derives a plain-text delta from the previous RAW block source vs the current visible text, maps that delta
   back into source offsets with `ContentsStructuredCursorSupport.js`, and applies the replacement directly to the RAW
   block source with `ContentsTextFormatRenderer.applyPlainTextReplacementToSource(...)`.
+- For semantic wrapper blocks such as `<paragraph>...</paragraph>`, the structured renderer/parser contract now feeds
+  this component only the inner editable content through `sourceText` / `sourceStart` / `sourceEnd`.
+  The outer wrapper span is preserved separately in parser metadata, so paragraph editing no longer risks rendering the
+  wrapper tags as visible text or deleting the wrapper itself when only the inner prose changed.
 - Inline text-block focus restore and caret-origin mutation requests are now both mapped through an inline-tag-aware
   source/plain cursor bridge instead of treating `TextEdit.cursorPosition` as a raw source offset.
   Closing tags such as `</highlight>` therefore stay zero-width for caret restore and `Enter`/typing mutations, so a
@@ -74,12 +78,12 @@ Renders one plain-text document segment inside the structured document-flow edit
   treated as a no-op inside the nested text editor.
   When the caret is at logical column `0` or at the block tail with no active selection, the block asks the host to
   remove an immediately adjacent atomic `resource` / `break` block by deleting that canonical RAW source span.
-- Plain `Left` / `Right` arrow movement at those same prose boundaries can now also escalate into adjacent atomic
-  attachment focus.
-  When the caret is at the start/end of a paragraph and the neighboring block is a focusable atomic resource, the
-  block asks `ContentsStructuredDocumentFlow.qml` to select that attachment as one token instead of letting cursor
-  traversal stall at the text edge.
-- Plain `Up` / `Down` now also enter an immediately adjacent atomic resource block once the caret is already on the
-  first or last visible text row of the paragraph.
-  Vertical keyboard traversal therefore treats the attachment as one selectable note token instead of turning the
-  resource boundary into a dead end.
+- Plain `Left` / `Right` arrow movement at those same prose boundaries now escalates into the generic block-navigation
+  contract rather than only into adjacent atomic attachments.
+  When the caret is at the start/end of a paragraph and any neighboring parsed block exists, the paragraph emits one
+  generic boundary-navigation request and lets `ContentsStructuredDocumentFlow.qml` resolve the immediately adjacent
+  document block instead of computing resource-only focus transfers locally.
+- Plain `Up` / `Down` now use that same flow-owned document navigation contract once the caret is already on the first
+  or last visible text row of the paragraph.
+  Vertical traversal can therefore leave prose for whichever block actually follows in the parsed `.wsnbody` stream,
+  including `resource`, `break`, `callout`, or `agenda`, instead of treating only resource boundaries as special.

@@ -11,6 +11,7 @@ FocusScope {
     required property var blockData
 
     signal activated()
+    signal boundaryNavigationRequested(string axis, string side)
     signal taskDoneToggled(int openTagStart, int openTagEnd, bool checked)
     signal taskEnterRequested(var blockData, var taskData)
     signal taskTextChanged(var taskData, string text, int cursorPosition)
@@ -68,12 +69,37 @@ FocusScope {
                 })
     }
 
+    function focusLastTask() {
+        return agendaBlock.focusTaskBoundary(taskRepeater.count - 1, "after")
+    }
+
+    function focusTaskBoundary(taskIndex, side) {
+        const numericTaskIndex = Number(taskIndex)
+        const resolvedTaskIndex = isFinite(numericTaskIndex) ? Math.floor(numericTaskIndex) : -1
+        const item = taskRepeater.itemAt(resolvedTaskIndex)
+        if (!item || item.focusEditor === undefined)
+            return false
+        const normalizedSide = side === undefined || side === null ? "" : String(side).trim().toLowerCase()
+        const plainText = item.currentEditorPlainText !== undefined
+                ? String(item.currentEditorPlainText() || "")
+                : String(item.taskText || "")
+        item.focusEditor(normalizedSide === "after" ? plainText.length : 0)
+        return true
+    }
+
+    function focusBoundary(side) {
+        const normalizedSide = side === undefined || side === null ? "" : String(side).trim().toLowerCase()
+        if (normalizedSide === "after")
+            return agendaBlock.focusLastTask()
+        return agendaBlock.focusFirstTask()
+    }
+
     function focusFirstTask() {
         for (let index = 0; index < taskRepeater.count; ++index) {
             const item = taskRepeater.itemAt(index)
             if (!item || item.focusEditor === undefined)
                 continue
-            item.focusEditor()
+            item.focusEditor(0)
             return true
         }
         return false
@@ -101,6 +127,9 @@ FocusScope {
         const safeRequest = request && typeof request === "object" ? request : ({})
         const taskOpenTagStart = Number(safeRequest.taskOpenTagStart)
         const localCursorPosition = Number(safeRequest.localCursorPosition)
+        const entryBoundary = safeRequest.entryBoundary === undefined || safeRequest.entryBoundary === null
+                ? ""
+                : String(safeRequest.entryBoundary).trim().toLowerCase()
         if (isFinite(taskOpenTagStart)) {
             for (let index = 0; index < taskRepeater.count; ++index) {
                 const item = taskRepeater.itemAt(index)
@@ -118,9 +147,13 @@ FocusScope {
             return false
         if (sourceOffset < agendaBlock.sourceStart || sourceOffset > agendaBlock.sourceEnd)
             return false
+        if (entryBoundary === "before" || sourceOffset <= agendaBlock.sourceStart)
+            return agendaBlock.focusBoundary("before")
+        if (entryBoundary === "after" || sourceOffset >= agendaBlock.sourceEnd)
+            return agendaBlock.focusBoundary("after")
         if (agendaBlock.focusTaskAtSourceOffset(sourceOffset))
             return true
-        return agendaBlock.focusFirstTask()
+        return agendaBlock.focusBoundary("before")
     }
 
     function shortcutInsertionSourceOffset() {
@@ -180,8 +213,10 @@ FocusScope {
                     delegate: FocusScope {
                         id: taskRow
 
+                        required property int index
                         required property var modelData
                         readonly property var taskData: modelData && typeof modelData === "object" ? modelData : ({})
+                        readonly property int taskIndex: index
                         readonly property int taskOpenTagStart: Math.floor(Number(taskData.openTagStart) || -1)
                         readonly property int taskOpenTagEnd: Math.floor(Number(taskData.openTagEnd) || -1)
                         readonly property int taskContentStart: Math.floor(Number(taskData.contentStart) || 0)
@@ -207,6 +242,14 @@ FocusScope {
                             agendaBlock.activated()
                         }
 
+                        function currentEditorPlainText() {
+                            if (!taskEditor)
+                                return StructuredCursorSupport.normalizedPlainText(taskRow.taskText)
+                            if (taskEditor.currentPlainText !== undefined)
+                                return StructuredCursorSupport.normalizedPlainText(taskEditor.currentPlainText())
+                            return StructuredCursorSupport.normalizedPlainText(taskRow.taskText)
+                        }
+
                         function currentCursorRowRect() {
                             const editorItem = taskEditor && taskEditor.editorItem ? taskEditor.editorItem : null
                             const cursorPosition = Math.max(
@@ -227,6 +270,101 @@ FocusScope {
                                 "contentHeight": Math.max(1, Number(rect.height) || Math.round(LV.Theme.scaleMetric(12))),
                                 "contentY": Math.max(0, Number(mappedPoint.y) || 0)
                             }
+                        }
+
+                        function cursorOnFirstVisualRow() {
+                            const rowRect = taskRow.currentCursorRowRect()
+                            const localTaskY = Math.max(0, Number(taskRow.y) || 0)
+                            return Math.max(0, Number(rowRect.contentY) || 0) <= localTaskY + 1
+                        }
+
+                        function cursorOnLastVisualRow() {
+                            const rowRect = taskRow.currentCursorRowRect()
+                            const rowBottom = Math.max(
+                                        0,
+                                        (Number(rowRect.contentY) || 0) + (Number(rowRect.contentHeight) || 0))
+                            const localTaskY = Math.max(0, Number(taskRow.y) || 0)
+                            const contentHeight = Math.max(
+                                        1,
+                                        Number(taskEditor && taskEditor.inputContentHeight !== undefined
+                                               ? taskEditor.inputContentHeight
+                                               : 0)
+                                        || Math.max(1, rowBottom - localTaskY))
+                            const localRowBottom = Math.max(0, rowBottom - localTaskY)
+                            return localRowBottom >= contentHeight - 1
+                        }
+
+                        function handleBoundaryKeyPress(event) {
+                            if (!event)
+                                return false
+                            const key = Number(event.key)
+                            const moveBackward = key === Qt.Key_Left
+                            const moveForward = key === Qt.Key_Right
+                            const moveUp = key === Qt.Key_Up
+                            const moveDown = key === Qt.Key_Down
+                            if (!moveBackward && !moveForward && !moveUp && !moveDown)
+                                return false
+                            const modifiers = Number(event.modifiers) || 0
+                            if ((modifiers & (Qt.ControlModifier | Qt.AltModifier | Qt.MetaModifier)) !== 0)
+                                return false
+                            const selectionStart = Math.max(0, Math.floor(Number(taskEditor.selectionStart) || 0))
+                            const selectionEnd = Math.max(selectionStart, Math.floor(Number(taskEditor.selectionEnd) || 0))
+                            if (selectionEnd > selectionStart)
+                                return false
+                            if (taskEditor.inputMethodComposing !== undefined && taskEditor.inputMethodComposing)
+                                return false
+                            const preeditText = taskEditor.preeditText !== undefined && taskEditor.preeditText !== null
+                                    ? String(taskEditor.preeditText)
+                                    : ""
+                            if (preeditText.length > 0)
+                                return false
+                            if ((modifiers & Qt.ShiftModifier) !== 0)
+                                return false
+
+                            const cursorPosition = Math.max(0, Math.floor(Number(taskEditor.cursorPosition) || 0))
+                            const plainTextLength = taskRow.currentEditorPlainText().length
+                            const taskIndex = Number(taskRow.taskIndex)
+                            const previousTaskIndex = Math.max(-1, Math.floor(taskIndex) - 1)
+                            const nextTaskIndex = Math.floor(taskIndex) + 1
+                            const lastTaskIndex = Math.max(0, taskRepeater.count - 1)
+
+                            if (moveBackward && cursorPosition === 0) {
+                                if (previousTaskIndex >= 0) {
+                                    agendaBlock.focusTaskBoundary(previousTaskIndex, "after")
+                                } else {
+                                    agendaBlock.boundaryNavigationRequested("horizontal", "before")
+                                }
+                                event.accepted = true
+                                return true
+                            }
+                            if (moveForward && cursorPosition === plainTextLength) {
+                                if (nextTaskIndex < taskRepeater.count) {
+                                    agendaBlock.focusTaskBoundary(nextTaskIndex, "before")
+                                } else {
+                                    agendaBlock.boundaryNavigationRequested("horizontal", "after")
+                                }
+                                event.accepted = true
+                                return true
+                            }
+                            if (moveUp && taskRow.cursorOnFirstVisualRow()) {
+                                if (previousTaskIndex >= 0) {
+                                    agendaBlock.focusTaskBoundary(previousTaskIndex, "after")
+                                } else {
+                                    agendaBlock.boundaryNavigationRequested("vertical", "before")
+                                }
+                                event.accepted = true
+                                return true
+                            }
+                            if (moveDown && taskRow.cursorOnLastVisualRow()) {
+                                if (nextTaskIndex <= lastTaskIndex) {
+                                    agendaBlock.focusTaskBoundary(nextTaskIndex, "before")
+                                } else {
+                                    agendaBlock.boundaryNavigationRequested("vertical", "after")
+                                }
+                                event.accepted = true
+                                return true
+                            }
+                            return false
                         }
 
                         RowLayout {
@@ -283,6 +421,8 @@ FocusScope {
                                 selectedTextColor: LV.Theme.textPrimary
                                 selectionColor: LV.Theme.accent
                                 shortcutKeyPressHandler: function (event) {
+                                    if (taskRow.handleBoundaryKeyPress(event))
+                                        return true
                                     const noModifiers = (event.modifiers & (Qt.ControlModifier | Qt.AltModifier | Qt.MetaModifier | Qt.ShiftModifier)) === 0
                                     if (!noModifiers)
                                         return false

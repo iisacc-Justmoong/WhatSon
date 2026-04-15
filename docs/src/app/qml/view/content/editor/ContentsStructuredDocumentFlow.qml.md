@@ -78,6 +78,10 @@ Hosts the document-native block editor for structured `.wsnbody` content.
   user input is interpreted as a RAW-source mutation request, the flow host replaces only the affected RAW range, and
   the next visible block tree comes only from reparsing that new RAW source.
   The host no longer treats any delegate RichText/DOM surface as a write-authoritative document snapshot.
+- For semantic text blocks that still own outer wrapper tags, the parser now keeps wrapper geometry separate from the
+  editable content span.
+  This flow therefore rewrites only the inner content range for prose edits while still preserving parser-level
+  metadata about the full wrapper block for later block-structural operations.
 - Keeps a lightweight focus request channel so shortcut insertion and backend-driven Enter rules can move focus into the
   newly materialized block after reparsing.
 - The flow-level `focused` state is now aggregated from mounted block delegates instead of relying only on the
@@ -162,14 +166,18 @@ Hosts the document-native block editor for structured `.wsnbody` content.
   block boundary and the user presses plain `Backspace`/`Delete`.
   The flow treats neighboring `resource` / `break` blocks as one document token for that boundary-delete path, removes
   the adjacent canonical source span, and keeps focus in the current prose block at the same logical boundary.
-- Structured prose blocks can now also request focus transfer into an immediately adjacent atomic resource when the
-  caret hits a block boundary and the user presses plain `Left` / `Right`.
-  The flow resolves that neighboring resource block from its canonical `sourceStart` and reissues focus as
-  `interactionMode: "selected"`, so arrow-key traversal can enter the attachment as one token instead of stalling at
-  the paragraph edge.
-- Plain `Up` / `Down` at a prose block edge now also hand off to an immediately adjacent atomic resource block.
-  Vertical keyboard traversal therefore enters the attachment as one selectable token instead of stopping at the prose
-  boundary, while a further `Up` / `Down` from the resource can continue toward surrounding prose.
+- Structured block-boundary navigation is now centralized in the flow host rather than split across individual block
+  delegates.
+  Text/resource/break/callout/agenda blocks emit generic horizontal/vertical boundary-navigation requests, and the flow
+  resolves the immediately adjacent parsed block from the document stream itself instead of rebroadcasting
+  delegate-local offset heuristics.
+- That flow-owned traversal now enters non-atomic blocks with an explicit `entryBoundary` hint (`before` or `after`)
+  and still selects atomic blocks such as `resource` / `break` as one token.
+  Sequential keyboard movement can therefore treat parsed `.wsnbody` as one ordered block stream rather than as prose
+  plus a few resource exceptions.
+- Plain `Up` / `Down` at a block edge now therefore use the same immediate-neighbor contract as `Left` / `Right`.
+  Vertical keyboard traversal can continue across paragraph, resource, break, callout, and agenda boundaries without
+  requiring each delegate to reimplement its own neighboring-offset lookup.
 - Source-offset focus matching now distinguishes prose blocks from atomic document tokens.
   Text-capable blocks still accept their trailing `sourceEnd` so the caret can land at a paragraph's visual end, but
   `resource` / `break` blocks now treat that trailing boundary as exclusive for ordinary source-offset lookups.

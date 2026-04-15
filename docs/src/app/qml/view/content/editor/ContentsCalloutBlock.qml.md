@@ -25,6 +25,13 @@ Renders one callout card as a native document block inside the editor flow.
 - The callout block now also exposes `currentCursorRowRect()` in block-local coordinates.
   Structured-flow hosts use that to align current-line gutter indicators with the actual visual caret row inside
   wrapped callout text.
+- The callout editor now also participates in the shared block-boundary keyboard contract.
+  Plain `Left` / `Right` at the block start/end and plain `Up` / `Down` on the first/last visual row emit one generic
+  boundary-navigation request back to `ContentsStructuredDocumentFlow.qml`, so callout cards no longer terminate
+  sequential keyboard traversal at their edges.
+- Focus restoration now also accepts `entryBoundary: "before" | "after"` hints from the flow host.
+  Sequential block traversal can therefore enter the callout at its visual head or tail instead of always restoring to
+  one generic fallback caret position.
 - Keeps agenda/callout shortcut insertion block-scoped so new proprietary wrappers are inserted after the current
   callout instead of nesting inside callout body content.
 - Treats Enter on an already-empty trailing line as the "exit callout" gesture.

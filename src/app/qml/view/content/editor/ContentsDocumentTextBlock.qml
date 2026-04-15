@@ -12,7 +12,7 @@ FocusScope {
 
     signal activated()
     signal adjacentAtomicBlockDeleteRequested(string side)
-    signal adjacentAtomicBlockFocusRequested(string side)
+    signal boundaryNavigationRequested(string axis, string side)
     signal sourceMutationRequested(string nextBlockSourceText, var focusRequest)
 
     readonly property var normalizedBlock: blockData && typeof blockData === "object" ? blockData : ({})
@@ -21,8 +21,8 @@ FocusScope {
     readonly property bool hasInlineStyleMarkup: /<\s*\/?\s*(bold|italic|underline|strikethrough|highlight)\b/i.test(textBlock.sourceText)
     property bool hasAdjacentAtomicBlockAfter: false
     property bool hasAdjacentAtomicBlockBefore: false
-    property bool hasAdjacentAtomicFocusAfter: false
-    property bool hasAdjacentAtomicFocusBefore: false
+    property bool hasAdjacentBlockAfter: false
+    property bool hasAdjacentBlockBefore: false
     readonly property int sourceStart: Math.max(0, Number(normalizedBlock.sourceStart) || 0)
     readonly property int sourceEnd: Math.max(sourceStart, Number(normalizedBlock.sourceEnd) || 0)
     readonly property string sourceText: normalizedBlock.sourceText !== undefined ? String(normalizedBlock.sourceText) : ""
@@ -353,23 +353,23 @@ FocusScope {
         }
         if ((modifiers & Qt.ShiftModifier) !== 0)
             return false
-        if (moveBackward && cursorPosition === 0 && textBlock.hasAdjacentAtomicFocusBefore) {
-            textBlock.adjacentAtomicBlockFocusRequested("before")
+        if (moveBackward && cursorPosition === 0 && textBlock.hasAdjacentBlockBefore) {
+            textBlock.boundaryNavigationRequested("horizontal", "before")
             event.accepted = true
             return true
         }
-        if (moveForward && cursorPosition === plainTextLength && textBlock.hasAdjacentAtomicFocusAfter) {
-            textBlock.adjacentAtomicBlockFocusRequested("after")
+        if (moveForward && cursorPosition === plainTextLength && textBlock.hasAdjacentBlockAfter) {
+            textBlock.boundaryNavigationRequested("horizontal", "after")
             event.accepted = true
             return true
         }
-        if (moveUp && textBlock.cursorOnFirstVisualRow() && textBlock.hasAdjacentAtomicFocusBefore) {
-            textBlock.adjacentAtomicBlockFocusRequested("before")
+        if (moveUp && textBlock.cursorOnFirstVisualRow() && textBlock.hasAdjacentBlockBefore) {
+            textBlock.boundaryNavigationRequested("vertical", "before")
             event.accepted = true
             return true
         }
-        if (moveDown && textBlock.cursorOnLastVisualRow() && textBlock.hasAdjacentAtomicFocusAfter) {
-            textBlock.adjacentAtomicBlockFocusRequested("after")
+        if (moveDown && textBlock.cursorOnLastVisualRow() && textBlock.hasAdjacentBlockAfter) {
+            textBlock.boundaryNavigationRequested("vertical", "after")
             event.accepted = true
             return true
         }

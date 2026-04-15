@@ -11,6 +11,7 @@ FocusScope {
     required property var blockData
 
     signal activated()
+    signal boundaryNavigationRequested(string axis, string side)
     signal enterExitRequested(var blockData)
     signal textChanged(string text, int cursorPosition)
 
@@ -27,7 +28,7 @@ FocusScope {
     width: parent ? parent.width : implicitWidth
 
     function currentEditorLogicalLineNumber() {
-        const textValue = StructuredCursorSupport.normalizedPlainText(calloutBlock.calloutText)
+        const textValue = calloutBlock.currentEditorPlainText()
         const cursorPosition = Math.max(
                     0,
                     Math.min(
@@ -43,7 +44,7 @@ FocusScope {
 
     function currentCursorRowRect() {
         const editorItem = calloutEditor && calloutEditor.editorItem ? calloutEditor.editorItem : null
-        const textValue = StructuredCursorSupport.normalizedPlainText(calloutBlock.calloutText)
+        const textValue = calloutBlock.currentEditorPlainText()
         const cursorPosition = Math.max(
                     0,
                     Math.min(
@@ -64,6 +65,33 @@ FocusScope {
         }
     }
 
+    function currentEditorPlainText() {
+        if (!calloutEditor)
+            return StructuredCursorSupport.normalizedPlainText(calloutBlock.calloutText)
+        if (calloutEditor.currentPlainText !== undefined)
+            return StructuredCursorSupport.normalizedPlainText(calloutEditor.currentPlainText())
+        return StructuredCursorSupport.normalizedPlainText(calloutBlock.calloutText)
+    }
+
+    function cursorOnFirstVisualRow() {
+        const rowRect = calloutBlock.currentCursorRowRect()
+        return Math.max(0, Number(rowRect.contentY) || 0) <= 1
+    }
+
+    function cursorOnLastVisualRow() {
+        const rowRect = calloutBlock.currentCursorRowRect()
+        const rowBottom = Math.max(
+                    0,
+                    (Number(rowRect.contentY) || 0) + (Number(rowRect.contentHeight) || 0))
+        const contentHeight = Math.max(
+                    1,
+                    Number(calloutEditor && calloutEditor.inputContentHeight !== undefined
+                           ? calloutEditor.inputContentHeight
+                           : 0)
+                    || rowBottom)
+        return rowBottom >= contentHeight - 1
+    }
+
     function focusEditor(cursorPosition) {
         calloutEditor.forceActiveFocus()
         const numericCursorPosition = Number(cursorPosition)
@@ -81,12 +109,23 @@ FocusScope {
         const safeRequest = request && typeof request === "object" ? request : ({})
         const localCursorPosition = Number(safeRequest.localCursorPosition)
         const sourceOffset = Number(safeRequest.sourceOffset)
+        const entryBoundary = safeRequest.entryBoundary === undefined || safeRequest.entryBoundary === null
+                ? ""
+                : String(safeRequest.entryBoundary).trim().toLowerCase()
         if (!isFinite(sourceOffset))
             return false
         if (sourceOffset < calloutBlock.sourceStart || sourceOffset > calloutBlock.sourceEnd)
             return false
         if (isFinite(localCursorPosition)) {
             calloutBlock.focusEditor(localCursorPosition)
+            return true
+        }
+        if (entryBoundary === "before" || sourceOffset <= calloutBlock.contentStart) {
+            calloutBlock.focusEditor(0)
+            return true
+        }
+        if (entryBoundary === "after" || sourceOffset >= calloutBlock.contentEnd) {
+            calloutBlock.focusEditor(calloutBlock.currentEditorPlainText().length)
             return true
         }
         if (sourceOffset >= calloutBlock.contentStart && sourceOffset <= calloutBlock.contentEnd) {
@@ -98,6 +137,58 @@ FocusScope {
         }
         calloutBlock.focusEditor()
         return true
+    }
+
+    function handleBoundaryKeyPress(event) {
+        if (!event)
+            return false
+        const key = Number(event.key)
+        const moveBackward = key === Qt.Key_Left
+        const moveForward = key === Qt.Key_Right
+        const moveUp = key === Qt.Key_Up
+        const moveDown = key === Qt.Key_Down
+        if (!moveBackward && !moveForward && !moveUp && !moveDown)
+            return false
+        const modifiers = Number(event.modifiers) || 0
+        if ((modifiers & (Qt.ControlModifier | Qt.AltModifier | Qt.MetaModifier)) !== 0)
+            return false
+        const selectionStart = Math.max(0, Math.floor(Number(calloutEditor.selectionStart) || 0))
+        const selectionEnd = Math.max(selectionStart, Math.floor(Number(calloutEditor.selectionEnd) || 0))
+        if (selectionEnd > selectionStart)
+            return false
+        if (calloutEditor.inputMethodComposing !== undefined && calloutEditor.inputMethodComposing)
+            return false
+        const preeditText = calloutEditor.preeditText !== undefined && calloutEditor.preeditText !== null
+                ? String(calloutEditor.preeditText)
+                : ""
+        if (preeditText.length > 0)
+            return false
+        if ((modifiers & Qt.ShiftModifier) !== 0)
+            return false
+
+        const plainTextLength = calloutBlock.currentEditorPlainText().length
+        const cursorPosition = Math.max(0, Math.floor(Number(calloutEditor.cursorPosition) || 0))
+        if (moveBackward && cursorPosition === 0) {
+            calloutBlock.boundaryNavigationRequested("horizontal", "before")
+            event.accepted = true
+            return true
+        }
+        if (moveForward && cursorPosition === plainTextLength) {
+            calloutBlock.boundaryNavigationRequested("horizontal", "after")
+            event.accepted = true
+            return true
+        }
+        if (moveUp && calloutBlock.cursorOnFirstVisualRow()) {
+            calloutBlock.boundaryNavigationRequested("vertical", "before")
+            event.accepted = true
+            return true
+        }
+        if (moveDown && calloutBlock.cursorOnLastVisualRow()) {
+            calloutBlock.boundaryNavigationRequested("vertical", "after")
+            event.accepted = true
+            return true
+        }
+        return false
     }
 
     function shortcutInsertionSourceOffset() {
@@ -151,6 +242,8 @@ FocusScope {
                 selectedTextColor: LV.Theme.textPrimary
                 selectionColor: LV.Theme.accent
                 shortcutKeyPressHandler: function (event) {
+                    if (calloutBlock.handleBoundaryKeyPress(event))
+                        return true
                     const noModifiers = (event.modifiers & (Qt.ControlModifier | Qt.AltModifier | Qt.MetaModifier | Qt.ShiftModifier)) === 0
                     if (!noModifiers)
                         return false

@@ -6,10 +6,11 @@
 
 ## Scope
 - Mirrored source directory: `src/app/editor`
-- Child directories: 2
+- Child directories: 3
 - Child files: 0
 
 ## Child Directories
+- `parser`
 - `painter`
 - `renderer`
 
@@ -25,6 +26,15 @@
 - Known hotspots and refactor priorities
 
 ## Current Notes
+- `parser/ContentsWsnBodyBlockParser.*` is now the first dedicated `.wsnbody` block-parser layer under
+  `src/app/editor`.
+  It tokenizes top-level semantic body tags once, emits one ordered `renderedDocumentBlocks` projection, and keeps the
+  legacy `renderedAgendas` / `renderedCallouts` side payloads only as compatibility views over that same parse pass.
+- Semantic text blocks such as `paragraph`, `title`, `subTitle`, and `eventDescription` now keep two coordinate
+  systems in that parser contract:
+  - wrapper spans (`blockSourceStart` / `blockSourceEnd`, open/close tag offsets) preserve the authored outer tag
+  - editable spans (`sourceStart` / `sourceEnd` / `sourceText`) point only at the inner text content so the
+    structured paragraph editor can rewrite RAW without stripping the outer semantic tag
 - The current UI-thread hotspot priority is note-open behavior, not steady-state typing.
 - Note-open reconcile and structured-tag correction now route file I/O through worker-thread queues before the result
   is mirrored back onto the main thread.

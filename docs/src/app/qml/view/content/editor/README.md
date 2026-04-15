@@ -53,6 +53,10 @@
   hosts no longer swap the whole editor surface into a dedicated resource viewer.
 - Resource-bearing note bodies now activate `ContentsStructuredDocumentFlow.qml` so `<resource ... />` stays in the
   same authored block stream as surrounding text.
+- Block-boundary keyboard navigation is now being consolidated under `ContentsStructuredDocumentFlow.qml` itself.
+  Text/resource/break/callout/agenda delegates are expected to emit generic boundary-navigation requests and let the
+  flow resolve the immediately adjacent parsed block from the `.wsnbody` stream rather than hardcoding neighbor lookup
+  rules inside each block widget.
 - `ContentsEditorTypingController.qml` now owns ordinary text-entry mutation routing so typing no longer reserializes
   the whole RichText surface on every edit.
 - The editor directory now follows one write direction for live note editing:

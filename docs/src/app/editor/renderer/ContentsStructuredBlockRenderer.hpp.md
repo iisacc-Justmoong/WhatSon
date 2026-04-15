@@ -1,7 +1,8 @@
 # `src/app/editor/renderer/ContentsStructuredBlockRenderer.hpp`
 
 ## Responsibility
-Declares the editor-side structured-block renderer that projects proprietary block tags into QML-facing render models.
+Declares the editor-side structured-block renderer that republishes parsed `.wsnbody` block projections into
+QML-facing render models.
 
 ## Public Contract
 - `sourceText`: canonical RAW note-body source consumed by the renderer.
@@ -10,8 +11,8 @@ Declares the editor-side structured-block renderer that projects proprietary blo
 - `renderedDocumentBlocks`: one ordered block stream for the structured editor host.
   Supported top-level body tags no longer need per-tag block list ownership at the renderer boundary; they are all
   projected into this same block sequence with common source-span geometry.
-- `agendaParseVerification`: latest agenda parser verification report forwarded from `ContentsAgendaBackend`.
-- `calloutParseVerification`: latest callout parser verification report forwarded from `ContentsCalloutBackend`.
+- `agendaParseVerification`: latest agenda verification report produced from the unified `.wsnbody` parse pass.
+- `calloutParseVerification`: latest callout verification report produced from the unified `.wsnbody` parse pass.
 - `structuredParseVerification`: merged renderer-level verification report that bundles agenda/callout/break
   verification plus the linter's synthetic XML/body well-formedness report for supported semantic tags.
   It exposes a top-level `wellFormed` bit, an `xml` child verification payload, and `canonicalizationSuggested` when
@@ -35,7 +36,7 @@ Declares the editor-side structured-block renderer that projects proprietary blo
 - `structuredCorrectionSuggested(sourceText, correctedSourceText, verification)`
 
 ## Architectural Note
-- This renderer lives in `editor/renderer` because tag detection and render-model projection belong to the editor
-  presentation layer.
+- This renderer lives in `editor/renderer` because render-model publication still belongs to the editor presentation
+  layer, even though top-level block tokenization now starts in `editor/parser`.
 - Agenda/callout authoring and source-mutation APIs remain in `src/app/agenda` and `src/app/callout`; this type only
-  exposes read-side render data.
+  exposes read-side render data derived from the parser result.
