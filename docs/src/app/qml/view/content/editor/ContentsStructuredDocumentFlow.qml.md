@@ -48,6 +48,14 @@ Hosts the document-native block editor for structured `.wsnbody` content.
   cursor-local interaction.
   Current-line gutter indicators therefore refresh even when the active block itself did not change and only the caret
   moved to another logical line inside that same block.
+- When the flow needs an "active" block for current-line or cursor-row state, it now prefers the actually focused
+  delegate over the last remembered `activeBlockIndex`.
+  Structured gutter state therefore no longer falls back to the first block in the note simply because a stale or
+  unset remembered active index still existed.
+- That focused-block preference is now also exposed through dedicated read-only flow properties rather than only
+  through helper functions.
+  Current-line bindings therefore have a stable dependency source when focus moves from the first image/resource block
+  into a later text block.
 - The flow now also exposes the active block's current visual cursor-row rectangle in document coordinates whenever the
   loaded delegate can provide it.
   Editor hosts use that document-space row rectangle for current-line gutter markers so the blue indicator follows the
