@@ -25,6 +25,10 @@ Renders one callout card as a native document block inside the editor flow.
 - The callout block now also exposes `currentCursorRowRect()` in block-local coordinates.
   Structured-flow hosts use that to align current-line gutter indicators with the actual visual caret row inside
   wrapped callout text.
+- The block now also exports the shared document-block contract for flow-level layout:
+  `textEditable=true`, `atomicBlock=false`, `gutterCollapsed=false`,
+  `minimapVisualKind=text`, `visiblePlainText()` as the live callout editor text, and
+  `representativeCharCount(...)` per visible line.
 - The callout editor now also participates in the shared block-boundary keyboard contract.
   Plain `Left` / `Right` at the block start/end and plain `Up` / `Down` on the first/last visual row emit one generic
   boundary-navigation request back to `ContentsStructuredDocumentFlow.qml`, so callout cards no longer terminate

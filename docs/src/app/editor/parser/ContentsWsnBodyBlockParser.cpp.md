@@ -21,6 +21,16 @@ Implements one-pass top-level `.wsnbody` parsing for the structured editor rende
   - `contentStart` / `contentEnd` and `sourceStart` / `sourceEnd` point at the inner editable payload
   - `sourceText` therefore contains only the inner content, including inline style tags but excluding the outer
     semantic wrapper
+- Every emitted block now also carries one generic block-trait payload for the structured QML host:
+  - `plainText`
+  - `textEditable`
+  - `atomicBlock`
+  - `gutterCollapsed`
+  - `logicalLineCountHint`
+  - `minimapVisualKind`
+  - `minimapRepresentativeCharCount`
+  This lets the flow host treat paragraph/resource/agenda/callout/break blocks uniformly as document blocks even
+  before the concrete QML delegate has mounted.
 - Resource blocks keep stable `resourceIndex`, `resourceId`, `resourcePath`, `resourceType`, and `resourceFormat`
   fields so QML can reconcile them with `ContentsBodyResourceRenderer`.
 - The parser still delegates canonicalization and verification to `WhatSonStructuredTagLinter`; it does not invent a

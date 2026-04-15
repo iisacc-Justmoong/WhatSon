@@ -18,6 +18,11 @@ FocusScope {
     readonly property int currentLogicalLineNumber: calloutBlock.currentEditorLogicalLineNumber()
     readonly property var normalizedBlock: blockData && typeof blockData === "object" ? blockData : ({})
     readonly property bool focused: calloutEditor.focused
+    readonly property bool textEditable: true
+    readonly property bool atomicBlock: false
+    readonly property bool gutterCollapsed: false
+    readonly property string minimapVisualKind: "text"
+    readonly property int minimapRepresentativeCharCount: 0
     readonly property int contentStart: Math.max(0, Number(normalizedBlock.contentStart) || 0)
     readonly property int contentEnd: Math.max(contentStart, Number(normalizedBlock.contentEnd) || contentStart)
     readonly property int sourceStart: Math.max(0, Number(normalizedBlock.sourceStart) || 0)
@@ -71,6 +76,15 @@ FocusScope {
         if (calloutEditor.currentPlainText !== undefined)
             return StructuredCursorSupport.normalizedPlainText(calloutEditor.currentPlainText())
         return StructuredCursorSupport.normalizedPlainText(calloutBlock.calloutText)
+    }
+
+    function visiblePlainText() {
+        return calloutBlock.currentEditorPlainText()
+    }
+
+    function representativeCharCount(lineText) {
+        const normalizedLineText = lineText === undefined || lineText === null ? "" : String(lineText)
+        return Math.max(0, normalizedLineText.length)
     }
 
     function cursorOnFirstVisualRow() {

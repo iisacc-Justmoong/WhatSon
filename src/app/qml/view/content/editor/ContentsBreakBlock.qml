@@ -15,6 +15,12 @@ FocusScope {
 
     readonly property var normalizedBlock: blockData && typeof blockData === "object" ? blockData : ({})
     readonly property bool focused: breakBlock.activeFocus
+    readonly property int currentLogicalLineNumber: 1
+    readonly property bool textEditable: false
+    readonly property bool atomicBlock: true
+    readonly property bool gutterCollapsed: true
+    readonly property string minimapVisualKind: "text"
+    readonly property int minimapRepresentativeCharCount: 8
     readonly property int sourceStart: Math.max(0, Number(normalizedBlock.sourceStart) || 0)
     readonly property int sourceEnd: Math.max(sourceStart, Number(normalizedBlock.sourceEnd) || sourceStart)
 
@@ -37,6 +43,37 @@ FocusScope {
             return false
         breakBlock.selectBreakBlock()
         return true
+    }
+
+    function visiblePlainText() {
+        return ""
+    }
+
+    function representativeCharCount(lineText) {
+        const normalizedLineText = lineText === undefined || lineText === null ? "" : String(lineText)
+        if (normalizedLineText.length > 0)
+            return normalizedLineText.length
+        return 8
+    }
+
+    function logicalLineLayoutEntries() {
+        const mappedOrigin = divider.mapToItem !== undefined
+                ? divider.mapToItem(breakBlock, 0, 0)
+                : ({ "x": 0, "y": Math.max(0, (breakBlock.height - divider.height) / 2) })
+        return [{
+                    "contentHeight": Math.max(1, Number(divider.height) || 1),
+                    "contentY": Math.max(0, Number(mappedOrigin.y) || 0)
+                }]
+    }
+
+    function currentCursorRowRect() {
+        const entries = breakBlock.logicalLineLayoutEntries()
+        if (entries.length > 0)
+            return entries[0]
+        return ({
+                    "contentHeight": 1,
+                    "contentY": 0
+                })
     }
 
     Rectangle {

@@ -39,74 +39,93 @@ FocusScope {
             event.accepted = true
     }
 
-    function blockUsesTextDelegate(blockEntry) {
-        const safeBlock = blockEntry && typeof blockEntry === "object" ? blockEntry : ({})
-        const blockType = safeBlock.type !== undefined ? String(safeBlock.type).toLowerCase() : "text"
-        return blockType !== "agenda"
-                && blockType !== "callout"
-                && blockType !== "resource"
-                && blockType !== "break"
+    function blockAtomic(blockHost, blockEntryOverride) {
+        const host = blockHost && typeof blockHost === "object" ? blockHost : null
+        const blockEntry = blockEntryOverride && typeof blockEntryOverride === "object"
+                ? blockEntryOverride
+                : (host && host.blockEntry && typeof host.blockEntry === "object" ? host.blockEntry : ({ }))
+        const delegateItem = documentFlow.delegateItemForBlockHost(host)
+        if (delegateItem && delegateItem.atomicBlock !== undefined)
+            return !!delegateItem.atomicBlock
+        if (blockEntry.atomicBlock !== undefined)
+            return !!blockEntry.atomicBlock
+        const blockType = blockEntry.type !== undefined ? String(blockEntry.type).trim().toLowerCase() : "text"
+        return blockType === "resource" || blockType === "break"
     }
 
-    function normalizedAgendaTasks(blockEntry) {
-        const safeBlock = blockEntry && typeof blockEntry === "object" ? blockEntry : ({})
-        const rawTasks = safeBlock.tasks
-        if (Array.isArray(rawTasks))
-            return rawTasks
-        if (rawTasks && rawTasks.length !== undefined) {
-            const normalized = []
-            for (let index = 0; index < rawTasks.length; ++index)
-                normalized.push(rawTasks[index])
-            return normalized
-        }
-        return []
+    function blockTextEditable(blockHost, blockEntryOverride) {
+        const host = blockHost && typeof blockHost === "object" ? blockHost : null
+        const blockEntry = blockEntryOverride && typeof blockEntryOverride === "object"
+                ? blockEntryOverride
+                : (host && host.blockEntry && typeof host.blockEntry === "object" ? host.blockEntry : ({ }))
+        const delegateItem = documentFlow.delegateItemForBlockHost(host)
+        if (delegateItem && delegateItem.textEditable !== undefined)
+            return !!delegateItem.textEditable
+        if (blockEntry.textEditable !== undefined)
+            return !!blockEntry.textEditable
+        return !documentFlow.blockAtomic(host, blockEntry)
     }
 
-    function visiblePlainTextForBlock(blockEntry) {
-        const safeBlock = blockEntry && typeof blockEntry === "object" ? blockEntry : ({})
-        const blockType = safeBlock.type !== undefined ? String(safeBlock.type).toLowerCase() : "text"
-        if (blockType === "agenda") {
-            const tasks = documentFlow.normalizedAgendaTasks(safeBlock)
-            const taskLines = []
-            for (let index = 0; index < tasks.length; ++index) {
-                const taskData = tasks[index] && typeof tasks[index] === "object" ? tasks[index] : ({})
-                taskLines.push(StructuredCursorSupport.normalizedPlainText(String(taskData.text || "")))
-            }
-            return taskLines.join("\n")
-        }
-        if (blockType === "callout")
-            return StructuredCursorSupport.normalizedPlainText(String(safeBlock.text || ""))
-        if (blockType === "resource" || blockType === "break")
-            return ""
-        return StructuredCursorSupport.plainTextFromInlineTaggedSource(String(safeBlock.sourceText || ""))
+    function visiblePlainTextForBlockHost(blockHost, blockEntryOverride) {
+        const host = blockHost && typeof blockHost === "object" ? blockHost : null
+        const blockEntry = blockEntryOverride && typeof blockEntryOverride === "object"
+                ? blockEntryOverride
+                : (host && host.blockEntry && typeof host.blockEntry === "object" ? host.blockEntry : ({ }))
+        const delegateItem = documentFlow.delegateItemForBlockHost(host)
+        if (delegateItem && delegateItem.visiblePlainText !== undefined)
+            return StructuredCursorSupport.normalizedPlainText(String(delegateItem.visiblePlainText() || ""))
+        if (blockEntry.plainText !== undefined)
+            return StructuredCursorSupport.normalizedPlainText(String(blockEntry.plainText || ""))
+        if (blockEntry.sourceText !== undefined)
+            return StructuredCursorSupport.normalizedPlainText(String(blockEntry.sourceText || ""))
+        return ""
     }
 
-    function blockRepresentativeCharCount(blockEntry, lineText) {
-        const safeBlock = blockEntry && typeof blockEntry === "object" ? blockEntry : ({})
-        const blockType = safeBlock.type !== undefined ? String(safeBlock.type).toLowerCase() : "text"
+    function blockRepresentativeCharCountForHost(blockHost, blockEntryOverride, lineText) {
+        const host = blockHost && typeof blockHost === "object" ? blockHost : null
+        const blockEntry = blockEntryOverride && typeof blockEntryOverride === "object"
+                ? blockEntryOverride
+                : (host && host.blockEntry && typeof host.blockEntry === "object" ? host.blockEntry : ({ }))
+        const delegateItem = documentFlow.delegateItemForBlockHost(host)
+        if (delegateItem && delegateItem.representativeCharCount !== undefined)
+            return Math.max(0, Number(delegateItem.representativeCharCount(lineText)) || 0)
         const normalizedLineText = lineText === undefined || lineText === null ? "" : String(lineText)
         if (normalizedLineText.length > 0)
             return normalizedLineText.length
-        if (blockType === "resource") {
-            const resourceLabel = safeBlock.resourceId !== undefined && String(safeBlock.resourceId).trim().length > 0
-                    ? String(safeBlock.resourceId).trim()
-                    : (safeBlock.resourcePath !== undefined && String(safeBlock.resourcePath).trim().length > 0
-                       ? String(safeBlock.resourcePath).trim()
-                       : "resource")
-            return Math.max(12, resourceLabel.length)
-        }
-        if (blockType === "break")
-            return 8
-        return 0
+        return Math.max(0, Number(blockEntry.minimapRepresentativeCharCount) || 0)
     }
 
-    function logicalLineCountForBlock(blockEntry, logicalLines) {
-        const safeBlock = blockEntry && typeof blockEntry === "object" ? blockEntry : ({})
-        const blockType = safeBlock.type !== undefined ? String(safeBlock.type).toLowerCase() : "text"
-        const logicalLineCount = Math.max(1, Array.isArray(logicalLines) ? logicalLines.length : 1)
-        if (blockType === "resource" || blockType === "break")
-            return 1
-        return logicalLineCount
+    function logicalLineCountForBlockHost(blockHost, blockEntryOverride) {
+        const host = blockHost && typeof blockHost === "object" ? blockHost : null
+        const blockEntry = blockEntryOverride && typeof blockEntryOverride === "object"
+                ? blockEntryOverride
+                : (host && host.blockEntry && typeof host.blockEntry === "object" ? host.blockEntry : ({ }))
+        const plainText = documentFlow.visiblePlainTextForBlockHost(host, blockEntry)
+        const logicalLines = plainText.length > 0 ? plainText.split("\n") : [""]
+        const explicitHint = Math.max(0, Number(blockEntry.logicalLineCountHint) || 0)
+        return Math.max(1, explicitHint > 0 ? explicitHint : logicalLines.length)
+    }
+
+    function blockGutterCollapsed(blockHost, blockEntryOverride) {
+        const host = blockHost && typeof blockHost === "object" ? blockHost : null
+        const blockEntry = blockEntryOverride && typeof blockEntryOverride === "object"
+                ? blockEntryOverride
+                : (host && host.blockEntry && typeof host.blockEntry === "object" ? host.blockEntry : ({ }))
+        const delegateItem = documentFlow.delegateItemForBlockHost(host)
+        if (delegateItem && delegateItem.gutterCollapsed !== undefined)
+            return !!delegateItem.gutterCollapsed
+        return !!blockEntry.gutterCollapsed
+    }
+
+    function blockMinimapVisualKind(blockHost, blockEntryOverride) {
+        const host = blockHost && typeof blockHost === "object" ? blockHost : null
+        const blockEntry = blockEntryOverride && typeof blockEntryOverride === "object"
+                ? blockEntryOverride
+                : (host && host.blockEntry && typeof host.blockEntry === "object" ? host.blockEntry : ({ }))
+        const delegateItem = documentFlow.delegateItemForBlockHost(host)
+        if (delegateItem && delegateItem.minimapVisualKind !== undefined)
+            return String(delegateItem.minimapVisualKind || "text")
+        return blockEntry.minimapVisualKind !== undefined ? String(blockEntry.minimapVisualKind || "text") : "text"
     }
 
     function logicalLineCount() {
@@ -115,25 +134,30 @@ FocusScope {
             return 1
         let lineCount = 0
         for (let index = 0; index < blocks.length; ++index) {
-            const plainText = documentFlow.visiblePlainTextForBlock(blocks[index])
-            const logicalLines = plainText.length > 0 ? plainText.split("\n") : [""]
-            lineCount += documentFlow.logicalLineCountForBlock(blocks[index], logicalLines)
+            const blockHost = blockRepeater.itemAt(index)
+            const blockEntry = blocks[index] && typeof blocks[index] === "object" ? blocks[index] : ({})
+            lineCount += documentFlow.logicalLineCountForBlockHost(blockHost, blockEntry)
         }
         return Math.max(1, lineCount)
     }
 
-    function visualLineCharCount(blockEntry, logicalLines, visualLineCount, visualLineIndex) {
+    function visualLineCharCount(blockHost, blockEntry, logicalLines, visualLineCount, visualLineIndex) {
         const safeLogicalLines = Array.isArray(logicalLines) && logicalLines.length > 0 ? logicalLines : [""]
         const safeVisualLineCount = Math.max(1, Math.floor(Number(visualLineCount) || 1))
         const safeVisualLineIndex = Math.max(0, Math.min(safeVisualLineCount - 1, Math.floor(Number(visualLineIndex) || 0)))
         if (safeVisualLineCount === safeLogicalLines.length)
-            return Math.max(0, documentFlow.blockRepresentativeCharCount(blockEntry, safeLogicalLines[safeVisualLineIndex]))
+            return Math.max(
+                        0,
+                        documentFlow.blockRepresentativeCharCountForHost(
+                            blockHost,
+                            blockEntry,
+                            safeLogicalLines[safeVisualLineIndex]))
 
         let totalCharCount = 0
         for (let index = 0; index < safeLogicalLines.length; ++index)
             totalCharCount += Math.max(0, String(safeLogicalLines[index] || "").length)
         if (totalCharCount <= 0)
-            return Math.max(0, documentFlow.blockRepresentativeCharCount(blockEntry, ""))
+            return Math.max(0, documentFlow.blockRepresentativeCharCountForHost(blockHost, blockEntry, ""))
 
         const baseCount = Math.floor(totalCharCount / safeVisualLineCount)
         const remainder = totalCharCount % safeVisualLineCount
@@ -171,9 +195,7 @@ FocusScope {
         const delegateItem = documentFlow.delegateItemForBlockHost(blockHost)
         if (delegateItem && delegateItem.currentLogicalLineNumber !== undefined)
             return Math.max(1, Number(delegateItem.currentLogicalLineNumber) || 1)
-        const plainText = documentFlow.visiblePlainTextForBlock(blockEntry)
-        const logicalLines = plainText.length > 0 ? plainText.split("\n") : [""]
-        return Math.max(1, documentFlow.logicalLineCountForBlock(blockEntry, logicalLines))
+        return Math.max(1, documentFlow.logicalLineCountForBlockHost(blockHost, blockEntry))
     }
 
     function blockHeightForLayout(blockHost, blockEntryOverride) {
@@ -181,12 +203,10 @@ FocusScope {
         const blockEntry = blockEntryOverride && typeof blockEntryOverride === "object"
                 ? blockEntryOverride
                 : (host && host.blockEntry && typeof host.blockEntry === "object" ? host.blockEntry : ({ }))
-        const plainText = documentFlow.visiblePlainTextForBlock(blockEntry)
-        const logicalLines = plainText.length > 0 ? plainText.split("\n") : [""]
         return Math.max(
                     1,
                     host ? (Number(host.implicitHeight) || Number(host.height) || 0) : 0,
-                    documentFlow.lineHeightHint * documentFlow.logicalLineCountForBlock(blockEntry, logicalLines))
+                    documentFlow.lineHeightHint * documentFlow.logicalLineCountForBlockHost(host, blockEntry))
     }
 
     function blockTopYForIndex(blockIndex) {
@@ -210,9 +230,7 @@ FocusScope {
         const blockEntry = blockEntryOverride && typeof blockEntryOverride === "object"
                 ? blockEntryOverride
                 : (host && host.blockEntry && typeof host.blockEntry === "object" ? host.blockEntry : ({ }))
-        const safeBlockEntry = blockEntry && typeof blockEntry === "object" ? blockEntry : ({})
-        const blockType = safeBlockEntry.type !== undefined ? String(safeBlockEntry.type).toLowerCase() : "text"
-        const plainText = documentFlow.visiblePlainTextForBlock(blockEntry)
+        const plainText = documentFlow.visiblePlainTextForBlockHost(host, blockEntry)
         const logicalLines = plainText.length > 0 ? plainText.split("\n") : [""]
         const blockHeight = documentFlow.blockHeightForLayout(host, blockEntry)
         const numericBlockBaseY = Number(blockBaseYOverride)
@@ -222,7 +240,7 @@ FocusScope {
                   ? documentFlow.blockTopYForIndex(host.blockIndex)
                   : Math.max(0, Number(host && host.y !== undefined ? host.y : 0) || 0)
         const entries = []
-        const lineCount = documentFlow.logicalLineCountForBlock(blockEntry, logicalLines)
+        const lineCount = documentFlow.logicalLineCountForBlockHost(host, blockEntry)
         const delegateItem = documentFlow.delegateItemForBlockHost(host)
         const delegateLineLayoutEntries = documentFlow.normalizedDelegateLineLayoutEntries(delegateItem, lineCount)
 
@@ -271,11 +289,11 @@ FocusScope {
                         fallbackLineBottom,
                         isFinite(mappedLineBottomY) ? mappedLineBottomY : fallbackLineBottom)
             const lineHeight = Math.max(1, lineBottom - lineTop)
-            const gutterCollapsed = blockType === "resource" || blockType === "break"
-            const minimapVisualKind = blockType === "resource" ? "block" : "text"
-            const minimapRowCharCount = blockType === "resource" ? 160 : 0
+            const gutterCollapsed = documentFlow.blockGutterCollapsed(host, blockEntry)
+            const minimapVisualKind = documentFlow.blockMinimapVisualKind(host, blockEntry)
+            const minimapRowCharCount = documentFlow.blockRepresentativeCharCountForHost(host, blockEntry, "")
             entries.push({
-                "charCount": documentFlow.visualLineCharCount(blockEntry, logicalLines, lineCount, index),
+                "charCount": documentFlow.visualLineCharCount(host, blockEntry, logicalLines, lineCount, index),
                 "contentHeight": lineHeight,
                 "contentY": lineTop,
                 "gutterCollapsed": gutterCollapsed,
@@ -555,7 +573,8 @@ FocusScope {
         const lastBlock = blocks[blocks.length - 1] && typeof blocks[blocks.length - 1] === "object"
                 ? blocks[blocks.length - 1]
                 : ({})
-        if (documentFlow.blockUsesTextDelegate(lastBlock)) {
+        const lastBlockHost = blockRepeater.itemAt(blocks.length - 1)
+        if (documentFlow.blockTextEditable(lastBlockHost, lastBlock)) {
             documentFlow.requestFocus({
                                           "sourceOffset": Math.max(
                                                               0,
@@ -693,16 +712,6 @@ FocusScope {
         return !!safeRequest.preferNearestTextBlock
     }
 
-    function normalizedRequestedInteractionMode(request) {
-        const safeRequest = request && typeof request === "object" ? request : ({})
-        if (safeRequest.interactionMode === undefined || safeRequest.interactionMode === null)
-            return ""
-        const requestedMode = String(safeRequest.interactionMode).trim().toLowerCase()
-        if (requestedMode === "before" || requestedMode === "after" || requestedMode === "selected")
-            return requestedMode
-        return ""
-    }
-
     function floorNumberOrFallback(value, fallbackValue) {
         const numericValue = Number(value)
         if (!isFinite(numericValue))
@@ -727,8 +736,7 @@ FocusScope {
 
     function blockUsesExclusiveTrailingBoundary(blockEntry) {
         const safeBlock = blockEntry && typeof blockEntry === "object" ? blockEntry : ({})
-        const blockType = safeBlock.type !== undefined ? String(safeBlock.type).trim().toLowerCase() : ""
-        return blockType === "resource" || blockType === "break"
+        return documentFlow.blockAtomic(null, safeBlock)
     }
 
     function blockContainsSourceOffset(blockEntry, sourceOffset) {
@@ -741,24 +749,6 @@ FocusScope {
             return sourceOffset === sourceStart
         if (documentFlow.blockUsesExclusiveTrailingBoundary(safeBlock))
             return sourceOffset >= sourceStart && sourceOffset < sourceEnd
-        return sourceOffset >= sourceStart && sourceOffset <= sourceEnd
-    }
-
-    function blockMatchesExplicitFocusRequest(blockEntry, request, sourceOffset) {
-        if (!isFinite(sourceOffset))
-            return false
-        const requestedInteractionMode = documentFlow.normalizedRequestedInteractionMode(request)
-        if (requestedInteractionMode.length === 0)
-            return false
-        if (!documentFlow.blockEntryIsAtomicFocusTarget(blockEntry))
-            return false
-        const safeBlock = blockEntry && typeof blockEntry === "object" ? blockEntry : ({})
-        const sourceStart = Math.max(0, Math.floor(Number(safeBlock.sourceStart) || 0))
-        const sourceEnd = Math.max(sourceStart, Math.floor(Number(safeBlock.sourceEnd) || sourceStart))
-        if (requestedInteractionMode === "before")
-            return sourceOffset === sourceStart
-        if (requestedInteractionMode === "after")
-            return sourceOffset === sourceEnd
         return sourceOffset >= sourceStart && sourceOffset <= sourceEnd
     }
 
@@ -834,33 +824,31 @@ FocusScope {
         if (isFinite(sourceOffset)) {
             let fallbackBeforeIndex = -1
             let fallbackAfterIndex = -1
-            let fallbackBeforeTextIndex = -1
-            let fallbackAfterTextIndex = -1
+            let fallbackBeforeEditableIndex = -1
+            let fallbackAfterEditableIndex = -1
             for (let index = 0; index < blocks.length; ++index) {
                 const blockEntry = blocks[index] && typeof blocks[index] === "object" ? blocks[index] : ({})
-                if (documentFlow.blockMatchesExplicitFocusRequest(blockEntry, request, sourceOffset))
-                    return index
                 if (documentFlow.blockContainsSourceOffset(blockEntry, sourceOffset))
                     return index
                 const sourceStart = Math.max(0, Math.floor(Number(blockEntry.sourceStart) || 0))
                 const sourceEnd = Math.max(sourceStart, Math.floor(Number(blockEntry.sourceEnd) || sourceStart))
                 if (sourceEnd < sourceOffset) {
                     fallbackBeforeIndex = index
-                    if (documentFlow.blockUsesTextDelegate(blockEntry))
-                        fallbackBeforeTextIndex = index
+                    if (documentFlow.blockTextEditable(blockRepeater.itemAt(index), blockEntry))
+                        fallbackBeforeEditableIndex = index
                     continue
                 }
                 if (sourceStart > sourceOffset && fallbackAfterIndex < 0) {
                     fallbackAfterIndex = index
-                    if (documentFlow.blockUsesTextDelegate(blockEntry))
-                        fallbackAfterTextIndex = index
+                    if (documentFlow.blockTextEditable(blockRepeater.itemAt(index), blockEntry))
+                        fallbackAfterEditableIndex = index
                 }
             }
             if (documentFlow.requestPrefersNearestTextBlock(request)) {
-                if (fallbackAfterTextIndex >= 0)
-                    return fallbackAfterTextIndex
-                if (fallbackBeforeTextIndex >= 0)
-                    return fallbackBeforeTextIndex
+                if (fallbackAfterEditableIndex >= 0)
+                    return fallbackAfterEditableIndex
+                if (fallbackBeforeEditableIndex >= 0)
+                    return fallbackBeforeEditableIndex
                 if (fallbackAfterIndex >= 0)
                     return fallbackAfterIndex
                 if (fallbackBeforeIndex >= 0)
@@ -992,7 +980,7 @@ FocusScope {
         const safeBlockIndex = Math.max(0, Math.min(blocks.length - 1, Math.floor(Number(blockIndex) || 0)))
         for (let index = safeBlockIndex - 1; index >= 0; --index) {
             const blockEntry = blocks[index] && typeof blocks[index] === "object" ? blocks[index] : ({})
-            if (!documentFlow.blockUsesTextDelegate(blockEntry))
+            if (!documentFlow.blockTextEditable(blockRepeater.itemAt(index), blockEntry))
                 continue
             return Math.max(0, Math.floor(Number(blockEntry.sourceEnd) || 0))
         }
@@ -1004,7 +992,7 @@ FocusScope {
         const safeBlockIndex = Math.max(0, Math.min(blocks.length - 1, Math.floor(Number(blockIndex) || 0)))
         for (let index = safeBlockIndex + 1; index < blocks.length; ++index) {
             const blockEntry = blocks[index] && typeof blocks[index] === "object" ? blocks[index] : ({})
-            if (!documentFlow.blockUsesTextDelegate(blockEntry))
+            if (!documentFlow.blockTextEditable(blockRepeater.itemAt(index), blockEntry))
                 continue
             return Math.max(0, Math.floor(Number(blockEntry.sourceStart) || 0))
         }
@@ -1023,48 +1011,6 @@ FocusScope {
         return boundedBlockEndOffset
     }
 
-    function insertPlainTextAdjacentToBlock(blockData, side, text, cursorPosition) {
-        const safeBlock = blockData && typeof blockData === "object" ? blockData : ({})
-        const normalizedSide = side === undefined || side === null ? "" : String(side).trim().toLowerCase()
-        if (normalizedSide !== "before" && normalizedSide !== "after")
-            return false
-        const currentSourceText = documentFlow.normalizedSourceText(documentFlow.sourceText)
-        const normalizedText = StructuredCursorSupport.normalizedPlainText(text)
-        if (normalizedText.length === 0)
-            return false
-        const blockSourceStart = Math.max(0, Math.floor(Number(safeBlock.sourceStart) || 0))
-        const blockSourceEnd = Math.max(blockSourceStart, Math.floor(Number(safeBlock.sourceEnd) || blockSourceStart))
-        const insertionOffset = normalizedSide === "before"
-                ? blockSourceStart
-                : documentFlow.nextEditableSourceOffsetAfterBlock(currentSourceText, blockSourceEnd)
-        const boundedInsertionOffset = Math.max(0, Math.min(currentSourceText.length, insertionOffset))
-        const prefixNewline = boundedInsertionOffset > 0
-                && currentSourceText.charAt(boundedInsertionOffset - 1) !== "\n"
-                ? "\n"
-                : ""
-        const suffixNewline = boundedInsertionOffset < currentSourceText.length
-                && currentSourceText.charAt(boundedInsertionOffset) !== "\n"
-                ? "\n"
-                : ""
-        const insertionSourceText = prefixNewline
-                + StructuredCursorSupport.replacementSourceText(normalizedText)
-                + suffixNewline
-        const cursorSourceOffset = boundedInsertionOffset
-                + prefixNewline.length
-                + StructuredCursorSupport.sourceOffsetForPlainCursor(
-                    normalizedText,
-                    cursorPosition,
-                    0)
-        documentFlow.replaceSourceRange(
-                    boundedInsertionOffset,
-                    boundedInsertionOffset,
-                    insertionSourceText,
-                    {
-                        "sourceOffset": cursorSourceOffset
-                    })
-        return true
-    }
-
     function deleteBlock(blockData) {
         const safeBlock = blockData && typeof blockData === "object" ? blockData : ({})
         const currentSourceText = documentFlow.normalizedSourceText(documentFlow.sourceText)
@@ -1079,16 +1025,25 @@ FocusScope {
         return true
     }
 
+    function blockIsAtomicByIndex(blockIndex) {
+        const blocks = documentFlow.normalizedBlocks()
+        if (blocks.length === 0)
+            return false
+        const safeBlockIndex = Math.max(0, Math.min(blocks.length - 1, Math.floor(Number(blockIndex) || 0)))
+        const blockEntry = blocks[safeBlockIndex] && typeof blocks[safeBlockIndex] === "object"
+                ? blocks[safeBlockIndex]
+                : ({})
+        return documentFlow.blockAtomic(blockRepeater.itemAt(safeBlockIndex), blockEntry)
+    }
+
     function blockEntryIsAtomicDeletionTarget(blockEntry) {
         const safeBlock = blockEntry && typeof blockEntry === "object" ? blockEntry : ({})
-        const blockType = safeBlock.type !== undefined ? String(safeBlock.type).trim().toLowerCase() : ""
-        return blockType === "resource" || blockType === "break"
+        return documentFlow.blockAtomic(null, safeBlock)
     }
 
     function blockEntryIsAtomicFocusTarget(blockEntry) {
         const safeBlock = blockEntry && typeof blockEntry === "object" ? blockEntry : ({})
-        const blockType = safeBlock.type !== undefined ? String(safeBlock.type).trim().toLowerCase() : ""
-        return blockType === "resource" || blockType === "break"
+        return documentFlow.blockAtomic(null, safeBlock)
     }
 
     function blockHasAdjacentAtomicDeletionTarget(blockIndex, side) {
@@ -1102,7 +1057,7 @@ FocusScope {
         const adjacentBlockIndex = normalizedSide === "before" ? safeBlockIndex - 1 : safeBlockIndex + 1
         if (adjacentBlockIndex < 0 || adjacentBlockIndex >= blocks.length)
             return false
-        return documentFlow.blockEntryIsAtomicDeletionTarget(blocks[adjacentBlockIndex])
+        return documentFlow.blockIsAtomicByIndex(adjacentBlockIndex)
     }
 
     function adjacentBlockIndex(blockIndex, side) {
@@ -1119,7 +1074,7 @@ FocusScope {
         return resolvedAdjacentBlockIndex
     }
 
-    function requestAtomicBlockFocus(blockIndex, interactionMode) {
+    function requestAtomicBlockFocus(blockIndex) {
         const blocks = documentFlow.normalizedBlocks()
         if (blocks.length === 0)
             return false
@@ -1129,16 +1084,12 @@ FocusScope {
                 : ({})
         if (!documentFlow.blockEntryIsAtomicFocusTarget(blockEntry))
             return false
-        const requestedMode = documentFlow.normalizedRequestedInteractionMode({
-                                                                              "interactionMode": interactionMode
-                                                                          })
         const focusSourceOffset = Math.max(
                     0,
                     documentFlow.floorNumberOrFallback(
                         blockEntry.sourceStart,
                         documentFlow.floorNumberOrFallback(blockEntry.focusSourceOffset, 0)))
         documentFlow.requestFocus({
-                                      "interactionMode": requestedMode.length > 0 ? requestedMode : "selected",
                                       "sourceOffset": focusSourceOffset
                                   })
         return true
@@ -1158,7 +1109,7 @@ FocusScope {
                 ? blocks[safeBlockIndex]
                 : ({})
         if (documentFlow.blockEntryIsAtomicFocusTarget(blockEntry))
-            return documentFlow.requestAtomicBlockFocus(safeBlockIndex, "selected")
+            return documentFlow.requestAtomicBlockFocus(safeBlockIndex)
         const focusSourceOffset = normalizedBoundarySide === "before"
                 ? Math.max(0, documentFlow.floorNumberOrFallback(blockEntry.sourceStart, 0))
                 : Math.max(0, documentFlow.floorNumberOrFallback(blockEntry.sourceEnd, 0))
@@ -1440,8 +1391,9 @@ FocusScope {
                                             insertedBlockEndOffset)
                     }
                     : {
-                        "interactionMode": "after",
-                        "sourceOffset": insertedBlockEndOffset
+                        "sourceOffset": Math.max(
+                                            insertionOffset + prefixNewline.length,
+                                            insertedBlockEndOffset - 1)
                     })
         return true
     }
@@ -1477,7 +1429,6 @@ FocusScope {
                         return !!delegateItem.focused
                     return delegateItem.activeFocus !== undefined && !!delegateItem.activeFocus
                 }
-                readonly property string blockType: blockEntry.type !== undefined ? String(blockEntry.type) : "text"
                 implicitHeight: blockLoader.item ? Math.max(0, Number(blockLoader.item.implicitHeight) || Number(blockLoader.item.height) || 0) : 0
                 width: documentColumn.width
                 height: implicitHeight
@@ -1487,15 +1438,7 @@ FocusScope {
 
                     anchors.fill: parent
                     asynchronous: blockRepeater.count > 12
-                    sourceComponent: blockHost.blockType === "agenda"
-                                     ? agendaBlockDelegate
-                                     : blockHost.blockType === "callout"
-                                       ? calloutBlockDelegate
-                                       : blockHost.blockType === "resource"
-                                         ? resourceBlockDelegate
-                                       : blockHost.blockType === "break"
-                                         ? breakBlockDelegate
-                                         : textBlockDelegate
+                    sourceComponent: documentBlockDelegate
 
                     onLoaded: {
                         if (!item || blockHost.blockIndex !== documentFlow.pendingFocusBlockIndex)
@@ -1505,14 +1448,15 @@ FocusScope {
                 }
 
                 Component {
-                    id: textBlockDelegate
+                    id: documentBlockDelegate
 
-                    ContentsDocumentTextBlock {
+                    ContentsDocumentBlock {
                         blockData: blockHost.blockEntry
                         hasAdjacentAtomicBlockAfter: documentFlow.blockHasAdjacentAtomicDeletionTarget(blockHost.blockIndex, "after")
                         hasAdjacentAtomicBlockBefore: documentFlow.blockHasAdjacentAtomicDeletionTarget(blockHost.blockIndex, "before")
                         hasAdjacentBlockAfter: documentFlow.adjacentBlockIndex(blockHost.blockIndex, "after") >= 0
                         hasAdjacentBlockBefore: documentFlow.adjacentBlockIndex(blockHost.blockIndex, "before") >= 0
+                        resourceEntry: documentFlow.resourceEntryForBlock(blockHost.blockEntry)
                         width: blockHost.width
 
                         onActivated: documentFlow.noteActiveBlockInteraction(blockHost.blockIndex)
@@ -1522,22 +1466,10 @@ FocusScope {
                         onBoundaryNavigationRequested: function (axis, side) {
                             documentFlow.navigateDocumentBoundary(blockHost.blockIndex, axis, side)
                         }
+                        onBlockDeletionRequested: documentFlow.deleteBlock(blockHost.blockEntry)
+                        onDocumentEndEditRequested: documentFlow.requestDocumentEndEdit()
                         onSourceMutationRequested: function (nextBlockSourceText, focusRequest) {
                             documentFlow.replaceTextBlock(blockHost.blockEntry, nextBlockSourceText, focusRequest)
-                        }
-                    }
-                }
-
-                Component {
-                    id: agendaBlockDelegate
-
-                    ContentsAgendaBlock {
-                        blockData: blockHost.blockEntry
-                        width: blockHost.width
-
-                        onActivated: documentFlow.noteActiveBlockInteraction(blockHost.blockIndex)
-                        onBoundaryNavigationRequested: function (axis, side) {
-                            documentFlow.navigateDocumentBoundary(blockHost.blockIndex, axis, side)
                         }
                         onTaskDoneToggled: function (openTagStart, openTagEnd, checked) {
                             documentFlow.toggleAgendaTaskDone(openTagStart, openTagEnd, checked)
@@ -1548,68 +1480,12 @@ FocusScope {
                         onTaskTextChanged: function (taskData, text, cursorPosition) {
                             documentFlow.updateAgendaTaskText(taskData, text, cursorPosition)
                         }
-                    }
-                }
-
-                Component {
-                    id: calloutBlockDelegate
-
-                    ContentsCalloutBlock {
-                        blockData: blockHost.blockEntry
-                        width: blockHost.width
-
-                        onActivated: documentFlow.noteActiveBlockInteraction(blockHost.blockIndex)
-                        onBoundaryNavigationRequested: function (axis, side) {
-                            documentFlow.navigateDocumentBoundary(blockHost.blockIndex, axis, side)
-                        }
                         onEnterExitRequested: function (blockData) {
                             documentFlow.exitCallout(blockData)
                         }
                         onTextChanged: function (text, cursorPosition) {
                             documentFlow.updateCalloutText(blockHost.blockEntry, text, cursorPosition)
                         }
-                    }
-                }
-
-                Component {
-                    id: breakBlockDelegate
-
-                    ContentsBreakBlock {
-                        blockData: blockHost.blockEntry
-                        width: blockHost.width
-
-                        onActivated: documentFlow.noteActiveBlockInteraction(blockHost.blockIndex)
-                        onBlockDeletionRequested: documentFlow.deleteBlock(blockHost.blockEntry)
-                        onBoundaryNavigationRequested: function (axis, side) {
-                            documentFlow.navigateDocumentBoundary(blockHost.blockIndex, axis, side)
-                        }
-                        onDocumentEndEditRequested: documentFlow.requestDocumentEndEdit()
-                    }
-                }
-
-                Component {
-                    id: resourceBlockDelegate
-
-                    ContentsResourceBlock {
-                        blockData: blockHost.blockEntry
-                        hasAdjacentBlockAfter: documentFlow.adjacentBlockIndex(blockHost.blockIndex, "after") >= 0
-                        hasAdjacentBlockBefore: documentFlow.adjacentBlockIndex(blockHost.blockIndex, "before") >= 0
-                        resourceEntry: documentFlow.resourceEntryForBlock(blockHost.blockEntry)
-                        width: blockHost.width
-
-                        onActivated: documentFlow.noteActiveBlockInteraction(blockHost.blockIndex)
-                        onAdjacentPlainTextInsertionRequested: function (side, text, cursorPosition) {
-                            documentFlow.insertPlainTextAdjacentToBlock(
-                                        blockHost.blockEntry,
-                                        side,
-                                        text,
-                                        cursorPosition)
-                        }
-                        onBoundaryNavigationRequested: function (axis, side) {
-                            documentFlow.navigateDocumentBoundary(blockHost.blockIndex, axis, side)
-                        }
-                        onBlockDeletionRequested: documentFlow.deleteBlock(blockHost.blockEntry)
-                        onDocumentEndEditRequested: documentFlow.requestDocumentEndEdit()
                     }
                 }
             }

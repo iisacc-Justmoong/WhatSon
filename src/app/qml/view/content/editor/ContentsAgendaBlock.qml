@@ -19,6 +19,11 @@ FocusScope {
     readonly property var normalizedBlock: blockData && typeof blockData === "object" ? blockData : ({})
     readonly property int currentLogicalLineNumber: agendaBlock.currentFocusedTaskLineNumber()
     readonly property bool focused: agendaBlock.activeFocus || agendaBlock.hasFocusedTaskRow()
+    readonly property bool textEditable: true
+    readonly property bool atomicBlock: false
+    readonly property bool gutterCollapsed: false
+    readonly property string minimapVisualKind: "text"
+    readonly property int minimapRepresentativeCharCount: 0
     readonly property var tasks: {
         const rawTasks = normalizedBlock.tasks
         if (Array.isArray(rawTasks))
@@ -67,6 +72,33 @@ FocusScope {
                     "contentHeight": Math.max(1, Math.round(LV.Theme.scaleMetric(12))),
                     "contentY": 0
                 })
+    }
+
+    function currentVisiblePlainText() {
+        const lines = []
+        for (let index = 0; index < taskRepeater.count; ++index) {
+            const item = taskRepeater.itemAt(index)
+            if (item && item.currentEditorPlainText !== undefined) {
+                lines.push(String(item.currentEditorPlainText() || ""))
+                continue
+            }
+            const taskData = agendaBlock.tasks[index] && typeof agendaBlock.tasks[index] === "object"
+                    ? agendaBlock.tasks[index]
+                    : ({})
+            lines.push(StructuredCursorSupport.normalizedPlainText(String(taskData.text || "")))
+        }
+        if (lines.length === 0)
+            lines.push("")
+        return lines.join("\n")
+    }
+
+    function visiblePlainText() {
+        return agendaBlock.currentVisiblePlainText()
+    }
+
+    function representativeCharCount(lineText) {
+        const normalizedLineText = lineText === undefined || lineText === null ? "" : String(lineText)
+        return Math.max(0, normalizedLineText.length)
     }
 
     function focusLastTask() {

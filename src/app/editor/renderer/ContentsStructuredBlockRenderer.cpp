@@ -47,6 +47,70 @@ namespace
         return std::clamp(index, 0, static_cast<int>(text.size()));
     }
 
+    QString resolvedDocumentBlockTypeName(const QString& normalizedTypeName)
+    {
+        return normalizedTypeName.isEmpty() ? QStringLiteral("text") : normalizedTypeName;
+    }
+
+    bool isAtomicDocumentBlockType(const QString& normalizedTypeName)
+    {
+        const QString resolvedTypeName = resolvedDocumentBlockTypeName(normalizedTypeName);
+        return resolvedTypeName == QStringLiteral("resource")
+            || resolvedTypeName == QStringLiteral("break");
+    }
+
+    QString minimapVisualKindForDocumentBlockType(const QString& normalizedTypeName)
+    {
+        return resolvedDocumentBlockTypeName(normalizedTypeName) == QStringLiteral("resource")
+            ? QStringLiteral("block")
+            : QStringLiteral("text");
+    }
+
+    int minimapRepresentativeCharCountForDocumentBlockType(const QString& normalizedTypeName)
+    {
+        const QString resolvedTypeName = resolvedDocumentBlockTypeName(normalizedTypeName);
+        if (resolvedTypeName == QStringLiteral("resource"))
+        {
+            return 160;
+        }
+        if (resolvedTypeName == QStringLiteral("break"))
+        {
+            return 8;
+        }
+        return 0;
+    }
+
+    int logicalLineCountHintForPlainText(const QString& plainText)
+    {
+        return std::max(1, plainText.count(QLatin1Char('\n')) + 1);
+    }
+
+    void applyDocumentBlockTraits(
+        QVariantMap* payload,
+        const QString& normalizedTypeName,
+        const QString& plainText)
+    {
+        if (payload == nullptr)
+        {
+            return;
+        }
+
+        const bool atomicBlock = isAtomicDocumentBlockType(normalizedTypeName);
+        payload->insert(QStringLiteral("plainText"), plainText);
+        payload->insert(QStringLiteral("textEditable"), !atomicBlock);
+        payload->insert(QStringLiteral("atomicBlock"), atomicBlock);
+        payload->insert(QStringLiteral("gutterCollapsed"), atomicBlock);
+        payload->insert(
+            QStringLiteral("minimapVisualKind"),
+            minimapVisualKindForDocumentBlockType(normalizedTypeName));
+        payload->insert(
+            QStringLiteral("minimapRepresentativeCharCount"),
+            minimapRepresentativeCharCountForDocumentBlockType(normalizedTypeName));
+        payload->insert(
+            QStringLiteral("logicalLineCountHint"),
+            logicalLineCountHintForPlainText(plainText));
+    }
+
     QVariantMap documentBlockPayload(
         const QString& sourceText,
         const int sourceStart,
@@ -58,16 +122,16 @@ namespace
         const int boundedEnd = boundedTextIndex(sourceText, std::max(boundedStart, sourceEnd));
         const QString normalizedTypeName = typeName.trimmed().toCaseFolded();
         const QString normalizedTagName = tagName.trimmed().toCaseFolded();
+        const QString resolvedTypeName = resolvedDocumentBlockTypeName(normalizedTypeName);
+        const QString blockSourceText = sourceText.mid(boundedStart, boundedEnd - boundedStart);
 
         QVariantMap payload;
         payload.insert(
             QStringLiteral("type"),
-            normalizedTypeName.isEmpty() ? QStringLiteral("text") : normalizedTypeName);
+            resolvedTypeName);
         payload.insert(QStringLiteral("sourceStart"), boundedStart);
         payload.insert(QStringLiteral("sourceEnd"), boundedEnd);
-        payload.insert(
-            QStringLiteral("sourceText"),
-            sourceText.mid(boundedStart, boundedEnd - boundedStart));
+        payload.insert(QStringLiteral("sourceText"), blockSourceText);
         if (!normalizedTypeName.isEmpty())
         {
             payload.insert(QStringLiteral("explicitBlock"), true);
@@ -79,6 +143,10 @@ namespace
                 payload.insert(QStringLiteral("semanticTagName"), normalizedTypeName);
             }
         }
+        applyDocumentBlockTraits(
+            &payload,
+            resolvedTypeName,
+            isAtomicDocumentBlockType(resolvedTypeName) ? QString() : blockSourceText);
         return payload;
     }
 

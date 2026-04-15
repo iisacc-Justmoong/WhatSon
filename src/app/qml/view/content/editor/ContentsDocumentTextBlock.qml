@@ -18,7 +18,11 @@ FocusScope {
     readonly property var normalizedBlock: blockData && typeof blockData === "object" ? blockData : ({})
     readonly property int currentLogicalLineNumber: textBlock.currentEditorLogicalLineNumber()
     readonly property bool focused: blockEditor.focused
-    readonly property bool hasInlineStyleMarkup: /<\s*\/?\s*(bold|italic|underline|strikethrough|highlight)\b/i.test(textBlock.sourceText)
+    readonly property bool textEditable: true
+    readonly property bool atomicBlock: false
+    readonly property bool gutterCollapsed: false
+    readonly property string minimapVisualKind: "text"
+    readonly property int minimapRepresentativeCharCount: 0
     property bool hasAdjacentAtomicBlockAfter: false
     property bool hasAdjacentAtomicBlockBefore: false
     property bool hasAdjacentBlockAfter: false
@@ -26,21 +30,32 @@ FocusScope {
     readonly property int sourceStart: Math.max(0, Number(normalizedBlock.sourceStart) || 0)
     readonly property int sourceEnd: Math.max(sourceStart, Number(normalizedBlock.sourceEnd) || 0)
     readonly property string sourceText: normalizedBlock.sourceText !== undefined ? String(normalizedBlock.sourceText) : ""
+    readonly property string authoritativePlainText: StructuredCursorSupport.plainTextFromInlineTaggedSource(
+                                                        textBlock.authoritativeSourceText())
 
     implicitHeight: blockEditor.implicitHeight
     width: parent ? parent.width : implicitWidth
 
-    function authoritativePlainText() {
-        return StructuredCursorSupport.plainTextFromInlineTaggedSource(textBlock.sourceText)
+    function authoritativeSourceText() {
+        return StructuredCursorSupport.normalizedPlainText(textBlock.sourceText)
+    }
+
+    function visiblePlainText() {
+        return textBlock.currentEditorPlainText()
+    }
+
+    function representativeCharCount(lineText) {
+        const normalizedLineText = lineText === undefined || lineText === null ? "" : String(lineText)
+        return Math.max(0, normalizedLineText.length)
     }
 
     function currentEditorPlainText() {
         if (!blockEditor)
-            return textBlock.authoritativePlainText()
+            return textBlock.authoritativePlainText
         if (blockEditor.currentPlainText !== undefined)
             return StructuredCursorSupport.normalizedPlainText(blockEditor.currentPlainText())
         if (blockEditor.getText === undefined)
-            return textBlock.authoritativePlainText()
+            return textBlock.authoritativePlainText
         const editorLength = blockEditor.length !== undefined
                 ? Math.max(0, Number(blockEditor.length) || 0)
                 : 0
@@ -48,8 +63,8 @@ FocusScope {
     }
 
     function logicalLineLayoutEntries() {
-        const plainText = textBlock.currentEditorPlainText()
-        const logicalLines = plainText.length > 0 ? plainText.split("\n") : [""]
+        const plainTextValue = textBlock.currentEditorPlainText()
+        const logicalLines = plainTextValue.length > 0 ? plainTextValue.split("\n") : [""]
         const editorItem = blockEditor && blockEditor.editorItem ? blockEditor.editorItem : null
         const blockHeight = Math.max(
                     1,
@@ -76,8 +91,8 @@ FocusScope {
                         ? Number(startRect.height) || 0
                         : 0)
             const nextLineStartOffset = index + 1 < logicalLines.length
-                    ? Math.min(plainText.length, lineStartOffset + lineText.length + 1)
-                    : plainText.length
+                    ? Math.min(plainTextValue.length, lineStartOffset + lineText.length + 1)
+                    : plainTextValue.length
             let endY = Math.max(startY + startHeight, blockHeight)
             if (index + 1 < logicalLines.length) {
                 const nextRect = editorItem && editorItem.positionToRectangle !== undefined
@@ -101,15 +116,15 @@ FocusScope {
     }
 
     function currentEditorLogicalLineNumber() {
-        const plainText = textBlock.currentEditorPlainText()
+        const plainTextValue = textBlock.currentEditorPlainText()
         const cursorPosition = Math.max(
                     0,
                     Math.min(
-                        plainText.length,
+                        plainTextValue.length,
                         Number(blockEditor && blockEditor.cursorPosition !== undefined ? blockEditor.cursorPosition : 0) || 0))
         let lineNumber = 1
         for (let index = 0; index < cursorPosition; ++index) {
-            if (plainText.charAt(index) === "\n")
+            if (plainTextValue.charAt(index) === "\n")
                 lineNumber += 1
         }
         return Math.max(1, lineNumber)
@@ -117,11 +132,11 @@ FocusScope {
 
     function currentCursorRowRect() {
         const editorItem = blockEditor && blockEditor.editorItem ? blockEditor.editorItem : null
-        const plainText = textBlock.currentEditorPlainText()
+        const plainTextValue = textBlock.currentEditorPlainText()
         const cursorPosition = Math.max(
                     0,
                     Math.min(
-                        plainText.length,
+                        plainTextValue.length,
                         Number(blockEditor && blockEditor.cursorPosition !== undefined ? blockEditor.cursorPosition : 0) || 0))
         if (!editorItem || editorItem.positionToRectangle === undefined)
             return ({
@@ -206,6 +221,22 @@ FocusScope {
         }
     }
 
+    function adjustedCursorPositionForSelectionMutation(selectionSnapshot, previousSelectionStart, previousSelectionEnd, nextSelectionStart, nextSelectionEnd) {
+        const boundedPreviousCursor = Math.max(
+                    previousSelectionStart,
+                    Math.min(
+                        previousSelectionEnd,
+                        Math.floor(Number(selectionSnapshot && selectionSnapshot.cursorPosition !== undefined
+                                          ? selectionSnapshot.cursorPosition
+                                          : previousSelectionEnd) || previousSelectionEnd)))
+        const relativeOffset = Math.max(0, boundedPreviousCursor - previousSelectionStart)
+        return Math.max(
+                    nextSelectionStart,
+                    Math.min(
+                        nextSelectionEnd,
+                        nextSelectionStart + relativeOffset))
+    }
+
     function focusEditor(cursorPosition) {
         blockEditor.forceActiveFocus()
         const numericCursorPosition = Number(cursorPosition)
@@ -252,9 +283,9 @@ FocusScope {
         if (sourceOffset < textBlock.sourceStart || sourceOffset > textBlock.sourceEnd)
             return false
 
-        const resolvedCursorPosition = StructuredCursorSupport.plainCursorForInlineTaggedSourceOffset(
-                    textBlock.sourceText,
-                    Math.floor(sourceOffset - textBlock.sourceStart))
+        const resolvedCursorPosition = Math.max(0, StructuredCursorSupport.plainCursorForInlineTaggedSourceOffset(
+                                                    textBlock.authoritativeSourceText(),
+                                                    Math.floor(sourceOffset - textBlock.sourceStart)))
         textBlock.focusEditor(resolvedCursorPosition)
         if (isFinite(selectionStart) && isFinite(selectionEnd) && selectionEnd > selectionStart)
             textBlock.restoreEditorSelection(selectionStart, selectionEnd, resolvedCursorPosition)
@@ -265,37 +296,38 @@ FocusScope {
         const normalizedTagName = textBlock.normalizeInlineStyleTag(tagName)
         if (normalizedTagName.length === 0)
             return false
-        if (!blockRenderer || blockRenderer.applyInlineStyleToLogicalSelectionSource === undefined)
-            return false
         const selectionSnapshot = explicitSelectionSnapshot && typeof explicitSelectionSnapshot === "object"
                 ? explicitSelectionSnapshot
                 : textBlock.inlineFormatSelectionSnapshot()
-        const plainText = textBlock.currentEditorPlainText()
-        const selectionStart = Math.max(0, Math.min(plainText.length, Math.floor(Number(selectionSnapshot.selectionStart) || 0)))
-        const selectionEnd = Math.max(selectionStart, Math.min(plainText.length, Math.floor(Number(selectionSnapshot.selectionEnd) || 0)))
+        const currentSourceText = textBlock.authoritativeSourceText()
+        const currentPlainText = textBlock.authoritativePlainText
+        const selectionStart = Math.max(0, Math.min(currentPlainText.length, Math.floor(Number(selectionSnapshot.selectionStart) || 0)))
+        const selectionEnd = Math.max(selectionStart, Math.min(currentPlainText.length, Math.floor(Number(selectionSnapshot.selectionEnd) || 0)))
         if (selectionEnd <= selectionStart)
             return false
-        const nextBlockSourceText = blockRenderer.applyInlineStyleToLogicalSelectionSource(
-                    textBlock.sourceText,
+        if (!inlineStyleRenderer || inlineStyleRenderer.applyInlineStyleToLogicalSelectionSource === undefined)
+            return false
+        const nextSourceText = String(inlineStyleRenderer.applyInlineStyleToLogicalSelectionSource(
+                    currentSourceText,
                     selectionStart,
                     selectionEnd,
-                    normalizedTagName)
-        if (nextBlockSourceText === undefined || nextBlockSourceText === null)
+                    normalizedTagName))
+        if (nextSourceText === currentSourceText)
             return false
-        const normalizedNextBlockSourceText = String(nextBlockSourceText)
-        const cursorPosition = Math.max(
+        const cursorPosition = textBlock.adjustedCursorPositionForSelectionMutation(
+                    selectionSnapshot,
                     selectionStart,
-                    Math.min(
-                        selectionEnd,
-                        Math.floor(Number(selectionSnapshot.cursorPosition) || selectionEnd)))
+                    selectionEnd,
+                    selectionStart,
+                    selectionEnd)
         textBlock.sourceMutationRequested(
-                    normalizedNextBlockSourceText,
+                    nextSourceText,
                     {
                         "localCursorPosition": cursorPosition,
                         "selectionEnd": selectionEnd,
                         "selectionStart": selectionStart,
                         "sourceOffset": StructuredCursorSupport.sourceOffsetForInlineTaggedCursor(
-                                            normalizedNextBlockSourceText,
+                                            nextSourceText,
                                             cursorPosition,
                                             textBlock.sourceStart)
                     })
@@ -377,16 +409,18 @@ FocusScope {
     }
 
     function shortcutInsertionSourceOffset() {
-        return StructuredCursorSupport.sourceOffsetForInlineTaggedCursor(
-                    textBlock.sourceText,
-                    Number(blockEditor.cursorPosition) || 0,
-                    textBlock.sourceStart)
+        return Math.max(textBlock.sourceStart, Math.min(
+                            textBlock.sourceEnd,
+                            StructuredCursorSupport.sourceOffsetForInlineTaggedCursor(
+                                textBlock.authoritativeSourceText(),
+                                Number(blockEditor.cursorPosition) || 0,
+                                textBlock.sourceStart)))
     }
 
     ContentsTextFormatRenderer {
-        id: blockRenderer
+        id: inlineStyleRenderer
 
-        sourceText: textBlock.sourceText
+        sourceText: textBlock.authoritativeSourceText()
     }
 
     ContentsInlineFormatEditor {
@@ -408,18 +442,17 @@ FocusScope {
         insetHorizontal: 0
         insetVertical: 0
         placeholderText: ""
-        renderedText: textBlock.hasInlineStyleMarkup ? String(blockRenderer.editorSurfaceHtml || "") : ""
         selectByMouse: true
         selectedTextColor: LV.Theme.textPrimary
         selectionColor: LV.Theme.accent
-        showRenderedOutput: textBlock.hasInlineStyleMarkup
+        showRenderedOutput: false
         showScrollBar: false
         shortcutKeyPressHandler: function (event) {
             return textBlock.handleAtomicBlockBoundaryKeyPress(event)
         }
-        text: textBlock.authoritativePlainText()
+        text: inlineStyleRenderer.editorSurfaceHtml
         textColor: LV.Theme.bodyColor
-        textFormat: TextEdit.PlainText
+        textFormat: TextEdit.RichText
         wrapMode: TextEdit.Wrap
 
         onFocusedChanged: {
@@ -431,43 +464,37 @@ FocusScope {
                 textBlock.activated()
         }
         onTextEdited: function (_surfaceText) {
-            // Live typing mutates RAW block source spans only; the RichText surface is presentation input, not source authority.
-            const previousPlainText = textBlock.authoritativePlainText()
+            const previousSourceText = textBlock.authoritativeSourceText()
+            const previousPlainText = textBlock.authoritativePlainText
             const nextPlainText = textBlock.currentEditorPlainText()
             if (previousPlainText === nextPlainText)
                 return
-
+            if (!inlineStyleRenderer || inlineStyleRenderer.applyPlainTextReplacementToSource === undefined)
+                return
             const replacementDelta = textBlock.computePlainTextReplacementDelta(previousPlainText, nextPlainText)
             if (!replacementDelta.valid)
                 return
-
-            const collapsedInsertion = replacementDelta.previousEnd === replacementDelta.start
-            const replacementSourceStart = collapsedInsertion
-                    ? StructuredCursorSupport.sourceOffsetForInlineTaggedCursor(
-                        textBlock.sourceText,
+            const replacementSourceStart = StructuredCursorSupport.sourceOffsetForInlineTaggedSelectionBoundary(
+                        previousSourceText,
                         replacementDelta.start,
                         0)
-                    : StructuredCursorSupport.sourceOffsetForInlineTaggedSelectionBoundary(
-                        textBlock.sourceText,
-                        replacementDelta.start,
-                        0)
-            const replacementSourceEnd = collapsedInsertion
-                    ? replacementSourceStart
-                    : StructuredCursorSupport.sourceOffsetForInlineTaggedSelectionBoundary(
-                        textBlock.sourceText,
+            const replacementSourceEnd = StructuredCursorSupport.sourceOffsetForInlineTaggedSelectionBoundary(
+                        previousSourceText,
                         replacementDelta.previousEnd,
                         0)
-            const nextBlockSourceText = blockRenderer.applyPlainTextReplacementToSource(
-                        textBlock.sourceText,
-                        replacementSourceStart,
-                        replacementSourceEnd,
-                        replacementDelta.insertedText)
+            const nextSourceText = String(inlineStyleRenderer.applyPlainTextReplacementToSource(
+                                              previousSourceText,
+                                              replacementSourceStart,
+                                              replacementSourceEnd,
+                                              replacementDelta.insertedText))
+            if (nextSourceText === previousSourceText)
+                return
             textBlock.sourceMutationRequested(
-                        nextBlockSourceText,
+                        nextSourceText,
                         {
                             "sourceOffset": StructuredCursorSupport.sourceOffsetForInlineTaggedCursor(
-                                                nextBlockSourceText,
-                                                Number(blockEditor.cursorPosition) || 0,
+                                                nextSourceText,
+                                                Math.max(0, Number(blockEditor.cursorPosition) || 0),
                                                 textBlock.sourceStart)
                         })
         }

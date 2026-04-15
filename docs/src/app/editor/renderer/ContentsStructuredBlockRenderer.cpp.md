@@ -24,6 +24,9 @@ Builds canonical structured render data from `.wsnbody` source text.
   relying on one monolithic pre-resource text fragment.
 - Each explicit block, including semantic text-tag blocks, now carries parser-owned source geometry so QML can rewrite
   RAW in place.
+- The renderer now also preserves the parser's generic block-trait payload (`plainText`, `textEditable`,
+  `atomicBlock`, `gutterCollapsed`, `logicalLineCountHint`, `minimapVisualKind`,
+  `minimapRepresentativeCharCount`) instead of forcing QML to rediscover those traits from block type names.
 - Explicit blocks now also carry one normalized `tagName` alongside `type`, so downstream QML sees the same
   document-block identity contract regardless of which supported tag family produced the span.
 - Semantic text-tag blocks additionally split wrapper span from editable content span:
@@ -52,6 +55,8 @@ Builds canonical structured render data from `.wsnbody` source text.
 - The renderer still keeps tiny local fast-path helpers for that background gate and placeholder publish path:
   case-insensitive tag probes (`mayContainAgendaBlock`, `mayContainCalloutBlock`, `mayContainResourceBlock`,
   `mayContainBreakBlock`) plus a minimal `documentBlockPayload(...)` builder for the temporary plain-text placeholder.
+  That placeholder builder now mirrors the same generic block-trait shape as the parser result, so empty/initial
+  structured hosts do not fall back to a different payload contract.
   Those helpers are intentionally local renderer utilities; they do not reintroduce the old multi-backend parse path.
 - Async render results are sequence-checked before apply so stale note-open parses cannot overwrite newer source text
   after selection changes or live edits.

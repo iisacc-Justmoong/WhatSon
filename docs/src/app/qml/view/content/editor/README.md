@@ -7,7 +7,7 @@
 ## Scope
 - Mirrored source directory: `src/app/qml/view/content/editor`
 - Child directories: 0
-- Child files: 19
+- Child files: 20
 
 ## Child Directories
 - No child directories.
@@ -19,6 +19,7 @@
 - `ContentsCalloutLayer.qml`
 - `ContentsCalloutBlock.qml`
 - `ContentsDisplayView.qml`
+- `ContentsDocumentBlock.qml`
 - `ContentsDocumentTextBlock.qml`
 - `ContentsEditorSelectionController.qml`
 - `ContentsEditorSession.qml`
@@ -53,6 +54,18 @@
   hosts no longer swap the whole editor surface into a dedicated resource viewer.
 - Resource-bearing note bodies now activate `ContentsStructuredDocumentFlow.qml` so `<resource ... />` stays in the
   same authored block stream as surrounding text.
+- `ContentsStructuredDocumentFlow.qml` now mounts one generic `ContentsDocumentBlock.qml` delegate per parsed block
+  instead of branching directly to block-type-specific delegates in the repeater host.
+- Parser payloads and mounted block delegates now share one block contract:
+  `plainText`, `textEditable`, `atomicBlock`, `gutterCollapsed`, `logicalLineCountHint`,
+  `minimapVisualKind`, and `minimapRepresentativeCharCount`.
+  Gutter, minimap, current-line focus, and nearest-editable-block resolution now consume that shared contract rather
+  than branching on block type names inside the flow host.
+- `ContentsDocumentTextBlock.qml` no longer uses an HTML overlay for inline formatting preview.
+  Structured paragraph editing now happens directly against RAW block source text.
+- `ContentsResourceBlock.qml` no longer keeps a resource-local `before/selected/after` boundary-editor state machine.
+  Resource rows now behave as plain atomic document blocks that emit selection, deletion, and boundary-navigation
+  requests back to the flow host.
 - Block-boundary keyboard navigation is now being consolidated under `ContentsStructuredDocumentFlow.qml` itself.
   Text/resource/break/callout/agenda delegates are expected to emit generic boundary-navigation requests and let the
   flow resolve the immediately adjacent parsed block from the `.wsnbody` stream rather than hardcoding neighbor lookup

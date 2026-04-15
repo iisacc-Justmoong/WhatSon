@@ -2,7 +2,6 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import LVRS 1.0 as LV
-import "ContentsStructuredCursorSupport.js" as StructuredCursorSupport
 
 FocusScope {
     id: resourceBlock
@@ -11,20 +10,19 @@ FocusScope {
     property var resourceEntry: ({})
 
     signal activated()
-    signal adjacentPlainTextInsertionRequested(string side, string text, int cursorPosition)
     signal boundaryNavigationRequested(string axis, string side)
     signal blockDeletionRequested()
     signal documentEndEditRequested()
 
     readonly property var normalizedBlock: blockData && typeof blockData === "object" ? blockData : ({})
     readonly property var normalizedResourceEntry: resourceEntry && typeof resourceEntry === "object" ? resourceEntry : ({})
-    readonly property real boundaryEditorHeight: Math.max(Math.round(LV.Theme.scaleMetric(18)), Math.round(LV.Theme.scaleMetric(12)))
-    readonly property real boundaryEditorInset: Math.max(0, Math.round(LV.Theme.scaleMetric(6)))
-    readonly property real boundaryEditorWidth: Math.max(Math.round(LV.Theme.scaleMetric(24)), Math.round(LV.Theme.scaleMetric(18)))
-    readonly property real boundaryCaretLaneWidth: Math.max(
-                                                       boundaryEditorWidth + boundaryEditorInset * 2,
-                                                       Math.round(LV.Theme.scaleMetric(18)))
-    readonly property bool focused: resourceBlock.activeFocus || beforeBoundaryEditor.focused || afterBoundaryEditor.focused
+    readonly property bool focused: resourceBlock.activeFocus
+    readonly property int currentLogicalLineNumber: 1
+    readonly property bool textEditable: false
+    readonly property bool atomicBlock: true
+    readonly property bool gutterCollapsed: true
+    readonly property string minimapVisualKind: "block"
+    readonly property int minimapRepresentativeCharCount: 160
     readonly property int sourceStart: Math.max(0, Number(normalizedBlock.sourceStart) || 0)
     readonly property int sourceEnd: Math.max(sourceStart, Number(normalizedBlock.sourceEnd) || 0)
     readonly property int focusSourceOffset: Math.max(
@@ -103,69 +101,16 @@ FocusScope {
 
         return mergedEntry
     }
-    property string interactionMode: "selected"
-    readonly property bool afterBoundaryActive: resourceBlock.interactionMode === "after"
-    readonly property bool beforeBoundaryActive: resourceBlock.interactionMode === "before"
-    readonly property bool blockSelected: resourceBlock.interactionMode === "selected"
-    readonly property bool blockFocusedVisual: resourceBlock.blockSelected
-                                              || resourceBlock.beforeBoundaryActive
-                                              || resourceBlock.afterBoundaryActive
-    property bool hasAdjacentBlockAfter: false
-    property bool hasAdjacentBlockBefore: false
 
     implicitHeight: resourceCard.implicitHeight
     width: parent ? parent.width : implicitWidth
 
-    function normalizedInteractionMode(mode) {
-        const normalizedMode = mode === undefined || mode === null ? "" : String(mode).trim().toLowerCase()
-        if (normalizedMode === "before" || normalizedMode === "selected" || normalizedMode === "after")
-            return normalizedMode
-        return "selected"
-    }
-
-    function explicitRequestedInteractionMode(request) {
-        const safeRequest = request && typeof request === "object" ? request : ({})
-        if (safeRequest.interactionMode === undefined || safeRequest.interactionMode === null)
-            return ""
-        const requestedMode = String(safeRequest.interactionMode).trim().toLowerCase()
-        if (requestedMode === "before" || requestedMode === "after" || requestedMode === "selected")
-            return requestedMode
-        return ""
-    }
-
-    function setInteractionMode(mode) {
-        const normalizedMode = resourceBlock.normalizedInteractionMode(mode)
-        if (resourceBlock.interactionMode !== normalizedMode)
-            resourceBlock.interactionMode = normalizedMode
-    }
-
-    function activateBoundaryEditor(mode) {
-        const normalizedMode = resourceBlock.normalizedInteractionMode(mode)
-        resourceBlock.setInteractionMode(normalizedMode)
-        resourceBlock.forceActiveFocus()
-        resourceBlock.activated()
-        Qt.callLater(function () {
-            if (normalizedMode === "before") {
-                beforeBoundaryEditor.forceActiveFocus()
-                return
-            }
-            if (normalizedMode === "after") {
-                afterBoundaryEditor.forceActiveFocus()
-                return
-            }
-            resourceBlock.forceActiveFocus()
-        })
-    }
-
     function selectResourceBlock() {
-        resourceBlock.setInteractionMode("selected")
         resourceBlock.forceActiveFocus()
         resourceBlock.activated()
     }
 
     function deleteSelectedBlock() {
-        if (!resourceBlock.blockSelected)
-            return false
         resourceBlock.blockDeletionRequested()
         return true
     }
@@ -173,7 +118,7 @@ FocusScope {
     function handleDeleteKeyPress(event) {
         if (!event)
             return false
-        if ((event.key === Qt.Key_Backspace || event.key === Qt.Key_Delete) && resourceBlock.blockSelected) {
+        if (event.key === Qt.Key_Backspace || event.key === Qt.Key_Delete) {
             if (resourceBlock.deleteSelectedBlock()) {
                 event.accepted = true
                 return true
@@ -182,116 +127,54 @@ FocusScope {
         return false
     }
 
-    function handleBoundaryEditorShortcut(mode, event) {
-        if (!event)
-            return false
-        const normalizedMode = resourceBlock.normalizedInteractionMode(mode)
-        const modifiers = Number(event.modifiers) || 0
-        if ((modifiers & (Qt.ControlModifier | Qt.AltModifier | Qt.MetaModifier)) !== 0)
-            return false
-        if (normalizedMode === "before") {
-            if (event.key === Qt.Key_Delete) {
-                resourceBlock.blockDeletionRequested()
-                event.accepted = true
-                return true
-            }
-            if (event.key === Qt.Key_Up) {
-                resourceBlock.boundaryNavigationRequested("vertical", "before")
-                event.accepted = true
-                return true
-            }
-            if (event.key === Qt.Key_Down) {
-                resourceBlock.boundaryNavigationRequested("vertical", "after")
-                event.accepted = true
-                return true
-            }
-            if (event.key === Qt.Key_Right) {
-                resourceBlock.selectResourceBlock()
-                event.accepted = true
-                return true
-            }
-            if (event.key === Qt.Key_Left) {
-                resourceBlock.boundaryNavigationRequested("horizontal", "before")
-                event.accepted = true
-                return true
-            }
-            return false
-        }
-        if (normalizedMode === "after") {
-            if (event.key === Qt.Key_Backspace) {
-                resourceBlock.blockDeletionRequested()
-                event.accepted = true
-                return true
-            }
-            if (event.key === Qt.Key_Up) {
-                resourceBlock.boundaryNavigationRequested("vertical", "before")
-                event.accepted = true
-                return true
-            }
-            if (event.key === Qt.Key_Down) {
-                resourceBlock.boundaryNavigationRequested("vertical", "after")
-                event.accepted = true
-                return true
-            }
-            if (event.key === Qt.Key_Left) {
-                resourceBlock.selectResourceBlock()
-                event.accepted = true
-                return true
-            }
-            if (event.key === Qt.Key_Right) {
-                resourceBlock.boundaryNavigationRequested("horizontal", "after")
-                event.accepted = true
-                return true
-            }
-            return false
-        }
-        return false
-    }
-
-    function tapInteractionMode(localX) {
-        const blockWidth = Math.max(1, Number(resourceBlock.width) || Number(resourceCard.width) || 1)
-        const normalizedX = Math.max(0, Math.min(blockWidth, Number(localX) || 0))
-        if (normalizedX <= resourceBlock.boundaryCaretLaneWidth)
-            return "before"
-        if (normalizedX >= blockWidth - resourceBlock.boundaryCaretLaneWidth)
-            return "after"
-        return "selected"
-    }
-
-    function commitBoundaryPlainText(mode, text, cursorPosition) {
-        const normalizedText = StructuredCursorSupport.normalizedPlainText(text)
-        if (normalizedText.length === 0)
-            return false
-        resourceBlock.adjacentPlainTextInsertionRequested(
-                    resourceBlock.normalizedInteractionMode(mode),
-                    normalizedText,
-                    Math.max(0, Math.floor(Number(cursorPosition) || 0)))
-        return true
-    }
-
     function applyFocusRequest(request) {
         const safeRequest = request && typeof request === "object" ? request : ({})
         const sourceOffset = Number(safeRequest.sourceOffset)
-        const requestedInteractionMode = resourceBlock.explicitRequestedInteractionMode(safeRequest)
         if (!isFinite(sourceOffset))
             return false
         if (sourceOffset < resourceBlock.sourceStart || sourceOffset > resourceBlock.sourceEnd)
             return false
-        if (requestedInteractionMode === "before") {
-            resourceBlock.activateBoundaryEditor("before")
-            return true
-        }
-        if (requestedInteractionMode === "after") {
-            resourceBlock.activateBoundaryEditor("after")
-            return true
-        }
         resourceBlock.selectResourceBlock()
         return true
     }
 
+    function logicalLineLayoutEntries() {
+        const mappedOrigin = resourceCard.mapToItem !== undefined
+                ? resourceCard.mapToItem(resourceBlock, 0, 0)
+                : ({ "x": 0, "y": 0 })
+        return [{
+                    "contentHeight": Math.max(
+                                         1,
+                                         Number(resourceCard.implicitHeight) || Number(resourceCard.height) || Math.round(LV.Theme.scaleMetric(12))),
+                    "contentY": Math.max(0, Number(mappedOrigin.y) || 0)
+                }]
+    }
+
+    function visiblePlainText() {
+        return ""
+    }
+
+    function representativeCharCount(lineText) {
+        const normalizedLineText = lineText === undefined || lineText === null ? "" : String(lineText)
+        if (normalizedLineText.length > 0)
+            return normalizedLineText.length
+        const resourceLabel = resourceBlock.blockResourceId.length > 0
+                ? resourceBlock.blockResourceId
+                : (resourceBlock.blockResourcePath.length > 0 ? resourceBlock.blockResourcePath : "resource")
+        return Math.max(12, resourceLabel.length)
+    }
+
+    function currentCursorRowRect() {
+        const entries = resourceBlock.logicalLineLayoutEntries()
+        if (entries.length > 0)
+            return entries[0]
+        return ({
+                    "contentHeight": Math.max(1, Math.round(LV.Theme.scaleMetric(12))),
+                    "contentY": 0
+                })
+    }
+
     function shortcutInsertionSourceOffset() {
-        if (resourceBlock.beforeBoundaryActive)
-            return resourceBlock.sourceStart
         return resourceBlock.focusSourceOffset
     }
 
@@ -308,131 +191,11 @@ FocusScope {
     Rectangle {
         anchors.fill: resourceCard
         border.color: LV.Theme.panelBackground10
-        border.width: resourceBlock.blockSelected ? Math.max(1, Math.round(LV.Theme.strokeThin)) : 0
+        border.width: resourceBlock.focused ? Math.max(1, Math.round(LV.Theme.strokeThin)) : 0
         color: "transparent"
         radius: Math.max(Math.round(LV.Theme.scaleMetric(12)), Number(resourceCard.radius) || 0)
-        visible: resourceBlock.blockFocusedVisual
+        visible: resourceBlock.focused
         z: 2
-    }
-
-    ContentsInlineFormatEditor {
-        id: beforeBoundaryEditor
-
-        anchors.left: parent.left
-        anchors.leftMargin: resourceBlock.boundaryEditorInset
-        anchors.verticalCenter: resourceCard.verticalCenter
-        autoFocusOnPress: false
-        backgroundColor: "transparent"
-        backgroundColorDisabled: "transparent"
-        backgroundColorFocused: "transparent"
-        backgroundColorHover: "transparent"
-        backgroundColorPressed: "transparent"
-        centeredTextHeight: Math.max(0, Math.round(LV.Theme.scaleMetric(12)))
-        cornerRadius: 0
-        cursorVisibleWhenFocused: true
-        fieldMinHeight: resourceBlock.boundaryEditorHeight
-        fontFamily: LV.Theme.fontBody
-        fontPixelSize: Math.max(0, Math.round(LV.Theme.scaleMetric(12)))
-        fontWeight: Font.Medium
-        height: resourceBlock.boundaryEditorHeight
-        insetHorizontal: 0
-        insetVertical: 0
-        placeholderText: ""
-        selectByMouse: false
-        selectedTextColor: LV.Theme.textPrimary
-        selectionColor: LV.Theme.accent
-        showRenderedOutput: false
-        showScrollBar: false
-        shortcutKeyPressHandler: function (event) {
-            return resourceBlock.handleBoundaryEditorShortcut("before", event)
-        }
-        text: ""
-        textColor: LV.Theme.textPrimary
-        textFormat: TextEdit.PlainText
-        visible: resourceBlock.beforeBoundaryActive
-        width: resourceBlock.boundaryEditorWidth
-        wrapMode: TextEdit.NoWrap
-        z: 3
-
-        onCursorPositionChanged: {
-            if (focused)
-                resourceBlock.activated()
-        }
-        onFocusedChanged: {
-            if (focused) {
-                resourceBlock.setInteractionMode("before")
-                resourceBlock.activated()
-                return
-            }
-            if (resourceBlock.beforeBoundaryActive)
-                resourceBlock.setInteractionMode("selected")
-        }
-        onTextEdited: function (text) {
-            resourceBlock.commitBoundaryPlainText(
-                        "before",
-                        String(text || ""),
-                        Math.max(0, Number(beforeBoundaryEditor.cursorPosition) || 0))
-        }
-    }
-
-    ContentsInlineFormatEditor {
-        id: afterBoundaryEditor
-
-        anchors.right: parent.right
-        anchors.rightMargin: resourceBlock.boundaryEditorInset
-        anchors.verticalCenter: resourceCard.verticalCenter
-        autoFocusOnPress: false
-        backgroundColor: "transparent"
-        backgroundColorDisabled: "transparent"
-        backgroundColorFocused: "transparent"
-        backgroundColorHover: "transparent"
-        backgroundColorPressed: "transparent"
-        centeredTextHeight: Math.max(0, Math.round(LV.Theme.scaleMetric(12)))
-        cornerRadius: 0
-        cursorVisibleWhenFocused: true
-        fieldMinHeight: resourceBlock.boundaryEditorHeight
-        fontFamily: LV.Theme.fontBody
-        fontPixelSize: Math.max(0, Math.round(LV.Theme.scaleMetric(12)))
-        fontWeight: Font.Medium
-        height: resourceBlock.boundaryEditorHeight
-        insetHorizontal: 0
-        insetVertical: 0
-        placeholderText: ""
-        selectByMouse: false
-        selectedTextColor: LV.Theme.textPrimary
-        selectionColor: LV.Theme.accent
-        showRenderedOutput: false
-        showScrollBar: false
-        shortcutKeyPressHandler: function (event) {
-            return resourceBlock.handleBoundaryEditorShortcut("after", event)
-        }
-        text: ""
-        textColor: LV.Theme.textPrimary
-        textFormat: TextEdit.PlainText
-        visible: resourceBlock.afterBoundaryActive
-        width: resourceBlock.boundaryEditorWidth
-        wrapMode: TextEdit.NoWrap
-        z: 3
-
-        onCursorPositionChanged: {
-            if (focused)
-                resourceBlock.activated()
-        }
-        onFocusedChanged: {
-            if (focused) {
-                resourceBlock.setInteractionMode("after")
-                resourceBlock.activated()
-                return
-            }
-            if (resourceBlock.afterBoundaryActive)
-                resourceBlock.setInteractionMode("selected")
-        }
-        onTextEdited: function (text) {
-            resourceBlock.commitBoundaryPlainText(
-                        "after",
-                        String(text || ""),
-                        Math.max(0, Number(afterBoundaryEditor.cursorPosition) || 0))
-        }
     }
 
     Keys.onPressed: function (event) {
@@ -441,69 +204,37 @@ FocusScope {
         if (resourceBlock.handleDeleteKeyPress(event))
             return
         if (event.key === Qt.Key_Up) {
-            if (resourceBlock.blockSelected && !resourceBlock.hasAdjacentBlockBefore) {
-                resourceBlock.activateBoundaryEditor("before")
-                event.accepted = true
-                return
-            }
             resourceBlock.boundaryNavigationRequested("vertical", "before")
             event.accepted = true
             return
         }
         if (event.key === Qt.Key_Down) {
-            if (resourceBlock.blockSelected && !resourceBlock.hasAdjacentBlockAfter) {
-                resourceBlock.activateBoundaryEditor("after")
-                event.accepted = true
-                return
-            }
             resourceBlock.boundaryNavigationRequested("vertical", "after")
             event.accepted = true
             return
         }
         if (event.key === Qt.Key_Left) {
-            if (resourceBlock.blockSelected) {
-                if (!resourceBlock.hasAdjacentBlockBefore) {
-                    resourceBlock.activateBoundaryEditor("before")
-                    event.accepted = true
-                    return
-                }
-                resourceBlock.boundaryNavigationRequested("horizontal", "before")
-                event.accepted = true
-                return
-            }
             resourceBlock.boundaryNavigationRequested("horizontal", "before")
             event.accepted = true
             return
         }
         if (event.key === Qt.Key_Right) {
-            if (resourceBlock.blockSelected) {
-                if (!resourceBlock.hasAdjacentBlockAfter) {
-                    resourceBlock.activateBoundaryEditor("after")
-                    event.accepted = true
-                    return
-                }
-                resourceBlock.boundaryNavigationRequested("horizontal", "after")
-                event.accepted = true
-                return
-            }
             resourceBlock.boundaryNavigationRequested("horizontal", "after")
             event.accepted = true
             return
+        }
+        if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+            resourceBlock.documentEndEditRequested()
+            event.accepted = true
         }
     }
 
     TapHandler {
         acceptedButtons: Qt.LeftButton
 
-        onTapped: function (eventPoint) {
-            const interactionMode = resourceBlock.tapInteractionMode(
-                        eventPoint && eventPoint.position ? eventPoint.position.x : 0)
-            if (interactionMode === "before") {
-                resourceBlock.activateBoundaryEditor("before")
-                return
-            }
-            if (interactionMode === "after") {
-                resourceBlock.activateBoundaryEditor("after")
+        onTapped: function () {
+            if (tapCount >= 2) {
+                resourceBlock.documentEndEditRequested()
                 return
             }
             resourceBlock.selectResourceBlock()

@@ -9,6 +9,9 @@ Renders `</break>` as a native divider block inside the structured document flow
 - `</break>` is now also a focusable atomic document block instead of a click-only decoration.
   The divider exposes `applyFocusRequest(...)`, block selection chrome, delete handling, and document-boundary
   navigation so it can participate in the same keyboard stream as resource blocks.
+- The divider now also exports the shared atomic-block contract:
+  `textEditable=false`, `atomicBlock=true`, `gutterCollapsed=true`,
+  `logicalLineLayoutEntries()`, `currentCursorRowRect()`, and a minimal minimap representative length.
 - Left/right/up/down navigation from the divider now delegates back into
   `ContentsStructuredDocumentFlow.qml` through one generic boundary-navigation signal.
   Break blocks therefore no longer sit outside the document cursor model.

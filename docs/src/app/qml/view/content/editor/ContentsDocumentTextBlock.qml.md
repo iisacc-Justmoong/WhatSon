@@ -1,89 +1,40 @@
 # `src/app/qml/view/content/editor/ContentsDocumentTextBlock.qml`
 
 ## Responsibility
-Renders one plain-text document segment inside the structured document-flow editor.
+Edits one ordinary structured text block while keeping RAW `.wsnbody` source authoritative and projecting inline style
+tags as visible formatted text.
 
-## Key Behavior
-- The structured paragraph editor now binds plain visible text (`authoritativePlainText()`) into
-  `ContentsInlineFormatEditor.qml` and keeps that nested `TextEdit` in `TextEdit.PlainText` mode.
-  Inline block editing therefore no longer depends on Qt RichText document state while the RAW-source mutation bridge
-  still remains authoritative.
-- When the RAW block source still contains inline style tags such as `<bold>`, `<italic>`, or `<highlight>`, the block
-  now also passes `ContentsTextFormatRenderer.editorSurfaceHtml` into the shared inline-editor wrapper as a read-only
-  rendered overlay.
-  Structured paragraphs therefore keep the plain-text input engine for mutations/caret mapping while the user can
-  still see styled text in-place after the RAW rewrite has succeeded.
-- When the shared inline-editor wrapper exposes `currentPlainText()`, the block now uses that helper as its current
-  visible plain-text snapshot before diffing RAW block source.
-- The live block-edit path no longer converts edited RichText surface HTML back into canonical source.
-  It now derives a plain-text delta from the previous RAW block source vs the current visible text, maps that delta
-  back into source offsets with `ContentsStructuredCursorSupport.js`, and applies the replacement directly to the RAW
-  block source with `ContentsTextFormatRenderer.applyPlainTextReplacementToSource(...)`.
-- For semantic wrapper blocks such as `<paragraph>...</paragraph>`, the structured renderer/parser contract now feeds
-  this component only the inner editable content through `sourceText` / `sourceStart` / `sourceEnd`.
-  The outer wrapper span is preserved separately in parser metadata, so paragraph editing no longer risks rendering the
-  wrapper tags as visible text or deleting the wrapper itself when only the inner prose changed.
-- Inline text-block focus restore and caret-origin mutation requests are now both mapped through an inline-tag-aware
-  source/plain cursor bridge instead of treating `TextEdit.cursorPosition` as a raw source offset.
-  Closing tags such as `</highlight>` therefore stay zero-width for caret restore and `Enter`/typing mutations, so a
-  styled paragraph tail is no longer re-targeted into the wrong block or peeled off one character at a time after a
-  split/reparse turn.
-- The inline editor now uses a paragraph-like minimum height that tracks the actual text content instead of keeping the
-  previous 28px floor. This keeps mixed text/image note bodies visually closer to the Figma `294:7933` markdown-style
-  reference.
-- The block now depends on `ContentsInlineFormatEditor.qml` publishing a real `implicitHeight` from live text content.
-  That keeps text delegates materially present inside `ContentsStructuredDocumentFlow.qml` instead of collapsing to
-  zero height while neighboring resource/image blocks remain visible.
-- That live `implicitHeight` is geometry only, not logical line authority.
-  Structured gutter numbering must come from the block's authored plain-text newline structure, with height applied
-  only afterward to position the already-determined logical lines in the viewport/minimap.
-- The block now also exposes logical line layout entries sampled from the live plain-text `TextEdit` through
-  `positionToRectangle(...)`.
-  Structured gutter Y placement can therefore align each authored line number with the line's actual rendered text row
-  instead of evenly dividing the whole paragraph block height.
-- The block now also exposes its current local logical line number by counting newline-delimited rows before the live
-  caret position in the nested plain-text editor.
-  `ContentsStructuredDocumentFlow.qml` uses that value to place current-line indicators on the actual authored line
-  inside a multi-line paragraph block.
-- While the editor stays focused, the block now also emits `activated()` on cursor moves.
-  Structured-flow hosts therefore re-evaluate current-line indicator placement when the caret moves between logical
-  lines inside the same paragraph block.
-- The block now also exposes its live cursor-row rectangle in block-local coordinates through
-  `currentCursorRowRect()`.
-  Structured-flow hosts use that rectangle to align current-line gutter indicators with the actual visual caret row
-  inside wrapped paragraph text.
-- The block now also exposes whether its nested inline editor currently owns focus.
-  `ContentsStructuredDocumentFlow.qml` uses that signal-free focus state to keep host-level idle refresh guards from
-  treating an actively edited structured paragraph as unfocused.
-- The block body text now renders with `Font.Medium` at the existing 12px size, matching the current note-body visual
-  spec more closely than the previous normal-weight fallback.
-- Accepts focus restoration requests by source offset so source rewrites can re-focus the same block after reparsing.
-- Focus restoration is now invoked directly by `ContentsStructuredDocumentFlow.qml` on the targeted block instance,
-  rather than by rebroadcasting one request through every text block.
-- Focus restoration requests may now also carry block-local `selectionStart` / `selectionEnd` values.
-  After a formatting rewrite reparses the block, the same visible selection can be restored around the newly rewritten
-  text instead of collapsing to a caret-only position.
-- Reports shortcut insertion offsets from the live plain cursor through the same RAW-source bridge, so structured
-  shortcuts can insert at the active text caret without consulting any rendered HTML payload as a source authority.
-- The block now also exposes `applyInlineFormatToSelection(tagName)`, which resolves the live plain-text selection,
-  rewrites canonical block source through `ContentsTextFormatRenderer.applyInlineStyleToLogicalSelectionSource(...)`,
-  and emits a block-scoped RAW mutation request with both caret and selection restore metadata.
-  Inline-format shortcuts inside structured paragraphs therefore no longer depend on the legacy whole-document editor
-  selection path.
-- The block now also accepts an explicit captured selection snapshot for that formatting rewrite instead of always
-  re-reading the nested editor selection live.
-  Structured-flow hosts can therefore capture the active selection on the shortcut turn itself and still rewrite the
-  correct RAW paragraph range immediately.
-- Plain `Backspace/Delete` at a prose block boundary now also escalates to the structured-flow host instead of being
-  treated as a no-op inside the nested text editor.
-  When the caret is at logical column `0` or at the block tail with no active selection, the block asks the host to
-  remove an immediately adjacent atomic `resource` / `break` block by deleting that canonical RAW source span.
-- Plain `Left` / `Right` arrow movement at those same prose boundaries now escalates into the generic block-navigation
-  contract rather than only into adjacent atomic attachments.
-  When the caret is at the start/end of a paragraph and any neighboring parsed block exists, the paragraph emits one
-  generic boundary-navigation request and lets `ContentsStructuredDocumentFlow.qml` resolve the immediately adjacent
-  document block instead of computing resource-only focus transfers locally.
-- Plain `Up` / `Down` now use that same flow-owned document navigation contract once the caret is already on the first
-  or last visible text row of the paragraph.
-  Vertical traversal can therefore leave prose for whichever block actually follows in the parsed `.wsnbody` stream,
-  including `resource`, `break`, `callout`, or `agenda`, instead of treating only resource boundaries as special.
+## Current Behavior
+- The block now binds its RAW inner block source into `ContentsTextFormatRenderer.editorSurfaceHtml` and feeds that
+  HTML projection into `ContentsInlineFormatEditor.qml` as a `TextEdit.RichText` editing surface.
+- Inline tags such as `<bold>`, `<italic>`, `<underline>`, `<strikethrough>`, and `<highlight>` therefore no longer
+  appear literally in the visible editor surface after a formatting command.
+- Live typing is still source-driven:
+  - compare previous visible plain text with current editor plain text
+  - compute the changed logical range
+  - map that logical range back into inline-tag-aware source offsets through
+    `ContentsStructuredCursorSupport.js`
+  - rewrite the RAW block source through `ContentsTextFormatRenderer.applyPlainTextReplacementToSource(...)`
+- Inline-format shortcuts no longer wrap raw text with local string surgery inside this QML block.
+  They now call `ContentsTextFormatRenderer.applyInlineStyleToLogicalSelectionSource(...)` so selection-based style
+  rewrites preserve the existing inline-style coverage model.
+- Focus restoration and caret-origin source offsets are now mapped through the same inline-tag-aware cursor bridge.
+  Rich text cursor positions stay in visible plain-text space, while reparsed RAW offsets still return to the same
+  visible caret location.
+- Gutter/minimap line layout still follows the live editor surface geometry via `positionToRectangle(...)`, but the
+  logical line content now comes from the visible plain-text projection rather than the literal RAW tag string.
+- The block still emits only RAW mutation requests upward; the rich-text surface remains a read-side/editor-side
+  projection, not a persistence authority.
+
+## Shared Block Contract
+- `textEditable = true`
+- `atomicBlock = false`
+- `gutterCollapsed = false`
+- `minimapVisualKind = text`
+- `visiblePlainText()` returns the current visible plain-text editor content
+- `representativeCharCount(...)` follows the visible line text length
+
+## Architecture Note
+- For semantic wrapper blocks such as `<paragraph>...</paragraph>`, the parser still passes only the inner editable
+  content into `sourceText` / `sourceStart` / `sourceEnd`.
+- This component therefore edits wrapper content directly without rendering or mutating the outer wrapper tags.

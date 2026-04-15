@@ -212,6 +212,76 @@ namespace
         return defaultDatePlaceholder();
     }
 
+    QString resolvedDocumentBlockTypeName(const QString& normalizedTypeName)
+    {
+        return normalizedTypeName.isEmpty() ? QStringLiteral("text") : normalizedTypeName;
+    }
+
+    bool isAtomicDocumentBlockType(const QString& normalizedTypeName)
+    {
+        const QString resolvedTypeName = resolvedDocumentBlockTypeName(normalizedTypeName);
+        return resolvedTypeName == QStringLiteral("resource")
+            || resolvedTypeName == QStringLiteral("break");
+    }
+
+    QString minimapVisualKindForDocumentBlockType(const QString& normalizedTypeName)
+    {
+        const QString resolvedTypeName = resolvedDocumentBlockTypeName(normalizedTypeName);
+        if (resolvedTypeName == QStringLiteral("resource"))
+        {
+            return QStringLiteral("block");
+        }
+        return QStringLiteral("text");
+    }
+
+    int minimapRepresentativeCharCountForDocumentBlockType(const QString& normalizedTypeName)
+    {
+        const QString resolvedTypeName = resolvedDocumentBlockTypeName(normalizedTypeName);
+        if (resolvedTypeName == QStringLiteral("resource"))
+        {
+            return 160;
+        }
+        if (resolvedTypeName == QStringLiteral("break"))
+        {
+            return 8;
+        }
+        return 0;
+    }
+
+    int logicalLineCountHintForPlainText(const QString& plainText)
+    {
+        return std::max(1, plainText.count(QLatin1Char('\n')) + 1);
+    }
+
+    void applyDocumentBlockTraits(
+        QVariantMap* payload,
+        const QString& normalizedTypeName,
+        const QString& plainText,
+        const int explicitLogicalLineCountHint = -1)
+    {
+        if (payload == nullptr)
+        {
+            return;
+        }
+
+        const bool atomicBlock = isAtomicDocumentBlockType(normalizedTypeName);
+        payload->insert(QStringLiteral("plainText"), plainText);
+        payload->insert(QStringLiteral("textEditable"), !atomicBlock);
+        payload->insert(QStringLiteral("atomicBlock"), atomicBlock);
+        payload->insert(QStringLiteral("gutterCollapsed"), atomicBlock);
+        payload->insert(
+            QStringLiteral("minimapVisualKind"),
+            minimapVisualKindForDocumentBlockType(normalizedTypeName));
+        payload->insert(
+            QStringLiteral("minimapRepresentativeCharCount"),
+            minimapRepresentativeCharCountForDocumentBlockType(normalizedTypeName));
+        payload->insert(
+            QStringLiteral("logicalLineCountHint"),
+            explicitLogicalLineCountHint > 0
+                ? explicitLogicalLineCountHint
+                : logicalLineCountHintForPlainText(plainText));
+    }
+
     QVariantMap documentBlockPayload(
         const QString& sourceText,
         const int sourceStart,
@@ -223,16 +293,16 @@ namespace
         const int boundedEnd = boundedTextIndex(sourceText, std::max(boundedStart, sourceEnd));
         const QString normalizedTypeName = typeName.trimmed().toCaseFolded();
         const QString normalizedTagName = tagName.trimmed().toCaseFolded();
+        const QString resolvedTypeName = resolvedDocumentBlockTypeName(normalizedTypeName);
+        const QString blockSourceText = sourceText.mid(boundedStart, boundedEnd - boundedStart);
 
         QVariantMap payload;
         payload.insert(
             QStringLiteral("type"),
-            normalizedTypeName.isEmpty() ? QStringLiteral("text") : normalizedTypeName);
+            resolvedTypeName);
         payload.insert(QStringLiteral("sourceStart"), boundedStart);
         payload.insert(QStringLiteral("sourceEnd"), boundedEnd);
-        payload.insert(
-            QStringLiteral("sourceText"),
-            sourceText.mid(boundedStart, boundedEnd - boundedStart));
+        payload.insert(QStringLiteral("sourceText"), blockSourceText);
         if (!normalizedTypeName.isEmpty())
         {
             payload.insert(QStringLiteral("explicitBlock"), true);
@@ -244,6 +314,10 @@ namespace
                 payload.insert(QStringLiteral("semanticTagName"), normalizedTypeName);
             }
         }
+        applyDocumentBlockTraits(
+            &payload,
+            resolvedTypeName,
+            isAtomicDocumentBlockType(resolvedTypeName) ? QString() : blockSourceText);
         return payload;
     }
 
@@ -365,6 +439,10 @@ namespace
                 sourceText.mid(
                     boundedOpenEnd,
                     std::max(0, calloutContentEnd - boundedOpenEnd))));
+        applyDocumentBlockTraits(
+            &payload,
+            QStringLiteral("callout"),
+            payload.value(QStringLiteral("text")).toString());
         return payload;
     }
 
@@ -422,6 +500,7 @@ namespace
             normalizedAgendaDateForDisplay(tagAttributeValue(openTagText, QStringLiteral("date"))));
 
         QVariantList tasks;
+        QStringList visibleTaskLines;
         int focusSourceOffset = boundedOpenEnd;
         QRegularExpressionMatchIterator taskIterator = kTaskOpenTagPattern.globalMatch(innerSource);
         while (taskIterator.hasNext())
@@ -480,6 +559,7 @@ namespace
                     sourceText.mid(
                         taskOpenTagEnd,
                         std::max(0, taskContentEnd - taskOpenTagEnd))));
+            visibleTaskLines.push_back(taskEntry.value(QStringLiteral("text")).toString());
             tasks.push_back(taskEntry);
 
             if (focusSourceOffset <= boundedOpenEnd)
@@ -502,12 +582,18 @@ namespace
             placeholderTaskEntry.insert(QStringLiteral("openTagEnd"), -1);
             placeholderTaskEntry.insert(QStringLiteral("tagVerified"), false);
             placeholderTaskEntry.insert(QStringLiteral("text"), visibleAgendaTaskText(innerSource));
+            visibleTaskLines.push_back(placeholderTaskEntry.value(QStringLiteral("text")).toString());
             tasks.push_back(placeholderTaskEntry);
         }
 
         payload.insert(QStringLiteral("focusSourceOffset"), std::max(0, focusSourceOffset));
         payload.insert(QStringLiteral("tagVerified"), hasCloseTag && containsOnlyTaskChildren);
         payload.insert(QStringLiteral("tasks"), tasks);
+        applyDocumentBlockTraits(
+            &payload,
+            QStringLiteral("agenda"),
+            visibleTaskLines.join(QLatin1Char('\n')),
+            std::max(1, static_cast<int>(tasks.size())));
         return payload;
     }
 

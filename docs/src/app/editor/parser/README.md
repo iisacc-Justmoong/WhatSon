@@ -27,5 +27,8 @@
   - editable content geometry through `sourceStart` / `sourceEnd` / `sourceText`
   This keeps `ContentsDocumentTextBlock.qml` on an inner-content editing contract even when the authored RAW still
   uses wrapper tags such as `<paragraph>...</paragraph>`.
+- Every emitted block now also carries one generic document-block trait payload for the QML flow host:
+  `plainText`, `textEditable`, `atomicBlock`, `gutterCollapsed`, `logicalLineCountHint`,
+  `minimapVisualKind`, and `minimapRepresentativeCharCount`.
 - The repository still does not maintain an in-repo automated editor test suite, so parser regression expectations are
   documented here rather than enforced by local tests.
