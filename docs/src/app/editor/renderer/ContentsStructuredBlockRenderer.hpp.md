@@ -7,6 +7,9 @@ Declares the editor-side structured-block renderer that projects proprietary blo
 - `sourceText`: canonical RAW note-body source consumed by the renderer.
 - `renderedAgendas`: `QVariantList` of parsed agenda/task card models.
 - `renderedCallouts`: `QVariantList` of parsed callout row models.
+- `renderedDocumentBlocks`: one ordered block stream for the structured editor host.
+  Supported top-level body tags no longer need per-tag block list ownership at the renderer boundary; they are all
+  projected into this same block sequence with common source-span geometry.
 - `agendaParseVerification`: latest agenda parser verification report forwarded from `ContentsAgendaBackend`.
 - `calloutParseVerification`: latest callout parser verification report forwarded from `ContentsCalloutBackend`.
 - `structuredParseVerification`: merged renderer-level verification report that bundles agenda/callout/break

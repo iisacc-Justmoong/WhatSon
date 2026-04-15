@@ -161,6 +161,10 @@ plain `QtQuick.TextEdit` as the actual rendering and input engine.
   - hosts can inject a key-routing callback that runs from the inner `TextEdit.Keys.onPressed`
   - when that callback accepts the event, the wrapper stops local key fallback processing
   - this keeps host shortcuts active even while the nested `TextEdit` owns direct focus.
+- Hosts can now also toggle `cursorVisibleWhenFocused`.
+  Attachment-boundary anchor editors use that switch to keep the native text caret hidden while still accepting focus
+  and key events, letting the surrounding resource block provide the visible focus/selection chrome instead of
+  painting one tiny misleading caret inside the image frame.
 - That same key-routing callback is now also the place where host code can intercept plain Enter before Qt RichText
   rewrites the document on its own.
   The inline wrapper therefore remains a passive key-forwarder while RAW-authoritative line-split behavior stays owned

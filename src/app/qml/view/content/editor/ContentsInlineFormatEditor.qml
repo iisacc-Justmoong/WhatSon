@@ -33,6 +33,7 @@ FocusScope {
     property color selectionColor: LV.Theme.accent
     property int shapeStyle: 0
     property var shortcutKeyPressHandler: null
+    property bool cursorVisibleWhenFocused: true
     property bool showRenderedOutput: true
     property bool showScrollBar: false
     property bool blockExternalDropMutation: false
@@ -641,7 +642,7 @@ FocusScope {
                                     && (!control.preferNativeInputHandling || control.inputMethodVisible)
                 bottomPadding: control.insetVertical
                 color: control.renderedOutputVisible ? "transparent" : control.textColor
-                cursorVisible: control.focused
+                cursorVisible: control.focused && control.cursorVisibleWhenFocused
                 font.family: control.fontFamily
                 font.letterSpacing: control.fontLetterSpacing
                 font.pixelSize: control.fontPixelSize

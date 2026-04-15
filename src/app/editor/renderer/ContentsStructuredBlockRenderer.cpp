@@ -8,6 +8,7 @@
 #include <QMetaObject>
 #include <QPointer>
 #include <QRegularExpression>
+#include <QHash>
 #include <QStringList>
 #include <QThreadPool>
 #include <QVariantMap>
@@ -52,6 +53,13 @@ namespace
     {
         int end = 0;
         QVariantMap payload;
+        int start = 0;
+    };
+
+    struct OpenExplicitBlock final
+    {
+        QString normalizedTagName;
+        QString typeName;
         int start = 0;
     };
 
@@ -110,11 +118,13 @@ namespace
         const QString& sourceText,
         const int sourceStart,
         const int sourceEnd,
-        const QString& typeName = QString())
+        const QString& typeName = QString(),
+        const QString& tagName = QString())
     {
         const int boundedStart = boundedTextIndex(sourceText, sourceStart);
         const int boundedEnd = boundedTextIndex(sourceText, std::max(boundedStart, sourceEnd));
         const QString normalizedTypeName = typeName.trimmed().toCaseFolded();
+        const QString normalizedTagName = tagName.trimmed().toCaseFolded();
 
         QVariantMap payload;
         payload.insert(
@@ -128,12 +138,20 @@ namespace
         if (!normalizedTypeName.isEmpty())
         {
             payload.insert(QStringLiteral("explicitBlock"), true);
+            payload.insert(
+                QStringLiteral("tagName"),
+                normalizedTagName.isEmpty() ? normalizedTypeName : normalizedTagName);
             if (SemanticTags::isRenderedTextBlockElement(normalizedTypeName))
             {
                 payload.insert(QStringLiteral("semanticTagName"), normalizedTypeName);
             }
         }
         return payload;
+    }
+
+    QString documentBlockRangeKey(const int sourceStart, const int sourceEnd)
+    {
+        return QStringLiteral("%1:%2").arg(sourceStart).arg(sourceEnd);
     }
 
     QVariantList buildRenderedResourceBlocks(const QString& sourceText)
@@ -196,119 +214,38 @@ namespace
         return renderedResources;
     }
 
-    QVariantList buildRenderedSemanticTextBlocks(const QString& sourceText)
+    QHash<QString, QVariantMap> payloadsByRangeKey(
+        const QString& sourceText,
+        const QVariantList& sourceEntries,
+        const QString& fallbackTypeName)
     {
-        static const QRegularExpression tagPattern(
-            QStringLiteral(R"(<\s*/?\s*([A-Za-z_][A-Za-z0-9_.:-]*)\b[^>]*>)"));
-
-        QVariantList renderedTextBlocks;
-        QVector<int> textBlockStack;
-        int structuredContainerDepth = 0;
-        int topLevelTextBlockStart = -1;
-        QString topLevelTextBlockTypeName;
-
-        QRegularExpressionMatchIterator iterator = tagPattern.globalMatch(sourceText);
-        while (iterator.hasNext())
+        QHash<QString, QVariantMap> indexedPayloads;
+        for (const QVariant& entryValue : sourceEntries)
         {
-            const QRegularExpressionMatch match = iterator.next();
-            if (!match.hasMatch())
+            const QVariantMap entry = entryValue.toMap();
+            const int sourceStart = entry.value(QStringLiteral("sourceStart")).toInt();
+            const int sourceEnd = entry.value(QStringLiteral("sourceEnd")).toInt();
+            if (sourceEnd <= sourceStart)
             {
                 continue;
             }
 
-            const QString fullTagToken = match.captured(0);
-            const QString rawTagName = match.captured(1);
-            const QString normalizedTagName = rawTagName.trimmed().toCaseFolded();
-            const bool closingTag = fullTagToken.contains(
-                QRegularExpression(QStringLiteral(R"(^<\s*/)")));
-            const bool selfClosingTag = fullTagToken.trimmed().endsWith(QStringLiteral("/>"));
-            const int tagStart = std::max(0, static_cast<int>(match.capturedStart(0)));
-            const int tagEnd = std::max(tagStart, static_cast<int>(match.capturedEnd(0)));
-
-            if (normalizedTagName == QStringLiteral("agenda")
-                || normalizedTagName == QStringLiteral("callout"))
+            QVariantMap payload = entry;
+            const QString normalizedTypeName = fallbackTypeName.trimmed().toCaseFolded();
+            if (!normalizedTypeName.isEmpty())
             {
-                if (!closingTag && !selfClosingTag)
-                {
-                    ++structuredContainerDepth;
-                }
-                else if (closingTag && structuredContainerDepth > 0)
-                {
-                    --structuredContainerDepth;
-                }
-                continue;
+                payload.insert(QStringLiteral("type"), normalizedTypeName);
             }
-
-            if (structuredContainerDepth > 0 || SemanticTags::isTransparentContainerTagName(rawTagName))
+            payload.insert(
+                QStringLiteral("sourceText"),
+                sourceText.mid(sourceStart, sourceEnd - sourceStart));
+            if (!payload.contains(QStringLiteral("explicitBlock")))
             {
-                continue;
+                payload.insert(QStringLiteral("explicitBlock"), true);
             }
-
-            if (!SemanticTags::isRenderedTextBlockElement(rawTagName))
-            {
-                continue;
-            }
-
-            if (!closingTag)
-            {
-                if (textBlockStack.isEmpty())
-                {
-                    topLevelTextBlockStart = tagStart;
-                    topLevelTextBlockTypeName =
-                        SemanticTags::canonicalRenderedTextBlockTagName(rawTagName);
-                }
-                textBlockStack.push_back(tagStart);
-
-                if (!selfClosingTag)
-                {
-                    continue;
-                }
-            }
-            else
-            {
-                if (textBlockStack.isEmpty())
-                {
-                    continue;
-                }
-
-                textBlockStack.removeLast();
-                if (!textBlockStack.isEmpty())
-                {
-                    continue;
-                }
-            }
-
-            const int blockSourceStart = topLevelTextBlockStart >= 0 ? topLevelTextBlockStart : tagStart;
-            const int blockSourceEnd = tagEnd;
-            const QString blockSourceText =
-                sourceText.mid(blockSourceStart, std::max(0, blockSourceEnd - blockSourceStart));
-            if (mayContainAgendaBlock(blockSourceText)
-                || mayContainCalloutBlock(blockSourceText)
-                || mayContainResourceBlock(blockSourceText)
-                || mayContainBreakBlock(blockSourceText))
-            {
-                if (selfClosingTag)
-                    textBlockStack.clear();
-                if (textBlockStack.isEmpty())
-                {
-                    topLevelTextBlockStart = -1;
-                    topLevelTextBlockTypeName.clear();
-                }
-                continue;
-            }
-
-            QVariantMap payload = documentBlockPayload(
-                sourceText,
-                blockSourceStart,
-                blockSourceEnd,
-                topLevelTextBlockTypeName);
-            renderedTextBlocks.push_back(payload);
-            textBlockStack.clear();
-            topLevelTextBlockStart = -1;
-            topLevelTextBlockTypeName.clear();
+            indexedPayloads.insert(documentBlockRangeKey(sourceStart, sourceEnd), payload);
         }
-
-        return renderedTextBlocks;
+        return indexedPayloads;
     }
 
     bool isFormattingWhitespaceBetweenExplicitBlocks(const QString& sourceText, const int sourceStart, const int sourceEnd)
@@ -322,77 +259,159 @@ namespace
         return gapText.trimmed().isEmpty();
     }
 
-    QVariantList buildRenderedDocumentBlocks(
+    QVariantList buildRenderedExplicitDocumentBlocks(
         const QString& sourceText,
         const QVariantList& agendas,
         const QVariantList& callouts,
         const QVariantList& resources,
         const bool includeBreakBlocks)
     {
-        static const QRegularExpression breakTagPattern(
-            QStringLiteral(R"((?:</break>|<\s*(?:break|hr)\b[^>]*?/?>|</\s*hr\s*>))"),
-            QRegularExpression::CaseInsensitiveOption);
+        static const QRegularExpression tagPattern(
+            QStringLiteral(R"(<\s*(/?)\s*([A-Za-z_][A-Za-z0-9_.:-]*)\b[^>]*>)"));
 
-        std::vector<DocumentBlockSpan> spans;
-        spans.reserve(
+        const QHash<QString, QVariantMap> agendaPayloadsByRange =
+            payloadsByRangeKey(sourceText, agendas, QStringLiteral("agenda"));
+        const QHash<QString, QVariantMap> calloutPayloadsByRange =
+            payloadsByRangeKey(sourceText, callouts, QStringLiteral("callout"));
+        const QHash<QString, QVariantMap> resourcePayloadsByRange =
+            payloadsByRangeKey(sourceText, resources, QStringLiteral("resource"));
+
+        auto explicitPayloadForRange =
+            [&](const int sourceStart,
+                const int sourceEnd,
+                const QString& typeName,
+                const QString& tagName) -> QVariantMap
+        {
+            const QString rangeKey = documentBlockRangeKey(sourceStart, sourceEnd);
+            if (typeName == QStringLiteral("agenda") && agendaPayloadsByRange.contains(rangeKey))
+            {
+                QVariantMap payload = agendaPayloadsByRange.value(rangeKey);
+                payload.insert(QStringLiteral("tagName"), tagName.trimmed().toCaseFolded());
+                return payload;
+            }
+            if (typeName == QStringLiteral("callout") && calloutPayloadsByRange.contains(rangeKey))
+            {
+                QVariantMap payload = calloutPayloadsByRange.value(rangeKey);
+                payload.insert(QStringLiteral("tagName"), tagName.trimmed().toCaseFolded());
+                return payload;
+            }
+            if (typeName == QStringLiteral("resource") && resourcePayloadsByRange.contains(rangeKey))
+            {
+                QVariantMap payload = resourcePayloadsByRange.value(rangeKey);
+                payload.insert(QStringLiteral("tagName"), tagName.trimmed().toCaseFolded());
+                return payload;
+            }
+            return documentBlockPayload(sourceText, sourceStart, sourceEnd, typeName, tagName);
+        };
+
+        std::vector<DocumentBlockSpan> explicitSpans;
+        explicitSpans.reserve(
             static_cast<std::size_t>(agendas.size())
             + static_cast<std::size_t>(callouts.size())
             + static_cast<std::size_t>(resources.size())
             + 8U);
 
-        const auto appendStructuredBlocks = [&](const QVariantList& sourceEntries, const QString& typeName) {
-            for (const QVariant& entryValue : sourceEntries)
-            {
-                const QVariantMap entry = entryValue.toMap();
-                const int sourceStart = entry.value(QStringLiteral("sourceStart")).toInt();
-                const int sourceEnd = entry.value(QStringLiteral("sourceEnd")).toInt();
-                if (sourceEnd <= sourceStart)
-                {
-                    continue;
-                }
-
-                QVariantMap payload = entry;
-                if (!typeName.trimmed().isEmpty())
-                {
-                    payload.insert(QStringLiteral("type"), typeName);
-                }
-                payload.insert(
-                    QStringLiteral("sourceText"),
-                    sourceText.mid(sourceStart, sourceEnd - sourceStart));
-                spans.push_back(DocumentBlockSpan{sourceEnd, payload, sourceStart});
-            }
-        };
-
-        appendStructuredBlocks(agendas, QStringLiteral("agenda"));
-        appendStructuredBlocks(callouts, QStringLiteral("callout"));
-        appendStructuredBlocks(resources, QStringLiteral("resource"));
-        appendStructuredBlocks(buildRenderedSemanticTextBlocks(sourceText), QString());
-
-        if (includeBreakBlocks)
+        QVector<OpenExplicitBlock> openBlocks;
+        QRegularExpressionMatchIterator iterator = tagPattern.globalMatch(sourceText);
+        while (iterator.hasNext())
         {
-            QRegularExpressionMatchIterator breakIterator = breakTagPattern.globalMatch(sourceText);
-            while (breakIterator.hasNext())
+            const QRegularExpressionMatch match = iterator.next();
+            if (!match.hasMatch())
             {
-                const QRegularExpressionMatch match = breakIterator.next();
-                if (!match.hasMatch())
+                continue;
+            }
+
+            const QString fullTagToken = match.captured(0);
+            const QString rawTagName = match.captured(2);
+            const QString normalizedTagName = rawTagName.trimmed().toCaseFolded();
+            const bool closingTag = match.captured(1) == QStringLiteral("/");
+            const bool selfClosingTag = fullTagToken.trimmed().endsWith(QStringLiteral("/>"));
+            const int tagStart = std::max(0, static_cast<int>(match.capturedStart(0)));
+            const int tagEnd = std::max(tagStart, static_cast<int>(match.capturedEnd(0)));
+
+            if (normalizedTagName == QStringLiteral("contents")
+                || normalizedTagName == QStringLiteral("body")
+                || SemanticTags::isTransparentContainerTagName(rawTagName)
+                || SemanticTags::isTaskTagName(rawTagName)
+                || !SemanticTags::canonicalInlineStyleTagName(rawTagName).isEmpty()
+                || SemanticTags::isRenderedLineBreakTagName(rawTagName))
+            {
+                continue;
+            }
+
+            const QString canonicalTypeName = SemanticTags::canonicalDocumentBlockTypeName(rawTagName);
+            if (canonicalTypeName.isEmpty())
+            {
+                continue;
+            }
+
+            const bool standAloneDividerClosingTag = closingTag
+                && SemanticTags::isBreakDividerTagName(rawTagName);
+            if ((selfClosingTag || standAloneDividerClosingTag) && openBlocks.isEmpty())
+            {
+                if (!includeBreakBlocks && canonicalTypeName == QStringLiteral("break"))
                 {
                     continue;
                 }
-
-                const int sourceStart = std::max(0, static_cast<int>(match.capturedStart(0)));
-                const int sourceEnd = std::max(sourceStart, static_cast<int>(match.capturedEnd(0)));
-                QVariantMap payload;
-                payload.insert(QStringLiteral("type"), QStringLiteral("break"));
-                payload.insert(QStringLiteral("sourceStart"), sourceStart);
-                payload.insert(QStringLiteral("sourceEnd"), sourceEnd);
-                payload.insert(QStringLiteral("sourceText"), sourceText.mid(sourceStart, sourceEnd - sourceStart));
-                spans.push_back(DocumentBlockSpan{sourceEnd, payload, sourceStart});
+                explicitSpans.push_back(DocumentBlockSpan {
+                    tagEnd,
+                    explicitPayloadForRange(tagStart, tagEnd, canonicalTypeName, rawTagName),
+                    tagStart});
+                continue;
             }
+
+            if (!closingTag)
+            {
+                openBlocks.push_back(OpenExplicitBlock {
+                    normalizedTagName,
+                    canonicalTypeName,
+                    tagStart});
+                continue;
+            }
+
+            int matchedOpenIndex = -1;
+            for (int index = openBlocks.size() - 1; index >= 0; --index)
+            {
+                if (openBlocks.at(index).normalizedTagName == normalizedTagName)
+                {
+                    matchedOpenIndex = index;
+                    break;
+                }
+            }
+            if (matchedOpenIndex < 0)
+            {
+                continue;
+            }
+
+            const OpenExplicitBlock matchedBlock = openBlocks.at(matchedOpenIndex);
+            while (openBlocks.size() > matchedOpenIndex)
+            {
+                openBlocks.removeLast();
+            }
+
+            if (!openBlocks.isEmpty())
+            {
+                continue;
+            }
+
+            if (!includeBreakBlocks && matchedBlock.typeName == QStringLiteral("break"))
+            {
+                continue;
+            }
+
+            explicitSpans.push_back(DocumentBlockSpan {
+                tagEnd,
+                explicitPayloadForRange(
+                    matchedBlock.start,
+                    tagEnd,
+                    matchedBlock.typeName,
+                    rawTagName),
+                matchedBlock.start});
         }
 
         std::sort(
-            spans.begin(),
-            spans.end(),
+            explicitSpans.begin(),
+            explicitSpans.end(),
             [](const DocumentBlockSpan& lhs, const DocumentBlockSpan& rhs) {
                 if (lhs.start != rhs.start)
                 {
@@ -403,7 +422,7 @@ namespace
 
         QVariantList renderedBlocks;
         int cursor = 0;
-        for (const DocumentBlockSpan& span : spans)
+        for (const DocumentBlockSpan& span : explicitSpans)
         {
             const int boundedStart = boundedTextIndex(sourceText, span.start);
             const int boundedEnd = boundedTextIndex(sourceText, std::max(span.start, span.end));
@@ -488,7 +507,7 @@ namespace
         const QVariantList renderedResources = resourceBlocksPossible
                                                    ? buildRenderedResourceBlocks(sourceText)
                                                    : QVariantList();
-        snapshot.renderedDocumentBlocks = buildRenderedDocumentBlocks(
+        snapshot.renderedDocumentBlocks = buildRenderedExplicitDocumentBlocks(
             sourceText,
             snapshot.renderedAgendas,
             snapshot.renderedCallouts,

@@ -23,6 +23,9 @@ FocusScope {
     readonly property real boundaryEditorHeight: Math.max(Math.round(LV.Theme.scaleMetric(18)), Math.round(LV.Theme.scaleMetric(12)))
     readonly property real boundaryEditorInset: Math.max(0, Math.round(LV.Theme.scaleMetric(6)))
     readonly property real boundaryEditorWidth: Math.max(Math.round(LV.Theme.scaleMetric(24)), Math.round(LV.Theme.scaleMetric(18)))
+    readonly property real edgeSelectionHotzoneWidth: Math.max(
+                                                          boundaryEditorWidth + boundaryEditorInset,
+                                                          Math.round(LV.Theme.scaleMetric(18)))
     readonly property bool focused: resourceBlock.activeFocus || beforeBoundaryEditor.focused || afterBoundaryEditor.focused
     readonly property int sourceStart: Math.max(0, Number(normalizedBlock.sourceStart) || 0)
     readonly property int sourceEnd: Math.max(sourceStart, Number(normalizedBlock.sourceEnd) || 0)
@@ -106,6 +109,9 @@ FocusScope {
     readonly property bool afterBoundaryActive: resourceBlock.interactionMode === "after"
     readonly property bool beforeBoundaryActive: resourceBlock.interactionMode === "before"
     readonly property bool blockSelected: resourceBlock.interactionMode === "selected"
+    readonly property bool blockFocusedVisual: resourceBlock.blockSelected
+                                              || resourceBlock.beforeBoundaryActive
+                                              || resourceBlock.afterBoundaryActive
 
     implicitHeight: resourceCard.implicitHeight
     width: parent ? parent.width : implicitWidth
@@ -115,6 +121,16 @@ FocusScope {
         if (normalizedMode === "before" || normalizedMode === "selected" || normalizedMode === "after")
             return normalizedMode
         return "selected"
+    }
+
+    function explicitRequestedInteractionMode(request) {
+        const safeRequest = request && typeof request === "object" ? request : ({})
+        if (safeRequest.interactionMode === undefined || safeRequest.interactionMode === null)
+            return ""
+        const requestedMode = String(safeRequest.interactionMode).trim().toLowerCase()
+        if (requestedMode === "before" || requestedMode === "after" || requestedMode === "selected")
+            return requestedMode
+        return ""
     }
 
     function setInteractionMode(mode) {
@@ -154,14 +170,75 @@ FocusScope {
         return true
     }
 
+    function handleDeleteKeyPress(event) {
+        if (!event)
+            return false
+        if ((event.key === Qt.Key_Backspace || event.key === Qt.Key_Delete) && resourceBlock.blockSelected) {
+            if (resourceBlock.deleteSelectedBlock()) {
+                event.accepted = true
+                return true
+            }
+        }
+        return false
+    }
+
+    function handleBoundaryEditorShortcut(mode, event) {
+        if (!event)
+            return false
+        const normalizedMode = resourceBlock.normalizedInteractionMode(mode)
+        const modifiers = Number(event.modifiers) || 0
+        if ((modifiers & (Qt.ControlModifier | Qt.AltModifier | Qt.MetaModifier)) !== 0)
+            return false
+        if (normalizedMode === "before") {
+            if (event.key === Qt.Key_Delete) {
+                resourceBlock.blockDeletionRequested()
+                event.accepted = true
+                return true
+            }
+            if (event.key === Qt.Key_Right) {
+                resourceBlock.selectResourceBlock()
+                event.accepted = true
+                return true
+            }
+            if (event.key === Qt.Key_Left) {
+                if (resourceBlock.focusAdjacentTextOrBoundary("before"))
+                    event.accepted = true
+                return event.accepted
+            }
+            return false
+        }
+        if (normalizedMode === "after") {
+            if (event.key === Qt.Key_Backspace) {
+                resourceBlock.blockDeletionRequested()
+                event.accepted = true
+                return true
+            }
+            if (event.key === Qt.Key_Left) {
+                resourceBlock.selectResourceBlock()
+                event.accepted = true
+                return true
+            }
+            if (event.key === Qt.Key_Right) {
+                if (resourceBlock.focusAdjacentTextOrBoundary("after"))
+                    event.accepted = true
+                return event.accepted
+            }
+            return false
+        }
+        return false
+    }
+
     function tapInteractionMode(localX) {
         const blockWidth = Math.max(1, Number(resourceBlock.width) || Number(resourceCard.width) || 1)
         const normalizedX = Math.max(0, Math.min(blockWidth, Number(localX) || 0))
-        const leftBoundary = blockWidth * 0.28
-        const rightBoundary = blockWidth * 0.72
-        if (normalizedX <= leftBoundary)
+        const edgeHotzoneWidth = Math.max(
+                    0,
+                    Math.min(
+                        Math.floor(blockWidth / 3),
+                        Math.round(Number(resourceBlock.edgeSelectionHotzoneWidth) || 0)))
+        if (edgeHotzoneWidth > 0 && normalizedX <= edgeHotzoneWidth)
             return "before"
-        if (normalizedX >= rightBoundary)
+        if (edgeHotzoneWidth > 0 && normalizedX >= blockWidth - edgeHotzoneWidth)
             return "after"
         return "selected"
     }
@@ -193,15 +270,16 @@ FocusScope {
     function applyFocusRequest(request) {
         const safeRequest = request && typeof request === "object" ? request : ({})
         const sourceOffset = Number(safeRequest.sourceOffset)
+        const requestedInteractionMode = resourceBlock.explicitRequestedInteractionMode(safeRequest)
         if (!isFinite(sourceOffset))
             return false
         if (sourceOffset < resourceBlock.sourceStart || sourceOffset > resourceBlock.sourceEnd)
             return false
-        if (sourceOffset <= resourceBlock.sourceStart) {
+        if (requestedInteractionMode === "before") {
             resourceBlock.activateBoundaryEditor("before")
             return true
         }
-        if (sourceOffset >= resourceBlock.sourceEnd) {
+        if (requestedInteractionMode === "after") {
             resourceBlock.activateBoundaryEditor("after")
             return true
         }
@@ -230,7 +308,7 @@ FocusScope {
         border.width: resourceBlock.blockSelected ? Math.max(1, Math.round(LV.Theme.strokeThin)) : 0
         color: "transparent"
         radius: Math.max(Math.round(LV.Theme.scaleMetric(12)), Number(resourceCard.radius) || 0)
-        visible: resourceBlock.blockSelected
+        visible: resourceBlock.blockFocusedVisual
         z: 2
     }
 
@@ -248,6 +326,7 @@ FocusScope {
         backgroundColorPressed: "transparent"
         centeredTextHeight: Math.max(0, Math.round(LV.Theme.scaleMetric(12)))
         cornerRadius: 0
+        cursorVisibleWhenFocused: false
         fieldMinHeight: resourceBlock.boundaryEditorHeight
         fontFamily: LV.Theme.fontBody
         fontPixelSize: Math.max(0, Math.round(LV.Theme.scaleMetric(12)))
@@ -261,6 +340,9 @@ FocusScope {
         selectionColor: LV.Theme.accent
         showRenderedOutput: false
         showScrollBar: false
+        shortcutKeyPressHandler: function (event) {
+            return resourceBlock.handleBoundaryEditorShortcut("before", event)
+        }
         text: ""
         textColor: LV.Theme.textPrimary
         textFormat: TextEdit.PlainText
@@ -304,6 +386,7 @@ FocusScope {
         backgroundColorPressed: "transparent"
         centeredTextHeight: Math.max(0, Math.round(LV.Theme.scaleMetric(12)))
         cornerRadius: 0
+        cursorVisibleWhenFocused: false
         fieldMinHeight: resourceBlock.boundaryEditorHeight
         fontFamily: LV.Theme.fontBody
         fontPixelSize: Math.max(0, Math.round(LV.Theme.scaleMetric(12)))
@@ -317,6 +400,9 @@ FocusScope {
         selectionColor: LV.Theme.accent
         showRenderedOutput: false
         showScrollBar: false
+        shortcutKeyPressHandler: function (event) {
+            return resourceBlock.handleBoundaryEditorShortcut("after", event)
+        }
         text: ""
         textColor: LV.Theme.textPrimary
         textFormat: TextEdit.PlainText
@@ -349,11 +435,8 @@ FocusScope {
     Keys.onPressed: function (event) {
         if (!event)
             return
-        if ((event.key === Qt.Key_Backspace || event.key === Qt.Key_Delete) && resourceBlock.blockSelected) {
-            if (resourceBlock.deleteSelectedBlock())
-                event.accepted = true
+        if (resourceBlock.handleDeleteKeyPress(event))
             return
-        }
         if (event.key === Qt.Key_Left) {
             if (resourceBlock.focusAdjacentTextOrBoundary("before"))
                 event.accepted = true

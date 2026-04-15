@@ -1029,6 +1029,46 @@ namespace
         return true;
     }
 
+    bool extractClipboardImage(const QClipboard* clipboard, QImage* outImage)
+    {
+        if (outImage != nullptr)
+        {
+            *outImage = QImage();
+        }
+
+        if (clipboard == nullptr)
+        {
+            return false;
+        }
+
+        if (extractClipboardImage(clipboard->mimeData(), outImage))
+        {
+            return true;
+        }
+
+        const QImage clipboardImage = clipboard->image();
+        if (!clipboardImage.isNull())
+        {
+            if (outImage != nullptr)
+            {
+                *outImage = clipboardImage;
+            }
+            return true;
+        }
+
+        const QPixmap clipboardPixmap = clipboard->pixmap();
+        if (!clipboardPixmap.isNull())
+        {
+            if (outImage != nullptr)
+            {
+                *outImage = clipboardPixmap.toImage();
+            }
+            return true;
+        }
+
+        return false;
+    }
+
     bool clipboardContainsImportableImage()
     {
         const QClipboard* clipboard = QGuiApplication::clipboard();
@@ -1037,7 +1077,7 @@ namespace
             return false;
         }
 
-        return extractClipboardImage(clipboard->mimeData(), nullptr);
+        return extractClipboardImage(clipboard, nullptr);
     }
 }
 
@@ -1625,7 +1665,7 @@ bool ResourcesImportViewModel::importClipboardImageInternal(
     }
 
     QImage clipboardImage;
-    if (!extractClipboardImage(clipboard->mimeData(), &clipboardImage) || clipboardImage.isNull())
+    if (!extractClipboardImage(clipboard, &clipboardImage) || clipboardImage.isNull())
     {
         const QString errorMessage = QStringLiteral("Clipboard does not contain an importable image.");
         setLastError(errorMessage);

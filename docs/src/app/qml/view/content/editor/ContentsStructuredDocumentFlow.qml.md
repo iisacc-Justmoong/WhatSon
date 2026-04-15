@@ -102,6 +102,10 @@ Hosts the document-native block editor for structured `.wsnbody` content.
 - The flow now also exposes previous/next editable text-block offsets around non-text blocks such as `resource`.
   Resource delegates can therefore move a left/right click into the nearest existing prose block instead of always
   reopening editing at document end.
+- Resource-block focus restoration now also treats whole-block selection as the default attachment state.
+  A generic `requestFocus({ sourceOffset })` that lands inside one `<resource ... />` span reselects that block as one
+  atomic token, while edge-anchor focus is reserved for requests that explicitly opt into
+  `interactionMode: "before"` / `interactionMode: "after"`.
 - When no adjacent prose block exists, resource delegates now ask the flow to insert committed plain text directly
   before or after the block through `insertPlainTextAdjacentToBlock(...)`.
   The flow isolates that inserted text with newline boundaries only when needed, then restores focus into the newly
@@ -154,6 +158,18 @@ Hosts the document-native block editor for structured `.wsnbody` content.
   The flow resolves that request against the block's reparsed `sourceStart/sourceEnd`, rewrites RAW with that exact
   range removed, and restores focus toward the nearest surrounding prose block instead of dropping editor focus after
   the resource tag disappears.
+- Structured prose blocks can now also request deletion of an immediately adjacent atomic block when the caret hits a
+  block boundary and the user presses plain `Backspace`/`Delete`.
+  The flow treats neighboring `resource` / `break` blocks as one document token for that boundary-delete path, removes
+  the adjacent canonical source span, and keeps focus in the current prose block at the same logical boundary.
+- Structured prose blocks can now also request focus transfer into an immediately adjacent atomic resource when the
+  caret hits a block boundary and the user presses plain `Left` / `Right`.
+  The flow resolves that neighboring resource block and reissues focus as `interactionMode: "selected"`, so arrow-key
+  traversal can enter the attachment as one token instead of stalling at the paragraph edge.
+- The flow root now also forwards plain delete keys to the active delegate when that delegate exposes its own
+  `handleDeleteKeyPress(...)` contract.
+  A selected inline resource block therefore does not depend on a separate legacy text editor being mounted in order to
+  remove its `<resource ... />` RAW tag.
 - For focus requests that explicitly prefer nearby prose recovery, the host now falls back from an exact `sourceOffset`
   match to the nearest following or preceding text-capable block.
   This prevents block deletion from leaving the caret stranded in a newline gap that no longer belongs to any mounted

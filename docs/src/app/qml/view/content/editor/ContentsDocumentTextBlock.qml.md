@@ -70,3 +70,12 @@ Renders one plain-text document segment inside the structured document-flow edit
   re-reading the nested editor selection live.
   Structured-flow hosts can therefore capture the active selection on the shortcut turn itself and still rewrite the
   correct RAW paragraph range immediately.
+- Plain `Backspace/Delete` at a prose block boundary now also escalates to the structured-flow host instead of being
+  treated as a no-op inside the nested text editor.
+  When the caret is at logical column `0` or at the block tail with no active selection, the block asks the host to
+  remove an immediately adjacent atomic `resource` / `break` block by deleting that canonical RAW source span.
+- Plain `Left` / `Right` arrow movement at those same prose boundaries can now also escalate into adjacent atomic
+  attachment focus.
+  When the caret is at the start/end of a paragraph and the neighboring block is a focusable atomic resource, the
+  block asks `ContentsStructuredDocumentFlow.qml` to select that attachment as one token instead of letting cursor
+  traversal stall at the text edge.

@@ -51,6 +51,10 @@ The implementation now supports two closely related sequences.
   payloads now feed the same temporary-PNG import path.
   Copying an image from a browser page therefore still resolves as a binary image import even when the clipboard uses
   HTML/data-URL transport instead of `hasImage()`.
+- Clipboard image extraction now also falls back from `QMimeData` inspection to direct `QClipboard::image()` /
+  `QClipboard::pixmap()` reads.
+  Native macOS screenshot captures that materialize as a pasteboard image object rather than an image-advertising MIME
+  payload therefore still enable `clipboardImageAvailable` and import correctly through `Cmd+V`.
 - Clipboard conflict inspection intentionally uses the canonical temporary asset name `clipboard-image.png`, so repeated
   pasted-image imports now hit the same duplicate-policy alert instead of silently creating numbered packages.
 - QML callers should still treat the `QVariantList` return from `importUrlsForEditor(...)` as a Qt list-like value,

@@ -123,6 +123,9 @@ structured document-flow editor changes.
   The user must be able to choose `Overwrite`, `Keep Both`, or `Cancel Import`.
 - The same drop must inject canonical `<resource ...>` source tags into the selected note body instead of only adding
   filesystem packages out-of-band.
+- On macOS, a native screenshot copied to the system clipboard must also import through plain `Cmd+V`.
+  The editor must not require a browser-style `image/*` MIME advertisement if `QClipboard::image()` or `pixmap()`
+  already exposes the captured bitmap.
 - The injected resource call must be canonical self-closing source with quoted attribute values:
   `<resource type="..." format="..." path=".../.wsresource" />`.
 - Relative resource paths that contain `/` but no spaces must still survive the editor insert/save round-trip intact;
@@ -228,10 +231,32 @@ structured document-flow editor changes.
 - Clicking the center of an inline image/resource block must leave that block selected.
   The structured viewport background tap handler must not immediately move focus to the document tail and clear the
   block selection on the same gesture.
+- Ordinary clicks inside the image/resource frame must default to that same whole-block selection state.
+  Only an intentional narrow left/right edge hit may escape into before/after caret behavior; the block must not fall
+  into right-edge caret mode just because the user clicked somewhere in the broad right half of the image.
 - Pressing `Backspace` or `Delete` while that center-selected image/resource block owns focus must remove the exact
   canonical `<resource ... />` RAW source span for that block.
   The delete path must not require a hidden legacy text selection, and it must not leave the image card mounted after
   the tag has already been removed from RAW.
+- When the caret is at the very start of a prose block that immediately follows an inline image/resource block,
+  pressing plain `Backspace` must delete that preceding atomic block instead of doing nothing.
+- When the caret is at the very end of a prose block that is immediately followed by an inline image/resource block,
+  pressing plain `Delete` must delete that following atomic block instead of doing nothing.
+- The same boundary-delete contract must still work even though the image/resource block itself is mounted as a
+  non-text structured delegate.
+  Resource blocks must behave like one cursor-addressable token for adjacent prose deletion, not like an isolated card
+  that arrow/delete traversal cannot reach.
+- When the caret is at the start/end of a prose block next to an inline image/resource block, plain `Left` / `Right`
+  must be able to move focus onto that attachment token.
+  Arrow traversal must not stop at the text edge as if the resource block were outside the editable document model.
+- When the keyboard caret is currently on the resource block's right-edge boundary anchor, plain `Backspace` must
+  delete that resource block immediately.
+- When the keyboard caret is currently on the resource block's left-edge boundary anchor, plain `Delete` must delete
+  that resource block immediately.
+- While either left/right boundary anchor owns focus, the resource block must still render as one focused atomic block
+  rather than looking like only a tiny edge caret is active.
+- The hidden boundary-anchor implementation must not leak a visible miniature text caret inside the image frame.
+  Attachment focus should read as whole-block selection/focus, consistent with standard notes-app attachment behavior.
 - After deleting a selected inline image/resource block, focus recovery must move to the nearest surviving prose block
   when one exists.
   The caret must not disappear into an unmapped newline gap between reparsed blocks just because the removed resource
@@ -272,6 +297,9 @@ structured document-flow editor changes.
 - If the RAW body still carries explicit semantic text tags such as `paragraph`, `title`, `subTitle`, or `eventTitle`,
   the parser must materialize each top-level tag as its own document block instead of collapsing them back into one
   generic raw text gap.
+- The same top-level block ordering rule must hold across tag families.
+  A note that mixes `paragraph`, `resource`, `break`, `agenda`, or `callout` tags must still emerge as one ordered
+  block stream by source position, rather than one family-specific overlay list winning over the others.
 - Selecting text inside the active structured paragraph below an inline image and pressing `Cmd/Ctrl+B` or the
   highlight shortcut must rewrite the selected block-local RAW source immediately.
   The same shortcut must not fail just because the legacy whole-note editor surface is not mounted in structured-flow
@@ -291,6 +319,9 @@ structured document-flow editor changes.
   If no following prose block exists, the next committed text must materialize after that resource block in RAW.
 - Clicking the center of an inline image/resource block must select the block itself as one atomic structured item.
   The frame must expose a visible selected state instead of behaving like a display-only card with no block targeting.
+- A generic focus restore that lands on one `<resource ... />` source span must also reselect the whole attachment
+  block by default.
+  Edge-anchor focus should appear only when the caller explicitly requests before/after attachment placement.
 - A resolved bitmap resource must still upgrade into the Figma `292:50` image frame even if the renderer payload
   reaches QML with `renderMode=document`.
   Real bitmap paths/formats must win over that downgraded metadata state; the editor must not fabricate any generic

@@ -12,6 +12,10 @@ Builds canonical structured render data from `.wsnbody` source text.
   - callout blocks: `type=callout`
   - resource blocks: `type=resource`
   - divider tags: `type=break`
+- The renderer now gathers supported top-level body tags through one shared explicit-block collector instead of
+  splicing separate per-tag block streams together ad hoc.
+  In other words, `paragraph`, `title`, `resource`, `agenda`, `callout`, and `break` all enter the editor-facing
+  document flow through the same block-span path, with specialized payload fields layered on afterward where needed.
 - Canonical semantic body elements such as `paragraph`, `p`, `title`, `subTitle`, `eventTitle`, and
   `eventDescription` now materialize as explicit block spans whose `type` is the canonical tag name itself
   (for example `type=paragraph`, `type=title`, `type=subtitle`, `type=eventtitle`).
@@ -19,6 +23,8 @@ Builds canonical structured render data from `.wsnbody` source text.
   relying on one monolithic pre-resource text fragment.
 - Each explicit block, including semantic text-tag blocks, carries the backend-owned source geometry so QML can rewrite
   RAW in place.
+- Explicit blocks now also carry one normalized `tagName` alongside `type`, so downstream QML sees the same
+  document-block identity contract regardless of which supported tag family produced the span.
 - Resource blocks also carry a stable `resourceIndex` plus the canonical tag attributes (`resourceId`,
   `resourcePath`, `resourceType`, `resourceFormat`) so the structured QML host can match the block back to
   `ContentsBodyResourceRenderer`'s resolved asset entry and paint the real package payload instead of the

@@ -34,6 +34,11 @@ FocusScope {
 
     signal sourceMutationRequested(string nextSourceText, var focusRequest)
 
+    Keys.onPressed: function (event) {
+        if (documentFlow.handleActiveBlockDeleteKeyPress(event))
+            event.accepted = true
+    }
+
     function blockUsesTextDelegate(blockEntry) {
         const safeBlock = blockEntry && typeof blockEntry === "object" ? blockEntry : ({})
         const blockType = safeBlock.type !== undefined ? String(safeBlock.type).toLowerCase() : "text"
@@ -510,6 +515,25 @@ FocusScope {
                     targetState.blockIndex,
                     tagName,
                     targetState.selectionSnapshot)
+    }
+
+    function handleActiveBlockDeleteKeyPress(event) {
+        if (!event)
+            return false
+        const key = Number(event.key)
+        if (key !== Qt.Key_Backspace && key !== Qt.Key_Delete)
+            return false
+        const blocks = documentFlow.normalizedBlocks()
+        if (blocks.length === 0)
+            return false
+        const resolvedActiveBlockIndex = Math.max(-1, Number(documentFlow.resolvedInteractiveBlockIndexValue) || -1)
+        if (resolvedActiveBlockIndex < 0 || resolvedActiveBlockIndex >= blocks.length)
+            return false
+        const activeBlockHost = blockRepeater.itemAt(resolvedActiveBlockIndex)
+        const delegateItem = documentFlow.delegateItemForBlockHost(activeBlockHost)
+        if (!delegateItem || delegateItem.handleDeleteKeyPress === undefined)
+            return false
+        return !!delegateItem.handleDeleteKeyPress(event)
     }
 
     function hasFocusedBlock() {
@@ -1015,6 +1039,114 @@ FocusScope {
         return true
     }
 
+    function blockEntryIsAtomicDeletionTarget(blockEntry) {
+        const safeBlock = blockEntry && typeof blockEntry === "object" ? blockEntry : ({})
+        const blockType = safeBlock.type !== undefined ? String(safeBlock.type).trim().toLowerCase() : ""
+        return blockType === "resource" || blockType === "break"
+    }
+
+    function blockEntryIsAtomicFocusTarget(blockEntry) {
+        const safeBlock = blockEntry && typeof blockEntry === "object" ? blockEntry : ({})
+        const blockType = safeBlock.type !== undefined ? String(safeBlock.type).trim().toLowerCase() : ""
+        return blockType === "resource"
+    }
+
+    function blockHasAdjacentAtomicDeletionTarget(blockIndex, side) {
+        const blocks = documentFlow.normalizedBlocks()
+        if (blocks.length === 0)
+            return false
+        const safeBlockIndex = Math.max(0, Math.min(blocks.length - 1, Math.floor(Number(blockIndex) || 0)))
+        const normalizedSide = side === undefined || side === null ? "" : String(side).trim().toLowerCase()
+        if (normalizedSide !== "before" && normalizedSide !== "after")
+            return false
+        const adjacentBlockIndex = normalizedSide === "before" ? safeBlockIndex - 1 : safeBlockIndex + 1
+        if (adjacentBlockIndex < 0 || adjacentBlockIndex >= blocks.length)
+            return false
+        return documentFlow.blockEntryIsAtomicDeletionTarget(blocks[adjacentBlockIndex])
+    }
+
+    function blockHasAdjacentAtomicFocusTarget(blockIndex, side) {
+        const blocks = documentFlow.normalizedBlocks()
+        if (blocks.length === 0)
+            return false
+        const safeBlockIndex = Math.max(0, Math.min(blocks.length - 1, Math.floor(Number(blockIndex) || 0)))
+        const normalizedSide = side === undefined || side === null ? "" : String(side).trim().toLowerCase()
+        if (normalizedSide !== "before" && normalizedSide !== "after")
+            return false
+        const adjacentBlockIndex = normalizedSide === "before" ? safeBlockIndex - 1 : safeBlockIndex + 1
+        if (adjacentBlockIndex < 0 || adjacentBlockIndex >= blocks.length)
+            return false
+        return documentFlow.blockEntryIsAtomicFocusTarget(blocks[adjacentBlockIndex])
+    }
+
+    function deleteAdjacentAtomicBlock(blockIndex, side) {
+        const blocks = documentFlow.normalizedBlocks()
+        if (blocks.length === 0)
+            return false
+        const safeBlockIndex = Math.max(0, Math.min(blocks.length - 1, Math.floor(Number(blockIndex) || 0)))
+        const normalizedSide = side === undefined || side === null ? "" : String(side).trim().toLowerCase()
+        if (normalizedSide !== "before" && normalizedSide !== "after")
+            return false
+        const adjacentBlockIndex = normalizedSide === "before" ? safeBlockIndex - 1 : safeBlockIndex + 1
+        if (adjacentBlockIndex < 0 || adjacentBlockIndex >= blocks.length)
+            return false
+
+        const currentBlock = blocks[safeBlockIndex] && typeof blocks[safeBlockIndex] === "object" ? blocks[safeBlockIndex] : ({})
+        const adjacentBlock = blocks[adjacentBlockIndex] && typeof blocks[adjacentBlockIndex] === "object" ? blocks[adjacentBlockIndex] : ({})
+        if (!documentFlow.blockEntryIsAtomicDeletionTarget(adjacentBlock))
+            return false
+
+        const currentSourceText = documentFlow.normalizedSourceText(documentFlow.sourceText)
+        const adjacentSourceStart = Math.max(0, Math.min(currentSourceText.length, Math.floor(Number(adjacentBlock.sourceStart) || 0)))
+        const adjacentSourceEnd = Math.max(adjacentSourceStart, Math.min(currentSourceText.length, Math.floor(Number(adjacentBlock.sourceEnd) || adjacentSourceStart)))
+        if (adjacentSourceEnd <= adjacentSourceStart)
+            return false
+
+        const deletedLength = adjacentSourceEnd - adjacentSourceStart
+        const nextSourceText = documentFlow.spliceSourceRange(adjacentSourceStart, adjacentSourceEnd, "")
+        const currentBlockSourceStart = Math.max(0, Math.floor(Number(currentBlock.sourceStart) || 0))
+        const currentBlockSourceEnd = Math.max(currentBlockSourceStart, Math.floor(Number(currentBlock.sourceEnd) || currentBlockSourceStart))
+        const focusSourceOffset = normalizedSide === "before"
+                ? Math.max(0, currentBlockSourceStart - deletedLength)
+                : Math.min(nextSourceText.length, currentBlockSourceEnd)
+        documentFlow.sourceMutationRequested(
+                    nextSourceText,
+                    {
+                        "preferNearestTextBlock": true,
+                        "sourceOffset": focusSourceOffset
+                    })
+        return true
+    }
+
+    function focusAdjacentAtomicBlock(blockIndex, side) {
+        const blocks = documentFlow.normalizedBlocks()
+        if (blocks.length === 0)
+            return false
+        const safeBlockIndex = Math.max(0, Math.min(blocks.length - 1, Math.floor(Number(blockIndex) || 0)))
+        const normalizedSide = side === undefined || side === null ? "" : String(side).trim().toLowerCase()
+        if (normalizedSide !== "before" && normalizedSide !== "after")
+            return false
+        const adjacentBlockIndex = normalizedSide === "before" ? safeBlockIndex - 1 : safeBlockIndex + 1
+        if (adjacentBlockIndex < 0 || adjacentBlockIndex >= blocks.length)
+            return false
+        const adjacentBlock = blocks[adjacentBlockIndex] && typeof blocks[adjacentBlockIndex] === "object"
+                ? blocks[adjacentBlockIndex]
+                : ({})
+        if (!documentFlow.blockEntryIsAtomicFocusTarget(adjacentBlock))
+            return false
+        const focusSourceOffset = Math.max(
+                    0,
+                    Math.floor(
+                        Number(adjacentBlock.focusSourceOffset)
+                        || Number(adjacentBlock.sourceStart)
+                        || 0))
+        documentFlow.requestFocus({
+                                      "interactionMode": "selected",
+                                      "sourceOffset": focusSourceOffset
+                                  })
+        return true
+    }
+
     function replaceTextBlock(blockData, nextBlockSourceText, focusRequest) {
         const safeBlock = blockData && typeof blockData === "object" ? blockData : ({})
         documentFlow.replaceSourceRange(
@@ -1293,9 +1425,19 @@ FocusScope {
 
                     ContentsDocumentTextBlock {
                         blockData: blockHost.blockEntry
+                        hasAdjacentAtomicBlockAfter: documentFlow.blockHasAdjacentAtomicDeletionTarget(blockHost.blockIndex, "after")
+                        hasAdjacentAtomicBlockBefore: documentFlow.blockHasAdjacentAtomicDeletionTarget(blockHost.blockIndex, "before")
+                        hasAdjacentAtomicFocusAfter: documentFlow.blockHasAdjacentAtomicFocusTarget(blockHost.blockIndex, "after")
+                        hasAdjacentAtomicFocusBefore: documentFlow.blockHasAdjacentAtomicFocusTarget(blockHost.blockIndex, "before")
                         width: blockHost.width
 
                         onActivated: documentFlow.noteActiveBlockInteraction(blockHost.blockIndex)
+                        onAdjacentAtomicBlockDeleteRequested: function (side) {
+                            documentFlow.deleteAdjacentAtomicBlock(blockHost.blockIndex, side)
+                        }
+                        onAdjacentAtomicBlockFocusRequested: function (side) {
+                            documentFlow.focusAdjacentAtomicBlock(blockHost.blockIndex, side)
+                        }
                         onSourceMutationRequested: function (nextBlockSourceText, focusRequest) {
                             documentFlow.replaceTextBlock(blockHost.blockEntry, nextBlockSourceText, focusRequest)
                         }
