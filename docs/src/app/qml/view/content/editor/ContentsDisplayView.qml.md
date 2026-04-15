@@ -11,6 +11,8 @@ Desktop content editor host.
   routing.
 - The legacy whole-note `ContentsInlineFormatEditor.qml` path is now transitional fallback only while no bound note
   session exists yet; it is no longer the ordinary note-editing mode.
+- When that fallback RichText path does temporarily render an inline image placeholder, the generated `<img>` width now
+  uses the full editor-body width budget instead of the older `480px` cap.
 
 ## Structured Document Flow
 - `agenda`, `callout`, `resource`, `break`, semantic text tags, and plain text now all share the same desktop

@@ -1041,7 +1041,7 @@ Item {
                 : 0;
         const viewportWidth = editorViewport ? Number(editorViewport.width) || 0 : 0;
         const availableWidth = Math.max(editorWidth, viewportWidth) - contentsView.editorHorizontalInset * 2;
-        return Math.max(120, Math.min(480, Math.floor(Math.max(120, availableWidth))));
+        return Math.max(120, Math.floor(Math.max(120, availableWidth)));
     }
     function resourceEntryOpenTarget(resourceEntry) {
         const safeEntry = resourceEntry && typeof resourceEntry === "object" ? resourceEntry : ({});

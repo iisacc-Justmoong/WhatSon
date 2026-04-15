@@ -10,13 +10,13 @@ Dedicated image-body frame container derived from Figma node `292:50`.
 - Center media slot
   - uses `8px` horizontal inset from the outer frame
   - keeps the outer frame at the available editor-body width while centering the actual media viewport inside it
-  - clamps the media viewport by a single downscale factor derived from:
+  - clamps the media viewport by one fitted scale derived from:
     - the available frame width after the 8px left/right inset
     - the media's natural pixel size
     - the frame-local maximum media height
-  - never upscales the media beyond the natural bitmap size
-  - derives its effective width/height from that single scale so tall images remain bounded as ordinary document blocks
-    instead of expanding to their raw pixel height inside the note body
+  - may upscale the media horizontally until the frame reaches the full available editor-body width
+  - still derives its effective width/height from that same fitted scale so tall images remain bounded as ordinary
+    document blocks instead of expanding to their raw pixel height inside the note body
   - exposed as a default-content slot so image/video viewers can be mounted inside it later
 - Bottom `resourceToolbar`
   - caption-style filename label
@@ -48,8 +48,7 @@ Dedicated image-body frame container derived from Figma node `292:50`.
   - frame-width resolution must derive from the parent width or the design fallback width, not from the frame's own
     `width` binding, so the image card does not enter a `resolvedFrameWidth` binding loop while it mounts
   - runtime media viewport stays centered
-  - runtime media width/height may shrink to fit the frame
-  - runtime media width/height must not upscale past the bitmap's natural pixel size
+  - runtime media width/height may shrink or grow to fit the frame width budget
   - runtime media height is additionally capped to the inline note-body block budget so the image frame does not
     consume the whole editor column
   - 8px horizontal header/footer/media padding

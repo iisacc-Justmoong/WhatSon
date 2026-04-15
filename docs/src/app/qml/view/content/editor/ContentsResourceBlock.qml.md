@@ -34,6 +34,9 @@ Renders one structured document-flow block for a canonical `<resource ... />` so
   They still feed committed plain text back into RAW through
   `adjacentPlainTextInsertionRequested(side, text, cursorPosition)`, which means typing from the left lane inserts a
   new paragraph before the `<resource ... />` tag and typing from the right lane inserts after it.
+- The resource frame itself now spans the full available document-column width.
+  The left/right caret lanes no longer reduce the rendered frame width; they float over the block edges so the card can
+  match the editor body's full horizontal span.
 - The resource block now also exposes a visible selected state for center-click block selection, so image frames can be
   targeted as atomic structured blocks instead of behaving like untouchable display-only cards.
 - That same whole-block focus chrome now stays visible while one of the transient left/right boundary caret anchors is

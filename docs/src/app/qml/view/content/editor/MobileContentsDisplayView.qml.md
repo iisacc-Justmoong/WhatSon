@@ -10,6 +10,8 @@ Mobile content editor host.
   and `break` now all stay inside that same document host instead of using mode-specific editor routing.
 - The legacy whole-note `ContentsInlineFormatEditor.qml` path is now transitional fallback only while no bound note
   session exists yet; it is no longer the ordinary mobile note-editing mode.
+- When that fallback RichText path does temporarily render an inline image placeholder, the generated `<img>` width now
+  uses the full editor-body width budget instead of the older `480px` cap.
 
 ## Structured Document Flow
 - `agenda`, `callout`, `resource`, `break`, semantic text tags, and plain text now all share the same mobile

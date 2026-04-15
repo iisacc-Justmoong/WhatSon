@@ -292,9 +292,7 @@ FocusScope {
         id: resourceCard
 
         anchors.left: parent.left
-        anchors.leftMargin: resourceBlock.boundaryCaretLaneWidth
         anchors.right: parent.right
-        anchors.rightMargin: resourceBlock.boundaryCaretLaneWidth
         anchors.top: parent.top
         inlinePresentation: true
         resourceEntry: resourceBlock.effectiveResourceEntry
