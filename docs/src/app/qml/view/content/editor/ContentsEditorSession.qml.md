@@ -120,6 +120,10 @@
   modification must rewrite that placeholder to current `YYYY-MM-DD`.
 - If model/body sync includes empty `<task>` or empty `<callout>` blocks, editor session normalization must expose
   them as single-space anchor bodies so subsequent typing/Enter flow can still target those structures.
+- Same-note model echoes that arrive while the local typing session is still authoritative should re-stage the current
+  buffer through deferred persistence instead of forcing an immediate file flush on the echo turn.
+- Immediate persistence remains a dedicated flush path for blur/note-switch settlement and should not be the default
+  write path for ordinary in-note typing.
 
 ## Intended Detailed Sections
 - Responsibility and business role

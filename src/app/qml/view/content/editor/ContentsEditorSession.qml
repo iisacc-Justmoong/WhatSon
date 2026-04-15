@@ -98,7 +98,7 @@ Item {
         if (currentNoteId === nextNoteId && currentText === nextText)
             return false;
         if (currentNoteId === nextNoteId && !editorSession.shouldAcceptModelBodyText(nextNoteId, nextText)) {
-            editorSession.persistEditorTextImmediately(currentText);
+            editorSession.scheduleEditorPersistence();
             return false;
         }
         editorSession.syncEditorTextFromSelection(nextNoteId, nextText);

@@ -276,7 +276,7 @@ Item {
     readonly property string structuredFlowSourceText: contentsView.documentPresentationSourceText
     readonly property bool liveResourceStructuredFlowRequested: contentsView.sourceContainsCanonicalResourceTag(
                                                                     contentsView.documentPresentationSourceText)
-    readonly property bool parsedStructuredFlowRequested: contentsView.editorSessionBoundToSelectedNote
+    readonly property bool parsedStructuredFlowRequested: contentsView.hasSelectedNote
     readonly property bool structuredDocumentFlowEnabled: contentsView.parsedStructuredFlowRequested
     readonly property bool resourceResolverNeedsLiveEditorSource: contentsView.showStructuredDocumentFlow
                                                                   || contentsView.liveResourceStructuredFlowRequested
@@ -323,7 +323,7 @@ Item {
                     ? ""
                     : String(contentsView.selectedNoteBodyText)
         }
-        return contentsView.editorText === undefined || contentsView.editorText === null ? "" : String(contentsView.editorText)
+        return ""
     }
     function activeLogicalTextSnapshot() {
         if (editorTypingController && editorTypingController.currentEditorPlainText !== undefined) {
@@ -683,10 +683,7 @@ Item {
     function commitGutterRefresh() {
         contentsView.refreshLiveLogicalLineMetrics();
         contentsView.gutterRefreshRevision += 1;
-        contentsView.refreshMinimapSnapshot();
         contentsView.visibleGutterLineEntries = contentsView.buildVisibleGutterLineEntries();
-        if (minimapLayer)
-            minimapLayer.requestRepaint();
     }
     function refreshVisibleGutterEntries() {
         contentsView.visibleGutterLineEntries = contentsView.buildVisibleGutterLineEntries();
@@ -2008,8 +2005,8 @@ Item {
                 structuredDocumentFlow.requestFocus(requestedFocus);
             });
         }
-        if (contentsView.persistEditorTextImmediately !== undefined)
-            contentsView.persistEditorTextImmediately(normalizedNextSourceText);
+        if (editorSession && editorSession.scheduleEditorPersistence !== undefined)
+            editorSession.scheduleEditorPersistence();
         contentsView.editorTextEdited(normalizedNextSourceText);
         return true;
     }
@@ -2352,6 +2349,16 @@ Item {
         if (contentsView.pendingEditorFocusNoteId === contentsView.selectedNoteId)
             contentsView.focusEditorForPendingNote();
     }
+    function canFlushSelectionModelSyncImmediately() {
+        const normalizedSelectedNoteId = contentsView.selectedNoteId === undefined || contentsView.selectedNoteId === null
+                ? ""
+                : String(contentsView.selectedNoteId).trim();
+        if (normalizedSelectedNoteId.length === 0)
+            return true;
+        if (contentsView.selectedNoteBodyLoading)
+            return false;
+        return contentsView.selectedNoteBodyNoteId === normalizedSelectedNoteId;
+    }
     function scheduleSelectionModelSync(options) {
         const syncOptions = options && typeof options === "object" ? options : ({});
         if (syncOptions.resetSnapshot)
@@ -2366,6 +2373,10 @@ Item {
             contentsView.selectionModelSyncForceVisualRefreshPending = true;
         if (contentsView.selectionModelSyncQueued)
             return;
+        if (contentsView.canFlushSelectionModelSyncImmediately()) {
+            contentsView.flushSelectionModelSync();
+            return;
+        }
         contentsView.selectionModelSyncQueued = true;
         Qt.callLater(function () {
             contentsView.flushSelectionModelSync();
@@ -2466,12 +2477,20 @@ Item {
         contentsView.scheduleDocumentPresentationRefresh(true);
     }
     onSelectedNoteBodyTextChanged: {
-        contentsView.scheduleSelectionModelSync({});
+        if (contentsView.selectedNoteBodyLoading)
+            return;
+        if (contentsView.selectedNoteBodyNoteId !== contentsView.selectedNoteId)
+            return;
+        contentsView.scheduleSelectionModelSync({
+                                                   "scheduleReconcile": true
+                                               });
     }
     onSelectedNoteBodyLoadingChanged: {
-        // Empty-body notes keep the same text payload across load completion, so loading state must also re-arm sync.
-        if (!contentsView.selectedNoteBodyLoading) {
+        if (!contentsView.selectedNoteBodyLoading
+                && contentsView.selectedNoteBodyNoteId === contentsView.selectedNoteId
+                && contentsView.selectedNoteBodyText.length === 0) {
             contentsView.scheduleSelectionModelSync({
+                                                       "scheduleReconcile": true,
                                                        "fallbackRefresh": true
                                                    });
         }
@@ -2481,8 +2500,6 @@ Item {
         contentsView.scheduleNoteEntryGutterRefresh(contentsView.selectedNoteId);
         contentsView.scheduleSelectionModelSync({
                                                    "resetSnapshot": true,
-                                                   "scheduleReconcile": true,
-                                                   "fallbackRefresh": true,
                                                    "focusEditor": true
                                                });
     }
@@ -2697,7 +2714,7 @@ Item {
         function onRenderedBlocksChanged() {
             contentsView.refreshStructuredDocumentFlowActivation();
             contentsView.scheduleMinimapSnapshotRefresh(true);
-            contentsView.scheduleGutterRefresh(2, "line-structure");
+            contentsView.scheduleGutterRefresh(1, "line-structure");
         }
 
         target: structuredBlockRenderer
@@ -2716,9 +2733,14 @@ Item {
     }
     Connections {
         function onEditorTextSynchronized() {
+            contentsView.consumePendingNoteEntryGutterRefresh(editorSession.editorBoundNoteId);
+            if (contentsView.parsedStructuredFlowRequested) {
+                if (contentsView.renderedEditorText !== "")
+                    contentsView.renderedEditorText = "";
+                return;
+            }
             contentsView.scheduleMinimapSnapshotRefresh(true);
             contentsView.scheduleDocumentPresentationRefresh(true);
-            contentsView.consumePendingNoteEntryGutterRefresh(editorSession.editorBoundNoteId);
             contentsView.scheduleGutterRefresh(4);
         }
 

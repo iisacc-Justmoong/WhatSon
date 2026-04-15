@@ -205,6 +205,17 @@ Mobile content editor host.
   refresh flag alive or re-arms the legacy refresh timer after ordinary RAW mutations.
 - The host-level `ContentsTextFormatRenderer` also stops consuming note RAW while that projection contract is disabled.
   Structured editing therefore avoids one otherwise-unused HTML render pass per source mutation on mobile as well.
+- Selection-model synchronization now flushes immediately when the selected note snapshot is already resident and
+  matches the selected note id.
+  Mobile therefore no longer pays an extra event-loop turn before binding the editor session to an already-loaded note
+  body.
+- Gutter refresh passes no longer recalculate the minimap snapshot themselves.
+  Mobile now leaves whole-note minimap work to the dedicated minimap scheduler so repeated gutter-settling passes do
+  not stall first paint with duplicate minimap recomputation.
+- `editorTextSynchronized` now also avoids forcing a full minimap/gutter refresh while structured flow is still
+  rematerializing parsed blocks from the new RAW snapshot.
+  Mobile therefore spends the first render turn on the note body itself and lets auxiliary surfaces catch up from the
+  structured render/layout path.
 - Mobile now also gates `ContentsBodyResourceRenderer.bodySourceText` by
   `editorSession.editorBoundNoteId == selectedNoteId` instead of by the selection-bridge body-note echo alone.
   A same-note drag/drop or clipboard image insert therefore resolves the newly inserted `<resource ... />` tag from
@@ -267,6 +278,18 @@ Mobile content editor host.
 - When `ContentsBodyResourceRenderer` refreshes after import or same-note reload, mobile now reapplies that resource
   payload back into the current RichText editor HTML, keeps the placeholder body slot in sync, and schedules a gutter
   refresh so the source-aligned resource renderer can repaint that slot without waiting for another note-open turn.
+- Mobile note selection now also enters structured-flow mode immediately instead of waiting for the editor session to
+  bind the selected note first. While the new body is still loading, the host resolves the presentation source to an
+  empty RAW snapshot rather than momentarily reusing the previously bound editor text.
+- After the mobile editor session sync lands for that same note, the host now clears any stale RichText projection cache
+  directly instead of scheduling another projection-refresh cycle, reducing the same visible stair-step loading pattern
+  on note open.
+- Structured-source mutations on mobile now also stay on the idle persistence queue during ordinary typing.
+  Mobile therefore stops forcing a synchronous body flush for every mutation and instead keeps `pendingBodySave` active
+  until the staged RAW snapshot is drained by the background idle sync controller.
+- Mobile note-open selection sync is now coalesced the same way as desktop:
+  non-empty note bodies sync from the body-text change only, while the loading-finished fallback remains only for empty
+  notes whose payload text does not actually change.
 - Programmatic RichText surface refresh now also raises `programmaticEditorSurfaceSyncActive` around that host-driven
   repaint window, so the rebuilt placeholder surface cannot re-enter the typing diff path as a fake committed edit.
 - Mobile file-drop linking now also raises `resourceDropEditorSurfaceGuardActive` for the drop turn itself.

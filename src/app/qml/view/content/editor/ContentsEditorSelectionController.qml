@@ -1023,7 +1023,8 @@ QtObject {
         controller.refreshPresentationStateAfterProgrammaticChange();
         if (controller.editorSession && controller.editorSession.markLocalEditorAuthority !== undefined)
             controller.editorSession.markLocalEditorAuthority();
-        controller.persistEditorTextImmediately(nextText);
+        if (controller.editorSession && controller.editorSession.scheduleEditorPersistence !== undefined)
+            controller.editorSession.scheduleEditorPersistence();
         if (lineContext.hasSelection) {
             controller.scheduleEditorSelection(
                         lineStates[0].entry.logicalStart,
@@ -1180,7 +1181,8 @@ QtObject {
         controller.refreshPresentationStateAfterProgrammaticChange();
         if (controller.editorSession && controller.editorSession.markLocalEditorAuthority !== undefined)
             controller.editorSession.markLocalEditorAuthority();
-        controller.persistEditorTextImmediately(nextText);
+        if (controller.editorSession && controller.editorSession.scheduleEditorPersistence !== undefined)
+            controller.editorSession.scheduleEditorPersistence();
         controller.resetEditorSelectionCache();
         controller.view.editorTextEdited(nextText);
         return true;

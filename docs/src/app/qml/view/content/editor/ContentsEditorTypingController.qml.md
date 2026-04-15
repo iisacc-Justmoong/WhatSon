@@ -323,3 +323,6 @@ structured-block projection do not re-enter the normal typing path.
 - Pressing `Enter` inside an empty `<task>` must exit agenda editing rather than stacking additional empty task blocks.
 - Pressing `Enter` inside an empty `<task>` and leaving an agenda where all tasks are empty must remove the entire
   `<agenda>...</agenda>` block from source.
+- Legacy typing mutations should stage persistence through the editor-session idle queue instead of flushing `.wsnbody`
+  synchronously on every accepted edit. RAW mutation and cursor restoration still happen immediately, but steady-state
+  typing should collapse to queued persistence bursts rather than one file-write turn per key.

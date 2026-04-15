@@ -213,3 +213,6 @@ It also owns keyboard-driven markdown block toggles for the list types the rende
   treats formatting/list rewrites as write-through `.wsnbody` updates by default.
 - A host with `preferNativeInputHandling` enabled must not be re-forced into `TextEdit.RichText` by the selection
   controller after note changes, surface syncs, or shortcut handling.
+- Programmatic list rewrites and inline-format wraps issued by the selection controller should share the same idle
+  persistence queue as ordinary typing. Selection-driven source rewrites must not force a synchronous flush for every
+  command unless the caller explicitly enters an immediate flush path.

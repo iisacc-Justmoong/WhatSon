@@ -757,8 +757,8 @@ QtObject {
 
         if (controller.editorSession && controller.editorSession.markLocalEditorAuthority !== undefined)
             controller.editorSession.markLocalEditorAuthority();
-        if (controller.view.persistEditorTextImmediately !== undefined)
-            controller.view.persistEditorTextImmediately(nextSourceText);
+        if (controller.editorSession && controller.editorSession.scheduleEditorPersistence !== undefined)
+            controller.editorSession.scheduleEditorPersistence();
         controller.view.editorTextEdited(nextSourceText);
         return true;
     }
@@ -1071,8 +1071,8 @@ QtObject {
 
         if (controller.editorSession && controller.editorSession.markLocalEditorAuthority !== undefined)
             controller.editorSession.markLocalEditorAuthority();
-        if (controller.view.persistEditorTextImmediately !== undefined)
-            controller.view.persistEditorTextImmediately(nextSourceText);
+        if (controller.editorSession && controller.editorSession.scheduleEditorPersistence !== undefined)
+            controller.editorSession.scheduleEditorPersistence();
         controller.view.editorTextEdited(nextSourceText);
         return true;
     }
@@ -1141,8 +1141,8 @@ QtObject {
 
         if (controller.editorSession && controller.editorSession.markLocalEditorAuthority !== undefined)
             controller.editorSession.markLocalEditorAuthority();
-        if (controller.view.persistEditorTextImmediately !== undefined)
-            controller.view.persistEditorTextImmediately(normalizedNextSourceText);
+        if (controller.editorSession && controller.editorSession.scheduleEditorPersistence !== undefined)
+            controller.editorSession.scheduleEditorPersistence();
         controller.view.editorTextEdited(normalizedNextSourceText);
         return true;
     }
@@ -1638,8 +1638,8 @@ QtObject {
 
         if (controller.editorSession && controller.editorSession.markLocalEditorAuthority !== undefined)
             controller.editorSession.markLocalEditorAuthority();
-        if (controller.view.persistEditorTextImmediately !== undefined)
-            controller.view.persistEditorTextImmediately(nextSourceText);
+        if (controller.editorSession && controller.editorSession.scheduleEditorPersistence !== undefined)
+            controller.editorSession.scheduleEditorPersistence();
         controller.view.editorTextEdited(nextSourceText);
         return true;
     }

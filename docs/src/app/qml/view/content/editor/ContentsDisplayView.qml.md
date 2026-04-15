@@ -295,6 +295,17 @@ Desktop content editor host.
   refresh state and no longer re-arms the legacy surface-sync timer just because RAW source changed.
 - The host-level `ContentsTextFormatRenderer` also stops receiving note RAW while that projection contract is disabled.
   Structured editing therefore no longer keeps one unused HTML renderer hot on every source mutation.
+- Selection-model synchronization now flushes immediately when the selected note snapshot is already resident and
+  matches the selected note id.
+  Desktop therefore no longer pays an extra event-loop turn before binding the editor session to an already-loaded
+  note body.
+- Gutter refresh passes no longer recalculate the minimap snapshot themselves.
+  Desktop now leaves whole-note minimap work to the dedicated minimap scheduler so repeated gutter-settling passes do
+  not block first paint with duplicate minimap recomputation.
+- `editorTextSynchronized` now also avoids forcing a full minimap/gutter refresh while structured flow is still
+  rematerializing parsed blocks from the new RAW snapshot.
+  Desktop therefore spends the first render turn on the note body itself and lets auxiliary surfaces catch up from the
+  structured render/layout path.
 - Desktop host no longer uses `ContentsResourceLayer.qml` for note-body rendering.
   Resource visibility now depends on parsed document blocks, not on a second overlay pass above the editor surface.
 - When the selection bridge can already expose a buffered dirty body for the newly selected note, the desktop host now
@@ -317,6 +328,19 @@ Desktop content editor host.
 - Desktop no longer auto-mounts `ContentsStructuredTagValidator` as a parser-driven write path.
   Renderer-side correction suggestions may still exist internally, but note-open and typing now stay on the single
   editor-session persistence path instead of opening an extra validator-triggered file write + note-list refresh turn.
+- Desktop note selection now enters structured-flow mode immediately, before `editorSession.editorBoundNoteId` catches up.
+  During that hand-off, unresolved note bodies resolve to an empty document snapshot instead of falling back to the
+  previously bound editor text, so the host no longer flashes the legacy HTML projection and then remounts the
+  structured surface one phase later.
+- Once the selected RAW body arrives, desktop keeps the RichText projection cache cleared instead of scheduling another
+  projection refresh turn for the same note-open event. This removes one more auxiliary repaint from the first
+  structured render path and reduces the visible stair-step note load.
+- Structured-source mutations on desktop no longer flush persistence synchronously on every edit.
+  RAW edits now stay local in `editorSession.editorText`, keep `pendingBodySave` armed, and fall back to the idle sync
+  queue for ordinary typing bursts instead of issuing an immediate file-write turn per keystroke.
+- Desktop note-open selection sync is now coalesced so non-empty note bodies sync from `selectedNoteBodyTextChanged`
+  only, while the `selectedNoteBodyLoadingChanged` fallback remains reserved for empty-note completions.
+  This removes one duplicate selection-to-render remount on ordinary note opens.
 - The print-document `Repeater` delegate now declares `required property int index`, and the inline editor host uses a
   literal `shapeStyle: 0`, removing runtime `ReferenceError` noise seen during desktop app execution.
 - When `ContentsBodyResourceRenderer` refreshes after a drop/import or same-note reload, the desktop host now reapplies
