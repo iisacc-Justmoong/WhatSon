@@ -8,8 +8,80 @@
 #include <QPointer>
 #include <QThreadPool>
 
+#include <algorithm>
+
 namespace
 {
+    namespace SemanticTags = WhatSon::NoteBodySemanticTagSupport;
+
+    bool containsIgnoreCase(const QString& text, const QString& token)
+    {
+        return text.indexOf(token, 0, Qt::CaseInsensitive) >= 0;
+    }
+
+    bool mayContainAgendaBlock(const QString& sourceText)
+    {
+        return containsIgnoreCase(sourceText, QStringLiteral("<agenda"));
+    }
+
+    bool mayContainCalloutBlock(const QString& sourceText)
+    {
+        return containsIgnoreCase(sourceText, QStringLiteral("<callout"));
+    }
+
+    bool mayContainBreakBlock(const QString& sourceText)
+    {
+        return containsIgnoreCase(sourceText, QStringLiteral("</break"))
+            || containsIgnoreCase(sourceText, QStringLiteral("<break"))
+            || containsIgnoreCase(sourceText, QStringLiteral("<hr"))
+            || containsIgnoreCase(sourceText, QStringLiteral("</hr"));
+    }
+
+    bool mayContainResourceBlock(const QString& sourceText)
+    {
+        return containsIgnoreCase(sourceText, QStringLiteral("<resource"));
+    }
+
+    int boundedTextIndex(const QString& text, const int index)
+    {
+        return std::clamp(index, 0, static_cast<int>(text.size()));
+    }
+
+    QVariantMap documentBlockPayload(
+        const QString& sourceText,
+        const int sourceStart,
+        const int sourceEnd,
+        const QString& typeName = QString(),
+        const QString& tagName = QString())
+    {
+        const int boundedStart = boundedTextIndex(sourceText, sourceStart);
+        const int boundedEnd = boundedTextIndex(sourceText, std::max(boundedStart, sourceEnd));
+        const QString normalizedTypeName = typeName.trimmed().toCaseFolded();
+        const QString normalizedTagName = tagName.trimmed().toCaseFolded();
+
+        QVariantMap payload;
+        payload.insert(
+            QStringLiteral("type"),
+            normalizedTypeName.isEmpty() ? QStringLiteral("text") : normalizedTypeName);
+        payload.insert(QStringLiteral("sourceStart"), boundedStart);
+        payload.insert(QStringLiteral("sourceEnd"), boundedEnd);
+        payload.insert(
+            QStringLiteral("sourceText"),
+            sourceText.mid(boundedStart, boundedEnd - boundedStart));
+        if (!normalizedTypeName.isEmpty())
+        {
+            payload.insert(QStringLiteral("explicitBlock"), true);
+            payload.insert(
+                QStringLiteral("tagName"),
+                normalizedTagName.isEmpty() ? normalizedTypeName : normalizedTagName);
+            if (SemanticTags::isRenderedTextBlockElement(normalizedTypeName))
+            {
+                payload.insert(QStringLiteral("semanticTagName"), normalizedTypeName);
+            }
+        }
+        return payload;
+    }
+
     QVariantMap defaultParseVerification(const QString& tagName)
     {
         return QVariantMap {

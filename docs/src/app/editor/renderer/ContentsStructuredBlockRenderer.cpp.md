@@ -49,6 +49,10 @@ Builds canonical structured render data from `.wsnbody` source text.
 - When the host enables `backgroundRefreshEnabled`, notes that may contain agenda/callout/resource/break blocks now
   publish a cheap single-text-block placeholder immediately and compute the expensive structured render snapshot on a
   worker thread.
+- The renderer still keeps tiny local fast-path helpers for that background gate and placeholder publish path:
+  case-insensitive tag probes (`mayContainAgendaBlock`, `mayContainCalloutBlock`, `mayContainResourceBlock`,
+  `mayContainBreakBlock`) plus a minimal `documentBlockPayload(...)` builder for the temporary plain-text placeholder.
+  Those helpers are intentionally local renderer utilities; they do not reintroduce the old multi-backend parse path.
 - Async render results are sequence-checked before apply so stale note-open parses cannot overwrite newer source text
   after selection changes or live edits.
 - Both the async apply path and the placeholder publish path now compare render payload deltas first, then emit
