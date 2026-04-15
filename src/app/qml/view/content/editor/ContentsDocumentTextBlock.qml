@@ -16,6 +16,7 @@ FocusScope {
     readonly property var normalizedBlock: blockData && typeof blockData === "object" ? blockData : ({})
     readonly property int currentLogicalLineNumber: textBlock.currentEditorLogicalLineNumber()
     readonly property bool focused: blockEditor.focused
+    readonly property bool hasInlineStyleMarkup: /<\s*\/?\s*(bold|italic|underline|strikethrough|highlight)\b/i.test(textBlock.sourceText)
     readonly property int sourceStart: Math.max(0, Number(normalizedBlock.sourceStart) || 0)
     readonly property int sourceEnd: Math.max(sourceStart, Number(normalizedBlock.sourceEnd) || 0)
     readonly property string sourceText: normalizedBlock.sourceText !== undefined ? String(normalizedBlock.sourceText) : ""
@@ -310,10 +311,11 @@ FocusScope {
         insetHorizontal: 0
         insetVertical: 0
         placeholderText: ""
+        renderedText: textBlock.hasInlineStyleMarkup ? String(blockRenderer.editorSurfaceHtml || "") : ""
         selectByMouse: true
         selectedTextColor: LV.Theme.textPrimary
         selectionColor: LV.Theme.accent
-        showRenderedOutput: false
+        showRenderedOutput: textBlock.hasInlineStyleMarkup
         showScrollBar: false
         text: textBlock.authoritativePlainText()
         textColor: LV.Theme.bodyColor

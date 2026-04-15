@@ -124,6 +124,16 @@ plain `QtQuick.TextEdit` as the actual rendering and input engine.
   - `externalScroll: true` disables the wrapper's own vertical flicking
   - `externalScrollViewport` points at the outer paper document viewport
   - `resolvedFlickable` and `contentOffsetY` let the host keep gutter/minimap math aligned to the outer paper document
+- Hosts may now also supply a rendered read-only overlay through:
+  - `renderedText`
+  - `renderedTextFormat`
+  - `showRenderedOutput`
+  When enabled in plain-text input mode, the wrapper paints that rendered overlay underneath the live `TextEdit` and
+  makes ordinary unselected editor glyphs transparent. This lets the app show formatted inline spans without giving
+  write authority back to Qt RichText.
+- That rendered overlay is automatically suppressed while an IME preedit/composition session is active.
+  Hangul or other native composition text therefore remains visibly painted from the real `TextEdit` instead of being
+  hidden behind one stale rendered-html snapshot.
 - Preserves the legacy nested editor access pattern:
   - `editorItem`
   - `editorItem.activeFocus` (native `Item` focus state)
@@ -222,3 +232,8 @@ plain `QtQuick.TextEdit` as the actual rendering and input engine.
 - Immediately after a host shortcut such as `Cmd/Ctrl+B`, `Cmd/Ctrl+I`, or highlight formatting, the wrapper must not
   report an empty selection just because the live `TextEdit` momentarily collapsed the range to one edge while the
   RAW formatting mutation is reading the current selection on that same turn.
+- A plain-text structured paragraph that contains RAW inline style tags must still paint visible formatted spans once
+  the host provides `renderedText`; the wrapper must not regress to a plain unformatted view just because the input
+  engine itself stayed in `TextEdit.PlainText`.
+- While that formatted overlay is active, starting an IME composition must immediately reveal the native composing text
+  instead of leaving the editor visually frozen on the previous rendered-html snapshot.

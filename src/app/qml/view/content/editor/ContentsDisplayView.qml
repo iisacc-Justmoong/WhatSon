@@ -513,9 +513,17 @@ Item {
     }
     function buildVisibleGutterLineEntries() {
         if (contentsView.showStructuredDocumentFlow) {
+            const lineEntries = contentsView.effectiveStructuredLogicalLineEntries();
+            if (lineEntries.length === 0) {
+                return [{
+                            "height": contentsView.editorLineHeight,
+                            "lineNumber": 1,
+                            "y": contentsView.gutterLineY(1)
+                        }];
+            }
             const visibleLines = [];
-            const firstVisibleLine = contentsView.firstVisibleLogicalLine();
-            for (let lineNumber = firstVisibleLine; lineNumber <= contentsView.logicalLineCount; ++lineNumber) {
+            for (let lineIndex = 0; lineIndex < lineEntries.length; ++lineIndex) {
+                const lineNumber = lineIndex + 1;
                 const gutterY = contentsView.gutterLineY(lineNumber);
                 const gutterHeight = contentsView.gutterLineVisualHeight(lineNumber, 1);
                 const visibleHeight = contentsView.lineVisualHeight(lineNumber, 1);
@@ -530,6 +538,7 @@ Item {
                 });
             }
             if (visibleLines.length === 0) {
+                const firstVisibleLine = contentsView.firstVisibleLogicalLine();
                 visibleLines.push({
                     "height": contentsView.gutterLineVisualHeight(firstVisibleLine, 1),
                     "lineNumber": firstVisibleLine,
@@ -747,7 +756,8 @@ Item {
     function documentOccupiedBottomY() {
         const refreshRevision = contentsView.gutterRefreshRevision;
         if (contentsView.showStructuredDocumentFlow) {
-            const lastLineNumber = Math.max(1, contentsView.logicalLineCount);
+            const structuredLineCount = Math.max(1, contentsView.effectiveStructuredLogicalLineEntries().length);
+            const lastLineNumber = structuredLineCount;
             return Math.max(
                         contentsView.editorLineHeight,
                         contentsView.lineDocumentY(lastLineNumber) + contentsView.lineVisualHeight(lastLineNumber, 1));
@@ -870,6 +880,19 @@ Item {
             return 1;
         const contentY = Math.max(0, Number(flickable.contentY) || 0);
         const firstVisibleDocumentY = Math.max(0, contentY - contentsView.editorDocumentStartY);
+        if (contentsView.showStructuredDocumentFlow) {
+            const lineEntries = contentsView.effectiveStructuredLogicalLineEntries();
+            for (let lineIndex = 0; lineIndex < lineEntries.length; ++lineIndex) {
+                const entry = lineEntries[lineIndex] && typeof lineEntries[lineIndex] === "object"
+                        ? lineEntries[lineIndex]
+                        : ({});
+                const lineTop = Math.max(0, Number(entry.contentY) || 0);
+                const lineBottom = lineTop + Math.max(1, Number(entry.contentHeight) || contentsView.editorLineHeight);
+                if (lineBottom > firstVisibleDocumentY)
+                    return lineIndex + 1;
+            }
+            return Math.max(1, lineEntries.length);
+        }
         return Math.max(1, Math.min(contentsView.logicalLineCount, contentsView.logicalLineNumberForDocumentY(firstVisibleDocumentY)));
     }
     function shouldFlushBlurredEditorState(scheduledNoteId) {
@@ -1314,12 +1337,15 @@ Item {
         return contentsView.minimapContentHeight() > (Number(flickable.height) || 0);
     }
     function lineDocumentY(lineNumber) {
-        const safeLineNumber = Math.max(1, Math.min(contentsView.logicalLineCount, Number(lineNumber) || 1));
         if (contentsView.showStructuredDocumentFlow) {
+            const structuredLineCount = Math.max(1, contentsView.effectiveStructuredLogicalLineEntries().length);
+            const safeLineNumber = Math.max(1, Math.min(structuredLineCount, Number(lineNumber) || 1));
             const structuredEntry = contentsView.structuredLogicalLineEntryAt(safeLineNumber);
             if (structuredEntry && structuredEntry.contentY !== undefined)
                 return Math.max(0, Number(structuredEntry.contentY) || 0);
+            return Math.max(0, (safeLineNumber - 1) * contentsView.editorLineHeight);
         }
+        const safeLineNumber = Math.max(1, Math.min(contentsView.logicalLineCount, Number(lineNumber) || 1));
         if (contentsView.incrementalLineGeometryAvailable()) {
             const lineGroup = contentsView.minimapLineGroups[safeLineNumber - 1];
             if (lineGroup && lineGroup.contentY !== undefined)
@@ -1341,9 +1367,10 @@ Item {
         return contentsView.lineDocumentY(lineNumber);
     }
     function lineVisualHeight(startLine, lineSpan) {
-        const safeStartLine = Math.max(1, Math.min(contentsView.logicalLineCount, Number(startLine) || 1));
         const safeLineSpan = Math.max(1, Number(lineSpan) || 1);
         if (contentsView.showStructuredDocumentFlow) {
+            const structuredLineCount = Math.max(1, contentsView.effectiveStructuredLogicalLineEntries().length);
+            const safeStartLine = Math.max(1, Math.min(structuredLineCount, Number(startLine) || 1));
             const startEntry = contentsView.structuredLogicalLineEntryAt(safeStartLine);
             if (safeLineSpan === 1) {
                 return Math.max(
@@ -1355,7 +1382,7 @@ Item {
             const safeEndLine = Math.max(
                         safeStartLine,
                         Math.min(
-                            contentsView.logicalLineCount,
+                            structuredLineCount,
                             safeStartLine + safeLineSpan - 1));
             const endEntry = contentsView.structuredLogicalLineEntryAt(safeEndLine);
             const startDocumentY = Math.max(0, Number(startEntry && startEntry.contentY !== undefined ? startEntry.contentY : 0) || 0);
@@ -1369,6 +1396,7 @@ Item {
                                    : 0) || contentsView.editorLineHeight));
             return Math.max(contentsView.editorLineHeight, endDocumentY - startDocumentY);
         }
+        const safeStartLine = Math.max(1, Math.min(contentsView.logicalLineCount, Number(startLine) || 1));
         if (safeLineSpan === 1 && contentsView.incrementalLineGeometryAvailable()) {
             const lineGroup = contentsView.minimapLineGroups[safeStartLine - 1];
             if (lineGroup && lineGroup.contentHeight !== undefined)
@@ -1385,20 +1413,22 @@ Item {
         return Math.max(contentsView.editorLineHeight, endDocumentY - startDocumentY);
     }
     function gutterLineVisualHeight(startLine, lineSpan) {
-        const safeStartLine = Math.max(1, Math.min(contentsView.logicalLineCount, Number(startLine) || 1));
         const safeLineSpan = Math.max(1, Number(lineSpan) || 1);
         if (contentsView.showStructuredDocumentFlow) {
+            const structuredLineCount = Math.max(1, contentsView.effectiveStructuredLogicalLineEntries().length);
+            const safeStartLine = Math.max(1, Math.min(structuredLineCount, Number(startLine) || 1));
             if (safeLineSpan === 1)
                 return contentsView.editorLineHeight;
             const startDocumentY = contentsView.gutterLineDocumentY(safeStartLine);
             const nextLineNumber = safeStartLine + safeLineSpan;
             let endDocumentY = 0;
-            if (nextLineNumber <= contentsView.logicalLineCount)
+            if (nextLineNumber <= structuredLineCount)
                 endDocumentY = contentsView.gutterLineDocumentY(nextLineNumber);
             else
                 endDocumentY = contentsView.documentOccupiedBottomY();
             return Math.max(contentsView.editorLineHeight, endDocumentY - startDocumentY);
         }
+        const safeStartLine = Math.max(1, Math.min(contentsView.logicalLineCount, Number(startLine) || 1));
         return contentsView.lineVisualHeight(safeStartLine, safeLineSpan);
     }
     function lineY(lineNumber) {
@@ -1408,6 +1438,26 @@ Item {
         return contentsView.editorViewportYForDocumentY(contentsView.gutterLineDocumentY(lineNumber));
     }
     function logicalLineNumberForDocumentY(documentY) {
+        if (contentsView.showStructuredDocumentFlow) {
+            const lineEntries = contentsView.effectiveStructuredLogicalLineEntries();
+            if (lineEntries.length === 0)
+                return 1;
+            const safeDocumentY = Math.max(0, Number(documentY) || 0);
+            let bestLineNumber = 1;
+            for (let lineIndex = 0; lineIndex < lineEntries.length; ++lineIndex) {
+                const entry = lineEntries[lineIndex] && typeof lineEntries[lineIndex] === "object"
+                        ? lineEntries[lineIndex]
+                        : ({});
+                const lineTop = Math.max(0, Number(entry.contentY) || 0);
+                const lineBottom = lineTop + Math.max(1, Number(entry.contentHeight) || contentsView.editorLineHeight);
+                if (safeDocumentY < lineTop)
+                    break;
+                bestLineNumber = lineIndex + 1;
+                if (safeDocumentY < lineBottom)
+                    break;
+            }
+            return bestLineNumber;
+        }
         if (contentsView.logicalLineCount <= 0)
             return 1;
         contentsView.ensureLogicalLineDocumentYCache();

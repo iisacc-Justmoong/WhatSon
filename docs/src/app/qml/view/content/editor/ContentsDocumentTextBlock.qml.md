@@ -8,6 +8,11 @@ Renders one plain-text document segment inside the structured document-flow edit
   `ContentsInlineFormatEditor.qml` and keeps that nested `TextEdit` in `TextEdit.PlainText` mode.
   Inline block editing therefore no longer depends on Qt RichText document state while the RAW-source mutation bridge
   still remains authoritative.
+- When the RAW block source still contains inline style tags such as `<bold>`, `<italic>`, or `<highlight>`, the block
+  now also passes `ContentsTextFormatRenderer.editorSurfaceHtml` into the shared inline-editor wrapper as a read-only
+  rendered overlay.
+  Structured paragraphs therefore keep the plain-text input engine for mutations/caret mapping while the user can
+  still see styled text in-place after the RAW rewrite has succeeded.
 - When the shared inline-editor wrapper exposes `currentPlainText()`, the block now uses that helper as its current
   visible plain-text snapshot before diffing RAW block source.
 - The live block-edit path no longer converts edited RichText surface HTML back into canonical source.

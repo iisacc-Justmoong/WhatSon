@@ -17,6 +17,15 @@ Renders one structured document-flow block for a canonical `<resource ... />` so
   partial renderer entry arrives before the fully resolved payload.
 - Implements the same `applyFocusRequest(...)` and `shortcutInsertionSourceOffset()` contract as other structured
   delegates, which lets the document-flow host keep block focus and shortcut insertion deterministic across reparses.
-- A left click on the resource block no longer traps focus inside the block-only frame.
-  Instead it emits `documentEndEditRequested()`, allowing the host to reopen plain text input at the document tail so
-  typing can continue after a terminal resource block.
+- The block now treats the resource frame itself as a three-zone interaction surface:
+  - left zone: move editing to the nearest preceding text block, or open a transient before-boundary editor when no
+    preceding text block exists
+  - center zone: select the resource block itself as one atomic document block
+  - right zone: move editing to the nearest following text block, or open a transient after-boundary editor when no
+    following text block exists
+- Those transient boundary editors feed committed plain text back into RAW through
+  `adjacentPlainTextInsertionRequested(side, text, cursorPosition)`.
+  Typing on the left/right edge of an image block therefore materializes canonical prose before or after the
+  `<resource ... />` tag instead of collapsing back to one fixed block-end insertion point.
+- The resource block now also exposes a visible selected state for center-click block selection, so image frames can be
+  targeted as atomic structured blocks instead of behaving like untouchable display-only cards.

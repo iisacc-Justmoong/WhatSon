@@ -38,6 +38,8 @@ FocusScope {
     property bool blockExternalDropMutation: false
     property bool suppressCommittedTextEditedDispatch: false
     property int tabIndentSpaceCount: 4
+    property string renderedText: ""
+    property int renderedTextFormat: Text.RichText
     property string text: ""
     property color textColor: LV.Theme.bodyColor
     property int textFormat: TextEdit.PlainText
@@ -49,7 +51,15 @@ FocusScope {
                                                    Math.max(
                                                        Number(control.fieldMinHeight) || 0,
                                                        Number(control.editorHeight) || 0,
-                                                       Number(textInput.contentHeight) || 0))
+                                                       Number(textInput.contentHeight) || 0,
+                                                       Number(renderedOutputText.contentHeight) || 0))
+    readonly property bool renderedOutputVisible: control.showRenderedOutput
+                                                  && control.textFormat === TextEdit.PlainText
+                                                  && !control.inputMethodSessionActive()
+                                                  && (control.renderedText === undefined
+                                                      || control.renderedText === null
+                                                      ? ""
+                                                      : String(control.renderedText)).length > 0
     implicitHeight: control.editorVisualHeight
 
     readonly property real contentHeight: control.externalScroll ? editorShell.height : editorFlickable.contentHeight
@@ -603,6 +613,26 @@ FocusScope {
                 return textInput.positionToRectangle(position);
             }
 
+            Text {
+                id: renderedOutputText
+
+                color: control.textColor
+                font.family: control.fontFamily
+                font.letterSpacing: control.fontLetterSpacing
+                font.pixelSize: control.fontPixelSize
+                font.weight: control.fontWeight
+                text: control.renderedText
+                textFormat: control.renderedTextFormat
+                visible: control.renderedOutputVisible
+                width: Math.max(
+                           0,
+                           parent ? (Number(parent.width) || 0) - control.insetHorizontal * 2 : 0)
+                wrapMode: Text.Wrap
+                x: control.insetHorizontal
+                y: 0
+                z: 0
+            }
+
             TextEdit {
                 id: textInput
 
@@ -610,7 +640,7 @@ FocusScope {
                 activeFocusOnPress: control.autoFocusOnPress
                                     && (!control.preferNativeInputHandling || control.inputMethodVisible)
                 bottomPadding: control.insetVertical
-                color: control.textColor
+                color: control.renderedOutputVisible ? "transparent" : control.textColor
                 cursorVisible: control.focused
                 font.family: control.fontFamily
                 font.letterSpacing: control.fontLetterSpacing

@@ -27,6 +27,15 @@ Hosts the document-native block editor for structured `.wsnbody` content.
 - Each logical line entry keeps the block's real document geometry alongside its logical line identity.
   Desktop gutter Y calculations can therefore stay aligned with the rendered block column while resource/break blocks
   still contribute only one logical gutter row.
+- Structured line geometry now maps delegate-local line rectangles back into document-flow coordinates with
+  `mapToItem(documentFlow, ...)` instead of assuming `host.y + localY` is already correct.
+  Gutter/current-line calculations therefore keep the real post-layout block offsets even when a tall resource card
+  or later delegate relayout shifts following prose blocks after the current turn.
+- When one gutter refresh lands while the `Column` block layout is still settling, the flow now also derives each
+  block's base document `y` from cumulative sibling heights plus inter-block spacing before it samples delegate-local
+  line rectangles.
+  Prose blocks that follow a tall `resource` card therefore cannot collapse back to local `y=0`, overwrite gutter line
+  `1`, or top-pack their later gutter rows simply because one intermediate `host.y` snapshot was still stale.
 - Resource-block line entries now also expose minimap block-style metadata.
   A tall inline image can therefore keep several minimap rows for its document height while each row still paints as a
   consistent wide block instead of being split into short text-like segments.
@@ -60,6 +69,9 @@ Hosts the document-native block editor for structured `.wsnbody` content.
   loaded delegate can provide it.
   Editor hosts use that document-space row rectangle for current-line gutter markers so the blue indicator follows the
   actual caret row inside wrapped structured content.
+- That cursor-row document `y` now shares the same cumulative block-base fallback used by line entries.
+  The blue current-line gutter indicator therefore stays aligned with the caret even on the first typing/reflow turn
+  after a tall resource block has shifted later prose downward.
 - Rewrites the authoritative RAW source string on every block edit, then asks the parent view to persist the new
   source.
 - Text-block delegates now obey the same one-way edit contract as the main editor host:
@@ -87,6 +99,13 @@ Hosts the document-native block editor for structured `.wsnbody` content.
 - The same active-block insertion bridge now also accepts imported resource-tag batches from the parent host.
   A note that is already in structured-flow mode therefore inserts dropped `<resource ... />` blocks next to the
   active block instead of falling back to the legacy inline-editor cursor path or appending at EOF.
+- The flow now also exposes previous/next editable text-block offsets around non-text blocks such as `resource`.
+  Resource delegates can therefore move a left/right click into the nearest existing prose block instead of always
+  reopening editing at document end.
+- When no adjacent prose block exists, resource delegates now ask the flow to insert committed plain text directly
+  before or after the block through `insertPlainTextAdjacentToBlock(...)`.
+  The flow isolates that inserted text with newline boundaries only when needed, then restores focus into the newly
+  materialized text block via a source-offset focus request.
 - That imported-resource insertion path now also guarantees one trailing newline after the inserted
   `<resource ... />` block when the insertion lands at EOF or before a non-newline character, then resolves the
   post-insert focus offset one source character past that block boundary.

@@ -198,6 +198,9 @@ structured document-flow editor changes.
 - The same structured image/divider block must count as exactly one visible gutter row.
   Scrolling through a tall image must not make the desktop gutter expand that one body block into several apparent line
   slots or a multi-row current-line marker.
+- For a note whose first authored body block is a `resource`, gutter line `1` must remain visible at the top of that
+  image block.
+  Later prose lines must not start from `2` because the resource row was skipped during visible-line detection.
 - While the user types on an existing logical line without adding or removing a newline, the gutter must not visibly
   oscillate between stale and recomputed positions on each keystroke.
   Line-structure-triggered gutter refresh is expected only when the current edit actually changes newline structure.
@@ -209,12 +212,19 @@ structured document-flow editor changes.
   aligned with the image block's real document height.
   Line numbers below the image must not overlap the bitmap, remain pinned near the top of the gutter, or jump only
   after the image fully leaves the viewport.
+- Right after typing, `Enter`, or another same-note reflow below a tall leading image/resource block, the later prose
+  lines must keep their absolute document offsets.
+  A transient block relayout must not reset those later gutter rows to the block-local top, hide line `1`, or stack
+  lines `2+` back over the image header area for one refresh turn.
 - A prose block below an inline image that contains only one authored newline-delimited line must contribute only one
   gutter number even when the rendered paragraph wraps or its delegate becomes taller than one editor line.
   Block height must not fabricate extra logical lines such as `4` when the authored note body still stops at line `3`.
 - For a multi-line prose block below an inline image, each visible gutter number must align with the actual rendered
   text row that starts that authored line.
   The gutter must not keep a uniform equal-gap ladder that visibly drifts away from the text baseline positions.
+- In a structured paragraph block, if the RAW body already contains inline tags such as `<bold>`, `<italic>`, or
+  `<highlight>`, the visible editor text must reflect those styles in place.
+  The paragraph must not fall back to a plain unformatted rendering while the RAW source already contains the tags.
 - The blue current-line gutter indicator must follow the caret's actual authored line inside multi-line paragraph,
   callout, and agenda blocks.
   Focusing a lower logical line inside one structured block must not leave the current-line marker pinned to that
@@ -243,10 +253,18 @@ structured document-flow editor changes.
 - The same structured formatting shortcuts must still rewrite the selected RAW range when the visible selection briefly
   collapses to one boundary during shortcut dispatch.
   A block-local selection captured on the shortcut turn must remain the rewrite target for the immediate RAW mutation.
+- While that formatted structured paragraph is still using the plain-text input engine, starting an IME composition
+  must temporarily reveal the native composing text rather than leaving the stale rendered overlay painted on top.
   The structured-flow host must treat those semantic blocks as editable text blocks at the document tail.
 - The first structured resource block in a note must still resolve its inline asset payload.
   A `resourceIndex` or focus target value of `0` must not collapse to a sentinel fallback that downgrades the block to
   a fabricated generic document summary tile.
+- Clicking the left edge of an inline image/resource block must move editing to the nearest preceding prose position.
+  If no preceding prose block exists, the next committed text must materialize before that resource block in RAW.
+- Clicking the right edge of an inline image/resource block must move editing to the nearest following prose position.
+  If no following prose block exists, the next committed text must materialize after that resource block in RAW.
+- Clicking the center of an inline image/resource block must select the block itself as one atomic structured item.
+  The frame must expose a visible selected state instead of behaving like a display-only card with no block targeting.
 - A resolved bitmap resource must still upgrade into the Figma `292:50` image frame even if the renderer payload
   reaches QML with `renderMode=document`.
   Real bitmap paths/formats must win over that downgraded metadata state; the editor must not fabricate any generic

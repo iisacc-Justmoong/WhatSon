@@ -195,6 +195,10 @@ Desktop content editor host.
 - The desktop gutter now anchors each structured logical line to that block's real document `contentY`.
   Tall image/divider blocks therefore keep the same vertical offset relationship as the rendered document itself, so
   line numbers after an inline image do not overlap the bitmap while it is still on screen.
+- Structured gutter visibility and first-visible-line detection now also read the live structured line-entry list
+  directly instead of trusting a separate logical-line-count snapshot.
+  A resource-bearing note therefore cannot drop line `1` or top-pack later gutter rows just because one intermediate
+  line-count cache or fallback binary search still reflects pre-layout state.
 - Structured gutter numbering now also comes from parser/text logical lines first, not from block height heuristics.
   A single wrapped paragraph below an image therefore remains one gutter line unless the authored source actually
   contains another newline-delimited line.

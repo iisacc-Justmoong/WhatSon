@@ -171,7 +171,36 @@ FocusScope {
         return Math.max(1, documentFlow.logicalLineCountForBlock(blockEntry, logicalLines))
     }
 
-    function blockLogicalLineEntries(blockHost, blockEntryOverride) {
+    function blockHeightForLayout(blockHost, blockEntryOverride) {
+        const host = blockHost && typeof blockHost === "object" ? blockHost : null
+        const blockEntry = blockEntryOverride && typeof blockEntryOverride === "object"
+                ? blockEntryOverride
+                : (host && host.blockEntry && typeof host.blockEntry === "object" ? host.blockEntry : ({ }))
+        const plainText = documentFlow.visiblePlainTextForBlock(blockEntry)
+        const logicalLines = plainText.length > 0 ? plainText.split("\n") : [""]
+        return Math.max(
+                    1,
+                    host ? (Number(host.implicitHeight) || Number(host.height) || 0) : 0,
+                    documentFlow.lineHeightHint * documentFlow.logicalLineCountForBlock(blockEntry, logicalLines))
+    }
+
+    function blockTopYForIndex(blockIndex) {
+        const blocks = documentFlow.normalizedBlocks()
+        if (blocks.length === 0)
+            return 0
+        const safeBlockIndex = Math.max(0, Math.min(blocks.length - 1, Math.floor(Number(blockIndex) || 0)))
+        const blockSpacing = Math.max(0, Number(documentColumn && documentColumn.spacing !== undefined ? documentColumn.spacing : 0) || 0)
+        let blockTopY = 0
+        for (let index = 0; index < safeBlockIndex; ++index) {
+            const blockHost = blockRepeater.itemAt(index)
+            const blockEntry = blocks[index] && typeof blocks[index] === "object" ? blocks[index] : ({})
+            blockTopY += documentFlow.blockHeightForLayout(blockHost, blockEntry)
+            blockTopY += blockSpacing
+        }
+        return blockTopY
+    }
+
+    function blockLogicalLineEntries(blockHost, blockEntryOverride, blockBaseYOverride) {
         const host = blockHost && typeof blockHost === "object" ? blockHost : null
         const blockEntry = blockEntryOverride && typeof blockEntryOverride === "object"
                 ? blockEntryOverride
@@ -180,11 +209,13 @@ FocusScope {
         const blockType = safeBlockEntry.type !== undefined ? String(safeBlockEntry.type).toLowerCase() : "text"
         const plainText = documentFlow.visiblePlainTextForBlock(blockEntry)
         const logicalLines = plainText.length > 0 ? plainText.split("\n") : [""]
-        const blockHeight = Math.max(
-                    1,
-                    host ? (Number(host.implicitHeight) || Number(host.height) || 0) : 0,
-                    documentFlow.lineHeightHint * Math.max(1, logicalLines.length))
-        const baseY = Math.max(0, host ? (Number(host.y) || 0) : 0)
+        const blockHeight = documentFlow.blockHeightForLayout(host, blockEntry)
+        const numericBlockBaseY = Number(blockBaseYOverride)
+        const blockBaseY = isFinite(numericBlockBaseY)
+                ? Math.max(0, numericBlockBaseY)
+                : host && host.blockIndex !== undefined
+                  ? documentFlow.blockTopYForIndex(host.blockIndex)
+                  : Math.max(0, Number(host && host.y !== undefined ? host.y : 0) || 0)
         const entries = []
         const lineCount = documentFlow.logicalLineCountForBlock(blockEntry, logicalLines)
         const delegateItem = documentFlow.delegateItemForBlockHost(host)
@@ -194,20 +225,46 @@ FocusScope {
             const delegateLineLayout = delegateLineLayoutEntries[index] && typeof delegateLineLayoutEntries[index] === "object"
                     ? delegateLineLayoutEntries[index]
                     : null
-            const fallbackLineTop = blockHeight * index / lineCount
-            const fallbackLineBottom = index + 1 < lineCount
+            const fallbackLocalLineTop = blockHeight * index / lineCount
+            const fallbackLocalLineBottom = index + 1 < lineCount
                     ? blockHeight * (index + 1) / lineCount
                     : blockHeight
             const localLineTop = delegateLineLayout && delegateLineLayout.contentY !== undefined
                     ? Math.max(0, Number(delegateLineLayout.contentY) || 0)
-                    : fallbackLineTop
+                    : fallbackLocalLineTop
             const localLineBottom = delegateLineLayout && delegateLineLayout.contentHeight !== undefined
                     ? Math.max(
                           localLineTop + documentFlow.lineHeightHint,
                           localLineTop + (Number(delegateLineLayout.contentHeight) || 0))
-                    : fallbackLineBottom
-            const lineTop = baseY + localLineTop
-            const lineBottom = baseY + Math.max(localLineTop + documentFlow.lineHeightHint, localLineBottom)
+                    : fallbackLocalLineBottom
+            const fallbackLineTop = blockBaseY + localLineTop
+            const fallbackLineBottom = blockBaseY + Math.max(localLineTop + documentFlow.lineHeightHint, localLineBottom)
+            const mappedLineTopPoint = delegateItem && delegateItem.mapToItem !== undefined
+                    ? delegateItem.mapToItem(documentFlow, 0, localLineTop)
+                    : host && host.mapToItem !== undefined
+                      ? host.mapToItem(documentFlow, 0, localLineTop)
+                      : ({ "x": 0, "y": fallbackLineTop })
+            const mappedLineBottomPoint = delegateItem && delegateItem.mapToItem !== undefined
+                    ? delegateItem.mapToItem(
+                        documentFlow,
+                        0,
+                        Math.max(localLineTop + documentFlow.lineHeightHint, localLineBottom))
+                    : host && host.mapToItem !== undefined
+                      ? host.mapToItem(
+                          documentFlow,
+                          0,
+                          Math.max(localLineTop + documentFlow.lineHeightHint, localLineBottom))
+                      : ({ "x": 0, "y": fallbackLineBottom })
+            const mappedLineTopY = Number(mappedLineTopPoint && mappedLineTopPoint.y !== undefined ? mappedLineTopPoint.y : fallbackLineTop)
+            const mappedLineBottomY = Number(mappedLineBottomPoint && mappedLineBottomPoint.y !== undefined ? mappedLineBottomPoint.y : fallbackLineBottom)
+            const lineTop = Math.max(
+                        0,
+                        fallbackLineTop,
+                        isFinite(mappedLineTopY) ? mappedLineTopY : fallbackLineTop)
+            const lineBottom = Math.max(
+                        lineTop + documentFlow.lineHeightHint,
+                        fallbackLineBottom,
+                        isFinite(mappedLineBottomY) ? mappedLineBottomY : fallbackLineBottom)
             const lineHeight = Math.max(1, lineBottom - lineTop)
             const gutterCollapsed = blockType === "resource" || blockType === "break"
             const minimapVisualKind = blockType === "resource" ? "block" : "text"
@@ -230,11 +287,13 @@ FocusScope {
     function logicalLineEntries() {
         const entries = []
         const blocks = documentFlow.normalizedBlocks()
+        const blockSpacing = Math.max(0, Number(documentColumn && documentColumn.spacing !== undefined ? documentColumn.spacing : 0) || 0)
+        let nextBlockBaseY = 0
         let nextGutterContentY = 0
         for (let blockIndex = 0; blockIndex < blockRepeater.count; ++blockIndex) {
             const blockHost = blockRepeater.itemAt(blockIndex)
             const blockEntry = blocks[blockIndex] && typeof blocks[blockIndex] === "object" ? blocks[blockIndex] : ({})
-            const blockEntries = documentFlow.blockLogicalLineEntries(blockHost, blockEntry)
+            const blockEntries = documentFlow.blockLogicalLineEntries(blockHost, blockEntry, nextBlockBaseY)
             for (let lineIndex = 0; lineIndex < blockEntries.length; ++lineIndex) {
                 const lineEntry = blockEntries[lineIndex] && typeof blockEntries[lineIndex] === "object"
                         ? blockEntries[lineIndex]
@@ -259,6 +318,9 @@ FocusScope {
                             1,
                             Number(lineEntry.gutterContentHeight) || documentFlow.lineHeightHint)
             }
+            nextBlockBaseY += documentFlow.blockHeightForLayout(blockHost, blockEntry)
+            if (blockIndex + 1 < blockRepeater.count)
+                nextBlockBaseY += blockSpacing
         }
 
         if (entries.length === 0) {
@@ -324,12 +386,18 @@ FocusScope {
         const delegateItem = documentFlow.delegateItemForBlockHost(activeBlockHost)
         if (delegateItem && delegateItem.currentCursorRowRect !== undefined) {
             const localRect = delegateItem.currentCursorRowRect()
+            const localRectY = Math.max(0, Number(localRect && localRect.contentY !== undefined ? localRect.contentY : 0) || 0)
+            const fallbackRowY = documentFlow.blockTopYForIndex(safeActiveBlockIndex) + localRectY
+            const mappedPoint = delegateItem.mapToItem !== undefined
+                    ? delegateItem.mapToItem(
+                        documentFlow,
+                        0,
+                        localRectY)
+                    : ({ "x": 0, "y": fallbackRowY })
+            const mappedY = Number(mappedPoint && mappedPoint.y !== undefined ? mappedPoint.y : fallbackRowY)
             return {
                 "height": Math.max(1, Number(localRect && localRect.contentHeight !== undefined ? localRect.contentHeight : 0) || documentFlow.lineHeightHint),
-                "y": Math.max(
-                         0,
-                         (Number(activeBlockHost && activeBlockHost.y !== undefined ? activeBlockHost.y : 0) || 0)
-                         + (Number(localRect && localRect.contentY !== undefined ? localRect.contentY : 0) || 0))
+                "y": Math.max(0, fallbackRowY, isFinite(mappedY) ? mappedY : fallbackRowY)
             }
         }
         const lineNumber = documentFlow.activeLogicalLineNumber()
@@ -738,6 +806,30 @@ FocusScope {
                     focusRequest && typeof focusRequest === "object" ? focusRequest : ({ }))
     }
 
+    function previousEditableBlockFocusSourceOffset(blockIndex) {
+        const blocks = documentFlow.normalizedBlocks()
+        const safeBlockIndex = Math.max(0, Math.min(blocks.length - 1, Math.floor(Number(blockIndex) || 0)))
+        for (let index = safeBlockIndex - 1; index >= 0; --index) {
+            const blockEntry = blocks[index] && typeof blocks[index] === "object" ? blocks[index] : ({})
+            if (!documentFlow.blockUsesTextDelegate(blockEntry))
+                continue
+            return Math.max(0, Math.floor(Number(blockEntry.sourceEnd) || 0))
+        }
+        return -1
+    }
+
+    function nextEditableBlockFocusSourceOffset(blockIndex) {
+        const blocks = documentFlow.normalizedBlocks()
+        const safeBlockIndex = Math.max(0, Math.min(blocks.length - 1, Math.floor(Number(blockIndex) || 0)))
+        for (let index = safeBlockIndex + 1; index < blocks.length; ++index) {
+            const blockEntry = blocks[index] && typeof blocks[index] === "object" ? blocks[index] : ({})
+            if (!documentFlow.blockUsesTextDelegate(blockEntry))
+                continue
+            return Math.max(0, Math.floor(Number(blockEntry.sourceStart) || 0))
+        }
+        return -1
+    }
+
     function nextEditableSourceOffsetAfterBlock(sourceText, blockEndOffset) {
         const normalizedText = documentFlow.normalizedSourceText(sourceText)
         const boundedBlockEndOffset = Math.max(
@@ -748,6 +840,48 @@ FocusScope {
             return boundedBlockEndOffset + 1
         }
         return boundedBlockEndOffset
+    }
+
+    function insertPlainTextAdjacentToBlock(blockData, side, text, cursorPosition) {
+        const safeBlock = blockData && typeof blockData === "object" ? blockData : ({})
+        const normalizedSide = side === undefined || side === null ? "" : String(side).trim().toLowerCase()
+        if (normalizedSide !== "before" && normalizedSide !== "after")
+            return false
+        const currentSourceText = documentFlow.normalizedSourceText(documentFlow.sourceText)
+        const normalizedText = StructuredCursorSupport.normalizedPlainText(text)
+        if (normalizedText.length === 0)
+            return false
+        const blockSourceStart = Math.max(0, Math.floor(Number(safeBlock.sourceStart) || 0))
+        const blockSourceEnd = Math.max(blockSourceStart, Math.floor(Number(safeBlock.sourceEnd) || blockSourceStart))
+        const insertionOffset = normalizedSide === "before"
+                ? blockSourceStart
+                : documentFlow.nextEditableSourceOffsetAfterBlock(currentSourceText, blockSourceEnd)
+        const boundedInsertionOffset = Math.max(0, Math.min(currentSourceText.length, insertionOffset))
+        const prefixNewline = boundedInsertionOffset > 0
+                && currentSourceText.charAt(boundedInsertionOffset - 1) !== "\n"
+                ? "\n"
+                : ""
+        const suffixNewline = boundedInsertionOffset < currentSourceText.length
+                && currentSourceText.charAt(boundedInsertionOffset) !== "\n"
+                ? "\n"
+                : ""
+        const insertionSourceText = prefixNewline
+                + StructuredCursorSupport.replacementSourceText(normalizedText)
+                + suffixNewline
+        const cursorSourceOffset = boundedInsertionOffset
+                + prefixNewline.length
+                + StructuredCursorSupport.sourceOffsetForPlainCursor(
+                    normalizedText,
+                    cursorPosition,
+                    0)
+        documentFlow.replaceSourceRange(
+                    boundedInsertionOffset,
+                    boundedInsertionOffset,
+                    insertionSourceText,
+                    {
+                        "sourceOffset": cursorSourceOffset
+                    })
+        return true
     }
 
     function replaceTextBlock(blockData, nextBlockSourceText, focusRequest) {
@@ -1088,11 +1222,27 @@ FocusScope {
                     id: resourceBlockDelegate
 
                     ContentsResourceBlock {
+                        afterTextFocusSourceOffset: documentFlow.nextEditableBlockFocusSourceOffset(blockHost.blockIndex)
                         blockData: blockHost.blockEntry
+                        beforeTextFocusSourceOffset: documentFlow.previousEditableBlockFocusSourceOffset(blockHost.blockIndex)
                         resourceEntry: documentFlow.resourceEntryForBlock(blockHost.blockEntry)
                         width: blockHost.width
 
-                        onActivated: documentFlow.activeBlockIndex = blockHost.blockIndex
+                        onActivated: documentFlow.noteActiveBlockInteraction(blockHost.blockIndex)
+                        onAdjacentPlainTextInsertionRequested: function (side, text, cursorPosition) {
+                            documentFlow.insertPlainTextAdjacentToBlock(
+                                        blockHost.blockEntry,
+                                        side,
+                                        text,
+                                        cursorPosition)
+                        }
+                        onAdjacentTextFocusRequested: function (sourceOffset) {
+                            documentFlow.requestFocus({
+                                                          "sourceOffset": Math.max(
+                                                                              0,
+                                                                              Math.floor(Number(sourceOffset) || 0))
+                                                      })
+                        }
                         onDocumentEndEditRequested: documentFlow.requestDocumentEndEdit()
                     }
                 }
