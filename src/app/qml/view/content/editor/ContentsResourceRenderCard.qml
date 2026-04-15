@@ -10,8 +10,8 @@ Rectangle {
 
     property var resourceEntry: ({})
     property bool inlinePresentation: false
-    property color borderColor: "#334E5157"
-    property color cardColor: "#E61A1D22"
+    property color borderColor: LV.Theme.panelBackground08
+    property color cardColor: LV.Theme.panelBackground03
 
     readonly property string resourceDisplayName: resourceEntry.displayName !== undefined ? String(resourceEntry.displayName) : ""
     readonly property string resourceFormat: resourceEntry.format !== undefined ? String(resourceEntry.format) : ""

@@ -218,7 +218,7 @@ FocusScope {
 
     Rectangle {
         anchors.fill: resourceCard
-        border.color: LV.Theme.accent
+        border.color: LV.Theme.panelBackground10
         border.width: resourceBlock.blockSelected ? Math.max(1, Math.round(LV.Theme.strokeThin)) : 0
         color: "transparent"
         radius: Math.max(Math.round(LV.Theme.scaleMetric(12)), Number(resourceCard.radius) || 0)

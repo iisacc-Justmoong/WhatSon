@@ -212,12 +212,30 @@ structured document-flow editor changes.
   aligned with the image block's real document height.
   Line numbers below the image must not overlap the bitmap, remain pinned near the top of the gutter, or jump only
   after the image fully leaves the viewport.
+- While that same structured note is scrolled, the gutter rail itself must remain scroll-coupled to the editor body.
+  Line numbers and marker bars must not stay visually fixed at their pre-scroll Y positions while the document moves.
+- The same scroll-coupling rule must hold for non-structured legacy inline-editor notes as well.
+  Gutter Y must follow the active editor `Flickable.contentY` instead of staying pinned to a stale absolute screen
+  coordinate.
 - Right after typing, `Enter`, or another same-note reflow below a tall leading image/resource block, the later prose
   lines must keep their absolute document offsets.
   A transient block relayout must not reset those later gutter rows to the block-local top, hide line `1`, or stack
   lines `2+` back over the image header area for one refresh turn.
 - A prose block below an inline image that contains only one authored newline-delimited line must contribute only one
   gutter number even when the rendered paragraph wraps or its delegate becomes taller than one editor line.
+- The inline image frame chrome, including the selected-block outline, must stay on the neutral panel palette from the
+  Figma resource-frame spec rather than switching to Accent-colored borders during normal document interaction.
+- Clicking the center of an inline image/resource block must leave that block selected.
+  The structured viewport background tap handler must not immediately move focus to the document tail and clear the
+  block selection on the same gesture.
+- Mounting or rematerializing a structured note with inline image/resource blocks must not log
+  `ReferenceError: index is not defined` from `ContentsStructuredDocumentFlow.qml`.
+  Block-host delegates must receive their repeater `index` explicitly under bound-component semantics.
+- Mounting an inline image frame must not log a `resolvedFrameWidth` binding loop from
+  `ContentsImageResourceFrame.qml`.
+  Frame width must resolve from the host/editor width contract without self-referencing the frame's own `width`.
+- After selecting text inside a structured paragraph block, right-click must open the editor format context menu.
+  The menu must not depend on the unloaded legacy whole-note editor selection state.
   Block height must not fabricate extra logical lines such as `4` when the authored note body still stops at line `3`.
 - For a multi-line prose block below an inline image, each visible gutter number must align with the actual rendered
   text row that starts that authored line.

@@ -205,6 +205,18 @@ Desktop content editor host.
 - Structured text-line `y` placement now also comes from delegate-sampled rendered line rectangles where available.
   The gutter no longer keeps an artificial equal-gap rhythm inside one tall text block when the actual text rows sit
   closer to the top or bottom after wrapping.
+- Gutter viewport offset now comes from the resolved active editor `Flickable.contentY` for every editor mode, with
+  older per-surface offsets kept only as a fallback when no live flickable exists yet.
+  Scrolling a note therefore moves gutter line numbers and markers with the document instead of leaving the gutter
+  visually pinned while body content continues to scroll underneath it.
+- The structured viewport background tap handler now asks `ContentsStructuredDocumentFlow.qml` whether the tap landed
+  on a real block before forcing `requestStructuredDocumentEndEdit()`.
+  Clicking an inline image/resource block therefore no longer gets immediately overwritten by the viewport's fallback
+  tail-focus behavior, and block selection can remain visible.
+- Desktop selection context menus now also support parser-owned structured text-block selections.
+  When the note is mounted through `ContentsStructuredDocumentFlow.qml`, right-click no longer depends on the unloaded
+  legacy whole-note `contentEditor` selection state; the host snapshots the active block-local selection and opens the
+  same `LV.ContextMenu` against that structured selection instead.
 - While the user is actively typing, desktop now treats gutter refresh as a logical-line-structure concern rather than
   a per-keystroke repaint duty.
   If the latest edit did not add or remove a newline-delimited logical line, line-structure-triggered gutter refresh

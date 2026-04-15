@@ -29,3 +29,9 @@ Renders one structured document-flow block for a canonical `<resource ... />` so
   `<resource ... />` tag instead of collapsing back to one fixed block-end insertion point.
 - The resource block now also exposes a visible selected state for center-click block selection, so image frames can be
   targeted as atomic structured blocks instead of behaving like untouchable display-only cards.
+- That selected outline now uses a neutral panel border instead of Accent so the interactive block state remains
+  visually consistent with the Figma image-frame chrome.
+- Parent viewport background taps are now filtered through the structured document flow hit-test helpers before the
+  fallback end-edit path runs.
+  A center click on the image frame can therefore preserve the block's selected state instead of being cleared one turn
+  later by the outer viewport.

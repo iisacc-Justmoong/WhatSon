@@ -41,9 +41,12 @@ Dedicated image-body frame container derived from Figma node `292:50`.
 ## Styling
 - Uses LVRS labels and theme colors instead of React/Tailwind output.
 - Keeps the Figma frame chrome while adapting it to the mixed-content note-body contract shown by Figma node `294:7933`:
+  - border/label/menu chrome stays on neutral panel/caption tones rather than Accent
   - no background fill on the outer frame, only border chrome
   - design-time reference width `480` remains only as the implicit-width hint
   - runtime outer width follows the parent/editor block width
+  - frame-width resolution must derive from the parent width or the design fallback width, not from the frame's own
+    `width` binding, so the image card does not enter a `resolvedFrameWidth` binding loop while it mounts
   - runtime media viewport stays centered
   - runtime media width/height may shrink to fit the frame
   - runtime media width/height must not upscale past the bitmap's natural pixel size

@@ -24,6 +24,8 @@ Item {
     readonly property var contentEditor: contentEditorLoader.item ? contentEditorLoader.item : contentEditorProxy
     property alias contextMenuSelectionEnd: editorSelectionController.contextMenuSelectionEnd
     property alias contextMenuSelectionStart: editorSelectionController.contextMenuSelectionStart
+    property int structuredContextMenuBlockIndex: -1
+    property var structuredContextMenuSelectionSnapshot: ({})
     readonly property int currentCursorLineNumber: contentsView.showStructuredDocumentFlow
                                                    ? 1
                                                    : contentsView.logicalLineNumberForOffset(Number(contentEditor.cursorPosition) || 0)
@@ -33,6 +35,9 @@ Item {
     readonly property int editorBottomInset: LV.Theme.gap16
     property alias editorBoundNoteId: editorSession.editorBoundNoteId
     readonly property real editorContentOffsetY: {
+        const flickable = contentsView.editorFlickable;
+        if (flickable && flickable.contentY !== undefined)
+            return -(Number(flickable.contentY) || 0);
         if (contentEditor && contentEditor.contentOffsetY !== undefined)
             return Number(contentEditor.contentOffsetY) || 0;
         if (!contentEditor.editorItem || !contentEditor.editorItem.parent)
@@ -837,6 +842,8 @@ Item {
         return editorSelectionController.handleInlineFormatShortcutKeyPress(event);
     }
     function handleSelectionContextMenuEvent(eventName) {
+        if (contentsView.handleStructuredSelectionContextMenuEvent(eventName))
+            return;
         editorSelectionController.handleSelectionContextMenuEvent(eventName);
     }
     function commitDocumentPresentationRefresh() {
@@ -1422,10 +1429,112 @@ Item {
         const normalizedType = typeValue === undefined || typeValue === null ? "" : String(typeValue).trim().toLowerCase();
         return normalizedType.length > 0 ? normalizedType : "other";
     }
+    function resetStructuredSelectionContextMenuSnapshot() {
+        contentsView.structuredContextMenuBlockIndex = -1;
+        contentsView.structuredContextMenuSelectionSnapshot = ({});
+    }
+    function normalizedStructuredSelectionContextMenuSnapshot(snapshot) {
+        const safeSnapshot = snapshot && typeof snapshot === "object" ? snapshot : ({});
+        return {
+            "cursorPosition": Number(safeSnapshot.cursorPosition),
+            "selectedText": safeSnapshot.selectedText === undefined || safeSnapshot.selectedText === null
+                            ? ""
+                            : String(safeSnapshot.selectedText),
+            "selectionEnd": Number(safeSnapshot.selectionEnd),
+            "selectionStart": Number(safeSnapshot.selectionStart)
+        };
+    }
+    function structuredContextMenuSelectionValid() {
+        const snapshot = contentsView.structuredContextMenuSelectionSnapshot;
+        const selectionStart = Number(snapshot && snapshot.selectionStart !== undefined ? snapshot.selectionStart : NaN);
+        const selectionEnd = Number(snapshot && snapshot.selectionEnd !== undefined ? snapshot.selectionEnd : NaN);
+        return contentsView.structuredContextMenuBlockIndex >= 0
+                && isFinite(selectionStart)
+                && isFinite(selectionEnd)
+                && selectionEnd > selectionStart;
+    }
+    function primeStructuredSelectionContextMenuSnapshot() {
+        if (!contentsView.showStructuredDocumentFlow
+                || !structuredDocumentFlow
+                || structuredDocumentFlow.inlineFormatTargetState === undefined) {
+            contentsView.resetStructuredSelectionContextMenuSnapshot();
+            return false;
+        }
+        const targetState = structuredDocumentFlow.inlineFormatTargetState();
+        if (!targetState || !targetState.valid) {
+            contentsView.resetStructuredSelectionContextMenuSnapshot();
+            return false;
+        }
+        const blockIndex = Number(targetState.blockIndex);
+        if (!isFinite(blockIndex) || blockIndex < 0) {
+            contentsView.resetStructuredSelectionContextMenuSnapshot();
+            return false;
+        }
+        const selectionSnapshot = contentsView.normalizedStructuredSelectionContextMenuSnapshot(targetState.selectionSnapshot);
+        const selectionStart = Number(selectionSnapshot.selectionStart);
+        const selectionEnd = Number(selectionSnapshot.selectionEnd);
+        if (!isFinite(selectionStart) || !isFinite(selectionEnd) || selectionEnd <= selectionStart) {
+            contentsView.resetStructuredSelectionContextMenuSnapshot();
+            return false;
+        }
+        contentsView.structuredContextMenuBlockIndex = Math.floor(blockIndex);
+        contentsView.structuredContextMenuSelectionSnapshot = selectionSnapshot;
+        return true;
+    }
+    function structuredContextMenuInlineStyleTag(eventName) {
+        const normalizedEventName = eventName === undefined || eventName === null ? "" : String(eventName).trim();
+        if (normalizedEventName === "editor.format.plain")
+            return "plain";
+        if (normalizedEventName === "editor.format.bold")
+            return "bold";
+        if (normalizedEventName === "editor.format.italic")
+            return "italic";
+        if (normalizedEventName === "editor.format.underline")
+            return "underline";
+        if (normalizedEventName === "editor.format.strikethrough")
+            return "strikethrough";
+        if (normalizedEventName === "editor.format.highlight")
+            return "highlight";
+        return "";
+    }
+    function handleStructuredSelectionContextMenuEvent(eventName) {
+        if (!contentsView.showStructuredDocumentFlow
+                || !structuredDocumentFlow
+                || structuredDocumentFlow.applyInlineFormatToBlockSelection === undefined)
+            return false;
+        const inlineStyleTag = contentsView.structuredContextMenuInlineStyleTag(eventName);
+        if (inlineStyleTag.length === 0)
+            return false;
+        if (!contentsView.structuredContextMenuSelectionValid()
+                && !contentsView.primeStructuredSelectionContextMenuSnapshot()) {
+            return false;
+        }
+        const blockIndex = Math.max(0, Math.floor(Number(contentsView.structuredContextMenuBlockIndex) || 0));
+        const handled = !!structuredDocumentFlow.applyInlineFormatToBlockSelection(
+                    blockIndex,
+                    inlineStyleTag,
+                    contentsView.structuredContextMenuSelectionSnapshot);
+        contentsView.resetStructuredSelectionContextMenuSnapshot();
+        return handled;
+    }
     function openEditorSelectionContextMenu(localX, localY) {
+        if (contentsView.showStructuredDocumentFlow) {
+            if (!contentsView.structuredContextMenuSelectionValid()
+                    && !contentsView.primeStructuredSelectionContextMenuSnapshot()) {
+                return false;
+            }
+            if (!editorSelectionContextMenu)
+                return false;
+            if (editorSelectionContextMenu.opened)
+                editorSelectionContextMenu.close();
+            editorSelectionContextMenu.openFor(editorViewport, Number(localX) || 0, Number(localY) || 0);
+            return true;
+        }
         return editorSelectionController.openEditorSelectionContextMenu(localX, localY);
     }
     function primeEditorSelectionContextMenuSnapshot() {
+        if (contentsView.showStructuredDocumentFlow)
+            return contentsView.primeStructuredSelectionContextMenuSnapshot();
         return editorSelectionController.primeContextMenuSelectionSnapshot();
     }
     function persistEditorTextImmediately(nextText) {
@@ -2557,7 +2666,19 @@ Item {
                             acceptedButtons: Qt.LeftButton
                             enabled: structuredDocumentViewport.visible
 
-                            onTapped: {
+                            onTapped: function (eventPoint) {
+                                const viewportTapX = eventPoint && eventPoint.position ? Number(eventPoint.position.x) || 0 : 0;
+                                const viewportTapY = eventPoint && eventPoint.position ? Number(eventPoint.position.y) || 0 : 0;
+                                const contentTapX = viewportTapX + (Number(structuredDocumentViewport.contentX) || 0);
+                                const contentTapY = viewportTapY + (Number(structuredDocumentViewport.contentY) || 0);
+                                const flowTapX = contentTapX - (Number(structuredDocumentFlow.x) || 0);
+                                const flowTapY = contentTapY - (Number(structuredDocumentFlow.y) || 0);
+                                if (structuredDocumentFlow
+                                        && structuredDocumentFlow.visible
+                                        && structuredDocumentFlow.hasBlockAtPoint !== undefined
+                                        && structuredDocumentFlow.hasBlockAtPoint(flowTapX, flowTapY)) {
+                                    return;
+                                }
                                 Qt.callLater(function () {
                                     contentsView.requestStructuredDocumentEndEdit();
                                 });

@@ -146,3 +146,10 @@ Hosts the document-native block editor for structured `.wsnbody` content.
   to materialize a new text block and then restores focus at that new end-of-document insertion point.
   If the RAW source has already received that trailing newline but the block parser has not yet caught up, the helper
   reuses the pending end offset instead of appending a second newline.
+- The flow now also exposes `blockIndexAtPoint(localX, localY)` / `hasBlockAtPoint(localX, localY)` so outer viewport
+  tap handlers can distinguish a real block hit from empty background.
+  This keeps parent "append at document tail" taps from overriding a center click that was meant to select an inline
+  image/resource block.
+- The block repeater delegate now declares `required property int index` explicitly.
+  Under `pragma ComponentBehavior: Bound`, the flow must not rely on an implicit delegate `index`, otherwise runtime
+  reparses can throw `ReferenceError: index is not defined` while block hosts are rematerialized.

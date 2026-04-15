@@ -188,6 +188,15 @@ Mobile content editor host.
   user is focused and the current edit did not change logical newline count.
   Even though the present mobile shell does not show the gutter rail, the shared editor geometry no longer churns on
   every same-line keystroke.
+- Shared gutter/minimap viewport offset now comes from the resolved editor `Flickable.contentY` for every mobile editor
+  mode, using proxy offsets only as a fallback before a live flickable exists.
+  Shared editor geometry therefore stays coupled to scroll position instead of relying on surface-specific inferred
+  offsets.
+- The mobile structured viewport background tap path now also skips taps that land on an actual structured block.
+  An inline image/resource block tap therefore stays with that block instead of being reinterpreted as a request to
+  move editing to the document tail.
+- Mobile selection context menus now also support parser-owned structured text-block selections through the active
+  block-local selection snapshot rather than the legacy whole-note editor selection state.
 - Mobile note transitions now also keep structured-flow notes off the legacy whole-editor typing diff path.
   Leaving a note whose body contains parser-owned `resource` blocks therefore no longer lets the fallback inline-editor
   serializer rewrite or damage `<resource ... />` source during transition cleanup.

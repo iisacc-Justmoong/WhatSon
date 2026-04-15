@@ -29,7 +29,14 @@ Rectangle {
     readonly property real designFrameWidth: 480
     readonly property real designBarHeight: 19
     readonly property real horizontalPadding: 8
-    readonly property real resolvedFrameWidth: Math.max(120, Number(imageFrame.width) || imageFrame.implicitWidth)
+    readonly property real parentFrameWidth: parent
+                                           ? (Number(parent.width) || Number(parent.implicitWidth) || 0)
+                                           : 0
+    readonly property real resolvedFrameWidth: Math.max(
+                                                   120,
+                                                   imageFrame.parentFrameWidth > 0
+                                                   ? imageFrame.parentFrameWidth
+                                                   : imageFrame.designFrameWidth)
     readonly property real availableMediaWidth: Math.max(
                                                     120,
                                                     imageFrame.resolvedFrameWidth - imageFrame.horizontalPadding * 2)
@@ -61,7 +68,7 @@ Rectangle {
     implicitHeight: imageFrame.designBarHeight * 2 + imageFrame.resolvedMediaHeight
     height: implicitHeight
     radius: imageFrame.frameCornerRadius
-    width: parent ? parent.width : implicitWidth
+    width: imageFrame.resolvedFrameWidth
 
     Item {
         id: headerBar

@@ -9,8 +9,8 @@ Item {
     property var renderedResources: []
     property var sourceOffsetYResolver: null
     property var blockFocusHandler: null
-    property color borderColor: "#334E5157"
-    property color cardColor: "#E61A1D22"
+    property color borderColor: LV.Theme.panelBackground08
+    property color cardColor: LV.Theme.panelBackground03
     property bool enableCardFocus: true
 
     function normalizedList(value) {

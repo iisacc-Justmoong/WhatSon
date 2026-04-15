@@ -372,6 +372,34 @@ FocusScope {
         return -1
     }
 
+    function blockIndexAtPoint(localX, localY) {
+        const safeLocalX = Number(localX)
+        const safeLocalY = Number(localY)
+        if (!isFinite(safeLocalX) || !isFinite(safeLocalY))
+            return -1
+        for (let index = 0; index < blockRepeater.count; ++index) {
+            const host = blockRepeater.itemAt(index)
+            if (!host)
+                continue
+            const hostX = Number(host.x) || 0
+            const hostY = Number(host.y) || 0
+            const hostWidth = Math.max(0, Number(host.width) || Number(host.implicitWidth) || 0)
+            const hostHeight = Math.max(0, Number(host.height) || Number(host.implicitHeight) || 0)
+            if (hostWidth <= 0 || hostHeight <= 0)
+                continue
+            if (safeLocalX < hostX || safeLocalX > hostX + hostWidth)
+                continue
+            if (safeLocalY < hostY || safeLocalY > hostY + hostHeight)
+                continue
+            return index
+        }
+        return -1
+    }
+
+    function hasBlockAtPoint(localX, localY) {
+        return documentFlow.blockIndexAtPoint(localX, localY) >= 0
+    }
+
     function currentCursorVisualRowRect() {
         const cursorRevision = documentFlow.activeBlockCursorRevision
         const blocks = documentFlow.normalizedBlocks()
@@ -1117,6 +1145,7 @@ FocusScope {
             delegate: Item {
                 id: blockHost
 
+                required property int index
                 required property var modelData
                 property alias delegateLoader: blockLoader
                 readonly property int blockIndex: index

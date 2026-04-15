@@ -11,6 +11,9 @@ Shared desktop/mobile resource card for `<resource ...>` note entries.
     the upstream payload forgot to keep `renderMode == "image"`
 - `borderColor`, `cardColor`
   Host-supplied tone overrides so desktop/mobile can keep their existing overlay palette.
+  The shared defaults now use neutral LV panel colors (`panelBackground08` border plus `panelBackground03` fill)
+  instead of the older accent-leaning hard-coded overlay tint, so inline resource-adjacent chrome stays aligned with
+  the Figma image-frame palette.
 - `inlinePresentation`
   Switches the card into the compact in-editor block mode used by `ContentsResourceLayer.qml`, where metadata stays
   single-line and the card height matches the reserved editor placeholder slot.
@@ -44,6 +47,7 @@ Shared desktop/mobile resource card for `<resource ...>` note entries.
   - non-inline resource presentation surfaces that keep the previous freer vertical sizing
 - The inline image path now follows the Figma `292:50` resource frame more closely:
   - outer frame stays transparent and keeps only the border
+  - default frame chrome is neutral panel/caption color, not Accent
   - the outer image frame stretches to the full available body width only
   - it must not treat gutter/minimap space or raw viewport overhang as part of that width contract
   - the inner bitmap viewport stays centered and does not upscale beyond the natural bitmap size
