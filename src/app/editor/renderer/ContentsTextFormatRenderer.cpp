@@ -16,7 +16,7 @@ namespace
 {
     namespace SemanticTags = WhatSon::NoteBodySemanticTagSupport;
 
-    constexpr int kResourceEditorPlaceholderLineCount = 6;
+    constexpr int kResourceEditorPlaceholderLineCount = 1;
 
     constexpr int kSupportedInlineStyleCount = 5;
 

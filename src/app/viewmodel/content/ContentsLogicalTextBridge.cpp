@@ -8,7 +8,8 @@
 
 namespace
 {
-    constexpr int kResourcePlaceholderLineCount = 6;
+    // Resource blocks participate in editor line metrics as one logical line.
+    constexpr int kResourcePlaceholderLineCount = 1;
 
     int boundedContainerSize(const qsizetype size) noexcept
     {

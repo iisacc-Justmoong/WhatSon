@@ -347,6 +347,9 @@ structured document-flow editor changes.
   instead of a native JS array.
   `length`, `count`, or numeric-key object façades must all preserve the inline image/resource card rather than leaving
   only the reserved placeholder lines in the editor body.
+- Resource payload resolution for an ordinary note must come only from the parser-owned structured block stream.
+  Updating one `<resource ... />` body slot must not depend on a second `.wsnbody` regex scan with different
+  `resourceIndex`, source-span, `resourceId`, or `resourcePath` matching rules.
 - If one structured resource block first matches a metadata-only placeholder entry and later matches a resolved entry
   with the real bitmap payload path, the block must prefer that resolved payload.
   The same body slot must not remain stuck on a fabricated generic document summary surface because an earlier partial match
@@ -379,8 +382,10 @@ structured document-flow editor changes.
 - A programmatic resource/body presentation rebuild must not persist the superseded placeholder surface back into
   `.wsnbody`; queued fallback `textEdited(...)` dispatch from the older RichText surface must be cancelled or ignored.
 - If the RichText surface later emits a plain-text delta whose logical span collapses back to one RAW source offset
-  inside a resource placeholder zone, that delta must be ignored and the surface must be restored from canonical
+  inside the single-line resource slot, that delta must be ignored and the surface must be restored from canonical
   source instead of rewriting the resource tag.
+- A standalone `<resource ... />` body block must count as exactly one logical editor line across the bridge,
+  structured-flow geometry, and fallback RichText placeholder projection.
 - Typing in a paragraph below an inline image/resource block must never serialize Qt's RichText document scaffold
   (`<!DOCTYPE HTML ... qrichtext ...>`) into the visible note body or canonical `.wsnbody` source.
 - Starting IME typing after noticing a misaligned image gutter must not let the next committed edit collapse the note

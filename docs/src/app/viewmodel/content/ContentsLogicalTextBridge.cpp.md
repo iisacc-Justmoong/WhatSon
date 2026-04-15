@@ -27,8 +27,8 @@
   - `<br>`, canonical `</break>`, and legacy `<hr>` each count as one logical line-break character
   - inside `<agenda>`, each later `<task>` start now also emits one synthetic logical line-break step before that
     task body, matching the plain-text projection produced by `NoteBodyPersistence`
-  - `<resource ... />` now emits the same fixed placeholder-line span that the editor RichText/native surfaces reserve
-    for the inline resource frame
+  - `<resource ... />` now reserves exactly one logical line, matching the structured block parser and fallback editor
+    projection instead of expanding into a multi-line placeholder span
   - `<tag>` emits one logical `#` glyph so tag markers still occupy cursor space
   - common HTML entities (`&lt;`, `&amp;`, `&#39;`, etc.) collapse to one logical character
 - That entity-collapse rule now intentionally matches the editor RichText surface, which renders RAW-safe entity tokens
@@ -77,8 +77,9 @@
 - When source contains multiple `<task>` children inside one `<agenda>`, `logicalToSourceOffsets()` must expose one
   logical line-break step between adjacent task bodies so cursor restoration and source splices can land inside the
   intended task instead of drifting to surrounding text.
-- When source contains `<resource ... />`, `logicalText` and `logicalToSourceOffsets()` must reserve the same fixed
-  blank-line slot so mobile plain-text editing and desktop overlay positioning both align to the authored resource tag.
+- When source contains `<resource ... />`, `logicalText` and `logicalToSourceOffsets()` must reserve the same
+  single-line slot that the structured block parser and fallback RichText projection use, so mobile plain-text editing
+  and desktop overlay positioning both align to the authored resource tag.
 - When the visible caret sits just after a proprietary inline-style run, `sourceOffsetForLogicalOffset(...)` must not
   point back in front of that closing style tag.
   Pressing `Enter` or typing more prose there must not split `</highlight>` or expose RAW tag tails in the editor.

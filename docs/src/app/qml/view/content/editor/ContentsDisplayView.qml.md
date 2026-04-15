@@ -17,9 +17,10 @@ Desktop content editor host.
 ## Structured Document Flow
 - `agenda`, `callout`, `resource`, `break`, semantic text tags, and plain text now all share the same desktop
   document-flow host.
-- Canonical live `<resource ... />` markup is still tracked through the live editor buffer, presentation snapshot, and
-  selection-bridge snapshot so `ContentsBodyResourceRenderer` can resolve inline resources against the freshest RAW
-  source.
+- Inline resource payload now resolves from the same parser-owned `renderedDocumentBlocks` stream that drives
+  `ContentsStructuredDocumentFlow.qml`.
+  Desktop therefore no longer lets `ContentsBodyResourceRenderer` re-scan the note RAW with a second resource-tag
+  grammar.
 - `ContentsStructuredDocumentFlow.qml` is therefore no longer a special-mode host only for some block families.
   It is the ordinary note-body host for the bound desktop editor session.
 - That block stream now also includes parser-owned semantic text blocks for `paragraph` / `title` / `subTitle` /
@@ -117,9 +118,9 @@ Desktop content editor host.
 - Desktop editor drop handling now accepts native file-manager drags without a `DropArea.keys` MIME gate, parses
   `drop.urls` first and then falls back through string-based payloads such as `drop.text`, `text/uri-list`,
   `text/plain`, and platform file-url MIME values, imports those files through `ResourcesImportViewModel`, injects
-  canonical `<resource ...>` calls into the active note source, and feeds the current presentation snapshot into
-  `ContentsBodyResourceRenderer` so the dropped resource card appears in the body overlay before the worker-thread note
-  flush finishes.
+  canonical `<resource ...>` calls into the active note source, and lets the synchronous structured parser refresh
+  `ContentsBodyResourceRenderer.documentBlocks` on the same editor turn so the dropped resource card appears without a
+  second body-text reparse.
 - Before that import actually mutates storage, desktop now asks `ResourcesImportViewModel.inspectImportConflictForUrls(...)`
   or `inspectClipboardImageImportConflict()` whether the incoming asset name already exists.
   If it does, the editor opens an `LV.Alert` with `Overwrite`, `Keep Both`, and `Cancel Import` actions instead of
@@ -174,11 +175,11 @@ Desktop content editor host.
 - Desktop keeps the RichText image-upgrade path only as fallback presentation support for the unloaded legacy editor.
   The bound note session itself now renders inline resource blocks through the canonical document host together with
   text, agenda, callout, and break blocks.
-- `ContentsBodyResourceRenderer`, `ContentsStructuredBlockRenderer`, and `ContentsStructuredDocumentFlow` now share one
-  `structuredFlowSourceText` contract.
-  That source is now a read-only derivation of the current authoritative note body instead of a second mutable cache.
-  Desktop therefore stops copying the same `.wsnbody` string through separate parser/presentation source slots just to
-  keep renderers in sync.
+- `ContentsStructuredBlockRenderer` and `ContentsStructuredDocumentFlow` still share the same
+  `structuredFlowSourceText` contract, and `ContentsBodyResourceRenderer` now consumes the renderer's
+  `renderedDocumentBlocks` projection directly.
+  Desktop therefore stops copying the same `.wsnbody` string through separate parser/resource source slots just to keep
+  renderers in sync.
 - `documentPresentationSourceText`, `structuredFlowSourceText`, `ContentsTextFormatRenderer.sourceText`, and
   `ContentsLogicalTextBridge.text` now all resolve from that same derived RAW source contract.
   Parser/resource/text-metric consumers therefore observe one source string directly instead of being re-armed through
@@ -203,10 +204,10 @@ Desktop content editor host.
   Resource-bearing notes therefore no longer collapse through the renderer's temporary placeholder block while a
   background parse is pending, which keeps inline image edits and the block tree stable during tail re-entry and the
   first keystroke below a resource.
-- Desktop now also gates `ContentsBodyResourceRenderer.bodySourceText` by
-  `editorSession.editorBoundNoteId == selectedNoteId` instead of by the selection-bridge body-note echo alone.
-  A same-note drag/drop or clipboard image insert therefore resolves the just-inserted `<resource ... />` tag from the
-  live bound editor RAW immediately, without waiting for the persisted-body snapshot to catch up first.
+- Desktop now binds `ContentsBodyResourceRenderer.documentBlocks` from
+  `ContentsStructuredBlockRenderer.renderedDocumentBlocks`.
+  Resource payload resolution therefore shares the exact same parsed block order, `resourceIndex`, and source spans as
+  the canonical structured document host.
 - Desktop now also binds `ContentsBodyResourceRenderer.noteDirectoryPath` from
   `selectionBridge.selectedNoteDirectoryPath`.
   Inline resource rendering therefore uses the same resolved note package path as the mounted editor session instead of

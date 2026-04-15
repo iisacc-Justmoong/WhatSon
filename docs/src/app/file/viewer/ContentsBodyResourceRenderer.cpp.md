@@ -15,12 +15,9 @@ Implements note-body resource rendering data extraction for the editor surface.
   transition lag and domains such as tags that do not own their own note-directory resolver.
 - If the resolved path is a `.wsresource` directory, it renders that package directly as a single
   resource card.
-- Otherwise it prefers the live `bodySourceText` snapshot supplied by the editor host and scans that RAW source for
-  `<resource ...>` tags, falling back to the active `.wsnbody` file only when the host has no same-note presentation
-  snapshot yet.
-- Supports quoted and unquoted attribute values (including package paths with `/`).
-- Scans comments and resource tags in one pass so comment text does not rewrite the authoring buffer before source-span
-  offsets are recorded.
+- Otherwise it consumes the parser-owned `documentBlocks` stream supplied by
+  `ContentsStructuredBlockRenderer.renderedDocumentBlocks` and resolves only `type=resource` blocks.
+  The renderer no longer reparses `.wsnbody` with its own `<resource ...>` grammar.
 - Resolves `.wsresource` references through `WhatSon::Resources::resolveAssetLocationFromReference(...)`.
 - Expands resource-reference base paths beyond the mounted note directory itself:
   note-directory ancestors up to the owning `.wshub`, the resolved `.wscontents` directory, the hub parent for
@@ -43,9 +40,9 @@ Implements note-body resource rendering data extraction for the editor surface.
   place resource cards at the authored inline position instead of pinning them to one bottom overlay rail.
 - Rebuilds the render model when the selected note changes or when `hubFilesystemMutated()` is emitted by the content view-model.
 - Rebuilds the render model when either the primary or fallback resolver emits `hubFilesystemMutated()`.
-- Rebuilds the render model immediately when `bodySourceText` changes, which lets drag-inserted resource tags render
-  before the background note-persistence worker finishes.
+- Rebuilds the render model immediately when parser-owned `documentBlocks` changes, so same-note RAW rewrites and
+  reparses update the resolved inline resource payload on the same editor turn.
 
 ## Testing
-  - `resourceRenderer_mustResolveResourceTagsFromCurrentNoteBody`
+  - `resourceRenderer_mustResolveResourceBlocksFromStructuredDocumentBlocks`
   - `resourceRenderer_mustRenderDirectResourcePackageSelection`

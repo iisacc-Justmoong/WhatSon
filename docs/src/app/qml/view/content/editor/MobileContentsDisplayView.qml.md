@@ -16,8 +16,10 @@ Mobile content editor host.
 ## Structured Document Flow
 - `agenda`, `callout`, `resource`, `break`, semantic text tags, and plain text now all share the same mobile
   document-flow host.
-- Canonical live `<resource ... />` markup is still tracked through the live editor buffer, presentation snapshot, and
-  selection-bridge body-source snapshot so `ContentsBodyResourceRenderer` can resolve against the freshest RAW source.
+- Inline resource payload now resolves from the same parser-owned `renderedDocumentBlocks` stream that drives
+  `ContentsStructuredDocumentFlow.qml`.
+  Mobile therefore no longer lets `ContentsBodyResourceRenderer` re-scan `.wsnbody` with a second resource-tag
+  grammar.
 - `ContentsStructuredDocumentFlow.qml` is therefore no longer a special-mode host only for some block families.
   It is the ordinary note-body host for the bound mobile editor session.
 - That block-flow stream now also includes parser-owned semantic text blocks for `paragraph` / `title` / `subTitle` /
@@ -168,10 +170,10 @@ Mobile content editor host.
   editor.
   The bound note session itself now renders inline resource blocks through the canonical document host together with
   text, agenda, callout, and break blocks.
-- `ContentsBodyResourceRenderer`, `ContentsStructuredBlockRenderer`, and `ContentsStructuredDocumentFlow` now share one
-  `structuredFlowSourceText` contract.
-  That source is now a read-only derivation of the authoritative note body instead of a second mutable cache.
-  Mobile therefore no longer copies the same `.wsnbody` string through separate parser/presentation source slots.
+- `ContentsStructuredBlockRenderer` and `ContentsStructuredDocumentFlow` still share the same
+  `structuredFlowSourceText` contract, and `ContentsBodyResourceRenderer` now consumes the renderer's
+  `renderedDocumentBlocks` projection directly.
+  Mobile therefore no longer copies the same `.wsnbody` string through separate parser/resource source slots.
 - `documentPresentationSourceText`, `structuredFlowSourceText`, `ContentsTextFormatRenderer.sourceText`, and
   `ContentsLogicalTextBridge.text` now all resolve from that one derived RAW source.
   Parser/resource/text-metric consumers therefore observe one value directly instead of depending on imperative
@@ -216,10 +218,10 @@ Mobile content editor host.
   rematerializing parsed blocks from the new RAW snapshot.
   Mobile therefore spends the first render turn on the note body itself and lets auxiliary surfaces catch up from the
   structured render/layout path.
-- Mobile now also gates `ContentsBodyResourceRenderer.bodySourceText` by
-  `editorSession.editorBoundNoteId == selectedNoteId` instead of by the selection-bridge body-note echo alone.
-  A same-note drag/drop or clipboard image insert therefore resolves the newly inserted `<resource ... />` tag from
-  the live bound editor RAW immediately, even before the saved-body snapshot finishes catching up.
+- Mobile now binds `ContentsBodyResourceRenderer.documentBlocks` from
+  `ContentsStructuredBlockRenderer.renderedDocumentBlocks`.
+  Resource payload resolution therefore shares the exact same parsed block order, `resourceIndex`, and source spans as
+  the canonical structured document host.
 - Mobile now also binds `ContentsBodyResourceRenderer.noteDirectoryPath` from
   `selectionBridge.selectedNoteDirectoryPath`.
   Inline resource rendering therefore reuses the mounted editor session's resolved note package path instead of

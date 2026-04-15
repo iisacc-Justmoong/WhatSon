@@ -50,10 +50,10 @@ Implements inline-format rendering from note-editor text to RichText HTML.
 - Converts the canonical single divider tag `</break>` (and legacy `<hr ...>` aliases) into rendered divider HTML
   (`<hr/>`) on both the live editor surface and preview HTML.
 - The live editor surface no longer drops `<resource ...>` tags as zero-height markup.
-  Instead it emits a fixed placeholder block for each resource tag, wrapped in stable
+  Instead it emits a single-placeholder-paragraph block for each resource tag, wrapped in stable
   `<!--whatson-resource-block:N--> ... <!--/whatson-resource-block:N-->` markers.
-  The editor host can then replace those exact slots with resolved inline media HTML while keeping one canonical
-  logical-placeholder contract for typing and source-offset mapping.
+  The editor host can then replace those exact slots with resolved inline media HTML while keeping the same
+  one-logical-line contract that the structured block parser and logical-text bridge use.
 - The live editor surface now also projects proprietary structured blocks into editor-owned RichText flow instead of
   treating them as zero-height skipped markup:
   - `<agenda ...><task ...>...</task>...</agenda>` emits one padded editor block that contains only task body text,

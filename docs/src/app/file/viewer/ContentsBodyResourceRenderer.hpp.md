@@ -12,8 +12,9 @@ Declares the body-resource renderer bridge that maps note-local `<resource ...>`
 - `noteDirectoryPath`: optional explicit selected-note directory path supplied by the selection bridge.
   When present, this path wins over view-model note-directory lookups so body resource resolution stays bound to the
   note package that is already mounted in the editor session.
-- `bodySourceText`: optional live editor/presentation snapshot used to resolve `<resource ...>` tags before the latest
-  `.wsnbody` flush finishes.
+- `documentBlocks`: parser-owned block projection from `ContentsStructuredBlockRenderer.renderedDocumentBlocks`.
+  Regular note rendering now derives resource payload only from this canonical block stream instead of reparsing RAW
+  `.wsnbody` text locally.
 - `maxRenderCount`: caps the number of rendered resource cards.
 - `renderedResources`: normalized `QVariantList` model (`type`, `format`, `resourcePath`, `renderMode`, `source`,
   `displayName`, `previewText`, `sourceStart`, `sourceEnd`, `focusSourceOffset`).
@@ -24,10 +25,11 @@ Declares the body-resource renderer bridge that maps note-local `<resource ...>`
 
 The renderer supports two selection sources through the same `noteId` contract:
 
-- regular note selection: resolve note directory -> prefer live `bodySourceText` when present -> otherwise parse
-  `<resource ...>` tags in `.wsnbody`
+- regular note selection: resolve note directory -> walk parser-owned `documentBlocks` -> resolve only
+  `type=resource` blocks into payload entries
 - direct resource-package selection: resolve `.wsresource` directory directly and render that package as a single entry
 
 ## Signals
 - Emits `renderedResourcesChanged()` whenever note selection or filesystem-backed resource payload changes.
+- Emits `documentBlocksChanged()` when the parser-owned block stream changes.
 - Emits `fallbackContentViewModelChanged()` when the secondary resolver changes.

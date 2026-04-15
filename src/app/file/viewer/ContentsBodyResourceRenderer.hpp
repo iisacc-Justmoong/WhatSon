@@ -17,7 +17,7 @@ class ContentsBodyResourceRenderer : public QObject
                    NOTIFY fallbackContentViewModelChanged)
     Q_PROPERTY(QString noteId READ noteId WRITE setNoteId NOTIFY noteIdChanged)
     Q_PROPERTY(QString noteDirectoryPath READ noteDirectoryPath WRITE setNoteDirectoryPath NOTIFY noteDirectoryPathChanged)
-    Q_PROPERTY(QString bodySourceText READ bodySourceText WRITE setBodySourceText NOTIFY bodySourceTextChanged)
+    Q_PROPERTY(QVariantList documentBlocks READ documentBlocks WRITE setDocumentBlocks NOTIFY documentBlocksChanged)
     Q_PROPERTY(int maxRenderCount READ maxRenderCount WRITE setMaxRenderCount NOTIFY maxRenderCountChanged)
     Q_PROPERTY(QVariantList renderedResources READ renderedResources NOTIFY renderedResourcesChanged)
     Q_PROPERTY(int resourceCount READ resourceCount NOTIFY renderedResourcesChanged)
@@ -38,8 +38,8 @@ public:
     QString noteDirectoryPath() const;
     void setNoteDirectoryPath(const QString& noteDirectoryPath);
 
-    QString bodySourceText() const;
-    void setBodySourceText(const QString& bodySourceText);
+    QVariantList documentBlocks() const;
+    void setDocumentBlocks(const QVariantList& documentBlocks);
 
     int maxRenderCount() const noexcept;
     void setMaxRenderCount(int maxRenderCount);
@@ -55,7 +55,7 @@ signals:
     void fallbackContentViewModelChanged();
     void noteIdChanged();
     void noteDirectoryPathChanged();
-    void bodySourceTextChanged();
+    void documentBlocksChanged();
     void maxRenderCountChanged();
     void renderedResourcesChanged();
 
@@ -68,7 +68,7 @@ private:
     static bool hasInvokableMethod(const QObject* object, const char* methodSignature);
 
     void refreshRenderedResources();
-    QVariantList buildRenderedResources(const QString& noteDirectoryPath, const QString& bodySourceText) const;
+    QVariantList buildRenderedResources(const QString& noteDirectoryPath, const QVariantList& documentBlocks) const;
     QString resolveNoteDirectoryPathFromViewModel(QObject* viewModel) const;
     QString resolveNoteDirectoryPath() const;
     void disconnectContentViewModel();
@@ -78,7 +78,7 @@ private:
     QPointer<QObject> m_fallbackContentViewModel;
     QString m_noteId;
     QString m_noteDirectoryPath;
-    QString m_bodySourceText;
+    QVariantList m_documentBlocks;
     int m_maxRenderCount = 3;
     QVariantList m_renderedResources;
     QMetaObject::Connection m_contentViewModelDestroyedConnection;

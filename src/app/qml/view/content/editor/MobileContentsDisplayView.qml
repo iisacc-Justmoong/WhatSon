@@ -264,7 +264,7 @@ Item {
     readonly property bool documentPresentationProjectionEnabled: !contentsView.preferNativeInputHandling
                                                                     || contentsView.showFormattedTextRenderer
     readonly property bool richTextInlineImageRenderingEnabled: !contentsView.preferNativeInputHandling
-    readonly property int resourceEditorPlaceholderLineCount: 6
+    readonly property int resourceEditorPlaceholderLineCount: 1
     property int programmaticEditorSurfaceSyncDepth: 0
     readonly property int editorIdleSyncThresholdMs: 1000
     readonly property string selectedNoteBodyText: selectionBridge.selectedNoteBodyText
@@ -2314,10 +2314,8 @@ Item {
     ContentsBodyResourceRenderer {
         id: bodyResourceRenderer
 
-        bodySourceText: contentsView.editorSessionBoundToSelectedNote
-                        ? contentsView.documentPresentationSourceText
-                        : ""
         contentViewModel: contentsView.contentViewModel
+        documentBlocks: structuredBlockRenderer.renderedDocumentBlocks
         fallbackContentViewModel: contentsView.libraryHierarchyViewModel
         maxRenderCount: contentsView.resourceRenderDisplayLimit
         noteId: contentsView.selectedNoteId

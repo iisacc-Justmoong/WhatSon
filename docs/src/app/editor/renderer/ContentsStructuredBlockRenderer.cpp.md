@@ -43,6 +43,10 @@ Builds canonical structured render data from `.wsnbody` source text.
   `resourcePath`, `resourceType`, `resourceFormat`) so the structured QML host can match the block back to
   `ContentsBodyResourceRenderer`'s resolved asset entry and paint the real package payload instead of the
   `.wsresource` directory path itself.
+- That same resource-block payload is now also the only regular-note input contract for
+  `ContentsBodyResourceRenderer`.
+  The resource renderer no longer re-reads `.wsnbody` or runs an independent `<resource ...>` regex scan, so parser
+  order/source spans and resolved resource payload now come from one shared block stream.
 - `hasRenderedBlocks` now reflects any explicit document block, including semantic text-tag blocks, standalone
   `</break>`, and `<resource ... />`.
 - `hasNonResourceRenderedBlocks` now likewise includes semantic text-tag blocks in addition to agenda/callout/break,

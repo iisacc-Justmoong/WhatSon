@@ -588,8 +588,11 @@ controller carries an incremental logical-to-source offset cache between those c
 longer force full-note plain-text diff/remap/rerender work.
 That same typing controller now also maintains incremental logical line-start offsets and pushes the full live state
 into `ContentsLogicalTextBridge.adoptIncrementalState(...)`, while desktop/mobile line-geometry helpers reuse cached
-`minimapLineGroups` even when the minimap is hidden. As a result, ordinary typing no longer needs a whole-note bridge
-rebuild or a second whole-document line-rectangle sweep just to keep gutter/minimap helpers aligned.
+`minimapLineGroups` even when the minimap is hidden. Inline `<resource ... />` blocks now also share the same
+single-logical-line contract across the bridge, structured block parser, and fallback RichText projection, so gutter,
+minimap, and source-offset helpers no longer disagree about resource block height. As a result, ordinary typing no
+longer needs a whole-note bridge rebuild or a second whole-document line-rectangle sweep just to keep gutter/minimap
+helpers aligned.
 Editor/QML code now stages save intent through `src/app/file/sync/ContentsEditorIdleSyncController.*`, which owns the
 worker-thread idle detector and note-exit flush promotion.
 Non-editing note-management work still sits behind `src/app/file/note/ContentsNoteManagementCoordinator.*`; direct
