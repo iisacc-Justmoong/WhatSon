@@ -1592,6 +1592,8 @@ FocusScope {
 
                     ContentsResourceBlock {
                         blockData: blockHost.blockEntry
+                        hasAdjacentBlockAfter: documentFlow.adjacentBlockIndex(blockHost.blockIndex, "after") >= 0
+                        hasAdjacentBlockBefore: documentFlow.adjacentBlockIndex(blockHost.blockIndex, "before") >= 0
                         resourceEntry: documentFlow.resourceEntryForBlock(blockHost.blockEntry)
                         width: blockHost.width
 

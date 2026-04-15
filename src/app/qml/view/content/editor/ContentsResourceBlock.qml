@@ -110,6 +110,8 @@ FocusScope {
     readonly property bool blockFocusedVisual: resourceBlock.blockSelected
                                               || resourceBlock.beforeBoundaryActive
                                               || resourceBlock.afterBoundaryActive
+    property bool hasAdjacentBlockAfter: false
+    property bool hasAdjacentBlockBefore: false
 
     implicitHeight: resourceCard.implicitHeight
     width: parent ? parent.width : implicitWidth
@@ -439,18 +441,33 @@ FocusScope {
         if (resourceBlock.handleDeleteKeyPress(event))
             return
         if (event.key === Qt.Key_Up) {
+            if (resourceBlock.blockSelected && !resourceBlock.hasAdjacentBlockBefore) {
+                resourceBlock.activateBoundaryEditor("before")
+                event.accepted = true
+                return
+            }
             resourceBlock.boundaryNavigationRequested("vertical", "before")
             event.accepted = true
             return
         }
         if (event.key === Qt.Key_Down) {
+            if (resourceBlock.blockSelected && !resourceBlock.hasAdjacentBlockAfter) {
+                resourceBlock.activateBoundaryEditor("after")
+                event.accepted = true
+                return
+            }
             resourceBlock.boundaryNavigationRequested("vertical", "after")
             event.accepted = true
             return
         }
         if (event.key === Qt.Key_Left) {
             if (resourceBlock.blockSelected) {
-                resourceBlock.activateBoundaryEditor("before")
+                if (!resourceBlock.hasAdjacentBlockBefore) {
+                    resourceBlock.activateBoundaryEditor("before")
+                    event.accepted = true
+                    return
+                }
+                resourceBlock.boundaryNavigationRequested("horizontal", "before")
                 event.accepted = true
                 return
             }
@@ -460,7 +477,12 @@ FocusScope {
         }
         if (event.key === Qt.Key_Right) {
             if (resourceBlock.blockSelected) {
-                resourceBlock.activateBoundaryEditor("after")
+                if (!resourceBlock.hasAdjacentBlockAfter) {
+                    resourceBlock.activateBoundaryEditor("after")
+                    event.accepted = true
+                    return
+                }
+                resourceBlock.boundaryNavigationRequested("horizontal", "after")
                 event.accepted = true
                 return
             }

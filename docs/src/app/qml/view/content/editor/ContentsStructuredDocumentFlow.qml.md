@@ -110,6 +110,10 @@ Hosts the document-native block editor for structured `.wsnbody` content.
   A generic `requestFocus({ sourceOffset })` that lands inside one `<resource ... />` span reselects that block as one
   atomic token, while edge-anchor focus is reserved for requests that explicitly opt into
   `interactionMode: "before"` / `interactionMode: "after"`.
+- Resource delegates now also receive explicit neighboring-block presence from the flow host.
+  A selected resource token can therefore hand plain arrow traversal straight to the previous/next parsed block when
+  one exists, while still falling back to its own before/after boundary caret lanes when the resource sits on a
+  document edge.
 - When no adjacent prose block exists, resource delegates now ask the flow to insert committed plain text directly
   before or after the block through `insertPlainTextAdjacentToBlock(...)`.
   The flow isolates that inserted text with newline boundaries only when needed, then restores focus into the newly

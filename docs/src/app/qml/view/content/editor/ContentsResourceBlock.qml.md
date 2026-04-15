@@ -52,9 +52,10 @@ Renders one structured document-flow block for a canonical `<resource ... />` so
   Resource blocks therefore behave more like one cursor-addressable token during keyboard traversal instead of one
   isolated display card plus two unrelated empty editors.
 - A center-selected resource token now consumes `Left` / `Right` itself before yielding to adjacent prose.
-  Keyboard traversal therefore becomes:
-  preceding prose -> left caret lane -> selected resource token -> right caret lane -> following prose
-  instead of skipping straight from the selected image block to one neighboring text block.
+  When an adjacent parsed block exists, the next plain arrow press now leaves the selected resource token directly for
+  that neighboring block instead of forcing the user through one extra boundary-caret step.
+  The left/right boundary carets remain available when the user clicks those lanes explicitly, and they still become
+  the keyboard fallback when the resource sits at a document edge with no neighboring block on that side.
 - The same block no longer computes surrounding prose focus offsets on its own.
   Its boundary lanes and selected state now emit one generic boundary-navigation request back to
   `ContentsStructuredDocumentFlow.qml`, which resolves the immediately adjacent parsed document block instead of
