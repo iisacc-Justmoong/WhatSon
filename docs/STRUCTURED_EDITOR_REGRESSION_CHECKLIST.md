@@ -219,6 +219,8 @@ structured document-flow editor changes.
   block's first gutter row.
 - Moving the caret with arrow keys or a mouse click inside the same focused structured paragraph/callout block must
   update the blue current-line indicator immediately without requiring a focus change to another block first.
+- Inside wrapped structured paragraph/callout/agenda text, the blue current-line indicator must follow the actual
+  visual caret row, not merely the first row of the owning logical line.
 - That same structured image block must also appear in the minimap as a wide filled block silhouette.
   The right rail must not render one tall image as several narrow text-like bars whose widths come from sliced label
   characters instead of the block card itself.

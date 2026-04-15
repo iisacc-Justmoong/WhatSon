@@ -731,10 +731,6 @@ Item {
         return Math.max(1, Number(rect.height) || contentsView.editorLineHeight);
     }
     function currentCursorGutterLineHeight() {
-        if (contentsView.showStructuredDocumentFlow) {
-            const safeLineNumber = Math.max(1, Math.min(contentsView.logicalLineCount, contentsView.currentCursorLineNumber));
-            return contentsView.gutterLineVisualHeight(safeLineNumber, 1);
-        }
         return contentsView.currentCursorVisualLineHeight();
     }
     function currentCursorVisualLineY() {
@@ -742,15 +738,19 @@ Item {
         return contentsView.editorViewportYForDocumentY(Number(rect.y) || 0);
     }
     function currentCursorGutterLineY() {
-        if (contentsView.showStructuredDocumentFlow) {
-            const safeLineNumber = Math.max(1, Math.min(contentsView.logicalLineCount, contentsView.currentCursorLineNumber));
-            return contentsView.gutterLineY(safeLineNumber);
-        }
         return contentsView.currentCursorVisualLineY();
     }
     function currentCursorVisualRowRect() {
         const refreshRevision = contentsView.gutterRefreshRevision;
         if (contentsView.showStructuredDocumentFlow) {
+            if (structuredDocumentFlow && structuredDocumentFlow.currentCursorVisualRowRect !== undefined) {
+                const rect = structuredDocumentFlow.currentCursorVisualRowRect();
+                return {
+                    "height": Math.max(1, Number(rect && rect.height !== undefined ? rect.height : 0) || contentsView.editorLineHeight),
+                    "width": 0,
+                    "y": Math.max(0, Number(rect && rect.y !== undefined ? rect.y : 0) || 0)
+                };
+            }
             const safeLineNumber = Math.max(1, Math.min(contentsView.logicalLineCount, contentsView.currentCursorLineNumber));
             return {
                 "height": Math.max(1, contentsView.lineVisualHeight(safeLineNumber, 1)),

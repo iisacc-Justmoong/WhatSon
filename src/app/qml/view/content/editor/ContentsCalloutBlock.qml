@@ -41,6 +41,29 @@ FocusScope {
         return Math.max(1, lineNumber)
     }
 
+    function currentCursorRowRect() {
+        const editorItem = calloutEditor && calloutEditor.editorItem ? calloutEditor.editorItem : null
+        const textValue = StructuredCursorSupport.normalizedPlainText(calloutBlock.calloutText)
+        const cursorPosition = Math.max(
+                    0,
+                    Math.min(
+                        textValue.length,
+                        Number(calloutEditor && calloutEditor.cursorPosition !== undefined ? calloutEditor.cursorPosition : 0) || 0))
+        if (!editorItem || editorItem.positionToRectangle === undefined)
+            return ({
+                        "contentHeight": Math.max(1, Number(calloutEditor ? calloutEditor.inputContentHeight : 0) || Math.round(LV.Theme.scaleMetric(12))),
+                        "contentY": 0
+                    })
+        const rect = editorItem.positionToRectangle(cursorPosition)
+        const mappedPoint = editorItem.mapToItem !== undefined
+                ? editorItem.mapToItem(calloutBlock, 0, Number(rect.y) || 0)
+                : ({ "x": 0, "y": Number(rect.y) || 0 })
+        return {
+            "contentHeight": Math.max(1, Number(rect.height) || Math.round(LV.Theme.scaleMetric(12))),
+            "contentY": Math.max(0, Number(mappedPoint.y) || 0)
+        }
+    }
+
     function focusEditor(cursorPosition) {
         calloutEditor.forceActiveFocus()
         const numericCursorPosition = Number(cursorPosition)

@@ -39,6 +39,10 @@ Renders one plain-text document segment inside the structured document-flow edit
 - While the editor stays focused, the block now also emits `activated()` on cursor moves.
   Structured-flow hosts therefore re-evaluate current-line indicator placement when the caret moves between logical
   lines inside the same paragraph block.
+- The block now also exposes its live cursor-row rectangle in block-local coordinates through
+  `currentCursorRowRect()`.
+  Structured-flow hosts use that rectangle to align current-line gutter indicators with the actual visual caret row
+  inside wrapped paragraph text.
 - The block now also exposes whether its nested inline editor currently owns focus.
   `ContentsStructuredDocumentFlow.qml` uses that signal-free focus state to keep host-level idle refresh guards from
   treating an actively edited structured paragraph as unfocused.

@@ -48,6 +48,10 @@ Hosts the document-native block editor for structured `.wsnbody` content.
   cursor-local interaction.
   Current-line gutter indicators therefore refresh even when the active block itself did not change and only the caret
   moved to another logical line inside that same block.
+- The flow now also exposes the active block's current visual cursor-row rectangle in document coordinates whenever the
+  loaded delegate can provide it.
+  Editor hosts use that document-space row rectangle for current-line gutter markers so the blue indicator follows the
+  actual caret row inside wrapped structured content.
 - Rewrites the authoritative RAW source string on every block edit, then asks the parent view to persist the new
   source.
 - Text-block delegates now obey the same one-way edit contract as the main editor host:

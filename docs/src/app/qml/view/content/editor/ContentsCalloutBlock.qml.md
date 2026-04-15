@@ -22,6 +22,9 @@ Renders one callout card as a native document block inside the editor flow.
 - While the callout editor keeps focus, cursor moves now also re-emit `activated()`.
   The host therefore refreshes current-line indicator placement when the caret moves to another authored callout line
   inside the same card.
+- The callout block now also exposes `currentCursorRowRect()` in block-local coordinates.
+  Structured-flow hosts use that to align current-line gutter indicators with the actual visual caret row inside
+  wrapped callout text.
 - Keeps agenda/callout shortcut insertion block-scoped so new proprietary wrappers are inserted after the current
   callout instead of nesting inside callout body content.
 - Treats Enter on an already-empty trailing line as the "exit callout" gesture.

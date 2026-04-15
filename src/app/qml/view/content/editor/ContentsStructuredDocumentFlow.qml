@@ -290,6 +290,36 @@ FocusScope {
         return Math.max(1, lineNumber + localLineNumber - 1)
     }
 
+    function currentCursorVisualRowRect() {
+        const cursorRevision = documentFlow.activeBlockCursorRevision
+        const blocks = documentFlow.normalizedBlocks()
+        const safeActiveBlockIndex = Math.max(0, Math.min(blocks.length - 1, Number(documentFlow.activeBlockIndex) || 0))
+        if (blocks.length === 0)
+            return ({
+                        "height": Math.max(1, documentFlow.lineHeightHint),
+                        "y": 0
+                    })
+        const activeBlockHost = blockRepeater.itemAt(safeActiveBlockIndex)
+        const delegateItem = documentFlow.delegateItemForBlockHost(activeBlockHost)
+        if (delegateItem && delegateItem.currentCursorRowRect !== undefined) {
+            const localRect = delegateItem.currentCursorRowRect()
+            return {
+                "height": Math.max(1, Number(localRect && localRect.contentHeight !== undefined ? localRect.contentHeight : 0) || documentFlow.lineHeightHint),
+                "y": Math.max(
+                         0,
+                         (Number(activeBlockHost && activeBlockHost.y !== undefined ? activeBlockHost.y : 0) || 0)
+                         + (Number(localRect && localRect.contentY !== undefined ? localRect.contentY : 0) || 0))
+            }
+        }
+        const lineNumber = documentFlow.activeLogicalLineNumber()
+        const lineEntries = documentFlow.logicalLineEntries()
+        const entry = lineEntries.length >= lineNumber && lineNumber > 0 ? lineEntries[lineNumber - 1] : ({})
+        return {
+            "height": Math.max(1, Number(entry && entry.contentHeight !== undefined ? entry.contentHeight : 0) || documentFlow.lineHeightHint),
+            "y": Math.max(0, Number(entry && entry.contentY !== undefined ? entry.contentY : 0) || 0)
+        }
+    }
+
     function noteActiveBlockInteraction(blockIndex) {
         const safeBlockIndex = Math.max(-1, Math.floor(Number(blockIndex) || -1))
         if (documentFlow.activeBlockIndex !== safeBlockIndex)

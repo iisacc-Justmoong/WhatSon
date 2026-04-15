@@ -55,6 +55,19 @@ FocusScope {
         return 1
     }
 
+    function currentCursorRowRect() {
+        for (let index = 0; index < taskRepeater.count; ++index) {
+            const item = taskRepeater.itemAt(index)
+            if (!item || item.focused === undefined || !item.focused || item.currentCursorRowRect === undefined)
+                continue
+            return item.currentCursorRowRect()
+        }
+        return ({
+                    "contentHeight": Math.max(1, Math.round(LV.Theme.scaleMetric(12))),
+                    "contentY": 0
+                })
+    }
+
     function focusFirstTask() {
         for (let index = 0; index < taskRepeater.count; ++index) {
             const item = taskRepeater.itemAt(index)
@@ -194,6 +207,28 @@ FocusScope {
                             agendaBlock.activated()
                         }
 
+                        function currentCursorRowRect() {
+                            const editorItem = taskEditor && taskEditor.editorItem ? taskEditor.editorItem : null
+                            const cursorPosition = Math.max(
+                                        0,
+                                        Math.min(
+                                            Math.max(0, taskEditor.length || 0),
+                                            Number(taskEditor && taskEditor.cursorPosition !== undefined ? taskEditor.cursorPosition : 0) || 0))
+                            if (!editorItem || editorItem.positionToRectangle === undefined)
+                                return ({
+                                            "contentHeight": Math.max(1, Number(taskEditor ? taskEditor.inputContentHeight : 0) || Math.round(LV.Theme.scaleMetric(12))),
+                                            "contentY": Math.max(0, Number(taskRow.y) || 0)
+                                        })
+                            const rect = editorItem.positionToRectangle(cursorPosition)
+                            const mappedPoint = editorItem.mapToItem !== undefined
+                                    ? editorItem.mapToItem(agendaBlock, 0, Number(rect.y) || 0)
+                                    : ({ "x": 0, "y": Math.max(0, Number(taskRow.y) || 0) + (Number(rect.y) || 0) })
+                            return {
+                                "contentHeight": Math.max(1, Number(rect.height) || Math.round(LV.Theme.scaleMetric(12))),
+                                "contentY": Math.max(0, Number(mappedPoint.y) || 0)
+                            }
+                        }
+
                         RowLayout {
                             anchors.left: parent.left
                             anchors.right: parent.right
@@ -265,6 +300,10 @@ FocusScope {
                                 wrapMode: TextEdit.Wrap
 
                                 onFocusedChanged: {
+                                    if (focused)
+                                        agendaBlock.activated()
+                                }
+                                onCursorPositionChanged: {
                                     if (focused)
                                         agendaBlock.activated()
                                 }

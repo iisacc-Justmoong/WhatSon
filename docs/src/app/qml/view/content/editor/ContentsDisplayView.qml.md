@@ -219,6 +219,10 @@ Desktop content editor host.
   only the first logical line of that block.
   Moving the caret between authored lines inside one paragraph/callout/agenda block therefore moves the blue gutter
   marker to the matching global document line without forcing a whole gutter geometry rebuild.
+- The current-line gutter marker now also uses the active structured block's live cursor row rectangle when that block
+  can expose one.
+  The blue indicator therefore follows the actual visual caret row inside wrapped paragraph/task/callout content
+  instead of staying pinned to the top of the owning logical line.
 - Resource and divider blocks still count as exactly one visible gutter row.
   The gutter marker height stays at one editor line even when the underlying block is much taller, while viewport
   culling still uses the real block height so the row remains visible throughout the image's on-screen span.

@@ -108,6 +108,29 @@ FocusScope {
         return Math.max(1, lineNumber)
     }
 
+    function currentCursorRowRect() {
+        const editorItem = blockEditor && blockEditor.editorItem ? blockEditor.editorItem : null
+        const plainText = textBlock.currentEditorPlainText()
+        const cursorPosition = Math.max(
+                    0,
+                    Math.min(
+                        plainText.length,
+                        Number(blockEditor && blockEditor.cursorPosition !== undefined ? blockEditor.cursorPosition : 0) || 0))
+        if (!editorItem || editorItem.positionToRectangle === undefined)
+            return ({
+                        "contentHeight": Math.max(1, Number(blockEditor ? blockEditor.inputContentHeight : 0) || Math.round(LV.Theme.scaleMetric(12))),
+                        "contentY": 0
+                    })
+        const rect = editorItem.positionToRectangle(cursorPosition)
+        const mappedPoint = editorItem.mapToItem !== undefined
+                ? editorItem.mapToItem(textBlock, 0, Number(rect.y) || 0)
+                : ({ "x": 0, "y": Number(rect.y) || 0 })
+        return {
+            "contentHeight": Math.max(1, Number(rect.height) || Math.round(LV.Theme.scaleMetric(12))),
+            "contentY": Math.max(0, Number(mappedPoint.y) || 0)
+        }
+    }
+
     function normalizeInlineStyleTag(tagName) {
         const normalizedTagName = tagName === undefined || tagName === null ? "" : String(tagName).trim().toLowerCase()
         if (normalizedTagName === "bold" || normalizedTagName === "b" || normalizedTagName === "strong")
