@@ -49,7 +49,7 @@ Rectangle {
         const fittedScale = Math.min(widthScale, heightScale)
         if (!isFinite(fittedScale) || fittedScale <= 0)
             return 1
-        return fittedScale
+        return Math.min(1, fittedScale)
     }
     readonly property real resolvedMediaWidth: Math.max(
                                                    1,

@@ -7,6 +7,37 @@
 #include <algorithm>
 #include <utility>
 
+namespace
+{
+    bool noteBackedSelectionEnabled(const QObject* noteListModel)
+    {
+        if (noteListModel == nullptr)
+        {
+            return false;
+        }
+
+        const QMetaObject* metaObject = noteListModel->metaObject();
+        if (metaObject == nullptr)
+        {
+            return false;
+        }
+
+        const int propertyIndex = metaObject->indexOfProperty("noteBacked");
+        if (propertyIndex < 0)
+        {
+            return true;
+        }
+
+        const QMetaProperty property = metaObject->property(propertyIndex);
+        if (!property.isReadable())
+        {
+            return true;
+        }
+
+        return property.read(noteListModel).toBool();
+    }
+}
+
 ContentsEditorSelectionBridge::ContentsEditorSelectionBridge(QObject* parent)
     : QObject(parent)
 {
@@ -517,7 +548,8 @@ void ContentsEditorSelectionBridge::scheduleNoteSelectionRefresh()
 
 void ContentsEditorSelectionBridge::refreshNoteSelectionState()
 {
-    const bool nextContractAvailable = hasReadableProperty(m_noteListModel, "currentNoteId");
+    const bool nextContractAvailable = noteBackedSelectionEnabled(m_noteListModel)
+        && hasReadableProperty(m_noteListModel, "currentNoteId");
     const QString nextNoteId = nextContractAvailable ? readStringProperty(m_noteListModel, "currentNoteId") : QString();
     const bool requiresRebind = m_noteSelectionRefreshRequiresRebind;
     m_noteSelectionRefreshRequiresRebind = false;

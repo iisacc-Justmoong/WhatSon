@@ -50,7 +50,7 @@ Shared desktop/mobile resource card for `<resource ...>` note entries.
   - default frame chrome is neutral panel/caption color, not Accent
   - the outer image frame stretches to the full available body width only
   - it must not treat gutter/minimap space or raw viewport overhang as part of that width contract
-  - the inner bitmap viewport stays centered and now expands to the available body width budget as well
-  - in note-body inline mode, the bitmap may shrink or upscale to match the frame width while preserving aspect ratio
+  - the inner bitmap viewport stays centered inside that full-width frame
+  - in note-body inline mode, the bitmap may shrink to fit while preserving aspect ratio, but it must not upscale
   - the image area still respects the real bitmap aspect ratio, but the inline frame now caps the body-block media
     height to the Figma `292:50` reference budget so a tall image cannot monopolize the whole editor surface

@@ -110,12 +110,12 @@ Hosts the document-native block editor for structured `.wsnbody` content.
   before or after the block through `insertPlainTextAdjacentToBlock(...)`.
   The flow isolates that inserted text with newline boundaries only when needed, then restores focus into the newly
   materialized text block via a source-offset focus request.
-- That imported-resource insertion path now also guarantees one trailing newline after the inserted
-  `<resource ... />` block when the insertion lands at EOF or before a non-newline character, then resolves the
-  post-insert focus offset one source character past that block boundary.
-  Focus therefore lands in the editable text slot after the image block instead of staying on the resource block's
-  inclusive `sourceEnd` boundary, which previously swallowed the next user keystrokes without emitting a RAW-source
-  mutation.
+- That imported-resource insertion path now appends a trailing newline only when the inserted `<resource ... />`
+  block is immediately followed by non-newline source text.
+  EOF insertion therefore no longer materializes a synthetic blank paragraph just to hold focus.
+- When the inserted resource lands at EOF, focus is restored onto the resource block's explicit
+  `interactionMode: "after"` boundary slot instead of forcing a newline-backed text block into RAW.
+  The next prose block is therefore created only if the user actually types after the resource.
 - Resolves each pending focus request to one target block index before dispatch:
   - agenda task focus prefers `taskOpenTagStart`
   - otherwise the host falls back to the reparsed `sourceOffset`
@@ -164,8 +164,18 @@ Hosts the document-native block editor for structured `.wsnbody` content.
   the adjacent canonical source span, and keeps focus in the current prose block at the same logical boundary.
 - Structured prose blocks can now also request focus transfer into an immediately adjacent atomic resource when the
   caret hits a block boundary and the user presses plain `Left` / `Right`.
-  The flow resolves that neighboring resource block and reissues focus as `interactionMode: "selected"`, so arrow-key
-  traversal can enter the attachment as one token instead of stalling at the paragraph edge.
+  The flow resolves that neighboring resource block from its canonical `sourceStart` and reissues focus as
+  `interactionMode: "selected"`, so arrow-key traversal can enter the attachment as one token instead of stalling at
+  the paragraph edge.
+- Plain `Up` / `Down` at a prose block edge now also hand off to an immediately adjacent atomic resource block.
+  Vertical keyboard traversal therefore enters the attachment as one selectable token instead of stopping at the prose
+  boundary, while a further `Up` / `Down` from the resource can continue toward surrounding prose.
+- Source-offset focus matching now distinguishes prose blocks from atomic document tokens.
+  Text-capable blocks still accept their trailing `sourceEnd` so the caret can land at a paragraph's visual end, but
+  `resource` / `break` blocks now treat that trailing boundary as exclusive for ordinary source-offset lookups.
+  Explicit `interactionMode: "before"` / `"after"` / `"selected"` focus requests are resolved separately for atomic
+  blocks, which prevents a `<resource ... />` span from swallowing the following prose block's shared boundary offset
+  during left/right keyboard traversal.
 - The flow root now also forwards plain delete keys to the active delegate when that delegate exposes its own
   `handleDeleteKeyPress(...)` contract.
   A selected inline resource block therefore does not depend on a separate legacy text editor being mounted in order to

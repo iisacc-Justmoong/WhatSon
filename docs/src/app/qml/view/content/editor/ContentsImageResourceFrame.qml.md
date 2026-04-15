@@ -14,7 +14,7 @@ Dedicated image-body frame container derived from Figma node `292:50`.
     - the available frame width after the 8px left/right inset
     - the media's natural pixel size
     - the frame-local maximum media height
-  - may upscale the media horizontally until the frame reaches the full available editor-body width
+  - keeps the outer frame at the full available editor-body width even when the bitmap itself remains smaller
   - still derives its effective width/height from that same fitted scale so tall images remain bounded as ordinary
     document blocks instead of expanding to their raw pixel height inside the note body
   - exposed as a default-content slot so image/video viewers can be mounted inside it later
@@ -48,7 +48,7 @@ Dedicated image-body frame container derived from Figma node `292:50`.
   - frame-width resolution must derive from the parent width or the design fallback width, not from the frame's own
     `width` binding, so the image card does not enter a `resolvedFrameWidth` binding loop while it mounts
   - runtime media viewport stays centered
-  - runtime media width/height may shrink or grow to fit the frame width budget
+  - runtime media width/height may shrink to fit the frame width budget, but must not grow past the natural bitmap size
   - runtime media height is additionally capped to the inline note-body block budget so the image frame does not
     consume the whole editor column
   - 8px horizontal header/footer/media padding

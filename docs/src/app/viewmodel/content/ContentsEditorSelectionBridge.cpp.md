@@ -53,6 +53,10 @@
   leaving QML to infer whether the current body text still belongs to the previous note.
 - `refreshNoteSelectionState()` now delegates note-id transitions into the sync controller through
   `bindSelectedNote(...)` / `clearSelectedNote()`, so open-count maintenance also left the bridge.
+- The bridge now also checks an optional note-list-model `noteBacked` property before it accepts a `currentNoteId`
+  contract.
+  Models such as `ResourcesListModel` can therefore keep note-like selection ids for generic list delegates without
+  being rebound into note open-count, note body load, or persistence lifecycles.
 - `setContentViewModel(...)` now only swaps the downstream content-view-model dependency immediately.
   The actual selected-note rebind is deferred into the existing queued selection refresh, so note-list-model and
   content-view-model replacements share one settled refresh turn instead of creating an intermediate mismatched pair.
@@ -102,6 +106,8 @@
 
 - Note-list selection changes must still update `selectedNoteId` / `selectedNoteBodyText`, but they must no longer run
   open-count/stat maintenance directly inside the bridge implementation.
+- A non-note-backed list model must clear selected-note lifecycle state instead of attempting to load or bind a fake
+  note package from its `currentNoteId`.
 - The bridge must continue forwarding sync-boundary queued/completion signals so `ContentsEditorSession.qml` behavior
   does not regress.
 - The bridge must not reintroduce note-switch blocking logic on top of the controller's buffered fetch model.

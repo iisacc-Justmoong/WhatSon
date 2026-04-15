@@ -249,6 +249,11 @@ int ResourcesListModel::rowCount(const QModelIndex& parent) const
     return m_items.size();
 }
 
+bool ResourcesListModel::noteBacked() const noexcept
+{
+    return false;
+}
+
 QVariant ResourcesListModel::data(const QModelIndex& index, int role) const
 {
     if (!index.isValid() || index.row() < 0 || index.row() >= m_items.size())

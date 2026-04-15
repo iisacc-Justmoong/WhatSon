@@ -1151,7 +1151,7 @@ Item {
         const previousCharacter = boundedCursorOffset > 0 ? currentSourceText.charAt(boundedCursorOffset - 1) : "";
         const nextCharacter = boundedCursorOffset < currentSourceText.length ? currentSourceText.charAt(boundedCursorOffset) : "";
         const leadingBreak = currentSourceText.length > 0 && previousCharacter !== "\n" ? "\n" : "";
-        const trailingBreak = nextCharacter !== "\n" ? "\n" : "";
+        const trailingBreak = boundedCursorOffset < currentSourceText.length && nextCharacter !== "\n" ? "\n" : "";
         return leadingBreak + blockSourceText + trailingBreak;
     }
     function sourceContainsCanonicalResourceTag(sourceText) {

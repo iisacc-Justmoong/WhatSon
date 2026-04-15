@@ -138,6 +138,23 @@ FocusScope {
         }
     }
 
+    function cursorOnFirstVisualRow() {
+        const rowRect = textBlock.currentCursorRowRect()
+        return Math.max(0, Number(rowRect.contentY) || 0) <= 1
+    }
+
+    function cursorOnLastVisualRow() {
+        const rowRect = textBlock.currentCursorRowRect()
+        const rowBottom = Math.max(
+                    0,
+                    (Number(rowRect.contentY) || 0) + (Number(rowRect.contentHeight) || 0))
+        const contentHeight = Math.max(
+                    1,
+                    Number(blockEditor && blockEditor.inputContentHeight !== undefined ? blockEditor.inputContentHeight : 0)
+                    || rowBottom)
+        return rowBottom >= contentHeight - 1
+    }
+
     function normalizeInlineStyleTag(tagName) {
         const normalizedTagName = tagName === undefined || tagName === null ? "" : String(tagName).trim().toLowerCase()
         if (normalizedTagName === "bold" || normalizedTagName === "b" || normalizedTagName === "strong")
@@ -293,8 +310,16 @@ FocusScope {
         const deleteForward = key === Qt.Key_Delete
         const moveBackward = key === Qt.Key_Left
         const moveForward = key === Qt.Key_Right
-        if (!deleteBackward && !deleteForward && !moveBackward && !moveForward)
+        const moveUp = key === Qt.Key_Up
+        const moveDown = key === Qt.Key_Down
+        if (!deleteBackward
+                && !deleteForward
+                && !moveBackward
+                && !moveForward
+                && !moveUp
+                && !moveDown) {
             return false
+        }
         const modifiers = Number(event.modifiers) || 0
         if ((modifiers & (Qt.ControlModifier | Qt.AltModifier | Qt.MetaModifier)) !== 0)
             return false
@@ -334,6 +359,16 @@ FocusScope {
             return true
         }
         if (moveForward && cursorPosition === plainTextLength && textBlock.hasAdjacentAtomicFocusAfter) {
+            textBlock.adjacentAtomicBlockFocusRequested("after")
+            event.accepted = true
+            return true
+        }
+        if (moveUp && textBlock.cursorOnFirstVisualRow() && textBlock.hasAdjacentAtomicFocusBefore) {
+            textBlock.adjacentAtomicBlockFocusRequested("before")
+            event.accepted = true
+            return true
+        }
+        if (moveDown && textBlock.cursorOnLastVisualRow() && textBlock.hasAdjacentAtomicFocusAfter) {
             textBlock.adjacentAtomicBlockFocusRequested("after")
             event.accepted = true
             return true

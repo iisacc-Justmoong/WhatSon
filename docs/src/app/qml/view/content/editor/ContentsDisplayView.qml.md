@@ -149,6 +149,9 @@ Desktop content editor host.
   the invokable return value is not tagged as `Array.isArray(...)` in QML.
 - Desktop resource-drop insertion now always emits canonical self-closing `<resource ... />` source with quoted,
   XML-escaped attributes, including quoted relative `path=".../.wsresource"` values.
+- That same import path no longer forces a terminal newline when the inserted `<resource ... />` lands at EOF.
+  Desktop therefore stops serializing a synthetic trailing `<paragraph></paragraph>` just to park focus below the
+  new resource.
 - Desktop no longer splices that imported resource tag block by the raw `TextEdit.cursorPosition` integer.
   On the legacy inline editor path it routes insertion through
   `ContentsEditorTypingController.insertRawSourceTextAtCursor(...)`, so logical/plain caret positions are mapped back

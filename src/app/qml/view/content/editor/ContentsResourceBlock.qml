@@ -195,6 +195,16 @@ FocusScope {
                 event.accepted = true
                 return true
             }
+            if (event.key === Qt.Key_Up) {
+                if (resourceBlock.focusAdjacentText("before"))
+                    event.accepted = true
+                return event.accepted
+            }
+            if (event.key === Qt.Key_Down) {
+                if (resourceBlock.focusAdjacentText("after"))
+                    event.accepted = true
+                return event.accepted
+            }
             if (event.key === Qt.Key_Right) {
                 resourceBlock.selectResourceBlock()
                 event.accepted = true
@@ -212,6 +222,16 @@ FocusScope {
                 resourceBlock.blockDeletionRequested()
                 event.accepted = true
                 return true
+            }
+            if (event.key === Qt.Key_Up) {
+                if (resourceBlock.focusAdjacentText("before"))
+                    event.accepted = true
+                return event.accepted
+            }
+            if (event.key === Qt.Key_Down) {
+                if (resourceBlock.focusAdjacentText("after"))
+                    event.accepted = true
+                return event.accepted
             }
             if (event.key === Qt.Key_Left) {
                 resourceBlock.selectResourceBlock()
@@ -248,6 +268,17 @@ FocusScope {
             return true
         }
         resourceBlock.activateBoundaryEditor(normalizedMode)
+        return true
+    }
+
+    function focusAdjacentText(mode) {
+        const normalizedMode = resourceBlock.normalizedInteractionMode(mode)
+        const adjacentSourceOffset = normalizedMode === "before"
+                ? Math.max(-1, Math.floor(Number(resourceBlock.beforeTextFocusSourceOffset) || -1))
+                : Math.max(-1, Math.floor(Number(resourceBlock.afterTextFocusSourceOffset) || -1))
+        if (adjacentSourceOffset < 0)
+            return false
+        resourceBlock.adjacentTextFocusRequested(adjacentSourceOffset)
         return true
     }
 
@@ -433,6 +464,16 @@ FocusScope {
             return
         if (resourceBlock.handleDeleteKeyPress(event))
             return
+        if (event.key === Qt.Key_Up) {
+            if (resourceBlock.focusAdjacentText("before"))
+                event.accepted = true
+            return
+        }
+        if (event.key === Qt.Key_Down) {
+            if (resourceBlock.focusAdjacentText("after"))
+                event.accepted = true
+            return
+        }
         if (event.key === Qt.Key_Left) {
             if (resourceBlock.blockSelected) {
                 resourceBlock.activateBoundaryEditor("before")

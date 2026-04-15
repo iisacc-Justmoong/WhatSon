@@ -55,6 +55,11 @@ Renders one structured document-flow block for a canonical `<resource ... />` so
   Keyboard traversal therefore becomes:
   preceding prose -> left caret lane -> selected resource token -> right caret lane -> following prose
   instead of skipping straight from the selected image block to one neighboring text block.
+- The same block now also treats plain `Up` / `Down` as prose-recovery traversal requests rather than boundary-caret
+  moves.
+  Whether the resource is center-selected or one boundary caret lane is active, `Up` moves focus toward preceding
+  prose and `Down` moves toward following prose, so an attachment no longer behaves like a vertical keyboard dead end
+  or traps the cursor on one special block token.
 - Those boundary anchors now keep one visible native caret at the resource row boundary while the same whole-block
   focus chrome remains active.
   Inline image/resource focus therefore reads like one selected attachment token with explicit before/after caret

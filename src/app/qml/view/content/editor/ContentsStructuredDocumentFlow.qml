@@ -693,6 +693,16 @@ FocusScope {
         return !!safeRequest.preferNearestTextBlock
     }
 
+    function normalizedRequestedInteractionMode(request) {
+        const safeRequest = request && typeof request === "object" ? request : ({})
+        if (safeRequest.interactionMode === undefined || safeRequest.interactionMode === null)
+            return ""
+        const requestedMode = String(safeRequest.interactionMode).trim().toLowerCase()
+        if (requestedMode === "before" || requestedMode === "after" || requestedMode === "selected")
+            return requestedMode
+        return ""
+    }
+
     function floorNumberOrFallback(value, fallbackValue) {
         const numericValue = Number(value)
         if (!isFinite(numericValue))
@@ -715,12 +725,40 @@ FocusScope {
         return false
     }
 
+    function blockUsesExclusiveTrailingBoundary(blockEntry) {
+        const safeBlock = blockEntry && typeof blockEntry === "object" ? blockEntry : ({})
+        const blockType = safeBlock.type !== undefined ? String(safeBlock.type).trim().toLowerCase() : ""
+        return blockType === "resource" || blockType === "break"
+    }
+
     function blockContainsSourceOffset(blockEntry, sourceOffset) {
         if (!isFinite(sourceOffset))
             return false
         const safeBlock = blockEntry && typeof blockEntry === "object" ? blockEntry : ({})
         const sourceStart = Math.max(0, Math.floor(Number(safeBlock.sourceStart) || 0))
         const sourceEnd = Math.max(sourceStart, Math.floor(Number(safeBlock.sourceEnd) || sourceStart))
+        if (sourceStart === sourceEnd)
+            return sourceOffset === sourceStart
+        if (documentFlow.blockUsesExclusiveTrailingBoundary(safeBlock))
+            return sourceOffset >= sourceStart && sourceOffset < sourceEnd
+        return sourceOffset >= sourceStart && sourceOffset <= sourceEnd
+    }
+
+    function blockMatchesExplicitFocusRequest(blockEntry, request, sourceOffset) {
+        if (!isFinite(sourceOffset))
+            return false
+        const requestedInteractionMode = documentFlow.normalizedRequestedInteractionMode(request)
+        if (requestedInteractionMode.length === 0)
+            return false
+        if (!documentFlow.blockEntryIsAtomicFocusTarget(blockEntry))
+            return false
+        const safeBlock = blockEntry && typeof blockEntry === "object" ? blockEntry : ({})
+        const sourceStart = Math.max(0, Math.floor(Number(safeBlock.sourceStart) || 0))
+        const sourceEnd = Math.max(sourceStart, Math.floor(Number(safeBlock.sourceEnd) || sourceStart))
+        if (requestedInteractionMode === "before")
+            return sourceOffset === sourceStart
+        if (requestedInteractionMode === "after")
+            return sourceOffset === sourceEnd
         return sourceOffset >= sourceStart && sourceOffset <= sourceEnd
     }
 
@@ -800,6 +838,8 @@ FocusScope {
             let fallbackAfterTextIndex = -1
             for (let index = 0; index < blocks.length; ++index) {
                 const blockEntry = blocks[index] && typeof blocks[index] === "object" ? blocks[index] : ({})
+                if (documentFlow.blockMatchesExplicitFocusRequest(blockEntry, request, sourceOffset))
+                    return index
                 if (documentFlow.blockContainsSourceOffset(blockEntry, sourceOffset))
                     return index
                 const sourceStart = Math.max(0, Math.floor(Number(blockEntry.sourceStart) || 0))
@@ -1136,10 +1176,9 @@ FocusScope {
             return false
         const focusSourceOffset = Math.max(
                     0,
-                    Math.floor(
-                        Number(adjacentBlock.focusSourceOffset)
-                        || Number(adjacentBlock.sourceStart)
-                        || 0))
+                    documentFlow.floorNumberOrFallback(
+                        adjacentBlock.sourceStart,
+                        documentFlow.floorNumberOrFallback(adjacentBlock.focusSourceOffset, 0)))
         documentFlow.requestFocus({
                                       "interactionMode": "selected",
                                       "sourceOffset": focusSourceOffset
@@ -1341,8 +1380,8 @@ FocusScope {
         const prefixNewline = insertionOffset > 0 && currentSourceText.charAt(insertionOffset - 1) !== "\n" ? "\n" : ""
         const blockSourceText = normalizedTagTexts.join("\n")
         const suffixOffset = insertionOffset < currentSourceText.length ? insertionOffset : currentSourceText.length
-        const suffixNewline = suffixOffset >= currentSourceText.length
-                || currentSourceText.charAt(suffixOffset) !== "\n"
+        const suffixNewline = suffixOffset < currentSourceText.length
+                && currentSourceText.charAt(suffixOffset) !== "\n"
                 ? "\n"
                 : ""
         const insertionSourceText = prefixNewline + blockSourceText + suffixNewline
@@ -1354,10 +1393,15 @@ FocusScope {
 
         documentFlow.sourceMutationRequested(
                     nextSourceText,
-                    {
+                    suffixNewline.length > 0
+                    ? {
                         "sourceOffset": documentFlow.nextEditableSourceOffsetAfterBlock(
                                             nextSourceText,
                                             insertedBlockEndOffset)
+                    }
+                    : {
+                        "interactionMode": "after",
+                        "sourceOffset": insertedBlockEndOffset
                     })
         return true
     }

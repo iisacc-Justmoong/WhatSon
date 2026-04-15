@@ -1,10 +1,39 @@
 #include "DetailCurrentNoteContextBridge.hpp"
 
 #include <QMetaObject>
+#include <QMetaProperty>
 #include <QVariant>
 
 namespace
 {
+    bool noteBackedSelectionEnabled(const QObject* noteListModel)
+    {
+        if (noteListModel == nullptr)
+        {
+            return false;
+        }
+
+        const QMetaObject* metaObject = noteListModel->metaObject();
+        if (metaObject == nullptr)
+        {
+            return false;
+        }
+
+        const int propertyIndex = metaObject->indexOfProperty("noteBacked");
+        if (propertyIndex < 0)
+        {
+            return true;
+        }
+
+        const QMetaProperty property = metaObject->property(propertyIndex);
+        if (!property.isReadable())
+        {
+            return true;
+        }
+
+        return property.read(noteListModel).toBool();
+    }
+
     bool hasNoteDirectoryResolver(const QObject* sourceViewModel)
     {
         if (sourceViewModel == nullptr)
@@ -25,6 +54,15 @@ namespace
 
         if (noteListModel == nullptr)
         {
+            return {};
+        }
+
+        if (!noteBackedSelectionEnabled(noteListModel))
+        {
+            if (resolvedFromModel != nullptr)
+            {
+                *resolvedFromModel = true;
+            }
             return {};
         }
 

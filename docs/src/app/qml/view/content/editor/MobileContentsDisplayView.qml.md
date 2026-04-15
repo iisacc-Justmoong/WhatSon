@@ -147,6 +147,9 @@ Mobile content editor host.
   On the legacy inline-editor path the drop handler reuses
   `ContentsEditorTypingController.insertRawSourceTextAtCursor(...)` so logical caret positions are translated back
   into RAW source offsets before save.
+- That same import path no longer forces a terminal newline when the inserted `<resource ... />` lands at EOF.
+  Mobile therefore stops serializing a synthetic trailing `<paragraph></paragraph>` just to park focus below the new
+  resource.
 - Mobile now also routes plain `Enter` / `Return` through
   `ContentsEditorTypingController.handlePlainEnterKeyPress(...)` before falling back to delete/formatting shortcuts.
   The legacy inline editor therefore splits lines by mutating RAW source directly instead of trusting a transient

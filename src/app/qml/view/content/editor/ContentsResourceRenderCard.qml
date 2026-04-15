@@ -126,7 +126,7 @@ Rectangle {
                 id: inlineResourceViewer
 
                 anchors.fill: parent
-                imageAllowUpscale: true
+                imageAllowUpscale: false
                 imageFillMode: Image.PreserveAspectFit
                 resourceEntry: resourceCard.resourceEntry
             }

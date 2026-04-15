@@ -34,6 +34,7 @@ class ResourcesListModel final : public QAbstractListModel
     Q_OBJECT
     Q_PROPERTY(int itemCount READ itemCount NOTIFY itemCountChanged)
     Q_PROPERTY(int currentIndex READ currentIndex WRITE setCurrentIndex NOTIFY currentIndexChanged)
+    Q_PROPERTY(bool noteBacked READ noteBacked CONSTANT)
     Q_PROPERTY(QString currentNoteId READ currentNoteId NOTIFY currentNoteIdChanged)
     Q_PROPERTY(QString currentBodyText READ currentBodyText NOTIFY currentBodyTextChanged)
     Q_PROPERTY(QVariantMap currentResourceEntry READ currentResourceEntry NOTIFY currentResourceEntryChanged)
@@ -73,6 +74,7 @@ public:
 
     int itemCount() const noexcept;
     int currentIndex() const noexcept;
+    bool noteBacked() const noexcept;
     QString currentNoteId() const;
     QString currentBodyText() const;
     QVariantMap currentResourceEntry() const;

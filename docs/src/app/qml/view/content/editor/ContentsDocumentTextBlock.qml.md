@@ -79,3 +79,7 @@ Renders one plain-text document segment inside the structured document-flow edit
   When the caret is at the start/end of a paragraph and the neighboring block is a focusable atomic resource, the
   block asks `ContentsStructuredDocumentFlow.qml` to select that attachment as one token instead of letting cursor
   traversal stall at the text edge.
+- Plain `Up` / `Down` now also enter an immediately adjacent atomic resource block once the caret is already on the
+  first or last visible text row of the paragraph.
+  Vertical keyboard traversal therefore treats the attachment as one selectable note token instead of turning the
+  resource boundary into a dead end.
