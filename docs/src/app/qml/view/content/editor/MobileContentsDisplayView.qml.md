@@ -235,9 +235,11 @@ Mobile content editor host.
   `ContentsEditorTypingController.qml` to ignore any same-turn late surface edit notification, and finally reapplies
   the canonical rendered editor surface so native `TextEdit` drop mutations cannot survive as literalized
   `resource`-attribute fragments in the editor buffer.
-- Mobile now also binds `StandardKey.Paste` to the same resource-import path while the clipboard contains image data.
+- Mobile now also intercepts image paste both through the focused editor key-event path and the
+  `StandardKey.Paste` shortcut fallback while the clipboard contains image data.
   Hardware-keyboard image paste therefore lands in `.wsresource` packaging plus canonical `<resource ... />` RAW
-  insertion, while non-image clipboard paste still stays on the ordinary native text-input path.
+  insertion even when a live text editor currently owns focus, while non-image clipboard paste still stays on the
+  ordinary native text-input path.
 - That same paste path now also routes through the duplicate-name alert flow.
   Repeated `clipboard-image.png` imports therefore require an explicit overwrite/keep-both decision instead of
   silently creating another numbered package.

@@ -344,6 +344,12 @@ structured document-flow editor changes.
 - Pasting an image from the system clipboard into the note body must follow the same pipeline as file drop:
   create a `.wsresource` package, insert a canonical `<resource ... />` tag into RAW, and render the new inline
   resource block in the current note without falling back to Qt's native inline-image document mutation.
+- The same clipboard-image import must still work while a live note-body text editor currently owns keyboard focus.
+  `Cmd/Ctrl+V` inside the editor must not be swallowed by the native `TextEdit` paste path before the resource-import
+  bridge can run.
+- Copying an image from a browser page must still import when the clipboard exposes that payload as platform image MIME
+  names such as `public.png` / `public.tiff` or as `text/html` / plain-text `data:image/...` content instead of a
+  plain `image/*` + `hasImage()` pair.
 - That clipboard-image import path must also honor the duplicate-name alert contract.
   Repeating a `clipboard-image.png` import must not silently create a numbered package unless the user explicitly chose
   `Keep Both` in the alert.

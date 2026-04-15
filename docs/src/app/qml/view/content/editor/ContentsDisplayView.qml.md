@@ -304,10 +304,11 @@ Desktop content editor host.
   `resourceDropActive || resourceDropEditorSurfaceGuardActive`, so the nested `TextEdit` turns read-only from drag
   hover through drop finalization and cannot corrupt adjacent `<callout>` / `<resource>` source by handling the same
   OS file drop as ordinary editable content.
-- Desktop now also intercepts `StandardKey.Paste` only while `ResourcesImportViewModel.clipboardImageAvailable` is
-  true.
-  Image paste therefore reuses the exact same guard + resource-import + `<resource ... />` insertion + deferred reload
-  path as drag/drop, while ordinary text clipboard paste still falls through to the native `TextEdit` implementation.
+- Desktop now also intercepts image paste both through the focused editor key-event path and the window-shortcut
+  fallback while `ResourcesImportViewModel.clipboardImageAvailable` is true.
+  A `Cmd/Ctrl+V` turn inside the live note editor therefore still reuses the exact same guard + resource-import +
+  `<resource ... />` insertion + deferred reload path as drag/drop, while ordinary text clipboard paste still falls
+  through to the native `TextEdit` implementation.
 - That same paste path now also reuses the duplicate-name alert flow.
   Repeated `clipboard-image.png` imports therefore require an explicit overwrite/keep-both decision instead of
   silently creating another numbered package.

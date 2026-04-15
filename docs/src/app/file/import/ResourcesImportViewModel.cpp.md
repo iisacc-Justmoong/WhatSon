@@ -46,6 +46,11 @@ The implementation now supports two closely related sequences.
   Explorer, and other host file managers stay on the same rollback-safe import pipeline as menu/file-picker imports.
 - Clipboard availability is tracked as a live property by listening to `QClipboard::dataChanged()`, so the editor can
   enable image-paste interception only while the clipboard still contains image data.
+- Clipboard image extraction now also accepts browser/platform variants that do not arrive as a plain `image/*` MIME:
+  image-like platform MIME names such as `public.png` / `public.tiff`, plus `text/html` or plain-text `data:image/...`
+  payloads now feed the same temporary-PNG import path.
+  Copying an image from a browser page therefore still resolves as a binary image import even when the clipboard uses
+  HTML/data-URL transport instead of `hasImage()`.
 - Clipboard conflict inspection intentionally uses the canonical temporary asset name `clipboard-image.png`, so repeated
   pasted-image imports now hit the same duplicate-policy alert instead of silently creating numbered packages.
 - QML callers should still treat the `QVariantList` return from `importUrlsForEditor(...)` as a Qt list-like value,

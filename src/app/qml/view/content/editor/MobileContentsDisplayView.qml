@@ -822,7 +822,51 @@ Item {
                 contentEditor.cursorPosition = cursorPosition;
         });
     }
+    function eventRequestsPasteShortcut(event) {
+        if (!event)
+            return false;
+        if (event.matches !== undefined && event.matches(StandardKey.Paste))
+            return true;
+
+        const modifiers = event.modifiers;
+        const metaPressed = !!(modifiers & Qt.MetaModifier);
+        const controlPressed = !!(modifiers & Qt.ControlModifier);
+        const altPressed = !!(modifiers & Qt.AltModifier);
+        const shiftPressed = !!(modifiers & Qt.ShiftModifier);
+        const normalizedText = event.text === undefined || event.text === null ? "" : String(event.text).toUpperCase();
+        if (!altPressed
+                && !shiftPressed
+                && (metaPressed || controlPressed)
+                && (event.key === Qt.Key_V || normalizedText === "V")) {
+            return true;
+        }
+        if (!metaPressed
+                && !controlPressed
+                && !altPressed
+                && shiftPressed
+                && event.key === Qt.Key_Insert) {
+            return true;
+        }
+        return false;
+    }
+    function handleClipboardImagePasteShortcut(event) {
+        if (!contentsView.eventRequestsPasteShortcut(event))
+            return false;
+        if (!contentsView.resourcesImportViewModel
+                || (contentsView.resourcesImportViewModel.busy !== undefined
+                    && contentsView.resourcesImportViewModel.busy)
+                || (contentsView.resourcesImportViewModel.clipboardImageAvailable !== undefined
+                    && !contentsView.resourcesImportViewModel.clipboardImageAvailable)) {
+            return false;
+        }
+        const pasted = contentsView.pasteClipboardImageAsResource();
+        if (pasted && event)
+            event.accepted = true;
+        return pasted;
+    }
     function handleInlineFormatShortcutKeyPress(event) {
+        if (contentsView.handleClipboardImagePasteShortcut(event))
+            return true;
         if (editorTypingController && editorTypingController.handlePlainEnterKeyPress !== undefined) {
             const enterHandled = editorTypingController.handlePlainEnterKeyPress(event);
             if (enterHandled) {
