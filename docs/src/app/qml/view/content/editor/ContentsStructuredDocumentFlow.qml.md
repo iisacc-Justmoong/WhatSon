@@ -28,8 +28,15 @@ Hosts the parsed `.wsnbody` block stream as one ordered document editor and forw
   - agenda/callout backend mutation signals
 - Visible text for ordinary structured text blocks is now the same RAW block string that the text delegate edits.
   Gutter/minimap/logical-line calculations therefore no longer depend on an inline-tag-stripped plain-text projection.
+- Plain newline-delimited prose now enters the flow as one ordered paragraph stream instead of one aggregated fallback
+  text block.
+  Blank lines below an inline resource therefore materialize as actual empty text blocks that arrow navigation and
+  focus restoration can target directly.
 - Atomic block focus no longer branches through `interactionMode: "before" / "after"`.
   Resource and break blocks are re-entered by source offsets inside their span and resolve to whole-block selection.
+- Atomic-block target focus now also carries an explicit `targetBlockIndex`.
+  When adjacent blocks share the same source boundary, flow-level focus restore can still choose the resource/break
+  block itself instead of letting a neighboring text block consume the same offset first.
 - The parser now supplies the same block-trait payload before delegates finish loading, so nearest-editable-block
   fallback, logical line counting, gutter collapse, and minimap sampling no longer depend on the delegate having
   mounted already.

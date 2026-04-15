@@ -82,7 +82,7 @@ namespace
 
     int logicalLineCountHintForPlainText(const QString& plainText)
     {
-        return std::max(1, plainText.count(QLatin1Char('\n')) + 1);
+        return std::max(1, static_cast<int>(plainText.count(QLatin1Char('\n'))) + 1);
     }
 
     void applyDocumentBlockTraits(

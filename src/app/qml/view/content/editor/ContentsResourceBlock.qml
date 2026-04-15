@@ -3,20 +3,18 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import LVRS 1.0 as LV
 
-FocusScope {
+Item {
     id: resourceBlock
 
     required property var blockData
+    property bool blockFocused: false
     property var resourceEntry: ({})
 
     signal activated()
-    signal boundaryNavigationRequested(string axis, string side)
-    signal blockDeletionRequested()
-    signal documentEndEditRequested()
 
     readonly property var normalizedBlock: blockData && typeof blockData === "object" ? blockData : ({})
     readonly property var normalizedResourceEntry: resourceEntry && typeof resourceEntry === "object" ? resourceEntry : ({})
-    readonly property bool focused: resourceBlock.activeFocus
+    readonly property bool focused: !!resourceBlock.blockFocused
     readonly property int currentLogicalLineNumber: 1
     readonly property bool textEditable: false
     readonly property bool atomicBlock: true
@@ -105,39 +103,6 @@ FocusScope {
     implicitHeight: resourceCard.implicitHeight
     width: parent ? parent.width : implicitWidth
 
-    function selectResourceBlock() {
-        resourceBlock.forceActiveFocus()
-        resourceBlock.activated()
-    }
-
-    function deleteSelectedBlock() {
-        resourceBlock.blockDeletionRequested()
-        return true
-    }
-
-    function handleDeleteKeyPress(event) {
-        if (!event)
-            return false
-        if (event.key === Qt.Key_Backspace || event.key === Qt.Key_Delete) {
-            if (resourceBlock.deleteSelectedBlock()) {
-                event.accepted = true
-                return true
-            }
-        }
-        return false
-    }
-
-    function applyFocusRequest(request) {
-        const safeRequest = request && typeof request === "object" ? request : ({})
-        const sourceOffset = Number(safeRequest.sourceOffset)
-        if (!isFinite(sourceOffset))
-            return false
-        if (sourceOffset < resourceBlock.sourceStart || sourceOffset > resourceBlock.sourceEnd)
-            return false
-        resourceBlock.selectResourceBlock()
-        return true
-    }
-
     function logicalLineLayoutEntries() {
         const mappedOrigin = resourceCard.mapToItem !== undefined
                 ? resourceCard.mapToItem(resourceBlock, 0, 0)
@@ -196,48 +161,5 @@ FocusScope {
         radius: Math.max(Math.round(LV.Theme.scaleMetric(12)), Number(resourceCard.radius) || 0)
         visible: resourceBlock.focused
         z: 2
-    }
-
-    Keys.onPressed: function (event) {
-        if (!event)
-            return
-        if (resourceBlock.handleDeleteKeyPress(event))
-            return
-        if (event.key === Qt.Key_Up) {
-            resourceBlock.boundaryNavigationRequested("vertical", "before")
-            event.accepted = true
-            return
-        }
-        if (event.key === Qt.Key_Down) {
-            resourceBlock.boundaryNavigationRequested("vertical", "after")
-            event.accepted = true
-            return
-        }
-        if (event.key === Qt.Key_Left) {
-            resourceBlock.boundaryNavigationRequested("horizontal", "before")
-            event.accepted = true
-            return
-        }
-        if (event.key === Qt.Key_Right) {
-            resourceBlock.boundaryNavigationRequested("horizontal", "after")
-            event.accepted = true
-            return
-        }
-        if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
-            resourceBlock.documentEndEditRequested()
-            event.accepted = true
-        }
-    }
-
-    TapHandler {
-        acceptedButtons: Qt.LeftButton
-
-        onTapped: function () {
-            if (tapCount >= 2) {
-                resourceBlock.documentEndEditRequested()
-                return
-            }
-            resourceBlock.selectResourceBlock()
-        }
     }
 }

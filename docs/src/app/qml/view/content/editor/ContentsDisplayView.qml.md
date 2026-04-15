@@ -178,6 +178,10 @@ Desktop content editor host.
   `structuredFlowSourceText` contract.
   Resource-block activation therefore stays aligned even when the live editor surface, the deferred presentation
   snapshot, and the selection-bridge body source are temporarily catching up with each other.
+- That shared `structuredFlowSourceText` is now refreshed imperatively from note-session ownership changes instead of
+  staying as a reactive multi-branch binding.
+  While the structured editor is bound to the selected note, desktop always feeds the parser/renderer from
+  `editorSession.editorText`; selection/presentation fallbacks are only used before the bound RAW session exists.
 - Desktop now also gates `ContentsBodyResourceRenderer.bodySourceText` by
   `editorSession.editorBoundNoteId == selectedNoteId` instead of by the selection-bridge body-note echo alone.
   A same-note drag/drop or clipboard image insert therefore resolves the just-inserted `<resource ... />` tag from the

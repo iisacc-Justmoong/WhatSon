@@ -250,7 +250,7 @@ namespace
 
     int logicalLineCountHintForPlainText(const QString& plainText)
     {
-        return std::max(1, plainText.count(QLatin1Char('\n')) + 1);
+        return std::max(1, static_cast<int>(plainText.count(QLatin1Char('\n'))) + 1);
     }
 
     void applyDocumentBlockTraits(
@@ -618,7 +618,97 @@ namespace
         }
 
         const QString gapText = sourceText.mid(sourceStart, sourceEnd - sourceStart);
+        if (gapText.contains(QLatin1Char('\n'))
+            || gapText.contains(QLatin1Char('\r'))
+            || gapText.contains(QChar(0x2028))
+            || gapText.contains(QChar(0x2029)))
+        {
+            return false;
+        }
         return gapText.trimmed().isEmpty();
+    }
+
+    QVariantMap buildImplicitParagraphPayload(
+        const QString& sourceText,
+        const int sourceStart,
+        const int sourceEnd)
+    {
+        QVariantMap payload = documentBlockPayload(sourceText, sourceStart, sourceEnd);
+        payload.insert(QStringLiteral("type"), QStringLiteral("paragraph"));
+        payload.insert(QStringLiteral("focusSourceOffset"), boundedTextIndex(sourceText, sourceStart));
+        payload.insert(QStringLiteral("implicitTextBlock"), true);
+        payload.insert(QStringLiteral("semanticTagName"), QStringLiteral("paragraph"));
+        applyDocumentBlockTraits(
+            &payload,
+            QStringLiteral("paragraph"),
+            payload.value(QStringLiteral("sourceText")).toString());
+        return payload;
+    }
+
+    void appendImplicitParagraphBlocks(
+        QVariantList* renderedDocumentBlocks,
+        const QString& sourceText,
+        const int sourceStart,
+        const int sourceEnd,
+        const bool gapFollowsExplicitBlock,
+        const bool gapPrecedesExplicitBlock)
+    {
+        if (renderedDocumentBlocks == nullptr)
+        {
+            return;
+        }
+
+        const int boundedStart = boundedTextIndex(sourceText, sourceStart);
+        const int boundedEnd = boundedTextIndex(sourceText, std::max(sourceStart, sourceEnd));
+        if (boundedEnd < boundedStart)
+        {
+            return;
+        }
+
+        const QString gapText = sourceText.mid(boundedStart, boundedEnd - boundedStart);
+        const QStringList lineSegments = gapText.split(QLatin1Char('\n'), Qt::KeepEmptyParts);
+        if (lineSegments.isEmpty())
+        {
+            renderedDocumentBlocks->push_back(
+                buildImplicitParagraphPayload(sourceText, boundedStart, boundedEnd));
+            return;
+        }
+
+        int keepStartIndex = 0;
+        int keepEndIndex = lineSegments.size();
+        if (gapFollowsExplicitBlock
+            && gapText.startsWith(QLatin1Char('\n'))
+            && keepStartIndex < keepEndIndex)
+        {
+            ++keepStartIndex;
+        }
+        if (gapPrecedesExplicitBlock
+            && gapText.endsWith(QLatin1Char('\n'))
+            && keepEndIndex > keepStartIndex)
+        {
+            --keepEndIndex;
+        }
+
+        int segmentSourceStart = boundedStart;
+        for (int segmentIndex = 0; segmentIndex < lineSegments.size(); ++segmentIndex)
+        {
+            const QString& segmentText = lineSegments.at(segmentIndex);
+            const int segmentSourceEnd = segmentSourceStart + boundedQSizeToInt(segmentText.size());
+            if (segmentIndex >= keepStartIndex && segmentIndex < keepEndIndex)
+            {
+                renderedDocumentBlocks->push_back(
+                    buildImplicitParagraphPayload(
+                        sourceText,
+                        segmentSourceStart,
+                        segmentSourceEnd));
+            }
+
+            segmentSourceStart = segmentSourceEnd;
+            if (segmentIndex + 1 < lineSegments.size())
+            {
+                ++segmentSourceStart;
+            }
+        }
     }
 
     void pushDocumentBlockSpan(std::vector<DocumentBlockSpan>* spans, const DocumentBlockSpan& span)
@@ -997,8 +1087,13 @@ ContentsWsnBodyBlockParser::ParseResult ContentsWsnBodyBlockParser::parse(const 
         if (cursor < boundedStart
             && !isFormattingWhitespaceBetweenExplicitBlocks(sourceText, cursor, boundedStart))
         {
-            result.renderedDocumentBlocks.push_back(
-                documentBlockPayload(sourceText, cursor, boundedStart));
+            appendImplicitParagraphBlocks(
+                &result.renderedDocumentBlocks,
+                sourceText,
+                cursor,
+                boundedStart,
+                cursor > 0,
+                true);
         }
 
         result.renderedDocumentBlocks.push_back(span.payload);
@@ -1007,14 +1102,24 @@ ContentsWsnBodyBlockParser::ParseResult ContentsWsnBodyBlockParser::parse(const 
 
     if (cursor < sourceText.size())
     {
-        result.renderedDocumentBlocks.push_back(
-            documentBlockPayload(sourceText, cursor, sourceText.size()));
+        appendImplicitParagraphBlocks(
+            &result.renderedDocumentBlocks,
+            sourceText,
+            cursor,
+            sourceText.size(),
+            cursor > 0,
+            false);
     }
 
     if (result.renderedDocumentBlocks.isEmpty())
     {
-        result.renderedDocumentBlocks.push_back(
-            documentBlockPayload(sourceText, 0, sourceText.size()));
+        appendImplicitParagraphBlocks(
+            &result.renderedDocumentBlocks,
+            sourceText,
+            0,
+            sourceText.size(),
+            false,
+            false);
     }
 
     result.agendaParseVerification = tagLinter.buildAgendaVerification(

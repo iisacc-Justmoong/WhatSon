@@ -1,16 +1,13 @@
 # `src/app/qml/view/content/editor/ContentsResourceBlock.qml`
 
 ## Responsibility
-Renders one canonical `<resource ... />` span as a normal atomic block inside structured document flow.
+Renders one canonical `<resource ... />` span as presentation-only document content inside structured document flow.
 
 ## Current Behavior
-- This block no longer keeps the old `before / selected / after` interaction state machine or its left/right boundary
-  editors.
-- A click now selects the whole block, and `Backspace` / `Delete` immediately emit `blockDeletionRequested()`.
-- Arrow keys emit only the generic `boundaryNavigationRequested(axis, side)` contract.
-  `ContentsStructuredDocumentFlow.qml` is now responsible for deciding which neighboring block receives focus next.
-- `applyFocusRequest(...)` treats any ordinary `sourceOffset` inside the resource span as whole-block selection.
-  There is no dedicated `interactionMode` branching anymore.
+- This block no longer owns focus, key handling, delete handling, or boundary-navigation logic.
+  It is now a presentation-only item.
+- Whole-block selection, arrow-key traversal, delete handling, and Enter behavior are handled by
+  `ContentsDocumentBlock.qml`, which uses the resource span only as one atomic document block surface.
 - The block still merges parser-owned block metadata with the resolved resource entry before passing the payload into
   `ContentsResourceRenderCard.qml`.
 - For gutter/current-line alignment, the block contributes one logical line and exposes
@@ -21,6 +18,6 @@ Renders one canonical `<resource ... />` span as a normal atomic block inside st
 - Structured shortcut insertion uses the block's trailing source offset (`focusSourceOffset`).
 
 ## Architecture Note
-- This file no longer owns a special text-insertion surface before or after the attachment.
+- This file no longer behaves like an editor widget.
 - Resource rows remain plain atomic document blocks inside the shared block stream, and surrounding document traversal
-  is resolved by the flow host plus neighboring text blocks.
+  is resolved by the adapter/flow layers rather than by a resource-local focus state machine.

@@ -280,15 +280,7 @@ Item {
                                                                && !contentsView.selectedNoteBodyLoading
                                                                && contentsView.selectedNoteBodyNoteId === contentsView.selectedNoteId
                                                                && contentsView.sourceContainsCanonicalResourceTag(contentsView.selectedNoteBodyText)
-    readonly property string structuredFlowSourceText: {
-        if (contentsView.liveEditorSourceContainsResourceTag)
-            return contentsView.editorText;
-        if (contentsView.presentationSourceContainsResourceTag)
-            return contentsView.documentPresentationSourceText;
-        if (contentsView.selectionSourceContainsResourceTag)
-            return contentsView.selectedNoteBodyText;
-        return contentsView.editorText;
-    }
+    property string structuredFlowSourceText: ""
     readonly property bool liveResourceStructuredFlowRequested: contentsView.liveEditorSourceContainsResourceTag
                                                                 || contentsView.presentationSourceContainsResourceTag
                                                                 || contentsView.selectionSourceContainsResourceTag
@@ -333,6 +325,20 @@ Item {
 
     function applyEditorRichTextSurface() {
         editorSelectionController.applyEditorRichTextSurface();
+    }
+    function resolvedStructuredFlowSourceText() {
+        if (contentsView.editorSessionBoundToSelectedNote)
+            return contentsView.editorText === undefined || contentsView.editorText === null ? "" : String(contentsView.editorText)
+        if (contentsView.selectionSourceContainsResourceTag)
+            return contentsView.selectedNoteBodyText === undefined || contentsView.selectedNoteBodyText === null ? "" : String(contentsView.selectedNoteBodyText)
+        if (contentsView.presentationSourceContainsResourceTag)
+            return contentsView.documentPresentationSourceText === undefined || contentsView.documentPresentationSourceText === null ? "" : String(contentsView.documentPresentationSourceText)
+        return contentsView.editorText === undefined || contentsView.editorText === null ? "" : String(contentsView.editorText)
+    }
+    function refreshStructuredFlowSourceText() {
+        const nextSourceText = contentsView.resolvedStructuredFlowSourceText()
+        if (contentsView.structuredFlowSourceText !== nextSourceText)
+            contentsView.structuredFlowSourceText = nextSourceText
     }
     function activeLogicalTextSnapshot() {
         if (editorTypingController && editorTypingController.currentEditorPlainText !== undefined) {
@@ -2425,6 +2431,7 @@ Item {
     clip: true
 
     Component.onCompleted: {
+        contentsView.refreshStructuredFlowSourceText();
         contentsView.scheduleSelectionModelSync({
                                                    "resetSnapshot": true,
                                                    "scheduleReconcile": true,
@@ -2440,10 +2447,21 @@ Item {
         contentsView.scheduleGutterRefresh(2);
     }
     onEditorTextChanged: {
+        contentsView.refreshStructuredFlowSourceText();
         contentsView.refreshStructuredDocumentFlowActivation();
         contentsView.scheduleMinimapSnapshotRefresh(false);
         if (!contentsView.showStructuredDocumentFlow)
             contentsView.scheduleDocumentPresentationRefresh(false);
+    }
+    onEditorBoundNoteIdChanged: {
+        contentsView.refreshStructuredFlowSourceText();
+        contentsView.refreshStructuredDocumentFlowActivation();
+    }
+    onDocumentPresentationSourceTextChanged: {
+        contentsView.refreshStructuredFlowSourceText();
+    }
+    onResourceDropEditorSurfaceGuardActiveChanged: {
+        contentsView.refreshStructuredFlowSourceText();
     }
     onShowStructuredDocumentFlowChanged: {
         if (contentsView.showStructuredDocumentFlow) {
@@ -2465,9 +2483,11 @@ Item {
         contentsView.scheduleDocumentPresentationRefresh(true);
     }
     onSelectedNoteBodyTextChanged: {
+        contentsView.refreshStructuredFlowSourceText();
         contentsView.scheduleSelectionModelSync({});
     }
     onSelectedNoteBodyLoadingChanged: {
+        contentsView.refreshStructuredFlowSourceText();
         // Empty-body notes keep the same text payload across load completion, so loading state must also re-arm sync.
         if (!contentsView.selectedNoteBodyLoading) {
             contentsView.scheduleSelectionModelSync({
@@ -2476,6 +2496,7 @@ Item {
         }
     }
     onSelectedNoteIdChanged: {
+        contentsView.refreshStructuredFlowSourceText();
         contentsView.structuredDocumentFlowActivatedNoteId = "";
         contentsView.scheduleNoteEntryGutterRefresh(contentsView.selectedNoteId);
         contentsView.scheduleSelectionModelSync({

@@ -7,7 +7,7 @@ Builds canonical structured render data from `.wsnbody` source text.
 - Still exposes `renderedAgendas` and `renderedCallouts` for legacy/fallback consumers.
 - Now also exposes `renderedDocumentBlocks`, a mixed document-flow model ordered by source position.
 - `renderedDocumentBlocks` interleaves:
-  - plain text segments: `type=text`
+  - implicit prose paragraphs split from plain-text line gaps: `type=paragraph`
   - agenda blocks: `type=agenda`
   - callout blocks: `type=callout`
   - resource blocks: `type=resource`
@@ -22,11 +22,16 @@ Builds canonical structured render data from `.wsnbody` source text.
   (for example `type=paragraph`, `type=title`, `type=subtitle`, `type=eventtitle`).
   Resource-bearing notes therefore keep their authored prose blocks visible in the structured document flow instead of
   relying on one monolithic pre-resource text fragment.
+- Parser-owned plain prose that is not wrapped in a semantic text tag is now also published paragraph-by-paragraph.
+  Newline-delimited blank prose slots below an inline resource therefore survive as their own text-editable document
+  blocks instead of being merged into one multiline fallback block.
 - Each explicit block, including semantic text-tag blocks, now carries parser-owned source geometry so QML can rewrite
   RAW in place.
 - The renderer now also preserves the parser's generic block-trait payload (`plainText`, `textEditable`,
   `atomicBlock`, `gutterCollapsed`, `logicalLineCountHint`, `minimapVisualKind`,
   `minimapRepresentativeCharCount`) instead of forcing QML to rediscover those traits from block type names.
+- The renderer-side placeholder payload now normalizes `logicalLineCountHint` to the same `int`-sized contract as the
+  parser path, preventing host/compiler-dependent integer width mismatches during placeholder publication.
 - Explicit blocks now also carry one normalized `tagName` alongside `type`, so downstream QML sees the same
   document-block identity contract regardless of which supported tag family produced the span.
 - Semantic text-tag blocks additionally split wrapper span from editable content span:
@@ -47,8 +52,8 @@ Builds canonical structured render data from `.wsnbody` source text.
 - That combined verification now includes the file-layer synthetic XML/body validation for supported semantic tags, so
   renderer consumers can see malformed `paragraph`/`title`/`subTitle`/`event*`/`resource` source through the same
   `structuredParseVerification` payload instead of only agenda/callout/break-specific lint.
-- Notes that do not contain any proprietary structured tags still fall back to one plain text block plus linter-only
-  verification, but that fallback is now a parser result rather than a renderer-owned special case.
+- Notes that do not contain any proprietary structured tags now still fall back entirely through the parser, but the
+  fallback is no longer "one giant text block"; it is one ordered paragraph stream derived from RAW line breaks.
 - When the host enables `backgroundRefreshEnabled`, notes that may contain agenda/callout/resource/break blocks now
   publish a cheap single-text-block placeholder immediately and compute the expensive structured render snapshot on a
   worker thread.

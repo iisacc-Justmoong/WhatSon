@@ -11,7 +11,10 @@ Implements one-pass top-level `.wsnbody` parsing for the structured editor rende
   - `callout`
   - `break`
 - Collects those blocks into one ordered `renderedDocumentBlocks` list by source position, then fills plain-text gaps
-  between explicit blocks as ordinary `type=text` entries.
+  between explicit blocks as paragraph-like prose blocks instead of one monolithic gap fragment.
+- Plain prose that is not already wrapped in an explicit semantic block is now split on logical source newlines.
+  Blank lines therefore survive as empty paragraph blocks, which lets the structured editor move/focus/edit below
+  inline resources without collapsing multiple authored paragraphs into one giant `type=text` payload.
 - Builds agenda/callout payloads directly during that same scan, including task text, done-state attributes,
   source-span metadata, and verification counters.
 - Recovers one malformed top-level open block before a sibling explicit block starts.
@@ -31,8 +34,13 @@ Implements one-pass top-level `.wsnbody` parsing for the structured editor rende
   - `minimapRepresentativeCharCount`
   This lets the flow host treat paragraph/resource/agenda/callout/break blocks uniformly as document blocks even
   before the concrete QML delegate has mounted.
+  `logicalLineCountHint` is intentionally normalized to an `int`-sized value before publishing so the parser does not
+  leak `qsizetype`-dependent width differences into the QML payload contract.
 - Resource blocks keep stable `resourceIndex`, `resourceId`, `resourcePath`, `resourceType`, and `resourceFormat`
   fields so QML can reconcile them with `ContentsBodyResourceRenderer`.
+- Separator newlines around explicit blocks are no longer treated the same as ignorable indentation-only whitespace.
+  The parser now discards only horizontal formatting whitespace between neighboring explicit blocks; authored newline
+  runs are preserved as actual paragraph slots in the document projection.
 - The parser still delegates canonicalization and verification to `WhatSonStructuredTagLinter`; it does not invent a
   second source-normalization authority.
 

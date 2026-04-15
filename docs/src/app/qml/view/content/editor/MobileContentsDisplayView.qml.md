@@ -172,6 +172,10 @@ Mobile content editor host.
   `structuredFlowSourceText` contract.
   Mobile resource-block activation therefore stays aligned even when the live editor surface, deferred presentation
   snapshot, and selection-bridge source are briefly out of step.
+- That shared `structuredFlowSourceText` is now also refreshed imperatively from session-selection state instead of
+  remaining a reactive multi-source binding.
+  While mobile is bound to the selected note, parser/renderer inputs always come from `editorSession.editorText`;
+  selection/presentation fallbacks are reserved for pre-bind transitions only.
 - Mobile now also gates `ContentsBodyResourceRenderer.bodySourceText` by
   `editorSession.editorBoundNoteId == selectedNoteId` instead of by the selection-bridge body-note echo alone.
   A same-note drag/drop or clipboard image insert therefore resolves the newly inserted `<resource ... />` tag from

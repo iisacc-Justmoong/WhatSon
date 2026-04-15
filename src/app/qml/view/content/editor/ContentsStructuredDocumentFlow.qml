@@ -699,6 +699,14 @@ FocusScope {
         return Math.floor(taskOpenTagStart)
     }
 
+    function normalizedFocusTargetBlockIndex(request) {
+        const safeRequest = request && typeof request === "object" ? request : ({})
+        const targetBlockIndex = Number(safeRequest.targetBlockIndex)
+        if (!isFinite(targetBlockIndex))
+            return -1
+        return Math.max(0, Math.floor(targetBlockIndex))
+    }
+
     function normalizedFocusSourceOffset(request) {
         const safeRequest = request && typeof request === "object" ? request : ({})
         const sourceOffset = Number(safeRequest.sourceOffset)
@@ -813,6 +821,9 @@ FocusScope {
         const blocks = documentFlow.normalizedBlocks()
         if (blocks.length === 0)
             return -1
+        const explicitTargetBlockIndex = documentFlow.normalizedFocusTargetBlockIndex(request)
+        if (explicitTargetBlockIndex >= 0 && explicitTargetBlockIndex < blocks.length)
+            return explicitTargetBlockIndex
         const taskOpenTagStart = documentFlow.normalizedFocusTaskOpenTagStart(request)
         if (isFinite(taskOpenTagStart)) {
             for (let index = 0; index < blocks.length; ++index) {
@@ -1090,6 +1101,7 @@ FocusScope {
                         blockEntry.sourceStart,
                         documentFlow.floorNumberOrFallback(blockEntry.focusSourceOffset, 0)))
         documentFlow.requestFocus({
+                                      "targetBlockIndex": safeBlockIndex,
                                       "sourceOffset": focusSourceOffset
                                   })
         return true
@@ -1114,6 +1126,7 @@ FocusScope {
                 ? Math.max(0, documentFlow.floorNumberOrFallback(blockEntry.sourceStart, 0))
                 : Math.max(0, documentFlow.floorNumberOrFallback(blockEntry.sourceEnd, 0))
         documentFlow.requestFocus({
+                                      "targetBlockIndex": safeBlockIndex,
                                       "entryBoundary": normalizedBoundarySide,
                                       "sourceOffset": Math.max(0, focusSourceOffset)
                                   })
