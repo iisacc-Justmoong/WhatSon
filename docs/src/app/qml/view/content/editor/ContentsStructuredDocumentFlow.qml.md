@@ -150,6 +150,14 @@ Hosts the document-native block editor for structured `.wsnbody` content.
   tap handlers can distinguish a real block hit from empty background.
   This keeps parent "append at document tail" taps from overriding a center click that was meant to select an inline
   image/resource block.
+- Selected resource blocks can now ask the host to delete their own canonical source span directly.
+  The flow resolves that request against the block's reparsed `sourceStart/sourceEnd`, rewrites RAW with that exact
+  range removed, and restores focus toward the nearest surrounding prose block instead of dropping editor focus after
+  the resource tag disappears.
+- For focus requests that explicitly prefer nearby prose recovery, the host now falls back from an exact `sourceOffset`
+  match to the nearest following or preceding text-capable block.
+  This prevents block deletion from leaving the caret stranded in a newline gap that no longer belongs to any mounted
+  delegate after the selected `<resource ... />` tag has been removed.
 - The block repeater delegate now declares `required property int index` explicitly.
   Under `pragma ComponentBehavior: Bound`, the flow must not rely on an implicit delegate `index`, otherwise runtime
   reparses can throw `ReferenceError: index is not defined` while block hosts are rematerialized.

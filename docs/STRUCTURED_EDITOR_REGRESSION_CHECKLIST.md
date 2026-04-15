@@ -228,6 +228,14 @@ structured document-flow editor changes.
 - Clicking the center of an inline image/resource block must leave that block selected.
   The structured viewport background tap handler must not immediately move focus to the document tail and clear the
   block selection on the same gesture.
+- Pressing `Backspace` or `Delete` while that center-selected image/resource block owns focus must remove the exact
+  canonical `<resource ... />` RAW source span for that block.
+  The delete path must not require a hidden legacy text selection, and it must not leave the image card mounted after
+  the tag has already been removed from RAW.
+- After deleting a selected inline image/resource block, focus recovery must move to the nearest surviving prose block
+  when one exists.
+  The caret must not disappear into an unmapped newline gap between reparsed blocks just because the removed resource
+  used to occupy that source offset.
 - Mounting or rematerializing a structured note with inline image/resource blocks must not log
   `ReferenceError: index is not defined` from `ContentsStructuredDocumentFlow.qml`.
   Block-host delegates must receive their repeater `index` explicitly under bound-component semantics.

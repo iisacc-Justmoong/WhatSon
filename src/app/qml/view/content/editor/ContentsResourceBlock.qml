@@ -15,6 +15,7 @@ FocusScope {
     signal activated()
     signal adjacentPlainTextInsertionRequested(string side, string text, int cursorPosition)
     signal adjacentTextFocusRequested(int sourceOffset)
+    signal blockDeletionRequested()
     signal documentEndEditRequested()
 
     readonly property var normalizedBlock: blockData && typeof blockData === "object" ? blockData : ({})
@@ -144,6 +145,13 @@ FocusScope {
         resourceBlock.setInteractionMode("selected")
         resourceBlock.forceActiveFocus()
         resourceBlock.activated()
+    }
+
+    function deleteSelectedBlock() {
+        if (!resourceBlock.blockSelected)
+            return false
+        resourceBlock.blockDeletionRequested()
+        return true
     }
 
     function tapInteractionMode(localX) {
@@ -341,6 +349,11 @@ FocusScope {
     Keys.onPressed: function (event) {
         if (!event)
             return
+        if ((event.key === Qt.Key_Backspace || event.key === Qt.Key_Delete) && resourceBlock.blockSelected) {
+            if (resourceBlock.deleteSelectedBlock())
+                event.accepted = true
+            return
+        }
         if (event.key === Qt.Key_Left) {
             if (resourceBlock.focusAdjacentTextOrBoundary("before"))
                 event.accepted = true

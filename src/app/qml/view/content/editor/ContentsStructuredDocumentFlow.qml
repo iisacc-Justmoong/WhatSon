@@ -664,6 +664,11 @@ FocusScope {
         return Math.max(0, Math.floor(sourceOffset))
     }
 
+    function requestPrefersNearestTextBlock(request) {
+        const safeRequest = request && typeof request === "object" ? request : ({})
+        return !!safeRequest.preferNearestTextBlock
+    }
+
     function floorNumberOrFallback(value, fallbackValue) {
         const numericValue = Number(value)
         if (!isFinite(numericValue))
@@ -765,9 +770,37 @@ FocusScope {
         }
         const sourceOffset = documentFlow.normalizedFocusSourceOffset(request)
         if (isFinite(sourceOffset)) {
+            let fallbackBeforeIndex = -1
+            let fallbackAfterIndex = -1
+            let fallbackBeforeTextIndex = -1
+            let fallbackAfterTextIndex = -1
             for (let index = 0; index < blocks.length; ++index) {
-                if (documentFlow.blockContainsSourceOffset(blocks[index], sourceOffset))
+                const blockEntry = blocks[index] && typeof blocks[index] === "object" ? blocks[index] : ({})
+                if (documentFlow.blockContainsSourceOffset(blockEntry, sourceOffset))
                     return index
+                const sourceStart = Math.max(0, Math.floor(Number(blockEntry.sourceStart) || 0))
+                const sourceEnd = Math.max(sourceStart, Math.floor(Number(blockEntry.sourceEnd) || sourceStart))
+                if (sourceEnd < sourceOffset) {
+                    fallbackBeforeIndex = index
+                    if (documentFlow.blockUsesTextDelegate(blockEntry))
+                        fallbackBeforeTextIndex = index
+                    continue
+                }
+                if (sourceStart > sourceOffset && fallbackAfterIndex < 0) {
+                    fallbackAfterIndex = index
+                    if (documentFlow.blockUsesTextDelegate(blockEntry))
+                        fallbackAfterTextIndex = index
+                }
+            }
+            if (documentFlow.requestPrefersNearestTextBlock(request)) {
+                if (fallbackAfterTextIndex >= 0)
+                    return fallbackAfterTextIndex
+                if (fallbackBeforeTextIndex >= 0)
+                    return fallbackBeforeTextIndex
+                if (fallbackAfterIndex >= 0)
+                    return fallbackAfterIndex
+                if (fallbackBeforeIndex >= 0)
+                    return fallbackBeforeIndex
             }
         }
         if (documentFlow.activeBlockIndex >= 0 && documentFlow.activeBlockIndex < blocks.length)
@@ -832,6 +865,62 @@ FocusScope {
         documentFlow.sourceMutationRequested(
                     documentFlow.spliceSourceRange(start, end, replacementText),
                     focusRequest && typeof focusRequest === "object" ? focusRequest : ({ }))
+    }
+
+    function blockIndexForEntry(blockData) {
+        const blocks = documentFlow.normalizedBlocks()
+        const safeBlock = blockData && typeof blockData === "object" ? blockData : ({})
+        const targetSourceStart = Math.max(0, Math.floor(Number(safeBlock.sourceStart) || 0))
+        const targetSourceEnd = Math.max(targetSourceStart, Math.floor(Number(safeBlock.sourceEnd) || targetSourceStart))
+        const targetType = safeBlock.type !== undefined ? String(safeBlock.type).trim().toLowerCase() : ""
+        for (let index = 0; index < blocks.length; ++index) {
+            const blockEntry = blocks[index] && typeof blocks[index] === "object" ? blocks[index] : ({})
+            if (blockEntry === safeBlock)
+                return index
+            const blockSourceStart = Math.max(0, Math.floor(Number(blockEntry.sourceStart) || 0))
+            const blockSourceEnd = Math.max(blockSourceStart, Math.floor(Number(blockEntry.sourceEnd) || blockSourceStart))
+            const blockType = blockEntry.type !== undefined ? String(blockEntry.type).trim().toLowerCase() : ""
+            if (blockSourceStart === targetSourceStart && blockSourceEnd === targetSourceEnd && blockType === targetType)
+                return index
+        }
+        const activeIndex = Math.floor(Number(documentFlow.activeBlockIndex) || -1)
+        if (activeIndex >= 0 && activeIndex < blocks.length)
+            return activeIndex
+        return -1
+    }
+
+    function focusRequestAfterBlockDeletion(blockData, nextSourceText) {
+        const safeBlock = blockData && typeof blockData === "object" ? blockData : ({})
+        const boundedNextSourceText = documentFlow.normalizedSourceText(nextSourceText)
+        const blockSourceStart = Math.max(0, Math.floor(Number(safeBlock.sourceStart) || 0))
+        const blockSourceEnd = Math.max(blockSourceStart, Math.floor(Number(safeBlock.sourceEnd) || blockSourceStart))
+        const blockIndex = documentFlow.blockIndexForEntry(safeBlock)
+        const deletedLength = Math.max(0, blockSourceEnd - blockSourceStart)
+        const previousEditableOffset = blockIndex >= 0
+                ? Math.max(-1, documentFlow.previousEditableBlockFocusSourceOffset(blockIndex))
+                : -1
+        const nextEditableOffset = blockIndex >= 0
+                ? Math.max(-1, documentFlow.nextEditableBlockFocusSourceOffset(blockIndex))
+                : -1
+        const adjustedNextEditableOffset = nextEditableOffset >= 0
+                ? Math.max(0, nextEditableOffset - deletedLength)
+                : -1
+        if (adjustedNextEditableOffset >= 0) {
+            return {
+                "preferNearestTextBlock": true,
+                "sourceOffset": Math.min(boundedNextSourceText.length, adjustedNextEditableOffset)
+            }
+        }
+        if (previousEditableOffset >= 0) {
+            return {
+                "preferNearestTextBlock": true,
+                "sourceOffset": Math.min(boundedNextSourceText.length, previousEditableOffset)
+            }
+        }
+        return {
+            "preferNearestTextBlock": true,
+            "sourceOffset": Math.min(boundedNextSourceText.length, blockSourceStart)
+        }
     }
 
     function previousEditableBlockFocusSourceOffset(blockIndex) {
@@ -909,6 +998,20 @@ FocusScope {
                     {
                         "sourceOffset": cursorSourceOffset
                     })
+        return true
+    }
+
+    function deleteBlock(blockData) {
+        const safeBlock = blockData && typeof blockData === "object" ? blockData : ({})
+        const currentSourceText = documentFlow.normalizedSourceText(documentFlow.sourceText)
+        const blockSourceStart = Math.max(0, Math.min(currentSourceText.length, Math.floor(Number(safeBlock.sourceStart) || 0)))
+        const blockSourceEnd = Math.max(blockSourceStart, Math.min(currentSourceText.length, Math.floor(Number(safeBlock.sourceEnd) || blockSourceStart)))
+        if (blockSourceEnd <= blockSourceStart)
+            return false
+        const nextSourceText = documentFlow.spliceSourceRange(blockSourceStart, blockSourceEnd, "")
+        documentFlow.sourceMutationRequested(
+                    nextSourceText,
+                    documentFlow.focusRequestAfterBlockDeletion(safeBlock, nextSourceText))
         return true
     }
 
@@ -1272,6 +1375,7 @@ FocusScope {
                                                                               Math.floor(Number(sourceOffset) || 0))
                                                       })
                         }
+                        onBlockDeletionRequested: documentFlow.deleteBlock(blockHost.blockEntry)
                         onDocumentEndEditRequested: documentFlow.requestDocumentEndEdit()
                     }
                 }
