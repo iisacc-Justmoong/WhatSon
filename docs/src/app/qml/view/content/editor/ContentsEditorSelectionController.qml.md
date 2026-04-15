@@ -43,7 +43,9 @@ It also owns keyboard-driven markdown block toggles for the list types the rende
 
 ## Range Mapping Rules
 
-- The controller first prefers the live `TextEdit` selection snapshot exposed by `contentEditor.selectionSnapshot()`.
+- The controller first prefers `contentEditor.inlineFormatSelectionSnapshot()` when the wrapper exposes it.
+  That cached snapshot keeps the latest non-empty range alive across the shortcut turn where Qt may briefly collapse
+  the live selection to one edge, and only then falls back to `contentEditor.selectionSnapshot()`.
 - When the wrapper exposes `currentPlainText()`, the controller now prefers that single helper for whole-surface
   plain-text inspection before falling back to direct `getText(...)` calls.
 - Right-click context-menu flows now prime their selection snapshot on mouse press and reuse that cached range when the
@@ -58,9 +60,9 @@ It also owns keyboard-driven markdown block toggles for the list types the rende
 - When numeric offsets disagree with the actual highlighted substring, the controller falls back to selected-text
   inference against the live editor plain-text surface returned by `contentEditor.getText(...)`, not against raw
   `.wsnbody` source text.
-- Shortcut-triggered wraps capture the resolved editor-surface selection range first, then queue the wrap one event-loop turn
-  later. The queued mutation therefore reuses the original selection snapshot instead of re-reading a possibly collapsed
-  post-shortcut selection.
+- Shortcut-triggered wraps capture the resolved editor-surface selection range first and now rewrite RAW immediately on
+  that same shortcut turn. The mutation therefore reuses the original selection snapshot instead of re-reading a
+  possibly collapsed post-shortcut selection.
 - Markdown list shortcuts follow the same queued-snapshot rule, but operate on whole logical lines instead of requiring
   a non-empty text selection.
 - A collapsed cursor toggles only the current logical line.
@@ -155,6 +157,9 @@ It also owns keyboard-driven markdown block toggles for the list types the rende
 
 - Re-selecting a different span and pressing `Cmd/Ctrl+B` / `I` / `U` / `Shift+X` / `Shift+E` should wrap the latest
   visible selection from the live `TextEdit`, not an older fallback snapshot.
+- The same inline-format shortcuts must still mutate RAW when the live `TextEdit` range has already collapsed to one
+  edge on the shortcut turn itself; the controller must recover the wrapper's cached non-empty inline-format
+  selection instead of treating the command as a zero-length range.
 - The same inline-format shortcuts must also work while the selected text lives inside the active structured paragraph
   delegate rather than the legacy whole-note editor surface.
 - Pressing `Cmd+Shift+8` on macOS or `Alt+Shift+8` on Windows/Linux with a collapsed cursor on a plain line should
@@ -194,8 +199,8 @@ It also owns keyboard-driven markdown block toggles for the list types the rende
 - Choosing `Plain` from the context menu should remove all inline formatting tags from the selected source range.
 - Drag-selecting text across multiple rendered paragraphs or mixed inline tags, then right-clicking to format it, must
   keep the original whole selection instead of reformatting only the fragment nearest the click.
-- Shortcut and window-level accelerator paths should coalesce into one queued wrap request per note/tag pair, avoiding
-  duplicate formatting from the same key chord.
+- Shortcut and window-level accelerator paths should still collapse to one RAW wrap mutation per key chord, avoiding
+  duplicate formatting from the same shortcut dispatch.
 - Heading/blockquotes/link/code markdown presentation must not cause `Bold` / `Italic` / `Underline` / `Highlight`
   toggles to misfire as if the proprietary `.wsnbody` style was already present.
 - Applying `Strikethrough` through shortcut/context-menu on indented markdown lines must keep line indentation and

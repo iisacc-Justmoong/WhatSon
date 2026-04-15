@@ -133,8 +133,6 @@ Item {
     property var logicalLineDocumentYCache: []
     property int logicalLineDocumentYCacheLineCount: 0
     property int logicalLineDocumentYCacheRevision: -1
-    property var structuredLogicalLineEntriesCache: []
-    property int structuredLogicalLineEntriesCacheLineCount: 0
     property var liveLogicalLineStartOffsets: Array.isArray(textMetricsBridge.logicalLineStartOffsets) && textMetricsBridge.logicalLineStartOffsets.length > 0
                                            ? textMetricsBridge.logicalLineStartOffsets
                                            : [0]
@@ -198,7 +196,6 @@ Item {
     property bool selectionModelSyncFocusEditorPending: false
     property bool selectionModelSyncFallbackRefreshPending: false
     property bool selectionModelSyncForceVisualRefreshPending: false
-    property var queuedStructuredInlineFormatWrapKeys: ({})
     property string pendingNoteEntryGutterRefreshNoteId: ""
     property string structuredDocumentFlowActivatedNoteId: ""
     property string pendingEditorFocusNoteId: ""
@@ -366,7 +363,7 @@ Item {
         return [];
     }
     function structuredLogicalLineEntryAt(lineNumber) {
-        const lineEntries = contentsView.effectiveStructuredLogicalLineEntries();
+        const lineEntries = contentsView.normalizedStructuredLogicalLineEntries();
         if (lineEntries.length === 0)
             return null;
         const safeLineNumber = Math.floor(Number(lineNumber) || 0);
@@ -375,38 +372,7 @@ Item {
         const entry = lineEntries[safeLineNumber - 1];
         return entry && typeof entry === "object" ? entry : null;
     }
-    function cacheStructuredLogicalLineEntries() {
-        const liveEntries = contentsView.normalizedStructuredLogicalLineEntries();
-        const snapshot = [];
-        for (let index = 0; index < liveEntries.length; ++index) {
-            const entry = liveEntries[index] && typeof liveEntries[index] === "object"
-                    ? liveEntries[index]
-                    : ({});
-            snapshot.push({
-                "charCount": Math.max(0, Number(entry.charCount) || 0),
-                "contentHeight": Math.max(1, Number(entry.contentHeight) || contentsView.editorLineHeight),
-                "contentY": Math.max(0, Number(entry.contentY) || 0),
-                "gutterCollapsed": !!entry.gutterCollapsed,
-                "gutterContentHeight": Math.max(1, Number(entry.gutterContentHeight) || contentsView.editorLineHeight),
-                "gutterContentY": Math.max(0, Number(entry.gutterContentY) || 0),
-                "lineNumber": Math.max(1, Number(entry.lineNumber) || index + 1),
-                "minimapRowCharCount": Math.max(0, Number(entry.minimapRowCharCount) || 0),
-                "minimapVisualKind": entry.minimapVisualKind !== undefined
-                                     ? String(entry.minimapVisualKind)
-                                     : "text",
-                "rowCount": Math.max(1, Number(entry.rowCount) || 1)
-            });
-        }
-        contentsView.structuredLogicalLineEntriesCache = snapshot;
-        contentsView.structuredLogicalLineEntriesCacheLineCount = snapshot.length;
-        return snapshot;
-    }
     function effectiveStructuredLogicalLineEntries() {
-        if (Array.isArray(contentsView.structuredLogicalLineEntriesCache)
-                && contentsView.structuredLogicalLineEntriesCache.length > 0
-                && contentsView.structuredLogicalLineEntriesCache.length === contentsView.structuredLogicalLineEntriesCacheLineCount) {
-            return contentsView.structuredLogicalLineEntriesCache;
-        }
         return contentsView.normalizedStructuredLogicalLineEntries();
     }
     function buildStructuredMinimapLineGroupsForRange(startLineNumber, endLineNumber) {
@@ -712,8 +678,6 @@ Item {
         return false;
     }
     function commitGutterRefresh() {
-        if (contentsView.showStructuredDocumentFlow)
-            contentsView.cacheStructuredLogicalLineEntries();
         contentsView.refreshLiveLogicalLineMetrics();
         contentsView.gutterRefreshRevision += 1;
         contentsView.refreshMinimapSnapshot();
@@ -1351,6 +1315,11 @@ Item {
     }
     function lineDocumentY(lineNumber) {
         const safeLineNumber = Math.max(1, Math.min(contentsView.logicalLineCount, Number(lineNumber) || 1));
+        if (contentsView.showStructuredDocumentFlow) {
+            const structuredEntry = contentsView.structuredLogicalLineEntryAt(safeLineNumber);
+            if (structuredEntry && structuredEntry.contentY !== undefined)
+                return Math.max(0, Number(structuredEntry.contentY) || 0);
+        }
         if (contentsView.incrementalLineGeometryAvailable()) {
             const lineGroup = contentsView.minimapLineGroups[safeLineNumber - 1];
             if (lineGroup && lineGroup.contentY !== undefined)
@@ -1374,6 +1343,32 @@ Item {
     function lineVisualHeight(startLine, lineSpan) {
         const safeStartLine = Math.max(1, Math.min(contentsView.logicalLineCount, Number(startLine) || 1));
         const safeLineSpan = Math.max(1, Number(lineSpan) || 1);
+        if (contentsView.showStructuredDocumentFlow) {
+            const startEntry = contentsView.structuredLogicalLineEntryAt(safeStartLine);
+            if (safeLineSpan === 1) {
+                return Math.max(
+                            1,
+                            Number(startEntry && startEntry.contentHeight !== undefined
+                                   ? startEntry.contentHeight
+                                   : 0) || contentsView.editorLineHeight);
+            }
+            const safeEndLine = Math.max(
+                        safeStartLine,
+                        Math.min(
+                            contentsView.logicalLineCount,
+                            safeStartLine + safeLineSpan - 1));
+            const endEntry = contentsView.structuredLogicalLineEntryAt(safeEndLine);
+            const startDocumentY = Math.max(0, Number(startEntry && startEntry.contentY !== undefined ? startEntry.contentY : 0) || 0);
+            const endDocumentY = Math.max(
+                        startDocumentY + contentsView.editorLineHeight,
+                        Math.max(0, Number(endEntry && endEntry.contentY !== undefined ? endEntry.contentY : startDocumentY) || startDocumentY)
+                        + Math.max(
+                            1,
+                            Number(endEntry && endEntry.contentHeight !== undefined
+                                   ? endEntry.contentHeight
+                                   : 0) || contentsView.editorLineHeight));
+            return Math.max(contentsView.editorLineHeight, endDocumentY - startDocumentY);
+        }
         if (safeLineSpan === 1 && contentsView.incrementalLineGeometryAvailable()) {
             const lineGroup = contentsView.minimapLineGroups[safeStartLine - 1];
             if (lineGroup && lineGroup.contentHeight !== undefined)
@@ -1725,37 +1720,12 @@ Item {
                        "selectionStart": Number(targetState.selectionSnapshot.selectionStart)
                    })
                 : ({});
-        const queueKey = normalizedNoteId
-                + "::"
-                + String(tagName)
-                + "::"
-                + String(blockIndex)
-                + "::"
-                + String(selectionSnapshot.selectionStart)
-                + "::"
-                + String(selectionSnapshot.selectionEnd)
-                + "::"
-                + String(selectionSnapshot.cursorPosition);
-        if (contentsView.queuedStructuredInlineFormatWrapKeys[queueKey])
-            return true;
-        contentsView.queuedStructuredInlineFormatWrapKeys[queueKey] = true;
-        Qt.callLater(function () {
-            delete contentsView.queuedStructuredInlineFormatWrapKeys[queueKey];
-            if (!contentsView.showStructuredDocumentFlow
-                    || !structuredDocumentFlow
-                    || !contentsView.hasSelectedNote)
-                return;
-            const currentNoteId = contentsView.selectedNoteId === undefined || contentsView.selectedNoteId === null
-                    ? ""
-                    : String(contentsView.selectedNoteId).trim();
-            if (currentNoteId !== normalizedNoteId)
-                return;
-            structuredDocumentFlow.applyInlineFormatToBlockSelection(
-                        blockIndex,
-                        tagName,
-                        selectionSnapshot);
-        });
-        return true;
+        if (normalizedNoteId !== contentsView.selectedNoteId)
+            return false;
+        return structuredDocumentFlow.applyInlineFormatToBlockSelection(
+                    blockIndex,
+                    tagName,
+                    selectionSnapshot);
     }
     function queueInlineFormatWrap(tagName) {
         if (contentsView.queueStructuredInlineFormatWrap(tagName))
@@ -1944,8 +1914,6 @@ Item {
         contentsView.logicalLineDocumentYCache = [];
         contentsView.logicalLineDocumentYCacheRevision = -1;
         contentsView.logicalLineDocumentYCacheLineCount = 0;
-        contentsView.structuredLogicalLineEntriesCache = [];
-        contentsView.structuredLogicalLineEntriesCacheLineCount = 0;
     }
     function resetEditorSelectionCache() {
         editorSelectionController.resetEditorSelectionCache();

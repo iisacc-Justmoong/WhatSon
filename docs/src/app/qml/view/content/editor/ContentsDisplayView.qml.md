@@ -206,19 +206,19 @@ Desktop content editor host.
   If the latest edit did not add or remove a newline-delimited logical line, line-structure-triggered gutter refresh
   requests are ignored so the visible gutter no longer jitters between stale and recomputed positions on every
   character.
-- Desktop now also freezes structured gutter geometry onto an explicit snapshot during approved full gutter refresh
-  turns.
-  Viewport-only updates such as content offset and viewport height changes then rebuild the visible line-number list
-  against that last stable snapshot instead of re-sampling transient structured block layout on every movement.
+- Desktop no longer keeps a dedicated structured gutter line-entry cache.
+  Gutter and structured minimap geometry now read the current `ContentsStructuredDocumentFlow.qml` line entries
+  directly at calculation time, so a stale fallback snapshot cannot survive and later overwrite corrected live
+  geometry.
 - The desktop host now also routes inline-format shortcuts through the active structured block before falling back to
   the legacy whole-editor selection controller.
   Selecting text inside a parser-owned paragraph block and pressing `Bold`, `Highlight`, or the other inline-format
   shortcuts therefore rewrites the owning block's RAW source directly instead of failing because the legacy full-note
   editor is not mounted.
-- That structured inline-format bridge is now also queued with a captured block index plus selection snapshot instead
-  of mutating the active block immediately during the shortcut signal turn.
-  Desktop formatting shortcuts therefore no longer depend on the structured editor still exposing the same live
-  selection range after Qt's shortcut dispatch has started to settle focus/selection state.
+- That structured inline-format bridge now captures the active block index plus selection snapshot and rewrites RAW
+  immediately on the shortcut turn itself.
+  Desktop formatting shortcuts therefore no longer depend on a delayed follow-up turn that might observe a different
+  live focus or selection state.
 - The current-line gutter indicator for structured notes now follows the active block's local logical line number, not
   only the first logical line of that block.
   Moving the caret between authored lines inside one paragraph/callout/agenda block therefore moves the blue gutter

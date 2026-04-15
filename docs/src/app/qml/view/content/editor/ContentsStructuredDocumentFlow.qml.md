@@ -82,9 +82,8 @@ Hosts the document-native block editor for structured `.wsnbody` content.
   whole-note editor surface.
 - The same formatting bridge now also exposes `inlineFormatTargetState()` and
   `applyInlineFormatToBlockSelection(blockIndex, tagName, selectionSnapshot)`.
-  Parent hosts can capture the active block-local selection range first, queue the shortcut rewrite for the next turn,
-  and then apply the rewrite back to that same block without trusting whatever live focus/selection state survived the
-  shortcut event itself.
+  Parent hosts can capture the active block-local selection range first and then apply the rewrite back to that same
+  block on the same shortcut turn without trusting a later live focus/selection lookup.
 - The same active-block insertion bridge now also accepts imported resource-tag batches from the parent host.
   A note that is already in structured-flow mode therefore inserts dropped `<resource ... />` blocks next to the
   active block instead of falling back to the legacy inline-editor cursor path or appending at EOF.

@@ -180,10 +180,10 @@ Mobile content editor host.
 - Mobile now also exposes the same structured inline-format shortcut bridge as desktop.
   Inline-format commands first ask the active structured block to rewrite its own RAW source selection and only fall
   back to the legacy selection-controller path when no structured block can handle the request.
-- That shared structured inline-format bridge now also queues one captured block-local selection snapshot per shortcut
-  turn before applying the RAW rewrite on the next event-loop turn.
-  Mobile therefore follows the same selection-stable formatting contract as desktop instead of depending on the live
-  focus/selection state to survive through shortcut dispatch unchanged.
+- That shared structured inline-format bridge now captures one block-local selection snapshot and applies the RAW
+  rewrite immediately on the shortcut turn itself.
+  Mobile therefore follows the same selection-stable formatting contract as desktop without depending on a later live
+  focus/selection lookup.
 - The shared mobile gutter/minimap geometry state now also suppresses line-structure-triggered refresh work while the
   user is focused and the current edit did not change logical newline count.
   Even though the present mobile shell does not show the gutter rail, the shared editor geometry no longer churns on

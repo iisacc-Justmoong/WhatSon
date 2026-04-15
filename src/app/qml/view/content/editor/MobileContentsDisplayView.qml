@@ -195,7 +195,6 @@ Item {
     property bool selectionModelSyncFocusEditorPending: false
     property bool selectionModelSyncFallbackRefreshPending: false
     property bool selectionModelSyncForceVisualRefreshPending: false
-    property var queuedStructuredInlineFormatWrapKeys: ({})
     property string pendingNoteEntryGutterRefreshNoteId: ""
     property string structuredDocumentFlowActivatedNoteId: ""
     property string pendingEditorFocusNoteId: ""
@@ -1534,37 +1533,12 @@ Item {
                        "selectionStart": Number(targetState.selectionSnapshot.selectionStart)
                    })
                 : ({});
-        const queueKey = normalizedNoteId
-                + "::"
-                + String(tagName)
-                + "::"
-                + String(blockIndex)
-                + "::"
-                + String(selectionSnapshot.selectionStart)
-                + "::"
-                + String(selectionSnapshot.selectionEnd)
-                + "::"
-                + String(selectionSnapshot.cursorPosition);
-        if (contentsView.queuedStructuredInlineFormatWrapKeys[queueKey])
-            return true;
-        contentsView.queuedStructuredInlineFormatWrapKeys[queueKey] = true;
-        Qt.callLater(function () {
-            delete contentsView.queuedStructuredInlineFormatWrapKeys[queueKey];
-            if (!contentsView.showStructuredDocumentFlow
-                    || !structuredDocumentFlow
-                    || !contentsView.hasSelectedNote)
-                return;
-            const currentNoteId = contentsView.selectedNoteId === undefined || contentsView.selectedNoteId === null
-                    ? ""
-                    : String(contentsView.selectedNoteId).trim();
-            if (currentNoteId !== normalizedNoteId)
-                return;
-            structuredDocumentFlow.applyInlineFormatToBlockSelection(
-                        blockIndex,
-                        tagName,
-                        selectionSnapshot);
-        });
-        return true;
+        if (normalizedNoteId !== contentsView.selectedNoteId)
+            return false;
+        return structuredDocumentFlow.applyInlineFormatToBlockSelection(
+                    blockIndex,
+                    tagName,
+                    selectionSnapshot);
     }
     function queueInlineFormatWrap(tagName) {
         if (contentsView.queueStructuredInlineFormatWrap(tagName))

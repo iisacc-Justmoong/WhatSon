@@ -112,6 +112,9 @@ plain `QtQuick.TextEdit` as the actual rendering and input engine.
   `inlineFormatSelectionSnapshot()` prefers the live `TextEdit` range, but if a host shortcut briefly collapses that
   range onto one selection edge during the same focus turn, the wrapper can still hand the formatting path the last
   valid selection snapshot instead of reporting an empty range.
+- Host formatting controllers must consume that `inlineFormatSelectionSnapshot()` helper for RAW wrap mutations rather
+  than reading `selectionSnapshot()` directly, otherwise the shortcut turn can still observe an empty selection and
+  skip `<bold>` / `<italic>` / `<highlight>` tag insertion.
 - That cached formatting selection is discarded as soon as focus leaves, text changes, or the caret moves away from the
   cached selection boundary, so ordinary caret-only editing does not inherit a stale format target.
 - Keeps the scroll contract compatible with the existing gutter/minimap code:
@@ -218,4 +221,4 @@ plain `QtQuick.TextEdit` as the actual rendering and input engine.
   must not fall through into literal character insertion.
 - Immediately after a host shortcut such as `Cmd/Ctrl+B`, `Cmd/Ctrl+I`, or highlight formatting, the wrapper must not
   report an empty selection just because the live `TextEdit` momentarily collapsed the range to one edge while the
-  shortcut handler was still running.
+  RAW formatting mutation is reading the current selection on that same turn.

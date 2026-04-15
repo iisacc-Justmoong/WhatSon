@@ -201,8 +201,10 @@ structured document-flow editor changes.
 - While the user types on an existing logical line without adding or removing a newline, the gutter must not visibly
   oscillate between stale and recomputed positions on each keystroke.
   Line-structure-triggered gutter refresh is expected only when the current edit actually changes newline structure.
-- The same-line typing path must not temporarily replace the last stable structured gutter geometry with a top-packed
-  fallback snapshot just because one intermediate content-offset or transient relayout event fired during editing.
+- The same-line typing path must not temporarily replace corrected structured gutter geometry with a top-packed
+  fallback layout just because one intermediate content-offset or transient relayout event fired during editing.
+- Structured gutter Y correction must come from the current live block-line geometry, not from a reused cached
+  line-entry snapshot that can survive after the underlying layout has already corrected itself.
 - While the viewport scrolls through the middle of that tall image, the gutter Y positions for later lines must stay
   aligned with the image block's real document height.
   Line numbers below the image must not overlap the bitmap, remain pinned near the top of the gutter, or jump only
@@ -240,8 +242,7 @@ structured document-flow editor changes.
   mode.
 - The same structured formatting shortcuts must still rewrite the selected RAW range when the visible selection briefly
   collapses to one boundary during shortcut dispatch.
-  A block-local selection captured on the shortcut turn must remain the rewrite target until the queued RAW mutation
-  applies.
+  A block-local selection captured on the shortcut turn must remain the rewrite target for the immediate RAW mutation.
   The structured-flow host must treat those semantic blocks as editable text blocks at the document tail.
 - The first structured resource block in a note must still resolve its inline asset payload.
   A `resourceIndex` or focus target value of `0` must not collapse to a sentinel fallback that downgrades the block to
@@ -338,6 +339,11 @@ structured document-flow editor changes.
 - Inline formatting shortcuts and context-menu actions must also stay on the same pipeline.
   They must rebuild proprietary RAW tags from logical/source ranges and then re-render from reparsed RAW, not from a
   serialized `QTextDocument` or editor-surface DOM snapshot.
+- The same `Cmd/Ctrl+B`, `I`, `U`, `Shift+X`, and `Shift+E` shortcuts on the legacy whole-note editor surface must
+  still insert canonical RAW tags even if Qt briefly collapses the visible selection to one boundary during shortcut
+  dispatch.
+  The controller must prefer the wrapper's cached inline-format selection snapshot over the transient zero-length live
+  range.
 - The right-side editor minimap must remain visible after note open and after later layout mutations.
   Adjacent editor/resource/detail content must not compress the minimap rail to zero width.
 - The editor column order must remain gutter on the left, editor in the center, minimap on the right.

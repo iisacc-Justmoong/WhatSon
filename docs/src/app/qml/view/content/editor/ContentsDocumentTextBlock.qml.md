@@ -63,5 +63,5 @@ Renders one plain-text document segment inside the structured document-flow edit
   selection path.
 - The block now also accepts an explicit captured selection snapshot for that formatting rewrite instead of always
   re-reading the nested editor selection live.
-  Structured-flow hosts can therefore capture the active selection before a shortcut turn settles and still rewrite the
-  correct RAW paragraph range one event-loop turn later.
+  Structured-flow hosts can therefore capture the active selection on the shortcut turn itself and still rewrite the
+  correct RAW paragraph range immediately.

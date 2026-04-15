@@ -44,7 +44,6 @@ QtObject {
     property string contextMenuSelectionText: ""
     property var editorSession: null
     property var editorViewport: null
-    property var queuedInlineFormatWrapKeys: ({})
     property var queuedMarkdownListMutationKeys: ({})
     property var queuedStructuredShortcutMutationKeys: ({})
     property var selectionBridge: null
@@ -105,16 +104,39 @@ QtObject {
                               : controller.currentEditorCursorPosition()
         };
     }
+    function currentInlineFormatSelectionSnapshot() {
+        if (!controller.contentEditor)
+            return {
+                "cursorPosition": NaN,
+                "selectedText": "",
+                "selectionEnd": NaN,
+                "selectionStart": NaN
+            };
+        if (controller.contentEditor.inlineFormatSelectionSnapshot !== undefined) {
+            const inlineSnapshot = controller.contentEditor.inlineFormatSelectionSnapshot();
+            if (inlineSnapshot)
+                return inlineSnapshot;
+        }
+        if (controller.contentEditor.selectionSnapshot !== undefined) {
+            const snapshot = controller.contentEditor.selectionSnapshot();
+            if (snapshot)
+                return snapshot;
+        }
+        return {
+            "cursorPosition": controller.contentEditor.cursorPosition,
+            "selectedText": controller.contentEditor.selectedText,
+            "selectionEnd": controller.contentEditor.selectionEnd,
+            "selectionStart": controller.contentEditor.selectionStart
+        };
+    }
     function currentEditorCursorPosition() {
         if (!controller.contentEditor)
             return NaN;
-        if (controller.contentEditor.selectionSnapshot !== undefined) {
-            const snapshot = controller.contentEditor.selectionSnapshot();
-            if (snapshot && snapshot.cursorPosition !== undefined) {
-                const cursor = Number(snapshot.cursorPosition);
-                if (isFinite(cursor))
-                    return cursor;
-            }
+        const selectionSnapshot = controller.currentInlineFormatSelectionSnapshot();
+        if (selectionSnapshot && selectionSnapshot.cursorPosition !== undefined) {
+            const selectionCursor = Number(selectionSnapshot.cursorPosition);
+            if (isFinite(selectionCursor))
+                return selectionCursor;
         }
         if (controller.contentEditor.cursorPosition !== undefined) {
             const cursor = Number(controller.contentEditor.cursorPosition);
@@ -163,17 +185,7 @@ QtObject {
                 "selectionEnd": NaN,
                 "selectionStart": NaN
             };
-        if (controller.contentEditor.selectionSnapshot !== undefined) {
-            const snapshot = controller.contentEditor.selectionSnapshot();
-            if (snapshot)
-                return snapshot;
-        }
-        return {
-            "cursorPosition": controller.currentEditorCursorPosition(),
-            "selectedText": controller.currentSelectedEditorText(),
-            "selectionEnd": controller.contentEditor.selectionEnd,
-            "selectionStart": controller.contentEditor.selectionStart
-        };
+        return controller.currentInlineFormatSelectionSnapshot();
     }
     function currentRawEditorSelectionRange() {
         if (!controller.contentEditor)
@@ -236,10 +248,12 @@ QtObject {
     function currentSelectedEditorText() {
         if (!controller.contentEditor)
             return "";
-        if (controller.contentEditor.selectionSnapshot !== undefined) {
-            const snapshot = controller.contentEditor.selectionSnapshot();
-            if (snapshot && snapshot.selectedText !== undefined)
-                return String(snapshot.selectedText === undefined || snapshot.selectedText === null ? "" : snapshot.selectedText);
+        const selectionSnapshot = controller.currentInlineFormatSelectionSnapshot();
+        if (selectionSnapshot && selectionSnapshot.selectedText !== undefined) {
+            return String(
+                        selectionSnapshot.selectedText === undefined || selectionSnapshot.selectedText === null
+                        ? ""
+                        : selectionSnapshot.selectedText);
         }
         if (controller.contentEditor.selectedText !== undefined)
             return String(controller.contentEditor.selectedText === undefined || controller.contentEditor.selectedText === null ? "" : controller.contentEditor.selectedText);
@@ -919,21 +933,7 @@ QtObject {
         };
         if (selectionRange.end <= selectionRange.start)
             return false;
-        const capturedSelectionRange = selectionSnapshot;
-        const noteId = controller.currentSelectedNoteId();
-        const queueKey = noteId + "::" + normalizedTagName + "::" + String(capturedSelectionRange.start) + "::" + String(capturedSelectionRange.end) + "::" + controller.normalizeSelectionTextValue(capturedSelectionRange.selectedText);
-        if (controller.queuedInlineFormatWrapKeys[queueKey])
-            return true;
-        controller.queuedInlineFormatWrapKeys[queueKey] = true;
-        Qt.callLater(function () {
-            delete controller.queuedInlineFormatWrapKeys[queueKey];
-            if (!controller.view || !controller.view.hasSelectedNote)
-                return;
-            if (controller.currentSelectedNoteId() !== noteId)
-                return;
-            controller.wrapSelectedEditorTextWithTag(normalizedTagName, capturedSelectionRange);
-        });
-        return true;
+        return controller.wrapSelectedEditorTextWithTag(normalizedTagName, selectionSnapshot);
     }
     function toggleMarkdownListForSelection(listKind, selectionSnapshot) {
         if (!controller.view || !controller.view.hasSelectedNote || controller.view.showDedicatedResourceViewer || controller.view.showFormattedTextRenderer)
