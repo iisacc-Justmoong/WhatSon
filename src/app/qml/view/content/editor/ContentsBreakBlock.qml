@@ -7,6 +7,7 @@ FocusScope {
     id: breakBlock
 
     required property var blockData
+    property var shortcutKeyPressHandler: null
 
     signal activated()
     signal blockDeletionRequested()
@@ -98,6 +99,12 @@ FocusScope {
     Keys.onPressed: function (event) {
         if (!event)
             return
+        if (breakBlock.shortcutKeyPressHandler
+                && typeof breakBlock.shortcutKeyPressHandler === "function") {
+            const shortcutHandled = !!breakBlock.shortcutKeyPressHandler(event)
+            if (shortcutHandled || event.accepted)
+                return
+        }
         if (event.key === Qt.Key_Backspace || event.key === Qt.Key_Delete) {
             breakBlock.blockDeletionRequested()
             event.accepted = true

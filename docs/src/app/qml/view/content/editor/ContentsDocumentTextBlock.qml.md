@@ -5,10 +5,11 @@ Edits one ordinary structured text block while keeping RAW `.wsnbody` source aut
 tags as visible formatted text.
 
 ## Current Behavior
-- The block now binds its RAW inner block source into `ContentsTextFormatRenderer.editorSurfaceHtml` and feeds that
-  HTML projection into `ContentsInlineFormatEditor.qml` as a `TextEdit.RichText` editing surface.
+- The block now keeps `ContentsInlineFormatEditor.qml` in `TextEdit.PlainText` mode and uses
+  `ContentsTextFormatRenderer.editorSurfaceHtml` only as the visual overlay payload.
 - Inline tags such as `<bold>`, `<italic>`, `<underline>`, `<strikethrough>`, and `<highlight>` therefore no longer
-  appear literally in the visible editor surface after a formatting command.
+  appear literally in the visible editor surface after a formatting command, but the editable buffer itself still
+  stays plain text instead of a serialized Qt RichText document.
 - Live typing is still source-driven:
   - compare previous visible plain text with current editor plain text
   - compute the changed logical range
@@ -23,8 +24,11 @@ tags as visible formatted text.
   visible caret location.
 - Gutter/minimap line layout still follows the live editor surface geometry via `positionToRectangle(...)`, but the
   logical line content now comes from the visible plain-text projection rather than the literal RAW tag string.
-- The block still emits only RAW mutation requests upward; the rich-text surface remains a read-side/editor-side
-  projection, not a persistence authority.
+- The block still emits only RAW mutation requests upward; the rendered overlay remains a read-side projection and
+  never becomes the persistence authority.
+- The nested inline editor now also runs one host-owned shortcut handler before its local boundary-navigation logic.
+  Note-wide shortcuts such as clipboard-image paste can therefore be intercepted while focus is inside a structured
+  paragraph editor, without reintroducing legacy whole-note editing authority.
 
 ## Shared Block Contract
 - `textEditable = true`

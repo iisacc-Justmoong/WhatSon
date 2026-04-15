@@ -182,6 +182,26 @@ Desktop content editor host.
   staying as a reactive multi-branch binding.
   While the structured editor is bound to the selected note, desktop always feeds the parser/renderer from
   `editorSession.editorText`; selection/presentation fallbacks are only used before the bound RAW session exists.
+- Structured-flow enablement now also depends only on the bound editor session itself, not on
+  `ContentsStructuredBlockRenderer.renderPending`.
+  The desktop host therefore no longer re-enters the renderer's own state while evaluating whether the structured
+  parser should be mounted, avoiding a source-binding loop on the first typing turn.
+- While that bound session exists, `documentPresentationSourceText` and resource-drop guard flips no longer force a
+  second `structuredFlowSourceText` refresh turn.
+  Parser input therefore stays pinned to live RAW note text during editing instead of being needlessly re-armed by a
+  presentation-side projection update.
+- Desktop image-paste interception now rechecks clipboard-image availability on the shortcut turn itself instead of
+  trusting only the last exported `clipboardImageAvailable` property snapshot.
+  Copying an image in another macOS app and returning to WhatSon therefore still lets `Cmd+V` import that bitmap into
+  the note body even if the earlier cached availability flag had not been refreshed yet.
+- The desktop structured document host now also injects that paste-shortcut handler into block-local editors.
+  Plain text paragraphs, agenda task rows, callouts, and selected break/resource blocks can therefore all route
+  `Cmd+V` image paste back into the note-body resource import path instead of only the legacy whole-note editor
+  supporting clipboard image insertion.
+- Desktop now keeps `ContentsStructuredBlockRenderer` on the synchronous path for the editable note host.
+  Resource-bearing notes therefore no longer collapse through the renderer's temporary placeholder block while a
+  background parse is pending, which keeps inline image edits and the block tree stable during tail re-entry and the
+  first keystroke below a resource.
 - Desktop now also gates `ContentsBodyResourceRenderer.bodySourceText` by
   `editorSession.editorBoundNoteId == selectedNoteId` instead of by the selection-bridge body-note echo alone.
   A same-note drag/drop or clipboard image insert therefore resolves the just-inserted `<resource ... />` tag from the

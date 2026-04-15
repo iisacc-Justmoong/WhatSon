@@ -642,6 +642,13 @@ FocusScope {
                                     && (!control.preferNativeInputHandling || control.inputMethodVisible)
                 bottomPadding: control.insetVertical
                 color: control.renderedOutputVisible ? "transparent" : control.textColor
+                cursorDelegate: Rectangle {
+                    color: control.textColor
+                    height: Math.max(1, Number(textInput.cursorRectangle.height) || Number(control.fontPixelSize) || 1)
+                    visible: textInput.cursorVisible
+                    width: Math.max(1, Math.round(LV.Theme.scaleMetric(1)))
+                    z: 2
+                }
                 cursorVisible: control.focused && control.cursorVisibleWhenFocused
                 font.family: control.fontFamily
                 font.letterSpacing: control.fontLetterSpacing

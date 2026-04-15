@@ -13,6 +13,7 @@ FocusScope {
     property var documentBlocks: []
     property int lineHeightHint: Math.max(1, Math.round(LV.Theme.scaleMetric(12)))
     property var renderedResources: []
+    property var shortcutKeyPressHandler: null
     property string sourceText: ""
     property int activeBlockIndex: -1
     property int activeBlockCursorRevision: 0
@@ -1470,6 +1471,7 @@ FocusScope {
                         hasAdjacentBlockAfter: documentFlow.adjacentBlockIndex(blockHost.blockIndex, "after") >= 0
                         hasAdjacentBlockBefore: documentFlow.adjacentBlockIndex(blockHost.blockIndex, "before") >= 0
                         resourceEntry: documentFlow.resourceEntryForBlock(blockHost.blockEntry)
+                        shortcutKeyPressHandler: documentFlow.shortcutKeyPressHandler
                         width: blockHost.width
 
                         onActivated: documentFlow.noteActiveBlockInteraction(blockHost.blockIndex)

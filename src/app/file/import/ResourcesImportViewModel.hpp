@@ -46,6 +46,7 @@ public:
     Q_INVOKABLE bool importClipboardImageWithConflictPolicy(int conflictPolicy);
     Q_INVOKABLE QVariantList importClipboardImageForEditor();
     Q_INVOKABLE QVariantList importClipboardImageForEditorWithConflictPolicy(int conflictPolicy);
+    Q_INVOKABLE bool refreshClipboardImageAvailabilitySnapshot();
     Q_INVOKABLE bool canImportDroppedUrls(const QVariantList& urls) const;
     Q_INVOKABLE bool importDroppedUrls(const QVariantList& urls);
     Q_INVOKABLE bool reloadImportedResources();

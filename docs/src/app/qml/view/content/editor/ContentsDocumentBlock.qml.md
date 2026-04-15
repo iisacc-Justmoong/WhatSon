@@ -15,6 +15,7 @@ Provides the single document-block adapter that keeps `ContentsStructuredDocumen
 - The outer API deliberately stays generic:
   - focus / current-line / cursor-row geometry queries
   - delete-key forwarding
+  - host-owned shortcut forwarding
   - inline-format selection snapshot + apply helpers
   - shortcut insertion offset lookup
   - generic block interaction signals
@@ -29,6 +30,10 @@ Provides the single document-block adapter that keeps `ContentsStructuredDocumen
 - Atomic blocks are now also focused and navigated at this adapter layer.
   `ContentsDocumentBlock.qml` owns block selection, arrow-key traversal, delete handling, and Enter-to-resume-edit
   behavior for non-text resource/break spans instead of delegating that behavior to a resource-local focus widget.
+- The adapter now also forwards one host-provided shortcut handler into both text-like delegates and atomic-block key
+  handling.
+  Note-wide shortcuts such as clipboard-image paste therefore keep working even when focus currently sits inside one
+  structured paragraph editor or on a selected break/resource block.
 - `Connections { ignoreUnknownSignals: true }` re-emits only the signals that the active inner block actually exposes.
 
 ## Architecture Note

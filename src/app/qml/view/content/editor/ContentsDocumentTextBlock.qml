@@ -9,6 +9,7 @@ FocusScope {
     id: textBlock
 
     required property var blockData
+    property var shortcutKeyPressHandler: null
 
     signal activated()
     signal adjacentAtomicBlockDeleteRequested(string side)
@@ -442,17 +443,24 @@ FocusScope {
         insetHorizontal: 0
         insetVertical: 0
         placeholderText: ""
+        renderedText: inlineStyleRenderer.editorSurfaceHtml
         selectByMouse: true
         selectedTextColor: LV.Theme.textPrimary
         selectionColor: LV.Theme.accent
-        showRenderedOutput: false
+        showRenderedOutput: true
         showScrollBar: false
         shortcutKeyPressHandler: function (event) {
+            if (textBlock.shortcutKeyPressHandler
+                    && typeof textBlock.shortcutKeyPressHandler === "function") {
+                const shortcutHandled = !!textBlock.shortcutKeyPressHandler(event)
+                if (shortcutHandled || event.accepted)
+                    return true
+            }
             return textBlock.handleAtomicBlockBoundaryKeyPress(event)
         }
-        text: inlineStyleRenderer.editorSurfaceHtml
+        text: textBlock.authoritativePlainText
         textColor: LV.Theme.bodyColor
-        textFormat: TextEdit.RichText
+        textFormat: TextEdit.PlainText
         wrapMode: TextEdit.Wrap
 
         onFocusedChanged: {

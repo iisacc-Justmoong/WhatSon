@@ -9,6 +9,7 @@ FocusScope {
     id: calloutBlock
 
     required property var blockData
+    property var shortcutKeyPressHandler: null
 
     signal activated()
     signal boundaryNavigationRequested(string axis, string side)
@@ -256,6 +257,12 @@ FocusScope {
                 selectedTextColor: LV.Theme.textPrimary
                 selectionColor: LV.Theme.accent
                 shortcutKeyPressHandler: function (event) {
+                    if (calloutBlock.shortcutKeyPressHandler
+                            && typeof calloutBlock.shortcutKeyPressHandler === "function") {
+                        const shortcutHandled = !!calloutBlock.shortcutKeyPressHandler(event)
+                        if (shortcutHandled || event.accepted)
+                            return true
+                    }
                     if (calloutBlock.handleBoundaryKeyPress(event))
                         return true
                     const noModifiers = (event.modifiers & (Qt.ControlModifier | Qt.AltModifier | Qt.MetaModifier | Qt.ShiftModifier)) === 0

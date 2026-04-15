@@ -131,6 +131,10 @@ plain `QtQuick.TextEdit` as the actual rendering and input engine.
   When enabled in plain-text input mode, the wrapper paints that rendered overlay underneath the live `TextEdit` and
   makes ordinary unselected editor glyphs transparent. This lets the app show formatted inline spans without giving
   write authority back to Qt RichText.
+- While that rendered overlay mode is active, the wrapper now also paints an explicit cursor delegate in the real
+  editor text color.
+  Paragraph/block editors can therefore hide the duplicate plain-text glyphs without accidentally making the live caret
+  disappear as well.
 - That rendered overlay is automatically suppressed while an IME preedit/composition session is active.
   Hangul or other native composition text therefore remains visibly painted from the real `TextEdit` instead of being
   hidden behind one stale rendered-html snapshot.

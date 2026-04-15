@@ -286,10 +286,6 @@ Item {
                                                                 || contentsView.selectionSourceContainsResourceTag
     readonly property bool parsedStructuredFlowRequested: contentsView.editorSessionBoundToSelectedNote
     readonly property bool structuredDocumentFlowEnabled: contentsView.parsedStructuredFlowRequested
-                                                          || (contentsView.editorSessionBoundToSelectedNote
-                                                              && structuredBlockRenderer.renderPending
-                                                              && contentsView.structuredDocumentFlowActivatedNoteId === contentsView.selectedNoteId
-                                                              && contentsView.selectedNoteId.length > 0)
     readonly property bool resourceResolverNeedsLiveEditorSource: contentsView.showStructuredDocumentFlow
                                                                   || contentsView.liveResourceStructuredFlowRequested
     readonly property bool legacyInlineEditorActive: !contentsView.showStructuredDocumentFlow
@@ -853,14 +849,22 @@ Item {
         }
         return false;
     }
+    function clipboardImageAvailableForPaste() {
+        if (!contentsView.resourcesImportViewModel)
+            return false;
+        if (contentsView.resourcesImportViewModel.refreshClipboardImageAvailabilitySnapshot !== undefined)
+            return !!contentsView.resourcesImportViewModel.refreshClipboardImageAvailabilitySnapshot();
+        if (contentsView.resourcesImportViewModel.clipboardImageAvailable === undefined)
+            return false;
+        return !!contentsView.resourcesImportViewModel.clipboardImageAvailable;
+    }
     function handleClipboardImagePasteShortcut(event) {
         if (!contentsView.eventRequestsPasteShortcut(event))
             return false;
         if (!contentsView.resourcesImportViewModel
                 || (contentsView.resourcesImportViewModel.busy !== undefined
                     && contentsView.resourcesImportViewModel.busy)
-                || (contentsView.resourcesImportViewModel.clipboardImageAvailable !== undefined
-                    && !contentsView.resourcesImportViewModel.clipboardImageAvailable)) {
+                || !contentsView.clipboardImageAvailableForPaste()) {
             return false;
         }
         const pasted = contentsView.pasteClipboardImageAsResource();
@@ -1215,8 +1219,7 @@ Item {
                 && contentsView.resourcesImportViewModel.busy) {
             return false;
         }
-        if (contentsView.resourcesImportViewModel.clipboardImageAvailable !== undefined
-                && !contentsView.resourcesImportViewModel.clipboardImageAvailable) {
+        if (!contentsView.clipboardImageAvailableForPaste()) {
             return false;
         }
 
@@ -2192,10 +2195,12 @@ Item {
         contentsView.refreshStructuredDocumentFlowActivation();
     }
     onDocumentPresentationSourceTextChanged: {
-        contentsView.refreshStructuredFlowSourceText();
+        if (!contentsView.editorSessionBoundToSelectedNote)
+            contentsView.refreshStructuredFlowSourceText();
     }
     onResourceDropEditorSurfaceGuardActiveChanged: {
-        contentsView.refreshStructuredFlowSourceText();
+        if (!contentsView.editorSessionBoundToSelectedNote)
+            contentsView.refreshStructuredFlowSourceText();
     }
     onShowStructuredDocumentFlowChanged: {
         if (contentsView.showStructuredDocumentFlow) {
@@ -2347,9 +2352,7 @@ Item {
     ContentsStructuredBlockRenderer {
         id: structuredBlockRenderer
 
-        backgroundRefreshEnabled: (!contentsView.editorInputFocused
-                                   || contentsView.syncingEditorTextFromModel)
-                                  && !contentsView.typingSessionSyncProtected
+        backgroundRefreshEnabled: false
         sourceText: contentsView.structuredFlowSourceText
     }
     ContentsTextFormatRenderer {
@@ -2754,8 +2757,12 @@ Item {
                         agendaBackend: contentsAgendaBackend
                         calloutBackend: contentsCalloutBackend
                         documentBlocks: structuredBlockRenderer.renderedDocumentBlocks
+                        lineHeightHint: contentsView.editorLineHeight
                         parent: contentsView.showPrintEditorLayout ? printDocumentSurface : structuredDocumentViewport.contentItem
                         renderedResources: bodyResourceRenderer.renderedResources
+                        shortcutKeyPressHandler: function (event) {
+                            return contentsView.handleClipboardImagePasteShortcut(event);
+                        }
                         sourceText: contentsView.structuredFlowSourceText
                         width: contentsView.showPrintEditorLayout
                                ? contentsView.printPaperTextWidth

@@ -176,6 +176,25 @@ Mobile content editor host.
   remaining a reactive multi-source binding.
   While mobile is bound to the selected note, parser/renderer inputs always come from `editorSession.editorText`;
   selection/presentation fallbacks are reserved for pre-bind transitions only.
+- Structured-flow enablement now also depends only on the bound editor session itself, not on
+  `ContentsStructuredBlockRenderer.renderPending`.
+  Mobile therefore avoids re-entering the renderer while deciding whether the structured parser host should stay
+  mounted.
+- While the mobile editor is already bound to the selected note, presentation-side source refreshes no longer trigger a
+  second `structuredFlowSourceText` update turn.
+  Structured parser input therefore stays pinned to live RAW note text during editing.
+- Mobile image-paste interception now also rechecks clipboard-image availability on the shortcut turn itself instead of
+  relying only on the last exported `clipboardImageAvailable` snapshot.
+  Copying an image in another app and returning to WhatSon therefore still lets the note host enter the clipboard
+  image import path on `Cmd+V`.
+- The mobile structured document host now also injects that paste-shortcut handler into block-local editors.
+  Plain text paragraphs, agenda task rows, callouts, and selected break/resource blocks can therefore all route
+  `Cmd+V` image paste back into the note-body resource import path instead of only the legacy whole-note editor
+  supporting clipboard image insertion.
+- Mobile now also keeps `ContentsStructuredBlockRenderer` on the synchronous path for the editable note host.
+  Resource-bearing notes therefore no longer fall back through the renderer's single placeholder block while a
+  background parse is pending, keeping inline image edits and block-local focus stable during tail re-entry and the
+  first typed character below a resource.
 - Mobile now also gates `ContentsBodyResourceRenderer.bodySourceText` by
   `editorSession.editorBoundNoteId == selectedNoteId` instead of by the selection-bridge body-note echo alone.
   A same-note drag/drop or clipboard image insert therefore resolves the newly inserted `<resource ... />` tag from

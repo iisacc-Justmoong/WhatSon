@@ -46,6 +46,10 @@ The implementation now supports two closely related sequences.
   Explorer, and other host file managers stay on the same rollback-safe import pipeline as menu/file-picker imports.
 - Clipboard availability is tracked as a live property by listening to `QClipboard::dataChanged()`, so the editor can
   enable image-paste interception only while the clipboard still contains image data.
+- The ViewModel now also refreshes that clipboard-image snapshot when the app returns to the foreground and when QML
+  explicitly calls `refreshClipboardImageAvailabilitySnapshot()`.
+  Copying an image in another app and immediately switching back to WhatSon therefore no longer depends on a stale
+  cached `clipboardImageAvailable` flag before `Cmd+V` can import the image into the note.
 - Clipboard image extraction now also accepts browser/platform variants that do not arrive as a plain `image/*` MIME:
   image-like platform MIME names such as `public.png` / `public.tiff`, plus `text/html` or plain-text `data:image/...`
   payloads now feed the same temporary-PNG import path.

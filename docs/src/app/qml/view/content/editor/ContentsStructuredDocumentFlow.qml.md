@@ -37,6 +37,10 @@ Hosts the parsed `.wsnbody` block stream as one ordered document editor and forw
 - Atomic-block target focus now also carries an explicit `targetBlockIndex`.
   When adjacent blocks share the same source boundary, flow-level focus restore can still choose the resource/break
   block itself instead of letting a neighboring text block consume the same offset first.
+- The flow now also accepts one generic `shortcutKeyPressHandler` from the host and forwards it into every mounted
+  document block.
+  Structured notes therefore can share note-wide shortcut interception, such as clipboard-image paste, without falling
+  back to the legacy whole-note editor path.
 - The parser now supplies the same block-trait payload before delegates finish loading, so nearest-editable-block
   fallback, logical line counting, gutter collapse, and minimap sampling no longer depend on the delegate having
   mounted already.

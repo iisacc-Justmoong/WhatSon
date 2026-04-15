@@ -9,6 +9,7 @@ FocusScope {
     id: agendaBlock
 
     required property var blockData
+    property var shortcutKeyPressHandler: null
 
     signal activated()
     signal boundaryNavigationRequested(string axis, string side)
@@ -453,6 +454,12 @@ FocusScope {
                                 selectedTextColor: LV.Theme.textPrimary
                                 selectionColor: LV.Theme.accent
                                 shortcutKeyPressHandler: function (event) {
+                                    if (agendaBlock.shortcutKeyPressHandler
+                                            && typeof agendaBlock.shortcutKeyPressHandler === "function") {
+                                        const shortcutHandled = !!agendaBlock.shortcutKeyPressHandler(event)
+                                        if (shortcutHandled || event.accepted)
+                                            return true
+                                    }
                                     if (taskRow.handleBoundaryKeyPress(event))
                                         return true
                                     const noModifiers = (event.modifiers & (Qt.ControlModifier | Qt.AltModifier | Qt.MetaModifier | Qt.ShiftModifier)) === 0

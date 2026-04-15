@@ -41,6 +41,9 @@ Implements one-pass top-level `.wsnbody` parsing for the structured editor rende
 - Separator newlines around explicit blocks are no longer treated the same as ignorable indentation-only whitespace.
   The parser now discards only horizontal formatting whitespace between neighboring explicit blocks; authored newline
   runs are preserved as actual paragraph slots in the document projection.
+- When a prose gap touches an explicit block boundary, the parser now trims only the single boundary-adjacent
+  whitespace-only line that comes from XML pretty-print formatting.
+  Interior empty lines are still preserved as real blank paragraphs.
 - The parser still delegates canonicalization and verification to `WhatSonStructuredTagLinter`; it does not invent a
   second source-normalization authority.
 

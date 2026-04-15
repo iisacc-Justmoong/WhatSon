@@ -8,6 +8,7 @@ FocusScope {
 
     required property var blockData
     property var resourceEntry: ({})
+    property var shortcutKeyPressHandler: null
     property bool hasAdjacentAtomicBlockAfter: false
     property bool hasAdjacentAtomicBlockBefore: false
     property bool hasAdjacentBlockAfter: false
@@ -189,6 +190,12 @@ FocusScope {
     function handleAtomicBoundaryKeyPress(event) {
         if (!documentBlock.atomicBlock || !event)
             return false
+        if (documentBlock.shortcutKeyPressHandler
+                && typeof documentBlock.shortcutKeyPressHandler === "function") {
+            const shortcutHandled = !!documentBlock.shortcutKeyPressHandler(event)
+            if (shortcutHandled || event.accepted)
+                return true
+        }
         if (documentBlock.handleDeleteKeyPress(event))
             return true
         const modifiers = Number(event.modifiers) || 0
@@ -302,6 +309,7 @@ FocusScope {
             hasAdjacentAtomicBlockBefore: documentBlock.hasAdjacentAtomicBlockBefore
             hasAdjacentBlockAfter: documentBlock.hasAdjacentBlockAfter
             hasAdjacentBlockBefore: documentBlock.hasAdjacentBlockBefore
+            shortcutKeyPressHandler: documentBlock.shortcutKeyPressHandler
             width: documentBlock.width
         }
     }
@@ -311,6 +319,7 @@ FocusScope {
 
         ContentsAgendaBlock {
             blockData: documentBlock.blockData
+            shortcutKeyPressHandler: documentBlock.shortcutKeyPressHandler
             width: documentBlock.width
         }
     }
@@ -320,6 +329,7 @@ FocusScope {
 
         ContentsCalloutBlock {
             blockData: documentBlock.blockData
+            shortcutKeyPressHandler: documentBlock.shortcutKeyPressHandler
             width: documentBlock.width
         }
     }
@@ -329,6 +339,7 @@ FocusScope {
 
         ContentsBreakBlock {
             blockData: documentBlock.blockData
+            shortcutKeyPressHandler: documentBlock.shortcutKeyPressHandler
             width: documentBlock.width
         }
     }

@@ -1085,6 +1085,14 @@ ResourcesImportViewModel::ResourcesImportViewModel(QObject* parent)
     : QObject(parent)
 {
     WhatSon::Debug::traceSelf(this, QString::fromLatin1(kScope), QStringLiteral("ctor"));
+    connect(
+        qApp,
+        &QGuiApplication::applicationStateChanged,
+        this,
+        [this](Qt::ApplicationState)
+        {
+            refreshClipboardImageAvailability();
+        });
     if (QClipboard* clipboard = QGuiApplication::clipboard())
     {
         connect(
@@ -1304,6 +1312,12 @@ QVariantList ResourcesImportViewModel::importClipboardImageForEditorWithConflict
         return {};
     }
     return importedEntries;
+}
+
+bool ResourcesImportViewModel::refreshClipboardImageAvailabilitySnapshot()
+{
+    refreshClipboardImageAvailability();
+    return m_clipboardImageAvailable;
 }
 
 bool ResourcesImportViewModel::importUrlsInternal(

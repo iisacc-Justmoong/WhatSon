@@ -33,6 +33,9 @@ Renders one callout card as a native document block inside the editor flow.
   Plain `Left` / `Right` at the block start/end and plain `Up` / `Down` on the first/last visual row emit one generic
   boundary-navigation request back to `ContentsStructuredDocumentFlow.qml`, so callout cards no longer terminate
   sequential keyboard traversal at their edges.
+- The nested callout editor now also runs one host-owned shortcut handler before its local boundary/exit rules.
+  Clipboard-image paste therefore stays available while the caret is inside callout content instead of only in the
+  legacy whole-note editor.
 - Focus restoration now also accepts `entryBoundary: "before" | "after"` hints from the flow host.
   Sequential block traversal can therefore enter the callout at its visual head or tail instead of always restoring to
   one generic fallback caret position.

@@ -18,6 +18,10 @@ This ViewModel translates external local file URLs into resource package imports
 - `clipboardImageAvailable`
   Reflects whether the system clipboard currently exposes an importable image payload. Editor paste shortcuts can bind
   to this flag so image paste is intercepted only when the clipboard actually contains image data.
+- `refreshClipboardImageAvailabilitySnapshot()`
+  Forces one immediate clipboard rescan and returns the current image-availability decision. Paste handlers use this
+  when the app regains focus after the user copied an image in another process and QML needs a fresh answer on the
+  shortcut turn itself.
 - `lastError`
   Stores the last failure message.
 

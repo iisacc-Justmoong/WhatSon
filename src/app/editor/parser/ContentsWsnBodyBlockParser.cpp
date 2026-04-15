@@ -677,14 +677,14 @@ namespace
         int keepStartIndex = 0;
         int keepEndIndex = lineSegments.size();
         if (gapFollowsExplicitBlock
-            && gapText.startsWith(QLatin1Char('\n'))
-            && keepStartIndex < keepEndIndex)
+            && keepStartIndex < keepEndIndex
+            && lineSegments.at(keepStartIndex).trimmed().isEmpty())
         {
             ++keepStartIndex;
         }
         if (gapPrecedesExplicitBlock
-            && gapText.endsWith(QLatin1Char('\n'))
-            && keepEndIndex > keepStartIndex)
+            && keepEndIndex > keepStartIndex
+            && lineSegments.at(keepEndIndex - 1).trimmed().isEmpty())
         {
             --keepEndIndex;
         }
