@@ -80,6 +80,9 @@ structured document-flow editor changes.
 - Desktop and mobile note-open flows must stay behaviorally aligned through the shared C++ coordinators:
   the same note/body transition should produce the same selection-sync fallback, reconcile scheduling, and
   structured-flow activation result on both hosts.
+- Desktop and mobile note-open flows must keep exactly one `ContentsEditorPresentationProjection` bound per mounted
+  note surface.
+  One note must not materialize multiple whole-document RAW-to-HTML projection objects in parallel for the same host.
 - While structured-flow mode remains active, the fallback full-document inline editor must stay unloaded rather than
   remaining mounted off-screen behind `visible: false`.
 - One note-open transition must not cause duplicate editor host selection sync passes just because the note-list bridge
@@ -91,6 +94,11 @@ structured document-flow editor changes.
 - One note-list rebuild must not trigger two immediate visible list snapshot refreshes from `modelReset` plus a second
   `itemsChanged()`-driven snapshot apply.
 - Parser-side structured correction suggestions must not trigger direct note writes during ordinary note-open or typing.
+- `ContentsStructuredDocumentFlow.qml` must keep pending-focus state, normalized block/resource collections, and
+  structured RAW insertion/deletion policy behind the `ContentsStructuredDocumentHost` C++ boundary.
+  Regressions must not move those host policies back into ad hoc QML state bags.
+- Desktop/mobile editor hosts and `ContentsResourceImportController.qml` must not regrow dead pass-through wrappers for
+  parser/import/presentation helpers once those collaborators already expose the owning behavior directly.
 
 ## Large Note Lazy Load
 - Selecting a very large note must not freeze the app before the editor becomes interactive.
@@ -145,6 +153,9 @@ structured document-flow editor changes.
 - The split helper set must remain QML-lintable as `QtObject`-owned collaborators.
   `ContentsResourceImportController.qml` must not regress into anonymous child-object composition that breaks under
   `qmllint` or QML compilation.
+- Resource import helpers must keep their narrowed dependency contract.
+  They must not regain broad host-`view` mutation authority just to reach prompt state, projection state, or editor
+  surface guard internals.
 - Accepting `overwrite` or `keep both` from that prompt must still insert canonical `<resource ... />` tags back into
   the currently bound note on both editor hosts.
 - If an imported file name already exists in the current resources store, desktop/mobile must open an explicit

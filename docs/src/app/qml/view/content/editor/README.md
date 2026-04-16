@@ -59,6 +59,8 @@
 - `ContentsResourceImportController.qml` is now only the public coordinator for editor-side resource import.
   Drag/drop payload parsing, duplicate-import prompt state, RAW tag insertion, inline RichText presentation, and
   editor-surface guard state now live in dedicated sibling helpers instead of a single import god object.
+  The controller no longer receives the full host `view`; desktop/mobile hosts now pass only the explicit callbacks,
+  flags, projection object, and import-policy contracts each helper actually needs.
 - Inline image resources now compose through `ContentsImageResourceFrame.qml` as transparent border-only cards whose
   runtime outer width follows the editor block width, whose inner bitmap viewport stays centered at natural size until
   the body column forces it smaller, and whose inline media height is capped to the Figma note-block budget so tall
@@ -92,9 +94,9 @@
 - Desktop/mobile editor views now keep a separate presentation timer for whole-document markdown/RichText refresh, so
   `ContentsTextFormatRenderer` and full minimap resampling no longer run directly on every committed keystroke.
 - Desktop/mobile editor views now also keep `documentPresentationSourceText` as the single whole-document presentation
-  snapshot. `ContentsLogicalTextBridge` and `ContentsTextFormatRenderer` bind to that snapshot instead of live
-  `editorText`, while `ContentsEditorTypingController.qml` carries the incremental plain-text/source-offset state
-  between idle commits.
+  snapshot. One `ContentsEditorPresentationProjection` now tokenizes RAW into editor HTML, RichText surface HTML,
+  logical text, and logical line metadata for that snapshot, while `ContentsEditorTypingController.qml` carries the
+  incremental plain-text/source-offset state between idle commits.
 - Desktop/mobile focused editing now also blocks that whole-document presentation timer from pushing a fresh editing
   surface back into the live `TextEdit`.
   Ordinary typing stays on the incremental live cache until blur or another explicit immediate refresh path, which
@@ -150,6 +152,11 @@
   C++ coordinators under `src/app/viewmodel/content`: note-selection sync/reconcile scheduling, whole-document
   presentation refresh policy, and structured-flow activation. The hosts keep UI composition and repaint/focus
   execution only.
+- `ContentsStructuredDocumentFlow.qml` now also converges structured document-host state through one
+  `ContentsStructuredDocumentHost` instance and delegates collection normalization, focus resolution, and RAW mutation
+  rules to dedicated C++ policy objects instead of keeping those host policies interleaved inside the QML flow object.
+- After that policy extraction, the flow and desktop/mobile hosts no longer keep dead duplicate QML helpers or
+  pass-through import wrappers that merely mirrored those dedicated collaborators.
 - Desktop/mobile snapshot polling now also prefers a filesystem reconcile fetch path
   (`reconcileViewSessionAndRefreshSnapshotForNote(noteId, editorSession.editorText)`) instead of only running
   model-side snapshot reload ticks.

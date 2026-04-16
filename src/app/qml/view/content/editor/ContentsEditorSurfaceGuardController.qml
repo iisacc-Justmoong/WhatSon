@@ -6,9 +6,8 @@ QtObject {
     id: controller
 
     property var contentEditor: null
-    property var textMetricsBridge: null
+    property var editorProjection: null
     property bool preferNativeInputHandling: false
-    property string renderedEditorText: ""
     property bool resourceDropEditorSurfaceGuardActive: false
     property int resourceDropEditorSurfaceGuardToken: 0
     property int programmaticEditorSurfaceSyncDepth: 0
@@ -36,13 +35,14 @@ QtObject {
             return;
 
         const nextSurfaceText = controller.preferNativeInputHandling
-                ? String(controller.textMetricsBridge && controller.textMetricsBridge.logicalText !== undefined
-                             && controller.textMetricsBridge.logicalText !== null
-                             ? controller.textMetricsBridge.logicalText
+                ? String(controller.editorProjection && controller.editorProjection.logicalText !== undefined
+                             && controller.editorProjection.logicalText !== null
+                             ? controller.editorProjection.logicalText
                              : "")
-                : String(controller.renderedEditorText === undefined || controller.renderedEditorText === null
-                             ? ""
-                             : controller.renderedEditorText);
+                : String(controller.editorProjection && controller.editorProjection.richTextSurfaceHtml !== undefined
+                             && controller.editorProjection.richTextSurfaceHtml !== null
+                             ? controller.editorProjection.richTextSurfaceHtml
+                             : "");
         controller.markProgrammaticEditorSurfaceSync();
         if (controller.contentEditor.setProgrammaticText !== undefined) {
             controller.contentEditor.setProgrammaticText(nextSurfaceText);

@@ -2,6 +2,7 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import QtQuick.Layouts
+import WhatSon.App.Internal 1.0
 import LVRS 1.0 as LV
 import "ContentsEditorDebugTrace.js" as EditorTrace
 import "ContentsStructuredCursorSupport.js" as StructuredCursorSupport
@@ -12,21 +13,21 @@ FocusScope {
 
     property var agendaBackend: null
     property var calloutBackend: null
-    property var documentBlocks: []
     property int lineHeightHint: Math.max(1, Math.round(LV.Theme.scaleMetric(12)))
-    property var renderedResources: []
     property var shortcutKeyPressHandler: null
-    property string sourceText: ""
-    property int activeBlockIndex: -1
-    property int activeBlockCursorRevision: 0
-    property var pendingFocusRequest: null
-    property int pendingFocusBlockIndex: -1
-    property bool pendingFocusApplyQueued: false
-    property var cachedLogicalLineEntries: []
-    property var cachedBlockLayoutSummaries: []
-    property bool layoutCacheRefreshQueued: false
-    property real viewportContentY: 0
-    property real viewportHeight: 0
+    property alias documentBlocks: documentHost.documentBlocks
+    property alias renderedResources: documentHost.renderedResources
+    property alias sourceText: documentHost.sourceText
+    property alias activeBlockIndex: documentHost.activeBlockIndex
+    property alias activeBlockCursorRevision: documentHost.activeBlockCursorRevision
+    property alias pendingFocusRequest: documentHost.pendingFocusRequest
+    property alias pendingFocusBlockIndex: documentHost.pendingFocusBlockIndex
+    property alias pendingFocusApplyQueued: documentHost.pendingFocusApplyQueued
+    property alias cachedLogicalLineEntries: documentHost.cachedLogicalLineEntries
+    property alias cachedBlockLayoutSummaries: documentHost.cachedBlockLayoutSummaries
+    property alias layoutCacheRefreshQueued: documentHost.layoutCacheRefreshQueued
+    property alias viewportContentY: documentHost.viewportContentY
+    property alias viewportHeight: documentHost.viewportHeight
     readonly property bool focused: documentFlow.activeFocus || documentFlow.hasFocusedBlock()
     readonly property real blockDelegateOverscan: Math.max(
                                                       Math.round(LV.Theme.scaleMetric(240)),
@@ -53,6 +54,11 @@ FocusScope {
     readonly property int currentLogicalLineNumber: documentFlow.activeLogicalLineNumber()
 
     signal sourceMutationRequested(string nextSourceText, var focusRequest)
+
+    ContentsStructuredDocumentHost {
+        id: documentHost
+        objectName: "contentsStructuredDocumentHost"
+    }
 
     Keys.onPressed: function (event) {
         if (documentFlow.handleActiveBlockDeleteKeyPress(event))
@@ -552,10 +558,7 @@ FocusScope {
     }
 
     function noteActiveBlockInteraction(blockIndex) {
-        const safeBlockIndex = Math.max(-1, Math.floor(Number(blockIndex) || -1))
-        if (documentFlow.activeBlockIndex !== safeBlockIndex)
-            documentFlow.activeBlockIndex = safeBlockIndex
-        documentFlow.activeBlockCursorRevision += 1
+        documentHost.noteActiveBlockInteraction(Math.max(-1, Math.floor(Number(blockIndex) || -1)))
     }
 
     function selectionSnapshotIsValid(selectionSnapshot) {
@@ -686,95 +689,24 @@ FocusScope {
     }
 
     function normalizedBlocks() {
-        if (Array.isArray(documentBlocks))
-            return documentBlocks
-
-        const explicitLength = documentBlocks ? Number(documentBlocks.length) : NaN
-        if (isFinite(explicitLength) && explicitLength >= 0) {
-            const normalized = []
-            for (let index = 0; index < Math.floor(explicitLength); ++index)
-                normalized.push(documentBlocks[index])
-            return normalized
-        }
-
-        const explicitCount = documentBlocks ? Number(documentBlocks.count) : NaN
-        if (isFinite(explicitCount) && explicitCount >= 0) {
-            const normalized = []
-            for (let index = 0; index < Math.floor(explicitCount); ++index)
-                normalized.push(documentBlocks[index])
-            return normalized
-        }
-
-        if (documentBlocks) {
-            const indexedKeys = Object.keys(documentBlocks).filter(function (key) {
-                return /^\d+$/.test(key)
-            }).sort(function (lhs, rhs) {
-                return Number(lhs) - Number(rhs)
-            })
-            if (indexedKeys.length > 0) {
-                const normalized = []
-                for (let index = 0; index < indexedKeys.length; ++index)
-                    normalized.push(documentBlocks[indexedKeys[index]])
-                return normalized
-            }
-        }
-
-        return []
+        return documentHost.collectionPolicy.normalizeEntries(documentFlow.documentBlocks)
     }
 
     function normalizedResourceEntries() {
-        if (Array.isArray(renderedResources))
-            return renderedResources
-
-        const explicitLength = renderedResources ? Number(renderedResources.length) : NaN
-        if (isFinite(explicitLength) && explicitLength >= 0) {
-            const normalized = []
-            for (let index = 0; index < Math.floor(explicitLength); ++index)
-                normalized.push(renderedResources[index])
-            return normalized
-        }
-
-        const explicitCount = renderedResources ? Number(renderedResources.count) : NaN
-        if (isFinite(explicitCount) && explicitCount >= 0) {
-            const normalized = []
-            for (let index = 0; index < Math.floor(explicitCount); ++index)
-                normalized.push(renderedResources[index])
-            return normalized
-        }
-
-        if (renderedResources) {
-            const indexedKeys = Object.keys(renderedResources).filter(function (key) {
-                return /^\d+$/.test(key)
-            }).sort(function (lhs, rhs) {
-                return Number(lhs) - Number(rhs)
-            })
-            if (indexedKeys.length > 0) {
-                const normalized = []
-                for (let index = 0; index < indexedKeys.length; ++index)
-                    normalized.push(renderedResources[indexedKeys[index]])
-                return normalized
-            }
-        }
-
-        return []
+        return documentHost.collectionPolicy.normalizeEntries(documentFlow.renderedResources)
     }
 
     function normalizedSourceText(value) {
-        let text = value === undefined || value === null ? "" : String(value)
-        text = text.replace(/\r\n/g, "\n")
-        text = text.replace(/\r/g, "\n")
-        text = text.replace(/\u2028/g, "\n")
-        text = text.replace(/\u2029/g, "\n")
-        text = text.replace(/\u00A0/g, " ")
-        return text
+        return documentHost.collectionPolicy.normalizeSourceText(
+                    value === undefined || value === null ? "" : String(value))
     }
 
     function spliceSourceRange(start, end, replacementText) {
-        const currentSourceText = documentFlow.normalizedSourceText(documentFlow.sourceText)
-        const safeStart = Math.max(0, Math.min(currentSourceText.length, Math.floor(Number(start) || 0)))
-        const safeEnd = Math.max(safeStart, Math.min(currentSourceText.length, Math.floor(Number(end) || 0)))
-        const replacement = replacementText === undefined || replacementText === null ? "" : String(replacementText)
-        return currentSourceText.slice(0, safeStart) + replacement + currentSourceText.slice(safeEnd)
+        return documentHost.collectionPolicy.spliceSourceRange(
+                    documentFlow.sourceText,
+                    Math.floor(Number(start) || 0),
+                    Math.floor(Number(end) || 0),
+                    replacementText === undefined || replacementText === null ? "" : String(replacementText))
     }
 
     function requestFocus(request) {
@@ -784,33 +716,10 @@ FocusScope {
         documentFlow.schedulePendingFocusApply()
     }
 
-    function normalizedFocusTaskOpenTagStart(request) {
-        const safeRequest = request && typeof request === "object" ? request : ({})
-        const taskOpenTagStart = Number(safeRequest.taskOpenTagStart)
-        if (!isFinite(taskOpenTagStart))
-            return NaN
-        return Math.floor(taskOpenTagStart)
-    }
-
-    function normalizedFocusTargetBlockIndex(request) {
-        const safeRequest = request && typeof request === "object" ? request : ({})
-        const targetBlockIndex = Number(safeRequest.targetBlockIndex)
-        if (!isFinite(targetBlockIndex))
-            return -1
-        return Math.max(0, Math.floor(targetBlockIndex))
-    }
-
-    function normalizedFocusSourceOffset(request) {
-        const safeRequest = request && typeof request === "object" ? request : ({})
-        const sourceOffset = Number(safeRequest.sourceOffset)
-        if (!isFinite(sourceOffset))
-            return NaN
-        return Math.max(0, Math.floor(sourceOffset))
-    }
-
-    function requestPrefersNearestTextBlock(request) {
-        const safeRequest = request && typeof request === "object" ? request : ({})
-        return !!safeRequest.preferNearestTextBlock
+    function hasPendingFocusRequest() {
+        return !!(documentFlow.pendingFocusRequest
+                  && typeof documentFlow.pendingFocusRequest === "object"
+                  && Object.keys(documentFlow.pendingFocusRequest).length > 0)
     }
 
     function floorNumberOrFallback(value, fallbackValue) {
@@ -820,94 +729,10 @@ FocusScope {
         return Math.floor(numericValue)
     }
 
-    function blockContainsTaskOpenTagStart(blockEntry, taskOpenTagStart) {
-        if (!isFinite(taskOpenTagStart))
-            return false
-        const safeBlock = blockEntry && typeof blockEntry === "object" ? blockEntry : ({})
-        const rawTasks = safeBlock.tasks
-        if (!rawTasks || rawTasks.length === undefined)
-            return false
-        for (let index = 0; index < rawTasks.length; ++index) {
-            const taskData = rawTasks[index] && typeof rawTasks[index] === "object" ? rawTasks[index] : ({})
-            if (documentFlow.floorNumberOrFallback(taskData.openTagStart, -1) === taskOpenTagStart)
-                return true
-        }
-        return false
-    }
-
-    function blockUsesExclusiveTrailingBoundary(blockEntry) {
-        const safeBlock = blockEntry && typeof blockEntry === "object" ? blockEntry : ({})
-        return documentFlow.blockAtomic(null, safeBlock)
-    }
-
-    function blockContainsSourceOffset(blockEntry, sourceOffset) {
-        if (!isFinite(sourceOffset))
-            return false
-        const safeBlock = blockEntry && typeof blockEntry === "object" ? blockEntry : ({})
-        const sourceStart = Math.max(0, Math.floor(Number(safeBlock.sourceStart) || 0))
-        const sourceEnd = Math.max(sourceStart, Math.floor(Number(safeBlock.sourceEnd) || sourceStart))
-        if (sourceStart === sourceEnd)
-            return sourceOffset === sourceStart
-        if (documentFlow.blockUsesExclusiveTrailingBoundary(safeBlock))
-            return sourceOffset >= sourceStart && sourceOffset < sourceEnd
-        return sourceOffset >= sourceStart && sourceOffset <= sourceEnd
-    }
-
-    function resourceEntryHasResolvedPayload(entry) {
-        const safeEntry = entry && typeof entry === "object" ? entry : ({})
-        const entrySource = safeEntry.source !== undefined ? String(safeEntry.source).trim() : ""
-        const entryResolvedPath = safeEntry.resolvedPath !== undefined ? String(safeEntry.resolvedPath).trim() : ""
-        return entrySource.length > 0 || entryResolvedPath.length > 0
-    }
-
     function resourceEntryForBlock(blockEntry) {
-        const safeBlock = blockEntry && typeof blockEntry === "object" ? blockEntry : ({})
-        const blockResourceIndex = documentFlow.floorNumberOrFallback(safeBlock.resourceIndex, -1)
-        const blockSourceStart = Math.max(0, Math.floor(Number(safeBlock.sourceStart) || 0))
-        const blockSourceEnd = Math.max(blockSourceStart, Math.floor(Number(safeBlock.sourceEnd) || blockSourceStart))
-        const blockResourceId = safeBlock.resourceId !== undefined ? String(safeBlock.resourceId).trim() : ""
-        const blockResourcePath = safeBlock.resourcePath !== undefined ? String(safeBlock.resourcePath).trim() : ""
-        const resourceEntries = documentFlow.normalizedResourceEntries()
-        let fallbackMatch = null
-
-        for (let index = 0; index < resourceEntries.length; ++index) {
-            const entry = resourceEntries[index] && typeof resourceEntries[index] === "object" ? resourceEntries[index] : ({})
-            const entryIndex = documentFlow.floorNumberOrFallback(entry.index, -1)
-            if (blockResourceIndex < 0 || entryIndex !== blockResourceIndex)
-                continue
-            if (documentFlow.resourceEntryHasResolvedPayload(entry))
-                return entry
-            if (!fallbackMatch)
-                fallbackMatch = entry
-        }
-
-        for (let index = 0; index < resourceEntries.length; ++index) {
-            const entry = resourceEntries[index] && typeof resourceEntries[index] === "object" ? resourceEntries[index] : ({})
-            const entrySourceStart = Math.max(0, Math.floor(Number(entry.sourceStart) || 0))
-            const entrySourceEnd = Math.max(entrySourceStart, Math.floor(Number(entry.sourceEnd) || entrySourceStart))
-            if (entrySourceStart !== blockSourceStart || entrySourceEnd !== blockSourceEnd)
-                continue
-            if (documentFlow.resourceEntryHasResolvedPayload(entry))
-                return entry
-            if (!fallbackMatch)
-                fallbackMatch = entry
-        }
-
-        for (let index = 0; index < resourceEntries.length; ++index) {
-            const entry = resourceEntries[index] && typeof resourceEntries[index] === "object" ? resourceEntries[index] : ({})
-            const entryResourceId = entry.resourceId !== undefined ? String(entry.resourceId).trim() : ""
-            const entryResourcePath = entry.resourcePath !== undefined ? String(entry.resourcePath).trim() : ""
-            const idMatched = blockResourceId.length > 0 && entryResourceId === blockResourceId
-            const pathMatched = blockResourcePath.length > 0 && entryResourcePath === blockResourcePath
-            if (!idMatched && !pathMatched)
-                continue
-            if (documentFlow.resourceEntryHasResolvedPayload(entry))
-                return entry
-            if (!fallbackMatch)
-                fallbackMatch = entry
-        }
-
-        return fallbackMatch ? fallbackMatch : ({})
+        return documentHost.collectionPolicy.resourceEntryForBlock(
+                    blockEntry && typeof blockEntry === "object" ? blockEntry : ({ }),
+                    documentFlow.renderedResources)
     }
 
     function shouldKeepBlockDelegateLoaded(blockHost, blockEntryOverride) {
@@ -943,61 +768,14 @@ FocusScope {
     }
 
     function focusTargetBlockIndex(request) {
-        const blocks = documentFlow.normalizedBlocks()
-        if (blocks.length === 0)
-            return -1
-        const explicitTargetBlockIndex = documentFlow.normalizedFocusTargetBlockIndex(request)
-        if (explicitTargetBlockIndex >= 0 && explicitTargetBlockIndex < blocks.length)
-            return explicitTargetBlockIndex
-        const taskOpenTagStart = documentFlow.normalizedFocusTaskOpenTagStart(request)
-        if (isFinite(taskOpenTagStart)) {
-            for (let index = 0; index < blocks.length; ++index) {
-                if (documentFlow.blockContainsTaskOpenTagStart(blocks[index], taskOpenTagStart))
-                    return index
-            }
-        }
-        const sourceOffset = documentFlow.normalizedFocusSourceOffset(request)
-        if (isFinite(sourceOffset)) {
-            let fallbackBeforeIndex = -1
-            let fallbackAfterIndex = -1
-            let fallbackBeforeEditableIndex = -1
-            let fallbackAfterEditableIndex = -1
-            for (let index = 0; index < blocks.length; ++index) {
-                const blockEntry = blocks[index] && typeof blocks[index] === "object" ? blocks[index] : ({})
-                if (documentFlow.blockContainsSourceOffset(blockEntry, sourceOffset))
-                    return index
-                const sourceStart = Math.max(0, Math.floor(Number(blockEntry.sourceStart) || 0))
-                const sourceEnd = Math.max(sourceStart, Math.floor(Number(blockEntry.sourceEnd) || sourceStart))
-                if (sourceEnd < sourceOffset) {
-                    fallbackBeforeIndex = index
-                    if (documentFlow.blockTextEditable(blockRepeater.itemAt(index), blockEntry))
-                        fallbackBeforeEditableIndex = index
-                    continue
-                }
-                if (sourceStart > sourceOffset && fallbackAfterIndex < 0) {
-                    fallbackAfterIndex = index
-                    if (documentFlow.blockTextEditable(blockRepeater.itemAt(index), blockEntry))
-                        fallbackAfterEditableIndex = index
-                }
-            }
-            if (documentFlow.requestPrefersNearestTextBlock(request)) {
-                if (fallbackAfterEditableIndex >= 0)
-                    return fallbackAfterEditableIndex
-                if (fallbackBeforeEditableIndex >= 0)
-                    return fallbackBeforeEditableIndex
-                if (fallbackAfterIndex >= 0)
-                    return fallbackAfterIndex
-                if (fallbackBeforeIndex >= 0)
-                    return fallbackBeforeIndex
-            }
-        }
-        if (documentFlow.activeBlockIndex >= 0 && documentFlow.activeBlockIndex < blocks.length)
-            return documentFlow.activeBlockIndex
-        return -1
+        return documentHost.focusPolicy.focusTargetBlockIndex(
+                    documentFlow.documentBlocks,
+                    documentFlow.activeBlockIndex,
+                    request && typeof request === "object" ? request : ({ }))
     }
 
     function refreshPendingFocusBlockIndex() {
-        if (!documentFlow.pendingFocusRequest || typeof documentFlow.pendingFocusRequest !== "object") {
+        if (!documentFlow.hasPendingFocusRequest()) {
             if (documentFlow.pendingFocusBlockIndex !== -1)
                 documentFlow.pendingFocusBlockIndex = -1
             return -1
@@ -1010,7 +788,7 @@ FocusScope {
 
     function applyFocusToBlockIndex(blockIndex) {
         const request = documentFlow.pendingFocusRequest
-        if (!request || typeof request !== "object")
+        if (!documentFlow.hasPendingFocusRequest())
             return false
         const safeIndex = Math.max(-1, documentFlow.floorNumberOrFallback(blockIndex, -1))
         if (safeIndex < 0 || safeIndex >= blockRepeater.count)
@@ -1022,21 +800,20 @@ FocusScope {
             return false
         if (!delegateItem.applyFocusRequest(request))
             return false
-        documentFlow.pendingFocusRequest = null
-        documentFlow.pendingFocusBlockIndex = -1
+        documentHost.clearPendingFocusRequest()
         documentFlow.activeBlockIndex = safeIndex
         return true
     }
 
     function schedulePendingFocusApply() {
-        if (!documentFlow.pendingFocusRequest || typeof documentFlow.pendingFocusRequest !== "object")
+        if (!documentFlow.hasPendingFocusRequest())
             return
         if (documentFlow.pendingFocusApplyQueued)
             return
         documentFlow.pendingFocusApplyQueued = true
         Qt.callLater(function () {
             documentFlow.pendingFocusApplyQueued = false
-            if (!documentFlow.pendingFocusRequest || typeof documentFlow.pendingFocusRequest !== "object")
+            if (!documentFlow.hasPendingFocusRequest())
                 return
             documentFlow.applyPendingFocus()
         })
@@ -1063,138 +840,25 @@ FocusScope {
                     focusRequest && typeof focusRequest === "object" ? focusRequest : ({ }))
     }
 
-    function blockIndexForEntry(blockData) {
-        const blocks = documentFlow.normalizedBlocks()
-        const safeBlock = blockData && typeof blockData === "object" ? blockData : ({})
-        const targetSourceStart = Math.max(0, Math.floor(Number(safeBlock.sourceStart) || 0))
-        const targetSourceEnd = Math.max(targetSourceStart, Math.floor(Number(safeBlock.sourceEnd) || targetSourceStart))
-        const targetType = safeBlock.type !== undefined ? String(safeBlock.type).trim().toLowerCase() : ""
-        for (let index = 0; index < blocks.length; ++index) {
-            const blockEntry = blocks[index] && typeof blocks[index] === "object" ? blocks[index] : ({})
-            if (blockEntry === safeBlock)
-                return index
-            const blockSourceStart = Math.max(0, Math.floor(Number(blockEntry.sourceStart) || 0))
-            const blockSourceEnd = Math.max(blockSourceStart, Math.floor(Number(blockEntry.sourceEnd) || blockSourceStart))
-            const blockType = blockEntry.type !== undefined ? String(blockEntry.type).trim().toLowerCase() : ""
-            if (blockSourceStart === targetSourceStart && blockSourceEnd === targetSourceEnd && blockType === targetType)
-                return index
-        }
-        const activeIndex = Math.floor(Number(documentFlow.activeBlockIndex) || -1)
-        if (activeIndex >= 0 && activeIndex < blocks.length)
-            return activeIndex
-        return -1
-    }
-
     function focusRequestAfterBlockDeletion(blockData, nextSourceText) {
-        const safeBlock = blockData && typeof blockData === "object" ? blockData : ({})
-        const boundedNextSourceText = documentFlow.normalizedSourceText(nextSourceText)
-        const blockSourceStart = Math.max(0, Math.floor(Number(safeBlock.sourceStart) || 0))
-        const blockSourceEnd = Math.max(blockSourceStart, Math.floor(Number(safeBlock.sourceEnd) || blockSourceStart))
-        const blockIndex = documentFlow.blockIndexForEntry(safeBlock)
-        const deletedLength = Math.max(0, blockSourceEnd - blockSourceStart)
-        const previousEditableOffset = blockIndex >= 0
-                ? Math.max(-1, documentFlow.previousEditableBlockFocusSourceOffset(blockIndex))
-                : -1
-        const nextEditableOffset = blockIndex >= 0
-                ? Math.max(-1, documentFlow.nextEditableBlockFocusSourceOffset(blockIndex))
-                : -1
-        const adjustedNextEditableOffset = nextEditableOffset >= 0
-                ? Math.max(0, nextEditableOffset - deletedLength)
-                : -1
-        if (adjustedNextEditableOffset >= 0) {
-            return {
-                "preferNearestTextBlock": true,
-                "sourceOffset": Math.min(boundedNextSourceText.length, adjustedNextEditableOffset)
-            }
-        }
-        if (previousEditableOffset >= 0) {
-            return {
-                "preferNearestTextBlock": true,
-                "sourceOffset": Math.min(boundedNextSourceText.length, previousEditableOffset)
-            }
-        }
-        return {
-            "preferNearestTextBlock": true,
-            "sourceOffset": Math.min(boundedNextSourceText.length, blockSourceStart)
-        }
-    }
-
-    function normalizedDeletionDirection(direction) {
-        const normalizedDirection = direction === undefined || direction === null
-                ? ""
-                : String(direction).trim().toLowerCase()
-        return normalizedDirection === "forward" ? "forward" : "backward"
+        return documentHost.focusPolicy.focusRequestAfterBlockDeletion(
+                    documentFlow.documentBlocks,
+                    documentFlow.activeBlockIndex,
+                    blockData && typeof blockData === "object" ? blockData : ({ }),
+                    nextSourceText)
     }
 
     function emptyTextBlockDeletionRange(blockData, direction, sourceText) {
-        const safeBlock = blockData && typeof blockData === "object" ? blockData : ({})
-        const currentSourceText = documentFlow.normalizedSourceText(sourceText)
-        const anchorOffset = Math.max(
-                    0,
-                    Math.min(
-                        currentSourceText.length,
-                        Math.floor(Number(safeBlock.sourceStart) || 0)))
-        const previousNewlineStart = anchorOffset > 0 && currentSourceText.charAt(anchorOffset - 1) === "\n"
-                ? anchorOffset - 1
-                : -1
-        const nextNewlineStart = anchorOffset < currentSourceText.length && currentSourceText.charAt(anchorOffset) === "\n"
-                ? anchorOffset
-                : -1
-        const normalizedDirection = documentFlow.normalizedDeletionDirection(direction)
-
-        let deletionStart = -1
-        if (normalizedDirection === "forward")
-            deletionStart = nextNewlineStart >= 0 ? nextNewlineStart : previousNewlineStart
-        else
-            deletionStart = previousNewlineStart >= 0 ? previousNewlineStart : nextNewlineStart
-
-        if (deletionStart < 0)
-            return null
-
-        return {
-            "end": deletionStart + 1,
-            "focusRequest": {
-                "preferNearestTextBlock": true,
-                "sourceOffset": deletionStart
-            },
-            "start": deletionStart
-        }
-    }
-
-    function previousEditableBlockFocusSourceOffset(blockIndex) {
-        const blocks = documentFlow.normalizedBlocks()
-        const safeBlockIndex = Math.max(0, Math.min(blocks.length - 1, Math.floor(Number(blockIndex) || 0)))
-        for (let index = safeBlockIndex - 1; index >= 0; --index) {
-            const blockEntry = blocks[index] && typeof blocks[index] === "object" ? blocks[index] : ({})
-            if (!documentFlow.blockTextEditable(blockRepeater.itemAt(index), blockEntry))
-                continue
-            return Math.max(0, Math.floor(Number(blockEntry.sourceEnd) || 0))
-        }
-        return -1
-    }
-
-    function nextEditableBlockFocusSourceOffset(blockIndex) {
-        const blocks = documentFlow.normalizedBlocks()
-        const safeBlockIndex = Math.max(0, Math.min(blocks.length - 1, Math.floor(Number(blockIndex) || 0)))
-        for (let index = safeBlockIndex + 1; index < blocks.length; ++index) {
-            const blockEntry = blocks[index] && typeof blocks[index] === "object" ? blocks[index] : ({})
-            if (!documentFlow.blockTextEditable(blockRepeater.itemAt(index), blockEntry))
-                continue
-            return Math.max(0, Math.floor(Number(blockEntry.sourceStart) || 0))
-        }
-        return -1
+        return documentHost.mutationPolicy.emptyTextBlockDeletionRange(
+                    blockData && typeof blockData === "object" ? blockData : ({ }),
+                    direction === undefined || direction === null ? "" : String(direction),
+                    sourceText === undefined || sourceText === null ? "" : String(sourceText))
     }
 
     function nextEditableSourceOffsetAfterBlock(sourceText, blockEndOffset) {
-        const normalizedText = documentFlow.normalizedSourceText(sourceText)
-        const boundedBlockEndOffset = Math.max(
-                    0,
-                    Math.min(normalizedText.length, Math.floor(Number(blockEndOffset) || 0)))
-        if (boundedBlockEndOffset < normalizedText.length
-                && normalizedText.charAt(boundedBlockEndOffset) === "\n") {
-            return boundedBlockEndOffset + 1
-        }
-        return boundedBlockEndOffset
+        return documentHost.mutationPolicy.nextEditableSourceOffsetAfterBlock(
+                    sourceText === undefined || sourceText === null ? "" : String(sourceText),
+                    Math.floor(Number(blockEndOffset) || 0))
     }
 
     function deleteBlock(blockData, direction) {
@@ -1610,15 +1274,15 @@ FocusScope {
             return false
         const currentSourceText = documentFlow.normalizedSourceText(documentFlow.sourceText)
         const insertionOffset = Math.max(0, Math.min(currentSourceText.length, documentFlow.shortcutInsertionSourceOffset()))
-        const prefixNewline = insertionOffset > 0 && currentSourceText.charAt(insertionOffset - 1) !== "\n" ? "\n" : ""
-        const suffixNewline = insertionOffset < currentSourceText.length && currentSourceText.charAt(insertionOffset) !== "\n" ? "\n" : ""
-        const insertionSourceText = prefixNewline + String(insertionSpec.insertionSourceText || "") + suffixNewline
-        documentFlow.replaceSourceRange(
+        const payload = documentHost.mutationPolicy.buildStructuredInsertionPayload(
+                    currentSourceText,
                     insertionOffset,
-                    insertionOffset,
-                    insertionSourceText,
+                    String(insertionSpec.insertionSourceText || ""),
+                    Math.max(0, Number(insertionSpec.cursorSourceOffsetFromInsertionStart) || 0))
+        documentFlow.sourceMutationRequested(
+                    String(payload.nextSourceText || currentSourceText),
                     {
-                        "sourceOffset": insertionOffset + prefixNewline.length + Math.max(0, Number(insertionSpec.cursorSourceOffsetFromInsertionStart) || 0)
+                        "sourceOffset": Math.max(0, Number(payload.sourceOffset) || 0)
                     })
         return true
     }
@@ -1642,33 +1306,15 @@ FocusScope {
 
         const currentSourceText = documentFlow.normalizedSourceText(documentFlow.sourceText)
         const insertionOffset = Math.max(0, Math.min(currentSourceText.length, documentFlow.shortcutInsertionSourceOffset()))
-        const prefixNewline = insertionOffset > 0 && currentSourceText.charAt(insertionOffset - 1) !== "\n" ? "\n" : ""
-        const blockSourceText = normalizedTagTexts.join("\n")
-        const suffixOffset = insertionOffset < currentSourceText.length ? insertionOffset : currentSourceText.length
-        const suffixNewline = suffixOffset < currentSourceText.length
-                && currentSourceText.charAt(suffixOffset) !== "\n"
-                ? "\n"
-                : ""
-        const insertionSourceText = prefixNewline + blockSourceText + suffixNewline
-        const nextSourceText = documentFlow.spliceSourceRange(
+        const payload = documentHost.mutationPolicy.buildResourceInsertionPayload(
+                    currentSourceText,
                     insertionOffset,
-                    insertionOffset,
-                    insertionSourceText)
-        const insertedBlockEndOffset = insertionOffset + prefixNewline.length + blockSourceText.length
-
+                    normalizedTagTexts)
         documentFlow.sourceMutationRequested(
-                    nextSourceText,
-                    suffixNewline.length > 0
-                    ? {
-                        "sourceOffset": documentFlow.nextEditableSourceOffsetAfterBlock(
-                                            nextSourceText,
-                                            insertedBlockEndOffset)
-                    }
-                    : {
-                        "sourceOffset": Math.max(
-                                            insertionOffset + prefixNewline.length,
-                                            insertedBlockEndOffset - 1)
-                    })
+                    String(payload.nextSourceText || currentSourceText),
+                    payload.focusRequest && typeof payload.focusRequest === "object"
+                    ? payload.focusRequest
+                    : ({ }))
         return true
     }
 
@@ -1796,7 +1442,7 @@ FocusScope {
                     "blockCount=" + documentFlow.documentBlocks.length,
                     documentFlow)
         documentFlow.refreshLayoutCache()
-        if (!documentFlow.pendingFocusRequest || typeof documentFlow.pendingFocusRequest !== "object")
+        if (!documentFlow.hasPendingFocusRequest())
             return
         documentFlow.refreshPendingFocusBlockIndex()
         documentFlow.schedulePendingFocusApply()

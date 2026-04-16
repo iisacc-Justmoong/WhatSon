@@ -5,32 +5,40 @@ import QtQuick
 QtObject {
     id: controller
 
-    property var view: null
     property var resourceTagController: null
     property var editorSurfaceGuardController: null
+    property bool hasSelectedNote: false
+    property bool showDedicatedResourceViewer: false
+    property bool showFormattedTextRenderer: false
+    property var resourcesImportViewModel: null
+    property int resourceImportModeNone: 0
+    property int resourceImportModeUrls: 1
+    property int resourceImportModeClipboard: 2
+    property int resourceImportConflictPolicyAbort: 0
+    property var clearResourceDropActiveHandler: null
+    property var clipboardImageAvailableHandler: null
     property var pendingResourceImportConflict: ({})
     property int pendingResourceImportMode: 0
     property var pendingResourceImportUrls: []
     property bool resourceImportConflictAlertOpen: false
 
     function canAcceptResourceDropUrls(urls) {
-        if (!controller.view
-                || !controller.view.hasSelectedNote
-                || !controller.view.resourcesImportViewModel) {
+        if (!controller.hasSelectedNote
+                || !controller.resourcesImportViewModel) {
             return false;
         }
-        if (controller.view.showDedicatedResourceViewer || controller.view.showFormattedTextRenderer)
+        if (controller.showDedicatedResourceViewer || controller.showFormattedTextRenderer)
             return false;
         if (!Array.isArray(urls) || urls.length === 0)
             return false;
-        if (controller.view.resourcesImportViewModel.canImportUrls === undefined)
+        if (controller.resourcesImportViewModel.canImportUrls === undefined)
             return false;
-        return !!controller.view.resourcesImportViewModel.canImportUrls(urls);
+        return !!controller.resourcesImportViewModel.canImportUrls(urls);
     }
 
     function clearPendingResourceImportConflict() {
         controller.pendingResourceImportConflict = ({});
-        controller.pendingResourceImportMode = controller.view ? controller.view.resourceImportModeNone : 0;
+        controller.pendingResourceImportMode = controller.resourceImportModeNone;
         controller.pendingResourceImportUrls = [];
         controller.resourceImportConflictAlertOpen = false;
     }
@@ -51,9 +59,6 @@ QtObject {
     }
 
     function scheduleResourceImportConflictPrompt(importMode, urls, conflict) {
-        if (!controller.view)
-            return false;
-
         if (controller.editorSurfaceGuardController
                 && controller.editorSurfaceGuardController.activateResourceDropEditorSurfaceGuard !== undefined) {
             controller.editorSurfaceGuardController.activateResourceDropEditorSurfaceGuard();
@@ -61,27 +66,31 @@ QtObject {
         controller.pendingResourceImportMode = importMode;
         controller.pendingResourceImportUrls = Array.isArray(urls) ? urls.slice(0) : [];
         controller.pendingResourceImportConflict = controller.normalizedResourceImportConflict(conflict);
-        controller.view.resourceDropActive = false;
+        if (controller.clearResourceDropActiveHandler
+                && typeof controller.clearResourceDropActiveHandler === "function")
+            controller.clearResourceDropActiveHandler();
         controller.resourceImportConflictAlertOpen = true;
         return true;
     }
 
     function finalizeInsertedImportedResources(importedEntries) {
-        if (!controller.view || !controller.resourceTagController)
+        if (!controller.resourceTagController)
             return false;
 
         const importedEntryCount = controller.resourceTagController.normalizedImportedResourceEntries(importedEntries).length;
         const inserted = controller.resourceTagController.insertImportedResourceTags(importedEntries);
         if (importedEntryCount > 0
-                && controller.view.resourcesImportViewModel
-                && controller.view.resourcesImportViewModel.reloadImportedResources !== undefined) {
-            controller.view.resourcesImportViewModel.reloadImportedResources();
+                && controller.resourcesImportViewModel
+                && controller.resourcesImportViewModel.reloadImportedResources !== undefined) {
+            controller.resourcesImportViewModel.reloadImportedResources();
         }
         if (controller.editorSurfaceGuardController
                 && controller.editorSurfaceGuardController.releaseResourceDropEditorSurfaceGuard !== undefined) {
             controller.editorSurfaceGuardController.releaseResourceDropEditorSurfaceGuard(inserted);
         }
-        controller.view.resourceDropActive = false;
+        if (controller.clearResourceDropActiveHandler
+                && typeof controller.clearResourceDropActiveHandler === "function")
+            controller.clearResourceDropActiveHandler();
         controller.clearPendingResourceImportConflict();
         return inserted;
     }
@@ -91,33 +100,34 @@ QtObject {
                 && controller.editorSurfaceGuardController.releaseResourceDropEditorSurfaceGuard !== undefined) {
             controller.editorSurfaceGuardController.releaseResourceDropEditorSurfaceGuard(false);
         }
-        if (controller.view)
-            controller.view.resourceDropActive = false;
+        if (controller.clearResourceDropActiveHandler
+                && typeof controller.clearResourceDropActiveHandler === "function")
+            controller.clearResourceDropActiveHandler();
         controller.clearPendingResourceImportConflict();
     }
 
     function executePendingResourceImportWithPolicy(conflictPolicy) {
-        if (!controller.view || !controller.view.resourcesImportViewModel) {
+        if (!controller.resourcesImportViewModel) {
             controller.cancelPendingResourceImportConflict();
             return false;
         }
 
         controller.resourceImportConflictAlertOpen = false;
         let importedEntries = [];
-        if (controller.pendingResourceImportMode === controller.view.resourceImportModeUrls) {
-            if (controller.view.resourcesImportViewModel.importUrlsForEditorWithConflictPolicy === undefined) {
+        if (controller.pendingResourceImportMode === controller.resourceImportModeUrls) {
+            if (controller.resourcesImportViewModel.importUrlsForEditorWithConflictPolicy === undefined) {
                 controller.cancelPendingResourceImportConflict();
                 return false;
             }
-            importedEntries = controller.view.resourcesImportViewModel.importUrlsForEditorWithConflictPolicy(
+            importedEntries = controller.resourcesImportViewModel.importUrlsForEditorWithConflictPolicy(
                         controller.pendingResourceImportUrls,
                         conflictPolicy);
-        } else if (controller.pendingResourceImportMode === controller.view.resourceImportModeClipboard) {
-            if (controller.view.resourcesImportViewModel.importClipboardImageForEditorWithConflictPolicy === undefined) {
+        } else if (controller.pendingResourceImportMode === controller.resourceImportModeClipboard) {
+            if (controller.resourcesImportViewModel.importClipboardImageForEditorWithConflictPolicy === undefined) {
                 controller.cancelPendingResourceImportConflict();
                 return false;
             }
-            importedEntries = controller.view.resourcesImportViewModel.importClipboardImageForEditorWithConflictPolicy(
+            importedEntries = controller.resourcesImportViewModel.importClipboardImageForEditorWithConflictPolicy(
                         conflictPolicy);
         } else {
             controller.cancelPendingResourceImportConflict();
@@ -128,67 +138,66 @@ QtObject {
     }
 
     function importUrlsAsResourcesWithPrompt(urls) {
-        if (!controller.view
-                || !controller.view.resourcesImportViewModel
-                || controller.view.resourcesImportViewModel.importUrlsForEditorWithConflictPolicy === undefined) {
+        if (!controller.resourcesImportViewModel
+                || controller.resourcesImportViewModel.importUrlsForEditorWithConflictPolicy === undefined) {
             return false;
         }
 
-        const conflict = controller.view.resourcesImportViewModel.inspectImportConflictForUrls !== undefined
-                ? controller.view.resourcesImportViewModel.inspectImportConflictForUrls(urls)
+        const conflict = controller.resourcesImportViewModel.inspectImportConflictForUrls !== undefined
+                ? controller.resourcesImportViewModel.inspectImportConflictForUrls(urls)
                 : ({});
         if (conflict && conflict.conflict)
-            return controller.scheduleResourceImportConflictPrompt(controller.view.resourceImportModeUrls, urls, conflict);
+            return controller.scheduleResourceImportConflictPrompt(controller.resourceImportModeUrls, urls, conflict);
 
         if (controller.editorSurfaceGuardController
                 && controller.editorSurfaceGuardController.activateResourceDropEditorSurfaceGuard !== undefined) {
             controller.editorSurfaceGuardController.activateResourceDropEditorSurfaceGuard();
         }
-        const importedEntries = controller.view.resourcesImportViewModel.importUrlsForEditorWithConflictPolicy(
+        const importedEntries = controller.resourcesImportViewModel.importUrlsForEditorWithConflictPolicy(
                     urls,
-                    controller.view.resourceImportConflictPolicyAbort);
+                    controller.resourceImportConflictPolicyAbort);
         return controller.finalizeInsertedImportedResources(importedEntries);
     }
 
     function pasteClipboardImageAsResource() {
-        if (!controller.view
-                || !controller.view.hasSelectedNote
-                || controller.view.showDedicatedResourceViewer
-                || controller.view.showFormattedTextRenderer) {
+        if (!controller.hasSelectedNote
+                || controller.showDedicatedResourceViewer
+                || controller.showFormattedTextRenderer) {
             return false;
         }
-        if (!controller.view.resourcesImportViewModel
-                || controller.view.resourcesImportViewModel.importClipboardImageForEditor === undefined) {
+        if (!controller.resourcesImportViewModel
+                || controller.resourcesImportViewModel.importClipboardImageForEditor === undefined) {
             return false;
         }
-        if (controller.view.resourcesImportViewModel.busy !== undefined
-                && controller.view.resourcesImportViewModel.busy) {
+        if (controller.resourcesImportViewModel.busy !== undefined
+                && controller.resourcesImportViewModel.busy) {
             return false;
         }
-        if (controller.view.clipboardImageAvailableForPaste === undefined
-                || !controller.view.clipboardImageAvailableForPaste()) {
+        if (!controller.clipboardImageAvailableHandler
+                || typeof controller.clipboardImageAvailableHandler !== "function"
+                || !controller.clipboardImageAvailableHandler()) {
             return false;
         }
 
-        const conflict = controller.view.resourcesImportViewModel.inspectClipboardImageImportConflict !== undefined
-                ? controller.view.resourcesImportViewModel.inspectClipboardImageImportConflict()
+        const conflict = controller.resourcesImportViewModel.inspectClipboardImageImportConflict !== undefined
+                ? controller.resourcesImportViewModel.inspectClipboardImageImportConflict()
                 : ({});
         if (conflict && conflict.conflict) {
             return controller.scheduleResourceImportConflictPrompt(
-                        controller.view.resourceImportModeClipboard,
+                        controller.resourceImportModeClipboard,
                         [],
                         conflict);
         }
 
-        if (controller.view.resourcesImportViewModel.importClipboardImageForEditorWithConflictPolicy === undefined)
+        if (controller.resourcesImportViewModel.importClipboardImageForEditorWithConflictPolicy === undefined)
             return false;
 
         if (controller.editorSurfaceGuardController
                 && controller.editorSurfaceGuardController.activateResourceDropEditorSurfaceGuard !== undefined) {
             controller.editorSurfaceGuardController.activateResourceDropEditorSurfaceGuard();
         }
-        const importedEntries = controller.view.resourcesImportViewModel.importClipboardImageForEditorWithConflictPolicy(
-                    controller.view.resourceImportConflictPolicyAbort);
+        const importedEntries = controller.resourcesImportViewModel.importClipboardImageForEditorWithConflictPolicy(
+                    controller.resourceImportConflictPolicyAbort);
         return controller.finalizeInsertedImportedResources(importedEntries);
     }
 }

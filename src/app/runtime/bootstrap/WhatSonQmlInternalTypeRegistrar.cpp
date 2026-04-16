@@ -11,9 +11,14 @@
 #include "viewmodel/content/ContentsDisplayPresentationRefreshController.hpp"
 #include "viewmodel/content/ContentsDisplaySelectionSyncCoordinator.hpp"
 #include "viewmodel/content/ContentsDisplayStructuredFlowCoordinator.hpp"
+#include "viewmodel/content/ContentsEditorPresentationProjection.hpp"
 #include "viewmodel/content/ContentsEditorSelectionBridge.hpp"
 #include "viewmodel/content/ContentsGutterMarkerBridge.hpp"
 #include "viewmodel/content/ContentsLogicalTextBridge.hpp"
+#include "viewmodel/content/ContentsStructuredDocumentCollectionPolicy.hpp"
+#include "viewmodel/content/ContentsStructuredDocumentFocusPolicy.hpp"
+#include "viewmodel/content/ContentsStructuredDocumentHost.hpp"
+#include "viewmodel/content/ContentsStructuredDocumentMutationPolicy.hpp"
 #include "viewmodel/panel/FocusedNoteDeletionBridge.hpp"
 #include "viewmodel/panel/HierarchyDragDropBridge.hpp"
 #include "viewmodel/panel/HierarchyInteractionBridge.hpp"
@@ -33,10 +38,20 @@ namespace WhatSon::Runtime::Bootstrap
             "WhatSon.App.Internal", 1, 0, "ContentsDisplayPresentationRefreshController");
         qmlRegisterType<ContentsDisplayStructuredFlowCoordinator>(
             "WhatSon.App.Internal", 1, 0, "ContentsDisplayStructuredFlowCoordinator");
+        qmlRegisterType<ContentsEditorPresentationProjection>(
+            "WhatSon.App.Internal", 1, 0, "ContentsEditorPresentationProjection");
         qmlRegisterType<ContentsLogicalTextBridge>(
             "WhatSon.App.Internal", 1, 0, "ContentsLogicalTextBridge");
         qmlRegisterType<ContentsGutterMarkerBridge>(
             "WhatSon.App.Internal", 1, 0, "ContentsGutterMarkerBridge");
+        qmlRegisterType<ContentsStructuredDocumentCollectionPolicy>(
+            "WhatSon.App.Internal", 1, 0, "ContentsStructuredDocumentCollectionPolicy");
+        qmlRegisterType<ContentsStructuredDocumentFocusPolicy>(
+            "WhatSon.App.Internal", 1, 0, "ContentsStructuredDocumentFocusPolicy");
+        qmlRegisterType<ContentsStructuredDocumentHost>(
+            "WhatSon.App.Internal", 1, 0, "ContentsStructuredDocumentHost");
+        qmlRegisterType<ContentsStructuredDocumentMutationPolicy>(
+            "WhatSon.App.Internal", 1, 0, "ContentsStructuredDocumentMutationPolicy");
         qmlRegisterType<ContentsTextFormatRenderer>(
             "WhatSon.App.Internal", 1, 0, "ContentsTextFormatRenderer");
         qmlRegisterType<ContentsStructuredBlockRenderer>(

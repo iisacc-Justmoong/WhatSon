@@ -7,12 +7,14 @@
 ## Scope
 - Mirrored source directory: `src/app/viewmodel/content`
 - Child directories: 0
-- Child files: 12
+- Child files: 22
 
 ## Child Directories
 - No child directories.
 
 ## Child Files
+- `ContentsEditorPresentationProjection.cpp`
+- `ContentsEditorPresentationProjection.hpp`
 - `ContentsDisplayPresentationRefreshController.cpp`
 - `ContentsDisplayPresentationRefreshController.hpp`
 - `ContentsDisplaySelectionSyncCoordinator.cpp`
@@ -25,6 +27,14 @@
 - `ContentsGutterMarkerBridge.hpp`
 - `ContentsLogicalTextBridge.cpp`
 - `ContentsLogicalTextBridge.hpp`
+- `ContentsStructuredDocumentCollectionPolicy.cpp`
+- `ContentsStructuredDocumentCollectionPolicy.hpp`
+- `ContentsStructuredDocumentFocusPolicy.cpp`
+- `ContentsStructuredDocumentFocusPolicy.hpp`
+- `ContentsStructuredDocumentHost.cpp`
+- `ContentsStructuredDocumentHost.hpp`
+- `ContentsStructuredDocumentMutationPolicy.cpp`
+- `ContentsStructuredDocumentMutationPolicy.hpp`
 
 ## Current Notes
 
@@ -55,6 +65,15 @@
   projection-disabled clearing, focused-input defer decisions, and deferred timer-trigger decisions.
 - `ContentsDisplayStructuredFlowCoordinator` now owns the note-scoped decision of when parsed structured flow becomes
   the active document host, so display QML no longer keeps that activation policy inline.
+- `ContentsEditorPresentationProjection` now centralizes the whole-document RAW-derived editor presentation snapshot.
+  Desktop/mobile hosts bind one projection object per note surface instead of keeping separate host-owned
+  `ContentsLogicalTextBridge` and `ContentsTextFormatRenderer` state graphs for the same document snapshot.
+- `ContentsStructuredDocumentHost` now centralizes structured-flow host state that used to live inline in
+  `ContentsStructuredDocumentFlow.qml`, including normalized block/resource collections, pending focus requests,
+  active-block tracking, and layout-cache-facing viewport state.
+- `ContentsStructuredDocumentCollectionPolicy`, `ContentsStructuredDocumentFocusPolicy`, and
+  `ContentsStructuredDocumentMutationPolicy` now split collection normalization, focus resolution, and RAW mutation
+  rules into separate C++ SRP units so structured host behavior no longer collapses back into one QML god object.
 - `ContentsEditorSelectionBridge` and `ContentsLogicalTextBridge` now also emit verbose editor trace events for
   constructor/destructor turns, selection sync, selected-note body load/reconcile, dirty snapshot adoption, text-state
   rebuilds, and incremental live-typing adoption so the editor pipeline can be followed from the QML host boundary.

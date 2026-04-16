@@ -132,17 +132,17 @@ Item {
     property int lineNumberColumnTextWidthOverride: -1
     readonly property int lineNumberColumnWidth: Math.max(0, Math.round(LV.Theme.scaleMetric(26)))
     readonly property int lineNumberRightInset: contentsView.editorHorizontalInset
-    property int liveLogicalLineCount: Math.max(1, Number(textMetricsBridge.logicalLineCount) || 1)
+    property int liveLogicalLineCount: Math.max(1, Number(editorProjection.logicalLineCount) || 1)
     readonly property int logicalLineCount: Math.max(1, Number(contentsView.liveLogicalLineCount) || 1)
     property var logicalLineDocumentYCache: []
     property int logicalLineDocumentYCacheLineCount: 0
     property int logicalLineDocumentYCacheRevision: -1
-    property var liveLogicalLineStartOffsets: Array.isArray(textMetricsBridge.logicalLineStartOffsets) && textMetricsBridge.logicalLineStartOffsets.length > 0
-                                           ? textMetricsBridge.logicalLineStartOffsets
+    property var liveLogicalLineStartOffsets: Array.isArray(editorProjection.logicalLineStartOffsets) && editorProjection.logicalLineStartOffsets.length > 0
+                                           ? editorProjection.logicalLineStartOffsets
                                            : [0]
     readonly property var logicalLineStartOffsets: contentsView.liveLogicalLineStartOffsets
-    property int liveLogicalTextLength: textMetricsBridge.logicalText !== undefined && textMetricsBridge.logicalText !== null
-                                      ? String(textMetricsBridge.logicalText).length
+    property int liveLogicalTextLength: editorProjection.logicalText !== undefined && editorProjection.logicalText !== null
+                                      ? String(editorProjection.logicalText).length
                                       : 0
     readonly property bool lineGeometryRefreshEnabled: !contentsView.showDedicatedResourceViewer
                                                        && !contentsView.showFormattedTextRenderer
@@ -227,8 +227,8 @@ Item {
     readonly property int documentPresentationRefreshIntervalMs: 120
     readonly property string documentPresentationSourceText: contentsView.resolvedDocumentPresentationSourceText()
     readonly property bool documentPresentationRefreshPendingWhileFocused: presentationRefreshController.pendingWhileFocused
-    property string renderedEditorText: ""
-    readonly property string mobileEditorDisplayText: textMetricsBridge.logicalText
+    property alias renderedEditorText: editorProjection.richTextSurfaceHtml
+    readonly property string mobileEditorDisplayText: editorProjection.logicalText
     readonly property var resolvedEditorViewModeViewModel: {
         if (contentsView.editorViewModeViewModel)
             return contentsView.editorViewModeViewModel;
@@ -320,8 +320,8 @@ Item {
             if (livePlainText !== undefined && livePlainText !== null)
                 return String(livePlainText);
         }
-        if (textMetricsBridge && textMetricsBridge.logicalText !== undefined && textMetricsBridge.logicalText !== null)
-            return String(textMetricsBridge.logicalText);
+        if (editorProjection && editorProjection.logicalText !== undefined && editorProjection.logicalText !== null)
+            return String(editorProjection.logicalText);
         return "";
     }
     function buildFallbackMinimapLineGroupsForRange(startLineNumber, endLineNumber) {
@@ -590,12 +590,6 @@ Item {
         contentsView.logicalLineDocumentYCacheRevision = refreshRevision;
         contentsView.logicalLineDocumentYCacheLineCount = lineCount;
     }
-    function appendResourceDropPayloadLines(rawText, urls) {
-        resourceImportController.appendResourceDropPayloadLines(rawText, urls);
-    }
-    function appendResourceDropMimePayload(drop, mimeType, urls) {
-        resourceImportController.appendResourceDropMimePayload(drop, mimeType, urls);
-    }
     function extractResourceDropUrls(drop) {
         return resourceImportController.extractResourceDropUrls(drop);
     }
@@ -774,8 +768,8 @@ Item {
             editorTypingController.synchronizeLiveEditingStateFromPresentation();
             return;
         }
-        const nextRenderedText = textFormatRenderer && textFormatRenderer.editorSurfaceHtml !== undefined && textFormatRenderer.editorSurfaceHtml !== null
-                ? String(textFormatRenderer.editorSurfaceHtml)
+        const nextRenderedText = editorProjection && editorProjection.editorSurfaceHtml !== undefined && editorProjection.editorSurfaceHtml !== null
+                ? String(editorProjection.editorSurfaceHtml)
                 : "";
         const editorRenderedText = contentsView.resourceBlocksRenderedInlineByRichTextEditor
                 ? contentsView.renderEditorSurfaceHtmlWithInlineResources(nextRenderedText)
@@ -794,8 +788,8 @@ Item {
         const needsRichTextProjection = contentsView.documentPresentationProjectionEnabled;
         if (!needsRichTextProjection)
             return contentsView.renderedEditorText !== "";
-        const rendererRenderedText = textFormatRenderer && textFormatRenderer.editorSurfaceHtml !== undefined && textFormatRenderer.editorSurfaceHtml !== null
-                ? String(textFormatRenderer.editorSurfaceHtml)
+        const rendererRenderedText = editorProjection && editorProjection.editorSurfaceHtml !== undefined && editorProjection.editorSurfaceHtml !== null
+                ? String(editorProjection.editorSurfaceHtml)
                 : "";
         const expectedRenderedText = contentsView.resourceBlocksRenderedInlineByRichTextEditor
                 ? contentsView.renderEditorSurfaceHtmlWithInlineResources(rendererRenderedText)
@@ -808,12 +802,6 @@ Item {
     function inlineStyleWrapTags(styleTag) {
         return editorSelectionController.inlineStyleWrapTags(styleTag);
     }
-    function normalizedImportedResourceEntries(importedEntries) {
-        return resourceImportController.normalizedImportedResourceEntries(importedEntries);
-    }
-    function resourceBlockSourceText(tagTexts) {
-        return resourceImportController.resourceBlockSourceText(tagTexts);
-    }
     function sourceContainsCanonicalResourceTag(sourceText) {
         return resourceImportController.sourceContainsCanonicalResourceTag(sourceText);
     }
@@ -823,35 +811,11 @@ Item {
     function resourceTagLossDetected(previousSourceText, nextSourceText) {
         return resourceImportController.resourceTagLossDetected(previousSourceText, nextSourceText);
     }
-    function inlineResourcePreviewWidth() {
-        return resourceImportController.inlineResourcePreviewWidth();
-    }
-    function resourceEntryOpenTarget(resourceEntry) {
-        return resourceImportController.resourceEntryOpenTarget(resourceEntry);
-    }
-    function richTextParagraphHtml(innerHtml) {
-        return resourceImportController.richTextParagraphHtml(innerHtml);
-    }
-    function inlineResourcePlaceholderHtml(lineCount) {
-        return resourceImportController.inlineResourcePlaceholderHtml(lineCount);
-    }
-    function resourcePlaceholderBlockHtml() {
-        return resourceImportController.resourcePlaceholderBlockHtml();
-    }
-    function inlineResourceBlockHtml(resourceEntry) {
-        return resourceImportController.inlineResourceBlockHtml(resourceEntry);
-    }
-    function resourceEntryCanRenderInlineInRichText(resourceEntry) {
-        return resourceImportController.resourceEntryCanRenderInlineInRichText(resourceEntry);
-    }
     function renderEditorSurfaceHtmlWithInlineResources(editorHtml) {
         return resourceImportController.renderEditorSurfaceHtmlWithInlineResources(editorHtml);
     }
     function refreshInlineResourcePresentation() {
         resourceImportController.refreshInlineResourcePresentation();
-    }
-    function activateResourceDropEditorSurfaceGuard() {
-        resourceImportController.activateResourceDropEditorSurfaceGuard();
     }
     function markProgrammaticEditorSurfaceSync() {
         resourceImportController.markProgrammaticEditorSurfaceSync();
@@ -1858,8 +1822,8 @@ Item {
         editorViewport: editorViewport
         selectionBridge: selectionBridge
         selectionContextMenu: editorSelectionContextMenu
-        textFormatRenderer: textFormatRenderer
-        textMetricsBridge: textMetricsBridge
+        textFormatRenderer: editorProjection
+        textMetricsBridge: editorProjection
         view: contentsView
     }
     ContentsEditorSelectionBridge {
@@ -1905,22 +1869,59 @@ Item {
         calloutBackend: contentsCalloutBackend
         contentEditor: contentsView.contentEditor
         editorSession: editorSession
-        textFormatRenderer: textFormatRenderer
-        textMetricsBridge: textMetricsBridge
+        textFormatRenderer: editorProjection
+        textMetricsBridge: editorProjection
         view: contentsView
     }
     ContentsResourceImportController {
         id: resourceImportController
 
         bodyResourceRenderer: bodyResourceRenderer
+        clearResourceDropActiveHandler: function () {
+            contentsView.resourceDropActive = false;
+        }
+        clipboardImageAvailableHandler: function () {
+            return contentsView.clipboardImageAvailableForPaste();
+        }
         contentEditor: contentsView.contentEditor
+        currentEditorCursorPositionHandler: function () {
+            return contentsView.currentEditorCursorPosition();
+        }
+        documentPresentationSourceText: contentsView.documentPresentationSourceText
+        editorHorizontalInset: contentsView.editorHorizontalInset
+        editorProjection: editorProjection
+        editorText: contentsView.editorText
         editorSession: editorSession
         editorTypingController: editorTypingController
         editorViewport: editorViewport
+        encodeXmlAttributeValueHandler: function (value) {
+            return contentsView.encodeXmlAttributeValue(value);
+        }
+        hasSelectedNote: contentsView.hasSelectedNote
+        preferNativeInputHandling: contentsView.preferNativeInputHandling
+        printPaperTextWidth: contentsView.printPaperTextWidth
+        resourceBlocksRenderedInlineByRichTextEditor: contentsView.resourceBlocksRenderedInlineByRichTextEditor
+        resourceEditorPlaceholderLineCount: contentsView.resourceEditorPlaceholderLineCount
+        resourceImportConflictPolicyAbort: contentsView.resourceImportConflictPolicyAbort
+        resourceImportModeClipboard: contentsView.resourceImportModeClipboard
+        resourceImportModeNone: contentsView.resourceImportModeNone
+        resourceImportModeUrls: contentsView.resourceImportModeUrls
+        resourceTagTextForImportedEntryHandler: function (entry) {
+            return contentsView.resourceTagTextForImportedEntry(entry);
+        }
+        resourcesImportViewModel: contentsView.resourcesImportViewModel
+        richTextInlineImageRenderingEnabled: contentsView.richTextInlineImageRenderingEnabled
+        scheduleEditorRichTextSurfaceSyncHandler: function () {
+            contentsView.scheduleEditorRichTextSurfaceSync();
+        }
+        selectedNoteBodyNoteId: contentsView.selectedNoteBodyNoteId
+        selectedNoteBodyText: contentsView.selectedNoteBodyText
+        selectedNoteId: contentsView.selectedNoteId
+        showDedicatedResourceViewer: contentsView.showDedicatedResourceViewer
+        showFormattedTextRenderer: contentsView.showFormattedTextRenderer
+        showPrintEditorLayout: contentsView.showPrintEditorLayout
+        showStructuredDocumentFlow: contentsView.showStructuredDocumentFlow
         structuredDocumentFlow: structuredDocumentFlow
-        textFormatRenderer: textFormatRenderer
-        textMetricsBridge: textMetricsBridge
-        view: contentsView
     }
     ContentsBodyResourceRenderer {
         id: bodyResourceRenderer
@@ -1956,18 +1957,11 @@ Item {
         backgroundRefreshEnabled: false
         sourceText: contentsView.documentPresentationSourceText
     }
-    ContentsTextFormatRenderer {
-        id: textFormatRenderer
+    ContentsEditorPresentationProjection {
+        id: editorProjection
 
         previewEnabled: contentsView.showFormattedTextRenderer
-        sourceText: contentsView.documentPresentationProjectionEnabled
-                    ? contentsView.documentPresentationSourceText
-                    : ""
-    }
-    ContentsLogicalTextBridge {
-        id: textMetricsBridge
-
-        text: contentsView.documentPresentationSourceText
+        sourceText: contentsView.documentPresentationSourceText
     }
     ContentsGutterMarkerBridge {
         id: gutterMarkerBridge
@@ -2669,7 +2663,7 @@ Item {
                             font.letterSpacing: 0
                             font.pixelSize: contentsView.effectiveEditorFontPixelSize
                             font.weight: Font.Medium
-                            text: textFormatRenderer.renderedHtml
+                            text: editorProjection.renderedHtml
                             textFormat: Text.RichText
                             width: formattedPreviewViewport.textWidth
                             wrapMode: Text.Wrap

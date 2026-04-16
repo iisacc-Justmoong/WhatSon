@@ -5,23 +5,26 @@ import QtQuick
 QtObject {
     id: controller
 
-    property var view: null
     property var contentEditor: null
     property var editorViewport: null
     property var bodyResourceRenderer: null
     property var resourceTagController: null
+    property bool showPrintEditorLayout: false
+    property real printPaperTextWidth: 0
+    property int editorHorizontalInset: 0
+    property int resourceEditorPlaceholderLineCount: 1
+    property bool richTextInlineImageRenderingEnabled: false
+    property var encodeXmlAttributeValueHandler: null
 
     function inlineResourcePreviewWidth() {
-        if (!controller.view)
-            return 120;
-        if (controller.view.showPrintEditorLayout)
-            return Math.max(120, Math.floor(controller.view.printPaperTextWidth));
+        if (controller.showPrintEditorLayout)
+            return Math.max(120, Math.floor(controller.printPaperTextWidth));
 
         const editorWidth = controller.contentEditor && controller.contentEditor.width !== undefined
                 ? Number(controller.contentEditor.width) || 0
                 : 0;
         const viewportWidth = controller.editorViewport ? Number(controller.editorViewport.width) || 0 : 0;
-        const availableWidth = Math.max(editorWidth, viewportWidth) - controller.view.editorHorizontalInset * 2;
+        const availableWidth = Math.max(editorWidth, viewportWidth) - controller.editorHorizontalInset * 2;
         return Math.max(120, Math.floor(Math.max(120, availableWidth)));
     }
 
@@ -50,19 +53,16 @@ QtObject {
     }
 
     function resourcePlaceholderBlockHtml() {
-        const placeholderLineCount = controller.view
-                && controller.view.resourceEditorPlaceholderLineCount !== undefined
-                ? controller.view.resourceEditorPlaceholderLineCount
-                : 1;
-        return controller.inlineResourcePlaceholderHtml(placeholderLineCount);
+        return controller.inlineResourcePlaceholderHtml(controller.resourceEditorPlaceholderLineCount);
     }
 
     function inlineResourceBlockHtml(resourceEntry) {
         const safeEntry = resourceEntry && typeof resourceEntry === "object" ? resourceEntry : ({});
         const renderMode = safeEntry.renderMode !== undefined ? String(safeEntry.renderMode).trim().toLowerCase() : "";
         const sourceUrl = controller.resourceEntryOpenTarget(safeEntry);
-        const encodedSourceUrl = controller.view && controller.view.encodeXmlAttributeValue !== undefined
-                ? controller.view.encodeXmlAttributeValue(sourceUrl)
+        const encodedSourceUrl = controller.encodeXmlAttributeValueHandler
+                && typeof controller.encodeXmlAttributeValueHandler === "function"
+                ? controller.encodeXmlAttributeValueHandler(sourceUrl)
                 : sourceUrl;
         const previewWidth = controller.inlineResourcePreviewWidth();
         if (renderMode === "image" && encodedSourceUrl.length > 0) {
@@ -78,8 +78,7 @@ QtObject {
         const safeEntry = resourceEntry && typeof resourceEntry === "object" ? resourceEntry : ({});
         const renderMode = safeEntry.renderMode !== undefined ? String(safeEntry.renderMode).trim().toLowerCase() : "";
         const sourceUrl = controller.resourceEntryOpenTarget(safeEntry);
-        return !!(controller.view
-                  && controller.view.richTextInlineImageRenderingEnabled
+        return !!(controller.richTextInlineImageRenderingEnabled
                   && renderMode === "image"
                   && sourceUrl.length > 0);
     }

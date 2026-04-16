@@ -5,11 +5,26 @@ import QtQuick
 QtObject {
     id: controller
 
-    property var view: null
     property var editorSession: null
     property var editorTypingController: null
     property var structuredDocumentFlow: null
     property var bodyResourceRenderer: null
+    property string editorText: ""
+    property string documentPresentationSourceText: ""
+    property string selectedNoteId: ""
+    property string selectedNoteBodyNoteId: ""
+    property string selectedNoteBodyText: ""
+    property bool showStructuredDocumentFlow: false
+    property var currentEditorCursorPositionHandler: null
+    property var resourceTagTextForImportedEntryHandler: null
+
+    function currentEditorCursorPosition() {
+        if (controller.currentEditorCursorPositionHandler
+                && typeof controller.currentEditorCursorPositionHandler === "function") {
+            return Number(controller.currentEditorCursorPositionHandler()) || 0;
+        }
+        return 0;
+    }
 
     function normalizedImportedResourceEntries(importedEntries) {
         if (Array.isArray(importedEntries))
@@ -48,18 +63,18 @@ QtObject {
     }
 
     function resourceBlockSourceText(tagTexts) {
-        if (!Array.isArray(tagTexts) || tagTexts.length === 0 || !controller.view)
+        if (!Array.isArray(tagTexts) || tagTexts.length === 0)
             return "";
 
         const blockSourceText = tagTexts.join("\n");
-        const currentSourceText = controller.view.editorText === undefined || controller.view.editorText === null
+        const currentSourceText = controller.editorText === undefined || controller.editorText === null
                 ? ""
-                : String(controller.view.editorText);
+                : String(controller.editorText);
         const cursorSourceOffset = controller.editorTypingController
                 && controller.editorTypingController.sourceOffsetForLogicalOffset !== undefined
                 ? controller.editorTypingController.sourceOffsetForLogicalOffset(
-                      controller.view.currentEditorCursorPosition())
-                : controller.view.currentEditorCursorPosition();
+                      controller.currentEditorCursorPosition())
+                : controller.currentEditorCursorPosition();
         const boundedCursorOffset = Math.max(0, Math.min(currentSourceText.length, Number(cursorSourceOffset) || 0));
         const previousCharacter = boundedCursorOffset > 0 ? currentSourceText.charAt(boundedCursorOffset - 1) : "";
         const nextCharacter = boundedCursorOffset < currentSourceText.length ? currentSourceText.charAt(boundedCursorOffset) : "";
@@ -84,32 +99,30 @@ QtObject {
     }
 
     function resourceTagLossDetected(previousSourceText, nextSourceText) {
-        if (!controller.view || controller.view.showStructuredDocumentFlow)
+        if (controller.showStructuredDocumentFlow)
             return false;
 
         const selectedBodyCount = ((!(controller.editorSession && controller.editorSession.localEditorAuthority))
-                                   && controller.view.selectedNoteBodyNoteId === controller.view.selectedNoteId)
-                ? controller.canonicalResourceTagCount(controller.view.selectedNoteBodyText)
+                                   && controller.selectedNoteBodyNoteId === controller.selectedNoteId)
+                ? controller.canonicalResourceTagCount(controller.selectedNoteBodyText)
                 : 0;
         const baselineCount = Math.max(
                     controller.canonicalResourceTagCount(previousSourceText),
-                    controller.canonicalResourceTagCount(controller.view.documentPresentationSourceText),
+                    controller.canonicalResourceTagCount(controller.documentPresentationSourceText),
                     selectedBodyCount);
         return baselineCount > controller.canonicalResourceTagCount(nextSourceText);
     }
 
     function insertImportedResourceTags(importedEntries) {
-        if (!controller.view)
-            return false;
-
         const normalizedImportedEntries = controller.normalizedImportedResourceEntries(importedEntries);
         if (normalizedImportedEntries.length === 0)
             return false;
 
         const tagTexts = [];
         for (let index = 0; index < normalizedImportedEntries.length; ++index) {
-            const tagText = controller.view.resourceTagTextForImportedEntry !== undefined
-                    ? controller.view.resourceTagTextForImportedEntry(normalizedImportedEntries[index])
+            const tagText = controller.resourceTagTextForImportedEntryHandler
+                    && typeof controller.resourceTagTextForImportedEntryHandler === "function"
+                    ? controller.resourceTagTextForImportedEntryHandler(normalizedImportedEntries[index])
                     : "";
             if (tagText.length > 0)
                 tagTexts.push(tagText);
@@ -118,7 +131,7 @@ QtObject {
             return false;
 
         let inserted = false;
-        if (controller.view.showStructuredDocumentFlow
+        if (controller.showStructuredDocumentFlow
                 && controller.structuredDocumentFlow
                 && controller.structuredDocumentFlow.insertResourceBlocksAtActivePosition !== undefined) {
             inserted = controller.structuredDocumentFlow.insertResourceBlocksAtActivePosition(tagTexts);
