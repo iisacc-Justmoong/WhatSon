@@ -7,7 +7,7 @@
 ## Scope
 - Mirrored source directory: `src/app/qml/view/content/editor`
 - Child directories: 0
-- Child files: 29
+- Child files: 30
 
 ## Child Directories
 - No child directories.
@@ -21,21 +21,25 @@
 - `ContentsDisplayView.qml`
 - `ContentsDocumentBlock.qml`
 - `ContentsDocumentTextBlock.qml`
+- `ContentsEditorDebugTrace.js`
 - `ContentsEditorSelectionController.qml`
 - `ContentsEditorSession.qml`
 - `ContentsEditorSurfaceGuardController.qml`
 - `ContentsEditorTypingController.qml`
 - `ContentsGutterLayer.qml`
+- `ContentsImageResourceFrame.qml`
 - `ContentsInlineFormatEditor.qml`
 - `ContentsInlineResourcePresentationController.qml`
 - `ContentsMinimapLayer.qml`
 - `ContentsMinimapSnapshotSupport.js`
+- `ContentsResourceBlock.qml`
 - `MobileContentsDisplayView.qml`
 - `ContentsResourceViewer.qml`
 - `ContentsResourceRenderCard.qml`
 - `ContentsResourceDropPayloadParser.qml`
 - `ContentsResourceImportConflictController.qml`
 - `ContentsResourceImportController.qml`
+- `ContentsResourceLayer.qml`
 - `ContentsResourceTagController.qml`
 - `ContentsStructuredCursorSupport.js`
 - `ContentsStructuredDocumentFlow.qml`
@@ -142,6 +146,10 @@
 - Desktop/mobile editor views now also gate timer-driven snapshot polling and deferred presentation commits on
   `typingSessionSyncProtected` plus `pendingBodySave`, not only focus state, so stale async snapshots cannot overwrite
   active typing when focus reporting briefly flaps.
+- `ContentsDisplayView.qml` and `MobileContentsDisplayView.qml` now delegate three former host-owned policy roles to
+  C++ coordinators under `src/app/viewmodel/content`: note-selection sync/reconcile scheduling, whole-document
+  presentation refresh policy, and structured-flow activation. The hosts keep UI composition and repaint/focus
+  execution only.
 - Desktop/mobile snapshot polling now also prefers a filesystem reconcile fetch path
   (`reconcileViewSessionAndRefreshSnapshotForNote(noteId, editorSession.editorText)`) instead of only running
   model-side snapshot reload ticks.
@@ -252,6 +260,10 @@
 - `ContentsStructuredCursorSupport.js` now also carries inline-tag-aware text-block cursor/source mapping, letting
   structured text blocks edit RAW source spans directly from plain-text deltas instead of round-tripping rendered HTML
   through a DOM-to-source normalization step.
+- `ContentsEditorDebugTrace.js` now centralizes verbose editor-domain QML tracing, and the desktop/mobile display
+  hosts, session bridge, typing controller, structured document flow, block wrapper, and inline editor now emit
+  lifecycle, mount/unmount, selection-sync, source-mutation, cursor/selection, and focus-transition logs through that
+  shared helper instead of each file inventing a different console format.
 - `ContentsStructuredDocumentFlow.qml` now asks the active block delegate for structured shortcut insertion offsets,
   which restores live-caret insertion for text blocks while still keeping agenda/callout shortcuts block-scoped.
 - That same structured-flow insertion bridge now also accepts dropped resource-tag batches, so resource imports inside

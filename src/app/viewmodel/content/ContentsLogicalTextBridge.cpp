@@ -1,5 +1,7 @@
 #include "ContentsLogicalTextBridge.hpp"
 
+#include "file/WhatSonDebugTrace.hpp"
+
 #include <QChar>
 #include <QStringList>
 #include <QStringView>
@@ -246,10 +248,20 @@ namespace
 ContentsLogicalTextBridge::ContentsLogicalTextBridge(QObject* parent)
     : QObject(parent)
 {
+    WhatSon::Debug::traceEditorSelf(this, QStringLiteral("logicalTextBridge"), QStringLiteral("ctor"));
     refreshTextState();
 }
 
-ContentsLogicalTextBridge::~ContentsLogicalTextBridge() = default;
+ContentsLogicalTextBridge::~ContentsLogicalTextBridge()
+{
+    WhatSon::Debug::traceEditorSelf(
+        this,
+        QStringLiteral("logicalTextBridge"),
+        QStringLiteral("dtor"),
+        QStringLiteral("lineCount=%1 %2")
+            .arg(m_logicalLineCount)
+            .arg(WhatSon::Debug::summarizeText(m_text)));
+}
 
 QString ContentsLogicalTextBridge::text() const
 {
@@ -263,6 +275,11 @@ QString ContentsLogicalTextBridge::logicalText() const
 
 void ContentsLogicalTextBridge::setText(const QString& text)
 {
+    WhatSon::Debug::traceEditorSelf(
+        this,
+        QStringLiteral("logicalTextBridge"),
+        QStringLiteral("setText"),
+        QStringLiteral("changed=%1 %2").arg(m_text != text).arg(WhatSon::Debug::summarizeText(text)));
     if (m_text == text)
     {
         return;
@@ -361,6 +378,15 @@ void ContentsLogicalTextBridge::adoptIncrementalState(
     const QVariantList& logicalLineStartOffsets,
     const QVariantList& logicalToSourceOffsets)
 {
+    WhatSon::Debug::traceEditorSelf(
+        this,
+        QStringLiteral("logicalTextBridge"),
+        QStringLiteral("adoptIncrementalState"),
+        QStringLiteral("sourceOffsets=%1 lineOffsets=%2 source=%3 logical=%4")
+            .arg(logicalToSourceOffsets.size())
+            .arg(logicalLineStartOffsets.size())
+            .arg(WhatSon::Debug::summarizeText(sourceText))
+            .arg(WhatSon::Debug::summarizeText(logicalText)));
     const QString normalizedSourceText = sourceText;
     const QString normalizedLogicalText = logicalText;
     const QVariantList nextLogicalLineStartOffsets =
@@ -678,6 +704,11 @@ QVector<int> ContentsLogicalTextBridge::buildLogicalToSourceOffsets(const QStrin
 
 void ContentsLogicalTextBridge::refreshTextState()
 {
+    WhatSon::Debug::traceEditorSelf(
+        this,
+        QStringLiteral("logicalTextBridge"),
+        QStringLiteral("refreshTextState"),
+        QStringLiteral("source=%1").arg(WhatSon::Debug::summarizeText(m_text)));
     const QString nextLogicalText = normalizeLogicalText(m_text);
     if (m_logicalText != nextLogicalText)
     {
@@ -698,4 +729,13 @@ void ContentsLogicalTextBridge::refreshTextState()
         m_logicalLineCount = nextLineCount;
         emit logicalLineCountChanged();
     }
+
+    WhatSon::Debug::traceEditorSelf(
+        this,
+        QStringLiteral("logicalTextBridge"),
+        QStringLiteral("refreshTextState.done"),
+        QStringLiteral("lineCount=%1 logicalOffsets=%2 logical=%3")
+            .arg(m_logicalLineCount)
+            .arg(m_logicalToSourceOffsets.size())
+            .arg(WhatSon::Debug::summarizeText(m_logicalText)));
 }

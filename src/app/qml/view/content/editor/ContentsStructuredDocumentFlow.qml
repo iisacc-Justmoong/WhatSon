@@ -3,10 +3,12 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Layouts
 import LVRS 1.0 as LV
+import "ContentsEditorDebugTrace.js" as EditorTrace
 import "ContentsStructuredCursorSupport.js" as StructuredCursorSupport
 
 FocusScope {
     id: documentFlow
+    objectName: "contentsStructuredDocumentFlow"
 
     property var agendaBackend: null
     property var calloutBackend: null
@@ -358,6 +360,13 @@ FocusScope {
 
     function refreshLayoutCache() {
         const blocks = documentFlow.normalizedBlocks()
+        EditorTrace.trace(
+                    "structuredDocumentFlow",
+                    "refreshLayoutCache",
+                    "blockCount=" + blocks.length
+                    + " viewportHeight=" + documentFlow.viewportHeight
+                    + " viewportContentY=" + documentFlow.viewportContentY,
+                    documentFlow)
         const blockSpacing = Math.max(0, Number(documentColumn && documentColumn.spacing !== undefined ? documentColumn.spacing : 0) || 0)
         const entries = []
         const blockSummaries = []
@@ -643,6 +652,11 @@ FocusScope {
     }
 
     function requestDocumentEndEdit() {
+        EditorTrace.trace(
+                    "structuredDocumentFlow",
+                    "requestDocumentEndEdit",
+                    "activeBlockIndex=" + documentFlow.activeBlockIndex,
+                    documentFlow)
         const blocks = documentFlow.normalizedBlocks()
         const currentSourceText = documentFlow.normalizedSourceText(documentFlow.sourceText)
         if (blocks.length === 0) {
@@ -1036,6 +1050,14 @@ FocusScope {
     }
 
     function replaceSourceRange(start, end, replacementText, focusRequest) {
+        EditorTrace.trace(
+                    "structuredDocumentFlow",
+                    "replaceSourceRange",
+                    "start=" + start
+                    + " end=" + end
+                    + " focusRequest={" + EditorTrace.describeFocusRequest(focusRequest) + "} "
+                    + EditorTrace.describeText(replacementText),
+                    documentFlow)
         documentFlow.sourceMutationRequested(
                     documentFlow.spliceSourceRange(start, end, replacementText),
                     focusRequest && typeof focusRequest === "object" ? focusRequest : ({ }))
@@ -1176,6 +1198,12 @@ FocusScope {
     }
 
     function deleteBlock(blockData, direction) {
+        EditorTrace.trace(
+                    "structuredDocumentFlow",
+                    "deleteBlock",
+                    "direction=" + String(direction || "")
+                    + " block={" + EditorTrace.describeObject(blockData, ["type", "sourceStart", "sourceEnd"]) + "}",
+                    documentFlow)
         const safeBlock = blockData && typeof blockData === "object" ? blockData : ({})
         const currentSourceText = documentFlow.normalizedSourceText(documentFlow.sourceText)
         const blockSourceStart = Math.max(0, Math.min(currentSourceText.length, Math.floor(Number(safeBlock.sourceStart) || 0)))
@@ -1391,6 +1419,13 @@ FocusScope {
     }
 
     function updateAgendaTaskText(taskData, text, cursorPosition) {
+        EditorTrace.trace(
+                    "structuredDocumentFlow",
+                    "updateAgendaTaskText",
+                    "cursorPosition=" + cursorPosition
+                    + " task={" + EditorTrace.describeObject(taskData, ["openTagStart", "contentStart", "contentEnd"]) + "} "
+                    + EditorTrace.describeText(text),
+                    documentFlow)
         const safeTask = taskData && typeof taskData === "object" ? taskData : ({})
         const contentStart = Number(safeTask.contentStart)
         const contentEnd = Number(safeTask.contentEnd)
@@ -1411,6 +1446,13 @@ FocusScope {
     }
 
     function toggleAgendaTaskDone(openTagStart, openTagEnd, checked) {
+        EditorTrace.trace(
+                    "structuredDocumentFlow",
+                    "toggleAgendaTaskDone",
+                    "openTagStart=" + openTagStart
+                    + " openTagEnd=" + openTagEnd
+                    + " checked=" + checked,
+                    documentFlow)
         if (!documentFlow.agendaBackend || documentFlow.agendaBackend.rewriteTaskDoneAttribute === undefined)
             return false
         const currentSourceText = documentFlow.normalizedSourceText(documentFlow.sourceText)
@@ -1428,6 +1470,11 @@ FocusScope {
     }
 
     function agendaTaskReturn(taskData) {
+        EditorTrace.trace(
+                    "structuredDocumentFlow",
+                    "agendaTaskReturn",
+                    "task={" + EditorTrace.describeObject(taskData, ["openTagStart", "contentEnd"]) + "}",
+                    documentFlow)
         if (!documentFlow.agendaBackend || documentFlow.agendaBackend.detectAgendaTaskEnterReplacement === undefined)
             return false
         const safeTask = taskData && typeof taskData === "object" ? taskData : ({})
@@ -1450,6 +1497,13 @@ FocusScope {
     }
 
     function updateCalloutText(blockData, text, cursorPosition) {
+        EditorTrace.trace(
+                    "structuredDocumentFlow",
+                    "updateCalloutText",
+                    "cursorPosition=" + cursorPosition
+                    + " block={" + EditorTrace.describeObject(blockData, ["type", "contentStart", "contentEnd"]) + "} "
+                    + EditorTrace.describeText(text),
+                    documentFlow)
         const safeBlock = blockData && typeof blockData === "object" ? blockData : ({})
         const contentStart = Number(safeBlock.contentStart)
         const contentEnd = Number(safeBlock.contentEnd)
@@ -1469,6 +1523,11 @@ FocusScope {
     }
 
     function exitCallout(blockData) {
+        EditorTrace.trace(
+                    "structuredDocumentFlow",
+                    "exitCallout",
+                    "block={" + EditorTrace.describeObject(blockData, ["type", "contentEnd"]) + "}",
+                    documentFlow)
         if (!documentFlow.calloutBackend || documentFlow.calloutBackend.detectCalloutEnterReplacement === undefined)
             return false
         const safeBlock = blockData && typeof blockData === "object" ? blockData : ({})
@@ -1540,6 +1599,12 @@ FocusScope {
     }
 
     function insertStructuredShortcutAtActivePosition(shortcutKind) {
+        EditorTrace.trace(
+                    "structuredDocumentFlow",
+                    "insertStructuredShortcutAtActivePosition",
+                    "shortcutKind=" + String(shortcutKind || "")
+                    + " activeBlockIndex=" + documentFlow.activeBlockIndex,
+                    documentFlow)
         const insertionSpec = documentFlow.structuredShortcutSpec(shortcutKind)
         if (!insertionSpec.applied)
             return false
@@ -1559,6 +1624,11 @@ FocusScope {
     }
 
     function insertResourceBlocksAtActivePosition(tagTexts) {
+        EditorTrace.trace(
+                    "structuredDocumentFlow",
+                    "insertResourceBlocksAtActivePosition",
+                    "tagCount=" + (Array.isArray(tagTexts) ? tagTexts.length : 0),
+                    documentFlow)
         if (!Array.isArray(tagTexts) || tagTexts.length === 0)
             return false
         const normalizedTagTexts = []
@@ -1720,6 +1790,11 @@ FocusScope {
     }
 
     onDocumentBlocksChanged: {
+        EditorTrace.trace(
+                    "structuredDocumentFlow",
+                    "documentBlocksChanged",
+                    "blockCount=" + documentFlow.documentBlocks.length,
+                    documentFlow)
         documentFlow.refreshLayoutCache()
         if (!documentFlow.pendingFocusRequest || typeof documentFlow.pendingFocusRequest !== "object")
             return
@@ -1730,5 +1805,17 @@ FocusScope {
     onViewportHeightChanged: documentFlow.scheduleLayoutCacheRefresh()
     onWidthChanged: documentFlow.scheduleLayoutCacheRefresh()
 
-    Component.onCompleted: documentFlow.refreshLayoutCache()
+    Component.onCompleted: {
+        EditorTrace.trace("structuredDocumentFlow", "mount", "blockCount=" + documentFlow.documentBlocks.length, documentFlow)
+        documentFlow.refreshLayoutCache()
+    }
+
+    Component.onDestruction: {
+        EditorTrace.trace(
+                    "structuredDocumentFlow",
+                    "unmount",
+                    "activeBlockIndex=" + documentFlow.activeBlockIndex
+                    + " blockCount=" + documentFlow.documentBlocks.length,
+                    documentFlow)
+    }
 }

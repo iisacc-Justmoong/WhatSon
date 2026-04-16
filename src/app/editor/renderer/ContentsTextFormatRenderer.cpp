@@ -1,5 +1,6 @@
 #include "ContentsTextFormatRenderer.hpp"
 #include "ContentsTextHighlightRenderer.hpp"
+#include "file/WhatSonDebugTrace.hpp"
 #include "file/note/WhatSonNoteBodySemanticTagSupport.hpp"
 #include "file/note/WhatSonNoteBodyPersistence.hpp"
 #include "file/note/WhatSonNoteMarkdownStyleObject.hpp"
@@ -1873,9 +1874,19 @@ namespace
 ContentsTextFormatRenderer::ContentsTextFormatRenderer(QObject* parent)
     : QObject(parent)
 {
+    WhatSon::Debug::traceEditorSelf(this, QStringLiteral("textFormatRenderer"), QStringLiteral("ctor"));
 }
 
-ContentsTextFormatRenderer::~ContentsTextFormatRenderer() = default;
+ContentsTextFormatRenderer::~ContentsTextFormatRenderer()
+{
+    WhatSon::Debug::traceEditorSelf(
+        this,
+        QStringLiteral("textFormatRenderer"),
+        QStringLiteral("dtor"),
+        QStringLiteral("preview=%1 sourceSummary=%2")
+            .arg(m_previewEnabled)
+            .arg(WhatSon::Debug::summarizeText(m_sourceText)));
+}
 
 QString ContentsTextFormatRenderer::sourceText() const
 {
@@ -1884,6 +1895,11 @@ QString ContentsTextFormatRenderer::sourceText() const
 
 void ContentsTextFormatRenderer::setSourceText(const QString& sourceText)
 {
+    WhatSon::Debug::traceEditorSelf(
+        this,
+        QStringLiteral("textFormatRenderer"),
+        QStringLiteral("setSourceText"),
+        QStringLiteral("changed=%1 %2").arg(m_sourceText != sourceText).arg(WhatSon::Debug::summarizeText(sourceText)));
     if (m_sourceText == sourceText)
     {
         return;
@@ -1911,6 +1927,11 @@ bool ContentsTextFormatRenderer::previewEnabled() const noexcept
 
 void ContentsTextFormatRenderer::setPreviewEnabled(const bool enabled)
 {
+    WhatSon::Debug::traceEditorSelf(
+        this,
+        QStringLiteral("textFormatRenderer"),
+        QStringLiteral("setPreviewEnabled"),
+        QStringLiteral("previous=%1 next=%2").arg(m_previewEnabled).arg(enabled));
     if (m_previewEnabled == enabled)
     {
         return;
@@ -2035,11 +2056,21 @@ QString ContentsTextFormatRenderer::applyInlineStyleToLogicalSelectionSource(
 
 void ContentsTextFormatRenderer::requestRenderRefresh()
 {
+    WhatSon::Debug::traceEditorSelf(
+        this,
+        QStringLiteral("textFormatRenderer"),
+        QStringLiteral("requestRenderRefresh"),
+        QStringLiteral("preview=%1").arg(m_previewEnabled));
     refreshRenderedOutputs();
 }
 
 void ContentsTextFormatRenderer::refreshRenderedOutputs()
 {
+    WhatSon::Debug::traceEditorSelf(
+        this,
+        QStringLiteral("textFormatRenderer"),
+        QStringLiteral("refreshRenderedOutputs"),
+        QStringLiteral("preview=%1 %2").arg(m_previewEnabled).arg(WhatSon::Debug::summarizeText(m_sourceText)));
     const QString nextEditorSurfaceHtml = renderInlineStyleEditingSurfaceHtml(m_sourceText);
     if (m_editorSurfaceHtml != nextEditorSurfaceHtml)
     {
@@ -2055,4 +2086,11 @@ void ContentsTextFormatRenderer::refreshRenderedOutputs()
 
     m_renderedHtml = nextRenderedHtml;
     emit renderedHtmlChanged();
+    WhatSon::Debug::traceEditorSelf(
+        this,
+        QStringLiteral("textFormatRenderer"),
+        QStringLiteral("renderedHtmlChanged"),
+        QStringLiteral("editorSurfaceLen=%1 renderedLen=%2")
+            .arg(m_editorSurfaceHtml.size())
+            .arg(m_renderedHtml.size()));
 }

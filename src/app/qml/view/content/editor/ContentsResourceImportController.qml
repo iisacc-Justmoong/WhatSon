@@ -1,9 +1,11 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import "ContentsEditorDebugTrace.js" as EditorTrace
 
 QtObject {
     id: controller
+    objectName: "contentsResourceImportController"
 
     property var view: null
     property var contentEditor: null
@@ -62,10 +64,12 @@ QtObject {
     }
 
     function canAcceptResourceDropUrls(urls) {
+        EditorTrace.trace("resourceImportController", "canAcceptResourceDropUrls", "urlCount=" + (Array.isArray(urls) ? urls.length : 0), controller)
         return resourceImportConflictController.canAcceptResourceDropUrls(urls);
     }
 
     function clearPendingResourceImportConflict() {
+        EditorTrace.trace("resourceImportController", "clearPendingResourceImportConflict", "", controller)
         resourceImportConflictController.clearPendingResourceImportConflict();
     }
 
@@ -78,22 +82,33 @@ QtObject {
     }
 
     function scheduleResourceImportConflictPrompt(importMode, urls, conflict) {
+        EditorTrace.trace(
+                    "resourceImportController",
+                    "scheduleResourceImportConflictPrompt",
+                    "importMode=" + importMode
+                    + " urlCount=" + (Array.isArray(urls) ? urls.length : 0)
+                    + " conflict={" + EditorTrace.describeObject(conflict) + "}",
+                    controller)
         return resourceImportConflictController.scheduleResourceImportConflictPrompt(importMode, urls, conflict);
     }
 
     function finalizeInsertedImportedResources(importedEntries) {
+        EditorTrace.trace("resourceImportController", "finalizeInsertedImportedResources", "entryCount=" + (Array.isArray(importedEntries) ? importedEntries.length : 0), controller)
         return resourceImportConflictController.finalizeInsertedImportedResources(importedEntries);
     }
 
     function cancelPendingResourceImportConflict() {
+        EditorTrace.trace("resourceImportController", "cancelPendingResourceImportConflict", "", controller)
         resourceImportConflictController.cancelPendingResourceImportConflict();
     }
 
     function executePendingResourceImportWithPolicy(conflictPolicy) {
+        EditorTrace.trace("resourceImportController", "executePendingResourceImportWithPolicy", "conflictPolicy=" + conflictPolicy, controller)
         return resourceImportConflictController.executePendingResourceImportWithPolicy(conflictPolicy);
     }
 
     function importUrlsAsResourcesWithPrompt(urls) {
+        EditorTrace.trace("resourceImportController", "importUrlsAsResourcesWithPrompt", "urlCount=" + (Array.isArray(urls) ? urls.length : 0), controller)
         return resourceImportConflictController.importUrlsAsResourcesWithPrompt(urls);
     }
 
@@ -106,6 +121,7 @@ QtObject {
     }
 
     function extractResourceDropUrls(drop) {
+        EditorTrace.trace("resourceImportController", "extractResourceDropUrls", "hasDrop=" + !!drop, controller)
         return dropPayloadParser.extractResourceDropUrls(drop);
     }
 
@@ -158,10 +174,12 @@ QtObject {
     }
 
     function renderEditorSurfaceHtmlWithInlineResources(editorHtml) {
+        EditorTrace.trace("resourceImportController", "renderEditorSurfaceHtmlWithInlineResources", EditorTrace.describeText(editorHtml), controller)
         return inlineResourcePresentationController.renderEditorSurfaceHtmlWithInlineResources(editorHtml);
     }
 
     function refreshInlineResourcePresentation() {
+        EditorTrace.trace("resourceImportController", "refreshInlineResourcePresentation", "", controller)
         if (!controller.view || !controller.view.resourceBlocksRenderedInlineByRichTextEditor)
             return;
         const rendererRenderedText = controller.textFormatRenderer
@@ -178,26 +196,40 @@ QtObject {
     }
 
     function activateResourceDropEditorSurfaceGuard() {
+        EditorTrace.trace("resourceImportController", "activateResourceDropEditorSurfaceGuard", "", controller)
         editorSurfaceGuardController.activateResourceDropEditorSurfaceGuard();
     }
 
     function markProgrammaticEditorSurfaceSync() {
+        EditorTrace.trace("resourceImportController", "markProgrammaticEditorSurfaceSync", "", controller)
         editorSurfaceGuardController.markProgrammaticEditorSurfaceSync();
     }
 
     function restoreEditorSurfaceFromPresentation() {
+        EditorTrace.trace("resourceImportController", "restoreEditorSurfaceFromPresentation", "", controller)
         editorSurfaceGuardController.restoreEditorSurfaceFromPresentation();
     }
 
     function releaseResourceDropEditorSurfaceGuard(restoreSurface) {
+        EditorTrace.trace("resourceImportController", "releaseResourceDropEditorSurfaceGuard", "restoreSurface=" + restoreSurface, controller)
         editorSurfaceGuardController.releaseResourceDropEditorSurfaceGuard(restoreSurface);
     }
 
     function insertImportedResourceTags(importedEntries) {
+        EditorTrace.trace("resourceImportController", "insertImportedResourceTags", "entryCount=" + (Array.isArray(importedEntries) ? importedEntries.length : 0), controller)
         return resourceTagController.insertImportedResourceTags(importedEntries);
     }
 
     function pasteClipboardImageAsResource() {
+        EditorTrace.trace("resourceImportController", "pasteClipboardImageAsResource", "", controller)
         return resourceImportConflictController.pasteClipboardImageAsResource();
+    }
+
+    Component.onCompleted: {
+        EditorTrace.trace("resourceImportController", "mount", "", controller)
+    }
+
+    Component.onDestruction: {
+        EditorTrace.trace("resourceImportController", "unmount", "", controller)
     }
 }

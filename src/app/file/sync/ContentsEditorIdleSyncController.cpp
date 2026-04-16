@@ -11,6 +11,7 @@ namespace
 ContentsEditorIdleSyncController::ContentsEditorIdleSyncController(QObject* parent)
     : QObject(parent)
 {
+    WhatSon::Debug::traceEditorSelf(this, QStringLiteral("idleSync"), QStringLiteral("ctor"));
     m_noteManagementCoordinator = new ContentsNoteManagementCoordinator(this);
     connect(
         m_noteManagementCoordinator,
@@ -47,7 +48,17 @@ ContentsEditorIdleSyncController::ContentsEditorIdleSyncController(QObject* pare
         &ContentsEditorIdleSyncController::handleFetchTimerTimeout);
 }
 
-ContentsEditorIdleSyncController::~ContentsEditorIdleSyncController() = default;
+ContentsEditorIdleSyncController::~ContentsEditorIdleSyncController()
+{
+    WhatSon::Debug::traceEditorSelf(
+        this,
+        QStringLiteral("idleSync"),
+        QStringLiteral("dtor"),
+        QStringLiteral("dirtyCount=%1 inFlight=%2 currentNoteId=%3")
+            .arg(m_dirtyNoteOrder.size())
+            .arg(m_persistenceInFlight)
+            .arg(m_inFlightNoteId));
+}
 
 QObject* ContentsEditorIdleSyncController::contentViewModel() const noexcept
 {
@@ -58,6 +69,11 @@ QObject* ContentsEditorIdleSyncController::contentViewModel() const noexcept
 
 void ContentsEditorIdleSyncController::setContentViewModel(QObject* model)
 {
+    WhatSon::Debug::traceEditorSelf(
+        this,
+        QStringLiteral("idleSync"),
+        QStringLiteral("setContentViewModel"),
+        QStringLiteral("next=0x%1").arg(QString::number(reinterpret_cast<quintptr>(model), 16)));
     if (m_noteManagementCoordinator != nullptr)
     {
         m_noteManagementCoordinator->setContentViewModel(model);
@@ -83,11 +99,21 @@ bool ContentsEditorIdleSyncController::persistEditorTextForNote(const QString& n
 
 bool ContentsEditorIdleSyncController::stageEditorTextForIdleSync(const QString& noteId, const QString& text)
 {
+    WhatSon::Debug::traceEditorSelf(
+        this,
+        QStringLiteral("idleSync"),
+        QStringLiteral("stageEditorTextForIdleSync"),
+        QStringLiteral("noteId=%1 %2").arg(noteId.trimmed()).arg(WhatSon::Debug::summarizeText(text)));
     return stageEditorSnapshot(noteId, text, false);
 }
 
 bool ContentsEditorIdleSyncController::flushEditorTextForNote(const QString& noteId, const QString& text)
 {
+    WhatSon::Debug::traceEditorSelf(
+        this,
+        QStringLiteral("idleSync"),
+        QStringLiteral("flushEditorTextForNote"),
+        QStringLiteral("noteId=%1 %2").arg(noteId.trimmed()).arg(WhatSon::Debug::summarizeText(text)));
     return stageEditorSnapshot(noteId, text, true);
 }
 
@@ -170,27 +196,53 @@ quint64 ContentsEditorIdleSyncController::loadNoteBodyTextForNote(const QString&
     {
         return 0;
     }
-    return m_noteManagementCoordinator->loadNoteBodyTextForNote(noteId);
+    const quint64 sequence = m_noteManagementCoordinator->loadNoteBodyTextForNote(noteId);
+    WhatSon::Debug::traceEditorSelf(
+        this,
+        QStringLiteral("idleSync"),
+        QStringLiteral("loadNoteBodyTextForNote"),
+        QStringLiteral("noteId=%1 sequence=%2").arg(noteId.trimmed()).arg(sequence));
+    return sequence;
 }
 
 bool ContentsEditorIdleSyncController::reconcileViewSessionAndRefreshSnapshotForNote(
     const QString& noteId,
     const QString& viewSessionText)
 {
-    return m_noteManagementCoordinator != nullptr
+    const bool accepted = m_noteManagementCoordinator != nullptr
         && m_noteManagementCoordinator->reconcileViewSessionAndRefreshSnapshotForNote(
             noteId,
             viewSessionText);
+    WhatSon::Debug::traceEditorSelf(
+        this,
+        QStringLiteral("idleSync"),
+        QStringLiteral("reconcileViewSessionAndRefreshSnapshotForNote"),
+        QStringLiteral("accepted=%1 noteId=%2 %3")
+            .arg(accepted)
+            .arg(noteId.trimmed())
+            .arg(WhatSon::Debug::summarizeText(viewSessionText)));
+    return accepted;
 }
 
 bool ContentsEditorIdleSyncController::refreshNoteSnapshotForNote(const QString& noteId)
 {
-    return m_noteManagementCoordinator != nullptr
+    const bool refreshed = m_noteManagementCoordinator != nullptr
         && m_noteManagementCoordinator->refreshNoteSnapshotForNote(noteId);
+    WhatSon::Debug::traceEditorSelf(
+        this,
+        QStringLiteral("idleSync"),
+        QStringLiteral("refreshNoteSnapshotForNote"),
+        QStringLiteral("refreshed=%1 noteId=%2").arg(refreshed).arg(noteId.trimmed()));
+    return refreshed;
 }
 
 void ContentsEditorIdleSyncController::bindSelectedNote(const QString& noteId)
 {
+    WhatSon::Debug::traceEditorSelf(
+        this,
+        QStringLiteral("idleSync"),
+        QStringLiteral("bindSelectedNote"),
+        QStringLiteral("noteId=%1").arg(noteId.trimmed()));
     if (m_noteManagementCoordinator != nullptr)
     {
         m_noteManagementCoordinator->bindSelectedNote(noteId);
@@ -199,6 +251,7 @@ void ContentsEditorIdleSyncController::bindSelectedNote(const QString& noteId)
 
 void ContentsEditorIdleSyncController::clearSelectedNote()
 {
+    WhatSon::Debug::traceEditorSelf(this, QStringLiteral("idleSync"), QStringLiteral("clearSelectedNote"));
     if (m_noteManagementCoordinator != nullptr)
     {
         m_noteManagementCoordinator->clearSelectedNote();
@@ -207,11 +260,21 @@ void ContentsEditorIdleSyncController::clearSelectedNote()
 
 void ContentsEditorIdleSyncController::handleFetchTimerTimeout()
 {
+    WhatSon::Debug::traceEditorSelf(
+        this,
+        QStringLiteral("idleSync"),
+        QStringLiteral("handleFetchTimerTimeout"),
+        QStringLiteral("dirtyCount=%1 inFlight=%2").arg(m_dirtyNoteOrder.size()).arg(m_persistenceInFlight));
     enqueueNextBufferedPersistenceIfNeeded();
 }
 
 void ContentsEditorIdleSyncController::handleContentPersistenceContractAvailabilityChanged()
 {
+    WhatSon::Debug::traceEditorSelf(
+        this,
+        QStringLiteral("idleSync"),
+        QStringLiteral("handleContentPersistenceContractAvailabilityChanged"),
+        QStringLiteral("available=%1").arg(contentPersistenceContractAvailable()));
     if (!contentPersistenceContractAvailable())
     {
         return;
@@ -228,6 +291,16 @@ void ContentsEditorIdleSyncController::handlePersistenceFinished(
 {
     const QString normalizedNoteId = noteId.trimmed();
     const QString completedText = text;
+
+    WhatSon::Debug::traceEditorSelf(
+        this,
+        QStringLiteral("idleSync"),
+        QStringLiteral("handlePersistenceFinished"),
+        QStringLiteral("success=%1 noteId=%2 dirtyCount=%3 %4")
+            .arg(success)
+            .arg(normalizedNoteId)
+            .arg(m_dirtyNoteOrder.size())
+            .arg(WhatSon::Debug::summarizeText(text)));
 
     m_persistenceInFlight = false;
     m_inFlightNoteId.clear();
@@ -280,6 +353,14 @@ bool ContentsEditorIdleSyncController::stageEditorSnapshot(
     const bool requestImmediateFetch)
 {
     const QString normalizedNoteId = noteId.trimmed();
+    WhatSon::Debug::traceEditorSelf(
+        this,
+        QStringLiteral("idleSync"),
+        QStringLiteral("stageEditorSnapshot"),
+        QStringLiteral("noteId=%1 immediate=%2 %3")
+            .arg(normalizedNoteId)
+            .arg(requestImmediateFetch)
+            .arg(WhatSon::Debug::summarizeText(text)));
     if (normalizedNoteId.isEmpty())
     {
         return false;
@@ -333,6 +414,11 @@ bool ContentsEditorIdleSyncController::stageEditorSnapshot(
 
 bool ContentsEditorIdleSyncController::enqueueNextBufferedPersistenceIfNeeded()
 {
+    WhatSon::Debug::traceEditorSelf(
+        this,
+        QStringLiteral("idleSync"),
+        QStringLiteral("enqueueNextBufferedPersistenceIfNeeded"),
+        QStringLiteral("dirtyCount=%1 inFlight=%2").arg(m_dirtyNoteOrder.size()).arg(m_persistenceInFlight));
     if (m_noteManagementCoordinator == nullptr || m_persistenceInFlight)
     {
         return true;
@@ -371,6 +457,10 @@ bool ContentsEditorIdleSyncController::enqueueNextBufferedPersistenceIfNeeded()
     if (candidateNoteId.isEmpty())
     {
         m_fetchTimer.stop();
+        WhatSon::Debug::traceEditorSelf(
+            this,
+            QStringLiteral("idleSync"),
+            QStringLiteral("enqueueNextBufferedPersistenceIfNeeded.empty"));
         return true;
     }
 
@@ -411,6 +501,14 @@ bool ContentsEditorIdleSyncController::enqueueNextBufferedPersistenceIfNeeded()
     m_persistenceInFlight = true;
     m_inFlightNoteId = candidateNoteId;
     m_inFlightText = candidateText;
+    WhatSon::Debug::traceEditorSelf(
+        this,
+        QStringLiteral("idleSync"),
+        QStringLiteral("enqueuePersist.accepted"),
+        QStringLiteral("noteId=%1 direct=%2 %3")
+            .arg(candidateNoteId)
+            .arg(candidateSnapshot.directPersistenceReady)
+            .arg(WhatSon::Debug::summarizeText(candidateText)));
     emit editorTextPersistenceQueued(candidateNoteId, candidateText);
     return true;
 }
@@ -419,17 +517,32 @@ void ContentsEditorIdleSyncController::ensureFetchTimerRunning()
 {
     if (!m_dirtyNoteOrder.isEmpty() && !m_fetchTimer.isActive())
     {
+        WhatSon::Debug::traceEditorSelf(
+            this,
+            QStringLiteral("idleSync"),
+            QStringLiteral("ensureFetchTimerRunning"),
+            QStringLiteral("dirtyCount=%1").arg(m_dirtyNoteOrder.size()));
         m_fetchTimer.start();
     }
 }
 
 void ContentsEditorIdleSyncController::markNoteDirty(const QString& noteId)
 {
+    WhatSon::Debug::traceEditorSelf(
+        this,
+        QStringLiteral("idleSync"),
+        QStringLiteral("markNoteDirty"),
+        QStringLiteral("noteId=%1").arg(noteId.trimmed()));
     removeNoteFromDirtyOrder(noteId);
     m_dirtyNoteOrder.append(noteId);
 }
 
 void ContentsEditorIdleSyncController::removeNoteFromDirtyOrder(const QString& noteId)
 {
+    WhatSon::Debug::traceEditorSelf(
+        this,
+        QStringLiteral("idleSync"),
+        QStringLiteral("removeNoteFromDirtyOrder"),
+        QStringLiteral("noteId=%1").arg(noteId.trimmed()));
     m_dirtyNoteOrder.removeAll(noteId);
 }

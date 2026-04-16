@@ -8,6 +8,9 @@
 #include "file/validator/ContentsStructuredTagValidator.hpp"
 #include "file/viewer/ContentsBodyResourceRenderer.hpp"
 #include "file/viewer/ResourceBitmapViewer.hpp"
+#include "viewmodel/content/ContentsDisplayPresentationRefreshController.hpp"
+#include "viewmodel/content/ContentsDisplaySelectionSyncCoordinator.hpp"
+#include "viewmodel/content/ContentsDisplayStructuredFlowCoordinator.hpp"
 #include "viewmodel/content/ContentsEditorSelectionBridge.hpp"
 #include "viewmodel/content/ContentsGutterMarkerBridge.hpp"
 #include "viewmodel/content/ContentsLogicalTextBridge.hpp"
@@ -24,6 +27,12 @@ namespace WhatSon::Runtime::Bootstrap
     {
         qmlRegisterType<ContentsEditorSelectionBridge>(
             "WhatSon.App.Internal", 1, 0, "ContentsEditorSelectionBridge");
+        qmlRegisterType<ContentsDisplaySelectionSyncCoordinator>(
+            "WhatSon.App.Internal", 1, 0, "ContentsDisplaySelectionSyncCoordinator");
+        qmlRegisterType<ContentsDisplayPresentationRefreshController>(
+            "WhatSon.App.Internal", 1, 0, "ContentsDisplayPresentationRefreshController");
+        qmlRegisterType<ContentsDisplayStructuredFlowCoordinator>(
+            "WhatSon.App.Internal", 1, 0, "ContentsDisplayStructuredFlowCoordinator");
         qmlRegisterType<ContentsLogicalTextBridge>(
             "WhatSon.App.Internal", 1, 0, "ContentsLogicalTextBridge");
         qmlRegisterType<ContentsGutterMarkerBridge>(

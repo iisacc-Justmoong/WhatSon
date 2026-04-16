@@ -1,5 +1,6 @@
 #include "ContentsBodyResourceRenderer.hpp"
 
+#include "file/WhatSonDebugTrace.hpp"
 #include "file/hierarchy/resources/WhatSonResourcePackageSupport.hpp"
 
 #include <QDir>
@@ -586,9 +587,17 @@ namespace
 ContentsBodyResourceRenderer::ContentsBodyResourceRenderer(QObject* parent)
     : QObject(parent)
 {
+    WhatSon::Debug::traceEditorSelf(this, QStringLiteral("bodyResourceRenderer"), QStringLiteral("ctor"));
 }
 
-ContentsBodyResourceRenderer::~ContentsBodyResourceRenderer() = default;
+ContentsBodyResourceRenderer::~ContentsBodyResourceRenderer()
+{
+    WhatSon::Debug::traceEditorSelf(
+        this,
+        QStringLiteral("bodyResourceRenderer"),
+        QStringLiteral("dtor"),
+        QStringLiteral("noteId=%1 resourceCount=%2").arg(m_noteId).arg(m_renderedResources.size()));
+}
 
 QObject* ContentsBodyResourceRenderer::contentViewModel() const noexcept
 {
@@ -602,6 +611,11 @@ QObject* ContentsBodyResourceRenderer::fallbackContentViewModel() const noexcept
 
 void ContentsBodyResourceRenderer::setContentViewModel(QObject* model)
 {
+    WhatSon::Debug::traceEditorSelf(
+        this,
+        QStringLiteral("bodyResourceRenderer"),
+        QStringLiteral("setContentViewModel"),
+        QStringLiteral("next=0x%1").arg(QString::number(reinterpret_cast<quintptr>(model), 16)));
     if (m_contentViewModel == model)
     {
         return;
@@ -634,6 +648,11 @@ void ContentsBodyResourceRenderer::setContentViewModel(QObject* model)
 
 void ContentsBodyResourceRenderer::setFallbackContentViewModel(QObject* model)
 {
+    WhatSon::Debug::traceEditorSelf(
+        this,
+        QStringLiteral("bodyResourceRenderer"),
+        QStringLiteral("setFallbackContentViewModel"),
+        QStringLiteral("next=0x%1").arg(QString::number(reinterpret_cast<quintptr>(model), 16)));
     if (m_fallbackContentViewModel == model)
     {
         return;
@@ -672,6 +691,11 @@ QString ContentsBodyResourceRenderer::noteId() const
 void ContentsBodyResourceRenderer::setNoteId(const QString& noteId)
 {
     const QString normalizedNoteId = noteId.trimmed();
+    WhatSon::Debug::traceEditorSelf(
+        this,
+        QStringLiteral("bodyResourceRenderer"),
+        QStringLiteral("setNoteId"),
+        QStringLiteral("previous=%1 next=%2").arg(m_noteId).arg(normalizedNoteId));
     if (m_noteId == normalizedNoteId)
     {
         return;
@@ -690,6 +714,11 @@ QString ContentsBodyResourceRenderer::noteDirectoryPath() const
 void ContentsBodyResourceRenderer::setNoteDirectoryPath(const QString& noteDirectoryPath)
 {
     const QString normalizedNoteDirectoryPath = normalizePath(noteDirectoryPath);
+    WhatSon::Debug::traceEditorSelf(
+        this,
+        QStringLiteral("bodyResourceRenderer"),
+        QStringLiteral("setNoteDirectoryPath"),
+        QStringLiteral("previous=%1 next=%2").arg(m_noteDirectoryPath).arg(normalizedNoteDirectoryPath));
     if (m_noteDirectoryPath == normalizedNoteDirectoryPath)
     {
         return;
@@ -707,6 +736,13 @@ QVariantList ContentsBodyResourceRenderer::documentBlocks() const
 
 void ContentsBodyResourceRenderer::setDocumentBlocks(const QVariantList& documentBlocks)
 {
+    WhatSon::Debug::traceEditorSelf(
+        this,
+        QStringLiteral("bodyResourceRenderer"),
+        QStringLiteral("setDocumentBlocks"),
+        QStringLiteral("previousCount=%1 nextCount=%2")
+            .arg(m_documentBlocks.size())
+            .arg(documentBlocks.size()));
     if (m_documentBlocks == documentBlocks)
     {
         return;
@@ -725,6 +761,11 @@ int ContentsBodyResourceRenderer::maxRenderCount() const noexcept
 void ContentsBodyResourceRenderer::setMaxRenderCount(int maxRenderCount)
 {
     const int normalizedMaxRenderCount = std::max(0, maxRenderCount);
+    WhatSon::Debug::traceEditorSelf(
+        this,
+        QStringLiteral("bodyResourceRenderer"),
+        QStringLiteral("setMaxRenderCount"),
+        QStringLiteral("previous=%1 next=%2").arg(m_maxRenderCount).arg(normalizedMaxRenderCount));
     if (m_maxRenderCount == normalizedMaxRenderCount)
     {
         return;
@@ -752,11 +793,17 @@ bool ContentsBodyResourceRenderer::hasRenderableResource() const noexcept
 
 void ContentsBodyResourceRenderer::requestRenderRefresh()
 {
+    WhatSon::Debug::traceEditorSelf(
+        this,
+        QStringLiteral("bodyResourceRenderer"),
+        QStringLiteral("requestRenderRefresh"),
+        QStringLiteral("noteId=%1 blockCount=%2").arg(m_noteId).arg(m_documentBlocks.size()));
     refreshRenderedResources();
 }
 
 void ContentsBodyResourceRenderer::handleContentViewModelDestroyed()
 {
+    WhatSon::Debug::traceEditorSelf(this, QStringLiteral("bodyResourceRenderer"), QStringLiteral("handleContentViewModelDestroyed"));
     disconnectContentViewModel();
     m_contentViewModel = nullptr;
     emit contentViewModelChanged();
@@ -765,6 +812,7 @@ void ContentsBodyResourceRenderer::handleContentViewModelDestroyed()
 
 void ContentsBodyResourceRenderer::handleFallbackContentViewModelDestroyed()
 {
+    WhatSon::Debug::traceEditorSelf(this, QStringLiteral("bodyResourceRenderer"), QStringLiteral("handleFallbackContentViewModelDestroyed"));
     disconnectFallbackContentViewModel();
     m_fallbackContentViewModel = nullptr;
     emit fallbackContentViewModelChanged();
@@ -773,6 +821,11 @@ void ContentsBodyResourceRenderer::handleFallbackContentViewModelDestroyed()
 
 void ContentsBodyResourceRenderer::handleContentFilesystemMutated()
 {
+    WhatSon::Debug::traceEditorSelf(
+        this,
+        QStringLiteral("bodyResourceRenderer"),
+        QStringLiteral("handleContentFilesystemMutated"),
+        QStringLiteral("noteId=%1").arg(m_noteId));
     refreshRenderedResources();
 }
 
@@ -788,6 +841,14 @@ bool ContentsBodyResourceRenderer::hasInvokableMethod(const QObject* object, con
 
 void ContentsBodyResourceRenderer::refreshRenderedResources()
 {
+    WhatSon::Debug::traceEditorSelf(
+        this,
+        QStringLiteral("bodyResourceRenderer"),
+        QStringLiteral("refreshRenderedResources"),
+        QStringLiteral("noteId=%1 blockCount=%2 maxRenderCount=%3")
+            .arg(m_noteId)
+            .arg(m_documentBlocks.size())
+            .arg(m_maxRenderCount));
     QVariantList nextRenderedResources;
     const QString noteDirectoryPath = resolveNoteDirectoryPath();
     if (!noteDirectoryPath.isEmpty())
@@ -807,6 +868,13 @@ void ContentsBodyResourceRenderer::refreshRenderedResources()
 
     m_renderedResources = nextRenderedResources;
     emit renderedResourcesChanged();
+    WhatSon::Debug::traceEditorSelf(
+        this,
+        QStringLiteral("bodyResourceRenderer"),
+        QStringLiteral("renderedResourcesChanged"),
+        QStringLiteral("resourceCount=%1 noteDirectoryPath=%2")
+            .arg(m_renderedResources.size())
+            .arg(noteDirectoryPath));
 }
 
 QVariantList ContentsBodyResourceRenderer::buildRenderedResources(
@@ -814,6 +882,13 @@ QVariantList ContentsBodyResourceRenderer::buildRenderedResources(
     const QVariantList& documentBlocks) const
 {
     const QString normalizedNoteDirectoryPath = normalizePath(noteDirectoryPath);
+    WhatSon::Debug::traceEditorSelf(
+        this,
+        QStringLiteral("bodyResourceRenderer"),
+        QStringLiteral("buildRenderedResources"),
+        QStringLiteral("noteDirectoryPath=%1 blockCount=%2")
+            .arg(normalizedNoteDirectoryPath)
+            .arg(documentBlocks.size()));
     if (normalizedNoteDirectoryPath.isEmpty())
     {
         return {};
@@ -894,6 +969,11 @@ QString ContentsBodyResourceRenderer::resolveNoteDirectoryPathFromViewModel(QObj
 
 QString ContentsBodyResourceRenderer::resolveNoteDirectoryPath() const
 {
+    WhatSon::Debug::traceEditorSelf(
+        this,
+        QStringLiteral("bodyResourceRenderer"),
+        QStringLiteral("resolveNoteDirectoryPath"),
+        QStringLiteral("noteId=%1 explicitPath=%2").arg(m_noteId).arg(m_noteDirectoryPath));
     if (!m_noteDirectoryPath.trimmed().isEmpty())
     {
         return normalizePath(m_noteDirectoryPath);

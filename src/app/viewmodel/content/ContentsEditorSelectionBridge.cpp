@@ -1,5 +1,6 @@
 #include "ContentsEditorSelectionBridge.hpp"
 
+#include "file/WhatSonDebugTrace.hpp"
 #include "file/sync/ContentsEditorIdleSyncController.hpp"
 
 #include <QMetaProperty>
@@ -41,6 +42,7 @@ namespace
 ContentsEditorSelectionBridge::ContentsEditorSelectionBridge(QObject* parent)
     : QObject(parent)
 {
+    WhatSon::Debug::traceEditorSelf(this, QStringLiteral("selectionBridge"), QStringLiteral("ctor"));
     m_idleSyncController = new ContentsEditorIdleSyncController(this);
     connect(
         m_idleSyncController,
@@ -79,7 +81,17 @@ ContentsEditorSelectionBridge::ContentsEditorSelectionBridge(QObject* parent)
         &ContentsEditorSelectionBridge::handleViewSessionSnapshotReconciledInternal);
 }
 
-ContentsEditorSelectionBridge::~ContentsEditorSelectionBridge() = default;
+ContentsEditorSelectionBridge::~ContentsEditorSelectionBridge()
+{
+    WhatSon::Debug::traceEditorSelf(
+        this,
+        QStringLiteral("selectionBridge"),
+        QStringLiteral("dtor"),
+        QStringLiteral("selectedNoteId=%1 bodyNoteId=%2 loading=%3")
+            .arg(m_selectedNoteId)
+            .arg(m_selectedNoteBodyNoteId)
+            .arg(m_selectedNoteBodyLoading));
+}
 
 QObject* ContentsEditorSelectionBridge::noteListModel() const noexcept
 {
@@ -88,6 +100,13 @@ QObject* ContentsEditorSelectionBridge::noteListModel() const noexcept
 
 void ContentsEditorSelectionBridge::setNoteListModel(QObject* model)
 {
+    WhatSon::Debug::traceEditorSelf(
+        this,
+        QStringLiteral("selectionBridge"),
+        QStringLiteral("setNoteListModel"),
+        QStringLiteral("previous=0x%1 next=0x%2")
+            .arg(QString::number(reinterpret_cast<quintptr>(m_noteListModel.data()), 16))
+            .arg(QString::number(reinterpret_cast<quintptr>(model), 16)));
     if (m_noteListModel == model)
     {
         return;
@@ -128,6 +147,13 @@ QObject* ContentsEditorSelectionBridge::contentViewModel() const noexcept
 
 void ContentsEditorSelectionBridge::setContentViewModel(QObject* model)
 {
+    WhatSon::Debug::traceEditorSelf(
+        this,
+        QStringLiteral("selectionBridge"),
+        QStringLiteral("setContentViewModel"),
+        QStringLiteral("previous=0x%1 next=0x%2")
+            .arg(QString::number(reinterpret_cast<quintptr>(m_contentViewModel.data()), 16))
+            .arg(QString::number(reinterpret_cast<quintptr>(model), 16)));
     if (m_contentViewModel == model)
     {
         return;
@@ -208,14 +234,32 @@ bool ContentsEditorSelectionBridge::persistEditorTextForNote(const QString& note
 
 bool ContentsEditorSelectionBridge::stageEditorTextForIdleSync(const QString& noteId, const QString& text)
 {
-    return m_idleSyncController != nullptr
+    const bool accepted = m_idleSyncController != nullptr
         && m_idleSyncController->stageEditorTextForIdleSync(noteId, text);
+    WhatSon::Debug::traceEditorSelf(
+        this,
+        QStringLiteral("selectionBridge"),
+        QStringLiteral("stageEditorTextForIdleSync"),
+        QStringLiteral("accepted=%1 noteId=%2 %3")
+            .arg(accepted)
+            .arg(noteId.trimmed())
+            .arg(WhatSon::Debug::summarizeText(text)));
+    return accepted;
 }
 
 bool ContentsEditorSelectionBridge::flushEditorTextForNote(const QString& noteId, const QString& text)
 {
-    return m_idleSyncController != nullptr
+    const bool accepted = m_idleSyncController != nullptr
         && m_idleSyncController->flushEditorTextForNote(noteId, text);
+    WhatSon::Debug::traceEditorSelf(
+        this,
+        QStringLiteral("selectionBridge"),
+        QStringLiteral("flushEditorTextForNote"),
+        QStringLiteral("accepted=%1 noteId=%2 %3")
+            .arg(accepted)
+            .arg(noteId.trimmed())
+            .arg(WhatSon::Debug::summarizeText(text)));
+    return accepted;
 }
 
 bool ContentsEditorSelectionBridge::reconcileViewSessionAndRefreshSnapshotForNote(
@@ -223,11 +267,20 @@ bool ContentsEditorSelectionBridge::reconcileViewSessionAndRefreshSnapshotForNot
     const QString& viewSessionText)
 {
     const QString normalizedNoteId = noteId.trimmed();
-    return m_idleSyncController != nullptr
+    const bool accepted = m_idleSyncController != nullptr
         && !normalizedNoteId.isEmpty()
         && m_idleSyncController->reconcileViewSessionAndRefreshSnapshotForNote(
             normalizedNoteId,
             viewSessionText);
+    WhatSon::Debug::traceEditorSelf(
+        this,
+        QStringLiteral("selectionBridge"),
+        QStringLiteral("reconcileViewSessionAndRefreshSnapshotForNote"),
+        QStringLiteral("accepted=%1 noteId=%2 %3")
+            .arg(accepted)
+            .arg(normalizedNoteId)
+            .arg(WhatSon::Debug::summarizeText(viewSessionText)));
+    return accepted;
 }
 
 bool ContentsEditorSelectionBridge::directPersistenceAvailable() const noexcept
@@ -240,6 +293,11 @@ bool ContentsEditorSelectionBridge::refreshSelectedNoteSnapshot()
 {
     const bool reloaded = m_idleSyncController != nullptr
         && m_idleSyncController->refreshNoteSnapshotForNote(m_selectedNoteId);
+    WhatSon::Debug::traceEditorSelf(
+        this,
+        QStringLiteral("selectionBridge"),
+        QStringLiteral("refreshSelectedNoteSnapshot"),
+        QStringLiteral("reloaded=%1 selectedNoteId=%2").arg(reloaded).arg(m_selectedNoteId));
     if (reloaded)
     {
         startSelectedNoteBodyLoad(m_selectedNoteId, false);
@@ -251,6 +309,12 @@ bool ContentsEditorSelectionBridge::refreshSelectedNoteSnapshot()
 
 void ContentsEditorSelectionBridge::handleNoteListSelectionChanged()
 {
+    WhatSon::Debug::traceEditorSelf(
+        this,
+        QStringLiteral("selectionBridge"),
+        QStringLiteral("handleNoteListSelectionChanged"),
+        QStringLiteral("noteListModel=0x%1")
+            .arg(QString::number(reinterpret_cast<quintptr>(m_noteListModel.data()), 16)));
     scheduleNoteSelectionRefresh();
 }
 
@@ -261,6 +325,15 @@ void ContentsEditorSelectionBridge::handleEditorTextPersistenceFinishedInternal(
     const QString& errorMessage)
 {
     Q_UNUSED(errorMessage)
+
+    WhatSon::Debug::traceEditorSelf(
+        this,
+        QStringLiteral("selectionBridge"),
+        QStringLiteral("handleEditorTextPersistenceFinishedInternal"),
+        QStringLiteral("success=%1 noteId=%2 %3")
+            .arg(success)
+            .arg(noteId.trimmed())
+            .arg(WhatSon::Debug::summarizeText(text)));
 
     if (!success)
     {
@@ -299,6 +372,16 @@ void ContentsEditorSelectionBridge::handleNoteBodyTextLoaded(
 {
     Q_UNUSED(errorMessage)
 
+    WhatSon::Debug::traceEditorSelf(
+        this,
+        QStringLiteral("selectionBridge"),
+        QStringLiteral("handleNoteBodyTextLoaded"),
+        QStringLiteral("sequence=%1 success=%2 noteId=%3 %4")
+            .arg(sequence)
+            .arg(success)
+            .arg(noteId.trimmed())
+            .arg(WhatSon::Debug::summarizeText(text)));
+
     const QString normalizedNoteId = noteId.trimmed();
     if (sequence == 0
         || normalizedNoteId.isEmpty()
@@ -336,6 +419,15 @@ void ContentsEditorSelectionBridge::handleViewSessionSnapshotReconciledInternal(
 {
     Q_UNUSED(errorMessage)
 
+    WhatSon::Debug::traceEditorSelf(
+        this,
+        QStringLiteral("selectionBridge"),
+        QStringLiteral("handleViewSessionSnapshotReconciledInternal"),
+        QStringLiteral("success=%1 refreshed=%2 noteId=%3")
+            .arg(success)
+            .arg(refreshed)
+            .arg(noteId.trimmed()));
+
     const QString normalizedNoteId = noteId.trimmed();
     if (!success || !refreshed || normalizedNoteId.isEmpty()
         || normalizedNoteId != m_selectedNoteId.trimmed())
@@ -349,6 +441,11 @@ void ContentsEditorSelectionBridge::handleViewSessionSnapshotReconciledInternal(
 void ContentsEditorSelectionBridge::flushPendingNoteSelectionRefresh()
 {
     m_noteSelectionRefreshQueued = false;
+    WhatSon::Debug::traceEditorSelf(
+        this,
+        QStringLiteral("selectionBridge"),
+        QStringLiteral("flushPendingNoteSelectionRefresh"),
+        QStringLiteral("selectedNoteId=%1").arg(m_selectedNoteId));
     refreshNoteSelectionState();
 }
 
@@ -359,6 +456,10 @@ void ContentsEditorSelectionBridge::handleNoteListCountChanged()
 
 void ContentsEditorSelectionBridge::handleNoteListDestroyed()
 {
+    WhatSon::Debug::traceEditorSelf(
+        this,
+        QStringLiteral("selectionBridge"),
+        QStringLiteral("handleNoteListDestroyed"));
     disconnectNoteListModel();
     m_noteListModel = nullptr;
     emit noteListModelChanged();
@@ -371,6 +472,10 @@ void ContentsEditorSelectionBridge::handleNoteListDestroyed()
 
 void ContentsEditorSelectionBridge::handleContentViewModelDestroyed()
 {
+    WhatSon::Debug::traceEditorSelf(
+        this,
+        QStringLiteral("selectionBridge"),
+        QStringLiteral("handleContentViewModelDestroyed"));
     disconnectContentViewModel();
     m_contentViewModel = nullptr;
     if (m_idleSyncController != nullptr)
@@ -431,6 +536,14 @@ bool ContentsEditorSelectionBridge::adoptPendingEditorBodyText(const QString& no
         return false;
     }
 
+    WhatSon::Debug::traceEditorSelf(
+        this,
+        QStringLiteral("selectionBridge"),
+        QStringLiteral("adoptPendingEditorBodyText"),
+        QStringLiteral("noteId=%1 %2")
+            .arg(normalizedNoteId)
+            .arg(WhatSon::Debug::summarizeText(pendingEditorText)));
+
     m_selectedNoteBodySnapshotNoteId = normalizedNoteId;
     m_selectedNoteBodyRequestSequence = 0;
     setSelectedNoteBodyState(normalizedNoteId, pendingEditorText, false);
@@ -454,6 +567,13 @@ void ContentsEditorSelectionBridge::setSelectedNoteDirectoryPath(QString noteDir
     {
         return;
     }
+    WhatSon::Debug::traceEditorSelf(
+        this,
+        QStringLiteral("selectionBridge"),
+        QStringLiteral("setSelectedNoteDirectoryPath"),
+        QStringLiteral("previous=%1 next=%2")
+            .arg(m_selectedNoteDirectoryPath)
+            .arg(noteDirectoryPath));
     m_selectedNoteDirectoryPath = std::move(noteDirectoryPath);
     emit selectedNoteDirectoryPathChanged();
 }
@@ -470,6 +590,15 @@ void ContentsEditorSelectionBridge::setSelectedNoteBodyState(
     m_selectedNoteBodyNoteId = std::move(noteId);
     m_selectedNoteBodyLoading = loading;
     m_selectedNoteBodyText = std::move(bodyText);
+
+    WhatSon::Debug::traceEditorSelf(
+        this,
+        QStringLiteral("selectionBridge"),
+        QStringLiteral("setSelectedNoteBodyState"),
+        QStringLiteral("noteId=%1 loading=%2 %3")
+            .arg(m_selectedNoteBodyNoteId)
+            .arg(m_selectedNoteBodyLoading)
+            .arg(WhatSon::Debug::summarizeText(m_selectedNoteBodyText)));
 
     if (noteIdChanged)
     {
@@ -490,6 +619,11 @@ void ContentsEditorSelectionBridge::startSelectedNoteBodyLoad(
     const bool clearCachedBody)
 {
     const QString normalizedNoteId = noteId.trimmed();
+    WhatSon::Debug::traceEditorSelf(
+        this,
+        QStringLiteral("selectionBridge"),
+        QStringLiteral("startSelectedNoteBodyLoad"),
+        QStringLiteral("noteId=%1 clearCachedBody=%2").arg(normalizedNoteId).arg(clearCachedBody));
     if (normalizedNoteId.isEmpty())
     {
         m_selectedNoteBodySnapshotNoteId.clear();
@@ -540,6 +674,11 @@ void ContentsEditorSelectionBridge::scheduleNoteSelectionRefresh()
     }
 
     m_noteSelectionRefreshQueued = true;
+    WhatSon::Debug::traceEditorSelf(
+        this,
+        QStringLiteral("selectionBridge"),
+        QStringLiteral("scheduleNoteSelectionRefresh"),
+        QStringLiteral("selectedNoteId=%1").arg(m_selectedNoteId));
     QMetaObject::invokeMethod(
         this,
         &ContentsEditorSelectionBridge::flushPendingNoteSelectionRefresh,
@@ -553,6 +692,15 @@ void ContentsEditorSelectionBridge::refreshNoteSelectionState()
     const QString nextNoteId = nextContractAvailable ? readStringProperty(m_noteListModel, "currentNoteId") : QString();
     const bool requiresRebind = m_noteSelectionRefreshRequiresRebind;
     m_noteSelectionRefreshRequiresRebind = false;
+    WhatSon::Debug::traceEditorSelf(
+        this,
+        QStringLiteral("selectionBridge"),
+        QStringLiteral("refreshNoteSelectionState"),
+        QStringLiteral("contract=%1 previousNoteId=%2 nextNoteId=%3 requiresRebind=%4")
+            .arg(nextContractAvailable)
+            .arg(m_selectedNoteId)
+            .arg(nextNoteId)
+            .arg(requiresRebind));
 
     if (m_noteSelectionContractAvailable != nextContractAvailable)
     {
@@ -604,6 +752,13 @@ void ContentsEditorSelectionBridge::refreshNoteCountState()
 {
     const bool nextContractAvailable = hasReadableProperty(m_noteListModel, "itemCount");
     const int nextVisibleNoteCount = nextContractAvailable ? readIntProperty(m_noteListModel, "itemCount") : 0;
+    WhatSon::Debug::traceEditorSelf(
+        this,
+        QStringLiteral("selectionBridge"),
+        QStringLiteral("refreshNoteCountState"),
+        QStringLiteral("contract=%1 visibleNoteCount=%2")
+            .arg(nextContractAvailable)
+            .arg(nextVisibleNoteCount));
 
     if (m_noteCountContractAvailable != nextContractAvailable)
     {

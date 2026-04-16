@@ -7,12 +7,18 @@
 ## Scope
 - Mirrored source directory: `src/app/viewmodel/content`
 - Child directories: 0
-- Child files: 6
+- Child files: 12
 
 ## Child Directories
 - No child directories.
 
 ## Child Files
+- `ContentsDisplayPresentationRefreshController.cpp`
+- `ContentsDisplayPresentationRefreshController.hpp`
+- `ContentsDisplaySelectionSyncCoordinator.cpp`
+- `ContentsDisplaySelectionSyncCoordinator.hpp`
+- `ContentsDisplayStructuredFlowCoordinator.cpp`
+- `ContentsDisplayStructuredFlowCoordinator.hpp`
 - `ContentsEditorSelectionBridge.cpp`
 - `ContentsEditorSelectionBridge.hpp`
 - `ContentsGutterMarkerBridge.cpp`
@@ -43,6 +49,17 @@
 - `ContentsLogicalTextBridge` now normalizes Qt container `size()` values through a bounded integer helper before
   reserve/export paths, which keeps Apple libc++ from failing mixed `int` / `qsizetype` template deduction in the
   live-typing bridge code.
+- `ContentsDisplaySelectionSyncCoordinator` now owns note-selection sync queuing, note snapshot reconcile gating, and
+  pending editor-focus intent for both desktop and mobile editor hosts.
+- `ContentsDisplayPresentationRefreshController` now owns whole-document presentation refresh policy, including
+  projection-disabled clearing, focused-input defer decisions, and deferred timer-trigger decisions.
+- `ContentsDisplayStructuredFlowCoordinator` now owns the note-scoped decision of when parsed structured flow becomes
+  the active document host, so display QML no longer keeps that activation policy inline.
+- `ContentsEditorSelectionBridge` and `ContentsLogicalTextBridge` now also emit verbose editor trace events for
+  constructor/destructor turns, selection sync, selected-note body load/reconcile, dirty snapshot adoption, text-state
+  rebuilds, and incremental live-typing adoption so the editor pipeline can be followed from the QML host boundary.
+- The new coordinators also emit editor trace events for their own state transitions and policy decisions, so the SRP
+  split remains observable without pushing orchestration back into QML.
 
 ## Intended Detailed Sections
 - Module responsibilities and architectural layer

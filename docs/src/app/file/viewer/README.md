@@ -20,6 +20,11 @@
 - `ResourceBitmapViewer.cpp`
 - `ResourceBitmapViewer.hpp`
 
+## Current Notes
+- `ContentsBodyResourceRenderer` now emits verbose editor trace events for content-view-model rebinding, note-id/path
+  changes, filesystem mutation callbacks, render refresh passes, and resolved inline-resource counts so resource block
+  materialization can be correlated with note-open and editor RAW mutations.
+
 ## Intended Detailed Sections
 - Module responsibilities and architectural layer
 - Internal submodule boundaries

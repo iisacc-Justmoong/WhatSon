@@ -33,6 +33,9 @@
   RAW source style starts or ends.
 - Page/Print paper-preview mode gating and A4 paper geometry calculations are now centralized in
   `ContentsPagePrintLayoutRenderer`, so desktop/mobile QML hosts only bind to backend state.
+- `ContentsStructuredBlockRenderer.cpp` and `ContentsTextFormatRenderer.cpp` now also emit verbose editor trace events
+  for constructor/destructor turns, source binding changes, synchronous/background render refresh passes, placeholder
+  publication, and final payload application so the read-side render pipeline can be traced alongside QML host updates.
 
 ## Intended Detailed Sections
 - Module responsibilities and architectural layer

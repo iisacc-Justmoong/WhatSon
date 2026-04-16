@@ -62,6 +62,24 @@ namespace WhatSon::Debug
         return enabled;
     }
 
+    inline bool isEditorTraceEnabled()
+    {
+        static const bool enabled = []()
+        {
+            const QByteArray raw = qgetenv("WHATSON_EDITOR_TRACE");
+            if (raw.trimmed().isEmpty())
+            {
+                return isEnabled();
+            }
+
+            bool recognized = false;
+            const bool parsed = parseBoolFlag(raw, &recognized);
+            return recognized ? parsed : isEnabled();
+        }();
+
+        return enabled;
+    }
+
     inline QString normalizeSegment(const QString& value, const QString& fallback)
     {
         const QString trimmed = value.trimmed();
@@ -133,6 +151,21 @@ namespace WhatSon::Debug
         return QStringLiteral("%1...(truncated originalChars=%2)")
                .arg(normalized.left(kMaxDetailLength))
                .arg(normalized.size());
+    }
+
+    inline QString summarizeText(const QString& text, const int previewLength = 96)
+    {
+        const QString normalized = text.normalized(QString::NormalizationForm_C)
+            .replace(u'\n', QStringLiteral("\\n"))
+            .replace(u'\r', QStringLiteral("\\r"));
+        const int safePreviewLength = std::max(0, previewLength);
+        const QString preview = normalized.left(safePreviewLength);
+        if (normalized.size() <= safePreviewLength)
+        {
+            return QStringLiteral("len=%1 preview=\"%2\"").arg(normalized.size()).arg(preview);
+        }
+
+        return QStringLiteral("len=%1 preview=\"%2\"...(truncated)").arg(normalized.size()).arg(preview);
     }
 
     inline QString ownerFromSignature(const QString& signature)
@@ -238,6 +271,20 @@ namespace WhatSon::Debug
         qWarning().noquote() << prefix << normalizedDetail;
     }
 
+    inline void traceEditor(
+        const QString& scope,
+        const QString& action,
+        const QString& detail = QString(),
+        const std::source_location& source = std::source_location::current())
+    {
+        if (!isEditorTraceEnabled())
+        {
+            return;
+        }
+
+        trace(QStringLiteral("editor.%1").arg(normalizeSegment(scope, QStringLiteral("general"))), action, detail, source);
+    }
+
     template <typename TObject>
     inline void traceSelf(
         const TObject* self,
@@ -282,5 +329,26 @@ namespace WhatSon::Debug
         }
 
         trace(scope, action, selfDetail, source);
+    }
+
+    template <typename TObject>
+    inline void traceEditorSelf(
+        const TObject* self,
+        const QString& scope,
+        const QString& action,
+        const QString& detail = QString(),
+        const std::source_location& source = std::source_location::current())
+    {
+        if (!isEditorTraceEnabled())
+        {
+            return;
+        }
+
+        traceSelf(
+            self,
+            QStringLiteral("editor.%1").arg(normalizeSegment(scope, QStringLiteral("general"))),
+            action,
+            detail,
+            source);
     }
 } // namespace WhatSon::Debug

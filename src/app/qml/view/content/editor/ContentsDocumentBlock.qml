@@ -2,9 +2,11 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import LVRS 1.0 as LV
+import "ContentsEditorDebugTrace.js" as EditorTrace
 
 FocusScope {
     id: documentBlock
+    objectName: "contentsDocumentBlock"
 
     required property var blockData
     property var resourceEntry: ({})
@@ -102,6 +104,13 @@ FocusScope {
     }
 
     function applyFocusRequest(request) {
+        EditorTrace.trace(
+                    "documentBlock",
+                    "applyFocusRequest",
+                    "blockType=" + documentBlock.blockType
+                    + " atomic=" + documentBlock.atomicBlock
+                    + " request={" + EditorTrace.describeFocusRequest(request) + "}",
+                    documentBlock)
         if (documentBlock.atomicBlock) {
             const safeRequest = request && typeof request === "object" ? request : ({})
             const sourceOffset = Number(safeRequest.sourceOffset)
@@ -122,6 +131,13 @@ FocusScope {
     }
 
     function handleDeleteKeyPress(event) {
+        EditorTrace.trace(
+                    "documentBlock",
+                    "handleDeleteKeyPress",
+                    "blockType=" + documentBlock.blockType
+                    + " atomic=" + documentBlock.atomicBlock
+                    + " key=" + (event ? Number(event.key) : -1),
+                    documentBlock)
         if (documentBlock.atomicBlock) {
             if (!event)
                 return false
@@ -235,6 +251,30 @@ FocusScope {
     Keys.onPressed: function (event) {
         if (documentBlock.handleAtomicBoundaryKeyPress(event))
             return
+    }
+
+    Component.onCompleted: {
+        EditorTrace.trace(
+                    "documentBlock",
+                    "mount",
+                    "block={" + EditorTrace.describeObject(documentBlock.normalizedBlock, ["type", "sourceStart", "sourceEnd"]) + "}",
+                    documentBlock)
+    }
+
+    Component.onDestruction: {
+        EditorTrace.trace(
+                    "documentBlock",
+                    "unmount",
+                    "block={" + EditorTrace.describeObject(documentBlock.normalizedBlock, ["type", "sourceStart", "sourceEnd"]) + "}",
+                    documentBlock)
+    }
+
+    onFocusedChanged: {
+        EditorTrace.trace(
+                    "documentBlock",
+                    "focusedChanged",
+                    "blockType=" + documentBlock.blockType + " focused=" + documentBlock.focused,
+                    documentBlock)
     }
 
     Loader {

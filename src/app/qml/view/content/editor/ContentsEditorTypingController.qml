@@ -1,9 +1,11 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import "ContentsEditorDebugTrace.js" as EditorTrace
 
 QtObject {
     id: controller
+    objectName: "contentsEditorTypingController"
 
     property var view: null
     property var contentEditor: null
@@ -303,6 +305,12 @@ QtObject {
         let sourceOffsets = [];
         if (controller.textMetricsBridge && controller.textMetricsBridge.logicalToSourceOffsets !== undefined)
             sourceOffsets = controller.textMetricsBridge.logicalToSourceOffsets();
+        EditorTrace.trace(
+                    "typingController",
+                    "synchronizeLiveEditingStateFromPresentation",
+                    "source=" + EditorTrace.describeText(snapshotSourceText)
+                    + " logical=" + EditorTrace.describeText(presentationLogicalText),
+                    controller)
         controller.liveSnapshotSourceText = snapshotSourceText;
         controller.liveAuthoritativePlainText = presentationLogicalText;
         controller.liveLogicalLineStartOffsets = controller.normalizeLineStartOffsets(
@@ -324,6 +332,15 @@ QtObject {
                 : [];
         const liveStateValid = currentOffsets.length === controller.liveAuthoritativePlainText.length + 1
                 && currentLineStartOffsets.length > 0;
+        EditorTrace.trace(
+                    "typingController",
+                    "ensureLiveEditingStateReady",
+                    "snapshotChanged=" + (controller.liveSnapshotSourceText !== snapshotSourceText)
+                    + " liveStateValid=" + liveStateValid
+                    + " localAuthority=" + (controller.editorSession && controller.editorSession.localEditorAuthority !== undefined
+                                            ? controller.editorSession.localEditorAuthority
+                                            : false),
+                    controller)
         if (controller.presentationSnapshotStale()
                 && liveStateValid
                 && controller.editorSession
@@ -1114,6 +1131,11 @@ QtObject {
     }
 
     function commitExplicitSourceMutation(nextSourceText) {
+        EditorTrace.trace(
+                    "typingController",
+                    "commitExplicitSourceMutation",
+                    EditorTrace.describeText(nextSourceText),
+                    controller)
         if (!controller.view)
             return false;
         if (controller.view.applyDocumentSourceMutation !== undefined)
@@ -1148,6 +1170,13 @@ QtObject {
     }
 
     function applyExplicitPlainTextLogicalReplacement(logicalReplacementStart, logicalReplacementEnd, insertedText) {
+        EditorTrace.trace(
+                    "typingController",
+                    "applyExplicitPlainTextLogicalReplacement",
+                    "logicalStart=" + logicalReplacementStart
+                    + " logicalEnd=" + logicalReplacementEnd
+                    + " inserted=" + EditorTrace.describeText(insertedText),
+                    controller)
         if (!controller.view
                 || !controller.view.hasSelectedNote
                 || controller.view.showDedicatedResourceViewer
@@ -1325,6 +1354,12 @@ QtObject {
     }
 
     function handlePlainEnterKeyPress(event) {
+        EditorTrace.trace(
+                    "typingController",
+                    "handlePlainEnterKeyPress",
+                    "key=" + (event ? Number(event.key) : -1)
+                    + " modifiers=" + (event ? Number(event.modifiers) : 0),
+                    controller)
         if (!event
                 || !controller.view
                 || !controller.view.hasSelectedNote
@@ -1433,6 +1468,14 @@ QtObject {
     }
 
     function handleEditorTextEdited() {
+        EditorTrace.trace(
+                    "typingController",
+                    "handleEditorTextEdited",
+                    "selectedNoteId=" + (controller.view ? String(controller.view.selectedNoteId || "") : "")
+                    + " structured=" + (controller.view && controller.view.showStructuredDocumentFlow !== undefined
+                                        ? controller.view.showStructuredDocumentFlow
+                                        : false),
+                    controller)
         if (!controller.view
                 || !controller.view.hasSelectedNote
                 || (controller.view.showStructuredDocumentFlow !== undefined
@@ -1642,5 +1685,13 @@ QtObject {
             controller.editorSession.scheduleEditorPersistence();
         controller.view.editorTextEdited(nextSourceText);
         return true;
+    }
+
+    Component.onCompleted: {
+        EditorTrace.trace("typingController", "mount", "", controller)
+    }
+
+    Component.onDestruction: {
+        EditorTrace.trace("typingController", "unmount", "", controller)
     }
 }

@@ -4,9 +4,11 @@ import QtQuick
 import QtQuick.Controls as Controls
 import LVRS 1.0 as LV
 import WhatSon.App.Internal 1.0
+import "ContentsEditorDebugTrace.js" as EditorTrace
 
 FocusScope {
     id: control
+    objectName: "contentsInlineFormatEditor"
 
     property bool autoFocusOnPress: true
     property color backgroundColor: "transparent"
@@ -133,6 +135,7 @@ FocusScope {
     }
 
     function forceActiveFocus() {
+        EditorTrace.trace("inlineFormatEditor", "forceActiveFocus", "", control)
         textInput.forceActiveFocus();
     }
 
@@ -254,6 +257,11 @@ FocusScope {
     function setCursorPositionPreservingInputMethod(position) {
         const maximumLength = Number(textInput.length) || 0;
         const boundedPosition = control.clampLogicalPosition(position, maximumLength);
+        EditorTrace.trace(
+                    "inlineFormatEditor",
+                    "setCursorPositionPreservingInputMethod",
+                    "requested=" + position + " bounded=" + boundedPosition + " maximumLength=" + maximumLength,
+                    control)
         if (Number(textInput.cursorPosition) === boundedPosition)
             return false;
         textInput.cursorPosition = boundedPosition;
@@ -538,6 +546,11 @@ FocusScope {
     }
 
     onFocusedChanged: {
+        EditorTrace.trace(
+                    "inlineFormatEditor",
+                    "focusedChanged",
+                    "focused=" + focused + " inputMethodSessionActive=" + control.inputMethodSessionActive(),
+                    control)
         control.notifyInputMethod(Qt.ImQueryAll);
         if (!focused && control.inputMethodSessionActive()) {
             Qt.callLater(function () {
@@ -553,6 +566,11 @@ FocusScope {
     onTextFormatChanged: control.synchronizeRichTextImeSurface()
     onTextChanged: {
         const normalizedText = text === undefined || text === null ? "" : String(text);
+        EditorTrace.trace(
+                    "inlineFormatEditor",
+                    "textChanged",
+                    EditorTrace.describeText(normalizedText),
+                    control)
         if (control.canDeferProgrammaticTextSync()) {
             control._deferredProgrammaticText = normalizedText;
             control._hasDeferredProgrammaticText = true;
@@ -689,11 +707,21 @@ FocusScope {
                 property bool showRenderedOutput: control.showRenderedOutput
 
                 onActiveFocusChanged: {
+                    EditorTrace.trace(
+                                "inlineFormatEditor",
+                                "textInputActiveFocusChanged",
+                                "activeFocus=" + activeFocus,
+                                control)
                     control.notifyInputMethod(Qt.ImQueryAll);
                     control.synchronizeRichTextImeSurface();
                     control.maybeDiscardCachedSelectionSnapshot();
                 }
                 onCursorPositionChanged: {
+                    EditorTrace.trace(
+                                "inlineFormatEditor",
+                                "cursorPositionChanged",
+                                "cursorPosition=" + cursorPosition,
+                                control)
                     control.notifyInputMethod(control.inputMethodSelectionQueryMask());
                     control.maybeDiscardCachedSelectionSnapshot();
                 }
@@ -701,14 +729,31 @@ FocusScope {
                     control.notifyInputMethod(control.inputMethodGeometryQueryMask());
                 }
                 onSelectionEndChanged: {
+                    EditorTrace.trace(
+                                "inlineFormatEditor",
+                                "selectionEndChanged",
+                                "selectionStart=" + selectionStart + " selectionEnd=" + selectionEnd,
+                                control)
                     control.notifyInputMethod(control.inputMethodSelectionQueryMask());
                     control.maybeDiscardCachedSelectionSnapshot();
                 }
                 onSelectionStartChanged: {
+                    EditorTrace.trace(
+                                "inlineFormatEditor",
+                                "selectionStartChanged",
+                                "selectionStart=" + selectionStart + " selectionEnd=" + selectionEnd,
+                                control)
                     control.notifyInputMethod(control.inputMethodSelectionQueryMask());
                     control.maybeDiscardCachedSelectionSnapshot();
                 }
                 onTextChanged: {
+                    EditorTrace.trace(
+                                "inlineFormatEditor",
+                                "textInputTextChanged",
+                                "programmaticDepth=" + control._programmaticTextSyncDepth
+                                + " inputMethodSessionActive=" + control.inputMethodSessionActive()
+                                + " " + EditorTrace.describeText(textInput.text),
+                                control)
                     control.notifyInputMethod(control.inputMethodSelectionQueryMask());
                     control.clearCachedSelectionSnapshot();
                     if (control._programmaticTextSyncDepth > 0)
@@ -817,8 +862,19 @@ FocusScope {
     }
 
     Component.onCompleted: {
+        EditorTrace.trace("inlineFormatEditor", "mount", EditorTrace.describeText(text), control)
         setProgrammaticText(text);
         control.synchronizeRichTextImeSurface();
         control.notifyInputMethod(Qt.ImQueryAll);
+    }
+
+    Component.onDestruction: {
+        EditorTrace.trace(
+                    "inlineFormatEditor",
+                    "unmount",
+                    "cursorPosition=" + cursorPosition
+                    + " selectionStart=" + selectionStart
+                    + " selectionEnd=" + selectionEnd,
+                    control)
     }
 }

@@ -3,6 +3,17 @@
 This repository does not operate automated or scripted tests. Use this checklist as manual regression coverage for
 structured document-flow editor changes.
 
+## Debug Trace Coverage
+- Selecting a note must emit one consistent trace chain across the selection bridge, idle sync controller, editor
+  session, display host, selection-sync coordinator, structured-flow coordinator, presentation-refresh controller,
+  structured renderer, logical-text bridge, and structured document flow.
+- Typing one character in an ordinary paragraph must emit editor-host/session/typing-controller/logical-bridge trace
+  events without dropping the final persisted RAW source mutation event.
+- Editing an agenda or callout block must emit block wrapper plus structured document-flow trace events that show the
+  rewritten RAW source range and the follow-up focus request.
+- Mounting and unmounting the desktop/mobile editor hosts, structured document flow, block delegates, and inline editor
+  wrapper must each emit a lifecycle trace so leaked editor surfaces can be spotted from logs alone.
+
 ## Agenda Typing
 - Typing continuously inside an existing agenda task must keep the caret in that same task instead of snapping to the
   task start.
@@ -66,6 +77,9 @@ structured document-flow editor changes.
 - Each note-entry transition must reset gutter line-number geometry and recompute it from the newly bound note body.
   Line numbers from the previously selected note must not persist until a later scroll, resize, or incidental cursor
   move happens to refresh the gutter.
+- Desktop and mobile note-open flows must stay behaviorally aligned through the shared C++ coordinators:
+  the same note/body transition should produce the same selection-sync fallback, reconcile scheduling, and
+  structured-flow activation result on both hosts.
 - While structured-flow mode remains active, the fallback full-document inline editor must stay unloaded rather than
   remaining mounted off-screen behind `visible: false`.
 - One note-open transition must not cause duplicate editor host selection sync passes just because the note-list bridge

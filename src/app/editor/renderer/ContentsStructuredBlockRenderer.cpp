@@ -1,6 +1,7 @@
 #include "ContentsStructuredBlockRenderer.hpp"
 
 #include "editor/parser/ContentsWsnBodyBlockParser.hpp"
+#include "file/WhatSonDebugTrace.hpp"
 #include "file/note/WhatSonNoteBodySemanticTagSupport.hpp"
 #include "file/validator/WhatSonStructuredTagLinter.hpp"
 
@@ -205,6 +206,7 @@ ContentsStructuredBlockRenderer::ContentsStructuredBlockRenderer(QObject* parent
     , m_agendaParseVerification(defaultParseVerification(QStringLiteral("agenda")))
     , m_calloutParseVerification(defaultParseVerification(QStringLiteral("callout")))
 {
+    WhatSon::Debug::traceEditorSelf(this, QStringLiteral("structuredBlockRenderer"), QStringLiteral("ctor"));
     const WhatSonStructuredTagLinter tagLinter;
     m_structuredParseVerification = tagLinter.buildStructuredVerification(
         m_agendaParseVerification,
@@ -212,7 +214,16 @@ ContentsStructuredBlockRenderer::ContentsStructuredBlockRenderer(QObject* parent
         QString());
 }
 
-ContentsStructuredBlockRenderer::~ContentsStructuredBlockRenderer() = default;
+ContentsStructuredBlockRenderer::~ContentsStructuredBlockRenderer()
+{
+    WhatSon::Debug::traceEditorSelf(
+        this,
+        QStringLiteral("structuredBlockRenderer"),
+        QStringLiteral("dtor"),
+        QStringLiteral("renderPending=%1 sourceSummary=%2")
+            .arg(m_renderPending)
+            .arg(WhatSon::Debug::summarizeText(m_sourceText)));
+}
 
 QString ContentsStructuredBlockRenderer::sourceText() const
 {
@@ -221,6 +232,11 @@ QString ContentsStructuredBlockRenderer::sourceText() const
 
 void ContentsStructuredBlockRenderer::setSourceText(const QString& sourceText)
 {
+    WhatSon::Debug::traceEditorSelf(
+        this,
+        QStringLiteral("structuredBlockRenderer"),
+        QStringLiteral("setSourceText"),
+        QStringLiteral("changed=%1 %2").arg(m_sourceText != sourceText).arg(WhatSon::Debug::summarizeText(sourceText)));
     if (m_sourceText == sourceText)
     {
         return;
@@ -278,6 +294,11 @@ bool ContentsStructuredBlockRenderer::backgroundRefreshEnabled() const noexcept
 
 void ContentsStructuredBlockRenderer::setBackgroundRefreshEnabled(const bool enabled)
 {
+    WhatSon::Debug::traceEditorSelf(
+        this,
+        QStringLiteral("structuredBlockRenderer"),
+        QStringLiteral("setBackgroundRefreshEnabled"),
+        QStringLiteral("previous=%1 next=%2").arg(m_backgroundRefreshEnabled).arg(enabled));
     if (m_backgroundRefreshEnabled == enabled)
     {
         return;
@@ -339,11 +360,24 @@ bool ContentsStructuredBlockRenderer::hasNonResourceRenderedBlocks() const noexc
 
 void ContentsStructuredBlockRenderer::requestRenderRefresh()
 {
+    WhatSon::Debug::traceEditorSelf(
+        this,
+        QStringLiteral("structuredBlockRenderer"),
+        QStringLiteral("requestRenderRefresh"),
+        QStringLiteral("renderPending=%1").arg(m_renderPending));
     refreshRenderedBlocks();
 }
 
 void ContentsStructuredBlockRenderer::refreshRenderedBlocks()
 {
+    WhatSon::Debug::traceEditorSelf(
+        this,
+        QStringLiteral("structuredBlockRenderer"),
+        QStringLiteral("refreshRenderedBlocks"),
+        QStringLiteral("background=%1 shouldBackground=%2 %3")
+            .arg(m_backgroundRefreshEnabled)
+            .arg(shouldRenderInBackground())
+            .arg(WhatSon::Debug::summarizeText(m_sourceText)));
     if (shouldRenderInBackground())
     {
         updateRenderPending(true);
@@ -431,6 +465,15 @@ bool ContentsStructuredBlockRenderer::shouldRenderInBackground() const noexcept
 
 void ContentsStructuredBlockRenderer::applyRenderResult(const RenderResult& result)
 {
+    WhatSon::Debug::traceEditorSelf(
+        this,
+        QStringLiteral("structuredBlockRenderer"),
+        QStringLiteral("applyRenderResult"),
+        QStringLiteral("agendas=%1 callouts=%2 blocks=%3 correction=%4")
+            .arg(result.renderedAgendas.size())
+            .arg(result.renderedCallouts.size())
+            .arg(result.renderedDocumentBlocks.size())
+            .arg(!result.correctedSourceText.isEmpty() && result.correctedSourceText != result.sourceText));
     const bool previousCorrectionSuggested = correctionSuggested();
 
     updateAgendaParseVerification(result.agendaParseVerification);
@@ -477,6 +520,11 @@ void ContentsStructuredBlockRenderer::applyRenderResult(const RenderResult& resu
 
 void ContentsStructuredBlockRenderer::dispatchAsyncRender()
 {
+    WhatSon::Debug::traceEditorSelf(
+        this,
+        QStringLiteral("structuredBlockRenderer"),
+        QStringLiteral("dispatchAsyncRender"),
+        QStringLiteral("inFlight=%1 activeSequence=%2").arg(m_renderRequestInFlight).arg(m_activeRenderSequence));
     if (m_renderRequestInFlight)
     {
         return;
@@ -519,6 +567,14 @@ void ContentsStructuredBlockRenderer::dispatchAsyncRender()
 
 void ContentsStructuredBlockRenderer::handleAsyncRenderFinished(const RenderResult& result)
 {
+    WhatSon::Debug::traceEditorSelf(
+        this,
+        QStringLiteral("structuredBlockRenderer"),
+        QStringLiteral("handleAsyncRenderFinished"),
+        QStringLiteral("resultSequence=%1 activeSequence=%2 sourceMatches=%3")
+            .arg(result.sequence)
+            .arg(m_activeRenderSequence)
+            .arg(result.sourceText == m_sourceText));
     const bool sequenceMatches = result.sequence != 0 && result.sequence == m_activeRenderSequence;
     m_renderRequestInFlight = false;
     if (sequenceMatches)
@@ -546,6 +602,11 @@ void ContentsStructuredBlockRenderer::handleAsyncRenderFinished(const RenderResu
 
 void ContentsStructuredBlockRenderer::publishPlaceholderDocumentBlocks()
 {
+    WhatSon::Debug::traceEditorSelf(
+        this,
+        QStringLiteral("structuredBlockRenderer"),
+        QStringLiteral("publishPlaceholderDocumentBlocks"),
+        QStringLiteral("sourceSummary=%1").arg(WhatSon::Debug::summarizeText(m_sourceText)));
     const QVariantList placeholderBlocks = QVariantList {
         documentBlockPayload(m_sourceText, 0, m_sourceText.size())
     };
