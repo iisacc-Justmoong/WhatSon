@@ -21,4 +21,6 @@
 - Hub selection wiring now updates sync/import state directly without a background write-lease heartbeat timer.
 - Permission startup wiring now consumes `permissions/WhatSonPermissionBootstrapper.hpp` after consolidating
   permission bootstrap code under `src/app/permissions`.
+- Application bootstrap no longer forces Qt scene-graph visualization environment variables and no longer auto-opens
+  the scene debug companion window.
 - This keeps the application bootstrap as the composition root for concrete object selection.

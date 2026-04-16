@@ -7,13 +7,12 @@
 ## Scope
 - Mirrored source directory: `src/app/qml/window`
 - Child directories: 1
-- Child files: 8
+- Child files: 7
 
 ## Child Directories
 - `preference`
 
 ## Child Files
-- `DebugConsole.qml`
 - `MacNativeMenuBar.qml`
 - `Onboarding.qml`
 - `OnboardingContent.qml`
@@ -23,6 +22,8 @@
 - `TrialStatus.qml`
 
 ## Current Notes
+- Scene-graph visualization helpers were removed from the runtime window set. This directory now only contains
+  user-facing application windows and onboarding/trial surfaces.
 - `Onboarding.qml`, `OnboardingContent.qml`, and `TrialStatus.qml` now route visible window geometry through LVRS
   `gap`, `radius`, `stroke`, and `scaleMetric(...)` helpers instead of local pixel literals.
 

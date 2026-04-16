@@ -19,3 +19,6 @@ and mobile hosts.
 - The coordinator still exposes the same host-facing API surface, but transient duplicate-import and editor-surface
   guard state now live inside dedicated helper objects instead of being written straight into host-owned mutable
   properties.
+- Because the root type remains `QtObject`, those helper collaborators are composed through explicit object properties
+  rather than anonymous inline children.
+  This keeps the controller valid under QML lint/compile rules while preserving the same public API.

@@ -161,7 +161,6 @@ LV.ApplicationWindow {
     property bool monthCalendarOverlayVisible: false
     property bool weekCalendarOverlayVisible: false
     property bool yearCalendarOverlayVisible: false
-    property bool sceneDebugOverlayVisible: true
     property int startupRouteRecoveryAttempts: 0
     property string startupRouteRecoveryReason: ""
 
@@ -473,13 +472,6 @@ LV.ApplicationWindow {
         sequence: StandardKey.New
 
         onActivated: windowInteractions.createNoteFromShortcut()
-    }
-    Shortcut {
-        autoRepeat: false
-        context: Qt.ApplicationShortcut
-        sequence: "Ctrl+Shift+D"
-
-        onActivated: applicationWindow.sceneDebugOverlayVisible = !applicationWindow.sceneDebugOverlayVisible
     }
     LV.EventListener {
         action: function (eventData) {
@@ -843,10 +835,6 @@ LV.ApplicationWindow {
             onWeekCalendarOverlayDismissRequested: applicationWindow.weekCalendarOverlayVisible = false
             onYearCalendarOverlayDismissRequested: applicationWindow.yearCalendarOverlayVisible = false
         }
-    }
-    WindowView.SceneDebugOverlay {
-        hostWindow: applicationWindow
-        enabled: applicationWindow.sceneDebugOverlayVisible
     }
     WindowView.Onboarding {
         id: onboardingSubWindow

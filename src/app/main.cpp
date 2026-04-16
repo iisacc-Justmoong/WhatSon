@@ -96,21 +96,6 @@ int main(int argc, char* argv[])
     {
         qputenv("WHATSON_DEBUG_MODE", QByteArrayLiteral("1"));
     }
-    if (!qEnvironmentVariableIsSet("WHATSON_SCENE_DEBUG"))
-    {
-        qputenv("WHATSON_SCENE_DEBUG", QByteArrayLiteral("1"));
-    }
-    if (qEnvironmentVariableIntValue("WHATSON_SCENE_DEBUG") > 0)
-    {
-        if (qEnvironmentVariableIsEmpty("QSG_VISUALIZE"))
-        {
-            qputenv("QSG_VISUALIZE", QByteArrayLiteral("clip,batches,changes,overdraw"));
-        }
-        if (qEnvironmentVariableIsEmpty("QSG_RHI_BACKEND"))
-        {
-            qputenv("QSG_RHI_BACKEND", QByteArrayLiteral("opengl"));
-        }
-    }
 #if defined(WHATSON_USE_LVRS_DYNAMIC_QML_IMPORT) && defined(WHATSON_LVRS_RUNTIME_IMPORT_ROOT)
     Q_CLEANUP_RESOURCE(qmake_LVRS);
 
@@ -539,19 +524,6 @@ int main(int argc, char* argv[])
             QStringLiteral("Main"),
             initialProperties);
     };
-    const auto loadDebugConsoleWindow =
-        [&loadWindowFromModule](QObject* hostWindow) -> QObject*
-    {
-        const QVariantMap debugWindowInitialProperties{
-            {QStringLiteral("hostWindow"), QVariant::fromValue(hostWindow)},
-            {QStringLiteral("visible"), true}
-        };
-        return loadWindowFromModule(
-            QStringLiteral("WhatSon.App"),
-            QStringLiteral("DebugConsole"),
-            debugWindowInitialProperties);
-    };
-
     const auto activateWindowObject = [](QObject* windowObject)
     {
         if (auto* window = qobject_cast<QWindow*>(windowObject))
@@ -702,16 +674,6 @@ int main(int argc, char* argv[])
     }
 
     activateWindowObject(mainWindow);
-
-    QObject* debugConsoleWindow = nullptr;
-    if (qEnvironmentVariableIntValue("WHATSON_SCENE_DEBUG") > 0)
-    {
-        debugConsoleWindow = loadDebugConsoleWindow(mainWindow);
-        if (debugConsoleWindow != nullptr)
-        {
-            activateWindowObject(debugConsoleWindow);
-        }
-    }
 
     if (startupRuntimeCoordinator.startupDeferredBootstrapActive())
     {

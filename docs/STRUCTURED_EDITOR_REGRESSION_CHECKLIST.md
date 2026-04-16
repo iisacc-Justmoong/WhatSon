@@ -128,6 +128,9 @@ structured document-flow editor changes.
   between desktop `ContentsDisplayView.qml` and mobile `MobileContentsDisplayView.qml`.
 - After the import-controller split, duplicate-import alert open/close state and editor-surface guard release must
   still remain synchronized on both hosts.
+- The split helper set must remain QML-lintable as `QtObject`-owned collaborators.
+  `ContentsResourceImportController.qml` must not regress into anonymous child-object composition that breaks under
+  `qmllint` or QML compilation.
 - Accepting `overwrite` or `keep both` from that prompt must still insert canonical `<resource ... />` tags back into
   the currently bound note on both editor hosts.
 - If an imported file name already exists in the current resources store, desktop/mobile must open an explicit

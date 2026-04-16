@@ -1,7 +1,6 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
-import LVRS 1.0 as LV
 
 QtObject {
     id: controller
@@ -19,11 +18,11 @@ QtObject {
     readonly property bool resourceImportConflictAlertOpen: resourceImportConflictController.resourceImportConflictAlertOpen
     readonly property bool programmaticEditorSurfaceSyncActive: editorSurfaceGuardController.programmaticEditorSurfaceSyncActive
 
-    ContentsResourceDropPayloadParser {
+    property QtObject dropPayloadParser: ContentsResourceDropPayloadParser {
         id: dropPayloadParser
     }
 
-    ContentsResourceTagController {
+    property QtObject resourceTagController: ContentsResourceTagController {
         id: resourceTagController
 
         bodyResourceRenderer: controller.bodyResourceRenderer
@@ -33,7 +32,7 @@ QtObject {
         view: controller.view
     }
 
-    ContentsInlineResourcePresentationController {
+    property QtObject inlineResourcePresentationController: ContentsInlineResourcePresentationController {
         id: inlineResourcePresentationController
 
         bodyResourceRenderer: controller.bodyResourceRenderer
@@ -43,7 +42,7 @@ QtObject {
         view: controller.view
     }
 
-    ContentsEditorSurfaceGuardController {
+    property QtObject editorSurfaceGuardController: ContentsEditorSurfaceGuardController {
         id: editorSurfaceGuardController
 
         contentEditor: controller.contentEditor
@@ -54,7 +53,7 @@ QtObject {
         textMetricsBridge: controller.textMetricsBridge
     }
 
-    ContentsResourceImportConflictController {
+    property QtObject resourceImportConflictController: ContentsResourceImportConflictController {
         id: resourceImportConflictController
 
         editorSurfaceGuardController: editorSurfaceGuardController
