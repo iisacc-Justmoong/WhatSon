@@ -242,18 +242,14 @@ Item {
         return null;
     }
     property bool resourceDropActive: false
-    property bool resourceDropEditorSurfaceGuardActive: false
-    property int resourceDropEditorSurfaceGuardToken: 0
+    readonly property bool resourceDropEditorSurfaceGuardActive: resourceImportController.resourceDropEditorSurfaceGuardActive
     readonly property int resourceImportConflictPolicyAbort: 0
     readonly property int resourceImportConflictPolicyOverwrite: 1
     readonly property int resourceImportConflictPolicyKeepBoth: 2
     readonly property int resourceImportModeNone: 0
     readonly property int resourceImportModeUrls: 1
     readonly property int resourceImportModeClipboard: 2
-    property var pendingResourceImportConflict: ({})
-    property int pendingResourceImportMode: contentsView.resourceImportModeNone
-    property var pendingResourceImportUrls: []
-    property bool resourceImportConflictAlertOpen: false
+    readonly property bool resourceImportConflictAlertOpen: resourceImportController.resourceImportConflictAlertOpen
     readonly property color resourceRenderBorderColor: "#334E5157"
     readonly property color resourceRenderCardColor: "#E61A1D22"
     readonly property int resourceRenderDisplayLimit: 0
@@ -265,7 +261,6 @@ Item {
                                                                     || contentsView.showFormattedTextRenderer
     readonly property bool richTextInlineImageRenderingEnabled: !contentsView.preferNativeInputHandling
     readonly property int resourceEditorPlaceholderLineCount: 1
-    property int programmaticEditorSurfaceSyncDepth: 0
     readonly property int editorIdleSyncThresholdMs: 1000
     readonly property string selectedNoteBodyText: selectionBridge.selectedNoteBodyText
     readonly property string selectedNoteBodyNoteId: selectionBridge.selectedNoteBodyNoteId
@@ -284,7 +279,7 @@ Item {
                                                      && !contentsView.showDedicatedResourceViewer
                                                      && !contentsView.showFormattedTextRenderer
     readonly property bool resourceBlocksRenderedInlineByRichTextEditor: contentsView.legacyInlineEditorActive
-    readonly property bool programmaticEditorSurfaceSyncActive: contentsView.programmaticEditorSurfaceSyncDepth > 0
+    readonly property bool programmaticEditorSurfaceSyncActive: resourceImportController.programmaticEditorSurfaceSyncActive
     readonly property bool showDedicatedResourceViewer: false
     readonly property bool showEditorGutter: !contentsView.showDedicatedResourceViewer
                                              && !contentsView.showFormattedTextRenderer
@@ -337,12 +332,15 @@ Item {
     }
     function normalizedStructuredLogicalLineEntries() {
         if (!contentsView.showStructuredDocumentFlow
-                || !structuredDocumentFlow
-                || structuredDocumentFlow.logicalLineEntries === undefined) {
+                || !structuredDocumentFlow) {
             return [];
         }
 
-        const rawEntries = structuredDocumentFlow.logicalLineEntries();
+        const rawEntries = structuredDocumentFlow.cachedLogicalLineEntries !== undefined
+                ? structuredDocumentFlow.cachedLogicalLineEntries
+                : (structuredDocumentFlow.logicalLineEntries !== undefined
+                   ? structuredDocumentFlow.logicalLineEntries()
+                   : []);
         if (Array.isArray(rawEntries))
             return rawEntries;
 
@@ -481,8 +479,30 @@ Item {
         return contentsView.editorText === undefined || contentsView.editorText === null ? "" : String(contentsView.editorText);
     }
     function nextMinimapLineGroupsForCurrentState(currentSourceText) {
-        if (contentsView.showStructuredDocumentFlow)
-            return contentsView.buildStructuredMinimapLineGroupsForRange(1, contentsView.logicalLineCount);
+        if (contentsView.showStructuredDocumentFlow) {
+            const structuredLineCount = Math.max(1, contentsView.effectiveStructuredLogicalLineEntries().length);
+            if (contentsView.minimapSnapshotForceFullRefresh
+                    || !Array.isArray(contentsView.minimapLineGroups)
+                    || contentsView.minimapLineGroups.length !== structuredLineCount
+                    || contentsView.minimapLineGroups.length === 0
+                    || contentsView.minimapSnapshotSourceText.length === 0) {
+                return contentsView.buildStructuredMinimapLineGroupsForRange(1, structuredLineCount);
+            }
+
+            const changeRange = MinimapSnapshotSupport.computeChangedLineRange(contentsView.minimapSnapshotSourceText, currentSourceText);
+            if (!changeRange.valid)
+                return contentsView.minimapLineGroups;
+
+            const replacementGroups = contentsView.buildStructuredMinimapLineGroupsForRange(changeRange.nextStartLine, changeRange.nextEndLine);
+            const mergedGroups = MinimapSnapshotSupport.spliceLineGroups(
+                        contentsView.minimapLineGroups,
+                        replacementGroups,
+                        changeRange.previousStartLine,
+                        changeRange.previousEndLine);
+            if (!Array.isArray(mergedGroups) || mergedGroups.length !== structuredLineCount)
+                return contentsView.buildStructuredMinimapLineGroupsForRange(1, structuredLineCount);
+            return mergedGroups;
+        }
         if (contentsView.minimapSnapshotForceFullRefresh
                 || !Array.isArray(contentsView.minimapLineGroups)
                 || contentsView.minimapLineGroups.length !== contentsView.logicalLineCount
@@ -517,10 +537,24 @@ Item {
             }
             const visibleLines = [];
             for (let lineIndex = 0; lineIndex < lineEntries.length; ++lineIndex) {
+                const entry = lineEntries[lineIndex] && typeof lineEntries[lineIndex] === "object"
+                        ? lineEntries[lineIndex]
+                        : ({});
                 const lineNumber = lineIndex + 1;
-                const gutterY = contentsView.gutterLineY(lineNumber);
-                const gutterHeight = contentsView.gutterLineVisualHeight(lineNumber, 1);
-                const visibleHeight = contentsView.lineVisualHeight(lineNumber, 1);
+                const lineContentY = Math.max(
+                            0,
+                            Number(entry.gutterContentY !== undefined ? entry.gutterContentY : entry.contentY) || 0);
+                const gutterY = contentsView.editorViewportYForDocumentY(lineContentY);
+                const gutterHeight = Math.max(
+                            1,
+                            Number(entry.gutterContentHeight !== undefined
+                                   ? entry.gutterContentHeight
+                                   : contentsView.editorLineHeight) || contentsView.editorLineHeight);
+                const visibleHeight = Math.max(
+                            1,
+                            Number(entry.contentHeight !== undefined
+                                   ? entry.contentHeight
+                                   : contentsView.editorLineHeight) || contentsView.editorLineHeight);
                 if (gutterY > contentsView.gutterViewportHeight)
                     break;
                 if (gutterY + visibleHeight < 0)
@@ -563,109 +597,31 @@ Item {
         return visibleLines;
     }
     function canAcceptResourceDropUrls(urls) {
-        if (!contentsView.hasSelectedNote || !contentsView.resourcesImportViewModel)
-            return false;
-        if (contentsView.showDedicatedResourceViewer || contentsView.showFormattedTextRenderer)
-            return false;
-        if (!Array.isArray(urls) || urls.length === 0)
-            return false;
-        if (contentsView.resourcesImportViewModel.canImportUrls === undefined)
-            return false;
-        return !!contentsView.resourcesImportViewModel.canImportUrls(urls);
+        return resourceImportController.canAcceptResourceDropUrls(urls);
     }
     function clearPendingResourceImportConflict() {
-        contentsView.pendingResourceImportConflict = ({});
-        contentsView.pendingResourceImportMode = contentsView.resourceImportModeNone;
-        contentsView.pendingResourceImportUrls = [];
-        contentsView.resourceImportConflictAlertOpen = false;
+        resourceImportController.clearPendingResourceImportConflict();
     }
     function normalizedResourceImportConflict(conflict) {
-        return conflict && typeof conflict === "object" ? conflict : ({});
+        return resourceImportController.normalizedResourceImportConflict(conflict);
     }
     function resourceImportConflictAlertMessage() {
-        const conflict = contentsView.normalizedResourceImportConflict(contentsView.pendingResourceImportConflict);
-        const fileName = conflict.sourceFileName !== undefined ? String(conflict.sourceFileName).trim() : "";
-        const resourcePath = conflict.existingResourcePath !== undefined ? String(conflict.existingResourcePath).trim() : "";
-        if (fileName.length === 0)
-            return "A resource with the same name already exists. Choose how to continue.";
-        if (resourcePath.length === 0)
-            return "A resource named \"" + fileName + "\" already exists. Choose whether to overwrite it, keep both copies, or cancel the import.";
-        return "A resource named \"" + fileName + "\" already exists at \"" + resourcePath + "\". Choose whether to overwrite it, keep both copies, or cancel the import.";
+        return resourceImportController.resourceImportConflictAlertMessage();
     }
     function scheduleResourceImportConflictPrompt(importMode, urls, conflict) {
-        contentsView.activateResourceDropEditorSurfaceGuard();
-        contentsView.pendingResourceImportMode = importMode;
-        contentsView.pendingResourceImportUrls = Array.isArray(urls) ? urls.slice(0) : [];
-        contentsView.pendingResourceImportConflict = contentsView.normalizedResourceImportConflict(conflict);
-        contentsView.resourceDropActive = false;
-        contentsView.resourceImportConflictAlertOpen = true;
-        return true;
+        return resourceImportController.scheduleResourceImportConflictPrompt(importMode, urls, conflict);
     }
     function finalizeInsertedImportedResources(importedEntries) {
-        const importedEntryCount = contentsView.normalizedImportedResourceEntries(importedEntries).length;
-        const inserted = contentsView.insertImportedResourceTags(importedEntries);
-        if (importedEntryCount > 0
-                && contentsView.resourcesImportViewModel
-                && contentsView.resourcesImportViewModel.reloadImportedResources !== undefined) {
-            contentsView.resourcesImportViewModel.reloadImportedResources();
-        }
-        contentsView.releaseResourceDropEditorSurfaceGuard(inserted);
-        contentsView.resourceDropActive = false;
-        contentsView.clearPendingResourceImportConflict();
-        return inserted;
+        return resourceImportController.finalizeInsertedImportedResources(importedEntries);
     }
     function cancelPendingResourceImportConflict() {
-        contentsView.releaseResourceDropEditorSurfaceGuard(false);
-        contentsView.resourceDropActive = false;
-        contentsView.clearPendingResourceImportConflict();
+        resourceImportController.cancelPendingResourceImportConflict();
     }
     function executePendingResourceImportWithPolicy(conflictPolicy) {
-        if (!contentsView.resourcesImportViewModel) {
-            contentsView.cancelPendingResourceImportConflict();
-            return false;
-        }
-
-        contentsView.resourceImportConflictAlertOpen = false;
-        let importedEntries = [];
-        if (contentsView.pendingResourceImportMode === contentsView.resourceImportModeUrls) {
-            if (contentsView.resourcesImportViewModel.importUrlsForEditorWithConflictPolicy === undefined) {
-                contentsView.cancelPendingResourceImportConflict();
-                return false;
-            }
-            importedEntries = contentsView.resourcesImportViewModel.importUrlsForEditorWithConflictPolicy(
-                        contentsView.pendingResourceImportUrls,
-                        conflictPolicy);
-        } else if (contentsView.pendingResourceImportMode === contentsView.resourceImportModeClipboard) {
-            if (contentsView.resourcesImportViewModel.importClipboardImageForEditorWithConflictPolicy === undefined) {
-                contentsView.cancelPendingResourceImportConflict();
-                return false;
-            }
-            importedEntries = contentsView.resourcesImportViewModel.importClipboardImageForEditorWithConflictPolicy(
-                        conflictPolicy);
-        } else {
-            contentsView.cancelPendingResourceImportConflict();
-            return false;
-        }
-
-        return contentsView.finalizeInsertedImportedResources(importedEntries);
+        return resourceImportController.executePendingResourceImportWithPolicy(conflictPolicy);
     }
     function importUrlsAsResourcesWithPrompt(urls) {
-        if (!contentsView.resourcesImportViewModel
-                || contentsView.resourcesImportViewModel.importUrlsForEditorWithConflictPolicy === undefined) {
-            return false;
-        }
-
-        const conflict = contentsView.resourcesImportViewModel.inspectImportConflictForUrls !== undefined
-                ? contentsView.resourcesImportViewModel.inspectImportConflictForUrls(urls)
-                : ({});
-        if (conflict && conflict.conflict)
-            return contentsView.scheduleResourceImportConflictPrompt(contentsView.resourceImportModeUrls, urls, conflict);
-
-        contentsView.activateResourceDropEditorSurfaceGuard();
-        const importedEntries = contentsView.resourcesImportViewModel.importUrlsForEditorWithConflictPolicy(
-                    urls,
-                    contentsView.resourceImportConflictPolicyAbort);
-        return contentsView.finalizeInsertedImportedResources(importedEntries);
+        return resourceImportController.importUrlsAsResourcesWithPrompt(urls);
     }
     function clampUnit(value) {
         return Math.max(0, Math.min(1, Number(value) || 0));
@@ -817,52 +773,13 @@ Item {
         contentsView.logicalLineDocumentYCacheLineCount = lineCount;
     }
     function appendResourceDropPayloadLines(rawText, urls) {
-        if (!Array.isArray(urls))
-            return;
-        const normalizedText = rawText === undefined || rawText === null ? "" : String(rawText).trim();
-        if (normalizedText.length === 0)
-            return;
-        const payloadLines = normalizedText.split(/\r?\n|\u0000/g);
-        for (let lineIndex = 0; lineIndex < payloadLines.length; ++lineIndex) {
-            const line = String(payloadLines[lineIndex] || "").trim();
-            if (line.length === 0 || line.charAt(0) === "#")
-                continue;
-            urls.push(line);
-        }
+        resourceImportController.appendResourceDropPayloadLines(rawText, urls);
     }
     function appendResourceDropMimePayload(drop, mimeType, urls) {
-        if (!drop
-                || drop.getDataAsString === undefined
-                || !Array.isArray(urls))
-            return;
-        contentsView.appendResourceDropPayloadLines(drop.getDataAsString(mimeType), urls);
+        resourceImportController.appendResourceDropMimePayload(drop, mimeType, urls);
     }
     function extractResourceDropUrls(drop) {
-        const urls = [];
-        if (drop && drop.urls !== undefined && drop.urls !== null) {
-            if (Array.isArray(drop.urls)) {
-                for (let index = 0; index < drop.urls.length; ++index)
-                    urls.push(drop.urls[index]);
-            } else if (drop.urls.length !== undefined) {
-                for (let listIndex = 0; listIndex < drop.urls.length; ++listIndex)
-                    urls.push(drop.urls[listIndex]);
-            } else {
-                urls.push(drop.urls);
-            }
-        }
-        if (urls.length > 0)
-            return urls;
-        contentsView.appendResourceDropPayloadLines(drop && drop.text !== undefined ? drop.text : "", urls);
-        const mimeTypes = [
-            "text/uri-list",
-            "text/plain",
-            "public.file-url",
-            "public.url",
-            "text/x-moz-url"
-        ];
-        for (let index = 0; index < mimeTypes.length; ++index)
-            contentsView.appendResourceDropMimePayload(drop, mimeTypes[index], urls);
-        return urls;
+        return resourceImportController.extractResourceDropUrls(drop);
     }
     function firstVisibleLogicalLine() {
         const refreshRevision = contentsView.gutterRefreshRevision;
@@ -1081,279 +998,64 @@ Item {
         return editorSelectionController.inlineStyleWrapTags(styleTag);
     }
     function normalizedImportedResourceEntries(importedEntries) {
-        if (Array.isArray(importedEntries))
-            return importedEntries;
-        if (!importedEntries)
-            return [];
-
-        const explicitLength = Number(importedEntries.length);
-        if (isFinite(explicitLength) && explicitLength >= 0) {
-            const normalizedEntries = [];
-            for (let index = 0; index < Math.floor(explicitLength); ++index)
-                normalizedEntries.push(importedEntries[index]);
-            return normalizedEntries;
-        }
-
-        const explicitCount = Number(importedEntries.count);
-        if (isFinite(explicitCount) && explicitCount >= 0) {
-            const normalizedEntries = [];
-            for (let index = 0; index < Math.floor(explicitCount); ++index)
-                normalizedEntries.push(importedEntries[index]);
-            return normalizedEntries;
-        }
-
-        const indexedKeys = Object.keys(importedEntries).filter(function (key) {
-            return /^\d+$/.test(key);
-        }).sort(function (lhs, rhs) {
-            return Number(lhs) - Number(rhs);
-        });
-        if (indexedKeys.length === 0)
-            return [];
-
-        const normalizedEntries = [];
-        for (let index = 0; index < indexedKeys.length; ++index)
-            normalizedEntries.push(importedEntries[indexedKeys[index]]);
-        return normalizedEntries;
+        return resourceImportController.normalizedImportedResourceEntries(importedEntries);
     }
     function resourceBlockSourceText(tagTexts) {
-        if (!Array.isArray(tagTexts) || tagTexts.length === 0)
-            return "";
-        const blockSourceText = tagTexts.join("\n");
-        const currentSourceText = contentsView.editorText !== undefined && contentsView.editorText !== null
-                ? String(contentsView.editorText)
-                : "";
-        const cursorSourceOffset = editorTypingController.sourceOffsetForLogicalOffset(
-                    contentsView.currentEditorCursorPosition());
-        const boundedCursorOffset = Math.max(0, Math.min(currentSourceText.length, Number(cursorSourceOffset) || 0));
-        const previousCharacter = boundedCursorOffset > 0 ? currentSourceText.charAt(boundedCursorOffset - 1) : "";
-        const nextCharacter = boundedCursorOffset < currentSourceText.length ? currentSourceText.charAt(boundedCursorOffset) : "";
-        const leadingBreak = currentSourceText.length > 0 && previousCharacter !== "\n" ? "\n" : "";
-        const trailingBreak = boundedCursorOffset < currentSourceText.length && nextCharacter !== "\n" ? "\n" : "";
-        return leadingBreak + blockSourceText + trailingBreak;
+        return resourceImportController.resourceBlockSourceText(tagTexts);
     }
     function sourceContainsCanonicalResourceTag(sourceText) {
-        const normalizedSourceText = sourceText === undefined || sourceText === null
-                ? ""
-                : String(sourceText);
-        if (normalizedSourceText.length === 0)
-            return false;
-        return /<resource\b[^>]*\/?>/i.test(normalizedSourceText);
+        return resourceImportController.sourceContainsCanonicalResourceTag(sourceText);
     }
     function canonicalResourceTagCount(sourceText) {
-        const normalizedSourceText = sourceText === undefined || sourceText === null
-                ? ""
-                : String(sourceText);
-        if (normalizedSourceText.length === 0)
-            return 0;
-        const matches = normalizedSourceText.match(/<resource\b[^>]*\/?>/gi);
-        return matches ? matches.length : 0;
+        return resourceImportController.canonicalResourceTagCount(sourceText);
     }
     function resourceTagLossDetected(previousSourceText, nextSourceText) {
-        if (contentsView.showStructuredDocumentFlow)
-            return false;
-        const selectedBodyCount = (!editorSession.localEditorAuthority
-                                   && contentsView.selectedNoteBodyNoteId === contentsView.selectedNoteId)
-                ? contentsView.canonicalResourceTagCount(contentsView.selectedNoteBodyText)
-                : 0;
-        const baselineCount = Math.max(
-                    contentsView.canonicalResourceTagCount(previousSourceText),
-                    contentsView.canonicalResourceTagCount(contentsView.documentPresentationSourceText),
-                    selectedBodyCount);
-        return baselineCount > contentsView.canonicalResourceTagCount(nextSourceText);
+        return resourceImportController.resourceTagLossDetected(previousSourceText, nextSourceText);
     }
     function inlineResourcePreviewWidth() {
-        if (contentsView.showPrintEditorLayout)
-            return Math.max(120, Math.floor(contentsView.printPaperTextWidth));
-        const editorWidth = contentEditor && contentEditor.width !== undefined
-                ? Number(contentEditor.width) || 0
-                : 0;
-        const viewportWidth = editorViewport ? Number(editorViewport.width) || 0 : 0;
-        const availableWidth = Math.max(editorWidth, viewportWidth) - contentsView.editorHorizontalInset * 2;
-        return Math.max(120, Math.floor(Math.max(120, availableWidth)));
+        return resourceImportController.inlineResourcePreviewWidth();
     }
     function resourceEntryOpenTarget(resourceEntry) {
-        const safeEntry = resourceEntry && typeof resourceEntry === "object" ? resourceEntry : ({});
-        const sourceUrl = safeEntry.source !== undefined ? String(safeEntry.source).trim() : "";
-        if (sourceUrl.length > 0)
-            return sourceUrl;
-        const resolvedPath = safeEntry.resolvedPath !== undefined ? String(safeEntry.resolvedPath).trim() : "";
-        return resolvedPath;
+        return resourceImportController.resourceEntryOpenTarget(resourceEntry);
     }
     function richTextParagraphHtml(innerHtml) {
-        const paragraphBody = innerHtml === undefined || innerHtml === null || String(innerHtml).length === 0
-                ? "&nbsp;"
-                : String(innerHtml);
-        return "<p style=\"margin-top:0px;margin-bottom:0px;\">" + paragraphBody + "</p>";
+        return resourceImportController.richTextParagraphHtml(innerHtml);
     }
     function inlineResourcePlaceholderHtml(lineCount) {
-        const lines = [];
-        const placeholderLineCount = Math.max(0, Math.floor(Number(lineCount) || 0));
-        for (let index = 0; index < placeholderLineCount; ++index)
-            lines.push(contentsView.richTextParagraphHtml("&nbsp;"));
-        return lines.join("");
+        return resourceImportController.inlineResourcePlaceholderHtml(lineCount);
     }
     function resourcePlaceholderBlockHtml() {
-        return contentsView.inlineResourcePlaceholderHtml(contentsView.resourceEditorPlaceholderLineCount);
+        return resourceImportController.resourcePlaceholderBlockHtml();
     }
     function inlineResourceBlockHtml(resourceEntry) {
-        const safeEntry = resourceEntry && typeof resourceEntry === "object" ? resourceEntry : ({});
-        const renderMode = safeEntry.renderMode !== undefined ? String(safeEntry.renderMode).trim().toLowerCase() : "";
-        const sourceUrl = contentsView.resourceEntryOpenTarget(safeEntry);
-        const encodedSourceUrl = contentsView.encodeXmlAttributeValue(sourceUrl);
-        const previewWidth = contentsView.inlineResourcePreviewWidth();
-        if (renderMode === "image" && encodedSourceUrl.length > 0) {
-            return "<table width=\"100%\" cellspacing=\"0\" cellpadding=\"0\" style=\"margin-top:0px;margin-bottom:0px;\">"
-                    + "<tr><td align=\"center\">"
-                    + "<img src=\"" + encodedSourceUrl + "\" width=\"" + String(previewWidth) + "\" />"
-                    + "</td></tr></table>";
-        }
-        return contentsView.resourcePlaceholderBlockHtml();
+        return resourceImportController.inlineResourceBlockHtml(resourceEntry);
     }
     function resourceEntryCanRenderInlineInRichText(resourceEntry) {
-        const safeEntry = resourceEntry && typeof resourceEntry === "object" ? resourceEntry : ({});
-        const renderMode = safeEntry.renderMode !== undefined ? String(safeEntry.renderMode).trim().toLowerCase() : "";
-        const sourceUrl = contentsView.resourceEntryOpenTarget(safeEntry);
-        return contentsView.richTextInlineImageRenderingEnabled
-                && renderMode === "image"
-                && sourceUrl.length > 0;
+        return resourceImportController.resourceEntryCanRenderInlineInRichText(resourceEntry);
     }
     function renderEditorSurfaceHtmlWithInlineResources(editorHtml) {
-        const baseEditorHtml = editorHtml === undefined || editorHtml === null ? "" : String(editorHtml);
-        const renderedResources = contentsView.normalizedImportedResourceEntries(bodyResourceRenderer.renderedResources);
-        return baseEditorHtml.replace(
-                    /<!--whatson-resource-block:(\d+)-->[\s\S]*?<!--\/whatson-resource-block:\1-->/g,
-                    function (_match, resourceIndexText) {
-                        const resourceIndex = Math.max(0, Math.floor(Number(resourceIndexText) || 0));
-                        const entry = resourceIndex < renderedResources.length ? renderedResources[resourceIndex] : null;
-                        // Resolved image resources now become real RichText document blocks.
-                        // Unresolved or non-image resources still keep a reserved placeholder slot.
-                        return contentsView.resourceEntryCanRenderInlineInRichText(entry)
-                                ? contentsView.inlineResourceBlockHtml(entry)
-                                : contentsView.resourcePlaceholderBlockHtml();
-                    });
+        return resourceImportController.renderEditorSurfaceHtmlWithInlineResources(editorHtml);
     }
     function refreshInlineResourcePresentation() {
-        if (!contentsView.resourceBlocksRenderedInlineByRichTextEditor)
-            return;
-        const rendererRenderedText = textFormatRenderer && textFormatRenderer.editorSurfaceHtml !== undefined && textFormatRenderer.editorSurfaceHtml !== null
-                ? String(textFormatRenderer.editorSurfaceHtml)
-                : "";
-        const nextRenderedText = contentsView.renderEditorSurfaceHtmlWithInlineResources(rendererRenderedText);
-        if (contentsView.renderedEditorText !== nextRenderedText) {
-            contentsView.markProgrammaticEditorSurfaceSync();
-            contentsView.renderedEditorText = nextRenderedText;
-        }
-        contentsView.scheduleEditorRichTextSurfaceSync();
+        resourceImportController.refreshInlineResourcePresentation();
     }
     function activateResourceDropEditorSurfaceGuard() {
-        contentsView.resourceDropEditorSurfaceGuardToken += 1;
-        if (!contentsView.resourceDropEditorSurfaceGuardActive)
-            contentsView.resourceDropEditorSurfaceGuardActive = true;
+        resourceImportController.activateResourceDropEditorSurfaceGuard();
     }
     function markProgrammaticEditorSurfaceSync() {
-        contentsView.programmaticEditorSurfaceSyncDepth += 1;
-        Qt.callLater(function () {
-            Qt.callLater(function () {
-                contentsView.programmaticEditorSurfaceSyncDepth = Math.max(
-                            0,
-                            (Number(contentsView.programmaticEditorSurfaceSyncDepth) || 0) - 1);
-            });
-        });
+        resourceImportController.markProgrammaticEditorSurfaceSync();
     }
     function restoreEditorSurfaceFromPresentation() {
-        if (!contentEditor)
-            return;
-        const nextSurfaceText = contentsView.preferNativeInputHandling
-                ? String(textMetricsBridge.logicalText === undefined || textMetricsBridge.logicalText === null
-                             ? ""
-                             : textMetricsBridge.logicalText)
-                : contentsView.renderedEditorText;
-        contentsView.markProgrammaticEditorSurfaceSync();
-        if (contentEditor.setProgrammaticText !== undefined) {
-            contentEditor.setProgrammaticText(nextSurfaceText);
-            return;
-        }
-        if (contentEditor.text !== undefined && contentEditor.text !== nextSurfaceText)
-            contentEditor.text = nextSurfaceText;
+        resourceImportController.restoreEditorSurfaceFromPresentation();
     }
     function releaseResourceDropEditorSurfaceGuard(restoreSurface) {
-        const scheduledToken = Math.max(0, Number(contentsView.resourceDropEditorSurfaceGuardToken) || 0);
-        if (!restoreSurface) {
-            contentsView.resourceDropEditorSurfaceGuardActive = false;
-            return;
-        }
-        Qt.callLater(function () {
-            Qt.callLater(function () {
-                if (contentsView.resourceDropEditorSurfaceGuardToken !== scheduledToken)
-                    return;
-                contentsView.restoreEditorSurfaceFromPresentation();
-                Qt.callLater(function () {
-                    if (contentsView.resourceDropEditorSurfaceGuardToken !== scheduledToken)
-                        return;
-                    contentsView.resourceDropEditorSurfaceGuardActive = false;
-                });
-            });
-        });
+        resourceImportController.releaseResourceDropEditorSurfaceGuard(restoreSurface);
     }
     function insertImportedResourceTags(importedEntries) {
-        const normalizedImportedEntries = contentsView.normalizedImportedResourceEntries(importedEntries);
-        if (normalizedImportedEntries.length === 0)
-            return false;
-        const tagTexts = [];
-        for (let index = 0; index < normalizedImportedEntries.length; ++index) {
-            const tagText = contentsView.resourceTagTextForImportedEntry(normalizedImportedEntries[index]);
-            if (tagText.length > 0)
-                tagTexts.push(tagText);
-        }
-        if (tagTexts.length === 0)
-            return false;
-        let inserted = false;
-        if (contentsView.showStructuredDocumentFlow
-                && structuredDocumentFlow
-                && structuredDocumentFlow.insertResourceBlocksAtActivePosition !== undefined) {
-            inserted = structuredDocumentFlow.insertResourceBlocksAtActivePosition(tagTexts);
-        } else {
-            const insertedSourceText = contentsView.resourceBlockSourceText(tagTexts);
-            inserted = editorTypingController.insertRawSourceTextAtCursor(
-                        insertedSourceText,
-                        insertedSourceText.length);
-        }
-        if (!inserted)
-            return false;
-        bodyResourceRenderer.requestRenderRefresh();
-        return inserted;
+        return resourceImportController.insertImportedResourceTags(importedEntries);
     }
     function pasteClipboardImageAsResource() {
-        if (!contentsView.hasSelectedNote
-                || contentsView.showDedicatedResourceViewer
-                || contentsView.showFormattedTextRenderer) {
-            return false;
-        }
-        if (!contentsView.resourcesImportViewModel
-                || contentsView.resourcesImportViewModel.importClipboardImageForEditor === undefined) {
-            return false;
-        }
-        if (contentsView.resourcesImportViewModel.busy !== undefined
-                && contentsView.resourcesImportViewModel.busy) {
-            return false;
-        }
-        if (!contentsView.clipboardImageAvailableForPaste()) {
-            return false;
-        }
-
-        const conflict = contentsView.resourcesImportViewModel.inspectClipboardImageImportConflict !== undefined
-                ? contentsView.resourcesImportViewModel.inspectClipboardImageImportConflict()
-                : ({});
-        if (conflict && conflict.conflict)
-            return contentsView.scheduleResourceImportConflictPrompt(contentsView.resourceImportModeClipboard, [], conflict);
-
-        if (contentsView.resourcesImportViewModel.importClipboardImageForEditorWithConflictPolicy === undefined)
-            return false;
-
-        contentsView.activateResourceDropEditorSurfaceGuard();
-        const importedEntries = contentsView.resourcesImportViewModel.importClipboardImageForEditorWithConflictPolicy(
-                    contentsView.resourceImportConflictPolicyAbort);
-        return contentsView.finalizeInsertedImportedResources(importedEntries);
+        return resourceImportController.pasteClipboardImageAsResource();
     }
     function isMinimapScrollable() {
         const flickable = contentsView.editorFlickable;
@@ -2033,10 +1735,13 @@ Item {
         if (!contentsView.lineGeometryRefreshEnabled)
             return;
         const currentSourceText = contentsView.currentMinimapSourceText();
+        const currentLineCount = contentsView.showStructuredDocumentFlow
+                ? Math.max(1, contentsView.effectiveStructuredLogicalLineEntries().length)
+                : contentsView.logicalLineCount;
         if (!contentsView.minimapSnapshotForceFullRefresh
                 && currentSourceText === contentsView.minimapSnapshotSourceText
                 && Array.isArray(contentsView.minimapLineGroups)
-                && contentsView.minimapLineGroups.length === contentsView.logicalLineCount) {
+                && contentsView.minimapLineGroups.length === currentLineCount) {
             contentsView.refreshMinimapViewportTracking();
             contentsView.refreshMinimapCursorTracking();
             return;
@@ -2577,6 +2282,19 @@ Item {
         textMetricsBridge: textMetricsBridge
         view: contentsView
     }
+    ContentsResourceImportController {
+        id: resourceImportController
+
+        bodyResourceRenderer: bodyResourceRenderer
+        contentEditor: contentsView.contentEditor
+        editorSession: editorSession
+        editorTypingController: editorTypingController
+        editorViewport: editorViewport
+        structuredDocumentFlow: structuredDocumentFlow
+        textFormatRenderer: textFormatRenderer
+        textMetricsBridge: textMetricsBridge
+        view: contentsView
+    }
     ContentsBodyResourceRenderer {
         id: bodyResourceRenderer
 
@@ -2718,6 +2436,9 @@ Item {
         target: structuredBlockRenderer
     }
     Connections {
+        function onCachedLogicalLineEntriesChanged() {
+            contentsView.refreshLiveLogicalLineMetrics();
+        }
         function onCurrentLogicalLineNumberChanged() {
             contentsView.scheduleCursorDrivenUiRefresh();
         }
@@ -3051,6 +2772,8 @@ Item {
                             return contentsView.handleClipboardImagePasteShortcut(event);
                         }
                         sourceText: contentsView.structuredFlowSourceText
+                        viewportContentY: contentsView.showPrintEditorLayout ? 0 : (Number(structuredDocumentViewport.contentY) || 0)
+                        viewportHeight: contentsView.showPrintEditorLayout ? 0 : (Number(structuredDocumentViewport.height) || 0)
                         width: contentsView.showPrintEditorLayout
                                ? contentsView.printPaperTextWidth
                                : Math.max(0, structuredDocumentViewport.width - contentsView.editorHorizontalInset * 2)

@@ -44,6 +44,10 @@ Editor-pop repair prefers the actually rendered note-list body before rebuilding
 ## Hierarchy Contract
 The mobile shell does not fork `Hierarchy.editable`; it forwards the shared reorder capability into the mounted hierarchy surface instead of creating a mobile-only hierarchy interaction model.
 
+The detail panel no longer binds itself to the sidebar through ad-hoc lambda wiring in `main.cpp`.
+Composition-root code now links those modules through `IActiveHierarchyContextSource` plus
+`DetailPanelCurrentHierarchyBinder`, keeping sidebar/detail-panel coupling behind an explicit coordinator object.
+
 Library system buckets now emit `draggable`, `dragAllowed`, `movable`, and `dragLocked`, and the hierarchy row baseline still resolves to a `20px` LVRS item height.
 
 `MobileHierarchyPage.qml` disables `usePlatformSafeMargin`, keeps the compact navigation bar and compact status bar mounted, and keeps the hierarchy column on the same mobile canvas instead of painting an isolated nested panel surface.

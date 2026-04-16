@@ -7,6 +7,8 @@ It sits above concrete hierarchy domains but below the visual sidebar QML. Its j
 
 ## Important Types
 - `SidebarHierarchyViewModel`: exposes the active hierarchy index and resolves the active hierarchy and note-list models.
+- `IActiveHierarchyContextSource`: exposes the active hierarchy index plus the active hierarchy/note-list binding
+  snapshot for consumers that need more than activation alone.
 - `IHierarchyViewModelProvider` and `HierarchyViewModelProvider`: map sidebar domain indices to dedicated hierarchy viewmodels.
 - `HierarchySidebarDomain.hpp`: shared constants and index normalization helpers.
 
@@ -17,3 +19,7 @@ The sidebar should not know how to discover the concrete viewmodel for each doma
 - the active note-list model
 
 That coordination is exactly what this directory provides.
+
+`HierarchyViewModelProvider` now stores those bindings as index-addressable `Mapping` entries rather than one
+hard-coded `Targets` struct field per domain, so the provider no longer needs a switch statement or one member per
+hierarchy type just to resolve the active module.

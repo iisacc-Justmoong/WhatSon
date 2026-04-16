@@ -47,6 +47,11 @@ Hosts the parsed `.wsnbody` block stream as one ordered document editor and forw
 - The parser now supplies the same block-trait payload before delegates finish loading, so nearest-editable-block
   fallback, logical line counting, gutter collapse, and minimap sampling no longer depend on the delegate having
   mounted already.
+- The flow now keeps one cached logical-line table and cached block layout summary per parsed snapshot instead of
+  rebuilding them on every gutter/minimap/current-line query.
+- The block host also now virtualizes delegate loading against the bound viewport:
+  off-screen text/resource/agenda/callout delegates are unloaded outside an overscanned window while their host items
+  keep a cached or estimated block height so document order and source-based focus math remain stable.
 - EOF resource insertion no longer restores a synthetic boundary mode; it restores focus to an offset inside the
   inserted block instead.
 - The dedicated resource-local plain-text adjacent-insertion path has been removed.

@@ -1,35 +1,43 @@
 #pragma once
 
 #include "viewmodel/hierarchy/IHierarchyViewModel.hpp"
+#include "viewmodel/sidebar/HierarchySidebarDomain.hpp"
 #include "viewmodel/sidebar/IHierarchyViewModelProvider.hpp"
+
+#include <QPointer>
+#include <QVector>
+
+#include <array>
 
 class HierarchyViewModelProvider final : public IHierarchyViewModelProvider
 {
     Q_OBJECT
 
 public:
-    struct Targets final
+    struct Mapping final
     {
-        IHierarchyViewModel* libraryViewModel = nullptr;
-        IHierarchyViewModel* projectsViewModel = nullptr;
-        IHierarchyViewModel* bookmarksViewModel = nullptr;
-        IHierarchyViewModel* tagsViewModel = nullptr;
-        IHierarchyViewModel* resourcesViewModel = nullptr;
-        IHierarchyViewModel* progressViewModel = nullptr;
-        IHierarchyViewModel* eventViewModel = nullptr;
-        IHierarchyViewModel* presetViewModel = nullptr;
+        int hierarchyIndex = WhatSon::Sidebar::kHierarchyDefaultIndex;
+        IHierarchyViewModel* viewModel = nullptr;
     };
 
     explicit HierarchyViewModelProvider(QObject* parent = nullptr);
     ~HierarchyViewModelProvider() override;
 
-    void setTargets(Targets targets);
-    Targets targets() const noexcept;
+    void setMappings(QVector<Mapping> mappings);
+    QVector<Mapping> mappings() const;
 
     IHierarchyViewModel* hierarchyViewModel(int hierarchyIndex) const override;
     QObject* noteListModel(int hierarchyIndex) const override;
 
 private:
-    static bool sameTargets(const Targets& lhs, const Targets& rhs) noexcept;
-    Targets m_targets;
+    static constexpr int kMappingCount =
+        WhatSon::Sidebar::kHierarchyMaxIndex - WhatSon::Sidebar::kHierarchyMinIndex + 1;
+
+    static int mappingOffsetForIndex(int hierarchyIndex) noexcept;
+    static std::array<QPointer<IHierarchyViewModel>, kMappingCount> normalizedMappings(
+        const QVector<Mapping>& mappings);
+    static QVector<Mapping> exportedMappings(
+        const std::array<QPointer<IHierarchyViewModel>, kMappingCount>& mappings);
+
+    std::array<QPointer<IHierarchyViewModel>, kMappingCount> m_mappings{};
 };

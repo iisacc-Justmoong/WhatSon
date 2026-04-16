@@ -1,13 +1,13 @@
 #pragma once
 
 #include "store/sidebar/ISidebarSelectionStore.hpp"
-#include "viewmodel/sidebar/IActiveHierarchySource.hpp"
+#include "viewmodel/sidebar/IActiveHierarchyContextSource.hpp"
 #include "viewmodel/sidebar/IHierarchyViewModelProvider.hpp"
 
 #include <QMetaObject>
 #include <QPointer>
 
-class SidebarHierarchyViewModel final : public IActiveHierarchySource
+class SidebarHierarchyViewModel final : public IActiveHierarchyContextSource
 {
     Q_OBJECT
 
@@ -27,8 +27,8 @@ public:
     int activeHierarchyIndex() const noexcept override;
     Q_INVOKABLE void setActiveHierarchyIndex(int index);
 
-    QObject* activeHierarchyViewModel() const;
-    QObject* activeNoteListModel() const;
+    QObject* activeHierarchyViewModel() const override;
+    QObject* activeNoteListModel() const override;
 
     Q_INVOKABLE QObject* hierarchyViewModelForIndex(int hierarchyIndex) const;
     Q_INVOKABLE QObject* noteListModelForIndex(int hierarchyIndex) const;
@@ -40,10 +40,6 @@ public:
     void setViewModelProvider(IHierarchyViewModelProvider* provider);
 
 signals:
-    void activeBindingsChanged();
-    void activeHierarchyIndexChanged();
-    void activeHierarchyViewModelChanged();
-    void activeNoteListModelChanged();
     void selectionStoreChanged();
     void viewModelProviderChanged();
 

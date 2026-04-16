@@ -11,6 +11,7 @@
 #include "viewmodel/hierarchy/tags/TagsHierarchyViewModel.hpp"
 #include "viewmodel/navigationbar/EditorViewModeViewModel.hpp"
 #include "viewmodel/navigationbar/NavigationModeViewModel.hpp"
+#include "viewmodel/detailPanel/DetailPanelCurrentHierarchyBinder.hpp"
 #include "viewmodel/detailPanel/DetailPanelViewModel.hpp"
 #include "viewmodel/calendar/DayCalendarViewModel.hpp"
 #include "viewmodel/calendar/AgendaViewModel.hpp"
@@ -95,6 +96,21 @@ int main(int argc, char* argv[])
     {
         qputenv("WHATSON_DEBUG_MODE", QByteArrayLiteral("1"));
     }
+    if (!qEnvironmentVariableIsSet("WHATSON_SCENE_DEBUG"))
+    {
+        qputenv("WHATSON_SCENE_DEBUG", QByteArrayLiteral("1"));
+    }
+    if (qEnvironmentVariableIntValue("WHATSON_SCENE_DEBUG") > 0)
+    {
+        if (qEnvironmentVariableIsEmpty("QSG_VISUALIZE"))
+        {
+            qputenv("QSG_VISUALIZE", QByteArrayLiteral("clip,batches,changes,overdraw"));
+        }
+        if (qEnvironmentVariableIsEmpty("QSG_RHI_BACKEND"))
+        {
+            qputenv("QSG_RHI_BACKEND", QByteArrayLiteral("opengl"));
+        }
+    }
 #if defined(WHATSON_USE_LVRS_DYNAMIC_QML_IMPORT) && defined(WHATSON_LVRS_RUNTIME_IMPORT_ROOT)
     Q_CLEANUP_RESOURCE(qmake_LVRS);
 
@@ -143,6 +159,7 @@ int main(int argc, char* argv[])
     SelectedHubStore selectedHubStore;
     HierarchyViewModelProvider hierarchyViewModelProvider;
     SidebarHierarchyViewModel sidebarHierarchyViewModel;
+    DetailPanelCurrentHierarchyBinder detailPanelCurrentHierarchyBinder;
     DetailPanelViewModel detailPanelViewModel;
     EditorViewModeViewModel editorViewModeViewModel;
     NavigationModeViewModel navigationModeViewModel;
@@ -428,38 +445,24 @@ int main(int argc, char* argv[])
         }
     }
 
-    HierarchyViewModelProvider::Targets hierarchyViewModelTargets;
-    hierarchyViewModelTargets.libraryViewModel = &libraryHierarchyViewModel;
-    hierarchyViewModelTargets.projectsViewModel = &projectsHierarchyViewModel;
-    hierarchyViewModelTargets.bookmarksViewModel = &bookmarksHierarchyViewModel;
-    hierarchyViewModelTargets.tagsViewModel = &tagsHierarchyViewModel;
-    hierarchyViewModelTargets.resourcesViewModel = &resourcesHierarchyViewModel;
-    hierarchyViewModelTargets.progressViewModel = &progressHierarchyViewModel;
-    hierarchyViewModelTargets.eventViewModel = &eventHierarchyViewModel;
-    hierarchyViewModelTargets.presetViewModel = &presetHierarchyViewModel;
-    hierarchyViewModelProvider.setTargets(hierarchyViewModelTargets);
+    hierarchyViewModelProvider.setMappings(QVector<HierarchyViewModelProvider::Mapping>{
+        { static_cast<int>(WhatSon::Sidebar::HierarchyDomain::Library), &libraryHierarchyViewModel },
+        { static_cast<int>(WhatSon::Sidebar::HierarchyDomain::Projects), &projectsHierarchyViewModel },
+        { static_cast<int>(WhatSon::Sidebar::HierarchyDomain::Bookmarks), &bookmarksHierarchyViewModel },
+        { static_cast<int>(WhatSon::Sidebar::HierarchyDomain::Tags), &tagsHierarchyViewModel },
+        { static_cast<int>(WhatSon::Sidebar::HierarchyDomain::Resources), &resourcesHierarchyViewModel },
+        { static_cast<int>(WhatSon::Sidebar::HierarchyDomain::Progress), &progressHierarchyViewModel },
+        { static_cast<int>(WhatSon::Sidebar::HierarchyDomain::Event), &eventHierarchyViewModel },
+        { static_cast<int>(WhatSon::Sidebar::HierarchyDomain::Preset), &presetHierarchyViewModel },
+    });
     detailPanelViewModel.setProjectSelectionSourceViewModel(&projectsHierarchyViewModel);
     detailPanelViewModel.setBookmarkSelectionSourceViewModel(&bookmarksHierarchyViewModel);
     detailPanelViewModel.setProgressSelectionSourceViewModel(&progressHierarchyViewModel);
     detailPanelViewModel.setTagsSourceViewModel(&tagsHierarchyViewModel);
     sidebarHierarchyViewModel.setSelectionStore(&sidebarSelectionStore);
     sidebarHierarchyViewModel.setViewModelProvider(&hierarchyViewModelProvider);
-    const auto syncDetailPanelCurrentNoteContext = [&detailPanelViewModel, &sidebarHierarchyViewModel]()
-    {
-        detailPanelViewModel.setCurrentNoteListModel(sidebarHierarchyViewModel.activeNoteListModel());
-        detailPanelViewModel.setCurrentNoteDirectorySourceViewModel(sidebarHierarchyViewModel.activeHierarchyViewModel());
-    };
-    QObject::connect(
-        &sidebarHierarchyViewModel,
-        &SidebarHierarchyViewModel::activeNoteListModelChanged,
-        &detailPanelViewModel,
-        syncDetailPanelCurrentNoteContext);
-    QObject::connect(
-        &sidebarHierarchyViewModel,
-        &SidebarHierarchyViewModel::activeHierarchyViewModelChanged,
-        &detailPanelViewModel,
-        syncDetailPanelCurrentNoteContext);
-    syncDetailPanelCurrentNoteContext();
+    detailPanelCurrentHierarchyBinder.setDetailPanelViewModel(&detailPanelViewModel);
+    detailPanelCurrentHierarchyBinder.setHierarchyContextSource(&sidebarHierarchyViewModel);
 
     startupRuntimeCoordinator.bindSidebarActivation(&sidebarHierarchyViewModel);
 
@@ -535,6 +538,18 @@ int main(int argc, char* argv[])
             QStringLiteral("WhatSon.App"),
             QStringLiteral("Main"),
             initialProperties);
+    };
+    const auto loadDebugConsoleWindow =
+        [&loadWindowFromModule](QObject* hostWindow) -> QObject*
+    {
+        const QVariantMap debugWindowInitialProperties{
+            {QStringLiteral("hostWindow"), QVariant::fromValue(hostWindow)},
+            {QStringLiteral("visible"), true}
+        };
+        return loadWindowFromModule(
+            QStringLiteral("WhatSon.App"),
+            QStringLiteral("DebugConsole"),
+            debugWindowInitialProperties);
     };
 
     const auto activateWindowObject = [](QObject* windowObject)
@@ -687,6 +702,16 @@ int main(int argc, char* argv[])
     }
 
     activateWindowObject(mainWindow);
+
+    QObject* debugConsoleWindow = nullptr;
+    if (qEnvironmentVariableIntValue("WHATSON_SCENE_DEBUG") > 0)
+    {
+        debugConsoleWindow = loadDebugConsoleWindow(mainWindow);
+        if (debugConsoleWindow != nullptr)
+        {
+            activateWindowObject(debugConsoleWindow);
+        }
+    }
 
     if (startupRuntimeCoordinator.startupDeferredBootstrapActive())
     {

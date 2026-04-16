@@ -20,7 +20,24 @@ FocusScope {
     property var pendingFocusRequest: null
     property int pendingFocusBlockIndex: -1
     property bool pendingFocusApplyQueued: false
+    property var cachedLogicalLineEntries: []
+    property var cachedBlockLayoutSummaries: []
+    property bool layoutCacheRefreshQueued: false
+    property real viewportContentY: 0
+    property real viewportHeight: 0
     readonly property bool focused: documentFlow.activeFocus || documentFlow.hasFocusedBlock()
+    readonly property real blockDelegateOverscan: Math.max(
+                                                      Math.round(LV.Theme.scaleMetric(240)),
+                                                      documentFlow.lineHeightHint * 12)
+    readonly property real delegateVirtualizationTopY: Math.max(
+                                                           0,
+                                                           (Number(documentFlow.viewportContentY) || 0)
+                                                           - documentFlow.blockDelegateOverscan)
+    readonly property real delegateVirtualizationBottomY: Math.max(
+                                                              documentFlow.delegateVirtualizationTopY,
+                                                              (Number(documentFlow.viewportContentY) || 0)
+                                                              + Math.max(0, Number(documentFlow.viewportHeight) || 0)
+                                                              + documentFlow.blockDelegateOverscan)
     readonly property int focusedBlockIndexValue: documentFlow.focusedBlockIndex()
     readonly property int resolvedInteractiveBlockIndexValue: {
         const focusedIndex = Number(documentFlow.focusedBlockIndexValue)
@@ -130,16 +147,7 @@ FocusScope {
     }
 
     function logicalLineCount() {
-        const blocks = documentFlow.normalizedBlocks()
-        if (blocks.length === 0)
-            return 1
-        let lineCount = 0
-        for (let index = 0; index < blocks.length; ++index) {
-            const blockHost = blockRepeater.itemAt(index)
-            const blockEntry = blocks[index] && typeof blocks[index] === "object" ? blocks[index] : ({})
-            lineCount += documentFlow.logicalLineCountForBlockHost(blockHost, blockEntry)
-        }
-        return Math.max(1, lineCount)
+        return Math.max(1, documentFlow.cachedLogicalLineEntries.length)
     }
 
     function visualLineCharCount(blockHost, blockEntry, logicalLines, visualLineCount, visualLineIndex) {
@@ -199,31 +207,71 @@ FocusScope {
         return Math.max(1, documentFlow.logicalLineCountForBlockHost(blockHost, blockEntry))
     }
 
+    function estimatedBlockHeight(blockEntryOverride) {
+        const blockEntry = blockEntryOverride && typeof blockEntryOverride === "object"
+                ? blockEntryOverride
+                : ({ })
+        const explicitHeightHint = Math.max(0, Number(blockEntry.blockHeightHint) || 0)
+        if (explicitHeightHint > 0)
+            return explicitHeightHint
+        const blockType = blockEntry.type !== undefined ? String(blockEntry.type).trim().toLowerCase() : "text"
+        const logicalLineCount = Math.max(1, documentFlow.logicalLineCountForBlockHost(null, blockEntry))
+        if (blockType === "resource")
+            return Math.max(Math.round(LV.Theme.scaleMetric(160)), documentFlow.lineHeightHint * 6)
+        if (blockType === "agenda") {
+            return Math.max(
+                        Math.round(LV.Theme.scaleMetric(72)),
+                        documentFlow.lineHeightHint * Math.max(2, logicalLineCount)
+                        + Math.round(LV.Theme.scaleMetric(36)))
+        }
+        if (blockType === "callout") {
+            return Math.max(
+                        Math.round(LV.Theme.scaleMetric(48)),
+                        documentFlow.lineHeightHint * Math.max(1, logicalLineCount)
+                        + Math.round(LV.Theme.scaleMetric(24)))
+        }
+        if (blockType === "break")
+            return Math.max(documentFlow.lineHeightHint, Math.round(LV.Theme.scaleMetric(24)))
+        return Math.max(documentFlow.lineHeightHint, documentFlow.lineHeightHint * logicalLineCount)
+    }
+
+    function measuredBlockHeightForHost(blockHost) {
+        const host = blockHost && typeof blockHost === "object" ? blockHost : null
+        if (!host)
+            return 0
+        const cachedDelegateHeight = Math.max(0, Number(host.cachedDelegateHeight) || 0)
+        if (cachedDelegateHeight > 0)
+            return cachedDelegateHeight
+        const measuredDelegateHeight = Math.max(0, Number(host.measuredDelegateHeight) || 0)
+        if (measuredDelegateHeight > 0)
+            return measuredDelegateHeight
+        return 0
+    }
+
     function blockHeightForLayout(blockHost, blockEntryOverride) {
         const host = blockHost && typeof blockHost === "object" ? blockHost : null
         const blockEntry = blockEntryOverride && typeof blockEntryOverride === "object"
                 ? blockEntryOverride
                 : (host && host.blockEntry && typeof host.blockEntry === "object" ? host.blockEntry : ({ }))
-        return Math.max(
-                    1,
-                    host ? (Number(host.implicitHeight) || Number(host.height) || 0) : 0,
-                    documentFlow.lineHeightHint * documentFlow.logicalLineCountForBlockHost(host, blockEntry))
+        const measuredHeight = documentFlow.measuredBlockHeightForHost(host)
+        if (measuredHeight > 0)
+            return Math.max(1, measuredHeight)
+        return Math.max(1, documentFlow.estimatedBlockHeight(blockEntry))
+    }
+
+    function cachedBlockLayoutSummaryAt(blockIndex) {
+        const safeBlockIndex = Math.max(0, Math.floor(Number(blockIndex) || 0))
+        if (safeBlockIndex >= documentFlow.cachedBlockLayoutSummaries.length)
+            return null
+        const entry = documentFlow.cachedBlockLayoutSummaries[safeBlockIndex]
+        return entry && typeof entry === "object" ? entry : null
     }
 
     function blockTopYForIndex(blockIndex) {
-        const blocks = documentFlow.normalizedBlocks()
-        if (blocks.length === 0)
-            return 0
-        const safeBlockIndex = Math.max(0, Math.min(blocks.length - 1, Math.floor(Number(blockIndex) || 0)))
-        const blockSpacing = Math.max(0, Number(documentColumn && documentColumn.spacing !== undefined ? documentColumn.spacing : 0) || 0)
-        let blockTopY = 0
-        for (let index = 0; index < safeBlockIndex; ++index) {
-            const blockHost = blockRepeater.itemAt(index)
-            const blockEntry = blocks[index] && typeof blocks[index] === "object" ? blocks[index] : ({})
-            blockTopY += documentFlow.blockHeightForLayout(blockHost, blockEntry)
-            blockTopY += blockSpacing
-        }
-        return blockTopY
+        const cachedSummary = documentFlow.cachedBlockLayoutSummaryAt(blockIndex)
+        if (cachedSummary && cachedSummary.blockTopY !== undefined)
+            return Math.max(0, Number(cachedSummary.blockTopY) || 0)
+        return 0
     }
 
     function blockLogicalLineEntries(blockHost, blockEntryOverride, blockBaseYOverride) {
@@ -308,16 +356,19 @@ FocusScope {
         return entries
     }
 
-    function logicalLineEntries() {
-        const entries = []
+    function refreshLayoutCache() {
         const blocks = documentFlow.normalizedBlocks()
         const blockSpacing = Math.max(0, Number(documentColumn && documentColumn.spacing !== undefined ? documentColumn.spacing : 0) || 0)
+        const entries = []
+        const blockSummaries = []
         let nextBlockBaseY = 0
         let nextGutterContentY = 0
         for (let blockIndex = 0; blockIndex < blockRepeater.count; ++blockIndex) {
             const blockHost = blockRepeater.itemAt(blockIndex)
             const blockEntry = blocks[blockIndex] && typeof blocks[blockIndex] === "object" ? blocks[blockIndex] : ({})
+            const blockHeight = documentFlow.blockHeightForLayout(blockHost, blockEntry)
             const blockEntries = documentFlow.blockLogicalLineEntries(blockHost, blockEntry, nextBlockBaseY)
+            const startLineNumber = entries.length + 1
             for (let lineIndex = 0; lineIndex < blockEntries.length; ++lineIndex) {
                 const lineEntry = blockEntries[lineIndex] && typeof blockEntries[lineIndex] === "object"
                         ? blockEntries[lineIndex]
@@ -342,7 +393,14 @@ FocusScope {
                             1,
                             Number(lineEntry.gutterContentHeight) || documentFlow.lineHeightHint)
             }
-            nextBlockBaseY += documentFlow.blockHeightForLayout(blockHost, blockEntry)
+            blockSummaries.push({
+                "blockHeight": blockHeight,
+                "blockIndex": blockIndex,
+                "blockTopY": nextBlockBaseY,
+                "lineCount": Math.max(1, blockEntries.length),
+                "startLineNumber": startLineNumber
+            })
+            nextBlockBaseY += blockHeight
             if (blockIndex + 1 < blockRepeater.count)
                 nextBlockBaseY += blockSpacing
         }
@@ -362,7 +420,22 @@ FocusScope {
             })
         }
 
-        return entries
+        documentFlow.cachedBlockLayoutSummaries = blockSummaries
+        documentFlow.cachedLogicalLineEntries = entries
+    }
+
+    function scheduleLayoutCacheRefresh() {
+        if (documentFlow.layoutCacheRefreshQueued)
+            return
+        documentFlow.layoutCacheRefreshQueued = true
+        Qt.callLater(function () {
+            documentFlow.layoutCacheRefreshQueued = false
+            documentFlow.refreshLayoutCache()
+        })
+    }
+
+    function logicalLineEntries() {
+        return documentFlow.cachedLogicalLineEntries
     }
 
     function activeLogicalLineNumber() {
@@ -372,13 +445,18 @@ FocusScope {
             return 1
         const resolvedActiveBlockIndex = Math.max(-1, Number(documentFlow.resolvedInteractiveBlockIndexValue) || -1)
         const safeActiveBlockIndex = Math.max(0, Math.min(blocks.length - 1, resolvedActiveBlockIndex))
-        let lineNumber = 1
-        for (let blockIndex = 0; blockIndex < safeActiveBlockIndex; ++blockIndex) {
-            const blockHost = blockRepeater.itemAt(blockIndex)
-            lineNumber += documentFlow.blockLogicalLineEntries(blockHost, blocks[blockIndex]).length
-        }
+        const cachedSummary = documentFlow.cachedBlockLayoutSummaryAt(safeActiveBlockIndex)
+        const lineNumber = Math.max(
+                    1,
+                    Number(cachedSummary && cachedSummary.startLineNumber !== undefined
+                           ? cachedSummary.startLineNumber
+                           : 1) || 1)
         const activeBlockHost = blockRepeater.itemAt(safeActiveBlockIndex)
-        const activeBlockLineCount = Math.max(1, documentFlow.blockLogicalLineEntries(activeBlockHost, blocks[safeActiveBlockIndex]).length)
+        const activeBlockLineCount = Math.max(
+                    1,
+                    Number(cachedSummary && cachedSummary.lineCount !== undefined
+                           ? cachedSummary.lineCount
+                           : documentFlow.logicalLineCountForBlockHost(activeBlockHost, blocks[safeActiveBlockIndex])) || 1)
         const localLineNumber = Math.max(1, Math.min(
                                              activeBlockLineCount,
                                              documentFlow.currentLocalLogicalLineNumberForBlockHost(
@@ -453,7 +531,7 @@ FocusScope {
             }
         }
         const lineNumber = documentFlow.activeLogicalLineNumber()
-        const lineEntries = documentFlow.logicalLineEntries()
+        const lineEntries = documentFlow.cachedLogicalLineEntries
         const entry = lineEntries.length >= lineNumber && lineNumber > 0 ? lineEntries[lineNumber - 1] : ({})
         return {
             "height": Math.max(
@@ -816,6 +894,38 @@ FocusScope {
         }
 
         return fallbackMatch ? fallbackMatch : ({})
+    }
+
+    function shouldKeepBlockDelegateLoaded(blockHost, blockEntryOverride) {
+        const host = blockHost && typeof blockHost === "object" ? blockHost : null
+        const blockEntry = blockEntryOverride && typeof blockEntryOverride === "object"
+                ? blockEntryOverride
+                : (host && host.blockEntry && typeof host.blockEntry === "object" ? host.blockEntry : ({ }))
+        if (!host)
+            return true
+        if (!documentFlow.visible)
+            return host.blockIndex === documentFlow.pendingFocusBlockIndex
+        if (host.blockIndex === documentFlow.pendingFocusBlockIndex || host.delegateFocused)
+            return true
+        const resolvedActiveBlockIndex = Math.max(-1, Number(documentFlow.resolvedInteractiveBlockIndexValue) || -1)
+        if (resolvedActiveBlockIndex >= 0 && Math.abs(host.blockIndex - resolvedActiveBlockIndex) <= 1)
+            return true
+        if ((Number(documentFlow.viewportHeight) || 0) <= 0)
+            return true
+        const cachedSummary = documentFlow.cachedBlockLayoutSummaryAt(host.blockIndex)
+        const blockTopY = Math.max(
+                    0,
+                    Number(cachedSummary && cachedSummary.blockTopY !== undefined
+                           ? cachedSummary.blockTopY
+                           : host.y) || 0)
+        const blockHeight = Math.max(
+                    1,
+                    Number(cachedSummary && cachedSummary.blockHeight !== undefined
+                           ? cachedSummary.blockHeight
+                           : documentFlow.blockHeightForLayout(host, blockEntry)) || 1)
+        const blockBottomY = blockTopY + Math.max(1, blockHeight)
+        return blockBottomY >= documentFlow.delegateVirtualizationTopY
+                && blockTopY <= documentFlow.delegateVirtualizationBottomY
     }
 
     function focusTargetBlockIndex(request) {
@@ -1513,6 +1623,12 @@ FocusScope {
                 required property int index
                 required property var modelData
                 property alias delegateLoader: blockLoader
+                property real cachedDelegateHeight: 0
+                property real measuredDelegateHeight: blockLoader.item
+                                                     ? Math.max(
+                                                           0,
+                                                           Number(blockLoader.item.implicitHeight) || Number(blockLoader.item.height) || 0)
+                                                     : 0
                 readonly property int blockIndex: index
                 readonly property var blockEntry: modelData && typeof modelData === "object" ? modelData : ({})
                 readonly property bool delegateFocused: {
@@ -1523,15 +1639,29 @@ FocusScope {
                         return !!delegateItem.focused
                     return delegateItem.activeFocus !== undefined && !!delegateItem.activeFocus
                 }
-                implicitHeight: blockLoader.item ? Math.max(0, Number(blockLoader.item.implicitHeight) || Number(blockLoader.item.height) || 0) : 0
+                readonly property bool keepDelegateLoaded: documentFlow.shouldKeepBlockDelegateLoaded(blockHost, blockHost.blockEntry)
+                implicitHeight: Math.max(
+                                    1,
+                                    blockHost.cachedDelegateHeight > 0
+                                    ? blockHost.cachedDelegateHeight
+                                    : documentFlow.estimatedBlockHeight(blockHost.blockEntry))
                 width: documentColumn.width
                 height: implicitHeight
+
+                onMeasuredDelegateHeightChanged: {
+                    const nextMeasuredHeight = Math.max(0, Number(blockHost.measuredDelegateHeight) || 0)
+                    if (nextMeasuredHeight <= 0 || Math.abs(nextMeasuredHeight - blockHost.cachedDelegateHeight) <= 0.5)
+                        return
+                    blockHost.cachedDelegateHeight = nextMeasuredHeight
+                }
+                onCachedDelegateHeightChanged: documentFlow.scheduleLayoutCacheRefresh()
 
                 Loader {
                     id: blockLoader
 
+                    active: blockHost.keepDelegateLoaded
                     anchors.fill: parent
-                    asynchronous: blockRepeater.count > 12
+                    asynchronous: blockRepeater.count > 12 && blockHost.keepDelegateLoaded
                     sourceComponent: documentBlockDelegate
 
                     onLoaded: {
@@ -1590,9 +1720,15 @@ FocusScope {
     }
 
     onDocumentBlocksChanged: {
+        documentFlow.refreshLayoutCache()
         if (!documentFlow.pendingFocusRequest || typeof documentFlow.pendingFocusRequest !== "object")
             return
         documentFlow.refreshPendingFocusBlockIndex()
         documentFlow.schedulePendingFocusApply()
     }
+    onLineHeightHintChanged: documentFlow.refreshLayoutCache()
+    onViewportHeightChanged: documentFlow.scheduleLayoutCacheRefresh()
+    onWidthChanged: documentFlow.scheduleLayoutCacheRefresh()
+
+    Component.onCompleted: documentFlow.refreshLayoutCache()
 }

@@ -7,7 +7,7 @@
 ## Scope
 - Mirrored source directory: `src/app/qml/view/content/editor`
 - Child directories: 0
-- Child files: 20
+- Child files: 29
 
 ## Child Directories
 - No child directories.
@@ -23,14 +23,20 @@
 - `ContentsDocumentTextBlock.qml`
 - `ContentsEditorSelectionController.qml`
 - `ContentsEditorSession.qml`
+- `ContentsEditorSurfaceGuardController.qml`
 - `ContentsEditorTypingController.qml`
 - `ContentsGutterLayer.qml`
 - `ContentsInlineFormatEditor.qml`
+- `ContentsInlineResourcePresentationController.qml`
 - `ContentsMinimapLayer.qml`
 - `ContentsMinimapSnapshotSupport.js`
 - `MobileContentsDisplayView.qml`
 - `ContentsResourceViewer.qml`
 - `ContentsResourceRenderCard.qml`
+- `ContentsResourceDropPayloadParser.qml`
+- `ContentsResourceImportConflictController.qml`
+- `ContentsResourceImportController.qml`
+- `ContentsResourceTagController.qml`
 - `ContentsStructuredCursorSupport.js`
 - `ContentsStructuredDocumentFlow.qml`
 
@@ -46,6 +52,9 @@
 - `ContentsResourceRenderCard.qml` now centralizes the shared desktop/mobile inline resource card used inside parsed
   note-body blocks, so file/image/audio/pdf/document presentation no longer duplicates the same card scaffolding in
   both hosts.
+- `ContentsResourceImportController.qml` is now only the public coordinator for editor-side resource import.
+  Drag/drop payload parsing, duplicate-import prompt state, RAW tag insertion, inline RichText presentation, and
+  editor-surface guard state now live in dedicated sibling helpers instead of a single import god object.
 - Inline image resources now compose through `ContentsImageResourceFrame.qml` as transparent border-only cards whose
   runtime outer width follows the editor block width, whose inner bitmap viewport stays centered at natural size until
   the body column forces it smaller, and whose inline media height is capped to the Figma note-block budget so tall

@@ -498,9 +498,12 @@ namespace
                 continue;
             }
 
+            bool resourceIndexOk = false;
+            const int parsedResourceIndex =
+                block.value(QStringLiteral("resourceIndex")).toInt(&resourceIndexOk);
             const int resourceIndex = std::max(
                 0,
-                block.value(QStringLiteral("resourceIndex")).toInt(nextFallbackResourceIndex));
+                resourceIndexOk ? parsedResourceIndex : nextFallbackResourceIndex);
             QString effectiveType =
                 block.value(QStringLiteral("resourceType")).toString().trimmed().toCaseFolded();
             QString effectiveFormat =

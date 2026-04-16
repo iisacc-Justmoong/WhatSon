@@ -121,6 +121,9 @@ Desktop content editor host.
   canonical `<resource ...>` calls into the active note source, and lets the synchronous structured parser refresh
   `ContentsBodyResourceRenderer.documentBlocks` on the same editor turn so the dropped resource card appears without a
   second body-text reparse.
+- Desktop no longer owns duplicate-import alert state or resource-drop surface-guard counters directly.
+  Those transient values now live under `ContentsResourceImportController.qml` and its helper objects, while the host
+  only reads the exported guard/alert state it needs for UI bindings.
 - Before that import actually mutates storage, desktop now asks `ResourcesImportViewModel.inspectImportConflictForUrls(...)`
   or `inspectClipboardImageImportConflict()` whether the incoming asset name already exists.
   If it does, the editor opens an `LV.Alert` with `Overwrite`, `Keep Both`, and `Cancel Import` actions instead of
@@ -224,6 +227,13 @@ Desktop content editor host.
   line numbers after an inline image do not overlap the bitmap while it is still on screen.
 - Structured gutter visibility and first-visible-line detection now also read the live structured line-entry list
   directly instead of trusting a separate logical-line-count snapshot.
+- Desktop now also consumes `ContentsStructuredDocumentFlow.cachedLogicalLineEntries` directly instead of calling back
+  into `logicalLineEntries()` for each gutter/minimap/current-line helper.
+  Structured line geometry therefore becomes one cached layout snapshot per document turn rather than a repeated
+  whole-flow recomputation fan-out.
+- Structured minimap refresh now also reuses the changed-line splice path when the RAW source diff stays local to a
+  subset of structured logical lines.
+  Ordinary typing in one block therefore stops forcing a whole-note minimap rebuild by default.
   A resource-bearing note therefore cannot drop line `1` or top-pack later gutter rows just because one intermediate
   line-count cache or fallback binary search still reflects pre-layout state.
 - Structured gutter numbering now also comes from parser/text logical lines first, not from block height heuristics.

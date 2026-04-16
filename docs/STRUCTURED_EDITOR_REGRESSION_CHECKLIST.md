@@ -53,6 +53,9 @@ structured document-flow editor changes.
   document-flow host.
 - Opening a long structured note must populate the document-native block flow without one large synchronous stall before
   the first editor frame becomes interactive.
+- Opening that same long structured note must not leave every off-screen text/resource/card delegate mounted after the
+  first settled layout turn.
+  GammaRay or equivalent scene-graph inspection should show only the viewport window plus overscan remaining live.
 - While the first structured render for a newly selected note is still pending, note-open must stay on the legacy
   editor/session path instead of switching into the structured host before block ownership is known.
 - Once a selected note has already activated structured-flow mode, later async reparses must keep that structured
@@ -69,6 +72,8 @@ structured document-flow editor changes.
   emitted both note-id and body-text updates in the same event loop turn.
 - Showing the editor again for the already-selected note must reuse the same queued note-open sync path rather than
   scheduling a second independent minimap/presentation/gutter refresh sequence.
+- Typing inside one existing structured block without adding/removing distant body sections must not rebuild the entire
+  minimap snapshot for the whole note on each keystroke.
 - One note-list rebuild must not trigger two immediate visible list snapshot refreshes from `modelReset` plus a second
   `itemsChanged()`-driven snapshot apply.
 - Parser-side structured correction suggestions must not trigger direct note writes during ordinary note-open or typing.
@@ -119,6 +124,12 @@ structured document-flow editor changes.
 ## Resource Drop Import
 - Dropping one or more local files onto the desktop/mobile editor must create matching `.wsresource` package
   directories under the active hub `*.wsresources` root and append those package paths into `Resources.wsresources`.
+- The duplicate-resource conflict prompt shown for drag/drop and clipboard image import must stay behaviorally aligned
+  between desktop `ContentsDisplayView.qml` and mobile `MobileContentsDisplayView.qml`.
+- After the import-controller split, duplicate-import alert open/close state and editor-surface guard release must
+  still remain synchronized on both hosts.
+- Accepting `overwrite` or `keep both` from that prompt must still insert canonical `<resource ... />` tags back into
+  the currently bound note on both editor hosts.
 - If an imported file name already exists in the current resources store, desktop/mobile must open an explicit
   duplicate-import decision alert instead of silently auto-numbering the package.
   The user must be able to choose `Overwrite`, `Keep Both`, or `Cancel Import`.

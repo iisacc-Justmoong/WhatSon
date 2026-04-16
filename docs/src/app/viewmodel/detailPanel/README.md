@@ -7,7 +7,7 @@
 ## Scope
 - Mirrored source directory: `src/app/viewmodel/detailPanel`
 - Child directories: 1
-- Child files: 18
+- Child files: 20
 
 ## Child Directories
 - `session`
@@ -15,6 +15,8 @@
 ## Child Files
 - `DetailContentSectionViewModel.cpp`
 - `DetailContentSectionViewModel.hpp`
+- `DetailPanelCurrentHierarchyBinder.cpp`
+- `DetailPanelCurrentHierarchyBinder.hpp`
 - `DetailCurrentNoteContextBridge.cpp`
 - `DetailCurrentNoteContextBridge.hpp`
 - `DetailFileStatViewModel.cpp`
@@ -39,3 +41,9 @@
 - Runtime ownership and lifecycle rules
 - Testing strategy and coverage map
 - Known hotspots and refactor priorities
+
+## Current Notes
+- `DetailPanelCurrentHierarchyBinder` now owns the composition-root binding between the active sidebar hierarchy
+  context and `DetailPanelViewModel`.
+- `DetailPanelViewModel` therefore no longer depends on `main.cpp` lambda wiring to keep its current note-list model
+  and current hierarchy directory resolver synchronized.

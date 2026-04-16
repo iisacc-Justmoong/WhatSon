@@ -40,6 +40,10 @@ Mobile content editor host.
 - The same structured-flow surface now also receives `bodyResourceRenderer.renderedResources`, letting mobile resource
   blocks resolve from `<resource ... />` to the actual asset file inside the referenced `.wsresource` package before
   `ContentsResourceRenderCard` paints the inline frame.
+- Mobile now also passes the structured viewport's live `contentY` and `height` into
+  `ContentsStructuredDocumentFlow.qml`.
+  The shared block host can therefore unload off-screen delegates on mobile as well instead of keeping every parsed
+  block mounted once the note grows long.
 - In screen editor mode, that structured-flow column now uses the same effective body width contract as ordinary note
   text: viewport width minus the editor's left/right body inset.
   Inline image resources therefore fill the note body column itself rather than the entire editor viewport.
@@ -117,6 +121,10 @@ Mobile content editor host.
   canonical `<resource ...>` calls into the active note source, and feeds the current presentation snapshot into
   `ContentsBodyResourceRenderer` so the dropped resource card appears in the body overlay before the worker-thread note
   flush finishes.
+- Mobile likewise no longer stores duplicate-import alert state or resource-drop surface-guard counters as mutable
+  host-owned properties.
+  The host now reads those transient states from `ContentsResourceImportController.qml`, which keeps import-specific
+  state changes out of unrelated mobile editor shell responsibilities.
 - Before that import actually runs, mobile now asks `ResourcesImportViewModel.inspectImportConflictForUrls(...)`
   or `inspectClipboardImageImportConflict()` whether the incoming asset name already exists.
   If it does, mobile opens the same `LV.Alert` decision surface as desktop with `Overwrite`, `Keep Both`, and

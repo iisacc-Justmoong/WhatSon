@@ -1,7 +1,6 @@
 #include "HierarchyViewModelProvider.hpp"
 
 #include "policy/ArchitecturePolicyLock.hpp"
-#include "viewmodel/sidebar/HierarchySidebarDomain.hpp"
 
 #include <QDebug>
 
@@ -12,55 +11,40 @@ HierarchyViewModelProvider::HierarchyViewModelProvider(QObject* parent)
 
 HierarchyViewModelProvider::~HierarchyViewModelProvider() = default;
 
-void HierarchyViewModelProvider::setTargets(Targets targets)
+void HierarchyViewModelProvider::setMappings(QVector<Mapping> mappings)
 {
     if (WhatSon::Policy::ArchitecturePolicyLock::isLocked())
     {
         qWarning().noquote()
             << QStringLiteral(
-                "[whatson:policy][lock] HierarchyViewModelProvider::setTargets rejected because architecture policy is locked");
+                "[whatson:policy][lock] HierarchyViewModelProvider::setMappings rejected because architecture policy is locked");
         return;
     }
 
-    if (sameTargets(m_targets, targets))
+    const auto normalized = normalizedMappings(mappings);
+    if (m_mappings == normalized)
     {
         return;
     }
 
-    m_targets = targets;
+    m_mappings = normalized;
     emit mappingsChanged();
 }
 
-HierarchyViewModelProvider::Targets HierarchyViewModelProvider::targets() const noexcept
+QVector<HierarchyViewModelProvider::Mapping> HierarchyViewModelProvider::mappings() const
 {
-    return m_targets;
+    return exportedMappings(m_mappings);
 }
 
 IHierarchyViewModel* HierarchyViewModelProvider::hierarchyViewModel(int hierarchyIndex) const
 {
-    const int normalizedIndex = WhatSon::Sidebar::normalizeHierarchyIndex(hierarchyIndex);
-    switch (normalizedIndex)
+    const int offset = mappingOffsetForIndex(hierarchyIndex);
+    if (offset < 0 || offset >= static_cast<int>(m_mappings.size()))
     {
-    case static_cast<int>(WhatSon::Sidebar::HierarchyDomain::Library):
-        return m_targets.libraryViewModel;
-    case static_cast<int>(WhatSon::Sidebar::HierarchyDomain::Projects):
-        return m_targets.projectsViewModel;
-    case static_cast<int>(WhatSon::Sidebar::HierarchyDomain::Bookmarks):
-        return m_targets.bookmarksViewModel;
-    case static_cast<int>(WhatSon::Sidebar::HierarchyDomain::Tags):
-        return m_targets.tagsViewModel;
-    case static_cast<int>(WhatSon::Sidebar::HierarchyDomain::Resources):
-        return m_targets.resourcesViewModel;
-    case static_cast<int>(WhatSon::Sidebar::HierarchyDomain::Progress):
-        return m_targets.progressViewModel;
-    case static_cast<int>(WhatSon::Sidebar::HierarchyDomain::Event):
-        return m_targets.eventViewModel;
-    case static_cast<int>(WhatSon::Sidebar::HierarchyDomain::Preset):
-        return m_targets.presetViewModel;
-    default:
-        break;
+        return nullptr;
     }
-    return nullptr;
+
+    return m_mappings[static_cast<std::size_t>(offset)].data();
 }
 
 QObject* HierarchyViewModelProvider::noteListModel(int hierarchyIndex) const
@@ -69,14 +53,51 @@ QObject* HierarchyViewModelProvider::noteListModel(int hierarchyIndex) const
     return viewModel ? viewModel->hierarchyNoteListModel() : nullptr;
 }
 
-bool HierarchyViewModelProvider::sameTargets(const Targets& lhs, const Targets& rhs) noexcept
+int HierarchyViewModelProvider::mappingOffsetForIndex(int hierarchyIndex) noexcept
 {
-    return lhs.libraryViewModel == rhs.libraryViewModel
-        && lhs.projectsViewModel == rhs.projectsViewModel
-        && lhs.bookmarksViewModel == rhs.bookmarksViewModel
-        && lhs.tagsViewModel == rhs.tagsViewModel
-        && lhs.resourcesViewModel == rhs.resourcesViewModel
-        && lhs.progressViewModel == rhs.progressViewModel
-        && lhs.eventViewModel == rhs.eventViewModel
-        && lhs.presetViewModel == rhs.presetViewModel;
+    const int normalizedIndex = WhatSon::Sidebar::normalizeHierarchyIndex(hierarchyIndex);
+    return normalizedIndex - WhatSon::Sidebar::kHierarchyMinIndex;
+}
+
+std::array<QPointer<IHierarchyViewModel>, HierarchyViewModelProvider::kMappingCount>
+HierarchyViewModelProvider::normalizedMappings(const QVector<Mapping>& mappings)
+{
+    std::array<QPointer<IHierarchyViewModel>, kMappingCount> normalized;
+    normalized.fill(nullptr);
+
+    for (const Mapping& mapping : mappings)
+    {
+        const int offset = mappingOffsetForIndex(mapping.hierarchyIndex);
+        if (offset < 0 || offset >= static_cast<int>(normalized.size()))
+        {
+            continue;
+        }
+
+        normalized[static_cast<std::size_t>(offset)] = mapping.viewModel;
+    }
+
+    return normalized;
+}
+
+QVector<HierarchyViewModelProvider::Mapping> HierarchyViewModelProvider::exportedMappings(
+    const std::array<QPointer<IHierarchyViewModel>, kMappingCount>& mappings)
+{
+    QVector<Mapping> exported;
+    exported.reserve(static_cast<qsizetype>(mappings.size()));
+
+    for (int offset = 0; offset < static_cast<int>(mappings.size()); ++offset)
+    {
+        IHierarchyViewModel* viewModel = mappings[static_cast<std::size_t>(offset)].data();
+        if (viewModel == nullptr)
+        {
+            continue;
+        }
+
+        Mapping mapping;
+        mapping.hierarchyIndex = WhatSon::Sidebar::kHierarchyMinIndex + offset;
+        mapping.viewModel = viewModel;
+        exported.push_back(mapping);
+    }
+
+    return exported;
 }
