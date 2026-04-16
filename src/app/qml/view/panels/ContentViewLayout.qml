@@ -150,7 +150,7 @@ Item {
             Loader {
                 anchors.fill: parent
                 active: editorContentSurface.visible
-                sourceComponent: contentViewLayout.isMobilePlatform ? mobileEditorSurfaceComponent : desktopEditorSurfaceComponent
+                sourceComponent: editorSurfaceComponent
             }
         }
         Item {
@@ -195,7 +195,7 @@ Item {
         }
     }
     Component {
-        id: desktopEditorSurfaceComponent
+        id: editorSurfaceComponent
 
         ContentsDisplayView {
             anchors.fill: parent
@@ -211,36 +211,7 @@ Item {
             lineNumberColumnLeftOverride: contentViewLayout.lineNumberColumnLeftOverride
             lineNumberColumnTextWidthOverride: contentViewLayout.lineNumberColumnTextWidthOverride
             minimapVisible: contentViewLayout.minimapVisible
-            noteListModel: contentViewLayout.resolvedNoteListModel
-            panelViewModel: contentViewLayout.panelViewModel
-            resourcesImportViewModel: contentViewLayout.resourcesImportViewModel
-            sidebarHierarchyViewModel: contentViewLayout.sidebarHierarchyViewModel
-
-            onEditorTextEdited: function (text) {
-                contentViewLayout.editorTextEdited(text);
-            }
-            onViewHookRequested: {
-                contentViewLayout.viewHookRequested();
-            }
-        }
-    }
-    Component {
-        id: mobileEditorSurfaceComponent
-
-        MobileContentsDisplayView {
-            anchors.fill: parent
-            contentViewModel: contentViewLayout.resolvedContentViewModel
-            displayColor: contentViewLayout.displayColor
-            editorViewModeViewModel: contentViewLayout.editorViewModeViewModel
-            enabled: contentViewLayout.visible
-            editorTopInsetOverride: contentViewLayout.editorTopInsetOverride
-            frameHorizontalInsetOverride: contentViewLayout.frameHorizontalInsetOverride
-            gutterColor: contentViewLayout.gutterColor
-            gutterWidthOverride: contentViewLayout.gutterWidthOverride
-            libraryHierarchyViewModel: contentViewLayout.libraryHierarchyViewModel
-            lineNumberColumnLeftOverride: contentViewLayout.lineNumberColumnLeftOverride
-            lineNumberColumnTextWidthOverride: contentViewLayout.lineNumberColumnTextWidthOverride
-            minimapVisible: contentViewLayout.minimapVisible
+            mobileHost: contentViewLayout.isMobilePlatform
             noteListModel: contentViewLayout.resolvedNoteListModel
             panelViewModel: contentViewLayout.panelViewModel
             resourcesImportViewModel: contentViewLayout.resourcesImportViewModel

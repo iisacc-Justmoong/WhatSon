@@ -1,24 +1,24 @@
 # `src/app/qml/view/content/editor/ContentsResourceImportController.qml`
 
 ## Role
-`ContentsResourceImportController.qml` is now the thin editor-side resource import coordinator shared by the desktop
-and mobile hosts.
+
+`ContentsResourceImportController.qml` is the editor-side resource import coordinator shared by the unified
+desktop/mobile host.
 
 ## Responsibilities
-- Delegates payload parsing to `ContentsResourceDropPayloadParser.qml`.
-- Delegates RAW tag insertion and tag-loss detection to `ContentsResourceTagController.qml`.
-- Delegates fallback RichText placeholder/image HTML building to
+
+- Delegates drag/drop payload parsing to `ContentsResourceDropPayloadParser.qml`.
+- Delegates RAW `<resource ... />` insertion and tag-loss detection to `ContentsResourceTagController.qml`.
+- Delegates inline HTML placeholder/image substitution to
   `ContentsInlineResourcePresentationController.qml`.
-- Delegates guard/programmatic-surface restore state to `ContentsEditorSurfaceGuardController.qml`.
-- Delegates duplicate-import prompt state and policy execution to
+- Delegates temporary read-only/programmatic-sync guard state to
+  `ContentsEditorSurfaceGuardController.qml`.
+- Delegates duplicate-import prompt state and conflict policy execution to
   `ContentsResourceImportConflictController.qml`.
 
-## Coupling Boundary
-- Desktop `ContentsDisplayView.qml` and mobile `MobileContentsDisplayView.qml` now delegate resource import behavior to
-  this controller instead of duplicating the same flow in each host.
-- The coordinator still exposes the same host-facing API surface, but transient duplicate-import and editor-surface
-  guard state now live inside dedicated helper objects instead of being written straight into host-owned mutable
-  properties.
-- Because the root type remains `QtObject`, those helper collaborators are composed through explicit object properties
-  rather than anonymous inline children.
-  This keeps the controller valid under QML lint/compile rules while preserving the same public API.
+## Current Boundary
+
+- The controller no longer mutates `ContentsEditorPresentationProjection` through a RichText surface override.
+- Inline resource rendering now stays a pure HTML substitution step owned by the host refresh pipeline.
+- The controller keeps the same host-facing import API, but helper-local transient state no longer leaks back into
+  arbitrary host properties.

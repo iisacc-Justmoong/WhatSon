@@ -14,13 +14,11 @@ QtObject {
     property var editorTypingController: null
     property var editorProjection: null
     property var bodyResourceRenderer: null
-    property bool preferNativeInputHandling: false
-    property bool resourceBlocksRenderedInlineByRichTextEditor: false
     property bool showPrintEditorLayout: false
     property real printPaperTextWidth: 0
     property int editorHorizontalInset: 0
     property int resourceEditorPlaceholderLineCount: 1
-    property bool richTextInlineImageRenderingEnabled: false
+    property bool inlineHtmlImageRenderingEnabled: false
     property string editorText: ""
     property string documentPresentationSourceText: ""
     property string selectedNoteId: ""
@@ -38,7 +36,6 @@ QtObject {
     property var currentEditorCursorPositionHandler: null
     property var resourceTagTextForImportedEntryHandler: null
     property var encodeXmlAttributeValueHandler: null
-    property var scheduleEditorRichTextSurfaceSyncHandler: null
     property var clearResourceDropActiveHandler: null
     property var clipboardImageAvailableHandler: null
     readonly property bool resourceDropEditorSurfaceGuardActive: editorSurfaceGuardController.resourceDropEditorSurfaceGuardActive
@@ -77,7 +74,7 @@ QtObject {
         printPaperTextWidth: controller.printPaperTextWidth
         resourceEditorPlaceholderLineCount: controller.resourceEditorPlaceholderLineCount
         resourceTagController: resourceTagController
-        richTextInlineImageRenderingEnabled: controller.richTextInlineImageRenderingEnabled
+        inlineHtmlImageRenderingEnabled: controller.inlineHtmlImageRenderingEnabled
         showPrintEditorLayout: controller.showPrintEditorLayout
     }
 
@@ -86,7 +83,6 @@ QtObject {
 
         contentEditor: controller.contentEditor
         editorProjection: controller.editorProjection
-        preferNativeInputHandling: controller.preferNativeInputHandling
     }
 
     property QtObject resourceImportConflictController: ContentsResourceImportConflictController {
@@ -175,31 +171,6 @@ QtObject {
     function renderEditorSurfaceHtmlWithInlineResources(editorHtml) {
         EditorTrace.trace("resourceImportController", "renderEditorSurfaceHtmlWithInlineResources", EditorTrace.describeText(editorHtml), controller)
         return inlineResourcePresentationController.renderEditorSurfaceHtmlWithInlineResources(editorHtml);
-    }
-
-    function refreshInlineResourcePresentation() {
-        EditorTrace.trace("resourceImportController", "refreshInlineResourcePresentation", "", controller)
-        if (!controller.resourceBlocksRenderedInlineByRichTextEditor)
-            return;
-        const rendererRenderedText = controller.editorProjection
-                && controller.editorProjection.editorSurfaceHtml !== undefined
-                && controller.editorProjection.editorSurfaceHtml !== null
-                ? String(controller.editorProjection.editorSurfaceHtml)
-                : "";
-        const nextRenderedText = inlineResourcePresentationController.renderEditorSurfaceHtmlWithInlineResources(rendererRenderedText);
-        if (controller.editorProjection && controller.editorProjection.richTextSurfaceHtml !== nextRenderedText) {
-            editorSurfaceGuardController.markProgrammaticEditorSurfaceSync();
-            controller.editorProjection.richTextSurfaceHtml = nextRenderedText;
-        }
-        if (controller.scheduleEditorRichTextSurfaceSyncHandler
-                && typeof controller.scheduleEditorRichTextSurfaceSyncHandler === "function") {
-            controller.scheduleEditorRichTextSurfaceSyncHandler();
-        }
-    }
-
-    function markProgrammaticEditorSurfaceSync() {
-        EditorTrace.trace("resourceImportController", "markProgrammaticEditorSurfaceSync", "", controller)
-        editorSurfaceGuardController.markProgrammaticEditorSurfaceSync();
     }
 
     function restoreEditorSurfaceFromPresentation() {

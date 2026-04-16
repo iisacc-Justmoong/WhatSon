@@ -45,7 +45,6 @@ FocusScope {
     property int renderedTextFormat: Text.RichText
     property string text: ""
     property color textColor: LV.Theme.bodyColor
-    property int textFormat: TextEdit.PlainText
     property int wrapMode: TextEdit.NoWrap
     property bool preferNativeInputHandling: false
     readonly property int effectiveTabIndentSpaceCount: Math.max(1, Math.floor(Number(control.tabIndentSpaceCount) || 4))
@@ -57,7 +56,6 @@ FocusScope {
                                                        Number(textInput.contentHeight) || 0,
                                                        Number(renderedOutputText.contentHeight) || 0))
     readonly property bool renderedOutputVisible: control.showRenderedOutput
-                                                  && control.textFormat === TextEdit.PlainText
                                                   && !control.inputMethodSessionActive()
                                                   && (control.renderedText === undefined
                                                       || control.renderedText === null
@@ -101,38 +99,12 @@ FocusScope {
     property string _deferredProgrammaticText: ""
     property bool _fallbackTextEditedDispatchQueued: false
     property int _fallbackTextEditedDispatchRevision: 0
-    property bool _richTextImeFallbackSurfaceActive: false
     property string _cachedSelectedText: ""
     property int _cachedSelectionCursorPosition: -1
     property int _cachedSelectionEnd: -1
     property int _cachedSelectionStart: -1
 
     signal textEdited(string text)
-
-    function looksLikeQtRichTextDocument(serializedText) {
-        const normalizedText = serializedText === undefined || serializedText === null ? "" : String(serializedText)
-        if (normalizedText.length === 0)
-            return false
-        if (/<meta\s+name=["']qrichtext["']/i.test(normalizedText))
-            return true
-        return /<!DOCTYPE\s+HTML/i.test(normalizedText)
-                && /<html[\s>]/i.test(normalizedText)
-                && /<body[\s>]/i.test(normalizedText)
-    }
-
-    function plainTextFromSerializedRichText(serializedText) {
-        const normalizedText = serializedText === undefined || serializedText === null ? "" : String(serializedText)
-        if (normalizedText.length === 0)
-            return ""
-        const richTextBridge = richTextTextBridgeLoader && richTextTextBridgeLoader.item
-                ? richTextTextBridgeLoader.item
-                : null
-        if (!richTextBridge
-                || richTextBridge.plainTextFromEditorSurfaceHtml === undefined) {
-            return normalizedText
-        }
-        return String(richTextBridge.plainTextFromEditorSurfaceHtml(normalizedText))
-    }
 
     function forceActiveFocus() {
         EditorTrace.trace("inlineFormatEditor", "forceActiveFocus", "", control)
@@ -146,15 +118,8 @@ FocusScope {
     function currentPlainText() {
         const maximumLength = Number(textInput.length) || 0
         if (textInput.getText !== undefined)
-        {
-            const extractedText = textInput.getText(0, maximumLength)
-            if (!control.looksLikeQtRichTextDocument(extractedText))
-                return extractedText
-        }
-        const serializedText = textInput.text === undefined || textInput.text === null ? "" : String(textInput.text)
-        if (textInput.textFormat === TextEdit.RichText)
-            return control.plainTextFromSerializedRichText(serializedText)
-        return serializedText
+            return textInput.getText(0, maximumLength)
+        return textInput.text === undefined || textInput.text === null ? "" : String(textInput.text)
     }
 
     function getFormattedText(start, end) {
@@ -408,10 +373,7 @@ FocusScope {
     }
 
     function canDeferProgrammaticTextSync() {
-        return control.inputMethodSessionActive()
-                || (control.textFormat === TextEdit.RichText
-                    && !!control.preferNativeInputHandling
-                    && control.focused);
+        return control.inputMethodSessionActive();
     }
 
     function flushDeferredProgrammaticText(force) {
@@ -471,31 +433,6 @@ FocusScope {
         control._programmaticTextSyncDepth -= 1;
         control.notifyInputMethod(control.inputMethodSelectionQueryMask());
         control.notifyInputMethod(control.inputMethodGeometryQueryMask());
-    }
-
-    function richTextImeFallbackRequested() {
-        return control.textFormat === TextEdit.RichText
-                && control.inputMethodSessionActive();
-    }
-
-    function synchronizeRichTextImeSurface() {
-        const fallbackRequested = control.richTextImeFallbackRequested();
-        if (fallbackRequested) {
-            if (textInput.textFormat !== TextEdit.PlainText)
-                textInput.textFormat = TextEdit.PlainText;
-            if (!control._richTextImeFallbackSurfaceActive) {
-                control._richTextImeFallbackSurfaceActive = true;
-                control.setProgrammaticText(control.currentPlainText());
-            }
-            return;
-        }
-
-        if (textInput.textFormat !== control.textFormat)
-            textInput.textFormat = control.textFormat;
-        if (!control._richTextImeFallbackSurfaceActive)
-            return;
-
-        control._richTextImeFallbackSurfaceActive = false;
     }
 
     function scheduleCommittedTextEditedDispatch() {
@@ -563,7 +500,6 @@ FocusScope {
         if (!focused)
             control.flushDeferredProgrammaticText(true);
     }
-    onTextFormatChanged: control.synchronizeRichTextImeSurface()
     onTextChanged: {
         const normalizedText = text === undefined || text === null ? "" : String(text);
         EditorTrace.trace(
@@ -591,20 +527,6 @@ FocusScope {
             return control.backgroundColor;
         }
         radius: control.cornerRadius
-    }
-
-    Loader {
-        id: richTextTextBridgeLoader
-
-        active: control.textFormat === TextEdit.RichText
-        sourceComponent: richTextTextBridgeComponent
-    }
-
-    Component {
-        id: richTextTextBridgeComponent
-
-        ContentsTextFormatRenderer {
-        }
     }
 
     Flickable {
@@ -636,7 +558,6 @@ FocusScope {
             readonly property int selectionEnd: textInput.selectionEnd
             readonly property int selectionStart: textInput.selectionStart
             property bool showRenderedOutput: control.showRenderedOutput
-            property alias textFormat: textInput.textFormat
             property alias topPadding: textInput.topPadding
 
             function forceActiveFocus() {
@@ -695,7 +616,7 @@ FocusScope {
                                && (!control.preferNativeInputHandling || control.inputMethodVisible)
                 selectedTextColor: control.selectedTextColor
                 selectionColor: control.selectionColor
-                textFormat: control.textFormat
+                textFormat: TextEdit.PlainText
                 tabStopDistance: Math.max(
                                      1,
                                      Number(tabStopTextMetrics.advanceWidth)
@@ -713,7 +634,6 @@ FocusScope {
                                 "activeFocus=" + activeFocus,
                                 control)
                     control.notifyInputMethod(Qt.ImQueryAll);
-                    control.synchronizeRichTextImeSurface();
                     control.maybeDiscardCachedSelectionSnapshot();
                 }
                 onCursorPositionChanged: {
@@ -842,7 +762,6 @@ FocusScope {
 
     Connections {
         function onInputMethodComposingChanged() {
-            control.synchronizeRichTextImeSurface();
             if (!textInput.inputMethodComposing) {
                 control.scheduleCommittedTextEditedDispatch();
                 control.flushDeferredProgrammaticText(false);
@@ -850,7 +769,6 @@ FocusScope {
         }
 
         function onPreeditTextChanged() {
-            control.synchronizeRichTextImeSurface();
             if (!textInput.inputMethodComposing && control.preeditText.length === 0) {
                 control.scheduleCommittedTextEditedDispatch();
                 control.flushDeferredProgrammaticText(false);
@@ -864,7 +782,6 @@ FocusScope {
     Component.onCompleted: {
         EditorTrace.trace("inlineFormatEditor", "mount", EditorTrace.describeText(text), control)
         setProgrammaticText(text);
-        control.synchronizeRichTextImeSurface();
         control.notifyInputMethod(Qt.ImQueryAll);
     }
 

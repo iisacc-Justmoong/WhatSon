@@ -57,31 +57,6 @@ QtObject {
                   && controller.view.preferNativeInputHandling !== undefined
                   && controller.view.preferNativeInputHandling);
     }
-
-    function applyEditorRichTextSurface() {
-        if (!controller.contentEditor)
-            return;
-        const preferredTextFormat = controller.preferNativeInputHandling() ? TextEdit.PlainText : TextEdit.RichText;
-        const preferredRenderedOutput = !controller.preferNativeInputHandling();
-        if (controller.contentEditor.textFormat !== undefined && controller.contentEditor.textFormat !== preferredTextFormat)
-            controller.contentEditor.textFormat = preferredTextFormat;
-        if (controller.contentEditor.showRenderedOutput !== undefined && controller.contentEditor.showRenderedOutput !== preferredRenderedOutput)
-            controller.contentEditor.showRenderedOutput = preferredRenderedOutput;
-        const editorItem = controller.contentEditor.editorItem;
-        if (!editorItem)
-            return;
-        if (editorItem.textFormat !== undefined && editorItem.textFormat !== preferredTextFormat)
-            editorItem.textFormat = preferredTextFormat;
-        if (editorItem.showRenderedOutput !== undefined && editorItem.showRenderedOutput !== preferredRenderedOutput)
-            editorItem.showRenderedOutput = preferredRenderedOutput;
-        const inputItem = editorItem.inputItem;
-        if (!inputItem)
-            return;
-        if (inputItem.textFormat !== undefined && inputItem.textFormat !== preferredTextFormat)
-            inputItem.textFormat = preferredTextFormat;
-        if (inputItem.selectByMouse !== undefined && !inputItem.selectByMouse)
-            inputItem.selectByMouse = true;
-    }
     function contextMenuEditorSelectionRange() {
         if (controller.contextMenuSelectionEnd <= controller.contextMenuSelectionStart)
             return ({
@@ -818,30 +793,6 @@ QtObject {
                 });
         }
     }
-    function normalizeBodySourceForRichTextEditor(sourceText) {
-        const source = sourceText === undefined || sourceText === null ? "" : String(sourceText);
-        if (source.length === 0)
-            return "";
-        if (controller.textFormatRenderer && controller.textFormatRenderer.normalizeInlineStyleAliasesForEditor !== undefined) {
-            const rendererNormalizedText = controller.textFormatRenderer.normalizeInlineStyleAliasesForEditor(source);
-            if (rendererNormalizedText !== undefined && rendererNormalizedText !== null)
-                return String(rendererNormalizedText);
-        }
-        const inlineTagPattern = /<\s*(\/?)\s*([A-Za-z_][A-Za-z0-9_.:-]*)\b[^>]*>/gi;
-        return source.replace(inlineTagPattern, function (token, slashToken, rawTagName) {
-            const normalizedTagName = rawTagName === undefined || rawTagName === null ? "" : String(rawTagName).trim().toLowerCase();
-            const isClosingTag = slashToken !== undefined && slashToken !== null && String(slashToken).length > 0;
-            if (normalizedTagName === "br")
-                return "<br/>";
-            const styleTag = controller.normalizeInlineStyleTag(normalizedTagName);
-            if (styleTag.length === 0)
-                return token;
-            const wrapTags = controller.richTextWrapTags(styleTag);
-            if (wrapTags.openTag.length === 0 || wrapTags.closeTag.length === 0)
-                return token;
-            return isClosingTag ? wrapTags.closeTag : wrapTags.openTag;
-        });
-    }
     function normalizeInlineStyleTag(tagName) {
         const normalizedTagName = tagName === undefined || tagName === null ? "" : String(tagName).trim().toLowerCase();
         if (normalizedTagName === "plain" || normalizedTagName === "clear" || normalizedTagName === "none")
@@ -1063,50 +1014,6 @@ QtObject {
             "start": -1,
             "end": -1
         };
-    }
-    function richTextWrapTags(styleTag) {
-        if (!controller.view)
-            return ({
-                    "openTag": "",
-                    "closeTag": ""
-                });
-        switch (styleTag) {
-        case "bold":
-            return ({
-                    "openTag": "<strong style=\"font-weight:900;\">",
-                    "closeTag": "</strong>"
-                });
-        case "italic":
-            return ({
-                    "openTag": "<span style=\"font-style:italic;\">",
-                    "closeTag": "</span>"
-                });
-        case "underline":
-            return ({
-                    "openTag": "<span style=\"text-decoration: underline;\">",
-                    "closeTag": "</span>"
-                });
-        case "strikethrough":
-            return ({
-                    "openTag": "<span style=\"text-decoration: line-through;\">",
-                    "closeTag": "</span>"
-                });
-        case "highlight":
-            return ({
-                    "openTag": controller.view.richTextHighlightOpenTag,
-                    "closeTag": "</span>"
-                });
-        default:
-            return ({
-                    "openTag": "",
-                    "closeTag": ""
-                });
-        }
-    }
-    function scheduleEditorRichTextSurfaceSync() {
-        Qt.callLater(function () {
-            controller.applyEditorRichTextSurface();
-        });
     }
     function refreshPresentationStateAfterProgrammaticChange() {
         if (!controller.view || controller.view.commitDocumentPresentationRefresh === undefined)

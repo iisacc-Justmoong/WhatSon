@@ -153,12 +153,13 @@ This keeps mobile back navigation local to the page and avoids stealing editor t
 - The routed `ListBarLayout.qml` now receives `resolvedNoteDeletionViewModel`, so hardware-keyboard
   `Delete` / `Backspace` in the mobile note list can remove resource packages when the resources
   hierarchy owns the active list.
-- `ContentViewLayout.qml`: renders the editor route body and now selects `MobileContentsDisplayView.qml` for mobile.
-- The mobile editor route no longer relies on desktop editor code plus mobile suppression flags:
-  - gutter is removed by the mobile-only editor file itself
+- `ContentViewLayout.qml`: renders the editor route body and now mounts the unified `ContentsDisplayView.qml` host in
+  mobile mode.
+- The mobile editor route still no longer relies on ad hoc desktop suppression flags:
+  - gutter is removed by the shared host's mobile mode policy
   - editor font size now stays aligned with the desktop `12px` baseline
-- The route forwards the LVRS window `isMobilePlatform` state into `ContentViewLayout`, so editor file selection uses
-  the canonical platform detector instead of responsive-width guesses.
+- The route forwards the LVRS window `isMobilePlatform` state into `ContentViewLayout`, so the unified host's mode
+  policy uses the canonical platform detector instead of responsive-width guesses.
 - `resourcesImportViewModel`: forwarded into `ContentViewLayout` so editor drops on mobile can package files and emit
   `<resource ...>` links through the same import pipeline.
 - `editorViewModeViewModel`: forwarded into `ContentViewLayout` so mobile editor mode selection uses the same
@@ -179,7 +180,7 @@ This keeps mobile back navigation local to the page and avoids stealing editor t
 - Mobile hierarchy routing must also resolve that snapshot from the selected hierarchy index itself, not only from one
   previously cached "active" provider object, or a toolbar switch can leave the old domain viewmodel mounted.
 - The mobile editor page must not reintroduce gutter width/line-number overrides now that mobile gutter policy lives in
-  `MobileContentsDisplayView.qml`.
+  `ContentsDisplayHostModePolicy.qml`.
 - The mobile editor page must keep sourcing platform mode from the LVRS window detector, not from viewport width.
 - The mobile editor page must not fall back to the desktop editor file for mobile rendering.
 - The mobile detail route must fill the routed body width end-to-end; centered fixed-width detail cards are a regression on

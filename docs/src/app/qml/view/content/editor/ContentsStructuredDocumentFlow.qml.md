@@ -49,6 +49,9 @@ Hosts the parsed `.wsnbody` block stream as one ordered document editor and forw
   mounted already.
 - The flow now keeps one cached logical-line table and cached block layout summary per parsed snapshot instead of
   rebuilding them on every gutter/minimap/current-line query.
+- Structured cached logical-line entries now also keep `gutterContentY` aligned to each line's real `contentY`.
+  Gutter-collapsed blocks still shrink only the rendered gutter box height, but line-number Y no longer comes from a
+  second synthetic accumulator that ignored block spacing and delegate-local top offsets.
 - The block host also now virtualizes delegate loading against the bound viewport:
   off-screen text/resource/agenda/callout delegates are unloaded outside an overscanned window while their host items
   keep a cached or estimated block height so document order and source-based focus math remain stable.

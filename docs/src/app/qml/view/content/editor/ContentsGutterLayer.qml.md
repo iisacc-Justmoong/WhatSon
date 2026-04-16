@@ -19,6 +19,9 @@ entries and marker geometry, then hands those values to the gutter as plain mode
 
 - Line-number delegates no longer call `lineY(...)` on every binding evaluation. They consume a precomputed
   `resolvedY` from `visibleLineNumbersModel`.
+- That `resolvedY` is now gutter-specific rather than plain editor-line Y.
+  The host pre-applies wrapped-row compensation, so each logical line number is pushed down by the extra visual-row
+  height created by prior soft wraps.
 - Rail offsets, marker width, line-number font size, and active/default gutter colors now come from LVRS gap/theme
   tokens plus `LV.Theme.scaleMetric(...)`, so gutter chrome scales with the same density policy as the host editor.
 - The parent snapshot function must hand this component a real array. If `visibleLineNumbersModel` is assigned from a
@@ -30,10 +33,10 @@ entries and marker geometry, then hands those values to the gutter as plain mode
 
 ## Collaborators
 
-- `ContentsDisplayView.qml`: desktop owner that computes the visible line-entry snapshot and normalized marker list.
-- `MobileContentsDisplayView.qml`: mobile owner that keeps gutter visibility disabled entirely.
-- Both desktop and mobile hosts now hard-clamp the gutter layout width to the resolved gutter token, so host relayout
-  pressure cannot squeeze the gutter narrower than its intended chrome width.
+- `ContentsDisplayView.qml`: unified owner that computes the visible line-entry snapshot and normalized marker list.
+  In mobile mode, `ContentsDisplayHostModePolicy.qml` keeps gutter visibility disabled entirely.
+- The shared host now hard-clamps the gutter layout width to the resolved gutter token, so host relayout pressure
+  cannot squeeze the gutter narrower than its intended chrome width.
 - `ContentsDisplayView.qml` resolves marker colors for `current`, `changed`, and `conflict`, and unknown marker types
   now fall back to the primary/current color instead of leaving the resolver path incomplete.
 - `ContentsGutterMarkerBridge`: prepares external marker payloads before the parent view hands them to the gutter.
@@ -41,6 +44,7 @@ entries and marker geometry, then hands those values to the gutter as plain mode
 ## Regression Checks
 
 - Line numbers should remain vertically stable while scrolling rich text with wrapped lines.
+- Soft-wrapped logical lines must push every following gutter label down by the same accumulated wrapped-row height.
 - Markdown-style list typing must not narrow or widen the allocated gutter strip while the editor surface relayouts.
 - Line numbers should not disappear after editor refactors that touch the parent snapshot helpers; the gutter expects a
   concrete `visibleLineNumbersModel` array at all times.

@@ -472,7 +472,6 @@ FocusScope {
         }
         text: textBlock.authoritativePlainText
         textColor: LV.Theme.bodyColor
-        textFormat: TextEdit.PlainText
         wrapMode: TextEdit.Wrap
 
         onFocusedChanged: {

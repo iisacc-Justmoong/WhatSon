@@ -357,7 +357,7 @@ FocusScope {
                 "gutterContentHeight": gutterCollapsed ? Math.max(1, documentFlow.lineHeightHint) : lineHeight,
                 "minimapRowCharCount": minimapRowCharCount,
                 "minimapVisualKind": minimapVisualKind,
-                "rowCount": Math.max(1, Math.round(lineHeight / Math.max(1, documentFlow.lineHeightHint)))
+                "rowCount": Math.max(1, Math.ceil(lineHeight / Math.max(1, documentFlow.lineHeightHint)))
             })
         }
 
@@ -377,7 +377,6 @@ FocusScope {
         const entries = []
         const blockSummaries = []
         let nextBlockBaseY = 0
-        let nextGutterContentY = 0
         for (let blockIndex = 0; blockIndex < blockRepeater.count; ++blockIndex) {
             const blockHost = blockRepeater.itemAt(blockIndex)
             const blockEntry = blocks[blockIndex] && typeof blocks[blockIndex] === "object" ? blocks[blockIndex] : ({})
@@ -396,7 +395,7 @@ FocusScope {
                     "gutterContentHeight": Math.max(
                                                1,
                                                Number(lineEntry.gutterContentHeight) || documentFlow.lineHeightHint),
-                    "gutterContentY": nextGutterContentY,
+                    "gutterContentY": Math.max(0, Number(lineEntry.contentY) || 0),
                     "lineNumber": entries.length + 1,
                     "minimapRowCharCount": Math.max(0, Number(lineEntry.minimapRowCharCount) || 0),
                     "minimapVisualKind": lineEntry.minimapVisualKind !== undefined
@@ -404,9 +403,6 @@ FocusScope {
                                          : "text",
                     "rowCount": Math.max(1, Number(lineEntry.rowCount) || 1)
                 })
-                nextGutterContentY += Math.max(
-                            1,
-                            Number(lineEntry.gutterContentHeight) || documentFlow.lineHeightHint)
             }
             blockSummaries.push({
                 "blockHeight": blockHeight,

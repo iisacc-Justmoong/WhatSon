@@ -22,10 +22,9 @@ ContentsEditorPresentationProjection::~ContentsEditorPresentationProjection()
         this,
         QStringLiteral("editorPresentationProjection"),
         QStringLiteral("dtor"),
-        QStringLiteral("source=%1 previewEnabled=%2 overrideActive=%3")
+        QStringLiteral("source=%1 previewEnabled=%2")
             .arg(WhatSon::Debug::summarizeText(sourceText()))
-            .arg(previewEnabled())
-            .arg(m_hasRichTextSurfaceHtmlOverride));
+            .arg(previewEnabled()));
 }
 
 QString ContentsEditorPresentationProjection::sourceText() const
@@ -90,11 +89,6 @@ QString ContentsEditorPresentationProjection::editorSurfaceHtml() const
     return m_textFormatRenderer != nullptr ? m_textFormatRenderer->editorSurfaceHtml() : QString();
 }
 
-QString ContentsEditorPresentationProjection::richTextSurfaceHtml() const
-{
-    return m_hasRichTextSurfaceHtmlOverride ? m_richTextSurfaceHtmlOverride : editorSurfaceHtml();
-}
-
 QString ContentsEditorPresentationProjection::renderedHtml() const
 {
     return m_textFormatRenderer != nullptr ? m_textFormatRenderer->renderedHtml() : QString();
@@ -113,27 +107,6 @@ QVariantList ContentsEditorPresentationProjection::logicalLineStartOffsets() con
 int ContentsEditorPresentationProjection::logicalLineCount() const noexcept
 {
     return m_logicalTextBridge != nullptr ? m_logicalTextBridge->logicalLineCount() : 1;
-}
-
-QString ContentsEditorPresentationProjection::renderRichText(const QString& sourceText) const
-{
-    return m_textFormatRenderer != nullptr ? m_textFormatRenderer->renderRichText(sourceText) : QString();
-}
-
-QString ContentsEditorPresentationProjection::normalizeInlineStyleAliasesForEditor(
-    const QString& sourceText) const
-{
-    return m_textFormatRenderer != nullptr
-               ? m_textFormatRenderer->normalizeInlineStyleAliasesForEditor(sourceText)
-               : sourceText;
-}
-
-QString ContentsEditorPresentationProjection::plainTextFromEditorSurfaceHtml(
-    const QString& richTextHtml) const
-{
-    return m_textFormatRenderer != nullptr
-               ? m_textFormatRenderer->plainTextFromEditorSurfaceHtml(richTextHtml)
-               : QString();
 }
 
 QString ContentsEditorPresentationProjection::applyPlainTextReplacementToSource(
@@ -227,58 +200,6 @@ void ContentsEditorPresentationProjection::adoptIncrementalState(
         logicalToSourceOffsets);
 }
 
-void ContentsEditorPresentationProjection::setRichTextSurfaceHtml(
-    const QString& richTextSurfaceHtml)
-{
-    const QString previousSurfaceHtml = this->richTextSurfaceHtml();
-    if (m_hasRichTextSurfaceHtmlOverride
-        && m_richTextSurfaceHtmlOverride == richTextSurfaceHtml)
-    {
-        return;
-    }
-
-    m_richTextSurfaceHtmlOverride = richTextSurfaceHtml;
-    m_hasRichTextSurfaceHtmlOverride = true;
-
-    if (previousSurfaceHtml == this->richTextSurfaceHtml())
-    {
-        return;
-    }
-
-    WhatSon::Debug::traceEditorSelf(
-        this,
-        QStringLiteral("editorPresentationProjection"),
-        QStringLiteral("setRichTextSurfaceHtml"),
-        QStringLiteral("surface=%1")
-            .arg(WhatSon::Debug::summarizeText(this->richTextSurfaceHtml())));
-    emit richTextSurfaceHtmlChanged();
-}
-
-void ContentsEditorPresentationProjection::clearRichTextSurfaceHtml()
-{
-    const QString previousSurfaceHtml = richTextSurfaceHtml();
-    if (!m_hasRichTextSurfaceHtmlOverride)
-    {
-        return;
-    }
-
-    m_hasRichTextSurfaceHtmlOverride = false;
-    m_richTextSurfaceHtmlOverride.clear();
-
-    if (previousSurfaceHtml == richTextSurfaceHtml())
-    {
-        return;
-    }
-
-    WhatSon::Debug::traceEditorSelf(
-        this,
-        QStringLiteral("editorPresentationProjection"),
-        QStringLiteral("clearRichTextSurfaceHtml"),
-        QStringLiteral("surface=%1")
-            .arg(WhatSon::Debug::summarizeText(richTextSurfaceHtml())));
-    emit richTextSurfaceHtmlChanged();
-}
-
 void ContentsEditorPresentationProjection::connectSignals()
 {
     if (m_textFormatRenderer != nullptr)
@@ -287,13 +208,7 @@ void ContentsEditorPresentationProjection::connectSignals()
             m_textFormatRenderer,
             &ContentsTextFormatRenderer::editorSurfaceHtmlChanged,
             this,
-            [this]() {
-                emit editorSurfaceHtmlChanged();
-                if (!m_hasRichTextSurfaceHtmlOverride)
-                {
-                    emit richTextSurfaceHtmlChanged();
-                }
-            });
+            &ContentsEditorPresentationProjection::editorSurfaceHtmlChanged);
         connect(
             m_textFormatRenderer,
             &ContentsTextFormatRenderer::renderedHtmlChanged,

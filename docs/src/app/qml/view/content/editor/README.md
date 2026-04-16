@@ -18,6 +18,7 @@
 - `ContentsBreakBlock.qml`
 - `ContentsCalloutLayer.qml`
 - `ContentsCalloutBlock.qml`
+- `ContentsDisplayHostModePolicy.qml`
 - `ContentsDisplayView.qml`
 - `ContentsDocumentBlock.qml`
 - `ContentsDocumentTextBlock.qml`
@@ -33,7 +34,6 @@
 - `ContentsMinimapLayer.qml`
 - `ContentsMinimapSnapshotSupport.js`
 - `ContentsResourceBlock.qml`
-- `MobileContentsDisplayView.qml`
 - `ContentsResourceViewer.qml`
 - `ContentsResourceRenderCard.qml`
 - `ContentsResourceDropPayloadParser.qml`
@@ -46,9 +46,10 @@
 
 ## Current Notes
 
-- `ContentsDisplayView.qml` is now the desktop-only editor surface.
-- `MobileContentsDisplayView.qml` is the duplicated mobile-only editor surface, so gutter/font behavior is no longer
-  gated through one shared desktop/mobile file.
+- `ContentsDisplayView.qml` is now the unified desktop/mobile editor surface.
+- `ContentsDisplayHostModePolicy.qml` now owns platform display deltas such as gutter/minimap visibility, editor
+  horizontal inset, native-input autofocus, and font weight so the shared host no longer forks into separate
+  desktop/mobile QML roots.
 - The shared live editor engine is already `QtQuick.TextEdit` wrapped by `ContentsInlineFormatEditor.qml`; this
   directory no longer depends on an LVRS `LV.TextEditor` implementation.
 - The editor, gutter, and minimap fill the `ContentsView` slot; note-body resources no longer use a separate overlay
@@ -57,7 +58,7 @@
   note-body blocks, so file/image/audio/pdf/document presentation no longer duplicates the same card scaffolding in
   both hosts.
 - `ContentsResourceImportController.qml` is now only the public coordinator for editor-side resource import.
-  Drag/drop payload parsing, duplicate-import prompt state, RAW tag insertion, inline RichText presentation, and
+  Drag/drop payload parsing, duplicate-import prompt state, RAW tag insertion, inline HTML presentation, and
   editor-surface guard state now live in dedicated sibling helpers instead of a single import god object.
   The controller no longer receives the full host `view`; desktop/mobile hosts now pass only the explicit callbacks,
   flags, projection object, and import-policy contracts each helper actually needs.
@@ -86,17 +87,20 @@
   flow resolve the immediately adjacent parsed block from the `.wsnbody` stream rather than hardcoding neighbor lookup
   rules inside each block widget.
 - `ContentsEditorTypingController.qml` now owns ordinary text-entry mutation routing so typing no longer reserializes
-  the whole RichText surface on every edit.
+  the whole presentation overlay on every edit.
 - The editor directory now follows one write direction for live note editing:
   RAW `.wsnote/.wsnbody` source is the only write authority, parsers/builders derive presentation state from that RAW
-  source, and RichText/DOM editor surfaces are no longer allowed to serialize themselves back into stored source
+  source, and HTML/DOM presentation surfaces are no longer allowed to serialize themselves back into stored source
   during ordinary typing.
-- Desktop/mobile editor views now keep a separate presentation timer for whole-document markdown/RichText refresh, so
+- Desktop/mobile editor views now keep a separate presentation timer for whole-document markdown/HTML projection refresh, so
   `ContentsTextFormatRenderer` and full minimap resampling no longer run directly on every committed keystroke.
 - Desktop/mobile editor views now also keep `documentPresentationSourceText` as the single whole-document presentation
-  snapshot. One `ContentsEditorPresentationProjection` now tokenizes RAW into editor HTML, RichText surface HTML,
+  snapshot. One `ContentsEditorPresentationProjection` now tokenizes RAW into editor HTML, preview HTML,
   logical text, and logical line metadata for that snapshot, while `ContentsEditorTypingController.qml` carries the
   incremental plain-text/source-offset state between idle commits.
+- `ContentsInlineFormatEditor.qml` is now strictly a plain-text input wrapper.
+  The fallback editor path paints formatted spans through a separate HTML overlay and no longer switches the live
+  `TextEdit` into `RichText` mode.
 - Desktop/mobile focused editing now also blocks that whole-document presentation timer from pushing a fresh editing
   surface back into the live `TextEdit`.
   Ordinary typing stays on the incremental live cache until blur or another explicit immediate refresh path, which
@@ -128,8 +132,13 @@
   `.wsnbody` flush contract as desktop.
 - Desktop editor hosts now also pause note snapshot polling while the live editor owns focus, so the periodic
   selected-note snapshot refresh cannot overwrite the active buffer with a stale same-note payload mid-typing.
-- `MobileContentsDisplayView.qml` also removes the mobile live-editor horizontal inset, so the content view spans the
-  full routed mobile width.
+- The unified `ContentsDisplayView.qml` now also removes the live-editor horizontal inset in mobile mode, so the
+  content view spans the full routed mobile width without a separate mobile host file.
+- The unified host now also keeps a dedicated gutter-Y cache that accumulates prior soft-wrap row height before placing
+  later logical line numbers, so wrapped prose no longer leaves gutter labels visually under-shifted.
+- `ContentsStructuredDocumentFlow.qml` now also emits structured gutter Y from each cached logical line's real
+  `contentY` instead of a separate synthetic gutter accumulator, so paragraph spacing, delegate-local top offsets, and
+  wrapped structured lines keep the gutter aligned to the actual rendered document surface.
 - `ContentsEditorSelectionController.qml` now also owns common markdown list shortcuts (`Cmd+Shift+7/8` on macOS,
   `Alt+Shift+7/8` on Windows/Linux) so block-level list toggles stay source-driven as well.
 - Markdown list toggles now restore selection/cursor using logical-text lengths from `ContentsLogicalTextBridge`, so
@@ -148,10 +157,10 @@
 - Desktop/mobile editor views now also gate timer-driven snapshot polling and deferred presentation commits on
   `typingSessionSyncProtected` plus `pendingBodySave`, not only focus state, so stale async snapshots cannot overwrite
   active typing when focus reporting briefly flaps.
-- `ContentsDisplayView.qml` and `MobileContentsDisplayView.qml` now delegate three former host-owned policy roles to
-  C++ coordinators under `src/app/viewmodel/content`: note-selection sync/reconcile scheduling, whole-document
-  presentation refresh policy, and structured-flow activation. The hosts keep UI composition and repaint/focus
-  execution only.
+- `ContentsDisplayView.qml` now delegates three former host-owned policy roles to C++ coordinators under
+  `src/app/viewmodel/content`: note-selection sync/reconcile scheduling, whole-document presentation refresh policy,
+  and structured-flow activation. The unified host keeps UI composition and repaint/focus execution only, while
+  `ContentsDisplayHostModePolicy.qml` carries platform-mode presentation policy.
 - `ContentsStructuredDocumentFlow.qml` now also converges structured document-host state through one
   `ContentsStructuredDocumentHost` instance and delegates collection normalization, focus resolution, and RAW mutation
   rules to dedicated C++ policy objects instead of keeping those host policies interleaved inside the QML flow object.
@@ -285,9 +294,9 @@
   replacing the earlier whole-tree focus fan-out across every block, loader, and nested editor.
 - That focus path no longer keeps an incrementing replay token or a generic `pendingFocusRequestChanged` watcher; it now
   recalculates the target block only when a focus request enters or the reparsed block list actually changes.
-- Structured-flow source edits no longer force `ContentsDisplayView.qml` / `MobileContentsDisplayView.qml` to rebuild
-  the whole legacy presentation snapshot on each keystroke; those hosts now only repopulate the fallback RichText
-  surface when the document leaves structured mode again.
+- Structured-flow source edits no longer force `ContentsDisplayView.qml` to rebuild the whole legacy presentation
+  snapshot on each keystroke; the unified host now only repopulates the fallback RichText surface when the document
+  leaves structured mode again.
 - While structured-flow mode is active, both hosts now unload the legacy `ContentsInlineFormatEditor` through a
   `Loader`, so note-open and block-edit turns no longer keep a second full-document editor instance alive behind
   `visible: false`.

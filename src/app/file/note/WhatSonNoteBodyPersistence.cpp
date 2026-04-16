@@ -1794,7 +1794,7 @@ namespace WhatSon::NoteBodyPersistence
         return normalizedSourceText;
     }
 
-    QString richTextFromBodyDocument(const QString& bodyDocumentText)
+    QString htmlProjectionFromBodyDocument(const QString& bodyDocumentText)
     {
         const BodyDocumentTextFragments fragments = parseBodyDocumentTextFragments(bodyDocumentText);
         if (!fragments.blockRichLines.isEmpty())

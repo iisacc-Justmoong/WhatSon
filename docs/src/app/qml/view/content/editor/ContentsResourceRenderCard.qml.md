@@ -40,8 +40,8 @@ Shared desktop/mobile resource card for `<resource ...>` note entries.
   Show a typed placeholder tile plus metadata and an external-open action.
 
 ## Reuse Rule
-- Desktop `ContentsDisplayView.qml` and mobile `MobileContentsDisplayView.qml` must both compose this shared card
-  instead of reintroducing duplicated per-host resource-card markup.
+- The unified `ContentsDisplayView.qml` host must compose this shared card in both desktop and mobile modes instead of
+  reintroducing duplicated per-mode resource-card markup.
 - The same card now serves both:
   - inline note-body rendering through `ContentsResourceLayer.qml`
   - non-inline resource presentation surfaces that keep the previous freer vertical sizing

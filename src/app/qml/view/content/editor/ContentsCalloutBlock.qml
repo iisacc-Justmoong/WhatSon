@@ -283,7 +283,6 @@ FocusScope {
                 showScrollBar: false
                 text: calloutBlock.calloutText
                 textColor: "#FFFFFF"
-                textFormat: TextEdit.PlainText
                 wrapMode: TextEdit.Wrap
 
                 onFocusedChanged: {

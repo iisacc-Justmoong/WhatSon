@@ -13,7 +13,7 @@ QtObject {
     property real printPaperTextWidth: 0
     property int editorHorizontalInset: 0
     property int resourceEditorPlaceholderLineCount: 1
-    property bool richTextInlineImageRenderingEnabled: false
+    property bool inlineHtmlImageRenderingEnabled: false
     property var encodeXmlAttributeValueHandler: null
 
     function inlineResourcePreviewWidth() {
@@ -37,7 +37,7 @@ QtObject {
         return resolvedPath;
     }
 
-    function richTextParagraphHtml(innerHtml) {
+    function paragraphHtml(innerHtml) {
         const paragraphBody = innerHtml === undefined || innerHtml === null || String(innerHtml).length === 0
                 ? "&nbsp;"
                 : String(innerHtml);
@@ -48,7 +48,7 @@ QtObject {
         const lines = [];
         const placeholderLineCount = Math.max(0, Math.floor(Number(lineCount) || 0));
         for (let index = 0; index < placeholderLineCount; ++index)
-            lines.push(controller.richTextParagraphHtml("&nbsp;"));
+            lines.push(controller.paragraphHtml("&nbsp;"));
         return lines.join("");
     }
 
@@ -74,11 +74,11 @@ QtObject {
         return controller.resourcePlaceholderBlockHtml();
     }
 
-    function resourceEntryCanRenderInlineInRichText(resourceEntry) {
+    function resourceEntryCanRenderInlineInHtmlProjection(resourceEntry) {
         const safeEntry = resourceEntry && typeof resourceEntry === "object" ? resourceEntry : ({});
         const renderMode = safeEntry.renderMode !== undefined ? String(safeEntry.renderMode).trim().toLowerCase() : "";
         const sourceUrl = controller.resourceEntryOpenTarget(safeEntry);
-        return !!(controller.richTextInlineImageRenderingEnabled
+        return !!(controller.inlineHtmlImageRenderingEnabled
                   && renderMode === "image"
                   && sourceUrl.length > 0);
     }
@@ -94,7 +94,7 @@ QtObject {
                     function (_match, resourceIndexText) {
                         const resourceIndex = Math.max(0, Math.floor(Number(resourceIndexText) || 0));
                         const entry = resourceIndex < renderedResources.length ? renderedResources[resourceIndex] : null;
-                        return controller.resourceEntryCanRenderInlineInRichText(entry)
+                        return controller.resourceEntryCanRenderInlineInHtmlProjection(entry)
                                 ? controller.inlineResourceBlockHtml(entry)
                                 : controller.resourcePlaceholderBlockHtml();
                     });

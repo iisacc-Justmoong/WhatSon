@@ -147,7 +147,7 @@ structured document-flow editor changes.
 - Dropping one or more local files onto the desktop/mobile editor must create matching `.wsresource` package
   directories under the active hub `*.wsresources` root and append those package paths into `Resources.wsresources`.
 - The duplicate-resource conflict prompt shown for drag/drop and clipboard image import must stay behaviorally aligned
-  between desktop `ContentsDisplayView.qml` and mobile `MobileContentsDisplayView.qml`.
+  between desktop/mobile mode inside the unified `ContentsDisplayView.qml` host.
 - After the import-controller split, duplicate-import alert open/close state and editor-surface guard release must
   still remain synchronized on both hosts.
 - The split helper set must remain QML-lintable as `QtObject`-owned collaborators.

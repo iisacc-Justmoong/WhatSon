@@ -3,13 +3,12 @@
 ## Responsibility
 
 `ContentViewLayout.qml` switches the center content slot between the editor surface and the calendar surfaces.
-It owns the platform split between desktop and mobile editor implementations and forwards shared editor collaborators
-into the selected editor surface.
+It owns the platform mode for the unified editor host and forwards shared editor collaborators into that one surface.
 
 ## Current Contract
 
-- Desktop editor surface: `ContentsDisplayView.qml`
-- Mobile editor surface: `MobileContentsDisplayView.qml`
+- Shared editor surface: `ContentsDisplayView.qml`
+- Mobile/desktop host variance: `mobileHost` input forwarded from `isMobilePlatform`
 - Calendar surfaces:
   - `AgendaPage.qml`
   - `DayCalendarPage.qml`
@@ -37,11 +36,11 @@ into the selected editor surface.
 - A `StackLayout` selects either the editor surface or the active calendar surface.
 - The active note-list model still closes any visible calendar surface when note selection changes.
 - `resourcesImportViewModel`, `editorViewModeViewModel`, `sidebarHierarchyViewModel`, and the resolved
-  note-list/content viewmodels are forwarded into both editor variants.
+  note-list/content viewmodels are forwarded into the unified editor host.
 - That sidebar-hierarchy forwarding is now part of the editor contract so desktop/mobile surfaces can distinguish:
   - direct resource-package browsing inside the Resources hierarchy
   - ordinary notes from other hierarchies whose `.wsnbody` happens to contain inline `<resource ... />` blocks
-- `isMobilePlatform` still decides which editor file is instantiated.
+- `isMobilePlatform` still decides which host mode is activated.
 - `requestOpenLibraryNote(noteId)` now uses `libraryHierarchyViewModel.activateNoteById(...)` together with
   `sidebarHierarchyViewModel.setActiveHierarchyIndex(...)` so a calendar note tap can switch the active hierarchy back
   to Library, select the note, and then dismiss the current calendar overlay.
@@ -53,7 +52,7 @@ into the selected editor surface.
 - Automated test files are not currently present in this repository.
 - Regression checklist:
   - Switching between editor and calendar surfaces must continue to use one shared content slot.
-  - Desktop and mobile editor surfaces must both fill that slot without a reserved bottom partition.
+  - The unified editor host must fill that slot in both desktop and mobile modes without a reserved bottom partition.
   - Note selection changes must still dismiss any visible calendar surface.
   - A year-calendar month/day tap must still propagate into a month-overlay open request with the month viewmodel
     already synchronized to the requested month/date.

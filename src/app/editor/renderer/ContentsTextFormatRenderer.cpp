@@ -10,7 +10,6 @@
 #include <limits>
 #include <QRegularExpression>
 #include <QStringList>
-#include <QTextDocument>
 #include <QVector>
 
 namespace
@@ -231,7 +230,7 @@ namespace
         text->chop(1);
     }
 
-    bool richTextFragmentOwnsBlockFlow(const QString& htmlFragment)
+    bool htmlFragmentOwnsBlockFlow(const QString& htmlFragment)
     {
         const QString trimmedFragment = htmlFragment.trimmed();
         return trimmedFragment.startsWith(QStringLiteral("<!--whatson-resource-block:"))
@@ -245,7 +244,7 @@ namespace
             || trimmedFragment.startsWith(QStringLiteral("<pre"));
     }
 
-    QString joinRichTextDocumentFragments(const QStringList& fragments)
+    QString joinHtmlDocumentFragments(const QStringList& fragments)
     {
         if (fragments.isEmpty())
         {
@@ -255,7 +254,7 @@ namespace
         QString html;
         for (const QString& fragment : fragments)
         {
-            if (richTextFragmentOwnsBlockFlow(fragment))
+            if (htmlFragmentOwnsBlockFlow(fragment))
             {
                 html += fragment;
                 continue;
@@ -1728,10 +1727,10 @@ namespace
                     WhatSon::NoteBodyPersistence::serializeBodyDocument(
                         QStringLiteral("note"),
                         *bufferedSourceText);
-                const QString bufferedRichText =
-                    WhatSon::NoteBodyPersistence::richTextFromBodyDocument(bufferedBodyDocument);
+                const QString bufferedHtmlProjection =
+                    WhatSon::NoteBodyPersistence::htmlProjectionFromBodyDocument(bufferedBodyDocument);
                 const QStringList bufferedLines =
-                    bufferedRichText.split(QStringLiteral("<br/>"), Qt::KeepEmptyParts);
+                    bufferedHtmlProjection.split(QStringLiteral("<br/>"), Qt::KeepEmptyParts);
                 for (const QString& bufferedLine : bufferedLines)
                 {
                     documentFragments->push_back(bufferedLine);
@@ -1866,7 +1865,7 @@ namespace
         }
 
         flushBufferedSourceText(&bufferedSourceText, &documentFragments);
-        return joinRichTextDocumentFragments(documentFragments);
+        return joinHtmlDocumentFragments(documentFragments);
     }
 
 } // namespace
@@ -1940,29 +1939,6 @@ void ContentsTextFormatRenderer::setPreviewEnabled(const bool enabled)
     m_previewEnabled = enabled;
     emit previewEnabledChanged();
     refreshRenderedOutputs();
-}
-
-QString ContentsTextFormatRenderer::renderRichText(const QString& sourceText) const
-{
-    return renderMarkdownAwareTextToHtml(sourceText);
-}
-
-QString ContentsTextFormatRenderer::normalizeInlineStyleAliasesForEditor(const QString& sourceText) const
-{
-    return renderInlineStyleEditingSurfaceHtml(sourceText);
-}
-
-QString ContentsTextFormatRenderer::plainTextFromEditorSurfaceHtml(const QString& richTextHtml) const
-{
-    const QString normalizedHtml = normalizeLineEndings(richTextHtml);
-    if (normalizedHtml.isEmpty())
-    {
-        return {};
-    }
-
-    QTextDocument document;
-    document.setHtml(normalizedHtml);
-    return normalizeLineEndings(document.toPlainText());
 }
 
 QString ContentsTextFormatRenderer::applyPlainTextReplacementToSource(

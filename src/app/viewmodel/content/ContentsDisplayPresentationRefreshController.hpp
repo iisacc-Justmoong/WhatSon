@@ -52,7 +52,6 @@ private:
         bool stopTimer,
         bool startTimer,
         bool commitRefresh,
-        bool requestRichTextSync,
         bool requestMinimapRefresh,
         bool requestMinimapRepaint,
         const QString& reason) const;

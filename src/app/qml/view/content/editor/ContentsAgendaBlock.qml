@@ -475,7 +475,6 @@ FocusScope {
                                 showScrollBar: false
                                 text: taskRow.taskText
                                 textColor: "#FFFFFF"
-                                textFormat: TextEdit.PlainText
                                 wrapMode: TextEdit.Wrap
 
                                 onFocusedChanged: {

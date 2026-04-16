@@ -125,17 +125,17 @@ QVariantMap ContentsDisplayPresentationRefreshController::planDeferredRequest()
     if (!m_projectionEnabled)
     {
         setPendingWhileFocused(false);
-        return buildPlan(false, true, false, false, false, false, false, QStringLiteral("projection-disabled"));
+        return buildPlan(false, true, false, false, false, false, QStringLiteral("projection-disabled"));
     }
 
     if (m_editorInputFocused || m_typingSessionSyncProtected)
     {
         setPendingWhileFocused(true);
-        return buildPlan(false, true, false, false, false, false, false, QStringLiteral("defer-while-focused"));
+        return buildPlan(false, true, false, false, false, false, QStringLiteral("defer-while-focused"));
     }
 
     setPendingWhileFocused(false);
-    return buildPlan(false, true, true, false, false, false, false, QStringLiteral("start-deferred-timer"));
+    return buildPlan(false, true, true, false, false, false, QStringLiteral("start-deferred-timer"));
 }
 
 QVariantMap ContentsDisplayPresentationRefreshController::planRefreshRequest(const bool immediate)
@@ -159,7 +159,6 @@ QVariantMap ContentsDisplayPresentationRefreshController::planRefreshRequest(con
             true,
             false,
             false,
-            false,
             true,
             true,
             QStringLiteral("projection-disabled"));
@@ -173,7 +172,6 @@ QVariantMap ContentsDisplayPresentationRefreshController::planRefreshRequest(con
             true,
             false,
             false,
-            immediate,
             true,
             true,
             QStringLiteral("presentation-clean"));
@@ -187,7 +185,7 @@ QVariantMap ContentsDisplayPresentationRefreshController::planRefreshRequest(con
     if (immediate || !m_editorInputFocused)
     {
         setPendingWhileFocused(false);
-        return buildPlan(false, true, false, true, false, false, false, QStringLiteral("commit-now"));
+        return buildPlan(false, true, false, true, false, false, QStringLiteral("commit-now"));
     }
 
     return planDeferredRequest();
@@ -207,17 +205,17 @@ QVariantMap ContentsDisplayPresentationRefreshController::planDeferredTrigger()
     if (!m_projectionEnabled)
     {
         setPendingWhileFocused(false);
-        return buildPlan(true, true, false, false, false, false, false, QStringLiteral("projection-disabled"));
+        return buildPlan(true, true, false, false, false, false, QStringLiteral("projection-disabled"));
     }
 
     if (m_editorInputFocused || m_typingSessionSyncProtected)
     {
         setPendingWhileFocused(true);
-        return buildPlan(false, true, false, false, false, false, false, QStringLiteral("still-focused"));
+        return buildPlan(false, true, false, false, false, false, QStringLiteral("still-focused"));
     }
 
     setPendingWhileFocused(false);
-    return buildPlan(false, true, false, true, false, false, false, QStringLiteral("commit-on-trigger"));
+    return buildPlan(false, true, false, true, false, false, QStringLiteral("commit-on-trigger"));
 }
 
 void ContentsDisplayPresentationRefreshController::clearPendingWhileFocused()
@@ -234,7 +232,6 @@ QVariantMap ContentsDisplayPresentationRefreshController::buildPlan(
     const bool stopTimer,
     const bool startTimer,
     const bool commitRefresh,
-    const bool requestRichTextSync,
     const bool requestMinimapRefresh,
     const bool requestMinimapRepaint,
     const QString& reason) const
@@ -246,7 +243,6 @@ QVariantMap ContentsDisplayPresentationRefreshController::buildPlan(
     plan.insert(QStringLiteral("reason"), reason);
     plan.insert(QStringLiteral("requestMinimapRefresh"), requestMinimapRefresh);
     plan.insert(QStringLiteral("requestMinimapRepaint"), requestMinimapRepaint);
-    plan.insert(QStringLiteral("requestRichTextSync"), requestRichTextSync);
     plan.insert(QStringLiteral("startTimer"), startTimer);
     plan.insert(QStringLiteral("stopTimer"), stopTimer);
     return plan;
