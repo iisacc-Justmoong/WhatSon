@@ -120,6 +120,9 @@
 - Real gutter geometry invalidations from structured-flow re-layout, inline resource render changes, and legacy editor
   line-height updates now bypass the focused `line-structure` suppression path and request their own gutter refresh
   reasons.
+- The unified host now also fingerprints structured gutter geometry separately from logical line-count metadata.
+  A resource-driven spacing change therefore refreshes gutter Y even when the parsed logical line count did not
+  change at all.
 - `ContentsInlineFormatEditor.qml` now also owns the `Qt.inputMethod.update(...)` bridge for cursor, selection, and
   geometry changes, keeping mobile platform text-selection handles and iOS keyboard trackpad gestures aligned with the
   live `TextEdit`.

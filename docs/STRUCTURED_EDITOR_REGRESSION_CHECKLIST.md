@@ -303,6 +303,9 @@ structured document-flow editor changes.
   the gutter even while the editor keeps focus.
   Real geometry invalidations must not be dropped just because focused-input suppression was originally meant only for
   coarse line-structure churn.
+- If an inline image/resource/callout/agenda block changes the spacing or measured height above later prose without
+  changing logical line count, the later gutter line numbers must still shift in the same refresh turn.
+  Geometry-only structured line-entry changes must not wait for an unrelated newline edit, cursor move, or scroll.
 - The same-line typing path must not temporarily replace corrected structured gutter geometry with a top-packed
   fallback layout just because one intermediate content-offset or transient relayout event fired during editing.
 - Structured gutter Y correction must come from the current live block-line geometry, not from a reused cached

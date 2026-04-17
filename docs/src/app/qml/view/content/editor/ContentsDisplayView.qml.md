@@ -39,6 +39,9 @@ It composes:
   against the shell bottom edge when the user scrolls to the document tail.
 - Structured-flow, resource-render, and legacy-editor geometry changes now request gutter refresh through dedicated
   reasons instead of reusing the focused `line-structure` suppression path.
+- Structured `cachedLogicalLineEntries` updates now split logical-metric change from geometry-only change.
+  Even when line count and start offsets stay the same, resource/callout/agenda spacing or measured block-height
+  changes still trigger a gutter refresh as soon as `contentY` / `gutterContentY` move.
 
 ## Resource Import
 

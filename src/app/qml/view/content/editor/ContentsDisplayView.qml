@@ -148,6 +148,7 @@ Item {
     property var logicalLineGutterDocumentYCache: []
     property int logicalLineGutterDocumentYCacheLineCount: 0
     property int logicalLineGutterDocumentYCacheRevision: -1
+    property string structuredGutterGeometrySignature: ""
     property var liveLogicalLineStartOffsets: [0]
     readonly property var logicalLineStartOffsets: contentsView.liveLogicalLineStartOffsets
     property int liveLogicalTextLength: 0
@@ -355,6 +356,38 @@ Item {
     }
     function effectiveStructuredLogicalLineEntries() {
         return contentsView.normalizedStructuredLogicalLineEntries();
+    }
+    function currentStructuredGutterGeometrySignature() {
+        if (!contentsView.structuredHostGeometryActive)
+            return "";
+        const lineEntries = contentsView.effectiveStructuredLogicalLineEntries();
+        const signatureParts = [];
+        for (let lineIndex = 0; lineIndex < lineEntries.length; ++lineIndex) {
+            const entry = lineEntries[lineIndex] && typeof lineEntries[lineIndex] === "object"
+                    ? lineEntries[lineIndex]
+                    : ({});
+            signatureParts.push(
+                        String(Math.max(0, Number(entry.contentY) || 0))
+                        + ":"
+                        + String(Math.max(1, Number(entry.contentHeight) || contentsView.editorLineHeight))
+                        + ":"
+                        + String(Math.max(
+                                     0,
+                                     Number(entry.gutterContentY !== undefined ? entry.gutterContentY : entry.contentY) || 0))
+                        + ":"
+                        + String(Math.max(
+                                     1,
+                                     Number(entry.gutterContentHeight !== undefined
+                                            ? entry.gutterContentHeight
+                                            : contentsView.editorLineHeight) || contentsView.editorLineHeight)));
+        }
+        return signatureParts.join("|");
+    }
+    function consumeStructuredGutterGeometryChange() {
+        const nextSignature = contentsView.currentStructuredGutterGeometrySignature();
+        const geometryChanged = contentsView.structuredGutterGeometrySignature !== nextSignature;
+        contentsView.structuredGutterGeometrySignature = nextSignature;
+        return geometryChanged;
     }
     function buildStructuredMinimapLineGroupsForRange(startLineNumber, endLineNumber) {
         const lineEntries = contentsView.effectiveStructuredLogicalLineEntries();
@@ -1884,6 +1917,7 @@ Item {
         contentsView.logicalLineGutterDocumentYCache = [];
         contentsView.logicalLineGutterDocumentYCacheRevision = -1;
         contentsView.logicalLineGutterDocumentYCacheLineCount = 0;
+        contentsView.structuredGutterGeometrySignature = "";
     }
     function resetEditorSelectionCache() {
         editorSelectionController.resetEditorSelectionCache();
@@ -2554,8 +2588,13 @@ Item {
         function onCachedLogicalLineEntriesChanged() {
             if (!contentsView.structuredHostGeometryActive)
                 return;
-            if (contentsView.refreshLiveLogicalLineMetrics())
-                contentsView.scheduleGutterRefresh(1, "structured-line-metrics");
+            const metricsChanged = contentsView.refreshLiveLogicalLineMetrics();
+            const geometryChanged = contentsView.consumeStructuredGutterGeometryChange();
+            if (!metricsChanged && !geometryChanged)
+                return;
+            contentsView.scheduleGutterRefresh(
+                        geometryChanged ? 2 : 1,
+                        geometryChanged ? "structured-line-geometry" : "structured-line-metrics");
         }
         function onCurrentLogicalLineNumberChanged() {
             if (!contentsView.structuredHostGeometryActive)
