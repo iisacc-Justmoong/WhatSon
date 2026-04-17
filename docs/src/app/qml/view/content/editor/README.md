@@ -147,6 +147,10 @@
 - `ContentsStructuredDocumentFlow.qml` now also emits structured gutter Y from each cached logical line's real
   `contentY` instead of a separate synthetic gutter accumulator, so paragraph spacing, delegate-local top offsets, and
   wrapped structured lines keep the gutter aligned to the actual rendered document surface.
+- `ContentsStructuredDocumentFlow.qml` no longer applies one global inter-block gap to text-family structured tags.
+  Text-to-text flow for `paragraph`, `title`, `subTitle`, `eventTitle`, and the other prose-style text delegates now
+  renders without synthetic bottom margin on `Enter`, while framed document blocks still keep explicit separation from
+  surrounding prose.
 - `ContentsEditorSelectionController.qml` now also owns common markdown list shortcuts (`Cmd+Shift+7/8` on macOS,
   `Alt+Shift+7/8` on Windows/Linux) so block-level list toggles stay source-driven as well.
 - Markdown list toggles now restore selection/cursor using logical-text lengths from `ContentsLogicalTextBridge`, so

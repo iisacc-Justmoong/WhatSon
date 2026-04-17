@@ -35,6 +35,10 @@ Hosts the parsed `.wsnbody` block stream as one ordered document editor and forw
 - Those zero-length paragraph blocks are now also deletable.
   When the block has wrapper source (`<paragraph></paragraph>`), the flow removes that wrapper span; when it is an
   implicit blank line between prose blocks, the flow removes the adjacent newline token that created the empty line.
+- Adjacent text-family blocks no longer inherit one global column gap.
+  Structured prose-like tags such as `paragraph`, `title`, `subTitle`, `eventTitle`, and the other text delegates now
+  keep zero extra inter-block spacing, while framed blocks such as `resource`, `break`, `agenda`, and `callout`
+  still reserve their visual separation from neighboring prose.
 - Atomic block focus no longer branches through `interactionMode: "before" / "after"`.
   Resource and break blocks are re-entered by source offsets inside their span and resolve to whole-block selection.
 - Atomic-block target focus now also carries an explicit `targetBlockIndex`.

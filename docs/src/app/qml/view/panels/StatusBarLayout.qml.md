@@ -16,7 +16,8 @@
 ## Current Theme Contract
 - Desktop `searchFieldColor` is intentionally transparent so the status strip inherits the root `ApplicationWindow`
   canvas instead of painting a second panel slab behind the search affordance.
-- Mobile compact search keeps its own filled field token; only the broad desktop strip is transparentized.
+- Mobile compact search keeps its own filled field token, but the shared mobile scaffold now feeds that token from the
+  same root canvas tone instead of a brighter mobile-only control surface color.
 - The desktop search-field min/max width clamps now route through `LV.Theme.scaleMetric(220/541)` instead of raw pixel
   literals, so wide/narrow status-bar search remains LVRS density-aware.
 

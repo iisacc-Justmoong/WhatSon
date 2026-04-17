@@ -23,6 +23,9 @@
 - Forward `editorViewModeViewModel` into both desktop `BodyLayout` and mobile `MobileHierarchyPage` so navigation-bar
   editor mode selection (`Plain/Page/Print/Web/Presentation`) drives the same content-surface render policy on every
   platform branch.
+- Mobile `MobileHierarchyPage` compact chrome now also receives the same root `canvasColor` for its control surface,
+  so mobile navigation/status background tone stays aligned with the desktop shell instead of introducing a brighter
+  mobile-only slab color.
 - Own Agenda/day/week/month/year overlay visibility flags and keep them mutually exclusive across desktop and mobile
   route handlers.
 - Accept `monthCalendarOverlayOpenRequested` from both desktop and mobile content shells so a year-calendar selection
@@ -85,6 +88,8 @@ The file keeps both desktop and mobile layout branches alive.
   - desktop navigation-bar `Agenda/Day/Week/Month/Year` actions must reopen their overlays on today's date context
     even after the user previously navigated to another date
   - mobile navigation-bar calendar actions must apply the same today-reset behavior
+  - mobile compact navigation/status chrome must stay on the same canvas background tone as the desktop shell and must
+    not reintroduce a brighter mobile-only backdrop slab
   - a year-calendar month/day tap that emits `monthCalendarOverlayOpenRequested` must still open the requested
     month/date instead of being reset back to today's month
 

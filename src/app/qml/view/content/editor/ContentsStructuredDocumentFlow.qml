@@ -45,6 +45,7 @@ FocusScope {
     readonly property int resolvedInteractiveBlockIndexValue: documentHost.resolvedInteractiveBlockIndex(
                                                                    documentFlow.focusedBlockIndexValue)
     readonly property int currentLogicalLineNumber: documentFlow.activeLogicalLineNumber()
+    readonly property int framedBlockSpacing: Math.max(0, Math.round(LV.Theme.scaleMetric(10)))
 
     signal sourceMutationRequested(string nextSourceText, var focusRequest)
 
@@ -65,6 +66,13 @@ FocusScope {
         return Math.max(-1, Math.floor(resolvedIndex))
     }
 
+    function normalizedBlockType(blockEntryOverride) {
+        const blockEntry = blockEntryOverride && typeof blockEntryOverride === "object"
+                ? blockEntryOverride
+                : ({ })
+        return blockEntry.type !== undefined ? String(blockEntry.type).trim().toLowerCase() : "text"
+    }
+
     function blockAtomic(blockHost, blockEntryOverride) {
         const host = blockHost && typeof blockHost === "object" ? blockHost : null
         const blockEntry = blockEntryOverride && typeof blockEntryOverride === "object"
@@ -75,7 +83,7 @@ FocusScope {
             return !!delegateItem.atomicBlock
         if (blockEntry.atomicBlock !== undefined)
             return !!blockEntry.atomicBlock
-        const blockType = blockEntry.type !== undefined ? String(blockEntry.type).trim().toLowerCase() : "text"
+        const blockType = documentFlow.normalizedBlockType(blockEntry)
         return blockType === "resource" || blockType === "break"
     }
 
@@ -159,12 +167,40 @@ FocusScope {
         const blockEntry = blockEntryOverride && typeof blockEntryOverride === "object"
                 ? blockEntryOverride
                 : (host && host.blockEntry && typeof host.blockEntry === "object" ? host.blockEntry : ({ }))
-        const blockType = blockEntry.type !== undefined ? String(blockEntry.type).trim().toLowerCase() : "text"
+        const blockType = documentFlow.normalizedBlockType(blockEntry)
         const resolvedLineHeight = Math.max(1, Number(lineHeight) || documentFlow.lineHeightHint)
         const rawRowCount = Math.max(1, Math.ceil(resolvedLineHeight / Math.max(1, documentFlow.lineHeightHint)))
         if (blockType === "resource")
             return Math.min(10, rawRowCount)
         return rawRowCount
+    }
+
+    function blockUsesSeparatedFlowSpacing(blockEntryOverride) {
+        const blockType = documentFlow.normalizedBlockType(blockEntryOverride)
+        // Text-family blocks (paragraph/title/subTitle/eventTitle/...) must stay flush in one prose flow.
+        // Only framed non-text blocks reserve extra inter-block spacing in the host column.
+        return blockType === "resource"
+                || blockType === "break"
+                || blockType === "agenda"
+                || blockType === "callout"
+    }
+
+    function blockSpacingAfterIndex(blockIndex) {
+        const blocks = documentFlow.normalizedBlocks()
+        const safeBlockIndex = Math.max(-1, Math.floor(Number(blockIndex) || -1))
+        if (safeBlockIndex < 0 || safeBlockIndex + 1 >= blocks.length)
+            return 0
+        const currentBlock = blocks[safeBlockIndex] && typeof blocks[safeBlockIndex] === "object"
+                ? blocks[safeBlockIndex]
+                : ({})
+        const nextBlock = blocks[safeBlockIndex + 1] && typeof blocks[safeBlockIndex + 1] === "object"
+                ? blocks[safeBlockIndex + 1]
+                : ({})
+        if (!documentFlow.blockUsesSeparatedFlowSpacing(currentBlock)
+                && !documentFlow.blockUsesSeparatedFlowSpacing(nextBlock)) {
+            return 0
+        }
+        return documentFlow.framedBlockSpacing
     }
 
     function logicalLineCount() {
@@ -235,7 +271,7 @@ FocusScope {
         const explicitHeightHint = Math.max(0, Number(blockEntry.blockHeightHint) || 0)
         if (explicitHeightHint > 0)
             return explicitHeightHint
-        const blockType = blockEntry.type !== undefined ? String(blockEntry.type).trim().toLowerCase() : "text"
+        const blockType = documentFlow.normalizedBlockType(blockEntry)
         const logicalLineCount = Math.max(1, documentFlow.logicalLineCountForBlockHost(null, blockEntry))
         if (blockType === "resource")
             return Math.max(Math.round(LV.Theme.scaleMetric(160)), documentFlow.lineHeightHint * 6)
@@ -386,7 +422,6 @@ FocusScope {
                     + " viewportHeight=" + documentFlow.viewportHeight
                     + " viewportContentY=" + documentFlow.viewportContentY,
                     documentFlow)
-        const blockSpacing = Math.max(0, Number(documentColumn && documentColumn.spacing !== undefined ? documentColumn.spacing : 0) || 0)
         const entries = []
         const blockSummaries = []
         let nextBlockBaseY = 0
@@ -395,6 +430,7 @@ FocusScope {
             const blockEntry = blocks[blockIndex] && typeof blocks[blockIndex] === "object" ? blocks[blockIndex] : ({})
             const blockHeight = documentFlow.blockHeightForLayout(blockHost, blockEntry)
             const blockEntries = documentFlow.blockLogicalLineEntries(blockHost, blockEntry, nextBlockBaseY)
+            const spacingAfter = documentFlow.blockSpacingAfterIndex(blockIndex)
             const startLineNumber = entries.length + 1
             for (let lineIndex = 0; lineIndex < blockEntries.length; ++lineIndex) {
                 const lineEntry = blockEntries[lineIndex] && typeof blockEntries[lineIndex] === "object"
@@ -422,11 +458,12 @@ FocusScope {
                 "blockIndex": blockIndex,
                 "blockTopY": nextBlockBaseY,
                 "lineCount": Math.max(1, blockEntries.length),
+                "spacingAfter": spacingAfter,
                 "startLineNumber": startLineNumber
             })
             nextBlockBaseY += blockHeight
-            if (blockIndex + 1 < blockRepeater.count)
-                nextBlockBaseY += blockSpacing
+            if (spacingAfter > 0)
+                nextBlockBaseY += spacingAfter
         }
 
         if (entries.length === 0) {
@@ -510,7 +547,10 @@ FocusScope {
             const hostX = Number(host.x) || 0
             const hostY = Number(host.y) || 0
             const hostWidth = Math.max(0, Number(host.width) || Number(host.implicitWidth) || 0)
-            const hostHeight = Math.max(0, Number(host.height) || Number(host.implicitHeight) || 0)
+            const hostHeight = Math.max(
+                        0,
+                        Number(host.contentHeight !== undefined ? host.contentHeight : 0)
+                        || Number(host.height) || Number(host.implicitHeight) || 0)
             if (hostWidth <= 0 || hostHeight <= 0)
                 continue
             if (safeLocalX < hostX || safeLocalX > hostX + hostWidth)
@@ -1354,7 +1394,7 @@ FocusScope {
 
         anchors.left: parent.left
         anchors.right: parent.right
-        spacing: Math.max(0, Math.round(LV.Theme.scaleMetric(10)))
+        spacing: 0
 
         Repeater {
             id: blockRepeater
@@ -1373,6 +1413,12 @@ FocusScope {
                                                            0,
                                                            Number(blockLoader.item.implicitHeight) || Number(blockLoader.item.height) || 0)
                                                      : 0
+                readonly property real contentHeight: Math.max(
+                                                          1,
+                                                          blockHost.cachedDelegateHeight > 0
+                                                          ? blockHost.cachedDelegateHeight
+                                                          : documentFlow.estimatedBlockHeight(blockHost.blockEntry))
+                readonly property real trailingSpacing: documentFlow.blockSpacingAfterIndex(blockHost.blockIndex)
                 readonly property int blockIndex: index
                 readonly property var blockEntry: modelData && typeof modelData === "object" ? modelData : ({})
                 readonly property bool delegateFocused: {
@@ -1384,11 +1430,7 @@ FocusScope {
                     return delegateItem.activeFocus !== undefined && !!delegateItem.activeFocus
                 }
                 readonly property bool keepDelegateLoaded: documentFlow.shouldKeepBlockDelegateLoaded(blockHost, blockHost.blockEntry)
-                implicitHeight: Math.max(
-                                    1,
-                                    blockHost.cachedDelegateHeight > 0
-                                    ? blockHost.cachedDelegateHeight
-                                    : documentFlow.estimatedBlockHeight(blockHost.blockEntry))
+                implicitHeight: blockHost.contentHeight + blockHost.trailingSpacing
                 width: documentColumn.width
                 height: implicitHeight
 
@@ -1404,8 +1446,11 @@ FocusScope {
                     id: blockLoader
 
                     active: blockHost.keepDelegateLoaded
-                    anchors.fill: parent
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.top: parent.top
                     asynchronous: blockRepeater.count > 12 && blockHost.keepDelegateLoaded
+                    height: blockHost.contentHeight
                     sourceComponent: documentBlockDelegate
 
                     onLoaded: {

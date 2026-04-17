@@ -257,6 +257,11 @@ structured document-flow editor changes.
   the following-line suffix.
   The editor must not delete the next line's text or rely on a transient RichText paragraph rewrite that diverges from
   RAW source.
+- Pressing plain `Enter` at the end of a structured text-family block must create the next text block without an extra
+  synthetic block-bottom margin.
+  Two adjacent prose-style blocks such as `paragraph`, `title`, `subTitle`, or `eventTitle` should be separated only
+  by the authored blank line itself, while framed blocks such as `resource`, `agenda`, `callout`, and `break` may
+  still keep their dedicated visual spacing.
 - Inline image rendering must still work when the active hierarchy view-model does not expose
   `noteDirectoryPathForNoteId(QString)` or when hierarchy switching momentarily leaves the content surface bound to the
   previous domain view-model.
