@@ -7,7 +7,7 @@
 ## Scope
 - Mirrored source directory: `src/app/editor/renderer`
 - Child directories: 0
-- Child files: 8
+- Child files: 10
 
 ## Child Directories
 - No child directories.
@@ -15,6 +15,8 @@
 ## Child Files
 - `ContentsTextHighlightRenderer.cpp`
 - `ContentsTextHighlightRenderer.hpp`
+- `ContentsHtmlBlockRenderPipeline.cpp`
+- `ContentsHtmlBlockRenderPipeline.hpp`
 - `ContentsTextFormatRenderer.cpp`
 - `ContentsTextFormatRenderer.hpp`
 - `ContentsStructuredBlockRenderer.cpp`
@@ -23,8 +25,13 @@
 - `ContentsPagePrintLayoutRenderer.hpp`
 
 ## Current Notes
+- `ContentsHtmlBlockRenderPipeline.cpp` is now the explicit editor HTML pipeline:
+  parser blocks -> HTML tokens -> normalized HTML blocks -> final editor HTML document.
 - `ContentsTextFormatRenderer.cpp` now treats proprietary inline source tags as the authoritative formatting basis for
   logical-selection formatting.
+- `ContentsTextFormatRenderer.cpp` now also republishes that pipeline's intermediate payloads (`htmlTokens`,
+  `normalizedHtmlBlocks`, `htmlOverlayVisible`) so block-level QML renderers can consume one stable decision instead of
+  inferring semantic presentation only from regexes over raw source text.
 - `ContentsStructuredBlockRenderer.cpp` now consumes `parser/ContentsWsnBodyBlockParser` as its single `.wsnbody`
   read-path source and republishes that parser result to QML.
 - Agenda/callout compatibility lists still exist, but they are now side projections over the same unified parser pass

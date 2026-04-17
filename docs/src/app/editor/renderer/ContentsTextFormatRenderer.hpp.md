@@ -15,10 +15,24 @@ embedded in the generic inline-tag parser.
   Source-editing RichText HTML consumed by the live editor surface.
   Markdown syntax now stays literal here and is treated as ordinary `.wsnbody` source text instead of a separate
   display grammar.
+- `htmlTokens`
+  Parser-derived HTML token payloads published by the new block render pipeline.
+- `normalizedHtmlBlocks`
+  Stable HTML block payloads derived from `htmlTokens`.
+  QML can now bind to one explicit render decision instead of rediscovering semantic/headline rendering from raw source
+  strings.
+- `htmlOverlayVisible`
+  Tells the live editor surface whether the normalized HTML block output should visually replace the plain-text paint
+  path for the current source snapshot.
 - `renderedHtml`
   Optional markdown-aware preview HTML consumed by preview-only QML surfaces.
 - `previewEnabled`
   Gates whether the expensive markdown-aware preview HTML should be recomputed at all.
+- `ContentsHtmlBlockRenderPipeline`
+  The live editor HTML path now goes through this dedicated pipeline:
+  RAW source -> parser -> HTML tokens -> normalized HTML blocks -> final editor HTML.
+  The renderer still keeps a carry-aware legacy whole-document fallback for multi-block inline-style spans until that
+  style-state transfer is fully migrated into the block pipeline.
 - `renderRichText(sourceText)`
   Stateless helper to render preview HTML without mutating bridge ownership state.
   This still includes markdown-style block rendering for:

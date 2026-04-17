@@ -9,6 +9,16 @@ Implements inline-format rendering from note-editor text to RichText HTML.
 - The renderer now maintains two different HTML outputs:
   - `editorSurfaceHtml`: cheap source-editing HTML for the live editor
   - `renderedHtml`: optional markdown-aware preview HTML, recomputed only while preview is enabled
+- The live editor HTML path now has one explicit intermediate pipeline:
+  - `ContentsWsnBodyBlockParser` reparses RAW source into ordered document blocks
+  - `ContentsHtmlBlockRenderPipeline` converts those blocks into `htmlTokens`
+  - the same pipeline resolves one normalized HTML block per token and publishes `normalizedHtmlBlocks`
+  - `ContentsTextFormatRenderer` finally republishes the joined `editorSurfaceHtml` plus the intermediate payloads to
+    QML
+- `htmlOverlayVisible` is now derived in C++ from that normalized block pipeline instead of being guessed only from one
+  inline-style regex in QML.
+  Semantic text blocks such as `title`, `subTitle`, and `eventTitle` can therefore request the styled overlay even
+  when their RAW inner text contains no inline formatting tag.
 - The live editor surface now treats markdown as raw `.wsnbody` source:
   - list markers, headings, blockquotes, fenced code fences, inline code, and markdown links remain literal text in
     `editorSurfaceHtml`
@@ -170,3 +180,10 @@ Implements inline-format rendering from note-editor text to RichText HTML.
 - The live editor surface should now expose ordinary prose as paragraph-style RichText document blocks instead of one
   flat `<br/>` chain, so inline media can share the same native document flow as surrounding text.
 - When preview is disabled, mutating `sourceText` must not recompute markdown-aware preview HTML.
+- For a semantic heading block in structured-flow mode, `htmlOverlayVisible` must flip to `true` even when the inner
+  RAW text itself contains no `<bold>`/`<italic>`-style inline tags.
+- The renderer must now expose one `htmlTokens` / `normalizedHtmlBlocks` snapshot per render pass, and that snapshot
+  must stay aligned with the parser-owned block order for the same RAW source turn.
+- If one note body uses inline style tags that span multiple parsed text blocks, the renderer must keep the carry-aware
+  legacy document composer for that source turn instead of dropping the carried style during block-normalized HTML
+  assembly.

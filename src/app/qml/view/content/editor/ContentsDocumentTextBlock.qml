@@ -32,8 +32,11 @@ FocusScope {
     readonly property int sourceStart: Math.max(0, Number(normalizedBlock.sourceStart) || 0)
     readonly property int sourceEnd: Math.max(sourceStart, Number(normalizedBlock.sourceEnd) || 0)
     readonly property string sourceText: normalizedBlock.sourceText !== undefined ? String(normalizedBlock.sourceText) : ""
-    readonly property bool inlineStyleOverlayVisible: /<\s*\/?\s*(?:bold|italic|underline|strikethrough|highlight)\b/i.test(
-                                                         textBlock.sourceText)
+    readonly property bool inlineStyleOverlayVisible: inlineStyleRenderer
+                                                      && inlineStyleRenderer.htmlOverlayVisible !== undefined
+                                                      ? !!inlineStyleRenderer.htmlOverlayVisible
+                                                      : /<\s*\/?\s*(?:bold|italic|underline|strikethrough|highlight)\b/i.test(
+                                                            textBlock.sourceText)
     readonly property string authoritativePlainText: StructuredCursorSupport.plainTextFromInlineTaggedSource(
                                                         textBlock.authoritativeSourceText())
 

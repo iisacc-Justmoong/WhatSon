@@ -1,4 +1,5 @@
 #include "ContentsTextFormatRenderer.hpp"
+#include "ContentsHtmlBlockRenderPipeline.hpp"
 #include "ContentsTextHighlightRenderer.hpp"
 #include "file/WhatSonDebugTrace.hpp"
 #include "file/note/WhatSonNoteBodySemanticTagSupport.hpp"
@@ -1919,6 +1920,21 @@ QString ContentsTextFormatRenderer::renderedHtml() const
     return m_renderedHtml;
 }
 
+QVariantList ContentsTextFormatRenderer::htmlTokens() const
+{
+    return m_htmlTokens;
+}
+
+QVariantList ContentsTextFormatRenderer::normalizedHtmlBlocks() const
+{
+    return m_normalizedHtmlBlocks;
+}
+
+bool ContentsTextFormatRenderer::htmlOverlayVisible() const noexcept
+{
+    return m_htmlOverlayVisible;
+}
+
 bool ContentsTextFormatRenderer::previewEnabled() const noexcept
 {
     return m_previewEnabled;
@@ -2047,7 +2063,31 @@ void ContentsTextFormatRenderer::refreshRenderedOutputs()
         QStringLiteral("textFormatRenderer"),
         QStringLiteral("refreshRenderedOutputs"),
         QStringLiteral("preview=%1 %2").arg(m_previewEnabled).arg(WhatSon::Debug::summarizeText(m_sourceText)));
-    const QString nextEditorSurfaceHtml = renderInlineStyleEditingSurfaceHtml(m_sourceText);
+    const ContentsHtmlBlockRenderPipeline renderPipeline;
+    const ContentsHtmlBlockRenderPipeline::RenderResult editorRenderResult =
+        renderPipeline.renderEditorDocument(m_sourceText);
+
+    if (m_htmlTokens != editorRenderResult.htmlTokens)
+    {
+        m_htmlTokens = editorRenderResult.htmlTokens;
+        emit htmlTokensChanged();
+    }
+
+    if (m_normalizedHtmlBlocks != editorRenderResult.normalizedHtmlBlocks)
+    {
+        m_normalizedHtmlBlocks = editorRenderResult.normalizedHtmlBlocks;
+        emit normalizedHtmlBlocksChanged();
+    }
+
+    if (m_htmlOverlayVisible != editorRenderResult.htmlOverlayVisible)
+    {
+        m_htmlOverlayVisible = editorRenderResult.htmlOverlayVisible;
+        emit htmlOverlayVisibleChanged();
+    }
+
+    const QString nextEditorSurfaceHtml = editorRenderResult.requiresLegacyDocumentComposition
+        ? renderInlineStyleEditingSurfaceHtml(m_sourceText)
+        : editorRenderResult.documentHtml;
     if (m_editorSurfaceHtml != nextEditorSurfaceHtml)
     {
         m_editorSurfaceHtml = nextEditorSurfaceHtml;
@@ -2066,7 +2106,9 @@ void ContentsTextFormatRenderer::refreshRenderedOutputs()
         this,
         QStringLiteral("textFormatRenderer"),
         QStringLiteral("renderedHtmlChanged"),
-        QStringLiteral("editorSurfaceLen=%1 renderedLen=%2")
+        QStringLiteral("editorSurfaceLen=%1 renderedLen=%2 htmlTokens=%3 htmlBlocks=%4")
             .arg(m_editorSurfaceHtml.size())
-            .arg(m_renderedHtml.size()));
+            .arg(m_renderedHtml.size())
+            .arg(m_htmlTokens.size())
+            .arg(m_normalizedHtmlBlocks.size()));
 }

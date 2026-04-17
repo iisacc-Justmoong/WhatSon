@@ -14,6 +14,17 @@ structured document-flow editor changes.
 - Mounting and unmounting the desktop/mobile editor hosts, structured document flow, block delegates, and inline editor
   wrapper must each emit a lifecycle trace so leaked editor surfaces can be spotted from logs alone.
 
+## HTML Block Pipeline
+- The active `ContentsTextFormatRenderer` instance must expose one stable `htmlTokens` snapshot and one stable
+  `normalizedHtmlBlocks` snapshot for each applied RAW render turn.
+  Their block order must match the parser-owned block order for that same source snapshot.
+- A semantic heading block such as `title`, `subTitle`, or `eventTitle` must flip `htmlOverlayVisible` to `true` and
+  render through the normalized HTML block styling path instead of staying on the plain-text paint path.
+- If inline style tags span several parsed text blocks in one source snapshot, the renderer must keep the carry-aware
+  legacy whole-document composition fallback for that turn.
+  The final editor HTML must not silently drop the style at the block boundary just because token/block normalization
+  is now explicit.
+
 ## Agenda Typing
 - Typing continuously inside an existing agenda task must keep the caret in that same task instead of snapping to the
   task start.
