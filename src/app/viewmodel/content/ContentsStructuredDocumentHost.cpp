@@ -328,6 +328,37 @@ QObject* ContentsStructuredDocumentHost::mutationPolicy() const noexcept
     return m_mutationPolicy;
 }
 
+int ContentsStructuredDocumentHost::resolvedInteractiveBlockIndex(
+    const int focusedBlockIndex) const noexcept
+{
+    if (focusedBlockIndex >= 0)
+    {
+        return focusedBlockIndex;
+    }
+    if (m_activeBlockIndex >= 0)
+    {
+        return m_activeBlockIndex;
+    }
+    return -1;
+}
+
+int ContentsStructuredDocumentHost::shortcutInsertionSourceOffset(
+    const int focusedBlockIndex,
+    const QVariant& delegateInsertionOffset) const
+{
+    if (m_focusPolicy == nullptr)
+    {
+        return -1;
+    }
+
+    return m_focusPolicy->shortcutInsertionSourceOffset(
+        m_documentBlocks,
+        resolvedInteractiveBlockIndex(focusedBlockIndex),
+        m_pendingFocusRequest,
+        m_sourceText,
+        delegateInsertionOffset);
+}
+
 void ContentsStructuredDocumentHost::noteActiveBlockInteraction(const int blockIndex)
 {
     setActiveBlockIndex(blockIndex);

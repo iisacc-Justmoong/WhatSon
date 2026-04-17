@@ -91,6 +91,10 @@ public:
     QObject* focusPolicy() const noexcept;
     QObject* mutationPolicy() const noexcept;
 
+    Q_INVOKABLE int resolvedInteractiveBlockIndex(int focusedBlockIndex) const noexcept;
+    Q_INVOKABLE int shortcutInsertionSourceOffset(
+        int focusedBlockIndex,
+        const QVariant& delegateInsertionOffset = QVariant()) const;
     Q_INVOKABLE void noteActiveBlockInteraction(int blockIndex);
     Q_INVOKABLE void clearPendingFocusRequest();
 

@@ -42,15 +42,8 @@ FocusScope {
                                                               + Math.max(0, Number(documentFlow.viewportHeight) || 0)
                                                               + documentFlow.blockDelegateOverscan)
     readonly property int focusedBlockIndexValue: documentFlow.focusedBlockIndex()
-    readonly property int resolvedInteractiveBlockIndexValue: {
-        const focusedIndex = Number(documentFlow.focusedBlockIndexValue)
-        if (isFinite(focusedIndex) && focusedIndex >= 0)
-            return Math.floor(focusedIndex)
-        const activeIndex = Number(documentFlow.activeBlockIndex)
-        if (isFinite(activeIndex) && activeIndex >= 0)
-            return Math.floor(activeIndex)
-        return -1
-    }
+    readonly property int resolvedInteractiveBlockIndexValue: documentHost.resolvedInteractiveBlockIndex(
+                                                                   documentFlow.focusedBlockIndexValue)
     readonly property int currentLogicalLineNumber: documentFlow.activeLogicalLineNumber()
 
     signal sourceMutationRequested(string nextSourceText, var focusRequest)
@@ -63,6 +56,13 @@ FocusScope {
     Keys.onPressed: function (event) {
         if (documentFlow.handleActiveBlockDeleteKeyPress(event))
             event.accepted = true
+    }
+
+    function normalizedResolvedInteractiveBlockIndex() {
+        const resolvedIndex = Number(documentFlow.resolvedInteractiveBlockIndexValue)
+        if (!isFinite(resolvedIndex))
+            return -1
+        return Math.max(-1, Math.floor(resolvedIndex))
     }
 
     function blockAtomic(blockHost, blockEntryOverride) {
@@ -467,7 +467,7 @@ FocusScope {
         const blocks = documentFlow.normalizedBlocks()
         if (blocks.length === 0)
             return 1
-        const resolvedActiveBlockIndex = Math.max(-1, Number(documentFlow.resolvedInteractiveBlockIndexValue) || -1)
+        const resolvedActiveBlockIndex = documentFlow.normalizedResolvedInteractiveBlockIndex()
         const safeActiveBlockIndex = Math.max(0, Math.min(blocks.length - 1, resolvedActiveBlockIndex))
         const cachedSummary = documentFlow.cachedBlockLayoutSummaryAt(safeActiveBlockIndex)
         const lineNumber = Math.max(
@@ -534,7 +534,7 @@ FocusScope {
                         "height": Math.max(1, documentFlow.lineHeightHint),
                         "y": 0
                     })
-        const resolvedActiveBlockIndex = Math.max(-1, Number(documentFlow.resolvedInteractiveBlockIndexValue) || -1)
+        const resolvedActiveBlockIndex = documentFlow.normalizedResolvedInteractiveBlockIndex()
         const safeActiveBlockIndex = Math.max(0, Math.min(blocks.length - 1, resolvedActiveBlockIndex))
         const activeBlockHost = blockRepeater.itemAt(safeActiveBlockIndex)
         const delegateItem = documentFlow.delegateItemForBlockHost(activeBlockHost)
@@ -584,7 +584,7 @@ FocusScope {
         const blocks = documentFlow.normalizedBlocks()
         if (blocks.length === 0)
             return ({ "valid": false })
-        const resolvedActiveBlockIndex = Math.max(-1, Number(documentFlow.resolvedInteractiveBlockIndexValue) || -1)
+        const resolvedActiveBlockIndex = documentFlow.normalizedResolvedInteractiveBlockIndex()
         const safeActiveBlockIndex = Math.max(0, Math.min(blocks.length - 1, resolvedActiveBlockIndex))
         const activeBlockHost = blockRepeater.itemAt(safeActiveBlockIndex)
         const delegateItem = documentFlow.delegateItemForBlockHost(activeBlockHost)
@@ -644,7 +644,7 @@ FocusScope {
         const blocks = documentFlow.normalizedBlocks()
         if (blocks.length === 0)
             return false
-        const resolvedActiveBlockIndex = Math.max(-1, Number(documentFlow.resolvedInteractiveBlockIndexValue) || -1)
+        const resolvedActiveBlockIndex = documentFlow.normalizedResolvedInteractiveBlockIndex()
         if (resolvedActiveBlockIndex < 0 || resolvedActiveBlockIndex >= blocks.length)
             return false
         const activeBlockHost = blockRepeater.itemAt(resolvedActiveBlockIndex)
@@ -755,7 +755,7 @@ FocusScope {
             return host.blockIndex === documentFlow.pendingFocusBlockIndex
         if (host.blockIndex === documentFlow.pendingFocusBlockIndex || host.delegateFocused)
             return true
-        const resolvedActiveBlockIndex = Math.max(-1, Number(documentFlow.resolvedInteractiveBlockIndexValue) || -1)
+        const resolvedActiveBlockIndex = documentFlow.normalizedResolvedInteractiveBlockIndex()
         if (resolvedActiveBlockIndex >= 0 && Math.abs(host.blockIndex - resolvedActiveBlockIndex) <= 1)
             return true
         if ((Number(documentFlow.viewportHeight) || 0) <= 0)
@@ -1254,29 +1254,13 @@ FocusScope {
         return ({ "applied": false })
     }
 
-    function pendingShortcutInsertionSourceOffset() {
-        const currentSourceText = documentFlow.normalizedSourceText(documentFlow.sourceText)
-        const pendingRequest = documentFlow.pendingFocusRequest && typeof documentFlow.pendingFocusRequest === "object"
-                ? documentFlow.pendingFocusRequest
-                : null
-        const pendingSourceOffset = Number(
-                    pendingRequest && pendingRequest.sourceOffset !== undefined
-                    ? pendingRequest.sourceOffset
-                    : NaN)
-        if (!isFinite(pendingSourceOffset))
-            return NaN
-        return Math.max(0, Math.min(currentSourceText.length, Math.floor(pendingSourceOffset)))
-    }
-
-    function shortcutInsertionSourceOffset() {
-        const currentSourceText = documentFlow.normalizedSourceText(documentFlow.sourceText)
-        const pendingSourceOffset = documentFlow.pendingShortcutInsertionSourceOffset()
+    function activeDelegateShortcutInsertionOffset() {
         const blocks = documentFlow.normalizedBlocks()
         if (blocks.length === 0)
-            return currentSourceText.length === 0 ? 0 : pendingSourceOffset
-        const resolvedActiveBlockIndex = Math.max(-1, Number(documentFlow.resolvedInteractiveBlockIndexValue) || -1)
+            return NaN
+        const resolvedActiveBlockIndex = documentFlow.normalizedResolvedInteractiveBlockIndex()
         if (resolvedActiveBlockIndex < 0 || resolvedActiveBlockIndex >= blocks.length)
-            return pendingSourceOffset
+            return NaN
         const safeIndex = resolvedActiveBlockIndex
         const blockHost = blockRepeater.itemAt(safeIndex)
         const delegateLoader = blockHost && blockHost.delegateLoader ? blockHost.delegateLoader : null
@@ -1284,12 +1268,15 @@ FocusScope {
         if (delegateItem && delegateItem.shortcutInsertionSourceOffset !== undefined) {
             const delegateOffset = Number(delegateItem.shortcutInsertionSourceOffset())
             if (isFinite(delegateOffset))
-                return Math.max(0, Math.min(currentSourceText.length, Math.floor(delegateOffset)))
+                return Math.max(0, Math.floor(delegateOffset))
         }
-        const block = blocks[safeIndex] && typeof blocks[safeIndex] === "object" ? blocks[safeIndex] : ({})
-        if (documentFlow.blockTextEditable(blockHost, block) && isFinite(pendingSourceOffset))
-            return pendingSourceOffset
-        return Math.max(0, Math.floor(Number(block.sourceEnd) || 0))
+        return NaN
+    }
+
+    function shortcutInsertionSourceOffset() {
+        return Number(documentHost.shortcutInsertionSourceOffset(
+                          documentFlow.focusedBlockIndexValue,
+                          documentFlow.activeDelegateShortcutInsertionOffset()))
     }
 
     function insertStructuredShortcutAtActivePosition(shortcutKind) {

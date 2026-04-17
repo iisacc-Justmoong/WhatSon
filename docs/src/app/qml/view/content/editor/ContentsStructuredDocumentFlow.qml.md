@@ -62,10 +62,13 @@ Hosts the parsed `.wsnbody` block stream as one ordered document editor and forw
   inserted block instead.
 - Structured resource insertion now also refuses empty/no-op payloads instead of reporting success on an unchanged RAW
   snapshot.
+- Structured shortcut/resource insertion anchor resolution now lives in
+  `ContentsStructuredDocumentHost` plus `ContentsStructuredDocumentFocusPolicy`.
+  `ContentsStructuredDocumentFlow.qml` only contributes delegate-local cursor hints from the currently mounted block.
 - Structured shortcut/resource insertion no longer falls back to the last block's `sourceEnd` when no interactive
-  block is active.
-  The flow now uses a live focused block or pending focus `sourceOffset` as the insertion anchor and otherwise lets
-  the caller abort or fall back to the outer cursor bridge.
+  block is active, and text-editable blocks no longer guess with `sourceEnd` when they lack a live caret anchor.
+  The flow now uses a live delegate cursor or pending focus `sourceOffset` and otherwise lets the caller abort or fall
+  back to the outer cursor bridge.
 - The dedicated resource-local plain-text adjacent-insertion path has been removed.
   Resource blocks now participate in the same generic block stream as every other block.
 

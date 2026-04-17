@@ -27,12 +27,18 @@ It composes:
 ## Presentation Refresh
 
 - `ContentsEditorPresentationProjection` now exposes editor HTML, preview HTML, and logical text/line metadata.
+- `ContentsDisplayView.qml` now copies projection logical-line metrics into explicit host state instead of relying on
+  breakable QML property bindings.
+- Projection `logicalLineCount` and `logicalLineStartOffsets` changes now schedule gutter refresh directly, so line
+  numbers no longer wait for an unrelated cursor, scroll, or layout event before updating.
 - `commitDocumentPresentationRefresh()` refreshes only the HTML overlay/minimap projection; it no longer triggers a
   RichText surface reinjection step.
 - Resource-bearing fallback notes still substitute `whatson-resource-block` placeholders into HTML, but that
   substitution now stays entirely inside the display pipeline.
 - The non-print editor viewport now reserves a multi-line bottom inset, so the last authored line no longer sits flush
   against the shell bottom edge when the user scrolls to the document tail.
+- Structured-flow, resource-render, and legacy-editor geometry changes now request gutter refresh through dedicated
+  reasons instead of reusing the focused `line-structure` suppression path.
 
 ## Resource Import
 

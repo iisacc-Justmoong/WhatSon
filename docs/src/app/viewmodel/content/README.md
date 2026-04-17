@@ -89,6 +89,10 @@
 - `ContentsStructuredDocumentCollectionPolicy`, `ContentsStructuredDocumentFocusPolicy`, and
   `ContentsStructuredDocumentMutationPolicy` now split collection normalization, focus resolution, and RAW mutation
   rules into separate C++ SRP units so structured host behavior no longer collapses back into one QML god object.
+- `ContentsStructuredDocumentFocusPolicy` now also resolves structured shortcut/resource insertion anchors from
+  `{focused block hint, active block, pending focus request, RAW source}`.
+  `ContentsStructuredDocumentFlow.qml` no longer keeps the fallback policy that guessed insertion at a block or
+  document tail when no live caret-derived source offset was available.
 - `ContentsEditorSelectionBridge` and `ContentsLogicalTextBridge` now also emit verbose editor trace events for
   constructor/destructor turns, selection sync, selected-note body load/reconcile, dirty snapshot adoption, text-state
   rebuilds, and incremental live-typing adoption so the editor pipeline can be followed from the QML host boundary.

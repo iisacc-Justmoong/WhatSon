@@ -204,6 +204,9 @@ structured document-flow editor changes.
 - If the structured host has no active block at the moment of the action, shortcut/resource insertion must still honor
   a live or pending caret-derived `sourceOffset`.
   It must not silently append at the previous last block's `sourceEnd`.
+- If the structured host resolves a text-editable active block but has neither a live delegate cursor offset nor a
+  pending caret-derived `sourceOffset`, structured shortcut/resource insertion must fail or fall back outward.
+  It must not guess by using that text block's `sourceEnd`.
 - Dropping an image into a note that already contains ordinary paragraphs must switch that same note into the
   structured resource path immediately.
   The editor must not leave one legacy frame alive that renders the literal `<resource ... />` tag as visible text.
@@ -288,6 +291,13 @@ structured document-flow editor changes.
 - While the user types on an existing logical line without adding or removing a newline, the gutter must not visibly
   oscillate between stale and recomputed positions on each keystroke.
   Line-structure-triggered gutter refresh is expected only when the current edit actually changes newline structure.
+- When `ContentsEditorPresentationProjection` changes `logicalLineCount` or `logicalLineStartOffsets`, the gutter must
+  refresh in that same projection turn.
+  Line numbers must not wait for an unrelated cursor move, viewport scroll, or delayed timer pass before updating.
+- Structured-flow relayout, inline resource render completion, and legacy editor line-height changes must still reach
+  the gutter even while the editor keeps focus.
+  Real geometry invalidations must not be dropped just because focused-input suppression was originally meant only for
+  coarse line-structure churn.
 - The same-line typing path must not temporarily replace corrected structured gutter geometry with a top-packed
   fallback layout just because one intermediate content-offset or transient relayout event fired during editing.
 - Structured gutter Y correction must come from the current live block-line geometry, not from a reused cached

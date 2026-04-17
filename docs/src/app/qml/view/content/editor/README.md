@@ -114,6 +114,12 @@
   re-sample the changed logical-line window instead of walking the full note text through `positionToRectangle(...)`.
 - Desktop/mobile line geometry helpers now reuse that same logical-line group cache even when the minimap is hidden, so
   gutter line-Y queries no longer need their own whole-document geometry sweep.
+- Desktop/mobile editor hosts now also mirror `ContentsEditorPresentationProjection` logical-line metrics into
+  explicit host state and listen to `logicalLineCountChanged` plus `logicalLineStartOffsetsChanged` directly, so
+  gutter line numbers refresh on the same RAW-to-projection turn instead of waiting for incidental UI movement.
+- Real gutter geometry invalidations from structured-flow re-layout, inline resource render changes, and legacy editor
+  line-height updates now bypass the focused `line-structure` suppression path and request their own gutter refresh
+  reasons.
 - `ContentsInlineFormatEditor.qml` now also owns the `Qt.inputMethod.update(...)` bridge for cursor, selection, and
   geometry changes, keeping mobile platform text-selection handles and iOS keyboard trackpad gestures aligned with the
   live `TextEdit`.
@@ -290,10 +296,13 @@
   hosts, session bridge, typing controller, structured document flow, block wrapper, and inline editor now emit
   lifecycle, mount/unmount, selection-sync, source-mutation, cursor/selection, and focus-transition logs through that
   shared helper instead of each file inventing a different console format.
-- `ContentsStructuredDocumentFlow.qml` now asks the active block delegate for structured shortcut insertion offsets,
-  which restores live-caret insertion for text blocks while still keeping agenda/callout shortcuts block-scoped.
-- If the structured host temporarily has no interactive block, that same insertion path no longer falls back to the
-  last block end; callers now use a pending cursor source offset or fall back to the outer cursor bridge.
+- `ContentsStructuredDocumentFlow.qml` now limits itself to exposing the active delegate's local shortcut-insertion
+  cursor hint.
+  `ContentsStructuredDocumentHost` plus `ContentsStructuredDocumentFocusPolicy` own the actual structured
+  shortcut/resource insertion-anchor resolution in C++.
+- If the structured host temporarily has no interactive block, or a text-editable block has no live/pending caret
+  anchor, that same insertion path no longer guesses with a block/document tail offset.
+  Callers now use a live or pending source offset or fall back to the outer cursor bridge.
 - That same structured-flow insertion bridge now also accepts dropped resource-tag batches, so resource imports inside
   agenda/callout/break notes insert next to the active block instead of appending through the legacy cursor bridge.
 - `ContentsStructuredBlockRenderer.*` now also short-circuits notes that contain no proprietary structured tags and

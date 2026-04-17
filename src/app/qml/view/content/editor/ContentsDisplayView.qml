@@ -140,7 +140,7 @@ Item {
     property int lineNumberColumnTextWidthOverride: -1
     readonly property int lineNumberColumnWidth: Math.max(0, Math.round(LV.Theme.scaleMetric(26)))
     readonly property int lineNumberRightInset: contentsView.editorHorizontalInset
-    property int liveLogicalLineCount: Math.max(1, Number(editorProjection.logicalLineCount) || 1)
+    property int liveLogicalLineCount: 1
     readonly property int logicalLineCount: Math.max(1, Number(contentsView.liveLogicalLineCount) || 1)
     property var logicalLineDocumentYCache: []
     property int logicalLineDocumentYCacheLineCount: 0
@@ -148,13 +148,9 @@ Item {
     property var logicalLineGutterDocumentYCache: []
     property int logicalLineGutterDocumentYCacheLineCount: 0
     property int logicalLineGutterDocumentYCacheRevision: -1
-    property var liveLogicalLineStartOffsets: Array.isArray(editorProjection.logicalLineStartOffsets) && editorProjection.logicalLineStartOffsets.length > 0
-                                           ? editorProjection.logicalLineStartOffsets
-                                           : [0]
+    property var liveLogicalLineStartOffsets: [0]
     readonly property var logicalLineStartOffsets: contentsView.liveLogicalLineStartOffsets
-    property int liveLogicalTextLength: editorProjection.logicalText !== undefined && editorProjection.logicalText !== null
-                                      ? String(editorProjection.logicalText).length
-                                      : 0
+    property int liveLogicalTextLength: 0
     readonly property bool lineGeometryRefreshEnabled: modePolicy.lineGeometryRefreshEnabled
     readonly property int minEditorHeight: LV.Theme.gap20 * 12
     readonly property real minimapAvailableTrackHeight: Math.max(1, contentsView.editorViewportHeight - contentsView.minimapTrackInset * 2)
@@ -618,6 +614,36 @@ Item {
     }
     function clampUnit(value) {
         return Math.max(0, Math.min(1, Number(value) || 0));
+    }
+    function logicalLineOffsetsEqual(previousOffsets, nextOffsets) {
+        const normalizedPrevious = Array.isArray(previousOffsets) && previousOffsets.length > 0 ? previousOffsets : [0];
+        const normalizedNext = Array.isArray(nextOffsets) && nextOffsets.length > 0 ? nextOffsets : [0];
+        if (normalizedPrevious.length !== normalizedNext.length)
+            return false;
+        for (let offsetIndex = 0; offsetIndex < normalizedPrevious.length; ++offsetIndex) {
+            if ((Number(normalizedPrevious[offsetIndex]) || 0) !== (Number(normalizedNext[offsetIndex]) || 0))
+                return false;
+        }
+        return true;
+    }
+    function applyLiveLogicalLineMetrics(logicalTextLength, lineStartOffsets, lineCount) {
+        const normalizedLogicalTextLength = Math.max(0, Number(logicalTextLength) || 0);
+        const normalizedLineStartOffsets = Array.isArray(lineStartOffsets) && lineStartOffsets.length > 0
+                ? lineStartOffsets.slice(0)
+                : [0];
+        const normalizedLineCount = Math.max(1, Number(lineCount) || normalizedLineStartOffsets.length || 1);
+        const lineCountChanged = contentsView.liveLogicalLineCount !== normalizedLineCount;
+        const textLengthChanged = contentsView.liveLogicalTextLength !== normalizedLogicalTextLength;
+        const lineOffsetsChanged = !contentsView.logicalLineOffsetsEqual(
+                    contentsView.liveLogicalLineStartOffsets,
+                    normalizedLineStartOffsets);
+        if (textLengthChanged)
+            contentsView.liveLogicalTextLength = normalizedLogicalTextLength;
+        if (lineOffsetsChanged)
+            contentsView.liveLogicalLineStartOffsets = normalizedLineStartOffsets;
+        if (lineCountChanged)
+            contentsView.liveLogicalLineCount = normalizedLineCount;
+        return lineCountChanged || textLengthChanged || lineOffsetsChanged;
     }
     function consumePendingNoteEntryGutterRefresh(noteId) {
         const normalizedNoteId = noteId === undefined || noteId === null ? "" : String(noteId).trim();
@@ -1939,10 +1965,10 @@ Item {
                 if (lineIndex + 1 < lineEntries.length)
                     logicalLength += 1;
             }
-            contentsView.liveLogicalTextLength = logicalLength;
-            contentsView.liveLogicalLineStartOffsets = nextLineStartOffsets;
-            contentsView.liveLogicalLineCount = Math.max(1, lineEntries.length);
-            return;
+            return contentsView.applyLiveLogicalLineMetrics(
+                        logicalLength,
+                        nextLineStartOffsets,
+                        Math.max(1, lineEntries.length));
         }
         const normalizedLogicalText = contentsView.activeLogicalTextSnapshot().replace(/\r\n/g, "\n").replace(/\r/g, "\n");
         const nextLineStartOffsets = [0];
@@ -1950,9 +1976,10 @@ Item {
             if (normalizedLogicalText.charAt(characterIndex) === "\n")
                 nextLineStartOffsets.push(characterIndex + 1);
         }
-        contentsView.liveLogicalTextLength = normalizedLogicalText.length;
-        contentsView.liveLogicalLineStartOffsets = nextLineStartOffsets;
-        contentsView.liveLogicalLineCount = Math.max(1, nextLineStartOffsets.length);
+        return contentsView.applyLiveLogicalLineMetrics(
+                    normalizedLogicalText.length,
+                    nextLineStartOffsets,
+                    Math.max(1, nextLineStartOffsets.length));
     }
     function activeLogicalLineCountSnapshot() {
         if (contentsView.structuredHostGeometryActive
@@ -2362,7 +2389,7 @@ Item {
             if (!contentsView.resourceBlocksRenderedInlineByHtmlProjection)
                 return;
             contentsView.refreshInlineResourcePresentation();
-            contentsView.scheduleGutterRefresh(2, "line-structure");
+            contentsView.scheduleGutterRefresh(2, "resource-line-geometry");
         }
 
         ignoreUnknownSignals: true
@@ -2384,6 +2411,30 @@ Item {
 
         previewEnabled: contentsView.showFormattedTextRenderer
         sourceText: contentsView.documentPresentationSourceText
+    }
+    Connections {
+        function onLogicalTextChanged() {
+            if (contentsView.structuredHostGeometryActive)
+                return;
+            const logicalText = editorProjection.logicalText;
+            contentsView.liveLogicalTextLength = logicalText !== undefined && logicalText !== null
+                    ? String(logicalText).length
+                    : 0;
+        }
+        function onLogicalLineCountChanged() {
+            if (contentsView.structuredHostGeometryActive)
+                return;
+            if (contentsView.refreshLiveLogicalLineMetrics())
+                contentsView.scheduleGutterRefresh(1, "projection-line-metrics");
+        }
+        function onLogicalLineStartOffsetsChanged() {
+            if (contentsView.structuredHostGeometryActive)
+                return;
+            if (contentsView.refreshLiveLogicalLineMetrics())
+                contentsView.scheduleGutterRefresh(1, "projection-line-metrics");
+        }
+
+        target: editorProjection
     }
     ContentsGutterMarkerBridge {
         id: gutterMarkerBridge
@@ -2493,7 +2544,7 @@ Item {
             contentsView.refreshStructuredDocumentFlowActivation();
             if (contentsView.structuredHostGeometryActive) {
                 contentsView.scheduleMinimapSnapshotRefresh(true);
-                contentsView.scheduleGutterRefresh(1, "line-structure");
+                contentsView.scheduleGutterRefresh(1, "structured-line-geometry");
             }
         }
 
@@ -2503,7 +2554,8 @@ Item {
         function onCachedLogicalLineEntriesChanged() {
             if (!contentsView.structuredHostGeometryActive)
                 return;
-            contentsView.refreshLiveLogicalLineMetrics();
+            if (contentsView.refreshLiveLogicalLineMetrics())
+                contentsView.scheduleGutterRefresh(1, "structured-line-metrics");
         }
         function onCurrentLogicalLineNumberChanged() {
             if (!contentsView.structuredHostGeometryActive)
@@ -2514,7 +2566,7 @@ Item {
             if (!contentsView.structuredHostGeometryActive)
                 return;
             contentsView.scheduleMinimapSnapshotRefresh(true);
-            contentsView.scheduleGutterRefresh(2, "line-structure");
+            contentsView.scheduleGutterRefresh(2, "structured-line-geometry");
         }
 
         ignoreUnknownSignals: true
@@ -2541,7 +2593,7 @@ Item {
                 contentsView.scheduleDeferredDocumentPresentationRefresh();
             else
                 contentsView.scheduleMinimapSnapshotRefresh(false);
-            contentsView.scheduleGutterRefresh(2, "line-structure");
+            contentsView.scheduleGutterRefresh(2, "editor-line-geometry");
         }
         function onCursorPositionChanged() {
             contentsView.scheduleCursorDrivenUiRefresh();
@@ -2551,7 +2603,7 @@ Item {
                 contentsView.scheduleDeferredDocumentPresentationRefresh();
             else
                 contentsView.scheduleMinimapSnapshotRefresh(false);
-            contentsView.scheduleGutterRefresh(2, "line-structure");
+            contentsView.scheduleGutterRefresh(2, "editor-line-geometry");
         }
 
         ignoreUnknownSignals: true

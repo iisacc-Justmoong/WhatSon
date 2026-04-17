@@ -4,6 +4,7 @@
 #include "file/WhatSonDebugTrace.hpp"
 
 #include <algorithm>
+#include <cmath>
 
 namespace
 {
@@ -142,6 +143,60 @@ int ContentsStructuredDocumentFocusPolicy::focusTargetBlockIndex(
     return -1;
 }
 
+int ContentsStructuredDocumentFocusPolicy::shortcutInsertionSourceOffset(
+    const QVariant& rawBlocks,
+    const int interactiveBlockIndex,
+    const QVariantMap& pendingFocusRequest,
+    const QString& sourceText,
+    const QVariant& delegateInsertionOffset) const
+{
+    const QVariantList blocks = normalizedBlocks(rawBlocks);
+    const QString currentSourceText = m_collectionPolicy != nullptr
+                                          ? m_collectionPolicy->normalizeSourceText(sourceText)
+                                          : sourceText;
+    const int currentSourceLength = static_cast<int>(currentSourceText.size());
+    const int pendingSourceOffset =
+        boundedPendingFocusSourceOffset(pendingFocusRequest, currentSourceLength);
+
+    if (blocks.isEmpty())
+    {
+        return currentSourceLength == 0 ? 0 : pendingSourceOffset;
+    }
+
+    if (interactiveBlockIndex < 0 || interactiveBlockIndex >= blocks.size())
+    {
+        return pendingSourceOffset;
+    }
+
+    bool delegateOffsetOk = false;
+    const double delegateOffset = delegateInsertionOffset.toDouble(&delegateOffsetOk);
+    if (delegateOffsetOk && std::isfinite(delegateOffset))
+    {
+        return std::clamp(
+            static_cast<int>(std::floor(delegateOffset)),
+            0,
+            currentSourceLength);
+    }
+
+    const QVariantMap blockEntry = normalizedMap(blocks.at(interactiveBlockIndex));
+    if (blockTextEditable(blockEntry))
+    {
+        return pendingSourceOffset;
+    }
+
+    const int blockSourceStart = std::max(
+        0,
+        m_collectionPolicy->floorNumberOrFallback(
+            blockEntry.value(QStringLiteral("sourceStart")),
+            0));
+    const int blockSourceEnd = std::max(
+        blockSourceStart,
+        m_collectionPolicy->floorNumberOrFallback(
+            blockEntry.value(QStringLiteral("sourceEnd")),
+            blockSourceStart));
+    return std::clamp(blockSourceEnd, 0, currentSourceLength);
+}
+
 QVariantMap ContentsStructuredDocumentFocusPolicy::focusRequestAfterBlockDeletion(
     const QVariant& rawBlocks,
     const int activeBlockIndex,
@@ -224,6 +279,18 @@ int ContentsStructuredDocumentFocusPolicy::normalizedFocusSourceOffset(
     bool ok = false;
     const int value = request.value(QStringLiteral("sourceOffset")).toInt(&ok);
     return ok ? std::max(0, value) : -1;
+}
+
+int ContentsStructuredDocumentFocusPolicy::boundedPendingFocusSourceOffset(
+    const QVariantMap& request,
+    const int sourceLength) const
+{
+    const int sourceOffset = normalizedFocusSourceOffset(request);
+    if (sourceOffset < 0)
+    {
+        return -1;
+    }
+    return std::clamp(sourceOffset, 0, std::max(0, sourceLength));
 }
 
 bool ContentsStructuredDocumentFocusPolicy::requestPrefersNearestTextBlock(

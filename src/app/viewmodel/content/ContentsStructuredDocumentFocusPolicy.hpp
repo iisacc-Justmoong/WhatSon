@@ -19,6 +19,12 @@ public:
         const QVariant& rawBlocks,
         int activeBlockIndex,
         const QVariantMap& request) const;
+    Q_INVOKABLE int shortcutInsertionSourceOffset(
+        const QVariant& rawBlocks,
+        int interactiveBlockIndex,
+        const QVariantMap& pendingFocusRequest,
+        const QString& sourceText,
+        const QVariant& delegateInsertionOffset = QVariant()) const;
     Q_INVOKABLE QVariantMap focusRequestAfterBlockDeletion(
         const QVariant& rawBlocks,
         int activeBlockIndex,
@@ -30,6 +36,7 @@ private:
     int normalizedFocusTaskOpenTagStart(const QVariantMap& request) const;
     int normalizedFocusTargetBlockIndex(const QVariantMap& request) const;
     int normalizedFocusSourceOffset(const QVariantMap& request) const;
+    int boundedPendingFocusSourceOffset(const QVariantMap& request, int sourceLength) const;
     bool requestPrefersNearestTextBlock(const QVariantMap& request) const;
     bool blockContainsTaskOpenTagStart(const QVariantMap& blockEntry, int taskOpenTagStart) const;
     bool blockUsesExclusiveTrailingBoundary(const QVariantMap& blockEntry) const;
