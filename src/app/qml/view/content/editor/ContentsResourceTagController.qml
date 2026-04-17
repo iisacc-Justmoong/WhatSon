@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import WhatSon.App.Internal 1.0
 
 QtObject {
     id: controller
@@ -16,7 +17,10 @@ QtObject {
     property string selectedNoteBodyText: ""
     property bool showStructuredDocumentFlow: false
     property var currentEditorCursorPositionHandler: null
-    property var resourceTagTextForImportedEntryHandler: null
+
+    ContentsResourceTagTextGenerator {
+        id: resourceTagTextGenerator
+    }
 
     function currentEditorCursorPosition() {
         if (controller.currentEditorCursorPositionHandler
@@ -120,9 +124,10 @@ QtObject {
 
         const tagTexts = [];
         for (let index = 0; index < normalizedImportedEntries.length; ++index) {
-            const tagText = controller.resourceTagTextForImportedEntryHandler
-                    && typeof controller.resourceTagTextForImportedEntryHandler === "function"
-                    ? controller.resourceTagTextForImportedEntryHandler(normalizedImportedEntries[index])
+            const tagText = resourceTagTextGenerator
+                    && resourceTagTextGenerator.buildCanonicalResourceTag !== undefined
+                    ? String(resourceTagTextGenerator.buildCanonicalResourceTag(
+                                 normalizedImportedEntries[index]) || "")
                     : "";
             if (tagText.length > 0)
                 tagTexts.push(tagText);

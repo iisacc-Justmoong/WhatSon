@@ -1455,18 +1455,6 @@ Item {
         encodedValue = encodedValue.replace(/>/g, "&gt;");
         return encodedValue;
     }
-    function normalizeResourceFormat(formatValue) {
-        let normalizedFormat = formatValue === undefined || formatValue === null ? "" : String(formatValue).trim().toLowerCase();
-        if (normalizedFormat.length === 0)
-            normalizedFormat = ".bin";
-        if (normalizedFormat.charAt(0) !== ".")
-            normalizedFormat = "." + normalizedFormat;
-        return normalizedFormat;
-    }
-    function normalizeResourceType(typeValue) {
-        const normalizedType = typeValue === undefined || typeValue === null ? "" : String(typeValue).trim().toLowerCase();
-        return normalizedType.length > 0 ? normalizedType : "other";
-    }
     function resetStructuredSelectionContextMenuSnapshot() {
         contentsView.structuredContextMenuBlockIndex = -1;
         contentsView.structuredContextMenuSelectionSnapshot = ({});
@@ -1883,22 +1871,6 @@ Item {
         if (!candidate || candidate.contentY === undefined || candidate.contentHeight === undefined || candidate.height === undefined)
             return null;
         return candidate;
-    }
-    function resourceTagTextForImportedEntry(entry) {
-        const resourceEntry = entry && typeof entry === "object" ? entry : ({});
-        const resourcePath = resourceEntry.resourcePath !== undefined ? String(resourceEntry.resourcePath).trim() : "";
-        if (resourcePath.length === 0)
-            return "";
-        const resourceType = contentsView.normalizeResourceType(resourceEntry.type);
-        const resourceFormat = contentsView.normalizeResourceFormat(resourceEntry.format);
-        const resourceId = resourceEntry.resourceId !== undefined ? String(resourceEntry.resourceId).trim() : "";
-        let tagText = "<resource type=\"" + contentsView.encodeXmlAttributeValue(resourceType)
-                + "\" format=\"" + contentsView.encodeXmlAttributeValue(resourceFormat)
-                + "\" path=\"" + contentsView.encodeXmlAttributeValue(resourcePath) + "\"";
-        if (resourceId.length > 0)
-            tagText += " id=\"" + contentsView.encodeXmlAttributeValue(resourceId) + "\"";
-        tagText += " />";
-        return tagText;
     }
     function scheduleEditorFocusForNote(noteId) {
         selectionSyncCoordinator.scheduleEditorFocusForNote(noteId);
@@ -2354,9 +2326,6 @@ Item {
         resourceImportModeClipboard: contentsView.resourceImportModeClipboard
         resourceImportModeNone: contentsView.resourceImportModeNone
         resourceImportModeUrls: contentsView.resourceImportModeUrls
-        resourceTagTextForImportedEntryHandler: function (entry) {
-            return contentsView.resourceTagTextForImportedEntry(entry);
-        }
         resourcesImportViewModel: contentsView.resourcesImportViewModel
         inlineHtmlImageRenderingEnabled: contentsView.inlineHtmlImageRenderingEnabled
         selectedNoteBodyNoteId: contentsView.selectedNoteBodyNoteId

@@ -19,6 +19,7 @@ desktop/mobile host.
 ## Current Boundary
 
 - The controller no longer mutates `ContentsEditorPresentationProjection` through a RichText surface override.
+- RAW resource-tag serialization no longer depends on a host-provided JavaScript string builder.
 - Inline resource rendering now stays a pure HTML substitution step owned by the host refresh pipeline.
 - The controller keeps the same host-facing import API, but helper-local transient state no longer leaks back into
   arbitrary host properties.

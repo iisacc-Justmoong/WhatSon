@@ -179,6 +179,9 @@ structured document-flow editor changes.
   already exposes the captured bitmap.
 - The injected resource call must be canonical self-closing source with quoted attribute values:
   `<resource type="..." format="..." path=".../.wsresource" />`.
+- The same imported metadata payload must produce the same canonical RAW tag text for drag/drop and clipboard-image
+  import.
+  If a `resourceId` is present in the imported entry, the inserted source must preserve it as `id="..."`.
 - Relative resource paths that contain `/` but no spaces must still survive the editor insert/save round-trip intact;
   they must not be truncated just because the original import path omitted attribute quotes.
 - Resource-drop note linking must complete before the resources hierarchy runtime reload rebinds the editor session.

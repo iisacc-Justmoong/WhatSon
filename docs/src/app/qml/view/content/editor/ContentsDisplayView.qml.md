@@ -33,6 +33,8 @@ It composes:
 ## Resource Import
 
 - Resource insertion still mutates RAW source first.
+- Canonical RAW `<resource ... />` text generation now lives behind the `ContentsResourceTagTextGenerator` C++ bridge
+  instead of a host-local JavaScript string builder.
 - After import, the host restores the plain-text editor surface from projection logical text and recomputes the HTML
   overlay.
 - Inline resource preview HTML is therefore presentation-only and cannot become editor write authority.

@@ -7,7 +7,7 @@
 ## Scope
 - Mirrored source directory: `src/app/viewmodel/content`
 - Child directories: 0
-- Child files: 22
+- Child files: 24
 
 ## Child Directories
 - No child directories.
@@ -27,6 +27,8 @@
 - `ContentsGutterMarkerBridge.hpp`
 - `ContentsLogicalTextBridge.cpp`
 - `ContentsLogicalTextBridge.hpp`
+- `ContentsResourceTagTextGenerator.cpp`
+- `ContentsResourceTagTextGenerator.hpp`
 - `ContentsStructuredDocumentCollectionPolicy.cpp`
 - `ContentsStructuredDocumentCollectionPolicy.hpp`
 - `ContentsStructuredDocumentFocusPolicy.cpp`
@@ -68,6 +70,8 @@
 - `ContentsEditorPresentationProjection` now centralizes the whole-document RAW-derived editor presentation snapshot.
   Desktop/mobile hosts bind one projection object per note surface instead of keeping separate host-owned
   `ContentsLogicalTextBridge` and `ContentsTextFormatRenderer` state graphs for the same document snapshot.
+- `ContentsResourceTagTextGenerator` now exposes the canonical RAW resource-tag builder to QML so editor import flows
+  no longer synthesize `<resource ... />` strings in JavaScript.
 - `ContentsStructuredDocumentHost` now centralizes structured-flow host state that used to live inline in
   `ContentsStructuredDocumentFlow.qml`, including normalized block/resource collections, pending focus requests,
   active-block tracking, and layout-cache-facing viewport state.
