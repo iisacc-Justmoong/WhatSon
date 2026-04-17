@@ -8,3 +8,5 @@
 - Stores pending duplicate-import state locally instead of mutating transient alert state on the host view.
 - Executes `Overwrite`, `Keep Both`, or `Cancel Import` follow-up work and coordinates guard release plus tag insertion
   through collaborator controllers.
+- Reloads imported resource runtime state only after RAW `<resource ... />` insertion succeeds, so filesystem package
+  import cannot advance ahead of the note-body source of truth.

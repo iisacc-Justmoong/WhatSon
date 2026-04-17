@@ -187,12 +187,17 @@ structured document-flow editor changes.
 - Resource-drop note linking must complete before the resources hierarchy runtime reload rebinds the editor session.
   A successful `.wsresource` import must not stop after `Resources.wsresources` persistence while leaving `.wsnbody`
   unchanged.
+- If RAW `<resource ... />` insertion fails, the import flow must not reload resource runtime state for that note.
+  The resource tree must not advance ahead of `.wsnbody`.
 - Native file-manager drops that surface only `text/uri-list` must still be accepted; desktop/mobile hosts must not
   rely solely on `drop.urls`.
 - Dropping a file while the caret sits in the middle of a paragraph must still insert the canonical `<resource ... />`
   call as its own source block instead of embedding the tag inline inside adjacent prose text.
 - The same drop while a structured text block still owns focus must insert at that block's live cursor-derived RAW
   offset rather than falling back to the last block end or silently no-oping.
+- If the structured host has no active block at the moment of the action, shortcut/resource insertion must still honor
+  a live or pending caret-derived `sourceOffset`.
+  It must not silently append at the previous last block's `sourceEnd`.
 - Dropping an image into a note that already contains ordinary paragraphs must switch that same note into the
   structured resource path immediately.
   The editor must not leave one legacy frame alive that renders the literal `<resource ... />` tag as visible text.
@@ -208,6 +213,9 @@ structured document-flow editor changes.
 - Right after drag/drop or clipboard-image insertion, the same selected note must resolve the new `<resource ... />`
   block from the currently bound editor RAW buffer.
   The body image must not wait for `selectedNoteBodyText` or a later save/reopen cycle before appearing.
+- Drag/drop and clipboard-image import must not force a renderer-only resource refresh from stale pre-parse
+  `documentBlocks`.
+  Inline resource repaint must wait for the parser-owned block projection that follows the successful RAW mutation.
 - A `<resource ... path=".../.wsresource" />` body slot must resolve through that package's `resource.xml` metadata to
   the actual internal asset file before image rendering.
   The inline bitmap viewer must never try to open the `.wsresource` directory path itself as if it were the payload.

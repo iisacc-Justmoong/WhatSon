@@ -79,7 +79,8 @@ QtObject {
 
         const importedEntryCount = controller.resourceTagController.normalizedImportedResourceEntries(importedEntries).length;
         const inserted = controller.resourceTagController.insertImportedResourceTags(importedEntries);
-        if (importedEntryCount > 0
+        if (inserted
+                && importedEntryCount > 0
                 && controller.resourcesImportViewModel
                 && controller.resourcesImportViewModel.reloadImportedResources !== undefined) {
             controller.resourcesImportViewModel.reloadImportedResources();

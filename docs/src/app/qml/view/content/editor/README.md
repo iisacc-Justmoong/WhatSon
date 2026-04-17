@@ -282,6 +282,8 @@
   shared helper instead of each file inventing a different console format.
 - `ContentsStructuredDocumentFlow.qml` now asks the active block delegate for structured shortcut insertion offsets,
   which restores live-caret insertion for text blocks while still keeping agenda/callout shortcuts block-scoped.
+- If the structured host temporarily has no interactive block, that same insertion path no longer falls back to the
+  last block end; callers now use a pending cursor source offset or fall back to the outer cursor bridge.
 - That same structured-flow insertion bridge now also accepts dropped resource-tag batches, so resource imports inside
   agenda/callout/break notes insert next to the active block instead of appending through the legacy cursor bridge.
 - `ContentsStructuredBlockRenderer.*` now also short-circuits notes that contain no proprietary structured tags and

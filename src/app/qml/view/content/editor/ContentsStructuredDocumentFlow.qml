@@ -1241,20 +1241,41 @@ FocusScope {
         return ({ "applied": false })
     }
 
+    function pendingShortcutInsertionSourceOffset() {
+        const currentSourceText = documentFlow.normalizedSourceText(documentFlow.sourceText)
+        const pendingRequest = documentFlow.pendingFocusRequest && typeof documentFlow.pendingFocusRequest === "object"
+                ? documentFlow.pendingFocusRequest
+                : null
+        const pendingSourceOffset = Number(
+                    pendingRequest && pendingRequest.sourceOffset !== undefined
+                    ? pendingRequest.sourceOffset
+                    : NaN)
+        if (!isFinite(pendingSourceOffset))
+            return NaN
+        return Math.max(0, Math.min(currentSourceText.length, Math.floor(pendingSourceOffset)))
+    }
+
     function shortcutInsertionSourceOffset() {
+        const currentSourceText = documentFlow.normalizedSourceText(documentFlow.sourceText)
+        const pendingSourceOffset = documentFlow.pendingShortcutInsertionSourceOffset()
         const blocks = documentFlow.normalizedBlocks()
         if (blocks.length === 0)
-            return documentFlow.normalizedSourceText(documentFlow.sourceText).length
-        const safeIndex = Math.max(0, Math.min(blocks.length - 1, documentFlow.activeBlockIndex >= 0 ? documentFlow.activeBlockIndex : blocks.length - 1))
+            return currentSourceText.length === 0 ? 0 : pendingSourceOffset
+        const resolvedActiveBlockIndex = Math.max(-1, Number(documentFlow.resolvedInteractiveBlockIndexValue) || -1)
+        if (resolvedActiveBlockIndex < 0 || resolvedActiveBlockIndex >= blocks.length)
+            return pendingSourceOffset
+        const safeIndex = resolvedActiveBlockIndex
         const blockHost = blockRepeater.itemAt(safeIndex)
         const delegateLoader = blockHost && blockHost.delegateLoader ? blockHost.delegateLoader : null
         const delegateItem = delegateLoader ? delegateLoader.item : null
         if (delegateItem && delegateItem.shortcutInsertionSourceOffset !== undefined) {
             const delegateOffset = Number(delegateItem.shortcutInsertionSourceOffset())
             if (isFinite(delegateOffset))
-                return Math.max(0, Math.min(documentFlow.normalizedSourceText(documentFlow.sourceText).length, Math.floor(delegateOffset)))
+                return Math.max(0, Math.min(currentSourceText.length, Math.floor(delegateOffset)))
         }
         const block = blocks[safeIndex] && typeof blocks[safeIndex] === "object" ? blocks[safeIndex] : ({})
+        if (documentFlow.blockTextEditable(blockHost, block) && isFinite(pendingSourceOffset))
+            return pendingSourceOffset
         return Math.max(0, Math.floor(Number(block.sourceEnd) || 0))
     }
 
@@ -1269,7 +1290,10 @@ FocusScope {
         if (!insertionSpec.applied)
             return false
         const currentSourceText = documentFlow.normalizedSourceText(documentFlow.sourceText)
-        const insertionOffset = Math.max(0, Math.min(currentSourceText.length, documentFlow.shortcutInsertionSourceOffset()))
+        const resolvedInsertionOffset = Number(documentFlow.shortcutInsertionSourceOffset())
+        if (!isFinite(resolvedInsertionOffset))
+            return false
+        const insertionOffset = Math.max(0, Math.min(currentSourceText.length, Math.floor(resolvedInsertionOffset)))
         const payload = documentHost.mutationPolicy.buildStructuredInsertionPayload(
                     currentSourceText,
                     insertionOffset,
@@ -1301,7 +1325,10 @@ FocusScope {
             return false
 
         const currentSourceText = documentFlow.normalizedSourceText(documentFlow.sourceText)
-        const insertionOffset = Math.max(0, Math.min(currentSourceText.length, documentFlow.shortcutInsertionSourceOffset()))
+        const resolvedInsertionOffset = Number(documentFlow.shortcutInsertionSourceOffset())
+        if (!isFinite(resolvedInsertionOffset))
+            return false
+        const insertionOffset = Math.max(0, Math.min(currentSourceText.length, Math.floor(resolvedInsertionOffset)))
         const payload = documentHost.mutationPolicy.buildResourceInsertionPayload(
                     currentSourceText,
                     insertionOffset,

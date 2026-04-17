@@ -11,8 +11,9 @@
 - Delegates the final RAW splice payload to `ContentsStructuredDocumentMutationPolicy` and applies that payload through
   the host `applyDocumentSourceMutation(...)` path.
 - Counts canonical resource tags and detects accidental tag loss on the legacy inline-editor path.
-- Falls back to `ContentsEditorTypingController.qml` only when the host mutation handler is unavailable, then refreshes
-  body-resource rendering.
+- Falls back to `ContentsEditorTypingController.qml` only when the host mutation handler is unavailable.
+- Leaves inline resource re-render timing to parser-owned `documentBlocks` updates instead of forcing an immediate
+  renderer-side refresh from the pre-parse snapshot.
 
 ## Ownership Note
 - Because the root object is `QtObject`, helper bridges must stay attached through explicit properties rather than

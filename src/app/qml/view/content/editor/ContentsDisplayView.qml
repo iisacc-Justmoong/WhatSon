@@ -1665,7 +1665,8 @@ Item {
         if (contentsView.showStructuredDocumentFlow
                 && structuredDocumentFlow
                 && structuredDocumentFlow.insertStructuredShortcutAtActivePosition !== undefined) {
-            return structuredDocumentFlow.insertStructuredShortcutAtActivePosition("agenda");
+            if (structuredDocumentFlow.insertStructuredShortcutAtActivePosition("agenda"))
+                return true;
         }
         return editorTypingController.queueAgendaShortcutInsertion();
     }
@@ -1673,7 +1674,8 @@ Item {
         if (contentsView.showStructuredDocumentFlow
                 && structuredDocumentFlow
                 && structuredDocumentFlow.insertStructuredShortcutAtActivePosition !== undefined) {
-            return structuredDocumentFlow.insertStructuredShortcutAtActivePosition("callout");
+            if (structuredDocumentFlow.insertStructuredShortcutAtActivePosition("callout"))
+                return true;
         }
         return editorTypingController.queueCalloutShortcutInsertion();
     }
@@ -1681,7 +1683,8 @@ Item {
         if (contentsView.showStructuredDocumentFlow
                 && structuredDocumentFlow
                 && structuredDocumentFlow.insertStructuredShortcutAtActivePosition !== undefined) {
-            return structuredDocumentFlow.insertStructuredShortcutAtActivePosition("break");
+            if (structuredDocumentFlow.insertStructuredShortcutAtActivePosition("break"))
+                return true;
         }
         return editorTypingController.queueBreakShortcutInsertion();
     }

@@ -186,10 +186,6 @@ QtObject {
 
         if (!inserted)
             return false;
-        if (controller.bodyResourceRenderer
-                && controller.bodyResourceRenderer.requestRenderRefresh !== undefined) {
-            controller.bodyResourceRenderer.requestRenderRefresh();
-        }
-        return inserted;
+        return true;
     }
 }

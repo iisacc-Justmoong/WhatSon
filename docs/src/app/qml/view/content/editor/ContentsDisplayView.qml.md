@@ -21,6 +21,8 @@ It composes:
   - plain logical text as the live input buffer
   - tokenized HTML as a separate read-side overlay (`renderedEditorHtml`)
 - The host no longer pushes a RichText editing surface back into `ContentsInlineFormatEditor.qml`.
+- Structured shortcut insertions now try the parser-owned document flow first, but if that host cannot resolve a live
+  caret anchor they fall back to the legacy cursor bridge instead of appending at the document tail.
 
 ## Presentation Refresh
 
