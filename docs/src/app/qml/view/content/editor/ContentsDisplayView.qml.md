@@ -35,6 +35,9 @@ It composes:
 - Resource insertion still mutates RAW source first.
 - Canonical RAW `<resource ... />` text generation now lives behind the `ContentsResourceTagTextGenerator` C++ bridge
   instead of a host-local JavaScript string builder.
+- The same import path now applies resource insertion payloads through `applyDocumentSourceMutation(...)`, so
+  structured-flow focus restore and persistence scheduling happen on the same host RAW mutation path as other editor
+  rewrites.
 - After import, the host restores the plain-text editor surface from projection logical text and recomputes the HTML
   overlay.
 - Inline resource preview HTML is therefore presentation-only and cannot become editor write authority.

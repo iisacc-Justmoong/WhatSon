@@ -34,6 +34,7 @@ QtObject {
     property int resourceImportModeClipboard: 2
     property int resourceImportConflictPolicyAbort: 0
     property var currentEditorCursorPositionHandler: null
+    property var documentSourceMutationHandler: null
     property var encodeXmlAttributeValueHandler: null
     property var clearResourceDropActiveHandler: null
     property var clipboardImageAvailableHandler: null
@@ -54,6 +55,7 @@ QtObject {
         editorText: controller.editorText
         editorTypingController: controller.editorTypingController
         currentEditorCursorPositionHandler: controller.currentEditorCursorPositionHandler
+        documentSourceMutationHandler: controller.documentSourceMutationHandler
         selectedNoteBodyNoteId: controller.selectedNoteBodyNoteId
         selectedNoteBodyText: controller.selectedNoteBodyText
         selectedNoteId: controller.selectedNoteId

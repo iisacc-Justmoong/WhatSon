@@ -20,6 +20,8 @@ desktop/mobile host.
 
 - The controller no longer mutates `ContentsEditorPresentationProjection` through a RichText surface override.
 - RAW resource-tag serialization no longer depends on a host-provided JavaScript string builder.
+- RAW resource-tag insertion now also routes through the host document-source mutation handler instead of depending on
+  a structured-flow-local success path.
 - Inline resource rendering now stays a pure HTML substitution step owned by the host refresh pipeline.
 - The controller keeps the same host-facing import API, but helper-local transient state no longer leaks back into
   arbitrary host properties.

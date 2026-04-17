@@ -2309,6 +2309,9 @@ Item {
         currentEditorCursorPositionHandler: function () {
             return contentsView.currentEditorCursorPosition();
         }
+        documentSourceMutationHandler: function (nextSourceText, focusRequest) {
+            return contentsView.applyDocumentSourceMutation(nextSourceText, focusRequest);
+        }
         documentPresentationSourceText: contentsView.documentPresentationSourceText
         editorHorizontalInset: contentsView.editorHorizontalInset
         editorProjection: editorProjection

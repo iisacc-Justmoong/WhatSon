@@ -72,6 +72,8 @@
   `ContentsLogicalTextBridge` and `ContentsTextFormatRenderer` state graphs for the same document snapshot.
 - `ContentsResourceTagTextGenerator` now exposes the canonical RAW resource-tag builder to QML so editor import flows
   no longer synthesize `<resource ... />` strings in JavaScript.
+- `ContentsStructuredDocumentMutationPolicy` now also accepts QML array/list variants robustly for resource insertion,
+  so drag/drop tag blocks do not silently no-op when QML hands the policy a non-`QVariantList` sequential value.
 - `ContentsStructuredDocumentHost` now centralizes structured-flow host state that used to live inline in
   `ContentsStructuredDocumentFlow.qml`, including normalized block/resource collections, pending focus requests,
   active-block tracking, and layout-cache-facing viewport state.

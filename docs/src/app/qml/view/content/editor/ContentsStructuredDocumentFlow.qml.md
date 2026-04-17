@@ -57,6 +57,8 @@ Hosts the parsed `.wsnbody` block stream as one ordered document editor and forw
   keep a cached or estimated block height so document order and source-based focus math remain stable.
 - EOF resource insertion no longer restores a synthetic boundary mode; it restores focus to an offset inside the
   inserted block instead.
+- Structured resource insertion now also refuses empty/no-op payloads instead of reporting success on an unchanged RAW
+  snapshot.
 - The dedicated resource-local plain-text adjacent-insertion path has been removed.
   Resource blocks now participate in the same generic block stream as every other block.
 

@@ -162,8 +162,8 @@ structured document-flow editor changes.
 - After the import-controller split, duplicate-import alert open/close state and editor-surface guard release must
   still remain synchronized on both hosts.
 - The split helper set must remain QML-lintable as `QtObject`-owned collaborators.
-  `ContentsResourceImportController.qml` must not regress into anonymous child-object composition that breaks under
-  `qmllint` or QML compilation.
+  `ContentsResourceImportController.qml` and `ContentsResourceTagController.qml` must not regress into anonymous
+  child-object composition that breaks under `qmllint`, QML compilation, or component load.
 - Resource import helpers must keep their narrowed dependency contract.
   They must not regain broad host-`view` mutation authority just to reach prompt state, projection state, or editor
   surface guard internals.
@@ -191,6 +191,8 @@ structured document-flow editor changes.
   rely solely on `drop.urls`.
 - Dropping a file while the caret sits in the middle of a paragraph must still insert the canonical `<resource ... />`
   call as its own source block instead of embedding the tag inline inside adjacent prose text.
+- The same drop while a structured text block still owns focus must insert at that block's live cursor-derived RAW
+  offset rather than falling back to the last block end or silently no-oping.
 - Dropping an image into a note that already contains ordinary paragraphs must switch that same note into the
   structured resource path immediately.
   The editor must not leave one legacy frame alive that renders the literal `<resource ... />` tag as visible text.

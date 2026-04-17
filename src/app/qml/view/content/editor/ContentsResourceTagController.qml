@@ -17,9 +17,10 @@ QtObject {
     property string selectedNoteBodyText: ""
     property bool showStructuredDocumentFlow: false
     property var currentEditorCursorPositionHandler: null
-
-    ContentsResourceTagTextGenerator {
-        id: resourceTagTextGenerator
+    property var documentSourceMutationHandler: null
+    property QtObject resourceInsertionPolicy: ContentsStructuredDocumentMutationPolicy {
+    }
+    property QtObject resourceTagTextGenerator: ContentsResourceTagTextGenerator {
     }
 
     function currentEditorCursorPosition() {
@@ -66,25 +67,40 @@ QtObject {
         return normalizedEntries;
     }
 
-    function resourceBlockSourceText(tagTexts) {
-        if (!Array.isArray(tagTexts) || tagTexts.length === 0)
-            return "";
-
-        const blockSourceText = tagTexts.join("\n");
+    function currentResourceInsertionSourceOffset() {
         const currentSourceText = controller.editorText === undefined || controller.editorText === null
                 ? ""
                 : String(controller.editorText);
-        const cursorSourceOffset = controller.editorTypingController
-                && controller.editorTypingController.sourceOffsetForLogicalOffset !== undefined
-                ? controller.editorTypingController.sourceOffsetForLogicalOffset(
-                      controller.currentEditorCursorPosition())
-                : controller.currentEditorCursorPosition();
-        const boundedCursorOffset = Math.max(0, Math.min(currentSourceText.length, Number(cursorSourceOffset) || 0));
-        const previousCharacter = boundedCursorOffset > 0 ? currentSourceText.charAt(boundedCursorOffset - 1) : "";
-        const nextCharacter = boundedCursorOffset < currentSourceText.length ? currentSourceText.charAt(boundedCursorOffset) : "";
-        const leadingBreak = currentSourceText.length > 0 && previousCharacter !== "\n" ? "\n" : "";
-        const trailingBreak = boundedCursorOffset < currentSourceText.length && nextCharacter !== "\n" ? "\n" : "";
-        return leadingBreak + blockSourceText + trailingBreak;
+        if (controller.showStructuredDocumentFlow
+                && controller.structuredDocumentFlow
+                && controller.structuredDocumentFlow.shortcutInsertionSourceOffset !== undefined) {
+            const structuredOffset = Number(
+                        controller.structuredDocumentFlow.shortcutInsertionSourceOffset());
+            if (isFinite(structuredOffset))
+                return Math.max(0, Math.min(currentSourceText.length, Math.floor(structuredOffset)));
+        }
+
+        const logicalCursorOffset = Math.max(
+                    0,
+                    Math.floor(Number(controller.currentEditorCursorPosition()) || 0));
+        if (controller.editorTypingController
+                && controller.editorTypingController.sourceOffsetForCollapsedLogicalInsertion !== undefined) {
+            const sourceOffset = Number(
+                        controller.editorTypingController.sourceOffsetForCollapsedLogicalInsertion(
+                            currentSourceText,
+                            logicalCursorOffset));
+            if (isFinite(sourceOffset))
+                return Math.max(0, Math.min(currentSourceText.length, Math.floor(sourceOffset)));
+        }
+        if (controller.editorTypingController
+                && controller.editorTypingController.sourceOffsetForLogicalOffset !== undefined) {
+            const sourceOffset = Number(
+                        controller.editorTypingController.sourceOffsetForLogicalOffset(
+                            logicalCursorOffset));
+            if (isFinite(sourceOffset))
+                return Math.max(0, Math.min(currentSourceText.length, Math.floor(sourceOffset)));
+        }
+        return Math.max(0, Math.min(currentSourceText.length, logicalCursorOffset));
     }
 
     function sourceContainsCanonicalResourceTag(sourceText) {
@@ -124,9 +140,9 @@ QtObject {
 
         const tagTexts = [];
         for (let index = 0; index < normalizedImportedEntries.length; ++index) {
-            const tagText = resourceTagTextGenerator
-                    && resourceTagTextGenerator.buildCanonicalResourceTag !== undefined
-                    ? String(resourceTagTextGenerator.buildCanonicalResourceTag(
+            const tagText = controller.resourceTagTextGenerator
+                    && controller.resourceTagTextGenerator.buildCanonicalResourceTag !== undefined
+                    ? String(controller.resourceTagTextGenerator.buildCanonicalResourceTag(
                                  normalizedImportedEntries[index]) || "")
                     : "";
             if (tagText.length > 0)
@@ -135,17 +151,37 @@ QtObject {
         if (tagTexts.length === 0)
             return false;
 
+        const currentSourceText = controller.editorText === undefined || controller.editorText === null
+                ? ""
+                : String(controller.editorText);
+        const insertionOffset = controller.currentResourceInsertionSourceOffset();
+        const insertionPayload = controller.resourceInsertionPolicy
+                && controller.resourceInsertionPolicy.buildResourceInsertionPayload !== undefined
+                ? controller.resourceInsertionPolicy.buildResourceInsertionPayload(
+                      currentSourceText,
+                      insertionOffset,
+                      tagTexts)
+                : ({});
+
         let inserted = false;
-        if (controller.showStructuredDocumentFlow
-                && controller.structuredDocumentFlow
-                && controller.structuredDocumentFlow.insertResourceBlocksAtActivePosition !== undefined) {
-            inserted = controller.structuredDocumentFlow.insertResourceBlocksAtActivePosition(tagTexts);
+        const nextSourceText = insertionPayload.nextSourceText !== undefined
+                && insertionPayload.nextSourceText !== null
+                ? String(insertionPayload.nextSourceText)
+                : currentSourceText;
+        if (nextSourceText !== currentSourceText
+                && controller.documentSourceMutationHandler
+                && typeof controller.documentSourceMutationHandler === "function") {
+            inserted = !!controller.documentSourceMutationHandler(
+                        nextSourceText,
+                        insertionPayload.focusRequest && typeof insertionPayload.focusRequest === "object"
+                        ? insertionPayload.focusRequest
+                        : ({ }));
         } else if (controller.editorTypingController
                    && controller.editorTypingController.insertRawSourceTextAtCursor !== undefined) {
-            const insertedSourceText = controller.resourceBlockSourceText(tagTexts);
+            const blockSourceText = tagTexts.join("\n");
             inserted = controller.editorTypingController.insertRawSourceTextAtCursor(
-                        insertedSourceText,
-                        insertedSourceText.length);
+                        blockSourceText,
+                        blockSourceText.length);
         }
 
         if (!inserted)

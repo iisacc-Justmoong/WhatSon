@@ -1306,8 +1306,13 @@ FocusScope {
                     currentSourceText,
                     insertionOffset,
                     normalizedTagTexts)
+        const nextSourceText = payload.nextSourceText !== undefined && payload.nextSourceText !== null
+                ? String(payload.nextSourceText)
+                : currentSourceText
+        if (nextSourceText === currentSourceText)
+            return false
         documentFlow.sourceMutationRequested(
-                    String(payload.nextSourceText || currentSourceText),
+                    nextSourceText,
                     payload.focusRequest && typeof payload.focusRequest === "object"
                     ? payload.focusRequest
                     : ({ }))

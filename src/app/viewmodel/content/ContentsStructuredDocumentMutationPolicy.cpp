@@ -3,7 +3,61 @@
 #include "ContentsStructuredDocumentCollectionPolicy.hpp"
 #include "file/WhatSonDebugTrace.hpp"
 
+#include <QJSValue>
+#include <QMetaType>
+#include <QSequentialIterable>
+#include <QStringList>
+
 #include <algorithm>
+
+namespace
+{
+    QVariantList normalizedVariantList(QVariant value)
+    {
+        if (!value.isValid())
+        {
+            return {};
+        }
+
+        if (value.metaType().id() == QMetaType::QJSValue)
+        {
+            value = value.value<QJSValue>().toVariant();
+        }
+
+        if (value.metaType().id() == QMetaType::QVariantList)
+        {
+            return value.toList();
+        }
+
+        if (value.metaType().id() == QMetaType::QStringList)
+        {
+            const QStringList stringValues = value.toStringList();
+            QVariantList normalizedValues;
+            normalizedValues.reserve(stringValues.size());
+            for (const QString& stringValue : stringValues)
+            {
+                normalizedValues.push_back(stringValue);
+            }
+            return normalizedValues;
+        }
+
+        if (value.canConvert<QSequentialIterable>())
+        {
+            const QSequentialIterable iterable = value.value<QSequentialIterable>();
+            QVariantList normalizedValues;
+            for (auto it = iterable.begin(); it != iterable.end(); ++it)
+            {
+                normalizedValues.push_back(*it);
+            }
+            if (!normalizedValues.isEmpty())
+            {
+                return normalizedValues;
+            }
+        }
+
+        return QVariantList{value};
+    }
+} // namespace
 
 ContentsStructuredDocumentMutationPolicy::ContentsStructuredDocumentMutationPolicy(QObject* parent)
     : QObject(parent)
@@ -128,8 +182,7 @@ QVariantMap ContentsStructuredDocumentMutationPolicy::buildResourceInsertionPayl
     const int insertionOffset,
     const QVariant& tagTexts) const
 {
-    const QVariantList rawTagTexts =
-        tagTexts.typeId() == QMetaType::QVariantList ? tagTexts.toList() : QVariantList{};
+    const QVariantList rawTagTexts = normalizedVariantList(tagTexts);
     QStringList normalizedTagTexts;
     normalizedTagTexts.reserve(rawTagTexts.size());
     for (const QVariant& tagTextValue : rawTagTexts)
