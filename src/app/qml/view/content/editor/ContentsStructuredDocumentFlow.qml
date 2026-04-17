@@ -154,6 +154,19 @@ FocusScope {
         return blockEntry.minimapVisualKind !== undefined ? String(blockEntry.minimapVisualKind || "text") : "text"
     }
 
+    function minimapRowCountForBlockHost(blockHost, blockEntryOverride, lineHeight) {
+        const host = blockHost && typeof blockHost === "object" ? blockHost : null
+        const blockEntry = blockEntryOverride && typeof blockEntryOverride === "object"
+                ? blockEntryOverride
+                : (host && host.blockEntry && typeof host.blockEntry === "object" ? host.blockEntry : ({ }))
+        const blockType = blockEntry.type !== undefined ? String(blockEntry.type).trim().toLowerCase() : "text"
+        const resolvedLineHeight = Math.max(1, Number(lineHeight) || documentFlow.lineHeightHint)
+        const rawRowCount = Math.max(1, Math.ceil(resolvedLineHeight / Math.max(1, documentFlow.lineHeightHint)))
+        if (blockType === "resource")
+            return Math.min(10, rawRowCount)
+        return rawRowCount
+    }
+
     function logicalLineCount() {
         return Math.max(1, documentFlow.cachedLogicalLineEntries.length)
     }
@@ -357,7 +370,7 @@ FocusScope {
                 "gutterContentHeight": gutterCollapsed ? Math.max(1, documentFlow.lineHeightHint) : lineHeight,
                 "minimapRowCharCount": minimapRowCharCount,
                 "minimapVisualKind": minimapVisualKind,
-                "rowCount": Math.max(1, Math.ceil(lineHeight / Math.max(1, documentFlow.lineHeightHint)))
+                "rowCount": documentFlow.minimapRowCountForBlockHost(host, blockEntry, lineHeight)
             })
         }
 

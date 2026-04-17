@@ -309,6 +309,8 @@ structured document-flow editor changes.
 - When the user scrolls to the note tail in the ordinary editor, the final visible prose line must keep a clear bottom
   breathing room below it.
   The last authored line must not sit flush against the app shell bottom edge in structured, legacy, or preview mode.
+- A single tall inline image/resource block must not expand into dozens of minimap rows.
+  The resource silhouette should stay capped to roughly ten minimap rows even when the rendered card is much taller.
 - Ordinary clicks inside the image/resource frame must default to that same whole-block selection state.
   Only an intentional narrow left/right edge hit may escape into before/after caret behavior; the block must not fall
   into right-edge caret mode just because the user clicked somewhere in the broad right half of the image.

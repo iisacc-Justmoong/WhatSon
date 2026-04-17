@@ -52,6 +52,9 @@ Hosts the parsed `.wsnbody` block stream as one ordered document editor and forw
 - Structured cached logical-line entries now also keep `gutterContentY` aligned to each line's real `contentY`.
   Gutter-collapsed blocks still shrink only the rendered gutter box height, but line-number Y no longer comes from a
   second synthetic accumulator that ignored block spacing and delegate-local top offsets.
+- Resource blocks now also cap their minimap silhouette expansion to ten rows even when the inline card itself is much
+  taller than ten editor lines.
+  Tall images therefore stay visually present on the minimap without dominating the whole rail.
 - The block host also now virtualizes delegate loading against the bound viewport:
   off-screen text/resource/agenda/callout delegates are unloaded outside an overscanned window while their host items
   keep a cached or estimated block height so document order and source-based focus math remain stable.

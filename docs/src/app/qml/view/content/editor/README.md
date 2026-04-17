@@ -77,6 +77,8 @@
   `minimapVisualKind`, and `minimapRepresentativeCharCount`.
   Gutter, minimap, current-line focus, and nearest-editable-block resolution now consume that shared contract rather
   than branching on block type names inside the flow host.
+- Resource blocks still advertise themselves to the minimap as block silhouettes, but the structured-flow cache now
+  caps one resource block to ten minimap rows so tall inline media do not overwhelm the rail.
 - `ContentsDocumentTextBlock.qml` no longer uses an HTML overlay for inline formatting preview.
   Structured paragraph editing now happens directly against RAW block source text.
 - `ContentsResourceBlock.qml` no longer keeps a resource-local `before/selected/after` boundary-editor state machine.
