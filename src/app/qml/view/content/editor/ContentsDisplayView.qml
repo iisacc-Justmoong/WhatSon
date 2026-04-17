@@ -2390,7 +2390,7 @@ Item {
 
         gutterMarkers: contentsView.gutterMarkers
     }
-    ContentsEditorSession {
+    ContentsEditorSessionController {
         id: editorSession
 
         agendaBackend: contentsAgendaBackend

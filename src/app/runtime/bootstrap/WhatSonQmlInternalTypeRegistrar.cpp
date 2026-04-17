@@ -12,6 +12,7 @@
 #include "viewmodel/content/ContentsDisplaySelectionSyncCoordinator.hpp"
 #include "viewmodel/content/ContentsDisplayStructuredFlowCoordinator.hpp"
 #include "viewmodel/content/ContentsEditorPresentationProjection.hpp"
+#include "viewmodel/content/ContentsEditorSessionController.hpp"
 #include "viewmodel/content/ContentsEditorSelectionBridge.hpp"
 #include "viewmodel/content/ContentsGutterMarkerBridge.hpp"
 #include "viewmodel/content/ContentsLogicalTextBridge.hpp"
@@ -41,6 +42,8 @@ namespace WhatSon::Runtime::Bootstrap
             "WhatSon.App.Internal", 1, 0, "ContentsDisplayStructuredFlowCoordinator");
         qmlRegisterType<ContentsEditorPresentationProjection>(
             "WhatSon.App.Internal", 1, 0, "ContentsEditorPresentationProjection");
+        qmlRegisterType<ContentsEditorSessionController>(
+            "WhatSon.App.Internal", 1, 0, "ContentsEditorSessionController");
         qmlRegisterType<ContentsLogicalTextBridge>(
             "WhatSon.App.Internal", 1, 0, "ContentsLogicalTextBridge");
         qmlRegisterType<ContentsGutterMarkerBridge>(

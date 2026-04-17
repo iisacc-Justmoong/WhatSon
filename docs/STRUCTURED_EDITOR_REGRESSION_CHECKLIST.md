@@ -149,6 +149,12 @@ structured document-flow editor changes.
 - Note-list preview text, loaded editor text, and the saved RAW paragraph text must remain the same logical content.
   One stale presentation snapshot must not cause repeated prose duplication in RAW while the editor surface still looks
   normal.
+- If a same-note RAW/model snapshot arrives while the editor is still protecting local input (`typing` window or
+  pending save), rejecting that snapshot must not itself enqueue a new save of the current editor buffer.
+  RAW must stay the write authority; model-sync refusal must not become an editor-to-RAW overwrite trigger.
+- `ContentsEditorSession.qml` must remain a thin wrapper over backend session policy.
+  Save gating, same-note snapshot acceptance, and agenda/empty-block normalization must not drift back into large QML
+  JavaScript branches.
 - A newly created note must enter the visible note list with the same normalized preview metadata that a later
   file-store read of that note would return.
   Note creation must not fabricate a partial runtime record that leaves the note-list preview blank until some later

@@ -7,7 +7,7 @@
 ## Scope
 - Mirrored source directory: `src/app/viewmodel/content`
 - Child directories: 0
-- Child files: 24
+- Child files: 26
 
 ## Child Directories
 - No child directories.
@@ -15,6 +15,8 @@
 ## Child Files
 - `ContentsEditorPresentationProjection.cpp`
 - `ContentsEditorPresentationProjection.hpp`
+- `ContentsEditorSessionController.cpp`
+- `ContentsEditorSessionController.hpp`
 - `ContentsDisplayPresentationRefreshController.cpp`
 - `ContentsDisplayPresentationRefreshController.hpp`
 - `ContentsDisplaySelectionSyncCoordinator.cpp`
@@ -40,6 +42,11 @@
 
 ## Current Notes
 
+- `ContentsEditorSessionController` now owns editor-session RAW sync acceptance, agenda/empty-block normalization,
+  pending-save state, and persistence enqueue decisions in C++ instead of keeping those calculations in QML.
+- `ContentsDisplayView.qml` now mounts `ContentsEditorSessionController` directly for the primary editor session path,
+  while `ContentsEditorSession.qml` remains only as a thin compatibility wrapper for any future QML caller that still
+  expects the old component name.
 - `ContentsEditorSelectionBridge` no longer owns the asynchronous direct `.wsnote` save queue itself.
 - The editor/UI path now stages body-write intent into `file/sync/ContentsEditorIdleSyncController`, which owns the
   buffered note snapshot cache, recurring `1000ms` fetch clock, and best-effort lifecycle flush path.

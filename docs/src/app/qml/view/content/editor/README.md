@@ -225,7 +225,10 @@
   text each mutation, fixing stale line-count growth where gutter/minimap lines could increase but not decrease after
   newline removal or line-wrap collapse.
 - Editor body persistence is now split into immediate-flush requests plus buffered retry/completion:
-  - `ContentsEditorSession.qml` owns pending/in-flight state only
+  - `ContentsDisplayView.qml` now mounts `ContentsEditorSessionController` directly on the main editor path
+  - `ContentsEditorSession.qml` remains only as a compatibility wrapper
+  - `ContentsEditorSessionController` owns pending/in-flight state, same-note RAW sync acceptance, and text
+    normalization for persistence/model-sync turns
   - `ContentsEditorSelectionBridge` stays as the QML-facing adapter
   - `file/sync/ContentsEditorIdleSyncController` owns the note-scoped buffered snapshot cache and recurring `1000ms`
     fetch clock
@@ -238,6 +241,11 @@
     flows no longer treat a rejected enqueue as if the note had already been durably accepted
   - each successful queued write now also triggers one reconcile verify(fetch) against filesystem RAW, so the visible
     note snapshot converges even when downstream body serialization canonicalizes markup/escaping.
+  - same-note RAW/model snapshot rejection while the editor still has local-protection state no longer schedules a new
+    persistence write from that rejection alone; the editor now waits for an explicit local mutation path instead of
+    using model-sync refusal as a reverse write trigger
+  - the save-path policy no longer depends on QML `undefined` checks or JavaScript regex normalization; those rules now
+    execute in the typed C++ session controller
   - on Android SAF-mounted hubs, the successful note-management path now mirrors the locally written note package back
     into the original source document tree before the editor receives a final save success signal
   - when desktop/mobile hosts call `persistEditorTextImmediately(...)`, that path now issues one immediate fetch enqueue

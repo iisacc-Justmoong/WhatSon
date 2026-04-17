@@ -1,292 +1,61 @@
 import QtQuick
-import "ContentsEditorDebugTrace.js" as EditorTrace
+import WhatSon.App.Internal 1.0
 
 Item {
     id: editorSession
     objectName: "contentsEditorSession"
+    visible: false
 
-    property string editorBoundNoteId: ""
-    property string editorText: ""
-    property bool localEditorAuthority: false
-    property double lastLocalEditTimestampMs: 0
-    property bool pendingBodySave: false
-    property int typingIdleThresholdMs: 1000
-    property var selectionBridge: null
-    property var agendaBackend: null
-    property bool syncingEditorTextFromModel: false
+    property alias agendaBackend: sessionController.agendaBackend
+    property alias editorBoundNoteId: sessionController.editorBoundNoteId
+    property alias editorText: sessionController.editorText
+    property alias lastLocalEditTimestampMs: sessionController.lastLocalEditTimestampMs
+    property alias localEditorAuthority: sessionController.localEditorAuthority
+    property alias pendingBodySave: sessionController.pendingBodySave
+    property alias selectionBridge: sessionController.selectionBridge
+    property alias syncingEditorTextFromModel: sessionController.syncingEditorTextFromModel
+    property alias typingIdleThresholdMs: sessionController.typingIdleThresholdMs
 
     signal editorTextSynchronized
 
-    function handleEditorPersistenceFinished(noteId, text, success) {
-        EditorTrace.trace(
-                    "editorSession",
-                    "handleEditorPersistenceFinished",
-                    "success=" + success
-                    + " noteId=" + String(noteId || "")
-                    + " " + EditorTrace.describeText(text),
-                    editorSession)
-        if (!success)
-            return;
-        const completedNoteId = noteId === undefined || noteId === null ? "" : String(noteId);
-        const completedText = text === undefined || text === null ? "" : String(text);
-        if (editorSession.editorBoundNoteId === completedNoteId
-                && editorSession.editorText === completedText) {
-            editorSession.pendingBodySave = false;
-        }
-    }
     function flushPendingEditorText() {
-        EditorTrace.trace(
-                    "editorSession",
-                    "flushPendingEditorText",
-                    "pendingBodySave=" + editorSession.pendingBodySave
-                    + " noteId=" + String(editorSession.editorBoundNoteId || ""),
-                    editorSession)
-        if (!editorSession.pendingBodySave)
-            return true;
-        const noteId = editorSession.editorBoundNoteId === undefined || editorSession.editorBoundNoteId === null ? "" : String(editorSession.editorBoundNoteId).trim();
-        if (noteId.length === 0) {
-            editorSession.pendingBodySave = false;
-            return false;
-        }
-        const rawBodyText = editorSession.editorText === undefined || editorSession.editorText === null ? "" : String(editorSession.editorText);
-        return editorSession.persistEditorTextImmediately(rawBodyText);
+        return sessionController.flushPendingEditorText();
     }
-    function currentTimestampMs() {
-        return Date.now();
-    }
-    function normalizeAgendaPlaceholderDates(text) {
-        const sourceText = text === undefined || text === null ? "" : String(text);
-        if (sourceText.length === 0)
-            return sourceText;
-        if (!editorSession.agendaBackend
-                || editorSession.agendaBackend.normalizeAgendaModifiedDate === undefined) {
-            return sourceText;
-        }
-        return String(editorSession.agendaBackend.normalizeAgendaModifiedDate(sourceText));
-    }
-    function normalizeStructuredEmptyBlockAnchors(text) {
-        let sourceText = text === undefined || text === null ? "" : String(text);
-        if (sourceText.length === 0)
-            return sourceText;
-        sourceText = sourceText.replace(
-                    /<task\b([^>]*)>\s*<\/task>/gi,
-                    "<task$1> </task>");
-        sourceText = sourceText.replace(
-                    /<callout\b([^>]*)>\s*<\/callout>/gi,
-                    "<callout$1> </callout>");
-        return sourceText;
-    }
-    function normalizedEditorText(text) {
-        return editorSession.normalizeAgendaPlaceholderDates(
-                    editorSession.normalizeStructuredEmptyBlockAnchors(text));
-    }
-    function normalizeModifiedEditorText(text) {
-        const normalizedText = editorSession.normalizedEditorText(text);
-        if (editorSession.editorText !== normalizedText)
-            editorSession.editorText = normalizedText;
-        return normalizedText;
-    }
+
     function isTypingSessionActive() {
-        if (!editorSession.localEditorAuthority)
-            return false;
-        const thresholdMs = Math.max(0, Number(editorSession.typingIdleThresholdMs) || 0);
-        if (thresholdMs <= 0)
-            return true;
-        const lastEditTimestampMs = Math.max(0, Number(editorSession.lastLocalEditTimestampMs) || 0);
-        const elapsedMs = editorSession.currentTimestampMs() - lastEditTimestampMs;
-        if (!isFinite(elapsedMs) || elapsedMs < 0)
-            return true;
-        return elapsedMs < thresholdMs;
+        return sessionController.isTypingSessionActive();
     }
+
     function requestSyncEditorTextFromSelection(noteId, text, bodyNoteId) {
-        const nextNoteId = noteId === undefined || noteId === null ? "" : String(noteId);
-        const nextBodyNoteId = bodyNoteId === undefined || bodyNoteId === null ? "" : String(bodyNoteId);
-        const nextText = editorSession.normalizedEditorText(text);
-        const currentNoteId = editorSession.editorBoundNoteId === undefined || editorSession.editorBoundNoteId === null ? "" : String(editorSession.editorBoundNoteId);
-        const currentText = editorSession.editorText === undefined || editorSession.editorText === null ? "" : String(editorSession.editorText);
-        EditorTrace.trace(
-                    "editorSession",
-                    "requestSyncEditorTextFromSelection",
-                    "nextNoteId=" + nextNoteId
-                    + " bodyNoteId=" + nextBodyNoteId
-                    + " currentNoteId=" + currentNoteId
-                    + " " + EditorTrace.describeText(nextText),
-                    editorSession)
-        if (nextNoteId.length === 0 || nextBodyNoteId !== nextNoteId)
-            return false;
-        if (currentNoteId !== nextNoteId && editorSession.pendingBodySave) {
-            if (!editorSession.flushPendingEditorText())
-                return false;
-        }
-        if (currentNoteId === nextNoteId && currentText === nextText)
-            return false;
-        if (currentNoteId === nextNoteId && !editorSession.shouldAcceptModelBodyText(nextNoteId, nextText)) {
-            editorSession.scheduleEditorPersistence();
-            return false;
-        }
-        editorSession.syncEditorTextFromSelection(nextNoteId, nextText);
-        return true;
+        return sessionController.requestSyncEditorTextFromSelection(
+                    noteId === undefined || noteId === null ? "" : String(noteId),
+                    text === undefined || text === null ? "" : String(text),
+                    bodyNoteId === undefined || bodyNoteId === null ? "" : String(bodyNoteId));
     }
-    function releaseSyncGuard() {
-        Qt.callLater(function () {
-            editorSession.syncingEditorTextFromModel = false;
-        });
-    }
+
     function markLocalEditorAuthority() {
-        editorSession.localEditorAuthority = true;
-        editorSession.lastLocalEditTimestampMs = editorSession.currentTimestampMs();
-        EditorTrace.trace(
-                    "editorSession",
-                    "markLocalEditorAuthority",
-                    "timestampMs=" + editorSession.lastLocalEditTimestampMs,
-                    editorSession)
+        sessionController.markLocalEditorAuthority();
     }
-    function enqueueEditorPersistence(noteId, bodyText, immediateFlush) {
-        const normalizedNoteId = noteId === undefined || noteId === null ? "" : String(noteId).trim();
-        if (normalizedNoteId.length === 0)
-            return false;
-        if (!editorSession.selectionBridge)
-            return false;
-        if (immediateFlush && editorSession.selectionBridge.flushEditorTextForNote !== undefined)
-            return !!editorSession.selectionBridge.flushEditorTextForNote(normalizedNoteId, bodyText);
-        if (editorSession.selectionBridge.stageEditorTextForIdleSync !== undefined)
-            return !!editorSession.selectionBridge.stageEditorTextForIdleSync(normalizedNoteId, bodyText);
-        return false;
-    }
+
     function scheduleEditorPersistence() {
-        const noteId = editorSession.editorBoundNoteId === undefined || editorSession.editorBoundNoteId === null
-                ? ""
-                : String(editorSession.editorBoundNoteId).trim();
-        EditorTrace.trace(
-                    "editorSession",
-                    "scheduleEditorPersistence",
-                    "noteId=" + noteId
-                    + " pendingBodySave(before)=" + editorSession.pendingBodySave
-                    + " " + EditorTrace.describeText(editorSession.editorText),
-                    editorSession)
-        if (noteId.length === 0) {
-            editorSession.pendingBodySave = false;
-            return false;
-        }
-        editorSession.pendingBodySave = true;
-        const rawBodyText = editorSession.editorText === undefined || editorSession.editorText === null ? "" : String(editorSession.editorText);
-        const bodyText = editorSession.normalizeModifiedEditorText(rawBodyText);
-        return editorSession.enqueueEditorPersistence(noteId, bodyText, false);
+        return sessionController.scheduleEditorPersistence();
     }
+
     function persistEditorTextImmediately(text) {
-        const noteId = editorSession.editorBoundNoteId === undefined || editorSession.editorBoundNoteId === null
-                ? ""
-                : String(editorSession.editorBoundNoteId).trim();
-        EditorTrace.trace(
-                    "editorSession",
-                    "persistEditorTextImmediately",
-                    "noteId=" + noteId
-                    + " " + EditorTrace.describeText(text === undefined || text === null ? editorSession.editorText : text),
-                    editorSession)
-        if (noteId.length === 0) {
-            editorSession.pendingBodySave = false;
-            return false;
-        }
-        editorSession.pendingBodySave = true;
-        const rawBodyText = text === undefined || text === null
-                ? (editorSession.editorText === undefined || editorSession.editorText === null ? "" : String(editorSession.editorText))
-                : String(text);
-        const bodyText = editorSession.normalizeModifiedEditorText(rawBodyText);
-        return editorSession.enqueueEditorPersistence(noteId, bodyText, true);
-    }
-    function shouldAcceptModelBodyText(noteId, text) {
-        const nextNoteId = noteId === undefined || noteId === null ? "" : String(noteId);
-        const nextText = editorSession.normalizedEditorText(text);
-        const currentNoteId = editorSession.editorBoundNoteId === undefined || editorSession.editorBoundNoteId === null ? "" : String(editorSession.editorBoundNoteId);
-        const currentText = editorSession.editorText === undefined || editorSession.editorText === null ? "" : String(editorSession.editorText);
-        if (nextNoteId !== currentNoteId)
-            return true;
-        if (currentText === nextText)
-            return true;
-        if (editorSession.isTypingSessionActive())
-            return false;
-        return !editorSession.pendingBodySave;
-    }
-    function syncEditorTextFromSelection(noteId, text) {
-        const nextNoteId = noteId === undefined || noteId === null ? "" : String(noteId);
-        const nextText = editorSession.normalizedEditorText(text);
-        const noteChanged = editorSession.editorBoundNoteId !== nextNoteId;
-        const textChanged = editorSession.editorText !== nextText;
-        EditorTrace.trace(
-                    "editorSession",
-                    "syncEditorTextFromSelection",
-                    "noteChanged=" + noteChanged
-                    + " textChanged=" + textChanged
-                    + " nextNoteId=" + nextNoteId
-                    + " " + EditorTrace.describeText(nextText),
-                    editorSession)
-        if (!noteChanged && !textChanged)
-            return;
-        if (noteChanged || textChanged)
-            editorSession.pendingBodySave = false;
-        editorSession.editorBoundNoteId = nextNoteId;
-        if (noteChanged) {
-            editorSession.localEditorAuthority = false;
-            editorSession.lastLocalEditTimestampMs = 0;
-        }
-        if (textChanged)
-            editorSession.syncingEditorTextFromModel = true;
-        if (textChanged)
-            editorSession.editorText = nextText;
-        if (textChanged)
-            editorSession.releaseSyncGuard();
-        editorSession.editorTextSynchronized();
+        if (text === undefined || text === null)
+            return sessionController.persistEditorTextImmediately();
+        return sessionController.persistEditorTextImmediatelyWithText(String(text));
     }
 
-    visible: false
-
-    Component.onCompleted: {
-        EditorTrace.trace("editorSession", "mount", "", editorSession)
-    }
-
-    Component.onDestruction: {
-        EditorTrace.trace(
-                    "editorSession",
-                    "unmount",
-                    "noteId=" + editorSession.editorBoundNoteId
-                    + " pendingBodySave=" + editorSession.pendingBodySave,
-                    editorSession)
-    }
-
-    onEditorBoundNoteIdChanged: {
-        EditorTrace.trace("editorSession", "editorBoundNoteIdChanged", "noteId=" + editorBoundNoteId, editorSession)
-    }
-
-    onEditorTextChanged: {
-        EditorTrace.trace("editorSession", "editorTextChanged", EditorTrace.describeText(editorText), editorSession)
-    }
-
-    onPendingBodySaveChanged: {
-        EditorTrace.trace("editorSession", "pendingBodySaveChanged", "pendingBodySave=" + pendingBodySave, editorSession)
-    }
-
-    onLocalEditorAuthorityChanged: {
-        EditorTrace.trace(
-                    "editorSession",
-                    "localEditorAuthorityChanged",
-                    "localEditorAuthority=" + localEditorAuthority + " lastEditMs=" + lastLocalEditTimestampMs,
-                    editorSession)
-    }
-
-    onSyncingEditorTextFromModelChanged: {
-        EditorTrace.trace(
-                    "editorSession",
-                    "syncingEditorTextFromModelChanged",
-                    "syncingEditorTextFromModel=" + syncingEditorTextFromModel,
-                    editorSession)
+    ContentsEditorSessionController {
+        id: sessionController
     }
 
     Connections {
-        function onEditorTextPersistenceFinished(noteId, text, success, errorMessage) {
-            editorSession.handleEditorPersistenceFinished(noteId, text, success);
+        function onEditorTextSynchronized() {
+            editorSession.editorTextSynchronized();
         }
 
-        ignoreUnknownSignals: true
-        target: editorSession.selectionBridge
+        target: sessionController
     }
 }
