@@ -31,6 +31,8 @@ It composes:
   RichText surface reinjection step.
 - Resource-bearing fallback notes still substitute `whatson-resource-block` placeholders into HTML, but that
   substitution now stays entirely inside the display pipeline.
+- The non-print editor viewport now reserves a multi-line bottom inset, so the last authored line no longer sits flush
+  against the shell bottom edge when the user scrolls to the document tail.
 
 ## Resource Import
 

@@ -40,7 +40,9 @@ Item {
     readonly property int desktopEditorFontPixelSize: Math.max(0, Math.round(LV.Theme.scaleMetric(12)))
     readonly property int editorFontWeight: modePolicy.editorFontWeight
     property color displayColor: "transparent"
-    readonly property int editorBottomInset: LV.Theme.gap16
+    readonly property int editorBottomInset: Math.max(
+                                                LV.Theme.gap16,
+                                                Math.round(contentsView.editorLineHeight * 6))
     property alias editorBoundNoteId: editorSession.editorBoundNoteId
     readonly property real editorContentOffsetY: {
         const flickable = contentsView.editorFlickable;

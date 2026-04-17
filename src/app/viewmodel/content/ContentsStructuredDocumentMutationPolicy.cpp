@@ -19,17 +19,17 @@ namespace
             return {};
         }
 
-        if (value.metaType().id() == QMetaType::QJSValue)
+        if (value.metaType() == QMetaType::fromType<QJSValue>())
         {
             value = value.value<QJSValue>().toVariant();
         }
 
-        if (value.metaType().id() == QMetaType::QVariantList)
+        if (value.metaType() == QMetaType::fromType<QVariantList>())
         {
             return value.toList();
         }
 
-        if (value.metaType().id() == QMetaType::QStringList)
+        if (value.metaType() == QMetaType::fromType<QStringList>())
         {
             const QStringList stringValues = value.toStringList();
             QVariantList normalizedValues;

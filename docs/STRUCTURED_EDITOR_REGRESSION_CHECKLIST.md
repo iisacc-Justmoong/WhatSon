@@ -306,6 +306,9 @@ structured document-flow editor changes.
 - Clicking the center of an inline image/resource block must leave that block selected.
   The structured viewport background tap handler must not immediately move focus to the document tail and clear the
   block selection on the same gesture.
+- When the user scrolls to the note tail in the ordinary editor, the final visible prose line must keep a clear bottom
+  breathing room below it.
+  The last authored line must not sit flush against the app shell bottom edge in structured, legacy, or preview mode.
 - Ordinary clicks inside the image/resource frame must default to that same whole-block selection state.
   Only an intentional narrow left/right edge hit may escape into before/after caret behavior; the block must not fall
   into right-edge caret mode just because the user clicked somewhere in the broad right half of the image.

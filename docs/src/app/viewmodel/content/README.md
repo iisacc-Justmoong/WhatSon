@@ -74,6 +74,8 @@
   no longer synthesize `<resource ... />` strings in JavaScript.
 - `ContentsStructuredDocumentMutationPolicy` now also accepts QML array/list variants robustly for resource insertion,
   so drag/drop tag blocks do not silently no-op when QML hands the policy a non-`QVariantList` sequential value.
+- That same mutation policy now compares wrapped QML container/value types through `QMetaType::fromType<T>()`,
+  keeping the `QJSValue` unwrap path compatible with the Qt 6.8 headers used by the app build.
 - `ContentsStructuredDocumentHost` now centralizes structured-flow host state that used to live inline in
   `ContentsStructuredDocumentFlow.qml`, including normalized block/resource collections, pending focus requests,
   active-block tracking, and layout-cache-facing viewport state.
