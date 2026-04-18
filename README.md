@@ -533,7 +533,8 @@ boundaries, and persistence contracts without starting the interactive workspace
 
 ## Unified Root CMake Targets
 
-Platform build, launch, export, and package targets are centralized in the root `CMakeLists.txt`.
+Platform build, launch, export, and package targets are orchestrated from the root `CMakeLists.txt` and grouped into
+`cmake/root/build`, `cmake/root/dev`, `cmake/root/runtime`, and `cmake/root/distribution`.
 
 ```bash
 cmake --build build --target whatson_build_all

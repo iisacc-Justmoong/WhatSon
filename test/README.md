@@ -5,6 +5,10 @@ This directory owns the in-repo automated regression suite for WhatSon.
 The maintained regression surface combines root-level build gates with a Qt Test based C++ runtime suite under
 `test/cpp/`.
 
+The `test/CMakeLists.txt` entrypoint now stays intentionally thin and delegates the executable/test wiring to
+`test/cpp/CMakeLists.txt`, so additional regression surfaces can be added without growing one monolithic test build
+definition.
+
 - `whatson_build_regression` builds the maintained product binaries and the regression test executable in `build/`.
 - `whatson_cpp_regression` runs the runtime C++ regression assertions only.
 - `whatson_regression` is the default combined verification gate.

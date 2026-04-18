@@ -10,9 +10,9 @@ every turn.
 
 - UI stack: Qt 6.5+ QML + LVRS 1.0
 - App entry: `src/app/main.cpp`
-- App build definition: `src/app/CMakeLists.txt`
+- App build definition: `src/app/CMakeLists.txt`, top-level domain shards under `src/app/*/CMakeLists.txt`, and build-only shards under `src/app/cmake/{resources,defaults,runtime}/CMakeLists.txt`
 - Daemon entry: `src/daemon/main.cpp`
-- Root build definition: `CMakeLists.txt`
+- Root build definition: `CMakeLists.txt` plus grouped root-target shards under `cmake/root/*/CMakeLists.txt`
 - Primary QML root: `src/app/qml/Main.qml`
 - Library hierarchy backend: `src/app/file/hierarchy/library`
 - Library hierarchy model/viewmodel: `src/app/viewmodel/hierarchy/library/LibraryHierarchyModel.*`,
@@ -244,6 +244,7 @@ An exception is allowed only when all conditions are satisfied.
 ## Start Checklist
 
 1. Verify `CMakeLists.txt` and `src/app/CMakeLists.txt` still match the LVRS baseline pattern.
+   Keep the root orchestration and per-directory `add_subdirectory(...)` splits aligned.
 2. Verify QML imports are consistently `import LVRS 1.0 as LV`.
 3. Design new UI with LVRS components first.
 

@@ -1,0 +1,150 @@
+if (WHATSON_ENABLE_IOS_XCODEPROJ_ON_BUILD AND APPLE AND NOT CMAKE_SYSTEM_NAME STREQUAL "iOS" AND TARGET WhatSon)
+    set(_whatson_qt_ios_prefix "")
+    if (DEFINED WHATSON_QT_IOS_PREFIX AND NOT WHATSON_QT_IOS_PREFIX STREQUAL "")
+        set(_whatson_qt_ios_prefix "${WHATSON_QT_IOS_PREFIX}")
+    elseif (DEFINED ENV{QT_IOS_PREFIX} AND NOT "$ENV{QT_IOS_PREFIX}" STREQUAL "")
+        set(_whatson_qt_ios_prefix "$ENV{QT_IOS_PREFIX}")
+    elseif (QT_ROOT_PATH AND EXISTS "${QT_ROOT_PATH}")
+        get_filename_component(_whatson_qt_root_parent "${QT_ROOT_PATH}" DIRECTORY)
+        if (EXISTS "${_whatson_qt_root_parent}/ios")
+            set(_whatson_qt_ios_prefix "${_whatson_qt_root_parent}/ios")
+        endif ()
+        unset(_whatson_qt_root_parent)
+    endif ()
+    if (NOT _whatson_qt_ios_prefix STREQUAL "")
+        set(WHATSON_QT_IOS_PREFIX "${_whatson_qt_ios_prefix}" CACHE PATH
+                "Qt iOS prefix used for iOS Xcode project generation.")
+    endif ()
+
+    set(_whatson_lvrs_ios_prefix "")
+    if (DEFINED WHATSON_LVRS_IOS_PREFIX AND NOT WHATSON_LVRS_IOS_PREFIX STREQUAL "")
+        set(_whatson_lvrs_ios_prefix "${WHATSON_LVRS_IOS_PREFIX}")
+    elseif (LVRS_PREFIX AND EXISTS "${LVRS_PREFIX}/platforms/ios")
+        set(_whatson_lvrs_ios_prefix "${LVRS_PREFIX}/platforms/ios")
+    elseif (DEFINED ENV{LVRS_IOS_PREFIX} AND NOT "$ENV{LVRS_IOS_PREFIX}" STREQUAL "")
+        set(_whatson_lvrs_ios_prefix "$ENV{LVRS_IOS_PREFIX}")
+    endif ()
+    if (NOT _whatson_lvrs_ios_prefix STREQUAL "")
+        set(WHATSON_LVRS_IOS_PREFIX "${_whatson_lvrs_ios_prefix}" CACHE PATH
+                "LVRS iOS prefix used for iOS Xcode project generation.")
+    endif ()
+
+    if (NOT DEFINED WHATSON_QT_IOS_PREFIX OR WHATSON_QT_IOS_PREFIX STREQUAL "")
+        message(WARNING "WHATSON_ENABLE_IOS_XCODEPROJ_ON_BUILD is ON but WHATSON_QT_IOS_PREFIX could not be resolved.")
+    else ()
+        set(_whatson_ios_toolchain "${WHATSON_QT_IOS_PREFIX}/lib/cmake/Qt6/qt.toolchain.cmake")
+        if (NOT EXISTS "${_whatson_ios_toolchain}")
+            message(WARNING "Qt iOS toolchain file was not found: ${_whatson_ios_toolchain}")
+        else ()
+            # Qt's optional gRPC / Protobuf Quick plugin packages try to resolve host protoc during
+            # cross-compiling even though WhatSon does not use those modules.
+            set(_whatson_ios_optional_qml_package_flags
+                    -DCMAKE_DISABLE_FIND_PACKAGE_Qt6GrpcQuick=TRUE
+                    -DCMAKE_DISABLE_FIND_PACKAGE_Qt6ProtobufQuick=TRUE
+            )
+            set(_whatson_ios_configure_cmd
+                    "${CMAKE_COMMAND}"
+                    -G Xcode
+                    -S "${CMAKE_SOURCE_DIR}"
+                    -B "${WHATSON_IOS_XCODEPROJ_DIR}"
+                    -DCMAKE_SYSTEM_NAME=iOS
+                    "-DCMAKE_TOOLCHAIN_FILE=${_whatson_ios_toolchain}"
+                    -DCMAKE_BUILD_TYPE=Release
+                    -DCMAKE_OSX_SYSROOT=iphonesimulator
+                    "-DCMAKE_OSX_ARCHITECTURES=${WHATSON_IOS_SIMULATOR_ARCH}"
+                    -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED=NO
+                    -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_REQUIRED=NO
+                    "-DCMAKE_XCODE_ATTRIBUTE_PRODUCT_BUNDLE_IDENTIFIER=${WHATSON_APPLE_BUNDLE_ID}"
+                    "-DWHATSON_PLATFORM_DIR=${WHATSON_PLATFORM_DIR}"
+                    "-DWHATSON_APPLE_DIR=${WHATSON_APPLE_DIR}"
+                    "-DWHATSON_IOS_INFO_PLIST=${WHATSON_IOS_INFO_PLIST}"
+                    "-DWHATSON_DEFAULT_INFO_PLIST=${WHATSON_DEFAULT_INFO_PLIST}"
+                    "-DWHATSON_ENTITLEMENTS=${WHATSON_ENTITLEMENTS}"
+                    "-DWHATSON_APPLE_BUNDLE_ID=${WHATSON_APPLE_BUNDLE_ID}"
+                    "-DWHATSON_ANDROID_PACKAGE_ID=${WHATSON_ANDROID_PACKAGE_ID}"
+                    ${_whatson_ios_optional_qml_package_flags}
+            )
+
+            if (DEFINED WHATSON_LVRS_IOS_PREFIX AND EXISTS "${WHATSON_LVRS_IOS_PREFIX}/lib/cmake/LVRS")
+                list(APPEND _whatson_ios_configure_cmd
+                        "-DLVRS_DIR=${WHATSON_LVRS_IOS_PREFIX}/lib/cmake/LVRS")
+            endif ()
+
+            set(_whatson_prepare_ios_export_script
+                    "${CMAKE_BINARY_DIR}/CMakeFiles/PrepareWhatSonIosXcodeproj.cmake")
+            configure_file(
+                    "${CMAKE_SOURCE_DIR}/cmake/PrepareWhatSonIosXcodeproj.cmake.in"
+                    "${_whatson_prepare_ios_export_script}"
+                    @ONLY
+            )
+
+            add_custom_target(whatson_generate_ios_xcodeproj
+                    COMMAND "${CMAKE_COMMAND}" -P "${_whatson_prepare_ios_export_script}"
+                    COMMAND ${_whatson_ios_configure_cmd}
+                    BYPRODUCTS "${WHATSON_IOS_XCODEPROJ_DIR}/WhatSon.xcodeproj"
+                    USES_TERMINAL
+                    COMMENT "Generate iOS Xcode project from platform/Apple metadata"
+            )
+        endif ()
+    endif ()
+endif ()
+
+if (TARGET WhatSon)
+    add_custom_target(whatson_run_app
+            COMMAND "$<TARGET_FILE:WhatSon>"
+            DEPENDS WhatSon
+            USES_TERMINAL
+            COMMENT "Run WhatSon app on current host"
+    )
+endif ()
+
+if (TARGET whatson_cli AND DEFINED WHATSON_CLI_BINARY_PATH AND NOT WHATSON_CLI_BINARY_PATH STREQUAL "")
+    add_custom_target(whatson_run_cli
+            COMMAND "${WHATSON_CLI_BINARY_PATH}"
+            DEPENDS whatson_cli
+            USES_TERMINAL
+            COMMENT "Run Rust CLI launcher (whatson)"
+    )
+endif ()
+
+if (TARGET WhatSon_daemon)
+    add_custom_target(whatson_run_daemon
+            COMMAND "$<TARGET_FILE:WhatSon_daemon>"
+            DEPENDS WhatSon_daemon
+            USES_TERMINAL
+            COMMENT "Run WhatSon daemon on current host"
+    )
+
+    add_custom_target(whatson_healthcheck_daemon
+            COMMAND "$<TARGET_FILE:WhatSon_daemon>" --healthcheck
+            DEPENDS WhatSon_daemon
+            USES_TERMINAL
+            COMMENT "Run daemon healthcheck"
+    )
+endif ()
+
+if (TARGET launch_WhatSon_ios)
+    add_custom_target(whatson_launch_ios DEPENDS launch_WhatSon_ios)
+endif ()
+
+if (TARGET launch_WhatSon_android)
+    add_custom_target(whatson_launch_android DEPENDS launch_WhatSon_android)
+endif ()
+
+if (TARGET launch_WhatSon_wasm)
+    add_custom_target(whatson_launch_wasm DEPENDS launch_WhatSon_wasm)
+endif ()
+
+if (TARGET whatson_generate_ios_xcodeproj)
+    add_custom_target(whatson_export_xcodeproj DEPENDS whatson_generate_ios_xcodeproj)
+elseif (TARGET export_WhatSon_xcodeproj)
+    add_custom_target(whatson_export_xcodeproj DEPENDS export_WhatSon_xcodeproj)
+endif ()
+
+if (TARGET export_WhatSon_android_studio)
+    add_custom_target(whatson_export_android_studio DEPENDS export_WhatSon_android_studio)
+endif ()
+
+if (TARGET export_WhatSon_wasm_site)
+    add_custom_target(whatson_export_wasm_site DEPENDS export_WhatSon_wasm_site)
+endif ()
