@@ -18,6 +18,9 @@ stable machine identity.
 Callers should arrive with normalized data. The creator does not try to infer missing UUIDs from
 paths; that responsibility belongs to higher-level services that know the current folder tree.
 
+The creator now also emits `<lastOpened>...</lastOpened>` in the top-level lifecycle metadata so
+RAW note headers carry the persisted last-open timestamp independently from `lastModified`.
+
 ## Scaffold Path Policy
 
 - `requiredRelativePaths()` is intentionally empty.

@@ -28,6 +28,8 @@ This helper owns the derived `.wsnhead <fileStat>` rules.
   note's own body/header payload and leaves the previously known incoming-backlink count untouched.
 - `incrementOpenCountForNoteHeader(...)` is now the cheap note-selection path. It rewrites only `.wsnhead` metadata
   and skips both local body parsing and hub-wide `.wsnbody` backlink scans.
+- Both the cheap header-only path and the full `refreshTrackedStatisticsForNote(..., true)` path now stamp
+  `lastOpenedAt` with the current UTC ISO timestamp whenever they advance `openCount`.
 - `openCount` is still incremented through `refreshTrackedStatisticsForNote(..., true)` when a caller explicitly wants
   the full tracked-stat refresh.
 - The helper intentionally does not mutate `modifiedCount`; write paths own that counter.

@@ -4,6 +4,12 @@
 
 `WhatSonNoteHeaderStore` is the normalized mutable container for `.wsnhead` metadata.
 
+## Activity Metadata
+
+- `lastOpenedAt() / setLastOpenedAt(...)` stores the persisted RAW note-open timestamp.
+- The value lives alongside the other top-level lifecycle metadata, not inside the numeric `fileStat` block.
+- Empty values are valid for notes that have never been opened since this field was introduced.
+
 ## Folder Binding API
 
 The store now exposes three levels of folder access:
@@ -60,6 +66,13 @@ At serialization time, folder bindings are written as:
 ```
 
 The text node remains the readable path. The `uuid` attribute carries the stable semantic identity.
+
+The lifecycle header metadata now also includes:
+
+```xml
+<lastModified>2026-04-18T09:00:00Z</lastModified>
+<lastOpened>2026-04-18T09:03:15Z</lastOpened>
+```
 
 The statistics block is serialized as:
 

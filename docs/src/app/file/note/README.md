@@ -57,7 +57,7 @@
   snapshot is already selected for async persistence.
 - `ContentsNoteManagementCoordinator` now owns editor-adjacent note-management orchestration:
   - direct `.wsnote` persistence serialization
-  - header-only `openCount` updates
+  - header-only `openCount` / `lastOpenedAt` updates
   - tracked-stat refresh follow-up
   - post-persist metadata resync back into the bound content view-model
 - Shared derived-statistic helpers now live under `src/app/file/statistic/WhatSonNoteFileStatSupport.*` rather than in
@@ -65,8 +65,9 @@
 - `.wsnhead` now carries a dedicated `fileStat` block for numeric detail-panel metadata.
 - Note creation, note update, and editor note selection all participate in keeping that block
   synchronized with the current body/header state.
-- Editor note selection now uses a header-only `openCount` rewrite path, so switching notes no longer forces a
-  hub-wide `.wsnbody` backlink rescan.
+- Editor note selection now uses a header-only `openCount` rewrite path that also stamps `.wsnhead lastOpenedAt`, so
+  switching notes no longer forces a hub-wide `.wsnbody` backlink rescan and inactivity sensors can read the true
+  last-open time directly from RAW header state.
 - The `fileStat` schema is tracked as a documented package contract; this repository no longer maintains a dedicated
   scripted test for it.
 - Empty-note body parsing now strips formatting-only `<body>` indentation so a newly created note opens on the first

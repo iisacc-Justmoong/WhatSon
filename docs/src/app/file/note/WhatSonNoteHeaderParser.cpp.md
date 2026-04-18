@@ -33,6 +33,12 @@ can then upgrade the note header to the new attribute-based format.
 - The parser now reads the `.wsnhead <fileStat>...</fileStat>` block.
 - Missing statistic tags default to `0` for backwards compatibility with older note headers.
 - Negative or invalid numeric payloads are normalized back to `0`.
-- Existing top-level metadata (`project`, `folders`, `tags`, `created`, `lastModified`) remains the
+- Existing top-level metadata (`project`, `folders`, `tags`, `created`, `lastModified`, `lastOpened`) remains the
   source of truth for the non-numeric Figma rows; the `fileStat` block only stores explicit numeric
   counters.
+
+## Activity Parsing Rules
+
+- `<lastOpened>` is optional and parses to an empty string for older note headers.
+- The parser stores `lastOpened` on `WhatSonNoteHeaderStore` so inactivity sensors can reason from RAW note headers
+  without loading body/editor projections.
