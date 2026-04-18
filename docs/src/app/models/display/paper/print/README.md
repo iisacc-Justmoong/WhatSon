@@ -8,5 +8,7 @@ Owns print-specific paper layout and option helpers.
 - `ContentsPagePrintLayoutRenderer.hpp`
 
 ## Current Notes
-- `ContentsPagePrintLayoutRenderer` centralizes page/print mode gating, A4 paper geometry, and print margin-guide
-  calculations for every surface that needs paper-layout state.
+- `ContentsPagePrintLayoutRenderer` centralizes page/print mode gating and print margin-guide calculations for every
+  surface that needs paper-layout state.
+- Canonical A4 geometry and paper background tokens are sourced from `src/app/models/display/paper/ContentsA4PaperBackground.*`
+  so `print/` keeps the print-specific layout policy rather than owning the shared paper definition.

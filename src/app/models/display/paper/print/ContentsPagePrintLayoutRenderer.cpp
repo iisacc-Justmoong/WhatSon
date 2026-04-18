@@ -1,5 +1,6 @@
 #include "ContentsPagePrintLayoutRenderer.hpp"
 
+#include "display/paper/ContentsA4PaperBackground.hpp"
 #include "viewmodel/navigationbar/EditorViewState.hpp"
 
 #include <algorithm>
@@ -10,7 +11,7 @@
 namespace
 {
     constexpr qreal kEpsilon = 0.0001;
-    constexpr qreal kDefaultPaperAspectRatio = 210.0 / 297.0;
+    constexpr qreal kDefaultPaperAspectRatio = ContentsA4PaperBackground::aspectRatioValue();
 
     bool nearlyEqual(const qreal lhs, const qreal rhs) noexcept
     {
@@ -29,6 +30,7 @@ namespace
 
 ContentsPagePrintLayoutRenderer::ContentsPagePrintLayoutRenderer(QObject* parent)
     : QObject(parent)
+    , m_paperAspectRatio(ContentsA4PaperBackground::aspectRatioValue())
 {
 }
 
@@ -384,42 +386,42 @@ qreal ContentsPagePrintLayoutRenderer::documentSurfaceHeight() const noexcept
 
 QColor ContentsPagePrintLayoutRenderer::canvasColor() const
 {
-    return QColor(QStringLiteral("#F1F3F6"));
+    return ContentsA4PaperBackground::canvasColorValue();
 }
 
 QColor ContentsPagePrintLayoutRenderer::paperBorderColor() const
 {
-    return QColor(QStringLiteral("#19000000"));
+    return ContentsA4PaperBackground::paperBorderColorValue();
 }
 
 QColor ContentsPagePrintLayoutRenderer::paperColor() const
 {
-    return QColor(QStringLiteral("#FFFCF5"));
+    return ContentsA4PaperBackground::paperColorValue();
 }
 
 QColor ContentsPagePrintLayoutRenderer::paperHighlightColor() const
 {
-    return QColor(QStringLiteral("#FFFDF9"));
+    return ContentsA4PaperBackground::paperHighlightColorValue();
 }
 
 QColor ContentsPagePrintLayoutRenderer::paperShadeColor() const
 {
-    return QColor(QStringLiteral("#F6EEE0"));
+    return ContentsA4PaperBackground::paperShadeColorValue();
 }
 
 QColor ContentsPagePrintLayoutRenderer::paperSeparatorColor() const
 {
-    return QColor(QStringLiteral("#24000000"));
+    return ContentsA4PaperBackground::paperSeparatorColorValue();
 }
 
 QColor ContentsPagePrintLayoutRenderer::paperShadowColor() const
 {
-    return QColor(QStringLiteral("#14000000"));
+    return ContentsA4PaperBackground::paperShadowColorValue();
 }
 
 QColor ContentsPagePrintLayoutRenderer::paperTextColor() const
 {
-    return QColor(QStringLiteral("#000000"));
+    return ContentsA4PaperBackground::paperTextColorValue();
 }
 
 void ContentsPagePrintLayoutRenderer::requestRefresh()

@@ -12,15 +12,16 @@ Implements page/print editor rendering state for paper-preview surfaces.
   - note-selection presence
   - dedicated resource-viewer visibility
 - Calculates paper geometry in C++:
-  - resolved paper width/height from viewport and A4 ratio
+  - resolved paper width/height from viewport and the canonical A4 ratio provided by `ContentsA4PaperBackground`
   - text content rectangle size from guide insets
   - page count from current editor content height
   - document surface height from paper stack + viewport clamp
 - Normalizes incoming numeric values:
   - non-finite or negative dimensions become safe non-negative values
   - invalid ratio/thickness input falls back to safe defaults
-- Provides centralized paper visual tokens (canvas/paper/border/shadow/separator/text colors) for both desktop and mobile
-  editor surfaces.
+- Reuses the shared `ContentsA4PaperBackground` object for default paper visual tokens
+  (canvas/paper/border/shadow/separator/text colors) so page and print surfaces stay locked to the same background
+  definition.
 - Exposes explicit `requestRefresh()` hook to force mode/layout notifier emission when QML needs a manual rebinding turn.
 
 ## Regression Checks

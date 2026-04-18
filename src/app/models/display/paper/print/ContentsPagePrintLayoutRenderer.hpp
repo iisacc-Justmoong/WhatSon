@@ -143,7 +143,7 @@ private:
 
     qreal m_guideHorizontalInset = 24.0;
     qreal m_guideVerticalInset = 24.0;
-    qreal m_paperAspectRatio = 210.0 / 297.0;
+    qreal m_paperAspectRatio = 0.0;
     qreal m_paperHorizontalMargin = 12.0;
     qreal m_paperVerticalMargin = 4.0;
     qreal m_paperMaxWidth = 880.0;

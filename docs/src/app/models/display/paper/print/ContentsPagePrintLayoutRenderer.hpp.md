@@ -5,6 +5,7 @@
 Declares the page/print layout renderer bridge used by QML editor surfaces.
 The renderer centralizes page/print mode gating and paper geometry calculations so the QML layer no longer owns
 Page/Print-specific math directly.
+Default A4 background geometry and paper color tokens are sourced from `ContentsA4PaperBackground`.
 
 ## Public Contract
 
@@ -63,6 +64,8 @@ These two signals are the authoritative update contract for QML bindings that co
 
 - This type is registered through `qmlRegisterType(...)`, so it must remain subclassable by Qt's internal
   `QQmlElement<T>` wrapper and therefore must not be declared `final`.
+- `paperAspectRatio` remains overrideable for layout experiments, but its default value must stay anchored to the
+  canonical A4 definition exposed by `ContentsA4PaperBackground`.
 
 ## Tests
 

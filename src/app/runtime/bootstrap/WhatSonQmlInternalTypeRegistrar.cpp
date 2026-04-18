@@ -3,6 +3,7 @@
 #include "agenda/ContentsAgendaBackend.hpp"
 #include "callout/ContentsCalloutBackend.hpp"
 #include "editor/renderer/ContentsStructuredBlockRenderer.hpp"
+#include "display/paper/ContentsA4PaperBackground.hpp"
 #include "display/paper/ContentsTextFormatRenderer.hpp"
 #include "display/paper/print/ContentsPagePrintLayoutRenderer.hpp"
 #include "file/validator/ContentsStructuredTagValidator.hpp"
@@ -61,6 +62,8 @@ namespace WhatSon::Runtime::Bootstrap
             "WhatSon.App.Internal", 1, 0, "ContentsStructuredDocumentHost");
         qmlRegisterType<ContentsStructuredDocumentMutationPolicy>(
             "WhatSon.App.Internal", 1, 0, "ContentsStructuredDocumentMutationPolicy");
+        qmlRegisterType<ContentsA4PaperBackground>(
+            "WhatSon.App.Internal", 1, 0, "ContentsA4PaperBackground");
         qmlRegisterType<ContentsTextFormatRenderer>(
             "WhatSon.App.Internal", 1, 0, "ContentsTextFormatRenderer");
         qmlRegisterType<ContentsStructuredBlockRenderer>(
