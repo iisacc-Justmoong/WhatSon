@@ -1,5 +1,7 @@
 #pragma once
 
+#include "ContentsPaperSelection.hpp"
+
 #include <QColor>
 #include <QObject>
 #include <QSizeF>
@@ -9,6 +11,7 @@ class ContentsA4PaperBackground : public QObject
 {
     Q_OBJECT
 
+    Q_PROPERTY(ContentsPaperSelection::PaperKind paperKind READ paperKind CONSTANT)
     Q_PROPERTY(QString paperStandard READ paperStandard CONSTANT)
     Q_PROPERTY(qreal widthMillimeters READ widthMillimeters CONSTANT)
     Q_PROPERTY(qreal heightMillimeters READ heightMillimeters CONSTANT)
@@ -27,6 +30,11 @@ class ContentsA4PaperBackground : public QObject
 public:
     explicit ContentsA4PaperBackground(QObject* parent = nullptr);
     ~ContentsA4PaperBackground() override;
+
+    static constexpr ContentsPaperSelection::PaperKind paperKindValue() noexcept
+    {
+        return ContentsPaperSelection::A4;
+    }
 
     static constexpr qreal widthMillimetersValue() noexcept
     {
@@ -54,6 +62,7 @@ public:
     static QColor paperShadowColorValue();
     static QColor paperTextColorValue();
 
+    ContentsPaperSelection::PaperKind paperKind() const noexcept;
     QString paperStandard() const;
     qreal widthMillimeters() const noexcept;
     qreal heightMillimeters() const noexcept;

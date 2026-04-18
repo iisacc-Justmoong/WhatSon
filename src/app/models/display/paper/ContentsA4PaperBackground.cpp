@@ -9,7 +9,7 @@ ContentsA4PaperBackground::~ContentsA4PaperBackground() = default;
 
 QString ContentsA4PaperBackground::paperStandardValue()
 {
-    return QStringLiteral("A4");
+    return ContentsPaperSelection::paperStandardForKind(paperKindValue());
 }
 
 QSizeF ContentsA4PaperBackground::sizeMillimetersValue()
@@ -55,6 +55,11 @@ QColor ContentsA4PaperBackground::paperShadowColorValue()
 QColor ContentsA4PaperBackground::paperTextColorValue()
 {
     return QColor(QStringLiteral("#000000"));
+}
+
+ContentsPaperSelection::PaperKind ContentsA4PaperBackground::paperKind() const noexcept
+{
+    return paperKindValue();
 }
 
 QString ContentsA4PaperBackground::paperStandard() const

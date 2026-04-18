@@ -1,4 +1,5 @@
 #include "display/paper/ContentsA4PaperBackground.hpp"
+#include "display/paper/ContentsPaperSelection.hpp"
 #include "display/paper/ContentsTextFormatRenderer.hpp"
 #include "display/paper/print/ContentsPagePrintLayoutRenderer.hpp"
 #include "file/hub/WhatSonHubPathUtils.hpp"
@@ -468,6 +469,7 @@ private slots:
     void resourceDetailPanelViewModel_tracksCurrentResourceSelection();
     void detailPanelRouting_separatesNoteAndResourceViewsAndViewModels();
     void contentsDisplayView_invalidatesGutterGeometryImmediatelyAcrossRapidNoteSwitches();
+    void paperSelection_tracksChosenPaperEnumState();
     void a4PaperBackground_exposesCanonicalMetricsAndAnchorsPrintRendererDefaults();
     void textFormatRenderer_wrapsCommittedUrlsIntoCanonicalWebLinks();
     void textFormatRenderer_appliesPaperPaletteToEditorAndPreviewHtml();
@@ -2663,11 +2665,38 @@ void WhatSonCppRegressionTests::textFormatRenderer_wrapsCommittedUrlsIntoCanonic
     QVERIFY(renderer.renderedHtml().contains(QStringLiteral("아이작닷컴</a>")));
 }
 
+void WhatSonCppRegressionTests::paperSelection_tracksChosenPaperEnumState()
+{
+    ContentsPaperSelection selection;
+    QSignalSpy selectedPaperKindChangedSpy(&selection, &ContentsPaperSelection::selectedPaperKindChanged);
+
+    QCOMPARE(selection.selectedPaperKind(), ContentsPaperSelection::A4);
+    QCOMPARE(selection.selectedPaperStandard(), QStringLiteral("A4"));
+    QCOMPARE(
+        ContentsPaperSelection::paperStandardForKind(ContentsPaperSelection::Letter),
+        QStringLiteral("Letter"));
+    QCOMPARE(selection.paperStandardForValue(ContentsPaperSelection::Legal), QStringLiteral("Legal"));
+
+    selection.setSelectedPaperKind(ContentsPaperSelection::B5);
+    QCOMPARE(selection.selectedPaperKind(), ContentsPaperSelection::B5);
+    QCOMPARE(selection.selectedPaperStandard(), QStringLiteral("B5"));
+
+    selection.setSelectedPaperKindByValue(ContentsPaperSelection::A5);
+    QCOMPARE(selection.selectedPaperKind(), ContentsPaperSelection::A5);
+    QCOMPARE(selection.selectedPaperStandard(), QStringLiteral("A5"));
+
+    selection.setSelectedPaperKindByValue(999);
+    QCOMPARE(selection.selectedPaperKind(), ContentsPaperSelection::Unknown);
+    QCOMPARE(selection.selectedPaperStandard(), QStringLiteral("Unknown"));
+    QCOMPARE(selectedPaperKindChangedSpy.count(), 3);
+}
+
 void WhatSonCppRegressionTests::a4PaperBackground_exposesCanonicalMetricsAndAnchorsPrintRendererDefaults()
 {
     ContentsA4PaperBackground background;
     ContentsPagePrintLayoutRenderer layoutRenderer;
 
+    QCOMPARE(background.paperKind(), ContentsPaperSelection::A4);
     QCOMPARE(background.paperStandard(), QStringLiteral("A4"));
     QCOMPARE(background.widthMillimeters(), 210.0);
     QCOMPARE(background.heightMillimeters(), 297.0);
@@ -2701,6 +2730,10 @@ void WhatSonCppRegressionTests::displayPaperModels_hostPageAndPrintViewModeObjec
         QStringLiteral("src/app/models/display/paper/ContentsA4PaperBackground.hpp"));
     const QString a4PaperBackgroundImplSource = readUtf8SourceFile(
         QStringLiteral("src/app/models/display/paper/ContentsA4PaperBackground.cpp"));
+    const QString paperSelectionHeaderSource = readUtf8SourceFile(
+        QStringLiteral("src/app/models/display/paper/ContentsPaperSelection.hpp"));
+    const QString paperSelectionImplSource = readUtf8SourceFile(
+        QStringLiteral("src/app/models/display/paper/ContentsPaperSelection.cpp"));
     const QString paperRendererHeaderSource = readUtf8SourceFile(
         QStringLiteral("src/app/models/display/paper/ContentsTextFormatRenderer.hpp"));
     const QString paperRendererImplSource = readUtf8SourceFile(
@@ -2721,6 +2754,8 @@ void WhatSonCppRegressionTests::displayPaperModels_hostPageAndPrintViewModeObjec
 
     QVERIFY(!a4PaperBackgroundHeaderSource.isEmpty());
     QVERIFY(!a4PaperBackgroundImplSource.isEmpty());
+    QVERIFY(!paperSelectionHeaderSource.isEmpty());
+    QVERIFY(!paperSelectionImplSource.isEmpty());
     QVERIFY(!paperRendererHeaderSource.isEmpty());
     QVERIFY(!paperRendererImplSource.isEmpty());
     QVERIFY(!printLayoutHeaderSource.isEmpty());
@@ -2735,7 +2770,11 @@ void WhatSonCppRegressionTests::displayPaperModels_hostPageAndPrintViewModeObjec
     QVERIFY(printCmakeSource.contains(QStringLiteral("whatson_app_register_directory_sources")));
 
     QVERIFY(registrarSource.contains(
+        QStringLiteral("#include \"display/paper/ContentsPaperSelection.hpp\"")));
+    QVERIFY(registrarSource.contains(
         QStringLiteral("#include \"display/paper/ContentsA4PaperBackground.hpp\"")));
+    QVERIFY(registrarSource.contains(
+        QStringLiteral("qmlRegisterType<ContentsPaperSelection>(")));
     QVERIFY(registrarSource.contains(
         QStringLiteral("#include \"display/paper/ContentsTextFormatRenderer.hpp\"")));
     QVERIFY(registrarSource.contains(

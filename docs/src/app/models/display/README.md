@@ -5,7 +5,7 @@ Owns display-mode model helpers that sit below QML and above raw editor/viewmode
 
 ## Current Domains
 - `paper`: canonical A4 paper background definitions plus common paper-surface presentation helpers shared by page and
-  print view modes.
+  print view modes, including the shared paper-selection enum object.
 
 ## Architectural Note
 - Display-mode objects belong under `models` because they expose stable QObject state and calculations for the UI, but

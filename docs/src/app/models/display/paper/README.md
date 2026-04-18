@@ -6,6 +6,8 @@ Owns paper-surface helpers shared by page and print editor modes.
 ## Child Files
 - `ContentsA4PaperBackground.cpp`
 - `ContentsA4PaperBackground.hpp`
+- `ContentsPaperSelection.cpp`
+- `ContentsPaperSelection.hpp`
 - `ContentsTextFormatRenderer.cpp`
 - `ContentsTextFormatRenderer.hpp`
 
@@ -14,5 +16,7 @@ Owns paper-surface helpers shared by page and print editor modes.
 
 ## Current Notes
 - `ContentsA4PaperBackground` is the canonical A4 paper background object for shared paper geometry and palette tokens.
+- `ContentsPaperSelection` is the shared enum-backed paper-choice object that tells the rest of the display layer
+  which paper standard is currently selected.
 - `ContentsTextFormatRenderer` remains the canonical RAW-to-HTML text projection backend, but its page/print paper
   palette responsibilities now live under the paper display model domain instead of the editor renderer domain.

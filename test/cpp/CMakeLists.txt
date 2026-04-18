@@ -20,6 +20,7 @@ set(WHATSON_CPP_REGRESSION_TEST_SOURCES
         "${CMAKE_SOURCE_DIR}/src/app/platform/Android/WhatSonAndroidStorageBackend.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/agenda/ContentsAgendaBackend.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/display/paper/ContentsA4PaperBackground.cpp"
+        "${CMAKE_SOURCE_DIR}/src/app/models/display/paper/ContentsPaperSelection.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/sensor/UnusedResourcesSensor.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/editor/parser/ContentsWsnBodyBlockParser.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/editor/renderer/ContentsHtmlBlockRenderPipeline.cpp"

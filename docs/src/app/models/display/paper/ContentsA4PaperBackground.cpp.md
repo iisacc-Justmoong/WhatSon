@@ -10,6 +10,7 @@ Implements the canonical A4 paper background tokens shared by page and print dis
   - width: `210`
   - height: `297`
   - aspect ratio: `210 / 297`
+- Publishes the fixed paper kind as the shared `ContentsPaperSelection::A4` enum value.
 - Publishes the paper-preview palette used by the editor's page/print surfaces:
   - canvas color
   - paper fill and highlight
@@ -22,5 +23,6 @@ Implements the canonical A4 paper background tokens shared by page and print dis
 
 - The background object must keep the canonical A4 geometry in millimeters instead of introducing a second ratio-only
   source of truth.
+- The background object must identify itself as `ContentsPaperSelection::A4`.
 - `ContentsPagePrintLayoutRenderer` must consume the same default aspect ratio and color tokens so the print layout
   path stays visually aligned with the common paper domain.
