@@ -13,6 +13,7 @@ class ContentsEditorPresentationProjection : public QObject
 
     Q_PROPERTY(QString sourceText READ sourceText WRITE setSourceText NOTIFY sourceTextChanged)
     Q_PROPERTY(bool previewEnabled READ previewEnabled WRITE setPreviewEnabled NOTIFY previewEnabledChanged)
+    Q_PROPERTY(bool paperPaletteEnabled READ paperPaletteEnabled WRITE setPaperPaletteEnabled NOTIFY paperPaletteEnabledChanged)
     Q_PROPERTY(QString editorSurfaceHtml READ editorSurfaceHtml NOTIFY editorSurfaceHtmlChanged)
     Q_PROPERTY(QString renderedHtml READ renderedHtml NOTIFY renderedHtmlChanged)
     Q_PROPERTY(QString logicalText READ logicalText NOTIFY logicalTextChanged)
@@ -28,6 +29,8 @@ public:
 
     bool previewEnabled() const noexcept;
     void setPreviewEnabled(bool enabled);
+    bool paperPaletteEnabled() const noexcept;
+    void setPaperPaletteEnabled(bool enabled);
 
     QString editorSurfaceHtml() const;
     QString renderedHtml() const;
@@ -60,6 +63,7 @@ public:
 signals:
     void sourceTextChanged();
     void previewEnabledChanged();
+    void paperPaletteEnabledChanged();
     void editorSurfaceHtmlChanged();
     void renderedHtmlChanged();
     void logicalTextChanged();

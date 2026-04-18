@@ -10,12 +10,13 @@ Item {
     property var sourceOffsetYResolver: null
     property var blockFocusHandler: null
     property bool enableCardFocus: true
+    property bool paperPaletteEnabled: false
     property bool showFrame: true
     property bool showText: true
-    readonly property color calloutColor: "#262728"
-    readonly property color dividerColor: "#D9D9D9"
+    readonly property color calloutColor: paperPaletteEnabled ? "#F7F3EA" : "#262728"
+    readonly property color dividerColor: paperPaletteEnabled ? "#B7A58A" : "#D9D9D9"
     readonly property int emptyFrameWidth: Math.max(0, Math.round(LV.Theme.scaleMetric(40)))
-    readonly property color textColor: "#FFFFFF"
+    readonly property color textColor: paperPaletteEnabled ? "#111111" : "#FFFFFF"
     readonly property int dividerMinimumHeight: 14
     readonly property int dividerWidth: 1
     readonly property int framePadding: 4

@@ -10,6 +10,7 @@ FocusScope {
 
     required property var blockData
     property var shortcutKeyPressHandler: null
+    property bool paperPaletteEnabled: false
 
     signal activated()
     signal boundaryNavigationRequested(string axis, string side)
@@ -40,6 +41,12 @@ FocusScope {
     readonly property string dateText: normalizedBlock.date !== undefined ? String(normalizedBlock.date) : "yyyy-mm-dd"
     readonly property int sourceStart: Math.max(0, Number(normalizedBlock.sourceStart) || 0)
     readonly property int sourceEnd: Math.max(sourceStart, Number(normalizedBlock.sourceEnd) || 0)
+    readonly property color frameColor: paperPaletteEnabled ? "#F7F3EA" : "#262728"
+    readonly property color frameBorderColor: paperPaletteEnabled ? "#D2C7B3" : "#343536"
+    readonly property color headerTextColor: paperPaletteEnabled ? "#6A5B44" : "#80FFFFFF"
+    readonly property color taskBoxColor: paperPaletteEnabled ? "#4E5763" : "#CCFFFFFF"
+    readonly property color taskCheckColor: paperPaletteEnabled ? agendaBlock.frameColor : "#262728"
+    readonly property color taskTextColor: paperPaletteEnabled ? "#111111" : "#FFFFFF"
 
     implicitHeight: agendaFrame.implicitHeight
     width: parent ? parent.width : implicitWidth
@@ -214,8 +221,8 @@ FocusScope {
 
         anchors.left: parent.left
         anchors.right: parent.right
-        color: "#262728"
-        border.color: "#343536"
+        color: agendaBlock.frameColor
+        border.color: agendaBlock.frameBorderColor
         border.width: 1
         implicitHeight: agendaLayout.implicitHeight + Math.round(LV.Theme.scaleMetric(16))
         radius: Math.round(LV.Theme.scaleMetric(12))
@@ -232,14 +239,14 @@ FocusScope {
 
                 LV.Label {
                     Layout.fillWidth: true
-                    color: "#80FFFFFF"
+                    color: agendaBlock.headerTextColor
                     font.pixelSize: Math.max(0, Math.round(LV.Theme.scaleMetric(11)))
                     font.weight: Font.Normal
                     style: caption
                     text: "Agenda"
                 }
                 LV.Label {
-                    color: "#80FFFFFF"
+                    color: agendaBlock.headerTextColor
                     font.pixelSize: Math.max(0, Math.round(LV.Theme.scaleMetric(11)))
                     font.weight: Font.Normal
                     style: caption
@@ -433,20 +440,20 @@ FocusScope {
                                 id: taskToggle
 
                                 Layout.alignment: Qt.AlignTop
-                                boxBorderColorCheckedEnabled: "#CCFFFFFF"
-                                boxBorderColorCheckedDisabled: "#CCFFFFFF"
-                                boxBorderColorUncheckedEnabled: "#CCFFFFFF"
-                                boxBorderColorUncheckedDisabled: "#CCFFFFFF"
+                                boxBorderColorCheckedEnabled: agendaBlock.taskBoxColor
+                                boxBorderColorCheckedDisabled: agendaBlock.taskBoxColor
+                                boxBorderColorUncheckedEnabled: agendaBlock.taskBoxColor
+                                boxBorderColorUncheckedDisabled: agendaBlock.taskBoxColor
                                 boxBorderWidthCheckedEnabled: 0.5
                                 boxBorderWidthCheckedDisabled: 0.5
                                 boxSize: Math.round(LV.Theme.scaleMetric(17))
-                                checkColor: "#262728"
+                                checkColor: agendaBlock.taskCheckColor
                                 checked: !!taskRow.taskData.done
-                                checkedColor: "#CCFFFFFF"
-                                disabledCheckedColor: "#CCFFFFFF"
-                                disabledUncheckedColor: "#CCFFFFFF"
+                                checkedColor: agendaBlock.taskBoxColor
+                                disabledCheckedColor: agendaBlock.taskBoxColor
+                                disabledUncheckedColor: agendaBlock.taskBoxColor
                                 text: ""
-                                uncheckedColor: "#CCFFFFFF"
+                                uncheckedColor: agendaBlock.taskBoxColor
 
                                 onToggled: {
                                     if (checked === !!taskRow.taskData.done)
@@ -498,7 +505,7 @@ FocusScope {
                                 showRenderedOutput: false
                                 showScrollBar: false
                                 text: taskRow.taskText
-                                textColor: "#FFFFFF"
+                                textColor: agendaBlock.taskTextColor
                                 wrapMode: TextEdit.Wrap
 
                                 onFocusedChanged: {

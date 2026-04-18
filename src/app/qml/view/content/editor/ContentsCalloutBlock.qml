@@ -11,6 +11,7 @@ FocusScope {
 
     required property var blockData
     property var shortcutKeyPressHandler: null
+    property bool paperPaletteEnabled: false
 
     signal activated()
     signal boundaryNavigationRequested(string axis, string side)
@@ -30,6 +31,9 @@ FocusScope {
     readonly property int sourceStart: Math.max(0, Number(normalizedBlock.sourceStart) || 0)
     readonly property int sourceEnd: Math.max(sourceStart, Number(normalizedBlock.sourceEnd) || 0)
     readonly property string calloutText: normalizedBlock.text !== undefined ? String(normalizedBlock.text) : ""
+    readonly property color frameColor: paperPaletteEnabled ? "#F7F3EA" : "#262728"
+    readonly property color dividerColor: paperPaletteEnabled ? "#B7A58A" : "#D9D9D9"
+    readonly property color bodyTextColor: paperPaletteEnabled ? "#111111" : "#FFFFFF"
 
     implicitHeight: calloutFrame.implicitHeight
     width: parent ? parent.width : implicitWidth
@@ -242,7 +246,7 @@ FocusScope {
 
         anchors.left: parent.left
         anchors.right: parent.right
-        color: "#262728"
+        color: calloutBlock.frameColor
         implicitHeight: Math.max(Math.round(LV.Theme.scaleMetric(22)), calloutEditor.implicitHeight + Math.round(LV.Theme.scaleMetric(8)))
         radius: 0
 
@@ -257,7 +261,7 @@ FocusScope {
             Rectangle {
                 Layout.fillHeight: true
                 Layout.preferredWidth: 1
-                color: "#D9D9D9"
+                color: calloutBlock.dividerColor
                 radius: 1
             }
 
@@ -308,7 +312,7 @@ FocusScope {
                 showRenderedOutput: false
                 showScrollBar: false
                 text: calloutBlock.calloutText
-                textColor: "#FFFFFF"
+                textColor: calloutBlock.bodyTextColor
                 wrapMode: TextEdit.Wrap
 
                 onFocusedChanged: {

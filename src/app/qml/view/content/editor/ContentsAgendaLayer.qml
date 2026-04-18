@@ -13,18 +13,21 @@ Item {
     property var taskToggleHandler: null
     property bool enableCardFocus: true
     property bool enableTaskToggle: true
+    property bool paperPaletteEnabled: false
     property bool showFrame: true
     property bool showHeader: true
     property bool showTaskCheckbox: true
     property bool showTaskText: true
     readonly property int cardSpacing: 8
-    readonly property color frameBorderColor: "#343536"
+    readonly property color frameBorderColor: paperPaletteEnabled ? "#D2C7B3" : "#343536"
     readonly property int frameBorderWidth: 1
-    readonly property color frameColor: "#262728"
+    readonly property color frameColor: paperPaletteEnabled ? "#F7F3EA" : "#262728"
     readonly property int framePadding: 8
     readonly property int frameRadius: 12
-    readonly property color headerTextColor: "#80FFFFFF"
-    readonly property color taskBoxColor: "#CCFFFFFF"
+    readonly property color headerTextColor: paperPaletteEnabled ? "#6A5B44" : "#80FFFFFF"
+    readonly property color taskBoxColor: paperPaletteEnabled ? "#4E5763" : "#CCFFFFFF"
+    readonly property color taskCheckColor: paperPaletteEnabled ? frameColor : "#262728"
+    readonly property color taskTextColor: paperPaletteEnabled ? "#111111" : "#FFFFFF"
     readonly property int taskBoxSize: 17
     readonly property real taskBoxRadius: 3.5
     readonly property int taskListInset: 8
@@ -159,8 +162,8 @@ Item {
                                 boxBorderColorUncheckedDisabled: agendaLayer.taskBoxColor
                                 boxBorderWidthCheckedEnabled: 0.5
                                 boxBorderWidthCheckedDisabled: 0.5
-                                checkColor: agendaCard.color
-                                checkMarkColorDisabled: agendaCard.color
+                                checkColor: agendaLayer.taskCheckColor
+                                checkMarkColorDisabled: agendaLayer.taskCheckColor
                                 checkedColor: agendaLayer.taskBoxColor
                                 checked: !!taskEntry.done
                                 disabledCheckedColor: agendaLayer.taskBoxColor
@@ -190,7 +193,7 @@ Item {
                             LV.Label {
                                 Layout.fillWidth: true
                                 Layout.alignment: Qt.AlignTop
-                                color: "#FFFFFF"
+                                color: agendaLayer.taskTextColor
                                 font.family: "Pretendard"
                                 font.pixelSize: 12
                                 font.weight: Font.Medium

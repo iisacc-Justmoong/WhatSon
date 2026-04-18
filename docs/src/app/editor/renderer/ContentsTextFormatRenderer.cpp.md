@@ -9,6 +9,11 @@ Implements inline-format rendering from note-editor text to RichText HTML.
 - The renderer now maintains two different HTML outputs:
   - `editorSurfaceHtml`: cheap source-editing HTML for the live editor
   - `renderedHtml`: optional markdown-aware preview HTML, recomputed only while preview is enabled
+- `paperPaletteEnabled` now lets the same renderer recolor both HTML payloads for page/print mode:
+  - the editor/preview HTML keeps the same semantic spans and block structure
+  - screen-only bright foregrounds are remapped to dark-on-paper colors before the HTML leaves C++
+  - the published `htmlTokens` / `normalizedHtmlBlocks` snapshots are recolored through the same pass so downstream
+    consumers do not drift from `editorSurfaceHtml`
 - The live editor HTML path now has one explicit intermediate pipeline:
   - `ContentsWsnBodyBlockParser` reparses RAW source into ordered document blocks
   - `ContentsHtmlBlockRenderPipeline` converts those blocks into `htmlTokens`
@@ -46,6 +51,9 @@ Implements inline-format rendering from note-editor text to RichText HTML.
   - `strikethrough`/`strike`/`s`/`del` -> `<span style="text-decoration: line-through;">`
 - Routes `highlight` / `mark` tags through `ContentsTextHighlightRenderer` and renders an Apple Notes-inspired
   highlight span (`#8A4B00` background, `#D6AE58` foreground, semibold text).
+- In page/print mode that highlight and the other markdown/semantic bright colors are now remapped to a paper-safe
+  palette (`#111111` text, lighter code/highlight backgrounds, darker muted/link accents) so white-on-paper spans do
+  not survive into the final RichText payload.
 - Styles inline markdown-shaped literals that do not conflict with proprietary formatting tags:
     - inline code spans (`` `code` ``)
     - link-shaped literals (`[label](url)`)
@@ -184,6 +192,8 @@ Implements inline-format rendering from note-editor text to RichText HTML.
   RAW text itself contains no `<bold>`/`<italic>`-style inline tags.
 - The renderer must now expose one `htmlTokens` / `normalizedHtmlBlocks` snapshot per render pass, and that snapshot
   must stay aligned with the parser-owned block order for the same RAW source turn.
+- Enabling `paperPaletteEnabled` must recolor both `editorSurfaceHtml` and `renderedHtml` without leaving screen-only
+  bright foreground colors such as `#F3F5F8`, `#8CB4FF`, or `#D6AE58` in the emitted page/print HTML.
 - If one note body uses inline style tags that span multiple parsed text blocks, the renderer must keep the carry-aware
   legacy document composer for that source turn instead of dropping the carried style during block-normalized HTML
   assembly.

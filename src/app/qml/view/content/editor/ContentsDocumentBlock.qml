@@ -13,6 +13,7 @@ FocusScope {
     property var resourceEntry: ({})
     property var selectionManager: null
     property var shortcutKeyPressHandler: null
+    property bool paperPaletteEnabled: false
     property bool hasAdjacentAtomicBlockAfter: false
     property bool hasAdjacentAtomicBlockBefore: false
     property bool hasAdjacentBlockAfter: false
@@ -384,6 +385,7 @@ FocusScope {
             hasAdjacentAtomicBlockBefore: documentBlock.hasAdjacentAtomicBlockBefore
             hasAdjacentBlockAfter: documentBlock.hasAdjacentBlockAfter
             hasAdjacentBlockBefore: documentBlock.hasAdjacentBlockBefore
+            paperPaletteEnabled: documentBlock.paperPaletteEnabled
             paragraphBoundaryOperationsEnabled: documentBlock.paragraphBoundaryOperationsEnabled
             paragraphMergeableAfter: documentBlock.paragraphMergeableAfter
             paragraphMergeableBefore: documentBlock.paragraphMergeableBefore
@@ -397,6 +399,7 @@ FocusScope {
 
         ContentsAgendaBlock {
             blockData: documentBlock.blockData
+            paperPaletteEnabled: documentBlock.paperPaletteEnabled
             shortcutKeyPressHandler: documentBlock.shortcutKeyPressHandler
             width: documentBlock.width
         }
@@ -407,6 +410,7 @@ FocusScope {
 
         ContentsCalloutBlock {
             blockData: documentBlock.blockData
+            paperPaletteEnabled: documentBlock.paperPaletteEnabled
             shortcutKeyPressHandler: documentBlock.shortcutKeyPressHandler
             width: documentBlock.width
         }

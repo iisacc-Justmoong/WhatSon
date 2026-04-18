@@ -14,6 +14,7 @@ FocusScope {
     property var agendaBackend: null
     property var calloutBackend: null
     property int lineHeightHint: Math.max(1, Math.round(LV.Theme.scaleMetric(12)))
+    property bool paperPaletteEnabled: false
     property var shortcutKeyPressHandler: null
     property alias documentBlocks: documentHost.documentBlocks
     property alias renderedResources: documentHost.renderedResources
@@ -1571,6 +1572,7 @@ FocusScope {
                         hasAdjacentAtomicBlockBefore: documentFlow.blockHasAdjacentAtomicDeletionTarget(blockHost.blockIndex, "before")
                         hasAdjacentBlockAfter: documentFlow.adjacentBlockIndex(blockHost.blockIndex, "after") >= 0
                         hasAdjacentBlockBefore: documentFlow.adjacentBlockIndex(blockHost.blockIndex, "before") >= 0
+                        paperPaletteEnabled: documentFlow.paperPaletteEnabled
                         paragraphBoundaryOperationsEnabled: documentFlow.blockSupportsParagraphBoundaryOperations(blockHost.blockEntry)
                         paragraphMergeableAfter: documentFlow.paragraphMergeableAdjacentBlock(blockHost.blockIndex, "after")
                         paragraphMergeableBefore: documentFlow.paragraphMergeableAdjacentBlock(blockHost.blockIndex, "before")

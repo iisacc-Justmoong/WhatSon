@@ -38,6 +38,10 @@ tags as visible formatted text.
 - The nested inline editor now also runs one host-owned shortcut handler before its local boundary-navigation logic.
   Note-wide shortcuts such as clipboard-image paste can therefore be intercepted while focus is inside a structured
   paragraph editor, without reintroducing legacy whole-note editing authority.
+- The block now also receives `paperPaletteEnabled` from the structured-flow host.
+  In page/print mode the inline editor base text color is forced to paper black and the inline-style HTML overlay is
+  re-rendered through the renderer's paper palette, so semantic/title/highlight spans cannot stay white on a white
+  paper surface.
 - An empty text block now treats plain `Backspace` / `Delete` as "remove this line" before it tries adjacent atomic
   block deletion.
   Zero-length paragraph blocks therefore no longer become undeletable cursor anchors.

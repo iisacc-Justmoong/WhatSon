@@ -9,6 +9,7 @@
 #include <array>
 #include <algorithm>
 #include <limits>
+#include <utility>
 #include <QRegularExpression>
 #include <QStringList>
 #include <QVector>
@@ -43,6 +44,8 @@ namespace
     QString renderInlineTaggedTextFragmentToHtml(
         const QString& sourceText,
         LiteralRenderMode renderMode);
+    QString applyPaperPaletteToHtml(QString html);
+    QVariantList applyPaperPaletteToHtmlField(const QVariantList& entries, const QString& fieldName);
 
     int boundedQStringSize(const QString& text) noexcept
     {
@@ -1704,6 +1707,62 @@ namespace
         return htmlLines.join(QStringLiteral("<br/>"));
     }
 
+    QString applyPaperPaletteToHtml(QString html)
+    {
+        if (html.isEmpty())
+        {
+            return html;
+        }
+
+        static const std::array<std::pair<QString, QString>, 10> replacements{{
+            {
+                QStringLiteral("background-color:#8A4B00;color:#D6AE58;font-weight:600;"),
+                QStringLiteral("background-color:#F4D37A;color:#111111;font-weight:600;")
+            },
+            {
+                QStringLiteral("background-color:#1A1D22;color:#D7DADF;"),
+                QStringLiteral("background-color:#E7EAEE;color:#111111;")
+            },
+            {
+                QStringLiteral("background-color:#1A1D22;color:#8F96A3;"),
+                QStringLiteral("background-color:#E7EAEE;color:#4E5763;")
+            },
+            {QStringLiteral("color:#F3F5F8;"), QStringLiteral("color:#111111;")},
+            {QStringLiteral("color:#C9CDD4;"), QStringLiteral("color:#2F343B;")},
+            {QStringLiteral("color:#8F96A3;"), QStringLiteral("color:#4E5763;")},
+            {QStringLiteral("color:#8CB4FF;"), QStringLiteral("color:#1F5FBF;")},
+            {QStringLiteral("color:#66727D;"), QStringLiteral("color:#4E5763;")},
+            {QStringLiteral("color:#D6AE58;"), QStringLiteral("color:#111111;")},
+            {QStringLiteral("color:#D7DADF;"), QStringLiteral("color:#111111;")},
+        }};
+
+        for (const auto& [from, to] : replacements)
+        {
+            html.replace(from, to);
+        }
+
+        return html;
+    }
+
+    QVariantList applyPaperPaletteToHtmlField(const QVariantList& entries, const QString& fieldName)
+    {
+        QVariantList recoloredEntries;
+        recoloredEntries.reserve(entries.size());
+
+        for (const QVariant& entryValue : entries)
+        {
+            QVariantMap entry = entryValue.toMap();
+            const QString currentHtml = entry.value(fieldName).toString();
+            if (!currentHtml.isEmpty())
+            {
+                entry.insert(fieldName, applyPaperPaletteToHtml(currentHtml));
+            }
+            recoloredEntries.push_back(entry);
+        }
+
+        return recoloredEntries;
+    }
+
     QString renderInlineStyleEditingSurfaceHtml(const QString& sourceText)
     {
         const QString normalizedText = normalizeLineEndings(sourceText);
@@ -1957,6 +2016,28 @@ void ContentsTextFormatRenderer::setPreviewEnabled(const bool enabled)
     refreshRenderedOutputs();
 }
 
+bool ContentsTextFormatRenderer::paperPaletteEnabled() const noexcept
+{
+    return m_paperPaletteEnabled;
+}
+
+void ContentsTextFormatRenderer::setPaperPaletteEnabled(const bool enabled)
+{
+    WhatSon::Debug::traceEditorSelf(
+        this,
+        QStringLiteral("textFormatRenderer"),
+        QStringLiteral("setPaperPaletteEnabled"),
+        QStringLiteral("previous=%1 next=%2").arg(m_paperPaletteEnabled).arg(enabled));
+    if (m_paperPaletteEnabled == enabled)
+    {
+        return;
+    }
+
+    m_paperPaletteEnabled = enabled;
+    emit paperPaletteEnabledChanged();
+    refreshRenderedOutputs();
+}
+
 QString ContentsTextFormatRenderer::applyPlainTextReplacementToSource(
     const QString& sourceText,
     int sourceStart,
@@ -2067,15 +2148,21 @@ void ContentsTextFormatRenderer::refreshRenderedOutputs()
     const ContentsHtmlBlockRenderPipeline::RenderResult editorRenderResult =
         renderPipeline.renderEditorDocument(m_sourceText);
 
-    if (m_htmlTokens != editorRenderResult.htmlTokens)
+    const QVariantList nextHtmlTokens = m_paperPaletteEnabled
+        ? applyPaperPaletteToHtmlField(editorRenderResult.htmlTokens, QStringLiteral("html"))
+        : editorRenderResult.htmlTokens;
+    if (m_htmlTokens != nextHtmlTokens)
     {
-        m_htmlTokens = editorRenderResult.htmlTokens;
+        m_htmlTokens = nextHtmlTokens;
         emit htmlTokensChanged();
     }
 
-    if (m_normalizedHtmlBlocks != editorRenderResult.normalizedHtmlBlocks)
+    const QVariantList nextNormalizedHtmlBlocks = m_paperPaletteEnabled
+        ? applyPaperPaletteToHtmlField(editorRenderResult.normalizedHtmlBlocks, QStringLiteral("htmlBlockHtml"))
+        : editorRenderResult.normalizedHtmlBlocks;
+    if (m_normalizedHtmlBlocks != nextNormalizedHtmlBlocks)
     {
-        m_normalizedHtmlBlocks = editorRenderResult.normalizedHtmlBlocks;
+        m_normalizedHtmlBlocks = nextNormalizedHtmlBlocks;
         emit normalizedHtmlBlocksChanged();
     }
 
@@ -2085,16 +2172,22 @@ void ContentsTextFormatRenderer::refreshRenderedOutputs()
         emit htmlOverlayVisibleChanged();
     }
 
-    const QString nextEditorSurfaceHtml = editorRenderResult.requiresLegacyDocumentComposition
+    const QString baseEditorSurfaceHtml = editorRenderResult.requiresLegacyDocumentComposition
         ? renderInlineStyleEditingSurfaceHtml(m_sourceText)
         : editorRenderResult.documentHtml;
+    const QString nextEditorSurfaceHtml = m_paperPaletteEnabled
+        ? applyPaperPaletteToHtml(baseEditorSurfaceHtml)
+        : baseEditorSurfaceHtml;
     if (m_editorSurfaceHtml != nextEditorSurfaceHtml)
     {
         m_editorSurfaceHtml = nextEditorSurfaceHtml;
         emit editorSurfaceHtmlChanged();
     }
 
-    const QString nextRenderedHtml = m_previewEnabled ? renderMarkdownAwareTextToHtml(m_sourceText) : QString();
+    const QString baseRenderedHtml = m_previewEnabled ? renderMarkdownAwareTextToHtml(m_sourceText) : QString();
+    const QString nextRenderedHtml = m_paperPaletteEnabled
+        ? applyPaperPaletteToHtml(baseRenderedHtml)
+        : baseRenderedHtml;
     if (m_renderedHtml == nextRenderedHtml)
     {
         return;

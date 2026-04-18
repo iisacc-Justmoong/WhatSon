@@ -1,5 +1,10 @@
 # `src/app/qml/view/content/editor/ContentsCalloutLayer.qml`
 
+## Current Behavior
+- The layer now also accepts `paperPaletteEnabled`.
+  Page/print mode therefore swaps the overlay callout text color away from the previous hardcoded white override and
+  keeps the layer aligned with the same paper-safe palette used by the structured callout block editor.
+
 ## Responsibility
 
 `ContentsCalloutLayer.qml` renders proprietary `<callout>` source blocks as a Figma-aligned callout row UI.

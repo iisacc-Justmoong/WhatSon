@@ -46,6 +46,9 @@ not note-backed.
 - Structured `cachedLogicalLineEntries` updates now split logical-metric change from geometry-only change.
   Even when line count and start offsets stay the same, resource/callout/agenda spacing or measured block-height
   changes still trigger a gutter refresh as soon as `contentY` / `gutterContentY` move.
+- Page/print mode now also injects `paperPaletteEnabled` into both `ContentsEditorPresentationProjection` and
+  `ContentsStructuredDocumentFlow.qml`, so the white paper surface cannot inherit dark-theme body white from either the
+  whole-document HTML renderer or the structured block delegates.
 
 ## Resource Import
 

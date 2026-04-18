@@ -84,6 +84,31 @@ void ContentsEditorPresentationProjection::setPreviewEnabled(const bool enabled)
     emit previewEnabledChanged();
 }
 
+bool ContentsEditorPresentationProjection::paperPaletteEnabled() const noexcept
+{
+    return m_textFormatRenderer != nullptr && m_textFormatRenderer->paperPaletteEnabled();
+}
+
+void ContentsEditorPresentationProjection::setPaperPaletteEnabled(const bool enabled)
+{
+    if (paperPaletteEnabled() == enabled)
+    {
+        return;
+    }
+
+    if (m_textFormatRenderer != nullptr)
+    {
+        m_textFormatRenderer->setPaperPaletteEnabled(enabled);
+    }
+
+    WhatSon::Debug::traceEditorSelf(
+        this,
+        QStringLiteral("editorPresentationProjection"),
+        QStringLiteral("setPaperPaletteEnabled"),
+        QStringLiteral("enabled=%1").arg(enabled));
+    emit paperPaletteEnabledChanged();
+}
+
 QString ContentsEditorPresentationProjection::editorSurfaceHtml() const
 {
     return m_textFormatRenderer != nullptr ? m_textFormatRenderer->editorSurfaceHtml() : QString();

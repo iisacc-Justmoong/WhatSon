@@ -2451,6 +2451,7 @@ Item {
     ContentsEditorPresentationProjection {
         id: editorProjection
 
+        paperPaletteEnabled: contentsView.showPrintEditorLayout
         previewEnabled: contentsView.showFormattedTextRenderer
         sourceText: contentsView.documentPresentationSourceText
     }
@@ -2935,6 +2936,7 @@ Item {
                         calloutBackend: contentsCalloutBackend
                         documentBlocks: structuredBlockRenderer.renderedDocumentBlocks
                         lineHeightHint: contentsView.editorLineHeight
+                        paperPaletteEnabled: contentsView.showPrintEditorLayout
                         parent: contentsView.showPrintEditorLayout ? printDocumentSurface : structuredDocumentViewport.contentItem
                         renderedResources: bodyResourceRenderer.renderedResources
                         shortcutKeyPressHandler: function (event) {
@@ -2977,6 +2979,7 @@ Item {
                                            : contentsView.editorDocumentStartY)
                         enableCardFocus: false
                         enableTaskToggle: false
+                        paperPaletteEnabled: contentsView.showPrintEditorLayout
                         renderedAgendas: contentsView.showStructuredDocumentFlow ? [] : structuredBlockRenderer.renderedAgendas
                         showTaskCheckbox: false
                         showTaskText: false
@@ -3021,6 +3024,7 @@ Item {
                                            ? (Number(printPaperColumn.y) || 0) + contentsView.printGuideVerticalInset
                                            : contentsView.editorDocumentStartY
                         enableCardFocus: false
+                        paperPaletteEnabled: contentsView.showPrintEditorLayout
                         renderedCallouts: contentsView.showStructuredDocumentFlow ? [] : structuredBlockRenderer.renderedCallouts
                         showText: false
                         blockFocusHandler: function (sourceOffset) {
@@ -3156,6 +3160,7 @@ Item {
                                            ? (Number(printPaperColumn.y) || 0) + contentsView.printGuideVerticalInset
                                            : contentsView.editorDocumentStartY)
                         enableCardFocus: false
+                        paperPaletteEnabled: contentsView.showPrintEditorLayout
                         renderedAgendas: contentsView.showStructuredDocumentFlow ? [] : structuredBlockRenderer.renderedAgendas
                         showFrame: false
                         showHeader: false

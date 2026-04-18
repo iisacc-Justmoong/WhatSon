@@ -45,3 +45,6 @@ Renders one agenda card as a native document block inside the editor flow.
 - Keeps shortcut-created proprietary wrappers block-scoped by reporting the agenda boundary, not an in-task insertion
   point, for agenda/callout shortcut routing.
 - Keeps empty tasks visible so RAW `<agenda>` tags always materialize into a card.
+- The block now also accepts `paperPaletteEnabled`.
+  Page/print mode therefore swaps the agenda chrome, task text, and checkbox colors away from the dark-theme
+  white-on-charcoal palette into a light paper-safe palette.

@@ -36,6 +36,7 @@ The C++ suite currently locks regression-sensitive runtime behavior for:
 - `ContentsEditorSessionController`
 - `ContentsNoteManagementCoordinator`
 - `ContentsEditorSurfaceModeSupport.js`
+- `ContentsTextFormatRenderer`
 - `ResourceBitmapViewer`
 
 The suite avoids booting the full application shell or loading a hub package.
@@ -92,5 +93,7 @@ ctest --test-dir build --output-on-failure -L cpp_regression
   switches the center slot away from the note editor immediately.
 - `ResourceBitmapViewer` now also pins bitmap-preview projection for the dedicated resource editor, so image resources
   and unsupported image-like formats expose stable viewer/open-target state to QML.
+- Page/print paper-palette routing now also pins both the HTML renderer and the structured editor QML wiring, so
+  bright screen-only text colors cannot leak onto the white paper surface in `Page` / `Print` mode.
 - Developer quality gates now also resolve their QML/C++ file lists from the repository root, so `whatson_qmllint`
   and `whatson_clang_tidy` no longer degrade into empty-input no-op runs.

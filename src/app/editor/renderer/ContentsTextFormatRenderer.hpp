@@ -15,6 +15,7 @@ class ContentsTextFormatRenderer : public QObject
     Q_PROPERTY(QVariantList normalizedHtmlBlocks READ normalizedHtmlBlocks NOTIFY normalizedHtmlBlocksChanged)
     Q_PROPERTY(bool htmlOverlayVisible READ htmlOverlayVisible NOTIFY htmlOverlayVisibleChanged)
     Q_PROPERTY(bool previewEnabled READ previewEnabled WRITE setPreviewEnabled NOTIFY previewEnabledChanged)
+    Q_PROPERTY(bool paperPaletteEnabled READ paperPaletteEnabled WRITE setPaperPaletteEnabled NOTIFY paperPaletteEnabledChanged)
 
 public:
     explicit ContentsTextFormatRenderer(QObject* parent = nullptr);
@@ -29,6 +30,8 @@ public:
     bool htmlOverlayVisible() const noexcept;
     bool previewEnabled() const noexcept;
     void setPreviewEnabled(bool enabled);
+    bool paperPaletteEnabled() const noexcept;
+    void setPaperPaletteEnabled(bool enabled);
 
     Q_INVOKABLE QString applyPlainTextReplacementToSource(
         const QString& sourceText,
@@ -52,6 +55,7 @@ signals:
     void normalizedHtmlBlocksChanged();
     void htmlOverlayVisibleChanged();
     void previewEnabledChanged();
+    void paperPaletteEnabledChanged();
 
 private:
     void refreshRenderedOutputs();
@@ -63,4 +67,5 @@ private:
     QVariantList m_normalizedHtmlBlocks;
     bool m_htmlOverlayVisible = false;
     bool m_previewEnabled = false;
+    bool m_paperPaletteEnabled = false;
 };

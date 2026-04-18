@@ -1,5 +1,10 @@
 # `src/app/qml/view/content/editor/ContentsAgendaLayer.qml`
 
+## Current Behavior
+- The layer now also accepts `paperPaletteEnabled`.
+  Even when it is only being used as an editor-side visual overlay, page/print mode no longer leaves hardcoded white
+  task/header text colors in this projection path.
+
 ## Responsibility
 
 `ContentsAgendaLayer.qml` renders proprietary `<agenda>` / `<task>` source blocks as an agenda card UI.

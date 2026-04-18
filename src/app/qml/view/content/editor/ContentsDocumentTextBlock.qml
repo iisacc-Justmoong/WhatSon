@@ -11,6 +11,7 @@ FocusScope {
 
     required property var blockData
     property var shortcutKeyPressHandler: null
+    property bool paperPaletteEnabled: false
 
     signal activated()
     signal adjacentAtomicBlockDeleteRequested(string side)
@@ -37,6 +38,7 @@ FocusScope {
     readonly property int sourceStart: Math.max(0, Number(normalizedBlock.sourceStart) || 0)
     readonly property int sourceEnd: Math.max(sourceStart, Number(normalizedBlock.sourceEnd) || 0)
     readonly property string sourceText: normalizedBlock.sourceText !== undefined ? String(normalizedBlock.sourceText) : ""
+    readonly property color editorTextColor: paperPaletteEnabled ? "#111111" : LV.Theme.bodyColor
     readonly property bool inlineStyleOverlayVisible: inlineStyleRenderer
                                                       && inlineStyleRenderer.htmlOverlayVisible !== undefined
                                                       ? !!inlineStyleRenderer.htmlOverlayVisible
@@ -438,6 +440,7 @@ FocusScope {
     ContentsTextFormatRenderer {
         id: inlineStyleRenderer
 
+        paperPaletteEnabled: textBlock.paperPaletteEnabled
         sourceText: textBlock.inlineStyleOverlayVisible ? textBlock.authoritativeSourceText() : ""
     }
 
@@ -476,7 +479,7 @@ FocusScope {
             return textBlock.handleAtomicBlockBoundaryKeyPress(event)
         }
         text: textBlock.authoritativePlainText
-        textColor: LV.Theme.bodyColor
+        textColor: textBlock.editorTextColor
         wrapMode: TextEdit.Wrap
 
         onFocusedChanged: {

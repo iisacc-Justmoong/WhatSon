@@ -201,6 +201,13 @@
 - `ContentsDocumentTextBlock.qml` now keeps paragraph boundary editing source-driven as well.
   Delegate-local key handling only emits split/merge intent; `ContentsStructuredDocumentMutationPolicy` owns the RAW
   rewrite so implicit prose lines and explicit `<paragraph>...</paragraph>` wrappers obey the same rule set.
+- Page/print view mode now also injects one explicit paper-palette flag from `ContentsDisplayView.qml` into both the
+  whole-document HTML projection and the structured block delegate tree.
+  Structured prose therefore no longer falls back to LVRS dark-theme body white while the paper surface itself stays
+  white.
+- `ContentsAgendaBlock.qml` and `ContentsCalloutBlock.qml` now also switch their native block chrome to a light
+  paper-safe palette in page/print mode, replacing their previous hardcoded white text overrides with conditional
+  dark-on-paper colors.
 - That same structured document host now also emits selection-clear revisions plus one retained block hint, and
   `ContentsDocumentBlock.qml` forwards that cleanup into paragraph/callout/agenda delegates.
   Drag-selected text therefore no longer stays highlighted after the user activates another structured editor or clicks

@@ -47,3 +47,6 @@ Renders one callout card as a native document block inside the editor flow.
 - Keeps agenda/callout shortcut insertion block-scoped so new proprietary wrappers are inserted after the current
   callout instead of nesting inside callout body content.
 - Treats Enter on an already-empty trailing line as the "exit callout" gesture.
+- The block now also accepts `paperPaletteEnabled`.
+  Page/print mode therefore swaps the callout frame/divider/body text away from the dark-theme hardcoded white-text
+  palette into a paper-safe light card with dark text.
