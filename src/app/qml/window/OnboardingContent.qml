@@ -64,6 +64,7 @@ Item {
     property var hubSessionController: null
     property color panelColor: LV.Theme.panelBackground06
     property bool autoCompleteOnHubLoaded: true
+    property var createHubDialogInstance: null
     readonly property int rightPanelWidth: Math.max(
                                                Math.max(0, Math.round(LV.Theme.scaleMetric(214))),
                                                Math.min(
@@ -99,6 +100,7 @@ Item {
         return "No WhatSon Hub Selected";
     }
     property color sidePanelColor: LV.Theme.panelBackground10
+    property var selectHubFileDialogInstance: null
     property bool standaloneMode: false
     readonly property string statusText: {
         if (root.hubSessionController && root.onboardingSessionState === "routingWorkspace")
@@ -130,6 +132,34 @@ Item {
     signal selectFileRequested
     signal viewHookRequested
 
+    function ensureCreateHubDialog() {
+        if (root.useMobileCreateDirectoryFlow)
+            return null;
+        if (!root.createHubDialogInstance)
+            root.createHubDialogInstance = createHubDialogComponent.createObject(root);
+        return root.createHubDialogInstance;
+    }
+
+    function ensureSelectHubFileDialog() {
+        if (!root.useAndroidExistingHubFileFlow)
+            return null;
+        if (!root.selectHubFileDialogInstance)
+            root.selectHubFileDialogInstance = selectHubFileDialogComponent.createObject(root);
+        return root.selectHubFileDialogInstance;
+    }
+
+    function openCreateHubDialog() {
+        const dialog = root.ensureCreateHubDialog();
+        if (dialog && dialog.open)
+            dialog.open();
+    }
+
+    function openSelectHubFileDialog() {
+        const dialog = root.ensureSelectHubFileDialog();
+        if (dialog && dialog.open)
+            dialog.open();
+    }
+
     Connections {
         target: root.hubSessionController
 
@@ -139,22 +169,23 @@ Item {
         }
     }
 
-    FileDialog {
-        id: createHubDialog
+    Component {
+        id: createHubDialogComponent
 
-        currentFile: root.suggestedCreateHubFileUrl
-        currentFolder: root.currentFolderUrl
-        defaultSuffix: "wshub"
-        fileMode: FileDialog.SaveFile
-        nameFilters: ["WhatSon Hub (*.wshub)"]
-        selectedFile: root.suggestedCreateHubFileUrl
-        title: "Create WhatSon Hub"
+        FileDialog {
+            currentFile: root.suggestedCreateHubFileUrl
+            currentFolder: root.currentFolderUrl
+            defaultSuffix: "wshub"
+            fileMode: FileDialog.SaveFile
+            nameFilters: ["WhatSon Hub (*.wshub)"]
+            title: "Create WhatSon Hub"
 
-        onAccepted: {
-            if (root.hubSessionController) {
-                root.hubSessionController.createHubAtUrl(selectedFile);
-            } else {
-                root.createFileRequested();
+            onAccepted: {
+                if (root.hubSessionController) {
+                    root.hubSessionController.createHubAtUrl(selectedFile);
+                } else {
+                    root.createFileRequested();
+                }
             }
         }
     }
@@ -192,19 +223,21 @@ Item {
         }
     }
 
-    FileDialog {
-        id: selectHubFileDialog
+    Component {
+        id: selectHubFileDialogComponent
 
-        currentFolder: root.currentFolderUrl
-        fileMode: FileDialog.OpenFile
-        nameFilters: ["WhatSon Hub (*.wshub)"]
-        title: "Select WhatSon Hub"
+        FileDialog {
+            currentFolder: root.currentFolderUrl
+            fileMode: FileDialog.OpenFile
+            nameFilters: ["WhatSon Hub (*.wshub)"]
+            title: "Select WhatSon Hub"
 
-        onAccepted: {
-            if (root.hubSessionController) {
-                root.hubSessionController.loadHubFromUrl(selectedFile);
-            } else {
-                root.selectFileRequested();
+            onAccepted: {
+                if (root.hubSessionController) {
+                    root.hubSessionController.loadHubFromUrl(selectedFile);
+                } else {
+                    root.selectFileRequested();
+                }
             }
         }
     }
@@ -405,7 +438,7 @@ Item {
                                     if (root.hubSessionController) {
                                         root.hubSessionController.clearLastError();
                                         root.hubSessionController.clearHubSelectionCandidates();
-                                        createHubDialog.open();
+                                        root.openCreateHubDialog();
                                     } else {
                                         root.createFileRequested();
                                     }
@@ -545,7 +578,7 @@ Item {
                                         root.hubSessionController.clearLastError();
                                         root.hubSessionController.clearHubSelectionCandidates();
                                         if (root.useAndroidExistingHubFileFlow)
-                                            selectHubFileDialog.open();
+                                            root.openSelectHubFileDialog();
                                         else
                                             selectHubDialog.open();
                                     } else {
@@ -633,6 +666,17 @@ Item {
             hoverEnabled: true
 
             onClicked: actionLink.triggered()
+        }
+    }
+
+    Component.onDestruction: {
+        if (root.createHubDialogInstance) {
+            root.createHubDialogInstance.destroy();
+            root.createHubDialogInstance = null;
+        }
+        if (root.selectHubFileDialogInstance) {
+            root.selectHubFileDialogInstance.destroy();
+            root.selectHubFileDialogInstance = null;
         }
     }
 }

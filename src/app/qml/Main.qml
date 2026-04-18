@@ -12,6 +12,10 @@ import "window" as WindowView
 LV.ApplicationWindow {
     id: applicationWindow
 
+    property int topPadding: 0
+    property int rightPadding: 0
+    property int bottomPadding: 0
+    property int leftPadding: 0
     readonly property int adaptiveStatusBarHeight: adaptiveMobileLayout ? 0 : statusBarHeight
     readonly property int baseListViewWidth: LV.Theme.inputWidthMd - LV.Theme.gap8
     readonly property int baseRightPanelWidth: Math.max(0, Math.round(LV.Theme.scaleMetric(194)))
@@ -643,7 +647,6 @@ LV.ApplicationWindow {
         id: onboardingPageComponent
 
         Item {
-            anchors.fill: parent
             clip: true
 
             Rectangle {
@@ -667,7 +670,6 @@ LV.ApplicationWindow {
         id: workspacePageComponent
 
         Item {
-            anchors.fill: parent
             clip: true
 
             Loader {

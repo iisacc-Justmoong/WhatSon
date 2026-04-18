@@ -451,6 +451,9 @@ private slots:
     void navigationModeViewModel_cyclesActiveSections();
     void editorViewModeViewModel_cyclesActiveSections();
     void onboardingRouteBootstrapController_syncsEmbeddedOnboardingLifecycle();
+    void embeddedOnboardingRoutePages_avoidStackViewAnchorConflicts();
+    void onboardingContent_saveDialog_doesNotPreselectMissingHubFile();
+    void mainQml_exposesZeroWindowPaddingForLvrsApplicationWindow();
     void clipboardImportFileNamePolicy_generatesRandom32CharacterAlphaNumericPngNames();
     void unixTimeAnalyzer_reportsStableEpochFields();
     void cronExpression_and_asyncScheduler_coverParsingMatchingAndDeduplication();
@@ -1248,6 +1251,53 @@ void WhatSonCppRegressionTests::onboardingRouteBootstrapController_syncsEmbedded
     QVERIFY(!controller.embeddedOnboardingEnabled());
     QVERIFY(!controller.embeddedOnboardingVisible());
     QCOMPARE(controller.startupRoutePath(), QStringLiteral("/"));
+}
+
+void WhatSonCppRegressionTests::embeddedOnboardingRoutePages_avoidStackViewAnchorConflicts()
+{
+    const QString mainQmlSource = readUtf8SourceFile(QStringLiteral("src/app/qml/Main.qml"));
+
+    QVERIFY(!mainQmlSource.isEmpty());
+    QVERIFY(mainQmlSource.contains(QStringLiteral("id: onboardingPageComponent")));
+    QVERIFY(mainQmlSource.contains(QStringLiteral("id: workspacePageComponent")));
+    QVERIFY(mainQmlSource.contains(
+        QStringLiteral("id: onboardingPageComponent\n\n        Item {\n            clip: true")));
+    QVERIFY(mainQmlSource.contains(
+        QStringLiteral("id: workspacePageComponent\n\n        Item {\n            clip: true")));
+    QVERIFY(!mainQmlSource.contains(
+        QStringLiteral("id: onboardingPageComponent\n\n        Item {\n            anchors.fill: parent")));
+    QVERIFY(!mainQmlSource.contains(
+        QStringLiteral("id: workspacePageComponent\n\n        Item {\n            anchors.fill: parent")));
+}
+
+void WhatSonCppRegressionTests::onboardingContent_saveDialog_doesNotPreselectMissingHubFile()
+{
+    const QString onboardingContentSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/window/OnboardingContent.qml"));
+
+    QVERIFY(!onboardingContentSource.isEmpty());
+    QVERIFY(onboardingContentSource.contains(QStringLiteral("id: createHubDialogComponent")));
+    QVERIFY(onboardingContentSource.contains(QStringLiteral("FileDialog {")));
+    QVERIFY(onboardingContentSource.contains(QStringLiteral("root.createHubDialogInstance = createHubDialogComponent.createObject(root);")));
+    QVERIFY(onboardingContentSource.contains(QStringLiteral("root.openCreateHubDialog();")));
+    QVERIFY(onboardingContentSource.contains(QStringLiteral("id: selectHubFileDialogComponent")));
+    QVERIFY(onboardingContentSource.contains(QStringLiteral("root.selectHubFileDialogInstance = selectHubFileDialogComponent.createObject(root);")));
+    QVERIFY(onboardingContentSource.contains(QStringLiteral("currentFile: root.suggestedCreateHubFileUrl")));
+    QVERIFY(onboardingContentSource.contains(QStringLiteral("currentFolder: root.currentFolderUrl")));
+    QVERIFY(!onboardingContentSource.contains(QStringLiteral("id: createHubDialog\n")));
+    QVERIFY(!onboardingContentSource.contains(QStringLiteral("id: selectHubFileDialog\n")));
+    QVERIFY(!onboardingContentSource.contains(QStringLiteral("selectedFile: root.suggestedCreateHubFileUrl")));
+}
+
+void WhatSonCppRegressionTests::mainQml_exposesZeroWindowPaddingForLvrsApplicationWindow()
+{
+    const QString mainQmlSource = readUtf8SourceFile(QStringLiteral("src/app/qml/Main.qml"));
+
+    QVERIFY(!mainQmlSource.isEmpty());
+    QVERIFY(mainQmlSource.contains(QStringLiteral("property int topPadding: 0")));
+    QVERIFY(mainQmlSource.contains(QStringLiteral("property int rightPadding: 0")));
+    QVERIFY(mainQmlSource.contains(QStringLiteral("property int bottomPadding: 0")));
+    QVERIFY(mainQmlSource.contains(QStringLiteral("property int leftPadding: 0")));
 }
 
 void WhatSonCppRegressionTests::clipboardImportFileNamePolicy_generatesRandom32CharacterAlphaNumericPngNames()

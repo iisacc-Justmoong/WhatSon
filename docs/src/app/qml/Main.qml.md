@@ -5,6 +5,8 @@
 
 ## Root Responsibilities
 - Instantiate the `LV.ApplicationWindow`.
+- Publish explicit zero `topPadding/rightPadding/bottomPadding/leftPadding` properties so the LVRS
+  `ApplicationWindow` compatibility bindings have stable geometry inputs on iOS.
 - Define root sizing, panel widths, and adaptive layout defaults.
 - Register runtime viewmodels into the LVRS `ViewModels` registry.
 - Claim writable ownership for selected interaction surfaces.
@@ -61,6 +63,11 @@ The file keeps both desktop and mobile layout branches alive.
 - Embedded mobile startup now keeps an app-owned watchdog around the routed page host. If the expected onboarding or
   workspace route exists in controller state but the active LVRS router has no current page item, `Main.qml` forces a
   `setRoot(...)` rebuild on the expected route and shows a temporary fallback surface instead of leaving a black frame.
+- The embedded onboarding/workspace route pages intentionally keep their root `Item` free of `anchors.fill`.
+  LVRS route hosting is backed by a `StackView`, and stack-managed page geometry must not compete with page-root
+  anchors during transitions on iOS.
+- The root `LV.ApplicationWindow` now also exposes explicit zero padding properties so LVRS does not emit
+  `topPadding/rightPadding/bottomPadding/leftPadding` binding warnings while bootstrapping the iOS shell.
 - iOS now uses LVRS full-window mobile coverage instead of UIKit safe-area delegation. This keeps
   the application content in true edge-to-edge mode without app-level safe-area color overrides.
 
