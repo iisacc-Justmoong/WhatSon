@@ -46,6 +46,10 @@ not note-backed.
 - Structured `cachedLogicalLineEntries` updates now split logical-metric change from geometry-only change.
   Even when line count and start offsets stay the same, resource/callout/agenda spacing or measured block-height
   changes still trigger a gutter refresh as soon as `contentY` / `gutterContentY` move.
+- The line-number column now uses a dedicated `gutterBodyGap` token for its right inset instead of reusing the editor
+  text column's `editorHorizontalInset`.
+  This keeps note-body left padding unchanged while tightening the visual distance between gutter numbers and the first
+  text glyph.
 - Note-entry gutter/minimap geometry is now also invalidated per selected note instead of trusting only line-count
   parity.
   Rapid note switches therefore clear stale incremental line caches immediately, queue a fresh structured layout-cache

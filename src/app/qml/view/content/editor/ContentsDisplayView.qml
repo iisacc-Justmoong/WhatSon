@@ -130,6 +130,7 @@ Item {
     property int gutterRefreshRevision: 0
     readonly property real gutterViewportHeight: contentsView.editorViewportHeight
     readonly property int gutterWidth: Math.max(0, Math.round(LV.Theme.scaleMetric(74)))
+    readonly property int gutterBodyGap: Math.max(0, Math.round(LV.Theme.scaleMetric(8)))
     property int gutterWidthOverride: -1
     readonly property bool hasSelectedNote: contentsView.selectedNoteId.length > 0
     property var libraryHierarchyViewModel: null
@@ -139,7 +140,7 @@ Item {
     readonly property int lineNumberColumnTextWidth: contentsView.gutterWidth - contentsView.lineNumberColumnLeft - contentsView.lineNumberRightInset
     property int lineNumberColumnTextWidthOverride: -1
     readonly property int lineNumberColumnWidth: Math.max(0, Math.round(LV.Theme.scaleMetric(26)))
-    readonly property int lineNumberRightInset: contentsView.editorHorizontalInset
+    readonly property int lineNumberRightInset: contentsView.gutterBodyGap
     property int liveLogicalLineCount: 1
     readonly property int logicalLineCount: Math.max(1, Number(contentsView.liveLogicalLineCount) || 1)
     property var logicalLineDocumentYCache: []

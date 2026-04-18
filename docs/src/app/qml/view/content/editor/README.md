@@ -53,6 +53,8 @@
 - `ContentsDisplayHostModePolicy.qml` now owns platform display deltas such as gutter/minimap visibility, editor
   horizontal inset, native-input autofocus, and font weight so the shared host no longer forks into separate
   desktop/mobile QML roots.
+- `ContentsDisplayView.qml` now also keeps gutter-body spacing separate from editor text padding through a dedicated
+  `gutterBodyGap` token, so line numbers can sit closer to the note body without shrinking the body column itself.
 - The shared live editor engine is already `QtQuick.TextEdit` wrapped by `ContentsInlineFormatEditor.qml`; this
   directory no longer depends on an LVRS `LV.TextEditor` implementation.
 - The editor, gutter, and minimap fill the `ContentsView` slot; note-body resources no longer use a separate overlay

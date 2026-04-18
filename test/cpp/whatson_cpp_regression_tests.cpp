@@ -60,6 +60,7 @@
 #include <QDateTime>
 #include <QDir>
 #include <QFile>
+#include <QFileInfo>
 #include <QHash>
 #include <QImage>
 #include <QJSEngine>
@@ -475,6 +476,7 @@ private slots:
     void resourceDetailPanelViewModel_tracksCurrentResourceSelection();
     void detailPanelRouting_separatesNoteAndResourceViewsAndViewModels();
     void contentsDisplayView_invalidatesGutterGeometryImmediatelyAcrossRapidNoteSwitches();
+    void contentsDisplayView_keepsGutterNumbersCloseToTheEditorBody();
     void paperSelection_tracksChosenPaperEnumState();
     void a4PaperBackground_exposesCanonicalMetricsAndAnchorsPrintRendererDefaults();
     void textFormatRenderer_wrapsCommittedUrlsIntoCanonicalWebLinks();
@@ -577,6 +579,13 @@ QJSValue WhatSonCppRegressionTests::jsArrayEntry(const QJSValue& arrayValue, con
 QString WhatSonCppRegressionTests::readUtf8SourceFile(const QString& relativeSourcePath)
 {
     QFile sourceFile(relativeSourcePath);
+    if (!sourceFile.exists())
+    {
+        QDir repositoryRoot(QFileInfo(QString::fromUtf8(__FILE__)).absolutePath());
+        repositoryRoot.cdUp();
+        repositoryRoot.cdUp();
+        sourceFile.setFileName(repositoryRoot.filePath(relativeSourcePath));
+    }
     if (!sourceFile.open(QIODevice::ReadOnly | QIODevice::Text))
     {
         return {};
@@ -2590,6 +2599,17 @@ void WhatSonCppRegressionTests::contentsDisplayView_invalidatesGutterGeometryImm
     QVERIFY(displayViewSource.contains(QStringLiteral("contentsView.scheduleGutterRefresh(6, \"note-entry\");")));
     QVERIFY(displayViewSource.contains(QStringLiteral("\"structured-layout-cache\"")));
     QVERIFY(displayViewSource.contains(QStringLiteral("\"editor-text-synchronized\"")));
+}
+
+void WhatSonCppRegressionTests::contentsDisplayView_keepsGutterNumbersCloseToTheEditorBody()
+{
+    const QString displayViewSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/content/editor/ContentsDisplayView.qml"));
+
+    QVERIFY(!displayViewSource.isEmpty());
+    QVERIFY(displayViewSource.contains(QStringLiteral("readonly property int gutterBodyGap")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("readonly property int lineNumberRightInset: contentsView.gutterBodyGap")));
+    QVERIFY(!displayViewSource.contains(QStringLiteral("readonly property int lineNumberRightInset: contentsView.editorHorizontalInset")));
 }
 
 void WhatSonCppRegressionTests::textFormatRenderer_appliesPaperPaletteToEditorAndPreviewHtml()

@@ -12,6 +12,8 @@ entries and marker geometry, then hands those values to the gutter as plain mode
 - `visibleLineNumbersModel`: array of `{ lineNumber, y }` entries already culled to the current viewport.
 - `effectiveGutterMarkers`: normalized marker payloads (`type`, `startLine`, `lineSpan`, `color`).
 - `lineNumberColumnLeft` / `lineNumberColumnTextWidth`: text column geometry.
+- `lineNumberRightInset`: dedicated breathing room between the right-aligned line numbers and the note body.
+  The parent now keeps this smaller than the editor text inset so the gutter no longer feels visually detached.
 - `markerHeightResolver` / `markerYResolver`: optional marker geometry callbacks.
 - `currentCursorLineNumber`: active line used for highlight color and font weight.
 
