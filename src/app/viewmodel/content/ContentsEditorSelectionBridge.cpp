@@ -264,20 +264,23 @@ bool ContentsEditorSelectionBridge::flushEditorTextForNote(const QString& noteId
 
 bool ContentsEditorSelectionBridge::reconcileViewSessionAndRefreshSnapshotForNote(
     const QString& noteId,
-    const QString& viewSessionText)
+    const QString& viewSessionText,
+    const bool preferViewSessionOnMismatch)
 {
     const QString normalizedNoteId = noteId.trimmed();
     const bool accepted = m_idleSyncController != nullptr
         && !normalizedNoteId.isEmpty()
         && m_idleSyncController->reconcileViewSessionAndRefreshSnapshotForNote(
             normalizedNoteId,
-            viewSessionText);
+            viewSessionText,
+            preferViewSessionOnMismatch);
     WhatSon::Debug::traceEditorSelf(
         this,
         QStringLiteral("selectionBridge"),
         QStringLiteral("reconcileViewSessionAndRefreshSnapshotForNote"),
-        QStringLiteral("accepted=%1 noteId=%2 %3")
+        QStringLiteral("accepted=%1 preferViewSession=%2 noteId=%3 %4")
             .arg(accepted)
+            .arg(preferViewSessionOnMismatch)
             .arg(normalizedNoteId)
             .arg(WhatSon::Debug::summarizeText(viewSessionText)));
     return accepted;

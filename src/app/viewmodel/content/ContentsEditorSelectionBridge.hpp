@@ -59,7 +59,8 @@ public:
     Q_INVOKABLE bool flushEditorTextForNote(const QString& noteId, const QString& text);
     Q_INVOKABLE bool reconcileViewSessionAndRefreshSnapshotForNote(
         const QString& noteId,
-        const QString& viewSessionText);
+        const QString& viewSessionText,
+        bool preferViewSessionOnMismatch = false);
     Q_INVOKABLE bool refreshSelectedNoteSnapshot();
 
 signals:

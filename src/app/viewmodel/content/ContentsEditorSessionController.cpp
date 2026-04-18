@@ -479,6 +479,11 @@ bool ContentsEditorSessionController::shouldAcceptModelBodyText(
         return true;
     }
 
+    if (m_localEditorAuthority)
+    {
+        return false;
+    }
+
     if (isTypingSessionActive())
     {
         return false;

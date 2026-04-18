@@ -184,7 +184,8 @@ quint64 ContentsNoteManagementCoordinator::loadNoteBodyTextForNote(const QString
 
 bool ContentsNoteManagementCoordinator::reconcileViewSessionAndRefreshSnapshotForNote(
     const QString& noteId,
-    const QString& viewSessionText)
+    const QString& viewSessionText,
+    const bool preferViewSessionOnMismatch)
 {
     const QString normalizedNoteId = noteId.trimmed();
     if (normalizedNoteId.isEmpty())
@@ -204,6 +205,7 @@ bool ContentsNoteManagementCoordinator::reconcileViewSessionAndRefreshSnapshotFo
     request.noteId = normalizedNoteId;
     request.noteDirectoryPath = noteDirectoryPath;
     request.text = WhatSon::NoteBodyPersistence::normalizeBodyPlainText(viewSessionText);
+    request.preferViewSessionOnMismatch = preferViewSessionOnMismatch;
     return enqueueRequest(std::move(request));
 }
 
@@ -461,7 +463,12 @@ bool ContentsNoteManagementCoordinator::enqueueRequest(Request request)
              || request.kind == RequestKind::ReconcileViewSessionSnapshot)
             && m_activeRequest.text == request.text)
         {
-            return true;
+            if (request.kind != RequestKind::ReconcileViewSessionSnapshot
+                || !request.preferViewSessionOnMismatch
+                || m_activeRequest.preferViewSessionOnMismatch)
+            {
+                return true;
+            }
         }
         if (request.kind == RequestKind::IncrementOpenCount
             || request.kind == RequestKind::RefreshTrackedStatistics)
@@ -475,11 +482,22 @@ bool ContentsNoteManagementCoordinator::enqueueRequest(Request request)
     {
         Request& pendingRequest = m_pendingRequests[pendingIndex];
         if (request.kind == RequestKind::DirectPersistBody
-            || request.kind == RequestKind::ViewModelPersistBody
-            || request.kind == RequestKind::ReconcileViewSessionSnapshot)
+            || request.kind == RequestKind::ViewModelPersistBody)
         {
             if (pendingRequest.text == request.text)
             {
+                return true;
+            }
+            pendingRequest = std::move(request);
+            return true;
+        }
+        if (request.kind == RequestKind::ReconcileViewSessionSnapshot)
+        {
+            if (pendingRequest.text == request.text)
+            {
+                pendingRequest.preferViewSessionOnMismatch =
+                    pendingRequest.preferViewSessionOnMismatch
+                    || request.preferViewSessionOnMismatch;
                 return true;
             }
             pendingRequest = std::move(request);
@@ -659,7 +677,38 @@ ContentsNoteManagementCoordinator::performWorkerRequest(const Request& request)
 
         const QString normalizedRawSourceText = WhatSon::NoteBodyPersistence::normalizeBodyPlainText(
             document.bodySourceText.isEmpty() ? document.bodyPlainText : document.bodySourceText);
-        result.snapshotRefreshRequested = request.text != normalizedRawSourceText;
+        const bool mismatchDetected = request.text != normalizedRawSourceText;
+        if (!mismatchDetected)
+        {
+            result.success = true;
+            return result;
+        }
+
+        if (!request.preferViewSessionOnMismatch)
+        {
+            result.snapshotRefreshRequested = true;
+            result.success = true;
+            return result;
+        }
+
+        WhatSonLocalNoteFileStore::UpdateRequest updateRequest;
+        updateRequest.document = std::move(document);
+        updateRequest.document.bodyPlainText = request.text;
+        updateRequest.document.bodySourceText = request.text;
+        updateRequest.persistHeader = false;
+        updateRequest.persistBody = true;
+        updateRequest.touchLastModified = true;
+        updateRequest.incrementModifiedCount = false;
+        updateRequest.refreshIncomingBacklinkStatistics = false;
+        updateRequest.refreshAffectedBacklinkTargets = false;
+
+        if (!noteFileStore.updateNote(updateRequest, &result.persistedDocument, &result.errorMessage))
+        {
+            return result;
+        }
+
+        result.viewSessionPersisted = true;
+        result.snapshotRefreshRequested = true;
         result.success = true;
         return result;
     }
@@ -908,13 +957,66 @@ void ContentsNoteManagementCoordinator::handleRequestFinished(const Result& resu
         bool success = result.success;
         QString errorMessage = result.errorMessage;
 
-        if (result.success && result.snapshotRefreshRequested)
+        if (success && result.viewSessionPersisted)
+        {
+            const QString syncNotePath =
+                !result.persistedDocument.noteDirectoryPath.trimmed().isEmpty()
+                    ? result.persistedDocument.noteDirectoryPath.trimmed()
+                    : result.noteDirectoryPath.trimmed();
+
+            if (!syncMountedNotePathToSource(syncNotePath, &errorMessage))
+            {
+                success = false;
+                WhatSon::Debug::traceSelf(
+                    this,
+                    QStringLiteral("content.note.management"),
+                    QStringLiteral("reconcileViewSession.sourceSyncFailed"),
+                    QStringLiteral("noteId=%1 path=%2 error=%3").arg(result.noteId, syncNotePath, errorMessage));
+            }
+
+            if (success)
+            {
+                const QString persistedDirectoryPath = result.persistedDocument.noteDirectoryPath.trimmed();
+                if (m_boundNoteId == result.noteId
+                    && !persistedDirectoryPath.isEmpty())
+                {
+                    m_boundNoteDirectoryPath = persistedDirectoryPath;
+                }
+
+                const bool appliedToContentViewModel = applyPersistedBodyStateToContentViewModel(
+                    result.noteId,
+                    result.persistedDocument);
+                if (!appliedToContentViewModel)
+                {
+                    reloadNoteMetadataForNote(result.noteId);
+                    if (m_contentViewModel != nullptr
+                        && hasInvokableMethod(m_contentViewModel, kRequestViewModelHookSignature))
+                    {
+                        QMetaObject::invokeMethod(
+                            m_contentViewModel,
+                            "requestViewModelHook",
+                            Qt::QueuedConnection);
+                    }
+                }
+
+                const QString statsDirectoryPath =
+                    !persistedDirectoryPath.isEmpty()
+                        ? persistedDirectoryPath
+                        : resolveNoteDirectoryPathForNote(result.noteId);
+                enqueueTrackedStatisticsRefresh(result.noteId, statsDirectoryPath, false);
+            }
+        }
+
+        if (success && result.snapshotRefreshRequested)
         {
             refreshed = refreshNoteSnapshotForNote(result.noteId);
             if (!refreshed)
             {
                 success = false;
-                errorMessage = QStringLiteral("Failed to refresh note snapshot after reconcile.");
+                if (errorMessage.isEmpty())
+                {
+                    errorMessage = QStringLiteral("Failed to refresh note snapshot after reconcile.");
+                }
             }
         }
 

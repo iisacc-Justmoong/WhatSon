@@ -35,7 +35,8 @@ public:
     quint64 loadNoteBodyTextForNote(const QString& noteId);
     bool reconcileViewSessionAndRefreshSnapshotForNote(
         const QString& noteId,
-        const QString& viewSessionText);
+        const QString& viewSessionText,
+        bool preferViewSessionOnMismatch = false);
     bool refreshNoteSnapshotForNote(const QString& noteId);
     void bindSelectedNote(const QString& noteId);
     void clearSelectedNote();
@@ -81,6 +82,7 @@ private:
         QString noteDirectoryPath;
         QString text;
         bool incrementOpenCount = false;
+        bool preferViewSessionOnMismatch = false;
     };
 
     struct Result final
@@ -94,6 +96,7 @@ private:
         QString errorMessage;
         bool incrementOpenCount = false;
         bool snapshotRefreshRequested = false;
+        bool viewSessionPersisted = false;
         bool success = false;
     };
 

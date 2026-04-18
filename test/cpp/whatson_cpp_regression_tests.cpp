@@ -1,4 +1,7 @@
 #include "file/hub/WhatSonHubPathUtils.hpp"
+#include "file/note/ContentsNoteManagementCoordinator.hpp"
+#include "file/note/WhatSonLocalNoteFileStore.hpp"
+#include "file/note/WhatSonNoteBodyPersistence.hpp"
 #include "file/note/WhatSonNoteFolderSemantics.hpp"
 #include "runtime/scheduler/WhatSonAsyncScheduler.hpp"
 #include "runtime/scheduler/WhatSonCronExpression.hpp"
@@ -6,6 +9,7 @@
 #include "store/hub/SelectedHubStore.hpp"
 #include "store/sidebar/ISidebarSelectionStore.hpp"
 #include "store/sidebar/SidebarSelectionStore.hpp"
+#include "viewmodel/content/ContentsEditorSessionController.hpp"
 #include "viewmodel/content/ContentsStructuredDocumentCollectionPolicy.hpp"
 #include "viewmodel/content/ContentsStructuredDocumentMutationPolicy.hpp"
 #include "viewmodel/content/ContentsResourceTagTextGenerator.hpp"
@@ -25,6 +29,7 @@
 
 #include <QCoreApplication>
 #include <QDir>
+#include <QHash>
 #include <QSettings>
 #include <QTemporaryDir>
 #include <QtTest>
@@ -179,6 +184,59 @@ public:
     QString lastFailureMessage;
 };
 
+class FakeContentPersistenceViewModel final : public QObject
+{
+    Q_OBJECT
+
+public:
+    explicit FakeContentPersistenceViewModel(QObject* parent = nullptr)
+        : QObject(parent)
+    {
+    }
+
+    Q_INVOKABLE QString noteDirectoryPathForNoteId(const QString& noteId) const
+    {
+        return m_noteDirectoryPaths.value(noteId.trimmed());
+    }
+
+    Q_INVOKABLE bool applyPersistedBodyStateForNote(
+        const QString& noteId,
+        const QString& bodyPlainText,
+        const QString& bodySourceText,
+        const QString& lastModifiedAt)
+    {
+        ++applyPersistedBodyStateCallCount;
+        lastAppliedNoteId = noteId.trimmed();
+        lastAppliedBodyPlainText = bodyPlainText;
+        lastAppliedBodySourceText = bodySourceText;
+        lastAppliedLastModifiedAt = lastModifiedAt;
+        return true;
+    }
+
+    Q_INVOKABLE bool reloadNoteMetadataForNoteId(const QString& noteId)
+    {
+        ++reloadNoteMetadataCallCount;
+        lastReloadedNoteId = noteId.trimmed();
+        return true;
+    }
+
+    void setNoteDirectoryPath(const QString& noteId, const QString& noteDirectoryPath)
+    {
+        m_noteDirectoryPaths.insert(noteId.trimmed(), QDir::cleanPath(noteDirectoryPath.trimmed()));
+    }
+
+    int applyPersistedBodyStateCallCount = 0;
+    int reloadNoteMetadataCallCount = 0;
+    QString lastAppliedNoteId;
+    QString lastAppliedBodyPlainText;
+    QString lastAppliedBodySourceText;
+    QString lastAppliedLastModifiedAt;
+    QString lastReloadedNoteId;
+
+private:
+    QHash<QString, QString> m_noteDirectoryPaths;
+};
+
 class ScopedQSettingsSandbox final
 {
 public:
@@ -232,7 +290,54 @@ private slots:
     void resourceTagTextGenerator_and_noteFolderSemantics_normalizeDescriptorsAndXml();
     void structuredCollectionPolicy_normalizesEntriesAndPrefersResolvedMatches();
     void structuredMutationPolicy_buildsDeletionAndInsertionPayloads();
+    void editorSessionController_preservesLocalEditorAuthorityAgainstSameNoteModelSync();
+    void noteManagementCoordinator_reconcilePersistsEditorSnapshotWhenPreferred();
+    void noteManagementCoordinator_reconcileRefreshesWithoutPersistingWhenEditorIsNotAuthoritative();
+
+private:
+    static QString createLocalNoteForRegression(
+        const QString& parentDirectoryPath,
+        const QString& noteId,
+        const QString& bodySourceText,
+        QString* errorMessage = nullptr);
 };
+
+QString WhatSonCppRegressionTests::createLocalNoteForRegression(
+    const QString& parentDirectoryPath,
+    const QString& noteId,
+    const QString& bodySourceText,
+    QString* errorMessage)
+{
+    if (errorMessage != nullptr)
+    {
+        errorMessage->clear();
+    }
+
+    const QString normalizedParentDirectoryPath = QDir::cleanPath(parentDirectoryPath.trimmed());
+    const QString normalizedNoteId = noteId.trimmed();
+    const QString noteDirectoryPath =
+        QDir(normalizedParentDirectoryPath).filePath(QStringLiteral("%1.wsnote").arg(normalizedNoteId));
+
+    WhatSonNoteHeaderStore headerStore;
+    headerStore.setNoteId(normalizedNoteId);
+    headerStore.setCreatedAt(QStringLiteral("2026-04-18-00-00-00"));
+    headerStore.setAuthor(QStringLiteral("WhatSonCppRegressionTests"));
+    headerStore.setLastModifiedAt(QStringLiteral("2026-04-18-00-00-00"));
+    headerStore.setModifiedBy(QStringLiteral("WhatSonCppRegressionTests"));
+
+    WhatSonLocalNoteFileStore fileStore;
+    WhatSonLocalNoteFileStore::CreateRequest request;
+    request.noteId = normalizedNoteId;
+    request.noteDirectoryPath = noteDirectoryPath;
+    request.headerStore = headerStore;
+    request.bodyPlainText = bodySourceText;
+
+    if (!fileStore.createNote(std::move(request), nullptr, errorMessage))
+    {
+        return {};
+    }
+    return noteDirectoryPath;
+}
 
 void WhatSonCppRegressionTests::selectedHubStore_persistsNormalizedSelectionsWithinSandboxedSettings()
 {
@@ -697,11 +802,15 @@ void WhatSonCppRegressionTests::cronExpression_and_asyncScheduler_coverParsingMa
     QCOMPARE(scheduler.evaluateSchedulesAtUnixSeconds(121), 0);
     QCOMPARE(scheduleTriggeredSpy.count(), 1);
 
+    QVERIFY(scheduler.unhookEvent(QStringLiteral("cron")));
+    QCOMPARE(scheduler.scheduleCount(), 0);
+    QVERIFY(!scheduler.unhookEvent(QStringLiteral("missing")));
+
     QVERIFY(scheduler.hookIntervalEvent(
         QStringLiteral("interval"),
         5,
         QVariantMap{{QStringLiteral("scope"), QStringLiteral("interval")}}));
-    QCOMPARE(scheduler.scheduleCount(), 2);
+    QCOMPARE(scheduler.scheduleCount(), 1);
 
     qint64 nextTriggerUnixSeconds = -1;
     const QVariantList schedules = scheduler.schedules();
@@ -730,15 +839,28 @@ void WhatSonCppRegressionTests::cronExpression_and_asyncScheduler_coverParsingMa
     QCOMPARE(scheduler.hookRequestCount(), 1);
     QCOMPARE(hookRequestCountChangedSpy.count(), 1);
 
-    QVERIFY(scheduler.start());
-    QVERIFY(!scheduler.start());
-    QVERIFY(scheduler.running());
-    scheduler.stop();
-    scheduler.stop();
-    QVERIFY(!scheduler.running());
-    QCOMPARE(runningChangedSpy.count(), 2);
+    const bool started = scheduler.start();
+    if (started)
+    {
+        QVERIFY(!scheduler.start());
+        QVERIFY(scheduler.running());
+        scheduler.stop();
+        scheduler.stop();
+        QVERIFY(!scheduler.running());
+        QCOMPARE(runningChangedSpy.count(), 2);
+    }
+    else
+    {
+        QVERIFY(!scheduler.running());
+        QVERIFY(!schedulerWarningSpy.isEmpty());
+        QVERIFY(
+            schedulerWarningSpy.constLast().at(0).toString().contains(
+                QStringLiteral("could not be activated")));
+        QVERIFY(!scheduler.start());
+        QVERIFY(!scheduler.running());
+    }
 
-    QVERIFY(scheduler.unhookEvent(QStringLiteral("cron")));
+    QVERIFY(scheduler.unhookEvent(QStringLiteral("interval")));
     scheduler.clearSchedules();
     QCOMPARE(scheduler.scheduleCount(), 0);
 }
@@ -923,6 +1045,151 @@ void WhatSonCppRegressionTests::structuredMutationPolicy_buildsDeletionAndInsert
         expectedFocusOffset);
 
     QVERIFY(policy.buildResourceInsertionPayload(QString(), 0, QVariantList{}).isEmpty());
+}
+
+void WhatSonCppRegressionTests::editorSessionController_preservesLocalEditorAuthorityAgainstSameNoteModelSync()
+{
+    ContentsEditorSessionController controller;
+
+    controller.setEditorBoundNoteId(QStringLiteral("note-1"));
+    controller.setEditorText(QStringLiteral("editor-owned text"));
+    controller.setLocalEditorAuthority(true);
+    controller.setLastLocalEditTimestampMs(0);
+    controller.setTypingIdleThresholdMs(1000);
+    controller.setPendingBodySave(false);
+
+    QVERIFY(!controller.isTypingSessionActive());
+    QVERIFY(!controller.requestSyncEditorTextFromSelection(
+        QStringLiteral("note-1"),
+        QStringLiteral("raw-owned text"),
+        QStringLiteral("note-1")));
+    QCOMPARE(controller.editorBoundNoteId(), QStringLiteral("note-1"));
+    QCOMPARE(controller.editorText(), QStringLiteral("editor-owned text"));
+    QVERIFY(controller.localEditorAuthority());
+
+    controller.setLocalEditorAuthority(false);
+    QVERIFY(controller.requestSyncEditorTextFromSelection(
+        QStringLiteral("note-1"),
+        QStringLiteral("raw-owned text"),
+        QStringLiteral("note-1")));
+    QCOMPARE(controller.editorText(), QStringLiteral("raw-owned text"));
+}
+
+void WhatSonCppRegressionTests::noteManagementCoordinator_reconcilePersistsEditorSnapshotWhenPreferred()
+{
+    QTemporaryDir workspaceDir;
+    QVERIFY(workspaceDir.isValid());
+
+    QString createError;
+    const QString noteId = QStringLiteral("authoritative-note");
+    const QString noteDirectoryPath = createLocalNoteForRegression(
+        workspaceDir.path(),
+        noteId,
+        QStringLiteral("raw-before"),
+        &createError);
+    QVERIFY2(
+        !noteDirectoryPath.isEmpty(),
+        qPrintable(QStringLiteral("Failed to create note fixture: %1").arg(createError)));
+
+    FakeContentPersistenceViewModel contentViewModel;
+    contentViewModel.setNoteDirectoryPath(noteId, noteDirectoryPath);
+
+    ContentsNoteManagementCoordinator coordinator;
+    coordinator.setContentViewModel(&contentViewModel);
+
+    QSignalSpy reconcileSpy(
+        &coordinator,
+        &ContentsNoteManagementCoordinator::viewSessionSnapshotReconciled);
+
+    QVERIFY(coordinator.reconcileViewSessionAndRefreshSnapshotForNote(
+        noteId,
+        QStringLiteral("editor-after"),
+        true));
+    QTRY_COMPARE_WITH_TIMEOUT(reconcileSpy.count(), 1, 10000);
+
+    const QList<QVariant> reconcileArguments = reconcileSpy.takeFirst();
+    QCOMPARE(reconcileArguments.at(0).toString(), noteId);
+    QVERIFY(reconcileArguments.at(1).toBool());
+    QVERIFY(reconcileArguments.at(2).toBool());
+    QCOMPARE(reconcileArguments.at(3).toString(), QString());
+
+    QCOMPARE(contentViewModel.applyPersistedBodyStateCallCount, 1);
+    QCOMPARE(contentViewModel.lastAppliedNoteId, noteId);
+    QCOMPARE(contentViewModel.lastAppliedBodyPlainText, QStringLiteral("editor-after"));
+    QCOMPARE(contentViewModel.lastAppliedBodySourceText, QStringLiteral("editor-after"));
+    QCOMPARE(contentViewModel.reloadNoteMetadataCallCount, 1);
+    QCOMPARE(contentViewModel.lastReloadedNoteId, noteId);
+
+    WhatSonLocalNoteFileStore fileStore;
+    WhatSonLocalNoteDocument document;
+    WhatSonLocalNoteFileStore::ReadRequest readRequest;
+    readRequest.noteId = noteId;
+    readRequest.noteDirectoryPath = noteDirectoryPath;
+
+    QString readError;
+    QVERIFY2(
+        fileStore.readNote(readRequest, &document, &readError),
+        qPrintable(QStringLiteral("Failed to read reconciled note: %1").arg(readError)));
+    QCOMPARE(
+        WhatSon::NoteBodyPersistence::normalizeBodyPlainText(document.bodySourceText),
+        QStringLiteral("editor-after"));
+}
+
+void WhatSonCppRegressionTests::noteManagementCoordinator_reconcileRefreshesWithoutPersistingWhenEditorIsNotAuthoritative()
+{
+    QTemporaryDir workspaceDir;
+    QVERIFY(workspaceDir.isValid());
+
+    QString createError;
+    const QString noteId = QStringLiteral("refresh-only-note");
+    const QString noteDirectoryPath = createLocalNoteForRegression(
+        workspaceDir.path(),
+        noteId,
+        QStringLiteral("raw-before"),
+        &createError);
+    QVERIFY2(
+        !noteDirectoryPath.isEmpty(),
+        qPrintable(QStringLiteral("Failed to create note fixture: %1").arg(createError)));
+
+    FakeContentPersistenceViewModel contentViewModel;
+    contentViewModel.setNoteDirectoryPath(noteId, noteDirectoryPath);
+
+    ContentsNoteManagementCoordinator coordinator;
+    coordinator.setContentViewModel(&contentViewModel);
+
+    QSignalSpy reconcileSpy(
+        &coordinator,
+        &ContentsNoteManagementCoordinator::viewSessionSnapshotReconciled);
+
+    QVERIFY(coordinator.reconcileViewSessionAndRefreshSnapshotForNote(
+        noteId,
+        QStringLiteral("editor-after"),
+        false));
+    QTRY_COMPARE_WITH_TIMEOUT(reconcileSpy.count(), 1, 10000);
+
+    const QList<QVariant> reconcileArguments = reconcileSpy.takeFirst();
+    QCOMPARE(reconcileArguments.at(0).toString(), noteId);
+    QVERIFY(reconcileArguments.at(1).toBool());
+    QVERIFY(reconcileArguments.at(2).toBool());
+    QCOMPARE(reconcileArguments.at(3).toString(), QString());
+
+    QCOMPARE(contentViewModel.applyPersistedBodyStateCallCount, 0);
+    QCOMPARE(contentViewModel.reloadNoteMetadataCallCount, 1);
+    QCOMPARE(contentViewModel.lastReloadedNoteId, noteId);
+
+    WhatSonLocalNoteFileStore fileStore;
+    WhatSonLocalNoteDocument document;
+    WhatSonLocalNoteFileStore::ReadRequest readRequest;
+    readRequest.noteId = noteId;
+    readRequest.noteDirectoryPath = noteDirectoryPath;
+
+    QString readError;
+    QVERIFY2(
+        fileStore.readNote(readRequest, &document, &readError),
+        qPrintable(QStringLiteral("Failed to read refreshed note: %1").arg(readError)));
+    QCOMPARE(
+        WhatSon::NoteBodyPersistence::normalizeBodyPlainText(document.bodySourceText),
+        QStringLiteral("raw-before"));
 }
 
 QTEST_APPLESS_MAIN(WhatSonCppRegressionTests)

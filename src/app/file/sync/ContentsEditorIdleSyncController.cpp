@@ -207,18 +207,21 @@ quint64 ContentsEditorIdleSyncController::loadNoteBodyTextForNote(const QString&
 
 bool ContentsEditorIdleSyncController::reconcileViewSessionAndRefreshSnapshotForNote(
     const QString& noteId,
-    const QString& viewSessionText)
+    const QString& viewSessionText,
+    const bool preferViewSessionOnMismatch)
 {
     const bool accepted = m_noteManagementCoordinator != nullptr
         && m_noteManagementCoordinator->reconcileViewSessionAndRefreshSnapshotForNote(
             noteId,
-            viewSessionText);
+            viewSessionText,
+            preferViewSessionOnMismatch);
     WhatSon::Debug::traceEditorSelf(
         this,
         QStringLiteral("idleSync"),
         QStringLiteral("reconcileViewSessionAndRefreshSnapshotForNote"),
-        QStringLiteral("accepted=%1 noteId=%2 %3")
+        QStringLiteral("accepted=%1 preferViewSession=%2 noteId=%3 %4")
             .arg(accepted)
+            .arg(preferViewSessionOnMismatch)
             .arg(noteId.trimmed())
             .arg(WhatSon::Debug::summarizeText(viewSessionText)));
     return accepted;
@@ -320,7 +323,10 @@ void ContentsEditorIdleSyncController::handlePersistenceFinished(
         if (!normalizedNoteId.isEmpty() && m_noteManagementCoordinator != nullptr)
         {
             const bool reconciled = m_noteManagementCoordinator
-                ->reconcileViewSessionAndRefreshSnapshotForNote(normalizedNoteId, completedText);
+                ->reconcileViewSessionAndRefreshSnapshotForNote(
+                    normalizedNoteId,
+                    completedText,
+                    true);
             if (!reconciled)
             {
                 WhatSon::Debug::traceSelf(

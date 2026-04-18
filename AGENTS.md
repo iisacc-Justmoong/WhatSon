@@ -44,10 +44,14 @@ every turn.
 
 ## Automated Test Policy
 
-- This repository now maintains an in-repo C++ build/runtime regression suite under `test/cpp/`.
-- Python test scripts under `scripts/test_*.py` were removed and must not be reintroduced; keep automated regression coverage under CTest and the C++ regression suite in `test/`.
+- This repository maintains in-repo build and runtime regression gates under the root CMake targets and `test/`.
+- The maintained verification entry points are `whatson_build_regression` (build gate), `whatson_cpp_regression`
+  (runtime C++ regression gate), and `whatson_regression` (combined default gate).
+- Python test scripts under `scripts/test_*.py` were removed and must not be reintroduced; keep automated regression
+  coverage under CTest and the C++ regression suite in `test/`.
 - Do not add `tests/*`, `scripts/test_*.py`, or ad hoc duplicate harnesses unless the user explicitly asks for a second test surface.
-- Default task flow must not run project-level tests, smoke suites, or verification builds. Only perform verification when the user explicitly asks for it, and keep all generated artifacts under `build/`.
+- Default task flow should run the smallest relevant verification gate before handoff and keep all generated artifacts
+  under `build/`.
 
 ### Hierarchy ViewModel Ownership (Critical)
 
@@ -104,7 +108,8 @@ every turn.
 ## Codex Init (`/init`) Procedure
 
 Initialization guidance in this section is reference material only.
-Do not execute this sequence during ordinary work unless the user explicitly asks for environment bootstrap or verification.
+Do not execute this full sequence during ordinary work unless the user explicitly asks for environment bootstrap.
+Ordinary feature work should prefer the smaller maintained verification targets in `build/`.
 
 When `/init` is explicitly requested, initialization is considered complete when the following sequence succeeds.
 
@@ -248,8 +253,8 @@ An exception is allowed only when all conditions are satisfied.
 2. Updated QML keeps consistent LVRS imports and component usage.
 3. Model/viewmodel/view contracts preserve signal-slot hooks (`signals`+`slots` in C++, `signal` + callable hook
    function in QML views).
-4. If the user explicitly requests verification or generated artifacts, reuse `build/` and do not create alternate
-   build directories.
+4. Run the smallest relevant verification gate in `build/` before handoff unless the user explicitly instructs
+   otherwise, and do not create alternate build directories.
 
 ## Maintenance Rules
 
@@ -269,6 +274,8 @@ An exception is allowed only when all conditions are satisfied.
     - Run `cmake --build build --target whatson_qmllint -j` after QML refactors.
     - Run `cmake --build build --target whatson_clang_tidy -j` after C++ refactors when `clang-tidy` is installed; if
       unavailable, report the missing tool explicitly in the completion notes.
+    - Run `cmake --build build --target whatson_build_regression -j` after build-system or compilation-surface changes.
+    - Run `cmake --build build --target whatson_regression -j` after C++ or cross-domain behavior changes.
 
 ## Troubleshooting Baseline
 
@@ -281,6 +288,7 @@ An exception is allowed only when all conditions are satisfied.
 - Use real repository files and logs as evidence instead of assumptions.
 - Keep changes small and verifiable.
 - In completion reports, include changed files, verification commands, and known limits.
-- When no tests were run, say so explicitly and cite the repository policy if that is the reason.
+- When verification was skipped or could not be run, say so explicitly and explain whether the user declined it or the
+  environment blocked it.
 - Use English only inside this project.
 - Rework `AGENTS.md` when major codebase changes or new requirements are introduced.

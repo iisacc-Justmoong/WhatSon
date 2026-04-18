@@ -299,6 +299,13 @@ bool WhatSonAsyncScheduler::start()
     }
 
     m_tickTimer.start();
+    if (!m_tickTimer.isActive())
+    {
+        emit schedulerWarning(
+            QStringLiteral("start rejected: scheduler timer could not be activated in the current thread."));
+        return false;
+    }
+
     emit runningChanged();
     return true;
 }

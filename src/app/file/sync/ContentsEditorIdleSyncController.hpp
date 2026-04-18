@@ -41,7 +41,8 @@ public:
     quint64 loadNoteBodyTextForNote(const QString& noteId);
     bool reconcileViewSessionAndRefreshSnapshotForNote(
         const QString& noteId,
-        const QString& viewSessionText);
+        const QString& viewSessionText,
+        bool preferViewSessionOnMismatch = false);
     bool refreshNoteSnapshotForNote(const QString& noteId);
     void bindSelectedNote(const QString& noteId);
     void clearSelectedNote();

@@ -1642,9 +1642,13 @@ Item {
             const sessionText = editorSession.editorText === undefined || editorSession.editorText === null
                     ? ""
                     : String(editorSession.editorText);
+            const preferViewSessionOnMismatch = editorSession
+                    && editorSession.localEditorAuthority !== undefined
+                    && !!editorSession.localEditorAuthority;
             if (selectionBridge.reconcileViewSessionAndRefreshSnapshotForNote(
                         normalizedNoteId,
-                        sessionText)) {
+                        sessionText,
+                        preferViewSessionOnMismatch)) {
                 selectionSyncCoordinator.markSnapshotReconcileStarted(normalizedNoteId);
                 return;
             }
@@ -1670,9 +1674,13 @@ Item {
         const sessionText = editorSession.editorText === undefined || editorSession.editorText === null
                 ? ""
                 : String(editorSession.editorText);
+        const preferViewSessionOnMismatch = editorSession
+                && editorSession.localEditorAuthority !== undefined
+                && !!editorSession.localEditorAuthority;
         if (!selectionBridge.reconcileViewSessionAndRefreshSnapshotForNote(
                     normalizedNoteId,
-                    sessionText))
+                    sessionText,
+                    preferViewSessionOnMismatch))
             return false;
         selectionSyncCoordinator.markSnapshotReconcileStarted(normalizedNoteId);
         return true;
