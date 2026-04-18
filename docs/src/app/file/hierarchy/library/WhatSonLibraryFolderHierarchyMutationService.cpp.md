@@ -32,6 +32,8 @@ the semantic folder identity.
   match the staged tree, otherwise the header is rewritten.
 - Header-only folder rewrites preserve existing `lastModified` and `modifiedBy` values; timestamp
   changes are reserved for `.wsnbody` persistence.
+- Folder path comparisons now run through the shared escaped-segment semantics, so one folder label
+  containing a literal `/` is not mis-read as a parent/child path during note-header remapping.
 
 ## Persistence Order
 

@@ -3,6 +3,7 @@
 #include "../WhatSonFolderIdentity.hpp"
 #include "WhatSonDebugTrace.hpp"
 #include "WhatSonFoldersHierarchyCreator.hpp"
+#include "file/note/WhatSonNoteFolderSemantics.hpp"
 
 #include <QDir>
 #include <QFile>
@@ -24,16 +25,16 @@ namespace
 
         for (WhatSonFolderDepthEntry& entry : entries)
         {
-            entry.id = sanitizeText(std::move(entry.id));
+            entry.id = WhatSon::NoteFolders::normalizeFolderPath(std::move(entry.id));
             entry.label = sanitizeText(std::move(entry.label));
             entry.uuid = WhatSon::FolderIdentity::normalizeFolderUuid(std::move(entry.uuid));
             if (entry.label.isEmpty() && !entry.id.isEmpty())
             {
-                entry.label = entry.id;
+                entry.label = WhatSon::NoteFolders::leafFolderName(entry.id);
             }
             if (entry.id.isEmpty() && !entry.label.isEmpty())
             {
-                entry.id = entry.label;
+                entry.id = WhatSon::NoteFolders::appendFolderPathSegment({}, entry.label);
             }
             if (entry.label.isEmpty() || entry.id.isEmpty())
             {

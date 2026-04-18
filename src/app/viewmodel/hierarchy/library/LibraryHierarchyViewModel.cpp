@@ -91,10 +91,10 @@ namespace
         folders.reserve(note.folders.size());
         for (const QString& folder : note.folders)
         {
-            const QString trimmed = folder.trimmed();
-            if (!trimmed.isEmpty())
+            const QString displayFolder = WhatSon::NoteFolders::displayFolderPath(folder);
+            if (!displayFolder.isEmpty())
             {
-                folders.push_back(trimmed);
+                folders.push_back(displayFolder);
             }
         }
         folders.removeDuplicates();
@@ -132,21 +132,7 @@ namespace
 
     QString normalizeFolderPath(QString value)
     {
-        value = value.trimmed();
-        value.replace(QLatin1Char('\\'), QLatin1Char('/'));
-        while (value.contains(QStringLiteral("//")))
-        {
-            value.replace(QStringLiteral("//"), QStringLiteral("/"));
-        }
-        while (value.startsWith(QLatin1Char('/')))
-        {
-            value.remove(0, 1);
-        }
-        while (value.endsWith(QLatin1Char('/')))
-        {
-            value.chop(1);
-        }
-        return value;
+        return WhatSon::NoteFolders::normalizeFolderPath(std::move(value));
     }
 
     QString normalizeFolderLookupKey(QString value)
@@ -161,35 +147,12 @@ namespace
 
     QString leafNameFromFolderPath(const QString& value)
     {
-        const QString normalized = normalizeFolderPath(value);
-        if (normalized.isEmpty())
-        {
-            return {};
-        }
-
-        const int slashIndex = normalized.lastIndexOf(QLatin1Char('/'));
-        if (slashIndex < 0)
-        {
-            return normalized;
-        }
-
-        return normalized.mid(slashIndex + 1);
+        return WhatSon::NoteFolders::leafFolderName(value);
     }
 
     QString buildFolderPath(const QString& parentPath, const QString& label)
     {
-        const QString normalizedLabel = normalizeFolderPath(label);
-        if (normalizedLabel.isEmpty())
-        {
-            return normalizeFolderPath(parentPath);
-        }
-
-        const QString normalizedParent = normalizeFolderPath(parentPath);
-        if (normalizedParent.isEmpty())
-        {
-            return normalizedLabel;
-        }
-        return normalizedParent + QLatin1Char('/') + normalizedLabel;
+        return WhatSon::NoteFolders::appendFolderPathSegment(parentPath, label);
     }
 
     bool usesReservedTodayFolderToken(const QString& value)
@@ -217,12 +180,7 @@ namespace
 
     QStringList folderPathSegments(const QString& folderPath)
     {
-        const QString normalized = normalizeFolderPath(folderPath);
-        if (normalized.isEmpty())
-        {
-            return {};
-        }
-        return normalized.split(QLatin1Char('/'), Qt::SkipEmptyParts);
+        return WhatSon::NoteFolders::folderPathSegments(folderPath);
     }
 
     FolderHierarchyLookup buildFolderHierarchyLookup(const QVector<LibraryHierarchyItem>& items)
@@ -315,7 +273,7 @@ namespace
             tokens.push_back(NoteFolderToken{
                 pathKey,
                 folderUuid,
-                normalizedFolder.contains(QLatin1Char('/'))
+                WhatSon::NoteFolders::isHierarchicalFolderPath(normalizedFolder)
             });
         }
 
@@ -476,7 +434,7 @@ namespace
                 const QString folderKey = normalizedFolderPath.toCaseFolded();
                 if (!normalizedFolderPath.isEmpty() && !folderKeys.contains(folderKey))
                 {
-                    folders.push_back(normalizedFolderPath);
+                    folders.push_back(WhatSon::NoteFolders::displayFolderPath(normalizedFolderPath));
                     folderKeys.insert(folderKey);
                 }
             }
@@ -492,7 +450,7 @@ namespace
                 continue;
             }
 
-            folders.push_back(normalizedFolderPath);
+            folders.push_back(WhatSon::NoteFolders::displayFolderPath(normalizedFolderPath));
             folderKeys.insert(folderKey);
         }
 

@@ -3,6 +3,7 @@
 #include "../WhatSonFolderIdentity.hpp"
 #include "WhatSonDebugTrace.hpp"
 #include "WhatSonFoldersHierarchyStore.hpp"
+#include "file/note/WhatSonNoteFolderSemantics.hpp"
 
 #include <QJsonArray>
 #include <QJsonDocument>
@@ -67,19 +68,7 @@ namespace
 
     QString leafNameFromPath(const QString& path)
     {
-        const QString normalized = path.trimmed();
-        if (normalized.isEmpty())
-        {
-            return {};
-        }
-
-        const int slashIndex = normalized.lastIndexOf(QLatin1Char('/'));
-        if (slashIndex < 0)
-        {
-            return normalized;
-        }
-
-        return normalized.mid(slashIndex + 1).trimmed();
+        return WhatSon::NoteFolders::leafFolderName(path);
     }
 
     void normalizeEntriesByDepthAndPath(
@@ -97,18 +86,14 @@ namespace
 
         for (WhatSonFolderDepthEntry entry : *entries)
         {
-            entry.id = entry.id.trimmed();
+            entry.id = WhatSon::NoteFolders::normalizeFolderPath(std::move(entry.id));
             entry.label = entry.label.trimmed();
             entry.uuid = normalizedOrGeneratedFolderUuid(std::move(entry.uuid), outUuidMigrationRequired);
             if (entry.label.isEmpty() && !entry.id.isEmpty())
             {
                 entry.label = leafNameFromPath(entry.id);
             }
-            if (entry.id.isEmpty() && !entry.label.isEmpty())
-            {
-                entry.id = entry.label;
-            }
-            if (entry.id.isEmpty() || entry.label.isEmpty())
+            if (entry.label.isEmpty())
             {
                 continue;
             }
@@ -125,16 +110,10 @@ namespace
             entry.depth = depth;
 
             const QString parentPath = (depth > 0 && !pathStack.isEmpty()) ? pathStack.constLast() : QString();
-            if (!parentPath.isEmpty() && !entry.id.startsWith(parentPath + QLatin1Char('/')))
+            entry.id = WhatSon::NoteFolders::appendFolderPathSegment(parentPath, entry.label);
+            if (entry.id.isEmpty())
             {
-                if (!entry.id.contains(QLatin1Char('/')))
-                {
-                    entry.id = parentPath + QLatin1Char('/') + entry.id;
-                }
-            }
-            if (entry.label.isEmpty())
-            {
-                entry.label = leafNameFromPath(entry.id);
+                continue;
             }
 
             normalized.push_back(entry);
@@ -169,7 +148,7 @@ namespace
             }
 
             WhatSonFolderDepthEntry entry;
-            entry.id = trimmedValue;
+            entry.id = WhatSon::NoteFolders::appendFolderPathSegment({}, trimmedValue);
             entry.label = trimmedValue;
             entry.depth = 0;
             entry.uuid = normalizedOrGeneratedFolderUuid({}, outUuidMigrationRequired);
@@ -322,7 +301,7 @@ namespace
                 return;
             }
             WhatSonFolderDepthEntry entry;
-            entry.id = text;
+            entry.id = WhatSon::NoteFolders::appendFolderPathSegment({}, text);
             entry.label = text;
             entry.depth = fallbackDepth < 0 ? 0 : fallbackDepth;
             entry.uuid = normalizedOrGeneratedFolderUuid({}, outUuidMigrationRequired);

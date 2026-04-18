@@ -26,21 +26,7 @@ namespace
 
     QString normalizeFolderPath(QString value)
     {
-        value = value.trimmed();
-        value.replace(QLatin1Char('\\'), QLatin1Char('/'));
-        while (value.contains(QStringLiteral("//")))
-        {
-            value.replace(QStringLiteral("//"), QStringLiteral("/"));
-        }
-        while (value.startsWith(QLatin1Char('/')))
-        {
-            value.remove(0, 1);
-        }
-        while (value.endsWith(QLatin1Char('/')))
-        {
-            value.chop(1);
-        }
-        return value;
+        return WhatSon::NoteFolders::normalizeFolderPath(std::move(value));
     }
 
     QString normalizeFolderLookupKey(QString value)
@@ -55,12 +41,7 @@ namespace
 
     QStringList folderPathSegments(const QString& folderPath)
     {
-        const QString normalized = normalizeFolderPath(folderPath);
-        if (normalized.isEmpty())
-        {
-            return {};
-        }
-        return normalized.split(QLatin1Char('/'), Qt::SkipEmptyParts);
+        return WhatSon::NoteFolders::folderPathSegments(folderPath);
     }
 
     FolderHierarchyLookup buildFolderHierarchyLookup(const QVector<WhatSonFolderDepthEntry>& entries)
@@ -152,7 +133,7 @@ namespace
             tokens.push_back(NoteFolderToken{
                 pathKey,
                 folderUuid,
-                normalizedFolder.contains(QLatin1Char('/'))
+                WhatSon::NoteFolders::isHierarchicalFolderPath(normalizedFolder)
             });
         }
 
@@ -333,18 +314,7 @@ namespace
 
     QString buildFolderPath(const QString& parentPath, const QString& label)
     {
-        const QString normalizedLabel = normalizeFolderPath(label);
-        if (normalizedLabel.isEmpty())
-        {
-            return normalizeFolderPath(parentPath);
-        }
-
-        const QString normalizedParent = normalizeFolderPath(parentPath);
-        if (normalizedParent.isEmpty())
-        {
-            return normalizedLabel;
-        }
-        return normalizedParent + QLatin1Char('/') + normalizedLabel;
+        return WhatSon::NoteFolders::appendFolderPathSegment(parentPath, label);
     }
 
 } // namespace

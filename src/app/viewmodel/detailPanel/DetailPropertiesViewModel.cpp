@@ -35,7 +35,7 @@ namespace
                 continue;
             }
 
-            items.push_back(WhatSon::NoteFolders::normalizeFolderPath(folderPath));
+            items.push_back(WhatSon::NoteFolders::displayFolderPath(folderPath));
         }
 
         return items;

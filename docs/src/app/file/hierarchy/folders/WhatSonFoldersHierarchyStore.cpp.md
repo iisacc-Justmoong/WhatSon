@@ -22,6 +22,14 @@ The store sits above the parser/creator pair:
 2. Sanitize each row, especially the `uuid` field.
 3. Serialize the sanitized list back when callers save the hierarchy.
 
+## Path Normalization
+
+- `id` is normalized through the shared folder-path escape rules before the caller sees it.
+- If only `label` is available, the store synthesizes a canonical one-segment `id` from that label, escaping any
+  literal `/` so the folder still stays one node.
+- If only `id` is available, the store derives `label` from the decoded leaf segment instead of exposing persisted
+  escape markers directly.
+
 ## Why This Matters
 
 The rest of the library pipeline now depends on folder UUIDs to reconnect note headers to the

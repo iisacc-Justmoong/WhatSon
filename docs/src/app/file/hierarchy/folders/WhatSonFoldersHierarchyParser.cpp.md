@@ -37,3 +37,14 @@ Each parsed row returns:
 
 The parser therefore remains path-aware for readability while producing the runtime identity needed
 for rename-safe mutations.
+
+## Escaped Slash Canonicalization
+
+- Parsed rows now treat `label` as the authoritative leaf name for one hierarchy level.
+- During normalization, the parser rebuilds `entry.id` from `depth + parentPath + label` using the shared
+  folder-path escaping rules.
+- A literal `/` inside one label is therefore persisted as `\/` inside `entry.id` instead of spawning an accidental
+  child hierarchy level.
+- This also upgrades already-saved folder rows whose JSON still contains raw slash labels such as
+  `"label": "Marketing/Sales"` with `"depth": 0`; they are re-emitted as one root node with canonical id
+  `Marketing\/Sales`.

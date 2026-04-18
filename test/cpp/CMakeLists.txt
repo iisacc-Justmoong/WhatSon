@@ -19,6 +19,9 @@ set(WHATSON_CPP_REGRESSION_TEST_SOURCES
         "${CMAKE_SOURCE_DIR}/src/app/policy/ArchitecturePolicyLock.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/file/statistic/WhatSonNoteFileStatSupport.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/file/sync/ContentsEditorIdleSyncController.cpp"
+        "${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/folders/WhatSonFoldersHierarchyCreator.cpp"
+        "${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/folders/WhatSonFoldersHierarchyParser.cpp"
+        "${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/folders/WhatSonFoldersHierarchyStore.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/tags/WhatSonTagsDepthFlattener.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/tags/WhatSonTagsHierarchyCreator.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/tags/WhatSonTagsHierarchyParser.cpp"
@@ -57,6 +60,7 @@ set(WHATSON_CPP_REGRESSION_TEST_SOURCES
         "${CMAKE_SOURCE_DIR}/src/app/viewmodel/content/ContentsStructuredDocumentFocusPolicy.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/viewmodel/content/ContentsStructuredDocumentHost.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/viewmodel/content/ContentsStructuredDocumentMutationPolicy.cpp"
+        "${CMAKE_SOURCE_DIR}/src/app/viewmodel/detailPanel/session/WhatSonFoldersHierarchySessionService.cpp"
 )
 
 add_executable(whatson_cpp_regression_tests

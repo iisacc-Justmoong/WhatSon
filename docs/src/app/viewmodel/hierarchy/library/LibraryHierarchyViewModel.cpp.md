@@ -43,9 +43,15 @@
   descendant subtree and persists the updated folders store before refreshing sidebar state.
 - The library sidebar right-click context menu now reuses those two existing methods through
   `HierarchyInteractionBridge`; no separate library-specific CRUD implementation was added for the menu.
+- Folder-path normalization now uses the shared escaped-segment semantics from `WhatSonNoteFolderSemantics.hpp`.
+  A folder label that literally contains `/` is persisted as one escaped segment (`\/`) and is no longer split into
+  fake parent/child hierarchy rows.
+- Note-list folder chips/search text now decode those escaped segments back into user-facing text, so the library list
+  does not expose persistence escape markers like `\/`.
 
 ## Tests
-- Automated test files are not currently present in this repository.
+- The maintained C++ regression suite now also covers escaped-slash folder-path semantics and parser migration for
+  literal-slash library folder labels.
 - Regression checklist:
   - Startup/deferred runtime note loads must emit `indexedNotesSnapshotChanged()` so calendar projections refresh
     before the user manually pokes the calendar surface.
@@ -63,3 +69,5 @@
   - Failed activation must not switch the current note to an unrelated item.
   - Large library notes must not be duplicated into note-list row `bodyText`; the editor must lazy-load the selected
     note body separately.
+  - A folder label such as `Marketing/Sales` must remain one hierarchy item after parse/load/save cycles.
+  - The same literal-slash folder label must not surface as `Marketing\\/Sales` in note-list folder presentation.

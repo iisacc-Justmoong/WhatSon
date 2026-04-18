@@ -1,4 +1,6 @@
 #include "file/hub/WhatSonHubPathUtils.hpp"
+#include "file/hierarchy/folders/WhatSonFoldersHierarchyParser.hpp"
+#include "file/hierarchy/folders/WhatSonFoldersHierarchyStore.hpp"
 #include "file/import/WhatSonClipboardResourceImportFileNamePolicy.hpp"
 #define private public
 #include "file/note/ContentsNoteManagementCoordinator.hpp"
@@ -28,6 +30,7 @@
 #include "viewmodel/navigationbar/NavigationModeViewModel.hpp"
 #include "viewmodel/onboarding/IOnboardingHubController.hpp"
 #include "viewmodel/onboarding/OnboardingRouteBootstrapController.hpp"
+#include "viewmodel/detailPanel/session/WhatSonFoldersHierarchySessionService.hpp"
 #include "viewmodel/panel/NoteListModelContractBridge.hpp"
 #include "viewmodel/sidebar/HierarchySidebarDomain.hpp"
 #include "viewmodel/sidebar/HierarchyViewModelProvider.hpp"
@@ -425,6 +428,8 @@ private slots:
     void unixTimeAnalyzer_reportsStableEpochFields();
     void cronExpression_and_asyncScheduler_coverParsingMatchingAndDeduplication();
     void resourceTagTextGenerator_and_noteFolderSemantics_normalizeDescriptorsAndXml();
+    void foldersHierarchyParser_escapesLiteralSlashLabelsIntoSingleSegments();
+    void foldersHierarchySessionService_preservesEscapedLiteralSlashFolderPaths();
     void structuredCollectionPolicy_normalizesEntriesAndPrefersResolvedMatches();
     void structuredMutationPolicy_buildsDeletionAndInsertionPayloads();
     void structuredMutationPolicy_buildsParagraphBoundaryMergeAndSplitPayloads();
@@ -1254,10 +1259,33 @@ void WhatSonCppRegressionTests::resourceTagTextGenerator_and_noteFolderSemantics
         WhatSon::NoteFolders::normalizeFolderPath(QStringLiteral(" /Research//Today/ ")),
         QStringLiteral("Research/Today"));
     QCOMPARE(
+        WhatSon::NoteFolders::normalizeFolderPath(QStringLiteral(" Marketing\\/Sales ")),
+        QStringLiteral("Marketing\\/Sales"));
+    QCOMPARE(
         WhatSon::NoteFolders::leafFolderName(QStringLiteral(" /Research//Today/ ")),
         QStringLiteral("Today"));
+    QCOMPARE(
+        WhatSon::NoteFolders::leafFolderName(QStringLiteral("Marketing\\/Sales")),
+        QStringLiteral("Marketing/Sales"));
+    QCOMPARE(
+        WhatSon::NoteFolders::displayFolderPath(QStringLiteral("Marketing\\/Sales/Pipeline")),
+        QStringLiteral("Marketing/Sales/Pipeline"));
+    QCOMPARE(
+        WhatSon::NoteFolders::folderPathSegments(QStringLiteral("Marketing\\/Sales/Pipeline")).size(),
+        2);
+    QVERIFY(!WhatSon::NoteFolders::isHierarchicalFolderPath(QStringLiteral("Marketing\\/Sales")));
+    QVERIFY(WhatSon::NoteFolders::isHierarchicalFolderPath(QStringLiteral("Marketing\\/Sales/Pipeline")));
+    QCOMPARE(
+        WhatSon::NoteFolders::appendFolderPathSegment(QString(), QStringLiteral("Marketing/Sales")),
+        QStringLiteral("Marketing\\/Sales"));
+    QCOMPARE(
+        WhatSon::NoteFolders::appendFolderPathSegment(
+            QStringLiteral("Marketing\\/Sales"),
+            QStringLiteral("Pipeline")),
+        QStringLiteral("Marketing\\/Sales/Pipeline"));
     QVERIFY(WhatSon::NoteFolders::usesReservedTodayFolderSegment(QStringLiteral("Research/today")));
     QVERIFY(!WhatSon::NoteFolders::usesReservedTodayFolderSegment(QStringLiteral("Research/Tomorrow")));
+    QVERIFY(!WhatSon::NoteFolders::usesReservedTodayFolderSegment(QStringLiteral("Research\\/today")));
 
     const WhatSon::NoteFolders::RawFoldersBlockState missingFoldersBlock =
         WhatSon::NoteFolders::inspectRawFoldersBlock(QStringLiteral("<header />"));
@@ -1275,6 +1303,115 @@ void WhatSonCppRegressionTests::resourceTagTextGenerator_and_noteFolderSemantics
             QStringLiteral("<folders><folder>Research</folder></folders>"));
     QVERIFY(concreteFoldersBlock.blockPresent);
     QVERIFY(concreteFoldersBlock.hasConcreteEntry);
+}
+
+void WhatSonCppRegressionTests::foldersHierarchyParser_escapesLiteralSlashLabelsIntoSingleSegments()
+{
+    WhatSonFoldersHierarchyParser parser;
+    WhatSonFoldersHierarchyStore store;
+    QString errorMessage;
+    bool uuidMigrationRequired = false;
+
+    const QString rawText = QStringLiteral(R"JSON(
+{
+  "version": 1,
+  "schema": "whatson.folders.tree",
+  "folders": [
+    {
+      "id": "Marketing/Sales",
+      "label": "Marketing/Sales",
+      "depth": 0,
+      "uuid": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+      "children": [
+        {
+          "id": "Marketing/Sales/Pipeline",
+          "label": "Pipeline",
+          "depth": 1,
+          "uuid": "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB"
+        }
+      ]
+    }
+  ]
+}
+)JSON");
+
+    QVERIFY(parser.parse(rawText, &store, &errorMessage, &uuidMigrationRequired));
+    QVERIFY2(errorMessage.isEmpty(), qPrintable(errorMessage));
+    QVERIFY(!uuidMigrationRequired);
+
+    const QVector<WhatSonFolderDepthEntry> entries = store.folderEntries();
+    QCOMPARE(entries.size(), 2);
+    QCOMPARE(entries.at(0).label, QStringLiteral("Marketing/Sales"));
+    QCOMPARE(entries.at(0).depth, 0);
+    QCOMPARE(entries.at(0).id, QStringLiteral("Marketing\\/Sales"));
+    QCOMPARE(entries.at(1).label, QStringLiteral("Pipeline"));
+    QCOMPARE(entries.at(1).depth, 1);
+    QCOMPARE(entries.at(1).id, QStringLiteral("Marketing\\/Sales/Pipeline"));
+}
+
+void WhatSonCppRegressionTests::foldersHierarchySessionService_preservesEscapedLiteralSlashFolderPaths()
+{
+    QTemporaryDir workspaceDir;
+    QVERIFY(workspaceDir.isValid());
+
+    const QString contentsPath = workspaceDir.filePath(QStringLiteral("Workspace.wscontents"));
+    QVERIFY(QDir().mkpath(contentsPath));
+
+    const QString noteDirectoryPath = QDir(contentsPath).filePath(QStringLiteral("Notes/Current"));
+    QVERIFY(QDir().mkpath(noteDirectoryPath));
+
+    const QString foldersFilePath = QDir(contentsPath).filePath(QStringLiteral("Folders.wsfolders"));
+    QFile foldersFile(foldersFilePath);
+    QVERIFY(foldersFile.open(QIODevice::WriteOnly | QIODevice::Text));
+    foldersFile.write(R"JSON(
+{
+  "version": 1,
+  "schema": "whatson.folders.tree",
+  "folders": [
+    {
+      "id": "Marketing\\/Sales",
+      "label": "Marketing/Sales",
+      "depth": 0,
+      "uuid": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+    }
+  ]
+}
+)JSON");
+    foldersFile.close();
+
+    WhatSonFoldersHierarchySessionService service;
+    WhatSonFoldersHierarchySessionService::FolderResolution resolution;
+    QString errorMessage;
+
+    QVERIFY(service.ensureFolderEntry(
+        noteDirectoryPath,
+        QStringLiteral("Marketing\\/Sales"),
+        &resolution,
+        &errorMessage));
+    QVERIFY2(errorMessage.isEmpty(), qPrintable(errorMessage));
+    QCOMPARE(resolution.folderPath, QStringLiteral("Marketing\\/Sales"));
+    QCOMPARE(resolution.folderUuid, QStringLiteral("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"));
+    QCOMPARE(resolution.foldersFilePath, foldersFilePath);
+    QVERIFY(!resolution.folderCreated);
+    QVERIFY(!resolution.hierarchyChanged);
+
+    WhatSonFoldersHierarchyParser parser;
+    WhatSonFoldersHierarchyStore store;
+    bool uuidMigrationRequired = false;
+
+    QVERIFY(foldersFile.open(QIODevice::ReadOnly | QIODevice::Text));
+    const QString persistedText = QString::fromUtf8(foldersFile.readAll());
+    foldersFile.close();
+
+    QVERIFY(parser.parse(persistedText, &store, &errorMessage, &uuidMigrationRequired));
+    QVERIFY2(errorMessage.isEmpty(), qPrintable(errorMessage));
+    QVERIFY(!uuidMigrationRequired);
+
+    const QVector<WhatSonFolderDepthEntry> entries = store.folderEntries();
+    QCOMPARE(entries.size(), 1);
+    QCOMPARE(entries.constFirst().id, QStringLiteral("Marketing\\/Sales"));
+    QCOMPARE(entries.constFirst().label, QStringLiteral("Marketing/Sales"));
+    QCOMPARE(entries.constFirst().depth, 0);
 }
 
 void WhatSonCppRegressionTests::structuredCollectionPolicy_normalizesEntriesAndPrefersResolvedMatches()

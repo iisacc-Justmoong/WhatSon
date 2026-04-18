@@ -41,10 +41,10 @@ namespace
                 continue;
             }
 
-            const QString normalizedFolderPath = WhatSon::NoteFolders::normalizeFolderPath(folderPath);
-            if (!normalizedFolderPath.isEmpty())
+            const QString displayFolderPath = WhatSon::NoteFolders::displayFolderPath(folderPath);
+            if (!displayFolderPath.isEmpty())
             {
-                items.push_back(normalizedFolderPath);
+                items.push_back(displayFolderPath);
             }
         }
 

@@ -64,7 +64,9 @@ plain-text Figma layout.
 
 ## Tests
 
-- Automated test files are not currently present in this repository.
+- Folder display now also decodes escaped folder-path segments before rendering fallback summary text, so detail stats
+  do not expose persistence markers such as `\/` when one folder label literally contains `/`.
+- The maintained C++ regression suite locks the shared folder-path escaping semantics that this view depends on.
 - Regression checklist:
   - a note with an empty `.wsnhead <project>` field must render `Projects: No project` in the file-stat summary
   - typing in the editor and waiting for autosave must not continuously increase `modifiedCount`

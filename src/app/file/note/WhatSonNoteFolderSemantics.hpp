@@ -6,46 +6,135 @@
 
 namespace WhatSon::NoteFolders
 {
-    inline QString normalizeFolderPath(QString value)
+    inline QString escapeFolderPathSegment(QString value)
     {
         value = value.trimmed();
-        value.replace(QLatin1Char('\\'), QLatin1Char('/'));
-        while (value.contains(QStringLiteral("//")))
-        {
-            value.replace(QStringLiteral("//"), QStringLiteral("/"));
-        }
-        while (value.startsWith(QLatin1Char('/')))
-        {
-            value.remove(0, 1);
-        }
-        while (value.endsWith(QLatin1Char('/')))
-        {
-            value.chop(1);
-        }
+        value.replace(QLatin1Char('\\'), QStringLiteral("\\\\"));
+        value.replace(QLatin1Char('/'), QStringLiteral("\\/"));
         return value;
     }
 
-    inline QString leafFolderName(QString value)
+    inline QStringList folderPathSegments(QString value)
     {
-        const QString normalizedPath = normalizeFolderPath(std::move(value));
-        if (normalizedPath.isEmpty())
+        value = value.trimmed();
+        if (value.isEmpty())
         {
             return {};
         }
 
-        const QStringList segments = normalizedPath.split(QLatin1Char('/'), Qt::SkipEmptyParts);
+        QStringList segments;
+        QString currentSegment;
+        currentSegment.reserve(value.size());
+
+        auto flushCurrentSegment = [&segments, &currentSegment]()
+        {
+            const QString normalizedSegment = currentSegment.trimmed();
+            currentSegment.clear();
+            if (!normalizedSegment.isEmpty())
+            {
+                segments.push_back(normalizedSegment);
+            }
+        };
+
+        for (int index = 0; index < value.size(); ++index)
+        {
+            const QChar character = value.at(index);
+            if (character == QLatin1Char('\\'))
+            {
+                const bool hasNextCharacter = index + 1 < value.size();
+                if (hasNextCharacter)
+                {
+                    const QChar nextCharacter = value.at(index + 1);
+                    if (nextCharacter == QLatin1Char('\\') || nextCharacter == QLatin1Char('/'))
+                    {
+                        currentSegment.push_back(nextCharacter);
+                        ++index;
+                        continue;
+                    }
+                }
+
+                flushCurrentSegment();
+                continue;
+            }
+
+            if (character == QLatin1Char('/'))
+            {
+                flushCurrentSegment();
+                continue;
+            }
+
+            currentSegment.push_back(character);
+        }
+
+        flushCurrentSegment();
+        return segments;
+    }
+
+    inline QString joinFolderPathSegments(const QStringList& segments)
+    {
+        QStringList sanitizedSegments;
+        sanitizedSegments.reserve(segments.size());
+
+        for (QString segment : segments)
+        {
+            segment = segment.trimmed();
+            if (segment.isEmpty())
+            {
+                continue;
+            }
+            sanitizedSegments.push_back(escapeFolderPathSegment(std::move(segment)));
+        }
+
+        return sanitizedSegments.join(QLatin1Char('/'));
+    }
+
+    inline QString normalizeFolderPath(QString value)
+    {
+        return joinFolderPathSegments(folderPathSegments(std::move(value)));
+    }
+
+    inline QString appendFolderPathSegment(const QString& parentPath, QString segment)
+    {
+        segment = segment.trimmed();
+        if (segment.isEmpty())
+        {
+            return normalizeFolderPath(parentPath);
+        }
+
+        QStringList segments = folderPathSegments(parentPath);
+        segments.push_back(segment);
+        return joinFolderPathSegments(segments);
+    }
+
+    inline QString displayFolderPath(QString value)
+    {
+        return folderPathSegments(std::move(value)).join(QLatin1Char('/'));
+    }
+
+    inline bool isHierarchicalFolderPath(const QString& value)
+    {
+        return folderPathSegments(value).size() > 1;
+    }
+
+    inline QString leafFolderName(QString value)
+    {
+        const QStringList segments = folderPathSegments(std::move(value));
+        if (segments.isEmpty())
+        {
+            return {};
+        }
+
         return segments.isEmpty() ? QString() : segments.constLast().trimmed();
     }
 
     inline bool usesReservedTodayFolderSegment(const QString& value)
     {
-        const QString normalizedPath = normalizeFolderPath(value);
-        if (normalizedPath.isEmpty())
+        const QStringList segments = folderPathSegments(value);
+        if (segments.isEmpty())
         {
             return false;
         }
 
-        const QStringList segments = normalizedPath.split(QLatin1Char('/'), Qt::SkipEmptyParts);
         for (const QString& segment : segments)
         {
             if (segment.trimmed().toCaseFolded() == QStringLiteral("today"))

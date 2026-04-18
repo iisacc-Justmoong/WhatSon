@@ -27,13 +27,12 @@ namespace
 
     QStringList folderSegments(const QString& folderPath)
     {
-        const QString normalizedPath = normalizeFolderPath(folderPath);
-        if (normalizedPath.isEmpty())
-        {
-            return {};
-        }
+        return WhatSon::NoteFolders::folderPathSegments(folderPath);
+    }
 
-        return normalizedPath.split(QLatin1Char('/'), Qt::SkipEmptyParts);
+    QString buildFolderPath(const QString& parentPath, const QString& segment)
+    {
+        return WhatSon::NoteFolders::appendFolderPathSegment(parentPath, segment);
     }
 
     struct FolderLookup final
@@ -166,9 +165,7 @@ bool WhatSonFoldersHierarchySessionService::ensureFolderEntry(
     for (int depth = 0; depth < segments.size(); ++depth)
     {
         const QString segment = segments.at(depth).trimmed();
-        const QString requestedCumulativePath = canonicalParentPath.isEmpty()
-            ? segment
-            : canonicalParentPath + QLatin1Char('/') + segment;
+        const QString requestedCumulativePath = buildFolderPath(canonicalParentPath, segment);
         const QString requestedPathKey = normalizeFolderLookupKey(requestedCumulativePath);
         const auto existingIt = lookup.indexByPathKey.constFind(requestedPathKey);
 
@@ -197,9 +194,7 @@ bool WhatSonFoldersHierarchySessionService::ensureFolderEntry(
             continue;
         }
 
-        const QString newCanonicalPath = canonicalParentPath.isEmpty()
-            ? segment
-            : canonicalParentPath + QLatin1Char('/') + segment;
+        const QString newCanonicalPath = buildFolderPath(canonicalParentPath, segment);
         WhatSonFolderDepthEntry newEntry;
         newEntry.id = newCanonicalPath;
         newEntry.label = segment;

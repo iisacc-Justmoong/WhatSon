@@ -77,3 +77,7 @@ ctest --test-dir build --output-on-failure -L cpp_regression
   `Resources -> Library` cannot hand member-owned C++ models to the QML garbage collector.
 - Hierarchy-driven note-list rebinding is now also locked at the bridge layer, so swapping only the active hierarchy
   viewmodel still replaces the effective note-list model immediately for desktop/mobile list surfaces.
+- Folder-path semantics now also lock escaped literal-slash handling plus `Folders.wsfolders` parser migration, so a
+  library folder label like `Marketing/Sales` cannot regress into an accidental parent/child hierarchy split.
+- Detail-panel folder assignment now also reuses an existing escaped folder path instead of recreating
+  `Marketing/Sales` as a fake nested hierarchy during `Folders.wsfolders` writes.
