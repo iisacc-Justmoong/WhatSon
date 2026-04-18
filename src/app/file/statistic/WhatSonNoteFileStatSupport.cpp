@@ -6,6 +6,7 @@
 
 #include <QDir>
 #include <QDirIterator>
+#include <QDateTime>
 #include <QFile>
 #include <QFileInfo>
 #include <QRegularExpression>
@@ -394,6 +395,11 @@ namespace
         headerStore->setIncludedResourceCount(countResourceTags(bodyDocumentText));
     }
 
+    QString currentOpenTimestampUtc()
+    {
+        return QDateTime::currentDateTimeUtc().toString(Qt::ISODate);
+    }
+
     bool refreshTrackedStatisticsInternal(
         const QString& noteId,
         const QString& noteDirectoryPath,
@@ -464,6 +470,7 @@ namespace
         if (incrementOpenCount)
         {
             headerStore.incrementOpenCount();
+            headerStore.setLastOpenedAt(currentOpenTimestampUtc());
         }
 
         WhatSonNoteHeaderCreator creator(noteDirectoryPath, QString());
@@ -537,6 +544,7 @@ namespace
             headerStore.setNoteId(normalizedNoteId);
         }
         headerStore.incrementOpenCount();
+        headerStore.setLastOpenedAt(currentOpenTimestampUtc());
 
         WhatSonNoteHeaderCreator creator(noteDirectoryPath, QString());
         QString writeError;

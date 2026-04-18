@@ -106,6 +106,8 @@ QString WhatSonNoteHeaderCreator::createHeaderText(const WhatSonNoteHeaderStore&
     text += QStringLiteral("    <author>") + escapeXmlText(store.author()) + QStringLiteral("</author>\n");
     text += QStringLiteral("    <lastModified>") + escapeXmlText(store.lastModifiedAt())
         + QStringLiteral("</lastModified>\n");
+    text += QStringLiteral("    <lastOpened>") + escapeXmlText(store.lastOpenedAt())
+        + QStringLiteral("</lastOpened>\n");
     text += QStringLiteral("    <modifiedBy>") + escapeXmlText(store.modifiedBy())
         + QStringLiteral("</modifiedBy>\n");
 
@@ -189,12 +191,13 @@ QString WhatSonNoteHeaderCreator::createHeaderText(const WhatSonNoteHeaderStore&
     WhatSon::Debug::traceSelf(this,
                               QStringLiteral("note.creator.header"),
                               QStringLiteral("createHeaderText"),
-                              QStringLiteral("id=%1 folderCount=%2 tagCount=%3 openCount=%4 modifiedCount=%5 progress=%6 bytes=%7")
+                              QStringLiteral("id=%1 folderCount=%2 tagCount=%3 openCount=%4 modifiedCount=%5 lastOpened=%6 progress=%7 bytes=%8")
                               .arg(store.noteId())
                               .arg(store.folders().size())
                               .arg(store.tags().size())
                               .arg(store.openCount())
                               .arg(store.modifiedCount())
+                              .arg(store.lastOpenedAt())
                               .arg(store.progress())
                               .arg(text.toUtf8().size()));
     return text;

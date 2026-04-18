@@ -23,6 +23,9 @@ public:
     QString lastModifiedAt() const;
     void setLastModifiedAt(QString lastModifiedAt);
 
+    QString lastOpenedAt() const;
+    void setLastOpenedAt(QString lastOpenedAt);
+
     QString modifiedBy() const;
     void setModifiedBy(QString modifiedBy);
 
@@ -101,6 +104,7 @@ private:
     QString m_createdAt;
     QString m_author;
     QString m_lastModifiedAt;
+    QString m_lastOpenedAt;
     QString m_modifiedBy;
     QStringList m_folders;
     QStringList m_folderUuids;

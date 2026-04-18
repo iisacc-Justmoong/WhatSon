@@ -24,6 +24,7 @@ namespace
                    "    <created></created>\n"
                    "    <author></author>\n"
                    "    <lastModified></lastModified>\n"
+                   "    <lastOpened></lastOpened>\n"
                    "    <modifiedBy></modifiedBy>\n"
                    "    <folders>\n"
                    "    </folders>\n"

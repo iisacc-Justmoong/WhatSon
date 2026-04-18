@@ -324,6 +324,7 @@ bool WhatSonNoteHeaderParser::parse(
     outStore->setCreatedAt(extractTagText(wsnHeadText, QStringLiteral("created")));
     outStore->setAuthor(extractTagText(wsnHeadText, QStringLiteral("author")));
     outStore->setLastModifiedAt(extractTagText(wsnHeadText, QStringLiteral("lastModified")));
+    outStore->setLastOpenedAt(extractTagText(wsnHeadText, QStringLiteral("lastOpened")));
     outStore->setModifiedBy(extractTagText(wsnHeadText, QStringLiteral("modifiedBy")));
     const ParsedFolderBindings folderBindings = extractFolderBindings(wsnHeadText);
     outStore->setFolderBindings(folderBindings.folders, folderBindings.folderUuids);
@@ -364,7 +365,7 @@ bool WhatSonNoteHeaderParser::parse(
                               QStringLiteral("note.header.parser"),
                               QStringLiteral("parse.success"),
                               QStringLiteral(
-                                  "id=%1 folderCount=%2 tagCount=%3 openCount=%4 modifiedCount=%5 backlinkTo=%6 backlinkBy=%7 progressEnumCount=%8 progress=%9 bookmarked=%10 preset=%11")
+                                  "id=%1 folderCount=%2 tagCount=%3 openCount=%4 modifiedCount=%5 backlinkTo=%6 backlinkBy=%7 progressEnumCount=%8 progress=%9 lastOpened=%10 bookmarked=%11 preset=%12")
                               .arg(outStore->noteId())
                               .arg(outStore->folders().size())
                               .arg(outStore->tags().size())
@@ -374,6 +375,7 @@ bool WhatSonNoteHeaderParser::parse(
                               .arg(outStore->backlinkByCount())
                               .arg(outStore->progressEnums().size())
                               .arg(outStore->progress())
+                              .arg(outStore->lastOpenedAt())
                               .arg(outStore->isBookmarked() ? QStringLiteral("true") : QStringLiteral("false"))
                               .arg(outStore->isPreset() ? QStringLiteral("true") : QStringLiteral("false")));
 

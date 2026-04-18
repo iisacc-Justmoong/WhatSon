@@ -186,6 +186,7 @@ void WhatSonNoteHeaderStore::clear()
     m_createdAt.clear();
     m_author.clear();
     m_lastModifiedAt.clear();
+    m_lastOpenedAt.clear();
     m_modifiedBy.clear();
     m_folders.clear();
     m_folderUuids.clear();
@@ -300,6 +301,26 @@ void WhatSonNoteHeaderStore::setLastModifiedAt(QString lastModifiedAt)
                               QStringLiteral("note.header.store"),
                               QStringLiteral("setLastModifiedAt"),
                               QStringLiteral("value=%1").arg(m_lastModifiedAt));
+}
+
+QString WhatSonNoteHeaderStore::lastOpenedAt() const
+{
+    return m_lastOpenedAt;
+}
+
+void WhatSonNoteHeaderStore::setLastOpenedAt(QString lastOpenedAt)
+{
+    QString value = sanitizeText(std::move(lastOpenedAt));
+    if (value.isEmpty() || isTemplateToken(value) || isDatePlaceholderToken(value))
+    {
+        value.clear();
+    }
+
+    m_lastOpenedAt = value;
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("note.header.store"),
+                              QStringLiteral("setLastOpenedAt"),
+                              QStringLiteral("value=%1").arg(m_lastOpenedAt));
 }
 
 QString WhatSonNoteHeaderStore::modifiedBy() const
