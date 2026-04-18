@@ -21,8 +21,9 @@ Rectangle {
     readonly property int dragCountBadgeMinWidth: dragCountBadgeHeight
     readonly property int dragCountBadgeWidthPadding: Math.max(0, Math.round(LV.Theme.scaleMetric(10)))
     readonly property real grabbedNoteOpacity: 0.25
-    readonly property bool hasNoteListModel: listBarLayout.noteListModel !== null && listBarLayout.noteListModel !== undefined
+    readonly property bool hasNoteListModel: noteListContractBridge.hasNoteListModel
     property bool headerVisible: true
+    property var hierarchyViewModel: null
     property color hintColor: LV.Theme.descriptionColor
     readonly property int mobileNoteDragHoldInterval: 1000
     readonly property var noteContextMenuItems: [
@@ -48,7 +49,8 @@ Rectangle {
     property bool noteDragCanceled: false
     property var noteDropTarget: null
     readonly property bool noteFolderClearContractAvailable: listBarLayout.noteDeletionViewModel !== null && listBarLayout.noteDeletionViewModel !== undefined && (listBarLayout.noteDeletionViewModel.clearNoteFoldersByIds !== undefined || listBarLayout.noteDeletionViewModel.clearNoteFoldersById !== undefined)
-    readonly property bool noteListCurrentIndexContractAvailable: listBarLayout.hasNoteListModel && (listBarLayout.noteListModel.currentIndex !== undefined || listBarLayout.noteListModel.setCurrentIndex !== undefined)
+    readonly property bool noteListCurrentIndexContractAvailable: listBarLayout.hasNoteListModel
+                                                           && noteListContractBridge.currentIndexContractAvailable
     readonly property bool noteListKineticViewportEnabled: LV.Theme.mobileTarget
                                                         || (Window.window && Window.window.isMobilePlatform !== undefined
                                                             ? Boolean(Window.window.isMobilePlatform)
@@ -69,14 +71,15 @@ Rectangle {
     property bool displayedNoteListEntriesForceRefreshQueued: false
     property int noteListModelTransitionRevision: 0
     readonly property int noteListScrollTick: LV.Theme.gap2
-    readonly property bool noteListSearchContractAvailable: listBarLayout.hasNoteListModel && (listBarLayout.noteListModel.searchText !== undefined || listBarLayout.noteListModel.setSearchText !== undefined)
+    readonly property bool noteListSearchContractAvailable: listBarLayout.hasNoteListModel
+                                                      && noteListContractBridge.searchContractAvailable
     property bool noteListViewportRestorePending: false
     property alias noteSelectionAnchorIndex: noteSelectionController.selectionAnchorIndex
     property color panelColor: "transparent"
     readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("ListBarLayout") : null
     property real preservedNoteListContentY: 0
     property int pressedNoteIndex: -1
-    readonly property var resolvedNoteListModel: listBarLayout.noteListMode ? listBarLayout.noteListModel : null
+    readonly property var resolvedNoteListModel: noteListContractBridge.noteListModel
     readonly property var resolvedSelectedNoteIds: listBarLayout.selectedNoteIdsFromIndices(listBarLayout.selectedNoteIndices)
     readonly property bool resourceListMode: listBarLayout.noteListMode && listBarLayout.resolvedNoteListModel !== null && listBarLayout.resolvedNoteListModel !== undefined && listBarLayout.resolvedNoteListModel.currentResourceEntry !== undefined
     property string searchText: ""
@@ -135,12 +138,12 @@ Rectangle {
         if (noteListContractBridge.applySearchText(listBarLayout.searchText))
             return;
 
-        if (listBarLayout.noteListModel.searchText !== undefined) {
-            listBarLayout.noteListModel.searchText = listBarLayout.searchText;
+        if (listBarLayout.resolvedNoteListModel.searchText !== undefined) {
+            listBarLayout.resolvedNoteListModel.searchText = listBarLayout.searchText;
             return;
         }
-        if (listBarLayout.noteListModel.setSearchText !== undefined)
-            listBarLayout.noteListModel.setSearchText(listBarLayout.searchText);
+        if (listBarLayout.resolvedNoteListModel.setSearchText !== undefined)
+            listBarLayout.resolvedNoteListModel.setSearchText(listBarLayout.searchText);
     }
     function beginNoteDragPreview(delegateItem, hotSpotX, hotSpotY) {
         if (!delegateItem)
@@ -241,8 +244,8 @@ Rectangle {
         const bridgeCurrentIndex = Number(noteListContractBridge.currentIndex);
         if (isFinite(bridgeCurrentIndex))
             return bridgeCurrentIndex;
-        if (listBarLayout.noteListModel.currentIndex !== undefined)
-            return Number(listBarLayout.noteListModel.currentIndex);
+        if (listBarLayout.resolvedNoteListModel.currentIndex !== undefined)
+            return Number(listBarLayout.resolvedNoteListModel.currentIndex);
         return -1;
     }
     function currentNoteIdFromModel() {
@@ -250,8 +253,10 @@ Rectangle {
         const normalizedBridgeNoteId = bridgeNoteId === undefined || bridgeNoteId === null ? "" : String(bridgeNoteId).trim();
         if (normalizedBridgeNoteId.length > 0)
             return normalizedBridgeNoteId;
-        if (listBarLayout.noteListModel && listBarLayout.noteListModel.currentNoteId !== undefined && listBarLayout.noteListModel.currentNoteId !== null) {
-            return String(listBarLayout.noteListModel.currentNoteId).trim();
+        if (listBarLayout.resolvedNoteListModel
+                && listBarLayout.resolvedNoteListModel.currentNoteId !== undefined
+                && listBarLayout.resolvedNoteListModel.currentNoteId !== null) {
+            return String(listBarLayout.resolvedNoteListModel.currentNoteId).trim();
         }
         return "";
     }
@@ -418,14 +423,14 @@ Rectangle {
             return;
         if (noteListContractBridge.pushCurrentIndex(Math.max(-1, Math.floor(normalizedIndex))))
             return;
-        if (listBarLayout.noteListModel.currentIndex !== undefined) {
-            if (Number(listBarLayout.noteListModel.currentIndex) === normalizedIndex)
+        if (listBarLayout.resolvedNoteListModel.currentIndex !== undefined) {
+            if (Number(listBarLayout.resolvedNoteListModel.currentIndex) === normalizedIndex)
                 return;
-            listBarLayout.noteListModel.currentIndex = index;
+            listBarLayout.resolvedNoteListModel.currentIndex = normalizedIndex;
             return;
         }
-        if (listBarLayout.noteListModel.setCurrentIndex !== undefined)
-            listBarLayout.noteListModel.setCurrentIndex(normalizedIndex);
+        if (listBarLayout.resolvedNoteListModel.setCurrentIndex !== undefined)
+            listBarLayout.resolvedNoteListModel.setCurrentIndex(normalizedIndex);
     }
     function quantizedNoteListContentY(value) {
         const clampedValue = listBarLayout.clampNoteListContentY(value);
@@ -654,7 +659,7 @@ Rectangle {
             noteContextMenu.close();
         applySearchTextToModel();
     }
-    onNoteListModelChanged: {
+    onResolvedNoteListModelChanged: {
         listBarLayout.noteDragCanceled = true;
         listBarLayout.noteDragActive = false;
         listBarLayout.noteListViewportRestorePending = false;
@@ -712,7 +717,8 @@ Rectangle {
     NoteListModelContractBridge {
         id: noteListContractBridge
 
-        noteListModel: listBarLayout.resolvedNoteListModel
+        hierarchyViewModel: listBarLayout.hierarchyViewModel
+        noteListModel: listBarLayout.noteListModel
     }
     LV.ContextMenu {
         id: noteContextMenu

@@ -19,6 +19,7 @@ The C++ suite currently locks regression-sensitive runtime behavior for:
 - `SidebarSelectionStore`
 - `HierarchyViewModelProvider`
 - `SidebarHierarchyViewModel`
+- `NoteListModelContractBridge`
 - `NavigationModeViewModel`
 - `EditorViewModeViewModel`
 - `OnboardingRouteBootstrapController`
@@ -74,3 +75,5 @@ ctest --test-dir build --output-on-failure -L cpp_regression
   placeholder names cannot regress back to a collision-prone fixed file name.
 - Hierarchy viewmodel switching now also pins QObject ownership at the sidebar/selection-bridge boundary, so switching
   `Resources -> Library` cannot hand member-owned C++ models to the QML garbage collector.
+- Hierarchy-driven note-list rebinding is now also locked at the bridge layer, so swapping only the active hierarchy
+  viewmodel still replaces the effective note-list model immediately for desktop/mobile list surfaces.

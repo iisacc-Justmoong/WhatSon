@@ -2,6 +2,7 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import QtQuick.Window
+import WhatSon.App.Internal 1.0
 import LVRS 1.0 as LV
 import ".." as MobileView
 import "../../panels" as PanelView
@@ -11,15 +12,12 @@ Item {
 
     property var activeHierarchyBindingSnapshot: ({
         "index": 0,
-        "noteListModel": null,
         "viewModel": null
     })
     readonly property var activeContentViewModel: mobileHierarchyPage.activeHierarchyBindingSnapshot
         ? mobileHierarchyPage.activeHierarchyBindingSnapshot.viewModel
         : null
-    readonly property var activeNoteListModel: mobileHierarchyPage.activeHierarchyBindingSnapshot
-        ? mobileHierarchyPage.activeHierarchyBindingSnapshot.noteListModel
-        : null
+    readonly property var activeNoteListModel: activeNoteListModelResolver.noteListModel
     readonly property int activeToolbarIndex: {
         const snapshot = mobileHierarchyPage.activeHierarchyBindingSnapshot;
         const numericIndex = Number(snapshot && snapshot.index !== undefined ? snapshot.index : 0);
@@ -124,7 +122,6 @@ Item {
         if (!sidebarViewModel) {
             mobileHierarchyPage.activeHierarchyBindingSnapshot = {
                 "index": 0,
-                "noteListModel": null,
                 "viewModel": null
             };
             return;
@@ -134,12 +131,8 @@ Item {
         const resolvedHierarchyViewModel = sidebarViewModel.hierarchyViewModelForIndex !== undefined
                 ? sidebarViewModel.hierarchyViewModelForIndex(resolvedIndex)
                 : sidebarViewModel.resolvedHierarchyViewModel;
-        const resolvedNoteListModel = sidebarViewModel.noteListModelForIndex !== undefined
-                ? sidebarViewModel.noteListModelForIndex(resolvedIndex)
-                : sidebarViewModel.resolvedNoteListModel;
         mobileHierarchyPage.activeHierarchyBindingSnapshot = {
             "index": resolvedIndex,
-            "noteListModel": resolvedNoteListModel,
             "viewModel": resolvedHierarchyViewModel
         };
     }
@@ -645,6 +638,13 @@ Item {
         mobileHierarchyPage.routeToHierarchyRoot();
     }
     onResolvedBodyRoutePathChanged: mobileHierarchyPage.syncRouteSelectionState()
+
+    NoteListModelContractBridge {
+        id: activeNoteListModelResolver
+
+        hierarchyViewModel: mobileHierarchyPage.activeContentViewModel
+    }
+
     MobileView.MobileNoteCreationCoordinator {
         id: noteCreationCoordinator
 
@@ -832,8 +832,8 @@ Item {
         PanelView.ListBarLayout {
             activeToolbarIndex: mobileHierarchyPage.activeToolbarIndex
             headerVisible: false
+            hierarchyViewModel: mobileHierarchyPage.activeContentViewModel
             noteDeletionViewModel: mobileHierarchyPage.resolvedNoteDeletionViewModel
-            noteListModel: mobileHierarchyPage.activeNoteListModel
             panelColor: mobileHierarchyPage.canvasColor
             searchText: mobileHierarchyPage.statusSearchText
 

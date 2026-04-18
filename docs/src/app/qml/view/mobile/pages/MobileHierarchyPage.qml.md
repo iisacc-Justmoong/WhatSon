@@ -20,14 +20,13 @@ It does not own the domain data itself. Its job is to keep the mobile `LV.PageRo
 - Resolve the effective list-deletion contract from the active hierarchy first, then fall back to
   the shared library-note mutation viewmodel (or the global LV viewmodel registry) when the active
   hierarchy does not own deletion itself.
-- Snapshot the active toolbar index, active hierarchy content viewmodel, and active note-list model as
-  one binding bundle whenever `SidebarHierarchyViewModel.activeBindingsChanged()` fires, so mobile route
-  decisions do not momentarily mix library state with resources-state chrome during hierarchy switches.
-- That mobile binding bundle now also resolves the active content/list objects directly from
-  `SidebarHierarchyViewModel.hierarchyViewModelForIndex(...)` / `noteListModelForIndex(...)` using the active toolbar
-  index.
+- Snapshot the active toolbar index and active hierarchy content viewmodel as one binding bundle whenever
+  `SidebarHierarchyViewModel.activeBindingsChanged()` fires, so mobile route decisions do not momentarily mix library
+  state with resources-state chrome during hierarchy switches.
+- The active note-list model is now derived from that hierarchy object through a local
+  `NoteListModelContractBridge`, not from a second direct `noteListModelForIndex(...)` lookup.
   A route refresh therefore cannot keep the previously mounted hierarchy domain alive just because one stale resolved
-  object outlived the index transition by one turn.
+  note-list object outlived the index transition by one turn.
 
 ## Routing Model
 The file defines four route constants:
@@ -176,11 +175,12 @@ This keeps mobile back navigation local to the page and avoids stealing editor t
 - Returning from `/mobile/editor` must prefer the actually displayed note-list body over a stale `currentPath` snapshot.
 - Returning from `/mobile/detail` must prefer the actual editor body and must never settle on the hierarchy page as the restored destination.
 - Mobile hierarchy routing is selection-driven; the routes do not own separate domain state copies.
-- Mobile hierarchy routing must refresh its active toolbar/content/list tuple from one snapshot, not from
-  three separate live bindings, or transient hierarchy switches can leave the routed note list out of sync
-  with the selected sidebar domain.
-- Mobile hierarchy routing must also resolve that snapshot from the selected hierarchy index itself, not only from one
-  previously cached "active" provider object, or a toolbar switch can leave the old domain viewmodel mounted.
+- Mobile hierarchy routing must refresh its active toolbar/content tuple from one snapshot, then derive the note-list
+  model from that hierarchy object, not from a second independent live lookup, or transient hierarchy switches can
+  leave the routed note list out of sync with the selected sidebar domain.
+- Mobile hierarchy routing must also resolve that hierarchy snapshot from the selected hierarchy index itself, not only
+  from one previously cached "active" provider object, or a toolbar switch can leave the old domain viewmodel
+  mounted.
 - The mobile editor page must not reintroduce gutter width/line-number overrides now that mobile gutter policy lives in
   `ContentsDisplayHostModePolicy.qml`.
 - The mobile editor page must keep sourcing platform mode from the LVRS window detector, not from viewport width.

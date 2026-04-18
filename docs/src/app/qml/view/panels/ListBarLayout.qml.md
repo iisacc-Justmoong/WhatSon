@@ -114,6 +114,10 @@ selection state machine lives in a sibling controller file.
 - The panel enters note-list mode whenever an actual `noteListModel` is injected. It must not hard-code
   hierarchy toolbar indexes such as `Library` or `Bookmarks`, because domains like `Projects` also own
   note-list projections.
+- The panel can now also receive only `hierarchyViewModel`; `NoteListModelContractBridge` resolves the effective
+  note-list model from that hierarchy object's `hierarchyNoteListModel` / `noteListModel` contract.
+  A hierarchy-domain switch therefore updates the list surface from one hierarchy input instead of depending on a
+  second, separately-timed `activeNoteListModel` binding.
 - `resourceListMode` is detected from `resolvedNoteListModel.currentResourceEntry`, then delegates switch to
   `ResourceListItem` so resources rows no longer inherit note-card visuals.
 - `activateNoteIndex(index, noteId)` is the only immediate note-activation path. It updates `currentIndex`, pushes the
@@ -141,6 +145,9 @@ selection state machine lives in a sibling controller file.
 - The bridge now also exposes `readAllRows()` plus `readAllRowsForModel(QObject*)`, allowing the QML view to keep a
   stable render snapshot even while the underlying `QAbstractItemModel` goes through
   `beginResetModel()/endResetModel()` refresh cycles and while hierarchy transitions are rebinding the bridge itself.
+- `resolvedNoteListModel` is now derived from the bridge, not from the raw injected `noteListModel` property.
+  This is the key regression guard for toolbar/domain switches: the list resets and re-primes itself when the bridge's
+  resolved model changes, even if the caller only swapped the active hierarchy viewmodel.
 - Committed active-row state now reads `noteListContractBridge.currentIndex/currentNoteId` **property contracts**
   (not invokable snapshots), so QML binding reactivity tracks selection changes and avoids the first-row-fixed
   active-card regression.
@@ -184,7 +191,8 @@ selection state machine lives in a sibling controller file.
 
 ## Tests
 
-- Automated test files are not currently present in this repository.
+- The maintained C++ regression suite now covers the bridge contract that this file depends on for hierarchy-driven
+  note-list rebinding.
 - Modifier-selection regression checklist for this file:
   - `Shift + click` selects contiguous ranges from `noteSelectionAnchorIndex`.
   - `Cmd/Ctrl + click` toggles row membership without collapsing to single-row selection.
@@ -201,6 +209,8 @@ selection state machine lives in a sibling controller file.
     `modelReset` plus a second post-reset `itemsChanged()` consumption path.
   - Switching from one hierarchy domain to another must not show the previous hierarchy's row snapshot for one frame
     while the new note-list model is being rebound.
+  - Switching hierarchy domains by changing only the mounted hierarchy viewmodel must still replace the effective
+    note-list model immediately.
   - Switching into the resources hierarchy must not leave the shared list blank before the user explicitly picks a
     resource taxonomy row.
   - A transition-time model population that only updates `itemCountChanged()` before later data notifications must

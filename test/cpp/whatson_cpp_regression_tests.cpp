@@ -28,6 +28,7 @@
 #include "viewmodel/navigationbar/NavigationModeViewModel.hpp"
 #include "viewmodel/onboarding/IOnboardingHubController.hpp"
 #include "viewmodel/onboarding/OnboardingRouteBootstrapController.hpp"
+#include "viewmodel/panel/NoteListModelContractBridge.hpp"
 #include "viewmodel/sidebar/HierarchySidebarDomain.hpp"
 #include "viewmodel/sidebar/HierarchyViewModelProvider.hpp"
 #include "viewmodel/sidebar/IActiveHierarchyContextSource.hpp"
@@ -259,7 +260,9 @@ class FakeSelectionNoteListModel final : public QObject
 {
     Q_OBJECT
 
+    Q_PROPERTY(int currentIndex READ currentIndex WRITE setCurrentIndex NOTIFY currentIndexChanged)
     Q_PROPERTY(QString currentNoteId READ currentNoteId WRITE setCurrentNoteId NOTIFY currentNoteIdChanged)
+    Q_PROPERTY(QString searchText READ searchText WRITE setSearchText NOTIFY searchTextChanged)
     Q_PROPERTY(int itemCount READ itemCount WRITE setItemCount NOTIFY itemCountChanged)
     Q_PROPERTY(bool noteBacked READ noteBacked WRITE setNoteBacked NOTIFY noteBackedChanged)
 
@@ -267,6 +270,23 @@ public:
     explicit FakeSelectionNoteListModel(QObject* parent = nullptr)
         : QObject(parent)
     {
+    }
+
+    int currentIndex() const noexcept
+    {
+        return m_currentIndex;
+    }
+
+    void setCurrentIndex(const int currentIndex)
+    {
+        const int normalizedIndex = std::max(-1, currentIndex);
+        if (m_currentIndex == normalizedIndex)
+        {
+            return;
+        }
+
+        m_currentIndex = normalizedIndex;
+        emit currentIndexChanged();
     }
 
     QString currentNoteId() const
@@ -284,6 +304,23 @@ public:
 
         m_currentNoteId = std::move(noteId);
         emit currentNoteIdChanged();
+    }
+
+    QString searchText() const
+    {
+        return m_searchText;
+    }
+
+    void setSearchText(QString searchText)
+    {
+        searchText = searchText.trimmed();
+        if (m_searchText == searchText)
+        {
+            return;
+        }
+
+        m_searchText = std::move(searchText);
+        emit searchTextChanged();
     }
 
     int itemCount() const noexcept
@@ -320,12 +357,16 @@ public:
     }
 
 signals:
+    void currentIndexChanged();
     void currentNoteIdChanged();
+    void searchTextChanged();
     void itemCountChanged(int itemCount);
     void noteBackedChanged();
 
 private:
+    int m_currentIndex = -1;
     QString m_currentNoteId;
+    QString m_searchText;
     int m_itemCount = 0;
     bool m_noteBacked = true;
 };
@@ -376,6 +417,7 @@ private slots:
     void sidebarHierarchyViewModel_preservesFallbackAcrossStoreAttachDetach();
     void sidebarHierarchyViewModel_reactsToProviderMappingChanges();
     void sidebarAndSelectionBridge_forceCppOwnershipAcrossHierarchySwitchBindings();
+    void noteListModelContractBridge_resolvesHierarchyBoundNoteListImmediately();
     void navigationModeViewModel_cyclesActiveSections();
     void editorViewModeViewModel_cyclesActiveSections();
     void onboardingRouteBootstrapController_syncsEmbeddedOnboardingLifecycle();
@@ -764,6 +806,67 @@ void WhatSonCppRegressionTests::sidebarAndSelectionBridge_forceCppOwnershipAcros
     QCOMPARE(selectionBridge.selectedNoteId(), QStringLiteral("library-note"));
     QCOMPARE(QQmlEngine::objectOwnership(activeLibraryViewModel), QQmlEngine::CppOwnership);
     QCOMPARE(QQmlEngine::objectOwnership(activeLibraryNoteListModel), QQmlEngine::CppOwnership);
+}
+
+void WhatSonCppRegressionTests::noteListModelContractBridge_resolvesHierarchyBoundNoteListImmediately()
+{
+    ensureCoreApplication();
+
+    FakeHierarchyViewModel libraryViewModel(QStringLiteral("library"));
+    FakeHierarchyViewModel resourcesViewModel(QStringLiteral("resources"));
+    FakeSelectionNoteListModel libraryNoteListModel;
+    FakeSelectionNoteListModel resourcesNoteListModel;
+    NoteListModelContractBridge bridge;
+
+    libraryNoteListModel.setCurrentIndex(2);
+    libraryNoteListModel.setCurrentNoteId(QStringLiteral("library-note"));
+    libraryNoteListModel.setSearchText(QStringLiteral("library-query"));
+
+    resourcesNoteListModel.setCurrentIndex(7);
+    resourcesNoteListModel.setCurrentNoteId(QStringLiteral("resource-note"));
+    resourcesNoteListModel.setSearchText(QStringLiteral("resource-query"));
+
+    libraryViewModel.setNoteListModelObject(&libraryNoteListModel);
+    resourcesViewModel.setNoteListModelObject(&resourcesNoteListModel);
+
+    QQmlEngine::setObjectOwnership(&libraryViewModel, QQmlEngine::JavaScriptOwnership);
+    QQmlEngine::setObjectOwnership(&resourcesViewModel, QQmlEngine::JavaScriptOwnership);
+    QQmlEngine::setObjectOwnership(&libraryNoteListModel, QQmlEngine::JavaScriptOwnership);
+    QQmlEngine::setObjectOwnership(&resourcesNoteListModel, QQmlEngine::JavaScriptOwnership);
+
+    QSignalSpy noteListModelChangedSpy(&bridge, &NoteListModelContractBridge::noteListModelChanged);
+
+    bridge.setHierarchyViewModel(&resourcesViewModel);
+
+    QCOMPARE(bridge.noteListModel(), static_cast<QObject*>(&resourcesNoteListModel));
+    QVERIFY(bridge.hasNoteListModel());
+    QVERIFY(bridge.searchContractAvailable());
+    QVERIFY(bridge.currentIndexContractAvailable());
+    QCOMPARE(bridge.currentIndex(), 7);
+    QCOMPARE(bridge.currentNoteId(), QStringLiteral("resource-note"));
+    QCOMPARE(QQmlEngine::objectOwnership(&resourcesViewModel), QQmlEngine::CppOwnership);
+    QCOMPARE(QQmlEngine::objectOwnership(&resourcesNoteListModel), QQmlEngine::CppOwnership);
+    QVERIFY(bridge.applySearchText(QStringLiteral("resources-filter")));
+    QCOMPARE(resourcesNoteListModel.searchText(), QStringLiteral("resources-filter"));
+    QVERIFY(bridge.pushCurrentIndex(3));
+    QCOMPARE(resourcesNoteListModel.currentIndex(), 3);
+
+    bridge.setHierarchyViewModel(&libraryViewModel);
+
+    QCOMPARE(bridge.noteListModel(), static_cast<QObject*>(&libraryNoteListModel));
+    QVERIFY(bridge.hasNoteListModel());
+    QVERIFY(bridge.searchContractAvailable());
+    QVERIFY(bridge.currentIndexContractAvailable());
+    QCOMPARE(bridge.currentIndex(), 2);
+    QCOMPARE(bridge.currentNoteId(), QStringLiteral("library-note"));
+    QCOMPARE(QQmlEngine::objectOwnership(&libraryViewModel), QQmlEngine::CppOwnership);
+    QCOMPARE(QQmlEngine::objectOwnership(&libraryNoteListModel), QQmlEngine::CppOwnership);
+    QVERIFY(bridge.applySearchText(QStringLiteral("library-filter")));
+    QCOMPARE(libraryNoteListModel.searchText(), QStringLiteral("library-filter"));
+    QVERIFY(bridge.pushCurrentIndex(1));
+    QCOMPARE(libraryNoteListModel.currentIndex(), 1);
+
+    QCOMPARE(noteListModelChangedSpy.count(), 2);
 }
 
 void WhatSonCppRegressionTests::navigationModeViewModel_cyclesActiveSections()

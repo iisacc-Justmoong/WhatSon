@@ -10,6 +10,7 @@ class NoteListModelContractBridge : public QObject
 {
     Q_OBJECT
 
+    Q_PROPERTY(QObject* hierarchyViewModel READ hierarchyViewModel WRITE setHierarchyViewModel NOTIFY hierarchyViewModelChanged)
     Q_PROPERTY(QObject* noteListModel READ noteListModel WRITE setNoteListModel NOTIFY noteListModelChanged)
     Q_PROPERTY(bool hasNoteListModel READ hasNoteListModel NOTIFY hasNoteListModelChanged)
     Q_PROPERTY(bool searchContractAvailable READ searchContractAvailable NOTIFY searchContractAvailableChanged)
@@ -21,6 +22,9 @@ class NoteListModelContractBridge : public QObject
 public:
     explicit NoteListModelContractBridge(QObject* parent = nullptr);
     ~NoteListModelContractBridge() override;
+
+    QObject* hierarchyViewModel() const noexcept;
+    void setHierarchyViewModel(QObject* model);
 
     QObject* noteListModel() const noexcept;
     void setNoteListModel(QObject* model);
@@ -40,6 +44,7 @@ public:
     Q_INVOKABLE bool pushCurrentIndex(int index);
 
 signals:
+    void hierarchyViewModelChanged();
     void noteListModelChanged();
     void hasNoteListModelChanged();
     void searchContractAvailableChanged();
@@ -51,6 +56,7 @@ private slots:
     void handleCurrentIndexChanged();
     void handleCurrentNoteIdChanged();
     void handleNoteListDestroyed();
+    void handleHierarchyViewModelDestroyed();
 
 private:
     static bool hasReadableProperty(const QObject* object, const char* propertyName);
@@ -58,13 +64,22 @@ private:
     static bool hasInvokableMethod(const QObject* object, const char* methodSignature);
     static QString readStringProperty(const QObject* object, const char* propertyName);
     static int readIntProperty(const QObject* object, const char* propertyName, int fallbackValue);
+    static QObject* readObjectProperty(const QObject* object, const char* propertyName);
+    static QObject* invokeObjectMethod(QObject* object, const char* methodName);
+    static QObject* resolveNoteListModelFromHierarchyViewModel(const QObject* hierarchyViewModel);
 
+    void refreshResolvedNoteListModel();
+    void setResolvedNoteListModel(QObject* model);
     void refreshContracts();
+    void disconnectHierarchyViewModel();
     void disconnectNoteListModel();
 
+    QPointer<QObject> m_hierarchyViewModel;
+    QPointer<QObject> m_explicitNoteListModel;
     QPointer<QObject> m_noteListModel;
     bool m_searchContractAvailable = false;
     bool m_currentIndexContractAvailable = false;
+    QMetaObject::Connection m_hierarchyViewModelDestroyedConnection;
     QMetaObject::Connection m_noteListDestroyedConnection;
     QMetaObject::Connection m_currentIndexChangedConnection;
     QMetaObject::Connection m_currentNoteIdChangedConnection;

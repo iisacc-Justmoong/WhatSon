@@ -34,15 +34,15 @@ right detail panel.
   (`deleteNoteById`, `deleteNotesByIds`, `clearNoteFoldersById`, or `clearNoteFoldersByIds`), that
   contract is used; otherwise the shell falls back to the shared library-note mutation viewmodel.
 - The desktop shell no longer reads the active hierarchy index, active hierarchy viewmodel, and active
-  note-list model as three unrelated live bindings. Instead it snapshots those values together when
-  `SidebarHierarchyViewModel.activeBindingsChanged()` fires, then fans that coherent snapshot out to
-  `ListBarLayout.qml` and `ContentViewLayout.qml`. This prevents library note-list rows from lingering
-  for one frame after the user switches into resources or another hierarchy domain.
-- That desktop snapshot now resolves the hierarchy viewmodel and note-list model directly from
-  `SidebarHierarchyViewModel.hierarchyViewModelForIndex(...)` / `noteListModelForIndex(...)` using the active
-  hierarchy index.
-  A hierarchy switch therefore cannot keep one stale previously-resolved object mounted just because the current
-  provider object and the current index changed on adjacent turns.
+  note-list model as three unrelated live bindings. Instead it snapshots the active hierarchy index and hierarchy
+  viewmodel together when `SidebarHierarchyViewModel.activeBindingsChanged()` fires, then lets an internal
+  `NoteListModelContractBridge` derive the effective note-list model from that hierarchy object.
+  This prevents library note-list rows from lingering for one frame after the user switches into resources or another
+  hierarchy domain, even when the caller only updates the hierarchy-side binding.
+- That desktop snapshot now resolves only the hierarchy viewmodel from
+  `SidebarHierarchyViewModel.hierarchyViewModelForIndex(...)` using the active hierarchy index.
+  The list/content split no longer depends on a second direct `noteListModelForIndex(...)` read staying in lock-step
+  with the hierarchy-viewmodel change.
 - The contents surface now fills the center panel directly without an additional bottom-partition contract.
 - Sidebar, list, and right-panel splitters continue to own the desktop width-resize flow.
 - Desktop default/min right-panel widths and sidebar horizontal inset now come from `LV.Theme.scaleMetric(...)` /
@@ -50,7 +50,7 @@ right detail panel.
 
 ## Tests
 
-- Automated test files are not currently present in this repository.
+- The maintained C++ regression suite now locks the hierarchy-driven note-list rebinding contract used by this shell.
 - Regression checklist:
   - The center content surface must still receive the active hierarchy viewmodel and note-list model.
   - Sidebar/list/right-panel splitters must keep their existing resize behavior.

@@ -7,6 +7,9 @@ heterogeneous note-list model objects.
 
 ## Behavior Summary
 
+- Resolves the effective note-list model from either:
+  - an explicit `noteListModel`, or
+  - the bound `hierarchyViewModel`'s `hierarchyNoteListModel` / `noteListModel` contract.
 - Uses `QMetaObject` reflection to detect whether the injected model supports:
   - writable `searchText` property or `setSearchText(QString)`
   - readable/writable `currentIndex` property or `setCurrentIndex(int)`
@@ -18,14 +21,16 @@ heterogeneous note-list model objects.
   note-card/resource-card summary fields, so body-only editor mutations no longer perturb the visible row signature or
   trigger avoidable list snapshot churn.
 - Connects to `currentIndexChanged()` and `currentNoteIdChanged()` when available to keep QML bindings reactive.
+- Forces resolved hierarchy/viewmodel-owned QObject instances back to `QQmlEngine::CppOwnership`, so QML rebinding does
+  not attempt to garbage-collect member-owned C++ note-list models during hierarchy switches.
 - Clears capability flags automatically when the bound model is destroyed.
 
 ## Tests
 
-Automated test files were removed from this repository; keep these bridge contracts stable:
-- property-backed contracts
-- method-only contracts
-- model-destroy lifecycle reset behavior
+The maintained C++ regression suite now locks these bridge contracts:
+- immediate hierarchy-viewmodel -> note-list-model rebinding without waiting for an extra event turn
+- property-backed search/current-index/current-note contracts on hierarchy-owned note-list models
+- QML ownership stabilization for hierarchy-owned note-list models during domain switches
 - multi-selection index -> note-id resolution against every note-list model that feeds `ListBarLayout.qml`
 - `readAllRows()` must preserve role-name keyed row snapshots for library/bookmarks/resources note-list models so the
   QML list surface can suppress equivalent refresh flicker while continuing to omit non-visible payload like

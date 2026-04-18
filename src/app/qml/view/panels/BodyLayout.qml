@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Layouts
+import WhatSon.App.Internal 1.0
 import LVRS 1.0 as LV
 
 Item {
@@ -7,7 +8,6 @@ Item {
 
     property var activeHierarchyBindingSnapshot: ({
         "index": 0,
-        "noteListModel": null,
         "viewModel": null
     })
     readonly property int activeHierarchyIndex: {
@@ -18,9 +18,7 @@ Item {
     readonly property var activeHierarchyViewModel: hStack.activeHierarchyBindingSnapshot
                                                   ? hStack.activeHierarchyBindingSnapshot.viewModel
                                                   : null
-    readonly property var activeNoteListModel: hStack.activeHierarchyBindingSnapshot
-                                             ? hStack.activeHierarchyBindingSnapshot.noteListModel
-                                             : null
+    readonly property var activeNoteListModel: activeNoteListModelResolver.noteListModel
     property color compactCanvasColor: LV.Theme.panelBackground01
     property bool compactMode: false
     property color contentsDisplayColor: "transparent"
@@ -97,7 +95,6 @@ Item {
         if (!sidebarViewModel) {
             hStack.activeHierarchyBindingSnapshot = {
                 "index": 0,
-                "noteListModel": null,
                 "viewModel": null
             };
             return;
@@ -107,12 +104,8 @@ Item {
         const resolvedHierarchyViewModel = sidebarViewModel.hierarchyViewModelForIndex !== undefined
                 ? sidebarViewModel.hierarchyViewModelForIndex(resolvedIndex)
                 : sidebarViewModel.resolvedHierarchyViewModel;
-        const resolvedNoteListModel = sidebarViewModel.noteListModelForIndex !== undefined
-                ? sidebarViewModel.noteListModelForIndex(resolvedIndex)
-                : sidebarViewModel.resolvedNoteListModel;
         hStack.activeHierarchyBindingSnapshot = {
             "index": resolvedIndex,
-            "noteListModel": resolvedNoteListModel,
             "viewModel": resolvedHierarchyViewModel
         };
     }
@@ -153,6 +146,12 @@ Item {
     clip: true
     Component.onCompleted: hStack.syncActiveHierarchyBindings()
     onSidebarHierarchyViewModelChanged: hStack.syncActiveHierarchyBindings()
+
+    NoteListModelContractBridge {
+        id: activeNoteListModelResolver
+
+        hierarchyViewModel: hStack.activeHierarchyViewModel
+    }
 
     Connections {
         target: hStack.sidebarHierarchyViewModel
@@ -222,8 +221,8 @@ Item {
                 ListBarLayout {
                     activeToolbarIndex: hStack.activeHierarchyIndex
                     anchors.fill: parent
+                    hierarchyViewModel: hStack.activeHierarchyViewModel
                     noteDeletionViewModel: hStack.resolvedNoteDeletionViewModel
-                    noteListModel: hStack.activeNoteListModel
                     noteDropTarget: sideBar.noteDropTargetView
                     panelColor: hStack.listViewColor
 

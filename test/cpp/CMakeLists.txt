@@ -46,6 +46,7 @@ set(WHATSON_CPP_REGRESSION_TEST_SOURCES
         "${CMAKE_SOURCE_DIR}/src/app/viewmodel/navigationbar/NavigationModeViewModel.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/viewmodel/onboarding/IOnboardingHubController.hpp"
         "${CMAKE_SOURCE_DIR}/src/app/viewmodel/onboarding/OnboardingRouteBootstrapController.cpp"
+        "${CMAKE_SOURCE_DIR}/src/app/viewmodel/panel/NoteListModelContractBridge.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/viewmodel/sidebar/IActiveHierarchyContextSource.hpp"
         "${CMAKE_SOURCE_DIR}/src/app/viewmodel/sidebar/IActiveHierarchySource.hpp"
         "${CMAKE_SOURCE_DIR}/src/app/viewmodel/sidebar/IHierarchyViewModelProvider.cpp"
