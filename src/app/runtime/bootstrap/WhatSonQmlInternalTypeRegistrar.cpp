@@ -2,9 +2,9 @@
 
 #include "agenda/ContentsAgendaBackend.hpp"
 #include "callout/ContentsCalloutBackend.hpp"
-#include "editor/renderer/ContentsPagePrintLayoutRenderer.hpp"
 #include "editor/renderer/ContentsStructuredBlockRenderer.hpp"
-#include "editor/renderer/ContentsTextFormatRenderer.hpp"
+#include "display/paper/ContentsTextFormatRenderer.hpp"
+#include "display/paper/print/ContentsPagePrintLayoutRenderer.hpp"
 #include "file/validator/ContentsStructuredTagValidator.hpp"
 #include "file/viewer/ContentsBodyResourceRenderer.hpp"
 #include "file/viewer/ResourceBitmapViewer.hpp"

@@ -48,9 +48,8 @@
   document tree, which reduces per-mutation main-thread work on longer structured notes.
 - The remaining focus path in `ContentsStructuredDocumentFlow.qml` is now also tokenless and request-driven, trimming the
   extra watcher/state churn that used to sit around that one-block restore path.
-- `ContentsTextFormatRenderer` now republishes parser-derived `htmlTokens`, `normalizedHtmlBlocks`, and
-  `htmlOverlayVisible` alongside the final editor HTML so QML no longer has to guess when semantic heading/block HTML
-  should replace the plain text paint path.
+- Paper/page/print-specific display helpers were extracted from `src/app/editor` into `src/app/models/display/paper`
+  so the remaining editor domain stays focused on parsing and rendering mechanics rather than reusable view-mode state.
 - Editor snapshot reconcile and correction-complete paths now also avoid overlapping same-note fetches and duplicate
   post-sync UI refresh scheduling, further reducing repeated main-thread work after note open and background sync.
 - Projects note projection now exposes the same lightweight persisted-body apply path as the other

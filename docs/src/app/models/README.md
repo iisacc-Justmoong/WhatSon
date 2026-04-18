@@ -8,6 +8,7 @@ viewmodels/QML surfaces.
 - `agenda`: agenda parsing and source-rewrite helpers used by the structured editor.
 - `calendar`: calendar board state and system-calendar integration.
 - `callout`: callout parsing and insertion/rewrite helpers for the structured editor.
+- `display`: paper/page/print presentation helpers that support editor view modes without living in the QML layer.
 - `sensor`: hub inspection objects that derive lightweight read-side facts such as unused resource packages.
 
 ## Dependency Direction

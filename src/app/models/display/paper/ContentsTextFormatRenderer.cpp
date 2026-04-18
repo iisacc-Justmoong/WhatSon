@@ -1,6 +1,6 @@
 #include "ContentsTextFormatRenderer.hpp"
-#include "ContentsHtmlBlockRenderPipeline.hpp"
-#include "ContentsTextHighlightRenderer.hpp"
+#include "editor/renderer/ContentsHtmlBlockRenderPipeline.hpp"
+#include "editor/renderer/ContentsTextHighlightRenderer.hpp"
 #include "file/WhatSonDebugTrace.hpp"
 #include "file/note/WhatSonNoteBodyWebLinkSupport.hpp"
 #include "file/note/WhatSonNoteBodySemanticTagSupport.hpp"

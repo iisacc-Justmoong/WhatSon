@@ -1,4 +1,4 @@
-# `src/app/editor/renderer/ContentsTextFormatRenderer.hpp`
+# `src/app/models/display/paper/ContentsTextFormatRenderer.hpp`
 
 ## Responsibility
 

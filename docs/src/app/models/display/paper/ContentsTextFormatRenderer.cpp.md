@@ -1,4 +1,4 @@
-# `src/app/editor/renderer/ContentsTextFormatRenderer.cpp`
+# `src/app/models/display/paper/ContentsTextFormatRenderer.cpp`
 
 ## Responsibility
 Implements inline-format rendering from note-editor text to RichText HTML.

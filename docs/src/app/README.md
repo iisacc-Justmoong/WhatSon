@@ -6,7 +6,7 @@
 This directory is the architectural center of the repository. Most other modules are either dependencies of `src/app` or helpers used by it during startup, runtime synchronization, and UI rendering.
 
 ## Main Subsystems
-- `models`: QML-adjacent QObject helpers such as editor block backends, calendar stores, and sensor-style hub inspectors.
+- `models`: QML-adjacent QObject helpers such as editor block backends, calendar stores, paper/page/print view-mode helpers, and sensor-style hub inspectors.
 - `file`: persistent storage, parsers, creators, validators, and hub-local mutations.
 - `viewmodel`: QObject-facing state and behavior consumed by QML.
 - `qml`: LVRS-based view composition and interaction surfaces.

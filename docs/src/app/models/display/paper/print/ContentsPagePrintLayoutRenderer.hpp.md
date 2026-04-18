@@ -1,4 +1,4 @@
-# `src/app/editor/renderer/ContentsPagePrintLayoutRenderer.hpp`
+# `src/app/models/display/paper/print/ContentsPagePrintLayoutRenderer.hpp`
 
 ## Responsibility
 

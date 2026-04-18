@@ -7,7 +7,7 @@
 ## Scope
 - Mirrored source directory: `src/app/editor/renderer`
 - Child directories: 0
-- Child files: 10
+- Child files: 6
 
 ## Child Directories
 - No child directories.
@@ -17,32 +17,23 @@
 - `ContentsTextHighlightRenderer.hpp`
 - `ContentsHtmlBlockRenderPipeline.cpp`
 - `ContentsHtmlBlockRenderPipeline.hpp`
-- `ContentsTextFormatRenderer.cpp`
-- `ContentsTextFormatRenderer.hpp`
 - `ContentsStructuredBlockRenderer.cpp`
 - `ContentsStructuredBlockRenderer.hpp`
-- `ContentsPagePrintLayoutRenderer.cpp`
-- `ContentsPagePrintLayoutRenderer.hpp`
 
 ## Current Notes
 - `ContentsHtmlBlockRenderPipeline.cpp` is now the explicit editor HTML pipeline:
   parser blocks -> HTML tokens -> normalized HTML blocks -> final editor HTML document.
-- `ContentsTextFormatRenderer.cpp` now treats proprietary inline source tags as the authoritative formatting basis for
-  logical-selection formatting.
-- `ContentsTextFormatRenderer.cpp` now also republishes that pipeline's intermediate payloads (`htmlTokens`,
-  `normalizedHtmlBlocks`, `htmlOverlayVisible`) so block-level QML renderers can consume one stable decision instead of
-  inferring semantic presentation only from regexes over raw source text.
 - `ContentsStructuredBlockRenderer.cpp` now consumes `parser/ContentsWsnBodyBlockParser` as its single `.wsnbody`
   read-path source and republishes that parser result to QML.
 - Agenda/callout compatibility lists still exist, but they are now side projections over the same unified parser pass
   rather than separate read-side backend merges.
 - Shortcut/context-menu formatting no longer depends on a transient `QTextDocument` fragment merge to decide where a
   RAW source style starts or ends.
-- Page/Print paper-preview mode gating and A4 paper geometry calculations are now centralized in
-  `ContentsPagePrintLayoutRenderer`, so desktop/mobile QML hosts only bind to backend state.
-- `ContentsStructuredBlockRenderer.cpp` and `ContentsTextFormatRenderer.cpp` now also emit verbose editor trace events
-  for constructor/destructor turns, source binding changes, synchronous/background render refresh passes, placeholder
-  publication, and final payload application so the read-side render pipeline can be traced alongside QML host updates.
+- Page/print paper-surface helpers were moved out to `src/app/models/display/paper` and
+  `src/app/models/display/paper/print`, leaving this directory focused on renderer-only concerns.
+- `ContentsStructuredBlockRenderer.cpp` still emits verbose editor trace events for constructor/destructor turns,
+  source binding changes, and projection refresh passes so the read-side renderer path can be traced alongside QML host
+  updates.
 
 ## Intended Detailed Sections
 - Module responsibilities and architectural layer

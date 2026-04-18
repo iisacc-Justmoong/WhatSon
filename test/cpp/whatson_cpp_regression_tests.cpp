@@ -1,4 +1,4 @@
-#include "editor/renderer/ContentsTextFormatRenderer.hpp"
+#include "display/paper/ContentsTextFormatRenderer.hpp"
 #include "file/hub/WhatSonHubPathUtils.hpp"
 #include "file/hierarchy/folders/WhatSonFoldersHierarchyParser.hpp"
 #include "file/hierarchy/folders/WhatSonFoldersHierarchyStore.hpp"
@@ -467,6 +467,7 @@ private slots:
     void contentsDisplayView_invalidatesGutterGeometryImmediatelyAcrossRapidNoteSwitches();
     void textFormatRenderer_wrapsCommittedUrlsIntoCanonicalWebLinks();
     void textFormatRenderer_appliesPaperPaletteToEditorAndPreviewHtml();
+    void displayPaperModels_hostPageAndPrintViewModeObjectsUnderModelsDirectory();
     void noteBodyPersistence_roundTripsAndProjectsCanonicalWebLinks();
     void logicalTextBridge_advancesCursorPastClosingWebLinkTag();
     void qmlStructuredEditors_bindPaperPaletteIntoPagePrintMode();
@@ -1430,42 +1431,58 @@ void WhatSonCppRegressionTests::unusedResourcesSensor_reportsHubPackagesMissingF
             QDir(workspaceDir.path()).filePath(QStringLiteral("%1.png").arg(resourceId));
         QImage image(QSize(11, 7), QImage::Format_ARGB32_Premultiplied);
         image.fill(fillColor);
-        QVERIFY(image.save(assetFilePath));
+        if (!image.save(assetFilePath))
+        {
+            return {};
+        }
 
         const QString packageDirectoryPath =
             QDir(resourcesDirectoryPath).filePath(QStringLiteral("%1.wsresource").arg(resourceId));
-        QVERIFY(QDir().mkpath(packageDirectoryPath));
+        if (!QDir().mkpath(packageDirectoryPath))
+        {
+            return {};
+        }
 
         const QString resourcePath =
             WhatSon::Resources::resourcePathForPackageDirectory(packageDirectoryPath);
         const WhatSon::Resources::ResourcePackageMetadata metadata =
             WhatSon::Resources::buildMetadataForAssetFile(assetFilePath, resourceId, resourcePath);
 
-        QVERIFY(QFile::copy(
-            assetFilePath,
-            QDir(packageDirectoryPath).filePath(metadata.assetPath)));
+        if (!QFile::copy(assetFilePath, QDir(packageDirectoryPath).filePath(metadata.assetPath)))
+        {
+            return {};
+        }
 
         QFile metadataFile(WhatSon::Resources::metadataFilePathForPackage(packageDirectoryPath));
-        QVERIFY(metadataFile.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate));
-        QVERIFY(
-            metadataFile.write(
+        if (!metadataFile.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate))
+        {
+            return {};
+        }
+        if (metadataFile.write(
                 WhatSon::Resources::createResourcePackageMetadataXml(metadata).toUtf8())
-            >= 0);
+            < 0)
+        {
+            return {};
+        }
         metadataFile.close();
 
         QString annotationError;
-        QVERIFY2(
-            WhatSon::Resources::writeResourcePackageAnnotationBitmap(
+        if (!WhatSon::Resources::writeResourcePackageAnnotationBitmap(
                 packageDirectoryPath,
                 assetFilePath,
-                &annotationError),
-            qPrintable(annotationError));
+                &annotationError))
+        {
+            return {};
+        }
         return resourcePath;
     };
 
     const QString usedResourcePath = createResourcePackage(QStringLiteral("used-cover"), qRgba(20, 60, 90, 255));
     const QString unusedResourcePath = createResourcePackage(QStringLiteral("unused-cover"), qRgba(90, 60, 20, 255));
     const QString hiddenOnlyResourcePath = createResourcePackage(QStringLiteral("hidden-only"), qRgba(40, 90, 30, 255));
+    QVERIFY(!usedResourcePath.isEmpty());
+    QVERIFY(!unusedResourcePath.isEmpty());
+    QVERIFY(!hiddenOnlyResourcePath.isEmpty());
 
     QString createError;
     const QString usedNoteDirectoryPath = createLocalNoteForRegression(
@@ -1499,12 +1516,13 @@ void WhatSonCppRegressionTests::unusedResourcesSensor_reportsHubPackagesMissingF
 
     QCOMPARE(sensor.lastError(), QString());
     QCOMPARE(sensor.unusedResourceCount(), 2);
+    const QStringList expectedUnusedResourcePaths{
+        hiddenOnlyResourcePath,
+        unusedResourcePath
+    };
     QCOMPARE(
         sensor.unusedResourcePaths(),
-        QStringList{
-            hiddenOnlyResourcePath,
-            unusedResourcePath
-        });
+        expectedUnusedResourcePaths);
     QCOMPARE(unusedResourcesChangedSpy.count(), 1);
     QCOMPARE(scanCompletedSpy.count(), 1);
 
@@ -2639,6 +2657,45 @@ void WhatSonCppRegressionTests::textFormatRenderer_wrapsCommittedUrlsIntoCanonic
     QVERIFY(renderer.renderedHtml().contains(
         QStringLiteral("<a href=\"https://www.iisacc.com\" style=\"color:#8CB4FF;text-decoration: underline;\">")));
     QVERIFY(renderer.renderedHtml().contains(QStringLiteral("아이작닷컴</a>")));
+}
+
+void WhatSonCppRegressionTests::displayPaperModels_hostPageAndPrintViewModeObjectsUnderModelsDirectory()
+{
+    const QString paperRendererHeaderSource = readUtf8SourceFile(
+        QStringLiteral("src/app/models/display/paper/ContentsTextFormatRenderer.hpp"));
+    const QString paperRendererImplSource = readUtf8SourceFile(
+        QStringLiteral("src/app/models/display/paper/ContentsTextFormatRenderer.cpp"));
+    const QString printLayoutHeaderSource = readUtf8SourceFile(
+        QStringLiteral("src/app/models/display/paper/print/ContentsPagePrintLayoutRenderer.hpp"));
+    const QString printLayoutImplSource = readUtf8SourceFile(
+        QStringLiteral("src/app/models/display/paper/print/ContentsPagePrintLayoutRenderer.cpp"));
+    const QString appCmakeSource = readUtf8SourceFile(QStringLiteral("src/app/CMakeLists.txt"));
+    const QString displayCmakeSource = readUtf8SourceFile(
+        QStringLiteral("src/app/models/display/CMakeLists.txt"));
+    const QString paperCmakeSource = readUtf8SourceFile(
+        QStringLiteral("src/app/models/display/paper/CMakeLists.txt"));
+    const QString printCmakeSource = readUtf8SourceFile(
+        QStringLiteral("src/app/models/display/paper/print/CMakeLists.txt"));
+    const QString registrarSource = readUtf8SourceFile(
+        QStringLiteral("src/app/runtime/bootstrap/WhatSonQmlInternalTypeRegistrar.cpp"));
+
+    QVERIFY(!paperRendererHeaderSource.isEmpty());
+    QVERIFY(!paperRendererImplSource.isEmpty());
+    QVERIFY(!printLayoutHeaderSource.isEmpty());
+    QVERIFY(!printLayoutImplSource.isEmpty());
+    QVERIFY(readUtf8SourceFile(QStringLiteral("src/app/editor/renderer/ContentsTextFormatRenderer.hpp")).isEmpty());
+    QVERIFY(readUtf8SourceFile(QStringLiteral("src/app/editor/renderer/ContentsPagePrintLayoutRenderer.hpp")).isEmpty());
+
+    QVERIFY(appCmakeSource.contains(QStringLiteral("add_subdirectory(models/display)")));
+    QVERIFY(displayCmakeSource.contains(QStringLiteral("add_subdirectory(paper)")));
+    QVERIFY(paperCmakeSource.contains(QStringLiteral("add_subdirectory(print)")));
+    QVERIFY(paperCmakeSource.contains(QStringLiteral("whatson_app_register_directory_sources")));
+    QVERIFY(printCmakeSource.contains(QStringLiteral("whatson_app_register_directory_sources")));
+
+    QVERIFY(registrarSource.contains(
+        QStringLiteral("#include \"display/paper/ContentsTextFormatRenderer.hpp\"")));
+    QVERIFY(registrarSource.contains(
+        QStringLiteral("#include \"display/paper/print/ContentsPagePrintLayoutRenderer.hpp\"")));
 }
 
 void WhatSonCppRegressionTests::noteBodyPersistence_roundTripsAndProjectsCanonicalWebLinks()
