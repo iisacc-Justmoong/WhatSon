@@ -42,7 +42,8 @@ Item {
     property color displayColor: "transparent"
     readonly property int editorBottomInset: Math.max(
                                                 LV.Theme.gap16,
-                                                Math.round(contentsView.editorLineHeight * 6))
+                                                Math.round(contentsView.editorLineHeight * 6),
+                                                Math.round(contentsView.editorSurfaceHeight * 0.5))
     property alias editorBoundNoteId: editorSession.editorBoundNoteId
     readonly property real editorContentOffsetY: {
         const flickable = contentsView.editorFlickable;
@@ -173,6 +174,8 @@ Item {
     property bool minimapScrollable: false
     property bool minimapSnapshotForceFullRefresh: true
     property bool cursorDrivenUiRefreshQueued: false
+    property bool typingViewportCorrectionQueued: false
+    property bool typingViewportForceCorrectionRequested: false
     property bool viewportGutterRefreshQueued: false
     property bool minimapSnapshotRefreshQueued: false
     property string minimapSnapshotSourceText: ""
@@ -813,6 +816,27 @@ Item {
             "width": 0,
             "y": contentsView.documentYForOffset(safeOffset)
         };
+    }
+    function typingViewportBandTop(cursorHeight) {
+        const safeCursorHeight = Math.max(1, Number(cursorHeight) || contentsView.editorLineHeight);
+        const surfaceHeight = Math.max(safeCursorHeight, Number(contentsView.editorSurfaceHeight) || 0);
+        return contentsView.editorDocumentStartY + Math.max(
+                    safeCursorHeight,
+                    Math.round(surfaceHeight * 0.18));
+    }
+    function typingViewportBandBottom(cursorHeight) {
+        const safeCursorHeight = Math.max(1, Number(cursorHeight) || contentsView.editorLineHeight);
+        const surfaceHeight = Math.max(safeCursorHeight, Number(contentsView.editorSurfaceHeight) || 0);
+        return contentsView.editorDocumentStartY + Math.max(
+                    safeCursorHeight * 2,
+                    Math.round(surfaceHeight * 0.56));
+    }
+    function typingViewportAnchorCenter(cursorHeight) {
+        const safeCursorHeight = Math.max(1, Number(cursorHeight) || contentsView.editorLineHeight);
+        const surfaceHeight = Math.max(safeCursorHeight, Number(contentsView.editorSurfaceHeight) || 0);
+        return contentsView.editorDocumentStartY + Math.max(
+                    safeCursorHeight / 2,
+                    Math.round(surfaceHeight * 0.5));
     }
     function currentEditorCursorPosition() {
         return editorSelectionController.currentEditorCursorPosition();
@@ -2186,6 +2210,62 @@ Item {
         const nextContentY = Math.max(0, Math.min(maxContentY, documentY - viewportHeight / 2));
         flickable.contentY = nextContentY;
     }
+    function correctTypingViewport(forceAnchor) {
+        if (contentsView.showPrintEditorLayout || !contentsView.editorInputFocused)
+            return;
+        const flickable = contentsView.editorFlickable;
+        if (!flickable || flickable.contentY === undefined)
+            return;
+        const viewportHeight = Math.max(0, Number(flickable.height) || contentsView.editorViewportHeight);
+        if (viewportHeight <= 0)
+            return;
+        const contentHeight = Math.max(
+                    viewportHeight,
+                    Number(flickable.contentHeight) || contentsView.editorOccupiedContentHeight());
+        const maxContentY = Math.max(0, contentHeight - viewportHeight);
+        if (maxContentY <= 0)
+            return;
+
+        const cursorRect = contentsView.currentCursorVisualRowRect();
+        const cursorHeight = Math.max(1, Number(cursorRect.height) || contentsView.editorLineHeight);
+        const cursorTopViewportY = contentsView.editorViewportYForDocumentY(Number(cursorRect.y) || 0);
+        const cursorBottomViewportY = cursorTopViewportY + cursorHeight;
+        const cursorCenterViewportY = cursorTopViewportY + cursorHeight / 2;
+        const bandTop = contentsView.typingViewportBandTop(cursorHeight);
+        const bandBottom = contentsView.typingViewportBandBottom(cursorHeight);
+        const anchorCenter = contentsView.typingViewportAnchorCenter(cursorHeight);
+
+        let deltaY = 0;
+        if (forceAnchor)
+            deltaY = cursorCenterViewportY - anchorCenter;
+        else if (cursorBottomViewportY > bandBottom)
+            deltaY = cursorBottomViewportY - bandBottom;
+        else if (cursorTopViewportY < bandTop)
+            deltaY = cursorTopViewportY - bandTop;
+        else
+            return;
+
+        const currentContentY = Math.max(0, Number(flickable.contentY) || 0);
+        const nextContentY = Math.max(0, Math.min(maxContentY, currentContentY + deltaY));
+        if (Math.abs(nextContentY - currentContentY) < 0.5)
+            return;
+        flickable.contentY = nextContentY;
+    }
+    function scheduleTypingViewportCorrection(forceAnchor) {
+        if (contentsView.showPrintEditorLayout)
+            return;
+        if (forceAnchor)
+            contentsView.typingViewportForceCorrectionRequested = true;
+        if (contentsView.typingViewportCorrectionQueued)
+            return;
+        contentsView.typingViewportCorrectionQueued = true;
+        Qt.callLater(function () {
+            const forceCorrection = contentsView.typingViewportForceCorrectionRequested;
+            contentsView.typingViewportForceCorrectionRequested = false;
+            contentsView.typingViewportCorrectionQueued = false;
+            contentsView.correctTypingViewport(forceCorrection);
+        });
+    }
     function selectedEditorRange() {
         return editorSelectionController.selectedEditorRange();
     }
@@ -2737,9 +2817,11 @@ Item {
             else
                 contentsView.scheduleMinimapSnapshotRefresh(false);
             contentsView.scheduleGutterRefresh(2, "editor-line-geometry");
+            contentsView.scheduleTypingViewportCorrection(true);
         }
         function onCursorPositionChanged() {
             contentsView.scheduleCursorDrivenUiRefresh();
+            contentsView.scheduleTypingViewportCorrection(false);
         }
         function onLineCountChanged() {
             if (contentsView.editorInputFocused)
@@ -2747,6 +2829,7 @@ Item {
             else
                 contentsView.scheduleMinimapSnapshotRefresh(false);
             contentsView.scheduleGutterRefresh(2, "editor-line-geometry");
+            contentsView.scheduleTypingViewportCorrection(true);
         }
 
         ignoreUnknownSignals: true
@@ -2765,6 +2848,7 @@ Item {
     Connections {
         function onCursorPositionChanged() {
             contentsView.scheduleCursorDrivenUiRefresh();
+            contentsView.scheduleTypingViewportCorrection(false);
         }
 
         ignoreUnknownSignals: true
@@ -2773,10 +2857,27 @@ Item {
     Connections {
         function onCursorPositionChanged() {
             contentsView.scheduleCursorDrivenUiRefresh();
+            contentsView.scheduleTypingViewportCorrection(false);
         }
 
         ignoreUnknownSignals: true
         target: contentsView.legacyInlineEditorActive && contentEditor && contentEditor.editorItem && contentEditor.editorItem.inputItem ? contentEditor.editorItem.inputItem : null
+    }
+    Connections {
+        function onActiveBlockCursorRevisionChanged() {
+            contentsView.scheduleCursorDrivenUiRefresh();
+            contentsView.scheduleTypingViewportCorrection(false);
+        }
+        function onImplicitHeightChanged() {
+            contentsView.scheduleTypingViewportCorrection(true);
+        }
+        function onFocusedChanged() {
+            if (structuredDocumentFlow && structuredDocumentFlow.focused)
+                contentsView.scheduleTypingViewportCorrection(true);
+        }
+
+        ignoreUnknownSignals: true
+        target: contentsView.showStructuredDocumentFlow ? structuredDocumentFlow : null
     }
     Connections {
         function onContentYChanged() {
@@ -2784,6 +2885,7 @@ Item {
         }
         function onHeightChanged() {
             contentsView.scheduleViewportGutterRefresh();
+            contentsView.scheduleTypingViewportCorrection(true);
         }
         function onWidthChanged() {
             contentsView.scheduleGutterRefresh(2);

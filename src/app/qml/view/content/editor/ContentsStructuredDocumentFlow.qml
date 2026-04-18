@@ -13,10 +13,10 @@ FocusScope {
 
     property var agendaBackend: null
     property var calloutBackend: null
+    property var documentBlocks: []
     property int lineHeightHint: Math.max(1, Math.round(LV.Theme.scaleMetric(12)))
     property bool paperPaletteEnabled: false
     property var shortcutKeyPressHandler: null
-    property alias documentBlocks: documentHost.documentBlocks
     property alias renderedResources: documentHost.renderedResources
     property alias sourceText: documentHost.sourceText
     property alias activeBlockIndex: documentHost.activeBlockIndex
@@ -208,6 +208,103 @@ FocusScope {
             return 0
         }
         return documentFlow.framedBlockSpacing
+    }
+
+    function implicitTextBlockInteractiveFlattenCandidate(blockEntryOverride) {
+        const blockEntry = blockEntryOverride && typeof blockEntryOverride === "object"
+                ? blockEntryOverride
+                : ({})
+        if (!!blockEntry.flattenedInteractiveGroup)
+            return false
+        if (!!blockEntry.explicitBlock)
+            return false
+        if (blockEntry.textEditable !== undefined && !blockEntry.textEditable)
+            return false
+        if (blockEntry.atomicBlock !== undefined && !!blockEntry.atomicBlock)
+            return false
+        const blockType = documentFlow.normalizedBlockType(blockEntry)
+        return blockType !== "agenda"
+                && blockType !== "callout"
+                && blockType !== "resource"
+                && blockType !== "break"
+    }
+
+    function groupedTextLogicalLineCountHint(groupSourceText) {
+        const normalizedSourceText = documentFlow.normalizedSourceText(groupSourceText)
+        if (normalizedSourceText.length === 0)
+            return 1
+        return Math.max(1, normalizedSourceText.split("\n").length)
+    }
+
+    function buildFlattenedInteractiveTextGroup(groupBlocks, normalizedSourceText) {
+        const groupedEntries = Array.isArray(groupBlocks) ? groupBlocks : []
+        if (groupedEntries.length === 0)
+            return ({})
+        const firstBlock = groupedEntries[0] && typeof groupedEntries[0] === "object"
+                ? groupedEntries[0]
+                : ({})
+        const lastBlock = groupedEntries[groupedEntries.length - 1]
+                && typeof groupedEntries[groupedEntries.length - 1] === "object"
+                ? groupedEntries[groupedEntries.length - 1]
+                : firstBlock
+        const sourceStart = Math.max(0, documentFlow.floorNumberOrFallback(firstBlock.sourceStart, 0))
+        const sourceEnd = Math.max(sourceStart, documentFlow.floorNumberOrFallback(lastBlock.sourceEnd, sourceStart))
+        const groupedSourceText = normalizedSourceText.slice(sourceStart, sourceEnd)
+        return {
+            "atomicBlock": false,
+            "flattenedInteractiveChildCount": groupedEntries.length,
+            "flattenedInteractiveGroup": true,
+            "focusSourceOffset": sourceStart,
+            "groupedBlocks": groupedEntries,
+            "gutterCollapsed": false,
+            "logicalLineCountHint": documentFlow.groupedTextLogicalLineCountHint(groupedSourceText),
+            "minimapRepresentativeCharCount": 0,
+            "minimapVisualKind": "text",
+            "plainText": groupedSourceText,
+            "sourceEnd": sourceEnd,
+            "sourceStart": sourceStart,
+            "sourceText": groupedSourceText,
+            "textEditable": true,
+            "type": "text-group"
+        }
+    }
+
+    function flattenedInteractiveBlocks() {
+        const parsedBlocks = documentFlow.normalizedParsedBlocks()
+        if (parsedBlocks.length === 0)
+            return []
+        const normalizedSourceText = documentFlow.normalizedSourceText(documentFlow.sourceText)
+        const flattenedBlocks = []
+        let pendingTextBlocks = []
+
+        function flushPendingTextBlocks() {
+            if (pendingTextBlocks.length === 0)
+                return
+            flattenedBlocks.push(
+                        documentFlow.buildFlattenedInteractiveTextGroup(
+                            pendingTextBlocks,
+                            normalizedSourceText))
+            pendingTextBlocks = []
+        }
+
+        for (let blockIndex = 0; blockIndex < parsedBlocks.length; ++blockIndex) {
+            const blockEntry = parsedBlocks[blockIndex] && typeof parsedBlocks[blockIndex] === "object"
+                    ? parsedBlocks[blockIndex]
+                    : ({})
+            if (documentFlow.implicitTextBlockInteractiveFlattenCandidate(blockEntry)) {
+                pendingTextBlocks.push(blockEntry)
+                continue
+            }
+            flushPendingTextBlocks()
+            flattenedBlocks.push(blockEntry)
+        }
+
+        flushPendingTextBlocks()
+        return flattenedBlocks
+    }
+
+    function refreshInteractiveDocumentBlocks() {
+        documentHost.documentBlocks = documentFlow.flattenedInteractiveBlocks()
     }
 
     function logicalLineCount() {
@@ -755,8 +852,12 @@ FocusScope {
         return true
     }
 
-    function normalizedBlocks() {
+    function normalizedParsedBlocks() {
         return documentHost.collectionPolicy.normalizeEntries(documentFlow.documentBlocks)
+    }
+
+    function normalizedBlocks() {
+        return documentHost.collectionPolicy.normalizeEntries(documentHost.documentBlocks)
     }
 
     function normalizedResourceEntries() {
@@ -930,6 +1031,8 @@ FocusScope {
 
     function blockSupportsParagraphBoundaryOperations(blockEntry) {
         const safeBlock = blockEntry && typeof blockEntry === "object" ? blockEntry : ({})
+        if (!!safeBlock.flattenedInteractiveGroup)
+            return false
         return documentHost.mutationPolicy
                 && documentHost.mutationPolicy.supportsParagraphBoundaryOperations !== undefined
                 && !!documentHost.mutationPolicy.supportsParagraphBoundaryOperations(safeBlock)
@@ -1507,10 +1610,10 @@ FocusScope {
         anchors.right: parent.right
         spacing: 0
 
-        Repeater {
-            id: blockRepeater
+    Repeater {
+        id: blockRepeater
 
-            model: documentBlocksModel
+        model: documentBlocksModel
 
             delegate: Item {
                 id: blockHost
@@ -1634,6 +1737,7 @@ FocusScope {
                     "documentBlocksChanged",
                     "blockCount=" + documentFlow.documentBlocks.length,
                     documentFlow)
+        documentFlow.refreshInteractiveDocumentBlocks()
         documentFlow.scheduleLayoutCacheRefresh()
         if (!documentFlow.hasPendingFocusRequest())
             return
@@ -1646,6 +1750,7 @@ FocusScope {
 
     Component.onCompleted: {
         EditorTrace.trace("structuredDocumentFlow", "mount", "blockCount=" + documentFlow.documentBlocks.length, documentFlow)
+        documentFlow.refreshInteractiveDocumentBlocks()
         documentFlow.refreshLayoutCache()
     }
 

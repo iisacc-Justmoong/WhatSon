@@ -39,8 +39,13 @@ not note-backed.
   RichText surface reinjection step.
 - Resource-bearing fallback notes still substitute `whatson-resource-block` placeholders into HTML, but that
   substitution now stays entirely inside the display pipeline.
-- The non-print editor viewport now reserves a multi-line bottom inset, so the last authored line no longer sits flush
-  against the shell bottom edge when the user scrolls to the document tail.
+- The non-print editor viewport now reserves a bottom inset that scales up to half of the live editor surface height.
+  The last authored line can therefore travel well above the bottom edge instead of collapsing against the shell when
+  the user reaches the document tail.
+- While the note editor is focused, cursor-row movement and live content-height growth now schedule a viewport
+  correction pass that keeps the active typing row inside a mid-viewport typing band.
+  As wrapped lines or newly inserted lines push the caret downward, the host advances `Flickable.contentY` with the
+  typing row so the typing height stays visually stable instead of dropping to the bottom edge.
 - Structured-flow, resource-render, and legacy-editor geometry changes now request gutter refresh through dedicated
   reasons instead of reusing the focused `line-structure` suppression path.
 - Structured `cachedLogicalLineEntries` updates now split logical-metric change from geometry-only change.

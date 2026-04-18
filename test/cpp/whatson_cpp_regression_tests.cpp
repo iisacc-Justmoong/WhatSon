@@ -482,7 +482,9 @@ private slots:
     void detailPanelRouting_separatesNoteAndResourceViewsAndViewModels();
     void contentsDisplayView_invalidatesGutterGeometryImmediatelyAcrossRapidNoteSwitches();
     void contentsDisplayView_keepsGutterNumbersCloseToTheEditorBody();
+    void contentsDisplayView_reservesHalfHeightBottomInsetAndCorrectsTypingViewport();
     void inlineFormatEditor_preservesMacModifierVerticalNavigationHooks();
+    void structuredFlow_flattensImplicitTextBlocksIntoInteractiveGroups();
     void structuredEditors_routeMacModifierVerticalNavigationAcrossBlockAndDocumentBoundaries();
     void paperSelection_tracksChosenPaperEnumState();
     void a4PaperBackground_exposesCanonicalMetricsAndAnchorsPrintRendererDefaults();
@@ -2710,6 +2712,23 @@ void WhatSonCppRegressionTests::contentsDisplayView_keepsGutterNumbersCloseToThe
     QVERIFY(!displayViewSource.contains(QStringLiteral("readonly property int lineNumberRightInset: contentsView.editorHorizontalInset")));
 }
 
+void WhatSonCppRegressionTests::contentsDisplayView_reservesHalfHeightBottomInsetAndCorrectsTypingViewport()
+{
+    const QString displayViewSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/content/editor/ContentsDisplayView.qml"));
+
+    QVERIFY(!displayViewSource.isEmpty());
+    QVERIFY(displayViewSource.contains(QStringLiteral("Math.round(contentsView.editorSurfaceHeight * 0.5)")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("function typingViewportBandTop(cursorHeight)")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("function typingViewportBandBottom(cursorHeight)")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("function typingViewportAnchorCenter(cursorHeight)")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("function correctTypingViewport(forceAnchor)")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("function scheduleTypingViewportCorrection(forceAnchor)")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("contentsView.scheduleTypingViewportCorrection(true);")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("contentsView.scheduleTypingViewportCorrection(false);")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("flickable.contentY = nextContentY;")));
+}
+
 void WhatSonCppRegressionTests::inlineFormatEditor_preservesMacModifierVerticalNavigationHooks()
 {
     const QString inlineEditorSource = readUtf8SourceFile(
@@ -2726,6 +2745,23 @@ void WhatSonCppRegressionTests::inlineFormatEditor_preservesMacModifierVerticalN
     QVERIFY(inlineEditorSource.contains(QStringLiteral("control.modifierVerticalNavigationHandler")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("textInput.deselect !== undefined")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("if (control.handleMacModifierVerticalNavigation(event))")));
+}
+
+void WhatSonCppRegressionTests::structuredFlow_flattensImplicitTextBlocksIntoInteractiveGroups()
+{
+    const QString structuredFlowSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/content/editor/ContentsStructuredDocumentFlow.qml"));
+
+    QVERIFY(!structuredFlowSource.isEmpty());
+    QVERIFY(structuredFlowSource.contains(QStringLiteral("property var documentBlocks: []")));
+    QVERIFY(structuredFlowSource.contains(QStringLiteral("function normalizedParsedBlocks() {")));
+    QVERIFY(structuredFlowSource.contains(QStringLiteral("function implicitTextBlockInteractiveFlattenCandidate(blockEntryOverride) {")));
+    QVERIFY(structuredFlowSource.contains(QStringLiteral("function buildFlattenedInteractiveTextGroup(groupBlocks, normalizedSourceText) {")));
+    QVERIFY(structuredFlowSource.contains(QStringLiteral("function flattenedInteractiveBlocks() {")));
+    QVERIFY(structuredFlowSource.contains(QStringLiteral("documentHost.documentBlocks = documentFlow.flattenedInteractiveBlocks()")));
+    QVERIFY(structuredFlowSource.contains(QStringLiteral("\"flattenedInteractiveGroup\": true")));
+    QVERIFY(structuredFlowSource.contains(QStringLiteral("\"type\": \"text-group\"")));
+    QVERIFY(structuredFlowSource.contains(QStringLiteral("if (!!safeBlock.flattenedInteractiveGroup)")));
 }
 
 void WhatSonCppRegressionTests::structuredEditors_routeMacModifierVerticalNavigationAcrossBlockAndDocumentBoundaries()

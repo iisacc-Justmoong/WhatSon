@@ -6,6 +6,8 @@ Provides the single document-block adapter that keeps `ContentsStructuredDocumen
 
 ## Current Behavior
 - The flow now instantiates this component for every structured row.
+- A structured row is now either one parsed explicit block or one flattened interactive prose group assembled by
+  `ContentsStructuredDocumentFlow.qml`.
 - An internal `Loader` chooses the concrete implementation from `blockData.type`:
   - `ContentsDocumentTextBlock.qml`
   - `ContentsAgendaBlock.qml`

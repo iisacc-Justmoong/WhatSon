@@ -5,7 +5,16 @@ Hosts the parsed `.wsnbody` block stream as one ordered document editor and forw
 source.
 
 ## Current Behavior
-- The flow consumes `renderedDocumentBlocks` and `renderedResources` and lays them out as one ordered block column.
+- The flow consumes raw parsed `renderedDocumentBlocks` plus `renderedResources`, then builds a second
+  interaction-only block stream before it lays the note out.
+- Parsed block boundaries therefore remain available for parsing, linting, and block-local render traits, but the
+  final editor `Repeater` no longer has to mirror every implicit prose paragraph one-for-one.
+- Contiguous implicit text blocks are now flattened into one `text-group` interactive row:
+  - the row spans the first/last child `sourceStart` / `sourceEnd`
+  - the row keeps one combined `sourceText` slice from the RAW note body
+  - the row mounts one shared `ContentsDocumentTextBlock.qml` editor surface for that whole prose run
+- This means plain prose paragraphs remain parser-visible blocks, but final keyboard focus and caret movement no
+  longer stop at every implicit paragraph boundary.
 - Parsed `renderedDocumentBlocks` snapshots no longer bind straight into the `Repeater` as ephemeral JS arrays.
   The flow now routes them through `ContentsStructuredDocumentBlocksModel`, which preserves retained rows and emits
   incremental row/data updates for suffix blocks whose source offsets shifted after an upstream edit.
@@ -36,6 +45,8 @@ source.
   text block.
   Blank lines below an inline resource therefore materialize as actual empty text blocks that arrow navigation and
   focus restoration can target directly.
+- Those parsed paragraph entries are now also flattened back into larger interactive prose rows before delegate mount.
+  The parser still owns paragraph discovery, while the final editor surface owns interaction flattening.
 - Those zero-length paragraph blocks are now also deletable.
   When the block has wrapper source (`<paragraph></paragraph>`), the flow removes that wrapper span; when it is an
   implicit blank line between prose blocks, the flow removes the adjacent newline token that created the empty line.
@@ -52,6 +63,10 @@ source.
   Structured prose-like tags such as `paragraph`, `title`, `subTitle`, `eventTitle`, and the other text delegates now
   keep zero extra inter-block spacing, while framed blocks such as `resource`, `break`, `agenda`, and `callout`
   still reserve their visual separation from neighboring prose.
+- Paragraph split/merge affordances are now suppressed for flattened interactive prose groups.
+  Once implicit prose paragraphs have been combined into one editor span, plain `Enter` and ordinary deletion stay
+  native inside that span and only cross-block transitions at the outer group edge continue to involve flow-level
+  block-boundary policy.
 - Atomic block focus no longer branches through `interactionMode: "before" / "after"`.
   Resource and break blocks are re-entered by source offsets inside their span and resolve to whole-block selection.
 - Atomic-block target focus now also carries an explicit `targetBlockIndex`.
