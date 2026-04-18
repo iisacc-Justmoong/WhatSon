@@ -17,6 +17,7 @@
 #include "viewmodel/content/ContentsGutterMarkerBridge.hpp"
 #include "viewmodel/content/ContentsLogicalTextBridge.hpp"
 #include "viewmodel/content/ContentsResourceTagTextGenerator.hpp"
+#include "viewmodel/content/ContentsStructuredDocumentBlocksModel.hpp"
 #include "viewmodel/content/ContentsStructuredDocumentCollectionPolicy.hpp"
 #include "viewmodel/content/ContentsStructuredDocumentFocusPolicy.hpp"
 #include "viewmodel/content/ContentsStructuredDocumentHost.hpp"
@@ -50,6 +51,8 @@ namespace WhatSon::Runtime::Bootstrap
             "WhatSon.App.Internal", 1, 0, "ContentsGutterMarkerBridge");
         qmlRegisterType<ContentsResourceTagTextGenerator>(
             "WhatSon.App.Internal", 1, 0, "ContentsResourceTagTextGenerator");
+        qmlRegisterType<ContentsStructuredDocumentBlocksModel>(
+            "WhatSon.App.Internal", 1, 0, "ContentsStructuredDocumentBlocksModel");
         qmlRegisterType<ContentsStructuredDocumentCollectionPolicy>(
             "WhatSon.App.Internal", 1, 0, "ContentsStructuredDocumentCollectionPolicy");
         qmlRegisterType<ContentsStructuredDocumentFocusPolicy>(

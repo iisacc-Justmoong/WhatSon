@@ -3,6 +3,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Layouts
 import LVRS 1.0 as LV
+import "ContentsLogicalLineLayoutSupport.js" as LogicalLineLayoutSupport
 import "ContentsStructuredCursorSupport.js" as StructuredCursorSupport
 
 FocusScope {
@@ -79,6 +80,22 @@ FocusScope {
         return StructuredCursorSupport.normalizedPlainText(calloutBlock.calloutText)
     }
 
+    function logicalLineLayoutEntries() {
+        const plainTextValue = calloutBlock.currentEditorPlainText()
+        const editorItem = calloutEditor && calloutEditor.editorItem ? calloutEditor.editorItem : null
+        const blockHeight = Math.max(
+                    1,
+                    Number(calloutBlock.implicitHeight) || 0,
+                    Number(calloutEditor ? calloutEditor.implicitHeight : 0) || 0,
+                    Number(calloutEditor ? calloutEditor.height : 0) || 0)
+        return LogicalLineLayoutSupport.buildEntries(
+                    plainTextValue,
+                    blockHeight,
+                    editorItem,
+                    calloutBlock,
+                    Math.round(LV.Theme.scaleMetric(12)))
+    }
+
     function visiblePlainText() {
         return calloutBlock.currentEditorPlainText()
     }
@@ -118,6 +135,15 @@ FocusScope {
         else if (calloutEditor.cursorPosition !== undefined)
             calloutEditor.cursorPosition = targetCursorPosition
         calloutBlock.activated()
+    }
+
+    function clearSelection(preserveFocusedEditor) {
+        if (!calloutEditor || calloutEditor.clearSelection === undefined)
+            return false
+        if (preserveFocusedEditor === true && calloutEditor.focused)
+            return false
+        calloutEditor.clearSelection()
+        return true
     }
 
     function applyFocusRequest(request) {

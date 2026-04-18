@@ -25,10 +25,13 @@ ContentsStructuredDocumentHost::~ContentsStructuredDocumentHost()
         this,
         QStringLiteral("structuredDocumentHost"),
         QStringLiteral("dtor"),
-        QStringLiteral("activeBlockIndex=%1 cursorRevision=%2 pendingFocusBlockIndex=%3")
+        QStringLiteral(
+            "activeBlockIndex=%1 cursorRevision=%2 pendingFocusBlockIndex=%3 selectionClearRevision=%4 retainedBlockIndex=%5")
             .arg(m_activeBlockIndex)
             .arg(m_activeBlockCursorRevision)
-            .arg(m_pendingFocusBlockIndex));
+            .arg(m_pendingFocusBlockIndex)
+            .arg(m_selectionClearRevision)
+            .arg(m_selectionClearRetainedBlockIndex));
 }
 
 QVariant ContentsStructuredDocumentHost::documentBlocks() const
@@ -205,6 +208,50 @@ void ContentsStructuredDocumentHost::setPendingFocusApplyQueued(
     emit pendingFocusApplyQueuedChanged();
 }
 
+int ContentsStructuredDocumentHost::selectionClearRevision() const noexcept
+{
+    return m_selectionClearRevision;
+}
+
+void ContentsStructuredDocumentHost::setSelectionClearRevision(
+    const int selectionClearRevision)
+{
+    if (m_selectionClearRevision == selectionClearRevision)
+    {
+        return;
+    }
+
+    m_selectionClearRevision = selectionClearRevision;
+    WhatSon::Debug::traceEditorSelf(
+        this,
+        QStringLiteral("structuredDocumentHost"),
+        QStringLiteral("setSelectionClearRevision"),
+        QStringLiteral("selectionClearRevision=%1").arg(selectionClearRevision));
+    emit selectionClearRevisionChanged();
+}
+
+int ContentsStructuredDocumentHost::selectionClearRetainedBlockIndex() const noexcept
+{
+    return m_selectionClearRetainedBlockIndex;
+}
+
+void ContentsStructuredDocumentHost::setSelectionClearRetainedBlockIndex(
+    const int selectionClearRetainedBlockIndex)
+{
+    if (m_selectionClearRetainedBlockIndex == selectionClearRetainedBlockIndex)
+    {
+        return;
+    }
+
+    m_selectionClearRetainedBlockIndex = selectionClearRetainedBlockIndex;
+    WhatSon::Debug::traceEditorSelf(
+        this,
+        QStringLiteral("structuredDocumentHost"),
+        QStringLiteral("setSelectionClearRetainedBlockIndex"),
+        QStringLiteral("selectionClearRetainedBlockIndex=%1").arg(selectionClearRetainedBlockIndex));
+    emit selectionClearRetainedBlockIndexChanged();
+}
+
 QVariantList ContentsStructuredDocumentHost::cachedLogicalLineEntries() const
 {
     return m_cachedLogicalLineEntries;
@@ -361,8 +408,16 @@ int ContentsStructuredDocumentHost::shortcutInsertionSourceOffset(
 
 void ContentsStructuredDocumentHost::noteActiveBlockInteraction(const int blockIndex)
 {
+    requestSelectionClear(blockIndex);
     setActiveBlockIndex(blockIndex);
     setActiveBlockCursorRevision(m_activeBlockCursorRevision + 1);
+}
+
+void ContentsStructuredDocumentHost::requestSelectionClear(
+    const int retainedBlockIndex)
+{
+    setSelectionClearRetainedBlockIndex(retainedBlockIndex);
+    setSelectionClearRevision(m_selectionClearRevision + 1);
 }
 
 void ContentsStructuredDocumentHost::clearPendingFocusRequest()

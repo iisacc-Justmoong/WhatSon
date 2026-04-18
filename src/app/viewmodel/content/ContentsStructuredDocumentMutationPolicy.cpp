@@ -2,6 +2,7 @@
 
 #include "ContentsStructuredDocumentCollectionPolicy.hpp"
 #include "file/WhatSonDebugTrace.hpp"
+#include "file/note/WhatSonNoteBodySemanticTagSupport.hpp"
 
 #include <QJSValue>
 #include <QMetaType>
@@ -12,6 +13,8 @@
 
 namespace
 {
+    namespace SemanticTags = WhatSon::NoteBodySemanticTagSupport;
+
     QVariantList normalizedVariantList(QVariant value)
     {
         if (!value.isValid())
@@ -56,6 +59,131 @@ namespace
         }
 
         return QVariantList{value};
+    }
+
+    QString canonicalParagraphBoundaryType(const QVariantMap& blockData)
+    {
+        static const QStringList candidateKeys{
+            QStringLiteral("semanticTagName"),
+            QStringLiteral("tagName"),
+            QStringLiteral("type"),
+        };
+        for (const QString& candidateKey : candidateKeys)
+        {
+            const QString rawValue = blockData.value(candidateKey).toString().trimmed();
+            if (rawValue.isEmpty())
+            {
+                continue;
+            }
+
+            const QString renderedType = SemanticTags::canonicalRenderedTextBlockTagName(rawValue);
+            if (!renderedType.isEmpty())
+            {
+                return renderedType;
+            }
+
+            const QString documentType = SemanticTags::canonicalDocumentBlockTypeName(rawValue);
+            if (!documentType.isEmpty())
+            {
+                return documentType;
+            }
+        }
+
+        return {};
+    }
+
+    bool isParagraphBoundaryType(const QString& canonicalTypeName)
+    {
+        return canonicalTypeName == QStringLiteral("paragraph")
+            || canonicalTypeName == QStringLiteral("p");
+    }
+
+    QVariantMap paragraphBoundaryFocusRequest(const int sourceOffset)
+    {
+        QVariantMap focusRequest;
+        focusRequest.insert(QStringLiteral("preferNearestTextBlock"), true);
+        focusRequest.insert(QStringLiteral("sourceOffset"), std::max(0, sourceOffset));
+        return focusRequest;
+    }
+
+    int boundedBlockOffset(
+        ContentsStructuredDocumentCollectionPolicy* collectionPolicy,
+        const QVariantMap& blockData,
+        const QString& key,
+        const int fallbackValue,
+        const int sourceLength)
+    {
+        return std::clamp(
+            collectionPolicy->floorNumberOrFallback(blockData.value(key), fallbackValue),
+            0,
+            sourceLength);
+    }
+
+    int blockContentStart(
+        ContentsStructuredDocumentCollectionPolicy* collectionPolicy,
+        const QVariantMap& blockData,
+        const int sourceLength)
+    {
+        const int sourceStart = boundedBlockOffset(
+            collectionPolicy,
+            blockData,
+            QStringLiteral("sourceStart"),
+            0,
+            sourceLength);
+        return boundedBlockOffset(
+            collectionPolicy,
+            blockData,
+            QStringLiteral("contentStart"),
+            sourceStart,
+            sourceLength);
+    }
+
+    int blockContentEnd(
+        ContentsStructuredDocumentCollectionPolicy* collectionPolicy,
+        const QVariantMap& blockData,
+        const int contentStart,
+        const int sourceLength)
+    {
+        const int sourceEnd = boundedBlockOffset(
+            collectionPolicy,
+            blockData,
+            QStringLiteral("sourceEnd"),
+            contentStart,
+            sourceLength);
+        return boundedBlockOffset(
+            collectionPolicy,
+            blockData,
+            QStringLiteral("contentEnd"),
+            sourceEnd,
+            sourceLength);
+    }
+
+    int blockSourceStart(
+        ContentsStructuredDocumentCollectionPolicy* collectionPolicy,
+        const QVariantMap& blockData,
+        const int contentStart,
+        const int sourceLength)
+    {
+        return boundedBlockOffset(
+            collectionPolicy,
+            blockData,
+            QStringLiteral("blockSourceStart"),
+            contentStart,
+            sourceLength);
+    }
+
+    int blockSourceEnd(
+        ContentsStructuredDocumentCollectionPolicy* collectionPolicy,
+        const QVariantMap& blockData,
+        const int contentEnd,
+        const int sourceLength)
+    {
+        return boundedBlockOffset(
+            collectionPolicy,
+            blockData,
+            QStringLiteral("blockSourceEnd"),
+            contentEnd,
+            sourceLength);
     }
 } // namespace
 
@@ -138,6 +266,146 @@ int ContentsStructuredDocumentMutationPolicy::nextEditableSourceOffsetAfterBlock
         return boundedBlockEndOffset + 1;
     }
     return boundedBlockEndOffset;
+}
+
+bool ContentsStructuredDocumentMutationPolicy::supportsParagraphBoundaryOperations(
+    const QVariantMap& blockData) const
+{
+    return isParagraphBoundaryType(canonicalParagraphBoundaryType(blockData));
+}
+
+QVariantMap ContentsStructuredDocumentMutationPolicy::buildParagraphMergePayload(
+    const QVariantMap& previousBlockData,
+    const QVariantMap& currentBlockData,
+    const QString& sourceText) const
+{
+    if (!supportsParagraphBoundaryOperations(previousBlockData)
+        || !supportsParagraphBoundaryOperations(currentBlockData))
+    {
+        return {};
+    }
+
+    const QString currentSourceText = m_collectionPolicy->normalizeSourceText(sourceText);
+    const int sourceLength = static_cast<int>(currentSourceText.size());
+
+    const int previousContentStart =
+        blockContentStart(m_collectionPolicy, previousBlockData, sourceLength);
+    const int previousContentEnd =
+        blockContentEnd(m_collectionPolicy, previousBlockData, previousContentStart, sourceLength);
+    const int previousBlockStart =
+        blockSourceStart(m_collectionPolicy, previousBlockData, previousContentStart, sourceLength);
+    const int previousBlockEnd =
+        blockSourceEnd(m_collectionPolicy, previousBlockData, previousContentEnd, sourceLength);
+
+    const int currentContentStart =
+        blockContentStart(m_collectionPolicy, currentBlockData, sourceLength);
+    const int currentContentEnd =
+        blockContentEnd(m_collectionPolicy, currentBlockData, currentContentStart, sourceLength);
+    const int currentBlockStart =
+        blockSourceStart(m_collectionPolicy, currentBlockData, currentContentStart, sourceLength);
+    const int currentBlockEnd =
+        blockSourceEnd(m_collectionPolicy, currentBlockData, currentContentEnd, sourceLength);
+
+    if (previousBlockStart > previousContentStart
+        || previousContentEnd > previousBlockEnd
+        || currentBlockStart > currentContentStart
+        || currentContentEnd > currentBlockEnd
+        || previousBlockEnd > currentBlockStart
+        || previousContentEnd > currentBlockEnd)
+    {
+        return {};
+    }
+
+    const QString previousClosingSuffix =
+        currentSourceText.mid(previousContentEnd, previousBlockEnd - previousContentEnd);
+    const QString currentContentText =
+        currentSourceText.mid(currentContentStart, currentContentEnd - currentContentStart);
+
+    QVariantMap payload;
+    payload.insert(
+        QStringLiteral("nextSourceText"),
+        m_collectionPolicy->spliceSourceRange(
+            currentSourceText,
+            previousContentEnd,
+            currentBlockEnd,
+            currentContentText + previousClosingSuffix));
+    payload.insert(
+        QStringLiteral("focusRequest"),
+        paragraphBoundaryFocusRequest(previousContentEnd));
+    return payload;
+}
+
+QVariantMap ContentsStructuredDocumentMutationPolicy::buildParagraphSplitPayload(
+    const QVariantMap& blockData,
+    const QString& sourceText,
+    const int sourceCursorOffset) const
+{
+    if (!supportsParagraphBoundaryOperations(blockData))
+    {
+        return {};
+    }
+
+    const QString currentSourceText = m_collectionPolicy->normalizeSourceText(sourceText);
+    const int sourceLength = static_cast<int>(currentSourceText.size());
+
+    const int contentStart = blockContentStart(m_collectionPolicy, blockData, sourceLength);
+    const int contentEnd =
+        blockContentEnd(m_collectionPolicy, blockData, contentStart, sourceLength);
+    const int blockStart =
+        blockSourceStart(m_collectionPolicy, blockData, contentStart, sourceLength);
+    const int blockEnd =
+        blockSourceEnd(m_collectionPolicy, blockData, contentEnd, sourceLength);
+
+    if (blockStart > contentStart || contentEnd > blockEnd)
+    {
+        return {};
+    }
+
+    const int boundedSplitOffset = std::clamp(sourceCursorOffset, contentStart, contentEnd);
+    const bool explicitWrapper = blockStart < contentStart || blockEnd > contentEnd;
+
+    QString nextSourceText;
+    int focusSourceOffset = boundedSplitOffset + 1;
+    if (!explicitWrapper)
+    {
+        nextSourceText = m_collectionPolicy->spliceSourceRange(
+            currentSourceText,
+            boundedSplitOffset,
+            boundedSplitOffset,
+            QStringLiteral("\n"));
+    }
+    else
+    {
+        const QString openingPrefix =
+            currentSourceText.mid(blockStart, contentStart - blockStart);
+        const QString closingSuffix =
+            currentSourceText.mid(contentEnd, blockEnd - contentEnd);
+        if (openingPrefix.isEmpty() || closingSuffix.isEmpty())
+        {
+            return {};
+        }
+
+        const QString rightContent =
+            currentSourceText.mid(boundedSplitOffset, contentEnd - boundedSplitOffset);
+        const QString splitReplacement =
+            closingSuffix + QStringLiteral("\n") + openingPrefix + rightContent + closingSuffix;
+        nextSourceText = m_collectionPolicy->spliceSourceRange(
+            currentSourceText,
+            boundedSplitOffset,
+            blockEnd,
+            splitReplacement);
+        focusSourceOffset =
+            boundedSplitOffset + static_cast<int>(closingSuffix.size()) + 1
+            + static_cast<int>(openingPrefix.size());
+    }
+
+    QVariantMap payload;
+    payload.insert(QStringLiteral("nextSourceText"), nextSourceText);
+    payload.insert(
+        QStringLiteral("focusRequest"),
+        paragraphBoundaryFocusRequest(
+            std::clamp(focusSourceOffset, 0, static_cast<int>(nextSourceText.size()))));
+    return payload;
 }
 
 QVariantMap ContentsStructuredDocumentMutationPolicy::buildStructuredInsertionPayload(

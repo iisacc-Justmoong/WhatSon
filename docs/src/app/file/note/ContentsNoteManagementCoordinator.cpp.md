@@ -33,8 +33,12 @@
 - The coordinator now also provides one-shot session/filesystem reconciliation for editor entry:
   - resolves note/session metadata on the UI thread only
   - queues RAW-read comparison work onto the same coordinator-owned worker lane
+  - accepts an explicit `preferViewSessionOnMismatch` policy bit from the upstream editor/session layer
   - emits `viewSessionSnapshotReconciled(noteId, refreshed, success, errorMessage)` back to QML-facing adapters
-  - triggers `refreshNoteSnapshotForNote(...)` on the main thread only when the worker reports a mismatch.
+  - when mismatch is reported for a non-authoritative session, triggers `refreshNoteSnapshotForNote(...)` on the main
+    thread
+  - when mismatch is reported for an editor-authoritative session, first persists that view-session text back into RAW,
+    then refreshes the visible note snapshot from the repaired filesystem state.
 - The same queue now also owns selected-note lazy body reads:
   - `loadNoteBodyTextForNote(noteId)` resolves the note path on the main thread
   - the actual `.wsnote` read runs on the worker lane
@@ -52,8 +56,8 @@
 - Header open-count requests deduplicate while the same note already has one such request in flight or pending.
 - Pending lazy note-body load requests keep only the newest queued request per note id while still preserving request
   sequence ordering across in-flight completions.
-- Reconcile requests are also coalesced by note id plus normalized session text so note-open and timer-driven snapshot
-  probes do not stack duplicate RAW reads on the UI thread.
+- Reconcile requests are also coalesced by note id plus normalized session text; if a later queued request upgrades the
+  same session text to `preferViewSessionOnMismatch`, that stronger editor-authoritative policy must be preserved.
 
 ## Regression Checks
 
@@ -70,6 +74,8 @@
   re-read `Tags.wstags`, so newly promoted `#label` tags appear in the hierarchy without a manual app restart.
 - Session/filesystem reconciliation must return success without reload when RAW already matches the current view
   session snapshot, and that check must not perform note reads on the UI thread anymore.
+- Editor-authoritative reconciliation must repair RAW from the current editor snapshot instead of refreshing stale RAW
+  back into the visible session.
 - Lazy selected-note body reads must execute on the worker lane and must not require the note-list model to carry the
   same full body text as selection state.
 - A newer same-note body-read request must not be discarded merely because an older body-read for that note is already

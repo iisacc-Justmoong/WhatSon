@@ -34,6 +34,10 @@ Provides the single document-block adapter that keeps `ContentsStructuredDocumen
   handling.
   Note-wide shortcuts such as clipboard-image paste therefore keep working even when focus currently sits inside one
   structured paragraph editor or on a selected break/resource block.
+- The adapter now also listens to the structured document host's selection-clear revision and forwards
+  `clearSelection(preserveFocusedEditor)` into the mounted delegate.
+  Selection cleanup therefore stays centralized at the host boundary instead of being reimplemented for every viewport
+  click path.
 - `Connections { ignoreUnknownSignals: true }` re-emits only the signals that the active inner block actually exposes.
 
 ## Architecture Note

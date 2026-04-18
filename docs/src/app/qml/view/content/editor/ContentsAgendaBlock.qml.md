@@ -24,6 +24,10 @@ Renders one agenda card as a native document block inside the editor flow.
 - The agenda block now also exposes `currentCursorRowRect()` for the currently focused task editor.
   Structured-flow hosts use that row rectangle to align current-line gutter indicators with the actual visual caret row
   inside wrapped agenda task text.
+- The block now also exposes `clearSelection(preserveFocusedEditor)` and clears every non-focused task editor on each
+  structured activation turn.
+  Agenda cards therefore cannot keep stale task selection highlight after focus moves to another task, block, or blank
+  document area.
 - The block now also exports the shared document-block contract for flow-level layout:
   `textEditable=true`, `atomicBlock=false`, `gutterCollapsed=false`,
   `minimapVisualKind=text`, `visiblePlainText()` as the joined task text, and

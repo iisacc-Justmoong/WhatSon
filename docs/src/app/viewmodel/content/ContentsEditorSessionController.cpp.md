@@ -9,11 +9,15 @@
   decision of when that normalization applies is now controller-owned.
 - Empty `<task>` / `<callout>` anchor normalization is now compiled regex work in C++, keeping save/model-sync text
   normalization off the QML hot path.
+- Same-note model sync now keeps honoring `localEditorAuthority` even after the typing-idle window has elapsed, so a
+  delayed RAW refresh cannot reclaim editor-owned text merely because the user paused typing for a moment.
 - The sync guard release uses a queued `QTimer::singleShot(0, ...)` turn so model-driven editor text changes still
   suppress the immediate follow-up typing echo without moving that scheduling rule back into QML.
 
 ## Regression Focus
 - A same-note protected model snapshot must not reopen the reverse write path that previously allowed a rejected RAW
   snapshot to re-stage the current editor buffer back to persistence.
+- A same-note RAW/model snapshot that differs from the current editor text must stay rejected while the selected note
+  still has local editor authority, even when `pendingBodySave == false`.
 - A note switch with pending buffered edits must still flush the current note before the next selection binds, but the
   flush acceptance must stay distinct from a durable save completion.

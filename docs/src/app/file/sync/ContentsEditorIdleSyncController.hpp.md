@@ -36,7 +36,8 @@ later fetch turn does not have to rediscover that path through a different activ
 - `refreshNoteSnapshotForNote(noteId)`, `bindSelectedNote(noteId)`, `clearSelectedNote()`: forward selection/session
   work to the downstream coordinator while keeping the sync boundary in `file/sync`.
 - `reconcileViewSessionAndRefreshSnapshotForNote(noteId, viewSessionText)`: compares one editor session snapshot
-  against filesystem RAW through the downstream coordinator and only refreshes note snapshot when mismatch is detected.
+  against filesystem RAW through the downstream coordinator. Callers may also mark the current editor session as
+  authoritative so a mismatch persists the view-session text back into RAW before refreshing the visible note snapshot.
 - `editorTextPersistenceQueued(...)`: emitted when one buffered snapshot actually enters the downstream persistence
   queue.
 - `editorTextPersistenceFinished(...)`: forwarded once that queued persistence request completes.
@@ -58,8 +59,8 @@ later fetch turn does not have to rediscover that path through a different activ
 - Lazy selected-note body reads also remain asynchronous, but they do not participate in dirty-note save ordering.
 - A buffered snapshot that already captured a direct note-directory path may still be written on a later fetch turn even
   if the active content view-model contract has since changed.
-- After each successful queued persistence completion, the controller also performs one reconcile fetch verify against
-  filesystem RAW to keep editor-visible note snapshots aligned without forcing unconditional reloads.
+- After each successful queued persistence completion, the controller also performs one editor-authoritative reconcile
+  verify against filesystem RAW so the just-saved editor snapshot cannot be replaced by a stale same-note RAW reload.
 
 ## Regression Checks
 
@@ -77,8 +78,8 @@ later fetch turn does not have to rediscover that path through a different activ
   even when the current content view-model contract is temporarily absent.
 - Session/filesystem reconciliation must not trigger unconditional reloads; filesystem refresh should happen only on
   mismatch.
-- Successful persistence completion must include one reconcile verify pass so the latest visible snapshot can converge
-  with canonicalized filesystem RAW.
+- Successful persistence completion must include one reconcile verify pass, and that verify must prefer the just-saved
+  editor session over stale RAW when the two still differ.
 - Lazy selected-note body reads must not require list-model `currentBodyText` as an alternate transport for the full
   note body.
 - The body-read completion contract must preserve per-request sequence identity so stale completions can be ignored.

@@ -30,6 +30,12 @@ class ContentsStructuredDocumentHost : public QObject
         bool pendingFocusApplyQueued READ pendingFocusApplyQueued WRITE setPendingFocusApplyQueued
             NOTIFY pendingFocusApplyQueuedChanged)
     Q_PROPERTY(
+        int selectionClearRevision READ selectionClearRevision WRITE setSelectionClearRevision
+            NOTIFY selectionClearRevisionChanged)
+    Q_PROPERTY(
+        int selectionClearRetainedBlockIndex READ selectionClearRetainedBlockIndex
+            WRITE setSelectionClearRetainedBlockIndex NOTIFY selectionClearRetainedBlockIndexChanged)
+    Q_PROPERTY(
         QVariantList cachedLogicalLineEntries READ cachedLogicalLineEntries WRITE setCachedLogicalLineEntries
             NOTIFY cachedLogicalLineEntriesChanged)
     Q_PROPERTY(
@@ -72,6 +78,12 @@ public:
     bool pendingFocusApplyQueued() const noexcept;
     void setPendingFocusApplyQueued(bool pendingFocusApplyQueued);
 
+    int selectionClearRevision() const noexcept;
+    void setSelectionClearRevision(int selectionClearRevision);
+
+    int selectionClearRetainedBlockIndex() const noexcept;
+    void setSelectionClearRetainedBlockIndex(int selectionClearRetainedBlockIndex);
+
     QVariantList cachedLogicalLineEntries() const;
     void setCachedLogicalLineEntries(const QVariantList& cachedLogicalLineEntries);
 
@@ -96,6 +108,7 @@ public:
         int focusedBlockIndex,
         const QVariant& delegateInsertionOffset = QVariant()) const;
     Q_INVOKABLE void noteActiveBlockInteraction(int blockIndex);
+    Q_INVOKABLE void requestSelectionClear(int retainedBlockIndex = -1);
     Q_INVOKABLE void clearPendingFocusRequest();
 
 signals:
@@ -107,6 +120,8 @@ signals:
     void pendingFocusRequestChanged();
     void pendingFocusBlockIndexChanged();
     void pendingFocusApplyQueuedChanged();
+    void selectionClearRevisionChanged();
+    void selectionClearRetainedBlockIndexChanged();
     void cachedLogicalLineEntriesChanged();
     void cachedBlockLayoutSummariesChanged();
     void layoutCacheRefreshQueuedChanged();
@@ -122,6 +137,8 @@ private:
     QVariantMap m_pendingFocusRequest;
     int m_pendingFocusBlockIndex = -1;
     bool m_pendingFocusApplyQueued = false;
+    int m_selectionClearRevision = 0;
+    int m_selectionClearRetainedBlockIndex = -1;
     QVariantList m_cachedLogicalLineEntries;
     QVariantList m_cachedBlockLayoutSummaries;
     bool m_layoutCacheRefreshQueued = false;

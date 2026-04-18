@@ -25,6 +25,11 @@ Renders one callout card as a native document block inside the editor flow.
 - The callout block now also exposes `currentCursorRowRect()` in block-local coordinates.
   Structured-flow hosts use that to align current-line gutter indicators with the actual visual caret row inside
   wrapped callout text.
+- Callout logical-line layout now also routes through `ContentsLogicalLineLayoutSupport.js`, so wrapped callout text
+  exports block-local `{contentY, contentHeight}` entries from live editor rectangles instead of one evenly divided
+  block-height estimate.
+- The block now also exposes `clearSelection(preserveFocusedEditor)`, allowing structured-flow activation to clear
+  stale callout highlight without disabling `persistentSelection` for the active editor.
 - The block now also exports the shared document-block contract for flow-level layout:
   `textEditable=true`, `atomicBlock=false`, `gutterCollapsed=false`,
   `minimapVisualKind=text`, `visiblePlainText()` as the live callout editor text, and

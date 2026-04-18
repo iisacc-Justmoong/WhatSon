@@ -3,6 +3,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import LVRS 1.0 as LV
 import WhatSon.App.Internal 1.0
+import "ContentsLogicalLineLayoutSupport.js" as LogicalLineLayoutSupport
 import "ContentsStructuredCursorSupport.js" as StructuredCursorSupport
 
 FocusScope {
@@ -15,6 +16,7 @@ FocusScope {
     signal adjacentAtomicBlockDeleteRequested(string side)
     signal boundaryNavigationRequested(string axis, string side)
     signal blockDeletionRequested(string direction)
+    signal paragraphSplitRequested(int sourceOffset)
     signal sourceMutationRequested(string nextBlockSourceText, var focusRequest)
 
     readonly property var normalizedBlock: blockData && typeof blockData === "object" ? blockData : ({})
@@ -29,6 +31,9 @@ FocusScope {
     property bool hasAdjacentAtomicBlockBefore: false
     property bool hasAdjacentBlockAfter: false
     property bool hasAdjacentBlockBefore: false
+    property bool paragraphBoundaryOperationsEnabled: false
+    property bool paragraphMergeableBefore: false
+    property bool paragraphMergeableAfter: false
     readonly property int sourceStart: Math.max(0, Number(normalizedBlock.sourceStart) || 0)
     readonly property int sourceEnd: Math.max(sourceStart, Number(normalizedBlock.sourceEnd) || 0)
     readonly property string sourceText: normalizedBlock.sourceText !== undefined ? String(normalizedBlock.sourceText) : ""
@@ -71,55 +76,18 @@ FocusScope {
 
     function logicalLineLayoutEntries() {
         const plainTextValue = textBlock.currentEditorPlainText()
-        const logicalLines = plainTextValue.length > 0 ? plainTextValue.split("\n") : [""]
         const editorItem = blockEditor && blockEditor.editorItem ? blockEditor.editorItem : null
         const blockHeight = Math.max(
                     1,
                     Number(textBlock.implicitHeight) || 0,
                     Number(blockEditor ? blockEditor.implicitHeight : 0) || 0,
                     Number(blockEditor ? blockEditor.height : 0) || 0)
-        const entries = []
-        let lineStartOffset = 0
-
-        for (let index = 0; index < logicalLines.length; ++index) {
-            const lineText = String(logicalLines[index] || "")
-            const startRect = editorItem && editorItem.positionToRectangle !== undefined
-                    ? editorItem.positionToRectangle(lineStartOffset)
-                    : ({})
-            const fallbackStartY = blockHeight * index / Math.max(1, logicalLines.length)
-            const startY = Math.max(
-                        0,
-                        startRect && startRect.y !== undefined
-                        ? Number(startRect.y) || 0
-                        : fallbackStartY)
-            const startHeight = Math.max(
-                        1,
-                        startRect && startRect.height !== undefined
-                        ? Number(startRect.height) || 0
-                        : 0)
-            const nextLineStartOffset = index + 1 < logicalLines.length
-                    ? Math.min(plainTextValue.length, lineStartOffset + lineText.length + 1)
-                    : plainTextValue.length
-            let endY = Math.max(startY + startHeight, blockHeight)
-            if (index + 1 < logicalLines.length) {
-                const nextRect = editorItem && editorItem.positionToRectangle !== undefined
-                        ? editorItem.positionToRectangle(nextLineStartOffset)
-                        : ({})
-                const fallbackEndY = blockHeight * (index + 1) / Math.max(1, logicalLines.length)
-                endY = Math.max(
-                            startY + startHeight,
-                            nextRect && nextRect.y !== undefined
-                            ? Number(nextRect.y) || 0
-                            : fallbackEndY)
-            }
-            entries.push({
-                "contentHeight": Math.max(1, endY - startY),
-                "contentY": startY
-            })
-            lineStartOffset = nextLineStartOffset
-        }
-
-        return entries
+        return LogicalLineLayoutSupport.buildEntries(
+                    plainTextValue,
+                    blockHeight,
+                    editorItem,
+                    textBlock,
+                    Math.round(LV.Theme.scaleMetric(12)))
     }
 
     function currentEditorLogicalLineNumber() {
@@ -263,6 +231,15 @@ FocusScope {
         return !!blockEditor.restoreSelectionRange(selectionStart, selectionEnd, cursorPosition)
     }
 
+    function clearSelection(preserveFocusedEditor) {
+        if (!blockEditor || blockEditor.clearSelection === undefined)
+            return false
+        if (preserveFocusedEditor === true && textBlock.focused)
+            return false
+        blockEditor.clearSelection()
+        return true
+    }
+
     function inlineFormatSelectionSnapshot() {
         if (!blockEditor)
             return ({})
@@ -351,12 +328,14 @@ FocusScope {
         const key = Number(event.key)
         const deleteBackward = key === Qt.Key_Backspace
         const deleteForward = key === Qt.Key_Delete
+        const insertParagraphBreak = key === Qt.Key_Return || key === Qt.Key_Enter
         const moveBackward = key === Qt.Key_Left
         const moveForward = key === Qt.Key_Right
         const moveUp = key === Qt.Key_Up
         const moveDown = key === Qt.Key_Down
         if (!deleteBackward
                 && !deleteForward
+                && !insertParagraphBreak
                 && !moveBackward
                 && !moveForward
                 && !moveUp
@@ -399,8 +378,31 @@ FocusScope {
             event.accepted = true
             return true
         }
+        if (deleteBackward && cursorPosition === 0 && textBlock.paragraphMergeableBefore) {
+            textBlock.blockDeletionRequested("merge-backward")
+            event.accepted = true
+            return true
+        }
+        if (deleteForward && cursorPosition === plainTextLength && textBlock.paragraphMergeableAfter) {
+            textBlock.blockDeletionRequested("merge-forward")
+            event.accepted = true
+            return true
+        }
         if ((modifiers & Qt.ShiftModifier) !== 0)
             return false
+        if (insertParagraphBreak && textBlock.paragraphBoundaryOperationsEnabled) {
+            textBlock.paragraphSplitRequested(
+                        Math.max(
+                            textBlock.sourceStart,
+                            Math.min(
+                                textBlock.sourceEnd,
+                                StructuredCursorSupport.sourceOffsetForInlineTaggedCursor(
+                                    textBlock.authoritativeSourceText(),
+                                    cursorPosition,
+                                    textBlock.sourceStart))))
+            event.accepted = true
+            return true
+        }
         if (moveBackward && cursorPosition === 0 && textBlock.hasAdjacentBlockBefore) {
             textBlock.boundaryNavigationRequested("horizontal", "before")
             event.accepted = true

@@ -27,14 +27,27 @@ tags as visible formatted text.
   visible caret location.
 - Gutter/minimap line layout still follows the live editor surface geometry via `positionToRectangle(...)`, but the
   logical line content now comes from the visible plain-text projection rather than the literal RAW tag string.
+- That logical-line geometry now also routes through `ContentsLogicalLineLayoutSupport.js`, which maps every sampled
+  line rectangle back into the block's own coordinate space before the structured flow caches it.
+  Gutter Y therefore no longer depends on the inline editor's internal local origin accidentally matching the block
+  host origin.
 - The block still emits only RAW mutation requests upward; the rendered overlay remains a read-side projection and
   never becomes the persistence authority.
+- The block now also exposes `clearSelection(preserveFocusedEditor)` so structured-flow-wide selection cleanup can
+  drop stale paragraph highlight while leaving the actively focused editor alone.
 - The nested inline editor now also runs one host-owned shortcut handler before its local boundary-navigation logic.
   Note-wide shortcuts such as clipboard-image paste can therefore be intercepted while focus is inside a structured
   paragraph editor, without reintroducing legacy whole-note editing authority.
 - An empty text block now treats plain `Backspace` / `Delete` as "remove this line" before it tries adjacent atomic
   block deletion.
   Zero-length paragraph blocks therefore no longer become undeletable cursor anchors.
+- Plain `Enter` inside `paragraph` / `p` blocks is now intercepted before `TextEdit` inserts an inline newline.
+  The delegate maps the visible caret back to a RAW source offset and emits a paragraph-split request so prose blocks
+  stay separable as true block boundaries instead of accidental in-block line breaks.
+- `Backspace` at the start of a paragraph block and `Delete` at the end now request paragraph-boundary merge only when
+  the adjacent parsed block is also paragraph-mergeable.
+  That keeps same-flow prose easy to merge while preventing headings, callouts, resources, and other non-paragraph
+  blocks from being collapsed into paragraph text accidentally.
 
 ## Shared Block Contract
 - `textEditable = true`
@@ -48,3 +61,6 @@ tags as visible formatted text.
 - For semantic wrapper blocks such as `<paragraph>...</paragraph>`, the parser still passes only the inner editable
   content into `sourceText` / `sourceStart` / `sourceEnd`.
 - This component therefore edits wrapper content directly without rendering or mutating the outer wrapper tags.
+- Paragraph split/merge requests still never mutate RAW locally inside this delegate.
+  They only emit the boundary intent upward so the shared structured mutation policy can rewrite implicit lines and
+  explicit paragraph wrappers consistently from one place.

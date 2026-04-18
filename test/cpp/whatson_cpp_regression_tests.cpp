@@ -1,5 +1,7 @@
 #include "file/hub/WhatSonHubPathUtils.hpp"
+#define private public
 #include "file/note/ContentsNoteManagementCoordinator.hpp"
+#undef private
 #include "file/note/WhatSonLocalNoteFileStore.hpp"
 #include "file/note/WhatSonNoteBodyPersistence.hpp"
 #include "file/note/WhatSonNoteFolderSemantics.hpp"
@@ -10,7 +12,9 @@
 #include "store/sidebar/ISidebarSelectionStore.hpp"
 #include "store/sidebar/SidebarSelectionStore.hpp"
 #include "viewmodel/content/ContentsEditorSessionController.hpp"
+#include "viewmodel/content/ContentsStructuredDocumentBlocksModel.hpp"
 #include "viewmodel/content/ContentsStructuredDocumentCollectionPolicy.hpp"
+#include "viewmodel/content/ContentsStructuredDocumentHost.hpp"
 #include "viewmodel/content/ContentsStructuredDocumentMutationPolicy.hpp"
 #include "viewmodel/content/ContentsResourceTagTextGenerator.hpp"
 #include "viewmodel/hierarchy/IHierarchyViewModel.hpp"
@@ -29,10 +33,16 @@
 
 #include <QCoreApplication>
 #include <QDir>
+#include <QFile>
 #include <QHash>
+#include <QJSEngine>
+#include <QJSValue>
+#include <QRegularExpression>
 #include <QSettings>
 #include <QTemporaryDir>
 #include <QtTest>
+
+#include <memory>
 
 class FakeHierarchyViewModel final : public IHierarchyViewModel
 {
@@ -290,6 +300,12 @@ private slots:
     void resourceTagTextGenerator_and_noteFolderSemantics_normalizeDescriptorsAndXml();
     void structuredCollectionPolicy_normalizesEntriesAndPrefersResolvedMatches();
     void structuredMutationPolicy_buildsDeletionAndInsertionPayloads();
+    void structuredMutationPolicy_buildsParagraphBoundaryMergeAndSplitPayloads();
+    void structuredDocumentBlocksModel_updatesRowsWithoutResettingStableSuffixBlocks();
+    void structuredDocumentBlocksModel_removesOnlyChangedMiddleRows();
+    void structuredDocumentHost_tracksSelectionClearRevisionAcrossInteractions();
+    void logicalLineLayoutSupport_mapsEditorRectanglesIntoBlockCoordinates();
+    void logicalLineLayoutSupport_fallsBackWhenLiveEditorGeometryIsUnavailable();
     void editorSessionController_preservesLocalEditorAuthorityAgainstSameNoteModelSync();
     void noteManagementCoordinator_reconcilePersistsEditorSnapshotWhenPreferred();
     void noteManagementCoordinator_reconcileRefreshesWithoutPersistingWhenEditorIsNotAuthoritative();
@@ -300,6 +316,11 @@ private:
         const QString& noteId,
         const QString& bodySourceText,
         QString* errorMessage = nullptr);
+    static QJSValue evaluateQmlJsLibrary(
+        QJSEngine* engine,
+        const QString& relativeSourcePath);
+    static QJSValue jsArrayEntry(const QJSValue& arrayValue, int index);
+    static QCoreApplication* ensureCoreApplication();
 };
 
 QString WhatSonCppRegressionTests::createLocalNoteForRegression(
@@ -337,6 +358,53 @@ QString WhatSonCppRegressionTests::createLocalNoteForRegression(
         return {};
     }
     return noteDirectoryPath;
+}
+
+QJSValue WhatSonCppRegressionTests::evaluateQmlJsLibrary(
+    QJSEngine* engine,
+    const QString& relativeSourcePath)
+{
+    if (engine == nullptr)
+    {
+        return {};
+    }
+
+    QFile scriptFile(relativeSourcePath);
+    if (!scriptFile.open(QIODevice::ReadOnly | QIODevice::Text))
+    {
+        return {};
+    }
+
+    QString scriptSource = QString::fromUtf8(scriptFile.readAll());
+    scriptSource.remove(
+        QRegularExpression(QStringLiteral(R"(^\s*\.pragma\s+library\s*\n?)")));
+
+    const QJSValue evaluationResult = engine->evaluate(scriptSource, relativeSourcePath);
+    if (evaluationResult.isError())
+    {
+        return evaluationResult;
+    }
+    return engine->globalObject();
+}
+
+QJSValue WhatSonCppRegressionTests::jsArrayEntry(const QJSValue& arrayValue, const int index)
+{
+    return arrayValue.property(QString::number(index));
+}
+
+QCoreApplication* WhatSonCppRegressionTests::ensureCoreApplication()
+{
+    if (QCoreApplication::instance() != nullptr)
+    {
+        return QCoreApplication::instance();
+    }
+
+    static int argc = 1;
+    static char applicationName[] = "whatson_cpp_regression_tests";
+    static char* argv[] = {applicationName, nullptr};
+    static std::unique_ptr<QCoreApplication> application;
+    application = std::make_unique<QCoreApplication>(argc, argv);
+    return application.get();
 }
 
 void WhatSonCppRegressionTests::selectedHubStore_persistsNormalizedSelectionsWithinSandboxedSettings()
@@ -1047,6 +1115,411 @@ void WhatSonCppRegressionTests::structuredMutationPolicy_buildsDeletionAndInsert
     QVERIFY(policy.buildResourceInsertionPayload(QString(), 0, QVariantList{}).isEmpty());
 }
 
+void WhatSonCppRegressionTests::structuredMutationPolicy_buildsParagraphBoundaryMergeAndSplitPayloads()
+{
+    ContentsStructuredDocumentMutationPolicy policy;
+
+    const QVariantMap implicitParagraphBlock{
+        {QStringLiteral("type"), QStringLiteral("paragraph")},
+        {QStringLiteral("semanticTagName"), QStringLiteral("paragraph")},
+        {QStringLiteral("sourceStart"), 0},
+        {QStringLiteral("sourceEnd"), 6},
+    };
+    const QVariantMap titleBlock{
+        {QStringLiteral("type"), QStringLiteral("title")},
+        {QStringLiteral("semanticTagName"), QStringLiteral("title")},
+        {QStringLiteral("sourceStart"), 0},
+        {QStringLiteral("sourceEnd"), 5},
+    };
+    QVERIFY(policy.supportsParagraphBoundaryOperations(implicitParagraphBlock));
+    QVERIFY(!policy.supportsParagraphBoundaryOperations(titleBlock));
+
+    const QString implicitMergeSource = QStringLiteral("foo\nbar");
+    const QVariantMap implicitPreviousBlock{
+        {QStringLiteral("type"), QStringLiteral("paragraph")},
+        {QStringLiteral("semanticTagName"), QStringLiteral("paragraph")},
+        {QStringLiteral("sourceStart"), 0},
+        {QStringLiteral("sourceEnd"), 3},
+    };
+    const QVariantMap implicitCurrentBlock{
+        {QStringLiteral("type"), QStringLiteral("paragraph")},
+        {QStringLiteral("semanticTagName"), QStringLiteral("paragraph")},
+        {QStringLiteral("sourceStart"), 4},
+        {QStringLiteral("sourceEnd"), 7},
+    };
+    const QVariantMap implicitMergePayload = policy.buildParagraphMergePayload(
+        implicitPreviousBlock,
+        implicitCurrentBlock,
+        implicitMergeSource);
+    QCOMPARE(
+        implicitMergePayload.value(QStringLiteral("nextSourceText")).toString(),
+        QStringLiteral("foobar"));
+    QCOMPARE(
+        implicitMergePayload.value(QStringLiteral("focusRequest"))
+            .toMap()
+            .value(QStringLiteral("sourceOffset"))
+            .toInt(),
+        3);
+
+    const QString explicitMergeSource =
+        QStringLiteral("<paragraph>foo</paragraph>\n<paragraph>bar</paragraph>");
+    const QVariantMap explicitPreviousBlock{
+        {QStringLiteral("type"), QStringLiteral("paragraph")},
+        {QStringLiteral("semanticTagName"), QStringLiteral("paragraph")},
+        {QStringLiteral("tagName"), QStringLiteral("paragraph")},
+        {QStringLiteral("blockSourceStart"), 0},
+        {QStringLiteral("blockSourceEnd"), 26},
+        {QStringLiteral("contentStart"), 11},
+        {QStringLiteral("contentEnd"), 14},
+        {QStringLiteral("sourceStart"), 11},
+        {QStringLiteral("sourceEnd"), 14},
+    };
+    const QVariantMap explicitCurrentBlock{
+        {QStringLiteral("type"), QStringLiteral("paragraph")},
+        {QStringLiteral("semanticTagName"), QStringLiteral("paragraph")},
+        {QStringLiteral("tagName"), QStringLiteral("paragraph")},
+        {QStringLiteral("blockSourceStart"), 27},
+        {QStringLiteral("blockSourceEnd"), 53},
+        {QStringLiteral("contentStart"), 38},
+        {QStringLiteral("contentEnd"), 41},
+        {QStringLiteral("sourceStart"), 38},
+        {QStringLiteral("sourceEnd"), 41},
+    };
+    const QVariantMap explicitMergePayload = policy.buildParagraphMergePayload(
+        explicitPreviousBlock,
+        explicitCurrentBlock,
+        explicitMergeSource);
+    QCOMPARE(
+        explicitMergePayload.value(QStringLiteral("nextSourceText")).toString(),
+        QStringLiteral("<paragraph>foobar</paragraph>"));
+    QCOMPARE(
+        explicitMergePayload.value(QStringLiteral("focusRequest"))
+            .toMap()
+            .value(QStringLiteral("sourceOffset"))
+            .toInt(),
+        14);
+
+    const QVariantMap implicitSplitPayload = policy.buildParagraphSplitPayload(
+        implicitParagraphBlock,
+        QStringLiteral("foobar"),
+        3);
+    QCOMPARE(
+        implicitSplitPayload.value(QStringLiteral("nextSourceText")).toString(),
+        QStringLiteral("foo\nbar"));
+    QCOMPARE(
+        implicitSplitPayload.value(QStringLiteral("focusRequest"))
+            .toMap()
+            .value(QStringLiteral("sourceOffset"))
+            .toInt(),
+        4);
+
+    const QVariantMap explicitSplitPayload = policy.buildParagraphSplitPayload(
+        QVariantMap{
+            {QStringLiteral("type"), QStringLiteral("paragraph")},
+            {QStringLiteral("semanticTagName"), QStringLiteral("paragraph")},
+            {QStringLiteral("tagName"), QStringLiteral("paragraph")},
+            {QStringLiteral("blockSourceStart"), 0},
+            {QStringLiteral("blockSourceEnd"), 29},
+            {QStringLiteral("contentStart"), 11},
+            {QStringLiteral("contentEnd"), 17},
+            {QStringLiteral("sourceStart"), 11},
+            {QStringLiteral("sourceEnd"), 17},
+        },
+        QStringLiteral("<paragraph>foobar</paragraph>"),
+        14);
+    QCOMPARE(
+        explicitSplitPayload.value(QStringLiteral("nextSourceText")).toString(),
+        QStringLiteral("<paragraph>foo</paragraph>\n<paragraph>bar</paragraph>"));
+    QCOMPARE(
+        explicitSplitPayload.value(QStringLiteral("focusRequest"))
+            .toMap()
+            .value(QStringLiteral("sourceOffset"))
+            .toInt(),
+        38);
+}
+
+void WhatSonCppRegressionTests::structuredDocumentBlocksModel_updatesRowsWithoutResettingStableSuffixBlocks()
+{
+    ContentsStructuredDocumentBlocksModel model;
+    QSignalSpy rowsInsertedSpy(&model, &QAbstractItemModel::rowsInserted);
+    QSignalSpy rowsRemovedSpy(&model, &QAbstractItemModel::rowsRemoved);
+    QSignalSpy modelResetSpy(&model, &QAbstractItemModel::modelReset);
+    QSignalSpy dataChangedSpy(&model, &QAbstractItemModel::dataChanged);
+
+    const QVariantList initialBlocks{
+        QVariantMap{
+            {QStringLiteral("type"), QStringLiteral("text")},
+            {QStringLiteral("sourceStart"), 0},
+            {QStringLiteral("sourceEnd"), 5},
+            {QStringLiteral("sourceText"), QStringLiteral("alpha")},
+        },
+        QVariantMap{
+            {QStringLiteral("type"), QStringLiteral("text")},
+            {QStringLiteral("sourceStart"), 6},
+            {QStringLiteral("sourceEnd"), 10},
+            {QStringLiteral("sourceText"), QStringLiteral("beta")},
+        },
+        QVariantMap{
+            {QStringLiteral("type"), QStringLiteral("resource")},
+            {QStringLiteral("sourceStart"), 11},
+            {QStringLiteral("sourceEnd"), 24},
+            {QStringLiteral("sourceText"), QStringLiteral("<resource />")},
+        },
+    };
+    model.setBlocks(initialBlocks);
+    QCOMPARE(model.count(), 3);
+    QCOMPARE(rowsInsertedSpy.count(), 1);
+    QCOMPARE(rowsRemovedSpy.count(), 0);
+    QCOMPARE(modelResetSpy.count(), 0);
+
+    rowsInsertedSpy.clear();
+    rowsRemovedSpy.clear();
+    dataChangedSpy.clear();
+
+    const QVariantList editedBlocks{
+        QVariantMap{
+            {QStringLiteral("type"), QStringLiteral("text")},
+            {QStringLiteral("sourceStart"), 0},
+            {QStringLiteral("sourceEnd"), 2},
+            {QStringLiteral("sourceText"), QStringLiteral("al")},
+        },
+        QVariantMap{
+            {QStringLiteral("type"), QStringLiteral("text")},
+            {QStringLiteral("sourceStart"), 3},
+            {QStringLiteral("sourceEnd"), 7},
+            {QStringLiteral("sourceText"), QStringLiteral("beta")},
+        },
+        QVariantMap{
+            {QStringLiteral("type"), QStringLiteral("resource")},
+            {QStringLiteral("sourceStart"), 8},
+            {QStringLiteral("sourceEnd"), 21},
+            {QStringLiteral("sourceText"), QStringLiteral("<resource />")},
+        },
+    };
+    model.setBlocks(editedBlocks);
+
+    QCOMPARE(model.count(), 3);
+    QCOMPARE(rowsInsertedSpy.count(), 0);
+    QCOMPARE(rowsRemovedSpy.count(), 0);
+    QCOMPARE(modelResetSpy.count(), 0);
+    QCOMPARE(dataChangedSpy.count(), 1);
+
+    const auto changedRange = dataChangedSpy.at(0);
+    QCOMPARE(changedRange.at(0).value<QModelIndex>().row(), 0);
+    QCOMPARE(changedRange.at(1).value<QModelIndex>().row(), 2);
+
+    QCOMPARE(
+        model.data(model.index(2, 0), ContentsStructuredDocumentBlocksModel::BlockDataRole).toMap().value(
+            QStringLiteral("sourceStart")).toInt(),
+        8);
+}
+
+void WhatSonCppRegressionTests::structuredDocumentBlocksModel_removesOnlyChangedMiddleRows()
+{
+    ContentsStructuredDocumentBlocksModel model;
+    QSignalSpy rowsInsertedSpy(&model, &QAbstractItemModel::rowsInserted);
+    QSignalSpy rowsRemovedSpy(&model, &QAbstractItemModel::rowsRemoved);
+    QSignalSpy modelResetSpy(&model, &QAbstractItemModel::modelReset);
+    QSignalSpy dataChangedSpy(&model, &QAbstractItemModel::dataChanged);
+
+    model.setBlocks(QVariantList{
+        QVariantMap{
+            {QStringLiteral("type"), QStringLiteral("text")},
+            {QStringLiteral("sourceStart"), 0},
+            {QStringLiteral("sourceEnd"), 5},
+            {QStringLiteral("sourceText"), QStringLiteral("alpha")},
+        },
+        QVariantMap{
+            {QStringLiteral("type"), QStringLiteral("text")},
+            {QStringLiteral("sourceStart"), 6},
+            {QStringLiteral("sourceEnd"), 10},
+            {QStringLiteral("sourceText"), QStringLiteral("beta")},
+        },
+        QVariantMap{
+            {QStringLiteral("type"), QStringLiteral("text")},
+            {QStringLiteral("sourceStart"), 11},
+            {QStringLiteral("sourceEnd"), 16},
+            {QStringLiteral("sourceText"), QStringLiteral("gamma")},
+        },
+    });
+
+    rowsInsertedSpy.clear();
+    rowsRemovedSpy.clear();
+    dataChangedSpy.clear();
+
+    model.setBlocks(QVariantList{
+        QVariantMap{
+            {QStringLiteral("type"), QStringLiteral("text")},
+            {QStringLiteral("sourceStart"), 0},
+            {QStringLiteral("sourceEnd"), 5},
+            {QStringLiteral("sourceText"), QStringLiteral("alpha")},
+        },
+        QVariantMap{
+            {QStringLiteral("type"), QStringLiteral("text")},
+            {QStringLiteral("sourceStart"), 6},
+            {QStringLiteral("sourceEnd"), 11},
+            {QStringLiteral("sourceText"), QStringLiteral("gamma")},
+        },
+    });
+
+    QCOMPARE(model.count(), 2);
+    QCOMPARE(rowsInsertedSpy.count(), 0);
+    QCOMPARE(rowsRemovedSpy.count(), 1);
+    QCOMPARE(modelResetSpy.count(), 0);
+    QCOMPARE(dataChangedSpy.count(), 1);
+
+    const auto removedRange = rowsRemovedSpy.takeFirst();
+    QCOMPARE(removedRange.at(1).toInt(), 1);
+    QCOMPARE(removedRange.at(2).toInt(), 1);
+
+    const auto changedRange = dataChangedSpy.takeFirst();
+    QCOMPARE(changedRange.at(0).value<QModelIndex>().row(), 1);
+    QCOMPARE(changedRange.at(1).value<QModelIndex>().row(), 1);
+    QCOMPARE(
+        model.data(model.index(1, 0), ContentsStructuredDocumentBlocksModel::BlockDataRole).toMap().value(
+            QStringLiteral("sourceText")).toString(),
+        QStringLiteral("gamma"));
+}
+
+void WhatSonCppRegressionTests::structuredDocumentHost_tracksSelectionClearRevisionAcrossInteractions()
+{
+    ContentsStructuredDocumentHost host;
+
+    QSignalSpy activeBlockIndexSpy(&host, &ContentsStructuredDocumentHost::activeBlockIndexChanged);
+    QSignalSpy activeBlockCursorRevisionSpy(
+        &host,
+        &ContentsStructuredDocumentHost::activeBlockCursorRevisionChanged);
+    QSignalSpy selectionClearRevisionSpy(
+        &host,
+        &ContentsStructuredDocumentHost::selectionClearRevisionChanged);
+    QSignalSpy selectionClearRetainedBlockIndexSpy(
+        &host,
+        &ContentsStructuredDocumentHost::selectionClearRetainedBlockIndexChanged);
+
+    QCOMPARE(host.activeBlockIndex(), -1);
+    QCOMPARE(host.activeBlockCursorRevision(), 0);
+    QCOMPARE(host.selectionClearRevision(), 0);
+    QCOMPARE(host.selectionClearRetainedBlockIndex(), -1);
+
+    host.requestSelectionClear(3);
+    QCOMPARE(host.selectionClearRevision(), 1);
+    QCOMPARE(host.selectionClearRetainedBlockIndex(), 3);
+    QCOMPARE(selectionClearRevisionSpy.count(), 1);
+    QCOMPARE(selectionClearRetainedBlockIndexSpy.count(), 1);
+
+    host.requestSelectionClear(3);
+    QCOMPARE(host.selectionClearRevision(), 2);
+    QCOMPARE(host.selectionClearRetainedBlockIndex(), 3);
+    QCOMPARE(selectionClearRevisionSpy.count(), 2);
+    QCOMPARE(selectionClearRetainedBlockIndexSpy.count(), 1);
+
+    host.noteActiveBlockInteraction(5);
+    QCOMPARE(host.activeBlockIndex(), 5);
+    QCOMPARE(host.activeBlockCursorRevision(), 1);
+    QCOMPARE(host.selectionClearRevision(), 3);
+    QCOMPARE(host.selectionClearRetainedBlockIndex(), 5);
+    QCOMPARE(activeBlockIndexSpy.count(), 1);
+    QCOMPARE(activeBlockCursorRevisionSpy.count(), 1);
+    QCOMPARE(selectionClearRevisionSpy.count(), 3);
+    QCOMPARE(selectionClearRetainedBlockIndexSpy.count(), 2);
+
+    host.noteActiveBlockInteraction(5);
+    QCOMPARE(host.activeBlockIndex(), 5);
+    QCOMPARE(host.activeBlockCursorRevision(), 2);
+    QCOMPARE(host.selectionClearRevision(), 4);
+    QCOMPARE(host.selectionClearRetainedBlockIndex(), 5);
+    QCOMPARE(activeBlockIndexSpy.count(), 1);
+    QCOMPARE(activeBlockCursorRevisionSpy.count(), 2);
+    QCOMPARE(selectionClearRevisionSpy.count(), 4);
+    QCOMPARE(selectionClearRetainedBlockIndexSpy.count(), 2);
+
+    host.requestSelectionClear(-1);
+    QCOMPARE(host.selectionClearRevision(), 5);
+    QCOMPARE(host.selectionClearRetainedBlockIndex(), -1);
+    QCOMPARE(selectionClearRevisionSpy.count(), 5);
+    QCOMPARE(selectionClearRetainedBlockIndexSpy.count(), 3);
+}
+
+void WhatSonCppRegressionTests::logicalLineLayoutSupport_mapsEditorRectanglesIntoBlockCoordinates()
+{
+    ensureCoreApplication();
+    QJSEngine engine;
+    const QJSValue library = evaluateQmlJsLibrary(
+        &engine,
+        QStringLiteral("src/app/qml/view/content/editor/ContentsLogicalLineLayoutSupport.js"));
+    QVERIFY2(!library.isError(), qPrintable(library.toString()));
+
+    const QJSValue buildEntries = library.property(QStringLiteral("buildEntries"));
+    QVERIFY(buildEntries.isCallable());
+
+    QJSValue editorItem = engine.newObject();
+    editorItem.setProperty(
+        QStringLiteral("positionToRectangle"),
+        engine.evaluate(
+            QStringLiteral(
+                "(function (position) {"
+                "  if (position <= 0)"
+                "    return { y: 0, height: 14 };"
+                "  return { y: 18, height: 14 };"
+                "})")));
+    editorItem.setProperty(
+        QStringLiteral("mapToItem"),
+        engine.evaluate(
+            QStringLiteral(
+                "(function (_target, _x, y) {"
+                "  return { x: 0, y: y + 11 };"
+                "})")));
+
+    const QJSValue entries = buildEntries.call(QJSValueList {
+        QJSValue(QStringLiteral("alpha\nbeta")),
+        QJSValue(52),
+        editorItem,
+        engine.newObject(),
+        QJSValue(12),
+    });
+
+    QVERIFY2(!entries.isError(), qPrintable(entries.toString()));
+    QCOMPARE(entries.property(QStringLiteral("length")).toInt(), 2);
+
+    const QJSValue firstEntry = jsArrayEntry(entries, 0);
+    const QJSValue secondEntry = jsArrayEntry(entries, 1);
+    QVERIFY(firstEntry.isObject());
+    QVERIFY(secondEntry.isObject());
+    QCOMPARE(firstEntry.property(QStringLiteral("contentY")).toInt(), 11);
+    QCOMPARE(firstEntry.property(QStringLiteral("contentHeight")).toInt(), 18);
+    QCOMPARE(secondEntry.property(QStringLiteral("contentY")).toInt(), 29);
+    QCOMPARE(secondEntry.property(QStringLiteral("contentHeight")).toInt(), 23);
+}
+
+void WhatSonCppRegressionTests::logicalLineLayoutSupport_fallsBackWhenLiveEditorGeometryIsUnavailable()
+{
+    ensureCoreApplication();
+    QJSEngine engine;
+    const QJSValue library = evaluateQmlJsLibrary(
+        &engine,
+        QStringLiteral("src/app/qml/view/content/editor/ContentsLogicalLineLayoutSupport.js"));
+    QVERIFY2(!library.isError(), qPrintable(library.toString()));
+
+    const QJSValue buildEntries = library.property(QStringLiteral("buildEntries"));
+    QVERIFY(buildEntries.isCallable());
+
+    const QJSValue entries = buildEntries.call(QJSValueList {
+        QJSValue(QStringLiteral("")),
+        QJSValue(0),
+        QJSValue(QJSValue::UndefinedValue),
+        QJSValue(QJSValue::UndefinedValue),
+        QJSValue(12),
+    });
+
+    QVERIFY2(!entries.isError(), qPrintable(entries.toString()));
+    QCOMPARE(entries.property(QStringLiteral("length")).toInt(), 1);
+
+    const QJSValue onlyEntry = jsArrayEntry(entries, 0);
+    QVERIFY(onlyEntry.isObject());
+    QCOMPARE(onlyEntry.property(QStringLiteral("contentY")).toInt(), 0);
+    QCOMPARE(onlyEntry.property(QStringLiteral("contentHeight")).toInt(), 12);
+}
+
 void WhatSonCppRegressionTests::editorSessionController_preservesLocalEditorAuthorityAgainstSameNoteModelSync()
 {
     ContentsEditorSessionController controller;
@@ -1101,11 +1574,21 @@ void WhatSonCppRegressionTests::noteManagementCoordinator_reconcilePersistsEdito
         &coordinator,
         &ContentsNoteManagementCoordinator::viewSessionSnapshotReconciled);
 
-    QVERIFY(coordinator.reconcileViewSessionAndRefreshSnapshotForNote(
-        noteId,
-        QStringLiteral("editor-after"),
-        true));
-    QTRY_COMPARE_WITH_TIMEOUT(reconcileSpy.count(), 1, 10000);
+    ContentsNoteManagementCoordinator::Request request;
+    request.kind = ContentsNoteManagementCoordinator::RequestKind::ReconcileViewSessionSnapshot;
+    request.noteId = noteId;
+    request.noteDirectoryPath = noteDirectoryPath;
+    request.text = QStringLiteral("editor-after");
+    request.preferViewSessionOnMismatch = true;
+
+    const ContentsNoteManagementCoordinator::Result result =
+        ContentsNoteManagementCoordinator::performWorkerRequest(request);
+    QVERIFY(result.success);
+    QVERIFY(result.viewSessionPersisted);
+    QVERIFY(result.snapshotRefreshRequested);
+
+    coordinator.handleRequestFinished(result);
+    QCOMPARE(reconcileSpy.count(), 1);
 
     const QList<QVariant> reconcileArguments = reconcileSpy.takeFirst();
     QCOMPARE(reconcileArguments.at(0).toString(), noteId);
@@ -1161,11 +1644,21 @@ void WhatSonCppRegressionTests::noteManagementCoordinator_reconcileRefreshesWith
         &coordinator,
         &ContentsNoteManagementCoordinator::viewSessionSnapshotReconciled);
 
-    QVERIFY(coordinator.reconcileViewSessionAndRefreshSnapshotForNote(
-        noteId,
-        QStringLiteral("editor-after"),
-        false));
-    QTRY_COMPARE_WITH_TIMEOUT(reconcileSpy.count(), 1, 10000);
+    ContentsNoteManagementCoordinator::Request request;
+    request.kind = ContentsNoteManagementCoordinator::RequestKind::ReconcileViewSessionSnapshot;
+    request.noteId = noteId;
+    request.noteDirectoryPath = noteDirectoryPath;
+    request.text = QStringLiteral("editor-after");
+    request.preferViewSessionOnMismatch = false;
+
+    const ContentsNoteManagementCoordinator::Result result =
+        ContentsNoteManagementCoordinator::performWorkerRequest(request);
+    QVERIFY(result.success);
+    QVERIFY(!result.viewSessionPersisted);
+    QVERIFY(result.snapshotRefreshRequested);
+
+    coordinator.handleRequestFinished(result);
+    QCOMPARE(reconcileSpy.count(), 1);
 
     const QList<QVariant> reconcileArguments = reconcileSpy.takeFirst();
     QCOMPARE(reconcileArguments.at(0).toString(), noteId);

@@ -30,6 +30,8 @@ The wrapper keeps the host/editor contract expected by `ContentsDisplayView.qml`
 - `textEdited(...)` remains the host notification hook, but it now always reports plain text.
 - The rendered HTML overlay is suppressed during active IME composition so native preedit text stays visible.
 - `TextEdit.moveCursorSelection(...)` is still preferred when restoring an existing selection.
+- The wrapper now also exposes `clearSelection()`, which explicitly clears `persistentSelection` highlight and any
+  cached selection snapshot when a structured-flow activation moves elsewhere.
 - The wrapper keeps the existing external-scroll contract used by page/print layout, gutter, and minimap code.
 
 ## Regression Focus

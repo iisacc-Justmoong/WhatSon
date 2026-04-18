@@ -7,7 +7,7 @@
 ## Scope
 - Mirrored source directory: `src/app/qml/view/content/editor`
 - Child directories: 0
-- Child files: 30
+- Child files: 31
 
 ## Child Directories
 - No child directories.
@@ -30,6 +30,7 @@
 - `ContentsGutterLayer.qml`
 - `ContentsImageResourceFrame.qml`
 - `ContentsInlineFormatEditor.qml`
+- `ContentsLogicalLineLayoutSupport.js`
 - `ContentsInlineResourcePresentationController.qml`
 - `ContentsMinimapLayer.qml`
 - `ContentsMinimapSnapshotSupport.js`
@@ -72,6 +73,13 @@
   same authored block stream as surrounding text.
 - `ContentsStructuredDocumentFlow.qml` now mounts one generic `ContentsDocumentBlock.qml` delegate per parsed block
   instead of branching directly to block-type-specific delegates in the repeater host.
+- That structured flow now also feeds its repeater through `ContentsStructuredDocumentBlocksModel` rather than
+  binding parsed block arrays directly.
+  Single-line delete and similar RAW edits therefore preserve unchanged block delegates instead of remounting the
+  entire structured editor column when only source offsets moved.
+- Paragraph/p prose blocks now also expose one shared boundary-editing rule:
+  plain `Enter` splits a paragraph at the RAW caret offset, while boundary `Backspace` / `Delete` merge adjacent
+  paragraphs through the structured mutation policy instead of inserting/removing in-block newlines locally.
 - Parser payloads and mounted block delegates now share one block contract:
   `plainText`, `textEditable`, `atomicBlock`, `gutterCollapsed`, `logicalLineCountHint`,
   `minimapVisualKind`, and `minimapRepresentativeCharCount`.
@@ -150,6 +158,9 @@
 - `ContentsStructuredDocumentFlow.qml` now also emits structured gutter Y from each cached logical line's real
   `contentY` instead of a separate synthetic gutter accumulator, so paragraph spacing, delegate-local top offsets, and
   wrapped structured lines keep the gutter aligned to the actual rendered document surface.
+- Text-family structured blocks now also share `ContentsLogicalLineLayoutSupport.js` for logical-line geometry.
+  Live `positionToRectangle(...)` samples are mapped back into the delegate's own coordinate space before the flow
+  caches gutter/minimap line Y, preventing block-local editor offsets from leaking into global gutter placement.
 - `ContentsStructuredDocumentFlow.qml` no longer applies one global inter-block gap to text-family structured tags.
   Text-to-text flow for `paragraph`, `title`, `subTitle`, `eventTitle`, and the other prose-style text delegates now
   renders without synthetic bottom margin on `Enter`, while framed document blocks still keep explicit separation from
@@ -179,6 +190,13 @@
 - `ContentsStructuredDocumentFlow.qml` now also converges structured document-host state through one
   `ContentsStructuredDocumentHost` instance and delegates collection normalization, focus resolution, and RAW mutation
   rules to dedicated C++ policy objects instead of keeping those host policies interleaved inside the QML flow object.
+- `ContentsDocumentTextBlock.qml` now keeps paragraph boundary editing source-driven as well.
+  Delegate-local key handling only emits split/merge intent; `ContentsStructuredDocumentMutationPolicy` owns the RAW
+  rewrite so implicit prose lines and explicit `<paragraph>...</paragraph>` wrappers obey the same rule set.
+- That same structured document host now also emits selection-clear revisions plus one retained block hint, and
+  `ContentsDocumentBlock.qml` forwards that cleanup into paragraph/callout/agenda delegates.
+  Drag-selected text therefore no longer stays highlighted after the user activates another structured editor or clicks
+  blank document space.
 - After that policy extraction, the flow and desktop/mobile hosts no longer keep dead duplicate QML helpers or
   pass-through import wrappers that merely mirrored those dedicated collaborators.
 - Desktop/mobile snapshot polling now also prefers a filesystem reconcile fetch path

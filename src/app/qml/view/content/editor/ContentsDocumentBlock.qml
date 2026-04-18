@@ -9,18 +9,24 @@ FocusScope {
     objectName: "contentsDocumentBlock"
 
     required property var blockData
+    property int blockIndex: -1
     property var resourceEntry: ({})
+    property var selectionManager: null
     property var shortcutKeyPressHandler: null
     property bool hasAdjacentAtomicBlockAfter: false
     property bool hasAdjacentAtomicBlockBefore: false
     property bool hasAdjacentBlockAfter: false
     property bool hasAdjacentBlockBefore: false
+    property bool paragraphBoundaryOperationsEnabled: false
+    property bool paragraphMergeableAfter: false
+    property bool paragraphMergeableBefore: false
 
     signal activated()
     signal adjacentAtomicBlockDeleteRequested(string side)
     signal boundaryNavigationRequested(string axis, string side)
     signal blockDeletionRequested(string direction)
     signal documentEndEditRequested()
+    signal paragraphSplitRequested(int sourceOffset)
     signal sourceMutationRequested(string nextBlockSourceText, var focusRequest)
     signal taskDoneToggled(int openTagStart, int openTagEnd, bool checked)
     signal taskEnterRequested(var blockData, var taskData)
@@ -175,6 +181,13 @@ FocusScope {
         return !!blockItem.applyInlineFormatToSelection(tagName, selectionSnapshot)
     }
 
+    function clearSelection(preserveFocusedEditor) {
+        const blockItem = blockLoader.item
+        if (!blockItem || blockItem.clearSelection === undefined)
+            return false
+        return !!blockItem.clearSelection(preserveFocusedEditor === true)
+    }
+
     function shortcutInsertionSourceOffset() {
         const blockItem = blockLoader.item
         if (blockItem && blockItem.shortcutInsertionSourceOffset !== undefined) {
@@ -269,6 +282,21 @@ FocusScope {
                     documentBlock)
     }
 
+    Connections {
+        target: documentBlock.selectionManager
+        ignoreUnknownSignals: true
+
+        function onSelectionClearRevisionChanged() {
+            const manager = documentBlock.selectionManager
+            if (!manager)
+                return
+            const retainedBlockIndex = manager.selectionClearRetainedBlockIndex !== undefined
+                    ? Math.floor(Number(manager.selectionClearRetainedBlockIndex) || -1)
+                    : -1
+            documentBlock.clearSelection(retainedBlockIndex === documentBlock.blockIndex)
+        }
+    }
+
     onFocusedChanged: {
         EditorTrace.trace(
                     "documentBlock",
@@ -318,6 +346,10 @@ FocusScope {
             documentBlock.documentEndEditRequested()
         }
 
+        function onParagraphSplitRequested(sourceOffset) {
+            documentBlock.paragraphSplitRequested(sourceOffset)
+        }
+
         function onSourceMutationRequested(nextBlockSourceText, focusRequest) {
             documentBlock.sourceMutationRequested(nextBlockSourceText, focusRequest)
         }
@@ -352,6 +384,9 @@ FocusScope {
             hasAdjacentAtomicBlockBefore: documentBlock.hasAdjacentAtomicBlockBefore
             hasAdjacentBlockAfter: documentBlock.hasAdjacentBlockAfter
             hasAdjacentBlockBefore: documentBlock.hasAdjacentBlockBefore
+            paragraphBoundaryOperationsEnabled: documentBlock.paragraphBoundaryOperationsEnabled
+            paragraphMergeableAfter: documentBlock.paragraphMergeableAfter
+            paragraphMergeableBefore: documentBlock.paragraphMergeableBefore
             shortcutKeyPressHandler: documentBlock.shortcutKeyPressHandler
             width: documentBlock.width
         }

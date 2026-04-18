@@ -24,7 +24,11 @@ The C++ suite currently locks regression-sensitive runtime behavior for:
 - `ContentsResourceTagTextGenerator`
 - `WhatSonNoteFolderSemantics`
 - `ContentsStructuredDocumentCollectionPolicy`
+- `ContentsStructuredDocumentHost`
 - `ContentsStructuredDocumentMutationPolicy`
+- `ContentsLogicalLineLayoutSupport.js`
+- `ContentsEditorSessionController`
+- `ContentsNoteManagementCoordinator`
 
 The suite avoids booting the full application shell or loading a hub package.
 
@@ -53,3 +57,11 @@ Run the same suite through `ctest`:
 ```bash
 ctest --test-dir build --output-on-failure -L cpp_regression
 ```
+
+## Current Focus
+
+- The QML-side line-coordinate helper `ContentsLogicalLineLayoutSupport.js` is now regression-tested through
+  `QJSEngine`, so gutter/minimap line placement keeps the block-local mapped Y contract even though the maintained
+  runtime suite stays C++-driven.
+- Structured editor selection cleanup is now also locked at the C++ host-object layer, so block activation keeps
+  emitting the selection-clear revision/retained-block contract that the QML delegates consume.

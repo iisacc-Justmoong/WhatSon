@@ -135,6 +135,13 @@ FocusScope {
         };
     }
 
+    function clearSelection() {
+        if (textInput.deselect !== undefined)
+            textInput.deselect();
+        control.clearCachedSelectionSnapshot();
+        control.notifyInputMethod(control.inputMethodSelectionQueryMask());
+    }
+
     function clearCachedSelectionSnapshot() {
         control._cachedSelectedText = "";
         control._cachedSelectionCursorPosition = -1;

@@ -189,6 +189,21 @@ FocusScope {
         return agendaBlock.focusBoundary("before")
     }
 
+    function clearSelection(preserveFocusedEditor) {
+        let cleared = false
+        for (let index = 0; index < taskRepeater.count; ++index) {
+            const item = taskRepeater.itemAt(index)
+            const clearSelectionFunction = item && item["clearSelection"] !== undefined
+                    ? item["clearSelection"]
+                    : null
+            if (!clearSelectionFunction)
+                continue
+            if (clearSelectionFunction(preserveFocusedEditor === true))
+                cleared = true
+        }
+        return cleared
+    }
+
     function shortcutInsertionSourceOffset() {
         // Agenda/callout shortcuts must stay block-scoped here so new wrappers do not nest inside task content.
         return agendaBlock.sourceEnd
@@ -273,6 +288,15 @@ FocusScope {
                             else if (taskEditor.cursorPosition !== undefined)
                                 taskEditor.cursorPosition = targetCursorPosition
                             agendaBlock.activated()
+                        }
+
+                        function clearSelection(preserveFocusedEditor) {
+                            if (!taskEditor || taskEditor.clearSelection === undefined)
+                                return false
+                            if (preserveFocusedEditor === true && taskEditor.focused)
+                                return false
+                            taskEditor.clearSelection()
+                            return true
                         }
 
                         function currentEditorPlainText() {

@@ -54,6 +54,12 @@ FocusScope {
         objectName: "contentsStructuredDocumentHost"
     }
 
+    ContentsStructuredDocumentBlocksModel {
+        id: documentBlocksModel
+
+        blocks: documentFlow.normalizedBlocks()
+    }
+
     Keys.onPressed: function (event) {
         if (documentFlow.handleActiveBlockDeleteKeyPress(event))
             event.accepted = true
@@ -404,6 +410,11 @@ FocusScope {
                 "contentY": lineTop,
                 "gutterCollapsed": gutterCollapsed,
                 "gutterContentHeight": gutterCollapsed ? Math.max(1, documentFlow.lineHeightHint) : lineHeight,
+                "gutterContentY": Math.max(
+                                      0,
+                                      Number(delegateLineLayout && delegateLineLayout.gutterContentY !== undefined
+                                             ? delegateLineLayout.gutterContentY
+                                             : lineTop) || 0),
                 "minimapRowCharCount": minimapRowCharCount,
                 "minimapVisualKind": minimapVisualKind,
                 "rowCount": documentFlow.minimapRowCountForBlockHost(host, blockEntry, lineHeight)
@@ -444,7 +455,11 @@ FocusScope {
                     "gutterContentHeight": Math.max(
                                                1,
                                                Number(lineEntry.gutterContentHeight) || documentFlow.lineHeightHint),
-                    "gutterContentY": Math.max(0, Number(lineEntry.contentY) || 0),
+                    "gutterContentY": Math.max(
+                                          0,
+                                          Number(lineEntry.gutterContentY !== undefined
+                                                 ? lineEntry.gutterContentY
+                                                 : lineEntry.contentY) || 0),
                     "lineNumber": entries.length + 1,
                     "minimapRowCharCount": Math.max(0, Number(lineEntry.minimapRowCharCount) || 0),
                     "minimapVisualKind": lineEntry.minimapVisualKind !== undefined
@@ -709,6 +724,8 @@ FocusScope {
                     "requestDocumentEndEdit",
                     "activeBlockIndex=" + documentFlow.activeBlockIndex,
                     documentFlow)
+        if (documentHost && documentHost.requestSelectionClear !== undefined)
+            documentHost.requestSelectionClear(-1)
         const blocks = documentFlow.normalizedBlocks()
         const currentSourceText = documentFlow.normalizedSourceText(documentFlow.sourceText)
         if (blocks.length === 0) {
@@ -910,7 +927,84 @@ FocusScope {
                     Math.floor(Number(blockEndOffset) || 0))
     }
 
-    function deleteBlock(blockData, direction) {
+    function blockSupportsParagraphBoundaryOperations(blockEntry) {
+        const safeBlock = blockEntry && typeof blockEntry === "object" ? blockEntry : ({})
+        return documentHost.mutationPolicy
+                && documentHost.mutationPolicy.supportsParagraphBoundaryOperations !== undefined
+                && !!documentHost.mutationPolicy.supportsParagraphBoundaryOperations(safeBlock)
+    }
+
+    function paragraphMergeableAdjacentBlock(blockIndex, side) {
+        const blocks = documentFlow.normalizedBlocks()
+        if (blocks.length === 0)
+            return false
+        const safeBlockIndex = Math.max(0, Math.min(blocks.length - 1, Math.floor(Number(blockIndex) || 0)))
+        const currentBlock = blocks[safeBlockIndex] && typeof blocks[safeBlockIndex] === "object"
+                ? blocks[safeBlockIndex]
+                : ({})
+        if (!documentFlow.blockSupportsParagraphBoundaryOperations(currentBlock))
+            return false
+        const neighborBlockIndex = documentFlow.adjacentBlockIndex(safeBlockIndex, side)
+        if (neighborBlockIndex < 0)
+            return false
+        const neighborBlock = blocks[neighborBlockIndex] && typeof blocks[neighborBlockIndex] === "object"
+                ? blocks[neighborBlockIndex]
+                : ({})
+        return documentFlow.blockSupportsParagraphBoundaryOperations(neighborBlock)
+    }
+
+    function mergeParagraphBlock(blockIndex, side) {
+        const blocks = documentFlow.normalizedBlocks()
+        if (blocks.length === 0 || !documentHost.mutationPolicy
+                || documentHost.mutationPolicy.buildParagraphMergePayload === undefined) {
+            return false
+        }
+        const safeBlockIndex = Math.max(0, Math.min(blocks.length - 1, Math.floor(Number(blockIndex) || 0)))
+        const normalizedSide = side === undefined || side === null ? "" : String(side).trim().toLowerCase()
+        if (normalizedSide !== "before" && normalizedSide !== "after")
+            return false
+        const adjacentIndex = documentFlow.adjacentBlockIndex(safeBlockIndex, normalizedSide)
+        if (adjacentIndex < 0)
+            return false
+        const previousBlockIndex = normalizedSide === "before" ? adjacentIndex : safeBlockIndex
+        const currentBlockIndex = normalizedSide === "before" ? safeBlockIndex : adjacentIndex
+        const previousBlock = blocks[previousBlockIndex] && typeof blocks[previousBlockIndex] === "object"
+                ? blocks[previousBlockIndex]
+                : ({})
+        const currentBlock = blocks[currentBlockIndex] && typeof blocks[currentBlockIndex] === "object"
+                ? blocks[currentBlockIndex]
+                : ({})
+        const payload = documentHost.mutationPolicy.buildParagraphMergePayload(
+                    previousBlock,
+                    currentBlock,
+                    documentFlow.sourceText)
+        if (!payload || typeof payload !== "object" || payload.nextSourceText === undefined)
+            return false
+        documentFlow.sourceMutationRequested(
+                    String(payload.nextSourceText),
+                    payload.focusRequest !== undefined ? payload.focusRequest : ({ }))
+        return true
+    }
+
+    function splitParagraphBlock(blockEntry, sourceOffset) {
+        if (!documentHost.mutationPolicy
+                || documentHost.mutationPolicy.buildParagraphSplitPayload === undefined) {
+            return false
+        }
+        const safeBlock = blockEntry && typeof blockEntry === "object" ? blockEntry : ({})
+        const payload = documentHost.mutationPolicy.buildParagraphSplitPayload(
+                    safeBlock,
+                    documentFlow.sourceText,
+                    Math.floor(Number(sourceOffset) || 0))
+        if (!payload || typeof payload !== "object" || payload.nextSourceText === undefined)
+            return false
+        documentFlow.sourceMutationRequested(
+                    String(payload.nextSourceText),
+                    payload.focusRequest !== undefined ? payload.focusRequest : ({ }))
+        return true
+    }
+
+    function deleteBlock(blockIndex, blockData, direction) {
         EditorTrace.trace(
                     "structuredDocumentFlow",
                     "deleteBlock",
@@ -918,6 +1012,13 @@ FocusScope {
                     + " block={" + EditorTrace.describeObject(blockData, ["type", "sourceStart", "sourceEnd"]) + "}",
                     documentFlow)
         const safeBlock = blockData && typeof blockData === "object" ? blockData : ({})
+        const normalizedDirection = direction === undefined || direction === null
+                ? ""
+                : String(direction).trim().toLowerCase()
+        if (normalizedDirection === "merge-backward")
+            return documentFlow.mergeParagraphBlock(blockIndex, "before")
+        if (normalizedDirection === "merge-forward")
+            return documentFlow.mergeParagraphBlock(blockIndex, "after")
         const currentSourceText = documentFlow.normalizedSourceText(documentFlow.sourceText)
         const blockSourceStart = Math.max(0, Math.min(currentSourceText.length, Math.floor(Number(safeBlock.sourceStart) || 0)))
         const blockSourceEnd = Math.max(blockSourceStart, Math.min(currentSourceText.length, Math.floor(Number(safeBlock.sourceEnd) || blockSourceStart)))
@@ -1399,13 +1500,13 @@ FocusScope {
         Repeater {
             id: blockRepeater
 
-            model: documentFlow.normalizedBlocks()
+            model: documentBlocksModel
 
             delegate: Item {
                 id: blockHost
 
                 required property int index
-                required property var modelData
+                required property var blockData
                 property alias delegateLoader: blockLoader
                 property real cachedDelegateHeight: 0
                 property real measuredDelegateHeight: blockLoader.item
@@ -1420,7 +1521,7 @@ FocusScope {
                                                           : documentFlow.estimatedBlockHeight(blockHost.blockEntry))
                 readonly property real trailingSpacing: documentFlow.blockSpacingAfterIndex(blockHost.blockIndex)
                 readonly property int blockIndex: index
-                readonly property var blockEntry: modelData && typeof modelData === "object" ? modelData : ({})
+                readonly property var blockEntry: blockData && typeof blockData === "object" ? blockData : ({})
                 readonly property bool delegateFocused: {
                     const delegateItem = blockLoader.item
                     if (!delegateItem)
@@ -1464,12 +1565,17 @@ FocusScope {
                     id: documentBlockDelegate
 
                     ContentsDocumentBlock {
+                        blockIndex: blockHost.blockIndex
                         blockData: blockHost.blockEntry
                         hasAdjacentAtomicBlockAfter: documentFlow.blockHasAdjacentAtomicDeletionTarget(blockHost.blockIndex, "after")
                         hasAdjacentAtomicBlockBefore: documentFlow.blockHasAdjacentAtomicDeletionTarget(blockHost.blockIndex, "before")
                         hasAdjacentBlockAfter: documentFlow.adjacentBlockIndex(blockHost.blockIndex, "after") >= 0
                         hasAdjacentBlockBefore: documentFlow.adjacentBlockIndex(blockHost.blockIndex, "before") >= 0
+                        paragraphBoundaryOperationsEnabled: documentFlow.blockSupportsParagraphBoundaryOperations(blockHost.blockEntry)
+                        paragraphMergeableAfter: documentFlow.paragraphMergeableAdjacentBlock(blockHost.blockIndex, "after")
+                        paragraphMergeableBefore: documentFlow.paragraphMergeableAdjacentBlock(blockHost.blockIndex, "before")
                         resourceEntry: documentFlow.resourceEntryForBlock(blockHost.blockEntry)
+                        selectionManager: documentHost
                         shortcutKeyPressHandler: documentFlow.shortcutKeyPressHandler
                         width: blockHost.width
 
@@ -1481,9 +1587,12 @@ FocusScope {
                             documentFlow.navigateDocumentBoundary(blockHost.blockIndex, axis, side)
                         }
                         onBlockDeletionRequested: function (direction) {
-                            documentFlow.deleteBlock(blockHost.blockEntry, direction)
+                            documentFlow.deleteBlock(blockHost.blockIndex, blockHost.blockEntry, direction)
                         }
                         onDocumentEndEditRequested: documentFlow.requestDocumentEndEdit()
+                        onParagraphSplitRequested: function (sourceOffset) {
+                            documentFlow.splitParagraphBlock(blockHost.blockEntry, sourceOffset)
+                        }
                         onSourceMutationRequested: function (nextBlockSourceText, focusRequest) {
                             documentFlow.replaceTextBlock(blockHost.blockEntry, nextBlockSourceText, focusRequest)
                         }
@@ -1514,7 +1623,7 @@ FocusScope {
                     "documentBlocksChanged",
                     "blockCount=" + documentFlow.documentBlocks.length,
                     documentFlow)
-        documentFlow.refreshLayoutCache()
+        documentFlow.scheduleLayoutCacheRefresh()
         if (!documentFlow.hasPendingFocusRequest())
             return
         documentFlow.refreshPendingFocusBlockIndex()

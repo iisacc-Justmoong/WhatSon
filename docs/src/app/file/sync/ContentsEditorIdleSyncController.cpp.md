@@ -24,6 +24,8 @@
   success after buffering.
 - Entry-time session/filesystem reconcile requests are forwarded as a dedicated pass-through operation to
   `ContentsNoteManagementCoordinator`; this controller does not reimplement RAW comparison logic locally.
+- Those reconcile calls now also carry an explicit "prefer view session on mismatch" bit so the downstream coordinator
+  can choose between RAW-first refresh and editor-first RAW repair without QML needing to duplicate that policy.
 - Selected-note body reads are also forwarded as pass-through operations to `ContentsNoteManagementCoordinator`.
   This controller emits `noteBodyTextLoaded(sequence, ...)` back toward the selection bridge without mutating the
   dirty-save buffer state.
@@ -37,7 +39,8 @@
 - Successful async persistence completion now also runs one post-write filesystem reconcile step:
   - compares the persisted editor snapshot against note RAW through
     `ContentsNoteManagementCoordinator::reconcileViewSessionAndRefreshSnapshotForNote(...)`
-  - refreshes the bound note snapshot only if filesystem RAW differs from the just-persisted payload.
+  - marks that compare as editor-authoritative so any mismatch rewrites RAW from the persisted editor snapshot first
+  - refreshes the bound note snapshot only after that RAW repair path finishes.
 - Failed writes keep the note dirty and wait for the next fetch turn instead of trying to force recovery inline on the
   editor path.
 
@@ -62,7 +65,8 @@
 - Reconcile operations must remain side-effect free for the buffered persistence queue state (no forced dirty-order
   mutation).
 - A successful persistence completion must still verify note RAW/session alignment once, so editor-visible snapshots
-  can self-heal if downstream body serialization canonicalizes the source text.
+  can self-heal if downstream body serialization canonicalizes the source text without letting stale RAW reclaim the
+  editor.
 - Lazy selected-note body reads must stay side-effect free for the dirty-note persistence queue and must not trigger
   extra save scheduling by themselves.
 - A newer same-note lazy body-read request must still be observable upstream after an older same-note read is already

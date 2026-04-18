@@ -36,6 +36,7 @@ set(WHATSON_CPP_REGRESSION_TEST_SOURCES
         "${CMAKE_SOURCE_DIR}/src/app/viewmodel/content/ContentsResourceTagTextGenerator.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/viewmodel/content/ContentsEditorSelectionBridge.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/viewmodel/content/ContentsEditorSessionController.cpp"
+        "${CMAKE_SOURCE_DIR}/src/app/viewmodel/content/ContentsStructuredDocumentBlocksModel.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/viewmodel/navigationbar/EditorViewModeViewModel.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/viewmodel/navigationbar/EditorViewSectionViewModel.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/viewmodel/navigationbar/EditorViewState.cpp"
@@ -51,6 +52,8 @@ set(WHATSON_CPP_REGRESSION_TEST_SOURCES
         "${CMAKE_SOURCE_DIR}/src/app/viewmodel/sidebar/SidebarHierarchyViewModel.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteBodyResourceTagGenerator.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/viewmodel/content/ContentsStructuredDocumentCollectionPolicy.cpp"
+        "${CMAKE_SOURCE_DIR}/src/app/viewmodel/content/ContentsStructuredDocumentFocusPolicy.cpp"
+        "${CMAKE_SOURCE_DIR}/src/app/viewmodel/content/ContentsStructuredDocumentHost.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/viewmodel/content/ContentsStructuredDocumentMutationPolicy.cpp"
 )
 

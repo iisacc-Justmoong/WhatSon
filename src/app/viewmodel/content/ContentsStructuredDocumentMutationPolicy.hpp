@@ -21,6 +21,16 @@ public:
     Q_INVOKABLE int nextEditableSourceOffsetAfterBlock(
         const QString& sourceText,
         int blockEndOffset) const;
+    Q_INVOKABLE bool supportsParagraphBoundaryOperations(
+        const QVariantMap& blockData) const;
+    Q_INVOKABLE QVariantMap buildParagraphMergePayload(
+        const QVariantMap& previousBlockData,
+        const QVariantMap& currentBlockData,
+        const QString& sourceText) const;
+    Q_INVOKABLE QVariantMap buildParagraphSplitPayload(
+        const QVariantMap& blockData,
+        const QString& sourceText,
+        int sourceCursorOffset) const;
     Q_INVOKABLE QVariantMap buildStructuredInsertionPayload(
         const QString& sourceText,
         int insertionOffset,
