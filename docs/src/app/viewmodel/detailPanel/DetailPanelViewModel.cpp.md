@@ -4,6 +4,8 @@
 `DetailPanelViewModel.cpp` owns the active detail-panel state, the active section view-model pointer, the toolbar
 selection list, the dedicated `fileStat` statistics viewmodel, and the three `.wsnhead`-backed selector-copy objects
 used by the properties form.
+That behavior is now the concrete note-detail implementation reused by `NoteDetailPanelViewModel`; resource detail
+routing is no longer forced through this note-specific state machine.
 
 ## Active State Surface
 The exported `activeStateName()` now follows the corrected page ids:

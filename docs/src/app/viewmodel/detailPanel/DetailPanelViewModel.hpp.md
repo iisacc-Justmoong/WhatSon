@@ -3,6 +3,8 @@
 ## Responsibility
 `DetailPanelViewModel` owns the active detail-panel page state, toolbar selection state, the dedicated `fileStat`
 statistics object, and the three detail-local hierarchy selector copies used by the properties form.
+It is now the reusable note-detail implementation base; the concrete runtime object mounted into the UI is
+`NoteDetailPanelViewModel`, which inherits this contract unchanged.
 
 ## Owned Objects
 - `DetailPropertiesViewModel` for `properties`

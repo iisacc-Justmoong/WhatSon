@@ -1,6 +1,8 @@
 #include "DetailPanelCurrentHierarchyBinder.hpp"
 
-#include "DetailPanelViewModel.hpp"
+#include "NoteDetailPanelViewModel.hpp"
+#include "ResourceDetailPanelViewModel.hpp"
+#include "viewmodel/sidebar/HierarchySidebarDomain.hpp"
 #include "viewmodel/sidebar/IActiveHierarchyContextSource.hpp"
 
 DetailPanelCurrentHierarchyBinder::DetailPanelCurrentHierarchyBinder(QObject* parent)
@@ -10,20 +12,38 @@ DetailPanelCurrentHierarchyBinder::DetailPanelCurrentHierarchyBinder(QObject* pa
 
 DetailPanelCurrentHierarchyBinder::~DetailPanelCurrentHierarchyBinder() = default;
 
-DetailPanelViewModel* DetailPanelCurrentHierarchyBinder::detailPanelViewModel() const noexcept
+NoteDetailPanelViewModel* DetailPanelCurrentHierarchyBinder::noteDetailPanelViewModel() const noexcept
 {
-    return m_detailPanelViewModel.data();
+    return m_noteDetailPanelViewModel.data();
 }
 
-void DetailPanelCurrentHierarchyBinder::setDetailPanelViewModel(DetailPanelViewModel* detailPanelViewModel)
+void DetailPanelCurrentHierarchyBinder::setNoteDetailPanelViewModel(NoteDetailPanelViewModel* detailPanelViewModel)
 {
-    if (m_detailPanelViewModel == detailPanelViewModel)
+    if (m_noteDetailPanelViewModel == detailPanelViewModel)
     {
         return;
     }
 
-    m_detailPanelViewModel = detailPanelViewModel;
-    emit detailPanelViewModelChanged();
+    m_noteDetailPanelViewModel = detailPanelViewModel;
+    emit noteDetailPanelViewModelChanged();
+    synchronize();
+}
+
+ResourceDetailPanelViewModel* DetailPanelCurrentHierarchyBinder::resourceDetailPanelViewModel() const noexcept
+{
+    return m_resourceDetailPanelViewModel.data();
+}
+
+void DetailPanelCurrentHierarchyBinder::setResourceDetailPanelViewModel(
+    ResourceDetailPanelViewModel* detailPanelViewModel)
+{
+    if (m_resourceDetailPanelViewModel == detailPanelViewModel)
+    {
+        return;
+    }
+
+    m_resourceDetailPanelViewModel = detailPanelViewModel;
+    emit resourceDetailPanelViewModelChanged();
     synchronize();
 }
 
@@ -93,19 +113,31 @@ void DetailPanelCurrentHierarchyBinder::clearHierarchyContextSource()
 
 void DetailPanelCurrentHierarchyBinder::synchronize()
 {
-    if (m_detailPanelViewModel == nullptr)
+    if (m_noteDetailPanelViewModel == nullptr && m_resourceDetailPanelViewModel == nullptr)
     {
         return;
     }
 
+    int activeHierarchyIndex = WhatSon::Sidebar::kHierarchyDefaultIndex;
     QObject* activeNoteListModel = nullptr;
     QObject* activeHierarchyViewModel = nullptr;
     if (m_hierarchyContextSource != nullptr)
     {
+        activeHierarchyIndex = WhatSon::Sidebar::normalizeHierarchyIndex(m_hierarchyContextSource->activeHierarchyIndex());
         activeNoteListModel = m_hierarchyContextSource->activeNoteListModel();
         activeHierarchyViewModel = m_hierarchyContextSource->activeHierarchyViewModel();
     }
 
-    m_detailPanelViewModel->setCurrentNoteListModel(activeNoteListModel);
-    m_detailPanelViewModel->setCurrentNoteDirectorySourceViewModel(activeHierarchyViewModel);
+    if (m_noteDetailPanelViewModel != nullptr)
+    {
+        m_noteDetailPanelViewModel->setCurrentNoteListModel(activeNoteListModel);
+        m_noteDetailPanelViewModel->setCurrentNoteDirectorySourceViewModel(activeHierarchyViewModel);
+    }
+
+    if (m_resourceDetailPanelViewModel != nullptr)
+    {
+        const bool resourceHierarchyActive =
+            activeHierarchyIndex == static_cast<int>(WhatSon::Sidebar::HierarchyDomain::Resources);
+        m_resourceDetailPanelViewModel->setCurrentResourceListModel(resourceHierarchyActive ? activeNoteListModel : nullptr);
+    }
 }

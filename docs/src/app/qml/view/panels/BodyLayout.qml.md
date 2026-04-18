@@ -33,16 +33,12 @@ right detail panel.
   hierarchy first. If the active hierarchy publishes its own delete/clear-folder contract
   (`deleteNoteById`, `deleteNotesByIds`, `clearNoteFoldersById`, or `clearNoteFoldersByIds`), that
   contract is used; otherwise the shell falls back to the shared library-note mutation viewmodel.
-- The desktop shell no longer reads the active hierarchy index, active hierarchy viewmodel, and active
-  note-list model as three unrelated live bindings. Instead it snapshots the active hierarchy index and hierarchy
-  viewmodel together when `SidebarHierarchyViewModel.activeBindingsChanged()` fires, then lets an internal
-  `NoteListModelContractBridge` derive the effective note-list model from that hierarchy object.
-  This prevents library note-list rows from lingering for one frame after the user switches into resources or another
-  hierarchy domain, even when the caller only updates the hierarchy-side binding.
-- That desktop snapshot now resolves only the hierarchy viewmodel from
-  `SidebarHierarchyViewModel.hierarchyViewModelForIndex(...)` using the active hierarchy index.
-  The list/content split no longer depends on a second direct `noteListModelForIndex(...)` read staying in lock-step
-  with the hierarchy-viewmodel change.
+- The desktop shell still snapshots the active hierarchy index and hierarchy viewmodel together when
+  `SidebarHierarchyViewModel.activeBindingsChanged()` fires, but it now also forwards the already-resolved
+  `activeNoteListModel` into `ListBarLayout.qml`.
+- `ListBarLayout.qml` and `ContentViewLayout.qml` therefore consume the same note-list object during hierarchy-domain
+  switches. This removes one remaining split path where the list bar could keep resolving rows from a stale
+  hierarchy-owned model while the center surface had already switched to the new domain note-list model.
 - The contents surface now fills the center panel directly without an additional bottom-partition contract.
 - Sidebar, list, and right-panel splitters continue to own the desktop width-resize flow.
 - Desktop default/min right-panel widths and sidebar horizontal inset now come from `LV.Theme.scaleMetric(...)` /
@@ -64,3 +60,5 @@ right detail panel.
     previous hierarchy's note-list rows do not remain visible during the transition turn.
   - Switching from Library to Resources (or any other domain) must also replace the mounted content/list viewmodel
     objects themselves, not only the highlighted toolbar index.
+  - Switching from Resources back to Library must restore library-row metadata such as folder and tag chips from the
+    same active note-list model that the editor surface uses.

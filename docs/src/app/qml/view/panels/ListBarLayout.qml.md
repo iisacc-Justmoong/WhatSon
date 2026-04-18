@@ -114,10 +114,10 @@ selection state machine lives in a sibling controller file.
 - The panel enters note-list mode whenever an actual `noteListModel` is injected. It must not hard-code
   hierarchy toolbar indexes such as `Library` or `Bookmarks`, because domains like `Projects` also own
   note-list projections.
-- The panel can now also receive only `hierarchyViewModel`; `NoteListModelContractBridge` resolves the effective
-  note-list model from that hierarchy object's `hierarchyNoteListModel` / `noteListModel` contract.
-  A hierarchy-domain switch therefore updates the list surface from one hierarchy input instead of depending on a
-  second, separately-timed `activeNoteListModel` binding.
+- The panel can now receive either a direct `noteListModel`, only `hierarchyViewModel`, or both.
+- Desktop/mobile shells now forward the same resolved `activeNoteListModel` object that the content surface uses.
+  `NoteListModelContractBridge` keeps the hierarchy-derived fallback for callers that only know the hierarchy object,
+  but explicit `noteListModel` input remains the preferred same-turn routing path for domain switches.
 - `resourceListMode` is detected from `resolvedNoteListModel.currentResourceEntry`, then delegates switch to
   `ResourceListItem` so resources rows no longer inherit note-card visuals.
 - `activateNoteIndex(index, noteId)` is the only immediate note-activation path. It updates `currentIndex`, pushes the
@@ -211,6 +211,8 @@ selection state machine lives in a sibling controller file.
     while the new note-list model is being rebound.
   - Switching hierarchy domains by changing only the mounted hierarchy viewmodel must still replace the effective
     note-list model immediately.
+  - When the caller forwards an explicit replacement note-list model during a hierarchy switch, the visible row
+    snapshot must immediately switch to that model's metadata payload, including folder/tag chips.
   - Switching into the resources hierarchy must not leave the shared list blank before the user explicitly picks a
     resource taxonomy row.
   - A transition-time model population that only updates `itemCountChanged()` before later data notifications must

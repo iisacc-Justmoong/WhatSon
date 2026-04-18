@@ -175,8 +175,8 @@ This keeps mobile back navigation local to the page and avoids stealing editor t
 - Returning from `/mobile/editor` must prefer the actually displayed note-list body over a stale `currentPath` snapshot.
 - Returning from `/mobile/detail` must prefer the actual editor body and must never settle on the hierarchy page as the restored destination.
 - Mobile hierarchy routing is selection-driven; the routes do not own separate domain state copies.
-- Mobile hierarchy routing must refresh its active toolbar/content tuple from one snapshot, then derive the note-list
-  model from that hierarchy object, not from a second independent live lookup, or transient hierarchy switches can
+- Mobile hierarchy routing must refresh its active toolbar/content tuple from one snapshot and forward the resulting
+  `activeNoteListModel` into both `ListBarLayout.qml` and `ContentViewLayout.qml`, or transient hierarchy switches can
   leave the routed note list out of sync with the selected sidebar domain.
 - Mobile hierarchy routing must also resolve that hierarchy snapshot from the selected hierarchy index itself, not only
   from one previously cached "active" provider object, or a toolbar switch can leave the old domain viewmodel

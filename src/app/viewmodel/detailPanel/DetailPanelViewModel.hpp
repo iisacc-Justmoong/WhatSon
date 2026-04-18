@@ -14,7 +14,7 @@
 #include <QObject>
 #include <QVariantList>
 
-class DetailPanelViewModel final : public QObject
+class DetailPanelViewModel : public QObject
 {
     Q_OBJECT
 

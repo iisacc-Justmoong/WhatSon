@@ -7,7 +7,7 @@
 ## Scope
 - Mirrored source directory: `src/app/qml/view/panels/detail`
 - Child directories: 0
-- Child files: 8
+- Child files: 10
 
 ## Child Directories
 - No child directories.
@@ -20,9 +20,15 @@
 - `DetailPanel.qml`
 - `DetailPanelHeaderToolbar.qml`
 - `DetailPanelHeaderToolbarButton.qml`
+- `NoteDetailPanel.qml`
+- `ResourceDetailPanel.qml`
 - `RightPanel.qml`
 
 ## Recent Notes
+- `DetailPanel.qml` is now only the hierarchy-aware router for the detail column, and it switches between
+  `NoteDetailPanel.qml` and `ResourceDetailPanel.qml` instead of forcing one note-only form onto every hierarchy.
+- `ResourceDetailPanel.qml` is intentionally blank for now, but it already owns a dedicated resource-detail
+  viewmodel contract so future resource-only UI can grow without reopening note-detail branching.
 - `DetailContents.qml` is shared by desktop and mobile detail routes, so compact section spacing and fixed-height
   surfaces must remain LVRS scale-aware instead of assuming desktop `1.0x` metrics.
 - `DetailMetadataHierarchyPicker.qml` now owns the shared folder/tag add overlay so desktop and mobile reuse the

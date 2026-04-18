@@ -37,6 +37,7 @@ The C++ suite currently locks regression-sensitive runtime behavior for:
 - `ContentsNoteManagementCoordinator`
 - `ContentsEditorSurfaceModeSupport.js`
 - `ContentsTextFormatRenderer`
+- `ResourceDetailPanelViewModel`
 - `ResourceBitmapViewer`
 
 The suite avoids booting the full application shell or loading a hub package.
@@ -80,8 +81,13 @@ ctest --test-dir build --output-on-failure -L cpp_regression
   `Resources -> Library` cannot hand member-owned C++ models to the QML garbage collector.
 - Hierarchy-driven note-list rebinding is now also locked at the bridge layer, so swapping only the active hierarchy
   viewmodel still replaces the effective note-list model immediately for desktop/mobile list surfaces.
+- The same bridge coverage now also pins explicit note-list-model overrides, so `Resources -> Library` toolbar
+  switches keep folder/tag note-list metadata aligned with the shared active list model instead of lingering on the
+  previous domain snapshot.
 - Folder-path semantics now also lock escaped literal-slash handling plus `Folders.wsfolders` parser migration, so a
   library folder label like `Marketing/Sales` cannot regress into an accidental parent/child hierarchy split.
+- Sidebar hierarchy rename now also prefers the escaped folder-path id over a naive display-label split, so the same
+  `Marketing/Sales` folder still seeds the inline rename editor as one literal label instead of collapsing to `Sales`.
 - Detail-panel folder assignment now also reuses an existing escaped folder path instead of recreating
   `Marketing/Sales` as a fake nested hierarchy during `Folders.wsfolders` writes.
 - Hierarchy selection normalization is now also locked in the C++ suite, so entering a populated hierarchy keeps the
@@ -91,6 +97,10 @@ ctest --test-dir build --output-on-failure -L cpp_regression
   (`Image`, `First draft`) remains identical to the list filter applied by the corresponding viewmodel.
 - The content-surface mode helper now also pins note-vs-resource editor routing, so a direct resource list model
   switches the center slot away from the note editor immediately.
+- The right detail column now also pins note-vs-resource panel routing, so the resources hierarchy mounts its own
+  dedicated viewmodel/view pair instead of reusing the note-detail surface.
+- Rapid note switches now also pin note-local gutter geometry invalidation, so the editor clears stale minimap/gutter
+  line caches on note entry and forces a fresh layout-cache pass before reusing line-number coordinates.
 - `ResourceBitmapViewer` now also pins bitmap-preview projection for the dedicated resource editor, so image resources
   and unsupported image-like formats expose stable viewer/open-target state to QML.
 - Page/print paper-palette routing now also pins both the HTML renderer and the structured editor QML wiring, so

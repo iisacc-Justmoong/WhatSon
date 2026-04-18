@@ -18,6 +18,8 @@ namespace WhatSon::Runtime::Bootstrap
         QObject* eventHierarchyViewModel = nullptr;
         QObject* presetHierarchyViewModel = nullptr;
         QObject* detailPanelViewModel = nullptr;
+        QObject* noteDetailPanelViewModel = nullptr;
+        QObject* resourceDetailPanelViewModel = nullptr;
         QObject* editorViewModeViewModel = nullptr;
         QObject* navigationModeViewModel = nullptr;
         QObject* sidebarHierarchyViewModel = nullptr;

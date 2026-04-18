@@ -46,6 +46,11 @@ not note-backed.
 - Structured `cachedLogicalLineEntries` updates now split logical-metric change from geometry-only change.
   Even when line count and start offsets stay the same, resource/callout/agenda spacing or measured block-height
   changes still trigger a gutter refresh as soon as `contentY` / `gutterContentY` move.
+- Note-entry gutter/minimap geometry is now also invalidated per selected note instead of trusting only line-count
+  parity.
+  Rapid note switches therefore clear stale incremental line caches immediately, queue a fresh structured layout-cache
+  rebuild for the newly selected note, and only reuse minimap-derived line geometry once it has been regenerated for
+  that same note id.
 - Page/print mode now also injects `paperPaletteEnabled` into both `ContentsEditorPresentationProjection` and
   `ContentsStructuredDocumentFlow.qml`, so the white paper surface cannot inherit dark-theme body white from either the
   whole-document HTML renderer or the structured block delegates.

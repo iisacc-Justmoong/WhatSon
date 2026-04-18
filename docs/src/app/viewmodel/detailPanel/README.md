@@ -7,7 +7,7 @@
 ## Scope
 - Mirrored source directory: `src/app/viewmodel/detailPanel`
 - Child directories: 1
-- Child files: 20
+- Child files: 23
 
 ## Child Directories
 - `session`
@@ -31,6 +31,9 @@
 - `DetailPanelToolbarItemsFactory.hpp`
 - `DetailPanelViewModel.cpp`
 - `DetailPanelViewModel.hpp`
+- `NoteDetailPanelViewModel.hpp`
+- `ResourceDetailPanelViewModel.cpp`
+- `ResourceDetailPanelViewModel.hpp`
 - `DetailPropertiesViewModel.cpp`
 - `DetailPropertiesViewModel.hpp`
 
@@ -44,6 +47,8 @@
 
 ## Current Notes
 - `DetailPanelCurrentHierarchyBinder` now owns the composition-root binding between the active sidebar hierarchy
-  context and `DetailPanelViewModel`.
-- `DetailPanelViewModel` therefore no longer depends on `main.cpp` lambda wiring to keep its current note-list model
-  and current hierarchy directory resolver synchronized.
+  context plus the concrete note/resource detail-panel viewmodels.
+- The runtime now mounts a dedicated `NoteDetailPanelViewModel` for note-backed hierarchies and a separate
+  `ResourceDetailPanelViewModel` for the resources hierarchy.
+- `DetailPanelViewModel` therefore remains the reusable note-detail implementation instead of acting as a shared
+  one-size-fits-all detail-panel selector object.

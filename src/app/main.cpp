@@ -12,7 +12,8 @@
 #include "viewmodel/navigationbar/EditorViewModeViewModel.hpp"
 #include "viewmodel/navigationbar/NavigationModeViewModel.hpp"
 #include "viewmodel/detailPanel/DetailPanelCurrentHierarchyBinder.hpp"
-#include "viewmodel/detailPanel/DetailPanelViewModel.hpp"
+#include "viewmodel/detailPanel/NoteDetailPanelViewModel.hpp"
+#include "viewmodel/detailPanel/ResourceDetailPanelViewModel.hpp"
 #include "viewmodel/calendar/DayCalendarViewModel.hpp"
 #include "viewmodel/calendar/AgendaViewModel.hpp"
 #include "viewmodel/calendar/MonthCalendarViewModel.hpp"
@@ -145,7 +146,8 @@ int main(int argc, char* argv[])
     HierarchyViewModelProvider hierarchyViewModelProvider;
     SidebarHierarchyViewModel sidebarHierarchyViewModel;
     DetailPanelCurrentHierarchyBinder detailPanelCurrentHierarchyBinder;
-    DetailPanelViewModel detailPanelViewModel;
+    NoteDetailPanelViewModel noteDetailPanelViewModel;
+    ResourceDetailPanelViewModel resourceDetailPanelViewModel;
     EditorViewModeViewModel editorViewModeViewModel;
     NavigationModeViewModel navigationModeViewModel;
     WhatSonAsyncScheduler asyncScheduler;
@@ -440,13 +442,14 @@ int main(int argc, char* argv[])
         { static_cast<int>(WhatSon::Sidebar::HierarchyDomain::Event), &eventHierarchyViewModel },
         { static_cast<int>(WhatSon::Sidebar::HierarchyDomain::Preset), &presetHierarchyViewModel },
     });
-    detailPanelViewModel.setProjectSelectionSourceViewModel(&projectsHierarchyViewModel);
-    detailPanelViewModel.setBookmarkSelectionSourceViewModel(&bookmarksHierarchyViewModel);
-    detailPanelViewModel.setProgressSelectionSourceViewModel(&progressHierarchyViewModel);
-    detailPanelViewModel.setTagsSourceViewModel(&tagsHierarchyViewModel);
+    noteDetailPanelViewModel.setProjectSelectionSourceViewModel(&projectsHierarchyViewModel);
+    noteDetailPanelViewModel.setBookmarkSelectionSourceViewModel(&bookmarksHierarchyViewModel);
+    noteDetailPanelViewModel.setProgressSelectionSourceViewModel(&progressHierarchyViewModel);
+    noteDetailPanelViewModel.setTagsSourceViewModel(&tagsHierarchyViewModel);
     sidebarHierarchyViewModel.setSelectionStore(&sidebarSelectionStore);
     sidebarHierarchyViewModel.setViewModelProvider(&hierarchyViewModelProvider);
-    detailPanelCurrentHierarchyBinder.setDetailPanelViewModel(&detailPanelViewModel);
+    detailPanelCurrentHierarchyBinder.setNoteDetailPanelViewModel(&noteDetailPanelViewModel);
+    detailPanelCurrentHierarchyBinder.setResourceDetailPanelViewModel(&resourceDetailPanelViewModel);
     detailPanelCurrentHierarchyBinder.setHierarchyContextSource(&sidebarHierarchyViewModel);
 
     startupRuntimeCoordinator.bindSidebarActivation(&sidebarHierarchyViewModel);
@@ -464,7 +467,9 @@ int main(int argc, char* argv[])
     workspaceContextObjects.progressHierarchyViewModel = &progressHierarchyViewModel;
     workspaceContextObjects.eventHierarchyViewModel = &eventHierarchyViewModel;
     workspaceContextObjects.presetHierarchyViewModel = &presetHierarchyViewModel;
-    workspaceContextObjects.detailPanelViewModel = &detailPanelViewModel;
+    workspaceContextObjects.detailPanelViewModel = &noteDetailPanelViewModel;
+    workspaceContextObjects.noteDetailPanelViewModel = &noteDetailPanelViewModel;
+    workspaceContextObjects.resourceDetailPanelViewModel = &resourceDetailPanelViewModel;
     workspaceContextObjects.editorViewModeViewModel = &editorViewModeViewModel;
     workspaceContextObjects.navigationModeViewModel = &navigationModeViewModel;
     workspaceContextObjects.sidebarHierarchyViewModel = &sidebarHierarchyViewModel;

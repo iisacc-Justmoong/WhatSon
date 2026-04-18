@@ -25,6 +25,7 @@
 #include "viewmodel/content/ContentsResourceTagTextGenerator.hpp"
 #include "viewmodel/hierarchy/IHierarchyViewModel.hpp"
 #include "viewmodel/hierarchy/WhatSonHierarchyTreeItemSupport.hpp"
+#include "viewmodel/hierarchy/library/LibraryNoteListModel.hpp"
 #include "viewmodel/hierarchy/progress/ProgressHierarchyViewModelSupport.hpp"
 #include "viewmodel/hierarchy/resources/ResourcesHierarchyViewModel.hpp"
 #include "viewmodel/navigationbar/EditorViewModeViewModel.hpp"
@@ -36,6 +37,8 @@
 #include "viewmodel/onboarding/IOnboardingHubController.hpp"
 #include "viewmodel/onboarding/OnboardingRouteBootstrapController.hpp"
 #include "viewmodel/detailPanel/session/WhatSonFoldersHierarchySessionService.hpp"
+#include "viewmodel/detailPanel/ResourceDetailPanelViewModel.hpp"
+#include "viewmodel/hierarchy/resources/ResourcesListModel.hpp"
 #include "viewmodel/panel/NoteListModelContractBridge.hpp"
 #include "viewmodel/sidebar/HierarchySidebarDomain.hpp"
 #include "viewmodel/sidebar/HierarchyViewModelProvider.hpp"
@@ -427,6 +430,7 @@ private slots:
     void sidebarHierarchyViewModel_reactsToProviderMappingChanges();
     void sidebarAndSelectionBridge_forceCppOwnershipAcrossHierarchySwitchBindings();
     void noteListModelContractBridge_resolvesHierarchyBoundNoteListImmediately();
+    void noteListModelContractBridge_prefersExplicitRowsAcrossHierarchySwitches();
     void navigationModeViewModel_cyclesActiveSections();
     void editorViewModeViewModel_cyclesActiveSections();
     void onboardingRouteBootstrapController_syncsEmbeddedOnboardingLifecycle();
@@ -438,6 +442,7 @@ private slots:
     void resourceTagTextGenerator_and_noteFolderSemantics_normalizeDescriptorsAndXml();
     void foldersHierarchyParser_escapesLiteralSlashLabelsIntoSingleSegments();
     void foldersHierarchySessionService_preservesEscapedLiteralSlashFolderPaths();
+    void sidebarHierarchyRenameController_preservesLiteralSlashFolderLabels();
     void resourcesHierarchyViewModel_defaultsSelectionToImageAndFiltersList();
     void structuredCollectionPolicy_normalizesEntriesAndPrefersResolvedMatches();
     void structuredMutationPolicy_buildsDeletionAndInsertionPayloads();
@@ -448,6 +453,9 @@ private slots:
     void logicalLineLayoutSupport_mapsEditorRectanglesIntoBlockCoordinates();
     void logicalLineLayoutSupport_fallsBackWhenLiveEditorGeometryIsUnavailable();
     void editorSurfaceModeSupport_switchesToResourceEditorForResourceListModels();
+    void resourceDetailPanelViewModel_tracksCurrentResourceSelection();
+    void detailPanelRouting_separatesNoteAndResourceViewsAndViewModels();
+    void contentsDisplayView_invalidatesGutterGeometryImmediatelyAcrossRapidNoteSwitches();
     void textFormatRenderer_appliesPaperPaletteToEditorAndPreviewHtml();
     void qmlStructuredEditors_bindPaperPaletteIntoPagePrintMode();
     void resourceBitmapViewer_projectsRenderableImagePreviewState();
@@ -896,6 +904,67 @@ void WhatSonCppRegressionTests::noteListModelContractBridge_resolvesHierarchyBou
     QCOMPARE(libraryNoteListModel.currentIndex(), 1);
 
     QCOMPARE(noteListModelChangedSpy.count(), 2);
+}
+
+void WhatSonCppRegressionTests::noteListModelContractBridge_prefersExplicitRowsAcrossHierarchySwitches()
+{
+    ensureCoreApplication();
+
+    FakeHierarchyViewModel libraryViewModel(QStringLiteral("library"));
+    FakeHierarchyViewModel resourcesViewModel(QStringLiteral("resources"));
+    LibraryNoteListModel libraryNoteListModel;
+    ResourcesListModel resourcesNoteListModel;
+    NoteListModelContractBridge bridge;
+
+    LibraryNoteListItem libraryItem;
+    libraryItem.id = QStringLiteral("library-note");
+    libraryItem.primaryText = QStringLiteral("Library note");
+    libraryItem.displayDate = QStringLiteral("2026-04-18");
+    libraryItem.folders = {QStringLiteral("Marketing")};
+    libraryItem.tags = {QStringLiteral("launch")};
+    libraryNoteListModel.setItems({libraryItem});
+
+    ResourcesListItem resourceItem;
+    resourceItem.id = QStringLiteral("resource-entry");
+    resourceItem.primaryText = QStringLiteral("Resource entry");
+    resourceItem.displayDate = QStringLiteral("image");
+    resourceItem.folders = {QStringLiteral("Image")};
+    resourceItem.tags = {QStringLiteral(".png")};
+    resourcesNoteListModel.setItems({resourceItem});
+
+    libraryViewModel.setNoteListModelObject(&libraryNoteListModel);
+    resourcesViewModel.setNoteListModelObject(&resourcesNoteListModel);
+
+    QQmlEngine::setObjectOwnership(&libraryViewModel, QQmlEngine::JavaScriptOwnership);
+    QQmlEngine::setObjectOwnership(&resourcesViewModel, QQmlEngine::JavaScriptOwnership);
+    QQmlEngine::setObjectOwnership(&libraryNoteListModel, QQmlEngine::JavaScriptOwnership);
+    QQmlEngine::setObjectOwnership(&resourcesNoteListModel, QQmlEngine::JavaScriptOwnership);
+
+    bridge.setHierarchyViewModel(&resourcesViewModel);
+    bridge.setNoteListModel(&resourcesNoteListModel);
+
+    QCOMPARE(bridge.noteListModel(), static_cast<QObject*>(&resourcesNoteListModel));
+    QCOMPARE(QQmlEngine::objectOwnership(&resourcesNoteListModel), QQmlEngine::CppOwnership);
+
+    QVariantList resourceRows = bridge.readAllRows();
+    QCOMPARE(resourceRows.size(), 1);
+    const QVariantMap resourceRow = resourceRows.constFirst().toMap();
+    QCOMPARE(resourceRow.value(QStringLiteral("noteId")).toString(), QStringLiteral("resource-entry"));
+    QCOMPARE(resourceRow.value(QStringLiteral("folders")).toStringList(), QStringList{QStringLiteral("Image")});
+    QCOMPARE(resourceRow.value(QStringLiteral("tags")).toStringList(), QStringList{QStringLiteral(".png")});
+
+    bridge.setHierarchyViewModel(&libraryViewModel);
+    bridge.setNoteListModel(&libraryNoteListModel);
+
+    QCOMPARE(bridge.noteListModel(), static_cast<QObject*>(&libraryNoteListModel));
+    QCOMPARE(QQmlEngine::objectOwnership(&libraryNoteListModel), QQmlEngine::CppOwnership);
+
+    QVariantList libraryRows = bridge.readAllRows();
+    QCOMPARE(libraryRows.size(), 1);
+    const QVariantMap libraryRow = libraryRows.constFirst().toMap();
+    QCOMPARE(libraryRow.value(QStringLiteral("noteId")).toString(), QStringLiteral("library-note"));
+    QCOMPARE(libraryRow.value(QStringLiteral("folders")).toStringList(), QStringList{QStringLiteral("Marketing")});
+    QCOMPARE(libraryRow.value(QStringLiteral("tags")).toStringList(), QStringList{QStringLiteral("launch")});
 }
 
 void WhatSonCppRegressionTests::navigationModeViewModel_cyclesActiveSections()
@@ -1457,6 +1526,20 @@ void WhatSonCppRegressionTests::foldersHierarchySessionService_preservesEscapedL
     QCOMPARE(entries.constFirst().id, QStringLiteral("Marketing\\/Sales"));
     QCOMPARE(entries.constFirst().label, QStringLiteral("Marketing/Sales"));
     QCOMPARE(entries.constFirst().depth, 0);
+}
+
+void WhatSonCppRegressionTests::sidebarHierarchyRenameController_preservesLiteralSlashFolderLabels()
+{
+    const QString renameControllerSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/panels/sidebar/SidebarHierarchyRenameController.qml"));
+
+    QVERIFY(!renameControllerSource.isEmpty());
+    QVERIFY(renameControllerSource.contains(QStringLiteral("function decodedHierarchyPathSegments(rawPath)")));
+    QVERIFY(renameControllerSource.contains(QStringLiteral("function leafHierarchyItemLabel(rawLabel, rawPath)")));
+    QVERIFY(renameControllerSource.contains(QStringLiteral("if (nextCharacter === \"\\\\\" || nextCharacter === \"/\")")));
+    QVERIFY(renameControllerSource.contains(QStringLiteral("renameController.leafHierarchyItemLabel(item.label, item.id)")));
+    QVERIFY(renameControllerSource.contains(QStringLiteral("item && item.id !== undefined && item.id !== null ? item.id : \"\"")));
+    QVERIFY(!renameControllerSource.contains(QStringLiteral("const segments = normalizedLabel.split(\"/\")")));
 }
 
 void WhatSonCppRegressionTests::resourcesHierarchyViewModel_defaultsSelectionToImageAndFiltersList()
@@ -2046,6 +2129,129 @@ void WhatSonCppRegressionTests::editorSurfaceModeSupport_switchesToResourceEdito
     QVERIFY(emptyResourceEntry.isObject());
     QVERIFY(!hasCurrentResourceEntry.call(QJSValueList{noteListModel}).toBool());
     QVERIFY(emptyResourceEntry.property(QStringLiteral("displayName")).isUndefined());
+}
+
+void WhatSonCppRegressionTests::resourceDetailPanelViewModel_tracksCurrentResourceSelection()
+{
+    ResourceDetailPanelViewModel viewModel;
+    ResourcesListModel resourceListModel;
+
+    QSignalSpy resourceListModelChangedSpy(
+        &viewModel,
+        &ResourceDetailPanelViewModel::resourceListModelChanged);
+    QSignalSpy currentResourceEntryChangedSpy(
+        &viewModel,
+        &ResourceDetailPanelViewModel::currentResourceEntryChanged);
+
+    ResourcesListItem firstItem;
+    firstItem.id = QStringLiteral("resource-1");
+    firstItem.displayName = QStringLiteral("Cover");
+    firstItem.resourcePath = QStringLiteral("resources/cover.png");
+    firstItem.resolvedPath = QStringLiteral("/tmp/resources/cover.png");
+    firstItem.type = QStringLiteral("image");
+    firstItem.renderMode = QStringLiteral("image");
+
+    ResourcesListItem secondItem;
+    secondItem.id = QStringLiteral("resource-2");
+    secondItem.displayName = QStringLiteral("Palette");
+    secondItem.resourcePath = QStringLiteral("resources/palette.png");
+    secondItem.resolvedPath = QStringLiteral("/tmp/resources/palette.png");
+    secondItem.type = QStringLiteral("image");
+    secondItem.renderMode = QStringLiteral("image");
+
+    resourceListModel.setItems({firstItem, secondItem});
+    resourceListModel.setCurrentIndex(1);
+
+    viewModel.setCurrentResourceListModel(&resourceListModel);
+
+    QCOMPARE(resourceListModelChangedSpy.count(), 1);
+    QVERIFY(viewModel.resourceContextLinked());
+    QCOMPARE(viewModel.resourceListModel(), static_cast<QObject*>(&resourceListModel));
+    QCOMPARE(
+        viewModel.currentResourceEntry().value(QStringLiteral("resourcePath")).toString(),
+        secondItem.resourcePath);
+    QCOMPARE(
+        viewModel.currentResourceEntry().value(QStringLiteral("displayName")).toString(),
+        secondItem.displayName);
+
+    resourceListModel.setCurrentIndex(0);
+
+    QVERIFY(currentResourceEntryChangedSpy.count() >= 2);
+    QCOMPARE(
+        viewModel.currentResourceEntry().value(QStringLiteral("resourcePath")).toString(),
+        firstItem.resourcePath);
+    QCOMPARE(
+        viewModel.currentResourceEntry().value(QStringLiteral("displayName")).toString(),
+        firstItem.displayName);
+
+    viewModel.setCurrentResourceListModel(nullptr);
+
+    QCOMPARE(resourceListModelChangedSpy.count(), 2);
+    QVERIFY(!viewModel.resourceContextLinked());
+    QVERIFY(viewModel.currentResourceEntry().isEmpty());
+}
+
+void WhatSonCppRegressionTests::detailPanelRouting_separatesNoteAndResourceViewsAndViewModels()
+{
+    const QString detailPanelSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/panels/detail/DetailPanel.qml"));
+    const QString noteDetailPanelSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/panels/detail/NoteDetailPanel.qml"));
+    const QString resourceDetailPanelSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/panels/detail/ResourceDetailPanel.qml"));
+    const QString binderSource = readUtf8SourceFile(
+        QStringLiteral("src/app/viewmodel/detailPanel/DetailPanelCurrentHierarchyBinder.cpp"));
+    const QString mainQmlSource = readUtf8SourceFile(QStringLiteral("src/app/qml/Main.qml"));
+    const QString mainCppSource = readUtf8SourceFile(QStringLiteral("src/app/main.cpp"));
+
+    QVERIFY(!detailPanelSource.isEmpty());
+    QVERIFY(!noteDetailPanelSource.isEmpty());
+    QVERIFY(!resourceDetailPanelSource.isEmpty());
+    QVERIFY(!binderSource.isEmpty());
+    QVERIFY(!mainQmlSource.isEmpty());
+    QVERIFY(!mainCppSource.isEmpty());
+
+    QVERIFY(detailPanelSource.contains(QStringLiteral("LV.ViewModels.get(\"noteDetailPanelViewModel\")")));
+    QVERIFY(detailPanelSource.contains(QStringLiteral("LV.ViewModels.get(\"resourceDetailPanelViewModel\")")));
+    QVERIFY(detailPanelSource.contains(QStringLiteral("NoteDetailPanel {")));
+    QVERIFY(detailPanelSource.contains(QStringLiteral("ResourceDetailPanel {")));
+    QVERIFY(detailPanelSource.contains(QStringLiteral("sidebarHierarchyVm.activeHierarchyViewModel === resourcesHierarchyVm")));
+
+    QVERIFY(noteDetailPanelSource.contains(QStringLiteral("property var noteDetailPanelViewModel: null")));
+    QVERIFY(noteDetailPanelSource.contains(QStringLiteral("readonly property var detailPanelVm: noteDetailPanel.noteDetailPanelViewModel")));
+    QVERIFY(resourceDetailPanelSource.contains(QStringLiteral("property var resourceDetailPanelViewModel: null")));
+
+    QVERIFY(mainQmlSource.contains(QStringLiteral("LV.ViewModels.set(\"noteDetailPanelViewModel\", noteDetailPanelViewModel);")));
+    QVERIFY(mainQmlSource.contains(QStringLiteral("LV.ViewModels.set(\"resourceDetailPanelViewModel\", resourceDetailPanelViewModel);")));
+    QVERIFY(mainCppSource.contains(QStringLiteral("NoteDetailPanelViewModel noteDetailPanelViewModel;")));
+    QVERIFY(mainCppSource.contains(QStringLiteral("ResourceDetailPanelViewModel resourceDetailPanelViewModel;")));
+
+    QVERIFY(binderSource.contains(QStringLiteral("setNoteDetailPanelViewModel")));
+    QVERIFY(binderSource.contains(QStringLiteral("setResourceDetailPanelViewModel")));
+    QVERIFY(binderSource.contains(QStringLiteral("HierarchyDomain::Resources")));
+    QVERIFY(binderSource.contains(QStringLiteral("setCurrentResourceListModel")));
+}
+
+void WhatSonCppRegressionTests::contentsDisplayView_invalidatesGutterGeometryImmediatelyAcrossRapidNoteSwitches()
+{
+    const QString displayViewSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/content/editor/ContentsDisplayView.qml"));
+
+    QVERIFY(!displayViewSource.isEmpty());
+    QVERIFY(displayViewSource.contains(QStringLiteral("property string minimapLineGroupsNoteId: \"\"")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("function activeLineGeometryNoteId()")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("function hasPendingNoteEntryGutterRefresh(noteId)")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("function finalizePendingNoteEntryGutterRefresh(noteId, reason, refreshStructuredLayout)")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("function resetNoteEntryLineGeometryState()")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("contentsView.minimapLineGroupsNoteId === contentsView.activeLineGeometryNoteId()")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("currentNoteId === contentsView.minimapLineGroupsNoteId")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("contentsView.minimapLineGroupsNoteId = currentNoteId;")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("contentsView.minimapLineGroupsNoteId = \"\";")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("structuredDocumentFlow.scheduleLayoutCacheRefresh();")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("contentsView.scheduleViewportGutterRefresh();")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("contentsView.scheduleGutterRefresh(6, \"note-entry\");")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("\"structured-layout-cache\"")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("\"editor-text-synchronized\"")));
 }
 
 void WhatSonCppRegressionTests::textFormatRenderer_appliesPaperPaletteToEditorAndPreviewHtml()

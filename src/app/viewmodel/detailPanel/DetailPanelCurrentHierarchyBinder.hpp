@@ -6,6 +6,8 @@
 
 class DetailPanelViewModel;
 class IActiveHierarchyContextSource;
+class NoteDetailPanelViewModel;
+class ResourceDetailPanelViewModel;
 
 class DetailPanelCurrentHierarchyBinder final : public QObject
 {
@@ -15,14 +17,18 @@ public:
     explicit DetailPanelCurrentHierarchyBinder(QObject* parent = nullptr);
     ~DetailPanelCurrentHierarchyBinder() override;
 
-    DetailPanelViewModel* detailPanelViewModel() const noexcept;
-    void setDetailPanelViewModel(DetailPanelViewModel* detailPanelViewModel);
+    NoteDetailPanelViewModel* noteDetailPanelViewModel() const noexcept;
+    void setNoteDetailPanelViewModel(NoteDetailPanelViewModel* detailPanelViewModel);
+
+    ResourceDetailPanelViewModel* resourceDetailPanelViewModel() const noexcept;
+    void setResourceDetailPanelViewModel(ResourceDetailPanelViewModel* detailPanelViewModel);
 
     IActiveHierarchyContextSource* hierarchyContextSource() const noexcept;
     void setHierarchyContextSource(IActiveHierarchyContextSource* hierarchyContextSource);
 
 signals:
-    void detailPanelViewModelChanged();
+    void noteDetailPanelViewModelChanged();
+    void resourceDetailPanelViewModelChanged();
     void hierarchyContextSourceChanged();
 
 private slots:
@@ -30,7 +36,8 @@ private slots:
     void synchronize();
 
 private:
-    QPointer<DetailPanelViewModel> m_detailPanelViewModel;
+    QPointer<NoteDetailPanelViewModel> m_noteDetailPanelViewModel;
+    QPointer<ResourceDetailPanelViewModel> m_resourceDetailPanelViewModel;
     QPointer<IActiveHierarchyContextSource> m_hierarchyContextSource;
     QMetaObject::Connection m_hierarchyBindingsConnection;
     QMetaObject::Connection m_hierarchyDestroyedConnection;

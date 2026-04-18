@@ -66,6 +66,10 @@ source.
   mounted already.
 - The flow now keeps one cached logical-line table and cached block layout summary per parsed snapshot instead of
   rebuilding them on every gutter/minimap/current-line query.
+- The display host now also asks this flow to queue a fresh layout-cache rebuild on every note entry, even when the
+  next note parses to the same logical line count as the previous one.
+  Rapid note switches therefore still force one new structured geometry pass before the gutter is allowed to reuse
+  note-local cached coordinates.
 - Structured cached logical-line entries now also keep `gutterContentY` aligned to each line's real `contentY`.
   Gutter-collapsed blocks still shrink only the rendered gutter box height, but line-number Y no longer comes from a
   second synthetic accumulator that ignored block spacing and delegate-local top offsets.

@@ -833,6 +833,7 @@ Item {
             activeToolbarIndex: mobileHierarchyPage.activeToolbarIndex
             headerVisible: false
             hierarchyViewModel: mobileHierarchyPage.activeContentViewModel
+            noteListModel: mobileHierarchyPage.activeNoteListModel
             noteDeletionViewModel: mobileHierarchyPage.resolvedNoteDeletionViewModel
             panelColor: mobileHierarchyPage.canvasColor
             searchText: mobileHierarchyPage.statusSearchText

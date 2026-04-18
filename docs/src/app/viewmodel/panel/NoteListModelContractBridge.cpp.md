@@ -29,6 +29,8 @@ heterogeneous note-list model objects.
 
 The maintained C++ regression suite now locks these bridge contracts:
 - immediate hierarchy-viewmodel -> note-list-model rebinding without waiting for an extra event turn
+- explicit note-list-model overrides must switch exported row snapshots immediately, including folder/tag metadata,
+  even if the hierarchy-viewmodel input is changing in the same transition window
 - property-backed search/current-index/current-note contracts on hierarchy-owned note-list models
 - QML ownership stabilization for hierarchy-owned note-list models during domain switches
 - multi-selection index -> note-id resolution against every note-list model that feeds `ListBarLayout.qml`

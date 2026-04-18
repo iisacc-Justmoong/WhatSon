@@ -99,16 +99,48 @@ QtObject {
         return true;
     }
 
-    function leafHierarchyItemLabel(rawLabel) {
-        const normalizedLabel = rawLabel === undefined || rawLabel === null ? "" : String(rawLabel).trim();
-        if (!normalizedLabel.length)
-            return "";
-        const segments = normalizedLabel.split("/");
-        for (let index = segments.length - 1; index >= 0; --index) {
-            const segment = String(segments[index]).trim();
-            if (segment.length)
-                return segment;
+    function decodedHierarchyPathSegments(rawPath) {
+        const normalizedPath = rawPath === undefined || rawPath === null ? "" : String(rawPath).trim();
+        if (!normalizedPath.length)
+            return [];
+        const segments = [];
+        let currentSegment = "";
+        function flushCurrentSegment() {
+            const normalizedSegment = String(currentSegment).trim();
+            currentSegment = "";
+            if (normalizedSegment.length)
+                segments.push(normalizedSegment);
         }
+        for (let index = 0; index < normalizedPath.length; ++index) {
+            const character = normalizedPath.charAt(index);
+            if (character === "\\") {
+                const hasNextCharacter = index + 1 < normalizedPath.length;
+                if (hasNextCharacter) {
+                    const nextCharacter = normalizedPath.charAt(index + 1);
+                    if (nextCharacter === "\\" || nextCharacter === "/") {
+                        currentSegment += nextCharacter;
+                        ++index;
+                        continue;
+                    }
+                }
+                flushCurrentSegment();
+                continue;
+            }
+            if (character === "/") {
+                flushCurrentSegment();
+                continue;
+            }
+            currentSegment += character;
+        }
+        flushCurrentSegment();
+        return segments;
+    }
+
+    function leafHierarchyItemLabel(rawLabel, rawPath) {
+        const pathSegments = renameController.decodedHierarchyPathSegments(rawPath);
+        if (pathSegments.length > 0)
+            return String(pathSegments[pathSegments.length - 1]);
+        const normalizedLabel = rawLabel === undefined || rawLabel === null ? "" : String(rawLabel).trim();
         return normalizedLabel;
     }
 
@@ -142,18 +174,19 @@ QtObject {
             return "";
         const item = standardHierarchyModel[selectedIndex];
         if (item && item.label !== undefined && item.label !== null) {
-            const projectedLabel = renameController.leafHierarchyItemLabel(item.label);
+            const projectedLabel = renameController.leafHierarchyItemLabel(item.label, item.id);
             if (projectedLabel.length)
                 return projectedLabel;
         }
         if (hierarchyViewModel) {
             const modelLabel = renameController.leafHierarchyItemLabel(
-                        hierarchyViewModel.hierarchyItemLabelAt(selectedIndex));
+                        hierarchyViewModel.hierarchyItemLabelAt(selectedIndex),
+                        item && item.id !== undefined && item.id !== null ? item.id : "");
             if (modelLabel.length)
                 return modelLabel;
         }
         if (hostView.activeHierarchyItem && hostView.activeHierarchyItem.text !== undefined)
-            return renameController.leafHierarchyItemLabel(hostView.activeHierarchyItem.text);
+            return renameController.leafHierarchyItemLabel(hostView.activeHierarchyItem.text, "");
         return "";
     }
 }

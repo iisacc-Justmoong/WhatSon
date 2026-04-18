@@ -35,6 +35,7 @@
 This bridge centralizes dynamic property/method detection so the QML side can stay focused on rendering and interaction
 flow rather than reflection-heavy contract logic.
 
-The same bridge also lets desktop/mobile shells hand over only the resolved hierarchy viewmodel during toolbar/domain
-switches. The note-list surface can then derive the correct note-list model immediately from that hierarchy object,
-instead of racing separate `activeHierarchyViewModel` and `activeNoteListModel` bindings for one event turn.
+The same bridge also lets desktop/mobile shells hand over the resolved hierarchy viewmodel, the resolved
+`activeNoteListModel`, or both during toolbar/domain switches. Current shell wiring prefers forwarding the explicit
+note-list model so the list surface and editor surface consume the same object on the same turn, while the
+hierarchy-derived path remains as the fallback for callers that only know the hierarchy object.

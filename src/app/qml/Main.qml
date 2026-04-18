@@ -181,6 +181,8 @@ LV.ApplicationWindow {
         LV.ViewModels.set("eventHierarchyViewModel", eventHierarchyViewModel);
         LV.ViewModels.set("presetHierarchyViewModel", presetHierarchyViewModel);
         LV.ViewModels.set("detailPanelViewModel", detailPanelViewModel);
+        LV.ViewModels.set("noteDetailPanelViewModel", noteDetailPanelViewModel);
+        LV.ViewModels.set("resourceDetailPanelViewModel", resourceDetailPanelViewModel);
         LV.ViewModels.set("editorViewModeViewModel", editorViewModeViewModel);
         LV.ViewModels.set("navigationModeViewModel", navigationModeViewModel);
         LV.ViewModels.set("sidebarHierarchyViewModel", sidebarHierarchyViewModel);

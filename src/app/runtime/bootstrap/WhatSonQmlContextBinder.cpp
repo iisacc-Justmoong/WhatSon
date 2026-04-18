@@ -22,6 +22,10 @@ namespace WhatSon::Runtime::Bootstrap
         context->setContextProperty(QStringLiteral("eventHierarchyViewModel"), objects.eventHierarchyViewModel);
         context->setContextProperty(QStringLiteral("presetHierarchyViewModel"), objects.presetHierarchyViewModel);
         context->setContextProperty(QStringLiteral("detailPanelViewModel"), objects.detailPanelViewModel);
+        context->setContextProperty(QStringLiteral("noteDetailPanelViewModel"), objects.noteDetailPanelViewModel);
+        context->setContextProperty(
+            QStringLiteral("resourceDetailPanelViewModel"),
+            objects.resourceDetailPanelViewModel);
         context->setContextProperty(QStringLiteral("editorViewModeViewModel"), objects.editorViewModeViewModel);
         context->setContextProperty(QStringLiteral("navigationModeViewModel"), objects.navigationModeViewModel);
         context->setContextProperty(QStringLiteral("sidebarHierarchyViewModel"), objects.sidebarHierarchyViewModel);

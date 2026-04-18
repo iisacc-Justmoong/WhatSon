@@ -222,6 +222,7 @@ Item {
                     activeToolbarIndex: hStack.activeHierarchyIndex
                     anchors.fill: parent
                     hierarchyViewModel: hStack.activeHierarchyViewModel
+                    noteListModel: hStack.activeNoteListModel
                     noteDeletionViewModel: hStack.resolvedNoteDeletionViewModel
                     noteDropTarget: sideBar.noteDropTargetView
                     panelColor: hStack.listViewColor
