@@ -391,8 +391,8 @@
   `ContentsPagePrintLayoutRenderer` in `src/app/editor/renderer`, so editor QML hosts consume backend layout state.
 - The repository no longer operates scripted editor tests; the per-file regression notes in this directory are
   documentation-only behavior contracts.
-- `docs/STRUCTURED_EDITOR_REGRESSION_CHECKLIST.md` now captures the manual regression cases for structured-flow caret
-  persistence and live-caret shortcut insertion.
+- The remaining automated regression surface is the C++ build/runtime suite under `test/cpp/`; the structured-flow
+  caret persistence and live-caret shortcut notes in this directory remain documentation-only behavior contracts.
 - Cursor restoration for ordinary typing/focus recovery now routes through the wrapper-level cursor setter instead of
   rewriting `cursorPosition` into the wrapper, `editorItem`, and `inputItem` together.
 - The shared editor wrapper no longer depends on its own synthetic IME commit queue for ordinary typing, so a just-typed

@@ -9,8 +9,9 @@ WhatSon is an LVRS-based Qt Quick application.
 
 ## Verification Policy
 
-- WhatSon does not maintain or operate an in-repo automated test suite.
-- Python test scripts under `scripts/test_*.py` were removed and are not part of the project workflow anymore.
+- WhatSon now maintains an in-repo C++ build/runtime regression suite under `test/cpp/`.
+- Python test scripts under `scripts/test_*.py` remain removed; automated regression coverage now lives under CTest
+  and the C++ regression target in `test/`.
 - `scripts/build_*.py` and `scripts/runtime_smoke_matrix.py` remain optional developer automation utilities, not
   project test suites or default completion gates.
 
@@ -492,6 +493,7 @@ cmake -S . -B build -DQT_ROOT_PATH=/absolute/path/to/Qt/kit
     - `whatson_qmlformat_fix`: rewrites `src/app/qml/**` in-place with `qmlformat`.
     - `whatson_clang_tidy`: runs `clang-tidy` against configured C++ translation units using
       `build/compile_commands.json`.
+    - `whatson_cpp_regression`: runs the Qt Test based C++ build/runtime regression suite under `test/cpp`.
     - `whatson_dev_checks`: default aggregate target (`qmllint` + `qmlformat_check`, plus `clang-tidy` when installed).
 - `qmllint` is intentionally configured to fail on syntax/import errors while tolerating the repository's current
   warning
@@ -499,6 +501,23 @@ cmake -S . -B build -DQT_ROOT_PATH=/absolute/path/to/Qt/kit
 - `whatson_clang_tidy` reads repository policy from [.clang-tidy](/Volumes/Storage/static/Product/WhatSon/.clang-tidy).
 - If a tool is missing at configure time, the corresponding target still exists but fails with an explicit installation
   hint when invoked.
+
+## Regression Tests
+
+The automated regression suite lives under `test/`.
+
+- `whatson_cpp_regression` runs Qt Test based C++ build/runtime regressions for hub/sidebar stores, sidebar hierarchy
+  resolution, navigation state/viewmodels, onboarding route bootstrap, scheduler behavior, note resource/folder
+  helpers, and structured document mutation/collection policies.
+
+```bash
+cmake -S . -B build
+cmake --build build --target whatson_cpp_regression -j
+ctest --test-dir build --output-on-failure -L cpp_regression
+```
+
+The suite intentionally stays below the full app runtime: it verifies regression-sensitive behavior, ownership
+boundaries, and persistence contracts without starting the interactive workspace shell.
 
 ## Unified Root CMake Targets
 

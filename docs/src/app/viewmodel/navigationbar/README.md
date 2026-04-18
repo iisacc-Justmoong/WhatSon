@@ -33,3 +33,8 @@
 - Runtime ownership and lifecycle rules
 - Testing strategy and coverage map
 - Known hotspots and refactor priorities
+
+## Current Notes
+- Automated C++ regression coverage now lives in `test/cpp/whatson_cpp_regression_tests.cpp`, locking state cycling,
+  invalid-value rejection, and active-section synchronization for `NavigationModeViewModel` and
+  `EditorViewModeViewModel`.

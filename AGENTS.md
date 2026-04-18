@@ -44,9 +44,9 @@ every turn.
 
 ## Automated Test Policy
 
-- This repository does not maintain or operate an in-repo automated test suite.
-- Python test scripts under `scripts/test_*.py` were removed and must not be reintroduced unless the user explicitly changes that policy.
-- Do not add `tests/*`, `scripts/test_*.py`, or equivalent local test harnesses unless explicitly requested.
+- This repository now maintains an in-repo C++ build/runtime regression suite under `test/cpp/`.
+- Python test scripts under `scripts/test_*.py` were removed and must not be reintroduced; keep automated regression coverage under CTest and the C++ regression suite in `test/`.
+- Do not add `tests/*`, `scripts/test_*.py`, or ad hoc duplicate harnesses unless the user explicitly asks for a second test surface.
 - Default task flow must not run project-level tests, smoke suites, or verification builds. Only perform verification when the user explicitly asks for it, and keep all generated artifacts under `build/`.
 
 ### Hierarchy ViewModel Ownership (Critical)

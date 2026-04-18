@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.24)
 
 project(WhatSon VERSION 0.1.0 LANGUAGES CXX)
 
+include(CTest)
+
 set(WHATSON_IOS_SIMULATOR_ARCH "arm64" CACHE STRING
         "Preferred iOS simulator architecture.")
 
@@ -178,6 +180,7 @@ message(STATUS "  WHATSON_BUILD_APP: ${WHATSON_BUILD_APP}")
 message(STATUS "  WHATSON_BUILD_DAEMON: ${WHATSON_BUILD_DAEMON}")
 message(STATUS "  WHATSON_BUILD_CLI: ${WHATSON_BUILD_CLI}")
 message(STATUS "  WHATSON_ENABLE_DEV_TOOLING: ${WHATSON_ENABLE_DEV_TOOLING}")
+message(STATUS "  BUILD_TESTING: ${BUILD_TESTING}")
 message(STATUS "  WHATSON_IS_TRIAL_BUILD: ${WHATSON_IS_TRIAL_BUILD}")
 message(STATUS "  WHATSON_ENABLE_TRIAL_BUILD_MIRROR: ${WHATSON_ENABLE_TRIAL_BUILD_MIRROR}")
 message(STATUS "  WHATSON_TRIAL_BUILD_DIR: ${WHATSON_TRIAL_BUILD_DIR}")
@@ -196,6 +199,10 @@ endif ()
 
 if (WHATSON_BUILD_CLI)
     add_subdirectory(src/cli)
+endif ()
+
+if (BUILD_TESTING)
+    add_subdirectory(test)
 endif ()
 
 set(WHATSON_BUILD_TARGETS)
