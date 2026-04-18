@@ -31,6 +31,7 @@ The C++ suite currently locks regression-sensitive runtime behavior for:
 - `ContentsStructuredDocumentHost`
 - `ContentsStructuredDocumentMutationPolicy`
 - `ContentsLogicalLineLayoutSupport.js`
+- `WhatSonClipboardResourceImportFileNamePolicy`
 - `ContentsEditorSessionController`
 - `ContentsNoteManagementCoordinator`
 
@@ -69,3 +70,5 @@ ctest --test-dir build --output-on-failure -L cpp_regression
   runtime suite stays C++-driven.
 - Structured editor selection cleanup is now also locked at the C++ host-object layer, so block activation keeps
   emitting the selection-clear revision/retained-block contract that the QML delegates consume.
+- Clipboard-image resource imports now also pin their synthesized asset-name policy in the C++ suite, so temporary
+  placeholder names cannot regress back to a collision-prone fixed file name.

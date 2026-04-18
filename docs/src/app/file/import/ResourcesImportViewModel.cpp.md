@@ -13,8 +13,8 @@ The implementation now supports two closely related sequences.
    Return normalized imported-entry metadata first, let the editor insert canonical `<resource ... />` RAW source into
    `.wsnbody`, and only then call `reloadImportedResources()` from QML.
 4. Clipboard-image path (`importClipboardImage(...)` / `importClipboardImageForEditor(...)`):
-   Read the current clipboard image, serialize it as a temporary `clipboard-image.png`, and then hand that local file
-   back into the same import pipeline used by drag/drop.
+   Read the current clipboard image, serialize it as a temporary PNG whose asset file name is a random 32-character
+   mixed-case alphanumeric key, and then hand that local file back into the same import pipeline used by drag/drop.
 5. Conflict-inspection path (`inspectImportConflictForUrls(...)` / `inspectClipboardImageImportConflict()`):
    Resolve the current hub/resources root, compare the incoming source file name against existing package asset names,
    and return the first duplicate so QML can ask the user what to do before the import mutates storage.
@@ -59,8 +59,10 @@ The implementation now supports two closely related sequences.
   `QClipboard::pixmap()` reads.
   Native macOS screenshot captures that materialize as a pasteboard image object rather than an image-advertising MIME
   payload therefore still enable `clipboardImageAvailable` and import correctly through `Cmd+V`.
-- Clipboard conflict inspection intentionally uses the canonical temporary asset name `clipboard-image.png`, so repeated
-  pasted-image imports now hit the same duplicate-policy alert instead of silently creating numbered packages.
+- Clipboard image import now allocates a random 32-character mixed-case alphanumeric `*.png` asset name before the
+  package copy runs.
+  Clipboard-originated resources therefore no longer depend on an ambiguous host file name and avoid accidental
+  same-name duplicate alerts that were caused by the old fixed `clipboard-image.png` placeholder.
 - QML callers should still treat the `QVariantList` return from `importUrlsForEditor(...)` as a Qt list-like value,
   not only as a strict JS `Array`, because post-import body insertion may otherwise skip valid imported entries.
 

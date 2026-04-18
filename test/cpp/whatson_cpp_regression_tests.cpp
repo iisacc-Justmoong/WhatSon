@@ -1,4 +1,5 @@
 #include "file/hub/WhatSonHubPathUtils.hpp"
+#include "file/import/WhatSonClipboardResourceImportFileNamePolicy.hpp"
 #define private public
 #include "file/note/ContentsNoteManagementCoordinator.hpp"
 #undef private
@@ -295,6 +296,7 @@ private slots:
     void navigationModeViewModel_cyclesActiveSections();
     void editorViewModeViewModel_cyclesActiveSections();
     void onboardingRouteBootstrapController_syncsEmbeddedOnboardingLifecycle();
+    void clipboardImportFileNamePolicy_generatesRandom32CharacterAlphaNumericPngNames();
     void unixTimeAnalyzer_reportsStableEpochFields();
     void cronExpression_and_asyncScheduler_coverParsingMatchingAndDeduplication();
     void resourceTagTextGenerator_and_noteFolderSemantics_normalizeDescriptorsAndXml();
@@ -799,6 +801,17 @@ void WhatSonCppRegressionTests::onboardingRouteBootstrapController_syncsEmbedded
     QVERIFY(!controller.embeddedOnboardingEnabled());
     QVERIFY(!controller.embeddedOnboardingVisible());
     QCOMPARE(controller.startupRoutePath(), QStringLiteral("/"));
+}
+
+void WhatSonCppRegressionTests::clipboardImportFileNamePolicy_generatesRandom32CharacterAlphaNumericPngNames()
+{
+    const QString firstFileName = WhatSon::Resources::generateClipboardImportAssetFileName();
+    const QString secondFileName = WhatSon::Resources::generateClipboardImportAssetFileName();
+
+    const QRegularExpression expectedPattern(QStringLiteral("^[A-Za-z0-9]{32}\\.png$"));
+    QVERIFY(expectedPattern.match(firstFileName).hasMatch());
+    QVERIFY(expectedPattern.match(secondFileName).hasMatch());
+    QVERIFY(firstFileName != secondFileName);
 }
 
 void WhatSonCppRegressionTests::unixTimeAnalyzer_reportsStableEpochFields()

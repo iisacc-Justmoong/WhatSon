@@ -1,5 +1,6 @@
 #include "ResourcesImportViewModel.hpp"
 
+#include "WhatSonClipboardResourceImportFileNamePolicy.hpp"
 #include "file/WhatSonDebugTrace.hpp"
 #include "file/hierarchy/resources/WhatSonResourcePackageSupport.hpp"
 #include "file/hierarchy/resources/WhatSonResourcesHierarchyParser.hpp"
@@ -314,6 +315,45 @@ namespace
         }
 
         return true;
+    }
+
+    QString uniqueClipboardImportAssetFileName(
+        const QString& resourcesDirectoryPath,
+        QString* errorMessage = nullptr)
+    {
+        QList<ExistingResourcePackageEntry> existingEntries;
+        if (!loadExistingResourcePackageEntries(resourcesDirectoryPath, &existingEntries, errorMessage))
+        {
+            return {};
+        }
+
+        QSet<QString> existingAssetFileNames;
+        existingAssetFileNames.reserve(existingEntries.size());
+        for (const ExistingResourcePackageEntry& entry : std::as_const(existingEntries))
+        {
+            const QString assetFileName = entry.assetFileName.trimmed().toCaseFolded();
+            if (!assetFileName.isEmpty())
+            {
+                existingAssetFileNames.insert(assetFileName);
+            }
+        }
+
+        constexpr int kMaxAttempts = 256;
+        for (int attempt = 0; attempt < kMaxAttempts; ++attempt)
+        {
+            const QString candidateFileName = WhatSon::Resources::generateClipboardImportAssetFileName();
+            if (!existingAssetFileNames.contains(candidateFileName.toCaseFolded()))
+            {
+                return candidateFileName;
+            }
+        }
+
+        if (errorMessage != nullptr)
+        {
+            *errorMessage = QStringLiteral(
+                "Failed to allocate a unique clipboard import asset name after repeated attempts.");
+        }
+        return {};
     }
 
     bool findFirstImportConflict(
@@ -1238,10 +1278,16 @@ QVariantMap ResourcesImportViewModel::inspectClipboardImageImportConflict() cons
         return emptyImportConflictMap();
     }
 
+    const QString clipboardImportFileName = uniqueClipboardImportAssetFileName(resourcesDirectoryPath, &resolveError);
+    if (clipboardImportFileName.isEmpty())
+    {
+        return emptyImportConflictMap();
+    }
+
     ImportConflictDescriptor descriptor;
     if (!findFirstImportConflict(
-        QStringList{QStringLiteral("clipboard-image.png")},
-        QStringList{QStringLiteral("clipboard-image.png")},
+        QStringList{clipboardImportFileName},
+        QStringList{clipboardImportFileName},
         resourcesDirectoryPath,
         &descriptor,
         &resolveError))
@@ -1697,7 +1743,33 @@ bool ResourcesImportViewModel::importClipboardImageInternal(
         return false;
     }
 
-    const QString temporaryImagePath = temporaryDirectory.filePath(QStringLiteral("clipboard-image.png"));
+    QString clipboardImportFileName = WhatSon::Resources::generateClipboardImportAssetFileName();
+    if (!m_currentHubPath.trimmed().isEmpty())
+    {
+        QString resolveError;
+        QStringList existingResourcePaths;
+        const QString contentsDirectoryPath = resolveContentsDirectory(m_currentHubPath, &resolveError);
+        if (!contentsDirectoryPath.isEmpty())
+        {
+            const QString resourcesFilePath = QDir(contentsDirectoryPath).filePath(QStringLiteral("Resources.wsresources"));
+            if (loadExistingResourcePaths(resourcesFilePath, &existingResourcePaths, &resolveError))
+            {
+                const QString resourcesDirectoryPath =
+                    resolveResourcesDirectory(m_currentHubPath, existingResourcePaths, &resolveError);
+                if (!resourcesDirectoryPath.isEmpty())
+                {
+                    const QString uniqueFileName =
+                        uniqueClipboardImportAssetFileName(resourcesDirectoryPath, &resolveError);
+                    if (!uniqueFileName.isEmpty())
+                    {
+                        clipboardImportFileName = uniqueFileName;
+                    }
+                }
+            }
+        }
+    }
+
+    const QString temporaryImagePath = temporaryDirectory.filePath(clipboardImportFileName);
     if (!clipboardImage.save(temporaryImagePath, "PNG"))
     {
         const QString errorMessage = QStringLiteral("Failed to write the clipboard image into a temporary PNG file.");

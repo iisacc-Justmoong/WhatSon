@@ -4,6 +4,7 @@ set(WHATSON_CPP_REGRESSION_TEST_SOURCES
         "${CMAKE_CURRENT_SOURCE_DIR}/whatson_cpp_regression_tests.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/platform/Android/WhatSonAndroidStorageBackend.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/agenda/ContentsAgendaBackend.cpp"
+        "${CMAKE_SOURCE_DIR}/src/app/file/import/WhatSonClipboardResourceImportFileNamePolicy.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/file/IO/WhatSonSystemIoGateway.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/file/diff/WhatSonLocalNoteVersionStore.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/file/note/ContentsNoteManagementCoordinator.cpp"

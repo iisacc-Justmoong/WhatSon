@@ -50,6 +50,8 @@ This ViewModel translates external local file URLs into resource package imports
   Clipboard-image variants of the same pipeline. They materialize the clipboard bitmap as a temporary PNG file, then
   reuse the ordinary URL import path so resource package creation, metadata generation, and rollback semantics stay
   identical to drag/drop imports.
+  The temporary asset file name is now a random 32-character mixed-case alphanumeric key, so clipboard-originated
+  resources do not reuse an ambiguous placeholder name inside the resource store.
 - `importClipboardImageWithConflictPolicy(...)`, `importClipboardImageForEditorWithConflictPolicy(...)`
   Clipboard-image variants of the same explicit conflict-policy flow.
 - `reloadImportedResources()`
@@ -71,6 +73,8 @@ Each input file is written into the current hub `*.wsresources` store with these
   replace that package contents in-place.
 - If a same-name conflict exists and the caller selects `KeepBoth`, fall back to the numbered `resourceId` path.
 - Create a flat `resourceId.wsresource` directory.
-- Copy the source file name unchanged.
+- Copy the source file name unchanged for ordinary local-file imports.
+- Clipboard-image imports first synthesize a random 32-character mixed-case alphanumeric `.png` file name, then copy
+  that generated name into the package.
 - Write `resource.xml` using `buildMetadataForAssetFile(...)`.
 - Append the relative package path to `Resources.wsresources`.
