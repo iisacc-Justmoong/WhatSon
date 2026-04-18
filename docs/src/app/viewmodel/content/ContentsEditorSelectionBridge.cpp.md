@@ -62,6 +62,9 @@
   content-view-model replacements share one settled refresh turn instead of creating an intermediate mismatched pair.
 - `setNoteListModel(...)` now also uses that same queued selection refresh path after model replacement, while
   `refreshNoteCountState()` still updates immediately for count-only consumers.
+- Both setter paths now also force `QQmlEngine::CppOwnership` on incoming `QObject*` bindings before the bridge stores
+  them. This keeps hierarchy-switch handoffs from reclassifying long-lived C++ models as JS-owned garbage-collectable
+  objects when QML reassigns the active content/note-list pair.
 - `refreshNoteSelectionState()` now honors one `requiresRebind` flag, so the bridge can rebind the current selected
   note into a newly replaced content view-model even when the selected note id itself did not change.
 - Persistence requests forwarded through the bridge now follow buffered fetch semantics rather than worker-thread idle
@@ -125,3 +128,5 @@
   persistence catches up.
 - A same-note successful save must advance `selectedNoteBodyText` even when filesystem reconcile reports that no extra
   snapshot refresh is needed.
+- Hierarchy-switch QML reassignment must not downgrade active content or note-list bindings to JS-owned objects that
+  can be garbage-collected out from under the bridge.

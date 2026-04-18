@@ -4,6 +4,7 @@
 #include "file/sync/ContentsEditorIdleSyncController.hpp"
 
 #include <QMetaProperty>
+#include <QQmlEngine>
 
 #include <algorithm>
 #include <utility>
@@ -36,6 +37,14 @@ namespace
         }
 
         return property.read(noteListModel).toBool();
+    }
+
+    void stabilizeQmlBindingOwnership(QObject* object)
+    {
+        if (object != nullptr)
+        {
+            QQmlEngine::setObjectOwnership(object, QQmlEngine::CppOwnership);
+        }
     }
 }
 
@@ -113,6 +122,7 @@ void ContentsEditorSelectionBridge::setNoteListModel(QObject* model)
     }
 
     disconnectNoteListModel();
+    stabilizeQmlBindingOwnership(model);
     m_noteListModel = model;
 
     if (m_noteListModel != nullptr)
@@ -160,6 +170,7 @@ void ContentsEditorSelectionBridge::setContentViewModel(QObject* model)
     }
 
     disconnectContentViewModel();
+    stabilizeQmlBindingOwnership(model);
     m_contentViewModel = model;
 
     if (m_contentViewModel != nullptr)

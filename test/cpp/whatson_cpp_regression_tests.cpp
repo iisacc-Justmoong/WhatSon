@@ -12,6 +12,7 @@
 #include "store/hub/SelectedHubStore.hpp"
 #include "store/sidebar/ISidebarSelectionStore.hpp"
 #include "store/sidebar/SidebarSelectionStore.hpp"
+#include "viewmodel/content/ContentsEditorSelectionBridge.hpp"
 #include "viewmodel/content/ContentsEditorSessionController.hpp"
 #include "viewmodel/content/ContentsStructuredDocumentBlocksModel.hpp"
 #include "viewmodel/content/ContentsStructuredDocumentCollectionPolicy.hpp"
@@ -38,6 +39,7 @@
 #include <QHash>
 #include <QJSEngine>
 #include <QJSValue>
+#include <QQmlEngine>
 #include <QRegularExpression>
 #include <QSettings>
 #include <QTemporaryDir>
@@ -67,6 +69,11 @@ public:
     QObject* noteListModel() noexcept override
     {
         return m_noteListModel;
+    }
+
+    void setNoteListModelObject(QObject* noteListModel)
+    {
+        m_noteListModel = noteListModel;
     }
 
     int selectedIndex() const noexcept override
@@ -248,6 +255,81 @@ private:
     QHash<QString, QString> m_noteDirectoryPaths;
 };
 
+class FakeSelectionNoteListModel final : public QObject
+{
+    Q_OBJECT
+
+    Q_PROPERTY(QString currentNoteId READ currentNoteId WRITE setCurrentNoteId NOTIFY currentNoteIdChanged)
+    Q_PROPERTY(int itemCount READ itemCount WRITE setItemCount NOTIFY itemCountChanged)
+    Q_PROPERTY(bool noteBacked READ noteBacked WRITE setNoteBacked NOTIFY noteBackedChanged)
+
+public:
+    explicit FakeSelectionNoteListModel(QObject* parent = nullptr)
+        : QObject(parent)
+    {
+    }
+
+    QString currentNoteId() const
+    {
+        return m_currentNoteId;
+    }
+
+    void setCurrentNoteId(QString noteId)
+    {
+        noteId = noteId.trimmed();
+        if (m_currentNoteId == noteId)
+        {
+            return;
+        }
+
+        m_currentNoteId = std::move(noteId);
+        emit currentNoteIdChanged();
+    }
+
+    int itemCount() const noexcept
+    {
+        return m_itemCount;
+    }
+
+    void setItemCount(int itemCount)
+    {
+        itemCount = std::max(0, itemCount);
+        if (m_itemCount == itemCount)
+        {
+            return;
+        }
+
+        m_itemCount = itemCount;
+        emit itemCountChanged(m_itemCount);
+    }
+
+    bool noteBacked() const noexcept
+    {
+        return m_noteBacked;
+    }
+
+    void setNoteBacked(bool noteBacked)
+    {
+        if (m_noteBacked == noteBacked)
+        {
+            return;
+        }
+
+        m_noteBacked = noteBacked;
+        emit noteBackedChanged();
+    }
+
+signals:
+    void currentNoteIdChanged();
+    void itemCountChanged(int itemCount);
+    void noteBackedChanged();
+
+private:
+    QString m_currentNoteId;
+    int m_itemCount = 0;
+    bool m_noteBacked = true;
+};
+
 class ScopedQSettingsSandbox final
 {
 public:
@@ -293,6 +375,7 @@ private slots:
     void hierarchyViewModelProvider_normalizesMappingsAndAvoidsDuplicateSignals();
     void sidebarHierarchyViewModel_preservesFallbackAcrossStoreAttachDetach();
     void sidebarHierarchyViewModel_reactsToProviderMappingChanges();
+    void sidebarAndSelectionBridge_forceCppOwnershipAcrossHierarchySwitchBindings();
     void navigationModeViewModel_cyclesActiveSections();
     void editorViewModeViewModel_cyclesActiveSections();
     void onboardingRouteBootstrapController_syncsEmbeddedOnboardingLifecycle();
@@ -603,6 +686,84 @@ void WhatSonCppRegressionTests::sidebarHierarchyViewModel_reactsToProviderMappin
     QVERIFY(hierarchyViewModelChangedSpy.count() >= 1);
     QVERIFY(noteListModelChangedSpy.count() >= 1);
     QVERIFY(activeBindingsSpy.count() >= 1);
+}
+
+void WhatSonCppRegressionTests::sidebarAndSelectionBridge_forceCppOwnershipAcrossHierarchySwitchBindings()
+{
+    ensureCoreApplication();
+
+    HierarchyViewModelProvider provider;
+    FakeHierarchyViewModel libraryViewModel(QStringLiteral("library"));
+    FakeHierarchyViewModel resourcesViewModel(QStringLiteral("resources"));
+    FakeSelectionNoteListModel libraryNoteListModel;
+    FakeSelectionNoteListModel resourcesNoteListModel;
+    SidebarHierarchyViewModel sidebarViewModel;
+    ContentsEditorSelectionBridge selectionBridge;
+
+    libraryNoteListModel.setCurrentNoteId(QStringLiteral("library-note"));
+    libraryNoteListModel.setItemCount(5);
+    libraryNoteListModel.setNoteBacked(true);
+
+    resourcesNoteListModel.setCurrentNoteId(QStringLiteral("resource-entry"));
+    resourcesNoteListModel.setItemCount(13);
+    resourcesNoteListModel.setNoteBacked(false);
+
+    libraryViewModel.setNoteListModelObject(&libraryNoteListModel);
+    resourcesViewModel.setNoteListModelObject(&resourcesNoteListModel);
+
+    QQmlEngine::setObjectOwnership(&libraryViewModel, QQmlEngine::JavaScriptOwnership);
+    QQmlEngine::setObjectOwnership(&resourcesViewModel, QQmlEngine::JavaScriptOwnership);
+    QQmlEngine::setObjectOwnership(&libraryNoteListModel, QQmlEngine::JavaScriptOwnership);
+    QQmlEngine::setObjectOwnership(&resourcesNoteListModel, QQmlEngine::JavaScriptOwnership);
+
+    provider.setMappings(QVector<HierarchyViewModelProvider::Mapping>{
+        {static_cast<int>(WhatSon::Sidebar::HierarchyDomain::Library), &libraryViewModel},
+        {static_cast<int>(WhatSon::Sidebar::HierarchyDomain::Resources), &resourcesViewModel},
+    });
+    sidebarViewModel.setViewModelProvider(&provider);
+
+    sidebarViewModel.setActiveHierarchyIndex(static_cast<int>(WhatSon::Sidebar::HierarchyDomain::Resources));
+
+    QObject* activeResourcesViewModel = sidebarViewModel.activeHierarchyViewModel();
+    QObject* activeResourcesNoteListModel = sidebarViewModel.activeNoteListModel();
+
+    QCOMPARE(activeResourcesViewModel, static_cast<QObject*>(&resourcesViewModel));
+    QCOMPARE(activeResourcesNoteListModel, static_cast<QObject*>(&resourcesNoteListModel));
+    QCOMPARE(QQmlEngine::objectOwnership(&resourcesViewModel), QQmlEngine::CppOwnership);
+    QCOMPARE(QQmlEngine::objectOwnership(&resourcesNoteListModel), QQmlEngine::CppOwnership);
+
+    selectionBridge.setContentViewModel(activeResourcesViewModel);
+    selectionBridge.setNoteListModel(activeResourcesNoteListModel);
+    QCoreApplication::processEvents();
+
+    QCOMPARE(selectionBridge.contentViewModel(), activeResourcesViewModel);
+    QCOMPARE(selectionBridge.noteListModel(), activeResourcesNoteListModel);
+    QVERIFY(selectionBridge.noteCountContractAvailable());
+    QCOMPARE(selectionBridge.visibleNoteCount(), 13);
+    QVERIFY(!selectionBridge.noteSelectionContractAvailable());
+
+    sidebarViewModel.setActiveHierarchyIndex(static_cast<int>(WhatSon::Sidebar::HierarchyDomain::Library));
+
+    QObject* activeLibraryViewModel = sidebarViewModel.activeHierarchyViewModel();
+    QObject* activeLibraryNoteListModel = sidebarViewModel.activeNoteListModel();
+
+    QCOMPARE(activeLibraryViewModel, static_cast<QObject*>(&libraryViewModel));
+    QCOMPARE(activeLibraryNoteListModel, static_cast<QObject*>(&libraryNoteListModel));
+    QCOMPARE(QQmlEngine::objectOwnership(&libraryViewModel), QQmlEngine::CppOwnership);
+    QCOMPARE(QQmlEngine::objectOwnership(&libraryNoteListModel), QQmlEngine::CppOwnership);
+
+    selectionBridge.setContentViewModel(activeLibraryViewModel);
+    selectionBridge.setNoteListModel(activeLibraryNoteListModel);
+    QCoreApplication::processEvents();
+
+    QCOMPARE(selectionBridge.contentViewModel(), activeLibraryViewModel);
+    QCOMPARE(selectionBridge.noteListModel(), activeLibraryNoteListModel);
+    QVERIFY(selectionBridge.noteCountContractAvailable());
+    QCOMPARE(selectionBridge.visibleNoteCount(), 5);
+    QVERIFY(selectionBridge.noteSelectionContractAvailable());
+    QCOMPARE(selectionBridge.selectedNoteId(), QStringLiteral("library-note"));
+    QCOMPARE(QQmlEngine::objectOwnership(activeLibraryViewModel), QQmlEngine::CppOwnership);
+    QCOMPARE(QQmlEngine::objectOwnership(activeLibraryNoteListModel), QQmlEngine::CppOwnership);
 }
 
 void WhatSonCppRegressionTests::navigationModeViewModel_cyclesActiveSections()

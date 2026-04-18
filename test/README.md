@@ -72,3 +72,5 @@ ctest --test-dir build --output-on-failure -L cpp_regression
   emitting the selection-clear revision/retained-block contract that the QML delegates consume.
 - Clipboard-image resource imports now also pin their synthesized asset-name policy in the C++ suite, so temporary
   placeholder names cannot regress back to a collision-prone fixed file name.
+- Hierarchy viewmodel switching now also pins QObject ownership at the sidebar/selection-bridge boundary, so switching
+  `Resources -> Library` cannot hand member-owned C++ models to the QML garbage collector.

@@ -4,6 +4,19 @@
 #include "viewmodel/sidebar/HierarchySidebarDomain.hpp"
 
 #include <QDebug>
+#include <QQmlEngine>
+
+namespace
+{
+    QObject* stabilizeQmlBindingOwnership(QObject* object)
+    {
+        if (object != nullptr)
+        {
+            QQmlEngine::setObjectOwnership(object, QQmlEngine::CppOwnership);
+        }
+        return object;
+    }
+}
 
 SidebarHierarchyViewModel::SidebarHierarchyViewModel(QObject* parent)
 {
@@ -55,7 +68,8 @@ QObject* SidebarHierarchyViewModel::hierarchyViewModelForIndex(int hierarchyInde
     {
         return nullptr;
     }
-    return m_viewModelProvider->hierarchyViewModel(WhatSon::Sidebar::normalizeHierarchyIndex(hierarchyIndex));
+    return stabilizeQmlBindingOwnership(
+        m_viewModelProvider->hierarchyViewModel(WhatSon::Sidebar::normalizeHierarchyIndex(hierarchyIndex)));
 }
 
 QObject* SidebarHierarchyViewModel::noteListModelForIndex(int hierarchyIndex) const
@@ -64,7 +78,8 @@ QObject* SidebarHierarchyViewModel::noteListModelForIndex(int hierarchyIndex) co
     {
         return nullptr;
     }
-    return m_viewModelProvider->noteListModel(WhatSon::Sidebar::normalizeHierarchyIndex(hierarchyIndex));
+    return stabilizeQmlBindingOwnership(
+        m_viewModelProvider->noteListModel(WhatSon::Sidebar::normalizeHierarchyIndex(hierarchyIndex)));
 }
 
 ISidebarSelectionStore* SidebarHierarchyViewModel::selectionStore() const noexcept

@@ -8,3 +8,7 @@
   subscribe to `activeBindingsChanged()`. The implementation emits that composite signal after selection changes and
   after provider mapping refreshes, so QML shells can refresh their entire active-binding snapshot in one step and
   avoid transient cross-domain list ghosts during hierarchy switches.
+- `hierarchyViewModelForIndex(...)` and `noteListModelForIndex(...)` now also force
+  `QQmlEngine::CppOwnership` on returned `QObject*` bindings before they cross the QML boundary.
+  This prevents hierarchy-switch snapshots from handing a member-owned C++ object to the QML garbage collector as if
+  it were a disposable JS-owned instance.
