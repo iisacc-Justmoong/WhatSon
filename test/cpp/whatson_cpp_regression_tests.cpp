@@ -453,6 +453,9 @@ private slots:
     void onboardingRouteBootstrapController_syncsEmbeddedOnboardingLifecycle();
     void embeddedOnboardingRoutePages_avoidStackViewAnchorConflicts();
     void mainQml_embeddedStartup_dropsWatchdogRecoveryScaffold();
+    void mainQml_iosInlineOnboarding_pinsPresentationToWorkspaceRoute();
+    void mainCpp_iosStartup_suppressesAutomaticOnboarding();
+    void iosInlineOnboardingSequence_reusesSharedOnboardingSurface();
     void onboardingContent_mobileLayout_avoidsFullscreenAntialiasedWindowFrame();
     void onboardingContent_saveDialog_doesNotPreselectMissingHubFile();
     void mainQml_exposesZeroWindowPaddingForLvrsApplicationWindow();
@@ -1281,7 +1284,7 @@ void WhatSonCppRegressionTests::mainQml_embeddedStartup_dropsWatchdogRecoverySca
 
     QVERIFY(!mainQmlSource.isEmpty());
     QVERIFY(mainQmlSource.contains(QStringLiteral("applicationWindow.applyRequestedRoute(applicationWindow.startupRoutePath, \"completed\");")));
-    QVERIFY(mainQmlSource.contains(QStringLiteral("applicationWindow.applyRequestedRoute(String(targetPath), String(reason));")));
+    QVERIFY(mainQmlSource.contains(QStringLiteral("applicationWindow.applyRequestedRoute(normalizedTargetPath, normalizedReason);")));
     QVERIFY(!mainQmlSource.contains(QStringLiteral("expectedEmbeddedRoutePath")));
     QVERIFY(!mainQmlSource.contains(QStringLiteral("embeddedRouteRecoveryNeeded")));
     QVERIFY(!mainQmlSource.contains(QStringLiteral("embeddedRouteStartupStatusText")));
@@ -1292,6 +1295,42 @@ void WhatSonCppRegressionTests::mainQml_embeddedStartup_dropsWatchdogRecoverySca
     QVERIFY(!mainQmlSource.contains(QStringLiteral("id: startupRouteWatchdogTimer")));
     QVERIFY(!mainQmlSource.contains(QStringLiteral("id: embeddedRouteStartupFallback")));
     QVERIFY(!mainQmlSource.contains(QStringLiteral("forceReload")));
+}
+
+void WhatSonCppRegressionTests::mainQml_iosInlineOnboarding_pinsPresentationToWorkspaceRoute()
+{
+    const QString mainQmlSource = readUtf8SourceFile(QStringLiteral("src/app/qml/Main.qml"));
+
+    QVERIFY(!mainQmlSource.isEmpty());
+    QVERIFY(mainQmlSource.contains(QStringLiteral("readonly property bool useIosInlineOnboardingSequence: applicationWindow.platform === \"ios\"")));
+    QVERIFY(mainQmlSource.contains(QStringLiteral("readonly property bool useRoutedEmbeddedOnboardingRoute: !applicationWindow.useIosInlineOnboardingSequence")));
+    QVERIFY(mainQmlSource.contains(QStringLiteral("readonly property string startupRoutePath: applicationWindow.useIosInlineOnboardingSequence")));
+    QVERIFY(mainQmlSource.contains(QStringLiteral("pageRoutes: applicationWindow.useIosInlineOnboardingSequence")));
+    QVERIFY(mainQmlSource.contains(QStringLiteral("? iosInlineOnboardingSequenceComponent")));
+    QVERIFY(mainQmlSource.contains(QStringLiteral("applicationWindow.onboardingRouteBootstrapController.handlePageStackNavigated(")));
+    QVERIFY(mainQmlSource.contains(QStringLiteral("applicationWindow.workspaceRoutePath);")));
+}
+
+void WhatSonCppRegressionTests::mainCpp_iosStartup_suppressesAutomaticOnboarding()
+{
+    const QString mainCppSource = readUtf8SourceFile(QStringLiteral("src/app/main.cpp"));
+
+    QVERIFY(!mainCppSource.isEmpty());
+    QVERIFY(mainCppSource.contains(QStringLiteral("const bool enableEmbeddedOnboardingPresentation = true;")));
+    QVERIFY(mainCppSource.contains(QStringLiteral("const bool suppressAutomaticStartupOnboardingOnIos = !startupHubSelection.mounted;")));
+    QVERIFY(mainCppSource.contains(QStringLiteral("onboardingRouteBootstrapController.dismissEmbeddedOnboarding();")));
+}
+
+void WhatSonCppRegressionTests::iosInlineOnboardingSequence_reusesSharedOnboardingSurface()
+{
+    const QString sequenceSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/window/IosInlineOnboardingSequence.qml"));
+
+    QVERIFY(!sequenceSource.isEmpty());
+    QVERIFY(sequenceSource.contains(QStringLiteral("WindowView.OnboardingContent {")));
+    QVERIFY(sequenceSource.contains(QStringLiteral("anchors.fill: parent")));
+    QVERIFY(sequenceSource.contains(QStringLiteral("autoCompleteOnHubLoaded: false")));
+    QVERIFY(sequenceSource.contains(QStringLiteral("color: root.canvasColor")));
 }
 
 void WhatSonCppRegressionTests::onboardingContent_mobileLayout_avoidsFullscreenAntialiasedWindowFrame()

@@ -21,16 +21,21 @@ WhatSon is an LVRS-based Qt Quick application.
 
 ## Adaptive Layout
 
-- `src/app/qml/Main.qml` now mounts the root shell through LVRS `ApplicationWindow` page-stack APIs:
-  `useInternalPageStack: true`, explicit routed onboarding/workspace entries in `pageRoutes`, and an app-owned
-  `startupRoutePath` that now comes from `src/app/viewmodel/onboarding/OnboardingRouteBootstrapController.*` and is
-  mirrored into both `initialRoutePath` and `pageInitialPath` before the first frame.
+- `src/app/qml/Main.qml` now mounts the root shell through LVRS `ApplicationWindow` page-stack APIs, but startup
+  presentation is platform-specific: Android keeps explicit routed onboarding/workspace entries in `pageRoutes`,
+  while iOS pins `initialRoutePath/pageInitialPath` to `/` and only reuses a dedicated inline onboarding sequence
+  inside the workspace page when onboarding is explicitly reopened.
 - The embedded mobile onboarding bootstrap state machine now lives in
   `src/app/viewmodel/onboarding/OnboardingRouteBootstrapController.*` instead of being open-coded across `Main.qml`.
-  `Main.qml` only applies requested LVRS route changes and keeps the desktop onboarding subwindow separate from the
-  mobile embedded route flow.
-- Mobile onboarding success now defers the `/onboarding -> /` route flip with `Qt.callLater(...)` so iOS/Android native
-  picker teardown can finish before the workspace shell replaces the onboarding surface.
+  `Main.qml` only applies requested LVRS route changes where routing is still used, keeps the desktop onboarding
+  subwindow separate from the mobile embedded flow, and reuses the same controller state for the iOS inline startup
+  sequence.
+- Android onboarding success still defers the `/onboarding -> /` route flip with `Qt.callLater(...)` so native picker
+  teardown can finish before the workspace shell replaces the onboarding surface. iOS now completes the same
+  controller transition in place against the already-mounted workspace page instead of flipping the LVRS page stack.
+- iOS no longer auto-opens onboarding during ordinary startup when no hub is restored. The composition root configures
+  the same embedded onboarding controller for later reuse, then immediately dismisses its visible state so the app can
+  finish booting on the unmounted workspace shell without entering onboarding by itself.
 - Android onboarding now routes `content://` SAF hub selections and destination directories through
   `src/app/platform/Android/WhatSonAndroidStorageBackend.*`. The backend keeps the OS-provided document URI as the
   source of truth, materializes the selected `.wshub` package into a deterministic app-local mount directory under app
@@ -572,20 +577,24 @@ picker plus the in-session candidate fallback, but Android switches to a native 
 `.wshub` package document directly. Android onboarding then resolves external-storage SAF document URLs back to shared
 filesystem paths whenever the picker points at a local `.wshub`, so the existing directory-based hub creator and
 runtime loader can mount the package tree instead of treating the document URI itself as a virtual directory.
-Mobile startup now follows the LVRS page-stack contract instead of booting a separate standalone onboarding window when
-no hub is restored. `Main.qml` registers `/onboarding` beside the workspace route and lets the same
-`LV.ApplicationWindow` transition from onboarding into the workspace shell, so iOS/Android no longer cross a
-multi-window handoff that can terminate the app session after a successful hub load. The dedicated `Onboarding.qml`
-window wrapper remains available for the explicit `whatson onboard` entrypoint and the desktop window-menu command,
-but regular mobile bootstraps route inside `Main.qml` through the shared `OnboardingContent.qml` surface.
+Mobile startup now stays inside `Main.qml` instead of booting a separate standalone onboarding window when no hub is
+restored, but the presentation differs by platform. Android still registers `/onboarding` beside the workspace route
+and lets the same `LV.ApplicationWindow` transition from onboarding into the workspace shell. iOS now keeps the LVRS
+page stack fixed on `/`, and automatic startup onboarding is now fully withdrawn there. The dedicated
+`IosInlineOnboardingSequence.qml` remains available only for explicit reopen flows, which still avoid the
+first-frame `/onboarding` navigation that was recreating the Metal swapchain during onboarding bootstrap.
+The dedicated `Onboarding.qml` window wrapper remains available for the explicit `whatson onboard` entrypoint and the
+desktop window-menu command, but regular mobile bootstraps stay inside `Main.qml` through the shared
+`OnboardingContent.qml` surface.
 That embedded mobile onboarding surface now drops the desktop-only rounded, antialiased outer frame and renders as a
 plain full-window panel on mobile/iOS, which avoids allocating a fullscreen multisample onboarding chrome target during
-the first routed frame.
+the first startup frame.
 Mobile onboarding no longer treats `hubLoaded` as an immediate page-complete event. `OnboardingHubController`
-now tracks a session-state ladder (`idle -> resolvingSelection -> loadingHub -> hubLoaded -> routingWorkspace -> ready`)
-and `Main.qml` only commits `/onboarding -> /` after the LVRS router confirms the workspace navigation. If that route
-commit fails, the controller falls back to `failed`, keeps the app inside onboarding, and surfaces the error instead of
-tearing down the mobile session.
+now tracks a session-state ladder (`idle -> resolvingSelection -> loadingHub -> hubLoaded -> routingWorkspace -> ready`).
+Android still commits `/onboarding -> /` only after the LVRS router confirms the workspace navigation. iOS completes
+the same transition in place after the workspace page is already mounted, so the controller can reach `ready` without
+another page-stack flip when onboarding is explicitly reopened. If either strategy fails, the controller falls back to `failed`, keeps the app inside
+onboarding, and surfaces the error instead of tearing down the mobile session.
 Before the runtime loader starts, `OnboardingHubController` also performs a local `.wshub` mount preflight:
 non-local document-provider URLs that cannot be resolved into real package directories now fail inside onboarding with a
 targeted error, instead of cascading into a full-domain runtime bootstrap failure.
@@ -593,10 +602,10 @@ The desktop onboarding window's right-hand status panel stays aligned with the F
 or the currently selected `.wshub` package name.
 The last selected `.wshub` is persisted through the app session store as a startup candidate, so the next launch tries
 that selection before falling back to `blueprint/*.wshub`.
-Startup onboarding is now gated by hub mountability rather than by full runtime-domain success. WhatSon first resolves
-the persisted hub selection into a mountable startup hub path (local `.wshub`, Android source URI -> mounted local
-copy, or restored Android mounted-hub source URI). If that persisted candidate can no longer be mounted, startup
-retries the bundled blueprint hub before handing control to onboarding.
+Android/desktop startup onboarding is now gated by hub mountability rather than by full runtime-domain success.
+WhatSon first resolves the persisted hub selection into a mountable startup hub path (local `.wshub`, Android source
+URI -> mounted local copy, or restored Android mounted-hub source URI). If that persisted candidate can no longer be
+mounted, startup retries the bundled blueprint hub before handing control to onboarding.
 When a startup hub is available, the first workspace frame now prioritizes the critical library-facing runtime
 domains and defers low-priority hierarchy domains (`Event`, `Preset`) until post-show idle turns or the first sidebar
 activation that needs them.

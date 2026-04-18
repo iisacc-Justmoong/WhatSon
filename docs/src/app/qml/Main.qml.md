@@ -11,8 +11,10 @@
 - Register runtime viewmodels into the LVRS `ViewModels` registry.
 - Claim writable ownership for selected interaction surfaces.
 - Mount `MainWindowInteractionController` and feed it the objects it needs for shortcuts and render-quality policy.
-- Switch between onboarding and workspace routes.
-- Route embedded mobile onboarding and workspace through the same LVRS page stack without a separate startup watchdog.
+- Switch between workspace and routed onboarding on platforms that use the LVRS page stack, while iOS keeps its
+  inline onboarding presentation inside the workspace page itself.
+- Route Android/mobile embedded onboarding through the same LVRS page stack without a separate startup watchdog, and
+  keep the iOS inline onboarding sequence owned by the same `LV.ApplicationWindow`.
 - Disable iOS safe-area/windowing delegation and force LVRS full-window mobile coverage so the app
   content occupies the entire screen while still pinning the render tier to `LowTier`.
 - Expose the global `StandardKey.New` note-creation shortcut only on desktop platforms.
@@ -59,10 +61,14 @@ The file keeps both desktop and mobile layout branches alive.
 - Root-owned sidebar/right-panel minimum and preferred widths, hierarchy toolbar inset/spacing, and onboarding minimum
   window sizes now route through `LV.Theme.gap...` and `LV.Theme.scaleMetric(...)` instead of shell-local pixel
   literals.
-- Onboarding can be embedded into the route stack or opened as a separate window depending on platform and adaptive mode.
-- Embedded mobile startup now relies on the LVRS route stack directly: `Component.onCompleted` seeds the startup route,
-  `routeSyncRequested(...)` applies controller-directed transitions, and failure handling stays inside
+- Onboarding can be routed, inlined, or opened as a separate window depending on platform and adaptive mode.
+- Android embedded startup still relies on the LVRS route stack directly: `Component.onCompleted` seeds the startup
+  route, `routeSyncRequested(...)` applies controller-directed transitions, and failure handling stays inside
   `OnboardingRouteBootstrapController` without any extra page-host watchdog or fallback overlay in `Main.qml`.
+- iOS keeps the LVRS page stack pinned to `/` and can switch the workspace page loader between
+  `IosInlineOnboardingSequence.qml` and the real workspace shell, but ordinary startup no longer opens onboarding
+  automatically there. The same `OnboardingRouteBootstrapController` still owns transition intent, and iOS completes
+  that intent without a `/onboarding -> /` page-stack flip when onboarding is explicitly reopened.
 - The embedded onboarding/workspace route pages intentionally keep their root `Item` free of `anchors.fill`.
   LVRS route hosting is backed by a `StackView`, and stack-managed page geometry must not compete with page-root
   anchors during transitions on iOS.
@@ -101,6 +107,8 @@ The file keeps both desktop and mobile layout branches alive.
     month/date instead of being reset back to today's month
   - embedded startup onboarding must not reintroduce a startup watchdog timer, recovery helper, or fallback overlay in
     `Main.qml`
+  - iOS startup without a mounted hub must keep the LVRS route pinned to `/` and must not auto-open the inline
+    onboarding sequence
 
 ## Practical Reading
 Read this file with:

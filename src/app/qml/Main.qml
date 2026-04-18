@@ -102,8 +102,14 @@ LV.ApplicationWindow {
     readonly property int sidebarWidth: hideSidebar ? 0 : Math.max(minSidebarWidth, preferredSidebarWidth)
     readonly property int statusBarHeight: LV.Theme.controlHeightMd
     readonly property bool onboardingRouteCommitPending: onboardingRouteBootstrapController ? onboardingRouteBootstrapController.routeCommitPending : false
-    readonly property string startupRoutePath: onboardingRouteBootstrapController ? onboardingRouteBootstrapController.startupRoutePath : workspaceRoutePath
-    readonly property bool useEmbeddedOnboardingRoute: adaptiveMobileLayout || isMobilePlatform
+    readonly property bool useIosInlineOnboardingSequence: applicationWindow.platform === "ios"
+    readonly property bool useRoutedEmbeddedOnboardingRoute: !applicationWindow.useIosInlineOnboardingSequence
+                                                         && (adaptiveMobileLayout || isMobilePlatform)
+    readonly property bool useEmbeddedOnboardingPresentation: applicationWindow.useIosInlineOnboardingSequence
+                                                          || applicationWindow.useRoutedEmbeddedOnboardingRoute
+    readonly property string startupRoutePath: applicationWindow.useIosInlineOnboardingSequence
+        ? workspaceRoutePath
+        : (onboardingRouteBootstrapController ? onboardingRouteBootstrapController.startupRoutePath : workspaceRoutePath)
     readonly property int windowDefaultHeight: LV.Theme.gap24 * 31 + LV.Theme.gap4
     readonly property int windowDefaultWidth: LV.Theme.controlHeightMd * 35 + LV.Theme.gap5
     readonly property int windowMinHeight: LV.Theme.gap20 * 21
@@ -235,7 +241,7 @@ LV.ApplicationWindow {
         return " ";
     }
     function showOnboardingWindow() {
-        if (applicationWindow.useEmbeddedOnboardingRoute && applicationWindow.onboardingRouteBootstrapController) {
+        if (applicationWindow.useEmbeddedOnboardingPresentation && applicationWindow.onboardingRouteBootstrapController) {
             applicationWindow.onboardingRouteBootstrapController.reopenEmbeddedOnboarding();
             return;
         }
@@ -278,7 +284,9 @@ LV.ApplicationWindow {
     navItems: []
     navigationEnabled: false
     pageInitialPath: startupRoutePath
-    pageRoutes: [onboardingRoute, workspaceShellRoute]
+    pageRoutes: applicationWindow.useIosInlineOnboardingSequence
+        ? [workspaceShellRoute]
+        : [onboardingRoute, workspaceShellRoute]
     useInternalPageStack: true
     usePlatformSafeMargin: false
     visible: true
@@ -296,7 +304,7 @@ LV.ApplicationWindow {
         clampPreferredSizes();
         windowInteractions.applyRenderQualityPolicy("completed");
         windowInteractions.reportLayoutBranch("completed");
-        if (applicationWindow.useEmbeddedOnboardingRoute) {
+        if (applicationWindow.useRoutedEmbeddedOnboardingRoute) {
             Qt.callLater(function () {
                 applicationWindow.applyRequestedRoute(applicationWindow.startupRoutePath, "completed");
             });
@@ -390,11 +398,22 @@ LV.ApplicationWindow {
         target: applicationWindow.onboardingRouteBootstrapController
 
         function onRouteSyncRequested(targetPath, deferred, reason) {
-            if (!applicationWindow.useEmbeddedOnboardingRoute)
-                return;
-
+            const normalizedTargetPath = String(targetPath);
+            const normalizedReason = String(reason);
             const sync = function () {
-                applicationWindow.applyRequestedRoute(String(targetPath), String(reason));
+                if (applicationWindow.useIosInlineOnboardingSequence) {
+                    if (normalizedTargetPath === applicationWindow.workspaceRoutePath
+                            && applicationWindow.onboardingRouteBootstrapController) {
+                        applicationWindow.onboardingRouteBootstrapController.handlePageStackNavigated(
+                            applicationWindow.workspaceRoutePath);
+                    }
+                    return;
+                }
+
+                if (!applicationWindow.useRoutedEmbeddedOnboardingRoute)
+                    return;
+
+                applicationWindow.applyRequestedRoute(normalizedTargetPath, normalizedReason);
             };
 
             if (deferred)
@@ -407,7 +426,7 @@ LV.ApplicationWindow {
         target: applicationWindow.onboardingHubController
 
         function onHubLoaded(hubPath) {
-            if (!applicationWindow.useEmbeddedOnboardingRoute)
+            if (!applicationWindow.useEmbeddedOnboardingPresentation)
                 return;
             if (applicationWindow.onboardingRouteBootstrapController)
                 applicationWindow.onboardingRouteBootstrapController.handleHubLoaded();
@@ -521,9 +540,28 @@ LV.ApplicationWindow {
                 id: workspaceLayoutLoader
 
                 anchors.fill: parent
-                sourceComponent: applicationWindow.adaptiveMobileLayout ? mobileMainLayoutComponent : desktopMainLayoutComponent
+                sourceComponent: applicationWindow.useIosInlineOnboardingSequence
+                                 && applicationWindow.onboardingRouteBootstrapController
+                                 && applicationWindow.onboardingRouteBootstrapController.embeddedOnboardingVisible
+                    ? iosInlineOnboardingSequenceComponent
+                    : (applicationWindow.adaptiveMobileLayout ? mobileMainLayoutComponent : desktopMainLayoutComponent)
 
                 onSourceComponentChanged: windowInteractions.reportLayoutBranch("workspaceSourceChanged")
+            }
+        }
+    }
+    Component {
+        id: iosInlineOnboardingSequenceComponent
+
+        WindowView.IosInlineOnboardingSequence {
+            anchors.fill: parent
+            canvasColor: applicationWindow.canvasColor
+            hostWindow: applicationWindow
+            hubSessionController: applicationWindow.onboardingHubController
+
+            onDismissRequested: {
+                if (applicationWindow.onboardingRouteBootstrapController)
+                    applicationWindow.onboardingRouteBootstrapController.dismissEmbeddedOnboarding();
             }
         }
     }

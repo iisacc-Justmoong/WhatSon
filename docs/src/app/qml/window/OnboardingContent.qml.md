@@ -19,8 +19,9 @@
   - spacing and insets use `LV.Theme.gap16/gap24`
   - outer surface radius uses `LV.Theme.radiusXl * 2`
 - Embedded mobile onboarding now disables the desktop rounded/antialiased outer frame and renders the shared surface as
-  a plain full-window panel. This keeps the iOS `/onboarding` route from allocating a fullscreen multisample shell
-  target during first-frame mobile startup.
+  a plain full-window panel. The same mobile surface is now reused by both the Android `/onboarding` route and the iOS
+  inline onboarding sequence, so neither path allocates a fullscreen multisample shell target during first-frame mobile
+  startup.
 - The close glyph no longer depends on fixed `5/11/1.6px` canvas coordinates; it derives its stroke path from the
   live button size so LVRS UI scaling keeps the icon centered and crisp.
 - Desktop-only create-hub `FileDialog` and Android-only `.wshub` file-pick `FileDialog` are now lazily created from

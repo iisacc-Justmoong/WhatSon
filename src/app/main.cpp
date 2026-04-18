@@ -653,12 +653,24 @@ int main(int argc, char* argv[])
     }
 
 #if defined(Q_OS_ANDROID) || defined(Q_OS_IOS)
-    const bool useEmbeddedStartupOnboarding = true;
+    const bool enableEmbeddedOnboardingPresentation = true;
 #else
-    const bool useEmbeddedStartupOnboarding = false;
+    const bool enableEmbeddedOnboardingPresentation = false;
 #endif
-    const bool showDesktopStartupOnboarding = !startupHubSelection.mounted && !useEmbeddedStartupOnboarding;
-    onboardingRouteBootstrapController.configure(useEmbeddedStartupOnboarding, startupHubSelection.mounted);
+#if defined(Q_OS_IOS)
+    const bool suppressAutomaticStartupOnboardingOnIos = !startupHubSelection.mounted;
+#else
+    const bool suppressAutomaticStartupOnboardingOnIos = false;
+#endif
+    const bool showDesktopStartupOnboarding = !startupHubSelection.mounted
+                                              && !enableEmbeddedOnboardingPresentation;
+    onboardingRouteBootstrapController.configure(
+        enableEmbeddedOnboardingPresentation,
+        startupHubSelection.mounted);
+    if (suppressAutomaticStartupOnboardingOnIos)
+    {
+        onboardingRouteBootstrapController.dismissEmbeddedOnboarding();
+    }
 
     const QVariantMap mainWindowInitialProperties{
         {
