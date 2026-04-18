@@ -12,6 +12,5 @@ namespace WhatSon::Runtime::Bootstrap
     };
 
     void prependEnvPath(const char* variableName, const QByteArray& path);
-    QString resolveBlueprintHubPath();
     LaunchOptions parseLaunchOptions(QGuiApplication& app);
 }

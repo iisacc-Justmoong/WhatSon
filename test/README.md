@@ -116,3 +116,5 @@ ctest --test-dir build --output-on-failure -L cpp_regression
   bright screen-only text colors cannot leak onto the white paper surface in `Page` / `Print` mode.
 - Developer quality gates now also resolve their QML/C++ file lists from the repository root, so `whatson_qmllint`
   and `whatson_clang_tidy` no longer degrade into empty-input no-op runs.
+- Startup hub resolution now also pins the “explicit persisted hub only” rule, so a missing or invalid selected hub
+  cannot silently reopen the blueprint sample workspace and must instead leave startup unmounted for onboarding.

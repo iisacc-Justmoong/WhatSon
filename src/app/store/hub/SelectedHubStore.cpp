@@ -57,16 +57,9 @@ QByteArray SelectedHubStore::selectedHubAccessBookmark()
     return settings.value(selectedHubBookmarkSettingsKey()).toByteArray();
 }
 
-QString SelectedHubStore::startupHubPath(const QString& blueprintFallbackHubPath)
+QString SelectedHubStore::startupHubPath()
 {
-    const QString storedHubPath = selectedHubPath();
-    if (!storedHubPath.isEmpty())
-        return storedHubPath;
-
-    const QString normalizedFallbackPath = normalizeHubPath(blueprintFallbackHubPath);
-    if (!isStoredHubPathValid(normalizedFallbackPath))
-        return QString();
-    return normalizedFallbackPath;
+    return selectedHubPath();
 }
 
 void SelectedHubStore::clearSelectedHubPath()
@@ -116,7 +109,9 @@ bool SelectedHubStore::isStoredHubPathValid(const QString& hubPath) const
         return true;
 
     const QFileInfo hubInfo(normalizedHubPath);
-    return hubInfo.fileName().endsWith(QStringLiteral(".wshub"), Qt::CaseInsensitive);
+    return hubInfo.exists()
+           && hubInfo.isDir()
+           && hubInfo.fileName().endsWith(QStringLiteral(".wshub"), Qt::CaseInsensitive);
 }
 
 QString SelectedHubStore::normalizeHubPath(const QString& hubPath) const

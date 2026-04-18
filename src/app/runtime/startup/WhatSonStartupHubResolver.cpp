@@ -4,7 +4,6 @@
 #include "file/hub/WhatSonHubPathUtils.hpp"
 #include "platform/Android/WhatSonAndroidStorageBackend.hpp"
 #include "platform/Apple/AppleSecurityScopedResourceAccess.hpp"
-#include "runtime/bootstrap/WhatSonAppLaunchSupport.hpp"
 #include "store/hub/ISelectedHubStore.hpp"
 
 #include <QDebug>
@@ -122,12 +121,10 @@ namespace WhatSon::Runtime::Startup
         return normalizedHubPath;
     }
 
-    StartupHubSelection resolveStartupHubSelection(
-        ISelectedHubStore& selectedHubStore,
-        const QString& blueprintFallbackHubPath)
+    StartupHubSelection resolveStartupHubSelection(ISelectedHubStore& selectedHubStore)
     {
         StartupHubSelection selection;
-        const QString startupHubSelectionPath = selectedHubStore.startupHubPath(blueprintFallbackHubPath);
+        const QString startupHubSelectionPath = selectedHubStore.startupHubPath();
         const QByteArray startupHubAccessBookmark = selectedHubStore.selectedHubAccessBookmark();
 
         auto tryResolve = [&selection](const QString& selectionPath,
@@ -158,17 +155,10 @@ namespace WhatSon::Runtime::Startup
 
         if (!startupHubSelectionPath.isEmpty())
         {
-            const bool startupSelectionResolved = tryResolve(
+            tryResolve(
                 startupHubSelectionPath,
                 startupHubAccessBookmark,
                 QStringLiteral("persisted"));
-            if (!startupSelectionResolved
-                && !blueprintFallbackHubPath.trimmed().isEmpty()
-                && WhatSon::HubPath::normalizePath(startupHubSelectionPath)
-                    != WhatSon::HubPath::normalizePath(blueprintFallbackHubPath))
-            {
-                tryResolve(blueprintFallbackHubPath, {}, QStringLiteral("blueprint fallback"));
-            }
         }
 
         if (!selection.mounted)
