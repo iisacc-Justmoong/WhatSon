@@ -7,13 +7,17 @@
 #include <QDirIterator>
 #include <QFile>
 #include <QFileInfo>
+#include <QImage>
+#include <QImageReader>
 #include <QRegularExpression>
+#include <QSaveFile>
 #include <QSet>
 #include <QString>
 #include <QStringList>
 #include <QUrl>
 #include <QXmlStreamReader>
 #include <QXmlStreamWriter>
+#include <QBuffer>
 
 namespace WhatSon::Resources
 {
@@ -22,6 +26,7 @@ namespace WhatSon::Resources
         QString resourceId;
         QString resourcePath;
         QString assetPath;
+        QString annotationPath;
         QString bucket;
         QString type;
         QString format;
@@ -45,6 +50,11 @@ namespace WhatSon::Resources
     inline QString metadataFileName()
     {
         return QStringLiteral("resource.xml");
+    }
+
+    inline QString annotationFileName()
+    {
+        return QStringLiteral("annotation.png");
     }
 
     inline QString normalizePath(const QString& value)
@@ -407,6 +417,7 @@ namespace WhatSon::Resources
         metadata.resourceId = resourceId.trimmed();
         metadata.resourcePath = normalizePath(resourcePath);
         metadata.assetPath = QFileInfo(assetFilePath.trimmed()).fileName().trimmed();
+        metadata.annotationPath = annotationFileName();
         metadata.format = formatFromAssetFilePath(assetFilePath);
         metadata.type = inferTypeFromFormat(metadata.format);
         metadata.bucket = inferBucket(metadata.type, metadata.format);
@@ -416,6 +427,134 @@ namespace WhatSon::Resources
     inline QString metadataFilePathForPackage(const QString& packageDirectoryPath)
     {
         return QDir(packageDirectoryPath).filePath(metadataFileName());
+    }
+
+    inline QString annotationFilePathForPackage(const QString& packageDirectoryPath)
+    {
+        return QDir(packageDirectoryPath).filePath(annotationFileName());
+    }
+
+    inline QSize annotationBitmapSizeForAssetFile(const QString& assetFilePath)
+    {
+        const QString normalizedAssetFilePath = assetFilePath.trimmed();
+        if (normalizedAssetFilePath.isEmpty())
+        {
+            return QSize(1, 1);
+        }
+
+        QImageReader imageReader(normalizedAssetFilePath);
+        const QSize readerSize = imageReader.size();
+        if (readerSize.isValid() && !readerSize.isEmpty())
+        {
+            return readerSize;
+        }
+
+        const QImage loadedImage(normalizedAssetFilePath);
+        if (!loadedImage.isNull() && !loadedImage.size().isEmpty())
+        {
+            return loadedImage.size();
+        }
+
+        return QSize(1, 1);
+    }
+
+    inline QImage createEmptyAnnotationBitmap(const QString& assetFilePath = QString())
+    {
+        QSize bitmapSize = annotationBitmapSizeForAssetFile(assetFilePath);
+        if (!bitmapSize.isValid() || bitmapSize.isEmpty())
+        {
+            bitmapSize = QSize(1, 1);
+        }
+
+        QImage image(bitmapSize, QImage::Format_ARGB32_Premultiplied);
+        image.fill(0x00000000);
+        return image;
+    }
+
+    inline QByteArray createEmptyAnnotationBitmapPngBytes(const QString& assetFilePath = QString())
+    {
+        const QImage image = createEmptyAnnotationBitmap(assetFilePath);
+        if (image.isNull())
+        {
+            return {};
+        }
+
+        QByteArray encodedBytes;
+        QBuffer buffer(&encodedBytes);
+        if (!buffer.open(QIODevice::WriteOnly))
+        {
+            return {};
+        }
+        if (!image.save(&buffer, "PNG"))
+        {
+            return {};
+        }
+        return encodedBytes;
+    }
+
+    inline bool writeResourcePackageAnnotationBitmap(
+        const QString& packageDirectoryPath,
+        const QString& assetFilePath = QString(),
+        QString* errorMessage = nullptr)
+    {
+        const QString normalizedPackageDirectoryPath = normalizePath(packageDirectoryPath);
+        if (normalizedPackageDirectoryPath.isEmpty())
+        {
+            if (errorMessage != nullptr)
+            {
+                *errorMessage = QStringLiteral("Package directory path is empty.");
+            }
+            return false;
+        }
+
+        if (!QDir().mkpath(normalizedPackageDirectoryPath))
+        {
+            if (errorMessage != nullptr)
+            {
+                *errorMessage = QStringLiteral("Failed to create resource package directory: %1").arg(
+                    normalizedPackageDirectoryPath);
+            }
+            return false;
+        }
+
+        const QByteArray encodedBytes = createEmptyAnnotationBitmapPngBytes(assetFilePath);
+        if (encodedBytes.isEmpty())
+        {
+            if (errorMessage != nullptr)
+            {
+                *errorMessage = QStringLiteral("Failed to encode annotation bitmap PNG for: %1").arg(assetFilePath);
+            }
+            return false;
+        }
+
+        QSaveFile annotationFile(annotationFilePathForPackage(normalizedPackageDirectoryPath));
+        if (!annotationFile.open(QIODevice::WriteOnly | QIODevice::Truncate))
+        {
+            if (errorMessage != nullptr)
+            {
+                *errorMessage = QStringLiteral("Failed to open annotation bitmap for write: %1").arg(
+                    annotationFile.fileName());
+            }
+            return false;
+        }
+        if (annotationFile.write(encodedBytes) != encodedBytes.size())
+        {
+            if (errorMessage != nullptr)
+            {
+                *errorMessage = QStringLiteral("Failed to write annotation bitmap: %1").arg(annotationFile.fileName());
+            }
+            annotationFile.cancelWriting();
+            return false;
+        }
+        if (!annotationFile.commit())
+        {
+            if (errorMessage != nullptr)
+            {
+                *errorMessage = QStringLiteral("Failed to commit annotation bitmap: %1").arg(annotationFile.fileName());
+            }
+            return false;
+        }
+        return true;
     }
 
     inline QStringList directChildAssetCandidates(const QString& packageDirectoryPath)
@@ -428,6 +567,10 @@ namespace WhatSon::Resources
         for (const QFileInfo& child : children)
         {
             if (child.fileName().compare(metadataFileName(), Qt::CaseInsensitive) == 0)
+            {
+                continue;
+            }
+            if (child.fileName().compare(annotationFileName(), Qt::CaseInsensitive) == 0)
             {
                 continue;
             }
@@ -459,6 +602,7 @@ namespace WhatSon::Resources
         metadata->resourcePath = normalizePath(metadata->resourcePath);
 
         metadata->assetPath = normalizePath(metadata->assetPath);
+        metadata->annotationPath = normalizePath(metadata->annotationPath);
         if (metadata->assetPath.isEmpty())
         {
             const QStringList candidates = directChildAssetCandidates(packageDirectoryPath);
@@ -466,6 +610,10 @@ namespace WhatSon::Resources
             {
                 metadata->assetPath = candidates.constFirst();
             }
+        }
+        if (metadata->annotationPath.isEmpty())
+        {
+            metadata->annotationPath = annotationFileName();
         }
 
         if (metadata->format.trimmed().isEmpty())
@@ -515,6 +663,12 @@ namespace WhatSon::Resources
         {
             writer.writeAttribute(QStringLiteral("format"), metadata.format.trimmed());
         }
+        writer.writeEmptyElement(QStringLiteral("annotation"));
+        writer.writeAttribute(
+            QStringLiteral("path"),
+            normalizePath(metadata.annotationPath.trimmed().isEmpty()
+                              ? annotationFileName()
+                              : metadata.annotationPath));
         writer.writeEmptyElement(QStringLiteral("asset"));
         if (!metadata.assetPath.trimmed().isEmpty())
         {
@@ -569,6 +723,14 @@ namespace WhatSon::Resources
             {
                 const QXmlStreamAttributes attributes = reader.attributes();
                 outMetadata->assetPath = decodeXmlEntities(
+                    attributes.value(QStringLiteral("path")).toString()).trimmed();
+                continue;
+            }
+
+            if (rootFound && elementName == QStringLiteral("annotation"))
+            {
+                const QXmlStreamAttributes attributes = reader.attributes();
+                outMetadata->annotationPath = decodeXmlEntities(
                     attributes.value(QStringLiteral("path")).toString()).trimmed();
             }
         }

@@ -16,9 +16,10 @@
 - Delegates source ownership to top-level app domains through `add_subdirectory(...)` instead of one monolithic recursive file list.
 
 ## Current Directory Split
-- `src/app/agenda/CMakeLists.txt`
-- `src/app/calendar/CMakeLists.txt`
-- `src/app/callout/CMakeLists.txt`
+- `src/app/models/agenda/CMakeLists.txt`
+- `src/app/models/calendar/CMakeLists.txt`
+- `src/app/models/callout/CMakeLists.txt`
+- `src/app/models/sensor/CMakeLists.txt`
 - `src/app/editor/CMakeLists.txt`
 - `src/app/file/CMakeLists.txt`
 - `src/app/permissions/CMakeLists.txt`
@@ -46,6 +47,13 @@
 - Platform packaging, LVRS defaults, and runtime-linking details are now delegated again under `src/app/cmake/*`, while the final `qt_add_qml_module(...)` call stays in `src/app/CMakeLists.txt` because it finalizes the same `WhatSon` target created there.
 - New top-level app domains now require an explicit sibling `CMakeLists.txt` plus a matching `add_subdirectory(...)` entry in `src/app/CMakeLists.txt`; this is intentional so architecture changes stay visible in code review.
 - Existing child shards still register sources recursively inside their owned directory, so intra-domain file additions do not require another parent-file edit.
+- Child shards must register `${CMAKE_CURRENT_SOURCE_DIR}` explicitly instead of `.` because the helper functions append
+  files to the shared `WhatSon` target from nested `add_subdirectory(...)` scopes, and using `.` would resolve against
+  the shard build directory rather than the owned source directory.
+- `src/app/models` is now registered once as a shared include-root compatibility shard before child `add_subdirectory(...)`
+  evaluation, so existing cross-domain includes like `calendar/SystemCalendarStore.hpp`,
+  `agenda/ContentsAgendaBackend.hpp`, `callout/ContentsCalloutBackend.hpp`, and
+  `sensor/UnusedResourcesSensor.hpp` keep compiling after those domains moved under `src/app/models/`.
 - Desktop trial builds pull in the dedicated trial activation sources from `src/extension/trial` and define `WHATSON_IS_TRIAL_BUILD=1` for the app target.
 - Android and iOS builds intentionally skip the trial sources because the mobile app does not participate in the desktop trial flow.
 - On Apple desktop trial builds, the app target also links the `Security` framework because the trial secure-store implementation uses the host keychain.

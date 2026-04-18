@@ -2,6 +2,7 @@
 #include "ContentsHtmlBlockRenderPipeline.hpp"
 #include "ContentsTextHighlightRenderer.hpp"
 #include "file/WhatSonDebugTrace.hpp"
+#include "file/note/WhatSonNoteBodyWebLinkSupport.hpp"
 #include "file/note/WhatSonNoteBodySemanticTagSupport.hpp"
 #include "file/note/WhatSonNoteBodyPersistence.hpp"
 #include "file/note/WhatSonNoteMarkdownStyleObject.hpp"
@@ -17,6 +18,7 @@
 namespace
 {
     namespace SemanticTags = WhatSon::NoteBodySemanticTagSupport;
+    namespace WebLinks = WhatSon::NoteBodyWebLinkSupport;
 
     constexpr int kResourceEditorPlaceholderLineCount = 1;
 
@@ -1544,6 +1546,24 @@ namespace
                 continue;
             }
 
+            if (SemanticTags::isWebLinkTagName(rawTagName))
+            {
+                if (closingTag)
+                {
+                    html += QStringLiteral("</a>");
+                }
+                else
+                {
+                    html += WebLinks::openingHtmlFromRawToken(fullTagToken);
+                    if (selfClosingTag)
+                    {
+                        html += QStringLiteral("</a>");
+                    }
+                }
+                cursor = tagEnd;
+                continue;
+            }
+
             QString styleTag = canonicalInlineStyleTagName(rawTagName);
             if (styleTag.isEmpty() && ContentsTextHighlightRenderer::isHighlightTagAlias(rawTagName))
             {
@@ -2049,9 +2069,20 @@ QString ContentsTextFormatRenderer::applyPlainTextReplacementToSource(
     const int maximumSourceLength = boundedQStringSize(normalizedSourceText);
     const int boundedStart = std::clamp(std::min(sourceStart, sourceEnd), 0, maximumSourceLength);
     const int boundedEnd = std::clamp(std::max(sourceStart, sourceEnd), 0, maximumSourceLength);
-    return normalizedSourceText.left(boundedStart)
+    const QString nextSourceText = normalizedSourceText.left(boundedStart)
         + escapeHtmlText(normalizedReplacementText)
         + normalizedSourceText.mid(boundedEnd);
+
+    const bool replacementContainsStandaloneWebLink =
+        WebLinks::containsDetectableWebLink(normalizedReplacementText);
+    const bool replacementCommitsPotentialWebLink = normalizedReplacementText.size() == 1
+        && QStringLiteral(" \t\n.,;:!?)]}\"'").contains(normalizedReplacementText);
+    if (!replacementContainsStandaloneWebLink && !replacementCommitsPotentialWebLink)
+    {
+        return nextSourceText;
+    }
+
+    return WebLinks::autoWrapDetectedWebLinks(nextSourceText);
 }
 
 QString ContentsTextFormatRenderer::applyInlineStyleToLogicalSelectionSource(

@@ -27,3 +27,13 @@
 - Runtime ownership and lifecycle rules
 - Testing strategy and coverage map
 - Known hotspots and refactor priorities
+
+## Current Notes
+
+- The singular `.wsresource` package contract now includes three package-local artifacts:
+  - the original imported asset
+  - `resource.xml`
+  - `annotation.png` as a transparent bitmap canvas reserved for future resource-editor sketch/annotation overlay work
+- `WhatSonResourcePackageSupport.hpp` owns both sides of that package contract:
+  - metadata XML creation/parsing for the new `annotationPath`
+  - empty annotation bitmap generation/writing for package creation paths

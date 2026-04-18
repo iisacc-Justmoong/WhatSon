@@ -6,6 +6,7 @@
 This directory is the architectural center of the repository. Most other modules are either dependencies of `src/app` or helpers used by it during startup, runtime synchronization, and UI rendering.
 
 ## Main Subsystems
+- `models`: QML-adjacent QObject helpers such as editor block backends, calendar stores, and sensor-style hub inspectors.
 - `file`: persistent storage, parsers, creators, validators, and hub-local mutations.
 - `viewmodel`: QObject-facing state and behavior consumed by QML.
 - `qml`: LVRS-based view composition and interaction surfaces.
@@ -13,7 +14,7 @@ This directory is the architectural center of the repository. Most other modules
 - `store`: lightweight shared state containers such as selected hub and sidebar selection.
 - `file/sync`: runtime and editor synchronization controllers consolidated under the file domain.
 - `policy`: layer rules and lock semantics for startup wiring.
-- `agenda`, `callout`, `calendar`, `permissions`, `platform`: domain/platform integration points.
+- `permissions`, `platform`: host-integration points that sit beside the app domain model.
 
 ## Startup Shape
 The app startup sequence lives in `main.cpp` and performs five broad phases.

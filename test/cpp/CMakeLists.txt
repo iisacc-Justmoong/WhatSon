@@ -18,7 +18,8 @@ endif ()
 set(WHATSON_CPP_REGRESSION_TEST_SOURCES
         "${CMAKE_CURRENT_SOURCE_DIR}/whatson_cpp_regression_tests.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/platform/Android/WhatSonAndroidStorageBackend.cpp"
-        "${CMAKE_SOURCE_DIR}/src/app/agenda/ContentsAgendaBackend.cpp"
+        "${CMAKE_SOURCE_DIR}/src/app/models/agenda/ContentsAgendaBackend.cpp"
+        "${CMAKE_SOURCE_DIR}/src/app/models/sensor/UnusedResourcesSensor.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/editor/parser/ContentsWsnBodyBlockParser.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/editor/renderer/ContentsHtmlBlockRenderPipeline.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/editor/renderer/ContentsTextFormatRenderer.cpp"
@@ -29,6 +30,7 @@ set(WHATSON_CPP_REGRESSION_TEST_SOURCES
         "${CMAKE_SOURCE_DIR}/src/app/file/note/ContentsNoteManagementCoordinator.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonLocalNoteFileStore.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteBodyPersistence.cpp"
+        "${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteBodyWebLinkSupport.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteBodySemanticTagSupport.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteCreator.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteHeaderCreator.cpp"
@@ -64,6 +66,7 @@ set(WHATSON_CPP_REGRESSION_TEST_SOURCES
         "${CMAKE_SOURCE_DIR}/src/app/viewmodel/content/ContentsResourceTagTextGenerator.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/viewmodel/content/ContentsEditorSelectionBridge.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/viewmodel/content/ContentsEditorSessionController.cpp"
+        "${CMAKE_SOURCE_DIR}/src/app/viewmodel/content/ContentsLogicalTextBridge.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/viewmodel/content/ContentsStructuredDocumentBlocksModel.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/viewmodel/hierarchy/library/LibraryNoteListModel.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/viewmodel/hierarchy/resources/ResourcesHierarchyModel.cpp"
@@ -97,6 +100,7 @@ add_executable(whatson_cpp_regression_tests
 )
 target_include_directories(whatson_cpp_regression_tests PRIVATE
         "${CMAKE_SOURCE_DIR}/src/app"
+        "${CMAKE_SOURCE_DIR}/src/app/models"
         "${CMAKE_SOURCE_DIR}/src/app/file"
 )
 target_link_libraries(whatson_cpp_regression_tests PRIVATE

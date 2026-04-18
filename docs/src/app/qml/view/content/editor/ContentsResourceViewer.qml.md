@@ -35,8 +35,9 @@ presentation surfaces, including the dedicated center-surface resource editor.
 ## Interaction
 
 - Renders only the resource viewport itself (bitmap image or PDF surface) with no extra metadata strip, button, or fallback card scaffold.
-- The dedicated resource editor wraps this viewport with metadata and unsupported-state scaffolding instead of
-  reimplementing bitmap/PDF rendering itself.
+- The dedicated resource editor now forwards this viewport almost directly and keeps the surrounding surface
+  transparent, so center-surface resource browsing no longer adds a metadata header/footer or unsupported-state copy
+  around the bitmap/PDF renderer.
 - For bitmap resources, the viewer remains presentation-neutral: parent frames decide whether the image should crop,
   fit, or drive outer height. The structured note-body path now uses those intrinsic bitmap dimensions to derive
   full-width, auto-height image blocks.

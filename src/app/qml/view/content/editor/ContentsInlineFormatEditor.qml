@@ -583,6 +583,9 @@ FocusScope {
                 font.letterSpacing: control.fontLetterSpacing
                 font.pixelSize: control.fontPixelSize
                 font.weight: control.fontWeight
+                onLinkActivated: function (link) {
+                    Qt.openUrlExternally(link);
+                }
                 text: control.renderedText
                 textFormat: control.renderedTextFormat
                 visible: control.renderedOutputVisible

@@ -22,6 +22,11 @@ The implementation now supports two closely related sequences.
 ## Import Semantics
 
 - The source file name is preserved as the package asset file name.
+- Every newly created or overwritten `.wsresource` package now also writes `annotation.png` beside the original asset
+  and `resource.xml`.
+  - bitmap image imports get a transparent annotation bitmap that matches the source image size
+  - non-image imports currently receive a minimal transparent bitmap placeholder until dedicated non-image annotation
+    sizing rules arrive
 - Same-name conflicts are detected by the incoming asset file name, not by package id.
 - If the caller selects `KeepBoth`, the package id is still derived from the file base name and receives a suffix when
   it would collide with an existing package.
@@ -37,6 +42,8 @@ The implementation now supports two closely related sequences.
 - Clipboard-image import intentionally does not create a second bespoke packaging path.
   Temporary PNG materialization means package-id generation, `resource.xml` creation, rollback, and later runtime
   reload all stay on the same battle-tested import path as ordinary file drops.
+- The same shared import path now also owns annotation-canvas generation, so overwrite/rollback and fresh package
+  creation cannot diverge on whether `annotation.png` exists.
 - That editor-return path intentionally defers the runtime reload callback until the view finishes RAW note mutation.
   This avoids editor rebind/reconcile churn between `.wsresource` package creation and the `.wsnbody` insertion turn
   that links those packages into the note.

@@ -6,7 +6,8 @@
 
 - 패키지 디렉터리 suffix: `.wsresource`
 - 메타데이터 파일 이름: `resource.xml`
-- 메타데이터 루트: `<wsresource ...><asset path="..."/></wsresource>`
+- 기본 주석 캔버스 파일 이름: `annotation.png`
+- 메타데이터 루트: `<wsresource ...><annotation path="annotation.png"/><asset path="..."/></wsresource>`
 
 ## Metadata Contract
 
@@ -15,18 +16,21 @@
 - `resourceId`
 - `resourcePath`
 - `assetPath`
+- `annotationPath`
 - `bucket`
 - `type`
 - `format`
 
 메타데이터의 `assetPath`는 패키지 내부의 실제 원본 에셋 파일을 가리키며, `resourcePath`는 허브 기준 경로
 예를 들어 `Hub.wsresources/logo.wsresource` 형식을 유지한다.
+`annotationPath`는 패키지 내부 주석 오버레이 bitmap 경로를 가리키며, 기본값은 항상 `annotation.png`다.
 
 ## Runtime Helpers
 
 이 헤더는 네 종류의 런타임 보조 함수를 제공한다.
 
 - `buildMetadataForAssetFile(...)`
+- `createEmptyAnnotationBitmap(...)` / `createEmptyAnnotationBitmapPngBytes(...)` / `writeResourcePackageAnnotationBitmap(...)`
 - `createResourcePackageMetadataXml(...)` / `parseResourcePackageMetadataXml(...)`
 - `loadResourcePackageMetadata(...)`
 - `resolveAssetLocationFromReference(...)`
@@ -37,6 +41,13 @@
 - `type`과 `bucket`은 그 suffix를 case-insensitive로 해석해 자동 할당한다
 
 예를 들어 `VisualAsset.PNG`는 `format=".PNG"`, `type="image"`, `bucket="Image"`가 된다.
+같은 호출은 새 패키지 주석 캔버스 경로도 `annotation.png`로 기본 설정한다.
+
+`createEmptyAnnotationBitmap(...)` 계열은 package-local 주석 캔버스를 생성한다.
+
+- 원본 asset이 bitmap 이미지면 그 실제 픽셀 크기를 따라가는 투명 PNG를 만든다.
+- 이미지 크기를 알아낼 수 없으면 최소 `1x1` 투명 PNG로 fallback 한다.
+- `writeResourcePackageAnnotationBitmap(...)`는 그 PNG를 `annotation.png`로 패키지 내부에 원자적으로 기록한다.
 
 마지막 함수는 `.wsnbody`의 `<resource ... resourcePath="...">`와 같은 참조를 받아:
 

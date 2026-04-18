@@ -76,5 +76,8 @@ Each input file is written into the current hub `*.wsresources` store with these
 - Copy the source file name unchanged for ordinary local-file imports.
 - Clipboard-image imports first synthesize a random 32-character mixed-case alphanumeric `.png` file name, then copy
   that generated name into the package.
-- Write `resource.xml` using `buildMetadataForAssetFile(...)`.
+- Generate `annotation.png` as an empty bitmap overlay canvas inside the package.
+  - bitmap image imports mirror the source pixel size with a transparent PNG
+  - non-bitmap imports fall back to a minimal transparent bitmap placeholder
+- Write `resource.xml` using `buildMetadataForAssetFile(...)`, including the package-local annotation path.
 - Append the relative package path to `Resources.wsresources`.

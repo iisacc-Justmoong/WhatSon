@@ -20,6 +20,10 @@ The current contract preserves editor-authored RAW source across save/load turns
   paragraph-based XML document instead of silently truncating it at the first line boundary.
 - During that write-side normalization, visible inline hashtags such as `#label` are promoted into canonical body tags
   as `<tag>label</tag>`.
+- The same write-side normalization now also auto-wraps detectable web URLs into canonical RAW/body tags:
+  - literal `www.iisacc.com` or `https://example.com` text can serialize as
+    `<weblink href="...">...</weblink>`
+  - markdown link destinations are intentionally skipped so `[label](url)` literals do not get rewritten by accident
 - Semantic passthrough tags that the live note source must keep verbatim now round-trip through the same serializer
   instead of being escaped into literal text:
   - `next`
@@ -35,6 +39,8 @@ The current contract preserves editor-authored RAW source across save/load turns
   editor-facing inline tags such as `<bold>...</bold>` and `<resource ... />`, instead of returning RichText spans.
   Stored `<tag>label</tag>` elements are intentionally projected back to visible editor text as `#label` so the
   user keeps editing the hashtag they originally typed instead of raw XML.
+- Stored `<weblink href="...">label</weblink>` nodes now also survive that read-side projection verbatim instead of
+  being escaped into literal `<weblink>` text.
 - That read-side source projection now stays on the parser/serializer projection only. It no longer runs a second
   structured-tag linter normalization pass, so note-open or note-switch cannot silently rewrite the editor RAW shape
   just because the note body was reparsed.
@@ -81,6 +87,7 @@ The current contract preserves editor-authored RAW source across save/load turns
   - `underline` / `u` -> `<span style="text-decoration: underline;">`
   - `strikethrough` / `strike` / `s` / `del` -> `<span style="text-decoration: line-through;">`
   - `highlight` / `mark` -> styled `span` (`background-color:#8A4B00; color:#D6AE58; font-weight:600`)
+  - `weblink` -> `<a href="...">` with the shared editor/preview link styling and scheme normalization for `www.*`
   - divider block tags (`<break/>` and legacy `<hr/>`) -> `<hr/>`
 - The same rich-text projection now preserves visible horizontal whitespace inside text nodes:
   - leading paragraph indentation is emitted as `&nbsp;`, so a Tab-authored space run stays visible after the
@@ -141,6 +148,8 @@ rewriting `bodySourceText` RAW just because the body document was read and repar
   though the serializer has to split that logical span into paragraph-local reopened canonical tags.
 - A typed `</break>` token must survive save/load as `</break>` in editor source while `.wsnbody` persists it as
   `<break/>`, and rich-text projection must show a divider line instead of literal tag text.
+- A typed or pasted web URL that canonicalizes into `<weblink href="...">label</weblink>` must survive save/load and
+  rich-text projection as one active hyperlink instead of escaping back into literal XML.
 - A typed agenda/task source block must survive save/load without escaping:
   - input: `<agenda date="..."><task done="false">todo</task></agenda>`
   - output source projection: canonical agenda/task tags with normalized attributes

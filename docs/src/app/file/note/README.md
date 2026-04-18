@@ -7,7 +7,7 @@
 ## Scope
 - Mirrored source directory: `src/app/file/note`
 - Child directories: 0
-- Child files: 35
+- Child files: 37
 
 ## Child Directories
 - No child directories.
@@ -33,6 +33,8 @@
 - `WhatSonNoteBodyResourceTagGenerator.hpp`
 - `WhatSonNoteBodyPersistence.cpp`
 - `WhatSonNoteBodyPersistence.hpp`
+- `WhatSonNoteBodyWebLinkSupport.cpp`
+- `WhatSonNoteBodyWebLinkSupport.hpp`
 - `WhatSonNoteBodySemanticTagSupport.cpp`
 - `WhatSonNoteBodySemanticTagSupport.hpp`
 - `WhatSonNoteCreator.cpp`
@@ -83,6 +85,10 @@
   raw-folder-block inspection through `WhatSonNoteFolderSemantics`.
 - `.wsnbody` semantic tag classification is now owned by `WhatSonNoteBodySemanticTagSupport.*` so the note-body save
   path and the editor HTML read paths resolve legacy body tags through the same registry.
+- RAW note hyperlinks are now centralized in `WhatSonNoteBodyWebLinkSupport.*`:
+  - typed/pasted committed URLs can be promoted into canonical `<weblink href="...">...</weblink>` RAW spans
+  - `.wsnbody` body serialization and RichText projection reuse the same helper, so saved/body HTML and live editor
+    preview do not disagree about which href should open externally
 - `fileStat.modifiedCount` is now the local commit counter for note package history.
   - whenever it advances, `.wsnversion` appends a snapshot with the matching `commitModifiedCount`
   - snapshot/diff persistence is delegated to `src/app/file/diff/WhatSonLocalNoteVersionStore.*`

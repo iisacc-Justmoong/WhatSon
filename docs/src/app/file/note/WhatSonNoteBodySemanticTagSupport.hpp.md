@@ -6,6 +6,7 @@ the same tag-classification rules.
 
 ## Shared Contracts
 - Centralizes the canonical inline-style alias map (`bold`, `italic`, `underline`, `strikethrough`, `highlight`).
+- Also exposes the canonical proprietary inline hyperlink tag name `weblink`.
 - Distinguishes source-projection block tags from richer rendered-semantic block tags:
   - source projection keeps the legacy/editor-safe block whitelist
   - rendered semantics additionally recognize legacy body tags such as `title`, `subTitle`, `eventTitle`, and

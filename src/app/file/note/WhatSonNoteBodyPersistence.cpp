@@ -1,5 +1,6 @@
 #include "WhatSonNoteBodyPersistence.hpp"
 
+#include "WhatSonNoteBodyWebLinkSupport.hpp"
 #include "WhatSonNoteBodySemanticTagSupport.hpp"
 #include "WhatSonNoteMarkdownStyleObject.hpp"
 #include "WhatSonLocalNoteFileStore.hpp"
@@ -14,6 +15,7 @@
 namespace
 {
     namespace SemanticTags = WhatSon::NoteBodySemanticTagSupport;
+    namespace WebLinks = WhatSon::NoteBodyWebLinkSupport;
 
     struct BodyDocumentTextFragments final
     {
@@ -375,6 +377,11 @@ namespace
     bool isCalloutTagName(const QString& elementName)
     {
         return SemanticTags::isCalloutTagName(elementName);
+    }
+
+    bool isWebLinkTagName(const QString& elementName)
+    {
+        return SemanticTags::isWebLinkTagName(elementName);
     }
 
     QString tagAttributeValue(const QString& rawTagText, const QString& attributeName)
@@ -919,6 +926,24 @@ namespace
                 continue;
             }
 
+            if (isWebLinkTagName(rawTagName) || normalizedTagName == QStringLiteral("a"))
+            {
+                if (closingTag)
+                {
+                    output += QStringLiteral("</weblink>");
+                }
+                else
+                {
+                    output += WebLinks::canonicalStartTagFromRawToken(fullTagToken);
+                    if (selfClosingTag)
+                    {
+                        output += QStringLiteral("</weblink>");
+                    }
+                }
+                cursor = tagEnd;
+                continue;
+            }
+
             output += fullTagToken;
             cursor = tagEnd;
         }
@@ -969,6 +994,7 @@ namespace
                 QStringLiteral(R"(<!DOCTYPE[\s\S]*?>)"),
                 QRegularExpression::CaseInsensitiveOption));
         normalizedSource = removeInterTagFormattingWhitespace(normalizedSource);
+        normalizedSource = WebLinks::autoWrapDetectedWebLinks(normalizedSource);
         const bool hasExplicitBodyTag = normalizedSource.contains(
             QRegularExpression(QStringLiteral(R"(<\s*body\b)"), QRegularExpression::CaseInsensitiveOption));
 
@@ -1110,6 +1136,24 @@ namespace
                     if (selfClosingTag)
                     {
                         output += QStringLiteral("</callout>");
+                    }
+                }
+                cursor = tagEnd;
+                continue;
+            }
+
+            if (isWebLinkTagName(rawTagName) || normalizedTagName == QStringLiteral("a"))
+            {
+                if (closingTag)
+                {
+                    output += QStringLiteral("</weblink>");
+                }
+                else
+                {
+                    output += WebLinks::canonicalStartTagFromRawToken(fullTagToken);
+                    if (selfClosingTag)
+                    {
+                        output += QStringLiteral("</weblink>");
                     }
                 }
                 cursor = tagEnd;
@@ -1331,6 +1375,24 @@ namespace
                 continue;
             }
 
+            if (isWebLinkTagName(rawTagName) || normalizedTagName == QStringLiteral("a"))
+            {
+                if (closingTag)
+                {
+                    output += QStringLiteral("</weblink>");
+                }
+                else
+                {
+                    output += WebLinks::canonicalStartTagFromRawToken(fullTagToken);
+                    if (selfClosingTag)
+                    {
+                        output += QStringLiteral("</weblink>");
+                    }
+                }
+                cursor = tagEnd;
+                continue;
+            }
+
             const QString inlineStyleTag = canonicalInlineStyleTagName(rawTagName);
             if (!inlineStyleTag.isEmpty())
             {
@@ -1400,6 +1462,7 @@ namespace
         QString currentBlockText;
         QString currentBlockRichText;
         QString activeStructuredBlockName;
+        QStringList activeWebLinkStack;
 
         while (!reader.atEnd())
         {
@@ -1433,6 +1496,22 @@ namespace
                         fragments.fallbackText += QLatin1Char('#');
                         fragments.fallbackRichText += QLatin1Char('#');
                     }
+                    continue;
+                }
+
+                if (isWebLinkTagName(elementName)
+                    || elementName.compare(QStringLiteral("a"), Qt::CaseInsensitive) == 0)
+                {
+                    const QString href = reader.attributes().value(QStringLiteral("href")).toString();
+                    if (blockDepth > 0)
+                    {
+                        currentBlockRichText += WebLinks::openingHtmlForHref(href);
+                    }
+                    else if (!encounteredBlockElement)
+                    {
+                        fragments.fallbackRichText += WebLinks::openingHtmlForHref(href);
+                    }
+                    activeWebLinkStack.push_back(href);
                     continue;
                 }
 
@@ -1561,6 +1640,24 @@ namespace
             }
 
             const QString elementName = reader.name().toString();
+            if (isWebLinkTagName(elementName)
+                || elementName.compare(QStringLiteral("a"), Qt::CaseInsensitive) == 0)
+            {
+                if (!activeWebLinkStack.isEmpty())
+                {
+                    activeWebLinkStack.removeLast();
+                }
+                if (blockDepth > 0)
+                {
+                    currentBlockRichText += QStringLiteral("</a>");
+                }
+                else if (!encounteredBlockElement)
+                {
+                    fragments.fallbackRichText += QStringLiteral("</a>");
+                }
+                continue;
+            }
+
             const InlineStyleHtmlTag inlineStyleTag = inlineStyleHtmlTagForElement(elementName);
             if (!inlineStyleTag.isEmpty())
             {

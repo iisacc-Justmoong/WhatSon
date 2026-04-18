@@ -1,4 +1,5 @@
 #include "WhatSonStructuredTagLinter.hpp"
+#include "file/note/WhatSonNoteBodyWebLinkSupport.hpp"
 #include "file/note/WhatSonNoteBodySemanticTagSupport.hpp"
 
 #include <QDate>
@@ -10,6 +11,7 @@
 namespace
 {
     namespace SemanticTags = WhatSon::NoteBodySemanticTagSupport;
+    namespace WebLinks = WhatSon::NoteBodyWebLinkSupport;
 
     const QRegularExpression kAgendaOpenPattern(
         QStringLiteral(R"(<agenda\b[^>]*>)"),
@@ -668,6 +670,24 @@ namespace
                 else
                 {
                     output += normalizedXmlStartTag(fullTagToken, canonicalName, selfClosingTag);
+                }
+                cursor = tagEnd;
+                continue;
+            }
+
+            if (SemanticTags::isWebLinkTagName(rawTagName))
+            {
+                if (closingTag)
+                {
+                    output += QStringLiteral("</weblink>");
+                }
+                else
+                {
+                    output += WebLinks::canonicalStartTagFromRawToken(fullTagToken);
+                    if (selfClosingTag)
+                    {
+                        output += QStringLiteral("</weblink>");
+                    }
                 }
                 cursor = tagEnd;
                 continue;

@@ -84,6 +84,13 @@ ctest --test-dir build --output-on-failure -L cpp_regression
 - The same bridge coverage now also pins explicit note-list-model overrides, so `Resources -> Library` toolbar
   switches keep folder/tag note-list metadata aligned with the shared active list model instead of lingering on the
   previous domain snapshot.
+- The regression build wiring now also follows the `src/app/models/*` move for agenda/calendar/callout backends, so
+  source-tree reshuffles under the new models root remain covered by the maintained `build/` verification flow.
+- RAW note hyperlink promotion now also has regression coverage, so committed/pasted URLs, `.wsnbody` round-trips,
+  closing-tag cursor offsets, and RichText external-link activation stay aligned on the new `<weblink href="...">`
+  contract.
+- `.wsresource` package support now also has regression coverage for annotation-canvas generation, so package metadata
+  round-trips the new `annotationPath` and newly created resource packages keep a transparent `annotation.png`.
 - Folder-path semantics now also lock escaped literal-slash handling plus `Folders.wsfolders` parser migration, so a
   library folder label like `Marketing/Sales` cannot regress into an accidental parent/child hierarchy split.
 - Sidebar hierarchy rename now also prefers the escaped folder-path id over a naive display-label split, so the same
@@ -97,6 +104,8 @@ ctest --test-dir build --output-on-failure -L cpp_regression
   (`Image`, `First draft`) remains identical to the list filter applied by the corresponding viewmodel.
 - The content-surface mode helper now also pins note-vs-resource editor routing, so a direct resource list model
   switches the center slot away from the note editor immediately.
+- The dedicated resource editor QML is now also source-locked as a transparent viewer-only surface, so Resources
+  hierarchy browsing cannot regress into a second background card or top/bottom metadata copy around the asset.
 - The right detail column now also pins note-vs-resource panel routing, so the resources hierarchy mounts its own
   dedicated viewmodel/view pair instead of reusing the note-detail surface.
 - Rapid note switches now also pin note-local gutter geometry invalidation, so the editor clears stale minimap/gutter

@@ -57,6 +57,9 @@ Implements inline-format rendering from note-editor text to RichText HTML.
 - Styles inline markdown-shaped literals that do not conflict with proprietary formatting tags:
     - inline code spans (`` `code` ``)
     - link-shaped literals (`[label](url)`)
+- Proprietary RAW hyperlinks now render as real anchors instead of literal text:
+  - `<weblink href="www.iisacc.com">아이작닷컴</weblink>` becomes an active RichText `<a href="https://www.iisacc.com">`
+  - the same link color string is shared with paper-palette recoloring, so page/print mode still darkens hyperlinks
 - Proprietary formatting remains authoritative for bold/italic/underline/strikethrough/highlight; markdown emphasis
   tokens are intentionally not promoted into those styles.
 - Converts `<br>` style tags and newline characters to `<br/>`.
@@ -117,6 +120,8 @@ Implements inline-format rendering from note-editor text to RichText HTML.
   - normalizes plain-text line endings
   - clamps source offsets against an `int`-safe `QString` length before replacement
   - escapes inserted literal text before stitching it back into `.wsnbody`
+  - when the replacement commits a completed/pasted URL, rewrites the authoritative RAW source into canonical
+    `<weblink href="...">...</weblink>` form instead of leaving an inert literal
   - avoids whole-document RichText export for normal typing/backspace/delete/paste
 - Exposes `applyInlineStyleToLogicalSelectionSource(...)` for shortcut/context-menu formatting that must ignore markdown
   presentation roles:

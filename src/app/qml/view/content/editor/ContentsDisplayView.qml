@@ -3309,6 +3309,9 @@ Item {
                             font.letterSpacing: 0
                             font.pixelSize: contentsView.effectiveEditorFontPixelSize
                             font.weight: contentsView.editorFontWeight
+                            onLinkActivated: function (link) {
+                                Qt.openUrlExternally(link);
+                            }
                             text: editorProjection.renderedHtml
                             textFormat: Text.RichText
                             width: formattedPreviewViewport.textWidth

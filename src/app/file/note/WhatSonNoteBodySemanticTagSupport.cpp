@@ -163,6 +163,11 @@ bool isResourceTagName(const QString& elementName)
     return normalizedTagName(elementName) == QStringLiteral("resource");
 }
 
+bool isWebLinkTagName(const QString& elementName)
+{
+    return normalizedTagName(elementName) == QStringLiteral("weblink");
+}
+
 bool isAgendaTagName(const QString& elementName)
 {
     return normalizedTagName(elementName) == QStringLiteral("agenda");

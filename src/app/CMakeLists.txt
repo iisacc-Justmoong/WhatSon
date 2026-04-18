@@ -194,6 +194,7 @@ endfunction()
 
 qt_add_executable(WhatSon main.cpp)
 target_include_directories(WhatSon PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
+whatson_app_register_directory_include_directories("${CMAKE_CURRENT_SOURCE_DIR}/models")
 
 if (WHATSON_IS_TRIAL_BUILD AND NOT ANDROID AND NOT (APPLE AND CMAKE_SYSTEM_NAME STREQUAL "iOS"))
     target_sources(WhatSon PRIVATE
@@ -209,9 +210,10 @@ if (WHATSON_IS_TRIAL_BUILD AND NOT ANDROID AND NOT (APPLE AND CMAKE_SYSTEM_NAME 
     )
 endif ()
 
-add_subdirectory(agenda)
-add_subdirectory(calendar)
-add_subdirectory(callout)
+add_subdirectory(models/agenda)
+add_subdirectory(models/calendar)
+add_subdirectory(models/callout)
+add_subdirectory(models/sensor)
 add_subdirectory(editor)
 add_subdirectory(file)
 add_subdirectory(permissions)

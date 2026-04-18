@@ -2,6 +2,7 @@
 #include "file/hub/WhatSonHubPathUtils.hpp"
 #include "file/hierarchy/folders/WhatSonFoldersHierarchyParser.hpp"
 #include "file/hierarchy/folders/WhatSonFoldersHierarchyStore.hpp"
+#include "file/hierarchy/resources/WhatSonResourcePackageSupport.hpp"
 #include "file/import/WhatSonClipboardResourceImportFileNamePolicy.hpp"
 #include "file/viewer/ResourceBitmapViewer.hpp"
 #define private public
@@ -13,11 +14,13 @@
 #include "runtime/scheduler/WhatSonAsyncScheduler.hpp"
 #include "runtime/scheduler/WhatSonCronExpression.hpp"
 #include "runtime/scheduler/WhatSonUnixTimeAnalyzer.hpp"
+#include "sensor/UnusedResourcesSensor.hpp"
 #include "store/hub/SelectedHubStore.hpp"
 #include "store/sidebar/ISidebarSelectionStore.hpp"
 #include "store/sidebar/SidebarSelectionStore.hpp"
 #include "viewmodel/content/ContentsEditorSelectionBridge.hpp"
 #include "viewmodel/content/ContentsEditorSessionController.hpp"
+#include "viewmodel/content/ContentsLogicalTextBridge.hpp"
 #include "viewmodel/content/ContentsStructuredDocumentBlocksModel.hpp"
 #include "viewmodel/content/ContentsStructuredDocumentCollectionPolicy.hpp"
 #include "viewmodel/content/ContentsStructuredDocumentHost.hpp"
@@ -49,6 +52,7 @@
 #include <QDir>
 #include <QFile>
 #include <QHash>
+#include <QImage>
 #include <QJSEngine>
 #include <QJSValue>
 #include <QQmlEngine>
@@ -439,6 +443,10 @@ private slots:
     void cronExpression_and_asyncScheduler_coverParsingMatchingAndDeduplication();
     void hierarchyTreeItemSupport_clampsNegativeSelectionToFirstVisibleRow();
     void progressHierarchySupport_defaultsFirstVisibleItemToFirstDraft();
+    void resourcePackageSupport_roundTripsAnnotationMetadataAndBitmap();
+    void unusedResourcesSensor_reportsHubPackagesMissingFromAllNoteEmbeddings();
+    void unusedResourcesSensor_refreshesAfterRawBodyEmbedsAResource();
+    void resourcesImportViewModel_wiresAnnotationBitmapGenerationIntoPackageCreation();
     void resourceTagTextGenerator_and_noteFolderSemantics_normalizeDescriptorsAndXml();
     void foldersHierarchyParser_escapesLiteralSlashLabelsIntoSingleSegments();
     void foldersHierarchySessionService_preservesEscapedLiteralSlashFolderPaths();
@@ -453,11 +461,16 @@ private slots:
     void logicalLineLayoutSupport_mapsEditorRectanglesIntoBlockCoordinates();
     void logicalLineLayoutSupport_fallsBackWhenLiveEditorGeometryIsUnavailable();
     void editorSurfaceModeSupport_switchesToResourceEditorForResourceListModels();
+    void qmlResourceEditorView_staysTransparentAndViewerOnly();
     void resourceDetailPanelViewModel_tracksCurrentResourceSelection();
     void detailPanelRouting_separatesNoteAndResourceViewsAndViewModels();
     void contentsDisplayView_invalidatesGutterGeometryImmediatelyAcrossRapidNoteSwitches();
+    void textFormatRenderer_wrapsCommittedUrlsIntoCanonicalWebLinks();
     void textFormatRenderer_appliesPaperPaletteToEditorAndPreviewHtml();
+    void noteBodyPersistence_roundTripsAndProjectsCanonicalWebLinks();
+    void logicalTextBridge_advancesCursorPastClosingWebLinkTag();
     void qmlStructuredEditors_bindPaperPaletteIntoPagePrintMode();
+    void qmlEditors_routeRenderedHyperlinksToExternalBrowser();
     void resourceBitmapViewer_projectsRenderableImagePreviewState();
     void editorSessionController_preservesLocalEditorAuthorityAgainstSameNoteModelSync();
     void noteManagementCoordinator_reconcilePersistsEditorSnapshotWhenPreferred();
@@ -1329,6 +1342,280 @@ void WhatSonCppRegressionTests::progressHierarchySupport_defaultsFirstVisibleIte
         0);
 }
 
+void WhatSonCppRegressionTests::resourcePackageSupport_roundTripsAnnotationMetadataAndBitmap()
+{
+    QTemporaryDir temporaryDirectory;
+    QVERIFY(temporaryDirectory.isValid());
+
+    const QString assetFilePath = QDir(temporaryDirectory.path()).filePath(QStringLiteral("cover.png"));
+    QImage sourceImage(QSize(13, 7), QImage::Format_ARGB32_Premultiplied);
+    sourceImage.fill(qRgba(12, 34, 56, 255));
+    QVERIFY(sourceImage.save(assetFilePath));
+
+    const WhatSon::Resources::ResourcePackageMetadata metadata =
+        WhatSon::Resources::buildMetadataForAssetFile(
+            assetFilePath,
+            QStringLiteral("cover"),
+            QStringLiteral("Demo.wsresources/cover.wsresource"));
+    QCOMPARE(metadata.assetPath, QStringLiteral("cover.png"));
+    QCOMPARE(metadata.annotationPath, QStringLiteral("annotation.png"));
+
+    const QString metadataXml = WhatSon::Resources::createResourcePackageMetadataXml(metadata);
+    QVERIFY(metadataXml.contains(QStringLiteral("<annotation path=\"annotation.png\"/>")));
+
+    WhatSon::Resources::ResourcePackageMetadata parsedMetadata;
+    QString parseError;
+    QVERIFY2(
+        WhatSon::Resources::parseResourcePackageMetadataXml(metadataXml, &parsedMetadata, &parseError),
+        qPrintable(parseError));
+    QCOMPARE(parsedMetadata.annotationPath, QStringLiteral("annotation.png"));
+
+    const QByteArray annotationBytes =
+        WhatSon::Resources::createEmptyAnnotationBitmapPngBytes(assetFilePath);
+    QVERIFY(!annotationBytes.isEmpty());
+
+    QImage annotationImage;
+    QVERIFY(annotationImage.loadFromData(annotationBytes, "PNG"));
+    QCOMPARE(annotationImage.size(), sourceImage.size());
+    QCOMPARE(qAlpha(annotationImage.pixel(0, 0)), 0);
+    QCOMPARE(
+        qAlpha(annotationImage.pixel(annotationImage.width() - 1, annotationImage.height() - 1)),
+        0);
+
+    const QString packageDirectoryPath =
+        QDir(temporaryDirectory.path()).filePath(QStringLiteral("cover.wsresource"));
+    QVERIFY(QDir().mkpath(packageDirectoryPath));
+    QVERIFY(QFile::copy(assetFilePath, QDir(packageDirectoryPath).filePath(QStringLiteral("cover.png"))));
+
+    QString writeError;
+    QVERIFY2(
+        WhatSon::Resources::writeResourcePackageAnnotationBitmap(
+            packageDirectoryPath,
+            assetFilePath,
+            &writeError),
+        qPrintable(writeError));
+
+    QFile metadataFile(WhatSon::Resources::metadataFilePathForPackage(packageDirectoryPath));
+    QVERIFY(metadataFile.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate));
+    QVERIFY(metadataFile.write(metadataXml.toUtf8()) >= 0);
+    metadataFile.close();
+
+    WhatSon::Resources::ResourcePackageMetadata loadedMetadata;
+    QString loadError;
+    QVERIFY2(
+        WhatSon::Resources::loadResourcePackageMetadata(
+            packageDirectoryPath,
+            &loadedMetadata,
+            &loadError),
+        qPrintable(loadError));
+    QCOMPARE(loadedMetadata.assetPath, QStringLiteral("cover.png"));
+    QCOMPARE(loadedMetadata.annotationPath, QStringLiteral("annotation.png"));
+    QVERIFY(QFileInfo(WhatSon::Resources::annotationFilePathForPackage(packageDirectoryPath)).isFile());
+}
+
+void WhatSonCppRegressionTests::unusedResourcesSensor_reportsHubPackagesMissingFromAllNoteEmbeddings()
+{
+    QTemporaryDir workspaceDir;
+    QVERIFY(workspaceDir.isValid());
+
+    const QString hubPath = QDir(workspaceDir.path()).filePath(QStringLiteral("Workspace.wshub"));
+    const QString contentsDirectoryPath = QDir(hubPath).filePath(QStringLiteral(".wscontents"));
+    const QString resourcesDirectoryPath = QDir(hubPath).filePath(QStringLiteral(".wsresources"));
+    QVERIFY(QDir().mkpath(contentsDirectoryPath));
+    QVERIFY(QDir().mkpath(resourcesDirectoryPath));
+
+    auto createResourcePackage = [&](const QString& resourceId, const QRgb fillColor) -> QString
+    {
+        const QString assetFilePath =
+            QDir(workspaceDir.path()).filePath(QStringLiteral("%1.png").arg(resourceId));
+        QImage image(QSize(11, 7), QImage::Format_ARGB32_Premultiplied);
+        image.fill(fillColor);
+        QVERIFY(image.save(assetFilePath));
+
+        const QString packageDirectoryPath =
+            QDir(resourcesDirectoryPath).filePath(QStringLiteral("%1.wsresource").arg(resourceId));
+        QVERIFY(QDir().mkpath(packageDirectoryPath));
+
+        const QString resourcePath =
+            WhatSon::Resources::resourcePathForPackageDirectory(packageDirectoryPath);
+        const WhatSon::Resources::ResourcePackageMetadata metadata =
+            WhatSon::Resources::buildMetadataForAssetFile(assetFilePath, resourceId, resourcePath);
+
+        QVERIFY(QFile::copy(
+            assetFilePath,
+            QDir(packageDirectoryPath).filePath(metadata.assetPath)));
+
+        QFile metadataFile(WhatSon::Resources::metadataFilePathForPackage(packageDirectoryPath));
+        QVERIFY(metadataFile.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate));
+        QVERIFY(
+            metadataFile.write(
+                WhatSon::Resources::createResourcePackageMetadataXml(metadata).toUtf8())
+            >= 0);
+        metadataFile.close();
+
+        QString annotationError;
+        QVERIFY2(
+            WhatSon::Resources::writeResourcePackageAnnotationBitmap(
+                packageDirectoryPath,
+                assetFilePath,
+                &annotationError),
+            qPrintable(annotationError));
+        return resourcePath;
+    };
+
+    const QString usedResourcePath = createResourcePackage(QStringLiteral("used-cover"), qRgba(20, 60, 90, 255));
+    const QString unusedResourcePath = createResourcePackage(QStringLiteral("unused-cover"), qRgba(90, 60, 20, 255));
+    const QString hiddenOnlyResourcePath = createResourcePackage(QStringLiteral("hidden-only"), qRgba(40, 90, 30, 255));
+
+    QString createError;
+    const QString usedNoteDirectoryPath = createLocalNoteForRegression(
+        contentsDirectoryPath,
+        QStringLiteral("used-note"),
+        QStringLiteral("<resource type=\"image\" format=\".png\" path=\"%1\" />\nvisible body")
+            .arg(usedResourcePath),
+        &createError);
+    QVERIFY2(
+        !usedNoteDirectoryPath.isEmpty(),
+        qPrintable(QStringLiteral("Failed to create used note fixture: %1").arg(createError)));
+
+    const QString hiddenNotesDirectoryPath = QDir(contentsDirectoryPath).filePath(QStringLiteral(".archive"));
+    QVERIFY(QDir().mkpath(hiddenNotesDirectoryPath));
+
+    createError.clear();
+    const QString hiddenNoteDirectoryPath = createLocalNoteForRegression(
+        hiddenNotesDirectoryPath,
+        QStringLiteral("hidden-note"),
+        QStringLiteral("<resource type=\"image\" format=\".png\" path=\"%1\" />").arg(hiddenOnlyResourcePath),
+        &createError);
+    QVERIFY2(
+        !hiddenNoteDirectoryPath.isEmpty(),
+        qPrintable(QStringLiteral("Failed to create hidden note fixture: %1").arg(createError)));
+
+    UnusedResourcesSensor sensor;
+    QSignalSpy unusedResourcesChangedSpy(&sensor, &UnusedResourcesSensor::unusedResourcesChanged);
+    QSignalSpy scanCompletedSpy(&sensor, &UnusedResourcesSensor::scanCompleted);
+
+    sensor.setHubPath(hubPath);
+
+    QCOMPARE(sensor.lastError(), QString());
+    QCOMPARE(sensor.unusedResourceCount(), 2);
+    QCOMPARE(
+        sensor.unusedResourcePaths(),
+        QStringList{
+            hiddenOnlyResourcePath,
+            unusedResourcePath
+        });
+    QCOMPARE(unusedResourcesChangedSpy.count(), 1);
+    QCOMPARE(scanCompletedSpy.count(), 1);
+
+    const QVariantList unusedEntries = sensor.unusedResources();
+    QCOMPARE(unusedEntries.size(), 2);
+
+    const QVariantMap firstEntry = unusedEntries.at(0).toMap();
+    QCOMPARE(firstEntry.value(QStringLiteral("resourcePath")).toString(), hiddenOnlyResourcePath);
+    QCOMPARE(firstEntry.value(QStringLiteral("annotationPath")).toString(), QStringLiteral("annotation.png"));
+    QVERIFY(firstEntry.value(QStringLiteral("metadataValid")).toBool());
+    QVERIFY(QFileInfo(firstEntry.value(QStringLiteral("assetAbsolutePath")).toString()).isFile());
+
+    const QVariantList completedEntries = scanCompletedSpy.constFirst().constFirst().toList();
+    QCOMPARE(completedEntries.size(), 2);
+}
+
+void WhatSonCppRegressionTests::unusedResourcesSensor_refreshesAfterRawBodyEmbedsAResource()
+{
+    QTemporaryDir workspaceDir;
+    QVERIFY(workspaceDir.isValid());
+
+    const QString hubPath = QDir(workspaceDir.path()).filePath(QStringLiteral("Workspace.wshub"));
+    const QString contentsDirectoryPath = QDir(hubPath).filePath(QStringLiteral(".wscontents"));
+    const QString resourcesDirectoryPath = QDir(hubPath).filePath(QStringLiteral(".wsresources"));
+    QVERIFY(QDir().mkpath(contentsDirectoryPath));
+    QVERIFY(QDir().mkpath(resourcesDirectoryPath));
+
+    const QString assetFilePath = QDir(workspaceDir.path()).filePath(QStringLiteral("loose-image.png"));
+    QImage image(QSize(9, 9), QImage::Format_ARGB32_Premultiplied);
+    image.fill(qRgba(80, 20, 140, 255));
+    QVERIFY(image.save(assetFilePath));
+
+    const QString packageDirectoryPath =
+        QDir(resourcesDirectoryPath).filePath(QStringLiteral("loose-image.wsresource"));
+    QVERIFY(QDir().mkpath(packageDirectoryPath));
+
+    const QString resourcePath =
+        WhatSon::Resources::resourcePathForPackageDirectory(packageDirectoryPath);
+    const WhatSon::Resources::ResourcePackageMetadata metadata =
+        WhatSon::Resources::buildMetadataForAssetFile(
+            assetFilePath,
+            QStringLiteral("loose-image"),
+            resourcePath);
+
+    QVERIFY(QFile::copy(assetFilePath, QDir(packageDirectoryPath).filePath(metadata.assetPath)));
+    QFile metadataFile(WhatSon::Resources::metadataFilePathForPackage(packageDirectoryPath));
+    QVERIFY(metadataFile.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate));
+    QVERIFY(metadataFile.write(WhatSon::Resources::createResourcePackageMetadataXml(metadata).toUtf8()) >= 0);
+    metadataFile.close();
+
+    QString annotationError;
+    QVERIFY2(
+        WhatSon::Resources::writeResourcePackageAnnotationBitmap(
+            packageDirectoryPath,
+            assetFilePath,
+            &annotationError),
+        qPrintable(annotationError));
+
+    QString createError;
+    const QString noteId = QStringLiteral("dynamic-note");
+    const QString noteDirectoryPath = createLocalNoteForRegression(
+        contentsDirectoryPath,
+        noteId,
+        QStringLiteral("body-before"),
+        &createError);
+    QVERIFY2(
+        !noteDirectoryPath.isEmpty(),
+        qPrintable(QStringLiteral("Failed to create note fixture: %1").arg(createError)));
+
+    UnusedResourcesSensor sensor;
+    QSignalSpy unusedResourcesChangedSpy(&sensor, &UnusedResourcesSensor::unusedResourcesChanged);
+    QSignalSpy scanCompletedSpy(&sensor, &UnusedResourcesSensor::scanCompleted);
+
+    sensor.setHubPath(hubPath);
+
+    QCOMPARE(sensor.lastError(), QString());
+    QCOMPARE(sensor.unusedResourceCount(), 1);
+    QCOMPARE(sensor.unusedResourcePaths(), QStringList{resourcePath});
+
+    const QString bodyFilePath = WhatSon::NoteBodyPersistence::resolveBodyPath(noteDirectoryPath);
+    QFile bodyFile(bodyFilePath);
+    QVERIFY(bodyFile.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate));
+    QVERIFY(
+        bodyFile.write(
+            WhatSon::NoteBodyPersistence::serializeBodyDocument(
+                noteId,
+                QStringLiteral("<resource type=\"image\" format=\".png\" path=\"%1\" />").arg(resourcePath))
+                .toUtf8())
+        >= 0);
+    bodyFile.close();
+
+    sensor.refresh();
+
+    QCOMPARE(sensor.lastError(), QString());
+    QCOMPARE(sensor.unusedResourceCount(), 0);
+    QVERIFY(sensor.unusedResources().isEmpty());
+    QCOMPARE(sensor.collectUnusedResourcePaths(), QStringList{});
+    QCOMPARE(unusedResourcesChangedSpy.count(), 2);
+    QCOMPARE(scanCompletedSpy.count(), 3);
+}
+
+void WhatSonCppRegressionTests::resourcesImportViewModel_wiresAnnotationBitmapGenerationIntoPackageCreation()
+{
+    const QString importViewModelSource = readUtf8SourceFile(
+        QStringLiteral("src/app/file/import/ResourcesImportViewModel.cpp"));
+
+    QVERIFY(!importViewModelSource.isEmpty());
+    QVERIFY(importViewModelSource.count(QStringLiteral("writeResourcePackageAnnotationBitmap(")) >= 2);
+    QVERIFY(importViewModelSource.contains(QStringLiteral("entry.insert(QStringLiteral(\"annotationPath\")")));
+}
+
 void WhatSonCppRegressionTests::resourceTagTextGenerator_and_noteFolderSemantics_normalizeDescriptorsAndXml()
 {
     ContentsResourceTagTextGenerator generator;
@@ -2131,6 +2418,25 @@ void WhatSonCppRegressionTests::editorSurfaceModeSupport_switchesToResourceEdito
     QVERIFY(emptyResourceEntry.property(QStringLiteral("displayName")).isUndefined());
 }
 
+void WhatSonCppRegressionTests::qmlResourceEditorView_staysTransparentAndViewerOnly()
+{
+    const QString resourceEditorSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/content/editor/ContentsResourceEditorView.qml"));
+
+    QVERIFY(!resourceEditorSource.isEmpty());
+    QVERIFY(resourceEditorSource.contains(QStringLiteral("Item {")));
+    QVERIFY(resourceEditorSource.contains(QStringLiteral("property color displayColor: \"transparent\"")));
+    QVERIFY(resourceEditorSource.contains(QStringLiteral("ContentsResourceViewer {")));
+    QVERIFY(resourceEditorSource.contains(QStringLiteral("anchors.fill: parent")));
+    QVERIFY(resourceEditorSource.contains(QStringLiteral("visible: resourceEditor.hasResourceSelection && resourceBitmapState.bitmapRenderable")));
+    QVERIFY(!resourceEditorSource.contains(QStringLiteral("LV.Theme.panelBackground03")));
+    QVERIFY(!resourceEditorSource.contains(QStringLiteral("#CC0F141A")));
+    QVERIFY(!resourceEditorSource.contains(QStringLiteral("No Resource Selected")));
+    QVERIFY(!resourceEditorSource.contains(QStringLiteral("Preview Unavailable")));
+    QVERIFY(!resourceEditorSource.contains(QStringLiteral("The dedicated resource editor currently previews image resources first.")));
+    QVERIFY(!resourceEditorSource.contains(QStringLiteral("The resource editor now owns direct resource preview for the Resources hierarchy.")));
+}
+
 void WhatSonCppRegressionTests::resourceDetailPanelViewModel_tracksCurrentResourceSelection()
 {
     ResourceDetailPanelViewModel viewModel;
@@ -2291,6 +2597,86 @@ void WhatSonCppRegressionTests::textFormatRenderer_appliesPaperPaletteToEditorAn
     QVERIFY(paperPreviewHtml.contains(QStringLiteral("background-color:#E7EAEE")));
 }
 
+void WhatSonCppRegressionTests::textFormatRenderer_wrapsCommittedUrlsIntoCanonicalWebLinks()
+{
+    ContentsTextFormatRenderer renderer;
+
+    const QString notYetCommittedSource = renderer.applyPlainTextReplacementToSource(
+        QStringLiteral("www.iisacc.co"),
+        QStringLiteral("www.iisacc.co").size(),
+        QStringLiteral("www.iisacc.co").size(),
+        QStringLiteral("m"));
+    QCOMPARE(notYetCommittedSource, QStringLiteral("www.iisacc.com"));
+
+    const QString committedSource = renderer.applyPlainTextReplacementToSource(
+        notYetCommittedSource,
+        notYetCommittedSource.size(),
+        notYetCommittedSource.size(),
+        QStringLiteral(" "));
+    QCOMPARE(
+        committedSource,
+        QStringLiteral("<weblink href=\"www.iisacc.com\">www.iisacc.com</weblink> "));
+
+    const QString pastedSource = renderer.applyPlainTextReplacementToSource(
+        QString(),
+        0,
+        0,
+        QStringLiteral("Visit https://www.iisacc.com/path?q=1"));
+    QCOMPARE(
+        pastedSource,
+        QStringLiteral(
+            "Visit <weblink href=\"https://www.iisacc.com/path?q=1\">https://www.iisacc.com/path?q=1</weblink>"));
+
+    const QString markdownSource = renderer.applyPlainTextReplacementToSource(
+        QString(),
+        0,
+        0,
+        QStringLiteral("[Doc](https://example.com)"));
+    QCOMPARE(markdownSource, QStringLiteral("[Doc](https://example.com)"));
+
+    renderer.setSourceText(QStringLiteral("<weblink href=\"www.iisacc.com\">아이작닷컴</weblink>"));
+    renderer.setPreviewEnabled(true);
+    QVERIFY(renderer.renderedHtml().contains(
+        QStringLiteral("<a href=\"https://www.iisacc.com\" style=\"color:#8CB4FF;text-decoration: underline;\">")));
+    QVERIFY(renderer.renderedHtml().contains(QStringLiteral("아이작닷컴</a>")));
+}
+
+void WhatSonCppRegressionTests::noteBodyPersistence_roundTripsAndProjectsCanonicalWebLinks()
+{
+    const QString sourceText =
+        QStringLiteral("브랜드 사이트 <weblink href=\"www.iisacc.com\">아이작닷컴</weblink>");
+    const QString bodyDocument =
+        WhatSon::NoteBodyPersistence::serializeBodyDocument(QStringLiteral("note"), sourceText);
+
+    QVERIFY(bodyDocument.contains(
+        QStringLiteral("<weblink href=\"www.iisacc.com\">아이작닷컴</weblink>")));
+    QCOMPARE(WhatSon::NoteBodyPersistence::sourceTextFromBodyDocument(bodyDocument), sourceText);
+
+    const QString htmlProjection =
+        WhatSon::NoteBodyPersistence::htmlProjectionFromBodyDocument(bodyDocument);
+    QVERIFY(htmlProjection.contains(
+        QStringLiteral("<a href=\"https://www.iisacc.com\" style=\"color:#8CB4FF;text-decoration: underline;\">")));
+    QVERIFY(htmlProjection.contains(QStringLiteral("아이작닷컴</a>")));
+
+    const QString autoWrappedDocument = WhatSon::NoteBodyPersistence::serializeBodyDocument(
+        QStringLiteral("note"),
+        QStringLiteral("Visit www.iisacc.com"));
+    QVERIFY(autoWrappedDocument.contains(
+        QStringLiteral("<weblink href=\"www.iisacc.com\">www.iisacc.com</weblink>")));
+}
+
+void WhatSonCppRegressionTests::logicalTextBridge_advancesCursorPastClosingWebLinkTag()
+{
+    ContentsLogicalTextBridge bridge;
+    const QString sourceText =
+        QStringLiteral("<weblink href=\"www.iisacc.com\">site</weblink>!");
+    bridge.setText(sourceText);
+
+    QCOMPARE(bridge.logicalText(), QStringLiteral("site!"));
+    QCOMPARE(bridge.logicalLengthForSourceText(sourceText), QStringLiteral("site!").size());
+    QCOMPARE(bridge.sourceOffsetForLogicalOffset(QStringLiteral("site").size()), sourceText.indexOf(QLatin1Char('!')));
+}
+
 void WhatSonCppRegressionTests::qmlStructuredEditors_bindPaperPaletteIntoPagePrintMode()
 {
     const QString structuredFlowSource = readUtf8SourceFile(
@@ -2342,6 +2728,21 @@ void WhatSonCppRegressionTests::qmlStructuredEditors_bindPaperPaletteIntoPagePri
         QStringLiteral("readonly property color textColor: paperPaletteEnabled ? \"#111111\" : \"#FFFFFF\"")));
 
     QVERIFY(displayViewSource.contains(QStringLiteral("paperPaletteEnabled: contentsView.showPrintEditorLayout")));
+}
+
+void WhatSonCppRegressionTests::qmlEditors_routeRenderedHyperlinksToExternalBrowser()
+{
+    const QString inlineEditorSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/content/editor/ContentsInlineFormatEditor.qml"));
+    const QString displayViewSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/content/editor/ContentsDisplayView.qml"));
+
+    QVERIFY(!inlineEditorSource.isEmpty());
+    QVERIFY(!displayViewSource.isEmpty());
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("onLinkActivated: function (link)")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("Qt.openUrlExternally(link);")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("onLinkActivated: function (link)")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("Qt.openUrlExternally(link);")));
 }
 
 void WhatSonCppRegressionTests::resourceBitmapViewer_projectsRenderableImagePreviewState()

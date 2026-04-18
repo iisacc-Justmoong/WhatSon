@@ -717,6 +717,19 @@ namespace
                 resourcePath);
 
         QString writeError;
+        if (!WhatSon::Resources::writeResourcePackageAnnotationBitmap(
+            packageDirectoryPath,
+            sourceFilePath,
+            &writeError))
+        {
+            QDir(packageDirectoryPath).removeRecursively();
+            if (errorMessage != nullptr)
+            {
+                *errorMessage = writeError;
+            }
+            return false;
+        }
+
         if (!writeUtf8FileAtomically(
             QDir(packageDirectoryPath).filePath(WhatSon::Resources::metadataFileName()),
             WhatSon::Resources::createResourcePackageMetadataXml(metadata),
@@ -836,6 +849,14 @@ namespace
         }
 
         QString writeError;
+        if (!WhatSon::Resources::writeResourcePackageAnnotationBitmap(
+            packageDirectoryPath,
+            sourceFilePath,
+            &writeError))
+        {
+            return restoreBackupAndFail(writeError);
+        }
+
         if (!writeUtf8FileAtomically(
             QDir(packageDirectoryPath).filePath(WhatSon::Resources::metadataFileName()),
             WhatSon::Resources::createResourcePackageMetadataXml(metadata),
@@ -859,6 +880,7 @@ namespace
         entry.insert(QStringLiteral("resourceId"), metadata.resourceId.trimmed());
         entry.insert(QStringLiteral("resourcePath"), WhatSon::Resources::normalizePath(metadata.resourcePath));
         entry.insert(QStringLiteral("assetPath"), WhatSon::Resources::normalizePath(metadata.assetPath));
+        entry.insert(QStringLiteral("annotationPath"), WhatSon::Resources::normalizePath(metadata.annotationPath));
         entry.insert(QStringLiteral("bucket"), metadata.bucket.trimmed());
         entry.insert(QStringLiteral("type"), metadata.type.trimmed().toCaseFolded());
         entry.insert(QStringLiteral("format"), WhatSon::Resources::normalizeFormat(metadata.format).toCaseFolded());

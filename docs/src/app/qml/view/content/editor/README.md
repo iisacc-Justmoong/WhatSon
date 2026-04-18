@@ -75,6 +75,8 @@
   - `ContentsDisplayView.qml` remains the note editor host for note-backed hierarchies
   - `ContentsResourceEditorView.qml` becomes the dedicated center-surface resource editor when the active
     note-list model exposes a direct resource selection instead of a note-backed document session
+- That dedicated resource editor surface is now intentionally transparent and viewer-only, so Resources hierarchy
+  browsing does not add a second metadata card or explanatory copy above/below the actual asset preview.
 - `ContentsEditorSurfaceModeSupport.js` owns that QML-side center-surface decision so `ContentViewLayout.qml`
   does not duplicate the note-backed/resource-backed detection logic inline.
 - Resource-bearing note bodies now activate `ContentsStructuredDocumentFlow.qml` so `<resource ... />` stays in the

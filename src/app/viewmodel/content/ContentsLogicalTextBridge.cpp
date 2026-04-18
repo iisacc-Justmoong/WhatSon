@@ -1,5 +1,6 @@
 #include "ContentsLogicalTextBridge.hpp"
 
+#include "file/note/WhatSonNoteBodySemanticTagSupport.hpp"
 #include "file/WhatSonDebugTrace.hpp"
 
 #include <QChar>
@@ -10,6 +11,8 @@
 
 namespace
 {
+    namespace SemanticTags = WhatSon::NoteBodySemanticTagSupport;
+
     // Resource blocks participate in editor line metrics as one logical line.
     constexpr int kResourcePlaceholderLineCount = 1;
 
@@ -92,7 +95,7 @@ namespace
             || normalizedTagName == QStringLiteral("hr");
     }
 
-    bool isInlineStyleTagName(const QString& tagName)
+    bool advancesCursorPastClosingInlineBoundaryTag(const QString& tagName)
     {
         return tagName == QStringLiteral("bold")
             || tagName == QStringLiteral("b")
@@ -107,10 +110,11 @@ namespace
             || tagName == QStringLiteral("s")
             || tagName == QStringLiteral("del")
             || tagName == QStringLiteral("highlight")
-            || tagName == QStringLiteral("mark");
+            || tagName == QStringLiteral("mark")
+            || SemanticTags::isWebLinkTagName(tagName);
     }
 
-    int advanceSourceOffsetPastClosingInlineStyleTags(const QString& text, int sourceOffset)
+    int advanceSourceOffsetPastClosingInlineBoundaryTags(const QString& text, int sourceOffset)
     {
         int boundedOffset = std::clamp(sourceOffset, 0, boundedQStringSize(text));
         while (boundedOffset < text.size() && text.at(boundedOffset) == QLatin1Char('<'))
@@ -123,7 +127,8 @@ namespace
 
             const QStringView tagToken(text.constData() + boundedOffset, tagEnd - boundedOffset + 1);
             const QString normalizedTagName = normalizedHtmlTagName(tagToken);
-            if (!isClosingHtmlTagToken(tagToken) || !isInlineStyleTagName(normalizedTagName))
+            if (!isClosingHtmlTagToken(tagToken)
+                || !advancesCursorPastClosingInlineBoundaryTag(normalizedTagName))
             {
                 break;
             }
@@ -613,7 +618,7 @@ QVector<int> ContentsLogicalTextBridge::buildLogicalToSourceOffsets(const QStrin
                         {
                             ++logicalOffset;
                             offsets.push_back(
-                                advanceSourceOffsetPastClosingInlineStyleTags(
+                                advanceSourceOffsetPastClosingInlineBoundaryTags(
                                     normalizedText,
                                     tagEnd + 1));
                         }
@@ -633,7 +638,7 @@ QVector<int> ContentsLogicalTextBridge::buildLogicalToSourceOffsets(const QStrin
                         {
                             ++logicalOffset;
                             offsets.push_back(
-                                advanceSourceOffsetPastClosingInlineStyleTags(
+                                advanceSourceOffsetPastClosingInlineBoundaryTags(
                                     normalizedText,
                                     tagEnd + 1));
                         }
@@ -648,7 +653,7 @@ QVector<int> ContentsLogicalTextBridge::buildLogicalToSourceOffsets(const QStrin
                     {
                         ++logicalOffset;
                         offsets.push_back(
-                            advanceSourceOffsetPastClosingInlineStyleTags(
+                            advanceSourceOffsetPastClosingInlineBoundaryTags(
                                 normalizedText,
                                 tagEnd + 1));
                     }
@@ -660,7 +665,7 @@ QVector<int> ContentsLogicalTextBridge::buildLogicalToSourceOffsets(const QStrin
                 {
                     ++logicalOffset;
                     offsets.push_back(
-                        advanceSourceOffsetPastClosingInlineStyleTags(
+                        advanceSourceOffsetPastClosingInlineBoundaryTags(
                             normalizedText,
                             tagEnd + 1));
                 }
@@ -675,7 +680,7 @@ QVector<int> ContentsLogicalTextBridge::buildLogicalToSourceOffsets(const QStrin
             sourceOffset += entityLength;
             ++logicalOffset;
             offsets.push_back(
-                advanceSourceOffsetPastClosingInlineStyleTags(
+                advanceSourceOffsetPastClosingInlineBoundaryTags(
                     normalizedText,
                     sourceOffset));
             continue;
@@ -684,7 +689,7 @@ QVector<int> ContentsLogicalTextBridge::buildLogicalToSourceOffsets(const QStrin
         ++sourceOffset;
         ++logicalOffset;
         offsets.push_back(
-            advanceSourceOffsetPastClosingInlineStyleTags(
+            advanceSourceOffsetPastClosingInlineBoundaryTags(
                 normalizedText,
                 sourceOffset));
     }

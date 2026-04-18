@@ -11,6 +11,7 @@ namespace WhatSon::NoteBodySemanticTagSupport
     bool isHashtagTagName(const QString& elementName);
     bool isBreakDividerTagName(const QString& elementName);
     bool isResourceTagName(const QString& elementName);
+    bool isWebLinkTagName(const QString& elementName);
     bool isAgendaTagName(const QString& elementName);
     bool isTaskTagName(const QString& elementName);
     bool isCalloutTagName(const QString& elementName);
