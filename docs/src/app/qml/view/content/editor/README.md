@@ -7,7 +7,7 @@
 ## Scope
 - Mirrored source directory: `src/app/qml/view/content/editor`
 - Child directories: 0
-- Child files: 31
+- Child files: 33
 
 ## Child Directories
 - No child directories.
@@ -25,6 +25,7 @@
 - `ContentsEditorDebugTrace.js`
 - `ContentsEditorSelectionController.qml`
 - `ContentsEditorSession.qml`
+- `ContentsEditorSurfaceModeSupport.js`
 - `ContentsEditorSurfaceGuardController.qml`
 - `ContentsEditorTypingController.qml`
 - `ContentsGutterLayer.qml`
@@ -40,6 +41,7 @@
 - `ContentsResourceDropPayloadParser.qml`
 - `ContentsResourceImportConflictController.qml`
 - `ContentsResourceImportController.qml`
+- `ContentsResourceEditorView.qml`
 - `ContentsResourceLayer.qml`
 - `ContentsResourceTagController.qml`
 - `ContentsStructuredCursorSupport.js`
@@ -69,6 +71,12 @@
   images remain ordinary document blocks instead of taking over the whole editor column.
 - `ContentsResourceViewer.qml` remains the low-level bitmap/PDF viewport component used by resource cards, but note
   hosts no longer swap the whole editor surface into a dedicated resource viewer.
+- `ContentViewLayout.qml` now selects one sibling surface policy for this directory:
+  - `ContentsDisplayView.qml` remains the note editor host for note-backed hierarchies
+  - `ContentsResourceEditorView.qml` becomes the dedicated center-surface resource editor when the active
+    note-list model exposes a direct resource selection instead of a note-backed document session
+- `ContentsEditorSurfaceModeSupport.js` owns that QML-side center-surface decision so `ContentViewLayout.qml`
+  does not duplicate the note-backed/resource-backed detection logic inline.
 - Resource-bearing note bodies now activate `ContentsStructuredDocumentFlow.qml` so `<resource ... />` stays in the
   same authored block stream as surrounding text.
 - `ContentsStructuredDocumentFlow.qml` now mounts one generic `ContentsDocumentBlock.qml` delegate per parsed block

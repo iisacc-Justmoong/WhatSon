@@ -43,6 +43,8 @@ This stops note-save related runtime refreshes from collapsing the preset sideba
 
 - Preset hierarchy rows are keyed semantically, not by current row position.
 - Rebuilds are allowed only when the preset source materially changed.
+- When rows are available, a negative or invalid selected index is normalized to the first visible row so runtime
+  refreshes do not leave the viewmodel in an invisible "no selection" state.
 
 ## Count Role Compatibility
 

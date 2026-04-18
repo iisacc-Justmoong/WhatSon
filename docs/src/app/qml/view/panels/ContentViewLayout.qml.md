@@ -2,12 +2,15 @@
 
 ## Responsibility
 
-`ContentViewLayout.qml` switches the center content slot between the editor surface and the calendar surfaces.
-It owns the platform mode for the unified editor host and forwards shared editor collaborators into that one surface.
+`ContentViewLayout.qml` switches the center content slot between the note editor, the dedicated resource editor, and
+the calendar surfaces.
+It owns the platform mode for the unified note host and forwards shared collaborators into the currently active center
+surface.
 
 ## Current Contract
 
-- Shared editor surface: `ContentsDisplayView.qml`
+- Note editor surface: `ContentsDisplayView.qml`
+- Resource editor surface: `ContentsResourceEditorView.qml`
 - Mobile/desktop host variance: `mobileHost` input forwarded from `isMobilePlatform`
 - Calendar surfaces:
   - `AgendaPage.qml`
@@ -15,8 +18,8 @@ It owns the platform mode for the unified editor host and forwards shared editor
   - `WeekCalendarPage.qml`
 - `MonthCalendarPage.qml`
 - `YearCalendarPage.qml`
-- The editor surface now always fills the full content slot and no longer forwards any bottom-partition sizing
-  contract.
+- The active non-calendar surface now always fills the full content slot and no longer forwards any bottom-partition
+  sizing contract.
 - Calendar note activation is also centralized here so every calendar surface can reuse one shared "open note in
   editor" bridge.
 
@@ -34,9 +37,14 @@ It owns the platform mode for the unified editor host and forwards shared editor
 ## Routing Notes
 
 - A `StackLayout` selects either the editor surface or the active calendar surface.
+- Inside the non-calendar slot, a second loader now selects:
+  - `ContentsDisplayView.qml` for note-backed list models
+  - `ContentsResourceEditorView.qml` for direct resource-backed list models
 - The active note-list model still closes any visible calendar surface when note selection changes.
+- Entering resource-editor mode also dismisses any active calendar overlay so the center slot cannot show both a
+  resource editor request and a calendar overlay at once.
 - `resourcesImportViewModel`, `editorViewModeViewModel`, `sidebarHierarchyViewModel`, and the resolved
-  note-list/content viewmodels are forwarded into the unified editor host.
+  note-list/content viewmodels are forwarded into the unified note editor host when that surface is active.
 - That sidebar-hierarchy forwarding is now part of the editor contract so desktop/mobile surfaces can distinguish:
   - direct resource-package browsing inside the Resources hierarchy
   - ordinary notes from other hierarchies whose `.wsnbody` happens to contain inline `<resource ... />` blocks
@@ -49,13 +57,14 @@ It owns the platform mode for the unified editor host and forwards shared editor
 
 ## Tests
 
-- Automated test files are not currently present in this repository.
+## Tests
+
+- Regression coverage now lives in `test/cpp/whatson_cpp_regression_tests.cpp`.
 - Regression checklist:
-  - Switching between editor and calendar surfaces must continue to use one shared content slot.
-  - The unified editor host must fill that slot in both desktop and mobile modes without a reserved bottom partition.
-  - Note selection changes must still dismiss any visible calendar surface.
-  - A year-calendar month/day tap must still propagate into a month-overlay open request with the month viewmodel
-    already synchronized to the requested month/date.
-  - A note tap from Agenda/day/week/month must reopen that library note and return the content slot to the editor
-    surface.
-  - Calendar note opening must switch the active hierarchy back to Library before the overlay is dismissed.
+  - switching between note editor, resource editor, and calendar surfaces must continue to use one shared content slot
+  - the active non-calendar surface must fill that slot in both desktop and mobile modes without a reserved bottom partition
+  - direct resource-backed list models must choose `ContentsResourceEditorView.qml` without affecting note-backed hierarchies
+  - note selection changes must still dismiss any visible calendar surface
+  - a year-calendar month/day tap must still propagate into a month-overlay open request with the month viewmodel already synchronized to the requested month/date
+  - a note tap from Agenda/day/week/month must reopen that library note and return the content slot to the note editor surface
+  - calendar note opening must switch the active hierarchy back to Library before the overlay is dismissed

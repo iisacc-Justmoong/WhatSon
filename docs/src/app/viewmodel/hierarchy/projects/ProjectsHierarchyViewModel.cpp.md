@@ -53,8 +53,9 @@ flat, the footer menu stays disabled because no row advertises `showChevron: tru
   projection can be re-synced on sidebar entry without waiting for a new runtime snapshot.
 - If an index row cannot be mapped to a readable note header, its project label is ignored for the
   Projects projection so index-only ghost rows do not leak into a selected project.
-- With no active sidebar selection, the model shows all notes whose project label is currently
-  present in the loaded project hierarchy.
+- When the hierarchy has visible rows, a negative or invalid selected index is normalized to the first visible row
+  before the note list is rebuilt. Projects therefore enter with the same first-project filter that the sidebar marks
+  as active, instead of falling back to an unfiltered list.
 - `reloadNoteMetadataForNoteId(...)` now re-reads a single note document from disk and rebuilds the
   filtered projection immediately, so project assignment writes do not require a later hub reload
   before the projects note list catches up.
@@ -96,3 +97,5 @@ flat, the footer menu stays disabled because no row advertises `showChevron: tru
 
 - Selection is semantic and should survive runtime snapshot churn.
 - A project snapshot that does not change the rendered hierarchy must not reset the sidebar state.
+- If rows still exist after a rebuild, the effective selection must remain a visible row rather than an implicit
+  "no filter" state.

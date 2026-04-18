@@ -20,6 +20,7 @@
 #include "file/note/WhatSonNoteFolderBindingRepository.hpp"
 #include "file/note/WhatSonNoteFolderBindingService.hpp"
 #include "file/note/WhatSonNoteFolderSemantics.hpp"
+#include "viewmodel/hierarchy/WhatSonHierarchyTreeItemSupport.hpp"
 #include "viewmodel/hierarchy/library/LibraryHierarchyViewModelSupport.hpp"
 #include "viewmodel/sidebar/SidebarHierarchyLvrsSupport.hpp"
 
@@ -1695,16 +1696,9 @@ void LibraryHierarchyViewModel::setSelectedIndex(int index)
 
 void LibraryHierarchyViewModel::applySelectedIndex(int index, bool forceReapply)
 {
-    const int maxIndex = m_itemModel.rowCount() - 1;
-    int clamped = index;
-    if (maxIndex < 0)
-    {
-        clamped = -1;
-    }
-    else
-    {
-        clamped = std::clamp(index, -1, maxIndex);
-    }
+    const int clamped = WhatSon::Hierarchy::TreeItemSupport::clampSelectionIndexToVisibleDefault(
+        index,
+        m_itemModel.rowCount());
 
     if (m_selectedIndex == clamped)
     {

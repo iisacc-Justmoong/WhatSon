@@ -8,6 +8,7 @@
 #include "file/note/WhatSonNoteBodyPersistence.hpp"
 #include "file/statistic/WhatSonNoteFileStatSupport.hpp"
 #include "file/note/WhatSonNoteFolderBindingRepository.hpp"
+#include "viewmodel/hierarchy/WhatSonHierarchyTreeItemSupport.hpp"
 
 #include <QDir>
 #include <QFileInfo>
@@ -401,16 +402,9 @@ QString BookmarksHierarchyViewModel::lastLoadError() const
 
 void BookmarksHierarchyViewModel::setSelectedIndex(int index)
 {
-    const int maxIndex = m_itemModel.rowCount() - 1;
-    int clamped = index;
-    if (maxIndex < 0)
-    {
-        clamped = -1;
-    }
-    else
-    {
-        clamped = std::clamp(index, -1, maxIndex);
-    }
+    const int clamped = WhatSon::Hierarchy::TreeItemSupport::clampSelectionIndexToVisibleDefault(
+        index,
+        m_itemModel.rowCount());
 
     if (m_selectedIndex == clamped)
     {

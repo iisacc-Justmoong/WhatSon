@@ -35,6 +35,8 @@ The C++ suite currently locks regression-sensitive runtime behavior for:
 - `WhatSonClipboardResourceImportFileNamePolicy`
 - `ContentsEditorSessionController`
 - `ContentsNoteManagementCoordinator`
+- `ContentsEditorSurfaceModeSupport.js`
+- `ResourceBitmapViewer`
 
 The suite avoids booting the full application shell or loading a hub package.
 
@@ -81,3 +83,14 @@ ctest --test-dir build --output-on-failure -L cpp_regression
   library folder label like `Marketing/Sales` cannot regress into an accidental parent/child hierarchy split.
 - Detail-panel folder assignment now also reuses an existing escaped folder path instead of recreating
   `Marketing/Sales` as a fake nested hierarchy during `Folders.wsfolders` writes.
+- Hierarchy selection normalization is now also locked in the C++ suite, so entering a populated hierarchy keeps the
+  effective selection on the first visible row instead of falling back to an invisible `-1` / "show everything"
+  state.
+- Resources and progress now each pin their domain fallback semantics in the C++ suite, so the initial active UI row
+  (`Image`, `First draft`) remains identical to the list filter applied by the corresponding viewmodel.
+- The content-surface mode helper now also pins note-vs-resource editor routing, so a direct resource list model
+  switches the center slot away from the note editor immediately.
+- `ResourceBitmapViewer` now also pins bitmap-preview projection for the dedicated resource editor, so image resources
+  and unsupported image-like formats expose stable viewer/open-target state to QML.
+- Developer quality gates now also resolve their QML/C++ file lists from the repository root, so `whatson_qmllint`
+  and `whatson_clang_tidy` no longer degrade into empty-input no-op runs.

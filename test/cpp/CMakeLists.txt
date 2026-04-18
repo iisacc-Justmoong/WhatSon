@@ -1,4 +1,19 @@
-find_package(Qt6 6.5 REQUIRED COMPONENTS Core Test Qml)
+find_package(Qt6 6.5 REQUIRED COMPONENTS Core Gui Test Qml)
+
+if (APPLE AND TARGET WrapOpenGL::WrapOpenGL)
+    get_target_property(_whatson_test_wrap_opengl_links WrapOpenGL::WrapOpenGL INTERFACE_LINK_LIBRARIES)
+    if (_whatson_test_wrap_opengl_links)
+        set(_whatson_test_wrap_opengl_links_filtered)
+        foreach (_whatson_test_wrap_link IN LISTS _whatson_test_wrap_opengl_links)
+            if (_whatson_test_wrap_link STREQUAL "-framework AGL" OR _whatson_test_wrap_link MATCHES "AGL\\.framework")
+                continue()
+            endif ()
+            list(APPEND _whatson_test_wrap_opengl_links_filtered "${_whatson_test_wrap_link}")
+        endforeach ()
+        set_property(TARGET WrapOpenGL::WrapOpenGL PROPERTY
+                INTERFACE_LINK_LIBRARIES "${_whatson_test_wrap_opengl_links_filtered}")
+    endif ()
+endif ()
 
 set(WHATSON_CPP_REGRESSION_TEST_SOURCES
         "${CMAKE_CURRENT_SOURCE_DIR}/whatson_cpp_regression_tests.cpp"
@@ -22,12 +37,17 @@ set(WHATSON_CPP_REGRESSION_TEST_SOURCES
         "${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/folders/WhatSonFoldersHierarchyCreator.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/folders/WhatSonFoldersHierarchyParser.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/folders/WhatSonFoldersHierarchyStore.cpp"
+        "${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/resources/WhatSonResourcesHierarchyCreator.cpp"
+        "${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/resources/WhatSonResourcesHierarchyParser.cpp"
+        "${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/resources/WhatSonResourcesHierarchyStore.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/tags/WhatSonTagsDepthFlattener.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/tags/WhatSonTagsHierarchyCreator.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/tags/WhatSonTagsHierarchyParser.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/tags/WhatSonTagsHierarchyStore.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/tags/WhatSonTagsJsonParser.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/file/validator/WhatSonStructuredTagLinter.cpp"
+        "${CMAKE_SOURCE_DIR}/src/app/file/viewer/ImageFormatCompatibilityLayer.cpp"
+        "${CMAKE_SOURCE_DIR}/src/app/file/viewer/ResourceBitmapViewer.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/store/hub/SelectedHubStore.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/store/sidebar/ISidebarSelectionStore.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/store/sidebar/ISidebarSelectionStore.hpp"
@@ -41,6 +61,9 @@ set(WHATSON_CPP_REGRESSION_TEST_SOURCES
         "${CMAKE_SOURCE_DIR}/src/app/viewmodel/content/ContentsEditorSelectionBridge.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/viewmodel/content/ContentsEditorSessionController.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/viewmodel/content/ContentsStructuredDocumentBlocksModel.cpp"
+        "${CMAKE_SOURCE_DIR}/src/app/viewmodel/hierarchy/resources/ResourcesHierarchyModel.cpp"
+        "${CMAKE_SOURCE_DIR}/src/app/viewmodel/hierarchy/resources/ResourcesHierarchyViewModel.cpp"
+        "${CMAKE_SOURCE_DIR}/src/app/viewmodel/hierarchy/resources/ResourcesListModel.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/viewmodel/navigationbar/EditorViewModeViewModel.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/viewmodel/navigationbar/EditorViewSectionViewModel.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/viewmodel/navigationbar/EditorViewState.cpp"
@@ -72,6 +95,7 @@ target_include_directories(whatson_cpp_regression_tests PRIVATE
 )
 target_link_libraries(whatson_cpp_regression_tests PRIVATE
         Qt6::Core
+        Qt6::Gui
         Qt6::Test
         Qt6::Qml
 )

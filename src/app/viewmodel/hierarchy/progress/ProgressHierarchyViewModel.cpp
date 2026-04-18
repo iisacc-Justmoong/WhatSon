@@ -9,6 +9,7 @@
 #include "file/note/WhatSonNoteBodyPersistence.hpp"
 #include "file/statistic/WhatSonNoteFileStatSupport.hpp"
 #include "file/note/WhatSonNoteFolderBindingRepository.hpp"
+#include "viewmodel/hierarchy/WhatSonHierarchyTreeItemSupport.hpp"
 #include "viewmodel/hierarchy/progress/ProgressHierarchyViewModelSupport.hpp"
 
 #include <QDir>
@@ -342,7 +343,9 @@ QString ProgressHierarchyViewModel::lastLoadError() const
 
 void ProgressHierarchyViewModel::setSelectedIndex(int index)
 {
-    const int clamped = WhatSon::Hierarchy::ProgressSupport::clampSelectionIndex(index, m_itemModel.rowCount());
+    const int clamped = WhatSon::Hierarchy::TreeItemSupport::clampSelectionIndexToVisibleDefault(
+        index,
+        m_itemModel.rowCount());
     if (m_selectedIndex == clamped)
     {
         return;
@@ -468,7 +471,9 @@ void ProgressHierarchyViewModel::setProgressState(int progressValue, QStringList
     syncProgressStore();
     m_createdFolderSequence = WhatSon::Hierarchy::ProgressSupport::nextGeneratedFolderSequence(m_items);
     syncModel();
-    const int nextSelectedIndex = WhatSon::Hierarchy::ProgressSupport::clampSelectionIndex(m_selectedIndex, m_itemModel.rowCount());
+    const int nextSelectedIndex = WhatSon::Hierarchy::TreeItemSupport::clampSelectionIndexToVisibleDefault(
+        m_selectedIndex,
+        m_itemModel.rowCount());
     if (m_selectedIndex != nextSelectedIndex)
     {
         m_selectedIndex = nextSelectedIndex;

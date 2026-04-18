@@ -8,6 +8,7 @@
 #include "file/note/WhatSonBookmarkColorPalette.hpp"
 #include "file/statistic/WhatSonNoteFileStatSupport.hpp"
 #include "file/note/WhatSonNoteFolderBindingRepository.hpp"
+#include "viewmodel/hierarchy/WhatSonHierarchyTreeItemSupport.hpp"
 #include "viewmodel/hierarchy/projects/ProjectsHierarchyViewModelSupport.hpp"
 #include "viewmodel/sidebar/SidebarHierarchyLvrsSupport.hpp"
 
@@ -926,7 +927,9 @@ QString ProjectsHierarchyViewModel::lastLoadError() const
 
 void ProjectsHierarchyViewModel::setSelectedIndex(int index)
 {
-    const int clamped = WhatSon::Hierarchy::ProjectsSupport::clampSelectionIndex(index, m_itemModel.rowCount());
+    const int clamped = WhatSon::Hierarchy::TreeItemSupport::clampSelectionIndexToVisibleDefault(
+        index,
+        m_itemModel.rowCount());
     if (m_selectedIndex == clamped)
     {
         return;

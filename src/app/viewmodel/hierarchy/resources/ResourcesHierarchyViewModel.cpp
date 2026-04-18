@@ -4,6 +4,7 @@
 #include "file/hierarchy/resources/WhatSonResourcePackageSupport.hpp"
 #include "file/hierarchy/resources/WhatSonResourcesHierarchyParser.hpp"
 #include "file/hierarchy/resources/WhatSonResourcesHierarchyStore.hpp"
+#include "viewmodel/hierarchy/WhatSonHierarchyTreeItemSupport.hpp"
 #include "viewmodel/hierarchy/resources/ResourcesHierarchyViewModelSupport.hpp"
 
 #include <QDir>
@@ -472,7 +473,9 @@ QString ResourcesHierarchyViewModel::lastLoadError() const
 
 void ResourcesHierarchyViewModel::setSelectedIndex(int index)
 {
-    const int clamped = WhatSon::Hierarchy::ResourcesSupport::clampSelectionIndex(index, m_itemModel.rowCount());
+    const int clamped = WhatSon::Hierarchy::TreeItemSupport::clampSelectionIndexToVisibleDefault(
+        index,
+        m_itemModel.rowCount());
     if (m_selectedIndex == clamped)
     {
         return;

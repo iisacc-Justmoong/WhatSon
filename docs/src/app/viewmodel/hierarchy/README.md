@@ -15,6 +15,11 @@ The key architectural rule is that each hierarchy category owns its own runtime 
 - Domains that own note indexing state (`library`, `projects`, `bookmarks`, `progress`) must recompute and republish that `count` when note metadata changes at runtime.
 - Domains that currently do not own note-index state must still publish `count` (using `0` as the fallback) to keep the model schema stable.
 
+## Selection Normalization Contract
+- When a hierarchy has at least one visible row, a negative or otherwise invalid selected index must normalize to the first visible row instead of remaining in a hidden "no selection" state.
+- This keeps the C++ viewmodel state aligned with the sidebar UI state, which already renders the first row as active on hierarchy entry.
+- Note-list-backed hierarchies must apply the same first-row fallback to their list filtering logic rather than treating `-1` as a domain-specific "show everything" shortcut.
+
 ## Why This Split Exists
 Older hierarchy work tended to accumulate all behavior onto a single interface, which pushed unrelated mutation responsibilities into places that only needed read access. The capability split keeps the common surface smaller and makes write paths explicit.
 

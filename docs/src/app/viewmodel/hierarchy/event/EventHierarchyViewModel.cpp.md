@@ -46,6 +46,8 @@ state.
 - Selection is preserved by semantic row key, never by stale row index.
 - Expansion resets only when the underlying event hierarchy truly changes in a way that removes the
   target row.
+- When rows are available, a negative or invalid selected index is normalized to the first visible row so the stored
+  C++ selection state matches the sidebar's default active row.
 
 ## Count Role Compatibility
 

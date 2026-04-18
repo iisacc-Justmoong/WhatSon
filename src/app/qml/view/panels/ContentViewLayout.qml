@@ -4,6 +4,7 @@ import QtQuick
 import QtQuick.Layouts
 import LVRS 1.0 as LV
 import "../calendar" as CalendarView
+import "../content/editor/ContentsEditorSurfaceModeSupport.js" as EditorSurfaceModeSupport
 
 Item {
     id: contentViewLayout
@@ -26,6 +27,10 @@ Item {
     property var resourcesImportViewModel: null
     readonly property var resolvedContentViewModel: contentViewLayout.contentViewModel
     readonly property var resolvedNoteListModel: contentViewLayout.noteListModel
+    readonly property bool resourceEditorVisible: EditorSurfaceModeSupport.resourceEditorVisible(
+                                                      contentViewLayout.resolvedNoteListModel)
+    readonly property var resolvedCurrentResourceEntry: EditorSurfaceModeSupport.currentResourceEntry(
+                                                            contentViewLayout.resolvedNoteListModel)
     property var sidebarHierarchyViewModel: null
     property bool dayCalendarOverlayVisible: false
     property var dayCalendarViewModel: null
@@ -67,6 +72,11 @@ Item {
     signal weekCalendarOverlayCloseRequested
     signal viewHookRequested
     signal yearCalendarOverlayCloseRequested
+
+    onResourceEditorVisibleChanged: {
+        if (contentViewLayout.resourceEditorVisible && contentViewLayout.calendarOverlayVisible)
+            contentViewLayout.requestActiveCalendarOverlayClose();
+    }
 
     function requestActiveCalendarOverlayClose() {
         if (contentViewLayout.showingAgendaOverlay) {
@@ -150,7 +160,9 @@ Item {
             Loader {
                 anchors.fill: parent
                 active: editorContentSurface.visible
-                sourceComponent: editorSurfaceComponent
+                sourceComponent: contentViewLayout.resourceEditorVisible
+                                 ? resourceEditorSurfaceComponent
+                                 : editorSurfaceComponent
             }
         }
         Item {
@@ -220,6 +232,19 @@ Item {
             onEditorTextEdited: function (text) {
                 contentViewLayout.editorTextEdited(text);
             }
+            onViewHookRequested: {
+                contentViewLayout.viewHookRequested();
+            }
+        }
+    }
+    Component {
+        id: resourceEditorSurfaceComponent
+
+        ContentsResourceEditorView {
+            anchors.fill: parent
+            displayColor: contentViewLayout.displayColor
+            resourceEntry: contentViewLayout.resolvedCurrentResourceEntry
+
             onViewHookRequested: {
                 contentViewLayout.viewHookRequested();
             }

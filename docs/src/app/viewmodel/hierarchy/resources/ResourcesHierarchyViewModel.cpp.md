@@ -25,7 +25,8 @@ default format catalog, so the resources sidebar is never a flat type-only list.
 
 This viewmodel now owns a dedicated `ResourcesListModel` projection for the shared right panel.
 
-- `selectedIndex = -1`: no hierarchy row is selected yet, so the right-panel list now projects the full resource set.
+- When the hierarchy has visible rows, a negative or invalid `selectedIndex` is normalized to the first visible row before the right-panel list is rebuilt.
+- The current first row is `Image`, so entering the resources hierarchy now defaults to the image-filtered list instead of the full resource set.
 - selected `kind="type"` row: only resources of that type are projected.
 - selected `kind="format"` row: only resources that match type+format are projected.
 
@@ -39,8 +40,8 @@ Each projected row carries:
   used by renderer and list delegates
 
 This is the bridge that fixes the previous `No list data` behavior in the resources domain, including the
-hierarchy-toolbar transition where the resources list must appear immediately even before the user picks a
-type/format row.
+hierarchy-toolbar transition where the resources list must appear immediately with the same filter the sidebar
+already marks as active.
 
 ## Resource Deletion Contract
 
@@ -80,8 +81,9 @@ package deletion or import instead of dropping back to a blank transition state.
 
 ## Regression Checks
 
-- Switching the active hierarchy to `Resources` must not leave the shared right-panel list blank while no
-  type/format node is selected yet.
+- Switching the active hierarchy to `Resources` must not leave the shared right-panel list blank.
+- The initial resources entry state must keep the sidebar focus and the right-panel filter aligned on the
+  first visible row (`Image`).
 - Deleting or importing `.wsresource` packages must preserve the current projection when the selected taxonomy
   key still exists after rebuild.
 

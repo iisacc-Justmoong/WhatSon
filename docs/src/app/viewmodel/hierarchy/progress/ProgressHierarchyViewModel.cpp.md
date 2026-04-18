@@ -35,8 +35,11 @@ materializing the matching note list from `.wsnhead` metadata.
   body.
 - `selectedIndex` is treated as the canonical progress enum value because the sidebar rows are fixed
   to the current ten-item product taxonomy.
+- When the hierarchy has visible rows, a negative or invalid selection is normalized to the first visible row
+  before filtering. The current first progress bucket is `First draft`.
 - `refreshNoteListForSelection()` keeps only notes whose `.wsnhead` `progress` integer matches the
-  selected progress value. When no row is selected, all indexed notes remain visible.
+  selected progress value, so the initial progress entry state now filters by that first bucket instead of
+  showing every indexed note.
 - `saveBodyTextForNote(...)`, `saveCurrentBodyText(...)`, and `noteDirectoryPathForNoteId(...)`
   keep the progress domain compatible with existing note editing and detail-panel current-note
   wiring.
@@ -63,3 +66,9 @@ materializing the matching note list from `.wsnhead` metadata.
   buckets rather than user-editable folders.
 - The first four rows still expose chevrons so the viewmodel can preserve Figma-aligned expansion
   state even though no child nodes are materialized yet.
+
+## Regression Checks
+
+- Entering the progress hierarchy must keep the active sidebar row and the note-list filter aligned on the
+  first visible bucket.
+- Runtime payload refresh must preserve that normalized first-row fallback whenever rows still exist.

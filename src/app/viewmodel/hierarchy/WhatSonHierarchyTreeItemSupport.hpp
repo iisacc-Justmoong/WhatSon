@@ -7,6 +7,17 @@
 
 namespace WhatSon::Hierarchy::TreeItemSupport
 {
+    inline int clampSelectionIndexToVisibleDefault(int requested, int itemCount)
+    {
+        if (itemCount <= 0)
+        {
+            return -1;
+        }
+
+        const int clamped = std::clamp(requested, -1, itemCount - 1);
+        return clamped >= 0 ? clamped : 0;
+    }
+
     template <typename Item>
     inline void applyChevronByDepth(QVector<Item>* items)
     {

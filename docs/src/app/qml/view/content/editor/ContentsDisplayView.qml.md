@@ -2,7 +2,7 @@
 
 ## Responsibility
 
-`ContentsDisplayView.qml` is the unified desktop/mobile editor host.
+`ContentsDisplayView.qml` is the unified desktop/mobile note editor host.
 
 It composes:
 
@@ -12,6 +12,10 @@ It composes:
 - legacy fallback editor hosting
 - gutter/minimap/page layout
 - resource import wiring
+
+It no longer acts as the direct center-surface viewer for resource-backed hierarchy browsing.
+`ContentViewLayout.qml` now mounts `ContentsResourceEditorView.qml` beside this host whenever the active list model is
+not note-backed.
 
 ## Editing Model
 

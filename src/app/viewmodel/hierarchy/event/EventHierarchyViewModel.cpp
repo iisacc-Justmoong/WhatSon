@@ -3,6 +3,7 @@
 #include "file/WhatSonDebugTrace.hpp"
 #include "file/hierarchy/event/WhatSonEventHierarchyParser.hpp"
 #include "file/hierarchy/event/WhatSonEventHierarchyStore.hpp"
+#include "viewmodel/hierarchy/WhatSonHierarchyTreeItemSupport.hpp"
 #include "viewmodel/hierarchy/event/EventHierarchyViewModelSupport.hpp"
 
 #include <QDir>
@@ -146,7 +147,9 @@ QString EventHierarchyViewModel::lastLoadError() const
 
 void EventHierarchyViewModel::setSelectedIndex(int index)
 {
-    const int clamped = WhatSon::Hierarchy::EventSupport::clampSelectionIndex(index, m_itemModel.rowCount());
+    const int clamped = WhatSon::Hierarchy::TreeItemSupport::clampSelectionIndexToVisibleDefault(
+        index,
+        m_itemModel.rowCount());
     if (m_selectedIndex == clamped)
     {
         return;

@@ -3,7 +3,7 @@
 ## Responsibility
 
 `ContentsResourceViewer.qml` is the low-level bitmap/PDF viewport used by note-body resource cards and other resource
-presentation surfaces.
+presentation surfaces, including the dedicated center-surface resource editor.
 
 ## Rendering Contract
 
@@ -35,6 +35,8 @@ presentation surfaces.
 ## Interaction
 
 - Renders only the resource viewport itself (bitmap image or PDF surface) with no extra metadata strip, button, or fallback card scaffold.
+- The dedicated resource editor wraps this viewport with metadata and unsupported-state scaffolding instead of
+  reimplementing bitmap/PDF rendering itself.
 - For bitmap resources, the viewer remains presentation-neutral: parent frames decide whether the image should crop,
   fit, or drive outer height. The structured note-body path now uses those intrinsic bitmap dimensions to derive
   full-width, auto-height image blocks.

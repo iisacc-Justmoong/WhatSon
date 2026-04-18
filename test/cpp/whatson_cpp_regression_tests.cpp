@@ -2,6 +2,7 @@
 #include "file/hierarchy/folders/WhatSonFoldersHierarchyParser.hpp"
 #include "file/hierarchy/folders/WhatSonFoldersHierarchyStore.hpp"
 #include "file/import/WhatSonClipboardResourceImportFileNamePolicy.hpp"
+#include "file/viewer/ResourceBitmapViewer.hpp"
 #define private public
 #include "file/note/ContentsNoteManagementCoordinator.hpp"
 #undef private
@@ -22,6 +23,9 @@
 #include "viewmodel/content/ContentsStructuredDocumentMutationPolicy.hpp"
 #include "viewmodel/content/ContentsResourceTagTextGenerator.hpp"
 #include "viewmodel/hierarchy/IHierarchyViewModel.hpp"
+#include "viewmodel/hierarchy/WhatSonHierarchyTreeItemSupport.hpp"
+#include "viewmodel/hierarchy/progress/ProgressHierarchyViewModelSupport.hpp"
+#include "viewmodel/hierarchy/resources/ResourcesHierarchyViewModel.hpp"
 #include "viewmodel/navigationbar/EditorViewModeViewModel.hpp"
 #include "viewmodel/navigationbar/EditorViewSectionViewModel.hpp"
 #include "viewmodel/navigationbar/EditorViewState.hpp"
@@ -47,6 +51,7 @@
 #include <QRegularExpression>
 #include <QSettings>
 #include <QTemporaryDir>
+#include <QUrl>
 #include <QtTest>
 
 #include <memory>
@@ -427,9 +432,12 @@ private slots:
     void clipboardImportFileNamePolicy_generatesRandom32CharacterAlphaNumericPngNames();
     void unixTimeAnalyzer_reportsStableEpochFields();
     void cronExpression_and_asyncScheduler_coverParsingMatchingAndDeduplication();
+    void hierarchyTreeItemSupport_clampsNegativeSelectionToFirstVisibleRow();
+    void progressHierarchySupport_defaultsFirstVisibleItemToFirstDraft();
     void resourceTagTextGenerator_and_noteFolderSemantics_normalizeDescriptorsAndXml();
     void foldersHierarchyParser_escapesLiteralSlashLabelsIntoSingleSegments();
     void foldersHierarchySessionService_preservesEscapedLiteralSlashFolderPaths();
+    void resourcesHierarchyViewModel_defaultsSelectionToImageAndFiltersList();
     void structuredCollectionPolicy_normalizesEntriesAndPrefersResolvedMatches();
     void structuredMutationPolicy_buildsDeletionAndInsertionPayloads();
     void structuredMutationPolicy_buildsParagraphBoundaryMergeAndSplitPayloads();
@@ -438,6 +446,8 @@ private slots:
     void structuredDocumentHost_tracksSelectionClearRevisionAcrossInteractions();
     void logicalLineLayoutSupport_mapsEditorRectanglesIntoBlockCoordinates();
     void logicalLineLayoutSupport_fallsBackWhenLiveEditorGeometryIsUnavailable();
+    void editorSurfaceModeSupport_switchesToResourceEditorForResourceListModels();
+    void resourceBitmapViewer_projectsRenderableImagePreviewState();
     void editorSessionController_preservesLocalEditorAuthorityAgainstSameNoteModelSync();
     void noteManagementCoordinator_reconcilePersistsEditorSnapshotWhenPreferred();
     void noteManagementCoordinator_reconcileRefreshesWithoutPersistingWhenEditorIsNotAuthoritative();
@@ -1215,6 +1225,27 @@ void WhatSonCppRegressionTests::cronExpression_and_asyncScheduler_coverParsingMa
     QCOMPARE(scheduler.scheduleCount(), 0);
 }
 
+void WhatSonCppRegressionTests::hierarchyTreeItemSupport_clampsNegativeSelectionToFirstVisibleRow()
+{
+    QCOMPARE(WhatSon::Hierarchy::TreeItemSupport::clampSelectionIndexToVisibleDefault(-1, 0), -1);
+    QCOMPARE(WhatSon::Hierarchy::TreeItemSupport::clampSelectionIndexToVisibleDefault(-1, 4), 0);
+    QCOMPARE(WhatSon::Hierarchy::TreeItemSupport::clampSelectionIndexToVisibleDefault(0, 4), 0);
+    QCOMPARE(WhatSon::Hierarchy::TreeItemSupport::clampSelectionIndexToVisibleDefault(3, 4), 3);
+    QCOMPARE(WhatSon::Hierarchy::TreeItemSupport::clampSelectionIndexToVisibleDefault(99, 4), 3);
+}
+
+void WhatSonCppRegressionTests::progressHierarchySupport_defaultsFirstVisibleItemToFirstDraft()
+{
+    const QVector<ProgressHierarchyItem> items =
+        WhatSon::Hierarchy::ProgressSupport::buildSupportedTypeItems({});
+
+    QVERIFY(!items.isEmpty());
+    QCOMPARE(items.constFirst().label, QStringLiteral("First draft"));
+    QCOMPARE(
+        WhatSon::Hierarchy::TreeItemSupport::clampSelectionIndexToVisibleDefault(-1, items.size()),
+        0);
+}
+
 void WhatSonCppRegressionTests::resourceTagTextGenerator_and_noteFolderSemantics_normalizeDescriptorsAndXml()
 {
     ContentsResourceTagTextGenerator generator;
@@ -1412,6 +1443,30 @@ void WhatSonCppRegressionTests::foldersHierarchySessionService_preservesEscapedL
     QCOMPARE(entries.constFirst().id, QStringLiteral("Marketing\\/Sales"));
     QCOMPARE(entries.constFirst().label, QStringLiteral("Marketing/Sales"));
     QCOMPARE(entries.constFirst().depth, 0);
+}
+
+void WhatSonCppRegressionTests::resourcesHierarchyViewModel_defaultsSelectionToImageAndFiltersList()
+{
+    ResourcesHierarchyViewModel viewModel;
+    viewModel.setResourcePaths({
+        QStringLiteral("images/Cover.PNG"),
+        QStringLiteral("documents/Report.pdf")
+    });
+
+    QCOMPARE(viewModel.selectedIndex(), 0);
+    QCOMPARE(viewModel.itemLabel(0), QStringLiteral("Image"));
+    QVERIFY(viewModel.noteListModel() != nullptr);
+    QCOMPARE(viewModel.noteListModel()->itemCount(), 1);
+
+    const QModelIndex imageIndex = viewModel.noteListModel()->index(0, 0);
+    QVERIFY(imageIndex.isValid());
+    QCOMPARE(
+        viewModel.noteListModel()->data(imageIndex, ResourcesListModel::TypeRole).toString(),
+        QStringLiteral("image"));
+
+    viewModel.setSelectedIndex(-1);
+    QCOMPARE(viewModel.selectedIndex(), 0);
+    QCOMPARE(viewModel.noteListModel()->itemCount(), 1);
 }
 
 void WhatSonCppRegressionTests::structuredCollectionPolicy_normalizesEntriesAndPrefersResolvedMatches()
@@ -1932,6 +1987,84 @@ void WhatSonCppRegressionTests::logicalLineLayoutSupport_fallsBackWhenLiveEditor
     QVERIFY(onlyEntry.isObject());
     QCOMPARE(onlyEntry.property(QStringLiteral("contentY")).toInt(), 0);
     QCOMPARE(onlyEntry.property(QStringLiteral("contentHeight")).toInt(), 12);
+}
+
+void WhatSonCppRegressionTests::editorSurfaceModeSupport_switchesToResourceEditorForResourceListModels()
+{
+    ensureCoreApplication();
+    QJSEngine engine;
+    const QJSValue library = evaluateQmlJsLibrary(
+        &engine,
+        QStringLiteral("src/app/qml/view/content/editor/ContentsEditorSurfaceModeSupport.js"));
+    QVERIFY2(!library.isError(), qPrintable(library.toString()));
+
+    const QJSValue resourceEditorVisible = library.property(QStringLiteral("resourceEditorVisible"));
+    const QJSValue currentResourceEntry = library.property(QStringLiteral("currentResourceEntry"));
+    const QJSValue hasCurrentResourceEntry = library.property(QStringLiteral("hasCurrentResourceEntry"));
+    QVERIFY(resourceEditorVisible.isCallable());
+    QVERIFY(currentResourceEntry.isCallable());
+    QVERIFY(hasCurrentResourceEntry.isCallable());
+
+    QJSValue resourceEntry = engine.newObject();
+    resourceEntry.setProperty(QStringLiteral("displayName"), QStringLiteral("Cover.PNG"));
+    resourceEntry.setProperty(QStringLiteral("renderMode"), QStringLiteral("image"));
+
+    QJSValue resourceListModel = engine.newObject();
+    resourceListModel.setProperty(QStringLiteral("noteBacked"), false);
+    resourceListModel.setProperty(QStringLiteral("currentResourceEntry"), resourceEntry);
+
+    QJSValue noteListModel = engine.newObject();
+    noteListModel.setProperty(QStringLiteral("noteBacked"), true);
+    noteListModel.setProperty(QStringLiteral("currentResourceEntry"), resourceEntry);
+
+    QVERIFY(resourceEditorVisible.call(QJSValueList{resourceListModel}).toBool());
+    QVERIFY(!resourceEditorVisible.call(QJSValueList{noteListModel}).toBool());
+    QVERIFY(!resourceEditorVisible.call(QJSValueList{QJSValue(QJSValue::UndefinedValue)}).toBool());
+
+    const QJSValue resolvedResourceEntry = currentResourceEntry.call(QJSValueList{resourceListModel});
+    QVERIFY(resolvedResourceEntry.isObject());
+    QCOMPARE(
+        resolvedResourceEntry.property(QStringLiteral("displayName")).toString(),
+        QStringLiteral("Cover.PNG"));
+    QVERIFY(hasCurrentResourceEntry.call(QJSValueList{resourceListModel}).toBool());
+
+    const QJSValue emptyResourceEntry = currentResourceEntry.call(QJSValueList{noteListModel});
+    QVERIFY(emptyResourceEntry.isObject());
+    QVERIFY(!hasCurrentResourceEntry.call(QJSValueList{noteListModel}).toBool());
+    QVERIFY(emptyResourceEntry.property(QStringLiteral("displayName")).isUndefined());
+}
+
+void WhatSonCppRegressionTests::resourceBitmapViewer_projectsRenderableImagePreviewState()
+{
+    ResourceBitmapViewer viewer;
+
+    viewer.setResourceEntry(QVariantMap{
+        {QStringLiteral("displayName"), QStringLiteral("Cover.PNG")},
+        {QStringLiteral("renderMode"), QStringLiteral("image")},
+        {QStringLiteral("format"), QStringLiteral(".PNG")},
+        {QStringLiteral("resolvedPath"), QStringLiteral("/tmp/WhatSon/Cover.PNG")}
+    });
+
+    QCOMPARE(viewer.normalizedFormat(), QStringLiteral(".png"));
+    QVERIFY(viewer.bitmapPreviewCandidate());
+    QVERIFY(viewer.bitmapFormatCompatible());
+    QVERIFY(viewer.bitmapRenderable());
+    QCOMPARE(
+        viewer.openTarget(),
+        QUrl::fromLocalFile(QStringLiteral("/tmp/WhatSon/Cover.PNG")).toString());
+    QCOMPARE(viewer.viewerSource(), viewer.openTarget());
+    QVERIFY(viewer.incompatibilityReason().isEmpty());
+
+    viewer.setResourceEntry(QVariantMap{
+        {QStringLiteral("displayName"), QStringLiteral("Source.psd")},
+        {QStringLiteral("format"), QStringLiteral(".psd")},
+        {QStringLiteral("resolvedPath"), QStringLiteral("/tmp/WhatSon/Source.psd")}
+    });
+
+    QVERIFY(viewer.bitmapPreviewCandidate());
+    QVERIFY(!viewer.bitmapFormatCompatible());
+    QVERIFY(!viewer.bitmapRenderable());
+    QVERIFY(!viewer.incompatibilityReason().trimmed().isEmpty());
 }
 
 void WhatSonCppRegressionTests::editorSessionController_preservesLocalEditorAuthorityAgainstSameNoteModelSync()

@@ -3,6 +3,7 @@
 #include "file/WhatSonDebugTrace.hpp"
 #include "file/hierarchy/preset/WhatSonPresetHierarchyParser.hpp"
 #include "file/hierarchy/preset/WhatSonPresetHierarchyStore.hpp"
+#include "viewmodel/hierarchy/WhatSonHierarchyTreeItemSupport.hpp"
 #include "viewmodel/hierarchy/preset/PresetHierarchyViewModelSupport.hpp"
 
 #include <QDir>
@@ -146,7 +147,9 @@ QString PresetHierarchyViewModel::lastLoadError() const
 
 void PresetHierarchyViewModel::setSelectedIndex(int index)
 {
-    const int clamped = WhatSon::Hierarchy::PresetSupport::clampSelectionIndex(index, m_itemModel.rowCount());
+    const int clamped = WhatSon::Hierarchy::TreeItemSupport::clampSelectionIndexToVisibleDefault(
+        index,
+        m_itemModel.rowCount());
     if (m_selectedIndex == clamped)
     {
         return;

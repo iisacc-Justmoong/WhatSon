@@ -32,24 +32,24 @@ if (WHATSON_ENABLE_DEV_TOOLING)
     file(GLOB_RECURSE WHATSON_DEV_QML_FILES
             CONFIGURE_DEPENDS
             RELATIVE "${CMAKE_SOURCE_DIR}"
-            "src/app/qml/*.qml"
+            "${CMAKE_SOURCE_DIR}/src/app/qml/*.qml"
     )
 
     file(GLOB_RECURSE WHATSON_DEV_CPP_FILES
             CONFIGURE_DEPENDS
             RELATIVE "${CMAKE_SOURCE_DIR}"
-            "src/app/*.cpp"
-            "src/app/*.cc"
-            "src/app/*.cxx"
+            "${CMAKE_SOURCE_DIR}/src/app/*.cpp"
+            "${CMAKE_SOURCE_DIR}/src/app/*.cc"
+            "${CMAKE_SOURCE_DIR}/src/app/*.cxx"
     )
 
     if (WHATSON_BUILD_DAEMON)
         file(GLOB_RECURSE WHATSON_DEV_DAEMON_CPP_FILES
                 CONFIGURE_DEPENDS
                 RELATIVE "${CMAKE_SOURCE_DIR}"
-                "src/daemon/*.cpp"
-                "src/daemon/*.cc"
-                "src/daemon/*.cxx"
+                "${CMAKE_SOURCE_DIR}/src/daemon/*.cpp"
+                "${CMAKE_SOURCE_DIR}/src/daemon/*.cc"
+                "${CMAKE_SOURCE_DIR}/src/daemon/*.cxx"
         )
         list(APPEND WHATSON_DEV_CPP_FILES ${WHATSON_DEV_DAEMON_CPP_FILES})
     endif ()

@@ -39,6 +39,9 @@
   creates the new folder as a child of the selected folder.
 - After persistence succeeds, `createFolder()` also moves the primary selected index to the inserted row so the QML
   sidebar can immediately activate and rename the new folder.
+- When the hierarchy has visible rows, a negative or invalid selected index is normalized to the first visible row
+  before the viewmodel republishes state. This keeps the library note-list filter aligned with the row the sidebar
+  already renders as active.
 - `deleteSelectedFolder()` remains the authoritative delete path. It removes the selected folder together with its
   descendant subtree and persists the updated folders store before refreshing sidebar state.
 - The library sidebar right-click context menu now reuses those two existing methods through
