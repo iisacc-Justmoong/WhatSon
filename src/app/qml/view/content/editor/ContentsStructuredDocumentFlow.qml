@@ -1213,6 +1213,15 @@ FocusScope {
         const safeBlockIndex = Math.max(0, Math.min(blocks.length - 1, Math.floor(Number(blockIndex) || 0)))
         const normalizedAxis = axis === undefined || axis === null ? "" : String(axis).trim().toLowerCase()
         const normalizedSide = side === undefined || side === null ? "" : String(side).trim().toLowerCase()
+        if (normalizedAxis === "document") {
+            const currentSourceText = documentFlow.normalizedSourceText(documentFlow.sourceText)
+            documentFlow.requestFocus({
+                                          "sourceOffset": normalizedSide === "before"
+                                                          ? 0
+                                                          : currentSourceText.length
+                                      })
+            return true
+        }
         if ((normalizedAxis !== "horizontal" && normalizedAxis !== "vertical")
                 || (normalizedSide !== "before" && normalizedSide !== "after")) {
             return false

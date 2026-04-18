@@ -479,6 +479,8 @@ private slots:
     void detailPanelRouting_separatesNoteAndResourceViewsAndViewModels();
     void contentsDisplayView_invalidatesGutterGeometryImmediatelyAcrossRapidNoteSwitches();
     void contentsDisplayView_keepsGutterNumbersCloseToTheEditorBody();
+    void inlineFormatEditor_preservesMacModifierVerticalNavigationHooks();
+    void structuredEditors_routeMacModifierVerticalNavigationAcrossBlockAndDocumentBoundaries();
     void paperSelection_tracksChosenPaperEnumState();
     void a4PaperBackground_exposesCanonicalMetricsAndAnchorsPrintRendererDefaults();
     void textFormatRenderer_wrapsCommittedUrlsIntoCanonicalWebLinks();
@@ -2656,6 +2658,57 @@ void WhatSonCppRegressionTests::contentsDisplayView_keepsGutterNumbersCloseToThe
     QVERIFY(displayViewSource.contains(QStringLiteral("readonly property int gutterBodyGap")));
     QVERIFY(displayViewSource.contains(QStringLiteral("readonly property int lineNumberRightInset: contentsView.gutterBodyGap")));
     QVERIFY(!displayViewSource.contains(QStringLiteral("readonly property int lineNumberRightInset: contentsView.editorHorizontalInset")));
+}
+
+void WhatSonCppRegressionTests::inlineFormatEditor_preservesMacModifierVerticalNavigationHooks()
+{
+    const QString inlineEditorSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/content/editor/ContentsInlineFormatEditor.qml"));
+
+    QVERIFY(!inlineEditorSource.isEmpty());
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("property var modifierVerticalNavigationHandler: null")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("function previousParagraphCursorPosition(")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("function nextParagraphCursorPosition(")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("function handleMacModifierVerticalNavigation(event)")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("Qt.platform.os !== \"osx\"")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("const commandPressed = (modifiers & Qt.MetaModifier) !== 0;")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("const optionPressed = (modifiers & Qt.AltModifier) !== 0;")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("control.modifierVerticalNavigationHandler")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("textInput.deselect !== undefined")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("if (control.handleMacModifierVerticalNavigation(event))")));
+}
+
+void WhatSonCppRegressionTests::structuredEditors_routeMacModifierVerticalNavigationAcrossBlockAndDocumentBoundaries()
+{
+    const QString textBlockSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/content/editor/ContentsDocumentTextBlock.qml"));
+    const QString calloutBlockSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/content/editor/ContentsCalloutBlock.qml"));
+    const QString agendaBlockSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/content/editor/ContentsAgendaBlock.qml"));
+    const QString documentBlockSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/content/editor/ContentsDocumentBlock.qml"));
+    const QString breakBlockSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/content/editor/ContentsBreakBlock.qml"));
+    const QString structuredFlowSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/content/editor/ContentsStructuredDocumentFlow.qml"));
+
+    QVERIFY(!textBlockSource.isEmpty());
+    QVERIFY(!calloutBlockSource.isEmpty());
+    QVERIFY(!agendaBlockSource.isEmpty());
+    QVERIFY(!documentBlockSource.isEmpty());
+    QVERIFY(!breakBlockSource.isEmpty());
+    QVERIFY(!structuredFlowSource.isEmpty());
+
+    QVERIFY(textBlockSource.contains(QStringLiteral("modifierVerticalNavigationHandler: function (request, event) {")));
+    QVERIFY(textBlockSource.contains(QStringLiteral("textBlock.boundaryNavigationRequested(\"document\", request.moveUp ? \"before\" : \"after\")")));
+    QVERIFY(calloutBlockSource.contains(QStringLiteral("calloutBlock.boundaryNavigationRequested(\"document\", request.moveUp ? \"before\" : \"after\")")));
+    QVERIFY(agendaBlockSource.contains(QStringLiteral("agendaBlock.boundaryNavigationRequested(\"document\", request.moveUp ? \"before\" : \"after\")")));
+    QVERIFY(documentBlockSource.contains(QStringLiteral("const macModifierVerticalNavigation = Qt.platform.os === \"osx\"")));
+    QVERIFY(documentBlockSource.contains(QStringLiteral("documentBlock.boundaryNavigationRequested(\"document\", moveUp ? \"before\" : \"after\")")));
+    QVERIFY(breakBlockSource.contains(QStringLiteral("breakBlock.boundaryNavigationRequested(\"document\", moveUp ? \"before\" : \"after\")")));
+    QVERIFY(structuredFlowSource.contains(QStringLiteral("if (normalizedAxis === \"document\") {")));
+    QVERIFY(structuredFlowSource.contains(QStringLiteral("\"sourceOffset\": normalizedSide === \"before\"")));
 }
 
 void WhatSonCppRegressionTests::textFormatRenderer_appliesPaperPaletteToEditorAndPreviewHtml()

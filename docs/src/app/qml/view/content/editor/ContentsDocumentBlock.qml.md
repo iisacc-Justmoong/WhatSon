@@ -34,6 +34,9 @@ Provides the single document-block adapter that keeps `ContentsStructuredDocumen
   handling.
   Note-wide shortcuts such as clipboard-image paste therefore keep working even when focus currently sits inside one
   structured paragraph editor or on a selected break/resource block.
+- Atomic resource/break blocks now also preserve macOS vertical modifier semantics.
+  `Option + Up/Down` steps to the previous/next block boundary, while `Command + Up/Down` requests document start/end
+  instead of being collapsed into ordinary adjacent-block traversal.
 - The adapter now also listens to the structured document host's selection-clear revision and forwards
   `clearSelection(preserveFocusedEditor)` into the mounted delegate.
   Selection cleanup therefore stays centralized at the host boundary instead of being reimplemented for every viewport

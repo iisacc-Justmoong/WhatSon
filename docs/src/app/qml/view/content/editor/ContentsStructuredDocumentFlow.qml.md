@@ -61,6 +61,10 @@ source.
   document block.
   Structured notes therefore can share note-wide shortcut interception, such as clipboard-image paste, without falling
   back to the legacy whole-note editor path.
+- Structured block navigation now also understands a document-level boundary axis in addition to adjacent
+  `horizontal / vertical` hops.
+  `Command + Up/Down` emitted by block delegates can therefore route straight to RAW document start/end without
+  pretending that the first/last block edge is only another neighboring-block transition.
 - The parser now supplies the same block-trait payload before delegates finish loading, so nearest-editable-block
   fallback, logical line counting, gutter collapse, and minimap sampling no longer depend on the delegate having
   mounted already.

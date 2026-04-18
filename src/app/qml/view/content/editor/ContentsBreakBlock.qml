@@ -105,6 +105,21 @@ FocusScope {
             if (shortcutHandled || event.accepted)
                 return
         }
+        const modifiers = Number(event.modifiers) || 0
+        const moveUp = event.key === Qt.Key_Up
+        const moveDown = event.key === Qt.Key_Down
+        const macModifierVerticalNavigation = Qt.platform.os === "osx"
+                && (moveUp || moveDown)
+                && (modifiers & (Qt.ControlModifier | Qt.ShiftModifier)) === 0
+                && (modifiers & (Qt.AltModifier | Qt.MetaModifier)) !== 0
+        if (macModifierVerticalNavigation) {
+            if ((modifiers & Qt.MetaModifier) !== 0)
+                breakBlock.boundaryNavigationRequested("document", moveUp ? "before" : "after")
+            else
+                breakBlock.boundaryNavigationRequested("vertical", moveUp ? "before" : "after")
+            event.accepted = true
+            return
+        }
         if (event.key === Qt.Key_Backspace || event.key === Qt.Key_Delete) {
             breakBlock.blockDeletionRequested()
             event.accepted = true
