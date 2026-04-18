@@ -175,13 +175,6 @@ FocusScope {
         return ({})
     }
 
-    function applyInlineFormatToSelection(tagName, selectionSnapshot) {
-        const blockItem = blockLoader.item
-        if (!blockItem || blockItem.applyInlineFormatToSelection === undefined)
-            return false
-        return !!blockItem.applyInlineFormatToSelection(tagName, selectionSnapshot)
-    }
-
     function clearSelection(preserveFocusedEditor) {
         const blockItem = blockLoader.item
         if (!blockItem || blockItem.clearSelection === undefined)

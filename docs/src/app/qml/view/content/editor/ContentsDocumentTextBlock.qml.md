@@ -24,9 +24,10 @@ from multiple implicit parser blocks.
   - rewrite the RAW block source through `ContentsTextFormatRenderer.applyPlainTextReplacementToSource(...)`
 - When the host passes a flattened interactive prose span, that RAW rewrite now applies to the whole grouped source
   slice instead of to only one parser paragraph entry.
-- Inline-format shortcuts no longer wrap raw text with local string surgery inside this QML block.
-  They now call `ContentsTextFormatRenderer.applyInlineStyleToLogicalSelectionSource(...)` so selection-based style
-  rewrites preserve the existing inline-style coverage model.
+- Inline-format shortcuts no longer mutate RAW from inside this delegate at all.
+  The block exposes only the live selection snapshot, while
+  `ContentsStructuredEditorFormattingController.qml` performs the actual selection-based RAW rewrite for the owning
+  structured editor session.
 - Focus restoration and caret-origin source offsets are now mapped through the same inline-tag-aware cursor bridge.
   Rich text cursor positions stay in visible plain-text space, while reparsed RAW offsets still return to the same
   visible caret location.
@@ -76,3 +77,6 @@ from multiple implicit parser blocks.
 - Paragraph split/merge requests still never mutate RAW locally inside this delegate.
   They only emit the boundary intent upward so the shared structured mutation policy can rewrite implicit lines and
   explicit paragraph wrappers consistently from one place.
+- Inline-format command handling now follows the same rule:
+  this delegate exposes selection/focus information, but the structured editor controller owns the RAW formatting
+  mutation.

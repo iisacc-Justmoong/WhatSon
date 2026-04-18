@@ -5,6 +5,10 @@ Hosts the parsed `.wsnbody` block stream as one ordered document editor and forw
 source.
 
 ## Current Behavior
+- Inline-format mutation authority now lives in one sibling editor controller,
+  `ContentsStructuredEditorFormattingController.qml`.
+  The flow exposes the same public formatting hooks to the outer host, but those hooks now delegate into a
+  flow-level editor object instead of calling block-local delegate mutation methods directly.
 - The flow consumes raw parsed `renderedDocumentBlocks` plus `renderedResources`, then builds a second
   interaction-only block stream before it lays the note out.
 - Parsed block boundaries therefore remain available for parsing, linting, and block-local render traits, but the
@@ -123,3 +127,6 @@ source.
 - This file is not a source of truth for the structured editor state.
 - Block delegates emit `nextSourceText` mutations upward, and the next visible document tree still comes only from
   reparsing that updated RAW snapshot.
+- Inline-style shortcuts therefore no longer depend on per-block delegate mutation helpers.
+  They now resolve selection state from the active delegate but commit the RAW rewrite through the flow-level
+  formatting controller.

@@ -54,9 +54,10 @@ WhatSon is an LVRS-based Qt Quick application.
 - `src/app/qml/MainWindowInteractionController.qml` now keeps the resize-time dynamic-resolution suspend/resume guard
   desktop-only. iOS startup no longer flips `LV.RenderQuality.dynamicResolutionEnabled` during the first geometry churn,
   which reduces swapchain recreate pressure while the Metal command queue still owns the previous multisample targets.
-- `src/app/qml/Main.qml` now also watches the embedded mobile onboarding/workspace route host. If LVRS exposes the
-  expected route path but the current page item never materializes, the root forces a route rebuild and paints a
-  temporary fallback surface instead of leaving the device on a black blank frame.
+- `src/app/qml/Main.qml` now keeps embedded mobile onboarding on the same LVRS page stack as the workspace shell, but
+  the extra startup watchdog/recovery overlay was removed. The mobile fallback now relies on the direct routed
+  `/onboarding` surface plus the existing onboarding/workspace transition controller instead of app-side route
+  self-healing.
 - `main.cpp` now re-acquires iOS Files access during startup mount preflight before deciding whether onboarding is
   needed. The stored `.wshub` path is checked through `AppleSecurityScopedResourceAccess::ensureAccessForPath(...)`
   first, and its parent directory is retried as a fallback, so reopening the app no longer falls back to onboarding
@@ -577,6 +578,9 @@ no hub is restored. `Main.qml` registers `/onboarding` beside the workspace rout
 multi-window handoff that can terminate the app session after a successful hub load. The dedicated `Onboarding.qml`
 window wrapper remains available for the explicit `whatson onboard` entrypoint and the desktop window-menu command,
 but regular mobile bootstraps route inside `Main.qml` through the shared `OnboardingContent.qml` surface.
+That embedded mobile onboarding surface now drops the desktop-only rounded, antialiased outer frame and renders as a
+plain full-window panel on mobile/iOS, which avoids allocating a fullscreen multisample onboarding chrome target during
+the first routed frame.
 Mobile onboarding no longer treats `hubLoaded` as an immediate page-complete event. `OnboardingHubController`
 now tracks a session-state ladder (`idle -> resolvingSelection -> loadingHub -> hubLoaded -> routingWorkspace -> ready`)
 and `Main.qml` only commits `/onboarding -> /` after the LVRS router confirms the workspace navigation. If that route

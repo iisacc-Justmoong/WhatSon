@@ -60,6 +60,7 @@ Item {
             return Boolean(root.hostWindow.adaptiveMobileLayout) || root.isMobilePlatform;
         return root.isMobilePlatform;
     }
+    readonly property bool useRoundedWindowFrame: !root.useMobileLayout
     property var hostWindow: null
     property var hubSessionController: null
     property color panelColor: LV.Theme.panelBackground06
@@ -246,10 +247,10 @@ Item {
         id: windowFrame
 
         anchors.fill: parent
-        antialiasing: true
-        clip: true
+        antialiasing: root.useRoundedWindowFrame
+        clip: root.useRoundedWindowFrame
         color: root.mainSurfaceColor
-        radius: root.useMobileLayout ? root.mobileSurfaceRadius : root.panelCornerRadius
+        radius: root.useRoundedWindowFrame ? root.panelCornerRadius : 0
 
         Item {
             anchors.fill: parent

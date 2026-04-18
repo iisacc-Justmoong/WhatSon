@@ -452,6 +452,8 @@ private slots:
     void editorViewModeViewModel_cyclesActiveSections();
     void onboardingRouteBootstrapController_syncsEmbeddedOnboardingLifecycle();
     void embeddedOnboardingRoutePages_avoidStackViewAnchorConflicts();
+    void mainQml_embeddedStartup_dropsWatchdogRecoveryScaffold();
+    void onboardingContent_mobileLayout_avoidsFullscreenAntialiasedWindowFrame();
     void onboardingContent_saveDialog_doesNotPreselectMissingHubFile();
     void mainQml_exposesZeroWindowPaddingForLvrsApplicationWindow();
     void clipboardImportFileNamePolicy_generatesRandom32CharacterAlphaNumericPngNames();
@@ -485,6 +487,7 @@ private slots:
     void contentsDisplayView_reservesHalfHeightBottomInsetAndCorrectsTypingViewport();
     void inlineFormatEditor_preservesMacModifierVerticalNavigationHooks();
     void structuredFlow_flattensImplicitTextBlocksIntoInteractiveGroups();
+    void structuredEditorFormattingController_commitsInlineStyleMutationsThroughFlowRawRanges();
     void structuredEditors_routeMacModifierVerticalNavigationAcrossBlockAndDocumentBoundaries();
     void paperSelection_tracksChosenPaperEnumState();
     void a4PaperBackground_exposesCanonicalMetricsAndAnchorsPrintRendererDefaults();
@@ -1270,6 +1273,38 @@ void WhatSonCppRegressionTests::embeddedOnboardingRoutePages_avoidStackViewAncho
         QStringLiteral("id: onboardingPageComponent\n\n        Item {\n            anchors.fill: parent")));
     QVERIFY(!mainQmlSource.contains(
         QStringLiteral("id: workspacePageComponent\n\n        Item {\n            anchors.fill: parent")));
+}
+
+void WhatSonCppRegressionTests::mainQml_embeddedStartup_dropsWatchdogRecoveryScaffold()
+{
+    const QString mainQmlSource = readUtf8SourceFile(QStringLiteral("src/app/qml/Main.qml"));
+
+    QVERIFY(!mainQmlSource.isEmpty());
+    QVERIFY(mainQmlSource.contains(QStringLiteral("applicationWindow.applyRequestedRoute(applicationWindow.startupRoutePath, \"completed\");")));
+    QVERIFY(mainQmlSource.contains(QStringLiteral("applicationWindow.applyRequestedRoute(String(targetPath), String(reason));")));
+    QVERIFY(!mainQmlSource.contains(QStringLiteral("expectedEmbeddedRoutePath")));
+    QVERIFY(!mainQmlSource.contains(QStringLiteral("embeddedRouteRecoveryNeeded")));
+    QVERIFY(!mainQmlSource.contains(QStringLiteral("embeddedRouteStartupStatusText")));
+    QVERIFY(!mainQmlSource.contains(QStringLiteral("startupRouteRecoveryAttempts")));
+    QVERIFY(!mainQmlSource.contains(QStringLiteral("startupRouteRecoveryReason")));
+    QVERIFY(!mainQmlSource.contains(QStringLiteral("function recoverEmbeddedRouteHost(")));
+    QVERIFY(!mainQmlSource.contains(QStringLiteral("function syncEmbeddedRouteWatchdog(")));
+    QVERIFY(!mainQmlSource.contains(QStringLiteral("id: startupRouteWatchdogTimer")));
+    QVERIFY(!mainQmlSource.contains(QStringLiteral("id: embeddedRouteStartupFallback")));
+    QVERIFY(!mainQmlSource.contains(QStringLiteral("forceReload")));
+}
+
+void WhatSonCppRegressionTests::onboardingContent_mobileLayout_avoidsFullscreenAntialiasedWindowFrame()
+{
+    const QString onboardingContentSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/window/OnboardingContent.qml"));
+
+    QVERIFY(!onboardingContentSource.isEmpty());
+    QVERIFY(onboardingContentSource.contains(QStringLiteral("readonly property bool useRoundedWindowFrame: !root.useMobileLayout")));
+    QVERIFY(onboardingContentSource.contains(QStringLiteral("antialiasing: root.useRoundedWindowFrame")));
+    QVERIFY(onboardingContentSource.contains(QStringLiteral("clip: root.useRoundedWindowFrame")));
+    QVERIFY(onboardingContentSource.contains(QStringLiteral("radius: root.useRoundedWindowFrame ? root.panelCornerRadius : 0")));
+    QVERIFY(!onboardingContentSource.contains(QStringLiteral("radius: root.useMobileLayout ? root.mobileSurfaceRadius : root.panelCornerRadius")));
 }
 
 void WhatSonCppRegressionTests::onboardingContent_saveDialog_doesNotPreselectMissingHubFile()
@@ -2762,6 +2797,38 @@ void WhatSonCppRegressionTests::structuredFlow_flattensImplicitTextBlocksIntoInt
     QVERIFY(structuredFlowSource.contains(QStringLiteral("\"flattenedInteractiveGroup\": true")));
     QVERIFY(structuredFlowSource.contains(QStringLiteral("\"type\": \"text-group\"")));
     QVERIFY(structuredFlowSource.contains(QStringLiteral("if (!!safeBlock.flattenedInteractiveGroup)")));
+}
+
+void WhatSonCppRegressionTests::structuredEditorFormattingController_commitsInlineStyleMutationsThroughFlowRawRanges()
+{
+    const QString formattingControllerSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/content/editor/ContentsStructuredEditorFormattingController.qml"));
+    const QString structuredFlowSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/content/editor/ContentsStructuredDocumentFlow.qml"));
+    const QString documentBlockSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/content/editor/ContentsDocumentBlock.qml"));
+    const QString textBlockSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/content/editor/ContentsDocumentTextBlock.qml"));
+
+    QVERIFY(!formattingControllerSource.isEmpty());
+    QVERIFY(!structuredFlowSource.isEmpty());
+    QVERIFY(!documentBlockSource.isEmpty());
+    QVERIFY(!textBlockSource.isEmpty());
+
+    QVERIFY(formattingControllerSource.contains(QStringLiteral("ContentsTextFormatRenderer {")));
+    QVERIFY(formattingControllerSource.contains(QStringLiteral("function inlineFormatTargetState() {")));
+    QVERIFY(formattingControllerSource.contains(QStringLiteral("function applyInlineFormatToBlockSelection(blockIndex, tagName, explicitSelectionSnapshot) {")));
+    QVERIFY(formattingControllerSource.contains(QStringLiteral("documentFlow.replaceSourceRange(")));
+    QVERIFY(formattingControllerSource.contains(QStringLiteral("StructuredCursorSupport.sourceOffsetForInlineTaggedCursor(")));
+    QVERIFY(formattingControllerSource.contains(QStringLiteral("\"targetBlockIndex\": safeBlockIndex")));
+
+    QVERIFY(structuredFlowSource.contains(QStringLiteral("ContentsStructuredEditorFormattingController {")));
+    QVERIFY(structuredFlowSource.contains(QStringLiteral("return structuredEditorFormattingController.inlineFormatTargetState()")));
+    QVERIFY(structuredFlowSource.contains(QStringLiteral("return structuredEditorFormattingController.applyInlineFormatToBlockSelection(")));
+    QVERIFY(structuredFlowSource.contains(QStringLiteral("return structuredEditorFormattingController.applyInlineFormatToActiveSelection(tagName)")));
+
+    QVERIFY(!documentBlockSource.contains(QStringLiteral("function applyInlineFormatToSelection(")));
+    QVERIFY(!textBlockSource.contains(QStringLiteral("function applyInlineFormatToSelection(")));
 }
 
 void WhatSonCppRegressionTests::structuredEditors_routeMacModifierVerticalNavigationAcrossBlockAndDocumentBoundaries()

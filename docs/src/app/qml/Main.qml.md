@@ -12,7 +12,7 @@
 - Claim writable ownership for selected interaction surfaces.
 - Mount `MainWindowInteractionController` and feed it the objects it needs for shortcuts and render-quality policy.
 - Switch between onboarding and workspace routes.
-- Recover embedded mobile startup routes when the LVRS page host resolves to an empty path or a missing page item.
+- Route embedded mobile onboarding and workspace through the same LVRS page stack without a separate startup watchdog.
 - Disable iOS safe-area/windowing delegation and force LVRS full-window mobile coverage so the app
   content occupies the entire screen while still pinning the render tier to `LowTier`.
 - Expose the global `StandardKey.New` note-creation shortcut only on desktop platforms.
@@ -60,9 +60,9 @@ The file keeps both desktop and mobile layout branches alive.
   window sizes now route through `LV.Theme.gap...` and `LV.Theme.scaleMetric(...)` instead of shell-local pixel
   literals.
 - Onboarding can be embedded into the route stack or opened as a separate window depending on platform and adaptive mode.
-- Embedded mobile startup now keeps an app-owned watchdog around the routed page host. If the expected onboarding or
-  workspace route exists in controller state but the active LVRS router has no current page item, `Main.qml` forces a
-  `setRoot(...)` rebuild on the expected route and shows a temporary fallback surface instead of leaving a black frame.
+- Embedded mobile startup now relies on the LVRS route stack directly: `Component.onCompleted` seeds the startup route,
+  `routeSyncRequested(...)` applies controller-directed transitions, and failure handling stays inside
+  `OnboardingRouteBootstrapController` without any extra page-host watchdog or fallback overlay in `Main.qml`.
 - The embedded onboarding/workspace route pages intentionally keep their root `Item` free of `anchors.fill`.
   LVRS route hosting is backed by a `StackView`, and stack-managed page geometry must not compete with page-root
   anchors during transitions on iOS.
@@ -84,8 +84,8 @@ The file keeps both desktop and mobile layout branches alive.
   - `monthCalendarOverlayOpenRequested` preserves the requested year/month/date coming from `YearCalendarPage.qml`
     instead of overwriting it with today's month.
 - `Component.onCompleted` performs registry registration, ownership binding, and initial layout stabilization.
-- `syncEmbeddedRouteWatchdog(...)` and `recoverEmbeddedRouteHost(...)` provide a first-frame safety net for iOS/mobile
-  startup so a missing routed page host turns into a controlled route rebuild instead of a blank screen.
+- Embedded onboarding route updates now flow only through `applyRequestedRoute(...)` and the onboarding controller's
+  `routeSyncRequested(...)` signal; `Main.qml` no longer owns a startup watchdog timer or a fallback overlay.
 - `Component.onDestruction` releases owned view bindings so the registry does not retain stale writable handles.
 
 ## Tests
@@ -99,6 +99,8 @@ The file keeps both desktop and mobile layout branches alive.
     not reintroduce a brighter mobile-only backdrop slab
   - a year-calendar month/day tap that emits `monthCalendarOverlayOpenRequested` must still open the requested
     month/date instead of being reset back to today's month
+  - embedded startup onboarding must not reintroduce a startup watchdog timer, recovery helper, or fallback overlay in
+    `Main.qml`
 
 ## Practical Reading
 Read this file with:

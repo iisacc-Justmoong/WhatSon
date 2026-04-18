@@ -61,6 +61,14 @@ FocusScope {
         blocks: documentFlow.normalizedBlocks()
     }
 
+    ContentsStructuredEditorFormattingController {
+        id: structuredEditorFormattingController
+
+        blockRepeater: blockRepeater
+        documentFlow: documentFlow
+        paperPaletteEnabled: documentFlow.paperPaletteEnabled
+    }
+
     Keys.onPressed: function (event) {
         if (documentFlow.handleActiveBlockDeleteKeyPress(event))
             event.accepted = true
@@ -734,58 +742,18 @@ FocusScope {
     }
 
     function inlineFormatTargetState() {
-        const blocks = documentFlow.normalizedBlocks()
-        if (blocks.length === 0)
-            return ({ "valid": false })
-        const resolvedActiveBlockIndex = documentFlow.normalizedResolvedInteractiveBlockIndex()
-        const safeActiveBlockIndex = Math.max(0, Math.min(blocks.length - 1, resolvedActiveBlockIndex))
-        const activeBlockHost = blockRepeater.itemAt(safeActiveBlockIndex)
-        const delegateItem = documentFlow.delegateItemForBlockHost(activeBlockHost)
-        if (!delegateItem)
-            return ({
-                        "blockIndex": safeActiveBlockIndex,
-                        "selectionSnapshot": ({ }),
-                        "valid": false
-                    })
-        const selectionSnapshot = delegateItem.inlineFormatSelectionSnapshot !== undefined
-                ? delegateItem.inlineFormatSelectionSnapshot()
-                : delegateItem.selectionSnapshot !== undefined
-                  ? delegateItem.selectionSnapshot()
-                  : ({})
-        return {
-            "blockIndex": safeActiveBlockIndex,
-            "selectionSnapshot": selectionSnapshot,
-            "valid": documentFlow.selectionSnapshotIsValid(selectionSnapshot)
-        }
+        return structuredEditorFormattingController.inlineFormatTargetState()
     }
 
     function applyInlineFormatToBlockSelection(blockIndex, tagName, selectionSnapshot) {
-        const blocks = documentFlow.normalizedBlocks()
-        if (blocks.length === 0)
-            return false
-        const numericBlockIndex = Number(blockIndex)
-        if (!isFinite(numericBlockIndex))
-            return false
-        const safeActiveBlockIndex = Math.max(
-                    0,
-                    Math.min(
-                        blocks.length - 1,
-                        Math.floor(numericBlockIndex)))
-        const activeBlockHost = blockRepeater.itemAt(safeActiveBlockIndex)
-        const delegateItem = documentFlow.delegateItemForBlockHost(activeBlockHost)
-        if (!delegateItem || delegateItem.applyInlineFormatToSelection === undefined)
-            return false
-        return !!delegateItem.applyInlineFormatToSelection(tagName, selectionSnapshot)
+        return structuredEditorFormattingController.applyInlineFormatToBlockSelection(
+                    blockIndex,
+                    tagName,
+                    selectionSnapshot)
     }
 
     function applyInlineFormatToActiveSelection(tagName) {
-        const targetState = documentFlow.inlineFormatTargetState()
-        if (!targetState.valid)
-            return false
-        return documentFlow.applyInlineFormatToBlockSelection(
-                    targetState.blockIndex,
-                    tagName,
-                    targetState.selectionSnapshot)
+        return structuredEditorFormattingController.applyInlineFormatToActiveSelection(tagName)
     }
 
     function handleActiveBlockDeleteKeyPress(event) {
