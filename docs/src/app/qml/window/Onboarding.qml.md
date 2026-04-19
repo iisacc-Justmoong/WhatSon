@@ -18,6 +18,8 @@
   instead of raw `542/867/420/620/762/470px` literals.
 - The outer window still delegates all visual chrome to `OnboardingContent.qml`; this file only owns window sizing,
   recentering, modality, and route-to-content wiring.
+- Embedded desktop onboarding completion now closes the application-modal shell immediately so the main workspace can
+  receive note-editor focus and pointer input after a hub finishes loading.
 
 ### Object IDs
 - `root`

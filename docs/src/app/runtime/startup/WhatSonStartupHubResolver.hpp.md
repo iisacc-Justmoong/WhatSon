@@ -7,3 +7,5 @@ This header defines helper functions that resolve the startup hub package and an
 - `resolveStartupHubSelection(...)` now accepts `ISelectedHubStore`.
 - Startup hub resolution is no longer tied to the concrete settings store implementation.
 - The resolver consumes only the persisted startup selection contract and does not accept a blueprint fallback path.
+- The startup selection record now carries the persisted selection URL as well as the resolved hub path/bookmark so iOS
+  can restore provider-backed `.wshub` picks through bookmark-first resolution.

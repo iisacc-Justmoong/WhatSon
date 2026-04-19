@@ -104,6 +104,9 @@ ctest --test-dir build --output-on-failure -L cpp_regression
   (`Image`, `First draft`) remains identical to the list filter applied by the corresponding viewmodel.
 - Startup hub selection now also pins the “no blueprint fallback” rule, so clearing the persisted selection cannot
   silently reopen a sample workspace during regression runs.
+- Startup hub persistence now also pins the selection-URL/bookmark contract plus the iOS direct `.wshub` picker source
+  wiring, so provider-backed mobile hub selection cannot regress back to a folder-only flow or a path-only startup
+  restore.
 - The content-surface mode helper now also pins note-vs-resource editor routing, so a direct resource list model
   switches the center slot away from the note editor immediately.
 - The dedicated resource editor QML is now also source-locked as a transparent viewer-only surface, so Resources

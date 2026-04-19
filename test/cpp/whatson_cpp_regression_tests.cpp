@@ -454,8 +454,11 @@ private slots:
     void mainQml_iosInlineOnboarding_pinsPresentationToWorkspaceRoute();
     void mainCpp_iosStartup_missingHubUsesStandaloneOnboardingWindow();
     void iosInlineOnboardingSequence_reusesSharedOnboardingSurface();
+    void onboardingWindow_closesModalShellAfterEmbeddedHubLoad();
+    void startupHubResolver_persistsSelectionUrlsForBookmarkBasedIosRestore();
     void onboardingContent_mobileLayout_avoidsFullscreenAntialiasedWindowFrame();
     void onboardingContent_saveDialog_doesNotPreselectMissingHubFile();
+    void appleSecurityScopedAccess_allowsProviderUrlsWithFilesystemPaths();
     void mainQml_exposesZeroWindowPaddingForLvrsApplicationWindow();
     void clipboardImportFileNamePolicy_generatesRandom32CharacterAlphaNumericPngNames();
     void unixTimeAnalyzer_reportsStableEpochFields();
@@ -635,21 +638,29 @@ void WhatSonCppRegressionTests::selectedHubStore_persistsNormalizedSelectionsWit
     QVERIFY(QDir().mkpath(selectedHubPath));
 
     const QByteArray bookmark("bookmark-token");
-    store.setSelectedHubSelection(selectedHubPath, bookmark);
+    const QString selectedHubUrl = QUrl::fromLocalFile(
+        WhatSon::HubPath::normalizeAbsolutePath(selectedHubPath)).toString(QUrl::FullyEncoded);
+    store.setSelectedHubSelection(selectedHubPath, bookmark, selectedHubUrl);
 
     QCOMPARE(store.selectedHubPath(), WhatSon::HubPath::normalizeAbsolutePath(selectedHubPath));
+    QCOMPARE(store.selectedHubUrl(), selectedHubUrl);
     QCOMPARE(store.selectedHubAccessBookmark(), bookmark);
     QCOMPARE(store.startupHubPath(), WhatSon::HubPath::normalizeAbsolutePath(selectedHubPath));
+    QCOMPARE(store.startupHubUrl(), selectedHubUrl);
 
     store.clearSelectedHubPath();
     QCOMPARE(store.selectedHubPath(), QString());
+    QCOMPARE(store.selectedHubUrl(), QString());
     QCOMPARE(store.selectedHubAccessBookmark(), QByteArray());
     QCOMPARE(store.startupHubPath(), QString());
+    QCOMPARE(store.startupHubUrl(), QString());
 
     store.setSelectedHubPath(QDir(hubRootDir.path()).filePath(QStringLiteral("NotAHub.txt")));
     QCOMPARE(store.selectedHubPath(), QString());
+    QCOMPARE(store.selectedHubUrl(), QString());
     QCOMPARE(store.selectedHubAccessBookmark(), QByteArray());
     QCOMPARE(store.startupHubPath(), QString());
+    QCOMPARE(store.startupHubUrl(), QString());
 }
 
 void WhatSonCppRegressionTests::sidebarSelectionStore_normalizesIndicesAndSuppressesDuplicateSignals()
@@ -1273,6 +1284,21 @@ void WhatSonCppRegressionTests::mainCpp_iosStartup_missingHubUsesStandaloneOnboa
     QVERIFY(mainCppSource.contains(QStringLiteral("{QStringLiteral(\"standaloneMode\"), true},")));
 }
 
+void WhatSonCppRegressionTests::startupHubResolver_persistsSelectionUrlsForBookmarkBasedIosRestore()
+{
+    const QString startupResolverSource = readUtf8SourceFile(
+        QStringLiteral("src/app/runtime/startup/WhatSonStartupHubResolver.cpp"));
+    const QString mainCppSource = readUtf8SourceFile(QStringLiteral("src/app/main.cpp"));
+
+    QVERIFY(!startupResolverSource.isEmpty());
+    QVERIFY(!mainCppSource.isEmpty());
+    QVERIFY(startupResolverSource.contains(QStringLiteral("const QString startupHubSelectionUrl = selectedHubStore.startupHubUrl();")));
+    QVERIFY(startupResolverSource.contains(QStringLiteral("const QString resolvedSelectionUrlHubPath = promotedHubPackagePath(selectionUrlPath);")));
+    QVERIFY(startupResolverSource.contains(QStringLiteral("selection.selectionUrl = selectionUrl;")));
+    QVERIFY(mainCppSource.contains(QStringLiteral("onboardingHubController.currentHubSelectionUrl()")));
+    QVERIFY(mainCppSource.contains(QStringLiteral("startupHubSelection.selectionUrl")));
+}
+
 void WhatSonCppRegressionTests::iosInlineOnboardingSequence_reusesSharedOnboardingSurface()
 {
     const QString sequenceSource = readUtf8SourceFile(
@@ -1283,6 +1309,16 @@ void WhatSonCppRegressionTests::iosInlineOnboardingSequence_reusesSharedOnboardi
     QVERIFY(sequenceSource.contains(QStringLiteral("anchors.fill: parent")));
     QVERIFY(sequenceSource.contains(QStringLiteral("autoCompleteOnHubLoaded: false")));
     QVERIFY(sequenceSource.contains(QStringLiteral("color: root.canvasColor")));
+}
+
+void WhatSonCppRegressionTests::onboardingWindow_closesModalShellAfterEmbeddedHubLoad()
+{
+    const QString onboardingWindowSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/window/Onboarding.qml"));
+
+    QVERIFY(!onboardingWindowSource.isEmpty());
+    QVERIFY(onboardingWindowSource.contains(QStringLiteral("modality: Qt.ApplicationModal")));
+    QVERIFY(onboardingWindowSource.contains(QStringLiteral("onCompleted: {\n            root.close()")));
 }
 
 void WhatSonCppRegressionTests::onboardingContent_mobileLayout_avoidsFullscreenAntialiasedWindowFrame()
@@ -1310,11 +1346,25 @@ void WhatSonCppRegressionTests::onboardingContent_saveDialog_doesNotPreselectMis
     QVERIFY(onboardingContentSource.contains(QStringLiteral("root.openCreateHubDialog();")));
     QVERIFY(onboardingContentSource.contains(QStringLiteral("id: selectHubFileDialogComponent")));
     QVERIFY(onboardingContentSource.contains(QStringLiteral("root.selectHubFileDialogInstance = selectHubFileDialogComponent.createObject(root);")));
+    QVERIFY(onboardingContentSource.contains(QStringLiteral("readonly property bool useDirectExistingHubFileFlow: Qt.platform.os === \"android\" || Qt.platform.os === \"ios\"")));
+    QVERIFY(onboardingContentSource.contains(QStringLiteral("if (root.useDirectExistingHubFileFlow)")));
     QVERIFY(onboardingContentSource.contains(QStringLiteral("currentFile: root.suggestedCreateHubFileUrl")));
     QVERIFY(onboardingContentSource.contains(QStringLiteral("currentFolder: root.currentFolderUrl")));
     QVERIFY(!onboardingContentSource.contains(QStringLiteral("id: createHubDialog\n")));
     QVERIFY(!onboardingContentSource.contains(QStringLiteral("id: selectHubFileDialog\n")));
     QVERIFY(!onboardingContentSource.contains(QStringLiteral("selectedFile: root.suggestedCreateHubFileUrl")));
+}
+
+void WhatSonCppRegressionTests::appleSecurityScopedAccess_allowsProviderUrlsWithFilesystemPaths()
+{
+    const QString securityScopedSource = readUtf8SourceFile(
+        QStringLiteral("src/app/platform/Apple/AppleSecurityScopedResourceAccess.mm"));
+
+    QVERIFY(!securityScopedSource.isEmpty());
+    QVERIFY(securityScopedSource.contains(QStringLiteral("QString localPathForUrl(const QUrl& url, bool parentDirectoryScope, QString* errorMessage)")));
+    QVERIFY(securityScopedSource.contains(QStringLiteral("nextEffectiveNsUrl = [nsUrl URLByDeletingLastPathComponent];")));
+    QVERIFY(securityScopedSource.contains(QStringLiteral("const QString normalizedLocalPath = localPathFromNsUrl(nsUrl);")));
+    QVERIFY(!securityScopedSource.contains(QStringLiteral("The selected iOS document URL is not a local filesystem URL.")));
 }
 
 void WhatSonCppRegressionTests::mainQml_exposesZeroWindowPaddingForLvrsApplicationWindow()

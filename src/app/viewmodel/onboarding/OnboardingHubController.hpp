@@ -33,6 +33,7 @@ public:
     [[nodiscard]] QUrl currentFolderUrl() const;
     [[nodiscard]] QString sessionState() const;
     [[nodiscard]] QByteArray currentHubAccessBookmark() const;
+    [[nodiscard]] QString currentHubSelectionUrl() const;
 
     void setCreateHubCallback(CreateHubCallback callback);
     void setLoadHubCallback(LoadHubCallback callback);
@@ -83,6 +84,7 @@ private:
     void setCurrentHubPath(const QString& hubPath);
     void setCurrentFolderPath(const QString& folderPath);
     void setCurrentHubAccessBookmark(const QByteArray& accessBookmark);
+    void setCurrentHubSelectionUrl(const QString& selectionUrl);
     void setHubSelectionCandidatePaths(const QStringList& hubCandidatePaths);
     void setLastError(const QString& errorMessage);
     void setSessionState(const QString& sessionState);
@@ -96,5 +98,6 @@ private:
     QString m_lastError;
     QUrl m_currentFolderUrl;
     QByteArray m_currentHubAccessBookmark;
+    QString m_currentHubSelectionUrl;
     QString m_sessionState = QStringLiteral("idle");
 };

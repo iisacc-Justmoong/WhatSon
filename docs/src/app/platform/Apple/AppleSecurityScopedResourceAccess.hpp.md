@@ -35,3 +35,5 @@
 - Read the real implementation and adjacent headers before replacing this scaffold.
 - Document concrete signals, slots, invokables, persistence side effects, and LVRS/QML bindings where applicable.
 - Cross-link this file with peer modules in the same directory once the detailed pass begins.
+- The API surface now also exposes `localPathForUrl(...)`, which normalizes provider-backed iOS picker URLs into a
+  filesystem path before the onboarding/startup flows validate a `.wshub` package.

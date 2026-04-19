@@ -107,6 +107,7 @@ Window {
         versionText: root.versionText
 
         onCompleted: {
+            root.close()
         }
         onCreateFileRequested: root.createFileRequested()
         onDismissRequested: root.close()

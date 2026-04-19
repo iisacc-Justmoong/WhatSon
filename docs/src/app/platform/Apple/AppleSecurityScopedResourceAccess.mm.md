@@ -35,3 +35,6 @@
 - Read the real implementation and adjacent headers before replacing this scaffold.
 - Document concrete signals, slots, invokables, persistence side effects, and LVRS/QML bindings where applicable.
 - Cross-link this file with peer modules in the same directory once the detailed pass begins.
+- Provider-backed iOS URLs are no longer rejected up front just because `QUrl::isLocalFile()` is false; the
+  implementation now resolves a filesystem path from the underlying `NSURL`, supports parent-directory derivation via
+  `URLByDeletingLastPathComponent`, and reuses that path for bookmark persistence/start-access bookkeeping.

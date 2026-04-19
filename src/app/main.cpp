@@ -392,7 +392,8 @@ int main(int argc, char* argv[])
         {
             selectedHubStore.setSelectedHubSelection(
                 hubPath,
-                onboardingHubController.currentHubAccessBookmark());
+                onboardingHubController.currentHubAccessBookmark(),
+                onboardingHubController.currentHubSelectionUrl());
             hubSyncController.setCurrentHubPath(hubPath);
             resourcesImportViewModel.setCurrentHubPath(hubPath);
             calendarBoardStore.setProjectedNotesHubPath(hubPath);
@@ -416,7 +417,8 @@ int main(int argc, char* argv[])
             onboardingHubController.completeWorkspaceTransition();
             selectedHubStore.setSelectedHubSelection(
                 startupHubSelection.hubPath,
-                startupHubSelection.accessBookmark);
+                startupHubSelection.accessBookmark,
+                startupHubSelection.selectionUrl);
             hubSyncController.setCurrentHubPath(startupHubSelection.hubPath);
             resourcesImportViewModel.setCurrentHubPath(startupHubSelection.hubPath);
             calendarBoardStore.setProjectedNotesHubPath(startupHubSelection.hubPath);

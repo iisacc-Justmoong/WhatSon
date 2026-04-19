@@ -11,11 +11,13 @@ namespace WhatSon::Runtime::Startup
     {
         bool mounted = false;
         QString hubPath;
+        QString selectionUrl;
         QByteArray accessBookmark;
     };
 
     QString resolveStartupHubMountPath(
         const QString& hubPath,
+        const QString& hubSelectionUrl,
         const QByteArray& hubAccessBookmark,
         QString* errorMessage = nullptr);
 

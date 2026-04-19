@@ -24,7 +24,7 @@ Item {
             return "idle";
         return String(root.hubSessionController.sessionState).trim();
     }
-    readonly property bool useAndroidExistingHubFileFlow: Qt.platform.os === "android"
+    readonly property bool useDirectExistingHubFileFlow: Qt.platform.os === "android" || Qt.platform.os === "ios"
     readonly property bool isMobilePlatform: Qt.platform.os === "android" || Qt.platform.os === "ios"
     readonly property bool useMobileCreateDirectoryFlow: root.isMobilePlatform
     readonly property color linkColor: LV.Theme.accent
@@ -79,8 +79,8 @@ Item {
     readonly property string mobileSelectionAssistText: {
         if (root.statusText.length > 0)
             return root.statusText;
-        if (root.useAndroidExistingHubFileFlow)
-            return "On Android, choose the .wshub package directly from the native picker.";
+        if (root.useDirectExistingHubFileFlow)
+            return "On mobile, choose the .wshub package directly from the native picker.";
         if (root.hasHubSelectionCandidates)
             return "Choose the WhatSon Hub package found in the selected folder.";
         return "On mobile, choose the folder that contains your WhatSon Hub.";
@@ -142,7 +142,7 @@ Item {
     }
 
     function ensureSelectHubFileDialog() {
-        if (!root.useAndroidExistingHubFileFlow)
+        if (!root.useDirectExistingHubFileFlow)
             return null;
         if (!root.selectHubFileDialogInstance)
             root.selectHubFileDialogInstance = selectHubFileDialogComponent.createObject(root);
@@ -578,7 +578,7 @@ Item {
                                     if (root.hubSessionController) {
                                         root.hubSessionController.clearLastError();
                                         root.hubSessionController.clearHubSelectionCandidates();
-                                        if (root.useAndroidExistingHubFileFlow)
+                                        if (root.useDirectExistingHubFileFlow)
                                             root.openSelectHubFileDialog();
                                         else
                                             selectHubDialog.open();

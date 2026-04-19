@@ -36,3 +36,5 @@
 - Document concrete signals, slots, invokables, persistence side effects, and LVRS/QML bindings where applicable.
 - Cross-link this file with peer modules in the same directory once the detailed pass begins.
 - Startup hub resolution now mirrors only the persisted selection and does not synthesize a blueprint fallback path.
+- The settings payload now also stores a normalized selection URL beside the resolved hub path and bookmark, so iOS can
+  keep the original provider-backed `.wshub` pick available across relaunches.

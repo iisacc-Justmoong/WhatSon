@@ -10,17 +10,101 @@
 #include <QDir>
 #include <QFileInfo>
 
+namespace
+{
+    QString normalizedAbsolutePath(const QString& path)
+    {
+        return WhatSon::HubPath::normalizeAbsolutePath(path);
+    }
+
+    QString enclosingHubPackagePath(const QString& selectedPath)
+    {
+        const QString normalizedSelectedPath = normalizedAbsolutePath(selectedPath);
+        if (normalizedSelectedPath.isEmpty())
+        {
+            return {};
+        }
+
+        const QFileInfo selectedInfo(normalizedSelectedPath);
+        if (selectedInfo.fileName().endsWith(QStringLiteral(".wshub"), Qt::CaseInsensitive))
+        {
+            return normalizedSelectedPath;
+        }
+
+        QString candidatePath = selectedInfo.isDir()
+                                    ? selectedInfo.absoluteFilePath()
+                                    : selectedInfo.absolutePath();
+        while (!candidatePath.isEmpty())
+        {
+            const QFileInfo candidateInfo(candidatePath);
+            if (candidateInfo.fileName().endsWith(QStringLiteral(".wshub"), Qt::CaseInsensitive))
+            {
+                return normalizedAbsolutePath(candidateInfo.absoluteFilePath());
+            }
+
+            const QString parentPath = candidateInfo.absolutePath();
+            if (parentPath.isEmpty() || parentPath == candidatePath)
+            {
+                break;
+            }
+            candidatePath = parentPath;
+        }
+
+        return {};
+    }
+
+    QString singleHubPackageInDirectory(const QString& directoryPath)
+    {
+        const QString normalizedDirectoryPath = normalizedAbsolutePath(directoryPath);
+        if (normalizedDirectoryPath.isEmpty())
+        {
+            return {};
+        }
+
+        const QDir selectedDirectory(normalizedDirectoryPath);
+        const QFileInfoList packageCandidates = selectedDirectory.entryInfoList(
+            QStringList{QStringLiteral("*.wshub")},
+            QDir::Dirs | QDir::NoDotAndDotDot,
+            QDir::Name);
+        if (packageCandidates.size() != 1)
+        {
+            return {};
+        }
+
+        return normalizedAbsolutePath(packageCandidates.constFirst().absoluteFilePath());
+    }
+
+    QString promotedHubPackagePath(const QString& selectedPath)
+    {
+        const QString enclosingHubPath = enclosingHubPackagePath(selectedPath);
+        if (!enclosingHubPath.isEmpty())
+        {
+            return enclosingHubPath;
+        }
+
+        const QFileInfo selectedInfo(normalizedAbsolutePath(selectedPath));
+        if (selectedInfo.isDir())
+        {
+            return singleHubPackageInDirectory(selectedInfo.absoluteFilePath());
+        }
+
+        return {};
+    }
+}
+
 namespace WhatSon::Runtime::Startup
 {
     QString resolveStartupHubMountPath(
         const QString& hubPath,
+        const QString& hubSelectionUrl,
         const QByteArray& hubAccessBookmark,
         QString* errorMessage)
     {
         const QString normalizedHubPath = hubPath.trimmed().isEmpty()
                                               ? QString()
                                               : WhatSon::HubPath::normalizeAbsolutePath(hubPath);
-        if (normalizedHubPath.isEmpty())
+        const QString normalizedSelectionUrl = hubSelectionUrl.trimmed();
+        if (normalizedHubPath.isEmpty() && normalizedSelectionUrl.isEmpty() && hubAccessBookmark.isEmpty())
         {
             if (errorMessage != nullptr)
             {
@@ -60,6 +144,7 @@ namespace WhatSon::Runtime::Startup
         }
 
 #if defined(Q_OS_IOS)
+        QString iosResolvedHubPath = promotedHubPackagePath(normalizedHubPath);
         QString restoredBookmarkPath;
         QString bookmarkRestoreError;
         if (!hubAccessBookmark.isEmpty())
@@ -68,12 +153,44 @@ namespace WhatSon::Runtime::Startup
                 hubAccessBookmark,
                 &restoredBookmarkPath,
                 &bookmarkRestoreError);
+            const QString restoredBookmarkHubPath = promotedHubPackagePath(restoredBookmarkPath);
+            if (!restoredBookmarkHubPath.isEmpty())
+            {
+                iosResolvedHubPath = restoredBookmarkHubPath;
+            }
+        }
+
+        QString selectionUrlPathError;
+        if (iosResolvedHubPath.isEmpty() && !normalizedSelectionUrl.isEmpty())
+        {
+            const QString selectionUrlPath = WhatSon::Apple::SecurityScopedResourceAccess::localPathForUrl(
+                QUrl(normalizedSelectionUrl),
+                false,
+                &selectionUrlPathError);
+            const QString resolvedSelectionUrlHubPath = promotedHubPackagePath(selectionUrlPath);
+            if (!resolvedSelectionUrlHubPath.isEmpty())
+            {
+                iosResolvedHubPath = resolvedSelectionUrlHubPath;
+            }
+        }
+
+        if (iosResolvedHubPath.isEmpty())
+        {
+            if (errorMessage != nullptr)
+            {
+                *errorMessage = !bookmarkRestoreError.trimmed().isEmpty()
+                                    ? bookmarkRestoreError.trimmed()
+                                    : (!selectionUrlPathError.trimmed().isEmpty()
+                                           ? selectionUrlPathError.trimmed()
+                                           : QStringLiteral("No mountable iOS WhatSon Hub path could be restored from the stored selection."));
+            }
+            return {};
         }
 
         QString iosAccessError;
-        if (!WhatSon::Apple::SecurityScopedResourceAccess::ensureAccessForPath(normalizedHubPath, &iosAccessError))
+        if (!WhatSon::Apple::SecurityScopedResourceAccess::ensureAccessForPath(iosResolvedHubPath, &iosAccessError))
         {
-            const QString parentDirectoryPath = QFileInfo(normalizedHubPath).absolutePath();
+            const QString parentDirectoryPath = QFileInfo(iosResolvedHubPath).absolutePath();
             QString parentAccessError;
             const bool parentAccessGranted =
                 !parentDirectoryPath.trimmed().isEmpty()
@@ -93,6 +210,31 @@ namespace WhatSon::Runtime::Startup
                 return {};
             }
         }
+
+        const QFileInfo hubInfo(iosResolvedHubPath);
+        if (!hubInfo.exists() || !hubInfo.isDir())
+        {
+            if (errorMessage != nullptr)
+            {
+                *errorMessage = QStringLiteral("Startup WhatSon Hub directory does not exist: %1").arg(iosResolvedHubPath);
+            }
+            return {};
+        }
+
+        if (!hubInfo.fileName().endsWith(QStringLiteral(".wshub"), Qt::CaseInsensitive))
+        {
+            if (errorMessage != nullptr)
+            {
+                *errorMessage = QStringLiteral("Startup WhatSon Hub path is not a .wshub directory: %1").arg(iosResolvedHubPath);
+            }
+            return {};
+        }
+
+        if (errorMessage != nullptr)
+        {
+            errorMessage->clear();
+        }
+        return iosResolvedHubPath;
 #endif
 
         const QFileInfo hubInfo(normalizedHubPath);
@@ -125,15 +267,18 @@ namespace WhatSon::Runtime::Startup
     {
         StartupHubSelection selection;
         const QString startupHubSelectionPath = selectedHubStore.startupHubPath();
+        const QString startupHubSelectionUrl = selectedHubStore.startupHubUrl();
         const QByteArray startupHubAccessBookmark = selectedHubStore.selectedHubAccessBookmark();
 
         auto tryResolve = [&selection](const QString& selectionPath,
+                                       const QString& selectionUrl,
                                        const QByteArray& selectionBookmark,
                                        const QString& selectionLabel) -> bool
         {
             QString startupMountError;
             const QString resolvedStartupHubPath = resolveStartupHubMountPath(
                 selectionPath,
+                selectionUrl,
                 selectionBookmark,
                 &startupMountError);
             if (resolvedStartupHubPath.isEmpty())
@@ -148,15 +293,17 @@ namespace WhatSon::Runtime::Startup
             }
 
             selection.hubPath = resolvedStartupHubPath;
+            selection.selectionUrl = selectionUrl;
             selection.accessBookmark = selectionBookmark;
             selection.mounted = true;
             return true;
         };
 
-        if (!startupHubSelectionPath.isEmpty())
+        if (!startupHubSelectionPath.isEmpty() || !startupHubSelectionUrl.isEmpty() || !startupHubAccessBookmark.isEmpty())
         {
             tryResolve(
                 startupHubSelectionPath,
+                startupHubSelectionUrl,
                 startupHubAccessBookmark,
                 QStringLiteral("persisted"));
         }

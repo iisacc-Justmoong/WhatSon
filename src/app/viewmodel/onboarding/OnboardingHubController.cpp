@@ -75,6 +75,38 @@ namespace
         return QFileInfo(normalizedHubPath).fileName().trimmed();
     }
 
+    QString selectionUrlStringFromUrl(const QUrl& hubUrl)
+    {
+        if (!hubUrl.isValid())
+        {
+            return {};
+        }
+
+        if (hubUrl.isLocalFile())
+        {
+            const QString normalizedLocalPath = WhatSon::HubPath::normalizeAbsolutePath(hubUrl.toLocalFile());
+            if (normalizedLocalPath.isEmpty())
+            {
+                return {};
+            }
+
+            return QUrl::fromLocalFile(normalizedLocalPath).toString(QUrl::FullyEncoded).trimmed();
+        }
+
+        return hubUrl.toString(QUrl::FullyEncoded).trimmed();
+    }
+
+    QString selectionUrlStringFromPath(const QString& hubPath)
+    {
+        const QUrl hubUrl = WhatSon::HubPath::urlFromPath(hubPath);
+        if (!hubUrl.isValid())
+        {
+            return {};
+        }
+
+        return hubUrl.toString(QUrl::FullyEncoded).trimmed();
+    }
+
     QString enclosingHubPackagePath(const QString& selectedPath)
     {
         const QString normalizedSelectedPath = normalizedAbsolutePath(selectedPath);
@@ -335,6 +367,11 @@ QByteArray OnboardingHubController::currentHubAccessBookmark() const
     return m_currentHubAccessBookmark;
 }
 
+QString OnboardingHubController::currentHubSelectionUrl() const
+{
+    return m_currentHubSelectionUrl;
+}
+
 void OnboardingHubController::setCreateHubCallback(CreateHubCallback callback)
 {
     m_createHubCallback = std::move(callback);
@@ -372,22 +409,6 @@ bool OnboardingHubController::createHubAtUrl(const QUrl& hubUrl)
         emit operationFailed(m_lastError);
         return false;
     }
-
-#if defined(Q_OS_IOS)
-    const QByteArray accessBookmark = WhatSon::Apple::SecurityScopedResourceAccess::bookmarkDataForUrl(
-        hubUrl,
-        true,
-        &accessError);
-    if (accessBookmark.isEmpty())
-    {
-        setLastError(accessError.trimmed().isEmpty()
-                         ? QStringLiteral("Failed to persist access to the selected WhatSon Hub location.")
-                         : accessError.trimmed());
-        emit operationFailed(m_lastError);
-        return false;
-    }
-    setCurrentHubAccessBookmark(accessBookmark);
-#endif
 
     const QString requestedPackagePath = localPathFromUrl(hubUrl);
     if (requestedPackagePath.trimmed().isEmpty())
@@ -432,6 +453,25 @@ bool OnboardingHubController::createHubAtUrl(const QUrl& hubUrl)
         return false;
     }
     setCurrentHubPath(normalizedCreatedHubPath);
+#if defined(Q_OS_IOS)
+    const QByteArray accessBookmark = WhatSon::Apple::SecurityScopedResourceAccess::bookmarkDataForUrl(
+        QUrl::fromLocalFile(normalizedCreatedHubPath),
+        false,
+        &accessError);
+    if (accessBookmark.isEmpty())
+    {
+        setLastError(accessError.trimmed().isEmpty()
+                         ? QStringLiteral("Failed to persist access to the selected WhatSon Hub location.")
+                         : accessError.trimmed());
+        setSessionState(QString::fromLatin1(kSessionStateFailed));
+        emit operationFailed(m_lastError);
+        return false;
+    }
+    setCurrentHubAccessBookmark(accessBookmark);
+#else
+    setCurrentHubAccessBookmark({});
+#endif
+    setCurrentHubSelectionUrl(selectionUrlStringFromPath(normalizedCreatedHubPath));
     if (hubUrl.isLocalFile())
     {
         setCurrentFolderPath(QFileInfo(normalizedCreatedHubPath).absolutePath());
@@ -547,6 +587,7 @@ bool OnboardingHubController::createHubInDirectoryUrl(const QUrl& directoryUrl, 
 
         const QString normalizedCreatedHubPath = normalizedAbsolutePath(createdHubPath);
         setCurrentHubPath(normalizedCreatedHubPath);
+        setCurrentHubSelectionUrl(selectionUrlStringFromPath(normalizedCreatedHubPath));
         emit hubCreated(normalizedCreatedHubPath);
 
         if (loadResolvedHubPath(normalizedCreatedHubPath, &errorMessage))
@@ -801,6 +842,7 @@ bool OnboardingHubController::loadHubFromUrl(const QUrl& hubUrl)
     }
     setCurrentHubAccessBookmark(accessBookmark);
 #endif
+    setCurrentHubSelectionUrl(selectionUrlStringFromUrl(hubUrl));
 
     QString errorMessage;
     const QString selectedPath = localPathFromUrl(hubUrl);
@@ -808,7 +850,7 @@ bool OnboardingHubController::loadHubFromUrl(const QUrl& hubUrl)
     if (resolvedHubPath.isEmpty())
     {
         setLastError(errorMessage.trimmed().isEmpty()
-                         ? QStringLiteral("Selected folder does not resolve to a WhatSon Hub.")
+                         ? QStringLiteral("Selected location does not resolve to a WhatSon Hub.")
                          : errorMessage.trimmed());
         setSessionState(QString::fromLatin1(kSessionStateFailed));
         emit operationFailed(m_lastError);
@@ -840,7 +882,9 @@ bool OnboardingHubController::loadHubSelectionCandidate(int index)
     }
 
     QString errorMessage;
-    if (loadResolvedHubPath(m_hubSelectionCandidatePaths.at(index), &errorMessage))
+    const QString selectedCandidatePath = m_hubSelectionCandidatePaths.at(index);
+    setCurrentHubSelectionUrl(selectionUrlStringFromPath(selectedCandidatePath));
+    if (loadResolvedHubPath(selectedCandidatePath, &errorMessage))
     {
         return true;
     }
@@ -891,6 +935,7 @@ void OnboardingHubController::syncCurrentHubSelection(const QString& hubPath)
 {
     const QString normalizedHubPath = normalizedAbsolutePath(hubPath);
     setCurrentHubPath(normalizedHubPath);
+    setCurrentHubSelectionUrl(selectionUrlStringFromPath(normalizedHubPath));
     if (!normalizedHubPath.isEmpty() && !WhatSon::HubPath::isNonLocalUrl(normalizedHubPath))
     {
         setCurrentFolderPath(QFileInfo(normalizedHubPath).absolutePath());
@@ -909,6 +954,17 @@ QString OnboardingHubController::localPathFromUrl(const QUrl& hubUrl) const
     {
         return WhatSon::HubPath::normalizePath(rawUrlText);
     }
+
+#if defined(Q_OS_IOS)
+    const QString iosLocalPath = WhatSon::Apple::SecurityScopedResourceAccess::localPathForUrl(
+        hubUrl,
+        false,
+        nullptr);
+    if (!iosLocalPath.isEmpty())
+    {
+        return WhatSon::HubPath::normalizeAbsolutePath(iosLocalPath);
+    }
+#endif
 
     if (rawUrlText.startsWith(QStringLiteral("content:"), Qt::CaseInsensitive))
     {
@@ -1176,6 +1232,11 @@ bool OnboardingHubController::loadCreatedHub(const QString& hubPath, QString* er
         return false;
     }
 
+    if (m_currentHubSelectionUrl.trimmed().isEmpty())
+    {
+        setCurrentHubSelectionUrl(selectionUrlStringFromPath(hubPath));
+    }
+
     setSessionState(QString::fromLatin1(kSessionStateLoadingHub));
     setBusy(true);
     const bool loaded = invokeLoadHubCallbackSafely(m_loadHubCallback, hubPath, errorMessage);
@@ -1221,6 +1282,11 @@ bool OnboardingHubController::loadResolvedHubPath(const QString& resolvedHubPath
             *errorMessage = validationError;
         }
         return false;
+    }
+
+    if (m_currentHubSelectionUrl.trimmed().isEmpty())
+    {
+        setCurrentHubSelectionUrl(selectionUrlStringFromPath(mountableHubPath));
     }
 
     setCurrentHubPath(mountableHubPath);
@@ -1312,6 +1378,17 @@ void OnboardingHubController::setCurrentHubAccessBookmark(const QByteArray& acce
     }
 
     m_currentHubAccessBookmark = accessBookmark;
+}
+
+void OnboardingHubController::setCurrentHubSelectionUrl(const QString& selectionUrl)
+{
+    const QString normalizedSelectionUrl = selectionUrl.trimmed();
+    if (m_currentHubSelectionUrl == normalizedSelectionUrl)
+    {
+        return;
+    }
+
+    m_currentHubSelectionUrl = normalizedSelectionUrl;
 }
 
 void OnboardingHubController::setHubSelectionCandidatePaths(const QStringList& hubCandidatePaths)
