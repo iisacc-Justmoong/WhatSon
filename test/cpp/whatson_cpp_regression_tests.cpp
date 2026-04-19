@@ -453,6 +453,8 @@ private slots:
     void mainQml_embeddedStartup_dropsWatchdogRecoveryScaffold();
     void mainQml_iosInlineOnboarding_pinsPresentationToWorkspaceRoute();
     void mainCpp_iosStartup_missingHubUsesStandaloneOnboardingWindow();
+    void onboardingController_selectionOnly_defersRuntimeLoadToHost();
+    void mainCpp_onboardingSelectionCentralizesRuntimeLoading();
     void iosInlineOnboardingSequence_reusesSharedOnboardingSurface();
     void onboardingWindow_closesModalShellAfterEmbeddedHubLoad();
     void startupHubResolver_persistsSelectionUrlsForBookmarkBasedIosRestore();
@@ -1284,6 +1286,42 @@ void WhatSonCppRegressionTests::mainCpp_iosStartup_missingHubUsesStandaloneOnboa
     QVERIFY(mainCppSource.contains(QStringLiteral("{QStringLiteral(\"standaloneMode\"), true},")));
 }
 
+void WhatSonCppRegressionTests::onboardingController_selectionOnly_defersRuntimeLoadToHost()
+{
+    const QString onboardingControllerHeaderSource = readUtf8SourceFile(
+        QStringLiteral("src/app/viewmodel/onboarding/OnboardingHubController.hpp"));
+    const QString onboardingControllerSource = readUtf8SourceFile(
+        QStringLiteral("src/app/viewmodel/onboarding/OnboardingHubController.cpp"));
+
+    QVERIFY(!onboardingControllerHeaderSource.isEmpty());
+    QVERIFY(!onboardingControllerSource.isEmpty());
+    QVERIFY(onboardingControllerHeaderSource.contains(QStringLiteral("void beginHubLoad();")));
+    QVERIFY(onboardingControllerHeaderSource.contains(QStringLiteral("void completeHubLoad(const QString& hubPath);")));
+    QVERIFY(onboardingControllerHeaderSource.contains(QStringLiteral("void failHubLoad(const QString& message);")));
+    QVERIFY(onboardingControllerHeaderSource.contains(QStringLiteral("void hubSelectionResolved(const QString& hubPath);")));
+    QVERIFY(!onboardingControllerHeaderSource.contains(QStringLiteral("using LoadHubCallback")));
+    QVERIFY(!onboardingControllerHeaderSource.contains(QStringLiteral("setLoadHubCallback")));
+    QVERIFY(onboardingControllerSource.contains(QStringLiteral("emit hubSelectionResolved(mountableHubPath);")));
+    QVERIFY(onboardingControllerSource.contains(QStringLiteral("setSessionState(QString::fromLatin1(kSessionStateLoadingHub));")));
+    QVERIFY(onboardingControllerSource.contains(QStringLiteral("emit hubLoaded(normalizedHubPath);")));
+    QVERIFY(!onboardingControllerSource.contains(QStringLiteral("invokeLoadHubCallbackSafely")));
+    QVERIFY(!onboardingControllerSource.contains(QStringLiteral("m_loadHubCallback")));
+}
+
+void WhatSonCppRegressionTests::mainCpp_onboardingSelectionCentralizesRuntimeLoading()
+{
+    const QString mainCppSource = readUtf8SourceFile(QStringLiteral("src/app/main.cpp"));
+
+    QVERIFY(!mainCppSource.isEmpty());
+    QVERIFY(mainCppSource.contains(QStringLiteral("&OnboardingHubController::hubSelectionResolved")));
+    QVERIFY(mainCppSource.contains(QStringLiteral("onboardingHubController.beginHubLoad();")));
+    QVERIFY(mainCppSource.contains(QStringLiteral("startupRuntimeCoordinator.loadHubIntoRuntime(")));
+    QVERIFY(mainCppSource.contains(QStringLiteral("onboardingHubController.failHubLoad(")));
+    QVERIFY(mainCppSource.contains(QStringLiteral("onboardingHubController.completeHubLoad(hubPath);")));
+    QVERIFY(mainCppSource.contains(QStringLiteral("const auto applyMountedHubSelection =")));
+    QVERIFY(!mainCppSource.contains(QStringLiteral("setLoadHubCallback(")));
+}
+
 void WhatSonCppRegressionTests::startupHubResolver_persistsSelectionUrlsForBookmarkBasedIosRestore()
 {
     const QString startupResolverSource = readUtf8SourceFile(
@@ -1294,6 +1332,8 @@ void WhatSonCppRegressionTests::startupHubResolver_persistsSelectionUrlsForBookm
     QVERIFY(!mainCppSource.isEmpty());
     QVERIFY(startupResolverSource.contains(QStringLiteral("const QString startupHubSelectionUrl = selectedHubStore.startupHubUrl();")));
     QVERIFY(startupResolverSource.contains(QStringLiteral("const QString resolvedSelectionUrlHubPath = promotedHubPackagePath(selectionUrlPath);")));
+    QVERIFY(startupResolverSource.contains(QStringLiteral("const QFileInfo iosResolvedHubInfo(iosResolvedHubPath);")));
+    QVERIFY(startupResolverSource.contains(QStringLiteral("const QFileInfo normalizedHubInfo(normalizedHubPath);")));
     QVERIFY(startupResolverSource.contains(QStringLiteral("selection.selectionUrl = selectionUrl;")));
     QVERIFY(mainCppSource.contains(QStringLiteral("onboardingHubController.currentHubSelectionUrl()")));
     QVERIFY(mainCppSource.contains(QStringLiteral("startupHubSelection.selectionUrl")));

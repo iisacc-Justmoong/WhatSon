@@ -8,4 +8,7 @@
   folder-only indirection step.
 - Newly created hubs on iOS now refresh their stored bookmark against the final `.wshub` package path rather than
   keeping a parent-directory bookmark from the pre-create picker location.
-- The change isolates route orchestration from the full concrete controller surface.
+- The controller now stops after validating and normalizing a hub selection; it emits a selection-ready signal and lets
+  `main.cpp` own the actual runtime mount/load decision.
+- `hubLoaded(...)` is again reserved for the post-load success path, and is now emitted only when the host composition
+  root confirms that the selected hub has been mounted into the workspace runtime successfully.

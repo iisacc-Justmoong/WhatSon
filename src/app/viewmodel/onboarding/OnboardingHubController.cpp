@@ -286,33 +286,6 @@ namespace
         return false;
     }
 
-    bool invokeLoadHubCallbackSafely(
-        const OnboardingHubController::LoadHubCallback& callback,
-        const QString& hubPath,
-        QString* errorMessage)
-    {
-        try
-        {
-            return callback(hubPath, errorMessage);
-        }
-        catch (const std::exception& exception)
-        {
-            if (errorMessage != nullptr)
-            {
-                *errorMessage = QStringLiteral("Hub loading raised an exception: %1")
-                                    .arg(QString::fromUtf8(exception.what()));
-            }
-        }
-        catch (...)
-        {
-            if (errorMessage != nullptr)
-            {
-                *errorMessage = QStringLiteral("Hub loading raised an unknown exception.");
-            }
-        }
-
-        return false;
-    }
 }
 
 OnboardingHubController::OnboardingHubController(QObject* parent)
@@ -375,11 +348,6 @@ QString OnboardingHubController::currentHubSelectionUrl() const
 void OnboardingHubController::setCreateHubCallback(CreateHubCallback callback)
 {
     m_createHubCallback = std::move(callback);
-}
-
-void OnboardingHubController::setLoadHubCallback(LoadHubCallback callback)
-{
-    m_loadHubCallback = std::move(callback);
 }
 
 bool OnboardingHubController::createHubAtUrl(const QUrl& hubUrl)
@@ -478,14 +446,14 @@ bool OnboardingHubController::createHubAtUrl(const QUrl& hubUrl)
     }
     emit hubCreated(normalizedCreatedHubPath);
 
-    if (loadCreatedHub(normalizedCreatedHubPath, &errorMessage))
+    if (submitResolvedHubSelection(normalizedCreatedHubPath, &errorMessage))
     {
         return true;
     }
 
     setLastError(errorMessage.trimmed().isEmpty()
-                     ? QStringLiteral("The hub was created but could not be loaded.")
-                     : QStringLiteral("The hub was created but could not be loaded: %1").arg(errorMessage.trimmed()));
+                     ? QStringLiteral("The hub was created but could not be prepared for workspace load.")
+                     : QStringLiteral("The hub was created but could not be prepared for workspace load: %1").arg(errorMessage.trimmed()));
     setSessionState(QString::fromLatin1(kSessionStateFailed));
     emit operationFailed(m_lastError);
     return false;
@@ -526,13 +494,6 @@ bool OnboardingHubController::createHubInDirectoryUrl(const QUrl& directoryUrl, 
         if (!m_createHubCallback)
         {
             setLastError(QStringLiteral("Hub creation callback is not configured."));
-            emit operationFailed(m_lastError);
-            return false;
-        }
-
-        if (!m_loadHubCallback)
-        {
-            setLastError(QStringLiteral("Hub loading callback is not configured."));
             emit operationFailed(m_lastError);
             return false;
         }
@@ -587,17 +548,18 @@ bool OnboardingHubController::createHubInDirectoryUrl(const QUrl& directoryUrl, 
 
         const QString normalizedCreatedHubPath = normalizedAbsolutePath(createdHubPath);
         setCurrentHubPath(normalizedCreatedHubPath);
+        setCurrentHubAccessBookmark({});
         setCurrentHubSelectionUrl(selectionUrlStringFromPath(normalizedCreatedHubPath));
         emit hubCreated(normalizedCreatedHubPath);
 
-        if (loadResolvedHubPath(normalizedCreatedHubPath, &errorMessage))
+        if (submitResolvedHubSelection(normalizedCreatedHubPath, &errorMessage))
         {
             return true;
         }
 
         setLastError(errorMessage.trimmed().isEmpty()
-                         ? QStringLiteral("The hub was created but could not be loaded.")
-                         : QStringLiteral("The hub was created but could not be loaded: %1").arg(errorMessage.trimmed()));
+                         ? QStringLiteral("The hub was created but could not be prepared for workspace load.")
+                         : QStringLiteral("The hub was created but could not be prepared for workspace load: %1").arg(errorMessage.trimmed()));
         setSessionState(QString::fromLatin1(kSessionStateFailed));
         emit operationFailed(m_lastError);
         return false;
@@ -614,14 +576,6 @@ bool OnboardingHubController::prepareHubSelectionFromUrl(const QUrl& hubUrl)
     if (m_busy)
     {
         setLastError(QStringLiteral("A hub operation is already in progress."));
-        setSessionState(QString::fromLatin1(kSessionStateFailed));
-        emit operationFailed(m_lastError);
-        return false;
-    }
-
-    if (!m_loadHubCallback)
-    {
-        setLastError(QStringLiteral("Hub loading callback is not configured."));
         setSessionState(QString::fromLatin1(kSessionStateFailed));
         emit operationFailed(m_lastError);
         return false;
@@ -653,6 +607,8 @@ bool OnboardingHubController::prepareHubSelectionFromUrl(const QUrl& hubUrl)
         return false;
     }
     setCurrentHubAccessBookmark(accessBookmark);
+#else
+    setCurrentHubAccessBookmark({});
 #endif
 
     const QString selectedPath = localPathFromUrl(hubUrl);
@@ -684,13 +640,13 @@ bool OnboardingHubController::prepareHubSelectionFromUrl(const QUrl& hubUrl)
 
         if (packageCandidates.size() == 1)
         {
-            if (loadResolvedHubPath(packageCandidates.constFirst(), &errorMessage))
+            if (submitResolvedHubSelection(packageCandidates.constFirst(), &errorMessage))
             {
                 return true;
             }
 
             setLastError(errorMessage.trimmed().isEmpty()
-                             ? QStringLiteral("Failed to load the selected WhatSon Hub.")
+                             ? QStringLiteral("Failed to prepare the selected WhatSon Hub.")
                              : errorMessage.trimmed());
             setSessionState(QString::fromLatin1(kSessionStateFailed));
             emit operationFailed(m_lastError);
@@ -715,7 +671,7 @@ bool OnboardingHubController::prepareHubSelectionFromUrl(const QUrl& hubUrl)
     {
         QString errorMessage;
         const QString resolvedHubPath = resolveExistingHubPath(normalizedSelectedPath, &errorMessage);
-        if (!resolvedHubPath.isEmpty() && loadResolvedHubPath(resolvedHubPath, &errorMessage))
+        if (!resolvedHubPath.isEmpty() && submitResolvedHubSelection(resolvedHubPath, &errorMessage))
         {
             return true;
         }
@@ -741,13 +697,13 @@ bool OnboardingHubController::prepareHubSelectionFromUrl(const QUrl& hubUrl)
     if (!enclosingHubPath.isEmpty())
     {
         QString errorMessage;
-        if (loadResolvedHubPath(enclosingHubPath, &errorMessage))
+        if (submitResolvedHubSelection(enclosingHubPath, &errorMessage))
         {
             return true;
         }
 
         setLastError(errorMessage.trimmed().isEmpty()
-                         ? QStringLiteral("Failed to load the selected WhatSon Hub.")
+                         ? QStringLiteral("Failed to prepare the selected WhatSon Hub.")
                          : errorMessage.trimmed());
         setSessionState(QString::fromLatin1(kSessionStateFailed));
         emit operationFailed(m_lastError);
@@ -768,13 +724,13 @@ bool OnboardingHubController::prepareHubSelectionFromUrl(const QUrl& hubUrl)
     if (packageCandidates.size() == 1)
     {
         QString errorMessage;
-        if (loadResolvedHubPath(packageCandidates.constFirst(), &errorMessage))
+        if (submitResolvedHubSelection(packageCandidates.constFirst(), &errorMessage))
         {
             return true;
         }
 
         setLastError(errorMessage.trimmed().isEmpty()
-                         ? QStringLiteral("Failed to load the selected WhatSon Hub.")
+                         ? QStringLiteral("Failed to prepare the selected WhatSon Hub.")
                          : errorMessage.trimmed());
         emit operationFailed(m_lastError);
         return false;
@@ -807,14 +763,6 @@ bool OnboardingHubController::loadHubFromUrl(const QUrl& hubUrl)
         return false;
     }
 
-    if (!m_loadHubCallback)
-    {
-        setLastError(QStringLiteral("Hub loading callback is not configured."));
-        setSessionState(QString::fromLatin1(kSessionStateFailed));
-        emit operationFailed(m_lastError);
-        return false;
-    }
-
     QString accessError;
     if (!WhatSon::Apple::SecurityScopedResourceAccess::startAccessForUrl(hubUrl, false, &accessError))
     {
@@ -841,6 +789,8 @@ bool OnboardingHubController::loadHubFromUrl(const QUrl& hubUrl)
         return false;
     }
     setCurrentHubAccessBookmark(accessBookmark);
+#else
+    setCurrentHubAccessBookmark({});
 #endif
     setCurrentHubSelectionUrl(selectionUrlStringFromUrl(hubUrl));
 
@@ -857,13 +807,13 @@ bool OnboardingHubController::loadHubFromUrl(const QUrl& hubUrl)
         return false;
     }
 
-    if (loadResolvedHubPath(resolvedHubPath, &errorMessage))
+    if (submitResolvedHubSelection(resolvedHubPath, &errorMessage))
     {
         return true;
     }
 
     setLastError(errorMessage.trimmed().isEmpty()
-                     ? QStringLiteral("Failed to load the selected WhatSon Hub.")
+                     ? QStringLiteral("Failed to prepare the selected WhatSon Hub.")
                      : errorMessage.trimmed());
     setSessionState(QString::fromLatin1(kSessionStateFailed));
     emit operationFailed(m_lastError);
@@ -884,17 +834,52 @@ bool OnboardingHubController::loadHubSelectionCandidate(int index)
     QString errorMessage;
     const QString selectedCandidatePath = m_hubSelectionCandidatePaths.at(index);
     setCurrentHubSelectionUrl(selectionUrlStringFromPath(selectedCandidatePath));
-    if (loadResolvedHubPath(selectedCandidatePath, &errorMessage))
+    if (submitResolvedHubSelection(selectedCandidatePath, &errorMessage))
     {
         return true;
     }
 
     setLastError(errorMessage.trimmed().isEmpty()
-                     ? QStringLiteral("Failed to load the selected WhatSon Hub.")
+                     ? QStringLiteral("Failed to prepare the selected WhatSon Hub.")
                      : errorMessage.trimmed());
     setSessionState(QString::fromLatin1(kSessionStateFailed));
     emit operationFailed(m_lastError);
     return false;
+}
+
+void OnboardingHubController::beginHubLoad()
+{
+    clearLastError();
+    setSessionState(QString::fromLatin1(kSessionStateLoadingHub));
+    setBusy(true);
+}
+
+void OnboardingHubController::completeHubLoad(const QString& hubPath)
+{
+    const QString normalizedHubPath = normalizedAbsolutePath(hubPath);
+    setCurrentHubPath(normalizedHubPath);
+    if (m_currentHubSelectionUrl.trimmed().isEmpty())
+    {
+        setCurrentHubSelectionUrl(selectionUrlStringFromPath(normalizedHubPath));
+    }
+    if (!normalizedHubPath.isEmpty() && !WhatSon::HubPath::isNonLocalUrl(normalizedHubPath))
+    {
+        setCurrentFolderPath(QFileInfo(normalizedHubPath).absolutePath());
+    }
+    setBusy(false);
+    setSessionState(QString::fromLatin1(kSessionStateHubLoaded));
+    emit hubLoaded(normalizedHubPath);
+}
+
+void OnboardingHubController::failHubLoad(const QString& message)
+{
+    setBusy(false);
+    if (!message.trimmed().isEmpty())
+    {
+        setLastError(message);
+    }
+    setSessionState(QString::fromLatin1(kSessionStateFailed));
+    emit operationFailed(m_lastError);
 }
 
 void OnboardingHubController::beginWorkspaceTransition()
@@ -1221,37 +1206,7 @@ QStringList OnboardingHubController::hubPackageCandidatesInDirectory(const QStri
     return candidatePaths;
 }
 
-bool OnboardingHubController::loadCreatedHub(const QString& hubPath, QString* errorMessage)
-{
-    if (!m_loadHubCallback)
-    {
-        if (errorMessage != nullptr)
-        {
-            *errorMessage = QStringLiteral("Hub loading callback is not configured.");
-        }
-        return false;
-    }
-
-    if (m_currentHubSelectionUrl.trimmed().isEmpty())
-    {
-        setCurrentHubSelectionUrl(selectionUrlStringFromPath(hubPath));
-    }
-
-    setSessionState(QString::fromLatin1(kSessionStateLoadingHub));
-    setBusy(true);
-    const bool loaded = invokeLoadHubCallbackSafely(m_loadHubCallback, hubPath, errorMessage);
-    setBusy(false);
-
-    if (loaded)
-    {
-        setSessionState(QString::fromLatin1(kSessionStateHubLoaded));
-        emit hubLoaded(hubPath);
-    }
-
-    return loaded;
-}
-
-bool OnboardingHubController::loadResolvedHubPath(const QString& resolvedHubPath, QString* errorMessage)
+bool OnboardingHubController::submitResolvedHubSelection(const QString& resolvedHubPath, QString* errorMessage)
 {
     QString mountableHubPath = resolvedHubPath;
     if (WhatSon::Android::Storage::isSupportedUri(resolvedHubPath))
@@ -1290,30 +1245,12 @@ bool OnboardingHubController::loadResolvedHubPath(const QString& resolvedHubPath
     }
 
     setCurrentHubPath(mountableHubPath);
-    setSessionState(QString::fromLatin1(kSessionStateLoadingHub));
-    setBusy(true);
-    QString callbackError;
-    const bool loaded = invokeLoadHubCallbackSafely(m_loadHubCallback, mountableHubPath, &callbackError);
-    setBusy(false);
-
-    if (!loaded)
-    {
-        if (errorMessage != nullptr)
-        {
-            *errorMessage = callbackError.trimmed().isEmpty()
-                                ? QStringLiteral("Failed to load the selected WhatSon Hub.")
-                                : callbackError.trimmed();
-        }
-        return false;
-    }
-
     if (!WhatSon::HubPath::isNonLocalUrl(mountableHubPath))
     {
         setCurrentFolderPath(QFileInfo(mountableHubPath).absolutePath());
     }
     clearHubSelectionCandidates();
-    setSessionState(QString::fromLatin1(kSessionStateHubLoaded));
-    emit hubLoaded(mountableHubPath);
+    emit hubSelectionResolved(mountableHubPath);
     if (errorMessage != nullptr)
     {
         errorMessage->clear();

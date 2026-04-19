@@ -372,33 +372,55 @@ int main(int argc, char* argv[])
         {
             return hubCreator.createHubAtPath(requestedHubPath, outPackagePath, errorMessage);
         });
-    onboardingHubController.setLoadHubCallback(
-        [&startupRuntimeCoordinator](const QString& hubPath, QString* errorMessage) -> bool
-        {
-            return startupRuntimeCoordinator.loadHubIntoRuntime(hubPath, errorMessage);
-        });
     OnboardingRouteBootstrapController onboardingRouteBootstrapController;
     onboardingRouteBootstrapController.setHubController(&onboardingHubController);
-    QObject::connect(
-        &onboardingHubController,
-        &OnboardingHubController::hubLoaded,
-        &app,
-        [&onboardingHubController,
-         &selectedHubStore,
+    const auto applyMountedHubSelection =
+        [&selectedHubStore,
          &hubSyncController,
          &resourcesImportViewModel,
          &calendarBoardStore,
-         &libraryHierarchyViewModel](const QString& hubPath)
+         &libraryHierarchyViewModel](const QString& hubPath,
+                                     const QByteArray& accessBookmark,
+                                     const QString& selectionUrl)
+    {
+        selectedHubStore.setSelectedHubSelection(
+            hubPath,
+            accessBookmark,
+            selectionUrl);
+        hubSyncController.setCurrentHubPath(hubPath);
+        resourcesImportViewModel.setCurrentHubPath(hubPath);
+        calendarBoardStore.setProjectedNotesHubPath(hubPath);
+        calendarBoardStore.reloadProjectedNotesFromSnapshot(
+            libraryHierarchyViewModel.indexedNotesSnapshot());
+    };
+    QObject::connect(
+        &onboardingHubController,
+        &OnboardingHubController::hubSelectionResolved,
+        &app,
+        [&onboardingHubController,
+         &startupRuntimeCoordinator,
+         &applyMountedHubSelection](const QString& hubPath)
         {
-            selectedHubStore.setSelectedHubSelection(
+            onboardingHubController.beginHubLoad();
+
+            QString errorMessage;
+            const bool loaded = startupRuntimeCoordinator.loadHubIntoRuntime(
+                hubPath,
+                &errorMessage);
+            if (!loaded)
+            {
+                onboardingHubController.failHubLoad(
+                    errorMessage.trimmed().isEmpty()
+                        ? QStringLiteral("Failed to load the selected WhatSon Hub.")
+                        : errorMessage.trimmed());
+                return;
+            }
+
+            applyMountedHubSelection(
                 hubPath,
                 onboardingHubController.currentHubAccessBookmark(),
                 onboardingHubController.currentHubSelectionUrl());
-            hubSyncController.setCurrentHubPath(hubPath);
-            resourcesImportViewModel.setCurrentHubPath(hubPath);
-            calendarBoardStore.setProjectedNotesHubPath(hubPath);
-            calendarBoardStore.reloadProjectedNotesFromSnapshot(
-                libraryHierarchyViewModel.indexedNotesSnapshot());
+            onboardingHubController.completeHubLoad(hubPath);
         });
 
     bool initialHubLoaded = false;
@@ -415,15 +437,10 @@ int main(int argc, char* argv[])
         {
             onboardingHubController.syncCurrentHubSelection(startupHubSelection.hubPath);
             onboardingHubController.completeWorkspaceTransition();
-            selectedHubStore.setSelectedHubSelection(
+            applyMountedHubSelection(
                 startupHubSelection.hubPath,
                 startupHubSelection.accessBookmark,
                 startupHubSelection.selectionUrl);
-            hubSyncController.setCurrentHubPath(startupHubSelection.hubPath);
-            resourcesImportViewModel.setCurrentHubPath(startupHubSelection.hubPath);
-            calendarBoardStore.setProjectedNotesHubPath(startupHubSelection.hubPath);
-            calendarBoardStore.reloadProjectedNotesFromSnapshot(
-                libraryHierarchyViewModel.indexedNotesSnapshot());
         }
         if (!initialHubLoaded && !errorMessage.trimmed().isEmpty())
         {

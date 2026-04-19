@@ -21,7 +21,6 @@ class OnboardingHubController final : public IOnboardingHubController
 
 public:
     using CreateHubCallback = std::function<bool(const QString &, QString *, QString *)>;
-    using LoadHubCallback = std::function<bool(const QString &, QString *)>;
 
     explicit OnboardingHubController(QObject* parent = nullptr);
 
@@ -36,7 +35,6 @@ public:
     [[nodiscard]] QString currentHubSelectionUrl() const;
 
     void setCreateHubCallback(CreateHubCallback callback);
-    void setLoadHubCallback(LoadHubCallback callback);
 
     Q_INVOKABLE bool createHubAtUrl(const QUrl& hubUrl);
     Q_INVOKABLE bool createHubInDirectoryUrl(const QUrl& directoryUrl, const QString& preferredFileName);
@@ -54,6 +52,9 @@ public
 
     void clearLastError();
     void clearHubSelectionCandidates();
+    void beginHubLoad();
+    void completeHubLoad(const QString& hubPath);
+    void failHubLoad(const QString& message);
     void requestViewHook();
     void syncCurrentHubSelection(const QString& hubPath);
 
@@ -69,6 +70,7 @@ public
     void currentFolderUrlChanged();
     void sessionStateChanged();
     void hubCreated(const QString& hubPath);
+    void hubSelectionResolved(const QString& hubPath);
     void hubLoaded(const QString& hubPath);
     void operationFailed(const QString& message);
     void viewHookRequested();
@@ -78,8 +80,7 @@ private:
     [[nodiscard]] QStringList hubPackageCandidatesInDirectory(const QString& directoryPath) const;
     [[nodiscard]] QString resolveExistingHubPath(const QString& selectedPath, QString* errorMessage) const;
     [[nodiscard]] bool validateMountableHubPath(const QString& hubPath, QString* errorMessage) const;
-    bool loadCreatedHub(const QString& hubPath, QString* errorMessage);
-    bool loadResolvedHubPath(const QString& resolvedHubPath, QString* errorMessage);
+    bool submitResolvedHubSelection(const QString& resolvedHubPath, QString* errorMessage);
     void setBusy(bool busy);
     void setCurrentHubPath(const QString& hubPath);
     void setCurrentFolderPath(const QString& folderPath);
@@ -90,7 +91,6 @@ private:
     void setSessionState(const QString& sessionState);
 
     CreateHubCallback m_createHubCallback;
-    LoadHubCallback m_loadHubCallback;
     bool m_busy = false;
     QString m_currentHubName;
     QString m_currentHubPathName;

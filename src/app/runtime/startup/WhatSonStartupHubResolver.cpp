@@ -211,8 +211,8 @@ namespace WhatSon::Runtime::Startup
             }
         }
 
-        const QFileInfo hubInfo(iosResolvedHubPath);
-        if (!hubInfo.exists() || !hubInfo.isDir())
+        const QFileInfo iosResolvedHubInfo(iosResolvedHubPath);
+        if (!iosResolvedHubInfo.exists() || !iosResolvedHubInfo.isDir())
         {
             if (errorMessage != nullptr)
             {
@@ -221,7 +221,7 @@ namespace WhatSon::Runtime::Startup
             return {};
         }
 
-        if (!hubInfo.fileName().endsWith(QStringLiteral(".wshub"), Qt::CaseInsensitive))
+        if (!iosResolvedHubInfo.fileName().endsWith(QStringLiteral(".wshub"), Qt::CaseInsensitive))
         {
             if (errorMessage != nullptr)
             {
@@ -237,8 +237,8 @@ namespace WhatSon::Runtime::Startup
         return iosResolvedHubPath;
 #endif
 
-        const QFileInfo hubInfo(normalizedHubPath);
-        if (!hubInfo.exists() || !hubInfo.isDir())
+        const QFileInfo normalizedHubInfo(normalizedHubPath);
+        if (!normalizedHubInfo.exists() || !normalizedHubInfo.isDir())
         {
             if (errorMessage != nullptr)
             {
@@ -247,7 +247,7 @@ namespace WhatSon::Runtime::Startup
             return {};
         }
 
-        if (!hubInfo.fileName().endsWith(QStringLiteral(".wshub"), Qt::CaseInsensitive))
+        if (!normalizedHubInfo.fileName().endsWith(QStringLiteral(".wshub"), Qt::CaseInsensitive))
         {
             if (errorMessage != nullptr)
             {

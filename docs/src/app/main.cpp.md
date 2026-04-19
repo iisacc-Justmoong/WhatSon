@@ -19,6 +19,9 @@
 - Resource-domain mutations now join that same local-mutation wiring path as well, so deleting
   `.wsresource` packages from the resources list is acknowledged as a local hub edit immediately.
 - Hub selection wiring now updates sync/import state directly without a background write-lease heartbeat timer.
+- Onboarding now submits only a validated hub selection ticket back into `main.cpp`; the composition root is the only
+  place that mounts the runtime, persists the chosen hub selection, and fans the loaded hub path into sync/import and
+  calendar projection state.
 - Persisted hub selection wiring now stores the loaded hub path together with the original selection URL and any
   security-scoped bookmark, so iOS startup can re-resolve provider-backed `.wshub` picks even when the local path
   changes between launches.
