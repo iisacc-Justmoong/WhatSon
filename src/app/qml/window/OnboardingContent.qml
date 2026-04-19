@@ -15,7 +15,8 @@ Item {
     readonly property int closeButtonSize: Math.max(0, Math.round(LV.Theme.scaleMetric(16)))
     readonly property int closeColumnWidth: Math.max(0, Math.round(LV.Theme.scaleMetric(48)))
     readonly property url currentFolderUrl: hubSessionController ? hubSessionController.currentFolderUrl : ""
-    readonly property string defaultCreateHubFileName: "Untitled.wshub"
+    readonly property string defaultCreateHubName: "Untitled"
+    readonly property string defaultCreateHubFileName: root.defaultCreateHubName + ".wshub"
     readonly property int desktopActionWidth: Math.max(0, Math.round(LV.Theme.scaleMetric(180)))
     readonly property int desktopContentWidth: Math.max(0, Math.round(LV.Theme.scaleMetric(209)))
     readonly property int dragRegionHeight: Math.max(0, Math.round(LV.Theme.scaleMetric(72)))
@@ -25,7 +26,7 @@ Item {
             return "idle";
         return String(root.hubSessionController.sessionState).trim();
     }
-    readonly property bool useDirectExistingHubFileFlow: Qt.platform.os === "android"
+    readonly property bool useDirectExistingHubFileFlow: Qt.platform.os === "android" || Qt.platform.os === "osx"
     readonly property bool useNativeIosExistingHubPicker: Qt.platform.os === "ios"
     readonly property bool isMobilePlatform: Qt.platform.os === "android" || Qt.platform.os === "ios"
     readonly property bool onboardingInteractionBusy: (root.hubSessionController && root.hubSessionController.busy)
@@ -33,6 +34,8 @@ Item {
     readonly property bool useMobileCreateDirectoryFlow: root.isMobilePlatform
     readonly property color linkColor: LV.Theme.accent
     readonly property color mainSurfaceColor: root.panelColor
+    readonly property int createHubFieldHeight: Math.max(0, Math.round(LV.Theme.scaleMetric(40)))
+    readonly property int createHubFieldTextHeight: Math.max(0, Math.round(LV.Theme.scaleMetric(16)))
     readonly property int mobileActionSpacing: LV.Theme.gap24
     readonly property int mobileActionWidth: Math.max(0, Math.round(LV.Theme.scaleMetric(180)))
     readonly property int mobileContentSpacing: Math.max(0, Math.round(LV.Theme.scaleMetric(32)))
@@ -69,6 +72,7 @@ Item {
     property var hubSessionController: null
     property color panelColor: LV.Theme.panelBackground06
     property bool autoCompleteOnHubLoaded: true
+    property string createHubNameText: root.defaultCreateHubName
     property var createHubDialogInstance: null
     readonly property int rightPanelWidth: Math.max(
                                                Math.max(0, Math.round(LV.Theme.scaleMetric(214))),
@@ -76,6 +80,7 @@ Item {
                                                    Math.max(0, Math.round(LV.Theme.scaleMetric(306))),
                                                    Math.round(root.width * Math.max(0, Math.round(LV.Theme.scaleMetric(306))) / 867)))
     readonly property color secondarySurfaceColor: root.sidePanelColor
+    readonly property string requestedCreateHubFileName: root.normalizedCreateHubFileName(root.createHubNameText)
     readonly property string resolvedVersionText: {
         const value = root.versionText === undefined || root.versionText === null ? "" : String(root.versionText).trim();
         return value.length > 0 ? value : "Version: 1.0.0";
@@ -84,7 +89,7 @@ Item {
         if (root.statusText.length > 0)
             return root.statusText;
         if (root.useNativeIosExistingHubPicker)
-            return "On iOS, browse Files or Box, open the .wshub package, select a file inside it, and tap Open.";
+            return "On iOS, browse Files or cloud storage, select the .wshub package directly or open it and choose any file or folder inside it, then tap Open.";
         if (root.useDirectExistingHubFileFlow)
             return "On mobile, choose the .wshub package directly from the native picker.";
         if (root.hasHubSelectionCandidates)
@@ -132,7 +137,7 @@ Item {
         if (folderText.length === 0)
             return "";
         const normalizedFolderText = folderText.endsWith("/") ? folderText.slice(0, -1) : folderText;
-        return normalizedFolderText + "/" + root.defaultCreateHubFileName;
+        return normalizedFolderText + "/" + root.requestedCreateHubFileName;
     }
     property string versionText: "Version: 1.0.0"
 
@@ -142,6 +147,47 @@ Item {
     signal requestWindowMove
     signal selectFileRequested
     signal viewHookRequested
+
+    function normalizedCreateHubFileName(hubNameText) {
+        const value = hubNameText === undefined || hubNameText === null ? "" : String(hubNameText).trim();
+        if (value.length === 0)
+            return root.defaultCreateHubFileName;
+        return value.toLowerCase().endsWith(".wshub") ? value : value + ".wshub";
+    }
+
+    function clearOnboardingOperationState() {
+        if (!root.hubSessionController)
+            return;
+
+        root.hubSessionController.clearLastError();
+        root.hubSessionController.clearHubSelectionCandidates();
+        iosHubPickerBridge.clearLastError();
+    }
+
+    function beginCreateHubFlow() {
+        root.viewHookRequested();
+        if (root.hubSessionController) {
+            root.clearOnboardingOperationState();
+            if (root.useMobileCreateDirectoryFlow)
+                createHubDirectoryDialog.open();
+            else
+                root.openCreateHubDialog();
+            return;
+        }
+
+        root.createFileRequested();
+    }
+
+    function beginSelectHubFlow() {
+        root.viewHookRequested();
+        if (root.hubSessionController) {
+            root.clearOnboardingOperationState();
+            root.openExistingHubSelector();
+            return;
+        }
+
+        root.selectFileRequested();
+    }
 
     function ensureCreateHubDialog() {
         if (root.useMobileCreateDirectoryFlow)
@@ -235,7 +281,7 @@ Item {
 
         onAccepted: {
             if (root.hubSessionController) {
-                root.hubSessionController.createHubInDirectoryUrl(selectedFolder, root.defaultCreateHubFileName);
+                root.hubSessionController.createHubInDirectoryUrl(selectedFolder, root.requestedCreateHubFileName);
             } else {
                 root.createFileRequested();
             }
@@ -459,6 +505,13 @@ Item {
                             text: root.resolvedVersionText
                             width: parent.width
                         }
+                        HubNameEditor {
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            enabled: !root.onboardingInteractionBusy
+                            width: parent.width
+
+                            onSubmitRequested: root.beginCreateHubFlow()
+                        }
 
                         Column {
                             anchors.horizontalCenter: parent.horizontalCenter
@@ -472,17 +525,7 @@ Item {
                                 label: "Create new WhatSon Hub"
                                 width: parent.width
 
-                                onTriggered: {
-                                    root.viewHookRequested();
-                                    if (root.hubSessionController) {
-                                        root.hubSessionController.clearLastError();
-                                        root.hubSessionController.clearHubSelectionCandidates();
-                                        iosHubPickerBridge.clearLastError();
-                                        root.openCreateHubDialog();
-                                    } else {
-                                        root.createFileRequested();
-                                    }
-                                }
+                                onTriggered: root.beginCreateHubFlow()
                             }
                             ActionLink {
                                 id: selectHubAction
@@ -491,17 +534,7 @@ Item {
                                 label: "Select WhatSon Hub"
                                 width: parent.width
 
-                                onTriggered: {
-                                    root.viewHookRequested();
-                                    if (root.hubSessionController) {
-                                        root.hubSessionController.clearLastError();
-                                        root.hubSessionController.clearHubSelectionCandidates();
-                                        iosHubPickerBridge.clearLastError();
-                                        root.openExistingHubSelector();
-                                    } else {
-                                        root.selectFileRequested();
-                                    }
-                                }
+                                onTriggered: root.beginSelectHubFlow()
                             }
                         }
                         LV.Label {
@@ -586,6 +619,13 @@ Item {
                                 width: root.mobileVersionWidth
                             }
                         }
+                        HubNameEditor {
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            enabled: !root.onboardingInteractionBusy
+                            width: parent.width
+
+                            onSubmitRequested: root.beginCreateHubFlow()
+                        }
 
                         Column {
                             anchors.horizontalCenter: parent.horizontalCenter
@@ -597,34 +637,14 @@ Item {
                                 label: "Create new WhatSon Hub"
                                 width: parent.width
 
-                                onTriggered: {
-                                    root.viewHookRequested();
-                                    if (root.hubSessionController) {
-                                        root.hubSessionController.clearLastError();
-                                        root.hubSessionController.clearHubSelectionCandidates();
-                                        iosHubPickerBridge.clearLastError();
-                                        createHubDirectoryDialog.open();
-                                    } else {
-                                        root.createFileRequested();
-                                    }
-                                }
+                                onTriggered: root.beginCreateHubFlow()
                             }
                             ActionLink {
                                 enabled: !root.onboardingInteractionBusy
                                 label: "Select WhatSon Hub"
                                 width: parent.width
 
-                                onTriggered: {
-                                    root.viewHookRequested();
-                                    if (root.hubSessionController) {
-                                        root.hubSessionController.clearLastError();
-                                        root.hubSessionController.clearHubSelectionCandidates();
-                                        iosHubPickerBridge.clearLastError();
-                                        root.openExistingHubSelector();
-                                    } else {
-                                        root.selectFileRequested();
-                                    }
-                                }
+                                onTriggered: root.beginSelectHubFlow()
                             }
                         }
 
@@ -706,6 +726,66 @@ Item {
             hoverEnabled: true
 
             onClicked: actionLink.triggered()
+        }
+    }
+
+    component HubNameEditor: Column {
+        id: hubNameEditor
+
+        property bool enabled: true
+
+        signal submitRequested
+
+        spacing: LV.Theme.gap8
+        width: parent ? parent.width : implicitWidth
+
+        LV.Label {
+            color: LV.Theme.descriptionColor
+            style: description
+            text: "Hub name"
+            width: parent.width
+        }
+
+        Rectangle {
+            color: LV.Theme.panelBackground08
+            height: root.createHubFieldHeight
+            opacity: hubNameEditor.enabled ? 1 : 0.72
+            radius: LV.Theme.radiusMd
+            width: parent.width
+
+            LV.InputField {
+                id: hubNameInput
+
+                anchors.fill: parent
+                backgroundColor: "transparent"
+                backgroundColorDisabled: "transparent"
+                backgroundColorFocused: "transparent"
+                backgroundColorHover: "transparent"
+                backgroundColorPressed: "transparent"
+                centeredTextHeight: root.createHubFieldTextHeight
+                clearButtonVisible: false
+                enabled: hubNameEditor.enabled
+                fieldMinHeight: parent.height
+                insetHorizontal: LV.Theme.gap12
+                insetVertical: 0
+                placeholderText: root.defaultCreateHubName
+                selectByMouse: true
+                text: root.createHubNameText
+                textColor: LV.Theme.bodyColor
+                textColorDisabled: LV.Theme.disabledColor
+
+                onAccepted: function(text) {
+                    const nextText = typeof text === "string" ? text : hubNameInput.text;
+                    if (root.createHubNameText !== nextText)
+                        root.createHubNameText = nextText;
+                    hubNameEditor.submitRequested();
+                }
+                onTextEdited: function(text) {
+                    const nextText = typeof text === "string" ? text : hubNameInput.text;
+                    if (root.createHubNameText !== nextText)
+                        root.createHubNameText = nextText;
+                }
+            }
         }
     }
 

@@ -1,16 +1,24 @@
 # `src/app/platform/Apple/WhatSonIosHubPickerBridge.mm`
 
 ## Role
-Implements the native iOS document-picker bridge used by onboarding to select a WhatSon hub from Files or third-party
+Implements the native iOS document-browser bridge used by onboarding to select a WhatSon hub from Files or third-party
 providers such as Box.
 
 ## Picker Strategy
-- Presents `UIDocumentPickerViewController` from the active foreground window/controller instead of relying on
+- Presents `UIDocumentBrowserViewController` from the active foreground window/controller instead of relying on
   `QtQuick.Dialogs`, which avoids the folder-picker/provider restrictions that disabled Box.
-- Uses `initForOpeningContentTypes(..., asCopy:NO)` with file-oriented provider-friendly content types
-  (`UTTypeItem`, `UTTypeContent`, `UTTypeData`), so Box can keep the native `Open` affordance active while the
-  onboarding controller still resolves the picked nested file back to the enclosing `.wshub` package.
-- Leaves the native Files chrome intact, which preserves the platform `Open` affordance the onboarding flow needs.
+- Uses `initForOpeningContentTypes(...)` / `initForOpeningFilesWithContentTypes(...)` with a package-aware,
+  provider-friendly type list:
+  the exported `com.iisacc.whatson.hub` document type, `UTTypePackage`, and generic file content supertypes
+  (`UTTypeContent`, `UTTypeItem`, `UTTypeData`).
+- This keeps providers that understand package documents eligible for direct `.wshub` picks, while providers that only
+  expose the package as a browsable directory can still return a nested file that onboarding remaps back to the
+  enclosing hub root.
+- Adds an app-owned `Open` browser action in the native navigation bar/menu so WhatSon still exposes an explicit
+  confirmation affordance when the provider does not show the system `Open` button.
+- That action now leaves `supportedContentTypes` at the browser default (`UTTypeItem.identifier`) instead of
+  narrowing it to `.wshub`-specific types, which keeps provider-exposed nested files and folders eligible to activate
+  the same `Open` action.
 
 ## Lifetime And Signals
 - A dedicated Objective-C delegate forwards accept/cancel/failure callbacks back into Qt with queued invocations.

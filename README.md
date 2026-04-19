@@ -21,21 +21,17 @@ WhatSon is an LVRS-based Qt Quick application.
 
 ## Adaptive Layout
 
-- `src/app/qml/Main.qml` now mounts the root shell through LVRS `ApplicationWindow` page-stack APIs, but startup
-  presentation is platform-specific: Android keeps explicit routed onboarding/workspace entries in `pageRoutes`,
-  while iOS pins `initialRoutePath/pageInitialPath` to `/` and only reuses a dedicated inline onboarding sequence
-  inside the workspace page when onboarding is explicitly reopened.
+- `src/app/qml/Main.qml` now mounts the root shell through LVRS `ApplicationWindow` page-stack APIs and owns the
+  ordinary onboarding/workspace session on desktop and mobile alike. Desktop/Android keep explicit routed
+  onboarding/workspace entries in `pageRoutes`, while iOS pins `initialRoutePath/pageInitialPath` to `/` and swaps in
+  a dedicated inline onboarding sequence inside the workspace page whenever onboarding is visible.
 - The embedded mobile onboarding bootstrap state machine now lives in
   `src/app/viewmodel/onboarding/OnboardingRouteBootstrapController.*` instead of being open-coded across `Main.qml`.
-  `Main.qml` only applies requested LVRS route changes where routing is still used, keeps the desktop onboarding
-  subwindow separate from the mobile embedded flow, and reuses the same controller state for the iOS inline startup
-  sequence.
-- Android onboarding success still defers the `/onboarding -> /` route flip with `Qt.callLater(...)` so native picker
-  teardown can finish before the workspace shell replaces the onboarding surface. iOS now completes the same
+  `Main.qml` only applies requested LVRS route changes where routing is still used and reuses the same controller
+  state for the iOS inline onboarding startup/reopen sequence.
+- Desktop/Android onboarding success still defer the `/onboarding -> /` route flip with `Qt.callLater(...)` so native
+  picker teardown can finish before the workspace shell replaces the onboarding surface. iOS completes the same
   controller transition in place against the already-mounted workspace page instead of flipping the LVRS page stack.
-- iOS no longer auto-opens onboarding during ordinary startup when no hub is restored. The composition root configures
-  the same embedded onboarding controller for later reuse, then immediately dismisses its visible state so the app can
-  finish booting on the unmounted workspace shell without entering onboarding by itself.
 - Android onboarding now routes `content://` SAF hub selections and destination directories through
   `src/app/platform/Android/WhatSonAndroidStorageBackend.*`. The backend keeps the OS-provided document URI as the
   source of truth, materializes the selected `.wshub` package into a deterministic app-local mount directory under app
@@ -563,29 +559,41 @@ build/cargo/release/whatson onboard
 
 `whatson onboard` forwards an internal `--onboarding-only` app flag and loads `Onboarding.qml` directly.
 The onboarding surface now uses native Qt Quick dialogs to either create a new `.wshub` package at a user-selected
-path through `WhatSonHubCreator` or load an existing package immediately into the workspace shell. Existing hub selection
+path through `WhatSonHubCreator` or load an existing package immediately into the workspace shell. The shared
+onboarding surface now also includes a `Hub name` field, so both desktop save dialogs and mobile folder-based
+creation flows derive their package name from the same user-editable value instead of hardcoding `Untitled.wshub`.
+Existing hub selection
 accepts the `.wshub` package root, a parent directory that contains exactly one `.wshub`, or any nested path inside an
 existing `.wshub` bundle so mobile document pickers can promote package-internal selections back to the hub root.
 On iOS the native Files picker still provides security-scoped document URLs, so onboarding now starts a security-scoped
 resource session before creating or loading a `.wshub` and retains access to the resolved hub root for the rest of the
 app session. The selected Files scope is also persisted as an implicit bookmark so startup can restore that access and
 reopen the same external `.wshub` without replaying onboarding when the bookmark remains valid. Mobile onboarding also
-switches hub creation to a directory-picker flow and synthesizes a unique
-`Untitled*.wshub` target path inside the chosen folder, because iOS native file dialogs only implement the open path
-and native mobile pickers diverge from desktop save-dialog semantics. Existing hub selection now keeps the iOS folder
-picker plus the in-session candidate fallback, but Android switches to a native file picker that can target a
-`.wshub` package document directly. Android onboarding then resolves external-storage SAF document URLs back to shared
-filesystem paths whenever the picker points at a local `.wshub`, so the existing directory-based hub creator and
-runtime loader can mount the package tree instead of treating the document URI itself as a virtual directory.
-Mobile startup now stays inside `Main.qml` instead of booting a separate standalone onboarding window when no hub is
-restored, but the presentation differs by platform. Android still registers `/onboarding` beside the workspace route
-and lets the same `LV.ApplicationWindow` transition from onboarding into the workspace shell. iOS now keeps the LVRS
-page stack fixed on `/`, and automatic startup onboarding is now fully withdrawn there. The dedicated
-`IosInlineOnboardingSequence.qml` remains available only for explicit reopen flows, which still avoid the
-first-frame `/onboarding` navigation that was recreating the Metal swapchain during onboarding bootstrap.
-The dedicated `Onboarding.qml` window wrapper remains available for the explicit `whatson onboard` entrypoint and the
-desktop window-menu command, but regular mobile bootstraps stay inside `Main.qml` through the shared
-`OnboardingContent.qml` surface.
+switches hub creation to a directory-picker flow and synthesizes the final `.wshub` target path from the current hub
+name inside the chosen folder, because iOS native file dialogs only implement the open path and native mobile pickers
+diverge from desktop save-dialog semantics. `OnboardingHubController` now keeps the selected folder URL as the active
+security-scoped authority for that flow and calls the shared `WhatSonHubCreator` callback directly against the resolved
+child package path, so mobile creation produces the same full scaffold as desktop creation. Existing iOS hub selection
+now goes through a
+native `UIDocumentBrowserViewController` bridge that advertises the exported `.wshub` package document type together
+with package/file supertypes. The same bridge adds an app-owned `Open` browser action so WhatSon keeps an explicit
+confirmation affordance even when a provider does not surface the system `Open` button while navigating inside a
+package. That action deliberately keeps the browser's default `public.item` scope so provider-exposed nested files and
+folders inside the package can still enable `Open` and be promoted back to the enclosing hub. This keeps providers such
+as Box eligible for direct `.wshub` picks when they expose the package as a document, while still allowing the
+onboarding controller to promote nested file or folder selections back to the enclosing hub when a provider exposes the
+same package as a browsable directory. Android continues to use a native file picker that
+can target a `.wshub` package document directly, then resolves external-storage SAF document URLs back to shared
+filesystem paths whenever the picker points at a local `.wshub`. macOS now also uses a direct `.wshub` file-picker
+path for existing-hub selection, avoiding the old folder-only picker path that could not choose packaged hubs.
+Regular startup onboarding now stays inside `Main.qml` on desktop and mobile alike instead of forking desktop into a
+separate modal onboarding window. Desktop and Android register `/onboarding` beside the workspace route and let the
+same `LV.ApplicationWindow` transition from onboarding into the workspace shell. iOS still keeps the LVRS page stack
+fixed on `/`, but now does so inside that same root window by swapping the workspace page loader to
+`IosInlineOnboardingSequence.qml` until a hub is available. This keeps the startup session unified while still
+avoiding the first-frame `/onboarding` navigation that had been recreating the Metal swapchain during iOS onboarding
+bootstrap.
+The dedicated `Onboarding.qml` window wrapper remains available only for the explicit `whatson onboard` entrypoint.
 That embedded mobile onboarding surface now drops the desktop-only rounded, antialiased outer frame and renders as a
 plain full-window panel on mobile/iOS, which avoids allocating a fullscreen multisample onboarding chrome target during
 the first startup frame.
@@ -593,13 +601,13 @@ Mobile onboarding no longer treats `hubLoaded` as an immediate page-complete eve
 now tracks a session-state ladder (`idle -> resolvingSelection -> loadingHub -> hubLoaded -> routingWorkspace -> ready`).
 Android still commits `/onboarding -> /` only after the LVRS router confirms the workspace navigation. iOS completes
 the same transition in place after the workspace page is already mounted, so the controller can reach `ready` without
-another page-stack flip when onboarding is explicitly reopened. If either strategy fails, the controller falls back to `failed`, keeps the app inside
+another page-stack flip during startup or explicit reopen flows. If either strategy fails, the controller falls back to `failed`, keeps the app inside
 onboarding, and surfaces the error instead of tearing down the mobile session.
 Before the runtime loader starts, `OnboardingHubController` also performs a local `.wshub` mount preflight:
 non-local document-provider URLs that cannot be resolved into real package directories now fail inside onboarding with a
 targeted error, instead of cascading into a full-domain runtime bootstrap failure.
-The desktop onboarding window's right-hand status panel stays aligned with the Figma onboarding design and shows either `No WhatSon Hub Selected`
-or the currently selected `.wshub` package name.
+The unified onboarding surface's right-hand status panel stays aligned with the Figma onboarding design and shows
+either `No WhatSon Hub Selected` or the currently selected `.wshub` package name.
 The last selected `.wshub` is persisted through the app session store as a startup candidate, so the next launch tries
 that selection before falling back to `blueprint/*.wshub`.
 Android/desktop startup onboarding is now gated by hub mountability rather than by full runtime-domain success.

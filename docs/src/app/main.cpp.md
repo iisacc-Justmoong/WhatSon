@@ -27,9 +27,10 @@
   changes between launches.
 - Startup hub resolution no longer synthesizes a `blueprint/*.wshub` fallback, so an unmounable persisted selection now
   leaves the composition root unmounted until onboarding opens a real workspace.
-- When iOS launch cannot mount a persisted hub, `main.cpp` now reuses the standalone onboarding-window handoff flow
-  before creating the main workspace window, avoiding the inline-startup presentation path that was re-triggering the
-  fatal render failure.
+- Regular startup no longer forks desktop and mobile onboarding into different top-level window flows. `main.cpp` now
+  loads `Main.qml` for ordinary startup on every platform and lets `OnboardingRouteBootstrapController` decide whether
+  the root window should begin in onboarding or workspace presentation.
+- The dedicated `Onboarding.qml` shell remains only for the explicit `--onboarding-only` launch path.
 - Permission startup wiring now consumes `permissions/WhatSonPermissionBootstrapper.hpp` after consolidating
   permission bootstrap code under `src/app/permissions`.
 - Application bootstrap no longer forces Qt scene-graph visualization environment variables and no longer auto-opens

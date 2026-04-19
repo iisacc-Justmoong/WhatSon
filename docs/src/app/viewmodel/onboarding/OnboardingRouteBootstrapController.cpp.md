@@ -4,6 +4,7 @@
 - `setHubController(...)` now accepts `IOnboardingHubController`.
 - Route handling still calls `beginWorkspaceTransition`, `completeWorkspaceTransition`, and `failWorkspaceTransition` at the same points.
 - `embeddedOnboardingVisible` now serves two presentation strategies:
-  - Android routed onboarding uses `routeSyncRequested(...)` to move between `/onboarding` and `/`.
-  - iOS inline onboarding still keeps `/` mounted when the main window is already active, while launch-time missing-hub
-    recovery is now handled earlier in `main.cpp` by the standalone onboarding-window flow.
+  - Desktop and Android routed onboarding use `routeSyncRequested(...)` to move between `/onboarding` and `/` inside
+    the same main window session.
+  - iOS inline onboarding still keeps `/` mounted and swaps the workspace page loader instead of pushing the route
+    stack through `/onboarding`.

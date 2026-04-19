@@ -446,7 +446,8 @@ bool OnboardingHubController::createHubAtUrl(const QUrl& hubUrl)
         return false;
     }
 
-    const QString normalizedCreatedHubPath = normalizedAbsolutePath(createdHubPath);
+    const QString normalizedCreatedHubPath = normalizedAbsolutePath(
+        createdHubPath.trimmed().isEmpty() ? requestedPackagePath : createdHubPath);
     if (!WhatSon::Apple::SecurityScopedResourceAccess::ensureAccessForPath(normalizedCreatedHubPath, &accessError))
     {
         setLastError(accessError.trimmed().isEmpty()
@@ -500,6 +501,30 @@ bool OnboardingHubController::createHubInDirectoryUrl(const QUrl& directoryUrl, 
     clearLastError();
     clearHubSelectionCandidates();
 
+    if (m_busy)
+    {
+        setLastError(QStringLiteral("A hub operation is already in progress."));
+        emit operationFailed(m_lastError);
+        return false;
+    }
+
+    if (!m_createHubCallback)
+    {
+        setLastError(QStringLiteral("Hub creation callback is not configured."));
+        emit operationFailed(m_lastError);
+        return false;
+    }
+
+    QString accessError;
+    if (!WhatSon::Apple::SecurityScopedResourceAccess::startAccessForUrl(directoryUrl, false, &accessError))
+    {
+        setLastError(accessError.trimmed().isEmpty()
+                         ? QStringLiteral("Failed to access the selected WhatSon Hub directory.")
+                         : accessError.trimmed());
+        emit operationFailed(m_lastError);
+        return false;
+    }
+
     const QString directoryPath = localPathFromUrl(directoryUrl);
     if (directoryPath.trimmed().isEmpty())
     {
@@ -520,20 +545,6 @@ bool OnboardingHubController::createHubInDirectoryUrl(const QUrl& directoryUrl, 
 
     if (WhatSon::Android::Storage::isSupportedUri(directoryPath))
     {
-        if (m_busy)
-        {
-            setLastError(QStringLiteral("A hub operation is already in progress."));
-            emit operationFailed(m_lastError);
-            return false;
-        }
-
-        if (!m_createHubCallback)
-        {
-            setLastError(QStringLiteral("Hub creation callback is not configured."));
-            emit operationFailed(m_lastError);
-            return false;
-        }
-
         QTemporaryDir temporaryDirectory;
         if (!temporaryDirectory.isValid())
         {
@@ -601,7 +612,74 @@ bool OnboardingHubController::createHubInDirectoryUrl(const QUrl& directoryUrl, 
         return false;
     }
 
-    return createHubAtUrl(WhatSon::HubPath::urlFromPath(targetHubPath));
+    setSessionState(QString::fromLatin1(kSessionStateLoadingHub));
+    setBusy(true);
+
+    QString createdHubPath;
+    QString errorMessage;
+    const bool created = invokeCreateHubCallbackSafely(
+        m_createHubCallback,
+        targetHubPath,
+        &createdHubPath,
+        &errorMessage);
+
+    setBusy(false);
+
+    if (!created)
+    {
+        setLastError(errorMessage.trimmed().isEmpty()
+                         ? QStringLiteral("Failed to create the WhatSon Hub.")
+                         : errorMessage.trimmed());
+        setSessionState(QString::fromLatin1(kSessionStateFailed));
+        emit operationFailed(m_lastError);
+        return false;
+    }
+
+    const QString normalizedCreatedHubPath = normalizedAbsolutePath(
+        createdHubPath.trimmed().isEmpty() ? targetHubPath : createdHubPath);
+    if (!WhatSon::Apple::SecurityScopedResourceAccess::ensureAccessForPath(normalizedCreatedHubPath, &accessError))
+    {
+        setLastError(accessError.trimmed().isEmpty()
+                         ? QStringLiteral("The hub was created but iOS did not grant access to it.")
+                         : accessError.trimmed());
+        setSessionState(QString::fromLatin1(kSessionStateFailed));
+        emit operationFailed(m_lastError);
+        return false;
+    }
+
+    setCurrentHubPath(normalizedCreatedHubPath);
+#if defined(Q_OS_IOS)
+    const QByteArray accessBookmark = WhatSon::Apple::SecurityScopedResourceAccess::bookmarkDataForUrl(
+        QUrl::fromLocalFile(normalizedCreatedHubPath),
+        false,
+        &accessError);
+    if (accessBookmark.isEmpty())
+    {
+        setLastError(accessError.trimmed().isEmpty()
+                         ? QStringLiteral("Failed to persist access to the selected WhatSon Hub location.")
+                         : accessError.trimmed());
+        setSessionState(QString::fromLatin1(kSessionStateFailed));
+        emit operationFailed(m_lastError);
+        return false;
+    }
+    setCurrentHubAccessBookmark(accessBookmark);
+#else
+    setCurrentHubAccessBookmark({});
+#endif
+    setCurrentHubSelectionUrl(selectionUrlStringFromPath(normalizedCreatedHubPath));
+    emit hubCreated(normalizedCreatedHubPath);
+
+    if (submitResolvedHubSelection(normalizedCreatedHubPath, &errorMessage))
+    {
+        return true;
+    }
+
+    setLastError(errorMessage.trimmed().isEmpty()
+                     ? QStringLiteral("The hub was created but could not be prepared for workspace load.")
+                     : QStringLiteral("The hub was created but could not be prepared for workspace load: %1").arg(errorMessage.trimmed()));
+    setSessionState(QString::fromLatin1(kSessionStateFailed));
+    emit operationFailed(m_lastError);
+    return false;
 }
 
 bool OnboardingHubController::prepareHubSelectionFromUrl(const QUrl& hubUrl)

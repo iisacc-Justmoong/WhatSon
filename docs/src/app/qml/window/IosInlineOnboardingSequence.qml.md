@@ -1,8 +1,8 @@
 # `src/app/qml/window/IosInlineOnboardingSequence.qml`
 
 ## Role
-`IosInlineOnboardingSequence.qml` hosts the shared onboarding surface inside the main LVRS workspace page on iOS when
-that onboarding surface is explicitly reopened.
+`IosInlineOnboardingSequence.qml` hosts the shared onboarding surface inside the main LVRS workspace page on iOS for
+both startup missing-hub recovery and explicit reopen flows.
 
 ## Responsibilities
 - Keep iOS onboarding pinned to the workspace route instead of pushing the LVRS page stack through `/onboarding`.

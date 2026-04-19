@@ -29,5 +29,5 @@
 ## Current Notes
 - Automated C++ regression coverage now lives in `test/cpp/whatson_cpp_regression_tests.cpp`, locking embedded
   onboarding route commits, reopen/dismiss routing, workspace transition callbacks for
-  `OnboardingRouteBootstrapController`, and the iOS-specific startup suppression that now dismisses automatic
-  onboarding in `main.cpp`.
+  `OnboardingRouteBootstrapController`, the unified main-window startup onboarding session in `main.cpp`, and the
+  platform-specific picker paths used by `OnboardingContent.qml`.
