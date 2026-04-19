@@ -35,3 +35,4 @@
 - Read the real implementation and adjacent headers before replacing this scaffold.
 - Document concrete signals, slots, invokables, persistence side effects, and LVRS/QML bindings where applicable.
 - Cross-link this file with peer modules in the same directory once the detailed pass begins.
+- Startup hub resolution now mirrors only the persisted selection and does not synthesize a blueprint fallback path.

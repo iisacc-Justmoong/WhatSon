@@ -19,6 +19,8 @@
 - Resource-domain mutations now join that same local-mutation wiring path as well, so deleting
   `.wsresource` packages from the resources list is acknowledged as a local hub edit immediately.
 - Hub selection wiring now updates sync/import state directly without a background write-lease heartbeat timer.
+- Startup hub resolution no longer synthesizes a `blueprint/*.wshub` fallback, so an unmounable persisted selection now
+  leaves the composition root unmounted until onboarding opens a real workspace.
 - The composition root now suppresses automatic startup onboarding on iOS specifically: it still configures
   `OnboardingRouteBootstrapController` for embedded presentation reuse, but if no startup hub is mounted it immediately
   dismisses the embedded onboarding visibility before the main window loads.

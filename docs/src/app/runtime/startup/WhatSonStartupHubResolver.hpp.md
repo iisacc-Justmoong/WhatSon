@@ -6,3 +6,4 @@ This header defines helper functions that resolve the startup hub package and an
 ## Interface Alignment
 - `resolveStartupHubSelection(...)` now accepts `ISelectedHubStore`.
 - Startup hub resolution is no longer tied to the concrete settings store implementation.
+- The resolver consumes only the persisted startup selection contract and does not accept a blueprint fallback path.

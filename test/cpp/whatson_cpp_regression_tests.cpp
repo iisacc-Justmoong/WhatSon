@@ -639,19 +639,17 @@ void WhatSonCppRegressionTests::selectedHubStore_persistsNormalizedSelectionsWit
 
     QCOMPARE(store.selectedHubPath(), WhatSon::HubPath::normalizeAbsolutePath(selectedHubPath));
     QCOMPARE(store.selectedHubAccessBookmark(), bookmark);
+    QCOMPARE(store.startupHubPath(), WhatSon::HubPath::normalizeAbsolutePath(selectedHubPath));
 
     store.clearSelectedHubPath();
     QCOMPARE(store.selectedHubPath(), QString());
     QCOMPARE(store.selectedHubAccessBookmark(), QByteArray());
+    QCOMPARE(store.startupHubPath(), QString());
 
     store.setSelectedHubPath(QDir(hubRootDir.path()).filePath(QStringLiteral("NotAHub.txt")));
     QCOMPARE(store.selectedHubPath(), QString());
-
-    const QString fallbackHubPath = QDir(hubRootDir.path()).filePath(QStringLiteral("BlueprintFallback.wshub"));
-    QCOMPARE(
-        store.startupHubPath(fallbackHubPath),
-        WhatSon::HubPath::normalizeAbsolutePath(fallbackHubPath));
-    QCOMPARE(store.startupHubPath(QStringLiteral("BlueprintFallback.txt")), QString());
+    QCOMPARE(store.selectedHubAccessBookmark(), QByteArray());
+    QCOMPARE(store.startupHubPath(), QString());
 }
 
 void WhatSonCppRegressionTests::sidebarSelectionStore_normalizesIndicesAndSuppressesDuplicateSignals()

@@ -57,16 +57,9 @@ QByteArray SelectedHubStore::selectedHubAccessBookmark()
     return settings.value(selectedHubBookmarkSettingsKey()).toByteArray();
 }
 
-QString SelectedHubStore::startupHubPath(const QString& blueprintFallbackHubPath)
+QString SelectedHubStore::startupHubPath()
 {
-    const QString storedHubPath = selectedHubPath();
-    if (!storedHubPath.isEmpty())
-        return storedHubPath;
-
-    const QString normalizedFallbackPath = normalizeHubPath(blueprintFallbackHubPath);
-    if (!isStoredHubPathValid(normalizedFallbackPath))
-        return QString();
-    return normalizedFallbackPath;
+    return selectedHubPath();
 }
 
 void SelectedHubStore::clearSelectedHubPath()
