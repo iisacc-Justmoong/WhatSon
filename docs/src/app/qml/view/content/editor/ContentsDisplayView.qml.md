@@ -20,10 +20,10 @@ not note-backed.
 ## Editing Model
 
 - RAW `.wsnbody` remains the only write authority.
-- `ContentsStructuredDocumentFlow.qml` is the canonical note host only after the selected note session has actually
-  bound and `ContentsDisplayStructuredFlowCoordinator` activates that same note id for the structured host.
-- Until that activation handoff completes, `ContentsDisplayView.qml` keeps the fallback whole-note projection visible
-  instead of mounting an empty structured host shell for a still-unbound note.
+- `ContentsStructuredDocumentFlow.qml` now mounts directly from the selected note's RAW snapshot as soon as that
+  snapshot is available for the current selection.
+- `ContentsDisplayView.qml` no longer keeps a second structured-flow activation latch that waits for
+  editor-session-bound confirmation before showing the canonical structured note host.
 - Empty selected notes now keep that canonical structured host mounted through one fallback editable prose row, so
   note selection and newly created blank notes no longer disappear into a non-focusable blank center panel.
 - The fallback whole-note editor path now uses:

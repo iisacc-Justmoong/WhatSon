@@ -73,7 +73,6 @@ set(WHATSON_CPP_REGRESSION_TEST_SOURCES
         "${CMAKE_SOURCE_DIR}/src/app/viewmodel/content/ContentsResourceTagTextGenerator.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/viewmodel/content/ContentsEditorSelectionBridge.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/viewmodel/content/ContentsEditorSessionController.cpp"
-        "${CMAKE_SOURCE_DIR}/src/app/viewmodel/content/ContentsDisplayStructuredFlowCoordinator.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/viewmodel/content/ContentsLogicalTextBridge.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/viewmodel/content/ContentsStructuredDocumentBlocksModel.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/viewmodel/hierarchy/library/LibraryNoteListModel.cpp"

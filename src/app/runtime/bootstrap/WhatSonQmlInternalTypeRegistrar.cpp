@@ -13,7 +13,6 @@
 #include "file/viewer/ResourceBitmapViewer.hpp"
 #include "viewmodel/content/ContentsDisplayPresentationRefreshController.hpp"
 #include "viewmodel/content/ContentsDisplaySelectionSyncCoordinator.hpp"
-#include "viewmodel/content/ContentsDisplayStructuredFlowCoordinator.hpp"
 #include "viewmodel/content/ContentsEditorPresentationProjection.hpp"
 #include "viewmodel/content/ContentsEditorSessionController.hpp"
 #include "viewmodel/content/ContentsEditorSelectionBridge.hpp"
@@ -42,8 +41,6 @@ namespace WhatSon::Runtime::Bootstrap
             "WhatSon.App.Internal", 1, 0, "ContentsDisplaySelectionSyncCoordinator");
         qmlRegisterType<ContentsDisplayPresentationRefreshController>(
             "WhatSon.App.Internal", 1, 0, "ContentsDisplayPresentationRefreshController");
-        qmlRegisterType<ContentsDisplayStructuredFlowCoordinator>(
-            "WhatSon.App.Internal", 1, 0, "ContentsDisplayStructuredFlowCoordinator");
         qmlRegisterType<ContentsEditorPresentationProjection>(
             "WhatSon.App.Internal", 1, 0, "ContentsEditorPresentationProjection");
         qmlRegisterType<ContentsEditorSessionController>(

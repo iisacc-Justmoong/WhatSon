@@ -200,7 +200,6 @@ Item {
     readonly property string editorEntrySnapshotComparedNoteId: selectionSyncCoordinator.comparedSnapshotNoteId
     readonly property string editorEntrySnapshotPendingNoteId: selectionSyncCoordinator.pendingSnapshotNoteId
     property string pendingNoteEntryGutterRefreshNoteId: ""
-    readonly property string structuredDocumentFlowActivatedNoteId: structuredFlowCoordinator.activatedNoteId
     readonly property string pendingEditorFocusNoteId: selectionSyncCoordinator.pendingEditorFocusNoteId
     readonly property int plainEditorViewModeValue: 0
     readonly property color printCanvasColor: pagePrintLayoutRenderer.canvasColor
@@ -282,7 +281,6 @@ Item {
     readonly property bool showEditorGutter: modePolicy.showEditorGutter
     readonly property bool showFormattedTextRenderer: false
     readonly property bool showStructuredDocumentFlow: contentsView.structuredDocumentFlowEnabled
-                                                       && contentsView.structuredDocumentFlowActivatedNoteId === contentsView.selectedNoteId
                                                        && !contentsView.showDedicatedResourceViewer
                                                        && !contentsView.showFormattedTextRenderer
     readonly property bool structuredHostGeometryActive: modePolicy.structuredHostGeometryActive
@@ -2192,9 +2190,6 @@ Item {
     function scheduleSelectionModelSync(options) {
         selectionSyncCoordinator.scheduleSelectionSync(options && typeof options === "object" ? options : ({}));
     }
-    function refreshStructuredDocumentFlowActivation() {
-        structuredFlowCoordinator.refreshActivatedNoteId();
-    }
     function scrollEditorViewportToMinimapPosition(localY) {
         const flickable = contentsView.editorFlickable;
         if (!flickable)
@@ -2306,18 +2301,9 @@ Item {
                     + " structured=" + contentsView.showStructuredDocumentFlow
                     + " " + EditorTrace.describeText(contentsView.editorText),
                     contentsView)
-        contentsView.refreshStructuredDocumentFlowActivation();
         contentsView.scheduleMinimapSnapshotRefresh(false);
         if (!contentsView.showStructuredDocumentFlow)
             contentsView.scheduleDocumentPresentationRefresh(false);
-    }
-    onEditorBoundNoteIdChanged: {
-        EditorTrace.trace(
-                    "displayView",
-                    "editorBoundNoteIdChanged",
-                    "editorBoundNoteId=" + contentsView.editorBoundNoteId,
-                    contentsView)
-        contentsView.refreshStructuredDocumentFlowActivation();
     }
     onShowStructuredDocumentFlowChanged: {
         EditorTrace.trace(
@@ -2506,14 +2492,6 @@ Item {
         projectionEnabled: contentsView.documentPresentationProjectionEnabled
         renderDirty: contentsView.documentPresentationRenderDirty()
         typingSessionSyncProtected: contentsView.typingSessionSyncProtected
-    }
-    ContentsDisplayStructuredFlowCoordinator {
-        id: structuredFlowCoordinator
-
-        editorSessionBoundToSelectedNote: contentsView.editorSessionBoundToSelectedNote
-        parsedStructuredFlowRequested: contentsView.parsedStructuredFlowRequested
-        renderPending: structuredBlockRenderer ? structuredBlockRenderer.renderPending : false
-        selectedNoteId: contentsView.selectedNoteId
     }
     ContentsEditorTypingController {
         id: editorTypingController
@@ -2737,11 +2715,7 @@ Item {
         target: selectionSyncCoordinator
     }
     Connections {
-        function onRenderPendingChanged() {
-            contentsView.refreshStructuredDocumentFlowActivation();
-        }
         function onRenderedBlocksChanged() {
-            contentsView.refreshStructuredDocumentFlowActivation();
             if (contentsView.structuredHostGeometryActive) {
                 if (contentsView.hasPendingNoteEntryGutterRefresh(contentsView.selectedNoteId)
                         && structuredDocumentFlow

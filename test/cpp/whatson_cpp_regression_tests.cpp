@@ -30,7 +30,6 @@
 #include "store/sidebar/SidebarSelectionStore.hpp"
 #include "viewmodel/content/ContentsEditorSelectionBridge.hpp"
 #include "viewmodel/content/ContentsEditorSessionController.hpp"
-#include "viewmodel/content/ContentsDisplayStructuredFlowCoordinator.hpp"
 #include "viewmodel/content/ContentsLogicalTextBridge.hpp"
 #include "viewmodel/content/ContentsStructuredDocumentBlocksModel.hpp"
 #include "viewmodel/content/ContentsStructuredDocumentCollectionPolicy.hpp"
@@ -523,12 +522,11 @@ private slots:
     void noteBackedHierarchyViewModels_exposeRuntimeBodySourceFallback();
     void contentsDisplayView_invalidatesGutterGeometryImmediatelyAcrossRapidNoteSwitches();
     void contentsDisplayView_keepsGutterNumbersCloseToTheEditorBody();
-    void contentsDisplayView_waitsForStructuredFlowActivationBeforeMountingDocumentFlow();
+    void contentsDisplayView_mountsStructuredFlowDirectlyFromSelectedRawSnapshot();
     void contentsDisplayView_reservesHalfHeightBottomInsetAndCorrectsTypingViewport();
     void inlineFormatEditor_preservesMacModifierVerticalNavigationHooks();
     void structuredFlow_flattensImplicitTextBlocksIntoInteractiveGroups();
     void structuredFlow_keepsEmptySelectedNotesEditableWithFallbackTextGroup();
-    void structuredFlowCoordinator_delaysActivationUntilSelectedSessionIsBound();
     void structuredEditorFormattingController_commitsInlineStyleMutationsThroughFlowRawRanges();
     void structuredEditors_routeMacModifierVerticalNavigationAcrossBlockAndDocumentBoundaries();
     void paperSelection_tracksChosenPaperEnumState();
@@ -3279,15 +3277,24 @@ void WhatSonCppRegressionTests::contentsDisplayView_keepsGutterNumbersCloseToThe
     QVERIFY(!displayViewSource.contains(QStringLiteral("readonly property int lineNumberRightInset: contentsView.editorHorizontalInset")));
 }
 
-void WhatSonCppRegressionTests::contentsDisplayView_waitsForStructuredFlowActivationBeforeMountingDocumentFlow()
+void WhatSonCppRegressionTests::contentsDisplayView_mountsStructuredFlowDirectlyFromSelectedRawSnapshot()
 {
     const QString displayViewSource = readUtf8SourceFile(
         QStringLiteral("src/app/qml/view/content/editor/ContentsDisplayView.qml"));
+    const QString registrarSource = readUtf8SourceFile(
+        QStringLiteral("src/app/runtime/bootstrap/WhatSonQmlInternalTypeRegistrar.cpp"));
 
     QVERIFY(!displayViewSource.isEmpty());
-    QVERIFY(displayViewSource.contains(QStringLiteral("readonly property string structuredDocumentFlowActivatedNoteId: structuredFlowCoordinator.activatedNoteId")));
+    QVERIFY(!registrarSource.isEmpty());
     QVERIFY(displayViewSource.contains(QStringLiteral("readonly property bool showStructuredDocumentFlow: contentsView.structuredDocumentFlowEnabled")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("contentsView.structuredDocumentFlowActivatedNoteId === contentsView.selectedNoteId")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("&& !contentsView.showDedicatedResourceViewer")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("&& !contentsView.showFormattedTextRenderer")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("if (!contentsView.selectedNoteBodyLoading")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("String(contentsView.selectedNoteBodyText)")));
+    QVERIFY(!displayViewSource.contains(QStringLiteral("structuredDocumentFlowActivatedNoteId")));
+    QVERIFY(!displayViewSource.contains(QStringLiteral("ContentsDisplayStructuredFlowCoordinator {")));
+    QVERIFY(!displayViewSource.contains(QStringLiteral("refreshStructuredDocumentFlowActivation")));
+    QVERIFY(!registrarSource.contains(QStringLiteral("ContentsDisplayStructuredFlowCoordinator")));
 }
 
 void WhatSonCppRegressionTests::contentsDisplayView_reservesHalfHeightBottomInsetAndCorrectsTypingViewport()
@@ -3353,29 +3360,6 @@ void WhatSonCppRegressionTests::structuredFlow_keepsEmptySelectedNotesEditableWi
     QVERIFY(structuredFlowSource.contains(QStringLiteral("\"focusSourceOffset\": 0")));
     QVERIFY(structuredFlowSource.contains(QStringLiteral("\"logicalLineCountHint\": 1")));
     QVERIFY(structuredFlowSource.contains(QStringLiteral("return normalizedSourceText.length === 0 ? [documentFlow.emptyInteractiveTextGroup()] : []")));
-}
-
-void WhatSonCppRegressionTests::structuredFlowCoordinator_delaysActivationUntilSelectedSessionIsBound()
-{
-    ContentsDisplayStructuredFlowCoordinator coordinator;
-
-    coordinator.setParsedStructuredFlowRequested(true);
-    coordinator.setSelectedNoteId(QStringLiteral("note-a"));
-    QCOMPARE(coordinator.activatedNoteId(), QString());
-
-    coordinator.setEditorSessionBoundToSelectedNote(true);
-    QCOMPARE(coordinator.activatedNoteId(), QStringLiteral("note-a"));
-
-    coordinator.setEditorSessionBoundToSelectedNote(false);
-    coordinator.setSelectedNoteId(QStringLiteral("note-b"));
-    QCOMPARE(coordinator.activatedNoteId(), QString());
-
-    coordinator.setRenderPending(true);
-    coordinator.setSelectedNoteId(QStringLiteral("note-c"));
-    QCOMPARE(coordinator.activatedNoteId(), QString());
-
-    coordinator.setEditorSessionBoundToSelectedNote(true);
-    QCOMPARE(coordinator.activatedNoteId(), QStringLiteral("note-c"));
 }
 
 void WhatSonCppRegressionTests::structuredEditorFormattingController_commitsInlineStyleMutationsThroughFlowRawRanges()
