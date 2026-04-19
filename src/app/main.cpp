@@ -553,8 +553,13 @@ int main(int argc, char* argv[])
             trialWindowInitialProperties);
     };
 #endif
+#if defined(Q_OS_IOS)
+    const bool launchStandaloneStartupOnboardingOnIos = !startupHubSelection.mounted;
+#else
+    const bool launchStandaloneStartupOnboardingOnIos = false;
+#endif
 
-    if (launchOptions.onboardingOnly)
+    if (launchOptions.onboardingOnly || launchStandaloneStartupOnboardingOnIos)
     {
         const QVariantMap onboardingWindowInitialProperties{
             {QStringLiteral("hubSessionController"), QVariant::fromValue(static_cast<QObject*>(&onboardingHubController))},
@@ -657,20 +662,11 @@ int main(int argc, char* argv[])
 #else
     const bool enableEmbeddedOnboardingPresentation = false;
 #endif
-#if defined(Q_OS_IOS)
-    const bool suppressAutomaticStartupOnboardingOnIos = !startupHubSelection.mounted;
-#else
-    const bool suppressAutomaticStartupOnboardingOnIos = false;
-#endif
     const bool showDesktopStartupOnboarding = !startupHubSelection.mounted
                                               && !enableEmbeddedOnboardingPresentation;
     onboardingRouteBootstrapController.configure(
         enableEmbeddedOnboardingPresentation,
         startupHubSelection.mounted);
-    if (suppressAutomaticStartupOnboardingOnIos)
-    {
-        onboardingRouteBootstrapController.dismissEmbeddedOnboarding();
-    }
 
     const QVariantMap mainWindowInitialProperties{
         {

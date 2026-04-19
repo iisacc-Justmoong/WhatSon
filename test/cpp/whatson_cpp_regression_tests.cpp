@@ -452,7 +452,7 @@ private slots:
     void embeddedOnboardingRoutePages_avoidStackViewAnchorConflicts();
     void mainQml_embeddedStartup_dropsWatchdogRecoveryScaffold();
     void mainQml_iosInlineOnboarding_pinsPresentationToWorkspaceRoute();
-    void mainCpp_iosStartup_suppressesAutomaticOnboarding();
+    void mainCpp_iosStartup_missingHubUsesStandaloneOnboardingWindow();
     void iosInlineOnboardingSequence_reusesSharedOnboardingSurface();
     void onboardingContent_mobileLayout_avoidsFullscreenAntialiasedWindowFrame();
     void onboardingContent_saveDialog_doesNotPreselectMissingHubFile();
@@ -1263,14 +1263,14 @@ void WhatSonCppRegressionTests::mainQml_iosInlineOnboarding_pinsPresentationToWo
     QVERIFY(mainQmlSource.contains(QStringLiteral("applicationWindow.workspaceRoutePath);")));
 }
 
-void WhatSonCppRegressionTests::mainCpp_iosStartup_suppressesAutomaticOnboarding()
+void WhatSonCppRegressionTests::mainCpp_iosStartup_missingHubUsesStandaloneOnboardingWindow()
 {
     const QString mainCppSource = readUtf8SourceFile(QStringLiteral("src/app/main.cpp"));
 
     QVERIFY(!mainCppSource.isEmpty());
-    QVERIFY(mainCppSource.contains(QStringLiteral("const bool enableEmbeddedOnboardingPresentation = true;")));
-    QVERIFY(mainCppSource.contains(QStringLiteral("const bool suppressAutomaticStartupOnboardingOnIos = !startupHubSelection.mounted;")));
-    QVERIFY(mainCppSource.contains(QStringLiteral("onboardingRouteBootstrapController.dismissEmbeddedOnboarding();")));
+    QVERIFY(mainCppSource.contains(QStringLiteral("const bool launchStandaloneStartupOnboardingOnIos = !startupHubSelection.mounted;")));
+    QVERIFY(mainCppSource.contains(QStringLiteral("if (launchOptions.onboardingOnly || launchStandaloneStartupOnboardingOnIos)")));
+    QVERIFY(mainCppSource.contains(QStringLiteral("{QStringLiteral(\"standaloneMode\"), true},")));
 }
 
 void WhatSonCppRegressionTests::iosInlineOnboardingSequence_reusesSharedOnboardingSurface()

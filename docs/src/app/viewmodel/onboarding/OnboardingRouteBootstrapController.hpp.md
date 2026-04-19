@@ -8,4 +8,4 @@
 - This keeps route logic bound only to transition hooks, not the full onboarding implementation.
 - The same visibility state is now also reused by the iOS inline onboarding sequence in `Main.qml`, so the controller
   remains the single onboarding/workspace transition authority even when iOS no longer pushes the page stack through
-  `/onboarding`.
+  `/onboarding`; startup-time missing-hub recovery is handled separately in `main.cpp` before the main window is created.

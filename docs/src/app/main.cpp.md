@@ -21,9 +21,9 @@
 - Hub selection wiring now updates sync/import state directly without a background write-lease heartbeat timer.
 - Startup hub resolution no longer synthesizes a `blueprint/*.wshub` fallback, so an unmounable persisted selection now
   leaves the composition root unmounted until onboarding opens a real workspace.
-- The composition root now suppresses automatic startup onboarding on iOS specifically: it still configures
-  `OnboardingRouteBootstrapController` for embedded presentation reuse, but if no startup hub is mounted it immediately
-  dismisses the embedded onboarding visibility before the main window loads.
+- When iOS launch cannot mount a persisted hub, `main.cpp` now reuses the standalone onboarding-window handoff flow
+  before creating the main workspace window, avoiding the inline-startup presentation path that was re-triggering the
+  fatal render failure.
 - Permission startup wiring now consumes `permissions/WhatSonPermissionBootstrapper.hpp` after consolidating
   permission bootstrap code under `src/app/permissions`.
 - Application bootstrap no longer forces Qt scene-graph visualization environment variables and no longer auto-opens
