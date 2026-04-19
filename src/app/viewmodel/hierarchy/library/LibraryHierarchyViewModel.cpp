@@ -3492,7 +3492,9 @@ LibraryNoteListItem LibraryHierarchyViewModel::buildNoteListItem(
     item.id = noteId;
     item.primaryText = WhatSon::LibraryPreview::notePrimaryText(note);
     item.searchableText = noteSearchableText(note, folderLabels);
-    item.bodyText.clear();
+    item.bodyText = !note.bodySourceText.isEmpty()
+        ? note.bodySourceText
+        : note.bodyPlainText;
     item.createdAt = note.createdAt;
     item.lastModifiedAt = note.lastModifiedAt;
     item.image = note.bodyHasResource;

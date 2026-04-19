@@ -601,7 +601,31 @@ bool ContentsEditorSelectionBridge::tryResolveSelectedNoteBodySourceText(
 
     const QString normalizedNoteId = noteId.trimmed();
     if (normalizedNoteId.isEmpty()
-        || m_contentViewModel == nullptr
+        || (m_noteListModel == nullptr && m_contentViewModel == nullptr))
+    {
+        return false;
+    }
+
+    if (m_noteListModel != nullptr
+        && hasReadableProperty(m_noteListModel, "currentNoteId")
+        && hasReadableProperty(m_noteListModel, "currentBodyText"))
+    {
+        const QString currentNoteId = readStringProperty(m_noteListModel, "currentNoteId").trimmed();
+        if (currentNoteId == normalizedNoteId)
+        {
+            const QString currentBodyText = readStringProperty(m_noteListModel, "currentBodyText");
+            if (!currentBodyText.isEmpty())
+            {
+                if (bodyText != nullptr)
+                {
+                    *bodyText = currentBodyText;
+                }
+                return true;
+            }
+        }
+    }
+
+    if (m_contentViewModel == nullptr
         || !hasInvokableMethod(m_contentViewModel, kNoteBodySourceTextForNoteIdSignature))
     {
         return false;

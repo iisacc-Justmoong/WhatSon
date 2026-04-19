@@ -25,10 +25,10 @@
 - `activateNoteById(...)` is now the canonical cross-surface note-open path. It first searches the currently visible
   library note list, then clears any active search filter, then falls back to the implicit `All Library` selection
   before selecting the requested note row.
-- Library note-list row projection no longer carries the full note body.
-  The viewmodel still derives `primaryText` / `searchableText` from indexed note metadata, but `bodyText` is now
-  cleared before rows are pushed into the shared note-list model so large notes do not get duplicated into selection
-  state.
+- Library note-list row projection now carries the normalized note body source again.
+  The viewmodel still derives `primaryText` / `searchableText` from indexed note metadata, but it no longer clears
+  `bodyText` before rows are pushed into the shared note-list model. This keeps the selected-note body available to
+  the editor even when the asynchronous lazy-load path is late or temporarily unavailable.
 - The library runtime snapshot now also exposes `noteBodySourceTextForNoteId(...)`.
   `ContentsEditorSelectionBridge` can therefore recover the selected note source from the already-loaded indexed note
   snapshot when direct package-path resolution fails for one desktop selection turn.
@@ -73,8 +73,8 @@
   - An active library search filter must be cleared automatically when it hides the requested note.
   - A folder-scoped library selection must fall back to `All Library` before the activation path reports failure.
   - Failed activation must not switch the current note to an unrelated item.
-  - Large library notes must not be duplicated into note-list row `bodyText`; the editor must lazy-load the selected
-    note body separately.
+  - The shared library note-list model must keep the selected note body available through `BodyTextRole` /
+    `currentBodyText` so editor selection never collapses to an empty document after runtime snapshot refreshes.
   - If direct note-package resolution is temporarily unavailable, the indexed library snapshot must still be able to
     provide the selected note's body source to the editor bridge.
   - A folder label such as `Marketing/Sales` must remain one hierarchy item after parse/load/save cycles.

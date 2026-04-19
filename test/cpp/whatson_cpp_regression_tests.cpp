@@ -455,7 +455,9 @@ private slots:
     void sidebarHierarchyViewModel_preservesFallbackAcrossStoreAttachDetach();
     void sidebarHierarchyViewModel_reactsToProviderMappingChanges();
     void sidebarAndSelectionBridge_forceCppOwnershipAcrossHierarchySwitchBindings();
+    void contentsEditorSelectionBridge_prefersSelectedNoteBodyAlreadyOnNoteListModel();
     void contentsEditorSelectionBridge_fallsBackToRuntimeSnapshotWhenNotePathIsUnavailable();
+    void libraryHierarchyViewModel_rowProjection_preservesNoteBodySourceText();
     void noteListModelContractBridge_resolvesHierarchyBoundNoteListImmediately();
     void noteListModelContractBridge_prefersExplicitRowsAcrossHierarchySwitches();
     void navigationModeViewModel_cyclesActiveSections();
@@ -919,6 +921,33 @@ void WhatSonCppRegressionTests::sidebarAndSelectionBridge_forceCppOwnershipAcros
     QCOMPARE(QQmlEngine::objectOwnership(activeLibraryNoteListModel), QQmlEngine::CppOwnership);
 }
 
+void WhatSonCppRegressionTests::contentsEditorSelectionBridge_prefersSelectedNoteBodyAlreadyOnNoteListModel()
+{
+    ensureCoreApplication();
+
+    LibraryNoteListModel noteListModel;
+    ContentsEditorSelectionBridge selectionBridge;
+
+    LibraryNoteListItem item;
+    item.id = QStringLiteral("selected-note");
+    item.primaryText = QStringLiteral("Selected note");
+    item.bodyText = QStringLiteral("<task priority=\"high\">selected body</task>");
+    item.displayDate = QStringLiteral("2026-04-19");
+    noteListModel.setItems({item});
+    noteListModel.setCurrentIndex(0);
+
+    selectionBridge.setNoteListModel(&noteListModel);
+    QCoreApplication::processEvents();
+
+    QVERIFY(selectionBridge.noteSelectionContractAvailable());
+    QCOMPARE(selectionBridge.selectedNoteId(), QStringLiteral("selected-note"));
+    QCOMPARE(selectionBridge.selectedNoteBodyNoteId(), QStringLiteral("selected-note"));
+    QCOMPARE(
+        selectionBridge.selectedNoteBodyText(),
+        QStringLiteral("<task priority=\"high\">selected body</task>"));
+    QVERIFY(!selectionBridge.selectedNoteBodyLoading());
+}
+
 void WhatSonCppRegressionTests::contentsEditorSelectionBridge_fallsBackToRuntimeSnapshotWhenNotePathIsUnavailable()
 {
     ensureCoreApplication();
@@ -944,6 +973,18 @@ void WhatSonCppRegressionTests::contentsEditorSelectionBridge_fallsBackToRuntime
     QCOMPARE(selectionBridge.selectedNoteBodyNoteId(), noteId);
     QCOMPARE(selectionBridge.selectedNoteBodyText(), bodySourceText);
     QVERIFY(!selectionBridge.selectedNoteBodyLoading());
+}
+
+void WhatSonCppRegressionTests::libraryHierarchyViewModel_rowProjection_preservesNoteBodySourceText()
+{
+    const QString source = readUtf8SourceFile(
+        QStringLiteral("src/app/viewmodel/hierarchy/library/LibraryHierarchyViewModel.cpp"));
+
+    QVERIFY(!source.isEmpty());
+    QVERIFY(source.contains(QStringLiteral("item.bodyText = !note.bodySourceText.isEmpty()")));
+    QVERIFY(source.contains(QStringLiteral("? note.bodySourceText")));
+    QVERIFY(source.contains(QStringLiteral(": note.bodyPlainText;")));
+    QVERIFY(!source.contains(QStringLiteral("item.bodyText.clear();")));
 }
 
 void WhatSonCppRegressionTests::noteListModelContractBridge_resolvesHierarchyBoundNoteListImmediately()

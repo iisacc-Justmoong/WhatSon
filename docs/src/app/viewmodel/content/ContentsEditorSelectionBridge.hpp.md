@@ -20,8 +20,8 @@
     `selectedNoteBodyLoading`, and `visibleNoteCount`
   - keeps the note-list selection/count property wiring for QML
   - forwards persistence and note-management requests to `file/sync/ContentsEditorIdleSyncController`
-- The note-list contract no longer requires `currentBodyText`.
-  Selected note bodies are now loaded lazily through the sync/note-management boundary after the note id changes.
+- The note-list contract can now optionally provide `currentBodyText` for the committed selected note.
+  When that payload is available, the bridge reuses it immediately before it falls back to lazy sync/package loading.
 - Public invokables remain:
   - `persistEditorTextForNote(noteId, text)`
   - `stageEditorTextForIdleSync(noteId, text)`
@@ -95,7 +95,8 @@
   `reconcileViewSessionAndRefreshSnapshotForNote(...)`, so QML can compare a live editor session snapshot against
   filesystem RAW and only then request a refresh.
 - The selected-note loading flag must stay aligned with the asynchronous note-body read lifecycle.
-- Large notes must not be mirrored into note-list `currentBodyText` just to support editor note-open.
+- A selected note whose model already exposes `currentBodyText` must not be forced through an empty interim editor state
+  while the bridge waits for the lazy package-load path.
 - Stale same-note body-read completions must not reclaim the selected note body after a newer request was issued.
 - Stale filesystem text must not reclaim the selected note body while the sync controller still owns a newer dirty or
   in-flight editor snapshot for that note.
