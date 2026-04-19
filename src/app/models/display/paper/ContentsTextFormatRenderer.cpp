@@ -2178,6 +2178,9 @@ void ContentsTextFormatRenderer::refreshRenderedOutputs()
     const ContentsHtmlBlockRenderPipeline renderPipeline;
     const ContentsHtmlBlockRenderPipeline::RenderResult editorRenderResult =
         renderPipeline.renderEditorDocument(m_sourceText);
+    const QString presentationSourceText = editorRenderResult.correctedSourceText.isEmpty()
+        ? m_sourceText
+        : editorRenderResult.correctedSourceText;
 
     const QVariantList nextHtmlTokens = m_paperPaletteEnabled
         ? applyPaperPaletteToHtmlField(editorRenderResult.htmlTokens, QStringLiteral("html"))
@@ -2204,7 +2207,7 @@ void ContentsTextFormatRenderer::refreshRenderedOutputs()
     }
 
     const QString baseEditorSurfaceHtml = editorRenderResult.requiresLegacyDocumentComposition
-        ? renderInlineStyleEditingSurfaceHtml(m_sourceText)
+        ? renderInlineStyleEditingSurfaceHtml(presentationSourceText)
         : editorRenderResult.documentHtml;
     const QString nextEditorSurfaceHtml = m_paperPaletteEnabled
         ? applyPaperPaletteToHtml(baseEditorSurfaceHtml)
@@ -2215,7 +2218,9 @@ void ContentsTextFormatRenderer::refreshRenderedOutputs()
         emit editorSurfaceHtmlChanged();
     }
 
-    const QString baseRenderedHtml = m_previewEnabled ? renderMarkdownAwareTextToHtml(m_sourceText) : QString();
+    const QString baseRenderedHtml = m_previewEnabled
+        ? renderMarkdownAwareTextToHtml(presentationSourceText)
+        : QString();
     const QString nextRenderedHtml = m_paperPaletteEnabled
         ? applyPaperPaletteToHtml(baseRenderedHtml)
         : baseRenderedHtml;

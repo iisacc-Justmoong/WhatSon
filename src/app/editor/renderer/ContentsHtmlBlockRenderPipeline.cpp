@@ -275,10 +275,18 @@ ContentsHtmlBlockRenderPipeline::RenderResult ContentsHtmlBlockRenderPipeline::r
     }
 
     const ContentsWsnBodyBlockParser parser;
-    const ContentsWsnBodyBlockParser::ParseResult parseResult = parser.parse(normalizedSourceText);
+    ContentsWsnBodyBlockParser::ParseResult parseResult = parser.parse(normalizedSourceText);
+    result.correctedSourceText = normalizeSourceText(
+        parseResult.correctedSourceText.isEmpty()
+            ? normalizedSourceText
+            : parseResult.correctedSourceText);
+    if (result.correctedSourceText != normalizedSourceText)
+    {
+        parseResult = parser.parse(result.correctedSourceText);
+    }
     result.requiresLegacyDocumentComposition =
         parseResult.renderedDocumentBlocks.size() > 1
-        && containsInlineStyleMarkup(normalizedSourceText);
+        && containsInlineStyleMarkup(result.correctedSourceText);
 
     QStringList documentFragments;
     documentFragments.reserve(parseResult.renderedDocumentBlocks.size());

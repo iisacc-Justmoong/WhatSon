@@ -117,6 +117,11 @@ ctest --test-dir build --output-on-failure -L cpp_regression
   dedicated viewmodel/view pair instead of reusing the note-detail surface.
 - Rapid note switches now also pin note-local gutter geometry invalidation, so the editor clears stale minimap/gutter
   line caches on note entry and forces a fresh layout-cache pass before reusing line-number coordinates.
+- Empty selected notes now also pin one fallback structured `text-group` row in the source-locked QML regression
+  checks, so selecting or creating a blank note still leaves a focusable body editor surface mounted.
+- The final editor HTML path now also pins canonical structured-source reparsing and corrected-source reuse in the
+  runtime suite, so legacy `<hr>` aliases and self-closing structured tags cannot swallow following note text during
+  the last render pass.
 - `ResourceBitmapViewer` now also pins bitmap-preview projection for the dedicated resource editor, so image resources
   and unsupported image-like formats expose stable viewer/open-target state to QML.
 - Page/print paper-palette routing now also pins both the HTML renderer and the structured editor QML wiring, so

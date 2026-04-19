@@ -122,6 +122,9 @@ source.
   back to the outer cursor bridge.
 - The dedicated resource-local plain-text adjacent-insertion path has been removed.
   Resource blocks now participate in the same generic block stream as every other block.
+- An empty selected RAW note body now still produces one fallback interactive `text-group` row.
+  The structured document host therefore stays focusable/editable for empty notes instead of collapsing to a blank
+  center surface until the first mutation lands.
 
 ## Architecture Note
 - This file is not a source of truth for the structured editor state.

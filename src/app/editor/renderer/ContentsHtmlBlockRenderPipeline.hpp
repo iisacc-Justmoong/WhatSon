@@ -8,6 +8,7 @@ class ContentsHtmlBlockRenderPipeline final
 public:
     struct RenderResult final
     {
+        QString correctedSourceText;
         QString documentHtml;
         QVariantList htmlTokens;
         QVariantList normalizedHtmlBlocks;

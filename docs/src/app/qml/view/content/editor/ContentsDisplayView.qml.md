@@ -21,6 +21,8 @@ not note-backed.
 
 - RAW `.wsnbody` remains the only write authority.
 - `ContentsStructuredDocumentFlow.qml` is the canonical note host once a note session is bound.
+- Empty selected notes now keep that canonical structured host mounted through one fallback editable prose row, so
+  note selection and newly created blank notes no longer disappear into a non-focusable blank center panel.
 - The fallback whole-note editor path now uses:
   - plain logical text as the live input buffer
   - tokenized HTML as a separate read-side overlay (`renderedEditorHtml`)

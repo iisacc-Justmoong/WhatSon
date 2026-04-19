@@ -277,11 +277,31 @@ FocusScope {
         }
     }
 
+    function emptyInteractiveTextGroup() {
+        return {
+            "atomicBlock": false,
+            "flattenedInteractiveChildCount": 0,
+            "flattenedInteractiveGroup": true,
+            "focusSourceOffset": 0,
+            "groupedBlocks": [],
+            "gutterCollapsed": false,
+            "logicalLineCountHint": 1,
+            "minimapRepresentativeCharCount": 0,
+            "minimapVisualKind": "text",
+            "plainText": "",
+            "sourceEnd": 0,
+            "sourceStart": 0,
+            "sourceText": "",
+            "textEditable": true,
+            "type": "text-group"
+        }
+    }
+
     function flattenedInteractiveBlocks() {
         const parsedBlocks = documentFlow.normalizedParsedBlocks()
-        if (parsedBlocks.length === 0)
-            return []
         const normalizedSourceText = documentFlow.normalizedSourceText(documentFlow.sourceText)
+        if (parsedBlocks.length === 0)
+            return normalizedSourceText.length === 0 ? [documentFlow.emptyInteractiveTextGroup()] : []
         const flattenedBlocks = []
         let pendingTextBlocks = []
 

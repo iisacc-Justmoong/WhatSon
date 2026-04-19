@@ -2,6 +2,7 @@
 #include "display/paper/ContentsPaperSelection.hpp"
 #include "display/paper/ContentsTextFormatRenderer.hpp"
 #include "display/paper/print/ContentsPagePrintLayoutRenderer.hpp"
+#include "editor/renderer/ContentsHtmlBlockRenderPipeline.hpp"
 #include "file/hub/WhatSonHubPackager.hpp"
 #include "file/hub/WhatSonHubPathUtils.hpp"
 #include "file/hierarchy/folders/WhatSonFoldersHierarchyParser.hpp"
@@ -521,10 +522,13 @@ private slots:
     void contentsDisplayView_reservesHalfHeightBottomInsetAndCorrectsTypingViewport();
     void inlineFormatEditor_preservesMacModifierVerticalNavigationHooks();
     void structuredFlow_flattensImplicitTextBlocksIntoInteractiveGroups();
+    void structuredFlow_keepsEmptySelectedNotesEditableWithFallbackTextGroup();
     void structuredEditorFormattingController_commitsInlineStyleMutationsThroughFlowRawRanges();
     void structuredEditors_routeMacModifierVerticalNavigationAcrossBlockAndDocumentBoundaries();
     void paperSelection_tracksChosenPaperEnumState();
     void a4PaperBackground_exposesCanonicalMetricsAndAnchorsPrintRendererDefaults();
+    void htmlBlockRenderPipeline_reparsesCanonicalStructuredSourceBeforeFinalHtmlAssembly();
+    void textFormatRenderer_usesCanonicalStructuredSourceForLegacyAndPreviewRendering();
     void textFormatRenderer_wrapsCommittedUrlsIntoCanonicalWebLinks();
     void textFormatRenderer_appliesPaperPaletteToEditorAndPreviewHtml();
     void displayPaperModels_hostPageAndPrintViewModeObjectsUnderModelsDirectory();
@@ -3243,6 +3247,19 @@ void WhatSonCppRegressionTests::structuredFlow_flattensImplicitTextBlocksIntoInt
     QVERIFY(structuredFlowSource.contains(QStringLiteral("if (!!safeBlock.flattenedInteractiveGroup)")));
 }
 
+void WhatSonCppRegressionTests::structuredFlow_keepsEmptySelectedNotesEditableWithFallbackTextGroup()
+{
+    const QString structuredFlowSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/content/editor/ContentsStructuredDocumentFlow.qml"));
+
+    QVERIFY(!structuredFlowSource.isEmpty());
+    QVERIFY(structuredFlowSource.contains(QStringLiteral("function emptyInteractiveTextGroup() {")));
+    QVERIFY(structuredFlowSource.contains(QStringLiteral("\"flattenedInteractiveChildCount\": 0")));
+    QVERIFY(structuredFlowSource.contains(QStringLiteral("\"focusSourceOffset\": 0")));
+    QVERIFY(structuredFlowSource.contains(QStringLiteral("\"logicalLineCountHint\": 1")));
+    QVERIFY(structuredFlowSource.contains(QStringLiteral("return normalizedSourceText.length === 0 ? [documentFlow.emptyInteractiveTextGroup()] : []")));
+}
+
 void WhatSonCppRegressionTests::structuredEditorFormattingController_commitsInlineStyleMutationsThroughFlowRawRanges()
 {
     const QString formattingControllerSource = readUtf8SourceFile(
@@ -3306,6 +3323,46 @@ void WhatSonCppRegressionTests::structuredEditors_routeMacModifierVerticalNaviga
     QVERIFY(breakBlockSource.contains(QStringLiteral("breakBlock.boundaryNavigationRequested(\"document\", moveUp ? \"before\" : \"after\")")));
     QVERIFY(structuredFlowSource.contains(QStringLiteral("if (normalizedAxis === \"document\") {")));
     QVERIFY(structuredFlowSource.contains(QStringLiteral("\"sourceOffset\": normalizedSide === \"before\"")));
+}
+
+void WhatSonCppRegressionTests::htmlBlockRenderPipeline_reparsesCanonicalStructuredSourceBeforeFinalHtmlAssembly()
+{
+    ContentsHtmlBlockRenderPipeline pipeline;
+
+    const ContentsHtmlBlockRenderPipeline::RenderResult result =
+        pipeline.renderEditorDocument(QStringLiteral("<hr>After"));
+
+    QCOMPARE(result.correctedSourceText, QStringLiteral("</break>After"));
+    QCOMPARE(result.htmlTokens.size(), 2);
+    QCOMPARE(result.normalizedHtmlBlocks.size(), 2);
+    QCOMPARE(
+        result.htmlTokens.at(0).toMap().value(QStringLiteral("renderDelegateType")).toString(),
+        QStringLiteral("break"));
+    QCOMPARE(
+        result.htmlTokens.at(1).toMap().value(QStringLiteral("renderDelegateType")).toString(),
+        QStringLiteral("text"));
+    QVERIFY(result.documentHtml.contains(QStringLiteral("<hr/>")));
+    QVERIFY(result.documentHtml.contains(QStringLiteral("After")));
+    QVERIFY(result.documentHtml.indexOf(QStringLiteral("<hr/>")) < result.documentHtml.indexOf(QStringLiteral("After")));
+}
+
+void WhatSonCppRegressionTests::textFormatRenderer_usesCanonicalStructuredSourceForLegacyAndPreviewRendering()
+{
+    ContentsTextFormatRenderer renderer;
+    renderer.setSourceText(QStringLiteral("<callout/>After <bold>bold</bold>"));
+    renderer.setPreviewEnabled(true);
+
+    const QString editorHtml = renderer.editorSurfaceHtml();
+    const QString previewHtml = renderer.renderedHtml();
+
+    QVERIFY(editorHtml.contains(QStringLiteral("<div style=\"margin:0;padding:4px 4px 4px 17px;\">&nbsp;</div>")));
+    QVERIFY(previewHtml.contains(QStringLiteral("<div style=\"margin:0;padding:4px 4px 4px 17px;\">&nbsp;</div>")));
+    QVERIFY(editorHtml.contains(QStringLiteral("After ")));
+    QVERIFY(previewHtml.contains(QStringLiteral("After ")));
+    QVERIFY(editorHtml.contains(QStringLiteral("font-weight:900")));
+    QVERIFY(previewHtml.contains(QStringLiteral("font-weight:900")));
+    QVERIFY(editorHtml.indexOf(QStringLiteral("&nbsp;</div>")) < editorHtml.indexOf(QStringLiteral("After")));
+    QVERIFY(previewHtml.indexOf(QStringLiteral("&nbsp;</div>")) < previewHtml.indexOf(QStringLiteral("After")));
 }
 
 void WhatSonCppRegressionTests::textFormatRenderer_appliesPaperPaletteToEditorAndPreviewHtml()

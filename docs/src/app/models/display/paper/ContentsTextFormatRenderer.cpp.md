@@ -20,6 +20,12 @@ Implements inline-format rendering from note-editor text to RichText HTML.
   - the same pipeline resolves one normalized HTML block per token and publishes `normalizedHtmlBlocks`
   - `ContentsTextFormatRenderer` finally republishes the joined `editorSurfaceHtml` plus the intermediate payloads to
     QML
+- When that pipeline reports a deterministic canonical structured RAW projection, the renderer now also feeds that
+  corrected snapshot into:
+  - the legacy whole-document inline-style composer
+  - the markdown-aware preview renderer
+  so self-closing structured tags and legacy divider aliases cannot consume trailing note text differently from the
+  parser-owned final block projection.
 - `htmlOverlayVisible` is now derived in C++ from that normalized block pipeline instead of being guessed only from one
   inline-style regex in QML.
   Semantic text blocks such as `title`, `subTitle`, and `eventTitle` can therefore request the styled overlay even
@@ -202,3 +208,6 @@ Implements inline-format rendering from note-editor text to RichText HTML.
 - If one note body uses inline style tags that span multiple parsed text blocks, the renderer must keep the carry-aware
   legacy document composer for that source turn instead of dropping the carried style during block-normalized HTML
   assembly.
+- A source such as `<callout/>After <bold>bold</bold>` must render an empty callout block followed by ordinary text in
+  both `editorSurfaceHtml` and `renderedHtml`; the self-closing callout must not swallow the trailing text just
+  because the final renderer revisited the uncorrected RAW snapshot.

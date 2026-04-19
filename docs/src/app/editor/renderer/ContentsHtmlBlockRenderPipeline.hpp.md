@@ -12,6 +12,9 @@ This pipeline sits after `ContentsWsnBodyBlockParser` and before the final RichT
 4. normalize the token stream into stable HTML blocks plus one joined editor document HTML payload
 
 ## Public Contract
+- `RenderResult.correctedSourceText`
+  Canonical structured RAW source snapshot suggested by the linter and reused by downstream final renderers whenever
+  the incoming source needs safe deterministic repairs.
 - `RenderResult.documentHtml`
   Final editor HTML document assembled from normalized HTML blocks.
 - `RenderResult.htmlTokens`
