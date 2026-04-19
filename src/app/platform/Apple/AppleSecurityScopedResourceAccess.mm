@@ -129,7 +129,7 @@ namespace
 
     bool effectiveUrlForSource(
         const QUrl& url,
-        const bool parentDirectoryScope,
+        const int ancestorDepth,
         QUrl* effectiveUrl,
         QString* errorMessage)
     {
@@ -153,9 +153,16 @@ namespace
         }
 
         NSURL* nextEffectiveNsUrl = nsUrl;
-        if (parentDirectoryScope)
+        int remainingAncestorDepth = ancestorDepth;
+        if (remainingAncestorDepth < 0)
+        {
+            remainingAncestorDepth = 0;
+        }
+        while (remainingAncestorDepth > 0)
         {
             nextEffectiveNsUrl = [nsUrl URLByDeletingLastPathComponent];
+            --remainingAncestorDepth;
+            nsUrl = nextEffectiveNsUrl;
         }
 
         if (nextEffectiveNsUrl == nil)
@@ -250,10 +257,26 @@ namespace
     }
 } // namespace
 
-QString localPathForUrl(const QUrl& url, bool parentDirectoryScope, QString* errorMessage)
+QUrl scopedUrlForUrl(const QUrl& url, int ancestorDepth, QString* errorMessage)
 {
     QUrl effectiveUrl;
-    if (!effectiveUrlForSource(url, parentDirectoryScope, &effectiveUrl, errorMessage))
+    if (!effectiveUrlForSource(url, ancestorDepth, &effectiveUrl, errorMessage))
+    {
+        return {};
+    }
+
+    return effectiveUrl;
+}
+
+QString localPathForUrl(const QUrl& url, bool parentDirectoryScope, QString* errorMessage)
+{
+    return localPathForUrl(url, parentDirectoryScope ? 1 : 0, errorMessage);
+}
+
+QString localPathForUrl(const QUrl& url, int ancestorDepth, QString* errorMessage)
+{
+    QUrl effectiveUrl;
+    if (!effectiveUrlForSource(url, ancestorDepth, &effectiveUrl, errorMessage))
     {
         return {};
     }
@@ -278,8 +301,13 @@ QString localPathForUrl(const QUrl& url, bool parentDirectoryScope, QString* err
 
 bool startAccessForUrl(const QUrl& url, bool parentDirectoryScope, QString* errorMessage)
 {
+    return startAccessForUrl(url, parentDirectoryScope ? 1 : 0, errorMessage);
+}
+
+bool startAccessForUrl(const QUrl& url, int ancestorDepth, QString* errorMessage)
+{
     QUrl effectiveUrl;
-    if (!effectiveUrlForSource(url, parentDirectoryScope, &effectiveUrl, errorMessage))
+    if (!effectiveUrlForSource(url, ancestorDepth, &effectiveUrl, errorMessage))
     {
         return false;
     }
@@ -312,8 +340,13 @@ bool ensureAccessForPath(const QString& localPath, QString* errorMessage)
 
 QByteArray bookmarkDataForUrl(const QUrl& url, bool parentDirectoryScope, QString* errorMessage)
 {
+    return bookmarkDataForUrl(url, parentDirectoryScope ? 1 : 0, errorMessage);
+}
+
+QByteArray bookmarkDataForUrl(const QUrl& url, int ancestorDepth, QString* errorMessage)
+{
     QUrl effectiveUrl;
-    if (!effectiveUrlForSource(url, parentDirectoryScope, &effectiveUrl, errorMessage))
+    if (!effectiveUrlForSource(url, ancestorDepth, &effectiveUrl, errorMessage))
     {
         return {};
     }

@@ -1,29 +1,19 @@
 # `src/app/runtime/bootstrap/WhatSonQmlInternalTypeRegistrar.cpp`
 
 ## Responsibility
-Provides the concrete QML bridge registration list used by the workspace shell.
+Registers the QObject-backed internal QML bridge types used by the application shell and editor surfaces.
 
 ## Registered Bridges
-- `ContentsEditorSelectionBridge`
-- `ContentsLogicalTextBridge`
-- `ContentsGutterMarkerBridge`
-- `ContentsResourceTagTextGenerator`
-- `ContentsTextFormatRenderer`
-- `ContentsStructuredBlockRenderer`
-- `ContentsStructuredTagValidator`
-- `ContentsAgendaBackend`
-- `ContentsCalloutBackend`
-- `ContentsPagePrintLayoutRenderer`
-- `ContentsBodyResourceRenderer`
-- `ResourceBitmapViewer`
-- `FocusedNoteDeletionBridge`
-- `NoteListModelContractBridge`
-- `HierarchyDragDropBridge`
-- `HierarchyInteractionBridge`
+- Editor/document bridges such as `ContentsEditorSelectionBridge`, `ContentsEditorSessionController`,
+  `ContentsLogicalTextBridge`, and the structured-document support types.
+- Rendering/annotation helpers such as `ContentsTextFormatRenderer`, `ContentsStructuredBlockRenderer`,
+  `ContentsAgendaBackend`, `ContentsCalloutBackend`, `ContentsBodyResourceRenderer`, and `ResourceBitmapViewer`.
+- Workspace interaction bridges such as `FocusedNoteDeletionBridge`, `NoteListModelContractBridge`,
+  `HierarchyDragDropBridge`, and `HierarchyInteractionBridge`.
+- Onboarding-specific native platform bridge `WhatSonIosHubPickerBridge`, which exposes the iOS Files/Box picker to
+  QML without pushing document-picker logic into `main.cpp`.
 
 ## Architectural Note
-This file is intentionally a narrow bootstrap adapter so changes to bridge registration do not
-inflate the composition root in `main.cpp`.
-
-Qt registers QObject-based bridges here through `qmlRegisterType(...)`, so registered bridge types must remain
-compatible with Qt's internal `QQmlElement<T>` wrapper (for example, do not declare those bridge classes as `final`).
+This file remains the narrow bootstrap seam for QML-visible helper types. Adding the iOS onboarding picker here keeps
+the platform-native dialog integration isolated from the composition root while still allowing `OnboardingContent.qml`
+to switch platforms declaratively.

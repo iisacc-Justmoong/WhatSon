@@ -12,5 +12,7 @@ state.
 - The selection URL contract now applies to folder-based onboarding selection as well, not only direct file/package
   picks, so iOS Files-provider onboarding can preserve the original provider URL before the controller promotes it to a
   concrete `.wshub` package path.
+- For iOS direct file picks inside a `.wshub` package, the controller now stores the provider URL of the enclosing hub
+  package rather than the leaf file URL, so startup restore and runtime loading operate on a package-scoped bookmark.
 - Runtime hub mounting is no longer injected into this controller; the composition root now reacts to the controller's
   validated selection signal and performs the actual runtime load centrally.

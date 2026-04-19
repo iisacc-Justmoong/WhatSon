@@ -474,8 +474,10 @@ private slots:
     void startupHubResolver_persistsSelectionUrlsForBookmarkBasedIosRestore();
     void onboardingContent_mobileLayout_avoidsFullscreenAntialiasedWindowFrame();
     void onboardingContent_saveDialog_doesNotPreselectMissingHubFile();
+    void onboardingContent_iosUsesNativeHubPickerBridgeForProviderAccess();
     void onboardingHubController_prepareHubSelectionPreservesOriginalSelectionUrl();
     void appleSecurityScopedAccess_allowsProviderUrlsWithFilesystemPaths();
+    void iosHubPickerBridge_usesNativeDocumentPickerAndRegistersQmlType();
     void mainQml_exposesZeroWindowPaddingForLvrsApplicationWindow();
     void clipboardImportFileNamePolicy_generatesRandom32CharacterAlphaNumericPngNames();
     void unixTimeAnalyzer_reportsStableEpochFields();
@@ -1461,21 +1463,44 @@ void WhatSonCppRegressionTests::onboardingContent_saveDialog_doesNotPreselectMis
         QStringLiteral("src/app/qml/window/OnboardingContent.qml"));
 
     QVERIFY(!onboardingContentSource.isEmpty());
+    QVERIFY(onboardingContentSource.contains(QStringLiteral("import WhatSon.App.Internal 1.0")));
     QVERIFY(onboardingContentSource.contains(QStringLiteral("id: createHubDialogComponent")));
     QVERIFY(onboardingContentSource.contains(QStringLiteral("FileDialog {")));
     QVERIFY(onboardingContentSource.contains(QStringLiteral("root.createHubDialogInstance = createHubDialogComponent.createObject(root);")));
     QVERIFY(onboardingContentSource.contains(QStringLiteral("root.openCreateHubDialog();")));
     QVERIFY(onboardingContentSource.contains(QStringLiteral("id: selectHubFileDialogComponent")));
     QVERIFY(onboardingContentSource.contains(QStringLiteral("root.selectHubFileDialogInstance = selectHubFileDialogComponent.createObject(root);")));
-    QVERIFY(onboardingContentSource.contains(QStringLiteral("readonly property bool useDirectExistingHubFileFlow: Qt.platform.os === \"android\"")));
-    QVERIFY(onboardingContentSource.contains(QStringLiteral("if (root.useDirectExistingHubFileFlow)")));
-    QVERIFY(onboardingContentSource.contains(QStringLiteral("On iOS, choose the .wshub package directory or a folder containing it from Files.")));
-    QVERIFY(onboardingContentSource.contains(QStringLiteral("Choose WhatSon Hub Package or Containing Folder")));
+    QVERIFY(onboardingContentSource.contains(QStringLiteral(
+        "readonly property bool useDirectExistingHubFileFlow: Qt.platform.os === \"android\"")));
+    QVERIFY(onboardingContentSource.contains(QStringLiteral("nameFilters: [\"WhatSon Hub (*.wshub)\"]")));
+    QVERIFY(onboardingContentSource.contains(QStringLiteral("title: \"Select WhatSon Hub\"")));
     QVERIFY(onboardingContentSource.contains(QStringLiteral("currentFile: root.suggestedCreateHubFileUrl")));
     QVERIFY(onboardingContentSource.contains(QStringLiteral("currentFolder: root.currentFolderUrl")));
     QVERIFY(!onboardingContentSource.contains(QStringLiteral("id: createHubDialog\n")));
     QVERIFY(!onboardingContentSource.contains(QStringLiteral("id: selectHubFileDialog\n")));
     QVERIFY(!onboardingContentSource.contains(QStringLiteral("selectedFile: root.suggestedCreateHubFileUrl")));
+    QVERIFY(!onboardingContentSource.contains(QStringLiteral(
+        "nameFilters: Qt.platform.os === \"ios\" ? [\"All files (*)\"] : [\"WhatSon Hub (*.wshub)\"]")));
+}
+
+void WhatSonCppRegressionTests::onboardingContent_iosUsesNativeHubPickerBridgeForProviderAccess()
+{
+    const QString onboardingContentSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/window/OnboardingContent.qml"));
+
+    QVERIFY(!onboardingContentSource.isEmpty());
+    QVERIFY(onboardingContentSource.contains(QStringLiteral(
+        "readonly property bool useNativeIosExistingHubPicker: Qt.platform.os === \"ios\"")));
+    QVERIFY(onboardingContentSource.contains(QStringLiteral("WhatSonIosHubPickerBridge {")));
+    QVERIFY(onboardingContentSource.contains(QStringLiteral("id: iosHubPickerBridge")));
+    QVERIFY(onboardingContentSource.contains(QStringLiteral("root.openExistingHubSelector();")));
+    QVERIFY(onboardingContentSource.contains(QStringLiteral("iosHubPickerBridge.open(root.currentFolderUrl);")));
+    QVERIFY(onboardingContentSource.contains(QStringLiteral(
+        "On iOS, browse Files or Box, open the .wshub package, select a file inside it, and tap Open.")));
+    QVERIFY(onboardingContentSource.contains(QStringLiteral(
+        "root.hubSessionController.prepareHubSelectionFromUrl(selectedUrl);")));
+    QVERIFY(!onboardingContentSource.contains(QStringLiteral(
+        "On iOS, browse Files or Box, select the .wshub package or a file inside it, and tap Open.")));
 }
 
 void WhatSonCppRegressionTests::onboardingHubController_prepareHubSelectionPreservesOriginalSelectionUrl()
@@ -1484,8 +1509,11 @@ void WhatSonCppRegressionTests::onboardingHubController_prepareHubSelectionPrese
         QStringLiteral("src/app/viewmodel/onboarding/OnboardingHubController.cpp"));
 
     QVERIFY(!onboardingControllerSource.isEmpty());
+    QVERIFY(onboardingControllerSource.contains(QStringLiteral("selectionUrlAncestorDepthForResolvedHubPath(")));
     QVERIFY(onboardingControllerSource.contains(QStringLiteral(
-        "setCurrentHubSelectionUrl(selectionUrlStringFromUrl(hubUrl));")));
+        "const QUrl scopedSelectionUrl = WhatSon::Apple::SecurityScopedResourceAccess::scopedUrlForUrl(")));
+    QVERIFY(onboardingControllerSource.contains(QStringLiteral(
+        "setCurrentHubSelectionUrl(selectionUrlStringFromUrl(scopedSelectionUrl));")));
 }
 
 void WhatSonCppRegressionTests::appleSecurityScopedAccess_allowsProviderUrlsWithFilesystemPaths()
@@ -1494,10 +1522,42 @@ void WhatSonCppRegressionTests::appleSecurityScopedAccess_allowsProviderUrlsWith
         QStringLiteral("src/app/platform/Apple/AppleSecurityScopedResourceAccess.mm"));
 
     QVERIFY(!securityScopedSource.isEmpty());
-    QVERIFY(securityScopedSource.contains(QStringLiteral("QString localPathForUrl(const QUrl& url, bool parentDirectoryScope, QString* errorMessage)")));
+    QVERIFY(securityScopedSource.contains(QStringLiteral("QUrl scopedUrlForUrl(const QUrl& url, int ancestorDepth, QString* errorMessage)")));
+    QVERIFY(securityScopedSource.contains(QStringLiteral("QString localPathForUrl(const QUrl& url, int ancestorDepth, QString* errorMessage)")));
+    QVERIFY(securityScopedSource.contains(QStringLiteral("while (remainingAncestorDepth > 0)")));
     QVERIFY(securityScopedSource.contains(QStringLiteral("nextEffectiveNsUrl = [nsUrl URLByDeletingLastPathComponent];")));
     QVERIFY(securityScopedSource.contains(QStringLiteral("const QString normalizedLocalPath = localPathFromNsUrl(nsUrl);")));
     QVERIFY(!securityScopedSource.contains(QStringLiteral("The selected iOS document URL is not a local filesystem URL.")));
+}
+
+void WhatSonCppRegressionTests::iosHubPickerBridge_usesNativeDocumentPickerAndRegistersQmlType()
+{
+    const QString registrarSource = readUtf8SourceFile(
+        QStringLiteral("src/app/runtime/bootstrap/WhatSonQmlInternalTypeRegistrar.cpp"));
+    const QString bridgeHeaderSource = readUtf8SourceFile(
+        QStringLiteral("src/app/platform/Apple/WhatSonIosHubPickerBridge.hpp"));
+    const QString bridgeSource = readUtf8SourceFile(
+        QStringLiteral("src/app/platform/Apple/WhatSonIosHubPickerBridge.mm"));
+    const QString bridgeStubSource = readUtf8SourceFile(
+        QStringLiteral("src/app/platform/Apple/WhatSonIosHubPickerBridge.cpp"));
+
+    QVERIFY(!registrarSource.isEmpty());
+    QVERIFY(!bridgeHeaderSource.isEmpty());
+    QVERIFY(!bridgeSource.isEmpty());
+    QVERIFY(!bridgeStubSource.isEmpty());
+    QVERIFY(registrarSource.contains(QStringLiteral("#include \"platform/Apple/WhatSonIosHubPickerBridge.hpp\"")));
+    QVERIFY(registrarSource.contains(QStringLiteral("qmlRegisterType<WhatSonIosHubPickerBridge>(")));
+    QVERIFY(bridgeHeaderSource.contains(QStringLiteral("Q_INVOKABLE bool open(const QUrl& initialDirectoryUrl = QUrl());")));
+    QVERIFY(bridgeSource.contains(QStringLiteral("UIDocumentPickerViewController")));
+    QVERIFY(bridgeSource.contains(QStringLiteral("initForOpeningContentTypes")));
+    QVERIFY(bridgeSource.contains(QStringLiteral("asCopy:NO")));
+    QVERIFY(bridgeSource.contains(QStringLiteral("UTTypeItem")));
+    QVERIFY(bridgeSource.contains(QStringLiteral("UTTypeContent")));
+    QVERIFY(bridgeSource.contains(QStringLiteral("UTTypeData")));
+    QVERIFY(bridgeSource.contains(QStringLiteral("presentViewController:controller animated:YES completion:nil")));
+    QVERIFY(bridgeSource.contains(QStringLiteral("documentPicker:(UIDocumentPickerViewController*)controller didPickDocumentsAtURLs")));
+    QVERIFY(!bridgeSource.contains(QStringLiteral("UTTypeFolder")));
+    QVERIFY(bridgeStubSource.contains(QStringLiteral("The native iOS hub picker is unavailable on this platform.")));
 }
 
 void WhatSonCppRegressionTests::mainQml_exposesZeroWindowPaddingForLvrsApplicationWindow()

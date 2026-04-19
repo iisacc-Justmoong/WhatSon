@@ -1,85 +1,26 @@
 # `src/app/qml/window/OnboardingContent.qml`
 
-## Status
-- Documentation phase: scaffold generated from the live source tree.
-- Detail level: structural placeholder prepared for a later deep pass.
+## Role
+This QML surface owns the shared LVRS onboarding experience for desktop and mobile startup flows.
 
-## Source Metadata
-- Source path: `src/app/qml/window/OnboardingContent.qml`
-- Source kind: QML view/component
-- File name: `OnboardingContent.qml`
-- Approximate line count: 619
+## Dialog Routing
+- Desktop hub creation still uses a lazily created `FileDialog` in `SaveFile` mode so the `.wshub` target path is not
+  pre-instantiated before the user confirms creation.
+- Android existing-hub selection still uses a lazily created `FileDialog` with the `*.wshub` filter, preserving the
+  direct package-pick flow on that platform.
+- iOS existing-hub selection no longer depends on `QtQuick.Dialogs`. The screen now imports
+  `WhatSon.App.Internal 1.0` and routes selection through `WhatSonIosHubPickerBridge`, which presents the native
+  Files document picker with provider-friendly content types.
 
-## QML Surface Snapshot
-- Root type: `Item`
+## iOS Provider Behaviour
+- The iOS onboarding guidance now explicitly tells the user to browse Files or Box, open the `.wshub` package,
+  select a file inside it, and confirm with `Open`.
+- Accepted URLs from the native picker are forwarded to
+  `OnboardingHubController::prepareHubSelectionFromUrl(...)`, which keeps the ancestor-remap/security-scoped restore
+  path centralized in the controller instead of duplicating it in QML.
+- Picker busy/error state is folded into the onboarding status label so the action links are disabled while the native
+  picker is open and picker failures surface through the same status text channel as controller failures.
 
-## Current Notes
-- Desktop/mobile onboarding chrome now routes its visible geometry through LVRS metrics:
-  - icon, close affordance, action widths, content widths, and panel widths use `LV.Theme.scaleMetric(...)`
-  - spacing and insets use `LV.Theme.gap16/gap24`
-  - outer surface radius uses `LV.Theme.radiusXl * 2`
-- Embedded mobile onboarding now disables the desktop rounded/antialiased outer frame and renders the shared surface as
-  a plain full-window panel. The same mobile surface is now reused by both the Android `/onboarding` route and the iOS
-  inline onboarding sequence, so neither path allocates a fullscreen multisample shell target during first-frame mobile
-  startup.
-- The close glyph no longer depends on fixed `5/11/1.6px` canvas coordinates; it derives its stroke path from the
-  live button size so LVRS UI scaling keeps the icon centered and crisp.
-- Desktop-only create-hub `FileDialog` and Android direct `.wshub` file-pick `FileDialog` are now lazily created from
-  `Component` factories.
-- iOS no longer routes existing-hub selection through the direct file picker because native Files package selection can
-  leave the accept button disabled for `.wshub` directories.
-  The shared onboarding surface now uses `FolderDialog` on iOS, allowing the user to pick either the `.wshub`
-  package directory itself or a parent folder that contains it while still staying inside the native Files/cloud
-  provider flow.
-- The lazily created create-hub dialog still seeds `currentFile/currentFolder` for `SaveFile` mode, but it no longer
-  exists at iOS startup time, so mobile onboarding does not attempt to preselect a non-existent `.wshub` path.
-
-### Object IDs
-- `root`
-- `createHubDialogComponent`
-- `createHubDirectoryDialog`
-- `selectHubDialog`
-- `selectHubFileDialogComponent`
-- `windowFrame`
-- `closeColumn`
-- `closeButton`
-- `closeMouseArea`
-- `rightPanel`
-- `appPanel`
-- `appPanelContent`
-- `appPanelColumn`
-- `createHubAction`
-- `selectHubAction`
-- `mobileAppColumn`
-- `actionLink`
-- `actionText`
-- `actionMouseArea`
-
-### Required Properties
-- `index`
-- `modelData`
-
-### Signals
-- `completed`
-- `createFileRequested`
-- `dismissRequested`
-- `requestWindowMove`
-- `selectFileRequested`
-- `viewHookRequested`
-- `triggered`
-
-## Intended Detailed Sections
-- Responsibility and business role
-- Ownership and lifecycle
-- Public API or externally observed bindings
-- Collaborators and dependency direction
-- Data flow and state transitions
-- Error handling and recovery paths
-- Threading, scheduling, or UI affinity constraints when relevant
-- Extension points, invariants, and known complexity hotspots
-- Test coverage and missing verification
-
-## Authoring Notes For Next Pass
-- Read the real implementation and adjacent headers before replacing this scaffold.
-- Document concrete signals, slots, invokables, persistence side effects, and LVRS/QML bindings where applicable.
-- Cross-link this file with peer modules in the same directory once the detailed pass begins.
+## Layout Note
+- The mobile/embedded onboarding surface still reuses the same LVRS geometry and avoids the fullscreen rounded shell
+  that previously triggered iOS first-frame Metal churn.

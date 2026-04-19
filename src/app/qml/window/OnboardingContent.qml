@@ -4,6 +4,7 @@ import QtQuick
 import QtQuick.Dialogs
 import QtQuick.Window
 import LVRS 1.0 as LV
+import WhatSon.App.Internal 1.0
 
 Item {
     id: root
@@ -25,7 +26,10 @@ Item {
         return String(root.hubSessionController.sessionState).trim();
     }
     readonly property bool useDirectExistingHubFileFlow: Qt.platform.os === "android"
+    readonly property bool useNativeIosExistingHubPicker: Qt.platform.os === "ios"
     readonly property bool isMobilePlatform: Qt.platform.os === "android" || Qt.platform.os === "ios"
+    readonly property bool onboardingInteractionBusy: (root.hubSessionController && root.hubSessionController.busy)
+                                                    || iosHubPickerBridge.busy
     readonly property bool useMobileCreateDirectoryFlow: root.isMobilePlatform
     readonly property color linkColor: LV.Theme.accent
     readonly property color mainSurfaceColor: root.panelColor
@@ -79,10 +83,10 @@ Item {
     readonly property string mobileSelectionAssistText: {
         if (root.statusText.length > 0)
             return root.statusText;
+        if (root.useNativeIosExistingHubPicker)
+            return "On iOS, browse Files or Box, open the .wshub package, select a file inside it, and tap Open.";
         if (root.useDirectExistingHubFileFlow)
             return "On mobile, choose the .wshub package directly from the native picker.";
-        if (Qt.platform.os === "ios")
-            return "On iOS, choose the .wshub package directory or a folder containing it from Files.";
         if (root.hasHubSelectionCandidates)
             return "Choose the WhatSon Hub package found in the selected folder.";
         return "On mobile, choose the folder that contains your WhatSon Hub.";
@@ -102,6 +106,8 @@ Item {
         }
         return "No WhatSon Hub Selected";
     }
+    readonly property bool hasOnboardingError: (root.hubSessionController && root.hubSessionController.lastError.length > 0)
+                                             || iosHubPickerBridge.lastError.length > 0
     property color sidePanelColor: LV.Theme.panelBackground10
     property var selectHubFileDialogInstance: null
     property bool standaloneMode: false
@@ -114,11 +120,13 @@ Item {
             return "Resolving WhatSon Hub...";
         if (hubSessionController && hubSessionController.busy)
             return "Preparing WhatSon Hub...";
+        if (root.useNativeIosExistingHubPicker && iosHubPickerBridge.lastError.length > 0)
+            return iosHubPickerBridge.lastError;
         if (hubSessionController && hubSessionController.lastError.length > 0)
             return hubSessionController.lastError;
         return "";
     }
-    readonly property color statusTextColor: hubSessionController && hubSessionController.lastError.length > 0 ? LV.Theme.danger : LV.Theme.descriptionColor
+    readonly property color statusTextColor: root.hasOnboardingError ? LV.Theme.danger : LV.Theme.descriptionColor
     readonly property url suggestedCreateHubFileUrl: {
         const folderText = root.currentFolderUrl ? String(root.currentFolderUrl).trim() : "";
         if (folderText.length === 0)
@@ -161,6 +169,32 @@ Item {
         const dialog = root.ensureSelectHubFileDialog();
         if (dialog && dialog.open)
             dialog.open();
+    }
+
+    function openExistingHubSelector() {
+        if (root.useNativeIosExistingHubPicker) {
+            iosHubPickerBridge.open(root.currentFolderUrl);
+            return;
+        }
+
+        if (root.useDirectExistingHubFileFlow) {
+            root.openSelectHubFileDialog();
+            return;
+        }
+
+        selectHubDialog.open();
+    }
+
+    WhatSonIosHubPickerBridge {
+        id: iosHubPickerBridge
+
+        onAccepted: {
+            if (root.hubSessionController) {
+                root.hubSessionController.prepareHubSelectionFromUrl(selectedUrl);
+            } else {
+                root.selectFileRequested();
+            }
+        }
     }
 
     Connections {
@@ -212,11 +246,9 @@ Item {
         id: selectHubDialog
 
         currentFolder: root.currentFolderUrl
-        title: Qt.platform.os === "ios"
-               ? "Choose WhatSon Hub Package or Containing Folder"
-               : root.isMobilePlatform
-                 ? "Choose Folder Containing WhatSon Hub"
-                 : "Select WhatSon Hub"
+        title: root.isMobilePlatform
+               ? "Choose Folder Containing WhatSon Hub"
+               : "Select WhatSon Hub"
 
         onAccepted: {
             if (root.hubSessionController) {
@@ -436,7 +468,7 @@ Item {
                             ActionLink {
                                 id: createHubAction
 
-                                enabled: !root.hubSessionController || !root.hubSessionController.busy
+                                enabled: !root.onboardingInteractionBusy
                                 label: "Create new WhatSon Hub"
                                 width: parent.width
 
@@ -445,6 +477,7 @@ Item {
                                     if (root.hubSessionController) {
                                         root.hubSessionController.clearLastError();
                                         root.hubSessionController.clearHubSelectionCandidates();
+                                        iosHubPickerBridge.clearLastError();
                                         root.openCreateHubDialog();
                                     } else {
                                         root.createFileRequested();
@@ -454,7 +487,7 @@ Item {
                             ActionLink {
                                 id: selectHubAction
 
-                                enabled: !root.hubSessionController || !root.hubSessionController.busy
+                                enabled: !root.onboardingInteractionBusy
                                 label: "Select WhatSon Hub"
                                 width: parent.width
 
@@ -463,7 +496,8 @@ Item {
                                     if (root.hubSessionController) {
                                         root.hubSessionController.clearLastError();
                                         root.hubSessionController.clearHubSelectionCandidates();
-                                        selectHubDialog.open();
+                                        iosHubPickerBridge.clearLastError();
+                                        root.openExistingHubSelector();
                                     } else {
                                         root.selectFileRequested();
                                     }
@@ -559,7 +593,7 @@ Item {
                             width: root.mobileActionWidth
 
                             ActionLink {
-                                enabled: !root.hubSessionController || !root.hubSessionController.busy
+                                enabled: !root.onboardingInteractionBusy
                                 label: "Create new WhatSon Hub"
                                 width: parent.width
 
@@ -568,6 +602,7 @@ Item {
                                     if (root.hubSessionController) {
                                         root.hubSessionController.clearLastError();
                                         root.hubSessionController.clearHubSelectionCandidates();
+                                        iosHubPickerBridge.clearLastError();
                                         createHubDirectoryDialog.open();
                                     } else {
                                         root.createFileRequested();
@@ -575,7 +610,7 @@ Item {
                                 }
                             }
                             ActionLink {
-                                enabled: !root.hubSessionController || !root.hubSessionController.busy
+                                enabled: !root.onboardingInteractionBusy
                                 label: "Select WhatSon Hub"
                                 width: parent.width
 
@@ -584,10 +619,8 @@ Item {
                                     if (root.hubSessionController) {
                                         root.hubSessionController.clearLastError();
                                         root.hubSessionController.clearHubSelectionCandidates();
-                                        if (root.useDirectExistingHubFileFlow)
-                                            root.openSelectHubFileDialog();
-                                        else
-                                            selectHubDialog.open();
+                                        iosHubPickerBridge.clearLastError();
+                                        root.openExistingHubSelector();
                                     } else {
                                         root.selectFileRequested();
                                     }

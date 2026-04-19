@@ -7,6 +7,9 @@
 - Folder-based hub preparation now also preserves the original picker URL before package-path promotion/validation.
   That keeps iOS Files/cloud-provider selections restorable even when onboarding resolves the chosen folder down to a
   concrete `.wshub` package path later in the same operation.
+- iOS direct file-pick onboarding now supports selecting a file from inside a `.wshub` package. The controller derives
+  how many path components it must strip from the picked provider URL, rewrites the stored selection URL to the
+  enclosing package URL, and persists the bookmark against that ancestor scope instead of the leaf file.
 - Newly created hubs on iOS now refresh their stored bookmark against the final `.wshub` package path rather than
   keeping a parent-directory bookmark from the pre-create picker location.
 - The controller now stops after validating and normalizing a hub selection; it emits a selection-ready signal and lets
