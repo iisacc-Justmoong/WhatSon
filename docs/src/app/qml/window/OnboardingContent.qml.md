@@ -24,9 +24,13 @@
   startup.
 - The close glyph no longer depends on fixed `5/11/1.6px` canvas coordinates; it derives its stroke path from the
   live button size so LVRS UI scaling keeps the icon centered and crisp.
-- Desktop-only create-hub `FileDialog` and mobile `.wshub` file-pick `FileDialog` are now lazily created from
-  `Component` factories. Android and iOS both route "Select WhatSon Hub" through the direct package picker, while
-  folder selection remains available only for flows that still need directory creation/candidate discovery.
+- Desktop-only create-hub `FileDialog` and Android direct `.wshub` file-pick `FileDialog` are now lazily created from
+  `Component` factories.
+- iOS no longer routes existing-hub selection through the direct file picker because native Files package selection can
+  leave the accept button disabled for `.wshub` directories.
+  The shared onboarding surface now uses `FolderDialog` on iOS, allowing the user to pick either the `.wshub`
+  package directory itself or a parent folder that contains it while still staying inside the native Files/cloud
+  provider flow.
 - The lazily created create-hub dialog still seeds `currentFile/currentFolder` for `SaveFile` mode, but it no longer
   exists at iOS startup time, so mobile onboarding does not attempt to preselect a non-existent `.wshub` path.
 

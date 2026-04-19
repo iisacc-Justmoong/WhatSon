@@ -245,6 +245,11 @@ public:
         return m_noteDirectoryPaths.value(noteId.trimmed());
     }
 
+    Q_INVOKABLE QString noteBodySourceTextForNoteId(const QString& noteId) const
+    {
+        return m_noteBodySourceTexts.value(noteId.trimmed());
+    }
+
     Q_INVOKABLE bool applyPersistedBodyStateForNote(
         const QString& noteId,
         const QString& bodyPlainText,
@@ -271,6 +276,11 @@ public:
         m_noteDirectoryPaths.insert(noteId.trimmed(), QDir::cleanPath(noteDirectoryPath.trimmed()));
     }
 
+    void setNoteBodySourceText(const QString& noteId, const QString& bodySourceText)
+    {
+        m_noteBodySourceTexts.insert(noteId.trimmed(), bodySourceText);
+    }
+
     int applyPersistedBodyStateCallCount = 0;
     int reloadNoteMetadataCallCount = 0;
     QString lastAppliedNoteId;
@@ -281,6 +291,7 @@ public:
 
 private:
     QHash<QString, QString> m_noteDirectoryPaths;
+    QHash<QString, QString> m_noteBodySourceTexts;
 };
 
 class FakeSelectionNoteListModel final : public QObject
@@ -444,6 +455,7 @@ private slots:
     void sidebarHierarchyViewModel_preservesFallbackAcrossStoreAttachDetach();
     void sidebarHierarchyViewModel_reactsToProviderMappingChanges();
     void sidebarAndSelectionBridge_forceCppOwnershipAcrossHierarchySwitchBindings();
+    void contentsEditorSelectionBridge_fallsBackToRuntimeSnapshotWhenNotePathIsUnavailable();
     void noteListModelContractBridge_resolvesHierarchyBoundNoteListImmediately();
     void noteListModelContractBridge_prefersExplicitRowsAcrossHierarchySwitches();
     void navigationModeViewModel_cyclesActiveSections();
@@ -460,6 +472,7 @@ private slots:
     void startupHubResolver_persistsSelectionUrlsForBookmarkBasedIosRestore();
     void onboardingContent_mobileLayout_avoidsFullscreenAntialiasedWindowFrame();
     void onboardingContent_saveDialog_doesNotPreselectMissingHubFile();
+    void onboardingHubController_prepareHubSelectionPreservesOriginalSelectionUrl();
     void appleSecurityScopedAccess_allowsProviderUrlsWithFilesystemPaths();
     void mainQml_exposesZeroWindowPaddingForLvrsApplicationWindow();
     void clipboardImportFileNamePolicy_generatesRandom32CharacterAlphaNumericPngNames();
@@ -904,6 +917,33 @@ void WhatSonCppRegressionTests::sidebarAndSelectionBridge_forceCppOwnershipAcros
     QCOMPARE(selectionBridge.selectedNoteId(), QStringLiteral("library-note"));
     QCOMPARE(QQmlEngine::objectOwnership(activeLibraryViewModel), QQmlEngine::CppOwnership);
     QCOMPARE(QQmlEngine::objectOwnership(activeLibraryNoteListModel), QQmlEngine::CppOwnership);
+}
+
+void WhatSonCppRegressionTests::contentsEditorSelectionBridge_fallsBackToRuntimeSnapshotWhenNotePathIsUnavailable()
+{
+    ensureCoreApplication();
+
+    FakeContentPersistenceViewModel contentViewModel;
+    FakeSelectionNoteListModel noteListModel;
+    ContentsEditorSelectionBridge selectionBridge;
+
+    const QString noteId = QStringLiteral("runtime-snapshot-note");
+    const QString bodySourceText = QStringLiteral("runtime snapshot body");
+
+    contentViewModel.setNoteBodySourceText(noteId, bodySourceText);
+    noteListModel.setItemCount(1);
+    noteListModel.setNoteBacked(true);
+    noteListModel.setCurrentNoteId(noteId);
+
+    selectionBridge.setContentViewModel(&contentViewModel);
+    selectionBridge.setNoteListModel(&noteListModel);
+    QCoreApplication::processEvents();
+
+    QVERIFY(selectionBridge.noteSelectionContractAvailable());
+    QCOMPARE(selectionBridge.selectedNoteId(), noteId);
+    QCOMPARE(selectionBridge.selectedNoteBodyNoteId(), noteId);
+    QCOMPARE(selectionBridge.selectedNoteBodyText(), bodySourceText);
+    QVERIFY(!selectionBridge.selectedNoteBodyLoading());
 }
 
 void WhatSonCppRegressionTests::noteListModelContractBridge_resolvesHierarchyBoundNoteListImmediately()
@@ -1386,13 +1426,25 @@ void WhatSonCppRegressionTests::onboardingContent_saveDialog_doesNotPreselectMis
     QVERIFY(onboardingContentSource.contains(QStringLiteral("root.openCreateHubDialog();")));
     QVERIFY(onboardingContentSource.contains(QStringLiteral("id: selectHubFileDialogComponent")));
     QVERIFY(onboardingContentSource.contains(QStringLiteral("root.selectHubFileDialogInstance = selectHubFileDialogComponent.createObject(root);")));
-    QVERIFY(onboardingContentSource.contains(QStringLiteral("readonly property bool useDirectExistingHubFileFlow: Qt.platform.os === \"android\" || Qt.platform.os === \"ios\"")));
+    QVERIFY(onboardingContentSource.contains(QStringLiteral("readonly property bool useDirectExistingHubFileFlow: Qt.platform.os === \"android\"")));
     QVERIFY(onboardingContentSource.contains(QStringLiteral("if (root.useDirectExistingHubFileFlow)")));
+    QVERIFY(onboardingContentSource.contains(QStringLiteral("On iOS, choose the .wshub package directory or a folder containing it from Files.")));
+    QVERIFY(onboardingContentSource.contains(QStringLiteral("Choose WhatSon Hub Package or Containing Folder")));
     QVERIFY(onboardingContentSource.contains(QStringLiteral("currentFile: root.suggestedCreateHubFileUrl")));
     QVERIFY(onboardingContentSource.contains(QStringLiteral("currentFolder: root.currentFolderUrl")));
     QVERIFY(!onboardingContentSource.contains(QStringLiteral("id: createHubDialog\n")));
     QVERIFY(!onboardingContentSource.contains(QStringLiteral("id: selectHubFileDialog\n")));
     QVERIFY(!onboardingContentSource.contains(QStringLiteral("selectedFile: root.suggestedCreateHubFileUrl")));
+}
+
+void WhatSonCppRegressionTests::onboardingHubController_prepareHubSelectionPreservesOriginalSelectionUrl()
+{
+    const QString onboardingControllerSource = readUtf8SourceFile(
+        QStringLiteral("src/app/viewmodel/onboarding/OnboardingHubController.cpp"));
+
+    QVERIFY(!onboardingControllerSource.isEmpty());
+    QVERIFY(onboardingControllerSource.contains(QStringLiteral(
+        "setCurrentHubSelectionUrl(selectionUrlStringFromUrl(hubUrl));")));
 }
 
 void WhatSonCppRegressionTests::appleSecurityScopedAccess_allowsProviderUrlsWithFilesystemPaths()

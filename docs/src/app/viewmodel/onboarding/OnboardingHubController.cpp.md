@@ -4,8 +4,9 @@
 - Constructor now initializes the `IOnboardingHubController` base.
 - Existing-hub loading now tracks the original selection URL alongside the resolved mount path, so main-thread startup
   persistence can keep the provider-backed iOS pick alive with a matching security-scoped bookmark.
-- iOS direct `.wshub` file picks now flow through the same controller path as desktop file picks instead of requiring a
-  folder-only indirection step.
+- Folder-based hub preparation now also preserves the original picker URL before package-path promotion/validation.
+  That keeps iOS Files/cloud-provider selections restorable even when onboarding resolves the chosen folder down to a
+  concrete `.wshub` package path later in the same operation.
 - Newly created hubs on iOS now refresh their stored bookmark against the final `.wshub` package path rather than
   keeping a parent-directory bookmark from the pre-create picker location.
 - The controller now stops after validating and normalizing a hub selection; it emits a selection-ready signal and lets

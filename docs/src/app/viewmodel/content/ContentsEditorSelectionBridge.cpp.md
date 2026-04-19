@@ -47,6 +47,11 @@
   `editorTextPersistenceFinished(noteId, text, success, ...)` for the currently visible note body.
   This closes the stale same-note gap where persistence could succeed, reconcile could report "no refresh needed", and
   QML would still keep the note-open body snapshot as the last selected-body value.
+- When note-package path resolution cannot produce a lazy-load request at all, the bridge now also asks the active
+  content view-model for an optional `noteBodySourceTextForNoteId(...)` runtime snapshot before it falls back to an
+  empty body.
+  This keeps desktop note-open flows from collapsing to a blank editor when the library runtime snapshot already owns
+  the selected note source but one selection turn cannot re-resolve the package path.
 - When the bridge cannot produce note-owned body text for the current selection, it now falls back to an explicit empty
   body that is still tagged with that selected note id.
 - `startSelectedNoteBodyLoad(...)` now keeps body ownership explicit during loading and fallback transitions instead of
@@ -124,6 +129,8 @@
 - A same-turn note-list-model swap and content-view-model swap must collapse into one selected-note refresh/rebind turn.
 - The bridge must provide an explicit empty-body fallback for the selected note when no note-owned body payload can be
   resolved.
+- A missing selected-note package path must still allow the bridge to surface runtime snapshot text through
+  `noteBodySourceTextForNoteId(...)` when the active content view-model exposes that contract.
 - Reopening a recently edited note must prefer the buffered editor snapshot over a stale package read until queued
   persistence catches up.
 - A same-note successful save must advance `selectedNoteBodyText` even when filesystem reconcile reports that no extra

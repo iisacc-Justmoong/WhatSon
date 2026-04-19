@@ -610,6 +610,7 @@ bool OnboardingHubController::prepareHubSelectionFromUrl(const QUrl& hubUrl)
 #else
     setCurrentHubAccessBookmark({});
 #endif
+    setCurrentHubSelectionUrl(selectionUrlStringFromUrl(hubUrl));
 
     const QString selectedPath = localPathFromUrl(hubUrl);
     const QString normalizedSelectedPath = normalizedAbsolutePath(selectedPath);

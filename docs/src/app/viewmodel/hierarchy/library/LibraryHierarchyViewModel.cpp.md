@@ -29,6 +29,9 @@
   The viewmodel still derives `primaryText` / `searchableText` from indexed note metadata, but `bodyText` is now
   cleared before rows are pushed into the shared note-list model so large notes do not get duplicated into selection
   state.
+- The library runtime snapshot now also exposes `noteBodySourceTextForNoteId(...)`.
+  `ContentsEditorSelectionBridge` can therefore recover the selected note source from the already-loaded indexed note
+  snapshot when direct package-path resolution fails for one desktop selection turn.
 - Editor persistence is now split into two viewmodel-facing phases:
   - `applyPersistedBodyStateForNote(...)` mutates only the in-memory indexed note/body preview immediately after a
     successful direct file-store write.
@@ -72,5 +75,7 @@
   - Failed activation must not switch the current note to an unrelated item.
   - Large library notes must not be duplicated into note-list row `bodyText`; the editor must lazy-load the selected
     note body separately.
+  - If direct note-package resolution is temporarily unavailable, the indexed library snapshot must still be able to
+    provide the selected note's body source to the editor bridge.
   - A folder label such as `Marketing/Sales` must remain one hierarchy item after parse/load/save cycles.
   - The same literal-slash folder label must not surface as `Marketing\\/Sales` in note-list folder presentation.

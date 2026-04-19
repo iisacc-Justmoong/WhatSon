@@ -113,9 +113,11 @@ private slots:
 
 private:
     static bool hasReadableProperty(const QObject* object, const char* propertyName);
+    static bool hasInvokableMethod(const QObject* object, const char* methodSignature);
     static QString readStringProperty(const QObject* object, const char* propertyName);
     static int readIntProperty(const QObject* object, const char* propertyName);
     QString resolveSelectedNoteDirectoryPath(const QString& noteId) const;
+    bool tryResolveSelectedNoteBodySourceText(const QString& noteId, QString* bodyText) const;
     void setSelectedNoteDirectoryPath(QString noteDirectoryPath);
     bool adoptPendingEditorBodyText(const QString& noteId);
     void setSelectedNoteBodyState(QString noteId, QString bodyText, bool loading);

@@ -24,7 +24,7 @@ Item {
             return "idle";
         return String(root.hubSessionController.sessionState).trim();
     }
-    readonly property bool useDirectExistingHubFileFlow: Qt.platform.os === "android" || Qt.platform.os === "ios"
+    readonly property bool useDirectExistingHubFileFlow: Qt.platform.os === "android"
     readonly property bool isMobilePlatform: Qt.platform.os === "android" || Qt.platform.os === "ios"
     readonly property bool useMobileCreateDirectoryFlow: root.isMobilePlatform
     readonly property color linkColor: LV.Theme.accent
@@ -81,6 +81,8 @@ Item {
             return root.statusText;
         if (root.useDirectExistingHubFileFlow)
             return "On mobile, choose the .wshub package directly from the native picker.";
+        if (Qt.platform.os === "ios")
+            return "On iOS, choose the .wshub package directory or a folder containing it from Files.";
         if (root.hasHubSelectionCandidates)
             return "Choose the WhatSon Hub package found in the selected folder.";
         return "On mobile, choose the folder that contains your WhatSon Hub.";
@@ -210,7 +212,11 @@ Item {
         id: selectHubDialog
 
         currentFolder: root.currentFolderUrl
-        title: root.isMobilePlatform ? "Choose Folder Containing WhatSon Hub" : "Select WhatSon Hub"
+        title: Qt.platform.os === "ios"
+               ? "Choose WhatSon Hub Package or Containing Folder"
+               : root.isMobilePlatform
+                 ? "Choose Folder Containing WhatSon Hub"
+                 : "Select WhatSon Hub"
 
         onAccepted: {
             if (root.hubSessionController) {
