@@ -80,6 +80,12 @@
   projection-disabled clearing, focused-input defer decisions, and deferred timer-trigger decisions.
 - `ContentsDisplayStructuredFlowCoordinator` now owns the note-scoped decision of when parsed structured flow becomes
   the active document host, so display QML no longer keeps that activation policy inline.
+- That activation result must also gate `ContentsDisplayView.qml` host visibility itself.
+  If the selected note is not yet bound to the editor session, the display host must keep the fallback projection on
+  screen instead of swapping in an empty structured-flow shell.
+- Note-backed hierarchy viewmodels now also expose `noteBodySourceTextForNoteId(...)` as a shared runtime fallback
+  contract, so the selection bridge can recover RAW note body source even when a path-based `.wsnbody` reload is not
+  immediately available.
 - `ContentsEditorPresentationProjection` now centralizes the whole-document RAW-derived editor presentation snapshot.
   Desktop/mobile hosts bind one projection object per note surface instead of keeping separate host-owned
   `ContentsLogicalTextBridge` and `ContentsTextFormatRenderer` state graphs for the same document snapshot.

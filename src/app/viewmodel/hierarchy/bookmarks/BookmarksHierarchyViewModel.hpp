@@ -64,6 +64,7 @@ public:
     Q_INVOKABLE bool saveBodyTextForNote(const QString& noteId, const QString& text);
     Q_INVOKABLE bool saveCurrentBodyText(const QString& text);
     Q_INVOKABLE QString noteDirectoryPathForNoteId(const QString& noteId) const;
+    Q_INVOKABLE QString noteBodySourceTextForNoteId(const QString& noteId) const;
     Q_INVOKABLE bool reloadNoteMetadataForNoteId(const QString& noteId);
 
     void setSystemCalendarStore(ISystemCalendarStore* store);

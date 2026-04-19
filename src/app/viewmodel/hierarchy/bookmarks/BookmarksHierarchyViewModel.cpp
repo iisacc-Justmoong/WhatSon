@@ -678,6 +678,29 @@ QString BookmarksHierarchyViewModel::noteDirectoryPathForNoteId(const QString& n
     return m_bookmarkedNotes.at(noteIndex).noteDirectoryPath.trimmed();
 }
 
+QString BookmarksHierarchyViewModel::noteBodySourceTextForNoteId(const QString& noteId) const
+{
+    const QString normalizedNoteId = noteId.trimmed();
+    if (normalizedNoteId.isEmpty())
+    {
+        return {};
+    }
+
+    const int noteIndex = indexOfBookmarkedNoteById(m_bookmarkedNotes, normalizedNoteId);
+    if (noteIndex < 0 || noteIndex >= m_bookmarkedNotes.size())
+    {
+        return {};
+    }
+
+    const LibraryNoteRecord& note = m_bookmarkedNotes.at(noteIndex);
+    if (!note.bodySourceText.isEmpty())
+    {
+        return note.bodySourceText;
+    }
+
+    return note.bodyPlainText;
+}
+
 bool BookmarksHierarchyViewModel::reloadNoteMetadataForNoteId(const QString& noteId)
 {
     const QString normalizedNoteId = noteId.trimmed();

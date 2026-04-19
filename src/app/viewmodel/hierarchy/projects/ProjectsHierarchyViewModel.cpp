@@ -905,6 +905,29 @@ QString ProjectsHierarchyViewModel::noteDirectoryPathForNoteId(const QString& no
     return resolveCanonicalNoteDirectoryPathForProjects(m_allNotes.at(noteIndex));
 }
 
+QString ProjectsHierarchyViewModel::noteBodySourceTextForNoteId(const QString& noteId) const
+{
+    const QString normalizedNoteId = noteId.trimmed();
+    if (normalizedNoteId.isEmpty())
+    {
+        return {};
+    }
+
+    const int noteIndex = indexOfNoteRecordById(m_allNotes, normalizedNoteId);
+    if (noteIndex < 0 || noteIndex >= m_allNotes.size())
+    {
+        return {};
+    }
+
+    const LibraryNoteRecord& note = m_allNotes.at(noteIndex);
+    if (!note.bodySourceText.isEmpty())
+    {
+        return note.bodySourceText;
+    }
+
+    return note.bodyPlainText;
+}
+
 int ProjectsHierarchyViewModel::selectedIndex() const noexcept
 {
     return m_selectedIndex;

@@ -282,6 +282,7 @@ Item {
     readonly property bool showEditorGutter: modePolicy.showEditorGutter
     readonly property bool showFormattedTextRenderer: false
     readonly property bool showStructuredDocumentFlow: contentsView.structuredDocumentFlowEnabled
+                                                       && contentsView.structuredDocumentFlowActivatedNoteId === contentsView.selectedNoteId
                                                        && !contentsView.showDedicatedResourceViewer
                                                        && !contentsView.showFormattedTextRenderer
     readonly property bool structuredHostGeometryActive: modePolicy.structuredHostGeometryActive

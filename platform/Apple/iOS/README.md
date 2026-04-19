@@ -5,6 +5,14 @@ This directory contains iOS platform-specific bundle configuration.
 - `Info.plist` must not declare the legacy `CFBundleIconFile` key. The app icon is provided by the Xcode asset
   catalog generated from `resources/icons/app/ios/*` via `src/app/CMakeLists.txt`, and that `.xcassets` directory must
   be attached to the bundle `Resources` phase so Xcode emits `Assets.car`.
+- `Info.plist` now also declares `CFBundleIconName=AppIcon`, so the compiled asset catalog stays bound to the primary
+  home-screen icon even when the generated Xcode project is rebuilt directly from the exported `.xcodeproj`.
+- `cmake/root/runtime/CMakeLists.txt` now runs `cmake/patch_whatson_ios_xcodeproj.py` immediately after
+  `whatson_generate_ios_xcodeproj` configures the clean iOS export tree.
+  CMake's Xcode generator currently emits the `WhatSonIcons.xcassets` file reference and `PBXBuildFile`, but it still
+  omits that asset catalog from the `WhatSon` app target's `PBXResourcesBuildPhase`. The post-export patch inserts the
+  missing build-phase entry so Xcode actually compiles `Assets.car` and the installed iOS app no longer shows a blank
+  icon.
 - `Info.plist` keeps `UIRequiresFullScreen` enabled because the current iOS target only declares portrait /
   landscape-left / landscape-right orientations.
 - When no startup `.wshub` is available on iOS, app bootstrap still loads `Main.qml` first and keeps onboarding inside

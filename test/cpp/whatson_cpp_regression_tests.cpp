@@ -30,6 +30,7 @@
 #include "store/sidebar/SidebarSelectionStore.hpp"
 #include "viewmodel/content/ContentsEditorSelectionBridge.hpp"
 #include "viewmodel/content/ContentsEditorSessionController.hpp"
+#include "viewmodel/content/ContentsDisplayStructuredFlowCoordinator.hpp"
 #include "viewmodel/content/ContentsLogicalTextBridge.hpp"
 #include "viewmodel/content/ContentsStructuredDocumentBlocksModel.hpp"
 #include "viewmodel/content/ContentsStructuredDocumentCollectionPolicy.hpp"
@@ -483,6 +484,7 @@ private slots:
     void onboardingContent_createHubNameField_drivesGeneratedPackageName();
     void onboardingContent_iosUsesNativeHubPickerBridgeForProviderAccess();
     void iosBundleConfig_declaresWshubPackageDocumentType();
+    void iosXcodeProjectBootstrap_attachesAssetCatalogToResourcesBuildPhase();
     void hubPackager_createsPackageRootsAndNormalizesExtensions();
     void hubCreator_separatesPackageMaterializationFromScaffoldWrites();
     void applePackageAppearance_marksHubDirectoriesAsPackages();
@@ -518,12 +520,15 @@ private slots:
     void qmlResourceEditorView_staysTransparentAndViewerOnly();
     void resourceDetailPanelViewModel_tracksCurrentResourceSelection();
     void detailPanelRouting_separatesNoteAndResourceViewsAndViewModels();
+    void noteBackedHierarchyViewModels_exposeRuntimeBodySourceFallback();
     void contentsDisplayView_invalidatesGutterGeometryImmediatelyAcrossRapidNoteSwitches();
     void contentsDisplayView_keepsGutterNumbersCloseToTheEditorBody();
+    void contentsDisplayView_waitsForStructuredFlowActivationBeforeMountingDocumentFlow();
     void contentsDisplayView_reservesHalfHeightBottomInsetAndCorrectsTypingViewport();
     void inlineFormatEditor_preservesMacModifierVerticalNavigationHooks();
     void structuredFlow_flattensImplicitTextBlocksIntoInteractiveGroups();
     void structuredFlow_keepsEmptySelectedNotesEditableWithFallbackTextGroup();
+    void structuredFlowCoordinator_delaysActivationUntilSelectedSessionIsBound();
     void structuredEditorFormattingController_commitsInlineStyleMutationsThroughFlowRawRanges();
     void structuredEditors_routeMacModifierVerticalNavigationAcrossBlockAndDocumentBoundaries();
     void paperSelection_tracksChosenPaperEnumState();
@@ -1622,6 +1627,8 @@ void WhatSonCppRegressionTests::iosBundleConfig_declaresWshubPackageDocumentType
     const QString infoPlistSource = readUtf8SourceFile(QStringLiteral("platform/Apple/iOS/Info.plist"));
 
     QVERIFY(!infoPlistSource.isEmpty());
+    QVERIFY(infoPlistSource.contains(QStringLiteral("<key>CFBundleIconName</key>")));
+    QVERIFY(infoPlistSource.contains(QStringLiteral("<string>AppIcon</string>")));
     QVERIFY(infoPlistSource.contains(QStringLiteral("<key>CFBundleDocumentTypes</key>")));
     QVERIFY(infoPlistSource.contains(QStringLiteral("<string>WhatSon Hub Package</string>")));
     QVERIFY(infoPlistSource.contains(QStringLiteral("<string>com.iisacc.whatson.hub</string>")));
@@ -1632,6 +1639,29 @@ void WhatSonCppRegressionTests::iosBundleConfig_declaresWshubPackageDocumentType
     QVERIFY(infoPlistSource.contains(QStringLiteral("<string>public.content</string>")));
     QVERIFY(infoPlistSource.contains(QStringLiteral("<string>wshub</string>")));
     QVERIFY(infoPlistSource.contains(QStringLiteral("<string>application/vnd.iisacc.whatson.hub</string>")));
+}
+
+void WhatSonCppRegressionTests::iosXcodeProjectBootstrap_attachesAssetCatalogToResourcesBuildPhase()
+{
+    const QString resourcesCmakeSource = readUtf8SourceFile(
+        QStringLiteral("src/app/cmake/resources/CMakeLists.txt"));
+    const QString runtimeCmakeSource = readUtf8SourceFile(
+        QStringLiteral("cmake/root/runtime/CMakeLists.txt"));
+    const QString patchScriptSource = readUtf8SourceFile(
+        QStringLiteral("cmake/patch_whatson_ios_xcodeproj.py"));
+
+    QVERIFY(!resourcesCmakeSource.isEmpty());
+    QVERIFY(!runtimeCmakeSource.isEmpty());
+    QVERIFY(!patchScriptSource.isEmpty());
+
+    QVERIFY(resourcesCmakeSource.contains(QStringLiteral("XCODE_EXPLICIT_FILE_TYPE \"folder.assetcatalog\"")));
+    QVERIFY(resourcesCmakeSource.contains(QStringLiteral("target_sources(WhatSon PRIVATE \"${_whatson_ios_asset_catalog_dir}\")")));
+    QVERIFY(runtimeCmakeSource.contains(QStringLiteral("find_package(Python3 COMPONENTS Interpreter REQUIRED)")));
+    QVERIFY(runtimeCmakeSource.contains(QStringLiteral("patch_whatson_ios_xcodeproj.py")));
+    QVERIFY(runtimeCmakeSource.contains(QStringLiteral("\"${WHATSON_IOS_XCODEPROJ_DIR}/WhatSon.xcodeproj/project.pbxproj\"")));
+    QVERIFY(patchScriptSource.contains(QStringLiteral("WhatSonIcons.xcassets")));
+    QVERIFY(patchScriptSource.contains(QStringLiteral("PBXResourcesBuildPhase")));
+    QVERIFY(patchScriptSource.contains(QStringLiteral("name = WhatSon")));
 }
 
 void WhatSonCppRegressionTests::hubPackager_createsPackageRootsAndNormalizesExtensions()
@@ -3178,6 +3208,44 @@ void WhatSonCppRegressionTests::detailPanelRouting_separatesNoteAndResourceViews
     QVERIFY(binderSource.contains(QStringLiteral("setCurrentResourceListModel")));
 }
 
+void WhatSonCppRegressionTests::noteBackedHierarchyViewModels_exposeRuntimeBodySourceFallback()
+{
+    const QString bookmarksHeader = readUtf8SourceFile(
+        QStringLiteral("src/app/viewmodel/hierarchy/bookmarks/BookmarksHierarchyViewModel.hpp"));
+    const QString bookmarksSource = readUtf8SourceFile(
+        QStringLiteral("src/app/viewmodel/hierarchy/bookmarks/BookmarksHierarchyViewModel.cpp"));
+    const QString projectsHeader = readUtf8SourceFile(
+        QStringLiteral("src/app/viewmodel/hierarchy/projects/ProjectsHierarchyViewModel.hpp"));
+    const QString projectsSource = readUtf8SourceFile(
+        QStringLiteral("src/app/viewmodel/hierarchy/projects/ProjectsHierarchyViewModel.cpp"));
+    const QString progressHeader = readUtf8SourceFile(
+        QStringLiteral("src/app/viewmodel/hierarchy/progress/ProgressHierarchyViewModel.hpp"));
+    const QString progressSource = readUtf8SourceFile(
+        QStringLiteral("src/app/viewmodel/hierarchy/progress/ProgressHierarchyViewModel.cpp"));
+
+    QVERIFY(!bookmarksHeader.isEmpty());
+    QVERIFY(!bookmarksSource.isEmpty());
+    QVERIFY(!projectsHeader.isEmpty());
+    QVERIFY(!projectsSource.isEmpty());
+    QVERIFY(!progressHeader.isEmpty());
+    QVERIFY(!progressSource.isEmpty());
+
+    QVERIFY(bookmarksHeader.contains(QStringLiteral("Q_INVOKABLE QString noteBodySourceTextForNoteId(const QString& noteId) const;")));
+    QVERIFY(bookmarksSource.contains(QStringLiteral("QString BookmarksHierarchyViewModel::noteBodySourceTextForNoteId(const QString& noteId) const")));
+    QVERIFY(bookmarksSource.contains(QStringLiteral("if (!note.bodySourceText.isEmpty())")));
+    QVERIFY(bookmarksSource.contains(QStringLiteral("return note.bodyPlainText;")));
+
+    QVERIFY(projectsHeader.contains(QStringLiteral("Q_INVOKABLE QString noteBodySourceTextForNoteId(const QString& noteId) const;")));
+    QVERIFY(projectsSource.contains(QStringLiteral("QString ProjectsHierarchyViewModel::noteBodySourceTextForNoteId(const QString& noteId) const")));
+    QVERIFY(projectsSource.contains(QStringLiteral("if (!note.bodySourceText.isEmpty())")));
+    QVERIFY(projectsSource.contains(QStringLiteral("return note.bodyPlainText;")));
+
+    QVERIFY(progressHeader.contains(QStringLiteral("Q_INVOKABLE QString noteBodySourceTextForNoteId(const QString& noteId) const;")));
+    QVERIFY(progressSource.contains(QStringLiteral("QString ProgressHierarchyViewModel::noteBodySourceTextForNoteId(const QString& noteId) const")));
+    QVERIFY(progressSource.contains(QStringLiteral("if (!note.bodySourceText.isEmpty())")));
+    QVERIFY(progressSource.contains(QStringLiteral("return note.bodyPlainText;")));
+}
+
 void WhatSonCppRegressionTests::contentsDisplayView_invalidatesGutterGeometryImmediatelyAcrossRapidNoteSwitches()
 {
     const QString displayViewSource = readUtf8SourceFile(
@@ -3209,6 +3277,17 @@ void WhatSonCppRegressionTests::contentsDisplayView_keepsGutterNumbersCloseToThe
     QVERIFY(displayViewSource.contains(QStringLiteral("readonly property int gutterBodyGap")));
     QVERIFY(displayViewSource.contains(QStringLiteral("readonly property int lineNumberRightInset: contentsView.gutterBodyGap")));
     QVERIFY(!displayViewSource.contains(QStringLiteral("readonly property int lineNumberRightInset: contentsView.editorHorizontalInset")));
+}
+
+void WhatSonCppRegressionTests::contentsDisplayView_waitsForStructuredFlowActivationBeforeMountingDocumentFlow()
+{
+    const QString displayViewSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/content/editor/ContentsDisplayView.qml"));
+
+    QVERIFY(!displayViewSource.isEmpty());
+    QVERIFY(displayViewSource.contains(QStringLiteral("readonly property string structuredDocumentFlowActivatedNoteId: structuredFlowCoordinator.activatedNoteId")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("readonly property bool showStructuredDocumentFlow: contentsView.structuredDocumentFlowEnabled")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("contentsView.structuredDocumentFlowActivatedNoteId === contentsView.selectedNoteId")));
 }
 
 void WhatSonCppRegressionTests::contentsDisplayView_reservesHalfHeightBottomInsetAndCorrectsTypingViewport()
@@ -3274,6 +3353,29 @@ void WhatSonCppRegressionTests::structuredFlow_keepsEmptySelectedNotesEditableWi
     QVERIFY(structuredFlowSource.contains(QStringLiteral("\"focusSourceOffset\": 0")));
     QVERIFY(structuredFlowSource.contains(QStringLiteral("\"logicalLineCountHint\": 1")));
     QVERIFY(structuredFlowSource.contains(QStringLiteral("return normalizedSourceText.length === 0 ? [documentFlow.emptyInteractiveTextGroup()] : []")));
+}
+
+void WhatSonCppRegressionTests::structuredFlowCoordinator_delaysActivationUntilSelectedSessionIsBound()
+{
+    ContentsDisplayStructuredFlowCoordinator coordinator;
+
+    coordinator.setParsedStructuredFlowRequested(true);
+    coordinator.setSelectedNoteId(QStringLiteral("note-a"));
+    QCOMPARE(coordinator.activatedNoteId(), QString());
+
+    coordinator.setEditorSessionBoundToSelectedNote(true);
+    QCOMPARE(coordinator.activatedNoteId(), QStringLiteral("note-a"));
+
+    coordinator.setEditorSessionBoundToSelectedNote(false);
+    coordinator.setSelectedNoteId(QStringLiteral("note-b"));
+    QCOMPARE(coordinator.activatedNoteId(), QString());
+
+    coordinator.setRenderPending(true);
+    coordinator.setSelectedNoteId(QStringLiteral("note-c"));
+    QCOMPARE(coordinator.activatedNoteId(), QString());
+
+    coordinator.setEditorSessionBoundToSelectedNote(true);
+    QCOMPARE(coordinator.activatedNoteId(), QStringLiteral("note-c"));
 }
 
 void WhatSonCppRegressionTests::structuredEditorFormattingController_commitsInlineStyleMutationsThroughFlowRawRanges()
