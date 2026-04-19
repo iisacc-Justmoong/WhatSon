@@ -26,5 +26,4 @@
 
 ## Current Notes
 - Automated C++ regression coverage now lives in `test/cpp/whatson_cpp_regression_tests.cpp`, locking sandboxed
-  `QSettings` persistence, normalization, clear behavior, and explicit-startup-selection behavior for
-  `SelectedHubStore`.
+  `QSettings` persistence, normalization, clear behavior, and fallback resolution for `SelectedHubStore`.

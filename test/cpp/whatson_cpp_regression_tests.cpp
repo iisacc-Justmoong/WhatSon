@@ -20,7 +20,6 @@
 #include "runtime/scheduler/WhatSonAsyncScheduler.hpp"
 #include "runtime/scheduler/WhatSonCronExpression.hpp"
 #include "runtime/scheduler/WhatSonUnixTimeAnalyzer.hpp"
-#include "runtime/startup/WhatSonStartupHubResolver.hpp"
 #include "sensor/MonthlyUnusedNote.hpp"
 #include "sensor/UnusedResourcesSensor.hpp"
 #include "sensor/WeeklyUnusedNote.hpp"
@@ -440,7 +439,6 @@ class WhatSonCppRegressionTests final : public QObject
 
 private slots:
     void selectedHubStore_persistsNormalizedSelectionsWithinSandboxedSettings();
-    void startupHubResolver_requiresExplicitPersistedHubSelection();
     void sidebarSelectionStore_normalizesIndicesAndSuppressesDuplicateSignals();
     void hierarchyViewModelProvider_normalizesMappingsAndAvoidsDuplicateSignals();
     void sidebarHierarchyViewModel_preservesFallbackAcrossStoreAttachDetach();
@@ -641,63 +639,19 @@ void WhatSonCppRegressionTests::selectedHubStore_persistsNormalizedSelectionsWit
 
     QCOMPARE(store.selectedHubPath(), WhatSon::HubPath::normalizeAbsolutePath(selectedHubPath));
     QCOMPARE(store.selectedHubAccessBookmark(), bookmark);
-    QCOMPARE(store.startupHubPath(), WhatSon::HubPath::normalizeAbsolutePath(selectedHubPath));
 
     store.clearSelectedHubPath();
     QCOMPARE(store.selectedHubPath(), QString());
     QCOMPARE(store.selectedHubAccessBookmark(), QByteArray());
-    QCOMPARE(store.startupHubPath(), QString());
 
     store.setSelectedHubPath(QDir(hubRootDir.path()).filePath(QStringLiteral("NotAHub.txt")));
     QCOMPARE(store.selectedHubPath(), QString());
-    QCOMPARE(store.selectedHubAccessBookmark(), QByteArray());
-    QCOMPARE(store.startupHubPath(), QString());
-}
 
-void WhatSonCppRegressionTests::startupHubResolver_requiresExplicitPersistedHubSelection()
-{
-    QTemporaryDir settingsDir;
-    QTemporaryDir hubRootDir;
-    QVERIFY(settingsDir.isValid());
-    QVERIFY(hubRootDir.isValid());
-
-    const ScopedQSettingsSandbox settingsSandbox(settingsDir.path());
-    SelectedHubStore store;
-
-    const WhatSon::Runtime::Startup::StartupHubSelection emptySelection =
-        WhatSon::Runtime::Startup::resolveStartupHubSelection(store);
-    QVERIFY(!emptySelection.mounted);
-    QVERIFY(emptySelection.hubPath.isEmpty());
-    QVERIFY(emptySelection.accessBookmark.isEmpty());
-
-    QSettings settings;
-    settings.setValue(
-        QStringLiteral("workspace/selectedHubPath"),
-        QDir(hubRootDir.path()).filePath(QStringLiteral("MissingWorkspace.wshub")));
-    settings.setValue(
-        QStringLiteral("workspace/selectedHubBookmark"),
-        QByteArrayLiteral("stale-bookmark"));
-    settings.sync();
-
-    const WhatSon::Runtime::Startup::StartupHubSelection invalidSelection =
-        WhatSon::Runtime::Startup::resolveStartupHubSelection(store);
-    QVERIFY(!invalidSelection.mounted);
-    QVERIFY(invalidSelection.hubPath.isEmpty());
-    QVERIFY(invalidSelection.accessBookmark.isEmpty());
-    QCOMPARE(store.selectedHubPath(), QString());
-    QCOMPARE(store.selectedHubAccessBookmark(), QByteArray());
-
-    const QString selectedHubPath = QDir(hubRootDir.path()).filePath(QStringLiteral("Workspace.wshub"));
-    QVERIFY(QDir().mkpath(selectedHubPath));
-
-    const QByteArray bookmark("bookmark-token");
-    store.setSelectedHubSelection(selectedHubPath, bookmark);
-
-    const WhatSon::Runtime::Startup::StartupHubSelection validSelection =
-        WhatSon::Runtime::Startup::resolveStartupHubSelection(store);
-    QVERIFY(validSelection.mounted);
-    QCOMPARE(validSelection.hubPath, WhatSon::HubPath::normalizeAbsolutePath(selectedHubPath));
-    QCOMPARE(validSelection.accessBookmark, bookmark);
+    const QString fallbackHubPath = QDir(hubRootDir.path()).filePath(QStringLiteral("BlueprintFallback.wshub"));
+    QCOMPARE(
+        store.startupHubPath(fallbackHubPath),
+        WhatSon::HubPath::normalizeAbsolutePath(fallbackHubPath));
+    QCOMPARE(store.startupHubPath(QStringLiteral("BlueprintFallback.txt")), QString());
 }
 
 void WhatSonCppRegressionTests::sidebarSelectionStore_normalizesIndicesAndSuppressesDuplicateSignals()

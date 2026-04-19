@@ -5,7 +5,7 @@
 
 ## Contract
 - Read current hub path and access bookmark.
-- Resolve the startup hub path from the persisted explicit hub selection only.
+- Resolve startup hub path with blueprint fallback.
 - Clear or update the persisted selection.
 
 ## Notes

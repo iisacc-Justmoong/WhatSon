@@ -401,8 +401,9 @@ int main(int argc, char* argv[])
         });
 
     bool initialHubLoaded = false;
+    const QString blueprintFallbackHubPath = WhatSon::Runtime::Bootstrap::resolveBlueprintHubPath();
     const WhatSon::Runtime::Startup::StartupHubSelection startupHubSelection =
-        WhatSon::Runtime::Startup::resolveStartupHubSelection(selectedHubStore);
+        WhatSon::Runtime::Startup::resolveStartupHubSelection(selectedHubStore, blueprintFallbackHubPath);
 
     if (startupHubSelection.mounted)
     {

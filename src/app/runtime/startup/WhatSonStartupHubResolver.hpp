@@ -19,5 +19,7 @@ namespace WhatSon::Runtime::Startup
         const QByteArray& hubAccessBookmark,
         QString* errorMessage = nullptr);
 
-    StartupHubSelection resolveStartupHubSelection(ISelectedHubStore& selectedHubStore);
+    StartupHubSelection resolveStartupHubSelection(
+        ISelectedHubStore& selectedHubStore,
+        const QString& blueprintFallbackHubPath);
 }

@@ -35,8 +35,3 @@
 - Read the real implementation and adjacent headers before replacing this scaffold.
 - Document concrete signals, slots, invokables, persistence side effects, and LVRS/QML bindings where applicable.
 - Cross-link this file with peer modules in the same directory once the detailed pass begins.
-- Current runtime policy: startup selection no longer falls back to `blueprint/*.wshub`.
-  If the persisted hub path is missing or invalid, the store clears that stale selection and leaves startup hub
-  resolution empty so onboarding can take over.
-- Local filesystem selections now also require a real existing `.wshub` directory, not just a path string with the
-  right suffix.
