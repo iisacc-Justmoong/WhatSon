@@ -21,17 +21,18 @@ WhatSon is an LVRS-based Qt Quick application.
 
 ## Adaptive Layout
 
-- `src/app/qml/Main.qml` now mounts the root shell through LVRS `ApplicationWindow` page-stack APIs and owns the
-  ordinary onboarding/workspace session on desktop and mobile alike. Desktop/Android keep explicit routed
-  onboarding/workspace entries in `pageRoutes`, while iOS pins `initialRoutePath/pageInitialPath` to `/` and swaps in
-  a dedicated inline onboarding sequence inside the workspace page whenever onboarding is visible.
+- `src/app/qml/Main.qml` now mounts the root shell through LVRS `ApplicationWindow` page-stack APIs and keeps the
+  ordinary workspace shell alive across platforms. Desktop reopens onboarding through a separate `Onboarding.qml`
+  window, Android keeps explicit routed onboarding/workspace entries in `pageRoutes`, and iOS pins
+  `initialRoutePath/pageInitialPath` to `/` and swaps in a dedicated inline onboarding sequence inside the workspace
+  page whenever onboarding is visible.
 - The embedded mobile onboarding bootstrap state machine now lives in
   `src/app/viewmodel/onboarding/OnboardingRouteBootstrapController.*` instead of being open-coded across `Main.qml`.
   `Main.qml` only applies requested LVRS route changes where routing is still used and reuses the same controller
   state for the iOS inline onboarding startup/reopen sequence.
-- Desktop/Android onboarding success still defer the `/onboarding -> /` route flip with `Qt.callLater(...)` so native
-  picker teardown can finish before the workspace shell replaces the onboarding surface. iOS completes the same
-  controller transition in place against the already-mounted workspace page instead of flipping the LVRS page stack.
+- Android onboarding success still defers the `/onboarding -> /` route flip with `Qt.callLater(...)` so native picker
+  teardown can finish before the workspace shell replaces the onboarding surface. iOS completes the same controller
+  transition in place against the already-mounted workspace page instead of flipping the LVRS page stack.
 - Android onboarding now routes `content://` SAF hub selections and destination directories through
   `src/app/platform/Android/WhatSonAndroidStorageBackend.*`. The backend keeps the OS-provided document URI as the
   source of truth, materializes the selected `.wshub` package into a deterministic app-local mount directory under app
@@ -559,7 +560,9 @@ build/cargo/release/whatson onboard
 
 `whatson onboard` forwards an internal `--onboarding-only` app flag and loads `Onboarding.qml` directly.
 The onboarding surface now uses native Qt Quick dialogs to either create a new `.wshub` package at a user-selected
-path through `WhatSonHubCreator` or load an existing package immediately into the workspace shell. The shared
+path through `WhatSonHubCreator`, while `WhatSonHubPackager` owns the package-root materialization and Apple package
+presentation hint that keeps `.wshub` directories file-like, or load an existing package immediately into the
+workspace shell. The shared
 onboarding surface now also includes a `Hub name` field, so both desktop save dialogs and mobile folder-based
 creation flows derive their package name from the same user-editable value instead of hardcoding `Untitled.wshub`.
 Existing hub selection
@@ -573,7 +576,8 @@ switches hub creation to a directory-picker flow and synthesizes the final `.wsh
 name inside the chosen folder, because iOS native file dialogs only implement the open path and native mobile pickers
 diverge from desktop save-dialog semantics. `OnboardingHubController` now keeps the selected folder URL as the active
 security-scoped authority for that flow and calls the shared `WhatSonHubCreator` callback directly against the resolved
-child package path, so mobile creation produces the same full scaffold as desktop creation. Existing iOS hub selection
+child package path, so mobile creation produces the same full scaffold and `.wshub` package presentation pass as
+desktop creation. Existing iOS hub selection
 now goes through a
 native `UIDocumentBrowserViewController` bridge that advertises the exported `.wshub` package document type together
 with package/file supertypes. The same bridge adds an app-owned `Open` browser action so WhatSon keeps an explicit
@@ -586,14 +590,15 @@ same package as a browsable directory. Android continues to use a native file pi
 can target a `.wshub` package document directly, then resolves external-storage SAF document URLs back to shared
 filesystem paths whenever the picker points at a local `.wshub`. macOS now also uses a direct `.wshub` file-picker
 path for existing-hub selection, avoiding the old folder-only picker path that could not choose packaged hubs.
-Regular startup onboarding now stays inside `Main.qml` on desktop and mobile alike instead of forking desktop into a
-separate modal onboarding window. Desktop and Android register `/onboarding` beside the workspace route and let the
-same `LV.ApplicationWindow` transition from onboarding into the workspace shell. iOS still keeps the LVRS page stack
-fixed on `/`, but now does so inside that same root window by swapping the workspace page loader to
-`IosInlineOnboardingSequence.qml` until a hub is available. This keeps the startup session unified while still
-avoiding the first-frame `/onboarding` navigation that had been recreating the Metal swapchain during iOS onboarding
-bootstrap.
-The dedicated `Onboarding.qml` window wrapper remains available only for the explicit `whatson onboard` entrypoint.
+Regular startup onboarding now forks by platform again. Desktop reopens the separate modal `Onboarding.qml` window when
+no persisted hub can be mounted, so packaged `.wshub` selection and creation stay isolated from the workspace shell.
+Android still registers `/onboarding` beside the workspace route and lets the same `LV.ApplicationWindow` transition
+from onboarding into the workspace shell. iOS still keeps the LVRS page stack fixed on `/`, but now does so inside
+that same root window by swapping the workspace page loader to `IosInlineOnboardingSequence.qml` until a hub is
+available. This keeps the mobile startup session unified while still avoiding the first-frame `/onboarding` navigation
+that had been recreating the Metal swapchain during iOS onboarding bootstrap.
+The dedicated `Onboarding.qml` window wrapper therefore remains available both for the explicit `whatson onboard`
+entrypoint and for ordinary desktop startup recovery.
 That embedded mobile onboarding surface now drops the desktop-only rounded, antialiased outer frame and renders as a
 plain full-window panel on mobile/iOS, which avoids allocating a fullscreen multisample onboarding chrome target during
 the first startup frame.

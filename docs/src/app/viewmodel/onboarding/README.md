@@ -27,7 +27,7 @@
 - Known hotspots and refactor priorities
 
 ## Current Notes
-- Automated C++ regression coverage now lives in `test/cpp/whatson_cpp_regression_tests.cpp`, locking embedded
-  onboarding route commits, reopen/dismiss routing, workspace transition callbacks for
-  `OnboardingRouteBootstrapController`, the unified main-window startup onboarding session in `main.cpp`, and the
-  platform-specific picker paths used by `OnboardingContent.qml`.
+- Automated C++ regression coverage now lives in `test/cpp/whatson_cpp_regression_tests.cpp`, locking Android/iOS
+  embedded onboarding route commits, desktop standalone onboarding-window startup wiring in `Main.qml`/`main.cpp`,
+  workspace transition callbacks for `OnboardingRouteBootstrapController`, and the platform-specific picker paths used
+  by `OnboardingContent.qml`.

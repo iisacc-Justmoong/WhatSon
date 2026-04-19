@@ -7,7 +7,7 @@
 ## Scope
 - Mirrored source directory: `src/app/platform/Apple`
 - Child directories: 0
-- Child files: 2
+- Child files: 7
 
 ## Child Directories
 - No child directories.
@@ -15,6 +15,11 @@
 ## Child Files
 - `AppleSecurityScopedResourceAccess.hpp`
 - `AppleSecurityScopedResourceAccess.mm`
+- `WhatSonIosHubPickerBridge.cpp`
+- `WhatSonIosHubPickerBridge.hpp`
+- `WhatSonIosHubPickerBridge.mm`
+- `WhatSonApplePackageAppearance.hpp`
+- `WhatSonApplePackageAppearance.mm`
 
 ## Intended Detailed Sections
 - Module responsibilities and architectural layer
@@ -23,3 +28,7 @@
 - Runtime ownership and lifecycle rules
 - Testing strategy and coverage map
 - Known hotspots and refactor priorities
+
+## Notes
+- `WhatSonApplePackageAppearance` owns the Apple-native `NSURLIsPackageKey` presentation hint used when a newly created
+  `.wshub` directory should appear as a file-like package in Finder and other Apple document browsers.

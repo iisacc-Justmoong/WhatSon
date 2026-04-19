@@ -18,7 +18,11 @@ Item {
     readonly property string defaultCreateHubName: "Untitled"
     readonly property string defaultCreateHubFileName: root.defaultCreateHubName + ".wshub"
     readonly property int desktopActionWidth: Math.max(0, Math.round(LV.Theme.scaleMetric(180)))
+    readonly property int desktopActionSpacing: Math.max(0, Math.round(LV.Theme.scaleMetric(18)))
+    readonly property int desktopBrandingSpacing: Math.max(0, Math.round(LV.Theme.scaleMetric(12)))
+    readonly property int desktopContentSpacing: Math.max(0, Math.round(LV.Theme.scaleMetric(20)))
     readonly property int desktopContentWidth: Math.max(0, Math.round(LV.Theme.scaleMetric(209)))
+    readonly property int desktopHubEditorSpacing: Math.max(0, Math.round(LV.Theme.scaleMetric(6)))
     readonly property int dragRegionHeight: Math.max(0, Math.round(LV.Theme.scaleMetric(72)))
     readonly property bool hasHubSelectionCandidates: root.hubSessionController && root.hubSessionController.hubSelectionCandidateNames.length > 0
     readonly property string onboardingSessionState: {
@@ -169,7 +173,7 @@ Item {
         if (root.hubSessionController) {
             root.clearOnboardingOperationState();
             if (root.useMobileCreateDirectoryFlow)
-                createHubDirectoryDialog.open();
+                root.openCreateHubDirectoryDialog();
             else
                 root.openCreateHubDialog();
             return;
@@ -205,16 +209,46 @@ Item {
         return root.selectHubFileDialogInstance;
     }
 
+    function applyDialogCurrentFolder(dialog) {
+        if (!dialog)
+            return;
+
+        const folderUrl = root.currentFolderUrl;
+        if (folderUrl === undefined || folderUrl === null)
+            return;
+
+        const folderText = String(folderUrl).trim();
+        if (folderText.length === 0)
+            return;
+
+        dialog.currentFolder = folderUrl;
+    }
+
     function openCreateHubDialog() {
         const dialog = root.ensureCreateHubDialog();
-        if (dialog && dialog.open)
+        if (dialog && dialog.open) {
+            root.applyDialogCurrentFolder(dialog);
+            dialog.currentFile = root.suggestedCreateHubFileUrl;
             dialog.open();
+        }
+    }
+
+    function openCreateHubDirectoryDialog() {
+        root.applyDialogCurrentFolder(createHubDirectoryDialog);
+        createHubDirectoryDialog.open();
     }
 
     function openSelectHubFileDialog() {
         const dialog = root.ensureSelectHubFileDialog();
-        if (dialog && dialog.open)
+        if (dialog && dialog.open) {
+            root.applyDialogCurrentFolder(dialog);
             dialog.open();
+        }
+    }
+
+    function openSelectHubFolderDialog() {
+        root.applyDialogCurrentFolder(selectHubDialog);
+        selectHubDialog.open();
     }
 
     function openExistingHubSelector() {
@@ -228,7 +262,7 @@ Item {
             return;
         }
 
-        selectHubDialog.open();
+        root.openSelectHubFolderDialog();
     }
 
     WhatSonIosHubPickerBridge {
@@ -256,8 +290,6 @@ Item {
         id: createHubDialogComponent
 
         FileDialog {
-            currentFile: root.suggestedCreateHubFileUrl
-            currentFolder: root.currentFolderUrl
             defaultSuffix: "wshub"
             fileMode: FileDialog.SaveFile
             nameFilters: ["WhatSon Hub (*.wshub)"]
@@ -276,7 +308,6 @@ Item {
     FolderDialog {
         id: createHubDirectoryDialog
 
-        currentFolder: root.currentFolderUrl
         title: "Choose Folder for New WhatSon Hub"
 
         onAccepted: {
@@ -291,7 +322,6 @@ Item {
     FolderDialog {
         id: selectHubDialog
 
-        currentFolder: root.currentFolderUrl
         title: root.isMobilePlatform
                ? "Choose Folder Containing WhatSon Hub"
                : "Select WhatSon Hub"
@@ -312,7 +342,6 @@ Item {
         id: selectHubFileDialogComponent
 
         FileDialog {
-            currentFolder: root.currentFolderUrl
             fileMode: FileDialog.OpenFile
             nameFilters: ["WhatSon Hub (*.wshub)"]
             title: "Select WhatSon Hub"
@@ -467,46 +496,54 @@ Item {
                         id: appPanelColumn
 
                         anchors.centerIn: parent
-                        spacing: root.mobileContentSpacing
+                        spacing: root.desktopContentSpacing
                         width: parent.width
 
-                        Image {
+                        Column {
                             anchors.horizontalCenter: parent.horizontalCenter
-                            fillMode: Image.PreserveAspectFit
-                            height: root.appIconSize
-                            mipmap: true
-                            smooth: true
-                            source: root.appIconSource
-                            sourceSize.height: root.appIconSize
-                            sourceSize.width: root.appIconSize
-                            width: root.appIconSize
-                        }
-                        LV.Label {
-                            anchors.horizontalCenter: parent.horizontalCenter
-                            color: LV.Theme.textPrimary
-                            font.pixelSize: root.titleTextSize
-                            font.styleName: "Bold"
-                            font.weight: Font.Bold
-                            horizontalAlignment: Text.AlignHCenter
-                            style: title
-                            text: "WhatSon"
                             width: parent.width
-                        }
-                        LV.Label {
-                            anchors.horizontalCenter: parent.horizontalCenter
-                            color: LV.Theme.descriptionColor
-                            font.pixelSize: root.versionTextSize
-                            font.styleName: "SemiBold"
-                            font.weight: Font.DemiBold
-                            horizontalAlignment: Text.AlignHCenter
-                            lineHeight: root.versionLineHeight
-                            lineHeightMode: Text.FixedHeight
-                            style: description
-                            text: root.resolvedVersionText
-                            width: parent.width
+
+                            spacing: root.desktopBrandingSpacing
+
+                            Image {
+                                anchors.horizontalCenter: parent.horizontalCenter
+                                fillMode: Image.PreserveAspectFit
+                                height: root.appIconSize
+                                mipmap: true
+                                smooth: true
+                                source: root.appIconSource
+                                sourceSize.height: root.appIconSize
+                                sourceSize.width: root.appIconSize
+                                width: root.appIconSize
+                            }
+                            LV.Label {
+                                anchors.horizontalCenter: parent.horizontalCenter
+                                color: LV.Theme.textPrimary
+                                font.pixelSize: root.titleTextSize
+                                font.styleName: "Bold"
+                                font.weight: Font.Bold
+                                horizontalAlignment: Text.AlignHCenter
+                                style: title
+                                text: "WhatSon"
+                                width: parent.width
+                            }
+                            LV.Label {
+                                anchors.horizontalCenter: parent.horizontalCenter
+                                color: LV.Theme.descriptionColor
+                                font.pixelSize: root.versionTextSize
+                                font.styleName: "SemiBold"
+                                font.weight: Font.DemiBold
+                                horizontalAlignment: Text.AlignHCenter
+                                lineHeight: root.versionLineHeight
+                                lineHeightMode: Text.FixedHeight
+                                style: description
+                                text: root.resolvedVersionText
+                                width: parent.width
+                            }
                         }
                         HubNameEditor {
                             anchors.horizontalCenter: parent.horizontalCenter
+                            contentSpacing: root.desktopHubEditorSpacing
                             enabled: !root.onboardingInteractionBusy
                             width: parent.width
 
@@ -515,7 +552,7 @@ Item {
 
                         Column {
                             anchors.horizontalCenter: parent.horizontalCenter
-                            spacing: root.mobileActionSpacing
+                            spacing: root.desktopActionSpacing
                             width: root.desktopActionWidth
 
                             ActionLink {
@@ -733,10 +770,11 @@ Item {
         id: hubNameEditor
 
         property bool enabled: true
+        property int contentSpacing: LV.Theme.gap8
 
         signal submitRequested
 
-        spacing: LV.Theme.gap8
+        spacing: hubNameEditor.contentSpacing
         width: parent ? parent.width : implicitWidth
 
         LV.Label {

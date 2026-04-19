@@ -25,6 +25,7 @@ LV.ApplicationWindow {
     readonly property int bodySplitterThickness: Math.max(1, Math.round(LV.Theme.strokeThin))
     readonly property color canvasColor: LV.Theme.panelBackground01
     readonly property color desktopPanelSurfaceColor: "transparent"
+    property bool desktopOnboardingWindowVisible: false
     readonly property int desktopMinimumBodyWidth: (hideSidebar ? 0 : minSidebarWidth)
                                                + (hideListView ? 0 : minListViewWidth)
                                                + minContentWidth
@@ -92,6 +93,8 @@ LV.ApplicationWindow {
     readonly property string onboardingRoutePath: "/onboarding"
     property var onboardingHubController: null
     property var onboardingRouteBootstrapController: null
+    readonly property int onboardingMinHeight: Math.max(0, Math.round(LV.Theme.scaleMetric(420)))
+    readonly property int onboardingMinWidth: Math.max(0, Math.round(LV.Theme.scaleMetric(620)))
     property int preferredListViewWidth: baseListViewWidth
     property int preferredRightPanelWidth: baseRightPanelWidth
     property int preferredSidebarWidth: baseSidebarWidth
@@ -101,7 +104,9 @@ LV.ApplicationWindow {
     readonly property bool onboardingRouteCommitPending: onboardingRouteBootstrapController ? onboardingRouteBootstrapController.routeCommitPending : false
     readonly property bool useIosInlineOnboardingSequence: applicationWindow.platform === "ios"
     readonly property bool useRoutedEmbeddedOnboardingRoute: !applicationWindow.useIosInlineOnboardingSequence
-    readonly property bool useEmbeddedOnboardingPresentation: true
+                                                         && (adaptiveMobileLayout || isMobilePlatform)
+    readonly property bool useEmbeddedOnboardingPresentation: applicationWindow.useIosInlineOnboardingSequence
+                                                          || applicationWindow.useRoutedEmbeddedOnboardingRoute
     readonly property string startupRoutePath: applicationWindow.useIosInlineOnboardingSequence
         ? workspaceRoutePath
         : (onboardingRouteBootstrapController ? onboardingRouteBootstrapController.startupRoutePath : workspaceRoutePath)
@@ -236,10 +241,15 @@ LV.ApplicationWindow {
         return " ";
     }
     function showOnboardingWindow() {
-        if (applicationWindow.onboardingRouteBootstrapController) {
+        if (applicationWindow.useEmbeddedOnboardingPresentation && applicationWindow.onboardingRouteBootstrapController) {
             applicationWindow.onboardingRouteBootstrapController.reopenEmbeddedOnboarding();
             return;
         }
+
+        applicationWindow.desktopOnboardingWindowVisible = true;
+        onboardingSubWindow.show();
+        onboardingSubWindow.raise();
+        onboardingSubWindow.requestActivate();
     }
     function applyRequestedRoute(targetPath, routeSource) {
         if (!applicationWindow.activePageRouter)
@@ -298,6 +308,8 @@ LV.ApplicationWindow {
             Qt.callLater(function () {
                 applicationWindow.applyRequestedRoute(applicationWindow.startupRoutePath, "completed");
             });
+        } else if (applicationWindow.desktopOnboardingWindowVisible) {
+            onboardingSubWindow.show();
         }
     }
     Component.onDestruction: {
@@ -709,6 +721,29 @@ LV.ApplicationWindow {
             onMonthCalendarOverlayDismissRequested: applicationWindow.monthCalendarOverlayVisible = false
             onWeekCalendarOverlayDismissRequested: applicationWindow.weekCalendarOverlayVisible = false
             onYearCalendarOverlayDismissRequested: applicationWindow.yearCalendarOverlayVisible = false
+        }
+    }
+
+    WindowView.Onboarding {
+        id: onboardingSubWindow
+
+        defaultHeight: applicationWindow.onboardingMinHeight
+        defaultWidth: applicationWindow.onboardingMinWidth
+        hostWindow: applicationWindow
+        hubSessionController: applicationWindow.onboardingHubController
+        minHeight: applicationWindow.onboardingMinHeight
+        minWidth: applicationWindow.onboardingMinWidth
+
+        onCreateFileRequested: {
+            applicationWindow.desktopOnboardingWindowVisible = false;
+            onboardingSubWindow.close();
+        }
+        onDismissed: {
+            applicationWindow.desktopOnboardingWindowVisible = false;
+        }
+        onSelectFileRequested: {
+            applicationWindow.desktopOnboardingWindowVisible = false;
+            onboardingSubWindow.close();
         }
     }
 }

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "WhatSonHubPackager.hpp"
+
 #include <QString>
 #include <QStringList>
 
@@ -51,4 +53,5 @@ private:
 
     QString m_workspaceRootPath;
     QString m_hubsRootPath;
+    WhatSonHubPackager m_packager;
 };

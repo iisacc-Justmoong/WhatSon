@@ -18,9 +18,10 @@
   instead of raw `542/867/420/620/762/470px` literals.
 - The outer window still delegates all visual chrome to `OnboardingContent.qml`; this file only owns window sizing,
   recentering, modality, and route-to-content wiring.
-- Regular desktop/mobile startup onboarding no longer depends on this wrapper. `Onboarding.qml` now primarily remains
-  as the explicit `whatson --onboarding-only` shell, while ordinary app startup uses the unified in-window onboarding
-  session owned by `Main.qml`.
+- Ordinary desktop startup now depends on this wrapper again: when no persisted hub can be mounted, `Main.qml` keeps the
+  workspace shell alive in the background and raises this separate modal onboarding window on top.
+- `Onboarding.qml` also remains the explicit `whatson --onboarding-only` shell, so desktop startup recovery and the
+  dedicated onboarding-only entrypoint share the same window owner.
 
 ### Object IDs
 - `root`

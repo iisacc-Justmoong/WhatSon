@@ -2,6 +2,7 @@
 #include "display/paper/ContentsPaperSelection.hpp"
 #include "display/paper/ContentsTextFormatRenderer.hpp"
 #include "display/paper/print/ContentsPagePrintLayoutRenderer.hpp"
+#include "file/hub/WhatSonHubPackager.hpp"
 #include "file/hub/WhatSonHubPathUtils.hpp"
 #include "file/hierarchy/folders/WhatSonFoldersHierarchyParser.hpp"
 #include "file/hierarchy/folders/WhatSonFoldersHierarchyStore.hpp"
@@ -466,8 +467,8 @@ private slots:
     void embeddedOnboardingRoutePages_avoidStackViewAnchorConflicts();
     void mainQml_embeddedStartup_dropsWatchdogRecoveryScaffold();
     void mainQml_iosInlineOnboarding_pinsPresentationToWorkspaceRoute();
-    void mainQml_desktopOnboarding_reusesEmbeddedMainWindowSession();
-    void mainCpp_startupMissingHub_usesUnifiedMainWindowOnboardingSession();
+    void mainQml_desktopOnboarding_usesStandaloneWindowSession();
+    void mainCpp_startupMissingHub_desktopUsesStandaloneOnboardingWindow();
     void onboardingController_selectionOnly_defersRuntimeLoadToHost();
     void mainCpp_onboardingSelectionCentralizesRuntimeLoading();
     void iosInlineOnboardingSequence_reusesSharedOnboardingSurface();
@@ -476,9 +477,13 @@ private slots:
     void onboardingContent_mobileLayout_avoidsFullscreenAntialiasedWindowFrame();
     void onboardingContent_saveDialog_doesNotPreselectMissingHubFile();
     void onboardingContent_desktopMac_usesDirectHubPackagePicker();
+    void onboardingContent_desktopLayout_compactsHubNameSpacing();
     void onboardingContent_createHubNameField_drivesGeneratedPackageName();
     void onboardingContent_iosUsesNativeHubPickerBridgeForProviderAccess();
     void iosBundleConfig_declaresWshubPackageDocumentType();
+    void hubPackager_createsPackageRootsAndNormalizesExtensions();
+    void hubCreator_separatesPackageMaterializationFromScaffoldWrites();
+    void applePackageAppearance_marksHubDirectoriesAsPackages();
     void mainCpp_onboardingCreateFlow_usesSharedHubCreator();
     void onboardingHubController_prepareHubSelectionPreservesOriginalSelectionUrl();
     void onboardingHubController_createHubInDirectory_createsDirectlyWithinSelectedFolderScope();
@@ -1358,6 +1363,7 @@ void WhatSonCppRegressionTests::mainQml_iosInlineOnboarding_pinsPresentationToWo
     QVERIFY(!mainQmlSource.isEmpty());
     QVERIFY(mainQmlSource.contains(QStringLiteral("readonly property bool useIosInlineOnboardingSequence: applicationWindow.platform === \"ios\"")));
     QVERIFY(mainQmlSource.contains(QStringLiteral("readonly property bool useRoutedEmbeddedOnboardingRoute: !applicationWindow.useIosInlineOnboardingSequence")));
+    QVERIFY(mainQmlSource.contains(QStringLiteral("&& (adaptiveMobileLayout || isMobilePlatform)")));
     QVERIFY(mainQmlSource.contains(QStringLiteral("readonly property string startupRoutePath: applicationWindow.useIosInlineOnboardingSequence")));
     QVERIFY(mainQmlSource.contains(QStringLiteral("pageRoutes: applicationWindow.useIosInlineOnboardingSequence")));
     QVERIFY(mainQmlSource.contains(QStringLiteral("? iosInlineOnboardingSequenceComponent")));
@@ -1365,31 +1371,42 @@ void WhatSonCppRegressionTests::mainQml_iosInlineOnboarding_pinsPresentationToWo
     QVERIFY(mainQmlSource.contains(QStringLiteral("applicationWindow.workspaceRoutePath);")));
 }
 
-void WhatSonCppRegressionTests::mainQml_desktopOnboarding_reusesEmbeddedMainWindowSession()
+void WhatSonCppRegressionTests::mainQml_desktopOnboarding_usesStandaloneWindowSession()
 {
     const QString mainQmlSource = readUtf8SourceFile(QStringLiteral("src/app/qml/Main.qml"));
 
     QVERIFY(!mainQmlSource.isEmpty());
-    QVERIFY(mainQmlSource.contains(QStringLiteral("readonly property bool useEmbeddedOnboardingPresentation: true")));
+    QVERIFY(mainQmlSource.contains(QStringLiteral("property bool desktopOnboardingWindowVisible: false")));
+    QVERIFY(mainQmlSource.contains(QStringLiteral("readonly property int onboardingMinHeight:")));
+    QVERIFY(mainQmlSource.contains(QStringLiteral("readonly property int onboardingMinWidth:")));
+    QVERIFY(mainQmlSource.contains(QStringLiteral(
+        "readonly property bool useEmbeddedOnboardingPresentation: applicationWindow.useIosInlineOnboardingSequence")));
     QVERIFY(mainQmlSource.contains(QStringLiteral(
         "applicationWindow.onboardingRouteBootstrapController.reopenEmbeddedOnboarding();")));
-    QVERIFY(!mainQmlSource.contains(QStringLiteral("property bool desktopOnboardingWindowVisible: false")));
-    QVERIFY(!mainQmlSource.contains(QStringLiteral("id: onboardingSubWindow")));
-    QVERIFY(!mainQmlSource.contains(QStringLiteral("WindowView.Onboarding {\n        id: onboardingSubWindow")));
+    QVERIFY(mainQmlSource.contains(QStringLiteral("Component {\n        id: mobileMainLayoutComponent")));
+    QVERIFY(mainQmlSource.contains(QStringLiteral("applicationWindow.desktopOnboardingWindowVisible = true;")));
+    QVERIFY(mainQmlSource.contains(QStringLiteral("id: onboardingSubWindow")));
+    QVERIFY(mainQmlSource.contains(QStringLiteral("WindowView.Onboarding {")));
+    QVERIFY(!mainQmlSource.contains(QStringLiteral("}\n}\n    Component {\n        id: mobileMainLayoutComponent")));
 }
 
-void WhatSonCppRegressionTests::mainCpp_startupMissingHub_usesUnifiedMainWindowOnboardingSession()
+void WhatSonCppRegressionTests::mainCpp_startupMissingHub_desktopUsesStandaloneOnboardingWindow()
 {
     const QString mainCppSource = readUtf8SourceFile(QStringLiteral("src/app/main.cpp"));
 
     QVERIFY(!mainCppSource.isEmpty());
     QVERIFY(mainCppSource.contains(QStringLiteral("if (launchOptions.onboardingOnly)")));
+    QVERIFY(mainCppSource.contains(QStringLiteral("const bool enableEmbeddedOnboardingPresentation = false;")));
+    QVERIFY(mainCppSource.contains(QStringLiteral("const bool showDesktopStartupOnboarding = !startupHubSelection.mounted")));
+    QVERIFY(mainCppSource.contains(QStringLiteral("{QStringLiteral(\"desktopOnboardingWindowVisible\"), false},")));
+    QVERIFY(mainCppSource.contains(QStringLiteral(
+        "{QStringLiteral(\"desktopOnboardingWindowVisible\"), showDesktopStartupOnboarding},")));
     QVERIFY(mainCppSource.contains(QStringLiteral("onboardingRouteBootstrapController.configure(")));
-    QVERIFY(mainCppSource.contains(QStringLiteral("        true,")));
-    QVERIFY(mainCppSource.contains(QStringLiteral("onboardingRouteBootstrapController.configure(true, true);")));
+    QVERIFY(mainCppSource.contains(QStringLiteral("        enableEmbeddedOnboardingPresentation,")));
+    QVERIFY(mainCppSource.contains(QStringLiteral(
+        "onboardingRouteBootstrapController.configure(enableEmbeddedOnboardingPresentation, true);")));
     QVERIFY(!mainCppSource.contains(QStringLiteral("launchStandaloneStartupOnboardingOnIos")));
-    QVERIFY(!mainCppSource.contains(QStringLiteral("desktopOnboardingWindowVisible")));
-    QVERIFY(!mainCppSource.contains(QStringLiteral("onboardingRouteBootstrapController.configure(false, true);")));
+    QVERIFY(!mainCppSource.contains(QStringLiteral("onboardingRouteBootstrapController.configure(true, true);")));
 }
 
 void WhatSonCppRegressionTests::onboardingController_selectionOnly_defersRuntimeLoadToHost()
@@ -1497,10 +1514,15 @@ void WhatSonCppRegressionTests::onboardingContent_saveDialog_doesNotPreselectMis
         "readonly property bool useDirectExistingHubFileFlow: Qt.platform.os === \"android\" || Qt.platform.os === \"osx\"")));
     QVERIFY(onboardingContentSource.contains(QStringLiteral("nameFilters: [\"WhatSon Hub (*.wshub)\"]")));
     QVERIFY(onboardingContentSource.contains(QStringLiteral("title: \"Select WhatSon Hub\"")));
-    QVERIFY(onboardingContentSource.contains(QStringLiteral("currentFile: root.suggestedCreateHubFileUrl")));
-    QVERIFY(onboardingContentSource.contains(QStringLiteral("currentFolder: root.currentFolderUrl")));
+    QVERIFY(onboardingContentSource.contains(QStringLiteral("function applyDialogCurrentFolder(dialog) {")));
+    QVERIFY(onboardingContentSource.contains(QStringLiteral("dialog.currentFolder = folderUrl;")));
+    QVERIFY(onboardingContentSource.contains(QStringLiteral("dialog.currentFile = root.suggestedCreateHubFileUrl;")));
+    QVERIFY(onboardingContentSource.contains(QStringLiteral("root.openCreateHubDirectoryDialog();")));
+    QVERIFY(onboardingContentSource.contains(QStringLiteral("root.openSelectHubFolderDialog();")));
     QVERIFY(!onboardingContentSource.contains(QStringLiteral("id: createHubDialog\n")));
     QVERIFY(!onboardingContentSource.contains(QStringLiteral("id: selectHubFileDialog\n")));
+    QVERIFY(!onboardingContentSource.contains(QStringLiteral("currentFile: root.suggestedCreateHubFileUrl")));
+    QVERIFY(!onboardingContentSource.contains(QStringLiteral("currentFolder: root.currentFolderUrl")));
     QVERIFY(!onboardingContentSource.contains(QStringLiteral("selectedFile: root.suggestedCreateHubFileUrl")));
     QVERIFY(!onboardingContentSource.contains(QStringLiteral(
         "nameFilters: Qt.platform.os === \"ios\" ? [\"All files (*)\"] : [\"WhatSon Hub (*.wshub)\"]")));
@@ -1518,6 +1540,22 @@ void WhatSonCppRegressionTests::onboardingContent_desktopMac_usesDirectHubPackag
     QVERIFY(onboardingContentSource.contains(QStringLiteral("fileMode: FileDialog.OpenFile")));
     QVERIFY(onboardingContentSource.contains(QStringLiteral(
         "root.hubSessionController.loadHubFromUrl(selectedFile);")));
+}
+
+void WhatSonCppRegressionTests::onboardingContent_desktopLayout_compactsHubNameSpacing()
+{
+    const QString onboardingContentSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/window/OnboardingContent.qml"));
+
+    QVERIFY(!onboardingContentSource.isEmpty());
+    QVERIFY(onboardingContentSource.contains(QStringLiteral("readonly property int desktopActionSpacing:")));
+    QVERIFY(onboardingContentSource.contains(QStringLiteral("readonly property int desktopBrandingSpacing:")));
+    QVERIFY(onboardingContentSource.contains(QStringLiteral("readonly property int desktopContentSpacing:")));
+    QVERIFY(onboardingContentSource.contains(QStringLiteral("readonly property int desktopHubEditorSpacing:")));
+    QVERIFY(onboardingContentSource.contains(QStringLiteral("spacing: root.desktopContentSpacing")));
+    QVERIFY(onboardingContentSource.contains(QStringLiteral("spacing: root.desktopBrandingSpacing")));
+    QVERIFY(onboardingContentSource.contains(QStringLiteral("contentSpacing: root.desktopHubEditorSpacing")));
+    QVERIFY(onboardingContentSource.contains(QStringLiteral("spacing: root.desktopActionSpacing")));
 }
 
 void WhatSonCppRegressionTests::onboardingContent_createHubNameField_drivesGeneratedPackageName()
@@ -1574,6 +1612,67 @@ void WhatSonCppRegressionTests::iosBundleConfig_declaresWshubPackageDocumentType
     QVERIFY(infoPlistSource.contains(QStringLiteral("<string>public.content</string>")));
     QVERIFY(infoPlistSource.contains(QStringLiteral("<string>wshub</string>")));
     QVERIFY(infoPlistSource.contains(QStringLiteral("<string>application/vnd.iisacc.whatson.hub</string>")));
+}
+
+void WhatSonCppRegressionTests::hubPackager_createsPackageRootsAndNormalizesExtensions()
+{
+    QTemporaryDir temporaryDirectory;
+    QVERIFY(temporaryDirectory.isValid());
+
+    WhatSonHubPackager packager;
+    QString createdPackagePath;
+    QString errorMessage;
+    const QString requestedPackagePath = QDir(temporaryDirectory.path()).filePath(QStringLiteral("Client Workspace"));
+
+    QVERIFY2(
+        packager.createPackageRoot(requestedPackagePath, &createdPackagePath, &errorMessage),
+        qPrintable(errorMessage));
+    QVERIFY(createdPackagePath.endsWith(QStringLiteral(".wshub")));
+    QCOMPARE(QFileInfo(createdPackagePath).fileName(), QStringLiteral("Client Workspace.wshub"));
+    QVERIFY(QFileInfo(createdPackagePath).isDir());
+
+    errorMessage.clear();
+    QVERIFY(!packager.createPackageRoot(requestedPackagePath, nullptr, &errorMessage));
+    QVERIFY(errorMessage.contains(QStringLiteral("Hub already exists")));
+}
+
+void WhatSonCppRegressionTests::hubCreator_separatesPackageMaterializationFromScaffoldWrites()
+{
+    const QString creatorHeaderSource = readUtf8SourceFile(
+        QStringLiteral("src/app/file/hub/WhatSonHubCreator.hpp"));
+    const QString creatorSource = readUtf8SourceFile(
+        QStringLiteral("src/app/file/hub/WhatSonHubCreator.cpp"));
+    const QString packagerHeaderSource = readUtf8SourceFile(
+        QStringLiteral("src/app/file/hub/WhatSonHubPackager.hpp"));
+    const QString packagerSource = readUtf8SourceFile(
+        QStringLiteral("src/app/file/hub/WhatSonHubPackager.cpp"));
+
+    QVERIFY(!creatorHeaderSource.isEmpty());
+    QVERIFY(!creatorSource.isEmpty());
+    QVERIFY(!packagerHeaderSource.isEmpty());
+    QVERIFY(!packagerSource.isEmpty());
+    QVERIFY(packagerHeaderSource.contains(QStringLiteral("class WhatSonHubPackager")));
+    QVERIFY(packagerSource.contains(QStringLiteral("bool WhatSonHubPackager::createPackageRoot(")));
+    QVERIFY(packagerSource.contains(QStringLiteral("QString WhatSonHubPackager::normalizePackagePath(")));
+    QVERIFY(creatorHeaderSource.contains(QStringLiteral("WhatSonHubPackager m_packager;")));
+    QVERIFY(creatorSource.contains(QStringLiteral("if (!m_packager.createPackageRoot(hubPackagePath, &absoluteHubPackagePath, errorMessage))")));
+    QVERIFY(creatorSource.contains(QStringLiteral("QDir(absoluteHubPackagePath).removeRecursively();")));
+    QVERIFY(!creatorSource.contains(QStringLiteral("if (!ensureDirectory(absoluteHubPackagePath, errorMessage))")));
+}
+
+void WhatSonCppRegressionTests::applePackageAppearance_marksHubDirectoriesAsPackages()
+{
+    const QString appearanceHeaderSource = readUtf8SourceFile(
+        QStringLiteral("src/app/platform/Apple/WhatSonApplePackageAppearance.hpp"));
+    const QString appearanceSource = readUtf8SourceFile(
+        QStringLiteral("src/app/platform/Apple/WhatSonApplePackageAppearance.mm"));
+
+    QVERIFY(!appearanceHeaderSource.isEmpty());
+    QVERIFY(!appearanceSource.isEmpty());
+    QVERIFY(appearanceHeaderSource.contains(QStringLiteral("namespace WhatSon::Apple::PackageAppearance")));
+    QVERIFY(appearanceSource.contains(QStringLiteral("NSURLIsPackageKey")));
+    QVERIFY(appearanceSource.contains(QStringLiteral(
+        "[packageUrl setResourceValue:@YES forKey:NSURLIsPackageKey error:&resourceError]")));
 }
 
 void WhatSonCppRegressionTests::mainCpp_onboardingCreateFlow_usesSharedHubCreator()

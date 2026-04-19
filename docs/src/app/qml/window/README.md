@@ -29,8 +29,8 @@
   `gap`, `radius`, `stroke`, and `scaleMetric(...)` helpers instead of local pixel literals.
 - `IosInlineOnboardingSequence.qml` now keeps the iOS inline onboarding presentation inside the root LVRS workspace
   page, avoiding the `/onboarding` route flip while reusing the shared onboarding content surface.
-- Ordinary desktop/mobile startup onboarding now lives inside `Main.qml`; `Onboarding.qml` remains as the explicit
-  standalone shell for `--onboarding-only`.
+- Ordinary desktop startup now uses `Onboarding.qml` again as a separate modal shell above `Main.qml`, while Android
+  keeps the embedded route-based onboarding and iOS keeps the inline workspace-sequence presentation.
 
 ## Intended Detailed Sections
 - Module responsibilities and architectural layer

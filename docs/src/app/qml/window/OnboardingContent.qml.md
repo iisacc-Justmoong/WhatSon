@@ -9,6 +9,9 @@ This QML surface owns the shared LVRS onboarding experience for desktop and mobi
 - Desktop hub creation still uses a lazily created `FileDialog` in `SaveFile` mode so the final `.wshub` target path
   is not pre-instantiated before the user confirms creation, but the suggested save target now tracks the current hub
   name field.
+- The Qt dialog start folder is now injected only when each dialog is opened instead of staying permanently bound to
+  `currentFolderUrl`, so desktop/mobile pickers can traverse away from the initial folder without being snapped back to
+  the onboarding default directory during navigation.
 - Android and macOS existing-hub selection now use a lazily created `FileDialog` with the `*.wshub` filter,
   preserving direct package-pick flows on platforms where the picker can return the package itself.
 - Other desktop platforms continue to keep the folder-based existing-hub picker path, preserving directory-style
@@ -30,5 +33,8 @@ This QML surface owns the shared LVRS onboarding experience for desktop and mobi
   browser is open and browser failures surface through the same status text channel as controller failures.
 
 ## Layout Note
+- Desktop now keeps the branding stack, hub-name editor, and action links on separate condensed spacing tracks so the
+  added creation field does not push the title block upward and the action block downward after the inline naming flow
+  was introduced.
 - The mobile/embedded onboarding surface still reuses the same LVRS geometry and avoids the fullscreen rounded shell
   that previously triggered iOS first-frame Metal churn.

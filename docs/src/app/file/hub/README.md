@@ -7,7 +7,7 @@
 ## Scope
 - Mirrored source directory: `src/app/file/hub`
 - Child directories: 0
-- Child files: 15
+- Child files: 17
 
 ## Child Directories
 - No child directories.
@@ -15,6 +15,8 @@
 ## Child Files
 - `WhatSonHubCreator.cpp`
 - `WhatSonHubCreator.hpp`
+- `WhatSonHubPackager.cpp`
+- `WhatSonHubPackager.hpp`
 - `WhatSonHubParser.cpp`
 - `WhatSonHubParser.hpp`
 - `WhatSonHubPathUtils.hpp`
@@ -30,5 +32,6 @@
 - `WhatSonHubStore.hpp`
 
 ## Notes
-- `WhatSonHubCreator` is responsible for initial hub package materialization, including `.whatson/hub.json`.
+- `WhatSonHubPackager` owns `.wshub` package-root creation and Apple package-presentation hints.
+- `WhatSonHubCreator` now owns only scaffold writes inside an already materialized package root, including `.whatson/hub.json`.
 - Runtime hub writes no longer depend on a hub-level write-lease side channel.

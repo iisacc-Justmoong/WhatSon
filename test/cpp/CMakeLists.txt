@@ -33,6 +33,7 @@ set(WHATSON_CPP_REGRESSION_TEST_SOURCES
         "${CMAKE_SOURCE_DIR}/src/app/file/import/WhatSonClipboardResourceImportFileNamePolicy.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/file/IO/WhatSonSystemIoGateway.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/file/diff/WhatSonLocalNoteVersionStore.cpp"
+        "${CMAKE_SOURCE_DIR}/src/app/file/hub/WhatSonHubPackager.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/file/note/ContentsNoteManagementCoordinator.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonLocalNoteFileStore.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteBodyPersistence.cpp"
@@ -100,6 +101,12 @@ set(WHATSON_CPP_REGRESSION_TEST_SOURCES
         "${CMAKE_SOURCE_DIR}/src/app/viewmodel/detailPanel/session/WhatSonFoldersHierarchySessionService.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/viewmodel/detailPanel/ResourceDetailPanelViewModel.cpp"
 )
+
+if (APPLE)
+    list(APPEND WHATSON_CPP_REGRESSION_TEST_SOURCES
+            "${CMAKE_SOURCE_DIR}/src/app/platform/Apple/WhatSonApplePackageAppearance.mm"
+    )
+endif ()
 
 add_executable(whatson_cpp_regression_tests
         ${WHATSON_CPP_REGRESSION_TEST_SOURCES}

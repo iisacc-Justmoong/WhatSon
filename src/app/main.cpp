@@ -572,6 +572,12 @@ int main(int argc, char* argv[])
             trialWindowInitialProperties);
     };
 #endif
+#if defined(Q_OS_ANDROID) || defined(Q_OS_IOS)
+    const bool enableEmbeddedOnboardingPresentation = true;
+#else
+    const bool enableEmbeddedOnboardingPresentation = false;
+#endif
+
     if (launchOptions.onboardingOnly)
     {
         const QVariantMap onboardingWindowInitialProperties{
@@ -633,12 +639,13 @@ int main(int argc, char* argv[])
                         QStringLiteral("onboardingHubController"),
                         QVariant::fromValue(static_cast<QObject*>(&onboardingHubController))
                     },
+                    {QStringLiteral("desktopOnboardingWindowVisible"), false},
                     {
                         QStringLiteral("onboardingRouteBootstrapController"),
                         QVariant::fromValue(static_cast<QObject*>(&onboardingRouteBootstrapController))
                     }
                 };
-                onboardingRouteBootstrapController.configure(true, true);
+                onboardingRouteBootstrapController.configure(enableEmbeddedOnboardingPresentation, true);
                 workspaceMainWindow = loadMainWindow(mainWindowInitialProperties);
                 if (workspaceMainWindow == nullptr)
                 {
@@ -669,8 +676,10 @@ int main(int argc, char* argv[])
         return app.exec();
     }
 
+    const bool showDesktopStartupOnboarding = !startupHubSelection.mounted
+                                              && !enableEmbeddedOnboardingPresentation;
     onboardingRouteBootstrapController.configure(
-        true,
+        enableEmbeddedOnboardingPresentation,
         startupHubSelection.mounted);
 
     const QVariantMap mainWindowInitialProperties{
@@ -678,6 +687,7 @@ int main(int argc, char* argv[])
             QStringLiteral("onboardingHubController"),
             QVariant::fromValue(static_cast<QObject*>(&onboardingHubController))
         },
+        {QStringLiteral("desktopOnboardingWindowVisible"), showDesktopStartupOnboarding},
         {
             QStringLiteral("onboardingRouteBootstrapController"),
             QVariant::fromValue(static_cast<QObject*>(&onboardingRouteBootstrapController))

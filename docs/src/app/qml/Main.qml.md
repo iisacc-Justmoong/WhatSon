@@ -11,9 +11,10 @@
 - Register runtime viewmodels into the LVRS `ViewModels` registry.
 - Claim writable ownership for selected interaction surfaces.
 - Mount `MainWindowInteractionController` and feed it the objects it needs for shortcuts and render-quality policy.
-- Switch between workspace and onboarding inside the same `LV.ApplicationWindow` on every platform.
-- Route desktop/Android onboarding through the LVRS page stack, while iOS keeps its inline onboarding presentation
-  inside the workspace page itself to avoid an extra page-stack flip.
+- Keep the desktop workspace shell mounted in `Main.qml` while ordinary desktop onboarding is presented through a
+  separate `Onboarding.qml` subwindow.
+- Route Android onboarding through the LVRS page stack, while iOS keeps its inline onboarding presentation inside the
+  workspace page itself to avoid an extra page-stack flip.
 - Disable iOS safe-area/windowing delegation and force LVRS full-window mobile coverage so the app
   content occupies the entire screen while still pinning the render tier to `LowTier`.
 - Expose the global `StandardKey.New` note-creation shortcut only on desktop platforms.
@@ -59,14 +60,19 @@ The file keeps both desktop and mobile layout branches alive.
 - Mobile uses routed workspace pages and a scaffold tuned for compact navigation.
 - Root-owned sidebar/right-panel minimum and preferred widths plus hierarchy toolbar inset/spacing now route through
   `LV.Theme.gap...` and `LV.Theme.scaleMetric(...)` instead of shell-local pixel literals.
-- Ordinary startup onboarding no longer opens as a separate desktop window. `Main.qml` now owns the regular desktop,
-  Android, and iOS onboarding session end-to-end.
-- Desktop/Android embedded startup still relies on the LVRS route stack directly: `Component.onCompleted` seeds the
-  startup route, `routeSyncRequested(...)` applies controller-directed transitions, and failure handling stays inside
+- Ordinary desktop startup can reopen a dedicated `WindowView.Onboarding` subwindow, while Android still uses the
+  embedded `/onboarding` route inside `Main.qml`.
+- Android embedded startup still relies on the LVRS route stack directly: `Component.onCompleted` seeds the startup
+  route, `routeSyncRequested(...)` applies controller-directed transitions, and failure handling stays inside
   `OnboardingRouteBootstrapController` without any extra page-host watchdog or fallback overlay in `Main.qml`.
 - iOS keeps the LVRS page stack pinned to `/` and switches the workspace page loader between
   `IosInlineOnboardingSequence.qml` and the real workspace shell. The same `OnboardingRouteBootstrapController` still
   owns transition intent, and iOS completes that intent without a `/onboarding -> /` page-stack flip.
+- Desktop `showOnboardingWindow()` now raises the dedicated onboarding subwindow unless the current adaptive/mobile
+  presentation is explicitly using an embedded onboarding route.
+- `mobileMainLayoutComponent`, `desktopMainLayoutComponent`, and the desktop `WindowView.Onboarding` subwindow must all
+  remain sibling nodes inside the same root `LV.ApplicationWindow`; moving the mobile component outside that root
+  breaks QML component parsing before the desktop layout branch can load.
 - The embedded onboarding/workspace route pages intentionally keep their root `Item` free of `anchors.fill`.
   LVRS route hosting is backed by a `StackView`, and stack-managed page geometry must not compete with page-root
   anchors during transitions on iOS.
@@ -106,7 +112,9 @@ The file keeps both desktop and mobile layout branches alive.
   - embedded startup onboarding must not reintroduce a startup watchdog timer, recovery helper, or fallback overlay in
     `Main.qml`
 - iOS startup without a mounted hub must keep the LVRS route pinned to `/` while still presenting the inline
-    onboarding sequence inside the same root window
+  onboarding sequence inside the same root window
+- desktop startup without a mounted hub must reopen the independent onboarding window instead of switching the main
+  page stack to `/onboarding`
 
 ## Practical Reading
 Read this file with:
