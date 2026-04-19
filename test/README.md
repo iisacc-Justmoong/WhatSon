@@ -107,6 +107,9 @@ ctest --test-dir build --output-on-failure -L cpp_regression
 - Startup hub persistence now also pins the selection-URL/bookmark contract plus the iOS direct `.wshub` picker source
   wiring, so provider-backed mobile hub selection cannot regress back to a folder-only flow or a path-only startup
   restore.
+- Startup presentation now also pins the "resolver success is not enough" rule, so a persisted hub that resolves to a
+  path but still fails runtime load reopens onboarding on both desktop and mobile instead of leaving the app on a
+  blank workspace shell.
 - Hub creation now also pins the `WhatSonHubPackager` split, so package-root materialization and Apple package
   presentation remain separate from the scaffold files written by `WhatSonHubCreator`.
 - The content-surface mode helper now also pins note-vs-resource editor routing, so a direct resource list model

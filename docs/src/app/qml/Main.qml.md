@@ -111,9 +111,9 @@ The file keeps both desktop and mobile layout branches alive.
     month/date instead of being reset back to today's month
   - embedded startup onboarding must not reintroduce a startup watchdog timer, recovery helper, or fallback overlay in
     `Main.qml`
-- iOS startup without a mounted hub must keep the LVRS route pinned to `/` while still presenting the inline
+- iOS startup without a successfully loaded hub must keep the LVRS route pinned to `/` while still presenting the inline
   onboarding sequence inside the same root window
-- desktop startup without a mounted hub must reopen the independent onboarding window instead of switching the main
+- desktop startup without a successfully loaded hub must reopen the independent onboarding window instead of switching the main
   page stack to `/onboarding`
 
 ## Practical Reading

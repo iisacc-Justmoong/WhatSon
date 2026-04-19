@@ -472,6 +472,7 @@ private slots:
     void mainCpp_startupMissingHub_desktopUsesStandaloneOnboardingWindow();
     void onboardingController_selectionOnly_defersRuntimeLoadToHost();
     void mainCpp_onboardingSelectionCentralizesRuntimeLoading();
+    void mainCpp_startupHubLoadFailure_forcesOnboardingPresentation();
     void iosInlineOnboardingSequence_reusesSharedOnboardingSurface();
     void onboardingWindow_closesModalShellAfterEmbeddedHubLoad();
     void startupHubResolver_persistsSelectionUrlsForBookmarkBasedIosRestore();
@@ -1401,7 +1402,8 @@ void WhatSonCppRegressionTests::mainCpp_startupMissingHub_desktopUsesStandaloneO
     QVERIFY(!mainCppSource.isEmpty());
     QVERIFY(mainCppSource.contains(QStringLiteral("if (launchOptions.onboardingOnly)")));
     QVERIFY(mainCppSource.contains(QStringLiteral("const bool enableEmbeddedOnboardingPresentation = false;")));
-    QVERIFY(mainCppSource.contains(QStringLiteral("const bool showDesktopStartupOnboarding = !startupHubSelection.mounted")));
+    QVERIFY(mainCppSource.contains(QStringLiteral("const bool startupHubConnected = startupHubSelection.mounted && initialHubLoaded;")));
+    QVERIFY(mainCppSource.contains(QStringLiteral("const bool showDesktopStartupOnboarding = !startupHubConnected")));
     QVERIFY(mainCppSource.contains(QStringLiteral("{QStringLiteral(\"desktopOnboardingWindowVisible\"), false},")));
     QVERIFY(mainCppSource.contains(QStringLiteral(
         "{QStringLiteral(\"desktopOnboardingWindowVisible\"), showDesktopStartupOnboarding},")));
@@ -1447,6 +1449,20 @@ void WhatSonCppRegressionTests::mainCpp_onboardingSelectionCentralizesRuntimeLoa
     QVERIFY(mainCppSource.contains(QStringLiteral("onboardingHubController.completeHubLoad(hubPath);")));
     QVERIFY(mainCppSource.contains(QStringLiteral("const auto applyMountedHubSelection =")));
     QVERIFY(!mainCppSource.contains(QStringLiteral("setLoadHubCallback(")));
+}
+
+void WhatSonCppRegressionTests::mainCpp_startupHubLoadFailure_forcesOnboardingPresentation()
+{
+    const QString mainCppSource = readUtf8SourceFile(QStringLiteral("src/app/main.cpp"));
+
+    QVERIFY(!mainCppSource.isEmpty());
+    QVERIFY(mainCppSource.contains(QStringLiteral("onboardingHubController.failHubLoad(startupLoadError);")));
+    QVERIFY(mainCppSource.contains(QStringLiteral("const bool startupHubConnected = startupHubSelection.mounted && initialHubLoaded;")));
+    QVERIFY(mainCppSource.contains(QStringLiteral("const bool showDesktopStartupOnboarding = !startupHubConnected")));
+    QVERIFY(mainCppSource.contains(QStringLiteral("onboardingRouteBootstrapController.configure(")));
+    QVERIFY(mainCppSource.contains(QStringLiteral("        startupHubConnected);")));
+    QVERIFY(!mainCppSource.contains(QStringLiteral("const bool showDesktopStartupOnboarding = !startupHubSelection.mounted")));
+    QVERIFY(!mainCppSource.contains(QStringLiteral("        startupHubSelection.mounted);")));
 }
 
 void WhatSonCppRegressionTests::startupHubResolver_persistsSelectionUrlsForBookmarkBasedIosRestore()

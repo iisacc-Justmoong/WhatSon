@@ -442,13 +442,19 @@ int main(int argc, char* argv[])
                 startupHubSelection.accessBookmark,
                 startupHubSelection.selectionUrl);
         }
-        if (!initialHubLoaded && !errorMessage.trimmed().isEmpty())
+        if (!initialHubLoaded)
         {
+            const QString startupLoadError = errorMessage.trimmed().isEmpty()
+                ? QStringLiteral("Failed to load the selected WhatSon Hub.")
+                : errorMessage.trimmed();
+            onboardingHubController.failHubLoad(startupLoadError);
             qWarning().noquote()
                 << QStringLiteral("Failed to load startup WhatSon Hub '%1': %2")
-                       .arg(startupHubSelection.hubPath, errorMessage.trimmed());
+                       .arg(startupHubSelection.hubPath, startupLoadError);
         }
     }
+
+    const bool startupHubConnected = startupHubSelection.mounted && initialHubLoaded;
 
     hierarchyViewModelProvider.setMappings(QVector<HierarchyViewModelProvider::Mapping>{
         { static_cast<int>(WhatSon::Sidebar::HierarchyDomain::Library), &libraryHierarchyViewModel },
@@ -676,11 +682,11 @@ int main(int argc, char* argv[])
         return app.exec();
     }
 
-    const bool showDesktopStartupOnboarding = !startupHubSelection.mounted
+    const bool showDesktopStartupOnboarding = !startupHubConnected
                                               && !enableEmbeddedOnboardingPresentation;
     onboardingRouteBootstrapController.configure(
         enableEmbeddedOnboardingPresentation,
-        startupHubSelection.mounted);
+        startupHubConnected);
 
     const QVariantMap mainWindowInitialProperties{
         {
