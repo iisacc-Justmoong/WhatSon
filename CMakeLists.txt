@@ -6,14 +6,47 @@ include(CTest)
 
 set(WHATSON_IOS_SIMULATOR_ARCH "arm64" CACHE STRING
         "Preferred iOS simulator architecture.")
+set(WHATSON_IOS_SDK "iphoneos" CACHE STRING
+        "Target Apple SDK for iOS builds and generated Xcode projects.")
+set_property(CACHE WHATSON_IOS_SDK PROPERTY STRINGS iphonesimulator iphoneos)
+set(WHATSON_IOS_ARCHITECTURES "" CACHE STRING
+        "Architectures used for iOS builds. Leave empty to derive from WHATSON_IOS_SDK.")
+set(WHATSON_IOS_DEVELOPMENT_TEAM "$ENV{WHATSON_IOS_DEVELOPMENT_TEAM}" CACHE STRING
+        "Apple Development team identifier used for iOS device signing.")
+set(WHATSON_IOS_CODE_SIGN_IDENTITY "$ENV{WHATSON_IOS_CODE_SIGN_IDENTITY}" CACHE STRING
+        "Optional explicit code-sign identity used for iOS device signing.")
+set(WHATSON_IOS_CODE_SIGN_STYLE "Automatic" CACHE STRING
+        "Code-sign style used for generated iOS Xcode projects.")
+set_property(CACHE WHATSON_IOS_CODE_SIGN_STYLE PROPERTY STRINGS "" Automatic Manual)
+set(WHATSON_IOS_QT_PERMISSION_PLUGIN_POLICY "auto" CACHE STRING
+        "How iOS builds import Qt permission plugins: auto, include, or exclude.")
+set_property(CACHE WHATSON_IOS_QT_PERMISSION_PLUGIN_POLICY PROPERTY STRINGS auto include exclude)
+
+set(_whatson_supported_ios_sdks iphonesimulator iphoneos)
+list(FIND _whatson_supported_ios_sdks "${WHATSON_IOS_SDK}" _whatson_ios_sdk_index)
+if (_whatson_ios_sdk_index EQUAL -1)
+    message(FATAL_ERROR
+            "Unsupported WHATSON_IOS_SDK value: ${WHATSON_IOS_SDK}. "
+            "Expected one of: ${_whatson_supported_ios_sdks}.")
+endif ()
+
+set(_whatson_effective_ios_architectures "${WHATSON_IOS_ARCHITECTURES}")
+if (_whatson_effective_ios_architectures STREQUAL "")
+    if (WHATSON_IOS_SDK STREQUAL "iphonesimulator")
+        set(_whatson_effective_ios_architectures "${WHATSON_IOS_SIMULATOR_ARCH}")
+    else ()
+        set(_whatson_effective_ios_architectures "arm64")
+    endif ()
+endif ()
 
 if (CMAKE_SYSTEM_NAME STREQUAL "iOS")
+    if (NOT DEFINED CMAKE_OSX_SYSROOT OR CMAKE_OSX_SYSROOT STREQUAL "")
+        set(CMAKE_OSX_SYSROOT "${WHATSON_IOS_SDK}" CACHE STRING "iOS SDK name" FORCE)
+    endif ()
+
     if (NOT DEFINED CMAKE_OSX_ARCHITECTURES OR CMAKE_OSX_ARCHITECTURES STREQUAL "")
-        if (CMAKE_OSX_SYSROOT MATCHES "iphonesimulator")
-            set(CMAKE_OSX_ARCHITECTURES "${WHATSON_IOS_SIMULATOR_ARCH}" CACHE STRING "iOS simulator architectures" FORCE)
-        elseif (CMAKE_HOST_SYSTEM_PROCESSOR STREQUAL "arm64")
-            set(CMAKE_OSX_ARCHITECTURES "arm64" CACHE STRING "iOS device architectures" FORCE)
-        endif ()
+        set(CMAKE_OSX_ARCHITECTURES "${_whatson_effective_ios_architectures}" CACHE STRING
+                "iOS architectures" FORCE)
     endif ()
 endif ()
 
@@ -185,6 +218,10 @@ message(STATUS "  WHATSON_IS_TRIAL_BUILD: ${WHATSON_IS_TRIAL_BUILD}")
 message(STATUS "  WHATSON_ENABLE_TRIAL_BUILD_MIRROR: ${WHATSON_ENABLE_TRIAL_BUILD_MIRROR}")
 message(STATUS "  WHATSON_TRIAL_BUILD_DIR: ${WHATSON_TRIAL_BUILD_DIR}")
 message(STATUS "  WHATSON_TRIAL_BUILD_OSX_ARCHITECTURES: ${WHATSON_TRIAL_BUILD_OSX_ARCHITECTURES}")
+message(STATUS "  WHATSON_IOS_SDK: ${WHATSON_IOS_SDK}")
+message(STATUS "  WHATSON_IOS_ARCHITECTURES: ${WHATSON_IOS_ARCHITECTURES}")
+message(STATUS "  WHATSON_IOS_DEVELOPMENT_TEAM: ${WHATSON_IOS_DEVELOPMENT_TEAM}")
+message(STATUS "  WHATSON_IOS_QT_PERMISSION_PLUGIN_POLICY: ${WHATSON_IOS_QT_PERMISSION_PLUGIN_POLICY}")
 message(STATUS "  CMAKE_PREFIX_PATH: ${CMAKE_PREFIX_PATH}")
 message(STATUS "  QT_ROOT_PATH: ${QT_ROOT_PATH}")
 message(STATUS "  LVRS_PREFIX: ${LVRS_PREFIX}")

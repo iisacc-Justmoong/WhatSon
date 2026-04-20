@@ -3,16 +3,34 @@
 This directory contains iOS platform-specific bundle configuration.
 
 - `Info.plist` must not declare the legacy `CFBundleIconFile` key. The app icon is provided by the Xcode asset
-  catalog generated from `resources/icons/app/ios/*` via `src/app/CMakeLists.txt`, and that `.xcassets` directory must
-  be attached to the bundle `Resources` phase so Xcode emits `Assets.car`.
-- `Info.plist` now also declares `CFBundleIconName=AppIcon`, so the compiled asset catalog stays bound to the primary
-  home-screen icon even when the generated Xcode project is rebuilt directly from the exported `.xcodeproj`.
+  catalog generated from `resources/icons/app/ios/*` via `src/app/CMakeLists.txt`, but iOS must also keep explicit
+  `CFBundleIcons` / `CFBundleIcons~ipad` fallback entries that point at bundle-root PNG files.
+- `src/app/cmake/resources/CMakeLists.txt` exports the existing fallback icon list, and `src/app/CMakeLists.txt`
+  copies `WHATSON_IOS_BUNDLE_ICON_FILES` into the iOS bundle root with a `POST_BUILD` step. Xcode does not reliably
+  attach loose PNG sources to the app `Resources` phase when they only carry `MACOSX_PACKAGE_LOCATION "."`, so the
+  copy step is the reliable fallback path.
+- If Xcode compiles `WhatSonIcons.xcassets`, the app still resolves the `AppIcon` asset catalog entry; if the
+  generated `.xcodeproj` drops that asset catalog from the `Resources` phase, the manual `CFBundleIconFiles` fallback
+  still keeps the installed home-screen icon visible on device.
 - `cmake/root/runtime/CMakeLists.txt` now runs `cmake/patch_whatson_ios_xcodeproj.py` immediately after
   `whatson_generate_ios_xcodeproj` configures the clean iOS export tree.
   CMake's Xcode generator currently emits the `WhatSonIcons.xcassets` file reference and `PBXBuildFile`, but it still
   omits that asset catalog from the `WhatSon` app target's `PBXResourcesBuildPhase`. The post-export patch inserts the
-  missing build-phase entry so Xcode actually compiles `Assets.car` and the installed iOS app no longer shows a blank
-  icon.
+  missing build-phase entry so Xcode actually compiles `Assets.car`; on simulator exports that same patch step also
+  strips Qt `permissions` plugin object/library link inputs when `WHATSON_IOS_QT_PERMISSION_PLUGIN_POLICY` is not
+  `include`, because the current Qt iOS kit can still contribute device-only arm64 permission objects to the
+  simulator link line. That patch path is intentionally idempotent so repeated export runs do not regress back to the
+  broken simulator link flags. The manual PNG fallback above remains the second line of defense when the asset-catalog
+  path does not survive a direct Xcode rebuild.
+- The same root runtime shard now owns the iOS export knobs through CMake cache variables instead of requiring manual
+  Xcode Build Settings edits:
+  `WHATSON_IOS_SDK`, `WHATSON_IOS_ARCHITECTURES`, `WHATSON_IOS_DEVELOPMENT_TEAM`,
+  `WHATSON_IOS_CODE_SIGN_IDENTITY`, `WHATSON_IOS_CODE_SIGN_STYLE`, and
+  `WHATSON_IOS_QT_PERMISSION_PLUGIN_POLICY`.
+  `whatson_export_xcodeproj` translates those into the early `CMAKE_OSX_*` toolchain settings and the final
+  `CMAKE_XCODE_ATTRIBUTE_*` signing metadata for the generated project. The default SDK is now `iphoneos`, because the
+  current static Qt iOS kit is reliable on device export first; simulator export remains opt-in through
+  `WHATSON_IOS_SDK=iphonesimulator`.
 - `Info.plist` keeps `UIRequiresFullScreen` enabled because the current iOS target only declares portrait /
   landscape-left / landscape-right orientations.
 - When no startup `.wshub` is available on iOS, app bootstrap still loads `Main.qml` first and keeps onboarding inside
@@ -25,6 +43,10 @@ This directory contains iOS platform-specific bundle configuration.
   so the app target must explicitly link the static QML plugin targets for `QtQuick`, `QtQuick.Window`,
   `QtQuick.Layouts`, `QtQuick.Controls`, and `QtQuick.Dialogs`. Otherwise the mobile onboarding route exits at runtime
   with `module "QtQuick" plugin "qtquick2plugin" not found`.
+- `src/app/cmake/runtime/CMakeLists.txt` also routes Qt permission plugin import through the CMake
+  `WHATSON_IOS_QT_PERMISSION_PLUGIN_POLICY` knob. The default `auto` mode excludes Qt `permissions` plugins for
+  `iphonesimulator` exports so Apple Silicon simulator links do not pull Qt's device-only arm64 permission objects,
+  while `iphoneos` exports still keep the permission plugins enabled for physical-device runs.
 - `src/app/platform/Apple/AppleSecurityScopedResourceAccess.mm` must start a security-scoped resource session for Files
   picker URLs before onboarding creates or loads a `.wshub`. The native iOS document picker returns document-provider
   URLs, but Qt does not start access automatically for app-level file I/O, so the app must retain that access itself

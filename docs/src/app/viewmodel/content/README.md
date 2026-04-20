@@ -79,6 +79,20 @@
 - `ContentsDisplayView.qml` no longer keeps a second structured-flow activation latch above the selected RAW snapshot.
 - Once a note is selected and the RAW body snapshot is available, the structured document host can mount immediately
   from that snapshot instead of waiting for a separate editor-session-bound confirmation path.
+- Note-backed hierarchy note-list models now also keep the selected row's RAW/source body snapshot in their
+  `currentBodyText` contract consistently across Library, Projects, Bookmarks, and Progress.
+  `ContentsEditorSelectionBridge` can therefore bootstrap the visible note body from the active note-list row before
+  it needs to fall back to the content-view-model runtime snapshot or filesystem reload path.
+- The traced note-open RAW path for editor hosts is now explicitly:
+  - `.wsnbody`
+  - `WhatSonLocalNoteFileStore::applyBodyDocumentText(...)`
+  - `WhatSon::NoteBodyPersistence::sourceTextFromBodyDocument(...)`
+  - note-list `currentBodyText` or content-view-model `noteBodySourceTextForNoteId(...)`
+  - `ContentsEditorSelectionBridge`
+  - `ContentsDisplayView.documentPresentationSourceText`
+  - `ContentsEditorPresentationProjection` / `ContentsStructuredBlockRenderer`
+- The storage read side now strips rendered-editor HTML block artifacts before that path begins, so HTML comment
+  placeholders and non-canonical block wrappers are treated as suspicious input instead of editor-authoritative RAW.
 - Note-backed hierarchy viewmodels now also expose `noteBodySourceTextForNoteId(...)` as a shared runtime fallback
   contract, so the selection bridge can recover RAW note body source even when a path-based `.wsnbody` reload is not
   immediately available.

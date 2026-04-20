@@ -4,6 +4,7 @@
 #include "WhatSonNoteBodySemanticTagSupport.hpp"
 #include "WhatSonNoteMarkdownStyleObject.hpp"
 #include "WhatSonLocalNoteFileStore.hpp"
+#include "file/WhatSonDebugTrace.hpp"
 #include <QDir>
 #include <QDate>
 #include <QFileInfo>
@@ -27,6 +28,8 @@ namespace
 
     QString removeInterTagFormattingWhitespace(QString text);
     QString normalizeStructuredBlocksToStandaloneLines(const QString& sourceText);
+    QString normalizeEditorSourceToInlineTaggedText(const QString& sourceText);
+    QString editorSourceTextFromCanonicalInlineTaggedText(const QString& normalizedSourceText);
 
     QString escapeXmlAttributeValue(QString value)
     {
@@ -239,6 +242,34 @@ namespace
         return resourceTagPattern.match(text).hasMatch();
     }
 
+    QString removeHtmlComments(QString text)
+    {
+        text.remove(QRegularExpression(QStringLiteral(R"(<!--[\s\S]*?-->)")));
+        return text;
+    }
+
+    bool containsSuspiciousEditorHtmlBlockProjection(const QString& text)
+    {
+        if (text.trimmed().isEmpty())
+        {
+            return false;
+        }
+
+        static const QRegularExpression suspiciousHtmlBlockPattern(
+            QStringLiteral(
+                R"((<!--whatson-resource-block:|<\s*(?:p|div|table|ul|ol|blockquote|pre|h1|h2|h3|h4|h5|h6|hr)\b))"),
+            QRegularExpression::CaseInsensitiveOption);
+        return suspiciousHtmlBlockPattern.match(text).hasMatch();
+    }
+
+    QString canonicalSourceTextFromBodyDocumentProjection(QString bodyDocumentText)
+    {
+        bodyDocumentText = removeHtmlComments(bodyDocumentText);
+        return WhatSon::NoteBodyPersistence::normalizeBodyPlainText(
+            editorSourceTextFromCanonicalInlineTaggedText(
+                normalizeEditorSourceToInlineTaggedText(bodyDocumentText)));
+    }
+
     QString fallbackSourceTextFromBodyDocumentPreservingResources(const QString& bodyDocumentText)
     {
         if (!textContainsResourceTag(bodyDocumentText))
@@ -256,7 +287,7 @@ namespace
         }
 
         QString bodyInnerText = bodyMatch.captured(1);
-        bodyInnerText.remove(QRegularExpression(QStringLiteral(R"(<!--[\s\S]*?-->)")));
+        bodyInnerText = removeHtmlComments(bodyInnerText);
         bodyInnerText = removeInterTagFormattingWhitespace(bodyInnerText);
 
         static const QRegularExpression textBlockBoundaryPattern(
@@ -1866,9 +1897,23 @@ namespace WhatSon::NoteBodyPersistence
 
     QString sourceTextFromBodyDocument(const QString& bodyDocumentText)
     {
-        const QString normalizedSourceText = WhatSon::NoteBodyPersistence::normalizeBodyPlainText(
-            editorSourceTextFromCanonicalInlineTaggedText(
-                normalizeEditorSourceToInlineTaggedText(bodyDocumentText)));
+        QString normalizedSourceText =
+            canonicalSourceTextFromBodyDocumentProjection(bodyDocumentText);
+        if (containsSuspiciousEditorHtmlBlockProjection(normalizedSourceText))
+        {
+            WhatSon::Debug::trace(
+                QStringLiteral("noteBodyPersistence"),
+                QStringLiteral("suspiciousEditorHtmlSourceProjection"),
+                QStringLiteral("projected=%1")
+                    .arg(WhatSon::Debug::summarizeText(normalizedSourceText)));
+
+            const QString repairedSourceText =
+                canonicalSourceTextFromBodyDocumentProjection(normalizedSourceText);
+            if (!repairedSourceText.isEmpty())
+            {
+                normalizedSourceText = repairedSourceText;
+            }
+        }
         if (textContainsResourceTag(bodyDocumentText) && !textContainsResourceTag(normalizedSourceText))
         {
             const QString fallbackSourceText =
@@ -1876,6 +1921,22 @@ namespace WhatSon::NoteBodyPersistence
             if (textContainsResourceTag(fallbackSourceText))
             {
                 return fallbackSourceText;
+            }
+        }
+        if (containsSuspiciousEditorHtmlBlockProjection(normalizedSourceText))
+        {
+            const QString plainTextFallback =
+                WhatSon::NoteBodyPersistence::normalizeBodyPlainText(
+                    plainTextFromBodyDocument(bodyDocumentText));
+            if (!plainTextFallback.isEmpty())
+            {
+                WhatSon::Debug::trace(
+                    QStringLiteral("noteBodyPersistence"),
+                    QStringLiteral("fallbackFromSuspiciousEditorHtmlSourceProjection"),
+                    QStringLiteral("projected=%1 fallback=%2")
+                        .arg(WhatSon::Debug::summarizeText(normalizedSourceText))
+                        .arg(WhatSon::Debug::summarizeText(plainTextFallback)));
+                return plainTextFallback;
             }
         }
         if (normalizedSourceText.isEmpty())

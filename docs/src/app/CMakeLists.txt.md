@@ -64,9 +64,19 @@
 - That closure includes the QML runtime foundation (`Qt6::qmlplugin`, `Qt6::modelsplugin`, `Qt6::workerscriptplugin`), the controls/dialog implementation chain (`Qt6::qtquicktemplates2plugin`, `Qt6::qtquickcontrols2implplugin`, `Qt6::qtquickcontrols2basicstyleimplplugin`, `Qt6::qtquickcontrols2iosstyleimplplugin`, `Qt6::qtquickdialogs2quickimplplugin`), and the feature-facing plugins already used by app QML.
 - `QtQuick.Pdf` is not self-contained on iOS in this static-plugin setup: `PdfMultiPageView.qml` also imports `QtQuick.Shapes`, so `Qt6::qmlshapesplugin` must stay in the same manual plugin link set or the QML engine aborts during startup.
 - This defensive list mirrors the transitive plugin closure hidden behind `QT_IS_PLUGIN_GENEX` inside Qt's imported plugin targets, which makes future `module \"...\" is not installed` regressions less likely when `PdfQuick`, dialogs, or control styles pull nested QML imports.
-- The host-side `whatson_generate_ios_xcodeproj` export path now also runs a dedicated post-export patch script for the generated `WhatSon.xcodeproj`.
+- The iOS resource shard now exports `WHATSON_IOS_POST_BUILD_BUNDLE_ICON_FILES`, and `src/app/CMakeLists.txt` copies
+  those PNGs into the bundle root with a `POST_BUILD` command while `platform/Apple/iOS/Info.plist` keeps
+  `CFBundleIcons` fallback metadata. A direct Xcode/device build therefore still has a valid home-screen icon even
+  when the generated asset catalog path fails.
+- The host-side `whatson_generate_ios_xcodeproj` export path still runs a dedicated post-export patch script for the generated `WhatSon.xcodeproj`.
   CMake already emits the iOS `WhatSonIcons.xcassets` file reference and `PBXBuildFile`, but it does not attach that asset catalog to the app target's `PBXResourcesBuildPhase`.
-  The patch script inserts that missing build-phase entry so Xcode compiles `Assets.car` and the installed iOS bundle resolves the `AppIcon` asset instead of showing a blank icon.
+  The patch script remains the preferred path for compiling `Assets.car`, while the bundle-root PNG fallback prevents blank icons when that build-phase entry is missing.
+  Simulator exports also use that patch step to strip Qt `permissions` plugin objects, archives, and request forcing
+  flags from the generated Xcode project when `WHATSON_IOS_QT_PERMISSION_PLUGIN_POLICY` excludes that plugin type.
+- iOS runtime CMake now also consumes `WHATSON_IOS_QT_PERMISSION_PLUGIN_POLICY`. The default `auto` mode excludes Qt
+  `permissions` plugins for `iphonesimulator` exports with `qt_import_plugins(WhatSon EXCLUDE_BY_TYPE permissions)`
+  and defines `WHATSON_DISABLE_QT_PERMISSION_REQUESTS=1`, keeping Apple Silicon simulator links stable when the
+  installed Qt iOS kit only ships device-side arm64 permission objects.
 ## Verification Notes
 - Build-system refactors that touch this file should run `cmake --build build --target whatson_build_regression -j`.
 - If the change can affect test wiring or compilation reachability, also run `cmake --build build --target whatson_regression -j`.

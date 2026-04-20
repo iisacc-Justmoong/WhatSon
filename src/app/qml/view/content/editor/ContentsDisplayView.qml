@@ -306,8 +306,7 @@ Item {
     function resolvedDocumentPresentationSourceText() {
         if (contentsView.editorSessionBoundToSelectedNote)
             return contentsView.editorText === undefined || contentsView.editorText === null ? "" : String(contentsView.editorText)
-        if (!contentsView.selectedNoteBodyLoading
-                && contentsView.selectedNoteBodyNoteId === contentsView.selectedNoteId) {
+        if (contentsView.selectedNoteBodyNoteId === contentsView.selectedNoteId) {
             return contentsView.selectedNoteBodyText === undefined || contentsView.selectedNoteBodyText === null
                     ? ""
                     : String(contentsView.selectedNoteBodyText)

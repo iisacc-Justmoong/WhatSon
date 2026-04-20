@@ -26,3 +26,7 @@ Hosts application permission integration code:
 - Consumed by `main.cpp` startup wiring.
 - Depends on Qt permission APIs (`QPermission`, `QMicrophonePermission`, `QCalendarPermission`, `QLocationPermission`)
   and Apple bridge request functions.
+- iOS simulator-safe exports may define `WHATSON_DISABLE_QT_PERMISSION_REQUESTS=1` from
+  `src/app/cmake/runtime/CMakeLists.txt` when `WHATSON_IOS_QT_PERMISSION_PLUGIN_POLICY` excludes Qt `permissions`
+  plugins. In that mode, the bootstrapper still requests Apple-bridge permissions but skips Qt runtime permission
+  steps that would otherwise depend on the excluded plugin type.

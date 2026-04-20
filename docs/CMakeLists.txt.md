@@ -15,8 +15,15 @@
 - Keep option declarations, package discovery, and primary product `add_subdirectory(...)` calls in the root file.
 - Keep grouped custom targets in `cmake/root/*` and avoid moving product-level source ownership back into the root file.
 - Reuse `build/` for configure/build/test flows; the nested `build-trial` path remains opt-in packaging infrastructure only.
+- Keep iOS export defaults centralized in root cache variables (`WHATSON_IOS_SDK`, `WHATSON_IOS_ARCHITECTURES`,
+  `WHATSON_IOS_DEVELOPMENT_TEAM`, `WHATSON_IOS_CODE_SIGN_IDENTITY`, `WHATSON_IOS_CODE_SIGN_STYLE`, and
+  `WHATSON_IOS_QT_PERMISSION_PLUGIN_POLICY`) so generated Xcode projects do not depend on manual Xcode Build Settings
+  edits or script-local signing logic. The default export profile should stay device-first (`iphoneos`) unless the
+  maintained Qt iOS kit proves simulator-safe again.
 
 ## Verification Notes
 - Run `cmake -S . -B build` after structural root-CMake changes.
 - Run `cmake --build build --target whatson_build_regression -j` after root-target refactors.
 - Run `cmake --build build --target whatson_regression -j` when regression-target wiring changes.
+- Run `cmake --build build --target whatson_generate_ios_xcodeproj -j` after iOS export-option or Xcode-project
+  generation changes.

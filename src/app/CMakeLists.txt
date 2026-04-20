@@ -312,4 +312,21 @@ qt_add_qml_module(WhatSon
         ${WHATSON_APP_QML_RESOURCE_FILES}
 )
 
+if (APPLE AND CMAKE_SYSTEM_NAME STREQUAL "iOS" AND WHATSON_IOS_POST_BUILD_BUNDLE_ICON_FILES)
+    # Keep loose PNG icons in the bundle root even when Xcode asset catalogs are enabled.
+    # Some generated Xcode projects still miss the asset catalog Resources-phase entry, and
+    # the manual CFBundleIcons fallback keeps the installed app icon visible on device.
+    # Xcode does not reliably attach MACOSX_PACKAGE_LOCATION "." image sources to the app
+    # Resources phase, so copy the fallback PNGs into the bundle root from the owning app
+    # target directory after link.
+    foreach (_whatson_ios_bundle_icon_file IN LISTS WHATSON_IOS_POST_BUILD_BUNDLE_ICON_FILES)
+        get_filename_component(_whatson_ios_bundle_icon_name "${_whatson_ios_bundle_icon_file}" NAME)
+        add_custom_command(TARGET WhatSon POST_BUILD
+                COMMAND "${CMAKE_COMMAND}" -E copy_if_different
+                "${_whatson_ios_bundle_icon_file}"
+                "$<TARGET_BUNDLE_DIR:WhatSon>/${_whatson_ios_bundle_icon_name}"
+                VERBATIM)
+    endforeach ()
+endif ()
+
 add_subdirectory(cmake/runtime)

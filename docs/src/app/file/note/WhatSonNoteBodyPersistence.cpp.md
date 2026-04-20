@@ -39,6 +39,10 @@ The current contract preserves editor-authored RAW source across save/load turns
   editor-facing inline tags such as `<bold>...</bold>` and `<resource ... />`, instead of returning RichText spans.
   Stored `<tag>label</tag>` elements are intentionally projected back to visible editor text as `#label` so the
   user keeps editing the hashtag they originally typed instead of raw XML.
+- The same read-side source extractor now strips rendered-editor HTML comment scaffolding such as
+  `<!--whatson-resource-block:...-->` before it projects note source back into editor RAW text.
+  This prevents renderer-owned HTML block markers from leaking into `bodySourceText` and then re-entering the editor
+  through note-open or runtime snapshot paths.
 - Stored `<weblink href="...">label</weblink>` nodes now also survive that read-side projection verbatim instead of
   being escaped into literal `<weblink>` text.
 - That read-side source projection now stays on the parser/serializer projection only. It no longer runs a second
@@ -49,6 +53,9 @@ The current contract preserves editor-authored RAW source across save/load turns
   buffer.
   This keeps note reopen/load behavior aligned with the saved RAW body text even when the source extractor cannot fully
   recover a malformed or partially canonicalized document.
+- If a read-side source projection still looks like non-canonical rendered HTML after that comment stripping
+  (`<p>`, `<div>`, `<hr>`, and similar block wrappers), the extractor now treats that payload as suspicious and falls
+  back to the parsed plain-text projection instead of letting HTML block wrappers reach the editor RAW pipeline.
 - The canonical single divider token `</break>` is now preserved end-to-end:
   - editor/source projection keeps `</break>`
   - `.wsnbody` body XML stores `<break/>` (valid XML)
@@ -167,3 +174,5 @@ rewriting `bodySourceText` RAW just because the body document was read and repar
   that projection.
 - Reopening a note whose saved `.wsnbody` still contains visible paragraph text must not yield an empty editor body
   solely because canonical inline-tag source extraction returned `""`.
+- A malformed/legacy `.wsnbody` that contains rendered editor HTML comment wrappers must not project those wrappers
+  back into the editor RAW source; the read path should collapse them back to plain editor text before note-open.

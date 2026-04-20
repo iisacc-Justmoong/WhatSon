@@ -27,7 +27,14 @@ if (APPLE AND NOT CMAKE_SYSTEM_NAME STREQUAL "iOS" AND EXISTS "${WHATSON_APP_ICO
 endif ()
 
 if (APPLE AND CMAKE_SYSTEM_NAME STREQUAL "iOS")
-    set(_whatson_use_ios_asset_catalog FALSE)
+    set(_whatson_ios_post_build_bundle_icon_files)
+    foreach (_whatson_ios_bundle_icon_file IN LISTS WHATSON_IOS_BUNDLE_ICON_FILES)
+        if (NOT EXISTS "${_whatson_ios_bundle_icon_file}")
+            continue()
+        endif ()
+        list(APPEND _whatson_ios_post_build_bundle_icon_files "${_whatson_ios_bundle_icon_file}")
+    endforeach ()
+
     if (CMAKE_GENERATOR MATCHES "^Xcode$")
         set(_whatson_has_complete_ios_icon_set TRUE)
         foreach (_whatson_ios_icon_file IN LISTS WHATSON_IOS_APP_ICON_FILES)
@@ -94,20 +101,12 @@ if (APPLE AND CMAKE_SYSTEM_NAME STREQUAL "iOS")
             target_sources(WhatSon PRIVATE "${_whatson_ios_asset_catalog_dir}")
             set_target_properties(WhatSon PROPERTIES
                     XCODE_ATTRIBUTE_ASSETCATALOG_COMPILER_APPICON_NAME "AppIcon")
-            set(_whatson_use_ios_asset_catalog TRUE)
         endif ()
     endif ()
 
-    if (NOT _whatson_use_ios_asset_catalog)
-        foreach (_whatson_ios_bundle_icon_file IN LISTS WHATSON_IOS_BUNDLE_ICON_FILES)
-            if (NOT EXISTS "${_whatson_ios_bundle_icon_file}")
-                continue()
-            endif ()
-            set_source_files_properties("${_whatson_ios_bundle_icon_file}" PROPERTIES
-                    MACOSX_PACKAGE_LOCATION ".")
-            target_sources(WhatSon PRIVATE "${_whatson_ios_bundle_icon_file}")
-        endforeach ()
-    endif ()
+    set(WHATSON_IOS_POST_BUILD_BUNDLE_ICON_FILES
+            "${_whatson_ios_post_build_bundle_icon_files}"
+            PARENT_SCOPE)
 endif ()
 
 if (ANDROID AND EXISTS "${WHATSON_ANDROID_DIR}")

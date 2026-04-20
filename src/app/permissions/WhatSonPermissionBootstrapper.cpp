@@ -90,13 +90,13 @@ void WhatSonPermissionBootstrapper::buildPermissionSteps()
 #if defined(Q_OS_MACOS) || defined(Q_OS_IOS)
     addApplePermissionStep(QStringLiteral("photo_library"), WhatSon::Permissions::requestPhotoLibraryPermission);
 #endif
-#if QT_CONFIG(permissions)
+#if QT_CONFIG(permissions) && !defined(WHATSON_DISABLE_QT_PERMISSION_REQUESTS)
     addQtPermissionStep(QStringLiteral("microphone"), []() -> QMicrophonePermission { return QMicrophonePermission{}; });
 #endif
 #if defined(Q_OS_MACOS)
     addApplePermissionStep(QStringLiteral("accessibility"), WhatSon::Permissions::requestAccessibilityPermission);
 #endif
-#if QT_CONFIG(permissions)
+#if QT_CONFIG(permissions) && !defined(WHATSON_DISABLE_QT_PERMISSION_REQUESTS)
     addQtPermissionStep(QStringLiteral("calendar"), []() -> QCalendarPermission {
         QCalendarPermission permission;
         permission.setAccessMode(QCalendarPermission::ReadWrite);
@@ -107,7 +107,7 @@ void WhatSonPermissionBootstrapper::buildPermissionSteps()
     addApplePermissionStep(QStringLiteral("reminders"), WhatSon::Permissions::requestRemindersPermission);
     addApplePermissionStep(QStringLiteral("local_network"), WhatSon::Permissions::requestLocalNetworkPermission);
 #endif
-#if QT_CONFIG(permissions)
+#if QT_CONFIG(permissions) && !defined(WHATSON_DISABLE_QT_PERMISSION_REQUESTS)
     addQtPermissionStep(QStringLiteral("location"), []() -> QLocationPermission {
         QLocationPermission permission;
         permission.setAvailability(QLocationPermission::WhenInUse);

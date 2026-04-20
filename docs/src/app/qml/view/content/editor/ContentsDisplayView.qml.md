@@ -35,6 +35,10 @@ not note-backed.
   breakable QML property bindings.
 - Projection `logicalLineCount` and `logicalLineStartOffsets` changes now schedule gutter refresh directly, so line
   numbers no longer wait for an unrelated cursor, scroll, or layout event before updating.
+- `resolvedDocumentPresentationSourceText()` now accepts same-note `selectedNoteBodyText` even while the bridge is
+  still finishing a background snapshot refresh.
+  This prevents the structured document host from mounting with a transient empty source when the selected note is
+  already known but the editor session binding has not completed yet.
 - `commitDocumentPresentationRefresh()` refreshes only the HTML overlay/minimap projection; it no longer triggers a
   RichText surface reinjection step.
 - Resource-bearing fallback notes still substitute `whatson-resource-block` placeholders into HTML, but that

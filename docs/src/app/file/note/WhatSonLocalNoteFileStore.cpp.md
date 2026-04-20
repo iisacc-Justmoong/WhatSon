@@ -21,6 +21,9 @@ It creates notes, reads materialized note directories, updates persisted body/he
 - It now projects both:
   - `bodyPlainText` (search/list summary text)
   - `bodySourceText` (editor-facing RAW source projection from `.wsnbody`)
+- That `bodySourceText` projection now inherits the read-side HTML-block guard from
+  `WhatSon::NoteBodyPersistence::sourceTextFromBodyDocument(...)`, so rendered-editor comment wrappers and other
+  suspicious non-canonical HTML block markup do not get rebound into note-open editor state.
 - The read path also derives `bodyFirstLine` from `WhatSon::NoteBodyPersistence::firstLineFromBodyDocument(...)` so inline titles before the first paragraph survive indexing and editor reads consistently.
 - This means empty paragraphs and whitespace-only paragraphs survive file reads instead of being normalized away.
 - Formatting whitespace from an otherwise empty `<body>` no longer survives file reads, so a newly created empty note

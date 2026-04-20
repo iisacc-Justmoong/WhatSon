@@ -737,10 +737,20 @@ void ContentsEditorSelectionBridge::startSelectedNoteBodyLoad(
     const QString currentBodyText = clearCachedBody || !noteBodyOwnedBySelection
         ? QString()
         : m_selectedNoteBodyText;
-    const bool shouldShowLoading = clearCachedBody
-        || !noteBodyOwnedBySelection
-        || (currentBodyText.isEmpty() && m_selectedNoteBodySnapshotNoteId != normalizedNoteId);
-    setSelectedNoteBodyState(normalizedNoteId, currentBodyText, shouldShowLoading);
+    QString immediateBodyText = currentBodyText;
+    bool immediateBodyResolved =
+        !clearCachedBody
+        && noteBodyOwnedBySelection
+        && m_selectedNoteBodySnapshotNoteId == normalizedNoteId;
+
+    if (!immediateBodyResolved
+        && tryResolveSelectedNoteBodySourceText(normalizedNoteId, &immediateBodyText))
+    {
+        m_selectedNoteBodySnapshotNoteId = normalizedNoteId;
+        immediateBodyResolved = true;
+    }
+
+    setSelectedNoteBodyState(normalizedNoteId, immediateBodyText, !immediateBodyResolved);
 
     const quint64 requestSequence = m_idleSyncController != nullptr
         ? m_idleSyncController->loadNoteBodyTextForNote(normalizedNoteId)

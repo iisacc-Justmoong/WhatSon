@@ -58,6 +58,10 @@
   body that is still tagged with that selected note id.
 - `startSelectedNoteBodyLoad(...)` now keeps body ownership explicit during loading and fallback transitions instead of
   leaving QML to infer whether the current body text still belongs to the previous note.
+- `startSelectedNoteBodyLoad(...)` now also tries the direct `noteBodySourceTextForNoteId(...)` snapshot before it
+  advertises a loading-only empty body for the newly selected note.
+  If the runtime source is already available, the bridge surfaces that body immediately, marks it as the selected-note
+  snapshot, and lets asynchronous refresh continue in the background without blanking the editor host first.
 - `refreshNoteSelectionState()` now delegates note-id transitions into the sync controller through
   `bindSelectedNote(...)` / `clearSelectedNote()`, so open-count maintenance also left the bridge.
 - The bridge now also checks an optional note-list-model `noteBacked` property before it accepts a `currentNoteId`
@@ -127,6 +131,8 @@
 - If the selected note-list model already exposes `currentBodyText` for the committed note, the bridge should reuse that
   payload immediately instead of forcing QML to wait for an asynchronous package read.
 - A note-open turn must not push an empty interim body into the editor before the lazy body load completes.
+- A note-open turn must also surface a direct content-view-model RAW snapshot immediately when that snapshot is already
+  available for the selected note.
 - An older same-note lazy body-read completion must not overwrite a newer selected-note body request.
 - A failed same-note lazy body-read completion must not replace the current selected-note body with `""`.
 - A same-turn note-list-model swap and content-view-model swap must collapse into one selected-note refresh/rebind turn.

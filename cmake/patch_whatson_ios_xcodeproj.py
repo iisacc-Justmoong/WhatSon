@@ -12,11 +12,55 @@ def fail(message: str) -> int:
     return 1
 
 
-def main() -> int:
-    if len(sys.argv) != 2:
-        return fail("usage: patch_whatson_ios_xcodeproj.py <path-to-project.pbxproj>")
+def strip_qt_permission_link_inputs(pbxproj_text: str) -> str:
+    patched_text = pbxproj_text
+    removal_patterns = (
+        re.compile(
+            r'^\s*"\'-Wl,-u,_QDarwinMicrophonePermissionRequest\'",\n',
+            re.MULTILINE,
+        ),
+        re.compile(
+            r" ?'-Wl,-u,_QDarwinMicrophonePermissionRequest'",
+        ),
+        re.compile(
+            r'^\s*"[^"\n]*/plugins/permissions/objects-(?:Debug|Release)/'
+            r'QDarwin(?:Bluetooth|Calendar|Location|Microphone)PermissionPlugin_init/[^"\n]+",\n',
+            re.MULTILINE,
+        ),
+        re.compile(
+            r',\s*"[^"\n]*/plugins/permissions/objects-(?:Debug|Release)/'
+            r'QDarwin(?:Bluetooth|Calendar|Location|Microphone)PermissionPlugin_init/[^"\n]+"',
+        ),
+        re.compile(
+            r'^\s*"?(?:[^,"\n]*/)?plugins/permissions/libqdarwin'
+            r'(?:bluetooth|calendar|location|microphone)permission(?:_debug)?\.a"?,\n',
+            re.MULTILINE,
+        ),
+        re.compile(
+            r',\s*"?(?:[^,"\n]*/)?plugins/permissions/libqdarwin'
+            r'(?:bluetooth|calendar|location|microphone)permission(?:_debug)?\.a"?',
+        ),
+    )
 
-    pbxproj_path = Path(sys.argv[1])
+    for pattern in removal_patterns:
+        patched_text = pattern.sub("", patched_text)
+
+    return patched_text
+
+
+def main() -> int:
+    strip_qt_permissions = False
+    argv = sys.argv[1:]
+    if "--strip-qt-permissions" in argv:
+        strip_qt_permissions = True
+        argv.remove("--strip-qt-permissions")
+
+    if len(argv) != 1:
+        return fail(
+            "usage: patch_whatson_ios_xcodeproj.py <path-to-project.pbxproj> [--strip-qt-permissions]"
+        )
+
+    pbxproj_path = Path(argv[0])
     if not pbxproj_path.is_file():
         return fail(f"WhatSon iOS Xcode project patch expected {pbxproj_path} to exist.")
 
@@ -78,23 +122,32 @@ def main() -> int:
         rf"^\s*{re.escape(icon_build_file_id)} /\* .+WhatSonIcons\.xcassets \*/,?$",
         re.MULTILINE,
     )
-    if icon_file_line_pattern.search(files_block_text):
+    patched_pbxproj_text = pbxproj_text
+    icon_was_missing = icon_file_line_pattern.search(files_block_text) is None
+    if icon_was_missing:
+        patched_files_block_text = (
+            f"{files_block_text}\n"
+            f"\t\t\t\t{icon_build_file_id} /* {icon_build_file_comment} */,"
+        )
+        patched_pbxproj_text = resources_phase_pattern.sub(
+            rf"\1{patched_files_block_text}\3",
+            patched_pbxproj_text,
+            count=1,
+        )
+
+        patched_resources_phase_block_match = resources_phase_pattern.search(patched_pbxproj_text)
+        if patched_resources_phase_block_match is None or icon_file_line_pattern.search(
+            patched_resources_phase_block_match.group("files")
+        ) is None:
+            return fail(
+                "WhatSon iOS Xcode project patch failed to attach WhatSonIcons.xcassets to the Resources build phase."
+            )
+
+    if strip_qt_permissions:
+        patched_pbxproj_text = strip_qt_permission_link_inputs(patched_pbxproj_text)
+
+    if patched_pbxproj_text == pbxproj_text:
         return 0
-
-    patched_files_block_text = (
-        f"{files_block_text}\n"
-        f"\t\t\t\t{icon_build_file_id} /* {icon_build_file_comment} */,"
-    )
-    patched_pbxproj_text = resources_phase_pattern.sub(
-        rf"\1{patched_files_block_text}\3",
-        pbxproj_text,
-        count=1,
-    )
-
-    if icon_file_line_pattern.search(
-        patched_pbxproj_text[resources_phase_block_match.start(): resources_phase_block_match.end() + 256]
-    ) is None:
-        return fail("WhatSon iOS Xcode project patch failed to attach WhatSonIcons.xcassets to the Resources build phase.")
 
     pbxproj_path.write_text(patched_pbxproj_text)
     return 0

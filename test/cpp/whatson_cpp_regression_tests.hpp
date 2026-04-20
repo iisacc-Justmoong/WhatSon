@@ -70,9 +70,11 @@
 #include <QImage>
 #include <QJSEngine>
 #include <QJSValue>
+#include <QProcess>
 #include <QQmlEngine>
 #include <QRegularExpression>
 #include <QSettings>
+#include <QStandardPaths>
 #include <QTemporaryDir>
 #include <QUrl>
 #include <QtTest>
@@ -271,9 +273,19 @@ public:
         return true;
     }
 
+    Q_INVOKABLE QString noteBodySourceTextForNoteId(const QString& noteId) const
+    {
+        return m_noteBodySourceTexts.value(noteId.trimmed());
+    }
+
     void setNoteDirectoryPath(const QString& noteId, const QString& noteDirectoryPath)
     {
         m_noteDirectoryPaths.insert(noteId.trimmed(), QDir::cleanPath(noteDirectoryPath.trimmed()));
+    }
+
+    void setNoteBodySourceText(const QString& noteId, const QString& bodySourceText)
+    {
+        m_noteBodySourceTexts.insert(noteId.trimmed(), bodySourceText);
     }
 
     int applyPersistedBodyStateCallCount = 0;
@@ -286,6 +298,7 @@ public:
 
 private:
     QHash<QString, QString> m_noteDirectoryPaths;
+    QHash<QString, QString> m_noteBodySourceTexts;
 };
 
 class FakeSelectionNoteListModel final : public QObject
@@ -294,6 +307,7 @@ class FakeSelectionNoteListModel final : public QObject
 
     Q_PROPERTY(int currentIndex READ currentIndex WRITE setCurrentIndex NOTIFY currentIndexChanged)
     Q_PROPERTY(QString currentNoteId READ currentNoteId WRITE setCurrentNoteId NOTIFY currentNoteIdChanged)
+    Q_PROPERTY(QString currentBodyText READ currentBodyText WRITE setCurrentBodyText NOTIFY currentBodyTextChanged)
     Q_PROPERTY(QString searchText READ searchText WRITE setSearchText NOTIFY searchTextChanged)
     Q_PROPERTY(int itemCount READ itemCount WRITE setItemCount NOTIFY itemCountChanged)
     Q_PROPERTY(bool noteBacked READ noteBacked WRITE setNoteBacked NOTIFY noteBackedChanged)
@@ -336,6 +350,22 @@ public:
 
         m_currentNoteId = std::move(noteId);
         emit currentNoteIdChanged();
+    }
+
+    QString currentBodyText() const
+    {
+        return m_currentBodyText;
+    }
+
+    void setCurrentBodyText(QString bodyText)
+    {
+        if (m_currentBodyText == bodyText)
+        {
+            return;
+        }
+
+        m_currentBodyText = std::move(bodyText);
+        emit currentBodyTextChanged();
     }
 
     QString searchText() const
@@ -391,6 +421,7 @@ public:
 signals:
     void currentIndexChanged();
     void currentNoteIdChanged();
+    void currentBodyTextChanged();
     void searchTextChanged();
     void itemCountChanged(int itemCount);
     void noteBackedChanged();
@@ -398,6 +429,7 @@ signals:
 private:
     int m_currentIndex = -1;
     QString m_currentNoteId;
+    QString m_currentBodyText;
     QString m_searchText;
     int m_itemCount = 0;
     bool m_noteBacked = true;
@@ -485,12 +517,21 @@ private slots:
     void startupHubResolver_returnsEmptyWithoutPersistedSelection();
     void startupHubResolver_mountsPersistedCompleteHubPackage();
     void startupHubResolver_keepsPersistedFailureVisibleWithoutSwitchingToBlueprint();
+    void iosBundleIconPackaging_declaresPrimaryAndIpadFallbackIconsInInfoPlist();
+    void iosBundleIconPackaging_stagesBundleRootPngsEvenWithAssetCatalogsEnabled();
+    void iosXcodeprojExport_surfacesSdkSigningAndPermissionPolicyOptionsInCmake();
+    void iosXcodeprojExport_routesSimulatorPermissionFallbackThroughAppRuntimeCmake();
+    void iosXcodeprojExport_patchScriptStripsQtPermissionsEvenWhenIconPhaseAlreadyExists();
+    void iosXcodeprojExport_keepsBuildIosScriptOnHighLevelCmakeOptions();
     void appLaunchSupport_requiresMountedAndLoadedHubForStartupWorkspace();
     void sidebarSelectionStore_normalizesIndicesAndSuppressesDuplicateSignals();
     void hierarchyViewModelProvider_normalizesMappingsAndAvoidsDuplicateSignals();
     void sidebarHierarchyViewModel_preservesFallbackAcrossStoreAttachDetach();
     void sidebarHierarchyViewModel_reactsToProviderMappingChanges();
     void sidebarAndSelectionBridge_forceCppOwnershipAcrossHierarchySwitchBindings();
+    void contentsEditorSelectionBridge_prefillsSelectedNoteBodyFromNoteListSnapshot();
+    void contentsEditorSelectionBridge_prefillsSelectedNoteBodyFromDirectSourceSnapshot();
+    void noteBackedHierarchyNoteLists_preserveRawBodySnapshotForEditorBootstrap();
     void noteListModelContractBridge_resolvesHierarchyBoundNoteListImmediately();
     void noteListModelContractBridge_prefersExplicitRowsAcrossHierarchySwitches();
     void navigationModeViewModel_cyclesActiveSections();
@@ -525,6 +566,7 @@ private slots:
     void contentsDisplayView_invalidatesGutterGeometryImmediatelyAcrossRapidNoteSwitches();
     void contentsDisplayView_keepsGutterNumbersCloseToTheEditorBody();
     void contentsDisplayView_reservesLargeBottomAccessibilityMargin();
+    void contentsDisplayView_usesSelectedNoteSnapshotWhileSessionBindingCatchesUp();
     void qmlInlineFormatEditor_keepsHiddenKeyboardTouchesScrollFirstOnMobile();
     void mobileChrome_usesSharedFigmaControlSurfaceColor();
     void paperSelection_tracksChosenPaperEnumState();
@@ -533,6 +575,7 @@ private slots:
     void textFormatRenderer_appliesPaperPaletteToEditorAndPreviewHtml();
     void displayPaperModels_hostPageAndPrintViewModeObjectsUnderModelsDirectory();
     void noteBodyPersistence_roundTripsAndProjectsCanonicalWebLinks();
+    void noteBodyPersistence_stripsRenderedHtmlBlockArtifactsFromSourceProjection();
     void logicalTextBridge_advancesCursorPastClosingWebLinkTag();
     void qmlStructuredEditors_bindPaperPaletteIntoPagePrintMode();
     void qmlEditors_routeRenderedHyperlinksToExternalBrowser();
@@ -560,4 +603,3 @@ private:
     static QString readUtf8SourceFile(const QString& relativeSourcePath);
     static QCoreApplication* ensureCoreApplication();
 };
-

@@ -1,6 +1,24 @@
 if (WHATSON_ENABLE_IOS_XCODEPROJ_ON_BUILD AND APPLE AND NOT CMAKE_SYSTEM_NAME STREQUAL "iOS" AND TARGET WhatSon)
     find_package(Python3 COMPONENTS Interpreter REQUIRED)
 
+    set(_whatson_supported_ios_sdks iphonesimulator iphoneos)
+    list(FIND _whatson_supported_ios_sdks "${WHATSON_IOS_SDK}" _whatson_ios_sdk_index)
+    if (_whatson_ios_sdk_index EQUAL -1)
+        message(FATAL_ERROR
+                "Unsupported WHATSON_IOS_SDK value for whatson_generate_ios_xcodeproj: ${WHATSON_IOS_SDK}. "
+                "Expected one of: ${_whatson_supported_ios_sdks}.")
+    endif ()
+
+    set(_whatson_ios_export_sdk "${WHATSON_IOS_SDK}")
+    set(_whatson_ios_export_architectures "${WHATSON_IOS_ARCHITECTURES}")
+    if (_whatson_ios_export_architectures STREQUAL "")
+        if (_whatson_ios_export_sdk STREQUAL "iphonesimulator")
+            set(_whatson_ios_export_architectures "${WHATSON_IOS_SIMULATOR_ARCH}")
+        else ()
+            set(_whatson_ios_export_architectures "arm64")
+        endif ()
+    endif ()
+
     set(_whatson_qt_ios_prefix "")
     if (DEFINED WHATSON_QT_IOS_PREFIX AND NOT WHATSON_QT_IOS_PREFIX STREQUAL "")
         set(_whatson_qt_ios_prefix "${WHATSON_QT_IOS_PREFIX}")
@@ -44,6 +62,33 @@ if (WHATSON_ENABLE_IOS_XCODEPROJ_ON_BUILD AND APPLE AND NOT CMAKE_SYSTEM_NAME ST
                     -DCMAKE_DISABLE_FIND_PACKAGE_Qt6GrpcQuick=TRUE
                     -DCMAKE_DISABLE_FIND_PACKAGE_Qt6ProtobufQuick=TRUE
             )
+            set(_whatson_ios_xcode_attribute_flags
+                    "-DCMAKE_XCODE_ATTRIBUTE_PRODUCT_BUNDLE_IDENTIFIER=${WHATSON_APPLE_BUNDLE_ID}"
+            )
+            if (_whatson_ios_export_sdk STREQUAL "iphonesimulator")
+                list(APPEND _whatson_ios_xcode_attribute_flags
+                        -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED=NO
+                        -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_REQUIRED=NO
+                )
+            else ()
+                if (DEFINED WHATSON_IOS_CODE_SIGN_STYLE AND NOT WHATSON_IOS_CODE_SIGN_STYLE STREQUAL "")
+                    list(APPEND _whatson_ios_xcode_attribute_flags
+                            "-DCMAKE_XCODE_ATTRIBUTE_CODE_SIGN_STYLE=${WHATSON_IOS_CODE_SIGN_STYLE}")
+                endif ()
+                if (DEFINED WHATSON_IOS_DEVELOPMENT_TEAM AND NOT WHATSON_IOS_DEVELOPMENT_TEAM STREQUAL "")
+                    list(APPEND _whatson_ios_xcode_attribute_flags
+                            "-DCMAKE_XCODE_ATTRIBUTE_DEVELOPMENT_TEAM=${WHATSON_IOS_DEVELOPMENT_TEAM}")
+                else ()
+                    message(WARNING
+                            "WHATSON_IOS_SDK=iphoneos but WHATSON_IOS_DEVELOPMENT_TEAM is empty. "
+                            "The generated Xcode project will still require a signing team selection "
+                            "before it can be installed on a physical device.")
+                endif ()
+                if (DEFINED WHATSON_IOS_CODE_SIGN_IDENTITY AND NOT WHATSON_IOS_CODE_SIGN_IDENTITY STREQUAL "")
+                    list(APPEND _whatson_ios_xcode_attribute_flags
+                            "-DCMAKE_XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY=${WHATSON_IOS_CODE_SIGN_IDENTITY}")
+                endif ()
+            endif ()
             set(_whatson_ios_configure_cmd
                     "${CMAKE_COMMAND}"
                     -G Xcode
@@ -52,11 +97,14 @@ if (WHATSON_ENABLE_IOS_XCODEPROJ_ON_BUILD AND APPLE AND NOT CMAKE_SYSTEM_NAME ST
                     -DCMAKE_SYSTEM_NAME=iOS
                     "-DCMAKE_TOOLCHAIN_FILE=${_whatson_ios_toolchain}"
                     -DCMAKE_BUILD_TYPE=Release
-                    -DCMAKE_OSX_SYSROOT=iphonesimulator
-                    "-DCMAKE_OSX_ARCHITECTURES=${WHATSON_IOS_SIMULATOR_ARCH}"
-                    -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED=NO
-                    -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_REQUIRED=NO
-                    "-DCMAKE_XCODE_ATTRIBUTE_PRODUCT_BUNDLE_IDENTIFIER=${WHATSON_APPLE_BUNDLE_ID}"
+                    "-DCMAKE_OSX_SYSROOT=${_whatson_ios_export_sdk}"
+                    "-DCMAKE_OSX_ARCHITECTURES=${_whatson_ios_export_architectures}"
+                    "-DWHATSON_IOS_SDK=${_whatson_ios_export_sdk}"
+                    "-DWHATSON_IOS_ARCHITECTURES=${_whatson_ios_export_architectures}"
+                    "-DWHATSON_IOS_DEVELOPMENT_TEAM=${WHATSON_IOS_DEVELOPMENT_TEAM}"
+                    "-DWHATSON_IOS_CODE_SIGN_IDENTITY=${WHATSON_IOS_CODE_SIGN_IDENTITY}"
+                    "-DWHATSON_IOS_CODE_SIGN_STYLE=${WHATSON_IOS_CODE_SIGN_STYLE}"
+                    "-DWHATSON_IOS_QT_PERMISSION_PLUGIN_POLICY=${WHATSON_IOS_QT_PERMISSION_PLUGIN_POLICY}"
                     "-DWHATSON_PLATFORM_DIR=${WHATSON_PLATFORM_DIR}"
                     "-DWHATSON_APPLE_DIR=${WHATSON_APPLE_DIR}"
                     "-DWHATSON_IOS_INFO_PLIST=${WHATSON_IOS_INFO_PLIST}"
@@ -65,6 +113,7 @@ if (WHATSON_ENABLE_IOS_XCODEPROJ_ON_BUILD AND APPLE AND NOT CMAKE_SYSTEM_NAME ST
                     "-DWHATSON_APPLE_BUNDLE_ID=${WHATSON_APPLE_BUNDLE_ID}"
                     "-DWHATSON_ANDROID_PACKAGE_ID=${WHATSON_ANDROID_PACKAGE_ID}"
                     ${_whatson_ios_optional_qml_package_flags}
+                    ${_whatson_ios_xcode_attribute_flags}
             )
 
             if (DEFINED WHATSON_LVRS_IOS_PREFIX AND EXISTS "${WHATSON_LVRS_IOS_PREFIX}/lib/cmake/LVRS")
@@ -80,12 +129,19 @@ if (WHATSON_ENABLE_IOS_XCODEPROJ_ON_BUILD AND APPLE AND NOT CMAKE_SYSTEM_NAME ST
                     @ONLY
             )
 
+            set(_whatson_ios_xcodeproj_patch_args
+                    "${WHATSON_IOS_XCODEPROJ_DIR}/WhatSon.xcodeproj/project.pbxproj")
+            if (_whatson_ios_export_sdk STREQUAL "iphonesimulator"
+                    AND NOT WHATSON_IOS_QT_PERMISSION_PLUGIN_POLICY STREQUAL "include")
+                list(APPEND _whatson_ios_xcodeproj_patch_args --strip-qt-permissions)
+            endif ()
+
             add_custom_target(whatson_generate_ios_xcodeproj
                     COMMAND "${CMAKE_COMMAND}" -P "${_whatson_prepare_ios_export_script}"
                     COMMAND ${_whatson_ios_configure_cmd}
                     COMMAND "${Python3_EXECUTABLE}"
                     "${CMAKE_SOURCE_DIR}/cmake/patch_whatson_ios_xcodeproj.py"
-                    "${WHATSON_IOS_XCODEPROJ_DIR}/WhatSon.xcodeproj/project.pbxproj"
+                    ${_whatson_ios_xcodeproj_patch_args}
                     BYPRODUCTS "${WHATSON_IOS_XCODEPROJ_DIR}/WhatSon.xcodeproj"
                     USES_TERMINAL
                     COMMENT "Generate iOS Xcode project from platform/Apple metadata"

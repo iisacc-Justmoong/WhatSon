@@ -44,3 +44,15 @@ void WhatSonCppRegressionTests::contentsDisplayView_reservesLargeBottomAccessibi
     QVERIFY(displayViewSource.contains(QStringLiteral("insetVertical: contentsView.showPrintEditorLayout ? 0 : contentsView.editorBottomInset")));
     QVERIFY(displayViewSource.contains(QStringLiteral("+ contentsView.editorBottomInset)")));
 }
+
+void WhatSonCppRegressionTests::contentsDisplayView_usesSelectedNoteSnapshotWhileSessionBindingCatchesUp()
+{
+    const QString displayViewSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/content/editor/ContentsDisplayView.qml"));
+
+    QVERIFY(!displayViewSource.isEmpty());
+    QVERIFY(displayViewSource.contains(
+        QStringLiteral("if (contentsView.selectedNoteBodyNoteId === contentsView.selectedNoteId) {")));
+    QVERIFY(displayViewSource.contains(
+        QStringLiteral("return contentsView.selectedNoteBodyText === undefined || contentsView.selectedNoteBodyText === null")));
+}

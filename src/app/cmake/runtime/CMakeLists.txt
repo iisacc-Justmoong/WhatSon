@@ -30,6 +30,26 @@ if (APPLE AND CMAKE_SYSTEM_NAME STREQUAL "iOS")
             target_link_libraries(WhatSon PRIVATE "${_whatson_ios_qml_plugin}")
         endif ()
     endforeach ()
+
+    set(_whatson_disable_qt_permission_plugins FALSE)
+    if (WHATSON_IOS_QT_PERMISSION_PLUGIN_POLICY STREQUAL "exclude")
+        set(_whatson_disable_qt_permission_plugins TRUE)
+    elseif (WHATSON_IOS_QT_PERMISSION_PLUGIN_POLICY STREQUAL "auto")
+        if (CMAKE_OSX_SYSROOT MATCHES "iphonesimulator")
+            # Some Qt iOS kits ship device-only arm64 slices for permissions plugins, which
+            # breaks Apple Silicon simulator links unless the plugin type is excluded.
+            set(_whatson_disable_qt_permission_plugins TRUE)
+        endif ()
+    elseif (NOT WHATSON_IOS_QT_PERMISSION_PLUGIN_POLICY STREQUAL "include")
+        message(FATAL_ERROR
+                "Unsupported WHATSON_IOS_QT_PERMISSION_PLUGIN_POLICY value: "
+                "${WHATSON_IOS_QT_PERMISSION_PLUGIN_POLICY}. Expected auto, include, or exclude.")
+    endif ()
+
+    if (_whatson_disable_qt_permission_plugins)
+        qt_import_plugins(WhatSon EXCLUDE_BY_TYPE permissions)
+        target_compile_definitions(WhatSon PRIVATE WHATSON_DISABLE_QT_PERMISSION_REQUESTS=1)
+    endif ()
 endif ()
 
 target_link_libraries(WhatSon

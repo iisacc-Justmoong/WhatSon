@@ -23,3 +23,20 @@ void WhatSonCppRegressionTests::noteBodyPersistence_roundTripsAndProjectsCanonic
     QVERIFY(autoWrappedDocument.contains(
         QStringLiteral("<weblink href=\"www.iisacc.com\">www.iisacc.com</weblink>")));
 }
+
+void WhatSonCppRegressionTests::noteBodyPersistence_stripsRenderedHtmlBlockArtifactsFromSourceProjection()
+{
+    const QString bodyDocument = QStringLiteral(
+        "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+        "<!DOCTYPE WHATSONNOTE>\n"
+        "<contents id=\"note\">\n"
+        "  <body>\n"
+        "    <!--whatson-resource-block:0--><p style=\"margin-top:0px;margin-bottom:0px;\">alpha</p><!--/whatson-resource-block:0-->\n"
+        "  </body>\n"
+        "</contents>\n");
+
+    const QString sourceText = WhatSon::NoteBodyPersistence::sourceTextFromBodyDocument(bodyDocument);
+    QCOMPARE(sourceText, QStringLiteral("alpha"));
+    QVERIFY(!sourceText.contains(QStringLiteral("whatson-resource-block")));
+    QVERIFY(!sourceText.contains(QStringLiteral("<p")));
+}

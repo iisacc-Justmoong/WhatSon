@@ -1701,15 +1701,17 @@ class BuildAll:
             "-DCMAKE_BUILD_TYPE=Release",
             "-DCMAKE_OSX_SYSROOT=iphoneos",
             "-DCMAKE_OSX_ARCHITECTURES=arm64",
+            "-DWHATSON_IOS_SDK=iphoneos",
+            "-DWHATSON_IOS_ARCHITECTURES=arm64",
+            f"-DWHATSON_APPLE_BUNDLE_ID={self.ios_bundle_id}",
+            f"-DWHATSON_IOS_DEVELOPMENT_TEAM={resolved_ios_development_team}",
+            "-DWHATSON_IOS_CODE_SIGN_STYLE=Automatic",
             *self._ios_backtrace_cmake_args("iphoneos"),
-            "-DCMAKE_XCODE_ATTRIBUTE_CODE_SIGN_STYLE=Automatic",
-            f"-DCMAKE_XCODE_ATTRIBUTE_DEVELOPMENT_TEAM={resolved_ios_development_team}",
-            f"-DCMAKE_XCODE_ATTRIBUTE_PRODUCT_BUNDLE_IDENTIFIER={self.ios_bundle_id}",
             "-DCMAKE_DISABLE_FIND_PACKAGE_Qt6GrpcQuick=TRUE",
             "-DCMAKE_DISABLE_FIND_PACKAGE_Qt6ProtobufQuick=TRUE",
         ]
         if self.ios_code_sign_identity:
-            ios_cmd.append(f"-DCMAKE_XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY={self.ios_code_sign_identity}")
+            ios_cmd.append(f"-DWHATSON_IOS_CODE_SIGN_IDENTITY={self.ios_code_sign_identity}")
 
         lvrs_dir = self._lvrs_cmake_dir(ios_lvrs_prefix)
         if lvrs_dir.exists():
@@ -1720,6 +1722,13 @@ class BuildAll:
         xcode_project = self.ios_project_dir / "WhatSon.xcodeproj"
         if not xcode_project.exists():
             raise CommandError(f"Xcode project was not generated: {xcode_project}")
+
+        patch_cmd = [
+            sys.executable,
+            str(self.root / "cmake" / "patch_whatson_ios_xcodeproj.py"),
+            str(xcode_project / "project.pbxproj"),
+        ]
+        self._run(task=task, cmd=patch_cmd, log_path=log_path)
 
         return xcode_project
 

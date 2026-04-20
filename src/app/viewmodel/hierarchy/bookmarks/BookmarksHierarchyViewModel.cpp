@@ -942,7 +942,9 @@ BookmarksNoteListItem BookmarksHierarchyViewModel::buildBookmarksListItem(const 
     item.id = note.noteId.trimmed();
     item.primaryText = bookmarkPrimaryText(note);
     item.searchableText = bookmarkSearchableText(note);
-    item.bodyText.clear();
+    item.bodyText = !note.bodySourceText.isEmpty()
+        ? note.bodySourceText
+        : note.bodyPlainText;
     item.createdAt = note.createdAt;
     item.lastModifiedAt = note.lastModifiedAt;
     item.image = note.bodyHasResource;

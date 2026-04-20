@@ -687,6 +687,28 @@ cmake --build build --target whatson_export_android_studio
 cmake --build build --target whatson_export_wasm_site
 ```
 
+iOS Xcode export now keeps its primary knobs in root CMake cache variables instead of
+requiring manual Xcode Build Settings edits:
+
+```bash
+cmake -S . -B build -DWHATSON_IOS_SDK=iphonesimulator
+cmake --build build --target whatson_export_xcodeproj
+
+cmake -S . -B build \
+  -DWHATSON_IOS_SDK=iphoneos \
+  -DWHATSON_IOS_DEVELOPMENT_TEAM=GRWGSK8RDF
+cmake --build build --target whatson_export_xcodeproj
+```
+
+Relevant iOS cache variables:
+
+- `WHATSON_IOS_SDK`: `iphonesimulator` or `iphoneos`
+- `WHATSON_IOS_ARCHITECTURES`: optional explicit architecture list; empty derives from the selected SDK
+- `WHATSON_IOS_DEVELOPMENT_TEAM`: Apple Development team for physical-device signing
+- `WHATSON_IOS_CODE_SIGN_IDENTITY`: optional explicit signing identity
+- `WHATSON_IOS_CODE_SIGN_STYLE`: Xcode code-sign style for generated iOS projects (`Automatic` or `Manual`)
+- `WHATSON_IOS_QT_PERMISSION_PLUGIN_POLICY`: `auto`, `include`, or `exclude`
+
 LVRS-native aliases are still available:
 
 ```bash
@@ -1115,9 +1137,10 @@ python3 scripts/build_host.py --jobs 4
 
 For iOS Xcode-project generation, `scripts/build_ios.py` resolves
 `WHATSON_IOS_DEVELOPMENT_TEAM` from local `Apple Development`
-code-signing identities and writes that signing metadata into the generated
-`.xcodeproj`. When multiple Apple Development teams are present, set the team
-explicitly before running the script:
+code-signing identities and forwards the device SDK/signing values into the
+root CMake options that back the generated `.xcodeproj`. When multiple Apple
+Development teams are present, set the team explicitly before running the
+script:
 
 ```bash
 export WHATSON_IOS_DEVELOPMENT_TEAM=GRWGSK8RDF
@@ -1162,9 +1185,17 @@ Default build and artifact directories are:
 The generated iOS configure path disables optional `Qt6GrpcQuick` / `Qt6ProtobufQuick`
 package discovery because WhatSon does not use those modules and cross-compiling may
 otherwise emit host `protoc` warnings.
-The generated iOS Xcode project keeps automatic signing metadata (`DEVELOPMENT_TEAM`,
-bundle identifier, optional code-sign identity) so the final physical-device build can
-be completed from Xcode against the selected run destination.
+The generated iOS Xcode project now derives SDK, architectures, bundle identifier,
+signing metadata, and Qt permission-plugin policy from root CMake cache options instead
+of ad hoc script-only Xcode attribute strings.
+The default generated iOS Xcode project now targets `iphoneos`, which is the reliable
+path for the current static Qt iOS kit. Simulator export remains available through
+`WHATSON_IOS_SDK=iphonesimulator`.
+When `WHATSON_IOS_SDK=iphonesimulator`, the export path also disables code signing and
+excludes Qt `permissions` plugins by default so Apple Silicon simulator links do not
+pick Qt's device-only arm64 permission objects; the generated `.xcodeproj` is patched
+immediately after configure so those permission objects and archives are not left in
+the simulator link flags, and that patch stays idempotent across repeated export runs.
 The app-side iOS startup path now also prefers UIKit-managed windowing/insets together
 with the LVRS `LowTier` render preset during physical-device testing. That reduces
 first-frame Metal swapchain churn compared with the framework's default full-window

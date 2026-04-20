@@ -14,8 +14,40 @@
     <key>CFBundleDisplayName</key>
     <string>WhatSon</string>
 
-    <key>CFBundleIconName</key>
-    <string>AppIcon</string>
+    <key>CFBundleIcons</key>
+    <dict>
+        <key>CFBundlePrimaryIcon</key>
+        <dict>
+            <key>CFBundleIconName</key>
+            <string>AppIcon</string>
+            <key>CFBundleIconFiles</key>
+            <array>
+                <string>AppIcon</string>
+                <string>AppIcon-Notification</string>
+                <string>AppIcon-Settings</string>
+                <string>AppIcon-Spotlight-40</string>
+                <string>AppIcon-60</string>
+            </array>
+        </dict>
+    </dict>
+
+    <key>CFBundleIcons~ipad</key>
+    <dict>
+        <key>CFBundlePrimaryIcon</key>
+        <dict>
+            <key>CFBundleIconName</key>
+            <string>AppIcon</string>
+            <key>CFBundleIconFiles</key>
+            <array>
+                <string>AppIcon</string>
+                <string>AppIcon-Notification~ipad</string>
+                <string>AppIcon-Settings~ipad</string>
+                <string>AppIcon-Spotlight-40~ipad</string>
+                <string>AppIcon-76~ipad</string>
+                <string>AppIcon-83.5~ipad</string>
+            </array>
+        </dict>
+    </dict>
 
     <key>CFBundleIdentifier</key>
     <string>com.iisacc.app.whatson</string>
