@@ -27,7 +27,7 @@ line coordinates from live `positionToRectangle(...)` data.
 ## Tests
 
 - Automated regression coverage now executes this helper through `QJSEngine` in
-  `test/cpp/whatson_cpp_regression_tests.cpp`.
+  `test/cpp/suites/*.cpp`.
 - Regression checklist:
   - mapped editor offsets must shift every logical line entry by the same parent-coordinate delta
   - line heights must still come from the live editor rectangles instead of collapsing to one fixed fallback height

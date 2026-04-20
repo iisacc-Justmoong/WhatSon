@@ -37,7 +37,7 @@ resource-backed instead of note-backed.
 ## Tests
 
 - Automated regression coverage for the routing contract lives in
-  `test/cpp/whatson_cpp_regression_tests.cpp` through the surface-mode helper and `ResourceBitmapViewer`.
+  `test/cpp/suites/*.cpp` through the surface-mode helper and `ResourceBitmapViewer`.
 - Regression checklist:
   - entering the Resources hierarchy with an image selection must replace the note editor with this resource editor
   - bitmap-compatible resources must render through `ContentsResourceViewer.qml`

@@ -582,17 +582,20 @@ now tracks a session-state ladder (`idle -> resolvingSelection -> loadingHub -> 
 and `Main.qml` only commits `/onboarding -> /` after the LVRS router confirms the workspace navigation. If that route
 commit fails, the controller falls back to `failed`, keeps the app inside onboarding, and surfaces the error instead of
 tearing down the mobile session.
-Before the runtime loader starts, `OnboardingHubController` also performs a local `.wshub` mount preflight:
+Before the runtime loader starts, `WhatSonHubMountValidator` performs a local `.wshub` mount preflight for both
+startup and onboarding:
 non-local document-provider URLs that cannot be resolved into real package directories now fail inside onboarding with a
 targeted error, instead of cascading into a full-domain runtime bootstrap failure.
 The desktop onboarding window's right-hand status panel stays aligned with the Figma onboarding design and shows either `No WhatSon Hub Selected`
 or the currently selected `.wshub` package name.
-The last selected `.wshub` is persisted through the app session store as a startup candidate, so the next launch tries
-that selection before falling back to `blueprint/*.wshub`.
+The last selected `.wshub` is persisted through the app session store as a startup candidate, and the next launch
+revalidates that selection before deciding whether onboarding is required.
 Startup onboarding is now gated by hub mountability rather than by full runtime-domain success. WhatSon first resolves
 the persisted hub selection into a mountable startup hub path (local `.wshub`, Android source URI -> mounted local
-copy, or restored Android mounted-hub source URI). If that persisted candidate can no longer be mounted, startup
-retries the bundled blueprint hub before handing control to onboarding.
+copy, or restored Android mounted-hub source URI). If that persisted candidate can no longer be mounted or is missing
+required hub structure, startup preserves that failure and hands control to onboarding. If the persisted candidate
+mounts but the first startup runtime load still fails, WhatSon also keeps the app inside onboarding and surfaces that
+runtime failure instead of leaving the user on an empty workspace shell.
 When a startup hub is available, the first workspace frame now prioritizes the critical library-facing runtime
 domains and defers low-priority hierarchy domains (`Event`, `Preset`) until post-show idle turns or the first sidebar
 activation that needs them.

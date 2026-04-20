@@ -38,11 +38,11 @@ void OnboardingRouteBootstrapController::setHubController(IOnboardingHubControll
     m_hubController = controller;
 }
 
-void OnboardingRouteBootstrapController::configure(const bool embeddedEnabled, const bool startupHubMounted)
+void OnboardingRouteBootstrapController::configure(const bool embeddedEnabled, const bool startupWorkspaceReady)
 {
     setEmbeddedOnboardingEnabled(embeddedEnabled);
     setRouteCommitPending(false);
-    setEmbeddedOnboardingVisible(embeddedEnabled && !startupHubMounted);
+    setEmbeddedOnboardingVisible(embeddedEnabled && !startupWorkspaceReady);
     setStartupRoutePath(m_embeddedOnboardingVisible
                             ? QString::fromLatin1(kOnboardingRoutePath)
                             : QString::fromLatin1(kWorkspaceRoutePath));

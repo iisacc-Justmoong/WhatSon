@@ -45,9 +45,8 @@
 - Forwards `compactEditorViewVisible` into `NavigationBarLayout` so the compact mobile editor route can replace the
   hierarchy-only settings affordance with the editor `View mode` combo (`NavigationEditorViewBar`) without introducing
   route-local navigation bar forks.
-- The scaffold now defaults `controlSurfaceColor` to the same `canvasColor` backdrop used by the mobile root, keeping
-  compact navigation/status chrome on the same background tone as desktop instead of painting a brighter mobile-only
-  control slab.
+- The scaffold now defaults `controlSurfaceColor` to `LV.Theme.panelBackground10`, which matches the shared Figma
+  mobile navigation/status surface fill used by both the compact top bar and the compact status search field.
 
 ## Intended Detailed Sections
 - Responsibility and business role

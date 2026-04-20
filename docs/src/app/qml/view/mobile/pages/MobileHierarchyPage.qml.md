@@ -167,8 +167,8 @@ This keeps mobile back navigation local to the page and avoids stealing editor t
 - The same shared sidebar viewmodel is also forwarded into `ContentViewLayout.qml`, so mobile calendar note taps reuse
   the same library-selection path as desktop.
 - `windowInteractions`: routes the dedicated create-note action and resolves the writable note-mutation capability.
-- The mobile page now keeps `controlSurfaceColor` aligned with `canvasColor`, so routed mobile chrome inherits the
-  same shell background tone as desktop instead of applying a brighter compact-only surface token.
+- The mobile page now defaults `controlSurfaceColor` to `LV.Theme.panelBackground10`, matching the Figma mobile
+  navigation/status surface token while still letting the root override that shared compact chrome color explicitly.
 
 ## Known Invariants
 - A note-list/editor canonical rebuild must preserve the hierarchy selection before changing the route stack.

@@ -5,8 +5,8 @@
 
 ## Contract
 - Read current hub path and access bookmark.
-- Resolve startup hub path with blueprint fallback.
 - Clear or update the persisted selection.
 
 ## Notes
-- Startup resolution code now depends on this interface rather than the concrete settings-backed store.
+- Startup resolution code depends on this interface for persisted selection only.
+- Blueprint fallback policy now lives in `WhatSonStartupHubResolver`, not in the settings-backed store.

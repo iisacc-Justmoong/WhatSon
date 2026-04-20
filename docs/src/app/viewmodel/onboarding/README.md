@@ -27,6 +27,6 @@
 - Known hotspots and refactor priorities
 
 ## Current Notes
-- Automated C++ regression coverage now lives in `test/cpp/whatson_cpp_regression_tests.cpp`, locking embedded
+- Automated C++ regression coverage now lives in `test/cpp/suites/*.cpp`, locking embedded
   onboarding route commits, reopen/dismiss routing, and workspace transition callbacks for
   `OnboardingRouteBootstrapController`.

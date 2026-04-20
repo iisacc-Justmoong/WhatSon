@@ -39,6 +39,7 @@
 #include "permissions/WhatSonPermissionBootstrapper.hpp"
 #include "runtime/scheduler/WhatSonAsyncScheduler.hpp"
 #include "file/hub/WhatSonHubCreator.hpp"
+#include "file/hub/WhatSonHubMountValidator.hpp"
 #include "file/hub/WhatSonHubPathUtils.hpp"
 #include "file/WhatSonDebugTrace.hpp"
 #include "platform/Android/WhatSonAndroidStorageBackend.hpp"
@@ -401,9 +402,15 @@ int main(int argc, char* argv[])
         });
 
     bool initialHubLoaded = false;
-    const QString blueprintFallbackHubPath = WhatSon::Runtime::Bootstrap::resolveBlueprintHubPath();
+    const WhatSonHubMountValidator startupHubMountValidator;
     const WhatSon::Runtime::Startup::StartupHubSelection startupHubSelection =
-        WhatSon::Runtime::Startup::resolveStartupHubSelection(selectedHubStore, blueprintFallbackHubPath);
+        WhatSon::Runtime::Startup::resolveStartupHubSelection(
+            selectedHubStore,
+            startupHubMountValidator);
+    if (!startupHubSelection.mounted && !startupHubSelection.failureMessage.trimmed().isEmpty())
+    {
+        onboardingHubController.failWorkspaceTransition(startupHubSelection.failureMessage);
+    }
 
     if (startupHubSelection.mounted)
     {
@@ -424,11 +431,15 @@ int main(int argc, char* argv[])
             calendarBoardStore.reloadProjectedNotesFromSnapshot(
                 libraryHierarchyViewModel.indexedNotesSnapshot());
         }
-        if (!initialHubLoaded && !errorMessage.trimmed().isEmpty())
+        if (!initialHubLoaded)
         {
+            const QString startupLoadFailureMessage = errorMessage.trimmed().isEmpty()
+                                                          ? QStringLiteral("Failed to load the startup WhatSon Hub.")
+                                                          : errorMessage.trimmed();
+            onboardingHubController.failWorkspaceTransition(startupLoadFailureMessage);
             qWarning().noquote()
                 << QStringLiteral("Failed to load startup WhatSon Hub '%1': %2")
-                       .arg(startupHubSelection.hubPath, errorMessage.trimmed());
+                       .arg(startupHubSelection.hubPath, startupLoadFailureMessage);
         }
     }
 
@@ -658,8 +669,11 @@ int main(int argc, char* argv[])
 #else
     const bool useEmbeddedStartupOnboarding = false;
 #endif
-    const bool showDesktopStartupOnboarding = !startupHubSelection.mounted && !useEmbeddedStartupOnboarding;
-    onboardingRouteBootstrapController.configure(useEmbeddedStartupOnboarding, startupHubSelection.mounted);
+    const bool startupWorkspaceAvailable = WhatSon::Runtime::Bootstrap::startupWorkspaceReady(
+        startupHubSelection.mounted,
+        initialHubLoaded);
+    const bool showDesktopStartupOnboarding = !startupWorkspaceAvailable && !useEmbeddedStartupOnboarding;
+    onboardingRouteBootstrapController.configure(useEmbeddedStartupOnboarding, startupWorkspaceAvailable);
 
     const QVariantMap mainWindowInitialProperties{
         {

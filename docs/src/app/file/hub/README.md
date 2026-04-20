@@ -7,7 +7,7 @@
 ## Scope
 - Mirrored source directory: `src/app/file/hub`
 - Child directories: 0
-- Child files: 15
+- Child files: 17
 
 ## Child Directories
 - No child directories.
@@ -15,6 +15,8 @@
 ## Child Files
 - `WhatSonHubCreator.cpp`
 - `WhatSonHubCreator.hpp`
+- `WhatSonHubMountValidator.cpp`
+- `WhatSonHubMountValidator.hpp`
 - `WhatSonHubParser.cpp`
 - `WhatSonHubParser.hpp`
 - `WhatSonHubPathUtils.hpp`
@@ -31,4 +33,6 @@
 
 ## Notes
 - `WhatSonHubCreator` is responsible for initial hub package materialization, including `.whatson/hub.json`.
+- `WhatSonHubMountValidator` now owns the lightweight mount/access + hub-structure preflight shared by startup and
+  onboarding.
 - Runtime hub writes no longer depend on a hub-level write-lease side channel.

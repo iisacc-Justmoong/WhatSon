@@ -76,8 +76,6 @@ private:
     [[nodiscard]] QString localPathFromUrl(const QUrl& hubUrl) const;
     [[nodiscard]] QStringList hubPackageCandidatesInDirectory(const QString& directoryPath) const;
     [[nodiscard]] QString resolveExistingHubPath(const QString& selectedPath, QString* errorMessage) const;
-    [[nodiscard]] bool validateMountableHubPath(const QString& hubPath, QString* errorMessage) const;
-    bool loadCreatedHub(const QString& hubPath, QString* errorMessage);
     bool loadResolvedHubPath(const QString& resolvedHubPath, QString* errorMessage);
     void setBusy(bool busy);
     void setCurrentHubPath(const QString& hubPath);

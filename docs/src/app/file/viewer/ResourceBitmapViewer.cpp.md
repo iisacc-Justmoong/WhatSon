@@ -25,7 +25,7 @@ Implements derived bitmap-viewer state projection from resource-entry metadata.
 
 ## Tests
 
-- Automated regression coverage now verifies this bridge in `test/cpp/whatson_cpp_regression_tests.cpp`.
+- Automated regression coverage now verifies this bridge in `test/cpp/suites/*.cpp`.
 - Regression checklist:
   - a compatible image resource entry must produce a local-file `openTarget`, normalized lowercase format, and a
     renderable bitmap state

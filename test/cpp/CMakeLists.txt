@@ -15,8 +15,14 @@ if (APPLE AND TARGET WrapOpenGL::WrapOpenGL)
     endif ()
 endif ()
 
+file(GLOB WHATSON_CPP_REGRESSION_SUITE_SOURCES CONFIGURE_DEPENDS
+        "${CMAKE_CURRENT_SOURCE_DIR}/suites/*.cpp")
+
 set(WHATSON_CPP_REGRESSION_TEST_SOURCES
-        "${CMAKE_CURRENT_SOURCE_DIR}/whatson_cpp_regression_tests.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/whatson_cpp_regression_tests.hpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/whatson_cpp_regression_tests_main.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/whatson_cpp_regression_test_support.cpp"
+        ${WHATSON_CPP_REGRESSION_SUITE_SOURCES}
         "${CMAKE_SOURCE_DIR}/src/app/platform/Android/WhatSonAndroidStorageBackend.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/agenda/ContentsAgendaBackend.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/display/paper/ContentsA4PaperBackground.cpp"
@@ -60,6 +66,8 @@ set(WHATSON_CPP_REGRESSION_TEST_SOURCES
         "${CMAKE_SOURCE_DIR}/src/app/file/validator/WhatSonStructuredTagLinter.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/file/viewer/ImageFormatCompatibilityLayer.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/file/viewer/ResourceBitmapViewer.cpp"
+        "${CMAKE_SOURCE_DIR}/src/app/file/hub/WhatSonHubMountValidator.cpp"
+        "${CMAKE_SOURCE_DIR}/src/app/runtime/startup/WhatSonStartupHubResolver.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/store/hub/SelectedHubStore.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/store/sidebar/ISidebarSelectionStore.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/store/sidebar/ISidebarSelectionStore.hpp"
@@ -105,6 +113,7 @@ add_executable(whatson_cpp_regression_tests
         ${WHATSON_CPP_REGRESSION_TEST_SOURCES}
 )
 target_include_directories(whatson_cpp_regression_tests PRIVATE
+        "${CMAKE_CURRENT_SOURCE_DIR}"
         "${CMAKE_SOURCE_DIR}/src/app"
         "${CMAKE_SOURCE_DIR}/src/app/models"
         "${CMAKE_SOURCE_DIR}/src/app/file"

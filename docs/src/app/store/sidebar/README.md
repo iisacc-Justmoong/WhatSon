@@ -27,5 +27,5 @@
 - Known hotspots and refactor priorities
 
 ## Current Notes
-- Automated C++ regression coverage now lives in `test/cpp/whatson_cpp_regression_tests.cpp`, locking hierarchy-index
+- Automated C++ regression coverage now lives in `test/cpp/suites/*.cpp`, locking hierarchy-index
   normalization and duplicate-signal suppression for `SidebarSelectionStore`.

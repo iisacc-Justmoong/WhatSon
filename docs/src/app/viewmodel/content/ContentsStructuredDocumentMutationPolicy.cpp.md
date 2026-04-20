@@ -15,6 +15,6 @@ Implements source-normalized RAW mutation helpers for structured document editin
   wrapper prefixes/suffixes for `<paragraph>...</paragraph>`-style blocks.
 
 ## Verification Surface
-- C++ regression coverage lives in `test/cpp/whatson_cpp_regression_tests.cpp`.
+- C++ regression coverage lives in `test/cpp/suites/*.cpp`.
 - The suite now asserts implicit merge, explicit merge, implicit split, and explicit split payloads so paragraph
   boundary editing stays deterministic.

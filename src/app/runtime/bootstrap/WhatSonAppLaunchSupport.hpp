@@ -11,7 +11,13 @@ namespace WhatSon::Runtime::Bootstrap
         bool onboardingOnly = false;
     };
 
+    [[nodiscard]] inline bool startupWorkspaceReady(
+        const bool startupHubMounted,
+        const bool startupRuntimeLoaded) noexcept
+    {
+        return startupHubMounted && startupRuntimeLoaded;
+    }
+
     void prependEnvPath(const char* variableName, const QByteArray& path);
-    QString resolveBlueprintHubPath();
     LaunchOptions parseLaunchOptions(QGuiApplication& app);
 }

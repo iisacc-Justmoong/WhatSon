@@ -9,6 +9,15 @@ The `test/CMakeLists.txt` entrypoint now stays intentionally thin and delegates 
 `test/cpp/CMakeLists.txt`, so additional regression surfaces can be added without growing one monolithic test build
 definition.
 
+The maintained Qt Test suite is now split by regression subject instead of keeping every slot in one source file:
+
+- `test/cpp/whatson_cpp_regression_tests.hpp` owns the shared fixture declarations, fake objects, and slot list.
+- `test/cpp/whatson_cpp_regression_test_support.cpp` owns reusable helper implementations such as sandboxed settings,
+  hub fixture creation, local note creation, JS loading, and source-file loading.
+- `test/cpp/whatson_cpp_regression_tests_main.cpp` keeps the single `QTEST_APPLESS_MAIN(...)` entrypoint.
+- `test/cpp/suites/*.cpp` owns the object-focused regression implementations. Each suite file now covers one object or
+  one tightly coupled runtime seam instead of extending a monolithic translation unit.
+
 - `whatson_build_regression` builds the maintained product binaries and the regression test executable in `build/`.
 - `whatson_cpp_regression` runs the runtime C++ regression assertions only.
 - `whatson_regression` is the default combined verification gate.

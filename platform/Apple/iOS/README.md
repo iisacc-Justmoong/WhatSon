@@ -40,8 +40,10 @@ This directory contains iOS platform-specific bundle configuration.
 - Embedded iOS onboarding now defers the actual `/onboarding -> /` route flip by one event turn after `hubLoaded` /
   `operationFailed`, keeping the workspace transition out of the native Files picker teardown stack.
 - Startup onboarding now consults the persisted hub selection as a mount candidate first instead of deleting that
-  selection during settings validation. If the stored iOS `.wshub` path can still be mounted, the app enters the
-  workspace directly; otherwise startup retries the bundled blueprint fallback before reopening onboarding.
+  selection during settings validation. If the stored iOS `.wshub` path can still be mounted and passes the shared hub
+  structure validator, the app enters the workspace directly; otherwise startup reopens onboarding with that failure.
+  A restored hub that mounts but still fails the first runtime load now also falls back to onboarding so the user can
+  re-pick the hub from the embedded mobile onboarding surface immediately.
 - `Main.qml` also disables LVRS `mobileOversizedHeightEnabled` on iOS. The default oversized mobile surface can place
   the routed onboarding page host outside the visible viewport, leaving only the dark `windowColor` fill on screen.
 - `Main.qml` disables LVRS `delegateMobileInsetsToSystem` and forces `forceFullWindowAreaOnMobile` on iOS, so the
@@ -49,9 +51,10 @@ This directory contains iOS platform-specific bundle configuration.
   background-only fallback.
 - `Main.qml` now leaves `forcedDeviceTierPreset` in LVRS auto-detect mode (`-1`) on iOS. Recent LVRS shell defaults no
   longer pin startup to `UltraTier`, so WhatSon must not keep the stale mobile override from the older bootstrap path.
-- `OnboardingHubController` also validates that the resolved iOS selection is a mountable local `.wshub` directory
-  before runtime bootstrap starts. Unsupported document-provider URLs or incomplete package scaffolds now stay inside
-  onboarding with an explicit error instead of collapsing the app session after the picker closes.
+- `WhatSonHubMountValidator` validates that the resolved iOS selection is a mountable local `.wshub` directory with the
+  required hub entries before runtime bootstrap starts. Unsupported document-provider URLs or incomplete package
+  scaffolds now stay inside onboarding with an explicit error instead of collapsing the app session after the picker
+  closes.
 - iOS now allows the same `.wshub` to be mounted concurrently with desktop and Android sessions. The old
   `.whatson/write-lease.json` gate is treated as a legacy cleanup artifact only and no longer blocks onboarding or
   runtime filesystem access.

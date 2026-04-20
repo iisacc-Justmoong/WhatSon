@@ -33,6 +33,12 @@ The wrapper keeps the host/editor contract expected by `ContentsDisplayView.qml`
 - The wrapper now also exposes `clearSelection()`, which explicitly clears `persistentSelection` highlight and any
   cached selection snapshot when a structured-flow activation moves elsewhere.
 - The wrapper keeps the existing external-scroll contract used by page/print layout, gutter, and minimap code.
+- In mobile native-input mode while the software keyboard is hidden, the wrapper now mounts a transparent `MouseArea`
+  guard above the live `TextEdit`.
+- That guard keeps drag gestures stealable by the parent `Flickable` and upgrades only a clean click into
+  `activateInputAtPoint(...)`, so touch scrolling does not immediately reopen keyboard focus or text selection.
+- Once the keyboard becomes visible again, the guard drops away and the live `TextEdit` resumes direct cursor and
+  selection handling.
 
 ## Regression Focus
 

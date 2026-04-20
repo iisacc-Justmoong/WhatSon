@@ -85,6 +85,8 @@ FocusScope {
                                                : false
     readonly property int length: textInput.length
     readonly property int lineCount: textInput.lineCount
+    readonly property bool nativeTouchScrollGuardActive: control.preferNativeInputHandling
+                                                         && !control.inputMethodVisible
     readonly property string preeditText: textInput.preeditText === undefined || textInput.preeditText === null
                                            ? ""
                                            : String(textInput.preeditText)
@@ -575,6 +577,21 @@ FocusScope {
                 return textInput.positionToRectangle(position);
             }
 
+            MouseArea {
+                anchors.fill: parent
+                acceptedButtons: Qt.LeftButton
+                enabled: control.nativeTouchScrollGuardActive
+                hoverEnabled: false
+                preventStealing: false
+                propagateComposedEvents: false
+                visible: enabled
+                z: 3
+
+                onClicked: function (mouse) {
+                    control.activateInputAtPoint(Qt.point(mouse.x, mouse.y));
+                }
+            }
+
             Text {
                 id: renderedOutputText
 
@@ -723,7 +740,9 @@ FocusScope {
                 TapHandler {
                     acceptedDevices: PointerDevice.TouchScreen
                     enabled: control.preferNativeInputHandling
+                             && !control.nativeTouchScrollGuardActive
                     gesturePolicy: TapHandler.DragThreshold
+                    grabPermissions: PointerHandler.ApprovesTakeOverByAnything
 
                     onDoubleTapped: function (eventPoint, _button) {
                         control.selectWordAtPoint(eventPoint.position);

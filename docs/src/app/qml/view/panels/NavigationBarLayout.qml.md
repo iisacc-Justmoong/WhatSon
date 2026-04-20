@@ -49,6 +49,9 @@
 - Compact mobile navigation now also exposes `compactEditorViewVisible`. When true, the left compact group
   shows `NavigationEditorViewBar` (`showLabel: false`) next to `NavigationModeBar` and suppresses the hierarchy-only
   `settings` icon, matching the dual-combo Figma mobile editor chrome (`174:5689`).
+- The compact mobile surface fill is supplied by `compactSurfaceColor`; the Figma mobile editor chrome uses
+  `panelBackground10` (`#343536`) for that pill background instead of leaving it transparent or inheriting the page
+  canvas tone.
 
 ## Intended Detailed Sections
 - Responsibility and business role

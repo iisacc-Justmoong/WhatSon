@@ -4,22 +4,26 @@
 #include <QString>
 
 class ISelectedHubStore;
+class WhatSonHubMountValidator;
 
 namespace WhatSon::Runtime::Startup
 {
+    enum class StartupHubSource
+    {
+        None,
+        PersistedSelection
+    };
+
     struct StartupHubSelection final
     {
         bool mounted = false;
+        StartupHubSource source = StartupHubSource::None;
         QString hubPath;
         QByteArray accessBookmark;
+        QString failureMessage;
     };
-
-    QString resolveStartupHubMountPath(
-        const QString& hubPath,
-        const QByteArray& hubAccessBookmark,
-        QString* errorMessage = nullptr);
 
     StartupHubSelection resolveStartupHubSelection(
         ISelectedHubStore& selectedHubStore,
-        const QString& blueprintFallbackHubPath);
+        const WhatSonHubMountValidator& hubMountValidator);
 }

@@ -21,6 +21,7 @@ LV.ApplicationWindow {
     readonly property int bodySplitterThickness: Math.max(1, Math.round(LV.Theme.strokeThin))
     readonly property color canvasColor: LV.Theme.panelBackground01
     readonly property color desktopPanelSurfaceColor: "transparent"
+    readonly property color mobileControlSurfaceColor: LV.Theme.panelBackground10
     property bool desktopOnboardingWindowVisible: false
     readonly property int desktopMinimumBodyWidth: (hideSidebar ? 0 : minSidebarWidth)
                                                + (hideListView ? 0 : minListViewWidth)
@@ -806,7 +807,7 @@ LV.ApplicationWindow {
         MobilePageView.MobileHierarchyPage {
             anchors.fill: parent
             canvasColor: applicationWindow.canvasColor
-            controlSurfaceColor: applicationWindow.canvasColor
+            controlSurfaceColor: applicationWindow.mobileControlSurfaceColor
             editorViewModeViewModel: applicationWindow.rootEditorViewModeViewModel
             navigationModeViewModel: applicationWindow.rootNavigationModeViewModel
             sidebarHierarchyViewModel: applicationWindow.rootSidebarHierarchyViewModel

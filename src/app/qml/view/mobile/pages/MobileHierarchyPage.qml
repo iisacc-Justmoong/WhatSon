@@ -34,7 +34,7 @@ Item {
     property int editorPopRepairRequestId: 0
     property int backSwipeSessionId: -1
     property color canvasColor: LV.Theme.panelBackground01
-    property color controlSurfaceColor: mobileHierarchyPage.canvasColor
+    property color controlSurfaceColor: LV.Theme.panelBackground10
     readonly property string detailRoutePath: "/mobile/detail"
     readonly property string editorRoutePath: "/mobile/editor"
     property var editorViewModeViewModel: null

@@ -1,5 +1,6 @@
 #include "OnboardingHubController.hpp"
 #include "file/hub/WhatSonHubPathUtils.hpp"
+#include "file/hub/WhatSonHubMountValidator.hpp"
 #include "platform/Android/WhatSonAndroidStorageBackend.hpp"
 #include "platform/Apple/AppleSecurityScopedResourceAccess.hpp"
 
@@ -156,73 +157,6 @@ namespace
         }
 
         return WhatSon::HubPath::joinPath(normalizedDirectoryPath, candidateName);
-    }
-
-    QString resolvePrimaryDirectoryEntry(
-        const QDir& baseDirectory,
-        const QString& fixedName,
-        const QString& dynamicPattern)
-    {
-        const QString fixedPath = normalizedAbsolutePath(baseDirectory.filePath(fixedName));
-        if (!fixedPath.isEmpty() && QFileInfo(fixedPath).isDir())
-        {
-            return fixedPath;
-        }
-
-        const QStringList dynamicEntries = baseDirectory.entryList(
-            QStringList{dynamicPattern},
-            QDir::Dirs | QDir::NoDotAndDotDot,
-            QDir::Name);
-        if (dynamicEntries.isEmpty())
-        {
-            return {};
-        }
-
-        return normalizedAbsolutePath(baseDirectory.filePath(dynamicEntries.constFirst()));
-    }
-
-    QString resolvePrimaryFileEntry(const QDir& baseDirectory, const QStringList& nameFilters)
-    {
-        const QStringList entries = baseDirectory.entryList(nameFilters, QDir::Files | QDir::NoDotAndDotDot, QDir::Name);
-        if (entries.isEmpty())
-        {
-            return {};
-        }
-
-        return normalizedAbsolutePath(baseDirectory.filePath(entries.constFirst()));
-    }
-
-    bool requireEntryPath(
-        const QString& basePath,
-        const QString& entryName,
-        const bool allowDirectory,
-        const bool allowFile,
-        QString* errorMessage)
-    {
-        const QString absoluteEntryPath = normalizedAbsolutePath(QDir(basePath).filePath(entryName));
-        const QFileInfo entryInfo(absoluteEntryPath);
-        if (!entryInfo.exists())
-        {
-            if (errorMessage != nullptr)
-            {
-                *errorMessage = QStringLiteral("Required hub entry is missing: %1").arg(absoluteEntryPath);
-            }
-            return false;
-        }
-        if (entryInfo.isDir() && allowDirectory)
-        {
-            return true;
-        }
-        if (entryInfo.isFile() && allowFile)
-        {
-            return true;
-        }
-
-        if (errorMessage != nullptr)
-        {
-            *errorMessage = QStringLiteral("Hub entry has an unexpected type: %1").arg(absoluteEntryPath);
-        }
-        return false;
     }
 
     bool invokeCreateHubCallbackSafely(
@@ -438,7 +372,7 @@ bool OnboardingHubController::createHubAtUrl(const QUrl& hubUrl)
     }
     emit hubCreated(normalizedCreatedHubPath);
 
-    if (loadCreatedHub(normalizedCreatedHubPath, &errorMessage))
+    if (loadResolvedHubPath(normalizedCreatedHubPath, &errorMessage))
     {
         return true;
     }
@@ -1027,121 +961,6 @@ QString OnboardingHubController::resolveExistingHubPath(
     return QString();
 }
 
-bool OnboardingHubController::validateMountableHubPath(const QString& hubPath, QString* errorMessage) const
-{
-    const QString normalizedHubPath = normalizedAbsolutePath(hubPath);
-    if (normalizedHubPath.isEmpty())
-    {
-        if (errorMessage != nullptr)
-        {
-            *errorMessage = QStringLiteral("Resolved WhatSon Hub path must not be empty.");
-        }
-        return false;
-    }
-
-    if (WhatSon::HubPath::isNonLocalUrl(normalizedHubPath))
-    {
-        if (errorMessage != nullptr)
-        {
-            *errorMessage = QStringLiteral(
-                "The selected WhatSon Hub provider does not expose a mountable local directory path.");
-        }
-        return false;
-    }
-
-    const QFileInfo hubInfo(normalizedHubPath);
-    if (!hubInfo.exists() || !hubInfo.isDir())
-    {
-        if (errorMessage != nullptr)
-        {
-            *errorMessage = QStringLiteral("Resolved WhatSon Hub directory does not exist: %1").arg(normalizedHubPath);
-        }
-        return false;
-    }
-
-    if (!hubInfo.fileName().endsWith(QStringLiteral(".wshub"), Qt::CaseInsensitive))
-    {
-        if (errorMessage != nullptr)
-        {
-            *errorMessage = QStringLiteral("Resolved path is not a .wshub directory: %1").arg(normalizedHubPath);
-        }
-        return false;
-    }
-
-    const QDir hubDirectory(normalizedHubPath);
-    const QString contentsPath = resolvePrimaryDirectoryEntry(
-        hubDirectory,
-        QStringLiteral(".wscontents"),
-        QStringLiteral("*.wscontents"));
-    if (contentsPath.isEmpty())
-    {
-        if (errorMessage != nullptr)
-        {
-            *errorMessage = QStringLiteral("No *.wscontents directory found inside hub: %1").arg(normalizedHubPath);
-        }
-        return false;
-    }
-
-    const QDir contentsDirectory(contentsPath);
-    const QString libraryPath = resolvePrimaryDirectoryEntry(
-        contentsDirectory,
-        QStringLiteral("Library.wslibrary"),
-        QStringLiteral("*.wslibrary"));
-    if (libraryPath.isEmpty())
-    {
-        if (errorMessage != nullptr)
-        {
-            *errorMessage = QStringLiteral("Library.wslibrary directory is missing: %1").arg(contentsPath);
-        }
-        return false;
-    }
-
-    const QString resourcesPath = resolvePrimaryDirectoryEntry(
-        hubDirectory,
-        QStringLiteral(".wsresources"),
-        QStringLiteral("*.wsresources"));
-    if (resourcesPath.isEmpty())
-    {
-        if (errorMessage != nullptr)
-        {
-            *errorMessage = QStringLiteral("No *.wsresources directory found inside hub: %1").arg(normalizedHubPath);
-        }
-        return false;
-    }
-
-    if (resolvePrimaryFileEntry(hubDirectory, QStringList{QStringLiteral("*.wsstat")}).isEmpty())
-    {
-        if (errorMessage != nullptr)
-        {
-            *errorMessage = QStringLiteral("No *.wsstat file found inside hub: %1").arg(normalizedHubPath);
-        }
-        return false;
-    }
-
-    QString entryError;
-    requireEntryPath(contentsPath, QStringLiteral("Folders.wsfolders"), false, true, &entryError);
-    requireEntryPath(contentsPath, QStringLiteral("ProjectLists.wsproj"), false, true, &entryError);
-    requireEntryPath(contentsPath, QStringLiteral("Bookmarks.wsbookmarks"), false, true, &entryError);
-    requireEntryPath(contentsPath, QStringLiteral("Tags.wstags"), false, true, &entryError);
-    requireEntryPath(contentsPath, QStringLiteral("Progress.wsprogress"), false, true, &entryError);
-    requireEntryPath(contentsPath, QStringLiteral("Preset.wspreset"), true, true, &entryError);
-    requireEntryPath(libraryPath, QStringLiteral("index.wsnindex"), false, true, &entryError);
-    if (!entryError.isEmpty())
-    {
-        if (errorMessage != nullptr)
-        {
-            *errorMessage = entryError;
-        }
-        return false;
-    }
-
-    if (errorMessage != nullptr)
-    {
-        errorMessage->clear();
-    }
-    return true;
-}
-
 QStringList OnboardingHubController::hubPackageCandidatesInDirectory(const QString& directoryPath) const
 {
     const QString normalizedDirectoryPath = normalizedAbsolutePath(directoryPath);
@@ -1165,63 +984,22 @@ QStringList OnboardingHubController::hubPackageCandidatesInDirectory(const QStri
     return candidatePaths;
 }
 
-bool OnboardingHubController::loadCreatedHub(const QString& hubPath, QString* errorMessage)
-{
-    if (!m_loadHubCallback)
-    {
-        if (errorMessage != nullptr)
-        {
-            *errorMessage = QStringLiteral("Hub loading callback is not configured.");
-        }
-        return false;
-    }
-
-    setSessionState(QString::fromLatin1(kSessionStateLoadingHub));
-    setBusy(true);
-    const bool loaded = invokeLoadHubCallbackSafely(m_loadHubCallback, hubPath, errorMessage);
-    setBusy(false);
-
-    if (loaded)
-    {
-        setSessionState(QString::fromLatin1(kSessionStateHubLoaded));
-        emit hubLoaded(hubPath);
-    }
-
-    return loaded;
-}
-
 bool OnboardingHubController::loadResolvedHubPath(const QString& resolvedHubPath, QString* errorMessage)
 {
-    QString mountableHubPath = resolvedHubPath;
-    if (WhatSon::Android::Storage::isSupportedUri(resolvedHubPath))
-    {
-        if (!WhatSon::Android::Storage::mountHub(resolvedHubPath, &mountableHubPath, errorMessage))
-        {
-            return false;
-        }
-    }
-
-    QString accessError;
-    if (!WhatSon::Apple::SecurityScopedResourceAccess::ensureAccessForPath(mountableHubPath, &accessError))
+    const WhatSonHubMountValidator hubMountValidator;
+    const WhatSonHubMountValidation mountValidation =
+        hubMountValidator.resolveMountedHub(resolvedHubPath, m_currentHubAccessBookmark);
+    if (!mountValidation.mounted)
     {
         if (errorMessage != nullptr)
         {
-            *errorMessage = accessError.trimmed().isEmpty()
-                                ? QStringLiteral("Failed to access the resolved WhatSon Hub package.")
-                                : accessError.trimmed();
+            *errorMessage = mountValidation.failureMessage.trimmed().isEmpty()
+                                ? QStringLiteral("Failed to resolve the selected WhatSon Hub package.")
+                                : mountValidation.failureMessage.trimmed();
         }
         return false;
     }
-
-    QString validationError;
-    if (!validateMountableHubPath(mountableHubPath, &validationError))
-    {
-        if (errorMessage != nullptr)
-        {
-            *errorMessage = validationError;
-        }
-        return false;
-    }
+    const QString mountableHubPath = mountValidation.hubPath;
 
     setCurrentHubPath(mountableHubPath);
     setSessionState(QString::fromLatin1(kSessionStateLoadingHub));

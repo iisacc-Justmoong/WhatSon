@@ -35,3 +35,5 @@
 - Read the real implementation and adjacent headers before replacing this scaffold.
 - Document concrete signals, slots, invokables, persistence side effects, and LVRS/QML bindings where applicable.
 - Cross-link this file with peer modules in the same directory once the detailed pass begins.
+- Keep the responsibility boundary explicit: `SelectedHubStore` persists the user selection and bookmark, while startup
+  fallback policy belongs to `src/app/runtime/startup/WhatSonStartupHubResolver.*`.

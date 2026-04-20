@@ -55,6 +55,9 @@
   desktop/mobile QML roots.
 - `ContentsDisplayView.qml` now also keeps gutter-body spacing separate from editor text padding through a dedicated
   `gutterBodyGap` token, so line numbers can sit closer to the note body without shrinking the body column itself.
+- `ContentsDisplayView.qml` now scales the existing non-print bottom accessibility inset up to roughly half of the
+  live editor height, so end-of-document editing keeps a much larger visual landing area without introducing a second
+  spacer concept.
 - The shared live editor engine is already `QtQuick.TextEdit` wrapped by `ContentsInlineFormatEditor.qml`; this
   directory no longer depends on an LVRS `LV.TextEditor` implementation.
 - The editor, gutter, and minimap fill the `ContentsView` slot; note-body resources no longer use a separate overlay
@@ -154,6 +157,8 @@
   inside a `Flickable`.
 - In mobile native-input mode, the shared wrapper now also separates scroll-vs-edit activation:
   - keyboard hidden: touch `press`/drag stays scroll-first and does not immediately move cursor/focus
+    A transparent guard layer now sits above `TextEdit`, forwards drags back to the parent `Flickable`, and only
+    upgrades a clean click into `activateInputAtPoint(...)`.
   - single tap: places cursor at the tapped point and opens the keyboard
   - keyboard visible: normal cursor placement/selection remains enabled
 - Mobile editor hosts now opt into native-input priority rules, pause note snapshot polling, delay app-driven

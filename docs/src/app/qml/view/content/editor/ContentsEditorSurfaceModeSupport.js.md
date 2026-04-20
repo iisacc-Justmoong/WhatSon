@@ -27,7 +27,7 @@ the dedicated resource editor.
 ## Tests
 
 - Automated regression coverage executes this helper through `QJSEngine` in
-  `test/cpp/whatson_cpp_regression_tests.cpp`.
+  `test/cpp/suites/*.cpp`.
 - Regression checklist:
   - direct resource list models must switch the center surface into resource-editor mode
   - note-backed list models must keep the note editor even if a helper payload is present

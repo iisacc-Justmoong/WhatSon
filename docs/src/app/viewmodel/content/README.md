@@ -105,7 +105,7 @@
   `ContentsStructuredDocumentMutationPolicy` now split collection normalization, focus resolution, and RAW mutation
   rules into separate C++ SRP units so structured host behavior no longer collapses back into one QML god object.
 - Automated C++ regression coverage for this directory now lives in
-  `test/cpp/whatson_cpp_regression_tests.cpp`, locking imported resource descriptor normalization/tag generation for
+  `test/cpp/suites/*.cpp`, locking imported resource descriptor normalization/tag generation for
   `ContentsResourceTagTextGenerator`, collection normalization/resource resolution for
   `ContentsStructuredDocumentCollectionPolicy`, structured deletion/insertion payload generation for
   `ContentsStructuredDocumentMutationPolicy`, stable row retention/removal behavior in

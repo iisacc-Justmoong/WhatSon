@@ -25,5 +25,5 @@ hard-coded `Targets` struct field per domain, so the provider no longer needs a 
 hierarchy type just to resolve the active module.
 
 Automated C++ regression coverage for this directory now lives in
-`test/cpp/whatson_cpp_regression_tests.cpp`, locking mapping normalization, exported ordering, fallback selection, and
+`test/cpp/suites/*.cpp`, locking mapping normalization, exported ordering, fallback selection, and
 provider/store-driven active-binding refresh for `HierarchyViewModelProvider` and `SidebarHierarchyViewModel`.

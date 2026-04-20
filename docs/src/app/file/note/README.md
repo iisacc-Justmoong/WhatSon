@@ -81,7 +81,7 @@
 - RAW resource import now also shares one static note-body tag generator:
   drag/drop and clipboard-image insertion both normalize imported metadata through
   `WhatSonNoteBodyResourceTagGenerator.*` before mutating `.wsnbody`.
-- Automated C++ regression coverage now lives in `test/cpp/whatson_cpp_regression_tests.cpp`, locking canonical
+- Automated C++ regression coverage now lives in `test/cpp/suites/*.cpp`, locking canonical
   resource-tag generation through `WhatSonNoteBodyResourceTagGenerator` / `ContentsResourceTagTextGenerator` and
   raw-folder-block inspection through `WhatSonNoteFolderSemantics`.
 - `.wsnbody` semantic tag classification is now owned by `WhatSonNoteBodySemanticTagSupport.*` so the note-body save

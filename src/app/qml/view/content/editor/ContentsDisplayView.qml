@@ -42,7 +42,8 @@ Item {
     property color displayColor: "transparent"
     readonly property int editorBottomInset: Math.max(
                                                 LV.Theme.gap16,
-                                                Math.round(contentsView.editorLineHeight * 6))
+                                                Math.round(contentsView.editorLineHeight * 6),
+                                                Math.round(contentsView.editorSurfaceHeight * 0.5))
     property alias editorBoundNoteId: editorSession.editorBoundNoteId
     readonly property real editorContentOffsetY: {
         const flickable = contentsView.editorFlickable;

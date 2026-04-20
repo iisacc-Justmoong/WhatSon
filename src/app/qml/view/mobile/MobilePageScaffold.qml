@@ -23,7 +23,7 @@ Rectangle {
     property bool compactLeadingActionVisible: false
     property bool compactNoteListControlsVisible: false
     property bool compactSettingsVisible: true
-    property color controlSurfaceColor: mobilePageScaffold.canvasColor
+    property color controlSurfaceColor: LV.Theme.panelBackground10
     property bool detailPanelCollapsed: true
     property var editorViewModeViewModel: null
     property var navigationModeViewModel: null

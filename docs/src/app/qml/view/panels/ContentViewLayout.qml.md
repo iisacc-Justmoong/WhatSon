@@ -59,7 +59,7 @@ surface.
 
 ## Tests
 
-- Regression coverage now lives in `test/cpp/whatson_cpp_regression_tests.cpp`.
+- Regression coverage now lives in `test/cpp/suites/*.cpp`.
 - Regression checklist:
   - switching between note editor, resource editor, and calendar surfaces must continue to use one shared content slot
   - the active non-calendar surface must fill that slot in both desktop and mobile modes without a reserved bottom partition

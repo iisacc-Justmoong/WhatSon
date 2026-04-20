@@ -18,7 +18,10 @@ This directory is the architectural center of the repository. Most other modules
 
 ## Startup Shape
 The app startup sequence lives in `main.cpp` and performs five broad phases.
-1. Parse launch options and resolve a startup hub candidate.
+1. Parse launch options and resolve a startup hub candidate through the shared hub mount validator.
+   If a persisted hub selection exists but cannot be mounted, startup now leaves the app in onboarding with the
+   original failure visible instead of silently opening any fallback hub. If that candidate mounts but the first
+   workspace runtime load still fails, startup also returns to onboarding and keeps the runtime error visible.
 2. Construct stores, services, viewmodels, and helper bridges on the C++ side.
 3. Load critical workspace domain snapshots, usually through `WhatSonRuntimeParallelLoader`.
 4. Defer low-priority hierarchy domains until the first post-show idle turns or the first sidebar activation that needs them.

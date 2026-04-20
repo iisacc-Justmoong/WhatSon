@@ -10,7 +10,6 @@ public:
 
     [[nodiscard]] QString selectedHubPath() override;
     [[nodiscard]] QByteArray selectedHubAccessBookmark() override;
-    [[nodiscard]] QString startupHubPath(const QString& blueprintFallbackHubPath) override;
     void clearSelectedHubPath() override;
     void setSelectedHubPath(const QString& hubPath) override;
     void setSelectedHubSelection(const QString& hubPath, const QByteArray& accessBookmark) override;

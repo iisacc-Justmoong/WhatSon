@@ -29,7 +29,7 @@
 - Known hotspots and refactor priorities
 
 ## Current Notes
-- Automated C++ regression coverage now lives in `test/cpp/whatson_cpp_regression_tests.cpp`, locking cron parsing,
+- Automated C++ regression coverage now lives in `test/cpp/suites/*.cpp`, locking cron parsing,
   minute-level deduplication, interval trigger progression, unix-time analysis, and scheduler hook state for
   `WhatSonCronExpression`, `WhatSonUnixTimeAnalyzer`, and `WhatSonAsyncScheduler`.
 - `WhatSonAsyncScheduler::start()` now only reports success when the underlying `QTimer` actually becomes active; if
