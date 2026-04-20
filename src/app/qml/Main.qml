@@ -12,6 +12,10 @@ import "window" as WindowView
 LV.ApplicationWindow {
     id: applicationWindow
 
+    property int topPadding: 0
+    property int rightPadding: 0
+    property int bottomPadding: 0
+    property int leftPadding: 0
     readonly property int adaptiveStatusBarHeight: adaptiveMobileLayout ? 0 : statusBarHeight
     readonly property int baseListViewWidth: LV.Theme.inputWidthMd - LV.Theme.gap8
     readonly property int baseRightPanelWidth: Math.max(0, Math.round(LV.Theme.scaleMetric(194)))
@@ -99,55 +103,14 @@ LV.ApplicationWindow {
     readonly property int sidebarWidth: hideSidebar ? 0 : Math.max(minSidebarWidth, preferredSidebarWidth)
     readonly property int statusBarHeight: LV.Theme.controlHeightMd
     readonly property bool onboardingRouteCommitPending: onboardingRouteBootstrapController ? onboardingRouteBootstrapController.routeCommitPending : false
-    readonly property string startupRoutePath: onboardingRouteBootstrapController ? onboardingRouteBootstrapController.startupRoutePath : workspaceRoutePath
-    readonly property string expectedEmbeddedRoutePath: {
-        if (!applicationWindow.useEmbeddedOnboardingRoute)
-            return applicationWindow.workspaceRoutePath;
-        if (applicationWindow.onboardingRouteBootstrapController
-                && applicationWindow.onboardingRouteBootstrapController.embeddedOnboardingVisible)
-            return applicationWindow.onboardingRoutePath;
-        return applicationWindow.workspaceRoutePath;
-    }
-    readonly property bool embeddedRouteHostReady: {
-        if (!applicationWindow.useEmbeddedOnboardingRoute)
-            return true;
-        if (!applicationWindow.activePageRouter)
-            return false;
-        const currentPath = applicationWindow.activePageRouter.currentPath !== undefined
-            ? String(applicationWindow.activePageRouter.currentPath).trim()
-            : "";
-        if (currentPath !== applicationWindow.expectedEmbeddedRoutePath)
-            return false;
-        return applicationWindow.activePageRouter.currentPageItem !== null
-            && applicationWindow.activePageRouter.currentPageItem !== undefined;
-    }
-    readonly property bool embeddedRouteRecoveryNeeded: {
-        if (!applicationWindow.useEmbeddedOnboardingRoute)
-            return false;
-        if (!applicationWindow.activePageRouter)
-            return true;
-        const currentPath = applicationWindow.activePageRouter.currentPath !== undefined
-            ? String(applicationWindow.activePageRouter.currentPath).trim()
-            : "";
-        if (currentPath.length === 0)
-            return true;
-        if (currentPath === applicationWindow.expectedEmbeddedRoutePath)
-            return applicationWindow.activePageRouter.currentPageItem === null
-                || applicationWindow.activePageRouter.currentPageItem === undefined;
-        return !applicationWindow.onboardingRouteCommitPending;
-    }
-    readonly property string embeddedRouteStartupStatusText: {
-        if (!applicationWindow.embeddedRouteRecoveryNeeded)
-            return "";
-        if (applicationWindow.onboardingHubController
-                && applicationWindow.onboardingHubController.busy)
-            return "Preparing WhatSon workspace...";
-        if (applicationWindow.onboardingRouteCommitPending)
-            return "Opening WhatSon workspace...";
-        return "Restoring WhatSon startup route...";
-    }
-    readonly property int startupRouteRecoveryLimit: 3
-    readonly property bool useEmbeddedOnboardingRoute: adaptiveMobileLayout || isMobilePlatform
+    readonly property bool useIosInlineOnboardingSequence: applicationWindow.platform === "ios"
+    readonly property bool useRoutedEmbeddedOnboardingRoute: !applicationWindow.useIosInlineOnboardingSequence
+                                                         && (adaptiveMobileLayout || isMobilePlatform)
+    readonly property bool useEmbeddedOnboardingPresentation: applicationWindow.useIosInlineOnboardingSequence
+                                                          || applicationWindow.useRoutedEmbeddedOnboardingRoute
+    readonly property string startupRoutePath: applicationWindow.useIosInlineOnboardingSequence
+        ? workspaceRoutePath
+        : (onboardingRouteBootstrapController ? onboardingRouteBootstrapController.startupRoutePath : workspaceRoutePath)
     readonly property int windowDefaultHeight: LV.Theme.gap24 * 31 + LV.Theme.gap4
     readonly property int windowDefaultWidth: LV.Theme.controlHeightMd * 35 + LV.Theme.gap5
     readonly property int windowMinHeight: LV.Theme.gap20 * 21
@@ -162,8 +125,6 @@ LV.ApplicationWindow {
     property bool monthCalendarOverlayVisible: false
     property bool weekCalendarOverlayVisible: false
     property bool yearCalendarOverlayVisible: false
-    property int startupRouteRecoveryAttempts: 0
-    property string startupRouteRecoveryReason: ""
 
     signal viewHookRequested
 
@@ -281,7 +242,7 @@ LV.ApplicationWindow {
         return " ";
     }
     function showOnboardingWindow() {
-        if (applicationWindow.useEmbeddedOnboardingRoute && applicationWindow.onboardingRouteBootstrapController) {
+        if (applicationWindow.useEmbeddedOnboardingPresentation && applicationWindow.onboardingRouteBootstrapController) {
             applicationWindow.onboardingRouteBootstrapController.reopenEmbeddedOnboarding();
             return;
         }
@@ -291,60 +252,16 @@ LV.ApplicationWindow {
         onboardingSubWindow.raise();
         onboardingSubWindow.requestActivate();
     }
-    function applyRequestedRoute(targetPath, routeSource, forceReload) {
+    function applyRequestedRoute(targetPath, routeSource) {
         if (!applicationWindow.activePageRouter)
             return;
 
-        const shouldForceReload = forceReload === true;
         const currentPath = applicationWindow.activePageRouter.currentPath !== undefined ? String(applicationWindow.activePageRouter.currentPath) : "";
-        if (!shouldForceReload && currentPath === targetPath)
+        if (currentPath === targetPath)
             return;
 
         applicationWindow.activePageRouter.setRoot(targetPath);
-        console.log("[whatson:debug][main.route][" + routeSource + "] target=" + targetPath + " forceReload=" + shouldForceReload);
-    }
-    function recoverEmbeddedRouteHost(source) {
-        if (!applicationWindow.useEmbeddedOnboardingRoute
-                || !applicationWindow.embeddedRouteRecoveryNeeded
-                || !applicationWindow.activePageRouter)
-            return;
-
-        const currentPath = applicationWindow.activePageRouter.currentPath !== undefined
-            ? String(applicationWindow.activePageRouter.currentPath).trim()
-            : "";
-        const targetPath = applicationWindow.expectedEmbeddedRoutePath;
-        const forceReload = currentPath === targetPath && currentPath.length > 0;
-
-        applicationWindow.startupRouteRecoveryAttempts += 1;
-        console.warn("[whatson:debug][main.route][startupWatchdog] reason=" + source
-                     + " attempt=" + applicationWindow.startupRouteRecoveryAttempts
-                     + " current=" + currentPath
-                     + " target=" + targetPath
-                     + " forceReload=" + forceReload);
-        applicationWindow.applyRequestedRoute(
-                    targetPath,
-                    "startupWatchdog:" + source,
-                    forceReload);
-        if (applicationWindow.embeddedRouteRecoveryNeeded
-                && applicationWindow.startupRouteRecoveryAttempts < applicationWindow.startupRouteRecoveryLimit)
-            startupRouteWatchdogTimer.restart();
-    }
-    function syncEmbeddedRouteWatchdog(source) {
-        if (!applicationWindow.useEmbeddedOnboardingRoute)
-            return;
-
-        if (!applicationWindow.embeddedRouteRecoveryNeeded) {
-            applicationWindow.startupRouteRecoveryReason = "";
-            if (applicationWindow.startupRouteRecoveryAttempts !== 0)
-                applicationWindow.startupRouteRecoveryAttempts = 0;
-            if (startupRouteWatchdogTimer.running)
-                startupRouteWatchdogTimer.stop();
-            return;
-        }
-
-        applicationWindow.startupRouteRecoveryReason = source;
-        if (!startupRouteWatchdogTimer.running)
-            startupRouteWatchdogTimer.start();
+        console.log("[whatson:debug][main.route][" + routeSource + "] target=" + targetPath);
     }
     function toggleDetailPanelVisibility() {
         applicationWindow.hideRightPanel = !applicationWindow.hideRightPanel;
@@ -368,7 +285,9 @@ LV.ApplicationWindow {
     navItems: []
     navigationEnabled: false
     pageInitialPath: startupRoutePath
-    pageRoutes: [onboardingRoute, workspaceShellRoute]
+    pageRoutes: applicationWindow.useIosInlineOnboardingSequence
+        ? [workspaceShellRoute]
+        : [onboardingRoute, workspaceShellRoute]
     useInternalPageStack: true
     usePlatformSafeMargin: false
     visible: true
@@ -386,10 +305,9 @@ LV.ApplicationWindow {
         clampPreferredSizes();
         windowInteractions.applyRenderQualityPolicy("completed");
         windowInteractions.reportLayoutBranch("completed");
-        if (applicationWindow.useEmbeddedOnboardingRoute) {
+        if (applicationWindow.useRoutedEmbeddedOnboardingRoute) {
             Qt.callLater(function () {
                 applicationWindow.applyRequestedRoute(applicationWindow.startupRoutePath, "completed");
-                applicationWindow.syncEmbeddedRouteWatchdog("completed");
             });
         } else if (applicationWindow.desktopOnboardingWindowVisible) {
             onboardingSubWindow.show();
@@ -398,26 +316,21 @@ LV.ApplicationWindow {
     Component.onDestruction: {
         unbindOwnedViewModels();
     }
-    onActivePageRouterChanged: applicationWindow.syncEmbeddedRouteWatchdog("activePageRouterChanged")
     onAdaptiveLayoutStateChanged: windowInteractions.reportLayoutBranch("adaptiveLayoutStateChanged")
     onBodyHeightChanged: clampPreferredSizes()
-    onExpectedEmbeddedRoutePathChanged: applicationWindow.syncEmbeddedRouteWatchdog("expectedEmbeddedRoutePathChanged")
     onHeightChanged: {
         if (applicationWindow.isDesktopPlatform) {
             windowInteractions.handleResizeForRenderQuality("heightChanged");
             resizeDebounceTimer.restart();
         }
-        applicationWindow.syncEmbeddedRouteWatchdog("heightChanged");
     }
     onPageStackNavigated: function (path, params) {
         windowInteractions.reportLayoutBranch("pageStackNavigated");
-        applicationWindow.syncEmbeddedRouteWatchdog("pageStackNavigated");
         if (applicationWindow.onboardingRouteBootstrapController)
             applicationWindow.onboardingRouteBootstrapController.handlePageStackNavigated(String(path));
     }
     onPageStackNavigationFailed: function (path) {
         console.warn("[whatson:debug][main.route][navigationFailed] path=" + path);
-        applicationWindow.syncEmbeddedRouteWatchdog("pageStackNavigationFailed");
         if (applicationWindow.onboardingRouteBootstrapController)
             applicationWindow.onboardingRouteBootstrapController.handlePageStackNavigationFailed(String(path));
     }
@@ -426,7 +339,6 @@ LV.ApplicationWindow {
             windowInteractions.handleResizeForRenderQuality("widthChanged");
             resizeDebounceTimer.restart();
         }
-        applicationWindow.syncEmbeddedRouteWatchdog("widthChanged");
     }
 
     MainWindowInteractionController {
@@ -451,14 +363,6 @@ LV.ApplicationWindow {
         repeat: false
 
         onTriggered: windowInteractions.finalizeResizeRenderQualityPolicy()
-    }
-    Timer {
-        id: startupRouteWatchdogTimer
-
-        interval: 240
-        repeat: false
-
-        onTriggered: applicationWindow.recoverEmbeddedRouteHost(applicationWindow.startupRouteRecoveryReason)
     }
     Shortcut {
         autoRepeat: false
@@ -495,47 +399,43 @@ LV.ApplicationWindow {
         target: applicationWindow.onboardingRouteBootstrapController
 
         function onRouteSyncRequested(targetPath, deferred, reason) {
-            if (!applicationWindow.useEmbeddedOnboardingRoute)
-                return;
-
+            const normalizedTargetPath = String(targetPath);
+            const normalizedReason = String(reason);
             const sync = function () {
-                applicationWindow.applyRequestedRoute(String(targetPath), String(reason));
+                if (applicationWindow.useIosInlineOnboardingSequence) {
+                    if (normalizedTargetPath === applicationWindow.workspaceRoutePath
+                            && applicationWindow.onboardingRouteBootstrapController) {
+                        applicationWindow.onboardingRouteBootstrapController.handlePageStackNavigated(
+                            applicationWindow.workspaceRoutePath);
+                    }
+                    return;
+                }
+
+                if (!applicationWindow.useRoutedEmbeddedOnboardingRoute)
+                    return;
+
+                applicationWindow.applyRequestedRoute(normalizedTargetPath, normalizedReason);
             };
 
             if (deferred)
                 Qt.callLater(sync);
             else
                 sync();
-
-            applicationWindow.syncEmbeddedRouteWatchdog("routeSyncRequested");
         }
     }
     Connections {
         target: applicationWindow.onboardingHubController
 
         function onHubLoaded(hubPath) {
-            if (!applicationWindow.useEmbeddedOnboardingRoute)
+            if (!applicationWindow.useEmbeddedOnboardingPresentation)
                 return;
             if (applicationWindow.onboardingRouteBootstrapController)
                 applicationWindow.onboardingRouteBootstrapController.handleHubLoaded();
-            applicationWindow.syncEmbeddedRouteWatchdog("hubLoaded");
         }
 
         function onOperationFailed(message) {
             if (applicationWindow.onboardingRouteBootstrapController)
                 applicationWindow.onboardingRouteBootstrapController.handleOperationFailed(message);
-            applicationWindow.syncEmbeddedRouteWatchdog("operationFailed");
-        }
-    }
-    Connections {
-        target: applicationWindow.activePageRouter
-
-        function onCurrentPageItemChanged() {
-            applicationWindow.syncEmbeddedRouteWatchdog("currentPageItemChanged");
-        }
-
-        function onCurrentPathChanged() {
-            applicationWindow.syncEmbeddedRouteWatchdog("currentPathChanged");
         }
     }
     Item {
@@ -595,38 +495,6 @@ LV.ApplicationWindow {
             color: applicationWindow.mobileSafeAreaBackdropColor
         }
     }
-    Rectangle {
-        id: embeddedRouteStartupFallback
-
-        anchors.fill: parent
-        color: applicationWindow.canvasColor
-        visible: applicationWindow.useEmbeddedOnboardingRoute
-                 && applicationWindow.embeddedRouteRecoveryNeeded
-        z: 9050
-
-        LV.VStack {
-            anchors.centerIn: parent
-            spacing: LV.Theme.gap4
-            width: Math.max(0, Math.min(parent.width - LV.Theme.gap20 * 2, LV.Theme.gap20 * 13))
-
-            LV.Label {
-                color: LV.Theme.textPrimary
-                horizontalAlignment: Text.AlignHCenter
-                style: header2
-                text: "WhatSon"
-                width: parent.width
-                wrapMode: Text.NoWrap
-            }
-            LV.Label {
-                color: LV.Theme.descriptionColor
-                horizontalAlignment: Text.AlignHCenter
-                style: description
-                text: applicationWindow.embeddedRouteStartupStatusText
-                width: parent.width
-                wrapMode: Text.WordWrap
-            }
-        }
-    }
     Loader {
         active: applicationWindow.platform === "osx"
         source: applicationWindow.platform === "osx"
@@ -644,7 +512,6 @@ LV.ApplicationWindow {
         id: onboardingPageComponent
 
         Item {
-            anchors.fill: parent
             clip: true
 
             Rectangle {
@@ -668,16 +535,34 @@ LV.ApplicationWindow {
         id: workspacePageComponent
 
         Item {
-            anchors.fill: parent
             clip: true
 
             Loader {
                 id: workspaceLayoutLoader
 
                 anchors.fill: parent
-                sourceComponent: applicationWindow.adaptiveMobileLayout ? mobileMainLayoutComponent : desktopMainLayoutComponent
+                sourceComponent: applicationWindow.useIosInlineOnboardingSequence
+                                 && applicationWindow.onboardingRouteBootstrapController
+                                 && applicationWindow.onboardingRouteBootstrapController.embeddedOnboardingVisible
+                    ? iosInlineOnboardingSequenceComponent
+                    : (applicationWindow.adaptiveMobileLayout ? mobileMainLayoutComponent : desktopMainLayoutComponent)
 
                 onSourceComponentChanged: windowInteractions.reportLayoutBranch("workspaceSourceChanged")
+            }
+        }
+    }
+    Component {
+        id: iosInlineOnboardingSequenceComponent
+
+        WindowView.IosInlineOnboardingSequence {
+            anchors.fill: parent
+            canvasColor: applicationWindow.canvasColor
+            hostWindow: applicationWindow
+            hubSessionController: applicationWindow.onboardingHubController
+
+            onDismissRequested: {
+                if (applicationWindow.onboardingRouteBootstrapController)
+                    applicationWindow.onboardingRouteBootstrapController.dismissEmbeddedOnboarding();
             }
         }
     }
@@ -839,6 +724,7 @@ LV.ApplicationWindow {
             onYearCalendarOverlayDismissRequested: applicationWindow.yearCalendarOverlayVisible = false
         }
     }
+
     WindowView.Onboarding {
         id: onboardingSubWindow
 

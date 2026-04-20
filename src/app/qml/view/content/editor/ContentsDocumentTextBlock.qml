@@ -147,23 +147,6 @@ FocusScope {
         return rowBottom >= contentHeight - 1
     }
 
-    function normalizeInlineStyleTag(tagName) {
-        const normalizedTagName = tagName === undefined || tagName === null ? "" : String(tagName).trim().toLowerCase()
-        if (normalizedTagName === "bold" || normalizedTagName === "b" || normalizedTagName === "strong")
-            return "bold"
-        if (normalizedTagName === "italic" || normalizedTagName === "i" || normalizedTagName === "em")
-            return "italic"
-        if (normalizedTagName === "underline" || normalizedTagName === "u")
-            return "underline"
-        if (normalizedTagName === "strikethrough" || normalizedTagName === "strike" || normalizedTagName === "s" || normalizedTagName === "del")
-            return "strikethrough"
-        if (normalizedTagName === "highlight" || normalizedTagName === "mark")
-            return "highlight"
-        if (normalizedTagName === "plain" || normalizedTagName === "clear" || normalizedTagName === "none")
-            return "plain"
-        return ""
-    }
-
     function computePlainTextReplacementDelta(previousText, nextText) {
         const previous = previousText === undefined || previousText === null ? "" : String(previousText)
         const next = nextText === undefined || nextText === null ? "" : String(nextText)
@@ -196,22 +179,6 @@ FocusScope {
             "start": prefixLength,
             "valid": true
         }
-    }
-
-    function adjustedCursorPositionForSelectionMutation(selectionSnapshot, previousSelectionStart, previousSelectionEnd, nextSelectionStart, nextSelectionEnd) {
-        const boundedPreviousCursor = Math.max(
-                    previousSelectionStart,
-                    Math.min(
-                        previousSelectionEnd,
-                        Math.floor(Number(selectionSnapshot && selectionSnapshot.cursorPosition !== undefined
-                                          ? selectionSnapshot.cursorPosition
-                                          : previousSelectionEnd) || previousSelectionEnd)))
-        const relativeOffset = Math.max(0, boundedPreviousCursor - previousSelectionStart)
-        return Math.max(
-                    nextSelectionStart,
-                    Math.min(
-                        nextSelectionEnd,
-                        nextSelectionStart + relativeOffset))
     }
 
     function focusEditor(cursorPosition) {
@@ -275,48 +242,6 @@ FocusScope {
         textBlock.focusEditor(resolvedCursorPosition)
         if (isFinite(selectionStart) && isFinite(selectionEnd) && selectionEnd > selectionStart)
             textBlock.restoreEditorSelection(selectionStart, selectionEnd, resolvedCursorPosition)
-        return true
-    }
-
-    function applyInlineFormatToSelection(tagName, explicitSelectionSnapshot) {
-        const normalizedTagName = textBlock.normalizeInlineStyleTag(tagName)
-        if (normalizedTagName.length === 0)
-            return false
-        const selectionSnapshot = explicitSelectionSnapshot && typeof explicitSelectionSnapshot === "object"
-                ? explicitSelectionSnapshot
-                : textBlock.inlineFormatSelectionSnapshot()
-        const currentSourceText = textBlock.authoritativeSourceText()
-        const currentPlainText = textBlock.authoritativePlainText
-        const selectionStart = Math.max(0, Math.min(currentPlainText.length, Math.floor(Number(selectionSnapshot.selectionStart) || 0)))
-        const selectionEnd = Math.max(selectionStart, Math.min(currentPlainText.length, Math.floor(Number(selectionSnapshot.selectionEnd) || 0)))
-        if (selectionEnd <= selectionStart)
-            return false
-        if (!inlineStyleRenderer || inlineStyleRenderer.applyInlineStyleToLogicalSelectionSource === undefined)
-            return false
-        const nextSourceText = String(inlineStyleRenderer.applyInlineStyleToLogicalSelectionSource(
-                    currentSourceText,
-                    selectionStart,
-                    selectionEnd,
-                    normalizedTagName))
-        if (nextSourceText === currentSourceText)
-            return false
-        const cursorPosition = textBlock.adjustedCursorPositionForSelectionMutation(
-                    selectionSnapshot,
-                    selectionStart,
-                    selectionEnd,
-                    selectionStart,
-                    selectionEnd)
-        textBlock.sourceMutationRequested(
-                    nextSourceText,
-                    {
-                        "localCursorPosition": cursorPosition,
-                        "selectionEnd": selectionEnd,
-                        "selectionStart": selectionStart,
-                        "sourceOffset": StructuredCursorSupport.sourceOffsetForInlineTaggedCursor(
-                                            nextSourceText,
-                                            cursorPosition,
-                                            textBlock.sourceStart)
-                    })
         return true
     }
 
@@ -467,6 +392,34 @@ FocusScope {
         selectByMouse: true
         selectedTextColor: LV.Theme.textPrimary
         selectionColor: LV.Theme.accent
+        modifierVerticalNavigationHandler: function (request, event) {
+            if (!request || !event)
+                return false
+            if (request.commandPressed) {
+                if (blockEditor.clearSelection !== undefined)
+                    blockEditor.clearSelection()
+                textBlock.boundaryNavigationRequested("document", request.moveUp ? "before" : "after")
+                event.accepted = true
+                return true
+            }
+            if (request.targetCursorPosition !== request.cursorPosition)
+                return false
+            if (request.moveUp && textBlock.hasAdjacentBlockBefore) {
+                if (blockEditor.clearSelection !== undefined)
+                    blockEditor.clearSelection()
+                textBlock.boundaryNavigationRequested("vertical", "before")
+                event.accepted = true
+                return true
+            }
+            if (request.moveDown && textBlock.hasAdjacentBlockAfter) {
+                if (blockEditor.clearSelection !== undefined)
+                    blockEditor.clearSelection()
+                textBlock.boundaryNavigationRequested("vertical", "after")
+                event.accepted = true
+                return true
+            }
+            return false
+        }
         showRenderedOutput: textBlock.inlineStyleOverlayVisible
         showScrollBar: false
         shortcutKeyPressHandler: function (event) {

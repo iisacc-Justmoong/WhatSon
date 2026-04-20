@@ -640,6 +640,29 @@ QString ProgressHierarchyViewModel::noteDirectoryPathForNoteId(const QString& no
     return m_allNotes.at(noteIndex).noteDirectoryPath.trimmed();
 }
 
+QString ProgressHierarchyViewModel::noteBodySourceTextForNoteId(const QString& noteId) const
+{
+    const QString normalizedNoteId = noteId.trimmed();
+    if (normalizedNoteId.isEmpty())
+    {
+        return {};
+    }
+
+    const int noteIndex = indexOfNoteRecordById(m_allNotes, normalizedNoteId);
+    if (noteIndex < 0 || noteIndex >= m_allNotes.size())
+    {
+        return {};
+    }
+
+    const LibraryNoteRecord& note = m_allNotes.at(noteIndex);
+    if (!note.bodySourceText.isEmpty())
+    {
+        return note.bodySourceText;
+    }
+
+    return note.bodyPlainText;
+}
+
 bool ProgressHierarchyViewModel::reloadNoteMetadataForNoteId(const QString& noteId)
 {
     const QString normalizedNoteId = noteId.trimmed();

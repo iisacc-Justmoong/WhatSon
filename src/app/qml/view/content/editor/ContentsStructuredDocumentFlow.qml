@@ -13,10 +13,10 @@ FocusScope {
 
     property var agendaBackend: null
     property var calloutBackend: null
+    property var documentBlocks: []
     property int lineHeightHint: Math.max(1, Math.round(LV.Theme.scaleMetric(12)))
     property bool paperPaletteEnabled: false
     property var shortcutKeyPressHandler: null
-    property alias documentBlocks: documentHost.documentBlocks
     property alias renderedResources: documentHost.renderedResources
     property alias sourceText: documentHost.sourceText
     property alias activeBlockIndex: documentHost.activeBlockIndex
@@ -59,6 +59,14 @@ FocusScope {
         id: documentBlocksModel
 
         blocks: documentFlow.normalizedBlocks()
+    }
+
+    ContentsStructuredEditorFormattingController {
+        id: structuredEditorFormattingController
+
+        blockRepeater: blockRepeater
+        documentFlow: documentFlow
+        paperPaletteEnabled: documentFlow.paperPaletteEnabled
     }
 
     Keys.onPressed: function (event) {
@@ -208,6 +216,123 @@ FocusScope {
             return 0
         }
         return documentFlow.framedBlockSpacing
+    }
+
+    function implicitTextBlockInteractiveFlattenCandidate(blockEntryOverride) {
+        const blockEntry = blockEntryOverride && typeof blockEntryOverride === "object"
+                ? blockEntryOverride
+                : ({})
+        if (!!blockEntry.flattenedInteractiveGroup)
+            return false
+        if (!!blockEntry.explicitBlock)
+            return false
+        if (blockEntry.textEditable !== undefined && !blockEntry.textEditable)
+            return false
+        if (blockEntry.atomicBlock !== undefined && !!blockEntry.atomicBlock)
+            return false
+        const blockType = documentFlow.normalizedBlockType(blockEntry)
+        return blockType !== "agenda"
+                && blockType !== "callout"
+                && blockType !== "resource"
+                && blockType !== "break"
+    }
+
+    function groupedTextLogicalLineCountHint(groupSourceText) {
+        const normalizedSourceText = documentFlow.normalizedSourceText(groupSourceText)
+        if (normalizedSourceText.length === 0)
+            return 1
+        return Math.max(1, normalizedSourceText.split("\n").length)
+    }
+
+    function buildFlattenedInteractiveTextGroup(groupBlocks, normalizedSourceText) {
+        const groupedEntries = Array.isArray(groupBlocks) ? groupBlocks : []
+        if (groupedEntries.length === 0)
+            return ({})
+        const firstBlock = groupedEntries[0] && typeof groupedEntries[0] === "object"
+                ? groupedEntries[0]
+                : ({})
+        const lastBlock = groupedEntries[groupedEntries.length - 1]
+                && typeof groupedEntries[groupedEntries.length - 1] === "object"
+                ? groupedEntries[groupedEntries.length - 1]
+                : firstBlock
+        const sourceStart = Math.max(0, documentFlow.floorNumberOrFallback(firstBlock.sourceStart, 0))
+        const sourceEnd = Math.max(sourceStart, documentFlow.floorNumberOrFallback(lastBlock.sourceEnd, sourceStart))
+        const groupedSourceText = normalizedSourceText.slice(sourceStart, sourceEnd)
+        return {
+            "atomicBlock": false,
+            "flattenedInteractiveChildCount": groupedEntries.length,
+            "flattenedInteractiveGroup": true,
+            "focusSourceOffset": sourceStart,
+            "groupedBlocks": groupedEntries,
+            "gutterCollapsed": false,
+            "logicalLineCountHint": documentFlow.groupedTextLogicalLineCountHint(groupedSourceText),
+            "minimapRepresentativeCharCount": 0,
+            "minimapVisualKind": "text",
+            "plainText": groupedSourceText,
+            "sourceEnd": sourceEnd,
+            "sourceStart": sourceStart,
+            "sourceText": groupedSourceText,
+            "textEditable": true,
+            "type": "text-group"
+        }
+    }
+
+    function emptyInteractiveTextGroup() {
+        return {
+            "atomicBlock": false,
+            "flattenedInteractiveChildCount": 0,
+            "flattenedInteractiveGroup": true,
+            "focusSourceOffset": 0,
+            "groupedBlocks": [],
+            "gutterCollapsed": false,
+            "logicalLineCountHint": 1,
+            "minimapRepresentativeCharCount": 0,
+            "minimapVisualKind": "text",
+            "plainText": "",
+            "sourceEnd": 0,
+            "sourceStart": 0,
+            "sourceText": "",
+            "textEditable": true,
+            "type": "text-group"
+        }
+    }
+
+    function flattenedInteractiveBlocks() {
+        const parsedBlocks = documentFlow.normalizedParsedBlocks()
+        const normalizedSourceText = documentFlow.normalizedSourceText(documentFlow.sourceText)
+        if (parsedBlocks.length === 0)
+            return normalizedSourceText.length === 0 ? [documentFlow.emptyInteractiveTextGroup()] : []
+        const flattenedBlocks = []
+        let pendingTextBlocks = []
+
+        function flushPendingTextBlocks() {
+            if (pendingTextBlocks.length === 0)
+                return
+            flattenedBlocks.push(
+                        documentFlow.buildFlattenedInteractiveTextGroup(
+                            pendingTextBlocks,
+                            normalizedSourceText))
+            pendingTextBlocks = []
+        }
+
+        for (let blockIndex = 0; blockIndex < parsedBlocks.length; ++blockIndex) {
+            const blockEntry = parsedBlocks[blockIndex] && typeof parsedBlocks[blockIndex] === "object"
+                    ? parsedBlocks[blockIndex]
+                    : ({})
+            if (documentFlow.implicitTextBlockInteractiveFlattenCandidate(blockEntry)) {
+                pendingTextBlocks.push(blockEntry)
+                continue
+            }
+            flushPendingTextBlocks()
+            flattenedBlocks.push(blockEntry)
+        }
+
+        flushPendingTextBlocks()
+        return flattenedBlocks
+    }
+
+    function refreshInteractiveDocumentBlocks() {
+        documentHost.documentBlocks = documentFlow.flattenedInteractiveBlocks()
     }
 
     function logicalLineCount() {
@@ -637,58 +762,18 @@ FocusScope {
     }
 
     function inlineFormatTargetState() {
-        const blocks = documentFlow.normalizedBlocks()
-        if (blocks.length === 0)
-            return ({ "valid": false })
-        const resolvedActiveBlockIndex = documentFlow.normalizedResolvedInteractiveBlockIndex()
-        const safeActiveBlockIndex = Math.max(0, Math.min(blocks.length - 1, resolvedActiveBlockIndex))
-        const activeBlockHost = blockRepeater.itemAt(safeActiveBlockIndex)
-        const delegateItem = documentFlow.delegateItemForBlockHost(activeBlockHost)
-        if (!delegateItem)
-            return ({
-                        "blockIndex": safeActiveBlockIndex,
-                        "selectionSnapshot": ({ }),
-                        "valid": false
-                    })
-        const selectionSnapshot = delegateItem.inlineFormatSelectionSnapshot !== undefined
-                ? delegateItem.inlineFormatSelectionSnapshot()
-                : delegateItem.selectionSnapshot !== undefined
-                  ? delegateItem.selectionSnapshot()
-                  : ({})
-        return {
-            "blockIndex": safeActiveBlockIndex,
-            "selectionSnapshot": selectionSnapshot,
-            "valid": documentFlow.selectionSnapshotIsValid(selectionSnapshot)
-        }
+        return structuredEditorFormattingController.inlineFormatTargetState()
     }
 
     function applyInlineFormatToBlockSelection(blockIndex, tagName, selectionSnapshot) {
-        const blocks = documentFlow.normalizedBlocks()
-        if (blocks.length === 0)
-            return false
-        const numericBlockIndex = Number(blockIndex)
-        if (!isFinite(numericBlockIndex))
-            return false
-        const safeActiveBlockIndex = Math.max(
-                    0,
-                    Math.min(
-                        blocks.length - 1,
-                        Math.floor(numericBlockIndex)))
-        const activeBlockHost = blockRepeater.itemAt(safeActiveBlockIndex)
-        const delegateItem = documentFlow.delegateItemForBlockHost(activeBlockHost)
-        if (!delegateItem || delegateItem.applyInlineFormatToSelection === undefined)
-            return false
-        return !!delegateItem.applyInlineFormatToSelection(tagName, selectionSnapshot)
+        return structuredEditorFormattingController.applyInlineFormatToBlockSelection(
+                    blockIndex,
+                    tagName,
+                    selectionSnapshot)
     }
 
     function applyInlineFormatToActiveSelection(tagName) {
-        const targetState = documentFlow.inlineFormatTargetState()
-        if (!targetState.valid)
-            return false
-        return documentFlow.applyInlineFormatToBlockSelection(
-                    targetState.blockIndex,
-                    tagName,
-                    targetState.selectionSnapshot)
+        return structuredEditorFormattingController.applyInlineFormatToActiveSelection(tagName)
     }
 
     function handleActiveBlockDeleteKeyPress(event) {
@@ -755,8 +840,12 @@ FocusScope {
         return true
     }
 
-    function normalizedBlocks() {
+    function normalizedParsedBlocks() {
         return documentHost.collectionPolicy.normalizeEntries(documentFlow.documentBlocks)
+    }
+
+    function normalizedBlocks() {
+        return documentHost.collectionPolicy.normalizeEntries(documentHost.documentBlocks)
     }
 
     function normalizedResourceEntries() {
@@ -930,6 +1019,8 @@ FocusScope {
 
     function blockSupportsParagraphBoundaryOperations(blockEntry) {
         const safeBlock = blockEntry && typeof blockEntry === "object" ? blockEntry : ({})
+        if (!!safeBlock.flattenedInteractiveGroup)
+            return false
         return documentHost.mutationPolicy
                 && documentHost.mutationPolicy.supportsParagraphBoundaryOperations !== undefined
                 && !!documentHost.mutationPolicy.supportsParagraphBoundaryOperations(safeBlock)
@@ -1213,6 +1304,15 @@ FocusScope {
         const safeBlockIndex = Math.max(0, Math.min(blocks.length - 1, Math.floor(Number(blockIndex) || 0)))
         const normalizedAxis = axis === undefined || axis === null ? "" : String(axis).trim().toLowerCase()
         const normalizedSide = side === undefined || side === null ? "" : String(side).trim().toLowerCase()
+        if (normalizedAxis === "document") {
+            const currentSourceText = documentFlow.normalizedSourceText(documentFlow.sourceText)
+            documentFlow.requestFocus({
+                                          "sourceOffset": normalizedSide === "before"
+                                                          ? 0
+                                                          : currentSourceText.length
+                                      })
+            return true
+        }
         if ((normalizedAxis !== "horizontal" && normalizedAxis !== "vertical")
                 || (normalizedSide !== "before" && normalizedSide !== "after")) {
             return false
@@ -1498,10 +1598,10 @@ FocusScope {
         anchors.right: parent.right
         spacing: 0
 
-        Repeater {
-            id: blockRepeater
+    Repeater {
+        id: blockRepeater
 
-            model: documentBlocksModel
+        model: documentBlocksModel
 
             delegate: Item {
                 id: blockHost
@@ -1625,6 +1725,7 @@ FocusScope {
                     "documentBlocksChanged",
                     "blockCount=" + documentFlow.documentBlocks.length,
                     documentFlow)
+        documentFlow.refreshInteractiveDocumentBlocks()
         documentFlow.scheduleLayoutCacheRefresh()
         if (!documentFlow.hasPendingFocusRequest())
             return
@@ -1637,6 +1738,7 @@ FocusScope {
 
     Component.onCompleted: {
         EditorTrace.trace("structuredDocumentFlow", "mount", "blockCount=" + documentFlow.documentBlocks.length, documentFlow)
+        documentFlow.refreshInteractiveDocumentBlocks()
         documentFlow.refreshLayoutCache()
     }
 

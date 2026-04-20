@@ -5,10 +5,18 @@ This directory contains iOS platform-specific bundle configuration.
 - `Info.plist` must not declare the legacy `CFBundleIconFile` key. The app icon is provided by the Xcode asset
   catalog generated from `resources/icons/app/ios/*` via `src/app/CMakeLists.txt`, and that `.xcassets` directory must
   be attached to the bundle `Resources` phase so Xcode emits `Assets.car`.
+- `Info.plist` now also declares `CFBundleIconName=AppIcon`, so the compiled asset catalog stays bound to the primary
+  home-screen icon even when the generated Xcode project is rebuilt directly from the exported `.xcodeproj`.
+- `cmake/root/runtime/CMakeLists.txt` now runs `cmake/patch_whatson_ios_xcodeproj.py` immediately after
+  `whatson_generate_ios_xcodeproj` configures the clean iOS export tree.
+  CMake's Xcode generator currently emits the `WhatSonIcons.xcassets` file reference and `PBXBuildFile`, but it still
+  omits that asset catalog from the `WhatSon` app target's `PBXResourcesBuildPhase`. The post-export patch inserts the
+  missing build-phase entry so Xcode actually compiles `Assets.car` and the installed iOS app no longer shows a blank
+  icon.
 - `Info.plist` keeps `UIRequiresFullScreen` enabled because the current iOS target only declares portrait /
   landscape-left / landscape-right orientations.
-- When no startup `.wshub` is available on mobile, app bootstrap still loads `Main.qml` first and lets the LVRS page
-  stack open `/onboarding` inside the root application window.
+- When no startup `.wshub` is available on iOS, app bootstrap still loads `Main.qml` first and keeps onboarding inside
+  the root application window instead of forking to a second top-level session.
 - `Main.qml` must not import macOS-only `Qt.labs.platform` directly, and it must not hold a static
   `WindowView.MacNativeMenuBar` reference either. The native menu bar must be lazy-loaded from
   `src/app/qml/window/MacNativeMenuBar.qml` through `Qt.resolvedUrl(...)`, otherwise iOS still parses the
@@ -21,24 +29,40 @@ This directory contains iOS platform-specific bundle configuration.
   picker URLs before onboarding creates or loads a `.wshub`. The native iOS document picker returns document-provider
   URLs, but Qt does not start access automatically for app-level file I/O, so the app must retain that access itself
   for the rest of the session.
+- `Info.plist` declares `.wshub` as the exported package document type `com.iisacc.whatson.hub`, marks the app as an
+  in-place document opener, and advertises the package in `CFBundleDocumentTypes`. This keeps document providers such
+  as Box eligible for direct package picks while still allowing nested-file picks when a provider exposes packages as
+  browsable directories.
 - The same bridge now persists an implicit iOS bookmark for the selected Files-backed hub scope and restores that
   access during startup preflight before `main.cpp` decides whether onboarding is required. WhatSon therefore reopens
   the previously selected external `.wshub` on cold relaunch as long as the bookmark still resolves successfully.
 - iOS native file dialogs only implement the open path (`QIOSFileDialog::show()` returns `false` for save mode), so
-  mobile onboarding must create hubs through a folder picker and synthesize a unique `Untitled*.wshub` path inside the
-  selected directory before calling `WhatSonHubCreator`.
-- iOS keeps the native Files folder picker for existing-hub selection as well. When the chosen folder contains multiple
-  `.wshub` packages, `OnboardingHubController::prepareHubSelectionFromUrl()` exposes those candidates back to
-  `Onboarding.qml` so the user can finish choosing the hub inside the onboarding session after the picker returns.
-- iOS startup now routes onboarding through `Main.qml` and the LVRS internal page stack when no hub has been restored.
-  The app keeps a single `ApplicationWindow` alive and only commits `/onboarding` -> `/` after both hub load success
-  and LVRS route confirmation. `hubLoaded` now advances the onboarding controller into `routingWorkspace`, while the
-  final `ready` state is only reached after `Main.qml` receives the workspace navigation callback.
-- `main.cpp` must inject `onboardingRouteBootstrapController` and `desktopOnboardingWindowVisible` before `Main.qml`
-  is loaded. `Main.qml` mirrors the coordinator-owned `startupRoutePath` into LVRS `initialRoutePath` and
-  `pageInitialPath`, so the first `/onboarding` commit is established before the root shell finishes booting.
-- Embedded iOS onboarding now defers the actual `/onboarding -> /` route flip by one event turn after `hubLoaded` /
-  `operationFailed`, keeping the workspace transition out of the native Files picker teardown stack.
+  mobile onboarding must create hubs through a folder picker instead of a save dialog. `OnboardingContent.qml`
+  therefore collects the hub name inline, and `OnboardingHubController` resolves the final `.wshub` package path
+  inside the selected directory before calling `WhatSonHubCreator`.
+- That mobile create flow must start security-scoped access on the selected directory URL itself and keep that scope
+  alive while `WhatSonHubCreator` writes the full `.wshub` scaffold, instead of bouncing through a synthetic child URL
+  that was never returned by the Files provider.
+- iOS existing-hub selection now goes through `WhatSonIosHubPickerBridge`, which presents the native
+  `UIDocumentBrowserViewController` with a package-aware type list: the exported `.wshub` package type,
+  `UTTypePackage`, and generic file content types.
+- The bridge also injects an app-owned `Open` browser action into the native document browser navigation bar/menu, so
+  WhatSon can keep a consistent explicit confirmation affordance even when a cloud provider does not expose the system
+  picker `Open` button for package-internal browsing.
+- That custom action now intentionally keeps the default `UIDocumentBrowserAction` content-type scope
+  (`UTTypeItem.identifier`) instead of narrowing itself to `.wshub`-specific types, so provider-exposed nested files
+  and folders can still activate `Open` and be remapped back to the enclosing hub root.
+- Providers that honor package declarations can still open the `.wshub` package directly, while providers that expose
+  the package as a directory can return an inner file that
+  `OnboardingHubController::prepareHubSelectionFromUrl()` remaps back to the enclosing `.wshub`.
+- iOS startup now routes onboarding through `Main.qml` itself when no hub has been restored. The app keeps a single
+  `ApplicationWindow` alive from first frame, pins the LVRS page stack to `/`, and lets the workspace page loader show
+  `IosInlineOnboardingSequence.qml` until a hub has been loaded successfully.
+- `main.cpp` must inject `onboardingRouteBootstrapController` before `Main.qml` is loaded. `Main.qml` mirrors the
+  coordinator-owned onboarding visibility into either the routed onboarding page (desktop/Android) or the iOS inline
+  onboarding host.
+- Embedded iOS onboarding still defers the actual workspace-transition acknowledgement by one event turn after
+  `hubLoaded` / `operationFailed`, keeping the state transition out of the native Files picker teardown stack.
 - Startup onboarding now consults the persisted hub selection as a mount candidate first instead of deleting that
   selection during settings validation. If the stored iOS `.wshub` path can still be mounted and passes the shared hub
   structure validator, the app enters the workspace directly; otherwise startup reopens onboarding with that failure.

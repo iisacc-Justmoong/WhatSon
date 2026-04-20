@@ -32,6 +32,11 @@ The wrapper keeps the host/editor contract expected by `ContentsDisplayView.qml`
 - `TextEdit.moveCursorSelection(...)` is still preferred when restoring an existing selection.
 - The wrapper now also exposes `clearSelection()`, which explicitly clears `persistentSelection` highlight and any
   cached selection snapshot when a structured-flow activation moves elsewhere.
+- macOS `Option` / `Command` + `Up/Down` now route through one dedicated vertical-navigation hook before ordinary
+  shortcut dispatch.
+  The wrapper computes paragraph/document boundary targets itself, lets structured block delegates override
+  cross-block routing through `modifierVerticalNavigationHandler`, and falls back to local cursor collapse when the
+  editor is the whole-document host.
 - The wrapper keeps the existing external-scroll contract used by page/print layout, gutter, and minimap code.
 - In mobile native-input mode while the software keyboard is hidden, the wrapper now mounts a transparent `MouseArea`
   guard above the live `TextEdit`.

@@ -64,6 +64,9 @@
 - That closure includes the QML runtime foundation (`Qt6::qmlplugin`, `Qt6::modelsplugin`, `Qt6::workerscriptplugin`), the controls/dialog implementation chain (`Qt6::qtquicktemplates2plugin`, `Qt6::qtquickcontrols2implplugin`, `Qt6::qtquickcontrols2basicstyleimplplugin`, `Qt6::qtquickcontrols2iosstyleimplplugin`, `Qt6::qtquickdialogs2quickimplplugin`), and the feature-facing plugins already used by app QML.
 - `QtQuick.Pdf` is not self-contained on iOS in this static-plugin setup: `PdfMultiPageView.qml` also imports `QtQuick.Shapes`, so `Qt6::qmlshapesplugin` must stay in the same manual plugin link set or the QML engine aborts during startup.
 - This defensive list mirrors the transitive plugin closure hidden behind `QT_IS_PLUGIN_GENEX` inside Qt's imported plugin targets, which makes future `module \"...\" is not installed` regressions less likely when `PdfQuick`, dialogs, or control styles pull nested QML imports.
+- The host-side `whatson_generate_ios_xcodeproj` export path now also runs a dedicated post-export patch script for the generated `WhatSon.xcodeproj`.
+  CMake already emits the iOS `WhatSonIcons.xcassets` file reference and `PBXBuildFile`, but it does not attach that asset catalog to the app target's `PBXResourcesBuildPhase`.
+  The patch script inserts that missing build-phase entry so Xcode compiles `Assets.car` and the installed iOS bundle resolves the `AppIcon` asset instead of showing a blank icon.
 ## Verification Notes
 - Build-system refactors that touch this file should run `cmake --build build --target whatson_build_regression -j`.
 - If the change can affect test wiring or compilation reachability, also run `cmake --build build --target whatson_regression -j`.

@@ -14,6 +14,9 @@
     <key>CFBundleDisplayName</key>
     <string>WhatSon</string>
 
+    <key>CFBundleIconName</key>
+    <string>AppIcon</string>
+
     <key>CFBundleIdentifier</key>
     <string>com.iisacc.app.whatson</string>
 
@@ -31,6 +34,24 @@
 
     <key>CFBundleAllowMixedLocalizations</key>
     <true/>
+
+    <key>CFBundleDocumentTypes</key>
+    <array>
+        <dict>
+            <key>CFBundleTypeName</key>
+            <string>WhatSon Hub Package</string>
+            <key>CFBundleTypeRole</key>
+            <string>Editor</string>
+            <key>LSHandlerRank</key>
+            <string>Owner</string>
+            <key>LSItemContentTypes</key>
+            <array>
+                <string>com.iisacc.whatson.hub</string>
+            </array>
+            <key>LSTypeIsPackage</key>
+            <true/>
+        </dict>
+    </array>
 
     <key>NSCalendarsUsageDescription</key>
     <string>WhatSon uses calendar and time information to organize work schedules.</string>
@@ -78,6 +99,33 @@
 
     <key>LSRequiresIPhoneOS</key>
     <true/>
+
+    <key>LSSupportsOpeningDocumentsInPlace</key>
+    <true/>
+
+    <key>UTExportedTypeDeclarations</key>
+    <array>
+        <dict>
+            <key>UTTypeConformsTo</key>
+            <array>
+                <string>public.content</string>
+                <string>com.apple.package</string>
+            </array>
+            <key>UTTypeDescription</key>
+            <string>WhatSon Hub Package</string>
+            <key>UTTypeIdentifier</key>
+            <string>com.iisacc.whatson.hub</string>
+            <key>UTTypeTagSpecification</key>
+            <dict>
+                <key>public.filename-extension</key>
+                <array>
+                    <string>wshub</string>
+                </array>
+                <key>public.mime-type</key>
+                <string>application/vnd.iisacc.whatson.hub</string>
+            </dict>
+        </dict>
+    </array>
 
     <key>UIRequiresFullScreen</key>
     <true/>

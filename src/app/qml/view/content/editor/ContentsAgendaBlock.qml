@@ -484,6 +484,46 @@ FocusScope {
                                 selectByMouse: true
                                 selectedTextColor: LV.Theme.textPrimary
                                 selectionColor: LV.Theme.accent
+                                modifierVerticalNavigationHandler: function (request, event) {
+                                    if (!request || !event)
+                                        return false
+                                    const taskIndex = Number(taskRow.taskIndex)
+                                    const previousTaskIndex = Math.max(-1, Math.floor(taskIndex) - 1)
+                                    const nextTaskIndex = Math.floor(taskIndex) + 1
+                                    const lastTaskIndex = Math.max(0, taskRepeater.count - 1)
+                                    if (request.commandPressed) {
+                                        if (taskEditor.clearSelection !== undefined)
+                                            taskEditor.clearSelection()
+                                        agendaBlock.boundaryNavigationRequested("document", request.moveUp ? "before" : "after")
+                                        event.accepted = true
+                                        return true
+                                    }
+                                    if (request.targetCursorPosition !== request.cursorPosition)
+                                        return false
+                                    if (request.moveUp) {
+                                        if (taskEditor.clearSelection !== undefined)
+                                            taskEditor.clearSelection()
+                                        if (previousTaskIndex >= 0) {
+                                            agendaBlock.focusTaskBoundary(previousTaskIndex, "after")
+                                        } else {
+                                            agendaBlock.boundaryNavigationRequested("vertical", "before")
+                                        }
+                                        event.accepted = true
+                                        return true
+                                    }
+                                    if (request.moveDown) {
+                                        if (taskEditor.clearSelection !== undefined)
+                                            taskEditor.clearSelection()
+                                        if (nextTaskIndex <= lastTaskIndex) {
+                                            agendaBlock.focusTaskBoundary(nextTaskIndex, "before")
+                                        } else {
+                                            agendaBlock.boundaryNavigationRequested("vertical", "after")
+                                        }
+                                        event.accepted = true
+                                        return true
+                                    }
+                                    return false
+                                }
                                 shortcutKeyPressHandler: function (event) {
                                     if (agendaBlock.shortcutKeyPressHandler
                                             && typeof agendaBlock.shortcutKeyPressHandler === "function") {

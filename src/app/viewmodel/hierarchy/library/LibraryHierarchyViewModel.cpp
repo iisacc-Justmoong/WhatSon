@@ -3246,6 +3246,28 @@ QString LibraryHierarchyViewModel::noteDirectoryPathForNoteId(const QString& not
     return allNotes.at(noteIndex).noteDirectoryPath.trimmed();
 }
 
+QString LibraryHierarchyViewModel::noteBodySourceTextForNoteId(const QString& noteId) const
+{
+    const QString normalizedNoteId = noteId.trimmed();
+    if (normalizedNoteId.isEmpty())
+    {
+        return {};
+    }
+
+    LibraryNoteRecord note;
+    if (!m_indexedState.noteById(normalizedNoteId, &note))
+    {
+        return {};
+    }
+
+    if (!note.bodySourceText.isEmpty())
+    {
+        return note.bodySourceText;
+    }
+
+    return note.bodyPlainText;
+}
+
 bool LibraryHierarchyViewModel::reloadNoteMetadataForNoteId(const QString& noteId)
 {
     const QString normalizedNoteId = noteId.trimmed();
@@ -3470,7 +3492,9 @@ LibraryNoteListItem LibraryHierarchyViewModel::buildNoteListItem(
     item.id = noteId;
     item.primaryText = WhatSon::LibraryPreview::notePrimaryText(note);
     item.searchableText = noteSearchableText(note, folderLabels);
-    item.bodyText.clear();
+    item.bodyText = !note.bodySourceText.isEmpty()
+        ? note.bodySourceText
+        : note.bodyPlainText;
     item.createdAt = note.createdAt;
     item.lastModifiedAt = note.lastModifiedAt;
     item.image = note.bodyHasResource;

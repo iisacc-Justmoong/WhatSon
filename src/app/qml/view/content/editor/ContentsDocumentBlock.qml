@@ -175,13 +175,6 @@ FocusScope {
         return ({})
     }
 
-    function applyInlineFormatToSelection(tagName, selectionSnapshot) {
-        const blockItem = blockLoader.item
-        if (!blockItem || blockItem.applyInlineFormatToSelection === undefined)
-            return false
-        return !!blockItem.applyInlineFormatToSelection(tagName, selectionSnapshot)
-    }
-
     function clearSelection(preserveFocusedEditor) {
         const blockItem = blockLoader.item
         if (!blockItem || blockItem.clearSelection === undefined)
@@ -232,6 +225,20 @@ FocusScope {
         if (documentBlock.handleDeleteKeyPress(event))
             return true
         const modifiers = Number(event.modifiers) || 0
+        const moveUp = event.key === Qt.Key_Up
+        const moveDown = event.key === Qt.Key_Down
+        const macModifierVerticalNavigation = Qt.platform.os === "osx"
+                && (moveUp || moveDown)
+                && (modifiers & (Qt.ControlModifier | Qt.ShiftModifier)) === 0
+                && (modifiers & (Qt.AltModifier | Qt.MetaModifier)) !== 0
+        if (macModifierVerticalNavigation) {
+            if ((modifiers & Qt.MetaModifier) !== 0)
+                documentBlock.boundaryNavigationRequested("document", moveUp ? "before" : "after")
+            else
+                documentBlock.boundaryNavigationRequested("vertical", moveUp ? "before" : "after")
+            event.accepted = true
+            return true
+        }
         if ((modifiers & (Qt.ControlModifier | Qt.AltModifier | Qt.MetaModifier | Qt.ShiftModifier)) !== 0)
             return false
         if (event.key === Qt.Key_Left) {

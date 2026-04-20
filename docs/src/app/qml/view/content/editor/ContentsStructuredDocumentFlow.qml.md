@@ -5,7 +5,20 @@ Hosts the parsed `.wsnbody` block stream as one ordered document editor and forw
 source.
 
 ## Current Behavior
-- The flow consumes `renderedDocumentBlocks` and `renderedResources` and lays them out as one ordered block column.
+- Inline-format mutation authority now lives in one sibling editor controller,
+  `ContentsStructuredEditorFormattingController.qml`.
+  The flow exposes the same public formatting hooks to the outer host, but those hooks now delegate into a
+  flow-level editor object instead of calling block-local delegate mutation methods directly.
+- The flow consumes raw parsed `renderedDocumentBlocks` plus `renderedResources`, then builds a second
+  interaction-only block stream before it lays the note out.
+- Parsed block boundaries therefore remain available for parsing, linting, and block-local render traits, but the
+  final editor `Repeater` no longer has to mirror every implicit prose paragraph one-for-one.
+- Contiguous implicit text blocks are now flattened into one `text-group` interactive row:
+  - the row spans the first/last child `sourceStart` / `sourceEnd`
+  - the row keeps one combined `sourceText` slice from the RAW note body
+  - the row mounts one shared `ContentsDocumentTextBlock.qml` editor surface for that whole prose run
+- This means plain prose paragraphs remain parser-visible blocks, but final keyboard focus and caret movement no
+  longer stop at every implicit paragraph boundary.
 - Parsed `renderedDocumentBlocks` snapshots no longer bind straight into the `Repeater` as ephemeral JS arrays.
   The flow now routes them through `ContentsStructuredDocumentBlocksModel`, which preserves retained rows and emits
   incremental row/data updates for suffix blocks whose source offsets shifted after an upstream edit.
@@ -36,6 +49,8 @@ source.
   text block.
   Blank lines below an inline resource therefore materialize as actual empty text blocks that arrow navigation and
   focus restoration can target directly.
+- Those parsed paragraph entries are now also flattened back into larger interactive prose rows before delegate mount.
+  The parser still owns paragraph discovery, while the final editor surface owns interaction flattening.
 - Those zero-length paragraph blocks are now also deletable.
   When the block has wrapper source (`<paragraph></paragraph>`), the flow removes that wrapper span; when it is an
   implicit blank line between prose blocks, the flow removes the adjacent newline token that created the empty line.
@@ -52,6 +67,10 @@ source.
   Structured prose-like tags such as `paragraph`, `title`, `subTitle`, `eventTitle`, and the other text delegates now
   keep zero extra inter-block spacing, while framed blocks such as `resource`, `break`, `agenda`, and `callout`
   still reserve their visual separation from neighboring prose.
+- Paragraph split/merge affordances are now suppressed for flattened interactive prose groups.
+  Once implicit prose paragraphs have been combined into one editor span, plain `Enter` and ordinary deletion stay
+  native inside that span and only cross-block transitions at the outer group edge continue to involve flow-level
+  block-boundary policy.
 - Atomic block focus no longer branches through `interactionMode: "before" / "after"`.
   Resource and break blocks are re-entered by source offsets inside their span and resolve to whole-block selection.
 - Atomic-block target focus now also carries an explicit `targetBlockIndex`.
@@ -61,6 +80,10 @@ source.
   document block.
   Structured notes therefore can share note-wide shortcut interception, such as clipboard-image paste, without falling
   back to the legacy whole-note editor path.
+- Structured block navigation now also understands a document-level boundary axis in addition to adjacent
+  `horizontal / vertical` hops.
+  `Command + Up/Down` emitted by block delegates can therefore route straight to RAW document start/end without
+  pretending that the first/last block edge is only another neighboring-block transition.
 - The parser now supplies the same block-trait payload before delegates finish loading, so nearest-editable-block
   fallback, logical line counting, gutter collapse, and minimap sampling no longer depend on the delegate having
   mounted already.
@@ -99,8 +122,14 @@ source.
   back to the outer cursor bridge.
 - The dedicated resource-local plain-text adjacent-insertion path has been removed.
   Resource blocks now participate in the same generic block stream as every other block.
+- An empty selected RAW note body now still produces one fallback interactive `text-group` row.
+  The structured document host therefore stays focusable/editable for empty notes instead of collapsing to a blank
+  center surface until the first mutation lands.
 
 ## Architecture Note
 - This file is not a source of truth for the structured editor state.
 - Block delegates emit `nextSourceText` mutations upward, and the next visible document tree still comes only from
   reparsing that updated RAW snapshot.
+- Inline-style shortcuts therefore no longer depend on per-block delegate mutation helpers.
+  They now resolve selection state from the active delegate but commit the RAW rewrite through the flow-level
+  formatting controller.

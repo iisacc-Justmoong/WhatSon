@@ -111,9 +111,25 @@ namespace
         return QUrl::fromLocalFile(normalizedLocalPath).toNSURL();
     }
 
+    QString localPathFromNsUrl(NSURL* nsUrl)
+    {
+        if (nsUrl == nil)
+        {
+            return {};
+        }
+
+        const NSString* nsPath = [nsUrl path];
+        if (nsPath == nil || [nsPath length] == 0)
+        {
+            return {};
+        }
+
+        return normalizeAbsolutePath(QString::fromUtf8([nsPath UTF8String]));
+    }
+
     bool effectiveUrlForSource(
         const QUrl& url,
-        const bool parentDirectoryScope,
+        const int ancestorDepth,
         QUrl* effectiveUrl,
         QString* errorMessage)
     {
@@ -126,23 +142,40 @@ namespace
             return false;
         }
 
-        if (!url.isLocalFile())
+        NSURL* nsUrl = url.toNSURL();
+        if (nsUrl == nil)
         {
             if (errorMessage != nullptr)
             {
-                *errorMessage = QStringLiteral("The selected iOS document URL is not a local filesystem URL.");
+                *errorMessage = QStringLiteral("Failed to convert the selected iOS document URL into an NSURL.");
             }
             return false;
         }
 
-        QUrl nextEffectiveUrl = url;
-        if (parentDirectoryScope)
+        NSURL* nextEffectiveNsUrl = nsUrl;
+        int remainingAncestorDepth = ancestorDepth;
+        if (remainingAncestorDepth < 0)
         {
-            const QString parentDirectoryPath = QFileInfo(url.toLocalFile()).absolutePath();
-            nextEffectiveUrl = QUrl::fromLocalFile(parentDirectoryPath);
+            remainingAncestorDepth = 0;
+        }
+        while (remainingAncestorDepth > 0)
+        {
+            nextEffectiveNsUrl = [nsUrl URLByDeletingLastPathComponent];
+            --remainingAncestorDepth;
+            nsUrl = nextEffectiveNsUrl;
         }
 
-        if (!nextEffectiveUrl.isValid() || !nextEffectiveUrl.isLocalFile())
+        if (nextEffectiveNsUrl == nil)
+        {
+            if (errorMessage != nullptr)
+            {
+                *errorMessage = QStringLiteral("The effective iOS document URL is invalid.");
+            }
+            return false;
+        }
+
+        const QUrl nextEffectiveUrl = QUrl::fromNSURL(nextEffectiveNsUrl);
+        if (!nextEffectiveUrl.isValid())
         {
             if (errorMessage != nullptr)
             {
@@ -162,9 +195,19 @@ namespace
         return true;
     }
 
-    bool beginAccessForLocalFileUrl(const QUrl& url, QString* errorMessage)
+    bool beginAccessForUrl(const QUrl& url, QString* errorMessage)
     {
-        const QString normalizedLocalPath = normalizeAbsolutePath(url.toLocalFile());
+        NSURL* nsUrl = url.toNSURL();
+        if (nsUrl == nil)
+        {
+            if (errorMessage != nullptr)
+            {
+                *errorMessage = QStringLiteral("Failed to convert the selected iOS document URL into an NSURL.");
+            }
+            return false;
+        }
+
+        const QString normalizedLocalPath = localPathFromNsUrl(nsUrl);
         if (normalizedLocalPath.isEmpty())
         {
             if (errorMessage != nullptr)
@@ -177,16 +220,6 @@ namespace
         if (scopedResourceRegistry().contains(normalizedLocalPath))
         {
             return true;
-        }
-
-        NSURL* nsUrl = url.toNSURL();
-        if (nsUrl == nil)
-        {
-            if (errorMessage != nullptr)
-            {
-                *errorMessage = QStringLiteral("Failed to convert the selected iOS document URL into an NSURL.");
-            }
-            return false;
         }
 
         const bool accessibleBeforeAccess = pathExists(normalizedLocalPath);
@@ -224,14 +257,61 @@ namespace
     }
 } // namespace
 
-bool startAccessForUrl(const QUrl& url, bool parentDirectoryScope, QString* errorMessage)
+QUrl scopedUrlForUrl(const QUrl& url, int ancestorDepth, QString* errorMessage)
 {
     QUrl effectiveUrl;
-    if (!effectiveUrlForSource(url, parentDirectoryScope, &effectiveUrl, errorMessage))
+    if (!effectiveUrlForSource(url, ancestorDepth, &effectiveUrl, errorMessage))
+    {
+        return {};
+    }
+
+    return effectiveUrl;
+}
+
+QString localPathForUrl(const QUrl& url, bool parentDirectoryScope, QString* errorMessage)
+{
+    return localPathForUrl(url, parentDirectoryScope ? 1 : 0, errorMessage);
+}
+
+QString localPathForUrl(const QUrl& url, int ancestorDepth, QString* errorMessage)
+{
+    QUrl effectiveUrl;
+    if (!effectiveUrlForSource(url, ancestorDepth, &effectiveUrl, errorMessage))
+    {
+        return {};
+    }
+
+    NSURL* nsUrl = effectiveUrl.toNSURL();
+    const QString normalizedLocalPath = localPathFromNsUrl(nsUrl);
+    if (normalizedLocalPath.isEmpty())
+    {
+        if (errorMessage != nullptr)
+        {
+            *errorMessage = QStringLiteral("The selected iOS document URL does not resolve to a local path.");
+        }
+        return {};
+    }
+
+    if (errorMessage != nullptr)
+    {
+        errorMessage->clear();
+    }
+    return normalizedLocalPath;
+}
+
+bool startAccessForUrl(const QUrl& url, bool parentDirectoryScope, QString* errorMessage)
+{
+    return startAccessForUrl(url, parentDirectoryScope ? 1 : 0, errorMessage);
+}
+
+bool startAccessForUrl(const QUrl& url, int ancestorDepth, QString* errorMessage)
+{
+    QUrl effectiveUrl;
+    if (!effectiveUrlForSource(url, ancestorDepth, &effectiveUrl, errorMessage))
     {
         return false;
     }
-    return beginAccessForLocalFileUrl(effectiveUrl, errorMessage);
+    return beginAccessForUrl(effectiveUrl, errorMessage);
 }
 
 bool ensureAccessForPath(const QString& localPath, QString* errorMessage)
@@ -255,13 +335,18 @@ bool ensureAccessForPath(const QString& localPath, QString* errorMessage)
         return true;
     }
 
-    return beginAccessForLocalFileUrl(QUrl::fromLocalFile(normalizedLocalPath), errorMessage);
+    return beginAccessForUrl(QUrl::fromLocalFile(normalizedLocalPath), errorMessage);
 }
 
 QByteArray bookmarkDataForUrl(const QUrl& url, bool parentDirectoryScope, QString* errorMessage)
 {
+    return bookmarkDataForUrl(url, parentDirectoryScope ? 1 : 0, errorMessage);
+}
+
+QByteArray bookmarkDataForUrl(const QUrl& url, int ancestorDepth, QString* errorMessage)
+{
     QUrl effectiveUrl;
-    if (!effectiveUrlForSource(url, parentDirectoryScope, &effectiveUrl, errorMessage))
+    if (!effectiveUrlForSource(url, ancestorDepth, &effectiveUrl, errorMessage))
     {
         return {};
     }

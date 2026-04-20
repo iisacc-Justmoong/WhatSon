@@ -111,6 +111,16 @@ ctest --test-dir build --output-on-failure -L cpp_regression
   state.
 - Resources and progress now each pin their domain fallback semantics in the C++ suite, so the initial active UI row
   (`Image`, `First draft`) remains identical to the list filter applied by the corresponding viewmodel.
+- Startup hub selection now also pins the “no blueprint fallback” rule, so clearing the persisted selection cannot
+  silently reopen a sample workspace during regression runs.
+- Startup hub persistence now also pins the selection-URL/bookmark contract plus the iOS direct `.wshub` picker source
+  wiring, so provider-backed mobile hub selection cannot regress back to a folder-only flow or a path-only startup
+  restore.
+- Startup presentation now also pins the "resolver success is not enough" rule, so a persisted hub that resolves to a
+  path but still fails runtime load reopens onboarding on both desktop and mobile instead of leaving the app on a
+  blank workspace shell.
+- Hub creation now also pins the `WhatSonHubPackager` split, so package-root materialization and Apple package
+  presentation remain separate from the scaffold files written by `WhatSonHubCreator`.
 - The content-surface mode helper now also pins note-vs-resource editor routing, so a direct resource list model
   switches the center slot away from the note editor immediately.
 - The dedicated resource editor QML is now also source-locked as a transparent viewer-only surface, so Resources
@@ -119,6 +129,11 @@ ctest --test-dir build --output-on-failure -L cpp_regression
   dedicated viewmodel/view pair instead of reusing the note-detail surface.
 - Rapid note switches now also pin note-local gutter geometry invalidation, so the editor clears stale minimap/gutter
   line caches on note entry and forces a fresh layout-cache pass before reusing line-number coordinates.
+- Empty selected notes now also pin one fallback structured `text-group` row in the source-locked QML regression
+  checks, so selecting or creating a blank note still leaves a focusable body editor surface mounted.
+- The final editor HTML path now also pins canonical structured-source reparsing and corrected-source reuse in the
+  runtime suite, so legacy `<hr>` aliases and self-closing structured tags cannot swallow following note text during
+  the last render pass.
 - `ResourceBitmapViewer` now also pins bitmap-preview projection for the dedicated resource editor, so image resources
   and unsupported image-like formats expose stable viewer/open-target state to QML.
 - Page/print paper-palette routing now also pins both the HTML renderer and the structured editor QML wiring, so

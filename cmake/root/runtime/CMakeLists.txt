@@ -1,4 +1,6 @@
 if (WHATSON_ENABLE_IOS_XCODEPROJ_ON_BUILD AND APPLE AND NOT CMAKE_SYSTEM_NAME STREQUAL "iOS" AND TARGET WhatSon)
+    find_package(Python3 COMPONENTS Interpreter REQUIRED)
+
     set(_whatson_qt_ios_prefix "")
     if (DEFINED WHATSON_QT_IOS_PREFIX AND NOT WHATSON_QT_IOS_PREFIX STREQUAL "")
         set(_whatson_qt_ios_prefix "${WHATSON_QT_IOS_PREFIX}")
@@ -81,6 +83,9 @@ if (WHATSON_ENABLE_IOS_XCODEPROJ_ON_BUILD AND APPLE AND NOT CMAKE_SYSTEM_NAME ST
             add_custom_target(whatson_generate_ios_xcodeproj
                     COMMAND "${CMAKE_COMMAND}" -P "${_whatson_prepare_ios_export_script}"
                     COMMAND ${_whatson_ios_configure_cmd}
+                    COMMAND "${Python3_EXECUTABLE}"
+                    "${CMAKE_SOURCE_DIR}/cmake/patch_whatson_ios_xcodeproj.py"
+                    "${WHATSON_IOS_XCODEPROJ_DIR}/WhatSon.xcodeproj/project.pbxproj"
                     BYPRODUCTS "${WHATSON_IOS_XCODEPROJ_DIR}/WhatSon.xcodeproj"
                     USES_TERMINAL
                     COMMENT "Generate iOS Xcode project from platform/Apple metadata"

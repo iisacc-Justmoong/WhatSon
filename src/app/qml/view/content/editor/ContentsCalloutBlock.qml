@@ -286,6 +286,34 @@ FocusScope {
                 selectByMouse: true
                 selectedTextColor: LV.Theme.textPrimary
                 selectionColor: LV.Theme.accent
+                modifierVerticalNavigationHandler: function (request, event) {
+                    if (!request || !event)
+                        return false
+                    if (request.commandPressed) {
+                        if (calloutEditor.clearSelection !== undefined)
+                            calloutEditor.clearSelection()
+                        calloutBlock.boundaryNavigationRequested("document", request.moveUp ? "before" : "after")
+                        event.accepted = true
+                        return true
+                    }
+                    if (request.targetCursorPosition !== request.cursorPosition)
+                        return false
+                    if (request.moveUp) {
+                        if (calloutEditor.clearSelection !== undefined)
+                            calloutEditor.clearSelection()
+                        calloutBlock.boundaryNavigationRequested("vertical", "before")
+                        event.accepted = true
+                        return true
+                    }
+                    if (request.moveDown) {
+                        if (calloutEditor.clearSelection !== undefined)
+                            calloutEditor.clearSelection()
+                        calloutBlock.boundaryNavigationRequested("vertical", "after")
+                        event.accepted = true
+                        return true
+                    }
+                    return false
+                }
                 shortcutKeyPressHandler: function (event) {
                     if (calloutBlock.shortcutKeyPressHandler
                             && typeof calloutBlock.shortcutKeyPressHandler === "function") {

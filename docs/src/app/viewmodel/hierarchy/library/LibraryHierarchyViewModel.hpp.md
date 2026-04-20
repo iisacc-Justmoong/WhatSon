@@ -17,6 +17,8 @@
   back to a visible/selectable state for one note without reimplementing library bucket/search rules in QML.
 - That invokable remains part of the public QML-facing surface because calendar note chips must be able to reopen the
   matching library note from both desktop and mobile editor routes.
+- Exposes `noteBodySourceTextForNoteId(...)` so editor-selection infrastructure can reuse the already-loaded runtime
+  snapshot for one selected note when direct package-path resolution is unavailable.
 - Exposes `applyPersistedBodyStateForNote(...)` and `requestTrackedStatisticsRefreshForNote(...)` so editor autosave
   can keep the note list hot with a cheap body-state update first and defer `.wsnbody` backlink scans to a later
   viewmodel-owned pass.

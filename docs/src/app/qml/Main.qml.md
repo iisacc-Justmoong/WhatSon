@@ -5,12 +5,16 @@
 
 ## Root Responsibilities
 - Instantiate the `LV.ApplicationWindow`.
+- Publish explicit zero `topPadding/rightPadding/bottomPadding/leftPadding` properties so the LVRS
+  `ApplicationWindow` compatibility bindings have stable geometry inputs on iOS.
 - Define root sizing, panel widths, and adaptive layout defaults.
 - Register runtime viewmodels into the LVRS `ViewModels` registry.
 - Claim writable ownership for selected interaction surfaces.
 - Mount `MainWindowInteractionController` and feed it the objects it needs for shortcuts and render-quality policy.
-- Switch between onboarding and workspace routes.
-- Recover embedded mobile startup routes when the LVRS page host resolves to an empty path or a missing page item.
+- Keep the desktop workspace shell mounted in `Main.qml` while ordinary desktop onboarding is presented through a
+  separate `Onboarding.qml` subwindow.
+- Route Android onboarding through the LVRS page stack, while iOS keeps its inline onboarding presentation inside the
+  workspace page itself to avoid an extra page-stack flip.
 - Disable iOS safe-area/windowing delegation and force LVRS full-window mobile coverage so the app
   content occupies the entire screen while still pinning the render tier to `LowTier`.
 - Expose the global `StandardKey.New` note-creation shortcut only on desktop platforms.
@@ -54,13 +58,26 @@ This means the root scene stops behaving like a bag of globally mutable QObjects
 The file keeps both desktop and mobile layout branches alive.
 - Desktop uses the status bar, navigation bar, sidebar, list, content, and detail panel composition.
 - Mobile uses routed workspace pages and a scaffold tuned for compact navigation.
-- Root-owned sidebar/right-panel minimum and preferred widths, hierarchy toolbar inset/spacing, and onboarding minimum
-  window sizes now route through `LV.Theme.gap...` and `LV.Theme.scaleMetric(...)` instead of shell-local pixel
-  literals.
-- Onboarding can be embedded into the route stack or opened as a separate window depending on platform and adaptive mode.
-- Embedded mobile startup now keeps an app-owned watchdog around the routed page host. If the expected onboarding or
-  workspace route exists in controller state but the active LVRS router has no current page item, `Main.qml` forces a
-  `setRoot(...)` rebuild on the expected route and shows a temporary fallback surface instead of leaving a black frame.
+- Root-owned sidebar/right-panel minimum and preferred widths plus hierarchy toolbar inset/spacing now route through
+  `LV.Theme.gap...` and `LV.Theme.scaleMetric(...)` instead of shell-local pixel literals.
+- Ordinary desktop startup can reopen a dedicated `WindowView.Onboarding` subwindow, while Android still uses the
+  embedded `/onboarding` route inside `Main.qml`.
+- Android embedded startup still relies on the LVRS route stack directly: `Component.onCompleted` seeds the startup
+  route, `routeSyncRequested(...)` applies controller-directed transitions, and failure handling stays inside
+  `OnboardingRouteBootstrapController` without any extra page-host watchdog or fallback overlay in `Main.qml`.
+- iOS keeps the LVRS page stack pinned to `/` and switches the workspace page loader between
+  `IosInlineOnboardingSequence.qml` and the real workspace shell. The same `OnboardingRouteBootstrapController` still
+  owns transition intent, and iOS completes that intent without a `/onboarding -> /` page-stack flip.
+- Desktop `showOnboardingWindow()` now raises the dedicated onboarding subwindow unless the current adaptive/mobile
+  presentation is explicitly using an embedded onboarding route.
+- `mobileMainLayoutComponent`, `desktopMainLayoutComponent`, and the desktop `WindowView.Onboarding` subwindow must all
+  remain sibling nodes inside the same root `LV.ApplicationWindow`; moving the mobile component outside that root
+  breaks QML component parsing before the desktop layout branch can load.
+- The embedded onboarding/workspace route pages intentionally keep their root `Item` free of `anchors.fill`.
+  LVRS route hosting is backed by a `StackView`, and stack-managed page geometry must not compete with page-root
+  anchors during transitions on iOS.
+- The root `LV.ApplicationWindow` now also exposes explicit zero padding properties so LVRS does not emit
+  `topPadding/rightPadding/bottomPadding/leftPadding` binding warnings while bootstrapping the iOS shell.
 - iOS now uses LVRS full-window mobile coverage instead of UIKit safe-area delegation. This keeps
   the application content in true edge-to-edge mode without app-level safe-area color overrides.
 
@@ -77,8 +94,8 @@ The file keeps both desktop and mobile layout branches alive.
   - `monthCalendarOverlayOpenRequested` preserves the requested year/month/date coming from `YearCalendarPage.qml`
     instead of overwriting it with today's month.
 - `Component.onCompleted` performs registry registration, ownership binding, and initial layout stabilization.
-- `syncEmbeddedRouteWatchdog(...)` and `recoverEmbeddedRouteHost(...)` provide a first-frame safety net for iOS/mobile
-  startup so a missing routed page host turns into a controlled route rebuild instead of a blank screen.
+- Embedded onboarding route updates now flow only through `applyRequestedRoute(...)` and the onboarding controller's
+  `routeSyncRequested(...)` signal; `Main.qml` no longer owns a startup watchdog timer or a fallback overlay.
 - `Component.onDestruction` releases owned view bindings so the registry does not retain stale writable handles.
 
 ## Tests
@@ -92,6 +109,12 @@ The file keeps both desktop and mobile layout branches alive.
     Figma mobile shell and must not regress back to the root canvas color
   - a year-calendar month/day tap that emits `monthCalendarOverlayOpenRequested` must still open the requested
     month/date instead of being reset back to today's month
+  - embedded startup onboarding must not reintroduce a startup watchdog timer, recovery helper, or fallback overlay in
+    `Main.qml`
+- iOS startup without a successfully loaded hub must keep the LVRS route pinned to `/` while still presenting the inline
+  onboarding sequence inside the same root window
+- desktop startup without a successfully loaded hub must reopen the independent onboarding window instead of switching the main
+  page stack to `/onboarding`
 
 ## Practical Reading
 Read this file with:

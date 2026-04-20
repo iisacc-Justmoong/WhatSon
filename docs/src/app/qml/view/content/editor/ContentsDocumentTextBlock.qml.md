@@ -4,6 +4,9 @@
 Edits one ordinary structured text block while keeping RAW `.wsnbody` source authoritative and projecting inline style
 tags as visible formatted text.
 
+In the structured-flow host this delegate may now also receive one flattened interactive prose span that was assembled
+from multiple implicit parser blocks.
+
 ## Current Behavior
 - The block now keeps `ContentsInlineFormatEditor.qml` in `TextEdit.PlainText` mode and uses
   `ContentsTextFormatRenderer.editorSurfaceHtml` only as the visual overlay payload.
@@ -19,9 +22,12 @@ tags as visible formatted text.
   - map that logical range back into inline-tag-aware source offsets through
     `ContentsStructuredCursorSupport.js`
   - rewrite the RAW block source through `ContentsTextFormatRenderer.applyPlainTextReplacementToSource(...)`
-- Inline-format shortcuts no longer wrap raw text with local string surgery inside this QML block.
-  They now call `ContentsTextFormatRenderer.applyInlineStyleToLogicalSelectionSource(...)` so selection-based style
-  rewrites preserve the existing inline-style coverage model.
+- When the host passes a flattened interactive prose span, that RAW rewrite now applies to the whole grouped source
+  slice instead of to only one parser paragraph entry.
+- Inline-format shortcuts no longer mutate RAW from inside this delegate at all.
+  The block exposes only the live selection snapshot, while
+  `ContentsStructuredEditorFormattingController.qml` performs the actual selection-based RAW rewrite for the owning
+  structured editor session.
 - Focus restoration and caret-origin source offsets are now mapped through the same inline-tag-aware cursor bridge.
   Rich text cursor positions stay in visible plain-text space, while reparsed RAW offsets still return to the same
   visible caret location.
@@ -48,6 +54,9 @@ tags as visible formatted text.
 - Plain `Enter` inside `paragraph` / `p` blocks is now intercepted before `TextEdit` inserts an inline newline.
   The delegate maps the visible caret back to a RAW source offset and emits a paragraph-split request so prose blocks
   stay separable as true block boundaries instead of accidental in-block line breaks.
+- Flattened interactive prose spans intentionally opt out of that paragraph-boundary interception at the host layer.
+  For those grouped spans, native newline insertion stays inside the shared prose editor and the parser can rediscover
+  paragraph boundaries on the next RAW refresh pass.
 - `Backspace` at the start of a paragraph block and `Delete` at the end now request paragraph-boundary merge only when
   the adjacent parsed block is also paragraph-mergeable.
   That keeps same-flow prose easy to merge while preventing headings, callouts, resources, and other non-paragraph
@@ -68,3 +77,6 @@ tags as visible formatted text.
 - Paragraph split/merge requests still never mutate RAW locally inside this delegate.
   They only emit the boundary intent upward so the shared structured mutation policy can rewrite implicit lines and
   explicit paragraph wrappers consistently from one place.
+- Inline-format command handling now follows the same rule:
+  this delegate exposes selection/focus information, but the structured editor controller owns the RAW formatting
+  mutation.

@@ -11,6 +11,8 @@
 
 namespace
 {
+    constexpr auto kNoteBodySourceTextForNoteIdSignature = "noteBodySourceTextForNoteId(QString)";
+
     bool noteBackedSelectionEnabled(const QObject* noteListModel)
     {
         if (noteListModel == nullptr)
@@ -414,9 +416,13 @@ void ContentsEditorSelectionBridge::handleNoteBodyTextLoaded(
     if (!success)
     {
         m_selectedNoteBodySnapshotNoteId = normalizedNoteId;
-        const QString fallbackText = m_selectedNoteBodyNoteId == normalizedNoteId
-            ? m_selectedNoteBodyText
-            : QString();
+        QString fallbackText;
+        if (!tryResolveSelectedNoteBodySourceText(normalizedNoteId, &fallbackText))
+        {
+            fallbackText = m_selectedNoteBodyNoteId == normalizedNoteId
+                ? m_selectedNoteBodyText
+                : QString();
+        }
         setSelectedNoteBodyState(normalizedNoteId, fallbackText, false);
         return;
     }
@@ -516,6 +522,16 @@ bool ContentsEditorSelectionBridge::hasReadableProperty(const QObject* object, c
     return object->metaObject()->property(propertyIndex).isReadable();
 }
 
+bool ContentsEditorSelectionBridge::hasInvokableMethod(const QObject* object, const char* methodSignature)
+{
+    if (object == nullptr || methodSignature == nullptr)
+    {
+        return false;
+    }
+
+    return object->metaObject()->indexOfMethod(QMetaObject::normalizedSignature(methodSignature)) >= 0;
+}
+
 QString ContentsEditorSelectionBridge::readStringProperty(const QObject* object, const char* propertyName)
 {
     if (!hasReadableProperty(object, propertyName))
@@ -572,6 +588,66 @@ QString ContentsEditorSelectionBridge::resolveSelectedNoteDirectoryPath(const QS
         return {};
     }
     return m_idleSyncController->noteDirectoryPathForNote(normalizedNoteId).trimmed();
+}
+
+bool ContentsEditorSelectionBridge::tryResolveSelectedNoteBodySourceText(
+    const QString& noteId,
+    QString* bodyText) const
+{
+    if (bodyText != nullptr)
+    {
+        bodyText->clear();
+    }
+
+    const QString normalizedNoteId = noteId.trimmed();
+    if (normalizedNoteId.isEmpty()
+        || (m_noteListModel == nullptr && m_contentViewModel == nullptr))
+    {
+        return false;
+    }
+
+    if (m_noteListModel != nullptr
+        && hasReadableProperty(m_noteListModel, "currentNoteId")
+        && hasReadableProperty(m_noteListModel, "currentBodyText"))
+    {
+        const QString currentNoteId = readStringProperty(m_noteListModel, "currentNoteId").trimmed();
+        if (currentNoteId == normalizedNoteId)
+        {
+            const QString currentBodyText = readStringProperty(m_noteListModel, "currentBodyText");
+            if (!currentBodyText.isEmpty())
+            {
+                if (bodyText != nullptr)
+                {
+                    *bodyText = currentBodyText;
+                }
+                return true;
+            }
+        }
+    }
+
+    if (m_contentViewModel == nullptr
+        || !hasInvokableMethod(m_contentViewModel, kNoteBodySourceTextForNoteIdSignature))
+    {
+        return false;
+    }
+
+    QString resolvedBodyText;
+    if (!QMetaObject::invokeMethod(
+            m_contentViewModel,
+            "noteBodySourceTextForNoteId",
+            Qt::DirectConnection,
+            Q_RETURN_ARG(QString, resolvedBodyText),
+            Q_ARG(QString, normalizedNoteId)))
+    {
+        return false;
+    }
+
+    if (bodyText != nullptr)
+    {
+        *bodyText = resolvedBodyText;
+    }
+
+    return true;
 }
 
 void ContentsEditorSelectionBridge::setSelectedNoteDirectoryPath(QString noteDirectoryPath)
@@ -675,9 +751,15 @@ void ContentsEditorSelectionBridge::startSelectedNoteBodyLoad(
         return;
     }
 
+    QString fallbackBodyText;
+    if (!tryResolveSelectedNoteBodySourceText(normalizedNoteId, &fallbackBodyText))
+    {
+        fallbackBodyText = currentBodyText;
+    }
+
     m_selectedNoteBodyRequestSequence = 0;
     m_selectedNoteBodySnapshotNoteId = normalizedNoteId;
-    setSelectedNoteBodyState(normalizedNoteId, currentBodyText, false);
+    setSelectedNoteBodyState(normalizedNoteId, fallbackBodyText, false);
 }
 
 void ContentsEditorSelectionBridge::scheduleNoteSelectionRefresh()

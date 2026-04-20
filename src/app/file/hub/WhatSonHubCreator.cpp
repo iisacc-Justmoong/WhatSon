@@ -89,12 +89,6 @@ bool WhatSonHubCreator::createHub(
         return false;
     }
 
-    const QString hubsRootAbsolutePath = joinPath(workspaceRootPath(), m_hubsRootPath);
-    if (!ensureDirectory(hubsRootAbsolutePath, errorMessage))
-    {
-        return false;
-    }
-
     return createHubAtPath(hubDirectoryPath(hubName), outPackagePath, errorMessage);
 }
 
@@ -107,59 +101,18 @@ bool WhatSonHubCreator::createHubAtPath(
                               QStringLiteral("hub.creator"),
                               QStringLiteral("createHubAtPath.begin"),
                               QStringLiteral("requestedPath=%1").arg(hubPackagePath));
-    const QString trimmedHubPackagePath = hubPackagePath.trimmed();
-    if (trimmedHubPackagePath.isEmpty())
+    QString absoluteHubPackagePath;
+    if (!m_packager.createPackageRoot(hubPackagePath, &absoluteHubPackagePath, errorMessage))
     {
-        if (errorMessage != nullptr)
-        {
-            *errorMessage = QStringLiteral("Hub package path must not be empty.");
-        }
         return false;
     }
 
-    QString normalizedHubPackagePath = WhatSon::HubPath::normalizeAbsolutePath(trimmedHubPackagePath);
-    if (!normalizedHubPackagePath.endsWith(packageExtension(), Qt::CaseInsensitive))
-    {
-        normalizedHubPackagePath += packageExtension();
-    }
-
-    const QFileInfo requestedPackageInfo(normalizedHubPackagePath);
-    const QString absoluteHubPackagePath = WhatSon::HubPath::normalizeAbsolutePath(normalizedHubPackagePath);
-    const QString hubParentDirectoryPath = WhatSon::HubPath::parentPath(absoluteHubPackagePath);
     const QString rawHubName = QFileInfo(absoluteHubPackagePath).completeBaseName();
     const QString sanitizedHubName = sanitizeHubName(rawHubName);
 
-    if (hubParentDirectoryPath.trimmed().isEmpty())
-    {
-        if (errorMessage != nullptr)
-        {
-            *errorMessage = QStringLiteral("Hub parent directory must not be empty.");
-        }
-        return false;
-    }
-
-    if (!ensureDirectory(hubParentDirectoryPath, errorMessage))
-    {
-        return false;
-    }
-
-    const QFileInfo absoluteHubPackageInfo(absoluteHubPackagePath);
-    if (absoluteHubPackageInfo.exists())
-    {
-        if (errorMessage != nullptr)
-        {
-            *errorMessage = QStringLiteral("Hub already exists: %1").arg(absoluteHubPackagePath);
-        }
-        return false;
-    }
-
-    if (!ensureDirectory(absoluteHubPackagePath, errorMessage))
-    {
-        return false;
-    }
-
     if (!createHubScaffold(absoluteHubPackagePath, sanitizedHubName, errorMessage))
     {
+        QDir(absoluteHubPackagePath).removeRecursively();
         WhatSon::Debug::traceSelf(this,
                                   QStringLiteral("hub.creator"),
                                   QStringLiteral("createHubAtPath.failed.scaffold"),
@@ -181,7 +134,7 @@ bool WhatSonHubCreator::createHubAtPath(
 
 QString WhatSonHubCreator::packageExtension() const
 {
-    return QStringLiteral(".wshub");
+    return m_packager.packageExtension();
 }
 
 QString WhatSonHubCreator::manifestFileName() const

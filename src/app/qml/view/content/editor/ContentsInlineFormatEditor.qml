@@ -35,6 +35,7 @@ FocusScope {
     property color selectionColor: LV.Theme.accent
     property int shapeStyle: 0
     property var shortcutKeyPressHandler: null
+    property var modifierVerticalNavigationHandler: null
     property bool cursorVisibleWhenFocused: true
     property bool showRenderedOutput: true
     property bool showScrollBar: false
@@ -365,6 +366,122 @@ FocusScope {
         if (paragraphRange.end <= paragraphRange.start)
             return false;
         return control.applyNativeSelectionRange(paragraphRange.start, paragraphRange.end, paragraphRange.end);
+    }
+
+    function previousParagraphCursorPosition(cursorPosition, textOverride) {
+        const editorText = textOverride === undefined || textOverride === null
+                ? control.currentPlainText()
+                : String(textOverride);
+        const maximumLength = editorText.length;
+        const resolvedCursor = control.clampLogicalPosition(cursorPosition, maximumLength);
+        if (maximumLength === 0 || resolvedCursor <= 0)
+            return 0;
+
+        let paragraphStart = resolvedCursor;
+        while (paragraphStart > 0 && editorText.charAt(paragraphStart - 1) !== "\n")
+            --paragraphStart;
+        if (paragraphStart < resolvedCursor)
+            return paragraphStart;
+
+        let previousParagraphEnd = Math.max(0, paragraphStart - 1);
+        while (previousParagraphEnd > 0 && editorText.charAt(previousParagraphEnd - 1) === "\n")
+            --previousParagraphEnd;
+        while (previousParagraphEnd > 0 && editorText.charAt(previousParagraphEnd - 1) !== "\n")
+            --previousParagraphEnd;
+        return previousParagraphEnd;
+    }
+
+    function nextParagraphCursorPosition(cursorPosition, textOverride) {
+        const editorText = textOverride === undefined || textOverride === null
+                ? control.currentPlainText()
+                : String(textOverride);
+        const maximumLength = editorText.length;
+        const resolvedCursor = control.clampLogicalPosition(cursorPosition, maximumLength);
+        if (maximumLength === 0 || resolvedCursor >= maximumLength)
+            return maximumLength;
+
+        let paragraphEnd = resolvedCursor;
+        while (paragraphEnd < maximumLength && editorText.charAt(paragraphEnd) !== "\n")
+            ++paragraphEnd;
+        if (paragraphEnd > resolvedCursor)
+            return paragraphEnd;
+
+        let nextParagraphStart = paragraphEnd;
+        while (nextParagraphStart < maximumLength && editorText.charAt(nextParagraphStart) === "\n")
+            ++nextParagraphStart;
+        let nextParagraphEnd = nextParagraphStart;
+        while (nextParagraphEnd < maximumLength && editorText.charAt(nextParagraphEnd) !== "\n")
+            ++nextParagraphEnd;
+        return nextParagraphEnd;
+    }
+
+    function handleMacModifierVerticalNavigation(event) {
+        if (!event || Qt.platform.os !== "osx")
+            return false;
+        const key = Number(event.key);
+        const moveUp = key === Qt.Key_Up;
+        const moveDown = key === Qt.Key_Down;
+        if (!moveUp && !moveDown)
+            return false;
+
+        const modifiers = Number(event.modifiers) || 0;
+        if ((modifiers & (Qt.ControlModifier | Qt.ShiftModifier)) !== 0)
+            return false;
+
+        const commandPressed = (modifiers & Qt.MetaModifier) !== 0;
+        const optionPressed = (modifiers & Qt.AltModifier) !== 0;
+        if (!commandPressed && !optionPressed)
+            return false;
+
+        if (control.inputMethodSessionActive())
+            return false;
+
+        const textValue = control.currentPlainText();
+        const textLength = textValue.length;
+        const cursorPosition = control.clampLogicalPosition(Number(textInput.cursorPosition), textLength);
+        const targetCursorPosition = commandPressed
+                ? (moveUp ? 0 : textLength)
+                : (moveUp
+                   ? control.previousParagraphCursorPosition(cursorPosition, textValue)
+                   : control.nextParagraphCursorPosition(cursorPosition, textValue));
+        const hadSelection = Math.max(
+                    0,
+                    Math.floor(Number(textInput.selectionEnd) || 0))
+                > Math.max(
+                    0,
+                    Math.floor(Number(textInput.selectionStart) || 0));
+        const navigationRequest = {
+            "commandPressed": commandPressed,
+            "cursorPosition": cursorPosition,
+            "hadSelection": hadSelection,
+            "key": key,
+            "modifiers": modifiers,
+            "moveDown": moveDown,
+            "moveUp": moveUp,
+            "optionPressed": optionPressed,
+            "targetCursorPosition": control.clampLogicalPosition(targetCursorPosition, textLength),
+            "textLength": textLength
+        };
+
+        if (control.modifierVerticalNavigationHandler
+                && typeof control.modifierVerticalNavigationHandler === "function") {
+            const callbackHandled = !!control.modifierVerticalNavigationHandler(navigationRequest, event);
+            if (callbackHandled || event.accepted)
+                return true;
+        }
+
+        if (!commandPressed
+                && navigationRequest.targetCursorPosition === cursorPosition
+                && !hadSelection) {
+            return false;
+        }
+
+        if (textInput.deselect !== undefined)
+            textInput.deselect();
+        control.clearCachedSelectionSnapshot();
+        control.setCursorPositionPreservingInputMethod(navigationRequest.targetCursorPosition);
+        event.accepted = true;
+        return true;
     }
 
     function activateInputAtPoint(point) {
@@ -720,6 +837,8 @@ FocusScope {
                     control.dispatchCommittedTextEditedIfReady();
                 }
                 Keys.onPressed: function (event) {
+                    if (control.handleMacModifierVerticalNavigation(event))
+                        return;
                     if (control.shortcutKeyPressHandler
                             && typeof control.shortcutKeyPressHandler === "function") {
                         const shortcutHandled = !!control.shortcutKeyPressHandler(event);

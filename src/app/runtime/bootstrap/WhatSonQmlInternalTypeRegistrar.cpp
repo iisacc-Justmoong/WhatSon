@@ -8,11 +8,11 @@
 #include "display/paper/ContentsTextFormatRenderer.hpp"
 #include "display/paper/print/ContentsPagePrintLayoutRenderer.hpp"
 #include "file/validator/ContentsStructuredTagValidator.hpp"
+#include "platform/Apple/WhatSonIosHubPickerBridge.hpp"
 #include "file/viewer/ContentsBodyResourceRenderer.hpp"
 #include "file/viewer/ResourceBitmapViewer.hpp"
 #include "viewmodel/content/ContentsDisplayPresentationRefreshController.hpp"
 #include "viewmodel/content/ContentsDisplaySelectionSyncCoordinator.hpp"
-#include "viewmodel/content/ContentsDisplayStructuredFlowCoordinator.hpp"
 #include "viewmodel/content/ContentsEditorPresentationProjection.hpp"
 #include "viewmodel/content/ContentsEditorSessionController.hpp"
 #include "viewmodel/content/ContentsEditorSelectionBridge.hpp"
@@ -41,8 +41,6 @@ namespace WhatSon::Runtime::Bootstrap
             "WhatSon.App.Internal", 1, 0, "ContentsDisplaySelectionSyncCoordinator");
         qmlRegisterType<ContentsDisplayPresentationRefreshController>(
             "WhatSon.App.Internal", 1, 0, "ContentsDisplayPresentationRefreshController");
-        qmlRegisterType<ContentsDisplayStructuredFlowCoordinator>(
-            "WhatSon.App.Internal", 1, 0, "ContentsDisplayStructuredFlowCoordinator");
         qmlRegisterType<ContentsEditorPresentationProjection>(
             "WhatSon.App.Internal", 1, 0, "ContentsEditorPresentationProjection");
         qmlRegisterType<ContentsEditorSessionController>(
@@ -91,5 +89,7 @@ namespace WhatSon::Runtime::Bootstrap
             "WhatSon.App.Internal", 1, 0, "HierarchyDragDropBridge");
         qmlRegisterType<HierarchyInteractionBridge>(
             "WhatSon.App.Internal", 1, 0, "HierarchyInteractionBridge");
+        qmlRegisterType<WhatSonIosHubPickerBridge>(
+            "WhatSon.App.Internal", 1, 0, "WhatSonIosHubPickerBridge");
     }
 } // namespace WhatSon::Runtime::Bootstrap

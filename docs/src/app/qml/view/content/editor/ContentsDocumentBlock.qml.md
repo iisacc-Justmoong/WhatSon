@@ -6,6 +6,8 @@ Provides the single document-block adapter that keeps `ContentsStructuredDocumen
 
 ## Current Behavior
 - The flow now instantiates this component for every structured row.
+- A structured row is now either one parsed explicit block or one flattened interactive prose group assembled by
+  `ContentsStructuredDocumentFlow.qml`.
 - An internal `Loader` chooses the concrete implementation from `blockData.type`:
   - `ContentsDocumentTextBlock.qml`
   - `ContentsAgendaBlock.qml`
@@ -16,7 +18,7 @@ Provides the single document-block adapter that keeps `ContentsStructuredDocumen
   - focus / current-line / cursor-row geometry queries
   - delete-key forwarding, including delete direction for empty-line removal
   - host-owned shortcut forwarding
-  - inline-format selection snapshot + apply helpers
+  - inline-format selection snapshot export for the flow-level formatting controller
   - shortcut insertion offset lookup
   - generic block interaction signals
 - The adapter now also proxies the parser/delegate block contract back to the flow host:
@@ -34,10 +36,16 @@ Provides the single document-block adapter that keeps `ContentsStructuredDocumen
   handling.
   Note-wide shortcuts such as clipboard-image paste therefore keep working even when focus currently sits inside one
   structured paragraph editor or on a selected break/resource block.
+- Atomic resource/break blocks now also preserve macOS vertical modifier semantics.
+  `Option + Up/Down` steps to the previous/next block boundary, while `Command + Up/Down` requests document start/end
+  instead of being collapsed into ordinary adjacent-block traversal.
 - The adapter now also listens to the structured document host's selection-clear revision and forwards
   `clearSelection(preserveFocusedEditor)` into the mounted delegate.
   Selection cleanup therefore stays centralized at the host boundary instead of being reimplemented for every viewport
   click path.
+- Inline-format RAW rewrites are now intentionally absent from this adapter surface.
+  The mounted block still reports live selection state, but the owning structured editor controller applies style
+  commands against the RAW source span at the flow layer.
 - `Connections { ignoreUnknownSignals: true }` re-emits only the signals that the active inner block actually exposes.
 
 ## Architecture Note
