@@ -37,14 +37,14 @@ private:
     struct HubObservation final
     {
         QByteArray signature;
-        QStringList watchPaths;
+        QStringList directoryWatchPaths;
     };
 
     [[nodiscard]] HubObservation inspectHub(const QString& hubPath) const;
     void scheduleSyncCheck();
     void refreshBaseline(bool rebuildWatcher);
     void rebuildWatcher();
-    void rebuildWatcher(QStringList watchPaths);
+    void rebuildWatcher(QStringList directoryWatchPaths);
     void clearWatcher();
 
     QFileSystemWatcher m_fileSystemWatcher;
@@ -53,8 +53,8 @@ private:
     std::function<bool(const QString&, QString*)> m_reloadCallback;
     QString m_currentHubPath;
     QByteArray m_lastKnownHubSignature;
-    QStringList m_lastObservedWatchPaths;
-    QStringList m_appliedWatchPaths;
+    QStringList m_lastObservedDirectoryWatchPaths;
+    QStringList m_appliedDirectoryWatchPaths;
     bool m_reloadInProgress = false;
     bool m_localMutationPending = false;
 };
