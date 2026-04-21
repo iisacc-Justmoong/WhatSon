@@ -1,6 +1,6 @@
 #include "WhatSonHubParser.hpp"
 
-#include "WhatSonDebugTrace.hpp"
+#include "models/file/WhatSonDebugTrace.hpp"
 #include "WhatSonHubPathUtils.hpp"
 #include "hierarchy/bookmarks/WhatSonBookmarksHierarchyParser.hpp"
 #include "hierarchy/bookmarks/WhatSonBookmarksHierarchyStore.hpp"

@@ -1,6 +1,6 @@
 #include "WhatSonProjectsHierarchyStore.hpp"
 
-#include "WhatSonDebugTrace.hpp"
+#include "models/file/WhatSonDebugTrace.hpp"
 #include "WhatSonProjectsHierarchyCreator.hpp"
 
 #include <QDir>

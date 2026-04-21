@@ -1,6 +1,6 @@
 #include "WhatSonHubRuntimeStore.hpp"
 
-#include "WhatSonDebugTrace.hpp"
+#include "models/file/WhatSonDebugTrace.hpp"
 #include "WhatSonHubPathUtils.hpp"
 #include "WhatSonHubParser.hpp"
 

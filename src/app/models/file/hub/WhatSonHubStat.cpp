@@ -1,6 +1,6 @@
 #include "WhatSonHubStat.hpp"
 
-#include "WhatSonDebugTrace.hpp"
+#include "models/file/WhatSonDebugTrace.hpp"
 
 #include <algorithm>
 #include <utility>

@@ -1,7 +1,7 @@
 #include "WhatSonFoldersHierarchyCreator.hpp"
 
 #include "../WhatSonFolderIdentity.hpp"
-#include "WhatSonDebugTrace.hpp"
+#include "models/file/WhatSonDebugTrace.hpp"
 #include "WhatSonFoldersHierarchyStore.hpp"
 
 #include <QJsonArray>

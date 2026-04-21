@@ -1,7 +1,7 @@
 #include "WhatSonPresetHierarchyCreator.hpp"
 
 #include "WhatSonPresetHierarchyStore.hpp"
-#include "WhatSonDebugTrace.hpp"
+#include "models/file/WhatSonDebugTrace.hpp"
 
 #include <QJsonArray>
 #include <QJsonDocument>

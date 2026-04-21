@@ -1,6 +1,6 @@
 #include "WhatSonResourcesHierarchyStore.hpp"
 
-#include "WhatSonDebugTrace.hpp"
+#include "models/file/WhatSonDebugTrace.hpp"
 #include "WhatSonResourcePackageSupport.hpp"
 #include "WhatSonResourcesHierarchyCreator.hpp"
 

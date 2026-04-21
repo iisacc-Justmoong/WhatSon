@@ -1,6 +1,6 @@
 #include "WhatSonProgressHierarchyCreator.hpp"
 
-#include "WhatSonDebugTrace.hpp"
+#include "models/file/WhatSonDebugTrace.hpp"
 #include "WhatSonProgressHierarchyStore.hpp"
 
 #include <QJsonArray>

@@ -1,6 +1,6 @@
 #include "WhatSonPresetHierarchyStore.hpp"
 
-#include "WhatSonDebugTrace.hpp"
+#include "models/file/WhatSonDebugTrace.hpp"
 #include "WhatSonPresetHierarchyCreator.hpp"
 
 #include <QDir>

@@ -2,7 +2,7 @@
 
 #include "../hierarchy/WhatSonFolderIdentity.hpp"
 #include "WhatSonBookmarkColorPalette.hpp"
-#include "WhatSonDebugTrace.hpp"
+#include "models/file/WhatSonDebugTrace.hpp"
 #include "WhatSonNoteFolderSemantics.hpp"
 
 #include <QRegularExpression>

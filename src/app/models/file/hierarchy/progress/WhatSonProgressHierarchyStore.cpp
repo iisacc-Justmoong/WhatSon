@@ -1,6 +1,6 @@
 #include "WhatSonProgressHierarchyStore.hpp"
 
-#include "WhatSonDebugTrace.hpp"
+#include "models/file/WhatSonDebugTrace.hpp"
 #include "WhatSonProgressHierarchyCreator.hpp"
 
 #include <QDir>

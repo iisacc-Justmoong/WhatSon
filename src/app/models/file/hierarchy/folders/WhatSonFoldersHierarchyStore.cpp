@@ -1,7 +1,7 @@
 #include "WhatSonFoldersHierarchyStore.hpp"
 
 #include "../WhatSonFolderIdentity.hpp"
-#include "WhatSonDebugTrace.hpp"
+#include "models/file/WhatSonDebugTrace.hpp"
 #include "WhatSonFoldersHierarchyCreator.hpp"
 #include "models/file/note/WhatSonNoteFolderSemantics.hpp"
 

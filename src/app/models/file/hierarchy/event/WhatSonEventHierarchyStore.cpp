@@ -1,6 +1,6 @@
 #include "WhatSonEventHierarchyStore.hpp"
 
-#include "WhatSonDebugTrace.hpp"
+#include "models/file/WhatSonDebugTrace.hpp"
 #include "WhatSonEventHierarchyCreator.hpp"
 
 #include <QDir>

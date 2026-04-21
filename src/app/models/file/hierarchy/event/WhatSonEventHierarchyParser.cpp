@@ -1,7 +1,7 @@
 #include "WhatSonEventHierarchyParser.hpp"
 
 #include "WhatSonEventHierarchyStore.hpp"
-#include "WhatSonDebugTrace.hpp"
+#include "models/file/WhatSonDebugTrace.hpp"
 
 #include <QJsonArray>
 #include <QJsonDocument>

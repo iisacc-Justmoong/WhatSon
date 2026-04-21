@@ -1,7 +1,7 @@
 #include "WhatSonBookmarksHierarchyCreator.hpp"
 
 #include "WhatSonBookmarksHierarchyStore.hpp"
-#include "WhatSonDebugTrace.hpp"
+#include "models/file/WhatSonDebugTrace.hpp"
 
 #include <QJsonArray>
 #include <QJsonDocument>
