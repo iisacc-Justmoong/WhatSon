@@ -28,7 +28,8 @@ Item {
                                               detailContents.activeContentViewModel ? detailContents.activeContentViewModel.activeTagIndex : -1,
                                               detailContents.tagItems)
     readonly property var folderItems: detailContents.resolveHeaderStringList(detailContents.activeContentViewModel ? detailContents.activeContentViewModel.folderItems : [])
-    readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("detail.DetailContents") : null
+    property var panelViewModelRegistry: null
+    readonly property var panelViewModel: detailContents.panelViewModelRegistry ? detailContents.panelViewModelRegistry.panelViewModel("detail.DetailContents") : null
     readonly property var registeredViewModelKeys: LV.ViewModels.keys
     readonly property var libraryHierarchySourceViewModel: {
         const _ = detailContents.registeredViewModelKeys;
@@ -700,12 +701,12 @@ Item {
                                     onPressedChanged: {
                                         if (!pressed)
                                             return;
-                                        const pressModifiers = point && point.modifiers !== undefined ? point.modifiers : Qt.application.keyboardModifiers;
+                                        const pressModifiers = point && point.modifiers !== undefined ? point.modifiers : Qt.NoModifier;
                                         metadataSelectionController.capturePointerSelectionModifiers(pressModifiers);
                                     }
                                 }
                                 onClicked: function() {
-                                    const resolvedModifiers = metadataSelectionController.resolveSelectionModifiers(Qt.application.keyboardModifiers);
+                                    const resolvedModifiers = metadataSelectionController.resolveSelectionModifiers(metadataSelectionController.pointerSelectionModifiers);
                                     listSection.requestSelection(index, resolvedModifiers);
                                     metadataSelectionController.clearPointerSelectionModifiers();
                                 }

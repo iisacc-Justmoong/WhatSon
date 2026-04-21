@@ -51,10 +51,8 @@ Rectangle {
     readonly property bool noteFolderClearContractAvailable: listBarLayout.noteDeletionViewModel !== null && listBarLayout.noteDeletionViewModel !== undefined && (listBarLayout.noteDeletionViewModel.clearNoteFoldersByIds !== undefined || listBarLayout.noteDeletionViewModel.clearNoteFoldersById !== undefined)
     readonly property bool noteListCurrentIndexContractAvailable: listBarLayout.hasNoteListModel
                                                            && noteListContractBridge.currentIndexContractAvailable
-    readonly property bool noteListKineticViewportEnabled: LV.Theme.mobileTarget
-                                                        || (Window.window && Window.window.isMobilePlatform !== undefined
-                                                            ? Boolean(Window.window.isMobilePlatform)
-                                                            : false)
+    property bool isMobilePlatform: false
+    readonly property bool noteListKineticViewportEnabled: LV.Theme.mobileTarget || listBarLayout.isMobilePlatform
     readonly property int noteListBoundsBehavior: listBarLayout.noteListKineticViewportEnabled ? Flickable.DragAndOvershootBounds : Flickable.StopAtBounds
     readonly property int noteListBoundsMovement: listBarLayout.noteListKineticViewportEnabled ? Flickable.FollowBoundsBehavior : Flickable.StopAtBounds
     readonly property int noteListDesktopFlickDeceleration: 1000000
@@ -76,7 +74,8 @@ Rectangle {
     property bool noteListViewportRestorePending: false
     property alias noteSelectionAnchorIndex: noteSelectionController.selectionAnchorIndex
     property color panelColor: "transparent"
-    readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("ListBarLayout") : null
+    property var panelViewModelRegistry: null
+    readonly property var panelViewModel: listBarLayout.panelViewModelRegistry ? listBarLayout.panelViewModelRegistry.panelViewModel("ListBarLayout") : null
     property real preservedNoteListContentY: 0
     property int pressedNoteIndex: -1
     readonly property var resolvedNoteListModel: noteListContractBridge.noteListModel
@@ -1065,7 +1064,7 @@ Rectangle {
                                         listBarLayout.pressedNoteIndex = -1;
                                     return;
                                 }
-                                const pressModifiers = noteTapHandler.point && noteTapHandler.point.modifiers !== undefined ? noteTapHandler.point.modifiers : Qt.application.keyboardModifiers;
+                                const pressModifiers = noteTapHandler.point && noteTapHandler.point.modifiers !== undefined ? noteTapHandler.point.modifiers : Qt.NoModifier;
                                 noteItemDelegate.pointerSelectionModifiers = listBarLayout.normalizedKeyboardModifiers(pressModifiers);
                                 noteItemDelegate.pointerSelectionModifiersCapturedAtMs = Date.now();
                                 listBarLayout.pressedNoteIndex = noteItemDelegate.index;
@@ -1073,7 +1072,7 @@ Rectangle {
                             }
                             onTapped: function (eventPoint, button) {
                                 listBarLayout.pressedNoteIndex = -1;
-                                const eventModifiers = eventPoint && eventPoint.modifiers !== undefined ? eventPoint.modifiers : Qt.NoModifier;
+                                const eventModifiers = eventPoint && eventPoint.modifiers !== undefined ? eventPoint.modifiers : noteItemDelegate.pointerSelectionModifiers;
                                 const selectionModifiers = listBarLayout.resolveSelectionModifiers(eventModifiers, noteItemDelegate.pointerSelectionModifiers, noteItemDelegate.pointerSelectionModifiersCapturedAtMs);
                                 noteItemDelegate.pointerSelectionModifiers = Qt.NoModifier;
                                 noteItemDelegate.pointerSelectionModifiersCapturedAtMs = 0;

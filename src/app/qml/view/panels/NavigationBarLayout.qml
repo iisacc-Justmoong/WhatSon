@@ -33,7 +33,8 @@ Rectangle {
     readonly property int effectivePanelHeight: panelHeight
     property var navigationModeViewModel: null
     property color panelColor: "transparent"
-    readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("NavigationBarLayout") : null
+    property var panelViewModelRegistry: null
+    readonly property var panelViewModel: navigationBar.panelViewModelRegistry ? navigationBar.panelViewModelRegistry.panelViewModel("NavigationBarLayout") : null
     property int panelHeight: LV.Theme.gap24
     property bool sidebarCollapsed: false
     readonly property int sideInset: compactMode ? LV.Theme.gap8 : LV.Theme.gap4

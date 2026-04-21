@@ -222,10 +222,12 @@ Item {
                     activeToolbarIndex: hStack.activeHierarchyIndex
                     anchors.fill: parent
                     hierarchyViewModel: hStack.activeHierarchyViewModel
+                    isMobilePlatform: hStack.isMobilePlatform
                     noteListModel: hStack.activeNoteListModel
                     noteDeletionViewModel: hStack.resolvedNoteDeletionViewModel
                     noteDropTarget: sideBar.noteDropTargetView
                     panelColor: hStack.listViewColor
+                    panelViewModelRegistry: panelViewModelRegistry
 
                     onNoteActivated: function (index, noteId) {
                         hStack.noteActivated(index, noteId);

@@ -32,13 +32,9 @@ QtObject {
     }
 
     function normalizedKeyboardModifiers(modifiers) {
-        const eventModifiers = modifiers === undefined || modifiers === null
+        return modifiers === undefined || modifiers === null
                 ? Qt.NoModifier
                 : modifiers;
-        const applicationModifiers = Qt.application && Qt.application.keyboardModifiers !== undefined
-                ? Qt.application.keyboardModifiers
-                : Qt.NoModifier;
-        return eventModifiers | applicationModifiers;
     }
 
     function selectionToggleModifierPressed(modifiers) {

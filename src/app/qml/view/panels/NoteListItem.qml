@@ -11,7 +11,8 @@ Item {
     readonly property bool activeState: noteListItem.active
     property color bookmarkColor: LV.Theme.accentYellow
     property bool bookmarked: false
-    readonly property var calendarStore: typeof systemCalendarStore !== "undefined" ? systemCalendarStore : null
+    property var systemCalendarStore: null
+    readonly property var calendarStore: noteListItem.systemCalendarStore
     readonly property color captionColor: LV.Theme.captionColor
     readonly property color cardColor: LV.Theme.accentBlueMuted
     property string displayDate: ""
@@ -34,7 +35,8 @@ Item {
     readonly property int metadataTextLineHeight: Math.max(0, Math.round(LV.Theme.scaleMetric(11)))
     readonly property int metadataTextSize: Math.max(0, Math.round(LV.Theme.scaleMetric(11)))
     property string noteId: ""
-    readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("NoteListItem") : null
+    property var panelViewModelRegistry: null
+    readonly property var panelViewModel: noteListItem.panelViewModelRegistry ? noteListItem.panelViewModelRegistry.panelViewModel("NoteListItem") : null
     property bool pressed: false
     property string primaryText: ""
     readonly property color primaryTextColor: LV.Theme.captionColor
