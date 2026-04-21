@@ -301,6 +301,82 @@ private:
     QHash<QString, QString> m_noteBodySourceTexts;
 };
 
+class FakeMobileSidebarBindingSource final : public QObject
+{
+    Q_OBJECT
+
+    Q_PROPERTY(
+        int resolvedActiveHierarchyIndex READ resolvedActiveHierarchyIndex WRITE setResolvedActiveHierarchyIndex NOTIFY
+            resolvedActiveHierarchyIndexChanged)
+    Q_PROPERTY(
+        QVariant resolvedHierarchyViewModel READ resolvedHierarchyViewModel WRITE setResolvedHierarchyViewModel NOTIFY
+            resolvedHierarchyViewModelChanged)
+
+public:
+    explicit FakeMobileSidebarBindingSource(QObject* parent = nullptr)
+        : QObject(parent)
+    {
+    }
+
+    int resolvedActiveHierarchyIndex() const noexcept
+    {
+        return m_resolvedActiveHierarchyIndex;
+    }
+
+    void setResolvedActiveHierarchyIndex(const int value)
+    {
+        if (m_resolvedActiveHierarchyIndex == value)
+        {
+            return;
+        }
+
+        m_resolvedActiveHierarchyIndex = value;
+        emit resolvedActiveHierarchyIndexChanged();
+    }
+
+    QVariant resolvedHierarchyViewModel() const
+    {
+        return m_resolvedHierarchyViewModel;
+    }
+
+    void setResolvedHierarchyViewModel(const QVariant& value)
+    {
+        if (m_resolvedHierarchyViewModel == value)
+        {
+            return;
+        }
+
+        m_resolvedHierarchyViewModel = value;
+        emit resolvedHierarchyViewModelChanged();
+    }
+
+    void setHierarchyViewModelForIndex(const int index, QObject* viewModel)
+    {
+        m_indexedHierarchyViewModels.insert(index, QVariant::fromValue(viewModel));
+    }
+
+    Q_INVOKABLE QVariant hierarchyViewModelForIndex(const QVariant& hierarchyIndex) const
+    {
+        bool ok = false;
+        const int resolvedIndex = hierarchyIndex.toInt(&ok);
+        if (!ok)
+        {
+            return {};
+        }
+
+        return m_indexedHierarchyViewModels.value(resolvedIndex);
+    }
+
+signals:
+    void resolvedActiveHierarchyIndexChanged();
+    void resolvedHierarchyViewModelChanged();
+
+private:
+    int m_resolvedActiveHierarchyIndex = 0;
+    QVariant m_resolvedHierarchyViewModel;
+    QHash<int, QVariant> m_indexedHierarchyViewModels;
+};
+
 class FakeSelectionNoteListModel final : public QObject
 {
     Q_OBJECT
@@ -680,6 +756,8 @@ private slots:
     void contentsDisplayView_usesSelectedNoteSnapshotWhileSessionBindingCatchesUp();
     void qmlInlineFormatEditor_keepsHiddenKeyboardTouchesScrollFirstOnMobile();
     void mobileChrome_usesSharedFigmaControlSurfaceColor();
+    void mobileHierarchyRouteStateStore_tracksNormalizedSelectionRestoreState();
+    void mobileHierarchySelectionCoordinator_prefersExplicitSidebarBindingsAndFallbacks();
     void paperSelection_tracksChosenPaperEnumState();
     void a4PaperBackground_exposesCanonicalMetricsAndAnchorsPrintRendererDefaults();
     void textFormatRenderer_wrapsCommittedUrlsIntoCanonicalWebLinks();

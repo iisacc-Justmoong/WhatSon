@@ -1,5 +1,6 @@
 #include "MobileHierarchySelectionCoordinator.hpp"
 
+#include <QMetaMethod>
 #include <QVariant>
 
 MobileHierarchySelectionCoordinator::MobileHierarchySelectionCoordinator(QObject* parent)

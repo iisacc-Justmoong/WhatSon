@@ -6,6 +6,9 @@ Registers the QObject-backed internal QML bridge types used by the application s
 ## Registered Bridges
 - Editor/document bridges such as `ContentsEditorSelectionBridge`, `ContentsEditorSessionController`,
   `ContentsLogicalTextBridge`, and the structured-document support types.
+- Content-surface helpers from `src/app/models/content/display`, `src/app/models/content/mobile`, and
+  `src/app/models/content/structured`, so runtime bootstrap resolves the real model-domain paths instead of relying on
+  flattened legacy include aliases.
 - Rendering/annotation helpers such as `ContentsTextFormatRenderer`, `ContentsStructuredBlockRenderer`,
   `ContentsAgendaBackend`, `ContentsCalloutBackend`, `ContentsBodyResourceRenderer`, and `ResourceBitmapViewer`.
 - Workspace interaction bridges such as `FocusedNoteDeletionBridge`, `NoteListModelContractBridge`,

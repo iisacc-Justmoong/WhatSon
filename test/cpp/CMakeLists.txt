@@ -123,7 +123,7 @@ target_include_directories(whatson_cpp_regression_tests PRIVATE
         "${CMAKE_CURRENT_SOURCE_DIR}"
         "${CMAKE_SOURCE_DIR}/src/app"
         "${CMAKE_SOURCE_DIR}/src/app/models"
-        "${CMAKE_SOURCE_DIR}/src/app/file"
+        "${CMAKE_SOURCE_DIR}/src/app/models/file"
 )
 target_link_libraries(whatson_cpp_regression_tests PRIVATE
         Qt6::Core

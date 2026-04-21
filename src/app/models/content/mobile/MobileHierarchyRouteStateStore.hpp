@@ -2,6 +2,7 @@
 
 #include <QObject>
 #include <QString>
+#include <QVariant>
 
 class MobileHierarchyRouteStateStore : public QObject
 {
