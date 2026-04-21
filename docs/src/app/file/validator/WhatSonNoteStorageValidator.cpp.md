@@ -1,4 +1,4 @@
-# `src/app/file/validator/WhatSonNoteStorageValidator.cpp`
+# `src/app/models/file/validator/WhatSonNoteStorageValidator.cpp`
 
 ## Behavior Summary
 The implementation provides path resolution helpers and an in-place normalizer for `.wsnote` directories.

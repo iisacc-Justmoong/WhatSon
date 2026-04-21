@@ -1,4 +1,4 @@
-# `src/app/file/hierarchy/library/LibraryToday.cpp`
+# `src/app/models/file/hierarchy/library/LibraryToday.cpp`
 
 ## Implementation Notes
 

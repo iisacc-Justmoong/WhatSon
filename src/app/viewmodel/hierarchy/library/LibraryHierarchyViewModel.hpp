@@ -2,9 +2,9 @@
 
 #include "LibraryHierarchyModel.hpp"
 #include "LibraryNoteListModel.hpp"
-#include "file/hierarchy/WhatSonFolderDepthEntry.hpp"
-#include "file/hierarchy/library/WhatSonLibraryIndexedState.hpp"
-#include "file/hub/WhatSonHubStore.hpp"
+#include "models/file/hierarchy/WhatSonFolderDepthEntry.hpp"
+#include "models/file/hierarchy/library/WhatSonLibraryIndexedState.hpp"
+#include "models/file/hub/WhatSonHubStore.hpp"
 #include "viewmodel/hierarchy/IHierarchyCapabilities.hpp"
 #include "viewmodel/hierarchy/IHierarchyViewModel.hpp"
 

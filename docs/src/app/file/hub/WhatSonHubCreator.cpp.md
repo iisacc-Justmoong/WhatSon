@@ -1,4 +1,4 @@
-# `src/app/file/hub/WhatSonHubCreator.cpp`
+# `src/app/models/file/hub/WhatSonHubCreator.cpp`
 
 ## Role
 Implements the on-disk scaffold for a brand new `.wshub` package after the package root has been materialized.

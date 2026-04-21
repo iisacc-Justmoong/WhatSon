@@ -1,9 +1,9 @@
 #pragma once
 
 #include "hub/WhatSonHubRuntimeStore.hpp"
-#include "file/hierarchy/WhatSonFolderDepthEntry.hpp"
-#include "file/hierarchy/library/LibraryNoteRecord.hpp"
-#include "file/hierarchy/tags/WhatSonTagDepthEntry.hpp"
+#include "models/file/hierarchy/WhatSonFolderDepthEntry.hpp"
+#include "models/file/hierarchy/library/LibraryNoteRecord.hpp"
+#include "models/file/hierarchy/tags/WhatSonTagDepthEntry.hpp"
 
 #include <QString>
 #include <QStringList>

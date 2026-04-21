@@ -1,4 +1,4 @@
-# `src/app/file/import/ResourcesImportViewModel.cpp`
+# `src/app/models/file/import/ResourcesImportViewModel.cpp`
 
 ## Responsibility
 

@@ -1,4 +1,4 @@
-# `src/app/file/hierarchy/library/LibraryNoteRecord.hpp`
+# `src/app/models/file/hierarchy/library/LibraryNoteRecord.hpp`
 
 ## Responsibility
 

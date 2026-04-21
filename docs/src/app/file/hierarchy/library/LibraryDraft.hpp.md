@@ -1,4 +1,4 @@
-# `src/app/file/hierarchy/library/LibraryDraft.hpp`
+# `src/app/models/file/hierarchy/library/LibraryDraft.hpp`
 
 ## Responsibility
 

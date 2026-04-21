@@ -1,4 +1,4 @@
-# `src/app/file/sync/WhatSonHubSyncController.cpp`
+# `src/app/models/file/sync/WhatSonHubSyncController.cpp`
 
 ## Implementation Summary
 The implementation turns hub synchronization into three explicit phases:
@@ -53,4 +53,4 @@ independent from UI navigation and gesture handling.
 - Automated test files are not currently present in this repository.
 - Regression checklist:
   - Runtime wiring (`main.cpp`, `WhatSonHubSyncWiring.cpp`) must include this implementation from `file/sync`.
-  - Path migration to `src/app/file/sync` must not change debounce, watcher rebuild, or local-mutation bypass behavior.
+  - Path migration to `src/app/models/file/sync` must not change debounce, watcher rebuild, or local-mutation bypass behavior.

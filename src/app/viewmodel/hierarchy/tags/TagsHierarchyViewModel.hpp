@@ -1,9 +1,9 @@
 #pragma once
 
-#include "file/hierarchy/library/LibraryNoteRecord.hpp"
+#include "models/file/hierarchy/library/LibraryNoteRecord.hpp"
 #include "TagsHierarchyModel.hpp"
-#include "file/hierarchy/tags/WhatSonTagDepthEntry.hpp"
-#include "file/hierarchy/tags/WhatSonTagsHierarchyStore.hpp"
+#include "models/file/hierarchy/tags/WhatSonTagDepthEntry.hpp"
+#include "models/file/hierarchy/tags/WhatSonTagsHierarchyStore.hpp"
 #include "viewmodel/hierarchy/IHierarchyCapabilities.hpp"
 #include "viewmodel/hierarchy/IHierarchyViewModel.hpp"
 #include "viewmodel/hierarchy/library/LibraryNoteListModel.hpp"

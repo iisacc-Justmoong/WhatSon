@@ -1,4 +1,4 @@
-# `src/app/file/viewer/ImageFormatCompatibilityLayer.hpp`
+# `src/app/models/file/viewer/ImageFormatCompatibilityLayer.hpp`
 
 ## Responsibility
 Declares the image-format compatibility layer used by in-app bitmap viewers.

@@ -1,4 +1,4 @@
-# `src/app/file/note/WhatSonNoteFolderBindingRepository.cpp`
+# `src/app/models/file/note/WhatSonNoteFolderBindingRepository.cpp`
 
 ## Responsibility
 

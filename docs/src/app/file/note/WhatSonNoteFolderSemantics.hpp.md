@@ -1,4 +1,4 @@
-# `src/app/file/note/WhatSonNoteFolderSemantics.hpp`
+# `src/app/models/file/note/WhatSonNoteFolderSemantics.hpp`
 
 ## Responsibility
 This header centralizes lightweight folder-path rules that must stay consistent across note-header parsing, mutation, and detail-panel presentation.

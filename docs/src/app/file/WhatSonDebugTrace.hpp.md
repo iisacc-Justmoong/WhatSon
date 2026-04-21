@@ -1,11 +1,11 @@
-# `src/app/file/WhatSonDebugTrace.hpp`
+# `src/app/models/file/WhatSonDebugTrace.hpp`
 
 ## Status
 - Documentation phase: scaffold generated from the live source tree.
 - Detail level: structural placeholder prepared for a later deep pass.
 
 ## Source Metadata
-- Source path: `src/app/file/WhatSonDebugTrace.hpp`
+- Source path: `src/app/models/file/WhatSonDebugTrace.hpp`
 - Source kind: C++ header
 - File name: `WhatSonDebugTrace.hpp`
 - Approximate line count: 286

@@ -1,11 +1,11 @@
-# `src/app/file/export`
+# `src/app/models/file/export`
 
 ## Status
 - Directory mirror generated from the current `src` tree.
 - This file is the entry point for the detailed documentation pass of this directory.
 
 ## Scope
-- Mirrored source directory: `src/app/file/export`
+- Mirrored source directory: `src/app/models/file/export`
 - Child directories: 0
 - Child files: 0
 

@@ -1,4 +1,4 @@
-# `src/app/file/hierarchy/resources/WhatSonResourcePackageSupport.hpp`
+# `src/app/models/file/hierarchy/resources/WhatSonResourcePackageSupport.hpp`
 
 ## Responsibility
 

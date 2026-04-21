@@ -1,4 +1,4 @@
-# `src/app/file/hierarchy/library/LibraryNotePreviewText.hpp`
+# `src/app/models/file/hierarchy/library/LibraryNotePreviewText.hpp`
 
 ## Responsibility
 

@@ -1,4 +1,4 @@
-# `src/app/editor/renderer/ContentsStructuredBlockRenderer.cpp`
+# `src/app/models/editor/renderer/ContentsStructuredBlockRenderer.cpp`
 
 ## Responsibility
 Builds canonical structured render data from `.wsnbody` source text.

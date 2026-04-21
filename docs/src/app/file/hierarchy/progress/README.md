@@ -1,11 +1,11 @@
-# `src/app/file/hierarchy/progress`
+# `src/app/models/file/hierarchy/progress`
 
 ## Status
 - Directory mirror generated from the current `src` tree.
 - This file is the entry point for the detailed documentation pass of this directory.
 
 ## Scope
-- Mirrored source directory: `src/app/file/hierarchy/progress`
+- Mirrored source directory: `src/app/models/file/hierarchy/progress`
 - Child directories: 0
 - Child files: 6
 

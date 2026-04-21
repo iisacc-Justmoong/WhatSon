@@ -44,4 +44,4 @@
 ## Main Collaborators
 - `src/app/viewmodel/onboarding/OnboardingHubController.*`
 - `src/app/runtime/startup/WhatSonStartupHubResolver.*`
-- `src/app/file/note/ContentsNoteManagementCoordinator.*`
+- `src/app/models/file/note/ContentsNoteManagementCoordinator.*`

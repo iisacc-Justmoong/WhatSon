@@ -1,11 +1,11 @@
-# `src/app/file/note/WhatSonNoteCreator.cpp`
+# `src/app/models/file/note/WhatSonNoteCreator.cpp`
 
 ## Status
 - Documentation phase: scaffold generated from the live source tree.
 - Detail level: structural placeholder prepared for a later deep pass.
 
 ## Source Metadata
-- Source path: `src/app/file/note/WhatSonNoteCreator.cpp`
+- Source path: `src/app/models/file/note/WhatSonNoteCreator.cpp`
 - Source kind: C++ implementation
 - File name: `WhatSonNoteCreator.cpp`
 - Approximate line count: 102

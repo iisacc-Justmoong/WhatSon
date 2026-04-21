@@ -1,4 +1,4 @@
-# `src/app/editor/renderer/ContentsStructuredBlockRenderer.hpp`
+# `src/app/models/editor/renderer/ContentsStructuredBlockRenderer.hpp`
 
 ## Responsibility
 Declares the editor-side structured-block renderer that republishes parsed `.wsnbody` block projections into

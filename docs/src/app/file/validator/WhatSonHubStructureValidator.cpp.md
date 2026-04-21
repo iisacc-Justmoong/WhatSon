@@ -1,11 +1,11 @@
-# `src/app/file/validator/WhatSonHubStructureValidator.cpp`
+# `src/app/models/file/validator/WhatSonHubStructureValidator.cpp`
 
 ## Status
 - Documentation phase: scaffold generated from the live source tree.
 - Detail level: structural placeholder prepared for a later deep pass.
 
 ## Source Metadata
-- Source path: `src/app/file/validator/WhatSonHubStructureValidator.cpp`
+- Source path: `src/app/models/file/validator/WhatSonHubStructureValidator.cpp`
 - Source kind: C++ implementation
 - File name: `WhatSonHubStructureValidator.cpp`
 - Approximate line count: 161

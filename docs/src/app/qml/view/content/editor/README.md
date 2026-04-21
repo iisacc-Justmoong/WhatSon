@@ -404,7 +404,7 @@
 - Callout parsing and insertion payload backend logic now lives in
   `src/app/callout/ContentsCalloutBackend.*`, while QML controllers keep event/cursor orchestration only.
 - Agenda/callout render-model projection now lives in
-  `src/app/editor/renderer/ContentsStructuredBlockRenderer.*`, so QML overlay layers consume renderer-owned data
+  `src/app/models/editor/renderer/ContentsStructuredBlockRenderer.*`, so QML overlay layers consume renderer-owned data
   instead of calling parse backends directly.
 - `ContentsEditorSession.qml` now treats `date="yyyy-mm-dd"` as a modification-time placeholder:
   - when local note modification is staged for persistence, placeholder dates are rewritten to current `YYYY-MM-DD`
@@ -430,7 +430,7 @@
 - `Page` / `Print` paper visuals now use an A4-style off-white sheet gradient with per-page separators and subtle
   shadow depth, replacing the prior plain-white flat backdrop.
 - `Page` / `Print` mode gating plus paper geometry/page-count math are now provided by
-  `ContentsPagePrintLayoutRenderer` in `src/app/editor/renderer`, so editor QML hosts consume backend layout state.
+  `ContentsPagePrintLayoutRenderer` in `src/app/models/editor/renderer`, so editor QML hosts consume backend layout state.
 - The repository no longer operates scripted editor tests; the per-file regression notes in this directory are
   documentation-only behavior contracts.
 - The remaining automated regression surface is the C++ build/runtime suite under `test/cpp/`; the structured-flow

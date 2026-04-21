@@ -1,4 +1,4 @@
-# `src/app/file/hierarchy/resources/WhatSonResourcesHierarchyParser.cpp`
+# `src/app/models/file/hierarchy/resources/WhatSonResourcesHierarchyParser.cpp`
 
 ## Responsibility
 

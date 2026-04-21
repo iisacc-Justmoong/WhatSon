@@ -1,9 +1,9 @@
 #include "ResourcesHierarchyViewModel.hpp"
 
-#include "file/WhatSonDebugTrace.hpp"
-#include "file/hierarchy/resources/WhatSonResourcePackageSupport.hpp"
-#include "file/hierarchy/resources/WhatSonResourcesHierarchyParser.hpp"
-#include "file/hierarchy/resources/WhatSonResourcesHierarchyStore.hpp"
+#include "models/file/WhatSonDebugTrace.hpp"
+#include "models/file/hierarchy/resources/WhatSonResourcePackageSupport.hpp"
+#include "models/file/hierarchy/resources/WhatSonResourcesHierarchyParser.hpp"
+#include "models/file/hierarchy/resources/WhatSonResourcesHierarchyStore.hpp"
 #include "viewmodel/hierarchy/WhatSonHierarchyTreeItemSupport.hpp"
 #include "viewmodel/hierarchy/resources/ResourcesHierarchyViewModelSupport.hpp"
 

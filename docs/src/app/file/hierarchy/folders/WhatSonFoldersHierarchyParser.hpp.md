@@ -1,4 +1,4 @@
-# `src/app/file/hierarchy/folders/WhatSonFoldersHierarchyParser.hpp`
+# `src/app/models/file/hierarchy/folders/WhatSonFoldersHierarchyParser.hpp`
 
 ## Responsibility
 

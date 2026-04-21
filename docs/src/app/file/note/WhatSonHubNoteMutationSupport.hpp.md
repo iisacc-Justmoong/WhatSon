@@ -1,11 +1,11 @@
-# `src/app/file/note/WhatSonHubNoteMutationSupport.hpp`
+# `src/app/models/file/note/WhatSonHubNoteMutationSupport.hpp`
 
 ## Status
 - Documentation phase: scaffold generated from the live source tree.
 - Detail level: structural placeholder prepared for a later deep pass.
 
 ## Source Metadata
-- Source path: `src/app/file/note/WhatSonHubNoteMutationSupport.hpp`
+- Source path: `src/app/models/file/note/WhatSonHubNoteMutationSupport.hpp`
 - Source kind: C++ header
 - File name: `WhatSonHubNoteMutationSupport.hpp`
 - Approximate line count: 23

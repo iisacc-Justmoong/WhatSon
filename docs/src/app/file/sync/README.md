@@ -1,11 +1,11 @@
-# `src/app/file/sync`
+# `src/app/models/file/sync`
 
 ## Status
 - Directory mirror generated from the current `src` tree.
 - This file is the entry point for the detailed documentation pass of this directory.
 
 ## Scope
-- Mirrored source directory: `src/app/file/sync`
+- Mirrored source directory: `src/app/models/file/sync`
 - Child directories: 0
 - Child files: 4
 

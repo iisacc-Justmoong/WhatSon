@@ -1,4 +1,4 @@
-# `src/app/file/note/WhatSonNoteBodyWebLinkSupport.hpp`
+# `src/app/models/file/note/WhatSonNoteBodyWebLinkSupport.hpp`
 
 ## Role
 Declares the shared RAW-note weblink helper that keeps editor mutation, `.wsnbody` serialization, and RichText

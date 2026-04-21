@@ -1,4 +1,4 @@
-# `src/app/file/viewer/ResourceBitmapViewer.hpp`
+# `src/app/models/file/viewer/ResourceBitmapViewer.hpp`
 
 ## Responsibility
 Declares the QML bridge that projects a resource-entry payload into bitmap-viewer state.

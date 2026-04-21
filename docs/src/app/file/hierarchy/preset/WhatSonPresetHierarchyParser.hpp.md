@@ -1,11 +1,11 @@
-# `src/app/file/hierarchy/preset/WhatSonPresetHierarchyParser.hpp`
+# `src/app/models/file/hierarchy/preset/WhatSonPresetHierarchyParser.hpp`
 
 ## Status
 - Documentation phase: scaffold generated from the live source tree.
 - Detail level: structural placeholder prepared for a later deep pass.
 
 ## Source Metadata
-- Source path: `src/app/file/hierarchy/preset/WhatSonPresetHierarchyParser.hpp`
+- Source path: `src/app/models/file/hierarchy/preset/WhatSonPresetHierarchyParser.hpp`
 - Source kind: C++ header
 - File name: `WhatSonPresetHierarchyParser.hpp`
 - Approximate line count: 17

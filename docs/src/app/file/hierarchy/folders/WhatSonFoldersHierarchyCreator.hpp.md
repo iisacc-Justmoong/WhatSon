@@ -1,11 +1,11 @@
-# `src/app/file/hierarchy/folders/WhatSonFoldersHierarchyCreator.hpp`
+# `src/app/models/file/hierarchy/folders/WhatSonFoldersHierarchyCreator.hpp`
 
 ## Status
 - Documentation phase: scaffold generated from the live source tree.
 - Detail level: structural placeholder prepared for a later deep pass.
 
 ## Source Metadata
-- Source path: `src/app/file/hierarchy/folders/WhatSonFoldersHierarchyCreator.hpp`
+- Source path: `src/app/models/file/hierarchy/folders/WhatSonFoldersHierarchyCreator.hpp`
 - Source kind: C++ header
 - File name: `WhatSonFoldersHierarchyCreator.hpp`
 - Approximate line count: 15

@@ -1,4 +1,4 @@
-# `src/app/file/hub/WhatSonHubParser.cpp`
+# `src/app/models/file/hub/WhatSonHubParser.cpp`
 
 ## Responsibility
 

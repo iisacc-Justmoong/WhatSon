@@ -1,11 +1,11 @@
-# `src/app/file/note/WhatSonNoteHeaderParser.hpp`
+# `src/app/models/file/note/WhatSonNoteHeaderParser.hpp`
 
 ## Status
 - Documentation phase: scaffold generated from the live source tree.
 - Detail level: structural placeholder prepared for a later deep pass.
 
 ## Source Metadata
-- Source path: `src/app/file/note/WhatSonNoteHeaderParser.hpp`
+- Source path: `src/app/models/file/note/WhatSonNoteHeaderParser.hpp`
 - Source kind: C++ header
 - File name: `WhatSonNoteHeaderParser.hpp`
 - Approximate line count: 17

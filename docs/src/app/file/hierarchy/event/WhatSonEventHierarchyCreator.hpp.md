@@ -1,11 +1,11 @@
-# `src/app/file/hierarchy/event/WhatSonEventHierarchyCreator.hpp`
+# `src/app/models/file/hierarchy/event/WhatSonEventHierarchyCreator.hpp`
 
 ## Status
 - Documentation phase: scaffold generated from the live source tree.
 - Detail level: structural placeholder prepared for a later deep pass.
 
 ## Source Metadata
-- Source path: `src/app/file/hierarchy/event/WhatSonEventHierarchyCreator.hpp`
+- Source path: `src/app/models/file/hierarchy/event/WhatSonEventHierarchyCreator.hpp`
 - Source kind: C++ header
 - File name: `WhatSonEventHierarchyCreator.hpp`
 - Approximate line count: 15

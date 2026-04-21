@@ -1,4 +1,4 @@
-# `src/app/editor/renderer/ContentsTextHighlightRenderer.hpp`
+# `src/app/models/editor/renderer/ContentsTextHighlightRenderer.hpp`
 
 ## Responsibility
 Defines the dedicated highlight-style renderer contract used by text-format rendering.

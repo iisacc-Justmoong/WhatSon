@@ -1,11 +1,11 @@
-# `src/app/file/hierarchy/projects/WhatSonProjectsHierarchyStore.hpp`
+# `src/app/models/file/hierarchy/projects/WhatSonProjectsHierarchyStore.hpp`
 
 ## Status
 - Documentation phase: scaffold generated from the live source tree.
 - Detail level: structural placeholder prepared for a later deep pass.
 
 ## Source Metadata
-- Source path: `src/app/file/hierarchy/projects/WhatSonProjectsHierarchyStore.hpp`
+- Source path: `src/app/models/file/hierarchy/projects/WhatSonProjectsHierarchyStore.hpp`
 - Source kind: C++ header
 - File name: `WhatSonProjectsHierarchyStore.hpp`
 - Approximate line count: 30

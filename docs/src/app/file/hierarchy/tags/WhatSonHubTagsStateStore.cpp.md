@@ -1,11 +1,11 @@
-# `src/app/file/hierarchy/tags/WhatSonHubTagsStateStore.cpp`
+# `src/app/models/file/hierarchy/tags/WhatSonHubTagsStateStore.cpp`
 
 ## Status
 - Documentation phase: scaffold generated from the live source tree.
 - Detail level: structural placeholder prepared for a later deep pass.
 
 ## Source Metadata
-- Source path: `src/app/file/hierarchy/tags/WhatSonHubTagsStateStore.cpp`
+- Source path: `src/app/models/file/hierarchy/tags/WhatSonHubTagsStateStore.cpp`
 - Source kind: C++ implementation
 - File name: `WhatSonHubTagsStateStore.cpp`
 - Approximate line count: 100

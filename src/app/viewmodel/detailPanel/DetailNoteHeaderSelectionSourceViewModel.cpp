@@ -1,6 +1,6 @@
 #include "DetailNoteHeaderSelectionSourceViewModel.hpp"
 
-#include "file/note/WhatSonBookmarkColorPalette.hpp"
+#include "models/file/note/WhatSonBookmarkColorPalette.hpp"
 
 #include <QRegularExpression>
 #include <QVariantMap>

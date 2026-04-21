@@ -1,4 +1,4 @@
-# `src/app/file/note/WhatSonNoteBodySemanticTagSupport.hpp`
+# `src/app/models/file/note/WhatSonNoteBodySemanticTagSupport.hpp`
 
 ## Role
 Declares the shared `.wsnbody` semantic-tag registry that keeps note-body save/load parsing and editor HTML rendering on

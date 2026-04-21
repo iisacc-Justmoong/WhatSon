@@ -1,11 +1,11 @@
-# `src/app/file/hierarchy/projects/WhatSonProjectsHierarchyCreator.cpp`
+# `src/app/models/file/hierarchy/projects/WhatSonProjectsHierarchyCreator.cpp`
 
 ## Status
 - Documentation phase: scaffold generated from the live source tree.
 - Detail level: structural placeholder prepared for a later deep pass.
 
 ## Source Metadata
-- Source path: `src/app/file/hierarchy/projects/WhatSonProjectsHierarchyCreator.cpp`
+- Source path: `src/app/models/file/hierarchy/projects/WhatSonProjectsHierarchyCreator.cpp`
 - Source kind: C++ implementation
 - File name: `WhatSonProjectsHierarchyCreator.cpp`
 - Approximate line count: 124

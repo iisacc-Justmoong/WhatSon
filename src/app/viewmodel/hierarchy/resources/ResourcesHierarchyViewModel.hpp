@@ -1,6 +1,6 @@
 #pragma once
 
-#include "file/hierarchy/resources/WhatSonResourcesHierarchyStore.hpp"
+#include "models/file/hierarchy/resources/WhatSonResourcesHierarchyStore.hpp"
 #include "viewmodel/hierarchy/IHierarchyCapabilities.hpp"
 #include "viewmodel/hierarchy/IHierarchyViewModel.hpp"
 #include "viewmodel/hierarchy/resources/ResourcesListModel.hpp"

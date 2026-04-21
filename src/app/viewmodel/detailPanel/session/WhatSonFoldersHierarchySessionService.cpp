@@ -1,10 +1,10 @@
 #include "WhatSonFoldersHierarchySessionService.hpp"
 
-#include "file/hierarchy/WhatSonFolderDepthEntry.hpp"
-#include "file/hierarchy/WhatSonFolderIdentity.hpp"
-#include "file/hierarchy/folders/WhatSonFoldersHierarchyParser.hpp"
-#include "file/hierarchy/folders/WhatSonFoldersHierarchyStore.hpp"
-#include "file/note/WhatSonNoteFolderSemantics.hpp"
+#include "models/file/hierarchy/WhatSonFolderDepthEntry.hpp"
+#include "models/file/hierarchy/WhatSonFolderIdentity.hpp"
+#include "models/file/hierarchy/folders/WhatSonFoldersHierarchyParser.hpp"
+#include "models/file/hierarchy/folders/WhatSonFoldersHierarchyStore.hpp"
+#include "models/file/note/WhatSonNoteFolderSemantics.hpp"
 #include "viewmodel/hierarchy/library/LibraryHierarchyViewModelSupport.hpp"
 
 #include <QDir>

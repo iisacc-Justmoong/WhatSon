@@ -36,8 +36,8 @@ void WhatSonCppRegressionTests::displayPaperModels_hostPageAndPrintViewModeObjec
     QVERIFY(!paperRendererImplSource.isEmpty());
     QVERIFY(!printLayoutHeaderSource.isEmpty());
     QVERIFY(!printLayoutImplSource.isEmpty());
-    QVERIFY(readUtf8SourceFile(QStringLiteral("src/app/editor/renderer/ContentsTextFormatRenderer.hpp")).isEmpty());
-    QVERIFY(readUtf8SourceFile(QStringLiteral("src/app/editor/renderer/ContentsPagePrintLayoutRenderer.hpp")).isEmpty());
+    QVERIFY(readUtf8SourceFile(QStringLiteral("src/app/models/editor/renderer/ContentsTextFormatRenderer.hpp")).isEmpty());
+    QVERIFY(readUtf8SourceFile(QStringLiteral("src/app/models/editor/renderer/ContentsPagePrintLayoutRenderer.hpp")).isEmpty());
 
     QVERIFY(appCmakeSource.contains(QStringLiteral("add_subdirectory(models/display)")));
     QVERIFY(displayCmakeSource.contains(QStringLiteral("add_subdirectory(paper)")));

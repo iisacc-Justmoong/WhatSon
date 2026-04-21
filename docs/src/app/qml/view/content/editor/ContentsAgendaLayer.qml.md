@@ -49,7 +49,7 @@ The layer is now a renderer-fed view:
 
 ## Render-Model Rules
 
-- Source parsing rules are now owned by `src/app/editor/renderer/ContentsStructuredBlockRenderer.cpp`.
+- Source parsing rules are now owned by `src/app/models/editor/renderer/ContentsStructuredBlockRenderer.cpp`.
 - This QML layer consumes only renderer-provided agenda entries and does not parse RAW source locally.
 - Parse entries include `sourceStart` and `focusSourceOffset`; cards are positioned by source order/location and can
   restore editor focus to the first task body.

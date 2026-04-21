@@ -1,4 +1,4 @@
-# `src/app/file/hierarchy/folders/WhatSonFoldersHierarchyCreator.cpp`
+# `src/app/models/file/hierarchy/folders/WhatSonFoldersHierarchyCreator.cpp`
 
 ## Responsibility
 

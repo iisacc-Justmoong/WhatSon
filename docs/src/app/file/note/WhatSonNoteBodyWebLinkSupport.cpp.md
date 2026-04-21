@@ -1,4 +1,4 @@
-# `src/app/file/note/WhatSonNoteBodyWebLinkSupport.cpp`
+# `src/app/models/file/note/WhatSonNoteBodyWebLinkSupport.cpp`
 
 ## Responsibility
 Implements shared note-body hyperlink normalization for RAW source and rendered RichText output.

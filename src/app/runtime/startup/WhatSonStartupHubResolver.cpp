@@ -1,7 +1,7 @@
 #include "WhatSonStartupHubResolver.hpp"
 
-#include "file/WhatSonDebugTrace.hpp"
-#include "file/hub/WhatSonHubMountValidator.hpp"
+#include "models/file/WhatSonDebugTrace.hpp"
+#include "models/file/hub/WhatSonHubMountValidator.hpp"
 #include "store/hub/ISelectedHubStore.hpp"
 
 #include <QDebug>

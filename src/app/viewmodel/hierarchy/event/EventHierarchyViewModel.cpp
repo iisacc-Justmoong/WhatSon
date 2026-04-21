@@ -1,8 +1,8 @@
 #include "EventHierarchyViewModel.hpp"
 
-#include "file/WhatSonDebugTrace.hpp"
-#include "file/hierarchy/event/WhatSonEventHierarchyParser.hpp"
-#include "file/hierarchy/event/WhatSonEventHierarchyStore.hpp"
+#include "models/file/WhatSonDebugTrace.hpp"
+#include "models/file/hierarchy/event/WhatSonEventHierarchyParser.hpp"
+#include "models/file/hierarchy/event/WhatSonEventHierarchyStore.hpp"
 #include "viewmodel/hierarchy/WhatSonHierarchyTreeItemSupport.hpp"
 #include "viewmodel/hierarchy/event/EventHierarchyViewModelSupport.hpp"
 

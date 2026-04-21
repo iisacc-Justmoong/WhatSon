@@ -1,4 +1,4 @@
-# `src/app/file/validator/WhatSonStructuredTagLinter.cpp`
+# `src/app/models/file/validator/WhatSonStructuredTagLinter.cpp`
 
 ## Responsibility
 Implements linting and safe canonicalization for proprietary note-body structured tags, then validates that supported

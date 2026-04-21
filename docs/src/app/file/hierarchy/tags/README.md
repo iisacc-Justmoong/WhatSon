@@ -1,11 +1,11 @@
-# `src/app/file/hierarchy/tags`
+# `src/app/models/file/hierarchy/tags`
 
 ## Status
 - Directory mirror generated from the current `src` tree.
 - This file is the entry point for the detailed documentation pass of this directory.
 
 ## Scope
-- Mirrored source directory: `src/app/file/hierarchy/tags`
+- Mirrored source directory: `src/app/models/file/hierarchy/tags`
 - Child directories: 0
 - Child files: 19
 

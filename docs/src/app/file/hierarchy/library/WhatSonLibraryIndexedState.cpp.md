@@ -1,4 +1,4 @@
-# `src/app/file/hierarchy/library/WhatSonLibraryIndexedState.cpp`
+# `src/app/models/file/hierarchy/library/WhatSonLibraryIndexedState.cpp`
 
 ## Implementation Summary
 

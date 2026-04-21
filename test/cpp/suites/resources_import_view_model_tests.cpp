@@ -3,7 +3,7 @@
 void WhatSonCppRegressionTests::resourcesImportViewModel_wiresAnnotationBitmapGenerationIntoPackageCreation()
 {
     const QString importViewModelSource = readUtf8SourceFile(
-        QStringLiteral("src/app/file/import/ResourcesImportViewModel.cpp"));
+        QStringLiteral("src/app/models/file/import/ResourcesImportViewModel.cpp"));
 
     QVERIFY(!importViewModelSource.isEmpty());
     QVERIFY(importViewModelSource.count(QStringLiteral("writeResourcePackageAnnotationBitmap(")) >= 2);

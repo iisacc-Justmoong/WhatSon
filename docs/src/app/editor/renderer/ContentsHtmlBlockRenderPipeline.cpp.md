@@ -1,4 +1,4 @@
-# `src/app/editor/renderer/ContentsHtmlBlockRenderPipeline.cpp`
+# `src/app/models/editor/renderer/ContentsHtmlBlockRenderPipeline.cpp`
 
 ## Responsibility
 Builds editor HTML tokens and normalized HTML blocks from parser-owned RAW document blocks.

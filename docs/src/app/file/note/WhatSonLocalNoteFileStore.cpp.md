@@ -1,4 +1,4 @@
-# `src/app/file/note/WhatSonLocalNoteFileStore.cpp`
+# `src/app/models/file/note/WhatSonLocalNoteFileStore.cpp`
 
 ## Role
 `WhatSonLocalNoteFileStore` is the concrete filesystem adapter for `.wsnhead`, `.wsnbody`, `.wsnversion`, and `.wsnpaint`.

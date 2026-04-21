@@ -1,8 +1,8 @@
 #include "UnusedNoteSensorSupport.hpp"
 
-#include "file/hub/WhatSonHubPathUtils.hpp"
-#include "file/note/WhatSonNoteBodyPersistence.hpp"
-#include "file/note/WhatSonNoteHeaderParser.hpp"
+#include "models/file/hub/WhatSonHubPathUtils.hpp"
+#include "models/file/note/WhatSonNoteBodyPersistence.hpp"
+#include "models/file/note/WhatSonNoteHeaderParser.hpp"
 
 #include <QDir>
 #include <QDirIterator>

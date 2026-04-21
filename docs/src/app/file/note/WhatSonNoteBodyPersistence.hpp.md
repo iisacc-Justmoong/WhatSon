@@ -1,4 +1,4 @@
-# `src/app/file/note/WhatSonNoteBodyPersistence.hpp`
+# `src/app/models/file/note/WhatSonNoteBodyPersistence.hpp`
 
 ## Role
 This header defines the shared plain-text persistence contract for note bodies.

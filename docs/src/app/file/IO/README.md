@@ -1,11 +1,11 @@
-# `src/app/file/IO`
+# `src/app/models/file/IO`
 
 ## Status
 - Directory mirror generated from the current `src` tree.
 - This file is the entry point for the detailed documentation pass of this directory.
 
 ## Scope
-- Mirrored source directory: `src/app/file/IO`
+- Mirrored source directory: `src/app/models/file/IO`
 - Child directories: 0
 - Child files: 7
 

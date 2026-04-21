@@ -1,11 +1,11 @@
-# `src/app/file/conflict`
+# `src/app/models/file/conflict`
 
 ## Status
 - Directory mirror generated from the current `src` tree.
 - This file is the entry point for the detailed documentation pass of this directory.
 
 ## Scope
-- Mirrored source directory: `src/app/file/conflict`
+- Mirrored source directory: `src/app/models/file/conflict`
 - Child directories: 0
 - Child files: 0
 

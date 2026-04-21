@@ -1,6 +1,6 @@
 #include "OnboardingHubController.hpp"
-#include "file/hub/WhatSonHubPathUtils.hpp"
-#include "file/hub/WhatSonHubMountValidator.hpp"
+#include "models/file/hub/WhatSonHubPathUtils.hpp"
+#include "models/file/hub/WhatSonHubMountValidator.hpp"
 #include "platform/Android/WhatSonAndroidStorageBackend.hpp"
 #include "platform/Apple/AppleSecurityScopedResourceAccess.hpp"
 

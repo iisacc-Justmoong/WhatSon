@@ -1,4 +1,4 @@
-# `src/app/file/note/WhatSonHubNoteCreationService.cpp`
+# `src/app/models/file/note/WhatSonHubNoteCreationService.cpp`
 
 ## Responsibility
 

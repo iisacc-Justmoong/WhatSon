@@ -1,4 +1,4 @@
-# `src/app/file/hub/WhatSonHubPackager.hpp`
+# `src/app/models/file/hub/WhatSonHubPackager.hpp`
 
 ## Role
 Declares the package-root service for `.wshub` creation.

@@ -21,8 +21,8 @@
 - `src/app/models/callout/CMakeLists.txt`
 - `src/app/models/display/CMakeLists.txt`
 - `src/app/models/sensor/CMakeLists.txt`
-- `src/app/editor/CMakeLists.txt`
-- `src/app/file/CMakeLists.txt`
+- `src/app/models/editor/CMakeLists.txt`
+- `src/app/models/file/CMakeLists.txt`
 - `src/app/permissions/CMakeLists.txt`
 - `src/app/platform/CMakeLists.txt`
 - `src/app/policy/CMakeLists.txt`

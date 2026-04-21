@@ -1,7 +1,7 @@
 #include "LibraryNoteListModel.hpp"
 
-#include "file/WhatSonDebugTrace.hpp"
-#include "file/note/WhatSonBookmarkColorPalette.hpp"
+#include "models/file/WhatSonDebugTrace.hpp"
+#include "models/file/note/WhatSonBookmarkColorPalette.hpp"
 
 #include <QDir>
 #include <QDateTime>

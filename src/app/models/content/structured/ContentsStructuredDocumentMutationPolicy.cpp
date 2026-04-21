@@ -1,8 +1,8 @@
 #include "ContentsStructuredDocumentMutationPolicy.hpp"
 
 #include "ContentsStructuredDocumentCollectionPolicy.hpp"
-#include "file/WhatSonDebugTrace.hpp"
-#include "file/note/WhatSonNoteBodySemanticTagSupport.hpp"
+#include "models/file/WhatSonDebugTrace.hpp"
+#include "models/file/note/WhatSonNoteBodySemanticTagSupport.hpp"
 
 #include <QJSValue>
 #include <QMetaType>

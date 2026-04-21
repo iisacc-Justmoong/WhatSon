@@ -1,4 +1,4 @@
-# `src/app/file/sync/ContentsEditorIdleSyncController.hpp`
+# `src/app/models/file/sync/ContentsEditorIdleSyncController.hpp`
 
 ## Status
 - Documentation phase: focused pass for editor fetch-sync ownership.

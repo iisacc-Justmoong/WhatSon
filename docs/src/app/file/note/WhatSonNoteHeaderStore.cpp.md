@@ -1,4 +1,4 @@
-# `src/app/file/note/WhatSonNoteHeaderStore.cpp`
+# `src/app/models/file/note/WhatSonNoteHeaderStore.cpp`
 
 ## Responsibility
 

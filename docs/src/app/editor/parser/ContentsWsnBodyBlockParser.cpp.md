@@ -1,4 +1,4 @@
-# `src/app/editor/parser/ContentsWsnBodyBlockParser.cpp`
+# `src/app/models/editor/parser/ContentsWsnBodyBlockParser.cpp`
 
 ## Responsibility
 Implements one-pass top-level `.wsnbody` parsing for the structured editor renderer path.

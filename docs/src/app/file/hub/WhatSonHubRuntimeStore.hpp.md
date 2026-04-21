@@ -1,11 +1,11 @@
-# `src/app/file/hub/WhatSonHubRuntimeStore.hpp`
+# `src/app/models/file/hub/WhatSonHubRuntimeStore.hpp`
 
 ## Status
 - Documentation phase: scaffold generated from the live source tree.
 - Detail level: structural placeholder prepared for a later deep pass.
 
 ## Source Metadata
-- Source path: `src/app/file/hub/WhatSonHubRuntimeStore.hpp`
+- Source path: `src/app/models/file/hub/WhatSonHubRuntimeStore.hpp`
 - Source kind: C++ header
 - File name: `WhatSonHubRuntimeStore.hpp`
 - Approximate line count: 40

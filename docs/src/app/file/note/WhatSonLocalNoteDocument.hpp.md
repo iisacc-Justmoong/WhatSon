@@ -1,4 +1,4 @@
-# `src/app/file/note/WhatSonLocalNoteDocument.hpp`
+# `src/app/models/file/note/WhatSonLocalNoteDocument.hpp`
 
 ## Responsibility
 

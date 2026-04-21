@@ -1,11 +1,11 @@
-# `src/app/file/IO/WhatSonSystemIoGateway.cpp`
+# `src/app/models/file/IO/WhatSonSystemIoGateway.cpp`
 
 ## Status
 - Documentation phase: scaffold generated from the live source tree.
 - Detail level: structural placeholder prepared for a later deep pass.
 
 ## Source Metadata
-- Source path: `src/app/file/IO/WhatSonSystemIoGateway.cpp`
+- Source path: `src/app/models/file/IO/WhatSonSystemIoGateway.cpp`
 - Source kind: C++ implementation
 - File name: `WhatSonSystemIoGateway.cpp`
 - Approximate line count: 625

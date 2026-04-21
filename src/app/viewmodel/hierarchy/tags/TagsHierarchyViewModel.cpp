@@ -1,12 +1,12 @@
 #include "TagsHierarchyViewModel.hpp"
 
 #include "calendar/SystemCalendarStore.hpp"
-#include "file/WhatSonDebugTrace.hpp"
-#include "file/hierarchy/library/LibraryAll.hpp"
-#include "file/hierarchy/tags/WhatSonTagsHierarchyParser.hpp"
-#include "file/note/WhatSonBookmarkColorPalette.hpp"
-#include "file/note/WhatSonNoteFolderBindingRepository.hpp"
-#include "file/note/WhatSonNoteBodyPersistence.hpp"
+#include "models/file/WhatSonDebugTrace.hpp"
+#include "models/file/hierarchy/library/LibraryAll.hpp"
+#include "models/file/hierarchy/tags/WhatSonTagsHierarchyParser.hpp"
+#include "models/file/note/WhatSonBookmarkColorPalette.hpp"
+#include "models/file/note/WhatSonNoteFolderBindingRepository.hpp"
+#include "models/file/note/WhatSonNoteBodyPersistence.hpp"
 #include "viewmodel/hierarchy/tags/TagsHierarchyViewModelSupport.hpp"
 
 #include <QDir>

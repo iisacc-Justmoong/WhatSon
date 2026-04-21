@@ -1,4 +1,4 @@
-# `src/app/file/hierarchy/WhatSonFolderDepthEntry.hpp`
+# `src/app/models/file/hierarchy/WhatSonFolderDepthEntry.hpp`
 
 ## Responsibility
 

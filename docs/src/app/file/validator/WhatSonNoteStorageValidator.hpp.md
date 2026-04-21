@@ -1,4 +1,4 @@
-# `src/app/file/validator/WhatSonNoteStorageValidator.hpp`
+# `src/app/models/file/validator/WhatSonNoteStorageValidator.hpp`
 
 ## Role
 `WhatSonNoteStorageValidator` resolves materialized note storage paths and now owns `.wsnote` package normalization.

@@ -1,4 +1,4 @@
-# `src/app/file/viewer/ResourceBitmapViewer.cpp`
+# `src/app/models/file/viewer/ResourceBitmapViewer.cpp`
 
 ## Responsibility
 Implements derived bitmap-viewer state projection from resource-entry metadata.

@@ -1,4 +1,4 @@
-# `src/app/file/validator/ContentsStructuredTagValidator.cpp`
+# `src/app/models/file/validator/ContentsStructuredTagValidator.cpp`
 
 ## Responsibility
 Implements the structured-tag validator's advisory correction gate.

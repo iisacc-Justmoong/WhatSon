@@ -1,4 +1,4 @@
-# `src/app/file/validator/WhatSonStructuredTagLinter.hpp`
+# `src/app/models/file/validator/WhatSonStructuredTagLinter.hpp`
 
 ## Role
 `WhatSonStructuredTagLinter` owns note-body proprietary structured-tag linting, safe canonicalization, and

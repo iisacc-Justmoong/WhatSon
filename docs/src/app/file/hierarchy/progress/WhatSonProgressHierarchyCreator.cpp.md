@@ -1,11 +1,11 @@
-# `src/app/file/hierarchy/progress/WhatSonProgressHierarchyCreator.cpp`
+# `src/app/models/file/hierarchy/progress/WhatSonProgressHierarchyCreator.cpp`
 
 ## Status
 - Documentation phase: scaffold generated from the live source tree.
 - Detail level: structural placeholder prepared for a later deep pass.
 
 ## Source Metadata
-- Source path: `src/app/file/hierarchy/progress/WhatSonProgressHierarchyCreator.cpp`
+- Source path: `src/app/models/file/hierarchy/progress/WhatSonProgressHierarchyCreator.cpp`
 - Source kind: C++ implementation
 - File name: `WhatSonProgressHierarchyCreator.cpp`
 - Approximate line count: 42

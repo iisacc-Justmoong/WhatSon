@@ -1,4 +1,4 @@
-# `src/app/file/note/WhatSonNoteBodySemanticTagSupport.cpp`
+# `src/app/models/file/note/WhatSonNoteBodySemanticTagSupport.cpp`
 
 ## Role
 Implements the shared semantic-tag lookup used by note-body persistence and editor rendering.

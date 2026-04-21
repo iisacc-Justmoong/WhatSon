@@ -1,11 +1,11 @@
-# `src/app/editor/renderer`
+# `src/app/models/editor/renderer`
 
 ## Status
 - Directory mirror generated from the current `src` tree.
 - This file is the entry point for the detailed documentation pass of this directory.
 
 ## Scope
-- Mirrored source directory: `src/app/editor/renderer`
+- Mirrored source directory: `src/app/models/editor/renderer`
 - Child directories: 0
 - Child files: 6
 

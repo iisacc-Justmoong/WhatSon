@@ -1,4 +1,4 @@
-# `src/app/file/sync/WhatSonHubSyncController.hpp`
+# `src/app/models/file/sync/WhatSonHubSyncController.hpp`
 
 ## Role
 `WhatSonHubSyncController` defines the app-level synchronization boundary between the mounted `.wshub` filesystem and

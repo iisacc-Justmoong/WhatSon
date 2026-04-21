@@ -1,6 +1,6 @@
 #include "DetailPropertiesViewModel.hpp"
 
-#include "file/note/WhatSonNoteFolderSemantics.hpp"
+#include "models/file/note/WhatSonNoteFolderSemantics.hpp"
 
 namespace
 {

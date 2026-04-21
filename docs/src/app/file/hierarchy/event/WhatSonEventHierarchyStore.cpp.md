@@ -1,11 +1,11 @@
-# `src/app/file/hierarchy/event/WhatSonEventHierarchyStore.cpp`
+# `src/app/models/file/hierarchy/event/WhatSonEventHierarchyStore.cpp`
 
 ## Status
 - Documentation phase: scaffold generated from the live source tree.
 - Detail level: structural placeholder prepared for a later deep pass.
 
 ## Source Metadata
-- Source path: `src/app/file/hierarchy/event/WhatSonEventHierarchyStore.cpp`
+- Source path: `src/app/models/file/hierarchy/event/WhatSonEventHierarchyStore.cpp`
 - Source kind: C++ implementation
 - File name: `WhatSonEventHierarchyStore.cpp`
 - Approximate line count: 130

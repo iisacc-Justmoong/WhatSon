@@ -1,11 +1,11 @@
-# `src/app/file/hierarchy/tags/WhatSonHubTagsDepthProvider.hpp`
+# `src/app/models/file/hierarchy/tags/WhatSonHubTagsDepthProvider.hpp`
 
 ## Status
 - Documentation phase: scaffold generated from the live source tree.
 - Detail level: structural placeholder prepared for a later deep pass.
 
 ## Source Metadata
-- Source path: `src/app/file/hierarchy/tags/WhatSonHubTagsDepthProvider.hpp`
+- Source path: `src/app/models/file/hierarchy/tags/WhatSonHubTagsDepthProvider.hpp`
 - Source kind: C++ header
 - File name: `WhatSonHubTagsDepthProvider.hpp`
 - Approximate line count: 27

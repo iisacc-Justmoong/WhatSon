@@ -1,4 +1,4 @@
-# `src/app/file/viewer/ImageFormatCompatibilityLayer.cpp`
+# `src/app/models/file/viewer/ImageFormatCompatibilityLayer.cpp`
 
 ## Responsibility
 Implements format normalization and runtime compatibility checks for bitmap preview.

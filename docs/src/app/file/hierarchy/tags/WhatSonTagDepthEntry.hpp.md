@@ -1,11 +1,11 @@
-# `src/app/file/hierarchy/tags/WhatSonTagDepthEntry.hpp`
+# `src/app/models/file/hierarchy/tags/WhatSonTagDepthEntry.hpp`
 
 ## Status
 - Documentation phase: scaffold generated from the live source tree.
 - Detail level: structural placeholder prepared for a later deep pass.
 
 ## Source Metadata
-- Source path: `src/app/file/hierarchy/tags/WhatSonTagDepthEntry.hpp`
+- Source path: `src/app/models/file/hierarchy/tags/WhatSonTagDepthEntry.hpp`
 - Source kind: C++ header
 - File name: `WhatSonTagDepthEntry.hpp`
 - Approximate line count: 10

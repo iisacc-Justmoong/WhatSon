@@ -1,4 +1,4 @@
-# `src/app/file/hierarchy/library/WhatSonLibraryFolderHierarchyMutationService.hpp`
+# `src/app/models/file/hierarchy/library/WhatSonLibraryFolderHierarchyMutationService.hpp`
 
 ## Responsibility
 

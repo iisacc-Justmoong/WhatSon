@@ -1,4 +1,4 @@
-# `src/app/file/note/WhatSonNoteMarkdownStyleObject.cpp`
+# `src/app/models/file/note/WhatSonNoteMarkdownStyleObject.cpp`
 
 ## Role
 

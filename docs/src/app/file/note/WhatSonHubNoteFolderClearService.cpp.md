@@ -1,4 +1,4 @@
-# `src/app/file/note/WhatSonHubNoteFolderClearService.cpp`
+# `src/app/models/file/note/WhatSonHubNoteFolderClearService.cpp`
 
 ## Responsibility
 

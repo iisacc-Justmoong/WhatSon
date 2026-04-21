@@ -1,6 +1,6 @@
 #pragma once
 
-#include "file/hierarchy/library/LibraryNoteRecord.hpp"
+#include "models/file/hierarchy/library/LibraryNoteRecord.hpp"
 #include "viewmodel/hierarchy/IHierarchyCapabilities.hpp"
 #include "viewmodel/hierarchy/bookmarks/BookmarksNoteListModel.hpp"
 #include "viewmodel/hierarchy/bookmarks/BookmarksHierarchyModel.hpp"

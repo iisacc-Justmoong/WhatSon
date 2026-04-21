@@ -1,11 +1,11 @@
-# `src/app/file/hierarchy/progress/WhatSonProgressHierarchyParser.cpp`
+# `src/app/models/file/hierarchy/progress/WhatSonProgressHierarchyParser.cpp`
 
 ## Status
 - Documentation phase: scaffold generated from the live source tree.
 - Detail level: structural placeholder prepared for a later deep pass.
 
 ## Source Metadata
-- Source path: `src/app/file/hierarchy/progress/WhatSonProgressHierarchyParser.cpp`
+- Source path: `src/app/models/file/hierarchy/progress/WhatSonProgressHierarchyParser.cpp`
 - Source kind: C++ implementation
 - File name: `WhatSonProgressHierarchyParser.cpp`
 - Approximate line count: 139

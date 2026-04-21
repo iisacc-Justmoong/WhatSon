@@ -1,11 +1,11 @@
-# `src/app/file/hierarchy/tags/WhatSonTagsHierarchyCreator.cpp`
+# `src/app/models/file/hierarchy/tags/WhatSonTagsHierarchyCreator.cpp`
 
 ## Status
 - Documentation phase: scaffold generated from the live source tree.
 - Detail level: structural placeholder prepared for a later deep pass.
 
 ## Source Metadata
-- Source path: `src/app/file/hierarchy/tags/WhatSonTagsHierarchyCreator.cpp`
+- Source path: `src/app/models/file/hierarchy/tags/WhatSonTagsHierarchyCreator.cpp`
 - Source kind: C++ implementation
 - File name: `WhatSonTagsHierarchyCreator.cpp`
 - Approximate line count: 44

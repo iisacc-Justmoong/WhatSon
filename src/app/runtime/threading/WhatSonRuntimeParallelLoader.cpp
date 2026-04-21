@@ -1,7 +1,7 @@
 #include "WhatSonRuntimeParallelLoader.hpp"
 
 #include "WhatSonRuntimeDomainSnapshots.hpp"
-#include "file/WhatSonDebugTrace.hpp"
+#include "models/file/WhatSonDebugTrace.hpp"
 #include "hub/WhatSonHubRuntimeStore.hpp"
 #include "viewmodel/hierarchy/bookmarks/BookmarksHierarchyViewModel.hpp"
 #include "viewmodel/hierarchy/event/EventHierarchyViewModel.hpp"

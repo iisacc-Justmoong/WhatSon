@@ -1,4 +1,4 @@
-# `src/app/file/note/WhatSonHubNoteMutationSupport.cpp`
+# `src/app/models/file/note/WhatSonHubNoteMutationSupport.cpp`
 
 ## Responsibility
 

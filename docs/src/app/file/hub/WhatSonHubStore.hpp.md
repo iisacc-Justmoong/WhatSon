@@ -1,11 +1,11 @@
-# `src/app/file/hub/WhatSonHubStore.hpp`
+# `src/app/models/file/hub/WhatSonHubStore.hpp`
 
 ## Status
 - Documentation phase: scaffold generated from the live source tree.
 - Detail level: structural placeholder prepared for a later deep pass.
 
 ## Source Metadata
-- Source path: `src/app/file/hub/WhatSonHubStore.hpp`
+- Source path: `src/app/models/file/hub/WhatSonHubStore.hpp`
 - Source kind: C++ header
 - File name: `WhatSonHubStore.hpp`
 - Approximate line count: 49

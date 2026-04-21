@@ -1,7 +1,7 @@
 #pragma once
 
-#include "file/hierarchy/library/LibraryNoteRecord.hpp"
-#include "file/hierarchy/progress/WhatSonProgressHierarchyStore.hpp"
+#include "models/file/hierarchy/library/LibraryNoteRecord.hpp"
+#include "models/file/hierarchy/progress/WhatSonProgressHierarchyStore.hpp"
 #include "viewmodel/hierarchy/IHierarchyCapabilities.hpp"
 #include "viewmodel/hierarchy/IHierarchyViewModel.hpp"
 #include "viewmodel/hierarchy/library/LibraryNoteListModel.hpp"

@@ -1,8 +1,8 @@
 #include "WhatSonNoteHeaderSessionStore.hpp"
 
-#include "file/note/WhatSonNoteFolderBindingService.hpp"
-#include "file/note/WhatSonLocalNoteFileStore.hpp"
-#include "file/note/WhatSonNoteHeaderParser.hpp"
+#include "models/file/note/WhatSonNoteFolderBindingService.hpp"
+#include "models/file/note/WhatSonLocalNoteFileStore.hpp"
+#include "models/file/note/WhatSonNoteHeaderParser.hpp"
 
 #include <QDir>
 #include <QFile>

@@ -1,4 +1,4 @@
-# `src/app/file/hub/WhatSonHubMountValidator.hpp`
+# `src/app/models/file/hub/WhatSonHubMountValidator.hpp`
 
 ## Role
 `WhatSonHubMountValidator` resolves a persisted or user-selected hub path into a mounted local `.wshub` package and

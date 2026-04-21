@@ -1,4 +1,4 @@
-# `src/app/file/hub/WhatSonHubMountValidator.cpp`
+# `src/app/models/file/hub/WhatSonHubMountValidator.cpp`
 
 ## Implementation Notes
 - The validator owns platform-specific mount/access preflight for Android SAF URIs, restored Android mount paths, and

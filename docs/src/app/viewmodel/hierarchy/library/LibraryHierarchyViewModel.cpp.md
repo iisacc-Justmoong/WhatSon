@@ -3,7 +3,7 @@
 ## Implementation Notes
 - `setSystemCalendarStore(...)` now binds to `ISystemCalendarStore` and its `systemInfoChanged` signal.
 - Note-list date formatting behavior is unchanged.
-- Note-list `primaryText` now comes from the shared `src/app/file/hierarchy/library/LibraryNotePreviewText.hpp`
+- Note-list `primaryText` now comes from the shared `src/app/models/file/hierarchy/library/LibraryNotePreviewText.hpp`
   helper, so the library list and calendar note chips read from the same preview-text contract.
 - Static `SystemCalendarStore::formatNoteDateForSystem(...)` remains the non-injected fallback helper.
 - `indexedNotesSnapshot()` returns the current `m_indexedState.allNotes()` copy so other runtime collaborators such as

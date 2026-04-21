@@ -1,4 +1,4 @@
-# `src/app/file/note/WhatSonNoteBodyResourceTagGenerator.cpp`
+# `src/app/models/file/note/WhatSonNoteBodyResourceTagGenerator.cpp`
 
 ## Responsibility
 Owns the static C++ normalization rules for note-body resource tag generation.

@@ -1,11 +1,11 @@
-# `src/app/file/hierarchy/tags/WhatSonTagsHierarchyParser.hpp`
+# `src/app/models/file/hierarchy/tags/WhatSonTagsHierarchyParser.hpp`
 
 ## Status
 - Documentation phase: scaffold generated from the live source tree.
 - Detail level: structural placeholder prepared for a later deep pass.
 
 ## Source Metadata
-- Source path: `src/app/file/hierarchy/tags/WhatSonTagsHierarchyParser.hpp`
+- Source path: `src/app/models/file/hierarchy/tags/WhatSonTagsHierarchyParser.hpp`
 - Source kind: C++ header
 - File name: `WhatSonTagsHierarchyParser.hpp`
 - Approximate line count: 17

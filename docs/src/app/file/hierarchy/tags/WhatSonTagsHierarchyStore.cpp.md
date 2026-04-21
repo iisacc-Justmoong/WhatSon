@@ -1,11 +1,11 @@
-# `src/app/file/hierarchy/tags/WhatSonTagsHierarchyStore.cpp`
+# `src/app/models/file/hierarchy/tags/WhatSonTagsHierarchyStore.cpp`
 
 ## Status
 - Documentation phase: scaffold generated from the live source tree.
 - Detail level: structural placeholder prepared for a later deep pass.
 
 ## Source Metadata
-- Source path: `src/app/file/hierarchy/tags/WhatSonTagsHierarchyStore.cpp`
+- Source path: `src/app/models/file/hierarchy/tags/WhatSonTagsHierarchyStore.cpp`
 - Source kind: C++ implementation
 - File name: `WhatSonTagsHierarchyStore.cpp`
 - Approximate line count: 105

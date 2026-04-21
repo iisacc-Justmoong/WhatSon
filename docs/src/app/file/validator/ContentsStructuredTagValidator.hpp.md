@@ -1,4 +1,4 @@
-# `src/app/file/validator/ContentsStructuredTagValidator.hpp`
+# `src/app/models/file/validator/ContentsStructuredTagValidator.hpp`
 
 ## Role
 `ContentsStructuredTagValidator` is a QML-facing structured-tag correction advisory helper.

@@ -1,4 +1,4 @@
-# `src/app/file/sync/ContentsEditorIdleSyncController.cpp`
+# `src/app/models/file/sync/ContentsEditorIdleSyncController.cpp`
 
 ## Status
 - Documentation phase: focused pass for editor fetch-sync runtime behavior.

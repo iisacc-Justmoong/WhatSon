@@ -1,4 +1,4 @@
-# `src/app/editor/renderer/ContentsHtmlBlockRenderPipeline.hpp`
+# `src/app/models/editor/renderer/ContentsHtmlBlockRenderPipeline.hpp`
 
 ## Responsibility
 

@@ -1,7 +1,7 @@
 #include "WhatSonStartupRuntimeCoordinator.hpp"
 
-#include "file/WhatSonDebugTrace.hpp"
-#include "file/hub/WhatSonHubPathUtils.hpp"
+#include "models/file/WhatSonDebugTrace.hpp"
+#include "models/file/hub/WhatSonHubPathUtils.hpp"
 #include "hub/WhatSonHubRuntimeStore.hpp"
 #include "runtime/threading/WhatSonRuntimeDomainSnapshots.hpp"
 #include "viewmodel/hierarchy/bookmarks/BookmarksHierarchyViewModel.hpp"

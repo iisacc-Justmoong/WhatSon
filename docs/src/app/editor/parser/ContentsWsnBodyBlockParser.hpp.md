@@ -1,4 +1,4 @@
-# `src/app/editor/parser/ContentsWsnBodyBlockParser.hpp`
+# `src/app/models/editor/parser/ContentsWsnBodyBlockParser.hpp`
 
 ## Responsibility
 Declares the dedicated `.wsnbody` block parser used by the editor read path.

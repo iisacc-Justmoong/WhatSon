@@ -1,11 +1,11 @@
-# `src/app/file/hierarchy/preset/WhatSonPresetHierarchyCreator.cpp`
+# `src/app/models/file/hierarchy/preset/WhatSonPresetHierarchyCreator.cpp`
 
 ## Status
 - Documentation phase: scaffold generated from the live source tree.
 - Detail level: structural placeholder prepared for a later deep pass.
 
 ## Source Metadata
-- Source path: `src/app/file/hierarchy/preset/WhatSonPresetHierarchyCreator.cpp`
+- Source path: `src/app/models/file/hierarchy/preset/WhatSonPresetHierarchyCreator.cpp`
 - Source kind: C++ implementation
 - File name: `WhatSonPresetHierarchyCreator.cpp`
 - Approximate line count: 40

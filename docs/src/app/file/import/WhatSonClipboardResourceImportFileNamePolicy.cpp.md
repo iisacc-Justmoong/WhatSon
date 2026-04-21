@@ -1,4 +1,4 @@
-# `src/app/file/import/WhatSonClipboardResourceImportFileNamePolicy.cpp`
+# `src/app/models/file/import/WhatSonClipboardResourceImportFileNamePolicy.cpp`
 
 ## Responsibility
 This implementation centralizes clipboard-import asset naming so both production code and the C++ regression suite use

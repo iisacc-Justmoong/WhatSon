@@ -1,11 +1,11 @@
-# `src/app/file/hierarchy/library/WhatSonLibraryHierarchyParser.cpp`
+# `src/app/models/file/hierarchy/library/WhatSonLibraryHierarchyParser.cpp`
 
 ## Status
 - Documentation phase: scaffold generated from the live source tree.
 - Detail level: structural placeholder prepared for a later deep pass.
 
 ## Source Metadata
-- Source path: `src/app/file/hierarchy/library/WhatSonLibraryHierarchyParser.cpp`
+- Source path: `src/app/models/file/hierarchy/library/WhatSonLibraryHierarchyParser.cpp`
 - Source kind: C++ implementation
 - File name: `WhatSonLibraryHierarchyParser.cpp`
 - Approximate line count: 173

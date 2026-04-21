@@ -1,11 +1,11 @@
 #include "ContentsTextFormatRenderer.hpp"
-#include "editor/renderer/ContentsHtmlBlockRenderPipeline.hpp"
-#include "editor/renderer/ContentsTextHighlightRenderer.hpp"
-#include "file/WhatSonDebugTrace.hpp"
-#include "file/note/WhatSonNoteBodyWebLinkSupport.hpp"
-#include "file/note/WhatSonNoteBodySemanticTagSupport.hpp"
-#include "file/note/WhatSonNoteBodyPersistence.hpp"
-#include "file/note/WhatSonNoteMarkdownStyleObject.hpp"
+#include "models/editor/renderer/ContentsHtmlBlockRenderPipeline.hpp"
+#include "models/editor/renderer/ContentsTextHighlightRenderer.hpp"
+#include "models/file/WhatSonDebugTrace.hpp"
+#include "models/file/note/WhatSonNoteBodyWebLinkSupport.hpp"
+#include "models/file/note/WhatSonNoteBodySemanticTagSupport.hpp"
+#include "models/file/note/WhatSonNoteBodyPersistence.hpp"
+#include "models/file/note/WhatSonNoteMarkdownStyleObject.hpp"
 
 #include <array>
 #include <algorithm>

@@ -1,11 +1,11 @@
-# `src/app/file/hierarchy/bookmarks/WhatSonBookmarksHierarchyCreator.hpp`
+# `src/app/models/file/hierarchy/bookmarks/WhatSonBookmarksHierarchyCreator.hpp`
 
 ## Status
 - Documentation phase: scaffold generated from the live source tree.
 - Detail level: structural placeholder prepared for a later deep pass.
 
 ## Source Metadata
-- Source path: `src/app/file/hierarchy/bookmarks/WhatSonBookmarksHierarchyCreator.hpp`
+- Source path: `src/app/models/file/hierarchy/bookmarks/WhatSonBookmarksHierarchyCreator.hpp`
 - Source kind: C++ header
 - File name: `WhatSonBookmarksHierarchyCreator.hpp`
 - Approximate line count: 15

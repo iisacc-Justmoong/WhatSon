@@ -3,7 +3,7 @@
 #include "ContentsStructuredDocumentCollectionPolicy.hpp"
 #include "ContentsStructuredDocumentFocusPolicy.hpp"
 #include "ContentsStructuredDocumentMutationPolicy.hpp"
-#include "file/WhatSonDebugTrace.hpp"
+#include "models/file/WhatSonDebugTrace.hpp"
 
 #include <cmath>
 

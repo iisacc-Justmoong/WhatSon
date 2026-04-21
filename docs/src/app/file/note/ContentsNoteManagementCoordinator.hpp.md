@@ -1,4 +1,4 @@
-# `src/app/file/note/ContentsNoteManagementCoordinator.hpp`
+# `src/app/models/file/note/ContentsNoteManagementCoordinator.hpp`
 
 ## Status
 - Documentation phase: focused pass for the editor note-management split.

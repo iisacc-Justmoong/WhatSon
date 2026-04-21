@@ -14,15 +14,15 @@ every turn.
 - Daemon entry: `src/daemon/main.cpp`
 - Root build definition: `CMakeLists.txt` plus grouped root-target shards under `cmake/root/*/CMakeLists.txt`
 - Primary QML root: `src/app/qml/Main.qml`
-- Library hierarchy backend: `src/app/file/hierarchy/library`
+- Library hierarchy backend: `src/app/models/file/hierarchy/library`
 - Library hierarchy model/viewmodel: `src/app/viewmodel/hierarchy/library/LibraryHierarchyModel.*`,
   `src/app/viewmodel/hierarchy/library/LibraryHierarchyViewModel.*`
 - Library right-panel list model: `src/app/viewmodel/hierarchy/library/LibraryNoteListModel.*`
-- Hub placement store: `src/app/file/hub/WhatSonHubPlacementStore.*`
-- Tags depth provider: `src/app/file/hierarchy/tags/WhatSonHubTagsDepthProvider.*`
-- Hub runtime store: `src/app/file/hub/WhatSonHubRuntimeStore.*`
+- Hub placement store: `src/app/models/file/hub/WhatSonHubPlacementStore.*`
+- Tags depth provider: `src/app/models/file/hierarchy/tags/WhatSonHubTagsDepthProvider.*`
+- Hub runtime store: `src/app/models/file/hub/WhatSonHubRuntimeStore.*`
 - Runtime parallel bootstrap loader: `src/app/runtime/threading/WhatSonRuntimeParallelLoader.*`
-- Tags runtime state store: `src/app/file/hierarchy/tags/WhatSonHubTagsStateStore.*`
+- Tags runtime state store: `src/app/models/file/hierarchy/tags/WhatSonHubTagsStateStore.*`
 - Tags hierarchy model/viewmodel: `src/app/viewmodel/hierarchy/tags/TagsHierarchyModel.*`,
   `src/app/viewmodel/hierarchy/tags/TagsHierarchyViewModel.*`
 - Navigation mode state/viewmodel: `src/app/viewmodel/navigationbar/NavigationModeState.*`,

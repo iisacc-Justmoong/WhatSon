@@ -1,4 +1,4 @@
-# `src/app/file/validator/WhatSonLibraryIndexIntegrityValidator.cpp`
+# `src/app/models/file/validator/WhatSonLibraryIndexIntegrityValidator.cpp`
 
 ## Role
 `WhatSonLibraryIndexIntegrityValidator` validates index/runtime consistency for library note records and rewrites index files from materialized records.

@@ -8,7 +8,7 @@ Implements hub-sync wiring extracted from `main.cpp`.
 - Builds one local-mutation connection per provided source object using
   `hubFilesystemMutated() -> acknowledgeLocalMutation()`.
 - Reports aggregate validity through `HubSyncWiringResult`.
-- Includes `WhatSonHubSyncController` from `src/app/file/sync` after sync-domain consolidation.
+- Includes `WhatSonHubSyncController` from `src/app/models/file/sync` after sync-domain consolidation.
 - `main.cpp` now supplies the projects hierarchy viewmodel in that source list as well, so project
   hierarchy writes are treated as local mutations instead of triggering a foreign-change reload path.
 

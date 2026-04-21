@@ -1,11 +1,11 @@
-# `src/app/file/note`
+# `src/app/models/file/note`
 
 ## Status
 - Directory mirror generated from the current `src` tree.
 - This file is the entry point for the detailed documentation pass of this directory.
 
 ## Scope
-- Mirrored source directory: `src/app/file/note`
+- Mirrored source directory: `src/app/models/file/note`
 - Child directories: 0
 - Child files: 37
 
@@ -60,7 +60,7 @@
   - header-only `openCount` / `lastOpenedAt` updates
   - tracked-stat refresh follow-up
   - post-persist metadata resync back into the bound content view-model
-- Shared derived-statistic helpers now live under `src/app/file/statistic/WhatSonNoteFileStatSupport.*` rather than in
+- Shared derived-statistic helpers now live under `src/app/models/file/statistic/WhatSonNoteFileStatSupport.*` rather than in
   this note-package directory.
 - `.wsnhead` now carries a dedicated `fileStat` block for numeric detail-panel metadata.
 - Note creation, note update, and editor note selection all participate in keeping that block
@@ -92,7 +92,7 @@
     preview do not disagree about which href should open externally
 - `fileStat.modifiedCount` is now the local commit counter for note package history.
   - whenever it advances, `.wsnversion` appends a snapshot with the matching `commitModifiedCount`
-  - snapshot/diff persistence is delegated to `src/app/file/diff/WhatSonLocalNoteVersionStore.*`
+  - snapshot/diff persistence is delegated to `src/app/models/file/diff/WhatSonLocalNoteVersionStore.*`
 
 
 ## Intended Detailed Sections

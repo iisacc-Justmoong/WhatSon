@@ -1,4 +1,4 @@
-# `src/app/file/import/WhatSonClipboardResourceImportFileNamePolicy.hpp`
+# `src/app/models/file/import/WhatSonClipboardResourceImportFileNamePolicy.hpp`
 
 ## Role
 This header exposes the clipboard-resource asset naming policy used by the import pipeline.

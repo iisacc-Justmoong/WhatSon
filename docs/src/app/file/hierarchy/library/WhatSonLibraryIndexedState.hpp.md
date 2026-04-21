@@ -1,4 +1,4 @@
-# `src/app/file/hierarchy/library/WhatSonLibraryIndexedState.hpp`
+# `src/app/models/file/hierarchy/library/WhatSonLibraryIndexedState.hpp`
 
 ## Responsibility
 

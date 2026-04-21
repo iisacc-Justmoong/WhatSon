@@ -2,7 +2,7 @@
 
 #include "ResourcesHierarchyModel.hpp"
 
-#include "file/hierarchy/resources/WhatSonResourcePackageSupport.hpp"
+#include "models/file/hierarchy/resources/WhatSonResourcePackageSupport.hpp"
 #include "viewmodel/hierarchy/WhatSonHierarchyIoSupport.hpp"
 
 #include <QHash>

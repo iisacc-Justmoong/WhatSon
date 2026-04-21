@@ -1,6 +1,6 @@
 #include "DetailContentSectionViewModel.hpp"
 
-#include "file/WhatSonDebugTrace.hpp"
+#include "models/file/WhatSonDebugTrace.hpp"
 
 DetailContentSectionViewModel::DetailContentSectionViewModel(
     DetailContentState state,

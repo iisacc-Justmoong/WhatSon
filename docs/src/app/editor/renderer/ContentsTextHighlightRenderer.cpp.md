@@ -1,4 +1,4 @@
-# `src/app/editor/renderer/ContentsTextHighlightRenderer.cpp`
+# `src/app/models/editor/renderer/ContentsTextHighlightRenderer.cpp`
 
 ## Responsibility
 Implements the isolated highlight style palette and alias resolution.

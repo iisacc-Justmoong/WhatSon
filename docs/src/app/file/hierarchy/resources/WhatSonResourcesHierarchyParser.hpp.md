@@ -1,11 +1,11 @@
-# `src/app/file/hierarchy/resources/WhatSonResourcesHierarchyParser.hpp`
+# `src/app/models/file/hierarchy/resources/WhatSonResourcesHierarchyParser.hpp`
 
 ## Status
 - Documentation phase: scaffold generated from the live source tree.
 - Detail level: structural placeholder prepared for a later deep pass.
 
 ## Source Metadata
-- Source path: `src/app/file/hierarchy/resources/WhatSonResourcesHierarchyParser.hpp`
+- Source path: `src/app/models/file/hierarchy/resources/WhatSonResourcesHierarchyParser.hpp`
 - Source kind: C++ header
 - File name: `WhatSonResourcesHierarchyParser.hpp`
 - Approximate line count: 17

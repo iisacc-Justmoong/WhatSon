@@ -1,4 +1,4 @@
-# `src/app/file/note/WhatSonNoteBodyResourceTagGenerator.hpp`
+# `src/app/models/file/note/WhatSonNoteBodyResourceTagGenerator.hpp`
 
 ## Role
 Declares the canonical RAW `<resource ... />` tag builder used by note-body import flows.

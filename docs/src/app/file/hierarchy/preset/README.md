@@ -1,11 +1,11 @@
-# `src/app/file/hierarchy/preset`
+# `src/app/models/file/hierarchy/preset`
 
 ## Status
 - Directory mirror generated from the current `src` tree.
 - This file is the entry point for the detailed documentation pass of this directory.
 
 ## Scope
-- Mirrored source directory: `src/app/file/hierarchy/preset`
+- Mirrored source directory: `src/app/models/file/hierarchy/preset`
 - Child directories: 0
 - Child files: 6
 

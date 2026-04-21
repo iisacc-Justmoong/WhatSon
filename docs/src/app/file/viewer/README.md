@@ -1,11 +1,11 @@
-# `src/app/file/viewer`
+# `src/app/models/file/viewer`
 
 ## Status
 - Directory mirror generated from the current `src` tree.
 - This file is the entry point for the detailed documentation pass of this directory.
 
 ## Scope
-- Mirrored source directory: `src/app/file/viewer`
+- Mirrored source directory: `src/app/models/file/viewer`
 - Child directories: 0
 - Child files: 6
 

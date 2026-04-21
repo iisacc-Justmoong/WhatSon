@@ -1,4 +1,4 @@
-# `src/app/file/hierarchy/library/LibraryDraft.cpp`
+# `src/app/models/file/hierarchy/library/LibraryDraft.cpp`
 
 ## Implementation Notes
 

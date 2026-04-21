@@ -39,7 +39,7 @@ The layer is renderer-fed:
 
 ## Render-Model Rules
 
-- Source parsing rules are now owned by `src/app/editor/renderer/ContentsStructuredBlockRenderer.cpp`.
+- Source parsing rules are now owned by `src/app/models/editor/renderer/ContentsStructuredBlockRenderer.cpp`.
 - This QML layer consumes only renderer-provided callout entries and does not parse RAW source locally.
 - Parse entries include `sourceStart` and `focusSourceOffset`; rows are positioned by source location and can restore
   editor focus to callout-body start.

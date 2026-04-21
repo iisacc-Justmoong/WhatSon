@@ -1,11 +1,11 @@
-# `src/app/file/hierarchy/folders`
+# `src/app/models/file/hierarchy/folders`
 
 ## Status
 - Directory mirror generated from the current `src` tree.
 - This file is the entry point for the detailed documentation pass of this directory.
 
 ## Scope
-- Mirrored source directory: `src/app/file/hierarchy/folders`
+- Mirrored source directory: `src/app/models/file/hierarchy/folders`
 - Child directories: 0
 - Child files: 6
 

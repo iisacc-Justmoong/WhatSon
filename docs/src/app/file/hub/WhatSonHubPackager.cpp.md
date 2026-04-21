@@ -1,4 +1,4 @@
-# `src/app/file/hub/WhatSonHubPackager.cpp`
+# `src/app/models/file/hub/WhatSonHubPackager.cpp`
 
 ## Role
 Implements `.wshub` package-root materialization independently from hub scaffold creation.

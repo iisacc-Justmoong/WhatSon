@@ -1,4 +1,4 @@
-# `src/app/file/note/WhatSonNoteFolderBindingService.hpp`
+# `src/app/models/file/note/WhatSonNoteFolderBindingService.hpp`
 
 ## Responsibility
 

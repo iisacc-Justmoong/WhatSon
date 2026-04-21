@@ -295,7 +295,7 @@ WhatSon is an LVRS-based Qt Quick application.
   bridge still forwards deletion into the injected `LibraryNoteMutationViewModel::deleteNoteById(...)` contract, while
   the note-mutation view-model stays separate from the hierarchy read model and delegates destructive writes into
   `WhatSonHubNoteDeletionService`. File-system integrity repair now lives
-  under `src/app/file/validator/`: `WhatSonHubStructureValidator` resolves hub/library/stat paths,
+  under `src/app/models/file/validator/`: `WhatSonHubStructureValidator` resolves hub/library/stat paths,
   `WhatSonNoteStorageValidator` resolves materialized `.wsnote` / `.wsnhead` storage, and
   `WhatSonLibraryIndexIntegrityValidator` owns orphan pruning plus `index.wsnindex` rewrites. When a stale
   `index.wsnindex` entry no longer has a materialized `.wsnote`, load-time indexing now prunes the orphan from both
@@ -325,7 +325,7 @@ WhatSon is an LVRS-based Qt Quick application.
   preview grammar. `ContentsTextFormatRenderer` splits the cheap source-editing HTML surface from the optional
   markdown-aware preview HTML, and hidden preview paths no longer regenerate on every edit.
 - `ContentsEditorSelectionBridge` now forwards editor persistence into
-  `src/app/file/sync/ContentsEditorIdleSyncController.*`.
+  `src/app/models/file/sync/ContentsEditorIdleSyncController.*`.
   QML/editor code now requests immediate `{noteId, bodyText}` flushes for live user mutations, and the sync
   controller keeps the buffered `1000ms` fetch clock only as the retry/drain path for already accepted dirty note
   snapshots. The background note-management lane re-reads the current `.wsnote`, writes `.wsnbody` / `.wsnhead`
@@ -602,7 +602,7 @@ activation that needs them.
 Concurrent hub access is now allowed across desktop and mobile sessions. `WhatSonHubWriteLease` remains only as a
 legacy cleanup shim for old `.whatson/write-lease.json` artifacts, so onboarding/runtime loading and filesystem
 mutation paths no longer reject a `.wshub` just because another WhatSon session already touched the same package.
-Runtime hub refresh now flows through `src/app/file/sync/WhatSonHubSyncController.*`. The controller keeps a periodic
+Runtime hub refresh now flows through `src/app/models/file/sync/WhatSonHubSyncController.*`. The controller keeps a periodic
 filesystem watcher/timer policy, recursive `QFileSystemWatcher` coverage over the mounted `.wshub`, and a debounced
 reload path that reacts to observed hub-signature changes without UI interaction hints. Signature hashing and watcher
 path collection now come from a single recursive observation pass, so one sync hint no longer scans the hub twice.
@@ -630,21 +630,21 @@ single-logical-line contract across the bridge, structured block parser, and fal
 minimap, and source-offset helpers no longer disagree about resource block height. As a result, ordinary typing no
 longer needs a whole-note bridge rebuild or a second whole-document line-rectangle sweep just to keep gutter/minimap
 helpers aligned.
-Editor/QML code now stages save intent through `src/app/file/sync/ContentsEditorIdleSyncController.*`, which owns the
+Editor/QML code now stages save intent through `src/app/models/file/sync/ContentsEditorIdleSyncController.*`, which owns the
 worker-thread idle detector and note-exit flush promotion.
-Non-editing note-management work still sits behind `src/app/file/note/ContentsNoteManagementCoordinator.*`; direct
+Non-editing note-management work still sits behind `src/app/models/file/note/ContentsNoteManagementCoordinator.*`; direct
 `.wsnote` persistence, header open-count maintenance, tracked-stat refresh, and post-persist metadata resync are
 serialized there outside the editor hot path.
-Local note-file CRUD is now centralized under `src/app/file/note/WhatSonLocalNoteFileStore.*` and
-`src/app/file/note/WhatSonLocalNoteDocument.hpp`. That IO layer owns `.wsnhead` / `.wsnbody` create-read-update-delete
+Local note-file CRUD is now centralized under `src/app/models/file/note/WhatSonLocalNoteFileStore.*` and
+`src/app/models/file/note/WhatSonLocalNoteDocument.hpp`. That IO layer owns `.wsnhead` / `.wsnbody` create-read-update-delete
 operations plus per-note `.wsnhistory` append-only diff logging and `.wsnversion` manifest initialization for library
 note creation, body persistence, folder-drop header rewrites, folder hierarchy remaps, and note deletion, so the local
 filesystem remains the first writer of record before runtime projections or external sync react.
-- `src/app/file/note/WhatSonLocalNoteVersionStore.*` adds git-like note version primitives on top of that local file
+- `src/app/models/file/note/WhatSonLocalNoteVersionStore.*` adds git-like note version primitives on top of that local file
   boundary: it captures full working-tree snapshots into `.wsnversion`, tracks `currentSnapshotId` vs
   `headSnapshotId`, computes compact header/body diffs between any two snapshots, supports detached checkout of an
   existing snapshot, and appends a fresh rollback snapshot when the user restores an older state.
-App-owned filesystem mutations are also serialized through `src/app/file/IO/WhatSonSystemIoGateway.*`. UTF-8 file
+App-owned filesystem mutations are also serialized through `src/app/models/file/IO/WhatSonSystemIoGateway.*`. UTF-8 file
 overwrites now commit through an atomic save path, and library index / note companion writes no longer bypass that
 gateway with ad-hoc `QFile` truncation helpers.
 
@@ -810,7 +810,7 @@ Filter only debug lines during a run:
 
 ## Hierarchy IO Components
 
-`src/app/file/hierarchy` now includes per-domain getter/setter store + parser + creator components
+`src/app/models/file/hierarchy` now includes per-domain getter/setter store + parser + creator components
 for hub/note hierarchy payloads.
 
 - Sidebar routing no longer depends on a shared `SidebarSelectionStore`; QML binds directly to each hierarchy
@@ -1078,7 +1078,7 @@ Library runtime classification behavior:
 - `Today`: filters notes where `<created>` or `<lastModified>` matches the current date; literal `<folder>Today</folder>`
   values are ignored rather than treated as concrete folder membership
 
-Runtime IO components (`src/app/file/IO`):
+Runtime IO components (`src/app/models/file/IO`):
 
 - `WhatSonIoEventListener`: accepts LVRS/runtime event names with prefix filtering and queues IO events.
 - `WhatSonSystemIoGateway`: owns filesystem UTF-8 read/write/append/remove and directory utility operations.

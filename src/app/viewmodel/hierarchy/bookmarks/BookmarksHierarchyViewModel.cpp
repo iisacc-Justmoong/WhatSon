@@ -2,12 +2,12 @@
 
 #include "calendar/ISystemCalendarStore.hpp"
 #include "calendar/SystemCalendarStore.hpp"
-#include "file/WhatSonDebugTrace.hpp"
-#include "file/hierarchy/library/WhatSonLibraryIndexedState.hpp"
-#include "file/note/WhatSonBookmarkColorPalette.hpp"
-#include "file/note/WhatSonNoteBodyPersistence.hpp"
-#include "file/statistic/WhatSonNoteFileStatSupport.hpp"
-#include "file/note/WhatSonNoteFolderBindingRepository.hpp"
+#include "models/file/WhatSonDebugTrace.hpp"
+#include "models/file/hierarchy/library/WhatSonLibraryIndexedState.hpp"
+#include "models/file/note/WhatSonBookmarkColorPalette.hpp"
+#include "models/file/note/WhatSonNoteBodyPersistence.hpp"
+#include "models/file/statistic/WhatSonNoteFileStatSupport.hpp"
+#include "models/file/note/WhatSonNoteFolderBindingRepository.hpp"
 #include "viewmodel/hierarchy/WhatSonHierarchyTreeItemSupport.hpp"
 
 #include <QDir>

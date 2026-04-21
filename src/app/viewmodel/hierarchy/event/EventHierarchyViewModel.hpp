@@ -1,6 +1,6 @@
 #pragma once
 
-#include "file/hierarchy/event/WhatSonEventHierarchyStore.hpp"
+#include "models/file/hierarchy/event/WhatSonEventHierarchyStore.hpp"
 #include "viewmodel/hierarchy/IHierarchyCapabilities.hpp"
 #include "viewmodel/hierarchy/IHierarchyViewModel.hpp"
 #include "viewmodel/hierarchy/event/EventHierarchyModel.hpp"

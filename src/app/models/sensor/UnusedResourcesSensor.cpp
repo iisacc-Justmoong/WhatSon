@@ -1,7 +1,7 @@
 #include "UnusedResourcesSensor.hpp"
 
-#include "file/hierarchy/resources/WhatSonResourcePackageSupport.hpp"
-#include "file/hub/WhatSonHubPathUtils.hpp"
+#include "models/file/hierarchy/resources/WhatSonResourcePackageSupport.hpp"
+#include "models/file/hub/WhatSonHubPathUtils.hpp"
 
 #include <QDir>
 #include <QDirIterator>

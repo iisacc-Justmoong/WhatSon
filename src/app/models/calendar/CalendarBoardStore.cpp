@@ -1,9 +1,9 @@
 #include "CalendarBoardStore.hpp"
 
-#include "file/WhatSonDebugTrace.hpp"
-#include "file/hierarchy/library/LibraryNotePreviewText.hpp"
-#include "file/hierarchy/library/WhatSonLibraryIndexedState.hpp"
-#include "file/hub/WhatSonHubPathUtils.hpp"
+#include "models/file/WhatSonDebugTrace.hpp"
+#include "models/file/hierarchy/library/LibraryNotePreviewText.hpp"
+#include "models/file/hierarchy/library/WhatSonLibraryIndexedState.hpp"
+#include "models/file/hub/WhatSonHubPathUtils.hpp"
 
 #include <QDateTime>
 #include <QUuid>

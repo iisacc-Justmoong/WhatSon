@@ -1,4 +1,4 @@
-# `src/app/file/note/WhatSonNoteBodyPersistence.cpp`
+# `src/app/models/file/note/WhatSonNoteBodyPersistence.cpp`
 
 ## Role
 This implementation owns the reusable note-body normalization and save workflow.

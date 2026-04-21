@@ -1,11 +1,11 @@
-# `src/app/file/IO/WhatSonIoRuntimeController.hpp`
+# `src/app/models/file/IO/WhatSonIoRuntimeController.hpp`
 
 ## Status
 - Documentation phase: scaffold generated from the live source tree.
 - Detail level: structural placeholder prepared for a later deep pass.
 
 ## Source Metadata
-- Source path: `src/app/file/IO/WhatSonIoRuntimeController.hpp`
+- Source path: `src/app/models/file/IO/WhatSonIoRuntimeController.hpp`
 - Source kind: C++ header
 - File name: `WhatSonIoRuntimeController.hpp`
 - Approximate line count: 39

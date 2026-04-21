@@ -1,4 +1,4 @@
-# `src/app/file/hierarchy/resources/WhatSonResourcesHierarchyCreator.cpp`
+# `src/app/models/file/hierarchy/resources/WhatSonResourcesHierarchyCreator.cpp`
 
 ## Responsibility
 

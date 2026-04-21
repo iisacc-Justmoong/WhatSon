@@ -1,7 +1,7 @@
 #include "WeeklyUnusedNote.hpp"
 
 #include "UnusedNoteSensorSupport.hpp"
-#include "file/hub/WhatSonHubPathUtils.hpp"
+#include "models/file/hub/WhatSonHubPathUtils.hpp"
 
 #include <QDateTime>
 

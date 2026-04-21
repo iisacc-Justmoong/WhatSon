@@ -1,4 +1,4 @@
-# `src/app/file/hierarchy/WhatSonFolderIdentity.hpp`
+# `src/app/models/file/hierarchy/WhatSonFolderIdentity.hpp`
 
 ## Responsibility
 

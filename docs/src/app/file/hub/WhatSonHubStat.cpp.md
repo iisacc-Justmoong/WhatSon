@@ -1,11 +1,11 @@
-# `src/app/file/hub/WhatSonHubStat.cpp`
+# `src/app/models/file/hub/WhatSonHubStat.cpp`
 
 ## Status
 - Documentation phase: scaffold generated from the live source tree.
 - Detail level: structural placeholder prepared for a later deep pass.
 
 ## Source Metadata
-- Source path: `src/app/file/hub/WhatSonHubStat.cpp`
+- Source path: `src/app/models/file/hub/WhatSonHubStat.cpp`
 - Source kind: C++ implementation
 - File name: `WhatSonHubStat.cpp`
 - Approximate line count: 164

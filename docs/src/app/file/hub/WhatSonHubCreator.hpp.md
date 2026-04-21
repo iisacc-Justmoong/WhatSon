@@ -1,4 +1,4 @@
-# `src/app/file/hub/WhatSonHubCreator.hpp`
+# `src/app/models/file/hub/WhatSonHubCreator.hpp`
 
 ## Role
 Declares the filesystem-facing factory that writes a new hub scaffold into a pre-materialized `.wshub` package root.

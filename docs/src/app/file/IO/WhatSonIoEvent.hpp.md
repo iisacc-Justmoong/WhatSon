@@ -1,11 +1,11 @@
-# `src/app/file/IO/WhatSonIoEvent.hpp`
+# `src/app/models/file/IO/WhatSonIoEvent.hpp`
 
 ## Status
 - Documentation phase: scaffold generated from the live source tree.
 - Detail level: structural placeholder prepared for a later deep pass.
 
 ## Source Metadata
-- Source path: `src/app/file/IO/WhatSonIoEvent.hpp`
+- Source path: `src/app/models/file/IO/WhatSonIoEvent.hpp`
 - Source kind: C++ header
 - File name: `WhatSonIoEvent.hpp`
 - Approximate line count: 12

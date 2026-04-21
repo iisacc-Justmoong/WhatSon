@@ -1,7 +1,7 @@
 #include "LibraryHierarchyModel.hpp"
 
-#include "file/hierarchy/WhatSonFolderIdentity.hpp"
-#include "file/WhatSonDebugTrace.hpp"
+#include "models/file/hierarchy/WhatSonFolderIdentity.hpp"
+#include "models/file/WhatSonDebugTrace.hpp"
 
 #include <stdexcept>
 #include <utility>
