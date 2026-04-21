@@ -25,7 +25,13 @@ void WhatSonCppRegressionTests::mobileChrome_usesSharedFigmaControlSurfaceColor(
     QVERIFY(mobileHierarchyPageSource.contains(
         QStringLiteral("property color controlSurfaceColor: LV.Theme.panelBackground10")));
     QVERIFY(mobileHierarchyPageSource.contains(
-        QStringLiteral("MobileHierarchyRouteCoordinator")));
+        QStringLiteral("MobileHierarchyRouteStateStore")));
+    QVERIFY(mobileHierarchyPageSource.contains(
+        QStringLiteral("MobileHierarchyCanonicalRoutePlanner")));
+    QVERIFY(mobileHierarchyPageSource.contains(
+        QStringLiteral("MobileHierarchyPopRepairPolicy")));
+    QVERIFY(mobileHierarchyPageSource.contains(
+        QStringLiteral("MobileHierarchyRouteSelectionSyncPolicy")));
     QVERIFY(mobileHierarchyPageSource.contains(
         QStringLiteral("MobileHierarchySelectionCoordinator")));
     QVERIFY(mobileHierarchyPageSource.contains(
@@ -33,9 +39,13 @@ void WhatSonCppRegressionTests::mobileChrome_usesSharedFigmaControlSurfaceColor(
     QVERIFY(mobileHierarchyPageSource.contains(
         QStringLiteral("MobileHierarchyBackSwipeCoordinator")));
     QVERIFY(mobileHierarchyPageSource.contains(
-        QStringLiteral("routeCoordinator.canonicalRoutePlan(")));
+        QStringLiteral("canonicalRoutePlanner.canonicalRoutePlan(")));
     QVERIFY(mobileHierarchyPageSource.contains(
         QStringLiteral("selectionCoordinator.activeHierarchyBindingSnapshotFromSidebar(")));
+    QVERIFY(mobileHierarchyPageSource.contains(
+        QStringLiteral("popRepairPolicy.repairVerificationPlan(")));
+    QVERIFY(mobileHierarchyPageSource.contains(
+        QStringLiteral("routeSelectionSyncPolicy.routeSelectionSyncPlan(")));
     QVERIFY(mobileHierarchyPageSource.contains(
         QStringLiteral("navigationCoordinator.openEditorPlan(")));
     QVERIFY(mobileHierarchyPageSource.contains(

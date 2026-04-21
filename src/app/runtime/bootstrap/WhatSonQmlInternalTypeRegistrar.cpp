@@ -15,8 +15,11 @@
 #include "viewmodel/content/ContentsDisplayGutterCoordinator.hpp"
 #include "viewmodel/content/ContentsDisplayMinimapCoordinator.hpp"
 #include "viewmodel/content/MobileHierarchyBackSwipeCoordinator.hpp"
+#include "viewmodel/content/MobileHierarchyCanonicalRoutePlanner.hpp"
 #include "viewmodel/content/MobileHierarchyNavigationCoordinator.hpp"
-#include "viewmodel/content/MobileHierarchyRouteCoordinator.hpp"
+#include "viewmodel/content/MobileHierarchyPopRepairPolicy.hpp"
+#include "viewmodel/content/MobileHierarchyRouteSelectionSyncPolicy.hpp"
+#include "viewmodel/content/MobileHierarchyRouteStateStore.hpp"
 #include "viewmodel/content/MobileHierarchySelectionCoordinator.hpp"
 #include "viewmodel/content/ContentsDisplayPresentationRefreshController.hpp"
 #include "viewmodel/content/ContentsDisplayRefreshCoordinator.hpp"
@@ -62,10 +65,16 @@ namespace WhatSon::Runtime::Bootstrap
             "WhatSon.App.Internal", 1, 0, "ContentsDisplayMinimapCoordinator");
         qmlRegisterType<MobileHierarchyBackSwipeCoordinator>(
             "WhatSon.App.Internal", 1, 0, "MobileHierarchyBackSwipeCoordinator");
+        qmlRegisterType<MobileHierarchyCanonicalRoutePlanner>(
+            "WhatSon.App.Internal", 1, 0, "MobileHierarchyCanonicalRoutePlanner");
         qmlRegisterType<MobileHierarchyNavigationCoordinator>(
             "WhatSon.App.Internal", 1, 0, "MobileHierarchyNavigationCoordinator");
-        qmlRegisterType<MobileHierarchyRouteCoordinator>(
-            "WhatSon.App.Internal", 1, 0, "MobileHierarchyRouteCoordinator");
+        qmlRegisterType<MobileHierarchyPopRepairPolicy>(
+            "WhatSon.App.Internal", 1, 0, "MobileHierarchyPopRepairPolicy");
+        qmlRegisterType<MobileHierarchyRouteSelectionSyncPolicy>(
+            "WhatSon.App.Internal", 1, 0, "MobileHierarchyRouteSelectionSyncPolicy");
+        qmlRegisterType<MobileHierarchyRouteStateStore>(
+            "WhatSon.App.Internal", 1, 0, "MobileHierarchyRouteStateStore");
         qmlRegisterType<MobileHierarchySelectionCoordinator>(
             "WhatSon.App.Internal", 1, 0, "MobileHierarchySelectionCoordinator");
         qmlRegisterType<ContentsDisplaySessionCoordinator>(

@@ -113,7 +113,7 @@ Item {
                     mobileHierarchyPage.sidebarHierarchyViewModel);
     }
     function normalizedInteger(value, fallbackValue) {
-        return routeCoordinator.normalizedInteger(value, fallbackValue);
+        return routeStateStore.normalizedInteger(value, fallbackValue);
     }
     function backSwipeGestureEventData(localX, localY, totalDeltaX, totalDeltaY, sessionId) {
         const localPoint = Qt.point(Number(localX) || 0, Number(localY) || 0);
@@ -123,7 +123,7 @@ Item {
                     Number(localY) || 0,
                     Number(totalDeltaX) || 0,
                     Number(totalDeltaY) || 0,
-                    routeCoordinator.normalizedInteger(sessionId, -1),
+                    routeStateStore.normalizedInteger(sessionId, -1),
                     Number(globalPoint.x) || 0,
                     Number(globalPoint.y) || 0);
     }
@@ -137,7 +137,7 @@ Item {
     function currentHierarchySelectionIndex() {
         return selectionCoordinator.currentHierarchySelectionIndex(
                     mobileHierarchyPage.activeContentViewModel,
-                    routeCoordinator.preservedNoteListSelectionIndex);
+                    routeStateStore.preservedNoteListSelectionIndex);
     }
     function displayedBodyRoutePath() {
         return navigationCoordinator.displayedBodyRoutePath(
@@ -203,13 +203,13 @@ Item {
         backSwipeCoordinator.resetState();
     }
     function cancelPendingEditorPopRepair() {
-        routeCoordinator.editorPopRepairRequestId += 1;
+        popRepairPolicy.editorPopRepairRequestId += 1;
     }
     function cancelPendingDetailPopRepair() {
-        routeCoordinator.detailPopRepairRequestId += 1;
+        popRepairPolicy.detailPopRepairRequestId += 1;
     }
     function rememberNoteListSelection(selectionIndex) {
-        return routeCoordinator.rememberSelectionIndex(
+        return routeStateStore.rememberSelectionIndex(
                     selectionIndex,
                     mobileHierarchyPage.currentHierarchySelectionIndex());
     }
@@ -217,23 +217,22 @@ Item {
         if (!mobileHierarchyPage.activeContentViewModel
                 || mobileHierarchyPage.activeContentViewModel.setHierarchySelectedIndex === undefined)
             return false;
-        const targetSelectionIndex = routeCoordinator.resolvedSelectionRestoreTarget(selectionIndex);
+        const targetSelectionIndex = routeStateStore.resolvedSelectionRestoreTarget(selectionIndex);
         mobileHierarchyPage.activeContentViewModel.setHierarchySelectedIndex(targetSelectionIndex);
         return targetSelectionIndex >= 0;
     }
     function routeStackDepth() {
-        return routeCoordinator.routeStackDepth(
+        return canonicalRoutePlanner.routeStackDepth(
                     mobileScaffold.activePageRouter && mobileScaffold.activePageRouter.depth !== undefined
                     ? mobileScaffold.activePageRouter.depth
                     : 0);
     }
     function routeToCanonicalNoteList(selectionIndex) {
-        const plan = routeCoordinator.canonicalRoutePlan(
+        const plan = canonicalRoutePlanner.canonicalRoutePlan(
                     mobileHierarchyPage.noteListRoutePath,
                     !!mobileScaffold.activePageRouter,
                     !!mobileHierarchyPage.activeNoteListModel,
-                    !!pageTransitionController.active,
-                    mobileHierarchyPage.displayedBodyRoutePath());
+                    !!pageTransitionController.active);
         if (!plan.allowed)
             return false;
         mobileHierarchyPage.cancelPendingEditorPopRepair();
@@ -242,27 +241,27 @@ Item {
             pageTransitionController.cancel();
         mobileHierarchyPage.resetBackSwipeState();
         const preservedSelectionIndex = mobileHierarchyPage.rememberNoteListSelection(selectionIndex);
-        routeCoordinator.routeSelectionSyncSuppressed = !!plan.suppressSelectionSync;
+        routeStateStore.routeSelectionSyncSuppressed = true;
+        routeSelectionSyncPolicy.routeSelectionSyncSuppressed = true;
         if (plan.resetToRoot)
             mobileScaffold.activePageRouter.setRoot(mobileHierarchyPage.hierarchyRoutePath);
-        if (plan.restoreSelection)
-            mobileHierarchyPage.restoreNoteListSelection(preservedSelectionIndex);
+        mobileHierarchyPage.restoreNoteListSelection(preservedSelectionIndex);
         for (const path of (plan.pushPaths || []))
             mobileScaffold.activePageRouter.push(String(path));
         Qt.callLater(function () {
-            routeCoordinator.routeSelectionSyncSuppressed = false;
+            routeStateStore.routeSelectionSyncSuppressed = false;
+            routeSelectionSyncPolicy.routeSelectionSyncSuppressed = false;
         });
         if (plan.requestViewHook)
             mobileHierarchyPage.requestViewHook();
         return true;
     }
     function routeToCanonicalEditor(selectionIndex) {
-        const plan = routeCoordinator.canonicalRoutePlan(
+        const plan = canonicalRoutePlanner.canonicalRoutePlan(
                     mobileHierarchyPage.editorRoutePath,
                     !!mobileScaffold.activePageRouter,
                     !!mobileHierarchyPage.activeNoteListModel,
-                    !!pageTransitionController.active,
-                    mobileHierarchyPage.displayedBodyRoutePath());
+                    !!pageTransitionController.active);
         if (!plan.allowed)
             return false;
         mobileHierarchyPage.cancelPendingEditorPopRepair();
@@ -271,27 +270,27 @@ Item {
             pageTransitionController.cancel();
         mobileHierarchyPage.resetBackSwipeState();
         const preservedSelectionIndex = mobileHierarchyPage.rememberNoteListSelection(selectionIndex);
-        routeCoordinator.routeSelectionSyncSuppressed = !!plan.suppressSelectionSync;
+        routeStateStore.routeSelectionSyncSuppressed = true;
+        routeSelectionSyncPolicy.routeSelectionSyncSuppressed = true;
         if (plan.resetToRoot)
             mobileScaffold.activePageRouter.setRoot(mobileHierarchyPage.hierarchyRoutePath);
-        if (plan.restoreSelection)
-            mobileHierarchyPage.restoreNoteListSelection(preservedSelectionIndex);
+        mobileHierarchyPage.restoreNoteListSelection(preservedSelectionIndex);
         for (const path of (plan.pushPaths || []))
             mobileScaffold.activePageRouter.push(String(path));
         Qt.callLater(function () {
-            routeCoordinator.routeSelectionSyncSuppressed = false;
+            routeStateStore.routeSelectionSyncSuppressed = false;
+            routeSelectionSyncPolicy.routeSelectionSyncSuppressed = false;
         });
         if (plan.requestViewHook)
             mobileHierarchyPage.requestViewHook();
         return true;
     }
     function routeToCanonicalDetailPanel(selectionIndex) {
-        const plan = routeCoordinator.canonicalRoutePlan(
+        const plan = canonicalRoutePlanner.canonicalRoutePlan(
                     mobileHierarchyPage.detailRoutePath,
                     !!mobileScaffold.activePageRouter,
                     !!mobileHierarchyPage.activeNoteListModel,
-                    !!pageTransitionController.active,
-                    mobileHierarchyPage.displayedBodyRoutePath());
+                    !!pageTransitionController.active);
         if (!plan.allowed)
             return false;
         mobileHierarchyPage.cancelPendingEditorPopRepair();
@@ -300,22 +299,23 @@ Item {
             pageTransitionController.cancel();
         mobileHierarchyPage.resetBackSwipeState();
         const preservedSelectionIndex = mobileHierarchyPage.rememberNoteListSelection(selectionIndex);
-        routeCoordinator.routeSelectionSyncSuppressed = !!plan.suppressSelectionSync;
+        routeStateStore.routeSelectionSyncSuppressed = true;
+        routeSelectionSyncPolicy.routeSelectionSyncSuppressed = true;
         if (plan.resetToRoot)
             mobileScaffold.activePageRouter.setRoot(mobileHierarchyPage.hierarchyRoutePath);
-        if (plan.restoreSelection)
-            mobileHierarchyPage.restoreNoteListSelection(preservedSelectionIndex);
+        mobileHierarchyPage.restoreNoteListSelection(preservedSelectionIndex);
         for (const path of (plan.pushPaths || []))
             mobileScaffold.activePageRouter.push(String(path));
         Qt.callLater(function () {
-            routeCoordinator.routeSelectionSyncSuppressed = false;
+            routeStateStore.routeSelectionSyncSuppressed = false;
+            routeSelectionSyncPolicy.routeSelectionSyncSuppressed = false;
         });
         if (plan.requestViewHook)
             mobileHierarchyPage.requestViewHook();
         return true;
     }
     function verifyCommittedEditorPopState(requestId, attemptsRemaining) {
-        const plan = routeCoordinator.repairVerificationPlan(
+        const plan = popRepairPolicy.repairVerificationPlan(
                     requestId,
                     true,
                     !!mobileScaffold.activePageRouter,
@@ -341,7 +341,7 @@ Item {
         return false;
     }
     function verifyCommittedDetailPopState(requestId, attemptsRemaining) {
-        const plan = routeCoordinator.repairVerificationPlan(
+        const plan = popRepairPolicy.repairVerificationPlan(
                     requestId,
                     false,
                     !!mobileScaffold.activePageRouter,
@@ -367,7 +367,7 @@ Item {
         return false;
     }
     function handleCommittedRouteTransition(state) {
-        const plan = routeCoordinator.committedTransitionPlan(
+        const plan = popRepairPolicy.committedTransitionPlan(
                     state && typeof state === "object" ? state : ({}),
                     !!mobileHierarchyPage.activeNoteListModel,
                     mobileHierarchyPage.displayedBodyRoutePath());
@@ -529,7 +529,7 @@ Item {
         viewHookRequested();
     }
     function routeToHierarchyRoot() {
-        const plan = routeCoordinator.hierarchyRootPlan(
+        const plan = canonicalRoutePlanner.hierarchyRootPlan(
                     !!mobileScaffold.activePageRouter,
                     !!pageTransitionController.active,
                     mobileHierarchyPage.displayedBodyRoutePath(),
@@ -551,12 +551,13 @@ Item {
     }
     function syncRouteSelectionState() {
         const displayedPath = mobileHierarchyPage.displayedBodyRoutePath();
-        const plan = routeCoordinator.routeSelectionSyncPlan(
+        const plan = routeSelectionSyncPolicy.routeSelectionSyncPlan(
                     !!mobileScaffold.activePageRouter,
                     displayedPath,
                     mobileScaffold.activePageRouter ? String(mobileScaffold.activePageRouter.currentPath) : "",
                     mobileHierarchyPage.routeStackDepth());
-        routeCoordinator.lastObservedRoutePath = String(plan.nextPath || displayedPath);
+        routeStateStore.lastObservedRoutePath = String(plan.nextPath || displayedPath);
+        routeSelectionSyncPolicy.lastObservedRoutePath = String(plan.nextPath || displayedPath);
         if (!plan.valid || !plan.clearHierarchySelection)
             return false;
         return mobileHierarchyPage.clearActiveHierarchySelection();
@@ -598,14 +599,32 @@ Item {
 
     Component.onCompleted: mobileHierarchyPage.syncActiveHierarchyBindings()
 
-    MobileHierarchyRouteCoordinator {
-        id: routeCoordinator
+    MobileHierarchyRouteStateStore {
+        id: routeStateStore
+
+        lastObservedRoutePath: canonicalRoutePlanner.hierarchyRoutePath
+    }
+    MobileHierarchyCanonicalRoutePlanner {
+        id: canonicalRoutePlanner
 
         detailRoutePath: mobileHierarchyPage.detailRoutePath
         editorRoutePath: mobileHierarchyPage.editorRoutePath
         hierarchyRoutePath: mobileHierarchyPage.hierarchyRoutePath
-        lastObservedRoutePath: routeCoordinator.hierarchyRoutePath
         noteListRoutePath: mobileHierarchyPage.noteListRoutePath
+    }
+    MobileHierarchyPopRepairPolicy {
+        id: popRepairPolicy
+
+        detailRoutePath: mobileHierarchyPage.detailRoutePath
+        editorRoutePath: mobileHierarchyPage.editorRoutePath
+        noteListRoutePath: mobileHierarchyPage.noteListRoutePath
+    }
+    MobileHierarchyRouteSelectionSyncPolicy {
+        id: routeSelectionSyncPolicy
+
+        hierarchyRoutePath: mobileHierarchyPage.hierarchyRoutePath
+        lastObservedRoutePath: routeStateStore.lastObservedRoutePath
+        routeSelectionSyncSuppressed: routeStateStore.routeSelectionSyncSuppressed
     }
     MobileHierarchySelectionCoordinator {
         id: selectionCoordinator
