@@ -1,7 +1,7 @@
-#include "../whatson_cpp_regression_tests.hpp"
+#include "test/cpp/whatson_cpp_regression_tests.hpp"
 
-#include "content/mobile/MobileHierarchyRouteStateStore.hpp"
-#include "content/mobile/MobileHierarchySelectionCoordinator.hpp"
+#include "app/models/content/mobile/MobileHierarchyRouteStateStore.hpp"
+#include "app/models/content/mobile/MobileHierarchySelectionCoordinator.hpp"
 
 void WhatSonCppRegressionTests::mobileChrome_usesSharedFigmaControlSurfaceColor()
 {

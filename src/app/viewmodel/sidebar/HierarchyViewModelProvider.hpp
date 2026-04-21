@@ -1,8 +1,8 @@
 #pragma once
 
-#include "viewmodel/hierarchy/IHierarchyViewModel.hpp"
-#include "viewmodel/sidebar/HierarchySidebarDomain.hpp"
-#include "viewmodel/sidebar/IHierarchyViewModelProvider.hpp"
+#include "app/viewmodel/hierarchy/IHierarchyViewModel.hpp"
+#include "app/viewmodel/sidebar/HierarchySidebarDomain.hpp"
+#include "app/viewmodel/sidebar/IHierarchyViewModelProvider.hpp"
 
 #include <QPointer>
 #include <QVector>

@@ -1,6 +1,6 @@
-#include "ContentsDisplaySelectionSyncCoordinator.hpp"
+#include "app/models/content/display/ContentsDisplaySelectionSyncCoordinator.hpp"
 
-#include "models/file/WhatSonDebugTrace.hpp"
+#include "app/models/file/WhatSonDebugTrace.hpp"
 
 namespace
 {

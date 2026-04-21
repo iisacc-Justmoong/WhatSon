@@ -1,10 +1,10 @@
-#include "WhatSonLibraryFolderHierarchyMutationService.hpp"
+#include "app/models/file/hierarchy/library/WhatSonLibraryFolderHierarchyMutationService.hpp"
 
-#include "models/file/hierarchy/WhatSonFolderIdentity.hpp"
-#include "models/file/hierarchy/folders/WhatSonFoldersHierarchyStore.hpp"
-#include "models/file/note/WhatSonHubNoteMutationSupport.hpp"
-#include "models/file/note/WhatSonNoteFolderBindingService.hpp"
-#include "models/file/note/WhatSonNoteFolderSemantics.hpp"
+#include "app/models/file/hierarchy/WhatSonFolderIdentity.hpp"
+#include "app/models/file/hierarchy/folders/WhatSonFoldersHierarchyStore.hpp"
+#include "app/models/file/note/WhatSonHubNoteMutationSupport.hpp"
+#include "app/models/file/note/WhatSonNoteFolderBindingService.hpp"
+#include "app/models/file/note/WhatSonNoteFolderSemantics.hpp"
 
 #include <QSet>
 

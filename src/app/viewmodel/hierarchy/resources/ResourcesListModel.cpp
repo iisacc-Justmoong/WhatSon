@@ -1,6 +1,6 @@
-#include "ResourcesListModel.hpp"
+#include "app/viewmodel/hierarchy/resources/ResourcesListModel.hpp"
 
-#include "models/file/WhatSonDebugTrace.hpp"
+#include "app/models/file/WhatSonDebugTrace.hpp"
 
 #include <QDir>
 #include <QFileInfo>

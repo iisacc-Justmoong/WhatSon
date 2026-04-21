@@ -1,6 +1,6 @@
 #pragma once
 
-#include "WhatSonHubPackager.hpp"
+#include "app/models/file/hub/WhatSonHubPackager.hpp"
 
 #include <QString>
 #include <QStringList>

@@ -1,4 +1,4 @@
-#include "WhatSonTrialRegisterXml.hpp"
+#include "extension/trial/WhatSonTrialRegisterXml.hpp"
 
 #include <QCryptographicHash>
 #include <QDir>

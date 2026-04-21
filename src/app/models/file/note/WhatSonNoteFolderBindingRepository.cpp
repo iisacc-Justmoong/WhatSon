@@ -1,6 +1,6 @@
-#include "WhatSonNoteFolderBindingRepository.hpp"
+#include "app/models/file/note/WhatSonNoteFolderBindingRepository.hpp"
 
-#include "WhatSonHubNoteMutationSupport.hpp"
+#include "app/models/file/note/WhatSonHubNoteMutationSupport.hpp"
 
 #include <utility>
 

@@ -1,10 +1,10 @@
-#include "PresetHierarchyViewModel.hpp"
+#include "app/viewmodel/hierarchy/preset/PresetHierarchyViewModel.hpp"
 
-#include "models/file/WhatSonDebugTrace.hpp"
-#include "models/file/hierarchy/preset/WhatSonPresetHierarchyParser.hpp"
-#include "models/file/hierarchy/preset/WhatSonPresetHierarchyStore.hpp"
-#include "viewmodel/hierarchy/WhatSonHierarchyTreeItemSupport.hpp"
-#include "viewmodel/hierarchy/preset/PresetHierarchyViewModelSupport.hpp"
+#include "app/models/file/WhatSonDebugTrace.hpp"
+#include "app/models/file/hierarchy/preset/WhatSonPresetHierarchyParser.hpp"
+#include "app/models/file/hierarchy/preset/WhatSonPresetHierarchyStore.hpp"
+#include "app/viewmodel/hierarchy/WhatSonHierarchyTreeItemSupport.hpp"
+#include "app/viewmodel/hierarchy/preset/PresetHierarchyViewModelSupport.hpp"
 
 #include <QDir>
 #include <QFileInfo>

@@ -1,6 +1,6 @@
-#include "WhatSonIoEventListener.hpp"
+#include "app/models/file/IO/WhatSonIoEventListener.hpp"
 
-#include "models/file/WhatSonDebugTrace.hpp"
+#include "app/models/file/WhatSonDebugTrace.hpp"
 
 #include <QDateTime>
 

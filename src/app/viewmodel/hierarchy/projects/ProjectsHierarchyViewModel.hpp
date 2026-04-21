@@ -1,11 +1,11 @@
 #pragma once
 
-#include "models/file/hierarchy/library/LibraryNoteRecord.hpp"
-#include "models/file/hierarchy/projects/WhatSonProjectsHierarchyStore.hpp"
-#include "viewmodel/hierarchy/IHierarchyCapabilities.hpp"
-#include "viewmodel/hierarchy/IHierarchyViewModel.hpp"
-#include "viewmodel/hierarchy/library/LibraryNoteListModel.hpp"
-#include "viewmodel/hierarchy/projects/ProjectsHierarchyModel.hpp"
+#include "app/models/file/hierarchy/library/LibraryNoteRecord.hpp"
+#include "app/models/file/hierarchy/projects/WhatSonProjectsHierarchyStore.hpp"
+#include "app/viewmodel/hierarchy/IHierarchyCapabilities.hpp"
+#include "app/viewmodel/hierarchy/IHierarchyViewModel.hpp"
+#include "app/viewmodel/hierarchy/library/LibraryNoteListModel.hpp"
+#include "app/viewmodel/hierarchy/projects/ProjectsHierarchyModel.hpp"
 
 #include <QStringList>
 #include <QVariantList>

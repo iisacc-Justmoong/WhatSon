@@ -1,6 +1,6 @@
-#include "ContentsAgendaBackend.hpp"
+#include "app/models/agenda/ContentsAgendaBackend.hpp"
 
-#include "models/file/validator/WhatSonStructuredTagLinter.hpp"
+#include "app/models/file/validator/WhatSonStructuredTagLinter.hpp"
 
 #include <QDate>
 #include <QRegularExpression>

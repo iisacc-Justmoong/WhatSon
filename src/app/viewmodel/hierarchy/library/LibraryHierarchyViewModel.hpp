@@ -1,12 +1,12 @@
 #pragma once
 
-#include "LibraryHierarchyModel.hpp"
-#include "LibraryNoteListModel.hpp"
-#include "models/file/hierarchy/WhatSonFolderDepthEntry.hpp"
-#include "models/file/hierarchy/library/WhatSonLibraryIndexedState.hpp"
-#include "models/file/hub/WhatSonHubStore.hpp"
-#include "viewmodel/hierarchy/IHierarchyCapabilities.hpp"
-#include "viewmodel/hierarchy/IHierarchyViewModel.hpp"
+#include "app/viewmodel/hierarchy/library/LibraryHierarchyModel.hpp"
+#include "app/viewmodel/hierarchy/library/LibraryNoteListModel.hpp"
+#include "app/models/file/hierarchy/WhatSonFolderDepthEntry.hpp"
+#include "app/models/file/hierarchy/library/WhatSonLibraryIndexedState.hpp"
+#include "app/models/file/hub/WhatSonHubStore.hpp"
+#include "app/viewmodel/hierarchy/IHierarchyCapabilities.hpp"
+#include "app/viewmodel/hierarchy/IHierarchyViewModel.hpp"
 
 #include <QHash>
 #include <QPointer>

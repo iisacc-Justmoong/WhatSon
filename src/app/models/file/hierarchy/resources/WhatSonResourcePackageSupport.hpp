@@ -1,7 +1,7 @@
 #pragma once
 
-#include "../../WhatSonDebugTrace.hpp"
-#include "../../hub/WhatSonHubPathUtils.hpp"
+#include "app/models/file/WhatSonDebugTrace.hpp"
+#include "app/models/file/hub/WhatSonHubPathUtils.hpp"
 
 #include <QDir>
 #include <QDirIterator>

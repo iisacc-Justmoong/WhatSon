@@ -1,4 +1,4 @@
-#include "ContentsDisplayRefreshCoordinator.hpp"
+#include "app/models/content/display/ContentsDisplayRefreshCoordinator.hpp"
 
 #include <QtGlobal>
 

@@ -1,4 +1,4 @@
-#include "WhatSonApplePackageAppearance.hpp"
+#include "app/platform/Apple/WhatSonApplePackageAppearance.hpp"
 
 #if defined(Q_OS_MACOS) || defined(Q_OS_IOS)
 

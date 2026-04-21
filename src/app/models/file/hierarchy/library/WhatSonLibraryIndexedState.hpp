@@ -1,8 +1,8 @@
 #pragma once
 
-#include "LibraryAll.hpp"
-#include "LibraryDraft.hpp"
-#include "LibraryToday.hpp"
+#include "app/models/file/hierarchy/library/LibraryAll.hpp"
+#include "app/models/file/hierarchy/library/LibraryDraft.hpp"
+#include "app/models/file/hierarchy/library/LibraryToday.hpp"
 
 #include <QString>
 #include <QVector>

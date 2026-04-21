@@ -1,11 +1,11 @@
-#include "WhatSonFoldersHierarchySessionService.hpp"
+#include "app/viewmodel/detailPanel/session/WhatSonFoldersHierarchySessionService.hpp"
 
-#include "models/file/hierarchy/WhatSonFolderDepthEntry.hpp"
-#include "models/file/hierarchy/WhatSonFolderIdentity.hpp"
-#include "models/file/hierarchy/folders/WhatSonFoldersHierarchyParser.hpp"
-#include "models/file/hierarchy/folders/WhatSonFoldersHierarchyStore.hpp"
-#include "models/file/note/WhatSonNoteFolderSemantics.hpp"
-#include "viewmodel/hierarchy/library/LibraryHierarchyViewModelSupport.hpp"
+#include "app/models/file/hierarchy/WhatSonFolderDepthEntry.hpp"
+#include "app/models/file/hierarchy/WhatSonFolderIdentity.hpp"
+#include "app/models/file/hierarchy/folders/WhatSonFoldersHierarchyParser.hpp"
+#include "app/models/file/hierarchy/folders/WhatSonFoldersHierarchyStore.hpp"
+#include "app/models/file/note/WhatSonNoteFolderSemantics.hpp"
+#include "app/viewmodel/hierarchy/library/LibraryHierarchyViewModelSupport.hpp"
 
 #include <QDir>
 #include <QFileInfo>

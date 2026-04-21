@@ -1,4 +1,4 @@
-#include "DetailCurrentNoteContextBridge.hpp"
+#include "app/viewmodel/detailPanel/DetailCurrentNoteContextBridge.hpp"
 
 #include <QMetaObject>
 #include <QMetaProperty>

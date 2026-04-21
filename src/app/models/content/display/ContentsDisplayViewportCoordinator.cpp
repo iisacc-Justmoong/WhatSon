@@ -1,4 +1,4 @@
-#include "ContentsDisplayViewportCoordinator.hpp"
+#include "app/models/content/display/ContentsDisplayViewportCoordinator.hpp"
 
 #include <QVariant>
 #include <QtGlobal>

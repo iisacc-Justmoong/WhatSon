@@ -1,4 +1,4 @@
-#include "EditorViewModeViewModel.hpp"
+#include "app/viewmodel/navigationbar/EditorViewModeViewModel.hpp"
 
 EditorViewModeViewModel::EditorViewModeViewModel(QObject* parent)
     : QObject(parent)

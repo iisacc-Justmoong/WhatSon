@@ -1,6 +1,6 @@
-#include "ContentsResourceTagTextGenerator.hpp"
+#include "app/models/editor/resource/ContentsResourceTagTextGenerator.hpp"
 
-#include "models/file/note/WhatSonNoteBodyResourceTagGenerator.hpp"
+#include "app/models/file/note/WhatSonNoteBodyResourceTagGenerator.hpp"
 
 #include <utility>
 

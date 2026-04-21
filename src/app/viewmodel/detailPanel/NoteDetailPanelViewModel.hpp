@@ -1,6 +1,6 @@
 #pragma once
 
-#include "DetailPanelViewModel.hpp"
+#include "app/viewmodel/detailPanel/DetailPanelViewModel.hpp"
 
 class NoteDetailPanelViewModel final : public DetailPanelViewModel
 {

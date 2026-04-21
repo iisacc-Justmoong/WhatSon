@@ -1,7 +1,7 @@
-#include "ContentsBodyResourceRenderer.hpp"
+#include "app/models/file/viewer/ContentsBodyResourceRenderer.hpp"
 
-#include "models/file/WhatSonDebugTrace.hpp"
-#include "models/file/hierarchy/resources/WhatSonResourcePackageSupport.hpp"
+#include "app/models/file/WhatSonDebugTrace.hpp"
+#include "app/models/file/hierarchy/resources/WhatSonResourcePackageSupport.hpp"
 
 #include <QDir>
 #include <QFile>

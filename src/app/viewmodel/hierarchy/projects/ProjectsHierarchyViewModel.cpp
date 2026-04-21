@@ -1,16 +1,16 @@
-#include "ProjectsHierarchyViewModel.hpp"
+#include "app/viewmodel/hierarchy/projects/ProjectsHierarchyViewModel.hpp"
 
-#include "calendar/SystemCalendarStore.hpp"
-#include "models/file/WhatSonDebugTrace.hpp"
-#include "models/file/hierarchy/library/LibraryAll.hpp"
-#include "models/file/hierarchy/projects/WhatSonProjectsHierarchyParser.hpp"
-#include "models/file/hierarchy/projects/WhatSonProjectsHierarchyStore.hpp"
-#include "models/file/note/WhatSonBookmarkColorPalette.hpp"
-#include "models/file/statistic/WhatSonNoteFileStatSupport.hpp"
-#include "models/file/note/WhatSonNoteFolderBindingRepository.hpp"
-#include "viewmodel/hierarchy/WhatSonHierarchyTreeItemSupport.hpp"
-#include "viewmodel/hierarchy/projects/ProjectsHierarchyViewModelSupport.hpp"
-#include "viewmodel/sidebar/SidebarHierarchyLvrsSupport.hpp"
+#include "app/models/calendar/SystemCalendarStore.hpp"
+#include "app/models/file/WhatSonDebugTrace.hpp"
+#include "app/models/file/hierarchy/library/LibraryAll.hpp"
+#include "app/models/file/hierarchy/projects/WhatSonProjectsHierarchyParser.hpp"
+#include "app/models/file/hierarchy/projects/WhatSonProjectsHierarchyStore.hpp"
+#include "app/models/file/note/WhatSonBookmarkColorPalette.hpp"
+#include "app/models/file/statistic/WhatSonNoteFileStatSupport.hpp"
+#include "app/models/file/note/WhatSonNoteFolderBindingRepository.hpp"
+#include "app/viewmodel/hierarchy/WhatSonHierarchyTreeItemSupport.hpp"
+#include "app/viewmodel/hierarchy/projects/ProjectsHierarchyViewModelSupport.hpp"
+#include "app/viewmodel/sidebar/SidebarHierarchyLvrsSupport.hpp"
 
 #include <QDebug>
 #include <QDir>

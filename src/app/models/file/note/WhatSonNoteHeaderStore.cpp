@@ -1,9 +1,9 @@
-#include "WhatSonNoteHeaderStore.hpp"
+#include "app/models/file/note/WhatSonNoteHeaderStore.hpp"
 
-#include "../hierarchy/WhatSonFolderIdentity.hpp"
-#include "WhatSonBookmarkColorPalette.hpp"
-#include "models/file/WhatSonDebugTrace.hpp"
-#include "WhatSonNoteFolderSemantics.hpp"
+#include "app/models/file/hierarchy/WhatSonFolderIdentity.hpp"
+#include "app/models/file/note/WhatSonBookmarkColorPalette.hpp"
+#include "app/models/file/WhatSonDebugTrace.hpp"
+#include "app/models/file/note/WhatSonNoteFolderSemantics.hpp"
 
 #include <QRegularExpression>
 #include <QSet>

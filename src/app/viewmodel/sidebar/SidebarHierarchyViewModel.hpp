@@ -1,8 +1,8 @@
 #pragma once
 
-#include "store/sidebar/ISidebarSelectionStore.hpp"
-#include "viewmodel/sidebar/IActiveHierarchyContextSource.hpp"
-#include "viewmodel/sidebar/IHierarchyViewModelProvider.hpp"
+#include "app/store/sidebar/ISidebarSelectionStore.hpp"
+#include "app/viewmodel/sidebar/IActiveHierarchyContextSource.hpp"
+#include "app/viewmodel/sidebar/IHierarchyViewModelProvider.hpp"
 
 #include <QMetaObject>
 #include <QPointer>

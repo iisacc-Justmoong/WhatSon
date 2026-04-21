@@ -1,6 +1,6 @@
 #pragma once
 
-#include "IWhatSonNoteHeaderSessionStore.hpp"
+#include "app/viewmodel/detailPanel/session/IWhatSonNoteHeaderSessionStore.hpp"
 
 #include <QHash>
 

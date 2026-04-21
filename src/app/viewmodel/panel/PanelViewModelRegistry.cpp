@@ -1,4 +1,4 @@
-#include "PanelViewModelRegistry.hpp"
+#include "app/viewmodel/panel/PanelViewModelRegistry.hpp"
 
 #include <QStringList>
 

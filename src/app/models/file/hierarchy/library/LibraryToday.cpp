@@ -1,6 +1,6 @@
-#include "LibraryToday.hpp"
+#include "app/models/file/hierarchy/library/LibraryToday.hpp"
 
-#include "models/file/WhatSonDebugTrace.hpp"
+#include "app/models/file/WhatSonDebugTrace.hpp"
 
 #include <QDateTime>
 #include <QDebug>

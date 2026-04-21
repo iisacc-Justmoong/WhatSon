@@ -1,11 +1,11 @@
-#include "LibraryAll.hpp"
+#include "app/models/file/hierarchy/library/LibraryAll.hpp"
 
-#include "models/file/WhatSonDebugTrace.hpp"
-#include "models/file/hierarchy/resources/WhatSonResourcePackageSupport.hpp"
-#include "note/WhatSonNoteBodyPersistence.hpp"
-#include "note/WhatSonNoteHeaderParser.hpp"
-#include "note/WhatSonNoteFolderSemantics.hpp"
-#include "note/WhatSonNoteHeaderStore.hpp"
+#include "app/models/file/WhatSonDebugTrace.hpp"
+#include "app/models/file/hierarchy/resources/WhatSonResourcePackageSupport.hpp"
+#include "app/models/file/note/WhatSonNoteBodyPersistence.hpp"
+#include "app/models/file/note/WhatSonNoteHeaderParser.hpp"
+#include "app/models/file/note/WhatSonNoteFolderSemantics.hpp"
+#include "app/models/file/note/WhatSonNoteHeaderStore.hpp"
 
 #include <QDebug>
 #include <QDateTime>

@@ -1,6 +1,6 @@
-#include "WhatSonHubNoteMutationSupport.hpp"
+#include "app/models/file/note/WhatSonHubNoteMutationSupport.hpp"
 
-#include "viewmodel/hierarchy/library/LibraryHierarchyViewModelSupport.hpp"
+#include "app/viewmodel/hierarchy/library/LibraryHierarchyViewModelSupport.hpp"
 
 #include <QDateTime>
 #include <QDir>

@@ -1,6 +1,6 @@
-#include "ContentsStructuredDocumentBlocksModel.hpp"
+#include "app/models/content/structured/ContentsStructuredDocumentBlocksModel.hpp"
 
-#include "models/file/WhatSonDebugTrace.hpp"
+#include "app/models/file/WhatSonDebugTrace.hpp"
 
 #include <QMetaType>
 

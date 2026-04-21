@@ -1,4 +1,4 @@
-#include "WhatSonTrialActivationPolicy.hpp"
+#include "extension/trial/WhatSonTrialActivationPolicy.hpp"
 
 #include <QtGlobal>
 

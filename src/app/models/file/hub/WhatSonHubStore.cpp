@@ -1,7 +1,7 @@
-#include "WhatSonHubStore.hpp"
+#include "app/models/file/hub/WhatSonHubStore.hpp"
 
-#include "models/file/WhatSonDebugTrace.hpp"
-#include "WhatSonHubPathUtils.hpp"
+#include "app/models/file/WhatSonDebugTrace.hpp"
+#include "app/models/file/hub/WhatSonHubPathUtils.hpp"
 
 #include <QDir>
 

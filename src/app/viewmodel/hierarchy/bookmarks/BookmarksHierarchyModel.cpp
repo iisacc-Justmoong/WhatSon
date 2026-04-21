@@ -1,6 +1,6 @@
-#include "BookmarksHierarchyModel.hpp"
+#include "app/viewmodel/hierarchy/bookmarks/BookmarksHierarchyModel.hpp"
 
-#include "models/file/WhatSonDebugTrace.hpp"
+#include "app/models/file/WhatSonDebugTrace.hpp"
 
 #include <stdexcept>
 #include <utility>

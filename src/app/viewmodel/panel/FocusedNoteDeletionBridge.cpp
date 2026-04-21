@@ -1,4 +1,4 @@
-#include "FocusedNoteDeletionBridge.hpp"
+#include "app/viewmodel/panel/FocusedNoteDeletionBridge.hpp"
 
 #include <QMetaObject>
 #include <QMetaProperty>

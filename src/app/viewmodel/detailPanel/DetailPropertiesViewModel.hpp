@@ -1,7 +1,7 @@
 #pragma once
 
-#include "DetailContentSectionViewModel.hpp"
-#include "models/file/note/WhatSonNoteHeaderStore.hpp"
+#include "app/viewmodel/detailPanel/DetailContentSectionViewModel.hpp"
+#include "app/models/file/note/WhatSonNoteHeaderStore.hpp"
 
 #include <QStringList>
 

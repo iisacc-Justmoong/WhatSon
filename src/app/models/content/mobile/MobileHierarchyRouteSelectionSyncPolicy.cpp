@@ -1,4 +1,4 @@
-#include "MobileHierarchyRouteSelectionSyncPolicy.hpp"
+#include "app/models/content/mobile/MobileHierarchyRouteSelectionSyncPolicy.hpp"
 
 namespace
 {

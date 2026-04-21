@@ -1,6 +1,6 @@
 #pragma once
 
-#include "viewmodel/hierarchy/WhatSonHierarchyIoSupport.hpp"
+#include "app/viewmodel/hierarchy/WhatSonHierarchyIoSupport.hpp"
 
 namespace WhatSon::Hierarchy::TagsSupport
 {

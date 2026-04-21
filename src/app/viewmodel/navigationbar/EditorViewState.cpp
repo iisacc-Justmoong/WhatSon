@@ -1,4 +1,4 @@
-#include "EditorViewState.hpp"
+#include "app/viewmodel/navigationbar/EditorViewState.hpp"
 
 namespace WhatSon::NavigationBar
 {

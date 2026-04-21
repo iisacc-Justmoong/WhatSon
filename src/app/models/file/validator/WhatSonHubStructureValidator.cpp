@@ -1,4 +1,4 @@
-#include "WhatSonHubStructureValidator.hpp"
+#include "app/models/file/validator/WhatSonHubStructureValidator.hpp"
 
 #include <QDir>
 #include <QFileInfo>

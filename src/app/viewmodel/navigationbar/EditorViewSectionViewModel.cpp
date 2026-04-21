@@ -1,4 +1,4 @@
-#include "EditorViewSectionViewModel.hpp"
+#include "app/viewmodel/navigationbar/EditorViewSectionViewModel.hpp"
 
 EditorViewSectionViewModel::EditorViewSectionViewModel(
     EditorView editorView,

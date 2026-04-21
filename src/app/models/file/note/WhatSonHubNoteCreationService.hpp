@@ -1,11 +1,11 @@
 #pragma once
 
-#include "WhatSonHubNoteMutationSupport.hpp"
-#include "WhatSonLocalNoteFileStore.hpp"
-#include "models/file/hub/WhatSonHubStat.hpp"
-#include "models/file/hierarchy/library/LibraryNoteRecord.hpp"
-#include "models/file/validator/WhatSonHubStructureValidator.hpp"
-#include "models/file/validator/WhatSonLibraryIndexIntegrityValidator.hpp"
+#include "app/models/file/note/WhatSonHubNoteMutationSupport.hpp"
+#include "app/models/file/note/WhatSonLocalNoteFileStore.hpp"
+#include "app/models/file/hub/WhatSonHubStat.hpp"
+#include "app/models/file/hierarchy/library/LibraryNoteRecord.hpp"
+#include "app/models/file/validator/WhatSonHubStructureValidator.hpp"
+#include "app/models/file/validator/WhatSonLibraryIndexIntegrityValidator.hpp"
 
 #include <QString>
 #include <QStringList>

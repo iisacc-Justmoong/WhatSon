@@ -1,6 +1,6 @@
-#include "WhatSonHubNoteFolderClearService.hpp"
+#include "app/models/file/note/WhatSonHubNoteFolderClearService.hpp"
 
-#include "WhatSonNoteFolderBindingService.hpp"
+#include "app/models/file/note/WhatSonNoteFolderBindingService.hpp"
 
 #include <utility>
 

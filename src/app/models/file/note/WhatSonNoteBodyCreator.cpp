@@ -1,6 +1,6 @@
-#include "WhatSonNoteBodyCreator.hpp"
+#include "app/models/file/note/WhatSonNoteBodyCreator.hpp"
 
-#include "models/file/WhatSonDebugTrace.hpp"
+#include "app/models/file/WhatSonDebugTrace.hpp"
 
 #include <QFileInfo>
 

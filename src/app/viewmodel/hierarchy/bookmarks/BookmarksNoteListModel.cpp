@@ -1,6 +1,6 @@
-#include "BookmarksNoteListModel.hpp"
+#include "app/viewmodel/hierarchy/bookmarks/BookmarksNoteListModel.hpp"
 
-#include "models/file/WhatSonDebugTrace.hpp"
+#include "app/models/file/WhatSonDebugTrace.hpp"
 
 #include <QDir>
 #include <QDateTime>

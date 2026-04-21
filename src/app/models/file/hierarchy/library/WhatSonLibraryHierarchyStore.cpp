@@ -1,6 +1,6 @@
-#include "WhatSonLibraryHierarchyStore.hpp"
+#include "app/models/file/hierarchy/library/WhatSonLibraryHierarchyStore.hpp"
 
-#include "models/file/WhatSonDebugTrace.hpp"
+#include "app/models/file/WhatSonDebugTrace.hpp"
 
 #include <utility>
 

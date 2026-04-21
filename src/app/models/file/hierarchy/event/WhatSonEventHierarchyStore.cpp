@@ -1,7 +1,7 @@
-#include "WhatSonEventHierarchyStore.hpp"
+#include "app/models/file/hierarchy/event/WhatSonEventHierarchyStore.hpp"
 
-#include "models/file/WhatSonDebugTrace.hpp"
-#include "WhatSonEventHierarchyCreator.hpp"
+#include "app/models/file/WhatSonDebugTrace.hpp"
+#include "app/models/file/hierarchy/event/WhatSonEventHierarchyCreator.hpp"
 
 #include <QDir>
 #include <QFile>

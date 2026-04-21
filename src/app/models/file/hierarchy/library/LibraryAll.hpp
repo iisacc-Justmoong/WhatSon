@@ -1,8 +1,8 @@
 #pragma once
 
-#include "LibraryNoteRecord.hpp"
-#include "validator/WhatSonHubStructureValidator.hpp"
-#include "validator/WhatSonLibraryIndexIntegrityValidator.hpp"
+#include "app/models/file/hierarchy/library/LibraryNoteRecord.hpp"
+#include "app/models/file/validator/WhatSonHubStructureValidator.hpp"
+#include "app/models/file/validator/WhatSonLibraryIndexIntegrityValidator.hpp"
 
 #include <QString>
 #include <QVector>

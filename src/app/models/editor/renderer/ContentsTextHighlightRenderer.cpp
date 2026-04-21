@@ -1,4 +1,4 @@
-#include "ContentsTextHighlightRenderer.hpp"
+#include "app/models/editor/renderer/ContentsTextHighlightRenderer.hpp"
 
 namespace
 {

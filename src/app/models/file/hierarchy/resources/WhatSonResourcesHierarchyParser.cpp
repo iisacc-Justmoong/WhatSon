@@ -1,7 +1,7 @@
-#include "WhatSonResourcesHierarchyParser.hpp"
+#include "app/models/file/hierarchy/resources/WhatSonResourcesHierarchyParser.hpp"
 
-#include "WhatSonResourcesHierarchyStore.hpp"
-#include "models/file/WhatSonDebugTrace.hpp"
+#include "app/models/file/hierarchy/resources/WhatSonResourcesHierarchyStore.hpp"
+#include "app/models/file/WhatSonDebugTrace.hpp"
 
 #include <QJsonArray>
 #include <QJsonDocument>

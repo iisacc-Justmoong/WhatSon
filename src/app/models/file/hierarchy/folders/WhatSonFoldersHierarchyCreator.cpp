@@ -1,8 +1,8 @@
-#include "WhatSonFoldersHierarchyCreator.hpp"
+#include "app/models/file/hierarchy/folders/WhatSonFoldersHierarchyCreator.hpp"
 
-#include "../WhatSonFolderIdentity.hpp"
-#include "models/file/WhatSonDebugTrace.hpp"
-#include "WhatSonFoldersHierarchyStore.hpp"
+#include "app/models/file/hierarchy/WhatSonFolderIdentity.hpp"
+#include "app/models/file/WhatSonDebugTrace.hpp"
+#include "app/models/file/hierarchy/folders/WhatSonFoldersHierarchyStore.hpp"
 
 #include <QJsonArray>
 #include <QJsonDocument>

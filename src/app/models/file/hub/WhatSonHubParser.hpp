@@ -1,6 +1,6 @@
 #pragma once
 
-#include "WhatSonHubStore.hpp"
+#include "app/models/file/hub/WhatSonHubStore.hpp"
 
 #include <QDir>
 #include <QJsonObject>

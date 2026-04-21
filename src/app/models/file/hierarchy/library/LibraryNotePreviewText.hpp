@@ -1,6 +1,6 @@
 #pragma once
 
-#include "LibraryNoteRecord.hpp"
+#include "app/models/file/hierarchy/library/LibraryNoteRecord.hpp"
 
 #include <QString>
 #include <QStringList>

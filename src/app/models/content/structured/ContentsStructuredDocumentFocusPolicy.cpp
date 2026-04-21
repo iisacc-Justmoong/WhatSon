@@ -1,7 +1,7 @@
-#include "ContentsStructuredDocumentFocusPolicy.hpp"
+#include "app/models/content/structured/ContentsStructuredDocumentFocusPolicy.hpp"
 
-#include "ContentsStructuredDocumentCollectionPolicy.hpp"
-#include "models/file/WhatSonDebugTrace.hpp"
+#include "app/models/content/structured/ContentsStructuredDocumentCollectionPolicy.hpp"
+#include "app/models/file/WhatSonDebugTrace.hpp"
 
 #include <algorithm>
 #include <cmath>

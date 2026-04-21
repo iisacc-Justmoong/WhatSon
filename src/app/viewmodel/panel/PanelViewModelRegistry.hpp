@@ -1,6 +1,6 @@
 #pragma once
 
-#include "PanelViewModel.hpp"
+#include "app/viewmodel/panel/PanelViewModel.hpp"
 
 #include <QHash>
 #include <QObject>

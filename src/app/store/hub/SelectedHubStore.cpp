@@ -1,6 +1,6 @@
-#include "SelectedHubStore.hpp"
-#include "models/file/hub/WhatSonHubPathUtils.hpp"
-#include "platform/Android/WhatSonAndroidStorageBackend.hpp"
+#include "app/store/hub/SelectedHubStore.hpp"
+#include "app/models/file/hub/WhatSonHubPathUtils.hpp"
+#include "app/platform/Android/WhatSonAndroidStorageBackend.hpp"
 
 #include <QDir>
 #include <QFileInfo>

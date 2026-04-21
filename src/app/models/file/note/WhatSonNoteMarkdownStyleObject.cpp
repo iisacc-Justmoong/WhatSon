@@ -1,4 +1,4 @@
-#include "WhatSonNoteMarkdownStyleObject.hpp"
+#include "app/models/file/note/WhatSonNoteMarkdownStyleObject.hpp"
 
 #include <algorithm>
 #include <QHash>

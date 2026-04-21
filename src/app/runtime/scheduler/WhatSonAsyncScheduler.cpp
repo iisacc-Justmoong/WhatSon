@@ -1,6 +1,6 @@
-#include "WhatSonAsyncScheduler.hpp"
+#include "app/runtime/scheduler/WhatSonAsyncScheduler.hpp"
 
-#include "WhatSonUnixTimeAnalyzer.hpp"
+#include "app/runtime/scheduler/WhatSonUnixTimeAnalyzer.hpp"
 
 #include <QDateTime>
 #include <QTimeZone>

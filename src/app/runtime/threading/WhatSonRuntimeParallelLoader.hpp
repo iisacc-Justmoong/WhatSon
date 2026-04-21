@@ -1,6 +1,6 @@
 #pragma once
 
-#include "IWhatSonRuntimeParallelLoader.hpp"
+#include "app/runtime/threading/IWhatSonRuntimeParallelLoader.hpp"
 
 class WhatSonRuntimeParallelLoader final : public IWhatSonRuntimeParallelLoader
 {

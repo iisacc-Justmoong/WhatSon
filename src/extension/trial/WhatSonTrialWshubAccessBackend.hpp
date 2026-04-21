@@ -1,10 +1,10 @@
 #pragma once
 
-#include "WhatSonRegisterManager.hpp"
-#include "WhatSonTrialActivationPolicy.hpp"
-#include "WhatSonTrialClientIdentityStore.hpp"
-#include "WhatSonTrialInstallStore.hpp"
-#include "WhatSonTrialRegisterXml.hpp"
+#include "app/register/WhatSonRegisterManager.hpp"
+#include "extension/trial/WhatSonTrialActivationPolicy.hpp"
+#include "extension/trial/WhatSonTrialClientIdentityStore.hpp"
+#include "extension/trial/WhatSonTrialInstallStore.hpp"
+#include "extension/trial/WhatSonTrialRegisterXml.hpp"
 
 #include <QDate>
 #include <QPointer>

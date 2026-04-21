@@ -1,13 +1,13 @@
-#include "TagsHierarchyViewModel.hpp"
+#include "app/viewmodel/hierarchy/tags/TagsHierarchyViewModel.hpp"
 
-#include "calendar/SystemCalendarStore.hpp"
-#include "models/file/WhatSonDebugTrace.hpp"
-#include "models/file/hierarchy/library/LibraryAll.hpp"
-#include "models/file/hierarchy/tags/WhatSonTagsHierarchyParser.hpp"
-#include "models/file/note/WhatSonBookmarkColorPalette.hpp"
-#include "models/file/note/WhatSonNoteFolderBindingRepository.hpp"
-#include "models/file/note/WhatSonNoteBodyPersistence.hpp"
-#include "viewmodel/hierarchy/tags/TagsHierarchyViewModelSupport.hpp"
+#include "app/models/calendar/SystemCalendarStore.hpp"
+#include "app/models/file/WhatSonDebugTrace.hpp"
+#include "app/models/file/hierarchy/library/LibraryAll.hpp"
+#include "app/models/file/hierarchy/tags/WhatSonTagsHierarchyParser.hpp"
+#include "app/models/file/note/WhatSonBookmarkColorPalette.hpp"
+#include "app/models/file/note/WhatSonNoteFolderBindingRepository.hpp"
+#include "app/models/file/note/WhatSonNoteBodyPersistence.hpp"
+#include "app/viewmodel/hierarchy/tags/TagsHierarchyViewModelSupport.hpp"
 
 #include <QDir>
 #include <QFileInfo>

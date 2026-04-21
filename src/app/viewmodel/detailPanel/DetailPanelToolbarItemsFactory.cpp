@@ -1,4 +1,4 @@
-#include "DetailPanelToolbarItemsFactory.hpp"
+#include "app/viewmodel/detailPanel/DetailPanelToolbarItemsFactory.hpp"
 
 #include <QVariantMap>
 

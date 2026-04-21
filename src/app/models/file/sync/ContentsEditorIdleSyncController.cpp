@@ -1,7 +1,7 @@
-#include "ContentsEditorIdleSyncController.hpp"
+#include "app/models/file/sync/ContentsEditorIdleSyncController.hpp"
 
-#include "models/file/WhatSonDebugTrace.hpp"
-#include "models/file/note/ContentsNoteManagementCoordinator.hpp"
+#include "app/models/file/WhatSonDebugTrace.hpp"
+#include "app/models/file/note/ContentsNoteManagementCoordinator.hpp"
 
 namespace
 {

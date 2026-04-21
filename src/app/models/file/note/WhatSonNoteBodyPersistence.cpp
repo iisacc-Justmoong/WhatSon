@@ -1,10 +1,10 @@
-#include "WhatSonNoteBodyPersistence.hpp"
+#include "app/models/file/note/WhatSonNoteBodyPersistence.hpp"
 
-#include "WhatSonNoteBodyWebLinkSupport.hpp"
-#include "WhatSonNoteBodySemanticTagSupport.hpp"
-#include "WhatSonNoteMarkdownStyleObject.hpp"
-#include "WhatSonLocalNoteFileStore.hpp"
-#include "models/file/WhatSonDebugTrace.hpp"
+#include "app/models/file/note/WhatSonNoteBodyWebLinkSupport.hpp"
+#include "app/models/file/note/WhatSonNoteBodySemanticTagSupport.hpp"
+#include "app/models/file/note/WhatSonNoteMarkdownStyleObject.hpp"
+#include "app/models/file/note/WhatSonLocalNoteFileStore.hpp"
+#include "app/models/file/WhatSonDebugTrace.hpp"
 #include <QDir>
 #include <QDate>
 #include <QFileInfo>

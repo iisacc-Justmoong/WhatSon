@@ -265,6 +265,8 @@ An exception is allowed only when all conditions are satisfied.
 - Keep C++ entrypoints minimal and focused.
 - Prefer LVRS `Theme` for design tokens.
 - Keep command examples and real output paths synchronized in docs.
+- Keep project-local C++ includes repository-absolute from the configured include roots: use `app/...`,
+  `extension/...`, or `test/...` instead of basename-only or file-relative include paths.
 - Keep model/viewmodel/view interfaces event-driven: every model, viewmodel, and view must expose at least one signal
   and one slot/hook entrypoint.
 - Keep hierarchy wiring type-safe: each hierarchy category must remain bound to its dedicated ViewModel in

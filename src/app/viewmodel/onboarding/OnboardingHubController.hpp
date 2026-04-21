@@ -1,6 +1,6 @@
 #pragma once
 
-#include "IOnboardingHubController.hpp"
+#include "app/viewmodel/onboarding/IOnboardingHubController.hpp"
 
 #include <QByteArray>
 #include <QStringList>

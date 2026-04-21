@@ -1,6 +1,6 @@
-#include "HierarchyViewModelProvider.hpp"
+#include "app/viewmodel/sidebar/HierarchyViewModelProvider.hpp"
 
-#include "policy/ArchitecturePolicyLock.hpp"
+#include "app/policy/ArchitecturePolicyLock.hpp"
 
 #include <QDebug>
 

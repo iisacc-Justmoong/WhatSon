@@ -1,7 +1,7 @@
-#include "WhatSonProjectsHierarchyCreator.hpp"
+#include "app/models/file/hierarchy/projects/WhatSonProjectsHierarchyCreator.hpp"
 
-#include "WhatSonProjectsHierarchyStore.hpp"
-#include "models/file/WhatSonDebugTrace.hpp"
+#include "app/models/file/hierarchy/projects/WhatSonProjectsHierarchyStore.hpp"
+#include "app/models/file/WhatSonDebugTrace.hpp"
 
 #include <QJsonArray>
 #include <QJsonDocument>

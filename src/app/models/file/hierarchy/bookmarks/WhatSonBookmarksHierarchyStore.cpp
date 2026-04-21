@@ -1,7 +1,7 @@
-#include "WhatSonBookmarksHierarchyStore.hpp"
+#include "app/models/file/hierarchy/bookmarks/WhatSonBookmarksHierarchyStore.hpp"
 
-#include "note/WhatSonBookmarkColorPalette.hpp"
-#include "models/file/WhatSonDebugTrace.hpp"
+#include "app/models/file/note/WhatSonBookmarkColorPalette.hpp"
+#include "app/models/file/WhatSonDebugTrace.hpp"
 
 #include <utility>
 

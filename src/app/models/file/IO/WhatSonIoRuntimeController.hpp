@@ -1,7 +1,7 @@
 #pragma once
 
-#include "WhatSonIoEventListener.hpp"
-#include "WhatSonSystemIoGateway.hpp"
+#include "app/models/file/IO/WhatSonIoEventListener.hpp"
+#include "app/models/file/IO/WhatSonSystemIoGateway.hpp"
 
 #include <QString>
 #include <QVariantMap>

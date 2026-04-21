@@ -1,4 +1,4 @@
-#include "WhatSonTrialWshubAccessBackend.hpp"
+#include "extension/trial/WhatSonTrialWshubAccessBackend.hpp"
 
 #include <QDir>
 #include <QFileInfo>

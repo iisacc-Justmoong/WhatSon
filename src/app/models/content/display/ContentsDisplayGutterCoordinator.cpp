@@ -1,4 +1,4 @@
-#include "ContentsDisplayGutterCoordinator.hpp"
+#include "app/models/content/display/ContentsDisplayGutterCoordinator.hpp"
 
 #include <QtGlobal>
 

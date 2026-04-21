@@ -1,4 +1,4 @@
-#include "DetailPanelState.hpp"
+#include "app/viewmodel/detailPanel/DetailPanelState.hpp"
 
 namespace WhatSon::DetailPanel
 {

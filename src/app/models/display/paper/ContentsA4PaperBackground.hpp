@@ -1,6 +1,6 @@
 #pragma once
 
-#include "ContentsPaperSelection.hpp"
+#include "app/models/display/paper/ContentsPaperSelection.hpp"
 
 #include <QColor>
 #include <QObject>

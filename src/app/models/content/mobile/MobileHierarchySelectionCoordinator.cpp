@@ -1,4 +1,4 @@
-#include "MobileHierarchySelectionCoordinator.hpp"
+#include "app/models/content/mobile/MobileHierarchySelectionCoordinator.hpp"
 
 #include <QMetaMethod>
 #include <QVariant>

@@ -1,9 +1,9 @@
-#include "WhatSonHubNoteCreationService.hpp"
+#include "app/models/file/note/WhatSonHubNoteCreationService.hpp"
 
-#include "models/file/WhatSonDebugTrace.hpp"
-#include "models/file/note/WhatSonNoteHeaderCreator.hpp"
-#include "models/file/note/WhatSonNoteHeaderStore.hpp"
-#include "viewmodel/hierarchy/library/LibraryHierarchyViewModelSupport.hpp"
+#include "app/models/file/WhatSonDebugTrace.hpp"
+#include "app/models/file/note/WhatSonNoteHeaderCreator.hpp"
+#include "app/models/file/note/WhatSonNoteHeaderStore.hpp"
+#include "app/viewmodel/hierarchy/library/LibraryHierarchyViewModelSupport.hpp"
 
 #include <QDateTime>
 #include <QDir>

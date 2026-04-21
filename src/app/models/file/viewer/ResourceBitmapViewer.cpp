@@ -1,6 +1,6 @@
-#include "ResourceBitmapViewer.hpp"
+#include "app/models/file/viewer/ResourceBitmapViewer.hpp"
 
-#include "ImageFormatCompatibilityLayer.hpp"
+#include "app/models/file/viewer/ImageFormatCompatibilityLayer.hpp"
 
 #include <QDir>
 #include <QUrl>

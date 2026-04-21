@@ -1,12 +1,12 @@
 #pragma once
 
-#include "models/file/hierarchy/library/LibraryNoteRecord.hpp"
-#include "TagsHierarchyModel.hpp"
-#include "models/file/hierarchy/tags/WhatSonTagDepthEntry.hpp"
-#include "models/file/hierarchy/tags/WhatSonTagsHierarchyStore.hpp"
-#include "viewmodel/hierarchy/IHierarchyCapabilities.hpp"
-#include "viewmodel/hierarchy/IHierarchyViewModel.hpp"
-#include "viewmodel/hierarchy/library/LibraryNoteListModel.hpp"
+#include "app/models/file/hierarchy/library/LibraryNoteRecord.hpp"
+#include "app/viewmodel/hierarchy/tags/TagsHierarchyModel.hpp"
+#include "app/models/file/hierarchy/tags/WhatSonTagDepthEntry.hpp"
+#include "app/models/file/hierarchy/tags/WhatSonTagsHierarchyStore.hpp"
+#include "app/viewmodel/hierarchy/IHierarchyCapabilities.hpp"
+#include "app/viewmodel/hierarchy/IHierarchyViewModel.hpp"
+#include "app/viewmodel/hierarchy/library/LibraryNoteListModel.hpp"
 
 #include <QVariantList>
 #include <QVector>

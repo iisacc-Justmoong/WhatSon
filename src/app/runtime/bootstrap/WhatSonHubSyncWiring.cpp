@@ -1,6 +1,6 @@
-#include "WhatSonHubSyncWiring.hpp"
+#include "app/runtime/bootstrap/WhatSonHubSyncWiring.hpp"
 
-#include "models/file/sync/WhatSonHubSyncController.hpp"
+#include "app/models/file/sync/WhatSonHubSyncController.hpp"
 
 #include <QCoreApplication>
 #include <QDebug>

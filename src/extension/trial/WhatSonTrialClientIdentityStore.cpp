@@ -1,4 +1,4 @@
-#include "WhatSonTrialClientIdentityStore.hpp"
+#include "extension/trial/WhatSonTrialClientIdentityStore.hpp"
 
 #include <QCryptographicHash>
 #include <QRandomGenerator>

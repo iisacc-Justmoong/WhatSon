@@ -1,12 +1,12 @@
 #pragma once
 
-#include "WhatSonLocalNoteFileStore.hpp"
-#include "models/file/IO/WhatSonSystemIoGateway.hpp"
-#include "models/file/hierarchy/library/LibraryNoteRecord.hpp"
-#include "models/file/hub/WhatSonHubStat.hpp"
-#include "models/file/validator/WhatSonHubStructureValidator.hpp"
-#include "models/file/validator/WhatSonLibraryIndexIntegrityValidator.hpp"
-#include "models/file/validator/WhatSonNoteStorageValidator.hpp"
+#include "app/models/file/note/WhatSonLocalNoteFileStore.hpp"
+#include "app/models/file/IO/WhatSonSystemIoGateway.hpp"
+#include "app/models/file/hierarchy/library/LibraryNoteRecord.hpp"
+#include "app/models/file/hub/WhatSonHubStat.hpp"
+#include "app/models/file/validator/WhatSonHubStructureValidator.hpp"
+#include "app/models/file/validator/WhatSonLibraryIndexIntegrityValidator.hpp"
+#include "app/models/file/validator/WhatSonNoteStorageValidator.hpp"
 
 #include <QString>
 #include <QVector>

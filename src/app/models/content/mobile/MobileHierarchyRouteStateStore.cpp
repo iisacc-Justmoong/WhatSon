@@ -1,4 +1,4 @@
-#include "MobileHierarchyRouteStateStore.hpp"
+#include "app/models/content/mobile/MobileHierarchyRouteStateStore.hpp"
 
 MobileHierarchyRouteStateStore::MobileHierarchyRouteStateStore(QObject* parent)
     : QObject(parent)

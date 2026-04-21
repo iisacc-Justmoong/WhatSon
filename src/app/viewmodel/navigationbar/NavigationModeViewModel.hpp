@@ -1,7 +1,7 @@
 #pragma once
 
-#include "NavigationModeSectionViewModel.hpp"
-#include "NavigationModeState.hpp"
+#include "app/viewmodel/navigationbar/NavigationModeSectionViewModel.hpp"
+#include "app/viewmodel/navigationbar/NavigationModeState.hpp"
 
 #include <QObject>
 #include <QString>

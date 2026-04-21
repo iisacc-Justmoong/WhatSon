@@ -1,6 +1,6 @@
 #pragma once
 
-#include "WhatSonHubPlacement.hpp"
+#include "app/models/file/hub/WhatSonHubPlacement.hpp"
 
 #include <QHash>
 #include <QString>

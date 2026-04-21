@@ -1,6 +1,6 @@
-#include "ResourcesHierarchyModel.hpp"
+#include "app/viewmodel/hierarchy/resources/ResourcesHierarchyModel.hpp"
 
-#include "models/file/WhatSonDebugTrace.hpp"
+#include "app/models/file/WhatSonDebugTrace.hpp"
 
 #include <stdexcept>
 #include <utility>

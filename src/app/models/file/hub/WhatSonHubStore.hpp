@@ -1,6 +1,6 @@
 #pragma once
 
-#include "WhatSonHubStat.hpp"
+#include "app/models/file/hub/WhatSonHubStat.hpp"
 
 #include <QString>
 #include <QVariantMap>

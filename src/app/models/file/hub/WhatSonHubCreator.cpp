@@ -1,7 +1,7 @@
-#include "WhatSonHubCreator.hpp"
+#include "app/models/file/hub/WhatSonHubCreator.hpp"
 
-#include "models/file/WhatSonDebugTrace.hpp"
-#include "WhatSonHubPathUtils.hpp"
+#include "app/models/file/WhatSonDebugTrace.hpp"
+#include "app/models/file/hub/WhatSonHubPathUtils.hpp"
 
 #include <QDateTime>
 #include <QDir>

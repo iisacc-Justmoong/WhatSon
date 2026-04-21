@@ -1,7 +1,7 @@
-#include "MonthlyUnusedNote.hpp"
+#include "app/models/sensor/MonthlyUnusedNote.hpp"
 
-#include "UnusedNoteSensorSupport.hpp"
-#include "models/file/hub/WhatSonHubPathUtils.hpp"
+#include "app/models/sensor/UnusedNoteSensorSupport.hpp"
+#include "app/models/file/hub/WhatSonHubPathUtils.hpp"
 
 #include <QDateTime>
 

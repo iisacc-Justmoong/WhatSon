@@ -1,4 +1,4 @@
-#include "ContentsA4PaperBackground.hpp"
+#include "app/models/display/paper/ContentsA4PaperBackground.hpp"
 
 ContentsA4PaperBackground::ContentsA4PaperBackground(QObject* parent)
     : QObject(parent)

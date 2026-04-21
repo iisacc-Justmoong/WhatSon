@@ -1,6 +1,6 @@
 #pragma once
 
-#include "ISystemCalendarStore.hpp"
+#include "app/models/calendar/ISystemCalendarStore.hpp"
 
 #include <QLocale>
 

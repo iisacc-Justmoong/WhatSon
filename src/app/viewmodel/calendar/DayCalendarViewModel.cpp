@@ -1,7 +1,7 @@
-#include "DayCalendarViewModel.hpp"
+#include "app/viewmodel/calendar/DayCalendarViewModel.hpp"
 
-#include "calendar/ICalendarBoardStore.hpp"
-#include "models/file/WhatSonDebugTrace.hpp"
+#include "app/models/calendar/ICalendarBoardStore.hpp"
+#include "app/models/file/WhatSonDebugTrace.hpp"
 
 #include <QDate>
 #include <QLocale>

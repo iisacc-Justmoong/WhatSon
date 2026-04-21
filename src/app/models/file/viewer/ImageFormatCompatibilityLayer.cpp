@@ -1,4 +1,4 @@
-#include "ImageFormatCompatibilityLayer.hpp"
+#include "app/models/file/viewer/ImageFormatCompatibilityLayer.hpp"
 
 #include <QFileInfo>
 #include <QHash>

@@ -1,4 +1,4 @@
-#include "WhatSonTrialClockStore.hpp"
+#include "extension/trial/WhatSonTrialClockStore.hpp"
 
 #include <QSettings>
 #include <QVariant>

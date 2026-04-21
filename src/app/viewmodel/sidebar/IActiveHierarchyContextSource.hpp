@@ -1,6 +1,6 @@
 #pragma once
 
-#include "viewmodel/sidebar/IActiveHierarchySource.hpp"
+#include "app/viewmodel/sidebar/IActiveHierarchySource.hpp"
 
 #include <QObject>
 

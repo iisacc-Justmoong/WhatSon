@@ -1,16 +1,16 @@
-#include "WhatSonRuntimeParallelLoader.hpp"
+#include "app/runtime/threading/WhatSonRuntimeParallelLoader.hpp"
 
-#include "WhatSonRuntimeDomainSnapshots.hpp"
-#include "models/file/WhatSonDebugTrace.hpp"
-#include "hub/WhatSonHubRuntimeStore.hpp"
-#include "viewmodel/hierarchy/bookmarks/BookmarksHierarchyViewModel.hpp"
-#include "viewmodel/hierarchy/event/EventHierarchyViewModel.hpp"
-#include "viewmodel/hierarchy/library/LibraryHierarchyViewModel.hpp"
-#include "viewmodel/hierarchy/preset/PresetHierarchyViewModel.hpp"
-#include "viewmodel/hierarchy/progress/ProgressHierarchyViewModel.hpp"
-#include "viewmodel/hierarchy/projects/ProjectsHierarchyViewModel.hpp"
-#include "viewmodel/hierarchy/resources/ResourcesHierarchyViewModel.hpp"
-#include "viewmodel/hierarchy/tags/TagsHierarchyViewModel.hpp"
+#include "app/runtime/threading/WhatSonRuntimeDomainSnapshots.hpp"
+#include "app/models/file/WhatSonDebugTrace.hpp"
+#include "app/models/file/hub/WhatSonHubRuntimeStore.hpp"
+#include "app/viewmodel/hierarchy/bookmarks/BookmarksHierarchyViewModel.hpp"
+#include "app/viewmodel/hierarchy/event/EventHierarchyViewModel.hpp"
+#include "app/viewmodel/hierarchy/library/LibraryHierarchyViewModel.hpp"
+#include "app/viewmodel/hierarchy/preset/PresetHierarchyViewModel.hpp"
+#include "app/viewmodel/hierarchy/progress/ProgressHierarchyViewModel.hpp"
+#include "app/viewmodel/hierarchy/projects/ProjectsHierarchyViewModel.hpp"
+#include "app/viewmodel/hierarchy/resources/ResourcesHierarchyViewModel.hpp"
+#include "app/viewmodel/hierarchy/tags/TagsHierarchyViewModel.hpp"
 
 #include <QElapsedTimer>
 #include <QEventLoop>

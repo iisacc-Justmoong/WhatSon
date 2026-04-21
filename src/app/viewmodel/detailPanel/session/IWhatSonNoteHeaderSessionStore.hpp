@@ -1,6 +1,6 @@
 #pragma once
 
-#include "models/file/note/WhatSonNoteHeaderStore.hpp"
+#include "app/models/file/note/WhatSonNoteHeaderStore.hpp"
 
 #include <QObject>
 #include <QString>

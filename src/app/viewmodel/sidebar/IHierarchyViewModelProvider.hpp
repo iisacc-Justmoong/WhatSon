@@ -1,6 +1,6 @@
 #pragma once
 
-#include "viewmodel/hierarchy/IHierarchyViewModel.hpp"
+#include "app/viewmodel/hierarchy/IHierarchyViewModel.hpp"
 
 #include <QObject>
 

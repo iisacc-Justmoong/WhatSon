@@ -1,7 +1,7 @@
 #pragma once
 
-#include "WhatSonTrialClientIdentityStore.hpp"
-#include "WhatSonTrialSecureStore.hpp"
+#include "extension/trial/WhatSonTrialClientIdentityStore.hpp"
+#include "extension/trial/WhatSonTrialSecureStore.hpp"
 
 #include <QDate>
 #include <QString>

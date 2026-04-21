@@ -1,4 +1,4 @@
-#include "ContentsGutterMarkerBridge.hpp"
+#include "app/models/editor/bridge/ContentsGutterMarkerBridge.hpp"
 
 #include <QVariantMap>
 

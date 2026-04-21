@@ -1,9 +1,9 @@
-#include "WhatSonFoldersHierarchyParser.hpp"
+#include "app/models/file/hierarchy/folders/WhatSonFoldersHierarchyParser.hpp"
 
-#include "../WhatSonFolderIdentity.hpp"
-#include "models/file/WhatSonDebugTrace.hpp"
-#include "WhatSonFoldersHierarchyStore.hpp"
-#include "models/file/note/WhatSonNoteFolderSemantics.hpp"
+#include "app/models/file/hierarchy/WhatSonFolderIdentity.hpp"
+#include "app/models/file/WhatSonDebugTrace.hpp"
+#include "app/models/file/hierarchy/folders/WhatSonFoldersHierarchyStore.hpp"
+#include "app/models/file/note/WhatSonNoteFolderSemantics.hpp"
 
 #include <QJsonArray>
 #include <QJsonDocument>

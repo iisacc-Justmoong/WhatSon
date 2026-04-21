@@ -1,6 +1,6 @@
 #pragma once
 
-#include "EditorViewState.hpp"
+#include "app/viewmodel/navigationbar/EditorViewState.hpp"
 
 #include <QObject>
 #include <QString>

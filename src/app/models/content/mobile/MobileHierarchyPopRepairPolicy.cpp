@@ -1,4 +1,4 @@
-#include "MobileHierarchyPopRepairPolicy.hpp"
+#include "app/models/content/mobile/MobileHierarchyPopRepairPolicy.hpp"
 
 namespace
 {

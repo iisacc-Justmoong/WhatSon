@@ -1,4 +1,4 @@
-#include "ContentsDisplaySessionCoordinator.hpp"
+#include "app/models/content/display/ContentsDisplaySessionCoordinator.hpp"
 
 ContentsDisplaySessionCoordinator::ContentsDisplaySessionCoordinator(QObject* parent)
     : QObject(parent)

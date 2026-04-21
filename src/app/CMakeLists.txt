@@ -193,7 +193,10 @@ function(whatson_app_register_directory_qml base_dir)
 endfunction()
 
 qt_add_executable(WhatSon main.cpp)
-target_include_directories(WhatSon PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
+target_include_directories(WhatSon PRIVATE
+        "${CMAKE_SOURCE_DIR}/src"
+        "${CMAKE_CURRENT_SOURCE_DIR}"
+)
 whatson_app_register_directory_include_directories("${CMAKE_CURRENT_SOURCE_DIR}/models")
 
 if (WHATSON_IS_TRIAL_BUILD AND NOT ANDROID AND NOT (APPLE AND CMAKE_SYSTEM_NAME STREQUAL "iOS"))

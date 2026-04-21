@@ -1,6 +1,6 @@
-#include "WhatSonPermissionBootstrapper.hpp"
+#include "app/permissions/WhatSonPermissionBootstrapper.hpp"
 
-#include "permissions/ApplePermissionBridge.hpp"
+#include "app/permissions/ApplePermissionBridge.hpp"
 
 #include <QCoreApplication>
 #include <QSettings>

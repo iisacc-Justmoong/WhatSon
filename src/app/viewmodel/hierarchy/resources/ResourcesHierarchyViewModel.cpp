@@ -1,11 +1,11 @@
-#include "ResourcesHierarchyViewModel.hpp"
+#include "app/viewmodel/hierarchy/resources/ResourcesHierarchyViewModel.hpp"
 
-#include "models/file/WhatSonDebugTrace.hpp"
-#include "models/file/hierarchy/resources/WhatSonResourcePackageSupport.hpp"
-#include "models/file/hierarchy/resources/WhatSonResourcesHierarchyParser.hpp"
-#include "models/file/hierarchy/resources/WhatSonResourcesHierarchyStore.hpp"
-#include "viewmodel/hierarchy/WhatSonHierarchyTreeItemSupport.hpp"
-#include "viewmodel/hierarchy/resources/ResourcesHierarchyViewModelSupport.hpp"
+#include "app/models/file/WhatSonDebugTrace.hpp"
+#include "app/models/file/hierarchy/resources/WhatSonResourcePackageSupport.hpp"
+#include "app/models/file/hierarchy/resources/WhatSonResourcesHierarchyParser.hpp"
+#include "app/models/file/hierarchy/resources/WhatSonResourcesHierarchyStore.hpp"
+#include "app/viewmodel/hierarchy/WhatSonHierarchyTreeItemSupport.hpp"
+#include "app/viewmodel/hierarchy/resources/ResourcesHierarchyViewModelSupport.hpp"
 
 #include <QDir>
 #include <QFileInfo>

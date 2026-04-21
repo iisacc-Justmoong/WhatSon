@@ -1,7 +1,7 @@
-#include "WhatSonLocalNoteVersionStore.hpp"
+#include "app/models/file/diff/WhatSonLocalNoteVersionStore.hpp"
 
-#include "models/file/note/WhatSonNoteBodyPersistence.hpp"
-#include "models/file/note/WhatSonNoteHeaderCreator.hpp"
+#include "app/models/file/note/WhatSonNoteBodyPersistence.hpp"
+#include "app/models/file/note/WhatSonNoteHeaderCreator.hpp"
 
 #include <QDateTime>
 #include <QDir>

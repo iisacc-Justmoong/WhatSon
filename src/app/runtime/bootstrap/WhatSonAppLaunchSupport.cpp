@@ -1,4 +1,4 @@
-#include "WhatSonAppLaunchSupport.hpp"
+#include "app/runtime/bootstrap/WhatSonAppLaunchSupport.hpp"
 
 #include <QCommandLineOption>
 #include <QCommandLineParser>

@@ -1,4 +1,4 @@
-#include "WhatSonTrialSecureStore.hpp"
+#include "extension/trial/WhatSonTrialSecureStore.hpp"
 
 #include <QByteArray>
 #include <QProcess>

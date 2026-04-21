@@ -1,13 +1,13 @@
-#include "WhatSonLocalNoteFileStore.hpp"
+#include "app/models/file/note/WhatSonLocalNoteFileStore.hpp"
 
-#include "WhatSonNoteBodyPersistence.hpp"
-#include "WhatSonNoteHeaderCreator.hpp"
-#include "models/file/diff/WhatSonLocalNoteVersionStore.hpp"
-#include "models/file/statistic/WhatSonNoteFileStatSupport.hpp"
-#include "WhatSonNoteHeaderParser.hpp"
-#include "models/file/hierarchy/resources/WhatSonResourcePackageSupport.hpp"
-#include "models/file/hierarchy/tags/WhatSonTagsHierarchyParser.hpp"
-#include "models/file/hierarchy/tags/WhatSonTagsHierarchyStore.hpp"
+#include "app/models/file/note/WhatSonNoteBodyPersistence.hpp"
+#include "app/models/file/note/WhatSonNoteHeaderCreator.hpp"
+#include "app/models/file/diff/WhatSonLocalNoteVersionStore.hpp"
+#include "app/models/file/statistic/WhatSonNoteFileStatSupport.hpp"
+#include "app/models/file/note/WhatSonNoteHeaderParser.hpp"
+#include "app/models/file/hierarchy/resources/WhatSonResourcePackageSupport.hpp"
+#include "app/models/file/hierarchy/tags/WhatSonTagsHierarchyParser.hpp"
+#include "app/models/file/hierarchy/tags/WhatSonTagsHierarchyStore.hpp"
 
 #include <QDateTime>
 #include <QDir>

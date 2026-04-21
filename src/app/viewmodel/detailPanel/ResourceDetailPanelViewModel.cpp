@@ -1,6 +1,6 @@
-#include "ResourceDetailPanelViewModel.hpp"
+#include "app/viewmodel/detailPanel/ResourceDetailPanelViewModel.hpp"
 
-#include "viewmodel/hierarchy/resources/ResourcesListModel.hpp"
+#include "app/viewmodel/hierarchy/resources/ResourcesListModel.hpp"
 
 ResourceDetailPanelViewModel::ResourceDetailPanelViewModel(QObject* parent)
     : QObject(parent)

@@ -1,7 +1,7 @@
-#include "models/editor/bridge/ContentsEditorSelectionBridge.hpp"
+#include "app/models/editor/bridge/ContentsEditorSelectionBridge.hpp"
 
-#include "models/file/WhatSonDebugTrace.hpp"
-#include "models/file/sync/ContentsEditorIdleSyncController.hpp"
+#include "app/models/file/WhatSonDebugTrace.hpp"
+#include "app/models/file/sync/ContentsEditorIdleSyncController.hpp"
 
 #include <QMetaProperty>
 #include <QQmlEngine>

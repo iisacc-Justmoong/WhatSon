@@ -1,7 +1,7 @@
-#include "SidebarHierarchyViewModel.hpp"
+#include "app/viewmodel/sidebar/SidebarHierarchyViewModel.hpp"
 
-#include "policy/ArchitecturePolicyLock.hpp"
-#include "viewmodel/sidebar/HierarchySidebarDomain.hpp"
+#include "app/policy/ArchitecturePolicyLock.hpp"
+#include "app/viewmodel/sidebar/HierarchySidebarDomain.hpp"
 
 #include <QDebug>
 #include <QQmlEngine>

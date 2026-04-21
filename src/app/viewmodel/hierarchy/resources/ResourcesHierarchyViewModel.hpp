@@ -1,10 +1,10 @@
 #pragma once
 
-#include "models/file/hierarchy/resources/WhatSonResourcesHierarchyStore.hpp"
-#include "viewmodel/hierarchy/IHierarchyCapabilities.hpp"
-#include "viewmodel/hierarchy/IHierarchyViewModel.hpp"
-#include "viewmodel/hierarchy/resources/ResourcesListModel.hpp"
-#include "viewmodel/hierarchy/resources/ResourcesHierarchyModel.hpp"
+#include "app/models/file/hierarchy/resources/WhatSonResourcesHierarchyStore.hpp"
+#include "app/viewmodel/hierarchy/IHierarchyCapabilities.hpp"
+#include "app/viewmodel/hierarchy/IHierarchyViewModel.hpp"
+#include "app/viewmodel/hierarchy/resources/ResourcesListModel.hpp"
+#include "app/viewmodel/hierarchy/resources/ResourcesHierarchyModel.hpp"
 
 #include <QStringList>
 #include <QVariantList>

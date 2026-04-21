@@ -31,6 +31,8 @@ set(WHATSON_CPP_REGRESSION_TEST_SOURCES
         "${CMAKE_SOURCE_DIR}/src/app/models/sensor/WeeklyUnusedNote.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/sensor/MonthlyUnusedNote.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/sensor/UnusedResourcesSensor.cpp"
+        "${CMAKE_SOURCE_DIR}/src/app/models/content/mobile/MobileHierarchyRouteStateStore.cpp"
+        "${CMAKE_SOURCE_DIR}/src/app/models/content/mobile/MobileHierarchySelectionCoordinator.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/editor/parser/ContentsWsnBodyBlockParser.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/editor/renderer/ContentsHtmlBlockRenderPipeline.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/display/paper/ContentsTextFormatRenderer.cpp"
@@ -120,10 +122,8 @@ add_executable(whatson_cpp_regression_tests
         ${WHATSON_CPP_REGRESSION_TEST_SOURCES}
 )
 target_include_directories(whatson_cpp_regression_tests PRIVATE
-        "${CMAKE_CURRENT_SOURCE_DIR}"
-        "${CMAKE_SOURCE_DIR}/src/app"
-        "${CMAKE_SOURCE_DIR}/src/app/models"
-        "${CMAKE_SOURCE_DIR}/src/app/models/file"
+        "${CMAKE_SOURCE_DIR}"
+        "${CMAKE_SOURCE_DIR}/src"
 )
 target_link_libraries(whatson_cpp_regression_tests PRIVATE
         Qt6::Core

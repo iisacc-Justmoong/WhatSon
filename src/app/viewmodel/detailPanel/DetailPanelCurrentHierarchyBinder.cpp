@@ -1,9 +1,9 @@
-#include "DetailPanelCurrentHierarchyBinder.hpp"
+#include "app/viewmodel/detailPanel/DetailPanelCurrentHierarchyBinder.hpp"
 
-#include "NoteDetailPanelViewModel.hpp"
-#include "ResourceDetailPanelViewModel.hpp"
-#include "viewmodel/sidebar/HierarchySidebarDomain.hpp"
-#include "viewmodel/sidebar/IActiveHierarchyContextSource.hpp"
+#include "app/viewmodel/detailPanel/NoteDetailPanelViewModel.hpp"
+#include "app/viewmodel/detailPanel/ResourceDetailPanelViewModel.hpp"
+#include "app/viewmodel/sidebar/HierarchySidebarDomain.hpp"
+#include "app/viewmodel/sidebar/IActiveHierarchyContextSource.hpp"
 
 DetailPanelCurrentHierarchyBinder::DetailPanelCurrentHierarchyBinder(QObject* parent)
     : QObject(parent)

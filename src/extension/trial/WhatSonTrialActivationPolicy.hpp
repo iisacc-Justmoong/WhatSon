@@ -1,7 +1,7 @@
 #pragma once
 
-#include "WhatSonRegisterManager.hpp"
-#include "WhatSonTrialInstallStore.hpp"
+#include "app/register/WhatSonRegisterManager.hpp"
+#include "extension/trial/WhatSonTrialInstallStore.hpp"
 
 #include <QDate>
 #include <QObject>

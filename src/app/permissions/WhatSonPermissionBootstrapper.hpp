@@ -6,7 +6,7 @@
 #include <functional>
 #include <utility>
 
-#include "permissions/ApplePermissionBridge.hpp"
+#include "app/permissions/ApplePermissionBridge.hpp"
 
 #include <QCoreApplication>
 #include <QtCore/qpermissions.h>

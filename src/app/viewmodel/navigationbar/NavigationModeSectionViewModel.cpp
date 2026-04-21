@@ -1,4 +1,4 @@
-#include "NavigationModeSectionViewModel.hpp"
+#include "app/viewmodel/navigationbar/NavigationModeSectionViewModel.hpp"
 
 NavigationModeSectionViewModel::NavigationModeSectionViewModel(
     NavigationMode mode,

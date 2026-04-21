@@ -1,8 +1,8 @@
-#include "DetailPanelViewModel.hpp"
+#include "app/viewmodel/detailPanel/DetailPanelViewModel.hpp"
 
-#include "DetailPanelToolbarItemsFactory.hpp"
-#include "models/file/WhatSonDebugTrace.hpp"
-#include "models/file/note/WhatSonNoteFolderSemantics.hpp"
+#include "app/viewmodel/detailPanel/DetailPanelToolbarItemsFactory.hpp"
+#include "app/models/file/WhatSonDebugTrace.hpp"
+#include "app/models/file/note/WhatSonNoteFolderSemantics.hpp"
 
 #include <QSet>
 

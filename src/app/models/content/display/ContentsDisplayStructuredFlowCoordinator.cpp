@@ -1,4 +1,4 @@
-#include "ContentsDisplayStructuredFlowCoordinator.hpp"
+#include "app/models/content/display/ContentsDisplayStructuredFlowCoordinator.hpp"
 
 #include <QtGlobal>
 

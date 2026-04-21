@@ -1,6 +1,6 @@
 #pragma once
 
-#include "WhatSonTrialClientIdentityStore.hpp"
+#include "extension/trial/WhatSonTrialClientIdentityStore.hpp"
 
 #include <QString>
 

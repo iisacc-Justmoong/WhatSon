@@ -1,4 +1,4 @@
-#include "MobileHierarchyCanonicalRoutePlanner.hpp"
+#include "app/models/content/mobile/MobileHierarchyCanonicalRoutePlanner.hpp"
 
 #include <QtGlobal>
 

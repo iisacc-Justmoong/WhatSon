@@ -1,4 +1,4 @@
-#include "ContentsPaperSelection.hpp"
+#include "app/models/display/paper/ContentsPaperSelection.hpp"
 
 ContentsPaperSelection::ContentsPaperSelection(QObject* parent)
     : QObject(parent)

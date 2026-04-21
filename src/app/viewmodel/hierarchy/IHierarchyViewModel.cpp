@@ -1,1 +1,1 @@
-#include "IHierarchyViewModel.hpp"
+#include "app/viewmodel/hierarchy/IHierarchyViewModel.hpp"

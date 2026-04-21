@@ -1,10 +1,10 @@
 #pragma once
 
-#include "models/file/hierarchy/library/LibraryNoteRecord.hpp"
-#include "viewmodel/hierarchy/IHierarchyCapabilities.hpp"
-#include "viewmodel/hierarchy/bookmarks/BookmarksNoteListModel.hpp"
-#include "viewmodel/hierarchy/bookmarks/BookmarksHierarchyModel.hpp"
-#include "viewmodel/hierarchy/IHierarchyViewModel.hpp"
+#include "app/models/file/hierarchy/library/LibraryNoteRecord.hpp"
+#include "app/viewmodel/hierarchy/IHierarchyCapabilities.hpp"
+#include "app/viewmodel/hierarchy/bookmarks/BookmarksNoteListModel.hpp"
+#include "app/viewmodel/hierarchy/bookmarks/BookmarksHierarchyModel.hpp"
+#include "app/viewmodel/hierarchy/IHierarchyViewModel.hpp"
 
 #include <QPointer>
 #include <QVariantList>

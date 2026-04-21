@@ -1,6 +1,6 @@
 #pragma once
 
-#include "NavigationModeState.hpp"
+#include "app/viewmodel/navigationbar/NavigationModeState.hpp"
 
 #include <QObject>
 #include <QString>

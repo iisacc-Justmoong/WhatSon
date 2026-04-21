@@ -1,6 +1,6 @@
-#include "WhatSonSystemIoGateway.hpp"
+#include "app/models/file/IO/WhatSonSystemIoGateway.hpp"
 
-#include "models/file/WhatSonDebugTrace.hpp"
+#include "app/models/file/WhatSonDebugTrace.hpp"
 
 #include <QDir>
 #include <QFile>

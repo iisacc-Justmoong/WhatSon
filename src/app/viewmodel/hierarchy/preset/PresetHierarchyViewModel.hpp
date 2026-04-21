@@ -1,9 +1,9 @@
 #pragma once
 
-#include "models/file/hierarchy/preset/WhatSonPresetHierarchyStore.hpp"
-#include "viewmodel/hierarchy/IHierarchyCapabilities.hpp"
-#include "viewmodel/hierarchy/IHierarchyViewModel.hpp"
-#include "viewmodel/hierarchy/preset/PresetHierarchyModel.hpp"
+#include "app/models/file/hierarchy/preset/WhatSonPresetHierarchyStore.hpp"
+#include "app/viewmodel/hierarchy/IHierarchyCapabilities.hpp"
+#include "app/viewmodel/hierarchy/IHierarchyViewModel.hpp"
+#include "app/viewmodel/hierarchy/preset/PresetHierarchyModel.hpp"
 
 #include <QStringList>
 #include <QVariantList>

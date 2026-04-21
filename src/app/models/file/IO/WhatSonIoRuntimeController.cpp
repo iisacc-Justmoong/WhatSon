@@ -1,6 +1,6 @@
-#include "WhatSonIoRuntimeController.hpp"
+#include "app/models/file/IO/WhatSonIoRuntimeController.hpp"
 
-#include "models/file/WhatSonDebugTrace.hpp"
+#include "app/models/file/WhatSonDebugTrace.hpp"
 
 #include <QDateTime>
 

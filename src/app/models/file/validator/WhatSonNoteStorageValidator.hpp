@@ -1,7 +1,7 @@
 #pragma once
 
-#include "models/file/IO/WhatSonSystemIoGateway.hpp"
-#include "models/file/hierarchy/library/LibraryNoteRecord.hpp"
+#include "app/models/file/IO/WhatSonSystemIoGateway.hpp"
+#include "app/models/file/hierarchy/library/LibraryNoteRecord.hpp"
 
 #include <QString>
 

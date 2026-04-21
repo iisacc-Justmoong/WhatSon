@@ -1,6 +1,6 @@
-#include "DetailHierarchySelectionViewModel.hpp"
+#include "app/viewmodel/detailPanel/DetailHierarchySelectionViewModel.hpp"
 
-#include "models/file/WhatSonDebugTrace.hpp"
+#include "app/models/file/WhatSonDebugTrace.hpp"
 
 #include <QVariantMap>
 

@@ -1,4 +1,4 @@
-#include "ContentsDisplayContextMenuCoordinator.hpp"
+#include "app/models/content/display/ContentsDisplayContextMenuCoordinator.hpp"
 
 #include <QtGlobal>
 

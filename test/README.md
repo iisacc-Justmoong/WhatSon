@@ -140,3 +140,5 @@ ctest --test-dir build --output-on-failure -L cpp_regression
   bright screen-only text colors cannot leak onto the white paper surface in `Page` / `Print` mode.
 - Developer quality gates now also resolve their QML/C++ file lists from the repository root, so `whatson_qmllint`
   and `whatson_clang_tidy` no longer degrade into empty-input no-op runs.
+- Project-local C++ headers now also lock repository-absolute include paths, so `app/...`, `extension/...`, and
+  `test/...` remain stable even when domains move under `src/app/models` or regression suites move under `test/cpp`.

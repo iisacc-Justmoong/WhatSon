@@ -1,4 +1,4 @@
-#include "WhatSonQmlContextBinder.hpp"
+#include "app/runtime/bootstrap/WhatSonQmlContextBinder.hpp"
 
 #include <QQmlContext>
 

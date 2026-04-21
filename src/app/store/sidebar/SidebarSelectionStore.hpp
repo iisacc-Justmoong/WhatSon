@@ -1,6 +1,6 @@
 #pragma once
 
-#include "store/sidebar/ISidebarSelectionStore.hpp"
+#include "app/store/sidebar/ISidebarSelectionStore.hpp"
 
 class SidebarSelectionStore final : public ISidebarSelectionStore
 {

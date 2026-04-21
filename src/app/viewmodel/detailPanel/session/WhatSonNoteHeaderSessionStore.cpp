@@ -1,8 +1,8 @@
-#include "WhatSonNoteHeaderSessionStore.hpp"
+#include "app/viewmodel/detailPanel/session/WhatSonNoteHeaderSessionStore.hpp"
 
-#include "models/file/note/WhatSonNoteFolderBindingService.hpp"
-#include "models/file/note/WhatSonLocalNoteFileStore.hpp"
-#include "models/file/note/WhatSonNoteHeaderParser.hpp"
+#include "app/models/file/note/WhatSonNoteFolderBindingService.hpp"
+#include "app/models/file/note/WhatSonLocalNoteFileStore.hpp"
+#include "app/models/file/note/WhatSonNoteHeaderParser.hpp"
 
 #include <QDir>
 #include <QFile>

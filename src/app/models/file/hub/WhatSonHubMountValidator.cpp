@@ -1,8 +1,8 @@
-#include "WhatSonHubMountValidator.hpp"
+#include "app/models/file/hub/WhatSonHubMountValidator.hpp"
 
-#include "WhatSonHubPathUtils.hpp"
-#include "platform/Android/WhatSonAndroidStorageBackend.hpp"
-#include "platform/Apple/AppleSecurityScopedResourceAccess.hpp"
+#include "app/models/file/hub/WhatSonHubPathUtils.hpp"
+#include "app/platform/Android/WhatSonAndroidStorageBackend.hpp"
+#include "app/platform/Apple/AppleSecurityScopedResourceAccess.hpp"
 
 #include <QDir>
 #include <QFileInfo>

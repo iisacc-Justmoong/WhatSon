@@ -1,6 +1,6 @@
 #pragma once
 
-#include "WhatSonLocalNoteDocument.hpp"
+#include "app/models/file/note/WhatSonLocalNoteDocument.hpp"
 
 #include <QMetaObject>
 #include <QObject>

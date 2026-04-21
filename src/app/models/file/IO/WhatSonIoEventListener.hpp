@@ -1,6 +1,6 @@
 #pragma once
 
-#include "WhatSonIoEvent.hpp"
+#include "app/models/file/IO/WhatSonIoEvent.hpp"
 
 #include <QString>
 #include <QStringList>

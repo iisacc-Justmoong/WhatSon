@@ -1,9 +1,9 @@
-#include "ContentsStructuredBlockRenderer.hpp"
+#include "app/models/editor/renderer/ContentsStructuredBlockRenderer.hpp"
 
-#include "models/editor/parser/ContentsWsnBodyBlockParser.hpp"
-#include "models/file/WhatSonDebugTrace.hpp"
-#include "models/file/note/WhatSonNoteBodySemanticTagSupport.hpp"
-#include "models/file/validator/WhatSonStructuredTagLinter.hpp"
+#include "app/models/editor/parser/ContentsWsnBodyBlockParser.hpp"
+#include "app/models/file/WhatSonDebugTrace.hpp"
+#include "app/models/file/note/WhatSonNoteBodySemanticTagSupport.hpp"
+#include "app/models/file/validator/WhatSonStructuredTagLinter.hpp"
 
 #include <QMetaObject>
 #include <QPointer>

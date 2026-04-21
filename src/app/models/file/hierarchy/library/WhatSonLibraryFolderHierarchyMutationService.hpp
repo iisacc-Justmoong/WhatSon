@@ -1,8 +1,8 @@
 #pragma once
 
-#include "models/file/hierarchy/WhatSonFolderDepthEntry.hpp"
-#include "models/file/hierarchy/library/LibraryNoteRecord.hpp"
-#include "models/file/note/WhatSonNoteFolderBindingRepository.hpp"
+#include "app/models/file/hierarchy/WhatSonFolderDepthEntry.hpp"
+#include "app/models/file/hierarchy/library/LibraryNoteRecord.hpp"
+#include "app/models/file/note/WhatSonNoteFolderBindingRepository.hpp"
 
 #include <QHash>
 #include <QString>

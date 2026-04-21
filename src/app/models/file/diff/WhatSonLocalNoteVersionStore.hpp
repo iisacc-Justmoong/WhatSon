@@ -1,8 +1,8 @@
 #pragma once
 
-#include "models/file/note/WhatSonLocalNoteDocument.hpp"
-#include "models/file/note/WhatSonLocalNoteFileStore.hpp"
-#include "models/file/IO/WhatSonSystemIoGateway.hpp"
+#include "app/models/file/note/WhatSonLocalNoteDocument.hpp"
+#include "app/models/file/note/WhatSonLocalNoteFileStore.hpp"
+#include "app/models/file/IO/WhatSonSystemIoGateway.hpp"
 
 #include <QString>
 #include <QVector>

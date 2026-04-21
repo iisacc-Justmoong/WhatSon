@@ -1,14 +1,14 @@
 #pragma once
 
-#include "DetailHierarchySelectionViewModel.hpp"
-#include "DetailContentSectionViewModel.hpp"
-#include "DetailCurrentNoteContextBridge.hpp"
-#include "DetailFileStatViewModel.hpp"
-#include "DetailPropertiesViewModel.hpp"
-#include "DetailNoteHeaderSelectionSourceViewModel.hpp"
-#include "DetailPanelState.hpp"
-#include "session/WhatSonFoldersHierarchySessionService.hpp"
-#include "session/WhatSonNoteHeaderSessionStore.hpp"
+#include "app/viewmodel/detailPanel/DetailHierarchySelectionViewModel.hpp"
+#include "app/viewmodel/detailPanel/DetailContentSectionViewModel.hpp"
+#include "app/viewmodel/detailPanel/DetailCurrentNoteContextBridge.hpp"
+#include "app/viewmodel/detailPanel/DetailFileStatViewModel.hpp"
+#include "app/viewmodel/detailPanel/DetailPropertiesViewModel.hpp"
+#include "app/viewmodel/detailPanel/DetailNoteHeaderSelectionSourceViewModel.hpp"
+#include "app/viewmodel/detailPanel/DetailPanelState.hpp"
+#include "app/viewmodel/detailPanel/session/WhatSonFoldersHierarchySessionService.hpp"
+#include "app/viewmodel/detailPanel/session/WhatSonNoteHeaderSessionStore.hpp"
 
 #include <QMetaObject>
 #include <QObject>

@@ -1,8 +1,8 @@
-#include "ContentsEditorSessionController.hpp"
+#include "app/models/editor/session/ContentsEditorSessionController.hpp"
 
-#include "agenda/ContentsAgendaBackend.hpp"
-#include "models/file/WhatSonDebugTrace.hpp"
-#include "models/editor/bridge/ContentsEditorSelectionBridge.hpp"
+#include "app/models/agenda/ContentsAgendaBackend.hpp"
+#include "app/models/file/WhatSonDebugTrace.hpp"
+#include "app/models/editor/bridge/ContentsEditorSelectionBridge.hpp"
 
 #include <QDateTime>
 #include <QRegularExpression>

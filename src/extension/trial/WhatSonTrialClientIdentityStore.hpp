@@ -1,6 +1,6 @@
 #pragma once
 
-#include "WhatSonTrialSecureStore.hpp"
+#include "extension/trial/WhatSonTrialSecureStore.hpp"
 
 #include <QString>
 

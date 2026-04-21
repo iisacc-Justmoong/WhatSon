@@ -1,9 +1,9 @@
 #pragma once
 
-#include "ProjectsHierarchyModel.hpp"
+#include "app/viewmodel/hierarchy/projects/ProjectsHierarchyModel.hpp"
 
-#include "viewmodel/hierarchy/WhatSonHierarchyIoSupport.hpp"
-#include "viewmodel/hierarchy/WhatSonHierarchyTreeItemSupport.hpp"
+#include "app/viewmodel/hierarchy/WhatSonHierarchyIoSupport.hpp"
+#include "app/viewmodel/hierarchy/WhatSonHierarchyTreeItemSupport.hpp"
 
 #include <QVariantList>
 #include <QVariantMap>

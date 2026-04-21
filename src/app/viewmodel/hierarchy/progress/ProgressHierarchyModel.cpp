@@ -1,6 +1,6 @@
-#include "ProgressHierarchyModel.hpp"
+#include "app/viewmodel/hierarchy/progress/ProgressHierarchyModel.hpp"
 
-#include "models/file/WhatSonDebugTrace.hpp"
+#include "app/models/file/WhatSonDebugTrace.hpp"
 
 #include <stdexcept>
 #include <utility>

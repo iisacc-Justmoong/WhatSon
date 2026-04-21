@@ -1,4 +1,4 @@
-#include "ContentsDisplayMinimapCoordinator.hpp"
+#include "app/models/content/display/ContentsDisplayMinimapCoordinator.hpp"
 
 #include <QtGlobal>
 

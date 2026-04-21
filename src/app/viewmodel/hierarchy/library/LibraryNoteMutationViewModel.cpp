@@ -1,4 +1,4 @@
-#include "LibraryNoteMutationViewModel.hpp"
+#include "app/viewmodel/hierarchy/library/LibraryNoteMutationViewModel.hpp"
 
 #include <QStringList>
 #include <QtGlobal>

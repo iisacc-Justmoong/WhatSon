@@ -1,6 +1,6 @@
-#include "WhatSonHubSyncController.hpp"
+#include "app/models/file/sync/WhatSonHubSyncController.hpp"
 
-#include "models/file/hub/WhatSonHubPathUtils.hpp"
+#include "app/models/file/hub/WhatSonHubPathUtils.hpp"
 
 #include <QCryptographicHash>
 #include <QDir>

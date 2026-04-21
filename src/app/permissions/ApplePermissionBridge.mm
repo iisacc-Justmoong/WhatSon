@@ -1,5 +1,5 @@
-#include "ApplePermissionBridge.hpp"
-#include "models/file/WhatSonDebugTrace.hpp"
+#include "app/permissions/ApplePermissionBridge.hpp"
+#include "app/models/file/WhatSonDebugTrace.hpp"
 
 #include <QCoreApplication>
 #include <QDesktopServices>

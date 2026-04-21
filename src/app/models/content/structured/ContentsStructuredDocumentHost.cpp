@@ -1,9 +1,9 @@
-#include "ContentsStructuredDocumentHost.hpp"
+#include "app/models/content/structured/ContentsStructuredDocumentHost.hpp"
 
-#include "ContentsStructuredDocumentCollectionPolicy.hpp"
-#include "ContentsStructuredDocumentFocusPolicy.hpp"
-#include "ContentsStructuredDocumentMutationPolicy.hpp"
-#include "models/file/WhatSonDebugTrace.hpp"
+#include "app/models/content/structured/ContentsStructuredDocumentCollectionPolicy.hpp"
+#include "app/models/content/structured/ContentsStructuredDocumentFocusPolicy.hpp"
+#include "app/models/content/structured/ContentsStructuredDocumentMutationPolicy.hpp"
+#include "app/models/file/WhatSonDebugTrace.hpp"
 
 #include <cmath>
 

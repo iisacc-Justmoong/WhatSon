@@ -1,4 +1,4 @@
-#include "MobileHierarchyBackSwipeCoordinator.hpp"
+#include "app/models/content/mobile/MobileHierarchyBackSwipeCoordinator.hpp"
 
 #include <QtGlobal>
 

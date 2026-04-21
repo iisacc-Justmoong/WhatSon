@@ -1,4 +1,4 @@
-#include "ArchitecturePolicyLock.hpp"
+#include "app/policy/ArchitecturePolicyLock.hpp"
 
 #include <array>
 #include <atomic>

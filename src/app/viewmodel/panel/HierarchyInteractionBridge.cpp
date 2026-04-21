@@ -1,7 +1,7 @@
-#include "HierarchyInteractionBridge.hpp"
+#include "app/viewmodel/panel/HierarchyInteractionBridge.hpp"
 
-#include "policy/ArchitecturePolicyLock.hpp"
-#include "viewmodel/hierarchy/IHierarchyCapabilities.hpp"
+#include "app/policy/ArchitecturePolicyLock.hpp"
+#include "app/viewmodel/hierarchy/IHierarchyCapabilities.hpp"
 
 #include <QVariantMap>
 

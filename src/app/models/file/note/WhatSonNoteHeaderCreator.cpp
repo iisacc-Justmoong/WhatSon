@@ -1,7 +1,7 @@
-#include "WhatSonNoteHeaderCreator.hpp"
+#include "app/models/file/note/WhatSonNoteHeaderCreator.hpp"
 
-#include "WhatSonBookmarkColorPalette.hpp"
-#include "models/file/WhatSonDebugTrace.hpp"
+#include "app/models/file/note/WhatSonBookmarkColorPalette.hpp"
+#include "app/models/file/WhatSonDebugTrace.hpp"
 
 #include <QFileInfo>
 

@@ -1,11 +1,11 @@
-#include "ResourcesImportViewModel.hpp"
+#include "app/models/file/import/ResourcesImportViewModel.hpp"
 
-#include "WhatSonClipboardResourceImportFileNamePolicy.hpp"
-#include "models/file/WhatSonDebugTrace.hpp"
-#include "models/file/hierarchy/resources/WhatSonResourcePackageSupport.hpp"
-#include "models/file/hierarchy/resources/WhatSonResourcesHierarchyParser.hpp"
-#include "models/file/hierarchy/resources/WhatSonResourcesHierarchyStore.hpp"
-#include "models/file/hub/WhatSonHubPathUtils.hpp"
+#include "app/models/file/import/WhatSonClipboardResourceImportFileNamePolicy.hpp"
+#include "app/models/file/WhatSonDebugTrace.hpp"
+#include "app/models/file/hierarchy/resources/WhatSonResourcePackageSupport.hpp"
+#include "app/models/file/hierarchy/resources/WhatSonResourcesHierarchyParser.hpp"
+#include "app/models/file/hierarchy/resources/WhatSonResourcesHierarchyStore.hpp"
+#include "app/models/file/hub/WhatSonHubPathUtils.hpp"
 
 #include <QClipboard>
 #include <QDir>

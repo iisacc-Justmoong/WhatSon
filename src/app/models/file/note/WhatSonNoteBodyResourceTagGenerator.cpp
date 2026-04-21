@@ -1,6 +1,6 @@
-#include "WhatSonNoteBodyResourceTagGenerator.hpp"
+#include "app/models/file/note/WhatSonNoteBodyResourceTagGenerator.hpp"
 
-#include "models/file/hierarchy/resources/WhatSonResourcePackageSupport.hpp"
+#include "app/models/file/hierarchy/resources/WhatSonResourcePackageSupport.hpp"
 
 #include <QStringList>
 

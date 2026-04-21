@@ -1,9 +1,9 @@
 #pragma once
 
-#include "ResourcesHierarchyModel.hpp"
+#include "app/viewmodel/hierarchy/resources/ResourcesHierarchyModel.hpp"
 
-#include "models/file/hierarchy/resources/WhatSonResourcePackageSupport.hpp"
-#include "viewmodel/hierarchy/WhatSonHierarchyIoSupport.hpp"
+#include "app/models/file/hierarchy/resources/WhatSonResourcePackageSupport.hpp"
+#include "app/viewmodel/hierarchy/WhatSonHierarchyIoSupport.hpp"
 
 #include <QHash>
 #include <QMetaType>

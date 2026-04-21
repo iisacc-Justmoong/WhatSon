@@ -1,6 +1,6 @@
 #pragma once
 
-#include "runtime/threading/IWhatSonRuntimeParallelLoader.hpp"
+#include "app/runtime/threading/IWhatSonRuntimeParallelLoader.hpp"
 
 #include <QSet>
 #include <QString>

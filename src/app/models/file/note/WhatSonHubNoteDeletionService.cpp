@@ -1,7 +1,7 @@
-#include "WhatSonHubNoteDeletionService.hpp"
+#include "app/models/file/note/WhatSonHubNoteDeletionService.hpp"
 
-#include "models/file/WhatSonDebugTrace.hpp"
-#include "models/file/statistic/WhatSonNoteFileStatSupport.hpp"
+#include "app/models/file/WhatSonDebugTrace.hpp"
+#include "app/models/file/statistic/WhatSonNoteFileStatSupport.hpp"
 
 #include <QDateTime>
 #include <QDir>

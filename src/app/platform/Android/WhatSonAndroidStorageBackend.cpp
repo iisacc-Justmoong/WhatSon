@@ -1,6 +1,6 @@
-#include "WhatSonAndroidStorageBackend.hpp"
+#include "app/platform/Android/WhatSonAndroidStorageBackend.hpp"
 
-#include "models/file/hub/WhatSonHubPathUtils.hpp"
+#include "app/models/file/hub/WhatSonHubPathUtils.hpp"
 
 #include <QCoreApplication>
 #include <QCryptographicHash>

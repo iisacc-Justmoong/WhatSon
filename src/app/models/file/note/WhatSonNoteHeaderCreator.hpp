@@ -1,7 +1,7 @@
 #pragma once
 
-#include "WhatSonNoteCreator.hpp"
-#include "WhatSonNoteHeaderStore.hpp"
+#include "app/models/file/note/WhatSonNoteCreator.hpp"
+#include "app/models/file/note/WhatSonNoteHeaderStore.hpp"
 
 class WhatSonNoteHeaderCreator : public WhatSonNoteCreator
 {

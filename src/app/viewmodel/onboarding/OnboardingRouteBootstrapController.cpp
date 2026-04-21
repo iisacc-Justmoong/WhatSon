@@ -1,6 +1,6 @@
-#include "OnboardingRouteBootstrapController.hpp"
+#include "app/viewmodel/onboarding/OnboardingRouteBootstrapController.hpp"
 
-#include "IOnboardingHubController.hpp"
+#include "app/viewmodel/onboarding/IOnboardingHubController.hpp"
 
 namespace
 {

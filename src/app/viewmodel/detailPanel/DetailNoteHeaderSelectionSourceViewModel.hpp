@@ -1,6 +1,6 @@
 #pragma once
 
-#include "viewmodel/detailPanel/session/IWhatSonNoteHeaderSessionStore.hpp"
+#include "app/viewmodel/detailPanel/session/IWhatSonNoteHeaderSessionStore.hpp"
 
 #include <QMetaObject>
 #include <QObject>

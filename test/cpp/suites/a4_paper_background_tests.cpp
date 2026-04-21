@@ -1,4 +1,4 @@
-#include "../whatson_cpp_regression_tests.hpp"
+#include "test/cpp/whatson_cpp_regression_tests.hpp"
 
 void WhatSonCppRegressionTests::a4PaperBackground_exposesCanonicalMetricsAndAnchorsPrintRendererDefaults()
 {

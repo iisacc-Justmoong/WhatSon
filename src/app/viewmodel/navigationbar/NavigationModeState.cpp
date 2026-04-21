@@ -1,4 +1,4 @@
-#include "NavigationModeState.hpp"
+#include "app/viewmodel/navigationbar/NavigationModeState.hpp"
 
 namespace WhatSon::NavigationBar
 {

@@ -1,7 +1,7 @@
-#include "LibraryDraft.hpp"
+#include "app/models/file/hierarchy/library/LibraryDraft.hpp"
 
-#include "models/file/WhatSonDebugTrace.hpp"
-#include "note/WhatSonNoteFolderSemantics.hpp"
+#include "app/models/file/WhatSonDebugTrace.hpp"
+#include "app/models/file/note/WhatSonNoteFolderSemantics.hpp"
 
 #include <QDir>
 #include <QFile>

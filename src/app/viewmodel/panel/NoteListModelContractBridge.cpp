@@ -1,4 +1,4 @@
-#include "NoteListModelContractBridge.hpp"
+#include "app/viewmodel/panel/NoteListModelContractBridge.hpp"
 
 #include <QAbstractItemModel>
 #include <QMetaObject>

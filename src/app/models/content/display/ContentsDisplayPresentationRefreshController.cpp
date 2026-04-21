@@ -1,6 +1,6 @@
-#include "ContentsDisplayPresentationRefreshController.hpp"
+#include "app/models/content/display/ContentsDisplayPresentationRefreshController.hpp"
 
-#include "models/file/WhatSonDebugTrace.hpp"
+#include "app/models/file/WhatSonDebugTrace.hpp"
 
 ContentsDisplayPresentationRefreshController::ContentsDisplayPresentationRefreshController(QObject* parent)
     : QObject(parent)

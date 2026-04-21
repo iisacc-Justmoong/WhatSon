@@ -1,4 +1,4 @@
-#include "WhatSonIosHubPickerBridge.hpp"
+#include "app/platform/Apple/WhatSonIosHubPickerBridge.hpp"
 
 #if !defined(Q_OS_IOS)
 

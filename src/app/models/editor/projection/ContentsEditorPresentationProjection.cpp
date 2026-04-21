@@ -1,8 +1,8 @@
-#include "ContentsEditorPresentationProjection.hpp"
+#include "app/models/editor/projection/ContentsEditorPresentationProjection.hpp"
 
-#include "display/paper/ContentsTextFormatRenderer.hpp"
-#include "models/file/WhatSonDebugTrace.hpp"
-#include "models/editor/text/ContentsLogicalTextBridge.hpp"
+#include "app/models/display/paper/ContentsTextFormatRenderer.hpp"
+#include "app/models/file/WhatSonDebugTrace.hpp"
+#include "app/models/editor/text/ContentsLogicalTextBridge.hpp"
 
 ContentsEditorPresentationProjection::ContentsEditorPresentationProjection(QObject* parent)
     : QObject(parent)

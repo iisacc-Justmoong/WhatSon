@@ -1,8 +1,8 @@
-#include "ContentsHtmlBlockRenderPipeline.hpp"
+#include "app/models/editor/renderer/ContentsHtmlBlockRenderPipeline.hpp"
 
-#include "models/editor/parser/ContentsWsnBodyBlockParser.hpp"
-#include "models/file/note/WhatSonNoteBodyPersistence.hpp"
-#include "models/file/note/WhatSonNoteBodySemanticTagSupport.hpp"
+#include "app/models/editor/parser/ContentsWsnBodyBlockParser.hpp"
+#include "app/models/file/note/WhatSonNoteBodyPersistence.hpp"
+#include "app/models/file/note/WhatSonNoteBodySemanticTagSupport.hpp"
 
 #include <QRegularExpression>
 #include <QStringList>

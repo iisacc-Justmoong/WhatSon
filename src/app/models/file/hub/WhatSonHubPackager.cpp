@@ -1,13 +1,13 @@
-#include "WhatSonHubPackager.hpp"
+#include "app/models/file/hub/WhatSonHubPackager.hpp"
 
-#include "models/file/WhatSonDebugTrace.hpp"
-#include "WhatSonHubPathUtils.hpp"
+#include "app/models/file/WhatSonDebugTrace.hpp"
+#include "app/models/file/hub/WhatSonHubPathUtils.hpp"
 
 #include <QDir>
 #include <QFileInfo>
 
 #if defined(Q_OS_MACOS) || defined(Q_OS_IOS)
-#include "platform/Apple/WhatSonApplePackageAppearance.hpp"
+#include "app/platform/Apple/WhatSonApplePackageAppearance.hpp"
 #endif
 
 QString WhatSonHubPackager::packageExtension() const

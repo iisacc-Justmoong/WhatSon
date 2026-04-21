@@ -1,11 +1,11 @@
-#include "ContentsStructuredTagValidator.hpp"
+#include "app/models/file/validator/ContentsStructuredTagValidator.hpp"
 
-#include "WhatSonStructuredTagLinter.hpp"
-#include "models/file/WhatSonDebugTrace.hpp"
-#include "models/file/note/WhatSonLocalNoteDocument.hpp"
-#include "models/file/note/WhatSonLocalNoteFileStore.hpp"
-#include "models/file/note/WhatSonNoteBodyPersistence.hpp"
-#include "models/file/statistic/WhatSonNoteFileStatSupport.hpp"
+#include "app/models/file/validator/WhatSonStructuredTagLinter.hpp"
+#include "app/models/file/WhatSonDebugTrace.hpp"
+#include "app/models/file/note/WhatSonLocalNoteDocument.hpp"
+#include "app/models/file/note/WhatSonLocalNoteFileStore.hpp"
+#include "app/models/file/note/WhatSonNoteBodyPersistence.hpp"
+#include "app/models/file/statistic/WhatSonNoteFileStatSupport.hpp"
 
 #include <QMetaObject>
 #include <QThreadPool>

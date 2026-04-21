@@ -1,6 +1,6 @@
 #pragma once
 
-#include "models/file/note/WhatSonLocalNoteDocument.hpp"
+#include "app/models/file/note/WhatSonLocalNoteDocument.hpp"
 
 #include <QObject>
 #include <QPointer>

@@ -1,8 +1,8 @@
-#include "WhatSonHubRuntimeStore.hpp"
+#include "app/models/file/hub/WhatSonHubRuntimeStore.hpp"
 
-#include "models/file/WhatSonDebugTrace.hpp"
-#include "WhatSonHubPathUtils.hpp"
-#include "WhatSonHubParser.hpp"
+#include "app/models/file/WhatSonDebugTrace.hpp"
+#include "app/models/file/hub/WhatSonHubPathUtils.hpp"
+#include "app/models/file/hub/WhatSonHubParser.hpp"
 
 #include <QDir>
 #include <QSet>

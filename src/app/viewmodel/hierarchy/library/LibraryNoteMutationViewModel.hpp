@@ -1,6 +1,6 @@
 #pragma once
 
-#include "viewmodel/hierarchy/IHierarchyCapabilities.hpp"
+#include "app/viewmodel/hierarchy/IHierarchyCapabilities.hpp"
 
 #include <QMetaObject>
 #include <QObject>

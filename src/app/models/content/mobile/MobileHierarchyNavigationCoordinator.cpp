@@ -1,4 +1,4 @@
-#include "MobileHierarchyNavigationCoordinator.hpp"
+#include "app/models/content/mobile/MobileHierarchyNavigationCoordinator.hpp"
 
 namespace
 {

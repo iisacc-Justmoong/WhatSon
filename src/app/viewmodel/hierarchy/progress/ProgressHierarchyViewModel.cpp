@@ -1,16 +1,16 @@
-#include "ProgressHierarchyViewModel.hpp"
+#include "app/viewmodel/hierarchy/progress/ProgressHierarchyViewModel.hpp"
 
-#include "calendar/SystemCalendarStore.hpp"
-#include "models/file/WhatSonDebugTrace.hpp"
-#include "models/file/hierarchy/library/LibraryAll.hpp"
-#include "models/file/hierarchy/progress/WhatSonProgressHierarchyParser.hpp"
-#include "models/file/hierarchy/progress/WhatSonProgressHierarchyStore.hpp"
-#include "models/file/note/WhatSonBookmarkColorPalette.hpp"
-#include "models/file/note/WhatSonNoteBodyPersistence.hpp"
-#include "models/file/statistic/WhatSonNoteFileStatSupport.hpp"
-#include "models/file/note/WhatSonNoteFolderBindingRepository.hpp"
-#include "viewmodel/hierarchy/WhatSonHierarchyTreeItemSupport.hpp"
-#include "viewmodel/hierarchy/progress/ProgressHierarchyViewModelSupport.hpp"
+#include "app/models/calendar/SystemCalendarStore.hpp"
+#include "app/models/file/WhatSonDebugTrace.hpp"
+#include "app/models/file/hierarchy/library/LibraryAll.hpp"
+#include "app/models/file/hierarchy/progress/WhatSonProgressHierarchyParser.hpp"
+#include "app/models/file/hierarchy/progress/WhatSonProgressHierarchyStore.hpp"
+#include "app/models/file/note/WhatSonBookmarkColorPalette.hpp"
+#include "app/models/file/note/WhatSonNoteBodyPersistence.hpp"
+#include "app/models/file/statistic/WhatSonNoteFileStatSupport.hpp"
+#include "app/models/file/note/WhatSonNoteFolderBindingRepository.hpp"
+#include "app/viewmodel/hierarchy/WhatSonHierarchyTreeItemSupport.hpp"
+#include "app/viewmodel/hierarchy/progress/ProgressHierarchyViewModelSupport.hpp"
 
 #include <QDir>
 #include <QFileInfo>

@@ -1,7 +1,7 @@
-#include "WhatSonProgressHierarchyCreator.hpp"
+#include "app/models/file/hierarchy/progress/WhatSonProgressHierarchyCreator.hpp"
 
-#include "models/file/WhatSonDebugTrace.hpp"
-#include "WhatSonProgressHierarchyStore.hpp"
+#include "app/models/file/WhatSonDebugTrace.hpp"
+#include "app/models/file/hierarchy/progress/WhatSonProgressHierarchyStore.hpp"
 
 #include <QJsonArray>
 #include <QJsonDocument>

@@ -1,9 +1,9 @@
 #pragma once
 
-#include "WhatSonLocalNoteDocument.hpp"
-#include "WhatSonLocalNoteFileStore.hpp"
-#include "WhatSonNoteFolderBindingService.hpp"
-#include "models/file/hierarchy/library/LibraryNoteRecord.hpp"
+#include "app/models/file/note/WhatSonLocalNoteDocument.hpp"
+#include "app/models/file/note/WhatSonLocalNoteFileStore.hpp"
+#include "app/models/file/note/WhatSonNoteFolderBindingService.hpp"
+#include "app/models/file/hierarchy/library/LibraryNoteRecord.hpp"
 
 #include <QString>
 

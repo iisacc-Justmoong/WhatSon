@@ -1,6 +1,6 @@
 #pragma once
 
-#include "ISelectedHubStore.hpp"
+#include "app/store/hub/ISelectedHubStore.hpp"
 
 class SelectedHubStore final : public ISelectedHubStore
 {

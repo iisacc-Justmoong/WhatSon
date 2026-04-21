@@ -1,8 +1,8 @@
-#include "WhatSonResourcesHierarchyStore.hpp"
+#include "app/models/file/hierarchy/resources/WhatSonResourcesHierarchyStore.hpp"
 
-#include "models/file/WhatSonDebugTrace.hpp"
-#include "WhatSonResourcePackageSupport.hpp"
-#include "WhatSonResourcesHierarchyCreator.hpp"
+#include "app/models/file/WhatSonDebugTrace.hpp"
+#include "app/models/file/hierarchy/resources/WhatSonResourcePackageSupport.hpp"
+#include "app/models/file/hierarchy/resources/WhatSonResourcesHierarchyCreator.hpp"
 
 #include <QDir>
 #include <QFile>

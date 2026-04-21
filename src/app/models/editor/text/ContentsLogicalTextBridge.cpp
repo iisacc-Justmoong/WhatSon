@@ -1,7 +1,7 @@
-#include "models/editor/text/ContentsLogicalTextBridge.hpp"
+#include "app/models/editor/text/ContentsLogicalTextBridge.hpp"
 
-#include "models/file/note/WhatSonNoteBodySemanticTagSupport.hpp"
-#include "models/file/WhatSonDebugTrace.hpp"
+#include "app/models/file/note/WhatSonNoteBodySemanticTagSupport.hpp"
+#include "app/models/file/WhatSonDebugTrace.hpp"
 
 #include <QChar>
 #include <QStringList>

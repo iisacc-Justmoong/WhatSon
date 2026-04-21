@@ -1,4 +1,4 @@
-#include "../whatson_cpp_regression_tests.hpp"
+#include "test/cpp/whatson_cpp_regression_tests.hpp"
 
 void WhatSonCppRegressionTests::displayPaperModels_hostPageAndPrintViewModeObjectsUnderModelsDirectory()
 {
@@ -46,15 +46,15 @@ void WhatSonCppRegressionTests::displayPaperModels_hostPageAndPrintViewModeObjec
     QVERIFY(printCmakeSource.contains(QStringLiteral("whatson_app_register_directory_sources")));
 
     QVERIFY(registrarSource.contains(
-        QStringLiteral("#include \"display/paper/ContentsPaperSelection.hpp\"")));
+        QStringLiteral("#include \"app/models/display/paper/ContentsPaperSelection.hpp\"")));
     QVERIFY(registrarSource.contains(
-        QStringLiteral("#include \"display/paper/ContentsA4PaperBackground.hpp\"")));
+        QStringLiteral("#include \"app/models/display/paper/ContentsA4PaperBackground.hpp\"")));
     QVERIFY(registrarSource.contains(
         QStringLiteral("qmlRegisterType<ContentsPaperSelection>(")));
     QVERIFY(registrarSource.contains(
-        QStringLiteral("#include \"display/paper/ContentsTextFormatRenderer.hpp\"")));
+        QStringLiteral("#include \"app/models/display/paper/ContentsTextFormatRenderer.hpp\"")));
     QVERIFY(registrarSource.contains(
-        QStringLiteral("#include \"display/paper/print/ContentsPagePrintLayoutRenderer.hpp\"")));
+        QStringLiteral("#include \"app/models/display/paper/print/ContentsPagePrintLayoutRenderer.hpp\"")));
     QVERIFY(registrarSource.contains(
         QStringLiteral("qmlRegisterType<ContentsA4PaperBackground>(")));
 }

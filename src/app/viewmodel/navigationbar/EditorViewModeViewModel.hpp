@@ -1,7 +1,7 @@
 #pragma once
 
-#include "EditorViewSectionViewModel.hpp"
-#include "EditorViewState.hpp"
+#include "app/viewmodel/navigationbar/EditorViewSectionViewModel.hpp"
+#include "app/viewmodel/navigationbar/EditorViewState.hpp"
 
 #include <QObject>
 #include <QString>

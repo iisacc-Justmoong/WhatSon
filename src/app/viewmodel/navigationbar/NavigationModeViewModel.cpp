@@ -1,4 +1,4 @@
-#include "NavigationModeViewModel.hpp"
+#include "app/viewmodel/navigationbar/NavigationModeViewModel.hpp"
 
 NavigationModeViewModel::NavigationModeViewModel(QObject* parent)
     : QObject(parent)

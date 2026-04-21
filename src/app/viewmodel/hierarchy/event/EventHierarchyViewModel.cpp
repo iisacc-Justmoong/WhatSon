@@ -1,10 +1,10 @@
-#include "EventHierarchyViewModel.hpp"
+#include "app/viewmodel/hierarchy/event/EventHierarchyViewModel.hpp"
 
-#include "models/file/WhatSonDebugTrace.hpp"
-#include "models/file/hierarchy/event/WhatSonEventHierarchyParser.hpp"
-#include "models/file/hierarchy/event/WhatSonEventHierarchyStore.hpp"
-#include "viewmodel/hierarchy/WhatSonHierarchyTreeItemSupport.hpp"
-#include "viewmodel/hierarchy/event/EventHierarchyViewModelSupport.hpp"
+#include "app/models/file/WhatSonDebugTrace.hpp"
+#include "app/models/file/hierarchy/event/WhatSonEventHierarchyParser.hpp"
+#include "app/models/file/hierarchy/event/WhatSonEventHierarchyStore.hpp"
+#include "app/viewmodel/hierarchy/WhatSonHierarchyTreeItemSupport.hpp"
+#include "app/viewmodel/hierarchy/event/EventHierarchyViewModelSupport.hpp"
 
 #include <QDir>
 #include <QFileInfo>

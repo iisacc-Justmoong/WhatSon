@@ -1,6 +1,6 @@
-#include "ContentsCalloutBackend.hpp"
+#include "app/models/callout/ContentsCalloutBackend.hpp"
 
-#include "models/file/validator/WhatSonStructuredTagLinter.hpp"
+#include "app/models/file/validator/WhatSonStructuredTagLinter.hpp"
 
 #include <QRegularExpression>
 #include <algorithm>

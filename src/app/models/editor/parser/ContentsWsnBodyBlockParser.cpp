@@ -1,7 +1,7 @@
-#include "ContentsWsnBodyBlockParser.hpp"
+#include "app/models/editor/parser/ContentsWsnBodyBlockParser.hpp"
 
-#include "models/file/note/WhatSonNoteBodySemanticTagSupport.hpp"
-#include "models/file/validator/WhatSonStructuredTagLinter.hpp"
+#include "app/models/file/note/WhatSonNoteBodySemanticTagSupport.hpp"
+#include "app/models/file/validator/WhatSonStructuredTagLinter.hpp"
 
 #include <QDate>
 #include <QRegularExpression>

@@ -1,8 +1,8 @@
-#include "WhatSonStartupHubResolver.hpp"
+#include "app/runtime/startup/WhatSonStartupHubResolver.hpp"
 
-#include "models/file/WhatSonDebugTrace.hpp"
-#include "models/file/hub/WhatSonHubMountValidator.hpp"
-#include "store/hub/ISelectedHubStore.hpp"
+#include "app/models/file/WhatSonDebugTrace.hpp"
+#include "app/models/file/hub/WhatSonHubMountValidator.hpp"
+#include "app/store/hub/ISelectedHubStore.hpp"
 
 #include <QDebug>
 

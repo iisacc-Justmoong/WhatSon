@@ -1,7 +1,7 @@
-#include "WhatSonRegisterManager.hpp"
+#include "app/register/WhatSonRegisterManager.hpp"
 
 #if defined(WHATSON_IS_TRIAL_BUILD)
-#include "WhatSonTrialClientIdentityStore.hpp"
+#include "extension/trial/WhatSonTrialClientIdentityStore.hpp"
 #endif
 
 #include <QCryptographicHash>

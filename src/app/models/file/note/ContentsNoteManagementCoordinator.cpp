@@ -1,10 +1,10 @@
-#include "ContentsNoteManagementCoordinator.hpp"
+#include "app/models/file/note/ContentsNoteManagementCoordinator.hpp"
 
-#include "models/file/WhatSonDebugTrace.hpp"
-#include "WhatSonLocalNoteFileStore.hpp"
-#include "WhatSonNoteBodyPersistence.hpp"
-#include "models/file/statistic/WhatSonNoteFileStatSupport.hpp"
-#include "platform/Android/WhatSonAndroidStorageBackend.hpp"
+#include "app/models/file/WhatSonDebugTrace.hpp"
+#include "app/models/file/note/WhatSonLocalNoteFileStore.hpp"
+#include "app/models/file/note/WhatSonNoteBodyPersistence.hpp"
+#include "app/models/file/statistic/WhatSonNoteFileStatSupport.hpp"
+#include "app/platform/Android/WhatSonAndroidStorageBackend.hpp"
 
 #include <QCoreApplication>
 #include <QDir>

@@ -1,4 +1,4 @@
-#include "WhatSonLibraryIndexedState.hpp"
+#include "app/models/file/hierarchy/library/WhatSonLibraryIndexedState.hpp"
 
 WhatSonLibraryIndexedState::WhatSonLibraryIndexedState() = default;
 

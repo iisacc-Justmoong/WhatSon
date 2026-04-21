@@ -1,6 +1,6 @@
-#include "WhatSonStructuredTagLinter.hpp"
-#include "models/file/note/WhatSonNoteBodyWebLinkSupport.hpp"
-#include "models/file/note/WhatSonNoteBodySemanticTagSupport.hpp"
+#include "app/models/file/validator/WhatSonStructuredTagLinter.hpp"
+#include "app/models/file/note/WhatSonNoteBodyWebLinkSupport.hpp"
+#include "app/models/file/note/WhatSonNoteBodySemanticTagSupport.hpp"
 
 #include <QDate>
 #include <QRegularExpression>

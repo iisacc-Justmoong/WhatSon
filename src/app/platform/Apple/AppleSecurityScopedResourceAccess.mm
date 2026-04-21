@@ -1,5 +1,5 @@
-#include "AppleSecurityScopedResourceAccess.hpp"
-#include "models/file/WhatSonDebugTrace.hpp"
+#include "app/platform/Apple/AppleSecurityScopedResourceAccess.hpp"
+#include "app/models/file/WhatSonDebugTrace.hpp"
 
 #include <QByteArray>
 #include <QDir>

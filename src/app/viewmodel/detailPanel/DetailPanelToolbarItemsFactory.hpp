@@ -1,6 +1,6 @@
 #pragma once
 
-#include "DetailPanelState.hpp"
+#include "app/viewmodel/detailPanel/DetailPanelState.hpp"
 
 #include <QVariantList>
 

@@ -1,4 +1,4 @@
-#include "WhatSonTrialInstallStore.hpp"
+#include "extension/trial/WhatSonTrialInstallStore.hpp"
 
 #include <QCryptographicHash>
 #include <QJsonDocument>

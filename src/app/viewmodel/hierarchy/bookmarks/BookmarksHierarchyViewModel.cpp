@@ -1,14 +1,14 @@
-#include "BookmarksHierarchyViewModel.hpp"
+#include "app/viewmodel/hierarchy/bookmarks/BookmarksHierarchyViewModel.hpp"
 
-#include "calendar/ISystemCalendarStore.hpp"
-#include "calendar/SystemCalendarStore.hpp"
-#include "models/file/WhatSonDebugTrace.hpp"
-#include "models/file/hierarchy/library/WhatSonLibraryIndexedState.hpp"
-#include "models/file/note/WhatSonBookmarkColorPalette.hpp"
-#include "models/file/note/WhatSonNoteBodyPersistence.hpp"
-#include "models/file/statistic/WhatSonNoteFileStatSupport.hpp"
-#include "models/file/note/WhatSonNoteFolderBindingRepository.hpp"
-#include "viewmodel/hierarchy/WhatSonHierarchyTreeItemSupport.hpp"
+#include "app/models/calendar/ISystemCalendarStore.hpp"
+#include "app/models/calendar/SystemCalendarStore.hpp"
+#include "app/models/file/WhatSonDebugTrace.hpp"
+#include "app/models/file/hierarchy/library/WhatSonLibraryIndexedState.hpp"
+#include "app/models/file/note/WhatSonBookmarkColorPalette.hpp"
+#include "app/models/file/note/WhatSonNoteBodyPersistence.hpp"
+#include "app/models/file/statistic/WhatSonNoteFileStatSupport.hpp"
+#include "app/models/file/note/WhatSonNoteFolderBindingRepository.hpp"
+#include "app/viewmodel/hierarchy/WhatSonHierarchyTreeItemSupport.hpp"
 
 #include <QDir>
 #include <QFileInfo>

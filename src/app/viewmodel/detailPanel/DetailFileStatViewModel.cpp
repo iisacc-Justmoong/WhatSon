@@ -1,6 +1,6 @@
-#include "DetailFileStatViewModel.hpp"
+#include "app/viewmodel/detailPanel/DetailFileStatViewModel.hpp"
 
-#include "models/file/note/WhatSonNoteFolderSemantics.hpp"
+#include "app/models/file/note/WhatSonNoteFolderSemantics.hpp"
 
 #include <QVariantMap>
 

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "WhatSonNoteCreator.hpp"
+#include "app/models/file/note/WhatSonNoteCreator.hpp"
 
 class WhatSonNoteBodyCreator : public WhatSonNoteCreator
 {
