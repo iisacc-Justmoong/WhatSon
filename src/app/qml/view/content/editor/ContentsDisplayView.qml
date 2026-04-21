@@ -304,14 +304,7 @@ Item {
     signal viewHookRequested
 
     function resolvedDocumentPresentationSourceText() {
-        if (contentsView.editorSessionBoundToSelectedNote)
-            return contentsView.editorText === undefined || contentsView.editorText === null ? "" : String(contentsView.editorText)
-        if (contentsView.selectedNoteBodyNoteId === contentsView.selectedNoteId) {
-            return contentsView.selectedNoteBodyText === undefined || contentsView.selectedNoteBodyText === null
-                    ? ""
-                    : String(contentsView.selectedNoteBodyText)
-        }
-        return ""
+        return sessionCoordinator.resolvedDocumentPresentationSourceText();
     }
     function activeLogicalTextSnapshot() {
         if (editorTypingController && editorTypingController.currentEditorPlainText !== undefined) {
@@ -421,63 +414,51 @@ Item {
                     editorContentHeight);
     }
     function currentMinimapSourceText() {
-        if (contentsView.structuredHostGeometryActive)
-            return contentsView.structuredFlowSourceText === undefined || contentsView.structuredFlowSourceText === null ? "" : String(contentsView.structuredFlowSourceText);
-        return contentsView.editorText === undefined || contentsView.editorText === null ? "" : String(contentsView.editorText);
+        return sessionCoordinator.currentMinimapSourceText(contentsView.structuredHostGeometryActive);
     }
     function activeLineGeometryNoteId() {
         return viewportCoordinator.normalizedNoteId(contentsView.selectedNoteId);
     }
     function nextMinimapLineGroupsForCurrentState(currentSourceText) {
         const currentNoteId = contentsView.activeLineGeometryNoteId();
-        if (contentsView.structuredHostGeometryActive) {
-            const structuredLineCount = Math.max(1, contentsView.effectiveStructuredLogicalLineEntries().length);
-            if (contentsView.minimapSnapshotForceFullRefresh
-                    || contentsView.hasPendingNoteEntryGutterRefresh(currentNoteId)
-                    || contentsView.minimapLineGroupsNoteId !== currentNoteId
-                    || !Array.isArray(contentsView.minimapLineGroups)
-                    || contentsView.minimapLineGroups.length !== structuredLineCount
-                    || contentsView.minimapLineGroups.length === 0
-                    || contentsView.minimapSnapshotSourceText.length === 0) {
-                return contentsView.buildStructuredMinimapLineGroupsForRange(1, structuredLineCount);
-            }
-
-            const changeRange = MinimapSnapshotSupport.computeChangedLineRange(contentsView.minimapSnapshotSourceText, currentSourceText);
-            if (!changeRange.valid)
-                return contentsView.minimapLineGroups;
-
-            const replacementGroups = contentsView.buildStructuredMinimapLineGroupsForRange(changeRange.nextStartLine, changeRange.nextEndLine);
-            const mergedGroups = MinimapSnapshotSupport.spliceLineGroups(
-                        contentsView.minimapLineGroups,
-                        replacementGroups,
-                        changeRange.previousStartLine,
-                        changeRange.previousEndLine);
-            if (!Array.isArray(mergedGroups) || mergedGroups.length !== structuredLineCount)
-                return contentsView.buildStructuredMinimapLineGroupsForRange(1, structuredLineCount);
-            return mergedGroups;
-        }
-        if (contentsView.minimapSnapshotForceFullRefresh
-                || contentsView.hasPendingNoteEntryGutterRefresh(currentNoteId)
-                || contentsView.minimapLineGroupsNoteId !== currentNoteId
-                || !Array.isArray(contentsView.minimapLineGroups)
-                || contentsView.minimapLineGroups.length !== contentsView.logicalLineCount
-                || contentsView.minimapLineGroups.length === 0
-                || contentsView.minimapSnapshotSourceText.length === 0) {
-            return contentsView.buildMinimapLineGroupsForRange(1, contentsView.logicalLineCount);
-        }
-
-        const changeRange = MinimapSnapshotSupport.computeChangedLineRange(contentsView.minimapSnapshotSourceText, currentSourceText);
-        if (!changeRange.valid)
+        const snapshotPlan = minimapCoordinator.buildNextMinimapSnapshotPlan(
+                    contentsView.minimapLineGroups,
+                    contentsView.minimapLineGroupsNoteId,
+                    currentNoteId,
+                    contentsView.minimapSnapshotSourceText,
+                    currentSourceText,
+                    contentsView.minimapSnapshotForceFullRefresh,
+                    contentsView.hasPendingNoteEntryGutterRefresh(currentNoteId),
+                    contentsView.effectiveStructuredLogicalLineEntries().length,
+                    contentsView.logicalLineCount);
+        if (snapshotPlan.reuseExisting)
             return contentsView.minimapLineGroups;
+        if (snapshotPlan.requiresFullRebuild) {
+            return contentsView.structuredHostGeometryActive
+                    ? contentsView.buildStructuredMinimapLineGroupsForRange(1, Math.max(1, contentsView.effectiveStructuredLogicalLineEntries().length))
+                    : contentsView.buildMinimapLineGroupsForRange(1, contentsView.logicalLineCount);
+        }
 
-        const replacementGroups = contentsView.buildMinimapLineGroupsForRange(changeRange.nextStartLine, changeRange.nextEndLine);
+        const replacementGroups = contentsView.structuredHostGeometryActive
+                ? contentsView.buildStructuredMinimapLineGroupsForRange(
+                      Number(snapshotPlan.replacementStartLine) || 1,
+                      Number(snapshotPlan.replacementEndLine) || 1)
+                : contentsView.buildMinimapLineGroupsForRange(
+                      Number(snapshotPlan.replacementStartLine) || 1,
+                      Number(snapshotPlan.replacementEndLine) || 1);
         const mergedGroups = MinimapSnapshotSupport.spliceLineGroups(
                     contentsView.minimapLineGroups,
                     replacementGroups,
-                    changeRange.previousStartLine,
-                    changeRange.previousEndLine);
-        if (!Array.isArray(mergedGroups) || mergedGroups.length !== contentsView.logicalLineCount)
-            return contentsView.buildMinimapLineGroupsForRange(1, contentsView.logicalLineCount);
+                    Number(snapshotPlan.previousStartLine) || 1,
+                    Number(snapshotPlan.previousEndLine) || 1);
+        const expectedLineCount = contentsView.structuredHostGeometryActive
+                ? Math.max(1, contentsView.effectiveStructuredLogicalLineEntries().length)
+                : contentsView.logicalLineCount;
+        if (!Array.isArray(mergedGroups) || mergedGroups.length !== expectedLineCount) {
+            return contentsView.structuredHostGeometryActive
+                    ? contentsView.buildStructuredMinimapLineGroupsForRange(1, expectedLineCount)
+                    : contentsView.buildMinimapLineGroupsForRange(1, expectedLineCount);
+        }
         return mergedGroups;
     }
     function buildVisibleGutterLineEntries() {
@@ -486,26 +467,17 @@ Item {
                         contentsView.effectiveStructuredLogicalLineEntries(),
                         contentsView.firstVisibleLogicalLine());
         }
-        const visibleLines = [];
         const firstVisibleLine = contentsView.firstVisibleLogicalLine();
+        const gutterLineYs = [];
+        const gutterLineHeights = [];
         for (let lineNumber = firstVisibleLine; lineNumber <= contentsView.logicalLineCount; ++lineNumber) {
-            const resolvedLineY = contentsView.gutterLineY(lineNumber);
-            if (resolvedLineY > contentsView.gutterViewportHeight)
-                break;
-            if (resolvedLineY + contentsView.gutterLineVisualHeight(lineNumber, 1) < 0)
-                continue;
-            visibleLines.push({
-                "lineNumber": lineNumber,
-                "y": resolvedLineY
-            });
+            gutterLineYs.push(contentsView.gutterLineY(lineNumber));
+            gutterLineHeights.push(contentsView.gutterLineVisualHeight(lineNumber, 1));
         }
-        if (visibleLines.length === 0) {
-            visibleLines.push({
-                "lineNumber": firstVisibleLine,
-                "y": contentsView.gutterLineY(firstVisibleLine)
-            });
-        }
-        return visibleLines;
+        return gutterCoordinator.buildVisiblePlainGutterLineEntries(
+                    firstVisibleLine,
+                    gutterLineYs,
+                    gutterLineHeights);
     }
     function canAcceptResourceDropUrls(urls) {
         return resourceImportController.canAcceptResourceDropUrls(urls);
@@ -1506,39 +1478,47 @@ Item {
         return "";
     }
     function handleStructuredSelectionContextMenuEvent(eventName) {
-        if (!contentsView.showStructuredDocumentFlow
-                || !structuredDocumentFlow
-                || structuredDocumentFlow.applyInlineFormatToBlockSelection === undefined)
-            return false;
         const inlineStyleTag = contentsView.structuredContextMenuInlineStyleTag(eventName);
-        if (inlineStyleTag.length === 0)
-            return false;
-        if (!contentsView.structuredContextMenuSelectionValid()
-                && !contentsView.primeStructuredSelectionContextMenuSnapshot()) {
+        const plan = contextMenuCoordinator.handleStructuredSelectionEventPlan(
+                    inlineStyleTag,
+                    contentsView.structuredContextMenuSelectionValid(),
+                    !!(structuredDocumentFlow && structuredDocumentFlow.applyInlineFormatToBlockSelection !== undefined));
+        if (!plan.applyStructuredInlineFormat) {
+            if (plan.requireStructuredSelectionPrime
+                    && contentsView.primeStructuredSelectionContextMenuSnapshot()) {
+                return contentsView.handleStructuredSelectionContextMenuEvent(eventName);
+            }
             return false;
         }
-        const blockIndex = Math.max(0, Math.floor(Number(contentsView.structuredContextMenuBlockIndex) || 0));
         const handled = !!structuredDocumentFlow.applyInlineFormatToBlockSelection(
-                    blockIndex,
-                    inlineStyleTag,
-                    contentsView.structuredContextMenuSelectionSnapshot);
+                    Number(plan.blockIndex) || 0,
+                    String(plan.inlineStyleTag || ""),
+                    plan.selectionSnapshot && typeof plan.selectionSnapshot === "object"
+                    ? plan.selectionSnapshot
+                    : ({}));
         contentsView.resetStructuredSelectionContextMenuSnapshot();
         return handled;
     }
     function openEditorSelectionContextMenu(localX, localY) {
-        if (contentsView.showStructuredDocumentFlow) {
-            if (!contentsView.structuredContextMenuSelectionValid()
-                    && !contentsView.primeStructuredSelectionContextMenuSnapshot()) {
-                return false;
-            }
-            if (!editorSelectionContextMenu)
-                return false;
-            if (editorSelectionContextMenu.opened)
-                editorSelectionContextMenu.close();
-            editorSelectionContextMenu.openFor(editorViewport, Number(localX) || 0, Number(localY) || 0);
-            return true;
-        }
-        return editorSelectionController.openEditorSelectionContextMenu(localX, localY);
+        const plan = contextMenuCoordinator.openSelectionContextMenuPlan(
+                    contentsView.structuredContextMenuSelectionValid(),
+                    !!editorSelectionContextMenu,
+                    Number(localX) || 0,
+                    Number(localY) || 0);
+        if (plan.delegateToEditorSelectionController)
+            return editorSelectionController.openEditorSelectionContextMenu(localX, localY);
+        if (plan.requireStructuredSelectionPrime
+                && !contentsView.primeStructuredSelectionContextMenuSnapshot())
+            return false;
+        if (!editorSelectionContextMenu)
+            return false;
+        if (plan.closeBeforeOpen && editorSelectionContextMenu.opened)
+            editorSelectionContextMenu.close();
+        editorSelectionContextMenu.openFor(
+                    editorViewport,
+                    Number(plan.openX) || 0,
+                    Number(plan.openY) || 0);
+        return true;
     }
     function primeEditorSelectionContextMenuSnapshot() {
         if (contentsView.showStructuredDocumentFlow)
@@ -1716,12 +1696,9 @@ Item {
             contentEditor.cursorPosition = logicalOffset;
     }
     function applyDocumentSourceMutation(nextSourceText, focusRequest) {
-        const normalizedNextSourceText = nextSourceText === undefined || nextSourceText === null
-                ? ""
-                : String(nextSourceText);
-        const currentSourceText = contentsView.editorText === undefined || contentsView.editorText === null
-                ? ""
-                : String(contentsView.editorText);
+        const mutation = sessionCoordinator.normalizedDocumentSourceMutation(nextSourceText);
+        const normalizedNextSourceText = String(mutation.nextSourceText || "");
+        const currentSourceText = String(mutation.currentSourceText || "");
         EditorTrace.trace(
                     "displayView",
                     "applyDocumentSourceMutation",
@@ -1729,7 +1706,7 @@ Item {
                     + " focusRequest={" + EditorTrace.describeFocusRequest(focusRequest) + "} "
                     + EditorTrace.describeText(normalizedNextSourceText),
                     contentsView)
-        if (normalizedNextSourceText === currentSourceText)
+        if (!mutation.changed)
             return false;
         if (contentsView.resourceTagLossDetected(currentSourceText, normalizedNextSourceText)) {
             contentsView.restoreEditorSurfaceFromPresentation();
@@ -2292,6 +2269,25 @@ Item {
         showPrintEditorLayout: contentsView.showPrintEditorLayout
         structuredHostGeometryActive: contentsView.structuredHostGeometryActive
     }
+    ContentsDisplaySessionCoordinator {
+        id: sessionCoordinator
+
+        editorSessionBoundToSelectedNote: contentsView.editorSessionBoundToSelectedNote
+        editorText: contentsView.editorText === undefined || contentsView.editorText === null ? "" : String(contentsView.editorText)
+        selectedNoteBodyNoteId: contentsView.selectedNoteBodyNoteId === undefined || contentsView.selectedNoteBodyNoteId === null ? "" : String(contentsView.selectedNoteBodyNoteId)
+        selectedNoteBodyText: contentsView.selectedNoteBodyText === undefined || contentsView.selectedNoteBodyText === null ? "" : String(contentsView.selectedNoteBodyText)
+        selectedNoteId: contentsView.selectedNoteId === undefined || contentsView.selectedNoteId === null ? "" : String(contentsView.selectedNoteId)
+        structuredFlowSourceText: contentsView.structuredFlowSourceText === undefined || contentsView.structuredFlowSourceText === null ? "" : String(contentsView.structuredFlowSourceText)
+    }
+    ContentsDisplayContextMenuCoordinator {
+        id: contextMenuCoordinator
+
+        structuredDocumentFlowVisible: contentsView.showStructuredDocumentFlow
+        structuredContextMenuBlockIndex: Math.max(0, Math.floor(Number(contentsView.structuredContextMenuBlockIndex) || 0))
+        structuredContextMenuSelectionSnapshot: contentsView.structuredContextMenuSelectionSnapshot && typeof contentsView.structuredContextMenuSelectionSnapshot === "object"
+                                             ? contentsView.structuredContextMenuSelectionSnapshot
+                                             : ({})
+    }
     ContentsDisplayViewportCoordinator {
         id: viewportCoordinator
 
@@ -2307,6 +2303,13 @@ Item {
         logicalTextLength: Math.max(0, Number(contentsView.logicalTextLength()) || 0)
         minimapResolvedTrackHeight: Number(contentsView.minimapResolvedTrackHeight) || 1
         showPrintEditorLayout: contentsView.showPrintEditorLayout
+        structuredHostGeometryActive: contentsView.structuredHostGeometryActive
+    }
+    ContentsDisplayGutterCoordinator {
+        id: gutterCoordinator
+
+        gutterViewportHeight: Number(contentsView.gutterViewportHeight) || 0
+        logicalLineCount: Math.max(1, Number(contentsView.logicalLineCount) || 1)
         structuredHostGeometryActive: contentsView.structuredHostGeometryActive
     }
     ContentsDisplayMinimapCoordinator {

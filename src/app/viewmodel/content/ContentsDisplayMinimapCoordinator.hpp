@@ -2,6 +2,7 @@
 
 #include <QObject>
 #include <QString>
+#include <QVariant>
 #include <QVariantList>
 #include <QVariantMap>
 
@@ -35,6 +36,16 @@ public:
     Q_INVOKABLE QVariantList buildStructuredMinimapLineGroupsForRange(const QVariantList& lineEntries, int startLineNumber, int endLineNumber) const;
     Q_INVOKABLE QVariantList buildFallbackMinimapLineGroupsForRange(const QVariantList& lineCharacterCounts, const QVariantList& lineDocumentYs, const QVariantList& lineVisualHeights, int startLineNumber, int endLineNumber) const;
     Q_INVOKABLE QVariantList buildEditorMinimapLineGroupsForRange(const QVariantList& lineCharacterCounts, const QVariantList& lineStartOffsets, const QVariantList& fallbackLineDocumentYs, const QVariantList& fallbackLineVisualHeights, const QVariantList& editorRects, int logicalTextLength, int startLineNumber, int endLineNumber, double editorWidth, double editorContentHeight) const;
+    Q_INVOKABLE QVariantMap buildNextMinimapSnapshotPlan(
+        const QVariant& currentLineGroups,
+        const QString& currentLineGroupsNoteId,
+        const QString& currentNoteId,
+        const QString& previousSourceText,
+        const QString& currentSourceText,
+        bool forceFullRefresh,
+        bool noteEntryRefreshPending,
+        int structuredLineCount,
+        int plainLogicalLineCount) const;
 
 signals:
     void structuredHostGeometryActiveChanged();

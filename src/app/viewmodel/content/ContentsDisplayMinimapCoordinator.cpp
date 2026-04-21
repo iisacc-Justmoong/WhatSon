@@ -192,6 +192,80 @@ QVariantList ContentsDisplayMinimapCoordinator::buildEditorMinimapLineGroupsForR
     return groups;
 }
 
+QVariantMap ContentsDisplayMinimapCoordinator::buildNextMinimapSnapshotPlan(
+    const QVariant& currentLineGroups,
+    const QString& currentLineGroupsNoteId,
+    const QString& currentNoteId,
+    const QString& previousSourceText,
+    const QString& currentSourceText,
+    const bool forceFullRefresh,
+    const bool noteEntryRefreshPending,
+    const int structuredLineCount,
+    const int plainLogicalLineCount) const
+{
+    const QVariantList existingGroups = currentLineGroups.toList();
+    const int expectedLineCount = m_structuredHostGeometryActive
+        ? qMax(1, structuredLineCount)
+        : qMax(1, plainLogicalLineCount);
+
+    QVariantMap plan;
+    plan.insert(QStringLiteral("reuseExisting"), false);
+    plan.insert(QStringLiteral("requiresFullRebuild"), false);
+    plan.insert(QStringLiteral("replacementStartLine"), 1);
+    plan.insert(QStringLiteral("replacementEndLine"), expectedLineCount);
+    plan.insert(QStringLiteral("previousStartLine"), 1);
+    plan.insert(QStringLiteral("previousEndLine"), expectedLineCount);
+
+    const bool invalidExistingGroups = existingGroups.isEmpty() || existingGroups.size() != expectedLineCount;
+    if (forceFullRefresh
+        || noteEntryRefreshPending
+        || currentLineGroupsNoteId != currentNoteId
+        || invalidExistingGroups
+        || previousSourceText.isEmpty())
+    {
+        plan.insert(QStringLiteral("requiresFullRebuild"), true);
+        return plan;
+    }
+
+    const QStringList previousLines = previousSourceText.split(u'\n');
+    const QStringList currentLines = currentSourceText.split(u'\n');
+
+    int prefix = 0;
+    const int previousCount = previousLines.size();
+    const int currentCount = currentLines.size();
+    while (prefix < previousCount && prefix < currentCount
+           && previousLines.at(prefix) == currentLines.at(prefix))
+    {
+        ++prefix;
+    }
+
+    if (prefix == previousCount && prefix == currentCount)
+    {
+        plan.insert(QStringLiteral("reuseExisting"), true);
+        return plan;
+    }
+
+    int previousSuffix = previousCount - 1;
+    int currentSuffix = currentCount - 1;
+    while (previousSuffix >= prefix && currentSuffix >= prefix
+           && previousLines.at(previousSuffix) == currentLines.at(currentSuffix))
+    {
+        --previousSuffix;
+        --currentSuffix;
+    }
+
+    const int replacementStartLine = qMax(1, prefix + 1);
+    const int replacementEndLine = qMax(replacementStartLine, currentSuffix + 1);
+    const int previousStartLine = qMax(1, prefix + 1);
+    const int previousEndLine = qMax(previousStartLine, previousSuffix + 1);
+
+    plan.insert(QStringLiteral("replacementStartLine"), replacementStartLine);
+    plan.insert(QStringLiteral("replacementEndLine"), replacementEndLine);
+    plan.insert(QStringLiteral("previousStartLine"), previousStartLine);
+    plan.insert(QStringLiteral("previousEndLine"), previousEndLine);
+    return plan;
+}
+
 QVariantMap ContentsDisplayMinimapCoordinator::normalizeCursorRect(
     const QVariantMap& rawRect,
     const double fallbackY,

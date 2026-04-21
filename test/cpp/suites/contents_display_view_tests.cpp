@@ -20,6 +20,9 @@ void WhatSonCppRegressionTests::contentsDisplayView_invalidatesGutterGeometryImm
     QVERIFY(displayViewSource.contains(QStringLiteral("refreshCoordinator.scheduleNoteEntryGutterRefresh(")));
     QVERIFY(displayViewSource.contains(QStringLiteral("refreshPlan.gutterPassCount")));
     QVERIFY(displayViewSource.contains(QStringLiteral("contentsView.scheduleGutterRefresh(")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("minimapCoordinator.buildNextMinimapSnapshotPlan(")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("contextMenuCoordinator.openSelectionContextMenuPlan(")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("gutterCoordinator.buildVisiblePlainGutterLineEntries(")));
     QVERIFY(displayViewSource.contains(QStringLiteral("\"structured-layout-cache\"")));
     QVERIFY(displayViewSource.contains(QStringLiteral("\"editor-text-synchronized\"")));
 }
@@ -54,7 +57,11 @@ void WhatSonCppRegressionTests::contentsDisplayView_usesSelectedNoteSnapshotWhil
 
     QVERIFY(!displayViewSource.isEmpty());
     QVERIFY(displayViewSource.contains(
-        QStringLiteral("if (contentsView.selectedNoteBodyNoteId === contentsView.selectedNoteId) {")));
+        QStringLiteral("ContentsDisplaySessionCoordinator")));
     QVERIFY(displayViewSource.contains(
-        QStringLiteral("return contentsView.selectedNoteBodyText === undefined || contentsView.selectedNoteBodyText === null")));
+        QStringLiteral("sessionCoordinator.resolvedDocumentPresentationSourceText()")));
+    QVERIFY(displayViewSource.contains(
+        QStringLiteral("selectedNoteBodyNoteId: contentsView.selectedNoteBodyNoteId === undefined || contentsView.selectedNoteBodyNoteId === null ? \"\" : String(contentsView.selectedNoteBodyNoteId)")));
+    QVERIFY(displayViewSource.contains(
+        QStringLiteral("selectedNoteBodyText: contentsView.selectedNoteBodyText === undefined || contentsView.selectedNoteBodyText === null ? \"\" : String(contentsView.selectedNoteBodyText)")));
 }

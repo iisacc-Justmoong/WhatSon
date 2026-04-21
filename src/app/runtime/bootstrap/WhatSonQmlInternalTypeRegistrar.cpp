@@ -11,10 +11,13 @@
 #include "platform/Apple/WhatSonIosHubPickerBridge.hpp"
 #include "file/viewer/ContentsBodyResourceRenderer.hpp"
 #include "file/viewer/ResourceBitmapViewer.hpp"
+#include "viewmodel/content/ContentsDisplayContextMenuCoordinator.hpp"
+#include "viewmodel/content/ContentsDisplayGutterCoordinator.hpp"
 #include "viewmodel/content/ContentsDisplayMinimapCoordinator.hpp"
 #include "viewmodel/content/ContentsDisplayPresentationRefreshController.hpp"
 #include "viewmodel/content/ContentsDisplayRefreshCoordinator.hpp"
 #include "viewmodel/content/ContentsDisplaySelectionSyncCoordinator.hpp"
+#include "viewmodel/content/ContentsDisplaySessionCoordinator.hpp"
 #include "viewmodel/content/ContentsDisplayStructuredFlowCoordinator.hpp"
 #include "viewmodel/content/ContentsDisplayViewportCoordinator.hpp"
 #include "viewmodel/content/ContentsEditorPresentationProjection.hpp"
@@ -47,8 +50,14 @@ namespace WhatSon::Runtime::Bootstrap
             "WhatSon.App.Internal", 1, 0, "ContentsDisplayPresentationRefreshController");
         qmlRegisterType<ContentsDisplayRefreshCoordinator>(
             "WhatSon.App.Internal", 1, 0, "ContentsDisplayRefreshCoordinator");
+        qmlRegisterType<ContentsDisplayContextMenuCoordinator>(
+            "WhatSon.App.Internal", 1, 0, "ContentsDisplayContextMenuCoordinator");
+        qmlRegisterType<ContentsDisplayGutterCoordinator>(
+            "WhatSon.App.Internal", 1, 0, "ContentsDisplayGutterCoordinator");
         qmlRegisterType<ContentsDisplayMinimapCoordinator>(
             "WhatSon.App.Internal", 1, 0, "ContentsDisplayMinimapCoordinator");
+        qmlRegisterType<ContentsDisplaySessionCoordinator>(
+            "WhatSon.App.Internal", 1, 0, "ContentsDisplaySessionCoordinator");
         qmlRegisterType<ContentsDisplayViewportCoordinator>(
             "WhatSon.App.Internal", 1, 0, "ContentsDisplayViewportCoordinator");
         qmlRegisterType<ContentsDisplayStructuredFlowCoordinator>(
