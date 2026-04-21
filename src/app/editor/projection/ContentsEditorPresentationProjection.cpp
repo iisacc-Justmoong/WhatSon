@@ -2,7 +2,7 @@
 
 #include "display/paper/ContentsTextFormatRenderer.hpp"
 #include "file/WhatSonDebugTrace.hpp"
-#include "ContentsLogicalTextBridge.hpp"
+#include "editor/text/ContentsLogicalTextBridge.hpp"
 
 ContentsEditorPresentationProjection::ContentsEditorPresentationProjection(QObject* parent)
     : QObject(parent)

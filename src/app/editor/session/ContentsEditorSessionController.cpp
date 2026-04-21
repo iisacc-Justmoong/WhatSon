@@ -2,7 +2,7 @@
 
 #include "agenda/ContentsAgendaBackend.hpp"
 #include "file/WhatSonDebugTrace.hpp"
-#include "ContentsEditorSelectionBridge.hpp"
+#include "editor/bridge/ContentsEditorSelectionBridge.hpp"
 
 #include <QDateTime>
 #include <QRegularExpression>

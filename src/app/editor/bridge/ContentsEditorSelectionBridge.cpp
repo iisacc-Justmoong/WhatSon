@@ -1,4 +1,4 @@
-#include "ContentsEditorSelectionBridge.hpp"
+#include "editor/bridge/ContentsEditorSelectionBridge.hpp"
 
 #include "file/WhatSonDebugTrace.hpp"
 #include "file/sync/ContentsEditorIdleSyncController.hpp"

@@ -1,4 +1,4 @@
-#include "ContentsLogicalTextBridge.hpp"
+#include "editor/text/ContentsLogicalTextBridge.hpp"
 
 #include "file/note/WhatSonNoteBodySemanticTagSupport.hpp"
 #include "file/WhatSonDebugTrace.hpp"
