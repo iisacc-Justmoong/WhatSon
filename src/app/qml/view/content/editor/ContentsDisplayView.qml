@@ -2060,6 +2060,21 @@ Item {
         if (refreshPlan.requestMinimapRepaint && minimapLayer && contentsView.minimapRefreshEnabled)
             minimapLayer.requestRepaint();
     }
+    function executeRefreshPlan(plan) {
+        const refreshPlan = plan && typeof plan === "object" ? plan : ({});
+        if (refreshPlan.resetNoteEntryLineGeometry)
+            contentsView.resetNoteEntryLineGeometryState();
+        if (refreshPlan.requestStructuredLayoutRefresh
+                && structuredDocumentFlow
+                && structuredDocumentFlow.scheduleLayoutCacheRefresh !== undefined)
+            structuredDocumentFlow.scheduleLayoutCacheRefresh();
+        if (refreshPlan.scheduleViewportGutterRefresh)
+            contentsView.scheduleViewportGutterRefresh();
+        if (refreshPlan.gutterPassCount !== undefined)
+            contentsView.scheduleGutterRefresh(
+                        Number(refreshPlan.gutterPassCount) || 0,
+                        String(refreshPlan.gutterReason || ""));
+    }
     function scheduleDeferredDocumentPresentationRefresh() {
         contentsView.applyPresentationRefreshPlan(presentationRefreshController.planDeferredRequest());
     }
@@ -2123,66 +2138,48 @@ Item {
         return Math.max(1, lineCount);
     }
     function shouldScheduleGutterRefreshForReason(reason) {
-        const normalizedReason = reason === undefined || reason === null ? "force" : String(reason).trim().toLowerCase();
-        if (normalizedReason !== "line-structure")
-            return true;
-        if (!contentsView.editorInputFocused)
-            return true;
-        return contentsView.activeLogicalLineCountSnapshot() !== Math.max(1, Number(contentsView.liveLogicalLineCount) || 1);
+        return refreshCoordinator.shouldScheduleGutterRefreshForReason(
+                    reason === undefined || reason === null ? "" : String(reason),
+                    contentsView.activeLogicalLineCountSnapshot());
     }
     function scheduleGutterRefresh(passCount, reason) {
-        if (!contentsView.shouldScheduleGutterRefreshForReason(reason))
-            return;
-        const requestedPassCount = Math.max(1, Number(passCount) || 1);
-        contentsView.gutterRefreshPassesRemaining = Math.max(contentsView.gutterRefreshPassesRemaining, requestedPassCount);
-        if (!gutterRefreshTimer.running)
+        const plan = refreshCoordinator.scheduleGutterRefresh(
+                    Number(passCount) || 0,
+                    reason === undefined || reason === null ? "" : String(reason),
+                    contentsView.activeLogicalLineCountSnapshot());
+        if (plan.startTimer && !gutterRefreshTimer.running)
             gutterRefreshTimer.start();
     }
     function scheduleNoteEntryGutterRefresh(noteId) {
-        const normalizedNoteId = noteId === undefined || noteId === null ? "" : String(noteId).trim();
-        contentsView.pendingNoteEntryGutterRefreshNoteId = normalizedNoteId;
-        contentsView.resetNoteEntryLineGeometryState();
-        if (normalizedNoteId.length === 0)
-            return;
-        if (structuredDocumentFlow && structuredDocumentFlow.scheduleLayoutCacheRefresh !== undefined)
-            structuredDocumentFlow.scheduleLayoutCacheRefresh();
-        contentsView.scheduleViewportGutterRefresh();
-        contentsView.scheduleGutterRefresh(6, "note-entry");
+        contentsView.executeRefreshPlan(refreshCoordinator.scheduleNoteEntryGutterRefresh(
+                                            noteId === undefined || noteId === null ? "" : String(noteId)));
     }
     function scheduleCursorDrivenUiRefresh() {
-        if (!contentsView.minimapRefreshEnabled && contentsView.preferNativeInputHandling)
+        const plan = refreshCoordinator.scheduleCursorDrivenUiRefresh();
+        if (!plan.queueCallLater)
             return;
-        if (contentsView.cursorDrivenUiRefreshQueued)
-            return;
-        contentsView.cursorDrivenUiRefreshQueued = true;
         Qt.callLater(function () {
-            contentsView.cursorDrivenUiRefreshQueued = false;
+            refreshCoordinator.clearCursorDrivenUiRefreshQueued();
             contentsView.refreshMinimapCursorTracking();
             if (minimapLayer && contentsView.minimapRefreshEnabled)
                 minimapLayer.requestRepaint();
         });
     }
     function scheduleViewportGutterRefresh() {
-        if (!contentsView.showEditorGutter)
+        const plan = refreshCoordinator.scheduleViewportGutterRefresh();
+        if (!plan.queueCallLater)
             return;
-        if (contentsView.viewportGutterRefreshQueued)
-            return;
-        contentsView.viewportGutterRefreshQueued = true;
         Qt.callLater(function () {
-            contentsView.viewportGutterRefreshQueued = false;
+            refreshCoordinator.clearViewportGutterRefreshQueued();
             contentsView.refreshVisibleGutterEntries();
         });
     }
     function scheduleMinimapSnapshotRefresh(forceFull) {
-        if (!contentsView.lineGeometryRefreshEnabled)
+        const plan = refreshCoordinator.scheduleMinimapSnapshotRefresh(!!forceFull);
+        if (!plan.queueCallLater)
             return;
-        if (forceFull)
-            contentsView.minimapSnapshotForceFullRefresh = true;
-        if (contentsView.minimapSnapshotRefreshQueued)
-            return;
-        contentsView.minimapSnapshotRefreshQueued = true;
         Qt.callLater(function () {
-            contentsView.minimapSnapshotRefreshQueued = false;
+            refreshCoordinator.clearMinimapSnapshotRefreshQueued();
             contentsView.refreshMinimapSnapshot();
         });
     }
@@ -2247,17 +2244,12 @@ Item {
         flickable.contentY = nextContentY;
     }
     function scheduleTypingViewportCorrection(forceAnchor) {
-        if (contentsView.showPrintEditorLayout)
+        const plan = refreshCoordinator.scheduleTypingViewportCorrection(!!forceAnchor);
+        if (!plan.queueCallLater)
             return;
-        if (forceAnchor)
-            contentsView.typingViewportForceCorrectionRequested = true;
-        if (contentsView.typingViewportCorrectionQueued)
-            return;
-        contentsView.typingViewportCorrectionQueued = true;
         Qt.callLater(function () {
-            const forceCorrection = contentsView.typingViewportForceCorrectionRequested;
-            contentsView.typingViewportForceCorrectionRequested = false;
-            contentsView.typingViewportCorrectionQueued = false;
+            const forceCorrection = refreshCoordinator.takeTypingViewportForceCorrectionRequested();
+            refreshCoordinator.clearTypingViewportCorrectionQueued();
             contentsView.correctTypingViewport(forceCorrection);
         });
     }
@@ -2491,6 +2483,18 @@ Item {
         projectionEnabled: contentsView.documentPresentationProjectionEnabled
         renderDirty: contentsView.documentPresentationRenderDirty()
         typingSessionSyncProtected: contentsView.typingSessionSyncProtected
+    }
+    ContentsDisplayRefreshCoordinator {
+        id: refreshCoordinator
+
+        editorInputFocused: contentsView.editorInputFocused
+        lineGeometryRefreshEnabled: contentsView.lineGeometryRefreshEnabled
+        liveLogicalLineCount: Math.max(1, Number(contentsView.liveLogicalLineCount) || 1)
+        minimapRefreshEnabled: contentsView.minimapRefreshEnabled
+        preferNativeInputHandling: contentsView.preferNativeInputHandling
+        showEditorGutter: contentsView.showEditorGutter
+        showPrintEditorLayout: contentsView.showPrintEditorLayout
+        structuredHostGeometryActive: contentsView.structuredHostGeometryActive
     }
     ContentsEditorTypingController {
         id: editorTypingController

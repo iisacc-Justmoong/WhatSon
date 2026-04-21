@@ -17,7 +17,9 @@ void WhatSonCppRegressionTests::contentsDisplayView_invalidatesGutterGeometryImm
     QVERIFY(displayViewSource.contains(QStringLiteral("contentsView.minimapLineGroupsNoteId = \"\";")));
     QVERIFY(displayViewSource.contains(QStringLiteral("structuredDocumentFlow.scheduleLayoutCacheRefresh();")));
     QVERIFY(displayViewSource.contains(QStringLiteral("contentsView.scheduleViewportGutterRefresh();")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("contentsView.scheduleGutterRefresh(6, \"note-entry\");")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("refreshCoordinator.scheduleNoteEntryGutterRefresh(")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("refreshPlan.gutterPassCount")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("contentsView.scheduleGutterRefresh(")));
     QVERIFY(displayViewSource.contains(QStringLiteral("\"structured-layout-cache\"")));
     QVERIFY(displayViewSource.contains(QStringLiteral("\"editor-text-synchronized\"")));
 }
