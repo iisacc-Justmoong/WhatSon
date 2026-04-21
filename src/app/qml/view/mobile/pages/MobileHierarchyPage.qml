@@ -10,10 +10,7 @@ import "../../panels" as PanelView
 Item {
     id: mobileHierarchyPage
 
-    property var activeHierarchyBindingSnapshot: ({
-        "index": 0,
-        "viewModel": null
-    })
+    property var activeHierarchyBindingSnapshot: selectionCoordinator.activeHierarchyBindingSnapshot
     readonly property var activeContentViewModel: mobileHierarchyPage.activeHierarchyBindingSnapshot
         ? mobileHierarchyPage.activeHierarchyBindingSnapshot.viewModel
         : null
@@ -112,23 +109,8 @@ Item {
         return Math.max(1, Math.round(Number(mobileScaffold.bodyWidth) || 0));
     }
     function syncActiveHierarchyBindings() {
-        const sidebarViewModel = mobileHierarchyPage.sidebarHierarchyViewModel;
-        if (!sidebarViewModel) {
-            mobileHierarchyPage.activeHierarchyBindingSnapshot = {
-                "index": 0,
-                "viewModel": null
-            };
-            return;
-        }
-        const numericIndex = Number(sidebarViewModel.resolvedActiveHierarchyIndex);
-        const resolvedIndex = isFinite(numericIndex) ? Math.floor(numericIndex) : 0;
-        const resolvedHierarchyViewModel = sidebarViewModel.hierarchyViewModelForIndex !== undefined
-                ? sidebarViewModel.hierarchyViewModelForIndex(resolvedIndex)
-                : sidebarViewModel.resolvedHierarchyViewModel;
-        mobileHierarchyPage.activeHierarchyBindingSnapshot = {
-            "index": resolvedIndex,
-            "viewModel": resolvedHierarchyViewModel
-        };
+        selectionCoordinator.activeHierarchyBindingSnapshot = selectionCoordinator.activeHierarchyBindingSnapshotFromSidebar(
+                    mobileHierarchyPage.sidebarHierarchyViewModel);
     }
     function normalizedInteger(value, fallbackValue) {
         return routeCoordinator.normalizedInteger(value, fallbackValue);
@@ -153,46 +135,31 @@ Item {
         return true;
     }
     function currentHierarchySelectionIndex() {
-        if (!mobileHierarchyPage.activeContentViewModel
-                || mobileHierarchyPage.activeContentViewModel.hierarchySelectedIndex === undefined)
-            return routeCoordinator.preservedNoteListSelectionIndex;
-        return mobileHierarchyPage.normalizedInteger(
-                    mobileHierarchyPage.activeContentViewModel.hierarchySelectedIndex,
-                    -1);
+        return selectionCoordinator.currentHierarchySelectionIndex(
+                    mobileHierarchyPage.activeContentViewModel,
+                    routeCoordinator.preservedNoteListSelectionIndex);
     }
     function displayedBodyRoutePath() {
-        const bodyItem = mobileScaffold.bodyItem;
-        if (bodyItem) {
-            if (bodyItem.detailPanelPage !== undefined)
-                return mobileHierarchyPage.detailRoutePath;
-            if (bodyItem.contentViewModel !== undefined)
-                return mobileHierarchyPage.editorRoutePath;
-            if (bodyItem.noteListModel !== undefined)
-                return mobileHierarchyPage.noteListRoutePath;
-            if (bodyItem.sidebarHierarchyViewModel !== undefined)
-                return mobileHierarchyPage.hierarchyRoutePath;
-        }
-        if (!mobileScaffold.activePageRouter)
-            return "";
-        return String(mobileScaffold.activePageRouter.currentPath);
+        return navigationCoordinator.displayedBodyRoutePath(
+                    mobileScaffold.bodyItem,
+                    mobileScaffold.activePageRouter);
     }
     function requestOpenDetailPanelPage() {
-        if (!mobileScaffold.activePageRouter || !mobileHierarchyPage.activeNoteListModel)
+        const plan = navigationCoordinator.openDetailPanelPlan(
+                    !!mobileScaffold.activePageRouter,
+                    !!mobileHierarchyPage.activeNoteListModel,
+                    mobileScaffold.activePageRouter ? String(mobileScaffold.activePageRouter.currentPath) : "",
+                    mobileHierarchyPage.displayedBodyRoutePath(),
+                    mobileHierarchyPage.routeStackDepth());
+        if (!plan.allowed)
             return false;
         mobileHierarchyPage.cancelPendingEditorPopRepair();
         mobileHierarchyPage.cancelPendingDetailPopRepair();
         mobileHierarchyPage.dismissCalendarOverlaysForEditorActivation();
         const preservedSelectionIndex = mobileHierarchyPage.rememberNoteListSelection();
-        const currentPath = String(mobileScaffold.activePageRouter.currentPath);
-        const displayedPath = mobileHierarchyPage.displayedBodyRoutePath();
-        const depth = mobileHierarchyPage.routeStackDepth();
-        if (currentPath === mobileHierarchyPage.detailRoutePath
-                && displayedPath === mobileHierarchyPage.detailRoutePath
-                && depth >= 4)
+        if (plan.alreadyOpen)
             return true;
-        if (currentPath === mobileHierarchyPage.editorRoutePath
-                && displayedPath === mobileHierarchyPage.editorRoutePath
-                && depth >= 3) {
+        if (plan.directPush) {
             mobileHierarchyPage.resetBackSwipeState();
             mobileHierarchyPage.restoreNoteListSelection(preservedSelectionIndex);
             mobileScaffold.activePageRouter.push(mobileHierarchyPage.detailRoutePath);
@@ -445,21 +412,20 @@ Item {
             mobileScaffold.bodyItem.requestCreateFolder();
     }
     function requestOpenNoteList(item, itemId, index) {
-        if (!mobileHierarchyPage.activeNoteListModel || !mobileScaffold.activePageRouter)
+        const plan = navigationCoordinator.openNoteListPlan(
+                    !!mobileScaffold.activePageRouter,
+                    !!mobileHierarchyPage.activeNoteListModel,
+                    mobileScaffold.activePageRouter ? String(mobileScaffold.activePageRouter.currentPath) : "",
+                    mobileHierarchyPage.displayedBodyRoutePath(),
+                    mobileHierarchyPage.routeStackDepth());
+        if (!plan.allowed)
             return;
         mobileHierarchyPage.cancelPendingEditorPopRepair();
         mobileHierarchyPage.cancelPendingDetailPopRepair();
         const preservedSelectionIndex = mobileHierarchyPage.rememberNoteListSelection(itemId);
-        const currentPath = String(mobileScaffold.activePageRouter.currentPath);
-        const displayedPath = mobileHierarchyPage.displayedBodyRoutePath();
-        const depth = mobileHierarchyPage.routeStackDepth();
-        if (currentPath === mobileHierarchyPage.noteListRoutePath
-                && displayedPath === mobileHierarchyPage.noteListRoutePath
-                && depth >= 2)
+        if (plan.alreadyOpen)
             return;
-        if (currentPath === mobileHierarchyPage.hierarchyRoutePath
-                && displayedPath === mobileHierarchyPage.hierarchyRoutePath
-                && depth <= 1) {
+        if (plan.directPush) {
             mobileHierarchyPage.resetBackSwipeState();
             mobileHierarchyPage.restoreNoteListSelection(preservedSelectionIndex);
             mobileScaffold.activePageRouter.push(mobileHierarchyPage.noteListRoutePath);
@@ -469,35 +435,41 @@ Item {
         mobileHierarchyPage.routeToCanonicalNoteList(preservedSelectionIndex);
     }
     function dismissCalendarOverlaysForEditorActivation() {
-        if (mobileHierarchyPage.agendaOverlayVisible)
+        const plan = navigationCoordinator.overlayDismissPlan(
+                    mobileHierarchyPage.agendaOverlayVisible,
+                    mobileHierarchyPage.dayCalendarOverlayVisible,
+                    mobileHierarchyPage.weekCalendarOverlayVisible,
+                    mobileHierarchyPage.monthCalendarOverlayVisible,
+                    mobileHierarchyPage.yearCalendarOverlayVisible);
+        if (plan.dismissAgenda)
             mobileHierarchyPage.agendaOverlayDismissRequested();
-        if (mobileHierarchyPage.dayCalendarOverlayVisible)
+        if (plan.dismissDay)
             mobileHierarchyPage.dayCalendarOverlayDismissRequested();
-        if (mobileHierarchyPage.weekCalendarOverlayVisible)
+        if (plan.dismissWeek)
             mobileHierarchyPage.weekCalendarOverlayDismissRequested();
-        if (mobileHierarchyPage.monthCalendarOverlayVisible)
+        if (plan.dismissMonth)
             mobileHierarchyPage.monthCalendarOverlayDismissRequested();
-        if (mobileHierarchyPage.yearCalendarOverlayVisible)
+        if (plan.dismissYear)
             mobileHierarchyPage.yearCalendarOverlayDismissRequested();
     }
     function requestOpenEditor(noteId, index) {
-        const normalizedNoteId = noteId === undefined || noteId === null ? "" : String(noteId).trim();
-        if (normalizedNoteId.length === 0 || !mobileHierarchyPage.activeContentViewModel || !mobileHierarchyPage.activeNoteListModel || !mobileScaffold.activePageRouter)
+        const plan = navigationCoordinator.openEditorPlan(
+                    noteId,
+                    !!mobileHierarchyPage.activeContentViewModel,
+                    !!mobileHierarchyPage.activeNoteListModel,
+                    !!mobileScaffold.activePageRouter,
+                    mobileScaffold.activePageRouter ? String(mobileScaffold.activePageRouter.currentPath) : "",
+                    mobileHierarchyPage.displayedBodyRoutePath(),
+                    mobileHierarchyPage.routeStackDepth());
+        if (!plan.allowed)
             return;
         mobileHierarchyPage.cancelPendingEditorPopRepair();
         mobileHierarchyPage.cancelPendingDetailPopRepair();
         mobileHierarchyPage.dismissCalendarOverlaysForEditorActivation();
         const preservedSelectionIndex = mobileHierarchyPage.rememberNoteListSelection();
-        const currentPath = String(mobileScaffold.activePageRouter.currentPath);
-        const displayedPath = mobileHierarchyPage.displayedBodyRoutePath();
-        const depth = mobileHierarchyPage.routeStackDepth();
-        if (currentPath === mobileHierarchyPage.editorRoutePath
-                && displayedPath === mobileHierarchyPage.editorRoutePath
-                && depth >= 3)
+        if (plan.alreadyOpen)
             return;
-        if (currentPath === mobileHierarchyPage.noteListRoutePath
-                && displayedPath === mobileHierarchyPage.noteListRoutePath
-                && depth >= 2) {
+        if (plan.directPush) {
             mobileHierarchyPage.resetBackSwipeState();
             mobileHierarchyPage.restoreNoteListSelection(preservedSelectionIndex);
             mobileScaffold.activePageRouter.push(mobileHierarchyPage.editorRoutePath);
@@ -507,11 +479,15 @@ Item {
         mobileHierarchyPage.routeToCanonicalEditor(preservedSelectionIndex);
     }
     function ensureCalendarSurfaceVisible() {
-        if (!mobileScaffold.activePageRouter)
+        const plan = navigationCoordinator.calendarSurfacePlan(
+                    !!mobileScaffold.activePageRouter,
+                    !!mobileHierarchyPage.activeNoteListModel,
+                    mobileHierarchyPage.displayedBodyRoutePath());
+        if (!plan.allowed)
             return false;
-        if (mobileHierarchyPage.displayedBodyRoutePath() === mobileHierarchyPage.editorRoutePath)
+        if (plan.alreadyVisible)
             return true;
-        if (!mobileHierarchyPage.activeNoteListModel)
+        if (!plan.routeToEditor)
             return false;
         mobileHierarchyPage.routeToCanonicalEditor();
         return true;
@@ -629,6 +605,17 @@ Item {
         editorRoutePath: mobileHierarchyPage.editorRoutePath
         hierarchyRoutePath: mobileHierarchyPage.hierarchyRoutePath
         lastObservedRoutePath: routeCoordinator.hierarchyRoutePath
+        noteListRoutePath: mobileHierarchyPage.noteListRoutePath
+    }
+    MobileHierarchySelectionCoordinator {
+        id: selectionCoordinator
+    }
+    MobileHierarchyNavigationCoordinator {
+        id: navigationCoordinator
+
+        detailRoutePath: mobileHierarchyPage.detailRoutePath
+        editorRoutePath: mobileHierarchyPage.editorRoutePath
+        hierarchyRoutePath: mobileHierarchyPage.hierarchyRoutePath
         noteListRoutePath: mobileHierarchyPage.noteListRoutePath
     }
     MobileHierarchyBackSwipeCoordinator {

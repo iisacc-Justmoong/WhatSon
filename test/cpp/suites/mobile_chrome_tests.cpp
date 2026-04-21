@@ -27,9 +27,17 @@ void WhatSonCppRegressionTests::mobileChrome_usesSharedFigmaControlSurfaceColor(
     QVERIFY(mobileHierarchyPageSource.contains(
         QStringLiteral("MobileHierarchyRouteCoordinator")));
     QVERIFY(mobileHierarchyPageSource.contains(
+        QStringLiteral("MobileHierarchySelectionCoordinator")));
+    QVERIFY(mobileHierarchyPageSource.contains(
+        QStringLiteral("MobileHierarchyNavigationCoordinator")));
+    QVERIFY(mobileHierarchyPageSource.contains(
         QStringLiteral("MobileHierarchyBackSwipeCoordinator")));
     QVERIFY(mobileHierarchyPageSource.contains(
         QStringLiteral("routeCoordinator.canonicalRoutePlan(")));
+    QVERIFY(mobileHierarchyPageSource.contains(
+        QStringLiteral("selectionCoordinator.activeHierarchyBindingSnapshotFromSidebar(")));
+    QVERIFY(mobileHierarchyPageSource.contains(
+        QStringLiteral("navigationCoordinator.openEditorPlan(")));
     QVERIFY(mobileHierarchyPageSource.contains(
         QStringLiteral("backSwipeCoordinator.beginGesturePlan(")));
     QVERIFY(mobileScaffoldSource.contains(
