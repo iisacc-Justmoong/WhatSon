@@ -1610,7 +1610,7 @@ namespace
         }
 
         static const QRegularExpression unorderedListPattern(
-            QStringLiteral(R"(^([ \t]*)([-+*\u2022])(\s+)(.*)$)"));
+            QStringLiteral(R"(^([ \t]*)(?:([-+*])|(•))(\s+)(.*)$)"));
         static const QRegularExpression orderedListPattern(
             QStringLiteral(R"(^([ \t]*)(\d+)([.)])(\s+)(.*)$)"));
         static const QRegularExpression headingPattern(
@@ -1653,16 +1653,21 @@ namespace
             const QRegularExpressionMatch unorderedListMatch = unorderedListPattern.match(line);
             if (unorderedListMatch.hasMatch())
             {
-                const QString trailingSpacing =
-                    whitespaceToHtml(unorderedListMatch.captured(3).mid(1));
+                const QString markerToken = !unorderedListMatch.captured(2).isEmpty()
+                                                ? unorderedListMatch.captured(2)
+                                                : unorderedListMatch.captured(3);
+                const QString markerSpacing = unorderedListMatch.captured(4);
+                const QString trailingSpacing = markerSpacing.size() > 1
+                                                    ? whitespaceToHtml(markerSpacing.mid(1))
+                                                    : QString();
                 htmlLines.push_back(
                     whitespaceToHtml(unorderedListMatch.captured(1))
                     + WhatSon::WhatSonNoteMarkdownStyleObject::wrapHtmlSpan(
                         WhatSon::WhatSonNoteMarkdownStyleObject::Role::UnorderedListMarker,
-                        QString(QChar(0x2022)))
+                        escapeHtmlText(markerToken))
                     + QStringLiteral("&nbsp;")
                     + trailingSpacing
-                    + renderInlineTaggedTextFragmentToHtml(unorderedListMatch.captured(4)));
+                    + renderInlineTaggedTextFragmentToHtml(unorderedListMatch.captured(5)));
                 continue;
             }
 

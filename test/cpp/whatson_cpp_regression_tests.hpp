@@ -684,6 +684,7 @@ private slots:
     void a4PaperBackground_exposesCanonicalMetricsAndAnchorsPrintRendererDefaults();
     void textFormatRenderer_wrapsCommittedUrlsIntoCanonicalWebLinks();
     void textFormatRenderer_appliesPaperPaletteToEditorAndPreviewHtml();
+    void textFormatRenderer_preservesMarkdownUnorderedListMarkersWithoutRegexWarnings();
     void displayPaperModels_hostPageAndPrintViewModeObjectsUnderModelsDirectory();
     void noteBodyPersistence_roundTripsAndProjectsCanonicalWebLinks();
     void noteBodyPersistence_stripsRenderedHtmlBlockArtifactsFromSourceProjection();

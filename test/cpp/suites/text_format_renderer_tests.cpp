@@ -80,3 +80,16 @@ void WhatSonCppRegressionTests::textFormatRenderer_wrapsCommittedUrlsIntoCanonic
         QStringLiteral("<a href=\"https://www.iisacc.com\" style=\"color:#8CB4FF;text-decoration: underline;\">")));
     QVERIFY(renderer.renderedHtml().contains(QStringLiteral("아이작닷컴</a>")));
 }
+
+void WhatSonCppRegressionTests::textFormatRenderer_preservesMarkdownUnorderedListMarkersWithoutRegexWarnings()
+{
+    ContentsTextFormatRenderer renderer;
+    renderer.setPreviewEnabled(true);
+    renderer.setSourceText(QStringLiteral("- alpha\n+ beta\n* gamma\n• delta"));
+
+    const QString previewHtml = renderer.renderedHtml();
+    QVERIFY(previewHtml.contains(QStringLiteral(">-</span>&nbsp;alpha")));
+    QVERIFY(previewHtml.contains(QStringLiteral(">+</span>&nbsp;beta")));
+    QVERIFY(previewHtml.contains(QStringLiteral(">*</span>&nbsp;gamma")));
+    QVERIFY(previewHtml.contains(QStringLiteral(">•</span>&nbsp;delta")));
+}
