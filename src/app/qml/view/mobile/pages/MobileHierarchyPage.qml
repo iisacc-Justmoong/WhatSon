@@ -27,12 +27,7 @@ Item {
         ? mobileScaffold.activePageRouter.canGoBack
         : false
     readonly property int backSwipeEdgeWidth: LV.Theme.gap24
-    property int backSwipeConsumedSessionId: -1
     property bool backSwipeDragCanceled: false
-    property int backSwipeGeneratedSessionId: 0
-    property int detailPopRepairRequestId: 0
-    property int editorPopRepairRequestId: 0
-    property int backSwipeSessionId: -1
     property color canvasColor: LV.Theme.panelBackground01
     property color controlSurfaceColor: LV.Theme.panelBackground10
     readonly property string detailRoutePath: "/mobile/detail"
@@ -40,9 +35,8 @@ Item {
     property var editorViewModeViewModel: null
     readonly property string hierarchyRoutePath: "/mobile/hierarchy"
     property string hierarchySearchText: ""
-    property string lastObservedRoutePath: hierarchyRoutePath
-    property int preservedNoteListSelectionIndex: -1
-    property bool routeSelectionSyncSuppressed: false
+    
+    
     readonly property var mobileBodyRoutes: [
         {
             "path": mobileHierarchyPage.hierarchyRoutePath,
@@ -137,25 +131,19 @@ Item {
         };
     }
     function normalizedInteger(value, fallbackValue) {
-        const numericValue = Number(value);
-        if (!isFinite(numericValue))
-            return fallbackValue;
-        return Math.floor(numericValue);
+        return routeCoordinator.normalizedInteger(value, fallbackValue);
     }
     function backSwipeGestureEventData(localX, localY, totalDeltaX, totalDeltaY, sessionId) {
         const localPoint = Qt.point(Number(localX) || 0, Number(localY) || 0);
         const globalPoint = backSwipeEdgeZone.mapToGlobal(localPoint);
-        return {
-            "globalX": globalPoint.x,
-            "globalY": globalPoint.y,
-            "sessionId": mobileHierarchyPage.normalizedInteger(sessionId, -1),
-            "startGlobalX": globalPoint.x - (Number(totalDeltaX) || 0),
-            "startGlobalY": globalPoint.y - (Number(totalDeltaY) || 0),
-            "totalDeltaX": Number(totalDeltaX) || 0,
-            "totalDeltaY": Number(totalDeltaY) || 0,
-            "velocityX": 0,
-            "velocityY": 0
-        };
+        return backSwipeCoordinator.gestureEventData(
+                    Number(localX) || 0,
+                    Number(localY) || 0,
+                    Number(totalDeltaX) || 0,
+                    Number(totalDeltaY) || 0,
+                    routeCoordinator.normalizedInteger(sessionId, -1),
+                    Number(globalPoint.x) || 0,
+                    Number(globalPoint.y) || 0);
     }
     function clearActiveHierarchySelection() {
         if (!mobileHierarchyPage.activeContentViewModel
@@ -167,7 +155,7 @@ Item {
     function currentHierarchySelectionIndex() {
         if (!mobileHierarchyPage.activeContentViewModel
                 || mobileHierarchyPage.activeContentViewModel.hierarchySelectedIndex === undefined)
-            return mobileHierarchyPage.preservedNoteListSelectionIndex;
+            return routeCoordinator.preservedNoteListSelectionIndex;
         return mobileHierarchyPage.normalizedInteger(
                     mobileHierarchyPage.activeContentViewModel.hierarchySelectedIndex,
                     -1);
@@ -214,212 +202,227 @@ Item {
         return mobileHierarchyPage.routeToCanonicalDetailPanel(preservedSelectionIndex);
     }
     function beginBackSwipeGesture(eventData) {
-        if (!mobileHierarchyPage.backNavigationAvailable || !eventData || pageTransitionController.active)
-            return false;
-        const sessionId = mobileHierarchyPage.normalizedInteger(eventData.sessionId, -1);
-        const startGlobalX = Number(eventData.startGlobalX !== undefined ? eventData.startGlobalX : eventData.globalX);
-        if (sessionId < 0
-                || sessionId === mobileHierarchyPage.backSwipeConsumedSessionId
-                || !isFinite(startGlobalX)
-                || !mobileHierarchyPage.isWithinBackSwipeEdge(startGlobalX))
+        const edgeOrigin = mobileHierarchyPage.mapToGlobal(Qt.point(0, 0));
+        const plan = backSwipeCoordinator.beginGesturePlan(
+                    mobileHierarchyPage.backNavigationAvailable,
+                    !!pageTransitionController.active,
+                    eventData && typeof eventData === "object" ? eventData : ({}),
+                    Number(edgeOrigin.x) || 0);
+        if (!plan.begin)
             return false;
         if (!pageTransitionController.beginBack({
-                    "sessionId": sessionId,
+                    "sessionId": Number(plan.sessionId) || -1,
                     "source": "edge-pan"
                 }))
             return false;
-        mobileHierarchyPage.backSwipeSessionId = sessionId;
+        backSwipeCoordinator.backSwipeSessionId = Number(plan.sessionId) || -1;
         return true;
     }
     function cancelBackSwipeGesture(eventData) {
-        const sessionId = mobileHierarchyPage.normalizedInteger(
-                    eventData && eventData.sessionId !== undefined ? eventData.sessionId : -1,
-                    -1);
-        if (mobileHierarchyPage.backSwipeSessionId < 0)
+        const plan = backSwipeCoordinator.cancelGesturePlan(
+                    eventData && typeof eventData === "object" ? eventData : ({}));
+        if (!plan.cancel)
             return false;
-        if (sessionId >= 0 && sessionId !== mobileHierarchyPage.backSwipeSessionId)
-            return false;
-        mobileHierarchyPage.backSwipeSessionId = -1;
-        if (sessionId >= 0)
-            mobileHierarchyPage.backSwipeConsumedSessionId = sessionId;
+        backSwipeCoordinator.backSwipeSessionId = -1;
+        if (Number(plan.sessionId) >= 0)
+            backSwipeCoordinator.backSwipeConsumedSessionId = Number(plan.sessionId) || -1;
         return pageTransitionController.cancel();
     }
     function isWithinBackSwipeEdge(globalX) {
         const edgeOrigin = mobileHierarchyPage.mapToGlobal(Qt.point(0, 0));
-        return globalX >= edgeOrigin.x && globalX <= edgeOrigin.x + mobileHierarchyPage.backSwipeEdgeWidth;
+        return Number(globalX) >= edgeOrigin.x && Number(globalX) <= edgeOrigin.x + mobileHierarchyPage.backSwipeEdgeWidth;
     }
     function resetBackSwipeState() {
-        mobileHierarchyPage.backSwipeConsumedSessionId = -1;
-        mobileHierarchyPage.backSwipeSessionId = -1;
+        backSwipeCoordinator.resetState();
     }
     function cancelPendingEditorPopRepair() {
-        mobileHierarchyPage.editorPopRepairRequestId += 1;
+        routeCoordinator.editorPopRepairRequestId += 1;
     }
     function cancelPendingDetailPopRepair() {
-        mobileHierarchyPage.detailPopRepairRequestId += 1;
+        routeCoordinator.detailPopRepairRequestId += 1;
     }
     function rememberNoteListSelection(selectionIndex) {
-        let nextSelectionIndex = -1;
-        if (selectionIndex !== undefined && selectionIndex !== null) {
-            const normalizedSelectionIndex = Math.floor(Number(selectionIndex));
-            if (isFinite(normalizedSelectionIndex))
-                nextSelectionIndex = normalizedSelectionIndex;
-        }
-        if (nextSelectionIndex < 0)
-            nextSelectionIndex = mobileHierarchyPage.currentHierarchySelectionIndex();
-        mobileHierarchyPage.preservedNoteListSelectionIndex = nextSelectionIndex;
-
+        return routeCoordinator.rememberSelectionIndex(
+                    selectionIndex,
+                    mobileHierarchyPage.currentHierarchySelectionIndex());
     }
     function restoreNoteListSelection(selectionIndex) {
         if (!mobileHierarchyPage.activeContentViewModel
                 || mobileHierarchyPage.activeContentViewModel.setHierarchySelectedIndex === undefined)
             return false;
-        let targetSelectionIndex = -1;
-        if (selectionIndex !== undefined && selectionIndex !== null) {
-            const normalizedSelectionIndex = Math.floor(Number(selectionIndex));
-            if (isFinite(normalizedSelectionIndex))
-                targetSelectionIndex = normalizedSelectionIndex;
-        }
-        if (targetSelectionIndex < 0)
-            targetSelectionIndex = mobileHierarchyPage.preservedNoteListSelectionIndex;
+        const targetSelectionIndex = routeCoordinator.resolvedSelectionRestoreTarget(selectionIndex);
         mobileHierarchyPage.activeContentViewModel.setHierarchySelectedIndex(targetSelectionIndex);
         return targetSelectionIndex >= 0;
     }
     function routeStackDepth() {
-        if (!mobileScaffold.activePageRouter || mobileScaffold.activePageRouter.depth === undefined)
-            return 0;
-        return Math.max(0, Math.floor(Number(mobileScaffold.activePageRouter.depth) || 0));
+        return routeCoordinator.routeStackDepth(
+                    mobileScaffold.activePageRouter && mobileScaffold.activePageRouter.depth !== undefined
+                    ? mobileScaffold.activePageRouter.depth
+                    : 0);
     }
     function routeToCanonicalNoteList(selectionIndex) {
-        if (!mobileScaffold.activePageRouter || !mobileHierarchyPage.activeNoteListModel)
+        const plan = routeCoordinator.canonicalRoutePlan(
+                    mobileHierarchyPage.noteListRoutePath,
+                    !!mobileScaffold.activePageRouter,
+                    !!mobileHierarchyPage.activeNoteListModel,
+                    !!pageTransitionController.active,
+                    mobileHierarchyPage.displayedBodyRoutePath());
+        if (!plan.allowed)
             return false;
         mobileHierarchyPage.cancelPendingEditorPopRepair();
         mobileHierarchyPage.cancelPendingDetailPopRepair();
-        if (pageTransitionController.active)
+        if (plan.cancelTransition)
             pageTransitionController.cancel();
         mobileHierarchyPage.resetBackSwipeState();
         const preservedSelectionIndex = mobileHierarchyPage.rememberNoteListSelection(selectionIndex);
-        mobileHierarchyPage.routeSelectionSyncSuppressed = true;
-        mobileScaffold.activePageRouter.setRoot(mobileHierarchyPage.hierarchyRoutePath);
-        mobileHierarchyPage.restoreNoteListSelection(preservedSelectionIndex);
-        mobileScaffold.activePageRouter.push(mobileHierarchyPage.noteListRoutePath);
+        routeCoordinator.routeSelectionSyncSuppressed = !!plan.suppressSelectionSync;
+        if (plan.resetToRoot)
+            mobileScaffold.activePageRouter.setRoot(mobileHierarchyPage.hierarchyRoutePath);
+        if (plan.restoreSelection)
+            mobileHierarchyPage.restoreNoteListSelection(preservedSelectionIndex);
+        for (const path of (plan.pushPaths || []))
+            mobileScaffold.activePageRouter.push(String(path));
         Qt.callLater(function () {
-            mobileHierarchyPage.routeSelectionSyncSuppressed = false;
+            routeCoordinator.routeSelectionSyncSuppressed = false;
         });
-        mobileHierarchyPage.requestViewHook();
+        if (plan.requestViewHook)
+            mobileHierarchyPage.requestViewHook();
         return true;
     }
     function routeToCanonicalEditor(selectionIndex) {
-        if (!mobileScaffold.activePageRouter || !mobileHierarchyPage.activeNoteListModel)
+        const plan = routeCoordinator.canonicalRoutePlan(
+                    mobileHierarchyPage.editorRoutePath,
+                    !!mobileScaffold.activePageRouter,
+                    !!mobileHierarchyPage.activeNoteListModel,
+                    !!pageTransitionController.active,
+                    mobileHierarchyPage.displayedBodyRoutePath());
+        if (!plan.allowed)
             return false;
         mobileHierarchyPage.cancelPendingEditorPopRepair();
         mobileHierarchyPage.cancelPendingDetailPopRepair();
-        if (pageTransitionController.active)
+        if (plan.cancelTransition)
             pageTransitionController.cancel();
         mobileHierarchyPage.resetBackSwipeState();
         const preservedSelectionIndex = mobileHierarchyPage.rememberNoteListSelection(selectionIndex);
-        mobileHierarchyPage.routeSelectionSyncSuppressed = true;
-        mobileScaffold.activePageRouter.setRoot(mobileHierarchyPage.hierarchyRoutePath);
-        mobileHierarchyPage.restoreNoteListSelection(preservedSelectionIndex);
-        mobileScaffold.activePageRouter.push(mobileHierarchyPage.noteListRoutePath);
-        mobileScaffold.activePageRouter.push(mobileHierarchyPage.editorRoutePath);
+        routeCoordinator.routeSelectionSyncSuppressed = !!plan.suppressSelectionSync;
+        if (plan.resetToRoot)
+            mobileScaffold.activePageRouter.setRoot(mobileHierarchyPage.hierarchyRoutePath);
+        if (plan.restoreSelection)
+            mobileHierarchyPage.restoreNoteListSelection(preservedSelectionIndex);
+        for (const path of (plan.pushPaths || []))
+            mobileScaffold.activePageRouter.push(String(path));
         Qt.callLater(function () {
-            mobileHierarchyPage.routeSelectionSyncSuppressed = false;
+            routeCoordinator.routeSelectionSyncSuppressed = false;
         });
-        mobileHierarchyPage.requestViewHook();
+        if (plan.requestViewHook)
+            mobileHierarchyPage.requestViewHook();
         return true;
     }
     function routeToCanonicalDetailPanel(selectionIndex) {
-        if (!mobileScaffold.activePageRouter || !mobileHierarchyPage.activeNoteListModel)
+        const plan = routeCoordinator.canonicalRoutePlan(
+                    mobileHierarchyPage.detailRoutePath,
+                    !!mobileScaffold.activePageRouter,
+                    !!mobileHierarchyPage.activeNoteListModel,
+                    !!pageTransitionController.active,
+                    mobileHierarchyPage.displayedBodyRoutePath());
+        if (!plan.allowed)
             return false;
         mobileHierarchyPage.cancelPendingEditorPopRepair();
         mobileHierarchyPage.cancelPendingDetailPopRepair();
-        if (pageTransitionController.active)
+        if (plan.cancelTransition)
             pageTransitionController.cancel();
         mobileHierarchyPage.resetBackSwipeState();
         const preservedSelectionIndex = mobileHierarchyPage.rememberNoteListSelection(selectionIndex);
-        mobileHierarchyPage.routeSelectionSyncSuppressed = true;
-        mobileScaffold.activePageRouter.setRoot(mobileHierarchyPage.hierarchyRoutePath);
-        mobileHierarchyPage.restoreNoteListSelection(preservedSelectionIndex);
-        mobileScaffold.activePageRouter.push(mobileHierarchyPage.noteListRoutePath);
-        mobileScaffold.activePageRouter.push(mobileHierarchyPage.editorRoutePath);
-        mobileScaffold.activePageRouter.push(mobileHierarchyPage.detailRoutePath);
+        routeCoordinator.routeSelectionSyncSuppressed = !!plan.suppressSelectionSync;
+        if (plan.resetToRoot)
+            mobileScaffold.activePageRouter.setRoot(mobileHierarchyPage.hierarchyRoutePath);
+        if (plan.restoreSelection)
+            mobileHierarchyPage.restoreNoteListSelection(preservedSelectionIndex);
+        for (const path of (plan.pushPaths || []))
+            mobileScaffold.activePageRouter.push(String(path));
         Qt.callLater(function () {
-            mobileHierarchyPage.routeSelectionSyncSuppressed = false;
+            routeCoordinator.routeSelectionSyncSuppressed = false;
         });
-        mobileHierarchyPage.requestViewHook();
+        if (plan.requestViewHook)
+            mobileHierarchyPage.requestViewHook();
         return true;
     }
     function verifyCommittedEditorPopState(requestId, attemptsRemaining) {
-        if (requestId !== mobileHierarchyPage.editorPopRepairRequestId
-                || !mobileScaffold.activePageRouter
-                || !mobileHierarchyPage.activeNoteListModel)
+        const plan = routeCoordinator.repairVerificationPlan(
+                    requestId,
+                    true,
+                    !!mobileScaffold.activePageRouter,
+                    !!mobileHierarchyPage.activeNoteListModel,
+                    mobileHierarchyPage.displayedBodyRoutePath(),
+                    mobileScaffold.activePageRouter ? String(mobileScaffold.activePageRouter.currentPath) : "",
+                    mobileHierarchyPage.routeStackDepth(),
+                    attemptsRemaining);
+        if (!plan.valid)
             return false;
-        const displayedPath = mobileHierarchyPage.displayedBodyRoutePath();
-        const currentPath = String(mobileScaffold.activePageRouter.currentPath);
-        const depth = mobileHierarchyPage.routeStackDepth();
-        if (displayedPath === mobileHierarchyPage.noteListRoutePath)
+        if (plan.done)
             return true;
-        if (currentPath === mobileHierarchyPage.noteListRoutePath && depth >= 2)
-            return true;
-        if (attemptsRemaining > 0) {
+        if (plan.retry) {
             Qt.callLater(function () {
-                mobileHierarchyPage.verifyCommittedEditorPopState(requestId, attemptsRemaining - 1);
+                mobileHierarchyPage.verifyCommittedEditorPopState(
+                            requestId,
+                            Number(plan.nextAttemptsRemaining) || 0);
             });
             return false;
         }
-        mobileHierarchyPage.routeToCanonicalNoteList();
+        if (plan.fallbackToCanonicalRoute)
+            mobileHierarchyPage.routeToCanonicalNoteList();
         return false;
     }
     function verifyCommittedDetailPopState(requestId, attemptsRemaining) {
-        if (requestId !== mobileHierarchyPage.detailPopRepairRequestId
-                || !mobileScaffold.activePageRouter
-                || !mobileHierarchyPage.activeNoteListModel)
+        const plan = routeCoordinator.repairVerificationPlan(
+                    requestId,
+                    false,
+                    !!mobileScaffold.activePageRouter,
+                    !!mobileHierarchyPage.activeNoteListModel,
+                    mobileHierarchyPage.displayedBodyRoutePath(),
+                    mobileScaffold.activePageRouter ? String(mobileScaffold.activePageRouter.currentPath) : "",
+                    mobileHierarchyPage.routeStackDepth(),
+                    attemptsRemaining);
+        if (!plan.valid)
             return false;
-        const displayedPath = mobileHierarchyPage.displayedBodyRoutePath();
-        const currentPath = String(mobileScaffold.activePageRouter.currentPath);
-        const depth = mobileHierarchyPage.routeStackDepth();
-        if (displayedPath === mobileHierarchyPage.editorRoutePath)
+        if (plan.done)
             return true;
-        if (currentPath === mobileHierarchyPage.editorRoutePath && depth >= 3)
-            return true;
-        if (attemptsRemaining > 0) {
+        if (plan.retry) {
             Qt.callLater(function () {
-                mobileHierarchyPage.verifyCommittedDetailPopState(requestId, attemptsRemaining - 1);
+                mobileHierarchyPage.verifyCommittedDetailPopState(
+                            requestId,
+                            Number(plan.nextAttemptsRemaining) || 0);
             });
             return false;
         }
-        mobileHierarchyPage.routeToCanonicalEditor();
+        if (plan.fallbackToCanonicalRoute)
+            mobileHierarchyPage.routeToCanonicalEditor();
         return false;
     }
     function handleCommittedRouteTransition(state) {
-        mobileHierarchyPage.requestViewHook();
-        const transitionState = state || ({});
-        const operation = transitionState.operation !== undefined ? String(transitionState.operation) : "";
-        const fromPath = transitionState.fromPath !== undefined ? String(transitionState.fromPath) : "";
-        if (operation !== "pop" || !mobileHierarchyPage.activeNoteListModel)
+        const plan = routeCoordinator.committedTransitionPlan(
+                    state && typeof state === "object" ? state : ({}),
+                    !!mobileHierarchyPage.activeNoteListModel,
+                    mobileHierarchyPage.displayedBodyRoutePath());
+        if (plan.requestViewHook)
+            mobileHierarchyPage.requestViewHook();
+        if (!mobileHierarchyPage.activeNoteListModel)
             return;
-        mobileHierarchyPage.rememberNoteListSelection();
-        if (fromPath === mobileHierarchyPage.detailRoutePath) {
+        if (plan.rememberSelection)
+            mobileHierarchyPage.rememberNoteListSelection();
+        if (plan.cancelDetailRepair)
             mobileHierarchyPage.cancelPendingDetailPopRepair();
-            const displayedPath = mobileHierarchyPage.displayedBodyRoutePath();
-            if (displayedPath === mobileHierarchyPage.editorRoutePath)
-                return;
-            const repairRequestId = mobileHierarchyPage.detailPopRepairRequestId;
-            Qt.callLater(function () {
-                mobileHierarchyPage.verifyCommittedDetailPopState(repairRequestId, 2);
-            });
+        if (plan.cancelEditorRepair)
+            mobileHierarchyPage.cancelPendingEditorPopRepair();
+        if (!plan.scheduleRepair)
             return;
-        }
-        if (fromPath !== mobileHierarchyPage.editorRoutePath)
-            return;
-        mobileHierarchyPage.cancelPendingEditorPopRepair();
-        const displayedPath = mobileHierarchyPage.displayedBodyRoutePath();
-        if (displayedPath === mobileHierarchyPage.noteListRoutePath)
-            return;
-        const repairRequestId = mobileHierarchyPage.editorPopRepairRequestId;
+        const repairRequestId = Number(plan.repairRequestId) || 0;
+        const attemptsRemaining = Number(plan.attemptsRemaining) || 0;
         Qt.callLater(function () {
-            mobileHierarchyPage.verifyCommittedEditorPopState(repairRequestId, 2);
+            if (plan.repairEditor)
+                mobileHierarchyPage.verifyCommittedEditorPopState(repairRequestId, attemptsRemaining);
+            else
+                mobileHierarchyPage.verifyCommittedDetailPopState(repairRequestId, attemptsRemaining);
         });
     }
     function requestBackToHierarchy() {
@@ -550,84 +553,89 @@ Item {
         viewHookRequested();
     }
     function routeToHierarchyRoot() {
-        if (!mobileScaffold.activePageRouter)
+        const plan = routeCoordinator.hierarchyRootPlan(
+                    !!mobileScaffold.activePageRouter,
+                    !!pageTransitionController.active,
+                    mobileHierarchyPage.displayedBodyRoutePath(),
+                    !!(mobileScaffold.activePageRouter && mobileScaffold.activePageRouter.canGoBack));
+        if (!plan.allowed)
             return false;
         mobileHierarchyPage.cancelPendingEditorPopRepair();
         mobileHierarchyPage.cancelPendingDetailPopRepair();
-        if (pageTransitionController.active)
+        if (plan.cancelTransition)
             pageTransitionController.cancel();
         mobileHierarchyPage.resetBackSwipeState();
-        if (mobileHierarchyPage.displayedBodyRoutePath() === mobileHierarchyPage.hierarchyRoutePath
-                && !mobileScaffold.activePageRouter.canGoBack)
+        if (plan.alreadyRoot)
             return false;
-        mobileScaffold.activePageRouter.setRoot(mobileHierarchyPage.hierarchyRoutePath);
-        mobileHierarchyPage.requestViewHook();
+        if (plan.setRoot)
+            mobileScaffold.activePageRouter.setRoot(mobileHierarchyPage.hierarchyRoutePath);
+        if (plan.requestViewHook)
+            mobileHierarchyPage.requestViewHook();
         return true;
     }
     function syncRouteSelectionState() {
-        if (!mobileScaffold.activePageRouter)
-            return false;
         const displayedPath = mobileHierarchyPage.displayedBodyRoutePath();
-        const routerCurrentPath = String(mobileScaffold.activePageRouter.currentPath);
-        const depth = mobileHierarchyPage.routeStackDepth();
-        const previousPath = mobileHierarchyPage.lastObservedRoutePath;
-        mobileHierarchyPage.lastObservedRoutePath = displayedPath;
-        if (mobileHierarchyPage.routeSelectionSyncSuppressed)
-            return false;
-        if (displayedPath !== mobileHierarchyPage.hierarchyRoutePath
-                || previousPath === mobileHierarchyPage.hierarchyRoutePath)
-            return false;
-        if (routerCurrentPath !== mobileHierarchyPage.hierarchyRoutePath || depth > 1)
+        const plan = routeCoordinator.routeSelectionSyncPlan(
+                    !!mobileScaffold.activePageRouter,
+                    displayedPath,
+                    mobileScaffold.activePageRouter ? String(mobileScaffold.activePageRouter.currentPath) : "",
+                    mobileHierarchyPage.routeStackDepth());
+        routeCoordinator.lastObservedRoutePath = String(plan.nextPath || displayedPath);
+        if (!plan.valid || !plan.clearHierarchySelection)
             return false;
         return mobileHierarchyPage.clearActiveHierarchySelection();
     }
     function finishBackSwipeGesture(eventData, cancelled) {
-        const sessionId = mobileHierarchyPage.normalizedInteger(
-                    eventData && eventData.sessionId !== undefined ? eventData.sessionId : -1,
-                    -1);
-        if (mobileHierarchyPage.backSwipeSessionId < 0)
+        const plan = backSwipeCoordinator.finishGesturePlan(
+                    eventData && typeof eventData === "object" ? eventData : ({}),
+                    !!cancelled,
+                    !!pageTransitionController.active,
+                    Number(pageTransitionController.progress) || 0);
+        if (!plan.valid)
             return false;
-        if (sessionId >= 0 && sessionId !== mobileHierarchyPage.backSwipeSessionId)
-            return false;
-        mobileHierarchyPage.backSwipeSessionId = -1;
-        if (sessionId >= 0)
-            mobileHierarchyPage.backSwipeConsumedSessionId = sessionId;
+        backSwipeCoordinator.backSwipeSessionId = -1;
+        if (Number(plan.sessionId) >= 0)
+            backSwipeCoordinator.backSwipeConsumedSessionId = Number(plan.sessionId) || -1;
         if (!pageTransitionController.active)
             return false;
-        if (cancelled)
+        if (plan.cancelled)
             return pageTransitionController.cancel();
-        const velocityX = Number(eventData && eventData.velocityX !== undefined ? eventData.velocityX : 0) || 0;
-        const velocityY = Number(eventData && eventData.velocityY !== undefined ? eventData.velocityY : 0) || 0;
-        const shouldCommit = pageTransitionController.shouldCommit(
-            pageTransitionController.progress,
-            velocityX,
-            velocityY);
-        return pageTransitionController.finish(shouldCommit);
+        return pageTransitionController.finish(!!plan.shouldCommit);
     }
     function updateBackSwipeGesture(eventData) {
-        if (!eventData)
+        const plan = backSwipeCoordinator.updateGesturePlan(
+                    eventData && typeof eventData === "object" ? eventData : ({}),
+                    !!pageTransitionController.active,
+                    mobileHierarchyPage.backSwipeViewportWidth(),
+                    LV.Theme.gap8);
+        if (!plan.valid)
             return false;
-        const sessionId = mobileHierarchyPage.normalizedInteger(eventData.sessionId, -1);
-        if (sessionId < 0 || sessionId === mobileHierarchyPage.backSwipeConsumedSessionId)
-            return false;
-        if (mobileHierarchyPage.backSwipeSessionId < 0)
-            return false;
-        if (sessionId !== mobileHierarchyPage.backSwipeSessionId || !pageTransitionController.active)
-            return false;
-        const absoluteDeltaX = Math.abs(Number(eventData.totalDeltaX) || 0);
-        const absoluteDeltaY = Math.abs(Number(eventData.totalDeltaY) || 0);
-        if (absoluteDeltaY > absoluteDeltaX && absoluteDeltaY >= LV.Theme.gap8)
+        if (plan.cancel)
             return mobileHierarchyPage.cancelBackSwipeGesture(eventData);
-        const progress = Math.max(
-            0,
-            Math.min(1, (Number(eventData.totalDeltaX) || 0) / mobileHierarchyPage.backSwipeViewportWidth()));
-        return pageTransitionController.update(progress, {
-                    "velocityX": Number(eventData.velocityX) || 0,
-                    "velocityY": Number(eventData.velocityY) || 0
+        if (!plan.update)
+            return false;
+        return pageTransitionController.update(Number(plan.progress) || 0, {
+                    "velocityX": Number(plan.velocityX) || 0,
+                    "velocityY": Number(plan.velocityY) || 0
                 });
     }
 
     Component.onCompleted: mobileHierarchyPage.syncActiveHierarchyBindings()
+
+    MobileHierarchyRouteCoordinator {
+        id: routeCoordinator
+
+        detailRoutePath: mobileHierarchyPage.detailRoutePath
+        editorRoutePath: mobileHierarchyPage.editorRoutePath
+        hierarchyRoutePath: mobileHierarchyPage.hierarchyRoutePath
+        lastObservedRoutePath: routeCoordinator.hierarchyRoutePath
+        noteListRoutePath: mobileHierarchyPage.noteListRoutePath
+    }
+    MobileHierarchyBackSwipeCoordinator {
+        id: backSwipeCoordinator
+
+        backSwipeEdgeWidth: mobileHierarchyPage.backSwipeEdgeWidth
+    }
     onSidebarHierarchyViewModelChanged: mobileHierarchyPage.syncActiveHierarchyBindings()
     onActiveContentViewModelChanged: noteCreationCoordinator.routePendingCreatedNoteToEditor()
     onActiveNoteListModelChanged: {
@@ -728,7 +736,7 @@ Item {
         anchors.left: parent.left
         anchors.top: parent.top
         visible: mobileHierarchyPage.backNavigationAvailable
-        width: visible ? mobileHierarchyPage.backSwipeEdgeWidth : 0
+        width: visible ? backSwipeCoordinator.backSwipeEdgeWidth : 0
         z: 3
 
         DragHandler {
@@ -743,13 +751,12 @@ Item {
             onActiveChanged: {
                 if (active) {
                     mobileHierarchyPage.backSwipeDragCanceled = false;
-                    mobileHierarchyPage.backSwipeGeneratedSessionId += 1;
                     const beginEventData = mobileHierarchyPage.backSwipeGestureEventData(
                                 backSwipeDragHandler.centroid.pressPosition.x,
                                 backSwipeDragHandler.centroid.pressPosition.y,
                                 0,
                                 0,
-                                mobileHierarchyPage.backSwipeGeneratedSessionId);
+                                backSwipeCoordinator.nextGeneratedSessionId());
                     if (!mobileHierarchyPage.beginBackSwipeGesture(beginEventData))
                         return;
                     mobileHierarchyPage.updateBackSwipeGesture(
@@ -758,10 +765,10 @@ Item {
                                     backSwipeDragHandler.centroid.position.y,
                                     Number(backSwipeDragHandler.centroid.position.x) - Number(backSwipeDragHandler.centroid.pressPosition.x),
                                     Number(backSwipeDragHandler.centroid.position.y) - Number(backSwipeDragHandler.centroid.pressPosition.y),
-                                    mobileHierarchyPage.backSwipeSessionId));
+                                    backSwipeCoordinator.backSwipeSessionId));
                     return;
                 }
-                if (mobileHierarchyPage.backSwipeSessionId < 0)
+                if (backSwipeCoordinator.backSwipeSessionId < 0)
                     return;
                 mobileHierarchyPage.finishBackSwipeGesture(
                             mobileHierarchyPage.backSwipeGestureEventData(
@@ -769,7 +776,7 @@ Item {
                                 backSwipeDragHandler.centroid.position.y,
                                 Number(backSwipeDragHandler.centroid.position.x) - Number(backSwipeDragHandler.centroid.pressPosition.x),
                                 Number(backSwipeDragHandler.centroid.position.y) - Number(backSwipeDragHandler.centroid.pressPosition.y),
-                                mobileHierarchyPage.backSwipeSessionId),
+                                backSwipeCoordinator.backSwipeSessionId),
                             mobileHierarchyPage.backSwipeDragCanceled);
                 mobileHierarchyPage.backSwipeDragCanceled = false;
             }
@@ -782,7 +789,7 @@ Item {
                                 backSwipeDragHandler.centroid.position.y,
                                 Number(backSwipeDragHandler.centroid.position.x) - Number(backSwipeDragHandler.centroid.pressPosition.x),
                                 Number(backSwipeDragHandler.centroid.position.y) - Number(backSwipeDragHandler.centroid.pressPosition.y),
-                                mobileHierarchyPage.backSwipeSessionId));
+                                backSwipeCoordinator.backSwipeSessionId));
             }
             onCanceled: {
                 mobileHierarchyPage.backSwipeDragCanceled = true;
@@ -792,7 +799,7 @@ Item {
                                 backSwipeDragHandler.centroid.position.y,
                                 Number(backSwipeDragHandler.centroid.position.x) - Number(backSwipeDragHandler.centroid.pressPosition.x),
                                 Number(backSwipeDragHandler.centroid.position.y) - Number(backSwipeDragHandler.centroid.pressPosition.y),
-                                mobileHierarchyPage.backSwipeSessionId),
+                                backSwipeCoordinator.backSwipeSessionId),
                             true);
             }
         }
