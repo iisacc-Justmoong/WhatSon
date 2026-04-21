@@ -154,10 +154,17 @@
 - The note-selection path now also exposes one grep-friendly trace vocabulary from selection to mount:
   - `ContentsEditorSelectionBridge` emits `selectionFlow.*` turns for note-list activation, queued refresh, settled
     note transition, and selected-body load decisions
+  - `ContentsDisplaySelectionSyncCoordinator` emits `selectionFlow.flushPlan`, while
+    `ContentsDisplayView.qml` mirrors the handled result as
+    `selectionFlow.selectionSyncPlan` / `selectionFlow.selectionSyncResult`
   - `ContentsDisplayNoteBodyMountCoordinator` emits `selectionFlow.mountPlan` for each mount/snapshot-refresh/editor
     binding decision
   - `ContentsDisplayView.qml` mirrors those plans with `selectionFlow.mountPlan` / `selectionFlow.mountResult`,
     making it possible to reconstruct exactly what happened after a specific note id was clicked
+- `ContentsDisplayView.qml` now fans one `scheduleSelectionModelSync(...)` call into both the selection-sync
+  coordinator and the mount coordinator, with separate `Connections` handlers for
+  `selectionSyncFlushRequested(...)` and `mountFlushRequested(...)`.
+  A note-open turn therefore cannot silently drop the mount-plan execution by attaching the wrong target object.
 
 ## Intended Detailed Sections
 - Module responsibilities and architectural layer

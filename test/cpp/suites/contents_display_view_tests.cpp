@@ -128,9 +128,15 @@ void WhatSonCppRegressionTests::contentsDisplayView_tracesNoteSelectionPlanExecu
     QVERIFY(displayViewSource.contains(
         QStringLiteral("\"selectionFlow.reconcileRequested\"")));
     QVERIFY(displayViewSource.contains(
+        QStringLiteral("\"selectionFlow.selectionSyncPlan\"")));
+    QVERIFY(displayViewSource.contains(
+        QStringLiteral("\"selectionFlow.selectionSyncResult\"")));
+    QVERIFY(displayViewSource.contains(
         QStringLiteral("\"selectionFlow.mountPlan\"")));
     QVERIFY(displayViewSource.contains(
         QStringLiteral("\"selectionFlow.mountResult\"")));
+    QVERIFY(displayViewSource.contains(
+        QStringLiteral("function onSelectionSyncFlushRequested(plan)")));
     QVERIFY(displayViewSource.contains(QStringLiteral("scheduledFollowUpMount")));
     QVERIFY(displayViewSource.contains(
         QStringLiteral("contentsView.describeSelectionPlan(mountPlan)")));
@@ -187,9 +193,17 @@ void WhatSonCppRegressionTests::contentsDisplayView_surfacesMountFailurePlacehol
     QVERIFY(displayViewSource.contains(
         QStringLiteral("const normalizedOptions = options && typeof options === \"object\" ? options : ({});")));
     QVERIFY(displayViewSource.contains(
+        QStringLiteral("selectionSyncCoordinator.scheduleSelectionSync(normalizedOptions);")));
+    QVERIFY(displayViewSource.contains(
         QStringLiteral("noteBodyMountCoordinator.scheduleMount(normalizedOptions);")));
     QVERIFY(displayViewSource.contains(
+        QStringLiteral("target: noteBodyMountCoordinator")));
+    QVERIFY(displayViewSource.contains(
+        QStringLiteral("function onSelectionSyncFlushRequested(plan)")));
+    QVERIFY(displayViewSource.contains(
         QStringLiteral("function onMountFlushRequested(plan)")));
+    QVERIFY(displayViewSource.contains(
+        QStringLiteral("selectionPlan.attemptSelectionSync")));
     QVERIFY(displayViewSource.contains(
         QStringLiteral("mountPlan.attemptSnapshotRefresh")));
     QVERIFY(displayViewSource.contains(

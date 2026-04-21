@@ -47,11 +47,18 @@ not note-backed.
   binding, document mount pending/mounted/failure transitions, structured-host requests, and legacy-inline-host
   requests.
 - It now also emits note-selection flow plan traces end-to-end:
-  - `selectionFlow.scheduleSelectionModelSync` when the host translates a note selection/body update into a mount pass
+  - `selectionFlow.scheduleSelectionModelSync` when the host translates a note selection/body update into paired
+    selection-sync and mount passes
   - `selectionFlow.pollPlan` / `selectionFlow.pollReconcileRequested` / `selectionFlow.pollSnapshotRefresh` for
     periodic same-note snapshot comparison
   - `selectionFlow.reconcilePlan` / `selectionFlow.reconcileRequested` for one-shot editor-entry reconciliation
+  - `selectionFlow.selectionSyncPlan` / `selectionFlow.selectionSyncResult` for editor-session sync, cache reset,
+    focus, and fallback-refresh handling emitted from `ContentsDisplaySelectionSyncCoordinator`
   - `selectionFlow.mountPlan` / `selectionFlow.mountResult` for the actual mount/snapshot-refresh/editor-bind outcome
+- `scheduleSelectionModelSync(...)` now dispatches the same normalized option payload into both
+  `ContentsDisplaySelectionSyncCoordinator` and `ContentsDisplayNoteBodyMountCoordinator`.
+  The host also keeps those flush handlers on separate `Connections` blocks so a mount-plan signal cannot be lost by
+  being attached to the wrong coordinator target.
 - The inline loader now logs both `contentEditorLoaderStatusChanged` and `contentEditorLoaderLoaded`, including the
   current loader status plus a summarized view of the instantiated editor item.
 - The structured host path now logs `structuredDocumentFlowVisibleChanged` so it is visible exactly when the parsed

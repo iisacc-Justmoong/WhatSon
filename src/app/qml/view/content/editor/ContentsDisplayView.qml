@@ -2241,6 +2241,7 @@ Item {
                     + " bodyLoading=" + contentsView.selectedNoteBodyLoading
                     + " editorBoundNoteId=" + contentsView.editorBoundNoteId,
                     contentsView)
+        selectionSyncCoordinator.scheduleSelectionSync(normalizedOptions);
         noteBodyMountCoordinator.scheduleMount(normalizedOptions);
     }
     function scrollEditorViewportToMinimapPosition(localY) {
@@ -3047,6 +3048,54 @@ Item {
                         + " snapshotRefreshAccepted=" + snapshotRefreshAccepted
                         + " scheduledFollowUpMount=" + scheduledFollowUpMount
                         + " focusEditor=" + !!mountPlan.focusEditorForSelectedNote,
+                        contentsView)
+        }
+
+        target: noteBodyMountCoordinator
+    }
+    Connections {
+        function onSelectionSyncFlushRequested(plan) {
+            const selectionPlan = plan && typeof plan === "object" ? plan : ({});
+            EditorTrace.trace(
+                        "displayView",
+                        "selectionFlow.selectionSyncPlan",
+                        "plan={" + contentsView.describeSelectionPlan(selectionPlan) + "}",
+                        contentsView)
+            if (selectionPlan.resetSelectionCache)
+                contentsView.resetEditorSelectionCache();
+            if (selectionPlan.flushPendingEditorText
+                    && editorSession
+                    && editorSession.flushPendingEditorText !== undefined) {
+                editorSession.flushPendingEditorText();
+            }
+            let selectionSynced = false;
+            if (selectionPlan.attemptSelectionSync
+                    && editorSession
+                    && editorSession.requestSyncEditorTextFromSelection !== undefined) {
+                selectionSynced = editorSession.requestSyncEditorTextFromSelection(
+                            String(selectionPlan.selectedNoteId || ""),
+                            String(selectionPlan.selectedNoteBodyText || ""),
+                            String(selectionPlan.selectedNoteBodyNoteId || ""));
+            }
+            if (selectionPlan.scheduleSnapshotReconcile)
+                contentsView.scheduleEditorEntrySnapshotReconcile();
+            if (selectionPlan.forceVisualRefresh
+                    || (!selectionSynced
+                        && selectionPlan.fallbackRefreshIfSyncSkipped)) {
+                contentsView.scheduleMinimapSnapshotRefresh(true);
+                contentsView.scheduleDocumentPresentationRefresh(true);
+                contentsView.scheduleGutterRefresh(4);
+            }
+            if (selectionPlan.focusEditorForSelectedNote)
+                selectionSyncCoordinator.scheduleEditorFocusForNote(
+                            String(selectionPlan.selectedNoteId || ""));
+            EditorTrace.trace(
+                        "displayView",
+                        "selectionFlow.selectionSyncResult",
+                        "reason=" + String(selectionPlan.reason || "")
+                        + " selectedNoteId=" + String(selectionPlan.selectedNoteId || "")
+                        + " selectionSynced=" + selectionSynced
+                        + " focusEditor=" + !!selectionPlan.focusEditorForSelectedNote,
                         contentsView)
         }
         function onSnapshotReconcileRequested() {
