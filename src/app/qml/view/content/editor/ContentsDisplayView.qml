@@ -324,28 +324,14 @@ Item {
         return "";
     }
     function normalizedStructuredLogicalLineEntries() {
-        if (!contentsView.structuredHostGeometryActive
-                || !structuredDocumentFlow) {
+        if (!contentsView.structuredHostGeometryActive || !structuredDocumentFlow)
             return [];
-        }
-
         const rawEntries = structuredDocumentFlow.cachedLogicalLineEntries !== undefined
                 ? structuredDocumentFlow.cachedLogicalLineEntries
                 : (structuredDocumentFlow.logicalLineEntries !== undefined
                    ? structuredDocumentFlow.logicalLineEntries()
                    : []);
-        if (Array.isArray(rawEntries))
-            return rawEntries;
-
-        const explicitLength = Number(rawEntries && rawEntries.length);
-        if (isFinite(explicitLength) && explicitLength >= 0) {
-            const normalized = [];
-            for (let index = 0; index < Math.floor(explicitLength); ++index)
-                normalized.push(rawEntries[index]);
-            return normalized;
-        }
-
-        return [];
+        return structuredFlowCoordinator.normalizeStructuredLogicalLineEntries(rawEntries);
     }
     function structuredLogicalLineEntryAt(lineNumber) {
         const lineEntries = contentsView.normalizedStructuredLogicalLineEntries();
@@ -365,11 +351,10 @@ Item {
                     contentsView.effectiveStructuredLogicalLineEntries());
     }
     function consumeStructuredGutterGeometryChange() {
-        const result = viewportCoordinator.consumeStructuredGutterGeometryChange(
-                    contentsView.structuredGutterGeometrySignature,
+        const state = structuredFlowCoordinator.evaluateStructuredLayoutState(
                     contentsView.effectiveStructuredLogicalLineEntries());
-        contentsView.structuredGutterGeometrySignature = String(result.signature || "");
-        return !!result.changed;
+        contentsView.structuredGutterGeometrySignature = String(state.signature || "");
+        return !!state.geometryChanged;
     }
     function buildStructuredMinimapLineGroupsForRange(startLineNumber, endLineNumber) {
         const lineEntries = contentsView.effectiveStructuredLogicalLineEntries();
@@ -539,53 +524,9 @@ Item {
     }
     function buildVisibleGutterLineEntries() {
         if (contentsView.structuredHostGeometryActive) {
-            const lineEntries = contentsView.effectiveStructuredLogicalLineEntries();
-            if (lineEntries.length === 0) {
-                return [{
-                            "height": contentsView.editorLineHeight,
-                            "lineNumber": 1,
-                            "y": contentsView.gutterLineY(1)
-                        }];
-            }
-            const visibleLines = [];
-            for (let lineIndex = 0; lineIndex < lineEntries.length; ++lineIndex) {
-                const entry = lineEntries[lineIndex] && typeof lineEntries[lineIndex] === "object"
-                        ? lineEntries[lineIndex]
-                        : ({});
-                const lineNumber = lineIndex + 1;
-                const lineContentY = Math.max(
-                            0,
-                            Number(entry.gutterContentY !== undefined ? entry.gutterContentY : entry.contentY) || 0);
-                const gutterY = contentsView.editorViewportYForDocumentY(lineContentY);
-                const gutterHeight = Math.max(
-                            1,
-                            Number(entry.gutterContentHeight !== undefined
-                                   ? entry.gutterContentHeight
-                                   : contentsView.editorLineHeight) || contentsView.editorLineHeight);
-                const visibleHeight = Math.max(
-                            1,
-                            Number(entry.contentHeight !== undefined
-                                   ? entry.contentHeight
-                                   : contentsView.editorLineHeight) || contentsView.editorLineHeight);
-                if (gutterY > contentsView.gutterViewportHeight)
-                    break;
-                if (gutterY + visibleHeight < 0)
-                    continue;
-                visibleLines.push({
-                    "height": gutterHeight,
-                    "lineNumber": lineNumber,
-                    "y": gutterY
-                });
-            }
-            if (visibleLines.length === 0) {
-                const firstVisibleLine = contentsView.firstVisibleLogicalLine();
-                visibleLines.push({
-                    "height": contentsView.gutterLineVisualHeight(firstVisibleLine, 1),
-                    "lineNumber": firstVisibleLine,
-                    "y": contentsView.gutterLineY(firstVisibleLine)
-                });
-            }
-            return visibleLines;
+            return structuredFlowCoordinator.buildVisibleStructuredGutterLineEntries(
+                        contentsView.effectiveStructuredLogicalLineEntries(),
+                        contentsView.firstVisibleLogicalLine());
         }
         const visibleLines = [];
         const firstVisibleLine = contentsView.firstVisibleLogicalLine();
@@ -2419,6 +2360,17 @@ Item {
         logicalTextLength: Math.max(0, Number(contentsView.logicalTextLength()) || 0)
         minimapResolvedTrackHeight: Number(contentsView.minimapResolvedTrackHeight) || 1
         showPrintEditorLayout: contentsView.showPrintEditorLayout
+        structuredHostGeometryActive: contentsView.structuredHostGeometryActive
+    }
+    ContentsDisplayStructuredFlowCoordinator {
+        id: structuredFlowCoordinator
+
+        editorContentOffsetY: Number(contentsView.editorContentOffsetY) || 0
+        editorDocumentStartY: Number(contentsView.editorDocumentStartY) || 0
+        editorLineHeight: Number(contentsView.editorLineHeight) || 0
+        gutterViewportHeight: Number(contentsView.gutterViewportHeight) || 0
+        logicalLineCount: Math.max(1, Number(contentsView.logicalLineCount) || 1)
+        structuredGutterGeometrySignature: contentsView.structuredGutterGeometrySignature
         structuredHostGeometryActive: contentsView.structuredHostGeometryActive
     }
     ContentsEditorTypingController {
