@@ -13,6 +13,25 @@
 
 namespace
 {
+    QString describeTraceObject(const QObject* object)
+    {
+        if (object == nullptr)
+        {
+            return QStringLiteral("ptr=<null>");
+        }
+
+        const QString metaClass = object->metaObject() == nullptr
+            ? QStringLiteral("unknown")
+            : QString::fromUtf8(object->metaObject()->className());
+        const QString objectName = object->objectName().isEmpty()
+            ? QStringLiteral("<empty>")
+            : object->objectName();
+        return QStringLiteral("ptr=0x%1 class=%2 objectName=%3")
+            .arg(QString::number(reinterpret_cast<quintptr>(object), 16))
+            .arg(metaClass)
+            .arg(objectName);
+    }
+
     const QRegularExpression kEmptyTaskPattern(
         QStringLiteral(R"(<task\b([^>]*)>\s*</task>)"),
         QRegularExpression::CaseInsensitiveOption);
@@ -193,6 +212,11 @@ void ContentsEditorSessionController::setSelectionBridge(QObject* selectionBridg
             &ContentsEditorSessionController::handleEditorTextPersistenceFinished);
     }
 
+    WhatSon::Debug::traceEditorSelf(
+        this,
+        QStringLiteral("editorSession"),
+        QStringLiteral("setSelectionBridge"),
+        QStringLiteral("selectionBridge={%1}").arg(describeTraceObject(m_selectionBridge)));
     emit selectionBridgeChanged();
 }
 
@@ -210,6 +234,11 @@ void ContentsEditorSessionController::setAgendaBackend(QObject* agendaBackendObj
     }
 
     m_agendaBackend = nextAgendaBackend;
+    WhatSon::Debug::traceEditorSelf(
+        this,
+        QStringLiteral("editorSession"),
+        QStringLiteral("setAgendaBackend"),
+        QStringLiteral("agendaBackend={%1}").arg(describeTraceObject(m_agendaBackend)));
     emit agendaBackendChanged();
 }
 

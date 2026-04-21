@@ -99,6 +99,15 @@
 - Note-list `currentIndexChanged()` and `currentNoteIdChanged()` still queue one deferred bridge refresh per
   event-loop turn instead of running `refreshNoteSelectionState()` immediately, so one logical selection transition
   stays coalesced before QML reacts.
+- The bridge now also emits one explicit `selectionFlow.*` trace vocabulary for note-open debugging:
+  - `selectionFlow.noteListSelectionChanged` / `selectionFlow.noteListBodyTextChanged`
+  - `selectionFlow.refreshScheduled` / `selectionFlow.refreshFlush` / `selectionFlow.refreshState`
+  - `selectionFlow.noteChanged` / `selectionFlow.noteStable` / `selectionFlow.noteCleared`
+  - `selectionFlow.bodyLoadStart`, immediate/pending/fallback body-load decisions, and
+    `selectionFlow.bodyLoadFinished`
+- Those traces summarize the live note-list state (`currentIndex`, `currentNoteId`, `currentBodyText`, `itemCount`)
+  beside the bridge's own selected-note/body state, so a clicked note id can be followed through selection
+  coalescing, body ownership transfer, and asynchronous snapshot completion.
 - Note-list count observation now connects to `itemCountChanged(int)` explicitly.
   The older parameterless signal signature no longer matched the actual note-list-model contract and produced a runtime
   QObject connect warning during live app startup.

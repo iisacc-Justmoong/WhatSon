@@ -5,6 +5,9 @@
   lose continuity even though the behavior moved from QML to C++.
 - `ContentsEditorSelectionBridge` is consumed as a typed collaborator rather than through loosely-typed JavaScript
   property checks. That removes one layer of QML `undefined`-style branching from the save path.
+- Creation-time collaborator wiring is now traced explicitly for both `selectionBridge` and `agendaBackend`, including
+  the collaborator pointer, runtime class name, and QML `objectName`, so editor bootstrap logs show which concrete
+  objects were attached before the first note-body mount attempt.
 - Agenda placeholder normalization stays delegated to `ContentsAgendaBackend.normalizeAgendaModifiedDate(...)`, but the
   decision of when that normalization applies is now controller-owned.
 - Empty `<task>` / `<callout>` anchor normalization is now compiled regex work in C++, keeping save/model-sync text

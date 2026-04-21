@@ -29,11 +29,43 @@ not note-backed.
   the editor session, and the mounted document surface.
   The host stays in a pending mount state until either the selected note snapshot resolves for that same note id or
   the editor session binds directly to the selected note.
-- If one snapshot refresh retry still leaves the selected note body unresolved or mismatched, the host suppresses the
-  body chrome and shows the centered `No document opened` placeholder.
-  Other exceptional states do not get a fallback label.
+- If no note is selected, the host suppresses the body chrome and shows the centered `No document opened` placeholder
+  plus a short instruction to pick a note from the list.
+- If one snapshot refresh retry still leaves the selected note body unresolved or mismatched, the host now shows a
+  reason-specific centered placeholder instead of collapsing every failure into `No document opened`.
+  Current failure labels distinguish at least:
+  - body snapshot mismatch against the current selection
+  - unresolved note body after snapshot refresh
+  - structured document surface not becoming ready
+  - inline fallback editor surface not becoming ready
 - Structured shortcut insertions now try the parser-owned document flow first, but if that host cannot resolve a live
   caret anchor they fall back to the legacy cursor bridge instead of appending at the document tail.
+
+## Debug Trace
+
+- The host now emits explicit editor-creation trace turns for note selection, body-note resolution, editor-session
+  binding, document mount pending/mounted/failure transitions, structured-host requests, and legacy-inline-host
+  requests.
+- It now also emits note-selection flow plan traces end-to-end:
+  - `selectionFlow.scheduleSelectionModelSync` when the host translates a note selection/body update into a mount pass
+  - `selectionFlow.pollPlan` / `selectionFlow.pollReconcileRequested` / `selectionFlow.pollSnapshotRefresh` for
+    periodic same-note snapshot comparison
+  - `selectionFlow.reconcilePlan` / `selectionFlow.reconcileRequested` for one-shot editor-entry reconciliation
+  - `selectionFlow.mountPlan` / `selectionFlow.mountResult` for the actual mount/snapshot-refresh/editor-bind outcome
+- The inline loader now logs both `contentEditorLoaderStatusChanged` and `contentEditorLoaderLoaded`, including the
+  current loader status plus a summarized view of the instantiated editor item.
+- The structured host path now logs `structuredDocumentFlowVisibleChanged` so it is visible exactly when the parsed
+  document surface becomes the live editor surface.
+- Host-owned creation logs now assign stable object names to the main editor-collaboration objects:
+  - `contentsDisplaySelectionBridge`
+  - `contentsDisplayNoteBodyMountCoordinator`
+  - `contentsDisplaySessionCoordinator`
+  - `contentsDisplayEditorSession`
+  - `contentsDisplayStructuredDocumentFlow`
+  - `contentsDisplayInlineEditorLoader`
+  - `contentsDisplayInlineFormatEditor`
+- Those names are mirrored in the QML trace payload so startup/runtime logs can reconstruct which object instance was
+  created, destroyed, or selected as the active document surface during editor bootstrap.
 
 ## Presentation Refresh
 

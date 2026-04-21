@@ -35,7 +35,10 @@ void WhatSonCppRegressionTests::noteBodyMountCoordinator_retriesRefreshBeforeFai
     QVERIFY(!coordinator.mountPending());
     QVERIFY(!coordinator.noteMounted());
     QVERIFY(coordinator.mountFailed());
-    QCOMPARE(coordinator.mountFailureMessage(), QStringLiteral("No document opened"));
+    QCOMPARE(coordinator.mountFailureReason(), QStringLiteral("body-note-mismatch"));
+    QCOMPARE(
+        coordinator.mountFailureMessage(),
+        QStringLiteral("The selected note body no longer matches the current selection."));
 }
 
 void WhatSonCppRegressionTests::noteBodyMountCoordinator_requestsEditorSessionMountFromResolvedSnapshot()
@@ -127,5 +130,53 @@ void WhatSonCppRegressionTests::noteBodyMountCoordinator_failsMountAfterAccepted
     QVERIFY(!coordinator.mountPending());
     QVERIFY(!coordinator.noteMounted());
     QVERIFY(coordinator.mountFailed());
-    QCOMPARE(coordinator.mountFailureMessage(), QStringLiteral("No document opened"));
+    QCOMPARE(coordinator.mountFailureReason(), QStringLiteral("body-note-mismatch"));
+    QCOMPARE(
+        coordinator.mountFailureMessage(),
+        QStringLiteral("The selected note body no longer matches the current selection."));
+}
+
+void WhatSonCppRegressionTests::noteBodyMountCoordinator_reportsSurfaceSpecificFailureMessage()
+{
+    ensureCoreApplication();
+
+    ContentsDisplayNoteBodyMountCoordinator coordinator;
+    QSignalSpy mountFlushRequestedSpy(
+        &coordinator,
+        &ContentsDisplayNoteBodyMountCoordinator::mountFlushRequested);
+
+    coordinator.setVisible(true);
+    coordinator.setSelectedNoteId(QStringLiteral("note-1"));
+    coordinator.setSelectedNoteBodyNoteId(QStringLiteral("note-1"));
+    coordinator.setSelectedNoteBodyText(QStringLiteral("Resolved body"));
+    coordinator.setSelectedNoteBodyResolved(true);
+    coordinator.setStructuredDocumentSurfaceRequested(true);
+    coordinator.setStructuredDocumentSurfaceReady(false);
+
+    coordinator.scheduleMount(QVariantMap{});
+    QCoreApplication::processEvents();
+
+    QCOMPARE(mountFlushRequestedSpy.count(), 1);
+    const QVariantMap mountPlan = mountFlushRequestedSpy.takeFirst().at(0).toMap();
+    QCOMPARE(mountPlan.value(QStringLiteral("attemptSnapshotRefresh")).toBool(), false);
+    QCOMPARE(mountPlan.value(QStringLiteral("attemptEditorSessionMount")).toBool(), true);
+    QCOMPARE(mountPlan.value(QStringLiteral("reason")).toString(), QStringLiteral("mount-editor-session"));
+
+    QVERIFY(!coordinator.mountPending());
+    QVERIFY(!coordinator.noteMounted());
+    QVERIFY(coordinator.mountFailed());
+    QCOMPARE(
+        coordinator.mountFailureReason(),
+        QStringLiteral("structured-document-surface-unavailable"));
+    QCOMPARE(
+        coordinator.mountFailureMessage(),
+        QStringLiteral("The structured document surface did not become ready for the selected note."));
+
+    const QVariantMap mountState = coordinator.currentMountState();
+    QCOMPARE(
+        mountState.value(QStringLiteral("mountFailureReason")).toString(),
+        QStringLiteral("structured-document-surface-unavailable"));
+    QCOMPARE(
+        mountState.value(QStringLiteral("mountFailureMessage")).toString(),
+        QStringLiteral("The structured document surface did not become ready for the selected note."));
 }

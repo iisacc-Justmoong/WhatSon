@@ -10,6 +10,57 @@ namespace
     {
         return value.trimmed();
     }
+
+    QString summarizeMountPlan(const QVariantMap& plan)
+    {
+        return QStringLiteral(
+                   "reason=%1 selectedNoteId=%2 bodyNoteId=%3 bodyResolved=%4 attemptSnapshotRefresh=%5 attemptEditorSessionMount=%6 resetSelectionCache=%7 scheduleSnapshotReconcile=%8 focusEditor=%9 flushPendingEditorText=%10 fallbackRefresh=%11 forceVisualRefresh=%12")
+            .arg(plan.value(QStringLiteral("reason")).toString())
+            .arg(plan.value(QStringLiteral("selectedNoteId")).toString())
+            .arg(plan.value(QStringLiteral("selectedNoteBodyNoteId")).toString())
+            .arg(plan.value(QStringLiteral("selectedNoteBodyResolved")).toBool())
+            .arg(plan.value(QStringLiteral("attemptSnapshotRefresh")).toBool())
+            .arg(plan.value(QStringLiteral("attemptEditorSessionMount")).toBool())
+            .arg(plan.value(QStringLiteral("resetSelectionCache")).toBool())
+            .arg(plan.value(QStringLiteral("scheduleSnapshotReconcile")).toBool())
+            .arg(plan.value(QStringLiteral("focusEditorForSelectedNote")).toBool())
+            .arg(plan.value(QStringLiteral("flushPendingEditorText")).toBool())
+            .arg(plan.value(QStringLiteral("fallbackRefreshIfMountSkipped")).toBool())
+            .arg(plan.value(QStringLiteral("forceVisualRefresh")).toBool());
+    }
+
+    QString mountFailureMessageForReason(const QString& reason)
+    {
+        if (reason == QStringLiteral("no-selected-note"))
+        {
+            return QStringLiteral("No document opened");
+        }
+        if (reason == QStringLiteral("body-note-mismatch"))
+        {
+            return QStringLiteral("The selected note body no longer matches the current selection.");
+        }
+        if (reason == QStringLiteral("body-unresolved"))
+        {
+            return QStringLiteral("The selected note body could not be resolved after refreshing its snapshot.");
+        }
+        if (reason == QStringLiteral("structured-document-surface-unavailable"))
+        {
+            return QStringLiteral("The structured document surface did not become ready for the selected note.");
+        }
+        if (reason == QStringLiteral("inline-document-surface-unavailable"))
+        {
+            return QStringLiteral("The inline editor surface did not become ready for the selected note.");
+        }
+        if (reason == QStringLiteral("document-surface-not-requested"))
+        {
+            return QStringLiteral("The current selection did not request a note document surface.");
+        }
+        if (reason == QStringLiteral("document-surface-unavailable"))
+        {
+            return QStringLiteral("The note document surface did not become ready for the selected note.");
+        }
+        return QStringLiteral("The selected note document could not be mounted.");
+    }
 }
 
 ContentsDisplayNoteBodyMountCoordinator::ContentsDisplayNoteBodyMountCoordinator(QObject* parent)
@@ -246,6 +297,11 @@ void ContentsDisplayNoteBodyMountCoordinator::setInlineDocumentSurfaceRequested(
     }
 
     m_inlineDocumentSurfaceRequested = requested;
+    WhatSon::Debug::traceEditorSelf(
+        this,
+        QStringLiteral("noteBodyMountCoordinator"),
+        QStringLiteral("setInlineDocumentSurfaceRequested"),
+        QStringLiteral("requested=%1").arg(requested));
     emit inlineDocumentSurfaceRequestedChanged();
     emit mountStateChanged();
 }
@@ -263,6 +319,11 @@ void ContentsDisplayNoteBodyMountCoordinator::setInlineDocumentSurfaceReady(cons
     }
 
     m_inlineDocumentSurfaceReady = ready;
+    WhatSon::Debug::traceEditorSelf(
+        this,
+        QStringLiteral("noteBodyMountCoordinator"),
+        QStringLiteral("setInlineDocumentSurfaceReady"),
+        QStringLiteral("ready=%1").arg(ready));
     emit inlineDocumentSurfaceReadyChanged();
     emit mountStateChanged();
 }
@@ -280,6 +341,11 @@ void ContentsDisplayNoteBodyMountCoordinator::setInlineDocumentSurfaceLoading(co
     }
 
     m_inlineDocumentSurfaceLoading = loading;
+    WhatSon::Debug::traceEditorSelf(
+        this,
+        QStringLiteral("noteBodyMountCoordinator"),
+        QStringLiteral("setInlineDocumentSurfaceLoading"),
+        QStringLiteral("loading=%1").arg(loading));
     emit inlineDocumentSurfaceLoadingChanged();
     emit mountStateChanged();
 }
@@ -297,6 +363,11 @@ void ContentsDisplayNoteBodyMountCoordinator::setStructuredDocumentSurfaceReques
     }
 
     m_structuredDocumentSurfaceRequested = requested;
+    WhatSon::Debug::traceEditorSelf(
+        this,
+        QStringLiteral("noteBodyMountCoordinator"),
+        QStringLiteral("setStructuredDocumentSurfaceRequested"),
+        QStringLiteral("requested=%1").arg(requested));
     emit structuredDocumentSurfaceRequestedChanged();
     emit mountStateChanged();
 }
@@ -314,6 +385,11 @@ void ContentsDisplayNoteBodyMountCoordinator::setStructuredDocumentSurfaceReady(
     }
 
     m_structuredDocumentSurfaceReady = ready;
+    WhatSon::Debug::traceEditorSelf(
+        this,
+        QStringLiteral("noteBodyMountCoordinator"),
+        QStringLiteral("setStructuredDocumentSurfaceReady"),
+        QStringLiteral("ready=%1").arg(ready));
     emit structuredDocumentSurfaceReadyChanged();
     emit mountStateChanged();
 }
@@ -388,13 +464,59 @@ bool ContentsDisplayNoteBodyMountCoordinator::surfaceVisible() const noexcept
     return noteMounted() || mountPending();
 }
 
+QString ContentsDisplayNoteBodyMountCoordinator::mountFailureReason() const
+{
+    if (!mountFailed())
+    {
+        return {};
+    }
+
+    const QString normalizedSelectedNoteId = normalizeNoteId(m_selectedNoteId);
+    if (normalizedSelectedNoteId.isEmpty())
+    {
+        return QStringLiteral("no-selected-note");
+    }
+    if (!documentSurfaceRequested())
+    {
+        return QStringLiteral("document-surface-not-requested");
+    }
+    if (!documentSourceReady())
+    {
+        return m_selectedNoteBodyNoteId == normalizedSelectedNoteId
+            ? QStringLiteral("body-unresolved")
+            : QStringLiteral("body-note-mismatch");
+    }
+
+    const bool structuredSurfaceUnavailable =
+        m_structuredDocumentSurfaceRequested && !m_structuredDocumentSurfaceReady;
+    const bool inlineSurfaceUnavailable =
+        m_inlineDocumentSurfaceRequested && !m_inlineDocumentSurfaceReady;
+    if (structuredSurfaceUnavailable && inlineSurfaceUnavailable)
+    {
+        return QStringLiteral("document-surface-unavailable");
+    }
+    if (structuredSurfaceUnavailable)
+    {
+        return QStringLiteral("structured-document-surface-unavailable");
+    }
+    if (inlineSurfaceUnavailable)
+    {
+        return QStringLiteral("inline-document-surface-unavailable");
+    }
+    if (!documentSurfaceReady())
+    {
+        return QStringLiteral("document-surface-unavailable");
+    }
+    return QStringLiteral("document-mount-failed");
+}
+
 QString ContentsDisplayNoteBodyMountCoordinator::mountFailureMessage() const
 {
     if (!mountFailed())
     {
         return {};
     }
-    return QStringLiteral("No document opened");
+    return mountFailureMessageForReason(mountFailureReason());
 }
 
 void ContentsDisplayNoteBodyMountCoordinator::scheduleMount(const QVariantMap& options)
@@ -409,7 +531,9 @@ void ContentsDisplayNoteBodyMountCoordinator::scheduleMount(const QVariantMap& o
         this,
         QStringLiteral("noteBodyMountCoordinator"),
         QStringLiteral("scheduleMount"),
-        QStringLiteral("resetSnapshot=%1 scheduleReconcile=%2 focusEditor=%3 fallbackRefresh=%4 forceVisualRefresh=%5")
+        QStringLiteral("selectedNoteId=%1 bodyNoteId=%2 resetSnapshot=%3 scheduleReconcile=%4 focusEditor=%5 fallbackRefresh=%6 forceVisualRefresh=%7")
+            .arg(m_selectedNoteId)
+            .arg(m_selectedNoteBodyNoteId)
             .arg(resetSnapshot)
             .arg(scheduleReconcile)
             .arg(focusEditor)
@@ -491,6 +615,7 @@ QVariantMap ContentsDisplayNoteBodyMountCoordinator::currentMountState() const
     state.insert(QStringLiteral("inlineDocumentSurfaceReady"), m_inlineDocumentSurfaceReady);
     state.insert(QStringLiteral("inlineDocumentSurfaceRequested"), m_inlineDocumentSurfaceRequested);
     state.insert(QStringLiteral("mountFailed"), mountFailed());
+    state.insert(QStringLiteral("mountFailureReason"), mountFailureReason());
     state.insert(QStringLiteral("mountFailureMessage"), mountFailureMessage());
     state.insert(QStringLiteral("mountPending"), mountPending());
     state.insert(QStringLiteral("noteMounted"), noteMounted());
@@ -619,18 +744,33 @@ void ContentsDisplayNoteBodyMountCoordinator::flushMount()
     if (!m_visible)
     {
         plan.insert(QStringLiteral("reason"), QStringLiteral("inactive-host"));
+        WhatSon::Debug::traceEditorSelf(
+            this,
+            QStringLiteral("noteBodyMountCoordinator"),
+            QStringLiteral("selectionFlow.mountPlan"),
+            summarizeMountPlan(plan));
         emit mountFlushRequested(plan);
         return;
     }
     if (normalizedSelectedNoteId.isEmpty())
     {
         plan.insert(QStringLiteral("reason"), QStringLiteral("no-selected-note"));
+        WhatSon::Debug::traceEditorSelf(
+            this,
+            QStringLiteral("noteBodyMountCoordinator"),
+            QStringLiteral("selectionFlow.mountPlan"),
+            summarizeMountPlan(plan));
         emit mountFlushRequested(plan);
         return;
     }
     if (!documentSurfaceRequested())
     {
         plan.insert(QStringLiteral("reason"), QStringLiteral("document-surface-not-requested"));
+        WhatSon::Debug::traceEditorSelf(
+            this,
+            QStringLiteral("noteBodyMountCoordinator"),
+            QStringLiteral("selectionFlow.mountPlan"),
+            summarizeMountPlan(plan));
         emit mountFlushRequested(plan);
         return;
     }
@@ -642,6 +782,11 @@ void ContentsDisplayNoteBodyMountCoordinator::flushMount()
             plan.insert(QStringLiteral("flushPendingEditorText"), true);
         }
         plan.insert(QStringLiteral("reason"), QStringLiteral("awaiting-body-load"));
+        WhatSon::Debug::traceEditorSelf(
+            this,
+            QStringLiteral("noteBodyMountCoordinator"),
+            QStringLiteral("selectionFlow.mountPlan"),
+            summarizeMountPlan(plan));
         emit mountFlushRequested(plan);
         return;
     }
@@ -660,6 +805,11 @@ void ContentsDisplayNoteBodyMountCoordinator::flushMount()
                 bodyNoteMatchesSelection
                     ? QStringLiteral("refresh-after-body-unresolved")
                     : QStringLiteral("refresh-after-body-note-mismatch"));
+            WhatSon::Debug::traceEditorSelf(
+                this,
+                QStringLiteral("noteBodyMountCoordinator"),
+                QStringLiteral("selectionFlow.mountPlan"),
+                summarizeMountPlan(plan));
             emit mountFlushRequested(plan);
             return;
         }
@@ -670,6 +820,11 @@ void ContentsDisplayNoteBodyMountCoordinator::flushMount()
             bodyNoteMatchesSelection
                 ? QStringLiteral("body-unresolved")
                 : QStringLiteral("body-note-mismatch"));
+        WhatSon::Debug::traceEditorSelf(
+            this,
+            QStringLiteral("noteBodyMountCoordinator"),
+            QStringLiteral("selectionFlow.mountPlan"),
+            summarizeMountPlan(plan));
         emit mountFlushRequested(plan);
         return;
     }
@@ -691,6 +846,11 @@ void ContentsDisplayNoteBodyMountCoordinator::flushMount()
         m_focusEditorOnMountNoteId.clear();
     }
 
+    WhatSon::Debug::traceEditorSelf(
+        this,
+        QStringLiteral("noteBodyMountCoordinator"),
+        QStringLiteral("selectionFlow.mountPlan"),
+        summarizeMountPlan(plan));
     emit mountFlushRequested(plan);
 }
 
@@ -710,5 +870,10 @@ void ContentsDisplayNoteBodyMountCoordinator::setPendingMountNoteId(const QStrin
     }
 
     m_pendingMountNoteId = normalized;
+    WhatSon::Debug::traceEditorSelf(
+        this,
+        QStringLiteral("noteBodyMountCoordinator"),
+        QStringLiteral("setPendingMountNoteId"),
+        QStringLiteral("noteId=%1").arg(normalized));
     emit mountStateChanged();
 }

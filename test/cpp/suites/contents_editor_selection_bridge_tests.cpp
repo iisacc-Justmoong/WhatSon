@@ -99,3 +99,47 @@ void WhatSonCppRegressionTests::contentsEditorSelectionBridge_refreshesSelectedB
     QVERIFY(selectionBridge.selectedNoteBodyResolved());
     QVERIFY(!selectionBridge.selectedNoteBodyLoading());
 }
+
+void WhatSonCppRegressionTests::contentsEditorSelectionBridge_emitsTraceForNoteSelectionFlow()
+{
+    const QString selectionBridgeSource = readUtf8SourceFile(
+        QStringLiteral("src/app/models/editor/bridge/ContentsEditorSelectionBridge.cpp"));
+
+    QVERIFY(!selectionBridgeSource.isEmpty());
+    QVERIFY(selectionBridgeSource.contains(QStringLiteral("summarizeTraceNoteListModel")));
+    QVERIFY(selectionBridgeSource.contains(QStringLiteral("currentBodyText={%6}")));
+    QVERIFY(selectionBridgeSource.contains(
+        QStringLiteral("QStringLiteral(\"selectionFlow.noteListSelectionChanged\")")));
+    QVERIFY(selectionBridgeSource.contains(
+        QStringLiteral("QStringLiteral(\"selectionFlow.noteListBodyTextChanged\")")));
+    QVERIFY(selectionBridgeSource.contains(
+        QStringLiteral("QStringLiteral(\"selectionFlow.refreshScheduled\")")));
+    QVERIFY(selectionBridgeSource.contains(
+        QStringLiteral("QStringLiteral(\"selectionFlow.refreshFlush\")")));
+    QVERIFY(selectionBridgeSource.contains(
+        QStringLiteral("QStringLiteral(\"selectionFlow.refreshState\")")));
+    QVERIFY(selectionBridgeSource.contains(
+        QStringLiteral("QStringLiteral(\"selectionFlow.noteStable\")")));
+    QVERIFY(selectionBridgeSource.contains(
+        QStringLiteral("QStringLiteral(\"selectionFlow.noteChanged\")")));
+    QVERIFY(selectionBridgeSource.contains(
+        QStringLiteral("QStringLiteral(\"selectionFlow.noteCleared\")")));
+    QVERIFY(selectionBridgeSource.contains(
+        QStringLiteral("QStringLiteral(\"selectionFlow.bodyLoadStart\")")));
+    QVERIFY(selectionBridgeSource.contains(
+        QStringLiteral("QStringLiteral(\"selectionFlow.bodyLoadImmediate\")")));
+    QVERIFY(selectionBridgeSource.contains(
+        QStringLiteral("QStringLiteral(\"selectionFlow.bodyLoadAsyncRequested\")")));
+    QVERIFY(selectionBridgeSource.contains(
+        QStringLiteral("QStringLiteral(\"selectionFlow.bodyLoadFromPendingEditor\")")));
+    QVERIFY(selectionBridgeSource.contains(
+        QStringLiteral("QStringLiteral(\"selectionFlow.bodyLoadFallbackResolved\")")));
+    QVERIFY(selectionBridgeSource.contains(
+        QStringLiteral("QStringLiteral(\"selectionFlow.bodyLoadFallbackEmpty\")")));
+    QVERIFY(selectionBridgeSource.contains(
+        QStringLiteral("QStringLiteral(\"selectionFlow.bodyLoadFinished\")")));
+    QVERIFY(selectionBridgeSource.contains(
+        QStringLiteral("QStringLiteral(\"selectionFlow.viewSessionSnapshotReconciled\")")));
+    QVERIFY(selectionBridgeSource.contains(
+        QStringLiteral("QStringLiteral(\"selectionFlow.refreshSelectedNoteSnapshot\")")));
+}

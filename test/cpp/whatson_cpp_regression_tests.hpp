@@ -719,6 +719,7 @@ private slots:
     void contentsEditorSelectionBridge_prefillsSelectedNoteBodyFromDirectSourceSnapshot();
     void contentsEditorSelectionBridge_treatsDirectEmptySourceAsResolvedEmptyNote();
     void contentsEditorSelectionBridge_refreshesSelectedBodyFromNoteListBodySignal();
+    void contentsEditorSelectionBridge_emitsTraceForNoteSelectionFlow();
     void noteBackedHierarchyNoteLists_preserveRawBodySnapshotForEditorBootstrap();
     void noteListModelContractBridge_resolvesHierarchyBoundNoteListImmediately();
     void noteListModelContractBridge_prefersExplicitRowsAcrossHierarchySwitches();
@@ -755,11 +756,16 @@ private slots:
     void contentsDisplayView_keepsGutterNumbersCloseToTheEditorBody();
     void contentsDisplayView_reservesLargeBottomAccessibilityMargin();
     void contentsDisplayView_usesSelectedNoteSnapshotWhileSessionBindingCatchesUp();
+    void contentsDisplayView_emitsEditorCreationTraceAcrossHostTransitions();
+    void contentsDisplayView_tracesNoteSelectionPlanExecution();
     void contentsDisplaySessionCoordinator_requiresResolvedSelectedBodyBeforeUsingSnapshot();
+    void contentsDisplayCreationPath_emitsCoordinatorTraceForEditorWiring();
+    void contentsDisplaySelectionFlow_emitsTraceForSelectionAndMountPlans();
     void contentsDisplaySelectionSyncCoordinator_blocksUntilSelectedBodyIsResolved();
     void contentsDisplayView_surfacesMountFailurePlaceholderWithoutChrome();
     void noteBodyMountCoordinator_retriesRefreshBeforeFailingMount();
     void noteBodyMountCoordinator_failsMountAfterAcceptedRefreshWhenBodyRemainsUnavailable();
+    void noteBodyMountCoordinator_reportsSurfaceSpecificFailureMessage();
     void noteBodyMountCoordinator_requestsEditorSessionMountFromResolvedSnapshot();
     void qmlInlineFormatEditor_keepsHiddenKeyboardTouchesScrollFirstOnMobile();
     void mobileChrome_usesSharedFigmaControlSurfaceColor();

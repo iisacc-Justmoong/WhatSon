@@ -145,6 +145,19 @@
   rebuilds, and incremental live-typing adoption so the editor pipeline can be followed from the QML host boundary.
 - The new coordinators also emit editor trace events for their own state transitions and policy decisions, so the SRP
   split remains observable without pushing orchestration back into QML.
+- The editor-creation path now also traces QML host decisions explicitly:
+  - which note/body pair the host is trying to mount
+  - whether the structured document surface or legacy inline surface was requested
+  - which loader status/object instance became the active editor surface
+  - which host-owned collaborators (`selectionBridge`, mount coordinator, display session coordinator, editor session)
+    were created and attached for that note-selection turn
+- The note-selection path now also exposes one grep-friendly trace vocabulary from selection to mount:
+  - `ContentsEditorSelectionBridge` emits `selectionFlow.*` turns for note-list activation, queued refresh, settled
+    note transition, and selected-body load decisions
+  - `ContentsDisplayNoteBodyMountCoordinator` emits `selectionFlow.mountPlan` for each mount/snapshot-refresh/editor
+    binding decision
+  - `ContentsDisplayView.qml` mirrors those plans with `selectionFlow.mountPlan` / `selectionFlow.mountResult`,
+    making it possible to reconstruct exactly what happened after a specific note id was clicked
 
 ## Intended Detailed Sections
 - Module responsibilities and architectural layer

@@ -55,6 +55,7 @@ class ContentsDisplayNoteBodyMountCoordinator : public QObject
     Q_PROPERTY(bool noteMounted READ noteMounted NOTIFY mountStateChanged)
     Q_PROPERTY(bool mountFailed READ mountFailed NOTIFY mountStateChanged)
     Q_PROPERTY(bool surfaceVisible READ surfaceVisible NOTIFY mountStateChanged)
+    Q_PROPERTY(QString mountFailureReason READ mountFailureReason NOTIFY mountStateChanged)
     Q_PROPERTY(QString mountFailureMessage READ mountFailureMessage NOTIFY mountStateChanged)
 
 public:
@@ -107,6 +108,7 @@ public:
     bool noteMounted() const noexcept;
     bool mountFailed() const noexcept;
     bool surfaceVisible() const noexcept;
+    QString mountFailureReason() const;
     QString mountFailureMessage() const;
 
     Q_INVOKABLE void scheduleMount(const QVariantMap& options);

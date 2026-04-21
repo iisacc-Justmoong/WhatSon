@@ -1,11 +1,28 @@
 #include "app/models/content/display/ContentsDisplaySessionCoordinator.hpp"
 
+#include "app/models/file/WhatSonDebugTrace.hpp"
+
 ContentsDisplaySessionCoordinator::ContentsDisplaySessionCoordinator(QObject* parent)
     : QObject(parent)
 {
+    WhatSon::Debug::traceEditorSelf(
+        this,
+        QStringLiteral("displaySessionCoordinator"),
+        QStringLiteral("ctor"));
 }
 
-ContentsDisplaySessionCoordinator::~ContentsDisplaySessionCoordinator() = default;
+ContentsDisplaySessionCoordinator::~ContentsDisplaySessionCoordinator()
+{
+    WhatSon::Debug::traceEditorSelf(
+        this,
+        QStringLiteral("displaySessionCoordinator"),
+        QStringLiteral("dtor"),
+        QStringLiteral("selectedNoteId=%1 bodyNoteId=%2 bodyResolved=%3 sessionBound=%4")
+            .arg(m_selectedNoteId)
+            .arg(m_selectedNoteBodyNoteId)
+            .arg(m_selectedNoteBodyResolved)
+            .arg(m_editorSessionBoundToSelectedNote));
+}
 
 bool ContentsDisplaySessionCoordinator::editorSessionBoundToSelectedNote() const noexcept { return m_editorSessionBoundToSelectedNote; }
 void ContentsDisplaySessionCoordinator::setEditorSessionBoundToSelectedNote(const bool value)
@@ -13,6 +30,11 @@ void ContentsDisplaySessionCoordinator::setEditorSessionBoundToSelectedNote(cons
     if (m_editorSessionBoundToSelectedNote == value)
         return;
     m_editorSessionBoundToSelectedNote = value;
+    WhatSon::Debug::traceEditorSelf(
+        this,
+        QStringLiteral("displaySessionCoordinator"),
+        QStringLiteral("setEditorSessionBoundToSelectedNote"),
+        QStringLiteral("value=%1").arg(value));
     emit editorSessionBoundToSelectedNoteChanged();
 }
 
@@ -22,6 +44,11 @@ void ContentsDisplaySessionCoordinator::setSelectedNoteId(const QString& value)
     if (m_selectedNoteId == value)
         return;
     m_selectedNoteId = value;
+    WhatSon::Debug::traceEditorSelf(
+        this,
+        QStringLiteral("displaySessionCoordinator"),
+        QStringLiteral("setSelectedNoteId"),
+        QStringLiteral("value=%1").arg(value));
     emit selectedNoteIdChanged();
 }
 
@@ -31,6 +58,11 @@ void ContentsDisplaySessionCoordinator::setSelectedNoteBodyNoteId(const QString&
     if (m_selectedNoteBodyNoteId == value)
         return;
     m_selectedNoteBodyNoteId = value;
+    WhatSon::Debug::traceEditorSelf(
+        this,
+        QStringLiteral("displaySessionCoordinator"),
+        QStringLiteral("setSelectedNoteBodyNoteId"),
+        QStringLiteral("value=%1").arg(value));
     emit selectedNoteBodyNoteIdChanged();
 }
 
@@ -40,6 +72,11 @@ void ContentsDisplaySessionCoordinator::setSelectedNoteBodyText(const QString& v
     if (m_selectedNoteBodyText == value)
         return;
     m_selectedNoteBodyText = value;
+    WhatSon::Debug::traceEditorSelf(
+        this,
+        QStringLiteral("displaySessionCoordinator"),
+        QStringLiteral("setSelectedNoteBodyText"),
+        WhatSon::Debug::summarizeText(value));
     emit selectedNoteBodyTextChanged();
 }
 
@@ -53,6 +90,11 @@ void ContentsDisplaySessionCoordinator::setSelectedNoteBodyResolved(const bool v
     if (m_selectedNoteBodyResolved == value)
         return;
     m_selectedNoteBodyResolved = value;
+    WhatSon::Debug::traceEditorSelf(
+        this,
+        QStringLiteral("displaySessionCoordinator"),
+        QStringLiteral("setSelectedNoteBodyResolved"),
+        QStringLiteral("value=%1").arg(value));
     emit selectedNoteBodyResolvedChanged();
 }
 
@@ -62,6 +104,11 @@ void ContentsDisplaySessionCoordinator::setEditorText(const QString& value)
     if (m_editorText == value)
         return;
     m_editorText = value;
+    WhatSon::Debug::traceEditorSelf(
+        this,
+        QStringLiteral("displaySessionCoordinator"),
+        QStringLiteral("setEditorText"),
+        WhatSon::Debug::summarizeText(value));
     emit editorTextChanged();
 }
 
@@ -71,6 +118,11 @@ void ContentsDisplaySessionCoordinator::setStructuredFlowSourceText(const QStrin
     if (m_structuredFlowSourceText == value)
         return;
     m_structuredFlowSourceText = value;
+    WhatSon::Debug::traceEditorSelf(
+        this,
+        QStringLiteral("displaySessionCoordinator"),
+        QStringLiteral("setStructuredFlowSourceText"),
+        WhatSon::Debug::summarizeText(value));
     emit structuredFlowSourceTextChanged();
 }
 

@@ -8,6 +8,26 @@ namespace
     {
         return value.trimmed();
     }
+
+    QString summarizeSelectionSyncPlan(const QVariantMap& plan)
+    {
+        return QStringLiteral(
+                   "reason=%1 noteId=%2 selectedNoteId=%3 bodyNoteId=%4 bodyResolved=%5 allowSnapshotRefresh=%6 attemptReconcile=%7 attemptSelectionSync=%8 resetSelectionCache=%9 scheduleSnapshotReconcile=%10 focusEditor=%11 flushPendingEditorText=%12 fallbackRefresh=%13 forceVisualRefresh=%14")
+            .arg(plan.value(QStringLiteral("reason")).toString())
+            .arg(plan.value(QStringLiteral("noteId")).toString())
+            .arg(plan.value(QStringLiteral("selectedNoteId")).toString())
+            .arg(plan.value(QStringLiteral("selectedNoteBodyNoteId")).toString())
+            .arg(plan.value(QStringLiteral("selectedNoteBodyResolved")).toBool())
+            .arg(plan.value(QStringLiteral("allowSnapshotRefresh")).toBool())
+            .arg(plan.value(QStringLiteral("attemptReconcile")).toBool())
+            .arg(plan.value(QStringLiteral("attemptSelectionSync")).toBool())
+            .arg(plan.value(QStringLiteral("resetSelectionCache")).toBool())
+            .arg(plan.value(QStringLiteral("scheduleSnapshotReconcile")).toBool())
+            .arg(plan.value(QStringLiteral("focusEditorForSelectedNote")).toBool())
+            .arg(plan.value(QStringLiteral("flushPendingEditorText")).toBool())
+            .arg(plan.value(QStringLiteral("fallbackRefreshIfSyncSkipped")).toBool())
+            .arg(plan.value(QStringLiteral("forceVisualRefresh")).toBool());
+    }
 }
 
 ContentsDisplaySelectionSyncCoordinator::ContentsDisplaySelectionSyncCoordinator(QObject* parent)
@@ -293,7 +313,9 @@ void ContentsDisplaySelectionSyncCoordinator::scheduleSelectionSync(const QVaria
         this,
         QStringLiteral("selectionSyncCoordinator"),
         QStringLiteral("scheduleSelectionSync"),
-        QStringLiteral("resetSnapshot=%1 scheduleReconcile=%2 focusEditor=%3 fallbackRefresh=%4 forceVisualRefresh=%5")
+        QStringLiteral("selectedNoteId=%1 bodyNoteId=%2 resetSnapshot=%3 scheduleReconcile=%4 focusEditor=%5 fallbackRefresh=%6 forceVisualRefresh=%7")
+            .arg(m_selectedNoteId)
+            .arg(m_selectedNoteBodyNoteId)
             .arg(resetSnapshot)
             .arg(scheduleReconcile)
             .arg(focusEditor)
@@ -362,6 +384,15 @@ void ContentsDisplaySelectionSyncCoordinator::scheduleSnapshotReconcile()
 QVariantMap ContentsDisplaySelectionSyncCoordinator::snapshotPollPlan() const
 {
     const QString normalizedSelectedNoteId = normalizeNoteId(m_selectedNoteId);
+    const auto tracedPlan = [this](const QVariantMap& plan)
+    {
+        WhatSon::Debug::traceEditorSelf(
+            this,
+            QStringLiteral("selectionSyncCoordinator"),
+            QStringLiteral("selectionFlow.snapshotPollPlan"),
+            summarizeSelectionSyncPlan(plan));
+        return plan;
+    };
     WhatSon::Debug::traceEditorSelf(
         this,
         QStringLiteral("selectionSyncCoordinator"),
@@ -378,39 +409,48 @@ QVariantMap ContentsDisplaySelectionSyncCoordinator::snapshotPollPlan() const
 
     if (m_typingSessionSyncProtected || m_pendingBodySave)
     {
-        return buildSnapshotPlan(QStringLiteral("blocked-by-local-edit"));
+        return tracedPlan(buildSnapshotPlan(QStringLiteral("blocked-by-local-edit")));
     }
     if (!m_editorSessionBoundToSelectedNote)
     {
-        return buildSnapshotPlan(QStringLiteral("session-not-bound"));
+        return tracedPlan(buildSnapshotPlan(QStringLiteral("session-not-bound")));
     }
     if (normalizedSelectedNoteId.isEmpty())
     {
-        return buildSnapshotPlan(QStringLiteral("no-selected-note"));
+        return tracedPlan(buildSnapshotPlan(QStringLiteral("no-selected-note")));
     }
     if (!normalizedSelectedNoteId.isEmpty() && m_selectedNoteBodyNoteId != normalizedSelectedNoteId)
     {
-        return buildSnapshotPlan(QStringLiteral("body-note-mismatch"));
+        return tracedPlan(buildSnapshotPlan(QStringLiteral("body-note-mismatch")));
     }
     if (!normalizedSelectedNoteId.isEmpty() && !m_selectedNoteBodyResolved)
     {
-        return buildSnapshotPlan(QStringLiteral("body-unresolved"));
+        return tracedPlan(buildSnapshotPlan(QStringLiteral("body-unresolved")));
     }
     if (m_pendingSnapshotNoteId == normalizedSelectedNoteId)
     {
-        return buildSnapshotPlan(QStringLiteral("reconcile-in-flight"));
+        return tracedPlan(buildSnapshotPlan(QStringLiteral("reconcile-in-flight")));
     }
 
     QVariantMap plan = buildSnapshotPlan(QStringLiteral("poll"));
     plan.insert(QStringLiteral("attemptReconcile"), !normalizedSelectedNoteId.isEmpty());
     plan.insert(QStringLiteral("allowSnapshotRefresh"), true);
     plan.insert(QStringLiteral("noteId"), normalizedSelectedNoteId);
-    return plan;
+    return tracedPlan(plan);
 }
 
 QVariantMap ContentsDisplaySelectionSyncCoordinator::snapshotReconcilePlan() const
 {
     const QString normalizedSelectedNoteId = normalizeNoteId(m_selectedNoteId);
+    const auto tracedPlan = [this](const QVariantMap& plan)
+    {
+        WhatSon::Debug::traceEditorSelf(
+            this,
+            QStringLiteral("selectionSyncCoordinator"),
+            QStringLiteral("selectionFlow.snapshotReconcilePlan"),
+            summarizeSelectionSyncPlan(plan));
+        return plan;
+    };
     WhatSon::Debug::traceEditorSelf(
         this,
         QStringLiteral("selectionSyncCoordinator"),
@@ -429,37 +469,37 @@ QVariantMap ContentsDisplaySelectionSyncCoordinator::snapshotReconcilePlan() con
 
     if (!m_visible || normalizedSelectedNoteId.isEmpty())
     {
-        return buildSnapshotPlan(QStringLiteral("inactive-host"));
+        return tracedPlan(buildSnapshotPlan(QStringLiteral("inactive-host")));
     }
     if (!m_editorSessionBoundToSelectedNote)
     {
-        return buildSnapshotPlan(QStringLiteral("session-not-bound"));
+        return tracedPlan(buildSnapshotPlan(QStringLiteral("session-not-bound")));
     }
     if (m_selectedNoteBodyNoteId != normalizedSelectedNoteId)
     {
-        return buildSnapshotPlan(QStringLiteral("body-note-mismatch"));
+        return tracedPlan(buildSnapshotPlan(QStringLiteral("body-note-mismatch")));
     }
     if (!m_selectedNoteBodyResolved)
     {
-        return buildSnapshotPlan(QStringLiteral("body-unresolved"));
+        return tracedPlan(buildSnapshotPlan(QStringLiteral("body-unresolved")));
     }
     if (m_comparedSnapshotNoteId == normalizedSelectedNoteId)
     {
-        return buildSnapshotPlan(QStringLiteral("already-compared"));
+        return tracedPlan(buildSnapshotPlan(QStringLiteral("already-compared")));
     }
     if (m_pendingSnapshotNoteId == normalizedSelectedNoteId)
     {
-        return buildSnapshotPlan(QStringLiteral("reconcile-in-flight"));
+        return tracedPlan(buildSnapshotPlan(QStringLiteral("reconcile-in-flight")));
     }
     if (m_editorInputFocused || m_pendingBodySave || m_typingSessionSyncProtected)
     {
-        return buildSnapshotPlan(QStringLiteral("blocked-by-input"));
+        return tracedPlan(buildSnapshotPlan(QStringLiteral("blocked-by-input")));
     }
 
     QVariantMap plan = buildSnapshotPlan(QStringLiteral("reconcile"));
     plan.insert(QStringLiteral("attemptReconcile"), true);
     plan.insert(QStringLiteral("noteId"), normalizedSelectedNoteId);
-    return plan;
+    return tracedPlan(plan);
 }
 
 void ContentsDisplaySelectionSyncCoordinator::markSnapshotReconcileStarted(const QString& noteId)
@@ -635,6 +675,11 @@ void ContentsDisplaySelectionSyncCoordinator::flushSelectionSync()
             m_editorBoundNoteId != m_selectedNoteId && m_pendingBodySave;
         plan.insert(QStringLiteral("flushPendingEditorText"), shouldFlushPendingEditorText);
         plan.insert(QStringLiteral("reason"), QStringLiteral("awaiting-body-load"));
+        WhatSon::Debug::traceEditorSelf(
+            this,
+            QStringLiteral("selectionSyncCoordinator"),
+            QStringLiteral("selectionFlow.flushPlan"),
+            summarizeSelectionSyncPlan(plan));
         emit selectionSyncFlushRequested(plan);
         return;
     }
@@ -642,12 +687,22 @@ void ContentsDisplaySelectionSyncCoordinator::flushSelectionSync()
     if (!m_selectedNoteId.isEmpty() && m_selectedNoteBodyNoteId != m_selectedNoteId)
     {
         plan.insert(QStringLiteral("reason"), QStringLiteral("body-note-mismatch"));
+        WhatSon::Debug::traceEditorSelf(
+            this,
+            QStringLiteral("selectionSyncCoordinator"),
+            QStringLiteral("selectionFlow.flushPlan"),
+            summarizeSelectionSyncPlan(plan));
         emit selectionSyncFlushRequested(plan);
         return;
     }
     if (!m_selectedNoteId.isEmpty() && !m_selectedNoteBodyResolved)
     {
         plan.insert(QStringLiteral("reason"), QStringLiteral("body-unresolved"));
+        WhatSon::Debug::traceEditorSelf(
+            this,
+            QStringLiteral("selectionSyncCoordinator"),
+            QStringLiteral("selectionFlow.flushPlan"),
+            summarizeSelectionSyncPlan(plan));
         emit selectionSyncFlushRequested(plan);
         return;
     }
@@ -657,6 +712,11 @@ void ContentsDisplaySelectionSyncCoordinator::flushSelectionSync()
     {
         plan.insert(QStringLiteral("focusEditorForSelectedNote"), true);
     }
+    WhatSon::Debug::traceEditorSelf(
+        this,
+        QStringLiteral("selectionSyncCoordinator"),
+        QStringLiteral("selectionFlow.flushPlan"),
+        summarizeSelectionSyncPlan(plan));
     emit selectionSyncFlushRequested(plan);
 }
 

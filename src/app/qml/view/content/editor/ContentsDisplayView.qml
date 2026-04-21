@@ -269,8 +269,54 @@ Item {
     readonly property bool noteDocumentMountPending: noteBodyMountCoordinator.mountPending
     readonly property bool noteDocumentMounted: noteBodyMountCoordinator.noteMounted
     readonly property bool noteDocumentMountFailureVisible: noteBodyMountCoordinator.mountFailed
+    readonly property string noteDocumentMountFailureReason: noteBodyMountCoordinator.mountFailureReason
     readonly property string noteDocumentMountFailureMessage: noteBodyMountCoordinator.mountFailureMessage
     readonly property bool noteDocumentSurfaceVisible: noteBodyMountCoordinator.surfaceVisible
+    readonly property string noteDocumentExceptionReason: {
+        if (!contentsView.hasSelectedNote)
+            return "no-selected-note"
+        const mountFailureReason = contentsView.noteDocumentMountFailureReason === undefined
+                || contentsView.noteDocumentMountFailureReason === null
+                ? ""
+                : String(contentsView.noteDocumentMountFailureReason).trim()
+        if (mountFailureReason.length > 0)
+            return mountFailureReason
+        return ""
+    }
+    readonly property string noteDocumentExceptionTitle: {
+        switch (contentsView.noteDocumentExceptionReason) {
+        case "no-selected-note":
+            return "No document opened"
+        case "body-note-mismatch":
+            return "Document selection changed"
+        case "body-unresolved":
+            return "Document body unavailable"
+        case "structured-document-surface-unavailable":
+            return "Structured document unavailable"
+        case "inline-document-surface-unavailable":
+            return "Inline editor unavailable"
+        case "document-surface-not-requested":
+        case "document-surface-unavailable":
+            return "Document surface unavailable"
+        default:
+            return "Document mount failed"
+        }
+    }
+    readonly property string noteDocumentExceptionMessage: {
+        if (contentsView.noteDocumentExceptionReason === "no-selected-note")
+            return "Select a note from the list to open its document."
+        const mountFailureMessage = contentsView.noteDocumentMountFailureMessage === undefined
+                || contentsView.noteDocumentMountFailureMessage === null
+                ? ""
+                : String(contentsView.noteDocumentMountFailureMessage).trim()
+        if (mountFailureMessage.length > 0)
+            return mountFailureMessage
+        return "WhatSon could not mount the selected note document."
+    }
+    readonly property bool noteDocumentExceptionVisible: contentsView.visible
+                                                       && !contentsView.noteDocumentMountPending
+                                                       && !contentsView.noteDocumentMounted
+                                                       && contentsView.noteDocumentExceptionReason.length > 0
     readonly property bool noteDocumentCommandSurfaceEnabled: contentsView.noteDocumentMounted
                                                              && !contentsView.showDedicatedResourceViewer
                                                              && !contentsView.showFormattedTextRenderer
@@ -331,6 +377,130 @@ Item {
         if (editorProjection && editorProjection.logicalText !== undefined && editorProjection.logicalText !== null)
             return String(editorProjection.logicalText);
         return "";
+    }
+    function loaderStatusName(status) {
+        switch (Number(status) || 0) {
+        case Loader.Ready:
+            return "Ready"
+        case Loader.Loading:
+            return "Loading"
+        case Loader.Error:
+            return "Error"
+        default:
+            return "Null"
+        }
+    }
+    function describeEditorSurfaceObject(objectValue) {
+        if (!objectValue || typeof objectValue !== "object")
+            return EditorTrace.describeValue(objectValue);
+        const objectName = objectValue.objectName === undefined || objectValue.objectName === null
+                ? ""
+                : String(objectValue.objectName).trim();
+        return "objectName=" + (objectName.length > 0 ? objectName : "<empty>")
+                + " visible=" + EditorTrace.describeValue(objectValue.visible)
+                + " focused=" + EditorTrace.describeValue(objectValue.focused)
+                + " activeFocus=" + EditorTrace.describeValue(objectValue.activeFocus)
+                + " cursorPosition=" + EditorTrace.describeValue(objectValue.cursorPosition)
+                + " inputContentHeight=" + EditorTrace.describeValue(objectValue.inputContentHeight)
+                + " contentHeight=" + EditorTrace.describeValue(objectValue.contentHeight);
+    }
+    function logEditorCreationState(reason) {
+        const normalizedReason = reason === undefined || reason === null ? "" : String(reason);
+        EditorTrace.trace(
+                    "displayView",
+                    "editorCreationState",
+                    "reason=" + normalizedReason
+                    + " selectedNoteId=" + contentsView.selectedNoteId
+                    + " bodyNoteId=" + contentsView.selectedNoteBodyNoteId
+                    + " bodyResolved=" + contentsView.selectedNoteBodyResolved
+                    + " bodyLoading=" + contentsView.selectedNoteBodyLoading
+                    + " editorBoundNoteId=" + contentsView.editorBoundNoteId
+                    + " sessionBound=" + contentsView.editorSessionBoundToSelectedNote
+                    + " structuredRequested=" + contentsView.structuredDocumentFlowRequested
+                    + " structuredVisible=" + contentsView.showStructuredDocumentFlow
+                    + " inlineRequested=" + contentsView.legacyInlineEditorRequested
+                    + " inlineActive=" + contentsView.legacyInlineEditorActive
+                    + " mountPending=" + contentsView.noteDocumentMountPending
+                    + " mounted=" + contentsView.noteDocumentMounted
+                    + " mountFailureReason=" + contentsView.noteDocumentMountFailureReason,
+                    contentsView)
+        EditorTrace.trace(
+                    "displayView",
+                    "editorCreationSurfaces",
+                    "reason=" + normalizedReason
+                    + " loaderActive=" + contentEditorLoader.active
+                    + " loaderStatus=" + contentsView.loaderStatusName(contentEditorLoader.status)
+                    + " loaderItem={" + contentsView.describeEditorSurfaceObject(contentEditorLoader.item) + "}"
+                    + " structuredFlow={" + contentsView.describeEditorSurfaceObject(structuredDocumentFlow) + "}",
+                    contentsView)
+        EditorTrace.trace(
+                    "displayView",
+                    "editorCreationCoordinators",
+                    "reason=" + normalizedReason
+                    + " selectionBridge={"
+                    + EditorTrace.describeObject(selectionBridge, [
+                                                    "objectName",
+                                                    "selectedNoteId",
+                                                    "selectedNoteBodyNoteId",
+                                                    "selectedNoteBodyResolved",
+                                                    "selectedNoteBodyLoading"
+                                                ]) + "}"
+                    + " mountCoordinator={"
+                    + EditorTrace.describeObject(noteBodyMountCoordinator, [
+                                                    "objectName",
+                                                    "mountPending",
+                                                    "noteMounted",
+                                                    "mountFailed",
+                                                    "mountFailureReason"
+                                                ]) + "}"
+                    + " sessionCoordinator={"
+                    + EditorTrace.describeObject(sessionCoordinator, [
+                                                    "objectName",
+                                                    "selectedNoteId",
+                                                    "selectedNoteBodyNoteId",
+                                                    "selectedNoteBodyResolved",
+                                                    "editorSessionBoundToSelectedNote"
+                                                ]) + "}"
+                    + " editorSession={"
+                    + EditorTrace.describeObject(editorSession, [
+                                                    "objectName",
+                                                    "editorBoundNoteId",
+                                                    "pendingBodySave",
+                                                    "syncingEditorTextFromModel"
+                                                ]) + "}",
+                    contentsView)
+    }
+    function describeSelectionSyncOptions(options) {
+        const normalizedOptions = options && typeof options === "object" ? options : ({});
+        return EditorTrace.describeObject(normalizedOptions, [
+                                              "resetSnapshot",
+                                              "scheduleReconcile",
+                                              "focusEditor",
+                                              "fallbackRefresh",
+                                              "forceVisualRefresh"
+                                          ]);
+    }
+    function describeSelectionPlan(plan) {
+        const normalizedPlan = plan && typeof plan === "object" ? plan : ({});
+        return EditorTrace.describeObject(normalizedPlan, [
+                                              "reason",
+                                              "noteId",
+                                              "selectedNoteId",
+                                              "selectedNoteBodyNoteId",
+                                              "selectedNoteBodyResolved",
+                                              "allowSnapshotRefresh",
+                                              "attemptReconcile",
+                                              "attemptSelectionSync",
+                                              "attemptSnapshotRefresh",
+                                              "attemptEditorSessionMount",
+                                              "resetSelectionCache",
+                                              "scheduleSnapshotReconcile",
+                                              "focusEditorForSelectedNote",
+                                              "flushPendingEditorText",
+                                              "fallbackRefreshIfSyncSkipped",
+                                              "fallbackRefreshIfMountSkipped",
+                                              "forceVisualRefresh"
+                                          ]);
     }
     function normalizedStructuredLogicalLineEntries() {
         if (!contentsView.structuredHostGeometryActive || !structuredDocumentFlow)
@@ -1559,6 +1729,13 @@ Item {
         const normalizedNoteId = pollPlan.noteId === undefined || pollPlan.noteId === null
                 ? ""
                 : String(pollPlan.noteId).trim();
+        EditorTrace.trace(
+                    "displayView",
+                    "selectionFlow.pollPlan",
+                    "plan={" + contentsView.describeSelectionPlan(pollPlan) + "}"
+                    + " comparedSnapshotNoteId=" + contentsView.editorEntrySnapshotComparedNoteId
+                    + " pendingSnapshotNoteId=" + contentsView.editorEntrySnapshotPendingNoteId,
+                    contentsView)
         if (pollPlan.attemptReconcile
                 && selectionBridge
                 && selectionBridge.reconcileViewSessionAndRefreshSnapshotForNote !== undefined
@@ -1569,19 +1746,40 @@ Item {
             const preferViewSessionOnMismatch = editorSession
                     && editorSession.localEditorAuthority !== undefined
                     && !!editorSession.localEditorAuthority;
-            if (selectionBridge.reconcileViewSessionAndRefreshSnapshotForNote(
+            const reconcileAccepted = selectionBridge.reconcileViewSessionAndRefreshSnapshotForNote(
                         normalizedNoteId,
                         sessionText,
-                        preferViewSessionOnMismatch)) {
+                        preferViewSessionOnMismatch);
+            EditorTrace.trace(
+                        "displayView",
+                        "selectionFlow.pollReconcileRequested",
+                        "accepted=" + reconcileAccepted
+                        + " noteId=" + normalizedNoteId
+                        + " preferViewSessionOnMismatch=" + preferViewSessionOnMismatch
+                        + " sessionText={" + EditorTrace.describeText(sessionText, 48) + "}",
+                        contentsView)
+            if (reconcileAccepted) {
                 selectionSyncCoordinator.markSnapshotReconcileStarted(normalizedNoteId);
                 return;
             }
         }
         if (!pollPlan.allowSnapshotRefresh
                 || !selectionBridge
-                || selectionBridge.refreshSelectedNoteSnapshot === undefined)
+                || selectionBridge.refreshSelectedNoteSnapshot === undefined) {
+            EditorTrace.trace(
+                        "displayView",
+                        "selectionFlow.pollSkipped",
+                        "plan={" + contentsView.describeSelectionPlan(pollPlan) + "}",
+                        contentsView)
             return;
-        selectionBridge.refreshSelectedNoteSnapshot();
+        }
+        const snapshotRefreshAccepted = !!selectionBridge.refreshSelectedNoteSnapshot();
+        EditorTrace.trace(
+                    "displayView",
+                    "selectionFlow.pollSnapshotRefresh",
+                    "accepted=" + snapshotRefreshAccepted
+                    + " noteId=" + normalizedNoteId,
+                    contentsView)
         contentsView.scheduleGutterRefresh(2);
     }
     function reconcileEditorEntrySnapshotOnce() {
@@ -1589,10 +1787,20 @@ Item {
         const normalizedNoteId = reconcilePlan.noteId === undefined || reconcilePlan.noteId === null
                 ? ""
                 : String(reconcilePlan.noteId).trim();
+        EditorTrace.trace(
+                    "displayView",
+                    "selectionFlow.reconcilePlan",
+                    "plan={" + contentsView.describeSelectionPlan(reconcilePlan) + "}",
+                    contentsView)
         if (!reconcilePlan.attemptReconcile)
             return false;
         if (!selectionBridge
                 || selectionBridge.reconcileViewSessionAndRefreshSnapshotForNote === undefined) {
+            EditorTrace.trace(
+                        "displayView",
+                        "selectionFlow.reconcileSkipped",
+                        "reason=bridge-unavailable noteId=" + normalizedNoteId,
+                        contentsView)
             return false;
         }
         const sessionText = editorSession.editorText === undefined || editorSession.editorText === null
@@ -1601,10 +1809,19 @@ Item {
         const preferViewSessionOnMismatch = editorSession
                 && editorSession.localEditorAuthority !== undefined
                 && !!editorSession.localEditorAuthority;
-        if (!selectionBridge.reconcileViewSessionAndRefreshSnapshotForNote(
+        const reconcileAccepted = selectionBridge.reconcileViewSessionAndRefreshSnapshotForNote(
                     normalizedNoteId,
                     sessionText,
-                    preferViewSessionOnMismatch))
+                    preferViewSessionOnMismatch);
+        EditorTrace.trace(
+                    "displayView",
+                    "selectionFlow.reconcileRequested",
+                    "accepted=" + reconcileAccepted
+                    + " noteId=" + normalizedNoteId
+                    + " preferViewSessionOnMismatch=" + preferViewSessionOnMismatch
+                    + " sessionText={" + EditorTrace.describeText(sessionText, 48) + "}",
+                    contentsView)
+        if (!reconcileAccepted)
             return false;
         selectionSyncCoordinator.markSnapshotReconcileStarted(normalizedNoteId);
         return true;
@@ -2013,7 +2230,18 @@ Item {
         });
     }
     function scheduleSelectionModelSync(options) {
-        noteBodyMountCoordinator.scheduleMount(options && typeof options === "object" ? options : ({}));
+        const normalizedOptions = options && typeof options === "object" ? options : ({});
+        EditorTrace.trace(
+                    "displayView",
+                    "selectionFlow.scheduleSelectionModelSync",
+                    "options={" + contentsView.describeSelectionSyncOptions(normalizedOptions) + "}"
+                    + " selectedNoteId=" + contentsView.selectedNoteId
+                    + " bodyNoteId=" + contentsView.selectedNoteBodyNoteId
+                    + " bodyResolved=" + contentsView.selectedNoteBodyResolved
+                    + " bodyLoading=" + contentsView.selectedNoteBodyLoading
+                    + " editorBoundNoteId=" + contentsView.editorBoundNoteId,
+                    contentsView)
+        noteBodyMountCoordinator.scheduleMount(normalizedOptions);
     }
     function scrollEditorViewportToMinimapPosition(localY) {
         const flickable = contentsView.editorFlickable;
@@ -2060,6 +2288,7 @@ Item {
 
     Component.onCompleted: {
         EditorTrace.trace("displayView", "mount", "visible=" + contentsView.visible, contentsView)
+        contentsView.logEditorCreationState("componentCompleted");
         contentsView.scheduleSelectionModelSync({
                                                    "resetSnapshot": true,
                                                    "scheduleReconcile": true,
@@ -2098,6 +2327,7 @@ Item {
                     "showStructuredDocumentFlowChanged",
                     "showStructuredDocumentFlow=" + contentsView.showStructuredDocumentFlow,
                     contentsView)
+        contentsView.logEditorCreationState("showStructuredDocumentFlowChanged");
         if (contentsView.showStructuredDocumentFlow) {
             presentationRefreshController.clearPendingWhileFocused();
             if (documentPresentationRefreshTimer.running)
@@ -2194,11 +2424,88 @@ Item {
                     "selectedNoteIdChanged",
                     "selectedNoteId=" + contentsView.selectedNoteId,
                     contentsView)
+        contentsView.logEditorCreationState("selectedNoteIdChanged");
         contentsView.scheduleNoteEntryGutterRefresh(contentsView.selectedNoteId);
         contentsView.scheduleSelectionModelSync({
                                                    "resetSnapshot": true,
                                                    "focusEditor": true
                                                });
+    }
+    onSelectedNoteBodyNoteIdChanged: {
+        EditorTrace.trace(
+                    "displayView",
+                    "selectedNoteBodyNoteIdChanged",
+                    "selectedNoteId=" + contentsView.selectedNoteId
+                    + " bodyNoteId=" + contentsView.selectedNoteBodyNoteId,
+                    contentsView)
+        contentsView.logEditorCreationState("selectedNoteBodyNoteIdChanged");
+    }
+    onEditorBoundNoteIdChanged: {
+        EditorTrace.trace(
+                    "displayView",
+                    "editorBoundNoteIdChanged",
+                    "editorBoundNoteId=" + contentsView.editorBoundNoteId
+                    + " selectedNoteId=" + contentsView.selectedNoteId,
+                    contentsView)
+        contentsView.logEditorCreationState("editorBoundNoteIdChanged");
+    }
+    onEditorSessionBoundToSelectedNoteChanged: {
+        EditorTrace.trace(
+                    "displayView",
+                    "editorSessionBoundToSelectedNoteChanged",
+                    "editorSessionBoundToSelectedNote=" + contentsView.editorSessionBoundToSelectedNote
+                    + " editorBoundNoteId=" + contentsView.editorBoundNoteId
+                    + " selectedNoteId=" + contentsView.selectedNoteId,
+                    contentsView)
+        contentsView.logEditorCreationState("editorSessionBoundToSelectedNoteChanged");
+    }
+    onStructuredDocumentFlowRequestedChanged: {
+        EditorTrace.trace(
+                    "displayView",
+                    "structuredDocumentFlowRequestedChanged",
+                    "structuredDocumentFlowRequested=" + contentsView.structuredDocumentFlowRequested,
+                    contentsView)
+        contentsView.logEditorCreationState("structuredDocumentFlowRequestedChanged");
+    }
+    onLegacyInlineEditorRequestedChanged: {
+        EditorTrace.trace(
+                    "displayView",
+                    "legacyInlineEditorRequestedChanged",
+                    "legacyInlineEditorRequested=" + contentsView.legacyInlineEditorRequested,
+                    contentsView)
+        contentsView.logEditorCreationState("legacyInlineEditorRequestedChanged");
+    }
+    onLegacyInlineEditorActiveChanged: {
+        EditorTrace.trace(
+                    "displayView",
+                    "legacyInlineEditorActiveChanged",
+                    "legacyInlineEditorActive=" + contentsView.legacyInlineEditorActive,
+                    contentsView)
+        contentsView.logEditorCreationState("legacyInlineEditorActiveChanged");
+    }
+    onNoteDocumentMountPendingChanged: {
+        EditorTrace.trace(
+                    "displayView",
+                    "noteDocumentMountPendingChanged",
+                    "noteDocumentMountPending=" + contentsView.noteDocumentMountPending,
+                    contentsView)
+        contentsView.logEditorCreationState("noteDocumentMountPendingChanged");
+    }
+    onNoteDocumentMountedChanged: {
+        EditorTrace.trace(
+                    "displayView",
+                    "noteDocumentMountedChanged",
+                    "noteDocumentMounted=" + contentsView.noteDocumentMounted,
+                    contentsView)
+        contentsView.logEditorCreationState("noteDocumentMountedChanged");
+    }
+    onNoteDocumentMountFailureReasonChanged: {
+        EditorTrace.trace(
+                    "displayView",
+                    "noteDocumentMountFailureReasonChanged",
+                    "noteDocumentMountFailureReason=" + contentsView.noteDocumentMountFailureReason,
+                    contentsView)
+        contentsView.logEditorCreationState("noteDocumentMountFailureReasonChanged");
     }
     onPendingBodySaveChanged: {
         EditorTrace.trace(
@@ -2282,12 +2589,34 @@ Item {
     }
     ContentsEditorSelectionBridge {
         id: selectionBridge
+        objectName: "contentsDisplaySelectionBridge"
 
         contentViewModel: contentsView.contentViewModel
         noteListModel: contentsView.noteListModel
+
+        Component.onCompleted: {
+            EditorTrace.trace(
+                        "displayView",
+                        "selectionBridgeCreated",
+                        EditorTrace.describeObject(selectionBridge, [
+                                                      "selectedNoteId",
+                                                      "selectedNoteBodyNoteId",
+                                                      "selectedNoteBodyResolved",
+                                                      "selectedNoteBodyLoading"
+                                                  ]),
+                        selectionBridge)
+        }
+        Component.onDestruction: {
+            EditorTrace.trace(
+                        "displayView",
+                        "selectionBridgeDestroyed",
+                        "selectedNoteId=" + selectionBridge.selectedNoteId,
+                        selectionBridge)
+        }
     }
     ContentsDisplayNoteBodyMountCoordinator {
         id: noteBodyMountCoordinator
+        objectName: "contentsDisplayNoteBodyMountCoordinator"
 
         editorBoundNoteId: contentsView.editorBoundNoteId
         editorSessionBoundToSelectedNote: contentsView.editorSessionBoundToSelectedNote
@@ -2303,6 +2632,26 @@ Item {
         structuredDocumentSurfaceReady: contentsView.structuredDocumentFlowRequested && structuredDocumentFlow.visible
         structuredDocumentSurfaceRequested: contentsView.structuredDocumentFlowRequested
         visible: contentsView.visible
+
+        Component.onCompleted: {
+            EditorTrace.trace(
+                        "displayView",
+                        "noteBodyMountCoordinatorCreated",
+                        EditorTrace.describeObject(noteBodyMountCoordinator, [
+                                                      "mountPending",
+                                                      "noteMounted",
+                                                      "mountFailed",
+                                                      "mountFailureReason"
+                                                  ]),
+                        noteBodyMountCoordinator)
+        }
+        Component.onDestruction: {
+            EditorTrace.trace(
+                        "displayView",
+                        "noteBodyMountCoordinatorDestroyed",
+                        "mountFailureReason=" + noteBodyMountCoordinator.mountFailureReason,
+                        noteBodyMountCoordinator)
+        }
     }
     ContentsDisplaySelectionSyncCoordinator {
         id: selectionSyncCoordinator
@@ -2341,6 +2690,7 @@ Item {
     }
     ContentsDisplaySessionCoordinator {
         id: sessionCoordinator
+        objectName: "contentsDisplaySessionCoordinator"
 
         editorSessionBoundToSelectedNote: contentsView.editorSessionBoundToSelectedNote
         editorText: contentsView.editorText === undefined || contentsView.editorText === null ? "" : String(contentsView.editorText)
@@ -2349,6 +2699,26 @@ Item {
         selectedNoteBodyText: contentsView.selectedNoteBodyText === undefined || contentsView.selectedNoteBodyText === null ? "" : String(contentsView.selectedNoteBodyText)
         selectedNoteId: contentsView.selectedNoteId === undefined || contentsView.selectedNoteId === null ? "" : String(contentsView.selectedNoteId)
         structuredFlowSourceText: contentsView.structuredFlowSourceText === undefined || contentsView.structuredFlowSourceText === null ? "" : String(contentsView.structuredFlowSourceText)
+
+        Component.onCompleted: {
+            EditorTrace.trace(
+                        "displayView",
+                        "sessionCoordinatorCreated",
+                        EditorTrace.describeObject(sessionCoordinator, [
+                                                      "selectedNoteId",
+                                                      "selectedNoteBodyNoteId",
+                                                      "selectedNoteBodyResolved",
+                                                      "editorSessionBoundToSelectedNote"
+                                                  ]),
+                        sessionCoordinator)
+        }
+        Component.onDestruction: {
+            EditorTrace.trace(
+                        "displayView",
+                        "sessionCoordinatorDestroyed",
+                        "selectedNoteId=" + sessionCoordinator.selectedNoteId,
+                        sessionCoordinator)
+        }
     }
     ContentsDisplayContextMenuCoordinator {
         id: contextMenuCoordinator
@@ -2530,10 +2900,31 @@ Item {
     }
     ContentsEditorSessionController {
         id: editorSession
+        objectName: "contentsDisplayEditorSession"
 
         agendaBackend: contentsAgendaBackend
         selectionBridge: selectionBridge
         typingIdleThresholdMs: contentsView.editorIdleSyncThresholdMs
+
+        Component.onCompleted: {
+            EditorTrace.trace(
+                        "displayView",
+                        "editorSessionCreated",
+                        EditorTrace.describeObject(editorSession, [
+                                                      "editorBoundNoteId",
+                                                      "pendingBodySave",
+                                                      "syncingEditorTextFromModel"
+                                                  ]),
+                        editorSession)
+        }
+        Component.onDestruction: {
+            EditorTrace.trace(
+                        "displayView",
+                        "editorSessionDestroyed",
+                        "editorBoundNoteId=" + editorSession.editorBoundNoteId
+                        + " pendingBodySave=" + editorSession.pendingBodySave,
+                        editorSession)
+        }
     }
     Timer {
         id: documentPresentationRefreshTimer
@@ -2587,6 +2978,11 @@ Item {
     Connections {
         function onMountFlushRequested(plan) {
             const mountPlan = plan && typeof plan === "object" ? plan : ({});
+            EditorTrace.trace(
+                        "displayView",
+                        "selectionFlow.mountPlan",
+                        "plan={" + contentsView.describeSelectionPlan(mountPlan) + "}",
+                        contentsView)
             if (mountPlan.resetSelectionCache)
                 contentsView.resetEditorSelectionCache();
             if (mountPlan.flushPendingEditorText
@@ -2596,6 +2992,7 @@ Item {
             }
             let selectionSynced = false;
             let snapshotRefreshAccepted = false;
+            let scheduledFollowUpMount = false;
             if (mountPlan.attemptSnapshotRefresh
                     && selectionBridge
                     && selectionBridge.refreshSelectedNoteSnapshot !== undefined) {
@@ -2613,6 +3010,7 @@ Item {
                             && refreshedNoteId.length > 0
                             && (currentBodyNoteId !== refreshedNoteId
                                 || !contentsView.selectedNoteBodyResolved)) {
+                        scheduledFollowUpMount = true;
                         contentsView.scheduleSelectionModelSync({
                                                                    "scheduleReconcile": true,
                                                                    "fallbackRefresh": true
@@ -2640,6 +3038,16 @@ Item {
             if (mountPlan.focusEditorForSelectedNote)
                 selectionSyncCoordinator.scheduleEditorFocusForNote(
                             String(mountPlan.selectedNoteId || ""));
+            EditorTrace.trace(
+                        "displayView",
+                        "selectionFlow.mountResult",
+                        "reason=" + String(mountPlan.reason || "")
+                        + " selectedNoteId=" + String(mountPlan.selectedNoteId || "")
+                        + " selectionSynced=" + selectionSynced
+                        + " snapshotRefreshAccepted=" + snapshotRefreshAccepted
+                        + " scheduledFollowUpMount=" + scheduledFollowUpMount
+                        + " focusEditor=" + !!mountPlan.focusEditorForSelectedNote,
+                        contentsView)
         }
         function onSnapshotReconcileRequested() {
             contentsView.reconcileEditorEntrySnapshotOnce();
@@ -2787,6 +3195,13 @@ Item {
                 contentsView.scheduleTypingViewportCorrection(true);
         }
         function onVisibleChanged() {
+            EditorTrace.trace(
+                        "displayView",
+                        "structuredDocumentFlowVisibleChanged",
+                        "visible=" + structuredDocumentFlow.visible
+                        + " " + contentsView.describeEditorSurfaceObject(structuredDocumentFlow),
+                        contentsView)
+            contentsView.logEditorCreationState("structuredDocumentFlowVisibleChanged");
             contentsView.scheduleSelectionModelSync({
                                                        "scheduleReconcile": true
                                                    });
@@ -2796,7 +3211,25 @@ Item {
         target: contentsView.showStructuredDocumentFlow ? structuredDocumentFlow : null
     }
     Connections {
+        function onLoaded() {
+            EditorTrace.trace(
+                        "displayView",
+                        "contentEditorLoaderLoaded",
+                        "status=" + contentsView.loaderStatusName(contentEditorLoader.status)
+                        + " active=" + contentEditorLoader.active
+                        + " item={" + contentsView.describeEditorSurfaceObject(contentEditorLoader.item) + "}",
+                        contentsView)
+            contentsView.logEditorCreationState("contentEditorLoaderLoaded");
+        }
         function onStatusChanged() {
+            EditorTrace.trace(
+                        "displayView",
+                        "contentEditorLoaderStatusChanged",
+                        "status=" + contentsView.loaderStatusName(contentEditorLoader.status)
+                        + " active=" + contentEditorLoader.active
+                        + " item={" + contentsView.describeEditorSurfaceObject(contentEditorLoader.item) + "}",
+                        contentsView)
+            contentsView.logEditorCreationState("contentEditorLoaderStatusChanged");
             contentsView.scheduleSelectionModelSync({
                                                        "scheduleReconcile": true
                                                    });
@@ -3053,6 +3486,7 @@ Item {
                     }
                     ContentsStructuredDocumentFlow {
                         id: structuredDocumentFlow
+                        objectName: "contentsDisplayStructuredDocumentFlow"
 
                         agendaBackend: contentsAgendaBackend
                         calloutBackend: contentsCalloutBackend
@@ -3192,6 +3626,7 @@ Item {
                         id: contentEditorComponent
 
                         ContentsInlineFormatEditor {
+                            objectName: "contentsDisplayInlineFormatEditor"
                             autoFocusOnPress: modePolicy.inlineEditorAutoFocusOnPress
                             anchors.fill: parent
                             backgroundColor: "transparent"
@@ -3251,6 +3686,7 @@ Item {
                     }
                     Loader {
                         id: contentEditorLoader
+                        objectName: "contentsDisplayInlineEditorLoader"
 
                         active: contentsView.legacyInlineEditorActive
                         sourceComponent: contentEditorComponent
@@ -3684,21 +4120,34 @@ Item {
         }
         Item {
             anchors.fill: parent
-            visible: contentsView.noteDocumentMountFailureVisible
+            visible: contentsView.noteDocumentExceptionVisible
             z: 1
 
-            LV.Label {
+            Column {
                 anchors.centerIn: parent
-                color: LV.Theme.descriptionColor
-                horizontalAlignment: Text.AlignHCenter
-                style: body
-                text: contentsView.noteDocumentMountFailureMessage
+                spacing: LV.Theme.gap4
                 width: Math.max(
                            0,
                            Math.min(
                                parent ? Number(parent.width) || 0 : 0,
-                               Math.round(LV.Theme.scaleMetric(320))))
-                wrapMode: Text.Wrap
+                               Math.round(LV.Theme.scaleMetric(360))))
+
+                LV.Label {
+                    color: LV.Theme.titleHeaderColor
+                    horizontalAlignment: Text.AlignHCenter
+                    style: body
+                    text: contentsView.noteDocumentExceptionTitle
+                    width: parent.width
+                    wrapMode: Text.Wrap
+                }
+                LV.Label {
+                    color: LV.Theme.descriptionColor
+                    horizontalAlignment: Text.AlignHCenter
+                    style: caption
+                    text: contentsView.noteDocumentExceptionMessage
+                    width: parent.width
+                    wrapMode: Text.Wrap
+                }
             }
         }
         ContentsMinimapLayer {
