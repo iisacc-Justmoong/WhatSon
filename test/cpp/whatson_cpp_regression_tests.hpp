@@ -717,6 +717,7 @@ private slots:
     void contentsEditorSelectionBridge_tracksSelectionFromCurrentIndexSignal();
     void contentsEditorSelectionBridge_prefillsSelectedNoteBodyFromNoteListSnapshot();
     void contentsEditorSelectionBridge_prefillsSelectedNoteBodyFromDirectSourceSnapshot();
+    void contentsEditorSelectionBridge_treatsDirectEmptySourceAsResolvedEmptyNote();
     void contentsEditorSelectionBridge_refreshesSelectedBodyFromNoteListBodySignal();
     void noteBackedHierarchyNoteLists_preserveRawBodySnapshotForEditorBootstrap();
     void noteListModelContractBridge_resolvesHierarchyBoundNoteListImmediately();
@@ -754,6 +755,12 @@ private slots:
     void contentsDisplayView_keepsGutterNumbersCloseToTheEditorBody();
     void contentsDisplayView_reservesLargeBottomAccessibilityMargin();
     void contentsDisplayView_usesSelectedNoteSnapshotWhileSessionBindingCatchesUp();
+    void contentsDisplaySessionCoordinator_requiresResolvedSelectedBodyBeforeUsingSnapshot();
+    void contentsDisplaySelectionSyncCoordinator_blocksUntilSelectedBodyIsResolved();
+    void contentsDisplayView_surfacesMountFailurePlaceholderWithoutChrome();
+    void noteBodyMountCoordinator_retriesRefreshBeforeFailingMount();
+    void noteBodyMountCoordinator_failsMountAfterAcceptedRefreshWhenBodyRemainsUnavailable();
+    void noteBodyMountCoordinator_requestsEditorSessionMountFromResolvedSnapshot();
     void qmlInlineFormatEditor_keepsHiddenKeyboardTouchesScrollFirstOnMobile();
     void mobileChrome_usesSharedFigmaControlSurfaceColor();
     void mobileHierarchyRouteStateStore_tracksNormalizedSelectionRestoreState();

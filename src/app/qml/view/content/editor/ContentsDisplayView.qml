@@ -192,7 +192,7 @@ Item {
     property var noteListModel: null
     readonly property bool noteSelectionContractAvailable: selectionBridge.noteSelectionContractAvailable
     readonly property bool typingSessionSyncProtected: editorSession && editorSession.isTypingSessionActive !== undefined && editorSession.isTypingSessionActive()
-    readonly property bool noteSnapshotRefreshEnabled: contentsView.visible && contentsView.hasSelectedNote && !contentsView.selectedNoteBodyLoading && !contentsView.showDedicatedResourceViewer && !contentsView.showFormattedTextRenderer && contentsView.noteSelectionContractAvailable && !contentsView.editorInputFocused && !contentsView.typingSessionSyncProtected && !contentsView.pendingBodySave
+    readonly property bool noteSnapshotRefreshEnabled: contentsView.visible && contentsView.hasSelectedNote && !contentsView.selectedNoteBodyLoading && (contentsView.editorSessionBoundToSelectedNote || contentsView.selectedNoteBodyResolved) && !contentsView.showDedicatedResourceViewer && !contentsView.showFormattedTextRenderer && contentsView.noteSelectionContractAvailable && !contentsView.editorInputFocused && !contentsView.typingSessionSyncProtected && !contentsView.pendingBodySave
     readonly property int noteSnapshotRefreshIntervalMs: 1200
     readonly property int pageEditorViewModeValue: pagePrintLayoutRenderer.pageViewModeValue
     property var panelViewModel: null
@@ -261,18 +261,36 @@ Item {
     readonly property int editorIdleSyncThresholdMs: 1000
     readonly property string selectedNoteBodyText: selectionBridge.selectedNoteBodyText
     readonly property string selectedNoteBodyNoteId: selectionBridge.selectedNoteBodyNoteId
+    readonly property bool selectedNoteBodyResolved: selectionBridge.selectedNoteBodyResolved
     readonly property bool selectedNoteBodyLoading: selectionBridge.selectedNoteBodyLoading
     readonly property string selectedNoteId: selectionBridge.selectedNoteId
     readonly property bool showCurrentLineMarker: contentsView.hasSelectedNote || contentsView.editorText.length > 0 || contentsView.editorInputFocused
     readonly property bool editorSessionBoundToSelectedNote: editorSession.editorBoundNoteId === contentsView.selectedNoteId
+    readonly property bool noteDocumentMountPending: noteBodyMountCoordinator.mountPending
+    readonly property bool noteDocumentMounted: noteBodyMountCoordinator.noteMounted
+    readonly property bool noteDocumentMountFailureVisible: noteBodyMountCoordinator.mountFailed
+    readonly property string noteDocumentMountFailureMessage: noteBodyMountCoordinator.mountFailureMessage
+    readonly property bool noteDocumentSurfaceVisible: noteBodyMountCoordinator.surfaceVisible
+    readonly property bool noteDocumentCommandSurfaceEnabled: contentsView.noteDocumentMounted
+                                                             && !contentsView.showDedicatedResourceViewer
+                                                             && !contentsView.showFormattedTextRenderer
     readonly property string structuredFlowSourceText: contentsView.documentPresentationSourceText
     readonly property bool liveResourceStructuredFlowRequested: contentsView.sourceContainsCanonicalResourceTag(
                                                                     contentsView.documentPresentationSourceText)
     readonly property bool parsedStructuredFlowRequested: contentsView.hasSelectedNote
     readonly property bool structuredDocumentFlowEnabled: contentsView.parsedStructuredFlowRequested
+    readonly property bool structuredDocumentFlowRequested: contentsView.hasSelectedNote
+                                                            && contentsView.structuredDocumentFlowEnabled
+                                                            && !contentsView.showDedicatedResourceViewer
+                                                            && !contentsView.showFormattedTextRenderer
     readonly property bool resourceResolverNeedsLiveEditorSource: contentsView.showStructuredDocumentFlow
                                                                   || contentsView.liveResourceStructuredFlowRequested
-    readonly property bool legacyInlineEditorActive: !contentsView.showStructuredDocumentFlow
+    readonly property bool legacyInlineEditorRequested: contentsView.hasSelectedNote
+                                                        && !contentsView.structuredDocumentFlowRequested
+                                                        && !contentsView.showDedicatedResourceViewer
+                                                        && !contentsView.showFormattedTextRenderer
+    readonly property bool legacyInlineEditorActive: contentsView.legacyInlineEditorRequested
+                                                     && !contentsView.showStructuredDocumentFlow
                                                      && !contentsView.showDedicatedResourceViewer
                                                      && !contentsView.showFormattedTextRenderer
     readonly property bool resourceBlocksRenderedInlineByHtmlProjection: contentsView.legacyInlineEditorActive
@@ -280,9 +298,7 @@ Item {
     readonly property bool showDedicatedResourceViewer: false
     readonly property bool showEditorGutter: modePolicy.showEditorGutter
     readonly property bool showFormattedTextRenderer: false
-    readonly property bool showStructuredDocumentFlow: contentsView.structuredDocumentFlowEnabled
-                                                       && !contentsView.showDedicatedResourceViewer
-                                                       && !contentsView.showFormattedTextRenderer
+    readonly property bool showStructuredDocumentFlow: contentsView.structuredDocumentFlowRequested
     readonly property bool structuredHostGeometryActive: modePolicy.structuredHostGeometryActive
     readonly property bool showPageEditorLayout: pagePrintLayoutRenderer.showPageEditorLayout
     readonly property bool showPrintEditorLayout: pagePrintLayoutRenderer.showPrintEditorLayout
@@ -885,15 +901,14 @@ Item {
         editorTypingController.handleEditorTextEdited();
         editorSession.flushPendingEditorText();
     }
-    function focusEditorForPendingNote() {
-        const selectedNoteId = contentsView.selectedNoteId === undefined || contentsView.selectedNoteId === null ? "" : String(contentsView.selectedNoteId).trim();
-        const pendingNoteId = selectionSyncCoordinator.takePendingEditorFocusNoteId(selectedNoteId);
-        if (pendingNoteId.length === 0 || !contentsView.hasSelectedNote)
+    function focusEditorForSelectedNoteId(noteId) {
+        const normalizedNoteId = noteId === undefined || noteId === null ? "" : String(noteId).trim();
+        if (normalizedNoteId.length === 0 || !contentsView.hasSelectedNote)
             return;
 
         Qt.callLater(function () {
             const activeNoteId = contentsView.selectedNoteId === undefined || contentsView.selectedNoteId === null ? "" : String(contentsView.selectedNoteId).trim();
-            if (activeNoteId !== pendingNoteId)
+            if (activeNoteId !== normalizedNoteId)
                 return;
 
             const cursorPosition = Math.max(0, contentsView.logicalTextLength());
@@ -905,6 +920,14 @@ Item {
             else if (contentEditor.cursorPosition !== undefined)
                 contentEditor.cursorPosition = cursorPosition;
         });
+    }
+    function focusEditorForPendingNote() {
+        const selectedNoteId = contentsView.selectedNoteId === undefined || contentsView.selectedNoteId === null ? "" : String(contentsView.selectedNoteId).trim();
+        const pendingNoteId = selectionSyncCoordinator.takePendingEditorFocusNoteId(selectedNoteId);
+        if (pendingNoteId.length === 0)
+            return;
+
+        contentsView.focusEditorForSelectedNoteId(pendingNoteId);
     }
     function eventRequestsPasteShortcut(event) {
         if (!event)
@@ -1990,7 +2013,7 @@ Item {
         });
     }
     function scheduleSelectionModelSync(options) {
-        selectionSyncCoordinator.scheduleSelectionSync(options && typeof options === "object" ? options : ({}));
+        noteBodyMountCoordinator.scheduleMount(options && typeof options === "object" ? options : ({}));
     }
     function scrollEditorViewportToMinimapPosition(localY) {
         const flickable = contentsView.editorFlickable;
@@ -2099,12 +2122,37 @@ Item {
                     "selectedNoteBodyTextChanged",
                     "selectedNoteId=" + contentsView.selectedNoteId
                     + " bodyNoteId=" + contentsView.selectedNoteBodyNoteId
+                    + " resolved=" + contentsView.selectedNoteBodyResolved
                     + " loading=" + contentsView.selectedNoteBodyLoading
                     + " " + EditorTrace.describeText(contentsView.selectedNoteBodyText),
                     contentsView)
         if (contentsView.selectedNoteBodyLoading)
             return;
+        if (!contentsView.selectedNoteBodyResolved)
+            return;
         if (contentsView.selectedNoteBodyNoteId !== contentsView.selectedNoteId)
+            return;
+        if (contentsView.hasPendingNoteEntryGutterRefresh(contentsView.selectedNoteId)
+                && structuredDocumentFlow
+                && structuredDocumentFlow.scheduleLayoutCacheRefresh !== undefined) {
+            structuredDocumentFlow.scheduleLayoutCacheRefresh();
+        }
+        contentsView.scheduleSelectionModelSync({
+                                                   "scheduleReconcile": true
+                                               });
+    }
+    onSelectedNoteBodyResolvedChanged: {
+        EditorTrace.trace(
+                    "displayView",
+                    "selectedNoteBodyResolvedChanged",
+                    "selectedNoteId=" + contentsView.selectedNoteId
+                    + " bodyNoteId=" + contentsView.selectedNoteBodyNoteId
+                    + " resolved=" + contentsView.selectedNoteBodyResolved
+                    + " loading=" + contentsView.selectedNoteBodyLoading,
+                    contentsView)
+        if (!contentsView.selectedNoteBodyResolved
+                || contentsView.selectedNoteBodyLoading
+                || contentsView.selectedNoteBodyNoteId !== contentsView.selectedNoteId)
             return;
         if (contentsView.hasPendingNoteEntryGutterRefresh(contentsView.selectedNoteId)
                 && structuredDocumentFlow
@@ -2121,21 +2169,24 @@ Item {
                     "selectedNoteBodyLoadingChanged",
                     "selectedNoteId=" + contentsView.selectedNoteId
                     + " bodyNoteId=" + contentsView.selectedNoteBodyNoteId
+                    + " resolved=" + contentsView.selectedNoteBodyResolved
                     + " loading=" + contentsView.selectedNoteBodyLoading,
                     contentsView)
-        if (!contentsView.selectedNoteBodyLoading
-                && contentsView.selectedNoteBodyNoteId === contentsView.selectedNoteId
-                && contentsView.selectedNoteBodyText.length === 0) {
-            if (contentsView.hasPendingNoteEntryGutterRefresh(contentsView.selectedNoteId)
-                    && structuredDocumentFlow
-                    && structuredDocumentFlow.scheduleLayoutCacheRefresh !== undefined) {
-                structuredDocumentFlow.scheduleLayoutCacheRefresh();
-            }
-            contentsView.scheduleSelectionModelSync({
-                                                       "scheduleReconcile": true,
-                                                       "fallbackRefresh": true
-                                                   });
+        if (contentsView.selectedNoteBodyLoading)
+            return;
+        if (contentsView.selectedNoteId.length === 0)
+            return;
+        if (contentsView.selectedNoteBodyNoteId !== contentsView.selectedNoteId)
+            return;
+        if (contentsView.hasPendingNoteEntryGutterRefresh(contentsView.selectedNoteId)
+                && structuredDocumentFlow
+                && structuredDocumentFlow.scheduleLayoutCacheRefresh !== undefined) {
+            structuredDocumentFlow.scheduleLayoutCacheRefresh();
         }
+        contentsView.scheduleSelectionModelSync({
+                                                   "scheduleReconcile": true,
+                                                   "fallbackRefresh": true
+                                               });
     }
     onSelectedNoteIdChanged: {
         EditorTrace.trace(
@@ -2235,6 +2286,24 @@ Item {
         contentViewModel: contentsView.contentViewModel
         noteListModel: contentsView.noteListModel
     }
+    ContentsDisplayNoteBodyMountCoordinator {
+        id: noteBodyMountCoordinator
+
+        editorBoundNoteId: contentsView.editorBoundNoteId
+        editorSessionBoundToSelectedNote: contentsView.editorSessionBoundToSelectedNote
+        inlineDocumentSurfaceLoading: contentEditorLoader.status === Loader.Loading
+        inlineDocumentSurfaceReady: contentEditorLoader.status === Loader.Ready && contentEditorLoader.item !== null
+        inlineDocumentSurfaceRequested: contentsView.legacyInlineEditorRequested
+        pendingBodySave: contentsView.pendingBodySave
+        selectedNoteBodyLoading: contentsView.selectedNoteBodyLoading
+        selectedNoteBodyNoteId: contentsView.selectedNoteBodyNoteId === undefined || contentsView.selectedNoteBodyNoteId === null ? "" : String(contentsView.selectedNoteBodyNoteId)
+        selectedNoteBodyText: contentsView.selectedNoteBodyText === undefined || contentsView.selectedNoteBodyText === null ? "" : String(contentsView.selectedNoteBodyText)
+        selectedNoteBodyResolved: contentsView.selectedNoteBodyResolved
+        selectedNoteId: contentsView.selectedNoteId === undefined || contentsView.selectedNoteId === null ? "" : String(contentsView.selectedNoteId)
+        structuredDocumentSurfaceReady: contentsView.structuredDocumentFlowRequested && structuredDocumentFlow.visible
+        structuredDocumentSurfaceRequested: contentsView.structuredDocumentFlowRequested
+        visible: contentsView.visible
+    }
     ContentsDisplaySelectionSyncCoordinator {
         id: selectionSyncCoordinator
 
@@ -2244,6 +2313,7 @@ Item {
         pendingBodySave: contentsView.pendingBodySave
         selectedNoteBodyLoading: contentsView.selectedNoteBodyLoading
         selectedNoteBodyNoteId: contentsView.selectedNoteBodyNoteId
+        selectedNoteBodyResolved: contentsView.selectedNoteBodyResolved
         selectedNoteBodyText: contentsView.selectedNoteBodyText
         selectedNoteId: contentsView.selectedNoteId
         typingSessionSyncProtected: contentsView.typingSessionSyncProtected
@@ -2275,6 +2345,7 @@ Item {
         editorSessionBoundToSelectedNote: contentsView.editorSessionBoundToSelectedNote
         editorText: contentsView.editorText === undefined || contentsView.editorText === null ? "" : String(contentsView.editorText)
         selectedNoteBodyNoteId: contentsView.selectedNoteBodyNoteId === undefined || contentsView.selectedNoteBodyNoteId === null ? "" : String(contentsView.selectedNoteBodyNoteId)
+        selectedNoteBodyResolved: contentsView.selectedNoteBodyResolved
         selectedNoteBodyText: contentsView.selectedNoteBodyText === undefined || contentsView.selectedNoteBodyText === null ? "" : String(contentsView.selectedNoteBodyText)
         selectedNoteId: contentsView.selectedNoteId === undefined || contentsView.selectedNoteId === null ? "" : String(contentsView.selectedNoteId)
         structuredFlowSourceText: contentsView.structuredFlowSourceText === undefined || contentsView.structuredFlowSourceText === null ? "" : String(contentsView.structuredFlowSourceText)
@@ -2514,34 +2585,61 @@ Item {
         target: selectionBridge
     }
     Connections {
-        function onSelectionSyncFlushRequested(plan) {
-            const syncPlan = plan && typeof plan === "object" ? plan : ({});
-            if (syncPlan.resetSelectionCache)
+        function onMountFlushRequested(plan) {
+            const mountPlan = plan && typeof plan === "object" ? plan : ({});
+            if (mountPlan.resetSelectionCache)
                 contentsView.resetEditorSelectionCache();
-            if (syncPlan.flushPendingEditorText
+            if (mountPlan.flushPendingEditorText
                     && editorSession
                     && editorSession.flushPendingEditorText !== undefined) {
                 editorSession.flushPendingEditorText();
             }
             let selectionSynced = false;
-            if (syncPlan.attemptSelectionSync
+            let snapshotRefreshAccepted = false;
+            if (mountPlan.attemptSnapshotRefresh
+                    && selectionBridge
+                    && selectionBridge.refreshSelectedNoteSnapshot !== undefined) {
+                snapshotRefreshAccepted = !!selectionBridge.refreshSelectedNoteSnapshot();
+                noteBodyMountCoordinator.handleSnapshotRefreshFinished(
+                            String(mountPlan.selectedNoteId || ""),
+                            snapshotRefreshAccepted);
+                if (snapshotRefreshAccepted) {
+                    const refreshedNoteId = String(mountPlan.selectedNoteId || "").trim();
+                    const currentBodyNoteId = contentsView.selectedNoteBodyNoteId === undefined
+                            || contentsView.selectedNoteBodyNoteId === null
+                            ? ""
+                            : String(contentsView.selectedNoteBodyNoteId).trim();
+                    if (!contentsView.selectedNoteBodyLoading
+                            && refreshedNoteId.length > 0
+                            && (currentBodyNoteId !== refreshedNoteId
+                                || !contentsView.selectedNoteBodyResolved)) {
+                        contentsView.scheduleSelectionModelSync({
+                                                                   "scheduleReconcile": true,
+                                                                   "fallbackRefresh": true
+                                                               });
+                    }
+                }
+            }
+            if (mountPlan.attemptEditorSessionMount
                     && editorSession
                     && editorSession.requestSyncEditorTextFromSelection !== undefined) {
                 selectionSynced = editorSession.requestSyncEditorTextFromSelection(
-                            String(syncPlan.selectedNoteId || ""),
-                            String(syncPlan.selectedNoteBodyText || ""),
-                            String(syncPlan.selectedNoteBodyNoteId || ""));
+                            String(mountPlan.selectedNoteId || ""),
+                            String(mountPlan.selectedNoteBodyText || ""),
+                            String(mountPlan.selectedNoteBodyNoteId || ""));
             }
-            if (syncPlan.scheduleSnapshotReconcile)
+            if (mountPlan.scheduleSnapshotReconcile)
                 contentsView.scheduleEditorEntrySnapshotReconcile();
-            if (syncPlan.forceVisualRefresh
-                    || (!selectionSynced && syncPlan.fallbackRefreshIfSyncSkipped)) {
+            if (mountPlan.forceVisualRefresh
+                    || ((!selectionSynced && !snapshotRefreshAccepted)
+                        && mountPlan.fallbackRefreshIfMountSkipped)) {
                 contentsView.scheduleMinimapSnapshotRefresh(true);
                 contentsView.scheduleDocumentPresentationRefresh(true);
                 contentsView.scheduleGutterRefresh(4);
             }
-            if (syncPlan.focusEditorForSelectedNote)
-                contentsView.focusEditorForPendingNote();
+            if (mountPlan.focusEditorForSelectedNote)
+                selectionSyncCoordinator.scheduleEditorFocusForNote(
+                            String(mountPlan.selectedNoteId || ""));
         }
         function onSnapshotReconcileRequested() {
             contentsView.reconcileEditorEntrySnapshotOnce();
@@ -2688,9 +2786,23 @@ Item {
             if (structuredDocumentFlow && structuredDocumentFlow.focused)
                 contentsView.scheduleTypingViewportCorrection(true);
         }
+        function onVisibleChanged() {
+            contentsView.scheduleSelectionModelSync({
+                                                       "scheduleReconcile": true
+                                                   });
+        }
 
         ignoreUnknownSignals: true
         target: contentsView.showStructuredDocumentFlow ? structuredDocumentFlow : null
+    }
+    Connections {
+        function onStatusChanged() {
+            contentsView.scheduleSelectionModelSync({
+                                                       "scheduleReconcile": true
+                                                   });
+        }
+
+        target: contentEditorLoader
     }
     Connections {
         function onContentYChanged() {
@@ -2721,7 +2833,7 @@ Item {
             LayoutMirroring.enabled: false
             layoutDirection: Qt.LeftToRight
             spacing: 0
-            visible: contentsView.hasSelectedNote
+            visible: contentsView.hasSelectedNote && contentsView.noteDocumentSurfaceVisible
 
             ContentsGutterLayer {
                 id: gutterLayer
@@ -2751,7 +2863,7 @@ Item {
                 markerYResolver: function (markerSpec) {
                     return contentsView.markerY(markerSpec);
                 }
-                visible: contentsView.showEditorGutter
+                visible: contentsView.showEditorGutter && contentsView.noteDocumentMounted
                 visibleLineNumbersModel: contentsView.visibleGutterLineEntries
             }
             Item {
@@ -3005,7 +3117,7 @@ Item {
                         taskToggleHandler: function (taskOpenTagStart, taskOpenTagEnd, checked) {
                             contentsView.setAgendaTaskDone(taskOpenTagStart, taskOpenTagEnd, checked);
                         }
-                        visible: contentsView.hasSelectedNote
+                        visible: contentsView.noteDocumentMounted
                                  && !contentsView.showStructuredDocumentFlow
                                  && !contentsView.showDedicatedResourceViewer
                                  && !contentsView.showFormattedTextRenderer
@@ -3046,7 +3158,7 @@ Item {
                             const documentY = Math.max(0, Number(contentsView.documentYForOffset(logicalOffset)) || 0);
                             return documentY;
                         }
-                        visible: contentsView.hasSelectedNote
+                        visible: contentsView.noteDocumentMounted
                                  && !contentsView.showStructuredDocumentFlow
                                  && !contentsView.showDedicatedResourceViewer
                                  && !contentsView.showFormattedTextRenderer
@@ -3187,7 +3299,7 @@ Item {
                         taskToggleHandler: function (taskOpenTagStart, taskOpenTagEnd, checked) {
                             contentsView.setAgendaTaskDone(taskOpenTagStart, taskOpenTagEnd, checked);
                         }
-                        visible: contentsView.hasSelectedNote
+                        visible: contentsView.noteDocumentMounted
                                  && !contentsView.showStructuredDocumentFlow
                                  && !contentsView.showDedicatedResourceViewer
                                  && !contentsView.showFormattedTextRenderer
@@ -3321,7 +3433,7 @@ Item {
 
                         acceptedButtons: Qt.RightButton
                         anchors.fill: parent
-                        enabled: contentsView.hasSelectedNote && !contentsView.showDedicatedResourceViewer && !contentsView.showFormattedTextRenderer
+                        enabled: contentsView.noteDocumentCommandSurfaceEnabled
                         hoverEnabled: false
                         preventStealing: false
                         propagateComposedEvents: true
@@ -3345,9 +3457,7 @@ Item {
                     Shortcut {
                         autoRepeat: false
                         context: Qt.WindowShortcut
-                        enabled: contentsView.hasSelectedNote
-                                 && !contentsView.showDedicatedResourceViewer
-                                 && !contentsView.showFormattedTextRenderer
+                        enabled: contentsView.noteDocumentCommandSurfaceEnabled
                                  && contentsView.resourcesImportViewModel
                                  && (!contentsView.resourcesImportViewModel.busy)
                                  && contentsView.resourcesImportViewModel.clipboardImageAvailable
@@ -3357,98 +3467,98 @@ Item {
                     }
                     Shortcut {
                         context: Qt.WindowShortcut
-                        enabled: contentsView.hasSelectedNote && !contentsView.showDedicatedResourceViewer && !contentsView.showFormattedTextRenderer
+                        enabled: contentsView.noteDocumentCommandSurfaceEnabled
                         sequence: "Meta+B"
 
                         onActivated: contentsView.queueInlineFormatWrap("bold")
                     }
                     Shortcut {
                         context: Qt.WindowShortcut
-                        enabled: contentsView.hasSelectedNote && !contentsView.showDedicatedResourceViewer && !contentsView.showFormattedTextRenderer
+                        enabled: contentsView.noteDocumentCommandSurfaceEnabled
                         sequence: "Ctrl+B"
 
                         onActivated: contentsView.queueInlineFormatWrap("bold")
                     }
                     Shortcut {
                         context: Qt.WindowShortcut
-                        enabled: contentsView.hasSelectedNote && !contentsView.showDedicatedResourceViewer && !contentsView.showFormattedTextRenderer
+                        enabled: contentsView.noteDocumentCommandSurfaceEnabled
                         sequence: "Meta+I"
 
                         onActivated: contentsView.queueInlineFormatWrap("italic")
                     }
                     Shortcut {
                         context: Qt.WindowShortcut
-                        enabled: contentsView.hasSelectedNote && !contentsView.showDedicatedResourceViewer && !contentsView.showFormattedTextRenderer
+                        enabled: contentsView.noteDocumentCommandSurfaceEnabled
                         sequence: "Ctrl+I"
 
                         onActivated: contentsView.queueInlineFormatWrap("italic")
                     }
                     Shortcut {
                         context: Qt.WindowShortcut
-                        enabled: contentsView.hasSelectedNote && !contentsView.showDedicatedResourceViewer && !contentsView.showFormattedTextRenderer
+                        enabled: contentsView.noteDocumentCommandSurfaceEnabled
                         sequence: "Meta+U"
 
                         onActivated: contentsView.queueInlineFormatWrap("underline")
                     }
                     Shortcut {
                         context: Qt.WindowShortcut
-                        enabled: contentsView.hasSelectedNote && !contentsView.showDedicatedResourceViewer && !contentsView.showFormattedTextRenderer
+                        enabled: contentsView.noteDocumentCommandSurfaceEnabled
                         sequence: "Ctrl+U"
 
                         onActivated: contentsView.queueInlineFormatWrap("underline")
                     }
                     Shortcut {
                         context: Qt.WindowShortcut
-                        enabled: contentsView.hasSelectedNote && !contentsView.showDedicatedResourceViewer && !contentsView.showFormattedTextRenderer
+                        enabled: contentsView.noteDocumentCommandSurfaceEnabled
                         sequence: "Meta+Shift+X"
 
                         onActivated: contentsView.queueInlineFormatWrap("strikethrough")
                     }
                     Shortcut {
                         context: Qt.WindowShortcut
-                        enabled: contentsView.hasSelectedNote && !contentsView.showDedicatedResourceViewer && !contentsView.showFormattedTextRenderer
+                        enabled: contentsView.noteDocumentCommandSurfaceEnabled
                         sequence: "Ctrl+Shift+X"
 
                         onActivated: contentsView.queueInlineFormatWrap("strikethrough")
                     }
                     Shortcut {
                         context: Qt.WindowShortcut
-                        enabled: contentsView.hasSelectedNote && !contentsView.showDedicatedResourceViewer && !contentsView.showFormattedTextRenderer
+                        enabled: contentsView.noteDocumentCommandSurfaceEnabled
                         sequence: "Meta+Shift+E"
 
                         onActivated: contentsView.queueInlineFormatWrap("highlight")
                     }
                     Shortcut {
                         context: Qt.WindowShortcut
-                        enabled: contentsView.hasSelectedNote && !contentsView.showDedicatedResourceViewer && !contentsView.showFormattedTextRenderer
+                        enabled: contentsView.noteDocumentCommandSurfaceEnabled
                         sequence: "Ctrl+Shift+E"
 
                         onActivated: contentsView.queueInlineFormatWrap("highlight")
                     }
                     Shortcut {
                         context: Qt.WindowShortcut
-                        enabled: contentsView.hasSelectedNote && !contentsView.showDedicatedResourceViewer && !contentsView.showFormattedTextRenderer
+                        enabled: contentsView.noteDocumentCommandSurfaceEnabled
                         sequence: "Meta+Shift+7"
 
                         onActivated: contentsView.queueMarkdownListMutation("ordered")
                     }
                     Shortcut {
                         context: Qt.WindowShortcut
-                        enabled: contentsView.hasSelectedNote && !contentsView.showDedicatedResourceViewer && !contentsView.showFormattedTextRenderer
+                        enabled: contentsView.noteDocumentCommandSurfaceEnabled
                         sequence: "Alt+Shift+7"
 
                         onActivated: contentsView.queueMarkdownListMutation("ordered")
                     }
                     Shortcut {
                         context: Qt.WindowShortcut
-                        enabled: contentsView.hasSelectedNote && !contentsView.showDedicatedResourceViewer && !contentsView.showFormattedTextRenderer
+                        enabled: contentsView.noteDocumentCommandSurfaceEnabled
                         sequence: "Meta+Shift+8"
 
                         onActivated: contentsView.queueMarkdownListMutation("unordered")
                     }
                     Shortcut {
                         context: Qt.WindowShortcut
-                        enabled: contentsView.hasSelectedNote && !contentsView.showDedicatedResourceViewer && !contentsView.showFormattedTextRenderer
+                        enabled: contentsView.noteDocumentCommandSurfaceEnabled
                         sequence: "Alt+Shift+8"
 
                         onActivated: contentsView.queueMarkdownListMutation("unordered")
@@ -3456,7 +3566,7 @@ Item {
                     Shortcut {
                         autoRepeat: false
                         context: Qt.WindowShortcut
-                        enabled: contentsView.hasSelectedNote && !contentsView.showDedicatedResourceViewer && !contentsView.showFormattedTextRenderer
+                        enabled: contentsView.noteDocumentCommandSurfaceEnabled
                         sequence: "Meta+Alt+T"
 
                         onActivated: contentsView.queueAgendaShortcutInsertion()
@@ -3464,7 +3574,7 @@ Item {
                     Shortcut {
                         autoRepeat: false
                         context: Qt.WindowShortcut
-                        enabled: contentsView.hasSelectedNote && !contentsView.showDedicatedResourceViewer && !contentsView.showFormattedTextRenderer
+                        enabled: contentsView.noteDocumentCommandSurfaceEnabled
                         sequence: "Ctrl+Alt+T"
 
                         onActivated: contentsView.queueAgendaShortcutInsertion()
@@ -3472,7 +3582,7 @@ Item {
                     Shortcut {
                         autoRepeat: false
                         context: Qt.WindowShortcut
-                        enabled: contentsView.hasSelectedNote && !contentsView.showDedicatedResourceViewer && !contentsView.showFormattedTextRenderer
+                        enabled: contentsView.noteDocumentCommandSurfaceEnabled
                         sequence: "Meta+Alt+C"
 
                         onActivated: contentsView.queueCalloutShortcutInsertion()
@@ -3480,7 +3590,7 @@ Item {
                     Shortcut {
                         autoRepeat: false
                         context: Qt.WindowShortcut
-                        enabled: contentsView.hasSelectedNote && !contentsView.showDedicatedResourceViewer && !contentsView.showFormattedTextRenderer
+                        enabled: contentsView.noteDocumentCommandSurfaceEnabled
                         sequence: "Ctrl+Alt+C"
 
                         onActivated: contentsView.queueCalloutShortcutInsertion()
@@ -3488,7 +3598,7 @@ Item {
                     Shortcut {
                         autoRepeat: false
                         context: Qt.WindowShortcut
-                        enabled: contentsView.hasSelectedNote && !contentsView.showDedicatedResourceViewer && !contentsView.showFormattedTextRenderer
+                        enabled: contentsView.noteDocumentCommandSurfaceEnabled
                         sequence: "Meta+Shift+H"
 
                         onActivated: contentsView.queueBreakShortcutInsertion()
@@ -3496,7 +3606,7 @@ Item {
                     Shortcut {
                         autoRepeat: false
                         context: Qt.WindowShortcut
-                        enabled: contentsView.hasSelectedNote && !contentsView.showDedicatedResourceViewer && !contentsView.showFormattedTextRenderer
+                        enabled: contentsView.noteDocumentCommandSurfaceEnabled
                         sequence: "Ctrl+Shift+H"
 
                         onActivated: contentsView.queueBreakShortcutInsertion()
@@ -3523,7 +3633,7 @@ Item {
                     Rectangle {
                         anchors.fill: parent
                         color: Qt.rgba(0.10, 0.11, 0.13, 0.78)
-                        visible: contentsView.hasSelectedNote && contentsView.selectedNoteBodyLoading
+                        visible: contentsView.noteDocumentMountPending
                         z: 4
 
                         LV.Label {
@@ -3572,6 +3682,25 @@ Item {
                 visible: false
             }
         }
+        Item {
+            anchors.fill: parent
+            visible: contentsView.noteDocumentMountFailureVisible
+            z: 1
+
+            LV.Label {
+                anchors.centerIn: parent
+                color: LV.Theme.descriptionColor
+                horizontalAlignment: Text.AlignHCenter
+                style: body
+                text: contentsView.noteDocumentMountFailureMessage
+                width: Math.max(
+                           0,
+                           Math.min(
+                               parent ? Number(parent.width) || 0 : 0,
+                               Math.round(LV.Theme.scaleMetric(320))))
+                wrapMode: Text.Wrap
+            }
+        }
         ContentsMinimapLayer {
             id: minimapLayer
 
@@ -3605,7 +3734,7 @@ Item {
             scrollToMinimapPositionHandler: function (localY) {
                 contentsView.scrollEditorViewportToMinimapPosition(localY);
             }
-            visible: contentsView.showMinimapRail
+            visible: contentsView.showMinimapRail && contentsView.noteDocumentMounted
             width: visible ? contentsView.minimapOuterWidth : 0
         }
     }

@@ -20,6 +20,10 @@ class ContentsDisplaySelectionSyncCoordinator : public QObject
             selectedNoteBodyText READ selectedNoteBodyText WRITE setSelectedNoteBodyText NOTIFY selectedNoteBodyTextChanged)
     Q_PROPERTY(
         bool
+            selectedNoteBodyResolved READ selectedNoteBodyResolved WRITE setSelectedNoteBodyResolved
+                NOTIFY selectedNoteBodyResolvedChanged)
+    Q_PROPERTY(
+        bool
             selectedNoteBodyLoading READ selectedNoteBodyLoading WRITE setSelectedNoteBodyLoading
                 NOTIFY selectedNoteBodyLoadingChanged)
     Q_PROPERTY(QString editorBoundNoteId READ editorBoundNoteId WRITE setEditorBoundNoteId NOTIFY editorBoundNoteIdChanged)
@@ -52,6 +56,9 @@ public:
 
     QString selectedNoteBodyText() const;
     void setSelectedNoteBodyText(const QString& text);
+
+    bool selectedNoteBodyResolved() const noexcept;
+    void setSelectedNoteBodyResolved(bool resolved);
 
     bool selectedNoteBodyLoading() const noexcept;
     void setSelectedNoteBodyLoading(bool loading);
@@ -90,6 +97,7 @@ signals:
     void selectedNoteIdChanged();
     void selectedNoteBodyNoteIdChanged();
     void selectedNoteBodyTextChanged();
+    void selectedNoteBodyResolvedChanged();
     void selectedNoteBodyLoadingChanged();
     void editorBoundNoteIdChanged();
     void editorSessionBoundToSelectedNoteChanged();
@@ -118,6 +126,7 @@ private:
     QString m_selectedNoteId;
     QString m_selectedNoteBodyNoteId;
     QString m_selectedNoteBodyText;
+    bool m_selectedNoteBodyResolved = false;
     bool m_selectedNoteBodyLoading = false;
     QString m_editorBoundNoteId;
     bool m_editorSessionBoundToSelectedNote = false;

@@ -43,6 +43,19 @@ void ContentsDisplaySessionCoordinator::setSelectedNoteBodyText(const QString& v
     emit selectedNoteBodyTextChanged();
 }
 
+bool ContentsDisplaySessionCoordinator::selectedNoteBodyResolved() const noexcept
+{
+    return m_selectedNoteBodyResolved;
+}
+
+void ContentsDisplaySessionCoordinator::setSelectedNoteBodyResolved(const bool value)
+{
+    if (m_selectedNoteBodyResolved == value)
+        return;
+    m_selectedNoteBodyResolved = value;
+    emit selectedNoteBodyResolvedChanged();
+}
+
 QString ContentsDisplaySessionCoordinator::editorText() const { return m_editorText; }
 void ContentsDisplaySessionCoordinator::setEditorText(const QString& value)
 {
@@ -65,7 +78,8 @@ QString ContentsDisplaySessionCoordinator::resolvedDocumentPresentationSourceTex
 {
     if (m_editorSessionBoundToSelectedNote)
         return m_editorText;
-    if (m_selectedNoteBodyNoteId == m_selectedNoteId)
+    if (m_selectedNoteBodyResolved
+        && m_selectedNoteBodyNoteId == m_selectedNoteId)
         return m_selectedNoteBodyText;
     return {};
 }

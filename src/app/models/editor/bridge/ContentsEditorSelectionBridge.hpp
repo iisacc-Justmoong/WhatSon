@@ -30,6 +30,7 @@ class ContentsEditorSelectionBridge : public QObject
     Q_PROPERTY(QString selectedNoteDirectoryPath READ selectedNoteDirectoryPath NOTIFY selectedNoteDirectoryPathChanged)
     Q_PROPERTY(QString selectedNoteBodyNoteId READ selectedNoteBodyNoteId NOTIFY selectedNoteBodyNoteIdChanged)
     Q_PROPERTY(QString selectedNoteBodyText READ selectedNoteBodyText NOTIFY selectedNoteBodyTextChanged)
+    Q_PROPERTY(bool selectedNoteBodyResolved READ selectedNoteBodyResolved NOTIFY selectedNoteBodyResolvedChanged)
     Q_PROPERTY(bool selectedNoteBodyLoading READ selectedNoteBodyLoading NOTIFY selectedNoteBodyLoadingChanged)
     Q_PROPERTY(int visibleNoteCount READ visibleNoteCount NOTIFY visibleNoteCountChanged)
 
@@ -51,6 +52,7 @@ public:
     QString selectedNoteDirectoryPath() const;
     QString selectedNoteBodyNoteId() const;
     QString selectedNoteBodyText() const;
+    bool selectedNoteBodyResolved() const noexcept;
     bool selectedNoteBodyLoading() const noexcept;
     int visibleNoteCount() const noexcept;
 
@@ -85,6 +87,7 @@ signals:
     void selectedNoteDirectoryPathChanged();
     void selectedNoteBodyNoteIdChanged();
     void selectedNoteBodyTextChanged();
+    void selectedNoteBodyResolvedChanged();
     void selectedNoteBodyLoadingChanged();
     void visibleNoteCountChanged();
 
@@ -121,7 +124,7 @@ private:
     bool tryResolveSelectedNoteBodySourceText(const QString& noteId, QString* bodyText) const;
     void setSelectedNoteDirectoryPath(QString noteDirectoryPath);
     bool adoptPendingEditorBodyText(const QString& noteId);
-    void setSelectedNoteBodyState(QString noteId, QString bodyText, bool loading);
+    void setSelectedNoteBodyState(QString noteId, QString bodyText, bool loading, bool resolved);
     void startSelectedNoteBodyLoad(const QString& noteId, bool clearCachedBody);
     void scheduleNoteSelectionRefresh();
     void refreshNoteSelectionState();
@@ -142,6 +145,7 @@ private:
     QString m_selectedNoteBodyText;
     QString m_selectedNoteBodySnapshotNoteId;
     quint64 m_selectedNoteBodyRequestSequence = 0;
+    bool m_selectedNoteBodyResolved = false;
     bool m_selectedNoteBodyLoading = false;
     int m_visibleNoteCount = 0;
     QMetaObject::Connection m_noteListDestroyedConnection;

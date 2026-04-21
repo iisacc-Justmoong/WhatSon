@@ -14,6 +14,7 @@
 #include "app/models/content/display/ContentsDisplayContextMenuCoordinator.hpp"
 #include "app/models/content/display/ContentsDisplayGutterCoordinator.hpp"
 #include "app/models/content/display/ContentsDisplayMinimapCoordinator.hpp"
+#include "app/models/content/display/ContentsDisplayNoteBodyMountCoordinator.hpp"
 #include "app/models/content/mobile/MobileHierarchyBackSwipeCoordinator.hpp"
 #include "app/models/content/mobile/MobileHierarchyCanonicalRoutePlanner.hpp"
 #include "app/models/content/mobile/MobileHierarchyNavigationCoordinator.hpp"
@@ -63,6 +64,8 @@ namespace WhatSon::Runtime::Bootstrap
             "WhatSon.App.Internal", 1, 0, "ContentsDisplayGutterCoordinator");
         qmlRegisterType<ContentsDisplayMinimapCoordinator>(
             "WhatSon.App.Internal", 1, 0, "ContentsDisplayMinimapCoordinator");
+        qmlRegisterType<ContentsDisplayNoteBodyMountCoordinator>(
+            "WhatSon.App.Internal", 1, 0, "ContentsDisplayNoteBodyMountCoordinator");
         qmlRegisterType<MobileHierarchyBackSwipeCoordinator>(
             "WhatSon.App.Internal", 1, 0, "MobileHierarchyBackSwipeCoordinator");
         qmlRegisterType<MobileHierarchyCanonicalRoutePlanner>(

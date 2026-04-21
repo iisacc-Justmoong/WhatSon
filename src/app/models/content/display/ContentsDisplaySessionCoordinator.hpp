@@ -12,6 +12,7 @@ class ContentsDisplaySessionCoordinator : public QObject
     Q_PROPERTY(QString selectedNoteId READ selectedNoteId WRITE setSelectedNoteId NOTIFY selectedNoteIdChanged)
     Q_PROPERTY(QString selectedNoteBodyNoteId READ selectedNoteBodyNoteId WRITE setSelectedNoteBodyNoteId NOTIFY selectedNoteBodyNoteIdChanged)
     Q_PROPERTY(QString selectedNoteBodyText READ selectedNoteBodyText WRITE setSelectedNoteBodyText NOTIFY selectedNoteBodyTextChanged)
+    Q_PROPERTY(bool selectedNoteBodyResolved READ selectedNoteBodyResolved WRITE setSelectedNoteBodyResolved NOTIFY selectedNoteBodyResolvedChanged)
     Q_PROPERTY(QString editorText READ editorText WRITE setEditorText NOTIFY editorTextChanged)
     Q_PROPERTY(QString structuredFlowSourceText READ structuredFlowSourceText WRITE setStructuredFlowSourceText NOTIFY structuredFlowSourceTextChanged)
 
@@ -31,6 +32,9 @@ public:
     QString selectedNoteBodyText() const;
     void setSelectedNoteBodyText(const QString& value);
 
+    bool selectedNoteBodyResolved() const noexcept;
+    void setSelectedNoteBodyResolved(bool value);
+
     QString editorText() const;
     void setEditorText(const QString& value);
 
@@ -46,6 +50,7 @@ signals:
     void selectedNoteIdChanged();
     void selectedNoteBodyNoteIdChanged();
     void selectedNoteBodyTextChanged();
+    void selectedNoteBodyResolvedChanged();
     void editorTextChanged();
     void structuredFlowSourceTextChanged();
 
@@ -56,6 +61,7 @@ private:
     QString m_selectedNoteId;
     QString m_selectedNoteBodyNoteId;
     QString m_selectedNoteBodyText;
+    bool m_selectedNoteBodyResolved = false;
     QString m_editorText;
     QString m_structuredFlowSourceText;
 };

@@ -138,7 +138,17 @@ ctest --test-dir build --output-on-failure -L cpp_regression
   and unsupported image-like formats expose stable viewer/open-target state to QML.
 - Page/print paper-palette routing now also pins both the HTML renderer and the structured editor QML wiring, so
   bright screen-only text colors cannot leak onto the white paper surface in `Page` / `Print` mode.
+- Note-body mount coordination now also pins the retry/failure boundary between the selection bridge, the editor
+  session, and the mounted document surface, so a selected note that still has no resolved body after one refresh pass
+  shows the centered `No document opened` placeholder instead of leaving the chrome alive around an empty body layer.
 - Developer quality gates now also resolve their QML/C++ file lists from the repository root, so `whatson_qmllint`
   and `whatson_clang_tidy` no longer degrade into empty-input no-op runs.
 - Project-local C++ headers now also lock repository-absolute include paths, so `app/...`, `extension/...`, and
   `test/...` remain stable even when domains move under `src/app/models` or regression suites move under `test/cpp`.
+- Selected-note body snapshots now also distinguish unresolved sources from legitimate empty notes, so the editor
+  session and note-mount placeholder only treat an empty body as authoritative after a direct source snapshot or a
+  completed body load confirms that the selected note really resolves.
+- `ContentsDisplayView` now also locks note-body mount coordination at the C++ and QML layers, so the center editor
+  first retries a selected-note snapshot refresh, then mounts the resolved body into the editor session, and only
+  then surfaces a centered `No document opened` placeholder instead of leaving gutter/minimap chrome visible beside an
+  unmounted note surface.

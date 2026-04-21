@@ -25,6 +25,13 @@ not note-backed.
   - plain logical text as the live input buffer
   - tokenized HTML as a separate read-side overlay (`renderedEditorHtml`)
 - The host no longer pushes a RichText editing surface back into `ContentsInlineFormatEditor.qml`.
+- `ContentsDisplayNoteBodyMountCoordinator` now owns the note-body mount contract between the selection bridge,
+  the editor session, and the mounted document surface.
+  The host stays in a pending mount state until either the selected note snapshot resolves for that same note id or
+  the editor session binds directly to the selected note.
+- If one snapshot refresh retry still leaves the selected note body unresolved or mismatched, the host suppresses the
+  body chrome and shows the centered `No document opened` placeholder.
+  Other exceptional states do not get a fallback label.
 - Structured shortcut insertions now try the parser-owned document flow first, but if that host cannot resolve a live
   caret anchor they fall back to the legacy cursor bridge instead of appending at the document tail.
 

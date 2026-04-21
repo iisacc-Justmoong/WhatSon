@@ -22,9 +22,10 @@ ContentsDisplaySelectionSyncCoordinator::~ContentsDisplaySelectionSyncCoordinato
         this,
         QStringLiteral("selectionSyncCoordinator"),
         QStringLiteral("dtor"),
-        QStringLiteral("selectedNoteId=%1 bodyNoteId=%2 editorBoundNoteId=%3 pendingSnapshot=%4 comparedSnapshot=%5")
+        QStringLiteral("selectedNoteId=%1 bodyNoteId=%2 bodyResolved=%3 editorBoundNoteId=%4 pendingSnapshot=%5 comparedSnapshot=%6")
             .arg(m_selectedNoteId)
             .arg(m_selectedNoteBodyNoteId)
+            .arg(m_selectedNoteBodyResolved)
             .arg(m_editorBoundNoteId)
             .arg(m_pendingSnapshotNoteId)
             .arg(m_comparedSnapshotNoteId));
@@ -115,6 +116,27 @@ void ContentsDisplaySelectionSyncCoordinator::setSelectedNoteBodyText(const QStr
         QStringLiteral("setSelectedNoteBodyText"),
         WhatSon::Debug::summarizeText(normalized));
     emit selectedNoteBodyTextChanged();
+}
+
+bool ContentsDisplaySelectionSyncCoordinator::selectedNoteBodyResolved() const noexcept
+{
+    return m_selectedNoteBodyResolved;
+}
+
+void ContentsDisplaySelectionSyncCoordinator::setSelectedNoteBodyResolved(const bool resolved)
+{
+    if (m_selectedNoteBodyResolved == resolved)
+    {
+        return;
+    }
+
+    m_selectedNoteBodyResolved = resolved;
+    WhatSon::Debug::traceEditorSelf(
+        this,
+        QStringLiteral("selectionSyncCoordinator"),
+        QStringLiteral("setSelectedNoteBodyResolved"),
+        QStringLiteral("resolved=%1").arg(resolved));
+    emit selectedNoteBodyResolvedChanged();
 }
 
 bool ContentsDisplaySelectionSyncCoordinator::selectedNoteBodyLoading() const noexcept
@@ -344,9 +366,10 @@ QVariantMap ContentsDisplaySelectionSyncCoordinator::snapshotPollPlan() const
         this,
         QStringLiteral("selectionSyncCoordinator"),
         QStringLiteral("snapshotPollPlan"),
-        QStringLiteral("selectedNoteId=%1 bodyNoteId=%2 editorBoundToSelected=%3 focused=%4 pendingBodySave=%5 typingProtected=%6 pendingSnapshot=%7")
+        QStringLiteral("selectedNoteId=%1 bodyNoteId=%2 bodyResolved=%3 editorBoundToSelected=%4 focused=%5 pendingBodySave=%6 typingProtected=%7 pendingSnapshot=%8")
             .arg(normalizedSelectedNoteId)
             .arg(m_selectedNoteBodyNoteId)
+            .arg(m_selectedNoteBodyResolved)
             .arg(m_editorSessionBoundToSelectedNote)
             .arg(m_editorInputFocused)
             .arg(m_pendingBodySave)
@@ -369,6 +392,10 @@ QVariantMap ContentsDisplaySelectionSyncCoordinator::snapshotPollPlan() const
     {
         return buildSnapshotPlan(QStringLiteral("body-note-mismatch"));
     }
+    if (!normalizedSelectedNoteId.isEmpty() && !m_selectedNoteBodyResolved)
+    {
+        return buildSnapshotPlan(QStringLiteral("body-unresolved"));
+    }
     if (m_pendingSnapshotNoteId == normalizedSelectedNoteId)
     {
         return buildSnapshotPlan(QStringLiteral("reconcile-in-flight"));
@@ -388,10 +415,11 @@ QVariantMap ContentsDisplaySelectionSyncCoordinator::snapshotReconcilePlan() con
         this,
         QStringLiteral("selectionSyncCoordinator"),
         QStringLiteral("snapshotReconcilePlan"),
-        QStringLiteral("visible=%1 selectedNoteId=%2 bodyNoteId=%3 sessionBound=%4 compared=%5 pending=%6 focused=%7 pendingBodySave=%8 typingProtected=%9")
+        QStringLiteral("visible=%1 selectedNoteId=%2 bodyNoteId=%3 bodyResolved=%4 sessionBound=%5 compared=%6 pending=%7 focused=%8 pendingBodySave=%9 typingProtected=%10")
             .arg(m_visible)
             .arg(normalizedSelectedNoteId)
             .arg(m_selectedNoteBodyNoteId)
+            .arg(m_selectedNoteBodyResolved)
             .arg(m_editorSessionBoundToSelectedNote)
             .arg(m_comparedSnapshotNoteId)
             .arg(m_pendingSnapshotNoteId)
@@ -410,6 +438,10 @@ QVariantMap ContentsDisplaySelectionSyncCoordinator::snapshotReconcilePlan() con
     if (m_selectedNoteBodyNoteId != normalizedSelectedNoteId)
     {
         return buildSnapshotPlan(QStringLiteral("body-note-mismatch"));
+    }
+    if (!m_selectedNoteBodyResolved)
+    {
+        return buildSnapshotPlan(QStringLiteral("body-unresolved"));
     }
     if (m_comparedSnapshotNoteId == normalizedSelectedNoteId)
     {
@@ -528,7 +560,8 @@ bool ContentsDisplaySelectionSyncCoordinator::canFlushSelectionSyncImmediately()
     {
         return false;
     }
-    return m_selectedNoteBodyNoteId == normalizedSelectedNoteId;
+    return m_selectedNoteBodyResolved
+        && m_selectedNoteBodyNoteId == normalizedSelectedNoteId;
 }
 
 QVariantMap ContentsDisplaySelectionSyncCoordinator::buildSnapshotPlan(const QString& reason) const
@@ -560,9 +593,10 @@ void ContentsDisplaySelectionSyncCoordinator::flushSelectionSync()
         this,
         QStringLiteral("selectionSyncCoordinator"),
         QStringLiteral("flushSelectionSync"),
-        QStringLiteral("selectedNoteId=%1 bodyNoteId=%2 loading=%3 resetSnapshot=%4 scheduleReconcile=%5 focusEditor=%6 fallbackRefresh=%7 forceVisualRefresh=%8")
+        QStringLiteral("selectedNoteId=%1 bodyNoteId=%2 bodyResolved=%3 loading=%4 resetSnapshot=%5 scheduleReconcile=%6 focusEditor=%7 fallbackRefresh=%8 forceVisualRefresh=%9")
             .arg(m_selectedNoteId)
             .arg(m_selectedNoteBodyNoteId)
+            .arg(m_selectedNoteBodyResolved)
             .arg(m_selectedNoteBodyLoading)
             .arg(shouldResetSnapshot)
             .arg(shouldScheduleReconcile)
@@ -580,6 +614,7 @@ void ContentsDisplaySelectionSyncCoordinator::flushSelectionSync()
     plan.insert(QStringLiteral("resetSelectionCache"), shouldResetSnapshot);
     plan.insert(QStringLiteral("scheduleSnapshotReconcile"), shouldScheduleReconcile);
     plan.insert(QStringLiteral("selectedNoteBodyNoteId"), m_selectedNoteBodyNoteId);
+    plan.insert(QStringLiteral("selectedNoteBodyResolved"), m_selectedNoteBodyResolved);
     plan.insert(QStringLiteral("selectedNoteBodyText"), m_selectedNoteBodyText);
     plan.insert(QStringLiteral("selectedNoteId"), m_selectedNoteId);
 
@@ -607,6 +642,12 @@ void ContentsDisplaySelectionSyncCoordinator::flushSelectionSync()
     if (!m_selectedNoteId.isEmpty() && m_selectedNoteBodyNoteId != m_selectedNoteId)
     {
         plan.insert(QStringLiteral("reason"), QStringLiteral("body-note-mismatch"));
+        emit selectionSyncFlushRequested(plan);
+        return;
+    }
+    if (!m_selectedNoteId.isEmpty() && !m_selectedNoteBodyResolved)
+    {
+        plan.insert(QStringLiteral("reason"), QStringLiteral("body-unresolved"));
         emit selectionSyncFlushRequested(plan);
         return;
     }

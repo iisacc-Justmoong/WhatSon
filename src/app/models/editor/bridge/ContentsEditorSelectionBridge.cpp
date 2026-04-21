@@ -11,6 +11,7 @@
 
 namespace
 {
+    constexpr auto kNoteDirectoryPathForNoteIdSignature = "noteDirectoryPathForNoteId(QString)";
     constexpr auto kNoteBodySourceTextForNoteIdSignature = "noteBodySourceTextForNoteId(QString)";
 
     bool noteBackedSelectionEnabled(const QObject* noteListModel)
@@ -98,9 +99,10 @@ ContentsEditorSelectionBridge::~ContentsEditorSelectionBridge()
         this,
         QStringLiteral("selectionBridge"),
         QStringLiteral("dtor"),
-        QStringLiteral("selectedNoteId=%1 bodyNoteId=%2 loading=%3")
+        QStringLiteral("selectedNoteId=%1 bodyNoteId=%2 resolved=%3 loading=%4")
             .arg(m_selectedNoteId)
             .arg(m_selectedNoteBodyNoteId)
+            .arg(m_selectedNoteBodyResolved)
             .arg(m_selectedNoteBodyLoading));
 }
 
@@ -238,6 +240,11 @@ QString ContentsEditorSelectionBridge::selectedNoteBodyNoteId() const
 QString ContentsEditorSelectionBridge::selectedNoteBodyText() const
 {
     return m_selectedNoteBodyText;
+}
+
+bool ContentsEditorSelectionBridge::selectedNoteBodyResolved() const noexcept
+{
+    return m_selectedNoteBodyResolved;
 }
 
 bool ContentsEditorSelectionBridge::selectedNoteBodyLoading() const noexcept
@@ -399,7 +406,7 @@ void ContentsEditorSelectionBridge::handleEditorTextPersistenceFinishedInternal(
 
     m_selectedNoteBodySnapshotNoteId = normalizedNoteId;
     m_selectedNoteBodyRequestSequence = 0;
-    setSelectedNoteBodyState(normalizedNoteId, text, false);
+    setSelectedNoteBodyState(normalizedNoteId, text, false, true);
 }
 
 void ContentsEditorSelectionBridge::handleNoteBodyTextLoaded(
@@ -438,20 +445,22 @@ void ContentsEditorSelectionBridge::handleNoteBodyTextLoaded(
 
     if (!success)
     {
-        m_selectedNoteBodySnapshotNoteId = normalizedNoteId;
         QString fallbackText;
-        if (!tryResolveSelectedNoteBodySourceText(normalizedNoteId, &fallbackText))
+        bool fallbackResolved = tryResolveSelectedNoteBodySourceText(normalizedNoteId, &fallbackText);
+        if (!fallbackResolved
+            && m_selectedNoteBodyNoteId == normalizedNoteId
+            && m_selectedNoteBodyResolved)
         {
-            fallbackText = m_selectedNoteBodyNoteId == normalizedNoteId
-                ? m_selectedNoteBodyText
-                : QString();
+            fallbackText = m_selectedNoteBodyText;
+            fallbackResolved = true;
         }
-        setSelectedNoteBodyState(normalizedNoteId, fallbackText, false);
+        m_selectedNoteBodySnapshotNoteId = fallbackResolved ? normalizedNoteId : QString();
+        setSelectedNoteBodyState(normalizedNoteId, fallbackText, false, fallbackResolved);
         return;
     }
 
     m_selectedNoteBodySnapshotNoteId = normalizedNoteId;
-    setSelectedNoteBodyState(normalizedNoteId, text, false);
+    setSelectedNoteBodyState(normalizedNoteId, text, false, true);
 }
 
 void ContentsEditorSelectionBridge::handleViewSessionSnapshotReconciledInternal(
@@ -599,18 +608,45 @@ bool ContentsEditorSelectionBridge::adoptPendingEditorBodyText(const QString& no
 
     m_selectedNoteBodySnapshotNoteId = normalizedNoteId;
     m_selectedNoteBodyRequestSequence = 0;
-    setSelectedNoteBodyState(normalizedNoteId, pendingEditorText, false);
+    setSelectedNoteBodyState(normalizedNoteId, pendingEditorText, false, true);
     return true;
 }
 
 QString ContentsEditorSelectionBridge::resolveSelectedNoteDirectoryPath(const QString& noteId) const
 {
     const QString normalizedNoteId = noteId.trimmed();
-    if (normalizedNoteId.isEmpty() || m_idleSyncController == nullptr)
+    if (normalizedNoteId.isEmpty())
     {
         return {};
     }
-    return m_idleSyncController->noteDirectoryPathForNote(normalizedNoteId).trimmed();
+
+    if (m_idleSyncController != nullptr)
+    {
+        const QString controllerPath = m_idleSyncController->noteDirectoryPathForNote(normalizedNoteId).trimmed();
+        if (!controllerPath.isEmpty())
+        {
+            return controllerPath;
+        }
+    }
+
+    if (m_contentViewModel == nullptr
+        || !hasInvokableMethod(m_contentViewModel, kNoteDirectoryPathForNoteIdSignature))
+    {
+        return {};
+    }
+
+    QString noteDirectoryPath;
+    if (!QMetaObject::invokeMethod(
+            m_contentViewModel,
+            "noteDirectoryPathForNoteId",
+            Qt::DirectConnection,
+            Q_RETURN_ARG(QString, noteDirectoryPath),
+            Q_ARG(QString, normalizedNoteId)))
+    {
+        return {};
+    }
+
+    return noteDirectoryPath.trimmed();
 }
 
 bool ContentsEditorSelectionBridge::tryResolveSelectedNoteBodySourceText(
@@ -665,6 +701,12 @@ bool ContentsEditorSelectionBridge::tryResolveSelectedNoteBodySourceText(
         return false;
     }
 
+    if (resolvedBodyText.isEmpty()
+        && resolveSelectedNoteDirectoryPath(normalizedNoteId).isEmpty())
+    {
+        return false;
+    }
+
     if (bodyText != nullptr)
     {
         *bodyText = resolvedBodyText;
@@ -694,22 +736,26 @@ void ContentsEditorSelectionBridge::setSelectedNoteDirectoryPath(QString noteDir
 void ContentsEditorSelectionBridge::setSelectedNoteBodyState(
     QString noteId,
     QString bodyText,
-    const bool loading)
+    const bool loading,
+    const bool resolved)
 {
     const bool noteIdChanged = m_selectedNoteBodyNoteId != noteId;
     const bool loadingChanged = m_selectedNoteBodyLoading != loading;
     const bool bodyTextChanged = m_selectedNoteBodyText != bodyText;
+    const bool resolvedChanged = m_selectedNoteBodyResolved != resolved;
 
     m_selectedNoteBodyNoteId = std::move(noteId);
     m_selectedNoteBodyLoading = loading;
     m_selectedNoteBodyText = std::move(bodyText);
+    m_selectedNoteBodyResolved = resolved;
 
     WhatSon::Debug::traceEditorSelf(
         this,
         QStringLiteral("selectionBridge"),
         QStringLiteral("setSelectedNoteBodyState"),
-        QStringLiteral("noteId=%1 loading=%2 %3")
+        QStringLiteral("noteId=%1 resolved=%2 loading=%3 %4")
             .arg(m_selectedNoteBodyNoteId)
+            .arg(m_selectedNoteBodyResolved)
             .arg(m_selectedNoteBodyLoading)
             .arg(WhatSon::Debug::summarizeText(m_selectedNoteBodyText)));
 
@@ -724,6 +770,10 @@ void ContentsEditorSelectionBridge::setSelectedNoteBodyState(
     if (bodyTextChanged)
     {
         emit selectedNoteBodyTextChanged();
+    }
+    if (resolvedChanged)
+    {
+        emit selectedNoteBodyResolvedChanged();
     }
 }
 
@@ -741,7 +791,7 @@ void ContentsEditorSelectionBridge::startSelectedNoteBodyLoad(
     {
         m_selectedNoteBodySnapshotNoteId.clear();
         m_selectedNoteBodyRequestSequence = 0;
-        setSelectedNoteBodyState(QString(), QString(), false);
+        setSelectedNoteBodyState(QString(), QString(), false, false);
         return;
     }
 
@@ -764,6 +814,7 @@ void ContentsEditorSelectionBridge::startSelectedNoteBodyLoad(
     bool immediateBodyResolved =
         !clearCachedBody
         && noteBodyOwnedBySelection
+        && m_selectedNoteBodyResolved
         && m_selectedNoteBodySnapshotNoteId == normalizedNoteId;
 
     if (!immediateBodyResolved
@@ -772,8 +823,12 @@ void ContentsEditorSelectionBridge::startSelectedNoteBodyLoad(
         m_selectedNoteBodySnapshotNoteId = normalizedNoteId;
         immediateBodyResolved = true;
     }
+    else if (!immediateBodyResolved)
+    {
+        m_selectedNoteBodySnapshotNoteId.clear();
+    }
 
-    setSelectedNoteBodyState(normalizedNoteId, immediateBodyText, !immediateBodyResolved);
+    setSelectedNoteBodyState(normalizedNoteId, immediateBodyText, !immediateBodyResolved, immediateBodyResolved);
 
     const quint64 requestSequence = m_idleSyncController != nullptr
         ? m_idleSyncController->loadNoteBodyTextForNote(normalizedNoteId)
@@ -785,14 +840,18 @@ void ContentsEditorSelectionBridge::startSelectedNoteBodyLoad(
     }
 
     QString fallbackBodyText;
-    if (!tryResolveSelectedNoteBodySourceText(normalizedNoteId, &fallbackBodyText))
+    bool fallbackResolved = tryResolveSelectedNoteBodySourceText(normalizedNoteId, &fallbackBodyText);
+    if (!fallbackResolved
+        && noteBodyOwnedBySelection
+        && m_selectedNoteBodyResolved)
     {
-        fallbackBodyText = currentBodyText;
+        fallbackBodyText = m_selectedNoteBodyText;
+        fallbackResolved = true;
     }
 
     m_selectedNoteBodyRequestSequence = 0;
-    m_selectedNoteBodySnapshotNoteId = normalizedNoteId;
-    setSelectedNoteBodyState(normalizedNoteId, fallbackBodyText, false);
+    m_selectedNoteBodySnapshotNoteId = fallbackResolved ? normalizedNoteId : QString();
+    setSelectedNoteBodyState(normalizedNoteId, fallbackBodyText, false, fallbackResolved);
 }
 
 void ContentsEditorSelectionBridge::scheduleNoteSelectionRefresh()
@@ -857,7 +916,9 @@ void ContentsEditorSelectionBridge::refreshNoteSelectionState()
             && (m_selectedNoteBodySnapshotNoteId != m_selectedNoteId || requiresRebind)
             && !m_selectedNoteBodyLoading)
         {
-            startSelectedNoteBodyLoad(m_selectedNoteId, m_selectedNoteBodyText.isEmpty());
+            startSelectedNoteBodyLoad(
+                m_selectedNoteId,
+                !m_selectedNoteBodyResolved && m_selectedNoteBodyText.isEmpty());
         }
         return;
     }
@@ -870,7 +931,7 @@ void ContentsEditorSelectionBridge::refreshNoteSelectionState()
     {
         m_selectedNoteBodySnapshotNoteId.clear();
         m_selectedNoteBodyRequestSequence = 0;
-        setSelectedNoteBodyState(QString(), QString(), false);
+        setSelectedNoteBodyState(QString(), QString(), false, false);
         return;
     }
 
