@@ -358,57 +358,29 @@ Item {
     }
     function buildStructuredMinimapLineGroupsForRange(startLineNumber, endLineNumber) {
         const lineEntries = contentsView.effectiveStructuredLogicalLineEntries();
-        if (lineEntries.length === 0)
-            return contentsView.buildFallbackMinimapLineGroupsForRange(startLineNumber, endLineNumber);
-
-        const safeStartLine = Math.max(1, Math.min(lineEntries.length, Number(startLineNumber) || 1));
-        const safeEndLine = Math.max(safeStartLine, Math.min(lineEntries.length, Number(endLineNumber) || safeStartLine));
-        const groups = [];
-        const textStartY = contentsView.editorDocumentStartY;
-        for (let lineIndex = safeStartLine - 1; lineIndex < safeEndLine; ++lineIndex) {
-            const entry = lineEntries[lineIndex] && typeof lineEntries[lineIndex] === "object"
-                    ? lineEntries[lineIndex]
-                    : ({});
-            groups.push({
-                "charCount": Math.max(0, Number(entry.charCount) || 0),
-                "contentHeight": Math.max(contentsView.editorLineHeight, Number(entry.contentHeight) || contentsView.editorLineHeight),
-                "contentY": textStartY + Math.max(0, Number(entry.contentY) || 0),
-                "lineNumber": lineIndex + 1,
-                "minimapRowCharCount": Math.max(0, Number(entry.minimapRowCharCount) || 0),
-                "minimapVisualKind": entry.minimapVisualKind !== undefined
-                                     ? String(entry.minimapVisualKind)
-                                     : "text",
-                "rowCount": Math.max(1, Number(entry.rowCount) || 1)
-            });
-        }
-
+        const groups = minimapCoordinator.buildStructuredMinimapLineGroupsForRange(
+                    lineEntries,
+                    Number(startLineNumber) || 1,
+                    Number(endLineNumber) || Number(startLineNumber) || 1);
         return groups.length > 0 ? groups : contentsView.buildFallbackMinimapLineGroupsForRange(startLineNumber, endLineNumber);
     }
     function buildFallbackMinimapLineGroupsForRange(startLineNumber, endLineNumber) {
-        const groups = [];
         const safeStartLine = Math.max(1, Math.min(contentsView.logicalLineCount, Number(startLineNumber) || 1));
         const safeEndLine = Math.max(safeStartLine, Math.min(contentsView.logicalLineCount, Number(endLineNumber) || safeStartLine));
-        const textStartY = contentsView.editorDocumentStartY;
+        const lineCharacterCounts = [];
+        const lineDocumentYs = [];
+        const lineVisualHeights = [];
         for (let lineNumber = safeStartLine; lineNumber <= safeEndLine; ++lineNumber) {
-            const contentHeight = Math.max(1, contentsView.lineVisualHeight(lineNumber, 1));
-            groups.push({
-                "charCount": contentsView.logicalLineCharacterCountAt(lineNumber - 1),
-                "contentHeight": contentHeight,
-                "contentY": textStartY + contentsView.lineDocumentY(lineNumber),
-                "lineNumber": lineNumber,
-                "rowCount": Math.max(1, Math.ceil(contentHeight / Math.max(1, contentsView.editorLineHeight)))
-            });
+            lineCharacterCounts.push(contentsView.logicalLineCharacterCountAt(lineNumber - 1));
+            lineDocumentYs.push(contentsView.lineDocumentY(lineNumber));
+            lineVisualHeights.push(contentsView.lineVisualHeight(lineNumber, 1));
         }
-        if (groups.length === 0) {
-            groups.push({
-                "charCount": 0,
-                "contentHeight": contentsView.editorLineHeight,
-                "contentY": textStartY,
-                "lineNumber": 1,
-                "rowCount": 1
-            });
-        }
-        return groups;
+        return minimapCoordinator.buildFallbackMinimapLineGroupsForRange(
+                    lineCharacterCounts,
+                    lineDocumentYs,
+                    lineVisualHeights,
+                    safeStartLine,
+                    safeEndLine);
     }
     function buildMinimapLineGroupsForRange(startLineNumber, endLineNumber) {
         const safeStartLine = Math.max(1, Math.min(contentsView.logicalLineCount, Number(startLineNumber) || 1));
@@ -418,49 +390,35 @@ Item {
         const editorItem = contentEditor ? contentEditor.editorItem : null;
         const editorWidth = Number(contentEditor ? contentEditor.width : 0) || 0;
         const editorContentHeight = Number(contentEditor ? contentEditor.contentHeight : 0) || 0;
-        if (!editorItem
-                || editorItem.positionToRectangle === undefined
-                || editorWidth <= 0
-                || editorContentHeight <= 0) {
-            return contentsView.buildFallbackMinimapLineGroupsForRange(safeStartLine, safeEndLine);
-        }
-
-        const groups = [];
-        const textStartY = contentsView.editorDocumentStartY;
+        const lineCharacterCounts = [];
+        const lineStartOffsets = [];
+        const fallbackLineDocumentYs = [];
+        const fallbackLineVisualHeights = [];
+        const editorRects = [];
         const logicalLength = contentsView.logicalTextLength();
-        let currentStartOffset = contentsView.logicalLineStartOffsetAt(safeStartLine - 1);
-        let currentRect = editorItem.positionToRectangle(currentStartOffset);
         for (let lineNumber = safeStartLine; lineNumber <= safeEndLine; ++lineNumber) {
-            const safeCurrentRectY = Number(currentRect.y);
-            const currentRectY = isFinite(safeCurrentRectY) ? safeCurrentRectY : Math.max(0, contentsView.lineDocumentY(lineNumber));
-            const nextStartOffset = lineNumber < contentsView.logicalLineCount
-                    ? contentsView.logicalLineStartOffsetAt(lineNumber)
-                    : Math.max(0, logicalLength);
-            const nextRect = editorItem.positionToRectangle(nextStartOffset);
-            const safeNextRectY = Number(nextRect.y);
-            const safeNextRectHeight = Number(nextRect.height);
-            let contentHeight = contentsView.editorLineHeight;
-            if (lineNumber < contentsView.logicalLineCount) {
-                const nextRectY = isFinite(safeNextRectY) ? safeNextRectY : currentRectY + contentsView.editorLineHeight;
-                contentHeight = Math.max(contentsView.editorLineHeight, nextRectY - currentRectY);
-            } else {
-                const nextRectY = isFinite(safeNextRectY) ? safeNextRectY : currentRectY;
-                const nextRectHeight = isFinite(safeNextRectHeight) ? safeNextRectHeight : contentsView.editorLineHeight;
-                contentHeight = Math.max(contentsView.editorLineHeight, nextRectY + Math.max(contentsView.editorLineHeight, nextRectHeight) - currentRectY);
-            }
-
-            groups.push({
-                "charCount": contentsView.logicalLineCharacterCountAt(lineNumber - 1),
-                "contentHeight": contentHeight,
-                "contentY": textStartY + currentRectY,
-                "lineNumber": lineNumber,
-                "rowCount": Math.max(1, Math.ceil(contentHeight / Math.max(1, contentsView.editorLineHeight)))
-            });
-            currentStartOffset = nextStartOffset;
-            currentRect = nextRect;
+            const lineIndex = lineNumber - 1;
+            const startOffset = contentsView.logicalLineStartOffsetAt(lineIndex);
+            lineCharacterCounts.push(contentsView.logicalLineCharacterCountAt(lineIndex));
+            lineStartOffsets.push(startOffset);
+            fallbackLineDocumentYs.push(contentsView.lineDocumentY(lineNumber));
+            fallbackLineVisualHeights.push(contentsView.lineVisualHeight(lineNumber, 1));
+            if (editorItem && editorItem.positionToRectangle !== undefined)
+                editorRects.push(editorItem.positionToRectangle(startOffset));
         }
-
-        return groups.length > 0 ? groups : contentsView.buildFallbackMinimapLineGroupsForRange(safeStartLine, safeEndLine);
+        if (editorItem && editorItem.positionToRectangle !== undefined)
+            editorRects.push(editorItem.positionToRectangle(Math.max(0, logicalLength)));
+        return minimapCoordinator.buildEditorMinimapLineGroupsForRange(
+                    lineCharacterCounts,
+                    lineStartOffsets,
+                    fallbackLineDocumentYs,
+                    fallbackLineVisualHeights,
+                    editorRects,
+                    logicalLength,
+                    safeStartLine,
+                    safeEndLine,
+                    editorWidth,
+                    editorContentHeight);
     }
     function currentMinimapSourceText() {
         if (contentsView.structuredHostGeometryActive)
@@ -694,35 +652,24 @@ Item {
     function currentCursorVisualRowRect() {
         const refreshRevision = contentsView.gutterRefreshRevision;
         if (contentsView.structuredHostGeometryActive) {
-            if (structuredDocumentFlow && structuredDocumentFlow.currentCursorVisualRowRect !== undefined) {
-                const rect = structuredDocumentFlow.currentCursorVisualRowRect();
-                return {
-                    "height": Math.max(1, Number(rect && rect.height !== undefined ? rect.height : 0) || contentsView.editorLineHeight),
-                    "width": 0,
-                    "y": Math.max(0, Number(rect && rect.y !== undefined ? rect.y : 0) || 0)
-                };
-            }
             const safeLineNumber = Math.max(1, Math.min(contentsView.logicalLineCount, contentsView.currentCursorLineNumber));
-            return {
-                "height": Math.max(1, contentsView.lineVisualHeight(safeLineNumber, 1)),
-                "width": 0,
-                "y": contentsView.lineDocumentY(safeLineNumber)
-            };
+            const structuredRect = structuredDocumentFlow && structuredDocumentFlow.currentCursorVisualRowRect !== undefined
+                    ? structuredDocumentFlow.currentCursorVisualRowRect()
+                    : ({ });
+            return minimapCoordinator.currentCursorVisualRowRectFromStructuredRect(
+                        structuredRect,
+                        safeLineNumber,
+                        contentsView.lineDocumentY(safeLineNumber),
+                        contentsView.lineVisualHeight(safeLineNumber, 1));
         }
         const safeOffset = Math.max(0, Math.min(contentsView.logicalTextLength(), Number(contentEditor.cursorPosition) || 0));
-        if (contentEditor.editorItem && contentEditor.editorItem.positionToRectangle !== undefined) {
-            const rect = contentEditor.editorItem.positionToRectangle(safeOffset);
-            return {
-                "height": Math.max(1, Number(rect.height) || contentsView.editorLineHeight),
-                "width": Math.max(0, Number(rect.width) || 0),
-                "y": Number(rect.y) || 0
-            };
-        }
-        return {
-            "height": contentsView.editorLineHeight,
-            "width": 0,
-            "y": contentsView.documentYForOffset(safeOffset)
-        };
+        const rect = contentEditor.editorItem && contentEditor.editorItem.positionToRectangle !== undefined
+                ? contentEditor.editorItem.positionToRectangle(safeOffset)
+                : ({ });
+        return minimapCoordinator.currentCursorVisualRowRectFromTextRect(
+                    rect,
+                    safeOffset,
+                    contentsView.documentYForOffset(safeOffset));
     }
     function typingViewportBandTop(cursorHeight) {
         const safeCursorHeight = Math.max(1, Number(cursorHeight) || contentsView.editorLineHeight);
@@ -2360,6 +2307,14 @@ Item {
         logicalTextLength: Math.max(0, Number(contentsView.logicalTextLength()) || 0)
         minimapResolvedTrackHeight: Number(contentsView.minimapResolvedTrackHeight) || 1
         showPrintEditorLayout: contentsView.showPrintEditorLayout
+        structuredHostGeometryActive: contentsView.structuredHostGeometryActive
+    }
+    ContentsDisplayMinimapCoordinator {
+        id: minimapCoordinator
+
+        editorDocumentStartY: Number(contentsView.editorDocumentStartY) || 0
+        editorLineHeight: Number(contentsView.editorLineHeight) || 0
+        logicalLineCount: Math.max(1, Number(contentsView.logicalLineCount) || 1)
         structuredHostGeometryActive: contentsView.structuredHostGeometryActive
     }
     ContentsDisplayStructuredFlowCoordinator {

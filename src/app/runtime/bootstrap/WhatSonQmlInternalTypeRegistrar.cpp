@@ -11,6 +11,7 @@
 #include "platform/Apple/WhatSonIosHubPickerBridge.hpp"
 #include "file/viewer/ContentsBodyResourceRenderer.hpp"
 #include "file/viewer/ResourceBitmapViewer.hpp"
+#include "viewmodel/content/ContentsDisplayMinimapCoordinator.hpp"
 #include "viewmodel/content/ContentsDisplayPresentationRefreshController.hpp"
 #include "viewmodel/content/ContentsDisplayRefreshCoordinator.hpp"
 #include "viewmodel/content/ContentsDisplaySelectionSyncCoordinator.hpp"
@@ -46,6 +47,8 @@ namespace WhatSon::Runtime::Bootstrap
             "WhatSon.App.Internal", 1, 0, "ContentsDisplayPresentationRefreshController");
         qmlRegisterType<ContentsDisplayRefreshCoordinator>(
             "WhatSon.App.Internal", 1, 0, "ContentsDisplayRefreshCoordinator");
+        qmlRegisterType<ContentsDisplayMinimapCoordinator>(
+            "WhatSon.App.Internal", 1, 0, "ContentsDisplayMinimapCoordinator");
         qmlRegisterType<ContentsDisplayViewportCoordinator>(
             "WhatSon.App.Internal", 1, 0, "ContentsDisplayViewportCoordinator");
         qmlRegisterType<ContentsDisplayStructuredFlowCoordinator>(
