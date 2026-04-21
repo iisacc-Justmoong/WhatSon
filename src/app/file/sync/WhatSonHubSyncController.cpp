@@ -7,6 +7,7 @@
 #include <QDirIterator>
 #include <QFileInfo>
 #include <QStringList>
+#include <QSet>
 
 #include <algorithm>
 
@@ -69,11 +70,6 @@ WhatSonHubSyncController::WhatSonHubSyncController(QObject* parent)
     QObject::connect(
         &m_fileSystemWatcher,
         &QFileSystemWatcher::directoryChanged,
-        this,
-        &WhatSonHubSyncController::onWatchedPathChanged);
-    QObject::connect(
-        &m_fileSystemWatcher,
-        &QFileSystemWatcher::fileChanged,
         this,
         &WhatSonHubSyncController::onWatchedPathChanged);
 }
@@ -305,11 +301,16 @@ void WhatSonHubSyncController::rebuildWatcher(QStringList watchPaths)
         return;
     }
 
+    const QSet<QString> nextPathSet(watchPaths.begin(), watchPaths.end());
+    const QSet<QString> currentPathSet(
+        m_appliedDirectoryWatchPaths.begin(),
+        m_appliedDirectoryWatchPaths.end());
+
     QStringList pathsToRemove;
     pathsToRemove.reserve(m_appliedDirectoryWatchPaths.size());
     for (const QString& existingPath : m_appliedDirectoryWatchPaths)
     {
-        if (!watchPaths.contains(existingPath))
+        if (!nextPathSet.contains(existingPath))
         {
             pathsToRemove.push_back(existingPath);
         }
@@ -319,7 +320,7 @@ void WhatSonHubSyncController::rebuildWatcher(QStringList watchPaths)
     pathsToAdd.reserve(watchPaths.size());
     for (const QString& candidatePath : watchPaths)
     {
-        if (!m_appliedDirectoryWatchPaths.contains(candidatePath))
+        if (!currentPathSet.contains(candidatePath))
         {
             pathsToAdd.push_back(candidatePath);
         }
