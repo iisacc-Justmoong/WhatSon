@@ -361,36 +361,15 @@ Item {
         return contentsView.normalizedStructuredLogicalLineEntries();
     }
     function currentStructuredGutterGeometrySignature() {
-        if (!contentsView.structuredHostGeometryActive)
-            return "";
-        const lineEntries = contentsView.effectiveStructuredLogicalLineEntries();
-        const signatureParts = [];
-        for (let lineIndex = 0; lineIndex < lineEntries.length; ++lineIndex) {
-            const entry = lineEntries[lineIndex] && typeof lineEntries[lineIndex] === "object"
-                    ? lineEntries[lineIndex]
-                    : ({});
-            signatureParts.push(
-                        String(Math.max(0, Number(entry.contentY) || 0))
-                        + ":"
-                        + String(Math.max(1, Number(entry.contentHeight) || contentsView.editorLineHeight))
-                        + ":"
-                        + String(Math.max(
-                                     0,
-                                     Number(entry.gutterContentY !== undefined ? entry.gutterContentY : entry.contentY) || 0))
-                        + ":"
-                        + String(Math.max(
-                                     1,
-                                     Number(entry.gutterContentHeight !== undefined
-                                            ? entry.gutterContentHeight
-                                            : contentsView.editorLineHeight) || contentsView.editorLineHeight)));
-        }
-        return signatureParts.join("|");
+        return viewportCoordinator.structuredGutterGeometrySignature(
+                    contentsView.effectiveStructuredLogicalLineEntries());
     }
     function consumeStructuredGutterGeometryChange() {
-        const nextSignature = contentsView.currentStructuredGutterGeometrySignature();
-        const geometryChanged = contentsView.structuredGutterGeometrySignature !== nextSignature;
-        contentsView.structuredGutterGeometrySignature = nextSignature;
-        return geometryChanged;
+        const result = viewportCoordinator.consumeStructuredGutterGeometryChange(
+                    contentsView.structuredGutterGeometrySignature,
+                    contentsView.effectiveStructuredLogicalLineEntries());
+        contentsView.structuredGutterGeometrySignature = String(result.signature || "");
+        return !!result.changed;
     }
     function buildStructuredMinimapLineGroupsForRange(startLineNumber, endLineNumber) {
         const lineEntries = contentsView.effectiveStructuredLogicalLineEntries();
@@ -504,9 +483,7 @@ Item {
         return contentsView.editorText === undefined || contentsView.editorText === null ? "" : String(contentsView.editorText);
     }
     function activeLineGeometryNoteId() {
-        return contentsView.selectedNoteId === undefined || contentsView.selectedNoteId === null
-                ? ""
-                : String(contentsView.selectedNoteId).trim();
+        return viewportCoordinator.normalizedNoteId(contentsView.selectedNoteId);
     }
     function nextMinimapLineGroupsForCurrentState(currentSourceText) {
         const currentNoteId = contentsView.activeLineGeometryNoteId();
@@ -692,42 +669,33 @@ Item {
         return lineCountChanged || textLengthChanged || lineOffsetsChanged;
     }
     function hasPendingNoteEntryGutterRefresh(noteId) {
-        const pendingNoteId = contentsView.pendingNoteEntryGutterRefreshNoteId === undefined
-                || contentsView.pendingNoteEntryGutterRefreshNoteId === null
-                ? ""
-                : String(contentsView.pendingNoteEntryGutterRefreshNoteId).trim();
-        if (pendingNoteId.length === 0)
-            return false;
-        if (noteId === undefined)
-            return true;
-        const normalizedNoteId = noteId === undefined || noteId === null ? "" : String(noteId).trim();
-        return normalizedNoteId.length > 0 && pendingNoteId === normalizedNoteId;
+        return viewportCoordinator.hasPendingNoteEntryGutterRefresh(
+                    contentsView.pendingNoteEntryGutterRefreshNoteId,
+                    noteId === undefined ? null : String(noteId));
     }
     function finalizePendingNoteEntryGutterRefresh(noteId, reason, refreshStructuredLayout) {
-        const normalizedNoteId = noteId === undefined || noteId === null ? "" : String(noteId).trim();
-        if (!contentsView.hasPendingNoteEntryGutterRefresh(normalizedNoteId))
+        const plan = viewportCoordinator.finalizePendingNoteEntryGutterRefresh(
+                    contentsView.pendingNoteEntryGutterRefreshNoteId,
+                    noteId === undefined || noteId === null ? "" : String(noteId),
+                    contentsView.selectedNoteBodyLoading,
+                    reason === undefined || reason === null ? "" : String(reason),
+                    !!refreshStructuredLayout);
+        if (!plan.clearPendingNoteId)
             return false;
-        if (contentsView.activeLineGeometryNoteId() !== normalizedNoteId)
-            return false;
-        if (contentsView.selectedNoteBodyLoading)
-            return false;
-        const shouldRefreshStructuredLayout = !!refreshStructuredLayout;
         contentsView.pendingNoteEntryGutterRefreshNoteId = "";
-        if (shouldRefreshStructuredLayout
-                && contentsView.structuredHostGeometryActive
+        if (plan.refreshStructuredLayoutNow
                 && structuredDocumentFlow
-                && structuredDocumentFlow.refreshLayoutCache !== undefined) {
+                && structuredDocumentFlow.refreshLayoutCache !== undefined)
             structuredDocumentFlow.refreshLayoutCache();
-        }
-        contentsView.refreshLiveLogicalLineMetrics();
-        contentsView.commitGutterRefresh();
-        contentsView.scheduleViewportGutterRefresh();
-        contentsView.scheduleMinimapSnapshotRefresh(true);
-        contentsView.scheduleGutterRefresh(
-                    4,
-                    reason === undefined || reason === null || String(reason).trim().length === 0
-                    ? "note-entry-finalize"
-                    : String(reason));
+        if (plan.commitGutterRefresh)
+            contentsView.commitGutterRefresh();
+        if (plan.scheduleViewportGutterRefresh)
+            contentsView.scheduleViewportGutterRefresh();
+        if (plan.scheduleMinimapSnapshotRefresh)
+            contentsView.scheduleMinimapSnapshotRefresh(!!plan.scheduleMinimapSnapshotForceFull);
+        if (plan.scheduleGutterRefresh)
+            contentsView.scheduleGutterRefresh(Number(plan.gutterPassCount) || 0,
+                                               String(plan.gutterReason || ""));
         return true;
     }
     function commitGutterRefresh() {
@@ -2092,50 +2060,23 @@ Item {
                     presentationRefreshController.planRefreshRequest(immediate));
     }
     function refreshLiveLogicalLineMetrics() {
-        if (contentsView.structuredHostGeometryActive) {
-            const lineEntries = contentsView.effectiveStructuredLogicalLineEntries();
-            const nextLineStartOffsets = [0];
-            let logicalLength = 0;
-            for (let lineIndex = 0; lineIndex < lineEntries.length; ++lineIndex) {
-                const entry = lineEntries[lineIndex] && typeof lineEntries[lineIndex] === "object"
-                        ? lineEntries[lineIndex]
-                        : ({});
-                const lineCharCount = Math.max(0, Number(entry.charCount) || 0);
-                if (lineIndex > 0)
-                    nextLineStartOffsets.push(logicalLength);
-                logicalLength += lineCharCount;
-                if (lineIndex + 1 < lineEntries.length)
-                    logicalLength += 1;
-            }
-            return contentsView.applyLiveLogicalLineMetrics(
-                        logicalLength,
-                        nextLineStartOffsets,
-                        Math.max(1, lineEntries.length));
-        }
-        const normalizedLogicalText = contentsView.activeLogicalTextSnapshot().replace(/\r\n/g, "\n").replace(/\r/g, "\n");
-        const nextLineStartOffsets = [0];
-        for (let characterIndex = 0; characterIndex < normalizedLogicalText.length; ++characterIndex) {
-            if (normalizedLogicalText.charAt(characterIndex) === "\n")
-                nextLineStartOffsets.push(characterIndex + 1);
-        }
+        const metrics = contentsView.structuredHostGeometryActive
+                ? viewportCoordinator.buildLogicalLineMetricsFromStructuredEntries(
+                      contentsView.effectiveStructuredLogicalLineEntries())
+                : viewportCoordinator.buildLogicalLineMetricsFromText(
+                      contentsView.activeLogicalTextSnapshot());
         return contentsView.applyLiveLogicalLineMetrics(
-                    normalizedLogicalText.length,
-                    nextLineStartOffsets,
-                    Math.max(1, nextLineStartOffsets.length));
+                    Number(metrics.logicalTextLength) || 0,
+                    metrics.lineStartOffsets || [0],
+                    Number(metrics.lineCount) || 1);
     }
     function activeLogicalLineCountSnapshot() {
-        if (contentsView.structuredHostGeometryActive
-                && structuredDocumentFlow
-                && structuredDocumentFlow.logicalLineCount !== undefined) {
-            return Math.max(1, Number(structuredDocumentFlow.logicalLineCount()) || 1);
-        }
-        const normalizedLogicalText = contentsView.activeLogicalTextSnapshot().replace(/\r\n/g, "\n").replace(/\r/g, "\n");
-        let lineCount = 1;
-        for (let characterIndex = 0; characterIndex < normalizedLogicalText.length; ++characterIndex) {
-            if (normalizedLogicalText.charAt(characterIndex) === "\n")
-                lineCount += 1;
-        }
-        return Math.max(1, lineCount);
+        const metrics = contentsView.structuredHostGeometryActive
+                ? viewportCoordinator.buildLogicalLineMetricsFromStructuredEntries(
+                      contentsView.effectiveStructuredLogicalLineEntries())
+                : viewportCoordinator.buildLogicalLineMetricsFromText(
+                      contentsView.activeLogicalTextSnapshot());
+        return Math.max(1, Number(metrics.lineCount) || 1);
     }
     function shouldScheduleGutterRefreshForReason(reason) {
         return refreshCoordinator.shouldScheduleGutterRefreshForReason(
@@ -2190,58 +2131,25 @@ Item {
         const flickable = contentsView.editorFlickable;
         if (!flickable)
             return;
-        const contentHeight = Math.max(1, contentsView.editorOccupiedContentHeight());
-        const viewportHeight = Math.max(0, contentsView.editorViewportHeight);
-        const maxContentY = Math.max(0, contentHeight - viewportHeight);
-        if (maxContentY <= 0) {
-            flickable.contentY = 0;
-            return;
-        }
-        const trackRatio = contentsView.clampUnit((Number(localY) || 0) / Math.max(1, contentsView.minimapResolvedTrackHeight));
-        const documentY = contentHeight * trackRatio;
-        const nextContentY = Math.max(0, Math.min(maxContentY, documentY - viewportHeight / 2));
-        flickable.contentY = nextContentY;
+        const plan = viewportCoordinator.minimapScrollPlan(
+                    Number(localY) || 0,
+                    Math.max(1, contentsView.editorOccupiedContentHeight()));
+        if (plan.apply)
+            flickable.contentY = Number(plan.contentY) || 0;
     }
     function correctTypingViewport(forceAnchor) {
-        if (contentsView.showPrintEditorLayout || !contentsView.editorInputFocused)
-            return;
         const flickable = contentsView.editorFlickable;
         if (!flickable || flickable.contentY === undefined)
             return;
-        const viewportHeight = Math.max(0, Number(flickable.height) || contentsView.editorViewportHeight);
-        if (viewportHeight <= 0)
-            return;
-        const contentHeight = Math.max(
-                    viewportHeight,
-                    Number(flickable.contentHeight) || contentsView.editorOccupiedContentHeight());
-        const maxContentY = Math.max(0, contentHeight - viewportHeight);
-        if (maxContentY <= 0)
-            return;
-
-        const cursorRect = contentsView.currentCursorVisualRowRect();
-        const cursorHeight = Math.max(1, Number(cursorRect.height) || contentsView.editorLineHeight);
-        const cursorTopViewportY = contentsView.editorViewportYForDocumentY(Number(cursorRect.y) || 0);
-        const cursorBottomViewportY = cursorTopViewportY + cursorHeight;
-        const cursorCenterViewportY = cursorTopViewportY + cursorHeight / 2;
-        const bandTop = contentsView.typingViewportBandTop(cursorHeight);
-        const bandBottom = contentsView.typingViewportBandBottom(cursorHeight);
-        const anchorCenter = contentsView.typingViewportAnchorCenter(cursorHeight);
-
-        let deltaY = 0;
-        if (forceAnchor)
-            deltaY = cursorCenterViewportY - anchorCenter;
-        else if (cursorBottomViewportY > bandBottom)
-            deltaY = cursorBottomViewportY - bandBottom;
-        else if (cursorTopViewportY < bandTop)
-            deltaY = cursorTopViewportY - bandTop;
-        else
-            return;
-
-        const currentContentY = Math.max(0, Number(flickable.contentY) || 0);
-        const nextContentY = Math.max(0, Math.min(maxContentY, currentContentY + deltaY));
-        if (Math.abs(nextContentY - currentContentY) < 0.5)
-            return;
-        flickable.contentY = nextContentY;
+        const plan = viewportCoordinator.typingViewportCorrectionPlan(
+                    !!forceAnchor,
+                    Number(flickable.height) || contentsView.editorViewportHeight,
+                    Math.max(Number(flickable.contentHeight) || 0,
+                             contentsView.editorOccupiedContentHeight()),
+                    Number(flickable.contentY) || 0,
+                    contentsView.currentCursorVisualRowRect());
+        if (plan.apply)
+            flickable.contentY = Number(plan.contentY) || 0;
     }
     function scheduleTypingViewportCorrection(forceAnchor) {
         const plan = refreshCoordinator.scheduleTypingViewportCorrection(!!forceAnchor);
@@ -2493,6 +2401,23 @@ Item {
         minimapRefreshEnabled: contentsView.minimapRefreshEnabled
         preferNativeInputHandling: contentsView.preferNativeInputHandling
         showEditorGutter: contentsView.showEditorGutter
+        showPrintEditorLayout: contentsView.showPrintEditorLayout
+        structuredHostGeometryActive: contentsView.structuredHostGeometryActive
+    }
+    ContentsDisplayViewportCoordinator {
+        id: viewportCoordinator
+
+        currentCursorLineNumber: Math.max(1, Number(contentsView.currentCursorLineNumber) || 1)
+        currentCursorOffset: Math.max(0, Number(contentEditor.cursorPosition) || 0)
+        editorContentOffsetY: Number(contentsView.editorContentOffsetY) || 0
+        editorDocumentStartY: Number(contentsView.editorDocumentStartY) || 0
+        editorInputFocused: contentsView.editorInputFocused
+        editorLineHeight: Number(contentsView.editorLineHeight) || 0
+        editorSurfaceHeight: Number(contentsView.editorSurfaceHeight) || 0
+        editorViewportHeight: Number(contentsView.editorViewportHeight) || 0
+        logicalLineCount: Math.max(1, Number(contentsView.logicalLineCount) || 1)
+        logicalTextLength: Math.max(0, Number(contentsView.logicalTextLength()) || 0)
+        minimapResolvedTrackHeight: Number(contentsView.minimapResolvedTrackHeight) || 1
         showPrintEditorLayout: contentsView.showPrintEditorLayout
         structuredHostGeometryActive: contentsView.structuredHostGeometryActive
     }
