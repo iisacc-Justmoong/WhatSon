@@ -38,6 +38,9 @@ public:
 
 private:
     void disableStartupDeferredBootstrap();
+    void applyHubRuntimeState(
+        const QString& normalizedHubPath,
+        const IWhatSonRuntimeParallelLoader::RequestedDomains& requestedDomains) const;
     bool loadHubIntoRuntimeWithRequestedDomains(
         const QString& hubPath,
         const IWhatSonRuntimeParallelLoader::RequestedDomains& requestedDomains,

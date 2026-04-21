@@ -16,6 +16,7 @@
 #include "file/hierarchy/resources/WhatSonResourcesHierarchyStore.hpp"
 #include "file/hierarchy/tags/WhatSonTagsHierarchyParser.hpp"
 #include "file/hierarchy/tags/WhatSonTagsHierarchyStore.hpp"
+#include "file/hub/WhatSonHubPathUtils.hpp"
 #include "hub/WhatSonHubRuntimeStore.hpp"
 #include "viewmodel/hierarchy/event/EventHierarchyViewModelSupport.hpp"
 #include "viewmodel/hierarchy/library/LibraryHierarchyViewModelSupport.hpp"
@@ -38,15 +39,89 @@ namespace
         }
         return QDir(contentsDirectories.first()).filePath(fileName);
     }
+
+    template <typename Resolver>
+    bool resolveSharedContentsDirectories(
+        const QString& wshubPath,
+        QStringList* contentsDirectories,
+        QString* errorMessage,
+        Resolver resolver)
+    {
+        if (contentsDirectories == nullptr)
+        {
+            if (errorMessage != nullptr)
+            {
+                *errorMessage = QStringLiteral("Contents directory output is null.");
+            }
+            return false;
+        }
+
+        QStringList resolvedDirectories;
+        QString resolveError;
+        if (!resolver(wshubPath, &resolvedDirectories, &resolveError))
+        {
+            if (errorMessage != nullptr)
+            {
+                *errorMessage = resolveError;
+            }
+            return false;
+        }
+
+        *contentsDirectories = resolvedDirectories;
+        if (errorMessage != nullptr)
+        {
+            errorMessage->clear();
+        }
+        return true;
+    }
 } // namespace
+
+WhatSonRuntimeDomainSnapshots::SharedContext WhatSonRuntimeDomainSnapshots::buildSharedContext(const QString& wshubPath)
+{
+    SharedContext context;
+    context.normalizedHubPath = wshubPath.trimmed().isEmpty()
+                                    ? QString()
+                                    : WhatSon::HubPath::normalizeAbsolutePath(wshubPath);
+    if (context.normalizedHubPath.isEmpty())
+    {
+        context.error = QStringLiteral("wshubPath is empty.");
+        return context;
+    }
+
+    if (!resolveSharedContentsDirectories(
+            context.normalizedHubPath,
+            &context.contentsDirectories,
+            &context.error,
+            [](const QString& hubPath, QStringList* directories, QString* error)
+            {
+                return WhatSon::Hierarchy::LibrarySupport::resolveContentsDirectories(hubPath, directories, error);
+            }))
+    {
+        return context;
+    }
+
+    context.succeeded = true;
+    return context;
+}
 
 WhatSonRuntimeDomainSnapshots::LibrarySnapshot WhatSonRuntimeDomainSnapshots::loadLibrary(const QString& wshubPath)
 {
+    return loadLibrary(buildSharedContext(wshubPath));
+}
+
+WhatSonRuntimeDomainSnapshots::LibrarySnapshot WhatSonRuntimeDomainSnapshots::loadLibrary(const SharedContext& context)
+{
     LibrarySnapshot snapshot;
+    if (!context.succeeded)
+    {
+        snapshot.succeeded = false;
+        snapshot.error = context.error;
+        return snapshot;
+    }
 
     WhatSonLibraryIndexedState indexedState;
     QString indexError;
-    if (!indexedState.indexFromWshub(wshubPath, &indexError))
+    if (!indexedState.indexFromWshub(context.normalizedHubPath, &indexError))
     {
         snapshot.succeeded = false;
         snapshot.error = indexError;
@@ -58,18 +133,8 @@ WhatSonRuntimeDomainSnapshots::LibrarySnapshot WhatSonRuntimeDomainSnapshots::lo
     snapshot.draftNotes = indexedSnapshot.draftNotes;
     snapshot.todayNotes = indexedSnapshot.todayNotes;
 
-    QStringList contentsDirectories;
-    QString resolveError;
-    if (!WhatSon::Hierarchy::LibrarySupport::resolveContentsDirectories(wshubPath, &contentsDirectories, &resolveError))
-    {
-        snapshot.succeeded = false;
-        snapshot.error = resolveError;
-        return snapshot;
-    }
-
     WhatSonFoldersHierarchyParser foldersParser;
-
-    for (const QString& contentsDirectory : contentsDirectories)
+    for (const QString& contentsDirectory : context.contentsDirectories)
     {
         const QString filePath = QDir(contentsDirectory).filePath(QStringLiteral("Folders.wsfolders"));
         if (!QFileInfo(filePath).isFile())
@@ -122,7 +187,7 @@ WhatSonRuntimeDomainSnapshots::LibrarySnapshot WhatSonRuntimeDomainSnapshots::lo
 
     if (snapshot.foldersFilePath.isEmpty())
     {
-        snapshot.foldersFilePath = defaultSourceFilePath(contentsDirectories, QStringLiteral("Folders.wsfolders"));
+        snapshot.foldersFilePath = defaultSourceFilePath(context.contentsDirectories, QStringLiteral("Folders.wsfolders"));
     }
 
     snapshot.succeeded = true;
@@ -140,9 +205,22 @@ WhatSonRuntimeDomainSnapshots::BookmarksSnapshot WhatSonRuntimeDomainSnapshots::
 
 WhatSonRuntimeDomainSnapshots::BookmarksSnapshot WhatSonRuntimeDomainSnapshots::loadBookmarks(const QString& wshubPath)
 {
+    return loadBookmarks(buildSharedContext(wshubPath));
+}
+
+WhatSonRuntimeDomainSnapshots::BookmarksSnapshot WhatSonRuntimeDomainSnapshots::loadBookmarks(const SharedContext& context)
+{
+    if (!context.succeeded)
+    {
+        BookmarksSnapshot snapshot;
+        snapshot.succeeded = false;
+        snapshot.error = context.error;
+        return snapshot;
+    }
+
     WhatSonLibraryIndexedState indexedState;
     QString indexError;
-    if (!indexedState.indexFromWshub(wshubPath, &indexError))
+    if (!indexedState.indexFromWshub(context.normalizedHubPath, &indexError))
     {
         BookmarksSnapshot snapshot;
         snapshot.succeeded = false;
@@ -155,20 +233,21 @@ WhatSonRuntimeDomainSnapshots::BookmarksSnapshot WhatSonRuntimeDomainSnapshots::
 
 WhatSonRuntimeDomainSnapshots::ProjectsSnapshot WhatSonRuntimeDomainSnapshots::loadProjects(const QString& wshubPath)
 {
-    ProjectsSnapshot snapshot;
+    return loadProjects(buildSharedContext(wshubPath));
+}
 
-    QStringList contentsDirectories;
-    QString resolveError;
-    if (!WhatSon::Hierarchy::ProjectsSupport::resolveContentsDirectories(
-        wshubPath, &contentsDirectories, &resolveError))
+WhatSonRuntimeDomainSnapshots::ProjectsSnapshot WhatSonRuntimeDomainSnapshots::loadProjects(const SharedContext& context)
+{
+    ProjectsSnapshot snapshot;
+    if (!context.succeeded)
     {
         snapshot.succeeded = false;
-        snapshot.error = resolveError;
+        snapshot.error = context.error;
         return snapshot;
     }
 
     WhatSonProjectsHierarchyParser parser;
-    for (const QString& contentsDirectory : contentsDirectories)
+    for (const QString& contentsDirectory : context.contentsDirectories)
     {
         const QString filePath = QDir(contentsDirectory).filePath(QStringLiteral("ProjectLists.wsproj"));
         if (!QFileInfo(filePath).isFile())
@@ -209,7 +288,7 @@ WhatSonRuntimeDomainSnapshots::ProjectsSnapshot WhatSonRuntimeDomainSnapshots::l
 
     if (snapshot.projectsFilePath.isEmpty())
     {
-        snapshot.projectsFilePath = defaultSourceFilePath(contentsDirectories, QStringLiteral("ProjectLists.wsproj"));
+        snapshot.projectsFilePath = defaultSourceFilePath(context.contentsDirectories, QStringLiteral("ProjectLists.wsproj"));
     }
 
     snapshot.succeeded = true;
@@ -218,20 +297,21 @@ WhatSonRuntimeDomainSnapshots::ProjectsSnapshot WhatSonRuntimeDomainSnapshots::l
 
 WhatSonRuntimeDomainSnapshots::StringListSnapshot WhatSonRuntimeDomainSnapshots::loadResources(const QString& wshubPath)
 {
-    StringListSnapshot snapshot;
+    return loadResources(buildSharedContext(wshubPath));
+}
 
-    QStringList contentsDirectories;
-    QString resolveError;
-    if (!WhatSon::Hierarchy::ResourcesSupport::resolveContentsDirectories(
-        wshubPath, &contentsDirectories, &resolveError))
+WhatSonRuntimeDomainSnapshots::StringListSnapshot WhatSonRuntimeDomainSnapshots::loadResources(const SharedContext& context)
+{
+    StringListSnapshot snapshot;
+    if (!context.succeeded)
     {
         snapshot.succeeded = false;
-        snapshot.error = resolveError;
+        snapshot.error = context.error;
         return snapshot;
     }
 
     WhatSonResourcesHierarchyParser parser;
-    for (const QString& contentsDirectory : contentsDirectories)
+    for (const QString& contentsDirectory : context.contentsDirectories)
     {
         const QString filePath = QDir(contentsDirectory).filePath(QStringLiteral("Resources.wsresources"));
         if (!QFileInfo(filePath).isFile())
@@ -271,12 +351,12 @@ WhatSonRuntimeDomainSnapshots::StringListSnapshot WhatSonRuntimeDomainSnapshots:
 
     if (snapshot.values.isEmpty())
     {
-        snapshot.values = WhatSon::Resources::listRelativeResourcePackagePathsForHub(wshubPath);
+        snapshot.values = WhatSon::Resources::listRelativeResourcePackagePathsForHub(context.normalizedHubPath);
     }
 
     if (snapshot.sourceFilePath.isEmpty())
     {
-        snapshot.sourceFilePath = defaultSourceFilePath(contentsDirectories, QStringLiteral("Resources.wsresources"));
+        snapshot.sourceFilePath = defaultSourceFilePath(context.contentsDirectories, QStringLiteral("Resources.wsresources"));
     }
 
     snapshot.succeeded = true;
@@ -285,22 +365,23 @@ WhatSonRuntimeDomainSnapshots::StringListSnapshot WhatSonRuntimeDomainSnapshots:
 
 WhatSonRuntimeDomainSnapshots::ProgressSnapshot WhatSonRuntimeDomainSnapshots::loadProgress(const QString& wshubPath)
 {
-    ProgressSnapshot snapshot;
+    return loadProgress(buildSharedContext(wshubPath));
+}
 
-    QStringList contentsDirectories;
-    QString resolveError;
-    if (!WhatSon::Hierarchy::ProgressSupport::resolveContentsDirectories(
-        wshubPath, &contentsDirectories, &resolveError))
+WhatSonRuntimeDomainSnapshots::ProgressSnapshot WhatSonRuntimeDomainSnapshots::loadProgress(const SharedContext& context)
+{
+    ProgressSnapshot snapshot;
+    if (!context.succeeded)
     {
         snapshot.succeeded = false;
-        snapshot.error = resolveError;
+        snapshot.error = context.error;
         return snapshot;
     }
 
     WhatSonProgressHierarchyParser parser;
     WhatSonProgressHierarchyStore store;
 
-    for (const QString& contentsDirectory : contentsDirectories)
+    for (const QString& contentsDirectory : context.contentsDirectories)
     {
         const QString filePath = QDir(contentsDirectory).filePath(QStringLiteral("Progress.wsprogress"));
         if (!QFileInfo(filePath).isFile())
@@ -332,7 +413,7 @@ WhatSonRuntimeDomainSnapshots::ProgressSnapshot WhatSonRuntimeDomainSnapshots::l
 
     if (snapshot.sourceFilePath.isEmpty())
     {
-        snapshot.sourceFilePath = defaultSourceFilePath(contentsDirectories, QStringLiteral("Progress.wsprogress"));
+        snapshot.sourceFilePath = defaultSourceFilePath(context.contentsDirectories, QStringLiteral("Progress.wsprogress"));
     }
 
     if (!snapshot.fileFound)
@@ -354,19 +435,21 @@ WhatSonRuntimeDomainSnapshots::ProgressSnapshot WhatSonRuntimeDomainSnapshots::l
 
 WhatSonRuntimeDomainSnapshots::StringListSnapshot WhatSonRuntimeDomainSnapshots::loadEvent(const QString& wshubPath)
 {
-    StringListSnapshot snapshot;
+    return loadEvent(buildSharedContext(wshubPath));
+}
 
-    QStringList contentsDirectories;
-    QString resolveError;
-    if (!WhatSon::Hierarchy::EventSupport::resolveContentsDirectories(wshubPath, &contentsDirectories, &resolveError))
+WhatSonRuntimeDomainSnapshots::StringListSnapshot WhatSonRuntimeDomainSnapshots::loadEvent(const SharedContext& context)
+{
+    StringListSnapshot snapshot;
+    if (!context.succeeded)
     {
         snapshot.succeeded = false;
-        snapshot.error = resolveError;
+        snapshot.error = context.error;
         return snapshot;
     }
 
     WhatSonEventHierarchyParser parser;
-    for (const QString& contentsDirectory : contentsDirectories)
+    for (const QString& contentsDirectory : context.contentsDirectories)
     {
         const QString filePath = QDir(contentsDirectory).filePath(QStringLiteral("Event.wsevent"));
         if (!QFileInfo(filePath).isFile())
@@ -406,7 +489,7 @@ WhatSonRuntimeDomainSnapshots::StringListSnapshot WhatSonRuntimeDomainSnapshots:
 
     if (snapshot.sourceFilePath.isEmpty())
     {
-        snapshot.sourceFilePath = defaultSourceFilePath(contentsDirectories, QStringLiteral("Event.wsevent"));
+        snapshot.sourceFilePath = defaultSourceFilePath(context.contentsDirectories, QStringLiteral("Event.wsevent"));
     }
 
     snapshot.succeeded = true;
@@ -415,19 +498,21 @@ WhatSonRuntimeDomainSnapshots::StringListSnapshot WhatSonRuntimeDomainSnapshots:
 
 WhatSonRuntimeDomainSnapshots::StringListSnapshot WhatSonRuntimeDomainSnapshots::loadPreset(const QString& wshubPath)
 {
-    StringListSnapshot snapshot;
+    return loadPreset(buildSharedContext(wshubPath));
+}
 
-    QStringList contentsDirectories;
-    QString resolveError;
-    if (!WhatSon::Hierarchy::PresetSupport::resolveContentsDirectories(wshubPath, &contentsDirectories, &resolveError))
+WhatSonRuntimeDomainSnapshots::StringListSnapshot WhatSonRuntimeDomainSnapshots::loadPreset(const SharedContext& context)
+{
+    StringListSnapshot snapshot;
+    if (!context.succeeded)
     {
         snapshot.succeeded = false;
-        snapshot.error = resolveError;
+        snapshot.error = context.error;
         return snapshot;
     }
 
     WhatSonPresetHierarchyParser parser;
-    for (const QString& contentsDirectory : contentsDirectories)
+    for (const QString& contentsDirectory : context.contentsDirectories)
     {
         const QString filePath = QDir(contentsDirectory).filePath(QStringLiteral("Preset.wspreset"));
         if (!QFileInfo(filePath).isFile())
@@ -467,7 +552,7 @@ WhatSonRuntimeDomainSnapshots::StringListSnapshot WhatSonRuntimeDomainSnapshots:
 
     if (snapshot.sourceFilePath.isEmpty())
     {
-        snapshot.sourceFilePath = defaultSourceFilePath(contentsDirectories, QStringLiteral("Preset.wspreset"));
+        snapshot.sourceFilePath = defaultSourceFilePath(context.contentsDirectories, QStringLiteral("Preset.wspreset"));
     }
 
     snapshot.succeeded = true;
@@ -476,19 +561,21 @@ WhatSonRuntimeDomainSnapshots::StringListSnapshot WhatSonRuntimeDomainSnapshots:
 
 WhatSonRuntimeDomainSnapshots::TagsSnapshot WhatSonRuntimeDomainSnapshots::loadTags(const QString& wshubPath)
 {
-    TagsSnapshot snapshot;
+    return loadTags(buildSharedContext(wshubPath));
+}
 
-    QStringList contentsDirectories;
-    QString resolveError;
-    if (!WhatSon::Hierarchy::TagsSupport::resolveContentsDirectories(wshubPath, &contentsDirectories, &resolveError))
+WhatSonRuntimeDomainSnapshots::TagsSnapshot WhatSonRuntimeDomainSnapshots::loadTags(const SharedContext& context)
+{
+    TagsSnapshot snapshot;
+    if (!context.succeeded)
     {
         snapshot.succeeded = false;
-        snapshot.error = resolveError;
+        snapshot.error = context.error;
         return snapshot;
     }
 
     WhatSonTagsHierarchyParser parser;
-    for (const QString& contentsDirectory : contentsDirectories)
+    for (const QString& contentsDirectory : context.contentsDirectories)
     {
         const QString filePath = QDir(contentsDirectory).filePath(QStringLiteral("Tags.wstags"));
         if (!QFileInfo(filePath).isFile())
@@ -529,7 +616,7 @@ WhatSonRuntimeDomainSnapshots::TagsSnapshot WhatSonRuntimeDomainSnapshots::loadT
 
     if (snapshot.tagsFilePath.isEmpty())
     {
-        snapshot.tagsFilePath = defaultSourceFilePath(contentsDirectories, QStringLiteral("Tags.wstags"));
+        snapshot.tagsFilePath = defaultSourceFilePath(context.contentsDirectories, QStringLiteral("Tags.wstags"));
     }
 
     snapshot.succeeded = true;
@@ -539,7 +626,20 @@ WhatSonRuntimeDomainSnapshots::TagsSnapshot WhatSonRuntimeDomainSnapshots::loadT
 WhatSonRuntimeDomainSnapshots::HubRuntimeSnapshot WhatSonRuntimeDomainSnapshots::loadHubRuntime(
     const QString& wshubPath)
 {
+    return loadHubRuntime(buildSharedContext(wshubPath));
+}
+
+WhatSonRuntimeDomainSnapshots::HubRuntimeSnapshot WhatSonRuntimeDomainSnapshots::loadHubRuntime(
+    const SharedContext& context)
+{
     HubRuntimeSnapshot snapshot;
-    snapshot.succeeded = snapshot.store.loadFromWshub(wshubPath, &snapshot.error);
+    if (!context.succeeded)
+    {
+        snapshot.succeeded = false;
+        snapshot.error = context.error;
+        return snapshot;
+    }
+
+    snapshot.succeeded = snapshot.store.loadFromWshub(context.normalizedHubPath, &snapshot.error);
     return snapshot;
 }

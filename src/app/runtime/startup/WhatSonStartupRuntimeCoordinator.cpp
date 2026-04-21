@@ -3,6 +3,7 @@
 #include "file/WhatSonDebugTrace.hpp"
 #include "file/hub/WhatSonHubPathUtils.hpp"
 #include "hub/WhatSonHubRuntimeStore.hpp"
+#include "runtime/threading/WhatSonRuntimeDomainSnapshots.hpp"
 #include "viewmodel/hierarchy/bookmarks/BookmarksHierarchyViewModel.hpp"
 #include "viewmodel/hierarchy/event/EventHierarchyViewModel.hpp"
 #include "viewmodel/hierarchy/library/LibraryHierarchyViewModel.hpp"
@@ -32,6 +33,30 @@ void WhatSonStartupRuntimeCoordinator::setTargets(const RuntimeTargets& targets)
 void WhatSonStartupRuntimeCoordinator::setParallelLoader(const IWhatSonRuntimeParallelLoader* loader)
 {
     m_parallelLoader = loader;
+}
+
+void WhatSonStartupRuntimeCoordinator::applyHubRuntimeState(
+    const QString& normalizedHubPath,
+    const IWhatSonRuntimeParallelLoader::RequestedDomains& requestedDomains) const
+{
+    if (m_targets.hubRuntimeStore == nullptr || m_targets.libraryViewModel == nullptr)
+    {
+        return;
+    }
+
+    m_targets.libraryViewModel->setHubStore(m_targets.hubRuntimeStore->hub(normalizedHubPath));
+
+    if (m_targets.tagsViewModel != nullptr)
+    {
+        m_targets.tagsViewModel->setTagDepthEntries(
+            m_targets.hubRuntimeStore->tagDepthEntries(normalizedHubPath));
+        WhatSon::Debug::trace(
+            QStringLiteral("startup.runtime"),
+            requestedDomains.tags
+                ? QStringLiteral("applyTagsDepthEntries.success")
+                : QStringLiteral("applyTagsDepthEntries.deferredReady"),
+            QStringLiteral("itemCount=%1").arg(m_targets.tagsViewModel->itemModel()->rowCount()));
+    }
 }
 
 bool WhatSonStartupRuntimeCoordinator::loadHubIntoRuntimeWithRequestedDomains(
@@ -138,23 +163,7 @@ bool WhatSonStartupRuntimeCoordinator::loadHubIntoRuntimeWithRequestedDomains(
 
     if (hubRuntimeLoadSucceeded)
     {
-        m_targets.libraryViewModel->setHubStore(m_targets.hubRuntimeStore->hub(normalizedHubPath));
-        if (requestedDomains.tags)
-        {
-            m_targets.tagsViewModel->setTagDepthEntries(
-                m_targets.hubRuntimeStore->tagDepthEntries(normalizedHubPath));
-            WhatSon::Debug::trace(
-                QStringLiteral("startup.runtime"),
-                QStringLiteral("applyTagsDepthEntries.success"),
-                QStringLiteral("itemCount=%1").arg(m_targets.tagsViewModel->itemModel()->rowCount()));
-        }
-        else
-        {
-            WhatSon::Debug::trace(
-                QStringLiteral("startup.runtime"),
-                QStringLiteral("applyTagsDepthEntries.skipped"),
-                QStringLiteral("reason=tags domain deferred"));
-        }
+        applyHubRuntimeState(normalizedHubPath, requestedDomains);
     }
     else if (hubRuntimeRequested)
     {
@@ -247,20 +256,22 @@ void WhatSonStartupRuntimeCoordinator::ensureDeferredStartupHierarchyLoaded(int 
         }
     };
 
+    IWhatSonRuntimeParallelLoader::RequestedDomains requestedDomains;
+    requestedDomains.library = false;
+    requestedDomains.projects = false;
+    requestedDomains.bookmarks = false;
+    requestedDomains.tags = false;
+    requestedDomains.resources = false;
+    requestedDomains.progress = false;
+    requestedDomains.event = normalizedIndex == static_cast<int>(WhatSon::Sidebar::HierarchyDomain::Event);
+    requestedDomains.preset = normalizedIndex == static_cast<int>(WhatSon::Sidebar::HierarchyDomain::Preset);
+    requestedDomains.hubRuntimeStore = true;
+
     QString loadError;
-    bool loadSucceeded = false;
-    switch (normalizedIndex)
-    {
-    case static_cast<int>(WhatSon::Sidebar::HierarchyDomain::Event):
-        loadSucceeded = m_targets.eventViewModel->loadFromWshub(m_currentLoadedHubPath, &loadError);
-        break;
-    case static_cast<int>(WhatSon::Sidebar::HierarchyDomain::Preset):
-        loadSucceeded = m_targets.presetViewModel->loadFromWshub(m_currentLoadedHubPath, &loadError);
-        break;
-    default:
-        m_startupLoadedHierarchyIndices.insert(normalizedIndex);
-        return;
-    }
+    const bool loadSucceeded = loadHubIntoRuntimeWithRequestedDomains(
+        m_currentLoadedHubPath,
+        requestedDomains,
+        &loadError);
 
     const QString domainName = domainNameForIndex(normalizedIndex);
     if (loadSucceeded)

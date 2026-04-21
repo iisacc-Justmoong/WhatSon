@@ -12,6 +12,14 @@
 class WhatSonRuntimeDomainSnapshots final
 {
 public:
+    struct SharedContext
+    {
+        bool succeeded = false;
+        QString error;
+        QString normalizedHubPath;
+        QStringList contentsDirectories;
+    };
+
     struct LibrarySnapshot
     {
         bool succeeded = false;
@@ -75,14 +83,24 @@ public:
         WhatSonHubRuntimeStore store;
     };
 
+    static SharedContext buildSharedContext(const QString& wshubPath);
     static LibrarySnapshot loadLibrary(const QString& wshubPath);
+    static LibrarySnapshot loadLibrary(const SharedContext& context);
     static BookmarksSnapshot buildBookmarks(const QVector<LibraryNoteRecord>& allNotes);
     static BookmarksSnapshot loadBookmarks(const QString& wshubPath);
+    static BookmarksSnapshot loadBookmarks(const SharedContext& context);
     static ProjectsSnapshot loadProjects(const QString& wshubPath);
+    static ProjectsSnapshot loadProjects(const SharedContext& context);
     static StringListSnapshot loadResources(const QString& wshubPath);
+    static StringListSnapshot loadResources(const SharedContext& context);
     static ProgressSnapshot loadProgress(const QString& wshubPath);
+    static ProgressSnapshot loadProgress(const SharedContext& context);
     static StringListSnapshot loadEvent(const QString& wshubPath);
+    static StringListSnapshot loadEvent(const SharedContext& context);
     static StringListSnapshot loadPreset(const QString& wshubPath);
+    static StringListSnapshot loadPreset(const SharedContext& context);
     static TagsSnapshot loadTags(const QString& wshubPath);
+    static TagsSnapshot loadTags(const SharedContext& context);
     static HubRuntimeSnapshot loadHubRuntime(const QString& wshubPath);
+    static HubRuntimeSnapshot loadHubRuntime(const SharedContext& context);
 };
