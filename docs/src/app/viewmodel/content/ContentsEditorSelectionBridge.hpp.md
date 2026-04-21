@@ -22,6 +22,13 @@
   - forwards persistence and note-management requests to `file/sync/ContentsEditorIdleSyncController`
 - The note-list contract can now optionally provide `currentBodyText` for the committed selected note.
   When that payload is available, the bridge reuses it immediately before it falls back to lazy sync/package loading.
+- The bridge now also treats note-list `currentIndexChanged()` as a first-class selection refresh trigger.
+  This keeps list-item activation aligned with editor selection even when the model derives `currentNoteId` lazily from
+  its committed index instead of emitting a dedicated note-id signal first.
+- The same bridge now also listens for note-list `currentBodyTextChanged()` and invalidates its cached selected-note
+  snapshot before the next queued refresh turn.
+  A selected note can therefore receive a late runtime body snapshot from the list model without requiring the note id
+  itself to change again.
 - Public invokables remain:
   - `persistEditorTextForNote(noteId, text)`
   - `stageEditorTextForIdleSync(noteId, text)`
@@ -97,6 +104,10 @@
 - The selected-note loading flag must stay aligned with the asynchronous note-body read lifecycle.
 - A selected note whose model already exposes `currentBodyText` must not be forced through an empty interim editor state
   while the bridge waits for the lazy package-load path.
+- A list-item activation path that only changes the committed `currentIndex` must still refresh `selectedNoteId` and
+  `selectedNoteBodyText` for the editor.
+- A same-note `currentBodyTextChanged()` from the note-list model must still refresh the bridge body snapshot even when
+  the selected note id itself did not change.
 - Stale same-note body-read completions must not reclaim the selected note body after a newer request was issued.
 - Stale filesystem text must not reclaim the selected note body while the sync controller still owns a newer dirty or
   in-flight editor snapshot for that note.

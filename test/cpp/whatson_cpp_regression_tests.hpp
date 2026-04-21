@@ -435,6 +435,115 @@ private:
     bool m_noteBacked = true;
 };
 
+class FakeIndexDrivenSelectionNoteListModel final : public QObject
+{
+    Q_OBJECT
+
+    Q_PROPERTY(int currentIndex READ currentIndex WRITE setCurrentIndex NOTIFY currentIndexChanged)
+    Q_PROPERTY(QString currentNoteId READ currentNoteId NOTIFY currentNoteIdChanged)
+    Q_PROPERTY(QString currentBodyText READ currentBodyText NOTIFY currentBodyTextChanged)
+    Q_PROPERTY(int itemCount READ itemCount WRITE setItemCount NOTIFY itemCountChanged)
+    Q_PROPERTY(bool noteBacked READ noteBacked WRITE setNoteBacked NOTIFY noteBackedChanged)
+
+public:
+    struct Entry
+    {
+        QString noteId;
+        QString bodyText;
+    };
+
+    explicit FakeIndexDrivenSelectionNoteListModel(QObject* parent = nullptr)
+        : QObject(parent)
+    {
+    }
+
+    int currentIndex() const noexcept
+    {
+        return m_currentIndex;
+    }
+
+    void setCurrentIndex(const int currentIndex)
+    {
+        const int normalizedIndex = std::max(-1, currentIndex);
+        if (m_currentIndex == normalizedIndex)
+        {
+            return;
+        }
+
+        m_currentIndex = normalizedIndex;
+        emit currentIndexChanged();
+    }
+
+    QString currentNoteId() const
+    {
+        return m_entries.value(m_currentIndex).noteId;
+    }
+
+    QString currentBodyText() const
+    {
+        return m_entries.value(m_currentIndex).bodyText;
+    }
+
+    void setEntry(const int index, QString noteId, QString bodyText)
+    {
+        const int normalizedIndex = std::max(0, index);
+        Entry entry;
+        entry.noteId = noteId.trimmed();
+        entry.bodyText = std::move(bodyText);
+        m_entries.insert(normalizedIndex, std::move(entry));
+        if (normalizedIndex + 1 > m_itemCount)
+        {
+            setItemCount(normalizedIndex + 1);
+        }
+    }
+
+    int itemCount() const noexcept
+    {
+        return m_itemCount;
+    }
+
+    void setItemCount(int itemCount)
+    {
+        itemCount = std::max(0, itemCount);
+        if (m_itemCount == itemCount)
+        {
+            return;
+        }
+
+        m_itemCount = itemCount;
+        emit itemCountChanged(m_itemCount);
+    }
+
+    bool noteBacked() const noexcept
+    {
+        return m_noteBacked;
+    }
+
+    void setNoteBacked(bool noteBacked)
+    {
+        if (m_noteBacked == noteBacked)
+        {
+            return;
+        }
+
+        m_noteBacked = noteBacked;
+        emit noteBackedChanged();
+    }
+
+signals:
+    void currentIndexChanged();
+    void currentNoteIdChanged();
+    void currentBodyTextChanged();
+    void itemCountChanged(int itemCount);
+    void noteBackedChanged();
+
+private:
+    QHash<int, Entry> m_entries;
+    int m_currentIndex = -1;
+    int m_itemCount = 0;
+    bool m_noteBacked = true;
+};
+
 class ScopedQSettingsSandbox final
 {
 public:
@@ -529,8 +638,10 @@ private slots:
     void sidebarHierarchyViewModel_preservesFallbackAcrossStoreAttachDetach();
     void sidebarHierarchyViewModel_reactsToProviderMappingChanges();
     void sidebarAndSelectionBridge_forceCppOwnershipAcrossHierarchySwitchBindings();
+    void contentsEditorSelectionBridge_tracksSelectionFromCurrentIndexSignal();
     void contentsEditorSelectionBridge_prefillsSelectedNoteBodyFromNoteListSnapshot();
     void contentsEditorSelectionBridge_prefillsSelectedNoteBodyFromDirectSourceSnapshot();
+    void contentsEditorSelectionBridge_refreshesSelectedBodyFromNoteListBodySignal();
     void noteBackedHierarchyNoteLists_preserveRawBodySnapshotForEditorBootstrap();
     void noteListModelContractBridge_resolvesHierarchyBoundNoteListImmediately();
     void noteListModelContractBridge_prefersExplicitRowsAcrossHierarchySwitches();

@@ -17,10 +17,18 @@
 ## Current Implementation Notes
 - The bridge no longer owns the serialized persistence queue or stat-refresh helpers directly.
 - Instead it now:
-  - keeps note-list property wiring (`currentNoteId`, `itemCount`)
+  - keeps note-list property wiring (`currentIndex`, `currentNoteId`, `currentBodyText`, `itemCount`)
   - forwards persistence/snapshot requests into `file/sync/ContentsEditorIdleSyncController`
   - forwards both `editorTextPersistenceQueued(...)` and `editorTextPersistenceFinished(...)` from that sync boundary
     back to QML
+- Note-list `currentIndexChanged()` now also queues the same deferred selection refresh used by
+  `currentNoteIdChanged()`.
+  The editor bridge therefore stays synchronized with list-item activation even when the visible selected note is
+  derived from the committed row index.
+- Note-list `currentBodyTextChanged()` now clears the bridge's cached selected-note snapshot before it schedules the
+  next refresh turn.
+  A selected note can therefore adopt a late list-provided RAW snapshot without waiting for an extra note-id change or
+  a filesystem round trip.
 - Selected note bodies still prefer the idle-sync/package load path, but the bridge now first reuses the currently
   selected note-list model `currentBodyText` payload when that contract is already populated.
   This removes the empty-editor gap where a visible selected note could briefly lose its body while the asynchronous
@@ -88,8 +96,9 @@
     bookkeeping without blocking the UI thread
 - Same-note snapshot refresh now also reuses the same lazy-load path, allowing the bridge to keep the currently visible
   editor body while a background reload for that selected note is still in flight.
-- Note-list `currentNoteIdChanged()` still queues one deferred bridge refresh per event-loop turn instead of running
-  `refreshNoteSelectionState()` immediately, so one logical selection transition stays coalesced before QML reacts.
+- Note-list `currentIndexChanged()` and `currentNoteIdChanged()` still queue one deferred bridge refresh per
+  event-loop turn instead of running `refreshNoteSelectionState()` immediately, so one logical selection transition
+  stays coalesced before QML reacts.
 - Note-list count observation now connects to `itemCountChanged(int)` explicitly.
   The older parameterless signal signature no longer matched the actual note-list-model contract and produced a runtime
   QObject connect warning during live app startup.
@@ -130,6 +139,10 @@
 - Reconciliation requests must not infer their target note from current bridge state when the caller omitted `noteId`.
 - If the selected note-list model already exposes `currentBodyText` for the committed note, the bridge should reuse that
   payload immediately instead of forcing QML to wait for an asynchronous package read.
+- A list-item activation path must still refresh editor selection when the model only emits `currentIndexChanged()`
+  before QML reaches the editor surface.
+- A same-note `currentBodyTextChanged()` must still invalidate the cached selected-note snapshot so the editor can
+  adopt the refreshed list-provided RAW body.
 - A note-open turn must not push an empty interim body into the editor before the lazy body load completes.
 - A note-open turn must also surface a direct content-view-model RAW snapshot immediately when that snapshot is already
   available for the selected note.

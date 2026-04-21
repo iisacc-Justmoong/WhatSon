@@ -134,11 +134,21 @@ void ContentsEditorSelectionBridge::setNoteListModel(QObject* model)
             &QObject::destroyed,
             this,
             &ContentsEditorSelectionBridge::handleNoteListDestroyed);
+        m_currentIndexChangedConnection = connect(
+            m_noteListModel,
+            SIGNAL(currentIndexChanged()),
+            this,
+            SLOT(handleNoteListSelectionChanged()));
         m_currentNoteIdChangedConnection = connect(
             m_noteListModel,
             SIGNAL(currentNoteIdChanged()),
             this,
             SLOT(handleNoteListSelectionChanged()));
+        m_currentBodyTextChangedConnection = connect(
+            m_noteListModel,
+            SIGNAL(currentBodyTextChanged()),
+            this,
+            SLOT(handleNoteListBodyTextChanged()));
         m_itemCountChangedConnection = connect(
             m_noteListModel,
             SIGNAL(itemCountChanged(int)),
@@ -331,6 +341,19 @@ void ContentsEditorSelectionBridge::handleNoteListSelectionChanged()
         QStringLiteral("handleNoteListSelectionChanged"),
         QStringLiteral("noteListModel=0x%1")
             .arg(QString::number(reinterpret_cast<quintptr>(m_noteListModel.data()), 16)));
+    scheduleNoteSelectionRefresh();
+}
+
+void ContentsEditorSelectionBridge::handleNoteListBodyTextChanged()
+{
+    WhatSon::Debug::traceEditorSelf(
+        this,
+        QStringLiteral("selectionBridge"),
+        QStringLiteral("handleNoteListBodyTextChanged"),
+        QStringLiteral("selectedNoteId=%1 snapshotNoteId=%2")
+            .arg(m_selectedNoteId)
+            .arg(m_selectedNoteBodySnapshotNoteId));
+    m_selectedNoteBodySnapshotNoteId.clear();
     scheduleNoteSelectionRefresh();
 }
 
@@ -885,10 +908,20 @@ void ContentsEditorSelectionBridge::disconnectNoteListModel()
         disconnect(m_noteListDestroyedConnection);
         m_noteListDestroyedConnection = QMetaObject::Connection();
     }
+    if (m_currentIndexChangedConnection)
+    {
+        disconnect(m_currentIndexChangedConnection);
+        m_currentIndexChangedConnection = QMetaObject::Connection();
+    }
     if (m_currentNoteIdChangedConnection)
     {
         disconnect(m_currentNoteIdChangedConnection);
         m_currentNoteIdChangedConnection = QMetaObject::Connection();
+    }
+    if (m_currentBodyTextChangedConnection)
+    {
+        disconnect(m_currentBodyTextChangedConnection);
+        m_currentBodyTextChangedConnection = QMetaObject::Connection();
     }
     if (m_itemCountChangedConnection)
     {

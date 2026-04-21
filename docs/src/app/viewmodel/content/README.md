@@ -83,6 +83,10 @@
   `currentBodyText` contract consistently across Library, Projects, Bookmarks, and Progress.
   `ContentsEditorSelectionBridge` can therefore bootstrap the visible note body from the active note-list row before
   it needs to fall back to the content-view-model runtime snapshot or filesystem reload path.
+- That same bridge now also treats note-list `currentIndexChanged()` as a committed selection refresh source and
+  invalidates its selected-note body snapshot on `currentBodyTextChanged()`.
+  List-item activation and late row-body hydration therefore keep propagating into the editor even when the note id
+  signal order is delayed or unchanged.
 - The traced note-open RAW path for editor hosts is now explicitly:
   - `.wsnbody`
   - `WhatSonLocalNoteFileStore::applyBodyDocumentText(...)`

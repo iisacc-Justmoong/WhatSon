@@ -90,6 +90,7 @@ signals:
 
 private slots:
     void handleNoteListSelectionChanged();
+    void handleNoteListBodyTextChanged();
     void handleEditorTextPersistenceFinishedInternal(
         const QString& noteId,
         const QString& text,
@@ -144,7 +145,9 @@ private:
     bool m_selectedNoteBodyLoading = false;
     int m_visibleNoteCount = 0;
     QMetaObject::Connection m_noteListDestroyedConnection;
+    QMetaObject::Connection m_currentIndexChangedConnection;
     QMetaObject::Connection m_currentNoteIdChangedConnection;
+    QMetaObject::Connection m_currentBodyTextChangedConnection;
     QMetaObject::Connection m_itemCountChangedConnection;
     QMetaObject::Connection m_contentViewModelDestroyedConnection;
 };
