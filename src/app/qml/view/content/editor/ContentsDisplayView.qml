@@ -1550,26 +1550,8 @@ Item {
     function resetStructuredSelectionContextMenuSnapshot() {
         contentsView.structuredContextMenuBlockIndex = -1;
         contentsView.structuredContextMenuSelectionSnapshot = ({});
-    }
-    function normalizedStructuredSelectionContextMenuSnapshot(snapshot) {
-        const safeSnapshot = snapshot && typeof snapshot === "object" ? snapshot : ({});
-        return {
-            "cursorPosition": Number(safeSnapshot.cursorPosition),
-            "selectedText": safeSnapshot.selectedText === undefined || safeSnapshot.selectedText === null
-                            ? ""
-                            : String(safeSnapshot.selectedText),
-            "selectionEnd": Number(safeSnapshot.selectionEnd),
-            "selectionStart": Number(safeSnapshot.selectionStart)
-        };
-    }
-    function structuredContextMenuSelectionValid() {
-        const snapshot = contentsView.structuredContextMenuSelectionSnapshot;
-        const selectionStart = Number(snapshot && snapshot.selectionStart !== undefined ? snapshot.selectionStart : NaN);
-        const selectionEnd = Number(snapshot && snapshot.selectionEnd !== undefined ? snapshot.selectionEnd : NaN);
-        return contentsView.structuredContextMenuBlockIndex >= 0
-                && isFinite(selectionStart)
-                && isFinite(selectionEnd)
-                && selectionEnd > selectionStart;
+        contextMenuCoordinator.structuredContextMenuBlockIndex = -1;
+        contextMenuCoordinator.structuredContextMenuSelectionSnapshot = ({})
     }
     function primeStructuredSelectionContextMenuSnapshot() {
         if (!contentsView.showStructuredDocumentFlow
@@ -1579,47 +1561,25 @@ Item {
             return false;
         }
         const targetState = structuredDocumentFlow.inlineFormatTargetState();
-        if (!targetState || !targetState.valid) {
+        const plan = contextMenuCoordinator.primeStructuredSelectionSnapshotPlan(
+                    targetState && typeof targetState === "object" ? targetState : ({}));
+        if (!plan.accepted) {
             contentsView.resetStructuredSelectionContextMenuSnapshot();
             return false;
         }
-        const blockIndex = Number(targetState.blockIndex);
-        if (!isFinite(blockIndex) || blockIndex < 0) {
-            contentsView.resetStructuredSelectionContextMenuSnapshot();
-            return false;
-        }
-        const selectionSnapshot = contentsView.normalizedStructuredSelectionContextMenuSnapshot(targetState.selectionSnapshot);
-        const selectionStart = Number(selectionSnapshot.selectionStart);
-        const selectionEnd = Number(selectionSnapshot.selectionEnd);
-        if (!isFinite(selectionStart) || !isFinite(selectionEnd) || selectionEnd <= selectionStart) {
-            contentsView.resetStructuredSelectionContextMenuSnapshot();
-            return false;
-        }
-        contentsView.structuredContextMenuBlockIndex = Math.floor(blockIndex);
-        contentsView.structuredContextMenuSelectionSnapshot = selectionSnapshot;
+        contentsView.structuredContextMenuBlockIndex = Number(plan.blockIndex) || 0;
+        contentsView.structuredContextMenuSelectionSnapshot = plan.selectionSnapshot && typeof plan.selectionSnapshot === "object"
+                ? plan.selectionSnapshot
+                : ({});
+        contextMenuCoordinator.structuredContextMenuBlockIndex = contentsView.structuredContextMenuBlockIndex;
+        contextMenuCoordinator.structuredContextMenuSelectionSnapshot = contentsView.structuredContextMenuSelectionSnapshot;
         return true;
     }
-    function structuredContextMenuInlineStyleTag(eventName) {
-        const normalizedEventName = eventName === undefined || eventName === null ? "" : String(eventName).trim();
-        if (normalizedEventName === "editor.format.plain")
-            return "plain";
-        if (normalizedEventName === "editor.format.bold")
-            return "bold";
-        if (normalizedEventName === "editor.format.italic")
-            return "italic";
-        if (normalizedEventName === "editor.format.underline")
-            return "underline";
-        if (normalizedEventName === "editor.format.strikethrough")
-            return "strikethrough";
-        if (normalizedEventName === "editor.format.highlight")
-            return "highlight";
-        return "";
-    }
     function handleStructuredSelectionContextMenuEvent(eventName) {
-        const inlineStyleTag = contentsView.structuredContextMenuInlineStyleTag(eventName);
+        const inlineStyleTag = contextMenuCoordinator.inlineStyleTagForEvent(eventName === undefined || eventName === null ? "" : String(eventName));
         const plan = contextMenuCoordinator.handleStructuredSelectionEventPlan(
                     inlineStyleTag,
-                    contentsView.structuredContextMenuSelectionValid(),
+                    contextMenuCoordinator.structuredSelectionValid(),
                     !!(structuredDocumentFlow && structuredDocumentFlow.applyInlineFormatToBlockSelection !== undefined));
         if (!plan.applyStructuredInlineFormat) {
             if (plan.requireStructuredSelectionPrime
@@ -1639,7 +1599,7 @@ Item {
     }
     function openEditorSelectionContextMenu(localX, localY) {
         const plan = contextMenuCoordinator.openSelectionContextMenuPlan(
-                    contentsView.structuredContextMenuSelectionValid(),
+                    contextMenuCoordinator.structuredSelectionValid(),
                     !!editorSelectionContextMenu,
                     Number(localX) || 0,
                     Number(localY) || 0);

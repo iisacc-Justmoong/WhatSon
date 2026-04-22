@@ -22,6 +22,9 @@ void WhatSonCppRegressionTests::contentsDisplayView_invalidatesGutterGeometryImm
     QVERIFY(displayViewSource.contains(QStringLiteral("contentsView.scheduleGutterRefresh(")));
     QVERIFY(displayViewSource.contains(QStringLiteral("minimapCoordinator.buildNextMinimapSnapshotPlan(")));
     QVERIFY(displayViewSource.contains(QStringLiteral("contextMenuCoordinator.openSelectionContextMenuPlan(")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("contextMenuCoordinator.inlineStyleTagForEvent(")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("contextMenuCoordinator.primeStructuredSelectionSnapshotPlan(")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("contextMenuCoordinator.structuredSelectionValid()")));
     QVERIFY(displayViewSource.contains(QStringLiteral("gutterCoordinator.buildVisiblePlainGutterLineEntries(")));
     QVERIFY(displayViewSource.contains(QStringLiteral("\"structured-layout-cache\"")));
     QVERIFY(displayViewSource.contains(QStringLiteral("\"editor-text-synchronized\"")));
@@ -209,6 +212,9 @@ void WhatSonCppRegressionTests::contentsDisplayView_surfacesMountFailurePlacehol
         QStringLiteral("function onSelectionSyncFlushRequested(plan)")));
     QVERIFY(displayViewSource.contains(
         QStringLiteral("function onMountFlushRequested(plan)")));
+    QVERIFY(!displayViewSource.contains(QStringLiteral("function normalizedStructuredSelectionContextMenuSnapshot(snapshot)")));
+    QVERIFY(!displayViewSource.contains(QStringLiteral("function structuredContextMenuSelectionValid()")));
+    QVERIFY(!displayViewSource.contains(QStringLiteral("function structuredContextMenuInlineStyleTag(eventName)")));
     QVERIFY(displayViewSource.contains(
         QStringLiteral("normalizedPlan.attemptSelectionSync || normalizedPlan.attemptEditorSessionMount")));
     QVERIFY(displayViewSource.contains(

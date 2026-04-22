@@ -25,6 +25,10 @@ public:
     QVariantMap structuredContextMenuSelectionSnapshot() const;
     void setStructuredContextMenuSelectionSnapshot(const QVariantMap& value);
 
+    Q_INVOKABLE QVariantMap normalizeStructuredSelectionSnapshot(const QVariantMap& snapshot) const;
+    Q_INVOKABLE bool structuredSelectionValid() const;
+    Q_INVOKABLE QString inlineStyleTagForEvent(const QString& eventName) const;
+    Q_INVOKABLE QVariantMap primeStructuredSelectionSnapshotPlan(const QVariantMap& targetState) const;
     Q_INVOKABLE QVariantMap openSelectionContextMenuPlan(bool structuredSelectionValid, bool hasContextMenu, double localX, double localY) const;
     Q_INVOKABLE QVariantMap handleStructuredSelectionEventPlan(const QString& inlineStyleTag, bool structuredSelectionValid, bool canApplyInlineFormat) const;
 
