@@ -23,6 +23,21 @@ void WhatSonCppRegressionTests::contentsDisplaySessionCoordinator_requiresResolv
     QCOMPARE(
         resolver.resolvedDocumentPresentationSourceText(),
         QStringLiteral("Editor body"));
+
+    resolver.setSelectedNoteId(QStringLiteral("note-empty"));
+    resolver.setSelectedNoteBodyNoteId(QStringLiteral("note-empty"));
+    resolver.setSelectedNoteBodyText(QString());
+    resolver.setSelectedNoteBodyResolved(true);
+    resolver.setEditorBoundNoteId(QString());
+    resolver.setEditorText(QString());
+
+    const QVariantMap emptyBodyPlan = resolver.resolveDocumentSourcePlan();
+    QCOMPARE(emptyBodyPlan.value(QStringLiteral("bodyMatchesSelection")).toBool(), true);
+    QCOMPARE(emptyBodyPlan.value(QStringLiteral("bodyAvailable")).toBool(), true);
+    QCOMPARE(emptyBodyPlan.value(QStringLiteral("resolvedSourceReady")).toBool(), true);
+    QCOMPARE(
+        resolver.resolvedDocumentPresentationSourceText(),
+        QString());
 }
 
 void WhatSonCppRegressionTests::contentsDisplayCreationPath_emitsCoordinatorTraceForEditorWiring()

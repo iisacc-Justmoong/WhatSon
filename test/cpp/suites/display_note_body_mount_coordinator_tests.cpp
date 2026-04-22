@@ -193,3 +193,46 @@ void WhatSonCppRegressionTests::noteBodyMountCoordinator_reportsSurfaceSpecificF
     QVERIFY(!coordinator.exceptionVisible());
     QVERIFY(coordinator.commandSurfaceEnabled());
 }
+
+void WhatSonCppRegressionTests::noteBodyMountCoordinator_acceptsResolvedEmptySelectedBody()
+{
+    ensureCoreApplication();
+
+    ContentsDisplayNoteBodyMountCoordinator coordinator;
+    QSignalSpy mountFlushRequestedSpy(
+        &coordinator,
+        &ContentsDisplayNoteBodyMountCoordinator::mountFlushRequested);
+
+    coordinator.setVisible(true);
+    coordinator.setSelectedNoteId(QStringLiteral("note-1"));
+    coordinator.setSelectedNoteBodyNoteId(QStringLiteral("note-1"));
+    coordinator.setSelectedNoteBodyText(QString());
+    coordinator.setSelectedNoteBodyResolved(true);
+    coordinator.setStructuredDocumentSurfaceRequested(true);
+    coordinator.setStructuredDocumentSurfaceReady(true);
+
+    coordinator.scheduleMount(QVariantMap{});
+    QCoreApplication::processEvents();
+
+    QCOMPARE(mountFlushRequestedSpy.count(), 1);
+    const QVariantMap mountPlan = mountFlushRequestedSpy.takeFirst().at(0).toMap();
+    QCOMPARE(mountPlan.value(QStringLiteral("attemptSnapshotRefresh")).toBool(), false);
+    QCOMPARE(mountPlan.value(QStringLiteral("attemptEditorSessionMount")).toBool(), true);
+    QCOMPARE(mountPlan.value(QStringLiteral("selectedNoteBodyText")).toString(), QString());
+    QCOMPARE(mountPlan.value(QStringLiteral("reason")).toString(), QStringLiteral("mount-editor-session"));
+
+    QVERIFY(!coordinator.mountPending());
+    QVERIFY(coordinator.parseMounted());
+    QVERIFY(coordinator.sourceMounted());
+    QVERIFY(coordinator.noteMounted());
+    QVERIFY(!coordinator.mountFailed());
+    QVERIFY(coordinator.surfaceVisible());
+    QVERIFY(!coordinator.exceptionVisible());
+    QVERIFY(coordinator.commandSurfaceEnabled());
+
+    const QVariantMap mountState = coordinator.currentMountState();
+    QCOMPARE(mountState.value(QStringLiteral("documentSourceReady")).toBool(), true);
+    QCOMPARE(mountState.value(QStringLiteral("selectionSnapshotReady")).toBool(), true);
+    QCOMPARE(mountState.value(QStringLiteral("parseMounted")).toBool(), true);
+    QCOMPARE(mountState.value(QStringLiteral("noteMounted")).toBool(), true);
+}

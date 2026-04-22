@@ -770,6 +770,7 @@ private slots:
     void noteBodyMountCoordinator_failsMountAfterAcceptedRefreshWhenBodyRemainsUnavailable();
     void noteBodyMountCoordinator_reportsSurfaceSpecificFailureMessage();
     void noteBodyMountCoordinator_requestsEditorSessionMountFromResolvedSnapshot();
+    void noteBodyMountCoordinator_acceptsResolvedEmptySelectedBody();
     void qmlInlineFormatEditor_keepsHiddenKeyboardTouchesScrollFirstOnMobile();
     void mobileChrome_usesSharedFigmaControlSurfaceColor();
     void mobileHierarchyRouteStateStore_tracksNormalizedSelectionRestoreState();

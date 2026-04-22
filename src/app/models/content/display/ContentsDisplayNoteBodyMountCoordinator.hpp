@@ -164,6 +164,8 @@ private:
     bool documentSurfaceReady() const noexcept;
     bool documentSurfaceLoading() const noexcept;
     bool selectionSnapshotReady() const noexcept;
+    bool selectionSnapshotRepresentsExplicitEmptyBody() const noexcept;
+    bool editorSessionRepresentsExplicitEmptyBody() const noexcept;
     bool documentSourceReady() const noexcept;
     bool refreshAttemptedForSelectedNote() const noexcept;
     void flushMount();

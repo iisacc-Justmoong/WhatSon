@@ -9,3 +9,5 @@ planning, and display refresh behavior.
   can delegate more calculations into C++.
 - Context-menu coordination remains here because it still belongs to display interaction policy rather than editor
   document storage or parsing authority.
+- Note-body mount policy must continue to accept explicit empty-body snapshots owned by the selected note; a blank
+  note is a valid mounted document, not a mount failure.

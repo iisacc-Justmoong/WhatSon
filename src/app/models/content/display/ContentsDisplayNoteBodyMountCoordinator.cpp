@@ -461,12 +461,14 @@ bool ContentsDisplayNoteBodyMountCoordinator::parseMounted() const noexcept
         return false;
     }
 
-    if (parserAcceptsSource(m_editorText))
+    if (editorSessionRepresentsExplicitEmptyBody() || parserAcceptsSource(m_editorText))
     {
         return true;
     }
 
-    if (selectionSnapshotReady() && parserAcceptsSource(m_selectedNoteBodyText))
+    if (selectionSnapshotReady()
+        && (selectionSnapshotRepresentsExplicitEmptyBody()
+            || parserAcceptsSource(m_selectedNoteBodyText)))
     {
         return true;
     }
@@ -788,14 +790,35 @@ bool ContentsDisplayNoteBodyMountCoordinator::selectionSnapshotReady() const noe
     return m_selectedNoteBodyResolved && m_selectedNoteBodyNoteId == normalizedSelectedNoteId;
 }
 
+bool ContentsDisplayNoteBodyMountCoordinator::selectionSnapshotRepresentsExplicitEmptyBody() const noexcept
+{
+    const QString normalizedSelectedNoteId = normalizeNoteId(m_selectedNoteId);
+    return !normalizedSelectedNoteId.isEmpty()
+        && m_selectedNoteBodyResolved
+        && m_selectedNoteBodyNoteId == normalizedSelectedNoteId
+        && m_selectedNoteBodyText.isEmpty();
+}
+
+bool ContentsDisplayNoteBodyMountCoordinator::editorSessionRepresentsExplicitEmptyBody() const noexcept
+{
+    const QString normalizedSelectedNoteId = normalizeNoteId(m_selectedNoteId);
+    const QString normalizedEditorNoteId = normalizeNoteId(m_editorBoundNoteId);
+    return !normalizedSelectedNoteId.isEmpty()
+        && m_editorSessionBoundToSelectedNote
+        && normalizedEditorNoteId == normalizedSelectedNoteId
+        && m_editorText.isEmpty();
+}
+
 bool ContentsDisplayNoteBodyMountCoordinator::documentSourceReady() const noexcept
 {
-    if (parserAcceptsSource(m_editorText))
+    if (editorSessionRepresentsExplicitEmptyBody() || parserAcceptsSource(m_editorText))
     {
         return true;
     }
 
-    if (selectionSnapshotReady() && parserAcceptsSource(m_selectedNoteBodyText))
+    if (selectionSnapshotReady()
+        && (selectionSnapshotRepresentsExplicitEmptyBody()
+            || parserAcceptsSource(m_selectedNoteBodyText)))
     {
         return true;
     }

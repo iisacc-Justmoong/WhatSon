@@ -87,9 +87,15 @@ QVariantMap ContentsDisplayDocumentSourceResolver::resolveDocumentSourcePlan() c
     QVariantMap plan;
     const bool sessionBound = editorSessionBoundToSelectedNote();
     const bool bodyIdMatches = !m_selectedNoteId.isEmpty() && m_selectedNoteBodyNoteId == m_selectedNoteId;
+    const bool bodyOwnedBySelection =
+        !m_selectedNoteId.isEmpty()
+        && (bodyIdMatches || m_selectedNoteBodyNoteId.isEmpty());
     const bool bodyHasText = !m_selectedNoteBodyText.isEmpty();
-    const bool bodyAvailable = bodyHasText && (m_selectedNoteBodyResolved || bodyIdMatches || m_selectedNoteBodyNoteId.isEmpty());
-    const bool editorAvailable = !m_editorText.isEmpty() && (sessionBound || m_pendingBodySave || m_editorBoundNoteId.isEmpty() || m_selectedNoteId.isEmpty());
+    const bool bodyAvailable = bodyOwnedBySelection
+        && (bodyHasText || m_selectedNoteBodyResolved);
+    const bool editorAvailable =
+        (sessionBound || m_pendingBodySave || m_editorBoundNoteId.isEmpty() || m_selectedNoteId.isEmpty())
+        && (!m_editorText.isEmpty() || sessionBound || m_pendingBodySave);
     const bool preferEditor = editorAvailable && (!bodyAvailable || sessionBound || m_pendingBodySave);
 
     plan.insert(QStringLiteral("selectedNoteId"), m_selectedNoteId);
