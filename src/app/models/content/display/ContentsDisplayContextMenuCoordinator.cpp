@@ -2,12 +2,15 @@
 
 #include <QtGlobal>
 #include <cmath>
+#include <limits>
 
 namespace
 {
-    QString normalizedString(const QVariant& value)
+    double doubleOrNaN(const QVariant& value)
     {
-        return value.toString().trimmed();
+        bool ok = false;
+        const double parsedValue = value.toDouble(&ok);
+        return ok ? parsedValue : std::numeric_limits<double>::quiet_NaN();
     }
 
     QVariantMap safeMap(const QVariantMap& value)
@@ -67,8 +70,10 @@ QVariantMap ContentsDisplayContextMenuCoordinator::normalizeStructuredSelectionS
 
 bool ContentsDisplayContextMenuCoordinator::structuredSelectionValid() const
 {
-    const double selectionStart = m_structuredContextMenuSelectionSnapshot.value(QStringLiteral("selectionStart")).toDouble(std::numeric_limits<double>::quiet_NaN());
-    const double selectionEnd = m_structuredContextMenuSelectionSnapshot.value(QStringLiteral("selectionEnd")).toDouble(std::numeric_limits<double>::quiet_NaN());
+    const double selectionStart = doubleOrNaN(
+        m_structuredContextMenuSelectionSnapshot.value(QStringLiteral("selectionStart")));
+    const double selectionEnd = doubleOrNaN(
+        m_structuredContextMenuSelectionSnapshot.value(QStringLiteral("selectionEnd")));
     return m_structuredContextMenuBlockIndex >= 0
         && std::isfinite(selectionStart)
         && std::isfinite(selectionEnd)
@@ -106,14 +111,14 @@ QVariantMap ContentsDisplayContextMenuCoordinator::primeStructuredSelectionSnaps
     if (!targetState.value(QStringLiteral("valid")).toBool())
         return plan;
 
-    const double blockIndex = targetState.value(QStringLiteral("blockIndex")).toDouble(std::numeric_limits<double>::quiet_NaN());
+    const double blockIndex = doubleOrNaN(targetState.value(QStringLiteral("blockIndex")));
     if (!std::isfinite(blockIndex) || blockIndex < 0)
         return plan;
 
     const QVariantMap selectionSnapshot = normalizeStructuredSelectionSnapshot(
         targetState.value(QStringLiteral("selectionSnapshot")).toMap());
-    const double selectionStart = selectionSnapshot.value(QStringLiteral("selectionStart")).toDouble(std::numeric_limits<double>::quiet_NaN());
-    const double selectionEnd = selectionSnapshot.value(QStringLiteral("selectionEnd")).toDouble(std::numeric_limits<double>::quiet_NaN());
+    const double selectionStart = doubleOrNaN(selectionSnapshot.value(QStringLiteral("selectionStart")));
+    const double selectionEnd = doubleOrNaN(selectionSnapshot.value(QStringLiteral("selectionEnd")));
     if (!std::isfinite(selectionStart) || !std::isfinite(selectionEnd) || selectionEnd <= selectionStart)
         return plan;
 

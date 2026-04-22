@@ -1,7 +1,7 @@
 #include "test/cpp/whatson_cpp_regression_tests.hpp"
 
 #include "app/models/content/display/ContentsDisplaySelectionSyncCoordinator.hpp"
-#include "app/models/content/display/ContentsDisplayDocumentSourceResolver.hpp"
+#include "app/models/editor/display/ContentsDisplayDocumentSourceResolver.hpp"
 
 void WhatSonCppRegressionTests::contentsDisplaySessionCoordinator_requiresResolvedSelectedBodyBeforeUsingSnapshot()
 {
@@ -28,7 +28,7 @@ void WhatSonCppRegressionTests::contentsDisplaySessionCoordinator_requiresResolv
 void WhatSonCppRegressionTests::contentsDisplayCreationPath_emitsCoordinatorTraceForEditorWiring()
 {
     const QString documentSourceResolverSource = readUtf8SourceFile(
-        QStringLiteral("src/app/models/content/display/ContentsDisplayDocumentSourceResolver.cpp"));
+        QStringLiteral("src/app/models/editor/display/ContentsDisplayDocumentSourceResolver.cpp"));
     const QString editorSessionSource = readUtf8SourceFile(
         QStringLiteral("src/app/models/editor/session/ContentsEditorSessionController.cpp"));
     const QString mountCoordinatorSource = readUtf8SourceFile(

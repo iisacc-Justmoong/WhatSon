@@ -15,8 +15,10 @@ hosts that render or navigate that state.
 - `structured`
 
 ## Architectural Notes
-- `display` owns editor-host coordination that reacts to selection, viewport, minimap, gutter, and presentation
-  refresh events without turning QML into a stateful document controller.
+- `display` owns editor-host coordination that reacts to selection, context-menu, mount, and presentation refresh
+  events without turning QML into a stateful document controller.
+- Line-offset lookup, viewport correction math, and minimap proportional geometry now live under
+  `src/app/models/editor/display` so the note editor does not keep those calculations inline in QML.
 - `mobile` owns mobile-only route planning, back-swipe, pop-repair, and hierarchy-selection preservation helpers that
   keep compact workspace navigation deterministic across note/detail/editor transitions.
 - `structured` owns the canonical structured document host, collection policy, focus policy, and mutation policy used

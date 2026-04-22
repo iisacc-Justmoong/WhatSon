@@ -1,5 +1,7 @@
 #include "test/cpp/whatson_cpp_regression_tests.hpp"
 
+#include <QStringView>
+
 void WhatSonCppRegressionTests::contentsDisplayView_invalidatesGutterGeometryImmediatelyAcrossRapidNoteSwitches()
 {
     const QString displayViewSource = readUtf8SourceFile(
@@ -69,6 +71,45 @@ void WhatSonCppRegressionTests::contentsDisplayView_usesSelectedNoteSnapshotWhil
         QStringLiteral("selectedNoteBodyResolved: contentsView.selectedNoteBodyResolved")));
     QVERIFY(displayViewSource.contains(
         QStringLiteral("selectedNoteBodyText: contentsView.selectedNoteBodyText === undefined || contentsView.selectedNoteBodyText === null ? \"\" : String(contentsView.selectedNoteBodyText)")));
+}
+
+void WhatSonCppRegressionTests::contentsDisplayView_keepsSingleResolverBindingPerDocumentSourceProperty()
+{
+    const QString displayViewSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/content/editor/ContentsDisplayView.qml"));
+
+    QVERIFY(!displayViewSource.isEmpty());
+
+    const QString resolverStartMarker = QStringLiteral("ContentsDisplayDocumentSourceResolver {");
+    const QString resolverEndMarker = QStringLiteral("    ContentsDisplayNoteBodyMountCoordinator {");
+    const int resolverStart = displayViewSource.indexOf(resolverStartMarker);
+    QVERIFY(resolverStart >= 0);
+    const int resolverEnd = displayViewSource.indexOf(resolverEndMarker, resolverStart);
+    QVERIFY(resolverEnd > resolverStart);
+
+    const QString resolverBlock = displayViewSource.mid(resolverStart, resolverEnd - resolverStart);
+
+    const auto countOccurrences = [&resolverBlock](QStringView token) {
+        int count = 0;
+        int searchFrom = 0;
+        const QString needle = token.toString();
+        while (true) {
+            const int foundIndex = resolverBlock.indexOf(needle, searchFrom);
+            if (foundIndex < 0)
+                return count;
+            ++count;
+            searchFrom = foundIndex + needle.size();
+        }
+    };
+
+    QCOMPARE(countOccurrences(u"editorBoundNoteId:"), 1);
+    QCOMPARE(countOccurrences(u"editorText:"), 1);
+    QCOMPARE(countOccurrences(u"pendingBodySave:"), 1);
+    QCOMPARE(countOccurrences(u"selectedNoteBodyNoteId:"), 1);
+    QCOMPARE(countOccurrences(u"selectedNoteBodyResolved:"), 1);
+    QCOMPARE(countOccurrences(u"selectedNoteBodyText:"), 1);
+    QCOMPARE(countOccurrences(u"selectedNoteId:"), 1);
+    QCOMPARE(countOccurrences(u"structuredFlowSourceText:"), 1);
 }
 
 void WhatSonCppRegressionTests::contentsDisplayView_emitsEditorCreationTraceAcrossHostTransitions()

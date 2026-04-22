@@ -6,10 +6,11 @@
 
 ## Scope
 - Mirrored source directory: `src/app/models/editor`
-- Child directories: 3
+- Child directories: 4
 - Child files: 0
 
 ## Child Directories
+- `display`
 - `parser`
 - `painter`
 - `renderer`
@@ -51,6 +52,10 @@
 - Paper/page/print-specific display helpers were extracted from `src/app/models/editor` into
   `src/app/models/display/paper` so the remaining editor domain stays focused on parsing and rendering mechanics rather
   than reusable view-mode state.
+- The note editor now also keeps document-source selection and viewport/minimap math under
+  `src/app/models/editor/display` instead of leaving those responsibilities embedded in `ContentsDisplayView.qml`.
+  The QML host still wires live state, but same-note source resolution, line-offset lookup, and minimap viewport math
+  now execute through dedicated C++ editor-domain objects.
 - Editor snapshot reconcile and correction-complete paths now also avoid overlapping same-note fetches and duplicate
   post-sync UI refresh scheduling, further reducing repeated main-thread work after note open and background sync.
 - Projects note projection now exposes the same lightweight persisted-body apply path as the other

@@ -85,6 +85,16 @@ not note-backed.
   still finishing a background snapshot refresh.
   This prevents the structured document host from mounting with a transient empty source when the selected note is
   already known but the editor session binding has not completed yet.
+- The document-source resolver itself now lives under `src/app/models/editor/display`.
+  QML still binds live selection/session state into it, but source arbitration is now treated as editor-domain C++
+  logic rather than as a content-panel helper.
+- The `ContentsDisplayDocumentSourceResolver` block keeps each upstream source property bound exactly once.
+  Duplicate assignments in that block are a hard QML compile error, so the host now relies on one normalized binding
+  per resolver input and the regression suite checks that those keys remain unique.
+- Logical-line offset lookup and minimap viewport math now route through
+  `ContentsDisplayViewportCoordinator` in `src/app/models/editor/display`.
+  `ContentsDisplayView.qml` still owns cache invalidation and composition, but it no longer carries those binary
+  searches and proportional-track calculations as local JavaScript helpers.
 - `commitDocumentPresentationRefresh()` refreshes only the HTML overlay/minimap projection; it no longer triggers a
   RichText surface reinjection step.
 - Resource-bearing fallback notes still substitute `whatson-resource-block` placeholders into HTML, but that

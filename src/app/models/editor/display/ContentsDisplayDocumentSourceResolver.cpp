@@ -1,4 +1,4 @@
-#include "app/models/content/display/ContentsDisplayDocumentSourceResolver.hpp"
+#include "app/models/editor/display/ContentsDisplayDocumentSourceResolver.hpp"
 
 ContentsDisplayDocumentSourceResolver::ContentsDisplayDocumentSourceResolver(QObject* parent)
     : QObject(parent)

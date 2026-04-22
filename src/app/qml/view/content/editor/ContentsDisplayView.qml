@@ -35,7 +35,9 @@ Item {
                                                       : 1)
                                                    : contentsView.showStructuredDocumentFlow
                                                      ? 1
-                                                   : contentsView.logicalLineNumberForOffset(Number(contentEditor.cursorPosition) || 0)
+                                                   : viewportCoordinator.logicalLineNumberForOffset(
+                                                         Number(contentEditor.cursorPosition) || 0,
+                                                         contentsView.logicalLineStartOffsets)
     readonly property color decorativeMarkerYellow: LV.Theme.warning
     readonly property int desktopEditorFontPixelSize: Math.max(0, Math.round(LV.Theme.scaleMetric(12)))
     readonly property int editorFontWeight: modePolicy.editorFontWeight
@@ -155,6 +157,7 @@ Item {
     property var liveLogicalLineStartOffsets: [0]
     readonly property var logicalLineStartOffsets: contentsView.liveLogicalLineStartOffsets
     property int liveLogicalTextLength: 0
+    readonly property int resolvedLogicalTextLength: Math.max(0, Number(viewportCoordinator.logicalTextLength) || 0)
     readonly property bool lineGeometryRefreshEnabled: modePolicy.lineGeometryRefreshEnabled
     readonly property int minEditorHeight: LV.Theme.gap20 * 12
     readonly property real minimapAvailableTrackHeight: Math.max(1, contentsView.editorViewportHeight - contentsView.minimapTrackInset * 2)
@@ -453,7 +456,9 @@ Item {
         const lineDocumentYs = [];
         const lineVisualHeights = [];
         for (let lineNumber = safeStartLine; lineNumber <= safeEndLine; ++lineNumber) {
-            lineCharacterCounts.push(contentsView.logicalLineCharacterCountAt(lineNumber - 1));
+            lineCharacterCounts.push(viewportCoordinator.logicalLineCharacterCountAt(
+                                         lineNumber - 1,
+                                         contentsView.logicalLineStartOffsets));
             lineDocumentYs.push(contentsView.lineDocumentY(lineNumber));
             lineVisualHeights.push(contentsView.lineVisualHeight(lineNumber, 1));
         }
@@ -477,11 +482,15 @@ Item {
         const fallbackLineDocumentYs = [];
         const fallbackLineVisualHeights = [];
         const editorRects = [];
-        const logicalLength = contentsView.logicalTextLength();
+        const logicalLength = contentsView.resolvedLogicalTextLength;
         for (let lineNumber = safeStartLine; lineNumber <= safeEndLine; ++lineNumber) {
             const lineIndex = lineNumber - 1;
-            const startOffset = contentsView.logicalLineStartOffsetAt(lineIndex);
-            lineCharacterCounts.push(contentsView.logicalLineCharacterCountAt(lineIndex));
+            const startOffset = viewportCoordinator.logicalLineStartOffsetAt(
+                        lineIndex,
+                        contentsView.logicalLineStartOffsets);
+            lineCharacterCounts.push(viewportCoordinator.logicalLineCharacterCountAt(
+                                         lineIndex,
+                                         contentsView.logicalLineStartOffsets));
             lineStartOffsets.push(startOffset);
             fallbackLineDocumentYs.push(contentsView.lineDocumentY(lineNumber));
             fallbackLineVisualHeights.push(contentsView.lineVisualHeight(lineNumber, 1));
@@ -696,7 +705,7 @@ Item {
                         contentsView.lineDocumentY(safeLineNumber),
                         contentsView.lineVisualHeight(safeLineNumber, 1));
         }
-        const safeOffset = Math.max(0, Math.min(contentsView.logicalTextLength(), Number(contentEditor.cursorPosition) || 0));
+        const safeOffset = Math.max(0, Math.min(contentsView.resolvedLogicalTextLength, Number(contentEditor.cursorPosition) || 0));
         const rect = contentEditor.editorItem && contentEditor.editorItem.positionToRectangle !== undefined
                 ? contentEditor.editorItem.positionToRectangle(safeOffset)
                 : ({ });
@@ -704,27 +713,6 @@ Item {
                     rect,
                     safeOffset,
                     contentsView.documentYForOffset(safeOffset));
-    }
-    function typingViewportBandTop(cursorHeight) {
-        const safeCursorHeight = Math.max(1, Number(cursorHeight) || contentsView.editorLineHeight);
-        const surfaceHeight = Math.max(safeCursorHeight, Number(contentsView.editorSurfaceHeight) || 0);
-        return contentsView.editorDocumentStartY + Math.max(
-                    safeCursorHeight,
-                    Math.round(surfaceHeight * 0.18));
-    }
-    function typingViewportBandBottom(cursorHeight) {
-        const safeCursorHeight = Math.max(1, Number(cursorHeight) || contentsView.editorLineHeight);
-        const surfaceHeight = Math.max(safeCursorHeight, Number(contentsView.editorSurfaceHeight) || 0);
-        return contentsView.editorDocumentStartY + Math.max(
-                    safeCursorHeight * 2,
-                    Math.round(surfaceHeight * 0.56));
-    }
-    function typingViewportAnchorCenter(cursorHeight) {
-        const safeCursorHeight = Math.max(1, Number(cursorHeight) || contentsView.editorLineHeight);
-        const surfaceHeight = Math.max(safeCursorHeight, Number(contentsView.editorSurfaceHeight) || 0);
-        return contentsView.editorDocumentStartY + Math.max(
-                    safeCursorHeight / 2,
-                    Math.round(surfaceHeight * 0.5));
     }
     function currentEditorCursorPosition() {
         return editorSelectionController.currentEditorCursorPosition();
@@ -744,7 +732,7 @@ Item {
         contentsView.ensureLogicalLineDocumentYCache();
         const cachedLastLineDocumentY = contentsView.logicalLineCount > 0 ? contentsView.lineDocumentY(contentsView.logicalLineCount) : 0;
         const cachedBottom = Math.max(contentsView.editorLineHeight, cachedLastLineDocumentY + contentsView.editorLineHeight);
-        const logicalLength = contentsView.logicalTextLength();
+        const logicalLength = contentsView.resolvedLogicalTextLength;
         if (contentEditor.editorItem && contentEditor.editorItem.positionToRectangle !== undefined) {
             const rect = contentEditor.editorItem.positionToRectangle(Math.max(0, logicalLength));
             const rectY = Number(rect.y);
@@ -758,9 +746,13 @@ Item {
         const refreshRevision = contentsView.gutterRefreshRevision;
         const safeOffset = Math.max(0, Number(offset) || 0);
         if (contentsView.structuredHostGeometryActive)
-            return contentsView.lineDocumentY(contentsView.logicalLineNumberForOffset(safeOffset));
+            return contentsView.lineDocumentY(viewportCoordinator.logicalLineNumberForOffset(
+                                                  safeOffset,
+                                                  contentsView.logicalLineStartOffsets));
         if (!contentEditor.editorItem || contentEditor.editorItem.positionToRectangle === undefined) {
-            const fallbackLineNumber = contentsView.logicalLineNumberForOffset(safeOffset);
+            const fallbackLineNumber = viewportCoordinator.logicalLineNumberForOffset(
+                        safeOffset,
+                        contentsView.logicalLineStartOffsets);
             return (fallbackLineNumber - 1) * contentsView.editorLineHeight;
         }
         const rect = contentEditor.editorItem.positionToRectangle(safeOffset);
@@ -795,7 +787,9 @@ Item {
         const cachedYValues = [];
         let previousDocumentY = 0;
         for (let lineIndex = 0; lineIndex < lineCount; ++lineIndex) {
-            const startOffset = contentsView.logicalLineStartOffsetAt(lineIndex);
+            const startOffset = viewportCoordinator.logicalLineStartOffsetAt(
+                        lineIndex,
+                        contentsView.logicalLineStartOffsets);
             const rawDocumentY = Math.max(0, Number(contentsView.documentYForOffset(startOffset)) || 0);
             const minimumDocumentY = lineIndex === 0 ? 0 : previousDocumentY + Math.max(1, contentsView.editorLineHeight);
             const resolvedDocumentY = lineIndex === 0 ? rawDocumentY : Math.max(rawDocumentY, minimumDocumentY);
@@ -954,7 +948,7 @@ Item {
             if (activeNoteId !== normalizedNoteId)
                 return;
 
-            const cursorPosition = Math.max(0, contentsView.logicalTextLength());
+            const cursorPosition = Math.max(0, contentsView.resolvedLogicalTextLength);
             contentEditor.forceActiveFocus();
             if (contentEditor.editorItem && contentEditor.editorItem.forceActiveFocus !== undefined)
                 contentEditor.editorItem.forceActiveFocus();
@@ -1284,41 +1278,6 @@ Item {
         }
         return best + 1;
     }
-    function logicalLineCharacterCountAt(lineIndex) {
-        const safeIndex = Math.max(0, Math.min(contentsView.logicalLineCount - 1, Number(lineIndex) || 0));
-        const startOffset = contentsView.logicalLineStartOffsetAt(safeIndex);
-        const hasNextLine = safeIndex + 1 < contentsView.logicalLineCount;
-        const nextOffset = hasNextLine ? contentsView.logicalLineStartOffsetAt(safeIndex + 1) : contentsView.logicalTextLength();
-        return Math.max(0, nextOffset - startOffset - (hasNextLine ? 1 : 0));
-    }
-    function logicalLineNumberForOffset(offset) {
-        if (contentsView.logicalLineCount <= 0)
-            return 1;
-        const safeOffset = Math.max(0, Math.min(contentsView.logicalTextLength(), Number(offset) || 0));
-        let low = 0;
-        let high = contentsView.logicalLineCount - 1;
-        let best = 0;
-        while (low <= high) {
-            const middle = Math.floor((low + high) / 2);
-            const middleOffset = contentsView.logicalLineStartOffsetAt(middle);
-            if (middleOffset <= safeOffset) {
-                best = middle;
-                low = middle + 1;
-            } else {
-                high = middle - 1;
-            }
-        }
-        return best + 1;
-    }
-    function logicalLineStartOffsetAt(lineIndex) {
-        const safeIndex = Math.max(0, Math.min(contentsView.logicalLineCount - 1, Number(lineIndex) || 0));
-        if (Array.isArray(contentsView.logicalLineStartOffsets) && safeIndex < contentsView.logicalLineStartOffsets.length)
-            return Math.max(0, Number(contentsView.logicalLineStartOffsets[safeIndex]) || 0);
-        return 0;
-    }
-    function logicalTextLength() {
-        return Math.max(0, Number(contentsView.liveLogicalTextLength) || 0);
-    }
     function markerColorForType(markerType) {
         const normalizedType = markerType === undefined || markerType === null ? "" : String(markerType).toLowerCase();
         if (normalizedType === "conflict")
@@ -1345,14 +1304,6 @@ Item {
             return contentsView.editorDocumentStartY;
         const startLine = Math.max(1, Number(markerSpec.startLine) || 1);
         return contentsView.gutterLineY(startLine);
-    }
-    function minimapBarWidth(characterCount) {
-        const safeCount = Math.max(0, Number(characterCount) || 0);
-        const maxWidth = Math.max(6, contentsView.minimapResolvedTrackWidth - 1);
-        if (safeCount <= 0)
-            return Math.max(2, maxWidth * 0.08);
-        const widthRatio = contentsView.clampUnit(0.08 + Math.log(safeCount + 1) / Math.log(160));
-        return Math.max(4, maxWidth * widthRatio);
     }
     function minimapContentHeight() {
         return Math.max(1, contentsView.editorOccupiedContentHeight());
@@ -1383,54 +1334,15 @@ Item {
     }
     function minimapLineY(lineNumber) {
         const safeLineNumber = Math.max(1, Math.min(contentsView.logicalLineCount, Number(lineNumber) || 1));
-        return contentsView.minimapTrackYForContentY(contentsView.minimapContentYForLine(safeLineNumber));
+        return viewportCoordinator.minimapTrackYForContentY(
+                    contentsView.minimapContentYForLine(safeLineNumber),
+                    contentsView.minimapContentHeight());
     }
     function minimapSilhouetteHeight(rowsOverride) {
         const rows = Array.isArray(rowsOverride) ? rowsOverride : (Array.isArray(contentsView.minimapVisualRows) ? contentsView.minimapVisualRows : []);
         if (rows.length === 0)
             return contentsView.minimapVisualRowPaintHeight(null);
         return rows.length * contentsView.minimapVisualRowPaintHeight(rows[0]) + Math.max(0, rows.length - 1) * contentsView.minimapRowGap;
-    }
-    function minimapTrackHeightForContentHeight(segmentHeight) {
-        const safeSegmentHeight = Math.max(0, Number(segmentHeight) || 0);
-        const contentHeight = contentsView.minimapContentHeight();
-        if (contentHeight <= 0)
-            return 0;
-        return Math.max(1, (safeSegmentHeight / contentHeight) * contentsView.minimapResolvedTrackHeight);
-    }
-    function minimapTrackYForContentY(contentY) {
-        const contentHeight = contentsView.minimapContentHeight();
-        if (contentHeight <= 0)
-            return 0;
-        const safeContentY = Math.max(0, Math.min(contentHeight, Number(contentY) || 0));
-        return (safeContentY / contentHeight) * contentsView.minimapResolvedTrackHeight;
-    }
-    function minimapViewportHeight(trackHeightOverride) {
-        const flickable = contentsView.editorFlickable;
-        const trackHeight = Math.max(1, Number(trackHeightOverride) || contentsView.minimapResolvedTrackHeight);
-        if (!flickable)
-            return trackHeight;
-        const contentHeight = Math.max(1, contentsView.minimapContentHeight());
-        const viewportHeight = Math.max(0, contentsView.editorViewportHeight);
-        if (contentHeight <= viewportHeight)
-            return trackHeight;
-        const proportionalHeight = Math.max(1, (viewportHeight / contentHeight) * trackHeight);
-        return Math.min(trackHeight, Math.max(contentsView.minimapViewportMinHeight, proportionalHeight));
-    }
-    function minimapViewportY(trackHeightOverride, viewportHeightOverride) {
-        const flickable = contentsView.editorFlickable;
-        const trackHeight = Math.max(1, Number(trackHeightOverride) || contentsView.minimapResolvedTrackHeight);
-        const viewportHeight = Math.max(0, Number(viewportHeightOverride) || contentsView.minimapResolvedViewportHeight);
-        if (!flickable)
-            return 0;
-        const contentHeight = Math.max(1, contentsView.minimapContentHeight());
-        const editorViewportHeight = Math.max(0, contentsView.editorViewportHeight);
-        const maxContentY = Math.max(0, contentHeight - editorViewportHeight);
-        if (maxContentY <= 0)
-            return 0;
-        const contentY = Math.max(0, Math.min(maxContentY, Number(flickable.contentY) || 0));
-        const maxTrackY = Math.max(0, trackHeight - viewportHeight);
-        return maxTrackY * (contentY / maxContentY);
     }
     function minimapVisualRowPaintHeight(rowSpec) {
         return 1;
@@ -1713,7 +1625,7 @@ Item {
                 && structuredDocumentFlow.requestDocumentEndEdit !== undefined) {
             return structuredDocumentFlow.requestDocumentEndEdit();
         }
-        const logicalOffset = Math.max(0, contentsView.logicalTextLength());
+        const logicalOffset = Math.max(0, contentsView.resolvedLogicalTextLength);
         contentEditor.forceActiveFocus();
         if (contentEditor.setCursorPositionPreservingInputMethod !== undefined) {
             contentEditor.setCursorPositionPreservingInputMethod(logicalOffset);
@@ -1853,16 +1765,24 @@ Item {
             return;
         const nextCurrentVisualRow = contentsView.minimapCurrentVisualRow(rowsOverride);
         contentsView.minimapResolvedCurrentLineHeight = contentsView.minimapVisualRowPaintHeight(nextCurrentVisualRow);
-        contentsView.minimapResolvedCurrentLineWidth = contentsView.minimapBarWidth(nextCurrentVisualRow.charCount);
+        contentsView.minimapResolvedCurrentLineWidth = viewportCoordinator.minimapBarWidth(
+                    Number(nextCurrentVisualRow.charCount) || 0,
+                    contentsView.minimapResolvedTrackWidth);
         contentsView.minimapResolvedCurrentLineY = contentsView.minimapVisualRowPaintY(nextCurrentVisualRow);
     }
     function refreshMinimapViewportTracking(trackHeightOverride) {
         if (!contentsView.minimapRefreshEnabled)
             return;
-        const resolvedTrackHeight = Math.max(1, Number(trackHeightOverride) || contentsView.minimapResolvedTrackHeight);
         const nextScrollable = contentsView.isMinimapScrollable();
-        const nextViewportHeight = contentsView.minimapViewportHeight(resolvedTrackHeight);
-        const nextViewportY = contentsView.minimapViewportY(resolvedTrackHeight, nextViewportHeight);
+        const nextViewportHeight = viewportCoordinator.minimapViewportHeight(
+                    !!contentsView.editorFlickable,
+                    contentsView.minimapContentHeight(),
+                    contentsView.minimapViewportMinHeight);
+        const nextViewportY = viewportCoordinator.minimapViewportY(
+                    !!contentsView.editorFlickable,
+                    contentsView.editorFlickable ? Number(contentsView.editorFlickable.contentY) || 0 : 0,
+                    contentsView.minimapContentHeight(),
+                    nextViewportHeight);
         contentsView.minimapScrollable = nextScrollable;
         contentsView.minimapResolvedViewportHeight = nextViewportHeight;
         contentsView.minimapResolvedViewportY = nextViewportY;
@@ -2488,14 +2408,6 @@ Item {
         selectedNoteBodyText: contentsView.selectedNoteBodyText === undefined || contentsView.selectedNoteBodyText === null ? "" : String(contentsView.selectedNoteBodyText)
         selectedNoteId: contentsView.selectedNoteId === undefined || contentsView.selectedNoteId === null ? "" : String(contentsView.selectedNoteId)
         structuredFlowSourceText: contentsView.structuredFlowSourceText === undefined || contentsView.structuredFlowSourceText === null ? "" : String(contentsView.structuredFlowSourceText)
-
-        editorBoundNoteId: contentsView.editorBoundNoteId
-        editorText: contentsView.editorText === undefined || contentsView.editorText === null ? "" : String(contentsView.editorText)
-        pendingBodySave: contentsView.pendingBodySave
-        selectedNoteBodyNoteId: contentsView.selectedNoteBodyNoteId === undefined || contentsView.selectedNoteBodyNoteId === null ? "" : String(contentsView.selectedNoteBodyNoteId)
-        selectedNoteBodyResolved: contentsView.selectedNoteBodyResolved
-        selectedNoteBodyText: contentsView.selectedNoteBodyText === undefined || contentsView.selectedNoteBodyText === null ? "" : String(contentsView.selectedNoteBodyText)
-        selectedNoteId: contentsView.selectedNoteId === undefined || contentsView.selectedNoteId === null ? "" : String(contentsView.selectedNoteId)
     }
     ContentsDisplayNoteBodyMountCoordinator {
         id: noteBodyMountCoordinator
@@ -2599,7 +2511,7 @@ Item {
         editorSurfaceHeight: Number(contentsView.editorSurfaceHeight) || 0
         editorViewportHeight: Number(contentsView.editorViewportHeight) || 0
         logicalLineCount: Math.max(1, Number(contentsView.logicalLineCount) || 1)
-        logicalTextLength: Math.max(0, Number(contentsView.logicalTextLength()) || 0)
+        logicalTextLength: Number(contentsView.liveLogicalTextLength) || 0
         minimapResolvedTrackHeight: Number(contentsView.minimapResolvedTrackHeight) || 1
         showPrintEditorLayout: contentsView.showPrintEditorLayout
         structuredHostGeometryActive: contentsView.structuredHostGeometryActive
@@ -3951,7 +3863,9 @@ Item {
                 Layout.preferredWidth: 0
                 editorFlickable: contentsView.editorFlickable
                 minimapBarWidthResolver: function (characterCount) {
-                    return contentsView.minimapBarWidth(characterCount);
+                    return viewportCoordinator.minimapBarWidth(
+                                Number(characterCount) || 0,
+                                contentsView.minimapResolvedTrackWidth);
                 }
                 minimapCurrentLineColor: contentsView.minimapCurrentLineColor
                 minimapCurrentLineHeight: contentsView.minimapResolvedCurrentLineHeight
@@ -4019,7 +3933,9 @@ Item {
             anchors.top: parent.top
             editorFlickable: contentsView.editorFlickable
             minimapBarWidthResolver: function (characterCount) {
-                return contentsView.minimapBarWidth(characterCount);
+                return viewportCoordinator.minimapBarWidth(
+                            Number(characterCount) || 0,
+                            contentsView.minimapResolvedTrackWidth);
             }
             minimapCurrentLineColor: contentsView.minimapCurrentLineColor
             minimapCurrentLineHeight: contentsView.minimapResolvedCurrentLineHeight

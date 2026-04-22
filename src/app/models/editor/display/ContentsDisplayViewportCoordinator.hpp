@@ -2,8 +2,8 @@
 
 #include <QObject>
 #include <QString>
-#include <QVariantMap>
 #include <QVariantList>
+#include <QVariantMap>
 
 class ContentsDisplayViewportCoordinator : public QObject
 {
@@ -78,6 +78,18 @@ public:
     Q_INVOKABLE QVariantMap buildLogicalLineMetricsFromText(const QString& text) const;
     Q_INVOKABLE QString structuredGutterGeometrySignature(const QVariantList& lineEntries) const;
     Q_INVOKABLE QVariantMap consumeStructuredGutterGeometryChange(const QString& previousSignature, const QVariantList& lineEntries) const;
+    Q_INVOKABLE int logicalLineStartOffsetAt(int lineIndex, const QVariantList& lineStartOffsets) const;
+    Q_INVOKABLE int logicalLineCharacterCountAt(int lineIndex, const QVariantList& lineStartOffsets) const;
+    Q_INVOKABLE int logicalLineNumberForOffset(int offset, const QVariantList& lineStartOffsets) const;
+    Q_INVOKABLE double minimapBarWidth(int characterCount, double resolvedTrackWidth) const;
+    Q_INVOKABLE double minimapTrackHeightForContentHeight(double segmentHeight, double contentHeight) const;
+    Q_INVOKABLE double minimapTrackYForContentY(double contentY, double contentHeight) const;
+    Q_INVOKABLE double minimapViewportHeight(bool flickableAvailable, double contentHeight, double viewportMinHeight) const;
+    Q_INVOKABLE double minimapViewportY(
+        bool flickableAvailable,
+        double flickableContentY,
+        double contentHeight,
+        double viewportHeight) const;
     Q_INVOKABLE QVariantMap minimapScrollPlan(double localY, double contentHeight) const;
     Q_INVOKABLE QVariantMap typingViewportCorrectionPlan(
         bool forceAnchor,

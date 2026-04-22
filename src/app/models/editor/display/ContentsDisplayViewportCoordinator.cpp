@@ -1,7 +1,9 @@
-#include "app/models/content/display/ContentsDisplayViewportCoordinator.hpp"
+#include "app/models/editor/display/ContentsDisplayViewportCoordinator.hpp"
 
 #include <QVariant>
 #include <QtGlobal>
+
+#include <cmath>
 
 namespace
 {
@@ -290,6 +292,130 @@ QVariantMap ContentsDisplayViewportCoordinator::consumeStructuredGutterGeometryC
     result.insert(QStringLiteral("signature"), nextSignature);
     result.insert(QStringLiteral("changed"), previousSignature != nextSignature);
     return result;
+}
+
+int ContentsDisplayViewportCoordinator::logicalLineStartOffsetAt(
+    const int lineIndex,
+    const QVariantList& lineStartOffsets) const
+{
+    const int safeLineCount = qMax(1, m_logicalLineCount);
+    const int safeIndex = qMax(0, qMin(safeLineCount - 1, lineIndex));
+    if (safeIndex < lineStartOffsets.size())
+        return qMax(0, lineStartOffsets.at(safeIndex).toInt());
+    return 0;
+}
+
+int ContentsDisplayViewportCoordinator::logicalLineCharacterCountAt(
+    const int lineIndex,
+    const QVariantList& lineStartOffsets) const
+{
+    const int safeLineCount = qMax(1, m_logicalLineCount);
+    const int safeIndex = qMax(0, qMin(safeLineCount - 1, lineIndex));
+    const int startOffset = logicalLineStartOffsetAt(safeIndex, lineStartOffsets);
+    const bool hasNextLine = safeIndex + 1 < safeLineCount;
+    const int nextOffset = hasNextLine
+        ? logicalLineStartOffsetAt(safeIndex + 1, lineStartOffsets)
+        : qMax(0, m_logicalTextLength);
+    return qMax(0, nextOffset - startOffset - (hasNextLine ? 1 : 0));
+}
+
+int ContentsDisplayViewportCoordinator::logicalLineNumberForOffset(
+    const int offset,
+    const QVariantList& lineStartOffsets) const
+{
+    const int safeLineCount = qMax(1, m_logicalLineCount);
+    const int safeOffset = qMax(0, qMin(qMax(0, m_logicalTextLength), offset));
+    int low = 0;
+    int high = safeLineCount - 1;
+    int best = 0;
+
+    while (low <= high)
+    {
+        const int middle = (low + high) / 2;
+        const int middleOffset = logicalLineStartOffsetAt(middle, lineStartOffsets);
+        if (middleOffset <= safeOffset)
+        {
+            best = middle;
+            low = middle + 1;
+        }
+        else
+        {
+            high = middle - 1;
+        }
+    }
+
+    return best + 1;
+}
+
+double ContentsDisplayViewportCoordinator::minimapBarWidth(
+    const int characterCount,
+    const double resolvedTrackWidth) const
+{
+    const double safeTrackWidth = qMax(0.0, resolvedTrackWidth);
+    const double maxWidth = qMax(6.0, safeTrackWidth - 1.0);
+    const int safeCount = qMax(0, characterCount);
+    if (safeCount <= 0)
+        return qMax(2.0, maxWidth * 0.08);
+
+    const double widthRatio = clampUnit(
+        0.08 + std::log(static_cast<double>(safeCount) + 1.0) / std::log(160.0));
+    return qMax(4.0, maxWidth * widthRatio);
+}
+
+double ContentsDisplayViewportCoordinator::minimapTrackHeightForContentHeight(
+    const double segmentHeight,
+    const double contentHeight) const
+{
+    const double safeContentHeight = qMax(1.0, contentHeight);
+    const double safeSegmentHeight = qMax(0.0, segmentHeight);
+    return qMax(1.0, (safeSegmentHeight / safeContentHeight) * qMax(1.0, m_minimapResolvedTrackHeight));
+}
+
+double ContentsDisplayViewportCoordinator::minimapTrackYForContentY(
+    const double contentY,
+    const double contentHeight) const
+{
+    const double safeContentHeight = qMax(1.0, contentHeight);
+    const double safeContentY = qMax(0.0, qMin(safeContentHeight, contentY));
+    return (safeContentY / safeContentHeight) * qMax(1.0, m_minimapResolvedTrackHeight);
+}
+
+double ContentsDisplayViewportCoordinator::minimapViewportHeight(
+    const bool flickableAvailable,
+    const double contentHeight,
+    const double viewportMinHeight) const
+{
+    const double trackHeight = qMax(1.0, m_minimapResolvedTrackHeight);
+    if (!flickableAvailable)
+        return trackHeight;
+
+    const double safeContentHeight = qMax(1.0, contentHeight);
+    const double viewportHeight = qMax(0.0, m_editorViewportHeight);
+    if (safeContentHeight <= viewportHeight)
+        return trackHeight;
+
+    const double proportionalHeight = qMax(1.0, (viewportHeight / safeContentHeight) * trackHeight);
+    return qMin(trackHeight, qMax(qMax(0.0, viewportMinHeight), proportionalHeight));
+}
+
+double ContentsDisplayViewportCoordinator::minimapViewportY(
+    const bool flickableAvailable,
+    const double flickableContentY,
+    const double contentHeight,
+    const double viewportHeight) const
+{
+    if (!flickableAvailable)
+        return 0.0;
+
+    const double safeContentHeight = qMax(1.0, contentHeight);
+    const double editorViewportHeight = qMax(0.0, m_editorViewportHeight);
+    const double maxContentY = qMax(0.0, safeContentHeight - editorViewportHeight);
+    if (maxContentY <= 0.0)
+        return 0.0;
+
+    const double contentY = qMax(0.0, qMin(maxContentY, flickableContentY));
+    const double maxTrackY = qMax(0.0, qMax(1.0, m_minimapResolvedTrackHeight) - qMax(0.0, viewportHeight));
+    return maxTrackY * (contentY / maxContentY);
 }
 
 QVariantMap ContentsDisplayViewportCoordinator::minimapScrollPlan(const double localY, const double contentHeight) const

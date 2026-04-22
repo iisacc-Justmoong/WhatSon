@@ -756,12 +756,15 @@ private slots:
     void contentsDisplayView_keepsGutterNumbersCloseToTheEditorBody();
     void contentsDisplayView_reservesLargeBottomAccessibilityMargin();
     void contentsDisplayView_usesSelectedNoteSnapshotWhileSessionBindingCatchesUp();
+    void contentsDisplayView_keepsSingleResolverBindingPerDocumentSourceProperty();
     void contentsDisplayView_emitsEditorCreationTraceAcrossHostTransitions();
     void contentsDisplayView_tracesNoteSelectionPlanExecution();
     void contentsDisplaySessionCoordinator_requiresResolvedSelectedBodyBeforeUsingSnapshot();
     void contentsDisplayCreationPath_emitsCoordinatorTraceForEditorWiring();
     void contentsDisplaySelectionFlow_emitsTraceForSelectionAndMountPlans();
     void contentsDisplaySelectionSyncCoordinator_blocksUntilSelectedBodyIsResolved();
+    void displayContextMenuCoordinator_rejectsNonNumericStructuredSelectionSnapshots();
+    void editorViewportCoordinator_movesMinimapAndLineMathOutOfQml();
     void contentsDisplayView_surfacesMountFailurePlaceholderWithoutChrome();
     void noteBodyMountCoordinator_retriesRefreshBeforeFailingMount();
     void noteBodyMountCoordinator_failsMountAfterAcceptedRefreshWhenBodyRemainsUnavailable();
