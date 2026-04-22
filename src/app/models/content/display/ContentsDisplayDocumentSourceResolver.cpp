@@ -77,20 +77,22 @@ QVariantMap ContentsDisplayDocumentSourceResolver::resolveDocumentSourcePlan() c
 {
     QVariantMap plan;
     const bool sessionBound = !m_editorBoundNoteId.isEmpty() && m_editorBoundNoteId == m_selectedNoteId;
-    const bool bodyMatches = m_selectedNoteBodyResolved
-        && !m_selectedNoteId.isEmpty()
-        && m_selectedNoteBodyNoteId == m_selectedNoteId;
-    const bool preferEditor = sessionBound && (!m_editorText.isEmpty() || m_pendingBodySave || !bodyMatches);
+    const bool bodyIdMatches = !m_selectedNoteId.isEmpty() && m_selectedNoteBodyNoteId == m_selectedNoteId;
+    const bool bodyHasText = !m_selectedNoteBodyText.isEmpty();
+    const bool bodyAvailable = bodyHasText && (m_selectedNoteBodyResolved || bodyIdMatches || m_selectedNoteBodyNoteId.isEmpty());
+    const bool editorAvailable = !m_editorText.isEmpty() && (sessionBound || m_pendingBodySave || m_editorBoundNoteId.isEmpty() || m_selectedNoteId.isEmpty());
+    const bool preferEditor = editorAvailable && (!bodyAvailable || sessionBound || m_pendingBodySave);
 
     plan.insert(QStringLiteral("selectedNoteId"), m_selectedNoteId);
     plan.insert(QStringLiteral("selectedNoteBodyNoteId"), m_selectedNoteBodyNoteId);
     plan.insert(QStringLiteral("editorBoundNoteId"), m_editorBoundNoteId);
     plan.insert(QStringLiteral("editorSessionBoundToSelectedNote"), sessionBound);
-    plan.insert(QStringLiteral("bodyMatchesSelection"), bodyMatches);
+    plan.insert(QStringLiteral("bodyMatchesSelection"), bodyIdMatches);
+    plan.insert(QStringLiteral("bodyAvailable"), bodyAvailable);
+    plan.insert(QStringLiteral("editorAvailable"), editorAvailable);
     plan.insert(QStringLiteral("preferEditorSessionSource"), preferEditor);
-    plan.insert(QStringLiteral("bodyAvailable"), bodyMatches && !m_selectedNoteBodyText.isEmpty());
-    plan.insert(QStringLiteral("resolvedSourceText"), preferEditor ? m_editorText : (bodyMatches ? m_selectedNoteBodyText : QString()));
-    plan.insert(QStringLiteral("resolvedSourceReady"), preferEditor || bodyMatches);
+    plan.insert(QStringLiteral("resolvedSourceText"), preferEditor ? m_editorText : (bodyAvailable ? m_selectedNoteBodyText : QString()));
+    plan.insert(QStringLiteral("resolvedSourceReady"), preferEditor || bodyAvailable);
     return plan;
 }
 

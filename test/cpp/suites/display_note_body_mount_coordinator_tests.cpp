@@ -25,7 +25,7 @@ void WhatSonCppRegressionTests::noteBodyMountCoordinator_retriesRefreshBeforeFai
     QCOMPARE(refreshPlan.value(QStringLiteral("attemptEditorSessionMount")).toBool(), false);
     QCOMPARE(
         refreshPlan.value(QStringLiteral("reason")).toString(),
-        QStringLiteral("refresh-after-body-note-mismatch"));
+        QStringLiteral("refresh-after-body-source-pending"));
     QVERIFY(coordinator.mountPending());
     QVERIFY(!coordinator.noteMounted());
     QVERIFY(!coordinator.mountFailed());
@@ -35,10 +35,10 @@ void WhatSonCppRegressionTests::noteBodyMountCoordinator_retriesRefreshBeforeFai
     QVERIFY(!coordinator.mountPending());
     QVERIFY(!coordinator.noteMounted());
     QVERIFY(coordinator.mountFailed());
-    QCOMPARE(coordinator.mountFailureReason(), QStringLiteral("body-note-mismatch"));
+    QCOMPARE(coordinator.mountFailureReason(), QStringLiteral("body-source-unavailable"));
     QCOMPARE(
         coordinator.mountFailureMessage(),
-        QStringLiteral("The selected note body no longer matches the current selection."));
+        QStringLiteral("No usable note body source was available for the current selection."));
 }
 
 void WhatSonCppRegressionTests::noteBodyMountCoordinator_requestsEditorSessionMountFromResolvedSnapshot()
@@ -106,7 +106,7 @@ void WhatSonCppRegressionTests::noteBodyMountCoordinator_failsMountAfterAccepted
     QCOMPARE(refreshPlan.value(QStringLiteral("attemptSnapshotRefresh")).toBool(), true);
     QCOMPARE(
         refreshPlan.value(QStringLiteral("reason")).toString(),
-        QStringLiteral("refresh-after-body-note-mismatch"));
+        QStringLiteral("refresh-after-body-source-pending"));
 
     coordinator.handleSnapshotRefreshFinished(QStringLiteral("note-1"), true);
     QVERIFY(coordinator.mountPending());
@@ -125,15 +125,15 @@ void WhatSonCppRegressionTests::noteBodyMountCoordinator_failsMountAfterAccepted
     QCOMPARE(failurePlan.value(QStringLiteral("scheduleSnapshotReconcile")).toBool(), true);
     QCOMPARE(
         failurePlan.value(QStringLiteral("reason")).toString(),
-        QStringLiteral("body-note-mismatch"));
+        QStringLiteral("body-source-unavailable"));
 
     QVERIFY(!coordinator.mountPending());
     QVERIFY(!coordinator.noteMounted());
     QVERIFY(coordinator.mountFailed());
-    QCOMPARE(coordinator.mountFailureReason(), QStringLiteral("body-note-mismatch"));
+    QCOMPARE(coordinator.mountFailureReason(), QStringLiteral("body-source-unavailable"));
     QCOMPARE(
         coordinator.mountFailureMessage(),
-        QStringLiteral("The selected note body no longer matches the current selection."));
+        QStringLiteral("No usable note body source was available for the current selection."));
 }
 
 void WhatSonCppRegressionTests::noteBodyMountCoordinator_reportsSurfaceSpecificFailureMessage()

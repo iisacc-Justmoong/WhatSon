@@ -2360,9 +2360,10 @@ Item {
                     contentsView)
         if (contentsView.selectedNoteBodyLoading)
             return;
-        if (!contentsView.selectedNoteBodyResolved)
+        if ((contentsView.selectedNoteBodyText === undefined || contentsView.selectedNoteBodyText === null || String(contentsView.selectedNoteBodyText).length === 0)
+                && !contentsView.selectedNoteBodyResolved)
             return;
-        if (contentsView.selectedNoteBodyNoteId !== contentsView.selectedNoteId)
+        if (contentsView.selectedNoteBodyNoteId !== "" && contentsView.selectedNoteBodyNoteId !== contentsView.selectedNoteId)
             return;
         if (contentsView.hasPendingNoteEntryGutterRefresh(contentsView.selectedNoteId)
                 && structuredDocumentFlow
@@ -2382,9 +2383,12 @@ Item {
                     + " resolved=" + contentsView.selectedNoteBodyResolved
                     + " loading=" + contentsView.selectedNoteBodyLoading,
                     contentsView)
-        if (!contentsView.selectedNoteBodyResolved
-                || contentsView.selectedNoteBodyLoading
-                || contentsView.selectedNoteBodyNoteId !== contentsView.selectedNoteId)
+        if (contentsView.selectedNoteBodyLoading)
+            return;
+        if ((contentsView.selectedNoteBodyText === undefined || contentsView.selectedNoteBodyText === null || String(contentsView.selectedNoteBodyText).length === 0)
+                && !contentsView.selectedNoteBodyResolved)
+            return;
+        if (contentsView.selectedNoteBodyNoteId !== "" && contentsView.selectedNoteBodyNoteId !== contentsView.selectedNoteId)
             return;
         if (contentsView.hasPendingNoteEntryGutterRefresh(contentsView.selectedNoteId)
                 && structuredDocumentFlow
@@ -2408,7 +2412,7 @@ Item {
             return;
         if (contentsView.selectedNoteId.length === 0)
             return;
-        if (contentsView.selectedNoteBodyNoteId !== contentsView.selectedNoteId)
+        if (contentsView.selectedNoteBodyNoteId !== "" && contentsView.selectedNoteBodyNoteId !== contentsView.selectedNoteId)
             return;
         if (contentsView.hasPendingNoteEntryGutterRefresh(contentsView.selectedNoteId)
                 && structuredDocumentFlow
@@ -3026,10 +3030,14 @@ Item {
                             || contentsView.selectedNoteBodyNoteId === null
                             ? ""
                             : String(contentsView.selectedNoteBodyNoteId).trim();
+                    const currentBodyText = contentsView.selectedNoteBodyText === undefined
+                            || contentsView.selectedNoteBodyText === null
+                            ? ""
+                            : String(contentsView.selectedNoteBodyText);
                     if (!contentsView.selectedNoteBodyLoading
                             && refreshedNoteId.length > 0
-                            && (currentBodyNoteId !== refreshedNoteId
-                                || !contentsView.selectedNoteBodyResolved)) {
+                            && (currentBodyText.length === 0
+                                || (currentBodyNoteId.length > 0 && currentBodyNoteId !== refreshedNoteId))) {
                         scheduledFollowUpMount = true;
                         contentsView.scheduleSelectionModelSync({
                                                                    "scheduleReconcile": true,

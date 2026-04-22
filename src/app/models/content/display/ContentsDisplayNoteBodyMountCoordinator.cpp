@@ -44,6 +44,10 @@ namespace
         {
             return QStringLiteral("The selected note body could not be resolved after refreshing its snapshot.");
         }
+        if (reason == QStringLiteral("body-source-unavailable"))
+        {
+            return QStringLiteral("No usable note body source was available for the current selection.");
+        }
         if (reason == QStringLiteral("structured-document-surface-unavailable"))
         {
             return QStringLiteral("The structured document surface did not become ready for the selected note.");
@@ -505,9 +509,11 @@ QString ContentsDisplayNoteBodyMountCoordinator::mountFailureReason() const
     }
     if (!documentSourceReady())
     {
-        return m_selectedNoteBodyNoteId == normalizedSelectedNoteId
-            ? QStringLiteral("body-unresolved")
-            : QStringLiteral("body-note-mismatch");
+        if (!m_selectedNoteBodyNoteId.isEmpty() && m_selectedNoteBodyNoteId != normalizedSelectedNoteId)
+        {
+            return QStringLiteral("body-note-mismatch");
+        }
+        return QStringLiteral("body-source-unavailable");
     }
 
     const bool structuredSurfaceUnavailable =
@@ -692,12 +698,24 @@ bool ContentsDisplayNoteBodyMountCoordinator::selectionSnapshotReady() const noe
         return false;
     }
 
+    if (!m_selectedNoteBodyText.isEmpty())
+    {
+        if (m_selectedNoteBodyResolved)
+        {
+            return true;
+        }
+        if (m_selectedNoteBodyNoteId.isEmpty() || m_selectedNoteBodyNoteId == normalizedSelectedNoteId)
+        {
+            return true;
+        }
+    }
+
     return m_selectedNoteBodyResolved && m_selectedNoteBodyNoteId == normalizedSelectedNoteId;
 }
 
 bool ContentsDisplayNoteBodyMountCoordinator::documentSourceReady() const noexcept
 {
-    if (m_editorSessionBoundToSelectedNote && parserAcceptsSource(m_editorText))
+    if (parserAcceptsSource(m_editorText))
     {
         return true;
     }
@@ -839,7 +857,8 @@ void ContentsDisplayNoteBodyMountCoordinator::flushMount()
         return;
     }
 
-    const bool bodyNoteMatchesSelection = m_selectedNoteBodyNoteId == normalizedSelectedNoteId;
+    const bool bodyNoteMatchesSelection = m_selectedNoteBodyNoteId.isEmpty()
+        || m_selectedNoteBodyNoteId == normalizedSelectedNoteId;
     if (!documentSourceReady())
     {
         if (!refreshAttemptedForSelectedNote())
@@ -851,7 +870,7 @@ void ContentsDisplayNoteBodyMountCoordinator::flushMount()
             plan.insert(
                 QStringLiteral("reason"),
                 bodyNoteMatchesSelection
-                    ? QStringLiteral("refresh-after-body-unresolved")
+                    ? QStringLiteral("refresh-after-body-source-pending")
                     : QStringLiteral("refresh-after-body-note-mismatch"));
             WhatSon::Debug::traceEditorSelf(
                 this,
@@ -866,7 +885,7 @@ void ContentsDisplayNoteBodyMountCoordinator::flushMount()
         plan.insert(
             QStringLiteral("reason"),
             bodyNoteMatchesSelection
-                ? QStringLiteral("body-unresolved")
+                ? QStringLiteral("body-source-unavailable")
                 : QStringLiteral("body-note-mismatch"));
         WhatSon::Debug::traceEditorSelf(
             this,

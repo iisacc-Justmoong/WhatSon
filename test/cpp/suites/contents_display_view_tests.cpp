@@ -255,7 +255,7 @@ void WhatSonCppRegressionTests::contentsDisplayView_surfacesMountFailurePlacehol
     QVERIFY(displayViewSource.contains(
         QStringLiteral("onSelectedNoteBodyResolvedChanged:")));
     QVERIFY(displayViewSource.contains(
-        QStringLiteral("if (!contentsView.selectedNoteBodyResolved)")));
+        QStringLiteral("&& !contentsView.selectedNoteBodyResolved)")));
     QVERIFY(displayViewSource.contains(
         QStringLiteral("function focusEditorForSelectedNoteId(noteId)")));
     QVERIFY(displayViewSource.contains(
