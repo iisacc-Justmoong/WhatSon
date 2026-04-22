@@ -4,6 +4,8 @@
 #include <QString>
 #include <QVariantMap>
 
+class ContentsWsnBodyBlockParser;
+
 class ContentsDisplayNoteBodyMountCoordinator : public QObject
 {
     Q_OBJECT
@@ -31,6 +33,7 @@ class ContentsDisplayNoteBodyMountCoordinator : public QObject
             editorSessionBoundToSelectedNote READ editorSessionBoundToSelectedNote
                 WRITE setEditorSessionBoundToSelectedNote NOTIFY editorSessionBoundToSelectedNoteChanged)
     Q_PROPERTY(bool pendingBodySave READ pendingBodySave WRITE setPendingBodySave NOTIFY pendingBodySaveChanged)
+    Q_PROPERTY(QString editorText READ editorText WRITE setEditorText NOTIFY editorTextChanged)
     Q_PROPERTY(
         bool
             inlineDocumentSurfaceRequested READ inlineDocumentSurfaceRequested
@@ -89,6 +92,9 @@ public:
     bool pendingBodySave() const noexcept;
     void setPendingBodySave(bool pending);
 
+    QString editorText() const;
+    void setEditorText(const QString& text);
+
     bool inlineDocumentSurfaceRequested() const noexcept;
     void setInlineDocumentSurfaceRequested(bool requested);
 
@@ -125,6 +131,7 @@ signals:
     void editorBoundNoteIdChanged();
     void editorSessionBoundToSelectedNoteChanged();
     void pendingBodySaveChanged();
+    void editorTextChanged();
     void inlineDocumentSurfaceRequestedChanged();
     void inlineDocumentSurfaceReadyChanged();
     void inlineDocumentSurfaceLoadingChanged();
@@ -138,6 +145,7 @@ private:
     static QString normalizeNoteId(const QString& noteId);
 
     bool canFlushMountImmediately() const noexcept;
+    bool parserAcceptsSource(const QString& sourceText) const;
     bool documentSurfaceRequested() const noexcept;
     bool documentSurfaceReady() const noexcept;
     bool documentSurfaceLoading() const noexcept;
@@ -157,6 +165,7 @@ private:
     QString m_editorBoundNoteId;
     bool m_editorSessionBoundToSelectedNote = false;
     bool m_pendingBodySave = false;
+    QString m_editorText;
     bool m_inlineDocumentSurfaceRequested = false;
     bool m_inlineDocumentSurfaceReady = false;
     bool m_inlineDocumentSurfaceLoading = false;

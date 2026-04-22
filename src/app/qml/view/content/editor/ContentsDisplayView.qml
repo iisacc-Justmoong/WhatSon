@@ -45,6 +45,7 @@ Item {
                                                 Math.round(contentsView.editorLineHeight * 6),
                                                 Math.round(contentsView.editorSurfaceHeight * 0.5))
     property alias editorBoundNoteId: editorSession.editorBoundNoteId
+    readonly property var documentSourcePlan: documentSourceResolver.resolveDocumentSourcePlan()
     readonly property real editorContentOffsetY: {
         const flickable = contentsView.editorFlickable;
         if (flickable && flickable.contentY !== undefined)
@@ -2615,20 +2616,38 @@ Item {
                         selectionBridge)
         }
     }
+    ContentsDisplayDocumentSourceResolver {
+        id: documentSourceResolver
+
+        editorBoundNoteId: contentsView.editorBoundNoteId
+        editorText: contentsView.editorText === undefined || contentsView.editorText === null ? "" : String(contentsView.editorText)
+        pendingBodySave: contentsView.pendingBodySave
+        selectedNoteBodyNoteId: contentsView.selectedNoteBodyNoteId === undefined || contentsView.selectedNoteBodyNoteId === null ? "" : String(contentsView.selectedNoteBodyNoteId)
+        selectedNoteBodyResolved: contentsView.selectedNoteBodyResolved
+        selectedNoteBodyText: contentsView.selectedNoteBodyText === undefined || contentsView.selectedNoteBodyText === null ? "" : String(contentsView.selectedNoteBodyText)
+        selectedNoteId: contentsView.selectedNoteId === undefined || contentsView.selectedNoteId === null ? "" : String(contentsView.selectedNoteId)
+    }
     ContentsDisplayNoteBodyMountCoordinator {
         id: noteBodyMountCoordinator
         objectName: "contentsDisplayNoteBodyMountCoordinator"
 
-        editorBoundNoteId: contentsView.editorBoundNoteId
-        editorSessionBoundToSelectedNote: contentsView.editorSessionBoundToSelectedNote
+        editorBoundNoteId: contentsView.documentSourcePlan.value("editorBoundNoteId", "")
+        editorSessionBoundToSelectedNote: contentsView.documentSourcePlan.value("editorSessionBoundToSelectedNote", false)
+        editorText: contentsView.documentSourcePlan.value("preferEditorSessionSource", false)
+                    ? contentsView.documentSourcePlan.value("resolvedSourceText", "")
+                    : (contentsView.editorText === undefined || contentsView.editorText === null ? "" : String(contentsView.editorText))
         inlineDocumentSurfaceLoading: contentEditorLoader.status === Loader.Loading
         inlineDocumentSurfaceReady: contentEditorLoader.status === Loader.Ready && contentEditorLoader.item !== null
         inlineDocumentSurfaceRequested: contentsView.legacyInlineEditorRequested
         pendingBodySave: contentsView.pendingBodySave
         selectedNoteBodyLoading: contentsView.selectedNoteBodyLoading
-        selectedNoteBodyNoteId: contentsView.selectedNoteBodyNoteId === undefined || contentsView.selectedNoteBodyNoteId === null ? "" : String(contentsView.selectedNoteBodyNoteId)
-        selectedNoteBodyText: contentsView.selectedNoteBodyText === undefined || contentsView.selectedNoteBodyText === null ? "" : String(contentsView.selectedNoteBodyText)
-        selectedNoteBodyResolved: contentsView.selectedNoteBodyResolved
+        selectedNoteBodyNoteId: contentsView.documentSourcePlan.value("bodyMatchesSelection", false)
+                                ? contentsView.documentSourcePlan.value("selectedNoteBodyNoteId", "")
+                                : (contentsView.selectedNoteBodyNoteId === undefined || contentsView.selectedNoteBodyNoteId === null ? "" : String(contentsView.selectedNoteBodyNoteId))
+        selectedNoteBodyText: contentsView.documentSourcePlan.value("preferEditorSessionSource", false)
+                              ? contentsView.documentSourcePlan.value("resolvedSourceText", "")
+                              : (contentsView.selectedNoteBodyText === undefined || contentsView.selectedNoteBodyText === null ? "" : String(contentsView.selectedNoteBodyText))
+        selectedNoteBodyResolved: contentsView.documentSourcePlan.value("resolvedSourceReady", false)
         selectedNoteId: contentsView.selectedNoteId === undefined || contentsView.selectedNoteId === null ? "" : String(contentsView.selectedNoteId)
         structuredDocumentSurfaceReady: contentsView.structuredDocumentFlowRequested && structuredDocumentFlow.visible
         structuredDocumentSurfaceRequested: contentsView.structuredDocumentFlowRequested

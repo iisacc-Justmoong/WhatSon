@@ -1,5 +1,6 @@
 #include "app/models/content/display/ContentsDisplayNoteBodyMountCoordinator.hpp"
 
+#include "app/models/editor/parser/ContentsWsnBodyBlockParser.hpp"
 #include "app/models/file/WhatSonDebugTrace.hpp"
 
 #include <QTimer>
@@ -282,6 +283,28 @@ void ContentsDisplayNoteBodyMountCoordinator::setPendingBodySave(const bool pend
         QStringLiteral("setPendingBodySave"),
         QStringLiteral("pending=%1").arg(pending));
     emit pendingBodySaveChanged();
+}
+
+QString ContentsDisplayNoteBodyMountCoordinator::editorText() const
+{
+    return m_editorText;
+}
+
+void ContentsDisplayNoteBodyMountCoordinator::setEditorText(const QString& text)
+{
+    if (m_editorText == text)
+    {
+        return;
+    }
+
+    m_editorText = text;
+    WhatSon::Debug::traceEditorSelf(
+        this,
+        QStringLiteral("noteBodyMountCoordinator"),
+        QStringLiteral("setEditorText"),
+        WhatSon::Debug::summarizeText(text));
+    emit editorTextChanged();
+    emit mountStateChanged();
 }
 
 bool ContentsDisplayNoteBodyMountCoordinator::inlineDocumentSurfaceRequested() const noexcept
@@ -674,7 +697,17 @@ bool ContentsDisplayNoteBodyMountCoordinator::selectionSnapshotReady() const noe
 
 bool ContentsDisplayNoteBodyMountCoordinator::documentSourceReady() const noexcept
 {
-    return m_editorSessionBoundToSelectedNote || selectionSnapshotReady();
+    if (m_editorSessionBoundToSelectedNote && parserAcceptsSource(m_editorText))
+    {
+        return true;
+    }
+
+    if (selectionSnapshotReady() && parserAcceptsSource(m_selectedNoteBodyText))
+    {
+        return true;
+    }
+
+    return false;
 }
 
 bool ContentsDisplayNoteBodyMountCoordinator::refreshAttemptedForSelectedNote() const noexcept
@@ -682,6 +715,21 @@ bool ContentsDisplayNoteBodyMountCoordinator::refreshAttemptedForSelectedNote() 
     const QString normalizedSelectedNoteId = normalizeNoteId(m_selectedNoteId);
     return !normalizedSelectedNoteId.isEmpty()
         && m_snapshotRefreshAttemptedNoteId == normalizedSelectedNoteId;
+}
+
+bool ContentsDisplayNoteBodyMountCoordinator::parserAcceptsSource(const QString& sourceText) const
+{
+    if (sourceText.isEmpty())
+    {
+        return false;
+    }
+
+    ContentsWsnBodyBlockParser parser;
+    const auto parseResult = parser.parse(sourceText);
+    return !parseResult.correctedSourceText.isEmpty()
+        || !parseResult.renderedDocumentBlocks.isEmpty()
+        || !parseResult.renderedAgendas.isEmpty()
+        || !parseResult.renderedCallouts.isEmpty();
 }
 
 void ContentsDisplayNoteBodyMountCoordinator::flushMount()
