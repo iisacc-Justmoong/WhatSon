@@ -1,57 +1,51 @@
 #include "test/cpp/whatson_cpp_regression_tests.hpp"
 
 #include "app/models/content/display/ContentsDisplaySelectionSyncCoordinator.hpp"
-#include "app/models/content/display/ContentsDisplaySessionCoordinator.hpp"
+#include "app/models/content/display/ContentsDisplayDocumentSourceResolver.hpp"
 
 void WhatSonCppRegressionTests::contentsDisplaySessionCoordinator_requiresResolvedSelectedBodyBeforeUsingSnapshot()
 {
-    ContentsDisplaySessionCoordinator coordinator;
+    ContentsDisplayDocumentSourceResolver resolver;
 
-    coordinator.setSelectedNoteId(QStringLiteral("note-1"));
-    coordinator.setSelectedNoteBodyNoteId(QStringLiteral("note-1"));
-    coordinator.setSelectedNoteBodyText(QStringLiteral("Selection body"));
+    resolver.setSelectedNoteId(QStringLiteral("note-1"));
+    resolver.setSelectedNoteBodyNoteId(QStringLiteral("note-1"));
+    resolver.setSelectedNoteBodyText(QStringLiteral("Selection body"));
 
-    QCOMPARE(coordinator.resolvedDocumentPresentationSourceText(), QString());
+    QCOMPARE(resolver.resolvedDocumentPresentationSourceText(), QString());
 
-    coordinator.setSelectedNoteBodyResolved(true);
+    resolver.setSelectedNoteBodyResolved(true);
     QCOMPARE(
-        coordinator.resolvedDocumentPresentationSourceText(),
+        resolver.resolvedDocumentPresentationSourceText(),
         QStringLiteral("Selection body"));
 
-    coordinator.setEditorText(QStringLiteral("Editor body"));
-    coordinator.setEditorSessionBoundToSelectedNote(true);
+    resolver.setEditorBoundNoteId(QStringLiteral("note-1"));
+    resolver.setEditorText(QStringLiteral("Editor body"));
     QCOMPARE(
-        coordinator.resolvedDocumentPresentationSourceText(),
+        resolver.resolvedDocumentPresentationSourceText(),
         QStringLiteral("Editor body"));
 }
 
 void WhatSonCppRegressionTests::contentsDisplayCreationPath_emitsCoordinatorTraceForEditorWiring()
 {
-    const QString sessionCoordinatorSource = readUtf8SourceFile(
-        QStringLiteral("src/app/models/content/display/ContentsDisplaySessionCoordinator.cpp"));
+    const QString documentSourceResolverSource = readUtf8SourceFile(
+        QStringLiteral("src/app/models/content/display/ContentsDisplayDocumentSourceResolver.cpp"));
     const QString editorSessionSource = readUtf8SourceFile(
         QStringLiteral("src/app/models/editor/session/ContentsEditorSessionController.cpp"));
     const QString mountCoordinatorSource = readUtf8SourceFile(
         QStringLiteral("src/app/models/content/display/ContentsDisplayNoteBodyMountCoordinator.cpp"));
 
-    QVERIFY(!sessionCoordinatorSource.isEmpty());
+    QVERIFY(!documentSourceResolverSource.isEmpty());
     QVERIFY(!editorSessionSource.isEmpty());
     QVERIFY(!mountCoordinatorSource.isEmpty());
 
-    QVERIFY(sessionCoordinatorSource.contains(
-        QStringLiteral("#include \"app/models/file/WhatSonDebugTrace.hpp\"")));
-    QVERIFY(sessionCoordinatorSource.contains(
-        QStringLiteral("QStringLiteral(\"displaySessionCoordinator\")")));
-    QVERIFY(sessionCoordinatorSource.contains(
-        QStringLiteral("QStringLiteral(\"setSelectedNoteId\")")));
-    QVERIFY(sessionCoordinatorSource.contains(
-        QStringLiteral("QStringLiteral(\"setSelectedNoteBodyNoteId\")")));
-    QVERIFY(sessionCoordinatorSource.contains(
-        QStringLiteral("QStringLiteral(\"setSelectedNoteBodyText\")")));
-    QVERIFY(sessionCoordinatorSource.contains(
-        QStringLiteral("QStringLiteral(\"setEditorSessionBoundToSelectedNote\")")));
-    QVERIFY(sessionCoordinatorSource.contains(
-        QStringLiteral("QStringLiteral(\"setStructuredFlowSourceText\")")));
+    QVERIFY(documentSourceResolverSource.contains(
+        QStringLiteral("resolvedDocumentPresentationSourceText")));
+    QVERIFY(documentSourceResolverSource.contains(
+        QStringLiteral("currentMinimapSourceText")));
+    QVERIFY(documentSourceResolverSource.contains(
+        QStringLiteral("normalizedDocumentSourceMutation")));
+    QVERIFY(documentSourceResolverSource.contains(
+        QStringLiteral("editorSessionBoundToSelectedNote() const noexcept")));
 
     QVERIFY(editorSessionSource.contains(
         QStringLiteral("QStringLiteral(\"setSelectionBridge\")")));

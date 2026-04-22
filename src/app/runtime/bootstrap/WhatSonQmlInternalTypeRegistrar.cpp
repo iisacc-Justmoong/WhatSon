@@ -26,7 +26,6 @@
 #include "app/models/content/display/ContentsDisplayPresentationRefreshController.hpp"
 #include "app/models/content/display/ContentsDisplayRefreshCoordinator.hpp"
 #include "app/models/content/display/ContentsDisplaySelectionSyncCoordinator.hpp"
-#include "app/models/content/display/ContentsDisplaySessionCoordinator.hpp"
 #include "app/models/content/display/ContentsDisplayStructuredFlowCoordinator.hpp"
 #include "app/models/content/display/ContentsDisplayTraceFormatter.hpp"
 #include "app/models/content/display/ContentsDisplayViewportCoordinator.hpp"
@@ -84,8 +83,6 @@ namespace WhatSon::Runtime::Bootstrap
             "WhatSon.App.Internal", 1, 0, "MobileHierarchyRouteStateStore");
         qmlRegisterType<MobileHierarchySelectionCoordinator>(
             "WhatSon.App.Internal", 1, 0, "MobileHierarchySelectionCoordinator");
-        qmlRegisterType<ContentsDisplaySessionCoordinator>(
-            "WhatSon.App.Internal", 1, 0, "ContentsDisplaySessionCoordinator");
         qmlRegisterType<ContentsDisplayViewportCoordinator>(
             "WhatSon.App.Internal", 1, 0, "ContentsDisplayViewportCoordinator");
         qmlRegisterType<ContentsDisplayStructuredFlowCoordinator>(

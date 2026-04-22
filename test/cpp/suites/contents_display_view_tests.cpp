@@ -60,9 +60,9 @@ void WhatSonCppRegressionTests::contentsDisplayView_usesSelectedNoteSnapshotWhil
 
     QVERIFY(!displayViewSource.isEmpty());
     QVERIFY(displayViewSource.contains(
-        QStringLiteral("ContentsDisplaySessionCoordinator")));
+        QStringLiteral("ContentsDisplayDocumentSourceResolver")));
     QVERIFY(displayViewSource.contains(
-        QStringLiteral("sessionCoordinator.resolvedDocumentPresentationSourceText()")));
+        QStringLiteral("documentSourceResolver.resolvedDocumentPresentationSourceText()")));
     QVERIFY(displayViewSource.contains(
         QStringLiteral("selectedNoteBodyNoteId: contentsView.selectedNoteBodyNoteId === undefined || contentsView.selectedNoteBodyNoteId === null ? \"\" : String(contentsView.selectedNoteBodyNoteId)")));
     QVERIFY(displayViewSource.contains(
@@ -84,7 +84,8 @@ void WhatSonCppRegressionTests::contentsDisplayView_emitsEditorCreationTraceAcro
     QVERIFY(displayViewSource.contains(QStringLiteral("contentsView.logEditorCreationState(\"componentCompleted\");")));
     QVERIFY(displayViewSource.contains(QStringLiteral("objectName: \"contentsDisplaySelectionBridge\"")));
     QVERIFY(displayViewSource.contains(QStringLiteral("objectName: \"contentsDisplayNoteBodyMountCoordinator\"")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("objectName: \"contentsDisplaySessionCoordinator\"")));
+    QVERIFY(!displayViewSource.contains(QStringLiteral("objectName: \"contentsDisplaySessionCoordinator\"")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("id: documentSourceResolver")));
     QVERIFY(displayViewSource.contains(QStringLiteral("objectName: \"contentsDisplayEditorSession\"")));
     QVERIFY(displayViewSource.contains(QStringLiteral("objectName: \"contentsDisplayStructuredDocumentFlow\"")));
     QVERIFY(displayViewSource.contains(QStringLiteral("objectName: \"contentsDisplayInlineFormatEditor\"")));
@@ -100,7 +101,8 @@ void WhatSonCppRegressionTests::contentsDisplayView_emitsEditorCreationTraceAcro
     QVERIFY(displayViewSource.contains(QStringLiteral("onNoteDocumentMountFailureReasonChanged:")));
     QVERIFY(displayViewSource.contains(QStringLiteral("\"selectionBridgeCreated\"")));
     QVERIFY(displayViewSource.contains(QStringLiteral("\"noteBodyMountCoordinatorCreated\"")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("\"sessionCoordinatorCreated\"")));
+    QVERIFY(!displayViewSource.contains(QStringLiteral("\"sessionCoordinatorCreated\"")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("documentSourceResolver={")));
     QVERIFY(displayViewSource.contains(QStringLiteral("\"editorSessionCreated\"")));
     QVERIFY(displayViewSource.contains(QStringLiteral("\"structuredDocumentFlowVisibleChanged\"")));
     QVERIFY(displayViewSource.contains(QStringLiteral("\"contentEditorLoaderLoaded\"")));

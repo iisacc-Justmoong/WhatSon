@@ -369,7 +369,7 @@ Item {
     signal viewHookRequested
 
     function resolvedDocumentPresentationSourceText() {
-        return sessionCoordinator.resolvedDocumentPresentationSourceText();
+        return documentSourceResolver.resolvedDocumentPresentationSourceText();
     }
     function activeLogicalTextSnapshot() {
         if (editorTypingController && editorTypingController.currentEditorPlainText !== undefined) {
@@ -430,13 +430,12 @@ Item {
                                                     "mountFailed",
                                                     "mountFailureReason"
                                                 ]) + "}"
-                    + " sessionCoordinator={"
-                    + EditorTrace.describeObject(sessionCoordinator, [
-                                                    "objectName",
+                    + " documentSourceResolver={"
+                    + EditorTrace.describeObject(documentSourceResolver, [
                                                     "selectedNoteId",
                                                     "selectedNoteBodyNoteId",
                                                     "selectedNoteBodyResolved",
-                                                    "editorSessionBoundToSelectedNote"
+                                                    "editorBoundNoteId"
                                                 ]) + "}"
                     + " editorSession={"
                     + EditorTrace.describeObject(editorSession, [
@@ -545,7 +544,7 @@ Item {
                     editorContentHeight);
     }
     function currentMinimapSourceText() {
-        return sessionCoordinator.currentMinimapSourceText(contentsView.structuredHostGeometryActive);
+        return documentSourceResolver.currentMinimapSourceText(contentsView.structuredHostGeometryActive);
     }
     function activeLineGeometryNoteId() {
         return viewportCoordinator.normalizedNoteId(contentsView.selectedNoteId);
@@ -1787,7 +1786,7 @@ Item {
             contentEditor.cursorPosition = logicalOffset;
     }
     function applyDocumentSourceMutation(nextSourceText, focusRequest) {
-        const mutation = sessionCoordinator.normalizedDocumentSourceMutation(nextSourceText);
+        const mutation = documentSourceResolver.normalizedDocumentSourceMutation(nextSourceText);
         const normalizedNextSourceText = String(mutation.nextSourceText || "");
         const currentSourceText = String(mutation.currentSourceText || "");
         EditorTrace.trace(
@@ -2507,6 +2506,15 @@ Item {
     ContentsDisplayDocumentSourceResolver {
         id: documentSourceResolver
 
+        editorBoundNoteId: contentsView.editorBoundNoteId === undefined || contentsView.editorBoundNoteId === null ? "" : String(contentsView.editorBoundNoteId)
+        editorText: contentsView.editorText === undefined || contentsView.editorText === null ? "" : String(contentsView.editorText)
+        pendingBodySave: contentsView.pendingBodySave
+        selectedNoteBodyNoteId: contentsView.selectedNoteBodyNoteId === undefined || contentsView.selectedNoteBodyNoteId === null ? "" : String(contentsView.selectedNoteBodyNoteId)
+        selectedNoteBodyResolved: contentsView.selectedNoteBodyResolved
+        selectedNoteBodyText: contentsView.selectedNoteBodyText === undefined || contentsView.selectedNoteBodyText === null ? "" : String(contentsView.selectedNoteBodyText)
+        selectedNoteId: contentsView.selectedNoteId === undefined || contentsView.selectedNoteId === null ? "" : String(contentsView.selectedNoteId)
+        structuredFlowSourceText: contentsView.structuredFlowSourceText === undefined || contentsView.structuredFlowSourceText === null ? "" : String(contentsView.structuredFlowSourceText)
+
         editorBoundNoteId: contentsView.editorBoundNoteId
         editorText: contentsView.editorText === undefined || contentsView.editorText === null ? "" : String(contentsView.editorText)
         pendingBodySave: contentsView.pendingBodySave
@@ -2595,38 +2603,6 @@ Item {
         showEditorGutter: contentsView.showEditorGutter
         showPrintEditorLayout: contentsView.showPrintEditorLayout
         structuredHostGeometryActive: contentsView.structuredHostGeometryActive
-    }
-    ContentsDisplaySessionCoordinator {
-        id: sessionCoordinator
-        objectName: "contentsDisplaySessionCoordinator"
-
-        editorSessionBoundToSelectedNote: contentsView.editorSessionBoundToSelectedNote
-        editorText: contentsView.editorText === undefined || contentsView.editorText === null ? "" : String(contentsView.editorText)
-        selectedNoteBodyNoteId: contentsView.selectedNoteBodyNoteId === undefined || contentsView.selectedNoteBodyNoteId === null ? "" : String(contentsView.selectedNoteBodyNoteId)
-        selectedNoteBodyResolved: contentsView.selectedNoteBodyResolved
-        selectedNoteBodyText: contentsView.selectedNoteBodyText === undefined || contentsView.selectedNoteBodyText === null ? "" : String(contentsView.selectedNoteBodyText)
-        selectedNoteId: contentsView.selectedNoteId === undefined || contentsView.selectedNoteId === null ? "" : String(contentsView.selectedNoteId)
-        structuredFlowSourceText: contentsView.structuredFlowSourceText === undefined || contentsView.structuredFlowSourceText === null ? "" : String(contentsView.structuredFlowSourceText)
-
-        Component.onCompleted: {
-            EditorTrace.trace(
-                        "displayView",
-                        "sessionCoordinatorCreated",
-                        EditorTrace.describeObject(sessionCoordinator, [
-                                                      "selectedNoteId",
-                                                      "selectedNoteBodyNoteId",
-                                                      "selectedNoteBodyResolved",
-                                                      "editorSessionBoundToSelectedNote"
-                                                  ]),
-                        sessionCoordinator)
-        }
-        Component.onDestruction: {
-            EditorTrace.trace(
-                        "displayView",
-                        "sessionCoordinatorDestroyed",
-                        "selectedNoteId=" + sessionCoordinator.selectedNoteId,
-                        sessionCoordinator)
-        }
     }
     ContentsDisplayContextMenuCoordinator {
         id: contextMenuCoordinator

@@ -14,6 +14,7 @@ class ContentsDisplayDocumentSourceResolver : public QObject
     Q_PROPERTY(bool selectedNoteBodyResolved READ selectedNoteBodyResolved WRITE setSelectedNoteBodyResolved NOTIFY selectedNoteBodyResolvedChanged)
     Q_PROPERTY(QString editorBoundNoteId READ editorBoundNoteId WRITE setEditorBoundNoteId NOTIFY editorBoundNoteIdChanged)
     Q_PROPERTY(QString editorText READ editorText WRITE setEditorText NOTIFY editorTextChanged)
+    Q_PROPERTY(QString structuredFlowSourceText READ structuredFlowSourceText WRITE setStructuredFlowSourceText NOTIFY structuredFlowSourceTextChanged)
     Q_PROPERTY(bool pendingBodySave READ pendingBodySave WRITE setPendingBodySave NOTIFY pendingBodySaveChanged)
 
 public:
@@ -38,10 +39,16 @@ public:
     QString editorText() const;
     void setEditorText(const QString& value);
 
+    QString structuredFlowSourceText() const;
+    void setStructuredFlowSourceText(const QString& value);
+
     bool pendingBodySave() const noexcept;
     void setPendingBodySave(bool value);
 
     Q_INVOKABLE QVariantMap resolveDocumentSourcePlan() const;
+    Q_INVOKABLE QString resolvedDocumentPresentationSourceText() const;
+    Q_INVOKABLE QString currentMinimapSourceText(bool structuredHostGeometryActive) const;
+    Q_INVOKABLE QVariantMap normalizedDocumentSourceMutation(const QVariant& nextSourceText) const;
 
 signals:
     void selectedNoteIdChanged();
@@ -50,10 +57,12 @@ signals:
     void selectedNoteBodyResolvedChanged();
     void editorBoundNoteIdChanged();
     void editorTextChanged();
+    void structuredFlowSourceTextChanged();
     void pendingBodySaveChanged();
 
 private:
     static QString normalizeNoteId(const QString& value);
+    bool editorSessionBoundToSelectedNote() const noexcept;
 
     QString m_selectedNoteId;
     QString m_selectedNoteBodyNoteId;
@@ -61,5 +70,6 @@ private:
     bool m_selectedNoteBodyResolved = false;
     QString m_editorBoundNoteId;
     QString m_editorText;
+    QString m_structuredFlowSourceText;
     bool m_pendingBodySave = false;
 };

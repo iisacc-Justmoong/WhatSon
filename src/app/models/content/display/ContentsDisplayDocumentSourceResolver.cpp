@@ -64,6 +64,15 @@ void ContentsDisplayDocumentSourceResolver::setEditorText(const QString& value)
     emit editorTextChanged();
 }
 
+QString ContentsDisplayDocumentSourceResolver::structuredFlowSourceText() const { return m_structuredFlowSourceText; }
+void ContentsDisplayDocumentSourceResolver::setStructuredFlowSourceText(const QString& value)
+{
+    if (m_structuredFlowSourceText == value)
+        return;
+    m_structuredFlowSourceText = value;
+    emit structuredFlowSourceTextChanged();
+}
+
 bool ContentsDisplayDocumentSourceResolver::pendingBodySave() const noexcept { return m_pendingBodySave; }
 void ContentsDisplayDocumentSourceResolver::setPendingBodySave(const bool value)
 {
@@ -76,7 +85,7 @@ void ContentsDisplayDocumentSourceResolver::setPendingBodySave(const bool value)
 QVariantMap ContentsDisplayDocumentSourceResolver::resolveDocumentSourcePlan() const
 {
     QVariantMap plan;
-    const bool sessionBound = !m_editorBoundNoteId.isEmpty() && m_editorBoundNoteId == m_selectedNoteId;
+    const bool sessionBound = editorSessionBoundToSelectedNote();
     const bool bodyIdMatches = !m_selectedNoteId.isEmpty() && m_selectedNoteBodyNoteId == m_selectedNoteId;
     const bool bodyHasText = !m_selectedNoteBodyText.isEmpty();
     const bool bodyAvailable = bodyHasText && (m_selectedNoteBodyResolved || bodyIdMatches || m_selectedNoteBodyNoteId.isEmpty());
@@ -96,7 +105,38 @@ QVariantMap ContentsDisplayDocumentSourceResolver::resolveDocumentSourcePlan() c
     return plan;
 }
 
+QString ContentsDisplayDocumentSourceResolver::resolvedDocumentPresentationSourceText() const
+{
+    if (editorSessionBoundToSelectedNote())
+        return m_editorText;
+    if (m_selectedNoteBodyResolved && m_selectedNoteBodyNoteId == m_selectedNoteId)
+        return m_selectedNoteBodyText;
+    return {};
+}
+
+QString ContentsDisplayDocumentSourceResolver::currentMinimapSourceText(const bool structuredHostGeometryActive) const
+{
+    return structuredHostGeometryActive ? m_structuredFlowSourceText : m_editorText;
+}
+
+QVariantMap ContentsDisplayDocumentSourceResolver::normalizedDocumentSourceMutation(const QVariant& nextSourceText) const
+{
+    QVariantMap result;
+    const QString normalizedNextSourceText = nextSourceText.isValid() && !nextSourceText.isNull()
+        ? nextSourceText.toString()
+        : QString();
+    result.insert(QStringLiteral("nextSourceText"), normalizedNextSourceText);
+    result.insert(QStringLiteral("currentSourceText"), m_editorText);
+    result.insert(QStringLiteral("changed"), normalizedNextSourceText != m_editorText);
+    return result;
+}
+
 QString ContentsDisplayDocumentSourceResolver::normalizeNoteId(const QString& value)
 {
     return value.trimmed();
+}
+
+bool ContentsDisplayDocumentSourceResolver::editorSessionBoundToSelectedNote() const noexcept
+{
+    return !m_editorBoundNoteId.isEmpty() && m_editorBoundNoteId == m_selectedNoteId;
 }
