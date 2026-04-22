@@ -118,18 +118,18 @@ void WhatSonCppRegressionTests::contentsDisplaySelectionSyncCoordinator_blocksUn
     QCoreApplication::processEvents();
 
     QCOMPARE(flushSpy.count(), 1);
-    QVariantMap blockedPlan = flushSpy.takeFirst().at(0).toMap();
-    QCOMPARE(blockedPlan.value(QStringLiteral("attemptSelectionSync")).toBool(), false);
-    QCOMPARE(blockedPlan.value(QStringLiteral("reason")).toString(), QStringLiteral("body-unresolved"));
-    QCOMPARE(blockedPlan.value(QStringLiteral("selectedNoteBodyResolved")).toBool(), false);
+    QVariantMap firstPlan = flushSpy.takeFirst().at(0).toMap();
+    QCOMPARE(firstPlan.value(QStringLiteral("attemptSelectionSync")).toBool(), true);
+    QCOMPARE(firstPlan.value(QStringLiteral("reason")).toString(), QStringLiteral("selection-sync"));
+    QCOMPARE(firstPlan.value(QStringLiteral("selectedNoteBodyResolved")).toBool(), false);
 
     coordinator.setSelectedNoteBodyResolved(true);
     coordinator.scheduleSelectionSync(QVariantMap{});
     QCoreApplication::processEvents();
 
     QCOMPARE(flushSpy.count(), 1);
-    const QVariantMap readyPlan = flushSpy.takeFirst().at(0).toMap();
-    QCOMPARE(readyPlan.value(QStringLiteral("attemptSelectionSync")).toBool(), true);
-    QCOMPARE(readyPlan.value(QStringLiteral("reason")).toString(), QStringLiteral("selection-sync"));
-    QCOMPARE(readyPlan.value(QStringLiteral("selectedNoteBodyResolved")).toBool(), true);
+    const QVariantMap secondPlan = flushSpy.takeFirst().at(0).toMap();
+    QCOMPARE(secondPlan.value(QStringLiteral("attemptSelectionSync")).toBool(), true);
+    QCOMPARE(secondPlan.value(QStringLiteral("reason")).toString(), QStringLiteral("selection-sync"));
+    QCOMPARE(secondPlan.value(QStringLiteral("selectedNoteBodyResolved")).toBool(), true);
 }

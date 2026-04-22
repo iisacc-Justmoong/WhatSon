@@ -684,30 +684,7 @@ void ContentsDisplaySelectionSyncCoordinator::flushSelectionSync()
         return;
     }
 
-    if (!m_selectedNoteId.isEmpty() && m_selectedNoteBodyNoteId != m_selectedNoteId)
-    {
-        plan.insert(QStringLiteral("reason"), QStringLiteral("body-note-mismatch"));
-        WhatSon::Debug::traceEditorSelf(
-            this,
-            QStringLiteral("selectionSyncCoordinator"),
-            QStringLiteral("selectionFlow.flushPlan"),
-            summarizeSelectionSyncPlan(plan));
-        emit selectionSyncFlushRequested(plan);
-        return;
-    }
-    if (!m_selectedNoteId.isEmpty() && !m_selectedNoteBodyResolved)
-    {
-        plan.insert(QStringLiteral("reason"), QStringLiteral("body-unresolved"));
-        WhatSon::Debug::traceEditorSelf(
-            this,
-            QStringLiteral("selectionSyncCoordinator"),
-            QStringLiteral("selectionFlow.flushPlan"),
-            summarizeSelectionSyncPlan(plan));
-        emit selectionSyncFlushRequested(plan);
-        return;
-    }
-
-    plan.insert(QStringLiteral("attemptSelectionSync"), true);
+    plan.insert(QStringLiteral("attemptSelectionSync"), !m_selectedNoteId.isEmpty());
     if (!m_pendingEditorFocusNoteId.isEmpty() && m_pendingEditorFocusNoteId == m_selectedNoteId)
     {
         plan.insert(QStringLiteral("focusEditorForSelectedNote"), true);
