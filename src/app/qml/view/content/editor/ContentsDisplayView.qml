@@ -268,6 +268,7 @@ Item {
     readonly property bool showCurrentLineMarker: contentsView.hasSelectedNote || contentsView.editorText.length > 0 || contentsView.editorInputFocused
     readonly property bool editorSessionBoundToSelectedNote: editorSession.editorBoundNoteId === contentsView.selectedNoteId
     readonly property bool noteDocumentMountPending: noteBodyMountCoordinator.mountPending
+    readonly property bool noteDocumentSourceMounted: noteBodyMountCoordinator.sourceMounted
     readonly property bool noteDocumentMounted: noteBodyMountCoordinator.noteMounted
     readonly property bool noteDocumentMountFailureVisible: noteBodyMountCoordinator.mountFailed
     readonly property string noteDocumentMountFailureReason: noteBodyMountCoordinator.mountFailureReason
@@ -316,9 +317,9 @@ Item {
     }
     readonly property bool noteDocumentExceptionVisible: contentsView.visible
                                                        && !contentsView.noteDocumentMountPending
-                                                       && !contentsView.noteDocumentMounted
+                                                       && !contentsView.noteDocumentSourceMounted
                                                        && contentsView.noteDocumentExceptionReason.length > 0
-    readonly property bool noteDocumentCommandSurfaceEnabled: contentsView.noteDocumentMounted
+    readonly property bool noteDocumentCommandSurfaceEnabled: contentsView.noteDocumentSourceMounted
                                                              && !contentsView.showDedicatedResourceViewer
                                                              && !contentsView.showFormattedTextRenderer
     readonly property string structuredFlowSourceText: contentsView.documentPresentationSourceText
@@ -3372,7 +3373,7 @@ Item {
                 markerYResolver: function (markerSpec) {
                     return contentsView.markerY(markerSpec);
                 }
-                visible: contentsView.showEditorGutter && contentsView.noteDocumentMounted
+                visible: contentsView.showEditorGutter && contentsView.noteDocumentSourceMounted
                 visibleLineNumbersModel: contentsView.visibleGutterLineEntries
             }
             Item {
@@ -3627,7 +3628,7 @@ Item {
                         taskToggleHandler: function (taskOpenTagStart, taskOpenTagEnd, checked) {
                             contentsView.setAgendaTaskDone(taskOpenTagStart, taskOpenTagEnd, checked);
                         }
-                        visible: contentsView.noteDocumentMounted
+                        visible: contentsView.noteDocumentSourceMounted
                                  && !contentsView.showStructuredDocumentFlow
                                  && !contentsView.showDedicatedResourceViewer
                                  && !contentsView.showFormattedTextRenderer
@@ -3668,7 +3669,7 @@ Item {
                             const documentY = Math.max(0, Number(contentsView.documentYForOffset(logicalOffset)) || 0);
                             return documentY;
                         }
-                        visible: contentsView.noteDocumentMounted
+                        visible: contentsView.noteDocumentSourceMounted
                                  && !contentsView.showStructuredDocumentFlow
                                  && !contentsView.showDedicatedResourceViewer
                                  && !contentsView.showFormattedTextRenderer
@@ -3811,7 +3812,7 @@ Item {
                         taskToggleHandler: function (taskOpenTagStart, taskOpenTagEnd, checked) {
                             contentsView.setAgendaTaskDone(taskOpenTagStart, taskOpenTagEnd, checked);
                         }
-                        visible: contentsView.noteDocumentMounted
+                        visible: contentsView.noteDocumentSourceMounted
                                  && !contentsView.showStructuredDocumentFlow
                                  && !contentsView.showDedicatedResourceViewer
                                  && !contentsView.showFormattedTextRenderer
@@ -4259,7 +4260,7 @@ Item {
             scrollToMinimapPositionHandler: function (localY) {
                 contentsView.scrollEditorViewportToMinimapPosition(localY);
             }
-            visible: contentsView.showMinimapRail && contentsView.noteDocumentMounted
+            visible: contentsView.showMinimapRail && contentsView.noteDocumentSourceMounted
             width: visible ? contentsView.minimapOuterWidth : 0
         }
     }
