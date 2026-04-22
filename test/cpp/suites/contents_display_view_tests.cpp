@@ -74,8 +74,9 @@ void WhatSonCppRegressionTests::contentsDisplayView_emitsEditorCreationTraceAcro
         QStringLiteral("src/app/qml/view/content/editor/ContentsDisplayView.qml"));
 
     QVERIFY(!displayViewSource.isEmpty());
-    QVERIFY(displayViewSource.contains(QStringLiteral("function loaderStatusName(status)")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("function describeEditorSurfaceObject(objectValue)")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("ContentsDisplayTraceFormatter")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("traceFormatter.loaderStatusName(contentEditorLoader.status)")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("traceFormatter.describeEditorSurfaceObject(contentEditorLoader.item)")));
     QVERIFY(displayViewSource.contains(QStringLiteral("function logEditorCreationState(reason)")));
     QVERIFY(displayViewSource.contains(QStringLiteral("contentsView.logEditorCreationState(\"componentCompleted\");")));
     QVERIFY(displayViewSource.contains(QStringLiteral("objectName: \"contentsDisplaySelectionBridge\"")));
@@ -110,9 +111,9 @@ void WhatSonCppRegressionTests::contentsDisplayView_tracesNoteSelectionPlanExecu
 
     QVERIFY(!displayViewSource.isEmpty());
     QVERIFY(displayViewSource.contains(
-        QStringLiteral("function describeSelectionSyncOptions(options)")));
+        QStringLiteral("traceFormatter.describeSelectionSyncOptions(normalizedOptions)")));
     QVERIFY(displayViewSource.contains(
-        QStringLiteral("function describeSelectionPlan(plan)")));
+        QStringLiteral("traceFormatter.describeSelectionPlan(mountPlan)")));
     QVERIFY(displayViewSource.contains(
         QStringLiteral("\"selectionFlow.scheduleSelectionModelSync\"")));
     QVERIFY(displayViewSource.contains(
@@ -139,7 +140,7 @@ void WhatSonCppRegressionTests::contentsDisplayView_tracesNoteSelectionPlanExecu
         QStringLiteral("function onSelectionSyncFlushRequested(plan)")));
     QVERIFY(displayViewSource.contains(QStringLiteral("scheduledFollowUpMount")));
     QVERIFY(displayViewSource.contains(
-        QStringLiteral("contentsView.describeSelectionPlan(mountPlan)")));
+        QStringLiteral("traceFormatter.describeSelectionPlan(mountPlan)")));
 }
 
 void WhatSonCppRegressionTests::contentsDisplayView_surfacesMountFailurePlaceholderWithoutChrome()

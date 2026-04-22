@@ -28,6 +28,7 @@
 #include "app/models/content/display/ContentsDisplaySelectionSyncCoordinator.hpp"
 #include "app/models/content/display/ContentsDisplaySessionCoordinator.hpp"
 #include "app/models/content/display/ContentsDisplayStructuredFlowCoordinator.hpp"
+#include "app/models/content/display/ContentsDisplayTraceFormatter.hpp"
 #include "app/models/content/display/ContentsDisplayViewportCoordinator.hpp"
 #include "app/models/editor/projection/ContentsEditorPresentationProjection.hpp"
 #include "app/models/editor/session/ContentsEditorSessionController.hpp"
@@ -89,6 +90,8 @@ namespace WhatSon::Runtime::Bootstrap
             "WhatSon.App.Internal", 1, 0, "ContentsDisplayViewportCoordinator");
         qmlRegisterType<ContentsDisplayStructuredFlowCoordinator>(
             "WhatSon.App.Internal", 1, 0, "ContentsDisplayStructuredFlowCoordinator");
+        qmlRegisterType<ContentsDisplayTraceFormatter>(
+            "WhatSon.App.Internal", 1, 0, "ContentsDisplayTraceFormatter");
         qmlRegisterType<ContentsEditorPresentationProjection>(
             "WhatSon.App.Internal", 1, 0, "ContentsEditorPresentationProjection");
         qmlRegisterType<ContentsEditorSessionController>(

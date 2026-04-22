@@ -381,33 +381,7 @@ Item {
             return String(editorProjection.logicalText);
         return "";
     }
-    function loaderStatusName(status) {
-        switch (Number(status) || 0) {
-        case Loader.Ready:
-            return "Ready"
-        case Loader.Loading:
-            return "Loading"
-        case Loader.Error:
-            return "Error"
-        default:
-            return "Null"
-        }
-    }
-    function describeEditorSurfaceObject(objectValue) {
-        if (!objectValue || typeof objectValue !== "object")
-            return EditorTrace.describeValue(objectValue);
-        const objectName = objectValue.objectName === undefined || objectValue.objectName === null
-                ? ""
-                : String(objectValue.objectName).trim();
-        return "objectName=" + (objectName.length > 0 ? objectName : "<empty>")
-                + " visible=" + EditorTrace.describeValue(objectValue.visible)
-                + " focused=" + EditorTrace.describeValue(objectValue.focused)
-                + " activeFocus=" + EditorTrace.describeValue(objectValue.activeFocus)
-                + " cursorPosition=" + EditorTrace.describeValue(objectValue.cursorPosition)
-                + " inputContentHeight=" + EditorTrace.describeValue(objectValue.inputContentHeight)
-                + " contentHeight=" + EditorTrace.describeValue(objectValue.contentHeight);
-    }
-    function logEditorCreationState(reason) {
+            function logEditorCreationState(reason) {
         const normalizedReason = reason === undefined || reason === null ? "" : String(reason);
         EditorTrace.trace(
                     "displayView",
@@ -432,8 +406,8 @@ Item {
                     "editorCreationSurfaces",
                     "reason=" + normalizedReason
                     + " loaderActive=" + contentEditorLoader.active
-                    + " loaderStatus=" + contentsView.loaderStatusName(contentEditorLoader.status)
-                    + " loaderItem={" + contentsView.describeEditorSurfaceObject(contentEditorLoader.item) + "}"
+                    + " loaderStatus=" + traceFormatter.loaderStatusName(contentEditorLoader.status)
+                    + " loaderItem={" + traceFormatter.describeEditorSurfaceObject(contentEditorLoader.item) + "}"
                     + " structuredFlow={" + contentsView.describeEditorSurfaceObject(structuredDocumentFlow) + "}",
                     contentsView)
         EditorTrace.trace(
@@ -473,39 +447,7 @@ Item {
                                                 ]) + "}",
                     contentsView)
     }
-    function describeSelectionSyncOptions(options) {
-        const normalizedOptions = options && typeof options === "object" ? options : ({});
-        return EditorTrace.describeObject(normalizedOptions, [
-                                              "resetSnapshot",
-                                              "scheduleReconcile",
-                                              "focusEditor",
-                                              "fallbackRefresh",
-                                              "forceVisualRefresh"
-                                          ]);
-    }
-    function describeSelectionPlan(plan) {
-        const normalizedPlan = plan && typeof plan === "object" ? plan : ({});
-        return EditorTrace.describeObject(normalizedPlan, [
-                                              "reason",
-                                              "noteId",
-                                              "selectedNoteId",
-                                              "selectedNoteBodyNoteId",
-                                              "selectedNoteBodyResolved",
-                                              "allowSnapshotRefresh",
-                                              "attemptReconcile",
-                                              "attemptSelectionSync",
-                                              "attemptSnapshotRefresh",
-                                              "attemptEditorSessionMount",
-                                              "resetSelectionCache",
-                                              "scheduleSnapshotReconcile",
-                                              "focusEditorForSelectedNote",
-                                              "flushPendingEditorText",
-                                              "fallbackRefreshIfSyncSkipped",
-                                              "fallbackRefreshIfMountSkipped",
-                                              "forceVisualRefresh"
-                                          ]);
-    }
-    function normalizedStructuredLogicalLineEntries() {
+            function normalizedStructuredLogicalLineEntries() {
         if (!contentsView.structuredHostGeometryActive || !structuredDocumentFlow)
             return [];
         const rawEntries = structuredDocumentFlow.cachedLogicalLineEntries !== undefined
@@ -2237,7 +2179,7 @@ Item {
         EditorTrace.trace(
                     "displayView",
                     "selectionFlow.scheduleSelectionModelSync",
-                    "options={" + contentsView.describeSelectionSyncOptions(normalizedOptions) + "}"
+                    "options={" + traceFormatter.describeSelectionSyncOptions(normalizedOptions) + "}"
                     + " selectedNoteId=" + contentsView.selectedNoteId
                     + " bodyNoteId=" + contentsView.selectedNoteBodyNoteId
                     + " bodyResolved=" + contentsView.selectedNoteBodyResolved
@@ -2653,6 +2595,9 @@ Item {
                         selectionBridge)
         }
     }
+    ContentsDisplayTraceFormatter {
+        id: traceFormatter
+    }
     ContentsDisplayDocumentSourceResolver {
         id: documentSourceResolver
 
@@ -3038,7 +2983,7 @@ Item {
             EditorTrace.trace(
                         "displayView",
                         "selectionFlow.mountPlan",
-                        "plan={" + contentsView.describeSelectionPlan(mountPlan) + "}",
+                        "plan={" + traceFormatter.describeSelectionPlan(mountPlan) + "}",
                         contentsView)
             let snapshotRefreshAccepted = false;
             let scheduledFollowUpMount = false;
@@ -3094,7 +3039,7 @@ Item {
             EditorTrace.trace(
                         "displayView",
                         "selectionFlow.selectionSyncPlan",
-                        "plan={" + contentsView.describeSelectionPlan(selectionPlan) + "}",
+                        "plan={" + traceFormatter.describeSelectionPlan(selectionPlan) + "}",
                         contentsView)
             const selectionSynced = contentsView.executeSelectionDeliveryPlan(
                         selectionPlan,
@@ -3274,9 +3219,9 @@ Item {
             EditorTrace.trace(
                         "displayView",
                         "contentEditorLoaderLoaded",
-                        "status=" + contentsView.loaderStatusName(contentEditorLoader.status)
+                        "status=" + traceFormatter.loaderStatusName(contentEditorLoader.status)
                         + " active=" + contentEditorLoader.active
-                        + " item={" + contentsView.describeEditorSurfaceObject(contentEditorLoader.item) + "}",
+                        + " item={" + traceFormatter.describeEditorSurfaceObject(contentEditorLoader.item) + "}",
                         contentsView)
             contentsView.logEditorCreationState("contentEditorLoaderLoaded");
         }
@@ -3284,9 +3229,9 @@ Item {
             EditorTrace.trace(
                         "displayView",
                         "contentEditorLoaderStatusChanged",
-                        "status=" + contentsView.loaderStatusName(contentEditorLoader.status)
+                        "status=" + traceFormatter.loaderStatusName(contentEditorLoader.status)
                         + " active=" + contentEditorLoader.active
-                        + " item={" + contentsView.describeEditorSurfaceObject(contentEditorLoader.item) + "}",
+                        + " item={" + traceFormatter.describeEditorSurfaceObject(contentEditorLoader.item) + "}",
                         contentsView)
             contentsView.logEditorCreationState("contentEditorLoaderStatusChanged");
             contentsView.scheduleSelectionModelSync({
