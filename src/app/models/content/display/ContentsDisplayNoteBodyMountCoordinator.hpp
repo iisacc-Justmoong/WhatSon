@@ -55,6 +55,7 @@ class ContentsDisplayNoteBodyMountCoordinator : public QObject
             structuredDocumentSurfaceReady READ structuredDocumentSurfaceReady
                 WRITE setStructuredDocumentSurfaceReady NOTIFY structuredDocumentSurfaceReadyChanged)
     Q_PROPERTY(bool mountPending READ mountPending NOTIFY mountStateChanged)
+    Q_PROPERTY(bool sourceMounted READ sourceMounted NOTIFY mountStateChanged)
     Q_PROPERTY(bool noteMounted READ noteMounted NOTIFY mountStateChanged)
     Q_PROPERTY(bool mountFailed READ mountFailed NOTIFY mountStateChanged)
     Q_PROPERTY(bool surfaceVisible READ surfaceVisible NOTIFY mountStateChanged)
@@ -111,6 +112,7 @@ public:
     void setStructuredDocumentSurfaceReady(bool ready);
 
     bool mountPending() const noexcept;
+    bool sourceMounted() const noexcept;
     bool noteMounted() const noexcept;
     bool mountFailed() const noexcept;
     bool surfaceVisible() const noexcept;

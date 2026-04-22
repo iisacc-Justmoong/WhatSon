@@ -448,7 +448,7 @@ bool ContentsDisplayNoteBodyMountCoordinator::mountPending() const noexcept
     return !refreshAttemptedForSelectedNote();
 }
 
-bool ContentsDisplayNoteBodyMountCoordinator::noteMounted() const noexcept
+bool ContentsDisplayNoteBodyMountCoordinator::sourceMounted() const noexcept
 {
     if (!m_visible)
     {
@@ -464,7 +464,12 @@ bool ContentsDisplayNoteBodyMountCoordinator::noteMounted() const noexcept
     {
         return false;
     }
-    return documentSourceReady() && documentSurfaceReady();
+    return documentSourceReady();
+}
+
+bool ContentsDisplayNoteBodyMountCoordinator::noteMounted() const noexcept
+{
+    return sourceMounted() && documentSurfaceReady();
 }
 
 bool ContentsDisplayNoteBodyMountCoordinator::mountFailed() const noexcept
@@ -483,12 +488,12 @@ bool ContentsDisplayNoteBodyMountCoordinator::mountFailed() const noexcept
     {
         return false;
     }
-    return !noteMounted();
+    return !sourceMounted() || !documentSurfaceReady();
 }
 
 bool ContentsDisplayNoteBodyMountCoordinator::surfaceVisible() const noexcept
 {
-    return noteMounted() || mountPending();
+    return sourceMounted() || mountPending();
 }
 
 QString ContentsDisplayNoteBodyMountCoordinator::mountFailureReason() const
@@ -647,6 +652,7 @@ QVariantMap ContentsDisplayNoteBodyMountCoordinator::currentMountState() const
     state.insert(QStringLiteral("mountFailureReason"), mountFailureReason());
     state.insert(QStringLiteral("mountFailureMessage"), mountFailureMessage());
     state.insert(QStringLiteral("mountPending"), mountPending());
+    state.insert(QStringLiteral("sourceMounted"), sourceMounted());
     state.insert(QStringLiteral("noteMounted"), noteMounted());
     state.insert(QStringLiteral("pendingMountNoteId"), m_pendingMountNoteId);
     state.insert(QStringLiteral("selectedNoteBodyLoading"), m_selectedNoteBodyLoading);
