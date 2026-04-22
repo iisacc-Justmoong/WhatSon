@@ -448,7 +448,7 @@ bool ContentsDisplayNoteBodyMountCoordinator::mountPending() const noexcept
     return !refreshAttemptedForSelectedNote();
 }
 
-bool ContentsDisplayNoteBodyMountCoordinator::sourceMounted() const noexcept
+bool ContentsDisplayNoteBodyMountCoordinator::parseMounted() const noexcept
 {
     if (!m_visible)
     {
@@ -460,11 +460,27 @@ bool ContentsDisplayNoteBodyMountCoordinator::sourceMounted() const noexcept
     {
         return false;
     }
+
+    if (parserAcceptsSource(m_editorText))
+    {
+        return true;
+    }
+
+    if (selectionSnapshotReady() && parserAcceptsSource(m_selectedNoteBodyText))
+    {
+        return true;
+    }
+
+    return false;
+}
+
+bool ContentsDisplayNoteBodyMountCoordinator::sourceMounted() const noexcept
+{
     if (mountPending())
     {
         return false;
     }
-    return documentSourceReady();
+    return parseMounted();
 }
 
 bool ContentsDisplayNoteBodyMountCoordinator::noteMounted() const noexcept
@@ -488,12 +504,12 @@ bool ContentsDisplayNoteBodyMountCoordinator::mountFailed() const noexcept
     {
         return false;
     }
-    return !sourceMounted() || !documentSurfaceReady();
+    return !parseMounted() || !documentSurfaceReady();
 }
 
 bool ContentsDisplayNoteBodyMountCoordinator::surfaceVisible() const noexcept
 {
-    return sourceMounted() || mountPending();
+    return parseMounted() || mountPending();
 }
 
 QString ContentsDisplayNoteBodyMountCoordinator::mountFailureReason() const
@@ -512,7 +528,7 @@ QString ContentsDisplayNoteBodyMountCoordinator::mountFailureReason() const
     {
         return QStringLiteral("document-surface-not-requested");
     }
-    if (!documentSourceReady())
+    if (!parseMounted())
     {
         if (!m_selectedNoteBodyNoteId.isEmpty() && m_selectedNoteBodyNoteId != normalizedSelectedNoteId)
         {
@@ -652,6 +668,7 @@ QVariantMap ContentsDisplayNoteBodyMountCoordinator::currentMountState() const
     state.insert(QStringLiteral("mountFailureReason"), mountFailureReason());
     state.insert(QStringLiteral("mountFailureMessage"), mountFailureMessage());
     state.insert(QStringLiteral("mountPending"), mountPending());
+    state.insert(QStringLiteral("parseMounted"), parseMounted());
     state.insert(QStringLiteral("sourceMounted"), sourceMounted());
     state.insert(QStringLiteral("noteMounted"), noteMounted());
     state.insert(QStringLiteral("pendingMountNoteId"), m_pendingMountNoteId);

@@ -74,6 +74,7 @@ void WhatSonCppRegressionTests::noteBodyMountCoordinator_requestsEditorSessionMo
     QCOMPARE(mountPlan.value(QStringLiteral("reason")).toString(), QStringLiteral("mount-editor-session"));
 
     QVERIFY(!coordinator.mountPending());
+    QVERIFY(coordinator.parseMounted());
     QVERIFY(coordinator.sourceMounted());
     QVERIFY(coordinator.noteMounted());
     QVERIFY(!coordinator.mountFailed());
@@ -82,6 +83,7 @@ void WhatSonCppRegressionTests::noteBodyMountCoordinator_requestsEditorSessionMo
     const QVariantMap mountState = coordinator.currentMountState();
     QCOMPARE(mountState.value(QStringLiteral("documentSourceReady")).toBool(), true);
     QCOMPARE(mountState.value(QStringLiteral("selectionSnapshotReady")).toBool(), true);
+    QCOMPARE(mountState.value(QStringLiteral("parseMounted")).toBool(), true);
     QCOMPARE(mountState.value(QStringLiteral("sourceMounted")).toBool(), true);
     QCOMPARE(mountState.value(QStringLiteral("noteMounted")).toBool(), true);
 }
@@ -165,6 +167,7 @@ void WhatSonCppRegressionTests::noteBodyMountCoordinator_reportsSurfaceSpecificF
     QCOMPARE(mountPlan.value(QStringLiteral("reason")).toString(), QStringLiteral("mount-editor-session"));
 
     QVERIFY(!coordinator.mountPending());
+    QVERIFY(coordinator.parseMounted());
     QVERIFY(coordinator.sourceMounted());
     QVERIFY(!coordinator.noteMounted());
     QVERIFY(coordinator.mountFailed());

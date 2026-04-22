@@ -171,6 +171,8 @@ void WhatSonCppRegressionTests::contentsDisplayView_surfacesMountFailurePlacehol
     QVERIFY(displayViewSource.contains(
         QStringLiteral("structuredDocumentSurfaceReady: contentsView.structuredDocumentFlowRequested && structuredDocumentFlow.visible")));
     QVERIFY(displayViewSource.contains(
+        QStringLiteral("readonly property bool noteDocumentParseMounted: noteBodyMountCoordinator.parseMounted")));
+    QVERIFY(displayViewSource.contains(
         QStringLiteral("readonly property bool noteDocumentSourceMounted: noteBodyMountCoordinator.sourceMounted")));
     QVERIFY(displayViewSource.contains(
         QStringLiteral("readonly property bool noteDocumentMounted: noteBodyMountCoordinator.noteMounted")));
@@ -191,7 +193,7 @@ void WhatSonCppRegressionTests::contentsDisplayView_surfacesMountFailurePlacehol
     QVERIFY(displayViewSource.contains(
         QStringLiteral("readonly property bool noteDocumentExceptionVisible: contentsView.visible")));
     QVERIFY(displayViewSource.contains(
-        QStringLiteral("readonly property bool noteDocumentCommandSurfaceEnabled: contentsView.noteDocumentSourceMounted")));
+        QStringLiteral("readonly property bool noteDocumentCommandSurfaceEnabled: contentsView.noteDocumentParseMounted")));
     QVERIFY(displayViewSource.contains(
         QStringLiteral("const normalizedOptions = options && typeof options === \"object\" ? options : ({});")));
     QVERIFY(displayViewSource.contains(
@@ -221,7 +223,7 @@ void WhatSonCppRegressionTests::contentsDisplayView_surfacesMountFailurePlacehol
     QVERIFY(displayViewSource.contains(
         QStringLiteral("visible: contentsView.hasSelectedNote && contentsView.noteDocumentSurfaceVisible")));
     QVERIFY(displayViewSource.contains(
-        QStringLiteral("visible: contentsView.showEditorGutter && contentsView.noteDocumentSourceMounted")));
+        QStringLiteral("visible: contentsView.showEditorGutter && contentsView.noteDocumentParseMounted")));
     QVERIFY(displayViewSource.contains(
         QStringLiteral("visible: contentsView.noteDocumentMountPending")));
     QVERIFY(displayViewSource.contains(
@@ -261,5 +263,5 @@ void WhatSonCppRegressionTests::contentsDisplayView_surfacesMountFailurePlacehol
     QVERIFY(displayViewSource.contains(
         QStringLiteral("function focusEditorForSelectedNoteId(noteId)")));
     QVERIFY(displayViewSource.contains(
-        QStringLiteral("visible: contentsView.showMinimapRail && contentsView.noteDocumentSourceMounted")));
+        QStringLiteral("visible: contentsView.showMinimapRail && contentsView.noteDocumentParseMounted")));
 }
