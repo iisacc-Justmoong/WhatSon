@@ -13,6 +13,7 @@
 #include "app/models/file/viewer/ResourceBitmapViewer.hpp"
 #include "app/models/content/display/ContentsDisplayContextMenuCoordinator.hpp"
 #include "app/models/content/display/ContentsDisplayDocumentSourceResolver.hpp"
+#include "app/models/content/display/ContentsDisplayEditOperationCoordinator.hpp"
 #include "app/models/content/display/ContentsDisplayGutterCoordinator.hpp"
 #include "app/models/content/display/ContentsDisplayMinimapCoordinator.hpp"
 #include "app/models/content/display/ContentsDisplayNoteBodyMountCoordinator.hpp"
@@ -69,6 +70,8 @@ namespace WhatSon::Runtime::Bootstrap
             "WhatSon.App.Internal", 1, 0, "ContentsDisplayNoteBodyMountCoordinator");
         qmlRegisterType<ContentsDisplayDocumentSourceResolver>(
             "WhatSon.App.Internal", 1, 0, "ContentsDisplayDocumentSourceResolver");
+        qmlRegisterType<ContentsDisplayEditOperationCoordinator>(
+            "WhatSon.App.Internal", 1, 0, "ContentsDisplayEditOperationCoordinator");
         qmlRegisterType<MobileHierarchyBackSwipeCoordinator>(
             "WhatSon.App.Internal", 1, 0, "MobileHierarchyBackSwipeCoordinator");
         qmlRegisterType<MobileHierarchyCanonicalRoutePlanner>(

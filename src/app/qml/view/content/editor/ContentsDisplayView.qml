@@ -1767,16 +1767,17 @@ Item {
         return false;
     }
     function focusStructuredBlockSourceOffset(sourceOffset) {
-        if (contentsView.showStructuredDocumentFlow
-                && structuredDocumentFlow
-                && structuredDocumentFlow.requestFocus !== undefined) {
+        const focusPlan = editOperationCoordinator.focusStructuredSourceOffsetPlan(
+                    contentsView.showStructuredDocumentFlow,
+                    structuredDocumentFlow && structuredDocumentFlow.requestFocus !== undefined,
+                    Math.floor(Number(sourceOffset) || 0));
+        if (focusPlan.handled) {
             structuredDocumentFlow.requestFocus({
-                                                   "sourceOffset": Math.max(0, Math.floor(Number(sourceOffset) || 0))
+                                                   "sourceOffset": Number(focusPlan.targetOffset) || 0
                                                });
             return;
         }
-        const logicalOffset = editorTypingController.logicalOffsetForSourceOffset(
-                    Math.max(0, Math.floor(Number(sourceOffset) || 0)));
+        const logicalOffset = editorTypingController.logicalOffsetForSourceOffset(Number(focusPlan.targetOffset) || 0);
         contentEditor.forceActiveFocus();
         if (contentEditor.setCursorPositionPreservingInputMethod !== undefined) {
             contentEditor.setCursorPositionPreservingInputMethod(logicalOffset);
@@ -1786,9 +1787,14 @@ Item {
             contentEditor.cursorPosition = logicalOffset;
     }
     function applyDocumentSourceMutation(nextSourceText, focusRequest) {
-        const mutation = documentSourceResolver.normalizedDocumentSourceMutation(nextSourceText);
-        const normalizedNextSourceText = String(mutation.nextSourceText || "");
-        const currentSourceText = String(mutation.currentSourceText || "");
+        const currentSourceText = contentsView.editorText === undefined || contentsView.editorText === null
+                ? ""
+                : String(contentsView.editorText);
+        const mutationPlan = editOperationCoordinator.documentSourceMutationPlan(
+                    nextSourceText,
+                    currentSourceText,
+                    contentsView.showStructuredDocumentFlow);
+        const normalizedNextSourceText = String(mutationPlan.nextSourceText || "");
         EditorTrace.trace(
                     "displayView",
                     "applyDocumentSourceMutation",
@@ -1796,14 +1802,19 @@ Item {
                     + " focusRequest={" + EditorTrace.describeFocusRequest(focusRequest) + "} "
                     + EditorTrace.describeText(normalizedNextSourceText),
                     contentsView)
-        if (!mutation.changed)
+        if (!mutationPlan.changed)
             return false;
         if (resourceImportController.resourceTagLossDetected(currentSourceText, normalizedNextSourceText)) {
             resourceImportController.restoreEditorSurfaceFromPresentation();
             return false;
         }
-        if (contentsView.editorText !== normalizedNextSourceText)
-            contentsView.editorText = normalizedNextSourceText;
+        if (mutationPlan.applyStructuredSourceText) {
+            if (contentsView.structuredFlowSourceText !== normalizedNextSourceText)
+                contentsView.structuredFlowSourceText = normalizedNextSourceText;
+        } else if (mutationPlan.applyEditorText) {
+            if (contentsView.editorText !== normalizedNextSourceText)
+                contentsView.editorText = normalizedNextSourceText;
+        }
         presentationRefreshController.clearPendingWhileFocused();
         if (!contentsView.showStructuredDocumentFlow
                 && contentsView.commitDocumentPresentationRefresh !== undefined) {
@@ -2502,6 +2513,10 @@ Item {
     }
     ContentsDisplayTraceFormatter {
         id: traceFormatter
+    }
+
+    ContentsDisplayEditOperationCoordinator {
+        id: editOperationCoordinator
     }
     ContentsDisplayDocumentSourceResolver {
         id: documentSourceResolver

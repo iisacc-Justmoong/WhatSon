@@ -34,6 +34,7 @@ set(WHATSON_CPP_REGRESSION_TEST_SOURCES
         "${CMAKE_SOURCE_DIR}/src/app/models/content/mobile/MobileHierarchyRouteStateStore.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/content/mobile/MobileHierarchySelectionCoordinator.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/content/display/ContentsDisplayDocumentSourceResolver.cpp"
+        "${CMAKE_SOURCE_DIR}/src/app/models/content/display/ContentsDisplayEditOperationCoordinator.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/content/display/ContentsDisplayNoteBodyMountCoordinator.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/content/display/ContentsDisplaySelectionSyncCoordinator.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/editor/parser/ContentsWsnBodyBlockParser.cpp"
