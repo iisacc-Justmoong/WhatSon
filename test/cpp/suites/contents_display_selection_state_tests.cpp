@@ -6,24 +6,63 @@
 void WhatSonCppRegressionTests::contentsDisplaySessionCoordinator_requiresResolvedSelectedBodyBeforeUsingSnapshot()
 {
     ContentsDisplayDocumentSourceResolver resolver;
+    QSignalSpy documentSourcePlanChangedSpy(
+        &resolver,
+        &ContentsDisplayDocumentSourceResolver::documentSourcePlanChanged);
+    QSignalSpy documentPresentationSourceTextChangedSpy(
+        &resolver,
+        &ContentsDisplayDocumentSourceResolver::documentPresentationSourceTextChanged);
 
     resolver.setSelectedNoteId(QStringLiteral("note-1"));
     resolver.setSelectedNoteBodyNoteId(QStringLiteral("note-1"));
     resolver.setSelectedNoteBodyText(QStringLiteral("Selection body"));
 
+    const QVariantMap unresolvedPlan = resolver.documentSourcePlan();
+    QCOMPARE(unresolvedPlan.value(QStringLiteral("bodyMatchesSelection")).toBool(), true);
+    QCOMPARE(unresolvedPlan.value(QStringLiteral("bodyAvailable")).toBool(), true);
+    QCOMPARE(unresolvedPlan.value(QStringLiteral("resolvedSourceReady")).toBool(), true);
+    QCOMPARE(
+        unresolvedPlan.value(QStringLiteral("resolvedSourceText")).toString(),
+        QStringLiteral("Selection body"));
+    QCOMPARE(resolver.documentPresentationSourceText(), QString());
     QCOMPARE(resolver.resolvedDocumentPresentationSourceText(), QString());
+    QVERIFY(documentSourcePlanChangedSpy.count() > 0);
+    QCOMPARE(documentPresentationSourceTextChangedSpy.count(), 0);
 
+    documentSourcePlanChangedSpy.clear();
+    documentPresentationSourceTextChangedSpy.clear();
     resolver.setSelectedNoteBodyResolved(true);
+    const QVariantMap resolvedPlan = resolver.documentSourcePlan();
+    QCOMPARE(resolvedPlan.value(QStringLiteral("bodyMatchesSelection")).toBool(), true);
+    QCOMPARE(resolvedPlan.value(QStringLiteral("bodyAvailable")).toBool(), true);
+    QCOMPARE(resolvedPlan.value(QStringLiteral("resolvedSourceReady")).toBool(), true);
+    QCOMPARE(
+        resolver.documentPresentationSourceText(),
+        QStringLiteral("Selection body"));
     QCOMPARE(
         resolver.resolvedDocumentPresentationSourceText(),
         QStringLiteral("Selection body"));
+    QCOMPARE(documentSourcePlanChangedSpy.count(), 0);
+    QCOMPARE(documentPresentationSourceTextChangedSpy.count(), 1);
 
+    documentSourcePlanChangedSpy.clear();
+    documentPresentationSourceTextChangedSpy.clear();
     resolver.setEditorBoundNoteId(QStringLiteral("note-1"));
     resolver.setEditorText(QStringLiteral("Editor body"));
+    const QVariantMap editorPlan = resolver.documentSourcePlan();
+    QCOMPARE(editorPlan.value(QStringLiteral("editorSessionBoundToSelectedNote")).toBool(), true);
+    QCOMPARE(editorPlan.value(QStringLiteral("preferEditorSessionSource")).toBool(), true);
+    QCOMPARE(
+        resolver.documentPresentationSourceText(),
+        QStringLiteral("Editor body"));
     QCOMPARE(
         resolver.resolvedDocumentPresentationSourceText(),
         QStringLiteral("Editor body"));
+    QVERIFY(documentSourcePlanChangedSpy.count() > 0);
+    QVERIFY(documentPresentationSourceTextChangedSpy.count() > 0);
 
+    documentSourcePlanChangedSpy.clear();
+    documentPresentationSourceTextChangedSpy.clear();
     resolver.setSelectedNoteId(QStringLiteral("note-empty"));
     resolver.setSelectedNoteBodyNoteId(QStringLiteral("note-empty"));
     resolver.setSelectedNoteBodyText(QString());
@@ -31,13 +70,16 @@ void WhatSonCppRegressionTests::contentsDisplaySessionCoordinator_requiresResolv
     resolver.setEditorBoundNoteId(QString());
     resolver.setEditorText(QString());
 
-    const QVariantMap emptyBodyPlan = resolver.resolveDocumentSourcePlan();
+    const QVariantMap emptyBodyPlan = resolver.documentSourcePlan();
     QCOMPARE(emptyBodyPlan.value(QStringLiteral("bodyMatchesSelection")).toBool(), true);
     QCOMPARE(emptyBodyPlan.value(QStringLiteral("bodyAvailable")).toBool(), true);
     QCOMPARE(emptyBodyPlan.value(QStringLiteral("resolvedSourceReady")).toBool(), true);
+    QCOMPARE(resolver.documentPresentationSourceText(), QString());
     QCOMPARE(
         resolver.resolvedDocumentPresentationSourceText(),
         QString());
+    QVERIFY(documentSourcePlanChangedSpy.count() > 0);
+    QVERIFY(documentPresentationSourceTextChangedSpy.count() > 0);
 }
 
 void WhatSonCppRegressionTests::contentsDisplayCreationPath_emitsCoordinatorTraceForEditorWiring()
@@ -147,4 +189,43 @@ void WhatSonCppRegressionTests::contentsDisplaySelectionSyncCoordinator_blocksUn
     QCOMPARE(secondPlan.value(QStringLiteral("attemptSelectionSync")).toBool(), true);
     QCOMPARE(secondPlan.value(QStringLiteral("reason")).toString(), QStringLiteral("selection-sync"));
     QCOMPARE(secondPlan.value(QStringLiteral("selectedNoteBodyResolved")).toBool(), true);
+}
+
+void WhatSonCppRegressionTests::contentsDisplaySelectionSyncCoordinator_snapshotPlansRetainSelectionContext()
+{
+    ensureCoreApplication();
+
+    ContentsDisplaySelectionSyncCoordinator coordinator;
+
+    coordinator.setVisible(true);
+    coordinator.setSelectedNoteId(QStringLiteral("note-1"));
+    coordinator.setSelectedNoteBodyNoteId(QStringLiteral("note-1"));
+    coordinator.setSelectedNoteBodyText(QStringLiteral("Snapshot body"));
+    coordinator.setSelectedNoteBodyResolved(true);
+    coordinator.setEditorBoundNoteId(QStringLiteral("note-1"));
+    coordinator.setEditorSessionBoundToSelectedNote(true);
+
+    const QVariantMap pollPlan = coordinator.snapshotPollPlan();
+    QCOMPARE(pollPlan.value(QStringLiteral("noteId")).toString(), QStringLiteral("note-1"));
+    QCOMPARE(pollPlan.value(QStringLiteral("selectedNoteId")).toString(), QStringLiteral("note-1"));
+    QCOMPARE(
+        pollPlan.value(QStringLiteral("selectedNoteBodyNoteId")).toString(),
+        QStringLiteral("note-1"));
+    QCOMPARE(pollPlan.value(QStringLiteral("selectedNoteBodyResolved")).toBool(), true);
+    QCOMPARE(
+        pollPlan.value(QStringLiteral("selectedNoteBodyText")).toString(),
+        QStringLiteral("Snapshot body"));
+    QCOMPARE(pollPlan.value(QStringLiteral("allowSnapshotRefresh")).toBool(), true);
+    QCOMPARE(pollPlan.value(QStringLiteral("attemptReconcile")).toBool(), true);
+
+    coordinator.setVisible(false);
+
+    const QVariantMap inactivePlan = coordinator.snapshotReconcilePlan();
+    QCOMPARE(inactivePlan.value(QStringLiteral("reason")).toString(), QStringLiteral("inactive-host"));
+    QCOMPARE(inactivePlan.value(QStringLiteral("noteId")).toString(), QStringLiteral("note-1"));
+    QCOMPARE(inactivePlan.value(QStringLiteral("selectedNoteId")).toString(), QStringLiteral("note-1"));
+    QCOMPARE(
+        inactivePlan.value(QStringLiteral("selectedNoteBodyNoteId")).toString(),
+        QStringLiteral("note-1"));
+    QCOMPARE(inactivePlan.value(QStringLiteral("selectedNoteBodyResolved")).toBool(), true);
 }

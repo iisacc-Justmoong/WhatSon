@@ -1,11 +1,11 @@
-# `src/app/viewmodel/content/ContentsEditorSelectionBridge.cpp`
+# `src/app/models/editor/bridge/ContentsEditorSelectionBridge.cpp`
 
 ## Status
 - Documentation phase: scaffold generated from the live source tree.
 - Detail level: structural placeholder prepared for a later deep pass.
 
 ## Source Metadata
-- Source path: `src/app/viewmodel/content/ContentsEditorSelectionBridge.cpp`
+- Source path: `src/app/models/editor/bridge/ContentsEditorSelectionBridge.cpp`
 - Source kind: C++ implementation
 - File name: `ContentsEditorSelectionBridge.cpp`
 - Approximate line count: 317
@@ -99,10 +99,15 @@
 - Note-list `currentIndexChanged()` and `currentNoteIdChanged()` still queue one deferred bridge refresh per
   event-loop turn instead of running `refreshNoteSelectionState()` immediately, so one logical selection transition
   stays coalesced before QML reacts.
+- `refreshNoteSelectionState()` now also treats one empty `currentNoteId` from a still-populated note-backed list as a
+  transient contract gap instead of an immediate note-clear event.
+  When the active note list still reports visible items, the bridge retains the previous selected note id/body owner
+  rather than clearing the editor session and unmounting the document surface on that transient empty-id turn.
 - The bridge now also emits one explicit `selectionFlow.*` trace vocabulary for note-open debugging:
   - `selectionFlow.noteListSelectionChanged` / `selectionFlow.noteListBodyTextChanged`
   - `selectionFlow.refreshScheduled` / `selectionFlow.refreshFlush` / `selectionFlow.refreshState`
   - `selectionFlow.noteChanged` / `selectionFlow.noteStable` / `selectionFlow.noteCleared`
+  - `selectionFlow.noteIdRetained` for transient empty-id retention while a note-backed list still owns visible rows
   - `selectionFlow.bodyLoadStart`, immediate/pending/fallback body-load decisions, and
     `selectionFlow.bodyLoadFinished`
 - Those traces summarize the live note-list state (`currentIndex`, `currentNoteId`, `currentBodyText`, `itemCount`)
@@ -162,6 +167,8 @@
   resolved.
 - A missing selected-note package path must still allow the bridge to surface runtime snapshot text through
   `noteBodySourceTextForNoteId(...)` when the active content view-model exposes that contract.
+- A transient empty `currentNoteId` from a note-backed list with remaining visible rows must not clear
+  `selectedNoteId` or unmount the current note body.
 - Reopening a recently edited note must prefer the buffered editor snapshot over a stale package read until queued
   persistence catches up.
 - A same-note successful save must advance `selectedNoteBodyText` even when filesystem reconcile reports that no extra

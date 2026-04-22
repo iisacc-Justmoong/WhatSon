@@ -606,11 +606,16 @@ bool ContentsDisplaySelectionSyncCoordinator::canFlushSelectionSyncImmediately()
 
 QVariantMap ContentsDisplaySelectionSyncCoordinator::buildSnapshotPlan(const QString& reason) const
 {
+    const QString normalizedSelectedNoteId = normalizeNoteId(m_selectedNoteId);
     QVariantMap plan;
     plan.insert(QStringLiteral("allowSnapshotRefresh"), false);
     plan.insert(QStringLiteral("attemptReconcile"), false);
-    plan.insert(QStringLiteral("noteId"), QString());
+    plan.insert(QStringLiteral("noteId"), normalizedSelectedNoteId);
     plan.insert(QStringLiteral("reason"), reason);
+    plan.insert(QStringLiteral("selectedNoteBodyNoteId"), m_selectedNoteBodyNoteId);
+    plan.insert(QStringLiteral("selectedNoteBodyResolved"), m_selectedNoteBodyResolved);
+    plan.insert(QStringLiteral("selectedNoteBodyText"), m_selectedNoteBodyText);
+    plan.insert(QStringLiteral("selectedNoteId"), normalizedSelectedNoteId);
     return plan;
 }
 

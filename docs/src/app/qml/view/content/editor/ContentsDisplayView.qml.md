@@ -59,6 +59,9 @@ not note-backed.
   `ContentsDisplaySelectionSyncCoordinator` and `ContentsDisplayNoteBodyMountCoordinator`.
   The host also keeps those flush handlers on separate `Connections` blocks so a mount-plan signal cannot be lost by
   being attached to the wrong coordinator target.
+- Snapshot poll and reconcile trace turns now call `traceFormatter.describeSelectionPlan(...)` directly.
+  This avoids the host-local `TypeError` that previously aborted the periodic snapshot refresh path before the selected
+  note body could be reconciled and remounted into the parser-backed document surface.
 - The inline loader now logs both `contentEditorLoaderStatusChanged` and `contentEditorLoaderLoaded`, including the
   current loader status plus a summarized view of the instantiated editor item.
 - The structured host path now logs `structuredDocumentFlowVisibleChanged` so it is visible exactly when the parsed
@@ -81,13 +84,15 @@ not note-backed.
   breakable QML property bindings.
 - Projection `logicalLineCount` and `logicalLineStartOffsets` changes now schedule gutter refresh directly, so line
   numbers no longer wait for an unrelated cursor, scroll, or layout event before updating.
-- `resolvedDocumentPresentationSourceText()` now accepts same-note `selectedNoteBodyText` even while the bridge is
-  still finishing a background snapshot refresh.
-  This prevents the structured document host from mounting with a transient empty source when the selected note is
-  already known but the editor session binding has not completed yet.
+- `documentPresentationSourceText` now comes from the resolver's signal-backed property instead of a one-shot
+  `Q_INVOKABLE` call.
+  This keeps the structured document host and HTML projection synchronized when the selection bridge resolves a fresh
+  same-note body snapshot after the initial mount attempt.
 - The document-source resolver itself now lives under `src/app/models/editor/display`.
   QML still binds live selection/session state into it, but source arbitration is now treated as editor-domain C++
   logic rather than as a content-panel helper.
+- The host now reads `documentSourcePlan` from the resolver's `Q_PROPERTY`, so the note-body mount coordinator is
+  re-evaluated by QML as soon as the selected note body, editor session, or pending-save state changes.
 - The `ContentsDisplayDocumentSourceResolver` block keeps each upstream source property bound exactly once.
   Duplicate assignments in that block are a hard QML compile error, so the host now relies on one normalized binding
   per resolver input and the regression suite checks that those keys remain unique.

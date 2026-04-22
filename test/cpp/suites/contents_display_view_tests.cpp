@@ -64,6 +64,12 @@ void WhatSonCppRegressionTests::contentsDisplayView_usesSelectedNoteSnapshotWhil
     QVERIFY(displayViewSource.contains(
         QStringLiteral("ContentsDisplayDocumentSourceResolver")));
     QVERIFY(displayViewSource.contains(
+        QStringLiteral("readonly property string documentPresentationSourceText: documentSourceResolver.documentPresentationSourceText")));
+    QVERIFY(displayViewSource.contains(
+        QStringLiteral("readonly property var documentSourcePlan: documentSourceResolver.documentSourcePlan")));
+    QVERIFY(!displayViewSource.contains(
+        QStringLiteral("documentSourceResolver.resolveDocumentSourcePlan()")));
+    QVERIFY(!displayViewSource.contains(
         QStringLiteral("documentSourceResolver.resolvedDocumentPresentationSourceText()")));
     QVERIFY(displayViewSource.contains(
         QStringLiteral("selectedNoteBodyNoteId: contentsView.selectedNoteBodyNoteId === undefined || contentsView.selectedNoteBodyNoteId === null ? \"\" : String(contentsView.selectedNoteBodyNoteId)")));
@@ -161,6 +167,12 @@ void WhatSonCppRegressionTests::contentsDisplayView_tracesNoteSelectionPlanExecu
     QVERIFY(displayViewSource.contains(
         QStringLiteral("traceFormatter.describeSelectionPlan(mountPlan)")));
     QVERIFY(displayViewSource.contains(
+        QStringLiteral("traceFormatter.describeSelectionPlan(pollPlan)")));
+    QVERIFY(displayViewSource.contains(
+        QStringLiteral("traceFormatter.describeSelectionPlan(reconcilePlan)")));
+    QVERIFY(!displayViewSource.contains(
+        QStringLiteral("contentsView.describeSelectionPlan(")));
+    QVERIFY(displayViewSource.contains(
         QStringLiteral("\"selectionFlow.scheduleSelectionModelSync\"")));
     QVERIFY(displayViewSource.contains(
         QStringLiteral("\"selectionFlow.pollPlan\"")));
@@ -206,11 +218,15 @@ void WhatSonCppRegressionTests::contentsDisplayView_surfacesMountFailurePlacehol
     QVERIFY(displayViewSource.contains(
         QStringLiteral("readonly property bool noteDocumentMountPending: noteBodyMountCoordinator.mountPending")));
     QVERIFY(displayViewSource.contains(
+        QStringLiteral("readonly property var documentSourcePlan: documentSourceResolver.documentSourcePlan")));
+    QVERIFY(displayViewSource.contains(
         QStringLiteral("inlineDocumentSurfaceRequested: contentsView.legacyInlineEditorRequested")));
     QVERIFY(displayViewSource.contains(
-        QStringLiteral("selectedNoteBodyResolved: contentsView.selectedNoteBodyResolved")));
+        QStringLiteral("editorBoundNoteId: contentsView.documentSourcePlan.value(\"editorBoundNoteId\", \"\")")));
     QVERIFY(displayViewSource.contains(
-        QStringLiteral("selectedNoteBodyText: contentsView.selectedNoteBodyText === undefined || contentsView.selectedNoteBodyText === null ? \"\" : String(contentsView.selectedNoteBodyText)")));
+        QStringLiteral("selectedNoteBodyResolved: contentsView.documentSourcePlan.value(\"resolvedSourceReady\", false)")));
+    QVERIFY(displayViewSource.contains(
+        QStringLiteral("selectedNoteBodyText: contentsView.documentSourcePlan.value(\"preferEditorSessionSource\", false)")));
     QVERIFY(displayViewSource.contains(
         QStringLiteral("inlineDocumentSurfaceReady: contentEditorLoader.status === Loader.Ready && contentEditorLoader.item !== null")));
     QVERIFY(displayViewSource.contains(

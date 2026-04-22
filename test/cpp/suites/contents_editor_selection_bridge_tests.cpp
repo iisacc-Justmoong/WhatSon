@@ -100,6 +100,36 @@ void WhatSonCppRegressionTests::contentsEditorSelectionBridge_refreshesSelectedB
     QVERIFY(!selectionBridge.selectedNoteBodyLoading());
 }
 
+void WhatSonCppRegressionTests::contentsEditorSelectionBridge_retainsSelectedNoteAcrossTransientEmptyCurrentNoteId()
+{
+    ensureCoreApplication();
+
+    FakeSelectionNoteListModel noteListModel;
+    ContentsEditorSelectionBridge selectionBridge;
+
+    noteListModel.setNoteBacked(true);
+    noteListModel.setItemCount(3);
+    noteListModel.setCurrentNoteId(QStringLiteral("note-1"));
+    noteListModel.setCurrentBodyText(QStringLiteral("Stable body snapshot"));
+
+    selectionBridge.setNoteListModel(&noteListModel);
+    QCoreApplication::processEvents();
+
+    QCOMPARE(selectionBridge.selectedNoteId(), QStringLiteral("note-1"));
+    QCOMPARE(selectionBridge.selectedNoteBodyNoteId(), QStringLiteral("note-1"));
+    QCOMPARE(selectionBridge.selectedNoteBodyText(), QStringLiteral("Stable body snapshot"));
+    QVERIFY(selectionBridge.selectedNoteBodyResolved());
+
+    noteListModel.setCurrentNoteId(QString());
+    QCoreApplication::processEvents();
+
+    QCOMPARE(selectionBridge.selectedNoteId(), QStringLiteral("note-1"));
+    QCOMPARE(selectionBridge.selectedNoteBodyNoteId(), QStringLiteral("note-1"));
+    QCOMPARE(selectionBridge.selectedNoteBodyText(), QStringLiteral("Stable body snapshot"));
+    QVERIFY(selectionBridge.selectedNoteBodyResolved());
+    QVERIFY(!selectionBridge.selectedNoteBodyLoading());
+}
+
 void WhatSonCppRegressionTests::contentsEditorSelectionBridge_emitsTraceForNoteSelectionFlow()
 {
     const QString selectionBridgeSource = readUtf8SourceFile(

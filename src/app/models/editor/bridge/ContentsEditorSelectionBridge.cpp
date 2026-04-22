@@ -1010,17 +1010,44 @@ void ContentsEditorSelectionBridge::refreshNoteSelectionState()
     const bool nextContractAvailable = noteBackedSelectionEnabled(m_noteListModel)
         && hasReadableProperty(m_noteListModel, "currentNoteId");
     const QString previousNoteId = m_selectedNoteId;
-    const QString nextNoteId = nextContractAvailable ? readStringProperty(m_noteListModel, "currentNoteId") : QString();
+    const QString proposedNoteId = nextContractAvailable
+        ? readStringProperty(m_noteListModel, "currentNoteId")
+        : QString();
+    const int visibleItemCount = hasReadableProperty(m_noteListModel, "itemCount")
+        ? readIntProperty(m_noteListModel, "itemCount")
+        : 0;
+    QString nextNoteId = proposedNoteId;
+    const bool retainPreviousSelectionForTransientEmptyId =
+        nextContractAvailable
+        && nextNoteId.trimmed().isEmpty()
+        && !previousNoteId.trimmed().isEmpty()
+        && visibleItemCount > 0;
+    if (retainPreviousSelectionForTransientEmptyId)
+    {
+        nextNoteId = previousNoteId;
+        WhatSon::Debug::traceEditorSelf(
+            this,
+            QStringLiteral("selectionBridge"),
+            QStringLiteral("selectionFlow.noteIdRetained"),
+            QStringLiteral("previousNoteId=%1 visibleItemCount=%2 proposedNoteId=%3 bodyNoteId=%4 bodyResolved=%5")
+                .arg(previousNoteId)
+                .arg(visibleItemCount)
+                .arg(proposedNoteId)
+                .arg(m_selectedNoteBodyNoteId)
+                .arg(m_selectedNoteBodyResolved));
+    }
     const bool requiresRebind = m_noteSelectionRefreshRequiresRebind;
     m_noteSelectionRefreshRequiresRebind = false;
     WhatSon::Debug::traceEditorSelf(
         this,
         QStringLiteral("selectionBridge"),
         QStringLiteral("selectionFlow.refreshState"),
-        QStringLiteral("contract=%1 previousNoteId=%2 nextNoteId=%3 requiresRebind=%4 {%5}")
+        QStringLiteral("contract=%1 previousNoteId=%2 proposedNoteId=%3 nextNoteId=%4 visibleItemCount=%5 requiresRebind=%6 {%7}")
             .arg(nextContractAvailable)
-            .arg(m_selectedNoteId)
+            .arg(previousNoteId)
+            .arg(proposedNoteId)
             .arg(nextNoteId)
+            .arg(visibleItemCount)
             .arg(requiresRebind)
             .arg(summarizeTraceNoteListModel(m_noteListModel)));
 

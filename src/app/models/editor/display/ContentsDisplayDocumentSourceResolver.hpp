@@ -16,6 +16,11 @@ class ContentsDisplayDocumentSourceResolver : public QObject
     Q_PROPERTY(QString editorText READ editorText WRITE setEditorText NOTIFY editorTextChanged)
     Q_PROPERTY(QString structuredFlowSourceText READ structuredFlowSourceText WRITE setStructuredFlowSourceText NOTIFY structuredFlowSourceTextChanged)
     Q_PROPERTY(bool pendingBodySave READ pendingBodySave WRITE setPendingBodySave NOTIFY pendingBodySaveChanged)
+    Q_PROPERTY(QVariantMap documentSourcePlan READ documentSourcePlan NOTIFY documentSourcePlanChanged)
+    Q_PROPERTY(
+        QString
+            documentPresentationSourceText READ documentPresentationSourceText
+                NOTIFY documentPresentationSourceTextChanged)
 
 public:
     explicit ContentsDisplayDocumentSourceResolver(QObject* parent = nullptr);
@@ -45,6 +50,9 @@ public:
     bool pendingBodySave() const noexcept;
     void setPendingBodySave(bool value);
 
+    QVariantMap documentSourcePlan() const;
+    QString documentPresentationSourceText() const;
+
     Q_INVOKABLE QVariantMap resolveDocumentSourcePlan() const;
     Q_INVOKABLE QString resolvedDocumentPresentationSourceText() const;
     Q_INVOKABLE QString currentMinimapSourceText(bool structuredHostGeometryActive) const;
@@ -59,10 +67,15 @@ signals:
     void editorTextChanged();
     void structuredFlowSourceTextChanged();
     void pendingBodySaveChanged();
+    void documentSourcePlanChanged();
+    void documentPresentationSourceTextChanged();
 
 private:
     static QString normalizeNoteId(const QString& value);
     bool editorSessionBoundToSelectedNote() const noexcept;
+    void emitDerivedOutputsIfChanged(
+        const QVariantMap& previousPlan,
+        const QString& previousPresentationSourceText);
 
     QString m_selectedNoteId;
     QString m_selectedNoteBodyNoteId;

@@ -719,6 +719,7 @@ private slots:
     void contentsEditorSelectionBridge_prefillsSelectedNoteBodyFromDirectSourceSnapshot();
     void contentsEditorSelectionBridge_treatsDirectEmptySourceAsResolvedEmptyNote();
     void contentsEditorSelectionBridge_refreshesSelectedBodyFromNoteListBodySignal();
+    void contentsEditorSelectionBridge_retainsSelectedNoteAcrossTransientEmptyCurrentNoteId();
     void contentsEditorSelectionBridge_emitsTraceForNoteSelectionFlow();
     void noteBackedHierarchyNoteLists_preserveRawBodySnapshotForEditorBootstrap();
     void noteListModelContractBridge_resolvesHierarchyBoundNoteListImmediately();
@@ -763,6 +764,7 @@ private slots:
     void contentsDisplayCreationPath_emitsCoordinatorTraceForEditorWiring();
     void contentsDisplaySelectionFlow_emitsTraceForSelectionAndMountPlans();
     void contentsDisplaySelectionSyncCoordinator_blocksUntilSelectedBodyIsResolved();
+    void contentsDisplaySelectionSyncCoordinator_snapshotPlansRetainSelectionContext();
     void displayContextMenuCoordinator_rejectsNonNumericStructuredSelectionSnapshots();
     void editorViewportCoordinator_movesMinimapAndLineMathOutOfQml();
     void contentsDisplayView_surfacesMountFailurePlaceholderWithoutChrome();

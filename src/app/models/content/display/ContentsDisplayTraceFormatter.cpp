@@ -36,11 +36,14 @@ QString ContentsDisplayTraceFormatter::describeSelectionSyncOptions(const QVaria
 QString ContentsDisplayTraceFormatter::describeSelectionPlan(const QVariantMap& plan) const
 {
     return QStringLiteral(
-               "reason=%1 selectedNoteId=%2 bodyNoteId=%3 bodyResolved=%4 attemptSnapshotRefresh=%5 attemptEditorSessionMount=%6 attemptSelectionSync=%7 resetSelectionCache=%8 scheduleSnapshotReconcile=%9 focusEditor=%10 flushPendingEditorText=%11 fallbackRefresh=%12 forceVisualRefresh=%13")
+               "reason=%1 noteId=%2 selectedNoteId=%3 bodyNoteId=%4 bodyResolved=%5 allowSnapshotRefresh=%6 attemptReconcile=%7 attemptSnapshotRefresh=%8 attemptEditorSessionMount=%9 attemptSelectionSync=%10 resetSelectionCache=%11 scheduleSnapshotReconcile=%12 focusEditor=%13 flushPendingEditorText=%14 fallbackRefresh=%15 forceVisualRefresh=%16")
         .arg(optionalString(plan, QStringLiteral("reason")))
+        .arg(optionalString(plan, QStringLiteral("noteId")))
         .arg(optionalString(plan, QStringLiteral("selectedNoteId")))
         .arg(optionalString(plan, QStringLiteral("selectedNoteBodyNoteId")))
         .arg(optionalBool(plan, QStringLiteral("selectedNoteBodyResolved")))
+        .arg(optionalBool(plan, QStringLiteral("allowSnapshotRefresh")))
+        .arg(optionalBool(plan, QStringLiteral("attemptReconcile")))
         .arg(optionalBool(plan, QStringLiteral("attemptSnapshotRefresh")))
         .arg(optionalBool(plan, QStringLiteral("attemptEditorSessionMount")))
         .arg(optionalBool(plan, QStringLiteral("attemptSelectionSync")))

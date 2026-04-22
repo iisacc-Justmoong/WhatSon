@@ -1,11 +1,11 @@
-# `src/app/viewmodel/content/ContentsEditorSelectionBridge.hpp`
+# `src/app/models/editor/bridge/ContentsEditorSelectionBridge.hpp`
 
 ## Status
 - Documentation phase: scaffold generated from the live source tree.
 - Detail level: structural placeholder prepared for a later deep pass.
 
 ## Source Metadata
-- Source path: `src/app/viewmodel/content/ContentsEditorSelectionBridge.hpp`
+- Source path: `src/app/models/editor/bridge/ContentsEditorSelectionBridge.hpp`
 - Source kind: C++ header
 - File name: `ContentsEditorSelectionBridge.hpp`
 - Approximate line count: 98
@@ -67,6 +67,10 @@
 - The bridge now also recognizes an optional content-view-model invokable,
   `noteBodySourceTextForNoteId(noteId)`, as the runtime-snapshot fallback contract for selected note bodies when
   package-path resolution cannot start a lazy load.
+- Selection refresh now also retains the previous selected note when a note-backed list still reports visible items but
+  transiently exposes an empty `currentNoteId`.
+  This prevents one empty-id contract turn from being treated as a real deselection and unmounting the active
+  document.
 
 ### Classes and Structs
 - `ContentsEditorSelectionBridge`
@@ -121,4 +125,6 @@
   rebinds.
 - Selection refresh must keep the editor body populated from a runtime snapshot when the content view-model can resolve
   `noteBodySourceTextForNoteId(...)` but the sync boundary cannot resolve a package path for that note.
+- A note-backed list with `itemCount > 0` must not clear bridge selection solely because one refresh turn exposed
+  `currentNoteId=""`.
 - Bridge APIs that target one note must not silently replace a missing `noteId` with the currently selected note.

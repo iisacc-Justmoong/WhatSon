@@ -47,7 +47,7 @@ Item {
                                                 Math.round(contentsView.editorLineHeight * 6),
                                                 Math.round(contentsView.editorSurfaceHeight * 0.5))
     property alias editorBoundNoteId: editorSession.editorBoundNoteId
-    readonly property var documentSourcePlan: documentSourceResolver.resolveDocumentSourcePlan()
+    readonly property var documentSourcePlan: documentSourceResolver.documentSourcePlan
     readonly property real editorContentOffsetY: {
         const flickable = contentsView.editorFlickable;
         if (flickable && flickable.contentY !== undefined)
@@ -232,7 +232,7 @@ Item {
     readonly property real printPaperResolvedHeight: pagePrintLayoutRenderer.paperResolvedHeight
     readonly property real printPaperResolvedWidth: pagePrintLayoutRenderer.paperResolvedWidth
     readonly property int documentPresentationRefreshIntervalMs: 120
-    readonly property string documentPresentationSourceText: contentsView.resolvedDocumentPresentationSourceText()
+    readonly property string documentPresentationSourceText: documentSourceResolver.documentPresentationSourceText
     readonly property bool documentPresentationRefreshPendingWhileFocused: presentationRefreshController.pendingWhileFocused
     readonly property string nativeInputDisplayText: modePolicy.nativeInputDisplayText
     property string renderedEditorHtml: ""
@@ -330,9 +330,6 @@ Item {
     signal editorTextEdited(string text)
     signal viewHookRequested
 
-    function resolvedDocumentPresentationSourceText() {
-        return documentSourceResolver.resolvedDocumentPresentationSourceText();
-    }
     function activeLogicalTextSnapshot() {
         if (editorTypingController && editorTypingController.currentEditorPlainText !== undefined) {
             const livePlainText = editorTypingController.currentEditorPlainText();
@@ -1453,7 +1450,7 @@ Item {
         EditorTrace.trace(
                     "displayView",
                     "selectionFlow.pollPlan",
-                    "plan={" + contentsView.describeSelectionPlan(pollPlan) + "}"
+                    "plan={" + traceFormatter.describeSelectionPlan(pollPlan) + "}"
                     + " comparedSnapshotNoteId=" + contentsView.editorEntrySnapshotComparedNoteId
                     + " pendingSnapshotNoteId=" + contentsView.editorEntrySnapshotPendingNoteId,
                     contentsView)
@@ -1490,7 +1487,7 @@ Item {
             EditorTrace.trace(
                         "displayView",
                         "selectionFlow.pollSkipped",
-                        "plan={" + contentsView.describeSelectionPlan(pollPlan) + "}",
+                        "plan={" + traceFormatter.describeSelectionPlan(pollPlan) + "}",
                         contentsView)
             return;
         }
@@ -1511,7 +1508,7 @@ Item {
         EditorTrace.trace(
                     "displayView",
                     "selectionFlow.reconcilePlan",
-                    "plan={" + contentsView.describeSelectionPlan(reconcilePlan) + "}",
+                    "plan={" + traceFormatter.describeSelectionPlan(reconcilePlan) + "}",
                     contentsView)
         if (!reconcilePlan.attemptReconcile)
             return false;
