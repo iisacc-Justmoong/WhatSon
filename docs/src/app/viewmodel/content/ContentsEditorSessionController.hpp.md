@@ -9,6 +9,7 @@
 ## QML Contract
 - State properties kept on the controller:
   - `editorBoundNoteId`
+  - `editorBoundNoteDirectoryPath`
   - `editorText`
   - `localEditorAuthority`
   - `lastLocalEditTimestampMs`
@@ -20,7 +21,7 @@
 - Invokable session operations exposed to QML:
   - `flushPendingEditorText()`
   - `isTypingSessionActive()`
-  - `requestSyncEditorTextFromSelection(noteId, text, bodyNoteId)`
+  - `requestSyncEditorTextFromSelection(noteId, text, bodyNoteId, noteDirectoryPath = "")`
   - `markLocalEditorAuthority()`
   - `scheduleEditorPersistence()`
   - `persistEditorTextImmediately()`
@@ -34,6 +35,9 @@
   converged to that editor text.
 - The controller must therefore reject any differing same-note incoming model snapshot while local editor authority is
   still active, not only during the typing-idle protection window or while `pendingBodySave` is set.
+- That same-note protection is now defined on the mounted package identity, not on `noteId` alone.
+  If the incoming selection/session payload points at a different `.wsnote` directory for the same id, the controller
+  must drop local-authority protection and rebind to the new package.
 - That rejection must not itself enqueue another editor-to-RAW write.
 - Persistence staging and immediate flush both normalize agenda placeholder dates and empty structured-block anchors
   before the payload enters `ContentsEditorSelectionBridge`.

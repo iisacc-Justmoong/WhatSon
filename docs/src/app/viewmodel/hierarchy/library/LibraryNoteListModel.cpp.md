@@ -11,6 +11,11 @@ sanitization. That preserves the selected-note body contract exposed through `cu
 prevents the editor from falling back to an empty document when the lazy note-body reload path does
 not win the selection race.
 
+Each row now also keeps a normalized `noteDirectoryPath`, and the selected-row contract exposes that
+value through `currentNoteDirectoryPath`.
+The list model therefore no longer describes the selected note purely by `noteId`; downstream
+selection/mount code can keep following the concrete `.wsnote` package that backs the visible row.
+
 ## Sorting Pipeline
 
 `setItems(...)` now normalizes `createdAt` and `lastModifiedAt` before the filtered source cache is
@@ -31,9 +36,11 @@ refreshes.
 
 ## Selection Stability
 
-`applySearchFilter()` still restores `m_currentIndex` by previously selected note id after every
-reset. This keeps the same note active when a save updates `lastModifiedAt` and pushes that note to
-the top of the list.
+`applySearchFilter()` still restores `m_currentIndex` by the previously selected logical note, and
+the selected-row notifications now also include `currentNoteDirectoryPathChanged()` when the visible
+package path changes.
+This keeps the same concrete `.wsnote` package active when duplicate ids exist across multiple note
+packages.
 
 `currentBodyText` is again a real selected-note payload. After search/filter resets the model still
 restores `m_currentIndex` by note id, and the selected row continues to expose its normalized note
@@ -61,3 +68,5 @@ Validate library note-list ordering through runtime library-viewmodel synchroniz
 
 Also confirm that the selected library note still exposes its body text immediately through the
 note-list model after runtime snapshot refreshes and search/filter resets.
+When duplicate note ids exist, also confirm that the selected row keeps exporting the correct
+`noteDirectoryPath` for the mounted package.

@@ -12,6 +12,10 @@ class ContentsEditorSessionController : public QObject
     Q_OBJECT
 
     Q_PROPERTY(QString editorBoundNoteId READ editorBoundNoteId WRITE setEditorBoundNoteId NOTIFY editorBoundNoteIdChanged)
+    Q_PROPERTY(
+        QString
+            editorBoundNoteDirectoryPath READ editorBoundNoteDirectoryPath WRITE setEditorBoundNoteDirectoryPath
+                NOTIFY editorBoundNoteDirectoryPathChanged)
     Q_PROPERTY(QString editorText READ editorText WRITE setEditorText NOTIFY editorTextChanged)
     Q_PROPERTY(
         bool
@@ -39,6 +43,9 @@ public:
 
     QString editorBoundNoteId() const;
     void setEditorBoundNoteId(const QString& noteId);
+
+    QString editorBoundNoteDirectoryPath() const;
+    void setEditorBoundNoteDirectoryPath(const QString& noteDirectoryPath);
 
     QString editorText() const;
     void setEditorText(const QString& text);
@@ -69,7 +76,8 @@ public:
     Q_INVOKABLE bool requestSyncEditorTextFromSelection(
         const QString& noteId,
         const QString& text,
-        const QString& bodyNoteId);
+        const QString& bodyNoteId,
+        const QString& noteDirectoryPath = QString());
     Q_INVOKABLE void markLocalEditorAuthority();
     Q_INVOKABLE bool scheduleEditorPersistence();
     Q_INVOKABLE bool persistEditorTextImmediately();
@@ -77,6 +85,7 @@ public:
 
 signals:
     void editorBoundNoteIdChanged();
+    void editorBoundNoteDirectoryPathChanged();
     void editorTextChanged();
     void localEditorAuthorityChanged();
     void lastLocalEditTimestampMsChanged();
@@ -97,21 +106,29 @@ private slots:
 
 private:
     static QString normalizedNoteId(const QString& noteId);
+    static QString normalizedNoteDirectoryPath(const QString& noteDirectoryPath);
 
     bool enqueueEditorPersistence(const QString& noteId, const QString& bodyText, bool immediateFlush);
     QString normalizeAgendaPlaceholderDates(const QString& text) const;
     QString normalizeStructuredEmptyBlockAnchors(const QString& text) const;
     QString normalizedEditorText(const QString& text) const;
     QString normalizeModifiedEditorText(const QString& text);
-    bool shouldAcceptModelBodyText(const QString& noteId, const QString& text) const;
+    bool shouldAcceptModelBodyText(
+        const QString& noteId,
+        const QString& noteDirectoryPath,
+        const QString& text) const;
     bool queueCurrentEditorTextForPersistence(bool immediateFlush, const QString& rawBodyText);
     void releaseSyncGuard();
-    void syncEditorTextFromSelection(const QString& noteId, const QString& text);
+    void syncEditorTextFromSelection(
+        const QString& noteId,
+        const QString& noteDirectoryPath,
+        const QString& text);
     double currentTimestampMs() const noexcept;
 
     QPointer<ContentsEditorSelectionBridge> m_selectionBridge;
     QPointer<ContentsAgendaBackend> m_agendaBackend;
     QString m_editorBoundNoteId;
+    QString m_editorBoundNoteDirectoryPath;
     QString m_editorText;
     bool m_localEditorAuthority = false;
     double m_lastLocalEditTimestampMs = 0;

@@ -32,13 +32,16 @@ public:
         const QString& noteId,
         QString* noteDirectoryPath) const;
     QString noteDirectoryPathForNote(const QString& noteId) const;
-    quint64 loadNoteBodyTextForNote(const QString& noteId);
+    quint64 loadNoteBodyTextForNote(
+        const QString& noteId,
+        const QString& noteDirectoryPath = QString());
     bool reconcileViewSessionAndRefreshSnapshotForNote(
         const QString& noteId,
         const QString& viewSessionText,
-        bool preferViewSessionOnMismatch = false);
+        bool preferViewSessionOnMismatch = false,
+        const QString& noteDirectoryPath = QString());
     bool refreshNoteSnapshotForNote(const QString& noteId);
-    void bindSelectedNote(const QString& noteId);
+    void bindSelectedNote(const QString& noteId, const QString& noteDirectoryPath = QString());
     void clearSelectedNote();
 
 signals:
@@ -103,7 +106,13 @@ private:
     static bool hasInvokableMethod(const QObject* object, const char* methodSignature);
 
     QString resolveNoteDirectoryPathForNote(const QString& noteId) const;
-    bool ensureBoundNotePersistenceSession(const QString& noteId, QString* errorMessage = nullptr);
+    QString resolvePreferredNoteDirectoryPath(
+        const QString& noteId,
+        const QString& noteDirectoryPath = QString()) const;
+    bool ensureBoundNotePersistenceSession(
+        const QString& noteId,
+        const QString& noteDirectoryPath = QString(),
+        QString* errorMessage = nullptr);
     void resetBoundNotePersistenceSession();
     void refreshContentPersistenceState();
 

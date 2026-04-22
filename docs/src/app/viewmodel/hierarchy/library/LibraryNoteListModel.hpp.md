@@ -4,8 +4,8 @@
 
 `LibraryNoteListModel` is the concrete list-model contract that feeds the library note-list view.
 It exposes only UI-facing roles such as `noteId`, `primaryText`, `bodyText`, `displayDate`,
-folders, tags, and bookmark state, but each `LibraryNoteListItem` now also carries internal
-`createdAt` and `lastModifiedAt` timestamps.
+folders, tags, bookmark state, and `noteDirectoryPath`, while each `LibraryNoteListItem` now also
+carries internal `createdAt` and `lastModifiedAt` timestamps.
 
 Those timestamps are not exported as QML roles. They exist so the model can keep the visible note
 rows sorted by most recently modified note first while preserving the rest of the public delegate
@@ -19,6 +19,10 @@ contract.
 
 This means the library note list no longer depends on index-file append order or creation-time
 insertion order when presenting the visible rows.
+
+The selected-row contract also includes `currentNoteDirectoryPath`.
+View/controller layers can therefore treat the currently highlighted library note as one concrete
+`.wsnote` package instead of assuming that `noteId` alone identifies the mounted editor target.
 
 ## Source Metadata
 - Source path: `src/app/viewmodel/hierarchy/library/LibraryNoteListModel.hpp`
@@ -42,3 +46,6 @@ insertion order when presenting the visible rows.
 - Selection is still exposed by visible row index because the QML surface is index-driven.
 - Refresh-time selection recovery is performed by note id in the implementation, so resorting after
   a save keeps the same logical note selected even when its row moves.
+- The exported row contract now also surfaces `noteDirectoryPath` / `currentNoteDirectoryPath`, so
+  downstream selection and mount code can disambiguate duplicate note ids that point at different
+  `.wsnote` packages.

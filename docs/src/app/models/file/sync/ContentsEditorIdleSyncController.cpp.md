@@ -11,7 +11,8 @@
     at staging time
   - `m_lastPersistedTextByNote`: latest successfully persisted payload per note
   - `m_dirtyNoteOrder`: round-robin fetch order for dirty notes
-  - `m_inFlightNoteId` / `m_inFlightText`: the async request currently owned by the downstream coordinator
+  - `m_inFlightNoteId` / `m_inFlightNoteDirectoryPath` / `m_inFlightText`: the async request currently owned by the
+    downstream coordinator
 - A recurring `1000ms` `QTimer` acts as the fetch clock.
 - Each fetch turn asks for the newest buffered snapshot of one dirty note and forwards it into
   `ContentsNoteManagementCoordinator::persistEditorTextForNote(...)`.
@@ -29,6 +30,12 @@
 - Selected-note body reads are also forwarded as pass-through operations to `ContentsNoteManagementCoordinator`.
   This controller emits `noteBodyTextLoaded(sequence, ...)` back toward the selection bridge without mutating the
   dirty-save buffer state.
+- The controller now also exposes explicit path-aware entry points such as
+  `stageEditorTextForIdleSyncAtPath(...)`, `flushEditorTextForNoteAtPath(...)`,
+  `loadNoteBodyTextForNoteAtPath(...)`, `reconcileViewSessionAndRefreshSnapshotForNoteAtPath(...)`, and
+  `bindSelectedNoteAtPath(...)`.
+  Those overloads let the selection/session stack keep operating on the exact `.wsnote` package that was selected,
+  even when another runtime view-model could resolve the same `noteId` differently later.
 - The controller now also provides one read-only "pending editor text" query that reports dirty or in-flight note
   bodies back to the selection layer.
   This lets note-open prefer the newest unsaved local snapshot instead of immediately trusting filesystem text.
@@ -51,6 +58,8 @@
 - The same collapse also keeps the newest resolved direct note-directory path captured for that note.
 - If the filesystem misses one intermediate fetch turn, the following fetch turn still sees the latest buffered text and
   persists that instead.
+- Buffer identity is still keyed by logical note id for coalescing, but explicit path-carrying APIs preserve which
+  concrete `.wsnote` package that buffered state belongs to while it is in flight or waiting for enqueue.
 
 ## Regression Checks
 
@@ -75,3 +84,5 @@
   staged snapshot already captured a direct note-directory path.
 - A selected note must not reopen from filesystem text while the controller still owns a newer dirty or in-flight
   editor snapshot for that same note.
+- When the caller already knows the mounted note directory, the controller must not silently downgrade that request
+  back to id-only note resolution.

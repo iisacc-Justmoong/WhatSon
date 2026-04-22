@@ -29,6 +29,10 @@
   The viewmodel still derives `primaryText` / `searchableText` from indexed note metadata, but it no longer clears
   `bodyText` before rows are pushed into the shared note-list model. This keeps the selected-note body available to
   the editor even when the asynchronous lazy-load path is late or temporarily unavailable.
+- The note-list row projection now also carries `noteDirectoryPath`, and the viewmodel's internal note-list cache key
+  is no longer `noteId` alone.
+  Cache invalidation and row reuse now treat `noteId + noteDirectoryPath` as the stable row identity so duplicate ids
+  from different `.wsnote` packages do not alias the same note-list projection.
 - The library runtime snapshot now also exposes `noteBodySourceTextForNoteId(...)`.
   `ContentsEditorSelectionBridge` can therefore recover the selected note source from the already-loaded indexed note
   snapshot when direct package-path resolution fails for one desktop selection turn.
@@ -75,6 +79,8 @@
   - Failed activation must not switch the current note to an unrelated item.
   - The shared library note-list model must keep the selected note body available through `BodyTextRole` /
     `currentBodyText` so editor selection never collapses to an empty document after runtime snapshot refreshes.
+  - The shared library note-list model must also export the correct `noteDirectoryPath` for the selected row so the
+    editor mounts the same `.wsnote` package that the library list selected.
   - If direct note-package resolution is temporarily unavailable, the indexed library snapshot must still be able to
     provide the selected note's body source to the editor bridge.
   - A folder label such as `Marketing/Sales` must remain one hierarchy item after parse/load/save cycles.

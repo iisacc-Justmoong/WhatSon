@@ -100,6 +100,38 @@ void WhatSonCppRegressionTests::contentsEditorSelectionBridge_refreshesSelectedB
     QVERIFY(!selectionBridge.selectedNoteBodyLoading());
 }
 
+void WhatSonCppRegressionTests::contentsEditorSelectionBridge_rebindsSameNoteIdWhenPackagePathChanges()
+{
+    ensureCoreApplication();
+
+    FakeSelectionNoteListModel noteListModel;
+    ContentsEditorSelectionBridge selectionBridge;
+
+    noteListModel.setNoteBacked(true);
+    noteListModel.setCurrentNoteId(QStringLiteral("note-1"));
+    noteListModel.setCurrentNoteDirectoryPath(QStringLiteral("/tmp/wsnote-a"));
+    noteListModel.setCurrentBodyText(QStringLiteral("Body A"));
+
+    selectionBridge.setNoteListModel(&noteListModel);
+    QCoreApplication::processEvents();
+
+    QCOMPARE(selectionBridge.selectedNoteId(), QStringLiteral("note-1"));
+    QCOMPARE(selectionBridge.selectedNoteDirectoryPath(), QStringLiteral("/tmp/wsnote-a"));
+    QCOMPARE(selectionBridge.selectedNoteBodyText(), QStringLiteral("Body A"));
+    QVERIFY(selectionBridge.selectedNoteBodyResolved());
+
+    noteListModel.setCurrentNoteDirectoryPath(QStringLiteral("/tmp/wsnote-b"));
+    noteListModel.setCurrentBodyText(QStringLiteral("Body B"));
+    QCoreApplication::processEvents();
+
+    QCOMPARE(selectionBridge.selectedNoteId(), QStringLiteral("note-1"));
+    QCOMPARE(selectionBridge.selectedNoteDirectoryPath(), QStringLiteral("/tmp/wsnote-b"));
+    QCOMPARE(selectionBridge.selectedNoteBodyNoteId(), QStringLiteral("note-1"));
+    QCOMPARE(selectionBridge.selectedNoteBodyText(), QStringLiteral("Body B"));
+    QVERIFY(selectionBridge.selectedNoteBodyResolved());
+    QVERIFY(!selectionBridge.selectedNoteBodyLoading());
+}
+
 void WhatSonCppRegressionTests::contentsEditorSelectionBridge_retainsSelectedNoteAcrossTransientEmptyCurrentNoteId()
 {
     ensureCoreApplication();

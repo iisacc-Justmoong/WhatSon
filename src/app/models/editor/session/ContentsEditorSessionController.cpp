@@ -5,6 +5,7 @@
 #include "app/models/editor/bridge/ContentsEditorSelectionBridge.hpp"
 
 #include <QDateTime>
+#include <QDir>
 #include <QRegularExpression>
 #include <QTimer>
 
@@ -55,8 +56,9 @@ ContentsEditorSessionController::~ContentsEditorSessionController()
         this,
         QStringLiteral("editorSession"),
         QStringLiteral("dtor"),
-        QStringLiteral("noteId=%1 pendingBodySave=%2")
+        QStringLiteral("noteId=%1 noteDirectoryPath=%2 pendingBodySave=%3")
             .arg(m_editorBoundNoteId)
+            .arg(m_editorBoundNoteDirectoryPath)
             .arg(m_pendingBodySave));
 }
 
@@ -79,6 +81,28 @@ void ContentsEditorSessionController::setEditorBoundNoteId(const QString& noteId
         QStringLiteral("editorBoundNoteIdChanged"),
         QStringLiteral("noteId=%1").arg(m_editorBoundNoteId));
     emit editorBoundNoteIdChanged();
+}
+
+QString ContentsEditorSessionController::editorBoundNoteDirectoryPath() const
+{
+    return m_editorBoundNoteDirectoryPath;
+}
+
+void ContentsEditorSessionController::setEditorBoundNoteDirectoryPath(const QString& noteDirectoryPath)
+{
+    const QString normalizedPath = normalizedNoteDirectoryPath(noteDirectoryPath);
+    if (m_editorBoundNoteDirectoryPath == normalizedPath)
+    {
+        return;
+    }
+
+    m_editorBoundNoteDirectoryPath = normalizedPath;
+    WhatSon::Debug::traceEditorSelf(
+        this,
+        QStringLiteral("editorSession"),
+        QStringLiteral("editorBoundNoteDirectoryPathChanged"),
+        QStringLiteral("noteDirectoryPath=%1").arg(m_editorBoundNoteDirectoryPath));
+    emit editorBoundNoteDirectoryPathChanged();
 }
 
 QString ContentsEditorSessionController::editorText() const
@@ -310,21 +334,26 @@ bool ContentsEditorSessionController::isTypingSessionActive() const
 bool ContentsEditorSessionController::requestSyncEditorTextFromSelection(
     const QString& noteId,
     const QString& text,
-    const QString& bodyNoteId)
+    const QString& bodyNoteId,
+    const QString& noteDirectoryPath)
 {
     const QString nextNoteId = normalizedNoteId(noteId);
     const QString nextBodyNoteId = normalizedNoteId(bodyNoteId);
+    const QString nextNoteDirectoryPath = normalizedNoteDirectoryPath(noteDirectoryPath);
     const QString nextText = normalizedEditorText(text);
     const QString currentNoteId = normalizedNoteId(m_editorBoundNoteId);
+    const QString currentNoteDirectoryPath = normalizedNoteDirectoryPath(m_editorBoundNoteDirectoryPath);
     const QString currentText = m_editorText;
     WhatSon::Debug::traceEditorSelf(
         this,
         QStringLiteral("editorSession"),
         QStringLiteral("requestSyncEditorTextFromSelection"),
-        QStringLiteral("nextNoteId=%1 bodyNoteId=%2 currentNoteId=%3 %4")
+        QStringLiteral("nextNoteId=%1 bodyNoteId=%2 nextNoteDirectoryPath=%3 currentNoteId=%4 currentNoteDirectoryPath=%5 %6")
             .arg(nextNoteId)
             .arg(nextBodyNoteId)
+            .arg(nextNoteDirectoryPath)
             .arg(currentNoteId)
+            .arg(currentNoteDirectoryPath)
             .arg(WhatSon::Debug::summarizeText(nextText)));
 
     if (nextNoteId.isEmpty() || nextBodyNoteId != nextNoteId)
@@ -340,19 +369,24 @@ bool ContentsEditorSessionController::requestSyncEditorTextFromSelection(
         }
     }
 
-    if (currentNoteId == nextNoteId && currentText == nextText)
+    if (currentNoteId == nextNoteId
+        && currentNoteDirectoryPath == nextNoteDirectoryPath
+        && currentText == nextText)
     {
         return false;
     }
 
-    if (currentNoteId == nextNoteId && !shouldAcceptModelBodyText(nextNoteId, nextText))
+    if (currentNoteId == nextNoteId
+        && currentNoteDirectoryPath == nextNoteDirectoryPath
+        && !shouldAcceptModelBodyText(nextNoteId, nextNoteDirectoryPath, nextText))
     {
         WhatSon::Debug::traceEditorSelf(
             this,
             QStringLiteral("editorSession"),
             QStringLiteral("requestSyncEditorTextFromSelection.rejectedProtectedSameNote"),
-            QStringLiteral("noteId=%1 pendingBodySave=%2 typingActive=%3 current=%4 incoming=%5")
+            QStringLiteral("noteId=%1 noteDirectoryPath=%2 pendingBodySave=%3 typingActive=%4 current=%5 incoming=%6")
                 .arg(nextNoteId)
+                .arg(nextNoteDirectoryPath)
                 .arg(m_pendingBodySave)
                 .arg(isTypingSessionActive())
                 .arg(WhatSon::Debug::summarizeText(currentText))
@@ -360,7 +394,7 @@ bool ContentsEditorSessionController::requestSyncEditorTextFromSelection(
         return false;
     }
 
-    syncEditorTextFromSelection(nextNoteId, nextText);
+    syncEditorTextFromSelection(nextNoteId, nextNoteDirectoryPath, nextText);
     return true;
 }
 
@@ -437,6 +471,12 @@ QString ContentsEditorSessionController::normalizedNoteId(const QString& noteId)
     return noteId.trimmed();
 }
 
+QString ContentsEditorSessionController::normalizedNoteDirectoryPath(const QString& noteDirectoryPath)
+{
+    const QString normalizedPath = QDir::cleanPath(noteDirectoryPath.trimmed());
+    return normalizedPath == QStringLiteral(".") ? QString() : normalizedPath;
+}
+
 bool ContentsEditorSessionController::enqueueEditorPersistence(
     const QString& noteId,
     const QString& bodyText,
@@ -494,11 +534,15 @@ QString ContentsEditorSessionController::normalizeModifiedEditorText(const QStri
 
 bool ContentsEditorSessionController::shouldAcceptModelBodyText(
     const QString& noteId,
+    const QString& noteDirectoryPath,
     const QString& text) const
 {
     const QString nextNoteId = normalizedNoteId(noteId);
+    const QString nextNoteDirectoryPath = normalizedNoteDirectoryPath(noteDirectoryPath);
     const QString currentNoteId = normalizedNoteId(m_editorBoundNoteId);
-    if (nextNoteId != currentNoteId)
+    const QString currentNoteDirectoryPath = normalizedNoteDirectoryPath(m_editorBoundNoteDirectoryPath);
+    if (nextNoteId != currentNoteId
+        || nextNoteDirectoryPath != currentNoteDirectoryPath)
     {
         return true;
     }
@@ -547,31 +591,36 @@ void ContentsEditorSessionController::releaseSyncGuard()
 
 void ContentsEditorSessionController::syncEditorTextFromSelection(
     const QString& noteId,
+    const QString& noteDirectoryPath,
     const QString& text)
 {
-    const bool noteChanged = m_editorBoundNoteId != noteId;
+    const bool noteIdentityChanged =
+        m_editorBoundNoteId != noteId
+        || normalizedNoteDirectoryPath(m_editorBoundNoteDirectoryPath) != normalizedNoteDirectoryPath(noteDirectoryPath);
     const bool textChanged = m_editorText != text;
     WhatSon::Debug::traceEditorSelf(
         this,
         QStringLiteral("editorSession"),
         QStringLiteral("syncEditorTextFromSelection"),
-        QStringLiteral("noteChanged=%1 textChanged=%2 nextNoteId=%3 %4")
-            .arg(noteChanged)
+        QStringLiteral("noteIdentityChanged=%1 textChanged=%2 nextNoteId=%3 nextNoteDirectoryPath=%4 %5")
+            .arg(noteIdentityChanged)
             .arg(textChanged)
             .arg(noteId)
+            .arg(normalizedNoteDirectoryPath(noteDirectoryPath))
             .arg(WhatSon::Debug::summarizeText(text)));
-    if (!noteChanged && !textChanged)
+    if (!noteIdentityChanged && !textChanged)
     {
         return;
     }
 
-    if (noteChanged || textChanged)
+    if (noteIdentityChanged || textChanged)
     {
         setPendingBodySave(false);
     }
 
     setEditorBoundNoteId(noteId);
-    if (noteChanged)
+    setEditorBoundNoteDirectoryPath(noteDirectoryPath);
+    if (noteIdentityChanged)
     {
         setLocalEditorAuthority(false);
         setLastLocalEditTimestampMs(0);

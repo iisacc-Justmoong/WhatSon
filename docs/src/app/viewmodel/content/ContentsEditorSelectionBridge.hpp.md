@@ -61,6 +61,10 @@
   QML body-resource rendering can therefore resolve `.wsresource` package references against the same note directory
   that the editor session is currently bound to, instead of re-deriving that path through whichever hierarchy
   view-model happens to be active.
+- The selection contract is therefore no longer `noteId`-only.
+  When the active note-list model exposes `currentNoteDirectoryPath`, the bridge treats
+  `selectedNoteId + selectedNoteDirectoryPath` as the mounted package identity and reacts to same-id package-path
+  changes as a true rebind.
 - `selectedNoteBodyNoteId` now makes body ownership explicit for QML/session consumers.
   An empty body string is therefore no longer ambiguous: it can still be attached to a specific selected note as an
   explicit empty-body fallback.
@@ -128,3 +132,5 @@
 - A note-backed list with `itemCount > 0` must not clear bridge selection solely because one refresh turn exposed
   `currentNoteId=""`.
 - Bridge APIs that target one note must not silently replace a missing `noteId` with the currently selected note.
+- Bridge APIs that target one selected note must prefer the already resolved note-directory path when it is known, so
+  same-id duplicate packages do not collapse back to whichever `.wsnote` path is rediscovered later.

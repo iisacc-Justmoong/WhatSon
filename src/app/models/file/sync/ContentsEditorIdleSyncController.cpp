@@ -104,7 +104,23 @@ bool ContentsEditorIdleSyncController::stageEditorTextForIdleSync(const QString&
         QStringLiteral("idleSync"),
         QStringLiteral("stageEditorTextForIdleSync"),
         QStringLiteral("noteId=%1 %2").arg(noteId.trimmed()).arg(WhatSon::Debug::summarizeText(text)));
-    return stageEditorSnapshot(noteId, text, false);
+    return stageEditorSnapshot(noteId, QString(), text, false);
+}
+
+bool ContentsEditorIdleSyncController::stageEditorTextForIdleSyncAtPath(
+    const QString& noteId,
+    const QString& noteDirectoryPath,
+    const QString& text)
+{
+    WhatSon::Debug::traceEditorSelf(
+        this,
+        QStringLiteral("idleSync"),
+        QStringLiteral("stageEditorTextForIdleSyncAtPath"),
+        QStringLiteral("noteId=%1 noteDirectoryPath=%2 %3")
+            .arg(noteId.trimmed())
+            .arg(noteDirectoryPath.trimmed())
+            .arg(WhatSon::Debug::summarizeText(text)));
+    return stageEditorSnapshot(noteId, noteDirectoryPath, text, false);
 }
 
 bool ContentsEditorIdleSyncController::flushEditorTextForNote(const QString& noteId, const QString& text)
@@ -114,7 +130,23 @@ bool ContentsEditorIdleSyncController::flushEditorTextForNote(const QString& not
         QStringLiteral("idleSync"),
         QStringLiteral("flushEditorTextForNote"),
         QStringLiteral("noteId=%1 %2").arg(noteId.trimmed()).arg(WhatSon::Debug::summarizeText(text)));
-    return stageEditorSnapshot(noteId, text, true);
+    return stageEditorSnapshot(noteId, QString(), text, true);
+}
+
+bool ContentsEditorIdleSyncController::flushEditorTextForNoteAtPath(
+    const QString& noteId,
+    const QString& noteDirectoryPath,
+    const QString& text)
+{
+    WhatSon::Debug::traceEditorSelf(
+        this,
+        QStringLiteral("idleSync"),
+        QStringLiteral("flushEditorTextForNoteAtPath"),
+        QStringLiteral("noteId=%1 noteDirectoryPath=%2 %3")
+            .arg(noteId.trimmed())
+            .arg(noteDirectoryPath.trimmed())
+            .arg(WhatSon::Debug::summarizeText(text)));
+    return stageEditorSnapshot(noteId, noteDirectoryPath, text, true);
 }
 
 QString ContentsEditorIdleSyncController::noteDirectoryPathForNote(const QString& noteId) const
@@ -205,6 +237,27 @@ quint64 ContentsEditorIdleSyncController::loadNoteBodyTextForNote(const QString&
     return sequence;
 }
 
+quint64 ContentsEditorIdleSyncController::loadNoteBodyTextForNoteAtPath(
+    const QString& noteId,
+    const QString& noteDirectoryPath)
+{
+    if (m_noteManagementCoordinator == nullptr)
+    {
+        return 0;
+    }
+
+    const quint64 sequence = m_noteManagementCoordinator->loadNoteBodyTextForNote(noteId, noteDirectoryPath);
+    WhatSon::Debug::traceEditorSelf(
+        this,
+        QStringLiteral("idleSync"),
+        QStringLiteral("loadNoteBodyTextForNoteAtPath"),
+        QStringLiteral("noteId=%1 noteDirectoryPath=%2 sequence=%3")
+            .arg(noteId.trimmed())
+            .arg(noteDirectoryPath.trimmed())
+            .arg(sequence));
+    return sequence;
+}
+
 bool ContentsEditorIdleSyncController::reconcileViewSessionAndRefreshSnapshotForNote(
     const QString& noteId,
     const QString& viewSessionText,
@@ -223,6 +276,31 @@ bool ContentsEditorIdleSyncController::reconcileViewSessionAndRefreshSnapshotFor
             .arg(accepted)
             .arg(preferViewSessionOnMismatch)
             .arg(noteId.trimmed())
+            .arg(WhatSon::Debug::summarizeText(viewSessionText)));
+    return accepted;
+}
+
+bool ContentsEditorIdleSyncController::reconcileViewSessionAndRefreshSnapshotForNoteAtPath(
+    const QString& noteId,
+    const QString& noteDirectoryPath,
+    const QString& viewSessionText,
+    const bool preferViewSessionOnMismatch)
+{
+    const bool accepted = m_noteManagementCoordinator != nullptr
+        && m_noteManagementCoordinator->reconcileViewSessionAndRefreshSnapshotForNote(
+            noteId,
+            viewSessionText,
+            preferViewSessionOnMismatch,
+            noteDirectoryPath);
+    WhatSon::Debug::traceEditorSelf(
+        this,
+        QStringLiteral("idleSync"),
+        QStringLiteral("reconcileViewSessionAndRefreshSnapshotForNoteAtPath"),
+        QStringLiteral("accepted=%1 preferViewSession=%2 noteId=%3 noteDirectoryPath=%4 %5")
+            .arg(accepted)
+            .arg(preferViewSessionOnMismatch)
+            .arg(noteId.trimmed())
+            .arg(noteDirectoryPath.trimmed())
             .arg(WhatSon::Debug::summarizeText(viewSessionText)));
     return accepted;
 }
@@ -249,6 +327,23 @@ void ContentsEditorIdleSyncController::bindSelectedNote(const QString& noteId)
     if (m_noteManagementCoordinator != nullptr)
     {
         m_noteManagementCoordinator->bindSelectedNote(noteId);
+    }
+}
+
+void ContentsEditorIdleSyncController::bindSelectedNoteAtPath(
+    const QString& noteId,
+    const QString& noteDirectoryPath)
+{
+    WhatSon::Debug::traceEditorSelf(
+        this,
+        QStringLiteral("idleSync"),
+        QStringLiteral("bindSelectedNoteAtPath"),
+        QStringLiteral("noteId=%1 noteDirectoryPath=%2")
+            .arg(noteId.trimmed())
+            .arg(noteDirectoryPath.trimmed()));
+    if (m_noteManagementCoordinator != nullptr)
+    {
+        m_noteManagementCoordinator->bindSelectedNote(noteId, noteDirectoryPath);
     }
 }
 
@@ -307,6 +402,8 @@ void ContentsEditorIdleSyncController::handlePersistenceFinished(
 
     m_persistenceInFlight = false;
     m_inFlightNoteId.clear();
+    const QString completedNoteDirectoryPath = m_inFlightNoteDirectoryPath;
+    m_inFlightNoteDirectoryPath.clear();
     m_inFlightText.clear();
 
     if (success)
@@ -326,7 +423,8 @@ void ContentsEditorIdleSyncController::handlePersistenceFinished(
                 ->reconcileViewSessionAndRefreshSnapshotForNote(
                     normalizedNoteId,
                     completedText,
-                    true);
+                    true,
+                    completedNoteDirectoryPath);
             if (!reconciled)
             {
                 WhatSon::Debug::traceSelf(
@@ -355,16 +453,19 @@ void ContentsEditorIdleSyncController::handlePersistenceFinished(
 
 bool ContentsEditorIdleSyncController::stageEditorSnapshot(
     const QString& noteId,
+    const QString& noteDirectoryPath,
     const QString& text,
     const bool requestImmediateFetch)
 {
     const QString normalizedNoteId = noteId.trimmed();
+    const QString normalizedNoteDirectoryPath = noteDirectoryPath.trimmed();
     WhatSon::Debug::traceEditorSelf(
         this,
         QStringLiteral("idleSync"),
         QStringLiteral("stageEditorSnapshot"),
-        QStringLiteral("noteId=%1 immediate=%2 %3")
+        QStringLiteral("noteId=%1 noteDirectoryPath=%2 immediate=%3 %4")
             .arg(normalizedNoteId)
+            .arg(normalizedNoteDirectoryPath)
             .arg(requestImmediateFetch)
             .arg(WhatSon::Debug::summarizeText(text)));
     if (normalizedNoteId.isEmpty())
@@ -375,14 +476,19 @@ bool ContentsEditorIdleSyncController::stageEditorSnapshot(
     const QString normalizedText = text;
     BufferedSnapshot bufferedSnapshot;
     bufferedSnapshot.text = normalizedText;
-    if (m_noteManagementCoordinator != nullptr)
+    if (!normalizedNoteDirectoryPath.isEmpty())
     {
-        QString noteDirectoryPath;
+        bufferedSnapshot.noteDirectoryPath = normalizedNoteDirectoryPath;
+        bufferedSnapshot.directPersistenceReady = true;
+    }
+    else if (m_noteManagementCoordinator != nullptr)
+    {
+        QString resolvedNoteDirectoryPath;
         if (m_noteManagementCoordinator->captureDirectPersistenceContextForNote(
                 normalizedNoteId,
-                &noteDirectoryPath))
+                &resolvedNoteDirectoryPath))
         {
-            bufferedSnapshot.noteDirectoryPath = noteDirectoryPath.trimmed();
+            bufferedSnapshot.noteDirectoryPath = resolvedNoteDirectoryPath.trimmed();
             bufferedSnapshot.directPersistenceReady = !bufferedSnapshot.noteDirectoryPath.isEmpty();
         }
     }
@@ -506,6 +612,7 @@ bool ContentsEditorIdleSyncController::enqueueNextBufferedPersistenceIfNeeded()
 
     m_persistenceInFlight = true;
     m_inFlightNoteId = candidateNoteId;
+    m_inFlightNoteDirectoryPath = candidateSnapshot.noteDirectoryPath;
     m_inFlightText = candidateText;
     WhatSon::Debug::traceEditorSelf(
         this,

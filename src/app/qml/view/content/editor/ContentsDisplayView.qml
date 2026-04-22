@@ -47,6 +47,7 @@ Item {
                                                 Math.round(contentsView.editorLineHeight * 6),
                                                 Math.round(contentsView.editorSurfaceHeight * 0.5))
     property alias editorBoundNoteId: editorSession.editorBoundNoteId
+    property alias editorBoundNoteDirectoryPath: editorSession.editorBoundNoteDirectoryPath
     readonly property var documentSourcePlan: documentSourceResolver.documentSourcePlan
     readonly property real editorContentOffsetY: {
         const flickable = contentsView.editorFlickable;
@@ -268,8 +269,15 @@ Item {
     readonly property bool selectedNoteBodyResolved: selectionBridge.selectedNoteBodyResolved
     readonly property bool selectedNoteBodyLoading: selectionBridge.selectedNoteBodyLoading
     readonly property string selectedNoteId: selectionBridge.selectedNoteId
+    readonly property string selectedNoteDirectoryPath: selectionBridge.selectedNoteDirectoryPath
     readonly property bool showCurrentLineMarker: contentsView.hasSelectedNote || contentsView.editorText.length > 0 || contentsView.editorInputFocused
-    readonly property bool editorSessionBoundToSelectedNote: editorSession.editorBoundNoteId === contentsView.selectedNoteId
+    readonly property bool editorSessionBoundToSelectedNote: {
+        if (editorSession.editorBoundNoteId !== contentsView.selectedNoteId)
+            return false;
+        if (contentsView.selectedNoteDirectoryPath === "")
+            return true;
+        return editorSession.editorBoundNoteDirectoryPath === contentsView.selectedNoteDirectoryPath;
+    }
     readonly property bool noteDocumentMountPending: noteBodyMountCoordinator.mountPending
     readonly property bool noteDocumentParseMounted: noteBodyMountCoordinator.parseMounted
     readonly property bool noteDocumentSourceMounted: noteBodyMountCoordinator.sourceMounted
@@ -1997,7 +2005,8 @@ Item {
             selectionSynced = editorSession.requestSyncEditorTextFromSelection(
                         String(normalizedPlan.selectedNoteId || ""),
                         String(normalizedPlan.selectedNoteBodyText || ""),
-                        String(normalizedPlan.selectedNoteBodyNoteId || ""));
+                        String(normalizedPlan.selectedNoteBodyNoteId || ""),
+                        String(contentsView.selectedNoteDirectoryPath || ""));
         }
         if (normalizedPlan.scheduleSnapshotReconcile)
             contentsView.scheduleEditorEntrySnapshotReconcile();
@@ -2398,11 +2407,13 @@ Item {
         id: documentSourceResolver
 
         editorBoundNoteId: contentsView.editorBoundNoteId === undefined || contentsView.editorBoundNoteId === null ? "" : String(contentsView.editorBoundNoteId)
+        editorBoundNoteDirectoryPath: contentsView.editorBoundNoteDirectoryPath === undefined || contentsView.editorBoundNoteDirectoryPath === null ? "" : String(contentsView.editorBoundNoteDirectoryPath)
         editorText: contentsView.editorText === undefined || contentsView.editorText === null ? "" : String(contentsView.editorText)
         pendingBodySave: contentsView.pendingBodySave
         selectedNoteBodyNoteId: contentsView.selectedNoteBodyNoteId === undefined || contentsView.selectedNoteBodyNoteId === null ? "" : String(contentsView.selectedNoteBodyNoteId)
         selectedNoteBodyResolved: contentsView.selectedNoteBodyResolved
         selectedNoteBodyText: contentsView.selectedNoteBodyText === undefined || contentsView.selectedNoteBodyText === null ? "" : String(contentsView.selectedNoteBodyText)
+        selectedNoteDirectoryPath: contentsView.selectedNoteDirectoryPath === undefined || contentsView.selectedNoteDirectoryPath === null ? "" : String(contentsView.selectedNoteDirectoryPath)
         selectedNoteId: contentsView.selectedNoteId === undefined || contentsView.selectedNoteId === null ? "" : String(contentsView.selectedNoteId)
         structuredFlowSourceText: contentsView.structuredFlowSourceText === undefined || contentsView.structuredFlowSourceText === null ? "" : String(contentsView.structuredFlowSourceText)
     }
@@ -2410,23 +2421,17 @@ Item {
         id: noteBodyMountCoordinator
         objectName: "contentsDisplayNoteBodyMountCoordinator"
 
-        editorBoundNoteId: contentsView.documentSourcePlan.value("editorBoundNoteId", "")
-        editorSessionBoundToSelectedNote: contentsView.documentSourcePlan.value("editorSessionBoundToSelectedNote", false)
-        editorText: contentsView.documentSourcePlan.value("preferEditorSessionSource", false)
-                    ? contentsView.documentSourcePlan.value("resolvedSourceText", "")
-                    : (contentsView.editorText === undefined || contentsView.editorText === null ? "" : String(contentsView.editorText))
+        editorBoundNoteId: contentsView.editorBoundNoteId === undefined || contentsView.editorBoundNoteId === null ? "" : String(contentsView.editorBoundNoteId)
+        editorSessionBoundToSelectedNote: contentsView.editorSessionBoundToSelectedNote
+        editorText: contentsView.editorText === undefined || contentsView.editorText === null ? "" : String(contentsView.editorText)
         inlineDocumentSurfaceLoading: contentEditorLoader.status === Loader.Loading
         inlineDocumentSurfaceReady: contentEditorLoader.status === Loader.Ready && contentEditorLoader.item !== null
         inlineDocumentSurfaceRequested: contentsView.legacyInlineEditorRequested
         pendingBodySave: contentsView.pendingBodySave
         selectedNoteBodyLoading: contentsView.selectedNoteBodyLoading
-        selectedNoteBodyNoteId: contentsView.documentSourcePlan.value("bodyMatchesSelection", false)
-                                ? contentsView.documentSourcePlan.value("selectedNoteBodyNoteId", "")
-                                : (contentsView.selectedNoteBodyNoteId === undefined || contentsView.selectedNoteBodyNoteId === null ? "" : String(contentsView.selectedNoteBodyNoteId))
-        selectedNoteBodyText: contentsView.documentSourcePlan.value("preferEditorSessionSource", false)
-                              ? contentsView.documentSourcePlan.value("resolvedSourceText", "")
-                              : (contentsView.selectedNoteBodyText === undefined || contentsView.selectedNoteBodyText === null ? "" : String(contentsView.selectedNoteBodyText))
-        selectedNoteBodyResolved: contentsView.documentSourcePlan.value("resolvedSourceReady", false)
+        selectedNoteBodyNoteId: contentsView.selectedNoteBodyNoteId === undefined || contentsView.selectedNoteBodyNoteId === null ? "" : String(contentsView.selectedNoteBodyNoteId)
+        selectedNoteBodyText: contentsView.selectedNoteBodyText === undefined || contentsView.selectedNoteBodyText === null ? "" : String(contentsView.selectedNoteBodyText)
+        selectedNoteBodyResolved: contentsView.selectedNoteBodyResolved
         selectedNoteId: contentsView.selectedNoteId === undefined || contentsView.selectedNoteId === null ? "" : String(contentsView.selectedNoteId)
         structuredDocumentSurfaceReady: contentsView.structuredDocumentFlowRequested && structuredDocumentFlow.visible
         structuredDocumentSurfaceRequested: contentsView.structuredDocumentFlowRequested

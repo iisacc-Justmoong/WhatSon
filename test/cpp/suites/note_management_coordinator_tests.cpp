@@ -136,3 +136,96 @@ void WhatSonCppRegressionTests::noteManagementCoordinator_reconcileRefreshesWith
         WhatSon::NoteBodyPersistence::normalizeBodyPlainText(document.bodySourceText),
         QStringLiteral("raw-before"));
 }
+
+void WhatSonCppRegressionTests::noteManagementCoordinator_loadNoteBodyText_preservesCanonicalSourceText()
+{
+    QTemporaryDir workspaceDir;
+    QVERIFY(workspaceDir.isValid());
+
+    QString createError;
+    const QString noteId = QStringLiteral("raw-source-note");
+    const QString bodySourceText =
+        QStringLiteral("<paragraph>Alpha</paragraph>\n<resource type=\"image\" id=\"img-1\" path=\"icloud.wsresources/raw-image.wsresource\" />");
+    const QString noteDirectoryPath = createLocalNoteForRegression(
+        workspaceDir.path(),
+        noteId,
+        bodySourceText,
+        &createError);
+    QVERIFY2(
+        !noteDirectoryPath.isEmpty(),
+        qPrintable(QStringLiteral("Failed to create note fixture: %1").arg(createError)));
+
+    ContentsNoteManagementCoordinator::Request request;
+    request.kind = ContentsNoteManagementCoordinator::RequestKind::LoadNoteBodyText;
+    request.noteId = noteId;
+    request.noteDirectoryPath = noteDirectoryPath;
+
+    WhatSonLocalNoteFileStore fileStore;
+    WhatSonLocalNoteDocument document;
+    WhatSonLocalNoteFileStore::ReadRequest readRequest;
+    readRequest.noteId = noteId;
+    readRequest.noteDirectoryPath = noteDirectoryPath;
+
+    QString readError;
+    QVERIFY2(
+        fileStore.readNote(readRequest, &document, &readError),
+        qPrintable(QStringLiteral("Failed to read canonicalized note: %1").arg(readError)));
+
+    const ContentsNoteManagementCoordinator::Result result =
+        ContentsNoteManagementCoordinator::performWorkerRequest(request);
+    QVERIFY(result.success);
+    QCOMPARE(result.noteId, noteId);
+    QCOMPARE(result.text, document.bodySourceText);
+    QVERIFY(result.text.contains(QStringLiteral("<resource ")));
+    QVERIFY(result.text.contains(QStringLiteral("Alpha")));
+}
+
+void WhatSonCppRegressionTests::noteManagementCoordinator_loadNoteBodyText_prefersExplicitNoteDirectoryPath()
+{
+    ensureCoreApplication();
+
+    QTemporaryDir workspaceDirA;
+    QTemporaryDir workspaceDirB;
+    QVERIFY(workspaceDirA.isValid());
+    QVERIFY(workspaceDirB.isValid());
+
+    QString createError;
+    const QString noteId = QStringLiteral("shared-note-id");
+    const QString noteDirectoryPathA = createLocalNoteForRegression(
+        workspaceDirA.path(),
+        noteId,
+        QStringLiteral("Body from path A"),
+        &createError);
+    QVERIFY2(
+        !noteDirectoryPathA.isEmpty(),
+        qPrintable(QStringLiteral("Failed to create note fixture A: %1").arg(createError)));
+
+    createError.clear();
+    const QString noteDirectoryPathB = createLocalNoteForRegression(
+        workspaceDirB.path(),
+        noteId,
+        QStringLiteral("Body from path B"),
+        &createError);
+    QVERIFY2(
+        !noteDirectoryPathB.isEmpty(),
+        qPrintable(QStringLiteral("Failed to create note fixture B: %1").arg(createError)));
+
+    FakeContentPersistenceViewModel contentViewModel;
+    contentViewModel.setNoteDirectoryPath(noteId, noteDirectoryPathA);
+
+    ContentsNoteManagementCoordinator coordinator;
+    coordinator.setContentViewModel(&contentViewModel);
+
+    QSignalSpy loadSpy(&coordinator, &ContentsNoteManagementCoordinator::noteBodyTextLoaded);
+
+    const quint64 sequence = coordinator.loadNoteBodyTextForNote(noteId, noteDirectoryPathB);
+    QVERIFY(sequence != 0);
+
+    QTRY_COMPARE(loadSpy.count(), 1);
+    const QList<QVariant> arguments = loadSpy.takeFirst();
+    QCOMPARE(arguments.at(0).value<quint64>(), sequence);
+    QCOMPARE(arguments.at(1).toString(), noteId);
+    QCOMPARE(arguments.at(2).toString(), QStringLiteral("Body from path B"));
+    QVERIFY(arguments.at(3).toBool());
+    QCOMPARE(arguments.at(4).toString(), QString());
+}

@@ -8,6 +8,7 @@ Item {
 
     property alias agendaBackend: sessionController.agendaBackend
     property alias editorBoundNoteId: sessionController.editorBoundNoteId
+    property alias editorBoundNoteDirectoryPath: sessionController.editorBoundNoteDirectoryPath
     property alias editorText: sessionController.editorText
     property alias lastLocalEditTimestampMs: sessionController.lastLocalEditTimestampMs
     property alias localEditorAuthority: sessionController.localEditorAuthority
@@ -26,11 +27,12 @@ Item {
         return sessionController.isTypingSessionActive();
     }
 
-    function requestSyncEditorTextFromSelection(noteId, text, bodyNoteId) {
+    function requestSyncEditorTextFromSelection(noteId, text, bodyNoteId, noteDirectoryPath) {
         return sessionController.requestSyncEditorTextFromSelection(
                     noteId === undefined || noteId === null ? "" : String(noteId),
                     text === undefined || text === null ? "" : String(text),
-                    bodyNoteId === undefined || bodyNoteId === null ? "" : String(bodyNoteId));
+                    bodyNoteId === undefined || bodyNoteId === null ? "" : String(bodyNoteId),
+                    noteDirectoryPath === undefined || noteDirectoryPath === null ? "" : String(noteDirectoryPath));
     }
 
     function markLocalEditorAuthority() {

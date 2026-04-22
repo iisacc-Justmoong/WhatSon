@@ -72,11 +72,17 @@ void WhatSonCppRegressionTests::contentsDisplayView_usesSelectedNoteSnapshotWhil
     QVERIFY(!displayViewSource.contains(
         QStringLiteral("documentSourceResolver.resolvedDocumentPresentationSourceText()")));
     QVERIFY(displayViewSource.contains(
+        QStringLiteral("editorBoundNoteDirectoryPath: contentsView.editorBoundNoteDirectoryPath === undefined || contentsView.editorBoundNoteDirectoryPath === null ? \"\" : String(contentsView.editorBoundNoteDirectoryPath)")));
+    QVERIFY(displayViewSource.contains(
         QStringLiteral("selectedNoteBodyNoteId: contentsView.selectedNoteBodyNoteId === undefined || contentsView.selectedNoteBodyNoteId === null ? \"\" : String(contentsView.selectedNoteBodyNoteId)")));
     QVERIFY(displayViewSource.contains(
         QStringLiteral("selectedNoteBodyResolved: contentsView.selectedNoteBodyResolved")));
     QVERIFY(displayViewSource.contains(
         QStringLiteral("selectedNoteBodyText: contentsView.selectedNoteBodyText === undefined || contentsView.selectedNoteBodyText === null ? \"\" : String(contentsView.selectedNoteBodyText)")));
+    QVERIFY(displayViewSource.contains(
+        QStringLiteral("selectedNoteDirectoryPath: contentsView.selectedNoteDirectoryPath === undefined || contentsView.selectedNoteDirectoryPath === null ? \"\" : String(contentsView.selectedNoteDirectoryPath)")));
+    QVERIFY(displayViewSource.contains(
+        QStringLiteral("return editorSession.editorBoundNoteDirectoryPath === contentsView.selectedNoteDirectoryPath;")));
 }
 
 void WhatSonCppRegressionTests::contentsDisplayView_keepsSingleResolverBindingPerDocumentSourceProperty()
@@ -109,11 +115,13 @@ void WhatSonCppRegressionTests::contentsDisplayView_keepsSingleResolverBindingPe
     };
 
     QCOMPARE(countOccurrences(u"editorBoundNoteId:"), 1);
+    QCOMPARE(countOccurrences(u"editorBoundNoteDirectoryPath:"), 1);
     QCOMPARE(countOccurrences(u"editorText:"), 1);
     QCOMPARE(countOccurrences(u"pendingBodySave:"), 1);
     QCOMPARE(countOccurrences(u"selectedNoteBodyNoteId:"), 1);
     QCOMPARE(countOccurrences(u"selectedNoteBodyResolved:"), 1);
     QCOMPARE(countOccurrences(u"selectedNoteBodyText:"), 1);
+    QCOMPARE(countOccurrences(u"selectedNoteDirectoryPath:"), 1);
     QCOMPARE(countOccurrences(u"selectedNoteId:"), 1);
     QCOMPARE(countOccurrences(u"structuredFlowSourceText:"), 1);
 }
@@ -222,10 +230,22 @@ void WhatSonCppRegressionTests::contentsDisplayView_surfacesMountFailurePlacehol
     QVERIFY(displayViewSource.contains(
         QStringLiteral("inlineDocumentSurfaceRequested: contentsView.legacyInlineEditorRequested")));
     QVERIFY(displayViewSource.contains(
+        QStringLiteral("editorBoundNoteId: contentsView.editorBoundNoteId === undefined || contentsView.editorBoundNoteId === null ? \"\" : String(contentsView.editorBoundNoteId)")));
+    QVERIFY(displayViewSource.contains(
+        QStringLiteral("editorSessionBoundToSelectedNote: contentsView.editorSessionBoundToSelectedNote")));
+    QVERIFY(displayViewSource.contains(
+        QStringLiteral("editorText: contentsView.editorText === undefined || contentsView.editorText === null ? \"\" : String(contentsView.editorText)")));
+    QVERIFY(displayViewSource.contains(
+        QStringLiteral("selectedNoteBodyNoteId: contentsView.selectedNoteBodyNoteId === undefined || contentsView.selectedNoteBodyNoteId === null ? \"\" : String(contentsView.selectedNoteBodyNoteId)")));
+    QVERIFY(displayViewSource.contains(
+        QStringLiteral("selectedNoteBodyResolved: contentsView.selectedNoteBodyResolved")));
+    QVERIFY(displayViewSource.contains(
+        QStringLiteral("selectedNoteBodyText: contentsView.selectedNoteBodyText === undefined || contentsView.selectedNoteBodyText === null ? \"\" : String(contentsView.selectedNoteBodyText)")));
+    QVERIFY(!displayViewSource.contains(
         QStringLiteral("editorBoundNoteId: contentsView.documentSourcePlan.value(\"editorBoundNoteId\", \"\")")));
-    QVERIFY(displayViewSource.contains(
+    QVERIFY(!displayViewSource.contains(
         QStringLiteral("selectedNoteBodyResolved: contentsView.documentSourcePlan.value(\"resolvedSourceReady\", false)")));
-    QVERIFY(displayViewSource.contains(
+    QVERIFY(!displayViewSource.contains(
         QStringLiteral("selectedNoteBodyText: contentsView.documentSourcePlan.value(\"preferEditorSessionSource\", false)")));
     QVERIFY(displayViewSource.contains(
         QStringLiteral("inlineDocumentSurfaceReady: contentEditorLoader.status === Loader.Ready && contentEditorLoader.item !== null")));

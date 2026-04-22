@@ -20,6 +20,10 @@
 - Public editor-session methods such as `flushPendingEditorText()`, `scheduleEditorPersistence()`,
   `persistEditorTextImmediately(text)`, `markLocalEditorAuthority()`, and
   `requestSyncEditorTextFromSelection(...)` are now thin forwarding shims.
+- The wrapper now also forwards `editorBoundNoteDirectoryPath`, and
+  `requestSyncEditorTextFromSelection(...)` carries the selected note directory as its fourth argument.
+  Same-id note packages are therefore disambiguated before the C++ controller applies same-note protection or rebind
+  policy.
 - `editorTextSynchronized()` remains the wrapper-level signal so existing QML callers do not need to learn the new
   backend type directly.
 
@@ -67,6 +71,8 @@
   downgrade the write to deferred staging only.
 - The session must not bind model text for note `B` unless the upstream bridge explicitly proves that the incoming body
   payload also belongs to note `B`.
+- The session must also treat a same `noteId` payload from a different `noteDirectoryPath` as a different mounted note,
+  not as a safe same-note echo for the current editor session.
 - The session must not infer a note id for model-sync requests from prior selection state when the caller omitted it.
 - If filesystem/body lookup cannot provide note-owned text for the current selection, the session must still be able to
   bind an explicit empty-body fallback for that selected note.

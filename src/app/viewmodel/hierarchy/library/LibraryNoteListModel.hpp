@@ -9,6 +9,7 @@
 struct LibraryNoteListItem
 {
     QString id;
+    QString noteDirectoryPath;
     QString primaryText;
     QString searchableText;
     QString bodyText;
@@ -29,6 +30,7 @@ class LibraryNoteListModel final : public QAbstractListModel
     Q_PROPERTY(int itemCount READ itemCount NOTIFY itemCountChanged)
     Q_PROPERTY(int currentIndex READ currentIndex WRITE setCurrentIndex NOTIFY currentIndexChanged)
     Q_PROPERTY(QString currentNoteId READ currentNoteId NOTIFY currentNoteIdChanged)
+    Q_PROPERTY(QString currentNoteDirectoryPath READ currentNoteDirectoryPath NOTIFY currentNoteDirectoryPathChanged)
     Q_PROPERTY(QString currentBodyText READ currentBodyText NOTIFY currentBodyTextChanged)
     Q_PROPERTY(QString searchText READ searchText WRITE setSearchText NOTIFY searchTextChanged)
     Q_PROPERTY(bool strictValidation READ strictValidation WRITE setStrictValidation NOTIFY strictValidationChanged)
@@ -41,6 +43,7 @@ public:
     {
         IdRole = Qt::UserRole + 1,
         NoteIdRole,
+        NoteDirectoryPathRole,
         PrimaryTextRole,
         BodyTextRole,
         ImageRole,
@@ -62,6 +65,7 @@ public:
     int itemCount() const noexcept;
     int currentIndex() const noexcept;
     QString currentNoteId() const;
+    QString currentNoteDirectoryPath() const;
     QString currentBodyText() const;
     Q_INVOKABLE void setCurrentIndex(int index);
     QString searchText() const;
@@ -94,6 +98,7 @@ public
     void itemsChanged();
     void currentIndexChanged();
     void currentNoteIdChanged();
+    void currentNoteDirectoryPathChanged();
     void currentBodyTextChanged();
     void searchTextChanged();
     void strictValidationChanged();

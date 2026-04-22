@@ -383,6 +383,10 @@ class FakeSelectionNoteListModel final : public QObject
 
     Q_PROPERTY(int currentIndex READ currentIndex WRITE setCurrentIndex NOTIFY currentIndexChanged)
     Q_PROPERTY(QString currentNoteId READ currentNoteId WRITE setCurrentNoteId NOTIFY currentNoteIdChanged)
+    Q_PROPERTY(
+        QString
+            currentNoteDirectoryPath READ currentNoteDirectoryPath WRITE setCurrentNoteDirectoryPath
+                NOTIFY currentNoteDirectoryPathChanged)
     Q_PROPERTY(QString currentBodyText READ currentBodyText WRITE setCurrentBodyText NOTIFY currentBodyTextChanged)
     Q_PROPERTY(QString searchText READ searchText WRITE setSearchText NOTIFY searchTextChanged)
     Q_PROPERTY(int itemCount READ itemCount WRITE setItemCount NOTIFY itemCountChanged)
@@ -426,6 +430,27 @@ public:
 
         m_currentNoteId = std::move(noteId);
         emit currentNoteIdChanged();
+    }
+
+    QString currentNoteDirectoryPath() const
+    {
+        return m_currentNoteDirectoryPath;
+    }
+
+    void setCurrentNoteDirectoryPath(QString noteDirectoryPath)
+    {
+        noteDirectoryPath = QDir::cleanPath(noteDirectoryPath.trimmed());
+        if (noteDirectoryPath == QStringLiteral("."))
+        {
+            noteDirectoryPath.clear();
+        }
+        if (m_currentNoteDirectoryPath == noteDirectoryPath)
+        {
+            return;
+        }
+
+        m_currentNoteDirectoryPath = std::move(noteDirectoryPath);
+        emit currentNoteDirectoryPathChanged();
     }
 
     QString currentBodyText() const
@@ -497,6 +522,7 @@ public:
 signals:
     void currentIndexChanged();
     void currentNoteIdChanged();
+    void currentNoteDirectoryPathChanged();
     void currentBodyTextChanged();
     void searchTextChanged();
     void itemCountChanged(int itemCount);
@@ -505,6 +531,7 @@ signals:
 private:
     int m_currentIndex = -1;
     QString m_currentNoteId;
+    QString m_currentNoteDirectoryPath;
     QString m_currentBodyText;
     QString m_searchText;
     int m_itemCount = 0;
@@ -517,6 +544,7 @@ class FakeIndexDrivenSelectionNoteListModel final : public QObject
 
     Q_PROPERTY(int currentIndex READ currentIndex WRITE setCurrentIndex NOTIFY currentIndexChanged)
     Q_PROPERTY(QString currentNoteId READ currentNoteId NOTIFY currentNoteIdChanged)
+    Q_PROPERTY(QString currentNoteDirectoryPath READ currentNoteDirectoryPath NOTIFY currentNoteDirectoryPathChanged)
     Q_PROPERTY(QString currentBodyText READ currentBodyText NOTIFY currentBodyTextChanged)
     Q_PROPERTY(int itemCount READ itemCount WRITE setItemCount NOTIFY itemCountChanged)
     Q_PROPERTY(bool noteBacked READ noteBacked WRITE setNoteBacked NOTIFY noteBackedChanged)
@@ -525,6 +553,7 @@ public:
     struct Entry
     {
         QString noteId;
+        QString noteDirectoryPath;
         QString bodyText;
     };
 
@@ -555,16 +584,26 @@ public:
         return m_entries.value(m_currentIndex).noteId;
     }
 
+    QString currentNoteDirectoryPath() const
+    {
+        return m_entries.value(m_currentIndex).noteDirectoryPath;
+    }
+
     QString currentBodyText() const
     {
         return m_entries.value(m_currentIndex).bodyText;
     }
 
-    void setEntry(const int index, QString noteId, QString bodyText)
+    void setEntry(const int index, QString noteId, QString bodyText, QString noteDirectoryPath = QString())
     {
         const int normalizedIndex = std::max(0, index);
         Entry entry;
         entry.noteId = noteId.trimmed();
+        entry.noteDirectoryPath = QDir::cleanPath(noteDirectoryPath.trimmed());
+        if (entry.noteDirectoryPath == QStringLiteral("."))
+        {
+            entry.noteDirectoryPath.clear();
+        }
         entry.bodyText = std::move(bodyText);
         m_entries.insert(normalizedIndex, std::move(entry));
         if (normalizedIndex + 1 > m_itemCount)
@@ -609,6 +648,7 @@ public:
 signals:
     void currentIndexChanged();
     void currentNoteIdChanged();
+    void currentNoteDirectoryPathChanged();
     void currentBodyTextChanged();
     void itemCountChanged(int itemCount);
     void noteBackedChanged();
@@ -719,6 +759,7 @@ private slots:
     void contentsEditorSelectionBridge_prefillsSelectedNoteBodyFromDirectSourceSnapshot();
     void contentsEditorSelectionBridge_treatsDirectEmptySourceAsResolvedEmptyNote();
     void contentsEditorSelectionBridge_refreshesSelectedBodyFromNoteListBodySignal();
+    void contentsEditorSelectionBridge_rebindsSameNoteIdWhenPackagePathChanges();
     void contentsEditorSelectionBridge_retainsSelectedNoteAcrossTransientEmptyCurrentNoteId();
     void contentsEditorSelectionBridge_emitsTraceForNoteSelectionFlow();
     void noteBackedHierarchyNoteLists_preserveRawBodySnapshotForEditorBootstrap();
@@ -761,6 +802,7 @@ private slots:
     void contentsDisplayView_emitsEditorCreationTraceAcrossHostTransitions();
     void contentsDisplayView_tracesNoteSelectionPlanExecution();
     void contentsDisplaySessionCoordinator_requiresResolvedSelectedBodyBeforeUsingSnapshot();
+    void contentsDisplaySessionCoordinator_treatsSameIdDifferentPackageAsUnboundSelection();
     void contentsDisplayCreationPath_emitsCoordinatorTraceForEditorWiring();
     void contentsDisplaySelectionFlow_emitsTraceForSelectionAndMountPlans();
     void contentsDisplaySelectionSyncCoordinator_blocksUntilSelectedBodyIsResolved();
@@ -773,6 +815,9 @@ private slots:
     void noteBodyMountCoordinator_reportsSurfaceSpecificFailureMessage();
     void noteBodyMountCoordinator_requestsEditorSessionMountFromResolvedSnapshot();
     void noteBodyMountCoordinator_acceptsResolvedEmptySelectedBody();
+    void noteBodyMountCoordinator_hidesExceptionUntilPendingMountSettles();
+    void noteBodyMountCoordinator_waitsForPresentationReadySourceBeforeMounting();
+    void noteBodyMountCoordinator_remountsSameNoteWhenEditorSessionTextIsStale();
     void qmlInlineFormatEditor_keepsHiddenKeyboardTouchesScrollFirstOnMobile();
     void mobileChrome_usesSharedFigmaControlSurfaceColor();
     void mobileHierarchyRouteStateStore_tracksNormalizedSelectionRestoreState();
@@ -791,8 +836,11 @@ private slots:
     void qmlEditors_routeRenderedHyperlinksToExternalBrowser();
     void resourceBitmapViewer_projectsRenderableImagePreviewState();
     void editorSessionController_preservesLocalEditorAuthorityAgainstSameNoteModelSync();
+    void editorSessionController_rebindsWhenSameNoteIdUsesDifferentPackagePath();
     void noteManagementCoordinator_reconcilePersistsEditorSnapshotWhenPreferred();
     void noteManagementCoordinator_reconcileRefreshesWithoutPersistingWhenEditorIsNotAuthoritative();
+    void noteManagementCoordinator_loadNoteBodyText_preservesCanonicalSourceText();
+    void noteManagementCoordinator_loadNoteBodyText_prefersExplicitNoteDirectoryPath();
     void noteFileStatSupport_incrementsOpenCountAndPersistsLastOpenedAt();
     void unusedNoteSensors_filterNoteIdsByLastOpenedWindow();
 

@@ -20,10 +20,9 @@ void WhatSonCppRegressionTests::contentsDisplaySessionCoordinator_requiresResolv
     const QVariantMap unresolvedPlan = resolver.documentSourcePlan();
     QCOMPARE(unresolvedPlan.value(QStringLiteral("bodyMatchesSelection")).toBool(), true);
     QCOMPARE(unresolvedPlan.value(QStringLiteral("bodyAvailable")).toBool(), true);
-    QCOMPARE(unresolvedPlan.value(QStringLiteral("resolvedSourceReady")).toBool(), true);
-    QCOMPARE(
-        unresolvedPlan.value(QStringLiteral("resolvedSourceText")).toString(),
-        QStringLiteral("Selection body"));
+    QCOMPARE(unresolvedPlan.value(QStringLiteral("bodyReadyForPresentation")).toBool(), false);
+    QCOMPARE(unresolvedPlan.value(QStringLiteral("resolvedSourceReady")).toBool(), false);
+    QCOMPARE(unresolvedPlan.value(QStringLiteral("resolvedSourceText")).toString(), QString());
     QCOMPARE(resolver.documentPresentationSourceText(), QString());
     QCOMPARE(resolver.resolvedDocumentPresentationSourceText(), QString());
     QVERIFY(documentSourcePlanChangedSpy.count() > 0);
@@ -35,6 +34,7 @@ void WhatSonCppRegressionTests::contentsDisplaySessionCoordinator_requiresResolv
     const QVariantMap resolvedPlan = resolver.documentSourcePlan();
     QCOMPARE(resolvedPlan.value(QStringLiteral("bodyMatchesSelection")).toBool(), true);
     QCOMPARE(resolvedPlan.value(QStringLiteral("bodyAvailable")).toBool(), true);
+    QCOMPARE(resolvedPlan.value(QStringLiteral("bodyReadyForPresentation")).toBool(), true);
     QCOMPARE(resolvedPlan.value(QStringLiteral("resolvedSourceReady")).toBool(), true);
     QCOMPARE(
         resolver.documentPresentationSourceText(),
@@ -42,16 +42,48 @@ void WhatSonCppRegressionTests::contentsDisplaySessionCoordinator_requiresResolv
     QCOMPARE(
         resolver.resolvedDocumentPresentationSourceText(),
         QStringLiteral("Selection body"));
-    QCOMPARE(documentSourcePlanChangedSpy.count(), 0);
+    QVERIFY(documentSourcePlanChangedSpy.count() > 0);
     QCOMPARE(documentPresentationSourceTextChangedSpy.count(), 1);
 
     documentSourcePlanChangedSpy.clear();
     documentPresentationSourceTextChangedSpy.clear();
     resolver.setEditorBoundNoteId(QStringLiteral("note-1"));
+    const QVariantMap boundEmptyEditorPlan = resolver.documentSourcePlan();
+    QCOMPARE(boundEmptyEditorPlan.value(QStringLiteral("editorSessionBoundToSelectedNote")).toBool(), true);
+    QCOMPARE(boundEmptyEditorPlan.value(QStringLiteral("editorAvailable")).toBool(), false);
+    QCOMPARE(boundEmptyEditorPlan.value(QStringLiteral("preferEditorSessionSource")).toBool(), false);
+    QCOMPARE(
+        resolver.documentPresentationSourceText(),
+        QStringLiteral("Selection body"));
+    QCOMPARE(
+        resolver.resolvedDocumentPresentationSourceText(),
+        QStringLiteral("Selection body"));
+    QVERIFY(documentSourcePlanChangedSpy.count() > 0);
+    QCOMPARE(documentPresentationSourceTextChangedSpy.count(), 0);
+
+    documentSourcePlanChangedSpy.clear();
+    documentPresentationSourceTextChangedSpy.clear();
     resolver.setEditorText(QStringLiteral("Editor body"));
     const QVariantMap editorPlan = resolver.documentSourcePlan();
     QCOMPARE(editorPlan.value(QStringLiteral("editorSessionBoundToSelectedNote")).toBool(), true);
-    QCOMPARE(editorPlan.value(QStringLiteral("preferEditorSessionSource")).toBool(), true);
+    QCOMPARE(editorPlan.value(QStringLiteral("editorAvailable")).toBool(), true);
+    QCOMPARE(editorPlan.value(QStringLiteral("preferEditorSessionSource")).toBool(), false);
+    QCOMPARE(
+        resolver.documentPresentationSourceText(),
+        QStringLiteral("Selection body"));
+    QCOMPARE(
+        resolver.resolvedDocumentPresentationSourceText(),
+        QStringLiteral("Selection body"));
+    QVERIFY(documentSourcePlanChangedSpy.count() > 0);
+    QCOMPARE(documentPresentationSourceTextChangedSpy.count(), 0);
+
+    documentSourcePlanChangedSpy.clear();
+    documentPresentationSourceTextChangedSpy.clear();
+    resolver.setPendingBodySave(true);
+    const QVariantMap pendingSavePlan = resolver.documentSourcePlan();
+    QCOMPARE(pendingSavePlan.value(QStringLiteral("editorSessionBoundToSelectedNote")).toBool(), true);
+    QCOMPARE(pendingSavePlan.value(QStringLiteral("editorAvailable")).toBool(), true);
+    QCOMPARE(pendingSavePlan.value(QStringLiteral("preferEditorSessionSource")).toBool(), true);
     QCOMPARE(
         resolver.documentPresentationSourceText(),
         QStringLiteral("Editor body"));
@@ -69,10 +101,12 @@ void WhatSonCppRegressionTests::contentsDisplaySessionCoordinator_requiresResolv
     resolver.setSelectedNoteBodyResolved(true);
     resolver.setEditorBoundNoteId(QString());
     resolver.setEditorText(QString());
+    resolver.setPendingBodySave(false);
 
     const QVariantMap emptyBodyPlan = resolver.documentSourcePlan();
     QCOMPARE(emptyBodyPlan.value(QStringLiteral("bodyMatchesSelection")).toBool(), true);
     QCOMPARE(emptyBodyPlan.value(QStringLiteral("bodyAvailable")).toBool(), true);
+    QCOMPARE(emptyBodyPlan.value(QStringLiteral("bodyReadyForPresentation")).toBool(), true);
     QCOMPARE(emptyBodyPlan.value(QStringLiteral("resolvedSourceReady")).toBool(), true);
     QCOMPARE(resolver.documentPresentationSourceText(), QString());
     QCOMPARE(
@@ -80,6 +114,50 @@ void WhatSonCppRegressionTests::contentsDisplaySessionCoordinator_requiresResolv
         QString());
     QVERIFY(documentSourcePlanChangedSpy.count() > 0);
     QVERIFY(documentPresentationSourceTextChangedSpy.count() > 0);
+
+    documentSourcePlanChangedSpy.clear();
+    documentPresentationSourceTextChangedSpy.clear();
+
+    resolver.setSelectedNoteId(QStringLiteral("note-loading"));
+    resolver.setSelectedNoteBodyNoteId(QString());
+    resolver.setSelectedNoteBodyText(QString());
+    resolver.setSelectedNoteBodyResolved(false);
+    resolver.setEditorBoundNoteId(QStringLiteral("note-loading"));
+    resolver.setEditorText(QString());
+    resolver.setPendingBodySave(false);
+
+    const QVariantMap loadingPlan = resolver.documentSourcePlan();
+    QCOMPARE(loadingPlan.value(QStringLiteral("editorSessionBoundToSelectedNote")).toBool(), true);
+    QCOMPARE(loadingPlan.value(QStringLiteral("editorAvailable")).toBool(), false);
+    QCOMPARE(loadingPlan.value(QStringLiteral("preferEditorSessionSource")).toBool(), false);
+    QCOMPARE(loadingPlan.value(QStringLiteral("resolvedSourceReady")).toBool(), false);
+    QCOMPARE(resolver.documentPresentationSourceText(), QString());
+    QCOMPARE(resolver.resolvedDocumentPresentationSourceText(), QString());
+    QVERIFY(documentSourcePlanChangedSpy.count() > 0);
+    QCOMPARE(documentPresentationSourceTextChangedSpy.count(), 0);
+}
+
+void WhatSonCppRegressionTests::contentsDisplaySessionCoordinator_treatsSameIdDifferentPackageAsUnboundSelection()
+{
+    ContentsDisplayDocumentSourceResolver resolver;
+
+    resolver.setSelectedNoteId(QStringLiteral("note-1"));
+    resolver.setSelectedNoteDirectoryPath(QStringLiteral("/tmp/wsnote-a"));
+    resolver.setSelectedNoteBodyNoteId(QStringLiteral("note-1"));
+    resolver.setSelectedNoteBodyText(QStringLiteral("Selection body"));
+    resolver.setSelectedNoteBodyResolved(true);
+    resolver.setEditorBoundNoteId(QStringLiteral("note-1"));
+    resolver.setEditorBoundNoteDirectoryPath(QStringLiteral("/tmp/wsnote-b"));
+    resolver.setEditorText(QStringLiteral("Editor body"));
+    resolver.setPendingBodySave(true);
+
+    const QVariantMap plan = resolver.documentSourcePlan();
+    QCOMPARE(plan.value(QStringLiteral("selectedNoteDirectoryPath")).toString(), QStringLiteral("/tmp/wsnote-a"));
+    QCOMPARE(plan.value(QStringLiteral("editorBoundNoteDirectoryPath")).toString(), QStringLiteral("/tmp/wsnote-b"));
+    QCOMPARE(plan.value(QStringLiteral("editorSessionBoundToSelectedNote")).toBool(), false);
+    QCOMPARE(plan.value(QStringLiteral("editorAvailable")).toBool(), false);
+    QCOMPARE(plan.value(QStringLiteral("preferEditorSessionSource")).toBool(), false);
+    QCOMPARE(resolver.documentPresentationSourceText(), QStringLiteral("Selection body"));
 }
 
 void WhatSonCppRegressionTests::contentsDisplayCreationPath_emitsCoordinatorTraceForEditorWiring()

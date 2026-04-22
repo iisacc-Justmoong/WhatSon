@@ -1,5 +1,7 @@
 #include "app/models/editor/display/ContentsDisplayDocumentSourceResolver.hpp"
 
+#include <QDir>
+
 ContentsDisplayDocumentSourceResolver::ContentsDisplayDocumentSourceResolver(QObject* parent)
     : QObject(parent)
 {
@@ -17,6 +19,23 @@ void ContentsDisplayDocumentSourceResolver::setSelectedNoteId(const QString& val
     const QString previousPresentationSourceText = documentPresentationSourceText();
     m_selectedNoteId = normalized;
     emit selectedNoteIdChanged();
+    emitDerivedOutputsIfChanged(previousPlan, previousPresentationSourceText);
+}
+
+QString ContentsDisplayDocumentSourceResolver::selectedNoteDirectoryPath() const
+{
+    return m_selectedNoteDirectoryPath;
+}
+
+void ContentsDisplayDocumentSourceResolver::setSelectedNoteDirectoryPath(const QString& value)
+{
+    const QString normalized = normalizeNoteDirectoryPath(value);
+    if (m_selectedNoteDirectoryPath == normalized)
+        return;
+    const QVariantMap previousPlan = documentSourcePlan();
+    const QString previousPresentationSourceText = documentPresentationSourceText();
+    m_selectedNoteDirectoryPath = normalized;
+    emit selectedNoteDirectoryPathChanged();
     emitDerivedOutputsIfChanged(previousPlan, previousPresentationSourceText);
 }
 
@@ -70,6 +89,23 @@ void ContentsDisplayDocumentSourceResolver::setEditorBoundNoteId(const QString& 
     emitDerivedOutputsIfChanged(previousPlan, previousPresentationSourceText);
 }
 
+QString ContentsDisplayDocumentSourceResolver::editorBoundNoteDirectoryPath() const
+{
+    return m_editorBoundNoteDirectoryPath;
+}
+
+void ContentsDisplayDocumentSourceResolver::setEditorBoundNoteDirectoryPath(const QString& value)
+{
+    const QString normalized = normalizeNoteDirectoryPath(value);
+    if (m_editorBoundNoteDirectoryPath == normalized)
+        return;
+    const QVariantMap previousPlan = documentSourcePlan();
+    const QString previousPresentationSourceText = documentPresentationSourceText();
+    m_editorBoundNoteDirectoryPath = normalized;
+    emit editorBoundNoteDirectoryPathChanged();
+    emitDerivedOutputsIfChanged(previousPlan, previousPresentationSourceText);
+}
+
 QString ContentsDisplayDocumentSourceResolver::editorText() const { return m_editorText; }
 void ContentsDisplayDocumentSourceResolver::setEditorText(const QString& value)
 {
@@ -114,30 +150,43 @@ QVariantMap ContentsDisplayDocumentSourceResolver::documentSourcePlan() const
     const bool bodyHasText = !m_selectedNoteBodyText.isEmpty();
     const bool bodyAvailable = bodyOwnedBySelection
         && (bodyHasText || m_selectedNoteBodyResolved);
+    const bool bodyReadyForPresentation =
+        m_selectedNoteBodyResolved
+        && bodyIdMatches;
+    const bool editorHasText = !m_editorText.isEmpty();
+    const bool editorCanRepresentEmptyDocument =
+        m_pendingBodySave && sessionBound;
     const bool editorAvailable =
-        (sessionBound || m_pendingBodySave || m_editorBoundNoteId.isEmpty() || m_selectedNoteId.isEmpty())
-        && (!m_editorText.isEmpty() || sessionBound || m_pendingBodySave);
-    const bool preferEditor = editorAvailable && (!bodyAvailable || sessionBound || m_pendingBodySave);
+        sessionBound
+        && (editorHasText || editorCanRepresentEmptyDocument);
+    const bool preferEditor = editorAvailable
+        && (m_pendingBodySave || !bodyAvailable);
+    const bool presentationSourceReady = preferEditor || bodyReadyForPresentation;
 
     plan.insert(QStringLiteral("selectedNoteId"), m_selectedNoteId);
+    plan.insert(QStringLiteral("selectedNoteDirectoryPath"), m_selectedNoteDirectoryPath);
     plan.insert(QStringLiteral("selectedNoteBodyNoteId"), m_selectedNoteBodyNoteId);
     plan.insert(QStringLiteral("editorBoundNoteId"), m_editorBoundNoteId);
+    plan.insert(QStringLiteral("editorBoundNoteDirectoryPath"), m_editorBoundNoteDirectoryPath);
     plan.insert(QStringLiteral("editorSessionBoundToSelectedNote"), sessionBound);
     plan.insert(QStringLiteral("bodyMatchesSelection"), bodyIdMatches);
     plan.insert(QStringLiteral("bodyAvailable"), bodyAvailable);
+    plan.insert(QStringLiteral("bodyReadyForPresentation"), bodyReadyForPresentation);
     plan.insert(QStringLiteral("editorAvailable"), editorAvailable);
     plan.insert(QStringLiteral("preferEditorSessionSource"), preferEditor);
-    plan.insert(QStringLiteral("resolvedSourceText"), preferEditor ? m_editorText : (bodyAvailable ? m_selectedNoteBodyText : QString()));
-    plan.insert(QStringLiteral("resolvedSourceReady"), preferEditor || bodyAvailable);
+    plan.insert(
+        QStringLiteral("resolvedSourceText"),
+        preferEditor ? m_editorText : (bodyReadyForPresentation ? m_selectedNoteBodyText : QString()));
+    plan.insert(QStringLiteral("resolvedSourceReady"), presentationSourceReady);
     return plan;
 }
 
 QString ContentsDisplayDocumentSourceResolver::documentPresentationSourceText() const
 {
-    if (editorSessionBoundToSelectedNote())
-        return m_editorText;
-    if (m_selectedNoteBodyResolved && m_selectedNoteBodyNoteId == m_selectedNoteId)
-        return m_selectedNoteBodyText;
+    const QVariantMap plan = documentSourcePlan();
+    if (plan.value(QStringLiteral("resolvedSourceReady")).toBool())
+        return plan.value(QStringLiteral("resolvedSourceText")).toString();
+
     return {};
 }
 
@@ -173,9 +222,25 @@ QString ContentsDisplayDocumentSourceResolver::normalizeNoteId(const QString& va
     return value.trimmed();
 }
 
+QString ContentsDisplayDocumentSourceResolver::normalizeNoteDirectoryPath(const QString& value)
+{
+    const QString normalized = QDir::cleanPath(value.trimmed());
+    return normalized == QStringLiteral(".") ? QString() : normalized;
+}
+
 bool ContentsDisplayDocumentSourceResolver::editorSessionBoundToSelectedNote() const noexcept
 {
-    return !m_editorBoundNoteId.isEmpty() && m_editorBoundNoteId == m_selectedNoteId;
+    if (m_editorBoundNoteId.isEmpty() || m_editorBoundNoteId != m_selectedNoteId)
+    {
+        return false;
+    }
+
+    if (m_selectedNoteDirectoryPath.isEmpty())
+    {
+        return true;
+    }
+
+    return m_editorBoundNoteDirectoryPath == m_selectedNoteDirectoryPath;
 }
 
 void ContentsDisplayDocumentSourceResolver::emitDerivedOutputsIfChanged(

@@ -155,7 +155,9 @@ QString ContentsNoteManagementCoordinator::noteDirectoryPathForNote(const QStrin
     return resolveNoteDirectoryPathForNote(noteId.trimmed());
 }
 
-quint64 ContentsNoteManagementCoordinator::loadNoteBodyTextForNote(const QString& noteId)
+quint64 ContentsNoteManagementCoordinator::loadNoteBodyTextForNote(
+    const QString& noteId,
+    const QString& noteDirectoryPath)
 {
     const QString normalizedNoteId = noteId.trimmed();
     if (normalizedNoteId.isEmpty())
@@ -163,8 +165,9 @@ quint64 ContentsNoteManagementCoordinator::loadNoteBodyTextForNote(const QString
         return 0;
     }
 
-    const QString noteDirectoryPath = resolveNoteDirectoryPathForNote(normalizedNoteId);
-    if (noteDirectoryPath.isEmpty())
+    const QString resolvedNoteDirectoryPath =
+        resolvePreferredNoteDirectoryPath(normalizedNoteId, noteDirectoryPath);
+    if (resolvedNoteDirectoryPath.isEmpty())
     {
         return 0;
     }
@@ -173,7 +176,7 @@ quint64 ContentsNoteManagementCoordinator::loadNoteBodyTextForNote(const QString
     request.kind = RequestKind::LoadNoteBodyText;
     request.sequence = m_nextRequestSequence++;
     request.noteId = normalizedNoteId;
-    request.noteDirectoryPath = noteDirectoryPath;
+    request.noteDirectoryPath = resolvedNoteDirectoryPath;
     const quint64 requestSequence = request.sequence;
     if (!enqueueRequest(std::move(request)))
     {
@@ -185,7 +188,8 @@ quint64 ContentsNoteManagementCoordinator::loadNoteBodyTextForNote(const QString
 bool ContentsNoteManagementCoordinator::reconcileViewSessionAndRefreshSnapshotForNote(
     const QString& noteId,
     const QString& viewSessionText,
-    const bool preferViewSessionOnMismatch)
+    const bool preferViewSessionOnMismatch,
+    const QString& noteDirectoryPath)
 {
     const QString normalizedNoteId = noteId.trimmed();
     if (normalizedNoteId.isEmpty())
@@ -193,8 +197,9 @@ bool ContentsNoteManagementCoordinator::reconcileViewSessionAndRefreshSnapshotFo
         return false;
     }
 
-    const QString noteDirectoryPath = resolveNoteDirectoryPathForNote(normalizedNoteId);
-    if (noteDirectoryPath.isEmpty())
+    const QString resolvedNoteDirectoryPath =
+        resolvePreferredNoteDirectoryPath(normalizedNoteId, noteDirectoryPath);
+    if (resolvedNoteDirectoryPath.isEmpty())
     {
         return false;
     }
@@ -203,7 +208,7 @@ bool ContentsNoteManagementCoordinator::reconcileViewSessionAndRefreshSnapshotFo
     request.kind = RequestKind::ReconcileViewSessionSnapshot;
     request.sequence = m_nextRequestSequence++;
     request.noteId = normalizedNoteId;
-    request.noteDirectoryPath = noteDirectoryPath;
+    request.noteDirectoryPath = resolvedNoteDirectoryPath;
     request.text = WhatSon::NoteBodyPersistence::normalizeBodyPlainText(viewSessionText);
     request.preferViewSessionOnMismatch = preferViewSessionOnMismatch;
     return enqueueRequest(std::move(request));
@@ -233,12 +238,14 @@ bool ContentsNoteManagementCoordinator::refreshNoteSnapshotForNote(const QString
     {
         const QString reboundNoteId = m_boundNoteId;
         resetBoundNotePersistenceSession();
-        ensureBoundNotePersistenceSession(reboundNoteId, nullptr);
+        ensureBoundNotePersistenceSession(reboundNoteId, m_boundNoteDirectoryPath, nullptr);
     }
     return true;
 }
 
-void ContentsNoteManagementCoordinator::bindSelectedNote(const QString& noteId)
+void ContentsNoteManagementCoordinator::bindSelectedNote(
+    const QString& noteId,
+    const QString& noteDirectoryPath)
 {
     const QString normalizedNoteId = noteId.trimmed();
     if (normalizedNoteId.isEmpty())
@@ -248,7 +255,7 @@ void ContentsNoteManagementCoordinator::bindSelectedNote(const QString& noteId)
     }
 
     QString sessionError;
-    if (!ensureBoundNotePersistenceSession(normalizedNoteId, &sessionError))
+    if (!ensureBoundNotePersistenceSession(normalizedNoteId, noteDirectoryPath, &sessionError))
     {
         WhatSon::Debug::traceSelf(
             this,
@@ -313,8 +320,23 @@ QString ContentsNoteManagementCoordinator::resolveNoteDirectoryPathForNote(const
     return noteDirectoryPath.trimmed();
 }
 
+QString ContentsNoteManagementCoordinator::resolvePreferredNoteDirectoryPath(
+    const QString& noteId,
+    const QString& noteDirectoryPath) const
+{
+    const QString normalizedPreferredDirectoryPath = QDir::cleanPath(noteDirectoryPath.trimmed());
+    if (!normalizedPreferredDirectoryPath.isEmpty()
+        && normalizedPreferredDirectoryPath != QStringLiteral("."))
+    {
+        return normalizedPreferredDirectoryPath;
+    }
+
+    return resolveNoteDirectoryPathForNote(noteId);
+}
+
 bool ContentsNoteManagementCoordinator::ensureBoundNotePersistenceSession(
     const QString& noteId,
+    const QString& noteDirectoryPath,
     QString* errorMessage)
 {
     const QString normalizedNoteId = noteId.trimmed();
@@ -327,7 +349,8 @@ bool ContentsNoteManagementCoordinator::ensureBoundNotePersistenceSession(
         return false;
     }
 
-    const QString resolvedDirectoryPath = resolveNoteDirectoryPathForNote(normalizedNoteId);
+    const QString resolvedDirectoryPath =
+        resolvePreferredNoteDirectoryPath(normalizedNoteId, noteDirectoryPath);
     if (resolvedDirectoryPath.isEmpty())
     {
         if (errorMessage != nullptr)
@@ -388,7 +411,7 @@ bool ContentsNoteManagementCoordinator::enqueuePersistenceRequest(
     if (m_directPersistenceContractAvailable)
     {
         QString sessionError;
-        if (!ensureBoundNotePersistenceSession(request.noteId, &sessionError))
+        if (!ensureBoundNotePersistenceSession(request.noteId, QString(), &sessionError))
         {
             WhatSon::Debug::traceSelf(
                 this,
@@ -624,8 +647,9 @@ ContentsNoteManagementCoordinator::performWorkerRequest(const Request& request)
             return result;
         }
 
-        result.text = WhatSon::NoteBodyPersistence::normalizeBodyPlainText(
-            document.bodySourceText.isEmpty() ? document.bodyPlainText : document.bodySourceText);
+        // The selection/mount stack needs the canonical persisted source here so the parser-backed
+        // document host can preserve structural tags instead of silently flattening them away.
+        result.text = document.bodySourceText.isEmpty() ? document.bodyPlainText : document.bodySourceText;
         result.success = true;
         return result;
     }

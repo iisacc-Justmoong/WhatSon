@@ -501,6 +501,13 @@ namespace
         return noteIds;
     }
 
+    QString noteListItemCacheKey(const QString& noteId, const QString& noteDirectoryPath)
+    {
+        return noteId.trimmed()
+            + QLatin1Char('\n')
+            + WhatSon::Hierarchy::LibrarySupport::normalizePath(noteDirectoryPath);
+    }
+
     QString randomAlphaNumericSegment(int length)
     {
         static const QString upperAlphabet = QStringLiteral("ABCDEFGHIJKLMNOPQRSTUVWXYZ");
@@ -3479,9 +3486,12 @@ LibraryNoteListItem LibraryHierarchyViewModel::buildNoteListItem(
     const QStringList& folderLabels) const
 {
     const QString noteId = note.noteId.trimmed();
+    const QString noteDirectoryPath =
+        WhatSon::Hierarchy::LibrarySupport::normalizePath(note.noteDirectoryPath);
+    const QString cacheKey = noteListItemCacheKey(noteId, noteDirectoryPath);
     if (!m_noteListItemCache.isEmpty())
     {
-        const auto cachedIt = m_noteListItemCache.constFind(noteId);
+        const auto cachedIt = m_noteListItemCache.constFind(cacheKey);
         if (cachedIt != m_noteListItemCache.constEnd())
         {
             return cachedIt.value();
@@ -3490,6 +3500,7 @@ LibraryNoteListItem LibraryHierarchyViewModel::buildNoteListItem(
 
     LibraryNoteListItem item;
     item.id = noteId;
+    item.noteDirectoryPath = noteDirectoryPath;
     item.primaryText = WhatSon::LibraryPreview::notePrimaryText(note);
     item.searchableText = noteSearchableText(note, folderLabels);
     item.bodyText = !note.bodySourceText.isEmpty()
@@ -3507,9 +3518,9 @@ LibraryNoteListItem LibraryHierarchyViewModel::buildNoteListItem(
     item.bookmarked = note.bookmarked;
     item.bookmarkColor = bookmarkColorHexFromNote(note);
 
-    if (!noteId.isEmpty())
+    if (!cacheKey.isEmpty())
     {
-        m_noteListItemCache.insert(noteId, item);
+        m_noteListItemCache.insert(cacheKey, item);
     }
     return item;
 }
@@ -3696,7 +3707,15 @@ void LibraryHierarchyViewModel::invalidateNoteListItemCacheForNoteId(const QStri
         return;
     }
 
-    m_noteListItemCache.remove(normalizedNoteId);
+    for (auto iterator = m_noteListItemCache.begin(); iterator != m_noteListItemCache.end();)
+    {
+        if (iterator.value().id.trimmed() == normalizedNoteId)
+        {
+            iterator = m_noteListItemCache.erase(iterator);
+            continue;
+        }
+        ++iterator;
+    }
 }
 
 void LibraryHierarchyViewModel::setIndexedStateNotes(QString sourceWshubPath, QVector<LibraryNoteRecord> notes)

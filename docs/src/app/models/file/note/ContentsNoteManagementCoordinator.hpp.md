@@ -27,14 +27,18 @@ should synchronize to disk.
 - `noteDirectoryPathForNote(noteId)`: exposes the current best-effort note-directory resolution without requiring the
   direct-persistence lane to be active, so read-side consumers can keep resource/package resolution tied to the same
   note package as the editor session.
-- `loadNoteBodyTextForNote(noteId)`: enqueues one worker-thread note read for the selected note body and returns the
-  resulting request sequence for `noteBodyTextLoaded(...)`.
-- `reconcileViewSessionAndRefreshSnapshotForNote(noteId, viewSessionText)`: reads the current note RAW body source
-  from filesystem, compares it against the provided view-session text, and only requests snapshot refresh when they
-  differ.
+- `loadNoteBodyTextForNote(noteId, noteDirectoryPath = "")`: enqueues one worker-thread note read for the selected
+  note body and returns the resulting request sequence for `noteBodyTextLoaded(...)`.
+  When `noteDirectoryPath` is present, that explicit `.wsnote` package is read directly instead of being rediscovered
+  from `noteId`.
+  That completion payload is the canonical persisted note source text when available, not a plain-text projection.
+- `reconcileViewSessionAndRefreshSnapshotForNote(noteId, viewSessionText, ..., noteDirectoryPath = "")`: reads the
+  current note RAW body source from filesystem, compares it against the provided view-session text, and only requests
+  snapshot refresh when they differ.
+- `bindSelectedNote(noteId, noteDirectoryPath = "")`: selected-note session bind contract that can retain the exact
+  mounted package directory across selection/mount transitions.
 - `refreshNoteSnapshotForNote(noteId)`: reloads one note's metadata/body snapshot through the bound content view-model.
-- `bindSelectedNote(noteId)` / `clearSelectedNote()`: maintain the selected note session and enqueue header-only
-  open-count maintenance outside the editor hot path.
+- `clearSelectedNote()`: clears the selected-note session and header-open-count follow-up context.
 - `editorTextPersistenceFinished(...)`: completion signal back to QML/editor session code once the queued persistence
   request reaches a final result.
 
@@ -50,6 +54,8 @@ should synchronize to disk.
 - Repeated autosaves for the same note coalesce to the newest pending persistence payload.
 - Repeated pending tracked-stat refresh requests for the same note coalesce into one pending request.
 - Repeated selected-note body load requests for the same note keep only the newest pending worker read for that note.
+- Requests that already captured an explicit note-directory path must preserve that package target while pending, so
+  same-id duplicate `.wsnote` packages do not alias each other inside the queue.
 
 ## Regression Checks
 
@@ -67,5 +73,10 @@ should synchronize to disk.
   RAW.
 - Selected note body reads must stay asynchronous and must not be satisfied by mirroring full note bodies through the
   note-list model contract.
+- Selected note body loads must preserve the same structured source contract that
+  `noteBodySourceTextForNoteId(...)` exposes from hierarchy view-models, so downstream mount code can continue to
+  parse canonical `.wsnbody` content instead of a flattened projection.
 - The selected-note body-read signal contract must preserve request sequencing so the selection bridge can ignore stale
   completions.
+- A caller-supplied note-directory path must remain authoritative for load/reconcile/bind requests; the coordinator
+  must not silently redirect those operations through another package that happens to share the same `noteId`.

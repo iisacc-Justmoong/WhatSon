@@ -35,16 +35,31 @@ public:
 
     Q_INVOKABLE bool persistEditorTextForNote(const QString& noteId, const QString& text);
     Q_INVOKABLE bool stageEditorTextForIdleSync(const QString& noteId, const QString& text);
+    bool stageEditorTextForIdleSyncAtPath(
+        const QString& noteId,
+        const QString& noteDirectoryPath,
+        const QString& text);
     Q_INVOKABLE bool flushEditorTextForNote(const QString& noteId, const QString& text);
+    bool flushEditorTextForNoteAtPath(
+        const QString& noteId,
+        const QString& noteDirectoryPath,
+        const QString& text);
     QString noteDirectoryPathForNote(const QString& noteId) const;
     bool pendingEditorTextForNote(const QString& noteId, QString* text = nullptr) const;
     quint64 loadNoteBodyTextForNote(const QString& noteId);
+    quint64 loadNoteBodyTextForNoteAtPath(const QString& noteId, const QString& noteDirectoryPath);
     bool reconcileViewSessionAndRefreshSnapshotForNote(
         const QString& noteId,
         const QString& viewSessionText,
         bool preferViewSessionOnMismatch = false);
+    bool reconcileViewSessionAndRefreshSnapshotForNoteAtPath(
+        const QString& noteId,
+        const QString& noteDirectoryPath,
+        const QString& viewSessionText,
+        bool preferViewSessionOnMismatch = false);
     bool refreshNoteSnapshotForNote(const QString& noteId);
     void bindSelectedNote(const QString& noteId);
+    void bindSelectedNoteAtPath(const QString& noteId, const QString& noteDirectoryPath);
     void clearSelectedNote();
 
 signals:
@@ -84,7 +99,11 @@ private:
         bool directPersistenceReady = false;
     };
 
-    bool stageEditorSnapshot(const QString& noteId, const QString& text, bool requestImmediateFetch);
+    bool stageEditorSnapshot(
+        const QString& noteId,
+        const QString& noteDirectoryPath,
+        const QString& text,
+        bool requestImmediateFetch);
     bool enqueueNextBufferedPersistenceIfNeeded();
     void ensureFetchTimerRunning();
     void markNoteDirty(const QString& noteId);
@@ -96,6 +115,7 @@ private:
     QHash<QString, QString> m_lastPersistedTextByNote;
     QStringList m_dirtyNoteOrder;
     QString m_inFlightNoteId;
+    QString m_inFlightNoteDirectoryPath;
     QString m_inFlightText;
     bool m_persistenceInFlight = false;
 };

@@ -12,6 +12,8 @@ It accepts hot-path body snapshots from QML, keeps the latest body text per note
 The live editor buffer remains authoritative; filesystem persistence is eventually consistent.
 Each buffered snapshot may also retain the resolved note-directory path that was valid when the edit was staged, so a
 later fetch turn does not have to rediscover that path through a different active hierarchy view-model.
+The public sync contract therefore treats `noteId + noteDirectoryPath` as the stable mounted package identity whenever
+the caller can provide both.
 
 ## Public Contract
 
@@ -21,11 +23,15 @@ later fetch turn does not have to rediscover that path through a different activ
   lanes are currently available.
 - `stageEditorTextForIdleSync(noteId, text)`: stores the latest editor snapshot for that note and marks it dirty for
   the next fetch turn even if the downstream persistence contract is temporarily unavailable.
+- `stageEditorTextForIdleSyncAtPath(noteId, noteDirectoryPath, text)`: same buffer contract, but with an explicit
+  mounted `.wsnote` directory that should travel with the staged snapshot.
 - When the direct persistence lane is available during that staging call, the controller also snapshots the resolved
   note-directory path for that note.
 - `flushEditorTextForNote(noteId, text)`: compatibility path that still stores the same buffered snapshot, but also
   asks the controller to attempt one immediate fetch-cycle enqueue when possible. The return value now reflects whether
   that immediate enqueue was actually accepted.
+- `flushEditorTextForNoteAtPath(noteId, noteDirectoryPath, text)`: immediate-enqueue variant that preserves the
+  caller-provided mounted package path.
 - `persistEditorTextForNote(noteId, text)`: compatibility alias for the buffered stage path.
 - `noteDirectoryPathForNote(noteId)`: exposes the freshest known note-directory path for one note, preferring a
   buffered snapshot's captured path and otherwise falling back to the downstream coordinator's live resolution.
@@ -33,11 +39,17 @@ later fetch turn does not have to rediscover that path through a different activ
   without forcing a filesystem read, so selection/open flows can prefer the unsaved local body over stale package IO.
 - `loadNoteBodyTextForNote(noteId)`: forwards one selected-note lazy body read to the downstream coordinator and
   returns its request sequence while later forwarding completion through `noteBodyTextLoaded(sequence, ...)`.
+- `loadNoteBodyTextForNoteAtPath(noteId, noteDirectoryPath)`: same read contract, but bound to an explicit selected
+  `.wsnote` package.
 - `refreshNoteSnapshotForNote(noteId)`, `bindSelectedNote(noteId)`, `clearSelectedNote()`: forward selection/session
   work to the downstream coordinator while keeping the sync boundary in `file/sync`.
+- `bindSelectedNoteAtPath(noteId, noteDirectoryPath)`: selected-note bind contract that avoids a second package
+  resolution step when the selection layer already knows the mounted directory.
 - `reconcileViewSessionAndRefreshSnapshotForNote(noteId, viewSessionText)`: compares one editor session snapshot
   against filesystem RAW through the downstream coordinator. Callers may also mark the current editor session as
   authoritative so a mismatch persists the view-session text back into RAW before refreshing the visible note snapshot.
+- `reconcileViewSessionAndRefreshSnapshotForNoteAtPath(noteId, noteDirectoryPath, viewSessionText, ...)`: package-
+  stable reconcile path for same-id duplicate note packages.
 - `editorTextPersistenceQueued(...)`: emitted when one buffered snapshot actually enters the downstream persistence
   queue.
 - `editorTextPersistenceFinished(...)`: forwarded once that queued persistence request completes.
@@ -76,6 +88,8 @@ later fetch turn does not have to rediscover that path through a different activ
   hierarchy/content-view-model swap must not silently redirect that buffered text through a different runtime model.
 - A buffered snapshot that already carries a direct note-directory path must still be eligible for a fetch-turn write
   even when the current content view-model contract is temporarily absent.
+- Path-aware selected-note reads/reconcile/bind calls must preserve the caller-provided `.wsnote` package identity
+  instead of re-resolving from `noteId` alone.
 - Session/filesystem reconciliation must not trigger unconditional reloads; filesystem refresh should happen only on
   mismatch.
 - Successful persistence completion must include one reconcile verify pass, and that verify must prefer the just-saved

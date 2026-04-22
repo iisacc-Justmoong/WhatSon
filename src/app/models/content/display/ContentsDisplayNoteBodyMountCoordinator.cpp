@@ -1,6 +1,5 @@
 #include "app/models/content/display/ContentsDisplayNoteBodyMountCoordinator.hpp"
 
-#include "app/models/editor/parser/ContentsWsnBodyBlockParser.hpp"
 #include "app/models/file/WhatSonDebugTrace.hpp"
 
 #include <QTimer>
@@ -461,19 +460,7 @@ bool ContentsDisplayNoteBodyMountCoordinator::parseMounted() const noexcept
         return false;
     }
 
-    if (editorSessionRepresentsExplicitEmptyBody() || parserAcceptsSource(m_editorText))
-    {
-        return true;
-    }
-
-    if (selectionSnapshotReady()
-        && (selectionSnapshotRepresentsExplicitEmptyBody()
-            || parserAcceptsSource(m_selectedNoteBodyText)))
-    {
-        return true;
-    }
-
-    return false;
+    return documentSourceReady();
 }
 
 bool ContentsDisplayNoteBodyMountCoordinator::sourceMounted() const noexcept
@@ -487,7 +474,9 @@ bool ContentsDisplayNoteBodyMountCoordinator::sourceMounted() const noexcept
 
 bool ContentsDisplayNoteBodyMountCoordinator::noteMounted() const noexcept
 {
-    return sourceMounted() && documentSurfaceReady();
+    return sourceMounted()
+        && documentSurfaceReady()
+        && editorSessionSynchronizedToSelectedSource();
 }
 
 bool ContentsDisplayNoteBodyMountCoordinator::mountFailed() const noexcept
@@ -615,12 +604,12 @@ QString ContentsDisplayNoteBodyMountCoordinator::exceptionMessage() const
 
 bool ContentsDisplayNoteBodyMountCoordinator::exceptionVisible() const noexcept
 {
-    return m_visible && !parseMounted();
+    return m_visible && mountFailed() && !parseMounted();
 }
 
 bool ContentsDisplayNoteBodyMountCoordinator::commandSurfaceEnabled() const noexcept
 {
-    return parseMounted();
+    return noteMounted();
 }
 
 void ContentsDisplayNoteBodyMountCoordinator::scheduleMount(const QVariantMap& options)
@@ -714,6 +703,18 @@ QVariantMap ContentsDisplayNoteBodyMountCoordinator::currentMountState() const
     state.insert(QStringLiteral("documentSurfaceReady"), documentSurfaceReady());
     state.insert(QStringLiteral("documentSurfaceRequested"), documentSurfaceRequested());
     state.insert(QStringLiteral("editorBoundNoteId"), m_editorBoundNoteId);
+    state.insert(
+        QStringLiteral("editorSessionBoundToSelectedNoteId"),
+        editorSessionBoundToSelectedNoteId());
+    state.insert(
+        QStringLiteral("editorSessionReadyForPresentation"),
+        editorSessionReadyForPresentation());
+    state.insert(
+        QStringLiteral("editorSessionRequiresSelectionMount"),
+        editorSessionRequiresSelectionMount());
+    state.insert(
+        QStringLiteral("editorSessionSynchronizedToSelectedSource"),
+        editorSessionSynchronizedToSelectedSource());
     state.insert(QStringLiteral("editorSessionBoundToSelectedNote"), m_editorSessionBoundToSelectedNote);
     state.insert(QStringLiteral("inlineDocumentSurfaceLoading"), m_inlineDocumentSurfaceLoading);
     state.insert(QStringLiteral("inlineDocumentSurfaceReady"), m_inlineDocumentSurfaceReady);
@@ -730,6 +731,7 @@ QVariantMap ContentsDisplayNoteBodyMountCoordinator::currentMountState() const
     state.insert(QStringLiteral("selectedNoteBodyNoteId"), m_selectedNoteBodyNoteId);
     state.insert(QStringLiteral("selectedNoteBodyResolved"), m_selectedNoteBodyResolved);
     state.insert(QStringLiteral("selectedNoteId"), m_selectedNoteId);
+    state.insert(QStringLiteral("selectedBodyReadyForPresentation"), selectedBodyReadyForPresentation());
     state.insert(QStringLiteral("selectionSnapshotReady"), selectionSnapshotReady());
     state.insert(QStringLiteral("snapshotRefreshAttemptedNoteId"), m_snapshotRefreshAttemptedNoteId);
     state.insert(QStringLiteral("structuredDocumentSurfaceReady"), m_structuredDocumentSurfaceReady);
@@ -799,6 +801,14 @@ bool ContentsDisplayNoteBodyMountCoordinator::selectionSnapshotRepresentsExplici
         && m_selectedNoteBodyText.isEmpty();
 }
 
+bool ContentsDisplayNoteBodyMountCoordinator::selectedBodyReadyForPresentation() const noexcept
+{
+    const QString normalizedSelectedNoteId = normalizeNoteId(m_selectedNoteId);
+    return !normalizedSelectedNoteId.isEmpty()
+        && m_selectedNoteBodyResolved
+        && m_selectedNoteBodyNoteId == normalizedSelectedNoteId;
+}
+
 bool ContentsDisplayNoteBodyMountCoordinator::editorSessionRepresentsExplicitEmptyBody() const noexcept
 {
     const QString normalizedSelectedNoteId = normalizeNoteId(m_selectedNoteId);
@@ -806,24 +816,81 @@ bool ContentsDisplayNoteBodyMountCoordinator::editorSessionRepresentsExplicitEmp
     return !normalizedSelectedNoteId.isEmpty()
         && m_editorSessionBoundToSelectedNote
         && normalizedEditorNoteId == normalizedSelectedNoteId
+        && m_pendingBodySave
         && m_editorText.isEmpty();
+}
+
+bool ContentsDisplayNoteBodyMountCoordinator::editorSessionBoundToSelectedNoteId() const noexcept
+{
+    const QString normalizedSelectedNoteId = normalizeNoteId(m_selectedNoteId);
+    const QString normalizedEditorNoteId = normalizeNoteId(m_editorBoundNoteId);
+    return !normalizedSelectedNoteId.isEmpty()
+        && m_editorSessionBoundToSelectedNote
+        && normalizedEditorNoteId == normalizedSelectedNoteId;
+}
+
+bool ContentsDisplayNoteBodyMountCoordinator::editorSessionReadyForPresentation() const noexcept
+{
+    return editorSessionBoundToSelectedNoteId()
+        && (!m_editorText.isEmpty() || editorSessionRepresentsExplicitEmptyBody());
+}
+
+bool ContentsDisplayNoteBodyMountCoordinator::editorSessionSynchronizedToSelectedSource() const noexcept
+{
+    if (!editorSessionBoundToSelectedNoteId())
+    {
+        return false;
+    }
+
+    if (m_pendingBodySave)
+    {
+        return !m_editorText.isEmpty() || editorSessionRepresentsExplicitEmptyBody();
+    }
+
+    if (!selectedBodyReadyForPresentation())
+    {
+        return false;
+    }
+
+    return m_editorText == m_selectedNoteBodyText;
+}
+
+bool ContentsDisplayNoteBodyMountCoordinator::editorSessionRequiresSelectionMount() const noexcept
+{
+    if (m_pendingBodySave)
+    {
+        return !editorSessionSynchronizedToSelectedSource();
+    }
+
+    if (!selectedBodyReadyForPresentation())
+    {
+        return false;
+    }
+
+    return !editorSessionSynchronizedToSelectedSource();
 }
 
 bool ContentsDisplayNoteBodyMountCoordinator::documentSourceReady() const noexcept
 {
-    if (editorSessionRepresentsExplicitEmptyBody() || parserAcceptsSource(m_editorText))
+    const QString normalizedSelectedNoteId = normalizeNoteId(m_selectedNoteId);
+    if (normalizedSelectedNoteId.isEmpty())
     {
-        return true;
+        return false;
     }
 
-    if (selectionSnapshotReady()
-        && (selectionSnapshotRepresentsExplicitEmptyBody()
-            || parserAcceptsSource(m_selectedNoteBodyText)))
-    {
-        return true;
-    }
+    const bool bodyMatchesSelection = m_selectedNoteBodyNoteId == normalizedSelectedNoteId;
+    const bool bodyOwnedBySelection =
+        bodyMatchesSelection || m_selectedNoteBodyNoteId.isEmpty();
+    const bool bodyHasText = !m_selectedNoteBodyText.isEmpty();
+    const bool bodyAvailable = bodyOwnedBySelection
+        && (bodyHasText || m_selectedNoteBodyResolved);
+    const bool bodyReadyForPresentation = selectedBodyReadyForPresentation();
+    const bool editorReadyForPresentation = editorSessionReadyForPresentation();
+    const bool preferEditorSource =
+        editorReadyForPresentation
+        && (m_pendingBodySave || !bodyAvailable);
 
-    return false;
+    return preferEditorSource || bodyReadyForPresentation;
 }
 
 bool ContentsDisplayNoteBodyMountCoordinator::refreshAttemptedForSelectedNote() const noexcept
@@ -831,21 +898,6 @@ bool ContentsDisplayNoteBodyMountCoordinator::refreshAttemptedForSelectedNote() 
     const QString normalizedSelectedNoteId = normalizeNoteId(m_selectedNoteId);
     return !normalizedSelectedNoteId.isEmpty()
         && m_snapshotRefreshAttemptedNoteId == normalizedSelectedNoteId;
-}
-
-bool ContentsDisplayNoteBodyMountCoordinator::parserAcceptsSource(const QString& sourceText) const
-{
-    if (sourceText.isEmpty())
-    {
-        return false;
-    }
-
-    ContentsWsnBodyBlockParser parser;
-    const auto parseResult = parser.parse(sourceText);
-    return !parseResult.correctedSourceText.isEmpty()
-        || !parseResult.renderedDocumentBlocks.isEmpty()
-        || !parseResult.renderedAgendas.isEmpty()
-        || !parseResult.renderedCallouts.isEmpty();
 }
 
 void ContentsDisplayNoteBodyMountCoordinator::flushMount()
@@ -995,7 +1047,7 @@ void ContentsDisplayNoteBodyMountCoordinator::flushMount()
     }
 
     setPendingMountNoteId(QString());
-    if (!m_editorSessionBoundToSelectedNote)
+    if (editorSessionRequiresSelectionMount())
     {
         plan.insert(QStringLiteral("attemptEditorSessionMount"), true);
         plan.insert(QStringLiteral("reason"), QStringLiteral("mount-editor-session"));

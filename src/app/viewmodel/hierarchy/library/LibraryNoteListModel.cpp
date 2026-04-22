@@ -77,6 +77,16 @@ namespace
         return value;
     }
 
+    QString normalizeNoteDirectoryPath(QString value)
+    {
+        value = value.trimmed();
+        if (value.isEmpty())
+        {
+            return {};
+        }
+        return QDir::cleanPath(value);
+    }
+
     QString normalizeTimestamp(QString value)
     {
         return value.trimmed();
@@ -142,6 +152,7 @@ namespace
     bool sameNoteListItem(const LibraryNoteListItem& lhs, const LibraryNoteListItem& rhs)
     {
         return lhs.id == rhs.id
+            && lhs.noteDirectoryPath == rhs.noteDirectoryPath
             && lhs.primaryText == rhs.primaryText
             && lhs.searchableText == rhs.searchableText
             && lhs.bodyText == rhs.bodyText
@@ -297,6 +308,15 @@ namespace
         return items.at(index).bodyText;
     }
 
+    QString itemNoteDirectoryPathAt(const QVector<LibraryNoteListItem>& items, int index)
+    {
+        if (index < 0 || index >= items.size())
+        {
+            return {};
+        }
+        return items.at(index).noteDirectoryPath;
+    }
+
     int indexOfItemById(const QVector<LibraryNoteListItem>& items, const QString& noteId)
     {
         const QString normalizedNoteId = noteId.trimmed();
@@ -346,6 +366,8 @@ QVariant LibraryNoteListModel::data(const QModelIndex& index, int role) const
     case IdRole:
     case NoteIdRole:
         return item.id;
+    case NoteDirectoryPathRole:
+        return item.noteDirectoryPath;
     case PrimaryTextRole:
         return item.primaryText;
     case BodyTextRole:
@@ -374,6 +396,7 @@ QHash<int, QByteArray> LibraryNoteListModel::roleNames() const
     return {
         {IdRole, "id"},
         {NoteIdRole, "noteId"},
+        {NoteDirectoryPathRole, "noteDirectoryPath"},
         {PrimaryTextRole, "primaryText"},
         {BodyTextRole, "bodyText"},
         {ImageRole, "image"},
@@ -401,6 +424,11 @@ QString LibraryNoteListModel::currentNoteId() const
     return itemIdAt(m_items, m_currentIndex);
 }
 
+QString LibraryNoteListModel::currentNoteDirectoryPath() const
+{
+    return itemNoteDirectoryPathAt(m_items, m_currentIndex);
+}
+
 QString LibraryNoteListModel::currentBodyText() const
 {
     return itemBodyTextAt(m_items, m_currentIndex);
@@ -424,6 +452,7 @@ void LibraryNoteListModel::setCurrentIndex(int index)
     }
 
     const QString previousNoteId = currentNoteId();
+    const QString previousNoteDirectoryPath = currentNoteDirectoryPath();
     const QString previousBodyText = currentBodyText();
 
     m_currentIndex = nextIndex;
@@ -432,6 +461,10 @@ void LibraryNoteListModel::setCurrentIndex(int index)
     if (currentNoteId() != previousNoteId)
     {
         emit currentNoteIdChanged();
+    }
+    if (currentNoteDirectoryPath() != previousNoteDirectoryPath)
+    {
+        emit currentNoteDirectoryPathChanged();
     }
     if (currentBodyText() != previousBodyText)
     {
@@ -505,6 +538,7 @@ void LibraryNoteListModel::setItems(QVector<LibraryNoteListItem> items)
         const QString originalImageSource = item.imageSource;
 
         item.id = item.id.trimmed();
+        item.noteDirectoryPath = normalizeNoteDirectoryPath(std::move(item.noteDirectoryPath));
         item.primaryText = normalizePrimaryText(std::move(item.primaryText));
         item.searchableText = normalizeSearchableText(std::move(item.searchableText));
         item.bodyText = normalizeBodyText(std::move(item.bodyText));
@@ -682,6 +716,7 @@ const QVector<LibraryNoteListItem>& LibraryNoteListModel::items() const noexcept
 void LibraryNoteListModel::applySearchFilter()
 {
     const QString previousNoteId = currentNoteId();
+    const QString previousNoteDirectoryPath = currentNoteDirectoryPath();
     const QString previousBodyText = currentBodyText();
     const int previousIndex = m_currentIndex;
     const int previousCount = m_items.size();
@@ -727,6 +762,10 @@ void LibraryNoteListModel::applySearchFilter()
     if (currentNoteId() != previousNoteId)
     {
         emit currentNoteIdChanged();
+    }
+    if (currentNoteDirectoryPath() != previousNoteDirectoryPath)
+    {
+        emit currentNoteDirectoryPathChanged();
     }
     if (currentBodyText() != previousBodyText)
     {

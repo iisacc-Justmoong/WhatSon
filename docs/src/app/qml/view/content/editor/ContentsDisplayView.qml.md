@@ -93,6 +93,18 @@ not note-backed.
   logic rather than as a content-panel helper.
 - The host now reads `documentSourcePlan` from the resolver's `Q_PROPERTY`, so the note-body mount coordinator is
   re-evaluated by QML as soon as the selected note body, editor session, or pending-save state changes.
+- The host now also treats a bound editor session as matching the current selection only when the note id matches and,
+  when available, `editorBoundNoteDirectoryPath == selectedNoteDirectoryPath`.
+  This prevents the editor chrome from staying mounted on stale session state when the same `noteId` resolves to a
+  different `.wsnote` package.
+- The mount coordinator itself now binds directly to raw selection-bridge and editor-session state instead of feeding
+  resolver-derived presentation choices back into the mount contract.
+  Source arbitration remains the resolver's job; mount readiness now evaluates against the authoritative
+  selection/session inputs without depending on a second layer of derived `documentSourcePlan` values.
+- The host's command surfaces remain disabled until the selected-note snapshot and the bound editor session agree on
+  the same mounted body text.
+  This prevents formatting/insert actions from targeting a stale same-note editor session while the selection bridge
+  and mount coordinator are still remounting that session to the latest selected note body.
 - The `ContentsDisplayDocumentSourceResolver` block keeps each upstream source property bound exactly once.
   Duplicate assignments in that block are a hard QML compile error, so the host now relies on one normalized binding
   per resolver input and the regression suite checks that those keys remain unique.
@@ -121,6 +133,10 @@ not note-backed.
   Rapid note switches therefore clear stale incremental line caches immediately, queue a fresh structured layout-cache
   rebuild for the newly selected note, and only reuse minimap-derived line geometry once it has been regenerated for
   that same note id.
+- Selection delivery into `ContentsEditorSession.qml` and `ContentsDisplayDocumentSourceResolver` now forwards
+  `selectedNoteDirectoryPath` explicitly.
+  QML no longer asks those collaborators to rediscover the mounted package from `noteId` alone after selection has
+  already picked a concrete `.wsnote` directory.
 - Page/print mode now also injects `paperPaletteEnabled` into both `ContentsEditorPresentationProjection` and
   `ContentsStructuredDocumentFlow.qml`, so the white paper surface cannot inherit dark-theme body white from either the
   whole-document HTML renderer or the structured block delegates.

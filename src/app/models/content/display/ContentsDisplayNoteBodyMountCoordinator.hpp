@@ -4,8 +4,6 @@
 #include <QString>
 #include <QVariantMap>
 
-class ContentsWsnBodyBlockParser;
-
 class ContentsDisplayNoteBodyMountCoordinator : public QObject
 {
     Q_OBJECT
@@ -159,13 +157,17 @@ private:
     static QString normalizeNoteId(const QString& noteId);
 
     bool canFlushMountImmediately() const noexcept;
-    bool parserAcceptsSource(const QString& sourceText) const;
     bool documentSurfaceRequested() const noexcept;
     bool documentSurfaceReady() const noexcept;
     bool documentSurfaceLoading() const noexcept;
     bool selectionSnapshotReady() const noexcept;
     bool selectionSnapshotRepresentsExplicitEmptyBody() const noexcept;
+    bool selectedBodyReadyForPresentation() const noexcept;
     bool editorSessionRepresentsExplicitEmptyBody() const noexcept;
+    bool editorSessionBoundToSelectedNoteId() const noexcept;
+    bool editorSessionReadyForPresentation() const noexcept;
+    bool editorSessionSynchronizedToSelectedSource() const noexcept;
+    bool editorSessionRequiresSelectionMount() const noexcept;
     bool documentSourceReady() const noexcept;
     bool refreshAttemptedForSelectedNote() const noexcept;
     void flushMount();

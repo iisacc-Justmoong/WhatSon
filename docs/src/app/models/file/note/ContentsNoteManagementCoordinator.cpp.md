@@ -17,6 +17,10 @@
 - The coordinator now also exposes a read-side `noteDirectoryPathForNote(noteId)` helper.
   `ContentsEditorIdleSyncController` and the selection bridge use that helper to surface the currently selected note's
   resolved package directory back to body resource rendering without depending on the editor's current hierarchy shell.
+- Read/reconcile/bind requests are no longer forced through `noteId`-only lookup.
+  `loadNoteBodyTextForNote(...)`, `reconcileViewSessionAndRefreshSnapshotForNote(...)`, and `bindSelectedNote(...)`
+  can all carry an explicit `noteDirectoryPath`, allowing the caller to keep targeting the exact `.wsnote` package
+  that selection already resolved even when another runtime model could resolve the same id differently.
 - Non-editing maintenance work also lives here:
   - `WhatSonNoteFileStatSupport::incrementOpenCountForNoteHeader(...)`
   - `WhatSonNoteFileStatSupport::refreshTrackedStatisticsForNote(...)`
@@ -40,11 +44,12 @@
   - when mismatch is reported for an editor-authoritative session, first persists that view-session text back into RAW,
     then refreshes the visible note snapshot from the repaired filesystem state.
 - The same queue now also owns selected-note lazy body reads:
-  - `loadNoteBodyTextForNote(noteId)` resolves the note path on the main thread
+  - `loadNoteBodyTextForNote(noteId, noteDirectoryPath = {})` resolves the note path on the main thread, preferring
+    the caller-provided path when present
   - the actual `.wsnote` read runs on the worker lane
   - each load keeps its own request sequence
-  - `noteBodyTextLoaded(sequence, noteId, text, success, errorMessage)` returns the normalized source/plain body back
-    to the selection bridge without requiring note-list models to hold the full note body in memory
+  - `noteBodyTextLoaded(sequence, noteId, text, success, errorMessage)` returns canonical persisted note source text
+    back to the selection bridge, falling back to plain body text only when a note package has no separate RAW source
   - a newer same-note lazy read can therefore supersede an older in-flight read instead of being silently dropped
 
 ## Queue Semantics
@@ -58,6 +63,8 @@
   sequence ordering across in-flight completions.
 - Reconcile requests are also coalesced by note id plus normalized session text; if a later queued request upgrades the
   same session text to `preferViewSessionOnMismatch`, that stronger editor-authoritative policy must be preserved.
+- Explicit note-directory paths must survive request enqueue/coalescing so a queued same-id operation does not drift to
+  a different `.wsnote` package before the worker lane executes it.
 
 ## Regression Checks
 
@@ -78,5 +85,10 @@
   back into the visible session.
 - Lazy selected-note body reads must execute on the worker lane and must not require the note-list model to carry the
   same full body text as selection state.
+- Lazy selected-note body reads must preserve structured RAW tags such as `<paragraph>`, `<resource ... />`, and
+  `<break/>`; flattening that worker-lane payload into plain text would desynchronize the parser-backed mount path
+  from the persisted `.wsnbody`.
 - A newer same-note body-read request must not be discarded merely because an older body-read for that note is already
   in flight.
+- When the caller supplied an explicit note-directory path, the worker request must read or reconcile that package
+  rather than re-resolving from `noteId` alone.

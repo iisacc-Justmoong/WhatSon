@@ -39,6 +39,10 @@
 - The bridge now also exposes `selectedNoteDirectoryPath`, resolved through the idle-sync/controller boundary.
   This gives QML renderers one stable note-package path for inline `<resource ...>` resolution even while hierarchy
   view-model bindings are switching.
+- Selection identity is now effectively `selectedNoteId + selectedNoteDirectoryPath`.
+  The bridge therefore listens to note-list `currentNoteDirectoryPathChanged()` in addition to note-id/body signals,
+  and a same-id selection that resolves to a different `.wsnote` directory is treated as a real rebind/remount rather
+  than as a stable same-note refresh.
 - Lazy body reads now also track one request sequence per selected-note fetch.
   The bridge only accepts `noteBodyTextLoaded(sequence, ...)` for the latest requested sequence of the currently
   selected note, so an older in-flight read can no longer overwrite a newer same-note body after local edits,
@@ -103,6 +107,10 @@
   transient contract gap instead of an immediate note-clear event.
   When the active note list still reports visible items, the bridge retains the previous selected note id/body owner
   rather than clearing the editor session and unmounting the document surface on that transient empty-id turn.
+- All bridge calls that target note IO now prefer the path-aware idle-sync overloads when
+  `selectedNoteDirectoryPath` is already known.
+  Lazy body load, staged persistence, immediate flush, and reconcile therefore keep operating on the same `.wsnote`
+  package that the selection layer actually mounted instead of rediscovering a package later from `noteId` alone.
 - The bridge now also emits one explicit `selectionFlow.*` trace vocabulary for note-open debugging:
   - `selectionFlow.noteListSelectionChanged` / `selectionFlow.noteListBodyTextChanged`
   - `selectionFlow.refreshScheduled` / `selectionFlow.refreshFlush` / `selectionFlow.refreshState`
@@ -173,5 +181,7 @@
   persistence catches up.
 - A same-note successful save must advance `selectedNoteBodyText` even when filesystem reconcile reports that no extra
   snapshot refresh is needed.
+- A same `noteId` paired with a different resolved `selectedNoteDirectoryPath` must force a selected-note rebind and
+  body reload instead of being treated as the previously mounted package.
 - Hierarchy-switch QML reassignment must not downgrade active content or note-list bindings to JS-owned objects that
   can be garbage-collected out from under the bridge.
