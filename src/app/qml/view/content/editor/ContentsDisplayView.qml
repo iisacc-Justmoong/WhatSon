@@ -275,52 +275,11 @@ Item {
     readonly property string noteDocumentMountFailureReason: noteBodyMountCoordinator.mountFailureReason
     readonly property string noteDocumentMountFailureMessage: noteBodyMountCoordinator.mountFailureMessage
     readonly property bool noteDocumentSurfaceVisible: noteBodyMountCoordinator.surfaceVisible
-    readonly property string noteDocumentExceptionReason: {
-        if (!contentsView.hasSelectedNote)
-            return "no-selected-note"
-        const mountFailureReason = contentsView.noteDocumentMountFailureReason === undefined
-                || contentsView.noteDocumentMountFailureReason === null
-                ? ""
-                : String(contentsView.noteDocumentMountFailureReason).trim()
-        if (mountFailureReason.length > 0)
-            return mountFailureReason
-        return ""
-    }
-    readonly property string noteDocumentExceptionTitle: {
-        switch (contentsView.noteDocumentExceptionReason) {
-        case "no-selected-note":
-            return "No document opened"
-        case "body-note-mismatch":
-            return "Document selection changed"
-        case "body-unresolved":
-            return "Document body unavailable"
-        case "structured-document-surface-unavailable":
-            return "Structured document unavailable"
-        case "inline-document-surface-unavailable":
-            return "Inline editor unavailable"
-        case "document-surface-not-requested":
-        case "document-surface-unavailable":
-            return "Document surface unavailable"
-        default:
-            return "Document mount failed"
-        }
-    }
-    readonly property string noteDocumentExceptionMessage: {
-        if (contentsView.noteDocumentExceptionReason === "no-selected-note")
-            return "Select a note from the list to open its document."
-        const mountFailureMessage = contentsView.noteDocumentMountFailureMessage === undefined
-                || contentsView.noteDocumentMountFailureMessage === null
-                ? ""
-                : String(contentsView.noteDocumentMountFailureMessage).trim()
-        if (mountFailureMessage.length > 0)
-            return mountFailureMessage
-        return "WhatSon could not mount the selected note document."
-    }
-    readonly property bool noteDocumentExceptionVisible: contentsView.visible
-                                                       && !contentsView.noteDocumentMountPending
-                                                       && !contentsView.noteDocumentParseMounted
-                                                       && contentsView.noteDocumentExceptionReason.length > 0
-    readonly property bool noteDocumentCommandSurfaceEnabled: contentsView.noteDocumentParseMounted
+    readonly property string noteDocumentExceptionReason: noteBodyMountCoordinator.exceptionReason
+    readonly property string noteDocumentExceptionTitle: noteBodyMountCoordinator.exceptionTitle
+    readonly property string noteDocumentExceptionMessage: noteBodyMountCoordinator.exceptionMessage
+    readonly property bool noteDocumentExceptionVisible: noteBodyMountCoordinator.exceptionVisible
+    readonly property bool noteDocumentCommandSurfaceEnabled: noteBodyMountCoordinator.commandSurfaceEnabled
                                                              && !contentsView.showDedicatedResourceViewer
                                                              && !contentsView.showFormattedTextRenderer
     readonly property string structuredFlowSourceText: contentsView.documentPresentationSourceText

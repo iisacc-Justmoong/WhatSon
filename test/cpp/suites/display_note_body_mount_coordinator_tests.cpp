@@ -185,4 +185,11 @@ void WhatSonCppRegressionTests::noteBodyMountCoordinator_reportsSurfaceSpecificF
     QCOMPARE(
         mountState.value(QStringLiteral("mountFailureMessage")).toString(),
         QStringLiteral("The structured document surface did not become ready for the selected note."));
+    QCOMPARE(coordinator.exceptionReason(), QStringLiteral("structured-document-surface-unavailable"));
+    QCOMPARE(coordinator.exceptionTitle(), QStringLiteral("Document surface unavailable"));
+    QCOMPARE(
+        coordinator.exceptionMessage(),
+        QStringLiteral("The structured document surface did not become ready for the selected note."));
+    QVERIFY(!coordinator.exceptionVisible());
+    QVERIFY(coordinator.commandSurfaceEnabled());
 }

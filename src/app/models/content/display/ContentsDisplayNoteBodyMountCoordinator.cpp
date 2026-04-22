@@ -569,6 +569,58 @@ QString ContentsDisplayNoteBodyMountCoordinator::mountFailureMessage() const
     return mountFailureMessageForReason(mountFailureReason());
 }
 
+QString ContentsDisplayNoteBodyMountCoordinator::exceptionReason() const
+{
+    if (m_selectedNoteId.isEmpty())
+    {
+        return QStringLiteral("no-selected-note");
+    }
+
+    return mountFailureReason().trimmed();
+}
+
+QString ContentsDisplayNoteBodyMountCoordinator::exceptionTitle() const
+{
+    const QString reason = exceptionReason();
+    if (reason == QStringLiteral("no-selected-note"))
+    {
+        return QStringLiteral("No note selected");
+    }
+    if (reason == QStringLiteral("body-note-mismatch"))
+    {
+        return QStringLiteral("Selected note changed");
+    }
+    if (reason == QStringLiteral("body-unresolved")
+        || reason == QStringLiteral("body-source-unavailable"))
+    {
+        return QStringLiteral("Note body unavailable");
+    }
+    if (reason.contains(QStringLiteral("surface")))
+    {
+        return QStringLiteral("Document surface unavailable");
+    }
+    return QStringLiteral("Note document unavailable");
+}
+
+QString ContentsDisplayNoteBodyMountCoordinator::exceptionMessage() const
+{
+    if (exceptionReason() == QStringLiteral("no-selected-note"))
+    {
+        return QStringLiteral("Select a note to open its document.");
+    }
+    return mountFailureMessage();
+}
+
+bool ContentsDisplayNoteBodyMountCoordinator::exceptionVisible() const noexcept
+{
+    return m_visible && !parseMounted();
+}
+
+bool ContentsDisplayNoteBodyMountCoordinator::commandSurfaceEnabled() const noexcept
+{
+    return parseMounted();
+}
+
 void ContentsDisplayNoteBodyMountCoordinator::scheduleMount(const QVariantMap& options)
 {
     const bool resetSnapshot = options.value(QStringLiteral("resetSnapshot")).toBool();

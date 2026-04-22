@@ -191,15 +191,15 @@ void WhatSonCppRegressionTests::contentsDisplayView_surfacesMountFailurePlacehol
     QVERIFY(displayViewSource.contains(
         QStringLiteral("readonly property bool noteDocumentSurfaceVisible: noteBodyMountCoordinator.surfaceVisible")));
     QVERIFY(displayViewSource.contains(
-        QStringLiteral("readonly property string noteDocumentExceptionReason: {")));
+        QStringLiteral("readonly property string noteDocumentExceptionReason: noteBodyMountCoordinator.exceptionReason")));
     QVERIFY(displayViewSource.contains(
-        QStringLiteral("readonly property string noteDocumentExceptionTitle: {")));
+        QStringLiteral("readonly property string noteDocumentExceptionTitle: noteBodyMountCoordinator.exceptionTitle")));
     QVERIFY(displayViewSource.contains(
-        QStringLiteral("readonly property string noteDocumentExceptionMessage: {")));
+        QStringLiteral("readonly property string noteDocumentExceptionMessage: noteBodyMountCoordinator.exceptionMessage")));
     QVERIFY(displayViewSource.contains(
-        QStringLiteral("readonly property bool noteDocumentExceptionVisible: contentsView.visible")));
+        QStringLiteral("readonly property bool noteDocumentExceptionVisible: noteBodyMountCoordinator.exceptionVisible")));
     QVERIFY(displayViewSource.contains(
-        QStringLiteral("readonly property bool noteDocumentCommandSurfaceEnabled: contentsView.noteDocumentParseMounted")));
+        QStringLiteral("readonly property bool noteDocumentCommandSurfaceEnabled: noteBodyMountCoordinator.commandSurfaceEnabled")));
     QVERIFY(displayViewSource.contains(
         QStringLiteral("const normalizedOptions = options && typeof options === \"object\" ? options : ({});")));
     QVERIFY(displayViewSource.contains(
@@ -248,21 +248,15 @@ void WhatSonCppRegressionTests::contentsDisplayView_surfacesMountFailurePlacehol
     QVERIFY(displayViewSource.contains(
         QStringLiteral("text: \"Loading note...\"")));
     QVERIFY(displayViewSource.contains(
-        QStringLiteral("return \"No document opened\"")));
+        QStringLiteral("readonly property string noteDocumentExceptionTitle: noteBodyMountCoordinator.exceptionTitle")));
     QVERIFY(displayViewSource.contains(
-        QStringLiteral("return \"Select a note from the list to open its document.\"")));
+        QStringLiteral("readonly property string noteDocumentExceptionMessage: noteBodyMountCoordinator.exceptionMessage")));
     QVERIFY(displayViewSource.contains(
-        QStringLiteral("return \"Document selection changed\"")));
+        QStringLiteral("readonly property string noteDocumentExceptionReason: noteBodyMountCoordinator.exceptionReason")));
     QVERIFY(displayViewSource.contains(
-        QStringLiteral("return \"Document body unavailable\"")));
+        QStringLiteral("readonly property string noteDocumentExceptionTitle: noteBodyMountCoordinator.exceptionTitle")));
     QVERIFY(displayViewSource.contains(
-        QStringLiteral("return \"Structured document unavailable\"")));
-    QVERIFY(displayViewSource.contains(
-        QStringLiteral("return \"Inline editor unavailable\"")));
-    QVERIFY(displayViewSource.contains(
-        QStringLiteral("return \"Document surface unavailable\"")));
-    QVERIFY(displayViewSource.contains(
-        QStringLiteral("return \"Document mount failed\"")));
+        QStringLiteral("readonly property string noteDocumentExceptionMessage: noteBodyMountCoordinator.exceptionMessage")));
     QVERIFY(displayViewSource.contains(
         QStringLiteral("onSelectedNoteBodyLoadingChanged:")));
     QVERIFY(displayViewSource.contains(

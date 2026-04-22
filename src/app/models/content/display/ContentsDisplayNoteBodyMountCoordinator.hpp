@@ -62,6 +62,11 @@ class ContentsDisplayNoteBodyMountCoordinator : public QObject
     Q_PROPERTY(bool surfaceVisible READ surfaceVisible NOTIFY mountStateChanged)
     Q_PROPERTY(QString mountFailureReason READ mountFailureReason NOTIFY mountStateChanged)
     Q_PROPERTY(QString mountFailureMessage READ mountFailureMessage NOTIFY mountStateChanged)
+    Q_PROPERTY(QString exceptionReason READ exceptionReason NOTIFY mountStateChanged)
+    Q_PROPERTY(QString exceptionTitle READ exceptionTitle NOTIFY mountStateChanged)
+    Q_PROPERTY(QString exceptionMessage READ exceptionMessage NOTIFY mountStateChanged)
+    Q_PROPERTY(bool exceptionVisible READ exceptionVisible NOTIFY mountStateChanged)
+    Q_PROPERTY(bool commandSurfaceEnabled READ commandSurfaceEnabled NOTIFY mountStateChanged)
 
 public:
     explicit ContentsDisplayNoteBodyMountCoordinator(QObject* parent = nullptr);
@@ -120,6 +125,11 @@ public:
     bool surfaceVisible() const noexcept;
     QString mountFailureReason() const;
     QString mountFailureMessage() const;
+    QString exceptionReason() const;
+    QString exceptionTitle() const;
+    QString exceptionMessage() const;
+    bool exceptionVisible() const noexcept;
+    bool commandSurfaceEnabled() const noexcept;
 
     Q_INVOKABLE void scheduleMount(const QVariantMap& options);
     Q_INVOKABLE void handleSnapshotRefreshFinished(const QString& noteId, bool success);
