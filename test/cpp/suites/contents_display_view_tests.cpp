@@ -203,11 +203,13 @@ void WhatSonCppRegressionTests::contentsDisplayView_surfacesMountFailurePlacehol
     QVERIFY(displayViewSource.contains(
         QStringLiteral("target: noteBodyMountCoordinator")));
     QVERIFY(displayViewSource.contains(
+        QStringLiteral("function executeSelectionDeliveryPlan(plan, fallbackKey)")));
+    QVERIFY(displayViewSource.contains(
         QStringLiteral("function onSelectionSyncFlushRequested(plan)")));
     QVERIFY(displayViewSource.contains(
         QStringLiteral("function onMountFlushRequested(plan)")));
     QVERIFY(displayViewSource.contains(
-        QStringLiteral("selectionPlan.attemptSelectionSync")));
+        QStringLiteral("normalizedPlan.attemptSelectionSync || normalizedPlan.attemptEditorSessionMount")));
     QVERIFY(displayViewSource.contains(
         QStringLiteral("mountPlan.attemptSnapshotRefresh")));
     QVERIFY(displayViewSource.contains(
@@ -217,9 +219,11 @@ void WhatSonCppRegressionTests::contentsDisplayView_surfacesMountFailurePlacehol
     QVERIFY(displayViewSource.contains(
         QStringLiteral("if (!contentsView.selectedNoteBodyLoading")));
     QVERIFY(displayViewSource.contains(
-        QStringLiteral("mountPlan.attemptEditorSessionMount")));
+        QStringLiteral("normalizedPlan.attemptSelectionSync || normalizedPlan.attemptEditorSessionMount")));
     QVERIFY(displayViewSource.contains(
-        QStringLiteral("mountPlan.fallbackRefreshIfMountSkipped")));
+        QStringLiteral("normalizedPlan[fallbackKey]")));
+    QVERIFY(displayViewSource.contains(
+        QStringLiteral("normalizedPlan[fallbackKey]")));
     QVERIFY(displayViewSource.contains(
         QStringLiteral("visible: contentsView.hasSelectedNote && contentsView.noteDocumentSurfaceVisible")));
     QVERIFY(displayViewSource.contains(

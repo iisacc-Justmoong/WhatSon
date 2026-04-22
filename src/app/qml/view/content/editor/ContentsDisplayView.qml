@@ -2247,6 +2247,37 @@ Item {
         selectionSyncCoordinator.scheduleSelectionSync(normalizedOptions);
         noteBodyMountCoordinator.scheduleMount(normalizedOptions);
     }
+    function executeSelectionDeliveryPlan(plan, fallbackKey) {
+        const normalizedPlan = plan && typeof plan === "object" ? plan : ({});
+        if (normalizedPlan.resetSelectionCache)
+            contentsView.resetEditorSelectionCache();
+        if (normalizedPlan.flushPendingEditorText
+                && editorSession
+                && editorSession.flushPendingEditorText !== undefined) {
+            editorSession.flushPendingEditorText();
+        }
+        let selectionSynced = false;
+        if ((normalizedPlan.attemptSelectionSync || normalizedPlan.attemptEditorSessionMount)
+                && editorSession
+                && editorSession.requestSyncEditorTextFromSelection !== undefined) {
+            selectionSynced = editorSession.requestSyncEditorTextFromSelection(
+                        String(normalizedPlan.selectedNoteId || ""),
+                        String(normalizedPlan.selectedNoteBodyText || ""),
+                        String(normalizedPlan.selectedNoteBodyNoteId || ""));
+        }
+        if (normalizedPlan.scheduleSnapshotReconcile)
+            contentsView.scheduleEditorEntrySnapshotReconcile();
+        if (normalizedPlan.forceVisualRefresh
+                || (!selectionSynced && normalizedPlan[fallbackKey])) {
+            contentsView.scheduleMinimapSnapshotRefresh(true);
+            contentsView.scheduleDocumentPresentationRefresh(true);
+            contentsView.scheduleGutterRefresh(4);
+        }
+        if (normalizedPlan.focusEditorForSelectedNote)
+            selectionSyncCoordinator.scheduleEditorFocusForNote(
+                        String(normalizedPlan.selectedNoteId || ""));
+        return selectionSynced;
+    }
     function scrollEditorViewportToMinimapPosition(localY) {
         const flickable = contentsView.editorFlickable;
         if (!flickable)
@@ -3009,14 +3040,6 @@ Item {
                         "selectionFlow.mountPlan",
                         "plan={" + contentsView.describeSelectionPlan(mountPlan) + "}",
                         contentsView)
-            if (mountPlan.resetSelectionCache)
-                contentsView.resetEditorSelectionCache();
-            if (mountPlan.flushPendingEditorText
-                    && editorSession
-                    && editorSession.flushPendingEditorText !== undefined) {
-                editorSession.flushPendingEditorText();
-            }
-            let selectionSynced = false;
             let snapshotRefreshAccepted = false;
             let scheduledFollowUpMount = false;
             if (mountPlan.attemptSnapshotRefresh
@@ -3048,26 +3071,9 @@ Item {
                     }
                 }
             }
-            if (mountPlan.attemptEditorSessionMount
-                    && editorSession
-                    && editorSession.requestSyncEditorTextFromSelection !== undefined) {
-                selectionSynced = editorSession.requestSyncEditorTextFromSelection(
-                            String(mountPlan.selectedNoteId || ""),
-                            String(mountPlan.selectedNoteBodyText || ""),
-                            String(mountPlan.selectedNoteBodyNoteId || ""));
-            }
-            if (mountPlan.scheduleSnapshotReconcile)
-                contentsView.scheduleEditorEntrySnapshotReconcile();
-            if (mountPlan.forceVisualRefresh
-                    || ((!selectionSynced && !snapshotRefreshAccepted)
-                        && mountPlan.fallbackRefreshIfMountSkipped)) {
-                contentsView.scheduleMinimapSnapshotRefresh(true);
-                contentsView.scheduleDocumentPresentationRefresh(true);
-                contentsView.scheduleGutterRefresh(4);
-            }
-            if (mountPlan.focusEditorForSelectedNote)
-                selectionSyncCoordinator.scheduleEditorFocusForNote(
-                            String(mountPlan.selectedNoteId || ""));
+            const selectionSynced = contentsView.executeSelectionDeliveryPlan(
+                        mountPlan,
+                        "fallbackRefreshIfMountSkipped");
             EditorTrace.trace(
                         "displayView",
                         "selectionFlow.mountResult",
@@ -3090,34 +3096,9 @@ Item {
                         "selectionFlow.selectionSyncPlan",
                         "plan={" + contentsView.describeSelectionPlan(selectionPlan) + "}",
                         contentsView)
-            if (selectionPlan.resetSelectionCache)
-                contentsView.resetEditorSelectionCache();
-            if (selectionPlan.flushPendingEditorText
-                    && editorSession
-                    && editorSession.flushPendingEditorText !== undefined) {
-                editorSession.flushPendingEditorText();
-            }
-            let selectionSynced = false;
-            if (selectionPlan.attemptSelectionSync
-                    && editorSession
-                    && editorSession.requestSyncEditorTextFromSelection !== undefined) {
-                selectionSynced = editorSession.requestSyncEditorTextFromSelection(
-                            String(selectionPlan.selectedNoteId || ""),
-                            String(selectionPlan.selectedNoteBodyText || ""),
-                            String(selectionPlan.selectedNoteBodyNoteId || ""));
-            }
-            if (selectionPlan.scheduleSnapshotReconcile)
-                contentsView.scheduleEditorEntrySnapshotReconcile();
-            if (selectionPlan.forceVisualRefresh
-                    || (!selectionSynced
-                        && selectionPlan.fallbackRefreshIfSyncSkipped)) {
-                contentsView.scheduleMinimapSnapshotRefresh(true);
-                contentsView.scheduleDocumentPresentationRefresh(true);
-                contentsView.scheduleGutterRefresh(4);
-            }
-            if (selectionPlan.focusEditorForSelectedNote)
-                selectionSyncCoordinator.scheduleEditorFocusForNote(
-                            String(selectionPlan.selectedNoteId || ""));
+            const selectionSynced = contentsView.executeSelectionDeliveryPlan(
+                        selectionPlan,
+                        "fallbackRefreshIfSyncSkipped");
             EditorTrace.trace(
                         "displayView",
                         "selectionFlow.selectionSyncResult",
