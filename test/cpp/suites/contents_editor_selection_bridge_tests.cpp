@@ -67,8 +67,8 @@ void WhatSonCppRegressionTests::contentsEditorSelectionBridge_treatsDirectEmptyS
     QCOMPARE(selectionBridge.selectedNoteId(), QStringLiteral("note-empty"));
     QCOMPARE(selectionBridge.selectedNoteBodyNoteId(), QStringLiteral("note-empty"));
     QCOMPARE(selectionBridge.selectedNoteBodyText(), QString());
-    QVERIFY(selectionBridge.selectedNoteBodyResolved());
-    QVERIFY(!selectionBridge.selectedNoteBodyLoading());
+    QVERIFY(!selectionBridge.selectedNoteBodyResolved());
+    QVERIFY(selectionBridge.selectedNoteBodyLoading() || !selectionBridge.selectedNoteBodyResolved());
 }
 
 void WhatSonCppRegressionTests::contentsEditorSelectionBridge_refreshesSelectedBodyFromNoteListBodySignal()

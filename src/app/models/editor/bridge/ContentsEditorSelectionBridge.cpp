@@ -849,8 +849,10 @@ bool ContentsEditorSelectionBridge::tryResolveSelectedNoteBodySourceText(
         return false;
     }
 
+    const QString resolvedNoteDirectoryPath = resolveSelectedNoteDirectoryPath(normalizedNoteId);
     if (resolvedBodyText.isEmpty()
-        && resolveSelectedNoteDirectoryPath(normalizedNoteId).isEmpty())
+        && !resolvedNoteDirectoryPath.isEmpty()
+        && m_idleSyncController != nullptr)
     {
         return false;
     }
@@ -977,11 +979,44 @@ void ContentsEditorSelectionBridge::startSelectedNoteBodyLoad(
         && m_selectedNoteBodyResolved
         && m_selectedNoteBodySnapshotNoteId == normalizedNoteId;
 
+    const QString noteDirectoryPath = resolveSelectedNoteDirectoryPath(normalizedNoteId);
+    const bool canDeferToWsnoteLoad = !noteDirectoryPath.isEmpty() && m_idleSyncController != nullptr;
     if (!immediateBodyResolved
+        && m_noteListModel != nullptr
+        && hasReadableProperty(m_noteListModel, "currentNoteId")
+        && hasReadableProperty(m_noteListModel, "currentBodyText")
+        && readStringProperty(m_noteListModel, "currentNoteId").trimmed() == normalizedNoteId)
+    {
+        immediateBodyText = readStringProperty(m_noteListModel, "currentBodyText");
+        if (!immediateBodyText.isEmpty())
+        {
+            m_selectedNoteBodySnapshotNoteId = normalizedNoteId;
+            immediateBodyResolved = true;
+        }
+    }
+    if (!immediateBodyResolved && !canDeferToWsnoteLoad
         && tryResolveSelectedNoteBodySourceText(normalizedNoteId, &immediateBodyText))
     {
         m_selectedNoteBodySnapshotNoteId = normalizedNoteId;
         immediateBodyResolved = true;
+    }
+    else if (!immediateBodyResolved
+             && !canDeferToWsnoteLoad
+             && m_contentViewModel != nullptr
+             && hasInvokableMethod(m_contentViewModel, kNoteBodySourceTextForNoteIdSignature))
+    {
+        QString directBodyText;
+        if (QMetaObject::invokeMethod(
+                m_contentViewModel,
+                "noteBodySourceTextForNoteId",
+                Qt::DirectConnection,
+                Q_RETURN_ARG(QString, directBodyText),
+                Q_ARG(QString, normalizedNoteId)))
+        {
+            immediateBodyText = directBodyText;
+            m_selectedNoteBodySnapshotNoteId = normalizedNoteId;
+            immediateBodyResolved = true;
+        }
     }
     else if (!immediateBodyResolved)
     {
@@ -993,14 +1028,13 @@ void ContentsEditorSelectionBridge::startSelectedNoteBodyLoad(
         this,
         QStringLiteral("selectionBridge"),
         QStringLiteral("selectionFlow.bodyLoadImmediate"),
-        QStringLiteral("noteId=%1 resolved=%2 loading=%3 snapshotNoteId=%4 %5")
+        QStringLiteral("noteId=%1 noteDirectoryPath=%2 resolved=%3 loading=%4 snapshotNoteId=%5 %6")
             .arg(normalizedNoteId)
+            .arg(noteDirectoryPath)
             .arg(immediateBodyResolved)
             .arg(!immediateBodyResolved)
             .arg(m_selectedNoteBodySnapshotNoteId)
             .arg(WhatSon::Debug::summarizeText(immediateBodyText)));
-
-    const QString noteDirectoryPath = resolveSelectedNoteDirectoryPath(normalizedNoteId);
     const quint64 requestSequence = m_idleSyncController != nullptr
         ? (!noteDirectoryPath.isEmpty()
                 ? m_idleSyncController->loadNoteBodyTextForNoteAtPath(normalizedNoteId, noteDirectoryPath)
