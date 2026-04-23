@@ -3,6 +3,7 @@
 #include "app/models/file/WhatSonDebugTrace.hpp"
 #include "app/models/file/sync/ContentsEditorIdleSyncController.hpp"
 
+#include <QAbstractItemModel>
 #include <QDir>
 #include <QMetaProperty>
 #include <QQmlEngine>
@@ -745,6 +746,47 @@ bool ContentsEditorSelectionBridge::adoptPendingEditorBodyText(const QString& no
 }
 
 
+QString ContentsEditorSelectionBridge::readNoteIdFromModelRow(int row) const
+{
+    const auto* itemModel = qobject_cast<const QAbstractItemModel*>(m_noteListModel.data());
+    if (itemModel == nullptr || row < 0 || row >= itemModel->rowCount())
+    {
+        return {};
+    }
+
+    const QModelIndex index = itemModel->index(row, 0);
+    if (!index.isValid())
+    {
+        return {};
+    }
+
+    const QVariant noteIdValue = itemModel->data(index, Qt::UserRole + 2);
+    const QString noteId = noteIdValue.toString().trimmed();
+    if (!noteId.isEmpty())
+    {
+        return noteId;
+    }
+
+    return itemModel->data(index, Qt::UserRole + 1).toString().trimmed();
+}
+
+QString ContentsEditorSelectionBridge::readNoteDirectoryPathFromModelRow(int row) const
+{
+    const auto* itemModel = qobject_cast<const QAbstractItemModel*>(m_noteListModel.data());
+    if (itemModel == nullptr || row < 0 || row >= itemModel->rowCount())
+    {
+        return {};
+    }
+
+    const QModelIndex index = itemModel->index(row, 0);
+    if (!index.isValid())
+    {
+        return {};
+    }
+
+    return itemModel->data(index, Qt::UserRole + 3).toString().trimmed();
+}
+
 QString ContentsEditorSelectionBridge::resolveCurrentNoteIdFromSelectionContract() const
 {
     const QString directNoteId = readStringProperty(m_noteListModel, "currentNoteId").trimmed();
@@ -756,7 +798,32 @@ QString ContentsEditorSelectionBridge::resolveCurrentNoteIdFromSelectionContract
     const int currentIndex = readIntProperty(m_noteListModel, "currentIndex");
     if (currentIndex < 0)
     {
+        WhatSon::Debug::traceEditorSelf(
+            this,
+            QStringLiteral("selectionBridge"),
+            QStringLiteral("selectionFlow.resolveCurrentNoteId.noCurrentIndex"),
+            QStringLiteral("currentIndex=%1 {%2}")
+                .arg(currentIndex)
+                .arg(summarizeTraceNoteListModel(m_noteListModel)));
         return {};
+    }
+
+    QString fallbackNoteId = readNoteIdFromModelRow(currentIndex);
+    if (fallbackNoteId.trimmed().isEmpty() && currentIndex == 0)
+    {
+        fallbackNoteId = readNoteIdFromModelRow(0);
+    }
+    if (!fallbackNoteId.trimmed().isEmpty())
+    {
+        WhatSon::Debug::traceEditorSelf(
+            this,
+            QStringLiteral("selectionBridge"),
+            QStringLiteral("selectionFlow.resolveCurrentNoteId.rowFallback"),
+            QStringLiteral("currentIndex=%1 noteId=%2 {%3}")
+                .arg(currentIndex)
+                .arg(fallbackNoteId)
+                .arg(summarizeTraceNoteListModel(m_noteListModel)));
+        return fallbackNoteId.trimmed();
     }
 
     if (hasInvokableMethod(m_noteListModel, "readNoteIdAt(int)"))
@@ -769,10 +836,27 @@ QString ContentsEditorSelectionBridge::resolveCurrentNoteIdFromSelectionContract
                 Q_RETURN_ARG(QString, noteId),
                 Q_ARG(int, currentIndex)))
         {
-            return noteId.trimmed();
+            const QString trimmedNoteId = noteId.trimmed();
+            WhatSon::Debug::traceEditorSelf(
+                this,
+                QStringLiteral("selectionBridge"),
+                QStringLiteral("selectionFlow.resolveCurrentNoteId.readNoteIdAt"),
+                QStringLiteral("currentIndex=%1 noteId=%2 {%3}")
+                    .arg(currentIndex)
+                    .arg(trimmedNoteId)
+                    .arg(summarizeTraceNoteListModel(m_noteListModel)));
+            return trimmedNoteId;
         }
     }
 
+    WhatSon::Debug::traceEditorSelf(
+        this,
+        QStringLiteral("selectionBridge"),
+        QStringLiteral("selectionFlow.resolveCurrentNoteId.unresolved"),
+        QStringLiteral("currentIndex=%1 hasReadNoteIdAt=%2 {%3}")
+            .arg(currentIndex)
+            .arg(hasInvokableMethod(m_noteListModel, "readNoteIdAt(int)"))
+            .arg(summarizeTraceNoteListModel(m_noteListModel)));
     return {};
 }
 
@@ -783,7 +867,36 @@ QString ContentsEditorSelectionBridge::resolveCurrentNoteDirectoryPathFromSelect
     {
         return directPath;
     }
-    return resolveSelectedNoteDirectoryPath(noteId);
+    const int currentIndex = readIntProperty(m_noteListModel, "currentIndex");
+    QString rowPath = readNoteDirectoryPathFromModelRow(currentIndex);
+    if (rowPath.trimmed().isEmpty() && currentIndex == 0)
+    {
+        rowPath = readNoteDirectoryPathFromModelRow(0);
+    }
+    if (!rowPath.trimmed().isEmpty())
+    {
+        WhatSon::Debug::traceEditorSelf(
+            this,
+            QStringLiteral("selectionBridge"),
+            QStringLiteral("selectionFlow.resolveCurrentNoteDirectoryPath.rowFallback"),
+            QStringLiteral("noteId=%1 currentIndex=%2 rowPath=%3 {%4}")
+                .arg(noteId)
+                .arg(currentIndex)
+                .arg(rowPath)
+                .arg(summarizeTraceNoteListModel(m_noteListModel)));
+        return rowPath;
+    }
+    const QString resolvedPath = resolveSelectedNoteDirectoryPath(noteId);
+    WhatSon::Debug::traceEditorSelf(
+        this,
+        QStringLiteral("selectionBridge"),
+        QStringLiteral("selectionFlow.resolveCurrentNoteDirectoryPath"),
+        QStringLiteral("noteId=%1 directPath=%2 resolvedPath=%3 {%4}")
+            .arg(noteId)
+            .arg(directPath)
+            .arg(resolvedPath)
+            .arg(summarizeTraceNoteListModel(m_noteListModel)));
+    return resolvedPath;
 }
 
 QString ContentsEditorSelectionBridge::resolveSelectedNoteDirectoryPath(const QString& noteId) const

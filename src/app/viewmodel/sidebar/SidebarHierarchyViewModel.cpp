@@ -2,6 +2,7 @@
 
 #include "app/policy/ArchitecturePolicyLock.hpp"
 #include "app/viewmodel/sidebar/HierarchySidebarDomain.hpp"
+#include "app/models/file/WhatSonDebugTrace.hpp"
 
 #include <QDebug>
 #include <QQmlEngine>
@@ -59,7 +60,14 @@ QObject* SidebarHierarchyViewModel::activeHierarchyViewModel() const
 
 QObject* SidebarHierarchyViewModel::activeNoteListModel() const
 {
-    return noteListModelForIndex(activeHierarchyIndex());
+    QObject* model = noteListModelForIndex(activeHierarchyIndex());
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("sidebar.hierarchy.viewmodel"),
+                              QStringLiteral("activeNoteListModel"),
+                              QStringLiteral("activeHierarchyIndex=%1 noteListModel=0x%2")
+                                  .arg(activeHierarchyIndex())
+                                  .arg(QString::number(reinterpret_cast<quintptr>(model), 16)));
+    return model;
 }
 
 QObject* SidebarHierarchyViewModel::hierarchyViewModelForIndex(int hierarchyIndex) const
@@ -192,6 +200,13 @@ void SidebarHierarchyViewModel::setViewModelProvider(IHierarchyViewModelProvider
 
 void SidebarHierarchyViewModel::emitActiveBindingsChanged()
 {
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("sidebar.hierarchy.viewmodel"),
+                              QStringLiteral("emitActiveBindingsChanged"),
+                              QStringLiteral("activeHierarchyIndex=%1 hierarchyViewModel=0x%2 noteListModel=0x%3")
+                                  .arg(activeHierarchyIndex())
+                                  .arg(QString::number(reinterpret_cast<quintptr>(activeHierarchyViewModel()), 16))
+                                  .arg(QString::number(reinterpret_cast<quintptr>(activeNoteListModel()), 16)));
     emit activeHierarchyIndexChanged();
     emit activeHierarchyViewModelChanged();
     emit activeNoteListModelChanged();

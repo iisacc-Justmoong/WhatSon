@@ -103,6 +103,10 @@ Rectangle {
         noteSelectionState.pendingIndex = targetIndex;
         noteSelectionState.requestRevision += 1;
         const requestRevision = noteSelectionState.requestRevision;
+        console.log("[whatson:qml][ListBarLayout][activateNoteIndex] targetIndex=" + targetIndex
+                    + " noteId=" + normalizedNoteId
+                    + " currentIndex(before)=" + noteListView.currentIndex
+                    + " modelCurrentIndex(before)=" + listBarLayout.currentIndexFromModel())
         if (noteListView.currentIndex !== targetIndex)
             noteListView.currentIndex = targetIndex;
         listBarLayout.pushCurrentIndexToModel(targetIndex);
@@ -1106,8 +1110,14 @@ Rectangle {
                         listBarLayout.applyNoteListViewportStep(noteListView.contentY);
                     }
                     onCurrentIndexChanged: {
+                        console.log("[whatson:qml][ListBarLayout][noteListView.currentIndexChanged] currentIndex="
+                                    + noteListView.currentIndex
+                                    + " authoritative=" + listBarLayout.currentIndexChangeIsAuthoritative(noteListView.currentIndex)
+                                    + " modelCurrentIndex=" + listBarLayout.currentIndexFromModel())
                         listBarLayout.pressedNoteIndex = -1;
                         if (!listBarLayout.currentIndexChangeIsAuthoritative(noteListView.currentIndex)) {
+                            console.log("[whatson:qml][ListBarLayout][noteListView.currentIndexChanged.nonAuthoritative] currentIndex="
+                                        + noteListView.currentIndex)
                             Qt.callLater(function () {
                                 listBarLayout.syncCurrentIndexFromModel();
                             });

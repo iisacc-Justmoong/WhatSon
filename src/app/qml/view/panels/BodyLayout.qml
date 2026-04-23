@@ -6,6 +6,13 @@ import LVRS 1.0 as LV
 Item {
     id: hStack
 
+    function traceActiveBindings(reason) {
+        console.log("[whatson:qml][BodyLayout][" + reason + "] activeHierarchyIndex="
+                    + hStack.activeHierarchyIndex
+                    + " activeHierarchyViewModel=" + hStack.activeHierarchyViewModel
+                    + " activeNoteListModel=" + hStack.activeNoteListModel)
+    }
+
     property var activeHierarchyBindingSnapshot: ({
         "index": 0,
         "viewModel": null
@@ -144,8 +151,12 @@ Item {
     Layout.fillHeight: true
     Layout.fillWidth: true
     clip: true
-    Component.onCompleted: hStack.syncActiveHierarchyBindings()
+    Component.onCompleted: {
+        hStack.syncActiveHierarchyBindings()
+        hStack.traceActiveBindings("completed")
+    }
     onSidebarHierarchyViewModelChanged: hStack.syncActiveHierarchyBindings()
+    onActiveHierarchyBindingSnapshotChanged: hStack.traceActiveBindings("activeHierarchyBindingSnapshotChanged")
 
     NoteListModelContractBridge {
         id: activeNoteListModelResolver

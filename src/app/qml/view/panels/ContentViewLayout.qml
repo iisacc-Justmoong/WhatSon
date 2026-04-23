@@ -9,6 +9,13 @@ import "../content/editor/ContentsEditorSurfaceModeSupport.js" as EditorSurfaceM
 Item {
     id: contentViewLayout
 
+    function traceNoteListModelBinding(reason) {
+        console.log("[whatson:qml][ContentViewLayout][" + reason + "] noteListModel="
+                    + contentViewLayout.noteListModel
+                    + " resolvedNoteListModel=" + contentViewLayout.resolvedNoteListModel
+                    + " contentViewModel=" + contentViewLayout.resolvedContentViewModel)
+    }
+
     property var contentViewModel: null
     property color displayColor: "transparent"
     property var editorViewModeViewModel: null
@@ -72,6 +79,10 @@ Item {
     signal weekCalendarOverlayCloseRequested
     signal viewHookRequested
     signal yearCalendarOverlayCloseRequested
+
+    Component.onCompleted: contentViewLayout.traceNoteListModelBinding("completed")
+    onNoteListModelChanged: contentViewLayout.traceNoteListModelBinding("noteListModelChanged")
+    onContentViewModelChanged: contentViewLayout.traceNoteListModelBinding("contentViewModelChanged")
 
     onResourceEditorVisibleChanged: {
         if (contentViewLayout.resourceEditorVisible && contentViewLayout.calendarOverlayVisible)

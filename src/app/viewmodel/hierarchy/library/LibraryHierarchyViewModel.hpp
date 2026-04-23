@@ -109,9 +109,11 @@ public:
     Q_INVOKABLE QString noteBodySourceTextForNoteId(const QString& noteId) const;
     Q_INVOKABLE bool reloadNoteMetadataForNoteId(const QString& noteId);
     Q_INVOKABLE bool activateNoteById(const QString& noteId);
+    Q_INVOKABLE bool autoActivateMostRecentNote();
     QVector<LibraryNoteRecord> indexedNotesSnapshot() const;
     bool indexedNoteRecordById(const QString& noteId, LibraryNoteRecord* outNote) const;
     bool supportsHierarchyNodeReorder() const noexcept override;
+    bool shouldAutoActivateMostRecentNote() const noexcept;
     bool supportsHierarchyNoteDrop() const noexcept override;
 
     void setSystemCalendarStore(ISystemCalendarStore* store);
@@ -204,6 +206,7 @@ private:
     void updateNoteItemCount();
     void updateLoadState(bool succeeded, QString errorMessage = QString());
     void syncModel();
+    QString mostRecentIndexedNoteIdByHeader() const;
 
     QVector<LibraryHierarchyItem> m_items;
     LibraryHierarchyModel m_itemModel;
@@ -218,6 +221,7 @@ private:
     int m_createdFolderSequence = 1;
     int m_itemCount = 0;
     int m_noteItemCount = 0;
+    bool m_startupAutoActivationPending = true;
     bool m_loadSucceeded = false;
     QString m_lastLoadError;
     QString m_foldersFilePath;

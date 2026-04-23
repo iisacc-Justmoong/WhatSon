@@ -159,6 +159,12 @@ int NoteListModelContractBridge::currentIndex() const
 
 QString NoteListModelContractBridge::currentNoteId() const
 {
+    const int currentRow = currentIndex();
+    const QString rowNoteId = readNoteIdAt(currentRow).trimmed();
+    if (!rowNoteId.isEmpty())
+    {
+        return rowNoteId;
+    }
     return readStringProperty(m_noteListModel, "currentNoteId").trimmed();
 }
 
@@ -246,7 +252,8 @@ bool NoteListModelContractBridge::pushCurrentIndex(int index)
         {
             return true;
         }
-        return m_noteListModel->setProperty("currentIndex", normalizedIndex);
+        const bool pushed = m_noteListModel->setProperty("currentIndex", normalizedIndex);
+        return pushed;
     }
 
     if (hasInvokableMethod(m_noteListModel, kSetCurrentIndexSignature))

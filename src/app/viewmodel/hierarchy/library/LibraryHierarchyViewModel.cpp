@@ -23,6 +23,7 @@
 #include "app/viewmodel/hierarchy/WhatSonHierarchyTreeItemSupport.hpp"
 #include "app/viewmodel/hierarchy/library/LibraryHierarchyViewModelSupport.hpp"
 #include "app/viewmodel/sidebar/SidebarHierarchyLvrsSupport.hpp"
+#include "app/viewmodel/detailPanel/session/WhatSonNoteHeaderSessionStore.hpp"
 
 #include <QDir>
 #include <QFile>
@@ -34,6 +35,7 @@
 #include <QJsonParseError>
 #include <QRandomGenerator>
 #include <QRegularExpression>
+#include <QDateTime>
 #include <QSet>
 #include <QVariantMap>
 
@@ -3307,6 +3309,145 @@ bool LibraryHierarchyViewModel::reloadNoteMetadataForNoteId(const QString& noteI
     return true;
 }
 
+bool LibraryHierarchyViewModel::shouldAutoActivateMostRecentNote() const noexcept
+{
+    const bool shouldActivate = m_startupAutoActivationPending && m_noteListModel.currentNoteId().trimmed().isEmpty();
+    WhatSon::Debug::traceSelf(const_cast<LibraryHierarchyViewModel*>(this),
+                              QStringLiteral("library.viewmodel"),
+                              QStringLiteral("shouldAutoActivateMostRecentNote"),
+                              QStringLiteral("pending=%1 currentNoteId=%2 shouldActivate=%3 noteItemCount=%4")
+                                  .arg(m_startupAutoActivationPending)
+                                  .arg(m_noteListModel.currentNoteId())
+                                  .arg(shouldActivate)
+                                  .arg(m_noteListModel.itemCount()));
+    return shouldActivate;
+}
+
+QString LibraryHierarchyViewModel::mostRecentIndexedNoteIdByHeader() const
+{
+    const QVector<LibraryNoteRecord> allNotes = m_indexedState.allNotes();
+    WhatSon::Debug::traceSelf(const_cast<LibraryHierarchyViewModel*>(this),
+                              QStringLiteral("library.viewmodel"),
+                              QStringLiteral("mostRecentIndexedNoteIdByHeader.begin"),
+                              QStringLiteral("allNotes=%1")
+                                  .arg(allNotes.size()));
+    if (allNotes.isEmpty())
+    {
+        WhatSon::Debug::traceSelf(const_cast<LibraryHierarchyViewModel*>(this),
+                                  QStringLiteral("library.viewmodel"),
+                                  QStringLiteral("mostRecentIndexedNoteIdByHeader.empty"),
+                                  QStringLiteral("reason=no-indexed-notes"));
+        return {};
+    }
+
+    auto parseTimestamp = [](const QString& value) -> QDateTime
+    {
+        const QString trimmed = value.trimmed();
+        if (trimmed.isEmpty())
+        {
+            return {};
+        }
+        QDateTime dt = QDateTime::fromString(trimmed, Qt::ISODateWithMs);
+        if (!dt.isValid())
+            dt = QDateTime::fromString(trimmed, Qt::ISODate);
+        if (!dt.isValid())
+            dt = QDateTime::fromString(trimmed, QStringLiteral("yyyy-MM-dd-HH-mm-ss"));
+        if (!dt.isValid())
+            dt = QDateTime::fromString(trimmed, QStringLiteral("yyyy-MM-dd-hh-mm-ss"));
+        return dt;
+    };
+
+    WhatSonNoteHeaderSessionStore headerSessionStore;
+    QString bestNoteId;
+    qint64 bestTimestamp = std::numeric_limits<qint64>::min();
+
+    for (const LibraryNoteRecord& note : allNotes)
+    {
+        const QString noteId = note.noteId.trimmed();
+        const QString noteDirectoryPath = note.noteDirectoryPath.trimmed();
+        if (noteId.isEmpty() || noteDirectoryPath.isEmpty())
+        {
+            continue;
+        }
+
+        QString loadError;
+        if (!headerSessionStore.ensureLoaded(noteId, noteDirectoryPath, &loadError))
+        {
+            WhatSon::Debug::traceSelf(this,
+                                      QStringLiteral("library.viewmodel"),
+                                      QStringLiteral("autoActivateMostRecentNote.headerLoadFailed"),
+                                      QStringLiteral("noteId=%1 noteDirectoryPath=%2 error=%3")
+                                          .arg(noteId)
+                                          .arg(noteDirectoryPath)
+                                          .arg(loadError));
+            continue;
+        }
+
+        const WhatSonNoteHeaderStore header = headerSessionStore.header(noteId);
+        const qint64 createdAt = parseTimestamp(header.createdAt()).isValid()
+            ? parseTimestamp(header.createdAt()).toMSecsSinceEpoch()
+            : std::numeric_limits<qint64>::min();
+        const qint64 lastModifiedAt = parseTimestamp(header.lastModifiedAt()).isValid()
+            ? parseTimestamp(header.lastModifiedAt()).toMSecsSinceEpoch()
+            : std::numeric_limits<qint64>::min();
+        const qint64 effectiveTimestamp = std::max(createdAt, lastModifiedAt);
+        WhatSon::Debug::traceSelf(this,
+                                  QStringLiteral("library.viewmodel"),
+                                  QStringLiteral("autoActivateMostRecentNote.candidate"),
+                                  QStringLiteral("noteId=%1 noteDirectoryPath=%2 createdAt=%3 lastModifiedAt=%4 effectiveTimestamp=%5")
+                                      .arg(noteId)
+                                      .arg(noteDirectoryPath)
+                                      .arg(header.createdAt())
+                                      .arg(header.lastModifiedAt())
+                                      .arg(effectiveTimestamp));
+        if (effectiveTimestamp > bestTimestamp)
+        {
+            bestTimestamp = effectiveTimestamp;
+            bestNoteId = noteId;
+        }
+    }
+
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("library.viewmodel"),
+                              QStringLiteral("autoActivateMostRecentNote.selectedCandidate"),
+                              QStringLiteral("noteId=%1 timestamp=%2")
+                                  .arg(bestNoteId)
+                                  .arg(bestTimestamp));
+    return bestNoteId;
+}
+
+bool LibraryHierarchyViewModel::autoActivateMostRecentNote()
+{
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("library.viewmodel"),
+                              QStringLiteral("autoActivateMostRecentNote.begin"),
+                              QStringLiteral("pending=%1 currentNoteId=%2 noteItemCount=%3")
+                                  .arg(m_startupAutoActivationPending)
+                                  .arg(m_noteListModel.currentNoteId())
+                                  .arg(m_noteListModel.itemCount()));
+    const QString noteId = mostRecentIndexedNoteIdByHeader();
+    if (noteId.trimmed().isEmpty())
+    {
+        WhatSon::Debug::traceSelf(this,
+                                  QStringLiteral("library.viewmodel"),
+                                  QStringLiteral("autoActivateMostRecentNote.noCandidate"),
+                                  QStringLiteral("reason=mostRecentIndexedNoteIdByHeader returned empty"));
+        return false;
+    }
+    const bool activated = activateNoteById(noteId);
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("library.viewmodel"),
+                              QStringLiteral("autoActivateMostRecentNote"),
+                              QStringLiteral("noteId=%1 activated=%2")
+                                  .arg(noteId)
+                                  .arg(activated));
+    if (activated)
+    {
+        m_startupAutoActivationPending = false;
+    }
+    return activated;
+}
+
 bool LibraryHierarchyViewModel::activateNoteById(const QString& noteId)
 {
     const QString normalizedNoteId = noteId.trimmed();
@@ -3485,9 +3626,26 @@ LibraryNoteListItem LibraryHierarchyViewModel::buildNoteListItem(
     const LibraryNoteRecord& note,
     const QStringList& folderLabels) const
 {
-    const QString noteId = note.noteId.trimmed();
+    QString noteId = note.noteId.trimmed();
     const QString noteDirectoryPath =
         WhatSon::Hierarchy::LibrarySupport::normalizePath(note.noteDirectoryPath);
+    if (noteId.isEmpty() && !noteDirectoryPath.isEmpty())
+    {
+        noteId = QFileInfo(noteDirectoryPath).completeBaseName().trimmed();
+        if (noteId.isEmpty())
+        {
+            noteId = QFileInfo(noteDirectoryPath).fileName().trimmed();
+        }
+        if (!noteId.isEmpty())
+        {
+            WhatSon::Debug::traceSelf(this,
+                                      QStringLiteral("library.viewmodel"),
+                                      QStringLiteral("buildNoteListItem.derivedNoteIdFromDirectoryPath"),
+                                      QStringLiteral("noteDirectoryPath=%1 derivedNoteId=%2")
+                                          .arg(noteDirectoryPath)
+                                          .arg(noteId));
+        }
+    }
     const QString cacheKey = noteListItemCacheKey(noteId, noteDirectoryPath);
     if (!m_noteListItemCache.isEmpty())
     {
@@ -3518,6 +3676,16 @@ LibraryNoteListItem LibraryHierarchyViewModel::buildNoteListItem(
     item.bookmarked = note.bookmarked;
     item.bookmarkColor = bookmarkColorHexFromNote(note);
 
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("library.viewmodel"),
+                              QStringLiteral("buildNoteListItem"),
+                              QStringLiteral("noteId=%1 noteDirectoryPath=%2 primaryText=%3 bodySourceText=%4 bodyPlainText=%5 bodyChosen=%6")
+                                  .arg(item.id)
+                                  .arg(item.noteDirectoryPath)
+                                  .arg(WhatSon::Debug::summarizeText(item.primaryText, 48))
+                                  .arg(WhatSon::Debug::summarizeText(note.bodySourceText, 48))
+                                  .arg(WhatSon::Debug::summarizeText(note.bodyPlainText, 48))
+                                  .arg(WhatSon::Debug::summarizeText(item.bodyText, 48)));
     if (!cacheKey.isEmpty())
     {
         m_noteListItemCache.insert(cacheKey, item);
@@ -3542,7 +3710,19 @@ QVector<LibraryNoteListItem> LibraryHierarchyViewModel::buildNoteListItems(
 
     for (const LibraryNoteRecord& note : notes)
     {
-        items.push_back(buildNoteListItem(note, canonicalNoteFolderLabels(note, activeLookup)));
+        const LibraryNoteListItem item = buildNoteListItem(note, canonicalNoteFolderLabels(note, activeLookup));
+        if (item.id.trimmed().isEmpty() && item.noteDirectoryPath.trimmed().isEmpty())
+        {
+            WhatSon::Debug::traceSelf(this,
+                                      QStringLiteral("library.viewmodel"),
+                                      QStringLiteral("buildNoteListItems.skipInvalidNote"),
+                                      QStringLiteral("primaryText=%1 createdAt=%2 lastModifiedAt=%3")
+                                          .arg(item.primaryText)
+                                          .arg(item.createdAt)
+                                          .arg(item.lastModifiedAt));
+            continue;
+        }
+        items.push_back(item);
     }
 
     return items;
@@ -3569,7 +3749,19 @@ QVector<LibraryNoteListItem> LibraryHierarchyViewModel::buildFolderScopedNoteLis
             continue;
         }
 
-        items.push_back(buildNoteListItem(note, canonicalNoteFolderLabels(note, &lookup)));
+        const LibraryNoteListItem item = buildNoteListItem(note, canonicalNoteFolderLabels(note, &lookup));
+        if (item.id.trimmed().isEmpty() && item.noteDirectoryPath.trimmed().isEmpty())
+        {
+            WhatSon::Debug::traceSelf(this,
+                                      QStringLiteral("library.viewmodel"),
+                                      QStringLiteral("buildFolderScopedNoteListItems.skipInvalidNote"),
+                                      QStringLiteral("primaryText=%1 createdAt=%2 lastModifiedAt=%3")
+                                          .arg(item.primaryText)
+                                          .arg(item.createdAt)
+                                          .arg(item.lastModifiedAt));
+            continue;
+        }
+        items.push_back(item);
     }
 
     return items;
@@ -3846,8 +4038,18 @@ void LibraryHierarchyViewModel::refreshNoteListForSelection()
     if (const IndexedBucketRange* range = bucketRangeForIndex(m_selectedIndex))
     {
         const QVector<LibraryNoteListItem> listItems = buildNoteListItems(notesForBucket(range->bucket));
+        WhatSon::Debug::traceSelf(this,
+                                  QStringLiteral("library.viewmodel"),
+                                  QStringLiteral("refreshNoteListModel.bucketRange"),
+                                  QStringLiteral("bucket=%1 count=%2 firstItemId=%3 firstItemDirectoryPath=%4")
+                                      .arg(static_cast<int>(range->bucket))
+                                      .arg(listItems.size())
+                                      .arg(listItems.isEmpty() ? QString() : listItems.constFirst().id)
+                                      .arg(listItems.isEmpty() ? QString() : listItems.constFirst().noteDirectoryPath));
         m_noteListModel.setItems(listItems);
         updateNoteItemCount();
+        if (shouldAutoActivateMostRecentNote())
+            autoActivateMostRecentNote();
         return;
     }
 
@@ -3855,21 +4057,52 @@ void LibraryHierarchyViewModel::refreshNoteListForSelection()
     {
         if (m_selectedIndex < 0 || m_selectedIndex >= m_items.size())
         {
-            m_noteListModel.setItems(buildNoteListItems(m_indexedState.allNotes()));
+            const QVector<LibraryNoteListItem> listItems = buildNoteListItems(m_indexedState.allNotes());
+            WhatSon::Debug::traceSelf(this,
+                                      QStringLiteral("library.viewmodel"),
+                                      QStringLiteral("refreshNoteListModel.allNotes"),
+                                      QStringLiteral("count=%1 firstItemId=%2 firstItemDirectoryPath=%3")
+                                          .arg(listItems.size())
+                                          .arg(listItems.isEmpty() ? QString() : listItems.constFirst().id)
+                                          .arg(listItems.isEmpty() ? QString() : listItems.constFirst().noteDirectoryPath));
+            m_noteListModel.setItems(listItems);
             updateNoteItemCount();
+            if (shouldAutoActivateMostRecentNote())
+                autoActivateMostRecentNote();
             return;
         }
 
         const FolderSelectionScope scope = selectedFolderScope();
-        m_noteListModel.setItems(buildFolderScopedNoteListItems(scope));
+        const QVector<LibraryNoteListItem> listItems = buildFolderScopedNoteListItems(scope);
+        WhatSon::Debug::traceSelf(this,
+                                  QStringLiteral("library.viewmodel"),
+                                  QStringLiteral("refreshNoteListModel.folderScope"),
+                                  QStringLiteral("folderUuid=%1 count=%2 firstItemId=%3 firstItemDirectoryPath=%4")
+                                      .arg(scope.selectedFolderUuid)
+                                      .arg(listItems.size())
+                                      .arg(listItems.isEmpty() ? QString() : listItems.constFirst().id)
+                                      .arg(listItems.isEmpty() ? QString() : listItems.constFirst().noteDirectoryPath));
+        m_noteListModel.setItems(listItems);
         updateNoteItemCount();
+        if (shouldAutoActivateMostRecentNote())
+            autoActivateMostRecentNote();
         return;
     }
 
     const IndexedBucket bucket = selectedBucket();
     const QVector<LibraryNoteListItem> listItems = buildNoteListItems(notesForBucket(bucket));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("library.viewmodel"),
+                              QStringLiteral("refreshNoteListModel.bucket"),
+                              QStringLiteral("bucket=%1 count=%2 firstItemId=%3 firstItemDirectoryPath=%4")
+                                  .arg(static_cast<int>(bucket))
+                                  .arg(listItems.size())
+                                  .arg(listItems.isEmpty() ? QString() : listItems.constFirst().id)
+                                  .arg(listItems.isEmpty() ? QString() : listItems.constFirst().noteDirectoryPath));
     m_noteListModel.setItems(listItems);
     updateNoteItemCount();
+    if (shouldAutoActivateMostRecentNote())
+        autoActivateMostRecentNote();
 }
 
 void LibraryHierarchyViewModel::refreshNoteListForSelectionAndNotifyHierarchyModel()

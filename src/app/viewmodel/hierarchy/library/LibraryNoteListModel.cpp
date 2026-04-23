@@ -421,12 +421,77 @@ int LibraryNoteListModel::currentIndex() const noexcept
 
 QString LibraryNoteListModel::currentNoteId() const
 {
-    return itemIdAt(m_items, m_currentIndex);
+    QString noteId = itemIdAt(m_items, m_currentIndex).trimmed();
+    if (noteId.isEmpty() && m_currentIndex >= 0 && m_currentIndex < m_items.size())
+    {
+        const QString noteDirectoryPath = m_items.at(m_currentIndex).noteDirectoryPath.trimmed();
+        if (!noteDirectoryPath.isEmpty())
+        {
+            noteId = QFileInfo(noteDirectoryPath).completeBaseName().trimmed();
+            if (noteId.isEmpty())
+                noteId = QFileInfo(noteDirectoryPath).fileName().trimmed();
+            WhatSon::Debug::traceSelf(this,
+                                      QStringLiteral("library.notelist.model"),
+                                      QStringLiteral("currentNoteId.derivedFromDirectoryPath"),
+                                      QStringLiteral("currentIndex=%1 noteDirectoryPath=%2 derivedNoteId=%3")
+                                          .arg(m_currentIndex)
+                                          .arg(noteDirectoryPath)
+                                          .arg(noteId));
+        }
+    }
+    if (noteId.isEmpty() && m_currentIndex >= 0 && m_currentIndex < m_sourceItems.size())
+    {
+        noteId = m_sourceItems.at(m_currentIndex).id.trimmed();
+        WhatSon::Debug::traceSelf(this,
+                                  QStringLiteral("library.notelist.model"),
+                                  QStringLiteral("currentNoteId.sourceItemsFallback"),
+                                  QStringLiteral("currentIndex=%1 sourceItemId=%2")
+                                      .arg(m_currentIndex)
+                                      .arg(noteId));
+    }
+    if (m_currentIndex >= 0 && m_currentIndex < m_items.size() && noteId.trimmed().isEmpty())
+    {
+        const LibraryNoteListItem& item = m_items.at(m_currentIndex);
+        WhatSon::Debug::traceSelf(this,
+                                  QStringLiteral("library.notelist.model"),
+                                  QStringLiteral("currentNoteId.emptyAtValidIndex"),
+                                  QStringLiteral("currentIndex=%1 itemCount=%2 itemId=%3 noteDirectoryPath=%4 primaryText=%5 bodyText=%6")
+                                      .arg(m_currentIndex)
+                                      .arg(m_items.size())
+                                      .arg(item.id)
+                                      .arg(item.noteDirectoryPath)
+                                      .arg(WhatSon::Debug::summarizeText(item.primaryText, 48))
+                                      .arg(WhatSon::Debug::summarizeText(item.bodyText, 48)));
+    }
+    return noteId;
 }
 
 QString LibraryNoteListModel::currentNoteDirectoryPath() const
 {
-    return itemNoteDirectoryPathAt(m_items, m_currentIndex);
+    QString noteDirectoryPath = itemNoteDirectoryPathAt(m_items, m_currentIndex).trimmed();
+    if (noteDirectoryPath.isEmpty() && m_currentIndex >= 0 && m_currentIndex < m_sourceItems.size())
+    {
+        noteDirectoryPath = m_sourceItems.at(m_currentIndex).noteDirectoryPath.trimmed();
+        WhatSon::Debug::traceSelf(this,
+                                  QStringLiteral("library.notelist.model"),
+                                  QStringLiteral("currentNoteDirectoryPath.sourceItemsFallback"),
+                                  QStringLiteral("currentIndex=%1 sourceItemDirectoryPath=%2")
+                                      .arg(m_currentIndex)
+                                      .arg(noteDirectoryPath));
+    }
+    if (m_currentIndex >= 0 && m_currentIndex < m_items.size() && noteDirectoryPath.trimmed().isEmpty())
+    {
+        const LibraryNoteListItem& item = m_items.at(m_currentIndex);
+        WhatSon::Debug::traceSelf(this,
+                                  QStringLiteral("library.notelist.model"),
+                                  QStringLiteral("currentNoteDirectoryPath.emptyAtValidIndex"),
+                                  QStringLiteral("currentIndex=%1 itemCount=%2 itemId=%3 primaryText=%4")
+                                      .arg(m_currentIndex)
+                                      .arg(m_items.size())
+                                      .arg(item.id)
+                                      .arg(WhatSon::Debug::summarizeText(item.primaryText, 48)));
+    }
+    return noteDirectoryPath;
 }
 
 QString LibraryNoteListModel::currentBodyText() const
@@ -454,6 +519,20 @@ void LibraryNoteListModel::setCurrentIndex(int index)
     const QString previousNoteId = currentNoteId();
     const QString previousNoteDirectoryPath = currentNoteDirectoryPath();
     const QString previousBodyText = currentBodyText();
+
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("library.notelist.model"),
+                              QStringLiteral("setCurrentIndex"),
+                              QStringLiteral("requestedIndex=%1 previousIndex=%2 nextIndex=%3 previousNoteId=%4 previousNoteDirectoryPath=%5 previousBodyText=%6 nextItemId=%7 nextItemDirectoryPath=%8 nextItemBodyText=%9")
+                                  .arg(index)
+                                  .arg(m_currentIndex)
+                                  .arg(nextIndex)
+                                  .arg(previousNoteId)
+                                  .arg(previousNoteDirectoryPath)
+                                  .arg(WhatSon::Debug::summarizeText(previousBodyText, 48))
+                                  .arg(itemIdAt(m_items, nextIndex))
+                                  .arg(itemNoteDirectoryPathAt(m_items, nextIndex))
+                                  .arg(WhatSon::Debug::summarizeText(itemBodyTextAt(m_items, nextIndex), 48)));
 
     m_currentIndex = nextIndex;
     emit currentIndexChanged();
@@ -691,7 +770,11 @@ void LibraryNoteListModel::setItems(QVector<LibraryNoteListItem> items)
     WhatSon::Debug::traceSelf(this,
                               QStringLiteral("library.notelist.model"),
                               QStringLiteral("setItems"),
-                              QStringLiteral("count=%1").arg(sanitized.size()));
+                              QStringLiteral("count=%1 firstItemId=%2 firstItemDirectoryPath=%3 firstItemPrimaryText=%4")
+                                  .arg(sanitized.size())
+                                  .arg(sanitized.isEmpty() ? QString() : sanitized.constFirst().id)
+                                  .arg(sanitized.isEmpty() ? QString() : sanitized.constFirst().noteDirectoryPath)
+                                  .arg(sanitized.isEmpty() ? QString() : WhatSon::Debug::summarizeText(sanitized.constFirst().primaryText, 48)));
     m_sourceItems = std::move(sanitized);
     applySearchFilter();
     if (!issues.isEmpty())
@@ -748,6 +831,22 @@ void LibraryNoteListModel::applySearchFilter()
     {
         nextCurrentIndex = std::clamp(previousIndex, 0, static_cast<int>(m_items.size()) - 1);
     }
+    if (nextCurrentIndex < 0 && !m_items.isEmpty())
+    {
+        nextCurrentIndex = 0;
+    }
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("library.notelist.model"),
+                              QStringLiteral("applySearchFilter"),
+                              QStringLiteral("searchText=%1 previousIndex=%2 previousCount=%3 nextCount=%4 previousNoteId=%5 nextCurrentIndex=%6 nextItemId=%7 nextItemDirectoryPath=%8")
+                                  .arg(m_searchText)
+                                  .arg(previousIndex)
+                                  .arg(previousCount)
+                                  .arg(filtered.size())
+                                  .arg(previousNoteId)
+                                  .arg(nextCurrentIndex)
+                                  .arg(itemIdAt(filtered, nextCurrentIndex))
+                                  .arg(itemNoteDirectoryPathAt(filtered, nextCurrentIndex)));
     m_currentIndex = nextCurrentIndex;
 
     const int nextCount = m_items.size();
