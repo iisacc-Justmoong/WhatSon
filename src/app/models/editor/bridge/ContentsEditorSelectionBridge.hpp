@@ -157,6 +157,12 @@ private:
     QMetaObject::Connection m_currentNoteIdChangedConnection;
     QMetaObject::Connection m_currentNoteDirectoryPathChangedConnection;
     QMetaObject::Connection m_currentBodyTextChangedConnection;
+    QMetaObject::Connection m_currentNoteEntryChangedConnection;
     QMetaObject::Connection m_itemCountChangedConnection;
+    QMetaObject::Connection m_modelResetConnection;
+    QMetaObject::Connection m_rowsInsertedConnection;
+    QMetaObject::Connection m_rowsRemovedConnection;
+    QMetaObject::Connection m_dataChangedConnection;
+    QMetaObject::Connection m_layoutChangedConnection;
     QMetaObject::Connection m_contentViewModelDestroyedConnection;
 };

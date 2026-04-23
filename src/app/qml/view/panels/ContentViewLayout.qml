@@ -30,7 +30,8 @@ Item {
     property int lineNumberColumnTextWidthOverride: -1
     property bool minimapVisible: true
     property var noteListModel: null
-    readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("ContentViewLayout") : null
+    property var panelViewModelRegistry: null
+    readonly property var panelViewModel: contentViewLayout.panelViewModelRegistry ? contentViewLayout.panelViewModelRegistry.panelViewModel("ContentViewLayout") : null
     property var resourcesImportViewModel: null
     readonly property var resolvedContentViewModel: contentViewLayout.contentViewModel
     readonly property var resolvedNoteListModel: contentViewLayout.noteListModel

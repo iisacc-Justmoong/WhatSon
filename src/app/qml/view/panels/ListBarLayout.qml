@@ -75,7 +75,7 @@ Rectangle {
     property alias noteSelectionAnchorIndex: noteSelectionController.selectionAnchorIndex
     property color panelColor: "transparent"
     property var panelViewModelRegistry: null
-    readonly property var panelViewModel: listBarLayout.panelViewModelRegistry ? listBarLayout.panelViewModelRegistry.panelViewModel("ListBarLayout") : null
+    readonly property var panelViewModel: null
     property real preservedNoteListContentY: 0
     property int pressedNoteIndex: -1
     readonly property var resolvedNoteListModel: noteListContractBridge.noteListModel

@@ -6,6 +6,8 @@
 #include <QQmlEngine>
 #include <QVariantMap>
 
+#include "app/models/file/WhatSonDebugTrace.hpp"
+
 #include <algorithm>
 
 namespace
@@ -219,13 +221,32 @@ QString NoteListModelContractBridge::readNoteIdAt(int index) const
     const QVariantMap snapshot = rowSnapshotAt(model, normalizedIndex);
     if (snapshot.isEmpty())
     {
+        WhatSon::Debug::traceSelf(const_cast<NoteListModelContractBridge*>(this),
+                                  QStringLiteral("notelist.contract"),
+                                  QStringLiteral("readNoteIdAt.emptySnapshot"),
+                                  QStringLiteral("index=%1 rowCount=%2 model=0x%3")
+                                      .arg(normalizedIndex)
+                                      .arg(model->rowCount())
+                                      .arg(QString::number(reinterpret_cast<quintptr>(model), 16)));
         return {};
     }
 
     const QVariant noteIdValue = snapshot.contains(QStringLiteral("noteId"))
         ? snapshot.value(QStringLiteral("noteId"))
         : snapshot.value(QStringLiteral("id"));
-    return noteIdValue.toString().trimmed();
+    const QString noteId = noteIdValue.toString().trimmed();
+    if (normalizedIndex == 0)
+    {
+        WhatSon::Debug::traceSelf(const_cast<NoteListModelContractBridge*>(this),
+                                  QStringLiteral("notelist.contract"),
+                                  QStringLiteral("readNoteIdAt.row0"),
+                                  QStringLiteral("index=%1 noteId=%2 noteDirectoryPath=%3 keys=%4")
+                                      .arg(normalizedIndex)
+                                      .arg(noteId)
+                                      .arg(snapshot.value(QStringLiteral("noteDirectoryPath")).toString().trimmed())
+                                      .arg(QStringList(snapshot.keys()).join(QStringLiteral(","))));
+    }
+    return noteId;
 }
 
 QVariantList NoteListModelContractBridge::readAllRows() const

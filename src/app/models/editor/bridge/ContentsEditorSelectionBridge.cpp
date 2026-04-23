@@ -7,6 +7,7 @@
 #include <QDir>
 #include <QMetaProperty>
 #include <QQmlEngine>
+#include <QTimer>
 
 #include <algorithm>
 #include <utility>
@@ -229,11 +230,71 @@ void ContentsEditorSelectionBridge::setNoteListModel(QObject* model)
             SIGNAL(currentBodyTextChanged()),
             this,
             SLOT(handleNoteListBodyTextChanged()));
+        m_currentNoteEntryChangedConnection = connect(
+            m_noteListModel,
+            SIGNAL(currentNoteEntryChanged()),
+            this,
+            SLOT(handleNoteListSelectionChanged()));
         m_itemCountChangedConnection = connect(
             m_noteListModel,
             SIGNAL(itemCountChanged(int)),
             this,
             SLOT(handleNoteListCountChanged()));
+
+        if (const auto* itemModel = qobject_cast<const QAbstractItemModel*>(m_noteListModel.data()))
+        {
+            m_modelResetConnection = connect(
+                itemModel,
+                &QAbstractItemModel::modelReset,
+                this,
+                [this]() {
+                    WhatSon::Debug::traceEditorSelf(
+                        this,
+                        QStringLiteral("selectionBridge"),
+                        QStringLiteral("selectionFlow.modelReset"),
+                        QStringLiteral("selectedNoteId=%1 {%2}")
+                            .arg(m_selectedNoteId)
+                            .arg(summarizeTraceNoteListModel(m_noteListModel)));
+                    m_noteSelectionRefreshRequiresRebind = true;
+                    scheduleNoteSelectionRefresh();
+                    QTimer::singleShot(0, this, [this]() {
+                        m_noteSelectionRefreshRequiresRebind = true;
+                        scheduleNoteSelectionRefresh();
+                    });
+                });
+            m_rowsInsertedConnection = connect(
+                itemModel,
+                &QAbstractItemModel::rowsInserted,
+                this,
+                [this](const QModelIndex&, int, int) {
+                    m_noteSelectionRefreshRequiresRebind = true;
+                    scheduleNoteSelectionRefresh();
+                });
+            m_rowsRemovedConnection = connect(
+                itemModel,
+                &QAbstractItemModel::rowsRemoved,
+                this,
+                [this](const QModelIndex&, int, int) {
+                    m_noteSelectionRefreshRequiresRebind = true;
+                    scheduleNoteSelectionRefresh();
+                });
+            m_dataChangedConnection = connect(
+                itemModel,
+                &QAbstractItemModel::dataChanged,
+                this,
+                [this](const QModelIndex&, const QModelIndex&, const QList<int>&) {
+                    m_noteSelectionRefreshRequiresRebind = true;
+                    scheduleNoteSelectionRefresh();
+                });
+            m_layoutChangedConnection = connect(
+                itemModel,
+                &QAbstractItemModel::layoutChanged,
+                this,
+                [this]() {
+                    m_noteSelectionRefreshRequiresRebind = true;
+                    scheduleNoteSelectionRefresh();
+                });
+        }
     }
 
     emit noteListModelChanged();
@@ -789,6 +850,20 @@ QString ContentsEditorSelectionBridge::readNoteDirectoryPathFromModelRow(int row
 
 QString ContentsEditorSelectionBridge::resolveCurrentNoteIdFromSelectionContract() const
 {
+    const QVariantMap currentNoteEntry = m_noteListModel != nullptr
+        ? m_noteListModel->property("currentNoteEntry").toMap()
+        : QVariantMap();
+    const QString entryNoteId = currentNoteEntry.value(QStringLiteral("noteId")).toString().trimmed();
+    if (!entryNoteId.isEmpty())
+    {
+        return entryNoteId;
+    }
+    const QString entryId = currentNoteEntry.value(QStringLiteral("id")).toString().trimmed();
+    if (!entryId.isEmpty())
+    {
+        return entryId;
+    }
+
     const QString directNoteId = readStringProperty(m_noteListModel, "currentNoteId").trimmed();
     if (!directNoteId.isEmpty())
     {
@@ -862,6 +937,14 @@ QString ContentsEditorSelectionBridge::resolveCurrentNoteIdFromSelectionContract
 
 QString ContentsEditorSelectionBridge::resolveCurrentNoteDirectoryPathFromSelectionContract(const QString& noteId) const
 {
+    const QVariantMap currentNoteEntry = m_noteListModel != nullptr
+        ? m_noteListModel->property("currentNoteEntry").toMap()
+        : QVariantMap();
+    const QString entryPath = currentNoteEntry.value(QStringLiteral("noteDirectoryPath")).toString().trimmed();
+    if (!entryPath.isEmpty())
+    {
+        return entryPath;
+    }
     const QString directPath = readStringProperty(m_noteListModel, "currentNoteDirectoryPath").trimmed();
     if (!directPath.isEmpty())
     {
@@ -1387,10 +1470,40 @@ void ContentsEditorSelectionBridge::disconnectNoteListModel()
         disconnect(m_currentBodyTextChangedConnection);
         m_currentBodyTextChangedConnection = QMetaObject::Connection();
     }
+    if (m_currentNoteEntryChangedConnection)
+    {
+        disconnect(m_currentNoteEntryChangedConnection);
+        m_currentNoteEntryChangedConnection = QMetaObject::Connection();
+    }
     if (m_itemCountChangedConnection)
     {
         disconnect(m_itemCountChangedConnection);
         m_itemCountChangedConnection = QMetaObject::Connection();
+    }
+    if (m_modelResetConnection)
+    {
+        disconnect(m_modelResetConnection);
+        m_modelResetConnection = QMetaObject::Connection();
+    }
+    if (m_rowsInsertedConnection)
+    {
+        disconnect(m_rowsInsertedConnection);
+        m_rowsInsertedConnection = QMetaObject::Connection();
+    }
+    if (m_rowsRemovedConnection)
+    {
+        disconnect(m_rowsRemovedConnection);
+        m_rowsRemovedConnection = QMetaObject::Connection();
+    }
+    if (m_dataChangedConnection)
+    {
+        disconnect(m_dataChangedConnection);
+        m_dataChangedConnection = QMetaObject::Connection();
+    }
+    if (m_layoutChangedConnection)
+    {
+        disconnect(m_layoutChangedConnection);
+        m_layoutChangedConnection = QMetaObject::Connection();
     }
 }
 

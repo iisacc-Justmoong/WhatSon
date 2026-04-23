@@ -25,7 +25,9 @@ Item {
     readonly property var activeHierarchyViewModel: hStack.activeHierarchyBindingSnapshot
                                                   ? hStack.activeHierarchyBindingSnapshot.viewModel
                                                   : null
-    readonly property var activeNoteListModel: activeNoteListModelResolver.noteListModel
+    readonly property var activeNoteListModel: hStack.sidebarHierarchyViewModel
+                                               ? hStack.sidebarHierarchyViewModel.activeNoteListModel
+                                               : null
     property color compactCanvasColor: LV.Theme.panelBackground01
     property bool compactMode: false
     property color contentsDisplayColor: "transparent"
@@ -53,7 +55,8 @@ Item {
         }
         return hStack.noteDeletionViewModel;
     }
-    readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("BodyLayout") : null
+    property var panelViewModelRegistry: null
+    readonly property var panelViewModel: hStack.panelViewModelRegistry ? hStack.panelViewModelRegistry.panelViewModel("BodyLayout") : null
     property var resourcesImportViewModel: null
     property color rightPanelColor: "transparent"
     property int rightPanelWidth: Math.max(0, Math.round(LV.Theme.scaleMetric(194)))
@@ -158,12 +161,6 @@ Item {
     onSidebarHierarchyViewModelChanged: hStack.syncActiveHierarchyBindings()
     onActiveHierarchyBindingSnapshotChanged: hStack.traceActiveBindings("activeHierarchyBindingSnapshotChanged")
 
-    NoteListModelContractBridge {
-        id: activeNoteListModelResolver
-
-        hierarchyViewModel: hStack.activeHierarchyViewModel
-    }
-
     Connections {
         target: hStack.sidebarHierarchyViewModel
         ignoreUnknownSignals: true
@@ -238,7 +235,7 @@ Item {
                     noteDeletionViewModel: hStack.resolvedNoteDeletionViewModel
                     noteDropTarget: sideBar.noteDropTargetView
                     panelColor: hStack.listViewColor
-                    panelViewModelRegistry: panelViewModelRegistry
+                    panelViewModelRegistry: null
 
                     onNoteActivated: function (index, noteId) {
                         hStack.noteActivated(index, noteId);
@@ -275,6 +272,7 @@ Item {
                 isMobilePlatform: hStack.isMobilePlatform
                 libraryHierarchyViewModel: hStack.libraryHierarchyViewModel
                 noteListModel: hStack.activeNoteListModel
+                panelViewModelRegistry: null
                 resourcesImportViewModel: hStack.resourcesImportViewModel
                 sidebarHierarchyViewModel: hStack.sidebarHierarchyViewModel
                 dayCalendarOverlayVisible: hStack.dayCalendarOverlayVisible

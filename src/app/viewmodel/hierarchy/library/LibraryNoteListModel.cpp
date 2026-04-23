@@ -361,6 +361,18 @@ QVariant LibraryNoteListModel::data(const QModelIndex& index, int role) const
     }
 
     const LibraryNoteListItem& item = m_items.at(index.row());
+    if (index.row() == 0 && (role == IdRole || role == NoteIdRole || role == NoteDirectoryPathRole))
+    {
+        WhatSon::Debug::traceSelf(this,
+                                  QStringLiteral("library.notelist.model"),
+                                  QStringLiteral("data.row0"),
+                                  QStringLiteral("role=%1 row=%2 itemId=%3 noteDirectoryPath=%4 primaryText=%5")
+                                      .arg(role)
+                                      .arg(index.row())
+                                      .arg(item.id)
+                                      .arg(item.noteDirectoryPath)
+                                      .arg(WhatSon::Debug::summarizeText(item.primaryText, 48)));
+    }
     switch (role)
     {
     case IdRole:
@@ -499,6 +511,32 @@ QString LibraryNoteListModel::currentBodyText() const
     return itemBodyTextAt(m_items, m_currentIndex);
 }
 
+QVariantMap LibraryNoteListModel::currentNoteEntry() const
+{
+    if (m_currentIndex < 0 || m_currentIndex >= m_items.size())
+    {
+        return {};
+    }
+
+    const LibraryNoteListItem& item = m_items.at(m_currentIndex);
+    return {
+        {QStringLiteral("id"), item.id},
+        {QStringLiteral("noteId"), item.id},
+        {QStringLiteral("noteDirectoryPath"), item.noteDirectoryPath},
+        {QStringLiteral("primaryText"), item.primaryText},
+        {QStringLiteral("bodyText"), item.bodyText},
+        {QStringLiteral("createdAt"), item.createdAt},
+        {QStringLiteral("lastModifiedAt"), item.lastModifiedAt},
+        {QStringLiteral("displayDate"), item.displayDate},
+        {QStringLiteral("folders"), item.folders},
+        {QStringLiteral("tags"), item.tags},
+        {QStringLiteral("bookmarked"), item.bookmarked},
+        {QStringLiteral("bookmarkColor"), item.bookmarkColor},
+        {QStringLiteral("image"), item.image},
+        {QStringLiteral("imageSource"), item.imageSource}
+    };
+}
+
 void LibraryNoteListModel::setCurrentIndex(int index)
 {
     int nextIndex = index;
@@ -519,6 +557,7 @@ void LibraryNoteListModel::setCurrentIndex(int index)
     const QString previousNoteId = currentNoteId();
     const QString previousNoteDirectoryPath = currentNoteDirectoryPath();
     const QString previousBodyText = currentBodyText();
+    const QVariantMap previousNoteEntry = currentNoteEntry();
 
     WhatSon::Debug::traceSelf(this,
                               QStringLiteral("library.notelist.model"),
@@ -548,6 +587,10 @@ void LibraryNoteListModel::setCurrentIndex(int index)
     if (currentBodyText() != previousBodyText)
     {
         emit currentBodyTextChanged();
+    }
+    if (currentNoteEntry() != previousNoteEntry)
+    {
+        emit currentNoteEntryChanged();
     }
 }
 

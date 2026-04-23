@@ -32,6 +32,7 @@ class LibraryNoteListModel final : public QAbstractListModel
     Q_PROPERTY(QString currentNoteId READ currentNoteId NOTIFY currentNoteIdChanged)
     Q_PROPERTY(QString currentNoteDirectoryPath READ currentNoteDirectoryPath NOTIFY currentNoteDirectoryPathChanged)
     Q_PROPERTY(QString currentBodyText READ currentBodyText NOTIFY currentBodyTextChanged)
+    Q_PROPERTY(QVariantMap currentNoteEntry READ currentNoteEntry NOTIFY currentNoteEntryChanged)
     Q_PROPERTY(QString searchText READ searchText WRITE setSearchText NOTIFY searchTextChanged)
     Q_PROPERTY(bool strictValidation READ strictValidation WRITE setStrictValidation NOTIFY strictValidationChanged)
     Q_PROPERTY(int correctionCount READ correctionCount NOTIFY correctionCountChanged)
@@ -67,6 +68,7 @@ public:
     QString currentNoteId() const;
     QString currentNoteDirectoryPath() const;
     QString currentBodyText() const;
+    QVariantMap currentNoteEntry() const;
     Q_INVOKABLE void setCurrentIndex(int index);
     QString searchText() const;
     void setSearchText(const QString& text);
@@ -100,6 +102,7 @@ public
     void currentNoteIdChanged();
     void currentNoteDirectoryPathChanged();
     void currentBodyTextChanged();
+    void currentNoteEntryChanged();
     void searchTextChanged();
     void strictValidationChanged();
     void correctionCountChanged();
