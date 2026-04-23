@@ -70,3 +70,55 @@ void WhatSonCppRegressionTests::resourcePackageSupport_roundTripsAnnotationMetad
     QCOMPARE(loadedMetadata.annotationPath, QStringLiteral("annotation.png"));
     QVERIFY(QFileInfo(WhatSon::Resources::annotationFilePathForPackage(packageDirectoryPath)).isFile());
 }
+
+void WhatSonCppRegressionTests::resourcePackageSupport_normalizesTerminalFormatForMultiDotAssetNames()
+{
+    QTemporaryDir temporaryDirectory;
+    QVERIFY(temporaryDirectory.isValid());
+
+    const QString assetFileName = QStringLiteral("Simulator Screenshot - iPhone 16 Pro Max - 2025-06-17 at 11.25.16.png");
+    const QString assetFilePath = QDir(temporaryDirectory.path()).filePath(assetFileName);
+    QImage sourceImage(QSize(9, 5), QImage::Format_ARGB32_Premultiplied);
+    sourceImage.fill(qRgba(78, 90, 123, 255));
+    QVERIFY(sourceImage.save(assetFilePath));
+
+    const WhatSon::Resources::ResourcePackageMetadata metadata =
+        WhatSon::Resources::buildMetadataForAssetFile(
+            assetFilePath,
+            QStringLiteral("simulator-screenshot"),
+            QStringLiteral("Demo.wsresources/simulator-screenshot.wsresource"));
+    QCOMPARE(metadata.assetPath, assetFileName);
+    QCOMPARE(metadata.format, QStringLiteral(".png"));
+    QCOMPARE(metadata.type, QStringLiteral("image"));
+    QCOMPARE(metadata.bucket, QStringLiteral("Image"));
+
+    const QString packageDirectoryPath =
+        QDir(temporaryDirectory.path()).filePath(QStringLiteral("simulator-screenshot.wsresource"));
+    QVERIFY(QDir().mkpath(packageDirectoryPath));
+    QVERIFY(QFile::copy(assetFilePath, QDir(packageDirectoryPath).filePath(assetFileName)));
+
+    QFile metadataFile(WhatSon::Resources::metadataFilePathForPackage(packageDirectoryPath));
+    QVERIFY(metadataFile.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate));
+    const QString poisonedMetadataXml = QStringLiteral(
+        "<?xml version=\"1.0\"?>\n"
+        "<wsresource version=\"1\" schema=\"whatson.resource.package\" "
+        "id=\"simulator-screenshot\" resourcePath=\"Demo.wsresources/simulator-screenshot.wsresource\" "
+        "bucket=\"Image\" type=\"image\" format=\".25.16.png\">\n"
+        "    <asset path=\"%1\"/>\n"
+        "</wsresource>\n").arg(assetFileName);
+    QVERIFY(metadataFile.write(poisonedMetadataXml.toUtf8()) >= 0);
+    metadataFile.close();
+
+    WhatSon::Resources::ResourcePackageMetadata loadedMetadata;
+    QString loadError;
+    QVERIFY2(
+        WhatSon::Resources::loadResourcePackageMetadata(
+            packageDirectoryPath,
+            &loadedMetadata,
+            &loadError),
+        qPrintable(loadError));
+    QCOMPARE(loadedMetadata.assetPath, assetFileName);
+    QCOMPARE(loadedMetadata.format, QStringLiteral(".png"));
+    QCOMPARE(loadedMetadata.type, QStringLiteral("image"));
+    QCOMPARE(loadedMetadata.bucket, QStringLiteral("Image"));
+}

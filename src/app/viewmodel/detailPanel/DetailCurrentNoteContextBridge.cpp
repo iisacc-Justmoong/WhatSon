@@ -1,11 +1,56 @@
 #include "app/viewmodel/detailPanel/DetailCurrentNoteContextBridge.hpp"
 
+#include <QDir>
 #include <QMetaObject>
 #include <QMetaProperty>
 #include <QVariant>
 
 namespace
 {
+    bool hasReadableProperty(const QObject* object, const char* propertyName)
+    {
+        if (object == nullptr || propertyName == nullptr)
+        {
+            return false;
+        }
+
+        const QMetaObject* metaObject = object->metaObject();
+        if (metaObject == nullptr)
+        {
+            return false;
+        }
+
+        const int propertyIndex = metaObject->indexOfProperty(propertyName);
+        if (propertyIndex < 0)
+        {
+            return false;
+        }
+
+        return metaObject->property(propertyIndex).isReadable();
+    }
+
+    bool hasSignal(const QObject* object, const char* signalSignature)
+    {
+        if (object == nullptr || signalSignature == nullptr)
+        {
+            return false;
+        }
+
+        const QMetaObject* metaObject = object->metaObject();
+        return metaObject != nullptr
+            && metaObject->indexOfSignal(QMetaObject::normalizedSignature(signalSignature)) >= 0;
+    }
+
+    QString normalizeNoteDirectoryPath(QString noteDirectoryPath)
+    {
+        noteDirectoryPath = QDir::cleanPath(noteDirectoryPath.trimmed());
+        if (noteDirectoryPath == QStringLiteral("."))
+        {
+            noteDirectoryPath.clear();
+        }
+        return noteDirectoryPath;
+    }
+
     bool noteBackedSelectionEnabled(const QObject* noteListModel)
     {
         if (noteListModel == nullptr)
@@ -45,29 +90,59 @@ namespace
         return metaObject != nullptr && metaObject->indexOfMethod("noteDirectoryPathForNoteId(QString)") >= 0;
     }
 
-    QString readCurrentNoteId(const QObject* noteListModel, bool* resolvedFromModel)
+    QVariantMap readCurrentNoteEntry(const QObject* noteListModel)
+    {
+        if (noteListModel == nullptr)
+        {
+            return {};
+        }
+
+        if (!hasReadableProperty(noteListModel, "currentNoteEntry"))
+        {
+            return {};
+        }
+
+        QVariantMap noteEntry = noteListModel->property("currentNoteEntry").toMap();
+        if (!noteEntry.contains(QStringLiteral("noteId")) && noteEntry.contains(QStringLiteral("id")))
+        {
+            noteEntry.insert(QStringLiteral("noteId"), noteEntry.value(QStringLiteral("id")));
+        }
+
+        const QString currentNoteDirectoryPath = normalizeNoteDirectoryPath(
+            noteListModel->property("currentNoteDirectoryPath").toString());
+        if (!noteEntry.contains(QStringLiteral("noteDirectoryPath")) && !currentNoteDirectoryPath.isEmpty())
+        {
+            noteEntry.insert(QStringLiteral("noteDirectoryPath"), currentNoteDirectoryPath);
+        }
+
+        return noteEntry;
+    }
+
+    QString noteIdFromEntry(const QVariantMap& noteEntry)
+    {
+        const QString noteId = noteEntry.value(QStringLiteral("noteId")).toString().trimmed();
+        if (!noteId.isEmpty())
+        {
+            return noteId;
+        }
+
+        return noteEntry.value(QStringLiteral("id")).toString().trimmed();
+    }
+
+    QString noteDirectoryPathFromEntry(const QVariantMap& noteEntry)
+    {
+        return normalizeNoteDirectoryPath(
+            noteEntry.value(QStringLiteral("noteDirectoryPath")).toString());
+    }
+
+    QString readCurrentNoteIdProperty(const QObject* noteListModel, bool* resolvedFromModel)
     {
         if (resolvedFromModel != nullptr)
         {
             *resolvedFromModel = false;
         }
 
-        if (noteListModel == nullptr)
-        {
-            return {};
-        }
-
-        if (!noteBackedSelectionEnabled(noteListModel))
-        {
-            if (resolvedFromModel != nullptr)
-            {
-                *resolvedFromModel = true;
-            }
-            return {};
-        }
-
-        const QMetaObject* metaObject = noteListModel->metaObject();
-        if (metaObject == nullptr || metaObject->indexOfProperty("currentNoteId") < 0)
+        if (noteListModel == nullptr || !hasReadableProperty(noteListModel, "currentNoteId"))
         {
             return {};
         }
@@ -77,6 +152,26 @@ namespace
             *resolvedFromModel = true;
         }
         return noteListModel->property("currentNoteId").toString().trimmed();
+    }
+
+    QString readCurrentNoteDirectoryPathProperty(const QObject* noteListModel, bool* resolvedFromModel)
+    {
+        if (resolvedFromModel != nullptr)
+        {
+            *resolvedFromModel = false;
+        }
+
+        if (noteListModel == nullptr || !hasReadableProperty(noteListModel, "currentNoteDirectoryPath"))
+        {
+            return {};
+        }
+
+        if (resolvedFromModel != nullptr)
+        {
+            *resolvedFromModel = true;
+        }
+        return normalizeNoteDirectoryPath(
+            noteListModel->property("currentNoteDirectoryPath").toString());
     }
 }
 
@@ -96,11 +191,49 @@ void DetailCurrentNoteContextBridge::setNoteListModel(QObject* noteListModel)
     {
         return;
     }
+
+    disconnectNoteListModelSignals();
     m_noteListModel = noteListModel;
     if (m_noteListModel != nullptr)
     {
-        QObject::connect(m_noteListModel, SIGNAL(currentNoteIdChanged()), this, SLOT(refreshContext()), Qt::UniqueConnection);
-        QObject::connect(m_noteListModel, &QObject::destroyed, this, &DetailCurrentNoteContextBridge::refreshContext, Qt::UniqueConnection);
+        m_noteListModelDestroyedConnection = connect(
+            m_noteListModel,
+            &QObject::destroyed,
+            this,
+            &DetailCurrentNoteContextBridge::refreshContext);
+
+        if (hasSignal(m_noteListModel, "currentIndexChanged()"))
+        {
+            m_currentIndexChangedConnection = connect(
+                m_noteListModel,
+                SIGNAL(currentIndexChanged()),
+                this,
+                SLOT(refreshContext()));
+        }
+        if (hasSignal(m_noteListModel, "currentNoteEntryChanged()"))
+        {
+            m_currentNoteEntryChangedConnection = connect(
+                m_noteListModel,
+                SIGNAL(currentNoteEntryChanged()),
+                this,
+                SLOT(refreshContext()));
+        }
+        if (hasSignal(m_noteListModel, "currentNoteIdChanged()"))
+        {
+            m_currentNoteIdChangedConnection = connect(
+                m_noteListModel,
+                SIGNAL(currentNoteIdChanged()),
+                this,
+                SLOT(refreshContext()));
+        }
+        if (hasSignal(m_noteListModel, "currentNoteDirectoryPathChanged()"))
+        {
+            m_currentNoteDirectoryPathChangedConnection = connect(
+                m_noteListModel,
+                SIGNAL(currentNoteDirectoryPathChanged()),
+                this,
+                SLOT(refreshContext()));
+        }
     }
     emit noteListModelChanged();
     refreshContext();
@@ -134,28 +267,59 @@ QString DetailCurrentNoteContextBridge::currentNoteDirectoryPath() const
 
 void DetailCurrentNoteContextBridge::refreshContext()
 {
-    bool noteIdResolvedFromModel = false;
-    QString nextNoteId = readCurrentNoteId(m_noteListModel.data(), &noteIdResolvedFromModel);
-    if (!noteIdResolvedFromModel)
-    {
-        nextNoteId = m_currentNoteId;
-    }
-
+    const QObject* noteListModel = m_noteListModel.data();
+    QString nextNoteId;
     QString nextDirectoryPath;
-    bool directoryResolved = false;
-    if (hasNoteDirectoryResolver(m_noteDirectorySourceViewModel.data()) && !nextNoteId.isEmpty())
+
+    if (noteListModel != nullptr && !noteBackedSelectionEnabled(noteListModel))
     {
-        directoryResolved = QMetaObject::invokeMethod(
-            m_noteDirectorySourceViewModel,
-            "noteDirectoryPathForNoteId",
-            Qt::DirectConnection,
-            Q_RETURN_ARG(QString, nextDirectoryPath),
-            Q_ARG(QString, nextNoteId));
-        nextDirectoryPath = nextDirectoryPath.trimmed();
+        nextNoteId.clear();
+        nextDirectoryPath.clear();
     }
-    if (!directoryResolved)
+    else
     {
-        nextDirectoryPath = nextNoteId == m_currentNoteId ? m_currentNoteDirectoryPath : QString();
+        const QVariantMap currentNoteEntry = readCurrentNoteEntry(noteListModel);
+
+        bool noteIdResolvedFromModel = false;
+        nextNoteId = noteIdFromEntry(currentNoteEntry);
+        if (!nextNoteId.isEmpty())
+        {
+            noteIdResolvedFromModel = true;
+        }
+        else
+        {
+            nextNoteId = readCurrentNoteIdProperty(noteListModel, &noteIdResolvedFromModel);
+        }
+        if (!noteIdResolvedFromModel)
+        {
+            nextNoteId = m_currentNoteId;
+        }
+
+        bool directoryResolved = false;
+        nextDirectoryPath = noteDirectoryPathFromEntry(currentNoteEntry);
+        if (!nextDirectoryPath.isEmpty())
+        {
+            directoryResolved = true;
+        }
+        else
+        {
+            nextDirectoryPath = readCurrentNoteDirectoryPathProperty(noteListModel, &directoryResolved);
+        }
+
+        if (!directoryResolved && hasNoteDirectoryResolver(m_noteDirectorySourceViewModel.data()) && !nextNoteId.isEmpty())
+        {
+            directoryResolved = QMetaObject::invokeMethod(
+                m_noteDirectorySourceViewModel,
+                "noteDirectoryPathForNoteId",
+                Qt::DirectConnection,
+                Q_RETURN_ARG(QString, nextDirectoryPath),
+                Q_ARG(QString, nextNoteId));
+            nextDirectoryPath = normalizeNoteDirectoryPath(nextDirectoryPath);
+        }
+        if (!directoryResolved)
+        {
+            nextDirectoryPath = nextNoteId == m_currentNoteId ? m_currentNoteDirectoryPath : QString();
+        }
     }
 
     if (m_currentNoteId != nextNoteId)
@@ -167,5 +331,34 @@ void DetailCurrentNoteContextBridge::refreshContext()
     {
         m_currentNoteDirectoryPath = nextDirectoryPath;
         emit currentNoteDirectoryPathChanged();
+    }
+}
+
+void DetailCurrentNoteContextBridge::disconnectNoteListModelSignals()
+{
+    if (m_noteListModelDestroyedConnection)
+    {
+        disconnect(m_noteListModelDestroyedConnection);
+        m_noteListModelDestroyedConnection = QMetaObject::Connection();
+    }
+    if (m_currentIndexChangedConnection)
+    {
+        disconnect(m_currentIndexChangedConnection);
+        m_currentIndexChangedConnection = QMetaObject::Connection();
+    }
+    if (m_currentNoteEntryChangedConnection)
+    {
+        disconnect(m_currentNoteEntryChangedConnection);
+        m_currentNoteEntryChangedConnection = QMetaObject::Connection();
+    }
+    if (m_currentNoteIdChangedConnection)
+    {
+        disconnect(m_currentNoteIdChangedConnection);
+        m_currentNoteIdChangedConnection = QMetaObject::Connection();
+    }
+    if (m_currentNoteDirectoryPathChangedConnection)
+    {
+        disconnect(m_currentNoteDirectoryPathChangedConnection);
+        m_currentNoteDirectoryPathChangedConnection = QMetaObject::Connection();
     }
 }

@@ -88,6 +88,12 @@ namespace WhatSon::Resources
         {
             value.prepend(QLatin1Char('.'));
         }
+
+        const int lastDotIndex = value.lastIndexOf(QLatin1Char('.'));
+        if (lastDotIndex > 0 && lastDotIndex < value.size() - 1)
+        {
+            value = value.mid(lastDotIndex);
+        }
         return value;
     }
 
@@ -105,13 +111,13 @@ namespace WhatSon::Resources
             return {};
         }
 
-        const int firstDotIndex = fileName.indexOf(QLatin1Char('.'));
-        if (firstDotIndex < 0 || firstDotIndex == fileName.size() - 1)
+        const int lastDotIndex = fileName.lastIndexOf(QLatin1Char('.'));
+        if (lastDotIndex <= 0 || lastDotIndex == fileName.size() - 1)
         {
             return {};
         }
 
-        return fileName.mid(firstDotIndex);
+        return fileName.mid(lastDotIndex);
     }
 
     inline QString normalizedType(QString value)

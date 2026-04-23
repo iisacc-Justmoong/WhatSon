@@ -844,6 +844,7 @@ void LibraryNoteListModel::applySearchFilter()
     const QString previousNoteId = currentNoteId();
     const QString previousNoteDirectoryPath = currentNoteDirectoryPath();
     const QString previousBodyText = currentBodyText();
+    const QVariantMap previousNoteEntry = currentNoteEntry();
     const int previousIndex = m_currentIndex;
     const int previousCount = m_items.size();
     const QStringList terms = searchTerms(m_searchText);
@@ -878,6 +879,7 @@ void LibraryNoteListModel::applySearchFilter()
     {
         nextCurrentIndex = 0;
     }
+    const int nextCount = m_items.size();
     WhatSon::Debug::traceSelf(this,
                               QStringLiteral("library.notelist.model"),
                               QStringLiteral("applySearchFilter"),
@@ -885,14 +887,13 @@ void LibraryNoteListModel::applySearchFilter()
                                   .arg(m_searchText)
                                   .arg(previousIndex)
                                   .arg(previousCount)
-                                  .arg(filtered.size())
+                                  .arg(nextCount)
                                   .arg(previousNoteId)
                                   .arg(nextCurrentIndex)
-                                  .arg(itemIdAt(filtered, nextCurrentIndex))
-                                  .arg(itemNoteDirectoryPathAt(filtered, nextCurrentIndex)));
+                                  .arg(itemIdAt(m_items, nextCurrentIndex))
+                                  .arg(itemNoteDirectoryPathAt(m_items, nextCurrentIndex)));
     m_currentIndex = nextCurrentIndex;
 
-    const int nextCount = m_items.size();
     if (nextCount != previousCount)
     {
         emit itemCountChanged(nextCount);
@@ -912,6 +913,10 @@ void LibraryNoteListModel::applySearchFilter()
     if (currentBodyText() != previousBodyText)
     {
         emit currentBodyTextChanged();
+    }
+    if (currentNoteEntry() != previousNoteEntry)
+    {
+        emit currentNoteEntryChanged();
     }
     emit itemsChanged();
 }

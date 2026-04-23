@@ -53,6 +53,7 @@
 #include "app/viewmodel/onboarding/IOnboardingHubController.hpp"
 #include "app/viewmodel/onboarding/OnboardingRouteBootstrapController.hpp"
 #include "app/viewmodel/detailPanel/session/WhatSonFoldersHierarchySessionService.hpp"
+#include "app/viewmodel/detailPanel/DetailCurrentNoteContextBridge.hpp"
 #include "app/viewmodel/detailPanel/ResourceDetailPanelViewModel.hpp"
 #include "app/viewmodel/hierarchy/resources/ResourcesListModel.hpp"
 #include "app/viewmodel/panel/NoteListModelContractBridge.hpp"
@@ -755,6 +756,7 @@ private slots:
     void sidebarHierarchyViewModel_reactsToProviderMappingChanges();
     void sidebarAndSelectionBridge_forceCppOwnershipAcrossHierarchySwitchBindings();
     void contentsEditorSelectionBridge_tracksSelectionFromCurrentIndexSignal();
+    void contentsEditorSelectionBridge_preservesNoSelectionSentinelBeforeIndexCommit();
     void contentsEditorSelectionBridge_prefillsSelectedNoteBodyFromNoteListSnapshot();
     void contentsEditorSelectionBridge_prefillsSelectedNoteBodyFromDirectSourceSnapshot();
     void contentsEditorSelectionBridge_treatsDirectEmptySourceAsResolvedEmptyNote();
@@ -765,6 +767,9 @@ private slots:
     void noteBackedHierarchyNoteLists_preserveRawBodySnapshotForEditorBootstrap();
     void noteListModelContractBridge_resolvesHierarchyBoundNoteListImmediately();
     void noteListModelContractBridge_prefersExplicitRowsAcrossHierarchySwitches();
+    void noteListModelContractBridge_exposesCurrentNoteEntryFromCurrentSelection();
+    void libraryNoteListModel_emitsCurrentNoteEntryChangedWhenInitialSelectionMaterializes();
+    void libraryNoteListModel_emitsCurrentNoteEntryChangedWhenSelectedRowReplacesCurrentSelection();
     void navigationModeViewModel_cyclesActiveSections();
     void editorViewModeViewModel_cyclesActiveSections();
     void onboardingRouteBootstrapController_syncsEmbeddedOnboardingLifecycle();
@@ -774,6 +779,7 @@ private slots:
     void hierarchyTreeItemSupport_clampsNegativeSelectionToFirstVisibleRow();
     void progressHierarchySupport_defaultsFirstVisibleItemToFirstDraft();
     void resourcePackageSupport_roundTripsAnnotationMetadataAndBitmap();
+    void resourcePackageSupport_normalizesTerminalFormatForMultiDotAssetNames();
     void unusedResourcesSensor_reportsHubPackagesMissingFromAllNoteEmbeddings();
     void unusedResourcesSensor_refreshesAfterRawBodyEmbedsAResource();
     void resourcesImportViewModel_wiresAnnotationBitmapGenerationIntoPackageCreation();
@@ -782,6 +788,7 @@ private slots:
     void foldersHierarchySessionService_preservesEscapedLiteralSlashFolderPaths();
     void sidebarHierarchyRenameController_preservesLiteralSlashFolderLabels();
     void resourcesHierarchyViewModel_defaultsSelectionToImageAndFiltersList();
+    void resourcesHierarchyViewModel_collapsesMultiDotImageFormatsIntoTerminalSuffix();
     void structuredCollectionPolicy_normalizesEntriesAndPrefersResolvedMatches();
     void structuredMutationPolicy_buildsDeletionAndInsertionPayloads();
     void structuredMutationPolicy_buildsParagraphBoundaryMergeAndSplitPayloads();
@@ -793,6 +800,7 @@ private slots:
     void editorSurfaceModeSupport_switchesToResourceEditorForResourceListModels();
     void qmlResourceEditorView_staysTransparentAndViewerOnly();
     void resourceDetailPanelViewModel_tracksCurrentResourceSelection();
+    void detailCurrentNoteContextBridge_prefersCurrentNoteEntryAndClearsNonNoteBackedSelection();
     void detailPanelRouting_separatesNoteAndResourceViewsAndViewModels();
     void contentsDisplayView_invalidatesGutterGeometryImmediatelyAcrossRapidNoteSwitches();
     void contentsDisplayView_keepsGutterNumbersCloseToTheEditorBody();

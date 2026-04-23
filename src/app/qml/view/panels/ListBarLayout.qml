@@ -11,6 +11,7 @@ Rectangle {
     id: listBarLayout
 
     property int activeToolbarIndex: 0
+    readonly property var committedNoteEntry: listBarLayout.currentNoteEntryFromModel()
     readonly property string committedNoteId: listBarLayout.currentNoteIdFromModel()
     readonly property int committedNoteIndex: listBarLayout.normalizeCurrentIndex(listBarLayout.currentIndexFromModel())
     property string contextMenuNoteId: ""
@@ -251,7 +252,25 @@ Rectangle {
             return Number(listBarLayout.resolvedNoteListModel.currentIndex);
         return -1;
     }
+    function currentNoteEntryFromModel() {
+        const bridgeNoteEntry = noteListContractBridge.currentNoteEntry;
+        if (bridgeNoteEntry !== undefined && bridgeNoteEntry !== null && typeof bridgeNoteEntry === "object") {
+            for (const key in bridgeNoteEntry)
+                return bridgeNoteEntry;
+        }
+        if (listBarLayout.resolvedNoteListModel
+                && listBarLayout.resolvedNoteListModel.currentNoteEntry !== undefined
+                && listBarLayout.resolvedNoteListModel.currentNoteEntry !== null
+                && typeof listBarLayout.resolvedNoteListModel.currentNoteEntry === "object") {
+            return listBarLayout.resolvedNoteListModel.currentNoteEntry;
+        }
+        return ({});
+    }
     function currentNoteIdFromModel() {
+        const currentNoteEntry = listBarLayout.committedNoteEntry;
+        const entryNoteId = listBarLayout.noteIdFromEntry(currentNoteEntry);
+        if (entryNoteId.length > 0)
+            return entryNoteId;
         const bridgeNoteId = noteListContractBridge.currentNoteId;
         const normalizedBridgeNoteId = bridgeNoteId === undefined || bridgeNoteId === null ? "" : String(bridgeNoteId).trim();
         if (normalizedBridgeNoteId.length > 0)
@@ -365,6 +384,18 @@ Rectangle {
         if (normalizedIndex < 0 || !noteListContractBridge || noteListContractBridge.readNoteIdAt === undefined)
             return "";
         return String(noteListContractBridge.readNoteIdAt(normalizedIndex) || "").trim();
+    }
+    function noteIdFromEntry(noteEntry) {
+        if (noteEntry === undefined || noteEntry === null || typeof noteEntry !== "object")
+            return "";
+        if (noteEntry.noteId !== undefined && noteEntry.noteId !== null) {
+            const normalizedNoteId = String(noteEntry.noteId).trim();
+            if (normalizedNoteId.length > 0)
+                return normalizedNoteId;
+        }
+        if (noteEntry.id !== undefined && noteEntry.id !== null)
+            return String(noteEntry.id).trim();
+        return "";
     }
     function noteListEntriesSignature(entries) {
         const normalizedEntries = entries === undefined || entries === null ? [] : entries;
@@ -593,9 +624,10 @@ Rectangle {
         });
     }
     function syncFocusedNoteDeletionState() {
-        const bridgeNoteId = noteListContractBridge.currentNoteId;
-        if (bridgeNoteId.length > 0) {
-            noteDeletionBridge.focusedNoteId = bridgeNoteId;
+        const currentNoteEntry = listBarLayout.committedNoteEntry;
+        const currentNoteId = listBarLayout.noteIdFromEntry(currentNoteEntry);
+        if (currentNoteId.length > 0) {
+            noteDeletionBridge.focusedNoteId = currentNoteId;
             return;
         }
         const noteModel = listBarLayout.resolvedNoteListModel;

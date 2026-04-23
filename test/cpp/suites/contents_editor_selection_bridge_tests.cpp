@@ -24,6 +24,32 @@ void WhatSonCppRegressionTests::contentsEditorSelectionBridge_tracksSelectionFro
     QVERIFY(selectionBridge.selectedNoteBodyLoading() || !selectionBridge.selectedNoteBodyResolved());
 }
 
+void WhatSonCppRegressionTests::contentsEditorSelectionBridge_preservesNoSelectionSentinelBeforeIndexCommit()
+{
+    ensureCoreApplication();
+
+    FakeIndexDrivenSelectionNoteListModel noteListModel;
+    ContentsEditorSelectionBridge selectionBridge;
+
+    noteListModel.setNoteBacked(true);
+    noteListModel.setEntry(0, QStringLiteral("note-1"), QStringLiteral("Body 1"));
+    noteListModel.setEntry(1, QStringLiteral("note-2"), QStringLiteral("Body 2"));
+    noteListModel.setCurrentIndex(-1);
+
+    selectionBridge.setNoteListModel(&noteListModel);
+    QCoreApplication::processEvents();
+
+    QCOMPARE(noteListModel.currentIndex(), -1);
+    QCOMPARE(noteListModel.itemCount(), 2);
+    QCOMPARE(selectionBridge.visibleNoteCount(), 2);
+    QCOMPARE(selectionBridge.selectedNoteId(), QString());
+    QCOMPARE(selectionBridge.selectedNoteDirectoryPath(), QString());
+    QCOMPARE(selectionBridge.selectedNoteBodyNoteId(), QString());
+    QCOMPARE(selectionBridge.selectedNoteBodyText(), QString());
+    QVERIFY(!selectionBridge.selectedNoteBodyResolved());
+    QVERIFY(!selectionBridge.selectedNoteBodyLoading());
+}
+
 void WhatSonCppRegressionTests::contentsEditorSelectionBridge_prefillsSelectedNoteBodyFromDirectSourceSnapshot()
 {
     ensureCoreApplication();

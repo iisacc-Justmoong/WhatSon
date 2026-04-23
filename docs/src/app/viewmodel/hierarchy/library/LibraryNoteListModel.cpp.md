@@ -42,9 +42,18 @@ package path changes.
 This keeps the same concrete `.wsnote` package active when duplicate ids exist across multiple note
 packages.
 
+The same reset path now also emits `currentNoteEntryChanged()` whenever the filtered selection
+materializes for the first time or the selected row is replaced in-place at the same visible index.
+That keeps `currentNoteEntry` consumers aligned with the authoritative row selection instead of
+depending on `currentIndexChanged()` alone.
+
 `currentBodyText` is again a real selected-note payload. After search/filter resets the model still
 restores `m_currentIndex` by note id, and the selected row continues to expose its normalized note
 body through both `currentBodyText` and `BodyTextRole`.
+
+The `applySearchFilter()` trace now logs post-reset `m_items` state instead of the moved-from
+temporary filter buffer. The `nextCount`, `nextItemId`, and `nextItemDirectoryPath` fields therefore
+describe the actual visible list state that downstream selection debugging should inspect.
 
 ## Source Metadata
 - Source path: `src/app/viewmodel/hierarchy/library/LibraryNoteListModel.cpp`
@@ -70,3 +79,5 @@ Also confirm that the selected library note still exposes its body text immediat
 note-list model after runtime snapshot refreshes and search/filter resets.
 When duplicate note ids exist, also confirm that the selected row keeps exporting the correct
 `noteDirectoryPath` for the mounted package.
+When the first visible selection materializes or the selected row is replaced by a reset, also
+confirm that `currentNoteEntryChanged()` fires exactly once with the new row payload.

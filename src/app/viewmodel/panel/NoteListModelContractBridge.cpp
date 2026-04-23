@@ -159,14 +159,61 @@ int NoteListModelContractBridge::currentIndex() const
     return readIntProperty(m_noteListModel, "currentIndex", -1);
 }
 
+QVariantMap NoteListModelContractBridge::currentNoteEntry() const
+{
+    QVariantMap noteEntry;
+    if (m_noteListModel == nullptr)
+    {
+        return noteEntry;
+    }
+
+    if (hasReadableProperty(m_noteListModel, "currentNoteEntry"))
+    {
+        noteEntry = m_noteListModel->property("currentNoteEntry").toMap();
+    }
+
+    if (noteEntry.isEmpty())
+    {
+        noteEntry = rowSnapshotAt(qobject_cast<QAbstractItemModel*>(m_noteListModel.data()), currentIndex());
+    }
+
+    const QString currentNoteId = readStringProperty(m_noteListModel, "currentNoteId").trimmed();
+    if (!noteEntry.contains(QStringLiteral("noteId")))
+    {
+        if (noteEntry.contains(QStringLiteral("id")))
+        {
+            noteEntry.insert(QStringLiteral("noteId"), noteEntry.value(QStringLiteral("id")));
+        }
+        else if (!currentNoteId.isEmpty())
+        {
+            noteEntry.insert(QStringLiteral("noteId"), currentNoteId);
+        }
+    }
+
+    const QString currentNoteDirectoryPath = readStringProperty(m_noteListModel, "currentNoteDirectoryPath").trimmed();
+    if (!noteEntry.contains(QStringLiteral("noteDirectoryPath")) && !currentNoteDirectoryPath.isEmpty())
+    {
+        noteEntry.insert(QStringLiteral("noteDirectoryPath"), currentNoteDirectoryPath);
+    }
+
+    return noteEntry;
+}
+
 QString NoteListModelContractBridge::currentNoteId() const
 {
-    const int currentRow = currentIndex();
-    const QString rowNoteId = readNoteIdAt(currentRow).trimmed();
-    if (!rowNoteId.isEmpty())
+    const QVariantMap noteEntry = currentNoteEntry();
+    QString entryNoteId = noteEntry.value(QStringLiteral("noteId")).toString().trimmed();
+    if (!entryNoteId.isEmpty())
     {
-        return rowNoteId;
+        return entryNoteId;
     }
+
+    QString entryId = noteEntry.value(QStringLiteral("id")).toString().trimmed();
+    if (!entryId.isEmpty())
+    {
+        return entryId;
+    }
+
     return readStringProperty(m_noteListModel, "currentNoteId").trimmed();
 }
 
@@ -197,6 +244,11 @@ bool NoteListModelContractBridge::applySearchText(const QString& searchText)
 int NoteListModelContractBridge::readCurrentIndex() const
 {
     return currentIndex();
+}
+
+QVariantMap NoteListModelContractBridge::readCurrentNoteEntry() const
+{
+    return currentNoteEntry();
 }
 
 QString NoteListModelContractBridge::readCurrentNoteId() const
@@ -234,7 +286,7 @@ QString NoteListModelContractBridge::readNoteIdAt(int index) const
     const QVariant noteIdValue = snapshot.contains(QStringLiteral("noteId"))
         ? snapshot.value(QStringLiteral("noteId"))
         : snapshot.value(QStringLiteral("id"));
-    const QString noteId = noteIdValue.toString().trimmed();
+    QString noteId = noteIdValue.toString().trimmed();
     if (normalizedIndex == 0)
     {
         WhatSon::Debug::traceSelf(const_cast<NoteListModelContractBridge*>(this),
@@ -292,10 +344,19 @@ bool NoteListModelContractBridge::pushCurrentIndex(int index)
 void NoteListModelContractBridge::handleCurrentIndexChanged()
 {
     emit currentIndexChanged();
+    emit currentNoteEntryChanged();
+    emit currentNoteIdChanged();
+}
+
+void NoteListModelContractBridge::handleCurrentNoteEntryChanged()
+{
+    emit currentNoteEntryChanged();
+    emit currentNoteIdChanged();
 }
 
 void NoteListModelContractBridge::handleCurrentNoteIdChanged()
 {
+    emit currentNoteEntryChanged();
     emit currentNoteIdChanged();
 }
 
@@ -319,6 +380,7 @@ void NoteListModelContractBridge::handleNoteListDestroyed()
     }
     refreshContracts();
     emit currentIndexChanged();
+    emit currentNoteEntryChanged();
     emit currentNoteIdChanged();
 
     QMetaObject::invokeMethod(
@@ -378,6 +440,16 @@ bool NoteListModelContractBridge::hasInvokableMethod(const QObject* object, cons
     }
 
     return object->metaObject()->indexOfMethod(QMetaObject::normalizedSignature(methodSignature)) >= 0;
+}
+
+bool NoteListModelContractBridge::hasSignal(const QObject* object, const char* signalSignature)
+{
+    if (object == nullptr || signalSignature == nullptr)
+    {
+        return false;
+    }
+
+    return object->metaObject()->indexOfSignal(QMetaObject::normalizedSignature(signalSignature)) >= 0;
 }
 
 QString NoteListModelContractBridge::readStringProperty(const QObject* object, const char* propertyName)
@@ -506,16 +578,30 @@ void NoteListModelContractBridge::setResolvedNoteListModel(QObject* model)
             &QObject::destroyed,
             this,
             &NoteListModelContractBridge::handleNoteListDestroyed);
-        m_currentIndexChangedConnection = connect(
-            m_noteListModel,
-            SIGNAL(currentIndexChanged()),
-            this,
-            SLOT(handleCurrentIndexChanged()));
-        m_currentNoteIdChangedConnection = connect(
-            m_noteListModel,
-            SIGNAL(currentNoteIdChanged()),
-            this,
-            SLOT(handleCurrentNoteIdChanged()));
+        if (hasSignal(m_noteListModel, "currentIndexChanged()"))
+        {
+            m_currentIndexChangedConnection = connect(
+                m_noteListModel,
+                SIGNAL(currentIndexChanged()),
+                this,
+                SLOT(handleCurrentIndexChanged()));
+        }
+        if (hasSignal(m_noteListModel, "currentNoteEntryChanged()"))
+        {
+            m_currentNoteEntryChangedConnection = connect(
+                m_noteListModel,
+                SIGNAL(currentNoteEntryChanged()),
+                this,
+                SLOT(handleCurrentNoteEntryChanged()));
+        }
+        if (hasSignal(m_noteListModel, "currentNoteIdChanged()"))
+        {
+            m_currentNoteIdChangedConnection = connect(
+                m_noteListModel,
+                SIGNAL(currentNoteIdChanged()),
+                this,
+                SLOT(handleCurrentNoteIdChanged()));
+        }
     }
 
     emit noteListModelChanged();
@@ -525,6 +611,7 @@ void NoteListModelContractBridge::setResolvedNoteListModel(QObject* model)
     }
     refreshContracts();
     emit currentIndexChanged();
+    emit currentNoteEntryChanged();
     emit currentNoteIdChanged();
 }
 
@@ -568,6 +655,11 @@ void NoteListModelContractBridge::disconnectNoteListModel()
     {
         disconnect(m_currentIndexChangedConnection);
         m_currentIndexChangedConnection = QMetaObject::Connection();
+    }
+    if (m_currentNoteEntryChangedConnection)
+    {
+        disconnect(m_currentNoteEntryChangedConnection);
+        m_currentNoteEntryChangedConnection = QMetaObject::Connection();
     }
     if (m_currentNoteIdChangedConnection)
     {

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <QMetaObject>
 #include <QObject>
 #include <QPointer>
 #include <QString>
@@ -34,8 +35,15 @@ private slots:
     void refreshContext();
 
 private:
+    void disconnectNoteListModelSignals();
+
     QPointer<QObject> m_noteListModel;
     QPointer<QObject> m_noteDirectorySourceViewModel;
+    QMetaObject::Connection m_noteListModelDestroyedConnection;
+    QMetaObject::Connection m_currentIndexChangedConnection;
+    QMetaObject::Connection m_currentNoteEntryChangedConnection;
+    QMetaObject::Connection m_currentNoteIdChangedConnection;
+    QMetaObject::Connection m_currentNoteDirectoryPathChangedConnection;
     QString m_currentNoteId;
     QString m_currentNoteDirectoryPath;
 };

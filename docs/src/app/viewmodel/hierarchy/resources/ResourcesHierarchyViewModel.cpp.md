@@ -17,6 +17,9 @@ The hierarchy keeps the legacy interaction contract:
 
 - top-level rows are resource types
 - expanding a type reveals format rows
+- format rows are keyed by the terminal file suffix (`.png`, `.pdf`, `.gz`) rather than by the full
+  complete suffix of a multi-dot file name, so screenshot names like `...11.25.16.png` stay grouped
+  under `.png`
 
 Even when the input path list is empty, the viewmodel still publishes the type parents with their
 default format catalog, so the resources sidebar is never a flat type-only list.
@@ -86,6 +89,8 @@ package deletion or import instead of dropping back to a blank transition state.
   first visible row (`Image`).
 - Deleting or importing `.wsresource` packages must preserve the current projection when the selected taxonomy
   key still exists after rebuild.
+- A multi-dot image asset and even a poisoned `resource.xml format=".25.16.png"` payload must still
+  materialize as the normal `.png` taxonomy row instead of creating a bogus `.25.16.png` child item.
 
 ## Load Fallback
 

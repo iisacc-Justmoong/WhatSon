@@ -25,6 +25,9 @@
 - The bridge now also treats note-list `currentIndexChanged()` as a first-class selection refresh trigger.
   This keeps list-item activation aligned with editor selection even when the model derives `currentNoteId` lazily from
   its committed index instead of emitting a dedicated note-id signal first.
+- The bridge also preserves a negative `currentIndex` sentinel from the note-list model.
+  A launch-time `-1` therefore still means "selection writer has not committed one row yet" instead of being collapsed
+  into row `0` before the model has surfaced a real note identity.
 - The same bridge now also listens for note-list `currentBodyTextChanged()` and invalidates its cached selected-note
   snapshot before the next queued refresh turn.
   A selected note can therefore receive a late runtime body snapshot from the list model without requiring the note id
@@ -114,6 +117,8 @@
   while the bridge waits for the lazy package-load path.
 - A list-item activation path that only changes the committed `currentIndex` must still refresh `selectedNoteId` and
   `selectedNoteBodyText` for the editor.
+- A note-backed list with `itemCount > 0` and `currentIndex=-1` must not be reinterpreted as an implicit row-0
+  selection by the bridge.
 - A same-note `currentBodyTextChanged()` from the note-list model must still refresh the bridge body snapshot even when
   the selected note id itself did not change.
 - Stale same-note body-read completions must not reclaim the selected note body after a newer request was issued.

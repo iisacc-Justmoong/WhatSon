@@ -37,10 +37,13 @@
 
 `buildMetadataForAssetFile(...)`는 파일 경로 하나만 받아:
 
-- `format`은 실제 파일명이 가진 suffix를 그대로 보존하고
+- `format`은 실제 파일명의 마지막 확장자(terminal suffix)만 사용하고
 - `type`과 `bucket`은 그 suffix를 case-insensitive로 해석해 자동 할당한다
 
 예를 들어 `VisualAsset.PNG`는 `format=".PNG"`, `type="image"`, `bucket="Image"`가 된다.
+같은 규칙으로 `Simulator Screenshot ... 11.25.16.png`처럼 파일명 중간에 날짜/버전 점이 더 있더라도
+`format`은 `.25.16.png`가 아니라 `.png`로 정규화된다. 패키지 로더도 기존 `resource.xml`의 오염된
+복합 포맷 값을 같은 terminal suffix 규칙으로 다시 해석한다.
 같은 호출은 새 패키지 주석 캔버스 경로도 `annotation.png`로 기본 설정한다.
 
 `createEmptyAnnotationBitmap(...)` 계열은 package-local 주석 캔버스를 생성한다.

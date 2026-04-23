@@ -103,6 +103,11 @@
 - Note-list `currentIndexChanged()` and `currentNoteIdChanged()` still queue one deferred bridge refresh per
   event-loop turn instead of running `refreshNoteSelectionState()` immediately, so one logical selection transition
   stays coalesced before QML reacts.
+- The bridge now preserves the note-list model's raw `currentIndex` sentinel.
+  `readIntProperty(...)` no longer clamps negative integers to `0`, so launch-time `currentIndex=-1` remains a true
+  "no committed selection yet" state instead of being misread as row `0`.
+  This keeps `resolveCurrentNoteIdFromSelectionContract()` from prematurely falling back to row `0` before the real
+  selection writer commits one authoritative index/note identity pair.
 - `refreshNoteSelectionState()` now also treats one empty `currentNoteId` from a still-populated note-backed list as a
   transient contract gap instead of an immediate note-clear event.
   When the active note list still reports visible items, the bridge retains the previous selected note id/body owner
@@ -163,6 +168,8 @@
   payload immediately instead of forcing QML to wait for an asynchronous package read.
 - A list-item activation path must still refresh editor selection when the model only emits `currentIndexChanged()`
   before QML reaches the editor surface.
+- A note-backed list with visible rows but `currentIndex=-1` must stay in the bridge's no-selection state until the
+  authoritative selection writer commits one non-negative current index.
 - A same-note `currentBodyTextChanged()` must still invalidate the cached selected-note snapshot so the editor can
   adopt the refreshed list-provided RAW body.
 - A note-open turn must not push an empty interim body into the editor before the lazy body load completes.

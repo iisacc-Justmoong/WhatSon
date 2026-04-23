@@ -5,6 +5,7 @@
 #include <QPointer>
 #include <QString>
 #include <QVariantList>
+#include <QVariantMap>
 
 class NoteListModelContractBridge : public QObject
 {
@@ -17,6 +18,7 @@ class NoteListModelContractBridge : public QObject
     Q_PROPERTY(bool currentIndexContractAvailable READ currentIndexContractAvailable
                    NOTIFY currentIndexContractAvailableChanged)
     Q_PROPERTY(int currentIndex READ currentIndex NOTIFY currentIndexChanged)
+    Q_PROPERTY(QVariantMap currentNoteEntry READ currentNoteEntry NOTIFY currentNoteEntryChanged)
     Q_PROPERTY(QString currentNoteId READ currentNoteId NOTIFY currentNoteIdChanged)
 
 public:
@@ -33,10 +35,12 @@ public:
     bool searchContractAvailable() const noexcept;
     bool currentIndexContractAvailable() const noexcept;
     int currentIndex() const;
+    QVariantMap currentNoteEntry() const;
     QString currentNoteId() const;
 
     Q_INVOKABLE bool applySearchText(const QString& searchText);
     Q_INVOKABLE int readCurrentIndex() const;
+    Q_INVOKABLE QVariantMap readCurrentNoteEntry() const;
     Q_INVOKABLE QString readCurrentNoteId() const;
     Q_INVOKABLE QString readNoteIdAt(int index) const;
     Q_INVOKABLE QVariantList readAllRows() const;
@@ -50,10 +54,12 @@ signals:
     void searchContractAvailableChanged();
     void currentIndexContractAvailableChanged();
     void currentIndexChanged();
+    void currentNoteEntryChanged();
     void currentNoteIdChanged();
 
 private slots:
     void handleCurrentIndexChanged();
+    void handleCurrentNoteEntryChanged();
     void handleCurrentNoteIdChanged();
     void handleNoteListDestroyed();
     void handleHierarchyViewModelDestroyed();
@@ -62,6 +68,7 @@ private:
     static bool hasReadableProperty(const QObject* object, const char* propertyName);
     static bool hasWritableProperty(const QObject* object, const char* propertyName);
     static bool hasInvokableMethod(const QObject* object, const char* methodSignature);
+    static bool hasSignal(const QObject* object, const char* signalSignature);
     static QString readStringProperty(const QObject* object, const char* propertyName);
     static int readIntProperty(const QObject* object, const char* propertyName, int fallbackValue);
     static QObject* readObjectProperty(const QObject* object, const char* propertyName);
@@ -82,5 +89,6 @@ private:
     QMetaObject::Connection m_hierarchyViewModelDestroyedConnection;
     QMetaObject::Connection m_noteListDestroyedConnection;
     QMetaObject::Connection m_currentIndexChangedConnection;
+    QMetaObject::Connection m_currentNoteEntryChangedConnection;
     QMetaObject::Connection m_currentNoteIdChangedConnection;
 };

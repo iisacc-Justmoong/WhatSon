@@ -115,6 +115,7 @@ set(WHATSON_CPP_REGRESSION_TEST_SOURCES
         "${CMAKE_SOURCE_DIR}/src/app/models/content/structured/ContentsStructuredDocumentHost.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/content/structured/ContentsStructuredDocumentMutationPolicy.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/viewmodel/detailPanel/session/WhatSonFoldersHierarchySessionService.cpp"
+        "${CMAKE_SOURCE_DIR}/src/app/viewmodel/detailPanel/DetailCurrentNoteContextBridge.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/viewmodel/detailPanel/ResourceDetailPanelViewModel.cpp"
 )
 

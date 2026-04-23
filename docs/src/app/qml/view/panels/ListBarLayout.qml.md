@@ -148,9 +148,9 @@ selection state machine lives in a sibling controller file.
 - `resolvedNoteListModel` is now derived from the bridge, not from the raw injected `noteListModel` property.
   This is the key regression guard for toolbar/domain switches: the list resets and re-primes itself when the bridge's
   resolved model changes, even if the caller only swapped the active hierarchy viewmodel.
-- Committed active-row state now reads `noteListContractBridge.currentIndex/currentNoteId` **property contracts**
-  (not invokable snapshots), so QML binding reactivity tracks selection changes and avoids the first-row-fixed
-  active-card regression.
+- Committed active-row state now reads `noteListContractBridge.currentIndex/currentNoteEntry/currentNoteId`
+  **property contracts** (not invokable snapshots), so note-backed hierarchies can follow the same explicit
+  current-entry selection pattern that already works for resources.
 - Delegate active styling uses `isDelegateActive(index, noteId)`:
   - first contract: `selectedNoteIndices` membership (multi-selection highlight)
   - primary contract: committed `currentIndex`
@@ -158,8 +158,9 @@ selection state machine lives in a sibling controller file.
   so the selected row stays visually active even when the model momentarily reorders or defers index stabilization.
 - `FocusedNoteDeletionBridge` still tracks the focused single note as a fallback, but keyboard delete now prefers the
   resolved multi-selection note-id set when one exists.
-- Focused-note sync still reads `resolvedNoteListModel.currentNoteId` first, so single-note delete fallback follows the
-  model-authoritative current note contract.
+- Focused-note sync now derives the preferred note id from the committed current-note entry before falling back to
+  legacy `currentNoteId`, so note-backed lists and resource lists share one explicit current-selection shape at the QML
+  boundary.
 
 ## Drag And Context Menu
 
@@ -192,7 +193,7 @@ selection state machine lives in a sibling controller file.
 ## Tests
 
 - The maintained C++ regression suite now covers the bridge contract that this file depends on for hierarchy-driven
-  note-list rebinding.
+  note-list rebinding and explicit current-note-entry propagation.
 - Modifier-selection regression checklist for this file:
   - `Shift + click` selects contiguous ranges from `noteSelectionAnchorIndex`.
   - `Cmd/Ctrl + click` toggles row membership without collapsing to single-row selection.
