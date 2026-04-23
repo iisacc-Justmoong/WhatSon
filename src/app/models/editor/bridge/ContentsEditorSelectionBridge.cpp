@@ -772,10 +772,17 @@ int ContentsEditorSelectionBridge::readIntProperty(const QObject* object, const 
 {
     if (!hasReadableProperty(object, propertyName))
     {
-        return 0;
+        return -1;
     }
 
-    return std::max(0, object->property(propertyName).toInt());
+    bool converted = false;
+    const int value = object->property(propertyName).toInt(&converted);
+    if (!converted)
+    {
+        return -1;
+    }
+
+    return value;
 }
 
 bool ContentsEditorSelectionBridge::adoptPendingEditorBodyText(const QString& noteId)
