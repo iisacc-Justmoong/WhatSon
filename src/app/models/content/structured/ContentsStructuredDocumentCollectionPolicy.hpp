@@ -14,6 +14,9 @@ public:
     ~ContentsStructuredDocumentCollectionPolicy() override;
 
     Q_INVOKABLE QVariantList normalizeEntries(const QVariant& rawEntries) const;
+    Q_INVOKABLE QVariantList normalizeInteractiveDocumentBlocks(
+        const QVariant& rawEntries,
+        const QString& sourceText) const;
     Q_INVOKABLE QString normalizeSourceText(const QString& value) const;
     Q_INVOKABLE QString spliceSourceRange(
         const QString& sourceText,
@@ -24,6 +27,10 @@ public:
     Q_INVOKABLE QVariantMap resourceEntryForBlock(
         const QVariantMap& blockEntry,
         const QVariant& renderedResources) const;
+
+    static QVariantList normalizeInteractiveDocumentBlockEntries(
+        const QVariantList& entries,
+        const QString& sourceText);
 
 private:
     static bool resourceEntryHasResolvedPayload(const QVariantMap& entry);

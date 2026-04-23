@@ -1,5 +1,6 @@
 #include "app/models/editor/renderer/ContentsStructuredBlockRenderer.hpp"
 
+#include "app/models/content/structured/ContentsStructuredDocumentCollectionPolicy.hpp"
 #include "app/models/editor/parser/ContentsWsnBodyBlockParser.hpp"
 #include "app/models/file/WhatSonDebugTrace.hpp"
 #include "app/models/file/note/WhatSonNoteBodySemanticTagSupport.hpp"
@@ -13,8 +14,6 @@
 
 namespace
 {
-    namespace SemanticTags = WhatSon::NoteBodySemanticTagSupport;
-
     bool containsIgnoreCase(const QString& text, const QString& token)
     {
         return text.indexOf(token, 0, Qt::CaseInsensitive) >= 0;
@@ -139,7 +138,7 @@ namespace
             payload.insert(
                 QStringLiteral("tagName"),
                 normalizedTagName.isEmpty() ? normalizedTypeName : normalizedTagName);
-            if (SemanticTags::isRenderedTextBlockElement(normalizedTypeName))
+            if (WhatSon::NoteBodySemanticTagSupport::isRenderedTextBlockElement(normalizedTypeName))
             {
                 payload.insert(QStringLiteral("semanticTagName"), normalizedTypeName);
             }
@@ -182,7 +181,10 @@ namespace
         snapshot.calloutParseVerification = parseResult.calloutParseVerification;
         snapshot.renderedAgendas = parseResult.renderedAgendas;
         snapshot.renderedCallouts = parseResult.renderedCallouts;
-        snapshot.renderedDocumentBlocks = parseResult.renderedDocumentBlocks;
+        snapshot.renderedDocumentBlocks =
+            ContentsStructuredDocumentCollectionPolicy::normalizeInteractiveDocumentBlockEntries(
+                parseResult.renderedDocumentBlocks,
+                sourceText);
         snapshot.structuredParseVerification = parseResult.structuredParseVerification;
         return snapshot;
     }
@@ -331,16 +333,7 @@ int ContentsStructuredBlockRenderer::calloutCount() const noexcept
 
 bool ContentsStructuredBlockRenderer::hasRenderedBlocks() const noexcept
 {
-    for (const QVariant& blockValue : m_renderedDocumentBlocks)
-    {
-        const QVariantMap block = blockValue.toMap();
-        const QString blockType = block.value(QStringLiteral("type")).toString().trimmed().toCaseFolded();
-        if (SemanticTags::isExplicitDocumentBlockTypeName(blockType))
-        {
-            return true;
-        }
-    }
-    return false;
+    return !m_renderedDocumentBlocks.isEmpty();
 }
 
 bool ContentsStructuredBlockRenderer::hasNonResourceRenderedBlocks() const noexcept
@@ -349,8 +342,7 @@ bool ContentsStructuredBlockRenderer::hasNonResourceRenderedBlocks() const noexc
     {
         const QVariantMap block = blockValue.toMap();
         const QString blockType = block.value(QStringLiteral("type")).toString().trimmed().toCaseFolded();
-        if (SemanticTags::isExplicitDocumentBlockTypeName(blockType)
-            && !SemanticTags::isResourceTagName(blockType))
+        if (blockType != QStringLiteral("resource"))
         {
             return true;
         }
@@ -607,9 +599,10 @@ void ContentsStructuredBlockRenderer::publishPlaceholderDocumentBlocks()
         QStringLiteral("structuredBlockRenderer"),
         QStringLiteral("publishPlaceholderDocumentBlocks"),
         QStringLiteral("sourceSummary=%1").arg(WhatSon::Debug::summarizeText(m_sourceText)));
-    const QVariantList placeholderBlocks = QVariantList {
-        documentBlockPayload(m_sourceText, 0, m_sourceText.size())
-    };
+    const QVariantList placeholderBlocks =
+        ContentsStructuredDocumentCollectionPolicy::normalizeInteractiveDocumentBlockEntries(
+            QVariantList{documentBlockPayload(m_sourceText, 0, m_sourceText.size())},
+            m_sourceText);
 
     const bool previousCorrectionSuggested = correctionSuggested();
     updateCorrectedSourceText(QString());

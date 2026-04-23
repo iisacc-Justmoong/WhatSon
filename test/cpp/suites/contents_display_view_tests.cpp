@@ -85,6 +85,101 @@ void WhatSonCppRegressionTests::contentsDisplayView_usesSelectedNoteSnapshotWhil
         QStringLiteral("return editorSession.editorBoundNoteDirectoryPath === contentsView.selectedNoteDirectoryPath;")));
 }
 
+void WhatSonCppRegressionTests::contentsDisplayView_routesStructuredMutationsThroughEditorSessionAuthority()
+{
+    const QString displayViewSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/content/editor/ContentsDisplayView.qml"));
+
+    QVERIFY(!displayViewSource.isEmpty());
+    QVERIFY(displayViewSource.contains(
+        QStringLiteral("if (mutationPlan.applyStructuredSourceText || mutationPlan.applyEditorText) {")));
+    QVERIFY(displayViewSource.contains(
+        QStringLiteral("if (contentsView.editorText !== normalizedNextSourceText)")));
+    QVERIFY(displayViewSource.contains(
+        QStringLiteral("contentsView.editorText = normalizedNextSourceText;")));
+    QVERIFY(!displayViewSource.contains(
+        QStringLiteral("contentsView.structuredFlowSourceText = normalizedNextSourceText;")));
+    QVERIFY(displayViewSource.contains(
+        QStringLiteral("editorSession.markLocalEditorAuthority")));
+    QVERIFY(displayViewSource.contains(
+        QStringLiteral("editorSession.scheduleEditorPersistence")));
+}
+
+void WhatSonCppRegressionTests::contentsDisplayView_refreshesMinimapFromResolvedPresentationSource()
+{
+    const QString displayViewSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/content/editor/ContentsDisplayView.qml"));
+
+    QVERIFY(!displayViewSource.isEmpty());
+    QVERIFY(displayViewSource.contains(
+        QStringLiteral("onDocumentPresentationSourceTextChanged: {")));
+    QVERIFY(displayViewSource.contains(
+        QStringLiteral("contentsView.refreshLiveLogicalLineMetrics();")));
+    QVERIFY(displayViewSource.contains(
+        QStringLiteral("contentsView.minimapSnapshotForceFullRefresh = true;")));
+    QVERIFY(displayViewSource.contains(
+        QStringLiteral("contentsView.scheduleMinimapSnapshotRefresh(true);")));
+}
+
+void WhatSonCppRegressionTests::contentsDisplayView_scalesMinimapRowsFromDocumentGeometry()
+{
+    const QString displayViewSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/content/editor/ContentsDisplayView.qml"));
+
+    QVERIFY(!displayViewSource.isEmpty());
+    QVERIFY(displayViewSource.contains(
+        QStringLiteral("viewportCoordinator.minimapTrackHeightForContentHeight(")));
+    QVERIFY(displayViewSource.contains(
+        QStringLiteral("viewportCoordinator.minimapTrackYForContentY(")));
+    QVERIFY(displayViewSource.contains(
+        QStringLiteral("Math.ceil(contentsView.minimapContentHeight() / safeEditorLineHeight)")));
+    QVERIFY(!displayViewSource.contains(
+        QStringLiteral("return rows.length * contentsView.minimapVisualRowPaintHeight(rows[0]) + Math.max(0, rows.length - 1) * contentsView.minimapRowGap;")));
+    QVERIFY(!displayViewSource.contains(
+        QStringLiteral("return visualIndex * (contentsView.minimapRowGap + contentsView.minimapVisualRowPaintHeight(rowSpec));")));
+}
+
+void WhatSonCppRegressionTests::contentsDisplayView_refreshesMinimapWhenStructuredLayoutCacheChanges()
+{
+    const QString displayViewSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/content/editor/ContentsDisplayView.qml"));
+
+    QVERIFY(!displayViewSource.isEmpty());
+    QVERIFY(displayViewSource.contains(
+        QStringLiteral("function onCachedLogicalLineEntriesChanged() {")));
+    QVERIFY(displayViewSource.contains(
+        QStringLiteral("const metricsChanged = contentsView.refreshLiveLogicalLineMetrics();")));
+    QVERIFY(displayViewSource.contains(
+        QStringLiteral("const geometryChanged = contentsView.consumeStructuredGutterGeometryChange();")));
+    QVERIFY(displayViewSource.contains(
+        QStringLiteral("contentsView.scheduleMinimapSnapshotRefresh(true);")));
+    QVERIFY(displayViewSource.contains(
+        QStringLiteral("contentsView.scheduleGutterRefresh(")));
+}
+
+void WhatSonCppRegressionTests::contentsDisplayView_normalizesMinimapSnapshotsAgainstStructuredEntries()
+{
+    const QString displayViewSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/content/editor/ContentsDisplayView.qml"));
+    const QString structuredFlowSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/content/editor/ContentsStructuredDocumentFlow.qml"));
+
+    QVERIFY(!displayViewSource.isEmpty());
+    QVERIFY(!structuredFlowSource.isEmpty());
+
+    QVERIFY(displayViewSource.contains(QStringLiteral("property var minimapSnapshotEntries: []")));
+    QVERIFY(!displayViewSource.contains(QStringLiteral("property string minimapSnapshotSourceText: \"\"")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("function hasStructuredLogicalLineGeometry()")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("function currentMinimapSnapshotEntries()")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("function minimapSnapshotEntriesEqual(previousEntries, nextEntries)")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("contentsView.minimapSnapshotEntries,")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("contentsView.documentPresentationSourceText !== undefined")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("structuredHostGeometryActive: contentsView.hasStructuredLogicalLineGeometry()")));
+
+    QVERIFY(structuredFlowSource.contains(QStringLiteral("function snapshotTokenForLogicalLine(blockEntry, logicalLines, lineIndex)")));
+    QVERIFY(structuredFlowSource.contains(QStringLiteral("\"snapshotToken\": documentFlow.snapshotTokenForLogicalLine(blockEntry, logicalLines, index)")));
+}
+
 void WhatSonCppRegressionTests::contentsDisplayView_keepsSingleResolverBindingPerDocumentSourceProperty()
 {
     const QString displayViewSource = readUtf8SourceFile(

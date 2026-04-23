@@ -160,6 +160,42 @@ void WhatSonCppRegressionTests::contentsDisplaySessionCoordinator_treatsSameIdDi
     QCOMPARE(resolver.documentPresentationSourceText(), QStringLiteral("Selection body"));
 }
 
+void WhatSonCppRegressionTests::contentsDisplaySessionCoordinator_usesResolvedPresentationSourceForMinimapSnapshots()
+{
+    ContentsDisplayDocumentSourceResolver resolver;
+
+    resolver.setSelectedNoteId(QStringLiteral("note-1"));
+    resolver.setSelectedNoteBodyNoteId(QStringLiteral("note-1"));
+    resolver.setSelectedNoteBodyText(QStringLiteral("Selection body"));
+    resolver.setSelectedNoteBodyResolved(true);
+
+    QCOMPARE(resolver.currentMinimapSourceText(false), QStringLiteral("Selection body"));
+    QCOMPARE(resolver.currentMinimapSourceText(true), QStringLiteral("Selection body"));
+
+    resolver.setEditorBoundNoteId(QStringLiteral("note-1"));
+    resolver.setEditorText(QStringLiteral("Editor body"));
+
+    QCOMPARE(resolver.currentMinimapSourceText(false), QStringLiteral("Selection body"));
+    QCOMPARE(resolver.currentMinimapSourceText(true), QStringLiteral("Selection body"));
+
+    resolver.setPendingBodySave(true);
+
+    QCOMPARE(resolver.currentMinimapSourceText(false), QStringLiteral("Editor body"));
+    QCOMPARE(resolver.currentMinimapSourceText(true), QStringLiteral("Editor body"));
+
+    resolver.setSelectedNoteId(QStringLiteral("note-2"));
+    resolver.setSelectedNoteBodyNoteId(QString());
+    resolver.setSelectedNoteBodyText(QString());
+    resolver.setSelectedNoteBodyResolved(false);
+    resolver.setEditorBoundNoteId(QStringLiteral("note-2"));
+    resolver.setEditorText(QString());
+    resolver.setStructuredFlowSourceText(QStringLiteral("Structured projection"));
+    resolver.setPendingBodySave(false);
+
+    QCOMPARE(resolver.currentMinimapSourceText(false), QString());
+    QCOMPARE(resolver.currentMinimapSourceText(true), QString());
+}
+
 void WhatSonCppRegressionTests::contentsDisplayCreationPath_emitsCoordinatorTraceForEditorWiring()
 {
     const QString documentSourceResolverSource = readUtf8SourceFile(

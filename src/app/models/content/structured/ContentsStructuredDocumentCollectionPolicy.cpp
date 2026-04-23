@@ -29,6 +29,135 @@ namespace
 
         return jsValue.toVariant();
     }
+
+    int floorNumberOrFallbackValue(const QVariant& value, const int fallbackValue)
+    {
+        bool ok = false;
+        const double numericValue = value.toDouble(&ok);
+        if (!ok)
+        {
+            return fallbackValue;
+        }
+        return static_cast<int>(std::floor(numericValue));
+    }
+
+    QString normalizedSourceTextValue(const QString& value)
+    {
+        QString normalized = value;
+        normalized.replace(QStringLiteral("\r\n"), QStringLiteral("\n"));
+        normalized.replace(QLatin1Char('\r'), QLatin1Char('\n'));
+        normalized.replace(QChar(0x2028), QLatin1Char('\n'));
+        normalized.replace(QChar(0x2029), QLatin1Char('\n'));
+        normalized.replace(QChar::Nbsp, QLatin1Char(' '));
+        return normalized;
+    }
+
+    QString normalizedBlockType(const QVariantMap& blockEntry)
+    {
+        return blockEntry.value(QStringLiteral("type")).toString().trimmed().toCaseFolded();
+    }
+
+    bool isInteractiveTextFlattenCandidate(const QVariantMap& blockEntry)
+    {
+        if (blockEntry.value(QStringLiteral("flattenedInteractiveGroup")).toBool())
+        {
+            return false;
+        }
+        if (blockEntry.value(QStringLiteral("explicitBlock")).toBool())
+        {
+            return false;
+        }
+        if (blockEntry.contains(QStringLiteral("textEditable"))
+            && !blockEntry.value(QStringLiteral("textEditable")).toBool())
+        {
+            return false;
+        }
+        if (blockEntry.contains(QStringLiteral("atomicBlock"))
+            && blockEntry.value(QStringLiteral("atomicBlock")).toBool())
+        {
+            return false;
+        }
+
+        const QString blockType = normalizedBlockType(blockEntry);
+        return blockType != QStringLiteral("agenda")
+            && blockType != QStringLiteral("callout")
+            && blockType != QStringLiteral("resource")
+            && blockType != QStringLiteral("break");
+    }
+
+    int groupedTextLogicalLineCountHint(const QString& groupSourceText)
+    {
+        const QString normalizedSourceText = normalizedSourceTextValue(groupSourceText);
+        if (normalizedSourceText.isEmpty())
+        {
+            return 1;
+        }
+        return std::max(1, static_cast<int>(normalizedSourceText.count(QLatin1Char('\n'))) + 1);
+    }
+
+    QVariantMap buildFlattenedInteractiveTextGroup(
+        const QVariantList& groupBlocks,
+        const QString& normalizedSourceText)
+    {
+        if (groupBlocks.isEmpty())
+        {
+            return {};
+        }
+
+        const QVariantMap firstBlock = normalizedMap(groupBlocks.constFirst());
+        const QVariantMap lastBlock = normalizedMap(groupBlocks.constLast());
+        const int sourceStart = std::max(
+            0,
+            floorNumberOrFallbackValue(firstBlock.value(QStringLiteral("sourceStart")), 0));
+        const int sourceEnd = std::max(
+            sourceStart,
+            floorNumberOrFallbackValue(lastBlock.value(QStringLiteral("sourceEnd")), sourceStart));
+        const QString groupedSourceText =
+            normalizedSourceText.mid(sourceStart, sourceEnd - sourceStart);
+
+        QVariantMap flattenedGroup;
+        flattenedGroup.insert(QStringLiteral("atomicBlock"), false);
+        flattenedGroup.insert(
+            QStringLiteral("flattenedInteractiveChildCount"),
+            static_cast<int>(groupBlocks.size()));
+        flattenedGroup.insert(QStringLiteral("flattenedInteractiveGroup"), true);
+        flattenedGroup.insert(QStringLiteral("focusSourceOffset"), sourceStart);
+        flattenedGroup.insert(QStringLiteral("groupedBlocks"), groupBlocks);
+        flattenedGroup.insert(QStringLiteral("gutterCollapsed"), false);
+        flattenedGroup.insert(
+            QStringLiteral("logicalLineCountHint"),
+            groupedTextLogicalLineCountHint(groupedSourceText));
+        flattenedGroup.insert(QStringLiteral("minimapRepresentativeCharCount"), 0);
+        flattenedGroup.insert(QStringLiteral("minimapVisualKind"), QStringLiteral("text"));
+        flattenedGroup.insert(QStringLiteral("plainText"), groupedSourceText);
+        flattenedGroup.insert(QStringLiteral("sourceEnd"), sourceEnd);
+        flattenedGroup.insert(QStringLiteral("sourceStart"), sourceStart);
+        flattenedGroup.insert(QStringLiteral("sourceText"), groupedSourceText);
+        flattenedGroup.insert(QStringLiteral("textEditable"), true);
+        flattenedGroup.insert(QStringLiteral("type"), QStringLiteral("text-group"));
+        return flattenedGroup;
+    }
+
+    QVariantMap emptyInteractiveTextGroup()
+    {
+        return QVariantMap{
+            {QStringLiteral("atomicBlock"), false},
+            {QStringLiteral("flattenedInteractiveChildCount"), 0},
+            {QStringLiteral("flattenedInteractiveGroup"), true},
+            {QStringLiteral("focusSourceOffset"), 0},
+            {QStringLiteral("groupedBlocks"), QVariantList{}},
+            {QStringLiteral("gutterCollapsed"), false},
+            {QStringLiteral("logicalLineCountHint"), 1},
+            {QStringLiteral("minimapRepresentativeCharCount"), 0},
+            {QStringLiteral("minimapVisualKind"), QStringLiteral("text")},
+            {QStringLiteral("plainText"), QString()},
+            {QStringLiteral("sourceEnd"), 0},
+            {QStringLiteral("sourceStart"), 0},
+            {QStringLiteral("sourceText"), QString()},
+            {QStringLiteral("textEditable"), true},
+            {QStringLiteral("type"), QStringLiteral("text-group")},
+        };
+    }
 }
 
 ContentsStructuredDocumentCollectionPolicy::ContentsStructuredDocumentCollectionPolicy(QObject* parent)
@@ -89,15 +218,16 @@ QVariantList ContentsStructuredDocumentCollectionPolicy::normalizeEntries(
     return {};
 }
 
+QVariantList ContentsStructuredDocumentCollectionPolicy::normalizeInteractiveDocumentBlocks(
+    const QVariant& rawEntries,
+    const QString& sourceText) const
+{
+    return normalizeInteractiveDocumentBlockEntries(normalizeEntries(rawEntries), sourceText);
+}
+
 QString ContentsStructuredDocumentCollectionPolicy::normalizeSourceText(const QString& value) const
 {
-    QString normalized = value;
-    normalized.replace(QStringLiteral("\r\n"), QStringLiteral("\n"));
-    normalized.replace(QLatin1Char('\r'), QLatin1Char('\n'));
-    normalized.replace(QChar(0x2028), QLatin1Char('\n'));
-    normalized.replace(QChar(0x2029), QLatin1Char('\n'));
-    normalized.replace(QChar::Nbsp, QLatin1Char(' '));
-    return normalized;
+    return normalizedSourceTextValue(value);
 }
 
 QString ContentsStructuredDocumentCollectionPolicy::spliceSourceRange(
@@ -119,13 +249,7 @@ int ContentsStructuredDocumentCollectionPolicy::floorNumberOrFallback(
     const QVariant& value,
     const int fallbackValue) const
 {
-    bool ok = false;
-    const double numericValue = value.toDouble(&ok);
-    if (!ok)
-    {
-        return fallbackValue;
-    }
-    return static_cast<int>(std::floor(numericValue));
+    return floorNumberOrFallbackValue(value, fallbackValue);
 }
 
 QVariantMap ContentsStructuredDocumentCollectionPolicy::resourceEntryForBlock(
@@ -214,6 +338,53 @@ QVariantMap ContentsStructuredDocumentCollectionPolicy::resourceEntryForBlock(
     }
 
     return fallbackMatch;
+}
+
+QVariantList ContentsStructuredDocumentCollectionPolicy::normalizeInteractiveDocumentBlockEntries(
+    const QVariantList& entries,
+    const QString& sourceText)
+{
+    const QString normalizedSourceText = normalizedSourceTextValue(sourceText);
+    if (entries.isEmpty())
+    {
+        return normalizedSourceText.isEmpty()
+            ? QVariantList{emptyInteractiveTextGroup()}
+            : QVariantList{};
+    }
+
+    QVariantList normalizedBlocks;
+    normalizedBlocks.reserve(entries.size());
+
+    QVariantList pendingTextBlocks;
+    pendingTextBlocks.reserve(entries.size());
+
+    const auto flushPendingTextBlocks = [&normalizedBlocks, &pendingTextBlocks, &normalizedSourceText]()
+    {
+        if (pendingTextBlocks.isEmpty())
+        {
+            return;
+        }
+
+        normalizedBlocks.push_back(
+            buildFlattenedInteractiveTextGroup(pendingTextBlocks, normalizedSourceText));
+        pendingTextBlocks.clear();
+    };
+
+    for (const QVariant& entryValue : entries)
+    {
+        const QVariantMap blockEntry = normalizedMap(entryValue);
+        if (isInteractiveTextFlattenCandidate(blockEntry))
+        {
+            pendingTextBlocks.push_back(blockEntry);
+            continue;
+        }
+
+        flushPendingTextBlocks();
+        normalizedBlocks.push_back(blockEntry);
+    }
+
+    flushPendingTextBlocks();
+    return normalizedBlocks;
 }
 
 bool ContentsStructuredDocumentCollectionPolicy::resourceEntryHasResolvedPayload(

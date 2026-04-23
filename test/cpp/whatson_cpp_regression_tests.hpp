@@ -32,6 +32,7 @@
 #include "app/store/sidebar/ISidebarSelectionStore.hpp"
 #include "app/store/sidebar/SidebarSelectionStore.hpp"
 #include "app/models/editor/bridge/ContentsEditorSelectionBridge.hpp"
+#include "app/models/editor/renderer/ContentsStructuredBlockRenderer.hpp"
 #include "app/models/editor/session/ContentsEditorSessionController.hpp"
 #include "app/models/editor/text/ContentsLogicalTextBridge.hpp"
 #include "app/models/content/structured/ContentsStructuredDocumentBlocksModel.hpp"
@@ -962,6 +963,9 @@ private slots:
     void resourcesHierarchyViewModel_collapsesMultiDotImageFormatsIntoTerminalSuffix();
     void structuredCollectionPolicy_normalizesEntriesAndPrefersResolvedMatches();
     void structuredCollectionPolicy_normalizesQmlJsArrayEntries();
+    void structuredCollectionPolicy_flattensImplicitInteractiveTextBlocksIntoSingleGroups();
+    void structuredBlockRenderer_publishesSingleNormalizedInteractiveStream();
+    void structuredBlockRenderer_keepsEmptyNotesFocusableWithOneTextGroup();
     void structuredMutationPolicy_buildsDeletionAndInsertionPayloads();
     void structuredMutationPolicy_buildsParagraphBoundaryMergeAndSplitPayloads();
     void structuredDocumentBlocksModel_updatesRowsWithoutResettingStableSuffixBlocks();
@@ -979,15 +983,23 @@ private slots:
     void contentsDisplayView_keepsGutterNumbersCloseToTheEditorBody();
     void contentsDisplayView_reservesLargeBottomAccessibilityMargin();
     void contentsDisplayView_usesSelectedNoteSnapshotWhileSessionBindingCatchesUp();
+    void contentsDisplayView_routesStructuredMutationsThroughEditorSessionAuthority();
+    void contentsDisplayView_refreshesMinimapFromResolvedPresentationSource();
+    void contentsDisplayView_scalesMinimapRowsFromDocumentGeometry();
+    void contentsDisplayView_refreshesMinimapWhenStructuredLayoutCacheChanges();
+    void contentsDisplayMinimapCoordinator_splicesNormalizedSnapshotEntries();
+    void contentsDisplayView_normalizesMinimapSnapshotsAgainstStructuredEntries();
     void contentsDisplayView_keepsSingleResolverBindingPerDocumentSourceProperty();
     void contentsDisplayView_emitsEditorCreationTraceAcrossHostTransitions();
     void contentsDisplayView_tracesNoteSelectionPlanExecution();
     void contentsDisplaySessionCoordinator_requiresResolvedSelectedBodyBeforeUsingSnapshot();
     void contentsDisplaySessionCoordinator_treatsSameIdDifferentPackageAsUnboundSelection();
+    void contentsDisplaySessionCoordinator_usesResolvedPresentationSourceForMinimapSnapshots();
     void contentsDisplayCreationPath_emitsCoordinatorTraceForEditorWiring();
     void contentsDisplaySelectionFlow_emitsTraceForSelectionAndMountPlans();
     void contentsDisplaySelectionSyncCoordinator_blocksUntilSelectedBodyIsResolved();
     void contentsDisplaySelectionSyncCoordinator_snapshotPlansRetainSelectionContext();
+    void qmlStructuredEditors_consumeRendererNormalizedBlocksWithoutLocalFlattening();
     void displayContextMenuCoordinator_rejectsNonNumericStructuredSelectionSnapshots();
     void editorViewportCoordinator_movesMinimapAndLineMathOutOfQml();
     void contentsDisplayView_surfacesMountFailurePlaceholderWithoutChrome();
@@ -1000,6 +1012,7 @@ private slots:
     void noteBodyMountCoordinator_waitsForPresentationReadySourceBeforeMounting();
     void noteBodyMountCoordinator_remountsSameNoteWhenEditorSessionTextIsStale();
     void qmlInlineFormatEditor_keepsHiddenKeyboardTouchesScrollFirstOnMobile();
+    void qmlInlineFormatEditor_keepsKeyboardSelectionAndImeQueriesNative();
     void mobileChrome_usesSharedFigmaControlSurfaceColor();
     void mobileHierarchyRouteStateStore_tracksNormalizedSelectionRestoreState();
     void mobileHierarchySelectionCoordinator_prefersExplicitSidebarBindingsAndFallbacks();
@@ -1014,6 +1027,7 @@ private slots:
     void noteBodyPersistence_stripsRenderedHtmlBlockArtifactsFromSourceProjection();
     void logicalTextBridge_advancesCursorPastClosingWebLinkTag();
     void qmlStructuredEditors_bindPaperPaletteIntoPagePrintMode();
+    void qmlStructuredEditors_clipInlineResourceCardsToMeasuredBlockBounds();
     void qmlEditors_routeRenderedHyperlinksToExternalBrowser();
     void resourceBitmapViewer_projectsRenderableImagePreviewState();
     void editorSessionController_preservesLocalEditorAuthorityAgainstSameNoteModelSync();

@@ -99,6 +99,8 @@ every turn.
   not be used as an alternate persistence or formatting authority.
 - Focus restoration, caret movement, and block re-materialization must always be computed against RAW source offsets or
   parser-derived block coordinates, not against incidental DOM structure.
+- Once parser blockization completes, the block projection must be normalized into one interactive document block stream
+  before the renderer/QML host publishes it; duplicate client-side regrouping paths are prohibited.
 - Ordinary note editing should be treated as an Apple Notes-like document surface whose persisted backing store happens
   to be `.wsnbody`.
 - The note editor should treat all note-body elements as ordinary blocks in one document host, including plain prose,

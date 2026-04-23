@@ -202,7 +202,8 @@ QString ContentsDisplayDocumentSourceResolver::resolvedDocumentPresentationSourc
 
 QString ContentsDisplayDocumentSourceResolver::currentMinimapSourceText(const bool structuredHostGeometryActive) const
 {
-    return structuredHostGeometryActive ? m_structuredFlowSourceText : m_editorText;
+    Q_UNUSED(structuredHostGeometryActive)
+    return documentPresentationSourceText();
 }
 
 QVariantMap ContentsDisplayDocumentSourceResolver::normalizedDocumentSourceMutation(const QVariant& nextSourceText) const

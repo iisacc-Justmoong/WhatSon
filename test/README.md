@@ -131,6 +131,29 @@ ctest --test-dir build --output-on-failure -L cpp_regression
   line caches on note entry and forces a fresh layout-cache pass before reusing line-number coordinates.
 - Empty selected notes now also pin one fallback structured `text-group` row in the source-locked QML regression
   checks, so selecting or creating a blank note still leaves a focusable body editor surface mounted.
+- Structured parser output now also pins renderer-side interactive-stream normalization, so adjacent implicit text
+  blocks collapse into one published `text-group` stream before the QML host consumes them and multi-block editing no
+  longer depends on a duplicate client-side flatten pass.
+- Structured document mutations now also pin editor-session write authority in the QML regression suite, so block-host
+  edits immediately update `editorText`, mark local authority, and enter the normal RAW persistence path instead of
+  disappearing when the user leaves the note.
+- Minimap snapshots now also pin the resolved document presentation source in both the C++ and QML regression suites,
+  so note-body snapshots populate the minimap immediately even before editor-session text becomes the active
+  presentation authority.
+- Minimap row painting now also pins document-geometry scaling in the QML regression suite, so the rail uses each
+  row's real `contentY` / `contentHeight` instead of evenly spacing bars by `visualIndex`, and long notes keep a
+  proportional minimap silhouette.
+- Structured layout-cache commits now also pin a forced minimap snapshot refresh in the QML regression suite, so once
+  `cachedLogicalLineEntries` lands after note parsing the minimap rebuilds from the same structured geometry instead of
+  staying on the stale pre-layout snapshot.
+- Minimap snapshot planning now also pins normalized logical-line snapshot entries in the C++ and QML regression
+  suites, so diff planning compares renderer-normalized document lines instead of raw `.wsnbody` newline splits and
+  structured notes keep the minimap aligned with the same document model the editor is rendering.
+- The shared inline-format editor now also pins keyboard-driven selection and input-method query updates, so
+  `Shift`-extended text selection keeps working without dropping OS IME integration on note-body editors.
+- Inline structured resource cards now also pin block/card clipping in the QML regression suite, so a mobile image
+  block cannot paint past its measured block bounds and overlay the following paragraph while the layout height
+  catches up.
 - The final editor HTML path now also pins canonical structured-source reparsing and corrected-source reuse in the
   runtime suite, so legacy `<hr>` aliases and self-closing structured tags cannot swallow following note text during
   the last render pass.

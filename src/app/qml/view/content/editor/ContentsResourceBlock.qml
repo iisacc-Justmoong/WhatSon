@@ -101,6 +101,7 @@ Item {
     }
 
     implicitHeight: resourceCard.implicitHeight
+    clip: true
     width: parent ? parent.width : implicitWidth
 
     function logicalLineLayoutEntries() {

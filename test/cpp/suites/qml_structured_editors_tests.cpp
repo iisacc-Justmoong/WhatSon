@@ -52,3 +52,37 @@ void WhatSonCppRegressionTests::qmlStructuredEditors_bindPaperPaletteIntoPagePri
 
     QVERIFY(displayViewSource.contains(QStringLiteral("paperPaletteEnabled: contentsView.showPrintEditorLayout")));
 }
+
+void WhatSonCppRegressionTests::qmlStructuredEditors_clipInlineResourceCardsToMeasuredBlockBounds()
+{
+    const QString resourceBlockSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/content/editor/ContentsResourceBlock.qml"));
+    const QString resourceCardSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/content/editor/ContentsResourceRenderCard.qml"));
+
+    QVERIFY(!resourceBlockSource.isEmpty());
+    QVERIFY(!resourceCardSource.isEmpty());
+
+    QVERIFY(resourceBlockSource.contains(QStringLiteral("implicitHeight: resourceCard.implicitHeight")));
+    QVERIFY(resourceBlockSource.contains(QStringLiteral("clip: true")));
+    QVERIFY(resourceCardSource.contains(QStringLiteral("clip: true")));
+    QVERIFY(!resourceCardSource.contains(QStringLiteral("clip: false")));
+}
+
+void WhatSonCppRegressionTests::qmlStructuredEditors_consumeRendererNormalizedBlocksWithoutLocalFlattening()
+{
+    const QString structuredFlowSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/content/editor/ContentsStructuredDocumentFlow.qml"));
+
+    QVERIFY(!structuredFlowSource.isEmpty());
+    QVERIFY(structuredFlowSource.contains(
+        QStringLiteral("documentHost.documentBlocks = documentHost.collectionPolicy.normalizeEntries(documentFlow.documentBlocks)")));
+    QVERIFY(!structuredFlowSource.contains(QStringLiteral("function flattenedInteractiveBlocks()")));
+    QVERIFY(!structuredFlowSource.contains(QStringLiteral("function normalizedParsedBlocks()")));
+    QVERIFY(!structuredFlowSource.contains(QStringLiteral("function buildFlattenedInteractiveTextGroup(")));
+    QVERIFY(!structuredFlowSource.contains(QStringLiteral("function implicitTextBlockInteractiveFlattenCandidate(")));
+    QVERIFY(structuredFlowSource.contains(
+        QStringLiteral("function snapshotTokenForLogicalLine(blockEntry, logicalLines, lineIndex)")));
+    QVERIFY(structuredFlowSource.contains(
+        QStringLiteral("\"snapshotToken\": documentFlow.snapshotTokenForLogicalLine(blockEntry, logicalLines, index)")));
+}

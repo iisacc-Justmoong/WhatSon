@@ -31,6 +31,7 @@ FocusScope {
     property real insetVertical: 0
     property string placeholderText: ""
     property bool selectByMouse: true
+    property bool selectByKeyboard: true
     property color selectedTextColor: LV.Theme.textPrimary
     property color selectionColor: LV.Theme.accent
     property int shapeStyle: 0
@@ -756,6 +757,7 @@ FocusScope {
                 persistentSelection: true
                 readOnly: control.blockExternalDropMutation
                 rightPadding: control.insetHorizontal
+                selectByKeyboard: control.selectByKeyboard
                 selectByMouse: control.selectByMouse
                                && (!control.preferNativeInputHandling || control.inputMethodVisible)
                 selectedTextColor: control.selectedTextColor

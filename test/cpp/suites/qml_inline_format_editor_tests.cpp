@@ -18,3 +18,18 @@ void WhatSonCppRegressionTests::qmlInlineFormatEditor_keepsHiddenKeyboardTouches
     QVERIFY(inlineEditorSource.contains(
         QStringLiteral("grabPermissions: PointerHandler.ApprovesTakeOverByAnything")));
 }
+
+void WhatSonCppRegressionTests::qmlInlineFormatEditor_keepsKeyboardSelectionAndImeQueriesNative()
+{
+    const QString inlineEditorSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/content/editor/ContentsInlineFormatEditor.qml"));
+
+    QVERIFY(!inlineEditorSource.isEmpty());
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("property bool selectByKeyboard: true")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("selectByKeyboard: control.selectByKeyboard")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("persistentSelection: true")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("onSelectionEndChanged: {")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("onSelectionStartChanged: {")));
+    QVERIFY(inlineEditorSource.contains(
+        QStringLiteral("control.notifyInputMethod(control.inputMethodSelectionQueryMask());")));
+}

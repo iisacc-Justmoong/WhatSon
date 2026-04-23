@@ -2,6 +2,48 @@
 
 #include <QtGlobal>
 
+#include <QStringList>
+
+namespace
+{
+QVariantList normalizedSnapshotEntries(const QVariant& rawEntries)
+{
+    if (!rawEntries.isValid() || rawEntries.isNull())
+        return {};
+
+    const QVariantList rawList = rawEntries.toList();
+    if (!rawList.isEmpty())
+        return rawList;
+
+    if (rawEntries.canConvert<QVariantList>())
+        return rawEntries.value<QVariantList>();
+
+    return {};
+}
+
+QString minimapSnapshotToken(const QVariant& rawEntry, const int fallbackIndex)
+{
+    const QVariantMap entry = rawEntry.toMap();
+    if (entry.contains(QStringLiteral("snapshotToken")))
+        return entry.value(QStringLiteral("snapshotToken")).toString();
+    if (entry.contains(QStringLiteral("token")))
+        return entry.value(QStringLiteral("token")).toString();
+    if (entry.contains(QStringLiteral("text")))
+        return QStringLiteral("text|") + entry.value(QStringLiteral("text")).toString();
+    return QStringLiteral("line|") + QString::number(qMax(0, fallbackIndex));
+}
+
+QStringList minimapSnapshotTokens(const QVariant& rawEntries)
+{
+    const QVariantList entries = normalizedSnapshotEntries(rawEntries);
+    QStringList tokens;
+    tokens.reserve(entries.size());
+    for (int index = 0; index < entries.size(); ++index)
+        tokens.push_back(minimapSnapshotToken(entries.at(index), index));
+    return tokens;
+}
+}
+
 ContentsDisplayMinimapCoordinator::ContentsDisplayMinimapCoordinator(QObject* parent)
     : QObject(parent)
 {
@@ -196,8 +238,8 @@ QVariantMap ContentsDisplayMinimapCoordinator::buildNextMinimapSnapshotPlan(
     const QVariant& currentLineGroups,
     const QString& currentLineGroupsNoteId,
     const QString& currentNoteId,
-    const QString& previousSourceText,
-    const QString& currentSourceText,
+    const QVariant& previousSnapshotEntries,
+    const QVariant& currentSnapshotEntries,
     const bool forceFullRefresh,
     const bool noteEntryRefreshPending,
     const int structuredLineCount,
@@ -217,24 +259,26 @@ QVariantMap ContentsDisplayMinimapCoordinator::buildNextMinimapSnapshotPlan(
     plan.insert(QStringLiteral("previousEndLine"), expectedLineCount);
 
     const bool invalidExistingGroups = existingGroups.isEmpty() || existingGroups.size() != expectedLineCount;
+    const QStringList previousTokens = minimapSnapshotTokens(previousSnapshotEntries);
+    const QStringList currentTokens = minimapSnapshotTokens(currentSnapshotEntries);
+    const bool invalidPreviousTokens = previousTokens.isEmpty() || previousTokens.size() != existingGroups.size();
+    const bool invalidCurrentTokens = currentTokens.isEmpty() || currentTokens.size() != expectedLineCount;
     if (forceFullRefresh
         || noteEntryRefreshPending
         || currentLineGroupsNoteId != currentNoteId
         || invalidExistingGroups
-        || previousSourceText.isEmpty())
+        || invalidPreviousTokens
+        || invalidCurrentTokens)
     {
         plan.insert(QStringLiteral("requiresFullRebuild"), true);
         return plan;
     }
 
-    const QStringList previousLines = previousSourceText.split(u'\n');
-    const QStringList currentLines = currentSourceText.split(u'\n');
-
     int prefix = 0;
-    const int previousCount = previousLines.size();
-    const int currentCount = currentLines.size();
+    const int previousCount = previousTokens.size();
+    const int currentCount = currentTokens.size();
     while (prefix < previousCount && prefix < currentCount
-           && previousLines.at(prefix) == currentLines.at(prefix))
+           && previousTokens.at(prefix) == currentTokens.at(prefix))
     {
         ++prefix;
     }
@@ -248,7 +292,7 @@ QVariantMap ContentsDisplayMinimapCoordinator::buildNextMinimapSnapshotPlan(
     int previousSuffix = previousCount - 1;
     int currentSuffix = currentCount - 1;
     while (previousSuffix >= prefix && currentSuffix >= prefix
-           && previousLines.at(previousSuffix) == currentLines.at(currentSuffix))
+           && previousTokens.at(previousSuffix) == currentTokens.at(currentSuffix))
     {
         --previousSuffix;
         --currentSuffix;

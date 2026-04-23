@@ -73,3 +73,77 @@ void WhatSonCppRegressionTests::structuredCollectionPolicy_normalizesQmlJsArrayE
     QCOMPARE(secondBlock.value(QStringLiteral("type")).toString(), QStringLiteral("break"));
     QCOMPARE(secondBlock.value(QStringLiteral("sourceText")).toString(), QStringLiteral("</break>"));
 }
+
+void WhatSonCppRegressionTests::structuredCollectionPolicy_flattensImplicitInteractiveTextBlocksIntoSingleGroups()
+{
+    ContentsStructuredDocumentCollectionPolicy policy;
+
+    const QString sourceText =
+        QStringLiteral("alpha\nbeta\n<resource type=\"image\" path=\"cover.png\" />\ngamma\ndelta");
+    const QVariantList renderedBlocks{
+        QVariantMap{
+            {QStringLiteral("type"), QStringLiteral("paragraph")},
+            {QStringLiteral("sourceStart"), 0},
+            {QStringLiteral("sourceEnd"), 5},
+            {QStringLiteral("sourceText"), QStringLiteral("alpha")},
+            {QStringLiteral("textEditable"), true},
+            {QStringLiteral("atomicBlock"), false},
+            {QStringLiteral("implicitTextBlock"), true},
+        },
+        QVariantMap{
+            {QStringLiteral("type"), QStringLiteral("paragraph")},
+            {QStringLiteral("sourceStart"), 6},
+            {QStringLiteral("sourceEnd"), 10},
+            {QStringLiteral("sourceText"), QStringLiteral("beta")},
+            {QStringLiteral("textEditable"), true},
+            {QStringLiteral("atomicBlock"), false},
+            {QStringLiteral("implicitTextBlock"), true},
+        },
+        QVariantMap{
+            {QStringLiteral("type"), QStringLiteral("resource")},
+            {QStringLiteral("sourceStart"), 11},
+            {QStringLiteral("sourceEnd"), 53},
+            {QStringLiteral("sourceText"), QStringLiteral("<resource type=\"image\" path=\"cover.png\" />")},
+            {QStringLiteral("textEditable"), false},
+            {QStringLiteral("atomicBlock"), true},
+            {QStringLiteral("explicitBlock"), true},
+        },
+        QVariantMap{
+            {QStringLiteral("type"), QStringLiteral("paragraph")},
+            {QStringLiteral("sourceStart"), 54},
+            {QStringLiteral("sourceEnd"), 59},
+            {QStringLiteral("sourceText"), QStringLiteral("gamma")},
+            {QStringLiteral("textEditable"), true},
+            {QStringLiteral("atomicBlock"), false},
+            {QStringLiteral("implicitTextBlock"), true},
+        },
+        QVariantMap{
+            {QStringLiteral("type"), QStringLiteral("paragraph")},
+            {QStringLiteral("sourceStart"), 60},
+            {QStringLiteral("sourceEnd"), 65},
+            {QStringLiteral("sourceText"), QStringLiteral("delta")},
+            {QStringLiteral("textEditable"), true},
+            {QStringLiteral("atomicBlock"), false},
+            {QStringLiteral("implicitTextBlock"), true},
+        },
+    };
+
+    const QVariantList normalizedBlocks =
+        policy.normalizeInteractiveDocumentBlocks(renderedBlocks, sourceText);
+    QCOMPARE(normalizedBlocks.size(), 3);
+
+    const QVariantMap firstGroup = normalizedBlocks.at(0).toMap();
+    QCOMPARE(firstGroup.value(QStringLiteral("type")).toString(), QStringLiteral("text-group"));
+    QVERIFY(firstGroup.value(QStringLiteral("flattenedInteractiveGroup")).toBool());
+    QCOMPARE(firstGroup.value(QStringLiteral("flattenedInteractiveChildCount")).toInt(), 2);
+    QCOMPARE(firstGroup.value(QStringLiteral("sourceText")).toString(), QStringLiteral("alpha\nbeta"));
+    QCOMPARE(firstGroup.value(QStringLiteral("logicalLineCountHint")).toInt(), 2);
+
+    const QVariantMap resourceBlock = normalizedBlocks.at(1).toMap();
+    QCOMPARE(resourceBlock.value(QStringLiteral("type")).toString(), QStringLiteral("resource"));
+
+    const QVariantMap trailingGroup = normalizedBlocks.at(2).toMap();
+    QCOMPARE(trailingGroup.value(QStringLiteral("type")).toString(), QStringLiteral("text-group"));
+    QCOMPARE(trailingGroup.value(QStringLiteral("sourceText")).toString(), QStringLiteral("gamma\ndelta"));
+    QCOMPARE(trailingGroup.value(QStringLiteral("flattenedInteractiveChildCount")).toInt(), 2);
+}

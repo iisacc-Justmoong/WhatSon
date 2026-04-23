@@ -77,7 +77,7 @@ Rectangle {
     border.width: resourceCard.inlineImagePresentation || !resourceCard.metadataCardVisible
                   ? 0
                   : Math.max(1, Math.round(LV.Theme.strokeThin))
-    clip: false
+    clip: true
     color: resourceCard.inlineImagePresentation || !resourceCard.metadataCardVisible
            ? "transparent"
            : resourceCard.cardColor
