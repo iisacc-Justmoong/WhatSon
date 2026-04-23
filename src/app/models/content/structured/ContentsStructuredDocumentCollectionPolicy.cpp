@@ -2,6 +2,8 @@
 
 #include "app/models/file/WhatSonDebugTrace.hpp"
 
+#include <QJSValue>
+
 #include <algorithm>
 #include <cmath>
 
@@ -10,6 +12,22 @@ namespace
     QVariantMap normalizedMap(const QVariant& value)
     {
         return value.typeId() == QMetaType::QVariantMap ? value.toMap() : QVariantMap{};
+    }
+
+    QVariant normalizedEntriesSource(const QVariant& rawEntries)
+    {
+        if (rawEntries.metaType().id() != qMetaTypeId<QJSValue>())
+        {
+            return rawEntries;
+        }
+
+        const QJSValue jsValue = rawEntries.value<QJSValue>();
+        if (jsValue.isUndefined() || jsValue.isNull())
+        {
+            return {};
+        }
+
+        return jsValue.toVariant();
     }
 }
 
@@ -33,12 +51,13 @@ ContentsStructuredDocumentCollectionPolicy::~ContentsStructuredDocumentCollectio
 QVariantList ContentsStructuredDocumentCollectionPolicy::normalizeEntries(
     const QVariant& rawEntries) const
 {
-    if (rawEntries.typeId() == QMetaType::QVariantList)
+    const QVariant normalizedSource = normalizedEntriesSource(rawEntries);
+    if (normalizedSource.typeId() == QMetaType::QVariantList)
     {
-        return rawEntries.toList();
+        return normalizedSource.toList();
     }
 
-    const QVariantMap indexedMap = rawEntries.toMap();
+    const QVariantMap indexedMap = normalizedSource.toMap();
     if (!indexedMap.isEmpty())
     {
         QList<int> keys;

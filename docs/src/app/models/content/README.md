@@ -23,6 +23,9 @@ hosts that render or navigate that state.
   keep compact workspace navigation deterministic across note/detail/editor transitions.
 - `structured` owns the canonical structured document host, collection policy, focus policy, and mutation policy used
   by `ContentsStructuredDocumentFlow.qml`.
+- The structured collection policy must normalize both C++ `QVariantList` payloads and QML `QJSValue` arrays.
+  If that normalization drops JS array entries, the structured host will still mount gutter/minimap chrome while the
+  document body collapses to `blockCount=0`.
 
 ## Verification Notes
 - Mobile content helpers are covered by the shared `whatson_cpp_regression` suite, including route-state restore and

@@ -4,6 +4,7 @@
 #include <QObject>
 #include <QPointer>
 #include <QString>
+#include <QVariantMap>
 #include <QtTypes>
 
 class ContentsEditorIdleSyncController;
@@ -93,6 +94,7 @@ signals:
 
 private slots:
     void handleNoteListSelectionChanged();
+    void handleNoteListEntrySelectionChanged();
     void handleNoteListBodyTextChanged();
     void handleEditorTextPersistenceFinishedInternal(
         const QString& noteId,
@@ -145,6 +147,7 @@ private:
     bool m_noteSelectionRefreshRequiresRebind = false;
     QString m_selectedNoteId;
     QString m_selectedNoteDirectoryPath;
+    QVariantMap m_selectedCurrentNoteEntry;
     QString m_selectedNoteBodyNoteId;
     QString m_selectedNoteBodyText;
     QString m_selectedNoteBodySnapshotNoteId;

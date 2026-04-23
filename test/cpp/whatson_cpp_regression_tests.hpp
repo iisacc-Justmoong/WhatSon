@@ -62,6 +62,7 @@
 #include "app/viewmodel/sidebar/IActiveHierarchyContextSource.hpp"
 #include "app/viewmodel/sidebar/SidebarHierarchyViewModel.hpp"
 
+#include <QAbstractListModel>
 #include <QCoreApplication>
 #include <QDateTime>
 #include <QDir>
@@ -82,6 +83,7 @@
 
 #include <cmath>
 #include <memory>
+#include <vector>
 
 class FakeHierarchyViewModel final : public IHierarchyViewModel
 {
@@ -661,6 +663,173 @@ private:
     bool m_noteBacked = true;
 };
 
+class FakeCurrentNoteEntryOnlyListModel final : public QObject
+{
+    Q_OBJECT
+
+    Q_PROPERTY(QVariantMap currentNoteEntry READ currentNoteEntry WRITE setCurrentNoteEntry NOTIFY currentNoteEntryChanged)
+    Q_PROPERTY(bool noteBacked READ noteBacked WRITE setNoteBacked NOTIFY noteBackedChanged)
+
+public:
+    explicit FakeCurrentNoteEntryOnlyListModel(QObject* parent = nullptr)
+        : QObject(parent)
+    {
+    }
+
+    QVariantMap currentNoteEntry() const
+    {
+        return m_currentNoteEntry;
+    }
+
+    void setCurrentNoteEntry(QVariantMap currentNoteEntry)
+    {
+        if (m_currentNoteEntry == currentNoteEntry)
+        {
+            return;
+        }
+
+        m_currentNoteEntry = std::move(currentNoteEntry);
+        emit currentNoteEntryChanged();
+    }
+
+    bool noteBacked() const noexcept
+    {
+        return m_noteBacked;
+    }
+
+    void setNoteBacked(const bool noteBacked)
+    {
+        if (m_noteBacked == noteBacked)
+        {
+            return;
+        }
+
+        m_noteBacked = noteBacked;
+        emit noteBackedChanged();
+    }
+
+signals:
+    void currentNoteEntryChanged();
+    void noteBackedChanged();
+
+private:
+    QVariantMap m_currentNoteEntry;
+    bool m_noteBacked = true;
+};
+
+class FakeRowOnlySelectionNoteListModel final : public QAbstractListModel
+{
+    Q_OBJECT
+
+    Q_PROPERTY(int currentIndex READ currentIndex WRITE setCurrentIndex NOTIFY currentIndexChanged)
+    Q_PROPERTY(int itemCount READ itemCount NOTIFY itemCountChanged)
+    Q_PROPERTY(bool noteBacked READ noteBacked WRITE setNoteBacked NOTIFY noteBackedChanged)
+
+public:
+    struct Entry
+    {
+        QString noteId;
+        QString noteDirectoryPath;
+        QString bodyText;
+    };
+
+    explicit FakeRowOnlySelectionNoteListModel(QObject* parent = nullptr)
+        : QAbstractListModel(parent)
+    {
+    }
+
+    int rowCount(const QModelIndex& parent = QModelIndex()) const override
+    {
+        if (parent.isValid())
+        {
+            return 0;
+        }
+        return static_cast<int>(m_entries.size());
+    }
+
+    QVariant data(const QModelIndex& index, int role) const override
+    {
+        if (!index.isValid() || index.row() < 0 || index.row() >= rowCount())
+        {
+            return {};
+        }
+
+        const Entry& entry = m_entries[static_cast<size_t>(index.row())];
+        switch (role)
+        {
+        case Qt::UserRole + 1:
+            return entry.noteId;
+        case Qt::UserRole + 3:
+            return entry.noteDirectoryPath;
+        case Qt::UserRole + 4:
+            return entry.bodyText;
+        default:
+            return {};
+        }
+    }
+
+    int currentIndex() const noexcept
+    {
+        return m_currentIndex;
+    }
+
+    void setCurrentIndex(const int currentIndex)
+    {
+        const int normalizedIndex = std::max(-1, currentIndex);
+        if (m_currentIndex == normalizedIndex)
+        {
+            return;
+        }
+
+        m_currentIndex = normalizedIndex;
+        emit currentIndexChanged();
+    }
+
+    int itemCount() const noexcept
+    {
+        return rowCount();
+    }
+
+    bool noteBacked() const noexcept
+    {
+        return m_noteBacked;
+    }
+
+    void setNoteBacked(const bool noteBacked)
+    {
+        if (m_noteBacked == noteBacked)
+        {
+            return;
+        }
+
+        m_noteBacked = noteBacked;
+        emit noteBackedChanged();
+    }
+
+    void appendEntry(QString noteId, QString noteDirectoryPath, QString bodyText)
+    {
+        const int nextRow = rowCount();
+        beginInsertRows(QModelIndex(), nextRow, nextRow);
+        Entry entry;
+        entry.noteId = std::move(noteId);
+        entry.noteDirectoryPath = std::move(noteDirectoryPath);
+        entry.bodyText = std::move(bodyText);
+        m_entries.push_back(std::move(entry));
+        endInsertRows();
+        emit itemCountChanged(itemCount());
+    }
+
+signals:
+    void currentIndexChanged();
+    void itemCountChanged(int itemCount);
+    void noteBackedChanged();
+
+private:
+    std::vector<Entry> m_entries;
+    int m_currentIndex = -1;
+    bool m_noteBacked = true;
+};
+
 class ScopedQSettingsSandbox final
 {
 public:
@@ -757,12 +926,14 @@ private slots:
     void sidebarAndSelectionBridge_forceCppOwnershipAcrossHierarchySwitchBindings();
     void contentsEditorSelectionBridge_tracksSelectionFromCurrentIndexSignal();
     void contentsEditorSelectionBridge_preservesNoSelectionSentinelBeforeIndexCommit();
+    void contentsEditorSelectionBridge_requiresCommittedSelectionContractForNoteIdentity();
     void contentsEditorSelectionBridge_prefillsSelectedNoteBodyFromNoteListSnapshot();
     void contentsEditorSelectionBridge_prefillsSelectedNoteBodyFromDirectSourceSnapshot();
     void contentsEditorSelectionBridge_treatsDirectEmptySourceAsResolvedEmptyNote();
     void contentsEditorSelectionBridge_ignoresNoteListBodySnapshotWithoutDirectSource();
     void contentsEditorSelectionBridge_rebindsSameNoteIdWhenPackagePathChanges();
-    void contentsEditorSelectionBridge_retainsSelectedNoteAcrossTransientEmptyCurrentNoteId();
+    void contentsEditorSelectionBridge_clearsSelectedNoteAcrossTransientEmptyCurrentNoteId();
+    void contentsEditorSelectionBridge_reloadsBodyWhenCommittedNoteEntryChangesWithoutNoteIdChange();
     void contentsEditorSelectionBridge_emitsTraceForNoteSelectionFlow();
     void noteBackedHierarchyNoteLists_preserveRawBodySnapshotForEditorBootstrap();
     void noteListModelContractBridge_resolvesHierarchyBoundNoteListImmediately();
@@ -790,6 +961,7 @@ private slots:
     void resourcesHierarchyViewModel_defaultsSelectionToImageAndFiltersList();
     void resourcesHierarchyViewModel_collapsesMultiDotImageFormatsIntoTerminalSuffix();
     void structuredCollectionPolicy_normalizesEntriesAndPrefersResolvedMatches();
+    void structuredCollectionPolicy_normalizesQmlJsArrayEntries();
     void structuredMutationPolicy_buildsDeletionAndInsertionPayloads();
     void structuredMutationPolicy_buildsParagraphBoundaryMergeAndSplitPayloads();
     void structuredDocumentBlocksModel_updatesRowsWithoutResettingStableSuffixBlocks();
@@ -801,6 +973,7 @@ private slots:
     void qmlResourceEditorView_staysTransparentAndViewerOnly();
     void resourceDetailPanelViewModel_tracksCurrentResourceSelection();
     void detailCurrentNoteContextBridge_prefersCurrentNoteEntryAndClearsNonNoteBackedSelection();
+    void detailCurrentNoteContextBridge_clearsReadableEmptyCurrentNoteEntrySelection();
     void detailPanelRouting_separatesNoteAndResourceViewsAndViewModels();
     void contentsDisplayView_invalidatesGutterGeometryImmediatelyAcrossRapidNoteSwitches();
     void contentsDisplayView_keepsGutterNumbersCloseToTheEditorBody();

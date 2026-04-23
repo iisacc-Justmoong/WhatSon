@@ -25,6 +25,8 @@
 - The bridge now also treats note-list `currentIndexChanged()` as a first-class selection refresh trigger.
   This keeps list-item activation aligned with editor selection even when the model derives `currentNoteId` lazily from
   its committed index instead of emitting a dedicated note-id signal first.
+- The bridge now also treats `currentNoteEntryChanged()` as a dedicated committed-selection refresh trigger.
+  Same-note entry revisions can therefore retrigger body binding without waiting for a new `currentNoteId` signal.
 - The bridge also preserves a negative `currentIndex` sentinel from the note-list model.
   A launch-time `-1` therefore still means "selection writer has not committed one row yet" instead of being collapsed
   into row `0` before the model has surfaced a real note identity.
@@ -74,10 +76,13 @@
 - The bridge now also recognizes an optional content-view-model invokable,
   `noteBodySourceTextForNoteId(noteId)`, as the runtime-snapshot fallback contract for selected note bodies when
   package-path resolution cannot start a lazy load.
-- Selection refresh now also retains the previous selected note when a note-backed list still reports visible items but
-  transiently exposes an empty `currentNoteId`.
-  This prevents one empty-id contract turn from being treated as a real deselection and unmounting the active
-  document.
+- Selection refresh now treats note identity as a committed contract only.
+  `currentNoteEntry` and `currentNoteId` can confirm the selected note, but row/current-index fallback is no longer
+  allowed to synthesize `selectedNoteId`.
+- A readable-but-empty committed selection contract now clears the selected note instead of retaining the previous note
+  as stale fallback state.
+- The bridge also tracks the last committed `currentNoteEntry` map so same-note entry revisions count as a rebind/body
+  refresh trigger even when `selectedNoteId` itself is stable.
 
 ### Classes and Structs
 - `ContentsEditorSelectionBridge`
@@ -121,6 +126,7 @@
   selection by the bridge.
 - A same-note `currentBodyTextChanged()` from the note-list model must still refresh the bridge body snapshot even when
   the selected note id itself did not change.
+- A note-backed list row/current index alone must not be treated as a committed note identity.
 - Stale same-note body-read completions must not reclaim the selected note body after a newer request was issued.
 - Stale filesystem text must not reclaim the selected note body while the sync controller still owns a newer dirty or
   in-flight editor snapshot for that note.
@@ -134,8 +140,10 @@
   rebinds.
 - Selection refresh must keep the editor body populated from a runtime snapshot when the content view-model can resolve
   `noteBodySourceTextForNoteId(...)` but the sync boundary cannot resolve a package path for that note.
-- A note-backed list with `itemCount > 0` must not clear bridge selection solely because one refresh turn exposed
-  `currentNoteId=""`.
+- A readable-but-empty committed selection contract must clear bridge selection instead of retaining the previous
+  selected note/body as stale state.
+- A same-note `currentNoteEntryChanged()` must still force one body refresh/rebind turn even when `selectedNoteId`
+  remains stable.
 - Bridge APIs that target one note must not silently replace a missing `noteId` with the currently selected note.
 - Bridge APIs that target one selected note must prefer the already resolved note-directory path when it is known, so
   same-id duplicate packages do not collapse back to whichever `.wsnote` path is rediscovered later.

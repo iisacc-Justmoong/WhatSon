@@ -18,6 +18,10 @@ namespace
     constexpr auto kNoteBodySourceTextForNoteIdSignature = "noteBodySourceTextForNoteId(QString)";
 
     bool noteBackedSelectionEnabled(const QObject* noteListModel);
+    bool hasReadableContractProperty(const QObject* object, const char* propertyName);
+    QVariantMap readCurrentNoteEntry(const QObject* noteListModel);
+    QString noteIdFromEntry(const QVariantMap& noteEntry);
+    QString noteDirectoryPathFromEntry(const QVariantMap& noteEntry);
 
     QString readTraceStringProperty(const QObject* object, const char* propertyName)
     {
@@ -114,6 +118,59 @@ namespace
         }
 
         return property.read(noteListModel).toBool();
+    }
+
+    bool hasReadableContractProperty(const QObject* object, const char* propertyName)
+    {
+        if (object == nullptr || propertyName == nullptr)
+        {
+            return false;
+        }
+
+        const QMetaObject* metaObject = object->metaObject();
+        if (metaObject == nullptr)
+        {
+            return false;
+        }
+
+        const int propertyIndex = metaObject->indexOfProperty(propertyName);
+        if (propertyIndex < 0)
+        {
+            return false;
+        }
+
+        return metaObject->property(propertyIndex).isReadable();
+    }
+
+    QVariantMap readCurrentNoteEntry(const QObject* noteListModel)
+    {
+        if (!hasReadableContractProperty(noteListModel, "currentNoteEntry"))
+        {
+            return {};
+        }
+
+        QVariantMap noteEntry = noteListModel->property("currentNoteEntry").toMap();
+        if (!noteEntry.contains(QStringLiteral("noteId")) && noteEntry.contains(QStringLiteral("id")))
+        {
+            noteEntry.insert(QStringLiteral("noteId"), noteEntry.value(QStringLiteral("id")));
+        }
+        return noteEntry;
+    }
+
+    QString noteIdFromEntry(const QVariantMap& noteEntry)
+    {
+        const QString noteId = noteEntry.value(QStringLiteral("noteId")).toString().trimmed();
+        if (!noteId.isEmpty())
+        {
+            return noteId;
+        }
+
+        return noteEntry.value(QStringLiteral("id")).toString().trimmed();
+    }
+
+    QString noteDirectoryPathFromEntry(const QVariantMap& noteEntry)
+    {
+        return noteEntry.value(QStringLiteral("noteDirectoryPath")).toString().trimmed();
     }
 
     void stabilizeQmlBindingOwnership(QObject* object)
@@ -234,7 +291,7 @@ void ContentsEditorSelectionBridge::setNoteListModel(QObject* model)
             m_noteListModel,
             SIGNAL(currentNoteEntryChanged()),
             this,
-            SLOT(handleNoteListSelectionChanged()));
+            SLOT(handleNoteListEntrySelectionChanged()));
         m_itemCountChangedConnection = connect(
             m_noteListModel,
             SIGNAL(itemCountChanged(int)),
@@ -528,6 +585,21 @@ void ContentsEditorSelectionBridge::handleNoteListSelectionChanged()
             .arg(m_selectedNoteBodyNoteId)
             .arg(m_noteSelectionRefreshQueued)
             .arg(summarizeTraceNoteListModel(m_noteListModel)));
+    scheduleNoteSelectionRefresh();
+}
+
+void ContentsEditorSelectionBridge::handleNoteListEntrySelectionChanged()
+{
+    WhatSon::Debug::traceEditorSelf(
+        this,
+        QStringLiteral("selectionBridge"),
+        QStringLiteral("selectionFlow.noteListEntrySelectionChanged"),
+        QStringLiteral("selectedNoteId=%1 bodyNoteId=%2 queued=%3 {%4}")
+            .arg(m_selectedNoteId)
+            .arg(m_selectedNoteBodyNoteId)
+            .arg(m_noteSelectionRefreshQueued)
+            .arg(summarizeTraceNoteListModel(m_noteListModel)));
+    m_noteSelectionRefreshRequiresRebind = true;
     scheduleNoteSelectionRefresh();
 }
 
@@ -857,18 +929,11 @@ QString ContentsEditorSelectionBridge::readNoteDirectoryPathFromModelRow(int row
 
 QString ContentsEditorSelectionBridge::resolveCurrentNoteIdFromSelectionContract() const
 {
-    const QVariantMap currentNoteEntry = m_noteListModel != nullptr
-        ? m_noteListModel->property("currentNoteEntry").toMap()
-        : QVariantMap();
-    const QString entryNoteId = currentNoteEntry.value(QStringLiteral("noteId")).toString().trimmed();
+    const QVariantMap currentNoteEntry = readCurrentNoteEntry(m_noteListModel.data());
+    const QString entryNoteId = noteIdFromEntry(currentNoteEntry);
     if (!entryNoteId.isEmpty())
     {
         return entryNoteId;
-    }
-    const QString entryId = currentNoteEntry.value(QStringLiteral("id")).toString().trimmed();
-    if (!entryId.isEmpty())
-    {
-        return entryId;
     }
 
     const QString directNoteId = readStringProperty(m_noteListModel, "currentNoteId").trimmed();
@@ -890,64 +955,21 @@ QString ContentsEditorSelectionBridge::resolveCurrentNoteIdFromSelectionContract
         return {};
     }
 
-    QString fallbackNoteId = readNoteIdFromModelRow(currentIndex);
-    if (fallbackNoteId.trimmed().isEmpty() && currentIndex == 0)
-    {
-        fallbackNoteId = readNoteIdFromModelRow(0);
-    }
-    if (!fallbackNoteId.trimmed().isEmpty())
-    {
-        WhatSon::Debug::traceEditorSelf(
-            this,
-            QStringLiteral("selectionBridge"),
-            QStringLiteral("selectionFlow.resolveCurrentNoteId.rowFallback"),
-            QStringLiteral("currentIndex=%1 noteId=%2 {%3}")
-                .arg(currentIndex)
-                .arg(fallbackNoteId)
-                .arg(summarizeTraceNoteListModel(m_noteListModel)));
-        return fallbackNoteId.trimmed();
-    }
-
-    if (hasInvokableMethod(m_noteListModel, "readNoteIdAt(int)"))
-    {
-        QString noteId;
-        if (QMetaObject::invokeMethod(
-                m_noteListModel,
-                "readNoteIdAt",
-                Qt::DirectConnection,
-                Q_RETURN_ARG(QString, noteId),
-                Q_ARG(int, currentIndex)))
-        {
-            const QString trimmedNoteId = noteId.trimmed();
-            WhatSon::Debug::traceEditorSelf(
-                this,
-                QStringLiteral("selectionBridge"),
-                QStringLiteral("selectionFlow.resolveCurrentNoteId.readNoteIdAt"),
-                QStringLiteral("currentIndex=%1 noteId=%2 {%3}")
-                    .arg(currentIndex)
-                    .arg(trimmedNoteId)
-                    .arg(summarizeTraceNoteListModel(m_noteListModel)));
-            return trimmedNoteId;
-        }
-    }
-
     WhatSon::Debug::traceEditorSelf(
         this,
         QStringLiteral("selectionBridge"),
         QStringLiteral("selectionFlow.resolveCurrentNoteId.unresolved"),
-        QStringLiteral("currentIndex=%1 hasReadNoteIdAt=%2 {%3}")
+        QStringLiteral("currentIndex=%1 committedEntryKeys=%2 {%3}")
             .arg(currentIndex)
-            .arg(hasInvokableMethod(m_noteListModel, "readNoteIdAt(int)"))
+            .arg(currentNoteEntry.keys().join(QLatin1Char(',')))
             .arg(summarizeTraceNoteListModel(m_noteListModel)));
     return {};
 }
 
 QString ContentsEditorSelectionBridge::resolveCurrentNoteDirectoryPathFromSelectionContract(const QString& noteId) const
 {
-    const QVariantMap currentNoteEntry = m_noteListModel != nullptr
-        ? m_noteListModel->property("currentNoteEntry").toMap()
-        : QVariantMap();
-    const QString entryPath = currentNoteEntry.value(QStringLiteral("noteDirectoryPath")).toString().trimmed();
+    const QVariantMap currentNoteEntry = readCurrentNoteEntry(m_noteListModel.data());
+    const QString entryPath = noteDirectoryPathFromEntry(currentNoteEntry);
     if (!entryPath.isEmpty())
     {
         return entryPath;
@@ -957,12 +979,12 @@ QString ContentsEditorSelectionBridge::resolveCurrentNoteDirectoryPathFromSelect
     {
         return directPath;
     }
+    if (noteId.trimmed().isEmpty())
+    {
+        return {};
+    }
     const int currentIndex = readIntProperty(m_noteListModel, "currentIndex");
     QString rowPath = readNoteDirectoryPathFromModelRow(currentIndex);
-    if (rowPath.trimmed().isEmpty() && currentIndex == 0)
-    {
-        rowPath = readNoteDirectoryPathFromModelRow(0);
-    }
     if (!rowPath.trimmed().isEmpty())
     {
         WhatSon::Debug::traceEditorSelf(
@@ -1292,8 +1314,12 @@ void ContentsEditorSelectionBridge::scheduleNoteSelectionRefresh()
 
 void ContentsEditorSelectionBridge::refreshNoteSelectionState()
 {
+    const bool currentNoteEntryReadable = hasReadableProperty(m_noteListModel, "currentNoteEntry");
+    const QVariantMap nextCurrentNoteEntry = currentNoteEntryReadable
+        ? readCurrentNoteEntry(m_noteListModel.data())
+        : QVariantMap();
     const bool nextContractAvailable = noteBackedSelectionEnabled(m_noteListModel)
-        && hasReadableProperty(m_noteListModel, "currentNoteId");
+        && (currentNoteEntryReadable || hasReadableProperty(m_noteListModel, "currentNoteId"));
     const QString previousNoteId = m_selectedNoteId;
     const QString previousNoteDirectoryPath = m_selectedNoteDirectoryPath;
     const QString proposedNoteId = nextContractAvailable
@@ -1302,46 +1328,21 @@ void ContentsEditorSelectionBridge::refreshNoteSelectionState()
     const int visibleItemCount = hasReadableProperty(m_noteListModel, "itemCount")
         ? readIntProperty(m_noteListModel, "itemCount")
         : 0;
-    QString nextNoteId = proposedNoteId;
-    const bool retainPreviousSelectionForTransientEmptyId =
-        nextContractAvailable
-        && nextNoteId.trimmed().isEmpty()
-        && !previousNoteId.trimmed().isEmpty()
-        && visibleItemCount > 0;
-    if (retainPreviousSelectionForTransientEmptyId)
-    {
-        nextNoteId = previousNoteId;
-        WhatSon::Debug::traceEditorSelf(
-            this,
-            QStringLiteral("selectionBridge"),
-            QStringLiteral("selectionFlow.noteIdRetained"),
-            QStringLiteral("previousNoteId=%1 visibleItemCount=%2 proposedNoteId=%3 bodyNoteId=%4 bodyResolved=%5")
-                .arg(previousNoteId)
-                .arg(visibleItemCount)
-                .arg(proposedNoteId)
-                .arg(m_selectedNoteBodyNoteId)
-                .arg(m_selectedNoteBodyResolved));
-    }
+    const QString nextNoteId = proposedNoteId;
     QString nextNoteDirectoryPath;
     if (!nextNoteId.trimmed().isEmpty())
     {
-        if (retainPreviousSelectionForTransientEmptyId)
-        {
-            nextNoteDirectoryPath = previousNoteDirectoryPath;
-        }
-        else
-        {
-            nextNoteDirectoryPath = resolveSelectedNoteDirectoryPath(nextNoteId);
-        }
+        nextNoteDirectoryPath = resolveCurrentNoteDirectoryPathFromSelectionContract(nextNoteId);
     }
     const bool noteDirectoryPathChanged = previousNoteDirectoryPath != nextNoteDirectoryPath;
-    const bool requiresRebind = m_noteSelectionRefreshRequiresRebind;
+    const bool committedEntryChanged = currentNoteEntryReadable && m_selectedCurrentNoteEntry != nextCurrentNoteEntry;
+    const bool requiresRebind = m_noteSelectionRefreshRequiresRebind || committedEntryChanged;
     m_noteSelectionRefreshRequiresRebind = false;
     WhatSon::Debug::traceEditorSelf(
         this,
         QStringLiteral("selectionBridge"),
         QStringLiteral("selectionFlow.refreshState"),
-        QStringLiteral("contract=%1 previousNoteId=%2 previousNoteDirectoryPath=%3 proposedNoteId=%4 nextNoteId=%5 nextNoteDirectoryPath=%6 visibleItemCount=%7 requiresRebind=%8 {%9}")
+        QStringLiteral("contract=%1 previousNoteId=%2 previousNoteDirectoryPath=%3 proposedNoteId=%4 nextNoteId=%5 nextNoteDirectoryPath=%6 visibleItemCount=%7 requiresRebind=%8 committedEntryChanged=%9 {%10}")
             .arg(nextContractAvailable)
             .arg(previousNoteId)
             .arg(previousNoteDirectoryPath)
@@ -1350,6 +1351,7 @@ void ContentsEditorSelectionBridge::refreshNoteSelectionState()
             .arg(nextNoteDirectoryPath)
             .arg(visibleItemCount)
             .arg(requiresRebind)
+            .arg(committedEntryChanged)
             .arg(summarizeTraceNoteListModel(m_noteListModel)));
 
     if (m_noteSelectionContractAvailable != nextContractAvailable)
@@ -1377,14 +1379,16 @@ void ContentsEditorSelectionBridge::refreshNoteSelectionState()
     const bool noteIdChanged = m_selectedNoteId != nextNoteId;
     if (!noteIdChanged)
     {
+        m_selectedCurrentNoteEntry = nextCurrentNoteEntry;
         WhatSon::Debug::traceEditorSelf(
             this,
             QStringLiteral("selectionBridge"),
             QStringLiteral("selectionFlow.noteStable"),
-            QStringLiteral("noteId=%1 noteDirectoryPathChanged=%2 requiresRebind=%3 snapshotNoteId=%4 bodyResolved=%5")
+            QStringLiteral("noteId=%1 noteDirectoryPathChanged=%2 requiresRebind=%3 committedEntryChanged=%4 snapshotNoteId=%5 bodyResolved=%6")
                 .arg(m_selectedNoteId)
                 .arg(noteDirectoryPathChanged)
                 .arg(requiresRebind)
+                .arg(committedEntryChanged)
                 .arg(m_selectedNoteBodySnapshotNoteId)
                 .arg(m_selectedNoteBodyResolved));
         setSelectedNoteDirectoryPath(nextNoteDirectoryPath);
@@ -1401,6 +1405,7 @@ void ContentsEditorSelectionBridge::refreshNoteSelectionState()
         return;
     }
 
+    m_selectedCurrentNoteEntry = nextCurrentNoteEntry;
     m_selectedNoteId = nextNoteId;
     emit selectedNoteIdChanged();
     WhatSon::Debug::traceEditorSelf(

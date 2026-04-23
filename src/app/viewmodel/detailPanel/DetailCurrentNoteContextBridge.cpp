@@ -278,34 +278,43 @@ void DetailCurrentNoteContextBridge::refreshContext()
     }
     else
     {
+        const bool currentNoteEntryReadable = hasReadableProperty(noteListModel, "currentNoteEntry");
+        const bool currentNoteIdReadable = hasReadableProperty(noteListModel, "currentNoteId");
+        const bool currentNoteDirectoryPathReadable = hasReadableProperty(noteListModel, "currentNoteDirectoryPath");
         const QVariantMap currentNoteEntry = readCurrentNoteEntry(noteListModel);
 
-        bool noteIdResolvedFromModel = false;
+        const bool noteIdContractReadable = currentNoteEntryReadable || currentNoteIdReadable;
         nextNoteId = noteIdFromEntry(currentNoteEntry);
-        if (!nextNoteId.isEmpty())
+        if (nextNoteId.isEmpty() && currentNoteIdReadable)
         {
-            noteIdResolvedFromModel = true;
+            bool noteIdResolvedFromProperty = false;
+            const QString noteIdFromProperty = readCurrentNoteIdProperty(noteListModel, &noteIdResolvedFromProperty);
+            if (noteIdResolvedFromProperty)
+            {
+                nextNoteId = noteIdFromProperty;
+            }
         }
-        else
-        {
-            nextNoteId = readCurrentNoteIdProperty(noteListModel, &noteIdResolvedFromModel);
-        }
-        if (!noteIdResolvedFromModel)
+        if (!noteIdContractReadable)
         {
             nextNoteId = m_currentNoteId;
         }
 
-        bool directoryResolved = false;
+        const bool directoryContractReadable =
+            currentNoteEntry.contains(QStringLiteral("noteDirectoryPath")) || currentNoteDirectoryPathReadable;
         nextDirectoryPath = noteDirectoryPathFromEntry(currentNoteEntry);
-        if (!nextDirectoryPath.isEmpty())
+        if (nextDirectoryPath.isEmpty() && currentNoteDirectoryPathReadable)
         {
-            directoryResolved = true;
-        }
-        else
-        {
-            nextDirectoryPath = readCurrentNoteDirectoryPathProperty(noteListModel, &directoryResolved);
+            bool directoryResolvedFromProperty = false;
+            const QString directoryPathFromProperty = readCurrentNoteDirectoryPathProperty(
+                noteListModel,
+                &directoryResolvedFromProperty);
+            if (directoryResolvedFromProperty)
+            {
+                nextDirectoryPath = directoryPathFromProperty;
+            }
         }
 
+        bool directoryResolved = !nextDirectoryPath.isEmpty();
         if (!directoryResolved && hasNoteDirectoryResolver(m_noteDirectorySourceViewModel.data()) && !nextNoteId.isEmpty())
         {
             directoryResolved = QMetaObject::invokeMethod(
@@ -318,7 +327,9 @@ void DetailCurrentNoteContextBridge::refreshContext()
         }
         if (!directoryResolved)
         {
-            nextDirectoryPath = nextNoteId == m_currentNoteId ? m_currentNoteDirectoryPath : QString();
+            nextDirectoryPath = !directoryContractReadable && nextNoteId == m_currentNoteId
+                ? m_currentNoteDirectoryPath
+                : QString();
         }
     }
 

@@ -48,3 +48,28 @@ void WhatSonCppRegressionTests::structuredCollectionPolicy_normalizesEntriesAndP
         resolvedEntry.value(QStringLiteral("resolvedPath")).toString(),
         QStringLiteral("/tmp/resource-7"));
 }
+
+void WhatSonCppRegressionTests::structuredCollectionPolicy_normalizesQmlJsArrayEntries()
+{
+    ContentsStructuredDocumentCollectionPolicy policy;
+    QJSEngine engine;
+
+    const QJSValue jsArray = engine.evaluate(
+        QStringLiteral("["
+                       "  { type: 'text', sourceStart: 0, sourceEnd: 5, sourceText: 'alpha' },"
+                       "  { type: 'break', sourceStart: 5, sourceEnd: 13, sourceText: '</break>' }"
+                       "]"));
+    QVERIFY2(!jsArray.isError(), "Failed to build QJSValue array fixture.");
+    QVERIFY(jsArray.isArray());
+
+    const QVariantList normalizedEntries = policy.normalizeEntries(QVariant::fromValue(jsArray));
+    QCOMPARE(normalizedEntries.size(), 2);
+
+    const QVariantMap firstBlock = normalizedEntries.at(0).toMap();
+    QCOMPARE(firstBlock.value(QStringLiteral("type")).toString(), QStringLiteral("text"));
+    QCOMPARE(firstBlock.value(QStringLiteral("sourceText")).toString(), QStringLiteral("alpha"));
+
+    const QVariantMap secondBlock = normalizedEntries.at(1).toMap();
+    QCOMPARE(secondBlock.value(QStringLiteral("type")).toString(), QStringLiteral("break"));
+    QCOMPARE(secondBlock.value(QStringLiteral("sourceText")).toString(), QStringLiteral("</break>"));
+}

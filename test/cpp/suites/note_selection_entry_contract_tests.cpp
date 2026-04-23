@@ -117,3 +117,40 @@ void WhatSonCppRegressionTests::detailCurrentNoteContextBridge_prefersCurrentNot
     QVERIFY(currentNoteIdChangedSpy.count() >= 3);
     QVERIFY(currentNoteDirectoryPathChangedSpy.count() >= 3);
 }
+
+void WhatSonCppRegressionTests::detailCurrentNoteContextBridge_clearsReadableEmptyCurrentNoteEntrySelection()
+{
+    ensureCoreApplication();
+
+    DetailCurrentNoteContextBridge bridge;
+    LibraryNoteListModel libraryNoteListModel;
+    FakeCurrentNoteEntryOnlyListModel emptySelectionModel;
+    QSignalSpy currentNoteIdChangedSpy(&bridge, &DetailCurrentNoteContextBridge::currentNoteIdChanged);
+    QSignalSpy currentNoteDirectoryPathChangedSpy(
+        &bridge,
+        &DetailCurrentNoteContextBridge::currentNoteDirectoryPathChanged);
+
+    libraryNoteListModel.setItems({
+        makeLibraryNoteListItem(
+            QStringLiteral("note-1"),
+            QStringLiteral("/tmp/library-note-1.wsnote"),
+            QStringLiteral("First note")),
+        makeLibraryNoteListItem(
+            QStringLiteral("note-2"),
+            QStringLiteral("/tmp/library-note-2.wsnote"),
+            QStringLiteral("Second note"))
+    });
+    libraryNoteListModel.setCurrentIndex(1);
+
+    bridge.setNoteListModel(&libraryNoteListModel);
+
+    QCOMPARE(bridge.currentNoteId(), QStringLiteral("note-2"));
+    QCOMPARE(bridge.currentNoteDirectoryPath(), QStringLiteral("/tmp/library-note-2.wsnote"));
+
+    bridge.setNoteListModel(&emptySelectionModel);
+
+    QVERIFY(bridge.currentNoteId().isEmpty());
+    QVERIFY(bridge.currentNoteDirectoryPath().isEmpty());
+    QVERIFY(currentNoteIdChangedSpy.count() >= 2);
+    QVERIFY(currentNoteDirectoryPathChangedSpy.count() >= 2);
+}

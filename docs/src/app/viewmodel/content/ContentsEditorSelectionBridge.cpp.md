@@ -106,21 +106,26 @@
 - The bridge now preserves the note-list model's raw `currentIndex` sentinel.
   `readIntProperty(...)` no longer clamps negative integers to `0`, so launch-time `currentIndex=-1` remains a true
   "no committed selection yet" state instead of being misread as row `0`.
-  This keeps `resolveCurrentNoteIdFromSelectionContract()` from prematurely falling back to row `0` before the real
-  selection writer commits one authoritative index/note identity pair.
-- `refreshNoteSelectionState()` now also treats one empty `currentNoteId` from a still-populated note-backed list as a
-  transient contract gap instead of an immediate note-clear event.
-  When the active note list still reports visible items, the bridge retains the previous selected note id/body owner
-  rather than clearing the editor session and unmounting the document surface on that transient empty-id turn.
+  This keeps `resolveCurrentNoteIdFromSelectionContract()` from collapsing a real "no committed selection yet" turn
+  into an implicit row `0` selection.
+- `resolveCurrentNoteIdFromSelectionContract()` now only trusts committed note identity contracts:
+  `currentNoteEntry.noteId`/`currentNoteEntry.id` and `currentNoteId`.
+  Row snapshots and `readNoteIdAt(...)` are no longer allowed to synthesize `selectedNoteId`.
+- `refreshNoteSelectionState()` now treats a readable-but-empty committed selection contract as a real clear event.
+  The bridge no longer retains the previous note across transient empty-id turns, so stale note identity/body state
+  cannot stay mounted merely because the list still has visible rows.
+- `currentNoteEntryChanged()` is now wired as a dedicated refresh signal.
+  The bridge tracks the last committed entry map and treats same-note entry revisions as a real rebind/body-refresh
+  trigger even when the committed `noteId` itself did not change.
 - All bridge calls that target note IO now prefer the path-aware idle-sync overloads when
   `selectedNoteDirectoryPath` is already known.
   Lazy body load, staged persistence, immediate flush, and reconcile therefore keep operating on the same `.wsnote`
   package that the selection layer actually mounted instead of rediscovering a package later from `noteId` alone.
 - The bridge now also emits one explicit `selectionFlow.*` trace vocabulary for note-open debugging:
-  - `selectionFlow.noteListSelectionChanged` / `selectionFlow.noteListBodyTextChanged`
+  - `selectionFlow.noteListSelectionChanged` / `selectionFlow.noteListEntrySelectionChanged`
+    / `selectionFlow.noteListBodyTextChanged`
   - `selectionFlow.refreshScheduled` / `selectionFlow.refreshFlush` / `selectionFlow.refreshState`
   - `selectionFlow.noteChanged` / `selectionFlow.noteStable` / `selectionFlow.noteCleared`
-  - `selectionFlow.noteIdRetained` for transient empty-id retention while a note-backed list still owns visible rows
   - `selectionFlow.bodyLoadStart`, immediate/pending/fallback body-load decisions, and
     `selectionFlow.bodyLoadFinished`
 - Those traces summarize the live note-list state (`currentIndex`, `currentNoteId`, `currentBodyText`, `itemCount`)
@@ -170,6 +175,8 @@
   before QML reaches the editor surface.
 - A note-backed list with visible rows but `currentIndex=-1` must stay in the bridge's no-selection state until the
   authoritative selection writer commits one non-negative current index.
+- A note-backed list row/current index alone must not synthesize `selectedNoteId`; the bridge must wait for
+  `currentNoteEntry` or `currentNoteId` to confirm note identity.
 - A same-note `currentBodyTextChanged()` must still invalidate the cached selected-note snapshot so the editor can
   adopt the refreshed list-provided RAW body.
 - A note-open turn must not push an empty interim body into the editor before the lazy body load completes.
@@ -182,8 +189,10 @@
   resolved.
 - A missing selected-note package path must still allow the bridge to surface runtime snapshot text through
   `noteBodySourceTextForNoteId(...)` when the active content view-model exposes that contract.
-- A transient empty `currentNoteId` from a note-backed list with remaining visible rows must not clear
-  `selectedNoteId` or unmount the current note body.
+- A readable-but-empty committed selection contract must clear `selectedNoteId` instead of retaining the previous note
+  as stale mounted state.
+- A same-note `currentNoteEntryChanged()` must still force one rebind/body-refresh turn even when `selectedNoteId`
+  remains stable.
 - Reopening a recently edited note must prefer the buffered editor snapshot over a stale package read until queued
   persistence catches up.
 - A same-note successful save must advance `selectedNoteBodyText` even when filesystem reconcile reports that no extra
