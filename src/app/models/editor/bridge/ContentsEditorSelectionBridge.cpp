@@ -744,6 +744,48 @@ bool ContentsEditorSelectionBridge::adoptPendingEditorBodyText(const QString& no
     return true;
 }
 
+
+QString ContentsEditorSelectionBridge::resolveCurrentNoteIdFromSelectionContract() const
+{
+    const QString directNoteId = readStringProperty(m_noteListModel, "currentNoteId").trimmed();
+    if (!directNoteId.isEmpty())
+    {
+        return directNoteId;
+    }
+
+    const int currentIndex = readIntProperty(m_noteListModel, "currentIndex");
+    if (currentIndex < 0)
+    {
+        return {};
+    }
+
+    if (hasInvokableMethod(m_noteListModel, "readNoteIdAt(int)"))
+    {
+        QString noteId;
+        if (QMetaObject::invokeMethod(
+                m_noteListModel,
+                "readNoteIdAt",
+                Qt::DirectConnection,
+                Q_RETURN_ARG(QString, noteId),
+                Q_ARG(int, currentIndex)))
+        {
+            return noteId.trimmed();
+        }
+    }
+
+    return {};
+}
+
+QString ContentsEditorSelectionBridge::resolveCurrentNoteDirectoryPathFromSelectionContract(const QString& noteId) const
+{
+    const QString directPath = readStringProperty(m_noteListModel, "currentNoteDirectoryPath").trimmed();
+    if (!directPath.isEmpty())
+    {
+        return directPath;
+    }
+    return resolveSelectedNoteDirectoryPath(noteId);
+}
+
 QString ContentsEditorSelectionBridge::resolveSelectedNoteDirectoryPath(const QString& noteId) const
 {
     const QString normalizedNoteId = noteId.trimmed();
@@ -807,32 +849,7 @@ bool ContentsEditorSelectionBridge::tryResolveSelectedNoteBodySourceText(
     }
 
     const QString normalizedNoteId = noteId.trimmed();
-    if (normalizedNoteId.isEmpty()
-        || (m_noteListModel == nullptr && m_contentViewModel == nullptr))
-    {
-        return false;
-    }
-
-    if (m_noteListModel != nullptr
-        && hasReadableProperty(m_noteListModel, "currentNoteId")
-        && hasReadableProperty(m_noteListModel, "currentBodyText"))
-    {
-        const QString currentNoteId = readStringProperty(m_noteListModel, "currentNoteId").trimmed();
-        if (currentNoteId == normalizedNoteId)
-        {
-            const QString currentBodyText = readStringProperty(m_noteListModel, "currentBodyText");
-            if (!currentBodyText.isEmpty())
-            {
-                if (bodyText != nullptr)
-                {
-                    *bodyText = currentBodyText;
-                }
-                return true;
-            }
-        }
-    }
-
-    if (m_contentViewModel == nullptr
+    if (normalizedNoteId.isEmpty() || m_contentViewModel == nullptr
         || !hasInvokableMethod(m_contentViewModel, kNoteBodySourceTextForNoteIdSignature))
     {
         return false;
@@ -979,44 +996,13 @@ void ContentsEditorSelectionBridge::startSelectedNoteBodyLoad(
         && m_selectedNoteBodyResolved
         && m_selectedNoteBodySnapshotNoteId == normalizedNoteId;
 
-    const QString noteDirectoryPath = resolveSelectedNoteDirectoryPath(normalizedNoteId);
+    const QString noteDirectoryPath = resolveCurrentNoteDirectoryPathFromSelectionContract(normalizedNoteId);
     const bool canDeferToWsnoteLoad = !noteDirectoryPath.isEmpty() && m_idleSyncController != nullptr;
-    if (!immediateBodyResolved
-        && m_noteListModel != nullptr
-        && hasReadableProperty(m_noteListModel, "currentNoteId")
-        && hasReadableProperty(m_noteListModel, "currentBodyText")
-        && readStringProperty(m_noteListModel, "currentNoteId").trimmed() == normalizedNoteId)
-    {
-        immediateBodyText = readStringProperty(m_noteListModel, "currentBodyText");
-        if (!immediateBodyText.isEmpty())
-        {
-            m_selectedNoteBodySnapshotNoteId = normalizedNoteId;
-            immediateBodyResolved = true;
-        }
-    }
     if (!immediateBodyResolved && !canDeferToWsnoteLoad
         && tryResolveSelectedNoteBodySourceText(normalizedNoteId, &immediateBodyText))
     {
         m_selectedNoteBodySnapshotNoteId = normalizedNoteId;
         immediateBodyResolved = true;
-    }
-    else if (!immediateBodyResolved
-             && !canDeferToWsnoteLoad
-             && m_contentViewModel != nullptr
-             && hasInvokableMethod(m_contentViewModel, kNoteBodySourceTextForNoteIdSignature))
-    {
-        QString directBodyText;
-        if (QMetaObject::invokeMethod(
-                m_contentViewModel,
-                "noteBodySourceTextForNoteId",
-                Qt::DirectConnection,
-                Q_RETURN_ARG(QString, directBodyText),
-                Q_ARG(QString, normalizedNoteId)))
-        {
-            immediateBodyText = directBodyText;
-            m_selectedNoteBodySnapshotNoteId = normalizedNoteId;
-            immediateBodyResolved = true;
-        }
     }
     else if (!immediateBodyResolved)
     {
@@ -1108,7 +1094,7 @@ void ContentsEditorSelectionBridge::refreshNoteSelectionState()
     const QString previousNoteId = m_selectedNoteId;
     const QString previousNoteDirectoryPath = m_selectedNoteDirectoryPath;
     const QString proposedNoteId = nextContractAvailable
-        ? readStringProperty(m_noteListModel, "currentNoteId")
+        ? resolveCurrentNoteIdFromSelectionContract()
         : QString();
     const int visibleItemCount = hasReadableProperty(m_noteListModel, "itemCount")
         ? readIntProperty(m_noteListModel, "itemCount")

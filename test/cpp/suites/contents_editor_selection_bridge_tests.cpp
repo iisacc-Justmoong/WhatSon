@@ -19,9 +19,9 @@ void WhatSonCppRegressionTests::contentsEditorSelectionBridge_tracksSelectionFro
 
     QCOMPARE(selectionBridge.selectedNoteId(), QStringLiteral("note-2"));
     QCOMPARE(selectionBridge.selectedNoteBodyNoteId(), QStringLiteral("note-2"));
-    QCOMPARE(selectionBridge.selectedNoteBodyText(), QStringLiteral("Body 2"));
-    QVERIFY(selectionBridge.selectedNoteBodyResolved());
-    QVERIFY(!selectionBridge.selectedNoteBodyLoading());
+    QCOMPARE(selectionBridge.selectedNoteBodyText(), QString());
+    QVERIFY(!selectionBridge.selectedNoteBodyResolved());
+    QVERIFY(selectionBridge.selectedNoteBodyLoading() || !selectionBridge.selectedNoteBodyResolved());
 }
 
 void WhatSonCppRegressionTests::contentsEditorSelectionBridge_prefillsSelectedNoteBodyFromDirectSourceSnapshot()
@@ -71,7 +71,7 @@ void WhatSonCppRegressionTests::contentsEditorSelectionBridge_treatsDirectEmptyS
     QVERIFY(selectionBridge.selectedNoteBodyLoading() || !selectionBridge.selectedNoteBodyResolved());
 }
 
-void WhatSonCppRegressionTests::contentsEditorSelectionBridge_refreshesSelectedBodyFromNoteListBodySignal()
+void WhatSonCppRegressionTests::contentsEditorSelectionBridge_ignoresNoteListBodySnapshotWithoutDirectSource()
 {
     ensureCoreApplication();
 
@@ -88,16 +88,14 @@ void WhatSonCppRegressionTests::contentsEditorSelectionBridge_refreshesSelectedB
     QCOMPARE(selectionBridge.selectedNoteBodyNoteId(), QStringLiteral("note-1"));
     QCOMPARE(selectionBridge.selectedNoteBodyText(), QString());
     QVERIFY(!selectionBridge.selectedNoteBodyResolved());
-    QVERIFY(!selectionBridge.selectedNoteBodyLoading());
 
     noteListModel.setCurrentBodyText(QStringLiteral("Late body snapshot"));
     QCoreApplication::processEvents();
 
     QCOMPARE(selectionBridge.selectedNoteId(), QStringLiteral("note-1"));
     QCOMPARE(selectionBridge.selectedNoteBodyNoteId(), QStringLiteral("note-1"));
-    QCOMPARE(selectionBridge.selectedNoteBodyText(), QStringLiteral("Late body snapshot"));
-    QVERIFY(selectionBridge.selectedNoteBodyResolved());
-    QVERIFY(!selectionBridge.selectedNoteBodyLoading());
+    QCOMPARE(selectionBridge.selectedNoteBodyText(), QString());
+    QVERIFY(!selectionBridge.selectedNoteBodyResolved());
 }
 
 void WhatSonCppRegressionTests::contentsEditorSelectionBridge_rebindsSameNoteIdWhenPackagePathChanges()
@@ -110,26 +108,23 @@ void WhatSonCppRegressionTests::contentsEditorSelectionBridge_rebindsSameNoteIdW
     noteListModel.setNoteBacked(true);
     noteListModel.setCurrentNoteId(QStringLiteral("note-1"));
     noteListModel.setCurrentNoteDirectoryPath(QStringLiteral("/tmp/wsnote-a"));
-    noteListModel.setCurrentBodyText(QStringLiteral("Body A"));
 
     selectionBridge.setNoteListModel(&noteListModel);
     QCoreApplication::processEvents();
 
     QCOMPARE(selectionBridge.selectedNoteId(), QStringLiteral("note-1"));
     QCOMPARE(selectionBridge.selectedNoteDirectoryPath(), QStringLiteral("/tmp/wsnote-a"));
-    QCOMPARE(selectionBridge.selectedNoteBodyText(), QStringLiteral("Body A"));
-    QVERIFY(selectionBridge.selectedNoteBodyResolved());
+    QCOMPARE(selectionBridge.selectedNoteBodyText(), QString());
+    QVERIFY(!selectionBridge.selectedNoteBodyResolved());
 
     noteListModel.setCurrentNoteDirectoryPath(QStringLiteral("/tmp/wsnote-b"));
-    noteListModel.setCurrentBodyText(QStringLiteral("Body B"));
     QCoreApplication::processEvents();
 
     QCOMPARE(selectionBridge.selectedNoteId(), QStringLiteral("note-1"));
     QCOMPARE(selectionBridge.selectedNoteDirectoryPath(), QStringLiteral("/tmp/wsnote-b"));
     QCOMPARE(selectionBridge.selectedNoteBodyNoteId(), QStringLiteral("note-1"));
-    QCOMPARE(selectionBridge.selectedNoteBodyText(), QStringLiteral("Body B"));
-    QVERIFY(selectionBridge.selectedNoteBodyResolved());
-    QVERIFY(!selectionBridge.selectedNoteBodyLoading());
+    QCOMPARE(selectionBridge.selectedNoteBodyText(), QString());
+    QVERIFY(!selectionBridge.selectedNoteBodyResolved());
 }
 
 void WhatSonCppRegressionTests::contentsEditorSelectionBridge_retainsSelectedNoteAcrossTransientEmptyCurrentNoteId()
@@ -142,24 +137,22 @@ void WhatSonCppRegressionTests::contentsEditorSelectionBridge_retainsSelectedNot
     noteListModel.setNoteBacked(true);
     noteListModel.setItemCount(3);
     noteListModel.setCurrentNoteId(QStringLiteral("note-1"));
-    noteListModel.setCurrentBodyText(QStringLiteral("Stable body snapshot"));
 
     selectionBridge.setNoteListModel(&noteListModel);
     QCoreApplication::processEvents();
 
     QCOMPARE(selectionBridge.selectedNoteId(), QStringLiteral("note-1"));
     QCOMPARE(selectionBridge.selectedNoteBodyNoteId(), QStringLiteral("note-1"));
-    QCOMPARE(selectionBridge.selectedNoteBodyText(), QStringLiteral("Stable body snapshot"));
-    QVERIFY(selectionBridge.selectedNoteBodyResolved());
+    QCOMPARE(selectionBridge.selectedNoteBodyText(), QString());
+    QVERIFY(!selectionBridge.selectedNoteBodyResolved());
 
     noteListModel.setCurrentNoteId(QString());
     QCoreApplication::processEvents();
 
     QCOMPARE(selectionBridge.selectedNoteId(), QStringLiteral("note-1"));
     QCOMPARE(selectionBridge.selectedNoteBodyNoteId(), QStringLiteral("note-1"));
-    QCOMPARE(selectionBridge.selectedNoteBodyText(), QStringLiteral("Stable body snapshot"));
-    QVERIFY(selectionBridge.selectedNoteBodyResolved());
-    QVERIFY(!selectionBridge.selectedNoteBodyLoading());
+    QCOMPARE(selectionBridge.selectedNoteBodyText(), QString());
+    QVERIFY(!selectionBridge.selectedNoteBodyResolved());
 }
 
 void WhatSonCppRegressionTests::contentsEditorSelectionBridge_emitsTraceForNoteSelectionFlow()

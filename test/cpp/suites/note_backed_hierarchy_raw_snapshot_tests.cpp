@@ -16,9 +16,9 @@ void WhatSonCppRegressionTests::contentsEditorSelectionBridge_prefillsSelectedNo
 
     QCOMPARE(selectionBridge.selectedNoteId(), QStringLiteral("note-1"));
     QCOMPARE(selectionBridge.selectedNoteBodyNoteId(), QStringLiteral("note-1"));
-    QCOMPARE(selectionBridge.selectedNoteBodyText(), QStringLiteral("<callout title=\"Alert\">Body</callout>"));
-    QVERIFY(selectionBridge.selectedNoteBodyResolved());
-    QVERIFY(!selectionBridge.selectedNoteBodyLoading());
+    QCOMPARE(selectionBridge.selectedNoteBodyText(), QString());
+    QVERIFY(!selectionBridge.selectedNoteBodyResolved());
+    QVERIFY(selectionBridge.selectedNoteBodyLoading() || !selectionBridge.selectedNoteBodyResolved());
 }
 
 void WhatSonCppRegressionTests::noteBackedHierarchyNoteLists_preserveRawBodySnapshotForEditorBootstrap()

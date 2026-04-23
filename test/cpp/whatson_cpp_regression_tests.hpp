@@ -758,7 +758,7 @@ private slots:
     void contentsEditorSelectionBridge_prefillsSelectedNoteBodyFromNoteListSnapshot();
     void contentsEditorSelectionBridge_prefillsSelectedNoteBodyFromDirectSourceSnapshot();
     void contentsEditorSelectionBridge_treatsDirectEmptySourceAsResolvedEmptyNote();
-    void contentsEditorSelectionBridge_refreshesSelectedBodyFromNoteListBodySignal();
+    void contentsEditorSelectionBridge_ignoresNoteListBodySnapshotWithoutDirectSource();
     void contentsEditorSelectionBridge_rebindsSameNoteIdWhenPackagePathChanges();
     void contentsEditorSelectionBridge_retainsSelectedNoteAcrossTransientEmptyCurrentNoteId();
     void contentsEditorSelectionBridge_emitsTraceForNoteSelectionFlow();
