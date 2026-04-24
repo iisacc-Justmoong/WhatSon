@@ -125,6 +125,9 @@ every turn.
   `Qt.inputMethod.visible !== undefined` guards.
 - Text editor wrappers may observe `TextEdit.inputMethodComposing` and `TextEdit.preeditText` as TextEdit state, but
   only to defer persistence or programmatic sync until native composition settles.
+- Until these primitives are promoted into LVRS, editor QML must route native-input session, shortcut-surface,
+  context-menu long-press, focused programmatic-sync, and ordinary text-edit focus-restore decisions through
+  `src/app/qml/view/content/editor/ContentsEditorInputPolicyAdapter.qml`.
 
 ## Codex Init (`/init`) Procedure
 

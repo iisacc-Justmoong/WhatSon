@@ -180,6 +180,62 @@ void WhatSonCppRegressionTests::qmlStructuredEditors_preserveNativeMobileInputDu
     QVERIFY(!calloutBlockSource.contains(QStringLiteral("shortcutKeyPressHandler: function")));
 }
 
+void WhatSonCppRegressionTests::qmlEditorInputPolicyAdapter_centralizesNativeInputDecisions()
+{
+    const QString policyAdapterSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/content/editor/ContentsEditorInputPolicyAdapter.qml"));
+    const QString displayViewSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/content/editor/ContentsDisplayView.qml"));
+    const QString inlineEditorSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/content/editor/ContentsInlineFormatEditor.qml"));
+    const QString textBlockSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/content/editor/ContentsDocumentTextBlock.qml"));
+
+    QVERIFY(!policyAdapterSource.isEmpty());
+    QVERIFY(!displayViewSource.isEmpty());
+    QVERIFY(!inlineEditorSource.isEmpty());
+    QVERIFY(!textBlockSource.isEmpty());
+
+    QVERIFY(policyAdapterSource.contains(QStringLiteral("readonly property bool nativeCompositionActive")));
+    QVERIFY(policyAdapterSource.contains(QStringLiteral("readonly property bool nativeTextInputSessionActive")));
+    QVERIFY(policyAdapterSource.contains(QStringLiteral("readonly property bool shortcutSurfaceEnabled")));
+    QVERIFY(policyAdapterSource.contains(QStringLiteral("readonly property bool tagManagementShortcutSurfaceEnabled")));
+    QVERIFY(policyAdapterSource.contains(QStringLiteral("readonly property bool contextMenuLongPressEnabled")));
+    QVERIFY(policyAdapterSource.contains(QStringLiteral("readonly property bool contextMenuSurfaceEnabled")));
+    QVERIFY(policyAdapterSource.contains(QStringLiteral("function programmaticTextSyncPolicy(")));
+    QVERIFY(policyAdapterSource.contains(QStringLiteral("function shouldDeferProgrammaticTextSync(")));
+    QVERIFY(policyAdapterSource.contains(QStringLiteral("function shouldApplyProgrammaticTextSync(")));
+    QVERIFY(policyAdapterSource.contains(QStringLiteral("function shouldRestoreFocusForMutation(")));
+    QVERIFY(policyAdapterSource.contains(QStringLiteral("reason === \"text-edit\"")));
+
+    QVERIFY(displayViewSource.contains(QStringLiteral("ContentsEditorInputPolicyAdapter {\n        id: editorInputPolicyAdapter")));
+    QVERIFY(displayViewSource.contains(
+        QStringLiteral("readonly property bool contextMenuLongPressEnabled: editorInputPolicyAdapter.contextMenuLongPressEnabled")));
+    QVERIFY(displayViewSource.contains(
+        QStringLiteral("readonly property bool noteDocumentShortcutSurfaceEnabled: editorInputPolicyAdapter.shortcutSurfaceEnabled")));
+    QVERIFY(displayViewSource.contains(
+        QStringLiteral("readonly property bool noteDocumentTagManagementShortcutSurfaceEnabled: editorInputPolicyAdapter.tagManagementShortcutSurfaceEnabled")));
+    QVERIFY(displayViewSource.contains(
+        QStringLiteral("readonly property bool noteDocumentContextMenuSurfaceEnabled: editorInputPolicyAdapter.contextMenuSurfaceEnabled")));
+    QVERIFY(displayViewSource.contains(
+        QStringLiteral("return editorInputPolicyAdapter.nativeTextInputSessionActive;")));
+    QVERIFY(displayViewSource.contains(
+        QStringLiteral("editorInputPolicyAdapter.shouldRestoreFocusForMutation(")));
+    QVERIFY(!displayViewSource.contains(
+        QStringLiteral("readonly property bool contextMenuLongPressEnabled: contentsView.nativeTextInputPriority")));
+    QVERIFY(!displayViewSource.contains(
+        QStringLiteral("return contentsView.nativeTextInputPriority && contentsView.editorInputFocused;")));
+
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("ContentsEditorInputPolicyAdapter {\n        id: inlineInputPolicyAdapter")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("function programmaticTextSyncPolicy(nextText)")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("inlineInputPolicyAdapter.programmaticTextSyncPolicy(")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("const syncPolicy = control.programmaticTextSyncPolicy(normalizedText);")));
+    QVERIFY(!inlineEditorSource.contains(QStringLiteral("return control.nativeCompositionActive();")));
+    QVERIFY(!inlineEditorSource.contains(QStringLiteral("control._localTextEditSinceFocus = false;\n            return false;")));
+
+    QVERIFY(textBlockSource.contains(QStringLiteral("\"reason\": \"text-edit\"")));
+}
+
 void WhatSonCppRegressionTests::qmlStructuredEditors_lockCustomInputToTagManagementOnly()
 {
     const QString displayViewSource = readUtf8SourceFile(

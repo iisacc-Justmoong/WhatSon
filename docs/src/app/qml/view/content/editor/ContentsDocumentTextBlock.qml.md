@@ -22,6 +22,9 @@ from multiple implicit parser blocks.
   - map that logical range back into inline-tag-aware source offsets through
     `ContentsStructuredCursorSupport.js`
   - rewrite the RAW block source through `ContentsTextFormatRenderer.applyPlainTextReplacementToSource(...)`
+- Ordinary text-edit mutation focus requests are marked with `reason: "text-edit"` so
+  `ContentsEditorInputPolicyAdapter.qml` can avoid replaying focus/cursor restoration during a native-priority focused
+  input session.
 - When the host passes a flattened interactive prose span, that RAW rewrite now applies to the whole grouped source
   slice instead of to only one parser paragraph entry.
 - While focused, the delegate keeps the last live source/plain-text pair that was successfully emitted upward.

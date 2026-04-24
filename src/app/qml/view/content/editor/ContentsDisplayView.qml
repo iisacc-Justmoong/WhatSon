@@ -296,17 +296,10 @@ Item {
     readonly property bool nativeTextInputPriority: contentsView.mobileHost || Qt.platform.os === "ios"
     readonly property bool editorCustomTextInputEnabled: false
     readonly property bool editorTagManagementInputEnabled: true
-    readonly property bool contextMenuLongPressEnabled: contentsView.nativeTextInputPriority
-    readonly property bool noteDocumentShortcutSurfaceEnabled: contentsView.noteDocumentCommandSurfaceEnabled
-                                                              && !contentsView.nativeTextInputSessionOwnsKeyboard()
-    readonly property bool noteDocumentTagManagementShortcutSurfaceEnabled: contentsView.editorTagManagementInputEnabled
-                                                                           && contentsView.noteDocumentShortcutSurfaceEnabled
-    readonly property bool noteDocumentContextMenuSurfaceEnabled: contentsView.editorTagManagementInputEnabled
-                                                                  && contentsView.noteDocumentCommandSurfaceEnabled
-                                                                  && !contentsView.nativeEditorCompositionActive()
-                                                                  && !(structuredDocumentFlow
-                                                                       && structuredDocumentFlow.nativeCompositionActive !== undefined
-                                                                       && structuredDocumentFlow.nativeCompositionActive())
+    readonly property bool contextMenuLongPressEnabled: editorInputPolicyAdapter.contextMenuLongPressEnabled
+    readonly property bool noteDocumentShortcutSurfaceEnabled: editorInputPolicyAdapter.shortcutSurfaceEnabled
+    readonly property bool noteDocumentTagManagementShortcutSurfaceEnabled: editorInputPolicyAdapter.tagManagementShortcutSurfaceEnabled
+    readonly property bool noteDocumentContextMenuSurfaceEnabled: editorInputPolicyAdapter.contextMenuSurfaceEnabled
     readonly property string structuredFlowSourceText: contentsView.documentPresentationSourceText
     readonly property bool liveResourceStructuredFlowRequested: resourceImportController.sourceContainsCanonicalResourceTag(
                                                                     contentsView.documentPresentationSourceText)
@@ -1000,14 +993,7 @@ Item {
         return !!(contentEditor && ((contentEditor.inputMethodComposing !== undefined && contentEditor.inputMethodComposing) || activePreeditText.length > 0));
     }
     function nativeTextInputSessionOwnsKeyboard() {
-        if (contentsView.nativeEditorCompositionActive())
-            return true;
-        if (structuredDocumentFlow
-                && structuredDocumentFlow.nativeCompositionActive !== undefined
-                && structuredDocumentFlow.nativeCompositionActive()) {
-            return true;
-        }
-        return contentsView.nativeTextInputPriority && contentsView.editorInputFocused;
+        return editorInputPolicyAdapter.nativeTextInputSessionActive;
     }
     function flushEditorStateAfterInputSettles(scheduledNoteId) {
         const normalizedScheduledNoteId = scheduledNoteId === undefined || scheduledNoteId === null
@@ -1807,7 +1793,16 @@ Item {
         }
         if (editorSession && editorSession.markLocalEditorAuthority !== undefined)
             editorSession.markLocalEditorAuthority();
-        if (focusRequest && structuredDocumentFlow && structuredDocumentFlow.requestFocus !== undefined) {
+        if (focusRequest
+                && structuredDocumentFlow
+                && structuredDocumentFlow.requestFocus !== undefined
+                && editorInputPolicyAdapter.shouldRestoreFocusForMutation(
+                    focusRequest,
+                    {
+                        "compositionActive": editorInputPolicyAdapter.nativeCompositionActive,
+                        "editorInputFocused": contentsView.editorInputFocused,
+                        "nativeTextInputPriority": contentsView.nativeTextInputPriority
+                    })) {
             const requestedFocus = focusRequest && typeof focusRequest === "object" ? focusRequest : ({});
             Qt.callLater(function () {
                 structuredDocumentFlow.requestFocus(requestedFocus);
@@ -2512,6 +2507,20 @@ Item {
     }
     ContentsDisplayTraceFormatter {
         id: traceFormatter
+    }
+
+    ContentsEditorInputPolicyAdapter {
+        id: editorInputPolicyAdapter
+        objectName: "contentsDisplayEditorInputPolicyAdapter"
+
+        editorCompositionActive: contentsView.nativeEditorCompositionActive()
+        editorInputFocused: contentsView.editorInputFocused
+        editorTagManagementInputEnabled: contentsView.editorTagManagementInputEnabled
+        nativeTextInputPriority: contentsView.nativeTextInputPriority
+        noteDocumentCommandSurfaceEnabled: contentsView.noteDocumentCommandSurfaceEnabled
+        structuredCompositionActive: structuredDocumentFlow
+                                     && structuredDocumentFlow.nativeCompositionActive !== undefined
+                                     && structuredDocumentFlow.nativeCompositionActive()
     }
 
     ContentsDisplayEditOperationCoordinator {

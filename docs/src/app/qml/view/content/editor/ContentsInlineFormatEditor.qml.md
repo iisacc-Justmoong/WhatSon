@@ -24,9 +24,9 @@ The wrapper keeps the host/editor contract expected by `ContentsDisplayView.qml`
 
 ## Key Behavior
 
-- Programmatic host sync is deferred while IME/preedit composition is active.
-  In native-input mode the wrapper also rejects focused stale host echo after a local edit when the incoming text no
-  longer matches the live `TextEdit` buffer.
+- Programmatic host sync is routed through `ContentsEditorInputPolicyAdapter.qml`.
+  The wrapper defers host sync while IME/preedit composition is active and also defers focused native-input echo after
+  a local edit until the live `TextEdit` session blurs or otherwise settles.
 - Cursor restoration through `setCursorPositionPreservingNativeInput(...)` is a no-op while native composition/preedit is
   active, so callers cannot move the IME anchor during a platform-owned input session.
 - `currentPlainText()` now returns the live editor buffer directly instead of recovering text from a serialized Qt

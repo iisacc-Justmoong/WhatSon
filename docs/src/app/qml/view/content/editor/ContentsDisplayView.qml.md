@@ -151,6 +151,10 @@ not note-backed.
 - Blur-driven immediate editor flush returns without saving while the live `TextEdit` is still composing or exposing
   preedit text. The host must not force a blur save after a fixed retry count because OS IME owns that unsettled input
   session.
+- Editor shortcut, context-menu, and focus-restore gating now goes through `ContentsEditorInputPolicyAdapter.qml`.
+  Ordinary text-edit focus requests are marked as `reason: "text-edit"` by the structured block delegate and are not
+  replayed during a focused native-priority input session, which avoids reapplying focus/cursor between iOS delete
+  repeat ticks.
 - Selection delivery into `ContentsEditorSession.qml` and `ContentsDisplayDocumentSourceResolver` now forwards
   `selectedNoteDirectoryPath` explicitly.
   QML no longer asks those collaborators to rediscover the mounted package from `noteId` alone after selection has

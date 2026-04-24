@@ -104,6 +104,10 @@ FocusScope {
 
     signal textEdited(string text)
 
+    ContentsEditorInputPolicyAdapter {
+        id: inlineInputPolicyAdapter
+    }
+
     function forceActiveFocus() {
         EditorTrace.trace("inlineFormatEditor", "forceActiveFocus", "", control)
         textInput.forceActiveFocus();
@@ -275,27 +279,33 @@ FocusScope {
         return false;
     }
 
-    function canDeferProgrammaticTextSync() {
-        return control.nativeCompositionActive();
+    function programmaticTextSyncPolicy(nextText) {
+        const normalizedNextText = nextText === undefined
+                ? control._deferredProgrammaticText
+                : nextText;
+        return inlineInputPolicyAdapter.programmaticTextSyncPolicy(
+                    control.currentPlainText(),
+                    normalizedNextText,
+                    control.nativeCompositionActive(),
+                    control.focused,
+                    control.preferNativeInputHandling,
+                    control._localTextEditSinceFocus);
+    }
+
+    function canDeferProgrammaticTextSync(nextText) {
+        const syncPolicy = control.programmaticTextSyncPolicy(nextText);
+        return !!syncPolicy.defer;
     }
 
     function shouldRejectFocusedProgrammaticTextSync(nextText) {
-        if (!control.preferNativeInputHandling || !control.focused || control.nativeCompositionActive())
-            return false;
-        const normalizedText = nextText === undefined || nextText === null ? "" : String(nextText);
-        if (control.currentPlainText() === normalizedText) {
-            control._localTextEditSinceFocus = false;
-            return false;
-        }
-        if (!control._localTextEditSinceFocus)
-            return false;
-        return control.currentPlainText() !== normalizedText;
+        const syncPolicy = control.programmaticTextSyncPolicy(nextText);
+        return !syncPolicy.apply;
     }
 
     function flushDeferredProgrammaticText(force) {
         if (!control._hasDeferredProgrammaticText)
             return;
-        if (!force && control.canDeferProgrammaticTextSync())
+        if (!force && control.canDeferProgrammaticTextSync(control._deferredProgrammaticText))
             return;
 
         const deferredText = control._deferredProgrammaticText;
@@ -390,13 +400,17 @@ FocusScope {
                     "textChanged",
                     EditorTrace.describeText(normalizedText),
                     control)
-        if (control.canDeferProgrammaticTextSync()) {
+        const syncPolicy = control.programmaticTextSyncPolicy(normalizedText);
+        if (syncPolicy.defer) {
             control._deferredProgrammaticText = normalizedText;
             control._hasDeferredProgrammaticText = true;
             return;
         }
-        if (control.shouldRejectFocusedProgrammaticTextSync(normalizedText))
+        if (!syncPolicy.apply) {
+            control._hasDeferredProgrammaticText = false;
+            control._deferredProgrammaticText = "";
             return;
+        }
         control._hasDeferredProgrammaticText = false;
         control._deferredProgrammaticText = "";
         setProgrammaticText(normalizedText);

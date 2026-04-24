@@ -23,6 +23,7 @@
 - `ContentsDocumentBlock.qml`
 - `ContentsDocumentTextBlock.qml`
 - `ContentsEditorDebugTrace.js`
+- `ContentsEditorInputPolicyAdapter.qml`
 - `ContentsEditorSelectionController.qml`
 - `ContentsEditorSession.qml`
 - `ContentsEditorSurfaceModeSupport.js`
@@ -167,6 +168,10 @@
   shortcuts while the OS keyboard owns the session.
   Continuous Backspace, selection gestures, and IME candidate/control gestures therefore stay on the platform `TextEdit`
   path instead of being accepted by QML handlers.
+- `ContentsEditorInputPolicyAdapter.qml` now centralizes native-input session policy for the editor domain. The host,
+  structured text blocks, and `ContentsInlineFormatEditor.qml` route shortcut gating, long-press gating, focused
+  programmatic sync, and ordinary text-edit focus-restore decisions through that adapter instead of each QML file
+  reimplementing its own IME or gesture condition.
 - Editor custom input is now policy-locked off by default through `editorCustomTextInputEnabled: false`.
   Only tag-management commands may sit outside the native `TextEdit` input path: inline style tags, resource paste,
   agenda/callout/break source-tag insertion, and selected atomic resource/break block management.

@@ -361,6 +361,7 @@ FocusScope {
             textBlock.sourceMutationRequested(
                         nextSourceText,
                         {
+                            "reason": "text-edit",
                             "sourceOffset": StructuredCursorSupport.sourceOffsetForInlineTaggedCursor(
                                                 nextSourceText,
                                                 Math.max(0, Number(blockEditor.cursorPosition) || 0),

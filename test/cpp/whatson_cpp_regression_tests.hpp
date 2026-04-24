@@ -1005,6 +1005,7 @@ private slots:
     void qmlStructuredEditors_consumeRendererNormalizedBlocksWithoutLocalFlattening();
     void qmlStructuredEditors_rejectStaleSourceRangeMutations();
     void qmlStructuredEditors_preserveNativeMobileInputDuringFocusedEdits();
+    void qmlEditorInputPolicyAdapter_centralizesNativeInputDecisions();
     void qmlStructuredEditors_lockCustomInputToTagManagementOnly();
     void displayContextMenuCoordinator_rejectsNonNumericStructuredSelectionSnapshots();
     void editorViewportCoordinator_movesMinimapAndLineMathOutOfQml();
