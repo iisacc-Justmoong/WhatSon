@@ -38,7 +38,7 @@ not note-backed.
   - unresolved note body after snapshot refresh
   - structured document surface not becoming ready
   - inline fallback editor surface not becoming ready
-- Structured shortcut insertions now try the parser-owned document flow first, but if that host cannot resolve a live
+- Structured tag insertions now try the parser-owned document flow first, but if that host cannot resolve a live
   caret anchor they fall back to the legacy cursor bridge instead of appending at the document tail.
 
 ## Debug Trace
@@ -105,6 +105,16 @@ not note-backed.
   the same mounted body text.
   This prevents formatting/insert actions from targeting a stale same-note editor session while the selection bridge
   and mount coordinator are still remounting that session to the latest selected note body.
+- Window-level document shortcuts are limited to tag-management commands and use a separate shortcut surface that stands
+  down while a native input session owns the keyboard.
+  On iOS/mobile this applies while the editor is focused; on all hosts it also applies while structured or fallback
+  editors report active IME/preedit composition.
+- The host exposes `editorCustomTextInputEnabled: false`, `editorTagManagementInputEnabled: true`, and
+  `noteDocumentTagManagementShortcutSurfaceEnabled` to make that policy explicit in QML and regression tests.
+- Markdown list toggles are not exposed from this host. `Meta/Alt+Shift+7/8` list shortcuts and generic key-event
+  forwarding are intentionally absent so ordinary text input remains native.
+- Fallback-editor `inputMethodComposing`/`preeditText` change signals now only resume pending cursor restoration and
+  resource-import surface restore after the native session has settled.
 - The `ContentsDisplayDocumentSourceResolver` block keeps each upstream source property bound exactly once.
   Duplicate assignments in that block are a hard QML compile error, so the host now relies on one normalized binding
   per resolver input and the regression suite checks that those keys remain unique.
@@ -133,6 +143,9 @@ not note-backed.
   Rapid note switches therefore clear stale incremental line caches immediately, queue a fresh structured layout-cache
   rebuild for the newly selected note, and only reuse minimap-derived line geometry once it has been regenerated for
   that same note id.
+- Blur-driven immediate editor flush returns without saving while the live `TextEdit` is still composing or exposing
+  preedit text. The host must not force a blur save after a fixed retry count because OS IME owns that unsettled input
+  session.
 - Selection delivery into `ContentsEditorSession.qml` and `ContentsDisplayDocumentSourceResolver` now forwards
   `selectedNoteDirectoryPath` explicitly.
   QML no longer asks those collaborators to rediscover the mounted package from `noteId` alone after selection has

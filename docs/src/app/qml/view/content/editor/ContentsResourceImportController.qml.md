@@ -13,6 +13,7 @@ desktop/mobile host.
   `ContentsInlineResourcePresentationController.qml`.
 - Delegates temporary read-only/programmatic-sync guard state to
   `ContentsEditorSurfaceGuardController.qml`.
+  Pending surface restores are resumed only after native input composition settles.
 - Delegates duplicate-import prompt state and conflict policy execution to
   `ContentsResourceImportConflictController.qml`.
 

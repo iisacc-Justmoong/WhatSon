@@ -112,6 +112,13 @@ every turn.
 ### Input Method Authority (Critical)
 
 - Editor input layers must leave OS/Qt IME handling on the live `TextEdit` path.
+- Except for explicit tag-management commands, editor QML must not install custom text input handlers for ordinary
+  note editing. Plain `Enter`, `Backspace`, `Delete`, arrow navigation, selection extension, repeat, and IME gestures
+  must remain native `TextEdit` behavior.
+- Allowed tag-management input is limited to RAW `.wsnbody` tag operations such as inline style tags,
+  agenda/callout/break/resource tag insertion, and selected atomic resource/break block management.
+- Markdown list shortcuts, markdown list Enter continuation, and generic text-boundary key overrides are not allowed in
+  the editor input layer.
 - Do not call `Qt.inputMethod.update(...)`, `Qt.inputMethod.show()`, `Qt.inputMethod.hide()`, or the bare QML
   `InputMethod.*` singleton from editor QML.
 - Do not add fallback branches that tolerate alternate input-method objects, such as `Qt.inputMethod && ...` or

@@ -85,6 +85,21 @@ void WhatSonCppRegressionTests::contentsDisplayView_usesSelectedNoteSnapshotWhil
         QStringLiteral("return editorSession.editorBoundNoteDirectoryPath === contentsView.selectedNoteDirectoryPath;")));
 }
 
+void WhatSonCppRegressionTests::contentsDisplayView_doesNotForceBlurFlushDuringNativeComposition()
+{
+    const QString displayViewSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/content/editor/ContentsDisplayView.qml"));
+
+    QVERIFY(!displayViewSource.isEmpty());
+    QVERIFY(displayViewSource.contains(QStringLiteral("function nativeEditorCompositionActive()")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("function flushEditorStateAfterInputSettles(scheduledNoteId)")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("if (contentsView.nativeEditorCompositionActive())\n            return;")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("contentsView.flushEditorStateAfterInputSettles(blurredNoteId);")));
+    QVERIFY(!displayViewSource.contains(QStringLiteral("retryCount < 6")));
+    QVERIFY(!displayViewSource.contains(QStringLiteral("flushEditorStateAfterInputSettles(retryCount + 1")));
+    QVERIFY(!displayViewSource.contains(QStringLiteral("flushEditorStateAfterInputSettles(0, blurredNoteId)")));
+}
+
 void WhatSonCppRegressionTests::contentsDisplayView_routesStructuredMutationsThroughEditorSessionAuthority()
 {
     const QString displayViewSource = readUtf8SourceFile(

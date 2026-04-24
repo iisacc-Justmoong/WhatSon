@@ -24,6 +24,9 @@ from multiple implicit parser blocks.
   - rewrite the RAW block source through `ContentsTextFormatRenderer.applyPlainTextReplacementToSource(...)`
 - When the host passes a flattened interactive prose span, that RAW rewrite now applies to the whole grouped source
   slice instead of to only one parser paragraph entry.
+- While focused, the delegate keeps the last live source/plain-text pair that was successfully emitted upward.
+  Rapid mobile input can therefore compute the next delta from the live `TextEdit` state instead of from an older
+  `blockData` snapshot.
 - Inline-format shortcuts no longer mutate RAW from inside this delegate at all.
   The block exposes only the live selection snapshot, while
   `ContentsStructuredEditorFormattingController.qml` performs the actual selection-based RAW rewrite for the owning
@@ -41,25 +44,21 @@ from multiple implicit parser blocks.
   never becomes the persistence authority.
 - The block now also exposes `clearSelection(preserveFocusedEditor)` so structured-flow-wide selection cleanup can
   drop stale paragraph highlight while leaving the actively focused editor alone.
-- The nested inline editor now also runs one host-owned shortcut handler before its local boundary-navigation logic.
-  Note-wide shortcuts such as clipboard-image paste can therefore be intercepted while focus is inside a structured
-  paragraph editor, without reintroducing legacy whole-note editing authority.
+- The nested inline editor no longer receives a host-owned shortcut handler.
+  Note-wide shortcut handling stays outside the live `TextEdit` path so native text input is not preempted.
 - The block now also receives `paperPaletteEnabled` from the structured-flow host.
   In page/print mode the inline editor base text color is forced to paper black and the inline-style HTML overlay is
   re-rendered through the renderer's paper palette, so semantic/title/highlight spans cannot stay white on a white
   paper surface.
-- An empty text block now treats plain `Backspace` / `Delete` as "remove this line" before it tries adjacent atomic
-  block deletion.
-  Zero-length paragraph blocks therefore no longer become undeletable cursor anchors.
 - Plain `Enter` inside `paragraph` / `p` blocks is no longer intercepted by the shared inline editor wrapper.
   The live `TextEdit` receives the key directly, then the ordinary text-edit mutation path persists the resulting RAW
   source snapshot.
 - Flattened interactive prose spans intentionally opt out of that paragraph-boundary interception at the host layer.
   For those grouped spans, native newline insertion stays inside the shared prose editor and the parser can rediscover
   paragraph boundaries on the next RAW refresh pass.
-- The old paragraph-boundary Backspace/Delete helper remains in the delegate for non-native block hosts, but
-  `ContentsInlineFormatEditor.qml` no longer dispatches native text-input keys through that helper.
-  Repeated Backspace/Delete therefore stays with the OS/Qt `TextEdit` path while the user is editing text.
+- This delegate no longer defines `Keys.onPressed`, delete-key helpers, or paragraph-boundary key helpers.
+  Repeated Backspace/Delete, Enter, arrow navigation, and selection gestures stay with the OS/Qt `TextEdit` path while
+  the user is editing text.
 
 ## Shared Block Contract
 - `textEditable = true`

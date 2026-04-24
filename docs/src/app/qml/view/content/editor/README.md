@@ -130,6 +130,8 @@
   surface back into the live `TextEdit`.
   Ordinary typing stays on the incremental live cache until blur or another explicit immediate refresh path, which
   prevents dropped keys, Hangul jamo deletion, and stale cursor restoration during active note writing.
+- Blur no longer forces immediate persistence after a fixed retry count while OS IME composition/preedit is still
+  active; the unsettled native input session is left untouched instead of being pushed into RAW save.
 - `ContentsEditorTypingController.qml` now also maintains incremental logical line-start offsets and pushes the entire
   live state into `ContentsLogicalTextBridge.adoptIncrementalState(...)`, so bridge consumers stay current without a
   whole-note rebuild per keystroke.
@@ -161,6 +163,16 @@
   of the RichText editor projection.
   Native-input priority no longer carries a deferred-persistence exception; mobile shares the same immediate
   `.wsnbody` flush contract as desktop.
+- Mobile/iOS native-input priority now also disables structured text-boundary key interception and window-level document
+  shortcuts while the OS keyboard owns the session.
+  Continuous Backspace, selection gestures, and IME candidate/control gestures therefore stay on the platform `TextEdit`
+  path instead of being accepted by QML handlers.
+- Editor custom input is now policy-locked off by default through `editorCustomTextInputEnabled: false`.
+  Only tag-management commands may sit outside the native `TextEdit` input path: inline style tags, resource paste,
+  agenda/callout/break source-tag insertion, and selected atomic resource/break block management.
+- Markdown list shortcuts and markdown list Enter continuation are intentionally absent from the editor input layer.
+  Users can still type markdown marker text literally, but the editor does not intercept list keys or synthesize the
+  next list line.
 - Desktop editor hosts now also pause note snapshot polling while the live editor owns focus, so the periodic
   selected-note snapshot refresh cannot overwrite the active buffer with a stale same-note payload mid-typing.
 - The unified `ContentsDisplayView.qml` now also removes the live-editor horizontal inset in mobile mode, so the
@@ -177,11 +189,8 @@
   Text-to-text flow for `paragraph`, `title`, `subTitle`, `eventTitle`, and the other prose-style text delegates now
   renders without synthetic bottom margin on `Enter`, while framed document blocks still keep explicit separation from
   surrounding prose.
-- `ContentsEditorSelectionController.qml` now also owns common markdown list shortcuts (`Cmd+Shift+7/8` on macOS,
-  `Alt+Shift+7/8` on Windows/Linux) so block-level list toggles stay source-driven as well.
-- Markdown list toggles now restore selection/cursor using logical-text lengths from `ContentsLogicalTextBridge`, so
-  lines that contain inline tags, escaped entities, or `<resource ...>` tokens no longer jump selection after a list
-  rewrite.
+- `ContentsEditorSelectionController.qml` owns inline style tag formatting and context-menu selection resolution only.
+  It no longer owns markdown list shortcuts or generic key-event shortcut parsing.
 - `ContentsEditorSession.qml` no longer serializes note swaps behind pending-body save barriers. It keeps the live editor buffer
   authoritative, re-stages the old note into the buffered fetch-sync controller, and allows the next selected note to
   bind immediately.
@@ -202,6 +211,10 @@
 - `ContentsStructuredDocumentFlow.qml` now also converges structured document-host state through one
   `ContentsStructuredDocumentHost` instance and delegates collection normalization, focus resolution, and RAW mutation
   rules to dedicated C++ policy objects instead of keeping those host policies interleaved inside the QML flow object.
+- Structured block text edits now check the delegate's expected RAW slice against the current document source before
+  applying the splice.
+  Mobile note dismiss/blur events that arrive from a stale block snapshot are ignored, preventing the same typed text
+  from being inserted again during save/session handoff.
 - `ContentsDocumentTextBlock.qml` now keeps paragraph boundary editing source-driven as well.
   Delegate-local key handling only emits split/merge intent; `ContentsStructuredDocumentMutationPolicy` owns the RAW
   rewrite so implicit prose lines and explicit `<paragraph>...</paragraph>` wrappers obey the same rule set.
@@ -309,9 +322,9 @@
   tokens instead of scattered local editor pixel literals.
 - The desktop gutter layout is now hard-clamped to its resolved token width, so markdown-list relayouts cannot make the
   gutter visibly squeeze or rebound while typing.
-- Markdown list continuation on `Enter` is also owned by `ContentsEditorTypingController.qml`, so bullet/numbered list
-  continuation stays source-driven instead of relying on RichText widget heuristics or the editor's rendered bullet
-  glyph representation.
+- Markdown list continuation on `Enter` is intentionally not owned by the editor input layer.
+  The native `TextEdit` receives the newline and typed markdown marker text is persisted literally unless a
+  tag-management rule applies.
 - `ContentsEditorTypingController.qml` now also canonicalizes a standalone `---` typing line into the proprietary
   divider source token `</break>` before persistence.
 - `ContentsEditorTypingController.qml` now also owns divider authoring shortcuts:
@@ -418,8 +431,8 @@
   live editor cursor path so empty agenda/callout cards remain editable as soon as the underlying RAW tag exists.
 - Agenda/callout placement now resolves against editor-content-relative document Y only, preventing double-counted top
   offsets from pushing cards out of view after tag insertion.
-- Empty continued markdown list items now also break back to a plain blank line on `Enter`, so repeated list newlines do
-  not get stuck in an endless empty-list state.
+- Empty markdown list items are not post-processed by custom editor input code; ordinary newline and deletion behavior
+  stays native.
 - `Page` / `Print` now mount the live RichText editor inside an outer paper-document viewport, so the paper grows with
   the note instead of remaining a fixed-height scaffold.
 - `Page` / `Print` paper visuals now use an A4-style off-white sheet gradient with per-page separators and subtle
@@ -444,6 +457,11 @@
   font metrics for four spaces, so Tab indent depth no longer jumps to an oversized default column.
 - The shared editor wrapper no longer intercepts direct `Tab` key insertion. Tab handling stays with the native
   `TextEdit` path so keyboard traversal, repeat, and platform text editing policy are not overridden by QML.
+- The shared editor wrapper also rejects focused stale host text echo in native-input mode after a local edit.
+  Structured text, agenda, and callout delegates keep live previous-source/text snapshots so rapid iOS input can rebase
+  before the parser publishes a newer block snapshot.
+- Legacy cursor restoration and resource-import surface restoration now pause on `inputMethodComposing`/`preeditText`
+  instead of writing through a live platform IME session.
 - `ContentsEditorTypingController.qml` no longer drops a committed `textEdited` mutation only because a transient
   model-sync guard bit is still set; committed user typing now always refreshes local authority and persistence staging.
 - The shared selection controller now also primes right-click context-menu selections on mouse press, so multi-block or

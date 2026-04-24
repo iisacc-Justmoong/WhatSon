@@ -10,7 +10,7 @@ FocusScope {
     id: textBlock
 
     required property var blockData
-    property var shortcutKeyPressHandler: null
+    property bool nativeTextInputPriority: false
     property bool paperPaletteEnabled: false
 
     signal activated()
@@ -18,11 +18,13 @@ FocusScope {
     signal boundaryNavigationRequested(string axis, string side)
     signal blockDeletionRequested(string direction)
     signal paragraphSplitRequested(int sourceOffset)
-    signal sourceMutationRequested(string nextBlockSourceText, var focusRequest)
+    signal sourceMutationRequested(string nextBlockSourceText, var focusRequest, string expectedPreviousSourceText)
 
     readonly property var normalizedBlock: blockData && typeof blockData === "object" ? blockData : ({})
     readonly property int currentLogicalLineNumber: textBlock.currentEditorLogicalLineNumber()
     readonly property bool focused: blockEditor.focused
+    readonly property bool inputMethodComposing: blockEditor.inputMethodComposing !== undefined
+                                                       && blockEditor.inputMethodComposing
     readonly property bool textEditable: true
     readonly property bool atomicBlock: false
     readonly property bool gutterCollapsed: false
@@ -46,6 +48,12 @@ FocusScope {
                                                             textBlock.sourceText)
     readonly property string authoritativePlainText: StructuredCursorSupport.plainTextFromInlineTaggedSource(
                                                         textBlock.authoritativeSourceText())
+    readonly property string preeditText: blockEditor.preeditText === undefined || blockEditor.preeditText === null
+                                          ? ""
+                                          : String(blockEditor.preeditText)
+    property bool _hasLiveEditSnapshot: false
+    property string _liveEditPlainText: ""
+    property string _liveEditSourceText: ""
 
     implicitHeight: blockEditor.implicitHeight
     width: parent ? parent.width : implicitWidth
@@ -74,6 +82,24 @@ FocusScope {
                 ? Math.max(0, Number(blockEditor.length) || 0)
                 : 0
         return StructuredCursorSupport.normalizedPlainText(blockEditor.getText(0, editorLength))
+    }
+
+    function nativeCompositionActive() {
+        return textBlock.inputMethodComposing || textBlock.preeditText.length > 0
+    }
+
+    function syncLiveEditSnapshotFromHost() {
+        const hostSourceText = textBlock.authoritativeSourceText()
+        const hostPlainText = textBlock.authoritativePlainText
+        if (textBlock.focused
+                && textBlock._hasLiveEditSnapshot
+                && hostSourceText !== textBlock._liveEditSourceText
+                && textBlock.currentEditorPlainText() !== hostPlainText) {
+            return
+        }
+        textBlock._liveEditSourceText = hostSourceText
+        textBlock._liveEditPlainText = hostPlainText
+        textBlock._hasLiveEditSnapshot = true
     }
 
     function logicalLineLayoutEntries() {
@@ -245,114 +271,6 @@ FocusScope {
         return true
     }
 
-    function handleDeleteKeyPress(event) {
-        return textBlock.handleAtomicBlockBoundaryKeyPress(event)
-    }
-
-    function handleAtomicBlockBoundaryKeyPress(event) {
-        if (!event)
-            return false
-        const key = Number(event.key)
-        const deleteBackward = key === Qt.Key_Backspace
-        const deleteForward = key === Qt.Key_Delete
-        const insertParagraphBreak = key === Qt.Key_Return || key === Qt.Key_Enter
-        const moveBackward = key === Qt.Key_Left
-        const moveForward = key === Qt.Key_Right
-        const moveUp = key === Qt.Key_Up
-        const moveDown = key === Qt.Key_Down
-        if (!deleteBackward
-                && !deleteForward
-                && !insertParagraphBreak
-                && !moveBackward
-                && !moveForward
-                && !moveUp
-                && !moveDown) {
-            return false
-        }
-        const modifiers = Number(event.modifiers) || 0
-        if ((modifiers & (Qt.ControlModifier | Qt.AltModifier | Qt.MetaModifier)) !== 0)
-            return false
-        const selectionStart = Math.max(0, Math.floor(Number(blockEditor.selectionStart) || 0))
-        const selectionEnd = Math.max(selectionStart, Math.floor(Number(blockEditor.selectionEnd) || 0))
-        if (selectionEnd > selectionStart)
-            return false
-        if (blockEditor.inputMethodComposing !== undefined && blockEditor.inputMethodComposing)
-            return false
-        const preeditText = blockEditor.preeditText !== undefined && blockEditor.preeditText !== null
-                ? String(blockEditor.preeditText)
-                : ""
-        if (preeditText.length > 0)
-            return false
-
-        const cursorPosition = Math.max(0, Math.floor(Number(blockEditor.cursorPosition) || 0))
-        const plainTextLength = Math.max(
-                    0,
-                    blockEditor.length !== undefined
-                    ? Math.floor(Number(blockEditor.length) || 0)
-                    : textBlock.currentEditorPlainText().length)
-        if ((deleteBackward || deleteForward) && plainTextLength === 0) {
-            textBlock.blockDeletionRequested(deleteForward ? "forward" : "backward")
-            event.accepted = true
-            return true
-        }
-        if (deleteBackward && cursorPosition === 0 && textBlock.hasAdjacentAtomicBlockBefore) {
-            textBlock.adjacentAtomicBlockDeleteRequested("before")
-            event.accepted = true
-            return true
-        }
-        if (deleteForward && cursorPosition === plainTextLength && textBlock.hasAdjacentAtomicBlockAfter) {
-            textBlock.adjacentAtomicBlockDeleteRequested("after")
-            event.accepted = true
-            return true
-        }
-        if (deleteBackward && cursorPosition === 0 && textBlock.paragraphMergeableBefore) {
-            textBlock.blockDeletionRequested("merge-backward")
-            event.accepted = true
-            return true
-        }
-        if (deleteForward && cursorPosition === plainTextLength && textBlock.paragraphMergeableAfter) {
-            textBlock.blockDeletionRequested("merge-forward")
-            event.accepted = true
-            return true
-        }
-        if ((modifiers & Qt.ShiftModifier) !== 0)
-            return false
-        if (insertParagraphBreak && textBlock.paragraphBoundaryOperationsEnabled) {
-            textBlock.paragraphSplitRequested(
-                        Math.max(
-                            textBlock.sourceStart,
-                            Math.min(
-                                textBlock.sourceEnd,
-                                StructuredCursorSupport.sourceOffsetForInlineTaggedCursor(
-                                    textBlock.authoritativeSourceText(),
-                                    cursorPosition,
-                                    textBlock.sourceStart))))
-            event.accepted = true
-            return true
-        }
-        if (moveBackward && cursorPosition === 0 && textBlock.hasAdjacentBlockBefore) {
-            textBlock.boundaryNavigationRequested("horizontal", "before")
-            event.accepted = true
-            return true
-        }
-        if (moveForward && cursorPosition === plainTextLength && textBlock.hasAdjacentBlockAfter) {
-            textBlock.boundaryNavigationRequested("horizontal", "after")
-            event.accepted = true
-            return true
-        }
-        if (moveUp && textBlock.cursorOnFirstVisualRow() && textBlock.hasAdjacentBlockBefore) {
-            textBlock.boundaryNavigationRequested("vertical", "before")
-            event.accepted = true
-            return true
-        }
-        if (moveDown && textBlock.cursorOnLastVisualRow() && textBlock.hasAdjacentBlockAfter) {
-            textBlock.boundaryNavigationRequested("vertical", "after")
-            event.accepted = true
-            return true
-        }
-        return false
-    }
-
     function shortcutInsertionSourceOffset() {
         return Math.max(textBlock.sourceStart, Math.min(
                             textBlock.sourceEnd,
@@ -392,45 +310,9 @@ FocusScope {
         selectByMouse: true
         selectedTextColor: LV.Theme.textPrimary
         selectionColor: LV.Theme.accent
-        modifierVerticalNavigationHandler: function (request, event) {
-            if (!request || !event)
-                return false
-            if (request.commandPressed) {
-                if (blockEditor.clearSelection !== undefined)
-                    blockEditor.clearSelection()
-                textBlock.boundaryNavigationRequested("document", request.moveUp ? "before" : "after")
-                event.accepted = true
-                return true
-            }
-            if (request.targetCursorPosition !== request.cursorPosition)
-                return false
-            if (request.moveUp && textBlock.hasAdjacentBlockBefore) {
-                if (blockEditor.clearSelection !== undefined)
-                    blockEditor.clearSelection()
-                textBlock.boundaryNavigationRequested("vertical", "before")
-                event.accepted = true
-                return true
-            }
-            if (request.moveDown && textBlock.hasAdjacentBlockAfter) {
-                if (blockEditor.clearSelection !== undefined)
-                    blockEditor.clearSelection()
-                textBlock.boundaryNavigationRequested("vertical", "after")
-                event.accepted = true
-                return true
-            }
-            return false
-        }
+        preferNativeInputHandling: true
         showRenderedOutput: textBlock.inlineStyleOverlayVisible
         showScrollBar: false
-        shortcutKeyPressHandler: function (event) {
-            if (textBlock.shortcutKeyPressHandler
-                    && typeof textBlock.shortcutKeyPressHandler === "function") {
-                const shortcutHandled = !!textBlock.shortcutKeyPressHandler(event)
-                if (shortcutHandled || event.accepted)
-                    return true
-            }
-            return textBlock.handleAtomicBlockBoundaryKeyPress(event)
-        }
         text: textBlock.authoritativePlainText
         textColor: textBlock.editorTextColor
         wrapMode: TextEdit.Wrap
@@ -444,8 +326,12 @@ FocusScope {
                 textBlock.activated()
         }
         onTextEdited: function (_surfaceText) {
-            const previousSourceText = textBlock.authoritativeSourceText()
-            const previousPlainText = textBlock.authoritativePlainText
+            const previousSourceText = textBlock._hasLiveEditSnapshot
+                    ? textBlock._liveEditSourceText
+                    : textBlock.authoritativeSourceText()
+            const previousPlainText = textBlock._hasLiveEditSnapshot
+                    ? textBlock._liveEditPlainText
+                    : textBlock.authoritativePlainText
             const nextPlainText = textBlock.currentEditorPlainText()
             if (previousPlainText === nextPlainText)
                 return
@@ -469,6 +355,9 @@ FocusScope {
                                               replacementDelta.insertedText))
             if (nextSourceText === previousSourceText)
                 return
+            textBlock._liveEditSourceText = nextSourceText
+            textBlock._liveEditPlainText = nextPlainText
+            textBlock._hasLiveEditSnapshot = true
             textBlock.sourceMutationRequested(
                         nextSourceText,
                         {
@@ -476,7 +365,12 @@ FocusScope {
                                                 nextSourceText,
                                                 Math.max(0, Number(blockEditor.cursorPosition) || 0),
                                                 textBlock.sourceStart)
-                        })
+                        },
+                        previousSourceText)
         }
     }
+
+    onSourceTextChanged: syncLiveEditSnapshotFromHost()
+
+    Component.onCompleted: syncLiveEditSnapshotFromHost()
 }

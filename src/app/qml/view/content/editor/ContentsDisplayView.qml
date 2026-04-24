@@ -293,6 +293,13 @@ Item {
     readonly property bool noteDocumentCommandSurfaceEnabled: noteBodyMountCoordinator.commandSurfaceEnabled
                                                              && !contentsView.showDedicatedResourceViewer
                                                              && !contentsView.showFormattedTextRenderer
+    readonly property bool nativeTextInputPriority: contentsView.mobileHost || Qt.platform.os === "ios"
+    readonly property bool editorCustomTextInputEnabled: false
+    readonly property bool editorTagManagementInputEnabled: true
+    readonly property bool noteDocumentShortcutSurfaceEnabled: contentsView.noteDocumentCommandSurfaceEnabled
+                                                              && !contentsView.nativeTextInputSessionOwnsKeyboard()
+    readonly property bool noteDocumentTagManagementShortcutSurfaceEnabled: contentsView.editorTagManagementInputEnabled
+                                                                           && contentsView.noteDocumentShortcutSurfaceEnabled
     readonly property string structuredFlowSourceText: contentsView.documentPresentationSourceText
     readonly property bool liveResourceStructuredFlowRequested: resourceImportController.sourceContainsCanonicalResourceTag(
                                                                     contentsView.documentPresentationSourceText)
@@ -981,21 +988,28 @@ Item {
                 && !!editorSession.pendingBodySave;
         return hasLocalEditorAuthority || hasPendingBodySave;
     }
-    function flushEditorStateAfterInputSettles(attempt, scheduledNoteId) {
-        const retryCount = Math.max(0, Number(attempt) || 0);
+    function nativeEditorCompositionActive() {
+        const activePreeditText = contentEditor && contentEditor.preeditText !== undefined ? String(contentEditor.preeditText === undefined || contentEditor.preeditText === null ? "" : contentEditor.preeditText) : "";
+        return !!(contentEditor && ((contentEditor.inputMethodComposing !== undefined && contentEditor.inputMethodComposing) || activePreeditText.length > 0));
+    }
+    function nativeTextInputSessionOwnsKeyboard() {
+        if (contentsView.nativeEditorCompositionActive())
+            return true;
+        if (structuredDocumentFlow
+                && structuredDocumentFlow.nativeCompositionActive !== undefined
+                && structuredDocumentFlow.nativeCompositionActive()) {
+            return true;
+        }
+        return contentsView.nativeTextInputPriority && contentsView.editorInputFocused;
+    }
+    function flushEditorStateAfterInputSettles(scheduledNoteId) {
         const normalizedScheduledNoteId = scheduledNoteId === undefined || scheduledNoteId === null
                 ? ""
                 : String(scheduledNoteId).trim();
         if (!contentsView.shouldFlushBlurredEditorState(normalizedScheduledNoteId))
             return;
-        const activePreeditText = contentEditor && contentEditor.preeditText !== undefined ? String(contentEditor.preeditText === undefined || contentEditor.preeditText === null ? "" : contentEditor.preeditText) : "";
-        const nativeCompositionBusy = !!(contentEditor && ((contentEditor.inputMethodComposing !== undefined && contentEditor.inputMethodComposing) || activePreeditText.length > 0));
-        if (nativeCompositionBusy && retryCount < 6) {
-            Qt.callLater(function () {
-                contentsView.flushEditorStateAfterInputSettles(retryCount + 1, normalizedScheduledNoteId);
-            });
+        if (contentsView.nativeEditorCompositionActive())
             return;
-        }
         const currentBoundNoteId = editorSession && editorSession.editorBoundNoteId !== undefined && editorSession.editorBoundNoteId !== null
                 ? String(editorSession.editorBoundNoteId).trim()
                 : "";
@@ -1088,26 +1102,10 @@ Item {
             event.accepted = true;
         return pasted;
     }
-    function handleInlineFormatShortcutKeyPress(event) {
+    function handleTagManagementShortcutKeyPress(event) {
         if (contentsView.handleClipboardImagePasteShortcut(event))
             return true;
-        if (editorTypingController && editorTypingController.handlePlainEnterKeyPress !== undefined) {
-            const enterHandled = editorTypingController.handlePlainEnterKeyPress(event);
-            if (enterHandled) {
-                if (event)
-                    event.accepted = true;
-                return true;
-            }
-        }
-        if (editorTypingController && editorTypingController.handleTagAwareDeleteKeyPress !== undefined) {
-            const deleteHandled = editorTypingController.handleTagAwareDeleteKeyPress(event);
-            if (deleteHandled) {
-                if (event)
-                    event.accepted = true;
-                return true;
-            }
-        }
-        return editorSelectionController.handleInlineFormatShortcutKeyPress(event);
+        return false;
     }
     function handleSelectionContextMenuEvent(eventName) {
         if (contentsView.handleStructuredSelectionContextMenuEvent(eventName))
@@ -1675,9 +1673,6 @@ Item {
         if (contentsView.queueStructuredInlineFormatWrap(tagName))
             return true;
         return editorSelectionController.queueInlineFormatWrap(tagName);
-    }
-    function queueMarkdownListMutation(listKind) {
-        return editorSelectionController.queueMarkdownListMutation(listKind);
     }
     function queueAgendaShortcutInsertion() {
         if (contentsView.showStructuredDocumentFlow
@@ -3004,6 +2999,10 @@ Item {
             contentsView.scheduleCursorDrivenUiRefresh();
             contentsView.scheduleTypingViewportCorrection(false);
         }
+        function onInputMethodComposingChanged() {
+            editorTypingController.applyPendingCursorPositionIfInputSettled();
+            resourceImportController.restorePendingEditorSurfaceFromPresentationIfInputSettled();
+        }
         function onLineCountChanged() {
             if (contentsView.editorInputFocused)
                 contentsView.scheduleDeferredDocumentPresentationRefresh();
@@ -3011,6 +3010,10 @@ Item {
                 contentsView.scheduleMinimapSnapshotRefresh(false);
             contentsView.scheduleGutterRefresh(2, "editor-line-geometry");
             contentsView.scheduleTypingViewportCorrection(true);
+        }
+        function onPreeditTextChanged() {
+            editorTypingController.applyPendingCursorPositionIfInputSettled();
+            resourceImportController.restorePendingEditorSurfaceFromPresentationIfInputSettled();
         }
 
         ignoreUnknownSignals: true
@@ -3354,11 +3357,12 @@ Item {
                         calloutBackend: contentsCalloutBackend
                         documentBlocks: structuredBlockRenderer.renderedDocumentBlocks
                         lineHeightHint: contentsView.editorLineHeight
+                        nativeTextInputPriority: contentsView.nativeTextInputPriority
                         paperPaletteEnabled: contentsView.showPrintEditorLayout
                         parent: contentsView.showPrintEditorLayout ? printDocumentSurface : structuredDocumentViewport.contentItem
                         renderedResources: bodyResourceRenderer.renderedResources
-                        shortcutKeyPressHandler: function (event) {
-                            return contentsView.handleClipboardImagePasteShortcut(event);
+                        tagManagementShortcutKeyPressHandler: function (event) {
+                            return contentsView.handleTagManagementShortcutKeyPress(event);
                         }
                         sourceText: contentsView.structuredFlowSourceText
                         viewportContentY: contentsView.showPrintEditorLayout ? 0 : (Number(structuredDocumentViewport.contentY) || 0)
@@ -3515,9 +3519,6 @@ Item {
                             selectedTextColor: LV.Theme.textPrimary
                             selectionColor: LV.Theme.accent
                             shapeStyle: 0
-                            shortcutKeyPressHandler: function (event) {
-                                return contentsView.handleInlineFormatShortcutKeyPress(event);
-                            }
                             blockExternalDropMutation: contentsView.resourceDropActive
                                                        || contentsView.resourceDropEditorSurfaceGuardActive
                             renderedText: contentsView.renderedEditorHtml
@@ -3538,7 +3539,7 @@ Item {
                                 const blurredNoteId = editorSession && editorSession.editorBoundNoteId !== undefined
                                         ? editorSession.editorBoundNoteId
                                         : "";
-                                contentsView.flushEditorStateAfterInputSettles(0, blurredNoteId);
+                                contentsView.flushEditorStateAfterInputSettles(blurredNoteId);
                                 contentsView.scheduleDocumentPresentationRefresh(true);
                             }
                             onTextEdited: function () {
@@ -3731,7 +3732,7 @@ Item {
 
                         acceptedButtons: Qt.RightButton
                         anchors.fill: parent
-                        enabled: contentsView.noteDocumentCommandSurfaceEnabled
+                        enabled: contentsView.noteDocumentTagManagementShortcutSurfaceEnabled
                         hoverEnabled: false
                         preventStealing: false
                         propagateComposedEvents: true
@@ -3755,7 +3756,7 @@ Item {
                     Shortcut {
                         autoRepeat: false
                         context: Qt.WindowShortcut
-                        enabled: contentsView.noteDocumentCommandSurfaceEnabled
+                        enabled: contentsView.noteDocumentTagManagementShortcutSurfaceEnabled
                                  && contentsView.resourcesImportViewModel
                                  && (!contentsView.resourcesImportViewModel.busy)
                                  && contentsView.resourcesImportViewModel.clipboardImageAvailable
@@ -3765,106 +3766,78 @@ Item {
                     }
                     Shortcut {
                         context: Qt.WindowShortcut
-                        enabled: contentsView.noteDocumentCommandSurfaceEnabled
+                        enabled: contentsView.noteDocumentTagManagementShortcutSurfaceEnabled
                         sequence: "Meta+B"
 
                         onActivated: contentsView.queueInlineFormatWrap("bold")
                     }
                     Shortcut {
                         context: Qt.WindowShortcut
-                        enabled: contentsView.noteDocumentCommandSurfaceEnabled
+                        enabled: contentsView.noteDocumentTagManagementShortcutSurfaceEnabled
                         sequence: "Ctrl+B"
 
                         onActivated: contentsView.queueInlineFormatWrap("bold")
                     }
                     Shortcut {
                         context: Qt.WindowShortcut
-                        enabled: contentsView.noteDocumentCommandSurfaceEnabled
+                        enabled: contentsView.noteDocumentTagManagementShortcutSurfaceEnabled
                         sequence: "Meta+I"
 
                         onActivated: contentsView.queueInlineFormatWrap("italic")
                     }
                     Shortcut {
                         context: Qt.WindowShortcut
-                        enabled: contentsView.noteDocumentCommandSurfaceEnabled
+                        enabled: contentsView.noteDocumentTagManagementShortcutSurfaceEnabled
                         sequence: "Ctrl+I"
 
                         onActivated: contentsView.queueInlineFormatWrap("italic")
                     }
                     Shortcut {
                         context: Qt.WindowShortcut
-                        enabled: contentsView.noteDocumentCommandSurfaceEnabled
+                        enabled: contentsView.noteDocumentTagManagementShortcutSurfaceEnabled
                         sequence: "Meta+U"
 
                         onActivated: contentsView.queueInlineFormatWrap("underline")
                     }
                     Shortcut {
                         context: Qt.WindowShortcut
-                        enabled: contentsView.noteDocumentCommandSurfaceEnabled
+                        enabled: contentsView.noteDocumentTagManagementShortcutSurfaceEnabled
                         sequence: "Ctrl+U"
 
                         onActivated: contentsView.queueInlineFormatWrap("underline")
                     }
                     Shortcut {
                         context: Qt.WindowShortcut
-                        enabled: contentsView.noteDocumentCommandSurfaceEnabled
+                        enabled: contentsView.noteDocumentTagManagementShortcutSurfaceEnabled
                         sequence: "Meta+Shift+X"
 
                         onActivated: contentsView.queueInlineFormatWrap("strikethrough")
                     }
                     Shortcut {
                         context: Qt.WindowShortcut
-                        enabled: contentsView.noteDocumentCommandSurfaceEnabled
+                        enabled: contentsView.noteDocumentTagManagementShortcutSurfaceEnabled
                         sequence: "Ctrl+Shift+X"
 
                         onActivated: contentsView.queueInlineFormatWrap("strikethrough")
                     }
                     Shortcut {
                         context: Qt.WindowShortcut
-                        enabled: contentsView.noteDocumentCommandSurfaceEnabled
+                        enabled: contentsView.noteDocumentTagManagementShortcutSurfaceEnabled
                         sequence: "Meta+Shift+E"
 
                         onActivated: contentsView.queueInlineFormatWrap("highlight")
                     }
                     Shortcut {
                         context: Qt.WindowShortcut
-                        enabled: contentsView.noteDocumentCommandSurfaceEnabled
+                        enabled: contentsView.noteDocumentTagManagementShortcutSurfaceEnabled
                         sequence: "Ctrl+Shift+E"
 
                         onActivated: contentsView.queueInlineFormatWrap("highlight")
                     }
                     Shortcut {
-                        context: Qt.WindowShortcut
-                        enabled: contentsView.noteDocumentCommandSurfaceEnabled
-                        sequence: "Meta+Shift+7"
-
-                        onActivated: contentsView.queueMarkdownListMutation("ordered")
-                    }
-                    Shortcut {
-                        context: Qt.WindowShortcut
-                        enabled: contentsView.noteDocumentCommandSurfaceEnabled
-                        sequence: "Alt+Shift+7"
-
-                        onActivated: contentsView.queueMarkdownListMutation("ordered")
-                    }
-                    Shortcut {
-                        context: Qt.WindowShortcut
-                        enabled: contentsView.noteDocumentCommandSurfaceEnabled
-                        sequence: "Meta+Shift+8"
-
-                        onActivated: contentsView.queueMarkdownListMutation("unordered")
-                    }
-                    Shortcut {
-                        context: Qt.WindowShortcut
-                        enabled: contentsView.noteDocumentCommandSurfaceEnabled
-                        sequence: "Alt+Shift+8"
-
-                        onActivated: contentsView.queueMarkdownListMutation("unordered")
-                    }
-                    Shortcut {
                         autoRepeat: false
                         context: Qt.WindowShortcut
-                        enabled: contentsView.noteDocumentCommandSurfaceEnabled
+                        enabled: contentsView.noteDocumentTagManagementShortcutSurfaceEnabled
                         sequence: "Meta+Alt+T"
 
                         onActivated: contentsView.queueAgendaShortcutInsertion()
@@ -3872,7 +3845,7 @@ Item {
                     Shortcut {
                         autoRepeat: false
                         context: Qt.WindowShortcut
-                        enabled: contentsView.noteDocumentCommandSurfaceEnabled
+                        enabled: contentsView.noteDocumentTagManagementShortcutSurfaceEnabled
                         sequence: "Ctrl+Alt+T"
 
                         onActivated: contentsView.queueAgendaShortcutInsertion()
@@ -3880,7 +3853,7 @@ Item {
                     Shortcut {
                         autoRepeat: false
                         context: Qt.WindowShortcut
-                        enabled: contentsView.noteDocumentCommandSurfaceEnabled
+                        enabled: contentsView.noteDocumentTagManagementShortcutSurfaceEnabled
                         sequence: "Meta+Alt+C"
 
                         onActivated: contentsView.queueCalloutShortcutInsertion()
@@ -3888,7 +3861,7 @@ Item {
                     Shortcut {
                         autoRepeat: false
                         context: Qt.WindowShortcut
-                        enabled: contentsView.noteDocumentCommandSurfaceEnabled
+                        enabled: contentsView.noteDocumentTagManagementShortcutSurfaceEnabled
                         sequence: "Ctrl+Alt+C"
 
                         onActivated: contentsView.queueCalloutShortcutInsertion()
@@ -3896,7 +3869,7 @@ Item {
                     Shortcut {
                         autoRepeat: false
                         context: Qt.WindowShortcut
-                        enabled: contentsView.noteDocumentCommandSurfaceEnabled
+                        enabled: contentsView.noteDocumentTagManagementShortcutSurfaceEnabled
                         sequence: "Meta+Shift+H"
 
                         onActivated: contentsView.queueBreakShortcutInsertion()
@@ -3904,7 +3877,7 @@ Item {
                     Shortcut {
                         autoRepeat: false
                         context: Qt.WindowShortcut
-                        enabled: contentsView.noteDocumentCommandSurfaceEnabled
+                        enabled: contentsView.noteDocumentTagManagementShortcutSurfaceEnabled
                         sequence: "Ctrl+Shift+H"
 
                         onActivated: contentsView.queueBreakShortcutInsertion()

@@ -15,8 +15,9 @@ FocusScope {
     property var calloutBackend: null
     property var documentBlocks: []
     property int lineHeightHint: Math.max(1, Math.round(LV.Theme.scaleMetric(12)))
+    property bool nativeTextInputPriority: false
     property bool paperPaletteEnabled: false
-    property var shortcutKeyPressHandler: null
+    property var tagManagementShortcutKeyPressHandler: null
     property alias renderedResources: documentHost.renderedResources
     property alias sourceText: documentHost.sourceText
     property alias activeBlockIndex: documentHost.activeBlockIndex
@@ -70,7 +71,9 @@ FocusScope {
     }
 
     Keys.onPressed: function (event) {
-        if (documentFlow.handleActiveBlockDeleteKeyPress(event))
+        if (documentFlow.nativeTextInputPriority)
+            return
+        if (documentFlow.handleActiveTagManagementKeyPress(event))
             event.accepted = true
     }
 
@@ -687,7 +690,12 @@ FocusScope {
         return structuredEditorFormattingController.applyInlineFormatToActiveSelection(tagName)
     }
 
-    function handleActiveBlockDeleteKeyPress(event) {
+    function blockEntryIsTagManagedAtomicBlock(blockEntry) {
+        const normalizedType = documentFlow.normalizedBlockType(blockEntry)
+        return normalizedType === "resource" || normalizedType === "break"
+    }
+
+    function handleActiveTagManagementKeyPress(event) {
         if (!event)
             return false
         const key = Number(event.key)
@@ -699,17 +707,40 @@ FocusScope {
         const resolvedActiveBlockIndex = documentFlow.normalizedResolvedInteractiveBlockIndex()
         if (resolvedActiveBlockIndex < 0 || resolvedActiveBlockIndex >= blocks.length)
             return false
+        if (!documentFlow.blockEntryIsTagManagedAtomicBlock(blocks[resolvedActiveBlockIndex]))
+            return false
         const activeBlockHost = blockRepeater.itemAt(resolvedActiveBlockIndex)
         const delegateItem = documentFlow.delegateItemForBlockHost(activeBlockHost)
-        if (!delegateItem || delegateItem.handleDeleteKeyPress === undefined)
+        if (!delegateItem || delegateItem.handleAtomicTagManagementKeyPress === undefined)
             return false
-        return !!delegateItem.handleDeleteKeyPress(event)
+        return !!delegateItem.handleAtomicTagManagementKeyPress(event)
     }
 
     function hasFocusedBlock() {
         for (let index = 0; index < blockRepeater.count; ++index) {
             const host = blockRepeater.itemAt(index)
             if (host && host.delegateFocused !== undefined && host.delegateFocused)
+                return true
+        }
+        return false
+    }
+
+    function nativeCompositionActive() {
+        for (let index = 0; index < blockRepeater.count; ++index) {
+            const host = blockRepeater.itemAt(index)
+            const delegateItem = documentFlow.delegateItemForBlockHost(host)
+            if (!delegateItem)
+                continue
+            if (delegateItem.nativeCompositionActive !== undefined
+                    && delegateItem.nativeCompositionActive()) {
+                return true
+            }
+            if (delegateItem.inputMethodComposing !== undefined && delegateItem.inputMethodComposing)
+                return true
+            const activePreeditText = delegateItem.preeditText !== undefined && delegateItem.preeditText !== null
+                    ? String(delegateItem.preeditText)
+                    : ""
+            if (activePreeditText.length > 0)
                 return true
         }
         return false
@@ -770,6 +801,46 @@ FocusScope {
                     Math.floor(Number(start) || 0),
                     Math.floor(Number(end) || 0),
                     replacementText === undefined || replacementText === null ? "" : String(replacementText))
+    }
+
+    function sourceRangeMatchesCurrentSnapshot(start, end, expectedText, options) {
+        const normalizedOptions = options && typeof options === "object" ? options : ({})
+        const currentSourceText = documentFlow.normalizedSourceText(documentFlow.sourceText)
+        const sourceLength = currentSourceText.length
+        const boundedStart = Math.max(0, Math.min(sourceLength, Math.floor(Number(start) || 0)))
+        const boundedEnd = Math.max(boundedStart, Math.min(sourceLength, Math.floor(Number(end) || 0)))
+        const currentSlice = currentSourceText.slice(boundedStart, boundedEnd)
+        const expectedSlice = documentFlow.normalizedSourceText(expectedText)
+        if (currentSlice === expectedSlice)
+            return true
+        if (normalizedOptions.allowBlankAnchor
+                && expectedSlice === " "
+                && currentSlice.trim().length === 0)
+            return true
+        EditorTrace.trace(
+                    "structuredDocumentFlow",
+                    "sourceRangeMatchesCurrentSnapshot.rejected",
+                    "reason=" + String(normalizedOptions.reason || "stale-source-range")
+                    + " start=" + boundedStart
+                    + " end=" + boundedEnd
+                    + " current=" + EditorTrace.describeText(currentSlice)
+                    + " expected=" + EditorTrace.describeText(expectedSlice),
+                    documentFlow)
+        return false
+    }
+
+    function replaceSourceRangeIfCurrent(start, end, expectedText, replacementText, focusRequest, options) {
+        if (!documentFlow.sourceRangeMatchesCurrentSnapshot(start, end, expectedText, options))
+            return false
+        const currentSourceText = documentFlow.normalizedSourceText(documentFlow.sourceText)
+        const sourceLength = currentSourceText.length
+        const boundedStart = Math.max(0, Math.min(sourceLength, Math.floor(Number(start) || 0)))
+        const boundedEnd = Math.max(boundedStart, Math.min(sourceLength, Math.floor(Number(end) || 0)))
+        const normalizedReplacementText = documentFlow.normalizedSourceText(replacementText)
+        if (currentSourceText.slice(boundedStart, boundedEnd) === normalizedReplacementText)
+            return false
+        documentFlow.replaceSourceRange(boundedStart, boundedEnd, normalizedReplacementText, focusRequest)
+        return true
     }
 
     function requestFocus(request) {
@@ -1231,16 +1302,35 @@ FocusScope {
         return documentFlow.requestBoundaryFocusForBlock(targetBlockIndex, targetBoundarySide)
     }
 
-    function replaceTextBlock(blockData, nextBlockSourceText, focusRequest) {
+    function replaceTextBlock(blockData, nextBlockSourceText, focusRequest, expectedPreviousSourceText) {
         const safeBlock = blockData && typeof blockData === "object" ? blockData : ({})
-        documentFlow.replaceSourceRange(
-                    Number(safeBlock.sourceStart) || 0,
-                    Number(safeBlock.sourceEnd) || 0,
-                    documentFlow.normalizedSourceText(nextBlockSourceText),
-                    focusRequest)
+        const sourceStart = Number(safeBlock.sourceStart) || 0
+        const hasExpectedPreviousSourceText = expectedPreviousSourceText !== undefined
+                && expectedPreviousSourceText !== null
+        const expectedSourceText = hasExpectedPreviousSourceText
+                ? documentFlow.normalizedSourceText(expectedPreviousSourceText)
+                : (safeBlock.sourceText !== undefined && safeBlock.sourceText !== null
+                   ? documentFlow.normalizedSourceText(safeBlock.sourceText)
+                   : "")
+        const sourceEnd = hasExpectedPreviousSourceText
+                ? sourceStart + expectedSourceText.length
+                : Number(safeBlock.sourceEnd) || 0
+        const nextSourceText = documentFlow.normalizedSourceText(nextBlockSourceText)
+        if (hasExpectedPreviousSourceText
+                || (safeBlock.sourceText !== undefined && safeBlock.sourceText !== null)) {
+            return documentFlow.replaceSourceRangeIfCurrent(
+                        sourceStart,
+                        sourceEnd,
+                        expectedSourceText,
+                        nextSourceText,
+                        focusRequest,
+                        { "reason": "text-block" })
+        }
+        documentFlow.replaceSourceRange(sourceStart, sourceEnd, nextSourceText, focusRequest)
+        return true
     }
 
-    function updateAgendaTaskText(taskData, text, cursorPosition) {
+    function updateAgendaTaskText(taskData, text, cursorPosition, expectedPreviousText) {
         EditorTrace.trace(
                     "structuredDocumentFlow",
                     "updateAgendaTaskText",
@@ -1255,16 +1345,29 @@ FocusScope {
             return false
         const normalizedText = StructuredCursorSupport.normalizedPlainText(text)
         const localCursorPosition = StructuredCursorSupport.clampedPlainCursor(normalizedText, cursorPosition)
-        documentFlow.replaceSourceRange(
+        const hasExpectedPreviousText = expectedPreviousText !== undefined && expectedPreviousText !== null
+        const previousTaskText = hasExpectedPreviousText
+                ? String(expectedPreviousText)
+                : (safeTask.text !== undefined && safeTask.text !== null ? String(safeTask.text) : "")
+        const expectedTaskSourceText = StructuredCursorSupport.replacementSourceText(
+                    previousTaskText)
+        const sourceRangeEnd = hasExpectedPreviousText
+                ? contentStart + expectedTaskSourceText.length
+                : contentEnd
+        return documentFlow.replaceSourceRangeIfCurrent(
                     contentStart,
-                    contentEnd,
+                    sourceRangeEnd,
+                    expectedTaskSourceText,
                     StructuredCursorSupport.replacementSourceText(normalizedText),
                     {
                         "localCursorPosition": localCursorPosition,
                         "sourceOffset": StructuredCursorSupport.sourceOffsetForPlainCursor(normalizedText, localCursorPosition, contentStart),
                         "taskOpenTagStart": documentFlow.floorNumberOrFallback(safeTask.openTagStart, -1)
+                    },
+                    {
+                        "allowBlankAnchor": true,
+                        "reason": "agenda-task"
                     })
-        return true
     }
 
     function toggleAgendaTaskDone(openTagStart, openTagEnd, checked) {
@@ -1318,7 +1421,7 @@ FocusScope {
         return true
     }
 
-    function updateCalloutText(blockData, text, cursorPosition) {
+    function updateCalloutText(blockData, text, cursorPosition, expectedPreviousText) {
         EditorTrace.trace(
                     "structuredDocumentFlow",
                     "updateCalloutText",
@@ -1333,15 +1436,28 @@ FocusScope {
             return false
         const normalizedText = StructuredCursorSupport.normalizedPlainText(text)
         const localCursorPosition = StructuredCursorSupport.clampedPlainCursor(normalizedText, cursorPosition)
-        documentFlow.replaceSourceRange(
+        const hasExpectedPreviousText = expectedPreviousText !== undefined && expectedPreviousText !== null
+        const previousCalloutText = hasExpectedPreviousText
+                ? String(expectedPreviousText)
+                : (safeBlock.text !== undefined && safeBlock.text !== null ? String(safeBlock.text) : "")
+        const expectedCalloutSourceText = StructuredCursorSupport.replacementSourceText(
+                    previousCalloutText)
+        const sourceRangeEnd = hasExpectedPreviousText
+                ? contentStart + expectedCalloutSourceText.length
+                : contentEnd
+        return documentFlow.replaceSourceRangeIfCurrent(
                     contentStart,
-                    contentEnd,
+                    sourceRangeEnd,
+                    expectedCalloutSourceText,
                     StructuredCursorSupport.replacementSourceText(normalizedText),
                     {
                         "localCursorPosition": localCursorPosition,
                         "sourceOffset": StructuredCursorSupport.sourceOffsetForPlainCursor(normalizedText, localCursorPosition, contentStart)
+                    },
+                    {
+                        "allowBlankAnchor": true,
+                        "reason": "callout-text"
                     })
-        return true
     }
 
     function exitCallout(blockData) {
@@ -1579,13 +1695,14 @@ FocusScope {
                         hasAdjacentAtomicBlockBefore: documentFlow.blockHasAdjacentAtomicDeletionTarget(blockHost.blockIndex, "before")
                         hasAdjacentBlockAfter: documentFlow.adjacentBlockIndex(blockHost.blockIndex, "after") >= 0
                         hasAdjacentBlockBefore: documentFlow.adjacentBlockIndex(blockHost.blockIndex, "before") >= 0
+                        nativeTextInputPriority: documentFlow.nativeTextInputPriority
                         paperPaletteEnabled: documentFlow.paperPaletteEnabled
                         paragraphBoundaryOperationsEnabled: documentFlow.blockSupportsParagraphBoundaryOperations(blockHost.blockEntry)
                         paragraphMergeableAfter: documentFlow.paragraphMergeableAdjacentBlock(blockHost.blockIndex, "after")
                         paragraphMergeableBefore: documentFlow.paragraphMergeableAdjacentBlock(blockHost.blockIndex, "before")
                         resourceEntry: documentFlow.resourceEntryForBlock(blockHost.blockEntry)
                         selectionManager: documentHost
-                        shortcutKeyPressHandler: documentFlow.shortcutKeyPressHandler
+                        tagManagementShortcutKeyPressHandler: documentFlow.tagManagementShortcutKeyPressHandler
                         width: blockHost.width
 
                         onActivated: documentFlow.noteActiveBlockInteraction(blockHost.blockIndex)
@@ -1602,8 +1719,8 @@ FocusScope {
                         onParagraphSplitRequested: function (sourceOffset) {
                             documentFlow.splitParagraphBlock(blockHost.blockEntry, sourceOffset)
                         }
-                        onSourceMutationRequested: function (nextBlockSourceText, focusRequest) {
-                            documentFlow.replaceTextBlock(blockHost.blockEntry, nextBlockSourceText, focusRequest)
+                        onSourceMutationRequested: function (nextBlockSourceText, focusRequest, expectedPreviousSourceText) {
+                            documentFlow.replaceTextBlock(blockHost.blockEntry, nextBlockSourceText, focusRequest, expectedPreviousSourceText)
                         }
                         onTaskDoneToggled: function (openTagStart, openTagEnd, checked) {
                             documentFlow.toggleAgendaTaskDone(openTagStart, openTagEnd, checked)
@@ -1611,14 +1728,14 @@ FocusScope {
                         onTaskEnterRequested: function (_blockData, taskData) {
                             documentFlow.agendaTaskReturn(taskData)
                         }
-                        onTaskTextChanged: function (taskData, text, cursorPosition) {
-                            documentFlow.updateAgendaTaskText(taskData, text, cursorPosition)
+                        onTaskTextChanged: function (taskData, text, cursorPosition, expectedPreviousText) {
+                            documentFlow.updateAgendaTaskText(taskData, text, cursorPosition, expectedPreviousText)
                         }
                         onEnterExitRequested: function (blockData) {
                             documentFlow.exitCallout(blockData)
                         }
-                        onTextChanged: function (text, cursorPosition) {
-                            documentFlow.updateCalloutText(blockHost.blockEntry, text, cursorPosition)
+                        onTextChanged: function (text, cursorPosition, expectedPreviousText) {
+                            documentFlow.updateCalloutText(blockHost.blockEntry, text, cursorPosition, expectedPreviousText)
                         }
                     }
                 }

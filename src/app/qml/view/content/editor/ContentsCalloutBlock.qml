@@ -10,17 +10,19 @@ FocusScope {
     id: calloutBlock
 
     required property var blockData
-    property var shortcutKeyPressHandler: null
+    property bool nativeTextInputPriority: false
     property bool paperPaletteEnabled: false
 
     signal activated()
     signal boundaryNavigationRequested(string axis, string side)
     signal enterExitRequested(var blockData)
-    signal textChanged(string text, int cursorPosition)
+    signal textChanged(string text, int cursorPosition, string expectedPreviousText)
 
     readonly property int currentLogicalLineNumber: calloutBlock.currentEditorLogicalLineNumber()
     readonly property var normalizedBlock: blockData && typeof blockData === "object" ? blockData : ({})
     readonly property bool focused: calloutEditor.focused
+    readonly property bool inputMethodComposing: calloutEditor.inputMethodComposing !== undefined
+                                                       && calloutEditor.inputMethodComposing
     readonly property bool textEditable: true
     readonly property bool atomicBlock: false
     readonly property bool gutterCollapsed: false
@@ -31,9 +33,14 @@ FocusScope {
     readonly property int sourceStart: Math.max(0, Number(normalizedBlock.sourceStart) || 0)
     readonly property int sourceEnd: Math.max(sourceStart, Number(normalizedBlock.sourceEnd) || 0)
     readonly property string calloutText: normalizedBlock.text !== undefined ? String(normalizedBlock.text) : ""
+    readonly property string preeditText: calloutEditor.preeditText === undefined || calloutEditor.preeditText === null
+                                          ? ""
+                                          : String(calloutEditor.preeditText)
     readonly property color frameColor: paperPaletteEnabled ? "#F7F3EA" : "#262728"
     readonly property color dividerColor: paperPaletteEnabled ? "#B7A58A" : "#D9D9D9"
     readonly property color bodyTextColor: paperPaletteEnabled ? "#111111" : "#FFFFFF"
+    property bool _hasLiveTextSnapshot: false
+    property string _liveText: ""
 
     implicitHeight: calloutFrame.implicitHeight
     width: parent ? parent.width : implicitWidth
@@ -82,6 +89,22 @@ FocusScope {
         if (calloutEditor.currentPlainText !== undefined)
             return StructuredCursorSupport.normalizedPlainText(calloutEditor.currentPlainText())
         return StructuredCursorSupport.normalizedPlainText(calloutBlock.calloutText)
+    }
+
+    function nativeCompositionActive() {
+        return calloutBlock.inputMethodComposing || calloutBlock.preeditText.length > 0
+    }
+
+    function syncLiveTextFromHost() {
+        const hostText = StructuredCursorSupport.normalizedPlainText(calloutBlock.calloutText)
+        if (calloutBlock.focused
+                && calloutBlock._hasLiveTextSnapshot
+                && hostText !== calloutBlock._liveText
+                && calloutBlock.currentEditorPlainText() !== hostText) {
+            return
+        }
+        calloutBlock._liveText = hostText
+        calloutBlock._hasLiveTextSnapshot = true
     }
 
     function logicalLineLayoutEntries() {
@@ -184,58 +207,6 @@ FocusScope {
         return true
     }
 
-    function handleBoundaryKeyPress(event) {
-        if (!event)
-            return false
-        const key = Number(event.key)
-        const moveBackward = key === Qt.Key_Left
-        const moveForward = key === Qt.Key_Right
-        const moveUp = key === Qt.Key_Up
-        const moveDown = key === Qt.Key_Down
-        if (!moveBackward && !moveForward && !moveUp && !moveDown)
-            return false
-        const modifiers = Number(event.modifiers) || 0
-        if ((modifiers & (Qt.ControlModifier | Qt.AltModifier | Qt.MetaModifier)) !== 0)
-            return false
-        const selectionStart = Math.max(0, Math.floor(Number(calloutEditor.selectionStart) || 0))
-        const selectionEnd = Math.max(selectionStart, Math.floor(Number(calloutEditor.selectionEnd) || 0))
-        if (selectionEnd > selectionStart)
-            return false
-        if (calloutEditor.inputMethodComposing !== undefined && calloutEditor.inputMethodComposing)
-            return false
-        const preeditText = calloutEditor.preeditText !== undefined && calloutEditor.preeditText !== null
-                ? String(calloutEditor.preeditText)
-                : ""
-        if (preeditText.length > 0)
-            return false
-        if ((modifiers & Qt.ShiftModifier) !== 0)
-            return false
-
-        const plainTextLength = calloutBlock.currentEditorPlainText().length
-        const cursorPosition = Math.max(0, Math.floor(Number(calloutEditor.cursorPosition) || 0))
-        if (moveBackward && cursorPosition === 0) {
-            calloutBlock.boundaryNavigationRequested("horizontal", "before")
-            event.accepted = true
-            return true
-        }
-        if (moveForward && cursorPosition === plainTextLength) {
-            calloutBlock.boundaryNavigationRequested("horizontal", "after")
-            event.accepted = true
-            return true
-        }
-        if (moveUp && calloutBlock.cursorOnFirstVisualRow()) {
-            calloutBlock.boundaryNavigationRequested("vertical", "before")
-            event.accepted = true
-            return true
-        }
-        if (moveDown && calloutBlock.cursorOnLastVisualRow()) {
-            calloutBlock.boundaryNavigationRequested("vertical", "after")
-            event.accepted = true
-            return true
-        }
-        return false
-    }
-
     function shortcutInsertionSourceOffset() {
         // Agenda/callout shortcuts must stay block-scoped here so new wrappers do not nest inside callout content.
         return calloutBlock.sourceEnd
@@ -286,57 +257,7 @@ FocusScope {
                 selectByMouse: true
                 selectedTextColor: LV.Theme.textPrimary
                 selectionColor: LV.Theme.accent
-                modifierVerticalNavigationHandler: function (request, event) {
-                    if (!request || !event)
-                        return false
-                    if (request.commandPressed) {
-                        if (calloutEditor.clearSelection !== undefined)
-                            calloutEditor.clearSelection()
-                        calloutBlock.boundaryNavigationRequested("document", request.moveUp ? "before" : "after")
-                        event.accepted = true
-                        return true
-                    }
-                    if (request.targetCursorPosition !== request.cursorPosition)
-                        return false
-                    if (request.moveUp) {
-                        if (calloutEditor.clearSelection !== undefined)
-                            calloutEditor.clearSelection()
-                        calloutBlock.boundaryNavigationRequested("vertical", "before")
-                        event.accepted = true
-                        return true
-                    }
-                    if (request.moveDown) {
-                        if (calloutEditor.clearSelection !== undefined)
-                            calloutEditor.clearSelection()
-                        calloutBlock.boundaryNavigationRequested("vertical", "after")
-                        event.accepted = true
-                        return true
-                    }
-                    return false
-                }
-                shortcutKeyPressHandler: function (event) {
-                    if (calloutBlock.shortcutKeyPressHandler
-                            && typeof calloutBlock.shortcutKeyPressHandler === "function") {
-                        const shortcutHandled = !!calloutBlock.shortcutKeyPressHandler(event)
-                        if (shortcutHandled || event.accepted)
-                            return true
-                    }
-                    if (calloutBlock.handleBoundaryKeyPress(event))
-                        return true
-                    const noModifiers = (event.modifiers & (Qt.ControlModifier | Qt.AltModifier | Qt.MetaModifier | Qt.ShiftModifier)) === 0
-                    if (!noModifiers)
-                        return false
-                    if (event.key !== Qt.Key_Return && event.key !== Qt.Key_Enter)
-                        return false
-                    const cursorPosition = Math.max(0, Number(calloutEditor.cursorPosition) || 0)
-                    const textValue = String(calloutEditor.getText(0, Math.max(0, calloutEditor.length || 0)) || "")
-                    if (cursorPosition === textValue.length && textValue.endsWith("\n")) {
-                        event.accepted = true
-                        calloutBlock.enterExitRequested(calloutBlock.blockData)
-                        return true
-                    }
-                    return false
-                }
+                preferNativeInputHandling: true
                 showRenderedOutput: false
                 showScrollBar: false
                 text: calloutBlock.calloutText
@@ -352,11 +273,24 @@ FocusScope {
                         calloutBlock.activated()
                 }
                 onTextEdited: function (text) {
+                    const previousText = calloutBlock._hasLiveTextSnapshot
+                            ? calloutBlock._liveText
+                            : StructuredCursorSupport.normalizedPlainText(calloutBlock.calloutText)
+                    const nextText = StructuredCursorSupport.normalizedPlainText(String(text || ""))
+                    if (previousText === nextText)
+                        return
+                    calloutBlock._liveText = nextText
+                    calloutBlock._hasLiveTextSnapshot = true
                     calloutBlock.textChanged(
-                                String(text || ""),
-                                Math.max(0, Number(calloutEditor.cursorPosition) || 0))
+                                nextText,
+                                Math.max(0, Number(calloutEditor.cursorPosition) || 0),
+                                previousText)
                 }
             }
         }
     }
+
+    onCalloutTextChanged: syncLiveTextFromHost()
+
+    Component.onCompleted: syncLiveTextFromHost()
 }

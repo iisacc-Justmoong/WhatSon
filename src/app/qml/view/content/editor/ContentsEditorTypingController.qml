@@ -18,104 +18,8 @@ QtObject {
     property var liveLogicalLineStartOffsets: [0]
     property var liveLogicalToSourceOffsets: [0]
     property string liveSnapshotSourceText: ""
-
-    function markerOnlyListBreakInsertion(logicalLineStart, logicalLineEnd) {
-        const replacementStart = Math.max(0, Math.floor(Number(logicalLineStart) || 0));
-        const replacementEnd = Math.max(replacementStart, Math.floor(Number(logicalLineEnd) || 0));
-        return ({
-                "applied": true,
-                "cursorPosition": replacementStart + 1,
-                "insertedText": "\n",
-                "replacementEnd": replacementEnd,
-                "replacementStart": replacementStart
-            });
-    }
-
-    function continuedListInsertion(replacementDelta, currentSourceText, nextPlainText) {
-        const sourceText = currentSourceText === undefined || currentSourceText === null ? "" : String(currentSourceText);
-        const plainText = nextPlainText === undefined || nextPlainText === null ? "" : String(nextPlainText);
-        if (!replacementDelta || !replacementDelta.valid)
-            return ({ "applied": false, "cursorPosition": -1, "insertedText": "", "replacementEnd": -1, "replacementStart": -1 });
-
-        const insertedText = replacementDelta.insertedText === undefined || replacementDelta.insertedText === null
-                ? ""
-                : String(replacementDelta.insertedText);
-        if (!insertedText.endsWith("\n"))
-            return ({ "applied": false, "cursorPosition": -1, "insertedText": "", "replacementEnd": -1, "replacementStart": -1 });
-        if ((insertedText.match(/\n/g) || []).length !== 1)
-            return ({ "applied": false, "cursorPosition": -1, "insertedText": "", "replacementEnd": -1, "replacementStart": -1 });
-
-        const insertionStart = Math.max(0, Math.floor(Number(replacementDelta.start) || 0));
-        const sourceInsertionStart = replacementDelta.previousEnd === replacementDelta.start
-                ? controller.sourceOffsetForCollapsedLogicalInsertion(sourceText, insertionStart)
-                : controller.sourceOffsetForLogicalOffset(insertionStart);
-        const sourceLineStart = sourceInsertionStart > 0 ? sourceText.lastIndexOf("\n", sourceInsertionStart - 1) + 1 : 0;
-        const sourceLinePrefix = sourceText.slice(sourceLineStart, sourceInsertionStart);
-        const sourceLineEnd = sourceText.indexOf("\n", sourceInsertionStart);
-        const sourceCurrentLine = sourceText.slice(sourceLineStart, sourceLineEnd >= 0 ? sourceLineEnd : sourceText.length);
-        const logicalInsertionEnd = insertionStart + insertedText.length;
-        if (logicalInsertionEnd <= 0 || logicalInsertionEnd > plainText.length || plainText.charAt(logicalInsertionEnd - 1) !== "\n")
-            return ({ "applied": false, "cursorPosition": -1, "insertedText": "", "replacementEnd": -1, "replacementStart": -1 });
-        const logicalLineEnd = logicalInsertionEnd - 1;
-        const logicalLineStart = logicalLineEnd > 0 ? plainText.lastIndexOf("\n", logicalLineEnd - 1) + 1 : 0;
-        const logicalLine = plainText.slice(logicalLineStart, logicalLineEnd);
-        const replacesWholeLogicalLine = replacementDelta.start === logicalLineStart
-                && insertedText.slice(0, Math.max(0, insertedText.length - 1)) === logicalLine;
-        if (replacementDelta.previousEnd !== replacementDelta.start && !replacesWholeLogicalLine)
-            return ({ "applied": false, "cursorPosition": -1, "insertedText": "", "replacementEnd": -1, "replacementStart": -1 });
-        const sourceLineForMarkerLookup = replacesWholeLogicalLine ? sourceCurrentLine : sourceLinePrefix;
-
-        const unorderedMatch = /^([ \t]*)([-*+\u2022])(\s+)(.*)$/.exec(logicalLine);
-        if (unorderedMatch) {
-            if (String(unorderedMatch[4] || "").trim().length === 0)
-                return controller.markerOnlyListBreakInsertion(logicalLineStart, logicalLineEnd);
-            const sourceUnorderedMatch = /^([ \t]*)([-*+])(\s*)/.exec(sourceLineForMarkerLookup);
-            const continuedIndent = sourceUnorderedMatch ? sourceUnorderedMatch[1] : unorderedMatch[1];
-            const continuedMarker = sourceUnorderedMatch
-                    ? sourceUnorderedMatch[2]
-                    : (unorderedMatch[2] === "\u2022" ? "-" : unorderedMatch[2]);
-            const continuedSeparator = sourceUnorderedMatch && String(sourceUnorderedMatch[3] || "").length > 0
-                    ? sourceUnorderedMatch[3]
-                    : unorderedMatch[3];
-            const normalizedInsertedText = replacesWholeLogicalLine
-                    ? unorderedMatch[1] + continuedMarker + continuedSeparator + unorderedMatch[4] + "\n"
-                    : insertedText;
-            const continuedText = normalizedInsertedText + continuedIndent + continuedMarker + continuedSeparator;
-            return ({
-                    "applied": true,
-                    "cursorPosition": insertionStart + continuedText.length,
-                    "insertedText": continuedText
-                });
-        }
-
-        const orderedMatch = /^([ \t]*)(\d+)([.)])([ \t]*)(.*)$/.exec(logicalLine);
-        if (orderedMatch) {
-            const orderedSpacing = String(orderedMatch[4] || "");
-            const orderedContent = String(orderedMatch[5] || "");
-            if (orderedContent.trim().length === 0)
-                return controller.markerOnlyListBreakInsertion(logicalLineStart, logicalLineEnd);
-            if (orderedSpacing.length === 0 && /^[0-9]/.test(orderedContent))
-                return ({ "applied": false, "cursorPosition": -1, "insertedText": "", "replacementEnd": -1, "replacementStart": -1 });
-            const sourceOrderedMatch = /^([ \t]*)(\d+)([.)])([ \t]*)/.exec(sourceLineForMarkerLookup);
-            const currentNumber = Number(orderedMatch[2]);
-            if (!isFinite(currentNumber))
-                return ({ "applied": false, "cursorPosition": -1, "insertedText": "", "replacementEnd": -1, "replacementStart": -1 });
-            const nextNumber = Math.max(1, Math.floor(currentNumber) + 1);
-            const continuedIndent = sourceOrderedMatch ? sourceOrderedMatch[1] : orderedMatch[1];
-            const continuedDelimiter = sourceOrderedMatch ? sourceOrderedMatch[3] : orderedMatch[3];
-            const continuedSeparator = sourceOrderedMatch && String(sourceOrderedMatch[4] || "").length > 0
-                    ? sourceOrderedMatch[4]
-                    : (orderedSpacing.length > 0 ? orderedSpacing : " ");
-            const continuedText = insertedText + continuedIndent + String(nextNumber) + continuedDelimiter + continuedSeparator;
-            return ({
-                    "applied": true,
-                    "cursorPosition": insertionStart + continuedText.length,
-                    "insertedText": continuedText
-                });
-        }
-
-        return ({ "applied": false, "cursorPosition": -1, "insertedText": "", "replacementEnd": -1, "replacementStart": -1 });
-    }
+    property bool pendingCursorPositionRequest: false
+    property int pendingCursorPosition: 0
 
     function normalizePlainText(text) {
         let normalizedText = text === undefined || text === null ? "" : String(text);
@@ -384,30 +288,52 @@ QtObject {
         return controller.normalizePlainText(controller.contentEditor.getText(0, editorLength));
     }
 
-    function scheduleCursorPosition(position, attempt) {
+    function nativeCompositionActive() {
+        if (!controller.contentEditor)
+            return false;
+        const activePreeditText = controller.contentEditor.preeditText !== undefined
+                ? String(controller.contentEditor.preeditText === undefined || controller.contentEditor.preeditText === null
+                             ? ""
+                             : controller.contentEditor.preeditText)
+                : "";
+        return (controller.contentEditor.inputMethodComposing !== undefined
+                && controller.contentEditor.inputMethodComposing)
+                || activePreeditText.length > 0;
+    }
+
+    function applyEditorCursorPosition(position) {
+        if (!controller.contentEditor || controller.nativeCompositionActive())
+            return false;
         const targetPosition = Math.max(0, Math.floor(Number(position) || 0));
-        const retryCount = Math.max(0, Math.floor(Number(attempt) || 0));
+        if (controller.contentEditor.setCursorPositionPreservingNativeInput !== undefined)
+            return !!controller.contentEditor.setCursorPositionPreservingNativeInput(targetPosition);
+        if (controller.contentEditor.cursorPosition !== undefined) {
+            controller.contentEditor.cursorPosition = targetPosition;
+            return true;
+        }
+        return false;
+    }
+
+    function applyPendingCursorPositionIfInputSettled() {
+        if (!controller.pendingCursorPositionRequest || controller.nativeCompositionActive())
+            return false;
+        const targetPosition = Math.max(0, Math.floor(Number(controller.pendingCursorPosition) || 0));
+        controller.pendingCursorPositionRequest = false;
+        return controller.applyEditorCursorPosition(targetPosition);
+    }
+
+    function scheduleCursorPosition(position) {
+        const targetPosition = Math.max(0, Math.floor(Number(position) || 0));
         Qt.callLater(function () {
             if (!controller.contentEditor)
                 return;
-            const activePreeditText = controller.contentEditor.preeditText !== undefined
-                    ? String(controller.contentEditor.preeditText === undefined || controller.contentEditor.preeditText === null
-                                 ? ""
-                                 : controller.contentEditor.preeditText)
-                    : "";
-            const nativeCompositionBusy = (controller.contentEditor.inputMethodComposing !== undefined
-                                     && controller.contentEditor.inputMethodComposing)
-                    || activePreeditText.length > 0;
-            if (nativeCompositionBusy && retryCount < 6) {
-                controller.scheduleCursorPosition(targetPosition, retryCount + 1);
+            if (controller.nativeCompositionActive()) {
+                controller.pendingCursorPosition = targetPosition;
+                controller.pendingCursorPositionRequest = true;
                 return;
             }
-            if (controller.contentEditor.setCursorPositionPreservingNativeInput !== undefined) {
-                controller.contentEditor.setCursorPositionPreservingNativeInput(targetPosition);
-                return;
-            }
-            if (controller.contentEditor.cursorPosition !== undefined)
-                controller.contentEditor.cursorPosition = targetPosition;
+            controller.pendingCursorPositionRequest = false;
+            controller.applyEditorCursorPosition(targetPosition);
         });
     }
 
@@ -733,114 +659,6 @@ QtObject {
                 "start": expandedStart,
                 "end": expandedEnd
             });
-    }
-
-    function applyDirectRawSourceReplacement(sourceStart, sourceEnd, replacementSourceText, cursorSourceOffsetFromReplacementStart) {
-        if (!controller.view)
-            return false;
-        const currentSourceText = controller.view.editorText === undefined || controller.view.editorText === null
-                ? ""
-                : String(controller.view.editorText);
-        const safeSourceLength = currentSourceText.length;
-        const boundedStart = Math.max(0, Math.min(safeSourceLength, Math.floor(Number(sourceStart) || 0)));
-        const boundedEnd = Math.max(boundedStart, Math.min(safeSourceLength, Math.floor(Number(sourceEnd) || 0)));
-        const normalizedReplacementSourceText = controller.normalizePlainText(replacementSourceText);
-        const nextSourceText = controller.spliceSourceText(
-                    currentSourceText,
-                    boundedStart,
-                    boundedEnd,
-                    normalizedReplacementSourceText);
-        if (nextSourceText === currentSourceText)
-            return false;
-        if (controller.resourceTagLossDetectedForMutation(currentSourceText, nextSourceText)) {
-            controller.restoreEditorSurfaceFromSourcePresentation();
-            return false;
-        }
-
-        if (controller.view.editorText !== nextSourceText)
-            controller.view.editorText = nextSourceText;
-        if (controller.view.commitDocumentPresentationRefresh !== undefined)
-            controller.view.commitDocumentPresentationRefresh();
-        else
-            controller.synchronizeLiveEditingStateFromPresentation();
-
-        const cursorOffsetInsideReplacement = Math.max(
-                    0,
-                    Math.min(
-                        normalizedReplacementSourceText.length,
-                        Math.floor(Number(cursorSourceOffsetFromReplacementStart) || 0)));
-        controller.scheduleCursorPosition(
-                    controller.logicalOffsetForSourceOffset(boundedStart + cursorOffsetInsideReplacement));
-
-        if (controller.editorSession && controller.editorSession.markLocalEditorAuthority !== undefined)
-            controller.editorSession.markLocalEditorAuthority();
-        if (controller.editorSession && controller.editorSession.scheduleEditorPersistence !== undefined)
-            controller.editorSession.scheduleEditorPersistence();
-        controller.view.editorTextEdited(nextSourceText);
-        return true;
-    }
-
-    function handleTagAwareDeleteKeyPress(event) {
-        if (!event
-                || !controller.view
-                || !controller.view.hasSelectedNote
-                || controller.view.showDedicatedResourceViewer
-                || controller.view.showFormattedTextRenderer) {
-            return false;
-        }
-
-        const key = Number(event.key);
-        const deleteBackward = key === Qt.Key_Backspace;
-        const deleteForward = key === Qt.Key_Delete;
-        if (!deleteBackward && !deleteForward)
-            return false;
-
-        const modifiers = Number(event.modifiers) || 0;
-        if ((modifiers & (Qt.ControlModifier | Qt.AltModifier | Qt.MetaModifier)) !== 0)
-            return false;
-
-        controller.ensureLiveEditingStateReady();
-        const currentSourceText = controller.view.editorText === undefined || controller.view.editorText === null
-                ? ""
-                : String(controller.view.editorText);
-        if (currentSourceText.length === 0)
-            return false;
-
-        const tagRanges = controller.sourceTagRanges(currentSourceText);
-        if (tagRanges.length === 0)
-            return false;
-
-        const selectionRange = controller.currentRawEditorSelectionRange();
-        if (selectionRange.end > selectionRange.start) {
-            const selectionSourceStart = controller.sourceOffsetForLogicalOffset(selectionRange.start);
-            const selectionSourceEnd = controller.sourceOffsetForLogicalOffset(selectionRange.end);
-            const expandedRange = controller.expandedDeletionSourceRange(
-                        tagRanges,
-                        selectionSourceStart,
-                        selectionSourceEnd);
-            if (expandedRange.end <= expandedRange.start)
-                return false;
-            return controller.applyDirectRawSourceReplacement(expandedRange.start, expandedRange.end, "", 0);
-        }
-
-        const logicalCursor = controller.currentLogicalCursorOffsetForShortcutInsertion();
-        const sourceCursorOffset = Math.max(
-                    0,
-                    Math.min(
-                        currentSourceText.length,
-                        Math.floor(Number(controller.sourceOffsetForLogicalOffset(logicalCursor)) || 0)));
-        const tagRange = controller.collapsedDeletionTagRange(
-                    tagRanges,
-                    sourceCursorOffset,
-                    deleteForward);
-        if (!tagRange)
-            return false;
-
-        return controller.applyDirectRawSourceReplacement(
-                    Math.max(0, Math.floor(Number(tagRange.start) || 0)),
-                    Math.max(0, Math.floor(Number(tagRange.end) || 0)),
-                    "",
-                    0);
     }
 
     function queueAgendaShortcutInsertion() {
@@ -1208,30 +1026,9 @@ QtObject {
         const syntheticNextPlainText = previousPlainText.slice(0, boundedLogicalStart)
                 + normalizedRequestedText
                 + previousPlainText.slice(boundedLogicalEnd);
-        const syntheticReplacementDelta = {
-            "insertedText": normalizedRequestedText,
-            "previousEnd": boundedLogicalEnd,
-            "start": boundedLogicalStart,
-            "valid": true
-        };
-
-        const continuedListInsertion = controller.continuedListInsertion(
-                    syntheticReplacementDelta,
-                    currentSourceText,
-                    syntheticNextPlainText);
-        let normalizedInsertedText = continuedListInsertion.applied
-                ? continuedListInsertion.insertedText
-                : normalizedRequestedText;
-        let resolvedLogicalReplacementStart = continuedListInsertion.applied
-                && continuedListInsertion.replacementStart !== undefined
-                && Number(continuedListInsertion.replacementStart) >= 0
-                ? Math.floor(Number(continuedListInsertion.replacementStart))
-                : boundedLogicalStart;
-        let resolvedLogicalReplacementEnd = continuedListInsertion.applied
-                && continuedListInsertion.replacementEnd !== undefined
-                && Number(continuedListInsertion.replacementEnd) >= 0
-                ? Math.floor(Number(continuedListInsertion.replacementEnd))
-                : boundedLogicalEnd;
+        let normalizedInsertedText = normalizedRequestedText;
+        let resolvedLogicalReplacementStart = boundedLogicalStart;
+        let resolvedLogicalReplacementEnd = boundedLogicalEnd;
 
         let rawSourceReplacementText = "";
         let rawReplacementEnabled = false;
@@ -1343,51 +1140,12 @@ QtObject {
         if (!committed)
             return false;
 
-        if (continuedListInsertion.applied && !rawReplacementEnabled)
-            controller.scheduleCursorPosition(continuedListInsertion.cursorPosition);
-        else if (rawReplacementEnabled && isFinite(cursorSourceOffsetOverride))
+        if (rawReplacementEnabled && isFinite(cursorSourceOffsetOverride))
             controller.scheduleCursorPosition(
                         controller.logicalOffsetForSourceOffset(replacementSourceStart + cursorSourceOffsetOverride));
         else if (isFinite(cursorLogicalOverride))
             controller.scheduleCursorPosition(cursorLogicalOverride);
         return true;
-    }
-
-    function handlePlainEnterKeyPress(event) {
-        EditorTrace.trace(
-                    "typingController",
-                    "handlePlainEnterKeyPress",
-                    "key=" + (event ? Number(event.key) : -1)
-                    + " modifiers=" + (event ? Number(event.modifiers) : 0),
-                    controller)
-        if (!event
-                || !controller.view
-                || !controller.view.hasSelectedNote
-                || controller.view.showDedicatedResourceViewer
-                || controller.view.showFormattedTextRenderer) {
-            return false;
-        }
-
-        const key = Number(event.key);
-        if (key !== Qt.Key_Return && key !== Qt.Key_Enter)
-            return false;
-
-        const modifiers = Number(event.modifiers) || 0;
-        if ((modifiers & (Qt.ControlModifier | Qt.AltModifier | Qt.MetaModifier)) !== 0)
-            return false;
-        if (controller.contentEditor
-                && ((controller.contentEditor.inputMethodComposing !== undefined
-                     && controller.contentEditor.inputMethodComposing)
-                    || (controller.contentEditor.preeditText !== undefined
-                        && String(controller.contentEditor.preeditText || "").length > 0))) {
-            return false;
-        }
-
-        const selectionRange = controller.currentRawEditorSelectionRange();
-        return controller.applyExplicitPlainTextLogicalReplacement(
-                    Math.max(0, Number(selectionRange.start)),
-                    Math.max(0, Number(selectionRange.end)),
-                    "\n");
     }
 
     function sourceOffsetForLogicalOffset(logicalOffset) {
@@ -1534,18 +1292,9 @@ QtObject {
         if (!replacementDelta.valid) {
             return false;
         }
-        const continuedListInsertion = controller.continuedListInsertion(replacementDelta, currentSourceText, nextPlainText);
-        let normalizedInsertedText = continuedListInsertion.applied
-                ? continuedListInsertion.insertedText
-                : replacementDelta.insertedText;
-        let logicalReplacementStart = continuedListInsertion.applied && continuedListInsertion.replacementStart !== undefined
-                && Number(continuedListInsertion.replacementStart) >= 0
-                ? Math.floor(Number(continuedListInsertion.replacementStart))
-                : replacementDelta.start;
-        let logicalReplacementEnd = continuedListInsertion.applied && continuedListInsertion.replacementEnd !== undefined
-                && Number(continuedListInsertion.replacementEnd) >= 0
-                ? Math.floor(Number(continuedListInsertion.replacementEnd))
-                : replacementDelta.previousEnd;
+        let normalizedInsertedText = replacementDelta.insertedText;
+        let logicalReplacementStart = replacementDelta.start;
+        let logicalReplacementEnd = replacementDelta.previousEnd;
 
         let rawSourceReplacementText = "";
         let rawReplacementEnabled = false;
@@ -1672,9 +1421,7 @@ QtObject {
             controller.adoptLiveStateIntoBridge(nextSourceText);
         }
 
-        if (continuedListInsertion.applied && !rawReplacementEnabled)
-            controller.scheduleCursorPosition(continuedListInsertion.cursorPosition);
-        else if (rawReplacementEnabled && isFinite(cursorSourceOffsetOverride))
+        if (rawReplacementEnabled && isFinite(cursorSourceOffsetOverride))
             controller.scheduleCursorPosition(controller.logicalOffsetForSourceOffset(replacementSourceStart + cursorSourceOffsetOverride));
         else if (isFinite(cursorLogicalOverride))
             controller.scheduleCursorPosition(cursorLogicalOverride);

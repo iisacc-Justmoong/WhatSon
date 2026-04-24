@@ -32,13 +32,10 @@ Renders one agenda card as a native document block inside the editor flow.
   `textEditable=true`, `atomicBlock=false`, `gutterCollapsed=false`,
   `minimapVisualKind=text`, `visiblePlainText()` as the joined task text, and
   `representativeCharCount(...)` per visible task line.
-- Agenda task editors now also participate in the shared block-boundary keyboard contract.
-  Plain `Left` / `Right` at a task edge and plain `Up` / `Down` on the first/last visual row either move focus to the
-  adjacent task inside the same card or emit one generic boundary-navigation request for
-  `ContentsStructuredDocumentFlow.qml` when the caret has reached the card's outer boundary.
-- Each task-row editor now also runs one host-owned shortcut handler before its local boundary/Enter rules.
-  Clipboard-image paste therefore stays available while focus is inside an agenda task instead of only in the legacy
-  whole-note editor.
+- Agenda task editors keep the last live task text emitted upward and pass it back as the expected previous field text.
+  This prevents fast mobile typing/backspace from using a stale task snapshot as the next splice baseline.
+- Agenda task rows no longer define custom boundary-key handlers.
+  The nested `TextEdit` owns arrow navigation, Enter, iOS keyboard gestures, repeated delete, and selection behavior.
 - Focus restoration now also accepts `entryBoundary: "before" | "after"` hints from the flow host.
   Sequential block traversal can therefore enter the agenda at its first task head or its last task tail instead of
   always collapsing back to the first task on reparsed focus restore.

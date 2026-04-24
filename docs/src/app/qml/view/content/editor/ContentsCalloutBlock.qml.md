@@ -34,19 +34,17 @@ Renders one callout card as a native document block inside the editor flow.
   `textEditable=true`, `atomicBlock=false`, `gutterCollapsed=false`,
   `minimapVisualKind=text`, `visiblePlainText()` as the live callout editor text, and
   `representativeCharCount(...)` per visible line.
-- The callout editor now also participates in the shared block-boundary keyboard contract.
-  Plain `Left` / `Right` at the block start/end and plain `Up` / `Down` on the first/last visual row emit one generic
-  boundary-navigation request back to `ContentsStructuredDocumentFlow.qml`, so callout cards no longer terminate
-  sequential keyboard traversal at their edges.
-- The nested callout editor now also runs one host-owned shortcut handler before its local boundary/exit rules.
-  Clipboard-image paste therefore stays available while the caret is inside callout content instead of only in the
-  legacy whole-note editor.
+- The callout editor keeps the last live body text emitted upward and passes it back as the expected previous field text.
+  Fast mobile typing/backspace therefore rebases from the live editor state rather than from an older block snapshot.
+- The callout body no longer defines custom boundary-key handlers.
+  The nested `TextEdit` owns arrow navigation, Enter, iOS keyboard gestures, repeated delete, and selection behavior.
 - Focus restoration now also accepts `entryBoundary: "before" | "after"` hints from the flow host.
   Sequential block traversal can therefore enter the callout at its visual head or tail instead of always restoring to
   one generic fallback caret position.
 - Keeps agenda/callout shortcut insertion block-scoped so new proprietary wrappers are inserted after the current
   callout instead of nesting inside callout body content.
-- Treats Enter on an already-empty trailing line as the "exit callout" gesture.
+- Callout exit gestures are handled as tag-management source mutations after native text commits, not by intercepting
+  live `TextEdit` key events.
 - The block now also accepts `paperPaletteEnabled`.
   Page/print mode therefore swaps the callout frame/divider/body text away from the dark-theme hardcoded white-text
   palette into a paper-safe light card with dark text.

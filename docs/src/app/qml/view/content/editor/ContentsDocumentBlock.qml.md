@@ -16,8 +16,8 @@ Provides the single document-block adapter that keeps `ContentsStructuredDocumen
   - `ContentsBreakBlock.qml`
 - The outer API deliberately stays generic:
   - focus / current-line / cursor-row geometry queries
-  - delete-key forwarding, including delete direction for empty-line removal
-  - host-owned shortcut forwarding
+  - tag-management delete handling for selected atomic resource/break blocks
+  - host-owned tag-management shortcut forwarding for selected atomic blocks
   - inline-format selection snapshot export for the flow-level formatting controller
   - shortcut insertion offset lookup
   - generic block interaction signals
@@ -32,10 +32,11 @@ Provides the single document-block adapter that keeps `ContentsStructuredDocumen
 - Atomic blocks are now also focused and navigated at this adapter layer.
   `ContentsDocumentBlock.qml` owns block selection, arrow-key traversal, delete handling, and Enter-to-resume-edit
   behavior for non-text resource/break spans instead of delegating that behavior to a resource-local focus widget.
-- The adapter now also forwards one host-provided shortcut handler into both text-like delegates and atomic-block key
-  handling.
-  Note-wide shortcuts such as clipboard-image paste therefore keep working even when focus currently sits inside one
-  structured paragraph editor or on a selected break/resource block.
+- The adapter now also exposes mounted delegates' native composition state (`inputMethodComposing` and `preeditText`) to
+  the structured flow.
+  Window-level shortcuts can therefore stand down while a nested editor is in IME composition.
+- The adapter keeps host-provided tag-management shortcut forwarding limited to selected atomic-block key handling.
+  Text-like delegates no longer receive QML shortcut handlers on top of their live `TextEdit`.
 - Atomic resource/break blocks now also preserve macOS vertical modifier semantics.
   `Option + Up/Down` steps to the previous/next block boundary, while `Command + Up/Down` requests document start/end
   instead of being collapsed into ordinary adjacent-block traversal.

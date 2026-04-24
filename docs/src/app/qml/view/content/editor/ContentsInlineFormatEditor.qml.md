@@ -24,7 +24,11 @@ The wrapper keeps the host/editor contract expected by `ContentsDisplayView.qml`
 
 ## Key Behavior
 
-- Programmatic host sync is deferred only while IME/preedit composition is active.
+- Programmatic host sync is deferred while IME/preedit composition is active.
+  In native-input mode the wrapper also rejects focused stale host echo after a local edit when the incoming text no
+  longer matches the live `TextEdit` buffer.
+- Cursor restoration through `setCursorPositionPreservingNativeInput(...)` is a no-op while native composition/preedit is
+  active, so callers cannot move the IME anchor during a platform-owned input session.
 - `currentPlainText()` now returns the live editor buffer directly instead of recovering text from a serialized Qt
   RichText document.
 - `textEdited(...)` remains the host notification hook, but it now always reports plain text.
@@ -39,8 +43,8 @@ The wrapper keeps the host/editor contract expected by `ContentsDisplayView.qml`
 - The wrapper no longer mounts an input-covering `MouseArea`, touch `TapHandler`, or `Keys.onPressed` handler above the
   live `TextEdit`.
 - The live `TextEdit` receives pointer, selection, Backspace/Delete repeat, Tab, and platform modifier-navigation input
-  directly from Qt/OS handling. Host shortcut properties are retained for compatibility but are not dispatched from the
-  wrapper's native text input path.
+  directly from Qt/OS handling. The wrapper no longer exposes host shortcut or modifier-navigation handler properties on
+  the native text input path.
 
 ## Regression Focus
 

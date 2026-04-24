@@ -9,18 +9,19 @@ FocusScope {
     id: agendaBlock
 
     required property var blockData
-    property var shortcutKeyPressHandler: null
+    property bool nativeTextInputPriority: false
     property bool paperPaletteEnabled: false
 
     signal activated()
     signal boundaryNavigationRequested(string axis, string side)
     signal taskDoneToggled(int openTagStart, int openTagEnd, bool checked)
     signal taskEnterRequested(var blockData, var taskData)
-    signal taskTextChanged(var taskData, string text, int cursorPosition)
+    signal taskTextChanged(var taskData, string text, int cursorPosition, string expectedPreviousText)
 
     readonly property var normalizedBlock: blockData && typeof blockData === "object" ? blockData : ({})
     readonly property int currentLogicalLineNumber: agendaBlock.currentFocusedTaskLineNumber()
     readonly property bool focused: agendaBlock.activeFocus || agendaBlock.hasFocusedTaskRow()
+    readonly property bool inputMethodComposing: agendaBlock.focusedTaskInputMethodComposing()
     readonly property bool textEditable: true
     readonly property bool atomicBlock: false
     readonly property bool gutterCollapsed: false
@@ -39,6 +40,7 @@ FocusScope {
         return []
     }
     readonly property string dateText: normalizedBlock.date !== undefined ? String(normalizedBlock.date) : "yyyy-mm-dd"
+    readonly property string preeditText: agendaBlock.focusedTaskPreeditText()
     readonly property int sourceStart: Math.max(0, Number(normalizedBlock.sourceStart) || 0)
     readonly property int sourceEnd: Math.max(sourceStart, Number(normalizedBlock.sourceEnd) || 0)
     readonly property color frameColor: paperPaletteEnabled ? "#F7F3EA" : "#262728"
@@ -54,16 +56,43 @@ FocusScope {
     function hasFocusedTaskRow() {
         for (let index = 0; index < taskRepeater.count; ++index) {
             const item = taskRepeater.itemAt(index)
-            if (item && item.focused !== undefined && item.focused)
+            if (item && item["focused"] !== undefined && item["focused"])
                 return true
         }
         return false
     }
 
+    function focusedTaskInputMethodComposing() {
+        for (let index = 0; index < taskRepeater.count; ++index) {
+            const item = taskRepeater.itemAt(index)
+            if (!item || item["focused"] === undefined || !item["focused"])
+                continue
+            return item["inputMethodComposing"] !== undefined && !!item["inputMethodComposing"]
+        }
+        return false
+    }
+
+    function focusedTaskPreeditText() {
+        for (let index = 0; index < taskRepeater.count; ++index) {
+            const item = taskRepeater.itemAt(index)
+            if (!item || item["focused"] === undefined || !item["focused"])
+                continue
+            return item["preeditText"] !== undefined && item["preeditText"] !== null
+                    ? String(item["preeditText"])
+                    : ""
+        }
+        return ""
+    }
+
+    function nativeCompositionActive() {
+        return agendaBlock.focusedTaskInputMethodComposing()
+                || agendaBlock.focusedTaskPreeditText().length > 0
+    }
+
     function currentFocusedTaskLineNumber() {
         for (let index = 0; index < taskRepeater.count; ++index) {
             const item = taskRepeater.itemAt(index)
-            if (item && item.focused !== undefined && item.focused)
+            if (item && item["focused"] !== undefined && item["focused"])
                 return index + 1
         }
         return 1
@@ -72,9 +101,9 @@ FocusScope {
     function currentCursorRowRect() {
         for (let index = 0; index < taskRepeater.count; ++index) {
             const item = taskRepeater.itemAt(index)
-            if (!item || item.focused === undefined || !item.focused || item.currentCursorRowRect === undefined)
+            if (!item || item["focused"] === undefined || !item["focused"] || item["currentCursorRowRect"] === undefined)
                 continue
-            return item.currentCursorRowRect()
+            return item["currentCursorRowRect"]()
         }
         return ({
                     "contentHeight": Math.max(1, Math.round(LV.Theme.scaleMetric(12))),
@@ -86,8 +115,8 @@ FocusScope {
         const lines = []
         for (let index = 0; index < taskRepeater.count; ++index) {
             const item = taskRepeater.itemAt(index)
-            if (item && item.currentEditorPlainText !== undefined) {
-                lines.push(String(item.currentEditorPlainText() || ""))
+            if (item && item["currentEditorPlainText"] !== undefined) {
+                lines.push(String(item["currentEditorPlainText"]() || ""))
                 continue
             }
             const taskData = agendaBlock.tasks[index] && typeof agendaBlock.tasks[index] === "object"
@@ -117,13 +146,13 @@ FocusScope {
         const numericTaskIndex = Number(taskIndex)
         const resolvedTaskIndex = isFinite(numericTaskIndex) ? Math.floor(numericTaskIndex) : -1
         const item = taskRepeater.itemAt(resolvedTaskIndex)
-        if (!item || item.focusEditor === undefined)
+        if (!item || item["focusEditor"] === undefined)
             return false
         const normalizedSide = side === undefined || side === null ? "" : String(side).trim().toLowerCase()
-        const plainText = item.currentEditorPlainText !== undefined
-                ? String(item.currentEditorPlainText() || "")
-                : String(item.taskText || "")
-        item.focusEditor(normalizedSide === "after" ? plainText.length : 0)
+        const plainText = item["currentEditorPlainText"] !== undefined
+                ? String(item["currentEditorPlainText"]() || "")
+                : String(item["taskText"] || "")
+        item["focusEditor"](normalizedSide === "after" ? plainText.length : 0)
         return true
     }
 
@@ -137,9 +166,9 @@ FocusScope {
     function focusFirstTask() {
         for (let index = 0; index < taskRepeater.count; ++index) {
             const item = taskRepeater.itemAt(index)
-            if (!item || item.focusEditor === undefined)
+            if (!item || item["focusEditor"] === undefined)
                 continue
-            item.focusEditor(0)
+            item["focusEditor"](0)
             return true
         }
         return false
@@ -151,13 +180,13 @@ FocusScope {
             return false
         for (let index = 0; index < taskRepeater.count; ++index) {
             const item = taskRepeater.itemAt(index)
-            if (!item || item.taskContentStart === undefined || item.taskContentEnd === undefined)
+            if (!item || item["taskContentStart"] === undefined || item["taskContentEnd"] === undefined)
                 continue
-            const contentStart = Math.max(0, Math.floor(Number(item.taskContentStart) || 0))
-            const contentEnd = Math.max(contentStart, Math.floor(Number(item.taskContentEnd) || 0))
+            const contentStart = Math.max(0, Math.floor(Number(item["taskContentStart"]) || 0))
+            const contentEnd = Math.max(contentStart, Math.floor(Number(item["taskContentEnd"]) || 0))
             if (numericSourceOffset < contentStart || numericSourceOffset > contentEnd)
                 continue
-            item.focusEditor(StructuredCursorSupport.plainCursorForSourceOffset(item.taskText, numericSourceOffset - contentStart))
+            item["focusEditor"](StructuredCursorSupport.plainCursorForSourceOffset(item["taskText"], numericSourceOffset - contentStart))
             return true
         }
         return false
@@ -173,11 +202,11 @@ FocusScope {
         if (isFinite(taskOpenTagStart)) {
             for (let index = 0; index < taskRepeater.count; ++index) {
                 const item = taskRepeater.itemAt(index)
-                if (!item || item.taskOpenTagStart === undefined)
+                if (!item || item["taskOpenTagStart"] === undefined)
                     continue
-                if (Number(item.taskOpenTagStart) !== Math.floor(taskOpenTagStart))
+                if (Number(item["taskOpenTagStart"]) !== Math.floor(taskOpenTagStart))
                     continue
-                item.focusEditor(localCursorPosition)
+                item["focusEditor"](localCursorPosition)
                 return true
             }
         }
@@ -278,7 +307,14 @@ FocusScope {
                         readonly property int taskContentEnd: Math.max(taskContentStart, Math.floor(Number(taskData.contentEnd) || taskContentStart))
                         readonly property bool focused: taskEditor.focused
                                                          || (taskToggle.activeFocus !== undefined && taskToggle.activeFocus)
-                        readonly property string taskText: taskData.text !== undefined ? String(taskData.text) : ""
+                        readonly property bool inputMethodComposing: taskEditor.inputMethodComposing !== undefined
+                                                                     && taskEditor.inputMethodComposing
+                        readonly property string preeditText: taskEditor.preeditText === undefined || taskEditor.preeditText === null
+                                                              ? ""
+                                                              : String(taskEditor.preeditText)
+                        property string taskText: taskData.text !== undefined ? String(taskData.text) : ""
+                        property bool _hasLiveTaskTextSnapshot: false
+                        property string _liveTaskText: ""
 
                         Layout.fillWidth: true
                         implicitHeight: taskEditor.implicitHeight
@@ -312,6 +348,18 @@ FocusScope {
                             if (taskEditor.currentPlainText !== undefined)
                                 return StructuredCursorSupport.normalizedPlainText(taskEditor.currentPlainText())
                             return StructuredCursorSupport.normalizedPlainText(taskRow.taskText)
+                        }
+
+                        function syncLiveTaskTextFromHost() {
+                            const hostText = StructuredCursorSupport.normalizedPlainText(taskRow.taskText)
+                            if (taskRow.focused
+                                    && taskRow._hasLiveTaskTextSnapshot
+                                    && hostText !== taskRow._liveTaskText
+                                    && taskRow.currentEditorPlainText() !== hostText) {
+                                return
+                            }
+                            taskRow._liveTaskText = hostText
+                            taskRow._hasLiveTaskTextSnapshot = true
                         }
 
                         function currentCursorRowRect() {
@@ -356,79 +404,6 @@ FocusScope {
                                         || Math.max(1, rowBottom - localTaskY))
                             const localRowBottom = Math.max(0, rowBottom - localTaskY)
                             return localRowBottom >= contentHeight - 1
-                        }
-
-                        function handleBoundaryKeyPress(event) {
-                            if (!event)
-                                return false
-                            const key = Number(event.key)
-                            const moveBackward = key === Qt.Key_Left
-                            const moveForward = key === Qt.Key_Right
-                            const moveUp = key === Qt.Key_Up
-                            const moveDown = key === Qt.Key_Down
-                            if (!moveBackward && !moveForward && !moveUp && !moveDown)
-                                return false
-                            const modifiers = Number(event.modifiers) || 0
-                            if ((modifiers & (Qt.ControlModifier | Qt.AltModifier | Qt.MetaModifier)) !== 0)
-                                return false
-                            const selectionStart = Math.max(0, Math.floor(Number(taskEditor.selectionStart) || 0))
-                            const selectionEnd = Math.max(selectionStart, Math.floor(Number(taskEditor.selectionEnd) || 0))
-                            if (selectionEnd > selectionStart)
-                                return false
-                            if (taskEditor.inputMethodComposing !== undefined && taskEditor.inputMethodComposing)
-                                return false
-                            const preeditText = taskEditor.preeditText !== undefined && taskEditor.preeditText !== null
-                                    ? String(taskEditor.preeditText)
-                                    : ""
-                            if (preeditText.length > 0)
-                                return false
-                            if ((modifiers & Qt.ShiftModifier) !== 0)
-                                return false
-
-                            const cursorPosition = Math.max(0, Math.floor(Number(taskEditor.cursorPosition) || 0))
-                            const plainTextLength = taskRow.currentEditorPlainText().length
-                            const taskIndex = Number(taskRow.taskIndex)
-                            const previousTaskIndex = Math.max(-1, Math.floor(taskIndex) - 1)
-                            const nextTaskIndex = Math.floor(taskIndex) + 1
-                            const lastTaskIndex = Math.max(0, taskRepeater.count - 1)
-
-                            if (moveBackward && cursorPosition === 0) {
-                                if (previousTaskIndex >= 0) {
-                                    agendaBlock.focusTaskBoundary(previousTaskIndex, "after")
-                                } else {
-                                    agendaBlock.boundaryNavigationRequested("horizontal", "before")
-                                }
-                                event.accepted = true
-                                return true
-                            }
-                            if (moveForward && cursorPosition === plainTextLength) {
-                                if (nextTaskIndex < taskRepeater.count) {
-                                    agendaBlock.focusTaskBoundary(nextTaskIndex, "before")
-                                } else {
-                                    agendaBlock.boundaryNavigationRequested("horizontal", "after")
-                                }
-                                event.accepted = true
-                                return true
-                            }
-                            if (moveUp && taskRow.cursorOnFirstVisualRow()) {
-                                if (previousTaskIndex >= 0) {
-                                    agendaBlock.focusTaskBoundary(previousTaskIndex, "after")
-                                } else {
-                                    agendaBlock.boundaryNavigationRequested("vertical", "before")
-                                }
-                                event.accepted = true
-                                return true
-                            }
-                            if (moveDown && taskRow.cursorOnLastVisualRow()) {
-                                if (nextTaskIndex <= lastTaskIndex) {
-                                    agendaBlock.focusTaskBoundary(nextTaskIndex, "before")
-                                } else {
-                                    agendaBlock.boundaryNavigationRequested("vertical", "after")
-                                }
-                                event.accepted = true
-                                return true
-                            }
-                            return false
                         }
 
                         RowLayout {
@@ -484,64 +459,7 @@ FocusScope {
                                 selectByMouse: true
                                 selectedTextColor: LV.Theme.textPrimary
                                 selectionColor: LV.Theme.accent
-                                modifierVerticalNavigationHandler: function (request, event) {
-                                    if (!request || !event)
-                                        return false
-                                    const taskIndex = Number(taskRow.taskIndex)
-                                    const previousTaskIndex = Math.max(-1, Math.floor(taskIndex) - 1)
-                                    const nextTaskIndex = Math.floor(taskIndex) + 1
-                                    const lastTaskIndex = Math.max(0, taskRepeater.count - 1)
-                                    if (request.commandPressed) {
-                                        if (taskEditor.clearSelection !== undefined)
-                                            taskEditor.clearSelection()
-                                        agendaBlock.boundaryNavigationRequested("document", request.moveUp ? "before" : "after")
-                                        event.accepted = true
-                                        return true
-                                    }
-                                    if (request.targetCursorPosition !== request.cursorPosition)
-                                        return false
-                                    if (request.moveUp) {
-                                        if (taskEditor.clearSelection !== undefined)
-                                            taskEditor.clearSelection()
-                                        if (previousTaskIndex >= 0) {
-                                            agendaBlock.focusTaskBoundary(previousTaskIndex, "after")
-                                        } else {
-                                            agendaBlock.boundaryNavigationRequested("vertical", "before")
-                                        }
-                                        event.accepted = true
-                                        return true
-                                    }
-                                    if (request.moveDown) {
-                                        if (taskEditor.clearSelection !== undefined)
-                                            taskEditor.clearSelection()
-                                        if (nextTaskIndex <= lastTaskIndex) {
-                                            agendaBlock.focusTaskBoundary(nextTaskIndex, "before")
-                                        } else {
-                                            agendaBlock.boundaryNavigationRequested("vertical", "after")
-                                        }
-                                        event.accepted = true
-                                        return true
-                                    }
-                                    return false
-                                }
-                                shortcutKeyPressHandler: function (event) {
-                                    if (agendaBlock.shortcutKeyPressHandler
-                                            && typeof agendaBlock.shortcutKeyPressHandler === "function") {
-                                        const shortcutHandled = !!agendaBlock.shortcutKeyPressHandler(event)
-                                        if (shortcutHandled || event.accepted)
-                                            return true
-                                    }
-                                    if (taskRow.handleBoundaryKeyPress(event))
-                                        return true
-                                    const noModifiers = (event.modifiers & (Qt.ControlModifier | Qt.AltModifier | Qt.MetaModifier | Qt.ShiftModifier)) === 0
-                                    if (!noModifiers)
-                                        return false
-                                    if (event.key !== Qt.Key_Return && event.key !== Qt.Key_Enter)
-                                        return false
-                                    event.accepted = true
-                                    agendaBlock.taskEnterRequested(agendaBlock.blockData, taskRow.taskData)
-                                    return true
-                                }
+                                preferNativeInputHandling: true
                                 showRenderedOutput: false
                                 showScrollBar: false
                                 text: taskRow.taskText
@@ -549,20 +467,33 @@ FocusScope {
                                 wrapMode: TextEdit.Wrap
 
                                 onFocusedChanged: {
-                                    if (focused)
+                                    if (focused) {
+                                        taskRow.syncLiveTaskTextFromHost()
                                         agendaBlock.activated()
+                                    }
                                 }
                                 onCursorPositionChanged: {
                                     if (focused)
                                         agendaBlock.activated()
                                 }
                                 onTextEdited: function (text) {
+                                    const previousText = taskRow._hasLiveTaskTextSnapshot
+                                            ? taskRow._liveTaskText
+                                            : StructuredCursorSupport.normalizedPlainText(taskRow.taskText)
+                                    const nextText = StructuredCursorSupport.normalizedPlainText(String(text || ""))
+                                    if (previousText === nextText)
+                                        return
+                                    taskRow._liveTaskText = nextText
+                                    taskRow._hasLiveTaskTextSnapshot = true
                                     agendaBlock.taskTextChanged(
                                                 taskRow.taskData,
-                                                String(text || ""),
-                                                Math.max(0, Number(taskEditor.cursorPosition) || 0))
+                                                nextText,
+                                                Math.max(0, Number(taskEditor.cursorPosition) || 0),
+                                                previousText)
                                 }
                             }
+
+                            Component.onCompleted: taskRow.syncLiveTaskTextFromHost()
                         }
                     }
                 }

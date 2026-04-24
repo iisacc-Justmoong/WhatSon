@@ -35,8 +35,6 @@ FocusScope {
     property color selectedTextColor: LV.Theme.textPrimary
     property color selectionColor: LV.Theme.accent
     property int shapeStyle: 0
-    property var shortcutKeyPressHandler: null
-    property var modifierVerticalNavigationHandler: null
     property bool cursorVisibleWhenFocused: true
     property bool showRenderedOutput: true
     property bool showScrollBar: false
@@ -98,6 +96,7 @@ FocusScope {
     property string _deferredProgrammaticText: ""
     property bool _fallbackTextEditedDispatchQueued: false
     property int _fallbackTextEditedDispatchRevision: 0
+    property bool _localTextEditSinceFocus: false
     property string _cachedSelectedText: ""
     property int _cachedSelectionCursorPosition: -1
     property int _cachedSelectionEnd: -1
@@ -225,6 +224,8 @@ FocusScope {
     }
 
     function setCursorPositionPreservingNativeInput(position) {
+        if (control.nativeCompositionActive())
+            return false;
         const maximumLength = Number(textInput.length) || 0;
         const boundedPosition = control.clampLogicalPosition(position, maximumLength);
         EditorTrace.trace(
@@ -276,6 +277,19 @@ FocusScope {
 
     function canDeferProgrammaticTextSync() {
         return control.nativeCompositionActive();
+    }
+
+    function shouldRejectFocusedProgrammaticTextSync(nextText) {
+        if (!control.preferNativeInputHandling || !control.focused || control.nativeCompositionActive())
+            return false;
+        const normalizedText = nextText === undefined || nextText === null ? "" : String(nextText);
+        if (control.currentPlainText() === normalizedText) {
+            control._localTextEditSinceFocus = false;
+            return false;
+        }
+        if (!control._localTextEditSinceFocus)
+            return false;
+        return control.currentPlainText() !== normalizedText;
     }
 
     function flushDeferredProgrammaticText(force) {
@@ -364,6 +378,7 @@ FocusScope {
             });
             return;
         }
+        control._localTextEditSinceFocus = false;
         control.maybeDiscardCachedSelectionSnapshot();
         if (!focused)
             control.flushDeferredProgrammaticText(true);
@@ -380,6 +395,8 @@ FocusScope {
             control._hasDeferredProgrammaticText = true;
             return;
         }
+        if (control.shouldRejectFocusedProgrammaticTextSync(normalizedText))
+            return;
         control._hasDeferredProgrammaticText = false;
         control._deferredProgrammaticText = "";
         setProgrammaticText(normalizedText);
@@ -540,6 +557,7 @@ FocusScope {
                     control.clearCachedSelectionSnapshot();
                     if (control._programmaticTextSyncDepth > 0)
                         return;
+                    control._localTextEditSinceFocus = true;
                     control.clearDeferredProgrammaticText();
                     if (control.blockExternalDropMutation
                             || control.suppressCommittedTextEditedDispatch) {

@@ -86,6 +86,13 @@ ctest --test-dir build --output-on-failure -L cpp_regression
   emitting the selection-clear revision/retained-block contract that the QML delegates consume.
 - Clipboard-image resource imports now also pin their synthesized asset-name policy in the C++ suite, so temporary
   placeholder names cannot regress back to a collision-prone fixed file name.
+- Structured QML editor checks now also pin the native mobile input contract: focused stale text echo is rejected,
+  live block/task/callout edit baselines are preserved, and iOS/mobile shortcut/key interception stands down while the
+  OS keyboard owns the session.
+  The same source checks pin pending cursor/surface restore behavior so neither path writes through native composition.
+- Structured QML editor checks now also lock the custom-input policy: ordinary editor input has no QML key handlers,
+  markdown list shortcuts/continuation helpers stay absent, and only tag-management commands may use host shortcut
+  surfaces or selected atomic-block key handling.
 - Hierarchy viewmodel switching now also pins QObject ownership at the sidebar/selection-bridge boundary, so switching
   `Resources -> Library` cannot hand member-owned C++ models to the QML garbage collector.
 - Hierarchy-driven note-list rebinding is now also locked at the bridge layer, so swapping only the active hierarchy
@@ -137,6 +144,9 @@ ctest --test-dir build --output-on-failure -L cpp_regression
 - Structured document mutations now also pin editor-session write authority in the QML regression suite, so block-host
   edits immediately update `editorText`, mark local authority, and enter the normal RAW persistence path instead of
   disappearing when the user leaves the note.
+- Structured document mutations now also pin current-source range validation in the QML regression suite, so stale
+  mobile blur/dismiss events cannot splice an older block snapshot into the latest RAW note body and duplicate the
+  text that was just saved.
 - Minimap snapshots now also pin the resolved document presentation source in both the C++ and QML regression suites,
   so note-body snapshots populate the minimap immediately even before editor-session text becomes the active
   presentation authority.
@@ -153,6 +163,8 @@ ctest --test-dir build --output-on-failure -L cpp_regression
   so mouse/touch selection, `Shift`-extended selection, and repeated Backspace/Delete remain OS/Qt-native. The same
   regression scans the QML source tree for forbidden input-method bridges and fallbacks, keeping IME query updates,
   candidate placement, and keyboard visibility on the OS/Qt `TextEdit` path.
+- The unified display view now also pins blur-save behavior during native composition: blur flush returns instead of
+  forcing RAW persistence after a fixed retry count while preedit text is still active.
 - Inline structured resource cards now also pin block/card clipping in the QML regression suite, so a mobile image
   block cannot paint past its measured block bounds and overlay the following paragraph while the layout height
   catches up.

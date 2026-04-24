@@ -178,6 +178,10 @@ QtObject {
         editorSurfaceGuardController.restoreEditorSurfaceFromPresentation();
     }
 
+    function restorePendingEditorSurfaceFromPresentationIfInputSettled() {
+        return editorSurfaceGuardController.restorePendingEditorSurfaceFromPresentationIfInputSettled();
+    }
+
     function releaseResourceDropEditorSurfaceGuard(restoreSurface) {
         EditorTrace.trace("resourceImportController", "releaseResourceDropEditorSurfaceGuard", "restoreSurface=" + restoreSurface, controller)
         editorSurfaceGuardController.releaseResourceDropEditorSurfaceGuard(restoreSurface);

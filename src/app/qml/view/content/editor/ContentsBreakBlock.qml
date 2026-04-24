@@ -7,7 +7,7 @@ FocusScope {
     id: breakBlock
 
     required property var blockData
-    property var shortcutKeyPressHandler: null
+    property var tagManagementShortcutKeyPressHandler: null
 
     signal activated()
     signal blockDeletionRequested()
@@ -99,9 +99,9 @@ FocusScope {
     Keys.onPressed: function (event) {
         if (!event)
             return
-        if (breakBlock.shortcutKeyPressHandler
-                && typeof breakBlock.shortcutKeyPressHandler === "function") {
-            const shortcutHandled = !!breakBlock.shortcutKeyPressHandler(event)
+        if (breakBlock.tagManagementShortcutKeyPressHandler
+                && typeof breakBlock.tagManagementShortcutKeyPressHandler === "function") {
+            const shortcutHandled = !!breakBlock.tagManagementShortcutKeyPressHandler(event)
             if (shortcutHandled || event.accepted)
                 return
         }

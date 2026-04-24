@@ -984,6 +984,7 @@ private slots:
     void contentsDisplayView_keepsGutterNumbersCloseToTheEditorBody();
     void contentsDisplayView_reservesLargeBottomAccessibilityMargin();
     void contentsDisplayView_usesSelectedNoteSnapshotWhileSessionBindingCatchesUp();
+    void contentsDisplayView_doesNotForceBlurFlushDuringNativeComposition();
     void contentsDisplayView_routesStructuredMutationsThroughEditorSessionAuthority();
     void contentsDisplayView_refreshesMinimapFromResolvedPresentationSource();
     void contentsDisplayView_scalesMinimapRowsFromDocumentGeometry();
@@ -1001,6 +1002,9 @@ private slots:
     void contentsDisplaySelectionSyncCoordinator_blocksUntilSelectedBodyIsResolved();
     void contentsDisplaySelectionSyncCoordinator_snapshotPlansRetainSelectionContext();
     void qmlStructuredEditors_consumeRendererNormalizedBlocksWithoutLocalFlattening();
+    void qmlStructuredEditors_rejectStaleSourceRangeMutations();
+    void qmlStructuredEditors_preserveNativeMobileInputDuringFocusedEdits();
+    void qmlStructuredEditors_lockCustomInputToTagManagementOnly();
     void displayContextMenuCoordinator_rejectsNonNumericStructuredSelectionSnapshots();
     void editorViewportCoordinator_movesMinimapAndLineMathOutOfQml();
     void contentsDisplayView_surfacesMountFailurePlaceholderWithoutChrome();

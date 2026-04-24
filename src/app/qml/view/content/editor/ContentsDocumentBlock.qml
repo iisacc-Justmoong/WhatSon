@@ -12,12 +12,13 @@ FocusScope {
     property int blockIndex: -1
     property var resourceEntry: ({})
     property var selectionManager: null
-    property var shortcutKeyPressHandler: null
+    property var tagManagementShortcutKeyPressHandler: null
     property bool paperPaletteEnabled: false
     property bool hasAdjacentAtomicBlockAfter: false
     property bool hasAdjacentAtomicBlockBefore: false
     property bool hasAdjacentBlockAfter: false
     property bool hasAdjacentBlockBefore: false
+    property bool nativeTextInputPriority: false
     property bool paragraphBoundaryOperationsEnabled: false
     property bool paragraphMergeableAfter: false
     property bool paragraphMergeableBefore: false
@@ -28,12 +29,12 @@ FocusScope {
     signal blockDeletionRequested(string direction)
     signal documentEndEditRequested()
     signal paragraphSplitRequested(int sourceOffset)
-    signal sourceMutationRequested(string nextBlockSourceText, var focusRequest)
+    signal sourceMutationRequested(string nextBlockSourceText, var focusRequest, string expectedPreviousSourceText)
     signal taskDoneToggled(int openTagStart, int openTagEnd, bool checked)
     signal taskEnterRequested(var blockData, var taskData)
-    signal taskTextChanged(var taskData, string text, int cursorPosition)
+    signal taskTextChanged(var taskData, string text, int cursorPosition, string expectedPreviousText)
     signal enterExitRequested(var blockData)
-    signal textChanged(string text, int cursorPosition)
+    signal textChanged(string text, int cursorPosition, string expectedPreviousText)
 
     readonly property var normalizedBlock: blockData && typeof blockData === "object" ? blockData : ({})
     readonly property string blockType: normalizedBlock.type !== undefined ? String(normalizedBlock.type).trim().toLowerCase() : "text"
@@ -46,6 +47,18 @@ FocusScope {
         if (blockItem.focused !== undefined)
             return !!blockItem.focused
         return blockItem.activeFocus !== undefined && !!blockItem.activeFocus
+    }
+    readonly property bool inputMethodComposing: {
+        const blockItem = blockLoader.item
+        return blockItem && blockItem.inputMethodComposing !== undefined
+                ? !!blockItem.inputMethodComposing
+                : false
+    }
+    readonly property string preeditText: {
+        const blockItem = blockLoader.item
+        return blockItem && blockItem.preeditText !== undefined && blockItem.preeditText !== null
+                ? String(blockItem.preeditText)
+                : ""
     }
     readonly property int currentLogicalLineNumber: {
         const blockItem = blockLoader.item
@@ -137,10 +150,10 @@ FocusScope {
         return !!blockItem.applyFocusRequest(request)
     }
 
-    function handleDeleteKeyPress(event) {
+    function handleAtomicTagDeleteKeyPress(event) {
         EditorTrace.trace(
                     "documentBlock",
-                    "handleDeleteKeyPress",
+                    "handleAtomicTagDeleteKeyPress",
                     "blockType=" + documentBlock.blockType
                     + " atomic=" + documentBlock.atomicBlock
                     + " key=" + (event ? Number(event.key) : -1),
@@ -158,10 +171,7 @@ FocusScope {
             }
             return false
         }
-        const blockItem = blockLoader.item
-        if (!blockItem || blockItem.handleDeleteKeyPress === undefined)
-            return false
-        return !!blockItem.handleDeleteKeyPress(event)
+        return false
     }
 
     function inlineFormatSelectionSnapshot() {
@@ -213,16 +223,16 @@ FocusScope {
         return minimapRepresentativeCharCount
     }
 
-    function handleAtomicBoundaryKeyPress(event) {
+    function handleAtomicTagManagementKeyPress(event) {
         if (!documentBlock.atomicBlock || !event)
             return false
-        if (documentBlock.shortcutKeyPressHandler
-                && typeof documentBlock.shortcutKeyPressHandler === "function") {
-            const shortcutHandled = !!documentBlock.shortcutKeyPressHandler(event)
+        if (documentBlock.tagManagementShortcutKeyPressHandler
+                && typeof documentBlock.tagManagementShortcutKeyPressHandler === "function") {
+            const shortcutHandled = !!documentBlock.tagManagementShortcutKeyPressHandler(event)
             if (shortcutHandled || event.accepted)
                 return true
         }
-        if (documentBlock.handleDeleteKeyPress(event))
+        if (documentBlock.handleAtomicTagDeleteKeyPress(event))
             return true
         const modifiers = Number(event.modifiers) || 0
         const moveUp = event.key === Qt.Key_Up
@@ -270,7 +280,7 @@ FocusScope {
     }
 
     Keys.onPressed: function (event) {
-        if (documentBlock.handleAtomicBoundaryKeyPress(event))
+        if (documentBlock.handleAtomicTagManagementKeyPress(event))
             return
     }
 
@@ -358,8 +368,8 @@ FocusScope {
             documentBlock.paragraphSplitRequested(sourceOffset)
         }
 
-        function onSourceMutationRequested(nextBlockSourceText, focusRequest) {
-            documentBlock.sourceMutationRequested(nextBlockSourceText, focusRequest)
+        function onSourceMutationRequested(nextBlockSourceText, focusRequest, expectedPreviousSourceText) {
+            documentBlock.sourceMutationRequested(nextBlockSourceText, focusRequest, expectedPreviousSourceText)
         }
 
         function onTaskDoneToggled(openTagStart, openTagEnd, checked) {
@@ -370,16 +380,16 @@ FocusScope {
             documentBlock.taskEnterRequested(blockData, taskData)
         }
 
-        function onTaskTextChanged(taskData, text, cursorPosition) {
-            documentBlock.taskTextChanged(taskData, text, cursorPosition)
+        function onTaskTextChanged(taskData, text, cursorPosition, expectedPreviousText) {
+            documentBlock.taskTextChanged(taskData, text, cursorPosition, expectedPreviousText)
         }
 
         function onEnterExitRequested(blockData) {
             documentBlock.enterExitRequested(blockData)
         }
 
-        function onTextChanged(text, cursorPosition) {
-            documentBlock.textChanged(text, cursorPosition)
+        function onTextChanged(text, cursorPosition, expectedPreviousText) {
+            documentBlock.textChanged(text, cursorPosition, expectedPreviousText)
         }
     }
 
@@ -392,11 +402,11 @@ FocusScope {
             hasAdjacentAtomicBlockBefore: documentBlock.hasAdjacentAtomicBlockBefore
             hasAdjacentBlockAfter: documentBlock.hasAdjacentBlockAfter
             hasAdjacentBlockBefore: documentBlock.hasAdjacentBlockBefore
+            nativeTextInputPriority: documentBlock.nativeTextInputPriority
             paperPaletteEnabled: documentBlock.paperPaletteEnabled
             paragraphBoundaryOperationsEnabled: documentBlock.paragraphBoundaryOperationsEnabled
             paragraphMergeableAfter: documentBlock.paragraphMergeableAfter
             paragraphMergeableBefore: documentBlock.paragraphMergeableBefore
-            shortcutKeyPressHandler: documentBlock.shortcutKeyPressHandler
             width: documentBlock.width
         }
     }
@@ -406,8 +416,8 @@ FocusScope {
 
         ContentsAgendaBlock {
             blockData: documentBlock.blockData
+            nativeTextInputPriority: documentBlock.nativeTextInputPriority
             paperPaletteEnabled: documentBlock.paperPaletteEnabled
-            shortcutKeyPressHandler: documentBlock.shortcutKeyPressHandler
             width: documentBlock.width
         }
     }
@@ -417,8 +427,8 @@ FocusScope {
 
         ContentsCalloutBlock {
             blockData: documentBlock.blockData
+            nativeTextInputPriority: documentBlock.nativeTextInputPriority
             paperPaletteEnabled: documentBlock.paperPaletteEnabled
-            shortcutKeyPressHandler: documentBlock.shortcutKeyPressHandler
             width: documentBlock.width
         }
     }
@@ -428,7 +438,7 @@ FocusScope {
 
         ContentsBreakBlock {
             blockData: documentBlock.blockData
-            shortcutKeyPressHandler: documentBlock.shortcutKeyPressHandler
+            tagManagementShortcutKeyPressHandler: documentBlock.tagManagementShortcutKeyPressHandler
             width: documentBlock.width
         }
     }

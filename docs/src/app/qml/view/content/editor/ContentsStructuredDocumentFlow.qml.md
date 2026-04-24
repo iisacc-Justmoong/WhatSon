@@ -43,6 +43,13 @@ source.
   - `boundaryNavigationRequested(axis, side)`
   - `documentEndEditRequested()`
   - agenda/callout backend mutation signals
+- Block, agenda-task, and callout text mutations now verify that the delegate's expected RAW source slice still
+  matches the current document source before splicing.
+  Late mobile blur/dismiss events from an older block snapshot are rejected instead of being applied to a newer source
+  buffer, so an already-saved edit cannot be inserted repeatedly during note leave/session flush.
+- Focused text delegates now send the expected previous live source/text with each mutation.
+  The flow uses that expected slice length for text, agenda task, and callout splices, so fast iOS backspace repeat can
+  continue rebasing on the latest local edit before the parser has emitted a fresh block snapshot.
 - Visible text for ordinary structured text blocks is now the same RAW block string that the text delegate edits.
   Gutter/minimap/logical-line calculations therefore no longer depend on an inline-tag-stripped plain-text projection.
 - Plain newline-delimited prose now enters the flow as one ordered paragraph stream instead of one aggregated fallback
@@ -76,10 +83,12 @@ source.
 - Atomic-block target focus now also carries an explicit `targetBlockIndex`.
   When adjacent blocks share the same source boundary, flow-level focus restore can still choose the resource/break
   block itself instead of letting a neighboring text block consume the same offset first.
-- The flow now also accepts one generic `shortcutKeyPressHandler` from the host and forwards it into every mounted
-  document block.
-  Structured notes therefore can share note-wide shortcut interception, such as clipboard-image paste, without falling
-  back to the legacy whole-note editor path.
+- The flow accepts one `tagManagementShortcutKeyPressHandler` from the host, and only selected tag-managed atomic
+  blocks (`resource` and `break`) can invoke it.
+  Text-editing delegates never dispatch host key handlers from their nested `TextEdit`, keeping native input keys and
+  IME composition on the OS/Qt path.
+- The flow exposes `nativeCompositionActive()` by scanning mounted delegates for `inputMethodComposing`/`preeditText`.
+  The display host uses that state to disable window-level document shortcuts while an IME composition is active.
 - Structured block navigation now also understands a document-level boundary axis in addition to adjacent
   `horizontal / vertical` hops.
   `Command + Up/Down` emitted by block delegates can therefore route straight to RAW document start/end without
