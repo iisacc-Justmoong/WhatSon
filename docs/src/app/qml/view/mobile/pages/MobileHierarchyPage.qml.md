@@ -16,6 +16,9 @@ It does not own the domain data itself. Its job is to keep the mobile `LV.PageRo
 - Keep compact navigation chrome route-aware so hierarchy-only controls do not leak into note-list or editor pages.
 - Keep the mobile detail route-aware: the compact navigation only exposes the detail affordance on `/mobile/editor`,
   and that affordance pushes a real routed page instead of toggling overlay chrome.
+- Treat mobile back navigation as page dismissal instead of a raw router pop, so `/mobile/detail` dismisses to the
+  editor, `/mobile/editor` dismisses to the current note list, and `/mobile/note-list` dismisses to the hierarchy
+  root without letting a transient hierarchy pop clear the active folder selection first.
 - Own the mobile panel hook directly through the `mobile.MobileHierarchyPage` panel key instead of routing that hook through a wrapper component, while keeping note creation on the dedicated `windowInteractions` shortcut path so generic route hooks never create files.
 - Resolve the effective list-deletion contract from the active hierarchy first, then fall back to
   the shared library-note mutation viewmodel (or the global LV viewmodel registry) when the active
@@ -120,6 +123,11 @@ Interactive back navigation from the editor can temporarily leave `currentPath` 
 
 `handleCommittedRouteTransition(...)` and `verifyCommittedEditorPopState(...)` therefore use `displayedBodyRoutePath()` before forcing a canonical note-list rebuild. If the rendered body is already the note-list page, the repair path is skipped. This keeps the previous folder-scoped note list on screen instead of rebuilding the stack back through the generic root state.
 
+The explicit mobile back action now avoids that transient state entirely. `dismissCurrentPage()` first asks
+`MobileHierarchyNavigationCoordinator::dismissPagePlan(...)` for the canonical dismiss target and then routes directly
+to that target instead of calling `router.back()`. This keeps editor dismissal on the stable
+`hierarchy -> note-list -> editor` model even when the live router stack has drifted.
+
 ## Detail Pop Repair
 Interactive back navigation from `/mobile/detail` is now repaired with the same explicit post-commit verification used by the editor route.
 
@@ -140,7 +148,8 @@ The left-edge gesture is implemented with a local `DragHandler` instead of a glo
 The flow is:
 1. `beginBackSwipeGesture(...)` validates the edge hit and begins `LV.PageTransitionController`.
 2. `updateBackSwipeGesture(...)` feeds progress and cancels when the motion turns vertical.
-3. `finishBackSwipeGesture(...)` commits or cancels based on controller heuristics.
+3. `finishBackSwipeGesture(...)` cancels the gesture when the controller rejects the commit and otherwise routes
+   through the same dismiss helper used by the explicit back action.
 
 This keeps mobile back navigation local to the page and avoids stealing editor text-selection gestures from the content view.
 
@@ -174,6 +183,8 @@ This keeps mobile back navigation local to the page and avoids stealing editor t
 - A note-list/editor canonical rebuild must preserve the hierarchy selection before changing the route stack.
 - Returning from `/mobile/editor` must prefer the actually displayed note-list body over a stale `currentPath` snapshot.
 - Returning from `/mobile/detail` must prefer the actual editor body and must never settle on the hierarchy page as the restored destination.
+- Explicit mobile back dismissal must never call a raw `router.back()` from `/mobile/editor`, because the transient
+  hierarchy route can clear the active hierarchy selection before note-list restoration runs.
 - Mobile hierarchy routing is selection-driven; the routes do not own separate domain state copies.
 - Mobile hierarchy routing must refresh its active toolbar/content tuple from one snapshot and forward the resulting
   `activeNoteListModel` into both `ListBarLayout.qml` and `ContentViewLayout.qml`, or transient hierarchy switches can

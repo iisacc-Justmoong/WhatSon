@@ -30,6 +30,7 @@ public:
     void setDetailRoutePath(const QString& value);
 
     Q_INVOKABLE QString displayedBodyRoutePath(const QVariant& bodyItem, const QVariant& activePageRouter) const;
+    Q_INVOKABLE QVariantMap dismissPagePlan(bool hasRouter, bool hasNoteListModel, const QString& displayedPath) const;
     Q_INVOKABLE QVariantMap openDetailPanelPlan(bool hasRouter, bool hasNoteListModel, const QString& currentPath, const QString& displayedPath, int depth) const;
     Q_INVOKABLE QVariantMap openNoteListPlan(bool hasRouter, bool hasNoteListModel, const QString& currentPath, const QString& displayedPath, int depth) const;
     Q_INVOKABLE QVariantMap openEditorPlan(const QVariant& noteId, bool hasActiveContentViewModel, bool hasNoteListModel, bool hasRouter, const QString& currentPath, const QString& displayedPath, int depth) const;

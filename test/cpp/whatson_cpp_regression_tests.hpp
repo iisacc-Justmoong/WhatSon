@@ -1016,6 +1016,7 @@ private slots:
     void mobileChrome_usesSharedFigmaControlSurfaceColor();
     void mobileHierarchyRouteStateStore_tracksNormalizedSelectionRestoreState();
     void mobileHierarchySelectionCoordinator_prefersExplicitSidebarBindingsAndFallbacks();
+    void mobileHierarchyNavigationCoordinator_routesBackAsDismissTargets();
     void sourceTree_usesRepositoryAbsoluteProjectIncludes();
     void paperSelection_tracksChosenPaperEnumState();
     void a4PaperBackground_exposesCanonicalMetricsAndAnchorsPrintRendererDefaults();

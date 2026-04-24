@@ -164,6 +164,8 @@ ctest --test-dir build --output-on-failure -L cpp_regression
 - Note-body mount coordination now also pins the retry/failure boundary between the selection bridge, the editor
   session, and the mounted document surface, so a selected note that still has no resolved body after one refresh pass
   shows the centered `No document opened` placeholder instead of leaving the chrome alive around an empty body layer.
+- Mobile hierarchy navigation now also pins dismiss-style back targets in the C++ and source-locked QML regression
+  suite, so leaving `/mobile/editor` returns to the current note list instead of falling through a raw hierarchy pop.
 - Developer quality gates now also resolve their QML/C++ file lists from the repository root, so `whatson_qmllint`
   and `whatson_clang_tidy` no longer degrade into empty-input no-op runs.
 - Project-local C++ headers now also lock repository-absolute include paths, so `app/...`, `extension/...`, and

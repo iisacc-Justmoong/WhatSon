@@ -17,6 +17,8 @@
 
 ## Recent Notes
 - The mobile routed workspace now explicitly repairs committed detail-page back navigation so the restore target remains the note editor instead of falling through to the hierarchy page.
+- The same mobile shell now also routes explicit back dismissal through canonical page targets (`detail -> editor ->
+  note-list -> hierarchy`) instead of issuing a raw `router.back()` from the note editor.
 
 ## Intended Detailed Sections
 - Module responsibilities and architectural layer

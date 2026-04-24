@@ -76,6 +76,53 @@ QString MobileHierarchyNavigationCoordinator::displayedBodyRoutePath(const QVari
     return routerObject->property("currentPath").toString();
 }
 
+QVariantMap MobileHierarchyNavigationCoordinator::dismissPagePlan(const bool hasRouter, const bool hasNoteListModel, const QString& displayedPath) const
+{
+    QVariantMap plan;
+    const QString normalizedDisplayedPath = normalizedPath(displayedPath);
+    plan.insert(QStringLiteral("allowed"), hasRouter);
+    plan.insert(QStringLiteral("dismissToEditor"), false);
+    plan.insert(QStringLiteral("dismissToHierarchy"), false);
+    plan.insert(QStringLiteral("dismissToNoteList"), false);
+    plan.insert(QStringLiteral("targetPath"), normalizedDisplayedPath);
+
+    if (!hasRouter)
+    {
+        return plan;
+    }
+
+    if (normalizedDisplayedPath == m_detailRoutePath)
+    {
+        plan.insert(QStringLiteral("allowed"), hasNoteListModel);
+        plan.insert(QStringLiteral("dismissToEditor"), hasNoteListModel);
+        plan.insert(QStringLiteral("targetPath"), m_editorRoutePath);
+        return plan;
+    }
+
+    if (normalizedDisplayedPath == m_editorRoutePath)
+    {
+        plan.insert(QStringLiteral("allowed"), hasNoteListModel);
+        plan.insert(QStringLiteral("dismissToNoteList"), hasNoteListModel);
+        plan.insert(QStringLiteral("targetPath"), m_noteListRoutePath);
+        return plan;
+    }
+
+    if (normalizedDisplayedPath == m_noteListRoutePath)
+    {
+        plan.insert(QStringLiteral("dismissToHierarchy"), true);
+        plan.insert(QStringLiteral("targetPath"), m_hierarchyRoutePath);
+        return plan;
+    }
+
+    if (normalizedDisplayedPath != m_hierarchyRoutePath)
+    {
+        plan.insert(QStringLiteral("allowed"), false);
+        plan.insert(QStringLiteral("targetPath"), QString());
+    }
+
+    return plan;
+}
+
 QVariantMap MobileHierarchyNavigationCoordinator::openDetailPanelPlan(const bool hasRouter, const bool hasNoteListModel, const QString& currentPath, const QString& displayedPath, const int depth) const
 {
     QVariantMap plan;

@@ -1,5 +1,6 @@
 #include "test/cpp/whatson_cpp_regression_tests.hpp"
 
+#include "app/models/content/mobile/MobileHierarchyNavigationCoordinator.hpp"
 #include "app/models/content/mobile/MobileHierarchyRouteStateStore.hpp"
 #include "app/models/content/mobile/MobileHierarchySelectionCoordinator.hpp"
 
@@ -51,6 +52,14 @@ void WhatSonCppRegressionTests::mobileChrome_usesSharedFigmaControlSurfaceColor(
         QStringLiteral("routeSelectionSyncPolicy.routeSelectionSyncPlan(")));
     QVERIFY(mobileHierarchyPageSource.contains(
         QStringLiteral("navigationCoordinator.openEditorPlan(")));
+    QVERIFY(mobileHierarchyPageSource.contains(
+        QStringLiteral("navigationCoordinator.dismissPagePlan(")));
+    QVERIFY(mobileHierarchyPageSource.contains(
+        QStringLiteral("function dismissCurrentPage()")));
+    QVERIFY(mobileHierarchyPageSource.contains(
+        QStringLiteral("return mobileHierarchyPage.dismissCurrentPage();")));
+    QVERIFY(!mobileHierarchyPageSource.contains(
+        QStringLiteral("mobileScaffold.activePageRouter.back();")));
     QVERIFY(mobileHierarchyPageSource.contains(
         QStringLiteral("backSwipeCoordinator.beginGesturePlan(")));
     QVERIFY(mobileScaffoldSource.contains(
@@ -129,4 +138,50 @@ void WhatSonCppRegressionTests::mobileHierarchySelectionCoordinator_prefersExpli
             5),
         5);
     QCOMPARE(coordinator.currentHierarchySelectionIndex(QVariant(), 7), 7);
+}
+
+void WhatSonCppRegressionTests::mobileHierarchyNavigationCoordinator_routesBackAsDismissTargets()
+{
+    MobileHierarchyNavigationCoordinator coordinator;
+    coordinator.setHierarchyRoutePath(QStringLiteral("/mobile/hierarchy"));
+    coordinator.setNoteListRoutePath(QStringLiteral("/mobile/note-list"));
+    coordinator.setEditorRoutePath(QStringLiteral("/mobile/editor"));
+    coordinator.setDetailRoutePath(QStringLiteral("/mobile/detail"));
+
+    const QVariantMap detailPlan = coordinator.dismissPagePlan(
+        true,
+        true,
+        QStringLiteral("/mobile/detail"));
+    QVERIFY(detailPlan.value(QStringLiteral("allowed")).toBool());
+    QVERIFY(detailPlan.value(QStringLiteral("dismissToEditor")).toBool());
+    QCOMPARE(
+        detailPlan.value(QStringLiteral("targetPath")).toString(),
+        QStringLiteral("/mobile/editor"));
+
+    const QVariantMap editorPlan = coordinator.dismissPagePlan(
+        true,
+        true,
+        QStringLiteral("/mobile/editor"));
+    QVERIFY(editorPlan.value(QStringLiteral("allowed")).toBool());
+    QVERIFY(editorPlan.value(QStringLiteral("dismissToNoteList")).toBool());
+    QCOMPARE(
+        editorPlan.value(QStringLiteral("targetPath")).toString(),
+        QStringLiteral("/mobile/note-list"));
+
+    const QVariantMap noteListPlan = coordinator.dismissPagePlan(
+        true,
+        true,
+        QStringLiteral("/mobile/note-list"));
+    QVERIFY(noteListPlan.value(QStringLiteral("allowed")).toBool());
+    QVERIFY(noteListPlan.value(QStringLiteral("dismissToHierarchy")).toBool());
+    QCOMPARE(
+        noteListPlan.value(QStringLiteral("targetPath")).toString(),
+        QStringLiteral("/mobile/hierarchy"));
+
+    const QVariantMap blockedEditorPlan = coordinator.dismissPagePlan(
+        true,
+        false,
+        QStringLiteral("/mobile/editor"));
+    QVERIFY(!blockedEditorPlan.value(QStringLiteral("allowed")).toBool());
+    QVERIFY(!blockedEditorPlan.value(QStringLiteral("dismissToNoteList")).toBool());
 }

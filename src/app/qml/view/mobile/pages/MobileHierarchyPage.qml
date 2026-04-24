@@ -392,20 +392,23 @@ Item {
                 mobileHierarchyPage.verifyCommittedDetailPopState(repairRequestId, attemptsRemaining);
         });
     }
+    function dismissCurrentPage() {
+        const plan = navigationCoordinator.dismissPagePlan(
+                    !!mobileScaffold.activePageRouter,
+                    !!mobileHierarchyPage.activeNoteListModel,
+                    mobileHierarchyPage.displayedBodyRoutePath());
+        if (!plan.allowed)
+            return false;
+        if (plan.dismissToEditor)
+            return mobileHierarchyPage.routeToCanonicalEditor();
+        if (plan.dismissToNoteList)
+            return mobileHierarchyPage.routeToCanonicalNoteList();
+        if (plan.dismissToHierarchy)
+            return mobileHierarchyPage.routeToHierarchyRoot();
+        return false;
+    }
     function requestBackToHierarchy() {
-        if (!mobileScaffold.activePageRouter)
-            return;
-        mobileHierarchyPage.cancelPendingEditorPopRepair();
-        mobileHierarchyPage.cancelPendingDetailPopRepair();
-        if (pageTransitionController.active)
-            pageTransitionController.cancel();
-        mobileHierarchyPage.resetBackSwipeState();
-        if (mobileScaffold.activePageRouter.canGoBack) {
-            mobileScaffold.activePageRouter.back();
-            mobileHierarchyPage.requestViewHook();
-            return;
-        }
-        mobileHierarchyPage.routeToHierarchyRoot();
+        return mobileHierarchyPage.dismissCurrentPage();
     }
     function requestCreateFolder() {
         if (mobileScaffold.bodyItem && mobileScaffold.bodyItem.requestCreateFolder !== undefined)
@@ -577,7 +580,9 @@ Item {
             return false;
         if (plan.cancelled)
             return pageTransitionController.cancel();
-        return pageTransitionController.finish(!!plan.shouldCommit);
+        if (!plan.shouldCommit)
+            return pageTransitionController.cancel();
+        return mobileHierarchyPage.dismissCurrentPage();
     }
     function updateBackSwipeGesture(eventData) {
         const plan = backSwipeCoordinator.updateGesturePlan(
