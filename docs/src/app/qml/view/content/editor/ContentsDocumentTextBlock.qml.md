@@ -51,16 +51,15 @@ from multiple implicit parser blocks.
 - An empty text block now treats plain `Backspace` / `Delete` as "remove this line" before it tries adjacent atomic
   block deletion.
   Zero-length paragraph blocks therefore no longer become undeletable cursor anchors.
-- Plain `Enter` inside `paragraph` / `p` blocks is now intercepted before `TextEdit` inserts an inline newline.
-  The delegate maps the visible caret back to a RAW source offset and emits a paragraph-split request so prose blocks
-  stay separable as true block boundaries instead of accidental in-block line breaks.
+- Plain `Enter` inside `paragraph` / `p` blocks is no longer intercepted by the shared inline editor wrapper.
+  The live `TextEdit` receives the key directly, then the ordinary text-edit mutation path persists the resulting RAW
+  source snapshot.
 - Flattened interactive prose spans intentionally opt out of that paragraph-boundary interception at the host layer.
   For those grouped spans, native newline insertion stays inside the shared prose editor and the parser can rediscover
   paragraph boundaries on the next RAW refresh pass.
-- `Backspace` at the start of a paragraph block and `Delete` at the end now request paragraph-boundary merge only when
-  the adjacent parsed block is also paragraph-mergeable.
-  That keeps same-flow prose easy to merge while preventing headings, callouts, resources, and other non-paragraph
-  blocks from being collapsed into paragraph text accidentally.
+- The old paragraph-boundary Backspace/Delete helper remains in the delegate for non-native block hosts, but
+  `ContentsInlineFormatEditor.qml` no longer dispatches native text-input keys through that helper.
+  Repeated Backspace/Delete therefore stays with the OS/Qt `TextEdit` path while the user is editing text.
 
 ## Shared Block Contract
 - `textEditable = true`

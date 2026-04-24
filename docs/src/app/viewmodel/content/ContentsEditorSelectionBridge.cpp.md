@@ -61,6 +61,10 @@
   `editorTextPersistenceFinished(noteId, text, success, ...)` for the currently visible note body.
   This closes the stale same-note gap where persistence could succeed, reconcile could report "no refresh needed", and
   QML would still keep the note-open body snapshot as the last selected-body value.
+- The bridge now emits the public `editorTextPersistenceFinished(...)` signal only after that selected-body snapshot
+  has been updated for successful same-note persistence.
+  This keeps the editor session from clearing `pendingBodySave` before QML's presentation resolver can see the saved
+  RAW body, preventing a brief fallback to the previous `.wsnbody` snapshot during live typing.
 - When note-package path resolution cannot produce a lazy-load request at all, the bridge now also asks the active
   content view-model for an optional `noteBodySourceTextForNoteId(...)` runtime snapshot before it falls back to an
   empty body.

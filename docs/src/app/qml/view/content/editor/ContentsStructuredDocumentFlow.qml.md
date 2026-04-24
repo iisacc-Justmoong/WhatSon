@@ -54,9 +54,9 @@ source.
 - Those zero-length paragraph blocks are now also deletable.
   When the block has wrapper source (`<paragraph></paragraph>`), the flow removes that wrapper span; when it is an
   implicit blank line between prose blocks, the flow removes the adjacent newline token that created the empty line.
-- Adjacent `paragraph` / `p` blocks are now also mergeable and splittable through one shared RAW mutation-policy path.
-  `Backspace` at the start of the later paragraph merges into the previous paragraph, `Delete` at the end merges the
-  next paragraph into the current one, and plain `Enter` splits the paragraph at the visible caret.
+- Adjacent `paragraph` / `p` blocks still share one RAW mutation-policy helper for non-native block hosts.
+  The shared inline text editor no longer dispatches native text-input `Enter`, `Backspace`, or `Delete` through that
+  helper, so ordinary paragraph editing stays on the OS/Qt `TextEdit` key path.
 - Paragraph-boundary operations stay limited to paragraph-style prose blocks only.
   The flow consults `ContentsStructuredDocumentMutationPolicy` before exposing merge/split affordances, so headings,
   framed blocks, and atomic resources do not accidentally participate in paragraph joins.

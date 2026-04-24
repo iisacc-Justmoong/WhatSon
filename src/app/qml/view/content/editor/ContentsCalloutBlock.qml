@@ -134,8 +134,8 @@ FocusScope {
         const targetCursorPosition = isFinite(numericCursorPosition)
                                    ? Math.max(0, Math.min(Math.floor(numericCursorPosition), Math.max(0, calloutEditor.length || 0)))
                                    : Math.max(0, calloutEditor.length || 0)
-        if (calloutEditor.setCursorPositionPreservingInputMethod !== undefined)
-            calloutEditor.setCursorPositionPreservingInputMethod(targetCursorPosition)
+        if (calloutEditor.setCursorPositionPreservingNativeInput !== undefined)
+            calloutEditor.setCursorPositionPreservingNativeInput(targetCursorPosition)
         else if (calloutEditor.cursorPosition !== undefined)
             calloutEditor.cursorPosition = targetCursorPosition
         calloutBlock.activated()

@@ -989,8 +989,8 @@ Item {
         if (!contentsView.shouldFlushBlurredEditorState(normalizedScheduledNoteId))
             return;
         const activePreeditText = contentEditor && contentEditor.preeditText !== undefined ? String(contentEditor.preeditText === undefined || contentEditor.preeditText === null ? "" : contentEditor.preeditText) : "";
-        const inputMethodBusy = !!(contentEditor && ((contentEditor.inputMethodComposing !== undefined && contentEditor.inputMethodComposing) || activePreeditText.length > 0));
-        if (inputMethodBusy && retryCount < 6) {
+        const nativeCompositionBusy = !!(contentEditor && ((contentEditor.inputMethodComposing !== undefined && contentEditor.inputMethodComposing) || activePreeditText.length > 0));
+        if (nativeCompositionBusy && retryCount < 6) {
             Qt.callLater(function () {
                 contentsView.flushEditorStateAfterInputSettles(retryCount + 1, normalizedScheduledNoteId);
             });
@@ -1024,8 +1024,8 @@ Item {
             contentEditor.forceActiveFocus();
             if (contentEditor.editorItem && contentEditor.editorItem.forceActiveFocus !== undefined)
                 contentEditor.editorItem.forceActiveFocus();
-            if (contentEditor.setCursorPositionPreservingInputMethod !== undefined)
-                contentEditor.setCursorPositionPreservingInputMethod(cursorPosition);
+            if (contentEditor.setCursorPositionPreservingNativeInput !== undefined)
+                contentEditor.setCursorPositionPreservingNativeInput(cursorPosition);
             else if (contentEditor.cursorPosition !== undefined)
                 contentEditor.cursorPosition = cursorPosition;
         });
@@ -1714,8 +1714,8 @@ Item {
         }
         const logicalOffset = Math.max(0, contentsView.resolvedLogicalTextLength);
         contentEditor.forceActiveFocus();
-        if (contentEditor.setCursorPositionPreservingInputMethod !== undefined) {
-            contentEditor.setCursorPositionPreservingInputMethod(logicalOffset);
+        if (contentEditor.setCursorPositionPreservingNativeInput !== undefined) {
+            contentEditor.setCursorPositionPreservingNativeInput(logicalOffset);
             return true;
         }
         if (contentEditor.cursorPosition !== undefined) {
@@ -1737,8 +1737,8 @@ Item {
         }
         const logicalOffset = editorTypingController.logicalOffsetForSourceOffset(Number(focusPlan.targetOffset) || 0);
         contentEditor.forceActiveFocus();
-        if (contentEditor.setCursorPositionPreservingInputMethod !== undefined) {
-            contentEditor.setCursorPositionPreservingInputMethod(logicalOffset);
+        if (contentEditor.setCursorPositionPreservingNativeInput !== undefined) {
+            contentEditor.setCursorPositionPreservingNativeInput(logicalOffset);
             return;
         }
         if (contentEditor.cursorPosition !== undefined)
@@ -3481,7 +3481,7 @@ Item {
                         function forceActiveFocus() {
                         }
 
-                        function setCursorPositionPreservingInputMethod(_cursorPosition) {
+                        function setCursorPositionPreservingNativeInput(_cursorPosition) {
                         }
                     }
                     Component {

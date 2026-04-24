@@ -92,9 +92,9 @@
   binding parsed block arrays directly.
   Single-line delete and similar RAW edits therefore preserve unchanged block delegates instead of remounting the
   entire structured editor column when only source offsets moved.
-- Paragraph/p prose blocks now also expose one shared boundary-editing rule:
-  plain `Enter` splits a paragraph at the RAW caret offset, while boundary `Backspace` / `Delete` merge adjacent
-  paragraphs through the structured mutation policy instead of inserting/removing in-block newlines locally.
+- Paragraph/p prose blocks keep a shared RAW mutation-policy helper for non-native hosts, but the shared inline editor
+  no longer routes ordinary `Enter`, `Backspace`, or `Delete` through QML key interception.
+  Live note-body text editing now leaves those keys with the OS/Qt `TextEdit` path.
 - Parser payloads and mounted block delegates now share one block contract:
   `plainText`, `textEditable`, `atomicBlock`, `gutterCollapsed`, `logicalLineCountHint`,
   `minimapVisualKind`, and `minimapRepresentativeCharCount`.
@@ -146,21 +146,16 @@
 - The unified host now also fingerprints structured gutter geometry separately from logical line-count metadata.
   A resource-driven spacing change therefore refreshes gutter Y even when the parsed logical line count did not
   change at all.
-- `ContentsInlineFormatEditor.qml` now also owns the `Qt.inputMethod.update(...)` bridge for cursor, selection, and
-  geometry changes, keeping mobile platform text-selection handles and iOS keyboard trackpad gestures aligned with the
-  live `TextEdit`.
+- `ContentsInlineFormatEditor.qml` no longer owns a QInputMethod notification bridge. Cursor, selection, preedit text,
+  candidate placement, keyboard visibility, and query updates stay on the live OS/Qt `TextEdit` path.
+  The editor must not call `Qt.inputMethod.*`, the bare QML `InputMethod.*` singleton, or maintain fallback branches
+  for alternate input-method objects; the C++ regression suite scans the QML source tree for those forbidden patterns.
 - Both the wrapper and the selection controller now restore selections with `TextEdit.moveCursorSelection(...)` when an
   active edge matters, so OS-driven selection expansion keeps one continuous anchor instead of degrading to repeated
   fresh sub-selections.
-- `ContentsInlineFormatEditor.qml` now also supplements mobile native-input selection with passive touch multi-tap
-  handling, restoring double-tap word selection and triple-tap paragraph selection even though the live editor sits
-  inside a `Flickable`.
-- In mobile native-input mode, the shared wrapper now also separates scroll-vs-edit activation:
-  - keyboard hidden: touch `press`/drag stays scroll-first and does not immediately move cursor/focus
-    A transparent guard layer now sits above `TextEdit`, forwards drags back to the parent `Flickable`, and only
-    upgrades a clean click into `activateInputAtPoint(...)`.
-  - single tap: places cursor at the tapped point and opens the keyboard
-  - keyboard visible: normal cursor placement/selection remains enabled
+- `ContentsInlineFormatEditor.qml` now leaves mobile and desktop pointer selection directly on the live `TextEdit`.
+  It no longer mounts a transparent guard layer or touch multi-tap handler above the input surface, so OS/Qt cursor
+  placement, selection handles, word selection, and drag selection are not preempted by wrapper code.
 - Mobile editor hosts now opt into native-input priority rules, pause note snapshot polling, delay app-driven
   RichText surface reinjection until the OS input session settles, and use a plain logical-text input surface instead
   of the RichText editor projection.
@@ -447,8 +442,8 @@
   edit.
 - The shared editor wrapper now also normalizes tab indentation width through `TextEdit.tabStopDistance` using runtime
   font metrics for four spaces, so Tab indent depth no longer jumps to an oversized default column.
-- The shared editor wrapper now also intercepts direct `Tab` key insertion to emit four literal spaces by default,
-  preventing mode-dependent `\t` expansion from producing oversized indentation width.
+- The shared editor wrapper no longer intercepts direct `Tab` key insertion. Tab handling stays with the native
+  `TextEdit` path so keyboard traversal, repeat, and platform text editing policy are not overridden by QML.
 - `ContentsEditorTypingController.qml` no longer drops a committed `textEdited` mutation only because a transient
   model-sync guard bit is still set; committed user typing now always refreshes local authority and persistence staging.
 - The shared selection controller now also primes right-click context-menu selections on mouse press, so multi-block or

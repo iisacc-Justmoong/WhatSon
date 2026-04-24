@@ -290,8 +290,8 @@ FocusScope {
                             const targetCursorPosition = isFinite(numericCursorPosition)
                                                        ? Math.max(0, Math.min(Math.floor(numericCursorPosition), Math.max(0, taskEditor.length || 0)))
                                                        : Math.max(0, taskEditor.length || 0)
-                            if (taskEditor.setCursorPositionPreservingInputMethod !== undefined)
-                                taskEditor.setCursorPositionPreservingInputMethod(targetCursorPosition)
+                            if (taskEditor.setCursorPositionPreservingNativeInput !== undefined)
+                                taskEditor.setCursorPositionPreservingNativeInput(targetCursorPosition)
                             else if (taskEditor.cursorPosition !== undefined)
                                 taskEditor.cursorPosition = targetCursorPosition
                             agendaBlock.activated()

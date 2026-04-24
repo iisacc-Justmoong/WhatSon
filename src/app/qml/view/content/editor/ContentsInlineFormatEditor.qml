@@ -58,7 +58,7 @@ FocusScope {
                                                        Number(textInput.contentHeight) || 0,
                                                        Number(renderedOutputText.contentHeight) || 0))
     readonly property bool renderedOutputVisible: control.showRenderedOutput
-                                                  && !control.inputMethodSessionActive()
+                                                  && !control.nativeCompositionActive()
                                                   && (control.renderedText === undefined
                                                       || control.renderedText === null
                                                       ? ""
@@ -82,13 +82,8 @@ FocusScope {
     readonly property bool focused: activeFocus || textInput.activeFocus
     readonly property bool hasSelection: textInput.selectionEnd > textInput.selectionStart
     readonly property bool inputMethodComposing: textInput.inputMethodComposing
-    readonly property bool inputMethodVisible: Qt.inputMethod && Qt.inputMethod.visible !== undefined
-                                               ? Qt.inputMethod.visible
-                                               : false
     readonly property int length: textInput.length
     readonly property int lineCount: textInput.lineCount
-    readonly property bool nativeTouchScrollGuardActive: control.preferNativeInputHandling
-                                                         && !control.inputMethodVisible
     readonly property string preeditText: textInput.preeditText === undefined || textInput.preeditText === null
                                            ? ""
                                            : String(textInput.preeditText)
@@ -143,7 +138,6 @@ FocusScope {
         if (textInput.deselect !== undefined)
             textInput.deselect();
         control.clearCachedSelectionSnapshot();
-        control.notifyInputMethod(control.inputMethodSelectionQueryMask());
     }
 
     function clearCachedSelectionSnapshot() {
@@ -219,7 +213,7 @@ FocusScope {
         };
     }
 
-    function inputMethodSessionActive() {
+    function nativeCompositionActive() {
         return control.inputMethodComposing || control.preeditText.length > 0;
     }
 
@@ -230,35 +224,18 @@ FocusScope {
         return Math.max(0, Math.min(Math.floor(numericPosition), Math.max(0, maximumLength)));
     }
 
-    function setCursorPositionPreservingInputMethod(position) {
+    function setCursorPositionPreservingNativeInput(position) {
         const maximumLength = Number(textInput.length) || 0;
         const boundedPosition = control.clampLogicalPosition(position, maximumLength);
         EditorTrace.trace(
                     "inlineFormatEditor",
-                    "setCursorPositionPreservingInputMethod",
+                    "setCursorPositionPreservingNativeInput",
                     "requested=" + position + " bounded=" + boundedPosition + " maximumLength=" + maximumLength,
                     control)
         if (Number(textInput.cursorPosition) === boundedPosition)
             return false;
         textInput.cursorPosition = boundedPosition;
-        control.notifyInputMethod(control.inputMethodSelectionQueryMask());
-        control.notifyInputMethod(control.inputMethodGeometryQueryMask());
         return true;
-    }
-
-    function inputMethodGeometryQueryMask() {
-        return Qt.ImCursorRectangle | Qt.ImAnchorRectangle | Qt.ImInputItemClipRectangle;
-    }
-
-    function inputMethodSelectionQueryMask() {
-        return Qt.ImQueryInput;
-    }
-
-    function notifyInputMethod(queries) {
-        const queryMask = queries === undefined || queries === null
-                ? control.inputMethodSelectionQueryMask()
-                : queries;
-        InputMethod.update(queryMask);
     }
 
     function selectionCursorUsesStartEdge(cursorPosition, selectionStart, selectionEnd) {
@@ -297,210 +274,8 @@ FocusScope {
         return false;
     }
 
-    function cursorPositionForPoint(point) {
-        const maximumLength = Number(textInput.length) || 0;
-        if (textInput.positionAt !== undefined && point) {
-            const pointX = Number(point.x);
-            const pointY = Number(point.y);
-            if (isFinite(pointX) && isFinite(pointY)) {
-                const resolvedPosition = Number(textInput.positionAt(
-                                                   Math.round(pointX),
-                                                   Math.round(pointY)));
-                if (isFinite(resolvedPosition))
-                    return control.clampLogicalPosition(resolvedPosition, maximumLength);
-            }
-        }
-        return control.clampLogicalPosition(Number(textInput.cursorPosition), maximumLength);
-    }
-
-    function paragraphSelectionRangeForPosition(position) {
-        const maximumLength = Number(textInput.length) || 0;
-        const editorText = textInput.getText !== undefined
-                ? String(textInput.getText(0, maximumLength))
-                : String(textInput.text === undefined || textInput.text === null ? "" : textInput.text);
-        if (editorText.length === 0)
-            return ({ "start": 0, "end": 0 });
-
-        let boundedPosition = control.clampLogicalPosition(position, editorText.length);
-        if (boundedPosition >= editorText.length)
-            boundedPosition = Math.max(0, editorText.length - 1);
-
-        let paragraphStart = boundedPosition;
-        while (paragraphStart > 0 && editorText.charAt(paragraphStart - 1) !== "\n")
-            --paragraphStart;
-
-        let paragraphEnd = boundedPosition;
-        while (paragraphEnd < editorText.length && editorText.charAt(paragraphEnd) !== "\n")
-            ++paragraphEnd;
-
-        return ({
-                "start": paragraphStart,
-                "end": paragraphEnd
-            });
-    }
-
-    function applyNativeSelectionRange(selectionStart, selectionEnd, cursorPosition) {
-        const restored = control.restoreSelectionRange(selectionStart, selectionEnd, cursorPosition);
-        if (restored) {
-            control.notifyInputMethod(control.inputMethodSelectionQueryMask());
-            control.notifyInputMethod(control.inputMethodGeometryQueryMask());
-        }
-        return restored;
-    }
-
-    function selectWordAtPoint(point) {
-        const targetPosition = control.cursorPositionForPoint(point);
-        textInput.cursorPosition = targetPosition;
-        if (textInput.selectWord === undefined)
-            return false;
-        textInput.selectWord();
-        const selectionStart = Number(textInput.selectionStart);
-        const selectionEnd = Number(textInput.selectionEnd);
-        if (selectionEnd <= selectionStart)
-            return false;
-        return control.applyNativeSelectionRange(selectionStart, selectionEnd, selectionEnd);
-    }
-
-    function selectParagraphAtPoint(point) {
-        const targetPosition = control.cursorPositionForPoint(point);
-        const paragraphRange = control.paragraphSelectionRangeForPosition(targetPosition);
-        if (paragraphRange.end <= paragraphRange.start)
-            return false;
-        return control.applyNativeSelectionRange(paragraphRange.start, paragraphRange.end, paragraphRange.end);
-    }
-
-    function previousParagraphCursorPosition(cursorPosition, textOverride) {
-        const editorText = textOverride === undefined || textOverride === null
-                ? control.currentPlainText()
-                : String(textOverride);
-        const maximumLength = editorText.length;
-        const resolvedCursor = control.clampLogicalPosition(cursorPosition, maximumLength);
-        if (maximumLength === 0 || resolvedCursor <= 0)
-            return 0;
-
-        let paragraphStart = resolvedCursor;
-        while (paragraphStart > 0 && editorText.charAt(paragraphStart - 1) !== "\n")
-            --paragraphStart;
-        if (paragraphStart < resolvedCursor)
-            return paragraphStart;
-
-        let previousParagraphEnd = Math.max(0, paragraphStart - 1);
-        while (previousParagraphEnd > 0 && editorText.charAt(previousParagraphEnd - 1) === "\n")
-            --previousParagraphEnd;
-        while (previousParagraphEnd > 0 && editorText.charAt(previousParagraphEnd - 1) !== "\n")
-            --previousParagraphEnd;
-        return previousParagraphEnd;
-    }
-
-    function nextParagraphCursorPosition(cursorPosition, textOverride) {
-        const editorText = textOverride === undefined || textOverride === null
-                ? control.currentPlainText()
-                : String(textOverride);
-        const maximumLength = editorText.length;
-        const resolvedCursor = control.clampLogicalPosition(cursorPosition, maximumLength);
-        if (maximumLength === 0 || resolvedCursor >= maximumLength)
-            return maximumLength;
-
-        let paragraphEnd = resolvedCursor;
-        while (paragraphEnd < maximumLength && editorText.charAt(paragraphEnd) !== "\n")
-            ++paragraphEnd;
-        if (paragraphEnd > resolvedCursor)
-            return paragraphEnd;
-
-        let nextParagraphStart = paragraphEnd;
-        while (nextParagraphStart < maximumLength && editorText.charAt(nextParagraphStart) === "\n")
-            ++nextParagraphStart;
-        let nextParagraphEnd = nextParagraphStart;
-        while (nextParagraphEnd < maximumLength && editorText.charAt(nextParagraphEnd) !== "\n")
-            ++nextParagraphEnd;
-        return nextParagraphEnd;
-    }
-
-    function handleMacModifierVerticalNavigation(event) {
-        if (!event || Qt.platform.os !== "osx")
-            return false;
-        const key = Number(event.key);
-        const moveUp = key === Qt.Key_Up;
-        const moveDown = key === Qt.Key_Down;
-        if (!moveUp && !moveDown)
-            return false;
-
-        const modifiers = Number(event.modifiers) || 0;
-        if ((modifiers & (Qt.ControlModifier | Qt.ShiftModifier)) !== 0)
-            return false;
-
-        const commandPressed = (modifiers & Qt.MetaModifier) !== 0;
-        const optionPressed = (modifiers & Qt.AltModifier) !== 0;
-        if (!commandPressed && !optionPressed)
-            return false;
-
-        if (control.inputMethodSessionActive())
-            return false;
-
-        const textValue = control.currentPlainText();
-        const textLength = textValue.length;
-        const cursorPosition = control.clampLogicalPosition(Number(textInput.cursorPosition), textLength);
-        const targetCursorPosition = commandPressed
-                ? (moveUp ? 0 : textLength)
-                : (moveUp
-                   ? control.previousParagraphCursorPosition(cursorPosition, textValue)
-                   : control.nextParagraphCursorPosition(cursorPosition, textValue));
-        const hadSelection = Math.max(
-                    0,
-                    Math.floor(Number(textInput.selectionEnd) || 0))
-                > Math.max(
-                    0,
-                    Math.floor(Number(textInput.selectionStart) || 0));
-        const navigationRequest = {
-            "commandPressed": commandPressed,
-            "cursorPosition": cursorPosition,
-            "hadSelection": hadSelection,
-            "key": key,
-            "modifiers": modifiers,
-            "moveDown": moveDown,
-            "moveUp": moveUp,
-            "optionPressed": optionPressed,
-            "targetCursorPosition": control.clampLogicalPosition(targetCursorPosition, textLength),
-            "textLength": textLength
-        };
-
-        if (control.modifierVerticalNavigationHandler
-                && typeof control.modifierVerticalNavigationHandler === "function") {
-            const callbackHandled = !!control.modifierVerticalNavigationHandler(navigationRequest, event);
-            if (callbackHandled || event.accepted)
-                return true;
-        }
-
-        if (!commandPressed
-                && navigationRequest.targetCursorPosition === cursorPosition
-                && !hadSelection) {
-            return false;
-        }
-
-        if (textInput.deselect !== undefined)
-            textInput.deselect();
-        control.clearCachedSelectionSnapshot();
-        control.setCursorPositionPreservingInputMethod(navigationRequest.targetCursorPosition);
-        event.accepted = true;
-        return true;
-    }
-
-    function activateInputAtPoint(point) {
-        if (!control.preferNativeInputHandling || control.inputMethodVisible)
-            return false;
-        const targetPosition = control.cursorPositionForPoint(point);
-        if (textInput.deselect !== undefined)
-            textInput.deselect();
-        control.setCursorPositionPreservingInputMethod(targetPosition);
-        textInput.forceActiveFocus();
-        control.notifyInputMethod(Qt.ImQueryAll);
-        if (Qt.inputMethod && Qt.inputMethod.show !== undefined)
-            Qt.inputMethod.show();
-        return true;
-    }
-
     function canDeferProgrammaticTextSync() {
-        return control.inputMethodSessionActive();
+        return control.nativeCompositionActive();
     }
 
     function flushDeferredProgrammaticText(force) {
@@ -527,7 +302,7 @@ FocusScope {
             return false
         if (control.suppressCommittedTextEditedDispatch)
             return false
-        if (control.inputMethodSessionActive())
+        if (control.nativeCompositionActive())
             return false
         control.textEdited(control.currentPlainText())
         return true
@@ -555,11 +330,9 @@ FocusScope {
             const restoredCursorPosition = control.clampLogicalPosition(previousCursorPosition, maximumLength);
             if (textInput.deselect !== undefined)
                 textInput.deselect();
-            control.setCursorPositionPreservingInputMethod(restoredCursorPosition);
+            control.setCursorPositionPreservingNativeInput(restoredCursorPosition);
         }
         control._programmaticTextSyncDepth -= 1;
-        control.notifyInputMethod(control.inputMethodSelectionQueryMask());
-        control.notifyInputMethod(control.inputMethodGeometryQueryMask());
     }
 
     function scheduleCommittedTextEditedDispatch() {
@@ -578,47 +351,15 @@ FocusScope {
         });
     }
 
-    function tabIndentText() {
-        return Array(control.effectiveTabIndentSpaceCount + 1).join(" ");
-    }
-
-    function insertTabIndentAsSpaces() {
-        const indentText = control.tabIndentText();
-        if (indentText.length === 0)
-            return false;
-
-        const cursorPosition = Math.max(0, Math.floor(Number(textInput.cursorPosition) || 0));
-        const selectionStart = Math.max(0, Math.floor(Number(textInput.selectionStart) || 0));
-        const selectionEnd = Math.max(selectionStart, Math.floor(Number(textInput.selectionEnd) || 0));
-        const hasSelection = selectionEnd > selectionStart;
-        const insertionPosition = hasSelection ? selectionStart : cursorPosition;
-
-        if (hasSelection && textInput.remove !== undefined)
-            textInput.remove(selectionStart, selectionEnd);
-
-        if (textInput.insert !== undefined) {
-            textInput.insert(insertionPosition, indentText);
-        } else {
-            const previousText = textInput.text === undefined || textInput.text === null ? "" : String(textInput.text);
-            textInput.text = previousText.slice(0, insertionPosition) + indentText + previousText.slice(insertionPosition);
-        }
-
-        if (textInput.deselect !== undefined)
-            textInput.deselect();
-        control.setCursorPositionPreservingInputMethod(insertionPosition + indentText.length);
-        return true;
-    }
-
     onFocusedChanged: {
         EditorTrace.trace(
                     "inlineFormatEditor",
                     "focusedChanged",
-                    "focused=" + focused + " inputMethodSessionActive=" + control.inputMethodSessionActive(),
+                    "focused=" + focused + " nativeCompositionActive=" + control.nativeCompositionActive(),
                     control)
-        control.notifyInputMethod(Qt.ImQueryAll);
-        if (!focused && control.inputMethodSessionActive()) {
+        if (!focused && control.nativeCompositionActive()) {
             Qt.callLater(function () {
-                if (!control.focused && !control.inputMethodSessionActive())
+                if (!control.focused && !control.nativeCompositionActive())
                     control.flushDeferredProgrammaticText(true);
             });
             return;
@@ -695,21 +436,6 @@ FocusScope {
                 return textInput.positionToRectangle(position);
             }
 
-            MouseArea {
-                anchors.fill: parent
-                acceptedButtons: Qt.LeftButton
-                enabled: control.nativeTouchScrollGuardActive
-                hoverEnabled: false
-                preventStealing: false
-                propagateComposedEvents: false
-                visible: enabled
-                z: 3
-
-                onClicked: function (mouse) {
-                    control.activateInputAtPoint(Qt.point(mouse.x, mouse.y));
-                }
-            }
-
             Text {
                 id: renderedOutputText
 
@@ -738,7 +464,6 @@ FocusScope {
 
                 anchors.fill: parent
                 activeFocusOnPress: control.autoFocusOnPress
-                                    && (!control.preferNativeInputHandling || control.inputMethodVisible)
                 bottomPadding: control.insetVertical
                 color: control.renderedOutputVisible ? "transparent" : control.textColor
                 cursorDelegate: Rectangle {
@@ -759,7 +484,6 @@ FocusScope {
                 rightPadding: control.insetHorizontal
                 selectByKeyboard: control.selectByKeyboard
                 selectByMouse: control.selectByMouse
-                               && (!control.preferNativeInputHandling || control.inputMethodVisible)
                 selectedTextColor: control.selectedTextColor
                 selectionColor: control.selectionColor
                 textFormat: TextEdit.PlainText
@@ -779,7 +503,6 @@ FocusScope {
                                 "textInputActiveFocusChanged",
                                 "activeFocus=" + activeFocus,
                                 control)
-                    control.notifyInputMethod(Qt.ImQueryAll);
                     control.maybeDiscardCachedSelectionSnapshot();
                 }
                 onCursorPositionChanged: {
@@ -788,11 +511,7 @@ FocusScope {
                                 "cursorPositionChanged",
                                 "cursorPosition=" + cursorPosition,
                                 control)
-                    control.notifyInputMethod(control.inputMethodSelectionQueryMask());
                     control.maybeDiscardCachedSelectionSnapshot();
-                }
-                onCursorRectangleChanged: {
-                    control.notifyInputMethod(control.inputMethodGeometryQueryMask());
                 }
                 onSelectionEndChanged: {
                     EditorTrace.trace(
@@ -800,7 +519,6 @@ FocusScope {
                                 "selectionEndChanged",
                                 "selectionStart=" + selectionStart + " selectionEnd=" + selectionEnd,
                                 control)
-                    control.notifyInputMethod(control.inputMethodSelectionQueryMask());
                     control.maybeDiscardCachedSelectionSnapshot();
                 }
                 onSelectionStartChanged: {
@@ -809,7 +527,6 @@ FocusScope {
                                 "selectionStartChanged",
                                 "selectionStart=" + selectionStart + " selectionEnd=" + selectionEnd,
                                 control)
-                    control.notifyInputMethod(control.inputMethodSelectionQueryMask());
                     control.maybeDiscardCachedSelectionSnapshot();
                 }
                 onTextChanged: {
@@ -817,10 +534,9 @@ FocusScope {
                                 "inlineFormatEditor",
                                 "textInputTextChanged",
                                 "programmaticDepth=" + control._programmaticTextSyncDepth
-                                + " inputMethodSessionActive=" + control.inputMethodSessionActive()
+                                + " nativeCompositionActive=" + control.nativeCompositionActive()
                                 + " " + EditorTrace.describeText(textInput.text),
                                 control)
-                    control.notifyInputMethod(control.inputMethodSelectionQueryMask());
                     control.clearCachedSelectionSnapshot();
                     if (control._programmaticTextSyncDepth > 0)
                         return;
@@ -831,51 +547,12 @@ FocusScope {
                         control._fallbackTextEditedDispatchQueued = false;
                         return;
                     }
-                    if (control.inputMethodSessionActive()) {
+                    if (control.nativeCompositionActive()) {
                         control.scheduleCommittedTextEditedDispatch();
                         return;
                     }
                     control._fallbackTextEditedDispatchRevision += 1;
                     control.dispatchCommittedTextEditedIfReady();
-                }
-                Keys.onPressed: function (event) {
-                    if (control.handleMacModifierVerticalNavigation(event))
-                        return;
-                    if (control.shortcutKeyPressHandler
-                            && typeof control.shortcutKeyPressHandler === "function") {
-                        const shortcutHandled = !!control.shortcutKeyPressHandler(event);
-                        if (shortcutHandled || event.accepted)
-                            return;
-                    }
-                    const modifierMask = Qt.ControlModifier | Qt.AltModifier | Qt.MetaModifier;
-                    if (event.key === Qt.Key_Tab
-                            && (event.modifiers & modifierMask) === 0
-                            && (event.modifiers & Qt.ShiftModifier) === 0) {
-                        if (control.insertTabIndentAsSpaces()) {
-                            event.accepted = true;
-                            return;
-                        }
-                    }
-                }
-
-                TapHandler {
-                    acceptedDevices: PointerDevice.TouchScreen
-                    enabled: control.preferNativeInputHandling
-                             && !control.nativeTouchScrollGuardActive
-                    gesturePolicy: TapHandler.DragThreshold
-                    grabPermissions: PointerHandler.ApprovesTakeOverByAnything
-
-                    onDoubleTapped: function (eventPoint, _button) {
-                        control.selectWordAtPoint(eventPoint.position);
-                    }
-                    onTapped: function (eventPoint, _button) {
-                        if (tapCount === 1) {
-                            control.activateInputAtPoint(eventPoint.position);
-                            return;
-                        }
-                        if (tapCount === 3)
-                            control.selectParagraphAtPoint(eventPoint.position);
-                    }
                 }
             }
         }
@@ -895,19 +572,6 @@ FocusScope {
         font.pixelSize: control.fontPixelSize
         font.weight: control.fontWeight
         text: Array(control.effectiveTabIndentSpaceCount + 1).join(" ")
-    }
-
-    Connections {
-        function onContentYChanged() {
-            control.notifyInputMethod(control.inputMethodGeometryQueryMask());
-        }
-
-        function onHeightChanged() {
-            control.notifyInputMethod(control.inputMethodGeometryQueryMask());
-        }
-
-        ignoreUnknownSignals: true
-        target: control.resolvedFlickable
     }
 
     Connections {
@@ -932,7 +596,6 @@ FocusScope {
     Component.onCompleted: {
         EditorTrace.trace("inlineFormatEditor", "mount", EditorTrace.describeText(text), control)
         setProgrammaticText(text);
-        control.notifyInputMethod(Qt.ImQueryAll);
     }
 
     Component.onDestruction: {

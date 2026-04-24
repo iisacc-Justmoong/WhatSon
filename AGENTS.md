@@ -109,6 +109,16 @@ every turn.
 - Specialized block delegates may change presentation, but they must not split the note into a separate editor mode or
   a different persistence authority.
 
+### Input Method Authority (Critical)
+
+- Editor input layers must leave OS/Qt IME handling on the live `TextEdit` path.
+- Do not call `Qt.inputMethod.update(...)`, `Qt.inputMethod.show()`, `Qt.inputMethod.hide()`, or the bare QML
+  `InputMethod.*` singleton from editor QML.
+- Do not add fallback branches that tolerate alternate input-method objects, such as `Qt.inputMethod && ...` or
+  `Qt.inputMethod.visible !== undefined` guards.
+- Text editor wrappers may observe `TextEdit.inputMethodComposing` and `TextEdit.preeditText` as TextEdit state, but
+  only to defer persistence or programmatic sync until native composition settles.
+
 ## Codex Init (`/init`) Procedure
 
 Initialization guidance in this section is reference material only.

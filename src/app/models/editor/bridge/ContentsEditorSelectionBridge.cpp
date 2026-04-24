@@ -201,11 +201,6 @@ ContentsEditorSelectionBridge::ContentsEditorSelectionBridge(QObject* parent)
         m_idleSyncController,
         &ContentsEditorIdleSyncController::editorTextPersistenceFinished,
         this,
-        &ContentsEditorSelectionBridge::editorTextPersistenceFinished);
-    connect(
-        m_idleSyncController,
-        &ContentsEditorIdleSyncController::editorTextPersistenceFinished,
-        this,
         &ContentsEditorSelectionBridge::handleEditorTextPersistenceFinishedInternal);
     connect(
         m_idleSyncController,
@@ -623,8 +618,6 @@ void ContentsEditorSelectionBridge::handleEditorTextPersistenceFinishedInternal(
     const bool success,
     const QString& errorMessage)
 {
-    Q_UNUSED(errorMessage)
-
     WhatSon::Debug::traceEditorSelf(
         this,
         QStringLiteral("selectionBridge"),
@@ -636,12 +629,14 @@ void ContentsEditorSelectionBridge::handleEditorTextPersistenceFinishedInternal(
 
     if (!success)
     {
+        emit editorTextPersistenceFinished(noteId, text, success, errorMessage);
         return;
     }
 
     const QString normalizedNoteId = noteId.trimmed();
     if (normalizedNoteId.isEmpty())
     {
+        emit editorTextPersistenceFinished(noteId, text, success, errorMessage);
         return;
     }
 
@@ -649,6 +644,7 @@ void ContentsEditorSelectionBridge::handleEditorTextPersistenceFinishedInternal(
     const QString selectedBodyNoteId = m_selectedNoteBodyNoteId.trimmed();
     if (normalizedNoteId != selectedNoteId && normalizedNoteId != selectedBodyNoteId)
     {
+        emit editorTextPersistenceFinished(noteId, text, success, errorMessage);
         return;
     }
 
@@ -660,6 +656,7 @@ void ContentsEditorSelectionBridge::handleEditorTextPersistenceFinishedInternal(
     m_selectedNoteBodySnapshotNoteId = normalizedNoteId;
     m_selectedNoteBodyRequestSequence = 0;
     setSelectedNoteBodyState(normalizedNoteId, text, false, true);
+    emit editorTextPersistenceFinished(noteId, text, success, errorMessage);
 }
 
 void ContentsEditorSelectionBridge::handleNoteBodyTextLoaded(

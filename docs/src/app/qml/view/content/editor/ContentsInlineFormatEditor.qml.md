@@ -29,25 +29,27 @@ The wrapper keeps the host/editor contract expected by `ContentsDisplayView.qml`
   RichText document.
 - `textEdited(...)` remains the host notification hook, but it now always reports plain text.
 - The rendered HTML overlay is suppressed during active IME composition so native preedit text stays visible.
+- The wrapper does not call `Qt.inputMethod.update(...)`, `Qt.inputMethod.show()`, `Qt.inputMethod.hide()`, or the bare
+  QML `InputMethod.*` singleton. Native IME visibility, candidate placement, and query updates stay with Qt's live
+  `TextEdit`.
 - `TextEdit.moveCursorSelection(...)` is still preferred when restoring an existing selection.
 - The wrapper now also exposes `clearSelection()`, which explicitly clears `persistentSelection` highlight and any
   cached selection snapshot when a structured-flow activation moves elsewhere.
-- macOS `Option` / `Command` + `Up/Down` now route through one dedicated vertical-navigation hook before ordinary
-  shortcut dispatch.
-  The wrapper computes paragraph/document boundary targets itself, lets structured block delegates override
-  cross-block routing through `modifierVerticalNavigationHandler`, and falls back to local cursor collapse when the
-  editor is the whole-document host.
 - The wrapper keeps the existing external-scroll contract used by page/print layout, gutter, and minimap code.
-- In mobile native-input mode while the software keyboard is hidden, the wrapper now mounts a transparent `MouseArea`
-  guard above the live `TextEdit`.
-- That guard keeps drag gestures stealable by the parent `Flickable` and upgrades only a clean click into
-  `activateInputAtPoint(...)`, so touch scrolling does not immediately reopen keyboard focus or text selection.
-- Once the keyboard becomes visible again, the guard drops away and the live `TextEdit` resumes direct cursor and
-  selection handling.
+- The wrapper no longer mounts an input-covering `MouseArea`, touch `TapHandler`, or `Keys.onPressed` handler above the
+  live `TextEdit`.
+- The live `TextEdit` receives pointer, selection, Backspace/Delete repeat, Tab, and platform modifier-navigation input
+  directly from Qt/OS handling. Host shortcut properties are retained for compatibility but are not dispatched from the
+  wrapper's native text input path.
 
 ## Regression Focus
 
 - Programmatic note switches must not emit fake user edits.
 - Overlay refresh must not overwrite the live plain-text buffer.
 - IME composition must remain visible and must not be interrupted by host-side resync.
+- OS/Qt `TextEdit` remains the only IME authority: regression checks scan the QML source tree and must reject
+  `Qt.inputMethod` calls, `InputMethod.*` calls, wrapper notification helpers, and alternate input-method fallback
+  guards.
 - The wrapper must never surface Qt RichText document scaffold as authored note text.
+- Native text editing must remain uncovered: mouse/touch selection, `Shift` selection, and repeated Backspace/Delete
+  must not be intercepted by QML wrapper layers.

@@ -187,8 +187,8 @@ FocusScope {
         const targetCursorPosition = isFinite(numericCursorPosition)
                                    ? Math.max(0, Math.min(Math.floor(numericCursorPosition), Math.max(0, blockEditor.length || 0)))
                                    : Math.max(0, blockEditor.length || 0)
-        if (blockEditor.setCursorPositionPreservingInputMethod !== undefined)
-            blockEditor.setCursorPositionPreservingInputMethod(targetCursorPosition)
+        if (blockEditor.setCursorPositionPreservingNativeInput !== undefined)
+            blockEditor.setCursorPositionPreservingNativeInput(targetCursorPosition)
         else if (blockEditor.cursorPosition !== undefined)
             blockEditor.cursorPosition = targetCursorPosition
         textBlock.activated()

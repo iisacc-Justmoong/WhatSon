@@ -55,9 +55,9 @@ This controller exists to keep plain typing separate from inline-format applicat
   mapped RAW boundary.
   A visible caret placed after a bold/italic/underline/strikethrough/highlight run therefore resolves to the source
   offset after the corresponding closing tags rather than to the interior edge before them.
-- The controller now also owns tag-aware raw deletion before `TextEdit` default handling runs.
-  Backspace/Delete no longer has to land as one-character plain-text diffs first and then hope the source bridge can
-  reconstruct the intended tag boundary afterward.
+- The controller still contains tag-aware raw deletion helpers for non-native hosts, but the shared note-body
+  `TextEdit` no longer routes Backspace/Delete through QML key interception before default handling.
+  Ordinary repeated delete/backspace now arrives through the native edited-text path.
 - Computes a single contiguous replacement delta (`start`, `previousEnd`, `insertedText`) from those two plain-text
   projections.
 - When that delta is a single `Enter` insertion on a markdown list line, the controller now expands the inserted text
@@ -88,22 +88,11 @@ This controller exists to keep plain typing separate from inline-format applicat
   - collapsed-caret insertions also skip immediately adjacent closing inline-style tags before splicing source
   - local-authority marking, cursor restore, same-note persistence, and host `editorTextEdited(...)` signaling stay on
     the exact same contract already used by agenda/callout/break shortcut insertion
-- Plain `Enter` / `Return` on the legacy inline editor now also has a RAW-first path:
-  - `handlePlainEnterKeyPress(event)` intercepts unmodified Enter before Qt RichText mutates the live document on its
-    own
-  - the controller replaces the current logical selection/caret with `\n` directly against RAW source, then commits
-    that source mutation through the same same-note persistence/surface-refresh contract used elsewhere
-  - list continuation, divider rewrite, agenda task exit, and callout exit still reuse the existing source-aware enter
-    transforms on top of that explicit newline replacement
-  - IME composition turns are excluded so Enter can still finalize the platform input-method session first
-- Backspace/Delete now also has a tag-aware raw-source fast path:
-  - when the pending delete span intersects an XML-like token such as `<resource ... />`, `<callout>`, `</callout>`,
-    `<agenda ...>`, `</agenda>`, inline-style tags, or comment-like editor markers, the controller expands the delete
-    range to the full token boundary before mutating `.wsnbody`
-  - caret-only Backspace removes the whole tag immediately behind the source cursor, and caret-only Delete removes the
-    whole tag immediately at or under the source cursor
-  - selection delete likewise expands to cover any partially intersected tag tokens so a raw source edit cannot leave
-    half-deleted tag fragments behind
+- The legacy explicit key handlers remain in this controller for non-native hosts, but
+  `ContentsInlineFormatEditor.qml` no longer dispatches `Enter`, `Backspace`, `Delete`, `Tab`, or platform modifier
+  navigation through QML `Keys.onPressed`.
+  The note-body `TextEdit` now receives those keys directly so OS/Qt selection, repeat, and input-method behavior are
+  not preempted by wrapper code.
 - Structured shortcut insertion now resolves the actual RAW insertion point before writing:
   - if the logical cursor is already inside an existing `<agenda>...</agenda>` or `<callout>...</callout>`, the new
     shortcut block is moved to the end of that enclosing block instead of being nested into it
@@ -239,10 +228,9 @@ structured-block projection do not re-enter the normal typing path.
   styled run instead of splicing it before the closing tag.
 - A committed delete/backspace turn must update the session through the plain-text/source-offset bridge itself; the
   controller must not depend on whole-surface RichText reserialization to rescue the edit.
-- Backspace/Delete while the logical/source cursor touches `<resource ... />`, `<callout>`, `</callout>`,
-  `<agenda ...>`, `</agenda>`, or inline-style tags must remove the full tag token, not only one source character.
-- A selection delete that partially covers a source tag must expand to the tag boundary before persistence; `.wsnbody`
-  must not retain broken tail fragments such as `resource ... />`, `/callout>`, or `&quot;image&quot; ... /&gt;`.
+- Non-native host deletion helpers may still expand partial tag deletions to full source-token boundaries.
+  The shared inline note-body editor does not invoke those helpers from `Keys.onPressed`, preserving native
+  Backspace/Delete repeat and selection deletion behavior.
 - The typing controller must not treat `selectedNoteBodyText` as authoritative unless the host also proves that the
   body payload belongs to the currently selected note.
 - A host-driven RichText/resource presentation refresh must not re-enter this controller while

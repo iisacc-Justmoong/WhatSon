@@ -149,8 +149,10 @@ ctest --test-dir build --output-on-failure -L cpp_regression
 - Minimap snapshot planning now also pins normalized logical-line snapshot entries in the C++ and QML regression
   suites, so diff planning compares renderer-normalized document lines instead of raw `.wsnbody` newline splits and
   structured notes keep the minimap aligned with the same document model the editor is rendering.
-- The shared inline-format editor now also pins keyboard-driven selection and input-method query updates, so
-  `Shift`-extended text selection keeps working without dropping OS IME integration on note-body editors.
+- The shared inline-format editor now also pins the absence of QML key/pointer interception above the live `TextEdit`,
+  so mouse/touch selection, `Shift`-extended selection, and repeated Backspace/Delete remain OS/Qt-native. The same
+  regression scans the QML source tree for forbidden input-method bridges and fallbacks, keeping IME query updates,
+  candidate placement, and keyboard visibility on the OS/Qt `TextEdit` path.
 - Inline structured resource cards now also pin block/card clipping in the QML regression suite, so a mobile image
   block cannot paint past its measured block bounds and overlay the following paragraph while the layout height
   catches up.
@@ -166,6 +168,8 @@ ctest --test-dir build --output-on-failure -L cpp_regression
   shows the centered `No document opened` placeholder instead of leaving the chrome alive around an empty body layer.
 - Mobile hierarchy navigation now also pins dismiss-style back targets in the C++ and source-locked QML regression
   suite, so leaving `/mobile/editor` returns to the current note list instead of falling through a raw hierarchy pop.
+- The C++ regression executable now also links `MobileHierarchyNavigationCoordinator.cpp` with the mobile chrome
+  suite, so the dismiss-plan assertions exercise the real coordinator implementation instead of failing at link time.
 - Developer quality gates now also resolve their QML/C++ file lists from the repository root, so `whatson_qmllint`
   and `whatson_clang_tidy` no longer degrade into empty-input no-op runs.
 - Project-local C++ headers now also lock repository-absolute include paths, so `app/...`, `extension/...`, and
@@ -177,3 +181,6 @@ ctest --test-dir build --output-on-failure -L cpp_regression
   first retries a selected-note snapshot refresh, then mounts the resolved body into the editor session, and only
   then surfaces a centered `No document opened` placeholder instead of leaving gutter/minimap chrome visible beside an
   unmounted note surface.
+- Selection-bridge persistence completion now also pins signal ordering, so a successful same-note body save updates
+  `selectedNoteBodyText` before `editorTextPersistenceFinished(...)` reaches the editor session. This prevents the
+  presentation source from briefly falling back to a stale saved body while typing resumes after an idle save.

@@ -935,6 +935,7 @@ private slots:
     void contentsEditorSelectionBridge_rebindsSameNoteIdWhenPackagePathChanges();
     void contentsEditorSelectionBridge_clearsSelectedNoteAcrossTransientEmptyCurrentNoteId();
     void contentsEditorSelectionBridge_reloadsBodyWhenCommittedNoteEntryChangesWithoutNoteIdChange();
+    void contentsEditorSelectionBridge_updatesBodySnapshotBeforePersistenceFinishedSignal();
     void contentsEditorSelectionBridge_emitsTraceForNoteSelectionFlow();
     void noteBackedHierarchyNoteLists_preserveRawBodySnapshotForEditorBootstrap();
     void noteListModelContractBridge_resolvesHierarchyBoundNoteListImmediately();
@@ -1011,8 +1012,8 @@ private slots:
     void noteBodyMountCoordinator_hidesExceptionUntilPendingMountSettles();
     void noteBodyMountCoordinator_waitsForPresentationReadySourceBeforeMounting();
     void noteBodyMountCoordinator_remountsSameNoteWhenEditorSessionTextIsStale();
-    void qmlInlineFormatEditor_keepsHiddenKeyboardTouchesScrollFirstOnMobile();
-    void qmlInlineFormatEditor_keepsKeyboardSelectionAndImeQueriesNative();
+    void qmlInlineFormatEditor_keepsNativeTextEditInputUncovered();
+    void qmlInlineFormatEditor_keepsKeyboardSelectionAndOsImeNative();
     void mobileChrome_usesSharedFigmaControlSurfaceColor();
     void mobileHierarchyRouteStateStore_tracksNormalizedSelectionRestoreState();
     void mobileHierarchySelectionCoordinator_prefersExplicitSidebarBindingsAndFallbacks();

@@ -395,15 +395,15 @@ QtObject {
                                  ? ""
                                  : controller.contentEditor.preeditText)
                     : "";
-            const inputMethodBusy = (controller.contentEditor.inputMethodComposing !== undefined
+            const nativeCompositionBusy = (controller.contentEditor.inputMethodComposing !== undefined
                                      && controller.contentEditor.inputMethodComposing)
                     || activePreeditText.length > 0;
-            if (inputMethodBusy && retryCount < 6) {
+            if (nativeCompositionBusy && retryCount < 6) {
                 controller.scheduleCursorPosition(targetPosition, retryCount + 1);
                 return;
             }
-            if (controller.contentEditor.setCursorPositionPreservingInputMethod !== undefined) {
-                controller.contentEditor.setCursorPositionPreservingInputMethod(targetPosition);
+            if (controller.contentEditor.setCursorPositionPreservingNativeInput !== undefined) {
+                controller.contentEditor.setCursorPositionPreservingNativeInput(targetPosition);
                 return;
             }
             if (controller.contentEditor.cursorPosition !== undefined)
