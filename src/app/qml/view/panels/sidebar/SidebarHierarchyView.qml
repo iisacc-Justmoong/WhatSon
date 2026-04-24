@@ -563,6 +563,27 @@ Rectangle {
         sidebarHierarchyView.requestViewHook("hierarchy.contextMenu.open");
         return true;
     }
+    function hierarchyContextMenuPointerTriggerAccepted(triggerKind) {
+        const normalizedTrigger = triggerKind === undefined || triggerKind === null ? "" : String(triggerKind).trim().toLowerCase();
+        if (normalizedTrigger === "rightclick"
+                || normalizedTrigger === "right-click"
+                || normalizedTrigger === "contextmenu"
+                || normalizedTrigger === "context-menu") {
+            return true;
+        }
+        if (normalizedTrigger === "longpress"
+                || normalizedTrigger === "long-press"
+                || normalizedTrigger === "pressandhold"
+                || normalizedTrigger === "press-and-hold") {
+            return sidebarHierarchyView.hierarchyKineticViewportEnabled;
+        }
+        return false;
+    }
+    function openHierarchyFolderContextMenuFromPointer(x, y, referenceItem, triggerKind) {
+        if (!sidebarHierarchyView.hierarchyContextMenuPointerTriggerAccepted(triggerKind))
+            return false;
+        return sidebarHierarchyView.openHierarchyFolderContextMenuAtPosition(x, y, referenceItem);
+    }
     function requestCreateFolder(targetIndex, reason) {
         if (sidebarHierarchyView.renameEditingActive)
             sidebarHierarchyView.cancelHierarchyRename();
@@ -898,6 +919,8 @@ Rectangle {
         }
 
         TapHandler {
+            id: hierarchyContextMenuTapHandler
+
             acceptedButtons: Qt.LeftButton | Qt.RightButton
             acceptedModifiers: Qt.KeyboardModifierMask
             gesturePolicy: TapHandler.DragThreshold
@@ -916,10 +939,24 @@ Rectangle {
             onTapped: function (eventPoint, button) {
                 if (button !== Qt.RightButton)
                     return;
-                sidebarHierarchyView.openHierarchyFolderContextMenuAtPosition(
+                sidebarHierarchyView.openHierarchyFolderContextMenuFromPointer(
                             eventPoint && eventPoint.position !== undefined ? eventPoint.position.x : 0,
                             eventPoint && eventPoint.position !== undefined ? eventPoint.position.y : 0,
-                            hierarchyTree);
+                            hierarchyTree,
+                            "rightClick");
+            }
+            onLongPressed: {
+                sidebarHierarchyView.openHierarchyFolderContextMenuFromPointer(
+                            hierarchyContextMenuTapHandler.point
+                            && hierarchyContextMenuTapHandler.point.position !== undefined
+                            ? hierarchyContextMenuTapHandler.point.position.x
+                            : 0,
+                            hierarchyContextMenuTapHandler.point
+                            && hierarchyContextMenuTapHandler.point.position !== undefined
+                            ? hierarchyContextMenuTapHandler.point.position.y
+                            : 0,
+                            hierarchyTree,
+                            "longPress");
             }
         }
     }

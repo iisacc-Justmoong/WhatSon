@@ -435,19 +435,41 @@ Rectangle {
     }
     function openNoteContextMenu(delegateItem, localX, localY) {
         if (!delegateItem)
-            return;
+            return false;
         const normalizedIndex = listBarLayout.normalizeCurrentIndex(delegateItem.index);
         const normalizedNoteId = delegateItem.noteId !== undefined && delegateItem.noteId !== null ? String(delegateItem.noteId).trim() : "";
         if (normalizedNoteId.length === 0)
-            return;
+            return false;
         const actionNoteIds = listBarLayout.selectedNoteIdsForDelegateAction(normalizedIndex, normalizedNoteId);
         if (actionNoteIds.length === 0)
-            return;
+            return false;
         listBarLayout.contextMenuNoteIndex = normalizedIndex;
         listBarLayout.contextMenuNoteId = normalizedNoteId;
         listBarLayout.contextMenuNoteIds = actionNoteIds;
         noteDeletionBridge.focusedNoteId = normalizedNoteId;
         noteContextMenu.openFor(delegateItem, Number(localX) || 0, Number(localY) || 0);
+        return true;
+    }
+    function noteContextMenuPointerTriggerAccepted(triggerKind) {
+        const normalizedTrigger = triggerKind === undefined || triggerKind === null ? "" : String(triggerKind).trim().toLowerCase();
+        if (normalizedTrigger === "rightclick"
+                || normalizedTrigger === "right-click"
+                || normalizedTrigger === "contextmenu"
+                || normalizedTrigger === "context-menu") {
+            return true;
+        }
+        if (normalizedTrigger === "longpress"
+                || normalizedTrigger === "long-press"
+                || normalizedTrigger === "pressandhold"
+                || normalizedTrigger === "press-and-hold") {
+            return listBarLayout.noteListKineticViewportEnabled;
+        }
+        return false;
+    }
+    function openNoteContextMenuFromPointer(delegateItem, localX, localY, triggerKind) {
+        if (!listBarLayout.noteContextMenuPointerTriggerAccepted(triggerKind))
+            return false;
+        return listBarLayout.openNoteContextMenu(delegateItem, localX, localY);
     }
     function pushCurrentIndexToModel(index) {
         if (!listBarLayout.noteListCurrentIndexContractAvailable)
@@ -1070,7 +1092,7 @@ Rectangle {
                                 noteItemDelegate.mobilePointerDragging = false;
                                 listBarLayout.pressedNoteIndex = -1;
                                 if (openContextMenu) {
-                                    listBarLayout.openNoteContextMenu(noteItemDelegate, mouse.x, mouse.y);
+                                    listBarLayout.openNoteContextMenuFromPointer(noteItemDelegate, mouse.x, mouse.y, "longPress");
                                     return;
                                 }
                                 if (!dragging)
@@ -1121,7 +1143,7 @@ Rectangle {
 
                             onTapped: function (eventPoint, button) {
                                 listBarLayout.pressedNoteIndex = -1;
-                                listBarLayout.openNoteContextMenu(noteItemDelegate, eventPoint.position.x, eventPoint.position.y);
+                                listBarLayout.openNoteContextMenuFromPointer(noteItemDelegate, eventPoint.position.x, eventPoint.position.y, "rightClick");
                             }
                         }
                     }

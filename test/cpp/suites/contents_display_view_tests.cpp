@@ -100,6 +100,50 @@ void WhatSonCppRegressionTests::contentsDisplayView_doesNotForceBlurFlushDuringN
     QVERIFY(!displayViewSource.contains(QStringLiteral("flushEditorStateAfterInputSettles(0, blurredNoteId)")));
 }
 
+void WhatSonCppRegressionTests::qmlContextMenus_treatRightClickAndLongPressAsSymmetricPointerTriggers()
+{
+    const QString displayViewSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/content/editor/ContentsDisplayView.qml"));
+    const QString listBarSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/panels/ListBarLayout.qml"));
+    const QString sidebarSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/panels/sidebar/SidebarHierarchyView.qml"));
+
+    QVERIFY(!displayViewSource.isEmpty());
+    QVERIFY(!listBarSource.isEmpty());
+    QVERIFY(!sidebarSource.isEmpty());
+
+    QVERIFY(displayViewSource.contains(
+        QStringLiteral("readonly property bool noteDocumentContextMenuSurfaceEnabled")));
+    QVERIFY(displayViewSource.contains(
+        QStringLiteral("function editorContextMenuPointerTriggerAccepted(triggerKind)")));
+    QVERIFY(displayViewSource.contains(
+        QStringLiteral("function requestEditorSelectionContextMenuFromPointer(localX, localY, triggerKind)")));
+    QVERIFY(displayViewSource.contains(
+        QStringLiteral("contentsView.requestEditorSelectionContextMenuFromPointer(lastPressX, lastPressY, \"rightClick\");")));
+    QVERIFY(displayViewSource.contains(
+        QStringLiteral("acceptedDevices: PointerDevice.TouchScreen | PointerDevice.Stylus")));
+    QVERIFY(displayViewSource.contains(
+        QStringLiteral("contentsView.requestEditorSelectionContextMenuFromPointer(pressPoint.x, pressPoint.y, \"longPress\");")));
+
+    QVERIFY(listBarSource.contains(
+        QStringLiteral("function noteContextMenuPointerTriggerAccepted(triggerKind)")));
+    QVERIFY(listBarSource.contains(
+        QStringLiteral("function openNoteContextMenuFromPointer(delegateItem, localX, localY, triggerKind)")));
+    QVERIFY(listBarSource.contains(
+        QStringLiteral("listBarLayout.openNoteContextMenuFromPointer(noteItemDelegate, mouse.x, mouse.y, \"longPress\");")));
+    QVERIFY(listBarSource.contains(
+        QStringLiteral("listBarLayout.openNoteContextMenuFromPointer(noteItemDelegate, eventPoint.position.x, eventPoint.position.y, \"rightClick\");")));
+
+    QVERIFY(sidebarSource.contains(
+        QStringLiteral("function hierarchyContextMenuPointerTriggerAccepted(triggerKind)")));
+    QVERIFY(sidebarSource.contains(
+        QStringLiteral("function openHierarchyFolderContextMenuFromPointer(x, y, referenceItem, triggerKind)")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("\"rightClick\"")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("\"longPress\"")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("onLongPressed: {")));
+}
+
 void WhatSonCppRegressionTests::contentsDisplayView_routesStructuredMutationsThroughEditorSessionAuthority()
 {
     const QString displayViewSource = readUtf8SourceFile(

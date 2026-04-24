@@ -174,6 +174,8 @@ selection state machine lives in a sibling controller file.
   with LVRS mobile UI density instead of staying desktop-sized.
 - Note-card context menus are centralized at the root through `contextMenuNoteId`, `contextMenuNoteIds`, and
   `openNoteContextMenu(...)`, which keeps delegates free of per-row popup wiring while preserving group actions.
+- Context-menu pointer invocation is centralized through `openNoteContextMenuFromPointer(...)`, so desktop right-click
+  and mobile long-press use the same target selection and batch-action rules.
 - Right-clicking or long-pressing a row that already belongs to the current multi-selection preserves that selection as
   the context-menu target set.
 - Keyboard delete, context-menu delete, and `Clear all folders` now replay the action across the selected note ids via

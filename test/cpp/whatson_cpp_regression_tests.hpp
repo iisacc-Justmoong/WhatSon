@@ -985,6 +985,7 @@ private slots:
     void contentsDisplayView_reservesLargeBottomAccessibilityMargin();
     void contentsDisplayView_usesSelectedNoteSnapshotWhileSessionBindingCatchesUp();
     void contentsDisplayView_doesNotForceBlurFlushDuringNativeComposition();
+    void qmlContextMenus_treatRightClickAndLongPressAsSymmetricPointerTriggers();
     void contentsDisplayView_routesStructuredMutationsThroughEditorSessionAuthority();
     void contentsDisplayView_refreshesMinimapFromResolvedPresentationSource();
     void contentsDisplayView_scalesMinimapRowsFromDocumentGeometry();

@@ -111,6 +111,11 @@ not note-backed.
   editors report active IME/preedit composition.
 - The host exposes `editorCustomTextInputEnabled: false`, `editorTagManagementInputEnabled: true`, and
   `noteDocumentTagManagementShortcutSurfaceEnabled` to make that policy explicit in QML and regression tests.
+- Editor selection context-menu invocation is now modeled as a shared pointer-trigger contract:
+  desktop right-click and mobile touch/stylus long-press both route through
+  `requestEditorSelectionContextMenuFromPointer(...)`.
+  This keeps mobile access to the same tag-management menu without adding ordinary text key handlers, and the menu
+  surface still stands down while a native composition/preedit session is active.
 - Markdown list toggles are not exposed from this host. `Meta/Alt+Shift+7/8` list shortcuts and generic key-event
   forwarding are intentionally absent so ordinary text input remains native.
 - Fallback-editor `inputMethodComposing`/`preeditText` change signals now only resume pending cursor restoration and

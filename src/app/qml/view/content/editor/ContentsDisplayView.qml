@@ -296,10 +296,17 @@ Item {
     readonly property bool nativeTextInputPriority: contentsView.mobileHost || Qt.platform.os === "ios"
     readonly property bool editorCustomTextInputEnabled: false
     readonly property bool editorTagManagementInputEnabled: true
+    readonly property bool contextMenuLongPressEnabled: contentsView.nativeTextInputPriority
     readonly property bool noteDocumentShortcutSurfaceEnabled: contentsView.noteDocumentCommandSurfaceEnabled
                                                               && !contentsView.nativeTextInputSessionOwnsKeyboard()
     readonly property bool noteDocumentTagManagementShortcutSurfaceEnabled: contentsView.editorTagManagementInputEnabled
                                                                            && contentsView.noteDocumentShortcutSurfaceEnabled
+    readonly property bool noteDocumentContextMenuSurfaceEnabled: contentsView.editorTagManagementInputEnabled
+                                                                  && contentsView.noteDocumentCommandSurfaceEnabled
+                                                                  && !contentsView.nativeEditorCompositionActive()
+                                                                  && !(structuredDocumentFlow
+                                                                       && structuredDocumentFlow.nativeCompositionActive !== undefined
+                                                                       && structuredDocumentFlow.nativeCompositionActive())
     readonly property string structuredFlowSourceText: contentsView.documentPresentationSourceText
     readonly property bool liveResourceStructuredFlowRequested: resourceImportController.sourceContainsCanonicalResourceTag(
                                                                     contentsView.documentPresentationSourceText)
@@ -1517,6 +1524,31 @@ Item {
                     editorViewport,
                     Number(plan.openX) || 0,
                     Number(plan.openY) || 0);
+        return true;
+    }
+    function editorContextMenuPointerTriggerAccepted(triggerKind) {
+        const normalizedTrigger = triggerKind === undefined || triggerKind === null ? "" : String(triggerKind).trim().toLowerCase();
+        if (normalizedTrigger === "rightclick"
+                || normalizedTrigger === "right-click"
+                || normalizedTrigger === "contextmenu"
+                || normalizedTrigger === "context-menu") {
+            return true;
+        }
+        if (normalizedTrigger === "longpress"
+                || normalizedTrigger === "long-press"
+                || normalizedTrigger === "pressandhold"
+                || normalizedTrigger === "press-and-hold") {
+            return contentsView.contextMenuLongPressEnabled;
+        }
+        return false;
+    }
+    function requestEditorSelectionContextMenuFromPointer(localX, localY, triggerKind) {
+        if (!contentsView.editorContextMenuPointerTriggerAccepted(triggerKind))
+            return false;
+        contentsView.primeEditorSelectionContextMenuSnapshot();
+        Qt.callLater(function () {
+            contentsView.openEditorSelectionContextMenu(localX, localY);
+        });
         return true;
     }
     function primeEditorSelectionContextMenuSnapshot() {
@@ -3732,7 +3764,7 @@ Item {
 
                         acceptedButtons: Qt.RightButton
                         anchors.fill: parent
-                        enabled: contentsView.noteDocumentTagManagementShortcutSurfaceEnabled
+                        enabled: contentsView.noteDocumentContextMenuSurfaceEnabled
                         hoverEnabled: false
                         preventStealing: false
                         propagateComposedEvents: true
@@ -3741,9 +3773,7 @@ Item {
                         onClicked: function (mouse) {
                             if (mouse.button !== Qt.RightButton)
                                 return;
-                            Qt.callLater(function () {
-                                contentsView.openEditorSelectionContextMenu(lastPressX, lastPressY);
-                            });
+                            contentsView.requestEditorSelectionContextMenuFromPointer(lastPressX, lastPressY, "rightClick");
                         }
                         onPressed: function (mouse) {
                             if (mouse.button !== Qt.RightButton)
@@ -3751,6 +3781,25 @@ Item {
                             lastPressX = mouse.x;
                             lastPressY = mouse.y;
                             contentsView.primeEditorSelectionContextMenuSnapshot();
+                        }
+                    }
+                    TapHandler {
+                        id: editorLongPressContextMenuTapHandler
+
+                        acceptedButtons: Qt.LeftButton
+                        acceptedDevices: PointerDevice.TouchScreen | PointerDevice.Stylus
+                        enabled: contentsView.noteDocumentContextMenuSurfaceEnabled
+                                 && contentsView.contextMenuLongPressEnabled
+                        gesturePolicy: TapHandler.DragThreshold
+                        grabPermissions: PointerHandler.ApprovesTakeOverByAnything
+                        target: null
+
+                        onLongPressed: {
+                            const pressPoint = editorLongPressContextMenuTapHandler.point
+                                    && editorLongPressContextMenuTapHandler.point.position !== undefined
+                                    ? editorLongPressContextMenuTapHandler.point.position
+                                    : Qt.point(0, 0);
+                            contentsView.requestEditorSelectionContextMenuFromPointer(pressPoint.x, pressPoint.y, "longPress");
                         }
                     }
                     Shortcut {

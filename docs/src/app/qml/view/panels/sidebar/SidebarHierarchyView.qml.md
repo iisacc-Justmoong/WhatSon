@@ -119,6 +119,9 @@ These signals make the file a reusable visual surface instead of a hard-coded on
 
 - The same `LV.ContextMenu` instance is now reused for library-folder right-click actions instead of creating a second
   popup owner.
+- Folder context-menu pointer invocation is centralized through `openHierarchyFolderContextMenuFromPointer(...)`, so
+  desktop right-click and mobile long-press share the same hit testing, selection promotion, and protected-folder
+  filtering.
 - Right-click hit testing routes through `SidebarHierarchyNoteDropController.noteDropTargetAtPosition(...)`, so the menu
   opens only when the pointer is over a concrete visible hierarchy row.
 - The folder menu is intentionally limited to library folder nodes (`folder:*` / `uuid`-backed entries). Protected
