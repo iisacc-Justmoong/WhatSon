@@ -1,14 +1,14 @@
 # `src/app/qml/Main.qml`
 
 ## Role
-`Main.qml` is the root LVRS shell. It owns route composition, adaptive layout selection, top-level geometry policy, and QML-side registration of root viewmodels into `LV.ViewModels`.
+`Main.qml` is the root LVRS shell. It owns route composition, adaptive layout selection, top-level geometry policy, and writable view ownership claims for selected root interaction surfaces.
 
 ## Root Responsibilities
 - Instantiate the `LV.ApplicationWindow`.
 - Publish explicit zero `topPadding/rightPadding/bottomPadding/leftPadding` properties so the LVRS
   `ApplicationWindow` compatibility bindings have stable geometry inputs on iOS.
 - Define root sizing, panel widths, and adaptive layout defaults.
-- Register runtime viewmodels into the LVRS `ViewModels` registry.
+- Resolve runtime viewmodels from the LVRS `ViewModels` registry populated by C++ bootstrap.
 - Claim writable ownership for selected interaction surfaces.
 - Mount `MainWindowInteractionController` and feed it the objects it needs for shortcuts and render-quality policy.
 - Keep the desktop workspace shell mounted in `Main.qml` while ordinary desktop onboarding is presented through a
@@ -40,14 +40,15 @@
 ## ViewModel Ownership
 The important architectural work in this file is not the layout math. It is the ownership hand-off.
 
-`registerRootViewModels()` copies context-property objects into `LV.ViewModels` under stable keys such as:
+`WhatSonQmlContextBinder` registers root ViewModels into `LV.ViewModels` before `Main.qml` loads, under
+stable keys such as:
 - `libraryHierarchyViewModel`
 - `libraryNoteMutationViewModel`
 - `navigationModeViewModel`
 - `sidebarHierarchyViewModel`
 - `detailPanelViewModel`
 
-`bindOwnedViewModel(...)` then claims write ownership for concrete view IDs:
+`bindOwnedViewModel(...)` claims write ownership for concrete view IDs:
 - `windowInteractions.libraryNoteMutation`
 - `windowInteractions.navigationMode`
 - `windowInteractions.sidebarHierarchy`

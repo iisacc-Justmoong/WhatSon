@@ -233,14 +233,14 @@ bool WhatSonStartupRuntimeCoordinator::reloadResourcesDomainIntoRuntime(const QS
     return loadHubIntoRuntimeWithRequestedDomains(hubPath, requestedDomains, errorMessage);
 }
 
-void WhatSonStartupRuntimeCoordinator::ensureDeferredStartupHierarchyLoaded(int hierarchyIndex, const QString& reason)
+bool WhatSonStartupRuntimeCoordinator::ensureDeferredStartupHierarchyLoaded(int hierarchyIndex, const QString& reason)
 {
     const int normalizedIndex = WhatSon::Sidebar::normalizeHierarchyIndex(hierarchyIndex);
     if (!m_startupDeferredBootstrapActive
         || m_currentLoadedHubPath.trimmed().isEmpty()
         || m_startupLoadedHierarchyIndices.contains(normalizedIndex))
     {
-        return;
+        return true;
     }
 
     auto domainNameForIndex = [](const int index) -> QString
@@ -288,7 +288,7 @@ void WhatSonStartupRuntimeCoordinator::ensureDeferredStartupHierarchyLoaded(int 
             QStringLiteral("startup.runtime"),
             QStringLiteral("deferredLoad.success"),
             QStringLiteral("domain=%1 reason=%2").arg(domainName, reason));
-        return;
+        return true;
     }
 
     const QString trimmedError = loadError.trimmed();
@@ -300,6 +300,7 @@ void WhatSonStartupRuntimeCoordinator::ensureDeferredStartupHierarchyLoaded(int 
         QStringLiteral("startup.runtime"),
         QStringLiteral("deferredLoad.failed"),
         QStringLiteral("domain=%1 reason=%2 error=%3").arg(domainName, reason, trimmedError));
+    return false;
 }
 
 void WhatSonStartupRuntimeCoordinator::bindSidebarActivation(IActiveHierarchySource* sidebarHierarchyViewModel)

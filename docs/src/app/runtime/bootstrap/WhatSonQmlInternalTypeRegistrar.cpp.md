@@ -1,7 +1,8 @@
 # `src/app/runtime/bootstrap/WhatSonQmlInternalTypeRegistrar.cpp`
 
 ## Responsibility
-Registers the QObject-backed internal QML bridge types used by the application shell and editor surfaces.
+Builds the manifest for QObject-backed internal QML bridge types used by the application shell and editor surfaces,
+then registers that manifest through LVRS `QmlTypeRegistrar`.
 
 ## Registered Bridges
 - Editor/document bridges such as `ContentsEditorSelectionBridge`, `ContentsEditorSessionController`,
@@ -17,6 +18,11 @@ Registers the QObject-backed internal QML bridge types used by the application s
   QML without pushing document-picker logic into `main.cpp`.
 
 ## Architectural Note
-This file remains the narrow bootstrap seam for QML-visible helper types. Adding the iOS onboarding picker here keeps
-the platform-native dialog integration isolated from the composition root while still allowing `OnboardingContent.qml`
-to switch platforms declaratively.
+This file remains the narrow bootstrap seam for QML-visible helper types. The manifest keeps type order, module URI,
+version, and diagnostics in one place while LVRS owns validation and registration reporting. Adding the iOS onboarding
+picker here keeps the platform-native dialog integration isolated from the composition root while still allowing
+`OnboardingContent.qml` to switch platforms declaratively.
+
+## Test Coverage
+`test/cpp/suites/qml_internal_type_registrar_tests.cpp` keeps this registrar on LVRS manifest registration and prevents
+direct `qmlRegisterType<...>()` blocks from returning.

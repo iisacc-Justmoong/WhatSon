@@ -62,8 +62,9 @@ These two signals are the authoritative update contract for QML bindings that co
 
 ## Architectural Constraint
 
-- This type is registered through `qmlRegisterType(...)`, so it must remain subclassable by Qt's internal
-  `QQmlElement<T>` wrapper and therefore must not be declared `final`.
+- This type is registered through the LVRS internal type manifest, which still uses Qt's creatable QML type
+  registration path. It must remain subclassable by Qt's internal `QQmlElement<T>` wrapper and therefore must not be
+  declared `final`.
 - `paperAspectRatio` remains overrideable for layout experiments, but its default value must stay anchored to the
   canonical A4 definition exposed by `ContentsA4PaperBackground`.
 

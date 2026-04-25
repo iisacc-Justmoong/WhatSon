@@ -1,5 +1,7 @@
 #include "app/runtime/threading/WhatSonRuntimeParallelLoader.hpp"
 
+#include "backend/runtime/bootstrapparallel.h"
+
 #include "app/runtime/threading/WhatSonRuntimeDomainSnapshots.hpp"
 #include "app/models/file/WhatSonDebugTrace.hpp"
 #include "app/models/file/hub/WhatSonHubRuntimeStore.hpp"
@@ -13,57 +15,21 @@
 #include "app/viewmodel/hierarchy/tags/TagsHierarchyViewModel.hpp"
 
 #include <QElapsedTimer>
-#include <QEventLoop>
-#include <QThread>
 #include <utility>
 
 namespace
 {
-    template <typename Loader>
-    QThread* spawnFunctionLoadThread(
+    constexpr int kDomainTaskPriorityStep = 10;
+
+    WhatSonRuntimeParallelLoader::DomainLoadResult domainLoadResultFromBootstrapResult(
         const QString& domain,
-        const QString& wshubPath,
-        WhatSonRuntimeParallelLoader::DomainLoadResult* result,
-        Loader loader)
+        const lvrs::BootstrapParallelTaskResult& taskResult)
     {
-        result->domain = domain;
-        WhatSon::Debug::trace(
-            QStringLiteral("runtime.parallel"),
-            QStringLiteral("task.queued"),
-            QStringLiteral("domain=%1 path=%2").arg(domain, wshubPath));
-        QThread* thread = new QThread();
-        QObject::connect(
-            thread,
-            &QThread::started,
-            thread,
-            [wshubPath, result, thread, domain, loader]()
-            {
-                WhatSon::Debug::trace(
-                    QStringLiteral("runtime.parallel"),
-                    QStringLiteral("task.begin"),
-                    QStringLiteral("domain=%1 path=%2 threadPtr=%3")
-                    .arg(domain, wshubPath)
-                    .arg(reinterpret_cast<quintptr>(QThread::currentThread()), 0, 16));
-
-                QElapsedTimer elapsedTimer;
-                elapsedTimer.start();
-                QString error;
-                const bool succeeded = loader(wshubPath, &error);
-                result->succeeded = succeeded;
-                result->error = error.trimmed();
-
-                WhatSon::Debug::trace(
-                    QStringLiteral("runtime.parallel"),
-                    QStringLiteral("load.completed"),
-                    QStringLiteral("domain=%1 succeeded=%2 elapsedMs=%3 error=%4")
-                    .arg(domain)
-                    .arg(succeeded ? QStringLiteral("1") : QStringLiteral("0"))
-                    .arg(elapsedTimer.elapsed())
-                    .arg(result->error));
-                thread->quit();
-            },
-            Qt::DirectConnection);
-        return thread;
+        WhatSonRuntimeParallelLoader::DomainLoadResult result;
+        result.domain = domain;
+        result.succeeded = taskResult.loadOk;
+        result.error = taskResult.errorMessage.trimmed();
+        return result;
     }
 } // namespace
 
@@ -123,8 +89,13 @@ bool WhatSonRuntimeParallelLoader::loadFromWshub(
     bool hasEventTask = false;
     bool hasPresetTask = false;
 
-    QVector<QThread*> threads;
-    threads.reserve(9);
+    const WhatSonRuntimeDomainSnapshots::SharedContext sharedContext =
+        WhatSonRuntimeDomainSnapshots::buildSharedContext(normalizedPath);
+
+    QList<lvrs::BootstrapParallelTask> bootstrapTasks;
+    bootstrapTasks.reserve(9);
+    QVector<int> bootstrapTaskResultIndexes;
+    bootstrapTaskResultIndexes.reserve(9);
     int derivedBookmarksResultIndex = -1;
 
     auto addImmediateFailure = [&results](const QString& domain, const QString& error)
@@ -136,37 +107,60 @@ bool WhatSonRuntimeParallelLoader::loadFromWshub(
         results.push_back(std::move(result));
     };
 
-    auto addSnapshotTask = [&results, &threads, &normalizedPath](
+    auto addSnapshotTask = [
+        &results,
+        &bootstrapTasks,
+        &bootstrapTaskResultIndexes,
+        &sharedContext,
+        &normalizedPath](
         const QString& domain,
         auto* snapshot,
         auto loader)
     {
         results.push_back(DomainLoadResult{});
-        DomainLoadResult* result = &results.back();
+        results.back().domain = domain;
+        const int resultIndex = results.size() - 1;
 
-        QThread* thread = spawnFunctionLoadThread(
+        lvrs::BootstrapParallelTask task;
+        task.name = domain;
+        task.priority = bootstrapTasks.size() * kDomainTaskPriorityStep;
+        task.fatal = true;
+        task.metadata.insert(QStringLiteral("path"), normalizedPath);
+        task.metadata.insert(QStringLiteral("domain"), domain);
+        task.load = [
+            snapshot,
+            loader,
+            sharedContext,
             domain,
-            normalizedPath,
-            result,
-            [snapshot, loader](const QString& path, QString* error)
-            {
-                *snapshot = loader(path);
-                if (!snapshot->succeeded && error != nullptr)
-                {
-                    *error = snapshot->error;
-                }
-                return snapshot->succeeded;
-            });
-
-        if (thread == nullptr)
+            normalizedPath](const lvrs::BootstrapParallelTaskContext&, QVariant*, QString* error) -> bool
         {
-            result->domain = domain;
-            result->succeeded = false;
-            result->error = QStringLiteral("Failed to create worker thread.");
-            return;
-        }
+            WhatSon::Debug::trace(
+                QStringLiteral("runtime.parallel"),
+                QStringLiteral("task.begin"),
+                QStringLiteral("domain=%1 path=%2").arg(domain, normalizedPath));
 
-        threads.push_back(thread);
+            *snapshot = loader(sharedContext);
+            if (!snapshot->succeeded && error != nullptr)
+            {
+                *error = snapshot->error;
+            }
+
+            WhatSon::Debug::trace(
+                QStringLiteral("runtime.parallel"),
+                QStringLiteral("load.completed"),
+                QStringLiteral("domain=%1 succeeded=%2 error=%3")
+                .arg(domain)
+                .arg(snapshot->succeeded ? QStringLiteral("1") : QStringLiteral("0"))
+                .arg(snapshot->error.trimmed()));
+            return snapshot->succeeded;
+        };
+
+        WhatSon::Debug::trace(
+            QStringLiteral("runtime.parallel"),
+            QStringLiteral("task.queued"),
+            QStringLiteral("domain=%1 path=%2").arg(domain, normalizedPath));
+        bootstrapTaskResultIndexes.push_back(resultIndex);
+        bootstrapTasks.append(std::move(task));
     };
 
     if (requestedDomains.library)
@@ -181,9 +175,9 @@ bool WhatSonRuntimeParallelLoader::loadFromWshub(
             addSnapshotTask(
                 QStringLiteral("library"),
                 &librarySnapshot,
-                [](const QString& path)
+                [](const WhatSonRuntimeDomainSnapshots::SharedContext& context)
                 {
-                    return WhatSonRuntimeDomainSnapshots::loadLibrary(path);
+                    return WhatSonRuntimeDomainSnapshots::loadLibrary(context);
                 });
         }
     }
@@ -200,9 +194,9 @@ bool WhatSonRuntimeParallelLoader::loadFromWshub(
             addSnapshotTask(
                 QStringLiteral("projects"),
                 &projectsSnapshot,
-                [](const QString& path)
+                [](const WhatSonRuntimeDomainSnapshots::SharedContext& context)
                 {
-                    return WhatSonRuntimeDomainSnapshots::loadProjects(path);
+                    return WhatSonRuntimeDomainSnapshots::loadProjects(context);
                 });
         }
     }
@@ -229,9 +223,9 @@ bool WhatSonRuntimeParallelLoader::loadFromWshub(
                 addSnapshotTask(
                     QStringLiteral("bookmarks"),
                     &bookmarksSnapshot,
-                    [](const QString& path)
+                    [](const WhatSonRuntimeDomainSnapshots::SharedContext& context)
                     {
-                        return WhatSonRuntimeDomainSnapshots::loadBookmarks(path);
+                        return WhatSonRuntimeDomainSnapshots::loadBookmarks(context);
                     });
             }
         }
@@ -249,9 +243,9 @@ bool WhatSonRuntimeParallelLoader::loadFromWshub(
             addSnapshotTask(
                 QStringLiteral("tags"),
                 &tagsSnapshot,
-                [](const QString& path)
+                [](const WhatSonRuntimeDomainSnapshots::SharedContext& context)
                 {
-                    return WhatSonRuntimeDomainSnapshots::loadTags(path);
+                    return WhatSonRuntimeDomainSnapshots::loadTags(context);
                 });
         }
     }
@@ -268,9 +262,9 @@ bool WhatSonRuntimeParallelLoader::loadFromWshub(
             addSnapshotTask(
                 QStringLiteral("resources"),
                 &resourcesSnapshot,
-                [](const QString& path)
+                [](const WhatSonRuntimeDomainSnapshots::SharedContext& context)
                 {
-                    return WhatSonRuntimeDomainSnapshots::loadResources(path);
+                    return WhatSonRuntimeDomainSnapshots::loadResources(context);
                 });
         }
     }
@@ -287,9 +281,9 @@ bool WhatSonRuntimeParallelLoader::loadFromWshub(
             addSnapshotTask(
                 QStringLiteral("progress"),
                 &progressSnapshot,
-                [](const QString& path)
+                [](const WhatSonRuntimeDomainSnapshots::SharedContext& context)
                 {
-                    return WhatSonRuntimeDomainSnapshots::loadProgress(path);
+                    return WhatSonRuntimeDomainSnapshots::loadProgress(context);
                 });
         }
     }
@@ -306,9 +300,9 @@ bool WhatSonRuntimeParallelLoader::loadFromWshub(
             addSnapshotTask(
                 QStringLiteral("event"),
                 &eventSnapshot,
-                [](const QString& path)
+                [](const WhatSonRuntimeDomainSnapshots::SharedContext& context)
                 {
-                    return WhatSonRuntimeDomainSnapshots::loadEvent(path);
+                    return WhatSonRuntimeDomainSnapshots::loadEvent(context);
                 });
         }
     }
@@ -325,9 +319,9 @@ bool WhatSonRuntimeParallelLoader::loadFromWshub(
             addSnapshotTask(
                 QStringLiteral("preset"),
                 &presetSnapshot,
-                [](const QString& path)
+                [](const WhatSonRuntimeDomainSnapshots::SharedContext& context)
                 {
-                    return WhatSonRuntimeDomainSnapshots::loadPreset(path);
+                    return WhatSonRuntimeDomainSnapshots::loadPreset(context);
                 });
         }
     }
@@ -340,77 +334,38 @@ bool WhatSonRuntimeParallelLoader::loadFromWshub(
         }
         else
         {
-            results.push_back(DomainLoadResult{});
-            DomainLoadResult* hubResult = &results.back();
-            QThread* hubThread = spawnFunctionLoadThread(
+            addSnapshotTask(
                 QStringLiteral("hub.runtime"),
-                normalizedPath,
-                hubResult,
-                [&hubRuntimeSnapshot](const QString& path, QString* error)
+                &hubRuntimeSnapshot,
+                [](const WhatSonRuntimeDomainSnapshots::SharedContext& context)
                 {
-                    hubRuntimeSnapshot = WhatSonRuntimeDomainSnapshots::loadHubRuntime(path);
-                    if (!hubRuntimeSnapshot.succeeded && error != nullptr)
-                    {
-                        *error = hubRuntimeSnapshot.error;
-                    }
-                    return hubRuntimeSnapshot.succeeded;
+                    return WhatSonRuntimeDomainSnapshots::loadHubRuntime(context);
                 });
-
-            if (hubThread == nullptr)
-            {
-                hubResult->domain = QStringLiteral("hub.runtime");
-                hubResult->succeeded = false;
-                hubResult->error = QStringLiteral("Failed to create worker thread.");
-            }
-            else
-            {
-                threads.push_back(hubThread);
-            }
         }
     }
 
-    int pendingCount = 0;
-    QEventLoop waitLoop;
-    for (QThread* thread : threads)
-    {
-        ++pendingCount;
-        QObject::connect(
-            thread,
-            &QThread::finished,
-            &waitLoop,
-            [&pendingCount, &waitLoop]()
-            {
-                --pendingCount;
-                if (pendingCount <= 0)
-                {
-                    waitLoop.quit();
-                }
-            },
-            Qt::QueuedConnection);
-        thread->start();
-    }
+    lvrs::BootstrapParallelRunOptions bootstrapOptions;
+    bootstrapOptions.skipApplyOnLoadFailure = true;
+    bootstrapOptions.logDiagnostics = true;
 
-    if (pendingCount > 0)
+    const lvrs::BootstrapParallelRunResult bootstrapResult =
+        lvrs::runBootstrapParallelTasks(bootstrapTasks, bootstrapOptions);
+    for (const lvrs::BootstrapParallelTaskResult& taskResult : bootstrapResult.taskResults)
     {
-        WhatSon::Debug::traceSelf(this,
-                                  QStringLiteral("runtime.parallel"),
-                                  QStringLiteral("wait.begin"),
-                                  QStringLiteral("pending=%1").arg(pendingCount));
-        waitLoop.exec();
-        WhatSon::Debug::traceSelf(this,
-                                  QStringLiteral("runtime.parallel"),
-                                  QStringLiteral("wait.end"),
-                                  QStringLiteral("pending=%1").arg(pendingCount));
-    }
-
-    for (QThread* thread : threads)
-    {
-        if (thread == nullptr)
+        if (taskResult.index < 0 || taskResult.index >= bootstrapTaskResultIndexes.size())
         {
             continue;
         }
-        thread->wait();
-        delete thread;
+
+        const int resultIndex = bootstrapTaskResultIndexes.at(taskResult.index);
+        if (resultIndex < 0 || resultIndex >= results.size())
+        {
+            continue;
+        }
+
+        results[resultIndex] = domainLoadResultFromBootstrapResult(
+            results.at(resultIndex).domain,
+            taskResult);
     }
 
     if (deriveBookmarksFromLibrary)

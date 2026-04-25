@@ -132,23 +132,6 @@ LV.ApplicationWindow {
         if (!LV.ViewModels.bindView(viewId, key, true))
             console.warn("[whatson:mvvm][bind] viewId=" + viewId + " key=" + key + " error=" + LV.ViewModels.lastError);
     }
-    function registerRootViewModels() {
-        LV.ViewModels.set("libraryHierarchyViewModel", libraryHierarchyViewModel);
-        LV.ViewModels.set("libraryNoteMutationViewModel", libraryNoteMutationViewModel);
-        LV.ViewModels.set("projectsHierarchyViewModel", projectsHierarchyViewModel);
-        LV.ViewModels.set("bookmarksHierarchyViewModel", bookmarksHierarchyViewModel);
-        LV.ViewModels.set("tagsHierarchyViewModel", tagsHierarchyViewModel);
-        LV.ViewModels.set("resourcesHierarchyViewModel", resourcesHierarchyViewModel);
-        LV.ViewModels.set("progressHierarchyViewModel", progressHierarchyViewModel);
-        LV.ViewModels.set("eventHierarchyViewModel", eventHierarchyViewModel);
-        LV.ViewModels.set("presetHierarchyViewModel", presetHierarchyViewModel);
-        LV.ViewModels.set("detailPanelViewModel", detailPanelViewModel);
-        LV.ViewModels.set("noteDetailPanelViewModel", noteDetailPanelViewModel);
-        LV.ViewModels.set("resourceDetailPanelViewModel", resourceDetailPanelViewModel);
-        LV.ViewModels.set("editorViewModeViewModel", editorViewModeViewModel);
-        LV.ViewModels.set("navigationModeViewModel", navigationModeViewModel);
-        LV.ViewModels.set("sidebarHierarchyViewModel", sidebarHierarchyViewModel);
-    }
     function unbindOwnedViewModels() {
         LV.ViewModels.unbindView(applicationWindow.libraryNoteMutationViewId);
         LV.ViewModels.unbindView(applicationWindow.navigationModeViewId);
@@ -298,7 +281,6 @@ LV.ApplicationWindow {
     windowDragHandleTopMargin: statusBarHeight
 
     Component.onCompleted: {
-        registerRootViewModels();
         bindOwnedViewModel(applicationWindow.libraryNoteMutationViewId, "libraryNoteMutationViewModel");
         bindOwnedViewModel(applicationWindow.navigationModeViewId, "navigationModeViewModel");
         bindOwnedViewModel(applicationWindow.sidebarHierarchyViewId, "sidebarHierarchyViewModel");

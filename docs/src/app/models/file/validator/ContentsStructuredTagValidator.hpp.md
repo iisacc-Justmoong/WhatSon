@@ -31,5 +31,5 @@
   note RAW directly.
 
 ## Registration Constraint
-- This QObject type is registered via `qmlRegisterType<ContentsStructuredTagValidator>()`.
+- This QObject type is registered through the LVRS manifest in `WhatSonQmlInternalTypeRegistrar`.
 - The class must remain non-`final` so Qt can wrap it through `QQmlElement<T>`.

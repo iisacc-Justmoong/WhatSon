@@ -381,17 +381,26 @@ FocusScope {
                     "focusedChanged",
                     "focused=" + focused + " nativeCompositionActive=" + control.nativeCompositionActive(),
                     control)
+        const hadLocalTextEditSinceFocus = control._localTextEditSinceFocus;
         if (!focused && control.nativeCompositionActive()) {
             Qt.callLater(function () {
-                if (!control.focused && !control.nativeCompositionActive())
-                    control.flushDeferredProgrammaticText(true);
+                if (!control.focused && !control.nativeCompositionActive()) {
+                    if (control.preferNativeInputHandling && hadLocalTextEditSinceFocus)
+                        control.clearDeferredProgrammaticText();
+                    else
+                        control.flushDeferredProgrammaticText(true);
+                }
             });
             return;
         }
-        control._localTextEditSinceFocus = false;
         control.maybeDiscardCachedSelectionSnapshot();
-        if (!focused)
-            control.flushDeferredProgrammaticText(true);
+        if (!focused) {
+            if (control.preferNativeInputHandling && hadLocalTextEditSinceFocus)
+                control.clearDeferredProgrammaticText();
+            else
+                control.flushDeferredProgrammaticText(true);
+        }
+        control._localTextEditSinceFocus = false;
     }
     onTextChanged: {
         const normalizedText = text === undefined || text === null ? "" : String(text);

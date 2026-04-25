@@ -1,7 +1,8 @@
 # `src/app/main.cpp`
 
 ## Runtime Wiring Notes
-- `WhatSonRuntimeParallelLoader` is now instantiated in `main.cpp` and injected into `WhatSonStartupRuntimeCoordinator` through `setParallelLoader(...)`.
+- `WhatSonRuntimeParallelLoader` is now instantiated in `main.cpp` and injected into `WhatSonStartupRuntimeCoordinator`
+  through `setParallelLoader(...)`; the concrete loader delegates requested domain fan-out to LVRS `BootstrapParallel`.
 - Calendar and system calendar stores continue to be instantiated concretely here, but downstream collaborators now consume interface types.
 - `main.cpp` now keeps the concrete `CalendarBoardStore` synchronized with the currently loaded hub path and refreshes
   calendar note projections from the live `LibraryHierarchyViewModel` snapshot after startup load, onboarding load,
@@ -41,6 +42,19 @@
     when startup connection fails.
 - The dedicated `Onboarding.qml` shell is therefore used both for the explicit `--onboarding-only` launch path and for
   ordinary desktop startup when no persisted hub can be mounted.
+- QML root loading now flows through `WhatSonQmlLaunchSupport`, which delegates initial-property setup and window
+  activation to LVRS `loadQmlRootObjects(...)` instead of duplicating `QQmlApplicationEngine::loadFromModule(...)`
+  and manual `show()/raise()/requestActivate()` logic in `main.cpp`.
+- Workspace context binding now flows through `WhatSonQmlContextBinder` and LVRS `QmlContextBindPlan`, so C++
+  registers root ViewModels into `LV.ViewModels` before `Main.qml` loads.
+- Internal QML bridge type registration now flows through `WhatSonQmlInternalTypeRegistrar` and LVRS
+  `QmlTypeRegistrar`; startup fails early if the internal type manifest cannot be registered.
+- Foreground scheduler and permission startup now run through LVRS `ForegroundServiceGate`; `main.cpp` builds a
+  lifecycle context from the loaded workspace root and starts those services only after a visible workspace window is
+  present.
+- Deferred startup hierarchy prefetch now runs as a non-fatal LVRS `QmlBootstrapTask` at
+  `QmlAppLifecycleStage::AfterFirstIdle`, so Event/Preset follow-up loads are attached to the app lifecycle instead of
+  a local `QTimer` chain in `main.cpp`.
 - Permission startup wiring now consumes `permissions/WhatSonPermissionBootstrapper.hpp` after consolidating
   permission bootstrap code under `src/app/permissions`.
 - Application bootstrap no longer forces Qt scene-graph visualization environment variables and no longer auto-opens

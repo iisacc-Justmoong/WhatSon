@@ -1,4 +1,5 @@
 #include "backend/runtime/appbootstrap.h"
+#include "backend/runtime/foregroundservices.h"
 #include "app/viewmodel/hierarchy/bookmarks/BookmarksHierarchyViewModel.hpp"
 #include "app/viewmodel/hierarchy/event/EventHierarchyViewModel.hpp"
 #include "app/viewmodel/hierarchy/library/LibraryHierarchyViewModel.hpp"
@@ -36,6 +37,7 @@
 #include "app/runtime/bootstrap/WhatSonHubSyncWiring.hpp"
 #include "app/runtime/bootstrap/WhatSonQmlContextBinder.hpp"
 #include "app/runtime/bootstrap/WhatSonQmlInternalTypeRegistrar.hpp"
+#include "app/runtime/bootstrap/WhatSonQmlLaunchSupport.hpp"
 #include "app/permissions/WhatSonPermissionBootstrapper.hpp"
 #include "app/runtime/scheduler/WhatSonAsyncScheduler.hpp"
 #include "app/models/file/hub/WhatSonHubCreator.hpp"
@@ -60,22 +62,115 @@
 #include <QPointer>
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
-#include <QSet>
+#include <QStringList>
 #include <QTimer>
 #include <QVariant>
 #include <QVector>
-#include <QWindow>
 #include <QtCore/qglobal.h>
 
 #include <cstdlib>
-#include <functional>
-#include <memory>
-#include <utility>
 
 void qml_register_types_LVRS();
 
 namespace
 {
+lvrs::QmlAppLifecycleContext workspaceLifecycleContext(
+    QGuiApplication& app,
+    QQmlApplicationEngine& engine,
+    QObject* workspaceRootObject,
+    const lvrs::QmlAppLifecycleStage stage)
+{
+    lvrs::QmlAppLifecycleContext context;
+    context.application = &app;
+    context.engine = &engine;
+    context.stage = stage;
+    context.rootLoadResult.ok = workspaceRootObject != nullptr;
+
+    if (workspaceRootObject != nullptr)
+    {
+        context.rootLoadResult.rootObjects.append(workspaceRootObject);
+        if (QWindow* workspaceWindow = lvrs::qmlRootWindow(workspaceRootObject))
+        {
+            context.rootLoadResult.windows.append(workspaceWindow);
+        }
+    }
+
+    return context;
+}
+
+QVector<int> deferredStartupHierarchyPrefetchOrder()
+{
+    return {
+        static_cast<int>(WhatSon::Sidebar::HierarchyDomain::Event),
+        static_cast<int>(WhatSon::Sidebar::HierarchyDomain::Preset)
+    };
+}
+
+QString deferredStartupHierarchyPrefetchLabel(const int hierarchyIndex)
+{
+    switch (hierarchyIndex)
+    {
+    case static_cast<int>(WhatSon::Sidebar::HierarchyDomain::Event):
+        return QStringLiteral("event");
+    case static_cast<int>(WhatSon::Sidebar::HierarchyDomain::Preset):
+        return QStringLiteral("preset");
+    default:
+        return QStringLiteral("unknown");
+    }
+}
+
+bool scheduleDeferredStartupHierarchyPrefetch(
+    QGuiApplication& app,
+    QQmlApplicationEngine& engine,
+    QObject* workspaceRootObject,
+    WhatSonStartupRuntimeCoordinator& startupRuntimeCoordinator)
+{
+    if (!startupRuntimeCoordinator.startupDeferredBootstrapActive())
+    {
+        return true;
+    }
+
+    lvrs::QmlBootstrapTask prefetchTask;
+    prefetchTask.name = QStringLiteral("whatson-deferred-startup-hierarchy-prefetch");
+    prefetchTask.stage = lvrs::QmlAppLifecycleStage::AfterFirstIdle;
+    prefetchTask.priority = 10;
+    prefetchTask.fatal = false;
+    prefetchTask.run = [&startupRuntimeCoordinator](const lvrs::QmlAppLifecycleContext&, QString* errorMessage)
+    {
+        QStringList failedHierarchyDomains;
+        for (const int hierarchyIndex : deferredStartupHierarchyPrefetchOrder())
+        {
+            const bool loaded = startupRuntimeCoordinator.ensureDeferredStartupHierarchyLoaded(
+                hierarchyIndex,
+                QStringLiteral("startup-after-first-idle-prefetch"));
+            if (!loaded)
+            {
+                failedHierarchyDomains.append(deferredStartupHierarchyPrefetchLabel(hierarchyIndex));
+            }
+        }
+
+        if (failedHierarchyDomains.isEmpty())
+        {
+            return true;
+        }
+
+        if (errorMessage != nullptr)
+        {
+            *errorMessage = QStringLiteral("Deferred startup hierarchy prefetch failed for: %1")
+                .arg(failedHierarchyDomains.join(QStringLiteral(", ")));
+        }
+        return false;
+    };
+
+    lvrs::QmlAppLifecycleHooks lifecycleHooks;
+    lifecycleHooks.tasks.append(prefetchTask);
+    return lvrs::scheduleQmlAppLifecycleStage(
+        &app,
+        workspaceLifecycleContext(app, engine, workspaceRootObject, lvrs::QmlAppLifecycleStage::AfterFirstIdle),
+        lifecycleHooks,
+        lvrs::QmlAppLifecycleStage::AfterFirstIdle,
+        true);
+}
 } // namespace
 
 int main(int argc, char* argv[])
@@ -109,7 +204,14 @@ int main(int argc, char* argv[])
 #if !defined(WHATSON_USE_LVRS_DYNAMIC_QML_IMPORT)
     qml_register_types_LVRS();
 #endif
-    WhatSon::Runtime::Bootstrap::registerInternalQmlTypes();
+    const lvrs::QmlTypeRegistrationReport internalQmlTypeRegistrationReport =
+        WhatSon::Runtime::Bootstrap::registerInternalQmlTypes();
+    if (!internalQmlTypeRegistrationReport.ok)
+    {
+        qCritical().noquote() << QStringLiteral("Failed to register WhatSon internal QML types: %1")
+            .arg(internalQmlTypeRegistrationReport.errorMessage());
+        return EXIT_FAILURE;
+    }
 #if !defined(Q_OS_MACOS) && !defined(Q_OS_IOS)
     app.setWindowIcon(QIcon(QStringLiteral(":/whatson/AppIcon.png")));
 #endif
@@ -493,7 +595,14 @@ int main(int argc, char* argv[])
     workspaceContextObjects.weekCalendarViewModel = &weekCalendarViewModel;
     workspaceContextObjects.yearCalendarViewModel = &yearCalendarViewModel;
     workspaceContextObjects.panelViewModelRegistry = &panelViewModelRegistry;
-    WhatSon::Runtime::Bootstrap::bindWorkspaceContextObjects(engine.rootContext(), workspaceContextObjects);
+    const lvrs::QmlContextBindResult workspaceContextBindResult =
+        WhatSon::Runtime::Bootstrap::bindWorkspaceContextObjects(engine, workspaceContextObjects);
+    if (!workspaceContextBindResult.ok)
+    {
+        qCritical().noquote() << QStringLiteral("Failed to bind workspace QML context: %1")
+            .arg(workspaceContextBindResult.errorMessage());
+        return EXIT_FAILURE;
+    }
     QObject::connect(
         &engine,
         &QQmlApplicationEngine::objectCreationFailed,
@@ -501,68 +610,83 @@ int main(int argc, char* argv[])
         []() { QCoreApplication::exit(EXIT_FAILURE); },
         Qt::QueuedConnection);
 
-    bool foregroundServicesStarted = false;
-    const auto startForegroundServices = [&asyncScheduler, &permissionBootstrapper, &foregroundServicesStarted]()
+    lvrs::ForegroundServiceGate foregroundServiceGate(&app);
+    const auto startForegroundServices =
+        [&app, &engine, &asyncScheduler, &permissionBootstrapper, &foregroundServiceGate](
+            QObject* workspaceRootObject) -> bool
     {
-        if (foregroundServicesStarted)
+        lvrs::ForegroundServiceTask schedulerStart;
+        schedulerStart.name = QStringLiteral("whatson-async-scheduler");
+        schedulerStart.priority = 10;
+        schedulerStart.fatal = true;
+        schedulerStart.metadata.insert(QStringLiteral("service"), QStringLiteral("scheduler"));
+        schedulerStart.start = [&asyncScheduler](const lvrs::ForegroundServiceStartContext&, QString* errorMessage)
         {
-            return;
+            if (asyncScheduler.start())
+            {
+                return true;
+            }
+
+            if (errorMessage != nullptr)
+            {
+                *errorMessage = QStringLiteral("WhatSon async scheduler did not start.");
+            }
+            return false;
+        };
+
+        lvrs::ForegroundServiceTask permissionBootstrap;
+        permissionBootstrap.name = QStringLiteral("whatson-permission-bootstrap");
+        permissionBootstrap.priority = 20;
+        permissionBootstrap.metadata.insert(QStringLiteral("service"), QStringLiteral("permissions"));
+        permissionBootstrap.start =
+            [&permissionBootstrapper](const lvrs::ForegroundServiceStartContext&, QString*) -> bool
+        {
+            QTimer::singleShot(0, &permissionBootstrapper, [&permissionBootstrapper]()
+            {
+                permissionBootstrapper.start();
+            });
+            return true;
+        };
+
+        lvrs::ForegroundServiceStartOptions options;
+        options.requireVisibleWorkspace = true;
+        options.logDiagnostics = true;
+        options.metadata.insert(QStringLiteral("phase"), QStringLiteral("workspace-visible"));
+
+        const lvrs::ForegroundServiceStartResult foregroundStartResult =
+            foregroundServiceGate.startOnceWhenWorkspaceVisible(
+                workspaceLifecycleContext(
+                    app,
+                    engine,
+                    workspaceRootObject,
+                    lvrs::QmlAppLifecycleStage::AfterWindowActivated),
+                {schedulerStart, permissionBootstrap},
+                options);
+
+        if (!foregroundStartResult.ok)
+        {
+            qWarning().noquote() << QStringLiteral("Foreground services did not start after visible workspace: %1")
+                .arg(foregroundStartResult.errorMessage());
+            return false;
         }
 
-        foregroundServicesStarted = true;
-        asyncScheduler.start();
-        QTimer::singleShot(0, &permissionBootstrapper, [&permissionBootstrapper]()
-        {
-            permissionBootstrapper.start();
-        });
-    };
-
-    const auto loadWindowFromModule =
-        [&engine](const QString& moduleUri, const QString& typeName, const QVariantMap& initialProperties = {}) -> QObject*
-    {
-        const qsizetype rootObjectCount = engine.rootObjects().size();
-        engine.setInitialProperties(initialProperties);
-        engine.loadFromModule(moduleUri, typeName);
-        engine.setInitialProperties({});
-        if (engine.rootObjects().size() <= rootObjectCount)
-        {
-            return nullptr;
-        }
-
-        return engine.rootObjects().constLast();
-    };
-
-    const auto loadMainWindow =
-        [&loadWindowFromModule](const QVariantMap& initialProperties = {}) -> QObject*
-    {
-        return loadWindowFromModule(
-            QStringLiteral("WhatSon.App"),
-            QStringLiteral("Main"),
-            initialProperties);
-    };
-    const auto activateWindowObject = [](QObject* windowObject)
-    {
-        if (auto* window = qobject_cast<QWindow*>(windowObject))
-        {
-            window->show();
-            window->raise();
-            window->requestActivate();
-        }
+        return true;
     };
 
 #if defined(WHATSON_IS_TRIAL_BUILD) && !defined(Q_OS_ANDROID) && !defined(Q_OS_IOS)
     const auto loadTrialStatusWindow =
-        [&loadWindowFromModule](QObject* hostWindow, QObject* trialPolicyObject) -> QObject*
+        [&engine](QObject* hostWindow, QObject* trialPolicyObject) -> QObject*
     {
         const QVariantMap trialWindowInitialProperties{
             {QStringLiteral("hostWindow"), QVariant::fromValue(hostWindow)},
             {QStringLiteral("trialActivationPolicy"), QVariant::fromValue(trialPolicyObject)},
             {QStringLiteral("visible"), true}
         };
-        return loadWindowFromModule(
-            QStringLiteral("WhatSon.App"),
+        return WhatSon::Runtime::Bootstrap::loadWhatSonAppRootObject(
+            engine,
             QStringLiteral("TrialStatus"),
-            trialWindowInitialProperties);
+            trialWindowInitialProperties,
+            lvrs::QmlWindowActivationPolicy::ShowRaiseAndActivate);
     };
 #endif
 
@@ -573,8 +697,8 @@ int main(int argc, char* argv[])
             {QStringLiteral("standaloneMode"), true},
             {QStringLiteral("visible"), true}
         };
-        QObject* onboardingWindow = loadWindowFromModule(
-            QStringLiteral("WhatSon.App"),
+        QObject* onboardingWindow = WhatSon::Runtime::Bootstrap::loadWhatSonAppRootObject(
+            engine,
             QStringLiteral("Onboarding"),
             onboardingWindowInitialProperties);
         if (onboardingWindow == nullptr)
@@ -592,7 +716,6 @@ int main(int argc, char* argv[])
             qWarning().noquote() << QStringLiteral("Failed to resolve the trial status window root object.");
             return EXIT_FAILURE;
         }
-        activateWindowObject(trialWindow);
 #endif
 
         QPointer<QObject> onboardingWindowGuard(onboardingWindow);
@@ -608,13 +731,12 @@ int main(int argc, char* argv[])
             &OnboardingHubController::hubLoaded,
             &app,
             [&app,
-                &loadMainWindow,
+                &engine,
                 &startForegroundServices,
                 &workspaceMainWindow,
                 &onboardingHubController,
                 &onboardingRouteBootstrapController,
                 &onboardingDismissedConnection,
-                &activateWindowObject,
                 onboardingWindowGuard](const QString&)
             {
                 if (workspaceMainWindow != nullptr)
@@ -634,7 +756,10 @@ int main(int argc, char* argv[])
                     }
                 };
                 onboardingRouteBootstrapController.configure(false, true);
-                workspaceMainWindow = loadMainWindow(mainWindowInitialProperties);
+                workspaceMainWindow = WhatSon::Runtime::Bootstrap::loadMainWindow(
+                    engine,
+                    mainWindowInitialProperties,
+                    lvrs::QmlWindowActivationPolicy::ShowRaiseAndActivate);
                 if (workspaceMainWindow == nullptr)
                 {
                     qWarning().noquote() <<
@@ -644,7 +769,6 @@ int main(int argc, char* argv[])
                 }
 
                 QObject::disconnect(onboardingDismissedConnection);
-                activateWindowObject(workspaceMainWindow);
 
                 if (onboardingWindowGuard)
                 {
@@ -659,7 +783,11 @@ int main(int argc, char* argv[])
                     });
                 }
 
-                startForegroundServices();
+                if (!startForegroundServices(workspaceMainWindow))
+                {
+                    QCoreApplication::exit(EXIT_FAILURE);
+                    return;
+                }
             });
         return app.exec();
     }
@@ -686,59 +814,19 @@ int main(int argc, char* argv[])
             QVariant::fromValue(static_cast<QObject*>(&onboardingRouteBootstrapController))
         }
     };
-    QObject* mainWindow = loadMainWindow(mainWindowInitialProperties);
+    QObject* mainWindow = WhatSon::Runtime::Bootstrap::loadMainWindow(
+        engine,
+        mainWindowInitialProperties,
+        lvrs::QmlWindowActivationPolicy::ShowRaiseAndActivate);
     if (mainWindow == nullptr)
     {
         return EXIT_FAILURE;
     }
 
-    activateWindowObject(mainWindow);
-
-    if (startupRuntimeCoordinator.startupDeferredBootstrapActive())
+    if (!scheduleDeferredStartupHierarchyPrefetch(app, engine, mainWindow, startupRuntimeCoordinator))
     {
-        const QVector<int> deferredStartupHierarchyOrder{
-            static_cast<int>(WhatSon::Sidebar::HierarchyDomain::Event),
-            static_cast<int>(WhatSon::Sidebar::HierarchyDomain::Preset)
-        };
-        auto deferredStartupHierarchyCursor = std::make_shared<int>(0);
-        auto scheduleDeferredStartupHierarchyLoad = std::make_shared<std::function<void()>>();
-        *scheduleDeferredStartupHierarchyLoad =
-            [&app,
-                &startupRuntimeCoordinator,
-                deferredStartupHierarchyOrder,
-                deferredStartupHierarchyCursor,
-                scheduleDeferredStartupHierarchyLoad]()
-        {
-            if (!startupRuntimeCoordinator.startupDeferredBootstrapActive())
-            {
-                return;
-            }
-
-            const QSet<int> startupLoadedHierarchyIndices =
-                startupRuntimeCoordinator.startupLoadedHierarchyIndices();
-            while (*deferredStartupHierarchyCursor < deferredStartupHierarchyOrder.size())
-            {
-                const int hierarchyIndex = deferredStartupHierarchyOrder.at(*deferredStartupHierarchyCursor);
-                *deferredStartupHierarchyCursor += 1;
-                if (startupLoadedHierarchyIndices.contains(hierarchyIndex))
-                {
-                    continue;
-                }
-
-                QTimer::singleShot(0, &app, [hierarchyIndex, &startupRuntimeCoordinator, scheduleDeferredStartupHierarchyLoad]()
-                {
-                    startupRuntimeCoordinator.ensureDeferredStartupHierarchyLoaded(
-                        hierarchyIndex,
-                        QStringLiteral("startup-idle-prefetch"));
-                    (*scheduleDeferredStartupHierarchyLoad)();
-                });
-                return;
-            }
-        };
-        QTimer::singleShot(0, &app, [scheduleDeferredStartupHierarchyLoad]()
-        {
-            (*scheduleDeferredStartupHierarchyLoad)();
-        });
+        qWarning().noquote() << QStringLiteral("Failed to schedule deferred startup hierarchy prefetch lifecycle task.");
+        return EXIT_FAILURE;
     }
 
 #if defined(WHATSON_IS_TRIAL_BUILD) && !defined(Q_OS_ANDROID) && !defined(Q_OS_IOS)
@@ -750,9 +838,11 @@ int main(int argc, char* argv[])
         qWarning().noquote() << QStringLiteral("Failed to resolve the trial status window root object.");
         return EXIT_FAILURE;
     }
-    activateWindowObject(trialWindow);
 #endif
 
-    startForegroundServices();
+    if (!startForegroundServices(mainWindow))
+    {
+        return EXIT_FAILURE;
+    }
     return app.exec();
 }

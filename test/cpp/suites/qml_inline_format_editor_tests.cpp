@@ -61,6 +61,8 @@ void WhatSonCppRegressionTests::qmlInlineFormatEditor_keepsKeyboardSelectionAndO
     QVERIFY(inlineEditorSource.contains(QStringLiteral("function nativeCompositionActive()")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("function shouldRejectFocusedProgrammaticTextSync(nextText)")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("property bool _localTextEditSinceFocus: false")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("const hadLocalTextEditSinceFocus = control._localTextEditSinceFocus;")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("if (control.preferNativeInputHandling && hadLocalTextEditSinceFocus)\n                control.clearDeferredProgrammaticText();")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("function setCursorPositionPreservingNativeInput(position)")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("if (control.nativeCompositionActive())\n            return false;")));
     QVERIFY(typingControllerSource.contains(QStringLiteral("property bool pendingCursorPositionRequest: false")));

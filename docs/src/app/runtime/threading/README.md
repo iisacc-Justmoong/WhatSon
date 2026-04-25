@@ -28,5 +28,7 @@
 
 ## Recent Notes
 - Startup/reload snapshot application is now all-or-nothing across the requested domain set.
-- Worker threads may still parse and stage hub/runtime data independently, but live viewmodels and
-  the shared `WhatSonHubRuntimeStore` are updated only after the entire request succeeds.
+- LVRS `BootstrapParallel` now owns the worker pool for requested domain loads. Live viewmodels and the shared
+  `WhatSonHubRuntimeStore` are still updated only after the entire request succeeds.
+- Deferred startup Event/Preset hierarchy prefetch is scheduled by `main.cpp` as an LVRS
+  `QmlAppLifecycleStage::AfterFirstIdle` bootstrap task after the workspace root is visible.

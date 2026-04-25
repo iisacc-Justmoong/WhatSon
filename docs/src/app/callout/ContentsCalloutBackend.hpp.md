@@ -18,5 +18,5 @@ Declares the callout editor backend bridge exposed to QML as
   `<callout>` confirmation state.
 
 ## Registration Constraint
-- This QObject type is registered via `qmlRegisterType<ContentsCalloutBackend>()`.
+- This QObject type is registered through the LVRS manifest in `WhatSonQmlInternalTypeRegistrar`.
 - The class must remain non-`final` to keep compatibility with Qt's internal `QQmlElement<T>` wrapper type.

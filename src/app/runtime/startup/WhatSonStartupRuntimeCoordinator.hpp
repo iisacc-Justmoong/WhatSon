@@ -29,7 +29,7 @@ public:
     bool loadHubIntoRuntime(const QString& hubPath, QString* errorMessage = nullptr);
     bool loadStartupHubIntoRuntime(const QString& hubPath, QString* errorMessage = nullptr);
     bool reloadResourcesDomainIntoRuntime(const QString& hubPath, QString* errorMessage = nullptr);
-    void ensureDeferredStartupHierarchyLoaded(int hierarchyIndex, const QString& reason);
+    bool ensureDeferredStartupHierarchyLoaded(int hierarchyIndex, const QString& reason);
     void bindSidebarActivation(IActiveHierarchySource* sidebarHierarchyViewModel);
 
     bool startupDeferredBootstrapActive() const noexcept;

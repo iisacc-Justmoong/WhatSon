@@ -30,8 +30,10 @@ void WhatSonCppRegressionTests::detailPanelRouting_separatesNoteAndResourceViews
     QVERIFY(noteDetailPanelSource.contains(QStringLiteral("readonly property var detailPanelVm: noteDetailPanel.noteDetailPanelViewModel")));
     QVERIFY(resourceDetailPanelSource.contains(QStringLiteral("property var resourceDetailPanelViewModel: null")));
 
-    QVERIFY(mainQmlSource.contains(QStringLiteral("LV.ViewModels.set(\"noteDetailPanelViewModel\", noteDetailPanelViewModel);")));
-    QVERIFY(mainQmlSource.contains(QStringLiteral("LV.ViewModels.set(\"resourceDetailPanelViewModel\", resourceDetailPanelViewModel);")));
+    QVERIFY(!mainQmlSource.contains(QStringLiteral("LV.ViewModels.set(\"noteDetailPanelViewModel\"")));
+    QVERIFY(!mainQmlSource.contains(QStringLiteral("LV.ViewModels.set(\"resourceDetailPanelViewModel\"")));
+    QVERIFY(mainCppSource.contains(QStringLiteral("workspaceContextObjects.noteDetailPanelViewModel = &noteDetailPanelViewModel;")));
+    QVERIFY(mainCppSource.contains(QStringLiteral("workspaceContextObjects.resourceDetailPanelViewModel = &resourceDetailPanelViewModel;")));
     QVERIFY(mainCppSource.contains(QStringLiteral("NoteDetailPanelViewModel noteDetailPanelViewModel;")));
     QVERIFY(mainCppSource.contains(QStringLiteral("ResourceDetailPanelViewModel resourceDetailPanelViewModel;")));
 

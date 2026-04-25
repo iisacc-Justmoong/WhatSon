@@ -1,6 +1,11 @@
 #pragma once
 
+#include "backend/runtime/qmltyperegistrar.h"
+
+#include <QList>
+
 namespace WhatSon::Runtime::Bootstrap
 {
-    void registerInternalQmlTypes();
+    QList<lvrs::QmlTypeRegistration> internalQmlTypeRegistrationManifest();
+    lvrs::QmlTypeRegistrationReport registerInternalQmlTypes();
 }

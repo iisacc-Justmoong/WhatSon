@@ -46,101 +46,120 @@
 #include "app/viewmodel/panel/HierarchyInteractionBridge.hpp"
 #include "app/viewmodel/panel/NoteListModelContractBridge.hpp"
 
-#include <qqml.h>
-
 namespace WhatSon::Runtime::Bootstrap
 {
-    void registerInternalQmlTypes()
+namespace
+{
+    template <typename T>
+    lvrs::QmlTypeRegistration whatsonInternalCreatableType(const QString& qmlName)
     {
-        qmlRegisterType<ContentsEditorSelectionBridge>(
-            "WhatSon.App.Internal", 1, 0, "ContentsEditorSelectionBridge");
-        qmlRegisterType<ContentsDisplaySelectionSyncCoordinator>(
-            "WhatSon.App.Internal", 1, 0, "ContentsDisplaySelectionSyncCoordinator");
-        qmlRegisterType<ContentsDisplayPresentationRefreshController>(
-            "WhatSon.App.Internal", 1, 0, "ContentsDisplayPresentationRefreshController");
-        qmlRegisterType<ContentsDisplayRefreshCoordinator>(
-            "WhatSon.App.Internal", 1, 0, "ContentsDisplayRefreshCoordinator");
-        qmlRegisterType<ContentsDisplayContextMenuCoordinator>(
-            "WhatSon.App.Internal", 1, 0, "ContentsDisplayContextMenuCoordinator");
-        qmlRegisterType<ContentsDisplayGutterCoordinator>(
-            "WhatSon.App.Internal", 1, 0, "ContentsDisplayGutterCoordinator");
-        qmlRegisterType<ContentsDisplayMinimapCoordinator>(
-            "WhatSon.App.Internal", 1, 0, "ContentsDisplayMinimapCoordinator");
-        qmlRegisterType<ContentsDisplayNoteBodyMountCoordinator>(
-            "WhatSon.App.Internal", 1, 0, "ContentsDisplayNoteBodyMountCoordinator");
-        qmlRegisterType<ContentsDisplayDocumentSourceResolver>(
-            "WhatSon.App.Internal", 1, 0, "ContentsDisplayDocumentSourceResolver");
-        qmlRegisterType<ContentsDisplayEditOperationCoordinator>(
-            "WhatSon.App.Internal", 1, 0, "ContentsDisplayEditOperationCoordinator");
-        qmlRegisterType<MobileHierarchyBackSwipeCoordinator>(
-            "WhatSon.App.Internal", 1, 0, "MobileHierarchyBackSwipeCoordinator");
-        qmlRegisterType<MobileHierarchyCanonicalRoutePlanner>(
-            "WhatSon.App.Internal", 1, 0, "MobileHierarchyCanonicalRoutePlanner");
-        qmlRegisterType<MobileHierarchyNavigationCoordinator>(
-            "WhatSon.App.Internal", 1, 0, "MobileHierarchyNavigationCoordinator");
-        qmlRegisterType<MobileHierarchyPopRepairPolicy>(
-            "WhatSon.App.Internal", 1, 0, "MobileHierarchyPopRepairPolicy");
-        qmlRegisterType<MobileHierarchyRouteSelectionSyncPolicy>(
-            "WhatSon.App.Internal", 1, 0, "MobileHierarchyRouteSelectionSyncPolicy");
-        qmlRegisterType<MobileHierarchyRouteStateStore>(
-            "WhatSon.App.Internal", 1, 0, "MobileHierarchyRouteStateStore");
-        qmlRegisterType<MobileHierarchySelectionCoordinator>(
-            "WhatSon.App.Internal", 1, 0, "MobileHierarchySelectionCoordinator");
-        qmlRegisterType<ContentsDisplayViewportCoordinator>(
-            "WhatSon.App.Internal", 1, 0, "ContentsDisplayViewportCoordinator");
-        qmlRegisterType<ContentsDisplayStructuredFlowCoordinator>(
-            "WhatSon.App.Internal", 1, 0, "ContentsDisplayStructuredFlowCoordinator");
-        qmlRegisterType<ContentsDisplayTraceFormatter>(
-            "WhatSon.App.Internal", 1, 0, "ContentsDisplayTraceFormatter");
-        qmlRegisterType<ContentsEditorPresentationProjection>(
-            "WhatSon.App.Internal", 1, 0, "ContentsEditorPresentationProjection");
-        qmlRegisterType<ContentsEditorSessionController>(
-            "WhatSon.App.Internal", 1, 0, "ContentsEditorSessionController");
-        qmlRegisterType<ContentsLogicalTextBridge>(
-            "WhatSon.App.Internal", 1, 0, "ContentsLogicalTextBridge");
-        qmlRegisterType<ContentsGutterMarkerBridge>(
-            "WhatSon.App.Internal", 1, 0, "ContentsGutterMarkerBridge");
-        qmlRegisterType<ContentsResourceTagTextGenerator>(
-            "WhatSon.App.Internal", 1, 0, "ContentsResourceTagTextGenerator");
-        qmlRegisterType<ContentsStructuredDocumentBlocksModel>(
-            "WhatSon.App.Internal", 1, 0, "ContentsStructuredDocumentBlocksModel");
-        qmlRegisterType<ContentsStructuredDocumentCollectionPolicy>(
-            "WhatSon.App.Internal", 1, 0, "ContentsStructuredDocumentCollectionPolicy");
-        qmlRegisterType<ContentsStructuredDocumentFocusPolicy>(
-            "WhatSon.App.Internal", 1, 0, "ContentsStructuredDocumentFocusPolicy");
-        qmlRegisterType<ContentsStructuredDocumentHost>(
-            "WhatSon.App.Internal", 1, 0, "ContentsStructuredDocumentHost");
-        qmlRegisterType<ContentsStructuredDocumentMutationPolicy>(
-            "WhatSon.App.Internal", 1, 0, "ContentsStructuredDocumentMutationPolicy");
-        qmlRegisterType<ContentsPaperSelection>(
-            "WhatSon.App.Internal", 1, 0, "ContentsPaperSelection");
-        qmlRegisterType<ContentsA4PaperBackground>(
-            "WhatSon.App.Internal", 1, 0, "ContentsA4PaperBackground");
-        qmlRegisterType<ContentsTextFormatRenderer>(
-            "WhatSon.App.Internal", 1, 0, "ContentsTextFormatRenderer");
-        qmlRegisterType<ContentsStructuredBlockRenderer>(
-            "WhatSon.App.Internal", 1, 0, "ContentsStructuredBlockRenderer");
-        qmlRegisterType<ContentsStructuredTagValidator>(
-            "WhatSon.App.Internal", 1, 0, "ContentsStructuredTagValidator");
-        qmlRegisterType<ContentsAgendaBackend>(
-            "WhatSon.App.Internal", 1, 0, "ContentsAgendaBackend");
-        qmlRegisterType<ContentsCalloutBackend>(
-            "WhatSon.App.Internal", 1, 0, "ContentsCalloutBackend");
-        qmlRegisterType<ContentsPagePrintLayoutRenderer>(
-            "WhatSon.App.Internal", 1, 0, "ContentsPagePrintLayoutRenderer");
-        qmlRegisterType<ContentsBodyResourceRenderer>(
-            "WhatSon.App.Internal", 1, 0, "ContentsBodyResourceRenderer");
-        qmlRegisterType<ResourceBitmapViewer>(
-            "WhatSon.App.Internal", 1, 0, "ResourceBitmapViewer");
-        qmlRegisterType<FocusedNoteDeletionBridge>(
-            "WhatSon.App.Internal", 1, 0, "FocusedNoteDeletionBridge");
-        qmlRegisterType<NoteListModelContractBridge>(
-            "WhatSon.App.Internal", 1, 0, "NoteListModelContractBridge");
-        qmlRegisterType<HierarchyDragDropBridge>(
-            "WhatSon.App.Internal", 1, 0, "HierarchyDragDropBridge");
-        qmlRegisterType<HierarchyInteractionBridge>(
-            "WhatSon.App.Internal", 1, 0, "HierarchyInteractionBridge");
-        qmlRegisterType<WhatSonIosHubPickerBridge>(
-            "WhatSon.App.Internal", 1, 0, "WhatSonIosHubPickerBridge");
+        return lvrs::qmlCreatableType<T>(
+            QStringLiteral("WhatSon.App.Internal"),
+            1,
+            0,
+            qmlName,
+            qmlName);
+    }
+} // namespace
+
+    QList<lvrs::QmlTypeRegistration> internalQmlTypeRegistrationManifest()
+    {
+        return {
+            whatsonInternalCreatableType<ContentsEditorSelectionBridge>(
+                QStringLiteral("ContentsEditorSelectionBridge")),
+            whatsonInternalCreatableType<ContentsDisplaySelectionSyncCoordinator>(
+                QStringLiteral("ContentsDisplaySelectionSyncCoordinator")),
+            whatsonInternalCreatableType<ContentsDisplayPresentationRefreshController>(
+                QStringLiteral("ContentsDisplayPresentationRefreshController")),
+            whatsonInternalCreatableType<ContentsDisplayRefreshCoordinator>(
+                QStringLiteral("ContentsDisplayRefreshCoordinator")),
+            whatsonInternalCreatableType<ContentsDisplayContextMenuCoordinator>(
+                QStringLiteral("ContentsDisplayContextMenuCoordinator")),
+            whatsonInternalCreatableType<ContentsDisplayGutterCoordinator>(
+                QStringLiteral("ContentsDisplayGutterCoordinator")),
+            whatsonInternalCreatableType<ContentsDisplayMinimapCoordinator>(
+                QStringLiteral("ContentsDisplayMinimapCoordinator")),
+            whatsonInternalCreatableType<ContentsDisplayNoteBodyMountCoordinator>(
+                QStringLiteral("ContentsDisplayNoteBodyMountCoordinator")),
+            whatsonInternalCreatableType<ContentsDisplayDocumentSourceResolver>(
+                QStringLiteral("ContentsDisplayDocumentSourceResolver")),
+            whatsonInternalCreatableType<ContentsDisplayEditOperationCoordinator>(
+                QStringLiteral("ContentsDisplayEditOperationCoordinator")),
+            whatsonInternalCreatableType<MobileHierarchyBackSwipeCoordinator>(
+                QStringLiteral("MobileHierarchyBackSwipeCoordinator")),
+            whatsonInternalCreatableType<MobileHierarchyCanonicalRoutePlanner>(
+                QStringLiteral("MobileHierarchyCanonicalRoutePlanner")),
+            whatsonInternalCreatableType<MobileHierarchyNavigationCoordinator>(
+                QStringLiteral("MobileHierarchyNavigationCoordinator")),
+            whatsonInternalCreatableType<MobileHierarchyPopRepairPolicy>(
+                QStringLiteral("MobileHierarchyPopRepairPolicy")),
+            whatsonInternalCreatableType<MobileHierarchyRouteSelectionSyncPolicy>(
+                QStringLiteral("MobileHierarchyRouteSelectionSyncPolicy")),
+            whatsonInternalCreatableType<MobileHierarchyRouteStateStore>(
+                QStringLiteral("MobileHierarchyRouteStateStore")),
+            whatsonInternalCreatableType<MobileHierarchySelectionCoordinator>(
+                QStringLiteral("MobileHierarchySelectionCoordinator")),
+            whatsonInternalCreatableType<ContentsDisplayViewportCoordinator>(
+                QStringLiteral("ContentsDisplayViewportCoordinator")),
+            whatsonInternalCreatableType<ContentsDisplayStructuredFlowCoordinator>(
+                QStringLiteral("ContentsDisplayStructuredFlowCoordinator")),
+            whatsonInternalCreatableType<ContentsDisplayTraceFormatter>(
+                QStringLiteral("ContentsDisplayTraceFormatter")),
+            whatsonInternalCreatableType<ContentsEditorPresentationProjection>(
+                QStringLiteral("ContentsEditorPresentationProjection")),
+            whatsonInternalCreatableType<ContentsEditorSessionController>(
+                QStringLiteral("ContentsEditorSessionController")),
+            whatsonInternalCreatableType<ContentsLogicalTextBridge>(
+                QStringLiteral("ContentsLogicalTextBridge")),
+            whatsonInternalCreatableType<ContentsGutterMarkerBridge>(
+                QStringLiteral("ContentsGutterMarkerBridge")),
+            whatsonInternalCreatableType<ContentsResourceTagTextGenerator>(
+                QStringLiteral("ContentsResourceTagTextGenerator")),
+            whatsonInternalCreatableType<ContentsStructuredDocumentBlocksModel>(
+                QStringLiteral("ContentsStructuredDocumentBlocksModel")),
+            whatsonInternalCreatableType<ContentsStructuredDocumentCollectionPolicy>(
+                QStringLiteral("ContentsStructuredDocumentCollectionPolicy")),
+            whatsonInternalCreatableType<ContentsStructuredDocumentFocusPolicy>(
+                QStringLiteral("ContentsStructuredDocumentFocusPolicy")),
+            whatsonInternalCreatableType<ContentsStructuredDocumentHost>(
+                QStringLiteral("ContentsStructuredDocumentHost")),
+            whatsonInternalCreatableType<ContentsStructuredDocumentMutationPolicy>(
+                QStringLiteral("ContentsStructuredDocumentMutationPolicy")),
+            whatsonInternalCreatableType<ContentsPaperSelection>(
+                QStringLiteral("ContentsPaperSelection")),
+            whatsonInternalCreatableType<ContentsA4PaperBackground>(
+                QStringLiteral("ContentsA4PaperBackground")),
+            whatsonInternalCreatableType<ContentsTextFormatRenderer>(
+                QStringLiteral("ContentsTextFormatRenderer")),
+            whatsonInternalCreatableType<ContentsStructuredBlockRenderer>(
+                QStringLiteral("ContentsStructuredBlockRenderer")),
+            whatsonInternalCreatableType<ContentsStructuredTagValidator>(
+                QStringLiteral("ContentsStructuredTagValidator")),
+            whatsonInternalCreatableType<ContentsAgendaBackend>(
+                QStringLiteral("ContentsAgendaBackend")),
+            whatsonInternalCreatableType<ContentsCalloutBackend>(
+                QStringLiteral("ContentsCalloutBackend")),
+            whatsonInternalCreatableType<ContentsPagePrintLayoutRenderer>(
+                QStringLiteral("ContentsPagePrintLayoutRenderer")),
+            whatsonInternalCreatableType<ContentsBodyResourceRenderer>(
+                QStringLiteral("ContentsBodyResourceRenderer")),
+            whatsonInternalCreatableType<ResourceBitmapViewer>(
+                QStringLiteral("ResourceBitmapViewer")),
+            whatsonInternalCreatableType<FocusedNoteDeletionBridge>(
+                QStringLiteral("FocusedNoteDeletionBridge")),
+            whatsonInternalCreatableType<NoteListModelContractBridge>(
+                QStringLiteral("NoteListModelContractBridge")),
+            whatsonInternalCreatableType<HierarchyDragDropBridge>(
+                QStringLiteral("HierarchyDragDropBridge")),
+            whatsonInternalCreatableType<HierarchyInteractionBridge>(
+                QStringLiteral("HierarchyInteractionBridge")),
+            whatsonInternalCreatableType<WhatSonIosHubPickerBridge>(
+                QStringLiteral("WhatSonIosHubPickerBridge"))
+        };
+    }
+
+    lvrs::QmlTypeRegistrationReport registerInternalQmlTypes()
+    {
+        return lvrs::registerQmlTypes(internalQmlTypeRegistrationManifest());
     }
 } // namespace WhatSon::Runtime::Bootstrap

@@ -50,11 +50,11 @@ void WhatSonCppRegressionTests::displayPaperModels_hostPageAndPrintViewModeObjec
     QVERIFY(registrarSource.contains(
         QStringLiteral("#include \"app/models/display/paper/ContentsA4PaperBackground.hpp\"")));
     QVERIFY(registrarSource.contains(
-        QStringLiteral("qmlRegisterType<ContentsPaperSelection>(")));
+        QStringLiteral("whatsonInternalCreatableType<ContentsPaperSelection>(")));
     QVERIFY(registrarSource.contains(
         QStringLiteral("#include \"app/models/display/paper/ContentsTextFormatRenderer.hpp\"")));
     QVERIFY(registrarSource.contains(
         QStringLiteral("#include \"app/models/display/paper/print/ContentsPagePrintLayoutRenderer.hpp\"")));
     QVERIFY(registrarSource.contains(
-        QStringLiteral("qmlRegisterType<ContentsA4PaperBackground>(")));
+        QStringLiteral("whatsonInternalCreatableType<ContentsA4PaperBackground>(")));
 }

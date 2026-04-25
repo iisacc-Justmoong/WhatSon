@@ -920,6 +920,12 @@ private slots:
     void iosXcodeprojExport_patchScriptStripsQtPermissionsEvenWhenIconPhaseAlreadyExists();
     void iosXcodeprojExport_keepsBuildIosScriptOnHighLevelCmakeOptions();
     void appLaunchSupport_requiresMountedAndLoadedHubForStartupWorkspace();
+    void qmlLaunchSupport_routesRootLoadingThroughLvrsAppEntry();
+    void qmlContextBinder_usesLvrsBindPlanForContextAndViewModels();
+    void qmlInternalTypeRegistrar_usesLvrsManifestRegistration();
+    void foregroundServiceGate_startsSchedulerAndPermissionsAfterVisibleWorkspace();
+    void startupDeferredHierarchyPrefetch_usesLvrsAfterFirstIdleLifecycleTask();
+    void runtimeParallelLoader_usesLvrsBootstrapParallelForDomainLoads();
     void sidebarSelectionStore_normalizesIndicesAndSuppressesDuplicateSignals();
     void hierarchyViewModelProvider_normalizesMappingsAndAvoidsDuplicateSignals();
     void sidebarHierarchyViewModel_preservesFallbackAcrossStoreAttachDetach();

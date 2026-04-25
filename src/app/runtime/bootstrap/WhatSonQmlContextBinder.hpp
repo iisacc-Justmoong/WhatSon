@@ -1,7 +1,9 @@
 #pragma once
 
+#include "backend/runtime/qmlcontextbinder.h"
+
 class QObject;
-class QQmlContext;
+class QQmlApplicationEngine;
 
 namespace WhatSon::Runtime::Bootstrap
 {
@@ -34,5 +36,7 @@ namespace WhatSon::Runtime::Bootstrap
         QObject* panelViewModelRegistry = nullptr;
     };
 
-    void bindWorkspaceContextObjects(QQmlContext* context, const WorkspaceContextObjects& objects);
+    lvrs::QmlContextBindResult bindWorkspaceContextObjects(
+        QQmlApplicationEngine& engine,
+        const WorkspaceContextObjects& objects);
 } // namespace WhatSon::Runtime::Bootstrap

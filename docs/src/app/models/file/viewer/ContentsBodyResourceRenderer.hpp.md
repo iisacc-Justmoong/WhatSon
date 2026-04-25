@@ -18,8 +18,8 @@ Declares the body-resource renderer bridge that maps note-local `<resource ...>`
 - `maxRenderCount`: caps the number of rendered resource cards.
 - `renderedResources`: normalized `QVariantList` model (`type`, `format`, `resourcePath`, `renderMode`, `source`,
   `displayName`, `previewText`, `sourceStart`, `sourceEnd`, `focusSourceOffset`).
-- Type declaration must stay **non-final** because `qmlRegisterType<T>()` instantiates an internal wrapper class that
-  derives from `T`.
+- Type declaration must stay **non-final** because the LVRS internal type manifest registers this as a creatable Qt QML
+  type, which instantiates an internal wrapper class that derives from `T`.
 
 ## Selection Modes
 

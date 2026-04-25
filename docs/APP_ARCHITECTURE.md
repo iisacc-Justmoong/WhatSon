@@ -81,6 +81,6 @@ hint maps to one filesystem walk instead of one walk for hashing plus another fo
 `WhatSonLibraryIndexedState` is the backend projection boundary for library note indexing. It owns the canonical `all`,
 `draft`, and `today` note collections so viewmodels do not each rebuild those derived buckets themselves.
 
-`WhatSonRuntimeParallelLoader.cpp` now derives bookmarks from the shared library snapshot when both domains are mounted.
-That keeps the runtime bootstrap on one library index traversal instead of reparsing the same `.wshub` tree for the
-bookmarks domain.
+`WhatSonRuntimeParallelLoader.cpp` now uses LVRS `BootstrapParallel` for requested domain loads and derives bookmarks
+from the shared library snapshot when both domains are mounted. That keeps the runtime bootstrap on one library index
+traversal instead of reparsing the same `.wshub` tree for the bookmarks domain.
