@@ -21,8 +21,14 @@ entrypoints.
   - `selectionClearRevision`
   - `selectionClearRetainedBlockIndex`
   - `requestSelectionClear(...)`
+  - `noteActiveBlockInteraction(...)`, which handles focus/activation cleanup
+  - `noteActiveBlockCursorInteraction(...)`, which updates cursor revision for live caret movement without clearing
+    the current block's native selection
 
 ## Integration Note
 - QML delegates should treat this host as the only structured selection-management authority.
 - Delegates may preserve selection only for the currently retained block/editor; all other stale
   `persistentSelection` highlights must be cleared on the next revision tick.
+- QML text delegates must route `TextEdit.cursorPosition` changes through `noteActiveBlockCursorInteraction(...)`, not
+  focus activation, because desktop drag selection and iOS text selection gestures update the cursor repeatedly while
+  the native `TextEdit` owns the active selection.

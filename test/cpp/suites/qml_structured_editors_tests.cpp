@@ -147,6 +147,9 @@ void WhatSonCppRegressionTests::qmlStructuredEditors_preserveNativeMobileInputDu
     QVERIFY(structuredFlowSource.contains(QStringLiteral("property bool nativeTextInputPriority: false")));
     QVERIFY(structuredFlowSource.contains(QStringLiteral("if (documentFlow.nativeTextInputPriority)\n            return")));
     QVERIFY(structuredFlowSource.contains(QStringLiteral("function nativeCompositionActive()")));
+    QVERIFY(structuredFlowSource.contains(QStringLiteral("function noteActiveBlockCursorInteraction(blockIndex)")));
+    QVERIFY(structuredFlowSource.contains(
+        QStringLiteral("onCursorInteraction: documentFlow.noteActiveBlockCursorInteraction(blockHost.blockIndex)")));
     QVERIFY(structuredFlowSource.contains(QStringLiteral("expectedPreviousSourceText")));
     QVERIFY(structuredFlowSource.contains(QStringLiteral("sourceStart + expectedSourceText.length")));
     QVERIFY(structuredFlowSource.contains(QStringLiteral("expectedPreviousText")));
@@ -155,11 +158,16 @@ void WhatSonCppRegressionTests::qmlStructuredEditors_preserveNativeMobileInputDu
     QVERIFY(documentBlockSource.contains(QStringLiteral("readonly property bool inputMethodComposing")));
     QVERIFY(documentBlockSource.contains(QStringLiteral("readonly property string preeditText")));
     QVERIFY(documentBlockSource.contains(QStringLiteral("nativeTextInputPriority: documentBlock.nativeTextInputPriority")));
+    QVERIFY(documentBlockSource.contains(QStringLiteral("signal cursorInteraction()")));
+    QVERIFY(documentBlockSource.contains(QStringLiteral("function onCursorInteraction()")));
 
     QVERIFY(textBlockSource.contains(QStringLiteral("property bool nativeTextInputPriority: false")));
     QVERIFY(textBlockSource.contains(QStringLiteral("property string _liveEditSourceText: \"\"")));
     QVERIFY(textBlockSource.contains(QStringLiteral("syncLiveEditSnapshotFromHost")));
     QVERIFY(textBlockSource.contains(QStringLiteral("preferNativeInputHandling: true")));
+    QVERIFY(textBlockSource.contains(QStringLiteral("signal cursorInteraction()")));
+    QVERIFY(textBlockSource.contains(QStringLiteral("textBlock.cursorInteraction()")));
+    QVERIFY(!textBlockSource.contains(QStringLiteral("onCursorPositionChanged: {\n            if (focused)\n                textBlock.activated()")));
     QVERIFY(!textBlockSource.contains(QStringLiteral("modifierVerticalNavigationHandler")));
     QVERIFY(!textBlockSource.contains(QStringLiteral("shortcutKeyPressHandler: function")));
 
@@ -168,6 +176,8 @@ void WhatSonCppRegressionTests::qmlStructuredEditors_preserveNativeMobileInputDu
     QVERIFY(agendaBlockSource.contains(QStringLiteral("syncLiveTaskTextFromHost")));
     QVERIFY(agendaBlockSource.contains(QStringLiteral("expectedPreviousText")));
     QVERIFY(agendaBlockSource.contains(QStringLiteral("preferNativeInputHandling: true")));
+    QVERIFY(agendaBlockSource.contains(QStringLiteral("signal cursorInteraction()")));
+    QVERIFY(agendaBlockSource.contains(QStringLiteral("agendaBlock.cursorInteraction()")));
     QVERIFY(!agendaBlockSource.contains(QStringLiteral("modifierVerticalNavigationHandler")));
     QVERIFY(!agendaBlockSource.contains(QStringLiteral("shortcutKeyPressHandler: function")));
 
@@ -176,6 +186,8 @@ void WhatSonCppRegressionTests::qmlStructuredEditors_preserveNativeMobileInputDu
     QVERIFY(calloutBlockSource.contains(QStringLiteral("syncLiveTextFromHost")));
     QVERIFY(calloutBlockSource.contains(QStringLiteral("expectedPreviousText")));
     QVERIFY(calloutBlockSource.contains(QStringLiteral("preferNativeInputHandling: true")));
+    QVERIFY(calloutBlockSource.contains(QStringLiteral("signal cursorInteraction()")));
+    QVERIFY(calloutBlockSource.contains(QStringLiteral("calloutBlock.cursorInteraction()")));
     QVERIFY(!calloutBlockSource.contains(QStringLiteral("modifierVerticalNavigationHandler")));
     QVERIFY(!calloutBlockSource.contains(QStringLiteral("shortcutKeyPressHandler: function")));
 }

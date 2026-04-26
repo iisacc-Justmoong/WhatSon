@@ -82,8 +82,9 @@ ctest --test-dir build --output-on-failure -L cpp_regression
 - The QML-side line-coordinate helper `ContentsLogicalLineLayoutSupport.js` is now regression-tested through
   `QJSEngine`, so gutter/minimap line placement keeps the block-local mapped Y contract even though the maintained
   runtime suite stays C++-driven.
-- Structured editor selection cleanup is now also locked at the C++ host-object layer, so block activation keeps
-  emitting the selection-clear revision/retained-block contract that the QML delegates consume.
+- Structured editor selection cleanup is now also locked at the C++ host-object and QML routing layers, so focus
+  activation emits the selection-clear revision/retained-block contract that QML delegates consume, while same-block
+  cursor movement uses a cursor-only host path and keeps native desktop/iOS text selection intact.
 - Clipboard-image resource imports now also pin their synthesized asset-name policy in the C++ suite, so temporary
   placeholder names cannot regress back to a collision-prone fixed file name.
 - Structured QML editor checks now also pin the native mobile input contract: focused stale text echo is rejected,

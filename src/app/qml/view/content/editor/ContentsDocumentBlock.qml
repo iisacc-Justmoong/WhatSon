@@ -27,6 +27,7 @@ FocusScope {
     signal adjacentAtomicBlockDeleteRequested(string side)
     signal boundaryNavigationRequested(string axis, string side)
     signal blockDeletionRequested(string direction)
+    signal cursorInteraction()
     signal documentEndEditRequested()
     signal paragraphSplitRequested(int sourceOffset)
     signal sourceMutationRequested(string nextBlockSourceText, var focusRequest, string expectedPreviousSourceText)
@@ -346,6 +347,10 @@ FocusScope {
             if (documentBlock.atomicBlock)
                 documentBlock.forceActiveFocus()
             documentBlock.activated()
+        }
+
+        function onCursorInteraction() {
+            documentBlock.cursorInteraction()
         }
 
         function onAdjacentAtomicBlockDeleteRequested(side) {

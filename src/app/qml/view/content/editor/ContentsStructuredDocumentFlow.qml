@@ -665,6 +665,10 @@ FocusScope {
         documentHost.noteActiveBlockInteraction(Math.max(-1, Math.floor(Number(blockIndex) || -1)))
     }
 
+    function noteActiveBlockCursorInteraction(blockIndex) {
+        documentHost.noteActiveBlockCursorInteraction(Math.max(-1, Math.floor(Number(blockIndex) || -1)))
+    }
+
     function selectionSnapshotIsValid(selectionSnapshot) {
         if (!selectionSnapshot || typeof selectionSnapshot !== "object")
             return false
@@ -1706,6 +1710,7 @@ FocusScope {
                         width: blockHost.width
 
                         onActivated: documentFlow.noteActiveBlockInteraction(blockHost.blockIndex)
+                        onCursorInteraction: documentFlow.noteActiveBlockCursorInteraction(blockHost.blockIndex)
                         onAdjacentAtomicBlockDeleteRequested: function (side) {
                             documentFlow.deleteAdjacentAtomicBlock(blockHost.blockIndex, side)
                         }

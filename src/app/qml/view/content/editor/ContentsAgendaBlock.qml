@@ -14,6 +14,7 @@ FocusScope {
 
     signal activated()
     signal boundaryNavigationRequested(string axis, string side)
+    signal cursorInteraction()
     signal taskDoneToggled(int openTagStart, int openTagEnd, bool checked)
     signal taskEnterRequested(var blockData, var taskData)
     signal taskTextChanged(var taskData, string text, int cursorPosition, string expectedPreviousText)
@@ -474,7 +475,7 @@ FocusScope {
                                 }
                                 onCursorPositionChanged: {
                                     if (focused)
-                                        agendaBlock.activated()
+                                        agendaBlock.cursorInteraction()
                                 }
                                 onTextEdited: function (text) {
                                     const previousText = taskRow._hasLiveTaskTextSnapshot

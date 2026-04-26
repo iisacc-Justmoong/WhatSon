@@ -413,6 +413,16 @@ void ContentsStructuredDocumentHost::noteActiveBlockInteraction(const int blockI
     setActiveBlockCursorRevision(m_activeBlockCursorRevision + 1);
 }
 
+void ContentsStructuredDocumentHost::noteActiveBlockCursorInteraction(const int blockIndex)
+{
+    if (m_activeBlockIndex != blockIndex)
+    {
+        requestSelectionClear(blockIndex);
+    }
+    setActiveBlockIndex(blockIndex);
+    setActiveBlockCursorRevision(m_activeBlockCursorRevision + 1);
+}
+
 void ContentsStructuredDocumentHost::requestSelectionClear(
     const int retainedBlockIndex)
 {

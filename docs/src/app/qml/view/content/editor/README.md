@@ -234,6 +234,9 @@
   `ContentsDocumentBlock.qml` forwards that cleanup into paragraph/callout/agenda delegates.
   Drag-selected text therefore no longer stays highlighted after the user activates another structured editor or clicks
   blank document space.
+- Text block, agenda task, and callout cursor movement is routed through the host's cursor-only interaction path.
+  That path advances cursor chrome without clearing the current native `TextEdit` selection, preserving desktop drag
+  selection and iOS selection gestures.
 - After that policy extraction, the flow and desktop/mobile hosts no longer keep dead duplicate QML helpers or
   pass-through import wrappers that merely mirrored those dedicated collaborators.
 - Desktop/mobile snapshot polling now also prefers a filesystem reconcile fetch path

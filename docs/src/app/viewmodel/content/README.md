@@ -120,7 +120,9 @@
   Structured single-line deletes and other small RAW edits therefore keep stable delegate rows for unchanged suffix
   blocks instead of remounting the whole document column every time parsed source offsets shift.
 - That host now also owns the selection-clear revision and retained-block hint used to drop stale
-  `persistentSelection` highlight when another structured editor becomes active.
+  `persistentSelection` highlight when another structured editor becomes active. QML delegates route live
+  `TextEdit.cursorPosition` changes through a cursor-only host method, so native `TextEdit` drag selection and iOS
+  selection gestures are not collapsed by a cleanup tick.
 - `ContentsStructuredDocumentCollectionPolicy`, `ContentsStructuredDocumentFocusPolicy`, and
   `ContentsStructuredDocumentMutationPolicy` now split collection normalization, focus resolution, and RAW mutation
   rules into separate C++ SRP units so structured host behavior no longer collapses back into one QML god object.

@@ -15,6 +15,7 @@ FocusScope {
 
     signal activated()
     signal boundaryNavigationRequested(string axis, string side)
+    signal cursorInteraction()
     signal enterExitRequested(var blockData)
     signal textChanged(string text, int cursorPosition, string expectedPreviousText)
 
@@ -270,7 +271,7 @@ FocusScope {
                 }
                 onCursorPositionChanged: {
                     if (focused)
-                        calloutBlock.activated()
+                        calloutBlock.cursorInteraction()
                 }
                 onTextEdited: function (text) {
                     const previousText = calloutBlock._hasLiveTextSnapshot

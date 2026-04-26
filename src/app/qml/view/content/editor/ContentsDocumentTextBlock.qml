@@ -17,6 +17,7 @@ FocusScope {
     signal adjacentAtomicBlockDeleteRequested(string side)
     signal boundaryNavigationRequested(string axis, string side)
     signal blockDeletionRequested(string direction)
+    signal cursorInteraction()
     signal paragraphSplitRequested(int sourceOffset)
     signal sourceMutationRequested(string nextBlockSourceText, var focusRequest, string expectedPreviousSourceText)
 
@@ -323,7 +324,7 @@ FocusScope {
         }
         onCursorPositionChanged: {
             if (focused)
-                textBlock.activated()
+                textBlock.cursorInteraction()
         }
         onTextEdited: function (_surfaceText) {
             const previousSourceText = textBlock._hasLiveEditSnapshot

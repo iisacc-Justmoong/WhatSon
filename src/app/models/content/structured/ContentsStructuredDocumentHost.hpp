@@ -108,6 +108,7 @@ public:
         int focusedBlockIndex,
         const QVariant& delegateInsertionOffset = QVariant()) const;
     Q_INVOKABLE void noteActiveBlockInteraction(int blockIndex);
+    Q_INVOKABLE void noteActiveBlockCursorInteraction(int blockIndex);
     Q_INVOKABLE void requestSelectionClear(int retainedBlockIndex = -1);
     Q_INVOKABLE void clearPendingFocusRequest();
 

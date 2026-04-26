@@ -7,13 +7,16 @@ layout cache, and selection cleanup.
 ## Current Behavior
 - Emits change signals only when the stored value actually changes.
 - Keeps structured-flow diagnostics visible through `WhatSon::Debug::traceEditorSelf(...)`.
-- `noteActiveBlockInteraction(...)` now performs three coupled actions in one turn:
+- `noteActiveBlockInteraction(...)` handles focus/activation transitions:
   - advances the selection-clear revision while retaining the active block
   - stores the active block index
-  - bumps the active-block cursor revision
+- `noteActiveBlockCursorInteraction(...)` handles live cursor movement:
+  - clears stale selection only if the cursor event belongs to a different active block
+  - always bumps the active-block cursor revision so gutter/minimap/caret chrome follows same-block cursor moves
 - `requestSelectionClear(...)` can also be called independently, allowing blank-area clicks to clear every stale
   structured editor selection before focus is restored elsewhere.
 
 ## Regression Focus
-- The maintained C++ regression suite now locks the selection-clear revision contract so repeated same-block
-  interactions still emit a fresh cleanup turn for nested editors such as agenda tasks.
+- The maintained C++ regression suite now locks the split between focus activation and cursor movement: same-block
+  cursor movement must not clear live TextEdit selections, while focus activation and real active-block changes still
+  clear stale selections in other structured editors.
