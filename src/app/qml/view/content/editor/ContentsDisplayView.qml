@@ -3554,8 +3554,13 @@ Item {
                             fontWeight: contentsView.editorFontWeight
                             insetHorizontal: contentsView.showPrintEditorLayout ? 0 : contentsView.editorHorizontalInset
                             insetVertical: contentsView.showPrintEditorLayout ? 0 : contentsView.editorBottomInset
+                            inputMethodHints: Qt.ImhNone
+                            mouseSelectionMode: TextEdit.SelectCharacters
+                            overwriteMode: false
+                            persistentSelection: true
                             placeholderText: ""
                             preferNativeInputHandling: contentsView.preferNativeInputHandling
+                            selectByKeyboard: true
                             selectByMouse: true
                             selectedTextColor: LV.Theme.textPrimary
                             selectionColor: LV.Theme.accent

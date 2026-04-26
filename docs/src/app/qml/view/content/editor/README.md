@@ -159,6 +159,10 @@
 - `ContentsInlineFormatEditor.qml` now leaves mobile and desktop pointer selection directly on the live `TextEdit`.
   It no longer mounts a transparent guard layer or touch multi-tap handler above the input surface, so OS/Qt cursor
   placement, selection handles, word selection, and drag selection are not preempted by wrapper code.
+- The shared live `TextEdit` wrapper now also declares every available Qt keyboard/selection feature flag instead of
+  relying on implicit defaults: focus-on-press, keyboard selection, pointer selection, persistent selection,
+  unrestricted input-method hints, character-level mouse selection, and insert-mode editing stay enabled for all note
+  body editors.
 - Mobile editor hosts now opt into native-input priority rules, pause note snapshot polling, delay app-driven
   RichText surface reinjection until the OS input session settles, and use a plain logical-text input surface instead
   of the RichText editor projection.
@@ -237,6 +241,17 @@
 - Text block, agenda task, and callout cursor movement is routed through the host's cursor-only interaction path.
   That path advances cursor chrome without clearing the current native `TextEdit` selection, preserving desktop drag
   selection and iOS selection gestures.
+- The input policy adapter now treats any focused body `TextEdit` as the native keyboard owner, not only mobile/iOS
+  sessions. Editor `WindowShortcut` commands therefore stand down while typing so macOS Option word movement and
+  Option+Shift word selection stay on the platform `TextEdit` path.
+- `ContentsInlineFormatEditor.qml` now also has a TextEdit-local `Keys.BeforeItem` handler for macOS
+  `Option+Left/Right` and `Option+Shift+Left/Right`. The handler defines the Option-word movement and selection
+  contract directly against the live `TextEdit`, instead of depending on Qt Quick to map macOS Option onto its default
+  Alt-key text bindings. The C++ regression suite verifies that behavior with real Quick key events instead of only
+  static QML source checks.
+- Atomic structured blocks now also avoid app-level `AltModifier` branching entirely. Resource/break block keyboard
+  handling only accepts plain navigation/delete and exact macOS Command Up/Down document-boundary movement, leaving
+  every Option-arrow chord unaccepted by the atomic block layer.
 - After that policy extraction, the flow and desktop/mobile hosts no longer keep dead duplicate QML helpers or
   pass-through import wrappers that merely mirrored those dedicated collaborators.
 - Desktop/mobile snapshot polling now also prefers a filesystem reconcile fetch path

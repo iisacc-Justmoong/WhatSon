@@ -14,7 +14,9 @@ The maintained Qt Test suite is now split by regression subject instead of keepi
 - `test/cpp/whatson_cpp_regression_tests.hpp` owns the shared fixture declarations, fake objects, and slot list.
 - `test/cpp/whatson_cpp_regression_test_support.cpp` owns reusable helper implementations such as sandboxed settings,
   hub fixture creation, local note creation, JS loading, and source-file loading.
-- `test/cpp/whatson_cpp_regression_tests_main.cpp` keeps the single `QTEST_APPLESS_MAIN(...)` entrypoint.
+- `test/cpp/whatson_cpp_regression_tests_main.cpp` keeps the single Qt Test entrypoint and initializes a
+  `QGuiApplication` with `QT_QPA_PLATFORM=offscreen` when no platform is already configured, so Quick item runtime
+  checks can run beside the non-visual C++ assertions.
 - `test/cpp/suites/*.cpp` owns the object-focused regression implementations. Each suite file now covers one object or
   one tightly coupled runtime seam instead of extending a monolithic translation unit.
 
@@ -85,6 +87,9 @@ ctest --test-dir build --output-on-failure -L cpp_regression
 - Structured editor selection cleanup is now also locked at the C++ host-object and QML routing layers, so focus
   activation emits the selection-clear revision/retained-block contract that QML delegates consume, while same-block
   cursor movement uses a cursor-only host path and keeps native desktop/iOS text selection intact.
+- Editor shortcut-surface gating now also treats every focused body `TextEdit` as the native keyboard owner, so desktop
+  Option word movement/selection chords remain OS/Qt behavior instead of being shadowed by app `WindowShortcut`
+  handling.
 - Clipboard-image resource imports now also pin their synthesized asset-name policy in the C++ suite, so temporary
   placeholder names cannot regress back to a collision-prone fixed file name.
 - Structured QML editor checks now also pin the native mobile input contract: focused stale text echo is rejected,
@@ -164,6 +169,14 @@ ctest --test-dir build --output-on-failure -L cpp_regression
   so mouse/touch selection, `Shift`-extended selection, and repeated Backspace/Delete remain OS/Qt-native. The same
   regression scans the QML source tree for forbidden input-method bridges and fallbacks, keeping IME query updates,
   candidate placement, and keyboard visibility on the OS/Qt `TextEdit` path.
+- The inline editor regression now also pins the explicit Qt `TextEdit` keyboard/selection flags used by note-body
+  editors: focus-on-press, keyboard selection, pointer selection, persistent selection, unrestricted input-method hints,
+  character-level mouse selection, and insert-mode editing. Structured editor tests also pin that atomic blocks do not
+  branch on `AltModifier` or consume Option-modified navigation/delete chords.
+- The inline editor regression now also creates the real `ContentsInlineFormatEditor.qml` inside a `QQuickWindow` on
+  macOS and sends `Option+Left/Right` plus `Option+Shift+Left/Right` key events to the live `TextEdit`. The test checks
+  cursor movement and selection ranges, and source checks require a TextEdit-local `Keys.BeforeItem` handler so the
+  contract no longer depends on Qt Quick's default Alt-key text bindings.
 - The unified display view now also pins blur-save behavior during native composition: blur flush returns instead of
   forcing RAW persistence after a fixed retry count while preedit text is still active.
 - Inline structured resource cards now also pin block/card clipping in the QML regression suite, so a mobile image

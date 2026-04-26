@@ -1026,6 +1026,7 @@ private slots:
     void noteBodyMountCoordinator_remountsSameNoteWhenEditorSessionTextIsStale();
     void qmlInlineFormatEditor_keepsNativeTextEditInputUncovered();
     void qmlInlineFormatEditor_keepsKeyboardSelectionAndOsImeNative();
+    void qmlInlineFormatEditor_handlesMacOptionWordNavigationAtRuntime();
     void mobileChrome_usesSharedFigmaControlSurfaceColor();
     void mobileHierarchyRouteStateStore_tracksNormalizedSelectionRestoreState();
     void mobileHierarchySelectionCoordinator_prefersExplicitSidebarBindingsAndFallbacks();

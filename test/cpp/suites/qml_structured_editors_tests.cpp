@@ -165,6 +165,11 @@ void WhatSonCppRegressionTests::qmlStructuredEditors_preserveNativeMobileInputDu
     QVERIFY(textBlockSource.contains(QStringLiteral("property string _liveEditSourceText: \"\"")));
     QVERIFY(textBlockSource.contains(QStringLiteral("syncLiveEditSnapshotFromHost")));
     QVERIFY(textBlockSource.contains(QStringLiteral("preferNativeInputHandling: true")));
+    QVERIFY(textBlockSource.contains(QStringLiteral("inputMethodHints: Qt.ImhNone")));
+    QVERIFY(textBlockSource.contains(QStringLiteral("mouseSelectionMode: TextEdit.SelectCharacters")));
+    QVERIFY(textBlockSource.contains(QStringLiteral("overwriteMode: false")));
+    QVERIFY(textBlockSource.contains(QStringLiteral("persistentSelection: true")));
+    QVERIFY(textBlockSource.contains(QStringLiteral("selectByKeyboard: true")));
     QVERIFY(textBlockSource.contains(QStringLiteral("signal cursorInteraction()")));
     QVERIFY(textBlockSource.contains(QStringLiteral("textBlock.cursorInteraction()")));
     QVERIFY(!textBlockSource.contains(QStringLiteral("onCursorPositionChanged: {\n            if (focused)\n                textBlock.activated()")));
@@ -210,6 +215,9 @@ void WhatSonCppRegressionTests::qmlEditorInputPolicyAdapter_centralizesNativeInp
 
     QVERIFY(policyAdapterSource.contains(QStringLiteral("readonly property bool nativeCompositionActive")));
     QVERIFY(policyAdapterSource.contains(QStringLiteral("readonly property bool nativeTextInputSessionActive")));
+    QVERIFY(policyAdapterSource.contains(QStringLiteral("|| adapter.editorInputFocused")));
+    QVERIFY(!policyAdapterSource.contains(
+        QStringLiteral("|| (adapter.nativeTextInputPriority\n                                                             && adapter.editorInputFocused)")));
     QVERIFY(policyAdapterSource.contains(QStringLiteral("readonly property bool shortcutSurfaceEnabled")));
     QVERIFY(policyAdapterSource.contains(QStringLiteral("readonly property bool tagManagementShortcutSurfaceEnabled")));
     QVERIFY(policyAdapterSource.contains(QStringLiteral("readonly property bool contextMenuLongPressEnabled")));
@@ -284,6 +292,8 @@ void WhatSonCppRegressionTests::qmlStructuredEditors_lockCustomInputToTagManagem
     QVERIFY(displayViewSource.contains(QStringLiteral("readonly property bool noteDocumentTagManagementShortcutSurfaceEnabled")));
     QVERIFY(displayViewSource.contains(QStringLiteral("function handleTagManagementShortcutKeyPress(event)")));
     QVERIFY(displayViewSource.contains(QStringLiteral("tagManagementShortcutKeyPressHandler: function (event)")));
+    QVERIFY(displayViewSource.contains(
+        QStringLiteral("readonly property bool noteDocumentTagManagementShortcutSurfaceEnabled: editorInputPolicyAdapter.tagManagementShortcutSurfaceEnabled")));
     QVERIFY(!displayViewSource.contains(QStringLiteral("function handleInlineFormatShortcutKeyPress(event)")));
     QVERIFY(!displayViewSource.contains(QStringLiteral("handlePlainEnterKeyPress(event)")));
     QVERIFY(!displayViewSource.contains(QStringLiteral("handleTagAwareDeleteKeyPress(event)")));
@@ -302,9 +312,19 @@ void WhatSonCppRegressionTests::qmlStructuredEditors_lockCustomInputToTagManagem
     QVERIFY(documentBlockSource.contains(QStringLiteral("property var tagManagementShortcutKeyPressHandler: null")));
     QVERIFY(documentBlockSource.contains(QStringLiteral("function handleAtomicTagManagementKeyPress(event)")));
     QVERIFY(documentBlockSource.contains(QStringLiteral("function handleAtomicTagDeleteKeyPress(event)")));
+    QVERIFY(documentBlockSource.contains(QStringLiteral("modifiers !== Qt.NoModifier")));
+    QVERIFY(documentBlockSource.contains(QStringLiteral("modifiers === Qt.MetaModifier")));
+    QVERIFY(!documentBlockSource.contains(QStringLiteral("Qt.AltModifier")));
+    QVERIFY(!documentBlockSource.contains(QStringLiteral("macModifierVerticalNavigation")));
+    QVERIFY(!documentBlockSource.contains(QStringLiteral("(Qt.AltModifier | Qt.MetaModifier) !== 0")));
     QVERIFY(!documentBlockSource.contains(QStringLiteral("return !!blockItem.handleDeleteKeyPress(event)")));
 
     QVERIFY(breakBlockSource.contains(QStringLiteral("property var tagManagementShortcutKeyPressHandler: null")));
+    QVERIFY(breakBlockSource.contains(QStringLiteral("modifiers !== Qt.NoModifier")));
+    QVERIFY(breakBlockSource.contains(QStringLiteral("modifiers === Qt.MetaModifier")));
+    QVERIFY(!breakBlockSource.contains(QStringLiteral("Qt.AltModifier")));
+    QVERIFY(!breakBlockSource.contains(QStringLiteral("macModifierVerticalNavigation")));
+    QVERIFY(!breakBlockSource.contains(QStringLiteral("(Qt.AltModifier | Qt.MetaModifier) !== 0")));
     QVERIFY(!breakBlockSource.contains(QStringLiteral("property var shortcutKeyPressHandler")));
 
     QVERIFY(!textBlockSource.contains(QStringLiteral("Keys.onPressed")));

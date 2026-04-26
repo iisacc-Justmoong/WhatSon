@@ -456,7 +456,12 @@ FocusScope {
                                 fontWeight: Font.Medium
                                 insetHorizontal: 0
                                 insetVertical: 0
+                                inputMethodHints: Qt.ImhNone
+                                mouseSelectionMode: TextEdit.SelectCharacters
+                                overwriteMode: false
+                                persistentSelection: true
                                 placeholderText: ""
+                                selectByKeyboard: true
                                 selectByMouse: true
                                 selectedTextColor: LV.Theme.textPrimary
                                 selectionColor: LV.Theme.accent

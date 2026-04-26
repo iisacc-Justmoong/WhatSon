@@ -37,9 +37,10 @@ Provides the single document-block adapter that keeps `ContentsStructuredDocumen
   Window-level shortcuts can therefore stand down while a nested editor is in IME composition.
 - The adapter keeps host-provided tag-management shortcut forwarding limited to selected atomic-block key handling.
   Text-like delegates no longer receive QML shortcut handlers on top of their live `TextEdit`.
-- Atomic resource/break blocks now also preserve macOS vertical modifier semantics.
-  `Option + Up/Down` steps to the previous/next block boundary, while `Command + Up/Down` requests document start/end
-  instead of being collapsed into ordinary adjacent-block traversal.
+- Atomic resource/break blocks now leave modified OS text-navigation chords to the platform path.
+  The adapter no longer branches on `AltModifier` at all. Only plain atomic-block navigation/deletion and exact
+  Command Up/Down document-boundary movement remain host-owned, so macOS Option-arrow input cannot be consumed by the
+  atomic-block adapter.
 - The adapter now also listens to the structured document host's selection-clear revision and forwards
   `clearSelection(preserveFocusedEditor)` into the mounted delegate.
   Selection cleanup therefore stays centralized at the host boundary instead of being reimplemented for every viewport

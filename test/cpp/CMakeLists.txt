@@ -1,4 +1,4 @@
-find_package(Qt6 6.5 REQUIRED COMPONENTS Core Gui Test Qml)
+find_package(Qt6 6.5 REQUIRED COMPONENTS Core Gui Test Qml Quick)
 
 if (APPLE AND TARGET WrapOpenGL::WrapOpenGL)
     get_target_property(_whatson_test_wrap_opengl_links WrapOpenGL::WrapOpenGL INTERFACE_LINK_LIBRARIES)
@@ -140,6 +140,7 @@ target_link_libraries(whatson_cpp_regression_tests PRIVATE
         Qt6::Gui
         Qt6::Test
         Qt6::Qml
+        Qt6::Quick
 )
 
 add_test(

@@ -3,7 +3,6 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Controls as Controls
 import LVRS 1.0 as LV
-import WhatSon.App.Internal 1.0
 import "ContentsEditorDebugTrace.js" as EditorTrace
 
 FocusScope {
@@ -29,6 +28,10 @@ FocusScope {
     property int fontWeight: Font.Medium
     property real insetHorizontal: 0
     property real insetVertical: 0
+    property int inputMethodHints: Qt.ImhNone
+    property int mouseSelectionMode: TextEdit.SelectCharacters
+    property bool overwriteMode: false
+    property bool persistentSelection: true
     property string placeholderText: ""
     property bool selectByMouse: true
     property bool selectByKeyboard: true
@@ -279,6 +282,85 @@ FocusScope {
         return false;
     }
 
+    function macOsTextUnitIsWord(character) {
+        if (character === undefined || character === null || String(character).length === 0)
+            return false;
+        const value = String(character);
+        if (/\s/.test(value))
+            return false;
+        return ".,;:!?()[]{}<>\"'`~@#$%^&*-+=|\\/".indexOf(value) < 0;
+    }
+
+    function macOsOptionWordNavigationTarget(direction, cursorPosition) {
+        const textValue = control.currentPlainText();
+        const textLength = textValue.length;
+        const cursor = control.clampLogicalPosition(cursorPosition, textLength);
+        const normalizedDirection = direction === undefined || direction === null
+                ? ""
+                : String(direction).trim().toLowerCase();
+        if (normalizedDirection === "right") {
+            let index = cursor;
+            if (index < textLength && control.macOsTextUnitIsWord(textValue.charAt(index))) {
+                while (index < textLength && control.macOsTextUnitIsWord(textValue.charAt(index)))
+                    ++index;
+                return index;
+            }
+            while (index < textLength && !control.macOsTextUnitIsWord(textValue.charAt(index)))
+                ++index;
+            while (index < textLength && control.macOsTextUnitIsWord(textValue.charAt(index)))
+                ++index;
+            return index;
+        }
+        if (normalizedDirection === "left") {
+            let index = cursor - 1;
+            while (index > 0 && !control.macOsTextUnitIsWord(textValue.charAt(index)))
+                --index;
+            while (index > 0 && control.macOsTextUnitIsWord(textValue.charAt(index - 1)))
+                --index;
+            return Math.max(0, index);
+        }
+        return cursor;
+    }
+
+    function handleMacOsOptionWordNavigation(event) {
+        if (Qt.platform.os !== "osx" || !event || control.nativeCompositionActive())
+            return false;
+        if (!control.selectByKeyboard || control.blockExternalDropMutation)
+            return false;
+        const modifiers = Number(event.modifiers) || 0;
+        const altPressed = (modifiers & Qt.AltModifier) !== 0;
+        const shiftPressed = (modifiers & Qt.ShiftModifier) !== 0;
+        if (!altPressed || (modifiers & (Qt.ControlModifier | Qt.MetaModifier)) !== 0)
+            return false;
+        if ((modifiers & (Qt.AltModifier | Qt.ShiftModifier)) !== modifiers)
+            return false;
+        if (event.key !== Qt.Key_Left && event.key !== Qt.Key_Right)
+            return false;
+
+        const target = control.macOsOptionWordNavigationTarget(
+                    event.key === Qt.Key_Left ? "left" : "right",
+                    textInput.cursorPosition);
+        if (shiftPressed) {
+            if (textInput.moveCursorSelection !== undefined) {
+                textInput.moveCursorSelection(target, TextEdit.SelectCharacters);
+            } else if (textInput.select !== undefined) {
+                const anchor = Math.max(0, Math.floor(Number(textInput.cursorPosition) || 0));
+                textInput.select(Math.min(anchor, target), Math.max(anchor, target));
+                textInput.cursorPosition = target;
+            } else {
+                textInput.cursorPosition = target;
+            }
+        } else {
+            textInput.cursorPosition = target;
+            if (textInput.deselect !== undefined)
+                textInput.deselect();
+            textInput.cursorPosition = target;
+        }
+        event.accepted = true;
+        control.maybeDiscardCachedSelectionSnapshot();
+        return true;
+    }
+
     function programmaticTextSyncPolicy(nextText) {
         const normalizedNextText = nextText === undefined
                 ? control._deferredProgrammaticText
@@ -518,8 +600,11 @@ FocusScope {
                 font.letterSpacing: control.fontLetterSpacing
                 font.pixelSize: control.fontPixelSize
                 font.weight: control.fontWeight
+                inputMethodHints: control.inputMethodHints
                 leftPadding: control.insetHorizontal
-                persistentSelection: true
+                mouseSelectionMode: control.mouseSelectionMode
+                overwriteMode: control.overwriteMode
+                persistentSelection: control.persistentSelection
                 readOnly: control.blockExternalDropMutation
                 rightPadding: control.insetHorizontal
                 selectByKeyboard: control.selectByKeyboard
@@ -537,6 +622,10 @@ FocusScope {
                 readonly property bool focused: activeFocus
                 property bool showRenderedOutput: control.showRenderedOutput
 
+                Keys.priority: Keys.BeforeItem
+                Keys.onPressed: function (event) {
+                    control.handleMacOsOptionWordNavigation(event);
+                }
                 onActiveFocusChanged: {
                     EditorTrace.trace(
                                 "inlineFormatEditor",

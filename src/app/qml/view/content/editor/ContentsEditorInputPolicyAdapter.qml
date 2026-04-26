@@ -16,8 +16,7 @@ QtObject {
     readonly property bool nativeCompositionActive: adapter.editorCompositionActive
                                                     || adapter.structuredCompositionActive
     readonly property bool nativeTextInputSessionActive: adapter.nativeCompositionActive
-                                                         || (adapter.nativeTextInputPriority
-                                                             && adapter.editorInputFocused)
+                                                         || adapter.editorInputFocused
     readonly property bool shortcutSurfaceEnabled: adapter.noteDocumentCommandSurfaceEnabled
                                                    && !adapter.nativeTextInputSessionActive
     readonly property bool tagManagementShortcutSurfaceEnabled: adapter.editorTagManagementInputEnabled

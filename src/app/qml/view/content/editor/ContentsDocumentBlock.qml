@@ -162,6 +162,9 @@ FocusScope {
         if (documentBlock.atomicBlock) {
             if (!event)
                 return false
+            const modifiers = Number(event.modifiers) || 0
+            if (modifiers !== Qt.NoModifier)
+                return false
             if (event.key === Qt.Key_Backspace || event.key === Qt.Key_Delete) {
                 documentBlock.blockDeletionRequested(
                             event.key === Qt.Key_Delete
@@ -238,19 +241,15 @@ FocusScope {
         const modifiers = Number(event.modifiers) || 0
         const moveUp = event.key === Qt.Key_Up
         const moveDown = event.key === Qt.Key_Down
-        const macModifierVerticalNavigation = Qt.platform.os === "osx"
+        const macCommandDocumentNavigation = Qt.platform.os === "osx"
                 && (moveUp || moveDown)
-                && (modifiers & (Qt.ControlModifier | Qt.ShiftModifier)) === 0
-                && (modifiers & (Qt.AltModifier | Qt.MetaModifier)) !== 0
-        if (macModifierVerticalNavigation) {
-            if ((modifiers & Qt.MetaModifier) !== 0)
-                documentBlock.boundaryNavigationRequested("document", moveUp ? "before" : "after")
-            else
-                documentBlock.boundaryNavigationRequested("vertical", moveUp ? "before" : "after")
+                && modifiers === Qt.MetaModifier
+        if (macCommandDocumentNavigation) {
+            documentBlock.boundaryNavigationRequested("document", moveUp ? "before" : "after")
             event.accepted = true
             return true
         }
-        if ((modifiers & (Qt.ControlModifier | Qt.AltModifier | Qt.MetaModifier | Qt.ShiftModifier)) !== 0)
+        if (modifiers !== Qt.NoModifier)
             return false
         if (event.key === Qt.Key_Left) {
             documentBlock.boundaryNavigationRequested("horizontal", "before")

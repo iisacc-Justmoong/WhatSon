@@ -40,11 +40,18 @@ The wrapper keeps the host/editor contract expected by `ContentsDisplayView.qml`
 - The wrapper now also exposes `clearSelection()`, which explicitly clears `persistentSelection` highlight and any
   cached selection snapshot when a structured-flow activation moves elsewhere.
 - The wrapper keeps the existing external-scroll contract used by page/print layout, gutter, and minimap code.
-- The wrapper no longer mounts an input-covering `MouseArea`, touch `TapHandler`, or `Keys.onPressed` handler above the
-  live `TextEdit`.
-- The live `TextEdit` receives pointer, selection, Backspace/Delete repeat, Tab, and platform modifier-navigation input
-  directly from Qt/OS handling. The wrapper no longer exposes host shortcut or modifier-navigation handler properties on
-  the native text input path.
+- The wrapper no longer mounts an input-covering `MouseArea`, touch `TapHandler`, or key handler above the live
+  `TextEdit`.
+- The live `TextEdit` receives pointer, selection, Backspace/Delete repeat, and Tab input directly from Qt/OS handling.
+  The wrapper no longer exposes host shortcut or generic modifier-navigation handler properties on the native text
+  input path.
+- The only live-text key handler is mounted inside the `TextEdit` itself with `Keys.priority: Keys.BeforeItem`: on
+  macOS, `Option+Left/Right` and `Option+Shift+Left/Right` are handled directly against the same live `TextEdit`
+  cursor/selection by word boundary. This is an explicit macOS Option-word contract, not a dependency on Qt Quick's
+  default Alt-key text bindings.
+- The wrapper now explicitly keeps the Qt `TextEdit` keyboard/selection flags open for platform behavior:
+  `activeFocusOnPress`, `selectByKeyboard`, `selectByMouse`, `persistentSelection`, unrestricted
+  `inputMethodHints`, character-level `mouseSelectionMode`, and insert-mode `overwriteMode=false`.
 
 ## Regression Focus
 
@@ -56,4 +63,5 @@ The wrapper keeps the host/editor contract expected by `ContentsDisplayView.qml`
   guards.
 - The wrapper must never surface Qt RichText document scaffold as authored note text.
 - Native text editing must remain uncovered: mouse/touch selection, `Shift` selection, and repeated Backspace/Delete
-  must not be intercepted by QML wrapper layers.
+  must not be intercepted by QML wrapper layers. macOS `Option+Left/Right` and `Option+Shift+Left/Right` are verified by
+  a runtime Quick test that sends key events to the real live `TextEdit` and checks cursor/selection movement.
