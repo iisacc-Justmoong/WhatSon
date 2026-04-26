@@ -332,8 +332,6 @@ FocusScope {
         const shiftPressed = (modifiers & Qt.ShiftModifier) !== 0;
         if (!altPressed || (modifiers & (Qt.ControlModifier | Qt.MetaModifier)) !== 0)
             return false;
-        if ((modifiers & (Qt.AltModifier | Qt.ShiftModifier)) !== modifiers)
-            return false;
         if (event.key !== Qt.Key_Left && event.key !== Qt.Key_Right)
             return false;
 

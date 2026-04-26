@@ -175,8 +175,9 @@ ctest --test-dir build --output-on-failure -L cpp_regression
   branch on `AltModifier` or consume Option-modified navigation/delete chords.
 - The inline editor regression now also creates the real `ContentsInlineFormatEditor.qml` inside a `QQuickWindow` on
   macOS and sends `Option+Left/Right` plus `Option+Shift+Left/Right` key events to the live `TextEdit`. The test checks
-  cursor movement and selection ranges, and source checks require a TextEdit-local `Keys.BeforeItem` handler so the
-  contract no longer depends on Qt Quick's default Alt-key text bindings.
+  cursor movement and selection ranges, including a variant with keypad-origin modifier metadata. Source checks require
+  a TextEdit-local `Keys.BeforeItem` handler so the contract no longer depends on Qt Quick's default Alt-key text
+  bindings.
 - The unified display view now also pins blur-save behavior during native composition: blur flush returns instead of
   forcing RAW persistence after a fixed retry count while preedit text is still active.
 - Inline structured resource cards now also pin block/card clipping in the QML regression suite, so a mobile image

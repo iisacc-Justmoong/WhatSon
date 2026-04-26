@@ -48,7 +48,9 @@ The wrapper keeps the host/editor contract expected by `ContentsDisplayView.qml`
 - The only live-text key handler is mounted inside the `TextEdit` itself with `Keys.priority: Keys.BeforeItem`: on
   macOS, `Option+Left/Right` and `Option+Shift+Left/Right` are handled directly against the same live `TextEdit`
   cursor/selection by word boundary. This is an explicit macOS Option-word contract, not a dependency on Qt Quick's
-  default Alt-key text bindings.
+  default Alt-key text bindings. The handler requires Option and rejects Control/Command, but it tolerates additional
+  harmless modifier bits such as keypad-origin metadata so physical arrow-key events do not fall back to
+  character-level `Shift+Arrow` selection.
 - The wrapper now explicitly keeps the Qt `TextEdit` keyboard/selection flags open for platform behavior:
   `activeFocusOnPress`, `selectByKeyboard`, `selectByMouse`, `persistentSelection`, unrestricted
   `inputMethodHints`, character-level `mouseSelectionMode`, and insert-mode `overwriteMode=false`.

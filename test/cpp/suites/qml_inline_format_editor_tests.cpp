@@ -121,6 +121,7 @@ void WhatSonCppRegressionTests::qmlInlineFormatEditor_keepsKeyboardSelectionAndO
     QVERIFY(inlineEditorSource.contains(QStringLiteral("function handleMacOsOptionWordNavigation(event)")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("Qt.platform.os !== \"osx\"")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("Keys.priority: Keys.BeforeItem")));
+    QVERIFY(!inlineEditorSource.contains(QStringLiteral("(modifiers & (Qt.AltModifier | Qt.ShiftModifier)) !== modifiers")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("textInput.moveCursorSelection(target, TextEdit.SelectCharacters);")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("event.accepted = true;")));
     QVERIFY(typingControllerSource.contains(QStringLiteral("property bool pendingCursorPositionRequest: false")));
@@ -235,6 +236,12 @@ void WhatSonCppRegressionTests::qmlInlineFormatEditor_handlesMacOptionWordNaviga
     QCOMPARE(inputItem->property("selectionEnd").toInt(), 5);
 
     QTest::keyClick(&window, Qt::Key_Right, Qt::AltModifier | Qt::ShiftModifier);
+    QTRY_COMPARE(inputItem->property("cursorPosition").toInt(), 10);
+    QCOMPARE(inputItem->property("selectionStart").toInt(), 5);
+    QCOMPARE(inputItem->property("selectionEnd").toInt(), 10);
+
+    inputItem->setProperty("cursorPosition", 5);
+    QTest::keyClick(&window, Qt::Key_Right, Qt::AltModifier | Qt::ShiftModifier | Qt::KeypadModifier);
     QTRY_COMPARE(inputItem->property("cursorPosition").toInt(), 10);
     QCOMPARE(inputItem->property("selectionStart").toInt(), 5);
     QCOMPARE(inputItem->property("selectionEnd").toInt(), 10);

@@ -247,8 +247,9 @@
 - `ContentsInlineFormatEditor.qml` now also has a TextEdit-local `Keys.BeforeItem` handler for macOS
   `Option+Left/Right` and `Option+Shift+Left/Right`. The handler defines the Option-word movement and selection
   contract directly against the live `TextEdit`, instead of depending on Qt Quick to map macOS Option onto its default
-  Alt-key text bindings. The C++ regression suite verifies that behavior with real Quick key events instead of only
-  static QML source checks.
+  Alt-key text bindings. It tolerates extra modifier metadata such as keypad-origin bits on physical arrow-key events
+  so those events do not degrade into character-level `Shift+Arrow` selection. The C++ regression suite verifies that
+  behavior with real Quick key events instead of only static QML source checks.
 - Atomic structured blocks now also avoid app-level `AltModifier` branching entirely. Resource/break block keyboard
   handling only accepts plain navigation/delete and exact macOS Command Up/Down document-boundary movement, leaving
   every Option-arrow chord unaccepted by the atomic block layer.
