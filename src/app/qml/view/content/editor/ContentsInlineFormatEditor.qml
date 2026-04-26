@@ -156,18 +156,6 @@ FocusScope {
         return inlineEditorController.restoreSelectionRange(selectionStart, selectionEnd, cursorPosition);
     }
 
-    function macOsTextUnitIsWord(character) {
-        return inlineEditorController.macOsTextUnitIsWord(character);
-    }
-
-    function macOsOptionWordNavigationTarget(direction, cursorPosition) {
-        return inlineEditorController.macOsOptionWordNavigationTarget(direction, cursorPosition);
-    }
-
-    function handleMacOsOptionWordNavigation(event) {
-        return inlineEditorController.handleMacOsOptionWordNavigation(event);
-    }
-
     function programmaticTextSyncPolicy(nextText) {
         return inlineEditorController.programmaticTextSyncPolicy(nextText);
     }
@@ -314,11 +302,6 @@ FocusScope {
 
                 readonly property bool focused: activeFocus
                 property bool showRenderedOutput: control.showRenderedOutput
-
-                Keys.priority: Keys.BeforeItem
-                Keys.onPressed: function (event) {
-                    inlineEditorController.handleMacOsOptionWordNavigation(event);
-                }
             }
         }
 

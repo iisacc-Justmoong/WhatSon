@@ -23,8 +23,7 @@ Owns editor input-policy and mutation-controller primitives that are not themsel
 - `ContentsEditorTypingController.qml`
   Converts committed text edits and editor authoring shortcuts into RAW `.wsnbody` mutations.
 - `ContentsInlineFormatEditorController.qml`
-  Owns the plain-text wrapper's native input policy, selection cache, macOS Option-word navigation, and text-edited
-  dispatch state.
+  Owns the plain-text wrapper's native input policy, selection cache, and text-edited dispatch state.
 
 ## Boundary
 - Ordinary text input must continue to stay on native Qt/OS `TextEdit` handling.

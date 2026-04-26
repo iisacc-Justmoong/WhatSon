@@ -94,6 +94,8 @@ set(WHATSON_CPP_REGRESSION_TEST_SOURCES
         "${CMAKE_SOURCE_DIR}/src/app/models/editor/session/ContentsEditorSessionController.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/editor/text/ContentsLogicalTextBridge.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/editor/structure/ContentsStructuredDocumentBlocksModel.cpp"
+        "${CMAKE_SOURCE_DIR}/src/app/viewmodel/editor/display/ContentsActiveEditorSurfaceAdapter.cpp"
+        "${CMAKE_SOURCE_DIR}/src/app/viewmodel/editor/display/ContentsDisplaySurfacePolicy.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/viewmodel/hierarchy/library/LibraryNoteListModel.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/viewmodel/hierarchy/resources/ResourcesHierarchyModel.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/viewmodel/hierarchy/resources/ResourcesHierarchyViewModel.cpp"

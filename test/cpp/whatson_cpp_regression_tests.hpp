@@ -57,6 +57,8 @@
 #include "app/viewmodel/detailPanel/session/WhatSonFoldersHierarchySessionService.hpp"
 #include "app/viewmodel/detailPanel/DetailCurrentNoteContextBridge.hpp"
 #include "app/viewmodel/detailPanel/ResourceDetailPanelViewModel.hpp"
+#include "app/viewmodel/editor/display/ContentsActiveEditorSurfaceAdapter.hpp"
+#include "app/viewmodel/editor/display/ContentsDisplaySurfacePolicy.hpp"
 #include "app/viewmodel/hierarchy/resources/ResourcesListModel.hpp"
 #include "app/viewmodel/panel/NoteListModelContractBridge.hpp"
 #include "app/viewmodel/sidebar/HierarchySidebarDomain.hpp"
@@ -1021,17 +1023,22 @@ private slots:
     void displayContextMenuCoordinator_rejectsNonNumericStructuredSelectionSnapshots();
     void editorViewportCoordinator_movesMinimapAndLineMathOutOfQml();
     void contentsDisplayView_surfacesMountFailurePlaceholderWithoutChrome();
+    void contentsActiveEditorSurfaceAdapter_routesFocusToStructuredSurfaceFirst();
+    void contentsActiveEditorSurfaceAdapter_routesFocusToInlineSurfaceOnlyWhenMounted();
+    void contentsDisplaySurfacePolicy_usesStructuredSurfaceAsCanonicalNoteBody();
+    void contentsDisplaySurfacePolicy_disablesLegacyInlineSurface();
     void noteBodyMountCoordinator_retriesRefreshBeforeFailingMount();
     void noteBodyMountCoordinator_failsMountAfterAcceptedRefreshWhenBodyRemainsUnavailable();
     void noteBodyMountCoordinator_reportsSurfaceSpecificFailureMessage();
     void noteBodyMountCoordinator_requestsEditorSessionMountFromResolvedSnapshot();
     void noteBodyMountCoordinator_acceptsResolvedEmptySelectedBody();
     void noteBodyMountCoordinator_hidesExceptionUntilPendingMountSettles();
+    void noteBodyMountCoordinator_cleansMountDecisionAfterQueuedBodyLoadPlan();
     void noteBodyMountCoordinator_waitsForPresentationReadySourceBeforeMounting();
+    void noteBodyMountCoordinator_clearsPendingWhenResolvedBodyArrivesBeforeLoadingFlagDrops();
     void noteBodyMountCoordinator_remountsSameNoteWhenEditorSessionTextIsStale();
     void qmlInlineFormatEditor_keepsNativeTextEditInputUncovered();
     void qmlInlineFormatEditor_keepsKeyboardSelectionAndOsImeNative();
-    void qmlInlineFormatEditor_handlesMacOptionWordNavigationAtRuntime();
     void mobileChrome_usesSharedFigmaControlSurfaceColor();
     void mobileHierarchyRouteStateStore_tracksNormalizedSelectionRestoreState();
     void mobileHierarchySelectionCoordinator_prefersExplicitSidebarBindingsAndFallbacks();

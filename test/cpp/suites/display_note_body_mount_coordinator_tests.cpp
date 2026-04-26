@@ -290,6 +290,45 @@ void WhatSonCppRegressionTests::noteBodyMountCoordinator_hidesExceptionUntilPend
     QVERIFY(coordinator.exceptionVisible());
 }
 
+void WhatSonCppRegressionTests::noteBodyMountCoordinator_cleansMountDecisionAfterQueuedBodyLoadPlan()
+{
+    ensureCoreApplication();
+
+    ContentsDisplayNoteBodyMountCoordinator coordinator;
+    QSignalSpy mountFlushRequestedSpy(
+        &coordinator,
+        &ContentsDisplayNoteBodyMountCoordinator::mountFlushRequested);
+
+    coordinator.setVisible(true);
+    coordinator.setSelectedNoteId(QStringLiteral("note-1"));
+    coordinator.setSelectedNoteBodyLoading(true);
+    coordinator.setInlineDocumentSurfaceRequested(true);
+    coordinator.setInlineDocumentSurfaceReady(true);
+
+    QVERIFY(coordinator.mountDecisionClean());
+
+    coordinator.scheduleMount(QVariantMap{});
+
+    QVERIFY(!coordinator.mountDecisionClean());
+    QVERIFY(coordinator.mountPending());
+
+    QCoreApplication::processEvents();
+
+    QCOMPARE(mountFlushRequestedSpy.count(), 1);
+    const QVariantMap awaitingPlan = mountFlushRequestedSpy.takeFirst().at(0).toMap();
+    QCOMPARE(awaitingPlan.value(QStringLiteral("attemptSnapshotRefresh")).toBool(), false);
+    QCOMPARE(awaitingPlan.value(QStringLiteral("attemptEditorSessionMount")).toBool(), false);
+    QCOMPARE(awaitingPlan.value(QStringLiteral("reason")).toString(), QStringLiteral("awaiting-body-load"));
+
+    QVERIFY(coordinator.mountDecisionClean());
+    QVERIFY(coordinator.mountPending());
+
+    const QVariantMap mountState = coordinator.currentMountState();
+    QCOMPARE(mountState.value(QStringLiteral("mountDecisionClean")).toBool(), true);
+    QCOMPARE(mountState.value(QStringLiteral("mountPending")).toBool(), true);
+    QCOMPARE(mountState.value(QStringLiteral("selectedNoteBodyLoading")).toBool(), true);
+}
+
 void WhatSonCppRegressionTests::noteBodyMountCoordinator_waitsForPresentationReadySourceBeforeMounting()
 {
     ensureCoreApplication();
@@ -322,6 +361,46 @@ void WhatSonCppRegressionTests::noteBodyMountCoordinator_waitsForPresentationRea
     QVERIFY(!coordinator.parseMounted());
     QVERIFY(!coordinator.noteMounted());
     QVERIFY(!coordinator.mountFailed());
+}
+
+void WhatSonCppRegressionTests::noteBodyMountCoordinator_clearsPendingWhenResolvedBodyArrivesBeforeLoadingFlagDrops()
+{
+    ensureCoreApplication();
+
+    ContentsDisplayNoteBodyMountCoordinator coordinator;
+    QSignalSpy mountFlushRequestedSpy(
+        &coordinator,
+        &ContentsDisplayNoteBodyMountCoordinator::mountFlushRequested);
+
+    coordinator.setVisible(true);
+    coordinator.setSelectedNoteId(QStringLiteral("note-1"));
+    coordinator.setSelectedNoteBodyNoteId(QStringLiteral("note-1"));
+    coordinator.setSelectedNoteBodyText(QStringLiteral("Resolved body"));
+    coordinator.setSelectedNoteBodyResolved(true);
+    coordinator.setSelectedNoteBodyLoading(true);
+    coordinator.setStructuredDocumentSurfaceRequested(true);
+    coordinator.setStructuredDocumentSurfaceReady(true);
+
+    QVERIFY(!coordinator.mountPending());
+    QVERIFY(coordinator.parseMounted());
+    QVERIFY(coordinator.sourceMounted());
+    QVERIFY(coordinator.surfaceVisible());
+    QVERIFY(!coordinator.mountFailed());
+    QVERIFY(!coordinator.noteMounted());
+
+    coordinator.scheduleMount(QVariantMap{});
+    QCoreApplication::processEvents();
+
+    QCOMPARE(mountFlushRequestedSpy.count(), 1);
+    const QVariantMap mountPlan = mountFlushRequestedSpy.takeFirst().at(0).toMap();
+    QCOMPARE(mountPlan.value(QStringLiteral("attemptSnapshotRefresh")).toBool(), false);
+    QCOMPARE(mountPlan.value(QStringLiteral("attemptEditorSessionMount")).toBool(), true);
+    QCOMPARE(mountPlan.value(QStringLiteral("reason")).toString(), QStringLiteral("mount-editor-session"));
+
+    const QVariantMap mountState = coordinator.currentMountState();
+    QCOMPARE(mountState.value(QStringLiteral("documentSourceReady")).toBool(), true);
+    QCOMPARE(mountState.value(QStringLiteral("mountPending")).toBool(), false);
+    QCOMPARE(mountState.value(QStringLiteral("selectedNoteBodyLoading")).toBool(), true);
 }
 
 void WhatSonCppRegressionTests::noteBodyMountCoordinator_remountsSameNoteWhenEditorSessionTextIsStale()

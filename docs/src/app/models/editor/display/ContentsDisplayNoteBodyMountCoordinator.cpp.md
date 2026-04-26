@@ -16,3 +16,11 @@
 - The exception placeholder is now reserved for settled mount failures only.
   While the coordinator is still pending a snapshot refresh or body read, the host may keep its loading affordance
   visible, but it must not simultaneously claim that the note document is already unavailable.
+- `mountPending` no longer wins over a presentation-ready selected-note body.
+  If the selected note's resolved source arrives before the upstream loading flag drops, the coordinator clears the
+  loading state from the editor surface and proceeds with the editor-session mount instead of leaving a stale loading
+  mask over already-rendered content.
+- `mountDecisionClean` now separates transient scheduling from the underlying body/surface pending state.
+  Queued mount work marks the decision dirty, and `flushMount()` marks it clean as soon as a mount plan is selected.
+  The view can therefore keep the editor surface visually clean even when lower-level note-body loading flags settle
+  later.

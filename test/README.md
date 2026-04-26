@@ -87,8 +87,16 @@ ctest --test-dir build --output-on-failure -L cpp_regression
 - Structured editor selection cleanup is now also locked at the C++ host-object and QML routing layers, so focus
   activation emits the selection-clear revision/retained-block contract that QML delegates consume, while same-block
   cursor movement uses a cursor-only host path and keeps native desktop/iOS text selection intact.
-- Editor shortcut-surface gating now also treats every focused body `TextEdit` as the native keyboard owner, so desktop
-  Option word movement/selection chords remain OS/Qt behavior instead of being shadowed by ordinary app shortcut
+- `ContentsDisplayView.qml` over-responsibility reduction is now source-locked by checking that gutter, minimap,
+  mount-loading, exception, and resource-import alert chrome are composed through sibling view hosts instead of being
+  owned directly by the root display host.
+- The same coverage now pins `ContentsActiveEditorSurfaceAdapter` as the C++ active-surface contract used by
+  note-selection focus restoration, so the root display host and selection/mount controller do not directly target a
+  concrete QML editor surface.
+- `ContentsDisplaySurfacePolicy` is covered as the C++ surface-selection policy: selected notes use the structured
+  document surface and the old whole-note inline loader stays disabled.
+- Editor shortcut-surface gating now also treats every focused body `TextEdit` as the native keyboard owner, so platform
+  text-navigation and selection chords remain OS/Qt behavior instead of being shadowed by ordinary app shortcut
   handling. The explicit tag-management surface remains enabled outside composition so inline formatting shortcuts still
   write RAW tags while editing.
 - Clipboard-image resource imports now also pin their synthesized asset-name policy in the C++ suite, so temporary
@@ -174,13 +182,9 @@ ctest --test-dir build --output-on-failure -L cpp_regression
   candidate placement, and keyboard visibility on the OS/Qt `TextEdit` path.
 - The inline editor regression now also pins the explicit Qt `TextEdit` keyboard/selection flags used by note-body
   editors: focus-on-press, keyboard selection, pointer selection, persistent selection, unrestricted input-method hints,
-  character-level mouse selection, and insert-mode editing. Structured editor tests also pin that atomic blocks do not
-  branch on `AltModifier` or consume Option-modified navigation/delete chords.
-- The inline editor regression now also creates the real `ContentsInlineFormatEditor.qml` inside a `QQuickWindow` on
-  macOS and sends `Option+Left/Right` plus `Option+Shift+Left/Right` key events to the live `TextEdit`. The test checks
-  cursor movement and selection ranges, including a variant with keypad-origin modifier metadata. Source checks require
-  a TextEdit-local `Keys.BeforeItem` handler so the contract no longer depends on Qt Quick's default Alt-key text
-  bindings.
+  character-level mouse selection, and insert-mode editing.
+- The inline editor regression also source-locks the absence of live-text key handlers in
+  `ContentsInlineFormatEditor.qml`, so ordinary navigation and selection chords stay with Qt/OS `TextEdit`.
 - The unified display view now also pins blur-save behavior during native composition: blur flush returns instead of
   forcing RAW persistence after a fixed retry count while preedit text is still active.
 - Inline structured resource cards now also pin block/card clipping in the QML regression suite, so a mobile image

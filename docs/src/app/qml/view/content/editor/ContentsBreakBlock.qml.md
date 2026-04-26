@@ -19,8 +19,8 @@ Renders `</break>` as a native divider block inside the structured document flow
   `ContentsStructuredDocumentFlow.qml` through one generic boundary-navigation signal.
   Break blocks therefore no longer sit outside the document cursor model.
 - Modified arrow/delete chords are not consumed by the divider's host navigation layer. Plain arrow/delete remains
-  atomic-block behavior, while modifier chords are left unaccepted. The divider no longer branches on `AltModifier` at
-  all, so macOS Option-arrow input cannot be consumed by this atomic-block path.
+  atomic-block behavior, while modifier chords are left unaccepted so platform text-navigation behavior stays outside
+  this atomic-block path.
 - The selected divider now also runs one host-owned tag-management shortcut handler before its own delete/navigation
   rules.
   Clipboard-image paste therefore stays available even when the current structured selection is a break block rather

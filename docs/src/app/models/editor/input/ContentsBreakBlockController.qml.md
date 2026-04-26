@@ -10,7 +10,7 @@ The visual break row delegates tap activation and tag-management key handling to
 
 - Plain Backspace/Delete may request selected break-block deletion.
 - Exact Command Up/Down may request document-boundary movement.
-- Option/Alt modified arrows are ignored so OS text-navigation behavior is not consumed by the break block.
+- Modified text-navigation chords are ignored so OS text-edit behavior is not consumed by the break block.
 
 ## Boundary
 

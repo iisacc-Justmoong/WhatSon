@@ -148,8 +148,8 @@
   split remains observable without pushing orchestration back into QML.
 - The editor-creation path now also traces QML host decisions explicitly:
   - which note/body pair the host is trying to mount
-  - whether the structured document surface or legacy inline surface was requested
-  - which loader status/object instance became the active editor surface
+  - which structured document surface policy became active
+  - which structured document-flow object instance became the active editor surface
   - which host-owned collaborators (`selectionBridge`, mount coordinator, display session coordinator, editor session)
     were created and attached for that note-selection turn
 - The note-selection path now also exposes one grep-friendly trace vocabulary from selection to mount:

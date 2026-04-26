@@ -19,6 +19,8 @@ void WhatSonCppRegressionTests::qmlInternalTypeRegistrar_usesLvrsManifestRegistr
     QVERIFY(registrarSource.contains(QStringLiteral("whatsonInternalCreatableType<MobileHierarchyRouteStateStore>")));
     QVERIFY(registrarSource.contains(QStringLiteral("whatsonInternalCreatableType<ContentsStructuredDocumentHost>")));
     QVERIFY(registrarSource.contains(QStringLiteral("whatsonInternalCreatableType<ContentsPagePrintLayoutRenderer>")));
+    QVERIFY(registrarSource.contains(QStringLiteral("whatsonInternalCreatableType<ContentsActiveEditorSurfaceAdapter>")));
+    QVERIFY(registrarSource.contains(QStringLiteral("whatsonInternalCreatableType<ContentsDisplaySurfacePolicy>")));
     QVERIFY(registrarSource.contains(QStringLiteral("whatsonInternalCreatableType<ContentsDisplayGeometryViewModel>")));
     QVERIFY(registrarSource.contains(QStringLiteral("whatsonInternalCreatableType<ContentsDisplayMutationViewModel>")));
     QVERIFY(registrarSource.contains(QStringLiteral("whatsonInternalCreatableType<ContentsDisplayPresentationViewModel>")));

@@ -53,6 +53,7 @@ class ContentsDisplayNoteBodyMountCoordinator : public QObject
             structuredDocumentSurfaceReady READ structuredDocumentSurfaceReady
                 WRITE setStructuredDocumentSurfaceReady NOTIFY structuredDocumentSurfaceReadyChanged)
     Q_PROPERTY(bool mountPending READ mountPending NOTIFY mountStateChanged)
+    Q_PROPERTY(bool mountDecisionClean READ mountDecisionClean NOTIFY mountStateChanged)
     Q_PROPERTY(bool parseMounted READ parseMounted NOTIFY mountStateChanged)
     Q_PROPERTY(bool sourceMounted READ sourceMounted NOTIFY mountStateChanged)
     Q_PROPERTY(bool noteMounted READ noteMounted NOTIFY mountStateChanged)
@@ -116,6 +117,7 @@ public:
     void setStructuredDocumentSurfaceReady(bool ready);
 
     bool mountPending() const noexcept;
+    bool mountDecisionClean() const noexcept;
     bool parseMounted() const noexcept;
     bool sourceMounted() const noexcept;
     bool noteMounted() const noexcept;
@@ -172,6 +174,7 @@ private:
     bool refreshAttemptedForSelectedNote() const noexcept;
     void flushMount();
     void resetCurrentSelectionMountTracking();
+    void setMountDecisionClean(bool clean);
     void setPendingMountNoteId(const QString& noteId);
 
     bool m_visible = true;
@@ -195,6 +198,7 @@ private:
     QString m_focusEditorOnMountNoteId;
 
     bool m_mountQueued = false;
+    bool m_mountDecisionClean = true;
     bool m_mountResetSnapshotPending = false;
     bool m_mountScheduleReconcilePending = false;
     bool m_mountFocusEditorPending = false;

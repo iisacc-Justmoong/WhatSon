@@ -53,12 +53,15 @@ void WhatSonCppRegressionTests::contentsDisplayView_reservesLargeBottomAccessibi
 {
     const QString displayViewSource = readUtf8SourceFile(
         QStringLiteral("src/app/qml/view/content/editor/ContentsDisplayView.qml"));
+    const QString surfaceHostSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/content/editor/ContentsDisplaySurfaceHost.qml"));
 
     QVERIFY(!displayViewSource.isEmpty());
+    QVERIFY(!surfaceHostSource.isEmpty());
     QVERIFY(displayViewSource.contains(QStringLiteral("readonly property int editorBottomInset: Math.max(")));
     QVERIFY(displayViewSource.contains(QStringLiteral("Math.round(contentsView.editorSurfaceHeight * 0.5)")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("insetVertical: contentsView.showPrintEditorLayout ? 0 : contentsView.editorBottomInset")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("+ contentsView.editorBottomInset)")));
+    QVERIFY(surfaceHostSource.contains(QStringLiteral("+ contentsView.editorBottomInset)")));
+    QVERIFY(!displayViewSource.contains(QStringLiteral("insetVertical: contentsView.showPrintEditorLayout ? 0 : contentsView.editorBottomInset")));
 }
 
 void WhatSonCppRegressionTests::contentsDisplayView_usesSelectedNoteSnapshotWhileSessionBindingCatchesUp()
@@ -103,7 +106,7 @@ void WhatSonCppRegressionTests::contentsDisplayView_doesNotForceBlurFlushDuringN
     QVERIFY(displayViewSource.contains(QStringLiteral("function nativeEditorCompositionActive()")));
     QVERIFY(displayViewSource.contains(QStringLiteral("function flushEditorStateAfterInputSettles(scheduledNoteId)")));
     QVERIFY(selectionMountControllerSource.contains(QStringLiteral("if (controller.contentsView.nativeEditorCompositionActive())\n            return;")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("contentsView.flushEditorStateAfterInputSettles(blurredNoteId);")));
+    QVERIFY(!displayViewSource.contains(QStringLiteral("contentsView.flushEditorStateAfterInputSettles(blurredNoteId);")));
     QVERIFY(!displayViewSource.contains(QStringLiteral("retryCount < 6")));
     QVERIFY(!displayViewSource.contains(QStringLiteral("flushEditorStateAfterInputSettles(retryCount + 1")));
     QVERIFY(!displayViewSource.contains(QStringLiteral("flushEditorStateAfterInputSettles(0, blurredNoteId)")));
@@ -303,17 +306,20 @@ void WhatSonCppRegressionTests::contentsDisplayView_emitsEditorCreationTraceAcro
 {
     const QString displayViewSource = readUtf8SourceFile(
         QStringLiteral("src/app/qml/view/content/editor/ContentsDisplayView.qml"));
+    const QString surfaceHostSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/content/editor/ContentsDisplaySurfaceHost.qml"));
     const QString presentationControllerSource = readUtf8SourceFile(
         QStringLiteral("src/app/models/editor/display/ContentsDisplayPresentationController.qml"));
     const QString eventPumpSource = readUtf8SourceFile(
         QStringLiteral("src/app/models/editor/display/ContentsDisplayEventPump.qml"));
 
     QVERIFY(!displayViewSource.isEmpty());
+    QVERIFY(!surfaceHostSource.isEmpty());
     QVERIFY(!presentationControllerSource.isEmpty());
     QVERIFY(!eventPumpSource.isEmpty());
     QVERIFY(displayViewSource.contains(QStringLiteral("ContentsDisplayTraceFormatter")));
-    QVERIFY(presentationControllerSource.contains(QStringLiteral("traceFormatter.loaderStatusName(controller.contentEditorLoader.status)")));
-    QVERIFY(presentationControllerSource.contains(QStringLiteral("traceFormatter.describeEditorSurfaceObject(controller.contentEditorLoader.item)")));
+    QVERIFY(presentationControllerSource.contains(QStringLiteral("\" activeSurface=\" + controller.contentsView.activeSurfaceKind")));
+    QVERIFY(presentationControllerSource.contains(QStringLiteral("traceFormatter.describeEditorSurfaceObject(controller.structuredDocumentFlow)")));
     QVERIFY(presentationControllerSource.contains(QStringLiteral("function logEditorCreationState(reason)")));
     QVERIFY(displayViewSource.contains(QStringLiteral("contentsView.logEditorCreationState(\"componentCompleted\");")));
     QVERIFY(displayViewSource.contains(QStringLiteral("objectName: \"contentsDisplaySelectionBridge\"")));
@@ -321,15 +327,15 @@ void WhatSonCppRegressionTests::contentsDisplayView_emitsEditorCreationTraceAcro
     QVERIFY(!displayViewSource.contains(QStringLiteral("objectName: \"contentsDisplaySessionCoordinator\"")));
     QVERIFY(displayViewSource.contains(QStringLiteral("id: documentSourceResolver")));
     QVERIFY(displayViewSource.contains(QStringLiteral("objectName: \"contentsDisplayEditorSession\"")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("objectName: \"contentsDisplayStructuredDocumentFlow\"")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("objectName: \"contentsDisplayInlineFormatEditor\"")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("objectName: \"contentsDisplayInlineEditorLoader\"")));
+    QVERIFY(surfaceHostSource.contains(QStringLiteral("objectName: \"contentsDisplayStructuredDocumentFlow\"")));
+    QVERIFY(!displayViewSource.contains(QStringLiteral("objectName: \"contentsDisplayInlineFormatEditor\"")));
+    QVERIFY(!displayViewSource.contains(QStringLiteral("objectName: \"contentsDisplayInlineEditorLoader\"")));
     QVERIFY(displayViewSource.contains(QStringLiteral("onSelectedNoteBodyNoteIdChanged:")));
     QVERIFY(displayViewSource.contains(QStringLiteral("onEditorBoundNoteIdChanged:")));
     QVERIFY(displayViewSource.contains(QStringLiteral("onEditorSessionBoundToSelectedNoteChanged:")));
     QVERIFY(displayViewSource.contains(QStringLiteral("onStructuredDocumentFlowRequestedChanged:")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("onLegacyInlineEditorRequestedChanged:")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("onLegacyInlineEditorActiveChanged:")));
+    QVERIFY(!displayViewSource.contains(QStringLiteral("onLegacyInlineEditorRequestedChanged:")));
+    QVERIFY(!displayViewSource.contains(QStringLiteral("onLegacyInlineEditorActiveChanged:")));
     QVERIFY(displayViewSource.contains(QStringLiteral("onNoteDocumentMountPendingChanged:")));
     QVERIFY(displayViewSource.contains(QStringLiteral("onNoteDocumentMountedChanged:")));
     QVERIFY(displayViewSource.contains(QStringLiteral("onNoteDocumentMountFailureReasonChanged:")));
@@ -339,8 +345,8 @@ void WhatSonCppRegressionTests::contentsDisplayView_emitsEditorCreationTraceAcro
     QVERIFY(presentationControllerSource.contains(QStringLiteral("documentSourceResolver={")));
     QVERIFY(displayViewSource.contains(QStringLiteral("\"editorSessionCreated\"")));
     QVERIFY(eventPumpSource.contains(QStringLiteral("\"structuredDocumentFlowVisibleChanged\"")));
-    QVERIFY(eventPumpSource.contains(QStringLiteral("\"contentEditorLoaderLoaded\"")));
-    QVERIFY(eventPumpSource.contains(QStringLiteral("\"contentEditorLoaderStatusChanged\"")));
+    QVERIFY(!eventPumpSource.contains(QStringLiteral("\"contentEditorLoaderLoaded\"")));
+    QVERIFY(!eventPumpSource.contains(QStringLiteral("\"contentEditorLoaderStatusChanged\"")));
 }
 
 void WhatSonCppRegressionTests::contentsDisplayView_tracesNoteSelectionPlanExecution()
@@ -351,7 +357,6 @@ void WhatSonCppRegressionTests::contentsDisplayView_tracesNoteSelectionPlanExecu
         QStringLiteral("src/app/models/editor/display/ContentsDisplaySelectionMountController.qml"));
     const QString eventPumpSource = readUtf8SourceFile(
         QStringLiteral("src/app/models/editor/display/ContentsDisplayEventPump.qml"));
-
     QVERIFY(!displayViewSource.isEmpty());
     QVERIFY(!selectionMountControllerSource.isEmpty());
     QVERIFY(!eventPumpSource.isEmpty());
@@ -402,24 +407,50 @@ void WhatSonCppRegressionTests::contentsDisplayView_surfacesMountFailurePlacehol
         QStringLiteral("src/app/models/editor/display/ContentsDisplaySelectionMountController.qml"));
     const QString eventPumpSource = readUtf8SourceFile(
         QStringLiteral("src/app/models/editor/display/ContentsDisplayEventPump.qml"));
+    const QString auxiliaryHostSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/content/editor/ContentsDisplayAuxiliaryRailHost.qml"));
+    const QString surfaceHostSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/content/editor/ContentsDisplaySurfaceHost.qml"));
+    const QString overlayHostSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/content/editor/ContentsDisplayOverlayHost.qml"));
+    const QString gutterHostSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/content/editor/ContentsDisplayGutterHost.qml"));
+    const QString minimapHostSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/content/editor/ContentsDisplayMinimapRailHost.qml"));
+    const QString exceptionOverlaySource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/content/editor/ContentsDisplayExceptionOverlay.qml"));
+    const QString resourceImportConflictAlertSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/content/editor/ContentsDisplayResourceImportConflictAlert.qml"));
 
     QVERIFY(!displayViewSource.isEmpty());
     QVERIFY(!selectionMountControllerSource.isEmpty());
     QVERIFY(!eventPumpSource.isEmpty());
+    QVERIFY(!auxiliaryHostSource.isEmpty());
+    QVERIFY(!surfaceHostSource.isEmpty());
+    QVERIFY(!overlayHostSource.isEmpty());
+    QVERIFY(!gutterHostSource.isEmpty());
+    QVERIFY(!minimapHostSource.isEmpty());
+    QVERIFY(!exceptionOverlaySource.isEmpty());
+    QVERIFY(!resourceImportConflictAlertSource.isEmpty());
     QVERIFY(displayViewSource.contains(QStringLiteral("ContentsDisplayNoteBodyMountCoordinator")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("ContentsDisplaySurfacePolicy")));
     QVERIFY(displayViewSource.contains(QStringLiteral("readonly property bool selectedNoteBodyResolved: selectionBridge.selectedNoteBodyResolved")));
     QVERIFY(displayViewSource.contains(
-        QStringLiteral("readonly property bool structuredDocumentFlowRequested: contentsView.hasSelectedNote")));
-    QVERIFY(displayViewSource.contains(
-        QStringLiteral("readonly property bool legacyInlineEditorRequested: contentsView.hasSelectedNote")));
+        QStringLiteral("readonly property bool structuredDocumentFlowRequested: surfacePolicy.structuredDocumentSurfaceRequested")));
+    QVERIFY(!displayViewSource.contains(QStringLiteral("legacyInlineEditorRequested")));
+    QVERIFY(!displayViewSource.contains(QStringLiteral("legacyInlineEditorActive")));
     QVERIFY(displayViewSource.contains(
         QStringLiteral("readonly property bool noteSnapshotRefreshEnabled: contentsView.visible && contentsView.hasSelectedNote && !contentsView.selectedNoteBodyLoading && (contentsView.editorSessionBoundToSelectedNote || contentsView.selectedNoteBodyResolved)")));
     QVERIFY(displayViewSource.contains(
+        QStringLiteral("readonly property bool noteDocumentMountDecisionClean: noteBodyMountCoordinator.mountDecisionClean")));
+    QVERIFY(displayViewSource.contains(
         QStringLiteral("readonly property bool noteDocumentMountPending: noteBodyMountCoordinator.mountPending")));
+    QVERIFY(displayViewSource.contains(
+        QStringLiteral("&& !contentsView.noteDocumentMountDecisionClean")));
     QVERIFY(displayViewSource.contains(
         QStringLiteral("readonly property var documentSourcePlan: documentSourceResolver.documentSourcePlan")));
     QVERIFY(displayViewSource.contains(
-        QStringLiteral("inlineDocumentSurfaceRequested: contentsView.legacyInlineEditorRequested")));
+        QStringLiteral("inlineDocumentSurfaceRequested: surfacePolicy.inlineDocumentSurfaceRequested")));
     QVERIFY(displayViewSource.contains(
         QStringLiteral("editorBoundNoteId: contentsView.editorBoundNoteId === undefined || contentsView.editorBoundNoteId === null ? \"\" : String(contentsView.editorBoundNoteId)")));
     QVERIFY(displayViewSource.contains(
@@ -438,12 +469,13 @@ void WhatSonCppRegressionTests::contentsDisplayView_surfacesMountFailurePlacehol
         QStringLiteral("selectedNoteBodyResolved: contentsView.documentSourcePlan.value(\"resolvedSourceReady\", false)")));
     QVERIFY(!displayViewSource.contains(
         QStringLiteral("selectedNoteBodyText: contentsView.documentSourcePlan.value(\"preferEditorSessionSource\", false)")));
-    QVERIFY(displayViewSource.contains(
-        QStringLiteral("inlineDocumentSurfaceReady: contentEditorLoader.status === Loader.Ready && contentEditorLoader.item !== null")));
+    QVERIFY(!displayViewSource.contains(QStringLiteral("contentEditorLoader")));
     QVERIFY(displayViewSource.contains(
         QStringLiteral("structuredDocumentSurfaceRequested: contentsView.structuredDocumentFlowRequested")));
     QVERIFY(displayViewSource.contains(
-        QStringLiteral("structuredDocumentSurfaceReady: contentsView.structuredDocumentFlowRequested && structuredDocumentFlow.visible")));
+        QStringLiteral("structuredDocumentSurfaceReady: contentsView.structuredDocumentFlowRequested")));
+    QVERIFY(displayViewSource.contains(
+        QStringLiteral("&& structuredDocumentFlow.visible")));
     QVERIFY(displayViewSource.contains(
         QStringLiteral("readonly property bool noteDocumentParseMounted: noteBodyMountCoordinator.parseMounted")));
     QVERIFY(displayViewSource.contains(
@@ -501,20 +533,29 @@ void WhatSonCppRegressionTests::contentsDisplayView_surfacesMountFailurePlacehol
         QStringLiteral("normalizedPlan[fallbackKey]")));
     QVERIFY(selectionMountControllerSource.contains(
         QStringLiteral("normalizedPlan[fallbackKey]")));
-    QVERIFY(displayViewSource.contains(
+    QVERIFY(auxiliaryHostSource.contains(
         QStringLiteral("visible: contentsView.hasSelectedNote && contentsView.noteDocumentSurfaceVisible")));
-    QVERIFY(displayViewSource.contains(
+    QVERIFY(displayViewSource.contains(QStringLiteral("ContentsDisplayAuxiliaryRailHost")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("ContentsDisplayOverlayHost")));
+    QVERIFY(auxiliaryHostSource.contains(QStringLiteral("ContentsDisplayGutterHost")));
+    QVERIFY(auxiliaryHostSource.contains(QStringLiteral("ContentsDisplayMinimapRailHost")));
+    QVERIFY(overlayHostSource.contains(QStringLiteral("ContentsDisplayExceptionOverlay")));
+    QVERIFY(!surfaceHostSource.contains(QStringLiteral("ContentsDisplayMountLoadingOverlay")));
+    QVERIFY(!surfaceHostSource.contains(QStringLiteral("Loading note")));
+    QVERIFY(overlayHostSource.contains(QStringLiteral("ContentsDisplayResourceImportConflictAlert")));
+    QVERIFY(resourceImportConflictAlertSource.contains(QStringLiteral("LV.Alert")));
+    QVERIFY(resourceImportConflictAlertSource.contains(QStringLiteral("resourceImportController.executePendingResourceImportWithPolicy")));
+    QVERIFY(!displayViewSource.contains(QStringLiteral("ContentsGutterLayer {")));
+    QVERIFY(!displayViewSource.contains(QStringLiteral("ContentsMinimapLayer {")));
+    QVERIFY(gutterHostSource.contains(
         QStringLiteral("visible: contentsView.showEditorGutter && contentsView.noteDocumentParseMounted")));
-    QVERIFY(displayViewSource.contains(
-        QStringLiteral("visible: contentsView.noteDocumentMountPending")));
-    QVERIFY(displayViewSource.contains(
+    QVERIFY(exceptionOverlaySource.contains(
         QStringLiteral("visible: contentsView.noteDocumentExceptionVisible")));
-    QVERIFY(displayViewSource.contains(
-        QStringLiteral("text: contentsView.noteDocumentExceptionTitle")));
-    QVERIFY(displayViewSource.contains(
-        QStringLiteral("text: contentsView.noteDocumentExceptionMessage")));
-    QVERIFY(displayViewSource.contains(
-        QStringLiteral("text: \"Loading note...\"")));
+    QVERIFY(exceptionOverlaySource.contains(
+        QStringLiteral("text: exceptionOverlay.contentsView.noteDocumentExceptionTitle")));
+    QVERIFY(exceptionOverlaySource.contains(
+        QStringLiteral("text: exceptionOverlay.contentsView.noteDocumentExceptionMessage")));
+    QVERIFY(!displayViewSource.contains(QStringLiteral("Loading note...")));
     QVERIFY(displayViewSource.contains(
         QStringLiteral("readonly property string noteDocumentExceptionTitle: noteBodyMountCoordinator.exceptionTitle")));
     QVERIFY(displayViewSource.contains(
@@ -537,6 +578,6 @@ void WhatSonCppRegressionTests::contentsDisplayView_surfacesMountFailurePlacehol
         QStringLiteral("&& !contentsView.selectedNoteBodyResolved)")));
     QVERIFY(displayViewSource.contains(
         QStringLiteral("function focusEditorForSelectedNoteId(noteId)")));
-    QVERIFY(displayViewSource.contains(
+    QVERIFY(auxiliaryHostSource.contains(
         QStringLiteral("visible: contentsView.showMinimapRail && contentsView.noteDocumentParseMounted")));
 }

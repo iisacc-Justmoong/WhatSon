@@ -11,8 +11,8 @@ context-menu trigger gating, focused programmatic text sync, and post-mutation f
 - OS/Qt `TextEdit` remains the authority for ordinary note editing, IME composition, preedit text, repeated
   Backspace/Delete, selection gestures, cursor movement, and platform keyboard behavior.
 - Ordinary app-level shortcuts are enabled only when the native text-input session does not own the keyboard. Any
-  focused note-body `TextEdit` counts as a native text-input session on desktop and mobile, so OS word
-  movement/selection chords such as Option+Arrow and Option+Shift+Arrow are not preempted by ordinary shortcuts.
+  focused note-body `TextEdit` counts as a native text-input session on desktop and mobile, so platform text-navigation
+  and selection chords are not preempted by ordinary shortcuts.
 - Tag-management shortcuts are deliberately separate from the ordinary shortcut surface. Inline style wrapping and
   structured tag insertion remain available while an editor is focused, but they still stand down during native
   composition/preedit.

@@ -432,19 +432,24 @@ bool ContentsDisplayNoteBodyMountCoordinator::mountPending() const noexcept
     {
         return false;
     }
-    if (m_selectedNoteBodyLoading || documentSurfaceLoading())
-    {
-        return true;
-    }
     if (documentSourceReady())
     {
         return false;
+    }
+    if (m_selectedNoteBodyLoading || documentSurfaceLoading())
+    {
+        return true;
     }
     if (m_pendingMountNoteId == normalizedSelectedNoteId)
     {
         return true;
     }
     return !refreshAttemptedForSelectedNote();
+}
+
+bool ContentsDisplayNoteBodyMountCoordinator::mountDecisionClean() const noexcept
+{
+    return m_mountDecisionClean;
 }
 
 bool ContentsDisplayNoteBodyMountCoordinator::parseMounted() const noexcept
@@ -665,6 +670,7 @@ void ContentsDisplayNoteBodyMountCoordinator::scheduleMount(const QVariantMap& o
         return;
     }
 
+    setMountDecisionClean(false);
     m_mountQueued = true;
     QTimer::singleShot(0, this, [this]()
     {
@@ -722,6 +728,7 @@ QVariantMap ContentsDisplayNoteBodyMountCoordinator::currentMountState() const
     state.insert(QStringLiteral("mountFailed"), mountFailed());
     state.insert(QStringLiteral("mountFailureReason"), mountFailureReason());
     state.insert(QStringLiteral("mountFailureMessage"), mountFailureMessage());
+    state.insert(QStringLiteral("mountDecisionClean"), mountDecisionClean());
     state.insert(QStringLiteral("mountPending"), mountPending());
     state.insert(QStringLiteral("parseMounted"), parseMounted());
     state.insert(QStringLiteral("sourceMounted"), sourceMounted());
@@ -748,7 +755,7 @@ QString ContentsDisplayNoteBodyMountCoordinator::normalizeNoteId(const QString& 
 
 bool ContentsDisplayNoteBodyMountCoordinator::canFlushMountImmediately() const noexcept
 {
-    return !m_selectedNoteBodyLoading && !documentSurfaceLoading();
+    return documentSourceReady() || (!m_selectedNoteBodyLoading && !documentSurfaceLoading());
 }
 
 bool ContentsDisplayNoteBodyMountCoordinator::documentSurfaceRequested() const noexcept
@@ -914,6 +921,7 @@ void ContentsDisplayNoteBodyMountCoordinator::flushMount()
     m_mountFocusEditorPending = false;
     m_mountFallbackRefreshPending = false;
     m_mountForceVisualRefreshPending = false;
+    setMountDecisionClean(true);
 
     if (shouldResetSnapshot)
     {
@@ -990,7 +998,7 @@ void ContentsDisplayNoteBodyMountCoordinator::flushMount()
         emit mountFlushRequested(plan);
         return;
     }
-    if (m_selectedNoteBodyLoading || documentSurfaceLoading())
+    if (!documentSourceReady() && (m_selectedNoteBodyLoading || documentSurfaceLoading()))
     {
         setPendingMountNoteId(normalizedSelectedNoteId);
         if (m_editorBoundNoteId != normalizedSelectedNoteId && m_pendingBodySave)
@@ -1076,6 +1084,22 @@ void ContentsDisplayNoteBodyMountCoordinator::resetCurrentSelectionMountTracking
     setPendingMountNoteId(QString());
     m_snapshotRefreshAttemptedNoteId.clear();
     m_focusEditorOnMountNoteId.clear();
+}
+
+void ContentsDisplayNoteBodyMountCoordinator::setMountDecisionClean(const bool clean)
+{
+    if (m_mountDecisionClean == clean)
+    {
+        return;
+    }
+
+    m_mountDecisionClean = clean;
+    WhatSon::Debug::traceEditorSelf(
+        this,
+        QStringLiteral("noteBodyMountCoordinator"),
+        QStringLiteral("setMountDecisionClean"),
+        QStringLiteral("clean=%1").arg(clean));
+    emit mountStateChanged();
 }
 
 void ContentsDisplayNoteBodyMountCoordinator::setPendingMountNoteId(const QString& noteId)

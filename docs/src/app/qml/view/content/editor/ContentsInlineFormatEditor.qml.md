@@ -26,8 +26,8 @@ The wrapper keeps the host/editor contract expected by `ContentsDisplayView.qml`
 
 Non-visual wrapper state now lives in
 `src/app/models/editor/input/ContentsInlineFormatEditorController.qml`. This view exposes the live `TextEdit`, wrapper
-properties, signals, and overlay layout; selection caching, macOS Option-word handling, programmatic sync policy, and
-committed edit dispatch are controller responsibilities.
+properties, signals, and overlay layout; selection caching, programmatic sync policy, and committed edit dispatch are
+controller responsibilities.
 
 ## Key Behavior
 
@@ -53,12 +53,8 @@ committed edit dispatch are controller responsibilities.
 - The live `TextEdit` receives pointer, selection, Backspace/Delete repeat, and Tab input directly from Qt/OS handling.
   The wrapper no longer exposes host shortcut or generic modifier-navigation handler properties on the native text
   input path.
-- The only live-text key handler is mounted inside the `TextEdit` itself with `Keys.priority: Keys.BeforeItem`: on
-  macOS, `Option+Left/Right` and `Option+Shift+Left/Right` are handled directly against the same live `TextEdit`
-  cursor/selection by word boundary. This is an explicit macOS Option-word contract, not a dependency on Qt Quick's
-  default Alt-key text bindings. The handler requires Option and rejects Control/Command, but it tolerates additional
-  harmless modifier bits such as keypad-origin metadata so physical arrow-key events do not fall back to
-  character-level `Shift+Arrow` selection.
+- The wrapper does not install live-text key handlers for ordinary navigation or selection chords; those remain native
+  Qt/OS `TextEdit` behavior.
 - The wrapper now explicitly keeps the Qt `TextEdit` keyboard/selection flags open for platform behavior:
   `activeFocusOnPress`, `selectByKeyboard`, `selectByMouse`, `persistentSelection`, unrestricted
   `inputMethodHints`, character-level `mouseSelectionMode`, and insert-mode `overwriteMode=false`.
@@ -72,6 +68,5 @@ committed edit dispatch are controller responsibilities.
   `Qt.inputMethod` calls, `InputMethod.*` calls, wrapper notification helpers, and alternate input-method fallback
   guards.
 - The wrapper must never surface Qt RichText document scaffold as authored note text.
-- Native text editing must remain uncovered: mouse/touch selection, `Shift` selection, and repeated Backspace/Delete
-  must not be intercepted by QML wrapper layers. macOS `Option+Left/Right` and `Option+Shift+Left/Right` are verified by
-  a runtime Quick test that sends key events to the real live `TextEdit` and checks cursor/selection movement.
+- Native text editing must remain uncovered: mouse/touch selection, keyboard selection, and repeated Backspace/Delete
+  must not be intercepted by QML wrapper layers.

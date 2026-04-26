@@ -6,7 +6,7 @@ import "../../../models/editor/diagnostics/ContentsEditorDebugTrace.js" as Edito
 QtObject {
     id: controller
 
-    property var contentEditor: null
+    property var activeEditorSurface: null
     property var contentsView: null
     property var editorSelectionController: null
     property var editorSession: null
@@ -80,15 +80,20 @@ QtObject {
             if (activeNoteId !== normalizedNoteId)
                 return;
 
-            const cursorPosition = Math.max(0, controller.contentsView.resolvedLogicalTextLength);
-            controller.contentEditor.forceActiveFocus();
-            if (controller.contentEditor.editorItem
-                    && controller.contentEditor.editorItem.forceActiveFocus !== undefined)
-                controller.contentEditor.editorItem.forceActiveFocus();
-            if (controller.contentEditor.setCursorPositionPreservingNativeInput !== undefined)
-                controller.contentEditor.setCursorPositionPreservingNativeInput(cursorPosition);
-            else if (controller.contentEditor.cursorPosition !== undefined)
-                controller.contentEditor.cursorPosition = cursorPosition;
+            if (!controller.activeEditorSurface
+                    || controller.activeEditorSurface.requestFocus === undefined)
+                return;
+
+            const logicalCursorPosition = Math.max(0, controller.contentsView.resolvedLogicalTextLength);
+            const sourceText = controller.contentsView.documentPresentationSourceText === undefined
+                    || controller.contentsView.documentPresentationSourceText === null
+                    ? ""
+                    : String(controller.contentsView.documentPresentationSourceText);
+            controller.activeEditorSurface.requestFocus({
+                                                            "cursorPosition": logicalCursorPosition,
+                                                            "logicalCursorPosition": logicalCursorPosition,
+                                                            "sourceOffset": sourceText.length
+                                                        });
         });
     }
 

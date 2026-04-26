@@ -7,8 +7,6 @@ Item {
     id: eventPump
 
     property var bodyResourceRenderer: null
-    property var contentEditor: null
-    property var contentEditorLoader: null
     property var contentsView: null
     property var editorProjection: null
     property var editorSession: null
@@ -98,7 +96,8 @@ Item {
         target: eventPump.bodyResourceRenderer
 
         function onRenderedResourcesChanged() {
-            if (!eventPump.contentsView.resourceBlocksRenderedInlineByHtmlProjection)
+            if (!eventPump.contentsView
+                    || !eventPump.contentsView.resourceBlocksRenderedInlineByHtmlProjection)
                 return;
             eventPump.contentsView.refreshInlineResourcePresentation();
             eventPump.contentsView.scheduleGutterRefresh(2, "resource-line-geometry");
@@ -294,7 +293,7 @@ Item {
 
     Connections {
         function onEditorTextSynchronized() {
-            if (eventPump.contentsView.parsedStructuredFlowRequested) {
+            if (eventPump.contentsView.showStructuredDocumentFlow) {
                 if (!eventPump.contentsView.structuredHostGeometryActive) {
                     eventPump.contentsView.finalizePendingNoteEntryGutterRefresh(
                                 eventPump.editorSession.editorBoundNoteId,
@@ -315,82 +314,6 @@ Item {
         }
 
         target: eventPump.editorSession
-    }
-
-    Connections {
-        function onContentHeightChanged() {
-            if (eventPump.contentsView.editorInputFocused)
-                eventPump.contentsView.scheduleDeferredDocumentPresentationRefresh();
-            else
-                eventPump.contentsView.scheduleMinimapSnapshotRefresh(false);
-            eventPump.contentsView.scheduleGutterRefresh(2, "editor-line-geometry");
-            eventPump.contentsView.scheduleTypingViewportCorrection(true);
-        }
-
-        function onCursorPositionChanged() {
-            eventPump.contentsView.scheduleCursorDrivenUiRefresh();
-            eventPump.contentsView.scheduleTypingViewportCorrection(false);
-        }
-
-        function onInputMethodComposingChanged() {
-            eventPump.editorTypingController.applyPendingCursorPositionIfInputSettled();
-            eventPump.resourceImportController.restorePendingEditorSurfaceFromPresentationIfInputSettled();
-        }
-
-        function onLineCountChanged() {
-            if (eventPump.contentsView.editorInputFocused)
-                eventPump.contentsView.scheduleDeferredDocumentPresentationRefresh();
-            else
-                eventPump.contentsView.scheduleMinimapSnapshotRefresh(false);
-            eventPump.contentsView.scheduleGutterRefresh(2, "editor-line-geometry");
-            eventPump.contentsView.scheduleTypingViewportCorrection(true);
-        }
-
-        function onPreeditTextChanged() {
-            eventPump.editorTypingController.applyPendingCursorPositionIfInputSettled();
-            eventPump.resourceImportController.restorePendingEditorSurfaceFromPresentationIfInputSettled();
-        }
-
-        ignoreUnknownSignals: true
-        target: eventPump.contentsView && eventPump.contentsView.legacyInlineEditorActive ? eventPump.contentEditor : null
-    }
-
-    Connections {
-        function onContentYChanged() {
-            eventPump.contentsView.refreshMinimapViewportTracking();
-            if (eventPump.minimapLayer && eventPump.contentsView.minimapRefreshEnabled)
-                eventPump.minimapLayer.requestRepaint();
-        }
-
-        ignoreUnknownSignals: true
-        target: eventPump.contentsView ? eventPump.contentsView.editorFlickable : null
-    }
-
-    Connections {
-        function onCursorPositionChanged() {
-            eventPump.contentsView.scheduleCursorDrivenUiRefresh();
-            eventPump.contentsView.scheduleTypingViewportCorrection(false);
-        }
-
-        ignoreUnknownSignals: true
-        target: eventPump.contentsView
-                && eventPump.contentsView.legacyInlineEditorActive
-                && eventPump.contentEditor
-                && eventPump.contentEditor.editorItem ? eventPump.contentEditor.editorItem : null
-    }
-
-    Connections {
-        function onCursorPositionChanged() {
-            eventPump.contentsView.scheduleCursorDrivenUiRefresh();
-            eventPump.contentsView.scheduleTypingViewportCorrection(false);
-        }
-
-        ignoreUnknownSignals: true
-        target: eventPump.contentsView
-                && eventPump.contentsView.legacyInlineEditorActive
-                && eventPump.contentEditor
-                && eventPump.contentEditor.editorItem
-                && eventPump.contentEditor.editorItem.inputItem ? eventPump.contentEditor.editorItem.inputItem : null
     }
 
     Connections {
@@ -425,35 +348,6 @@ Item {
         target: eventPump.contentsView && eventPump.contentsView.showStructuredDocumentFlow
                 ? eventPump.structuredDocumentFlow
                 : null
-    }
-
-    Connections {
-        function onLoaded() {
-            EditorTrace.trace(
-                        "displayView",
-                        "contentEditorLoaderLoaded",
-                        "status=" + eventPump.traceFormatter.loaderStatusName(eventPump.contentEditorLoader.status)
-                        + " active=" + eventPump.contentEditorLoader.active
-                        + " item={" + eventPump.traceFormatter.describeEditorSurfaceObject(eventPump.contentEditorLoader.item) + "}",
-                        eventPump.contentsView)
-            eventPump.contentsView.logEditorCreationState("contentEditorLoaderLoaded");
-        }
-
-        function onStatusChanged() {
-            EditorTrace.trace(
-                        "displayView",
-                        "contentEditorLoaderStatusChanged",
-                        "status=" + eventPump.traceFormatter.loaderStatusName(eventPump.contentEditorLoader.status)
-                        + " active=" + eventPump.contentEditorLoader.active
-                        + " item={" + eventPump.traceFormatter.describeEditorSurfaceObject(eventPump.contentEditorLoader.item) + "}",
-                        eventPump.contentsView)
-            eventPump.contentsView.logEditorCreationState("contentEditorLoaderStatusChanged");
-            eventPump.contentsView.scheduleSelectionModelSync({
-                                                                  "scheduleReconcile": true
-                                                              });
-        }
-
-        target: eventPump.contentEditorLoader
     }
 
     Connections {

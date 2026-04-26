@@ -1,12 +1,9 @@
 #include "test/cpp/whatson_cpp_regression_tests.hpp"
 
+#include <QDir>
 #include <QDirIterator>
-#include <QQmlComponent>
-#include <QQmlEngine>
-#include <QQuickItem>
-#include <QQuickWindow>
-
-#include <memory>
+#include <QFile>
+#include <QFileInfo>
 
 namespace
 {
@@ -19,42 +16,6 @@ namespace
         return repositoryRoot.absolutePath();
     }
 
-    QString qmlErrorString(const QList<QQmlError>& errors)
-    {
-        QStringList messages;
-        messages.reserve(errors.size());
-        for (const QQmlError& error : errors)
-        {
-            messages.push_back(error.toString());
-        }
-        return messages.join(QLatin1Char('\n'));
-    }
-
-    void addWhatSonQmlImportPaths(QQmlEngine& engine, const QString& repositoryRoot)
-    {
-        const QStringList candidatePaths{
-            repositoryRoot + QStringLiteral("/src/app/qml"),
-            repositoryRoot + QStringLiteral("/build/src/app"),
-            repositoryRoot + QStringLiteral("/build/src/app/cmake/runtime/lvrs_runtime_qml"),
-            repositoryRoot + QStringLiteral("/build/src/app/lvrs_runtime_qml"),
-        };
-        for (const QString& candidatePath : candidatePaths)
-        {
-            if (QFileInfo::exists(candidatePath))
-            {
-                engine.addImportPath(candidatePath);
-            }
-        }
-    }
-
-    QObject* objectProperty(QObject* object, const char* propertyName)
-    {
-        if (object == nullptr)
-        {
-            return nullptr;
-        }
-        return qvariant_cast<QObject*>(object->property(propertyName));
-    }
 } // namespace
 
 void WhatSonCppRegressionTests::qmlInlineFormatEditor_keepsNativeTextEditInputUncovered()
@@ -66,10 +27,7 @@ void WhatSonCppRegressionTests::qmlInlineFormatEditor_keepsNativeTextEditInputUn
     QVERIFY(!inlineEditorSource.contains(QStringLiteral("nativeTouchScrollGuardActive")));
     QVERIFY(!inlineEditorSource.contains(QStringLiteral("MouseArea {")));
     QVERIFY(!inlineEditorSource.contains(QStringLiteral("TapHandler {")));
-    QVERIFY(inlineEditorSource.contains(QStringLiteral("Keys.priority: Keys.BeforeItem")));
-    QVERIFY(!inlineEditorSource.contains(QStringLiteral("Keys.priority: Keys.AfterItem")));
-    QVERIFY(inlineEditorSource.contains(QStringLiteral("Keys.onPressed: function (event)")));
-    QVERIFY(inlineEditorSource.contains(QStringLiteral("inlineEditorController.handleMacOsOptionWordNavigation(event);")));
+    QVERIFY(!inlineEditorSource.contains(QStringLiteral("Keys.onPressed")));
     QVERIFY(!inlineEditorSource.contains(QStringLiteral("property var shortcutKeyPressHandler")));
     QVERIFY(!inlineEditorSource.contains(QStringLiteral("property var modifierVerticalNavigationHandler")));
     QVERIFY(!inlineEditorSource.contains(QStringLiteral("handleMacModifierVerticalNavigation")));
@@ -124,12 +82,7 @@ void WhatSonCppRegressionTests::qmlInlineFormatEditor_keepsKeyboardSelectionAndO
     QVERIFY(inlineEditorControllerSource.contains(QStringLiteral("if (controller.control && controller.control.preferNativeInputHandling && hadLocalTextEditSinceFocus)\n                        controller.clearDeferredProgrammaticText();")));
     QVERIFY(inlineEditorControllerSource.contains(QStringLiteral("function setCursorPositionPreservingNativeInput(position)")));
     QVERIFY(inlineEditorControllerSource.contains(QStringLiteral("if (!controller.textInput || controller.nativeCompositionActive())\n            return false;")));
-    QVERIFY(inlineEditorControllerSource.contains(QStringLiteral("function handleMacOsOptionWordNavigation(event)")));
-    QVERIFY(inlineEditorControllerSource.contains(QStringLiteral("Qt.platform.os !== \"osx\"")));
-    QVERIFY(inlineEditorSource.contains(QStringLiteral("Keys.priority: Keys.BeforeItem")));
-    QVERIFY(!inlineEditorControllerSource.contains(QStringLiteral("(modifiers & (Qt.AltModifier | Qt.ShiftModifier)) !== modifiers")));
-    QVERIFY(inlineEditorControllerSource.contains(QStringLiteral("controller.textInput.moveCursorSelection(target, TextEdit.SelectCharacters);")));
-    QVERIFY(inlineEditorControllerSource.contains(QStringLiteral("event.accepted = true;")));
+    QVERIFY(!inlineEditorSource.contains(QStringLiteral("Keys.onPressed")));
     QVERIFY(typingControllerSource.contains(QStringLiteral("property bool pendingCursorPositionRequest: false")));
     QVERIFY(typingControllerSource.contains(QStringLiteral("function applyPendingCursorPositionIfInputSettled()")));
     QVERIFY(typingControllerSource.contains(QStringLiteral("if (controller.nativeCompositionActive()) {\n                controller.pendingCursorPosition = targetPosition;")));
@@ -139,10 +92,8 @@ void WhatSonCppRegressionTests::qmlInlineFormatEditor_keepsKeyboardSelectionAndO
     QVERIFY(surfaceGuardSource.contains(QStringLiteral("function restorePendingEditorSurfaceFromPresentationIfInputSettled()")));
     QVERIFY(surfaceGuardSource.contains(QStringLiteral("shouldRejectFocusedProgrammaticTextSync(nextSurfaceText)")));
     QVERIFY(resourceImportControllerSource.contains(QStringLiteral("function restorePendingEditorSurfaceFromPresentationIfInputSettled()")));
-    QVERIFY(eventPumpSource.contains(QStringLiteral("function onInputMethodComposingChanged()")));
-    QVERIFY(eventPumpSource.contains(QStringLiteral("editorTypingController.applyPendingCursorPositionIfInputSettled();")));
-    QVERIFY(eventPumpSource.contains(QStringLiteral("resourceImportController.restorePendingEditorSurfaceFromPresentationIfInputSettled();")));
-    QVERIFY(eventPumpSource.contains(QStringLiteral("function onPreeditTextChanged()")));
+    QVERIFY(!eventPumpSource.contains(QStringLiteral("function onInputMethodComposingChanged()")));
+    QVERIFY(!eventPumpSource.contains(QStringLiteral("function onPreeditTextChanged()")));
     QVERIFY(!inlineEditorSource.contains(QStringLiteral("Qt.inputMethod")));
     QVERIFY(!inlineEditorSource.contains(QStringLiteral("InputMethod.")));
     QVERIFY(!inlineEditorSource.contains(QStringLiteral("notifyInputMethod")));
@@ -193,83 +144,4 @@ void WhatSonCppRegressionTests::qmlInlineFormatEditor_keepsKeyboardSelectionAndO
             }
         }
     }
-}
-
-void WhatSonCppRegressionTests::qmlInlineFormatEditor_handlesMacOptionWordNavigationAtRuntime()
-{
-#ifndef Q_OS_MACOS
-    QSKIP("macOS Option word navigation is platform-specific.");
-#else
-    const QString repositoryRoot = qmlInlineFormatEditorRepositoryRootPath();
-    QQmlEngine engine;
-    addWhatSonQmlImportPaths(engine, repositoryRoot);
-
-    QQmlComponent component(
-        &engine,
-        QUrl::fromLocalFile(
-            repositoryRoot
-            + QStringLiteral("/src/app/qml/view/content/editor/ContentsInlineFormatEditor.qml")));
-    if (component.status() == QQmlComponent::Error)
-    {
-        QFAIL(qPrintable(qmlErrorString(component.errors())));
-    }
-
-    std::unique_ptr<QObject> editorObject(component.create());
-    if (!editorObject)
-    {
-        QFAIL(qPrintable(qmlErrorString(component.errors())));
-    }
-
-    auto* editorItem = qobject_cast<QQuickItem*>(editorObject.get());
-    QVERIFY(editorItem != nullptr);
-    editorItem->setWidth(420);
-    editorItem->setHeight(80);
-    editorObject->setProperty("fieldMinHeight", 80);
-    editorObject->setProperty("showRenderedOutput", false);
-    editorObject->setProperty("text", QStringLiteral("alpha beta gamma"));
-
-    QQuickWindow window;
-    window.resize(420, 80);
-    editorItem->setParentItem(window.contentItem());
-    window.show();
-    QVERIFY(QTest::qWaitForWindowExposed(&window));
-
-    QObject* editorShell = objectProperty(editorObject.get(), "editorItem");
-    QVERIFY(editorShell != nullptr);
-    QObject* inputItem = objectProperty(editorShell, "inputItem");
-    QVERIFY(inputItem != nullptr);
-    QTRY_COMPARE(inputItem->property("text").toString(), QStringLiteral("alpha beta gamma"));
-
-    QVERIFY(QMetaObject::invokeMethod(inputItem, "forceActiveFocus"));
-    QTRY_VERIFY(inputItem->property("activeFocus").toBool());
-
-    inputItem->setProperty("cursorPosition", 0);
-    QTest::keyClick(&window, Qt::Key_Right, Qt::AltModifier);
-    QTRY_COMPARE(inputItem->property("cursorPosition").toInt(), 5);
-    QCOMPARE(inputItem->property("selectionStart").toInt(), 5);
-    QCOMPARE(inputItem->property("selectionEnd").toInt(), 5);
-
-    QTest::keyClick(&window, Qt::Key_Right, Qt::AltModifier | Qt::ShiftModifier);
-    QTRY_COMPARE(inputItem->property("cursorPosition").toInt(), 10);
-    QCOMPARE(inputItem->property("selectionStart").toInt(), 5);
-    QCOMPARE(inputItem->property("selectionEnd").toInt(), 10);
-
-    inputItem->setProperty("cursorPosition", 5);
-    QTest::keyClick(&window, Qt::Key_Right, Qt::AltModifier | Qt::ShiftModifier | Qt::KeypadModifier);
-    QTRY_COMPARE(inputItem->property("cursorPosition").toInt(), 10);
-    QCOMPARE(inputItem->property("selectionStart").toInt(), 5);
-    QCOMPARE(inputItem->property("selectionEnd").toInt(), 10);
-
-    inputItem->setProperty("cursorPosition", 16);
-    QTest::keyClick(&window, Qt::Key_Left, Qt::AltModifier);
-    QTRY_COMPARE(inputItem->property("cursorPosition").toInt(), 11);
-    QCOMPARE(inputItem->property("selectionStart").toInt(), 11);
-    QCOMPARE(inputItem->property("selectionEnd").toInt(), 11);
-
-    inputItem->setProperty("cursorPosition", 16);
-    QTest::keyClick(&window, Qt::Key_Left, Qt::AltModifier | Qt::ShiftModifier);
-    QTRY_COMPARE(inputItem->property("cursorPosition").toInt(), 11);
-    QCOMPARE(inputItem->property("selectionStart").toInt(), 11);
-    QCOMPARE(inputItem->property("selectionEnd").toInt(), 16);
-#endif
 }

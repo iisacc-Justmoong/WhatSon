@@ -8,10 +8,9 @@ It composes:
 
 - C++ editor display ViewModels under `src/app/viewmodel/editor/display`
 - model-side display controllers under `src/app/models/editor/display`
-- structured document-flow mounting
-- legacy fallback editor hosting
-- gutter/minimap/page layout
-- resource import layout wiring
+- active display-surface policy assembly
+- editor display controller and ViewModel assembly
+- sibling host assembly for the surface, auxiliary rails, and root overlays
 
 It no longer acts as the direct center-surface viewer for resource-backed hierarchy browsing.
 `ContentViewLayout.qml` now mounts `ContentsResourceEditorView.qml` beside this host whenever the active list model is
@@ -21,16 +20,24 @@ not note-backed.
 
 - RAW `.wsnbody` remains the only write authority.
 - `ContentsStructuredDocumentFlow.qml` is the canonical note host once a note session is bound.
-- The fallback whole-note editor path now uses:
-  - plain logical text as the live input buffer
-  - tokenized HTML as a separate read-side overlay (`renderedEditorHtml`)
-- The host no longer pushes a RichText editing surface back into `ContentsInlineFormatEditor.qml`.
+- `ContentsDisplaySurfacePolicy` owns the active surface decision. A selected note requests the structured document
+  surface; the legacy whole-note inline loader is no longer mounted by this host.
+- The host no longer exposes a no-op inline editor proxy or pushes a RichText editing surface back into
+  `ContentsInlineFormatEditor.qml`.
 - Selection/mount, presentation, RAW mutation, and minimap/gutter command surfaces now pass through dedicated C++
   ViewModels under `src/app/viewmodel/editor/display`.
+- Selected-note focus restoration now routes through `ContentsActiveEditorSurfaceAdapter`, a C++ active-surface
+  contract that targets the mounted structured flow without requiring this view host to expose a no-op editor proxy as
+  a focus target.
 - QML runtime mechanics that need timers, connections, shortcuts, pointer handlers, or context menus live as
   model-side controllers under `src/app/models/editor/display`; they are not ViewModels.
 - `ContentsDisplayView.qml` keeps compatibility controller functions only for collaborators that still call the display
   host API directly; those controllers delegate into the responsible C++ ViewModel.
+- Center-surface rendering now lives in `ContentsDisplaySurfaceHost.qml`, auxiliary gutter/minimap composition lives in
+  `ContentsDisplayAuxiliaryRailHost.qml`, and root exception/conflict overlays live in
+  `ContentsDisplayOverlayHost.qml`.
+  `ContentsDisplayView.qml` keeps aliases to the mounted surface objects only because existing display controllers
+  still need a single object contract for focus, geometry, and minimap repaint calls.
 - `ContentsDisplayNoteBodyMountCoordinator` now owns the note-body mount contract between the selection bridge,
   the editor session, and the mounted document surface.
   The host stays in a pending mount state until either the selected note snapshot resolves for that same note id or
@@ -43,15 +50,12 @@ not note-backed.
   - body snapshot mismatch against the current selection
   - unresolved note body after snapshot refresh
   - structured document surface not becoming ready
-  - inline fallback editor surface not becoming ready
-- Structured tag insertions now try the parser-owned document flow first, but if that host cannot resolve a live
-  caret anchor they fall back to the legacy cursor bridge instead of appending at the document tail.
+- Structured tag insertions target the parser-owned document flow rather than a hidden fallback editor surface.
 
 ## Debug Trace
 
 - The host now emits explicit editor-creation trace turns for note selection, body-note resolution, editor-session
-  binding, document mount pending/mounted/failure transitions, structured-host requests, and legacy-inline-host
-  requests.
+  binding, document mount pending/mounted/failure transitions, structured-host requests, and the active surface policy.
 - It now also emits note-selection flow plan traces end-to-end:
   - `selectionFlow.scheduleSelectionModelSync` when the host translates a note selection/body update into paired
     selection-sync and mount passes
@@ -68,18 +72,13 @@ not note-backed.
 - Snapshot poll and reconcile trace turns now call `traceFormatter.describeSelectionPlan(...)` directly.
   This avoids the host-local `TypeError` that previously aborted the periodic snapshot refresh path before the selected
   note body could be reconciled and remounted into the parser-backed document surface.
-- The inline loader now logs both `contentEditorLoaderStatusChanged` and `contentEditorLoaderLoaded`, including the
-  current loader status plus a summarized view of the instantiated editor item.
 - The structured host path now logs `structuredDocumentFlowVisibleChanged` so it is visible exactly when the parsed
   document surface becomes the live editor surface.
 - Host-owned creation logs now assign stable object names to the main editor-collaboration objects:
   - `contentsDisplaySelectionBridge`
   - `contentsDisplayNoteBodyMountCoordinator`
-  - `contentsDisplaySessionCoordinator`
   - `contentsDisplayEditorSession`
   - `contentsDisplayStructuredDocumentFlow`
-  - `contentsDisplayInlineEditorLoader`
-  - `contentsDisplayInlineFormatEditor`
 - Those names are mirrored in the QML trace payload so startup/runtime logs can reconstruct which object instance was
   created, destroyed, or selected as the active document surface during editor bootstrap.
 

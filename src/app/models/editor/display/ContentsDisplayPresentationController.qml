@@ -6,7 +6,6 @@ import "../../../models/editor/diagnostics/ContentsEditorDebugTrace.js" as Edito
 QtObject {
     id: controller
 
-    property var contentEditorLoader: null
     property var contentsView: null
     property var documentSourceResolver: null
     property var editorProjection: null
@@ -36,8 +35,7 @@ QtObject {
                     + " sessionBound=" + controller.contentsView.editorSessionBoundToSelectedNote
                     + " structuredRequested=" + controller.contentsView.structuredDocumentFlowRequested
                     + " structuredVisible=" + controller.contentsView.showStructuredDocumentFlow
-                    + " inlineRequested=" + controller.contentsView.legacyInlineEditorRequested
-                    + " inlineActive=" + controller.contentsView.legacyInlineEditorActive
+                    + " activeSurface=" + controller.contentsView.activeSurfaceKind
                     + " mountPending=" + controller.contentsView.noteDocumentMountPending
                     + " mounted=" + controller.contentsView.noteDocumentMounted
                     + " mountFailureReason=" + controller.contentsView.noteDocumentMountFailureReason,
@@ -46,9 +44,7 @@ QtObject {
                     "displayView",
                     "editorCreationSurfaces",
                     "reason=" + normalizedReason
-                    + " loaderActive=" + controller.contentEditorLoader.active
-                    + " loaderStatus=" + controller.traceFormatter.loaderStatusName(controller.contentEditorLoader.status)
-                    + " loaderItem={" + controller.traceFormatter.describeEditorSurfaceObject(controller.contentEditorLoader.item) + "}"
+                    + " activeSurface=" + controller.contentsView.activeSurfaceKind
                     + " structuredFlow={" + controller.traceFormatter.describeEditorSurfaceObject(controller.structuredDocumentFlow) + "}",
                     controller.contentsView)
         EditorTrace.trace(

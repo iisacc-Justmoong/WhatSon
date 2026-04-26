@@ -12,7 +12,7 @@ tag-management key handling out of the visual adapter shell.
 - Text delegates keep ordinary input on their nested `TextEdit`.
 - Atomic resource and break blocks may consume plain selection/delete keys and exact Command Up/Down document-boundary
   commands.
-- Option/Alt modified arrows are not consumed by this controller, preserving OS text-navigation chords.
+- Modified text-navigation chords are not consumed by this controller, preserving OS text-edit behavior.
 - Mounted delegate signals are re-emitted through the outer document-block contract.
 
 ## Boundary

@@ -41,10 +41,12 @@
 #include "app/models/editor/structure/ContentsStructuredDocumentFocusPolicy.hpp"
 #include "app/models/editor/structure/ContentsStructuredDocumentHost.hpp"
 #include "app/models/editor/structure/ContentsStructuredDocumentMutationPolicy.hpp"
+#include "app/viewmodel/editor/display/ContentsActiveEditorSurfaceAdapter.hpp"
 #include "app/viewmodel/editor/display/ContentsDisplayGeometryViewModel.hpp"
 #include "app/viewmodel/editor/display/ContentsDisplayMutationViewModel.hpp"
 #include "app/viewmodel/editor/display/ContentsDisplayPresentationViewModel.hpp"
 #include "app/viewmodel/editor/display/ContentsDisplaySelectionMountViewModel.hpp"
+#include "app/viewmodel/editor/display/ContentsDisplaySurfacePolicy.hpp"
 #include "app/viewmodel/panel/FocusedNoteDeletionBridge.hpp"
 #include "app/viewmodel/panel/HierarchyDragDropBridge.hpp"
 #include "app/viewmodel/panel/HierarchyInteractionBridge.hpp"
@@ -129,6 +131,8 @@ namespace
                 QStringLiteral("ContentsStructuredDocumentHost")),
             whatsonInternalCreatableType<ContentsStructuredDocumentMutationPolicy>(
                 QStringLiteral("ContentsStructuredDocumentMutationPolicy")),
+            whatsonInternalCreatableType<ContentsActiveEditorSurfaceAdapter>(
+                QStringLiteral("ContentsActiveEditorSurfaceAdapter")),
             whatsonInternalCreatableType<ContentsDisplayGeometryViewModel>(
                 QStringLiteral("ContentsDisplayGeometryViewModel")),
             whatsonInternalCreatableType<ContentsDisplayMutationViewModel>(
@@ -137,6 +141,8 @@ namespace
                 QStringLiteral("ContentsDisplayPresentationViewModel")),
             whatsonInternalCreatableType<ContentsDisplaySelectionMountViewModel>(
                 QStringLiteral("ContentsDisplaySelectionMountViewModel")),
+            whatsonInternalCreatableType<ContentsDisplaySurfacePolicy>(
+                QStringLiteral("ContentsDisplaySurfacePolicy")),
             whatsonInternalCreatableType<ContentsPaperSelection>(
                 QStringLiteral("ContentsPaperSelection")),
             whatsonInternalCreatableType<ContentsA4PaperBackground>(

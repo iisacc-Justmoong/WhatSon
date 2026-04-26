@@ -19,6 +19,12 @@ while preserving the existing host API shape that QML collaborators call.
   Publishes selected-note snapshot polling, reconcile, editor-session delivery, and note-body mount scheduling hooks.
 - `ContentsDisplayGeometryViewModel.*`
   Publishes minimap/gutter cache invalidation and viewport correction hooks.
+- `ContentsActiveEditorSurfaceAdapter.*`
+  Publishes the active editor surface contract used by selection/mount orchestration for focus restoration and logical
+  cursor movement, without exposing concrete QML editor item names to that orchestration.
+- `ContentsDisplaySurfacePolicy.*`
+  Publishes the active editor surface decision. The canonical selected-note surface is the structured document flow;
+  the legacy whole-note inline loader is disabled at the policy boundary.
 
 ## Boundary
 

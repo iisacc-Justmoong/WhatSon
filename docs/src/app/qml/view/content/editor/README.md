@@ -3,7 +3,7 @@
 ## Scope
 - Mirrored source directory: `src/app/qml/view/content/editor`
 - Child directories: 0
-- Child files: 18
+- Child files: 25
 
 ## Child Directories
 - No child directories.
@@ -14,6 +14,13 @@
 - `ContentsBreakBlock.qml`
 - `ContentsCalloutLayer.qml`
 - `ContentsCalloutBlock.qml`
+- `ContentsDisplayAuxiliaryRailHost.qml`
+- `ContentsDisplayExceptionOverlay.qml`
+- `ContentsDisplayGutterHost.qml`
+- `ContentsDisplayMinimapRailHost.qml`
+- `ContentsDisplayOverlayHost.qml`
+- `ContentsDisplayResourceImportConflictAlert.qml`
+- `ContentsDisplaySurfaceHost.qml`
 - `ContentsDisplayView.qml`
 - `ContentsDocumentBlock.qml`
 - `ContentsDocumentTextBlock.qml`
@@ -31,11 +38,21 @@
 ## Current Notes
 
 - `ContentsDisplayView.qml` is now the unified desktop/mobile editor surface.
+- `ContentsDisplayView.qml` delegates view-only surface, auxiliary rail, and overlay composition to narrow sibling
+  hosts: `ContentsDisplaySurfaceHost.qml`, `ContentsDisplayAuxiliaryRailHost.qml`, and
+  `ContentsDisplayOverlayHost.qml`.
+- `ContentsDisplayView.qml` also delegates active editor focus routing to the C++
+  `ContentsActiveEditorSurfaceAdapter`, keeping note-selection focus restoration out of the view layout file.
+- `ContentsDisplaySurfacePolicy` now owns the note-surface decision: selected notes mount the structured document flow,
+  and the unreachable whole-note inline loader is no longer part of `ContentsDisplayView.qml`.
+- The editor surface no longer mounts a note-loading overlay. Mount decisions now settle through
+  `ContentsDisplayNoteBodyMountCoordinator::mountDecisionClean`, so a stale pending body load cannot dim already
+  rendered note content.
 - This directory now contains only editor view hosts, visual layers, and block delegates. Non-visual QML policies,
   controllers, session controllers, and support JavaScript live under `src/app/models/editor`.
 - `src/app/models/editor/display/ContentsDisplayHostModePolicy.qml` owns platform display deltas such as
-  gutter/minimap visibility, editor horizontal inset, native-input autofocus, and font weight so the shared host no
-  longer forks into separate desktop/mobile QML roots.
+  gutter/minimap visibility, editor horizontal inset, and font weight so the shared host no longer forks into separate
+  desktop/mobile QML roots.
 - `ContentsDisplayView.qml` now also keeps gutter-body spacing separate from editor text padding through a dedicated
   `gutterBodyGap` token, so line numbers can sit closer to the note body without shrinking the body column itself.
 - `ContentsDisplayView.qml` now scales the existing non-print bottom accessibility inset up to roughly half of the
@@ -129,9 +146,8 @@
 - Desktop/mobile editor hosts now also mirror `ContentsEditorPresentationProjection` logical-line metrics into
   explicit host state and listen to `logicalLineCountChanged` plus `logicalLineStartOffsetsChanged` directly, so
   gutter line numbers refresh on the same RAW-to-projection turn instead of waiting for incidental UI movement.
-- Real gutter geometry invalidations from structured-flow re-layout, inline resource render changes, and legacy editor
-  line-height updates now bypass the focused `line-structure` suppression path and request their own gutter refresh
-  reasons.
+- Real gutter geometry invalidations from structured-flow re-layout and inline resource render changes now bypass the
+  focused `line-structure` suppression path and request their own gutter refresh reasons.
 - The unified host now also fingerprints structured gutter geometry separately from logical line-count metadata.
   A resource-driven spacing change therefore refreshes gutter Y even when the parsed logical line count did not
   change at all.
@@ -232,18 +248,13 @@
   That path advances cursor chrome without clearing the current native `TextEdit` selection, preserving desktop drag
   selection and iOS selection gestures.
 - The input policy adapter now treats any focused body `TextEdit` as the native keyboard owner, not only mobile/iOS
-  sessions. Ordinary editor shortcuts therefore stand down while typing so macOS Option word movement and Option+Shift
-  word selection stay on the platform `TextEdit` path. Explicit tag-management shortcuts remain available outside
-  native composition so formatting commands can still write RAW inline style tags.
-- `ContentsInlineFormatEditor.qml` now also has a TextEdit-local `Keys.BeforeItem` handler for macOS
-  `Option+Left/Right` and `Option+Shift+Left/Right`. The handler defines the Option-word movement and selection
-  contract directly against the live `TextEdit`, instead of depending on Qt Quick to map macOS Option onto its default
-  Alt-key text bindings. It tolerates extra modifier metadata such as keypad-origin bits on physical arrow-key events
-  so those events do not degrade into character-level `Shift+Arrow` selection. The C++ regression suite verifies that
-  behavior with real Quick key events instead of only static QML source checks.
-- Atomic structured blocks now also avoid app-level `AltModifier` branching entirely. Resource/break block keyboard
-  handling only accepts plain navigation/delete and exact macOS Command Up/Down document-boundary movement, leaving
-  every Option-arrow chord unaccepted by the atomic block layer.
+  sessions. Ordinary editor shortcuts therefore stand down while typing so platform text-navigation and selection stay
+  on the native `TextEdit` path. Explicit tag-management shortcuts remain available outside native composition so
+  formatting commands can still write RAW inline style tags.
+- `ContentsInlineFormatEditor.qml` does not install a live-text key handler for ordinary navigation or selection chords;
+  those remain Qt/OS `TextEdit` behavior.
+- Atomic structured blocks keep keyboard handling limited to plain navigation/delete and exact macOS Command Up/Down
+  document-boundary movement.
 - After that policy extraction, the flow and desktop/mobile hosts no longer keep dead duplicate QML helpers or
   pass-through import controllers that merely mirrored those dedicated collaborators.
 - Desktop/mobile snapshot polling now also prefers a filesystem reconcile fetch path
@@ -288,9 +299,8 @@
   `ContentsStructuredDocumentFlow.qml` is active.
   Structured notes therefore no longer risk `<resource ... />` damage when note-switch cleanup tries to flush the old
   editor surface.
-- That same legacy diff path now also requires a real mounted inline editor surface.
-  When the host has already fallen back to the proxy object during note switching, the controller no longer treats that
-  proxy as editable input and no longer rewrites the old note body from a non-existent editor snapshot.
+- That same legacy diff path is no longer reachable from `ContentsDisplayView.qml`, because the host does not mount a
+  whole-note inline editor or proxy object during note switching.
 - `ContentsInlineFormatEditor.qml` now emits committed typing directly from the nested `TextEdit.onTextChanged` path
   whenever the change is not programmatic and IME composition has already settled.
   That keeps `ContentsEditorSessionController::editorText` moving with the visible buffer instead of leaving the note-open body
@@ -330,9 +340,8 @@
     attempt for the current note payload instead of silently downgrading to deferred-only staging
 - The RichText editor surface now decodes one safe-entity layer for display, so RAW-preserving source escapes like
   `&lt;` / `&gt;` / `&amp;` render as visible glyphs without changing the canonical note-body source contract.
-- The print-page `Repeater` delegates now declare `required property int index`, and the inline editor host now uses a
-  concrete `shapeStyle: 0` value instead of an undefined `shapeRoundRect` symbol, removing two runtime
-  `ReferenceError` classes observed during live app execution.
+- The print-page `Repeater` delegates now declare `required property int index`, removing a runtime `ReferenceError`
+  class observed during live app execution.
 - Gutter/minimap/editor default geometry now routes through LVRS `gap`, `stroke`, theme-color, and `scaleMetric(...)`
   tokens instead of scattered local editor pixel literals.
 - The desktop gutter layout is now hard-clamped to its resolved token width, so markdown-list relayouts cannot make the
@@ -365,9 +374,9 @@
   structured text blocks edit RAW source spans directly from plain-text deltas instead of round-tripping rendered HTML
   through a DOM-to-source normalization step.
 - `ContentsEditorDebugTrace.js` now centralizes verbose editor-domain QML tracing, and the desktop/mobile display
-  hosts, session bridge, typing controller, structured document flow, block controller, and inline editor now emit
-  lifecycle, mount/unmount, selection-sync, source-mutation, cursor/selection, and focus-transition logs through that
-  shared helper instead of each file inventing a different console format.
+  hosts, session bridge, typing controller, structured document flow, and block controllers now emit lifecycle,
+  mount/unmount, selection-sync, source-mutation, cursor/selection, and focus-transition logs through that shared helper
+  instead of each file inventing a different console format.
 - `ContentsStructuredDocumentFlow.qml` now limits itself to exposing the active delegate's local shortcut-insertion
   cursor hint.
   `ContentsStructuredDocumentHost` plus `ContentsStructuredDocumentFocusPolicy` own the actual structured
@@ -376,7 +385,7 @@
   anchor, that same insertion path no longer guesses with a block/document tail offset.
   Callers now use a live or pending source offset or fall back to the outer cursor bridge.
 - That same structured-flow insertion bridge now also accepts dropped resource-tag batches, so resource imports inside
-  agenda/callout/break notes insert next to the active block instead of appending through the legacy cursor bridge.
+  agenda/callout/break notes insert next to the active block.
 - `ContentsStructuredBlockRenderer.*` now also short-circuits notes that contain no proprietary structured tags and
   computes combined structured verification only once per source refresh, shrinking note-open parse overhead.
 - In structured-flow mode, desktop/mobile hosts now stop feeding legacy agenda/callout overlay layers, so the fallback
@@ -388,13 +397,10 @@
 - That focus path no longer keeps an incrementing replay token or a generic `pendingFocusRequestChanged` watcher; it now
   recalculates the target block only when a focus request enters or the reparsed block list actually changes.
 - Structured-flow source edits no longer force `ContentsDisplayView.qml` to rebuild the whole legacy presentation
-  snapshot on each keystroke; the unified host now only repopulates the fallback RichText surface when the document
-  leaves structured mode again.
-- While structured-flow mode is active, both hosts now unload the legacy `ContentsInlineFormatEditor` through a
-  `Loader`, so note-open and block-edit turns no longer keep a second full-document editor instance alive behind
-  `visible: false`.
-- Those hosts keep a lightweight proxy object under the shared `contentEditor` reference, preserving existing
-  geometry/focus helper call sites without requiring the hidden editor instance to stay mounted.
+  snapshot on each keystroke; the unified host no longer mounts a second full-document editor instance behind the
+  structured flow.
+- The shared `contentEditor` compatibility reference now resolves to the structured document flow instead of a no-op
+  inline editor proxy.
 - Desktop/mobile hosts now also treat `editorSession.editorTextSynchronized` as the main post-sync refresh boundary,
   which removes duplicate minimap/presentation/gutter refresh scheduling after model sync, reconcile completion, and
   structured correction apply.
@@ -405,9 +411,8 @@
   the editor surface does not schedule a second parallel note-open refresh path next to the selected-note handlers.
 - Desktop/mobile hosts now also bind `ContentsStructuredBlockRenderer.backgroundRefreshEnabled` to the note-open/model
   sync window, not only to the unfocused state.
-- Newly selected notes stay on the legacy editor/session path until the first settled structured render confirms block
-  ownership, then later same-note async reparses keep the structured surface mounted while agenda/callout parsing runs
-  off the UI thread.
+- Newly selected notes request the structured surface immediately; later same-note async reparses keep that structured
+  surface mounted while agenda/callout parsing runs off the UI thread.
 - Structured shortcut insertion now also resolves out of existing proprietary controllers before writing:
   - invoking agenda/callout insertion while the cursor is already inside an existing agenda/callout moves the new RAW
     block to the enclosing controller end first

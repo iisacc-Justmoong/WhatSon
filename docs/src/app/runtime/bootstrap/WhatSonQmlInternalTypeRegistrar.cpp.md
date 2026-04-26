@@ -10,6 +10,9 @@ then registers that manifest through LVRS `QmlTypeRegistrar`.
 - Content-surface helpers from `src/app/models/content/mobile` plus editor-domain helpers from
   `src/app/models/editor/display` and `src/app/models/editor/structure`, so runtime bootstrap resolves the real
   model-domain paths instead of relying on flattened legacy include aliases.
+- Editor display ViewModels from `src/app/viewmodel/editor/display`, including
+  `ContentsActiveEditorSurfaceAdapter` and `ContentsDisplaySurfacePolicy`, so view QML can instantiate C++ command and
+  surface-policy contracts instead of carrying those responsibilities locally.
 - Rendering/annotation helpers such as `ContentsTextFormatRenderer`, `ContentsStructuredBlockRenderer`,
   `ContentsAgendaBackend`, `ContentsCalloutBackend`, `ContentsBodyResourceRenderer`, and `ResourceBitmapViewer`.
 - Workspace interaction bridges such as `FocusedNoteDeletionBridge`, `NoteListModelContractBridge`,

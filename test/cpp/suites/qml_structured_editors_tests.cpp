@@ -264,7 +264,8 @@ void WhatSonCppRegressionTests::qmlStructuredEditors_preserveNativeMobileInputDu
     QVERIFY(!calloutBlockSource.isEmpty());
     QVERIFY(!calloutBlockControllerSource.isEmpty());
 
-    QVERIFY(displayViewSource.contains(QStringLiteral("readonly property bool nativeTextInputPriority: true")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("readonly property bool nativeTextInputPriority: surfacePolicy.nativeInputPriority")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("ContentsDisplaySurfacePolicy")));
     QVERIFY(!displayViewSource.contains(QStringLiteral("contentsView.mobileHost || Qt.platform.os === \"ios\"")));
     QVERIFY(displayViewSource.contains(QStringLiteral("readonly property bool noteDocumentShortcutSurfaceEnabled")));
     QVERIFY(displayViewSource.contains(QStringLiteral("readonly property bool noteDocumentTagManagementShortcutSurfaceEnabled")));
@@ -432,6 +433,13 @@ void WhatSonCppRegressionTests::qmlEditorViewDirectory_containsOnlyViewSurfaceFi
         QStringLiteral("ContentsBreakBlock.qml"),
         QStringLiteral("ContentsCalloutBlock.qml"),
         QStringLiteral("ContentsCalloutLayer.qml"),
+        QStringLiteral("ContentsDisplayAuxiliaryRailHost.qml"),
+        QStringLiteral("ContentsDisplayExceptionOverlay.qml"),
+        QStringLiteral("ContentsDisplayGutterHost.qml"),
+        QStringLiteral("ContentsDisplayMinimapRailHost.qml"),
+        QStringLiteral("ContentsDisplayOverlayHost.qml"),
+        QStringLiteral("ContentsDisplayResourceImportConflictAlert.qml"),
+        QStringLiteral("ContentsDisplaySurfaceHost.qml"),
         QStringLiteral("ContentsDisplayView.qml"),
         QStringLiteral("ContentsDocumentBlock.qml"),
         QStringLiteral("ContentsDocumentTextBlock.qml"),
@@ -452,8 +460,15 @@ void WhatSonCppRegressionTests::qmlEditorViewDirectory_containsOnlyViewSurfaceFi
     QVERIFY(editorCmakeSource.contains(QStringLiteral("whatson_app_register_directory_qml")));
 
     const QString viewmodelCmakeSource = readUtf8SourceFile(QStringLiteral("src/app/viewmodel/CMakeLists.txt"));
+    const QString testCmakeSource = readUtf8SourceFile(QStringLiteral("test/cpp/CMakeLists.txt"));
     const QString displayViewSource = readUtf8SourceFile(
         QStringLiteral("src/app/qml/view/content/editor/ContentsDisplayView.qml"));
+    const QString auxiliaryHostSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/content/editor/ContentsDisplayAuxiliaryRailHost.qml"));
+    const QString surfaceHostSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/content/editor/ContentsDisplaySurfaceHost.qml"));
+    const QString overlayHostSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/content/editor/ContentsDisplayOverlayHost.qml"));
     const QString eventPumpSource = readUtf8SourceFile(
         QStringLiteral("src/app/models/editor/display/ContentsDisplayEventPump.qml"));
     const QString inputCommandSurfaceSource = readUtf8SourceFile(
@@ -480,6 +495,14 @@ void WhatSonCppRegressionTests::qmlEditorViewDirectory_containsOnlyViewSurfaceFi
         QStringLiteral("src/app/viewmodel/editor/display/ContentsDisplayGeometryViewModel.hpp"));
     const QString geometryViewModelCpp = readUtf8SourceFile(
         QStringLiteral("src/app/viewmodel/editor/display/ContentsDisplayGeometryViewModel.cpp"));
+    const QString activeSurfaceAdapterHeader = readUtf8SourceFile(
+        QStringLiteral("src/app/viewmodel/editor/display/ContentsActiveEditorSurfaceAdapter.hpp"));
+    const QString activeSurfaceAdapterCpp = readUtf8SourceFile(
+        QStringLiteral("src/app/viewmodel/editor/display/ContentsActiveEditorSurfaceAdapter.cpp"));
+    const QString surfacePolicyHeader = readUtf8SourceFile(
+        QStringLiteral("src/app/viewmodel/editor/display/ContentsDisplaySurfacePolicy.hpp"));
+    const QString surfacePolicyCpp = readUtf8SourceFile(
+        QStringLiteral("src/app/viewmodel/editor/display/ContentsDisplaySurfacePolicy.cpp"));
     QVERIFY(!displayControllerBridgeHeader.isEmpty());
     QVERIFY(!mutationViewModelHeader.isEmpty());
     QVERIFY(!mutationViewModelCpp.isEmpty());
@@ -489,7 +512,18 @@ void WhatSonCppRegressionTests::qmlEditorViewDirectory_containsOnlyViewSurfaceFi
     QVERIFY(!selectionMountViewModelCpp.isEmpty());
     QVERIFY(!geometryViewModelHeader.isEmpty());
     QVERIFY(!geometryViewModelCpp.isEmpty());
+    QVERIFY(!activeSurfaceAdapterHeader.isEmpty());
+    QVERIFY(!activeSurfaceAdapterCpp.isEmpty());
+    QVERIFY(!surfacePolicyHeader.isEmpty());
+    QVERIFY(!surfacePolicyCpp.isEmpty());
+    QVERIFY(!auxiliaryHostSource.isEmpty());
+    QVERIFY(!surfaceHostSource.isEmpty());
+    QVERIFY(!overlayHostSource.isEmpty());
     QVERIFY(!viewmodelCmakeSource.contains(QStringLiteral("whatson_app_register_directory_qml")));
+    QVERIFY(testCmakeSource.contains(
+        QStringLiteral("src/app/viewmodel/editor/display/ContentsActiveEditorSurfaceAdapter.cpp")));
+    QVERIFY(testCmakeSource.contains(
+        QStringLiteral("src/app/viewmodel/editor/display/ContentsDisplaySurfacePolicy.cpp")));
     QVERIFY(displayControllerBridgeHeader.contains(QStringLiteral("Q_PROPERTY(QObject* controller READ controller WRITE setController NOTIFY controllerChanged)")));
     QVERIFY(displayControllerBridgeHeader.contains(QStringLiteral("public slots:")));
     QVERIFY(displayControllerBridgeHeader.contains(QStringLiteral("void controllerChanged();")));
@@ -505,14 +539,32 @@ void WhatSonCppRegressionTests::qmlEditorViewDirectory_containsOnlyViewSurfaceFi
     QVERIFY(geometryViewModelHeader.contains(QStringLiteral("class ContentsDisplayGeometryViewModel")));
     QVERIFY(geometryViewModelHeader.contains(QStringLiteral("public slots:")));
     QVERIFY(geometryViewModelCpp.contains(QStringLiteral("invokeControllerVoid(\"refreshMinimapSnapshot\")")));
+    QVERIFY(activeSurfaceAdapterHeader.contains(QStringLiteral("class ContentsActiveEditorSurfaceAdapter")));
+    QVERIFY(activeSurfaceAdapterHeader.contains(QStringLiteral("Q_PROPERTY(QObject* structuredDocumentFlow")));
+    QVERIFY(activeSurfaceAdapterHeader.contains(QStringLiteral("bool requestFocus(const QVariant& request)")));
+    QVERIFY(activeSurfaceAdapterCpp.contains(QStringLiteral("requestStructuredFocus")));
+    QVERIFY(activeSurfaceAdapterCpp.contains(QStringLiteral("requestInlineFocus")));
+    QVERIFY(surfacePolicyHeader.contains(QStringLiteral("class ContentsDisplaySurfacePolicy")));
+    QVERIFY(surfacePolicyHeader.contains(QStringLiteral("Q_PROPERTY(bool structuredDocumentSurfaceRequested")));
+    QVERIFY(surfacePolicyCpp.contains(QStringLiteral("return false;")));
     QVERIFY(displayViewSource.contains(QStringLiteral("EditorDisplayModel.ContentsDisplayEventPump")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("EditorDisplayModel.ContentsDisplayInputCommandSurface")));
+    QVERIFY(surfaceHostSource.contains(QStringLiteral("EditorDisplayModel.ContentsDisplayInputCommandSurface")));
     QVERIFY(displayViewSource.contains(QStringLiteral("EditorDisplayModel.ContentsDisplayPresentationController")));
     QVERIFY(displayViewSource.contains(QStringLiteral("ContentsDisplayPresentationViewModel")));
     QVERIFY(displayViewSource.contains(QStringLiteral("EditorDisplayModel.ContentsDisplayMutationController")));
     QVERIFY(displayViewSource.contains(QStringLiteral("ContentsDisplayMutationViewModel")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("ContentsActiveEditorSurfaceAdapter")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("ContentsDisplaySurfacePolicy")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("activeEditorSurface: activeEditorSurfaceAdapter")));
     QVERIFY(displayViewSource.contains(QStringLiteral("EditorDisplayModel.ContentsDisplaySelectionMountController")));
     QVERIFY(displayViewSource.contains(QStringLiteral("ContentsDisplaySelectionMountViewModel")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("ContentsDisplayAuxiliaryRailHost")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("ContentsDisplayOverlayHost")));
+    QVERIFY(auxiliaryHostSource.contains(QStringLiteral("ContentsDisplayGutterHost")));
+    QVERIFY(auxiliaryHostSource.contains(QStringLiteral("ContentsDisplayMinimapRailHost")));
+    QVERIFY(overlayHostSource.contains(QStringLiteral("ContentsDisplayExceptionOverlay")));
+    QVERIFY(!surfaceHostSource.contains(QStringLiteral("ContentsDisplayMountLoadingOverlay")));
+    QVERIFY(overlayHostSource.contains(QStringLiteral("ContentsDisplayResourceImportConflictAlert")));
     QVERIFY(displayViewSource.contains(QStringLiteral("EditorDisplayModel.ContentsDisplayGeometryController")));
     QVERIFY(displayViewSource.contains(QStringLiteral("ContentsDisplayGeometryViewModel")));
     QVERIFY(!displayViewSource.contains(QStringLiteral("Timer {")));
@@ -540,6 +592,8 @@ void WhatSonCppRegressionTests::qmlStructuredEditors_lockCustomInputToTagManagem
 {
     const QString displayViewSource = readUtf8SourceFile(
         QStringLiteral("src/app/qml/view/content/editor/ContentsDisplayView.qml"));
+    const QString surfaceHostSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/content/editor/ContentsDisplaySurfaceHost.qml"));
     const QString structuredFlowSource = readUtf8SourceFile(
         QStringLiteral("src/app/qml/view/content/editor/ContentsStructuredDocumentFlow.qml"));
     const QString documentBlockSource = readUtf8SourceFile(
@@ -562,6 +616,7 @@ void WhatSonCppRegressionTests::qmlStructuredEditors_lockCustomInputToTagManagem
         QStringLiteral("src/app/models/editor/input/ContentsEditorTypingController.qml"));
 
     QVERIFY(!displayViewSource.isEmpty());
+    QVERIFY(!surfaceHostSource.isEmpty());
     QVERIFY(!structuredFlowSource.isEmpty());
     QVERIFY(!documentBlockSource.isEmpty());
     QVERIFY(!documentBlockControllerSource.isEmpty());
@@ -577,7 +632,7 @@ void WhatSonCppRegressionTests::qmlStructuredEditors_lockCustomInputToTagManagem
     QVERIFY(displayViewSource.contains(QStringLiteral("readonly property bool editorTagManagementInputEnabled: true")));
     QVERIFY(displayViewSource.contains(QStringLiteral("readonly property bool noteDocumentTagManagementShortcutSurfaceEnabled")));
     QVERIFY(displayViewSource.contains(QStringLiteral("function handleTagManagementShortcutKeyPress(event)")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("tagManagementShortcutKeyPressHandler: function (event)")));
+    QVERIFY(surfaceHostSource.contains(QStringLiteral("tagManagementShortcutKeyPressHandler: function (event)")));
     QVERIFY(displayViewSource.contains(
         QStringLiteral("readonly property bool noteDocumentTagManagementShortcutSurfaceEnabled: editorInputPolicyAdapter.tagManagementShortcutSurfaceEnabled")));
     QVERIFY(!displayViewSource.contains(QStringLiteral("function handleInlineFormatShortcutKeyPress(event)")));
@@ -600,17 +655,13 @@ void WhatSonCppRegressionTests::qmlStructuredEditors_lockCustomInputToTagManagem
     QVERIFY(documentBlockSource.contains(QStringLiteral("function handleAtomicTagDeleteKeyPress(event)")));
     QVERIFY(documentBlockControllerSource.contains(QStringLiteral("modifiers !== Qt.NoModifier")));
     QVERIFY(documentBlockControllerSource.contains(QStringLiteral("modifiers === Qt.MetaModifier")));
-    QVERIFY(!documentBlockSource.contains(QStringLiteral("Qt.AltModifier")));
     QVERIFY(!documentBlockSource.contains(QStringLiteral("macModifierVerticalNavigation")));
-    QVERIFY(!documentBlockSource.contains(QStringLiteral("(Qt.AltModifier | Qt.MetaModifier) !== 0")));
     QVERIFY(!documentBlockControllerSource.contains(QStringLiteral("return !!blockItem.handleDeleteKeyPress(event)")));
 
     QVERIFY(breakBlockSource.contains(QStringLiteral("property var tagManagementShortcutKeyPressHandler: null")));
     QVERIFY(breakBlockControllerSource.contains(QStringLiteral("modifiers !== Qt.NoModifier")));
     QVERIFY(breakBlockControllerSource.contains(QStringLiteral("modifiers === Qt.MetaModifier")));
-    QVERIFY(!breakBlockSource.contains(QStringLiteral("Qt.AltModifier")));
     QVERIFY(!breakBlockSource.contains(QStringLiteral("macModifierVerticalNavigation")));
-    QVERIFY(!breakBlockSource.contains(QStringLiteral("(Qt.AltModifier | Qt.MetaModifier) !== 0")));
     QVERIFY(!breakBlockSource.contains(QStringLiteral("property var shortcutKeyPressHandler")));
 
     QVERIFY(!textBlockSource.contains(QStringLiteral("Keys.onPressed")));

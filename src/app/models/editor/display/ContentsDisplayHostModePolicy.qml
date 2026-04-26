@@ -14,19 +14,12 @@ QtObject {
     property bool showFormattedTextRenderer: false
     property bool showPrintEditorLayout: false
     property bool showStructuredDocumentFlow: false
-    property var editorProjection: null
 
     readonly property int editorFontWeight: mobileHost ? Font.Medium : Font.Normal
     readonly property int editorHorizontalInset: mobileHost ? LV.Theme.gapNone : LV.Theme.gap16
-    readonly property bool inlineEditorAutoFocusOnPress: !mobileHost || !preferNativeInputHandling
     readonly property bool lineGeometryRefreshEnabled: !showDedicatedResourceViewer
                                                        && !showFormattedTextRenderer
                                                        && (!mobileHost || !showStructuredDocumentFlow)
-    readonly property string nativeInputDisplayText: editorProjection
-                                                     && editorProjection.logicalText !== undefined
-                                                     && editorProjection.logicalText !== null
-                                                     ? String(editorProjection.logicalText)
-                                                     : ""
     readonly property bool showEditorGutter: !mobileHost
                                              && !showDedicatedResourceViewer
                                              && !showFormattedTextRenderer
