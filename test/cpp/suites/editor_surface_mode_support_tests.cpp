@@ -6,7 +6,7 @@ void WhatSonCppRegressionTests::editorSurfaceModeSupport_switchesToResourceEdito
     QJSEngine engine;
     const QJSValue library = evaluateQmlJsLibrary(
         &engine,
-        QStringLiteral("src/app/qml/view/content/editor/ContentsEditorSurfaceModeSupport.js"));
+        QStringLiteral("src/app/models/editor/display/ContentsEditorSurfaceModeSupport.js"));
     QVERIFY2(!library.isError(), qPrintable(library.toString()));
 
     const QJSValue resourceEditorVisible = library.property(QStringLiteral("resourceEditorVisible"));

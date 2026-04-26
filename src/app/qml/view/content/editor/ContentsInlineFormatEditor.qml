@@ -3,7 +3,8 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Controls as Controls
 import LVRS 1.0 as LV
-import "ContentsEditorDebugTrace.js" as EditorTrace
+import "../../../../models/editor/diagnostics/ContentsEditorDebugTrace.js" as EditorTrace
+import "../../../../models/editor/input" as EditorInputModel
 
 FocusScope {
     id: control
@@ -107,7 +108,7 @@ FocusScope {
 
     signal textEdited(string text)
 
-    ContentsEditorInputPolicyAdapter {
+    EditorInputModel.ContentsEditorInputPolicyAdapter {
         id: inlineInputPolicyAdapter
     }
 

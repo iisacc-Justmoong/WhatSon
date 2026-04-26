@@ -3,8 +3,8 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Layouts
 import LVRS 1.0 as LV
-import "ContentsLogicalLineLayoutSupport.js" as LogicalLineLayoutSupport
-import "ContentsStructuredCursorSupport.js" as StructuredCursorSupport
+import "../../../../models/editor/structure/ContentsLogicalLineLayoutSupport.js" as LogicalLineLayoutSupport
+import "../../../../models/editor/structure/ContentsStructuredCursorSupport.js" as StructuredCursorSupport
 
 FocusScope {
     id: calloutBlock

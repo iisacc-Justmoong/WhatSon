@@ -4,8 +4,9 @@ import QtQuick
 import QtQuick.Layouts
 import WhatSon.App.Internal 1.0
 import LVRS 1.0 as LV
-import "ContentsEditorDebugTrace.js" as EditorTrace
-import "ContentsStructuredCursorSupport.js" as StructuredCursorSupport
+import "../../../../models/editor/diagnostics/ContentsEditorDebugTrace.js" as EditorTrace
+import "../../../../models/editor/format" as EditorFormatModel
+import "../../../../models/editor/structure/ContentsStructuredCursorSupport.js" as StructuredCursorSupport
 
 FocusScope {
     id: documentFlow
@@ -62,7 +63,7 @@ FocusScope {
         blocks: documentFlow.normalizedBlocks()
     }
 
-    ContentsStructuredEditorFormattingController {
+    EditorFormatModel.ContentsStructuredEditorFormattingController {
         id: structuredEditorFormattingController
 
         blockRepeater: blockRepeater

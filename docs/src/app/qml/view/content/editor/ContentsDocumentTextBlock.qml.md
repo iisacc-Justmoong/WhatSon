@@ -16,6 +16,9 @@ from multiple implicit parser blocks.
 - That formatted overlay is now mounted only when the block source actually contains inline style tags.
   Ordinary plain paragraphs therefore no longer pay for one extra rich-text overlay paint path when they are just
   plain text.
+- The overlay gate is driven by the RAW block source before the renderer output is read. The renderer still decides
+  whether the generated HTML should be shown, but its input is no longer blocked by a previous `htmlOverlayVisible`
+  value, so newly inserted `<bold>`, `<italic>`, and `<highlight>` tags render on the next projection pass.
 - Live typing is still source-driven:
   - compare previous visible plain text with current editor plain text
   - compute the changed logical range

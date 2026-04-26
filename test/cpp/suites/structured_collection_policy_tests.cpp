@@ -3,6 +3,12 @@
 void WhatSonCppRegressionTests::structuredCollectionPolicy_normalizesEntriesAndPrefersResolvedMatches()
 {
     ContentsStructuredDocumentCollectionPolicy policy;
+    const QString structuredPolicySource = readUtf8SourceFile(
+        QStringLiteral("src/app/models/editor/structure/ContentsStructuredDocumentCollectionPolicy.cpp"));
+    const QString oldStructuredPolicySource = readUtf8SourceFile(
+        QStringLiteral("src/app/models/content/structured/ContentsStructuredDocumentCollectionPolicy.cpp"));
+    QVERIFY(!structuredPolicySource.isEmpty());
+    QVERIFY(oldStructuredPolicySource.isEmpty());
 
     const QVariantMap indexedEntries{
         {QStringLiteral("10"), QStringLiteral("ten")},

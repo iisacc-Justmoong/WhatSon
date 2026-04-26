@@ -88,14 +88,17 @@ ctest --test-dir build --output-on-failure -L cpp_regression
   activation emits the selection-clear revision/retained-block contract that QML delegates consume, while same-block
   cursor movement uses a cursor-only host path and keeps native desktop/iOS text selection intact.
 - Editor shortcut-surface gating now also treats every focused body `TextEdit` as the native keyboard owner, so desktop
-  Option word movement/selection chords remain OS/Qt behavior instead of being shadowed by app `WindowShortcut`
-  handling.
+  Option word movement/selection chords remain OS/Qt behavior instead of being shadowed by ordinary app shortcut
+  handling. The explicit tag-management surface remains enabled outside composition so inline formatting shortcuts still
+  write RAW tags while editing.
 - Clipboard-image resource imports now also pin their synthesized asset-name policy in the C++ suite, so temporary
   placeholder names cannot regress back to a collision-prone fixed file name.
-- Structured QML editor checks now also pin the native mobile input contract: focused stale text echo is rejected,
-  live block/task/callout edit baselines are preserved, and iOS/mobile shortcut/key interception stands down while the
+- Structured QML editor checks now also pin the native input contract for every host: focused stale text echo is rejected,
+  live block/task/callout edit baselines are preserved, and shortcut/key interception stands down while the
   OS keyboard owns the session.
   The same source checks pin pending cursor/surface restore behavior so neither path writes through native composition.
+- Structured QML editor checks now instantiate `ContentsDocumentTextBlock.qml` with RAW inline style tags and verify that
+  the live editor receives rendered overlay HTML while its editable plain-text buffer stays tag-free.
 - Structured QML editor checks now also lock the custom-input policy: ordinary editor input has no QML key handlers,
   markdown list shortcuts/continuation helpers stay absent, and only tag-management commands may use host shortcut
   surfaces or selected atomic-block key handling.

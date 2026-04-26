@@ -1,6 +1,6 @@
 #include "app/models/editor/renderer/ContentsStructuredBlockRenderer.hpp"
 
-#include "app/models/content/structured/ContentsStructuredDocumentCollectionPolicy.hpp"
+#include "app/models/editor/structure/ContentsStructuredDocumentCollectionPolicy.hpp"
 #include "app/models/editor/parser/ContentsWsnBodyBlockParser.hpp"
 #include "app/models/file/WhatSonDebugTrace.hpp"
 #include "app/models/file/note/WhatSonNoteBodySemanticTagSupport.hpp"

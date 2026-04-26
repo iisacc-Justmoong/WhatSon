@@ -1,6 +1,6 @@
 #include "test/cpp/whatson_cpp_regression_tests.hpp"
 
-#include "app/models/content/display/ContentsDisplayMinimapCoordinator.hpp"
+#include "app/models/editor/display/ContentsDisplayMinimapCoordinator.hpp"
 
 void WhatSonCppRegressionTests::contentsDisplayMinimapCoordinator_splicesNormalizedSnapshotEntries()
 {

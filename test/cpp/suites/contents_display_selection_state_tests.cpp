@@ -1,6 +1,6 @@
 #include "test/cpp/whatson_cpp_regression_tests.hpp"
 
-#include "app/models/content/display/ContentsDisplaySelectionSyncCoordinator.hpp"
+#include "app/models/editor/display/ContentsDisplaySelectionSyncCoordinator.hpp"
 #include "app/models/editor/display/ContentsDisplayDocumentSourceResolver.hpp"
 
 void WhatSonCppRegressionTests::contentsDisplaySessionCoordinator_requiresResolvedSelectedBodyBeforeUsingSnapshot()
@@ -203,11 +203,15 @@ void WhatSonCppRegressionTests::contentsDisplayCreationPath_emitsCoordinatorTrac
     const QString editorSessionSource = readUtf8SourceFile(
         QStringLiteral("src/app/models/editor/session/ContentsEditorSessionController.cpp"));
     const QString mountCoordinatorSource = readUtf8SourceFile(
-        QStringLiteral("src/app/models/content/display/ContentsDisplayNoteBodyMountCoordinator.cpp"));
+        QStringLiteral("src/app/models/editor/display/ContentsDisplayNoteBodyMountCoordinator.cpp"));
+    const QString contentCmakeSource = readUtf8SourceFile(
+        QStringLiteral("src/app/models/content/CMakeLists.txt"));
 
     QVERIFY(!documentSourceResolverSource.isEmpty());
     QVERIFY(!editorSessionSource.isEmpty());
     QVERIFY(!mountCoordinatorSource.isEmpty());
+    QVERIFY(!contentCmakeSource.contains(QStringLiteral("add_subdirectory(display)")));
+    QVERIFY(!contentCmakeSource.contains(QStringLiteral("add_subdirectory(structured)")));
 
     QVERIFY(documentSourceResolverSource.contains(
         QStringLiteral("resolvedDocumentPresentationSourceText")));
@@ -244,9 +248,9 @@ void WhatSonCppRegressionTests::contentsDisplayCreationPath_emitsCoordinatorTrac
 void WhatSonCppRegressionTests::contentsDisplaySelectionFlow_emitsTraceForSelectionAndMountPlans()
 {
     const QString selectionSyncSource = readUtf8SourceFile(
-        QStringLiteral("src/app/models/content/display/ContentsDisplaySelectionSyncCoordinator.cpp"));
+        QStringLiteral("src/app/models/editor/display/ContentsDisplaySelectionSyncCoordinator.cpp"));
     const QString mountCoordinatorSource = readUtf8SourceFile(
-        QStringLiteral("src/app/models/content/display/ContentsDisplayNoteBodyMountCoordinator.cpp"));
+        QStringLiteral("src/app/models/editor/display/ContentsDisplayNoteBodyMountCoordinator.cpp"));
 
     QVERIFY(!selectionSyncSource.isEmpty());
     QVERIFY(!mountCoordinatorSource.isEmpty());

@@ -1,13 +1,9 @@
 # `src/app/qml/view/content/editor`
 
-## Status
-- Directory mirror generated from the current `src` tree.
-- This file is the entry point for the detailed documentation pass of this directory.
-
 ## Scope
 - Mirrored source directory: `src/app/qml/view/content/editor`
 - Child directories: 0
-- Child files: 33
+- Child files: 18
 
 ## Child Directories
 - No child directories.
@@ -18,42 +14,28 @@
 - `ContentsBreakBlock.qml`
 - `ContentsCalloutLayer.qml`
 - `ContentsCalloutBlock.qml`
-- `ContentsDisplayHostModePolicy.qml`
 - `ContentsDisplayView.qml`
 - `ContentsDocumentBlock.qml`
 - `ContentsDocumentTextBlock.qml`
-- `ContentsEditorDebugTrace.js`
-- `ContentsEditorInputPolicyAdapter.qml`
-- `ContentsEditorSelectionController.qml`
-- `ContentsEditorSession.qml`
-- `ContentsEditorSurfaceModeSupport.js`
-- `ContentsEditorSurfaceGuardController.qml`
-- `ContentsEditorTypingController.qml`
 - `ContentsGutterLayer.qml`
 - `ContentsImageResourceFrame.qml`
 - `ContentsInlineFormatEditor.qml`
-- `ContentsLogicalLineLayoutSupport.js`
-- `ContentsInlineResourcePresentationController.qml`
 - `ContentsMinimapLayer.qml`
-- `ContentsMinimapSnapshotSupport.js`
 - `ContentsResourceBlock.qml`
 - `ContentsResourceViewer.qml`
 - `ContentsResourceRenderCard.qml`
-- `ContentsResourceDropPayloadParser.qml`
-- `ContentsResourceImportConflictController.qml`
-- `ContentsResourceImportController.qml`
 - `ContentsResourceEditorView.qml`
 - `ContentsResourceLayer.qml`
-- `ContentsResourceTagController.qml`
-- `ContentsStructuredCursorSupport.js`
 - `ContentsStructuredDocumentFlow.qml`
 
 ## Current Notes
 
 - `ContentsDisplayView.qml` is now the unified desktop/mobile editor surface.
-- `ContentsDisplayHostModePolicy.qml` now owns platform display deltas such as gutter/minimap visibility, editor
-  horizontal inset, native-input autofocus, and font weight so the shared host no longer forks into separate
-  desktop/mobile QML roots.
+- This directory now contains only editor view hosts, visual layers, and block delegates. Non-visual QML policies,
+  controllers, session wrappers, and support JavaScript live under `src/app/models/editor`.
+- `src/app/models/editor/display/ContentsDisplayHostModePolicy.qml` owns platform display deltas such as
+  gutter/minimap visibility, editor horizontal inset, native-input autofocus, and font weight so the shared host no
+  longer forks into separate desktop/mobile QML roots.
 - `ContentsDisplayView.qml` now also keeps gutter-body spacing separate from editor text padding through a dedicated
   `gutterBodyGap` token, so line numbers can sit closer to the note body without shrinking the body column itself.
 - `ContentsDisplayView.qml` now scales the existing non-print bottom accessibility inset up to roughly half of the
@@ -66,7 +48,8 @@
 - `ContentsResourceRenderCard.qml` now centralizes the shared desktop/mobile inline resource card used inside parsed
   note-body blocks, so file/image/audio/pdf/document presentation no longer duplicates the same card scaffolding in
   both hosts.
-- `ContentsResourceImportController.qml` is now only the public coordinator for editor-side resource import.
+- `src/app/models/editor/resource/ContentsResourceImportController.qml` is now only the public coordinator for
+  editor-side resource import.
   Drag/drop payload parsing, duplicate-import prompt state, RAW tag insertion, inline HTML presentation, and
   editor-surface guard state now live in dedicated sibling helpers instead of a single import god object.
   The controller no longer receives the full host `view`; desktop/mobile hosts now pass only the explicit callbacks,
@@ -83,7 +66,8 @@
     note-list model exposes a direct resource selection instead of a note-backed document session
 - That dedicated resource editor surface is now intentionally transparent and viewer-only, so Resources hierarchy
   browsing does not add a second metadata card or explanatory copy above/below the actual asset preview.
-- `ContentsEditorSurfaceModeSupport.js` owns that QML-side center-surface decision so `ContentViewLayout.qml`
+- `src/app/models/editor/display/ContentsEditorSurfaceModeSupport.js` owns that QML-side center-surface decision so
+  `ContentViewLayout.qml`
   does not duplicate the note-backed/resource-backed detection logic inline.
 - Resource-bearing note bodies now activate `ContentsStructuredDocumentFlow.qml` so `<resource ... />` stays in the
   same authored block stream as surrounding text.
@@ -103,8 +87,9 @@
   than branching on block type names inside the flow host.
 - Resource blocks still advertise themselves to the minimap as block silhouettes, but the structured-flow cache now
   caps one resource block to ten minimap rows so tall inline media do not overwhelm the rail.
-- `ContentsDocumentTextBlock.qml` no longer uses an HTML overlay for inline formatting preview.
-  Structured paragraph editing now happens directly against RAW block source text.
+- `ContentsDocumentTextBlock.qml` uses a read-side HTML overlay only when RAW block source contains inline style tags.
+  Structured paragraph editing still happens directly against RAW block source text, while the overlay renders tags such
+  as `<bold>`, `<italic>`, and `<highlight>` as visible formatting.
 - `ContentsResourceBlock.qml` no longer keeps a resource-local `before/selected/after` boundary-editor state machine.
   Resource rows now behave as plain atomic document blocks that emit selection, deletion, and boundary-navigation
   requests back to the flow host.
@@ -112,7 +97,8 @@
   Text/resource/break/callout/agenda delegates are expected to emit generic boundary-navigation requests and let the
   flow resolve the immediately adjacent parsed block from the `.wsnbody` stream rather than hardcoding neighbor lookup
   rules inside each block widget.
-- `ContentsEditorTypingController.qml` now owns ordinary text-entry mutation routing so typing no longer reserializes
+- `src/app/models/editor/input/ContentsEditorTypingController.qml` now owns ordinary text-entry mutation routing so
+  typing no longer reserializes
   the whole presentation overlay on every edit.
 - The editor directory now follows one write direction for live note editing:
   RAW `.wsnote/.wsnbody` source is the only write authority, parsers/builders derive presentation state from that RAW
@@ -163,12 +149,12 @@
   relying on implicit defaults: focus-on-press, keyboard selection, pointer selection, persistent selection,
   unrestricted input-method hints, character-level mouse selection, and insert-mode editing stay enabled for all note
   body editors.
-- Mobile editor hosts now opt into native-input priority rules, pause note snapshot polling, delay app-driven
+- Editor hosts now opt into native-input priority rules on every platform, pause note snapshot polling, delay app-driven
   RichText surface reinjection until the OS input session settles, and use a plain logical-text input surface instead
   of the RichText editor projection.
-  Native-input priority no longer carries a deferred-persistence exception; mobile shares the same immediate
+  Native-input priority no longer carries a deferred-persistence exception; every host shares the same immediate
   `.wsnbody` flush contract as desktop.
-- Mobile/iOS native-input priority now also disables structured text-boundary key interception and window-level document
+- Native-input priority now also disables structured text-boundary key interception and window-level document
   shortcuts while the OS keyboard owns the session.
   Continuous Backspace, selection gestures, and IME candidate/control gestures therefore stay on the platform `TextEdit`
   path instead of being accepted by QML handlers.
@@ -242,8 +228,9 @@
   That path advances cursor chrome without clearing the current native `TextEdit` selection, preserving desktop drag
   selection and iOS selection gestures.
 - The input policy adapter now treats any focused body `TextEdit` as the native keyboard owner, not only mobile/iOS
-  sessions. Editor `WindowShortcut` commands therefore stand down while typing so macOS Option word movement and
-  Option+Shift word selection stay on the platform `TextEdit` path.
+  sessions. Ordinary editor shortcuts therefore stand down while typing so macOS Option word movement and Option+Shift
+  word selection stay on the platform `TextEdit` path. Explicit tag-management shortcuts remain available outside
+  native composition so formatting commands can still write RAW inline style tags.
 - `ContentsInlineFormatEditor.qml` now also has a TextEdit-local `Keys.BeforeItem` handler for macOS
   `Option+Left/Right` and `Option+Shift+Left/Right`. The handler defines the Option-word movement and selection
   contract directly against the live `TextEdit`, instead of depending on Qt Quick to map macOS Option onto its default

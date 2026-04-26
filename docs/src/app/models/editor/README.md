@@ -1,19 +1,25 @@
 # `src/app/models/editor`
 
-## Status
-- Directory mirror generated from the current `src` tree.
-- This file is the entry point for the detailed documentation pass of this directory.
-
 ## Scope
 - Mirrored source directory: `src/app/models/editor`
-- Child directories: 4
+- Child directories: 13
 - Child files: 0
 
 ## Child Directories
+- `bridge`
+- `diagnostics`
 - `display`
+- `format`
+- `input`
 - `parser`
-- `painter`
+- `persistence`
+- `projection`
 - `renderer`
+- `resource`
+- `session`
+- `structure`
+- `tags`
+- `text`
 
 ## Child Files
 - No direct source files.
@@ -35,6 +41,16 @@
   parser output and final RichText/QML consumption.
   It converts parser-owned blocks into HTML tokens, resolves per-token render strategy, and normalizes the result into
   stable HTML blocks before the live editor paints them.
+- `format/ContentsTextFormatRenderer.*` is the editor-owned RAW inline-style projection and mutation backend.
+  It no longer lives under the paper display model because bold, italic, highlight, and related tags are editor body
+  responsibilities, not page-surface responsibilities.
+- `structure/ContentsStructuredDocument*` owns the structured document host, collection policy, focus policy, mutation
+  policy, and blocks model used by `ContentsStructuredDocumentFlow.qml`.
+- `display/ContentsDisplay*` owns editor-host display coordination for selection, context menus, gutter/minimap state,
+  mount plans, refresh plans, and viewport math.
+- Editor-domain QML policy/controller/support files now also live under these responsibility directories. The
+  `src/app/qml/view/content/editor` directory is reserved for view hosts, visual layers, and block delegates that match
+  the Figma `ContentsView` / `ContentsDisplayView` surface.
 - Semantic text blocks such as `paragraph`, `title`, `subTitle`, and `eventDescription` now keep two coordinate
   systems in that parser contract:
   - wrapper spans (`blockSourceStart` / `blockSourceEnd`, open/close tag offsets) preserve the authored outer tag
@@ -49,13 +65,12 @@
   document tree, which reduces per-mutation main-thread work on longer structured notes.
 - The remaining focus path in `ContentsStructuredDocumentFlow.qml` is now also tokenless and request-driven, trimming
   the extra watcher/state churn that used to sit around that one-block restore path.
-- Paper/page/print-specific display helpers were extracted from `src/app/models/editor` into
-  `src/app/models/display/paper` so the remaining editor domain stays focused on parsing and rendering mechanics rather
-  than reusable view-mode state.
-- The note editor now also keeps document-source selection and viewport/minimap math under
-  `src/app/models/editor/display` instead of leaving those responsibilities embedded in `ContentsDisplayView.qml`.
-  The QML host still wires live state, but same-note source resolution, line-offset lookup, and minimap viewport math
-  now execute through dedicated C++ editor-domain objects.
+- Paper/page/print-specific display helpers remain in `src/app/models/display/paper`, while editor-body formatting,
+  display coordination, and structured document behavior now stay under the editor domain.
+- The note editor keeps document-source selection and viewport/minimap math under `src/app/models/editor/display`
+  instead of leaving those responsibilities embedded in `ContentsDisplayView.qml`. The QML host still wires live state,
+  but same-note source resolution, line-offset lookup, and minimap viewport math now execute through dedicated C++
+  editor-domain objects.
 - Editor snapshot reconcile and correction-complete paths now also avoid overlapping same-note fetches and duplicate
   post-sync UI refresh scheduling, further reducing repeated main-thread work after note open and background sync.
 - Projects note projection now exposes the same lightweight persisted-body apply path as the other

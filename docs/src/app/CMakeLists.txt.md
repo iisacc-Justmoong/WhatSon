@@ -54,7 +54,7 @@
 - `src/app/models` is now registered once as a shared include-root compatibility shard before child `add_subdirectory(...)`
   evaluation, so existing cross-domain includes like `calendar/SystemCalendarStore.hpp`,
   `agenda/ContentsAgendaBackend.hpp`, `callout/ContentsCalloutBackend.hpp`, and
-  `display/paper/ContentsTextFormatRenderer.hpp`, `display/paper/print/ContentsPagePrintLayoutRenderer.hpp`, and
+  `editor/format/ContentsTextFormatRenderer.hpp`, `display/paper/print/ContentsPagePrintLayoutRenderer.hpp`, and
   `sensor/UnusedResourcesSensor.hpp` keep compiling after those domains moved under `src/app/models/`.
 - Desktop trial builds pull in the dedicated trial activation sources from `src/extension/trial` and define `WHATSON_IS_TRIAL_BUILD=1` for the app target.
 - Android and iOS builds intentionally skip the trial sources because the mobile app does not participate in the desktop trial flow.

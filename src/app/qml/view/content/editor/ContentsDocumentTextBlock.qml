@@ -3,8 +3,8 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import LVRS 1.0 as LV
 import WhatSon.App.Internal 1.0
-import "ContentsLogicalLineLayoutSupport.js" as LogicalLineLayoutSupport
-import "ContentsStructuredCursorSupport.js" as StructuredCursorSupport
+import "../../../../models/editor/structure/ContentsLogicalLineLayoutSupport.js" as LogicalLineLayoutSupport
+import "../../../../models/editor/structure/ContentsStructuredCursorSupport.js" as StructuredCursorSupport
 
 FocusScope {
     id: textBlock
@@ -42,11 +42,12 @@ FocusScope {
     readonly property int sourceEnd: Math.max(sourceStart, Number(normalizedBlock.sourceEnd) || 0)
     readonly property string sourceText: normalizedBlock.sourceText !== undefined ? String(normalizedBlock.sourceText) : ""
     readonly property color editorTextColor: paperPaletteEnabled ? "#111111" : LV.Theme.bodyColor
-    readonly property bool inlineStyleOverlayVisible: inlineStyleRenderer
+    readonly property bool sourceContainsInlineStyleTags: /<\s*\/?\s*(?:bold|b|strong|italic|i|em|underline|u|strikethrough|strike|s|del|highlight|mark)\b/i.test(
+                                                              textBlock.authoritativeSourceText())
+    readonly property bool inlineStyleOverlayVisible: textBlock.sourceContainsInlineStyleTags
+                                                      && inlineStyleRenderer
                                                       && inlineStyleRenderer.htmlOverlayVisible !== undefined
-                                                      ? !!inlineStyleRenderer.htmlOverlayVisible
-                                                      : /<\s*\/?\s*(?:bold|italic|underline|strikethrough|highlight)\b/i.test(
-                                                            textBlock.sourceText)
+                                                      && !!inlineStyleRenderer.htmlOverlayVisible
     readonly property string authoritativePlainText: StructuredCursorSupport.plainTextFromInlineTaggedSource(
                                                         textBlock.authoritativeSourceText())
     readonly property string preeditText: blockEditor.preeditText === undefined || blockEditor.preeditText === null
@@ -285,7 +286,7 @@ FocusScope {
         id: inlineStyleRenderer
 
         paperPaletteEnabled: textBlock.paperPaletteEnabled
-        sourceText: textBlock.inlineStyleOverlayVisible ? textBlock.authoritativeSourceText() : ""
+        sourceText: textBlock.sourceContainsInlineStyleTags ? textBlock.authoritativeSourceText() : ""
     }
 
     ContentsInlineFormatEditor {

@@ -1,6 +1,6 @@
 #include "app/models/editor/projection/ContentsEditorPresentationProjection.hpp"
 
-#include "app/models/display/paper/ContentsTextFormatRenderer.hpp"
+#include "app/models/editor/format/ContentsTextFormatRenderer.hpp"
 #include "app/models/file/WhatSonDebugTrace.hpp"
 #include "app/models/editor/text/ContentsLogicalTextBridge.hpp"
 

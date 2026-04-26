@@ -4,7 +4,7 @@ import QtQuick
 import QtQuick.Layouts
 import LVRS 1.0 as LV
 import "../calendar" as CalendarView
-import "../content/editor/ContentsEditorSurfaceModeSupport.js" as EditorSurfaceModeSupport
+import "../../../models/editor/display/ContentsEditorSurfaceModeSupport.js" as EditorSurfaceModeSupport
 
 Item {
     id: contentViewLayout

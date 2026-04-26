@@ -3,7 +3,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Layouts
 import LVRS 1.0 as LV
-import "ContentsStructuredCursorSupport.js" as StructuredCursorSupport
+import "../../../../models/editor/structure/ContentsStructuredCursorSupport.js" as StructuredCursorSupport
 
 FocusScope {
     id: agendaBlock

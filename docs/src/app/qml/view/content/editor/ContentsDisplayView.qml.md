@@ -2,16 +2,15 @@
 
 ## Responsibility
 
-`ContentsDisplayView.qml` is the unified desktop/mobile note editor host.
+`ContentsDisplayView.qml` is the unified desktop/mobile note editor layout host.
 
 It composes:
 
-- selection/session sync
-- whole-document presentation refresh policy
+- editor display viewmodels under `src/app/viewmodel/editor/display`
 - structured document-flow mounting
 - legacy fallback editor hosting
 - gutter/minimap/page layout
-- resource import wiring
+- resource import layout wiring
 
 It no longer acts as the direct center-surface viewer for resource-backed hierarchy browsing.
 `ContentViewLayout.qml` now mounts `ContentsResourceEditorView.qml` beside this host whenever the active list model is
@@ -25,6 +24,11 @@ not note-backed.
   - plain logical text as the live input buffer
   - tokenized HTML as a separate read-side overlay (`renderedEditorHtml`)
 - The host no longer pushes a RichText editing surface back into `ContentsInlineFormatEditor.qml`.
+- Selection/mount orchestration, presentation refresh application, RAW mutation commands, input shortcut surfaces,
+  event timers/connections, and minimap/gutter scheduling now live in dedicated QML viewmodels under
+  `src/app/viewmodel/editor/display`.
+- `ContentsDisplayView.qml` keeps compatibility wrapper functions only for collaborators that still call the display
+  host API directly; those wrappers delegate into the responsible viewmodel.
 - `ContentsDisplayNoteBodyMountCoordinator` now owns the note-body mount contract between the selection bridge,
   the editor session, and the mounted document surface.
   The host stays in a pending mount state until either the selected note snapshot resolves for that same note id or
@@ -105,10 +109,9 @@ not note-backed.
   the same mounted body text.
   This prevents formatting/insert actions from targeting a stale same-note editor session while the selection bridge
   and mount coordinator are still remounting that session to the latest selected note body.
-- Window-level document shortcuts are limited to tag-management commands and use a separate shortcut surface that stands
-  down while a native input session owns the keyboard.
-  On iOS/mobile this applies while the editor is focused; on all hosts it also applies while structured or fallback
-  editors report active IME/preedit composition.
+- Ordinary window-level document shortcuts stand down while a native input session owns the keyboard.
+  The tag-management shortcut surface is separate: inline style wrapping and structured tag insertion stay enabled while
+  an editor is focused, but still stand down during structured or fallback IME/preedit composition.
 - The host exposes `editorCustomTextInputEnabled: false`, `editorTagManagementInputEnabled: true`, and
   `noteDocumentTagManagementShortcutSurfaceEnabled` to make that policy explicit in QML and regression tests.
 - Editor selection context-menu invocation is now modeled as a shared pointer-trigger contract:

@@ -1,6 +1,6 @@
 #include "test/cpp/whatson_cpp_regression_tests.hpp"
 
-#include "app/models/content/display/ContentsDisplayContextMenuCoordinator.hpp"
+#include "app/models/editor/display/ContentsDisplayContextMenuCoordinator.hpp"
 
 void WhatSonCppRegressionTests::displayContextMenuCoordinator_rejectsNonNumericStructuredSelectionSnapshots()
 {
@@ -46,7 +46,7 @@ void WhatSonCppRegressionTests::displayContextMenuCoordinator_rejectsNonNumericS
     QCOMPARE(normalizedSelectionSnapshot.value(QStringLiteral("selectedText")).toString(), QStringLiteral("abc"));
 
     const QString coordinatorSource = readUtf8SourceFile(
-        QStringLiteral("src/app/models/content/display/ContentsDisplayContextMenuCoordinator.cpp"));
+        QStringLiteral("src/app/models/editor/display/ContentsDisplayContextMenuCoordinator.cpp"));
     QVERIFY(!coordinatorSource.isEmpty());
     QVERIFY(!coordinatorSource.contains(
         QStringLiteral("toDouble(std::numeric_limits<double>::quiet_NaN())")));

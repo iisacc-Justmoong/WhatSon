@@ -1,5 +1,64 @@
 #include "test/cpp/whatson_cpp_regression_tests.hpp"
 
+#include <QDir>
+#include <QFileInfo>
+#include <QQmlComponent>
+#include <QQuickItem>
+#include <QQuickWindow>
+#include <QtQml/qqml.h>
+
+#include <memory>
+
+namespace
+{
+    QString qmlStructuredEditorsRepositoryRootPath()
+    {
+        QDir repositoryRoot(QFileInfo(QString::fromUtf8(__FILE__)).absolutePath());
+        repositoryRoot.cdUp();
+        repositoryRoot.cdUp();
+        repositoryRoot.cdUp();
+        return repositoryRoot.absolutePath();
+    }
+
+    QString qmlStructuredEditorErrorString(const QList<QQmlError>& errors)
+    {
+        QStringList messages;
+        messages.reserve(errors.size());
+        for (const QQmlError& error : errors)
+        {
+            messages.push_back(error.toString());
+        }
+        return messages.join(QLatin1Char('\n'));
+    }
+
+    void addWhatSonStructuredEditorQmlImportPaths(QQmlEngine& engine, const QString& repositoryRoot)
+    {
+        const QStringList candidatePaths{
+            repositoryRoot + QStringLiteral("/src/app/qml"),
+            repositoryRoot + QStringLiteral("/build/src/app"),
+            repositoryRoot + QStringLiteral("/build/src/app/cmake/runtime/lvrs_runtime_qml"),
+            repositoryRoot + QStringLiteral("/build/src/app/lvrs_runtime_qml"),
+        };
+        for (const QString& candidatePath : candidatePaths)
+        {
+            if (QFileInfo::exists(candidatePath))
+            {
+                engine.addImportPath(candidatePath);
+            }
+        }
+    }
+
+    void registerStructuredEditorRuntimeQmlTypes()
+    {
+        static const int textFormatRendererTypeId = qmlRegisterType<ContentsTextFormatRenderer>(
+            "WhatSon.App.Internal",
+            1,
+            0,
+            "ContentsTextFormatRenderer");
+        Q_UNUSED(textFormatRendererTypeId);
+    }
+} // namespace
+
 void WhatSonCppRegressionTests::qmlStructuredEditors_bindPaperPaletteIntoPagePrintMode()
 {
     const QString structuredFlowSource = readUtf8SourceFile(
@@ -69,6 +128,63 @@ void WhatSonCppRegressionTests::qmlStructuredEditors_clipInlineResourceCardsToMe
     QVERIFY(!resourceCardSource.contains(QStringLiteral("clip: false")));
 }
 
+void WhatSonCppRegressionTests::qmlStructuredEditors_renderInlineStyleOverlayAtRuntime()
+{
+    registerStructuredEditorRuntimeQmlTypes();
+
+    const QString repositoryRoot = qmlStructuredEditorsRepositoryRootPath();
+    QQmlEngine engine;
+    addWhatSonStructuredEditorQmlImportPaths(engine, repositoryRoot);
+
+    QQmlComponent component(
+        &engine,
+        QUrl::fromLocalFile(
+            repositoryRoot
+            + QStringLiteral("/src/app/qml/view/content/editor/ContentsDocumentTextBlock.qml")));
+    if (component.status() == QQmlComponent::Error)
+    {
+        QFAIL(qPrintable(qmlStructuredEditorErrorString(component.errors())));
+    }
+
+    const QString sourceText =
+        QStringLiteral("Plain <bold>strong</bold> and <highlight>glow</highlight>");
+    QVariantMap blockData;
+    blockData.insert(QStringLiteral("sourceStart"), 0);
+    blockData.insert(QStringLiteral("sourceEnd"), sourceText.size());
+    blockData.insert(QStringLiteral("sourceText"), sourceText);
+
+    std::unique_ptr<QObject> textBlockObject(component.createWithInitialProperties({
+        {QStringLiteral("blockData"), blockData},
+    }));
+    if (!textBlockObject)
+    {
+        QFAIL(qPrintable(qmlStructuredEditorErrorString(component.errors())));
+    }
+
+    auto* textBlockItem = qobject_cast<QQuickItem*>(textBlockObject.get());
+    QVERIFY(textBlockItem != nullptr);
+    textBlockItem->setWidth(420);
+    textBlockItem->setHeight(80);
+
+    QQuickWindow window;
+    window.resize(420, 80);
+    textBlockItem->setParentItem(window.contentItem());
+    window.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&window));
+
+    QTRY_VERIFY(textBlockObject->property("sourceContainsInlineStyleTags").toBool());
+    QTRY_VERIFY(textBlockObject->property("inlineStyleOverlayVisible").toBool());
+
+    QObject* inlineEditor = textBlockObject->findChild<QObject*>(QStringLiteral("contentsInlineFormatEditor"));
+    QVERIFY(inlineEditor != nullptr);
+
+    QTRY_VERIFY(inlineEditor->property("showRenderedOutput").toBool());
+    const QString renderedText = inlineEditor->property("renderedText").toString();
+    QVERIFY(renderedText.contains(QStringLiteral("<strong style=\"font-weight:900;\">strong</strong>")));
+    QVERIFY(renderedText.contains(QStringLiteral("background-color:#8A4B00")));
+    QCOMPARE(inlineEditor->property("text").toString(), QStringLiteral("Plain strong and glow"));
+}
+
 void WhatSonCppRegressionTests::qmlStructuredEditors_consumeRendererNormalizedBlocksWithoutLocalFlattening()
 {
     const QString structuredFlowSource = readUtf8SourceFile(
@@ -130,8 +246,8 @@ void WhatSonCppRegressionTests::qmlStructuredEditors_preserveNativeMobileInputDu
     QVERIFY(!agendaBlockSource.isEmpty());
     QVERIFY(!calloutBlockSource.isEmpty());
 
-    QVERIFY(displayViewSource.contains(
-        QStringLiteral("readonly property bool nativeTextInputPriority: contentsView.mobileHost || Qt.platform.os === \"ios\"")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("readonly property bool nativeTextInputPriority: true")));
+    QVERIFY(!displayViewSource.contains(QStringLiteral("contentsView.mobileHost || Qt.platform.os === \"ios\"")));
     QVERIFY(displayViewSource.contains(QStringLiteral("readonly property bool noteDocumentShortcutSurfaceEnabled")));
     QVERIFY(displayViewSource.contains(QStringLiteral("readonly property bool noteDocumentTagManagementShortcutSurfaceEnabled")));
     QVERIFY(displayViewSource.contains(QStringLiteral("function nativeTextInputSessionOwnsKeyboard()")));
@@ -164,6 +280,11 @@ void WhatSonCppRegressionTests::qmlStructuredEditors_preserveNativeMobileInputDu
     QVERIFY(textBlockSource.contains(QStringLiteral("property bool nativeTextInputPriority: false")));
     QVERIFY(textBlockSource.contains(QStringLiteral("property string _liveEditSourceText: \"\"")));
     QVERIFY(textBlockSource.contains(QStringLiteral("syncLiveEditSnapshotFromHost")));
+    QVERIFY(textBlockSource.contains(QStringLiteral("readonly property bool sourceContainsInlineStyleTags")));
+    QVERIFY(textBlockSource.contains(
+        QStringLiteral("sourceText: textBlock.sourceContainsInlineStyleTags ? textBlock.authoritativeSourceText() : \"\"")));
+    QVERIFY(!textBlockSource.contains(
+        QStringLiteral("sourceText: textBlock.inlineStyleOverlayVisible ? textBlock.authoritativeSourceText() : \"\"")));
     QVERIFY(textBlockSource.contains(QStringLiteral("preferNativeInputHandling: true")));
     QVERIFY(textBlockSource.contains(QStringLiteral("inputMethodHints: Qt.ImhNone")));
     QVERIFY(textBlockSource.contains(QStringLiteral("mouseSelectionMode: TextEdit.SelectCharacters")));
@@ -200,9 +321,11 @@ void WhatSonCppRegressionTests::qmlStructuredEditors_preserveNativeMobileInputDu
 void WhatSonCppRegressionTests::qmlEditorInputPolicyAdapter_centralizesNativeInputDecisions()
 {
     const QString policyAdapterSource = readUtf8SourceFile(
-        QStringLiteral("src/app/qml/view/content/editor/ContentsEditorInputPolicyAdapter.qml"));
+        QStringLiteral("src/app/models/editor/input/ContentsEditorInputPolicyAdapter.qml"));
     const QString displayViewSource = readUtf8SourceFile(
         QStringLiteral("src/app/qml/view/content/editor/ContentsDisplayView.qml"));
+    const QString mutationViewModelSource = readUtf8SourceFile(
+        QStringLiteral("src/app/viewmodel/editor/display/ContentsDisplayMutationViewModel.qml"));
     const QString inlineEditorSource = readUtf8SourceFile(
         QStringLiteral("src/app/qml/view/content/editor/ContentsInlineFormatEditor.qml"));
     const QString textBlockSource = readUtf8SourceFile(
@@ -210,6 +333,7 @@ void WhatSonCppRegressionTests::qmlEditorInputPolicyAdapter_centralizesNativeInp
 
     QVERIFY(!policyAdapterSource.isEmpty());
     QVERIFY(!displayViewSource.isEmpty());
+    QVERIFY(!mutationViewModelSource.isEmpty());
     QVERIFY(!inlineEditorSource.isEmpty());
     QVERIFY(!textBlockSource.isEmpty());
 
@@ -220,6 +344,9 @@ void WhatSonCppRegressionTests::qmlEditorInputPolicyAdapter_centralizesNativeInp
         QStringLiteral("|| (adapter.nativeTextInputPriority\n                                                             && adapter.editorInputFocused)")));
     QVERIFY(policyAdapterSource.contains(QStringLiteral("readonly property bool shortcutSurfaceEnabled")));
     QVERIFY(policyAdapterSource.contains(QStringLiteral("readonly property bool tagManagementShortcutSurfaceEnabled")));
+    QVERIFY(policyAdapterSource.contains(QStringLiteral("&& adapter.noteDocumentCommandSurfaceEnabled")));
+    QVERIFY(policyAdapterSource.contains(QStringLiteral("&& !adapter.nativeCompositionActive")));
+    QVERIFY(!policyAdapterSource.contains(QStringLiteral("&& adapter.shortcutSurfaceEnabled")));
     QVERIFY(policyAdapterSource.contains(QStringLiteral("readonly property bool contextMenuLongPressEnabled")));
     QVERIFY(policyAdapterSource.contains(QStringLiteral("readonly property bool contextMenuSurfaceEnabled")));
     QVERIFY(policyAdapterSource.contains(QStringLiteral("function programmaticTextSyncPolicy(")));
@@ -228,7 +355,7 @@ void WhatSonCppRegressionTests::qmlEditorInputPolicyAdapter_centralizesNativeInp
     QVERIFY(policyAdapterSource.contains(QStringLiteral("function shouldRestoreFocusForMutation(")));
     QVERIFY(policyAdapterSource.contains(QStringLiteral("reason === \"text-edit\"")));
 
-    QVERIFY(displayViewSource.contains(QStringLiteral("ContentsEditorInputPolicyAdapter {\n        id: editorInputPolicyAdapter")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("EditorInputModel.ContentsEditorInputPolicyAdapter {\n        id: editorInputPolicyAdapter")));
     QVERIFY(displayViewSource.contains(
         QStringLiteral("readonly property bool contextMenuLongPressEnabled: editorInputPolicyAdapter.contextMenuLongPressEnabled")));
     QVERIFY(displayViewSource.contains(
@@ -239,14 +366,14 @@ void WhatSonCppRegressionTests::qmlEditorInputPolicyAdapter_centralizesNativeInp
         QStringLiteral("readonly property bool noteDocumentContextMenuSurfaceEnabled: editorInputPolicyAdapter.contextMenuSurfaceEnabled")));
     QVERIFY(displayViewSource.contains(
         QStringLiteral("return editorInputPolicyAdapter.nativeTextInputSessionActive;")));
-    QVERIFY(displayViewSource.contains(
-        QStringLiteral("editorInputPolicyAdapter.shouldRestoreFocusForMutation(")));
+    QVERIFY(mutationViewModelSource.contains(
+        QStringLiteral("viewModel.editorInputPolicyAdapter.shouldRestoreFocusForMutation(")));
     QVERIFY(!displayViewSource.contains(
         QStringLiteral("readonly property bool contextMenuLongPressEnabled: contentsView.nativeTextInputPriority")));
     QVERIFY(!displayViewSource.contains(
         QStringLiteral("return contentsView.nativeTextInputPriority && contentsView.editorInputFocused;")));
 
-    QVERIFY(inlineEditorSource.contains(QStringLiteral("ContentsEditorInputPolicyAdapter {\n        id: inlineInputPolicyAdapter")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("EditorInputModel.ContentsEditorInputPolicyAdapter {\n        id: inlineInputPolicyAdapter")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("function programmaticTextSyncPolicy(nextText)")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("inlineInputPolicyAdapter.programmaticTextSyncPolicy(")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("const syncPolicy = control.programmaticTextSyncPolicy(normalizedText);")));
@@ -254,6 +381,69 @@ void WhatSonCppRegressionTests::qmlEditorInputPolicyAdapter_centralizesNativeInp
     QVERIFY(!inlineEditorSource.contains(QStringLiteral("control._localTextEditSinceFocus = false;\n            return false;")));
 
     QVERIFY(textBlockSource.contains(QStringLiteral("\"reason\": \"text-edit\"")));
+}
+
+void WhatSonCppRegressionTests::qmlEditorViewDirectory_containsOnlyViewSurfaceFiles()
+{
+    const QDir viewDirectory(QStringLiteral("src/app/qml/view/content/editor"));
+    QVERIFY(viewDirectory.exists());
+
+    QStringList actualFiles = viewDirectory.entryList(
+        QStringList{QStringLiteral("*.qml"), QStringLiteral("*.js")},
+        QDir::Files,
+        QDir::Name);
+    const QStringList expectedFiles{
+        QStringLiteral("ContentsAgendaBlock.qml"),
+        QStringLiteral("ContentsAgendaLayer.qml"),
+        QStringLiteral("ContentsBreakBlock.qml"),
+        QStringLiteral("ContentsCalloutBlock.qml"),
+        QStringLiteral("ContentsCalloutLayer.qml"),
+        QStringLiteral("ContentsDisplayView.qml"),
+        QStringLiteral("ContentsDocumentBlock.qml"),
+        QStringLiteral("ContentsDocumentTextBlock.qml"),
+        QStringLiteral("ContentsGutterLayer.qml"),
+        QStringLiteral("ContentsImageResourceFrame.qml"),
+        QStringLiteral("ContentsInlineFormatEditor.qml"),
+        QStringLiteral("ContentsMinimapLayer.qml"),
+        QStringLiteral("ContentsResourceBlock.qml"),
+        QStringLiteral("ContentsResourceEditorView.qml"),
+        QStringLiteral("ContentsResourceLayer.qml"),
+        QStringLiteral("ContentsResourceRenderCard.qml"),
+        QStringLiteral("ContentsResourceViewer.qml"),
+        QStringLiteral("ContentsStructuredDocumentFlow.qml"),
+    };
+    QCOMPARE(actualFiles, expectedFiles);
+
+    const QString editorCmakeSource = readUtf8SourceFile(QStringLiteral("src/app/models/editor/CMakeLists.txt"));
+    QVERIFY(editorCmakeSource.contains(QStringLiteral("whatson_app_register_directory_qml")));
+
+    const QString viewmodelCmakeSource = readUtf8SourceFile(QStringLiteral("src/app/viewmodel/CMakeLists.txt"));
+    const QString displayViewSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/content/editor/ContentsDisplayView.qml"));
+    const QString eventPumpSource = readUtf8SourceFile(
+        QStringLiteral("src/app/viewmodel/editor/display/ContentsDisplayEventPump.qml"));
+    const QString inputCommandSurfaceSource = readUtf8SourceFile(
+        QStringLiteral("src/app/viewmodel/editor/display/ContentsDisplayInputCommandSurface.qml"));
+    const QString mutationViewModelSource = readUtf8SourceFile(
+        QStringLiteral("src/app/viewmodel/editor/display/ContentsDisplayMutationViewModel.qml"));
+    const QString geometryViewModelSource = readUtf8SourceFile(
+        QStringLiteral("src/app/viewmodel/editor/display/ContentsDisplayGeometryViewModel.qml"));
+    QVERIFY(viewmodelCmakeSource.contains(QStringLiteral("whatson_app_register_directory_qml")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("EditorDisplayViewModel.ContentsDisplayEventPump")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("EditorDisplayViewModel.ContentsDisplayInputCommandSurface")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("EditorDisplayViewModel.ContentsDisplayMutationViewModel")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("EditorDisplayViewModel.ContentsDisplayGeometryViewModel")));
+    QVERIFY(!displayViewSource.contains(QStringLiteral("Timer {")));
+    QVERIFY(!displayViewSource.contains(QStringLiteral("Connections {")));
+    QVERIFY(!displayViewSource.contains(QStringLiteral("Shortcut {")));
+    QVERIFY(!displayViewSource.contains(QStringLiteral("MouseArea {")));
+    QVERIFY(!displayViewSource.contains(QStringLiteral("LV.ContextMenu")));
+    QVERIFY(eventPumpSource.contains(QStringLiteral("Timer {")));
+    QVERIFY(eventPumpSource.contains(QStringLiteral("Connections {")));
+    QVERIFY(inputCommandSurfaceSource.contains(QStringLiteral("Shortcut {")));
+    QVERIFY(inputCommandSurfaceSource.contains(QStringLiteral("LV.ContextMenu")));
+    QVERIFY(mutationViewModelSource.contains(QStringLiteral("function applyDocumentSourceMutation(")));
+    QVERIFY(geometryViewModelSource.contains(QStringLiteral("function refreshMinimapSnapshot()")));
 }
 
 void WhatSonCppRegressionTests::qmlStructuredEditors_lockCustomInputToTagManagementOnly()
@@ -273,9 +463,9 @@ void WhatSonCppRegressionTests::qmlStructuredEditors_lockCustomInputToTagManagem
     const QString calloutBlockSource = readUtf8SourceFile(
         QStringLiteral("src/app/qml/view/content/editor/ContentsCalloutBlock.qml"));
     const QString selectionControllerSource = readUtf8SourceFile(
-        QStringLiteral("src/app/qml/view/content/editor/ContentsEditorSelectionController.qml"));
+        QStringLiteral("src/app/models/editor/input/ContentsEditorSelectionController.qml"));
     const QString typingControllerSource = readUtf8SourceFile(
-        QStringLiteral("src/app/qml/view/content/editor/ContentsEditorTypingController.qml"));
+        QStringLiteral("src/app/models/editor/input/ContentsEditorTypingController.qml"));
 
     QVERIFY(!displayViewSource.isEmpty());
     QVERIFY(!structuredFlowSource.isEmpty());

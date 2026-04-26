@@ -2,7 +2,7 @@
 
 #include "app/models/display/paper/ContentsA4PaperBackground.hpp"
 #include "app/models/display/paper/ContentsPaperSelection.hpp"
-#include "app/models/display/paper/ContentsTextFormatRenderer.hpp"
+#include "app/models/editor/format/ContentsTextFormatRenderer.hpp"
 #include "app/models/display/paper/print/ContentsPagePrintLayoutRenderer.hpp"
 #include "app/models/file/hub/WhatSonHubMountValidator.hpp"
 #include "app/models/file/hub/WhatSonHubPathUtils.hpp"
@@ -35,10 +35,10 @@
 #include "app/models/editor/renderer/ContentsStructuredBlockRenderer.hpp"
 #include "app/models/editor/session/ContentsEditorSessionController.hpp"
 #include "app/models/editor/text/ContentsLogicalTextBridge.hpp"
-#include "app/models/content/structured/ContentsStructuredDocumentBlocksModel.hpp"
-#include "app/models/content/structured/ContentsStructuredDocumentCollectionPolicy.hpp"
-#include "app/models/content/structured/ContentsStructuredDocumentHost.hpp"
-#include "app/models/content/structured/ContentsStructuredDocumentMutationPolicy.hpp"
+#include "app/models/editor/structure/ContentsStructuredDocumentBlocksModel.hpp"
+#include "app/models/editor/structure/ContentsStructuredDocumentCollectionPolicy.hpp"
+#include "app/models/editor/structure/ContentsStructuredDocumentHost.hpp"
+#include "app/models/editor/structure/ContentsStructuredDocumentMutationPolicy.hpp"
 #include "app/models/editor/resource/ContentsResourceTagTextGenerator.hpp"
 #include "app/viewmodel/hierarchy/IHierarchyViewModel.hpp"
 #include "app/viewmodel/hierarchy/WhatSonHierarchyTreeItemSupport.hpp"
@@ -1011,7 +1011,9 @@ private slots:
     void qmlStructuredEditors_consumeRendererNormalizedBlocksWithoutLocalFlattening();
     void qmlStructuredEditors_rejectStaleSourceRangeMutations();
     void qmlStructuredEditors_preserveNativeMobileInputDuringFocusedEdits();
+    void qmlStructuredEditors_renderInlineStyleOverlayAtRuntime();
     void qmlEditorInputPolicyAdapter_centralizesNativeInputDecisions();
+    void qmlEditorViewDirectory_containsOnlyViewSurfaceFiles();
     void qmlStructuredEditors_lockCustomInputToTagManagementOnly();
     void displayContextMenuCoordinator_rejectsNonNumericStructuredSelectionSnapshots();
     void editorViewportCoordinator_movesMinimapAndLineMathOutOfQml();

@@ -6,7 +6,7 @@ void WhatSonCppRegressionTests::logicalLineLayoutSupport_mapsEditorRectanglesInt
     QJSEngine engine;
     const QJSValue library = evaluateQmlJsLibrary(
         &engine,
-        QStringLiteral("src/app/qml/view/content/editor/ContentsLogicalLineLayoutSupport.js"));
+        QStringLiteral("src/app/models/editor/structure/ContentsLogicalLineLayoutSupport.js"));
     QVERIFY2(!library.isError(), qPrintable(library.toString()));
 
     const QJSValue buildEntries = library.property(QStringLiteral("buildEntries"));
@@ -57,7 +57,7 @@ void WhatSonCppRegressionTests::logicalLineLayoutSupport_fallsBackWhenLiveEditor
     QJSEngine engine;
     const QJSValue library = evaluateQmlJsLibrary(
         &engine,
-        QStringLiteral("src/app/qml/view/content/editor/ContentsLogicalLineLayoutSupport.js"));
+        QStringLiteral("src/app/models/editor/structure/ContentsLogicalLineLayoutSupport.js"));
     QVERIFY2(!library.isError(), qPrintable(library.toString()));
 
     const QJSValue buildEntries = library.property(QStringLiteral("buildEntries"));

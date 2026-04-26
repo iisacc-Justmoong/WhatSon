@@ -7,14 +7,12 @@
 ## Scope
 - Mirrored source directory: `src/app/models/editor/renderer`
 - Child directories: 0
-- Child files: 6
+- Child files: 4
 
 ## Child Directories
 - No child directories.
 
 ## Child Files
-- `ContentsTextHighlightRenderer.cpp`
-- `ContentsTextHighlightRenderer.hpp`
 - `ContentsHtmlBlockRenderPipeline.cpp`
 - `ContentsHtmlBlockRenderPipeline.hpp`
 - `ContentsStructuredBlockRenderer.cpp`
@@ -29,6 +27,8 @@
   rather than separate read-side backend merges.
 - Shortcut/context-menu formatting no longer depends on a transient `QTextDocument` fragment merge to decide where a
   RAW source style starts or ends.
+- Inline text formatting and highlight tag styling now live in `src/app/models/editor/format`; this renderer directory
+  stays focused on block-level HTML and structured document projection.
 - Page/print paper-surface helpers were moved out to `src/app/models/display/paper` and
   `src/app/models/display/paper/print`, leaving this directory focused on renderer-only concerns.
 - `ContentsStructuredBlockRenderer.cpp` still emits verbose editor trace events for constructor/destructor turns,

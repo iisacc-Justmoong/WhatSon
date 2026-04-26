@@ -1,6 +1,6 @@
 #include "test/cpp/whatson_cpp_regression_tests.hpp"
 
-#include "app/models/content/display/ContentsDisplayNoteBodyMountCoordinator.hpp"
+#include "app/models/editor/display/ContentsDisplayNoteBodyMountCoordinator.hpp"
 
 void WhatSonCppRegressionTests::noteBodyMountCoordinator_retriesRefreshBeforeFailingMount()
 {

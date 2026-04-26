@@ -2,7 +2,7 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import LVRS 1.0 as LV
-import "ContentsEditorDebugTrace.js" as EditorTrace
+import "../../../../models/editor/diagnostics/ContentsEditorDebugTrace.js" as EditorTrace
 
 FocusScope {
     id: documentBlock
