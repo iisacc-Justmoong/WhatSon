@@ -69,7 +69,7 @@ void WhatSonCppRegressionTests::qmlInlineFormatEditor_keepsNativeTextEditInputUn
     QVERIFY(inlineEditorSource.contains(QStringLiteral("Keys.priority: Keys.BeforeItem")));
     QVERIFY(!inlineEditorSource.contains(QStringLiteral("Keys.priority: Keys.AfterItem")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("Keys.onPressed: function (event)")));
-    QVERIFY(inlineEditorSource.contains(QStringLiteral("control.handleMacOsOptionWordNavigation(event);")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("inlineEditorController.handleMacOsOptionWordNavigation(event);")));
     QVERIFY(!inlineEditorSource.contains(QStringLiteral("property var shortcutKeyPressHandler")));
     QVERIFY(!inlineEditorSource.contains(QStringLiteral("property var modifierVerticalNavigationHandler")));
     QVERIFY(!inlineEditorSource.contains(QStringLiteral("handleMacModifierVerticalNavigation")));
@@ -87,10 +87,12 @@ void WhatSonCppRegressionTests::qmlInlineFormatEditor_keepsKeyboardSelectionAndO
 {
     const QString inlineEditorSource = readUtf8SourceFile(
         QStringLiteral("src/app/qml/view/content/editor/ContentsInlineFormatEditor.qml"));
+    const QString inlineEditorControllerSource = readUtf8SourceFile(
+        QStringLiteral("src/app/models/editor/input/ContentsInlineFormatEditorController.qml"));
     const QString displayViewSource = readUtf8SourceFile(
         QStringLiteral("src/app/qml/view/content/editor/ContentsDisplayView.qml"));
     const QString eventPumpSource = readUtf8SourceFile(
-        QStringLiteral("src/app/viewmodel/editor/display/ContentsDisplayEventPump.qml"));
+        QStringLiteral("src/app/models/editor/display/ContentsDisplayEventPump.qml"));
     const QString typingControllerSource = readUtf8SourceFile(
         QStringLiteral("src/app/models/editor/input/ContentsEditorTypingController.qml"));
     const QString surfaceGuardSource = readUtf8SourceFile(
@@ -99,6 +101,7 @@ void WhatSonCppRegressionTests::qmlInlineFormatEditor_keepsKeyboardSelectionAndO
         QStringLiteral("src/app/models/editor/resource/ContentsResourceImportController.qml"));
 
     QVERIFY(!inlineEditorSource.isEmpty());
+    QVERIFY(!inlineEditorControllerSource.isEmpty());
     QVERIFY(!displayViewSource.isEmpty());
     QVERIFY(!eventPumpSource.isEmpty());
     QVERIFY(!typingControllerSource.isEmpty());
@@ -110,23 +113,23 @@ void WhatSonCppRegressionTests::qmlInlineFormatEditor_keepsKeyboardSelectionAndO
     QVERIFY(inlineEditorSource.contains(QStringLiteral("overwriteMode: control.overwriteMode")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("persistentSelection: control.persistentSelection")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("selectByKeyboard: control.selectByKeyboard")));
-    QVERIFY(inlineEditorSource.contains(QStringLiteral("onSelectionEndChanged: {")));
-    QVERIFY(inlineEditorSource.contains(QStringLiteral("onSelectionStartChanged: {")));
+    QVERIFY(inlineEditorControllerSource.contains(QStringLiteral("function onSelectionEndChanged() {")));
+    QVERIFY(inlineEditorControllerSource.contains(QStringLiteral("function onSelectionStartChanged() {")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("readonly property bool inputMethodComposing: textInput.inputMethodComposing")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("readonly property string preeditText: textInput.preeditText")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("function nativeCompositionActive()")));
-    QVERIFY(inlineEditorSource.contains(QStringLiteral("function shouldRejectFocusedProgrammaticTextSync(nextText)")));
-    QVERIFY(inlineEditorSource.contains(QStringLiteral("property bool _localTextEditSinceFocus: false")));
-    QVERIFY(inlineEditorSource.contains(QStringLiteral("const hadLocalTextEditSinceFocus = control._localTextEditSinceFocus;")));
-    QVERIFY(inlineEditorSource.contains(QStringLiteral("if (control.preferNativeInputHandling && hadLocalTextEditSinceFocus)\n                control.clearDeferredProgrammaticText();")));
-    QVERIFY(inlineEditorSource.contains(QStringLiteral("function setCursorPositionPreservingNativeInput(position)")));
-    QVERIFY(inlineEditorSource.contains(QStringLiteral("if (control.nativeCompositionActive())\n            return false;")));
-    QVERIFY(inlineEditorSource.contains(QStringLiteral("function handleMacOsOptionWordNavigation(event)")));
-    QVERIFY(inlineEditorSource.contains(QStringLiteral("Qt.platform.os !== \"osx\"")));
+    QVERIFY(inlineEditorControllerSource.contains(QStringLiteral("function shouldRejectFocusedProgrammaticTextSync(nextText)")));
+    QVERIFY(inlineEditorControllerSource.contains(QStringLiteral("property bool localTextEditSinceFocus: false")));
+    QVERIFY(inlineEditorControllerSource.contains(QStringLiteral("const hadLocalTextEditSinceFocus = controller.localTextEditSinceFocus;")));
+    QVERIFY(inlineEditorControllerSource.contains(QStringLiteral("if (controller.control && controller.control.preferNativeInputHandling && hadLocalTextEditSinceFocus)\n                        controller.clearDeferredProgrammaticText();")));
+    QVERIFY(inlineEditorControllerSource.contains(QStringLiteral("function setCursorPositionPreservingNativeInput(position)")));
+    QVERIFY(inlineEditorControllerSource.contains(QStringLiteral("if (!controller.textInput || controller.nativeCompositionActive())\n            return false;")));
+    QVERIFY(inlineEditorControllerSource.contains(QStringLiteral("function handleMacOsOptionWordNavigation(event)")));
+    QVERIFY(inlineEditorControllerSource.contains(QStringLiteral("Qt.platform.os !== \"osx\"")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("Keys.priority: Keys.BeforeItem")));
-    QVERIFY(!inlineEditorSource.contains(QStringLiteral("(modifiers & (Qt.AltModifier | Qt.ShiftModifier)) !== modifiers")));
-    QVERIFY(inlineEditorSource.contains(QStringLiteral("textInput.moveCursorSelection(target, TextEdit.SelectCharacters);")));
-    QVERIFY(inlineEditorSource.contains(QStringLiteral("event.accepted = true;")));
+    QVERIFY(!inlineEditorControllerSource.contains(QStringLiteral("(modifiers & (Qt.AltModifier | Qt.ShiftModifier)) !== modifiers")));
+    QVERIFY(inlineEditorControllerSource.contains(QStringLiteral("controller.textInput.moveCursorSelection(target, TextEdit.SelectCharacters);")));
+    QVERIFY(inlineEditorControllerSource.contains(QStringLiteral("event.accepted = true;")));
     QVERIFY(typingControllerSource.contains(QStringLiteral("property bool pendingCursorPositionRequest: false")));
     QVERIFY(typingControllerSource.contains(QStringLiteral("function applyPendingCursorPositionIfInputSettled()")));
     QVERIFY(typingControllerSource.contains(QStringLiteral("if (controller.nativeCompositionActive()) {\n                controller.pendingCursorPosition = targetPosition;")));
@@ -163,23 +166,31 @@ void WhatSonCppRegressionTests::qmlInlineFormatEditor_keepsKeyboardSelectionAndO
         QStringLiteral("Qt.inputMethod.visible !== undefined"),
         QStringLiteral("Qt.ImQuery"),
     };
-    QDirIterator qmlFiles(
-        repositoryRoot.filePath(QStringLiteral("src/app/qml")),
-        QStringList{QStringLiteral("*.qml")},
-        QDir::Files | QDir::NoDotAndDotDot,
-        QDirIterator::Subdirectories);
-    while (qmlFiles.hasNext())
+    const QStringList qmlRoots{
+        QStringLiteral("src/app/qml"),
+        QStringLiteral("src/app/models/editor"),
+        QStringLiteral("src/app/viewmodel/editor"),
+    };
+    for (const QString& qmlRoot : qmlRoots)
     {
-        const QString absolutePath = qmlFiles.next();
-        QFile sourceFile(absolutePath);
-        QVERIFY2(sourceFile.open(QIODevice::ReadOnly | QIODevice::Text), qPrintable(absolutePath));
-        const QString qmlSource = QString::fromUtf8(sourceFile.readAll());
-        for (const QString& forbiddenPattern : forbiddenInputMethodPatterns)
+        QDirIterator qmlFiles(
+            repositoryRoot.filePath(qmlRoot),
+            QStringList{QStringLiteral("*.qml")},
+            QDir::Files | QDir::NoDotAndDotDot,
+            QDirIterator::Subdirectories);
+        while (qmlFiles.hasNext())
         {
-            QVERIFY2(
-                !qmlSource.contains(forbiddenPattern),
-                qPrintable(QStringLiteral("%1 contains forbidden input-method pattern: %2")
-                               .arg(repositoryRoot.relativeFilePath(absolutePath), forbiddenPattern)));
+            const QString absolutePath = qmlFiles.next();
+            QFile sourceFile(absolutePath);
+            QVERIFY2(sourceFile.open(QIODevice::ReadOnly | QIODevice::Text), qPrintable(absolutePath));
+            const QString qmlSource = QString::fromUtf8(sourceFile.readAll());
+            for (const QString& forbiddenPattern : forbiddenInputMethodPatterns)
+            {
+                QVERIFY2(
+                    !qmlSource.contains(forbiddenPattern),
+                    qPrintable(QStringLiteral("%1 contains forbidden input-method pattern: %2")
+                                   .arg(repositoryRoot.relativeFilePath(absolutePath), forbiddenPattern)));
+            }
         }
     }
 }

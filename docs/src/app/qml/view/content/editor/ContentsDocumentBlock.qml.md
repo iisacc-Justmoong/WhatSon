@@ -5,6 +5,9 @@ Provides the single document-block adapter that keeps `ContentsStructuredDocumen
  block-specific delegates.
 
 ## Current Behavior
+- Non-visual adapter behavior now lives in `src/app/models/editor/input/ContentsDocumentBlockController.qml`.
+  This view keeps the generic document-block layout and delegate loader; atomic tag-management key handling, mounted
+  delegate signal forwarding, selection-clear propagation, and focus routing belong to the controller.
 - The flow now instantiates this component for every structured row.
 - A structured row is now either one parsed explicit block or one flattened interactive prose group assembled by
   `ContentsStructuredDocumentFlow.qml`.

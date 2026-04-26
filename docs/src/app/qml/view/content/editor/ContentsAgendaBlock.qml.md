@@ -4,6 +4,10 @@
 Renders one agenda card as a native document block inside the editor flow.
 
 ## Key Behavior
+- Non-visual aggregate agenda behavior now lives in
+  `src/app/models/editor/input/ContentsAgendaBlockController.qml`.
+  Per-task typing state, toggle forwarding, cursor geometry, and committed task text emission live in
+  `src/app/models/editor/input/ContentsAgendaTaskRowController.qml`.
 - Fills the available editor width.
 - Shows the agenda header/date frame using LVRS components and theme-scaled geometry.
 - Renders each task as `LV.CheckBox` plus an inline plain-text editor.

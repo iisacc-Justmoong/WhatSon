@@ -4,6 +4,9 @@
 Renders `</break>` as a native divider block inside the structured document flow.
 
 ## Key Behavior
+- Non-visual break interaction state now lives in
+  `src/app/models/editor/input/ContentsBreakBlockController.qml`.
+  This view keeps only the visual divider row and delegates tap/key tag-management decisions to the controller.
 - Fills the editor width.
 - Keeps divider presentation in the same block stream as text, agenda, and callout nodes.
 - `</break>` is now also a focusable atomic document block instead of a click-only decoration.

@@ -1,10 +1,9 @@
 # `src/app/viewmodel/content/ContentsEditorSessionController.hpp`
 
 ## Role
-- `ContentsEditorSessionController` is the C++ owner of note-editor session save/sync policy that used to live in
-  `ContentsEditorSession.qml`.
-- The class is registered to QML through `WhatSonQmlInternalTypeRegistrar` and mounted behind the thin
-  `ContentsEditorSession.qml` wrapper so existing editor call sites keep the same surface API.
+- `ContentsEditorSessionController` is the C++ owner of note-editor session save/sync policy.
+- The class is registered to QML through `WhatSonQmlInternalTypeRegistrar` so view QML can instantiate the C++
+  controller directly without a non-view QML wrapper.
 
 ## QML Contract
 - State properties kept on the controller:

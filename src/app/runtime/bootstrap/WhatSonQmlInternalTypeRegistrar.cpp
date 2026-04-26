@@ -1,13 +1,13 @@
 #include "app/runtime/bootstrap/WhatSonQmlInternalTypeRegistrar.hpp"
 
-#include "app/models/agenda/ContentsAgendaBackend.hpp"
-#include "app/models/callout/ContentsCalloutBackend.hpp"
+#include "app/models/editor/tags/ContentsAgendaBackend.hpp"
+#include "app/models/editor/tags/ContentsCalloutBackend.hpp"
 #include "app/models/editor/renderer/ContentsStructuredBlockRenderer.hpp"
 #include "app/models/display/paper/ContentsA4PaperBackground.hpp"
 #include "app/models/display/paper/ContentsPaperSelection.hpp"
 #include "app/models/editor/format/ContentsTextFormatRenderer.hpp"
 #include "app/models/display/paper/print/ContentsPagePrintLayoutRenderer.hpp"
-#include "app/models/file/validator/ContentsStructuredTagValidator.hpp"
+#include "app/models/editor/tags/ContentsStructuredTagValidator.hpp"
 #include "app/platform/Apple/WhatSonIosHubPickerBridge.hpp"
 #include "app/models/file/viewer/ContentsBodyResourceRenderer.hpp"
 #include "app/models/file/viewer/ResourceBitmapViewer.hpp"
@@ -35,12 +35,16 @@
 #include "app/models/editor/bridge/ContentsEditorSelectionBridge.hpp"
 #include "app/models/editor/bridge/ContentsGutterMarkerBridge.hpp"
 #include "app/models/editor/text/ContentsLogicalTextBridge.hpp"
-#include "app/models/editor/resource/ContentsResourceTagTextGenerator.hpp"
+#include "app/models/editor/tags/ContentsResourceTagTextGenerator.hpp"
 #include "app/models/editor/structure/ContentsStructuredDocumentBlocksModel.hpp"
 #include "app/models/editor/structure/ContentsStructuredDocumentCollectionPolicy.hpp"
 #include "app/models/editor/structure/ContentsStructuredDocumentFocusPolicy.hpp"
 #include "app/models/editor/structure/ContentsStructuredDocumentHost.hpp"
 #include "app/models/editor/structure/ContentsStructuredDocumentMutationPolicy.hpp"
+#include "app/viewmodel/editor/display/ContentsDisplayGeometryViewModel.hpp"
+#include "app/viewmodel/editor/display/ContentsDisplayMutationViewModel.hpp"
+#include "app/viewmodel/editor/display/ContentsDisplayPresentationViewModel.hpp"
+#include "app/viewmodel/editor/display/ContentsDisplaySelectionMountViewModel.hpp"
 #include "app/viewmodel/panel/FocusedNoteDeletionBridge.hpp"
 #include "app/viewmodel/panel/HierarchyDragDropBridge.hpp"
 #include "app/viewmodel/panel/HierarchyInteractionBridge.hpp"
@@ -125,6 +129,14 @@ namespace
                 QStringLiteral("ContentsStructuredDocumentHost")),
             whatsonInternalCreatableType<ContentsStructuredDocumentMutationPolicy>(
                 QStringLiteral("ContentsStructuredDocumentMutationPolicy")),
+            whatsonInternalCreatableType<ContentsDisplayGeometryViewModel>(
+                QStringLiteral("ContentsDisplayGeometryViewModel")),
+            whatsonInternalCreatableType<ContentsDisplayMutationViewModel>(
+                QStringLiteral("ContentsDisplayMutationViewModel")),
+            whatsonInternalCreatableType<ContentsDisplayPresentationViewModel>(
+                QStringLiteral("ContentsDisplayPresentationViewModel")),
+            whatsonInternalCreatableType<ContentsDisplaySelectionMountViewModel>(
+                QStringLiteral("ContentsDisplaySelectionMountViewModel")),
             whatsonInternalCreatableType<ContentsPaperSelection>(
                 QStringLiteral("ContentsPaperSelection")),
             whatsonInternalCreatableType<ContentsA4PaperBackground>(

@@ -52,7 +52,7 @@
 - `WhatSonNoteHeaderStore.hpp`
 
 ## Current Focus Areas
-- `file/sync/ContentsEditorIdleSyncController` now owns the editor-side buffered fetch clock and best-effort
+- `src/app/models/editor/persistence/ContentsEditorPersistenceController` now owns the editor-side buffered persistence drain clock and best-effort
   lifecycle flush requests. This `file/note` directory only owns the downstream note-package management queue once a
   snapshot is already selected for async persistence.
 - `ContentsNoteManagementCoordinator` now owns editor-adjacent note-management orchestration:

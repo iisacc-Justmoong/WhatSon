@@ -2,8 +2,9 @@
 
 ## Responsibility
 
-This directory holds editor-domain display helpers that are performance-sensitive or safety-sensitive enough to keep out
-of QML script bodies.
+This directory holds editor-domain display helpers. Under the current QML boundary, QML must be used for view
+construction only; model-side QML controller files in this directory are transitional migration targets and must not
+gain new session, persistence, parsing, mutation, scheduling, or command-surface responsibility.
 
 ## Current Modules
 
@@ -31,6 +32,19 @@ of QML script bodies.
 - `ContentsDisplayViewportCoordinator.*`
   Owns line-offset lookup, minimap track math, viewport correction plans, and structured gutter geometry summaries used
   by `ContentsDisplayView.qml`.
+- `ContentsDisplayEventPump.qml`
+  Owns display-host timers and signal connections for note mount, selection sync, projection, cursor, and geometry
+  refresh events.
+- `ContentsDisplayInputCommandSurface.qml`
+  Owns editor context-menu pointer triggers and tag-management shortcuts.
+- `ContentsDisplayGeometryController.qml`
+  Owns QML-runtime geometry scheduling and delegates public calls through the C++ geometry ViewModel.
+- `ContentsDisplayMutationController.qml`
+  Owns QML-runtime RAW mutation orchestration delegated through the C++ mutation ViewModel.
+- `ContentsDisplayPresentationController.qml`
+  Owns QML-runtime presentation refresh orchestration delegated through the C++ presentation ViewModel.
+- `ContentsDisplaySelectionMountController.qml`
+  Owns QML-runtime selection and mount orchestration delegated through the C++ selection/mount ViewModel.
 - `ContentsDisplayHostModePolicy.qml`
   Owns desktop/mobile presentation deltas for the unified editor host without keeping policy objects in the view
   directory.
@@ -45,5 +59,6 @@ of QML script bodies.
   note-session state.
 - Mobile hierarchy navigation remains in `src/app/models/content/mobile`; only editor-body display coordination belongs
   here.
-- They are intentionally QML-facing `QObject` bridges, but the calculations themselves live in C++ so the view layer
-  stays declarative.
+- ViewModels remain C++ under `src/app/viewmodel`.
+- New editor display orchestration should be C++ model or ViewModel code, with QML limited to view construction under
+  `src/app/qml/view`.

@@ -32,7 +32,7 @@
 
 - `ContentsDisplayView.qml` is now the unified desktop/mobile editor surface.
 - This directory now contains only editor view hosts, visual layers, and block delegates. Non-visual QML policies,
-  controllers, session wrappers, and support JavaScript live under `src/app/models/editor`.
+  controllers, session controllers, and support JavaScript live under `src/app/models/editor`.
 - `src/app/models/editor/display/ContentsDisplayHostModePolicy.qml` owns platform display deltas such as
   gutter/minimap visibility, editor horizontal inset, native-input autofocus, and font weight so the shared host no
   longer forks into separate desktop/mobile QML roots.
@@ -110,7 +110,7 @@
   snapshot. One `ContentsEditorPresentationProjection` now tokenizes RAW into editor HTML, preview HTML,
   logical text, and logical line metadata for that snapshot, while `ContentsEditorTypingController.qml` carries the
   incremental plain-text/source-offset state between idle commits.
-- `ContentsInlineFormatEditor.qml` is now strictly a plain-text input wrapper.
+- `ContentsInlineFormatEditor.qml` is now strictly a plain-text input controller.
   The fallback editor path paints formatted spans through a separate HTML overlay and no longer switches the live
   `TextEdit` into `RichText` mode.
 - Desktop/mobile focused editing now also blocks that whole-document presentation timer from pushing a fresh editing
@@ -139,13 +139,13 @@
   candidate placement, keyboard visibility, and query updates stay on the live OS/Qt `TextEdit` path.
   The editor must not call `Qt.inputMethod.*`, the bare QML `InputMethod.*` singleton, or maintain fallback branches
   for alternate input-method objects; the C++ regression suite scans the QML source tree for those forbidden patterns.
-- Both the wrapper and the selection controller now restore selections with `TextEdit.moveCursorSelection(...)` when an
+- Both the controller and the selection controller now restore selections with `TextEdit.moveCursorSelection(...)` when an
   active edge matters, so OS-driven selection expansion keeps one continuous anchor instead of degrading to repeated
   fresh sub-selections.
 - `ContentsInlineFormatEditor.qml` now leaves mobile and desktop pointer selection directly on the live `TextEdit`.
   It no longer mounts a transparent guard layer or touch multi-tap handler above the input surface, so OS/Qt cursor
-  placement, selection handles, word selection, and drag selection are not preempted by wrapper code.
-- The shared live `TextEdit` wrapper now also declares every available Qt keyboard/selection feature flag instead of
+  placement, selection handles, word selection, and drag selection are not preempted by controller code.
+- The shared live `TextEdit` controller now also declares every available Qt keyboard/selection feature flag instead of
   relying on implicit defaults: focus-on-press, keyboard selection, pointer selection, persistent selection,
   unrestricted input-method hints, character-level mouse selection, and insert-mode editing stay enabled for all note
   body editors.
@@ -158,6 +158,10 @@
   shortcuts while the OS keyboard owns the session.
   Continuous Backspace, selection gestures, and IME candidate/control gestures therefore stay on the platform `TextEdit`
   path instead of being accepted by QML handlers.
+- Inline editor, text block, callout, agenda, break, and document-block delegates now keep their non-visual input state
+  in `src/app/models/editor/input/*Controller.qml` objects. View QML in this directory should compose LVRS/Qt visual
+  surfaces, expose signals/properties, and delegate live typing, cursor bookkeeping, source replacement, selection
+  cache, and atomic tag-management decisions to those model-side controllers.
 - `ContentsEditorInputPolicyAdapter.qml` now centralizes native-input session policy for the editor domain. The host,
   structured text blocks, and `ContentsInlineFormatEditor.qml` route shortcut gating, long-press gating, focused
   programmatic sync, and ordinary text-edit focus-restore decisions through that adapter instead of each QML file
@@ -186,12 +190,12 @@
   surrounding prose.
 - `ContentsEditorSelectionController.qml` owns inline style tag formatting and context-menu selection resolution only.
   It no longer owns markdown list shortcuts or generic key-event shortcut parsing.
-- `ContentsEditorSession.qml` no longer serializes note swaps behind pending-body save barriers. It keeps the live editor buffer
-  authoritative, re-stages the old note into the buffered fetch-sync controller, and allows the next selected note to
-  bind immediately.
-- `ContentsEditorSession.qml` now also keeps local editor authority across same-note model echoes, so one successful
+- `ContentsEditorSessionController` no longer serializes note swaps behind pending-body save barriers. It keeps the
+  live editor buffer authoritative, re-stages the old note into the buffered editor persistence controller, and allows
+  the next selected note to bind immediately.
+- `ContentsEditorSessionController` now also keeps local editor authority across same-note model echoes, so one successful
   echo cannot immediately reopen the door for the next stale polling snapshot to replace the current note body.
-- `ContentsEditorSession.qml` now also gates same-note model snapshot apply with an explicit typing-idle window
+- `ContentsEditorSessionController` now also gates same-note model snapshot apply with an explicit typing-idle window
   (`typingIdleThresholdMs` + last local edit timestamp), so non-idle typing turns cannot be overwritten by an older
   snapshot captured before the latest user input.
 - Desktop/mobile hosts now inject that idle threshold through `editorIdleSyncThresholdMs`, keeping the apply policy
@@ -199,9 +203,9 @@
 - Desktop/mobile editor views now also gate timer-driven snapshot polling and deferred presentation commits on
   `typingSessionSyncProtected` plus `pendingBodySave`, not only focus state, so stale async snapshots cannot overwrite
   active typing when focus reporting briefly flaps.
-- `ContentsDisplayView.qml` now delegates three former host-owned policy roles to C++ coordinators under
-  `src/app/viewmodel/content`: note-selection sync/reconcile scheduling, whole-document presentation refresh policy,
-  and structured-flow activation. The unified host keeps UI composition and repaint/focus execution only, while
+- `ContentsDisplayView.qml` now delegates former host-owned policy roles to C++ coordinators and model-side
+  controllers under `src/app/models/editor/display`, with narrow C++ ViewModel command surfaces under
+  `src/app/viewmodel/editor/display`. The unified host keeps UI composition and repaint/focus execution only, while
   `ContentsDisplayHostModePolicy.qml` carries platform-mode presentation policy.
 - `ContentsStructuredDocumentFlow.qml` now also converges structured document-host state through one
   `ContentsStructuredDocumentHost` instance and delegates collection normalization, focus resolution, and RAW mutation
@@ -212,7 +216,7 @@
   from being inserted again during save/session handoff.
 - `ContentsDocumentTextBlock.qml` now keeps paragraph boundary editing source-driven as well.
   Delegate-local key handling only emits split/merge intent; `ContentsStructuredDocumentMutationPolicy` owns the RAW
-  rewrite so implicit prose lines and explicit `<paragraph>...</paragraph>` wrappers obey the same rule set.
+  rewrite so implicit prose lines and explicit `<paragraph>...</paragraph>` controllers obey the same rule set.
 - Page/print view mode now also injects one explicit paper-palette flag from `ContentsDisplayView.qml` into both the
   whole-document HTML projection and the structured block delegate tree.
   Structured prose therefore no longer falls back to LVRS dark-theme body white while the paper surface itself stays
@@ -241,7 +245,7 @@
   handling only accepts plain navigation/delete and exact macOS Command Up/Down document-boundary movement, leaving
   every Option-arrow chord unaccepted by the atomic block layer.
 - After that policy extraction, the flow and desktop/mobile hosts no longer keep dead duplicate QML helpers or
-  pass-through import wrappers that merely mirrored those dedicated collaborators.
+  pass-through import controllers that merely mirrored those dedicated collaborators.
 - Desktop/mobile snapshot polling now also prefers a filesystem reconcile fetch path
   (`reconcileViewSessionAndRefreshSnapshotForNote(noteId, editorSession.editorText)`) instead of only running
   model-side snapshot reload ticks.
@@ -289,7 +293,7 @@
   proxy as editable input and no longer rewrites the old note body from a non-existent editor snapshot.
 - `ContentsInlineFormatEditor.qml` now emits committed typing directly from the nested `TextEdit.onTextChanged` path
   whenever the change is not programmatic and IME composition has already settled.
-  That keeps `ContentsEditorSession.editorText` moving with the visible buffer instead of leaving the note-open body
+  That keeps `ContentsEditorSessionController::editorText` moving with the visible buffer instead of leaving the note-open body
   snapshot as the last authoritative session text.
 - `ContentsEditorTypingController.qml` no longer reverse-normalizes the whole rendered RichText surface back into RAW
   during ordinary typing.
@@ -300,20 +304,20 @@
   newline removal or line-wrap collapse.
 - Editor body persistence is now split into immediate-flush requests plus buffered retry/completion:
   - `ContentsDisplayView.qml` now mounts `ContentsEditorSessionController` directly on the main editor path
-  - `ContentsEditorSession.qml` remains only as a compatibility wrapper
+  - no `ContentsEditorSession.qml` compatibility wrapper remains
   - `ContentsEditorSessionController` owns pending/in-flight state, same-note RAW sync acceptance, and text
     normalization for persistence/model-sync turns
   - `ContentsEditorSelectionBridge` stays as the QML-facing adapter
-  - `file/sync/ContentsEditorIdleSyncController` owns the note-scoped buffered snapshot cache and recurring `1000ms`
-    fetch clock
+  - `src/app/models/editor/persistence/ContentsEditorPersistenceController` owns the note-scoped buffered snapshot
+    cache and recurring `1000ms` persistence drain clock
   - `ContentsNoteManagementCoordinator` serializes direct `.wsnote` writes plus open-count/stat follow-up work on the
     downstream management side
   - selection/typing controllers now default to immediate `.wsnbody` flush requests for live editor mutations, while
-    the buffered fetch clock remains the retry/drain path for dirty note snapshots that were already accepted into the
-    persistence controller
+    the buffered persistence drain clock remains the retry/drain path for dirty note snapshots that were already
+    accepted into the persistence controller
   - immediate flush calls now return `false` when the persistence lane rejects the current snapshot, so note-switch
     flows no longer treat a rejected enqueue as if the note had already been durably accepted
-  - each successful queued write now also triggers one reconcile verify(fetch) against filesystem RAW, so the visible
+  - each successful queued write now also triggers one reconcile verify against filesystem RAW, so the visible
     note snapshot converges even when downstream body serialization canonicalizes markup/escaping.
   - same-note RAW/model snapshot rejection while the editor still has local-protection state no longer schedules a new
     persistence write from that rejection alone; the editor now waits for an explicit local mutation path instead of
@@ -322,7 +326,7 @@
     execute in the typed C++ session controller
   - on Android SAF-mounted hubs, the successful note-management path now mirrors the locally written note package back
     into the original source document tree before the editor receives a final save success signal
-  - when desktop/mobile hosts call `persistEditorTextImmediately(...)`, that path now issues one immediate fetch enqueue
+  - when desktop/mobile hosts call `persistEditorTextImmediately(...)`, that path now issues one immediate persistence enqueue
     attempt for the current note payload instead of silently downgrading to deferred-only staging
 - The RichText editor surface now decodes one safe-entity layer for display, so RAW-preserving source escapes like
   `&lt;` / `&gt;` / `&amp;` render as visible glyphs without changing the canonical note-body source contract.
@@ -361,7 +365,7 @@
   structured text blocks edit RAW source spans directly from plain-text deltas instead of round-tripping rendered HTML
   through a DOM-to-source normalization step.
 - `ContentsEditorDebugTrace.js` now centralizes verbose editor-domain QML tracing, and the desktop/mobile display
-  hosts, session bridge, typing controller, structured document flow, block wrapper, and inline editor now emit
+  hosts, session bridge, typing controller, structured document flow, block controller, and inline editor now emit
   lifecycle, mount/unmount, selection-sync, source-mutation, cursor/selection, and focus-transition logs through that
   shared helper instead of each file inventing a different console format.
 - `ContentsStructuredDocumentFlow.qml` now limits itself to exposing the active delegate's local shortcut-insertion
@@ -404,9 +408,9 @@
 - Newly selected notes stay on the legacy editor/session path until the first settled structured render confirms block
   ownership, then later same-note async reparses keep the structured surface mounted while agenda/callout parsing runs
   off the UI thread.
-- Structured shortcut insertion now also resolves out of existing proprietary wrappers before writing:
+- Structured shortcut insertion now also resolves out of existing proprietary controllers before writing:
   - invoking agenda/callout insertion while the cursor is already inside an existing agenda/callout moves the new RAW
-    block to the enclosing wrapper end first
+    block to the enclosing controller end first
   - newline padding is then applied around that resolved point so proprietary blocks remain standalone instead of
     nesting inside one another
 - Agenda Enter handling now distinguishes empty trailing tasks from empty middle tasks:
@@ -419,16 +423,18 @@
 - Callout block focus restoration now also refreshes the flow host's active-block pointer on cursor-only programmatic
   focus moves, keeping subsequent structured shortcuts scoped to the active callout.
 - Agenda parsing and source-mutation backend logic used by those shortcuts now lives in
-  `src/app/agenda/ContentsAgendaBackend.*`, while QML controllers keep event/cursor orchestration only.
+  `src/app/models/editor/tags/ContentsAgendaBackend.*`; QML editor files should only construct the visible editor surface and
+  invoke typed C++ hooks.
 - Callout parsing and insertion payload backend logic now lives in
-  `src/app/callout/ContentsCalloutBackend.*`, while QML controllers keep event/cursor orchestration only.
+  `src/app/models/editor/tags/ContentsCalloutBackend.*`; QML editor files should only construct the visible editor surface and
+  invoke typed C++ hooks.
 - Agenda/callout render-model projection now lives in
   `src/app/models/editor/renderer/ContentsStructuredBlockRenderer.*`, so QML overlay layers consume renderer-owned data
   instead of calling parse backends directly.
-- `ContentsEditorSession.qml` now treats `date="yyyy-mm-dd"` as a modification-time placeholder:
+- `ContentsEditorSessionController` now treats `date="yyyy-mm-dd"` as a modification-time placeholder:
   - when local note modification is staged for persistence, placeholder dates are rewritten to current `YYYY-MM-DD`
   - passive same-note model sync does not rewrite agenda dates
-- `ContentsEditorSession.qml` now also normalizes empty structured blocks into one-space anchors on model sync:
+- `ContentsEditorSessionController` now also normalizes empty structured blocks into one-space anchors on model sync:
   - `<task ...></task>` -> `<task ...> </task>`
   - `<callout></callout>` -> `<callout> </callout>`
 - `ContentsAgendaLayer.qml` is now mounted by desktop/mobile hosts for every editor view mode, including `Plain`, and
@@ -454,21 +460,21 @@
   documentation-only behavior contracts.
 - The remaining automated regression surface is the C++ build/runtime suite under `test/cpp/`; the structured-flow
   caret persistence and live-caret shortcut notes in this directory remain documentation-only behavior contracts.
-- Cursor restoration for ordinary typing/focus recovery now routes through the wrapper-level cursor setter instead of
-  rewriting `cursorPosition` into the wrapper, `editorItem`, and `inputItem` together.
-- The shared editor wrapper no longer depends on its own synthetic IME commit queue for ordinary typing, so a just-typed
-  word is no longer left behind a wrapper-local composition flag while the user immediately clicks to move the cursor.
-- The shared editor wrapper now also prefers the native `QtQuick.TextEdit` edited-signal / input-method commit path
+- Cursor restoration for ordinary typing/focus recovery now routes through the controller-level cursor setter instead of
+  rewriting `cursorPosition` into the controller, `editorItem`, and `inputItem` together.
+- The shared editor controller no longer depends on its own synthetic IME commit queue for ordinary typing, so a just-typed
+  word is no longer left behind a controller-local composition flag while the user immediately clicks to move the cursor.
+- The shared editor controller now also prefers the native `QtQuick.TextEdit` edited-signal / input-method commit path
   instead of maintaining its own synthetic IME commit flag, aligning Hangul composition behavior with standard text
   editors and word processors more closely.
-- That same wrapper now also suppresses one echoed native `textEdited` turn for host-driven RichText surface
+- That same controller now also suppresses one echoed native `textEdited` turn for host-driven RichText surface
   replacement, preventing debounced presentation refresh from re-entering the RAW typing-mutation path as a fake user
   edit.
-- The shared editor wrapper now also normalizes tab indentation width through `TextEdit.tabStopDistance` using runtime
+- The shared editor controller now also normalizes tab indentation width through `TextEdit.tabStopDistance` using runtime
   font metrics for four spaces, so Tab indent depth no longer jumps to an oversized default column.
-- The shared editor wrapper no longer intercepts direct `Tab` key insertion. Tab handling stays with the native
+- The shared editor controller no longer intercepts direct `Tab` key insertion. Tab handling stays with the native
   `TextEdit` path so keyboard traversal, repeat, and platform text editing policy are not overridden by QML.
-- The shared editor wrapper also rejects focused stale host text echo in native-input mode after a local edit.
+- The shared editor controller also rejects focused stale host text echo in native-input mode after a local edit.
   Structured text, agenda, and callout delegates keep live previous-source/text snapshots so rapid iOS input can rebase
   before the parser publishes a newer block snapshot.
 - Legacy cursor restoration and resource-import surface restoration now pause on `inputMethodComposing`/`preeditText`

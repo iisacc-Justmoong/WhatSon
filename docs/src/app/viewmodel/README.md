@@ -9,12 +9,20 @@
 - Child directories: 10
 - Child files: 0
 
+## Boundary
+
+- ViewModels in this tree are C++ objects with one responsibility per class.
+- QML files are not registered from `src/app/viewmodel`; QML orchestration surfaces belong under the owning model or
+  view directory instead.
+- Each ViewModel must expose a signal/slot contract suitable for QML binding while leaving domain mutation and timing
+  mechanics in the owning model layer.
+
 ## Child Directories
 - `calendar`
 - `content`
 - `detailPanel`
+- `editor`
 - `hierarchy`
-- `listMenu`
 - `navigationbar`
 - `onboarding`
 - `panel`

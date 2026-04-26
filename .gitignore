@@ -125,3 +125,10 @@ CMakeLists.txt.user*
 /build*/
 cmake-build-debug
 automation-logs
+
+# Project architecture directories named "tags" must remain trackable even when
+# a developer has a global ctags ignore pattern.
+!src/app/models/editor/tags/
+!src/app/models/editor/tags/**
+!docs/src/app/models/editor/tags/
+!docs/src/app/models/editor/tags/**

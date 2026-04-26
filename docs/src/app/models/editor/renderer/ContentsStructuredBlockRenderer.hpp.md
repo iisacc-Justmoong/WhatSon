@@ -38,5 +38,5 @@ QML-facing render models.
 ## Architectural Note
 - This renderer lives in `editor/renderer` because render-model publication still belongs to the editor presentation
   layer, even though top-level block tokenization now starts in `editor/parser`.
-- Agenda/callout authoring and source-mutation APIs remain in `src/app/agenda` and `src/app/callout`; this type only
-  exposes read-side render data derived from the parser result.
+- Agenda/callout authoring and source-mutation APIs remain in `src/app/models/editor/tags`; this type only exposes
+  read-side render data derived from the parser result.

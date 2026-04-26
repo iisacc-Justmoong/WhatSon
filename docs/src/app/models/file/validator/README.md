@@ -7,7 +7,7 @@
 ## Scope
 - Mirrored source directory: `src/app/models/file/validator`
 - Child directories: 0
-- Child files: 10
+- Child files: 6
 
 ## Child Directories
 - No child directories.
@@ -19,10 +19,6 @@
 - `WhatSonLibraryIndexIntegrityValidator.hpp`
 - `WhatSonNoteStorageValidator.cpp`
 - `WhatSonNoteStorageValidator.hpp`
-- `ContentsStructuredTagValidator.cpp`
-- `ContentsStructuredTagValidator.hpp`
-- `WhatSonStructuredTagLinter.cpp`
-- `WhatSonStructuredTagLinter.hpp`
 
 ## Intended Detailed Sections
 - Module responsibilities and architectural layer
@@ -33,12 +29,6 @@
 - Known hotspots and refactor priorities
 
 ## Current Domain Notes
-- `WhatSonStructuredTagLinter` owns proprietary body-tag lint/canonicalization for `break`, `agenda`, `task`, and
-  `callout`, and also validates that supported `.wsnbody` semantic/body tags still produce one well-formed XML
-  document projection.
-- That XML projection covers body/resource semantics such as `paragraph`, heading-style semantic tags
-  (`title`/`subTitle`/`eventTitle`), `eventDescription`, transparent `event` wrappers, `next`, hashtag tags, and
-  inline style aliases.
-- `ContentsStructuredTagValidator` remains available as an opt-in direct-correction helper, but editor hosts no longer
-  auto-wire parser/renderer suggestions into direct note writes during ordinary note-open or typing.
-- The validator layer now serves both filesystem package normalization and note-body structured-tag normalization.
+- This directory owns filesystem and package validators only.
+- Editor-body structured tag linting and correction advisory state moved to `src/app/models/editor/tags` so
+  `<agenda>`, `<task>`, `<callout>`, `<break>`, and `<resource ... />` responsibilities stay inside the editor domain.

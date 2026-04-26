@@ -3,7 +3,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Layouts
 import LVRS 1.0 as LV
-import "../../../../models/editor/structure/ContentsStructuredCursorSupport.js" as StructuredCursorSupport
+import "../../../../models/editor/input" as EditorInputModel
 
 FocusScope {
     id: agendaBlock
@@ -20,9 +20,9 @@ FocusScope {
     signal taskTextChanged(var taskData, string text, int cursorPosition, string expectedPreviousText)
 
     readonly property var normalizedBlock: blockData && typeof blockData === "object" ? blockData : ({})
-    readonly property int currentLogicalLineNumber: agendaBlock.currentFocusedTaskLineNumber()
-    readonly property bool focused: agendaBlock.activeFocus || agendaBlock.hasFocusedTaskRow()
-    readonly property bool inputMethodComposing: agendaBlock.focusedTaskInputMethodComposing()
+    readonly property int currentLogicalLineNumber: agendaBlockController.currentFocusedTaskLineNumber()
+    readonly property bool focused: agendaBlock.activeFocus || agendaBlockController.hasFocusedTaskRow()
+    readonly property bool inputMethodComposing: agendaBlockController.focusedTaskInputMethodComposing()
     readonly property bool textEditable: true
     readonly property bool atomicBlock: false
     readonly property bool gutterCollapsed: false
@@ -41,7 +41,7 @@ FocusScope {
         return []
     }
     readonly property string dateText: normalizedBlock.date !== undefined ? String(normalizedBlock.date) : "yyyy-mm-dd"
-    readonly property string preeditText: agendaBlock.focusedTaskPreeditText()
+    readonly property string preeditText: agendaBlockController.focusedTaskPreeditText()
     readonly property int sourceStart: Math.max(0, Number(normalizedBlock.sourceStart) || 0)
     readonly property int sourceEnd: Math.max(sourceStart, Number(normalizedBlock.sourceEnd) || 0)
     readonly property color frameColor: paperPaletteEnabled ? "#F7F3EA" : "#262728"
@@ -55,195 +55,71 @@ FocusScope {
     width: parent ? parent.width : implicitWidth
 
     function hasFocusedTaskRow() {
-        for (let index = 0; index < taskRepeater.count; ++index) {
-            const item = taskRepeater.itemAt(index)
-            if (item && item["focused"] !== undefined && item["focused"])
-                return true
-        }
-        return false
+        return agendaBlockController.hasFocusedTaskRow()
     }
 
     function focusedTaskInputMethodComposing() {
-        for (let index = 0; index < taskRepeater.count; ++index) {
-            const item = taskRepeater.itemAt(index)
-            if (!item || item["focused"] === undefined || !item["focused"])
-                continue
-            return item["inputMethodComposing"] !== undefined && !!item["inputMethodComposing"]
-        }
-        return false
+        return agendaBlockController.focusedTaskInputMethodComposing()
     }
 
     function focusedTaskPreeditText() {
-        for (let index = 0; index < taskRepeater.count; ++index) {
-            const item = taskRepeater.itemAt(index)
-            if (!item || item["focused"] === undefined || !item["focused"])
-                continue
-            return item["preeditText"] !== undefined && item["preeditText"] !== null
-                    ? String(item["preeditText"])
-                    : ""
-        }
-        return ""
+        return agendaBlockController.focusedTaskPreeditText()
     }
 
     function nativeCompositionActive() {
-        return agendaBlock.focusedTaskInputMethodComposing()
-                || agendaBlock.focusedTaskPreeditText().length > 0
+        return agendaBlockController.nativeCompositionActive()
     }
 
     function currentFocusedTaskLineNumber() {
-        for (let index = 0; index < taskRepeater.count; ++index) {
-            const item = taskRepeater.itemAt(index)
-            if (item && item["focused"] !== undefined && item["focused"])
-                return index + 1
-        }
-        return 1
+        return agendaBlockController.currentFocusedTaskLineNumber()
     }
 
     function currentCursorRowRect() {
-        for (let index = 0; index < taskRepeater.count; ++index) {
-            const item = taskRepeater.itemAt(index)
-            if (!item || item["focused"] === undefined || !item["focused"] || item["currentCursorRowRect"] === undefined)
-                continue
-            return item["currentCursorRowRect"]()
-        }
-        return ({
-                    "contentHeight": Math.max(1, Math.round(LV.Theme.scaleMetric(12))),
-                    "contentY": 0
-                })
+        return agendaBlockController.currentCursorRowRect()
     }
 
     function currentVisiblePlainText() {
-        const lines = []
-        for (let index = 0; index < taskRepeater.count; ++index) {
-            const item = taskRepeater.itemAt(index)
-            if (item && item["currentEditorPlainText"] !== undefined) {
-                lines.push(String(item["currentEditorPlainText"]() || ""))
-                continue
-            }
-            const taskData = agendaBlock.tasks[index] && typeof agendaBlock.tasks[index] === "object"
-                    ? agendaBlock.tasks[index]
-                    : ({})
-            lines.push(StructuredCursorSupport.normalizedPlainText(String(taskData.text || "")))
-        }
-        if (lines.length === 0)
-            lines.push("")
-        return lines.join("\n")
+        return agendaBlockController.currentVisiblePlainText()
     }
 
     function visiblePlainText() {
-        return agendaBlock.currentVisiblePlainText()
+        return agendaBlockController.visiblePlainText()
     }
 
     function representativeCharCount(lineText) {
-        const normalizedLineText = lineText === undefined || lineText === null ? "" : String(lineText)
-        return Math.max(0, normalizedLineText.length)
+        return agendaBlockController.representativeCharCount(lineText)
     }
 
     function focusLastTask() {
-        return agendaBlock.focusTaskBoundary(taskRepeater.count - 1, "after")
+        return agendaBlockController.focusLastTask()
     }
 
     function focusTaskBoundary(taskIndex, side) {
-        const numericTaskIndex = Number(taskIndex)
-        const resolvedTaskIndex = isFinite(numericTaskIndex) ? Math.floor(numericTaskIndex) : -1
-        const item = taskRepeater.itemAt(resolvedTaskIndex)
-        if (!item || item["focusEditor"] === undefined)
-            return false
-        const normalizedSide = side === undefined || side === null ? "" : String(side).trim().toLowerCase()
-        const plainText = item["currentEditorPlainText"] !== undefined
-                ? String(item["currentEditorPlainText"]() || "")
-                : String(item["taskText"] || "")
-        item["focusEditor"](normalizedSide === "after" ? plainText.length : 0)
-        return true
+        return agendaBlockController.focusTaskBoundary(taskIndex, side)
     }
 
     function focusBoundary(side) {
-        const normalizedSide = side === undefined || side === null ? "" : String(side).trim().toLowerCase()
-        if (normalizedSide === "after")
-            return agendaBlock.focusLastTask()
-        return agendaBlock.focusFirstTask()
+        return agendaBlockController.focusBoundary(side)
     }
 
     function focusFirstTask() {
-        for (let index = 0; index < taskRepeater.count; ++index) {
-            const item = taskRepeater.itemAt(index)
-            if (!item || item["focusEditor"] === undefined)
-                continue
-            item["focusEditor"](0)
-            return true
-        }
-        return false
+        return agendaBlockController.focusFirstTask()
     }
 
     function focusTaskAtSourceOffset(sourceOffset) {
-        const numericSourceOffset = Number(sourceOffset)
-        if (!isFinite(numericSourceOffset))
-            return false
-        for (let index = 0; index < taskRepeater.count; ++index) {
-            const item = taskRepeater.itemAt(index)
-            if (!item || item["taskContentStart"] === undefined || item["taskContentEnd"] === undefined)
-                continue
-            const contentStart = Math.max(0, Math.floor(Number(item["taskContentStart"]) || 0))
-            const contentEnd = Math.max(contentStart, Math.floor(Number(item["taskContentEnd"]) || 0))
-            if (numericSourceOffset < contentStart || numericSourceOffset > contentEnd)
-                continue
-            item["focusEditor"](StructuredCursorSupport.plainCursorForSourceOffset(item["taskText"], numericSourceOffset - contentStart))
-            return true
-        }
-        return false
+        return agendaBlockController.focusTaskAtSourceOffset(sourceOffset)
     }
 
     function applyFocusRequest(request) {
-        const safeRequest = request && typeof request === "object" ? request : ({})
-        const taskOpenTagStart = Number(safeRequest.taskOpenTagStart)
-        const localCursorPosition = Number(safeRequest.localCursorPosition)
-        const entryBoundary = safeRequest.entryBoundary === undefined || safeRequest.entryBoundary === null
-                ? ""
-                : String(safeRequest.entryBoundary).trim().toLowerCase()
-        if (isFinite(taskOpenTagStart)) {
-            for (let index = 0; index < taskRepeater.count; ++index) {
-                const item = taskRepeater.itemAt(index)
-                if (!item || item["taskOpenTagStart"] === undefined)
-                    continue
-                if (Number(item["taskOpenTagStart"]) !== Math.floor(taskOpenTagStart))
-                    continue
-                item["focusEditor"](localCursorPosition)
-                return true
-            }
-        }
-
-        const sourceOffset = Number(safeRequest.sourceOffset)
-        if (!isFinite(sourceOffset))
-            return false
-        if (sourceOffset < agendaBlock.sourceStart || sourceOffset > agendaBlock.sourceEnd)
-            return false
-        if (entryBoundary === "before" || sourceOffset <= agendaBlock.sourceStart)
-            return agendaBlock.focusBoundary("before")
-        if (entryBoundary === "after" || sourceOffset >= agendaBlock.sourceEnd)
-            return agendaBlock.focusBoundary("after")
-        if (agendaBlock.focusTaskAtSourceOffset(sourceOffset))
-            return true
-        return agendaBlock.focusBoundary("before")
+        return agendaBlockController.applyFocusRequest(request)
     }
 
     function clearSelection(preserveFocusedEditor) {
-        let cleared = false
-        for (let index = 0; index < taskRepeater.count; ++index) {
-            const item = taskRepeater.itemAt(index)
-            const clearSelectionFunction = item && item["clearSelection"] !== undefined
-                    ? item["clearSelection"]
-                    : null
-            if (!clearSelectionFunction)
-                continue
-            if (clearSelectionFunction(preserveFocusedEditor === true))
-                cleared = true
-        }
-        return cleared
+        return agendaBlockController.clearSelection(preserveFocusedEditor)
     }
 
     function shortcutInsertionSourceOffset() {
-        // Agenda/callout shortcuts must stay block-scoped here so new wrappers do not nest inside task content.
-        return agendaBlock.sourceEnd
+        return agendaBlockController.shortcutInsertionSourceOffset()
     }
 
     Rectangle {
@@ -314,97 +190,37 @@ FocusScope {
                                                               ? ""
                                                               : String(taskEditor.preeditText)
                         property string taskText: taskData.text !== undefined ? String(taskData.text) : ""
-                        property bool _hasLiveTaskTextSnapshot: false
-                        property string _liveTaskText: ""
 
                         Layout.fillWidth: true
                         implicitHeight: taskEditor.implicitHeight
                         width: parent ? parent.width : implicitWidth
 
                         function focusEditor(cursorPosition) {
-                            taskEditor.forceActiveFocus()
-                            const numericCursorPosition = Number(cursorPosition)
-                            const targetCursorPosition = isFinite(numericCursorPosition)
-                                                       ? Math.max(0, Math.min(Math.floor(numericCursorPosition), Math.max(0, taskEditor.length || 0)))
-                                                       : Math.max(0, taskEditor.length || 0)
-                            if (taskEditor.setCursorPositionPreservingNativeInput !== undefined)
-                                taskEditor.setCursorPositionPreservingNativeInput(targetCursorPosition)
-                            else if (taskEditor.cursorPosition !== undefined)
-                                taskEditor.cursorPosition = targetCursorPosition
-                            agendaBlock.activated()
+                            taskRowController.focusEditor(cursorPosition)
                         }
 
                         function clearSelection(preserveFocusedEditor) {
-                            if (!taskEditor || taskEditor.clearSelection === undefined)
-                                return false
-                            if (preserveFocusedEditor === true && taskEditor.focused)
-                                return false
-                            taskEditor.clearSelection()
-                            return true
+                            return taskRowController.clearSelection(preserveFocusedEditor)
                         }
 
                         function currentEditorPlainText() {
-                            if (!taskEditor)
-                                return StructuredCursorSupport.normalizedPlainText(taskRow.taskText)
-                            if (taskEditor.currentPlainText !== undefined)
-                                return StructuredCursorSupport.normalizedPlainText(taskEditor.currentPlainText())
-                            return StructuredCursorSupport.normalizedPlainText(taskRow.taskText)
+                            return taskRowController.currentEditorPlainText()
                         }
 
                         function syncLiveTaskTextFromHost() {
-                            const hostText = StructuredCursorSupport.normalizedPlainText(taskRow.taskText)
-                            if (taskRow.focused
-                                    && taskRow._hasLiveTaskTextSnapshot
-                                    && hostText !== taskRow._liveTaskText
-                                    && taskRow.currentEditorPlainText() !== hostText) {
-                                return
-                            }
-                            taskRow._liveTaskText = hostText
-                            taskRow._hasLiveTaskTextSnapshot = true
+                            taskRowController.syncLiveTaskTextFromHost()
                         }
 
                         function currentCursorRowRect() {
-                            const editorItem = taskEditor && taskEditor.editorItem ? taskEditor.editorItem : null
-                            const cursorPosition = Math.max(
-                                        0,
-                                        Math.min(
-                                            Math.max(0, taskEditor.length || 0),
-                                            Number(taskEditor && taskEditor.cursorPosition !== undefined ? taskEditor.cursorPosition : 0) || 0))
-                            if (!editorItem || editorItem.positionToRectangle === undefined)
-                                return ({
-                                            "contentHeight": Math.max(1, Number(taskEditor ? taskEditor.inputContentHeight : 0) || Math.round(LV.Theme.scaleMetric(12))),
-                                            "contentY": Math.max(0, Number(taskRow.y) || 0)
-                                        })
-                            const rect = editorItem.positionToRectangle(cursorPosition)
-                            const mappedPoint = editorItem.mapToItem !== undefined
-                                    ? editorItem.mapToItem(agendaBlock, 0, Number(rect.y) || 0)
-                                    : ({ "x": 0, "y": Math.max(0, Number(taskRow.y) || 0) + (Number(rect.y) || 0) })
-                            return {
-                                "contentHeight": Math.max(1, Number(rect.height) || Math.round(LV.Theme.scaleMetric(12))),
-                                "contentY": Math.max(0, Number(mappedPoint.y) || 0)
-                            }
+                            return taskRowController.currentCursorRowRect()
                         }
 
                         function cursorOnFirstVisualRow() {
-                            const rowRect = taskRow.currentCursorRowRect()
-                            const localTaskY = Math.max(0, Number(taskRow.y) || 0)
-                            return Math.max(0, Number(rowRect.contentY) || 0) <= localTaskY + 1
+                            return taskRowController.cursorOnFirstVisualRow()
                         }
 
                         function cursorOnLastVisualRow() {
-                            const rowRect = taskRow.currentCursorRowRect()
-                            const rowBottom = Math.max(
-                                        0,
-                                        (Number(rowRect.contentY) || 0) + (Number(rowRect.contentHeight) || 0))
-                            const localTaskY = Math.max(0, Number(taskRow.y) || 0)
-                            const contentHeight = Math.max(
-                                        1,
-                                        Number(taskEditor && taskEditor.inputContentHeight !== undefined
-                                               ? taskEditor.inputContentHeight
-                                               : 0)
-                                        || Math.max(1, rowBottom - localTaskY))
-                            const localRowBottom = Math.max(0, rowBottom - localTaskY)
-                            return localRowBottom >= contentHeight - 1
+                            return taskRowController.cursorOnLastVisualRow()
                         }
 
                         RowLayout {
@@ -432,10 +248,7 @@ FocusScope {
                                 uncheckedColor: agendaBlock.taskBoxColor
 
                                 onToggled: {
-                                    if (checked === !!taskRow.taskData.done)
-                                        return
-                                    agendaBlock.taskDoneToggled(taskRow.taskOpenTagStart, taskRow.taskOpenTagEnd, checked)
-                                    agendaBlock.activated()
+                                    taskRowController.handleToggleChanged(checked)
                                 }
                             }
 
@@ -472,38 +285,26 @@ FocusScope {
                                 textColor: agendaBlock.taskTextColor
                                 wrapMode: TextEdit.Wrap
 
-                                onFocusedChanged: {
-                                    if (focused) {
-                                        taskRow.syncLiveTaskTextFromHost()
-                                        agendaBlock.activated()
-                                    }
-                                }
-                                onCursorPositionChanged: {
-                                    if (focused)
-                                        agendaBlock.cursorInteraction()
-                                }
-                                onTextEdited: function (text) {
-                                    const previousText = taskRow._hasLiveTaskTextSnapshot
-                                            ? taskRow._liveTaskText
-                                            : StructuredCursorSupport.normalizedPlainText(taskRow.taskText)
-                                    const nextText = StructuredCursorSupport.normalizedPlainText(String(text || ""))
-                                    if (previousText === nextText)
-                                        return
-                                    taskRow._liveTaskText = nextText
-                                    taskRow._hasLiveTaskTextSnapshot = true
-                                    agendaBlock.taskTextChanged(
-                                                taskRow.taskData,
-                                                nextText,
-                                                Math.max(0, Number(taskEditor.cursorPosition) || 0),
-                                                previousText)
-                                }
                             }
 
-                            Component.onCompleted: taskRow.syncLiveTaskTextFromHost()
+                            EditorInputModel.ContentsAgendaTaskRowController {
+                                id: taskRowController
+
+                                agendaBlock: agendaBlock
+                                taskEditor: taskEditor
+                                taskRow: taskRow
+                            }
                         }
                     }
                 }
             }
         }
+    }
+
+    EditorInputModel.ContentsAgendaBlockController {
+        id: agendaBlockController
+
+        agendaBlock: agendaBlock
+        taskRepeater: taskRepeater
     }
 }

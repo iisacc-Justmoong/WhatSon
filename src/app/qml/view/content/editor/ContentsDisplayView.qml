@@ -8,7 +8,6 @@ import "../../../../models/editor/display" as EditorDisplayModel
 import "../../../../models/editor/display/ContentsMinimapSnapshotSupport.js" as MinimapSnapshotSupport
 import "../../../../models/editor/input" as EditorInputModel
 import "../../../../models/editor/resource" as EditorResourceModel
-import "../../../../viewmodel/editor/display" as EditorDisplayViewModel
 
 Item {
     id: contentsView
@@ -2154,7 +2153,7 @@ Item {
                         editorSession)
         }
     }
-    EditorDisplayViewModel.ContentsDisplayEventPump {
+    EditorDisplayModel.ContentsDisplayEventPump {
         id: eventPump
 
         bodyResourceRenderer: bodyResourceRenderer
@@ -2174,8 +2173,8 @@ Item {
         structuredDocumentFlow: structuredDocumentFlow
         traceFormatter: traceFormatter
     }
-    EditorDisplayViewModel.ContentsDisplayPresentationViewModel {
-        id: presentationViewModel
+    EditorDisplayModel.ContentsDisplayPresentationController {
+        id: presentationController
 
         contentEditorLoader: contentEditorLoader
         contentsView: contentsView
@@ -2193,8 +2192,13 @@ Item {
         structuredDocumentFlow: structuredDocumentFlow
         traceFormatter: traceFormatter
     }
-    EditorDisplayViewModel.ContentsDisplayMutationViewModel {
-        id: mutationViewModel
+    ContentsDisplayPresentationViewModel {
+        id: presentationViewModel
+
+        controller: presentationController
+    }
+    EditorDisplayModel.ContentsDisplayMutationController {
+        id: mutationController
 
         contentEditor: contentsView.contentEditor
         contentsAgendaBackend: contentsAgendaBackend
@@ -2209,8 +2213,13 @@ Item {
         resourceImportController: resourceImportController
         structuredDocumentFlow: structuredDocumentFlow
     }
-    EditorDisplayViewModel.ContentsDisplaySelectionMountViewModel {
-        id: selectionMountViewModel
+    ContentsDisplayMutationViewModel {
+        id: mutationViewModel
+
+        controller: mutationController
+    }
+    EditorDisplayModel.ContentsDisplaySelectionMountController {
+        id: selectionMountController
 
         contentEditor: contentsView.contentEditor
         contentsView: contentsView
@@ -2222,8 +2231,13 @@ Item {
         selectionSyncCoordinator: selectionSyncCoordinator
         traceFormatter: traceFormatter
     }
-    EditorDisplayViewModel.ContentsDisplayGeometryViewModel {
-        id: geometryViewModel
+    ContentsDisplaySelectionMountViewModel {
+        id: selectionMountViewModel
+
+        controller: selectionMountController
+    }
+    EditorDisplayModel.ContentsDisplayGeometryController {
+        id: geometryController
 
         contentsView: contentsView
         eventPump: eventPump
@@ -2231,6 +2245,11 @@ Item {
         refreshCoordinator: refreshCoordinator
         structuredDocumentFlow: structuredDocumentFlow
         viewportCoordinator: viewportCoordinator
+    }
+    ContentsDisplayGeometryViewModel {
+        id: geometryViewModel
+
+        controller: geometryController
     }
     Rectangle {
         id: contentsDisplayView
@@ -2846,7 +2865,7 @@ Item {
         }
     }
 }
-                    EditorDisplayViewModel.ContentsDisplayInputCommandSurface {
+                    EditorDisplayModel.ContentsDisplayInputCommandSurface {
                         id: inputCommandSurface
 
                         contentsView: contentsView

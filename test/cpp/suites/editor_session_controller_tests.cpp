@@ -50,3 +50,35 @@ void WhatSonCppRegressionTests::editorSessionController_rebindsWhenSameNoteIdUse
     QCOMPARE(controller.editorText(), QStringLiteral("raw-owned text"));
     QVERIFY(!controller.localEditorAuthority());
 }
+
+void WhatSonCppRegressionTests::editorSessionBoundary_usesCppControllerWithoutQmlWrapper()
+{
+    const QString sessionControllerHeader = readUtf8SourceFile(
+        QStringLiteral("src/app/models/editor/session/ContentsEditorSessionController.hpp"));
+    const QString sessionControllerSource = readUtf8SourceFile(
+        QStringLiteral("src/app/models/editor/session/ContentsEditorSessionController.cpp"));
+    const QString sessionQmlWrapper = readUtf8SourceFile(
+        QStringLiteral("src/app/models/editor/session/ContentsEditorSession.qml"));
+    const QString displayViewSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/content/editor/ContentsDisplayView.qml"));
+    const QString sessionReadme = readUtf8SourceFile(
+        QStringLiteral("docs/src/app/models/editor/session/README.md"));
+    QDir repositoryRoot(QFileInfo(QString::fromUtf8(__FILE__)).absolutePath());
+    repositoryRoot.cdUp();
+    repositoryRoot.cdUp();
+    repositoryRoot.cdUp();
+    const QDir sessionDirectory(repositoryRoot.filePath(QStringLiteral("src/app/models/editor/session")));
+
+    QVERIFY(!sessionControllerHeader.isEmpty());
+    QVERIFY(!sessionControllerSource.isEmpty());
+    QVERIFY(sessionQmlWrapper.isEmpty());
+    QVERIFY(!displayViewSource.isEmpty());
+    QVERIFY(!sessionReadme.isEmpty());
+    QVERIFY(sessionDirectory.entryList(QStringList{QStringLiteral("*.qml")}, QDir::Files).isEmpty());
+
+    QVERIFY(sessionControllerHeader.contains(QStringLiteral("class ContentsEditorSessionController : public QObject")));
+    QVERIFY(sessionControllerSource.contains(QStringLiteral("queueCurrentEditorTextForPersistence")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("ContentsEditorSessionController {")));
+    QVERIFY(!displayViewSource.contains(QStringLiteral("ContentsEditorSession {")));
+    QVERIFY(sessionReadme.contains(QStringLiteral("must not contain QML wrappers")));
+}

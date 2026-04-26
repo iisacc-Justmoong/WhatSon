@@ -31,6 +31,12 @@ every turn.
 - Editor view mode state/viewmodel: `src/app/viewmodel/navigationbar/EditorViewState.*`,
   `src/app/viewmodel/navigationbar/EditorViewSectionViewModel.*`,
   `src/app/viewmodel/navigationbar/EditorViewModeViewModel.*`
+- Editor persistence controller: `src/app/models/editor/persistence/ContentsEditorPersistenceController.*`
+- Editor non-format tag helpers: `src/app/models/editor/tags/ContentsAgendaBackend.*`,
+  `src/app/models/editor/tags/ContentsCalloutBackend.*`,
+  `src/app/models/editor/tags/ContentsStructuredTagValidator.*`,
+  `src/app/models/editor/tags/WhatSonStructuredTagLinter.*`,
+  `src/app/models/editor/tags/ContentsResourceTagTextGenerator.*`
 - Sidebar selection store interface/impl: `src/app/store/sidebar/ISidebarSelectionStore.*`,
   `src/app/store/sidebar/SidebarSelectionStore.*`
 - Sidebar hierarchy wiring interfaces/viewmodel: `src/app/viewmodel/sidebar/IHierarchyViewModelProvider.*`,
@@ -72,6 +78,16 @@ every turn.
 - Flat/shared hierarchy model abstraction is prohibited for runtime hierarchy ViewModel wiring.
 - Keep model/support code isolated per domain directory in `src/app/viewmodel/hierarchy/<domain>/`.
 
+### ViewModel Implementation Boundary (Critical)
+
+- ViewModels must be single-responsibility C++ classes.
+- Do not add QML files under `src/app/viewmodel`, and do not register that directory as a QML module source.
+- QML must be used for view construction only.
+- Do not add compatibility QML wrappers for model, viewmodel, session, persistence, sync, parsing, mutation,
+  scheduling, or command-surface responsibilities. Promote those responsibilities into single-purpose C++ objects.
+- Each C++ ViewModel must expose a narrow signal/slot contract and delegate domain mutation, timing, rendering, or
+  persistence work to the owning model layer.
+
 ## Architectural Direction
 
 - Prefer Domain-Driven Development and Feature-Driven Development for new code, refactors, and file moves.
@@ -108,6 +124,13 @@ every turn.
 - `ContentsStructuredDocumentFlow.qml` is the canonical note document host once a note session is bound.
 - Specialized block delegates may change presentation, but they must not split the note into a separate editor mode or
   a different persistence authority.
+- Editor-session persistence orchestration belongs under `src/app/models/editor/persistence`.
+  `ContentsEditorPersistenceController` owns note-body snapshot buffering, immediate enqueue attempts, persistence
+  retry/drain scheduling, pending-snapshot adoption, selected-note body reads, and post-save reconcile handoff.
+- Non-format editor-body tag responsibilities belong under `src/app/models/editor/tags`, including agenda/task,
+  callout, break, structured-tag lint/correction advisory state, and RAW resource-tag construction.
+- `src/app/models/file/note` owns concrete `.wsnote/.wsnbody` file mutation once the editor persistence layer has
+  selected a RAW snapshot for IO; it must not own editor-session dirty buffers or editor save-timing policy.
 
 ### Input Method Authority (Critical)
 
@@ -127,7 +150,7 @@ every turn.
   only to defer persistence or programmatic sync until native composition settles.
 - Until these primitives are promoted into LVRS, editor QML must route native-input session, shortcut-surface,
   context-menu long-press, focused programmatic-sync, and ordinary text-edit focus-restore decisions through
-  `src/app/qml/view/content/editor/ContentsEditorInputPolicyAdapter.qml`.
+  `src/app/models/editor/input/ContentsEditorInputPolicyAdapter.qml`.
 
 ## Codex Init (`/init`) Procedure
 

@@ -7,15 +7,15 @@
 ## Runtime Notes
 
 - The coordinator now centralizes the editor-adjacent note-management queue that sits downstream of
-  `file/sync/ContentsEditorIdleSyncController`.
+  `src/app/models/editor/persistence/ContentsEditorPersistenceController`.
 - Direct body persistence still uses `WhatSonLocalNoteFileStore`, but that worker request is now just one request kind
   inside the coordinator.
-- The coordinator now also exposes one direct-context capture path for the upstream idle-sync controller:
+- The coordinator now also exposes one direct-context capture path for the upstream editor persistence controller:
   - resolve `noteDirectoryPathForNoteId(noteId)` while the correct content view-model is still bound
-  - allow a later buffered fetch turn to enqueue `DirectPersistBody` with that frozen note-directory path
+  - allow a later buffered drain turn to enqueue `DirectPersistBody` with that frozen note-directory path
   - avoid re-routing stale buffered editor text through whichever hierarchy view-model happens to be active later
 - The coordinator now also exposes a read-side `noteDirectoryPathForNote(noteId)` helper.
-  `ContentsEditorIdleSyncController` and the selection bridge use that helper to surface the currently selected note's
+  `ContentsEditorPersistenceController` and the selection bridge use that helper to surface the currently selected note's
   resolved package directory back to body resource rendering without depending on the editor's current hierarchy shell.
 - Read/reconcile/bind requests are no longer forced through `noteId`-only lookup.
   `loadNoteBodyTextForNote(...)`, `reconcileViewSessionAndRefreshSnapshotForNote(...)`, and `bindSelectedNote(...)`
@@ -68,7 +68,7 @@
 
 ## Regression Checks
 
-- A body persistence completion must still emit `editorTextPersistenceFinished(...)` so `ContentsEditorSession.qml` can
+- A body persistence completion must still emit `editorTextPersistenceFinished(...)` so `ContentsEditorSessionController` can
   clear or retry its save state correctly.
 - Persist completion must not immediately run backlink/open-count scans on the editor path; those must be queued as
   coordinator follow-up tasks.
@@ -76,7 +76,7 @@
   that already finished.
 - Destroying the bound content view-model during an in-flight request must not crash queued completion handling.
 - A buffered editor save that already captured its direct note-directory path must not be lost merely because the active
-  content view-model changed before the next fetch turn.
+  content view-model changed before the next drain turn.
 - Fallback/direct body persistence for a Tags-selected note must still cause the active tags hierarchy view-model to
   re-read `Tags.wstags`, so newly promoted `#label` tags appear in the hierarchy without a manual app restart.
 - Session/filesystem reconciliation must return success without reload when RAW already matches the current view

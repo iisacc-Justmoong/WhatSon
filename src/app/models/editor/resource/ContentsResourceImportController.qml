@@ -2,6 +2,7 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import "../diagnostics/ContentsEditorDebugTrace.js" as EditorTrace
+import "../tags" as EditorTagsModel
 
 QtObject {
     id: controller
@@ -46,7 +47,7 @@ QtObject {
         id: dropPayloadParser
     }
 
-    property QtObject resourceTagController: ContentsResourceTagController {
+    property QtObject resourceTagController: EditorTagsModel.ContentsResourceTagController {
         id: resourceTagController
 
         bodyResourceRenderer: controller.bodyResourceRenderer

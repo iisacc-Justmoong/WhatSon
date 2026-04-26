@@ -8,7 +8,8 @@ desktop/mobile host.
 ## Responsibilities
 
 - Delegates drag/drop payload parsing to `ContentsResourceDropPayloadParser.qml`.
-- Delegates RAW `<resource ... />` insertion and tag-loss detection to `ContentsResourceTagController.qml`.
+- Delegates RAW `<resource ... />` insertion and tag-loss detection to
+  `src/app/models/editor/tags/ContentsResourceTagController.qml`.
 - Delegates inline HTML placeholder/image substitution to
   `ContentsInlineResourcePresentationController.qml`.
 - Delegates temporary read-only/programmatic-sync guard state to

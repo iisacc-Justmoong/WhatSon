@@ -213,9 +213,7 @@ if (WHATSON_IS_TRIAL_BUILD AND NOT ANDROID AND NOT (APPLE AND CMAKE_SYSTEM_NAME 
     )
 endif ()
 
-add_subdirectory(models/agenda)
 add_subdirectory(models/calendar)
-add_subdirectory(models/callout)
 add_subdirectory(models/content)
 add_subdirectory(models/display)
 add_subdirectory(models/editor)

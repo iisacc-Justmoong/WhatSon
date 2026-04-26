@@ -6,7 +6,8 @@
 
 It composes:
 
-- editor display viewmodels under `src/app/viewmodel/editor/display`
+- C++ editor display ViewModels under `src/app/viewmodel/editor/display`
+- model-side display controllers under `src/app/models/editor/display`
 - structured document-flow mounting
 - legacy fallback editor hosting
 - gutter/minimap/page layout
@@ -24,11 +25,12 @@ not note-backed.
   - plain logical text as the live input buffer
   - tokenized HTML as a separate read-side overlay (`renderedEditorHtml`)
 - The host no longer pushes a RichText editing surface back into `ContentsInlineFormatEditor.qml`.
-- Selection/mount orchestration, presentation refresh application, RAW mutation commands, input shortcut surfaces,
-  event timers/connections, and minimap/gutter scheduling now live in dedicated QML viewmodels under
-  `src/app/viewmodel/editor/display`.
-- `ContentsDisplayView.qml` keeps compatibility wrapper functions only for collaborators that still call the display
-  host API directly; those wrappers delegate into the responsible viewmodel.
+- Selection/mount, presentation, RAW mutation, and minimap/gutter command surfaces now pass through dedicated C++
+  ViewModels under `src/app/viewmodel/editor/display`.
+- QML runtime mechanics that need timers, connections, shortcuts, pointer handlers, or context menus live as
+  model-side controllers under `src/app/models/editor/display`; they are not ViewModels.
+- `ContentsDisplayView.qml` keeps compatibility controller functions only for collaborators that still call the display
+  host API directly; those controllers delegate into the responsible C++ ViewModel.
 - `ContentsDisplayNoteBodyMountCoordinator` now owns the note-body mount contract between the selection bridge,
   the editor session, and the mounted document surface.
   The host stays in a pending mount state until either the selected note snapshot resolves for that same note id or
@@ -158,7 +160,7 @@ not note-backed.
   Ordinary text-edit focus requests are marked as `reason: "text-edit"` by the structured block delegate and are not
   replayed during a focused native-priority input session, which avoids reapplying focus/cursor between iOS delete
   repeat ticks.
-- Selection delivery into `ContentsEditorSession.qml` and `ContentsDisplayDocumentSourceResolver` now forwards
+- Selection delivery into `ContentsEditorSessionController` and `ContentsDisplayDocumentSourceResolver` now forwards
   `selectedNoteDirectoryPath` explicitly.
   QML no longer asks those collaborators to rediscover the mounted package from `noteId` alone after selection has
   already picked a concrete `.wsnote` directory.

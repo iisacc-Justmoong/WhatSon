@@ -16,9 +16,7 @@
 - Delegates source ownership to top-level app domains through `add_subdirectory(...)` instead of one monolithic recursive file list.
 
 ## Current Directory Split
-- `src/app/models/agenda/CMakeLists.txt`
 - `src/app/models/calendar/CMakeLists.txt`
-- `src/app/models/callout/CMakeLists.txt`
 - `src/app/models/display/CMakeLists.txt`
 - `src/app/models/sensor/CMakeLists.txt`
 - `src/app/models/editor/CMakeLists.txt`
@@ -53,9 +51,11 @@
   the shard build directory rather than the owned source directory.
 - `src/app/models` is now registered once as a shared include-root compatibility shard before child `add_subdirectory(...)`
   evaluation, so existing cross-domain includes like `calendar/SystemCalendarStore.hpp`,
-  `agenda/ContentsAgendaBackend.hpp`, `callout/ContentsCalloutBackend.hpp`, and
+  `editor/tags/ContentsAgendaBackend.hpp`, `editor/tags/ContentsCalloutBackend.hpp`, and
   `editor/format/ContentsTextFormatRenderer.hpp`, `display/paper/print/ContentsPagePrintLayoutRenderer.hpp`, and
   `sensor/UnusedResourcesSensor.hpp` keep compiling after those domains moved under `src/app/models/`.
+- Non-format editor body tag sources are grouped under `src/app/models/editor/tags`; agenda and callout no longer use
+  separate build shards.
 - Desktop trial builds pull in the dedicated trial activation sources from `src/extension/trial` and define `WHATSON_IS_TRIAL_BUILD=1` for the app target.
 - Android and iOS builds intentionally skip the trial sources because the mobile app does not participate in the desktop trial flow.
 - On Apple desktop trial builds, the app target also links the `Security` framework because the trial secure-store implementation uses the host keychain.

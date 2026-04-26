@@ -19,9 +19,9 @@
   - exports `selectedNoteId`, `selectedNoteDirectoryPath`, `selectedNoteBodyNoteId`, `selectedNoteBodyText`,
     `selectedNoteBodyLoading`, and `visibleNoteCount`
   - keeps the note-list selection/count property wiring for QML
-  - forwards persistence and note-management requests to `file/sync/ContentsEditorIdleSyncController`
+  - forwards persistence and note-management requests to `src/app/models/editor/persistence/ContentsEditorPersistenceController`
 - The note-list contract can now optionally provide `currentBodyText` for the committed selected note.
-  When that payload is available, the bridge reuses it immediately before it falls back to lazy sync/package loading.
+  When that payload is available, the bridge reuses it immediately before it falls back to lazy editor-persistence package loading.
 - The bridge now also treats note-list `currentIndexChanged()` as a first-class selection refresh trigger.
   This keeps list-item activation aligned with editor selection even when the model derives `currentNoteId` lazily from
   its committed index instead of emitting a dedicated note-id signal first.
@@ -40,29 +40,29 @@
   - `flushEditorTextForNote(noteId, text)`
   - `reconcileViewSessionAndRefreshSnapshotForNote(noteId, viewSessionText)`
   - `refreshSelectedNoteSnapshot()`
-  and they now delegate to the sync boundary instead of performing note-management work inside the bridge itself.
+  and they now delegate to the editor persistence boundary instead of performing note-management work inside the bridge itself.
 - Those invokables no longer imply an idle-threshold or immediate-save guarantee:
-  - staging means "buffer this latest note snapshot for a later fetch turn"
-  - flush means "buffer it and request one immediate fetch attempt if possible"
+  - staging means "buffer this latest note snapshot for a later drain turn"
+  - flush means "buffer it and request one immediate persistence enqueue attempt if possible"
 - `reconcileViewSessionAndRefreshSnapshotForNote(...)` now also requires an explicit note id; it no longer falls back
   to whichever note the bridge currently marks as selected.
 - The bridge still exposes `directPersistenceContractAvailable` and `contentPersistenceContractAvailable`, but those
-  values now come from the sync-owned downstream management boundary.
+  values now come from the persistence-owned downstream management boundary.
 - The bridge now also forwards `editorTextPersistenceQueued(...)` so QML sessions can distinguish
-  "the fetch boundary accepted one buffered snapshot into the persistence queue" from "the write already finished".
+  "the editor persistence boundary accepted one buffered snapshot into the persistence queue" from "the write already finished".
 - `editorTextPersistenceFinished(noteId, text, success, errorMessage)` is still the completion signal consumed by QML
   editor sessions, and the bridge now also uses successful same-note completion to advance its own
   `selectedNoteBodyText` cache.
 - Internal note-list selection refresh now follows a queued-coalesced contract: one event-loop turn can schedule at
   most one pending note-selection refresh.
 - Note-list-model replacement and content-view-model replacement now both funnel through that same queued refresh turn.
-  The bridge keeps one `requiresRebind` flag so the downstream sync controller rebinds the selected note only after the
+  The bridge keeps one `requiresRebind` flag so the downstream editor persistence controller rebinds the selected note only after the
   final note-list/content-view-model pair for that event-loop turn has settled.
 - The selected-note lazy-load contract now also keeps one latest request sequence, allowing the bridge to ignore stale
   same-note body-read completions.
 - The bridge now also keeps one internal pending-body adoption helper so selected-note lazy loads can reuse a dirty or
-  in-flight editor snapshot from `ContentsEditorIdleSyncController` before falling back to package IO.
-- The bridge now also exposes `selectedNoteDirectoryPath`, resolved through the idle-sync boundary.
+  in-flight editor snapshot from `ContentsEditorPersistenceController` before falling back to package IO.
+- The bridge now also exposes `selectedNoteDirectoryPath`, resolved through the editor persistence boundary.
   QML body-resource rendering can therefore resolve `.wsresource` package references against the same note directory
   that the editor session is currently bound to, instead of re-deriving that path through whichever hierarchy
   view-model happens to be active.
@@ -109,10 +109,10 @@
 ## Regression Checks
 
 - Selection refresh must not directly execute note-file persistence, stat refresh, or open-count maintenance logic.
-- `persistEditorTextForNote(...)` must stay as a buffered-stage contract for QML even after the sync split.
-- Binding a new content view-model must request one coalesced selected-note rebind into the sync controller so note-path
+- `persistEditorTextForNote(...)` must stay as a buffered-stage contract for QML even after the persistence split.
+- Binding a new content view-model must request one coalesced selected-note rebind into the editor persistence controller so note-path
   resolution uses the settled note-list/content-view-model pair rather than an intermediate mismatch.
-- QML must still be able to request a best-effort immediate fetch through `flushEditorTextForNote(...)` when the editor
+- QML must still be able to request a best-effort immediate persistence enqueue through `flushEditorTextForNote(...)` when the editor
   lifecycle is ending, but ordinary note switches must not depend on that path.
 - Mobile entry-time reconciliation must be available through
   `reconcileViewSessionAndRefreshSnapshotForNote(...)`, so QML can compare a live editor session snapshot against
@@ -128,7 +128,7 @@
   the selected note id itself did not change.
 - A note-backed list row/current index alone must not be treated as a committed note identity.
 - Stale same-note body-read completions must not reclaim the selected note body after a newer request was issued.
-- Stale filesystem text must not reclaim the selected note body while the sync controller still owns a newer dirty or
+- Stale filesystem text must not reclaim the selected note body while the editor persistence controller still owns a newer dirty or
   in-flight editor snapshot for that note.
 - A successful same-note persistence completion must not leave `selectedNoteBodyText` behind at the note-open snapshot.
 - A same-turn note-list/content-view-model swap must not bind the old note id to the new content view-model or the new
@@ -139,7 +139,7 @@
   so inline image/resource rendering does not disappear merely because the hierarchy view-model resolver is between
   rebinds.
 - Selection refresh must keep the editor body populated from a runtime snapshot when the content view-model can resolve
-  `noteBodySourceTextForNoteId(...)` but the sync boundary cannot resolve a package path for that note.
+  `noteBodySourceTextForNoteId(...)` but the editor persistence boundary cannot resolve a package path for that note.
 - A readable-but-empty committed selection contract must clear bridge selection instead of retaining the previous
   selected note/body as stale state.
 - A same-note `currentNoteEntryChanged()` must still force one body refresh/rebind turn even when `selectedNoteId`

@@ -32,6 +32,7 @@
 #include "app/store/sidebar/ISidebarSelectionStore.hpp"
 #include "app/store/sidebar/SidebarSelectionStore.hpp"
 #include "app/models/editor/bridge/ContentsEditorSelectionBridge.hpp"
+#include "app/models/editor/persistence/ContentsEditorPersistenceController.hpp"
 #include "app/models/editor/renderer/ContentsStructuredBlockRenderer.hpp"
 #include "app/models/editor/session/ContentsEditorSessionController.hpp"
 #include "app/models/editor/text/ContentsLogicalTextBridge.hpp"
@@ -39,7 +40,7 @@
 #include "app/models/editor/structure/ContentsStructuredDocumentCollectionPolicy.hpp"
 #include "app/models/editor/structure/ContentsStructuredDocumentHost.hpp"
 #include "app/models/editor/structure/ContentsStructuredDocumentMutationPolicy.hpp"
-#include "app/models/editor/resource/ContentsResourceTagTextGenerator.hpp"
+#include "app/models/editor/tags/ContentsResourceTagTextGenerator.hpp"
 #include "app/viewmodel/hierarchy/IHierarchyViewModel.hpp"
 #include "app/viewmodel/hierarchy/WhatSonHierarchyTreeItemSupport.hpp"
 #include "app/viewmodel/hierarchy/library/LibraryNoteListModel.hpp"
@@ -943,6 +944,7 @@ private slots:
     void contentsEditorSelectionBridge_reloadsBodyWhenCommittedNoteEntryChangesWithoutNoteIdChange();
     void contentsEditorSelectionBridge_updatesBodySnapshotBeforePersistenceFinishedSignal();
     void contentsEditorSelectionBridge_emitsTraceForNoteSelectionFlow();
+    void editorPersistenceController_definesEditorPersistenceBoundary();
     void noteBackedHierarchyNoteLists_preserveRawBodySnapshotForEditorBootstrap();
     void noteListModelContractBridge_resolvesHierarchyBoundNoteListImmediately();
     void noteListModelContractBridge_prefersExplicitRowsAcrossHierarchySwitches();
@@ -963,6 +965,7 @@ private slots:
     void unusedResourcesSensor_refreshesAfterRawBodyEmbedsAResource();
     void resourcesImportViewModel_wiresAnnotationBitmapGenerationIntoPackageCreation();
     void resourceTagTextGenerator_and_noteFolderSemantics_normalizeDescriptorsAndXml();
+    void editorTagsBoundary_groupsNonFormatBodyTagResponsibilities();
     void foldersHierarchyParser_escapesLiteralSlashLabelsIntoSingleSegments();
     void foldersHierarchySessionService_preservesEscapedLiteralSlashFolderPaths();
     void sidebarHierarchyRenameController_preservesLiteralSlashFolderLabels();
@@ -1049,6 +1052,7 @@ private slots:
     void resourceBitmapViewer_projectsRenderableImagePreviewState();
     void editorSessionController_preservesLocalEditorAuthorityAgainstSameNoteModelSync();
     void editorSessionController_rebindsWhenSameNoteIdUsesDifferentPackagePath();
+    void editorSessionBoundary_usesCppControllerWithoutQmlWrapper();
     void noteManagementCoordinator_reconcilePersistsEditorSnapshotWhenPreferred();
     void noteManagementCoordinator_reconcileRefreshesWithoutPersistingWhenEditorIsNotAuthoritative();
     void noteManagementCoordinator_loadNoteBodyText_preservesCanonicalSourceText();

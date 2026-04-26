@@ -7,7 +7,7 @@
 ## Scope
 - Mirrored source directory: `src/app/viewmodel/content`
 - Child directories: 0
-- Child files: 26
+- Child files: 24
 
 ## Child Directories
 - No child directories.
@@ -27,8 +27,6 @@
 - `ContentsGutterMarkerBridge.hpp`
 - `ContentsLogicalTextBridge.cpp`
 - `ContentsLogicalTextBridge.hpp`
-- `ContentsResourceTagTextGenerator.cpp`
-- `ContentsResourceTagTextGenerator.hpp`
 - `ContentsStructuredDocumentBlocksModel.cpp`
 - `ContentsStructuredDocumentBlocksModel.hpp`
 - `ContentsStructuredDocumentCollectionPolicy.cpp`
@@ -47,13 +45,13 @@
 - That same controller now also treats the live editor session as authoritative for same-note mismatch resolution once
   local edits exist, so delayed RAW/model refreshes cannot reclaim modified text until RAW has been repaired.
 - `ContentsDisplayView.qml` now mounts `ContentsEditorSessionController` directly for the primary editor session path,
-  while `ContentsEditorSession.qml` remains only as a thin compatibility wrapper for any future QML caller that still
-  expects the old component name.
+  and no QML session controller remains.
 - `ContentsEditorSelectionBridge` no longer owns the asynchronous direct `.wsnote` save queue itself.
-- The editor/UI path now stages body-write intent into `file/sync/ContentsEditorIdleSyncController`, which owns the
-  buffered note snapshot cache, recurring `1000ms` fetch clock, and best-effort lifecycle flush path.
-- `ContentsEditorSelectionBridge` now also prefers that sync-owned dirty snapshot cache when reopening a recently edited
-  note, so selection can reuse the newest local body before lazy file IO completes.
+- The editor/UI path now stages body-write intent into
+  `src/app/models/editor/persistence/ContentsEditorPersistenceController`, which owns the buffered note snapshot
+  cache, recurring `1000ms` persistence drain clock, and best-effort lifecycle flush path.
+- `ContentsEditorSelectionBridge` now also prefers that persistence-owned dirty snapshot cache when reopening a
+  recently edited note, so selection can reuse the newest local body before lazy file IO completes.
 - The same bridge now also advances its selected-note body cache on successful same-note persistence completion, so the
   note-open body snapshot cannot keep reclaiming the editor after a save that required no extra filesystem refresh.
 - Downstream note-management work still lives under the `file/note` domain in `ContentsNoteManagementCoordinator`,
@@ -96,22 +94,23 @@
   - `ContentsDisplayView.documentPresentationSourceText`
   - `ContentsEditorPresentationProjection` / `ContentsStructuredBlockRenderer`
 - The storage read side now strips rendered-editor HTML block artifacts before that path begins, so HTML comment
-  placeholders and non-canonical block wrappers are treated as suspicious input instead of editor-authoritative RAW.
+  placeholders and non-canonical block controllers are treated as suspicious input instead of editor-authoritative RAW.
 - Note-backed hierarchy viewmodels now also expose `noteBodySourceTextForNoteId(...)` as a shared runtime fallback
   contract, so the selection bridge can recover RAW note body source even when a path-based `.wsnbody` reload is not
   immediately available.
 - `ContentsEditorPresentationProjection` now centralizes the whole-document RAW-derived editor presentation snapshot.
   Desktop/mobile hosts bind one projection object per note surface instead of keeping separate host-owned
   `ContentsLogicalTextBridge` and `ContentsTextFormatRenderer` state graphs for the same document snapshot.
-- `ContentsResourceTagTextGenerator` now exposes the canonical RAW resource-tag builder to QML so editor import flows
-  no longer synthesize `<resource ... />` strings in JavaScript.
+- Canonical RAW resource-tag construction now lives under
+  `src/app/models/editor/tags/ContentsResourceTagTextGenerator.*` so non-format body tag helpers stay in the editor
+  tag boundary.
 - `ContentsStructuredDocumentMutationPolicy` now also accepts QML array/list variants robustly for resource insertion,
   so drag/drop tag blocks do not silently no-op when QML hands the policy a non-`QVariantList` sequential value.
 - That same mutation policy now compares wrapped QML container/value types through `QMetaType::fromType<T>()`,
   keeping the `QJSValue` unwrap path compatible with the Qt 6.8 headers used by the app build.
 - The mutation policy now also owns paragraph-boundary RAW rewrites for structured prose blocks.
   Adjacent `paragraph` / `p` blocks merge through one canonical payload builder, and paragraph split rewrites clone
-  explicit wrappers when needed instead of letting QML delegates perform ad-hoc tag surgery.
+  explicit controllers when needed instead of letting QML delegates perform ad-hoc tag surgery.
 - `ContentsStructuredDocumentHost` now centralizes structured-flow host state that used to live inline in
   `ContentsStructuredDocumentFlow.qml`, including normalized block/resource collections, pending focus requests,
   active-block tracking, and layout-cache-facing viewport state.
@@ -127,8 +126,8 @@
   `ContentsStructuredDocumentMutationPolicy` now split collection normalization, focus resolution, and RAW mutation
   rules into separate C++ SRP units so structured host behavior no longer collapses back into one QML god object.
 - Automated C++ regression coverage for this directory now lives in
-  `test/cpp/suites/*.cpp`, locking imported resource descriptor normalization/tag generation for
-  `ContentsResourceTagTextGenerator`, collection normalization/resource resolution for
+  `test/cpp/suites/*.cpp`, locking imported resource descriptor normalization/tag generation through the editor tags
+  boundary, collection normalization/resource resolution for
   `ContentsStructuredDocumentCollectionPolicy`, structured deletion/insertion payload generation for
   `ContentsStructuredDocumentMutationPolicy`, stable row retention/removal behavior in
   `ContentsStructuredDocumentBlocksModel`, selection-clear revision behavior in
@@ -137,7 +136,7 @@
   `ContentsNoteManagementCoordinator`.
 - That same regression suite now also locks paragraph merge/split payload generation in
   `ContentsStructuredDocumentMutationPolicy`, covering both implicit newline-delimited prose and explicit
-  `<paragraph>...</paragraph>` wrappers.
+  `<paragraph>...</paragraph>` controllers.
 - `ContentsStructuredDocumentFocusPolicy` now also resolves structured shortcut/resource insertion anchors from
   `{focused block hint, active block, pending focus request, RAW source}`.
   `ContentsStructuredDocumentFlow.qml` no longer keeps the fallback policy that guessed insertion at a block or

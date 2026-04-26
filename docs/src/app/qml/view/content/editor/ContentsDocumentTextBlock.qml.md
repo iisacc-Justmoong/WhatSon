@@ -8,6 +8,10 @@ In the structured-flow host this delegate may now also receive one flattened int
 from multiple implicit parser blocks.
 
 ## Current Behavior
+- Non-visual block editing state now lives in
+  `src/app/models/editor/input/ContentsDocumentTextBlockController.qml`.
+  This view keeps layout, inline editor composition, and rendered overlay wiring; focused live snapshots,
+  inline-tag-aware source replacement, cursor geometry, and focus requests belong to the controller.
 - The block now keeps `ContentsInlineFormatEditor.qml` in `TextEdit.PlainText` mode and uses
   `ContentsTextFormatRenderer.editorSurfaceHtml` only as the visual overlay payload.
 - Inline tags such as `<bold>`, `<italic>`, `<underline>`, `<strikethrough>`, and `<highlight>` therefore no longer

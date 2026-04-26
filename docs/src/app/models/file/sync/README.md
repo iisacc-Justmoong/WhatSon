@@ -7,28 +7,22 @@
 ## Scope
 - Mirrored source directory: `src/app/models/file/sync`
 - Child directories: 0
-- Child files: 4
+- Child files: 2
 
 ## Child Directories
 - No child directories.
 
 ## Child Files
-- `ContentsEditorIdleSyncController.cpp`
-- `ContentsEditorIdleSyncController.hpp`
 - `WhatSonHubSyncController.cpp`
 - `WhatSonHubSyncController.hpp`
 
 ## Current Notes
 
-- `ContentsEditorIdleSyncController` owns the editor-side buffered fetch-sync boundary under the `file/sync` domain.
-- That controller now also exposes the newest dirty or in-flight note body back to the selection layer, so note-open
-  can prefer unsaved local text over a stale package read.
-- Immediate editor flush requests now surface the real downstream enqueue result instead of always succeeding after
-  local buffering.
 - `WhatSonHubSyncController` was moved from `src/app/sync` into this directory so sync responsibilities are now
   fully consolidated under `file/sync`.
-- Runtime hub synchronization and editor idle synchronization now share the same domain root while preserving their
-  existing responsibilities.
+- Runtime hub synchronization remains the responsibility of this directory.
+- Note editor persistence is no longer part of `file/sync`; it is owned by
+  `src/app/models/editor/persistence/ContentsEditorPersistenceController`.
 
 ## Tests
 
@@ -36,7 +30,8 @@
 - Regression checklist:
   - Startup/runtime wiring must still resolve `WhatSonHubSyncController` through the new `file/sync` include path.
   - Hub watcher debounce and local-mutation acknowledge flow must remain unchanged after the directory move.
-  - Editor idle sync (`ContentsEditorIdleSyncController`) behavior must remain unchanged.
+  - Editor persistence tests must continue to reject any new dependency on the removed editor-persistence path under
+    `src/app/models/file/sync`.
 
 ## Intended Detailed Sections
 - Module responsibilities and architectural layer

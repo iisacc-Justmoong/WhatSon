@@ -2,7 +2,7 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import LVRS 1.0 as LV
-import "../../../../models/editor/diagnostics/ContentsEditorDebugTrace.js" as EditorTrace
+import "../../../../models/editor/input" as EditorInputModel
 
 FocusScope {
     id: documentBlock
@@ -108,219 +108,48 @@ FocusScope {
     width: parent ? parent.width : implicitWidth
 
     function currentCursorRowRect() {
-        const blockItem = blockLoader.item
-        if (blockItem && blockItem.currentCursorRowRect !== undefined)
-            return blockItem.currentCursorRowRect()
-        return ({
-                    "contentHeight": Math.max(1, Math.round(LV.Theme.scaleMetric(12))),
-                    "contentY": 0
-                })
+        return documentBlockController.currentCursorRowRect()
     }
 
     function logicalLineLayoutEntries() {
-        const blockItem = blockLoader.item
-        if (blockItem && blockItem.logicalLineLayoutEntries !== undefined)
-            return blockItem.logicalLineLayoutEntries()
-        return []
+        return documentBlockController.logicalLineLayoutEntries()
     }
 
     function applyFocusRequest(request) {
-        EditorTrace.trace(
-                    "documentBlock",
-                    "applyFocusRequest",
-                    "blockType=" + documentBlock.blockType
-                    + " atomic=" + documentBlock.atomicBlock
-                    + " request={" + EditorTrace.describeFocusRequest(request) + "}",
-                    documentBlock)
-        if (documentBlock.atomicBlock) {
-            const safeRequest = request && typeof request === "object" ? request : ({})
-            const sourceOffset = Number(safeRequest.sourceOffset)
-            if (!isFinite(sourceOffset))
-                return false
-            const sourceStart = Math.max(0, Number(documentBlock.normalizedBlock.sourceStart) || 0)
-            const sourceEnd = Math.max(sourceStart, Number(documentBlock.normalizedBlock.sourceEnd) || sourceStart)
-            if (sourceOffset < sourceStart || sourceOffset > sourceEnd)
-                return false
-            documentBlock.forceActiveFocus()
-            documentBlock.activated()
-            return true
-        }
-        const blockItem = blockLoader.item
-        if (!blockItem || blockItem.applyFocusRequest === undefined)
-            return false
-        return !!blockItem.applyFocusRequest(request)
+        return documentBlockController.applyFocusRequest(request)
     }
 
     function handleAtomicTagDeleteKeyPress(event) {
-        EditorTrace.trace(
-                    "documentBlock",
-                    "handleAtomicTagDeleteKeyPress",
-                    "blockType=" + documentBlock.blockType
-                    + " atomic=" + documentBlock.atomicBlock
-                    + " key=" + (event ? Number(event.key) : -1),
-                    documentBlock)
-        if (documentBlock.atomicBlock) {
-            if (!event)
-                return false
-            const modifiers = Number(event.modifiers) || 0
-            if (modifiers !== Qt.NoModifier)
-                return false
-            if (event.key === Qt.Key_Backspace || event.key === Qt.Key_Delete) {
-                documentBlock.blockDeletionRequested(
-                            event.key === Qt.Key_Delete
-                            ? "forward"
-                            : "backward")
-                event.accepted = true
-                return true
-            }
-            return false
-        }
-        return false
+        return documentBlockController.handleAtomicTagDeleteKeyPress(event)
     }
 
     function inlineFormatSelectionSnapshot() {
-        const blockItem = blockLoader.item
-        if (!blockItem)
-            return ({})
-        if (blockItem.inlineFormatSelectionSnapshot !== undefined)
-            return blockItem.inlineFormatSelectionSnapshot()
-        if (blockItem.selectionSnapshot !== undefined)
-            return blockItem.selectionSnapshot()
-        return ({})
+        return documentBlockController.inlineFormatSelectionSnapshot()
     }
 
     function clearSelection(preserveFocusedEditor) {
-        const blockItem = blockLoader.item
-        if (!blockItem || blockItem.clearSelection === undefined)
-            return false
-        return !!blockItem.clearSelection(preserveFocusedEditor === true)
+        return documentBlockController.clearSelection(preserveFocusedEditor)
     }
 
     function shortcutInsertionSourceOffset() {
-        const blockItem = blockLoader.item
-        if (blockItem && blockItem.shortcutInsertionSourceOffset !== undefined) {
-            const blockOffset = Number(blockItem.shortcutInsertionSourceOffset())
-            if (isFinite(blockOffset))
-                return Math.max(0, Math.floor(blockOffset))
-        }
-        return Math.max(0, Number(normalizedBlock.sourceEnd) || 0)
+        return documentBlockController.shortcutInsertionSourceOffset()
     }
 
     function visiblePlainText() {
-        const blockItem = blockLoader.item
-        if (blockItem && blockItem.visiblePlainText !== undefined)
-            return String(blockItem.visiblePlainText() || "")
-        if (normalizedBlock.plainText !== undefined)
-            return String(normalizedBlock.plainText || "")
-        if (normalizedBlock.sourceText !== undefined)
-            return String(normalizedBlock.sourceText || "")
-        return ""
+        return documentBlockController.visiblePlainText()
     }
 
     function representativeCharCount(lineText) {
-        const blockItem = blockLoader.item
-        if (blockItem && blockItem.representativeCharCount !== undefined)
-            return Math.max(0, Number(blockItem.representativeCharCount(lineText)) || 0)
-        const normalizedLineText = lineText === undefined || lineText === null ? "" : String(lineText)
-        if (normalizedLineText.length > 0)
-            return normalizedLineText.length
-        return minimapRepresentativeCharCount
+        return documentBlockController.representativeCharCount(lineText)
     }
 
     function handleAtomicTagManagementKeyPress(event) {
-        if (!documentBlock.atomicBlock || !event)
-            return false
-        if (documentBlock.tagManagementShortcutKeyPressHandler
-                && typeof documentBlock.tagManagementShortcutKeyPressHandler === "function") {
-            const shortcutHandled = !!documentBlock.tagManagementShortcutKeyPressHandler(event)
-            if (shortcutHandled || event.accepted)
-                return true
-        }
-        if (documentBlock.handleAtomicTagDeleteKeyPress(event))
-            return true
-        const modifiers = Number(event.modifiers) || 0
-        const moveUp = event.key === Qt.Key_Up
-        const moveDown = event.key === Qt.Key_Down
-        const macCommandDocumentNavigation = Qt.platform.os === "osx"
-                && (moveUp || moveDown)
-                && modifiers === Qt.MetaModifier
-        if (macCommandDocumentNavigation) {
-            documentBlock.boundaryNavigationRequested("document", moveUp ? "before" : "after")
-            event.accepted = true
-            return true
-        }
-        if (modifiers !== Qt.NoModifier)
-            return false
-        if (event.key === Qt.Key_Left) {
-            documentBlock.boundaryNavigationRequested("horizontal", "before")
-            event.accepted = true
-            return true
-        }
-        if (event.key === Qt.Key_Right) {
-            documentBlock.boundaryNavigationRequested("horizontal", "after")
-            event.accepted = true
-            return true
-        }
-        if (event.key === Qt.Key_Up) {
-            documentBlock.boundaryNavigationRequested("vertical", "before")
-            event.accepted = true
-            return true
-        }
-        if (event.key === Qt.Key_Down) {
-            documentBlock.boundaryNavigationRequested("vertical", "after")
-            event.accepted = true
-            return true
-        }
-        if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
-            documentBlock.documentEndEditRequested()
-            event.accepted = true
-            return true
-        }
-        return false
+        return documentBlockController.handleAtomicTagManagementKeyPress(event)
     }
 
     Keys.onPressed: function (event) {
         if (documentBlock.handleAtomicTagManagementKeyPress(event))
             return
-    }
-
-    Component.onCompleted: {
-        EditorTrace.trace(
-                    "documentBlock",
-                    "mount",
-                    "block={" + EditorTrace.describeObject(documentBlock.normalizedBlock, ["type", "sourceStart", "sourceEnd"]) + "}",
-                    documentBlock)
-    }
-
-    Component.onDestruction: {
-        EditorTrace.trace(
-                    "documentBlock",
-                    "unmount",
-                    "block={" + EditorTrace.describeObject(documentBlock.normalizedBlock, ["type", "sourceStart", "sourceEnd"]) + "}",
-                    documentBlock)
-    }
-
-    Connections {
-        target: documentBlock.selectionManager
-        ignoreUnknownSignals: true
-
-        function onSelectionClearRevisionChanged() {
-            const manager = documentBlock.selectionManager
-            if (!manager)
-                return
-            const retainedBlockIndex = manager.selectionClearRetainedBlockIndex !== undefined
-                    ? Math.floor(Number(manager.selectionClearRetainedBlockIndex) || -1)
-                    : -1
-            documentBlock.clearSelection(retainedBlockIndex === documentBlock.blockIndex)
-        }
-    }
-
-    onFocusedChanged: {
-        EditorTrace.trace(
-                    "documentBlock",
-                    "focusedChanged",
-                    "blockType=" + documentBlock.blockType + " focused=" + documentBlock.focused,
-                    documentBlock)
     }
 
     Loader {
@@ -338,63 +167,11 @@ FocusScope {
                              : textBlockComponent
     }
 
-    Connections {
-        target: blockLoader.item
-        ignoreUnknownSignals: true
+    EditorInputModel.ContentsDocumentBlockController {
+        id: documentBlockController
 
-        function onActivated() {
-            if (documentBlock.atomicBlock)
-                documentBlock.forceActiveFocus()
-            documentBlock.activated()
-        }
-
-        function onCursorInteraction() {
-            documentBlock.cursorInteraction()
-        }
-
-        function onAdjacentAtomicBlockDeleteRequested(side) {
-            documentBlock.adjacentAtomicBlockDeleteRequested(side)
-        }
-
-        function onBoundaryNavigationRequested(axis, side) {
-            documentBlock.boundaryNavigationRequested(axis, side)
-        }
-
-        function onBlockDeletionRequested(direction) {
-            documentBlock.blockDeletionRequested(direction)
-        }
-
-        function onDocumentEndEditRequested() {
-            documentBlock.documentEndEditRequested()
-        }
-
-        function onParagraphSplitRequested(sourceOffset) {
-            documentBlock.paragraphSplitRequested(sourceOffset)
-        }
-
-        function onSourceMutationRequested(nextBlockSourceText, focusRequest, expectedPreviousSourceText) {
-            documentBlock.sourceMutationRequested(nextBlockSourceText, focusRequest, expectedPreviousSourceText)
-        }
-
-        function onTaskDoneToggled(openTagStart, openTagEnd, checked) {
-            documentBlock.taskDoneToggled(openTagStart, openTagEnd, checked)
-        }
-
-        function onTaskEnterRequested(blockData, taskData) {
-            documentBlock.taskEnterRequested(blockData, taskData)
-        }
-
-        function onTaskTextChanged(taskData, text, cursorPosition, expectedPreviousText) {
-            documentBlock.taskTextChanged(taskData, text, cursorPosition, expectedPreviousText)
-        }
-
-        function onEnterExitRequested(blockData) {
-            documentBlock.enterExitRequested(blockData)
-        }
-
-        function onTextChanged(text, cursorPosition, expectedPreviousText) {
-            documentBlock.textChanged(text, cursorPosition, expectedPreviousText)
-        }
+        blockLoader: blockLoader
+        documentBlock: documentBlock
     }
 
     Component {
@@ -463,10 +240,7 @@ FocusScope {
         enabled: documentBlock.atomicBlock
 
         onTapped: function () {
-            documentBlock.forceActiveFocus()
-            documentBlock.activated()
-            if (tapCount >= 2)
-                documentBlock.documentEndEditRequested()
+            documentBlockController.handleAtomicTap(tapCount)
         }
     }
 }

@@ -4,6 +4,10 @@
 Renders one callout card as a native document block inside the editor flow.
 
 ## Key Behavior
+- Non-visual callout editing state now lives in
+  `src/app/models/editor/input/ContentsCalloutBlockController.qml`.
+  This view keeps layout and styling, while live text snapshots, cursor geometry, selection cleanup, focus requests,
+  and committed text emission belong to the controller.
 - Fills the available editor width.
 - Uses a variable-height frame and full-height vertical divider, matching the multi-line callout contract.
 - Edits callout body text directly inside the card instead of through a detached overlay.

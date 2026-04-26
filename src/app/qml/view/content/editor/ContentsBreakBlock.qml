@@ -2,6 +2,7 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import LVRS 1.0 as LV
+import "../../../../models/editor/input" as EditorInputModel
 
 FocusScope {
     id: breakBlock
@@ -31,50 +32,27 @@ FocusScope {
     width: parent ? parent.width : implicitWidth
 
     function selectBreakBlock() {
-        breakBlock.forceActiveFocus()
-        breakBlock.activated()
+        breakBlockController.selectBreakBlock()
     }
 
     function applyFocusRequest(request) {
-        const safeRequest = request && typeof request === "object" ? request : ({})
-        const sourceOffset = Number(safeRequest.sourceOffset)
-        if (!isFinite(sourceOffset))
-            return false
-        if (sourceOffset < breakBlock.sourceStart || sourceOffset > breakBlock.sourceEnd)
-            return false
-        breakBlock.selectBreakBlock()
-        return true
+        return breakBlockController.applyFocusRequest(request)
     }
 
     function visiblePlainText() {
-        return ""
+        return breakBlockController.visiblePlainText()
     }
 
     function representativeCharCount(lineText) {
-        const normalizedLineText = lineText === undefined || lineText === null ? "" : String(lineText)
-        if (normalizedLineText.length > 0)
-            return normalizedLineText.length
-        return 8
+        return breakBlockController.representativeCharCount(lineText)
     }
 
     function logicalLineLayoutEntries() {
-        const mappedOrigin = divider.mapToItem !== undefined
-                ? divider.mapToItem(breakBlock, 0, 0)
-                : ({ "x": 0, "y": Math.max(0, (breakBlock.height - divider.height) / 2) })
-        return [{
-                    "contentHeight": Math.max(1, Number(divider.height) || 1),
-                    "contentY": Math.max(0, Number(mappedOrigin.y) || 0)
-                }]
+        return breakBlockController.logicalLineLayoutEntries()
     }
 
     function currentCursorRowRect() {
-        const entries = breakBlock.logicalLineLayoutEntries()
-        if (entries.length > 0)
-            return entries[0]
-        return ({
-                    "contentHeight": 1,
-                    "contentY": 0
-                })
+        return breakBlockController.currentCursorRowRect()
     }
 
     Rectangle {
@@ -97,63 +75,21 @@ FocusScope {
     }
 
     Keys.onPressed: function (event) {
-        if (!event)
-            return
-        if (breakBlock.tagManagementShortcutKeyPressHandler
-                && typeof breakBlock.tagManagementShortcutKeyPressHandler === "function") {
-            const shortcutHandled = !!breakBlock.tagManagementShortcutKeyPressHandler(event)
-            if (shortcutHandled || event.accepted)
-                return
-        }
-        const modifiers = Number(event.modifiers) || 0
-        const moveUp = event.key === Qt.Key_Up
-        const moveDown = event.key === Qt.Key_Down
-        const macCommandDocumentNavigation = Qt.platform.os === "osx"
-                && (moveUp || moveDown)
-                && modifiers === Qt.MetaModifier
-        if (macCommandDocumentNavigation) {
-            breakBlock.boundaryNavigationRequested("document", moveUp ? "before" : "after")
-            event.accepted = true
-            return
-        }
-        if (modifiers !== Qt.NoModifier)
-            return
-        if (event.key === Qt.Key_Backspace || event.key === Qt.Key_Delete) {
-            breakBlock.blockDeletionRequested()
-            event.accepted = true
-            return
-        }
-        if (event.key === Qt.Key_Left) {
-            breakBlock.boundaryNavigationRequested("horizontal", "before")
-            event.accepted = true
-            return
-        }
-        if (event.key === Qt.Key_Right) {
-            breakBlock.boundaryNavigationRequested("horizontal", "after")
-            event.accepted = true
-            return
-        }
-        if (event.key === Qt.Key_Up) {
-            breakBlock.boundaryNavigationRequested("vertical", "before")
-            event.accepted = true
-            return
-        }
-        if (event.key === Qt.Key_Down) {
-            breakBlock.boundaryNavigationRequested("vertical", "after")
-            event.accepted = true
-            return
-        }
+        breakBlockController.handleKeyPress(event)
     }
 
     TapHandler {
         acceptedButtons: Qt.LeftButton
 
         onTapped: function () {
-            if (tapCount >= 2) {
-                breakBlock.documentEndEditRequested()
-                return
-            }
-            breakBlock.selectBreakBlock()
+            breakBlockController.handleTap(tapCount)
         }
+    }
+
+    EditorInputModel.ContentsBreakBlockController {
+        id: breakBlockController
+
+        breakBlock: breakBlock
+        divider: divider
     }
 }

@@ -7,7 +7,7 @@
 #include <QVariantMap>
 #include <QtTypes>
 
-class ContentsEditorIdleSyncController;
+class ContentsEditorPersistenceController;
 
 class ContentsEditorSelectionBridge : public QObject
 {
@@ -140,7 +140,7 @@ private:
 
     QPointer<QObject> m_noteListModel;
     QPointer<QObject> m_contentViewModel;
-    QPointer<ContentsEditorIdleSyncController> m_idleSyncController;
+    QPointer<ContentsEditorPersistenceController> m_persistenceController;
     bool m_noteSelectionContractAvailable = false;
     bool m_noteCountContractAvailable = false;
     bool m_noteSelectionRefreshQueued = false;

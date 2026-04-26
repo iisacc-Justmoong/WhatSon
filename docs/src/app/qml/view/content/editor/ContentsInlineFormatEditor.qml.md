@@ -22,9 +22,17 @@ The wrapper keeps the host/editor contract expected by `ContentsDisplayView.qml`
 - IME handling, cursor restoration, selection preservation, and `textEdited(...)` dispatch therefore all operate on
   one plain-text buffer only.
 
+## Controller Boundary
+
+Non-visual wrapper state now lives in
+`src/app/models/editor/input/ContentsInlineFormatEditorController.qml`. This view exposes the live `TextEdit`, wrapper
+properties, signals, and overlay layout; selection caching, macOS Option-word handling, programmatic sync policy, and
+committed edit dispatch are controller responsibilities.
+
 ## Key Behavior
 
-- Programmatic host sync is routed through `ContentsEditorInputPolicyAdapter.qml`.
+- Programmatic host sync is routed through `ContentsInlineFormatEditorController.qml` and
+  `ContentsEditorInputPolicyAdapter.qml`.
   The wrapper defers host sync while IME/preedit composition is active and also defers focused native-input echo after
   a local edit until the live `TextEdit` session blurs or otherwise settles.
 - Cursor restoration through `setCursorPositionPreservingNativeInput(...)` is a no-op while native composition/preedit is

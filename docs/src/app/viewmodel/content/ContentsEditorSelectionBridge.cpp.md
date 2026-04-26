@@ -18,8 +18,8 @@
 - The bridge no longer owns the serialized persistence queue or stat-refresh helpers directly.
 - Instead it now:
   - keeps note-list property wiring (`currentIndex`, `currentNoteId`, `currentBodyText`, `itemCount`)
-  - forwards persistence/snapshot requests into `file/sync/ContentsEditorIdleSyncController`
-  - forwards both `editorTextPersistenceQueued(...)` and `editorTextPersistenceFinished(...)` from that sync boundary
+  - forwards persistence/snapshot requests into `src/app/models/editor/persistence/ContentsEditorPersistenceController`
+  - forwards both `editorTextPersistenceQueued(...)` and `editorTextPersistenceFinished(...)` from that editor persistence boundary
     back to QML
 - Note-list `currentIndexChanged()` now also queues the same deferred selection refresh used by
   `currentNoteIdChanged()`.
@@ -29,28 +29,28 @@
   next refresh turn.
   A selected note can therefore adopt a late list-provided RAW snapshot without waiting for an extra note-id change or
   a filesystem round trip.
-- Selected note bodies still prefer the idle-sync/package load path, but the bridge now first reuses the currently
+- Selected note bodies still prefer the editor persistence package load path, but the bridge now first reuses the currently
   selected note-list model `currentBodyText` payload when that contract is already populated.
   This removes the empty-editor gap where a visible selected note could briefly lose its body while the asynchronous
   package load path was still rebinding.
 - The bridge therefore owns one extra QML-facing state flag, `selectedNoteBodyLoading`, so editor hosts can defer
   note-open sync until the selected note body actually arrives.
 - The bridge now also exposes `selectedNoteBodyNoteId`, making the owner of the current body payload explicit for QML.
-- The bridge now also exposes `selectedNoteDirectoryPath`, resolved through the idle-sync/controller boundary.
+- The bridge now also exposes `selectedNoteDirectoryPath`, resolved through the editor persistence controller boundary.
   This gives QML renderers one stable note-package path for inline `<resource ...>` resolution even while hierarchy
   view-model bindings are switching.
 - Selection identity is now effectively `selectedNoteId + selectedNoteDirectoryPath`.
   The bridge therefore listens to note-list `currentNoteDirectoryPathChanged()` in addition to note-id/body signals,
   and a same-id selection that resolves to a different `.wsnote` directory is treated as a real rebind/remount rather
   than as a stable same-note refresh.
-- Lazy body reads now also track one request sequence per selected-note fetch.
+- Lazy body reads now also track one request sequence per selected-note body read.
   The bridge only accepts `noteBodyTextLoaded(sequence, ...)` for the latest requested sequence of the currently
   selected note, so an older in-flight read can no longer overwrite a newer same-note body after local edits,
   persistence, or reconcile-triggered reloads.
 - Failed lazy body reads now clear only the loading state.
   They no longer replace the current selected-note body with an empty string, so a transient read failure cannot wipe
   the live editor through a same-note model sync.
-- Before a selected-note lazy load adopts file-backed text, the bridge now asks the idle-sync controller whether that
+- Before a selected-note lazy load adopts file-backed text, the bridge now asks the editor persistence controller whether that
   same note still has a dirty or in-flight editor snapshot.
   If so, the bridge reuses that pending body immediately and skips the stale file-backed adoption path.
 - That same bridge refresh path now also re-resolves `selectedNoteDirectoryPath` for the current selected note on each
@@ -78,7 +78,7 @@
   advertises a loading-only empty body for the newly selected note.
   If the runtime source is already available, the bridge surfaces that body immediately, marks it as the selected-note
   snapshot, and lets asynchronous refresh continue in the background without blanking the editor host first.
-- `refreshNoteSelectionState()` now delegates note-id transitions into the sync controller through
+- `refreshNoteSelectionState()` now delegates note-id transitions into the editor persistence controller through
   `bindSelectedNote(...)` / `clearSelectedNote()`, so open-count maintenance also left the bridge.
 - The bridge now also checks an optional note-list-model `noteBacked` property before it accepts a `currentNoteId`
   contract.
@@ -94,10 +94,10 @@
   objects when QML reassigns the active content/note-list pair.
 - `refreshNoteSelectionState()` now honors one `requiresRebind` flag, so the bridge can rebind the current selected
   note into a newly replaced content view-model even when the selected note id itself did not change.
-- Persistence requests forwarded through the bridge now follow buffered fetch semantics rather than worker-thread idle
+- Persistence requests forwarded through the bridge now follow buffered persistence semantics rather than worker-thread idle
   semantics, so the bridge remains a pure adapter while the controller owns eventual filesystem sync.
 - The bridge now also exposes `reconcileViewSessionAndRefreshSnapshotForNote(noteId, viewSessionText)`:
-  - delegates session-vs-filesystem comparison to the sync layer
+  - delegates session-vs-filesystem comparison to the editor persistence layer
   - now treats reconciliation as an asynchronous request/notification boundary
   - now requires an explicit non-empty `noteId` instead of falling back to the bridge's current selected note
   - forwards `viewSessionSnapshotReconciled(...)` back to QML so note-open hosts can finish their one-shot reconcile
@@ -121,7 +121,7 @@
 - `currentNoteEntryChanged()` is now wired as a dedicated refresh signal.
   The bridge tracks the last committed entry map and treats same-note entry revisions as a real rebind/body-refresh
   trigger even when the committed `noteId` itself did not change.
-- All bridge calls that target note IO now prefer the path-aware idle-sync overloads when
+- All bridge calls that target note IO now prefer the path-aware editor persistence overloads when
   `selectedNoteDirectoryPath` is already known.
   Lazy body load, staged persistence, immediate flush, and reconcile therefore keep operating on the same `.wsnote`
   package that the selection layer actually mounted instead of rediscovering a package later from `noteId` alone.
@@ -167,9 +167,9 @@
   open-count/stat maintenance directly inside the bridge implementation.
 - A non-note-backed list model must clear selected-note lifecycle state instead of attempting to load or bind a fake
   note package from its `currentNoteId`.
-- The bridge must continue forwarding sync-boundary queued/completion signals so `ContentsEditorSession.qml` behavior
-  does not regress.
-- The bridge must not reintroduce note-switch blocking logic on top of the controller's buffered fetch model.
+- The bridge must continue forwarding editor-persistence queued/completion signals so
+  `ContentsEditorSessionController` behavior does not regress.
+- The bridge must not reintroduce note-switch blocking logic on top of the controller's buffered persistence model.
 - Reconciliation requests must not reintroduce synchronous UI-thread RAW reads, and post-reconcile
   `selectedNoteBodyText` must stay aligned with the async note-body load result consumed by QML.
 - Reconciliation requests must not infer their target note from current bridge state when the caller omitted `noteId`.

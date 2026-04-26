@@ -1,7 +1,7 @@
 #include "app/models/editor/bridge/ContentsEditorSelectionBridge.hpp"
 
 #include "app/models/file/WhatSonDebugTrace.hpp"
-#include "app/models/file/sync/ContentsEditorIdleSyncController.hpp"
+#include "app/models/editor/persistence/ContentsEditorPersistenceController.hpp"
 
 #include <QAbstractItemModel>
 #include <QDir>
@@ -186,35 +186,35 @@ ContentsEditorSelectionBridge::ContentsEditorSelectionBridge(QObject* parent)
     : QObject(parent)
 {
     WhatSon::Debug::traceEditorSelf(this, QStringLiteral("selectionBridge"), QStringLiteral("ctor"));
-    m_idleSyncController = new ContentsEditorIdleSyncController(this);
+    m_persistenceController = new ContentsEditorPersistenceController(this);
     connect(
-        m_idleSyncController,
-        &ContentsEditorIdleSyncController::contentPersistenceContractAvailableChanged,
+        m_persistenceController,
+        &ContentsEditorPersistenceController::contentPersistenceContractAvailableChanged,
         this,
         &ContentsEditorSelectionBridge::contentPersistenceContractAvailableChanged);
     connect(
-        m_idleSyncController,
-        &ContentsEditorIdleSyncController::editorTextPersistenceQueued,
+        m_persistenceController,
+        &ContentsEditorPersistenceController::editorTextPersistenceQueued,
         this,
         &ContentsEditorSelectionBridge::editorTextPersistenceQueued);
     connect(
-        m_idleSyncController,
-        &ContentsEditorIdleSyncController::editorTextPersistenceFinished,
+        m_persistenceController,
+        &ContentsEditorPersistenceController::editorTextPersistenceFinished,
         this,
         &ContentsEditorSelectionBridge::handleEditorTextPersistenceFinishedInternal);
     connect(
-        m_idleSyncController,
-        &ContentsEditorIdleSyncController::noteBodyTextLoaded,
+        m_persistenceController,
+        &ContentsEditorPersistenceController::noteBodyTextLoaded,
         this,
         &ContentsEditorSelectionBridge::handleNoteBodyTextLoaded);
     connect(
-        m_idleSyncController,
-        &ContentsEditorIdleSyncController::viewSessionSnapshotReconciled,
+        m_persistenceController,
+        &ContentsEditorPersistenceController::viewSessionSnapshotReconciled,
         this,
         &ContentsEditorSelectionBridge::viewSessionSnapshotReconciled);
     connect(
-        m_idleSyncController,
-        &ContentsEditorIdleSyncController::viewSessionSnapshotReconciled,
+        m_persistenceController,
+        &ContentsEditorPersistenceController::viewSessionSnapshotReconciled,
         this,
         &ContentsEditorSelectionBridge::handleViewSessionSnapshotReconciledInternal);
 }
@@ -387,9 +387,9 @@ void ContentsEditorSelectionBridge::setContentViewModel(QObject* model)
             &ContentsEditorSelectionBridge::handleContentViewModelDestroyed);
     }
 
-    if (m_idleSyncController != nullptr)
+    if (m_persistenceController != nullptr)
     {
-        m_idleSyncController->setContentViewModel(m_contentViewModel);
+        m_persistenceController->setContentViewModel(m_contentViewModel);
     }
 
     emit contentViewModelChanged();
@@ -409,8 +409,8 @@ bool ContentsEditorSelectionBridge::noteCountContractAvailable() const noexcept
 
 bool ContentsEditorSelectionBridge::contentPersistenceContractAvailable() const noexcept
 {
-    return m_idleSyncController != nullptr
-        && m_idleSyncController->contentPersistenceContractAvailable();
+    return m_persistenceController != nullptr
+        && m_persistenceController->contentPersistenceContractAvailable();
 }
 
 QString ContentsEditorSelectionBridge::selectedNoteId() const
@@ -460,13 +460,13 @@ bool ContentsEditorSelectionBridge::stageEditorTextForIdleSync(const QString& no
         normalizedNoteId == m_selectedNoteId.trimmed()
         ? m_selectedNoteDirectoryPath.trimmed()
         : QString();
-    const bool accepted = m_idleSyncController != nullptr
+    const bool accepted = m_persistenceController != nullptr
         && (!selectedNoteDirectoryPath.isEmpty()
-                ? m_idleSyncController->stageEditorTextForIdleSyncAtPath(
+                ? m_persistenceController->stageEditorTextForPersistenceAtPath(
                     normalizedNoteId,
                     selectedNoteDirectoryPath,
                     text)
-                : m_idleSyncController->stageEditorTextForIdleSync(normalizedNoteId, text));
+                : m_persistenceController->stageEditorTextForPersistence(normalizedNoteId, text));
     WhatSon::Debug::traceEditorSelf(
         this,
         QStringLiteral("selectionBridge"),
@@ -486,13 +486,13 @@ bool ContentsEditorSelectionBridge::flushEditorTextForNote(const QString& noteId
         normalizedNoteId == m_selectedNoteId.trimmed()
         ? m_selectedNoteDirectoryPath.trimmed()
         : QString();
-    const bool accepted = m_idleSyncController != nullptr
+    const bool accepted = m_persistenceController != nullptr
         && (!selectedNoteDirectoryPath.isEmpty()
-                ? m_idleSyncController->flushEditorTextForNoteAtPath(
+                ? m_persistenceController->flushEditorTextForNoteAtPath(
                     normalizedNoteId,
                     selectedNoteDirectoryPath,
                     text)
-                : m_idleSyncController->flushEditorTextForNote(normalizedNoteId, text));
+                : m_persistenceController->flushEditorTextForNote(normalizedNoteId, text));
     WhatSon::Debug::traceEditorSelf(
         this,
         QStringLiteral("selectionBridge"),
@@ -515,15 +515,15 @@ bool ContentsEditorSelectionBridge::reconcileViewSessionAndRefreshSnapshotForNot
         normalizedNoteId == m_selectedNoteId.trimmed()
         ? m_selectedNoteDirectoryPath.trimmed()
         : QString();
-    const bool accepted = m_idleSyncController != nullptr
+    const bool accepted = m_persistenceController != nullptr
         && !normalizedNoteId.isEmpty()
         && (!selectedNoteDirectoryPath.isEmpty()
-                ? m_idleSyncController->reconcileViewSessionAndRefreshSnapshotForNoteAtPath(
+                ? m_persistenceController->reconcileViewSessionAndRefreshSnapshotForNoteAtPath(
                     normalizedNoteId,
                     selectedNoteDirectoryPath,
                     viewSessionText,
                     preferViewSessionOnMismatch)
-                : m_idleSyncController->reconcileViewSessionAndRefreshSnapshotForNote(
+                : m_persistenceController->reconcileViewSessionAndRefreshSnapshotForNote(
                     normalizedNoteId,
                     viewSessionText,
                     preferViewSessionOnMismatch));
@@ -542,14 +542,14 @@ bool ContentsEditorSelectionBridge::reconcileViewSessionAndRefreshSnapshotForNot
 
 bool ContentsEditorSelectionBridge::directPersistenceAvailable() const noexcept
 {
-    return m_idleSyncController != nullptr
-        && m_idleSyncController->directPersistenceAvailable();
+    return m_persistenceController != nullptr
+        && m_persistenceController->directPersistenceAvailable();
 }
 
 bool ContentsEditorSelectionBridge::refreshSelectedNoteSnapshot()
 {
-    const bool reloaded = m_idleSyncController != nullptr
-        && m_idleSyncController->refreshNoteSnapshotForNote(m_selectedNoteId);
+    const bool reloaded = m_persistenceController != nullptr
+        && m_persistenceController->refreshNoteSnapshotForNote(m_selectedNoteId);
     WhatSon::Debug::traceEditorSelf(
         this,
         QStringLiteral("selectionBridge"),
@@ -793,9 +793,9 @@ void ContentsEditorSelectionBridge::handleContentViewModelDestroyed()
         QStringLiteral("handleContentViewModelDestroyed"));
     disconnectContentViewModel();
     m_contentViewModel = nullptr;
-    if (m_idleSyncController != nullptr)
+    if (m_persistenceController != nullptr)
     {
-        m_idleSyncController->setContentViewModel(nullptr);
+        m_persistenceController->setContentViewModel(nullptr);
     }
     m_selectedNoteBodyRequestSequence = 0;
     emit contentViewModelChanged();
@@ -857,13 +857,13 @@ int ContentsEditorSelectionBridge::readIntProperty(const QObject* object, const 
 bool ContentsEditorSelectionBridge::adoptPendingEditorBodyText(const QString& noteId)
 {
     const QString normalizedNoteId = noteId.trimmed();
-    if (normalizedNoteId.isEmpty() || m_idleSyncController == nullptr)
+    if (normalizedNoteId.isEmpty() || m_persistenceController == nullptr)
     {
         return false;
     }
 
     QString pendingEditorText;
-    if (!m_idleSyncController->pendingEditorTextForNote(normalizedNoteId, &pendingEditorText))
+    if (!m_persistenceController->pendingEditorTextForNote(normalizedNoteId, &pendingEditorText))
     {
         return false;
     }
@@ -1032,9 +1032,9 @@ QString ContentsEditorSelectionBridge::resolveSelectedNoteDirectoryPath(const QS
         }
     }
 
-    if (m_idleSyncController != nullptr)
+    if (m_persistenceController != nullptr)
     {
-        const QString controllerPath = m_idleSyncController->noteDirectoryPathForNote(normalizedNoteId).trimmed();
+        const QString controllerPath = m_persistenceController->noteDirectoryPathForNote(normalizedNoteId).trimmed();
         if (!controllerPath.isEmpty())
         {
             return controllerPath;
@@ -1091,7 +1091,7 @@ bool ContentsEditorSelectionBridge::tryResolveSelectedNoteBodySourceText(
     const QString resolvedNoteDirectoryPath = resolveSelectedNoteDirectoryPath(normalizedNoteId);
     if (resolvedBodyText.isEmpty()
         && !resolvedNoteDirectoryPath.isEmpty()
-        && m_idleSyncController != nullptr)
+        && m_persistenceController != nullptr)
     {
         return false;
     }
@@ -1219,7 +1219,7 @@ void ContentsEditorSelectionBridge::startSelectedNoteBodyLoad(
         && m_selectedNoteBodySnapshotNoteId == normalizedNoteId;
 
     const QString noteDirectoryPath = resolveCurrentNoteDirectoryPathFromSelectionContract(normalizedNoteId);
-    const bool canDeferToWsnoteLoad = !noteDirectoryPath.isEmpty() && m_idleSyncController != nullptr;
+    const bool canDeferToWsnoteLoad = !noteDirectoryPath.isEmpty() && m_persistenceController != nullptr;
     if (!immediateBodyResolved && !canDeferToWsnoteLoad
         && tryResolveSelectedNoteBodySourceText(normalizedNoteId, &immediateBodyText))
     {
@@ -1243,10 +1243,10 @@ void ContentsEditorSelectionBridge::startSelectedNoteBodyLoad(
             .arg(!immediateBodyResolved)
             .arg(m_selectedNoteBodySnapshotNoteId)
             .arg(WhatSon::Debug::summarizeText(immediateBodyText)));
-    const quint64 requestSequence = m_idleSyncController != nullptr
+    const quint64 requestSequence = m_persistenceController != nullptr
         ? (!noteDirectoryPath.isEmpty()
-                ? m_idleSyncController->loadNoteBodyTextForNoteAtPath(normalizedNoteId, noteDirectoryPath)
-                : m_idleSyncController->loadNoteBodyTextForNote(normalizedNoteId))
+                ? m_persistenceController->loadNoteBodyTextForNoteAtPath(normalizedNoteId, noteDirectoryPath)
+                : m_persistenceController->loadNoteBodyTextForNote(normalizedNoteId))
         : 0;
     if (requestSequence != 0)
     {
@@ -1356,20 +1356,20 @@ void ContentsEditorSelectionBridge::refreshNoteSelectionState()
         m_noteSelectionContractAvailable = nextContractAvailable;
         emit noteSelectionContractAvailableChanged();
     }
-    if (m_idleSyncController != nullptr
+    if (m_persistenceController != nullptr
         && (m_selectedNoteId != nextNoteId || noteDirectoryPathChanged || requiresRebind))
     {
         if (nextNoteId.trimmed().isEmpty())
         {
-            m_idleSyncController->clearSelectedNote();
+            m_persistenceController->clearSelectedNote();
         }
         else if (!nextNoteDirectoryPath.isEmpty())
         {
-            m_idleSyncController->bindSelectedNoteAtPath(nextNoteId, nextNoteDirectoryPath);
+            m_persistenceController->bindSelectedNoteAtPath(nextNoteId, nextNoteDirectoryPath);
         }
         else
         {
-            m_idleSyncController->bindSelectedNote(nextNoteId);
+            m_persistenceController->bindSelectedNote(nextNoteId);
         }
     }
 

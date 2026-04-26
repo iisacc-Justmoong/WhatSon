@@ -1,6 +1,6 @@
 #include "app/models/editor/session/ContentsEditorSessionController.hpp"
 
-#include "app/models/agenda/ContentsAgendaBackend.hpp"
+#include "app/models/editor/tags/ContentsAgendaBackend.hpp"
 #include "app/models/file/WhatSonDebugTrace.hpp"
 #include "app/models/editor/bridge/ContentsEditorSelectionBridge.hpp"
 

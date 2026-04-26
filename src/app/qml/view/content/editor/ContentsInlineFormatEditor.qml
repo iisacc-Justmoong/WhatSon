@@ -3,7 +3,6 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Controls as Controls
 import LVRS 1.0 as LV
-import "../../../../models/editor/diagnostics/ContentsEditorDebugTrace.js" as EditorTrace
 import "../../../../models/editor/input" as EditorInputModel
 
 FocusScope {
@@ -95,26 +94,10 @@ FocusScope {
     readonly property int selectionEnd: textInput.selectionEnd
     readonly property int selectionStart: textInput.selectionStart
 
-    property int _programmaticTextSyncDepth: 0
-    property bool _hasDeferredProgrammaticText: false
-    property string _deferredProgrammaticText: ""
-    property bool _fallbackTextEditedDispatchQueued: false
-    property int _fallbackTextEditedDispatchRevision: 0
-    property bool _localTextEditSinceFocus: false
-    property string _cachedSelectedText: ""
-    property int _cachedSelectionCursorPosition: -1
-    property int _cachedSelectionEnd: -1
-    property int _cachedSelectionStart: -1
-
     signal textEdited(string text)
 
-    EditorInputModel.ContentsEditorInputPolicyAdapter {
-        id: inlineInputPolicyAdapter
-    }
-
     function forceActiveFocus() {
-        EditorTrace.trace("inlineFormatEditor", "forceActiveFocus", "", control)
-        textInput.forceActiveFocus();
+        inlineEditorController.forceActiveFocus();
     }
 
     function getText(start, end) {
@@ -122,10 +105,7 @@ FocusScope {
     }
 
     function currentPlainText() {
-        const maximumLength = Number(textInput.length) || 0
-        if (textInput.getText !== undefined)
-            return textInput.getText(0, maximumLength)
-        return textInput.text === undefined || textInput.text === null ? "" : String(textInput.text)
+        return inlineEditorController.currentPlainText();
     }
 
     function getFormattedText(start, end) {
@@ -133,377 +113,91 @@ FocusScope {
     }
 
     function selectionSnapshot() {
-        return {
-            "cursorPosition": Number(textInput.cursorPosition),
-            "selectedText": textInput.selectedText,
-            "selectionEnd": Number(textInput.selectionEnd),
-            "selectionStart": Number(textInput.selectionStart)
-        };
+        return inlineEditorController.selectionSnapshot();
     }
 
     function clearSelection() {
-        if (textInput.deselect !== undefined)
-            textInput.deselect();
-        control.clearCachedSelectionSnapshot();
+        inlineEditorController.clearSelection();
     }
 
     function clearCachedSelectionSnapshot() {
-        control._cachedSelectedText = "";
-        control._cachedSelectionCursorPosition = -1;
-        control._cachedSelectionEnd = -1;
-        control._cachedSelectionStart = -1;
+        inlineEditorController.clearCachedSelectionSnapshot();
     }
 
     function cacheCurrentSelectionSnapshot() {
-        const selectionStart = Math.max(0, Math.floor(Number(textInput.selectionStart) || 0));
-        const selectionEnd = Math.max(selectionStart, Math.floor(Number(textInput.selectionEnd) || 0));
-        if (selectionEnd <= selectionStart)
-            return false;
-        control._cachedSelectedText = textInput.selectedText === undefined || textInput.selectedText === null
-                ? ""
-                : String(textInput.selectedText);
-        control._cachedSelectionCursorPosition = Math.max(
-                    0,
-                    Math.floor(Number(textInput.cursorPosition) || selectionEnd));
-        control._cachedSelectionEnd = selectionEnd;
-        control._cachedSelectionStart = selectionStart;
-        return true;
+        return inlineEditorController.cacheCurrentSelectionSnapshot();
     }
 
     function maybeDiscardCachedSelectionSnapshot() {
-        const selectionStart = Math.max(0, Math.floor(Number(textInput.selectionStart) || 0));
-        const selectionEnd = Math.max(selectionStart, Math.floor(Number(textInput.selectionEnd) || 0));
-        if (selectionEnd > selectionStart) {
-            control.cacheCurrentSelectionSnapshot();
-            return;
-        }
-
-        const cachedStart = Math.max(0, Math.floor(Number(control._cachedSelectionStart) || 0));
-        const cachedEnd = Math.max(cachedStart, Math.floor(Number(control._cachedSelectionEnd) || 0));
-        if (cachedEnd <= cachedStart) {
-            control.clearCachedSelectionSnapshot();
-            return;
-        }
-
-        if (!control.focused) {
-            control.clearCachedSelectionSnapshot();
-            return;
-        }
-
-        const currentCursorPosition = Math.max(0, Math.floor(Number(textInput.cursorPosition) || 0));
-        if (currentCursorPosition !== cachedStart && currentCursorPosition !== cachedEnd)
-            control.clearCachedSelectionSnapshot();
+        inlineEditorController.maybeDiscardCachedSelectionSnapshot();
     }
 
     function inlineFormatSelectionSnapshot() {
-        if (control.cacheCurrentSelectionSnapshot())
-            return control.selectionSnapshot();
-
-        const cachedStart = Math.max(0, Math.floor(Number(control._cachedSelectionStart) || 0));
-        const cachedEnd = Math.max(cachedStart, Math.floor(Number(control._cachedSelectionEnd) || 0));
-        if (cachedEnd <= cachedStart)
-            return control.selectionSnapshot();
-
-        const currentCursorPosition = Math.max(0, Math.floor(Number(textInput.cursorPosition) || 0));
-        if (!control.focused
-                || (currentCursorPosition !== cachedStart && currentCursorPosition !== cachedEnd)) {
-            return control.selectionSnapshot();
-        }
-
-        return {
-            "cursorPosition": Math.max(
-                                  0,
-                                  Math.floor(Number(control._cachedSelectionCursorPosition) || cachedEnd)),
-            "selectedText": control._cachedSelectedText,
-            "selectionEnd": cachedEnd,
-            "selectionStart": cachedStart
-        };
+        return inlineEditorController.inlineFormatSelectionSnapshot();
     }
 
     function nativeCompositionActive() {
-        return control.inputMethodComposing || control.preeditText.length > 0;
+        return inlineEditorController.nativeCompositionActive();
     }
 
     function clampLogicalPosition(position, maximumLength) {
-        const numericPosition = Number(position);
-        if (!isFinite(numericPosition))
-            return 0;
-        return Math.max(0, Math.min(Math.floor(numericPosition), Math.max(0, maximumLength)));
+        return inlineEditorController.clampLogicalPosition(position, maximumLength);
     }
 
     function setCursorPositionPreservingNativeInput(position) {
-        if (control.nativeCompositionActive())
-            return false;
-        const maximumLength = Number(textInput.length) || 0;
-        const boundedPosition = control.clampLogicalPosition(position, maximumLength);
-        EditorTrace.trace(
-                    "inlineFormatEditor",
-                    "setCursorPositionPreservingNativeInput",
-                    "requested=" + position + " bounded=" + boundedPosition + " maximumLength=" + maximumLength,
-                    control)
-        if (Number(textInput.cursorPosition) === boundedPosition)
-            return false;
-        textInput.cursorPosition = boundedPosition;
-        return true;
+        return inlineEditorController.setCursorPositionPreservingNativeInput(position);
     }
 
     function selectionCursorUsesStartEdge(cursorPosition, selectionStart, selectionEnd) {
-        const boundedStart = Math.max(0, Math.floor(Number(selectionStart) || 0));
-        const boundedEnd = Math.max(boundedStart, Math.floor(Number(selectionEnd) || 0));
-        const numericCursor = Number(cursorPosition);
-        if (!isFinite(numericCursor))
-            return false;
-        const boundedCursor = control.clampLogicalPosition(numericCursor, boundedEnd);
-        if (boundedCursor <= boundedStart)
-            return true;
-        if (boundedCursor >= boundedEnd)
-            return false;
-        return Math.abs(boundedCursor - boundedStart) <= Math.abs(boundedCursor - boundedEnd);
+        return inlineEditorController.selectionCursorUsesStartEdge(cursorPosition, selectionStart, selectionEnd);
     }
 
     function restoreSelectionRange(selectionStart, selectionEnd, cursorPosition) {
-        const maximumLength = Number(textInput.length) || 0;
-        const boundedStart = control.clampLogicalPosition(selectionStart, maximumLength);
-        const boundedEnd = control.clampLogicalPosition(selectionEnd, maximumLength);
-        if (boundedEnd <= boundedStart)
-            return false;
-        const activeCursor = isFinite(Number(cursorPosition)) ? Number(cursorPosition) : boundedEnd;
-        const activeEdgeIsStart = control.selectionCursorUsesStartEdge(activeCursor, boundedStart, boundedEnd);
-        if (textInput.moveCursorSelection !== undefined) {
-            const anchorPosition = activeEdgeIsStart ? boundedEnd : boundedStart;
-            const activePosition = activeEdgeIsStart ? boundedStart : boundedEnd;
-            textInput.cursorPosition = anchorPosition;
-            textInput.moveCursorSelection(activePosition, TextEdit.SelectCharacters);
-            return true;
-        }
-        if (textInput.select !== undefined) {
-            textInput.select(boundedStart, boundedEnd);
-            return true;
-        }
-        return false;
+        return inlineEditorController.restoreSelectionRange(selectionStart, selectionEnd, cursorPosition);
     }
 
     function macOsTextUnitIsWord(character) {
-        if (character === undefined || character === null || String(character).length === 0)
-            return false;
-        const value = String(character);
-        if (/\s/.test(value))
-            return false;
-        return ".,;:!?()[]{}<>\"'`~@#$%^&*-+=|\\/".indexOf(value) < 0;
+        return inlineEditorController.macOsTextUnitIsWord(character);
     }
 
     function macOsOptionWordNavigationTarget(direction, cursorPosition) {
-        const textValue = control.currentPlainText();
-        const textLength = textValue.length;
-        const cursor = control.clampLogicalPosition(cursorPosition, textLength);
-        const normalizedDirection = direction === undefined || direction === null
-                ? ""
-                : String(direction).trim().toLowerCase();
-        if (normalizedDirection === "right") {
-            let index = cursor;
-            if (index < textLength && control.macOsTextUnitIsWord(textValue.charAt(index))) {
-                while (index < textLength && control.macOsTextUnitIsWord(textValue.charAt(index)))
-                    ++index;
-                return index;
-            }
-            while (index < textLength && !control.macOsTextUnitIsWord(textValue.charAt(index)))
-                ++index;
-            while (index < textLength && control.macOsTextUnitIsWord(textValue.charAt(index)))
-                ++index;
-            return index;
-        }
-        if (normalizedDirection === "left") {
-            let index = cursor - 1;
-            while (index > 0 && !control.macOsTextUnitIsWord(textValue.charAt(index)))
-                --index;
-            while (index > 0 && control.macOsTextUnitIsWord(textValue.charAt(index - 1)))
-                --index;
-            return Math.max(0, index);
-        }
-        return cursor;
+        return inlineEditorController.macOsOptionWordNavigationTarget(direction, cursorPosition);
     }
 
     function handleMacOsOptionWordNavigation(event) {
-        if (Qt.platform.os !== "osx" || !event || control.nativeCompositionActive())
-            return false;
-        if (!control.selectByKeyboard || control.blockExternalDropMutation)
-            return false;
-        const modifiers = Number(event.modifiers) || 0;
-        const altPressed = (modifiers & Qt.AltModifier) !== 0;
-        const shiftPressed = (modifiers & Qt.ShiftModifier) !== 0;
-        if (!altPressed || (modifiers & (Qt.ControlModifier | Qt.MetaModifier)) !== 0)
-            return false;
-        if (event.key !== Qt.Key_Left && event.key !== Qt.Key_Right)
-            return false;
-
-        const target = control.macOsOptionWordNavigationTarget(
-                    event.key === Qt.Key_Left ? "left" : "right",
-                    textInput.cursorPosition);
-        if (shiftPressed) {
-            if (textInput.moveCursorSelection !== undefined) {
-                textInput.moveCursorSelection(target, TextEdit.SelectCharacters);
-            } else if (textInput.select !== undefined) {
-                const anchor = Math.max(0, Math.floor(Number(textInput.cursorPosition) || 0));
-                textInput.select(Math.min(anchor, target), Math.max(anchor, target));
-                textInput.cursorPosition = target;
-            } else {
-                textInput.cursorPosition = target;
-            }
-        } else {
-            textInput.cursorPosition = target;
-            if (textInput.deselect !== undefined)
-                textInput.deselect();
-            textInput.cursorPosition = target;
-        }
-        event.accepted = true;
-        control.maybeDiscardCachedSelectionSnapshot();
-        return true;
+        return inlineEditorController.handleMacOsOptionWordNavigation(event);
     }
 
     function programmaticTextSyncPolicy(nextText) {
-        const normalizedNextText = nextText === undefined
-                ? control._deferredProgrammaticText
-                : nextText;
-        return inlineInputPolicyAdapter.programmaticTextSyncPolicy(
-                    control.currentPlainText(),
-                    normalizedNextText,
-                    control.nativeCompositionActive(),
-                    control.focused,
-                    control.preferNativeInputHandling,
-                    control._localTextEditSinceFocus);
+        return inlineEditorController.programmaticTextSyncPolicy(nextText);
     }
 
     function canDeferProgrammaticTextSync(nextText) {
-        const syncPolicy = control.programmaticTextSyncPolicy(nextText);
-        return !!syncPolicy.defer;
+        return inlineEditorController.canDeferProgrammaticTextSync(nextText);
     }
 
     function shouldRejectFocusedProgrammaticTextSync(nextText) {
-        const syncPolicy = control.programmaticTextSyncPolicy(nextText);
-        return !syncPolicy.apply;
+        return inlineEditorController.shouldRejectFocusedProgrammaticTextSync(nextText);
     }
 
     function flushDeferredProgrammaticText(force) {
-        if (!control._hasDeferredProgrammaticText)
-            return;
-        if (!force && control.canDeferProgrammaticTextSync(control._deferredProgrammaticText))
-            return;
-
-        const deferredText = control._deferredProgrammaticText;
-        control._hasDeferredProgrammaticText = false;
-        control._deferredProgrammaticText = "";
-        control.setProgrammaticText(deferredText);
+        inlineEditorController.flushDeferredProgrammaticText(force);
     }
 
     function clearDeferredProgrammaticText() {
-        control._hasDeferredProgrammaticText = false;
-        control._deferredProgrammaticText = "";
+        inlineEditorController.clearDeferredProgrammaticText();
     }
 
     function dispatchCommittedTextEditedIfReady() {
-        if (control._programmaticTextSyncDepth > 0)
-            return false
-        if (control.blockExternalDropMutation)
-            return false
-        if (control.suppressCommittedTextEditedDispatch)
-            return false
-        if (control.nativeCompositionActive())
-            return false
-        control.textEdited(control.currentPlainText())
-        return true
+        return inlineEditorController.dispatchCommittedTextEditedIfReady();
     }
 
     function setProgrammaticText(nextText) {
-        const normalizedText = nextText === undefined || nextText === null ? "" : String(nextText);
-        if (textInput.text === normalizedText)
-            return;
-        const previousCursorPosition = Number(textInput.cursorPosition);
-        const previousSelectionStart = Number(textInput.selectionStart);
-        const previousSelectionEnd = Number(textInput.selectionEnd);
-        const hadSelection = isFinite(previousSelectionStart) && isFinite(previousSelectionEnd)
-                && previousSelectionEnd > previousSelectionStart;
-        // Cancel any deferred committed-text dispatch that was queued for the previous surface.
-        control._fallbackTextEditedDispatchRevision += 1;
-        control._fallbackTextEditedDispatchQueued = false;
-        control._programmaticTextSyncDepth += 1;
-        textInput.text = normalizedText;
-        control.clearCachedSelectionSnapshot();
-        if (hadSelection && previousSelectionEnd > previousSelectionStart) {
-            control.restoreSelectionRange(previousSelectionStart, previousSelectionEnd, previousCursorPosition);
-        } else {
-            const maximumLength = Number(textInput.length) || 0;
-            const restoredCursorPosition = control.clampLogicalPosition(previousCursorPosition, maximumLength);
-            if (textInput.deselect !== undefined)
-                textInput.deselect();
-            control.setCursorPositionPreservingNativeInput(restoredCursorPosition);
-        }
-        control._programmaticTextSyncDepth -= 1;
+        inlineEditorController.setProgrammaticText(nextText);
     }
 
     function scheduleCommittedTextEditedDispatch() {
-        if (control._programmaticTextSyncDepth > 0)
-            return;
-        if (control._fallbackTextEditedDispatchQueued)
-            return;
-        const scheduledRevision = control._fallbackTextEditedDispatchRevision + 1;
-        control._fallbackTextEditedDispatchRevision = scheduledRevision;
-        control._fallbackTextEditedDispatchQueued = true;
-        Qt.callLater(function () {
-            control._fallbackTextEditedDispatchQueued = false;
-            if (control._fallbackTextEditedDispatchRevision !== scheduledRevision)
-                return;
-            control.dispatchCommittedTextEditedIfReady();
-        });
-    }
-
-    onFocusedChanged: {
-        EditorTrace.trace(
-                    "inlineFormatEditor",
-                    "focusedChanged",
-                    "focused=" + focused + " nativeCompositionActive=" + control.nativeCompositionActive(),
-                    control)
-        const hadLocalTextEditSinceFocus = control._localTextEditSinceFocus;
-        if (!focused && control.nativeCompositionActive()) {
-            Qt.callLater(function () {
-                if (!control.focused && !control.nativeCompositionActive()) {
-                    if (control.preferNativeInputHandling && hadLocalTextEditSinceFocus)
-                        control.clearDeferredProgrammaticText();
-                    else
-                        control.flushDeferredProgrammaticText(true);
-                }
-            });
-            return;
-        }
-        control.maybeDiscardCachedSelectionSnapshot();
-        if (!focused) {
-            if (control.preferNativeInputHandling && hadLocalTextEditSinceFocus)
-                control.clearDeferredProgrammaticText();
-            else
-                control.flushDeferredProgrammaticText(true);
-        }
-        control._localTextEditSinceFocus = false;
-    }
-    onTextChanged: {
-        const normalizedText = text === undefined || text === null ? "" : String(text);
-        EditorTrace.trace(
-                    "inlineFormatEditor",
-                    "textChanged",
-                    EditorTrace.describeText(normalizedText),
-                    control)
-        const syncPolicy = control.programmaticTextSyncPolicy(normalizedText);
-        if (syncPolicy.defer) {
-            control._deferredProgrammaticText = normalizedText;
-            control._hasDeferredProgrammaticText = true;
-            return;
-        }
-        if (!syncPolicy.apply) {
-            control._hasDeferredProgrammaticText = false;
-            control._deferredProgrammaticText = "";
-            return;
-        }
-        control._hasDeferredProgrammaticText = false;
-        control._deferredProgrammaticText = "";
-        setProgrammaticText(normalizedText);
+        inlineEditorController.scheduleCommittedTextEditedDispatch();
     }
 
     Rectangle {
@@ -623,65 +317,7 @@ FocusScope {
 
                 Keys.priority: Keys.BeforeItem
                 Keys.onPressed: function (event) {
-                    control.handleMacOsOptionWordNavigation(event);
-                }
-                onActiveFocusChanged: {
-                    EditorTrace.trace(
-                                "inlineFormatEditor",
-                                "textInputActiveFocusChanged",
-                                "activeFocus=" + activeFocus,
-                                control)
-                    control.maybeDiscardCachedSelectionSnapshot();
-                }
-                onCursorPositionChanged: {
-                    EditorTrace.trace(
-                                "inlineFormatEditor",
-                                "cursorPositionChanged",
-                                "cursorPosition=" + cursorPosition,
-                                control)
-                    control.maybeDiscardCachedSelectionSnapshot();
-                }
-                onSelectionEndChanged: {
-                    EditorTrace.trace(
-                                "inlineFormatEditor",
-                                "selectionEndChanged",
-                                "selectionStart=" + selectionStart + " selectionEnd=" + selectionEnd,
-                                control)
-                    control.maybeDiscardCachedSelectionSnapshot();
-                }
-                onSelectionStartChanged: {
-                    EditorTrace.trace(
-                                "inlineFormatEditor",
-                                "selectionStartChanged",
-                                "selectionStart=" + selectionStart + " selectionEnd=" + selectionEnd,
-                                control)
-                    control.maybeDiscardCachedSelectionSnapshot();
-                }
-                onTextChanged: {
-                    EditorTrace.trace(
-                                "inlineFormatEditor",
-                                "textInputTextChanged",
-                                "programmaticDepth=" + control._programmaticTextSyncDepth
-                                + " nativeCompositionActive=" + control.nativeCompositionActive()
-                                + " " + EditorTrace.describeText(textInput.text),
-                                control)
-                    control.clearCachedSelectionSnapshot();
-                    if (control._programmaticTextSyncDepth > 0)
-                        return;
-                    control._localTextEditSinceFocus = true;
-                    control.clearDeferredProgrammaticText();
-                    if (control.blockExternalDropMutation
-                            || control.suppressCommittedTextEditedDispatch) {
-                        control._fallbackTextEditedDispatchRevision += 1;
-                        control._fallbackTextEditedDispatchQueued = false;
-                        return;
-                    }
-                    if (control.nativeCompositionActive()) {
-                        control.scheduleCommittedTextEditedDispatch();
-                        return;
-                    }
-                    control._fallbackTextEditedDispatchRevision += 1;
-                    control.dispatchCommittedTextEditedIfReady();
+                    inlineEditorController.handleMacOsOptionWordNavigation(event);
                 }
             }
         }
@@ -703,37 +339,10 @@ FocusScope {
         text: Array(control.effectiveTabIndentSpaceCount + 1).join(" ")
     }
 
-    Connections {
-        function onInputMethodComposingChanged() {
-            if (!textInput.inputMethodComposing) {
-                control.scheduleCommittedTextEditedDispatch();
-                control.flushDeferredProgrammaticText(false);
-            }
-        }
+    EditorInputModel.ContentsInlineFormatEditorController {
+        id: inlineEditorController
 
-        function onPreeditTextChanged() {
-            if (!textInput.inputMethodComposing && control.preeditText.length === 0) {
-                control.scheduleCommittedTextEditedDispatch();
-                control.flushDeferredProgrammaticText(false);
-            }
-        }
-
-        ignoreUnknownSignals: true
-        target: textInput
-    }
-
-    Component.onCompleted: {
-        EditorTrace.trace("inlineFormatEditor", "mount", EditorTrace.describeText(text), control)
-        setProgrammaticText(text);
-    }
-
-    Component.onDestruction: {
-        EditorTrace.trace(
-                    "inlineFormatEditor",
-                    "unmount",
-                    "cursorPosition=" + cursorPosition
-                    + " selectionStart=" + selectionStart
-                    + " selectionEnd=" + selectionEnd,
-                    control)
+        control: control
+        textInput: textInput
     }
 }
