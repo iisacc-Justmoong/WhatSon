@@ -811,6 +811,128 @@ Item {
     QTRY_COMPARE(hostContentsView->property("endEditRequestCount").toInt(), 1);
 }
 
+void WhatSonCppRegressionTests::qmlStructuredEditors_backspaceDeletesPreviousResourceFromEmptyTextBlock()
+{
+    registerStructuredEditorRuntimeQmlTypes();
+
+    const QString repositoryRoot = qmlStructuredEditorsRepositoryRootPath();
+    QQmlEngine engine;
+    addWhatSonStructuredEditorQmlImportPaths(engine, repositoryRoot);
+
+    QQmlComponent component(
+        &engine,
+        QUrl::fromLocalFile(
+            repositoryRoot
+            + QStringLiteral("/src/app/qml/view/content/editor/ContentsStructuredDocumentFlow.qml")));
+    if (component.status() == QQmlComponent::Error)
+    {
+        QFAIL(qPrintable(qmlStructuredEditorErrorString(component.errors())));
+    }
+
+    const QString resourceTag =
+        QStringLiteral("<resource type=\"image\" format=\".png\" path=\"icloud.wsresources/r.wsresource\" id=\"r\" />");
+    const QString paragraphOpen = QStringLiteral("<paragraph>");
+    const QString paragraphClose = QStringLiteral("</paragraph>");
+    const QString sourceText = resourceTag + QLatin1Char('\n') + paragraphOpen + paragraphClose;
+    const int paragraphBlockStart = resourceTag.size() + 1;
+    const int paragraphContentStart = paragraphBlockStart + paragraphOpen.size();
+    const int paragraphContentEnd = paragraphContentStart;
+    const int paragraphBlockEnd = paragraphContentEnd + paragraphClose.size();
+
+    QVariantMap resourceBlock;
+    resourceBlock.insert(QStringLiteral("atomicBlock"), true);
+    resourceBlock.insert(QStringLiteral("gutterCollapsed"), true);
+    resourceBlock.insert(QStringLiteral("resourceFormat"), QStringLiteral(".png"));
+    resourceBlock.insert(QStringLiteral("resourceId"), QStringLiteral("r"));
+    resourceBlock.insert(QStringLiteral("resourcePath"), QStringLiteral("icloud.wsresources/r.wsresource"));
+    resourceBlock.insert(QStringLiteral("resourceType"), QStringLiteral("image"));
+    resourceBlock.insert(QStringLiteral("sourceStart"), 0);
+    resourceBlock.insert(QStringLiteral("sourceEnd"), resourceTag.size());
+    resourceBlock.insert(QStringLiteral("sourceText"), resourceTag);
+    resourceBlock.insert(QStringLiteral("textEditable"), false);
+    resourceBlock.insert(QStringLiteral("type"), QStringLiteral("resource"));
+
+    QVariantMap emptyParagraphBlock;
+    emptyParagraphBlock.insert(QStringLiteral("atomicBlock"), false);
+    emptyParagraphBlock.insert(QStringLiteral("blockSourceStart"), paragraphBlockStart);
+    emptyParagraphBlock.insert(QStringLiteral("blockSourceEnd"), paragraphBlockEnd);
+    emptyParagraphBlock.insert(QStringLiteral("contentStart"), paragraphContentStart);
+    emptyParagraphBlock.insert(QStringLiteral("contentEnd"), paragraphContentEnd);
+    emptyParagraphBlock.insert(QStringLiteral("plainText"), QString());
+    emptyParagraphBlock.insert(QStringLiteral("semanticTagName"), QStringLiteral("paragraph"));
+    emptyParagraphBlock.insert(QStringLiteral("sourceStart"), paragraphContentStart);
+    emptyParagraphBlock.insert(QStringLiteral("sourceEnd"), paragraphContentEnd);
+    emptyParagraphBlock.insert(QStringLiteral("sourceText"), QString());
+    emptyParagraphBlock.insert(QStringLiteral("textEditable"), true);
+    emptyParagraphBlock.insert(QStringLiteral("type"), QStringLiteral("paragraph"));
+
+    QVariantList documentBlocks;
+    documentBlocks.push_back(resourceBlock);
+    documentBlocks.push_back(emptyParagraphBlock);
+
+    std::unique_ptr<QObject> flowObject(component.createWithInitialProperties({
+        {QStringLiteral("documentBlocks"), documentBlocks},
+        {QStringLiteral("sourceText"), sourceText},
+    }));
+    if (!flowObject)
+    {
+        QFAIL(qPrintable(qmlStructuredEditorErrorString(component.errors())));
+    }
+
+    auto* flowItem = qobject_cast<QQuickItem*>(flowObject.get());
+    QVERIFY(flowItem != nullptr);
+    flowItem->setWidth(520);
+    flowItem->setHeight(220);
+
+    QQuickWindow window;
+    window.resize(520, 220);
+    flowItem->setParentItem(window.contentItem());
+    window.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&window));
+
+    QQuickItem* inlineEditorItem = nullptr;
+    QTRY_VERIFY((inlineEditorItem = findStructuredEditorQuickItemByObjectName(
+                     flowItem,
+                     QStringLiteral("contentsInlineFormatEditor"))) != nullptr);
+    QObject* inlineEditor = inlineEditorItem;
+    QObject* editorItem = qvariant_cast<QObject*>(inlineEditor->property("editorItem"));
+    QVERIFY(editorItem != nullptr);
+    QObject* textInput = qvariant_cast<QObject*>(editorItem->property("inputItem"));
+    QVERIFY(textInput != nullptr);
+    auto* textInputItem = qobject_cast<QQuickItem*>(textInput);
+    QVERIFY(textInputItem != nullptr);
+
+    QSignalSpy mutationSpy(
+        flowObject.get(),
+        SIGNAL(sourceMutationRequested(QString,QVariant)));
+    QVERIFY2(mutationSpy.isValid(), "sourceMutationRequested signal must remain observable from C++ tests");
+
+    QVERIFY(QMetaObject::invokeMethod(inlineEditor, "forceActiveFocus"));
+    QTRY_VERIFY(textInputItem->hasActiveFocus());
+    textInput->setProperty("cursorPosition", 0);
+    QTest::keyClick(&window, Qt::Key_Backspace);
+
+    QTRY_VERIFY(mutationSpy.count() >= 1);
+    const QList<QVariant> mutationArguments = mutationSpy.takeFirst();
+    QCOMPARE(mutationArguments.at(0).toString(), paragraphOpen + paragraphClose);
+
+    const QVariantMap focusRequest = mutationArguments.at(1).toMap();
+    QCOMPARE(focusRequest.value(QStringLiteral("preferNearestTextBlock")).toBool(), true);
+    QCOMPARE(focusRequest.value(QStringLiteral("sourceOffset")).toInt(), 0);
+
+    const QString textBlockControllerSource = readUtf8SourceFile(
+        QStringLiteral("src/app/models/editor/input/ContentsDocumentTextBlockController.qml"));
+    const QString structuredFlowSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/content/editor/ContentsStructuredDocumentFlow.qml"));
+    const QString mutationPolicySource = readUtf8SourceFile(
+        QStringLiteral("src/app/models/editor/structure/ContentsStructuredDocumentMutationPolicy.cpp"));
+    QVERIFY(textBlockControllerSource.contains(QStringLiteral("function handleBoundaryDeletionKeyPress(event)")));
+    QVERIFY(textBlockControllerSource.contains(QStringLiteral("controller.textBlock.blockDeletionRequested(\"backward\")")));
+    QVERIFY(structuredFlowSource.contains(QStringLiteral("documentFlow.emptyTextBlockDeletionRange(")));
+    QVERIFY(mutationPolicySource.contains(QStringLiteral("previousResourceTagDeletionRange(")));
+    QVERIFY(!structuredFlowSource.contains(QStringLiteral("deleteAdjacentAtomicBlock(blockHost.blockIndex, \"before\")")));
+}
+
 void WhatSonCppRegressionTests::qmlStructuredEditors_deletesEmptyCalloutWithBackspace()
 {
     const QString repositoryRoot = qmlStructuredEditorsRepositoryRootPath();

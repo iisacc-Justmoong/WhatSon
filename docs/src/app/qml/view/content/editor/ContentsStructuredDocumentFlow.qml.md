@@ -62,6 +62,10 @@ source.
 - Those zero-length paragraph blocks are now also deletable.
   When the block has wrapper source (`<paragraph></paragraph>`), the flow removes that wrapper span; when it is an
   implicit blank line between prose blocks, the flow removes the adjacent newline token that created the empty line.
+- When Backspace is pressed at offset `0` in an empty text block after a `<resource ... />`, the flow still receives
+  the normal `blockDeletionRequested("backward")` signal.
+  It asks `ContentsStructuredDocumentMutationPolicy` for the preceding RAW range first, so the resource tag is removed
+  while the empty paragraph remains the editable landing block.
 - Empty callout cards reuse the same block deletion path when their nested editor emits
   `blockDeletionRequested("backward")` from a plain Backspace key press.
 - Adjacent `paragraph` / `p` blocks still share one RAW mutation-policy helper for non-native block hosts.
@@ -164,6 +168,9 @@ source.
   The flow now uses a live delegate cursor or pending focus `sourceOffset` and otherwise lets the caller abort or fall
   back to the outer cursor bridge.
 - The dedicated resource-local plain-text adjacent-insertion path has been removed.
+- The focused empty text block also does not call the resource-specific adjacent-atomic delete helper for Backspace.
+  It stays on the same block deletion signal used by empty text/callout edits, and only the mutation policy chooses the
+  RAW range to splice.
   Resource blocks now participate in the same generic block stream as every other block.
 - An empty selected RAW note body now still produces one fallback interactive `text-group` row.
   The structured document host therefore stays focusable/editable for empty notes instead of collapsing to a blank

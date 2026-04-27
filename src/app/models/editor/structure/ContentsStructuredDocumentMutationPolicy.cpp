@@ -185,6 +185,78 @@ namespace
             contentEnd,
             sourceLength);
     }
+
+    QVariantMap deletionRangeWithFocus(
+        const int start,
+        const int end,
+        const int focusOffset)
+    {
+        if (end <= start)
+        {
+            return {};
+        }
+
+        QVariantMap focusRequest;
+        focusRequest.insert(QStringLiteral("preferNearestTextBlock"), true);
+        focusRequest.insert(QStringLiteral("sourceOffset"), std::max(0, focusOffset));
+
+        QVariantMap deletionRange;
+        deletionRange.insert(QStringLiteral("start"), std::max(0, start));
+        deletionRange.insert(QStringLiteral("end"), std::max(std::max(0, start), end));
+        deletionRange.insert(QStringLiteral("focusRequest"), focusRequest);
+        return deletionRange;
+    }
+
+    bool isResourceSelfClosingTag(const QString& tagText)
+    {
+        const QString trimmedTag = tagText.trimmed();
+        const QString lowerTag = trimmedTag.toLower();
+        constexpr qsizetype resourcePrefixLength = 9;
+        if (!lowerTag.startsWith(QStringLiteral("<resource")))
+        {
+            return false;
+        }
+        if (lowerTag.size() > resourcePrefixLength)
+        {
+            const QChar nextChar = lowerTag.at(resourcePrefixLength);
+            if (!nextChar.isSpace() && nextChar != QLatin1Char('/') && nextChar != QLatin1Char('>'))
+            {
+                return false;
+            }
+        }
+        return lowerTag.endsWith(QStringLiteral("/>"));
+    }
+
+    QVariantMap previousResourceTagDeletionRange(
+        const QString& sourceText,
+        const int anchorOffset)
+    {
+        const int sourceLength = static_cast<int>(sourceText.size());
+        const int boundedAnchor = std::clamp(anchorOffset, 0, sourceLength);
+        int tagEnd = boundedAnchor;
+        while (tagEnd > 0 && sourceText.at(tagEnd - 1).isSpace())
+        {
+            --tagEnd;
+        }
+        if (tagEnd <= 0 || sourceText.at(tagEnd - 1) != QLatin1Char('>'))
+        {
+            return {};
+        }
+
+        const int tagStart = sourceText.lastIndexOf(QLatin1Char('<'), tagEnd - 1);
+        if (tagStart < 0)
+        {
+            return {};
+        }
+
+        const QString tagText = sourceText.mid(tagStart, tagEnd - tagStart);
+        if (!isResourceSelfClosingTag(tagText))
+        {
+            return {};
+        }
+
+        return deletionRangeWithFocus(tagStart, boundedAnchor, tagStart);
+    }
 } // namespace
 
 ContentsStructuredDocumentMutationPolicy::ContentsStructuredDocumentMutationPolicy(QObject* parent)
@@ -212,8 +284,24 @@ QVariantMap ContentsStructuredDocumentMutationPolicy::emptyTextBlockDeletionRang
 {
     const QString currentSourceText = m_collectionPolicy->normalizeSourceText(sourceText);
     const int currentSourceLength = static_cast<int>(currentSourceText.size());
+    const QString normalizedDirection = normalizedDeletionDirection(direction);
+    const int contentStart = blockContentStart(m_collectionPolicy, blockData, currentSourceLength);
+    const int backwardAnchorOffset =
+        blockSourceStart(m_collectionPolicy, blockData, contentStart, currentSourceLength);
+    if (normalizedDirection == QStringLiteral("backward"))
+    {
+        const QVariantMap previousResourceDeletion =
+            previousResourceTagDeletionRange(currentSourceText, backwardAnchorOffset);
+        if (!previousResourceDeletion.isEmpty())
+        {
+            return previousResourceDeletion;
+        }
+    }
+
     const int anchorOffset = std::clamp(
-        m_collectionPolicy->floorNumberOrFallback(blockData.value(QStringLiteral("sourceStart")), 0),
+        normalizedDirection == QStringLiteral("backward")
+            ? backwardAnchorOffset
+            : m_collectionPolicy->floorNumberOrFallback(blockData.value(QStringLiteral("sourceStart")), 0),
         0,
         currentSourceLength);
     const int previousNewlineStart = anchorOffset > 0
@@ -228,7 +316,7 @@ QVariantMap ContentsStructuredDocumentMutationPolicy::emptyTextBlockDeletionRang
                                  : -1;
 
     int deletionStart = -1;
-    if (normalizedDeletionDirection(direction) == QStringLiteral("forward"))
+    if (normalizedDirection == QStringLiteral("forward"))
     {
         deletionStart = nextNewlineStart >= 0 ? nextNewlineStart : previousNewlineStart;
     }
@@ -242,15 +330,7 @@ QVariantMap ContentsStructuredDocumentMutationPolicy::emptyTextBlockDeletionRang
         return {};
     }
 
-    QVariantMap focusRequest;
-    focusRequest.insert(QStringLiteral("preferNearestTextBlock"), true);
-    focusRequest.insert(QStringLiteral("sourceOffset"), deletionStart);
-
-    QVariantMap deletionRange;
-    deletionRange.insert(QStringLiteral("start"), deletionStart);
-    deletionRange.insert(QStringLiteral("end"), deletionStart + 1);
-    deletionRange.insert(QStringLiteral("focusRequest"), focusRequest);
-    return deletionRange;
+    return deletionRangeWithFocus(deletionStart, deletionStart + 1, deletionStart);
 }
 
 int ContentsStructuredDocumentMutationPolicy::nextEditableSourceOffsetAfterBlock(

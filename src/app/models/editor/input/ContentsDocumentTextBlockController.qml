@@ -274,6 +274,24 @@ Item {
         return ({});
     }
 
+    function handleBoundaryDeletionKeyPress(event) {
+        if (!controller.textBlock || !controller.blockEditor || !event)
+            return false;
+        const modifiers = Number(event.modifiers) || 0;
+        if (modifiers !== Qt.NoModifier)
+            return false;
+        if (Number(event.key) !== Qt.Key_Backspace)
+            return false;
+        if (controller.currentEditorPlainText().length !== 0)
+            return false;
+        const cursorPosition = Math.max(0, Math.floor(Number(controller.blockEditor.cursorPosition) || 0));
+        if (cursorPosition !== 0)
+            return false;
+        controller.textBlock.blockDeletionRequested("backward");
+        event.accepted = true;
+        return true;
+    }
+
     function applyFocusRequest(request) {
         if (!controller.textBlock)
             return false;

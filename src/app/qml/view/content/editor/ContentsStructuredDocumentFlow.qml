@@ -1248,6 +1248,19 @@ FocusScope {
         let focusRequest = null
 
         if (deletionEnd <= deletionStart) {
+            if (normalizedDirection === "backward") {
+                const backwardEmptyDeletionRange = documentFlow.emptyTextBlockDeletionRange(
+                            safeBlock,
+                            direction,
+                            currentSourceText)
+                if (backwardEmptyDeletionRange) {
+                    deletionStart = Math.max(0, Math.floor(Number(backwardEmptyDeletionRange.start) || 0))
+                    deletionEnd = Math.max(deletionStart, Math.floor(Number(backwardEmptyDeletionRange.end) || deletionStart))
+                    focusRequest = backwardEmptyDeletionRange.focusRequest && typeof backwardEmptyDeletionRange.focusRequest === "object"
+                            ? backwardEmptyDeletionRange.focusRequest
+                            : null
+                }
+            }
             const blockWrapperStart = Math.max(
                         0,
                         Math.min(
@@ -1258,10 +1271,10 @@ FocusScope {
                         Math.min(
                             currentSourceText.length,
                             Math.floor(Number(safeBlock.blockSourceEnd) || blockWrapperStart)))
-            if (blockWrapperEnd > blockWrapperStart) {
+            if (deletionEnd <= deletionStart && blockWrapperEnd > blockWrapperStart) {
                 deletionStart = blockWrapperStart
                 deletionEnd = blockWrapperEnd
-            } else {
+            } else if (deletionEnd <= deletionStart) {
                 const emptyDeletionRange = documentFlow.emptyTextBlockDeletionRange(
                             safeBlock,
                             direction,

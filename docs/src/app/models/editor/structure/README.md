@@ -16,6 +16,8 @@ Owns the structured note document host and policies used by the editor body.
   Builds RAW source insertion, deletion, merge, and split payloads for structured block edits.
   Resource insertion payloads always leave the caret on an editable source boundary after the inserted resource tag;
   EOF image paste therefore materializes a trailing empty text block instead of focusing the atomic resource card.
+  Empty-block backward deletion also uses this policy to remove a preceding self-closing `<resource ... />` tag from
+  RAW while preserving the current empty paragraph as the editable focus target.
 - `ContentsLogicalLineLayoutSupport.js`
   Maps live `TextEdit` geometry into structured block logical-line entries.
 - `ContentsStructuredCursorSupport.js`

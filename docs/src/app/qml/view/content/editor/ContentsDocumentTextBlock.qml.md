@@ -62,6 +62,10 @@ from multiple implicit parser blocks.
 - The nested inline editor receives only the shared tag-management hook. It uses that hook for clipboard-image resource
   paste and inline-style commands, releases declined paste events back to native text paste, and falls back to the
   block-level `inlineFormatRequested(...)` signal only for explicit formatting shortcuts.
+- Empty-block Backspace also stays on the shared structured deletion path.
+  The text block forwards that boundary key to `ContentsDocumentTextBlockController.qml`, which emits
+  `blockDeletionRequested("backward")`; the flow and mutation policy perform the RAW deletion without using the
+  resource-specific adjacent-atomic helper.
 - The block now also receives `paperPaletteEnabled` from the structured-flow host.
   In page/print mode the inline editor base text color is forced to paper black and the inline-style HTML overlay is
   re-rendered through the renderer's paper palette, so semantic/title/highlight spans cannot stay white on a white
@@ -72,9 +76,10 @@ from multiple implicit parser blocks.
 - Flattened interactive prose spans intentionally opt out of that paragraph-boundary interception at the host layer.
   For those grouped spans, native newline insertion stays inside the shared prose editor and the parser can rediscover
   paragraph boundaries on the next RAW refresh pass.
-- This delegate no longer defines `Keys.onPressed`, delete-key helpers, or paragraph-boundary key helpers.
+- This delegate no longer defines broad paragraph-boundary key helpers.
   Repeated Backspace/Delete, Enter, arrow navigation, and selection gestures stay with the OS/Qt `TextEdit` path while
-  the user is editing text.
+  the user is editing text; only the empty-block offset-0 Backspace bridge is forwarded into the existing RAW block
+  deletion path.
 
 ## Shared Block Contract
 - `textEditable = true`

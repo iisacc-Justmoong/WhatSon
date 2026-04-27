@@ -134,6 +134,8 @@ FocusScope {
             if (handled || (event && event.accepted))
                 return true
         }
+        if (documentTextBlockController.handleBoundaryDeletionKeyPress(event))
+            return true
         const tagName = blockEditor.inlineFormatShortcutTag !== undefined
                 ? blockEditor.inlineFormatShortcutTag(event)
                 : ""
