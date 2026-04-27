@@ -109,10 +109,15 @@ Item {
                 ? resourceCard.mapToItem(resourceBlock, 0, 0)
                 : ({ "x": 0, "y": 0 })
         return [{
+                    "contentAvailableWidth": Math.max(
+                                                 1,
+                                                 Number(resourceBlock.width) || Number(resourceCard.width) || 1),
                     "contentHeight": Math.max(
                                          1,
                                          Number(resourceCard.implicitHeight) || Number(resourceCard.height) || Math.round(LV.Theme.scaleMetric(12))),
-                    "contentY": Math.max(0, Number(mappedOrigin.y) || 0)
+                    "contentWidth": Math.max(0, Number(resourceCard.width) || Number(resourceBlock.width) || 0),
+                    "contentY": Math.max(0, Number(mappedOrigin.y) || 0),
+                    "visualRowWidths": [ Math.max(0, Number(resourceCard.width) || Number(resourceBlock.width) || 0) ]
                 }]
     }
 

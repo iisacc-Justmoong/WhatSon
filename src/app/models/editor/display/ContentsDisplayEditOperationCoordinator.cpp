@@ -7,23 +7,6 @@ ContentsDisplayEditOperationCoordinator::ContentsDisplayEditOperationCoordinator
 
 ContentsDisplayEditOperationCoordinator::~ContentsDisplayEditOperationCoordinator() = default;
 
-QVariantMap ContentsDisplayEditOperationCoordinator::documentSourceMutationPlan(
-    const QVariant& nextSourceText,
-    const QString& currentSourceText,
-    const bool showStructuredDocumentFlow) const
-{
-    QVariantMap plan;
-    const QString normalizedNextSourceText = nextSourceText.isValid() && !nextSourceText.isNull()
-        ? nextSourceText.toString()
-        : QString();
-    const bool changed = normalizedNextSourceText != currentSourceText;
-    plan.insert(QStringLiteral("nextSourceText"), normalizedNextSourceText);
-    plan.insert(QStringLiteral("changed"), changed);
-    plan.insert(QStringLiteral("applyStructuredSourceText"), changed && showStructuredDocumentFlow);
-    plan.insert(QStringLiteral("applyEditorText"), changed && !showStructuredDocumentFlow);
-    return plan;
-}
-
 QVariantMap ContentsDisplayEditOperationCoordinator::structuredShortcutPlan(
     const QString& shortcutKind,
     const bool showStructuredDocumentFlow,

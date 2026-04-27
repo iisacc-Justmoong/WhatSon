@@ -188,6 +188,156 @@ void WhatSonCppRegressionTests::qmlStructuredEditors_renderInlineStyleOverlayAtR
     QCOMPARE(inlineEditor->property("text").toString(), QStringLiteral("Plain strong and glow"));
 }
 
+void WhatSonCppRegressionTests::qmlStructuredEditors_commitsPlainTextBlocksDirectlyToRawSource()
+{
+    registerStructuredEditorRuntimeQmlTypes();
+
+    const QString repositoryRoot = qmlStructuredEditorsRepositoryRootPath();
+    QQmlEngine engine;
+    addWhatSonStructuredEditorQmlImportPaths(engine, repositoryRoot);
+
+    QQmlComponent component(
+        &engine,
+        QUrl::fromLocalFile(
+            repositoryRoot
+            + QStringLiteral("/src/app/qml/view/content/editor/ContentsDocumentTextBlock.qml")));
+    if (component.status() == QQmlComponent::Error)
+    {
+        QFAIL(qPrintable(qmlStructuredEditorErrorString(component.errors())));
+    }
+
+    const QString sourceText = QStringLiteral("Alpha beta");
+    const int sourceStart = 7;
+    QVariantMap blockData;
+    blockData.insert(QStringLiteral("sourceStart"), sourceStart);
+    blockData.insert(QStringLiteral("sourceEnd"), sourceStart + sourceText.size());
+    blockData.insert(QStringLiteral("sourceText"), sourceText);
+
+    std::unique_ptr<QObject> textBlockObject(component.createWithInitialProperties({
+        {QStringLiteral("blockData"), blockData},
+    }));
+    if (!textBlockObject)
+    {
+        QFAIL(qPrintable(qmlStructuredEditorErrorString(component.errors())));
+    }
+
+    auto* textBlockItem = qobject_cast<QQuickItem*>(textBlockObject.get());
+    QVERIFY(textBlockItem != nullptr);
+    textBlockItem->setWidth(420);
+    textBlockItem->setHeight(80);
+
+    QQuickWindow window;
+    window.resize(420, 80);
+    textBlockItem->setParentItem(window.contentItem());
+    window.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&window));
+
+    QObject* inlineEditor = textBlockObject->findChild<QObject*>(QStringLiteral("contentsInlineFormatEditor"));
+    QVERIFY(inlineEditor != nullptr);
+    QTRY_COMPARE(inlineEditor->property("text").toString(), sourceText);
+    QVERIFY(!textBlockObject->property("sourceContainsInlineStyleTags").toBool());
+    QVERIFY(!inlineEditor->property("showRenderedOutput").toBool());
+
+    QSignalSpy mutationSpy(
+        textBlockObject.get(),
+        SIGNAL(sourceMutationRequested(QString,QVariant,QString)));
+    QVERIFY2(mutationSpy.isValid(), "sourceMutationRequested signal must remain observable from C++ tests");
+
+    QObject* editorItem = qvariant_cast<QObject*>(inlineEditor->property("editorItem"));
+    QVERIFY(editorItem != nullptr);
+    QObject* textInput = qvariant_cast<QObject*>(editorItem->property("inputItem"));
+    QVERIFY(textInput != nullptr);
+
+    textInput->setProperty("cursorPosition", sourceText.size());
+    QVERIFY(QMetaObject::invokeMethod(
+        textInput,
+        "insert",
+        Q_ARG(int, sourceText.size()),
+        Q_ARG(QString, QStringLiteral(" gamma"))));
+
+    const QString nextSourceText = QStringLiteral("Alpha beta gamma");
+    QTRY_VERIFY(mutationSpy.count() >= 1);
+    const QList<QVariant> mutationArguments = mutationSpy.takeFirst();
+    QCOMPARE(mutationArguments.at(0).toString(), nextSourceText);
+    QCOMPARE(mutationArguments.at(2).toString(), sourceText);
+
+    const QVariantMap focusRequest = mutationArguments.at(1).toMap();
+    QCOMPARE(focusRequest.value(QStringLiteral("reason")).toString(), QStringLiteral("text-edit"));
+    const int sourceOffset = focusRequest.value(QStringLiteral("sourceOffset")).toInt();
+    QVERIFY(sourceOffset >= sourceStart);
+    QVERIFY(sourceOffset <= sourceStart + nextSourceText.size());
+}
+
+void WhatSonCppRegressionTests::qmlStructuredEditors_deletesEmptyCalloutWithBackspace()
+{
+    const QString repositoryRoot = qmlStructuredEditorsRepositoryRootPath();
+    QQmlEngine engine;
+    addWhatSonStructuredEditorQmlImportPaths(engine, repositoryRoot);
+
+    QQmlComponent component(
+        &engine,
+        QUrl::fromLocalFile(
+            repositoryRoot
+            + QStringLiteral("/src/app/qml/view/content/editor/ContentsCalloutBlock.qml")));
+    if (component.status() == QQmlComponent::Error)
+    {
+        QFAIL(qPrintable(qmlStructuredEditorErrorString(component.errors())));
+    }
+
+    const QString sourceText = QStringLiteral("<callout> </callout>");
+    QVariantMap blockData;
+    blockData.insert(QStringLiteral("type"), QStringLiteral("callout"));
+    blockData.insert(QStringLiteral("sourceStart"), 0);
+    blockData.insert(QStringLiteral("sourceEnd"), sourceText.size());
+    blockData.insert(QStringLiteral("contentStart"), QStringLiteral("<callout>").size());
+    blockData.insert(QStringLiteral("contentEnd"), QStringLiteral("<callout> ").size());
+    blockData.insert(QStringLiteral("text"), QString());
+
+    std::unique_ptr<QObject> calloutBlockObject(component.createWithInitialProperties({
+        {QStringLiteral("blockData"), blockData},
+    }));
+    if (!calloutBlockObject)
+    {
+        QFAIL(qPrintable(qmlStructuredEditorErrorString(component.errors())));
+    }
+
+    auto* calloutBlockItem = qobject_cast<QQuickItem*>(calloutBlockObject.get());
+    QVERIFY(calloutBlockItem != nullptr);
+    calloutBlockItem->setWidth(420);
+    calloutBlockItem->setHeight(80);
+
+    QQuickWindow window;
+    window.resize(420, 80);
+    calloutBlockItem->setParentItem(window.contentItem());
+    window.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&window));
+
+    QObject* inlineEditor = calloutBlockObject->findChild<QObject*>(QStringLiteral("contentsInlineFormatEditor"));
+    QVERIFY(inlineEditor != nullptr);
+    QTRY_COMPARE(inlineEditor->property("text").toString(), QString());
+
+    QObject* editorItem = qvariant_cast<QObject*>(inlineEditor->property("editorItem"));
+    QVERIFY(editorItem != nullptr);
+    QObject* textInput = qvariant_cast<QObject*>(editorItem->property("inputItem"));
+    QVERIFY(textInput != nullptr);
+    auto* textInputItem = qobject_cast<QQuickItem*>(textInput);
+    QVERIFY(textInputItem != nullptr);
+
+    QSignalSpy deletionSpy(
+        calloutBlockObject.get(),
+        SIGNAL(blockDeletionRequested(QString)));
+    QVERIFY2(deletionSpy.isValid(), "blockDeletionRequested signal must remain observable from C++ tests");
+
+    QVERIFY(QMetaObject::invokeMethod(inlineEditor, "forceActiveFocus"));
+    QTRY_VERIFY(textInputItem->hasActiveFocus());
+    textInput->setProperty("cursorPosition", 0);
+    QTest::keyClick(&window, Qt::Key_Backspace);
+
+    QTRY_COMPARE(deletionSpy.count(), 1);
+    const QList<QVariant> deletionArguments = deletionSpy.takeFirst();
+    QCOMPARE(deletionArguments.at(0).toString(), QStringLiteral("backward"));
+}
+
 void WhatSonCppRegressionTests::qmlStructuredEditors_consumeRendererNormalizedBlocksWithoutLocalFlattening()
 {
     const QString structuredFlowSource = readUtf8SourceFile(
@@ -228,6 +378,8 @@ void WhatSonCppRegressionTests::qmlStructuredEditors_preserveNativeMobileInputDu
 {
     const QString displayViewSource = readUtf8SourceFile(
         QStringLiteral("src/app/qml/view/content/editor/ContentsDisplayView.qml"));
+    const QString typingControllerSource = readUtf8SourceFile(
+        QStringLiteral("src/app/models/editor/input/ContentsEditorTypingController.qml"));
     const QString inlineEditorSource = readUtf8SourceFile(
         QStringLiteral("src/app/qml/view/content/editor/ContentsInlineFormatEditor.qml"));
     const QString inlineEditorControllerSource = readUtf8SourceFile(
@@ -252,6 +404,7 @@ void WhatSonCppRegressionTests::qmlStructuredEditors_preserveNativeMobileInputDu
         QStringLiteral("src/app/models/editor/input/ContentsCalloutBlockController.qml"));
 
     QVERIFY(!displayViewSource.isEmpty());
+    QVERIFY(!typingControllerSource.isEmpty());
     QVERIFY(!inlineEditorSource.isEmpty());
     QVERIFY(!inlineEditorControllerSource.isEmpty());
     QVERIFY(!structuredFlowSource.isEmpty());
@@ -275,6 +428,7 @@ void WhatSonCppRegressionTests::qmlStructuredEditors_preserveNativeMobileInputDu
         QStringLiteral("context: Qt.WindowShortcut\n                        enabled: contentsView.noteDocumentCommandSurfaceEnabled")));
 
     QVERIFY(inlineEditorSource.contains(QStringLiteral("EditorInputModel.ContentsInlineFormatEditorController")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("property var tagManagementKeyPressHandler: null")));
     QVERIFY(inlineEditorControllerSource.contains(QStringLiteral("function shouldRejectFocusedProgrammaticTextSync(nextText)")));
     QVERIFY(inlineEditorControllerSource.contains(QStringLiteral("property bool localTextEditSinceFocus: false")));
     QVERIFY(!inlineEditorSource.contains(QStringLiteral("property var shortcutKeyPressHandler")));
@@ -283,6 +437,12 @@ void WhatSonCppRegressionTests::qmlStructuredEditors_preserveNativeMobileInputDu
     QVERIFY(structuredFlowSource.contains(QStringLiteral("property bool nativeTextInputPriority: false")));
     QVERIFY(structuredFlowSource.contains(QStringLiteral("if (documentFlow.nativeTextInputPriority)\n            return")));
     QVERIFY(structuredFlowSource.contains(QStringLiteral("function nativeCompositionActive()")));
+    QVERIFY(structuredFlowSource.contains(QStringLiteral("ContentsEditorBodyTagInsertionPlanner")));
+    QVERIFY(structuredFlowSource.contains(QStringLiteral("bodyTagInsertionPlanner.buildStructuredShortcutInsertionPayload(")));
+    QVERIFY(structuredFlowSource.contains(QStringLiteral("bodyTagInsertionPlanner.buildCalloutRangeWrappingPayload(")));
+    QVERIFY(structuredFlowSource.contains(QStringLiteral("function activeCalloutWrapSourceRange()")));
+    QVERIFY(structuredFlowSource.contains(QStringLiteral("function exitCallout(blockData, sourceOffset)")));
+    QVERIFY(!structuredFlowSource.contains(QStringLiteral("function structuredShortcutSpec(")));
     QVERIFY(structuredFlowSource.contains(QStringLiteral("function noteActiveBlockCursorInteraction(blockIndex)")));
     QVERIFY(structuredFlowSource.contains(
         QStringLiteral("onCursorInteraction: documentFlow.noteActiveBlockCursorInteraction(blockHost.blockIndex)")));
@@ -304,6 +464,18 @@ void WhatSonCppRegressionTests::qmlStructuredEditors_preserveNativeMobileInputDu
     QVERIFY(textBlockControllerSource.contains(QStringLiteral("property string liveEditSourceText: \"\"")));
     QVERIFY(textBlockControllerSource.contains(QStringLiteral("syncLiveEditSnapshotFromHost")));
     QVERIFY(textBlockControllerSource.contains(QStringLiteral("readonly property bool sourceContainsInlineStyleTags")));
+    QVERIFY(textBlockControllerSource.contains(QStringLiteral("function commitPlainTextRawMutation(")));
+    QVERIFY(textBlockControllerSource.contains(QStringLiteral("function currentPlainTextCursorSourceOffset(")));
+    QVERIFY(textBlockControllerSource.contains(
+        QStringLiteral("if (!controller.sourceContainsInlineStyleTags) {\n            controller.commitPlainTextRawMutation(nextPlainText, previousSourceText);\n            return;\n        }")));
+    QVERIFY(textBlockControllerSource.contains(
+        QStringLiteral("\"sourceOffset\": controller.currentPlainTextCursorSourceOffset(nextSourceText)")));
+    const qsizetype plainRawMutationIndex = textBlockControllerSource.indexOf(
+        QStringLiteral("function commitPlainTextRawMutation("));
+    const qsizetype styledRawMutationIndex = textBlockControllerSource.indexOf(
+        QStringLiteral("applyPlainTextReplacementToSource"));
+    QVERIFY(plainRawMutationIndex >= 0);
+    QVERIFY(styledRawMutationIndex > plainRawMutationIndex);
     QVERIFY(textBlockSource.contains(
         QStringLiteral("sourceText: textBlock.sourceContainsInlineStyleTags ? textBlock.authoritativeSourceText() : \"\"")));
     QVERIFY(!textBlockSource.contains(
@@ -336,13 +508,29 @@ void WhatSonCppRegressionTests::qmlStructuredEditors_preserveNativeMobileInputDu
     QVERIFY(calloutBlockSource.contains(QStringLiteral("EditorInputModel.ContentsCalloutBlockController")));
     QVERIFY(calloutBlockControllerSource.contains(QStringLiteral("property string liveText: \"\"")));
     QVERIFY(calloutBlockControllerSource.contains(QStringLiteral("syncLiveTextFromHost")));
+    QVERIFY(calloutBlockSource.contains(QStringLiteral("signal blockDeletionRequested(string direction)")));
     QVERIFY(calloutBlockSource.contains(QStringLiteral("signal textChanged(string text, int cursorPosition, string expectedPreviousText)")));
     QVERIFY(calloutBlockControllerSource.contains(QStringLiteral("controller.calloutBlock.textChanged(")));
     QVERIFY(calloutBlockSource.contains(QStringLiteral("preferNativeInputHandling: true")));
     QVERIFY(calloutBlockSource.contains(QStringLiteral("signal cursorInteraction()")));
     QVERIFY(calloutBlockControllerSource.contains(QStringLiteral("controller.calloutBlock.cursorInteraction();")));
+    QVERIFY(calloutBlockSource.contains(QStringLiteral("tagManagementKeyPressHandler: function (event)")));
+    QVERIFY(calloutBlockControllerSource.contains(QStringLiteral("function handleTagManagementKeyPress(event)")));
+    QVERIFY(calloutBlockControllerSource.contains(QStringLiteral("key === Qt.Key_Backspace")));
+    QVERIFY(calloutBlockControllerSource.contains(QStringLiteral("plainText.length !== 0")));
+    QVERIFY(calloutBlockControllerSource.contains(QStringLiteral("controller.calloutBlock.blockDeletionRequested(\"backward\")")));
+    QVERIFY(calloutBlockControllerSource.contains(QStringLiteral("textModifiers === Qt.ShiftModifier")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("event.accepted = false;")));
+    QVERIFY(calloutBlockControllerSource.contains(QStringLiteral("controller.calloutBlock.enterExitRequested(")));
     QVERIFY(!calloutBlockSource.contains(QStringLiteral("modifierVerticalNavigationHandler")));
     QVERIFY(!calloutBlockSource.contains(QStringLiteral("shortcutKeyPressHandler: function")));
+
+    QVERIFY(displayViewSource.contains(QStringLiteral("ContentsEditorBodyTagInsertionPlanner")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("bodyTagInsertionPlanner: contentsBodyTagInsertionPlanner")));
+    QVERIFY(typingControllerSource.contains(QStringLiteral("property var bodyTagInsertionPlanner: null")));
+    QVERIFY(typingControllerSource.contains(QStringLiteral("bodyTagInsertionPlanner.buildRawSourceInsertionPayload(")));
+    QVERIFY(typingControllerSource.contains(QStringLiteral("bodyTagInsertionPlanner.buildCalloutRangeWrappingPayload(")));
+    QVERIFY(!typingControllerSource.contains(QStringLiteral("function completeStructuredShortcutInsertionSpec(")));
 }
 
 void WhatSonCppRegressionTests::qmlEditorInputPolicyAdapter_centralizesNativeInputDecisions()

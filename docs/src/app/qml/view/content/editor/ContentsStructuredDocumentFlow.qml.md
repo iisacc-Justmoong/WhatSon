@@ -61,6 +61,8 @@ source.
 - Those zero-length paragraph blocks are now also deletable.
   When the block has wrapper source (`<paragraph></paragraph>`), the flow removes that wrapper span; when it is an
   implicit blank line between prose blocks, the flow removes the adjacent newline token that created the empty line.
+- Empty callout cards reuse the same block deletion path when their nested editor emits
+  `blockDeletionRequested("backward")` from a plain Backspace key press.
 - Adjacent `paragraph` / `p` blocks still share one RAW mutation-policy helper for non-native block hosts.
   The shared inline text editor no longer dispatches native text-input `Enter`, `Backspace`, or `Delete` through that
   helper, so ordinary paragraph editing stays on the OS/Qt `TextEdit` key path.
@@ -105,6 +107,10 @@ source.
 - Structured cached logical-line entries now also keep `gutterContentY` aligned to each line's real `contentY`.
   Gutter-collapsed blocks still shrink only the rendered gutter box height, but line-number Y no longer comes from a
   second synthetic accumulator that ignored block spacing and delegate-local top offsets.
+- Structured cached logical-line entries now also preserve measured row-width metadata (`contentWidth`,
+  `contentAvailableWidth`, and `visualRowWidths`) from mounted delegates.
+  The minimap can therefore cascade through the note body and draw each visible row at the width it actually occupies in
+  the editor, rather than deriving the silhouette from raw character counts.
 - The layout cache now also preserves any explicit per-line `gutterContentY` exported by a delegate instead of always
   overwriting it with `contentY`.
   Text-family blocks can therefore hand the flow one already block-mapped gutter origin when their inline editor's
@@ -122,6 +128,13 @@ source.
   inserted block instead.
 - Structured resource insertion now also refuses empty/no-op payloads instead of reporting success on an unchanged RAW
   snapshot.
+- Structured agenda/callout/break shortcut insertion now asks `ContentsEditorBodyTagInsertionPlanner` for the canonical
+  RAW tag insertion payload. The flow no longer assembles those tag strings itself; it only supplies the active
+  source-offset anchor or selected source range and emits the resulting source mutation upward.
+- When text is selected, callout shortcut insertion wraps that selected RAW range with explicit
+  `<callout>...</callout>` tags before the parser rematerializes the visual callout block.
+- Callout delegate plain-Enter exit requests now carry the source cursor into the flow, so the backend can close the
+  callout at that cursor while Shift+Enter stays a native in-callout line break.
 - Structured shortcut/resource insertion anchor resolution now lives in
   `ContentsStructuredDocumentHost` plus `ContentsStructuredDocumentFocusPolicy`.
   `ContentsStructuredDocumentFlow.qml` only contributes delegate-local cursor hints from the currently mounted block.

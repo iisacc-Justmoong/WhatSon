@@ -56,7 +56,9 @@ QtObject {
             return;
         const nextCurrentVisualRow = controller.contentsView.minimapCurrentVisualRow(rowsOverride);
         controller.contentsView.minimapResolvedCurrentLineHeight = controller.contentsView.minimapVisualRowPaintHeight(nextCurrentVisualRow);
-        controller.contentsView.minimapResolvedCurrentLineWidth = controller.viewportCoordinator.minimapBarWidth(
+        controller.contentsView.minimapResolvedCurrentLineWidth = controller.viewportCoordinator.minimapLineBarWidth(
+                    Number(nextCurrentVisualRow.contentWidth) || 0,
+                    Number(nextCurrentVisualRow.contentAvailableWidth) || 0,
                     Number(nextCurrentVisualRow.charCount) || 0,
                     controller.contentsView.minimapResolvedTrackWidth);
         controller.contentsView.minimapResolvedCurrentLineY = controller.contentsView.minimapVisualRowPaintY(nextCurrentVisualRow);

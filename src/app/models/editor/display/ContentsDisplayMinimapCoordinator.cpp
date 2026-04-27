@@ -124,6 +124,7 @@ QVariantList ContentsDisplayMinimapCoordinator::buildStructuredMinimapLineGroups
     for (int lineIndex = safeStartLine - 1; lineIndex < safeEndLine; ++lineIndex)
     {
         const QVariantMap entry = lineEntries.at(lineIndex).toMap();
+        const QVariantList visualRowWidths = entry.value(QStringLiteral("visualRowWidths")).toList();
         groups.push_back(minimapGroup(
             lineIndex + 1,
             qMax(0, entry.value(QStringLiteral("charCount")).toInt()),
@@ -131,6 +132,9 @@ QVariantList ContentsDisplayMinimapCoordinator::buildStructuredMinimapLineGroups
             qMax(m_editorLineHeight, entry.value(QStringLiteral("contentHeight")).toDouble() > 0.0
                                           ? entry.value(QStringLiteral("contentHeight")).toDouble()
                                           : m_editorLineHeight),
+            qMax(0.0, entry.value(QStringLiteral("contentWidth")).toDouble()),
+            qMax(0.0, entry.value(QStringLiteral("contentAvailableWidth")).toDouble()),
+            visualRowWidths,
             entry.value(QStringLiteral("minimapVisualKind")).toString().isEmpty()
                 ? QStringLiteral("text")
                 : entry.value(QStringLiteral("minimapVisualKind")).toString(),
@@ -161,6 +165,9 @@ QVariantList ContentsDisplayMinimapCoordinator::buildFallbackMinimapLineGroupsFo
             charCount,
             m_editorDocumentStartY + contentY,
             contentHeight,
+            0.0,
+            0.0,
+            QVariantList(),
             QStringLiteral("text"),
             0,
             qMax(1, qCeil(contentHeight / qMax(1.0, m_editorLineHeight)))));
@@ -221,6 +228,9 @@ QVariantList ContentsDisplayMinimapCoordinator::buildEditorMinimapLineGroupsForR
             charCount,
             m_editorDocumentStartY + resolvedCurrentY,
             contentHeight,
+            0.0,
+            0.0,
+            QVariantList(),
             QStringLiteral("text"),
             0,
             qMax(1, qCeil(contentHeight / qMax(1.0, m_editorLineHeight)))));
@@ -332,17 +342,32 @@ QVariantMap ContentsDisplayMinimapCoordinator::minimapGroup(
     const int charCount,
     const double contentY,
     const double contentHeight,
+    const double contentWidth,
+    const double contentAvailableWidth,
+    const QVariantList& visualRowWidths,
     const QString& minimapVisualKind,
     const int minimapRowCharCount,
     const int rowCount) const
 {
+    const double normalizedContentWidth = qMax(0.0, contentWidth);
+    const double normalizedContentAvailableWidth = qMax(normalizedContentWidth, qMax(0.0, contentAvailableWidth));
+    QVariantList normalizedVisualRowWidths;
+    normalizedVisualRowWidths.reserve(visualRowWidths.size());
+    for (const QVariant& rawWidth : visualRowWidths)
+        normalizedVisualRowWidths.push_back(qMax(0.0, rawWidth.toDouble()));
+    if (normalizedVisualRowWidths.isEmpty())
+        normalizedVisualRowWidths.push_back(normalizedContentWidth);
+
     QVariantMap group;
     group.insert(QStringLiteral("charCount"), qMax(0, charCount));
+    group.insert(QStringLiteral("contentAvailableWidth"), normalizedContentAvailableWidth);
     group.insert(QStringLiteral("contentHeight"), qMax(1.0, contentHeight));
+    group.insert(QStringLiteral("contentWidth"), normalizedContentWidth);
     group.insert(QStringLiteral("contentY"), qMax(0.0, contentY));
     group.insert(QStringLiteral("lineNumber"), qMax(1, lineNumber));
     group.insert(QStringLiteral("minimapRowCharCount"), qMax(0, minimapRowCharCount));
     group.insert(QStringLiteral("minimapVisualKind"), minimapVisualKind.isEmpty() ? QStringLiteral("text") : minimapVisualKind);
     group.insert(QStringLiteral("rowCount"), qMax(1, rowCount));
+    group.insert(QStringLiteral("visualRowWidths"), normalizedVisualRowWidths);
     return group;
 }

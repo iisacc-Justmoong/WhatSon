@@ -32,6 +32,7 @@ Renders one callout card as a native document block inside the editor flow.
 - Callout logical-line layout now also routes through `ContentsLogicalLineLayoutSupport.js`, so wrapped callout text
   exports block-local `{contentY, contentHeight}` entries from live editor rectangles instead of one evenly divided
   block-height estimate.
+  Those entries also include measured line width and wrapped visual-row widths for minimap silhouette drawing.
 - The block now also exposes `clearSelection(preserveFocusedEditor)`, allowing structured-flow activation to clear
   stale callout highlight without disabling `persistentSelection` for the active editor.
 - The block now also exports the shared document-block contract for flow-level layout:
@@ -40,15 +41,20 @@ Renders one callout card as a native document block inside the editor flow.
   `representativeCharCount(...)` per visible line.
 - The callout editor keeps the last live body text emitted upward and passes it back as the expected previous field text.
   Fast mobile typing/backspace therefore rebases from the live editor state rather than from an older block snapshot.
-- The callout body no longer defines custom boundary-key handlers.
-  The nested `TextEdit` owns arrow navigation, Enter, iOS keyboard gestures, repeated delete, and selection behavior.
+- The callout body no longer defines custom boundary-navigation key handlers.
+  The nested `TextEdit` owns arrow navigation, Shift+Enter line breaks, iOS keyboard gestures, repeated delete, and
+  selection behavior. Empty-callout Backspace is the only block-local delete exception and removes the whole callout
+  RAW tag range.
 - Focus restoration now also accepts `entryBoundary: "before" | "after"` hints from the flow host.
   Sequential block traversal can therefore enter the callout at its visual head or tail instead of always restoring to
   one generic fallback caret position.
 - Keeps agenda/callout shortcut insertion block-scoped so new proprietary wrappers are inserted after the current
   callout instead of nesting inside callout body content.
-- Callout exit gestures are handled as tag-management source mutations after native text commits, not by intercepting
-  live `TextEdit` key events.
+- Plain Enter is the explicit callout-exit tag-management command.
+  It closes the callout at the current source cursor; Shift+Enter remains the native way to insert a line break inside
+  the callout body.
+- Plain Backspace on an empty callout emits `blockDeletionRequested("backward")`, which the document block host forwards
+  into the shared RAW block deletion path.
 - The block now also accepts `paperPaletteEnabled`.
   Page/print mode therefore swaps the callout frame/divider/body text away from the dark-theme hardcoded white-text
   palette into a paper-safe light card with dark text.

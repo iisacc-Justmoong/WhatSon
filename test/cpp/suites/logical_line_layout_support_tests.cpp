@@ -13,21 +13,22 @@ void WhatSonCppRegressionTests::logicalLineLayoutSupport_mapsEditorRectanglesInt
     QVERIFY(buildEntries.isCallable());
 
     QJSValue editorItem = engine.newObject();
+    editorItem.setProperty(QStringLiteral("width"), 200);
     editorItem.setProperty(
         QStringLiteral("positionToRectangle"),
         engine.evaluate(
             QStringLiteral(
                 "(function (position) {"
-                "  if (position <= 0)"
-                "    return { y: 0, height: 14 };"
-                "  return { y: 18, height: 14 };"
+                "  if (position <= 5)"
+                "    return { x: position * 7, y: 0, height: 14 };"
+                "  return { x: (position - 6) * 8, y: 18, height: 14 };"
                 "})")));
     editorItem.setProperty(
         QStringLiteral("mapToItem"),
         engine.evaluate(
             QStringLiteral(
-                "(function (_target, _x, y) {"
-                "  return { x: 0, y: y + 11 };"
+                "(function (_target, x, y) {"
+                "  return { x: x + 4, y: y + 11 };"
                 "})")));
 
     const QJSValue entries = buildEntries.call(QJSValueList {
@@ -47,8 +48,16 @@ void WhatSonCppRegressionTests::logicalLineLayoutSupport_mapsEditorRectanglesInt
     QVERIFY(secondEntry.isObject());
     QCOMPARE(firstEntry.property(QStringLiteral("contentY")).toInt(), 11);
     QCOMPARE(firstEntry.property(QStringLiteral("contentHeight")).toInt(), 18);
+    QCOMPARE(firstEntry.property(QStringLiteral("contentAvailableWidth")).toInt(), 200);
+    QCOMPARE(firstEntry.property(QStringLiteral("contentWidth")).toInt(), 35);
+    QCOMPARE(firstEntry.property(QStringLiteral("visualRowWidths")).property(QStringLiteral("length")).toInt(), 1);
+    QCOMPARE(jsArrayEntry(firstEntry.property(QStringLiteral("visualRowWidths")), 0).toInt(), 35);
     QCOMPARE(secondEntry.property(QStringLiteral("contentY")).toInt(), 29);
     QCOMPARE(secondEntry.property(QStringLiteral("contentHeight")).toInt(), 23);
+    QCOMPARE(secondEntry.property(QStringLiteral("contentAvailableWidth")).toInt(), 200);
+    QCOMPARE(secondEntry.property(QStringLiteral("contentWidth")).toInt(), 32);
+    QCOMPARE(secondEntry.property(QStringLiteral("visualRowWidths")).property(QStringLiteral("length")).toInt(), 1);
+    QCOMPARE(jsArrayEntry(secondEntry.property(QStringLiteral("visualRowWidths")), 0).toInt(), 32);
 }
 
 void WhatSonCppRegressionTests::logicalLineLayoutSupport_fallsBackWhenLiveEditorGeometryIsUnavailable()
@@ -78,4 +87,7 @@ void WhatSonCppRegressionTests::logicalLineLayoutSupport_fallsBackWhenLiveEditor
     QVERIFY(onlyEntry.isObject());
     QCOMPARE(onlyEntry.property(QStringLiteral("contentY")).toInt(), 0);
     QCOMPARE(onlyEntry.property(QStringLiteral("contentHeight")).toInt(), 12);
+    QCOMPARE(onlyEntry.property(QStringLiteral("contentWidth")).toInt(), 0);
+    QCOMPARE(onlyEntry.property(QStringLiteral("visualRowWidths")).property(QStringLiteral("length")).toInt(), 1);
+    QCOMPARE(jsArrayEntry(onlyEntry.property(QStringLiteral("visualRowWidths")), 0).toInt(), 0);
 }

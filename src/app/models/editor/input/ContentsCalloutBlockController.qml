@@ -223,6 +223,48 @@ Item {
             controller.calloutBlock.cursorInteraction();
     }
 
+    function handleTagManagementKeyPress(event) {
+        if (!controller.calloutBlock || !controller.calloutEditor || !event)
+            return false;
+        const key = Number(event.key);
+        const modifiers = Number(event.modifiers) || 0;
+        const textModifiers = modifiers & ~Qt.KeypadModifier;
+        if (key === Qt.Key_Backspace) {
+            if (textModifiers !== Qt.NoModifier)
+                return false;
+            if (controller.nativeCompositionActive())
+                return false;
+            const plainText = controller.currentEditorPlainText();
+            const cursorPosition = Math.max(0, Number(controller.calloutEditor.cursorPosition) || 0);
+            const selectionStart = Math.max(0, Number(controller.calloutEditor.selectionStart) || 0);
+            const selectionEnd = Math.max(selectionStart, Number(controller.calloutEditor.selectionEnd) || selectionStart);
+            if (plainText.length !== 0 || cursorPosition !== 0 || selectionEnd > selectionStart)
+                return false;
+            controller.calloutBlock.blockDeletionRequested("backward");
+            event.accepted = true;
+            return true;
+        }
+        if (key !== Qt.Key_Return && key !== Qt.Key_Enter)
+            return false;
+        if (textModifiers === Qt.ShiftModifier)
+            return false;
+        if (textModifiers !== Qt.NoModifier)
+            return false;
+        if (controller.nativeCompositionActive())
+            return false;
+
+        const cursorPosition = Math.max(0, Number(controller.calloutEditor.cursorPosition) || 0);
+        const sourceOffset = StructuredCursorSupport.sourceOffsetForPlainCursor(
+                    controller.currentEditorPlainText(),
+                    cursorPosition,
+                    controller.calloutBlock.contentStart);
+        controller.calloutBlock.enterExitRequested(
+                    controller.calloutBlock.blockData,
+                    Math.max(controller.calloutBlock.contentStart, sourceOffset));
+        event.accepted = true;
+        return true;
+    }
+
     function handleEditorTextEdited(text) {
         if (!controller.calloutBlock || !controller.calloutEditor)
             return;

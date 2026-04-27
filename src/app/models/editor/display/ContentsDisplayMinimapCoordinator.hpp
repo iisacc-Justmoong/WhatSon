@@ -55,7 +55,17 @@ signals:
 
 private:
     QVariantMap normalizeCursorRect(const QVariantMap& rawRect, double fallbackY, double fallbackHeight, bool preserveWidth) const;
-    QVariantMap minimapGroup(int lineNumber, int charCount, double contentY, double contentHeight, const QString& minimapVisualKind = QStringLiteral("text"), int minimapRowCharCount = 0, int rowCount = 1) const;
+    QVariantMap minimapGroup(
+        int lineNumber,
+        int charCount,
+        double contentY,
+        double contentHeight,
+        double contentWidth = 0.0,
+        double contentAvailableWidth = 0.0,
+        const QVariantList& visualRowWidths = QVariantList(),
+        const QString& minimapVisualKind = QStringLiteral("text"),
+        int minimapRowCharCount = 0,
+        int rowCount = 1) const;
 
     bool m_structuredHostGeometryActive = false;
     double m_editorLineHeight = 0.0;

@@ -104,6 +104,8 @@
   than branching on block type names inside the flow host.
 - Resource blocks still advertise themselves to the minimap as block silhouettes, but the structured-flow cache now
   caps one resource block to ten minimap rows so tall inline media do not overwhelm the rail.
+- Minimap row width is now driven by measured editor line width (`contentWidth` over `contentAvailableWidth`) when
+  structured geometry is available, leaving character-count width as a fallback for incomplete geometry.
 - `ContentsDocumentTextBlock.qml` uses a read-side HTML overlay only when RAW block source contains inline style tags.
   Structured paragraph editing still happens directly against RAW block source text, while the overlay renders tags such
   as `<bold>`, `<italic>`, and `<highlight>` as visible formatting.
@@ -114,13 +116,17 @@
   Text/resource/break/callout/agenda delegates are expected to emit generic boundary-navigation requests and let the
   flow resolve the immediately adjacent parsed block from the `.wsnbody` stream rather than hardcoding neighbor lookup
   rules inside each block widget.
-- `src/app/models/editor/input/ContentsEditorTypingController.qml` now owns ordinary text-entry mutation routing so
-  typing no longer reserializes
-  the whole presentation overlay on every edit.
+- `src/app/models/editor/input/ContentsDocumentTextBlockController.qml` now owns ordinary structured text-block
+  mutation routing. Plain text blocks commit the live `TextEdit` plain text directly as the next RAW block source,
+  while styled blocks keep the inline-tag-aware replacement path so formatting tags survive visible text edits.
 - The editor directory now follows one write direction for live note editing:
   RAW `.wsnote/.wsnbody` source is the only write authority, parsers/builders derive presentation state from that RAW
   source, and HTML/DOM presentation surfaces are no longer allowed to serialize themselves back into stored source
   during ordinary typing.
+- The live input-to-render path is intentionally short: native `TextEdit` input or tag-management commands build the
+  next RAW source, the display mutation controller writes that RAW source directly to `editorText`, and the existing
+  parser/renderer projections observe that source change. Display-mode mutation plans must not sit between input and
+  the RAW write.
 - Desktop/mobile editor views now keep a separate presentation timer for whole-document markdown/HTML projection refresh, so
   `ContentsTextFormatRenderer` and full minimap resampling no longer run directly on every committed keystroke.
 - Desktop/mobile editor views now also keep `documentPresentationSourceText` as the single whole-document presentation
@@ -141,6 +147,8 @@
   whole-note rebuild per keystroke.
 - Desktop/mobile minimap snapshotting now also shares `ContentsMinimapSnapshotSupport.js`, so ordinary note edits only
   re-sample the changed logical-line window instead of walking the full note text through `positionToRectangle(...)`.
+  The cached snapshot rows preserve measured `visualRowWidths`, allowing the minimap to cascade top-to-bottom through the
+  note body and keep the visible text silhouette.
 - Desktop/mobile line geometry helpers now reuse that same logical-line group cache even when the minimap is hidden, so
   gutter line-Y queries no longer need their own whole-document geometry sweep.
 - Desktop/mobile editor hosts now also mirror `ContentsEditorPresentationProjection` logical-line metrics into
@@ -200,6 +208,7 @@
 - Text-family structured blocks now also share `ContentsLogicalLineLayoutSupport.js` for logical-line geometry.
   Live `positionToRectangle(...)` samples are mapped back into the delegate's own coordinate space before the flow
   caches gutter/minimap line Y, preventing block-local editor offsets from leaking into global gutter placement.
+  The same samples now capture each visual row's X span for minimap width.
 - `ContentsStructuredDocumentFlow.qml` no longer applies one global inter-block gap to text-family structured tags.
   Text-to-text flow for `paragraph`, `title`, `subTitle`, `eventTitle`, and the other prose-style text delegates now
   renders without synthetic bottom margin on `Enter`, while framed document blocks still keep explicit separation from
@@ -351,10 +360,14 @@
   tag-management rule applies.
 - `ContentsEditorTypingController.qml` now also canonicalizes a standalone `---` typing line into the proprietary
   divider source token `</break>` before persistence.
-- `ContentsEditorTypingController.qml` now also owns divider authoring shortcuts:
+- `ContentsEditorBodyTagInsertionPlanner` now owns canonical RAW insertion payloads for generated agenda, callout,
+  selected-range callout wrapping, divider, and prebuilt raw tag text. Keyboard/menu events still enter through the
+  command surface, but QML hosts now apply planner-built `nextSourceText` payloads instead of assembling those body
+  tags locally.
+- Divider authoring shortcuts:
   - `Cmd+Shift+H` inserts canonical `</break>` into RAW at the current cursor
   - `Ctrl+Shift+H` fallback is also accepted when runtime Command mapping resolves as `ControlModifier`
-- `ContentsEditorTypingController.qml` now also owns agenda authoring shortcuts:
+- Agenda authoring shortcuts:
   - `Cmd+Opt+T` inserts canonical `<agenda date="YYYY-MM-DD"><task done="false"> </task></agenda>` (empty-body
     cursor anchor included)
   - `Ctrl+Alt+T` fallback is also accepted when runtime Command mapping resolves as `ControlModifier`
@@ -363,11 +376,18 @@
   - pressing `Enter` inside `<task>` either creates the next `<task>` or exits agenda editing when the current task is
     empty
   - if agenda exit occurs on an empty task and all sibling tasks are empty, the entire agenda block is removed
-- `ContentsEditorTypingController.qml` now also owns callout authoring shortcuts:
-  - `Cmd+Opt+C` inserts canonical `<callout> </callout>` (empty-body cursor anchor included) into RAW at the current cursor
+- Callout authoring shortcuts:
+  - `Cmd+Opt+C` wraps the active selected RAW text range as `<callout>...</callout>`
+  - with no selection, `Cmd+Opt+C` inserts canonical `<callout> </callout>` (empty-body cursor anchor included) into
+    RAW at the current cursor
   - `Ctrl+Alt+C` fallback is also accepted when runtime Command mapping resolves as `ControlModifier`
   - insertion now aborts unless that payload still validates as one complete `<callout>...</callout>` block
-  - pressing `Enter` twice on a trailing empty callout line exits the callout block on the second `Enter`
+  - inside a callout, `Shift+Enter` inserts a callout body line break through native `TextEdit`
+  - inside a callout, plain `Enter` closes the callout at the current cursor and moves editing outside the
+    `</callout>` wrapper
+  - inside an empty callout, plain `Backspace` deletes the entire callout RAW block
+  - unhandled Enter/Backspace variants are explicitly marked unaccepted by the inline editor so native `TextEdit`
+    behavior still runs for line breaks, ordinary deletion, and other OS-owned editing paths
 - `ContentsStructuredCursorSupport.js` now centralizes plain-text cursor/source-offset mapping for agenda/callout block
   reparses, so local caret restoration survives entity-escaped RAW rewrites.
 - `ContentsStructuredCursorSupport.js` now also carries inline-tag-aware text-block cursor/source mapping, letting

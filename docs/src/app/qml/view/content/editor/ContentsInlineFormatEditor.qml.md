@@ -50,7 +50,14 @@ controller responsibilities.
 - The wrapper keeps the existing external-scroll contract used by page/print layout, gutter, and minimap code.
 - The wrapper no longer mounts an input-covering `MouseArea`, touch `TapHandler`, or key handler above the live
   `TextEdit`.
-- The live `TextEdit` receives pointer, selection, Backspace/Delete repeat, and Tab input directly from Qt/OS handling.
+- `tagManagementKeyPressHandler` is the only key hook exposed on the live `TextEdit`.
+  It exists for block-level tag commands such as plain-Enter callout exit and empty-callout Backspace deletion; hosts
+  must leave ordinary editing, Shift+Enter line breaks, navigation, selection, and IME gestures native.
+- The wrapper only pre-checks Backspace for that tag-management hook because Qt Quick does not expose a Backspace
+  specific attached signal. When the hook declines the event, the wrapper explicitly restores `event.accepted = false`
+  so Qt can still run native `TextEdit` key behavior.
+- The live `TextEdit` receives pointer, selection, ordinary Backspace/Delete repeat, and Tab input directly from Qt/OS
+  handling.
   The wrapper no longer exposes host shortcut or generic modifier-navigation handler properties on the native text
   input path.
 - The wrapper does not install live-text key handlers for ordinary navigation or selection chords; those remain native
@@ -68,5 +75,5 @@ controller responsibilities.
   `Qt.inputMethod` calls, `InputMethod.*` calls, wrapper notification helpers, and alternate input-method fallback
   guards.
 - The wrapper must never surface Qt RichText document scaffold as authored note text.
-- Native text editing must remain uncovered: mouse/touch selection, keyboard selection, and repeated Backspace/Delete
-  must not be intercepted by QML wrapper layers.
+- Native text editing must remain uncovered: mouse/touch selection, keyboard selection, and ordinary repeated
+  Backspace/Delete must not be intercepted by QML wrapper layers.

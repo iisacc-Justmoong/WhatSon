@@ -9,9 +9,11 @@ ContentsMinimapLayer {
     required property var viewportCoordinator
 
     editorFlickable: contentsView.editorFlickable
-    minimapBarWidthResolver: function (characterCount) {
-        return viewportCoordinator.minimapBarWidth(
-                    Number(characterCount) || 0,
+    minimapBarWidthResolver: function (row) {
+        return viewportCoordinator.minimapLineBarWidth(
+                    Number(row && row.contentWidth !== undefined ? row.contentWidth : 0) || 0,
+                    Number(row && row.contentAvailableWidth !== undefined ? row.contentAvailableWidth : 0) || 0,
+                    Number(row && row.charCount !== undefined ? row.charCount : 0) || 0,
                     contentsView.minimapResolvedTrackWidth);
     }
     minimapCurrentLineColor: contentsView.minimapCurrentLineColor

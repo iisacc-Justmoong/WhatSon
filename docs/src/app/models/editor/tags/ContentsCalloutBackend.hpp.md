@@ -8,9 +8,9 @@ Declares the callout editor backend bridge exposed to QML as
 - `lastParseVerification`: latest parser verification report for callout tags.
 - `parseCallouts(sourceText)`: parses canonical `<callout>...</callout>` source blocks into render-model entries.
 - `buildCalloutInsertionPayload(bodyText)`: builds canonical callout insertion source and cursor offset data.
-- `detectCalloutEnterReplacement(sourceText, sourceStart, sourceEnd, insertedText)`: detects the second `Enter`
-  pressed on a trailing empty callout line and returns an exit rewrite payload that moves editing outside the
-  `</callout>` wrapper.
+- `detectCalloutEnterReplacement(sourceText, sourceStart, sourceEnd, insertedText)`: turns a plain Enter request inside
+  callout content into a source rewrite that closes the callout at the current source cursor and moves editing outside
+  the `</callout>` wrapper.
 
 ## Signals
 - `lastParseVerificationChanged()`: emitted when the cached callout parse verification report changes.

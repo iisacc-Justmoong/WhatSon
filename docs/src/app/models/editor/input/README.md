@@ -11,17 +11,22 @@ Owns editor input-policy and mutation-controller primitives that are not themsel
 - `ContentsBreakBlockController.qml`
   Owns break-block tag-management key handling and selection activation.
 - `ContentsCalloutBlockController.qml`
-  Owns callout text snapshots, cursor geometry, selection cleanup, and committed text emission.
+  Owns callout text snapshots, cursor geometry, selection cleanup, committed text emission, and the explicit
+  plain-Enter callout-exit tag command. It also owns empty-callout Backspace deletion. Shift+Enter and other unhandled
+  Enter/Backspace variants remain native callout body text input.
 - `ContentsDocumentBlockController.qml`
   Owns generic document-block delegation, atomic-block tag-management keys, and mounted delegate signal forwarding.
 - `ContentsDocumentTextBlockController.qml`
-  Owns structured text-block live snapshots, inline-tag-aware source replacement, cursor geometry, and focus handling.
+  Owns structured text-block live snapshots, direct plain-text RAW block mutation, inline-tag-aware source replacement
+  for styled blocks, cursor geometry, and focus handling.
 - `ContentsEditorInputPolicyAdapter.qml`
   Centralizes native input, shortcut-surface, context-menu, and focus-restore gating.
 - `ContentsEditorSelectionController.qml`
   Resolves editor selections and routes inline style/context-menu commands.
 - `ContentsEditorTypingController.qml`
-  Converts committed text edits and editor authoring shortcuts into RAW `.wsnbody` mutations.
+  Keeps legacy whole-editor text mutation helpers and editor authoring shortcuts that still need whole-document RAW
+  cursor/selection context. Generated body-tag insertion and selected-range callout wrapping payloads are delegated to
+  `src/app/models/editor/tags/ContentsEditorBodyTagInsertionPlanner.*`.
 - `ContentsInlineFormatEditorController.qml`
   Owns the plain-text wrapper's native input policy, selection cache, and text-edited dispatch state.
 

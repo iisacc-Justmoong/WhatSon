@@ -44,6 +44,9 @@
 - `format/ContentsTextFormatRenderer.*` is the editor-owned RAW inline-style projection and mutation backend.
   It no longer lives under the paper display model because bold, italic, highlight, and related tags are editor body
   responsibilities, not page-surface responsibilities.
+- `tags/ContentsEditorBodyTagInsertionPlanner.*` is the editor-owned RAW body-tag insertion planner for generated
+  agenda, selected-range callout wrapping, callout insertion, break, and generic raw tag text. Input events may request
+  tags, but the planner builds the next-source payload that parser and renderer projections observe.
 - `structure/ContentsStructuredDocument*` owns the structured document host, collection policy, focus policy, mutation
   policy, and blocks model used by `ContentsStructuredDocumentFlow.qml`.
 - `display/ContentsDisplay*` owns editor-host display coordination for selection, context menus, gutter/minimap state,

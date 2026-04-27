@@ -14,6 +14,7 @@ QtObject {
     property var textMetricsBridge: null
     property var agendaBackend: null
     property var calloutBackend: null
+    property var bodyTagInsertionPlanner: null
     property string liveAuthoritativePlainText: ""
     property var liveLogicalLineStartOffsets: [0]
     property var liveLogicalToSourceOffsets: [0]
@@ -691,92 +692,52 @@ QtObject {
         return controller.insertStructuredShortcutSourceAtCursor("break");
     }
 
-    function completeStructuredShortcutInsertionSpec(shortcutKind) {
-        const normalizedKind = shortcutKind === undefined || shortcutKind === null
-                ? ""
-                : String(shortcutKind).toLowerCase();
-        if (normalizedKind === "agenda") {
-            if (!controller.agendaBackend
-                    || controller.agendaBackend.buildAgendaInsertionPayload === undefined) {
-                return ({
-                        "applied": false,
-                        "cursorSourceOffsetFromInsertionStart": 0,
-                        "insertionSourceText": ""
-                    });
-            }
-            const insertionPayload = controller.agendaBackend.buildAgendaInsertionPayload(false, "");
-            const insertionSourceText = insertionPayload && insertionPayload.insertionSourceText !== undefined
-                    ? String(insertionPayload.insertionSourceText)
-                    : "";
-            const canonicalAgendaPattern = /^<agenda\b[^>]*>\s*<task\b[^>]*>[\s\S]*<\/task>\s*<\/agenda>$/i;
-            if (!canonicalAgendaPattern.test(insertionSourceText)) {
-                return ({
-                        "applied": false,
-                        "cursorSourceOffsetFromInsertionStart": 0,
-                        "insertionSourceText": ""
-                    });
-            }
-            return ({
-                    "applied": true,
-                    "cursorSourceOffsetFromInsertionStart": insertionPayload && insertionPayload.cursorSourceOffsetFromInsertionStart !== undefined
-                                                           ? Math.max(0, Math.floor(Number(insertionPayload.cursorSourceOffsetFromInsertionStart) || 0))
-                                                           : 0,
-                    "insertionSourceText": insertionSourceText
-                });
-        }
-
-        if (normalizedKind === "callout") {
-            if (!controller.calloutBackend
-                    || controller.calloutBackend.buildCalloutInsertionPayload === undefined) {
-                return ({
-                        "applied": false,
-                        "cursorSourceOffsetFromInsertionStart": 0,
-                        "insertionSourceText": ""
-                    });
-            }
-            const insertionPayload = controller.calloutBackend.buildCalloutInsertionPayload("");
-            const insertionSourceText = insertionPayload && insertionPayload.insertionSourceText !== undefined
-                    ? String(insertionPayload.insertionSourceText)
-                    : "";
-            const canonicalCalloutPattern = /^<callout>[\s\S]*<\/callout>$/i;
-            if (!canonicalCalloutPattern.test(insertionSourceText)) {
-                return ({
-                        "applied": false,
-                        "cursorSourceOffsetFromInsertionStart": 0,
-                        "insertionSourceText": ""
-                    });
-            }
-            return ({
-                    "applied": true,
-                    "cursorSourceOffsetFromInsertionStart": insertionPayload && insertionPayload.cursorSourceOffsetFromInsertionStart !== undefined
-                                                           ? Math.max(0, Math.floor(Number(insertionPayload.cursorSourceOffsetFromInsertionStart) || 0))
-                                                           : 0,
-                    "insertionSourceText": insertionSourceText
-                });
-        }
-
-        if (normalizedKind === "break") {
-            return ({
-                    "applied": true,
-                    "cursorSourceOffsetFromInsertionStart": "</break>".length,
-                    "insertionSourceText": "</break>"
-                });
-        }
-
-        return ({
-                "applied": false,
-                "cursorSourceOffsetFromInsertionStart": 0,
-                "insertionSourceText": ""
-            });
-    }
-
     function insertStructuredShortcutSourceAtCursor(shortcutKind) {
-        const insertionSpec = controller.completeStructuredShortcutInsertionSpec(shortcutKind);
-        if (!insertionSpec.applied)
+        if (!controller.bodyTagInsertionPlanner
+                || controller.bodyTagInsertionPlanner.buildStructuredShortcutInsertionPayload === undefined)
             return false;
-        return controller.insertRawSourceTextAtCursor(
-                    String(insertionSpec.insertionSourceText || ""),
-                    Math.max(0, Math.floor(Number(insertionSpec.cursorSourceOffsetFromInsertionStart) || 0)));
+
+        controller.ensureLiveEditingStateReady();
+        const currentSourceText = controller.view && controller.view.editorText !== undefined && controller.view.editorText !== null
+                ? String(controller.view.editorText)
+                : "";
+        const normalizedShortcutKind = String(shortcutKind || "").trim().toLowerCase();
+        if (normalizedShortcutKind === "callout"
+                && controller.bodyTagInsertionPlanner.buildCalloutRangeWrappingPayload !== undefined) {
+            const selectionRange = controller.currentRawEditorSelectionRange();
+            const logicalSelectionStart = Math.max(0, Math.floor(Number(selectionRange.start) || 0));
+            const logicalSelectionEnd = Math.max(logicalSelectionStart, Math.floor(Number(selectionRange.end) || 0));
+            if (logicalSelectionEnd > logicalSelectionStart) {
+                const sourceSelectionStart = Math.max(
+                            0,
+                            Math.min(
+                                currentSourceText.length,
+                                Math.floor(Number(controller.sourceOffsetForLogicalOffset(logicalSelectionStart)) || 0)));
+                const sourceSelectionEnd = Math.max(
+                            sourceSelectionStart,
+                            Math.min(
+                                currentSourceText.length,
+                                Math.floor(Number(controller.sourceOffsetForLogicalOffset(logicalSelectionEnd)) || 0)));
+                const wrapPayload = controller.bodyTagInsertionPlanner.buildCalloutRangeWrappingPayload(
+                            currentSourceText,
+                            sourceSelectionStart,
+                            sourceSelectionEnd);
+                return controller.commitRawSourceInsertionPayload(wrapPayload, currentSourceText);
+            }
+        }
+        const logicalCursor = controller.currentLogicalCursorOffsetForShortcutInsertion();
+        const rawSourceCursorOffset = Math.max(
+                    0,
+                    Math.min(
+                        currentSourceText.length,
+                        Math.floor(Number(controller.sourceOffsetForCollapsedLogicalInsertion(
+                                             currentSourceText,
+                                             logicalCursor)) || 0)));
+        const insertionPayload = controller.bodyTagInsertionPlanner.buildStructuredShortcutInsertionPayload(
+                    currentSourceText,
+                    rawSourceCursorOffset,
+                    normalizedShortcutKind);
+        return controller.commitRawSourceInsertionPayload(insertionPayload, currentSourceText);
     }
 
     function currentLogicalCursorOffsetForShortcutInsertion() {
@@ -789,111 +750,16 @@ QtObject {
         return Math.max(0, Math.min(plainTextLength, Math.floor(numericCursor)));
     }
 
-    function findEnclosingStructuredShortcutBlock(sourceText, sourceOffset) {
-        const normalizedSourceText = controller.normalizePlainText(sourceText);
-        const safeSourceOffset = Math.max(
-                    0,
-                    Math.min(
-                        normalizedSourceText.length,
-                        Math.floor(Number(sourceOffset) || 0)));
-        const blockPatterns = [
-            {
-                "regex": /<agenda\b[^>]*>[\s\S]*?<\/agenda>/gi,
-                "type": "agenda"
-            },
-            {
-                "regex": /<callout\b[^>]*>[\s\S]*?<\/callout>/gi,
-                "type": "callout"
-            }
-        ];
-
-        for (let patternIndex = 0; patternIndex < blockPatterns.length; ++patternIndex) {
-            const patternSpec = blockPatterns[patternIndex];
-            const regex = patternSpec.regex;
-            regex.lastIndex = 0;
-
-            let match = regex.exec(normalizedSourceText);
-            while (match) {
-                const blockToken = String(match[0] || "");
-                const blockStart = Math.max(0, Number(match.index) || 0);
-                const blockEnd = blockStart + blockToken.length;
-                if (safeSourceOffset > blockStart && safeSourceOffset < blockEnd) {
-                    return ({
-                            "end": blockEnd,
-                            "found": true,
-                            "start": blockStart,
-                            "type": patternSpec.type
-                        });
-                }
-
-                if (regex.lastIndex === match.index)
-                    regex.lastIndex = match.index + Math.max(1, blockToken.length);
-                match = regex.exec(normalizedSourceText);
-            }
-        }
-
-        return ({
-                "end": safeSourceOffset,
-                "found": false,
-                "start": safeSourceOffset,
-                "type": ""
-            });
-    }
-
-    function resolveStructuredShortcutInsertionSourceOffset(sourceText, sourceOffset) {
-        const normalizedSourceText = controller.normalizePlainText(sourceText);
-        const safeSourceOffset = Math.max(
-                    0,
-                    Math.min(
-                        normalizedSourceText.length,
-                        Math.floor(Number(sourceOffset) || 0)));
-        const enclosingBlock = controller.findEnclosingStructuredShortcutBlock(
-                    normalizedSourceText,
-                    safeSourceOffset);
-        if (enclosingBlock.found)
-            return Math.max(0, Math.min(normalizedSourceText.length, Number(enclosingBlock.end) || 0));
-        return safeSourceOffset;
-    }
-
-    function insertRawSourceTextAtCursor(rawSourceText, cursorSourceOffsetFromInsertionStart) {
-        if (!controller.view)
+    function commitRawSourceInsertionPayload(insertionPayload, currentSourceText) {
+        const safePayload = insertionPayload && typeof insertionPayload === "object" ? insertionPayload : ({});
+        if (!safePayload.applied)
             return false;
-        const normalizedRawSourceText = controller.normalizePlainText(rawSourceText);
-        if (normalizedRawSourceText.length === 0)
+        const nextSourceText = safePayload.nextSourceText !== undefined && safePayload.nextSourceText !== null
+                ? String(safePayload.nextSourceText)
+                : currentSourceText;
+        if (nextSourceText === currentSourceText)
             return false;
-        controller.ensureLiveEditingStateReady();
-        const currentSourceText = controller.view.editorText === undefined || controller.view.editorText === null
-                ? ""
-                : String(controller.view.editorText);
-        const logicalCursor = controller.currentLogicalCursorOffsetForShortcutInsertion();
-        const rawSourceCursorOffset = Math.max(
-                    0,
-                    Math.min(
-                        currentSourceText.length,
-                        Math.floor(Number(controller.sourceOffsetForCollapsedLogicalInsertion(
-                                             currentSourceText,
-                                             logicalCursor)) || 0)));
-        const sourceCursorOffset = controller.resolveStructuredShortcutInsertionSourceOffset(
-                    currentSourceText,
-                    rawSourceCursorOffset);
-        const prefixNewline = sourceCursorOffset > 0 && currentSourceText.charAt(sourceCursorOffset - 1) !== "\n"
-                ? "\n"
-                : "";
-        const suffixNewline = sourceCursorOffset < currentSourceText.length && currentSourceText.charAt(sourceCursorOffset) !== "\n"
-                ? "\n"
-                : "";
-        const insertionSourceText = prefixNewline + normalizedRawSourceText + suffixNewline;
-        const cursorOffsetInsideRawSource = Math.max(
-                    0,
-                    Math.min(
-                        normalizedRawSourceText.length,
-                        Math.floor(Number(cursorSourceOffsetFromInsertionStart) || 0)));
-        const cursorSourceOffset = sourceCursorOffset + prefixNewline.length + cursorOffsetInsideRawSource;
-        const nextSourceText = controller.spliceSourceText(
-                    currentSourceText,
-                    sourceCursorOffset,
-                    sourceCursorOffset,
-                    insertionSourceText);
+        const cursorSourceOffset = Math.max(0, Math.floor(Number(safePayload.sourceOffset) || 0));
 
         if (controller.view.editorText !== nextSourceText)
             controller.view.editorText = nextSourceText;
@@ -910,6 +776,35 @@ QtObject {
             controller.editorSession.scheduleEditorPersistence();
         controller.view.editorTextEdited(nextSourceText);
         return true;
+    }
+
+    function insertRawSourceTextAtCursor(rawSourceText, cursorSourceOffsetFromInsertionStart) {
+        if (!controller.view)
+            return false;
+        if (!controller.bodyTagInsertionPlanner
+                || controller.bodyTagInsertionPlanner.buildRawSourceInsertionPayload === undefined)
+            return false;
+        const normalizedRawSourceText = controller.normalizePlainText(rawSourceText);
+        if (normalizedRawSourceText.length === 0)
+            return false;
+        controller.ensureLiveEditingStateReady();
+        const currentSourceText = controller.view.editorText === undefined || controller.view.editorText === null
+                ? ""
+                : String(controller.view.editorText);
+        const logicalCursor = controller.currentLogicalCursorOffsetForShortcutInsertion();
+        const rawSourceCursorOffset = Math.max(
+                    0,
+                    Math.min(
+                        currentSourceText.length,
+                        Math.floor(Number(controller.sourceOffsetForCollapsedLogicalInsertion(
+                                             currentSourceText,
+                                             logicalCursor)) || 0)));
+        const insertionPayload = controller.bodyTagInsertionPlanner.buildRawSourceInsertionPayload(
+                    currentSourceText,
+                    rawSourceCursorOffset,
+                    normalizedRawSourceText,
+                    Math.max(0, Math.floor(Number(cursorSourceOffsetFromInsertionStart) || 0)));
+        return controller.commitRawSourceInsertionPayload(insertionPayload, currentSourceText);
     }
 
     function agendaTodoShortcutInsertion(previousPlainText, replacementStart, replacementEnd, insertedText) {

@@ -362,6 +362,21 @@ double ContentsDisplayViewportCoordinator::minimapBarWidth(
     return qMax(4.0, maxWidth * widthRatio);
 }
 
+double ContentsDisplayViewportCoordinator::minimapLineBarWidth(
+    const double contentWidth,
+    const double contentAvailableWidth,
+    const int fallbackCharacterCount,
+    const double resolvedTrackWidth) const
+{
+    const double safeTrackWidth = qMax(0.0, resolvedTrackWidth);
+    const double maxWidth = qMax(6.0, safeTrackWidth - 1.0);
+    const double safeContentWidth = qMax(0.0, contentWidth);
+    const double safeContentAvailableWidth = qMax(safeContentWidth, qMax(0.0, contentAvailableWidth));
+    if (safeContentWidth > 0.0 && safeContentAvailableWidth > 0.0)
+        return qMax(2.0, maxWidth * clampUnit(safeContentWidth / safeContentAvailableWidth));
+    return minimapBarWidth(fallbackCharacterCount, resolvedTrackWidth);
+}
+
 double ContentsDisplayViewportCoordinator::minimapTrackHeightForContentHeight(
     const double segmentHeight,
     const double contentHeight) const

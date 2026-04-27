@@ -14,8 +14,9 @@ FocusScope {
 
     signal activated()
     signal boundaryNavigationRequested(string axis, string side)
+    signal blockDeletionRequested(string direction)
     signal cursorInteraction()
-    signal enterExitRequested(var blockData)
+    signal enterExitRequested(var blockData, int sourceOffset)
     signal textChanged(string text, int cursorPosition, string expectedPreviousText)
 
     readonly property int currentLogicalLineNumber: calloutBlockController.currentEditorLogicalLineNumber()
@@ -151,6 +152,9 @@ FocusScope {
                 preferNativeInputHandling: true
                 showRenderedOutput: false
                 showScrollBar: false
+                tagManagementKeyPressHandler: function (event) {
+                    return calloutBlockController.handleTagManagementKeyPress(event)
+                }
                 text: calloutBlock.calloutText
                 textColor: calloutBlock.bodyTextColor
                 wrapMode: TextEdit.Wrap

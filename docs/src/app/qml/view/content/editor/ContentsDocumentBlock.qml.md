@@ -24,6 +24,7 @@ Provides the single document-block adapter that keeps `ContentsStructuredDocumen
   - inline-format selection snapshot export for the flow-level formatting controller
   - shortcut insertion offset lookup
   - generic block interaction signals
+  - empty callout deletion forwarding through `blockDeletionRequested(direction)`
 - The adapter now also proxies the parser/delegate block contract back to the flow host:
   - `textEditable`
   - `atomicBlock`

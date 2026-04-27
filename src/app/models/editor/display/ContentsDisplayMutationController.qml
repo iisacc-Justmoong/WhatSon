@@ -139,11 +139,9 @@ QtObject {
                 || controller.contentsView.editorText === null
                 ? ""
                 : String(controller.contentsView.editorText);
-        const mutationPlan = controller.editOperationCoordinator.documentSourceMutationPlan(
-                    nextSourceText,
-                    currentSourceText,
-                    controller.contentsView.showStructuredDocumentFlow);
-        const normalizedNextSourceText = String(mutationPlan.nextSourceText || "");
+        const normalizedNextSourceText = nextSourceText === undefined || nextSourceText === null
+                ? ""
+                : String(nextSourceText);
         EditorTrace.trace(
                     "displayView",
                     "applyDocumentSourceMutation",
@@ -151,16 +149,14 @@ QtObject {
                     + " focusRequest={" + EditorTrace.describeFocusRequest(focusRequest) + "} "
                     + EditorTrace.describeText(normalizedNextSourceText),
                     controller.contentsView)
-        if (!mutationPlan.changed)
+        if (normalizedNextSourceText === currentSourceText)
             return false;
         if (controller.resourceImportController.resourceTagLossDetected(currentSourceText, normalizedNextSourceText)) {
             controller.resourceImportController.restoreEditorSurfaceFromPresentation();
             return false;
         }
-        if (mutationPlan.applyStructuredSourceText || mutationPlan.applyEditorText) {
-            if (controller.contentsView.editorText !== normalizedNextSourceText)
-                controller.contentsView.editorText = normalizedNextSourceText;
-        }
+        if (controller.contentsView.editorText !== normalizedNextSourceText)
+            controller.contentsView.editorText = normalizedNextSourceText;
         controller.presentationRefreshController.clearPendingWhileFocused();
         if (!controller.contentsView.showStructuredDocumentFlow
                 && controller.contentsView.commitDocumentPresentationRefresh !== undefined) {

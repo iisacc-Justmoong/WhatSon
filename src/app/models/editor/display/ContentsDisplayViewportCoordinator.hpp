@@ -82,6 +82,7 @@ public:
     Q_INVOKABLE int logicalLineCharacterCountAt(int lineIndex, const QVariantList& lineStartOffsets) const;
     Q_INVOKABLE int logicalLineNumberForOffset(int offset, const QVariantList& lineStartOffsets) const;
     Q_INVOKABLE double minimapBarWidth(int characterCount, double resolvedTrackWidth) const;
+    Q_INVOKABLE double minimapLineBarWidth(double contentWidth, double contentAvailableWidth, int fallbackCharacterCount, double resolvedTrackWidth) const;
     Q_INVOKABLE double minimapTrackHeightForContentHeight(double segmentHeight, double contentHeight) const;
     Q_INVOKABLE double minimapTrackYForContentY(double contentY, double contentHeight) const;
     Q_INVOKABLE double minimapViewportHeight(bool flickableAvailable, double contentHeight, double viewportMinHeight) const;

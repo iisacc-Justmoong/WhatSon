@@ -12,6 +12,8 @@ Renders one canonical `<resource ... />` span as presentation-only document cont
   `ContentsResourceRenderCard.qml`.
 - For gutter/current-line alignment, the block contributes one logical line and exposes
   `currentLogicalLineNumber`, `logicalLineLayoutEntries()`, and `currentCursorRowRect()`.
+  Its logical-line layout entry now includes the rendered card width so the minimap paints the resource row as a visual
+  silhouette instead of a character-count approximation.
 - The block also exports the shared atomic-block contract explicitly:
   `textEditable=false`, `atomicBlock=true`, `gutterCollapsed=true`,
   `minimapVisualKind=block`, `minimapRepresentativeCharCount=160`, and an empty `visiblePlainText()`.

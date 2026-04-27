@@ -282,68 +282,34 @@ QVariantMap ContentsCalloutBackend::detectCalloutEnterReplacement(
     const int sourceEnd,
     const QString& insertedText) const
 {
-    const QString normalizedInsertedText = normalizePlainText(insertedText);
-    if (!normalizedInsertedText.endsWith(QLatin1Char('\n')))
-    {
-        return notAppliedResult();
-    }
-    if (normalizedInsertedText.count(QLatin1Char('\n')) != 1)
+    if (normalizePlainText(insertedText) != QStringLiteral("\n"))
     {
         return notAppliedResult();
     }
 
-    const std::optional<CalloutContext> calloutContext = calloutContextAtSourceOffset(sourceText, sourceStart);
+    const QString normalizedSourceText = normalizePlainText(sourceText);
+    const int safeStart = boundedTextIndex(normalizedSourceText, sourceStart);
+    const int safeEnd = boundedTextIndex(normalizedSourceText, std::max(safeStart, sourceEnd));
+    const std::optional<CalloutContext> calloutContext =
+        calloutContextAtSourceOffset(normalizedSourceText, safeStart);
     if (!calloutContext.has_value())
     {
         return notAppliedResult();
     }
-
-    const QString normalizedSourceText = sourceText;
-    const int safeStart = boundedTextIndex(normalizedSourceText, sourceStart);
-    const int safeEnd = boundedTextIndex(normalizedSourceText, std::max(safeStart, sourceEnd));
-    if (safeStart != safeEnd)
+    if (safeStart < calloutContext->calloutContentStart
+        || safeStart > calloutContext->calloutCloseStart
+        || safeEnd > calloutContext->calloutCloseStart)
     {
         return notAppliedResult();
     }
 
-    const int lineStartCandidate =
-        safeStart > calloutContext->calloutContentStart
-        ? normalizedSourceText.lastIndexOf(QLatin1Char('\n'), safeStart - 1) + 1
-        : calloutContext->calloutContentStart;
-    const int lineStart = std::max(calloutContext->calloutContentStart, lineStartCandidate);
-    if (lineStart <= calloutContext->calloutContentStart)
-    {
-        return notAppliedResult();
-    }
-    if (normalizedSourceText.at(lineStart - 1) != QLatin1Char('\n'))
-    {
-        return notAppliedResult();
-    }
-
-    const int lineEndIndex = normalizedSourceText.indexOf(QLatin1Char('\n'), safeEnd);
-    const int lineEnd =
-        lineEndIndex >= 0 && lineEndIndex < calloutContext->calloutCloseStart
-        ? lineEndIndex
-        : calloutContext->calloutCloseStart;
-    const QString linePrefix = normalizedSourceText.mid(lineStart, safeStart - lineStart);
-    const QString lineSuffix = normalizedSourceText.mid(safeEnd, lineEnd - safeEnd);
-    if (!linePrefix.trimmed().isEmpty() || !lineSuffix.trimmed().isEmpty())
-    {
-        return notAppliedResult();
-    }
-
-    const QString trailingSourceText =
+    const QString trailingCalloutSourceText =
         normalizedSourceText.mid(safeEnd, calloutContext->calloutCloseStart - safeEnd);
-    if (!trailingSourceText.trimmed().isEmpty())
-    {
-        return notAppliedResult();
-    }
-
-    const QString exitCalloutSourceText = QStringLiteral("</callout>\n");
+    const QString exitCalloutSourceText = QStringLiteral("</callout>\n") + trailingCalloutSourceText;
     return {
         {QStringLiteral("applied"), true},
-        {QStringLiteral("cursorSourceOffsetFromReplacementStart"), exitCalloutSourceText.size()},
-        {QStringLiteral("replacementSourceStart"), lineStart - 1},
+        {QStringLiteral("cursorSourceOffsetFromReplacementStart"), QStringLiteral("</callout>\n").size()},
+        {QStringLiteral("replacementSourceStart"), safeStart},
         {QStringLiteral("replacementSourceEnd"), calloutContext->calloutCloseEnd},
         {QStringLiteral("replacementSourceText"), exitCalloutSourceText}
     };

@@ -25,6 +25,7 @@ set(WHATSON_CPP_REGRESSION_TEST_SOURCES
         ${WHATSON_CPP_REGRESSION_SUITE_SOURCES}
         "${CMAKE_SOURCE_DIR}/src/app/platform/Android/WhatSonAndroidStorageBackend.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/editor/tags/ContentsAgendaBackend.cpp"
+        "${CMAKE_SOURCE_DIR}/src/app/models/editor/tags/ContentsCalloutBackend.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/display/paper/ContentsA4PaperBackground.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/display/paper/ContentsPaperSelection.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/sensor/UnusedNoteSensorSupport.cpp"
@@ -76,6 +77,7 @@ set(WHATSON_CPP_REGRESSION_TEST_SOURCES
         "${CMAKE_SOURCE_DIR}/src/app/models/file/hierarchy/tags/WhatSonTagsHierarchyStore.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/file/hierarchy/tags/WhatSonTagsJsonParser.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/editor/tags/WhatSonStructuredTagLinter.cpp"
+        "${CMAKE_SOURCE_DIR}/src/app/models/editor/tags/ContentsEditorBodyTagInsertionPlanner.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/file/viewer/ImageFormatCompatibilityLayer.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/file/viewer/ResourceBitmapViewer.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/file/hub/WhatSonHubMountValidator.cpp"

@@ -1189,7 +1189,9 @@ Item {
         }
         return rows.length > 0 ? rows[0] : ({
                 "charCount": 0,
+                "contentAvailableWidth": contentsView.minimapResolvedTrackWidth,
                 "contentHeight": contentsView.editorLineHeight,
+                "contentWidth": 0,
                 "contentY": textStartY,
                 "lineNumber": 1,
                 "visualIndex": 0
@@ -1978,6 +1980,7 @@ Item {
         id: editorTypingController
 
         agendaBackend: contentsAgendaBackend
+        bodyTagInsertionPlanner: contentsBodyTagInsertionPlanner
         calloutBackend: contentsCalloutBackend
         contentEditor: contentsView.contentEditor
         editorSession: editorSession
@@ -2045,6 +2048,12 @@ Item {
     }
     ContentsCalloutBackend {
         id: contentsCalloutBackend
+    }
+    ContentsEditorBodyTagInsertionPlanner {
+        id: contentsBodyTagInsertionPlanner
+
+        agendaBackend: contentsAgendaBackend
+        calloutBackend: contentsCalloutBackend
     }
     ContentsStructuredBlockRenderer {
         id: structuredBlockRenderer

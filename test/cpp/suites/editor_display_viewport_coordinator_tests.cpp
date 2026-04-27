@@ -28,6 +28,9 @@ void WhatSonCppRegressionTests::editorViewportCoordinator_movesMinimapAndLineMat
     QCOMPARE(coordinator.logicalLineNumberForOffset(13, lineStartOffsets), 3);
 
     QVERIFY(std::abs(coordinator.minimapBarWidth(0, 36.0) - 2.8) < 0.001);
+    QVERIFY(std::abs(coordinator.minimapLineBarWidth(180.0, 360.0, 0, 36.0) - 17.5) < 0.001);
+    QVERIFY(std::abs(coordinator.minimapLineBarWidth(480.0, 240.0, 0, 36.0) - 35.0) < 0.001);
+    QVERIFY(std::abs(coordinator.minimapLineBarWidth(0.0, 360.0, 0, 36.0) - 2.8) < 0.001);
     QVERIFY(std::abs(coordinator.minimapTrackHeightForContentHeight(30.0, 120.0) - 15.0) < 0.001);
     QVERIFY(std::abs(coordinator.minimapTrackYForContentY(30.0, 120.0) - 15.0) < 0.001);
     QVERIFY(std::abs(coordinator.minimapViewportHeight(true, 120.0, 8.0) - 20.0) < 0.001);
@@ -48,7 +51,7 @@ void WhatSonCppRegressionTests::editorViewportCoordinator_movesMinimapAndLineMat
     QVERIFY(geometryControllerSource.contains(
         QStringLiteral("controller.viewportCoordinator.minimapViewportHeight(")));
     QVERIFY(geometryControllerSource.contains(
-        QStringLiteral("controller.viewportCoordinator.minimapBarWidth(")));
+        QStringLiteral("controller.viewportCoordinator.minimapLineBarWidth(")));
     QVERIFY(!displayViewSource.contains(
         QStringLiteral("function logicalLineCharacterCountAt(lineIndex)")));
     QVERIFY(!displayViewSource.contains(
@@ -63,4 +66,6 @@ void WhatSonCppRegressionTests::editorViewportCoordinator_movesMinimapAndLineMat
         QStringLiteral("ContentsDisplayViewportCoordinator::logicalLineCharacterCountAt")));
     QVERIFY(viewportCoordinatorSource.contains(
         QStringLiteral("ContentsDisplayViewportCoordinator::minimapViewportHeight")));
+    QVERIFY(viewportCoordinatorSource.contains(
+        QStringLiteral("ContentsDisplayViewportCoordinator::minimapLineBarWidth")));
 }

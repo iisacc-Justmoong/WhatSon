@@ -2,6 +2,7 @@
 
 #include "app/models/editor/tags/ContentsAgendaBackend.hpp"
 #include "app/models/editor/tags/ContentsCalloutBackend.hpp"
+#include "app/models/editor/tags/ContentsEditorBodyTagInsertionPlanner.hpp"
 #include "app/models/editor/renderer/ContentsStructuredBlockRenderer.hpp"
 #include "app/models/display/paper/ContentsA4PaperBackground.hpp"
 #include "app/models/display/paper/ContentsPaperSelection.hpp"
@@ -121,6 +122,8 @@ namespace
                 QStringLiteral("ContentsGutterMarkerBridge")),
             whatsonInternalCreatableType<ContentsResourceTagTextGenerator>(
                 QStringLiteral("ContentsResourceTagTextGenerator")),
+            whatsonInternalCreatableType<ContentsEditorBodyTagInsertionPlanner>(
+                QStringLiteral("ContentsEditorBodyTagInsertionPlanner")),
             whatsonInternalCreatableType<ContentsStructuredDocumentBlocksModel>(
                 QStringLiteral("ContentsStructuredDocumentBlocksModel")),
             whatsonInternalCreatableType<ContentsStructuredDocumentCollectionPolicy>(

@@ -71,6 +71,13 @@ FocusScope {
         paperPaletteEnabled: documentFlow.paperPaletteEnabled
     }
 
+    ContentsEditorBodyTagInsertionPlanner {
+        id: bodyTagInsertionPlanner
+
+        agendaBackend: documentFlow.agendaBackend
+        calloutBackend: documentFlow.calloutBackend
+    }
+
     Keys.onPressed: function (event) {
         if (documentFlow.nativeTextInputPriority)
             return
@@ -274,6 +281,23 @@ FocusScope {
         return normalized
     }
 
+    function normalizedVisualRowWidths(rawWidths, fallbackWidth) {
+        const widths = []
+        if (Array.isArray(rawWidths)) {
+            for (let index = 0; index < rawWidths.length; ++index)
+                widths.push(Math.max(0, Number(rawWidths[index]) || 0))
+        } else {
+            const explicitLength = Number(rawWidths && rawWidths.length)
+            if (isFinite(explicitLength) && explicitLength >= 0) {
+                for (let index = 0; index < Math.floor(explicitLength); ++index)
+                    widths.push(Math.max(0, Number(rawWidths[index]) || 0))
+            }
+        }
+        if (widths.length === 0)
+            widths.push(Math.max(0, Number(fallbackWidth) || 0))
+        return widths
+    }
+
     function delegateItemForBlockHost(blockHost) {
         return blockHost && blockHost.delegateLoader && blockHost.delegateLoader.item
                 ? blockHost.delegateLoader.item
@@ -440,9 +464,37 @@ FocusScope {
             const gutterCollapsed = documentFlow.blockGutterCollapsed(host, blockEntry)
             const minimapVisualKind = documentFlow.blockMinimapVisualKind(host, blockEntry)
             const minimapRowCharCount = documentFlow.blockRepresentativeCharCountForHost(host, blockEntry, "")
+            const lineCharCount = documentFlow.visualLineCharCount(host, blockEntry, logicalLines, lineCount, index)
+            const fallbackAvailableWidth = Math.max(
+                        1,
+                        Number(delegateItem && delegateItem.width !== undefined ? delegateItem.width : 0) || 0,
+                        Number(host && host.width !== undefined ? host.width : 0) || 0,
+                        Number(documentFlow.width) || 0)
+            const lineContentAvailableWidth = Math.max(
+                        1,
+                        Number(delegateLineLayout && delegateLineLayout.contentAvailableWidth !== undefined
+                               ? delegateLineLayout.contentAvailableWidth
+                               : 0) || fallbackAvailableWidth)
+            const fallbackContentWidth = Math.min(
+                        lineContentAvailableWidth,
+                        Math.max(0, lineCharCount * documentFlow.lineHeightHint * 0.58))
+            const lineContentWidth = Math.min(
+                        lineContentAvailableWidth,
+                        Math.max(
+                            0,
+                            Number(delegateLineLayout && delegateLineLayout.contentWidth !== undefined
+                                   ? delegateLineLayout.contentWidth
+                                   : fallbackContentWidth) || 0))
+            const visualRowWidths = documentFlow.normalizedVisualRowWidths(
+                        delegateLineLayout && delegateLineLayout.visualRowWidths !== undefined
+                        ? delegateLineLayout.visualRowWidths
+                        : null,
+                        lineContentWidth)
             entries.push({
-                "charCount": documentFlow.visualLineCharCount(host, blockEntry, logicalLines, lineCount, index),
+                "charCount": lineCharCount,
+                "contentAvailableWidth": lineContentAvailableWidth,
                 "contentHeight": lineHeight,
+                "contentWidth": lineContentWidth,
                 "contentY": lineTop,
                 "gutterCollapsed": gutterCollapsed,
                 "gutterContentHeight": gutterCollapsed ? Math.max(1, documentFlow.lineHeightHint) : lineHeight,
@@ -454,7 +506,8 @@ FocusScope {
                 "minimapRowCharCount": minimapRowCharCount,
                 "snapshotToken": documentFlow.snapshotTokenForLogicalLine(blockEntry, logicalLines, index),
                 "minimapVisualKind": minimapVisualKind,
-                "rowCount": documentFlow.minimapRowCountForBlockHost(host, blockEntry, lineHeight)
+                "rowCount": documentFlow.minimapRowCountForBlockHost(host, blockEntry, lineHeight),
+                "visualRowWidths": visualRowWidths
             })
         }
 
@@ -486,7 +539,9 @@ FocusScope {
                         : ({})
                 entries.push({
                     "charCount": Math.max(0, Number(lineEntry.charCount) || 0),
+                    "contentAvailableWidth": Math.max(1, Number(lineEntry.contentAvailableWidth) || Number(documentFlow.width) || 1),
                     "contentHeight": Math.max(1, Number(lineEntry.contentHeight) || documentFlow.lineHeightHint),
+                    "contentWidth": Math.max(0, Number(lineEntry.contentWidth) || 0),
                     "contentY": Math.max(0, Number(lineEntry.contentY) || 0),
                     "gutterCollapsed": !!lineEntry.gutterCollapsed,
                     "gutterContentHeight": Math.max(
@@ -505,7 +560,10 @@ FocusScope {
                     "snapshotToken": lineEntry.snapshotToken !== undefined
                                      ? String(lineEntry.snapshotToken)
                                      : documentFlow.snapshotTokenForLogicalLine(blockEntry, [""], lineIndex),
-                    "rowCount": Math.max(1, Number(lineEntry.rowCount) || 1)
+                    "rowCount": Math.max(1, Number(lineEntry.rowCount) || 1),
+                    "visualRowWidths": documentFlow.normalizedVisualRowWidths(
+                                           lineEntry.visualRowWidths,
+                                           Number(lineEntry.contentWidth) || 0)
                 })
             }
             blockSummaries.push({
@@ -524,7 +582,9 @@ FocusScope {
         if (entries.length === 0) {
             entries.push({
                 "charCount": 0,
+                "contentAvailableWidth": Math.max(1, Number(documentFlow.width) || 1),
                 "contentHeight": Math.max(1, documentFlow.lineHeightHint),
+                "contentWidth": 0,
                 "contentY": 0,
                 "gutterCollapsed": false,
                 "gutterContentHeight": Math.max(1, documentFlow.lineHeightHint),
@@ -533,7 +593,8 @@ FocusScope {
                 "minimapRowCharCount": 0,
                 "minimapVisualKind": "text",
                 "snapshotToken": "text-group|",
-                "rowCount": 1
+                "rowCount": 1,
+                "visualRowWidths": [ 0 ]
             })
         }
 
@@ -1465,7 +1526,7 @@ FocusScope {
                     })
     }
 
-    function exitCallout(blockData) {
+    function exitCallout(blockData, sourceOffset) {
         EditorTrace.trace(
                     "structuredDocumentFlow",
                     "exitCallout",
@@ -1474,7 +1535,10 @@ FocusScope {
         if (!documentFlow.calloutBackend || documentFlow.calloutBackend.detectCalloutEnterReplacement === undefined)
             return false
         const safeBlock = blockData && typeof blockData === "object" ? blockData : ({})
-        const insertionOffset = Math.max(0, Math.floor(Number(safeBlock.contentEnd) || 0))
+        const requestedSourceOffset = Number(sourceOffset)
+        const insertionOffset = isFinite(requestedSourceOffset)
+                ? Math.max(0, Math.floor(requestedSourceOffset))
+                : Math.max(0, Math.floor(Number(safeBlock.contentEnd) || 0))
         const payload = documentFlow.calloutBackend.detectCalloutEnterReplacement(
                     documentFlow.sourceText,
                     insertionOffset,
@@ -1490,38 +1554,6 @@ FocusScope {
                         "sourceOffset": Math.max(0, (Number(payload.replacementSourceStart) || 0) + (Number(payload.cursorSourceOffsetFromReplacementStart) || 0))
                     })
         return true
-    }
-
-    function structuredShortcutSpec(shortcutKind) {
-        const normalizedKind = shortcutKind === undefined || shortcutKind === null ? "" : String(shortcutKind).toLowerCase()
-        if (normalizedKind === "agenda") {
-            if (!documentFlow.agendaBackend || documentFlow.agendaBackend.buildAgendaInsertionPayload === undefined)
-                return ({ "applied": false })
-            const payload = documentFlow.agendaBackend.buildAgendaInsertionPayload(false, "")
-            return {
-                "applied": !!payload.applied,
-                "cursorSourceOffsetFromInsertionStart": Math.max(0, Number(payload.cursorSourceOffsetFromInsertionStart) || 0),
-                "insertionSourceText": String(payload.insertionSourceText || "")
-            }
-        }
-        if (normalizedKind === "callout") {
-            if (!documentFlow.calloutBackend || documentFlow.calloutBackend.buildCalloutInsertionPayload === undefined)
-                return ({ "applied": false })
-            const payload = documentFlow.calloutBackend.buildCalloutInsertionPayload("")
-            return {
-                "applied": !!payload.applied,
-                "cursorSourceOffsetFromInsertionStart": Math.max(0, Number(payload.cursorSourceOffsetFromInsertionStart) || 0),
-                "insertionSourceText": String(payload.insertionSourceText || "")
-            }
-        }
-        if (normalizedKind === "break") {
-            return {
-                "applied": true,
-                "cursorSourceOffsetFromInsertionStart": "</break>".length,
-                "insertionSourceText": "</break>"
-            }
-        }
-        return ({ "applied": false })
     }
 
     function activeDelegateShortcutInsertionOffset() {
@@ -1549,6 +1581,72 @@ FocusScope {
                           documentFlow.activeDelegateShortcutInsertionOffset()))
     }
 
+    function activeCalloutWrapSourceRange() {
+        const targetState = documentFlow.inlineFormatTargetState()
+        if (!targetState || !targetState.valid)
+            return ({ "valid": false })
+
+        const blocks = documentFlow.normalizedBlocks()
+        const blockIndex = Math.max(0, Math.floor(Number(targetState.blockIndex) || 0))
+        if (blockIndex >= blocks.length)
+            return ({ "valid": false })
+
+        const blockEntry = blocks[blockIndex] && typeof blocks[blockIndex] === "object"
+                ? blocks[blockIndex]
+                : ({})
+        const blockType = documentFlow.normalizedBlockType(blockEntry)
+        if (blockType === "agenda"
+                || blockType === "callout"
+                || blockType === "resource"
+                || blockType === "break") {
+            return ({ "valid": false })
+        }
+
+        const currentSourceText = documentFlow.normalizedSourceText(documentFlow.sourceText)
+        const blockSourceStart = Math.max(
+                    0,
+                    Math.min(
+                        currentSourceText.length,
+                        Math.floor(Number(blockEntry.sourceStart) || 0)))
+        const blockSourceEnd = Math.max(
+                    blockSourceStart,
+                    Math.min(
+                        currentSourceText.length,
+                        Math.floor(Number(blockEntry.sourceEnd) || blockSourceStart)))
+        if (blockSourceEnd <= blockSourceStart)
+            return ({ "valid": false })
+
+        const blockSourceText = currentSourceText.slice(blockSourceStart, blockSourceEnd)
+        const currentPlainText = StructuredCursorSupport.plainTextFromInlineTaggedSource(blockSourceText)
+        const selectionSnapshot = targetState.selectionSnapshot && typeof targetState.selectionSnapshot === "object"
+                ? targetState.selectionSnapshot
+                : ({})
+        const selectionStart = Math.max(
+                    0,
+                    Math.min(
+                        currentPlainText.length,
+                        Math.floor(Number(selectionSnapshot.selectionStart) || 0)))
+        const selectionEnd = Math.max(
+                    selectionStart,
+                    Math.min(
+                        currentPlainText.length,
+                        Math.floor(Number(selectionSnapshot.selectionEnd) || 0)))
+        if (selectionEnd <= selectionStart)
+            return ({ "valid": false })
+
+        return {
+            "sourceEnd": StructuredCursorSupport.sourceOffsetForInlineTaggedSelectionBoundary(
+                             blockSourceText,
+                             selectionEnd,
+                             blockSourceStart),
+            "sourceStart": StructuredCursorSupport.sourceOffsetForInlineTaggedSelectionBoundary(
+                               blockSourceText,
+                               selectionStart,
+                               blockSourceStart),
+            "valid": true
+        }
+    }
+
     function insertStructuredShortcutAtActivePosition(shortcutKind) {
         EditorTrace.trace(
                     "structuredDocumentFlow",
@@ -1556,19 +1654,35 @@ FocusScope {
                     "shortcutKind=" + String(shortcutKind || "")
                     + " activeBlockIndex=" + documentFlow.activeBlockIndex,
                     documentFlow)
-        const insertionSpec = documentFlow.structuredShortcutSpec(shortcutKind)
-        if (!insertionSpec.applied)
-            return false
         const currentSourceText = documentFlow.normalizedSourceText(documentFlow.sourceText)
+        const normalizedShortcutKind = String(shortcutKind || "").trim().toLowerCase()
+        if (normalizedShortcutKind === "callout") {
+            const wrapRange = documentFlow.activeCalloutWrapSourceRange()
+            if (wrapRange.valid) {
+                const wrapPayload = bodyTagInsertionPlanner.buildCalloutRangeWrappingPayload(
+                            currentSourceText,
+                            Math.floor(Number(wrapRange.sourceStart) || 0),
+                            Math.floor(Number(wrapRange.sourceEnd) || 0))
+                if (wrapPayload.applied) {
+                    documentFlow.sourceMutationRequested(
+                                String(wrapPayload.nextSourceText || currentSourceText),
+                                {
+                                    "sourceOffset": Math.max(0, Number(wrapPayload.sourceOffset) || 0)
+                                })
+                    return true
+                }
+            }
+        }
         const resolvedInsertionOffset = Number(documentFlow.shortcutInsertionSourceOffset())
         if (!isFinite(resolvedInsertionOffset))
             return false
         const insertionOffset = Math.max(0, Math.min(currentSourceText.length, Math.floor(resolvedInsertionOffset)))
-        const payload = documentHost.mutationPolicy.buildStructuredInsertionPayload(
+        const payload = bodyTagInsertionPlanner.buildStructuredShortcutInsertionPayload(
                     currentSourceText,
                     insertionOffset,
-                    String(insertionSpec.insertionSourceText || ""),
-                    Math.max(0, Number(insertionSpec.cursorSourceOffsetFromInsertionStart) || 0))
+                    normalizedShortcutKind)
+        if (!payload.applied)
+            return false
         documentFlow.sourceMutationRequested(
                     String(payload.nextSourceText || currentSourceText),
                     {
@@ -1737,8 +1851,8 @@ FocusScope {
                         onTaskTextChanged: function (taskData, text, cursorPosition, expectedPreviousText) {
                             documentFlow.updateAgendaTaskText(taskData, text, cursorPosition, expectedPreviousText)
                         }
-                        onEnterExitRequested: function (blockData) {
-                            documentFlow.exitCallout(blockData)
+                        onEnterExitRequested: function (blockData, sourceOffset) {
+                            documentFlow.exitCallout(blockData, sourceOffset)
                         }
                         onTextChanged: function (text, cursorPosition, expectedPreviousText) {
                             documentFlow.updateCalloutText(blockHost.blockEntry, text, cursorPosition, expectedPreviousText)

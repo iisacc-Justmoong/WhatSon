@@ -197,6 +197,39 @@ Item {
         };
     }
 
+    function currentPlainTextCursorSourceOffset(sourceText) {
+        if (!controller.textBlock)
+            return 0;
+        const normalizedSourceText = StructuredCursorSupport.normalizedPlainText(sourceText);
+        const cursorPosition = Math.max(
+                    0,
+                    Math.min(
+                        normalizedSourceText.length,
+                        Number(controller.blockEditor && controller.blockEditor.cursorPosition !== undefined
+                               ? controller.blockEditor.cursorPosition
+                               : normalizedSourceText.length) || 0));
+        return controller.textBlock.sourceStart + cursorPosition;
+    }
+
+    function commitPlainTextRawMutation(nextPlainText, previousSourceText) {
+        if (!controller.textBlock)
+            return false;
+        const nextSourceText = StructuredCursorSupport.normalizedPlainText(nextPlainText);
+        if (nextSourceText === previousSourceText)
+            return false;
+        controller.liveEditSourceText = nextSourceText;
+        controller.liveEditPlainText = nextSourceText;
+        controller.hasLiveEditSnapshot = true;
+        controller.textBlock.sourceMutationRequested(
+                    nextSourceText,
+                    {
+                        "reason": "text-edit",
+                        "sourceOffset": controller.currentPlainTextCursorSourceOffset(nextSourceText)
+                    },
+                    previousSourceText);
+        return true;
+    }
+
     function focusEditor(cursorPosition) {
         if (!controller.textBlock || !controller.blockEditor)
             return;
@@ -281,7 +314,7 @@ Item {
     }
 
     function handleEditorTextEdited(_surfaceText) {
-        if (!controller.textBlock || !controller.inlineStyleRenderer)
+        if (!controller.textBlock)
             return;
         const previousSourceText = controller.hasLiveEditSnapshot
                 ? controller.liveEditSourceText
@@ -292,6 +325,10 @@ Item {
         const nextPlainText = controller.currentEditorPlainText();
         if (previousPlainText === nextPlainText)
             return;
+        if (!controller.sourceContainsInlineStyleTags) {
+            controller.commitPlainTextRawMutation(nextPlainText, previousSourceText);
+            return;
+        }
         if (!controller.inlineStyleRenderer
                 || controller.inlineStyleRenderer.applyPlainTextReplacementToSource === undefined)
             return;

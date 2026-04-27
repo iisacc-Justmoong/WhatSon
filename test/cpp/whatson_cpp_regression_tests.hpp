@@ -35,6 +35,9 @@
 #include "app/models/editor/persistence/ContentsEditorPersistenceController.hpp"
 #include "app/models/editor/renderer/ContentsStructuredBlockRenderer.hpp"
 #include "app/models/editor/session/ContentsEditorSessionController.hpp"
+#include "app/models/editor/tags/ContentsAgendaBackend.hpp"
+#include "app/models/editor/tags/ContentsCalloutBackend.hpp"
+#include "app/models/editor/tags/ContentsEditorBodyTagInsertionPlanner.hpp"
 #include "app/models/editor/text/ContentsLogicalTextBridge.hpp"
 #include "app/models/editor/structure/ContentsStructuredDocumentBlocksModel.hpp"
 #include "app/models/editor/structure/ContentsStructuredDocumentCollectionPolicy.hpp"
@@ -968,6 +971,8 @@ private slots:
     void resourcesImportViewModel_wiresAnnotationBitmapGenerationIntoPackageCreation();
     void resourceTagTextGenerator_and_noteFolderSemantics_normalizeDescriptorsAndXml();
     void editorTagsBoundary_groupsNonFormatBodyTagResponsibilities();
+    void contentsCalloutBackend_exitsOnPlainEnterAndSplitsAtCursor();
+    void editorBodyTagInsertionPlanner_buildsRawTagInsertionPayloads();
     void foldersHierarchyParser_escapesLiteralSlashLabelsIntoSingleSegments();
     void foldersHierarchySessionService_preservesEscapedLiteralSlashFolderPaths();
     void sidebarHierarchyRenameController_preservesLiteralSlashFolderLabels();
@@ -1002,6 +1007,7 @@ private slots:
     void contentsDisplayView_scalesMinimapRowsFromDocumentGeometry();
     void contentsDisplayView_refreshesMinimapWhenStructuredLayoutCacheChanges();
     void contentsDisplayMinimapCoordinator_splicesNormalizedSnapshotEntries();
+    void minimapSnapshotSupport_preservesVisualRowWidths();
     void contentsDisplayView_normalizesMinimapSnapshotsAgainstStructuredEntries();
     void contentsDisplayView_keepsSingleResolverBindingPerDocumentSourceProperty();
     void contentsDisplayView_emitsEditorCreationTraceAcrossHostTransitions();
@@ -1016,6 +1022,8 @@ private slots:
     void qmlStructuredEditors_consumeRendererNormalizedBlocksWithoutLocalFlattening();
     void qmlStructuredEditors_rejectStaleSourceRangeMutations();
     void qmlStructuredEditors_preserveNativeMobileInputDuringFocusedEdits();
+    void qmlStructuredEditors_commitsPlainTextBlocksDirectlyToRawSource();
+    void qmlStructuredEditors_deletesEmptyCalloutWithBackspace();
     void qmlStructuredEditors_renderInlineStyleOverlayAtRuntime();
     void qmlEditorInputPolicyAdapter_centralizesNativeInputDecisions();
     void qmlEditorViewDirectory_containsOnlyViewSurfaceFiles();

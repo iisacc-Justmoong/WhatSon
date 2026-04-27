@@ -26,6 +26,7 @@ void WhatSonCppRegressionTests::qmlInternalTypeRegistrar_usesLvrsManifestRegistr
     QVERIFY(registrarSource.contains(QStringLiteral("whatsonInternalCreatableType<ContentsDisplayPresentationViewModel>")));
     QVERIFY(registrarSource.contains(QStringLiteral("whatsonInternalCreatableType<ContentsDisplaySelectionMountViewModel>")));
     QVERIFY(registrarSource.contains(QStringLiteral("whatsonInternalCreatableType<WhatSonIosHubPickerBridge>")));
+    QVERIFY(registrarSource.contains(QStringLiteral("whatsonInternalCreatableType<ContentsEditorBodyTagInsertionPlanner>")));
     QVERIFY(registrarSource.contains(QStringLiteral("QStringLiteral(\"WhatSon.App.Internal\")")));
     QVERIFY(registrarSource.contains(QStringLiteral("lvrs::registerQmlTypes(internalQmlTypeRegistrationManifest())")));
     QVERIFY(!registrarSource.contains(QStringLiteral("qmlRegisterType<")));

@@ -81,6 +81,7 @@ Item {
                 for (let rowIndex = 0; rowIndex < rows.length; ++rowIndex) {
                     const row = rows[rowIndex];
                     const characterCount = Number(row.charCount) || 0;
+                    const contentWidth = Number(row.contentWidth) || 0;
                     const barY = minimapLayer.resolveNumericResolverValue(
                                 minimapLayer.minimapVisualRowPaintYResolver,
                                 0,
@@ -92,11 +93,11 @@ Item {
                     if (barY > height || barY + barHeight < 0)
                         continue;
                     context.fillStyle = minimapLayer.minimapLineColor;
-                    context.globalAlpha = characterCount > 0 ? 0.48 : 0.12;
+                    context.globalAlpha = characterCount > 0 || contentWidth > 0 ? 0.48 : 0.12;
                     const barWidth = minimapLayer.resolveNumericResolverValue(
                                 minimapLayer.minimapBarWidthResolver,
                                 1,
-                                characterCount);
+                                row);
                     context.fillRect(0, barY, barWidth, barHeight);
                 }
                 context.globalAlpha = 1;

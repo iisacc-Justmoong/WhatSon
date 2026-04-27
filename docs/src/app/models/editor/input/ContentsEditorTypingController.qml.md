@@ -2,7 +2,8 @@
 
 ## Responsibility
 
-`ContentsEditorTypingController.qml` owns committed editor text mutations for `ContentsDisplayView.qml`.
+`ContentsEditorTypingController.qml` owns the legacy whole-editor mutation helpers and tag-management shortcuts that
+still need `ContentsDisplayView.qml` document-level cursor context.
 
 The live `TextEdit` remains the only ordinary input surface. This controller reacts after native editing has produced a
 stable text snapshot; it does not intercept ordinary key events.
@@ -17,7 +18,9 @@ stable text snapshot; it does not intercept ordinary key events.
 - Reads committed text from `contentEditor.currentPlainText()` when available, with `getText(0, length)` as the legacy
   surface fallback.
 - Computes one contiguous plain-text delta and maps that delta back into RAW `.wsnbody` source offsets.
-- Delegates ordinary source splicing to `ContentsTextFormatRenderer.applyPlainTextReplacementToSource(...)`.
+- The canonical structured text-block path now lives in `ContentsDocumentTextBlockController.qml`: plain text blocks
+  commit the `TextEdit` plain text directly as RAW block source, and styled blocks use the tag-preserving replacement
+  path.
 - Adopts each accepted ordinary edit back into `ContentsLogicalTextBridge` through `adoptIncrementalState(...)` so
   gutter, selection, and cursor helpers stay current without a whole-note rebuild per keystroke.
 
@@ -36,15 +39,16 @@ stable text snapshot; it does not intercept ordinary key events.
 The remaining non-literal transformations are source-tag management, not live key interception:
 
 - `queueAgendaShortcutInsertion()` inserts a canonical `<agenda ...><task ...>...</task></agenda>` block at the
-  resolved RAW cursor.
-- `queueCalloutShortcutInsertion()` inserts canonical `<callout>...</callout>` source.
+  resolved RAW cursor through `ContentsEditorBodyTagInsertionPlanner`.
+- `queueCalloutShortcutInsertion()` wraps the active selected RAW range as `<callout>...</callout>` when text is
+  selected, otherwise it inserts canonical `<callout>...</callout>` source at the resolved RAW cursor.
 - `queueBreakShortcutInsertion()` inserts canonical `</break>` source.
 - Typing `[] item` or `[x] item` can canonicalize into agenda/task tags after the native edit is committed.
 - A standalone `---` line can canonicalize into `</break>` after the native edit is committed.
-- Agenda task Enter handling and callout exit handling are delegated to their backends as RAW tag mutations after the
-  committed text delta is available.
-- Resource drops and clipboard resource imports reuse `insertRawSourceTextAtCursor(...)` to place canonical
-  `<resource ... />` tags at the resolved RAW cursor.
+- Agenda task Enter handling and legacy whole-editor callout exit handling are delegated to their backends as RAW tag
+  mutations after the committed text delta is available.
+- Resource drops and clipboard resource imports reuse `insertRawSourceTextAtCursor(...)`, which now delegates raw
+  source insertion payload construction to `ContentsEditorBodyTagInsertionPlanner` before applying the next RAW source.
 
 ## Disallowed Custom Input
 

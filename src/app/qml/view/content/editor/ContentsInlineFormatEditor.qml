@@ -44,6 +44,7 @@ FocusScope {
     property bool blockExternalDropMutation: false
     property bool suppressCommittedTextEditedDispatch: false
     property int tabIndentSpaceCount: 4
+    property var tagManagementKeyPressHandler: null
     property string renderedText: ""
     property int renderedTextFormat: Text.RichText
     property string text: ""
@@ -188,6 +189,21 @@ FocusScope {
         inlineEditorController.scheduleCommittedTextEditedDispatch();
     }
 
+    function handleTagManagementKeyPress(event) {
+        if (!control.tagManagementKeyPressHandler
+                || typeof control.tagManagementKeyPressHandler !== "function") {
+            event.accepted = false;
+            return false;
+        }
+        const handled = !!control.tagManagementKeyPressHandler(event);
+        if (handled || event.accepted) {
+            event.accepted = true;
+            return true;
+        }
+        event.accepted = false;
+        return false;
+    }
+
     Rectangle {
         anchors.fill: parent
         color: {
@@ -302,6 +318,23 @@ FocusScope {
 
                 readonly property bool focused: activeFocus
                 property bool showRenderedOutput: control.showRenderedOutput
+
+                Keys.onPressed: function (event) {
+                    const key = Number(event.key);
+                    if (key !== Qt.Key_Backspace) {
+                        event.accepted = false;
+                        return;
+                    }
+                    control.handleTagManagementKeyPress(event);
+                }
+
+                Keys.onEnterPressed: function (event) {
+                    control.handleTagManagementKeyPress(event);
+                }
+
+                Keys.onReturnPressed: function (event) {
+                    control.handleTagManagementKeyPress(event);
+                }
             }
         }
 

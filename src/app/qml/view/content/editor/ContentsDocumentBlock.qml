@@ -34,7 +34,7 @@ FocusScope {
     signal taskDoneToggled(int openTagStart, int openTagEnd, bool checked)
     signal taskEnterRequested(var blockData, var taskData)
     signal taskTextChanged(var taskData, string text, int cursorPosition, string expectedPreviousText)
-    signal enterExitRequested(var blockData)
+    signal enterExitRequested(var blockData, int sourceOffset)
     signal textChanged(string text, int cursorPosition, string expectedPreviousText)
 
     readonly property var normalizedBlock: blockData && typeof blockData === "object" ? blockData : ({})

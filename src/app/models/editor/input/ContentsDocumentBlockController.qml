@@ -303,8 +303,8 @@ Item {
             controller.documentBlock.documentEndEditRequested();
         }
 
-        function onEnterExitRequested(blockData) {
-            controller.documentBlock.enterExitRequested(blockData);
+        function onEnterExitRequested(blockData, sourceOffset) {
+            controller.documentBlock.enterExitRequested(blockData, sourceOffset);
         }
 
         function onParagraphSplitRequested(sourceOffset) {

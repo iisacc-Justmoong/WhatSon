@@ -12,7 +12,8 @@ parent view and paints them without re-entering editor layout state.
 
 - `minimapVisualRows`: row model for the painted silhouette.
 - `minimapBarWidthResolver`, `minimapVisualRowPaintHeightResolver`, `minimapVisualRowPaintYResolver`: paint-only
-  callbacks used by the canvas for each row.
+  callbacks used by the canvas for each row. The width resolver receives the full row object so it can use measured
+  `contentWidth` / `contentAvailableWidth` before falling back to `charCount`.
 - `minimapSilhouetteHeight`: resolved track-height ceiling from the parent view.
 - `minimapScrollable`: whether the viewport thumb should be shown.
 - `minimapViewportHeight` / `minimapViewportY`: resolved viewport thumb geometry.
@@ -37,6 +38,8 @@ parent view and paints them without re-entering editor layout state.
   values, not as live bindings back into `ContentsDisplayView.qml`.
 - Only the canvas row paint path still uses resolver callbacks, because those values are paint-time projections from a
   static row model rather than live layout dependencies.
+- The canvas opacity treats either `charCount` or measured `contentWidth` as visible content, allowing non-text/visual
+  block rows to remain visible without inventing text length.
 
 ## Collaborators
 
@@ -48,5 +51,7 @@ parent view and paints them without re-entering editor layout state.
 - Opening a note should no longer emit repeated binding-loop warnings for minimap `scrollable`, `height`, or `y`.
 - The minimap column should remain visibly present on the editor's right edge; expanding sibling editor/panel content
   must not compress the minimap layout slot away.
+- Differently sized authored lines should produce differently sized minimap bars that follow the body silhouette from top
+  to bottom.
 - Dragging or clicking the minimap should still reposition the shared editor viewport.
 - The viewport thumb should disappear when the document fits entirely inside the editor viewport.

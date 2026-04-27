@@ -52,8 +52,13 @@ QtObject {
                                 (controller.breakBlock.height - controller.divider.height) / 2)
                    });
         return [{
+                    "contentAvailableWidth": Math.max(
+                                                 1,
+                                                 Number(controller.breakBlock.width) || Number(controller.divider.width) || 1),
                     "contentHeight": Math.max(1, Number(controller.divider.height) || 1),
-                    "contentY": Math.max(0, Number(mappedOrigin.y) || 0)
+                    "contentWidth": Math.max(0, Number(controller.divider.width) || 0),
+                    "contentY": Math.max(0, Number(mappedOrigin.y) || 0),
+                    "visualRowWidths": [ Math.max(0, Number(controller.divider.width) || 0) ]
                 }];
     }
 

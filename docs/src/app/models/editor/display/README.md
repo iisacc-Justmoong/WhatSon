@@ -14,11 +14,12 @@ gain new session, persistence, parsing, mutation, scheduling, or command-surface
   Resolves which RAW note source the editor should present while note selection, snapshot refresh, and editor-session
   binding are converging.
 - `ContentsDisplayEditOperationCoordinator.*`
-  Coordinates high-level edit operation state that QML surfaces need to apply against the current note body.
+  Coordinates high-level focus and shortcut operation state that QML surfaces need to apply against the current note body.
 - `ContentsDisplayGutterCoordinator.*`
   Keeps gutter state derived from the same editor document projection as the visible body.
 - `ContentsDisplayMinimapCoordinator.*`
-  Owns minimap snapshot reuse and rebuild decisions for structured editor geometry.
+  Owns minimap snapshot reuse and rebuild decisions for structured editor geometry, including measured row-width metadata
+  that lets the minimap preserve the note body's silhouette.
 - `ContentsDisplayNoteBodyMountCoordinator.*`
   Drives note-body mount, retry, and exception plans while the selected RAW body is converging.
 - `ContentsDisplayPresentationRefreshController.*` and `ContentsDisplayRefreshCoordinator.*`
@@ -40,7 +41,8 @@ gain new session, persistence, parsing, mutation, scheduling, or command-surface
 - `ContentsDisplayGeometryController.qml`
   Owns QML-runtime geometry scheduling and delegates public calls through the C++ geometry ViewModel.
 - `ContentsDisplayMutationController.qml`
-  Owns QML-runtime RAW mutation orchestration delegated through the C++ mutation ViewModel.
+  Owns QML-runtime RAW source writes delegated through the C++ mutation ViewModel. It applies already-built RAW
+  `.wsnbody` text directly, then lets parser and renderer projections observe the changed source.
 - `ContentsDisplayPresentationController.qml`
   Owns QML-runtime presentation refresh orchestration delegated through the C++ presentation ViewModel.
 - `ContentsDisplaySelectionMountController.qml`
@@ -51,7 +53,8 @@ gain new session, persistence, parsing, mutation, scheduling, or command-surface
 - `ContentsEditorSurfaceModeSupport.js`
   Resolves whether `ContentViewLayout.qml` should mount the note editor surface or direct resource editor surface.
 - `ContentsMinimapSnapshotSupport.js`
-  Normalizes changed-line ranges and minimap snapshot rows for editor display refreshes.
+  Normalizes changed-line ranges and minimap snapshot rows for editor display refreshes while preserving measured
+  `contentWidth` / `visualRowWidths` metadata.
 
 ## Boundary
 

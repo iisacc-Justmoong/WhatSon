@@ -10,8 +10,9 @@ line coordinates from live `positionToRectangle(...)` data.
 - `normalizedPlainTextLines(plainTextValue)`
   Normalizes the visible plain-text editor snapshot into the logical-line list consumed by the geometry builder.
 - `buildEntries(plainTextValue, blockHeight, editorItem, mapTarget, fallbackLineHeight)`
-  Builds one `{contentY, contentHeight}` entry per logical line and maps every sampled `TextEdit` rectangle into the
-  owning block's coordinate space before the structured flow consumes it.
+  Builds one `{contentY, contentHeight, contentWidth, contentAvailableWidth, visualRowWidths}` entry per logical line and
+  maps every sampled `TextEdit` rectangle into the owning block's coordinate space before the structured flow consumes
+  it.
 
 ## Notes
 
@@ -21,6 +22,8 @@ line coordinates from live `positionToRectangle(...)` data.
   through `mapToItem(...)` when available.
   Logical-line caches therefore stay aligned even when the live editor's internal text item is no longer rooted at the
   block's local `y = 0`.
+- The helper also samples cursor X positions across each authored line so the minimap can draw the actual line silhouette
+  from measured visual-row width instead of deriving bar width from character count alone.
 - The helper remains read-side only.
   It does not mutate RAW source and does not own persistence.
 
@@ -31,4 +34,5 @@ line coordinates from live `positionToRectangle(...)` data.
 - Regression checklist:
   - mapped editor offsets must shift every logical line entry by the same parent-coordinate delta
   - line heights must still come from the live editor rectangles instead of collapsing to one fixed fallback height
+  - line widths and `visualRowWidths` must preserve the sampled editor X span for each visible row
   - fallback distribution must still produce one entry for empty/plain one-line blocks when no editor geometry exists

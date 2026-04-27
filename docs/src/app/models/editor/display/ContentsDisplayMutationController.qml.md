@@ -6,6 +6,6 @@ Owns QML-runtime mutation orchestration for the editor display host.
 
 ## Boundary
 
-- Applies RAW `.wsnbody` mutation plans through editor-domain coordinators.
+- Applies incoming RAW `.wsnbody` source text directly to the display host before persistence and parser projection.
 - Delegates public access through `ContentsDisplayMutationViewModel`.
 - Must preserve RAW source as the only write authority.

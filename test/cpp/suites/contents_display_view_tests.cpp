@@ -166,11 +166,20 @@ void WhatSonCppRegressionTests::contentsDisplayView_routesStructuredMutationsThr
         QStringLiteral("src/app/qml/view/content/editor/ContentsDisplayView.qml"));
     const QString mutationControllerSource = readUtf8SourceFile(
         QStringLiteral("src/app/models/editor/display/ContentsDisplayMutationController.qml"));
+    const QString editOperationCoordinatorHeader = readUtf8SourceFile(
+        QStringLiteral("src/app/models/editor/display/ContentsDisplayEditOperationCoordinator.hpp"));
+    const QString editOperationCoordinatorSource = readUtf8SourceFile(
+        QStringLiteral("src/app/models/editor/display/ContentsDisplayEditOperationCoordinator.cpp"));
 
     QVERIFY(!displayViewSource.isEmpty());
     QVERIFY(!mutationControllerSource.isEmpty());
-    QVERIFY(mutationControllerSource.contains(
-        QStringLiteral("if (mutationPlan.applyStructuredSourceText || mutationPlan.applyEditorText) {")));
+    QVERIFY(!editOperationCoordinatorHeader.isEmpty());
+    QVERIFY(!editOperationCoordinatorSource.isEmpty());
+    QVERIFY(!mutationControllerSource.contains(QStringLiteral("documentSourceMutationPlan(")));
+    QVERIFY(!mutationControllerSource.contains(QStringLiteral("applyStructuredSourceText")));
+    QVERIFY(!mutationControllerSource.contains(QStringLiteral("applyEditorText")));
+    QVERIFY(!editOperationCoordinatorHeader.contains(QStringLiteral("documentSourceMutationPlan")));
+    QVERIFY(!editOperationCoordinatorSource.contains(QStringLiteral("documentSourceMutationPlan")));
     QVERIFY(mutationControllerSource.contains(
         QStringLiteral("if (controller.contentsView.editorText !== normalizedNextSourceText)")));
     QVERIFY(mutationControllerSource.contains(

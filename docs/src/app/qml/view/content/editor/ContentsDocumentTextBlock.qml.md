@@ -11,7 +11,8 @@ from multiple implicit parser blocks.
 - Non-visual block editing state now lives in
   `src/app/models/editor/input/ContentsDocumentTextBlockController.qml`.
   This view keeps layout, inline editor composition, and rendered overlay wiring; focused live snapshots,
-  inline-tag-aware source replacement, cursor geometry, and focus requests belong to the controller.
+  direct plain-text RAW mutation, inline-tag-aware source replacement for styled blocks, cursor geometry, and focus
+  requests belong to the controller.
 - The block now keeps `ContentsInlineFormatEditor.qml` in `TextEdit.PlainText` mode and uses
   `ContentsTextFormatRenderer.editorSurfaceHtml` only as the visual overlay payload.
 - Inline tags such as `<bold>`, `<italic>`, `<underline>`, `<strikethrough>`, and `<highlight>` therefore no longer
@@ -25,10 +26,10 @@ from multiple implicit parser blocks.
   value, so newly inserted `<bold>`, `<italic>`, and `<highlight>` tags render on the next projection pass.
 - Live typing is still source-driven:
   - compare previous visible plain text with current editor plain text
-  - compute the changed logical range
-  - map that logical range back into inline-tag-aware source offsets through
-    `ContentsStructuredCursorSupport.js`
-  - rewrite the RAW block source through `ContentsTextFormatRenderer.applyPlainTextReplacementToSource(...)`
+  - when the block has no inline style tags, commit the current plain text directly as the next RAW block source
+  - when the block already contains inline style tags, compute the changed logical range, map that range through
+    `ContentsStructuredCursorSupport.js`, and rewrite the RAW block source through
+    `ContentsTextFormatRenderer.applyPlainTextReplacementToSource(...)`
 - Ordinary text-edit mutation focus requests are marked with `reason: "text-edit"` so
   `ContentsEditorInputPolicyAdapter.qml` can avoid replaying focus/cursor restoration during a native-priority focused
   input session.
@@ -50,6 +51,8 @@ from multiple implicit parser blocks.
   line rectangle back into the block's own coordinate space before the structured flow caches it.
   Gutter Y therefore no longer depends on the inline editor's internal local origin accidentally matching the block
   host origin.
+- The shared line-geometry helper also reports measured line width and wrapped visual-row widths so the minimap follows
+  the actual prose silhouette.
 - The block still emits only RAW mutation requests upward; the rendered overlay remains a read-side projection and
   never becomes the persistence authority.
 - The block now also exposes `clearSelection(preserveFocusedEditor)` so structured-flow-wide selection cleanup can
