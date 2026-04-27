@@ -48,6 +48,11 @@
 - The editor surface no longer mounts a note-loading overlay. Mount decisions now settle through
   `ContentsDisplayNoteBodyMountCoordinator::mountDecisionClean`, so a stale pending body load cannot dim already
   rendered note content.
+- Focus/input availability is likewise tied to
+  `ContentsDisplayNoteBodyMountCoordinator::surfaceInteractive`, so a parse-mounted note stays editable while slower
+  startup runtime state finishes settling.
+- Tag-management command surfaces use that same interactive mount state, so inline formatting shortcuts can insert
+  RAW `<bold>`/`<italic>`/`<highlight>` tags before the slower editor-session `noteMounted` flag completes.
 - This directory now contains only editor view hosts, visual layers, and block delegates. Non-visual QML policies,
   controllers, session controllers, and support JavaScript live under `src/app/models/editor`.
 - `src/app/models/editor/display/ContentsDisplayHostModePolicy.qml` owns platform display deltas such as

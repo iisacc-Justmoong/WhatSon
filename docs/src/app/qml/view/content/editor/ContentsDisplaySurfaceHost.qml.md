@@ -11,6 +11,8 @@ command surface.
 
 The host intentionally does not mount a note-loading overlay. Mount scheduling is settled by the display model's
 `mountDecisionClean` flag instead of a visual mask, so rendered note content is never dimmed by a stale loading state.
+The host also gates focus/input with `noteDocumentSurfaceInteractive`, not the raw `selectedNoteBodyLoading` flag, so
+startup runtime loading cannot keep an already parse-mounted note editor disabled.
 
 ## Boundary
 

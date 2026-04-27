@@ -508,6 +508,13 @@ bool ContentsDisplayNoteBodyMountCoordinator::surfaceVisible() const noexcept
     return parseMounted() || mountPending();
 }
 
+bool ContentsDisplayNoteBodyMountCoordinator::surfaceInteractive() const noexcept
+{
+    return surfaceVisible()
+        && parseMounted()
+        && documentSurfaceReady();
+}
+
 QString ContentsDisplayNoteBodyMountCoordinator::mountFailureReason() const
 {
     if (!mountFailed())
@@ -614,7 +621,7 @@ bool ContentsDisplayNoteBodyMountCoordinator::exceptionVisible() const noexcept
 
 bool ContentsDisplayNoteBodyMountCoordinator::commandSurfaceEnabled() const noexcept
 {
-    return noteMounted();
+    return surfaceInteractive();
 }
 
 void ContentsDisplayNoteBodyMountCoordinator::scheduleMount(const QVariantMap& options)
@@ -743,6 +750,7 @@ QVariantMap ContentsDisplayNoteBodyMountCoordinator::currentMountState() const
     state.insert(QStringLiteral("snapshotRefreshAttemptedNoteId"), m_snapshotRefreshAttemptedNoteId);
     state.insert(QStringLiteral("structuredDocumentSurfaceReady"), m_structuredDocumentSurfaceReady);
     state.insert(QStringLiteral("structuredDocumentSurfaceRequested"), m_structuredDocumentSurfaceRequested);
+    state.insert(QStringLiteral("surfaceInteractive"), surfaceInteractive());
     state.insert(QStringLiteral("surfaceVisible"), surfaceVisible());
     state.insert(QStringLiteral("visible"), m_visible);
     return state;

@@ -146,7 +146,7 @@ Item {
     }
 
     function shortcutInsertionSourceOffset() {
-        return resourceBlock.focusSourceOffset
+        return resourceBlock.sourceEnd
     }
 
     ContentsResourceRenderCard {

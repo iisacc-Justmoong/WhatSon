@@ -983,6 +983,7 @@ private slots:
     void structuredCollectionPolicy_flattensImplicitInteractiveTextBlocksIntoSingleGroups();
     void structuredBlockRenderer_publishesSingleNormalizedInteractiveStream();
     void structuredBlockRenderer_keepsEmptyNotesFocusableWithOneTextGroup();
+    void structuredBlockRenderer_keepsTrailingResourceInsertionsEditable();
     void structuredMutationPolicy_buildsDeletionAndInsertionPayloads();
     void structuredMutationPolicy_buildsParagraphBoundaryMergeAndSplitPayloads();
     void structuredDocumentBlocksModel_updatesRowsWithoutResettingStableSuffixBlocks();
@@ -1047,6 +1048,7 @@ private slots:
     void noteBodyMountCoordinator_remountsSameNoteWhenEditorSessionTextIsStale();
     void qmlInlineFormatEditor_keepsNativeTextEditInputUncovered();
     void qmlInlineFormatEditor_keepsKeyboardSelectionAndOsImeNative();
+    void qmlInlineFormatEditor_forwardsInlineFormatShortcutsToTagManagementHook();
     void mobileChrome_usesSharedFigmaControlSurfaceColor();
     void mobileHierarchyRouteStateStore_tracksNormalizedSelectionRestoreState();
     void mobileHierarchySelectionCoordinator_prefersExplicitSidebarBindingsAndFallbacks();

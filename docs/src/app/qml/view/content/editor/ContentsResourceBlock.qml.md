@@ -17,7 +17,8 @@ Renders one canonical `<resource ... />` span as presentation-only document cont
 - The block also exports the shared atomic-block contract explicitly:
   `textEditable=false`, `atomicBlock=true`, `gutterCollapsed=true`,
   `minimapVisualKind=block`, `minimapRepresentativeCharCount=160`, and an empty `visiblePlainText()`.
-- Structured shortcut insertion uses the block's trailing source offset (`focusSourceOffset`).
+- Structured shortcut insertion uses the block's trailing source offset (`sourceEnd`), so pasting another resource while
+  a resource card is focused appends after the current card instead of reusing the card's internal focus anchor.
 
 ## Architecture Note
 - This file no longer behaves like an editor widget.

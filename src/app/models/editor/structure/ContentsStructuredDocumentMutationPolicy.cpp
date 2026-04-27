@@ -477,8 +477,8 @@ QVariantMap ContentsStructuredDocumentMutationPolicy::buildResourceInsertionPayl
         : QString();
     const QString blockSourceText = normalizedTagTexts.join(QLatin1Char('\n'));
     const QString suffixNewline =
-        boundedInsertionOffset < currentSourceLength
-            && currentSourceText.at(boundedInsertionOffset) != QLatin1Char('\n')
+        boundedInsertionOffset >= currentSourceLength
+            || currentSourceText.at(boundedInsertionOffset) != QLatin1Char('\n')
         ? QStringLiteral("\n")
         : QString();
     const QString insertionSourceText = prefixNewline + blockSourceText + suffixNewline;
@@ -492,20 +492,10 @@ QVariantMap ContentsStructuredDocumentMutationPolicy::buildResourceInsertionPayl
         + static_cast<int>(blockSourceText.size());
 
     QVariantMap focusRequest;
-    if (!suffixNewline.isEmpty())
-    {
-        focusRequest.insert(
-            QStringLiteral("sourceOffset"),
-            nextEditableSourceOffsetAfterBlock(nextSourceText, insertedBlockEndOffset));
-    }
-    else
-    {
-        focusRequest.insert(
-            QStringLiteral("sourceOffset"),
-            std::max(
-                boundedInsertionOffset + static_cast<int>(prefixNewline.size()),
-                insertedBlockEndOffset - 1));
-    }
+    focusRequest.insert(QStringLiteral("preferNearestTextBlock"), true);
+    focusRequest.insert(
+        QStringLiteral("sourceOffset"),
+        nextEditableSourceOffsetAfterBlock(nextSourceText, insertedBlockEndOffset));
 
     QVariantMap payload;
     payload.insert(QStringLiteral("focusRequest"), focusRequest);

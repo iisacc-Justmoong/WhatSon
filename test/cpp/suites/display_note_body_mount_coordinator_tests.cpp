@@ -79,7 +79,8 @@ void WhatSonCppRegressionTests::noteBodyMountCoordinator_requestsEditorSessionMo
     QVERIFY(!coordinator.noteMounted());
     QVERIFY(!coordinator.mountFailed());
     QVERIFY(coordinator.surfaceVisible());
-    QVERIFY(!coordinator.commandSurfaceEnabled());
+    QVERIFY(coordinator.surfaceInteractive());
+    QVERIFY(coordinator.commandSurfaceEnabled());
 
     const QVariantMap mountState = coordinator.currentMountState();
     QCOMPARE(mountState.value(QStringLiteral("documentSourceReady")).toBool(), true);
@@ -238,7 +239,8 @@ void WhatSonCppRegressionTests::noteBodyMountCoordinator_acceptsResolvedEmptySel
     QVERIFY(!coordinator.mountFailed());
     QVERIFY(coordinator.surfaceVisible());
     QVERIFY(!coordinator.exceptionVisible());
-    QVERIFY(!coordinator.commandSurfaceEnabled());
+    QVERIFY(coordinator.surfaceInteractive());
+    QVERIFY(coordinator.commandSurfaceEnabled());
 
     const QVariantMap mountState = coordinator.currentMountState();
     QCOMPARE(mountState.value(QStringLiteral("documentSourceReady")).toBool(), true);
@@ -311,6 +313,7 @@ void WhatSonCppRegressionTests::noteBodyMountCoordinator_cleansMountDecisionAfte
 
     QVERIFY(!coordinator.mountDecisionClean());
     QVERIFY(coordinator.mountPending());
+    QVERIFY(!coordinator.surfaceInteractive());
 
     QCoreApplication::processEvents();
 
@@ -327,6 +330,7 @@ void WhatSonCppRegressionTests::noteBodyMountCoordinator_cleansMountDecisionAfte
     QCOMPARE(mountState.value(QStringLiteral("mountDecisionClean")).toBool(), true);
     QCOMPARE(mountState.value(QStringLiteral("mountPending")).toBool(), true);
     QCOMPARE(mountState.value(QStringLiteral("selectedNoteBodyLoading")).toBool(), true);
+    QCOMPARE(mountState.value(QStringLiteral("surfaceInteractive")).toBool(), false);
 }
 
 void WhatSonCppRegressionTests::noteBodyMountCoordinator_waitsForPresentationReadySourceBeforeMounting()
@@ -385,8 +389,10 @@ void WhatSonCppRegressionTests::noteBodyMountCoordinator_clearsPendingWhenResolv
     QVERIFY(coordinator.parseMounted());
     QVERIFY(coordinator.sourceMounted());
     QVERIFY(coordinator.surfaceVisible());
+    QVERIFY(coordinator.surfaceInteractive());
     QVERIFY(!coordinator.mountFailed());
     QVERIFY(!coordinator.noteMounted());
+    QVERIFY(coordinator.commandSurfaceEnabled());
 
     coordinator.scheduleMount(QVariantMap{});
     QCoreApplication::processEvents();
@@ -401,6 +407,7 @@ void WhatSonCppRegressionTests::noteBodyMountCoordinator_clearsPendingWhenResolv
     QCOMPARE(mountState.value(QStringLiteral("documentSourceReady")).toBool(), true);
     QCOMPARE(mountState.value(QStringLiteral("mountPending")).toBool(), false);
     QCOMPARE(mountState.value(QStringLiteral("selectedNoteBodyLoading")).toBool(), true);
+    QCOMPARE(mountState.value(QStringLiteral("surfaceInteractive")).toBool(), true);
 }
 
 void WhatSonCppRegressionTests::noteBodyMountCoordinator_remountsSameNoteWhenEditorSessionTextIsStale()
@@ -438,7 +445,8 @@ void WhatSonCppRegressionTests::noteBodyMountCoordinator_remountsSameNoteWhenEdi
     QVERIFY(coordinator.parseMounted());
     QVERIFY(coordinator.sourceMounted());
     QVERIFY(!coordinator.noteMounted());
-    QVERIFY(!coordinator.commandSurfaceEnabled());
+    QVERIFY(coordinator.surfaceInteractive());
+    QVERIFY(coordinator.commandSurfaceEnabled());
 
     const QVariantMap mountState = coordinator.currentMountState();
     QCOMPARE(mountState.value(QStringLiteral("selectedBodyReadyForPresentation")).toBool(), true);

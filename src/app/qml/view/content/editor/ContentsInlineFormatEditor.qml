@@ -232,6 +232,33 @@ FocusScope {
         return false;
     }
 
+    function eventRequestsInlineFormatShortcut(event) {
+        if (!event)
+            return false;
+
+        const modifiers = Number(event.modifiers) || 0;
+        const metaPressed = !!(modifiers & Qt.MetaModifier);
+        const controlPressed = !!(modifiers & Qt.ControlModifier);
+        const altPressed = !!(modifiers & Qt.AltModifier);
+        const shiftPressed = !!(modifiers & Qt.ShiftModifier);
+        if (altPressed || (metaPressed && controlPressed) || (!metaPressed && !controlPressed))
+            return false;
+
+        const normalizedText = event.text === undefined || event.text === null ? "" : String(event.text).toUpperCase();
+        if (!shiftPressed) {
+            return event.key === Qt.Key_B
+                    || event.key === Qt.Key_I
+                    || event.key === Qt.Key_U
+                    || normalizedText === "B"
+                    || normalizedText === "I"
+                    || normalizedText === "U";
+        }
+        return event.key === Qt.Key_X
+                || event.key === Qt.Key_E
+                || normalizedText === "X"
+                || normalizedText === "E";
+    }
+
     Rectangle {
         anchors.fill: parent
         color: {
@@ -349,7 +376,9 @@ FocusScope {
 
                 Keys.onPressed: function (event) {
                     const key = Number(event.key);
-                    if (key !== Qt.Key_Backspace && !control.eventRequestsPasteShortcut(event)) {
+                    if (key !== Qt.Key_Backspace
+                            && !control.eventRequestsPasteShortcut(event)
+                            && !control.eventRequestsInlineFormatShortcut(event)) {
                         event.accepted = false;
                         return;
                     }

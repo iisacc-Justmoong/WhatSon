@@ -27,7 +27,7 @@ Item {
     Layout.fillWidth: true
     Layout.minimumHeight: contentsView.minEditorHeight
     clip: true
-    enabled: !contentsView.selectedNoteBodyLoading
+    enabled: contentsView.noteDocumentSurfaceInteractive
 
     Flickable {
         id: printDocumentViewportItem

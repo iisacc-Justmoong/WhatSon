@@ -62,6 +62,19 @@ void WhatSonCppRegressionTests::structuredMutationPolicy_buildsDeletionAndInsert
     QCOMPARE(
         resourceInsertion.value(QStringLiteral("focusRequest")).toMap().value(QStringLiteral("sourceOffset")).toInt(),
         expectedFocusOffset);
+    QVERIFY(resourceInsertion.value(QStringLiteral("focusRequest")).toMap().value(QStringLiteral("preferNearestTextBlock")).toBool());
+
+    const QVariantMap eofResourceInsertion = policy.buildResourceInsertionPayload(
+        QStringLiteral("abc"),
+        3,
+        QStringList{QStringLiteral("<resource one />")});
+    QCOMPARE(
+        eofResourceInsertion.value(QStringLiteral("nextSourceText")).toString(),
+        QStringLiteral("abc\n<resource one />\n"));
+    QCOMPARE(
+        eofResourceInsertion.value(QStringLiteral("focusRequest")).toMap().value(QStringLiteral("sourceOffset")).toInt(),
+        static_cast<int>(QStringLiteral("abc\n<resource one />\n").size()));
+    QVERIFY(eofResourceInsertion.value(QStringLiteral("focusRequest")).toMap().value(QStringLiteral("preferNearestTextBlock")).toBool());
 
     QVERIFY(policy.buildResourceInsertionPayload(QString(), 0, QVariantList{}).isEmpty());
 }

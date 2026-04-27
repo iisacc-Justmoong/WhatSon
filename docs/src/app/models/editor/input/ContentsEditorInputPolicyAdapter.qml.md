@@ -16,6 +16,8 @@ context-menu trigger gating, focused programmatic text sync, and post-mutation f
 - Tag-management shortcuts are deliberately separate from the ordinary shortcut surface. Inline style wrapping and
   structured tag insertion remain available while an editor is focused, but they still stand down during native
   composition/preedit.
+- Focused text delegates may forward only those explicit tag-management key chords to the host, so formatting shortcuts
+  can mutate RAW `<bold>`/`<italic>`/`<highlight>` tags without reintroducing generic text-input key handling.
 - Mobile long-press context-menu handling is disabled while the native text-input session is active, so iOS text
   selection and caret gestures stay with the platform.
 - Programmatic host text sync is deferred while composition is active or while a focused native-input editor has a

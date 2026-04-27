@@ -275,6 +275,7 @@ Item {
     readonly property string noteDocumentMountFailureReason: noteBodyMountCoordinator.mountFailureReason
     readonly property string noteDocumentMountFailureMessage: noteBodyMountCoordinator.mountFailureMessage
     readonly property bool noteDocumentSurfaceVisible: noteBodyMountCoordinator.surfaceVisible
+    readonly property bool noteDocumentSurfaceInteractive: noteBodyMountCoordinator.surfaceInteractive
     readonly property string noteDocumentExceptionReason: noteBodyMountCoordinator.exceptionReason
     readonly property string noteDocumentExceptionTitle: noteBodyMountCoordinator.exceptionTitle
     readonly property string noteDocumentExceptionMessage: noteBodyMountCoordinator.exceptionMessage
@@ -909,6 +910,44 @@ Item {
         }
         return false;
     }
+    function inlineFormatShortcutTag(event) {
+        if (!event)
+            return "";
+
+        const modifiers = Number(event.modifiers) || 0;
+        const metaPressed = !!(modifiers & Qt.MetaModifier);
+        const controlPressed = !!(modifiers & Qt.ControlModifier);
+        const altPressed = !!(modifiers & Qt.AltModifier);
+        const shiftPressed = !!(modifiers & Qt.ShiftModifier);
+        if (altPressed || (metaPressed && controlPressed) || (!metaPressed && !controlPressed))
+            return "";
+
+        const normalizedText = event.text === undefined || event.text === null ? "" : String(event.text).toUpperCase();
+        const key = Number(event.key);
+        if (!shiftPressed) {
+            if (key === Qt.Key_B || normalizedText === "B")
+                return "bold";
+            if (key === Qt.Key_I || normalizedText === "I")
+                return "italic";
+            if (key === Qt.Key_U || normalizedText === "U")
+                return "underline";
+            return "";
+        }
+        if (key === Qt.Key_X || normalizedText === "X")
+            return "strikethrough";
+        if (key === Qt.Key_E || normalizedText === "E")
+            return "highlight";
+        return "";
+    }
+    function handleInlineFormatTagShortcut(event) {
+        const tagName = contentsView.inlineFormatShortcutTag(event);
+        if (tagName.length === 0)
+            return false;
+        const handled = contentsView.queueInlineFormatWrap(tagName);
+        if (handled && event)
+            event.accepted = true;
+        return handled;
+    }
     function clipboardImageAvailableForPaste() {
         if (!contentsView.resourcesImportViewModel)
             return false;
@@ -934,6 +973,8 @@ Item {
     }
     function handleTagManagementShortcutKeyPress(event) {
         if (contentsView.handleClipboardImagePasteShortcut(event))
+            return true;
+        if (contentsView.handleInlineFormatTagShortcut(event))
             return true;
         return false;
     }

@@ -4,6 +4,12 @@
 #include <QDirIterator>
 #include <QFile>
 #include <QFileInfo>
+#include <QQmlComponent>
+#include <QQmlEngine>
+#include <QQuickItem>
+#include <QQuickWindow>
+
+#include <memory>
 
 namespace
 {
@@ -14,6 +20,34 @@ namespace
         repositoryRoot.cdUp();
         repositoryRoot.cdUp();
         return repositoryRoot.absolutePath();
+    }
+
+    QString qmlInlineFormatEditorErrorString(const QList<QQmlError>& errors)
+    {
+        QStringList messages;
+        messages.reserve(errors.size());
+        for (const QQmlError& error : errors)
+        {
+            messages.push_back(error.toString());
+        }
+        return messages.join(QLatin1Char('\n'));
+    }
+
+    void addWhatSonInlineFormatEditorQmlImportPaths(QQmlEngine& engine, const QString& repositoryRoot)
+    {
+        const QStringList candidatePaths{
+            repositoryRoot + QStringLiteral("/src/app/qml"),
+            repositoryRoot + QStringLiteral("/build/src/app"),
+            repositoryRoot + QStringLiteral("/build/src/app/cmake/runtime/lvrs_runtime_qml"),
+            repositoryRoot + QStringLiteral("/build/src/app/lvrs_runtime_qml"),
+        };
+        for (const QString& candidatePath : candidatePaths)
+        {
+            if (QFileInfo::exists(candidatePath))
+            {
+                engine.addImportPath(candidatePath);
+            }
+        }
     }
 
 } // namespace
@@ -30,8 +64,10 @@ void WhatSonCppRegressionTests::qmlInlineFormatEditor_keepsNativeTextEditInputUn
     QVERIFY(inlineEditorSource.contains(QStringLiteral("Keys.onPressed: function (event)")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("key !== Qt.Key_Backspace")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("function eventRequestsPasteShortcut(event)")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("function eventRequestsInlineFormatShortcut(event)")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("event.matches(StandardKey.Paste)")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("!control.eventRequestsPasteShortcut(event)")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("!control.eventRequestsInlineFormatShortcut(event)")));
     QVERIFY(!inlineEditorSource.contains(QStringLiteral("property var shortcutKeyPressHandler")));
     QVERIFY(!inlineEditorSource.contains(QStringLiteral("property var modifierVerticalNavigationHandler")));
     QVERIFY(!inlineEditorSource.contains(QStringLiteral("handleMacModifierVerticalNavigation")));
@@ -43,6 +79,79 @@ void WhatSonCppRegressionTests::qmlInlineFormatEditor_keepsNativeTextEditInputUn
     QVERIFY(inlineEditorSource.contains(QStringLiteral("property bool overwriteMode: false")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("property bool persistentSelection: true")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("selectByMouse: control.selectByMouse")));
+}
+
+void WhatSonCppRegressionTests::qmlInlineFormatEditor_forwardsInlineFormatShortcutsToTagManagementHook()
+{
+    const QString repositoryRoot = qmlInlineFormatEditorRepositoryRootPath();
+    QQmlEngine engine;
+    addWhatSonInlineFormatEditorQmlImportPaths(engine, repositoryRoot);
+
+    const QString editorImportUrl =
+        QUrl::fromLocalFile(repositoryRoot + QStringLiteral("/src/app/qml/view/content/editor")).toString();
+    const QByteArray qmlSource = QStringLiteral(R"QML(
+import QtQuick
+import "%1" as EditorView
+
+Item {
+    id: root
+    objectName: "inlineFormatShortcutHarness"
+    property bool handled: false
+    property int handledKey: -1
+    property int handledModifiers: 0
+    width: 360
+    height: 96
+
+    EditorView.ContentsInlineFormatEditor {
+        id: editor
+        objectName: "inlineFormatEditorUnderTest"
+        anchors.fill: parent
+        text: "Alpha beta"
+        tagManagementKeyPressHandler: function (event) {
+            root.handled = true;
+            root.handledKey = Number(event.key) || -1;
+            root.handledModifiers = Number(event.modifiers) || 0;
+            event.accepted = true;
+            return true;
+        }
+    }
+}
+)QML").arg(editorImportUrl).toUtf8();
+
+    QQmlComponent component(&engine);
+    component.setData(
+        qmlSource,
+        QUrl::fromLocalFile(repositoryRoot + QStringLiteral("/test/cpp/InlineFormatShortcutHarness.qml")));
+    if (component.status() == QQmlComponent::Error)
+    {
+        QFAIL(qPrintable(qmlInlineFormatEditorErrorString(component.errors())));
+    }
+
+    std::unique_ptr<QObject> rootObject(component.create());
+    if (!rootObject)
+    {
+        QFAIL(qPrintable(qmlInlineFormatEditorErrorString(component.errors())));
+    }
+
+    auto* rootItem = qobject_cast<QQuickItem*>(rootObject.get());
+    QVERIFY(rootItem != nullptr);
+
+    QQuickWindow window;
+    window.resize(360, 96);
+    rootItem->setParentItem(window.contentItem());
+    window.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&window));
+
+    QObject* inlineEditor = rootObject->findChild<QObject*>(QStringLiteral("inlineFormatEditorUnderTest"));
+    QVERIFY(inlineEditor != nullptr);
+    QVERIFY(QMetaObject::invokeMethod(inlineEditor, "forceActiveFocus"));
+    QTRY_VERIFY(inlineEditor->property("focused").toBool());
+
+    QTest::keyClick(&window, Qt::Key_B, Qt::ControlModifier);
+
+    QTRY_VERIFY(rootObject->property("handled").toBool());
+    QCOMPARE(rootObject->property("handledKey").toInt(), static_cast<int>(Qt::Key_B));
+    QVERIFY(rootObject->property("handledModifiers").toInt() & static_cast<int>(Qt::ControlModifier));
 }
 
 void WhatSonCppRegressionTests::qmlInlineFormatEditor_keepsKeyboardSelectionAndOsImeNative()
@@ -89,6 +198,7 @@ void WhatSonCppRegressionTests::qmlInlineFormatEditor_keepsKeyboardSelectionAndO
     QVERIFY(inlineEditorSource.contains(QStringLiteral("Keys.onPressed: function (event)")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("key !== Qt.Key_Backspace")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("control.eventRequestsPasteShortcut(event)")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("control.eventRequestsInlineFormatShortcut(event)")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("event.matches(StandardKey.Paste)")));
     QVERIFY(typingControllerSource.contains(QStringLiteral("property bool pendingCursorPositionRequest: false")));
     QVERIFY(typingControllerSource.contains(QStringLiteral("function applyPendingCursorPositionIfInputSettled()")));

@@ -127,6 +127,8 @@ void WhatSonCppRegressionTests::qmlStructuredEditors_clipInlineResourceCardsToMe
 
     QVERIFY(resourceBlockSource.contains(QStringLiteral("implicitHeight: resourceCard.implicitHeight")));
     QVERIFY(resourceBlockSource.contains(QStringLiteral("clip: true")));
+    QVERIFY(resourceBlockSource.contains(QStringLiteral("function shortcutInsertionSourceOffset()")));
+    QVERIFY(resourceBlockSource.contains(QStringLiteral("return resourceBlock.sourceEnd")));
     QVERIFY(resourceCardSource.contains(QStringLiteral("clip: true")));
     QVERIFY(!resourceCardSource.contains(QStringLiteral("clip: false")));
 }
@@ -843,6 +845,9 @@ void WhatSonCppRegressionTests::qmlStructuredEditors_lockCustomInputToTagManagem
     QVERIFY(displayViewSource.contains(QStringLiteral("readonly property bool editorTagManagementInputEnabled: true")));
     QVERIFY(displayViewSource.contains(QStringLiteral("readonly property bool noteDocumentTagManagementShortcutSurfaceEnabled")));
     QVERIFY(displayViewSource.contains(QStringLiteral("function handleTagManagementShortcutKeyPress(event)")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("function inlineFormatShortcutTag(event)")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("function handleInlineFormatTagShortcut(event)")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("contentsView.queueInlineFormatWrap(tagName)")));
     QVERIFY(surfaceHostSource.contains(QStringLiteral("tagManagementShortcutKeyPressHandler: function (event)")));
     QVERIFY(displayViewSource.contains(
         QStringLiteral("readonly property bool noteDocumentTagManagementShortcutSurfaceEnabled: editorInputPolicyAdapter.tagManagementShortcutSurfaceEnabled")));

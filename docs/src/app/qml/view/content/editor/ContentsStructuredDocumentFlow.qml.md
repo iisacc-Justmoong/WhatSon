@@ -86,9 +86,10 @@ source.
   When adjacent blocks share the same source boundary, flow-level focus restore can still choose the resource/break
   block itself instead of letting a neighboring text block consume the same offset first.
 - The flow accepts one `tagManagementShortcutKeyPressHandler` from the host, and only selected tag-managed atomic
-  blocks (`resource` and `break`) can invoke it.
-  Text-editing delegates never dispatch host key handlers from their nested `TextEdit`, keeping native input keys and
-  IME composition on the OS/Qt path.
+  blocks (`resource` and `break`) can invoke it for atomic deletion commands.
+  Text-editing delegates may forward only explicit tag-management chords such as clipboard-image paste and inline
+  style shortcuts from their nested `TextEdit`; native input keys, navigation, selection, text paste, and IME
+  composition remain on the OS/Qt path.
 - The flow exposes `nativeCompositionActive()` by scanning mounted delegates for `inputMethodComposing`/`preeditText`.
   The display host uses that state to disable window-level document shortcuts while an IME composition is active.
 - Structured block navigation now also understands a document-level boundary axis in addition to adjacent
@@ -124,8 +125,8 @@ source.
 - The flow now also routes explicit structured selection cleanup through `ContentsStructuredDocumentHost`.
   Every block activation emits a new host selection-clear revision, and blank-area `requestDocumentEndEdit()` clears
   stale selections before it restores focus at the document tail.
-- EOF resource insertion no longer restores a synthetic boundary mode; it restores focus to an offset inside the
-  inserted block instead.
+- EOF resource insertion now creates a trailing editable text block and restores focus after the inserted resource tag
+  instead of focusing the atomic resource card.
 - Structured resource insertion now also refuses empty/no-op payloads instead of reporting success on an unchanged RAW
   snapshot.
 - Structured agenda/callout/break shortcut insertion now asks `ContentsEditorBodyTagInsertionPlanner` for the canonical

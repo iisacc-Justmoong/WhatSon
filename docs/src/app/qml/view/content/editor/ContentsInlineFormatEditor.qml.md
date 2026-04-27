@@ -52,10 +52,12 @@ controller responsibilities.
   `TextEdit`.
 - `tagManagementKeyPressHandler` is the only key hook exposed on the live `TextEdit`.
   It exists for block-level tag commands such as plain-Enter callout exit, empty-callout Backspace deletion, and
-  clipboard-image resource paste; hosts must leave ordinary editing, Shift+Enter line breaks, navigation, selection,
-  text paste, and IME gestures native.
-- The wrapper pre-checks Backspace and paste shortcuts for that tag-management hook. When the hook declines the event,
-  the wrapper explicitly restores `event.accepted = false` so Qt can still run native `TextEdit` key behavior.
+  clipboard-image resource paste, plus explicit inline-format RAW tag commands such as bold/italic/highlight;
+  hosts must leave ordinary editing, Shift+Enter line breaks, navigation, selection, text paste, and IME gestures
+  native.
+- The wrapper pre-checks Backspace, paste shortcuts, and inline-format shortcuts for that tag-management hook. When the
+  hook declines the event, the wrapper explicitly restores `event.accepted = false` so Qt can still run native
+  `TextEdit` key behavior.
 - The live `TextEdit` receives pointer, selection, ordinary Backspace/Delete repeat, and Tab input directly from Qt/OS
   handling.
   The wrapper no longer exposes host shortcut or generic modifier-navigation handler properties on the native text
