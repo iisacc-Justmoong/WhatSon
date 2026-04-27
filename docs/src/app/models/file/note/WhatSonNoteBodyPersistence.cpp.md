@@ -118,6 +118,12 @@ The current contract preserves editor-authored RAW source across save/load turns
   inline-tag text, so pretty-printed HTML/XML indentation cannot leak into the note body as real content lines.
 - `firstLineFromBodyDocument(...)` preserves leading inline title text even when the visible plain-text summary is driven by later paragraph blocks.
 - Empty paragraphs are emitted as empty lines instead of being dropped, including leading/trailing empty paragraphs the user intentionally created.
+- Empty paragraphs that follow standalone resource/agenda/callout/divider body blocks are likewise projected as empty
+  editor source lines. A saved `<resource ... /><paragraph></paragraph>` sequence therefore reopens as
+  `<resource ... />\n`, giving the structured editor a real cursor line after the atomic block.
+- Empty paragraphs before a standalone block, or between two standalone blocks, are also represented by explicit newline
+  boundaries in the editor source projection. The read path must not decide that an empty tag has no value merely because
+  it contributes no visible characters.
 - Whitespace-only paragraphs are preserved exactly as stored; the persistence layer no longer trims outer whitespace-only lines during read/normalization.
 - Stored `<tag>` nodes contribute a literal leading `#` in plain-text and rich-text projections, so previews and
   first-line extraction stay aligned with the editor-visible source.
@@ -163,6 +169,11 @@ rewriting `bodySourceText` RAW just because the body document was read and repar
 - A typed `<callout>message</callout>` block must survive save/load without escaping wrapper tags.
 - A standalone `<agenda>...</agenda>`, `<callout>...</callout>`, `<resource ... />`, or `</break>` source line must
   round-trip as a direct `<body>` child instead of being rewrapped into `<paragraph>`.
+- A direct `<resource ... />` body child followed by an empty `<paragraph></paragraph>` must project back to editor
+  source with a trailing newline, not to a resource-only source string, so gutter line 2 and the post-resource caret
+  target are preserved on note reopen.
+- Empty `<paragraph></paragraph>` body children before or between direct resource body children must likewise survive as
+  leading/interior empty editor source lines.
 - A paragraph line that already contains only an escaped resource tag from an earlier bad save must recover to a direct
   `<resource ... />` body child on the next read/write turn instead of staying escaped forever.
 - A saved legacy semantic body block such as `<title>`, `<subTitle>`, `<eventTitle>`, `<eventDescription>`, or

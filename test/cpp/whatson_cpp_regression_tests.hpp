@@ -984,6 +984,8 @@ private slots:
     void structuredBlockRenderer_publishesSingleNormalizedInteractiveStream();
     void structuredBlockRenderer_keepsEmptyNotesFocusableWithOneTextGroup();
     void structuredBlockRenderer_keepsTrailingResourceInsertionsEditable();
+    void structuredBlockRenderer_keepsResourceOnlyTrailingLineEditable();
+    void structuredBlockRenderer_keepsEmptyParagraphBetweenResourcesEditable();
     void structuredMutationPolicy_buildsDeletionAndInsertionPayloads();
     void structuredMutationPolicy_buildsParagraphBoundaryMergeAndSplitPayloads();
     void structuredDocumentBlocksModel_updatesRowsWithoutResettingStableSuffixBlocks();
@@ -1062,6 +1064,8 @@ private slots:
     void displayPaperModels_hostPageAndPrintViewModeObjectsUnderModelsDirectory();
     void noteBodyPersistence_roundTripsAndProjectsCanonicalWebLinks();
     void noteBodyPersistence_stripsRenderedHtmlBlockArtifactsFromSourceProjection();
+    void noteBodyPersistence_preservesEmptyParagraphCursorLineAfterResource();
+    void noteBodyPersistence_preservesEmptyParagraphBoundariesAroundResources();
     void logicalTextBridge_advancesCursorPastClosingWebLinkTag();
     void qmlStructuredEditors_bindPaperPaletteIntoPagePrintMode();
     void qmlStructuredEditors_clipInlineResourceCardsToMeasuredBlockBounds();

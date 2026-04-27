@@ -25,6 +25,11 @@ Builds canonical structured render data from `.wsnbody` source text.
 - Parser-owned plain prose that is not wrapped in a semantic text tag is now also published paragraph-by-paragraph.
   Newline-delimited blank prose slots below an inline resource therefore survive as their own text-editable document
   blocks instead of being merged into one multiline fallback block.
+- Resource-only source that ends with a newline now also publishes the trailing blank line as a text-editable
+  `text-group`. That keeps the gutter and caret target for the empty paragraph immediately after an image/resource
+  block.
+- Empty source lines between two resource blocks likewise publish as a text-editable `text-group`; the renderer must not
+  collapse adjacent atomic blocks together when RAW contains an authored empty paragraph between them.
 - Each explicit block, including semantic text-tag blocks, now carries parser-owned source geometry so QML can rewrite
   RAW in place.
 - The renderer now also preserves the parser's generic block-trait payload (`plainText`, `textEditable`,

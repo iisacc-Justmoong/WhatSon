@@ -40,3 +40,58 @@ void WhatSonCppRegressionTests::noteBodyPersistence_stripsRenderedHtmlBlockArtif
     QVERIFY(!sourceText.contains(QStringLiteral("whatson-resource-block")));
     QVERIFY(!sourceText.contains(QStringLiteral("<p")));
 }
+
+void WhatSonCppRegressionTests::noteBodyPersistence_preservesEmptyParagraphCursorLineAfterResource()
+{
+    const QString bodyDocument = QStringLiteral(
+        "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+        "<!DOCTYPE WHATSONNOTE>\n"
+        "<contents id=\"note\">\n"
+        "  <body>\n"
+        "    <resource type=\"image\" path=\"cover.png\" />\n"
+        "    <paragraph></paragraph>\n"
+        "  </body>\n"
+        "</contents>\n");
+
+    const QString sourceText = WhatSon::NoteBodyPersistence::sourceTextFromBodyDocument(bodyDocument);
+    QCOMPARE(sourceText, QStringLiteral("<resource type=\"image\" path=\"cover.png\" />\n"));
+
+    const QString roundTripDocument =
+        WhatSon::NoteBodyPersistence::serializeBodyDocument(QStringLiteral("note"), sourceText);
+    QVERIFY(roundTripDocument.contains(
+        QStringLiteral("<resource type=\"image\" path=\"cover.png\" />\n"
+                       "    <paragraph></paragraph>")));
+}
+
+void WhatSonCppRegressionTests::noteBodyPersistence_preservesEmptyParagraphBoundariesAroundResources()
+{
+    const QString leadingEmptyParagraphBodyDocument = QStringLiteral(
+        "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+        "<!DOCTYPE WHATSONNOTE>\n"
+        "<contents id=\"note\">\n"
+        "  <body>\n"
+        "    <paragraph></paragraph>\n"
+        "    <resource type=\"image\" path=\"cover.png\" />\n"
+        "  </body>\n"
+        "</contents>\n");
+    QCOMPARE(
+        WhatSon::NoteBodyPersistence::sourceTextFromBodyDocument(leadingEmptyParagraphBodyDocument),
+        QStringLiteral("\n<resource type=\"image\" path=\"cover.png\" />"));
+
+    const QString interiorEmptyParagraphBodyDocument = QStringLiteral(
+        "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+        "<!DOCTYPE WHATSONNOTE>\n"
+        "<contents id=\"note\">\n"
+        "  <body>\n"
+        "    <resource type=\"image\" path=\"first.png\" />\n"
+        "    <paragraph></paragraph>\n"
+        "    <resource type=\"image\" path=\"second.png\" />\n"
+        "  </body>\n"
+        "</contents>\n");
+    QCOMPARE(
+        WhatSon::NoteBodyPersistence::sourceTextFromBodyDocument(interiorEmptyParagraphBodyDocument),
+        QStringLiteral(
+            "<resource type=\"image\" path=\"first.png\" />\n"
+            "\n"
+            "<resource type=\"image\" path=\"second.png\" />"));
+}

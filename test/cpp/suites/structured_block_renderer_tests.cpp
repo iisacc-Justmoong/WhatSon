@@ -67,3 +67,49 @@ void WhatSonCppRegressionTests::structuredBlockRenderer_keepsTrailingResourceIns
         trailingGroup.value(QStringLiteral("sourceStart")).toInt(),
         static_cast<int>(QStringLiteral("alpha\n<resource type=\"image\" path=\"cover.png\" />\n").size()));
 }
+
+void WhatSonCppRegressionTests::structuredBlockRenderer_keepsResourceOnlyTrailingLineEditable()
+{
+    const QString sourceText = QStringLiteral("<resource type=\"image\" path=\"cover.png\" />\n");
+    ContentsStructuredBlockRenderer renderer;
+    renderer.setSourceText(sourceText);
+
+    const QVariantList renderedBlocks = renderer.renderedDocumentBlocks();
+    QCOMPARE(renderedBlocks.size(), 2);
+
+    const QVariantMap resourceBlock = renderedBlocks.at(0).toMap();
+    QCOMPARE(resourceBlock.value(QStringLiteral("type")).toString(), QStringLiteral("resource"));
+    QVERIFY(resourceBlock.value(QStringLiteral("atomicBlock")).toBool());
+
+    const QVariantMap trailingGroup = renderedBlocks.at(1).toMap();
+    QCOMPARE(trailingGroup.value(QStringLiteral("type")).toString(), QStringLiteral("text-group"));
+    QVERIFY(trailingGroup.value(QStringLiteral("textEditable")).toBool());
+    QVERIFY(!trailingGroup.value(QStringLiteral("atomicBlock")).toBool());
+    QVERIFY(!trailingGroup.value(QStringLiteral("gutterCollapsed")).toBool());
+    QCOMPARE(trailingGroup.value(QStringLiteral("logicalLineCountHint")).toInt(), 1);
+    QCOMPARE(trailingGroup.value(QStringLiteral("sourceText")).toString(), QString());
+    QCOMPARE(trailingGroup.value(QStringLiteral("sourceStart")).toInt(), static_cast<int>(sourceText.size()));
+    QCOMPARE(trailingGroup.value(QStringLiteral("sourceEnd")).toInt(), static_cast<int>(sourceText.size()));
+}
+
+void WhatSonCppRegressionTests::structuredBlockRenderer_keepsEmptyParagraphBetweenResourcesEditable()
+{
+    const QString sourceText = QStringLiteral(
+        "<resource type=\"image\" path=\"first.png\" />\n"
+        "\n"
+        "<resource type=\"image\" path=\"second.png\" />");
+    ContentsStructuredBlockRenderer renderer;
+    renderer.setSourceText(sourceText);
+
+    const QVariantList renderedBlocks = renderer.renderedDocumentBlocks();
+    QCOMPARE(renderedBlocks.size(), 3);
+
+    QCOMPARE(renderedBlocks.at(0).toMap().value(QStringLiteral("type")).toString(), QStringLiteral("resource"));
+    const QVariantMap emptyParagraphGroup = renderedBlocks.at(1).toMap();
+    QCOMPARE(emptyParagraphGroup.value(QStringLiteral("type")).toString(), QStringLiteral("text-group"));
+    QVERIFY(emptyParagraphGroup.value(QStringLiteral("textEditable")).toBool());
+    QVERIFY(!emptyParagraphGroup.value(QStringLiteral("atomicBlock")).toBool());
+    QVERIFY(!emptyParagraphGroup.value(QStringLiteral("gutterCollapsed")).toBool());
+    QCOMPARE(emptyParagraphGroup.value(QStringLiteral("sourceText")).toString(), QString());
+    QCOMPARE(renderedBlocks.at(2).toMap().value(QStringLiteral("type")).toString(), QStringLiteral("resource"));
+}

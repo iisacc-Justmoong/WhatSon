@@ -1037,7 +1037,22 @@ namespace
         bool insideBody = !hasExplicitBodyTag;
         int textBlockDepth = 0;
         bool encounteredTopLevelTextBlock = false;
+        bool pendingEmptyTopLevelTextBlockBoundary = false;
+        qsizetype topLevelTextBlockOutputStart = 0;
         QVector<QStringList> spanStyleStack;
+
+        const auto appendBoundaryAfterEmptyTopLevelTextBlock = [&output, &pendingEmptyTopLevelTextBlockBoundary]()
+        {
+            if (!pendingEmptyTopLevelTextBlockBoundary)
+            {
+                return;
+            }
+            if (output.isEmpty() || output.endsWith(QLatin1Char('\n')))
+            {
+                output += QLatin1Char('\n');
+            }
+            pendingEmptyTopLevelTextBlockBoundary = false;
+        };
 
         QRegularExpressionMatchIterator iterator = tagPattern.globalMatch(normalizedSource);
         while (iterator.hasNext())
@@ -1093,13 +1108,24 @@ namespace
                         {
                             output += QLatin1Char('\n');
                         }
+                        else if (!output.isEmpty() && !output.endsWith(QLatin1Char('\n')))
+                        {
+                            output += QLatin1Char('\n');
+                        }
                         encounteredTopLevelTextBlock = true;
+                        pendingEmptyTopLevelTextBlockBoundary = false;
+                        topLevelTextBlockOutputStart = output.size();
                     }
                     ++textBlockDepth;
                 }
                 else if (textBlockDepth > 0)
                 {
                     --textBlockDepth;
+                    if (textBlockDepth == 0)
+                    {
+                        pendingEmptyTopLevelTextBlockBoundary =
+                            output.size() == topLevelTextBlockOutputStart;
+                    }
                 }
                 cursor = tagEnd;
                 continue;
@@ -1114,6 +1140,7 @@ namespace
 
             if (isBreakDividerTagName(normalizedTagName))
             {
+                appendBoundaryAfterEmptyTopLevelTextBlock();
                 output += canonicalBreakDividerSourceTag();
                 cursor = tagEnd;
                 continue;
@@ -1127,6 +1154,7 @@ namespace
                 }
                 else
                 {
+                    appendBoundaryAfterEmptyTopLevelTextBlock();
                     output += normalizeAgendaStartTag(fullTagToken);
                     if (selfClosingTag)
                     {
@@ -1163,6 +1191,7 @@ namespace
                 }
                 else
                 {
+                    appendBoundaryAfterEmptyTopLevelTextBlock();
                     output += normalizeCalloutStartTag(fullTagToken);
                     if (selfClosingTag)
                     {
@@ -1195,6 +1224,7 @@ namespace
             {
                 if (!closingTag)
                 {
+                    appendBoundaryAfterEmptyTopLevelTextBlock();
                     output += normalizeResourceStartTag(fullTagToken);
                 }
                 cursor = tagEnd;
