@@ -85,14 +85,6 @@ Item {
     readonly property int effectiveFrameHorizontalInset: contentsView.frameHorizontalInsetOverride >= 0 ? contentsView.frameHorizontalInsetOverride : contentsView.frameHorizontalInset
     readonly property var effectiveGutterMarkers: {
         const normalizedMarkers = [];
-        if (contentsView.showCurrentLineMarker) {
-            normalizedMarkers.push({
-                "color": contentsView.gutterMarkerCurrentColor,
-                "lineSpan": 1,
-                "startLine": contentsView.currentCursorLineNumber,
-                "type": "current"
-            });
-        }
         const externalMarkers = Array.isArray(contentsView.normalizedExternalGutterMarkers) ? contentsView.normalizedExternalGutterMarkers : [];
         for (let i = 0; i < externalMarkers.length; ++i) {
             const marker = externalMarkers[i];
@@ -118,7 +110,6 @@ Item {
     readonly property int gutterIconRailWidth: Math.max(0, Math.round(LV.Theme.scaleMetric(18)))
     readonly property color gutterMarkerChangedColor: contentsView.decorativeMarkerYellow
     readonly property color gutterMarkerConflictColor: LV.Theme.danger
-    readonly property color gutterMarkerCurrentColor: LV.Theme.primary
     property var gutterMarkers: []
     property int gutterRefreshPassesRemaining: 0
     property int gutterRefreshRevision: 0
@@ -257,7 +248,6 @@ Item {
     readonly property bool selectedNoteBodyLoading: selectionBridge.selectedNoteBodyLoading
     readonly property string selectedNoteId: selectionBridge.selectedNoteId
     readonly property string selectedNoteDirectoryPath: selectionBridge.selectedNoteDirectoryPath
-    readonly property bool showCurrentLineMarker: contentsView.hasSelectedNote || contentsView.editorText.length > 0 || contentsView.editorInputFocused
     readonly property bool editorSessionBoundToSelectedNote: {
         if (editorSession.editorBoundNoteId !== contentsView.selectedNoteId)
             return false;
@@ -672,15 +662,9 @@ Item {
         const rect = contentsView.currentCursorVisualRowRect();
         return Math.max(1, Number(rect.height) || contentsView.editorLineHeight);
     }
-    function currentCursorGutterLineHeight() {
-        return contentsView.currentCursorVisualLineHeight();
-    }
     function currentCursorVisualLineY() {
         const rect = contentsView.currentCursorVisualRowRect();
         return contentsView.editorViewportYForDocumentY(Number(rect.y) || 0);
-    }
-    function currentCursorGutterLineY() {
-        return contentsView.currentCursorVisualLineY();
     }
     function currentCursorVisualRowRect() {
         const refreshRevision = contentsView.gutterRefreshRevision;
@@ -919,7 +903,8 @@ Item {
         const controlPressed = !!(modifiers & Qt.ControlModifier);
         const altPressed = !!(modifiers & Qt.AltModifier);
         const shiftPressed = !!(modifiers & Qt.ShiftModifier);
-        if (altPressed || (metaPressed && controlPressed) || (!metaPressed && !controlPressed))
+        const commandPressed = metaPressed || controlPressed;
+        if (altPressed || !commandPressed)
             return "";
 
         const normalizedText = event.text === undefined || event.text === null ? "" : String(event.text).toUpperCase();
@@ -1189,21 +1174,15 @@ Item {
         if (normalizedType === "changed")
             return contentsView.gutterMarkerChangedColor;
         if (normalizedType === "current")
-            return contentsView.gutterMarkerCurrentColor;
+            return contentsView.activeLineNumberColor;
         return contentsView.gutterMarkerChangedColor;
     }
     function markerHeight(markerSpec) {
-        const markerType = markerSpec && markerSpec.type !== undefined ? String(markerSpec.type).toLowerCase() : "";
-        if (markerType === "current")
-            return contentsView.currentCursorGutterLineHeight();
         if (!markerSpec)
             return contentsView.editorLineHeight;
         return Math.max(1, contentsView.gutterLineVisualHeight(markerSpec.startLine, markerSpec.lineSpan));
     }
     function markerY(markerSpec) {
-        const markerType = markerSpec && markerSpec.type !== undefined ? String(markerSpec.type).toLowerCase() : "";
-        if (markerType === "current")
-            return contentsView.currentCursorGutterLineY();
         if (!markerSpec)
             return contentsView.editorDocumentStartY;
         const startLine = Math.max(1, Number(markerSpec.startLine) || 1);
@@ -1374,11 +1353,24 @@ Item {
     function requestEditorSelectionContextMenuFromPointer(localX, localY, triggerKind) {
         if (!contentsView.editorContextMenuPointerTriggerAccepted(triggerKind))
             return false;
-        contentsView.primeEditorSelectionContextMenuSnapshot();
+        if (!contentsView.ensureEditorSelectionContextMenuSnapshot())
+            return false;
         Qt.callLater(function () {
             contentsView.openEditorSelectionContextMenu(localX, localY);
         });
         return true;
+    }
+    function editorSelectionContextMenuSnapshotValid() {
+        if (contentsView.showStructuredDocumentFlow)
+            return contextMenuCoordinator.structuredSelectionValid();
+        const selectionRange = editorSelectionController.contextMenuEditorSelectionRange();
+        return selectionRange
+                && Number(selectionRange.end) > Number(selectionRange.start);
+    }
+    function ensureEditorSelectionContextMenuSnapshot() {
+        if (contentsView.editorSelectionContextMenuSnapshotValid())
+            return true;
+        return contentsView.primeEditorSelectionContextMenuSnapshot();
     }
     function primeEditorSelectionContextMenuSnapshot() {
         if (contentsView.showStructuredDocumentFlow)
@@ -1465,14 +1457,27 @@ Item {
             contentsView.resetNoteEntryLineGeometryState();
         if (refreshPlan.requestStructuredLayoutRefresh
                 && structuredDocumentFlow
-                && structuredDocumentFlow.scheduleLayoutCacheRefresh !== undefined)
-            structuredDocumentFlow.scheduleLayoutCacheRefresh();
+                && !contentsView.selectedNoteBodyLoading
+                && contentsView.selectedNoteBodyNoteId === contentsView.selectedNoteId)
+            contentsView.scheduleStructuredDocumentOpenLayoutRefresh(
+                        String(refreshPlan.gutterReason || "note-entry"));
         if (refreshPlan.scheduleViewportGutterRefresh)
             contentsView.scheduleViewportGutterRefresh();
         if (refreshPlan.gutterPassCount !== undefined)
             contentsView.scheduleGutterRefresh(
                         Number(refreshPlan.gutterPassCount) || 0,
                         String(refreshPlan.gutterReason || ""));
+    }
+    function scheduleStructuredDocumentOpenLayoutRefresh(reason) {
+        if (!structuredDocumentFlow)
+            return;
+        if (structuredDocumentFlow.scheduleEditorOpenLayoutCacheRefresh !== undefined) {
+            structuredDocumentFlow.scheduleEditorOpenLayoutCacheRefresh(
+                        reason === undefined || reason === null ? "" : String(reason));
+            return;
+        }
+        if (structuredDocumentFlow.scheduleLayoutCacheRefresh !== undefined)
+            structuredDocumentFlow.scheduleLayoutCacheRefresh();
     }
     function scheduleDeferredDocumentPresentationRefresh() {
         presentationViewModel.scheduleDeferredDocumentPresentationRefresh();
@@ -1612,9 +1617,8 @@ Item {
         if (contentsView.selectedNoteBodyNoteId !== "" && contentsView.selectedNoteBodyNoteId !== contentsView.selectedNoteId)
             return;
         if (contentsView.hasPendingNoteEntryGutterRefresh(contentsView.selectedNoteId)
-                && structuredDocumentFlow
-                && structuredDocumentFlow.scheduleLayoutCacheRefresh !== undefined) {
-            structuredDocumentFlow.scheduleLayoutCacheRefresh();
+                && structuredDocumentFlow) {
+            contentsView.scheduleStructuredDocumentOpenLayoutRefresh("selected-body-text");
         }
         contentsView.scheduleSelectionModelSync({
                                                    "scheduleReconcile": true
@@ -1637,9 +1641,8 @@ Item {
         if (contentsView.selectedNoteBodyNoteId !== "" && contentsView.selectedNoteBodyNoteId !== contentsView.selectedNoteId)
             return;
         if (contentsView.hasPendingNoteEntryGutterRefresh(contentsView.selectedNoteId)
-                && structuredDocumentFlow
-                && structuredDocumentFlow.scheduleLayoutCacheRefresh !== undefined) {
-            structuredDocumentFlow.scheduleLayoutCacheRefresh();
+                && structuredDocumentFlow) {
+            contentsView.scheduleStructuredDocumentOpenLayoutRefresh("selected-body-resolved");
         }
         contentsView.scheduleSelectionModelSync({
                                                    "scheduleReconcile": true
@@ -1661,9 +1664,8 @@ Item {
         if (contentsView.selectedNoteBodyNoteId !== "" && contentsView.selectedNoteBodyNoteId !== contentsView.selectedNoteId)
             return;
         if (contentsView.hasPendingNoteEntryGutterRefresh(contentsView.selectedNoteId)
-                && structuredDocumentFlow
-                && structuredDocumentFlow.scheduleLayoutCacheRefresh !== undefined) {
-            structuredDocumentFlow.scheduleLayoutCacheRefresh();
+                && structuredDocumentFlow) {
+            contentsView.scheduleStructuredDocumentOpenLayoutRefresh("selected-body-loading");
         }
         contentsView.scheduleSelectionModelSync({
                                                    "scheduleReconcile": true,
@@ -1734,6 +1736,8 @@ Item {
                     "noteDocumentMounted=" + contentsView.noteDocumentMounted,
                     contentsView)
         contentsView.logEditorCreationState("noteDocumentMountedChanged");
+        if (contentsView.noteDocumentMounted)
+            contentsView.scheduleStructuredDocumentOpenLayoutRefresh("note-mounted");
     }
     onNoteDocumentMountFailureReasonChanged: {
         EditorTrace.trace(

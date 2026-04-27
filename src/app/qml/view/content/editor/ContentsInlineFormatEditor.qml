@@ -241,7 +241,8 @@ FocusScope {
         const controlPressed = !!(modifiers & Qt.ControlModifier);
         const altPressed = !!(modifiers & Qt.AltModifier);
         const shiftPressed = !!(modifiers & Qt.ShiftModifier);
-        if (altPressed || (metaPressed && controlPressed) || (!metaPressed && !controlPressed))
+        const commandPressed = metaPressed || controlPressed;
+        if (altPressed || !commandPressed)
             return false;
 
         const normalizedText = event.text === undefined || event.text === null ? "" : String(event.text).toUpperCase();

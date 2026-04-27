@@ -15,6 +15,8 @@ FocusScope {
     property var agendaBackend: null
     property var calloutBackend: null
     property var documentBlocks: []
+    property int editorOpenLayoutRefreshPassesRemaining: 0
+    property int editorOpenLayoutRefreshRevision: 0
     property int lineHeightHint: Math.max(1, Math.round(LV.Theme.scaleMetric(12)))
     property bool nativeTextInputPriority: false
     property bool paperPaletteEnabled: false
@@ -48,6 +50,7 @@ FocusScope {
     readonly property int resolvedInteractiveBlockIndexValue: documentHost.resolvedInteractiveBlockIndex(
                                                                    documentFlow.focusedBlockIndexValue)
     readonly property int currentLogicalLineNumber: documentFlow.activeLogicalLineNumber()
+    readonly property int editorOpenLayoutRefreshPassCount: 3
     readonly property int framedBlockSpacing: Math.max(0, Math.round(LV.Theme.scaleMetric(10)))
 
     signal sourceMutationRequested(string nextSourceText, var focusRequest)
@@ -612,6 +615,35 @@ FocusScope {
         })
     }
 
+    function scheduleEditorOpenLayoutCacheRefresh(reason) {
+        documentFlow.editorOpenLayoutRefreshRevision += 1
+        documentFlow.editorOpenLayoutRefreshPassesRemaining = Math.max(
+                    documentFlow.editorOpenLayoutRefreshPassesRemaining,
+                    documentFlow.editorOpenLayoutRefreshPassCount)
+        EditorTrace.trace(
+                    "structuredDocumentFlow",
+                    "scheduleEditorOpenLayoutCacheRefresh",
+                    "reason=" + String(reason || "")
+                    + " revision=" + documentFlow.editorOpenLayoutRefreshRevision
+                    + " passes=" + documentFlow.editorOpenLayoutRefreshPassesRemaining,
+                    documentFlow)
+        documentFlow.scheduleEditorOpenLayoutCacheRefreshPass(
+                    documentFlow.editorOpenLayoutRefreshRevision)
+    }
+
+    function scheduleEditorOpenLayoutCacheRefreshPass(revision) {
+        Qt.callLater(function () {
+            if (revision !== documentFlow.editorOpenLayoutRefreshRevision)
+                return
+            if (documentFlow.editorOpenLayoutRefreshPassesRemaining <= 0)
+                return
+            documentFlow.refreshLayoutCache()
+            documentFlow.editorOpenLayoutRefreshPassesRemaining -= 1
+            if (documentFlow.editorOpenLayoutRefreshPassesRemaining > 0)
+                documentFlow.scheduleEditorOpenLayoutCacheRefreshPass(revision)
+        })
+    }
+
     function logicalLineEntries() {
         return documentFlow.cachedLogicalLineEntries
     }
@@ -681,6 +713,46 @@ FocusScope {
 
     function hasBlockAtPoint(localX, localY) {
         return documentFlow.blockIndexAtPoint(localX, localY) >= 0
+    }
+
+    function documentContentBottomY() {
+        const blocks = documentFlow.normalizedBlocks()
+        if (blocks.length === 0)
+            return 0
+        const lastBlockIndex = blocks.length - 1
+        const cachedSummary = documentFlow.cachedBlockLayoutSummaryAt(lastBlockIndex)
+        if (cachedSummary && cachedSummary.blockTopY !== undefined) {
+            return Math.max(
+                        0,
+                        (Number(cachedSummary.blockTopY) || 0)
+                        + Math.max(
+                            1,
+                            Number(cachedSummary.blockHeight) || documentFlow.lineHeightHint))
+        }
+        const lastBlockHost = blockRepeater.itemAt(lastBlockIndex)
+        if (lastBlockHost) {
+            return Math.max(
+                        0,
+                        (Number(lastBlockHost.y) || 0)
+                        + Math.max(
+                            1,
+                            Number(lastBlockHost.contentHeight !== undefined
+                                   ? lastBlockHost.contentHeight
+                                   : 0)
+                            || Number(lastBlockHost.height)
+                            || Number(lastBlockHost.implicitHeight)
+                            || documentFlow.lineHeightHint))
+        }
+        return Math.max(0, Number(documentColumn.implicitHeight) || 0)
+    }
+
+    function pointTargetsDocumentEndEdit(localX, localY) {
+        const safeLocalY = Number(localY)
+        if (!isFinite(safeLocalY))
+            return false
+        if (documentFlow.blockIndexAtPoint(localX, safeLocalY) >= 0)
+            return false
+        return safeLocalY >= documentFlow.documentContentBottomY()
     }
 
     function currentCursorVisualRowRect() {
@@ -826,25 +898,35 @@ FocusScope {
             documentFlow.requestFocus({ "sourceOffset": currentSourceText.length })
             return true
         }
+        const lastBlockIndex = blocks.length - 1
         const lastBlock = blocks[blocks.length - 1] && typeof blocks[blocks.length - 1] === "object"
                 ? blocks[blocks.length - 1]
                 : ({})
-        const lastBlockHost = blockRepeater.itemAt(blocks.length - 1)
+        const lastBlockHost = blockRepeater.itemAt(lastBlockIndex)
         if (documentFlow.blockTextEditable(lastBlockHost, lastBlock)) {
             documentFlow.requestFocus({
+                                          "reason": "document-end-edit",
                                           "sourceOffset": Math.max(
                                                               0,
-                                                              Math.floor(Number(lastBlock.sourceEnd) || currentSourceText.length))
+                                                              Math.floor(Number(lastBlock.sourceEnd) || currentSourceText.length)),
+                                          "targetBlockIndex": lastBlockIndex
                                       })
             return true
         }
         if (currentSourceText.length > 0 && currentSourceText.charAt(currentSourceText.length - 1) === "\n") {
-            documentFlow.requestFocus({ "sourceOffset": currentSourceText.length })
+            documentFlow.requestFocus({
+                                          "reason": "document-end-edit",
+                                          "sourceOffset": currentSourceText.length,
+                                          "targetBlockIndex": lastBlockIndex
+                                      })
             return true
         }
         documentFlow.sourceMutationRequested(
                     currentSourceText + "\n",
-                    { "sourceOffset": currentSourceText.length + 1 })
+                    {
+                        "reason": "document-end-edit",
+                        "sourceOffset": currentSourceText.length + 1
+                    })
         return true
     }
 
@@ -1798,6 +1880,7 @@ FocusScope {
                     sourceComponent: documentBlockDelegate
 
                     onLoaded: {
+                        documentFlow.scheduleLayoutCacheRefresh()
                         if (!item || blockHost.blockIndex !== documentFlow.pendingFocusBlockIndex)
                             return
                         documentFlow.schedulePendingFocusApply()
@@ -1878,12 +1961,17 @@ FocusScope {
     }
     onLineHeightHintChanged: documentFlow.refreshLayoutCache()
     onViewportHeightChanged: documentFlow.scheduleLayoutCacheRefresh()
+    onVisibleChanged: {
+        if (documentFlow.visible)
+            documentFlow.scheduleEditorOpenLayoutCacheRefresh("visible")
+    }
     onWidthChanged: documentFlow.scheduleLayoutCacheRefresh()
 
     Component.onCompleted: {
         EditorTrace.trace("structuredDocumentFlow", "mount", "blockCount=" + documentFlow.documentBlocks.length, documentFlow)
         documentFlow.refreshInteractiveDocumentBlocks()
         documentFlow.refreshLayoutCache()
+        documentFlow.scheduleEditorOpenLayoutCacheRefresh("completed")
     }
 
     Component.onDestruction: {

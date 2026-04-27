@@ -105,6 +105,11 @@ source.
   next note parses to the same logical line count as the previous one.
   Rapid note switches therefore still force one new structured geometry pass before the gutter is allowed to reuse
   note-local cached coordinates.
+- Opening or remounting the structured editor now schedules a short editor-open layout-cache pass sequence.
+  The first pass can still catch the immediate block stream, while the follow-up passes run after delegate creation and
+  height measurement have had event-loop turns to settle.
+- Block delegate load completion also queues a layout-cache refresh, so asynchronous or virtualized delegates can publish
+  their measured line geometry to the gutter as soon as they mount.
 - Structured cached logical-line entries now also keep `gutterContentY` aligned to each line's real `contentY`.
   Gutter-collapsed blocks still shrink only the rendered gutter box height, but line-number Y no longer comes from a
   second synthetic accumulator that ignored block spacing and delegate-local top offsets.
@@ -116,6 +121,12 @@ source.
   overwriting it with `contentY`.
   Text-family blocks can therefore hand the flow one already block-mapped gutter origin when their inline editor's
   local origin does not match the delegate root item.
+- The flow owns bottom-whitespace hit testing through `pointTargetsDocumentEndEdit(...)`.
+  A click below the last rendered document block is treated as a document-end edit request, while clicks in non-block
+  space above or between blocks are ignored by this route.
+- Document-end focus requests now carry the last block's explicit `targetBlockIndex` with the source-end offset.
+  This prevents a shared source boundary from being resolved to the previous block when the user clicks the editor's
+  bottom padding to continue typing at the end.
 - Resource blocks now also cap their minimap silhouette expansion to ten rows even when the inline card itself is much
   taller than ten editor lines.
   Tall images therefore stay visually present on the minimap without dominating the whole rail.

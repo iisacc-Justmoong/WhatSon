@@ -115,11 +115,18 @@ not note-backed.
   an editor is focused, but still stand down during structured or fallback IME/preedit composition.
 - The host exposes `editorCustomTextInputEnabled: false`, `editorTagManagementInputEnabled: true`, and
   `noteDocumentTagManagementShortcutSurfaceEnabled` to make that policy explicit in QML and regression tests.
+- Inline-format shortcut parsing treats either `Meta` or `Control` as the command accelerator so the RAW tag mutation
+  path still runs on platforms that report native command chords with both modifier bits. `Alt`/Option remains excluded
+  from these formatting commands.
 - Editor selection context-menu invocation is now modeled as a shared pointer-trigger contract:
   desktop right-click and mobile touch/stylus long-press both route through
   `requestEditorSelectionContextMenuFromPointer(...)`.
   This keeps mobile access to the same tag-management menu without adding ordinary text key handlers, and the menu
   surface still stands down while a native composition/preedit session is active.
+- Context-menu pointer requests now preserve an already valid press-time selection snapshot instead of always re-priming
+  on tap.
+  This keeps a selected body range available for the menu even if the live `TextEdit` selection changes during the
+  right-click release turn.
 - Markdown list toggles are not exposed from this host. `Meta/Alt+Shift+7/8` list shortcuts and generic key-event
   forwarding are intentionally absent so ordinary text input remains native.
 - Fallback-editor `inputMethodComposing`/`preeditText` change signals now only resume pending cursor restoration and
@@ -147,11 +154,23 @@ not note-backed.
   text column's `editorHorizontalInset`.
   This keeps note-body left padding unchanged while tightening the visual distance between gutter numbers and the first
   text glyph.
+- The host no longer synthesizes an automatic `current` gutter marker for the cursor line.
+  Current-line feedback remains limited to the line number's active color/font weight, so the editor does not draw an
+  unexplained dot beside the first glyph of each text block.
 - Note-entry gutter/minimap geometry is now also invalidated per selected note instead of trusting only line-count
   parity.
   Rapid note switches therefore clear stale incremental line caches immediately, queue a fresh structured layout-cache
   rebuild for the newly selected note, and only reuse minimap-derived line geometry once it has been regenerated for
   that same note id.
+- Note-entry structured layout rebuilds now route through `scheduleStructuredDocumentOpenLayoutRefresh(...)` instead of
+  calling the flow's single-pass cache refresh directly.
+  That keeps the display host as the note-entry trigger while the structured document flow owns the post-open delegate
+  measurement passes that make gutter coordinates reliable.
+  The initial selected-note plan only enters that path after the resolved body id matches the selected note, so old-note
+  geometry cannot satisfy the new note's pending gutter refresh.
+  The selected-body text/resolved/loading handlers use the same open-layout path while a note-entry gutter refresh is
+  pending, which keeps the first clean body snapshot and the first rendered block snapshot on the same measurement
+  contract.
 - Blur-driven immediate editor flush returns without saving while the live `TextEdit` is still composing or exposing
   preedit text. The host must not force a blur save after a fixed retry count because OS IME owns that unsettled input
   session.

@@ -23,7 +23,18 @@ void WhatSonCppRegressionTests::contentsDisplayView_invalidatesGutterGeometryImm
     QVERIFY(geometryControllerSource.contains(QStringLiteral("currentNoteId === controller.contentsView.minimapLineGroupsNoteId")));
     QVERIFY(geometryControllerSource.contains(QStringLiteral("controller.contentsView.minimapLineGroupsNoteId = currentNoteId;")));
     QVERIFY(geometryControllerSource.contains(QStringLiteral("controller.contentsView.minimapLineGroupsNoteId = \"\";")));
-    QVERIFY(eventPumpSource.contains(QStringLiteral("eventPump.structuredDocumentFlow.scheduleLayoutCacheRefresh();")));
+    QVERIFY(eventPumpSource.contains(
+        QStringLiteral("eventPump.contentsView.scheduleStructuredDocumentOpenLayoutRefresh(\"rendered-blocks\")")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("function scheduleStructuredDocumentOpenLayoutRefresh(reason)")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("!contentsView.selectedNoteBodyLoading")));
+    QVERIFY(displayViewSource.contains(
+        QStringLiteral("contentsView.selectedNoteBodyNoteId === contentsView.selectedNoteId")));
+    QVERIFY(displayViewSource.contains(
+        QStringLiteral("contentsView.scheduleStructuredDocumentOpenLayoutRefresh(\"selected-body-text\")")));
+    QVERIFY(displayViewSource.contains(
+        QStringLiteral("contentsView.scheduleStructuredDocumentOpenLayoutRefresh(\"selected-body-resolved\")")));
+    QVERIFY(displayViewSource.contains(
+        QStringLiteral("contentsView.scheduleStructuredDocumentOpenLayoutRefresh(\"selected-body-loading\")")));
     QVERIFY(eventPumpSource.contains(QStringLiteral("eventPump.contentsView.scheduleViewportGutterRefresh();")));
     QVERIFY(geometryControllerSource.contains(QStringLiteral("controller.refreshCoordinator.scheduleNoteEntryGutterRefresh(")));
     QVERIFY(displayViewSource.contains(QStringLiteral("refreshPlan.gutterPassCount")));
@@ -47,6 +58,26 @@ void WhatSonCppRegressionTests::contentsDisplayView_keepsGutterNumbersCloseToThe
     QVERIFY(displayViewSource.contains(QStringLiteral("readonly property int gutterBodyGap")));
     QVERIFY(displayViewSource.contains(QStringLiteral("readonly property int lineNumberRightInset: contentsView.gutterBodyGap")));
     QVERIFY(!displayViewSource.contains(QStringLiteral("readonly property int lineNumberRightInset: contentsView.editorHorizontalInset")));
+}
+
+void WhatSonCppRegressionTests::contentsDisplayView_doesNotInjectCurrentLineGutterDot()
+{
+    const QString displayViewSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/content/editor/ContentsDisplayView.qml"));
+    const QString gutterLayerSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/content/editor/ContentsGutterLayer.qml"));
+
+    QVERIFY(!displayViewSource.isEmpty());
+    QVERIFY(!gutterLayerSource.isEmpty());
+    QVERIFY(displayViewSource.contains(QStringLiteral("readonly property var effectiveGutterMarkers")));
+    QVERIFY(!displayViewSource.contains(QStringLiteral("showCurrentLineMarker")));
+    QVERIFY(!displayViewSource.contains(QStringLiteral("gutterMarkerCurrentColor")));
+    QVERIFY(!displayViewSource.contains(QStringLiteral("currentCursorGutterLineHeight")));
+    QVERIFY(!displayViewSource.contains(QStringLiteral("currentCursorGutterLineY")));
+    QVERIFY(!displayViewSource.contains(QStringLiteral("\"type\": \"current\"")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("return contentsView.activeLineNumberColor;")));
+    QVERIFY(gutterLayerSource.contains(QStringLiteral("currentCursorLineNumber: active line used for highlight color and font weight"))
+            || gutterLayerSource.contains(QStringLiteral("currentCursorLineNumber")));
 }
 
 void WhatSonCppRegressionTests::contentsDisplayView_reservesLargeBottomAccessibilityMargin()
@@ -134,8 +165,22 @@ void WhatSonCppRegressionTests::qmlContextMenus_treatRightClickAndLongPressAsSym
         QStringLiteral("function editorContextMenuPointerTriggerAccepted(triggerKind)")));
     QVERIFY(displayViewSource.contains(
         QStringLiteral("function requestEditorSelectionContextMenuFromPointer(localX, localY, triggerKind)")));
+    QVERIFY(displayViewSource.contains(
+        QStringLiteral("function editorSelectionContextMenuSnapshotValid()")));
+    QVERIFY(displayViewSource.contains(
+        QStringLiteral("function ensureEditorSelectionContextMenuSnapshot()")));
+    QVERIFY(displayViewSource.contains(
+        QStringLiteral("if (!contentsView.ensureEditorSelectionContextMenuSnapshot())")));
+    QVERIFY(displayViewSource.contains(
+        QStringLiteral("return contextMenuCoordinator.structuredSelectionValid();")));
     QVERIFY(inputCommandSurfaceSource.contains(
-        QStringLiteral("commandSurface.contentsView.requestEditorSelectionContextMenuFromPointer(lastPressX, lastPressY, \"rightClick\");")));
+        QStringLiteral("TapHandler {\n        id: editorRightClickContextMenuTapHandler")));
+    QVERIFY(inputCommandSurfaceSource.contains(
+        QStringLiteral("acceptedButtons: Qt.RightButton")));
+    QVERIFY(inputCommandSurfaceSource.contains(
+        QStringLiteral("commandSurface.contentsView.primeEditorSelectionContextMenuSnapshot();")));
+    QVERIFY(inputCommandSurfaceSource.contains(
+        QStringLiteral("commandSurface.contentsView.requestEditorSelectionContextMenuFromPointer(")));
     QVERIFY(inputCommandSurfaceSource.contains(
         QStringLiteral("acceptedDevices: PointerDevice.TouchScreen | PointerDevice.Stylus")));
     QVERIFY(inputCommandSurfaceSource.contains(

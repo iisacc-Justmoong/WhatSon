@@ -14,6 +14,16 @@ The host intentionally does not mount a note-loading overlay. Mount scheduling i
 The host also gates focus/input with `noteDocumentSurfaceInteractive`, not the raw `selectedNoteBodyLoading` flag, so
 startup runtime loading cannot keep an already parse-mounted note editor disabled.
 
+The host forwards left taps in the bottom document padding to the structured flow's document-end hit test from both
+the surface-level pointer path and the structured viewport path. When the tap is below the last block, the host
+requests the same focus behavior as clicking the note body's final editable position.
+Those two pointer paths coalesce through a one-turn queue guard so a single click cannot emit duplicate document-end
+edit requests.
+
+The model-side input command surface must bind through `surfaceHost.contentsView` and
+`surfaceHost.resourceImportController`. Those qualified bindings avoid a self-referential QML binding loop and keep
+window-level formatting shortcuts connected to the live editor host.
+
 ## Boundary
 
 The host does not decide which surface mode is active and does not mutate note source on its own. It consumes state,

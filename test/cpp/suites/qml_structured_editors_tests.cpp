@@ -56,7 +56,52 @@ namespace
             1,
             0,
             "ContentsTextFormatRenderer");
+        static const int bodyTagInsertionPlannerTypeId = qmlRegisterType<ContentsEditorBodyTagInsertionPlanner>(
+            "WhatSon.App.Internal",
+            1,
+            0,
+            "ContentsEditorBodyTagInsertionPlanner");
+        static const int structuredDocumentBlocksModelTypeId = qmlRegisterType<ContentsStructuredDocumentBlocksModel>(
+            "WhatSon.App.Internal",
+            1,
+            0,
+            "ContentsStructuredDocumentBlocksModel");
+        static const int structuredDocumentHostTypeId = qmlRegisterType<ContentsStructuredDocumentHost>(
+            "WhatSon.App.Internal",
+            1,
+            0,
+            "ContentsStructuredDocumentHost");
+        static const int resourceBitmapViewerTypeId = qmlRegisterType<ResourceBitmapViewer>(
+            "WhatSon.App.Internal",
+            1,
+            0,
+            "ResourceBitmapViewer");
         Q_UNUSED(textFormatRendererTypeId);
+        Q_UNUSED(bodyTagInsertionPlannerTypeId);
+        Q_UNUSED(structuredDocumentBlocksModelTypeId);
+        Q_UNUSED(structuredDocumentHostTypeId);
+        Q_UNUSED(resourceBitmapViewerTypeId);
+    }
+
+    QQuickItem* findStructuredEditorQuickItemByObjectName(QQuickItem* rootItem, const QString& objectName)
+    {
+        if (!rootItem)
+        {
+            return nullptr;
+        }
+        if (rootItem->objectName() == objectName)
+        {
+            return rootItem;
+        }
+        const QList<QQuickItem*> children = rootItem->childItems();
+        for (QQuickItem* child : children)
+        {
+            if (QQuickItem* match = findStructuredEditorQuickItemByObjectName(child, objectName))
+            {
+                return match;
+            }
+        }
+        return nullptr;
     }
 } // namespace
 
@@ -270,6 +315,476 @@ void WhatSonCppRegressionTests::qmlStructuredEditors_commitsPlainTextBlocksDirec
     QVERIFY(sourceOffset <= sourceStart + nextSourceText.size());
 }
 
+void WhatSonCppRegressionTests::qmlStructuredEditors_insertsInlineFormatTagsAtCollapsedCursor()
+{
+    registerStructuredEditorRuntimeQmlTypes();
+
+    const QString repositoryRoot = qmlStructuredEditorsRepositoryRootPath();
+    QQmlEngine engine;
+    addWhatSonStructuredEditorQmlImportPaths(engine, repositoryRoot);
+
+    QQmlComponent component(
+        &engine,
+        QUrl::fromLocalFile(
+            repositoryRoot
+            + QStringLiteral("/src/app/qml/view/content/editor/ContentsStructuredDocumentFlow.qml")));
+    if (component.status() == QQmlComponent::Error)
+    {
+        QFAIL(qPrintable(qmlStructuredEditorErrorString(component.errors())));
+    }
+
+    const QString sourceText = QStringLiteral("Alpha beta");
+    QVariantMap blockData;
+    blockData.insert(QStringLiteral("atomicBlock"), false);
+    blockData.insert(QStringLiteral("plainText"), sourceText);
+    blockData.insert(QStringLiteral("sourceStart"), 0);
+    blockData.insert(QStringLiteral("sourceEnd"), sourceText.size());
+    blockData.insert(QStringLiteral("sourceText"), sourceText);
+    blockData.insert(QStringLiteral("textEditable"), true);
+    blockData.insert(QStringLiteral("type"), QStringLiteral("text-group"));
+    QVariantList documentBlocks;
+    documentBlocks.push_back(blockData);
+
+    std::unique_ptr<QObject> flowObject(component.createWithInitialProperties({
+        {QStringLiteral("documentBlocks"), documentBlocks},
+        {QStringLiteral("sourceText"), sourceText},
+    }));
+    if (!flowObject)
+    {
+        QFAIL(qPrintable(qmlStructuredEditorErrorString(component.errors())));
+    }
+
+    QSignalSpy mutationSpy(
+        flowObject.get(),
+        SIGNAL(sourceMutationRequested(QString,QVariant)));
+    QVERIFY2(mutationSpy.isValid(), "sourceMutationRequested signal must remain observable from C++ tests");
+
+    QVariantMap collapsedSelectionSnapshot;
+    collapsedSelectionSnapshot.insert(QStringLiteral("cursorPosition"), 5);
+    collapsedSelectionSnapshot.insert(QStringLiteral("selectedText"), QString());
+    collapsedSelectionSnapshot.insert(QStringLiteral("selectionStart"), 5);
+    collapsedSelectionSnapshot.insert(QStringLiteral("selectionEnd"), 5);
+
+    QVariant returnValue;
+    QVERIFY(QMetaObject::invokeMethod(
+        flowObject.get(),
+        "applyInlineFormatToBlockSelection",
+        Q_RETURN_ARG(QVariant, returnValue),
+        Q_ARG(QVariant, QVariant(0)),
+        Q_ARG(QVariant, QVariant(QStringLiteral("bold"))),
+        Q_ARG(QVariant, QVariant(collapsedSelectionSnapshot))));
+    QVERIFY(returnValue.toBool());
+
+    QTRY_VERIFY(mutationSpy.count() >= 1);
+    const QList<QVariant> mutationArguments = mutationSpy.takeFirst();
+    QCOMPARE(mutationArguments.at(0).toString(), QStringLiteral("Alpha<bold></bold> beta"));
+
+    const QVariantMap focusRequest = mutationArguments.at(1).toMap();
+    const int expectedFocusOffset = QStringLiteral("Alpha<bold>").size();
+    QCOMPARE(focusRequest.value(QStringLiteral("sourceOffset")).toInt(), expectedFocusOffset);
+    QCOMPARE(focusRequest.value(QStringLiteral("targetBlockIndex")).toInt(), 0);
+}
+
+void WhatSonCppRegressionTests::qmlStructuredEditors_acceptsPlatformCommandModifierForInlineFormatting()
+{
+    registerStructuredEditorRuntimeQmlTypes();
+
+    const QString repositoryRoot = qmlStructuredEditorsRepositoryRootPath();
+    QQmlEngine engine;
+    addWhatSonStructuredEditorQmlImportPaths(engine, repositoryRoot);
+
+    QQmlComponent component(
+        &engine,
+        QUrl::fromLocalFile(
+            repositoryRoot
+            + QStringLiteral("/src/app/qml/view/content/editor/ContentsInlineFormatEditor.qml")));
+    if (component.status() == QQmlComponent::Error)
+    {
+        QFAIL(qPrintable(qmlStructuredEditorErrorString(component.errors())));
+    }
+
+    std::unique_ptr<QObject> inlineEditorObject(component.create());
+    if (!inlineEditorObject)
+    {
+        QFAIL(qPrintable(qmlStructuredEditorErrorString(component.errors())));
+    }
+
+    QVariantMap nativeCommandEvent;
+    nativeCommandEvent.insert(QStringLiteral("key"), static_cast<int>(Qt::Key_B));
+    nativeCommandEvent.insert(
+        QStringLiteral("modifiers"),
+        static_cast<int>(Qt::ControlModifier | Qt::MetaModifier));
+    nativeCommandEvent.insert(QStringLiteral("text"), QStringLiteral("b"));
+
+    QVariant acceptedReturnValue;
+    QVERIFY(QMetaObject::invokeMethod(
+        inlineEditorObject.get(),
+        "eventRequestsInlineFormatShortcut",
+        Q_RETURN_ARG(QVariant, acceptedReturnValue),
+        Q_ARG(QVariant, QVariant(nativeCommandEvent))));
+    QVERIFY(acceptedReturnValue.toBool());
+
+    QVariantMap optionCommandEvent = nativeCommandEvent;
+    optionCommandEvent.insert(
+        QStringLiteral("modifiers"),
+        static_cast<int>(Qt::ControlModifier | Qt::AltModifier));
+
+    QVariant rejectedReturnValue;
+    QVERIFY(QMetaObject::invokeMethod(
+        inlineEditorObject.get(),
+        "eventRequestsInlineFormatShortcut",
+        Q_RETURN_ARG(QVariant, rejectedReturnValue),
+        Q_ARG(QVariant, QVariant(optionCommandEvent))));
+    QVERIFY(!rejectedReturnValue.toBool());
+
+    const QString displayViewSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/content/editor/ContentsDisplayView.qml"));
+    const QString inlineEditorSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/content/editor/ContentsInlineFormatEditor.qml"));
+    QVERIFY(!displayViewSource.contains(QStringLiteral("metaPressed && controlPressed")));
+    QVERIFY(!inlineEditorSource.contains(QStringLiteral("metaPressed && controlPressed")));
+}
+
+void WhatSonCppRegressionTests::qmlStructuredEditors_routesInlineFormatShortcutThroughDocumentFlow()
+{
+    registerStructuredEditorRuntimeQmlTypes();
+
+    const QString repositoryRoot = qmlStructuredEditorsRepositoryRootPath();
+    QQmlEngine engine;
+    addWhatSonStructuredEditorQmlImportPaths(engine, repositoryRoot);
+
+    const QString editorImportPath = repositoryRoot + QStringLiteral("/src/app/qml/view/content/editor");
+    const QString editorImportUrl = QUrl::fromLocalFile(editorImportPath).toString();
+    const QString qmlSource = QStringLiteral(R"QML(
+import QtQuick
+import "%1" as EditorView
+
+EditorView.ContentsStructuredDocumentFlow {
+    id: flow
+    objectName: "flowUnderTest"
+    width: 420
+    height: 120
+    sourceText: "Alpha beta"
+    documentBlocks: [
+        {
+            "atomicBlock": false,
+            "plainText": "Alpha beta",
+            "sourceStart": 0,
+            "sourceEnd": 10,
+            "sourceText": "Alpha beta",
+            "textEditable": true,
+            "type": "text-group"
+        }
+    ]
+    tagManagementShortcutKeyPressHandler: function (event) {
+        if (!event || Number(event.key) !== Qt.Key_B)
+            return false;
+        return flow.applyInlineFormatToActiveSelection("bold");
+    }
+}
+)QML").arg(editorImportUrl);
+
+    QQmlComponent component(&engine);
+    component.setData(qmlSource.toUtf8(), QUrl::fromLocalFile(repositoryRoot + QStringLiteral("/test/flow-inline-format.qml")));
+    if (component.status() == QQmlComponent::Error)
+    {
+        QFAIL(qPrintable(qmlStructuredEditorErrorString(component.errors())));
+    }
+
+    std::unique_ptr<QObject> flowObject(component.create());
+    if (!flowObject)
+    {
+        QFAIL(qPrintable(qmlStructuredEditorErrorString(component.errors())));
+    }
+
+    auto* flowItem = qobject_cast<QQuickItem*>(flowObject.get());
+    QVERIFY(flowItem != nullptr);
+    flowItem->setWidth(420);
+    flowItem->setHeight(120);
+
+    QQuickWindow window;
+    window.resize(420, 120);
+    flowItem->setParentItem(window.contentItem());
+    window.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&window));
+
+    QQuickItem* inlineEditorItem = nullptr;
+    QTRY_VERIFY((inlineEditorItem = findStructuredEditorQuickItemByObjectName(
+                     flowItem,
+                     QStringLiteral("contentsInlineFormatEditor"))) != nullptr);
+    QObject* inlineEditor = inlineEditorItem;
+    QObject* editorItem = qvariant_cast<QObject*>(inlineEditor->property("editorItem"));
+    QVERIFY(editorItem != nullptr);
+    QObject* textInput = qvariant_cast<QObject*>(editorItem->property("inputItem"));
+    QVERIFY(textInput != nullptr);
+    auto* textInputItem = qobject_cast<QQuickItem*>(textInput);
+    QVERIFY(textInputItem != nullptr);
+
+    QSignalSpy mutationSpy(
+        flowObject.get(),
+        SIGNAL(sourceMutationRequested(QString,QVariant)));
+    QVERIFY2(mutationSpy.isValid(), "sourceMutationRequested signal must remain observable from C++ tests");
+
+    QVERIFY(QMetaObject::invokeMethod(inlineEditor, "forceActiveFocus"));
+    QTRY_VERIFY(textInputItem->hasActiveFocus());
+    textInput->setProperty("cursorPosition", 5);
+    QTest::keyClick(&window, Qt::Key_B, Qt::ControlModifier);
+
+    QTRY_VERIFY(mutationSpy.count() >= 1);
+    const QList<QVariant> mutationArguments = mutationSpy.takeFirst();
+    QCOMPARE(mutationArguments.at(0).toString(), QStringLiteral("Alpha<bold></bold> beta"));
+}
+
+void WhatSonCppRegressionTests::qmlStructuredEditors_focusesDocumentEndFromBottomWhitespace()
+{
+    registerStructuredEditorRuntimeQmlTypes();
+
+    const QString surfaceHostSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/content/editor/ContentsDisplaySurfaceHost.qml"));
+    const QString structuredFlowSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/content/editor/ContentsStructuredDocumentFlow.qml"));
+    QVERIFY(!surfaceHostSource.isEmpty());
+    QVERIFY(!structuredFlowSource.isEmpty());
+    QVERIFY(surfaceHostSource.contains(QStringLiteral("pointTargetsDocumentEndEdit(flowTapX, flowTapY)")));
+    QVERIFY(surfaceHostSource.contains(QStringLiteral("property bool documentEndEditRequestQueued: false")));
+    QVERIFY(surfaceHostSource.contains(QStringLiteral("if (surfaceHost.documentEndEditRequestQueued)")));
+    QVERIFY(surfaceHostSource.contains(QStringLiteral("function requestStructuredDocumentEndEditFromSurfacePoint(")));
+    QVERIFY(surfaceHostSource.contains(QStringLiteral("structuredDocumentEndWhitespaceTapHandler")));
+    QVERIFY(surfaceHostSource.contains(QStringLiteral("contentsView: surfaceHost.contentsView")));
+    QVERIFY(surfaceHostSource.contains(QStringLiteral("resourceImportController: surfaceHost.resourceImportController")));
+    QVERIFY(!surfaceHostSource.contains(QStringLiteral("contentsView: contentsView")));
+    QVERIFY(!surfaceHostSource.contains(QStringLiteral("resourceImportController: resourceImportController")));
+    QVERIFY(structuredFlowSource.contains(QStringLiteral("function pointTargetsDocumentEndEdit(localX, localY)")));
+    QVERIFY(structuredFlowSource.contains(QStringLiteral("\"targetBlockIndex\": lastBlockIndex")));
+
+    const QString repositoryRoot = qmlStructuredEditorsRepositoryRootPath();
+    QQmlEngine engine;
+    addWhatSonStructuredEditorQmlImportPaths(engine, repositoryRoot);
+
+    QQmlComponent component(
+        &engine,
+        QUrl::fromLocalFile(
+            repositoryRoot
+            + QStringLiteral("/src/app/qml/view/content/editor/ContentsStructuredDocumentFlow.qml")));
+    if (component.status() == QQmlComponent::Error)
+    {
+        QFAIL(qPrintable(qmlStructuredEditorErrorString(component.errors())));
+    }
+
+    const QString resourceSourceText = QStringLiteral("<resource id=\"image\" />");
+    QVariantMap resourceBlock;
+    resourceBlock.insert(QStringLiteral("atomicBlock"), true);
+    resourceBlock.insert(QStringLiteral("gutterCollapsed"), true);
+    resourceBlock.insert(QStringLiteral("sourceStart"), 0);
+    resourceBlock.insert(QStringLiteral("sourceEnd"), resourceSourceText.size());
+    resourceBlock.insert(QStringLiteral("sourceText"), resourceSourceText);
+    resourceBlock.insert(QStringLiteral("textEditable"), false);
+    resourceBlock.insert(QStringLiteral("type"), QStringLiteral("resource"));
+
+    QVariantMap trailingTextBlock;
+    trailingTextBlock.insert(QStringLiteral("atomicBlock"), false);
+    trailingTextBlock.insert(QStringLiteral("plainText"), QString());
+    trailingTextBlock.insert(QStringLiteral("sourceStart"), resourceSourceText.size());
+    trailingTextBlock.insert(QStringLiteral("sourceEnd"), resourceSourceText.size());
+    trailingTextBlock.insert(QStringLiteral("sourceText"), QString());
+    trailingTextBlock.insert(QStringLiteral("textEditable"), true);
+    trailingTextBlock.insert(QStringLiteral("type"), QStringLiteral("text-group"));
+
+    QVariantList documentBlocks;
+    documentBlocks.push_back(resourceBlock);
+    documentBlocks.push_back(trailingTextBlock);
+
+    std::unique_ptr<QObject> flowObject(component.createWithInitialProperties({
+        {QStringLiteral("documentBlocks"), documentBlocks},
+        {QStringLiteral("sourceText"), resourceSourceText},
+    }));
+    if (!flowObject)
+    {
+        QFAIL(qPrintable(qmlStructuredEditorErrorString(component.errors())));
+    }
+
+    QVariant returnValue;
+    QVERIFY(QMetaObject::invokeMethod(
+        flowObject.get(),
+        "requestDocumentEndEdit",
+        Q_RETURN_ARG(QVariant, returnValue)));
+    QVERIFY(returnValue.toBool());
+
+    const QVariantMap focusRequest = flowObject->property("pendingFocusRequest").toMap();
+    QCOMPARE(focusRequest.value(QStringLiteral("reason")).toString(), QStringLiteral("document-end-edit"));
+    QCOMPARE(focusRequest.value(QStringLiteral("sourceOffset")).toInt(), resourceSourceText.size());
+    QCOMPARE(focusRequest.value(QStringLiteral("targetBlockIndex")).toInt(), 1);
+    QCOMPARE(flowObject->property("pendingFocusBlockIndex").toInt(), 1);
+
+    const QString editorImportPath = repositoryRoot + QStringLiteral("/src/app/qml/view/content/editor");
+    const QString editorImportUrl = QUrl::fromLocalFile(editorImportPath).toString();
+    const QString surfaceHostQmlSource = QStringLiteral(R"QML(
+import QtQuick
+import "%1" as EditorView
+
+Item {
+    id: root
+    width: 420
+    height: 360
+
+    QtObject {
+        id: bodyResourceRenderer
+        property var renderedResources: []
+    }
+    QtObject {
+        id: blockRenderer
+        property var renderedAgendas: []
+        property var renderedCallouts: []
+        property var renderedDocumentBlocks: [
+            {
+                "atomicBlock": false,
+                "plainText": "Alpha",
+                "sourceStart": 0,
+                "sourceEnd": 5,
+                "sourceText": "Alpha",
+                "textEditable": true,
+                "type": "text-group"
+            }
+        ]
+    }
+    QtObject {
+        id: editorProjection
+        property string renderedHtml: ""
+    }
+    QtObject {
+        id: editorTypingController
+        function logicalOffsetForSourceOffset(sourceOffset) { return sourceOffset; }
+    }
+    QtObject {
+        id: resourceImportController
+        function canAcceptResourceDropUrls(_urls) { return false; }
+        function extractResourceDropUrls(_drop) { return []; }
+        function importUrlsAsResourcesWithPrompt(_urls) { return false; }
+        function releaseResourceDropEditorSurfaceGuard(_accepted) {}
+    }
+    QtObject { id: agendaBackend }
+    QtObject { id: calloutBackend }
+
+    Item {
+        id: contentsView
+        objectName: "surfaceHostContentsView"
+        property int endEditRequestCount: 0
+        property int minEditorHeight: 0
+        property bool noteDocumentSurfaceInteractive: true
+        property bool noteDocumentParseMounted: true
+        property bool showPrintEditorLayout: false
+        property bool showStructuredDocumentFlow: true
+        property bool showDedicatedResourceViewer: false
+        property bool showFormattedTextRenderer: false
+        property bool showPrintMarginGuides: false
+        property bool nativeTextInputPriority: false
+        property bool resourceDropActive: false
+        property bool noteDocumentContextMenuSurfaceEnabled: false
+        property bool contextMenuLongPressEnabled: false
+        property bool noteDocumentTagManagementShortcutSurfaceEnabled: false
+        property var editorSelectionContextMenuItems: []
+        property var resourcesImportViewModel: null
+        property string structuredFlowSourceText: "Alpha"
+        property int editorBottomInset: 240
+        property int editorDocumentStartY: 16
+        property int editorFontWeight: Font.Medium
+        property int editorHorizontalInset: 24
+        property int editorLineHeight: 18
+        property int effectiveEditorFontPixelSize: 18
+        property color printCanvasColor: "transparent"
+        property int printDocumentPageCount: 0
+        property int printDocumentSurfaceHeight: 0
+        property int printGuideHorizontalInset: 0
+        property int printGuideVerticalInset: 0
+        property color printPaperBorderColor: "transparent"
+        property color printPaperColor: "transparent"
+        property int printPaperDocumentHeight: 0
+        property color printPaperHighlightColor: "transparent"
+        property int printPaperResolvedHeight: 0
+        property int printPaperResolvedWidth: 0
+        property color printPaperSeparatorColor: "transparent"
+        property int printPaperSeparatorThickness: 0
+        property color printPaperShadeColor: "transparent"
+        property color printPaperShadowColor: "transparent"
+        property int printPaperShadowOffsetX: 0
+        property int printPaperShadowOffsetY: 0
+        property color printPaperTextColor: "transparent"
+        property int printPaperTextHeight: 0
+        property int printPaperTextWidth: 0
+        property int printPaperVerticalMargin: 0
+        function applyDocumentSourceMutation(_nextSourceText, _focusRequest) {}
+        function documentYForOffset(_logicalOffset) { return 0; }
+        function focusStructuredBlockSourceOffset(_sourceOffset) {}
+        function handleSelectionContextMenuEvent(_eventName) {}
+        function handleTagManagementShortcutKeyPress(_event) { return false; }
+        function primeEditorSelectionContextMenuSnapshot() {}
+        function queueAgendaShortcutInsertion() { return false; }
+        function queueBreakShortcutInsertion() { return false; }
+        function queueCalloutShortcutInsertion() { return false; }
+        function queueInlineFormatWrap(_tagName) { return false; }
+        function requestEditorSelectionContextMenuFromPointer(_x, _y, _reason) {}
+        function requestStructuredDocumentEndEdit() {
+            endEditRequestCount += 1;
+            return true;
+        }
+        function setAgendaTaskDone(_taskOpenTagStart, _taskOpenTagEnd, _checked) {}
+    }
+
+    EditorView.ContentsDisplaySurfaceHost {
+        id: surfaceHost
+        objectName: "surfaceHostUnderTest"
+        anchors.fill: parent
+        bodyResourceRenderer: bodyResourceRenderer
+        contentsAgendaBackend: agendaBackend
+        contentsCalloutBackend: calloutBackend
+        contentsView: contentsView
+        editorProjection: editorProjection
+        editorTypingController: editorTypingController
+        resourceImportController: resourceImportController
+        structuredBlockRenderer: blockRenderer
+    }
+}
+)QML").arg(editorImportUrl);
+
+    QQmlComponent surfaceHostComponent(&engine);
+    surfaceHostComponent.setData(
+        surfaceHostQmlSource.toUtf8(),
+        QUrl::fromLocalFile(repositoryRoot + QStringLiteral("/test/surface-host-end-edit.qml")));
+    if (surfaceHostComponent.status() == QQmlComponent::Error)
+    {
+        QFAIL(qPrintable(qmlStructuredEditorErrorString(surfaceHostComponent.errors())));
+    }
+
+    std::unique_ptr<QObject> rootObject(surfaceHostComponent.create());
+    if (!rootObject)
+    {
+        QFAIL(qPrintable(qmlStructuredEditorErrorString(surfaceHostComponent.errors())));
+    }
+    auto* rootItem = qobject_cast<QQuickItem*>(rootObject.get());
+    QVERIFY(rootItem != nullptr);
+
+    QQuickWindow hostWindow;
+    hostWindow.resize(420, 360);
+    rootItem->setParentItem(hostWindow.contentItem());
+    hostWindow.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&hostWindow));
+
+    QObject* hostContentsView = rootObject->findChild<QObject*>(QStringLiteral("surfaceHostContentsView"));
+    QVERIFY(hostContentsView != nullptr);
+    QObject* surfaceHost = rootObject->findChild<QObject*>(QStringLiteral("surfaceHostUnderTest"));
+    QVERIFY(surfaceHost != nullptr);
+
+    QVariant hostReturnValue;
+    QVERIFY(QMetaObject::invokeMethod(
+        surfaceHost,
+        "requestStructuredDocumentEndEditFromSurfacePoint",
+        Q_RETURN_ARG(QVariant, hostReturnValue),
+        Q_ARG(QVariant, QVariant(220)),
+        Q_ARG(QVariant, QVariant(320))));
+    QVERIFY(hostReturnValue.toBool());
+    QTRY_COMPARE(hostContentsView->property("endEditRequestCount").toInt(), 1);
+}
+
 void WhatSonCppRegressionTests::qmlStructuredEditors_deletesEmptyCalloutWithBackspace()
 {
     const QString repositoryRoot = qmlStructuredEditorsRepositoryRootPath();
@@ -356,6 +871,42 @@ void WhatSonCppRegressionTests::qmlStructuredEditors_consumeRendererNormalizedBl
         QStringLiteral("function snapshotTokenForLogicalLine(blockEntry, logicalLines, lineIndex)")));
     QVERIFY(structuredFlowSource.contains(
         QStringLiteral("\"snapshotToken\": documentFlow.snapshotTokenForLogicalLine(blockEntry, logicalLines, index)")));
+}
+
+void WhatSonCppRegressionTests::qmlStructuredEditors_refreshesGutterLayoutOnEditorOpen()
+{
+    const QString structuredFlowSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/content/editor/ContentsStructuredDocumentFlow.qml"));
+    const QString displayViewSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/content/editor/ContentsDisplayView.qml"));
+    const QString eventPumpSource = readUtf8SourceFile(
+        QStringLiteral("src/app/models/editor/display/ContentsDisplayEventPump.qml"));
+
+    QVERIFY(!structuredFlowSource.isEmpty());
+    QVERIFY(!displayViewSource.isEmpty());
+    QVERIFY(!eventPumpSource.isEmpty());
+
+    QVERIFY(structuredFlowSource.contains(
+        QStringLiteral("property int editorOpenLayoutRefreshPassesRemaining: 0")));
+    QVERIFY(structuredFlowSource.contains(QStringLiteral("readonly property int editorOpenLayoutRefreshPassCount: 3")));
+    QVERIFY(structuredFlowSource.contains(QStringLiteral("function scheduleEditorOpenLayoutCacheRefresh(reason)")));
+    QVERIFY(structuredFlowSource.contains(QStringLiteral("function scheduleEditorOpenLayoutCacheRefreshPass(revision)")));
+    QVERIFY(structuredFlowSource.contains(QStringLiteral(
+        "documentFlow.editorOpenLayoutRefreshPassesRemaining = Math.max(")));
+    QVERIFY(structuredFlowSource.contains(QStringLiteral(
+        "documentFlow.scheduleEditorOpenLayoutCacheRefreshPass(")));
+    QVERIFY(structuredFlowSource.contains(QStringLiteral(
+        "documentFlow.scheduleEditorOpenLayoutCacheRefresh(\"completed\")")));
+    QVERIFY(structuredFlowSource.contains(QStringLiteral(
+        "documentFlow.scheduleEditorOpenLayoutCacheRefresh(\"visible\")")));
+    QVERIFY(structuredFlowSource.contains(QStringLiteral("onLoaded: {")));
+    QVERIFY(structuredFlowSource.contains(QStringLiteral("documentFlow.scheduleLayoutCacheRefresh()")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("function scheduleStructuredDocumentOpenLayoutRefresh(reason)")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("structuredDocumentFlow.scheduleEditorOpenLayoutCacheRefresh(")));
+    QVERIFY(displayViewSource.contains(QStringLiteral(
+        "contentsView.scheduleStructuredDocumentOpenLayoutRefresh(\"note-mounted\")")));
+    QVERIFY(eventPumpSource.contains(QStringLiteral(
+        "eventPump.contentsView.scheduleStructuredDocumentOpenLayoutRefresh(\"rendered-blocks\")")));
 }
 
 void WhatSonCppRegressionTests::qmlStructuredEditors_rejectStaleSourceRangeMutations()

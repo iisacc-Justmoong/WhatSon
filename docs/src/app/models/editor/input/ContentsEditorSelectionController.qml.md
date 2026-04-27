@@ -37,6 +37,8 @@ It does not own ordinary typing, markdown list input, or generic key-event short
   non-empty selection even if Qt briefly collapses the live range.
 - Right-click context-menu flows prime their selection snapshot on mouse press and reuse that cached range when the menu
   opens one event-loop turn later.
+- The display host must not re-prime over an already valid context-menu snapshot during the tap/release phase.
+  This preserves the press-time selection if native `TextEdit` processing has already collapsed the live selection.
 - Selection text normalization strips RichText object-replacement glyphs (`U+FFFC`) and normalizes NBSP back to ordinary
   spaces.
 - The controller delegates source rewriting to `ContentsTextFormatRenderer.applyInlineStyleToLogicalSelectionSource(...)`

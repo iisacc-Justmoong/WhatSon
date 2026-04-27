@@ -244,8 +244,8 @@ Item {
             if (eventPump.contentsView.structuredHostGeometryActive) {
                 if (eventPump.contentsView.hasPendingNoteEntryGutterRefresh(eventPump.contentsView.selectedNoteId)
                         && eventPump.structuredDocumentFlow
-                        && eventPump.structuredDocumentFlow.scheduleLayoutCacheRefresh !== undefined) {
-                    eventPump.structuredDocumentFlow.scheduleLayoutCacheRefresh();
+                        && eventPump.contentsView.scheduleStructuredDocumentOpenLayoutRefresh !== undefined) {
+                    eventPump.contentsView.scheduleStructuredDocumentOpenLayoutRefresh("rendered-blocks");
                 }
                 eventPump.contentsView.scheduleMinimapSnapshotRefresh(true);
                 eventPump.contentsView.scheduleGutterRefresh(1, "structured-line-geometry");

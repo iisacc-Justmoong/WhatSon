@@ -22,12 +22,82 @@ Item {
     property alias printDocumentViewport: printDocumentViewportItem
     property alias structuredDocumentFlow: structuredDocumentFlowItem
     property alias structuredDocumentViewport: structuredDocumentViewportItem
+    property bool documentEndEditRequestQueued: false
 
     Layout.fillHeight: true
     Layout.fillWidth: true
     Layout.minimumHeight: contentsView.minEditorHeight
     clip: true
     enabled: contentsView.noteDocumentSurfaceInteractive
+
+    function requestStructuredDocumentEndEditFromViewportPoint(viewportX, viewportY) {
+        if (!structuredDocumentViewportItem.visible || surfaceHost.contentsView.showPrintEditorLayout)
+            return false;
+        const viewportTapX = Number(viewportX);
+        const viewportTapY = Number(viewportY);
+        if (!isFinite(viewportTapX) || !isFinite(viewportTapY))
+            return false;
+        if (viewportTapX < 0 || viewportTapY < 0
+                || viewportTapX > structuredDocumentViewportItem.width
+                || viewportTapY > structuredDocumentViewportItem.height) {
+            return false;
+        }
+        const contentTapX = viewportTapX + (Number(structuredDocumentViewportItem.contentX) || 0);
+        const contentTapY = viewportTapY + (Number(structuredDocumentViewportItem.contentY) || 0);
+        const flowTapX = contentTapX - (Number(structuredDocumentFlowItem.x) || 0);
+        const flowTapY = contentTapY - (Number(structuredDocumentFlowItem.y) || 0);
+        if (!structuredDocumentFlowItem || !structuredDocumentFlowItem.visible)
+            return false;
+        if (structuredDocumentFlowItem.hasBlockAtPoint !== undefined
+                && structuredDocumentFlowItem.hasBlockAtPoint(flowTapX, flowTapY)) {
+            return false;
+        }
+        if (structuredDocumentFlowItem.pointTargetsDocumentEndEdit !== undefined
+                && !structuredDocumentFlowItem.pointTargetsDocumentEndEdit(flowTapX, flowTapY)) {
+            return false;
+        }
+        if (surfaceHost.documentEndEditRequestQueued)
+            return true;
+        surfaceHost.documentEndEditRequestQueued = true;
+        Qt.callLater(function () {
+            surfaceHost.documentEndEditRequestQueued = false;
+            surfaceHost.contentsView.requestStructuredDocumentEndEdit();
+        });
+        return true;
+    }
+
+    function requestStructuredDocumentEndEditFromSurfacePoint(surfaceX, surfaceY) {
+        const surfaceTapX = Number(surfaceX);
+        const surfaceTapY = Number(surfaceY);
+        if (!isFinite(surfaceTapX) || !isFinite(surfaceTapY))
+            return false;
+        const viewportPoint = surfaceHost.mapToItem(
+                    structuredDocumentViewportItem,
+                    surfaceTapX,
+                    surfaceTapY);
+        return surfaceHost.requestStructuredDocumentEndEditFromViewportPoint(
+                    viewportPoint.x,
+                    viewportPoint.y);
+    }
+
+    TapHandler {
+        id: structuredDocumentEndWhitespaceTapHandler
+
+        acceptedButtons: Qt.LeftButton
+        enabled: structuredDocumentViewportItem.visible
+                 && !surfaceHost.contentsView.showPrintEditorLayout
+        gesturePolicy: TapHandler.ReleaseWithinBounds
+        grabPermissions: PointerHandler.ApprovesTakeOverByAnything
+        target: null
+
+        onTapped: function (eventPoint, button) {
+            if (button !== Qt.LeftButton)
+                return;
+            const surfaceTapX = eventPoint && eventPoint.position ? Number(eventPoint.position.x) || 0 : 0;
+            const surfaceTapY = eventPoint && eventPoint.position ? Number(eventPoint.position.y) || 0 : 0;
+            surfaceHost.requestStructuredDocumentEndEditFromSurfacePoint(surfaceTapX, surfaceTapY);
+        }
+    }
 
     Flickable {
         id: printDocumentViewportItem
@@ -187,23 +257,13 @@ Item {
         TapHandler {
             acceptedButtons: Qt.LeftButton
             enabled: structuredDocumentViewportItem.visible
+            gesturePolicy: TapHandler.ReleaseWithinBounds
+            grabPermissions: PointerHandler.ApprovesTakeOverByAnything
 
             onTapped: function (eventPoint) {
                 const viewportTapX = eventPoint && eventPoint.position ? Number(eventPoint.position.x) || 0 : 0;
                 const viewportTapY = eventPoint && eventPoint.position ? Number(eventPoint.position.y) || 0 : 0;
-                const contentTapX = viewportTapX + (Number(structuredDocumentViewportItem.contentX) || 0);
-                const contentTapY = viewportTapY + (Number(structuredDocumentViewportItem.contentY) || 0);
-                const flowTapX = contentTapX - (Number(structuredDocumentFlowItem.x) || 0);
-                const flowTapY = contentTapY - (Number(structuredDocumentFlowItem.y) || 0);
-                if (structuredDocumentFlowItem
-                        && structuredDocumentFlowItem.visible
-                        && structuredDocumentFlowItem.hasBlockAtPoint !== undefined
-                        && structuredDocumentFlowItem.hasBlockAtPoint(flowTapX, flowTapY)) {
-                    return;
-                }
-                Qt.callLater(function () {
-                    contentsView.requestStructuredDocumentEndEdit();
-                });
+                surfaceHost.requestStructuredDocumentEndEditFromViewportPoint(viewportTapX, viewportTapY);
             }
         }
     }
@@ -477,8 +537,8 @@ Item {
     EditorDisplayModel.ContentsDisplayInputCommandSurface {
         id: inputCommandSurfaceItem
 
-        contentsView: contentsView
-        resourceImportController: resourceImportController
+        contentsView: surfaceHost.contentsView
+        resourceImportController: surfaceHost.resourceImportController
         z: 6
     }
 }

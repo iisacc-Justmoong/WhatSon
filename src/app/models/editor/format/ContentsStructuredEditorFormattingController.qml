@@ -55,6 +55,17 @@ QtObject {
         return !!documentFlow.selectionSnapshotIsValid(selectionSnapshot)
     }
 
+    function cursorSnapshotIsValid(selectionSnapshot) {
+        if (!selectionSnapshot || typeof selectionSnapshot !== "object")
+            return false
+        const cursorPosition = Number(selectionSnapshot.cursorPosition)
+        if (isFinite(cursorPosition))
+            return true
+        const selectionStart = Number(selectionSnapshot.selectionStart)
+        const selectionEnd = Number(selectionSnapshot.selectionEnd)
+        return isFinite(selectionStart) || isFinite(selectionEnd)
+    }
+
     function normalizedBlockIndex(blockIndex) {
         if (!documentFlow || documentFlow.normalizedBlocks === undefined)
             return -1
@@ -97,6 +108,64 @@ QtObject {
         return ({})
     }
 
+    function blockDelegateFocused(blockIndex) {
+        const delegateItem = controller.delegateItemForBlockIndex(blockIndex)
+        if (!delegateItem)
+            return false
+        if (delegateItem.focused !== undefined)
+            return !!delegateItem.focused
+        return delegateItem.activeFocus !== undefined && !!delegateItem.activeFocus
+    }
+
+    function blockInlineFormatTargetState(blockIndex) {
+        const safeBlockIndex = controller.normalizedBlockIndex(blockIndex)
+        if (safeBlockIndex < 0)
+            return ({ "valid": false })
+        const selectionSnapshot = controller.blockSelectionSnapshot(safeBlockIndex)
+        const selectionValid = controller.selectionSnapshotIsValid(selectionSnapshot)
+        const focused = controller.blockDelegateFocused(safeBlockIndex)
+        const cursorValid = controller.cursorSnapshotIsValid(selectionSnapshot)
+        return {
+            "blockIndex": safeBlockIndex,
+            "cursorValid": cursorValid,
+            "focused": focused,
+            "selectionSnapshot": selectionSnapshot,
+            "selectionValid": selectionValid,
+            "valid": selectionValid || (focused && cursorValid)
+        }
+    }
+
+    function firstMountedSelectionTargetState() {
+        if (!documentFlow || documentFlow.normalizedBlocks === undefined)
+            return ({ "valid": false })
+        const blocks = documentFlow.normalizedBlocks()
+        for (let blockIndex = 0; blockIndex < blocks.length; ++blockIndex) {
+            const targetState = controller.blockInlineFormatTargetState(blockIndex)
+            if (targetState.selectionValid)
+                return targetState
+        }
+        return ({ "valid": false })
+    }
+
+    function focusedCursorTargetState() {
+        if (!documentFlow || documentFlow.normalizedBlocks === undefined)
+            return ({ "valid": false })
+        const focusedBlockIndex = documentFlow.focusedBlockIndex !== undefined
+                ? documentFlow.focusedBlockIndex()
+                : -1
+        const focusedTargetState = controller.blockInlineFormatTargetState(focusedBlockIndex)
+        if (focusedTargetState.valid)
+            return focusedTargetState
+
+        const blocks = documentFlow.normalizedBlocks()
+        for (let blockIndex = 0; blockIndex < blocks.length; ++blockIndex) {
+            const targetState = controller.blockInlineFormatTargetState(blockIndex)
+            if (targetState.focused && targetState.cursorValid)
+                return targetState
+        }
+        return ({ "valid": false })
+    }
+
     function inlineFormatTargetState() {
         if (!documentFlow || documentFlow.normalizedBlocks === undefined)
             return ({ "valid": false })
@@ -106,13 +175,58 @@ QtObject {
         const resolvedActiveBlockIndex = documentFlow.normalizedResolvedInteractiveBlockIndex !== undefined
                 ? documentFlow.normalizedResolvedInteractiveBlockIndex()
                 : -1
-        const safeActiveBlockIndex = Math.max(0, Math.min(blocks.length - 1, resolvedActiveBlockIndex))
-        const selectionSnapshot = controller.blockSelectionSnapshot(safeActiveBlockIndex)
-        return {
-            "blockIndex": safeActiveBlockIndex,
-            "selectionSnapshot": selectionSnapshot,
-            "valid": controller.selectionSnapshotIsValid(selectionSnapshot)
-        }
+        const activeTargetState = controller.blockInlineFormatTargetState(resolvedActiveBlockIndex)
+        if (activeTargetState.valid)
+            return activeTargetState
+
+        const selectedTargetState = controller.firstMountedSelectionTargetState()
+        if (selectedTargetState.valid)
+            return selectedTargetState
+
+        return controller.focusedCursorTargetState()
+    }
+
+    function applyInlineFormatAtCollapsedCursor(blockIndex, tagName, selectionSnapshot, blockSourceStart, blockSourceEnd, blockSourceText, currentPlainText) {
+        const safeSnapshot = selectionSnapshot && typeof selectionSnapshot === "object"
+                ? selectionSnapshot
+                : ({})
+        const fallbackCursor = isFinite(Number(safeSnapshot.selectionEnd))
+                ? Number(safeSnapshot.selectionEnd)
+                : currentPlainText.length
+        const cursorPosition = Math.max(
+                    0,
+                    Math.min(
+                        currentPlainText.length,
+                        Math.floor(isFinite(Number(safeSnapshot.cursorPosition))
+                                   ? Number(safeSnapshot.cursorPosition)
+                                   : fallbackCursor)))
+        const sourceInsertionOffset = StructuredCursorSupport.sourceOffsetForInlineTaggedCursor(
+                    blockSourceText,
+                    cursorPosition,
+                    blockSourceStart)
+        const localInsertionOffset = Math.max(
+                    0,
+                    Math.min(
+                        blockSourceText.length,
+                        Math.floor(sourceInsertionOffset - blockSourceStart)))
+        const openTag = "<" + tagName + ">"
+        const closeTag = "</" + tagName + ">"
+        const nextBlockSourceText = blockSourceText.slice(0, localInsertionOffset)
+                + openTag
+                + closeTag
+                + blockSourceText.slice(localInsertionOffset)
+        if (nextBlockSourceText === blockSourceText)
+            return false
+        documentFlow.replaceSourceRange(
+                    blockSourceStart,
+                    blockSourceEnd,
+                    nextBlockSourceText,
+                    {
+                        "localCursorPosition": cursorPosition,
+                        "sourceOffset": sourceInsertionOffset + openTag.length,
+                        "targetBlockIndex": blockIndex
+                    })
+        return true
     }
 
     function applyInlineFormatToBlockSelection(blockIndex, tagName, explicitSelectionSnapshot) {
@@ -146,14 +260,13 @@ QtObject {
                     Math.min(
                         currentSourceText.length,
                         Math.floor(Number(blockEntry.sourceEnd) || blockSourceStart)))
-        if (blockSourceEnd <= blockSourceStart)
-            return false
 
         const blockSourceText = currentSourceText.slice(blockSourceStart, blockSourceEnd)
         const currentPlainText = StructuredCursorSupport.plainTextFromInlineTaggedSource(blockSourceText)
         const selectionSnapshot = explicitSelectionSnapshot
                 && typeof explicitSelectionSnapshot === "object"
-                && controller.selectionSnapshotIsValid(explicitSelectionSnapshot)
+                && (controller.selectionSnapshotIsValid(explicitSelectionSnapshot)
+                    || controller.cursorSnapshotIsValid(explicitSelectionSnapshot))
                 ? explicitSelectionSnapshot
                 : controller.blockSelectionSnapshot(safeBlockIndex)
         const selectionStart = Math.max(
@@ -166,7 +279,19 @@ QtObject {
                     Math.min(
                         currentPlainText.length,
                         Math.floor(Number(selectionSnapshot.selectionEnd) || 0)))
-        if (selectionEnd <= selectionStart)
+        if (selectionEnd <= selectionStart) {
+            if (!controller.cursorSnapshotIsValid(selectionSnapshot))
+                return false
+            return controller.applyInlineFormatAtCollapsedCursor(
+                        safeBlockIndex,
+                        normalizedTagName,
+                        selectionSnapshot,
+                        blockSourceStart,
+                        blockSourceEnd,
+                        blockSourceText,
+                        currentPlainText)
+        }
+        if (blockSourceEnd <= blockSourceStart)
             return false
 
         const nextBlockSourceText = String(controller.inlineStyleRenderer.applyInlineStyleToLogicalSelectionSource(

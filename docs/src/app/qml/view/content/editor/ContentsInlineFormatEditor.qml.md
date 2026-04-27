@@ -55,6 +55,8 @@ controller responsibilities.
   clipboard-image resource paste, plus explicit inline-format RAW tag commands such as bold/italic/highlight;
   hosts must leave ordinary editing, Shift+Enter line breaks, navigation, selection, text paste, and IME gestures
   native.
+- Inline-format shortcut detection treats either `Meta` or `Control` as a command modifier, including platforms that
+  report both for one native accelerator. `Alt`/Option remains excluded from formatting shortcuts.
 - The wrapper pre-checks Backspace, paste shortcuts, and inline-format shortcuts for that tag-management hook. When the
   hook declines the event, the wrapper explicitly restores `event.accepted = false` so Qt can still run native
   `TextEdit` key behavior.

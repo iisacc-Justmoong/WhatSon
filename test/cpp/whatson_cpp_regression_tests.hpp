@@ -1001,6 +1001,7 @@ private slots:
     void detailPanelRouting_separatesNoteAndResourceViewsAndViewModels();
     void contentsDisplayView_invalidatesGutterGeometryImmediatelyAcrossRapidNoteSwitches();
     void contentsDisplayView_keepsGutterNumbersCloseToTheEditorBody();
+    void contentsDisplayView_doesNotInjectCurrentLineGutterDot();
     void contentsDisplayView_reservesLargeBottomAccessibilityMargin();
     void contentsDisplayView_usesSelectedNoteSnapshotWhileSessionBindingCatchesUp();
     void contentsDisplayView_doesNotForceBlurFlushDuringNativeComposition();
@@ -1023,9 +1024,14 @@ private slots:
     void contentsDisplaySelectionSyncCoordinator_blocksUntilSelectedBodyIsResolved();
     void contentsDisplaySelectionSyncCoordinator_snapshotPlansRetainSelectionContext();
     void qmlStructuredEditors_consumeRendererNormalizedBlocksWithoutLocalFlattening();
+    void qmlStructuredEditors_refreshesGutterLayoutOnEditorOpen();
     void qmlStructuredEditors_rejectStaleSourceRangeMutations();
     void qmlStructuredEditors_preserveNativeMobileInputDuringFocusedEdits();
     void qmlStructuredEditors_commitsPlainTextBlocksDirectlyToRawSource();
+    void qmlStructuredEditors_insertsInlineFormatTagsAtCollapsedCursor();
+    void qmlStructuredEditors_acceptsPlatformCommandModifierForInlineFormatting();
+    void qmlStructuredEditors_routesInlineFormatShortcutThroughDocumentFlow();
+    void qmlStructuredEditors_focusesDocumentEndFromBottomWhitespace();
     void qmlStructuredEditors_deletesEmptyCalloutWithBackspace();
     void qmlStructuredEditors_renderInlineStyleOverlayAtRuntime();
     void qmlEditorInputPolicyAdapter_centralizesNativeInputDecisions();

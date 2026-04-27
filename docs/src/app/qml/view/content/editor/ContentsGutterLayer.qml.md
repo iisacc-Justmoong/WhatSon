@@ -10,7 +10,8 @@ entries and marker geometry, then hands those values to the gutter as plain mode
 ## Public Surface
 
 - `visibleLineNumbersModel`: array of `{ lineNumber, y }` entries already culled to the current viewport.
-- `effectiveGutterMarkers`: normalized marker payloads (`type`, `startLine`, `lineSpan`, `color`).
+- `effectiveGutterMarkers`: normalized external marker payloads (`type`, `startLine`, `lineSpan`, `color`).
+  The parent no longer injects an implicit cursor/current-line marker into this model.
 - `lineNumberColumnLeft` / `lineNumberColumnTextWidth`: text column geometry.
 - `lineNumberRightInset`: dedicated breathing room between the right-aligned line numbers and the note body.
   The parent now keeps this smaller than the editor text inset so the gutter no longer feels visually detached.
@@ -51,6 +52,8 @@ entries and marker geometry, then hands those values to the gutter as plain mode
 - Line numbers should not disappear after editor refactors that touch the parent snapshot helpers; the gutter expects a
   concrete `visibleLineNumbersModel` array at all times.
 - Active line styling should track the current cursor line without creating repeated binding-loop warnings.
+- Active line styling should not create a separate current-line marker dot; the active line is indicated by the line
+  number text style only.
 - Marker pills should remain aligned with the same logical lines as the line-number snapshot.
 - Marker color resolution should remain total for `current`, `changed`, `conflict`, and unexpected fallback input.
 - Mobile editor routes should not instantiate visible gutter chrome or reserve gutter width.
