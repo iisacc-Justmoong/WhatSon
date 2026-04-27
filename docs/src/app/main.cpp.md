@@ -29,12 +29,14 @@
 - Startup hub resolution no longer synthesizes a `blueprint/*.wshub` fallback, so an unmounable persisted selection now
   leaves the composition root unmounted until onboarding opens a real workspace.
 - Regular startup now distinguishes between:
-  - a persisted selection that merely resolved to a candidate `.wshub` path, and
-  - a hub connection that actually loaded into runtime successfully.
-  Startup onboarding is now driven by that successful runtime connection state, not just by the earlier resolver step.
-- If startup hub mounting/resolution appears to succeed but `loadStartupHubIntoRuntime(...)` still fails, `main.cpp`
-  now reports that failure through `OnboardingHubController::failHubLoad(...)` and immediately falls back to the same
-  onboarding presentation used for an unmounted startup.
+  - a persisted selection that cannot be mounted, and
+  - a persisted selection that mounts and can immediately route to the workspace shell.
+  The runtime domain load is no longer part of the pre-window decision.
+- If startup hub mounting succeeds, `main.cpp` schedules `whatson-startup-runtime-load` as an LVRS
+  `AfterFirstIdle` lifecycle task. The task performs the normal full runtime load, then publishes the loaded hub path
+  into sync/import/calendar state after the first workspace window has been created.
+- If that post-idle runtime load fails, `main.cpp` reports the failure through `OnboardingHubController` without
+  blocking the initial window on disk I/O or snapshot application.
 - Regular startup now forks desktop and mobile onboarding presentation again:
   - desktop loads `Main.qml` plus a dedicated onboarding window when no startup hub is connected successfully,
   - Android keeps using the embedded `/onboarding` route inside `Main.qml` when startup connection fails,
@@ -52,9 +54,9 @@
 - Foreground scheduler and permission startup now run through LVRS `ForegroundServiceGate`; `main.cpp` builds a
   lifecycle context from the loaded workspace root and starts those services only after a visible workspace window is
   present.
-- Deferred startup hierarchy prefetch now runs as a non-fatal LVRS `QmlBootstrapTask` at
-  `QmlAppLifecycleStage::AfterFirstIdle`, so Event/Preset follow-up loads are attached to the app lifecycle instead of
-  a local `QTimer` chain in `main.cpp`.
+- Startup runtime loading now runs as a non-fatal LVRS `QmlBootstrapTask` at
+  `QmlAppLifecycleStage::AfterFirstIdle`; the old partial startup load plus deferred Event/Preset prefetch path has
+  been removed.
 - Permission startup wiring now consumes `permissions/WhatSonPermissionBootstrapper.hpp` after consolidating
   permission bootstrap code under `src/app/permissions`.
 - Application bootstrap no longer forces Qt scene-graph visualization environment variables and no longer auto-opens

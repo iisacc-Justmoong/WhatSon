@@ -11,6 +11,7 @@ FocusScope {
     required property var blockData
     property bool nativeTextInputPriority: false
     property bool paperPaletteEnabled: false
+    property var tagManagementShortcutKeyPressHandler: null
 
     signal activated()
     signal adjacentAtomicBlockDeleteRequested(string side)
@@ -125,6 +126,13 @@ FocusScope {
         return documentTextBlockController.shortcutInsertionSourceOffset()
     }
 
+    function invokeTagManagementShortcut(event) {
+        const handler = textBlock.tagManagementShortcutKeyPressHandler
+        if (!handler || typeof handler !== "function")
+            return false
+        return !!handler(event)
+    }
+
     ContentsTextFormatRenderer {
         id: inlineStyleRenderer
 
@@ -163,6 +171,9 @@ FocusScope {
         preferNativeInputHandling: true
         showRenderedOutput: textBlock.inlineStyleOverlayVisible
         showScrollBar: false
+        tagManagementKeyPressHandler: function (event) {
+            return textBlock.invokeTagManagementShortcut(event)
+        }
         text: textBlock.authoritativePlainText
         textColor: textBlock.editorTextColor
         wrapMode: TextEdit.Wrap

@@ -39,8 +39,9 @@ Provides the single document-block adapter that keeps `ContentsStructuredDocumen
 - The adapter now also exposes mounted delegates' native composition state (`inputMethodComposing` and `preeditText`) to
   the structured flow.
   Window-level shortcuts can therefore stand down while a nested editor is in IME composition.
-- The adapter keeps host-provided tag-management shortcut forwarding limited to selected atomic-block key handling.
-  Text-like delegates no longer receive QML shortcut handlers on top of their live `TextEdit`.
+- The adapter forwards the host-provided tag-management shortcut hook into text-like delegates only for the shared
+  live `TextEdit` tag-command path. That keeps clipboard-image resource paste available from the focused editor while
+  ordinary text paste and navigation still fall back to native `TextEdit` behavior when the hook declines the event.
 - Atomic resource/break blocks now leave modified OS text-navigation chords to the platform path.
   Only plain atomic-block navigation/deletion and exact Command Up/Down document-boundary movement remain host-owned,
   so text-navigation chords are left to the platform text editor.

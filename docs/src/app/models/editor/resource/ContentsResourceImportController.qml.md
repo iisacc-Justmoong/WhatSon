@@ -17,6 +17,9 @@ desktop/mobile host.
   Pending surface restores are resumed only after native input composition settles.
 - Delegates duplicate-import prompt state and conflict policy execution to
   `ContentsResourceImportConflictController.qml`.
+- Exposes `pasteClipboardImageAsResource()` for the live editor `TextEdit` tag-management hook and the command surface
+  shortcut path. Both routes share the same conflict prompt, resource import, RAW `<resource ... />` insertion, and
+  runtime resource reload flow.
 
 ## Current Boundary
 

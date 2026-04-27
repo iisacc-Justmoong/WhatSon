@@ -41,7 +41,8 @@
   to assemble them ad hoc at render time, which keeps month bootstrap aligned with MVVM ownership and reduces
   page-open churn.
 - Calendar note projection refresh is now driven by the library runtime viewmodel's note-snapshot signal instead of a
-  month-page open side effect, so note mounting stays deterministic even during deferred startup loads.
+  month-page open side effect, so note mounting stays deterministic when the post-idle startup runtime load publishes
+  the first library snapshot.
 - `WeekCalendarViewModel` now owns both the canonical week anchor and the lazy horizontal timeline day window, while
   the QML week surface is reduced to viewport math and hit interaction for that data.
 - `WeekCalendarViewModel::trimTimelineWindow(...)` explicitly normalizes Qt container sizes into integer window counts

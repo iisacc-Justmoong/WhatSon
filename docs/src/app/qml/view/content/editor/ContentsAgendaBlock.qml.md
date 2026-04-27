@@ -40,6 +40,8 @@ Renders one agenda card as a native document block inside the editor flow.
   This prevents fast mobile typing/backspace from using a stale task snapshot as the next splice baseline.
 - Agenda task rows no longer define custom boundary-key handlers.
   The nested `TextEdit` owns arrow navigation, Enter, iOS keyboard gestures, repeated delete, and selection behavior.
+- Agenda task editors still receive the shared tag-management hook for clipboard-image resource paste. If the clipboard
+  does not contain an importable image, the paste event is released back to native task text paste.
 - Focus restoration now also accepts `entryBoundary: "before" | "after"` hints from the flow host.
   Sequential block traversal can therefore enter the agenda at its first task head or its last task tail instead of
   always collapsing back to the first task on reparsed focus restore.

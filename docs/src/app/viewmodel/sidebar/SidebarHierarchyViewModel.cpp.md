@@ -3,7 +3,8 @@
 ## Implementation Notes
 - Constructor now initializes the `IActiveHierarchySource` base.
 - Selection-store ownership and provider wiring remain the same; only the active-binding notification surface grew.
-- The new interface is used by deferred startup hierarchy loading.
+- The active hierarchy interface is now consumed by view/panel binding code only; startup runtime loading no longer
+  uses sidebar activation as a deferred bootstrap trigger.
 - Active hierarchy consumers that need a coherent "toolbar index + hierarchy viewmodel + note-list model" tuple can now
   subscribe to `activeBindingsChanged()`. The implementation emits that composite signal after selection changes and
   after provider mapping refreshes, so QML shells can refresh their entire active-binding snapshot in one step and

@@ -11,11 +11,9 @@ namespace WhatSon::Runtime::Bootstrap
         bool onboardingOnly = false;
     };
 
-    [[nodiscard]] inline bool startupWorkspaceReady(
-        const bool startupHubMounted,
-        const bool startupRuntimeLoaded) noexcept
+    [[nodiscard]] inline bool startupWorkspaceReady(const bool startupHubMounted) noexcept
     {
-        return startupHubMounted && startupRuntimeLoaded;
+        return startupHubMounted;
     }
 
     void prependEnvPath(const char* variableName, const QByteArray& path);

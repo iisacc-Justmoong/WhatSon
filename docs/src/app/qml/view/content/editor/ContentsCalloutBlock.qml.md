@@ -55,6 +55,8 @@ Renders one callout card as a native document block inside the editor flow.
   the callout body.
 - Plain Backspace on an empty callout emits `blockDeletionRequested("backward")`, which the document block host forwards
   into the shared RAW block deletion path.
+- Clipboard-image paste first passes through the shared document tag-management hook. When the clipboard is not an
+  image import, the event falls back to the callout's native text paste or local Enter/Backspace tag commands.
 - The block now also accepts `paperPaletteEnabled`.
   Page/print mode therefore swaps the callout frame/divider/body text away from the dark-theme hardcoded white-text
   palette into a paper-safe light card with dark text.

@@ -193,6 +193,9 @@
 - Editor custom input is now policy-locked off by default through `editorCustomTextInputEnabled: false`.
   Only tag-management commands may sit outside the native `TextEdit` input path: inline style tags, resource paste,
   agenda/callout/break source-tag insertion, and selected atomic resource/break block management.
+- Clipboard-image paste is routed through the live `TextEdit` tag-management hook only after the key event matches the
+  platform paste shortcut and the resource import controller confirms an importable image. If the hook declines, the
+  event is released back to native text paste.
 - Markdown list shortcuts and markdown list Enter continuation are intentionally absent from the editor input layer.
   Users can still type markdown marker text literally, but the editor does not intercept list keys or synthesize the
   next list line.

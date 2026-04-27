@@ -651,6 +651,14 @@ void WhatSonCppRegressionTests::qmlEditorViewDirectory_containsOnlyViewSurfaceFi
     const QString testCmakeSource = readUtf8SourceFile(QStringLiteral("test/cpp/CMakeLists.txt"));
     const QString displayViewSource = readUtf8SourceFile(
         QStringLiteral("src/app/qml/view/content/editor/ContentsDisplayView.qml"));
+    const QString documentBlockSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/content/editor/ContentsDocumentBlock.qml"));
+    const QString documentTextBlockSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/content/editor/ContentsDocumentTextBlock.qml"));
+    const QString calloutBlockSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/content/editor/ContentsCalloutBlock.qml"));
+    const QString agendaBlockSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/content/editor/ContentsAgendaBlock.qml"));
     const QString auxiliaryHostSource = readUtf8SourceFile(
         QStringLiteral("src/app/qml/view/content/editor/ContentsDisplayAuxiliaryRailHost.qml"));
     const QString surfaceHostSource = readUtf8SourceFile(
@@ -704,6 +712,10 @@ void WhatSonCppRegressionTests::qmlEditorViewDirectory_containsOnlyViewSurfaceFi
     QVERIFY(!activeSurfaceAdapterCpp.isEmpty());
     QVERIFY(!surfacePolicyHeader.isEmpty());
     QVERIFY(!surfacePolicyCpp.isEmpty());
+    QVERIFY(!documentBlockSource.isEmpty());
+    QVERIFY(!documentTextBlockSource.isEmpty());
+    QVERIFY(!calloutBlockSource.isEmpty());
+    QVERIFY(!agendaBlockSource.isEmpty());
     QVERIFY(!auxiliaryHostSource.isEmpty());
     QVERIFY(!surfaceHostSource.isEmpty());
     QVERIFY(!overlayHostSource.isEmpty());
@@ -764,6 +776,17 @@ void WhatSonCppRegressionTests::qmlEditorViewDirectory_containsOnlyViewSurfaceFi
     QVERIFY(eventPumpSource.contains(QStringLiteral("Connections {")));
     QVERIFY(inputCommandSurfaceSource.contains(QStringLiteral("Shortcut {")));
     QVERIFY(inputCommandSurfaceSource.contains(QStringLiteral("LV.ContextMenu")));
+    QVERIFY(documentBlockSource.contains(
+        QStringLiteral("tagManagementShortcutKeyPressHandler: documentBlock.tagManagementShortcutKeyPressHandler")));
+    QVERIFY(documentTextBlockSource.contains(QStringLiteral("property var tagManagementShortcutKeyPressHandler")));
+    QVERIFY(documentTextBlockSource.contains(QStringLiteral("function invokeTagManagementShortcut(event)")));
+    QVERIFY(documentTextBlockSource.contains(QStringLiteral("tagManagementKeyPressHandler: function (event)")));
+    QVERIFY(calloutBlockSource.contains(QStringLiteral("property var tagManagementShortcutKeyPressHandler")));
+    QVERIFY(calloutBlockSource.contains(QStringLiteral("function invokeDocumentTagManagementShortcut(event)")));
+    QVERIFY(calloutBlockSource.contains(QStringLiteral("calloutBlock.invokeDocumentTagManagementShortcut(event)")));
+    QVERIFY(agendaBlockSource.contains(QStringLiteral("property var tagManagementShortcutKeyPressHandler")));
+    QVERIFY(agendaBlockSource.contains(QStringLiteral("function invokeTagManagementShortcut(event)")));
+    QVERIFY(agendaBlockSource.contains(QStringLiteral("agendaBlock.invokeTagManagementShortcut(event)")));
     QVERIFY(mutationControllerSource.contains(QStringLiteral("function applyDocumentSourceMutation(")));
     QVERIFY(geometryControllerSource.contains(QStringLiteral("function refreshMinimapSnapshot()")));
 

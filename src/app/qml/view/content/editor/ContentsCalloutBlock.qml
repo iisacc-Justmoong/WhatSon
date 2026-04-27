@@ -11,6 +11,7 @@ FocusScope {
     required property var blockData
     property bool nativeTextInputPriority: false
     property bool paperPaletteEnabled: false
+    property var tagManagementShortcutKeyPressHandler: null
 
     signal activated()
     signal boundaryNavigationRequested(string axis, string side)
@@ -99,6 +100,13 @@ FocusScope {
         return calloutBlockController.shortcutInsertionSourceOffset()
     }
 
+    function invokeDocumentTagManagementShortcut(event) {
+        const handler = calloutBlock.tagManagementShortcutKeyPressHandler
+        if (!handler || typeof handler !== "function")
+            return false
+        return !!handler(event)
+    }
+
     Rectangle {
         id: calloutFrame
 
@@ -153,6 +161,8 @@ FocusScope {
                 showRenderedOutput: false
                 showScrollBar: false
                 tagManagementKeyPressHandler: function (event) {
+                    if (calloutBlock.invokeDocumentTagManagementShortcut(event))
+                        return true
                     return calloutBlockController.handleTagManagementKeyPress(event)
                 }
                 text: calloutBlock.calloutText

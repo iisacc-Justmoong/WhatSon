@@ -188,6 +188,7 @@ FocusScope {
             paragraphBoundaryOperationsEnabled: documentBlock.paragraphBoundaryOperationsEnabled
             paragraphMergeableAfter: documentBlock.paragraphMergeableAfter
             paragraphMergeableBefore: documentBlock.paragraphMergeableBefore
+            tagManagementShortcutKeyPressHandler: documentBlock.tagManagementShortcutKeyPressHandler
             width: documentBlock.width
         }
     }
@@ -199,6 +200,7 @@ FocusScope {
             blockData: documentBlock.blockData
             nativeTextInputPriority: documentBlock.nativeTextInputPriority
             paperPaletteEnabled: documentBlock.paperPaletteEnabled
+            tagManagementShortcutKeyPressHandler: documentBlock.tagManagementShortcutKeyPressHandler
             width: documentBlock.width
         }
     }
@@ -210,6 +212,7 @@ FocusScope {
             blockData: documentBlock.blockData
             nativeTextInputPriority: documentBlock.nativeTextInputPriority
             paperPaletteEnabled: documentBlock.paperPaletteEnabled
+            tagManagementShortcutKeyPressHandler: documentBlock.tagManagementShortcutKeyPressHandler
             width: documentBlock.width
         }
     }

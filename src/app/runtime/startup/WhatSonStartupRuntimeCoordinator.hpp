@@ -2,7 +2,6 @@
 
 #include "app/runtime/threading/IWhatSonRuntimeParallelLoader.hpp"
 
-#include <QSet>
 #include <QString>
 
 class LibraryHierarchyViewModel;
@@ -14,7 +13,6 @@ class ProgressHierarchyViewModel;
 class EventHierarchyViewModel;
 class PresetHierarchyViewModel;
 class WhatSonHubRuntimeStore;
-class IActiveHierarchySource;
 
 class WhatSonStartupRuntimeCoordinator final
 {
@@ -27,17 +25,9 @@ public:
     void setTargets(const RuntimeTargets& targets);
     void setParallelLoader(const IWhatSonRuntimeParallelLoader* loader);
     bool loadHubIntoRuntime(const QString& hubPath, QString* errorMessage = nullptr);
-    bool loadStartupHubIntoRuntime(const QString& hubPath, QString* errorMessage = nullptr);
     bool reloadResourcesDomainIntoRuntime(const QString& hubPath, QString* errorMessage = nullptr);
-    bool ensureDeferredStartupHierarchyLoaded(int hierarchyIndex, const QString& reason);
-    void bindSidebarActivation(IActiveHierarchySource* sidebarHierarchyViewModel);
-
-    bool startupDeferredBootstrapActive() const noexcept;
-    QSet<int> startupLoadedHierarchyIndices() const;
-    QString currentLoadedHubPath() const;
 
 private:
-    void disableStartupDeferredBootstrap();
     void applyHubRuntimeState(
         const QString& normalizedHubPath,
         const IWhatSonRuntimeParallelLoader::RequestedDomains& requestedDomains) const;
@@ -48,7 +38,4 @@ private:
 
     RuntimeTargets m_targets;
     const IWhatSonRuntimeParallelLoader* m_parallelLoader = nullptr;
-    QString m_currentLoadedHubPath;
-    bool m_startupDeferredBootstrapActive = false;
-    QSet<int> m_startupLoadedHierarchyIndices;
 };

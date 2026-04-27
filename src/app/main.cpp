@@ -69,6 +69,7 @@
 #include <QtCore/qglobal.h>
 
 #include <cstdlib>
+#include <functional>
 
 void qml_register_types_LVRS();
 
@@ -98,72 +99,64 @@ lvrs::QmlAppLifecycleContext workspaceLifecycleContext(
     return context;
 }
 
-QVector<int> deferredStartupHierarchyPrefetchOrder()
-{
-    return {
-        static_cast<int>(WhatSon::Sidebar::HierarchyDomain::Event),
-        static_cast<int>(WhatSon::Sidebar::HierarchyDomain::Preset)
-    };
-}
-
-QString deferredStartupHierarchyPrefetchLabel(const int hierarchyIndex)
-{
-    switch (hierarchyIndex)
-    {
-    case static_cast<int>(WhatSon::Sidebar::HierarchyDomain::Event):
-        return QStringLiteral("event");
-    case static_cast<int>(WhatSon::Sidebar::HierarchyDomain::Preset):
-        return QStringLiteral("preset");
-    default:
-        return QStringLiteral("unknown");
-    }
-}
-
-bool scheduleDeferredStartupHierarchyPrefetch(
+bool scheduleStartupRuntimeLoadAfterFirstIdle(
     QGuiApplication& app,
     QQmlApplicationEngine& engine,
     QObject* workspaceRootObject,
-    WhatSonStartupRuntimeCoordinator& startupRuntimeCoordinator)
+    const WhatSon::Runtime::Startup::StartupHubSelection& startupHubSelection,
+    WhatSonStartupRuntimeCoordinator& startupRuntimeCoordinator,
+    OnboardingHubController& onboardingHubController,
+    const std::function<void(const QString&, const QByteArray&)>& publishLoadedHubConnection)
 {
-    if (!startupRuntimeCoordinator.startupDeferredBootstrapActive())
+    if (!startupHubSelection.mounted)
     {
         return true;
     }
 
-    lvrs::QmlBootstrapTask prefetchTask;
-    prefetchTask.name = QStringLiteral("whatson-deferred-startup-hierarchy-prefetch");
-    prefetchTask.stage = lvrs::QmlAppLifecycleStage::AfterFirstIdle;
-    prefetchTask.priority = 10;
-    prefetchTask.fatal = false;
-    prefetchTask.run = [&startupRuntimeCoordinator](const lvrs::QmlAppLifecycleContext&, QString* errorMessage)
+    lvrs::QmlBootstrapTask runtimeLoadTask;
+    runtimeLoadTask.name = QStringLiteral("whatson-startup-runtime-load");
+    runtimeLoadTask.stage = lvrs::QmlAppLifecycleStage::AfterFirstIdle;
+    runtimeLoadTask.priority = 10;
+    runtimeLoadTask.fatal = false;
+    runtimeLoadTask.run =
+        [&startupRuntimeCoordinator,
+         &onboardingHubController,
+         startupHubSelection,
+         publishLoadedHubConnection](const lvrs::QmlAppLifecycleContext&, QString* errorMessage)
     {
-        QStringList failedHierarchyDomains;
-        for (const int hierarchyIndex : deferredStartupHierarchyPrefetchOrder())
+        QString loadError;
+        const bool loaded = startupRuntimeCoordinator.loadHubIntoRuntime(
+            startupHubSelection.hubPath,
+            &loadError);
+        if (loaded)
         {
-            const bool loaded = startupRuntimeCoordinator.ensureDeferredStartupHierarchyLoaded(
-                hierarchyIndex,
-                QStringLiteral("startup-after-first-idle-prefetch"));
-            if (!loaded)
+            if (publishLoadedHubConnection)
             {
-                failedHierarchyDomains.append(deferredStartupHierarchyPrefetchLabel(hierarchyIndex));
+                publishLoadedHubConnection(
+                    startupHubSelection.hubPath,
+                    startupHubSelection.accessBookmark);
             }
-        }
-
-        if (failedHierarchyDomains.isEmpty())
-        {
+            onboardingHubController.completeWorkspaceTransition();
             return true;
         }
 
+        const QString failureMessage = loadError.trimmed().isEmpty()
+                                           ? QStringLiteral("Failed to load the startup WhatSon Hub.")
+                                           : loadError.trimmed();
+        onboardingHubController.failWorkspaceTransition(failureMessage);
+        qWarning().noquote()
+            << QStringLiteral("Failed to load startup WhatSon Hub '%1' after first idle: %2")
+                   .arg(startupHubSelection.hubPath, failureMessage);
+
         if (errorMessage != nullptr)
         {
-            *errorMessage = QStringLiteral("Deferred startup hierarchy prefetch failed for: %1")
-                .arg(failedHierarchyDomains.join(QStringLiteral(", ")));
+            *errorMessage = failureMessage;
         }
         return false;
     };
 
     lvrs::QmlAppLifecycleHooks lifecycleHooks;
-    lifecycleHooks.tasks.append(prefetchTask);
+    lifecycleHooks.tasks.append(runtimeLoadTask);
     return lvrs::scheduleQmlAppLifecycleStage(
         &app,
         workspaceLifecycleContext(app, engine, workspaceRootObject, lvrs::QmlAppLifecycleStage::AfterFirstIdle),
@@ -482,28 +475,32 @@ int main(int argc, char* argv[])
         });
     OnboardingRouteBootstrapController onboardingRouteBootstrapController;
     onboardingRouteBootstrapController.setHubController(&onboardingHubController);
+    const auto publishLoadedHubConnection =
+        [&selectedHubStore,
+         &hubSyncController,
+         &resourcesImportViewModel,
+         &calendarBoardStore,
+         &libraryHierarchyViewModel](const QString& hubPath, const QByteArray& accessBookmark)
+    {
+        selectedHubStore.setSelectedHubSelection(hubPath, accessBookmark);
+        hubSyncController.setCurrentHubPath(hubPath);
+        resourcesImportViewModel.setCurrentHubPath(hubPath);
+        calendarBoardStore.setProjectedNotesHubPath(hubPath);
+        calendarBoardStore.reloadProjectedNotesFromSnapshot(
+            libraryHierarchyViewModel.indexedNotesSnapshot());
+    };
     QObject::connect(
         &onboardingHubController,
         &OnboardingHubController::hubLoaded,
         &app,
         [&onboardingHubController,
-         &selectedHubStore,
-         &hubSyncController,
-         &resourcesImportViewModel,
-         &calendarBoardStore,
-         &libraryHierarchyViewModel](const QString& hubPath)
+         &publishLoadedHubConnection](const QString& hubPath)
         {
-            selectedHubStore.setSelectedHubSelection(
+            publishLoadedHubConnection(
                 hubPath,
                 onboardingHubController.currentHubAccessBookmark());
-            hubSyncController.setCurrentHubPath(hubPath);
-            resourcesImportViewModel.setCurrentHubPath(hubPath);
-            calendarBoardStore.setProjectedNotesHubPath(hubPath);
-            calendarBoardStore.reloadProjectedNotesFromSnapshot(
-                libraryHierarchyViewModel.indexedNotesSnapshot());
         });
 
-    bool initialHubLoaded = false;
     const WhatSonHubMountValidator startupHubMountValidator;
     const WhatSon::Runtime::Startup::StartupHubSelection startupHubSelection =
         WhatSon::Runtime::Startup::resolveStartupHubSelection(
@@ -516,33 +513,8 @@ int main(int argc, char* argv[])
 
     if (startupHubSelection.mounted)
     {
-        QString errorMessage;
-        initialHubLoaded = startupRuntimeCoordinator.loadStartupHubIntoRuntime(
-            startupHubSelection.hubPath,
-            &errorMessage);
-        if (initialHubLoaded)
-        {
-            onboardingHubController.syncCurrentHubSelection(startupHubSelection.hubPath);
-            onboardingHubController.completeWorkspaceTransition();
-            selectedHubStore.setSelectedHubSelection(
-                startupHubSelection.hubPath,
-                startupHubSelection.accessBookmark);
-            hubSyncController.setCurrentHubPath(startupHubSelection.hubPath);
-            resourcesImportViewModel.setCurrentHubPath(startupHubSelection.hubPath);
-            calendarBoardStore.setProjectedNotesHubPath(startupHubSelection.hubPath);
-            calendarBoardStore.reloadProjectedNotesFromSnapshot(
-                libraryHierarchyViewModel.indexedNotesSnapshot());
-        }
-        if (!initialHubLoaded)
-        {
-            const QString startupLoadFailureMessage = errorMessage.trimmed().isEmpty()
-                                                          ? QStringLiteral("Failed to load the startup WhatSon Hub.")
-                                                          : errorMessage.trimmed();
-            onboardingHubController.failWorkspaceTransition(startupLoadFailureMessage);
-            qWarning().noquote()
-                << QStringLiteral("Failed to load startup WhatSon Hub '%1': %2")
-                       .arg(startupHubSelection.hubPath, startupLoadFailureMessage);
-        }
+        onboardingHubController.syncCurrentHubSelection(startupHubSelection.hubPath);
+        onboardingHubController.completeWorkspaceTransition();
     }
 
     hierarchyViewModelProvider.setMappings(QVector<HierarchyViewModelProvider::Mapping>{
@@ -564,8 +536,6 @@ int main(int argc, char* argv[])
     detailPanelCurrentHierarchyBinder.setNoteDetailPanelViewModel(&noteDetailPanelViewModel);
     detailPanelCurrentHierarchyBinder.setResourceDetailPanelViewModel(&resourceDetailPanelViewModel);
     detailPanelCurrentHierarchyBinder.setHierarchyContextSource(&sidebarHierarchyViewModel);
-
-    startupRuntimeCoordinator.bindSidebarActivation(&sidebarHierarchyViewModel);
 
     WhatSon::Policy::ArchitecturePolicyLock::lock();
 
@@ -798,8 +768,7 @@ int main(int argc, char* argv[])
     const bool useEmbeddedStartupOnboarding = false;
 #endif
     const bool startupWorkspaceAvailable = WhatSon::Runtime::Bootstrap::startupWorkspaceReady(
-        startupHubSelection.mounted,
-        initialHubLoaded);
+        startupHubSelection.mounted);
     const bool showDesktopStartupOnboarding = !startupWorkspaceAvailable && !useEmbeddedStartupOnboarding;
     onboardingRouteBootstrapController.configure(useEmbeddedStartupOnboarding, startupWorkspaceAvailable);
 
@@ -823,9 +792,16 @@ int main(int argc, char* argv[])
         return EXIT_FAILURE;
     }
 
-    if (!scheduleDeferredStartupHierarchyPrefetch(app, engine, mainWindow, startupRuntimeCoordinator))
+    if (!scheduleStartupRuntimeLoadAfterFirstIdle(
+            app,
+            engine,
+            mainWindow,
+            startupHubSelection,
+            startupRuntimeCoordinator,
+            onboardingHubController,
+            publishLoadedHubConnection))
     {
-        qWarning().noquote() << QStringLiteral("Failed to schedule deferred startup hierarchy prefetch lifecycle task.");
+        qWarning().noquote() << QStringLiteral("Failed to schedule startup runtime load lifecycle task.");
         return EXIT_FAILURE;
     }
 

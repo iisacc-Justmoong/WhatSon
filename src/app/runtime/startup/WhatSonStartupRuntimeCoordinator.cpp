@@ -3,7 +3,6 @@
 #include "app/models/file/WhatSonDebugTrace.hpp"
 #include "app/models/file/hub/WhatSonHubPathUtils.hpp"
 #include "app/models/file/hub/WhatSonHubRuntimeStore.hpp"
-#include "app/runtime/threading/WhatSonRuntimeDomainSnapshots.hpp"
 #include "app/viewmodel/hierarchy/bookmarks/BookmarksHierarchyViewModel.hpp"
 #include "app/viewmodel/hierarchy/event/EventHierarchyViewModel.hpp"
 #include "app/viewmodel/hierarchy/library/LibraryHierarchyViewModel.hpp"
@@ -12,8 +11,6 @@
 #include "app/viewmodel/hierarchy/projects/ProjectsHierarchyViewModel.hpp"
 #include "app/viewmodel/hierarchy/resources/ResourcesHierarchyViewModel.hpp"
 #include "app/viewmodel/hierarchy/tags/TagsHierarchyViewModel.hpp"
-#include "app/viewmodel/sidebar/HierarchySidebarDomain.hpp"
-#include "app/viewmodel/sidebar/IActiveHierarchySource.hpp"
 
 #include <QDebug>
 #include <QStringList>
@@ -173,7 +170,6 @@ bool WhatSonStartupRuntimeCoordinator::loadHubIntoRuntimeWithRequestedDomains(
             QStringLiteral("reason=hub.runtime load failed"));
     }
 
-    m_currentLoadedHubPath = normalizedHubPath;
     if (errorMessage != nullptr)
     {
         errorMessage->clear();
@@ -183,39 +179,10 @@ bool WhatSonStartupRuntimeCoordinator::loadHubIntoRuntimeWithRequestedDomains(
 
 bool WhatSonStartupRuntimeCoordinator::loadHubIntoRuntime(const QString& hubPath, QString* errorMessage)
 {
-    const bool succeeded = loadHubIntoRuntimeWithRequestedDomains(
+    return loadHubIntoRuntimeWithRequestedDomains(
         hubPath,
         IWhatSonRuntimeParallelLoader::RequestedDomains{},
         errorMessage);
-    if (succeeded)
-    {
-        disableStartupDeferredBootstrap();
-    }
-    return succeeded;
-}
-
-bool WhatSonStartupRuntimeCoordinator::loadStartupHubIntoRuntime(const QString& hubPath, QString* errorMessage)
-{
-    disableStartupDeferredBootstrap();
-
-    IWhatSonRuntimeParallelLoader::RequestedDomains requestedDomains;
-    requestedDomains.event = false;
-    requestedDomains.preset = false;
-
-    const bool succeeded = loadHubIntoRuntimeWithRequestedDomains(hubPath, requestedDomains, errorMessage);
-    if (!succeeded)
-    {
-        return false;
-    }
-
-    m_startupLoadedHierarchyIndices.insert(WhatSon::Sidebar::kHierarchyDefaultIndex);
-    m_startupLoadedHierarchyIndices.insert(static_cast<int>(WhatSon::Sidebar::HierarchyDomain::Projects));
-    m_startupLoadedHierarchyIndices.insert(static_cast<int>(WhatSon::Sidebar::HierarchyDomain::Bookmarks));
-    m_startupLoadedHierarchyIndices.insert(static_cast<int>(WhatSon::Sidebar::HierarchyDomain::Tags));
-    m_startupLoadedHierarchyIndices.insert(static_cast<int>(WhatSon::Sidebar::HierarchyDomain::Resources));
-    m_startupLoadedHierarchyIndices.insert(static_cast<int>(WhatSon::Sidebar::HierarchyDomain::Progress));
-    m_startupDeferredBootstrapActive = true;
-    return true;
 }
 
 bool WhatSonStartupRuntimeCoordinator::reloadResourcesDomainIntoRuntime(const QString& hubPath, QString* errorMessage)
@@ -231,114 +198,4 @@ bool WhatSonStartupRuntimeCoordinator::reloadResourcesDomainIntoRuntime(const QS
     requestedDomains.preset = false;
     requestedDomains.hubRuntimeStore = true;
     return loadHubIntoRuntimeWithRequestedDomains(hubPath, requestedDomains, errorMessage);
-}
-
-bool WhatSonStartupRuntimeCoordinator::ensureDeferredStartupHierarchyLoaded(int hierarchyIndex, const QString& reason)
-{
-    const int normalizedIndex = WhatSon::Sidebar::normalizeHierarchyIndex(hierarchyIndex);
-    if (!m_startupDeferredBootstrapActive
-        || m_currentLoadedHubPath.trimmed().isEmpty()
-        || m_startupLoadedHierarchyIndices.contains(normalizedIndex))
-    {
-        return true;
-    }
-
-    auto domainNameForIndex = [](const int index) -> QString
-    {
-        switch (index)
-        {
-        case static_cast<int>(WhatSon::Sidebar::HierarchyDomain::Event):
-            return QStringLiteral("event");
-        case static_cast<int>(WhatSon::Sidebar::HierarchyDomain::Preset):
-            return QStringLiteral("preset");
-        default:
-            return QStringLiteral("unknown");
-        }
-    };
-
-    IWhatSonRuntimeParallelLoader::RequestedDomains requestedDomains;
-    requestedDomains.library = false;
-    requestedDomains.projects = false;
-    requestedDomains.bookmarks = false;
-    requestedDomains.tags = false;
-    requestedDomains.resources = false;
-    requestedDomains.progress = false;
-    requestedDomains.event = normalizedIndex == static_cast<int>(WhatSon::Sidebar::HierarchyDomain::Event);
-    requestedDomains.preset = normalizedIndex == static_cast<int>(WhatSon::Sidebar::HierarchyDomain::Preset);
-    requestedDomains.hubRuntimeStore = true;
-
-    QString loadError;
-    const bool loadSucceeded = loadHubIntoRuntimeWithRequestedDomains(
-        m_currentLoadedHubPath,
-        requestedDomains,
-        &loadError);
-
-    const QString domainName = domainNameForIndex(normalizedIndex);
-    if (loadSucceeded)
-    {
-        m_startupLoadedHierarchyIndices.insert(normalizedIndex);
-        const bool deferredHierarchyBootstrapCompleted =
-            m_startupLoadedHierarchyIndices.contains(static_cast<int>(WhatSon::Sidebar::HierarchyDomain::Event))
-            && m_startupLoadedHierarchyIndices.contains(static_cast<int>(WhatSon::Sidebar::HierarchyDomain::Preset));
-        if (deferredHierarchyBootstrapCompleted)
-        {
-            m_startupDeferredBootstrapActive = false;
-        }
-        WhatSon::Debug::trace(
-            QStringLiteral("startup.runtime"),
-            QStringLiteral("deferredLoad.success"),
-            QStringLiteral("domain=%1 reason=%2").arg(domainName, reason));
-        return true;
-    }
-
-    const QString trimmedError = loadError.trimmed();
-    qWarning().noquote()
-        << QStringLiteral("Deferred startup load failed for domain '%1': %2")
-               .arg(domainName,
-                    trimmedError.isEmpty() ? QStringLiteral("unknown load error") : trimmedError);
-    WhatSon::Debug::trace(
-        QStringLiteral("startup.runtime"),
-        QStringLiteral("deferredLoad.failed"),
-        QStringLiteral("domain=%1 reason=%2 error=%3").arg(domainName, reason, trimmedError));
-    return false;
-}
-
-void WhatSonStartupRuntimeCoordinator::bindSidebarActivation(IActiveHierarchySource* sidebarHierarchyViewModel)
-{
-    if (sidebarHierarchyViewModel == nullptr)
-    {
-        return;
-    }
-
-    QObject::connect(
-        sidebarHierarchyViewModel,
-        &IActiveHierarchySource::activeHierarchyIndexChanged,
-        sidebarHierarchyViewModel,
-        [this, sidebarHierarchyViewModel]()
-        {
-            ensureDeferredStartupHierarchyLoaded(
-                sidebarHierarchyViewModel->activeHierarchyIndex(),
-                QStringLiteral("sidebar-activation"));
-        });
-}
-
-bool WhatSonStartupRuntimeCoordinator::startupDeferredBootstrapActive() const noexcept
-{
-    return m_startupDeferredBootstrapActive;
-}
-
-QSet<int> WhatSonStartupRuntimeCoordinator::startupLoadedHierarchyIndices() const
-{
-    return m_startupLoadedHierarchyIndices;
-}
-
-QString WhatSonStartupRuntimeCoordinator::currentLoadedHubPath() const
-{
-    return m_currentLoadedHubPath;
-}
-
-void WhatSonStartupRuntimeCoordinator::disableStartupDeferredBootstrap()
-{
-    m_startupDeferredBootstrapActive = false;
-    m_startupLoadedHierarchyIndices.clear();
 }

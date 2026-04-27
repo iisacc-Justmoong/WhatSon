@@ -1,11 +1,9 @@
 #include "test/cpp/whatson_cpp_regression_tests.hpp"
 
-void WhatSonCppRegressionTests::appLaunchSupport_requiresMountedAndLoadedHubForStartupWorkspace()
+void WhatSonCppRegressionTests::appLaunchSupport_requiresMountedHubForStartupWorkspace()
 {
-    QVERIFY(!WhatSon::Runtime::Bootstrap::startupWorkspaceReady(false, false));
-    QVERIFY(!WhatSon::Runtime::Bootstrap::startupWorkspaceReady(false, true));
-    QVERIFY(!WhatSon::Runtime::Bootstrap::startupWorkspaceReady(true, false));
-    QVERIFY(WhatSon::Runtime::Bootstrap::startupWorkspaceReady(true, true));
+    QVERIFY(!WhatSon::Runtime::Bootstrap::startupWorkspaceReady(false));
+    QVERIFY(WhatSon::Runtime::Bootstrap::startupWorkspaceReady(true));
 }
 
 void WhatSonCppRegressionTests::qmlLaunchSupport_routesRootLoadingThroughLvrsAppEntry()
@@ -47,7 +45,7 @@ void WhatSonCppRegressionTests::foregroundServiceGate_startsSchedulerAndPermissi
     QVERIFY(!mainSource.contains(QStringLiteral("startForegroundServices();")));
 }
 
-void WhatSonCppRegressionTests::startupDeferredHierarchyPrefetch_usesLvrsAfterFirstIdleLifecycleTask()
+void WhatSonCppRegressionTests::startupRuntimeLoad_usesLvrsAfterFirstIdleLifecycleTask()
 {
     const QString mainSource = readUtf8SourceFile(QStringLiteral("src/app/main.cpp"));
     const QString coordinatorHeader = readUtf8SourceFile(
@@ -55,24 +53,26 @@ void WhatSonCppRegressionTests::startupDeferredHierarchyPrefetch_usesLvrsAfterFi
     const QString coordinatorSource = readUtf8SourceFile(
         QStringLiteral("src/app/runtime/startup/WhatSonStartupRuntimeCoordinator.cpp"));
 
-    QVERIFY(mainSource.contains(QStringLiteral("bool scheduleDeferredStartupHierarchyPrefetch(")));
-    QVERIFY(mainSource.contains(QStringLiteral("lvrs::QmlBootstrapTask prefetchTask;")));
+    QVERIFY(mainSource.contains(QStringLiteral("bool scheduleStartupRuntimeLoadAfterFirstIdle(")));
+    QVERIFY(mainSource.contains(QStringLiteral("lvrs::QmlBootstrapTask runtimeLoadTask;")));
     QVERIFY(mainSource.contains(
-        QStringLiteral("prefetchTask.name = QStringLiteral(\"whatson-deferred-startup-hierarchy-prefetch\")")));
+        QStringLiteral("runtimeLoadTask.name = QStringLiteral(\"whatson-startup-runtime-load\")")));
     QVERIFY(mainSource.contains(
-        QStringLiteral("prefetchTask.stage = lvrs::QmlAppLifecycleStage::AfterFirstIdle;")));
+        QStringLiteral("runtimeLoadTask.stage = lvrs::QmlAppLifecycleStage::AfterFirstIdle;")));
     QVERIFY(mainSource.contains(QStringLiteral("lvrs::scheduleQmlAppLifecycleStage(")));
-    QVERIFY(mainSource.contains(QStringLiteral("startup-after-first-idle-prefetch")));
     QVERIFY(mainSource.contains(
-        QStringLiteral("scheduleDeferredStartupHierarchyPrefetch(app, engine, mainWindow, startupRuntimeCoordinator)")));
+        QStringLiteral("scheduleStartupRuntimeLoadAfterFirstIdle(")));
+    QVERIFY(mainSource.contains(QStringLiteral("startupRuntimeCoordinator.loadHubIntoRuntime(")));
 
-    QVERIFY(coordinatorHeader.contains(
-        QStringLiteral("bool ensureDeferredStartupHierarchyLoaded(int hierarchyIndex, const QString& reason);")));
-    QVERIFY(coordinatorSource.contains(
-        QStringLiteral("bool WhatSonStartupRuntimeCoordinator::ensureDeferredStartupHierarchyLoaded(")));
-    QVERIFY(coordinatorSource.contains(QStringLiteral("return false;")));
+    QVERIFY(!mainSource.contains(QStringLiteral("loadStartupHubIntoRuntime(")));
+    QVERIFY(!coordinatorHeader.contains(QStringLiteral("loadStartupHubIntoRuntime")));
+    QVERIFY(!coordinatorHeader.contains(QStringLiteral("ensureDeferredStartupHierarchyLoaded")));
+    QVERIFY(!coordinatorHeader.contains(QStringLiteral("bindSidebarActivation")));
+    QVERIFY(!coordinatorSource.contains(QStringLiteral("ensureDeferredStartupHierarchyLoaded")));
+    QVERIFY(!coordinatorSource.contains(QStringLiteral("startupDeferredBootstrapActive")));
 
     QVERIFY(!mainSource.contains(QStringLiteral("deferredStartupHierarchyCursor")));
     QVERIFY(!mainSource.contains(QStringLiteral("scheduleDeferredStartupHierarchyLoad")));
     QVERIFY(!mainSource.contains(QStringLiteral("startup-idle-prefetch")));
+    QVERIFY(!mainSource.contains(QStringLiteral("whatson-deferred-startup-hierarchy-prefetch")));
 }

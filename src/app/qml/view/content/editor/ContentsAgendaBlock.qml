@@ -11,6 +11,7 @@ FocusScope {
     required property var blockData
     property bool nativeTextInputPriority: false
     property bool paperPaletteEnabled: false
+    property var tagManagementShortcutKeyPressHandler: null
 
     signal activated()
     signal boundaryNavigationRequested(string axis, string side)
@@ -120,6 +121,13 @@ FocusScope {
 
     function shortcutInsertionSourceOffset() {
         return agendaBlockController.shortcutInsertionSourceOffset()
+    }
+
+    function invokeTagManagementShortcut(event) {
+        const handler = agendaBlock.tagManagementShortcutKeyPressHandler
+        if (!handler || typeof handler !== "function")
+            return false
+        return !!handler(event)
     }
 
     Rectangle {
@@ -281,6 +289,9 @@ FocusScope {
                                 preferNativeInputHandling: true
                                 showRenderedOutput: false
                                 showScrollBar: false
+                                tagManagementKeyPressHandler: function (event) {
+                                    return agendaBlock.invokeTagManagementShortcut(event)
+                                }
                                 text: taskRow.taskText
                                 textColor: agendaBlock.taskTextColor
                                 wrapMode: TextEdit.Wrap

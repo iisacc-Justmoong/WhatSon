@@ -57,8 +57,8 @@ from multiple implicit parser blocks.
   never becomes the persistence authority.
 - The block now also exposes `clearSelection(preserveFocusedEditor)` so structured-flow-wide selection cleanup can
   drop stale paragraph highlight while leaving the actively focused editor alone.
-- The nested inline editor no longer receives a host-owned shortcut handler.
-  Note-wide shortcut handling stays outside the live `TextEdit` path so native text input is not preempted.
+- The nested inline editor receives only the shared tag-management hook. It uses that hook for clipboard-image resource
+  paste and releases declined paste events back to native text paste.
 - The block now also receives `paperPaletteEnabled` from the structured-flow host.
   In page/print mode the inline editor base text color is forced to paper black and the inline-style HTML overlay is
   re-rendered through the renderer's paper palette, so semantic/title/highlight spans cannot stay white on a white

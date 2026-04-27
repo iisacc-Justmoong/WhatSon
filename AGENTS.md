@@ -43,12 +43,12 @@ every turn.
   `src/app/viewmodel/sidebar/HierarchyViewModelProvider.*`,
   `src/app/viewmodel/sidebar/SidebarHierarchyViewModel.*`
 - Architecture policy lock and layer contract: `src/app/policy/ArchitecturePolicyLock.*`
-- Runtime bootstrap: app startup loads the critical startup domains only when a persisted `.wshub` selection can be
+- Runtime bootstrap: app startup may route directly to the workspace shell when a persisted `.wshub` selection can be
   mounted. If no persisted startup hub can be mounted, startup must remain unmounted and route into onboarding instead
-  of reopening a blueprint/sample workspace. Once a real hub is selected, critical domains load in parallel worker
-  threads via `WhatSonRuntimeParallelLoader` and are then applied to ViewModel objects on the main thread before the
-  first workspace frame. Low-priority hierarchy domains may be deferred until first-frame idle turns or the first
-  explicit sidebar activation.
+  of reopening a blueprint/sample workspace. Persisted startup must not load runtime domains before the first workspace
+  window is created; `main.cpp` schedules the normal full runtime load through an LVRS `AfterFirstIdle` lifecycle task
+  and then applies ViewModel state from `WhatSonRuntimeParallelLoader`. Explicit hub selection during onboarding may
+  still load the selected hub before switching into the workspace.
 
 ## Automated Test Policy
 
