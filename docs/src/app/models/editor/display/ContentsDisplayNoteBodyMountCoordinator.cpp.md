@@ -20,12 +20,13 @@
   If the selected note's resolved source arrives before the upstream loading flag drops, the coordinator clears the
   loading state from the editor surface and proceeds with the editor-session mount instead of leaving a stale loading
   mask over already-rendered content.
-- `surfaceInteractive` is derived from the mount contract instead of the raw upstream loading flag.
-  Once a selected-note source is parse-mounted and a document surface is ready, the editor surface may accept focus
-  even if `selectedNoteBodyLoading` is still settling after startup runtime work.
+- `surfaceInteractive` is derived from parse-mounted source availability instead of the raw upstream loading flag or a
+  late document-surface-ready latch.
+  Once the selected-note RAW source is parse-mounted, the visible editor surface may accept focus even if
+  `selectedNoteBodyLoading` or surface-ready bookkeeping is still settling after startup runtime work.
 - `commandSurfaceEnabled` follows `surfaceInteractive`, not `noteMounted`.
-  RAW tag-management shortcuts such as `<bold>` insertion must be available as soon as source and surface are ready,
-  even while the editor session is still completing its synchronization pass.
+  RAW tag-management shortcuts such as `<bold>` insertion must be available as soon as source is parse-mounted, even
+  while the editor session or surface-ready latch is still completing its synchronization pass.
 - `mountDecisionClean` now separates transient scheduling from the underlying body/surface pending state.
   Queued mount work marks the decision dirty, and `flushMount()` marks it clean as soon as a mount plan is selected.
   The view can therefore keep the editor surface visually clean even when lower-level note-body loading flags settle

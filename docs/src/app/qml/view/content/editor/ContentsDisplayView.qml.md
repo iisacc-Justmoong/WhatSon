@@ -155,8 +155,9 @@ not note-backed.
   This keeps note-body left padding unchanged while tightening the visual distance between gutter numbers and the first
   text glyph.
 - The host no longer synthesizes an automatic `current` gutter marker for the cursor line.
-  Current-line feedback remains limited to the line number's active color/font weight, so the editor does not draw an
-  unexplained dot beside the first glyph of each text block.
+  Current-line feedback remains limited to the line number's active color/font weight, and external `current` marker
+  payloads are ignored by the marker bridge, so the editor does not draw an unexplained dot beside the first glyph of
+  each text block.
 - Note-entry gutter/minimap geometry is now also invalidated per selected note instead of trusting only line-count
   parity.
   Rapid note switches therefore clear stale incremental line caches immediately, queue a fresh structured layout-cache

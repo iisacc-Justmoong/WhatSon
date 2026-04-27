@@ -202,7 +202,9 @@ void WhatSonCppRegressionTests::noteBodyMountCoordinator_reportsSurfaceSpecificF
         coordinator.exceptionMessage(),
         QStringLiteral("The structured document surface did not become ready for the selected note."));
     QVERIFY(!coordinator.exceptionVisible());
-    QVERIFY(!coordinator.commandSurfaceEnabled());
+    QVERIFY(coordinator.surfaceInteractive());
+    QVERIFY(coordinator.commandSurfaceEnabled());
+    QCOMPARE(mountState.value(QStringLiteral("surfaceInteractive")).toBool(), true);
 }
 
 void WhatSonCppRegressionTests::noteBodyMountCoordinator_acceptsResolvedEmptySelectedBody()

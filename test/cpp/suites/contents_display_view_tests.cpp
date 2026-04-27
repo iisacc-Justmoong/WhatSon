@@ -66,16 +66,20 @@ void WhatSonCppRegressionTests::contentsDisplayView_doesNotInjectCurrentLineGutt
         QStringLiteral("src/app/qml/view/content/editor/ContentsDisplayView.qml"));
     const QString gutterLayerSource = readUtf8SourceFile(
         QStringLiteral("src/app/qml/view/content/editor/ContentsGutterLayer.qml"));
+    const QString gutterMarkerBridgeSource = readUtf8SourceFile(
+        QStringLiteral("src/app/models/editor/bridge/ContentsGutterMarkerBridge.cpp"));
 
     QVERIFY(!displayViewSource.isEmpty());
     QVERIFY(!gutterLayerSource.isEmpty());
+    QVERIFY(!gutterMarkerBridgeSource.isEmpty());
     QVERIFY(displayViewSource.contains(QStringLiteral("readonly property var effectiveGutterMarkers")));
     QVERIFY(!displayViewSource.contains(QStringLiteral("showCurrentLineMarker")));
     QVERIFY(!displayViewSource.contains(QStringLiteral("gutterMarkerCurrentColor")));
     QVERIFY(!displayViewSource.contains(QStringLiteral("currentCursorGutterLineHeight")));
     QVERIFY(!displayViewSource.contains(QStringLiteral("currentCursorGutterLineY")));
     QVERIFY(!displayViewSource.contains(QStringLiteral("\"type\": \"current\"")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("return contentsView.activeLineNumberColor;")));
+    QVERIFY(!displayViewSource.contains(QStringLiteral("normalizedType === \"current\"")));
+    QVERIFY(!gutterMarkerBridgeSource.contains(QStringLiteral("QStringLiteral(\"current\")")));
     QVERIFY(gutterLayerSource.contains(QStringLiteral("currentCursorLineNumber: active line used for highlight color and font weight"))
             || gutterLayerSource.contains(QStringLiteral("currentCursorLineNumber")));
 }
@@ -547,6 +551,8 @@ void WhatSonCppRegressionTests::contentsDisplayView_surfacesMountFailurePlacehol
     QVERIFY(displayViewSource.contains(
         QStringLiteral("readonly property bool noteDocumentSurfaceInteractive: noteBodyMountCoordinator.surfaceInteractive")));
     QVERIFY(surfaceHostSource.contains(
+        QStringLiteral("enabled: contentsView.noteDocumentParseMounted")));
+    QVERIFY(!surfaceHostSource.contains(
         QStringLiteral("enabled: contentsView.noteDocumentSurfaceInteractive")));
     QVERIFY(!surfaceHostSource.contains(
         QStringLiteral("enabled: !contentsView.selectedNoteBodyLoading")));

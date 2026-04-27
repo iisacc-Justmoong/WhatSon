@@ -49,9 +49,10 @@ Provides the single document-block adapter that keeps `ContentsStructuredDocumen
   `clearSelection(preserveFocusedEditor)` into the mounted delegate.
   Selection cleanup therefore stays centralized at the host boundary instead of being reimplemented for every viewport
   click path.
-- Inline-format RAW rewrites are now intentionally absent from this adapter surface.
-  The mounted block still reports live selection state, but the owning structured editor controller applies style
-  commands against the RAW source span at the flow layer.
+- Inline-format RAW rewrites are still absent from this adapter surface.
+  The mounted text block can emit `inlineFormatRequested(...)` when the host shortcut hook declines a formatting chord,
+  and this adapter forwards that intent with the block index to the flow.
+  The owning structured editor controller still applies the style command against the RAW source span.
 - `Connections { ignoreUnknownSignals: true }` re-emits only the signals that the active inner block actually exposes.
 
 ## Architecture Note

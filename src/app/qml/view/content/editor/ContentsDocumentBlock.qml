@@ -29,6 +29,7 @@ FocusScope {
     signal blockDeletionRequested(string direction)
     signal cursorInteraction()
     signal documentEndEditRequested()
+    signal inlineFormatRequested(int blockIndex, string tagName, var selectionSnapshot)
     signal paragraphSplitRequested(int sourceOffset)
     signal sourceMutationRequested(string nextBlockSourceText, var focusRequest, string expectedPreviousSourceText)
     signal taskDoneToggled(int openTagStart, int openTagEnd, bool checked)
@@ -190,6 +191,10 @@ FocusScope {
             paragraphMergeableBefore: documentBlock.paragraphMergeableBefore
             tagManagementShortcutKeyPressHandler: documentBlock.tagManagementShortcutKeyPressHandler
             width: documentBlock.width
+
+            onInlineFormatRequested: function (tagName, selectionSnapshot) {
+                documentBlock.inlineFormatRequested(documentBlock.blockIndex, tagName, selectionSnapshot)
+            }
         }
     }
 

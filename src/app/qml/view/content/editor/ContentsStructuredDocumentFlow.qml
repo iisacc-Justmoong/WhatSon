@@ -720,15 +720,6 @@ FocusScope {
         if (blocks.length === 0)
             return 0
         const lastBlockIndex = blocks.length - 1
-        const cachedSummary = documentFlow.cachedBlockLayoutSummaryAt(lastBlockIndex)
-        if (cachedSummary && cachedSummary.blockTopY !== undefined) {
-            return Math.max(
-                        0,
-                        (Number(cachedSummary.blockTopY) || 0)
-                        + Math.max(
-                            1,
-                            Number(cachedSummary.blockHeight) || documentFlow.lineHeightHint))
-        }
         const lastBlockHost = blockRepeater.itemAt(lastBlockIndex)
         if (lastBlockHost) {
             return Math.max(
@@ -743,7 +734,19 @@ FocusScope {
                             || Number(lastBlockHost.implicitHeight)
                             || documentFlow.lineHeightHint))
         }
-        return Math.max(0, Number(documentColumn.implicitHeight) || 0)
+        const columnHeight = Math.max(0, Number(documentColumn.implicitHeight) || 0)
+        if (columnHeight > 0)
+            return columnHeight
+        const cachedSummary = documentFlow.cachedBlockLayoutSummaryAt(lastBlockIndex)
+        if (cachedSummary && cachedSummary.blockTopY !== undefined) {
+            return Math.max(
+                        0,
+                        (Number(cachedSummary.blockTopY) || 0)
+                        + Math.max(
+                            1,
+                            Number(cachedSummary.blockHeight) || documentFlow.lineHeightHint))
+        }
+        return 0
     }
 
     function pointTargetsDocumentEndEdit(localX, localY) {
@@ -1919,6 +1922,9 @@ FocusScope {
                             documentFlow.deleteBlock(blockHost.blockIndex, blockHost.blockEntry, direction)
                         }
                         onDocumentEndEditRequested: documentFlow.requestDocumentEndEdit()
+                        onInlineFormatRequested: function (blockIndex, tagName, selectionSnapshot) {
+                            documentFlow.applyInlineFormatToBlockSelection(blockIndex, tagName, selectionSnapshot)
+                        }
                         onParagraphSplitRequested: function (sourceOffset) {
                             documentFlow.splitParagraphBlock(blockHost.blockEntry, sourceOffset)
                         }

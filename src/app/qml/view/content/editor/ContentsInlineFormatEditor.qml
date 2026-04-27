@@ -232,9 +232,9 @@ FocusScope {
         return false;
     }
 
-    function eventRequestsInlineFormatShortcut(event) {
+    function inlineFormatShortcutTag(event) {
         if (!event)
-            return false;
+            return "";
 
         const modifiers = Number(event.modifiers) || 0;
         const metaPressed = !!(modifiers & Qt.MetaModifier);
@@ -243,21 +243,27 @@ FocusScope {
         const shiftPressed = !!(modifiers & Qt.ShiftModifier);
         const commandPressed = metaPressed || controlPressed;
         if (altPressed || !commandPressed)
-            return false;
+            return "";
 
         const normalizedText = event.text === undefined || event.text === null ? "" : String(event.text).toUpperCase();
         if (!shiftPressed) {
-            return event.key === Qt.Key_B
-                    || event.key === Qt.Key_I
-                    || event.key === Qt.Key_U
-                    || normalizedText === "B"
-                    || normalizedText === "I"
-                    || normalizedText === "U";
+            if (event.key === Qt.Key_B || normalizedText === "B")
+                return "bold";
+            if (event.key === Qt.Key_I || normalizedText === "I")
+                return "italic";
+            if (event.key === Qt.Key_U || normalizedText === "U")
+                return "underline";
+            return "";
         }
-        return event.key === Qt.Key_X
-                || event.key === Qt.Key_E
-                || normalizedText === "X"
-                || normalizedText === "E";
+        if (event.key === Qt.Key_X || normalizedText === "X")
+            return "strikethrough";
+        if (event.key === Qt.Key_E || normalizedText === "E")
+            return "highlight";
+        return "";
+    }
+
+    function eventRequestsInlineFormatShortcut(event) {
+        return control.inlineFormatShortcutTag(event).length > 0;
     }
 
     Rectangle {

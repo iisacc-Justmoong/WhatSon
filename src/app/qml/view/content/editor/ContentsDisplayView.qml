@@ -1173,8 +1173,6 @@ Item {
             return contentsView.gutterMarkerConflictColor;
         if (normalizedType === "changed")
             return contentsView.gutterMarkerChangedColor;
-        if (normalizedType === "current")
-            return contentsView.activeLineNumberColor;
         return contentsView.gutterMarkerChangedColor;
     }
     function markerHeight(markerSpec) {

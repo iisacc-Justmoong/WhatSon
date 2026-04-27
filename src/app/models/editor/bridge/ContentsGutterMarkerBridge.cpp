@@ -56,8 +56,7 @@ QVariantList ContentsGutterMarkerBridge::normalizeExternalMarkers(const QVariant
         const int lineSpan = explicitSpan > 0 ? explicitSpan : std::max(1, endLine - startLine + 1);
         const QString markerType = marker.value(QStringLiteral("type")).toString().trimmed().toLower();
         if (markerType != QStringLiteral("changed")
-            && markerType != QStringLiteral("conflict")
-            && markerType != QStringLiteral("current"))
+            && markerType != QStringLiteral("conflict"))
         {
             continue;
         }

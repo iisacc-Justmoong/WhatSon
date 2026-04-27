@@ -38,6 +38,7 @@ source.
   - `minimapRepresentativeCharCount`
 - The common contracts handled at flow level are:
   - `sourceMutationRequested(...)`
+  - `inlineFormatRequested(blockIndex, tagName, selectionSnapshot)`
   - `blockDeletionRequested(direction)`
   - `paragraphSplitRequested(sourceOffset)`
   - `boundaryNavigationRequested(axis, side)`
@@ -90,6 +91,10 @@ source.
   Text-editing delegates may forward only explicit tag-management chords such as clipboard-image paste and inline
   style shortcuts from their nested `TextEdit`; native input keys, navigation, selection, text paste, and IME
   composition remain on the OS/Qt path.
+- Text-editing delegates also provide a local inline-format fallback for the focused editor path.
+  When the host-level shortcut surface is stale or declines the key event, the delegate sends the current selection
+  snapshot through `inlineFormatRequested(...)`; the flow then calls
+  `applyInlineFormatToBlockSelection(...)` so the RAW source still receives the formatting tag from the live block.
 - The flow exposes `nativeCompositionActive()` by scanning mounted delegates for `inputMethodComposing`/`preeditText`.
   The display host uses that state to disable window-level document shortcuts while an IME composition is active.
 - Structured block navigation now also understands a document-level boundary axis in addition to adjacent
@@ -110,6 +115,10 @@ source.
   height measurement have had event-loop turns to settle.
 - Block delegate load completion also queues a layout-cache refresh, so asynchronous or virtualized delegates can publish
   their measured line geometry to the gutter as soon as they mount.
+- Bottom-whitespace hit testing now prefers the mounted last block and the live document column height before falling
+  back to cached layout summaries.
+  A stale cache can therefore no longer make the bottom margin miss the document-end focus target after the editor has
+  visibly rendered.
 - Structured cached logical-line entries now also keep `gutterContentY` aligned to each line's real `contentY`.
   Gutter-collapsed blocks still shrink only the rendered gutter box height, but line-number Y no longer comes from a
   second synthetic accumulator that ignored block spacing and delegate-local top offsets.

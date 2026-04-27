@@ -11,8 +11,8 @@ command surface.
 
 The host intentionally does not mount a note-loading overlay. Mount scheduling is settled by the display model's
 `mountDecisionClean` flag instead of a visual mask, so rendered note content is never dimmed by a stale loading state.
-The host also gates focus/input with `noteDocumentSurfaceInteractive`, not the raw `selectedNoteBodyLoading` flag, so
-startup runtime loading cannot keep an already parse-mounted note editor disabled.
+The host now gates focus/input with `noteDocumentParseMounted`; once RAW source has been parsed into the structured
+document, late surface-ready bookkeeping cannot keep the visible editor disabled.
 
 The host forwards left taps in the bottom document padding to the structured flow's document-end hit test from both
 the surface-level pointer path and the structured viewport path. When the tap is below the last block, the host

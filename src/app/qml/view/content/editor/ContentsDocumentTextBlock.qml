@@ -18,6 +18,7 @@ FocusScope {
     signal boundaryNavigationRequested(string axis, string side)
     signal blockDeletionRequested(string direction)
     signal cursorInteraction()
+    signal inlineFormatRequested(string tagName, var selectionSnapshot)
     signal paragraphSplitRequested(int sourceOffset)
     signal sourceMutationRequested(string nextBlockSourceText, var focusRequest, string expectedPreviousSourceText)
 
@@ -128,9 +129,20 @@ FocusScope {
 
     function invokeTagManagementShortcut(event) {
         const handler = textBlock.tagManagementShortcutKeyPressHandler
-        if (!handler || typeof handler !== "function")
+        if (handler && typeof handler === "function") {
+            const handled = !!handler(event)
+            if (handled || (event && event.accepted))
+                return true
+        }
+        const tagName = blockEditor.inlineFormatShortcutTag !== undefined
+                ? blockEditor.inlineFormatShortcutTag(event)
+                : ""
+        if (tagName.length === 0)
             return false
-        return !!handler(event)
+        textBlock.inlineFormatRequested(tagName, textBlock.inlineFormatSelectionSnapshot())
+        if (event)
+            event.accepted = true
+        return true
     }
 
     ContentsTextFormatRenderer {

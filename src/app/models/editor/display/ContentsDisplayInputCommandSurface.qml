@@ -17,11 +17,12 @@ Item {
         id: editorRightClickContextMenuTapHandler
 
         acceptedButtons: Qt.RightButton
+        acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
         enabled: commandSurface.contentsView
                  && commandSurface.contentsView.noteDocumentContextMenuSurfaceEnabled
         gesturePolicy: TapHandler.DragThreshold
         grabPermissions: PointerHandler.ApprovesTakeOverByAnything
-        target: null
+        target: commandSurface
 
         onPressedChanged: {
             if (!pressed)

@@ -511,8 +511,7 @@ bool ContentsDisplayNoteBodyMountCoordinator::surfaceVisible() const noexcept
 bool ContentsDisplayNoteBodyMountCoordinator::surfaceInteractive() const noexcept
 {
     return surfaceVisible()
-        && parseMounted()
-        && documentSurfaceReady();
+        && parseMounted();
 }
 
 QString ContentsDisplayNoteBodyMountCoordinator::mountFailureReason() const

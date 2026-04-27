@@ -424,6 +424,14 @@ void WhatSonCppRegressionTests::qmlStructuredEditors_acceptsPlatformCommandModif
         Q_ARG(QVariant, QVariant(nativeCommandEvent))));
     QVERIFY(acceptedReturnValue.toBool());
 
+    QVariant tagReturnValue;
+    QVERIFY(QMetaObject::invokeMethod(
+        inlineEditorObject.get(),
+        "inlineFormatShortcutTag",
+        Q_RETURN_ARG(QVariant, tagReturnValue),
+        Q_ARG(QVariant, QVariant(nativeCommandEvent))));
+    QCOMPARE(tagReturnValue.toString(), QStringLiteral("bold"));
+
     QVariantMap optionCommandEvent = nativeCommandEvent;
     optionCommandEvent.insert(
         QStringLiteral("modifiers"),
@@ -477,9 +485,7 @@ EditorView.ContentsStructuredDocumentFlow {
         }
     ]
     tagManagementShortcutKeyPressHandler: function (event) {
-        if (!event || Number(event.key) !== Qt.Key_B)
-            return false;
-        return flow.applyInlineFormatToActiveSelection("bold");
+        return false;
     }
 }
 )QML").arg(editorImportUrl);
@@ -533,6 +539,17 @@ EditorView.ContentsStructuredDocumentFlow {
     QTRY_VERIFY(mutationSpy.count() >= 1);
     const QList<QVariant> mutationArguments = mutationSpy.takeFirst();
     QCOMPARE(mutationArguments.at(0).toString(), QStringLiteral("Alpha<bold></bold> beta"));
+
+    const QString textBlockSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/content/editor/ContentsDocumentTextBlock.qml"));
+    const QString documentBlockSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/content/editor/ContentsDocumentBlock.qml"));
+    const QString structuredFlowSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/content/editor/ContentsStructuredDocumentFlow.qml"));
+    QVERIFY(textBlockSource.contains(QStringLiteral("signal inlineFormatRequested(string tagName, var selectionSnapshot)")));
+    QVERIFY(textBlockSource.contains(QStringLiteral("blockEditor.inlineFormatShortcutTag(event)")));
+    QVERIFY(documentBlockSource.contains(QStringLiteral("signal inlineFormatRequested(int blockIndex, string tagName, var selectionSnapshot)")));
+    QVERIFY(structuredFlowSource.contains(QStringLiteral("onInlineFormatRequested: function (blockIndex, tagName, selectionSnapshot)")));
 }
 
 void WhatSonCppRegressionTests::qmlStructuredEditors_focusesDocumentEndFromBottomWhitespace()
@@ -543,8 +560,13 @@ void WhatSonCppRegressionTests::qmlStructuredEditors_focusesDocumentEndFromBotto
         QStringLiteral("src/app/qml/view/content/editor/ContentsDisplaySurfaceHost.qml"));
     const QString structuredFlowSource = readUtf8SourceFile(
         QStringLiteral("src/app/qml/view/content/editor/ContentsStructuredDocumentFlow.qml"));
+    const QString commandSurfaceSource = readUtf8SourceFile(
+        QStringLiteral("src/app/models/editor/display/ContentsDisplayInputCommandSurface.qml"));
     QVERIFY(!surfaceHostSource.isEmpty());
     QVERIFY(!structuredFlowSource.isEmpty());
+    QVERIFY(!commandSurfaceSource.isEmpty());
+    QVERIFY(surfaceHostSource.contains(QStringLiteral("enabled: contentsView.noteDocumentParseMounted")));
+    QVERIFY(!surfaceHostSource.contains(QStringLiteral("enabled: contentsView.noteDocumentSurfaceInteractive")));
     QVERIFY(surfaceHostSource.contains(QStringLiteral("pointTargetsDocumentEndEdit(flowTapX, flowTapY)")));
     QVERIFY(surfaceHostSource.contains(QStringLiteral("property bool documentEndEditRequestQueued: false")));
     QVERIFY(surfaceHostSource.contains(QStringLiteral("if (surfaceHost.documentEndEditRequestQueued)")));
@@ -555,7 +577,11 @@ void WhatSonCppRegressionTests::qmlStructuredEditors_focusesDocumentEndFromBotto
     QVERIFY(!surfaceHostSource.contains(QStringLiteral("contentsView: contentsView")));
     QVERIFY(!surfaceHostSource.contains(QStringLiteral("resourceImportController: resourceImportController")));
     QVERIFY(structuredFlowSource.contains(QStringLiteral("function pointTargetsDocumentEndEdit(localX, localY)")));
+    QVERIFY(structuredFlowSource.indexOf(QStringLiteral("const lastBlockHost = blockRepeater.itemAt(lastBlockIndex)"))
+            < structuredFlowSource.indexOf(QStringLiteral("const cachedSummary = documentFlow.cachedBlockLayoutSummaryAt(lastBlockIndex)")));
     QVERIFY(structuredFlowSource.contains(QStringLiteral("\"targetBlockIndex\": lastBlockIndex")));
+    QVERIFY(commandSurfaceSource.contains(QStringLiteral("target: commandSurface")));
+    QVERIFY(commandSurfaceSource.contains(QStringLiteral("acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad")));
 
     const QString repositoryRoot = qmlStructuredEditorsRepositoryRootPath();
     QQmlEngine engine;

@@ -38,10 +38,12 @@ from multiple implicit parser blocks.
 - While focused, the delegate keeps the last live source/plain-text pair that was successfully emitted upward.
   Rapid mobile input can therefore compute the next delta from the live `TextEdit` state instead of from an older
   `blockData` snapshot.
-- Inline-format shortcuts no longer mutate RAW from inside this delegate at all.
-  The block exposes only the live selection snapshot, while
-  `ContentsStructuredEditorFormattingController.qml` performs the actual selection-based RAW rewrite for the owning
-  structured editor session.
+- Inline-format shortcuts still route RAW mutation through
+  `ContentsStructuredEditorFormattingController.qml`, but the focused text block now has a local fallback signal for
+  that command.
+  If the host-level tag-management hook declines a `<bold>` / `<italic>` / `<highlight>` shortcut, the block emits
+  `inlineFormatRequested(tagName, selectionSnapshot)` with its current live selection so the owning structured flow can
+  still mutate RAW from the actual focused editor path.
 - Focus restoration and caret-origin source offsets are now mapped through the same inline-tag-aware cursor bridge.
   Rich text cursor positions stay in visible plain-text space, while reparsed RAW offsets still return to the same
   visible caret location.
@@ -58,7 +60,8 @@ from multiple implicit parser blocks.
 - The block now also exposes `clearSelection(preserveFocusedEditor)` so structured-flow-wide selection cleanup can
   drop stale paragraph highlight while leaving the actively focused editor alone.
 - The nested inline editor receives only the shared tag-management hook. It uses that hook for clipboard-image resource
-  paste and releases declined paste events back to native text paste.
+  paste and inline-style commands, releases declined paste events back to native text paste, and falls back to the
+  block-level `inlineFormatRequested(...)` signal only for explicit formatting shortcuts.
 - The block now also receives `paperPaletteEnabled` from the structured-flow host.
   In page/print mode the inline editor base text color is forced to paper black and the inline-style HTML overlay is
   re-rendered through the renderer's paper palette, so semantic/title/highlight spans cannot stay white on a white
@@ -89,5 +92,5 @@ from multiple implicit parser blocks.
   They only emit the boundary intent upward so the shared structured mutation policy can rewrite implicit lines and
   explicit paragraph wrappers consistently from one place.
 - Inline-format command handling now follows the same rule:
-  this delegate exposes selection/focus information, but the structured editor controller owns the RAW formatting
-  mutation.
+  this delegate exposes selection/focus information and command intent, but the structured editor controller owns the
+  RAW formatting mutation.
