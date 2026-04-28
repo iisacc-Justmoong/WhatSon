@@ -213,6 +213,10 @@ void WhatSonCppRegressionTests::qmlContextMenus_treatRightClickAndLongPressAsSym
     QVERIFY(inputCommandSurfaceSource.contains(
         QStringLiteral("acceptedDevices: PointerDevice.TouchScreen | PointerDevice.Stylus")));
     QVERIFY(inputCommandSurfaceSource.contains(
+        QStringLiteral("readonly property bool nativeTouchSelectionGesturesPreferred: Qt.platform.os === \"ios\"")));
+    QVERIFY(inputCommandSurfaceSource.contains(
+        QStringLiteral("&& !commandSurface.nativeTouchSelectionGesturesPreferred")));
+    QVERIFY(inputCommandSurfaceSource.contains(
         QStringLiteral("commandSurface.contentsView.requestEditorSelectionContextMenuFromPointer(")));
     QVERIFY(inputCommandSurfaceSource.contains(QStringLiteral("\"longPress\"")));
 

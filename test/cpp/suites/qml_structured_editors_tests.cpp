@@ -732,6 +732,8 @@ void WhatSonCppRegressionTests::qmlStructuredEditors_focusesDocumentEndFromBotto
     QVERIFY(commandSurfaceSource.contains(QStringLiteral("editorRightClickContextMenuMouseArea")));
     QVERIFY(commandSurfaceSource.contains(QStringLiteral("acceptedButtons: Qt.RightButton")));
     QVERIFY(commandSurfaceSource.contains(QStringLiteral("preventStealing: true")));
+    QVERIFY(commandSurfaceSource.contains(QStringLiteral("readonly property bool nativeTouchSelectionGesturesPreferred: Qt.platform.os === \"ios\"")));
+    QVERIFY(commandSurfaceSource.contains(QStringLiteral("&& !commandSurface.nativeTouchSelectionGesturesPreferred")));
 
     const QString repositoryRoot = qmlStructuredEditorsRepositoryRootPath();
     QQmlEngine engine;
@@ -1375,7 +1377,10 @@ void WhatSonCppRegressionTests::qmlStructuredEditors_preserveNativeMobileInputDu
         QStringLiteral("sourceText: textBlock.inlineStyleOverlayVisible ? textBlock.authoritativeSourceText() : \"\"")));
     QVERIFY(textBlockSource.contains(QStringLiteral("preferNativeInputHandling: true")));
     QVERIFY(textBlockSource.contains(QStringLiteral("inputMethodHints: Qt.ImhNone")));
-    QVERIFY(textBlockSource.contains(QStringLiteral("mouseSelectionMode: TextEdit.SelectCharacters")));
+    QVERIFY(textBlockSource.contains(QStringLiteral("readonly property int editorMouseSelectionMode: Qt.platform.os === \"ios\"")));
+    QVERIFY(textBlockSource.contains(QStringLiteral("? TextEdit.SelectWords")));
+    QVERIFY(textBlockSource.contains(QStringLiteral(": TextEdit.SelectCharacters")));
+    QVERIFY(textBlockSource.contains(QStringLiteral("mouseSelectionMode: textBlock.editorMouseSelectionMode")));
     QVERIFY(textBlockSource.contains(QStringLiteral("overwriteMode: false")));
     QVERIFY(textBlockSource.contains(QStringLiteral("persistentSelection: true")));
     QVERIFY(textBlockSource.contains(QStringLiteral("selectByKeyboard: true")));
@@ -1386,6 +1391,8 @@ void WhatSonCppRegressionTests::qmlStructuredEditors_preserveNativeMobileInputDu
     QVERIFY(!textBlockSource.contains(QStringLiteral("shortcutKeyPressHandler: function")));
 
     QVERIFY(agendaBlockSource.contains(QStringLiteral("property bool nativeTextInputPriority: false")));
+    QVERIFY(agendaBlockSource.contains(QStringLiteral("readonly property int editorMouseSelectionMode: Qt.platform.os === \"ios\"")));
+    QVERIFY(agendaBlockSource.contains(QStringLiteral("mouseSelectionMode: agendaBlock.editorMouseSelectionMode")));
     QVERIFY(agendaBlockSource.contains(QStringLiteral("EditorInputModel.ContentsAgendaTaskRowController")));
     QVERIFY(agendaTaskRowControllerSource.contains(QStringLiteral("property string liveTaskText: \"\"")));
     QVERIFY(agendaTaskRowControllerSource.contains(QStringLiteral("syncLiveTaskTextFromHost")));
@@ -1686,6 +1693,8 @@ void WhatSonCppRegressionTests::qmlEditorViewDirectory_containsOnlyViewSurfaceFi
     QVERIFY(documentTextBlockSource.contains(QStringLiteral("function invokeTagManagementShortcut(event)")));
     QVERIFY(documentTextBlockSource.contains(QStringLiteral("tagManagementKeyPressHandler: function (event)")));
     QVERIFY(calloutBlockSource.contains(QStringLiteral("property var tagManagementShortcutKeyPressHandler")));
+    QVERIFY(calloutBlockSource.contains(QStringLiteral("readonly property int editorMouseSelectionMode: Qt.platform.os === \"ios\"")));
+    QVERIFY(calloutBlockSource.contains(QStringLiteral("mouseSelectionMode: calloutBlock.editorMouseSelectionMode")));
     QVERIFY(calloutBlockSource.contains(QStringLiteral("function invokeDocumentTagManagementShortcut(event)")));
     QVERIFY(calloutBlockSource.contains(QStringLiteral("calloutBlock.invokeDocumentTagManagementShortcut(event)")));
     QVERIFY(agendaBlockSource.contains(QStringLiteral("property var tagManagementShortcutKeyPressHandler")));

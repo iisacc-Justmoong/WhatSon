@@ -52,6 +52,9 @@ FocusScope {
     readonly property string preeditText: blockEditor.preeditText === undefined || blockEditor.preeditText === null
                                           ? ""
                                           : String(blockEditor.preeditText)
+    readonly property int editorMouseSelectionMode: Qt.platform.os === "ios"
+                                                    ? TextEdit.SelectWords
+                                                    : TextEdit.SelectCharacters
     implicitHeight: blockEditor.implicitHeight
     width: parent ? parent.width : implicitWidth
 
@@ -177,7 +180,7 @@ FocusScope {
         insetHorizontal: 0
         insetVertical: 0
         inputMethodHints: Qt.ImhNone
-        mouseSelectionMode: TextEdit.SelectCharacters
+        mouseSelectionMode: textBlock.editorMouseSelectionMode
         overwriteMode: false
         persistentSelection: true
         placeholderText: ""

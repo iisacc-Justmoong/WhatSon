@@ -12,6 +12,9 @@ FocusScope {
     property bool nativeTextInputPriority: false
     property bool paperPaletteEnabled: false
     property var tagManagementShortcutKeyPressHandler: null
+    readonly property int editorMouseSelectionMode: Qt.platform.os === "ios"
+                                                    ? TextEdit.SelectWords
+                                                    : TextEdit.SelectCharacters
 
     signal activated()
     signal boundaryNavigationRequested(string axis, string side)
@@ -149,7 +152,7 @@ FocusScope {
                 insetHorizontal: 0
                 insetVertical: 0
                 inputMethodHints: Qt.ImhNone
-                mouseSelectionMode: TextEdit.SelectCharacters
+                mouseSelectionMode: calloutBlock.editorMouseSelectionMode
                 overwriteMode: false
                 persistentSelection: true
                 placeholderText: ""

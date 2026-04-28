@@ -10,6 +10,7 @@ Item {
     property var contentsView: null
     property var resourceImportController: null
     readonly property alias selectionContextMenu: editorSelectionContextMenu
+    readonly property bool nativeTouchSelectionGesturesPreferred: Qt.platform.os === "ios"
 
     anchors.fill: parent
 
@@ -47,6 +48,7 @@ Item {
         enabled: commandSurface.contentsView
                  && commandSurface.contentsView.noteDocumentContextMenuSurfaceEnabled
                  && commandSurface.contentsView.contextMenuLongPressEnabled
+                 && !commandSurface.nativeTouchSelectionGesturesPreferred
         gesturePolicy: TapHandler.DragThreshold
         grabPermissions: PointerHandler.ApprovesTakeOverByAnything
         target: null

@@ -16,3 +16,6 @@ Owns the editor display command surface for tag-management shortcuts and context
 - Mobile long-press still uses a separate `TapHandler`.
   Desktop right-click and mobile long-press stay split so the desktop menu path does not depend on passive pointer
   grabs inside nested editor delegates.
+- On iOS the command-surface long-press handler stands down entirely, because native `TextEdit` long-press, double-tap,
+  and triple-tap selection gestures must remain platform-owned instead of being intercepted by the host context-menu
+  layer.

@@ -204,6 +204,8 @@
   structured text blocks, and `ContentsInlineFormatEditor.qml` route shortcut gating, long-press gating, focused
   programmatic sync, and ordinary text-edit focus-restore decisions through that adapter instead of each QML file
   reimplementing its own IME or gesture condition.
+  iOS additionally keeps native tap-count and long-press text-selection gestures by letting note-body delegates switch
+  to word-selection mode and by standing the host long-press menu surface down.
 - Editor custom input is now policy-locked off by default through `editorCustomTextInputEnabled: false`.
   Only tag-management commands may sit outside the native `TextEdit` input path: inline style tags, resource paste,
   agenda/callout/break source-tag insertion, and selected atomic resource/break block management.

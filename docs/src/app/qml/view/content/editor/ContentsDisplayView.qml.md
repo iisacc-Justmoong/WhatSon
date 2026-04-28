@@ -134,6 +134,8 @@ not note-backed.
   `requestEditorSelectionContextMenuFromPointer(...)`.
   This keeps mobile access to the same tag-management menu without adding ordinary text key handlers, and the menu
   surface still stands down while a native composition/preedit session is active.
+- On iOS that host-side long-press surface is additionally disabled so native `TextEdit` long-press and tap-count
+  selection gestures keep full ownership of the selection session.
 - The desktop path now primes that selection snapshot from a right-button `MouseArea` press before opening on click.
   This keeps a selected body range available for the menu even if the live `TextEdit` selection changes during the
   right-click release turn.

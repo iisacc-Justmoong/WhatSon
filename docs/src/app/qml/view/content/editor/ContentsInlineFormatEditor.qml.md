@@ -68,7 +68,9 @@ controller responsibilities.
   Qt/OS `TextEdit` behavior.
 - The wrapper now explicitly keeps the Qt `TextEdit` keyboard/selection flags open for platform behavior:
   `activeFocusOnPress`, `selectByKeyboard`, `selectByMouse`, `persistentSelection`, unrestricted
-  `inputMethodHints`, character-level `mouseSelectionMode`, and insert-mode `overwriteMode=false`.
+  `inputMethodHints`, platform-owned `mouseSelectionMode`, and insert-mode `overwriteMode=false`.
+  Host delegates may still choose the concrete mode per platform; iOS note-body editors now prefer word-selection mode
+  so native double-tap and triple-tap selection expansion remains available.
 
 ## Regression Focus
 
