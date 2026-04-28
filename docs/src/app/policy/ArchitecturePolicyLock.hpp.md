@@ -13,7 +13,10 @@ It exposes two separate concepts.
 - `isDependencyAllowed(Layer from, Layer to)`: pure policy query without side effects.
 - `assertDependencyAllowed(...)`: returns a boolean and optionally formats an error message.
 - `verifyDependencyAllowed(...)`: same rule check, but intended for production call sites that should emit warnings when a bad edge is attempted.
+- `verifyMutableWiringAllowed(...)`: rejects post-lock runtime rewiring attempts and can format a caller-facing reason.
+- `verifyMutableDependencyAllowed(...)`: applies both the post-lock mutation rule and the layer dependency rule in one shared helper.
 - `ArchitecturePolicyLock::isLocked()` and `ArchitecturePolicyLock::lock()`: global startup freeze.
+- `ArchitecturePolicyLock::unlockForTests()`: test-only escape hatch used to isolate process-global lock state between regression cases.
 
 ## Usage Pattern
 Typical consumers are startup-time composition code and bridge-like objects that connect QML-facing views to QObject-based viewmodels or stores.
@@ -26,3 +29,5 @@ The expected sequence is this.
 
 ## Important Constraint
 This header only defines a small policy language. It does not automatically rewrite architecture by itself. Production code must call the verification helpers if runtime enforcement is desired.
+
+The current runtime contract is role-based rather than folder-based: bridge/QML-facing setter paths are treated as `View -> ViewModel`, and ViewModel store attachment paths are treated as `ViewModel -> Store`.

@@ -43,6 +43,13 @@ gain new session, persistence, parsing, mutation, scheduling, or command-surface
   Owns editor context-menu pointer triggers and tag-management shortcuts.
 - `ContentsDisplayGeometryController.qml`
   Owns QML-runtime geometry scheduling and delegates public calls through the C++ geometry ViewModel.
+- `ContentsDisplayGeometrySnapshotModel.qml`
+  Owns QML-side geometry snapshot normalization, structured minimap snapshot planning, visible gutter entry building,
+  and compatibility wrappers that let `ContentsDisplayView.qml` shed large helper bodies without breaking existing host
+  call sites.
+- `ContentsDisplayViewportModel.qml`
+  Owns QML-side document/viewport line math such as logical-line Y lookup, gutter Y lookup, marker placement,
+  minimap row positioning, and documentY-to-line resolution.
 - `ContentsDisplayMutationController.qml`
   Owns QML-runtime RAW source writes delegated through the C++ mutation ViewModel. It applies already-built RAW
   `.wsnbody` text directly, then lets parser and renderer projections observe the changed source.

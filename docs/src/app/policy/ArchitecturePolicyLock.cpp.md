@@ -19,14 +19,17 @@ This is not a general-purpose DI framework. It is a repository-specific guardrai
 - Startup code performs dependency injection.
 - `ArchitecturePolicyLock::lock()` flips the flag.
 - Late wiring attempts can then reject mutation and emit warnings.
+- `ArchitecturePolicyLock::unlockForTests()` exists only so regression tests can reset the global lock state between cases.
 
-The lock is intentionally one-way. There is no public unlock because application composition is expected to be complete before the first QML scene is fully active.
+Production composition still treats the lock as one-way: application wiring is expected to be complete before the first QML scene is fully active.
 
 ## Verification Helpers
 - `assertDependencyAllowed(...)` is the pure diagnostic helper.
 - `verifyDependencyAllowed(...)` adds a production-facing warning path using `[whatson:policy][dependency] ...`.
+- `verifyMutableWiringAllowed(...)` adds the post-lock rewiring guard using `[whatson:policy][lock] ...`.
+- `verifyMutableDependencyAllowed(...)` is the shared helper now used by setter/wiring entry points that must reject both illegal layer edges and any mutation attempted after the startup lock.
 
-The newer bridge code uses `verifyDependencyAllowed(...)` so the policy is exercised directly in real wiring paths.
+The newer bridge and ViewModel setter code uses these shared helpers directly, so the policy is exercised in real wiring paths instead of remaining documentation-only.
 
 ## Practical Reading
 Read this file together with:
@@ -34,3 +37,4 @@ Read this file together with:
 - `src/app/viewmodel/panel/HierarchyInteractionBridge.cpp` for view-to-viewmodel verification.
 - `src/app/viewmodel/panel/HierarchyDragDropBridge.cpp` for drag/drop contract verification.
 - `src/app/viewmodel/sidebar/SidebarHierarchyViewModel.cpp` for viewmodel-to-store verification.
+- `src/app/viewmodel/sidebar/HierarchyViewModelProvider.cpp`, `src/app/viewmodel/panel/NoteListModelContractBridge.cpp`, and `src/app/viewmodel/detailPanel/DetailCurrentNoteContextBridge.cpp` for post-lock mutation rejection at major runtime wiring seams.

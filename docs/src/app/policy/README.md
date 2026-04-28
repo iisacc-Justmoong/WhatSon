@@ -14,6 +14,7 @@ The policy module is intentionally small. Its job is not to model business behav
 - Once root wiring is complete, the composition root locks the policy.
 - After the lock, late reassignment of critical runtime collaborators should be rejected.
 - Runtime bridge code can also call dependency verification helpers to log illegal layer edges in production code paths.
+- Major setter/wiring seams now share explicit helpers for both cases: `verifyMutableWiringAllowed(...)` blocks post-lock rewiring, and `verifyMutableDependencyAllowed(...)` combines the lock rule with role-based layer verification such as `View -> ViewModel` and `ViewModel -> Store`.
 
 ## Why This Directory Matters
 This module is small, but it acts as the repository's explicit statement of intended architecture. When documentation and runtime behavior drift apart, this is the first place that should be corrected.

@@ -90,9 +90,9 @@ ctest --test-dir build --output-on-failure -L cpp_regression
 - `ContentsDisplayView.qml` over-responsibility reduction is now source-locked by checking that gutter, minimap,
   mount-loading, exception, and resource-import alert chrome are composed through sibling view hosts instead of being
   owned directly by the root display host.
-- The same coverage now pins `ContentsActiveEditorSurfaceAdapter` as the C++ active-surface contract used by
-  note-selection focus restoration, so the root display host and selection/mount controller do not directly target a
-  concrete QML editor surface.
+- The same coverage now pins `ContentsDisplaySurfacePolicy` as the C++ surface-selection contract used by
+  note-selection focus restoration, so the root display host and selection/mount controller keep the parser-backed
+  structured document flow as the only concrete note editor surface.
 - `ContentsDisplaySurfacePolicy` is covered as the C++ surface-selection policy: selected notes use the structured
   document surface and the old whole-note inline loader stays disabled.
 - Editor shortcut-surface gating now also treats every focused body `TextEdit` as the native keyboard owner, so platform
