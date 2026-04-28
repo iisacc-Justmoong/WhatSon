@@ -98,7 +98,7 @@ ISidebarSelectionStore* SidebarHierarchyViewModel::selectionStore() const noexce
 void SidebarHierarchyViewModel::setSelectionStore(ISidebarSelectionStore* store)
 {
     if (store != nullptr
-        && !WhatSon::Policy::verifyDependencyAllowed(
+        && !WhatSon::Policy::verifyMutableDependencyAllowed(
             WhatSon::Policy::Layer::ViewModel,
             WhatSon::Policy::Layer::Store,
             QStringLiteral("SidebarHierarchyViewModel::setSelectionStore")))
@@ -106,11 +106,10 @@ void SidebarHierarchyViewModel::setSelectionStore(ISidebarSelectionStore* store)
         return;
     }
 
-    if (WhatSon::Policy::ArchitecturePolicyLock::isLocked())
+    if (store == nullptr
+        && !WhatSon::Policy::verifyMutableWiringAllowed(
+            QStringLiteral("SidebarHierarchyViewModel::setSelectionStore")))
     {
-        qWarning().noquote()
-            << QStringLiteral(
-                "[whatson:policy][lock] SidebarHierarchyViewModel::setSelectionStore rejected because architecture policy is locked");
         return;
     }
 
@@ -155,11 +154,9 @@ IHierarchyViewModelProvider* SidebarHierarchyViewModel::viewModelProvider() cons
 
 void SidebarHierarchyViewModel::setViewModelProvider(IHierarchyViewModelProvider* provider)
 {
-    if (WhatSon::Policy::ArchitecturePolicyLock::isLocked())
+    if (!WhatSon::Policy::verifyMutableWiringAllowed(
+            QStringLiteral("SidebarHierarchyViewModel::setViewModelProvider")))
     {
-        qWarning().noquote()
-            << QStringLiteral(
-                "[whatson:policy][lock] SidebarHierarchyViewModel::setViewModelProvider rejected because architecture policy is locked");
         return;
     }
 

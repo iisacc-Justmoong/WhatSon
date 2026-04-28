@@ -13,11 +13,9 @@ HierarchyViewModelProvider::~HierarchyViewModelProvider() = default;
 
 void HierarchyViewModelProvider::setMappings(QVector<Mapping> mappings)
 {
-    if (WhatSon::Policy::ArchitecturePolicyLock::isLocked())
+    if (!WhatSon::Policy::verifyMutableWiringAllowed(
+            QStringLiteral("HierarchyViewModelProvider::setMappings")))
     {
-        qWarning().noquote()
-            << QStringLiteral(
-                "[whatson:policy][lock] HierarchyViewModelProvider::setMappings rejected because architecture policy is locked");
         return;
     }
 

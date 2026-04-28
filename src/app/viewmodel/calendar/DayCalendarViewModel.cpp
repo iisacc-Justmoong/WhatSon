@@ -2,6 +2,7 @@
 
 #include "app/models/calendar/ICalendarBoardStore.hpp"
 #include "app/models/file/WhatSonDebugTrace.hpp"
+#include "app/policy/ArchitecturePolicyLock.hpp"
 
 #include <QDate>
 #include <QLocale>
@@ -37,6 +38,22 @@ QVariantList DayCalendarViewModel::timeSlots() const
 
 void DayCalendarViewModel::setCalendarBoardStore(ICalendarBoardStore* calendarBoardStore)
 {
+    if (calendarBoardStore != nullptr
+        && !WhatSon::Policy::verifyMutableDependencyAllowed(
+            WhatSon::Policy::Layer::ViewModel,
+            WhatSon::Policy::Layer::Store,
+            QStringLiteral("DayCalendarViewModel::setCalendarBoardStore")))
+    {
+        return;
+    }
+
+    if (calendarBoardStore == nullptr
+        && !WhatSon::Policy::verifyMutableWiringAllowed(
+            QStringLiteral("DayCalendarViewModel::setCalendarBoardStore")))
+    {
+        return;
+    }
+
     if (m_calendarBoardStore == calendarBoardStore)
     {
         return;

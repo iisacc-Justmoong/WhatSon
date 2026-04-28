@@ -1,5 +1,7 @@
 #include "app/viewmodel/panel/FocusedNoteDeletionBridge.hpp"
 
+#include "app/policy/ArchitecturePolicyLock.hpp"
+
 #include <QMetaObject>
 #include <QMetaProperty>
 
@@ -22,6 +24,22 @@ QObject* FocusedNoteDeletionBridge::noteListModel() const noexcept
 
 void FocusedNoteDeletionBridge::setNoteListModel(QObject* model)
 {
+    if (model != nullptr
+        && !WhatSon::Policy::verifyMutableDependencyAllowed(
+            WhatSon::Policy::Layer::View,
+            WhatSon::Policy::Layer::ViewModel,
+            QStringLiteral("FocusedNoteDeletionBridge::setNoteListModel")))
+    {
+        return;
+    }
+
+    if (model == nullptr
+        && !WhatSon::Policy::verifyMutableWiringAllowed(
+            QStringLiteral("FocusedNoteDeletionBridge::setNoteListModel")))
+    {
+        return;
+    }
+
     if (m_noteListModel == model)
     {
         return;
@@ -55,6 +73,22 @@ QObject* FocusedNoteDeletionBridge::deletionTarget() const noexcept
 
 void FocusedNoteDeletionBridge::setDeletionTarget(QObject* target)
 {
+    if (target != nullptr
+        && !WhatSon::Policy::verifyMutableDependencyAllowed(
+            WhatSon::Policy::Layer::View,
+            WhatSon::Policy::Layer::ViewModel,
+            QStringLiteral("FocusedNoteDeletionBridge::setDeletionTarget")))
+    {
+        return;
+    }
+
+    if (target == nullptr
+        && !WhatSon::Policy::verifyMutableWiringAllowed(
+            QStringLiteral("FocusedNoteDeletionBridge::setDeletionTarget")))
+    {
+        return;
+    }
+
     if (m_deletionTarget == target)
     {
         return;

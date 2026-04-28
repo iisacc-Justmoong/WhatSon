@@ -1,6 +1,7 @@
 #include "app/viewmodel/detailPanel/DetailNoteHeaderSelectionSourceViewModel.hpp"
 
 #include "app/models/file/note/WhatSonBookmarkColorPalette.hpp"
+#include "app/policy/ArchitecturePolicyLock.hpp"
 
 #include <QRegularExpression>
 #include <QVariantMap>
@@ -222,6 +223,22 @@ QObject* DetailNoteHeaderSelectionSourceViewModel::optionsSourceViewModel() cons
 
 void DetailNoteHeaderSelectionSourceViewModel::setSessionStore(IWhatSonNoteHeaderSessionStore* sessionStore)
 {
+    if (sessionStore != nullptr
+        && !WhatSon::Policy::verifyMutableDependencyAllowed(
+            WhatSon::Policy::Layer::ViewModel,
+            WhatSon::Policy::Layer::Store,
+            QStringLiteral("DetailNoteHeaderSelectionSourceViewModel::setSessionStore")))
+    {
+        return;
+    }
+
+    if (sessionStore == nullptr
+        && !WhatSon::Policy::verifyMutableWiringAllowed(
+            QStringLiteral("DetailNoteHeaderSelectionSourceViewModel::setSessionStore")))
+    {
+        return;
+    }
+
     m_sessionStore = sessionStore;
     synchronize(true);
 }
@@ -252,6 +269,22 @@ void DetailNoteHeaderSelectionSourceViewModel::setNoteDirectoryPath(const QStrin
 
 void DetailNoteHeaderSelectionSourceViewModel::setOptionsSourceViewModel(QObject* optionsSourceViewModel)
 {
+    if (optionsSourceViewModel != nullptr
+        && !WhatSon::Policy::verifyMutableDependencyAllowed(
+            WhatSon::Policy::Layer::View,
+            WhatSon::Policy::Layer::ViewModel,
+            QStringLiteral("DetailNoteHeaderSelectionSourceViewModel::setOptionsSourceViewModel")))
+    {
+        return;
+    }
+
+    if (optionsSourceViewModel == nullptr
+        && !WhatSon::Policy::verifyMutableWiringAllowed(
+            QStringLiteral("DetailNoteHeaderSelectionSourceViewModel::setOptionsSourceViewModel")))
+    {
+        return;
+    }
+
     if (m_optionsSourceViewModel == optionsSourceViewModel)
     {
         return;

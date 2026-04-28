@@ -1,5 +1,7 @@
 #include "app/viewmodel/hierarchy/library/LibraryNoteMutationViewModel.hpp"
 
+#include "app/policy/ArchitecturePolicyLock.hpp"
+
 #include <QStringList>
 #include <QtGlobal>
 
@@ -36,6 +38,22 @@ LibraryNoteMutationViewModel::~LibraryNoteMutationViewModel()
 
 void LibraryNoteMutationViewModel::setSourceViewModel(QObject* viewModel)
 {
+    if (viewModel != nullptr
+        && !WhatSon::Policy::verifyMutableDependencyAllowed(
+            WhatSon::Policy::Layer::View,
+            WhatSon::Policy::Layer::ViewModel,
+            QStringLiteral("LibraryNoteMutationViewModel::setSourceViewModel")))
+    {
+        return;
+    }
+
+    if (viewModel == nullptr
+        && !WhatSon::Policy::verifyMutableWiringAllowed(
+            QStringLiteral("LibraryNoteMutationViewModel::setSourceViewModel")))
+    {
+        return;
+    }
+
     if (m_sourceViewModel == viewModel)
     {
         return;

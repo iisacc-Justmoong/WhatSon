@@ -2,6 +2,7 @@
 
 #include "app/models/calendar/ICalendarBoardStore.hpp"
 #include "app/models/file/WhatSonDebugTrace.hpp"
+#include "app/policy/ArchitecturePolicyLock.hpp"
 
 #include <QCalendar>
 #include <QDate>
@@ -100,6 +101,22 @@ QVariantList MonthCalendarViewModel::calendarSystemOptions() const
 
 void MonthCalendarViewModel::setCalendarBoardStore(ICalendarBoardStore* calendarBoardStore)
 {
+    if (calendarBoardStore != nullptr
+        && !WhatSon::Policy::verifyMutableDependencyAllowed(
+            WhatSon::Policy::Layer::ViewModel,
+            WhatSon::Policy::Layer::Store,
+            QStringLiteral("MonthCalendarViewModel::setCalendarBoardStore")))
+    {
+        return;
+    }
+
+    if (calendarBoardStore == nullptr
+        && !WhatSon::Policy::verifyMutableWiringAllowed(
+            QStringLiteral("MonthCalendarViewModel::setCalendarBoardStore")))
+    {
+        return;
+    }
+
     if (m_calendarBoardStore == calendarBoardStore)
     {
         return;

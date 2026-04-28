@@ -4,7 +4,6 @@ import WhatSon.App.Internal 1.0
 import LVRS 1.0 as LV
 import "../../../../models/editor/diagnostics/ContentsEditorDebugTrace.js" as EditorTrace
 import "../../../../models/editor/display" as EditorDisplayModel
-import "../../../../models/editor/display/ContentsMinimapSnapshotSupport.js" as MinimapSnapshotSupport
 import "../../../../models/editor/input" as EditorInputModel
 import "../../../../models/editor/resource" as EditorResourceModel
 
@@ -318,364 +317,58 @@ Item {
         editorInputPolicyAdapter: editorInputPolicyAdapter
         surfacePolicy: surfacePolicy
     }
+    EditorDisplayModel.ContentsDisplayGeometrySnapshotModel {
+        id: geometrySnapshotModel
 
-    function activeLogicalTextSnapshot() {
-        if (editorTypingController && editorTypingController.currentEditorPlainText !== undefined) {
-            const livePlainText = editorTypingController.currentEditorPlainText();
-            if (livePlainText !== undefined && livePlainText !== null)
-                return String(livePlainText);
-        }
-        if (editorProjection && editorProjection.logicalText !== undefined && editorProjection.logicalText !== null)
-            return String(editorProjection.logicalText);
-        if (contentsView.documentPresentationSourceText !== undefined
-                && contentsView.documentPresentationSourceText !== null)
-            return String(contentsView.documentPresentationSourceText);
-        return "";
+        contentsView: contentsView
+        editorProjection: editorProjection
+        editorTypingController: editorTypingController
+        gutterCoordinator: gutterCoordinator
+        minimapCoordinator: minimapCoordinator
+        structuredDocumentFlow: structuredDocumentFlow
+        structuredFlowCoordinator: structuredFlowCoordinator
+        viewportCoordinator: viewportCoordinator
     }
-    function normalizedSnapshotEntries(rawEntries) {
-        if (rawEntries === undefined || rawEntries === null)
-            return [];
-        const explicitLength = Math.floor(Number(rawEntries.length) || 0);
-        if (explicitLength <= 0)
-            return [];
-        const normalized = [];
-        for (let index = 0; index < explicitLength; ++index)
-            normalized.push(rawEntries[index]);
-        return normalized;
+    EditorDisplayModel.ContentsDisplayViewportModel {
+        id: viewportModel
+
+        contentsView: contentsView
+        structuredDocumentFlow: structuredDocumentFlow
+        viewportCoordinator: viewportCoordinator
     }
-    function minimapSnapshotToken(entry, fallbackIndex) {
-        const safeEntry = entry && typeof entry === "object" ? entry : ({});
-        if (safeEntry.snapshotToken !== undefined && safeEntry.snapshotToken !== null)
-            return String(safeEntry.snapshotToken);
-        if (safeEntry.token !== undefined && safeEntry.token !== null)
-            return String(safeEntry.token);
-        if (safeEntry.text !== undefined && safeEntry.text !== null)
-            return "text|" + String(safeEntry.text);
-        return "line|" + String(Math.max(0, Math.floor(Number(fallbackIndex) || 0)));
-    }
-    function normalizedMinimapSnapshotText(rawText) {
-        const normalizedText = rawText === undefined || rawText === null ? "" : String(rawText);
-        return normalizedText
-                .replace(/\r\n/g, "\n")
-                .replace(/\r/g, "\n")
-                .replace(/\u2028/g, "\n")
-                .replace(/\u2029/g, "\n");
-    }
-    function plainMinimapSnapshotEntries(rawText) {
-        const normalizedText = contentsView.normalizedMinimapSnapshotText(rawText);
-        const lines = normalizedText.length > 0 ? normalizedText.split("\n") : [""];
-        const entries = [];
-        for (let lineIndex = 0; lineIndex < lines.length; ++lineIndex) {
-            entries.push({
-                "lineNumber": lineIndex + 1,
-                "snapshotToken": "text|" + lines[lineIndex]
-            });
-        }
-        return entries;
-    }
-    function hasStructuredLogicalLineGeometry() {
-        return contentsView.structuredHostGeometryActive
-                && contentsView.effectiveStructuredLogicalLineEntries().length > 0;
-    }
-    function effectiveStructuredMinimapEntries() {
-        if (!contentsView.structuredHostGeometryActive
-                || !structuredDocumentFlow
-                || structuredDocumentFlow.normalizedBlocks === undefined) {
-            return [];
-        }
-        return contentsView.normalizedSnapshotEntries(
-                    minimapCoordinator.buildStructuredMinimapSnapshotEntries(
-                        structuredDocumentFlow.normalizedBlocks()));
-    }
-    function hasStructuredMinimapEntries() {
-        return contentsView.structuredHostGeometryActive
-                && contentsView.effectiveStructuredMinimapEntries().length > 0;
-    }
-    function currentMinimapSnapshotEntries() {
-        if (contentsView.hasStructuredMinimapEntries())
-            return contentsView.effectiveStructuredMinimapEntries();
-        return contentsView.plainMinimapSnapshotEntries(contentsView.activeLogicalTextSnapshot());
-    }
-    function minimapSnapshotEntriesEqual(previousEntries, nextEntries) {
-        const normalizedPrevious = contentsView.normalizedSnapshotEntries(previousEntries);
-        const normalizedNext = contentsView.normalizedSnapshotEntries(nextEntries);
-        if (normalizedPrevious.length !== normalizedNext.length)
-            return false;
-        for (let index = 0; index < normalizedPrevious.length; ++index) {
-            if (contentsView.minimapSnapshotToken(normalizedPrevious[index], index)
-                    !== contentsView.minimapSnapshotToken(normalizedNext[index], index)) {
-                return false;
-            }
-        }
-        return true;
-    }
-            function logEditorCreationState(reason) {
+
+    function activeLogicalTextSnapshot() { return geometrySnapshotModel.activeLogicalTextSnapshot(); }
+    function normalizedSnapshotEntries(rawEntries) { return geometrySnapshotModel.normalizedSnapshotEntries(rawEntries); }
+    function minimapSnapshotToken(entry, fallbackIndex) { return geometrySnapshotModel.minimapSnapshotToken(entry, fallbackIndex); }
+    function normalizedMinimapSnapshotText(rawText) { return geometrySnapshotModel.normalizedMinimapSnapshotText(rawText); }
+    function plainMinimapSnapshotEntries(rawText) { return geometrySnapshotModel.plainMinimapSnapshotEntries(rawText); }
+    function hasStructuredLogicalLineGeometry() { return geometrySnapshotModel.hasStructuredLogicalLineGeometry(); }
+    function effectiveStructuredMinimapEntries() { return geometrySnapshotModel.effectiveStructuredMinimapEntries(); }
+    function hasStructuredMinimapEntries() { return geometrySnapshotModel.hasStructuredMinimapEntries(); }
+    function currentMinimapSnapshotEntries() { return geometrySnapshotModel.currentMinimapSnapshotEntries(); }
+    function minimapSnapshotEntriesEqual(previousEntries, nextEntries) { return geometrySnapshotModel.minimapSnapshotEntriesEqual(previousEntries, nextEntries); }
+    function logEditorCreationState(reason) {
         presentationViewModel.logEditorCreationState(reason);
     }
-            function normalizedStructuredLogicalLineEntries() {
-        if (!contentsView.structuredHostGeometryActive || !structuredDocumentFlow)
-            return [];
-        const rawEntries = structuredDocumentFlow.cachedLogicalLineEntries !== undefined
-                ? structuredDocumentFlow.cachedLogicalLineEntries
-                : (structuredDocumentFlow.logicalLineEntries !== undefined
-                   ? structuredDocumentFlow.logicalLineEntries()
-                   : []);
-        return structuredFlowCoordinator.normalizeStructuredLogicalLineEntries(rawEntries);
-    }
-    function structuredLogicalLineEntryAt(lineNumber) {
-        const lineEntries = contentsView.normalizedStructuredLogicalLineEntries();
-        if (lineEntries.length === 0)
-            return null;
-        const safeLineNumber = Math.floor(Number(lineNumber) || 0);
-        if (safeLineNumber < 1 || safeLineNumber > lineEntries.length)
-            return null;
-        const entry = lineEntries[safeLineNumber - 1];
-        return entry && typeof entry === "object" ? entry : null;
-    }
-    function effectiveStructuredLogicalLineEntries() {
-        return contentsView.normalizedStructuredLogicalLineEntries();
-    }
-    function currentStructuredGutterGeometrySignature() {
-        return viewportCoordinator.structuredGutterGeometrySignature(
-                    contentsView.effectiveStructuredLogicalLineEntries());
-    }
-    function consumeStructuredGutterGeometryChange() {
-        const state = structuredFlowCoordinator.evaluateStructuredLayoutState(
-                    contentsView.effectiveStructuredLogicalLineEntries());
-        contentsView.structuredGutterGeometrySignature = String(state.signature || "");
-        return !!state.geometryChanged;
-    }
-    function buildStructuredMinimapLineGroupsForRange(startLineNumber, endLineNumber) {
-        const snapshotEntries = contentsView.effectiveStructuredMinimapEntries();
-        const groups = minimapCoordinator.buildStructuredMinimapLineGroupsForRange(
-                    snapshotEntries,
-                    Number(startLineNumber) || 1,
-                    Number(endLineNumber) || Number(startLineNumber) || 1,
-                    contentsView.editorOccupiedContentHeight());
-        return groups.length > 0 ? groups : contentsView.buildFallbackMinimapLineGroupsForRange(startLineNumber, endLineNumber);
-    }
-    function buildFallbackMinimapLineGroupsForRange(startLineNumber, endLineNumber) {
-        const safeStartLine = Math.max(1, Math.min(contentsView.logicalLineCount, Number(startLineNumber) || 1));
-        const safeEndLine = Math.max(safeStartLine, Math.min(contentsView.logicalLineCount, Number(endLineNumber) || safeStartLine));
-        const lineCharacterCounts = [];
-        const lineDocumentYs = [];
-        const lineVisualHeights = [];
-        for (let lineNumber = safeStartLine; lineNumber <= safeEndLine; ++lineNumber) {
-            lineCharacterCounts.push(viewportCoordinator.logicalLineCharacterCountAt(
-                                         lineNumber - 1,
-                                         contentsView.logicalLineStartOffsets));
-            lineDocumentYs.push(contentsView.lineDocumentY(lineNumber));
-            lineVisualHeights.push(contentsView.lineVisualHeight(lineNumber, 1));
-        }
-        return minimapCoordinator.buildFallbackMinimapLineGroupsForRange(
-                    lineCharacterCounts,
-                    lineDocumentYs,
-                    lineVisualHeights,
-                    safeStartLine,
-                    safeEndLine);
-    }
-    function buildMinimapLineGroupsForRange(startLineNumber, endLineNumber) {
-        const safeStartLine = Math.max(1, Math.min(contentsView.logicalLineCount, Number(startLineNumber) || 1));
-        const safeEndLine = Math.max(safeStartLine, Math.min(contentsView.logicalLineCount, Number(endLineNumber) || safeStartLine));
-        if (contentsView.hasStructuredLogicalLineGeometry())
-            return contentsView.buildStructuredMinimapLineGroupsForRange(safeStartLine, safeEndLine);
-        const editorWidth = 0;
-        const editorContentHeight = 0;
-        const lineCharacterCounts = [];
-        const lineStartOffsets = [];
-        const fallbackLineDocumentYs = [];
-        const fallbackLineVisualHeights = [];
-        const editorRects = [];
-        const logicalLength = contentsView.resolvedLogicalTextLength;
-        for (let lineNumber = safeStartLine; lineNumber <= safeEndLine; ++lineNumber) {
-            const lineIndex = lineNumber - 1;
-            const startOffset = viewportCoordinator.logicalLineStartOffsetAt(
-                        lineIndex,
-                        contentsView.logicalLineStartOffsets);
-            lineCharacterCounts.push(viewportCoordinator.logicalLineCharacterCountAt(
-                                         lineIndex,
-                                         contentsView.logicalLineStartOffsets));
-            lineStartOffsets.push(startOffset);
-            fallbackLineDocumentYs.push(contentsView.lineDocumentY(lineNumber));
-            fallbackLineVisualHeights.push(contentsView.lineVisualHeight(lineNumber, 1));
-        }
-        return minimapCoordinator.buildEditorMinimapLineGroupsForRange(
-                    lineCharacterCounts,
-                    lineStartOffsets,
-                    fallbackLineDocumentYs,
-                    fallbackLineVisualHeights,
-                    editorRects,
-                    logicalLength,
-                    safeStartLine,
-                    safeEndLine,
-                    editorWidth,
-                    editorContentHeight);
-    }
-    function activeLineGeometryNoteId() {
-        return viewportCoordinator.normalizedNoteId(contentsView.selectedNoteId);
-    }
-    function nextMinimapLineGroupsForCurrentState(currentSnapshotEntries) {
-        const currentNoteId = contentsView.activeLineGeometryNoteId();
-        const useStructuredMinimap = contentsView.hasStructuredMinimapEntries();
-        const structuredLineCount = useStructuredMinimap
-                ? contentsView.effectiveStructuredMinimapEntries().length
-                : 0;
-        const snapshotPlan = minimapCoordinator.buildNextMinimapSnapshotPlan(
-                    contentsView.minimapLineGroups,
-                    contentsView.minimapLineGroupsNoteId,
-                    currentNoteId,
-                    contentsView.minimapSnapshotEntries,
-                    currentSnapshotEntries,
-                    contentsView.minimapSnapshotForceFullRefresh,
-                    contentsView.hasPendingNoteEntryGutterRefresh(currentNoteId),
-                    structuredLineCount,
-                    contentsView.logicalLineCount);
-        if (snapshotPlan.reuseExisting)
-            return contentsView.minimapLineGroups;
-        if (snapshotPlan.requiresFullRebuild) {
-            return useStructuredMinimap
-                    ? contentsView.buildStructuredMinimapLineGroupsForRange(1, Math.max(1, structuredLineCount))
-                    : contentsView.buildMinimapLineGroupsForRange(1, contentsView.logicalLineCount);
-        }
-
-        const replacementGroups = useStructuredMinimap
-                ? contentsView.buildStructuredMinimapLineGroupsForRange(
-                      Number(snapshotPlan.replacementStartLine) || 1,
-                      Number(snapshotPlan.replacementEndLine) || 1)
-                : contentsView.buildMinimapLineGroupsForRange(
-                      Number(snapshotPlan.replacementStartLine) || 1,
-                      Number(snapshotPlan.replacementEndLine) || 1);
-        const mergedGroups = MinimapSnapshotSupport.spliceLineGroups(
-                    contentsView.minimapLineGroups,
-                    replacementGroups,
-                    Number(snapshotPlan.previousStartLine) || 1,
-                      Number(snapshotPlan.previousEndLine) || 1);
-        const expectedLineCount = useStructuredMinimap
-                ? Math.max(1, structuredLineCount)
-                : contentsView.logicalLineCount;
-        if (!Array.isArray(mergedGroups) || mergedGroups.length !== expectedLineCount) {
-            return useStructuredMinimap
-                    ? contentsView.buildStructuredMinimapLineGroupsForRange(1, expectedLineCount)
-                    : contentsView.buildMinimapLineGroupsForRange(1, expectedLineCount);
-        }
-        return mergedGroups;
-    }
-    function buildVisibleGutterLineEntries() {
-        if (contentsView.structuredHostGeometryActive) {
-            return structuredFlowCoordinator.buildVisibleStructuredGutterLineEntries(
-                        contentsView.effectiveStructuredLogicalLineEntries(),
-                        contentsView.firstVisibleLogicalLine());
-        }
-        const firstVisibleLine = contentsView.firstVisibleLogicalLine();
-        const gutterLineYs = [];
-        const gutterLineHeights = [];
-        for (let lineNumber = firstVisibleLine; lineNumber <= contentsView.logicalLineCount; ++lineNumber) {
-            gutterLineYs.push(contentsView.gutterLineY(lineNumber));
-            gutterLineHeights.push(contentsView.gutterLineVisualHeight(lineNumber, 1));
-        }
-        return gutterCoordinator.buildVisiblePlainGutterLineEntries(
-                    firstVisibleLine,
-                    gutterLineYs,
-                    gutterLineHeights);
-    }
-                                        function clampUnit(value) {
-        return Math.max(0, Math.min(1, Number(value) || 0));
-    }
-    function logicalLineOffsetsEqual(previousOffsets, nextOffsets) {
-        const normalizedPrevious = Array.isArray(previousOffsets) && previousOffsets.length > 0 ? previousOffsets : [0];
-        const normalizedNext = Array.isArray(nextOffsets) && nextOffsets.length > 0 ? nextOffsets : [0];
-        if (normalizedPrevious.length !== normalizedNext.length)
-            return false;
-        for (let offsetIndex = 0; offsetIndex < normalizedPrevious.length; ++offsetIndex) {
-            if ((Number(normalizedPrevious[offsetIndex]) || 0) !== (Number(normalizedNext[offsetIndex]) || 0))
-                return false;
-        }
-        return true;
-    }
-    function applyLiveLogicalLineMetrics(logicalTextLength, lineStartOffsets, lineCount) {
-        const normalizedLogicalTextLength = Math.max(0, Number(logicalTextLength) || 0);
-        const normalizedLineStartOffsets = Array.isArray(lineStartOffsets) && lineStartOffsets.length > 0
-                ? lineStartOffsets.slice(0)
-                : [0];
-        const normalizedLineCount = Math.max(1, Number(lineCount) || normalizedLineStartOffsets.length || 1);
-        const lineCountChanged = contentsView.liveLogicalLineCount !== normalizedLineCount;
-        const textLengthChanged = contentsView.liveLogicalTextLength !== normalizedLogicalTextLength;
-        const lineOffsetsChanged = !contentsView.logicalLineOffsetsEqual(
-                    contentsView.liveLogicalLineStartOffsets,
-                    normalizedLineStartOffsets);
-        if (textLengthChanged)
-            contentsView.liveLogicalTextLength = normalizedLogicalTextLength;
-        if (lineOffsetsChanged)
-            contentsView.liveLogicalLineStartOffsets = normalizedLineStartOffsets;
-        if (lineCountChanged)
-            contentsView.liveLogicalLineCount = normalizedLineCount;
-        return lineCountChanged || textLengthChanged || lineOffsetsChanged;
-    }
-    function hasPendingNoteEntryGutterRefresh(noteId) {
-        return viewportCoordinator.hasPendingNoteEntryGutterRefresh(
-                    contentsView.pendingNoteEntryGutterRefreshNoteId,
-                    noteId === undefined ? null : String(noteId));
-    }
-    function finalizePendingNoteEntryGutterRefresh(noteId, reason, refreshStructuredLayout) {
-        const plan = viewportCoordinator.finalizePendingNoteEntryGutterRefresh(
-                    contentsView.pendingNoteEntryGutterRefreshNoteId,
-                    noteId === undefined || noteId === null ? "" : String(noteId),
-                    contentsView.selectedNoteBodyLoading,
-                    reason === undefined || reason === null ? "" : String(reason),
-                    !!refreshStructuredLayout);
-        if (!plan.clearPendingNoteId)
-            return false;
-        contentsView.pendingNoteEntryGutterRefreshNoteId = "";
-        if (plan.refreshStructuredLayoutNow
-                && structuredDocumentFlow
-                && structuredDocumentFlow.refreshLayoutCache !== undefined)
-            structuredDocumentFlow.refreshLayoutCache();
-        if (plan.commitGutterRefresh)
-            contentsView.commitGutterRefresh();
-        if (plan.scheduleViewportGutterRefresh)
-            contentsView.scheduleViewportGutterRefresh();
-        if (plan.scheduleMinimapSnapshotRefresh)
-            contentsView.scheduleMinimapSnapshotRefresh(!!plan.scheduleMinimapSnapshotForceFull);
-        if (plan.scheduleGutterRefresh)
-            contentsView.scheduleGutterRefresh(Number(plan.gutterPassCount) || 0,
-                                               String(plan.gutterReason || ""));
-        return true;
-    }
-    function commitGutterRefresh() {
-        contentsView.refreshLiveLogicalLineMetrics();
-        contentsView.gutterRefreshRevision += 1;
-        contentsView.visibleGutterLineEntries = contentsView.buildVisibleGutterLineEntries();
-        contentsView.traceVisibleGutterSnapshot("commit");
-    }
-    function refreshVisibleGutterEntries() {
-        contentsView.visibleGutterLineEntries = contentsView.buildVisibleGutterLineEntries();
-        contentsView.traceVisibleGutterSnapshot("refresh");
-    }
-    function traceVisibleGutterSnapshot(reason) {
-        if (!contentsView.hasSelectedNote)
-            return;
-        const startLine = 14;
-        const endLine = Math.min(contentsView.logicalLineCount, 27);
-        const parts = [];
-        for (let lineNumber = startLine; lineNumber <= endLine; ++lineNumber) {
-            const lineGroup = contentsView.incrementalLineGeometryAvailable()
-                    ? contentsView.minimapLineGroups[lineNumber - 1]
-                    : null;
-            parts.push("L" + lineNumber
-                       + "{lineY=" + Math.round(contentsView.lineY(lineNumber))
-                       + ",gutterY=" + Math.round(contentsView.gutterLineY(lineNumber))
-                       + ",lineH=" + Math.round(contentsView.lineVisualHeight(lineNumber, 1))
-                       + ",gutterH=" + Math.round(contentsView.gutterLineVisualHeight(lineNumber, 1))
-                       + ",rows=" + Math.max(1, Math.ceil(Number(lineGroup && lineGroup.rowCount !== undefined ? lineGroup.rowCount : 1) || 1))
-                       + "}");
-        }
-        EditorTrace.trace("displayView",
-                          "gutterSnapshot",
-                          "reason=" + reason
-                          + " count=" + contentsView.visibleGutterLineEntries.length
-                          + " lines=[" + parts.join(", ") + "]",
-                          contentsView);
-    }
+    function normalizedStructuredLogicalLineEntries() { return geometrySnapshotModel.normalizedStructuredLogicalLineEntries(); }
+    function structuredLogicalLineEntryAt(lineNumber) { return geometrySnapshotModel.structuredLogicalLineEntryAt(lineNumber); }
+    function effectiveStructuredLogicalLineEntries() { return geometrySnapshotModel.effectiveStructuredLogicalLineEntries(); }
+    function currentStructuredGutterGeometrySignature() { return geometrySnapshotModel.currentStructuredGutterGeometrySignature(); }
+    function consumeStructuredGutterGeometryChange() { return geometrySnapshotModel.consumeStructuredGutterGeometryChange(); }
+    function buildStructuredMinimapLineGroupsForRange(startLineNumber, endLineNumber) { return geometrySnapshotModel.buildStructuredMinimapLineGroupsForRange(startLineNumber, endLineNumber); }
+    function buildFallbackMinimapLineGroupsForRange(startLineNumber, endLineNumber) { return geometrySnapshotModel.buildFallbackMinimapLineGroupsForRange(startLineNumber, endLineNumber); }
+    function buildMinimapLineGroupsForRange(startLineNumber, endLineNumber) { return geometrySnapshotModel.buildMinimapLineGroupsForRange(startLineNumber, endLineNumber); }
+    function activeLineGeometryNoteId() { return geometrySnapshotModel.activeLineGeometryNoteId(); }
+    function nextMinimapLineGroupsForCurrentState(currentSnapshotEntries) { return geometrySnapshotModel.nextMinimapLineGroupsForCurrentState(currentSnapshotEntries); }
+    function buildVisibleGutterLineEntries() { return geometrySnapshotModel.buildVisibleGutterLineEntries(); }
+    function clampUnit(value) { return geometrySnapshotModel.clampUnit(value); }
+    function logicalLineOffsetsEqual(previousOffsets, nextOffsets) { return geometrySnapshotModel.logicalLineOffsetsEqual(previousOffsets, nextOffsets); }
+    function applyLiveLogicalLineMetrics(logicalTextLength, lineStartOffsets, lineCount) { return geometrySnapshotModel.applyLiveLogicalLineMetrics(logicalTextLength, lineStartOffsets, lineCount); }
+    function hasPendingNoteEntryGutterRefresh(noteId) { return geometrySnapshotModel.hasPendingNoteEntryGutterRefresh(noteId); }
+    function finalizePendingNoteEntryGutterRefresh(noteId, reason, refreshStructuredLayout) { return geometrySnapshotModel.finalizePendingNoteEntryGutterRefresh(noteId, reason, refreshStructuredLayout); }
+    function commitGutterRefresh() { geometrySnapshotModel.commitGutterRefresh(); }
+    function refreshVisibleGutterEntries() { geometrySnapshotModel.refreshVisibleGutterEntries(); }
+    function traceVisibleGutterSnapshot(reason) { geometrySnapshotModel.traceVisibleGutterSnapshot(reason); }
     function contextMenuEditorSelectionRange() {
         return editorSelectionController.contextMenuEditorSelectionRange();
     }
@@ -1006,292 +699,28 @@ Item {
     function inlineStyleWrapTags(styleTag) {
         return editorSelectionController.inlineStyleWrapTags(styleTag);
     }
-                    function refreshInlineResourcePresentation() {
+    function refreshInlineResourcePresentation() {
         presentationViewModel.refreshInlineResourcePresentation();
     }
-                    function isMinimapScrollable() {
-        const flickable = contentsView.editorFlickable;
-        if (!flickable)
-            return false;
-        return contentsView.minimapContentHeight() > (Number(flickable.height) || 0);
-    }
-    function lineDocumentY(lineNumber) {
-        if (contentsView.structuredHostGeometryActive) {
-            const structuredLineCount = Math.max(1, contentsView.effectiveStructuredLogicalLineEntries().length);
-            const safeLineNumber = Math.max(1, Math.min(structuredLineCount, Number(lineNumber) || 1));
-            const structuredEntry = contentsView.structuredLogicalLineEntryAt(safeLineNumber);
-            if (structuredEntry && structuredEntry.contentY !== undefined)
-                return Math.max(0, Number(structuredEntry.contentY) || 0);
-            return Math.max(0, (safeLineNumber - 1) * contentsView.editorLineHeight);
-        }
-        const safeLineNumber = Math.max(1, Math.min(contentsView.logicalLineCount, Number(lineNumber) || 1));
-        if (contentsView.incrementalLineGeometryAvailable()) {
-            const lineGroup = contentsView.minimapLineGroups[safeLineNumber - 1];
-            if (lineGroup && lineGroup.contentY !== undefined)
-                return Math.max(0, (Number(lineGroup.contentY) || 0) - contentsView.editorDocumentStartY);
-        }
-        contentsView.ensureLogicalLineDocumentYCache();
-        const cacheIndex = safeLineNumber - 1;
-        if (Array.isArray(contentsView.logicalLineDocumentYCache) && cacheIndex >= 0 && cacheIndex < contentsView.logicalLineDocumentYCache.length) {
-            return Number(contentsView.logicalLineDocumentYCache[cacheIndex]) || 0;
-        }
-        return Math.max(0, (safeLineNumber - 1) * contentsView.editorLineHeight);
-    }
-    function gutterLineDocumentY(lineNumber) {
-        if (contentsView.structuredHostGeometryActive) {
-            const structuredEntry = contentsView.structuredLogicalLineEntryAt(lineNumber);
-            if (structuredEntry && structuredEntry.gutterContentY !== undefined)
-                return Math.max(0, Number(structuredEntry.gutterContentY) || 0);
-            if (structuredEntry && structuredEntry.contentY !== undefined)
-                return Math.max(0, Number(structuredEntry.contentY) || 0);
-        }
-        contentsView.ensureLogicalLineGutterDocumentYCache();
-        const safeLineNumber = Math.max(1, Math.min(contentsView.logicalLineCount, Number(lineNumber) || 1));
-        const cacheIndex = safeLineNumber - 1;
-        if (Array.isArray(contentsView.logicalLineGutterDocumentYCache)
-                && cacheIndex >= 0
-                && cacheIndex < contentsView.logicalLineGutterDocumentYCache.length) {
-            return Math.max(0, Number(contentsView.logicalLineGutterDocumentYCache[cacheIndex]) || 0);
-        }
-        return contentsView.lineDocumentY(safeLineNumber);
-    }
-    function gutterDocumentOccupiedBottomY() {
-        if (contentsView.structuredHostGeometryActive) {
-            const structuredLineCount = Math.max(1, contentsView.effectiveStructuredLogicalLineEntries().length);
-            const lastLineNumber = structuredLineCount;
-            return Math.max(
-                        contentsView.editorLineHeight,
-                        contentsView.gutterLineDocumentY(lastLineNumber)
-                        + contentsView.singleLineGutterHeight(lastLineNumber));
-        }
-        if (contentsView.logicalLineCount <= 0)
-            return contentsView.editorLineHeight;
-        contentsView.ensureLogicalLineGutterDocumentYCache();
-        const lastLineNumber = contentsView.logicalLineCount;
-        return Math.max(
-                    contentsView.editorLineHeight,
-                    contentsView.gutterLineDocumentY(lastLineNumber)
-                    + contentsView.singleLineGutterHeight(lastLineNumber));
-    }
-    function lineVisualHeight(startLine, lineSpan) {
-        const safeLineSpan = Math.max(1, Number(lineSpan) || 1);
-        if (contentsView.structuredHostGeometryActive) {
-            const structuredLineCount = Math.max(1, contentsView.effectiveStructuredLogicalLineEntries().length);
-            const safeStartLine = Math.max(1, Math.min(structuredLineCount, Number(startLine) || 1));
-            const startEntry = contentsView.structuredLogicalLineEntryAt(safeStartLine);
-            if (safeLineSpan === 1) {
-                return Math.max(
-                            1,
-                            Number(startEntry && startEntry.contentHeight !== undefined
-                                   ? startEntry.contentHeight
-                                   : 0) || contentsView.editorLineHeight);
-            }
-            const safeEndLine = Math.max(
-                        safeStartLine,
-                        Math.min(
-                            structuredLineCount,
-                            safeStartLine + safeLineSpan - 1));
-            const endEntry = contentsView.structuredLogicalLineEntryAt(safeEndLine);
-            const startDocumentY = Math.max(0, Number(startEntry && startEntry.contentY !== undefined ? startEntry.contentY : 0) || 0);
-            const endDocumentY = Math.max(
-                        startDocumentY + contentsView.editorLineHeight,
-                        Math.max(0, Number(endEntry && endEntry.contentY !== undefined ? endEntry.contentY : startDocumentY) || startDocumentY)
-                        + Math.max(
-                            1,
-                            Number(endEntry && endEntry.contentHeight !== undefined
-                                   ? endEntry.contentHeight
-                                   : 0) || contentsView.editorLineHeight));
-            return Math.max(contentsView.editorLineHeight, endDocumentY - startDocumentY);
-        }
-        const safeStartLine = Math.max(1, Math.min(contentsView.logicalLineCount, Number(startLine) || 1));
-        if (safeLineSpan === 1 && contentsView.incrementalLineGeometryAvailable()) {
-            const lineGroup = contentsView.minimapLineGroups[safeStartLine - 1];
-            if (lineGroup && lineGroup.contentHeight !== undefined)
-                return Math.max(1, Number(lineGroup.contentHeight) || contentsView.editorLineHeight);
-        }
-        const startDocumentY = contentsView.lineDocumentY(safeStartLine);
-        const nextLineNumber = safeStartLine + safeLineSpan;
-        let endDocumentY = 0;
-        if (nextLineNumber <= contentsView.logicalLineCount) {
-            endDocumentY = contentsView.lineDocumentY(nextLineNumber);
-        } else {
-            endDocumentY = contentsView.documentOccupiedBottomY();
-        }
-        return Math.max(contentsView.editorLineHeight, endDocumentY - startDocumentY);
-    }
-    function gutterLineVisualHeight(startLine, lineSpan) {
-        const safeLineSpan = Math.max(1, Number(lineSpan) || 1);
-        if (contentsView.structuredHostGeometryActive) {
-            const structuredLineCount = Math.max(1, contentsView.effectiveStructuredLogicalLineEntries().length);
-            const safeStartLine = Math.max(1, Math.min(structuredLineCount, Number(startLine) || 1));
-            if (safeLineSpan === 1)
-                return contentsView.singleLineGutterHeight(safeStartLine);
-            const startDocumentY = contentsView.gutterLineDocumentY(safeStartLine);
-            const nextLineNumber = safeStartLine + safeLineSpan;
-            let endDocumentY = 0;
-            if (nextLineNumber <= structuredLineCount)
-                endDocumentY = contentsView.gutterLineDocumentY(nextLineNumber);
-            else
-                endDocumentY = contentsView.gutterDocumentOccupiedBottomY();
-            return Math.max(contentsView.editorLineHeight, endDocumentY - startDocumentY);
-        }
-        const safeStartLine = Math.max(1, Math.min(contentsView.logicalLineCount, Number(startLine) || 1));
-        if (safeLineSpan === 1)
-            return contentsView.singleLineGutterHeight(safeStartLine);
-        const startDocumentY = contentsView.gutterLineDocumentY(safeStartLine);
-        const nextLineNumber = safeStartLine + safeLineSpan;
-        let endDocumentY = 0;
-        if (nextLineNumber <= contentsView.logicalLineCount)
-            endDocumentY = contentsView.gutterLineDocumentY(nextLineNumber);
-        else
-            endDocumentY = contentsView.gutterDocumentOccupiedBottomY();
-        return Math.max(contentsView.editorLineHeight, endDocumentY - startDocumentY);
-    }
-    function lineY(lineNumber) {
-        return contentsView.editorViewportYForDocumentY(contentsView.lineDocumentY(lineNumber));
-    }
-    function gutterLineY(lineNumber) {
-        return contentsView.editorViewportYForDocumentY(contentsView.gutterLineDocumentY(lineNumber));
-    }
-    function logicalLineNumberForDocumentY(documentY) {
-        if (contentsView.structuredHostGeometryActive) {
-            const lineEntries = contentsView.effectiveStructuredLogicalLineEntries();
-            if (lineEntries.length === 0)
-                return 1;
-            const safeDocumentY = Math.max(0, Number(documentY) || 0);
-            let bestLineNumber = 1;
-            for (let lineIndex = 0; lineIndex < lineEntries.length; ++lineIndex) {
-                const entry = lineEntries[lineIndex] && typeof lineEntries[lineIndex] === "object"
-                        ? lineEntries[lineIndex]
-                        : ({});
-                const lineTop = Math.max(0, Number(entry.contentY) || 0);
-                const lineBottom = lineTop + Math.max(1, Number(entry.contentHeight) || contentsView.editorLineHeight);
-                if (safeDocumentY < lineTop)
-                    break;
-                bestLineNumber = lineIndex + 1;
-                if (safeDocumentY < lineBottom)
-                    break;
-            }
-            return bestLineNumber;
-        }
-        if (contentsView.logicalLineCount <= 0)
-            return 1;
-        contentsView.ensureLogicalLineDocumentYCache();
-        const safeDocumentY = Math.max(0, Number(documentY) || 0);
-        let low = 0;
-        let high = contentsView.logicalLineCount - 1;
-        let best = 0;
-        while (low <= high) {
-            const middle = Math.floor((low + high) / 2);
-            const middleY = contentsView.lineDocumentY(middle + 1);
-            if (middleY <= safeDocumentY) {
-                best = middle;
-                low = middle + 1;
-            } else {
-                high = middle - 1;
-            }
-        }
-        return best + 1;
-    }
-    function markerColorForType(markerType) {
-        const normalizedType = markerType === undefined || markerType === null ? "" : String(markerType).toLowerCase();
-        if (normalizedType === "conflict")
-            return contentsView.gutterMarkerConflictColor;
-        if (normalizedType === "changed")
-            return contentsView.gutterMarkerChangedColor;
-        return contentsView.gutterMarkerChangedColor;
-    }
-    function markerHeight(markerSpec) {
-        if (!markerSpec)
-            return contentsView.editorLineHeight;
-        return Math.max(1, contentsView.gutterLineVisualHeight(markerSpec.startLine, markerSpec.lineSpan));
-    }
-    function markerY(markerSpec) {
-        if (!markerSpec)
-            return contentsView.editorDocumentStartY;
-        const startLine = Math.max(1, Number(markerSpec.startLine) || 1);
-        return contentsView.gutterLineY(startLine);
-    }
-    function minimapContentHeight() {
-        return Math.max(1, contentsView.editorOccupiedContentHeight());
-    }
-    function minimapContentYForLine(lineNumber) {
-        const textStartY = contentsView.editorDocumentStartY;
-        return textStartY + contentsView.lineDocumentY(lineNumber);
-    }
-    function minimapCurrentVisualRow(rowsOverride) {
-        const rows = Array.isArray(rowsOverride) ? rowsOverride : (Array.isArray(contentsView.minimapVisualRows) ? contentsView.minimapVisualRows : []);
-        if (contentsView.structuredHostGeometryActive && rows.length > 0) {
-            const resolvedBlockIndex = structuredDocumentFlow
-                    && structuredDocumentFlow.normalizedResolvedInteractiveBlockIndex !== undefined
-                    ? Number(structuredDocumentFlow.normalizedResolvedInteractiveBlockIndex())
-                    : NaN;
-            const fallbackBlockIndex = structuredDocumentFlow
-                    && structuredDocumentFlow.activeBlockIndex !== undefined
-                    ? Number(structuredDocumentFlow.activeBlockIndex)
-                    : NaN;
-            const safeBlockIndex = isFinite(resolvedBlockIndex) && resolvedBlockIndex >= 0
-                    ? Math.floor(resolvedBlockIndex)
-                    : (isFinite(fallbackBlockIndex) && fallbackBlockIndex >= 0
-                       ? Math.floor(fallbackBlockIndex)
-                       : -1);
-            if (safeBlockIndex >= 0 && safeBlockIndex < rows.length)
-                return rows[safeBlockIndex];
-        }
-        const textStartY = contentsView.editorDocumentStartY;
-        const cursorRect = contentsView.currentCursorVisualRowRect();
-        const cursorContentY = textStartY + (Number(cursorRect.y) || 0);
-        for (let index = 0; index < rows.length; ++index) {
-            const row = rows[index];
-            const rowStart = Number(row.contentY) || 0;
-            const rowEnd = rowStart + Math.max(1, Number(row.contentHeight) || contentsView.editorLineHeight);
-            if (cursorContentY >= rowStart && cursorContentY < rowEnd)
-                return row;
-        }
-        return rows.length > 0 ? rows[0] : ({
-                "charCount": 0,
-                "contentAvailableWidth": contentsView.minimapResolvedTrackWidth,
-                "contentHeight": contentsView.editorLineHeight,
-                "contentWidth": 0,
-                "contentY": textStartY,
-                "lineNumber": 1,
-                "visualIndex": 0
-            });
-    }
-    function minimapLineY(lineNumber) {
-        const safeLineNumber = Math.max(1, Math.min(contentsView.logicalLineCount, Number(lineNumber) || 1));
-        return viewportCoordinator.minimapTrackYForContentY(
-                    contentsView.minimapContentYForLine(safeLineNumber),
-                    contentsView.minimapContentHeight());
-    }
-    function minimapSilhouetteHeight(rowsOverride) {
-        const rows = Array.isArray(rowsOverride) ? rowsOverride : (Array.isArray(contentsView.minimapVisualRows) ? contentsView.minimapVisualRows : []);
-        if (rows.length === 0)
-            return 1;
-        const safeEditorLineHeight = Math.max(1, Number(contentsView.editorLineHeight) || 1);
-        return Math.max(1, Math.ceil(contentsView.minimapContentHeight() / safeEditorLineHeight));
-    }
-    function minimapVisualRowPaintHeight(rowSpec) {
-        const safeContentHeight = contentsView.minimapContentHeight();
-        const safeRowContentHeight = Math.max(
-                    1,
-                    Number(rowSpec && rowSpec.contentHeight !== undefined ? rowSpec.contentHeight : 0)
-                    || contentsView.editorLineHeight);
-        return Math.max(
-                    1,
-                    viewportCoordinator.minimapTrackHeightForContentHeight(
-                        safeRowContentHeight,
-                        safeContentHeight));
-    }
-    function minimapVisualRowPaintY(rowSpec) {
-        const safeContentHeight = contentsView.minimapContentHeight();
-        const safeRowContentY = Math.max(
-                    0,
-                    Number(rowSpec && rowSpec.contentY !== undefined ? rowSpec.contentY : 0) || 0);
-        return viewportCoordinator.minimapTrackYForContentY(
-                    safeRowContentY,
-                    safeContentHeight);
-    }
+    function isMinimapScrollable() { return viewportModel.isMinimapScrollable(); }
+    function lineDocumentY(lineNumber) { return viewportModel.lineDocumentY(lineNumber); }
+    function gutterLineDocumentY(lineNumber) { return viewportModel.gutterLineDocumentY(lineNumber); }
+    function gutterDocumentOccupiedBottomY() { return viewportModel.gutterDocumentOccupiedBottomY(); }
+    function lineVisualHeight(startLine, lineSpan) { return viewportModel.lineVisualHeight(startLine, lineSpan); }
+    function gutterLineVisualHeight(startLine, lineSpan) { return viewportModel.gutterLineVisualHeight(startLine, lineSpan); }
+    function lineY(lineNumber) { return viewportModel.lineY(lineNumber); }
+    function gutterLineY(lineNumber) { return viewportModel.gutterLineY(lineNumber); }
+    function logicalLineNumberForDocumentY(documentY) { return viewportModel.logicalLineNumberForDocumentY(documentY); }
+    function markerColorForType(markerType) { return viewportModel.markerColorForType(markerType); }
+    function markerHeight(markerSpec) { return viewportModel.markerHeight(markerSpec); }
+    function markerY(markerSpec) { return viewportModel.markerY(markerSpec); }
+    function minimapContentHeight() { return viewportModel.minimapContentHeight(); }
+    function minimapContentYForLine(lineNumber) { return viewportModel.minimapContentYForLine(lineNumber); }
+    function minimapCurrentVisualRow(rowsOverride) { return viewportModel.minimapCurrentVisualRow(rowsOverride); }
+    function minimapLineY(lineNumber) { return viewportModel.minimapLineY(lineNumber); }
+    function minimapSilhouetteHeight(rowsOverride) { return viewportModel.minimapSilhouetteHeight(rowsOverride); }
+    function minimapVisualRowPaintHeight(rowSpec) { return viewportModel.minimapVisualRowPaintHeight(rowSpec); }
+    function minimapVisualRowPaintY(rowSpec) { return viewportModel.minimapVisualRowPaintY(rowSpec); }
     function normalizeInlineStyleTag(tagName) {
         return editorSelectionController.normalizeInlineStyleTag(tagName);
     }

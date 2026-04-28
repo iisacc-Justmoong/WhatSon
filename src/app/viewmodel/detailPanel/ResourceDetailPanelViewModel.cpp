@@ -1,5 +1,6 @@
 #include "app/viewmodel/detailPanel/ResourceDetailPanelViewModel.hpp"
 
+#include "app/policy/ArchitecturePolicyLock.hpp"
 #include "app/viewmodel/hierarchy/resources/ResourcesListModel.hpp"
 
 ResourceDetailPanelViewModel::ResourceDetailPanelViewModel(QObject* parent)
@@ -27,6 +28,22 @@ QVariantMap ResourceDetailPanelViewModel::currentResourceEntry() const
 
 void ResourceDetailPanelViewModel::setCurrentResourceListModel(QObject* resourceListModel)
 {
+    if (resourceListModel != nullptr
+        && !WhatSon::Policy::verifyMutableDependencyAllowed(
+            WhatSon::Policy::Layer::View,
+            WhatSon::Policy::Layer::ViewModel,
+            QStringLiteral("ResourceDetailPanelViewModel::setCurrentResourceListModel")))
+    {
+        return;
+    }
+
+    if (resourceListModel == nullptr
+        && !WhatSon::Policy::verifyMutableWiringAllowed(
+            QStringLiteral("ResourceDetailPanelViewModel::setCurrentResourceListModel")))
+    {
+        return;
+    }
+
     if (m_resourceListModel == resourceListModel)
     {
         return;

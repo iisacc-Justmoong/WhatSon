@@ -1,6 +1,7 @@
 #include "app/viewmodel/hierarchy/bookmarks/BookmarksHierarchyViewModel.hpp"
 
 #include "app/models/calendar/ISystemCalendarStore.hpp"
+#include "app/policy/ArchitecturePolicyLock.hpp"
 #include "app/models/calendar/SystemCalendarStore.hpp"
 #include "app/models/file/WhatSonDebugTrace.hpp"
 #include "app/models/file/hierarchy/library/WhatSonLibraryIndexedState.hpp"
@@ -340,6 +341,22 @@ BookmarksNoteListModel* BookmarksHierarchyViewModel::noteListModel() noexcept
 
 void BookmarksHierarchyViewModel::setSystemCalendarStore(ISystemCalendarStore* store)
 {
+    if (store != nullptr
+        && !WhatSon::Policy::verifyMutableDependencyAllowed(
+            WhatSon::Policy::Layer::ViewModel,
+            WhatSon::Policy::Layer::Store,
+            QStringLiteral("BookmarksHierarchyViewModel::setSystemCalendarStore")))
+    {
+        return;
+    }
+
+    if (store == nullptr
+        && !WhatSon::Policy::verifyMutableWiringAllowed(
+            QStringLiteral("BookmarksHierarchyViewModel::setSystemCalendarStore")))
+    {
+        return;
+    }
+
     if (m_systemCalendarStore == store)
     {
         return;

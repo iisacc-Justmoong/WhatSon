@@ -1,6 +1,7 @@
 #include "app/viewmodel/detailPanel/DetailHierarchySelectionViewModel.hpp"
 
 #include "app/models/file/WhatSonDebugTrace.hpp"
+#include "app/policy/ArchitecturePolicyLock.hpp"
 
 #include <QVariantMap>
 
@@ -71,6 +72,22 @@ void DetailHierarchySelectionViewModel::setSelectedIndex(int index)
 
 void DetailHierarchySelectionViewModel::setSourceViewModel(QObject* sourceViewModel)
 {
+    if (sourceViewModel != nullptr
+        && !WhatSon::Policy::verifyMutableDependencyAllowed(
+            WhatSon::Policy::Layer::View,
+            WhatSon::Policy::Layer::ViewModel,
+            QStringLiteral("DetailHierarchySelectionViewModel::setSourceViewModel")))
+    {
+        return;
+    }
+
+    if (sourceViewModel == nullptr
+        && !WhatSon::Policy::verifyMutableWiringAllowed(
+            QStringLiteral("DetailHierarchySelectionViewModel::setSourceViewModel")))
+    {
+        return;
+    }
+
     if (m_sourceViewModel == sourceViewModel)
     {
         return;

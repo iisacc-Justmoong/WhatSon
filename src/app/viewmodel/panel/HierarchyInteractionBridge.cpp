@@ -20,9 +20,16 @@ QObject* HierarchyInteractionBridge::hierarchyViewModel() const noexcept
 void HierarchyInteractionBridge::setHierarchyViewModel(QObject* viewModel)
 {
     if (viewModel != nullptr
-        && !WhatSon::Policy::verifyDependencyAllowed(
+        && !WhatSon::Policy::verifyMutableDependencyAllowed(
             WhatSon::Policy::Layer::View,
             WhatSon::Policy::Layer::ViewModel,
+            QStringLiteral("HierarchyInteractionBridge::setHierarchyViewModel")))
+    {
+        return;
+    }
+
+    if (viewModel == nullptr
+        && !WhatSon::Policy::verifyMutableWiringAllowed(
             QStringLiteral("HierarchyInteractionBridge::setHierarchyViewModel")))
     {
         return;

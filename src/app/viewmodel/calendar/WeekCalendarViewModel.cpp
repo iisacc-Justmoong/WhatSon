@@ -2,6 +2,7 @@
 
 #include "app/models/calendar/ICalendarBoardStore.hpp"
 #include "app/models/file/WhatSonDebugTrace.hpp"
+#include "app/policy/ArchitecturePolicyLock.hpp"
 
 #include <QDate>
 #include <QLocale>
@@ -47,6 +48,22 @@ QVariantList WeekCalendarViewModel::timelineDayModels() const
 
 void WeekCalendarViewModel::setCalendarBoardStore(ICalendarBoardStore* calendarBoardStore)
 {
+    if (calendarBoardStore != nullptr
+        && !WhatSon::Policy::verifyMutableDependencyAllowed(
+            WhatSon::Policy::Layer::ViewModel,
+            WhatSon::Policy::Layer::Store,
+            QStringLiteral("WeekCalendarViewModel::setCalendarBoardStore")))
+    {
+        return;
+    }
+
+    if (calendarBoardStore == nullptr
+        && !WhatSon::Policy::verifyMutableWiringAllowed(
+            QStringLiteral("WeekCalendarViewModel::setCalendarBoardStore")))
+    {
+        return;
+    }
+
     if (m_calendarBoardStore == calendarBoardStore)
     {
         return;

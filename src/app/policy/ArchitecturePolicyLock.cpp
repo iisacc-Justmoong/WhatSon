@@ -49,6 +49,11 @@ namespace WhatSon::Policy
         g_architecturePolicyLocked.store(true, std::memory_order_release);
     }
 
+    void ArchitecturePolicyLock::unlockForTests() noexcept
+    {
+        g_architecturePolicyLocked.store(false, std::memory_order_release);
+    }
+
     const char* layerName(Layer layer) noexcept
     {
         switch (layer)
@@ -133,5 +138,41 @@ namespace WhatSon::Policy
             *errorMessage = formattedMessage;
         }
         return false;
+    }
+
+    bool verifyMutableWiringAllowed(const QString& context, QString* errorMessage)
+    {
+        if (!ArchitecturePolicyLock::isLocked())
+        {
+            if (errorMessage != nullptr)
+            {
+                errorMessage->clear();
+            }
+            return true;
+        }
+
+        const QString trimmedContext = context.trimmed();
+        const QString message = trimmedContext.isEmpty()
+            ? QStringLiteral("architecture policy is locked")
+            : QStringLiteral("architecture policy is locked (%1)").arg(trimmedContext);
+        qWarning().noquote() << QStringLiteral("[whatson:policy][lock] %1").arg(message);
+        if (errorMessage != nullptr)
+        {
+            *errorMessage = message;
+        }
+        return false;
+    }
+
+    bool verifyMutableDependencyAllowed(
+        Layer from,
+        Layer to,
+        const QString& context,
+        QString* errorMessage)
+    {
+        if (!verifyMutableWiringAllowed(context, errorMessage))
+        {
+            return false;
+        }
+        return verifyDependencyAllowed(from, to, context, errorMessage);
     }
 } // namespace WhatSon::Policy

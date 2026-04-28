@@ -19,6 +19,7 @@
 #include "app/models/file/note/WhatSonLocalNoteFileStore.hpp"
 #include "app/models/file/note/WhatSonNoteBodyPersistence.hpp"
 #include "app/models/file/note/WhatSonNoteHeaderCreator.hpp"
+#include "app/policy/ArchitecturePolicyLock.hpp"
 #include "app/models/file/note/WhatSonNoteHeaderParser.hpp"
 #include "app/models/file/note/WhatSonNoteFolderSemantics.hpp"
 #include "app/models/file/statistic/WhatSonNoteFileStatSupport.hpp"
@@ -934,8 +935,14 @@ private slots:
     void runtimeParallelLoader_usesLvrsBootstrapParallelForDomainLoads();
     void sidebarSelectionStore_normalizesIndicesAndSuppressesDuplicateSignals();
     void hierarchyViewModelProvider_normalizesMappingsAndAvoidsDuplicateSignals();
+    void architecturePolicyLock_blocksMutableWiringAfterLock();
+    void hierarchyViewModelProvider_rejectsMappingMutationAfterLock();
     void sidebarHierarchyViewModel_preservesFallbackAcrossStoreAttachDetach();
+    void sidebarHierarchyViewModel_rejectsSelectionStoreMutationAfterLock();
     void sidebarHierarchyViewModel_reactsToProviderMappingChanges();
+    void noteListModelContractBridge_rejectsWiringMutationAfterLock();
+    void detailCurrentNoteContextBridge_rejectsWiringMutationAfterLock();
+    void onboardingRouteBootstrapController_rejectsHubControllerMutationAfterLock();
     void sidebarAndSelectionBridge_forceCppOwnershipAcrossHierarchySwitchBindings();
     void contentsEditorSelectionBridge_tracksSelectionFromCurrentIndexSignal();
     void contentsEditorSelectionBridge_preservesNoSelectionSentinelBeforeIndexCommit();

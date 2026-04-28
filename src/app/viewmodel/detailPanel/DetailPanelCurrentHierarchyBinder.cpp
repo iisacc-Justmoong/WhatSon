@@ -1,5 +1,6 @@
 #include "app/viewmodel/detailPanel/DetailPanelCurrentHierarchyBinder.hpp"
 
+#include "app/policy/ArchitecturePolicyLock.hpp"
 #include "app/viewmodel/detailPanel/NoteDetailPanelViewModel.hpp"
 #include "app/viewmodel/detailPanel/ResourceDetailPanelViewModel.hpp"
 #include "app/viewmodel/sidebar/HierarchySidebarDomain.hpp"
@@ -19,6 +20,22 @@ NoteDetailPanelViewModel* DetailPanelCurrentHierarchyBinder::noteDetailPanelView
 
 void DetailPanelCurrentHierarchyBinder::setNoteDetailPanelViewModel(NoteDetailPanelViewModel* detailPanelViewModel)
 {
+    if (detailPanelViewModel != nullptr
+        && !WhatSon::Policy::verifyMutableDependencyAllowed(
+            WhatSon::Policy::Layer::View,
+            WhatSon::Policy::Layer::ViewModel,
+            QStringLiteral("DetailPanelCurrentHierarchyBinder::setNoteDetailPanelViewModel")))
+    {
+        return;
+    }
+
+    if (detailPanelViewModel == nullptr
+        && !WhatSon::Policy::verifyMutableWiringAllowed(
+            QStringLiteral("DetailPanelCurrentHierarchyBinder::setNoteDetailPanelViewModel")))
+    {
+        return;
+    }
+
     if (m_noteDetailPanelViewModel == detailPanelViewModel)
     {
         return;
@@ -37,6 +54,22 @@ ResourceDetailPanelViewModel* DetailPanelCurrentHierarchyBinder::resourceDetailP
 void DetailPanelCurrentHierarchyBinder::setResourceDetailPanelViewModel(
     ResourceDetailPanelViewModel* detailPanelViewModel)
 {
+    if (detailPanelViewModel != nullptr
+        && !WhatSon::Policy::verifyMutableDependencyAllowed(
+            WhatSon::Policy::Layer::View,
+            WhatSon::Policy::Layer::ViewModel,
+            QStringLiteral("DetailPanelCurrentHierarchyBinder::setResourceDetailPanelViewModel")))
+    {
+        return;
+    }
+
+    if (detailPanelViewModel == nullptr
+        && !WhatSon::Policy::verifyMutableWiringAllowed(
+            QStringLiteral("DetailPanelCurrentHierarchyBinder::setResourceDetailPanelViewModel")))
+    {
+        return;
+    }
+
     if (m_resourceDetailPanelViewModel == detailPanelViewModel)
     {
         return;
@@ -55,6 +88,22 @@ IActiveHierarchyContextSource* DetailPanelCurrentHierarchyBinder::hierarchyConte
 void DetailPanelCurrentHierarchyBinder::setHierarchyContextSource(
     IActiveHierarchyContextSource* hierarchyContextSource)
 {
+    if (hierarchyContextSource != nullptr
+        && !WhatSon::Policy::verifyMutableDependencyAllowed(
+            WhatSon::Policy::Layer::View,
+            WhatSon::Policy::Layer::ViewModel,
+            QStringLiteral("DetailPanelCurrentHierarchyBinder::setHierarchyContextSource")))
+    {
+        return;
+    }
+
+    if (hierarchyContextSource == nullptr
+        && !WhatSon::Policy::verifyMutableWiringAllowed(
+            QStringLiteral("DetailPanelCurrentHierarchyBinder::setHierarchyContextSource")))
+    {
+        return;
+    }
+
     if (m_hierarchyContextSource == hierarchyContextSource)
     {
         return;

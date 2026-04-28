@@ -40,14 +40,17 @@ void WhatSonCppRegressionTests::editorViewportCoordinator_movesMinimapAndLineMat
         QStringLiteral("src/app/qml/view/content/editor/ContentsDisplayView.qml"));
     const QString geometryControllerSource = readUtf8SourceFile(
         QStringLiteral("src/app/models/editor/display/ContentsDisplayGeometryController.qml"));
+    const QString geometrySnapshotModelSource = readUtf8SourceFile(
+        QStringLiteral("src/app/models/editor/display/ContentsDisplayGeometrySnapshotModel.qml"));
     const QString viewportCoordinatorSource = readUtf8SourceFile(
         QStringLiteral("src/app/models/editor/display/ContentsDisplayViewportCoordinator.cpp"));
 
     QVERIFY(!displayViewSource.isEmpty());
     QVERIFY(!geometryControllerSource.isEmpty());
+    QVERIFY(!geometrySnapshotModelSource.isEmpty());
     QVERIFY(!viewportCoordinatorSource.isEmpty());
-    QVERIFY(displayViewSource.contains(
-        QStringLiteral("viewportCoordinator.logicalLineCharacterCountAt(")));
+    QVERIFY(geometrySnapshotModelSource.contains(
+        QStringLiteral("model.viewportCoordinator.logicalLineCharacterCountAt(")));
     QVERIFY(geometryControllerSource.contains(
         QStringLiteral("controller.viewportCoordinator.minimapViewportHeight(")));
     QVERIFY(geometryControllerSource.contains(

@@ -1,5 +1,7 @@
 #include "app/viewmodel/detailPanel/DetailCurrentNoteContextBridge.hpp"
 
+#include "app/policy/ArchitecturePolicyLock.hpp"
+
 #include <QDir>
 #include <QMetaObject>
 #include <QMetaProperty>
@@ -187,6 +189,22 @@ QObject* DetailCurrentNoteContextBridge::noteListModel() const noexcept
 
 void DetailCurrentNoteContextBridge::setNoteListModel(QObject* noteListModel)
 {
+    if (noteListModel != nullptr
+        && !WhatSon::Policy::verifyMutableDependencyAllowed(
+            WhatSon::Policy::Layer::View,
+            WhatSon::Policy::Layer::ViewModel,
+            QStringLiteral("DetailCurrentNoteContextBridge::setNoteListModel")))
+    {
+        return;
+    }
+
+    if (noteListModel == nullptr
+        && !WhatSon::Policy::verifyMutableWiringAllowed(
+            QStringLiteral("DetailCurrentNoteContextBridge::setNoteListModel")))
+    {
+        return;
+    }
+
     if (m_noteListModel == noteListModel)
     {
         return;
@@ -246,6 +264,22 @@ QObject* DetailCurrentNoteContextBridge::noteDirectorySourceViewModel() const no
 
 void DetailCurrentNoteContextBridge::setNoteDirectorySourceViewModel(QObject* sourceViewModel)
 {
+    if (sourceViewModel != nullptr
+        && !WhatSon::Policy::verifyMutableDependencyAllowed(
+            WhatSon::Policy::Layer::View,
+            WhatSon::Policy::Layer::ViewModel,
+            QStringLiteral("DetailCurrentNoteContextBridge::setNoteDirectorySourceViewModel")))
+    {
+        return;
+    }
+
+    if (sourceViewModel == nullptr
+        && !WhatSon::Policy::verifyMutableWiringAllowed(
+            QStringLiteral("DetailCurrentNoteContextBridge::setNoteDirectorySourceViewModel")))
+    {
+        return;
+    }
+
     if (m_noteDirectorySourceViewModel == sourceViewModel)
     {
         return;

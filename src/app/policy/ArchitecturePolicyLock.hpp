@@ -20,6 +20,7 @@ namespace WhatSon::Policy
     public:
         static bool isLocked() noexcept;
         static void lock() noexcept;
+        static void unlockForTests() noexcept;
 
     private:
         ArchitecturePolicyLock() = delete;
@@ -32,4 +33,10 @@ namespace WhatSon::Policy
                                  Layer to,
                                  const QString& context = QString(),
                                  QString* errorMessage = nullptr);
+    bool verifyMutableWiringAllowed(const QString& context = QString(),
+                                    QString* errorMessage = nullptr);
+    bool verifyMutableDependencyAllowed(Layer from,
+                                        Layer to,
+                                        const QString& context = QString(),
+                                        QString* errorMessage = nullptr);
 } // namespace WhatSon::Policy

@@ -10,12 +10,15 @@ void WhatSonCppRegressionTests::contentsDisplayView_invalidatesGutterGeometryImm
         QStringLiteral("src/app/models/editor/display/ContentsDisplayEventPump.qml"));
     const QString geometryControllerSource = readUtf8SourceFile(
         QStringLiteral("src/app/models/editor/display/ContentsDisplayGeometryController.qml"));
+    const QString geometrySnapshotModelSource = readUtf8SourceFile(
+        QStringLiteral("src/app/models/editor/display/ContentsDisplayGeometrySnapshotModel.qml"));
     const QString geometryStateSource = readUtf8SourceFile(
         QStringLiteral("src/app/models/editor/display/ContentsDisplayGeometryState.qml"));
 
     QVERIFY(!displayViewSource.isEmpty());
     QVERIFY(!eventPumpSource.isEmpty());
     QVERIFY(!geometryControllerSource.isEmpty());
+    QVERIFY(!geometrySnapshotModelSource.isEmpty());
     QVERIFY(displayViewSource.contains(QStringLiteral("property alias minimapLineGroupsNoteId: geometryState.minimapLineGroupsNoteId")));
     QVERIFY(geometryStateSource.contains(QStringLiteral("property string minimapLineGroupsNoteId: \"\"")));
     QVERIFY(displayViewSource.contains(QStringLiteral("function activeLineGeometryNoteId()")));
@@ -42,12 +45,12 @@ void WhatSonCppRegressionTests::contentsDisplayView_invalidatesGutterGeometryImm
     QVERIFY(geometryControllerSource.contains(QStringLiteral("controller.refreshCoordinator.scheduleNoteEntryGutterRefresh(")));
     QVERIFY(displayViewSource.contains(QStringLiteral("refreshPlan.gutterPassCount")));
     QVERIFY(displayViewSource.contains(QStringLiteral("contentsView.scheduleGutterRefresh(")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("minimapCoordinator.buildNextMinimapSnapshotPlan(")));
+    QVERIFY(geometrySnapshotModelSource.contains(QStringLiteral("model.minimapCoordinator.buildNextMinimapSnapshotPlan(")));
     QVERIFY(displayViewSource.contains(QStringLiteral("contextMenuCoordinator.openSelectionContextMenuPlan(")));
     QVERIFY(displayViewSource.contains(QStringLiteral("contextMenuCoordinator.inlineStyleTagForEvent(")));
     QVERIFY(displayViewSource.contains(QStringLiteral("contextMenuCoordinator.primeStructuredSelectionSnapshotPlan(")));
     QVERIFY(displayViewSource.contains(QStringLiteral("contextMenuCoordinator.structuredSelectionValid()")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("gutterCoordinator.buildVisiblePlainGutterLineEntries(")));
+    QVERIFY(geometrySnapshotModelSource.contains(QStringLiteral("model.gutterCoordinator.buildVisiblePlainGutterLineEntries(")));
     QVERIFY(eventPumpSource.contains(QStringLiteral("\"structured-layout-cache\"")));
     QVERIFY(eventPumpSource.contains(QStringLiteral("\"editor-text-synchronized\"")));
 }
@@ -269,19 +272,24 @@ void WhatSonCppRegressionTests::contentsDisplayView_scalesMinimapRowsFromDocumen
 {
     const QString displayViewSource = readUtf8SourceFile(
         QStringLiteral("src/app/qml/view/content/editor/ContentsDisplayView.qml"));
+    const QString viewportModelSource = readUtf8SourceFile(
+        QStringLiteral("src/app/models/editor/display/ContentsDisplayViewportModel.qml"));
 
     QVERIFY(!displayViewSource.isEmpty());
+    QVERIFY(!viewportModelSource.isEmpty());
     QVERIFY(displayViewSource.contains(
+        QStringLiteral("EditorDisplayModel.ContentsDisplayViewportModel {")));
+    QVERIFY(viewportModelSource.contains(
         QStringLiteral("viewportCoordinator.minimapTrackHeightForContentHeight(")));
-    QVERIFY(displayViewSource.contains(
+    QVERIFY(viewportModelSource.contains(
         QStringLiteral("viewportCoordinator.minimapTrackYForContentY(")));
-    QVERIFY(displayViewSource.contains(
+    QVERIFY(viewportModelSource.contains(
         QStringLiteral("structuredDocumentFlow.normalizedResolvedInteractiveBlockIndex()")));
-    QVERIFY(displayViewSource.contains(
-        QStringLiteral("Math.ceil(contentsView.minimapContentHeight() / safeEditorLineHeight)")));
-    QVERIFY(!displayViewSource.contains(
+    QVERIFY(viewportModelSource.contains(
+        QStringLiteral("Math.ceil(model.minimapContentHeight() / safeEditorLineHeight)")));
+    QVERIFY(!viewportModelSource.contains(
         QStringLiteral("return rows.length * contentsView.minimapVisualRowPaintHeight(rows[0]) + Math.max(0, rows.length - 1) * contentsView.minimapRowGap;")));
-    QVERIFY(!displayViewSource.contains(
+    QVERIFY(!viewportModelSource.contains(
         QStringLiteral("return visualIndex * (contentsView.minimapRowGap + contentsView.minimapVisualRowPaintHeight(rowSpec));")));
 }
 
@@ -310,25 +318,29 @@ void WhatSonCppRegressionTests::contentsDisplayView_normalizesMinimapSnapshotsAg
 {
     const QString displayViewSource = readUtf8SourceFile(
         QStringLiteral("src/app/qml/view/content/editor/ContentsDisplayView.qml"));
+    const QString geometrySnapshotModelSource = readUtf8SourceFile(
+        QStringLiteral("src/app/models/editor/display/ContentsDisplayGeometrySnapshotModel.qml"));
     const QString minimapCoordinatorSource = readUtf8SourceFile(
         QStringLiteral("src/app/models/editor/display/ContentsDisplayMinimapCoordinator.cpp"));
     const QString geometryStateSource = readUtf8SourceFile(
         QStringLiteral("src/app/models/editor/display/ContentsDisplayGeometryState.qml"));
 
     QVERIFY(!displayViewSource.isEmpty());
+    QVERIFY(!geometrySnapshotModelSource.isEmpty());
     QVERIFY(!minimapCoordinatorSource.isEmpty());
 
     QVERIFY(displayViewSource.contains(QStringLiteral("property alias minimapSnapshotEntries: geometryState.minimapSnapshotEntries")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("EditorDisplayModel.ContentsDisplayGeometrySnapshotModel {")));
     QVERIFY(geometryStateSource.contains(QStringLiteral("property var minimapSnapshotEntries: []")));
     QVERIFY(!displayViewSource.contains(QStringLiteral("property string minimapSnapshotSourceText: \"\"")));
     QVERIFY(displayViewSource.contains(QStringLiteral("function hasStructuredLogicalLineGeometry()")));
     QVERIFY(displayViewSource.contains(QStringLiteral("function effectiveStructuredMinimapEntries()")));
     QVERIFY(displayViewSource.contains(QStringLiteral("function hasStructuredMinimapEntries()")));
     QVERIFY(displayViewSource.contains(QStringLiteral("function currentMinimapSnapshotEntries()")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("minimapCoordinator.buildStructuredMinimapSnapshotEntries(")));
+    QVERIFY(geometrySnapshotModelSource.contains(QStringLiteral("minimapCoordinator.buildStructuredMinimapSnapshotEntries(")));
     QVERIFY(displayViewSource.contains(QStringLiteral("function minimapSnapshotEntriesEqual(previousEntries, nextEntries)")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("contentsView.minimapSnapshotEntries,")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("contentsView.documentPresentationSourceText !== undefined")));
+    QVERIFY(geometrySnapshotModelSource.contains(QStringLiteral("model.contentsView.minimapSnapshotEntries,")));
+    QVERIFY(geometrySnapshotModelSource.contains(QStringLiteral("model.contentsView.documentPresentationSourceText !== undefined")));
     QVERIFY(displayViewSource.contains(QStringLiteral("structuredHostGeometryActive: contentsView.hasStructuredMinimapEntries()")));
     QVERIFY(!displayViewSource.contains(QStringLiteral("return contentsView.normalizedSnapshotEntries(contentsView.effectiveStructuredLogicalLineEntries());")));
     QVERIFY(minimapCoordinatorSource.contains(QStringLiteral("buildStructuredMinimapSnapshotEntries")));

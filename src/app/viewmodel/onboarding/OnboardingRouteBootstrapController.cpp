@@ -1,5 +1,6 @@
 #include "app/viewmodel/onboarding/OnboardingRouteBootstrapController.hpp"
 
+#include "app/policy/ArchitecturePolicyLock.hpp"
 #include "app/viewmodel/onboarding/IOnboardingHubController.hpp"
 
 namespace
@@ -35,6 +36,12 @@ QString OnboardingRouteBootstrapController::startupRoutePath() const
 
 void OnboardingRouteBootstrapController::setHubController(IOnboardingHubController* controller)
 {
+    if (!WhatSon::Policy::verifyMutableWiringAllowed(
+            QStringLiteral("OnboardingRouteBootstrapController::setHubController")))
+    {
+        return;
+    }
+
     m_hubController = controller;
 }
 

@@ -7,6 +7,7 @@
 #include <QVariantMap>
 
 #include "app/models/file/WhatSonDebugTrace.hpp"
+#include "app/policy/ArchitecturePolicyLock.hpp"
 
 #include <algorithm>
 
@@ -101,6 +102,22 @@ QObject* NoteListModelContractBridge::hierarchyViewModel() const noexcept
 
 void NoteListModelContractBridge::setHierarchyViewModel(QObject* model)
 {
+    if (model != nullptr
+        && !WhatSon::Policy::verifyMutableDependencyAllowed(
+            WhatSon::Policy::Layer::View,
+            WhatSon::Policy::Layer::ViewModel,
+            QStringLiteral("NoteListModelContractBridge::setHierarchyViewModel")))
+    {
+        return;
+    }
+
+    if (model == nullptr
+        && !WhatSon::Policy::verifyMutableWiringAllowed(
+            QStringLiteral("NoteListModelContractBridge::setHierarchyViewModel")))
+    {
+        return;
+    }
+
     if (m_hierarchyViewModel == model)
     {
         return;
@@ -130,6 +147,22 @@ QObject* NoteListModelContractBridge::noteListModel() const noexcept
 
 void NoteListModelContractBridge::setNoteListModel(QObject* model)
 {
+    if (model != nullptr
+        && !WhatSon::Policy::verifyMutableDependencyAllowed(
+            WhatSon::Policy::Layer::View,
+            WhatSon::Policy::Layer::ViewModel,
+            QStringLiteral("NoteListModelContractBridge::setNoteListModel")))
+    {
+        return;
+    }
+
+    if (model == nullptr
+        && !WhatSon::Policy::verifyMutableWiringAllowed(
+            QStringLiteral("NoteListModelContractBridge::setNoteListModel")))
+    {
+        return;
+    }
+
     if (m_explicitNoteListModel == model)
     {
         return;

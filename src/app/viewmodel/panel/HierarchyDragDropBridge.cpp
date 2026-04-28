@@ -41,9 +41,16 @@ QObject* HierarchyDragDropBridge::hierarchyViewModel() const noexcept
 void HierarchyDragDropBridge::setHierarchyViewModel(QObject* viewModel)
 {
     if (viewModel != nullptr
-        && !WhatSon::Policy::verifyDependencyAllowed(
+        && !WhatSon::Policy::verifyMutableDependencyAllowed(
             WhatSon::Policy::Layer::View,
             WhatSon::Policy::Layer::ViewModel,
+            QStringLiteral("HierarchyDragDropBridge::setHierarchyViewModel")))
+    {
+        return;
+    }
+
+    if (viewModel == nullptr
+        && !WhatSon::Policy::verifyMutableWiringAllowed(
             QStringLiteral("HierarchyDragDropBridge::setHierarchyViewModel")))
     {
         return;

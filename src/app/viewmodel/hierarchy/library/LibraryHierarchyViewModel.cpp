@@ -1,6 +1,7 @@
 #include "app/viewmodel/hierarchy/library/LibraryHierarchyViewModel.hpp"
 
 #include "app/models/calendar/ISystemCalendarStore.hpp"
+#include "app/policy/ArchitecturePolicyLock.hpp"
 #include "app/models/calendar/SystemCalendarStore.hpp"
 #include "app/models/file/IO/WhatSonSystemIoGateway.hpp"
 #include "app/models/file/WhatSonDebugTrace.hpp"
@@ -1636,6 +1637,22 @@ bool LibraryHierarchyViewModel::supportsHierarchyNoteDrop() const noexcept
 
 void LibraryHierarchyViewModel::setSystemCalendarStore(ISystemCalendarStore* store)
 {
+    if (store != nullptr
+        && !WhatSon::Policy::verifyMutableDependencyAllowed(
+            WhatSon::Policy::Layer::ViewModel,
+            WhatSon::Policy::Layer::Store,
+            QStringLiteral("LibraryHierarchyViewModel::setSystemCalendarStore")))
+    {
+        return;
+    }
+
+    if (store == nullptr
+        && !WhatSon::Policy::verifyMutableWiringAllowed(
+            QStringLiteral("LibraryHierarchyViewModel::setSystemCalendarStore")))
+    {
+        return;
+    }
+
     if (m_systemCalendarStore == store)
     {
         return;
