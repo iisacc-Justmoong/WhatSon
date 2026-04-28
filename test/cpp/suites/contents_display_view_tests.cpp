@@ -618,6 +618,10 @@ void WhatSonCppRegressionTests::contentsDisplayView_surfacesMountFailurePlacehol
     QVERIFY(!displayViewSource.contains(
         QStringLiteral("readonly property bool noteDocumentSurfaceInteractive: noteBodyMountCoordinator.surfaceInteractive")));
     QVERIFY(surfaceHostSource.contains(
+        QStringLiteral("enabled: contentsView.hasSelectedNote")));
+    QVERIFY(surfaceHostSource.contains(
+        QStringLiteral("&& !contentsView.noteDocumentExceptionVisible")));
+    QVERIFY(!surfaceHostSource.contains(
         QStringLiteral("enabled: contentsView.noteDocumentParseMounted")));
     QVERIFY(!surfaceHostSource.contains(
         QStringLiteral("enabled: contentsView.noteDocumentSurfaceInteractive")));

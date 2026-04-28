@@ -712,7 +712,9 @@ void WhatSonCppRegressionTests::qmlStructuredEditors_focusesDocumentEndFromBotto
     QVERIFY(!surfaceHostSource.isEmpty());
     QVERIFY(!structuredFlowSource.isEmpty());
     QVERIFY(!commandSurfaceSource.isEmpty());
-    QVERIFY(surfaceHostSource.contains(QStringLiteral("enabled: contentsView.noteDocumentParseMounted")));
+    QVERIFY(surfaceHostSource.contains(QStringLiteral("enabled: contentsView.hasSelectedNote")));
+    QVERIFY(surfaceHostSource.contains(QStringLiteral("&& !contentsView.noteDocumentExceptionVisible")));
+    QVERIFY(!surfaceHostSource.contains(QStringLiteral("enabled: contentsView.noteDocumentParseMounted")));
     QVERIFY(!surfaceHostSource.contains(QStringLiteral("enabled: contentsView.noteDocumentSurfaceInteractive")));
     QVERIFY(surfaceHostSource.contains(QStringLiteral("pointTargetsDocumentEndEdit(flowTapX, flowTapY)")));
     QVERIFY(surfaceHostSource.contains(QStringLiteral("property bool documentEndEditRequestQueued: false")));

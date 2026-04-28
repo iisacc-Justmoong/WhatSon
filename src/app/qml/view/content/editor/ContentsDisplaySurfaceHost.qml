@@ -28,7 +28,8 @@ Item {
     Layout.fillWidth: true
     Layout.minimumHeight: contentsView.minEditorHeight
     clip: true
-    enabled: contentsView.noteDocumentParseMounted
+    enabled: contentsView.hasSelectedNote
+             && !contentsView.noteDocumentExceptionVisible
 
     function requestStructuredDocumentEndEditFromViewportPoint(viewportX, viewportY) {
         if (!structuredDocumentViewportItem.visible || surfaceHost.contentsView.showPrintEditorLayout)
