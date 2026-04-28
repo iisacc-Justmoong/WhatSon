@@ -346,6 +346,21 @@ Item {
         resourceImportController: resourceImportController
         structuredDocumentFlow: structuredDocumentFlow
     }
+    EditorDisplayModel.ContentsDisplaySelectionOrchestrationModel {
+        id: selectionOrchestrationModel
+
+        contentsView: contentsView
+        editorInputPolicyAdapter: editorInputPolicyAdapter
+        selectionMountViewModel: selectionMountViewModel
+        structuredDocumentFlow: structuredDocumentFlow
+    }
+    EditorDisplayModel.ContentsDisplayPresentationOrchestrationModel {
+        id: presentationOrchestrationModel
+
+        contentsView: contentsView
+        presentationViewModel: presentationViewModel
+        structuredDocumentFlow: structuredDocumentFlow
+    }
 
     function activeLogicalTextSnapshot() { return geometrySnapshotModel.activeLogicalTextSnapshot(); }
     function normalizedSnapshotEntries(rawEntries) { return geometrySnapshotModel.normalizedSnapshotEntries(rawEntries); }
@@ -357,9 +372,7 @@ Item {
     function hasStructuredMinimapEntries() { return geometrySnapshotModel.hasStructuredMinimapEntries(); }
     function currentMinimapSnapshotEntries() { return geometrySnapshotModel.currentMinimapSnapshotEntries(); }
     function minimapSnapshotEntriesEqual(previousEntries, nextEntries) { return geometrySnapshotModel.minimapSnapshotEntriesEqual(previousEntries, nextEntries); }
-    function logEditorCreationState(reason) {
-        presentationViewModel.logEditorCreationState(reason);
-    }
+    function logEditorCreationState(reason) { presentationOrchestrationModel.logEditorCreationState(reason); }
     function normalizedStructuredLogicalLineEntries() { return geometrySnapshotModel.normalizedStructuredLogicalLineEntries(); }
     function structuredLogicalLineEntryAt(lineNumber) { return geometrySnapshotModel.structuredLogicalLineEntryAt(lineNumber); }
     function effectiveStructuredLogicalLineEntries() { return geometrySnapshotModel.effectiveStructuredLogicalLineEntries(); }
@@ -576,26 +589,12 @@ Item {
         }
         return Math.max(1, Math.min(contentsView.logicalLineCount, contentsView.logicalLineNumberForDocumentY(firstVisibleDocumentY)));
     }
-    function shouldFlushBlurredEditorState(scheduledNoteId) {
-        return selectionMountViewModel.shouldFlushBlurredEditorState(scheduledNoteId);
-    }
-    function nativeEditorCompositionActive() {
-        return !!(structuredDocumentFlow
-                  && structuredDocumentFlow.nativeCompositionActive !== undefined
-                  && structuredDocumentFlow.nativeCompositionActive());
-    }
-    function nativeTextInputSessionOwnsKeyboard() {
-        return editorInputPolicyAdapter.nativeTextInputSessionActive;
-    }
-    function flushEditorStateAfterInputSettles(scheduledNoteId) {
-        selectionMountViewModel.flushEditorStateAfterInputSettles(scheduledNoteId);
-    }
-    function focusEditorForSelectedNoteId(noteId) {
-        selectionMountViewModel.focusEditorForSelectedNoteId(noteId);
-    }
-    function focusEditorForPendingNote() {
-        selectionMountViewModel.focusEditorForPendingNote();
-    }
+    function shouldFlushBlurredEditorState(scheduledNoteId) { return selectionOrchestrationModel.shouldFlushBlurredEditorState(scheduledNoteId); }
+    function nativeEditorCompositionActive() { return selectionOrchestrationModel.nativeEditorCompositionActive(); }
+    function nativeTextInputSessionOwnsKeyboard() { return selectionOrchestrationModel.nativeTextInputSessionOwnsKeyboard(); }
+    function flushEditorStateAfterInputSettles(scheduledNoteId) { selectionOrchestrationModel.flushEditorStateAfterInputSettles(scheduledNoteId); }
+    function focusEditorForSelectedNoteId(noteId) { selectionOrchestrationModel.focusEditorForSelectedNoteId(noteId); }
+    function focusEditorForPendingNote() { selectionOrchestrationModel.focusEditorForPendingNote(); }
     function eventRequestsPasteShortcut(event) { return inputOrchestrationModel.eventRequestsPasteShortcut(event); }
     function inlineFormatShortcutTag(event) { return inputOrchestrationModel.inlineFormatShortcutTag(event); }
     function handleInlineFormatTagShortcut(event) { return inputOrchestrationModel.handleInlineFormatTagShortcut(event); }
@@ -603,21 +602,15 @@ Item {
     function handleClipboardImagePasteShortcut(event) { return inputOrchestrationModel.handleClipboardImagePasteShortcut(event); }
     function handleTagManagementShortcutKeyPress(event) { return inputOrchestrationModel.handleTagManagementShortcutKeyPress(event); }
     function handleSelectionContextMenuEvent(eventName) { return inputOrchestrationModel.handleSelectionContextMenuEvent(eventName); }
-    function commitDocumentPresentationRefresh() {
-        presentationViewModel.commitDocumentPresentationRefresh();
-    }
-    function documentPresentationRenderDirty() {
-        return presentationViewModel.documentPresentationRenderDirty();
-    }
+    function commitDocumentPresentationRefresh() { presentationOrchestrationModel.commitDocumentPresentationRefresh(); }
+    function documentPresentationRenderDirty() { return presentationOrchestrationModel.documentPresentationRenderDirty(); }
     function inferSelectionRangeFromSelectedText(selectedText, cursorPosition) {
         return editorSelectionController.inferSelectionRangeFromSelectedText(selectedText, cursorPosition);
     }
     function inlineStyleWrapTags(styleTag) {
         return editorSelectionController.inlineStyleWrapTags(styleTag);
     }
-    function refreshInlineResourcePresentation() {
-        presentationViewModel.refreshInlineResourcePresentation();
-    }
+    function refreshInlineResourcePresentation() { presentationOrchestrationModel.refreshInlineResourcePresentation(); }
     function isMinimapScrollable() { return viewportModel.isMinimapScrollable(); }
     function lineDocumentY(lineNumber) { return viewportModel.lineDocumentY(lineNumber); }
     function gutterLineDocumentY(lineNumber) { return viewportModel.gutterLineDocumentY(lineNumber); }
@@ -653,15 +646,9 @@ Item {
     function persistEditorTextImmediately(nextText) {
         return mutationViewModel.persistEditorTextImmediately(nextText);
     }
-    function scheduleEditorEntrySnapshotReconcile() {
-        selectionMountViewModel.scheduleEditorEntrySnapshotReconcile();
-    }
-    function pollSelectedNoteSnapshot() {
-        selectionMountViewModel.pollSelectedNoteSnapshot();
-    }
-    function reconcileEditorEntrySnapshotOnce() {
-        return selectionMountViewModel.reconcileEditorEntrySnapshotOnce();
-    }
+    function scheduleEditorEntrySnapshotReconcile() { selectionOrchestrationModel.scheduleEditorEntrySnapshotReconcile(); }
+    function pollSelectedNoteSnapshot() { selectionOrchestrationModel.pollSelectedNoteSnapshot(); }
+    function reconcileEditorEntrySnapshotOnce() { return selectionOrchestrationModel.reconcileEditorEntrySnapshotOnce(); }
     function queueStructuredInlineFormatWrap(tagName) {
         return mutationViewModel.queueStructuredInlineFormatWrap(tagName);
     }
@@ -698,18 +685,14 @@ Item {
     function refreshMinimapViewportTracking(trackHeightOverride) {
         geometryViewModel.refreshMinimapViewportTracking(trackHeightOverride);
     }
-    function requestViewHook(reason) {
-        presentationViewModel.requestViewHook(reason);
-    }
+    function requestViewHook(reason) { presentationOrchestrationModel.requestViewHook(reason); }
     function resetNoteEntryLineGeometryState() {
         geometryViewModel.resetNoteEntryLineGeometryState();
     }
     function resetGutterRefreshState() {
         geometryViewModel.resetGutterRefreshState();
     }
-    function resetEditorSelectionCache() {
-        selectionMountViewModel.resetEditorSelectionCache();
-    }
+    function resetEditorSelectionCache() { selectionOrchestrationModel.resetEditorSelectionCache(); }
     function resolveEditorFlickable() {
         if (contentsView.showStructuredDocumentFlow) {
             if (contentsView.showPrintEditorLayout)
@@ -718,46 +701,12 @@ Item {
         }
         return null;
     }
-    function scheduleEditorFocusForNote(noteId) {
-        selectionMountViewModel.scheduleEditorFocusForNote(noteId);
-    }
-    function applyPresentationRefreshPlan(plan) {
-        presentationViewModel.applyPresentationRefreshPlan(plan);
-    }
-    function executeRefreshPlan(plan) {
-        const refreshPlan = plan && typeof plan === "object" ? plan : ({});
-        if (refreshPlan.resetNoteEntryLineGeometry)
-            contentsView.resetNoteEntryLineGeometryState();
-        if (refreshPlan.requestStructuredLayoutRefresh
-                && structuredDocumentFlow
-                && !contentsView.selectedNoteBodyLoading
-                && contentsView.selectedNoteBodyNoteId === contentsView.selectedNoteId)
-            contentsView.scheduleStructuredDocumentOpenLayoutRefresh(
-                        String(refreshPlan.gutterReason || "note-entry"));
-        if (refreshPlan.scheduleViewportGutterRefresh)
-            contentsView.scheduleViewportGutterRefresh();
-        if (refreshPlan.gutterPassCount !== undefined)
-            contentsView.scheduleGutterRefresh(
-                        Number(refreshPlan.gutterPassCount) || 0,
-                        String(refreshPlan.gutterReason || ""));
-    }
-    function scheduleStructuredDocumentOpenLayoutRefresh(reason) {
-        if (!structuredDocumentFlow)
-            return;
-        if (structuredDocumentFlow.scheduleEditorOpenLayoutCacheRefresh !== undefined) {
-            structuredDocumentFlow.scheduleEditorOpenLayoutCacheRefresh(
-                        reason === undefined || reason === null ? "" : String(reason));
-            return;
-        }
-        if (structuredDocumentFlow.scheduleLayoutCacheRefresh !== undefined)
-            structuredDocumentFlow.scheduleLayoutCacheRefresh();
-    }
-    function scheduleDeferredDocumentPresentationRefresh() {
-        presentationViewModel.scheduleDeferredDocumentPresentationRefresh();
-    }
-    function scheduleDocumentPresentationRefresh(forceImmediate) {
-        presentationViewModel.scheduleDocumentPresentationRefresh(forceImmediate);
-    }
+    function scheduleEditorFocusForNote(noteId) { selectionOrchestrationModel.scheduleEditorFocusForNote(noteId); }
+    function applyPresentationRefreshPlan(plan) { presentationOrchestrationModel.applyPresentationRefreshPlan(plan); }
+    function executeRefreshPlan(plan) { presentationOrchestrationModel.executeRefreshPlan(plan); }
+    function scheduleStructuredDocumentOpenLayoutRefresh(reason) { presentationOrchestrationModel.scheduleStructuredDocumentOpenLayoutRefresh(reason); }
+    function scheduleDeferredDocumentPresentationRefresh() { presentationOrchestrationModel.scheduleDeferredDocumentPresentationRefresh(); }
+    function scheduleDocumentPresentationRefresh(forceImmediate) { presentationOrchestrationModel.scheduleDocumentPresentationRefresh(forceImmediate); }
     function refreshLiveLogicalLineMetrics() {
         return geometryViewModel.refreshLiveLogicalLineMetrics();
     }
@@ -784,12 +733,8 @@ Item {
     function scheduleMinimapSnapshotRefresh(forceFull) {
         geometryViewModel.scheduleMinimapSnapshotRefresh(forceFull);
     }
-    function scheduleSelectionModelSync(options) {
-        selectionMountViewModel.scheduleSelectionModelSync(options);
-    }
-    function executeSelectionDeliveryPlan(plan, fallbackKey) {
-        return selectionMountViewModel.executeSelectionDeliveryPlan(plan, fallbackKey);
-    }
+    function scheduleSelectionModelSync(options) { selectionOrchestrationModel.scheduleSelectionModelSync(options); }
+    function executeSelectionDeliveryPlan(plan, fallbackKey) { return selectionOrchestrationModel.executeSelectionDeliveryPlan(plan, fallbackKey); }
     function scrollEditorViewportToMinimapPosition(localY) {
         geometryViewModel.scrollEditorViewportToMinimapPosition(localY);
     }

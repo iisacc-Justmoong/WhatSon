@@ -59,9 +59,17 @@ gain new session, persistence, parsing, mutation, scheduling, or command-surface
   Owns QML-runtime RAW source writes delegated through the C++ mutation ViewModel. It applies already-built RAW
   `.wsnbody` text directly, then lets parser and renderer projections observe the changed source.
 - `ContentsDisplayPresentationController.qml`
-  Owns QML-runtime presentation refresh orchestration delegated through the C++ presentation ViewModel.
+  Owns the detailed presentation refresh and editor-creation trace orchestration delegated through the C++
+  presentation ViewModel.
+- `ContentsDisplayPresentationOrchestrationModel.qml`
+  Owns the thin host-facing presentation wrappers for refresh-plan execution and structured layout refresh dispatch so
+  `ContentsDisplayView.qml` stays a composer.
 - `ContentsDisplaySelectionMountController.qml`
-  Owns QML-runtime selection and mount orchestration delegated through the C++ selection/mount ViewModel.
+  Owns the detailed selection, snapshot reconcile, and mount orchestration delegated through the C++
+  selection/mount ViewModel.
+- `ContentsDisplaySelectionOrchestrationModel.qml`
+  Owns the thin host-facing selection wrappers for focus, snapshot reconcile, mount-delivery dispatch, and native
+  composition policy checks.
 - `ContentsDisplayHostModePolicy.qml`
   Owns desktop/mobile presentation deltas for the unified editor host without keeping policy objects in the view
   directory.

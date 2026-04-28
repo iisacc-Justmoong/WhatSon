@@ -1176,10 +1176,13 @@ void WhatSonCppRegressionTests::qmlStructuredEditors_refreshesGutterLayoutOnEdit
         QStringLiteral("src/app/qml/view/content/editor/ContentsDisplayView.qml"));
     const QString eventPumpSource = readUtf8SourceFile(
         QStringLiteral("src/app/models/editor/display/ContentsDisplayEventPump.qml"));
+    const QString presentationOrchestrationModelSource = readUtf8SourceFile(
+        QStringLiteral("src/app/models/editor/display/ContentsDisplayPresentationOrchestrationModel.qml"));
 
     QVERIFY(!structuredFlowSource.isEmpty());
     QVERIFY(!displayViewSource.isEmpty());
     QVERIFY(!eventPumpSource.isEmpty());
+    QVERIFY(!presentationOrchestrationModelSource.isEmpty());
 
     QVERIFY(structuredFlowSource.contains(
         QStringLiteral("property int editorOpenLayoutRefreshPassesRemaining: 0")));
@@ -1197,7 +1200,7 @@ void WhatSonCppRegressionTests::qmlStructuredEditors_refreshesGutterLayoutOnEdit
     QVERIFY(structuredFlowSource.contains(QStringLiteral("onLoaded: {")));
     QVERIFY(structuredFlowSource.contains(QStringLiteral("documentFlow.scheduleLayoutCacheRefresh()")));
     QVERIFY(displayViewSource.contains(QStringLiteral("function scheduleStructuredDocumentOpenLayoutRefresh(reason)")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("structuredDocumentFlow.scheduleEditorOpenLayoutCacheRefresh(")));
+    QVERIFY(presentationOrchestrationModelSource.contains(QStringLiteral("model.structuredDocumentFlow.scheduleEditorOpenLayoutCacheRefresh(")));
     QVERIFY(displayViewSource.contains(QStringLiteral(
         "contentsView.scheduleStructuredDocumentOpenLayoutRefresh(\"note-mounted\")")));
     QVERIFY(eventPumpSource.contains(QStringLiteral(
@@ -1415,6 +1418,8 @@ void WhatSonCppRegressionTests::qmlEditorInputPolicyAdapter_centralizesNativeInp
         QStringLiteral("src/app/qml/view/content/editor/ContentsDisplayView.qml"));
     const QString mutationControllerSource = readUtf8SourceFile(
         QStringLiteral("src/app/models/editor/display/ContentsDisplayMutationController.qml"));
+    const QString selectionOrchestrationModelSource = readUtf8SourceFile(
+        QStringLiteral("src/app/models/editor/display/ContentsDisplaySelectionOrchestrationModel.qml"));
     const QString inlineEditorSource = readUtf8SourceFile(
         QStringLiteral("src/app/qml/view/content/editor/ContentsInlineFormatEditor.qml"));
     const QString inlineEditorControllerSource = readUtf8SourceFile(
@@ -1464,8 +1469,8 @@ void WhatSonCppRegressionTests::qmlEditorInputPolicyAdapter_centralizesNativeInp
         QStringLiteral("readonly property bool noteDocumentTagManagementShortcutSurfaceEnabled: inputState.noteDocumentTagManagementShortcutSurfaceEnabled")));
     QVERIFY(displayViewSource.contains(
         QStringLiteral("readonly property bool noteDocumentContextMenuSurfaceEnabled: inputState.noteDocumentContextMenuSurfaceEnabled")));
-    QVERIFY(displayViewSource.contains(
-        QStringLiteral("return editorInputPolicyAdapter.nativeTextInputSessionActive;")));
+    QVERIFY(selectionOrchestrationModelSource.contains(
+        QStringLiteral("model.editorInputPolicyAdapter.nativeTextInputSessionActive")));
     QVERIFY(mutationControllerSource.contains(
         QStringLiteral("controller.editorInputPolicyAdapter.shouldRestoreFocusForMutation(")));
     QVERIFY(!displayViewSource.contains(
@@ -1708,6 +1713,10 @@ void WhatSonCppRegressionTests::qmlStructuredEditors_lockCustomInputToTagManagem
         QStringLiteral("src/app/models/editor/display/ContentsDisplayInputState.qml"));
     const QString inputOrchestrationModelSource = readUtf8SourceFile(
         QStringLiteral("src/app/models/editor/display/ContentsDisplayInputOrchestrationModel.qml"));
+    const QString selectionOrchestrationModelSource = readUtf8SourceFile(
+        QStringLiteral("src/app/models/editor/display/ContentsDisplaySelectionOrchestrationModel.qml"));
+    const QString presentationOrchestrationModelSource = readUtf8SourceFile(
+        QStringLiteral("src/app/models/editor/display/ContentsDisplayPresentationOrchestrationModel.qml"));
 
     QVERIFY(!displayViewSource.isEmpty());
     QVERIFY(!surfaceHostSource.isEmpty());
@@ -1723,16 +1732,22 @@ void WhatSonCppRegressionTests::qmlStructuredEditors_lockCustomInputToTagManagem
     QVERIFY(!typingControllerSource.isEmpty());
     QVERIFY(!inputStateSource.isEmpty());
     QVERIFY(!inputOrchestrationModelSource.isEmpty());
+    QVERIFY(!selectionOrchestrationModelSource.isEmpty());
+    QVERIFY(!presentationOrchestrationModelSource.isEmpty());
 
     QVERIFY(displayViewSource.contains(QStringLiteral("readonly property bool editorCustomTextInputEnabled: inputState.editorCustomTextInputEnabled")));
     QVERIFY(displayViewSource.contains(QStringLiteral("readonly property bool editorTagManagementInputEnabled: inputState.editorTagManagementInputEnabled")));
     QVERIFY(inputStateSource.contains(QStringLiteral("readonly property bool editorCustomTextInputEnabled: false")));
     QVERIFY(inputStateSource.contains(QStringLiteral("readonly property bool editorTagManagementInputEnabled: true")));
     QVERIFY(displayViewSource.contains(QStringLiteral("readonly property bool noteDocumentTagManagementShortcutSurfaceEnabled")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("EditorDisplayModel.ContentsDisplaySelectionOrchestrationModel {")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("EditorDisplayModel.ContentsDisplayPresentationOrchestrationModel {")));
     QVERIFY(displayViewSource.contains(QStringLiteral("function handleTagManagementShortcutKeyPress(event)")));
     QVERIFY(displayViewSource.contains(QStringLiteral("function inlineFormatShortcutTag(event)")));
     QVERIFY(displayViewSource.contains(QStringLiteral("function handleInlineFormatTagShortcut(event)")));
     QVERIFY(inputOrchestrationModelSource.contains(QStringLiteral("model.contentsView.queueInlineFormatWrap(tagName)")));
+    QVERIFY(selectionOrchestrationModelSource.contains(QStringLiteral("model.selectionMountViewModel.scheduleSelectionModelSync(options);")));
+    QVERIFY(presentationOrchestrationModelSource.contains(QStringLiteral("model.presentationViewModel.scheduleDocumentPresentationRefresh(forceImmediate);")));
     QVERIFY(surfaceHostSource.contains(QStringLiteral("tagManagementShortcutKeyPressHandler: function (event)")));
     QVERIFY(displayViewSource.contains(
         QStringLiteral("readonly property bool noteDocumentTagManagementShortcutSurfaceEnabled: inputState.noteDocumentTagManagementShortcutSurfaceEnabled")));
