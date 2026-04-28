@@ -1,5 +1,9 @@
 # `ContentsDisplayNoteBodyMountCoordinator.cpp`
 
+- This source is now the public QObject/state-plumbing unit for the mount coordinator.
+  The heavier derived-status logic and mount-plan emission logic were split into
+  `ContentsDisplayNoteBodyMountCoordinatorStatus.cpp` and `ContentsDisplayNoteBodyMountCoordinatorPlan.cpp` so the
+  note-open coordination path no longer lives in one giant translation unit.
 - Coordinates note-open mount decisions between selected-note snapshots, the bound editor session, and the active
   document surface.
 - Mount readiness now follows the same presentation-ready source contract as

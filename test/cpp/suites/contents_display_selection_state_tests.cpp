@@ -204,12 +204,15 @@ void WhatSonCppRegressionTests::contentsDisplayCreationPath_emitsCoordinatorTrac
         QStringLiteral("src/app/models/editor/session/ContentsEditorSessionController.cpp"));
     const QString mountCoordinatorSource = readUtf8SourceFile(
         QStringLiteral("src/app/models/editor/display/ContentsDisplayNoteBodyMountCoordinator.cpp"));
+    const QString mountCoordinatorPlanSource = readUtf8SourceFile(
+        QStringLiteral("src/app/models/editor/display/ContentsDisplayNoteBodyMountCoordinatorPlan.cpp"));
     const QString contentCmakeSource = readUtf8SourceFile(
         QStringLiteral("src/app/models/content/CMakeLists.txt"));
 
     QVERIFY(!documentSourceResolverSource.isEmpty());
     QVERIFY(!editorSessionSource.isEmpty());
     QVERIFY(!mountCoordinatorSource.isEmpty());
+    QVERIFY(!mountCoordinatorPlanSource.isEmpty());
     QVERIFY(!contentCmakeSource.contains(QStringLiteral("add_subdirectory(display)")));
     QVERIFY(!contentCmakeSource.contains(QStringLiteral("add_subdirectory(structured)")));
 
@@ -233,7 +236,7 @@ void WhatSonCppRegressionTests::contentsDisplayCreationPath_emitsCoordinatorTrac
 
     QVERIFY(mountCoordinatorSource.contains(
         QStringLiteral("QStringLiteral(\"setStructuredDocumentSurfaceRequested\")")));
-    QVERIFY(mountCoordinatorSource.contains(
+    QVERIFY(mountCoordinatorPlanSource.contains(
         QStringLiteral("QStringLiteral(\"setPendingMountNoteId\")")));
     QVERIFY(mountCoordinatorSource.contains(
         QStringLiteral("QStringLiteral(\"setPendingBodySave\")")));
@@ -243,11 +246,11 @@ void WhatSonCppRegressionTests::contentsDisplaySelectionFlow_emitsTraceForSelect
 {
     const QString selectionSyncSource = readUtf8SourceFile(
         QStringLiteral("src/app/models/editor/display/ContentsDisplaySelectionSyncCoordinator.cpp"));
-    const QString mountCoordinatorSource = readUtf8SourceFile(
-        QStringLiteral("src/app/models/editor/display/ContentsDisplayNoteBodyMountCoordinator.cpp"));
+    const QString mountCoordinatorPlanSource = readUtf8SourceFile(
+        QStringLiteral("src/app/models/editor/display/ContentsDisplayNoteBodyMountCoordinatorPlan.cpp"));
 
     QVERIFY(!selectionSyncSource.isEmpty());
-    QVERIFY(!mountCoordinatorSource.isEmpty());
+    QVERIFY(!mountCoordinatorPlanSource.isEmpty());
 
     QVERIFY(selectionSyncSource.contains(QStringLiteral("summarizeSelectionSyncPlan")));
     QVERIFY(selectionSyncSource.contains(
@@ -260,11 +263,11 @@ void WhatSonCppRegressionTests::contentsDisplaySelectionFlow_emitsTraceForSelect
     QVERIFY(selectionSyncSource.contains(
         QStringLiteral("selectedNoteId=%1 bodyNoteId=%2 resetSnapshot=%3")));
 
-    QVERIFY(mountCoordinatorSource.contains(QStringLiteral("summarizeMountPlan")));
-    QVERIFY(mountCoordinatorSource.contains(
+    QVERIFY(mountCoordinatorPlanSource.contains(QStringLiteral("summarizeMountPlan")));
+    QVERIFY(mountCoordinatorPlanSource.contains(
         QStringLiteral("QStringLiteral(\"selectionFlow.mountPlan\")")));
-    QVERIFY(mountCoordinatorSource.contains(QStringLiteral("summarizeMountPlan(plan)")));
-    QVERIFY(mountCoordinatorSource.contains(
+    QVERIFY(mountCoordinatorPlanSource.contains(QStringLiteral("summarizeMountPlan(plan)")));
+    QVERIFY(mountCoordinatorPlanSource.contains(
         QStringLiteral("selectedNoteId=%1 bodyNoteId=%2 resetSnapshot=%3")));
 }
 

@@ -40,6 +40,8 @@ set(WHATSON_CPP_REGRESSION_TEST_SOURCES
         "${CMAKE_SOURCE_DIR}/src/app/models/editor/display/ContentsDisplayDocumentSourceResolver.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/editor/display/ContentsDisplayEditOperationCoordinator.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/editor/display/ContentsDisplayNoteBodyMountCoordinator.cpp"
+        "${CMAKE_SOURCE_DIR}/src/app/models/editor/display/ContentsDisplayNoteBodyMountCoordinatorPlan.cpp"
+        "${CMAKE_SOURCE_DIR}/src/app/models/editor/display/ContentsDisplayNoteBodyMountCoordinatorStatus.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/editor/display/ContentsDisplaySelectionSyncCoordinator.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/editor/display/ContentsDisplayViewportCoordinator.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/editor/parser/ContentsWsnBodyBlockParser.cpp"

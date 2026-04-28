@@ -23,6 +23,8 @@ gain new session, persistence, parsing, mutation, scheduling, or command-surface
   and reserving block-like silhouettes only for visual entries such as resources.
 - `ContentsDisplayNoteBodyMountCoordinator.*`
   Drives note-body mount, retry, and exception plans while the selected RAW body is converging.
+  The coordinator is now split into narrow implementation units so public QObject state plumbing, mount-plan emission,
+  and derived mount/exception status no longer live in one giant translation unit.
   It no longer publishes separate surface-ready or surface-interactive state; parse-mounted `.wsnbody` is the only
   readiness authority exposed upward.
 - `ContentsDisplayPresentationRefreshController.*` and `ContentsDisplayRefreshCoordinator.*`
