@@ -34,17 +34,19 @@ QtObject {
         return value === undefined || value === null ? "" : String(value);
     }
 
-    function programmaticTextSyncPolicy(currentText, nextText, compositionActive, focused, preferNativeInputHandling, localTextEditActive) {
+    function programmaticTextSyncPolicy(currentText, nextText, compositionActive, focused, preferNativeInputHandling, localTextEditActive, localSelectionInteractionActive) {
         const current = adapter.normalizedText(currentText);
         const next = adapter.normalizedText(nextText);
-        const nativeFocusedLocalEdit = !!preferNativeInputHandling && !!focused && !!localTextEditActive;
+        const nativeFocusedLocalInteraction = !!preferNativeInputHandling
+                && !!focused
+                && (!!localTextEditActive || !!localSelectionInteractionActive);
         if (compositionActive) {
             return {
                 "apply": false,
                 "defer": true
             };
         }
-        if (nativeFocusedLocalEdit) {
+        if (nativeFocusedLocalInteraction) {
             return {
                 "apply": false,
                 "defer": current !== next
@@ -56,25 +58,27 @@ QtObject {
         };
     }
 
-    function shouldDeferProgrammaticTextSync(currentText, nextText, compositionActive, focused, preferNativeInputHandling, localTextEditActive) {
+    function shouldDeferProgrammaticTextSync(currentText, nextText, compositionActive, focused, preferNativeInputHandling, localTextEditActive, localSelectionInteractionActive) {
         const policy = adapter.programmaticTextSyncPolicy(
                     currentText,
                     nextText,
                     compositionActive,
                     focused,
                     preferNativeInputHandling,
-                    localTextEditActive);
+                    localTextEditActive,
+                    localSelectionInteractionActive);
         return !!policy.defer;
     }
 
-    function shouldApplyProgrammaticTextSync(currentText, nextText, compositionActive, focused, preferNativeInputHandling, localTextEditActive) {
+    function shouldApplyProgrammaticTextSync(currentText, nextText, compositionActive, focused, preferNativeInputHandling, localTextEditActive, localSelectionInteractionActive) {
         const policy = adapter.programmaticTextSyncPolicy(
                     currentText,
                     nextText,
                     compositionActive,
                     focused,
                     preferNativeInputHandling,
-                    localTextEditActive);
+                    localTextEditActive,
+                    localSelectionInteractionActive);
         return !!policy.apply;
     }
 

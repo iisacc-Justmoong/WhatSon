@@ -14,6 +14,7 @@ Item {
     property string deferredProgrammaticText: ""
     property bool fallbackTextEditedDispatchQueued: false
     property int fallbackTextEditedDispatchRevision: 0
+    property bool localSelectionInteractionSinceFocus: false
     property bool localTextEditSinceFocus: false
     property string cachedSelectedText: ""
     property int cachedSelectionCursorPosition: -1
@@ -243,7 +244,8 @@ Item {
                     controller.control && controller.control.preferNativeInputHandling !== undefined
                         ? !!controller.control.preferNativeInputHandling
                         : false,
-                    controller.localTextEditSinceFocus);
+                    controller.localTextEditSinceFocus,
+                    controller.localSelectionInteractionSinceFocus);
     }
 
     function canDeferProgrammaticTextSync(nextText) {
@@ -358,6 +360,7 @@ Item {
             else
                 controller.flushDeferredProgrammaticText(true);
         }
+        controller.localSelectionInteractionSinceFocus = false;
         controller.localTextEditSinceFocus = false;
     }
 
@@ -403,6 +406,8 @@ Item {
                     "cursorPositionChanged",
                     "cursorPosition=" + controller.textInput.cursorPosition,
                     controller.control)
+        if (controller.controlFocused())
+            controller.localSelectionInteractionSinceFocus = true;
         controller.maybeDiscardCachedSelectionSnapshot();
     }
 
@@ -415,6 +420,8 @@ Item {
                     "selectionStart=" + controller.textInput.selectionStart
                     + " selectionEnd=" + controller.textInput.selectionEnd,
                     controller.control)
+        if (controller.controlFocused())
+            controller.localSelectionInteractionSinceFocus = true;
         controller.maybeDiscardCachedSelectionSnapshot();
     }
 
@@ -427,6 +434,8 @@ Item {
                     "selectionStart=" + controller.textInput.selectionStart
                     + " selectionEnd=" + controller.textInput.selectionEnd,
                     controller.control)
+        if (controller.controlFocused())
+            controller.localSelectionInteractionSinceFocus = true;
         controller.maybeDiscardCachedSelectionSnapshot();
     }
 
@@ -443,6 +452,7 @@ Item {
         controller.clearCachedSelectionSnapshot();
         if (controller.programmaticTextSyncDepth > 0)
             return;
+        controller.localSelectionInteractionSinceFocus = true;
         controller.localTextEditSinceFocus = true;
         controller.clearDeferredProgrammaticText();
         if (controller.control

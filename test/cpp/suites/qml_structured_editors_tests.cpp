@@ -1472,6 +1472,7 @@ void WhatSonCppRegressionTests::qmlEditorInputPolicyAdapter_centralizesNativeInp
     QVERIFY(policyAdapterSource.contains(QStringLiteral("function shouldDeferProgrammaticTextSync(")));
     QVERIFY(policyAdapterSource.contains(QStringLiteral("function shouldApplyProgrammaticTextSync(")));
     QVERIFY(policyAdapterSource.contains(QStringLiteral("function shouldRestoreFocusForMutation(")));
+    QVERIFY(policyAdapterSource.contains(QStringLiteral("!!localSelectionInteractionActive")));
     QVERIFY(policyAdapterSource.contains(QStringLiteral("reason === \"text-edit\"")));
 
     QVERIFY(displayViewSource.contains(QStringLiteral("EditorInputModel.ContentsEditorInputPolicyAdapter {\n        id: editorInputPolicyAdapter")));
@@ -1500,7 +1501,10 @@ void WhatSonCppRegressionTests::qmlEditorInputPolicyAdapter_centralizesNativeInp
     QVERIFY(inlineEditorControllerSource.contains(QStringLiteral("ContentsEditorInputPolicyAdapter {\n        id: inlineInputPolicyAdapter")));
     QVERIFY(inlineEditorControllerSource.contains(QStringLiteral("function programmaticTextSyncPolicy(nextText)")));
     QVERIFY(inlineEditorControllerSource.contains(QStringLiteral("inlineInputPolicyAdapter.programmaticTextSyncPolicy(")));
+    QVERIFY(inlineEditorControllerSource.contains(QStringLiteral("controller.localSelectionInteractionSinceFocus);")));
     QVERIFY(inlineEditorControllerSource.contains(QStringLiteral("const syncPolicy = controller.programmaticTextSyncPolicy(normalizedText);")));
+    QVERIFY(inlineEditorControllerSource.contains(QStringLiteral("controller.localSelectionInteractionSinceFocus = true;")));
+    QVERIFY(inlineEditorControllerSource.contains(QStringLiteral("controller.localSelectionInteractionSinceFocus = false;")));
     QVERIFY(!inlineEditorControllerSource.contains(QStringLiteral("return control.nativeCompositionActive();")));
     QVERIFY(!inlineEditorControllerSource.contains(QStringLiteral("control._localTextEditSinceFocus = false;\n            return false;")));
 

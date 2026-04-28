@@ -11,7 +11,10 @@ policy, deferred edit dispatch, and native-composition guards.
 
 - Keeps the OS/Qt `TextEdit` as the ordinary input authority.
 - Rejects programmatic cursor/text sync while `inputMethodComposing` or `preeditText` is active.
-- Tracks local text edits so focused native-input sessions are not overwritten by host projection refreshes.
+- Tracks local text edits and cursor/selection interaction so focused native-input sessions are not overwritten by host
+  projection refreshes.
+  That includes iOS keyboard space-bar trackpad selection gestures, which must survive even before the user commits a
+  text mutation.
 - Emits `textEdited(...)` only after committed text is available.
 
 ## Boundary
