@@ -336,6 +336,16 @@ Item {
         structuredDocumentFlow: structuredDocumentFlow
         viewportCoordinator: viewportCoordinator
     }
+    EditorDisplayModel.ContentsDisplayInputOrchestrationModel {
+        id: inputOrchestrationModel
+
+        contentsView: contentsView
+        contextMenuCoordinator: contextMenuCoordinator
+        editorSelectionController: editorSelectionController
+        editorViewport: editorViewport
+        resourceImportController: resourceImportController
+        structuredDocumentFlow: structuredDocumentFlow
+    }
 
     function activeLogicalTextSnapshot() { return geometrySnapshotModel.activeLogicalTextSnapshot(); }
     function normalizedSnapshotEntries(rawEntries) { return geometrySnapshotModel.normalizedSnapshotEntries(rawEntries); }
@@ -586,107 +596,13 @@ Item {
     function focusEditorForPendingNote() {
         selectionMountViewModel.focusEditorForPendingNote();
     }
-    function eventRequestsPasteShortcut(event) {
-        if (!event)
-            return false;
-        if (event.matches !== undefined && event.matches(StandardKey.Paste))
-            return true;
-
-        const modifiers = event.modifiers;
-        const metaPressed = !!(modifiers & Qt.MetaModifier);
-        const controlPressed = !!(modifiers & Qt.ControlModifier);
-        const altPressed = !!(modifiers & Qt.AltModifier);
-        const shiftPressed = !!(modifiers & Qt.ShiftModifier);
-        const normalizedText = event.text === undefined || event.text === null ? "" : String(event.text).toUpperCase();
-        if (!altPressed
-                && !shiftPressed
-                && (metaPressed || controlPressed)
-                && (event.key === Qt.Key_V || normalizedText === "V")) {
-            return true;
-        }
-        if (!metaPressed
-                && !controlPressed
-                && !altPressed
-                && shiftPressed
-                && event.key === Qt.Key_Insert) {
-            return true;
-        }
-        return false;
-    }
-    function inlineFormatShortcutTag(event) {
-        if (!event)
-            return "";
-
-        const modifiers = Number(event.modifiers) || 0;
-        const metaPressed = !!(modifiers & Qt.MetaModifier);
-        const controlPressed = !!(modifiers & Qt.ControlModifier);
-        const altPressed = !!(modifiers & Qt.AltModifier);
-        const shiftPressed = !!(modifiers & Qt.ShiftModifier);
-        const commandPressed = metaPressed || controlPressed;
-        if (altPressed || !commandPressed)
-            return "";
-
-        const normalizedText = event.text === undefined || event.text === null ? "" : String(event.text).toUpperCase();
-        const key = Number(event.key);
-        if (!shiftPressed) {
-            if (key === Qt.Key_B || normalizedText === "B")
-                return "bold";
-            if (key === Qt.Key_I || normalizedText === "I")
-                return "italic";
-            if (key === Qt.Key_U || normalizedText === "U")
-                return "underline";
-            return "";
-        }
-        if (key === Qt.Key_X || normalizedText === "X")
-            return "strikethrough";
-        if (key === Qt.Key_E || normalizedText === "E")
-            return "highlight";
-        return "";
-    }
-    function handleInlineFormatTagShortcut(event) {
-        const tagName = contentsView.inlineFormatShortcutTag(event);
-        if (tagName.length === 0)
-            return false;
-        const handled = contentsView.queueInlineFormatWrap(tagName);
-        if (handled && event)
-            event.accepted = true;
-        return handled;
-    }
-    function clipboardImageAvailableForPaste() {
-        if (!contentsView.resourcesImportViewModel)
-            return false;
-        if (contentsView.resourcesImportViewModel.refreshClipboardImageAvailabilitySnapshot !== undefined)
-            return !!contentsView.resourcesImportViewModel.refreshClipboardImageAvailabilitySnapshot();
-        if (contentsView.resourcesImportViewModel.clipboardImageAvailable === undefined)
-            return false;
-        return !!contentsView.resourcesImportViewModel.clipboardImageAvailable;
-    }
-    function handleClipboardImagePasteShortcut(event) {
-        if (!contentsView.eventRequestsPasteShortcut(event))
-            return false;
-        if (!contentsView.resourcesImportViewModel
-                || (contentsView.resourcesImportViewModel.busy !== undefined
-                    && contentsView.resourcesImportViewModel.busy)
-                || !contentsView.clipboardImageAvailableForPaste()) {
-            return false;
-        }
-        const pasted = resourceImportController.pasteClipboardImageAsResource();
-        if (pasted && event)
-            event.accepted = true;
-        return pasted;
-    }
-    function handleTagManagementShortcutKeyPress(event) {
-        if (contentsView.handleClipboardImagePasteShortcut(event))
-            return true;
-        if (contentsView.handleInlineFormatTagShortcut(event))
-            return true;
-        return false;
-    }
-    function handleSelectionContextMenuEvent(eventName) {
-        if (contentsView.handleStructuredSelectionContextMenuEvent(eventName))
-            return;
-        editorSelectionController.handleSelectionContextMenuEvent(eventName);
-    }
+    function eventRequestsPasteShortcut(event) { return inputOrchestrationModel.eventRequestsPasteShortcut(event); }
+    function inlineFormatShortcutTag(event) { return inputOrchestrationModel.inlineFormatShortcutTag(event); }
+    function handleInlineFormatTagShortcut(event) { return inputOrchestrationModel.handleInlineFormatTagShortcut(event); }
+    function clipboardImageAvailableForPaste() { return inputOrchestrationModel.clipboardImageAvailableForPaste(); }
+    function handleClipboardImagePasteShortcut(event) { return inputOrchestrationModel.handleClipboardImagePasteShortcut(event); }
+    function handleTagManagementShortcutKeyPress(event) { return inputOrchestrationModel.handleTagManagementShortcutKeyPress(event); }
+    function handleSelectionContextMenuEvent(eventName) { return inputOrchestrationModel.handleSelectionContextMenuEvent(eventName); }
     function commitDocumentPresentationRefresh() {
         presentationViewModel.commitDocumentPresentationRefresh();
     }
@@ -724,129 +640,16 @@ Item {
     function normalizeInlineStyleTag(tagName) {
         return editorSelectionController.normalizeInlineStyleTag(tagName);
     }
-    function encodeXmlAttributeValue(value) {
-        let encodedValue = value === undefined || value === null ? "" : String(value);
-        encodedValue = encodedValue.replace(/&/g, "&amp;");
-        encodedValue = encodedValue.replace(/"/g, "&quot;");
-        encodedValue = encodedValue.replace(/'/g, "&apos;");
-        encodedValue = encodedValue.replace(/</g, "&lt;");
-        encodedValue = encodedValue.replace(/>/g, "&gt;");
-        return encodedValue;
-    }
-    function resetStructuredSelectionContextMenuSnapshot() {
-        contentsView.structuredContextMenuBlockIndex = -1;
-        contentsView.structuredContextMenuSelectionSnapshot = ({});
-        contextMenuCoordinator.structuredContextMenuBlockIndex = -1;
-        contextMenuCoordinator.structuredContextMenuSelectionSnapshot = ({})
-    }
-    function primeStructuredSelectionContextMenuSnapshot() {
-        if (!contentsView.showStructuredDocumentFlow
-                || !structuredDocumentFlow
-                || structuredDocumentFlow.inlineFormatTargetState === undefined) {
-            contentsView.resetStructuredSelectionContextMenuSnapshot();
-            return false;
-        }
-        const targetState = structuredDocumentFlow.inlineFormatTargetState();
-        const plan = contextMenuCoordinator.primeStructuredSelectionSnapshotPlan(
-                    targetState && typeof targetState === "object" ? targetState : ({}));
-        if (!plan.accepted) {
-            contentsView.resetStructuredSelectionContextMenuSnapshot();
-            return false;
-        }
-        contentsView.structuredContextMenuBlockIndex = Number(plan.blockIndex) || 0;
-        contentsView.structuredContextMenuSelectionSnapshot = plan.selectionSnapshot && typeof plan.selectionSnapshot === "object"
-                ? plan.selectionSnapshot
-                : ({});
-        contextMenuCoordinator.structuredContextMenuBlockIndex = contentsView.structuredContextMenuBlockIndex;
-        contextMenuCoordinator.structuredContextMenuSelectionSnapshot = contentsView.structuredContextMenuSelectionSnapshot;
-        return true;
-    }
-    function handleStructuredSelectionContextMenuEvent(eventName) {
-        const inlineStyleTag = contextMenuCoordinator.inlineStyleTagForEvent(eventName === undefined || eventName === null ? "" : String(eventName));
-        const plan = contextMenuCoordinator.handleStructuredSelectionEventPlan(
-                    inlineStyleTag,
-                    contextMenuCoordinator.structuredSelectionValid(),
-                    !!(structuredDocumentFlow && structuredDocumentFlow.applyInlineFormatToBlockSelection !== undefined));
-        if (!plan.applyStructuredInlineFormat) {
-            if (plan.requireStructuredSelectionPrime
-                    && contentsView.primeStructuredSelectionContextMenuSnapshot()) {
-                return contentsView.handleStructuredSelectionContextMenuEvent(eventName);
-            }
-            return false;
-        }
-        const handled = !!structuredDocumentFlow.applyInlineFormatToBlockSelection(
-                    Number(plan.blockIndex) || 0,
-                    String(plan.inlineStyleTag || ""),
-                    plan.selectionSnapshot && typeof plan.selectionSnapshot === "object"
-                    ? plan.selectionSnapshot
-                    : ({}));
-        contentsView.resetStructuredSelectionContextMenuSnapshot();
-        return handled;
-    }
-    function openEditorSelectionContextMenu(localX, localY) {
-        const plan = contextMenuCoordinator.openSelectionContextMenuPlan(
-                    contextMenuCoordinator.structuredSelectionValid(),
-                    !!editorSelectionContextMenu,
-                    Number(localX) || 0,
-                    Number(localY) || 0);
-        if (plan.delegateToEditorSelectionController)
-            return editorSelectionController.openEditorSelectionContextMenu(localX, localY);
-        if (plan.requireStructuredSelectionPrime
-                && !contentsView.primeStructuredSelectionContextMenuSnapshot())
-            return false;
-        if (!editorSelectionContextMenu)
-            return false;
-        if (plan.closeBeforeOpen && editorSelectionContextMenu.opened)
-            editorSelectionContextMenu.close();
-        editorSelectionContextMenu.openFor(
-                    editorViewport,
-                    Number(plan.openX) || 0,
-                    Number(plan.openY) || 0);
-        return true;
-    }
-    function editorContextMenuPointerTriggerAccepted(triggerKind) {
-        const normalizedTrigger = triggerKind === undefined || triggerKind === null ? "" : String(triggerKind).trim().toLowerCase();
-        if (normalizedTrigger === "rightclick"
-                || normalizedTrigger === "right-click"
-                || normalizedTrigger === "contextmenu"
-                || normalizedTrigger === "context-menu") {
-            return true;
-        }
-        if (normalizedTrigger === "longpress"
-                || normalizedTrigger === "long-press"
-                || normalizedTrigger === "pressandhold"
-                || normalizedTrigger === "press-and-hold") {
-            return contentsView.contextMenuLongPressEnabled;
-        }
-        return false;
-    }
-    function requestEditorSelectionContextMenuFromPointer(localX, localY, triggerKind) {
-        if (!contentsView.editorContextMenuPointerTriggerAccepted(triggerKind))
-            return false;
-        if (!contentsView.ensureEditorSelectionContextMenuSnapshot())
-            return false;
-        Qt.callLater(function () {
-            contentsView.openEditorSelectionContextMenu(localX, localY);
-        });
-        return true;
-    }
-    function editorSelectionContextMenuSnapshotValid() {
-        if (contentsView.showStructuredDocumentFlow)
-            return contextMenuCoordinator.structuredSelectionValid();
-        const selectionRange = editorSelectionController.contextMenuEditorSelectionRange();
-        return selectionRange
-                && Number(selectionRange.end) > Number(selectionRange.start);
-    }
-    function ensureEditorSelectionContextMenuSnapshot() {
-        if (contentsView.editorSelectionContextMenuSnapshotValid())
-            return true;
-        return contentsView.primeEditorSelectionContextMenuSnapshot();
-    }
-    function primeEditorSelectionContextMenuSnapshot() {
-        if (contentsView.showStructuredDocumentFlow)
-            return contentsView.primeStructuredSelectionContextMenuSnapshot();
-        return editorSelectionController.primeContextMenuSelectionSnapshot();
-    }
+    function encodeXmlAttributeValue(value) { return inputOrchestrationModel.encodeXmlAttributeValue(value); }
+    function resetStructuredSelectionContextMenuSnapshot() { return inputOrchestrationModel.resetStructuredSelectionContextMenuSnapshot(); }
+    function primeStructuredSelectionContextMenuSnapshot() { return inputOrchestrationModel.primeStructuredSelectionContextMenuSnapshot(); }
+    function handleStructuredSelectionContextMenuEvent(eventName) { return inputOrchestrationModel.handleStructuredSelectionContextMenuEvent(eventName); }
+    function openEditorSelectionContextMenu(localX, localY) { return inputOrchestrationModel.openEditorSelectionContextMenu(localX, localY); }
+    function editorContextMenuPointerTriggerAccepted(triggerKind) { return inputOrchestrationModel.editorContextMenuPointerTriggerAccepted(triggerKind); }
+    function requestEditorSelectionContextMenuFromPointer(localX, localY, triggerKind) { return inputOrchestrationModel.requestEditorSelectionContextMenuFromPointer(localX, localY, triggerKind); }
+    function editorSelectionContextMenuSnapshotValid() { return inputOrchestrationModel.editorSelectionContextMenuSnapshotValid(); }
+    function ensureEditorSelectionContextMenuSnapshot() { return inputOrchestrationModel.ensureEditorSelectionContextMenuSnapshot(); }
+    function primeEditorSelectionContextMenuSnapshot() { return inputOrchestrationModel.primeEditorSelectionContextMenuSnapshot(); }
     function persistEditorTextImmediately(nextText) {
         return mutationViewModel.persistEditorTextImmediately(nextText);
     }

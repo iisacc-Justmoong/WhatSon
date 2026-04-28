@@ -33,7 +33,8 @@ not note-backed.
   model-side controllers under `src/app/models/editor/display`; they are not ViewModels.
 - `ContentsDisplayView.qml` keeps compatibility controller functions only for collaborators that still call the display
   host API directly; those controllers delegate into the responsible C++ ViewModel or into narrow QML-side models such
-  as `ContentsDisplayGeometrySnapshotModel.qml` and `ContentsDisplayViewportModel.qml`.
+  as `ContentsDisplayGeometrySnapshotModel.qml`, `ContentsDisplayViewportModel.qml`, and
+  `ContentsDisplayInputOrchestrationModel.qml`.
 - Center-surface rendering now lives in `ContentsDisplaySurfaceHost.qml`, auxiliary gutter/minimap composition lives in
   `ContentsDisplayAuxiliaryRailHost.qml`, and root exception/conflict overlays live in
   `ContentsDisplayOverlayHost.qml`.
@@ -56,10 +57,11 @@ not note-backed.
 
 - The host now emits explicit editor-creation trace turns for note selection, body-note resolution, editor-session
   binding, document mount pending/mounted/failure transitions, structured-host requests, and the active surface policy.
-- Geometry/minimap snapshot planning and viewport line math are no longer implemented inline as one large block inside
-  this file. The host keeps the public wrapper function names, but the heavy logic now lives in
-  `src/app/models/editor/display/ContentsDisplayGeometrySnapshotModel.qml` and
-  `src/app/models/editor/display/ContentsDisplayViewportModel.qml`.
+- Geometry/minimap snapshot planning, viewport line math, and input/context-menu shortcut orchestration are no longer
+  implemented inline as one large block inside this file. The host keeps the public wrapper function names, but the
+  heavy logic now lives in `src/app/models/editor/display/ContentsDisplayGeometrySnapshotModel.qml`,
+  `src/app/models/editor/display/ContentsDisplayViewportModel.qml`, and
+  `src/app/models/editor/display/ContentsDisplayInputOrchestrationModel.qml`.
 - It now also emits note-selection flow plan traces end-to-end:
   - `selectionFlow.scheduleSelectionModelSync` when the host translates a note selection/body update into paired
     selection-sync and mount passes

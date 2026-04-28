@@ -1706,6 +1706,8 @@ void WhatSonCppRegressionTests::qmlStructuredEditors_lockCustomInputToTagManagem
         QStringLiteral("src/app/models/editor/input/ContentsEditorTypingController.qml"));
     const QString inputStateSource = readUtf8SourceFile(
         QStringLiteral("src/app/models/editor/display/ContentsDisplayInputState.qml"));
+    const QString inputOrchestrationModelSource = readUtf8SourceFile(
+        QStringLiteral("src/app/models/editor/display/ContentsDisplayInputOrchestrationModel.qml"));
 
     QVERIFY(!displayViewSource.isEmpty());
     QVERIFY(!surfaceHostSource.isEmpty());
@@ -1720,6 +1722,7 @@ void WhatSonCppRegressionTests::qmlStructuredEditors_lockCustomInputToTagManagem
     QVERIFY(!selectionControllerSource.isEmpty());
     QVERIFY(!typingControllerSource.isEmpty());
     QVERIFY(!inputStateSource.isEmpty());
+    QVERIFY(!inputOrchestrationModelSource.isEmpty());
 
     QVERIFY(displayViewSource.contains(QStringLiteral("readonly property bool editorCustomTextInputEnabled: inputState.editorCustomTextInputEnabled")));
     QVERIFY(displayViewSource.contains(QStringLiteral("readonly property bool editorTagManagementInputEnabled: inputState.editorTagManagementInputEnabled")));
@@ -1729,7 +1732,7 @@ void WhatSonCppRegressionTests::qmlStructuredEditors_lockCustomInputToTagManagem
     QVERIFY(displayViewSource.contains(QStringLiteral("function handleTagManagementShortcutKeyPress(event)")));
     QVERIFY(displayViewSource.contains(QStringLiteral("function inlineFormatShortcutTag(event)")));
     QVERIFY(displayViewSource.contains(QStringLiteral("function handleInlineFormatTagShortcut(event)")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("contentsView.queueInlineFormatWrap(tagName)")));
+    QVERIFY(inputOrchestrationModelSource.contains(QStringLiteral("model.contentsView.queueInlineFormatWrap(tagName)")));
     QVERIFY(surfaceHostSource.contains(QStringLiteral("tagManagementShortcutKeyPressHandler: function (event)")));
     QVERIFY(displayViewSource.contains(
         QStringLiteral("readonly property bool noteDocumentTagManagementShortcutSurfaceEnabled: inputState.noteDocumentTagManagementShortcutSurfaceEnabled")));

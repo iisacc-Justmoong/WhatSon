@@ -12,6 +12,8 @@ void WhatSonCppRegressionTests::contentsDisplayView_invalidatesGutterGeometryImm
         QStringLiteral("src/app/models/editor/display/ContentsDisplayGeometryController.qml"));
     const QString geometrySnapshotModelSource = readUtf8SourceFile(
         QStringLiteral("src/app/models/editor/display/ContentsDisplayGeometrySnapshotModel.qml"));
+    const QString inputOrchestrationModelSource = readUtf8SourceFile(
+        QStringLiteral("src/app/models/editor/display/ContentsDisplayInputOrchestrationModel.qml"));
     const QString geometryStateSource = readUtf8SourceFile(
         QStringLiteral("src/app/models/editor/display/ContentsDisplayGeometryState.qml"));
 
@@ -19,6 +21,7 @@ void WhatSonCppRegressionTests::contentsDisplayView_invalidatesGutterGeometryImm
     QVERIFY(!eventPumpSource.isEmpty());
     QVERIFY(!geometryControllerSource.isEmpty());
     QVERIFY(!geometrySnapshotModelSource.isEmpty());
+    QVERIFY(!inputOrchestrationModelSource.isEmpty());
     QVERIFY(displayViewSource.contains(QStringLiteral("property alias minimapLineGroupsNoteId: geometryState.minimapLineGroupsNoteId")));
     QVERIFY(geometryStateSource.contains(QStringLiteral("property string minimapLineGroupsNoteId: \"\"")));
     QVERIFY(displayViewSource.contains(QStringLiteral("function activeLineGeometryNoteId()")));
@@ -46,10 +49,11 @@ void WhatSonCppRegressionTests::contentsDisplayView_invalidatesGutterGeometryImm
     QVERIFY(displayViewSource.contains(QStringLiteral("refreshPlan.gutterPassCount")));
     QVERIFY(displayViewSource.contains(QStringLiteral("contentsView.scheduleGutterRefresh(")));
     QVERIFY(geometrySnapshotModelSource.contains(QStringLiteral("model.minimapCoordinator.buildNextMinimapSnapshotPlan(")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("contextMenuCoordinator.openSelectionContextMenuPlan(")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("contextMenuCoordinator.inlineStyleTagForEvent(")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("contextMenuCoordinator.primeStructuredSelectionSnapshotPlan(")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("contextMenuCoordinator.structuredSelectionValid()")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("EditorDisplayModel.ContentsDisplayInputOrchestrationModel {")));
+    QVERIFY(inputOrchestrationModelSource.contains(QStringLiteral("model.contextMenuCoordinator.openSelectionContextMenuPlan(")));
+    QVERIFY(inputOrchestrationModelSource.contains(QStringLiteral("model.contextMenuCoordinator.inlineStyleTagForEvent(")));
+    QVERIFY(inputOrchestrationModelSource.contains(QStringLiteral("model.contextMenuCoordinator.primeStructuredSelectionSnapshotPlan(")));
+    QVERIFY(inputOrchestrationModelSource.contains(QStringLiteral("model.contextMenuCoordinator.structuredSelectionValid()")));
     QVERIFY(geometrySnapshotModelSource.contains(QStringLiteral("model.gutterCoordinator.buildVisiblePlainGutterLineEntries(")));
     QVERIFY(eventPumpSource.contains(QStringLiteral("\"structured-layout-cache\"")));
     QVERIFY(eventPumpSource.contains(QStringLiteral("\"editor-text-synchronized\"")));
@@ -162,6 +166,8 @@ void WhatSonCppRegressionTests::qmlContextMenus_treatRightClickAndLongPressAsSym
         QStringLiteral("src/app/qml/view/content/editor/ContentsDisplayView.qml"));
     const QString inputCommandSurfaceSource = readUtf8SourceFile(
         QStringLiteral("src/app/models/editor/display/ContentsDisplayInputCommandSurface.qml"));
+    const QString inputOrchestrationModelSource = readUtf8SourceFile(
+        QStringLiteral("src/app/models/editor/display/ContentsDisplayInputOrchestrationModel.qml"));
     const QString listBarSource = readUtf8SourceFile(
         QStringLiteral("src/app/qml/view/panels/ListBarLayout.qml"));
     const QString sidebarSource = readUtf8SourceFile(
@@ -169,6 +175,7 @@ void WhatSonCppRegressionTests::qmlContextMenus_treatRightClickAndLongPressAsSym
 
     QVERIFY(!displayViewSource.isEmpty());
     QVERIFY(!inputCommandSurfaceSource.isEmpty());
+    QVERIFY(!inputOrchestrationModelSource.isEmpty());
     QVERIFY(!listBarSource.isEmpty());
     QVERIFY(!sidebarSource.isEmpty());
 
@@ -182,10 +189,10 @@ void WhatSonCppRegressionTests::qmlContextMenus_treatRightClickAndLongPressAsSym
         QStringLiteral("function editorSelectionContextMenuSnapshotValid()")));
     QVERIFY(displayViewSource.contains(
         QStringLiteral("function ensureEditorSelectionContextMenuSnapshot()")));
-    QVERIFY(displayViewSource.contains(
-        QStringLiteral("if (!contentsView.ensureEditorSelectionContextMenuSnapshot())")));
-    QVERIFY(displayViewSource.contains(
-        QStringLiteral("return contextMenuCoordinator.structuredSelectionValid();")));
+    QVERIFY(inputOrchestrationModelSource.contains(
+        QStringLiteral("if (!model.ensureEditorSelectionContextMenuSnapshot())")));
+    QVERIFY(inputOrchestrationModelSource.contains(
+        QStringLiteral("return model.contextMenuCoordinator.structuredSelectionValid();")));
     QVERIFY(inputCommandSurfaceSource.contains(
         QStringLiteral("MouseArea {\n        id: editorRightClickContextMenuMouseArea")));
     QVERIFY(inputCommandSurfaceSource.contains(

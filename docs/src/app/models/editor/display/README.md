@@ -42,7 +42,10 @@ gain new session, persistence, parsing, mutation, scheduling, or command-surface
   Owns display-host timers and signal connections for note mount, selection sync, projection, cursor, and geometry
   refresh events.
 - `ContentsDisplayInputCommandSurface.qml`
-  Owns editor context-menu pointer triggers and tag-management shortcuts.
+  Owns the actual editor context-menu pointer surfaces and shortcut handler wiring.
+- `ContentsDisplayInputOrchestrationModel.qml`
+  Owns QML-side paste, inline-format shortcut, and editor selection context-menu orchestration so
+  `ContentsDisplayView.qml` only keeps thin compatibility wrappers for existing callers.
 - `ContentsDisplayGeometryController.qml`
   Owns QML-runtime geometry scheduling and delegates public calls through the C++ geometry ViewModel.
 - `ContentsDisplayGeometrySnapshotModel.qml`
