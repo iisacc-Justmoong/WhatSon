@@ -18,6 +18,8 @@ stable text snapshot; it does not intercept ordinary key events.
 - Reads committed text from `contentEditor.currentPlainText()` when available, with `getText(0, length)` as the legacy
   surface fallback.
 - Computes one contiguous plain-text delta and maps that delta back into RAW `.wsnbody` source offsets.
+- Delegates plain-text source stitching and committed-URL canonicalization to
+  `ContentsPlainTextSourceMutator` instead of calling a document renderer bridge.
 - The canonical structured text-block path now lives in `ContentsDocumentTextBlockController.qml`: plain text blocks
   commit the `TextEdit` plain text directly as RAW block source, and styled blocks use the tag-preserving replacement
   path.
@@ -39,7 +41,7 @@ stable text snapshot; it does not intercept ordinary key events.
 The remaining non-literal transformations are source-tag management, not live key interception:
 
 - `queueAgendaShortcutInsertion()` inserts a canonical `<agenda ...><task ...>...</task></agenda>` block at the
-  resolved RAW cursor through `ContentsEditorBodyTagInsertionPlanner`.
+  resolved RAW cursor through `ContentsRawBodyTagMutationSupport.js`.
 - `queueCalloutShortcutInsertion()` wraps the active selected RAW range as `<callout>...</callout>` when text is
   selected, otherwise it inserts canonical `<callout>...</callout>` source at the resolved RAW cursor.
 - `queueBreakShortcutInsertion()` inserts canonical `</break>` source.
@@ -48,7 +50,7 @@ The remaining non-literal transformations are source-tag management, not live ke
 - Agenda task Enter handling and legacy whole-editor callout exit handling are delegated to their backends as RAW tag
   mutations after the committed text delta is available.
 - Resource drops and clipboard resource imports reuse `insertRawSourceTextAtCursor(...)`, which now delegates raw
-  source insertion payload construction to `ContentsEditorBodyTagInsertionPlanner` before applying the next RAW source.
+  source insertion payload construction to `ContentsRawBodyTagMutationSupport.js` before applying the next RAW source.
 
 ## Disallowed Custom Input
 

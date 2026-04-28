@@ -126,6 +126,9 @@ CMakeLists.txt.user*
 cmake-build-debug
 automation-logs
 
+# Rust CLI build artifacts
+src/cli/target/
+
 # Project architecture directories named "tags" must remain trackable even when
 # a developer has a global ctags ignore pattern.
 !src/app/models/editor/tags/

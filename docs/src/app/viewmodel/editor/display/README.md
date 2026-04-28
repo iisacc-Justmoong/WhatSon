@@ -19,9 +19,6 @@ while preserving the existing host API shape that QML collaborators call.
   Publishes selected-note snapshot polling, reconcile, editor-session delivery, and note-body mount scheduling hooks.
 - `ContentsDisplayGeometryViewModel.*`
   Publishes minimap/gutter cache invalidation and viewport correction hooks.
-- `ContentsActiveEditorSurfaceAdapter.*`
-  Publishes the active editor surface contract used by selection/mount orchestration for focus restoration and logical
-  cursor movement, without exposing concrete QML editor item names to that orchestration.
 - `ContentsDisplaySurfacePolicy.*`
   Publishes the active editor surface decision. The canonical selected-note surface is the structured document flow;
   the legacy whole-note inline loader is disabled at the policy boundary.
@@ -33,5 +30,8 @@ while preserving the existing host API shape that QML collaborators call.
 - Non-view editor orchestration must move into C++ model or ViewModel objects. QML is limited to view construction and
   must not be used as a ViewModel, session, persistence, scheduling, or command-surface boundary.
 - `ContentsDisplayView.qml` instantiates these ViewModels and binds layout-only surfaces to their public hooks.
+- ViewModels in this directory no longer expose an active-editor-surface adapter layer.
+  Focus restoration and RAW mutation routing target the parser-backed `ContentsStructuredDocumentFlow.qml` host
+  directly, keeping `.wsnbody` as the only write authority.
 - The view may keep compatibility wrapper functions only when existing editor-domain collaborators still call the host
   API directly; those wrappers must delegate into the responsible C++ ViewModel.

@@ -7,6 +7,6 @@ Implements the active document-surface policy for the note display host.
 ## Behavior
 
 - `activeSurfaceKind` is `structured` when a note is selected and no specialized surface request is active.
-- `inlineDocumentSurfaceRequested`, `inlineDocumentSurfaceReady`, and `inlineDocumentSurfaceLoading` stay false so
-  `ContentsDisplayView.qml` cannot silently mount the unreachable whole-note inline editor path.
+- The policy no longer publishes legacy inline-surface readiness or loading flags.
+  `ContentsDisplayView.qml` mounts the parser-backed structured document host directly when a note is selected.
 - `documentPresentationProjectionEnabled` is only true for formatted-preview mode.

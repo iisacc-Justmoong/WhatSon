@@ -18,9 +18,9 @@ QtObject {
             return;
         const currentSnapshotEntries = controller.contentsView.currentMinimapSnapshotEntries();
         const currentNoteId = controller.contentsView.activeLineGeometryNoteId();
-        const useStructuredGeometry = controller.contentsView.hasStructuredLogicalLineGeometry();
-        const currentLineCount = useStructuredGeometry
-                ? Math.max(1, controller.contentsView.effectiveStructuredLogicalLineEntries().length)
+        const useStructuredMinimap = controller.contentsView.hasStructuredMinimapEntries();
+        const currentLineCount = useStructuredMinimap
+                ? Math.max(1, controller.contentsView.effectiveStructuredMinimapEntries().length)
                 : controller.contentsView.logicalLineCount;
         if (!controller.contentsView.minimapSnapshotForceFullRefresh
                 && !controller.contentsView.hasPendingNoteEntryGutterRefresh(currentNoteId)

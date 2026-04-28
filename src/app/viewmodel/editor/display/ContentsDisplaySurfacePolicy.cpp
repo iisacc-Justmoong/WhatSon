@@ -32,21 +32,6 @@ bool ContentsDisplaySurfacePolicy::structuredDocumentFlowVisible() const noexcep
     return structuredSurfaceActive();
 }
 
-bool ContentsDisplaySurfacePolicy::inlineDocumentSurfaceRequested() const noexcept
-{
-    return false;
-}
-
-bool ContentsDisplaySurfacePolicy::inlineDocumentSurfaceReady() const noexcept
-{
-    return false;
-}
-
-bool ContentsDisplaySurfacePolicy::inlineDocumentSurfaceLoading() const noexcept
-{
-    return false;
-}
-
 bool ContentsDisplaySurfacePolicy::dedicatedResourceViewerVisible() const noexcept
 {
     return m_hasSelectedNote && m_resourceViewerRequested;

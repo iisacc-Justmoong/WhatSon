@@ -14,7 +14,7 @@ from multiple implicit parser blocks.
   direct plain-text RAW mutation, inline-tag-aware source replacement for styled blocks, cursor geometry, and focus
   requests belong to the controller.
 - The block now keeps `ContentsInlineFormatEditor.qml` in `TextEdit.PlainText` mode and uses
-  `ContentsTextFormatRenderer.editorSurfaceHtml` only as the visual overlay payload.
+  `ContentsInlineStyleOverlayRenderer.editorSurfaceHtml` only as the visual overlay payload.
 - Inline tags such as `<bold>`, `<italic>`, `<underline>`, `<strikethrough>`, and `<highlight>` therefore no longer
   appear literally in the visible editor surface after a formatting command, but the editable buffer itself still
   stays plain text instead of a serialized Qt RichText document.
@@ -29,7 +29,7 @@ from multiple implicit parser blocks.
   - when the block has no inline style tags, commit the current plain text directly as the next RAW block source
   - when the block already contains inline style tags, compute the changed logical range, map that range through
     `ContentsStructuredCursorSupport.js`, and rewrite the RAW block source through
-    `ContentsTextFormatRenderer.applyPlainTextReplacementToSource(...)`
+    `ContentsPlainTextSourceMutator.applyPlainTextReplacementToSource(...)`
 - Ordinary text-edit mutation focus requests are marked with `reason: "text-edit"` so
   `ContentsEditorInputPolicyAdapter.qml` can avoid replaying focus/cursor restoration during a native-priority focused
   input session.

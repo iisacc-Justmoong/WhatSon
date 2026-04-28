@@ -34,39 +34,20 @@ class ContentsDisplayNoteBodyMountCoordinator : public QObject
     Q_PROPERTY(QString editorText READ editorText WRITE setEditorText NOTIFY editorTextChanged)
     Q_PROPERTY(
         bool
-            inlineDocumentSurfaceRequested READ inlineDocumentSurfaceRequested
-                WRITE setInlineDocumentSurfaceRequested NOTIFY inlineDocumentSurfaceRequestedChanged)
-    Q_PROPERTY(
-        bool
-            inlineDocumentSurfaceReady READ inlineDocumentSurfaceReady
-                WRITE setInlineDocumentSurfaceReady NOTIFY inlineDocumentSurfaceReadyChanged)
-    Q_PROPERTY(
-        bool
-            inlineDocumentSurfaceLoading READ inlineDocumentSurfaceLoading
-                WRITE setInlineDocumentSurfaceLoading NOTIFY inlineDocumentSurfaceLoadingChanged)
-    Q_PROPERTY(
-        bool
             structuredDocumentSurfaceRequested READ structuredDocumentSurfaceRequested
                 WRITE setStructuredDocumentSurfaceRequested NOTIFY structuredDocumentSurfaceRequestedChanged)
-    Q_PROPERTY(
-        bool
-            structuredDocumentSurfaceReady READ structuredDocumentSurfaceReady
-                WRITE setStructuredDocumentSurfaceReady NOTIFY structuredDocumentSurfaceReadyChanged)
     Q_PROPERTY(bool mountPending READ mountPending NOTIFY mountStateChanged)
     Q_PROPERTY(bool mountDecisionClean READ mountDecisionClean NOTIFY mountStateChanged)
     Q_PROPERTY(bool parseMounted READ parseMounted NOTIFY mountStateChanged)
     Q_PROPERTY(bool sourceMounted READ sourceMounted NOTIFY mountStateChanged)
     Q_PROPERTY(bool noteMounted READ noteMounted NOTIFY mountStateChanged)
     Q_PROPERTY(bool mountFailed READ mountFailed NOTIFY mountStateChanged)
-    Q_PROPERTY(bool surfaceVisible READ surfaceVisible NOTIFY mountStateChanged)
-    Q_PROPERTY(bool surfaceInteractive READ surfaceInteractive NOTIFY mountStateChanged)
     Q_PROPERTY(QString mountFailureReason READ mountFailureReason NOTIFY mountStateChanged)
     Q_PROPERTY(QString mountFailureMessage READ mountFailureMessage NOTIFY mountStateChanged)
     Q_PROPERTY(QString exceptionReason READ exceptionReason NOTIFY mountStateChanged)
     Q_PROPERTY(QString exceptionTitle READ exceptionTitle NOTIFY mountStateChanged)
     Q_PROPERTY(QString exceptionMessage READ exceptionMessage NOTIFY mountStateChanged)
     Q_PROPERTY(bool exceptionVisible READ exceptionVisible NOTIFY mountStateChanged)
-    Q_PROPERTY(bool commandSurfaceEnabled READ commandSurfaceEnabled NOTIFY mountStateChanged)
 
 public:
     explicit ContentsDisplayNoteBodyMountCoordinator(QObject* parent = nullptr);
@@ -102,20 +83,8 @@ public:
     QString editorText() const;
     void setEditorText(const QString& text);
 
-    bool inlineDocumentSurfaceRequested() const noexcept;
-    void setInlineDocumentSurfaceRequested(bool requested);
-
-    bool inlineDocumentSurfaceReady() const noexcept;
-    void setInlineDocumentSurfaceReady(bool ready);
-
-    bool inlineDocumentSurfaceLoading() const noexcept;
-    void setInlineDocumentSurfaceLoading(bool loading);
-
     bool structuredDocumentSurfaceRequested() const noexcept;
     void setStructuredDocumentSurfaceRequested(bool requested);
-
-    bool structuredDocumentSurfaceReady() const noexcept;
-    void setStructuredDocumentSurfaceReady(bool ready);
 
     bool mountPending() const noexcept;
     bool mountDecisionClean() const noexcept;
@@ -123,16 +92,12 @@ public:
     bool sourceMounted() const noexcept;
     bool noteMounted() const noexcept;
     bool mountFailed() const noexcept;
-    bool surfaceVisible() const noexcept;
-    bool surfaceInteractive() const noexcept;
     QString mountFailureReason() const;
     QString mountFailureMessage() const;
     QString exceptionReason() const;
     QString exceptionTitle() const;
     QString exceptionMessage() const;
     bool exceptionVisible() const noexcept;
-    bool commandSurfaceEnabled() const noexcept;
-
     Q_INVOKABLE void scheduleMount(const QVariantMap& options);
     Q_INVOKABLE void handleSnapshotRefreshFinished(const QString& noteId, bool success);
     Q_INVOKABLE QVariantMap currentMountState() const;
@@ -148,11 +113,7 @@ signals:
     void editorSessionBoundToSelectedNoteChanged();
     void pendingBodySaveChanged();
     void editorTextChanged();
-    void inlineDocumentSurfaceRequestedChanged();
-    void inlineDocumentSurfaceReadyChanged();
-    void inlineDocumentSurfaceLoadingChanged();
     void structuredDocumentSurfaceRequestedChanged();
-    void structuredDocumentSurfaceReadyChanged();
     void mountStateChanged();
 
     void mountFlushRequested(const QVariantMap& plan);
@@ -162,8 +123,6 @@ private:
 
     bool canFlushMountImmediately() const noexcept;
     bool documentSurfaceRequested() const noexcept;
-    bool documentSurfaceReady() const noexcept;
-    bool documentSurfaceLoading() const noexcept;
     bool selectionSnapshotReady() const noexcept;
     bool selectionSnapshotRepresentsExplicitEmptyBody() const noexcept;
     bool selectedBodyReadyForPresentation() const noexcept;
@@ -189,11 +148,7 @@ private:
     bool m_editorSessionBoundToSelectedNote = false;
     bool m_pendingBodySave = false;
     QString m_editorText;
-    bool m_inlineDocumentSurfaceRequested = false;
-    bool m_inlineDocumentSurfaceReady = false;
-    bool m_inlineDocumentSurfaceLoading = false;
     bool m_structuredDocumentSurfaceRequested = false;
-    bool m_structuredDocumentSurfaceReady = false;
 
     QString m_pendingMountNoteId;
     QString m_snapshotRefreshAttemptedNoteId;

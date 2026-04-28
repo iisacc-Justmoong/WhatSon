@@ -6,7 +6,6 @@ import "../../../models/editor/diagnostics/ContentsEditorDebugTrace.js" as Edito
 QtObject {
     id: controller
 
-    property var contentEditor: null
     property var contentsAgendaBackend: null
     property var contentsView: null
     property var editOperationCoordinator: null
@@ -100,16 +99,6 @@ QtObject {
                 && controller.structuredDocumentFlow.requestDocumentEndEdit !== undefined) {
             return controller.structuredDocumentFlow.requestDocumentEndEdit();
         }
-        const logicalOffset = Math.max(0, controller.contentsView.resolvedLogicalTextLength);
-        controller.contentEditor.forceActiveFocus();
-        if (controller.contentEditor.setCursorPositionPreservingNativeInput !== undefined) {
-            controller.contentEditor.setCursorPositionPreservingNativeInput(logicalOffset);
-            return true;
-        }
-        if (controller.contentEditor.cursorPosition !== undefined) {
-            controller.contentEditor.cursorPosition = logicalOffset;
-            return true;
-        }
         return false;
     }
 
@@ -122,16 +111,9 @@ QtObject {
             controller.structuredDocumentFlow.requestFocus({
                                                              "sourceOffset": Number(focusPlan.targetOffset) || 0
                                                          });
-            return;
+            return true;
         }
-        const logicalOffset = controller.editorTypingController.logicalOffsetForSourceOffset(Number(focusPlan.targetOffset) || 0);
-        controller.contentEditor.forceActiveFocus();
-        if (controller.contentEditor.setCursorPositionPreservingNativeInput !== undefined) {
-            controller.contentEditor.setCursorPositionPreservingNativeInput(logicalOffset);
-            return;
-        }
-        if (controller.contentEditor.cursorPosition !== undefined)
-            controller.contentEditor.cursorPosition = logicalOffset;
+        return false;
     }
 
     function applyDocumentSourceMutation(nextSourceText, focusRequest) {

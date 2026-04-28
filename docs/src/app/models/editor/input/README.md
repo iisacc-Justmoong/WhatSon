@@ -26,7 +26,8 @@ Owns editor input-policy and mutation-controller primitives that are not themsel
 - `ContentsEditorTypingController.qml`
   Keeps legacy whole-editor text mutation helpers and editor authoring shortcuts that still need whole-document RAW
   cursor/selection context. Generated body-tag insertion and selected-range callout wrapping payloads are delegated to
-  `src/app/models/editor/tags/ContentsEditorBodyTagInsertionPlanner.*`.
+  `src/app/models/editor/tags/ContentsRawBodyTagMutationSupport.js`, which returns direct RAW `.wsnbody` splice
+  payloads instead of routing through an extra planner QObject.
 - `ContentsInlineFormatEditorController.qml`
   Owns the plain-text wrapper's native input policy, selection cache, and text-edited dispatch state.
 

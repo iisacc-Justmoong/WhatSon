@@ -6,7 +6,6 @@ import "../../../models/editor/diagnostics/ContentsEditorDebugTrace.js" as Edito
 QtObject {
     id: controller
 
-    property var activeEditorSurface: null
     property var contentsView: null
     property var editorSelectionController: null
     property var editorSession: null
@@ -14,6 +13,7 @@ QtObject {
     property var noteBodyMountCoordinator: null
     property var selectionBridge: null
     property var selectionSyncCoordinator: null
+    property var structuredDocumentFlow: null
     property var traceFormatter: null
 
     function shouldFlushBlurredEditorState(scheduledNoteId) {
@@ -80,8 +80,8 @@ QtObject {
             if (activeNoteId !== normalizedNoteId)
                 return;
 
-            if (!controller.activeEditorSurface
-                    || controller.activeEditorSurface.requestFocus === undefined)
+            if (!controller.structuredDocumentFlow
+                    || controller.structuredDocumentFlow.requestFocus === undefined)
                 return;
 
             const logicalCursorPosition = Math.max(0, controller.contentsView.resolvedLogicalTextLength);
@@ -89,11 +89,11 @@ QtObject {
                     || controller.contentsView.documentPresentationSourceText === null
                     ? ""
                     : String(controller.contentsView.documentPresentationSourceText);
-            controller.activeEditorSurface.requestFocus({
-                                                            "cursorPosition": logicalCursorPosition,
-                                                            "logicalCursorPosition": logicalCursorPosition,
-                                                            "sourceOffset": sourceText.length
-                                                        });
+            controller.structuredDocumentFlow.requestFocus({
+                                                               "cursorPosition": logicalCursorPosition,
+                                                               "logicalCursorPosition": logicalCursorPosition,
+                                                               "sourceOffset": sourceText.length
+                                                           });
         });
     }
 

@@ -13,8 +13,7 @@ void WhatSonCppRegressionTests::noteBodyMountCoordinator_retriesRefreshBeforeFai
 
     coordinator.setVisible(true);
     coordinator.setSelectedNoteId(QStringLiteral("note-1"));
-    coordinator.setInlineDocumentSurfaceRequested(true);
-    coordinator.setInlineDocumentSurfaceReady(true);
+    coordinator.setStructuredDocumentSurfaceRequested(true);
 
     coordinator.scheduleMount(QVariantMap{});
     QCoreApplication::processEvents();
@@ -55,8 +54,7 @@ void WhatSonCppRegressionTests::noteBodyMountCoordinator_requestsEditorSessionMo
     coordinator.setSelectedNoteBodyNoteId(QStringLiteral("note-1"));
     coordinator.setSelectedNoteBodyText(QStringLiteral("Resolved body"));
     coordinator.setSelectedNoteBodyResolved(true);
-    coordinator.setInlineDocumentSurfaceRequested(true);
-    coordinator.setInlineDocumentSurfaceReady(true);
+    coordinator.setStructuredDocumentSurfaceRequested(true);
 
     coordinator.scheduleMount(
         QVariantMap{
@@ -78,9 +76,6 @@ void WhatSonCppRegressionTests::noteBodyMountCoordinator_requestsEditorSessionMo
     QVERIFY(coordinator.sourceMounted());
     QVERIFY(!coordinator.noteMounted());
     QVERIFY(!coordinator.mountFailed());
-    QVERIFY(coordinator.surfaceVisible());
-    QVERIFY(coordinator.surfaceInteractive());
-    QVERIFY(coordinator.commandSurfaceEnabled());
 
     const QVariantMap mountState = coordinator.currentMountState();
     QCOMPARE(mountState.value(QStringLiteral("documentSourceReady")).toBool(), true);
@@ -96,7 +91,6 @@ void WhatSonCppRegressionTests::noteBodyMountCoordinator_requestsEditorSessionMo
     coordinator.setEditorText(QStringLiteral("Resolved body"));
 
     QVERIFY(coordinator.noteMounted());
-    QVERIFY(coordinator.commandSurfaceEnabled());
 }
 
 void WhatSonCppRegressionTests::noteBodyMountCoordinator_failsMountAfterAcceptedRefreshWhenBodyRemainsUnavailable()
@@ -110,8 +104,7 @@ void WhatSonCppRegressionTests::noteBodyMountCoordinator_failsMountAfterAccepted
 
     coordinator.setVisible(true);
     coordinator.setSelectedNoteId(QStringLiteral("note-1"));
-    coordinator.setInlineDocumentSurfaceRequested(true);
-    coordinator.setInlineDocumentSurfaceReady(true);
+    coordinator.setStructuredDocumentSurfaceRequested(true);
 
     coordinator.scheduleMount(QVariantMap{});
     QCoreApplication::processEvents();
@@ -151,7 +144,7 @@ void WhatSonCppRegressionTests::noteBodyMountCoordinator_failsMountAfterAccepted
         QStringLiteral("No usable note body source was available for the current selection."));
 }
 
-void WhatSonCppRegressionTests::noteBodyMountCoordinator_reportsSurfaceSpecificFailureMessage()
+void WhatSonCppRegressionTests::noteBodyMountCoordinator_treatsParseMountedSourceAsMountedWithoutSurfaceReadyGate()
 {
     ensureCoreApplication();
 
@@ -166,8 +159,6 @@ void WhatSonCppRegressionTests::noteBodyMountCoordinator_reportsSurfaceSpecificF
     coordinator.setSelectedNoteBodyText(QStringLiteral("Resolved body"));
     coordinator.setSelectedNoteBodyResolved(true);
     coordinator.setStructuredDocumentSurfaceRequested(true);
-    coordinator.setStructuredDocumentSurfaceReady(false);
-
     coordinator.scheduleMount(QVariantMap{});
     QCoreApplication::processEvents();
 
@@ -181,30 +172,17 @@ void WhatSonCppRegressionTests::noteBodyMountCoordinator_reportsSurfaceSpecificF
     QVERIFY(coordinator.parseMounted());
     QVERIFY(coordinator.sourceMounted());
     QVERIFY(!coordinator.noteMounted());
-    QVERIFY(coordinator.mountFailed());
-    QCOMPARE(
-        coordinator.mountFailureReason(),
-        QStringLiteral("structured-document-surface-unavailable"));
-    QCOMPARE(
-        coordinator.mountFailureMessage(),
-        QStringLiteral("The structured document surface did not become ready for the selected note."));
+    QVERIFY(!coordinator.mountFailed());
+    QCOMPARE(coordinator.mountFailureReason(), QString());
+    QCOMPARE(coordinator.mountFailureMessage(), QString());
 
     const QVariantMap mountState = coordinator.currentMountState();
-    QCOMPARE(
-        mountState.value(QStringLiteral("mountFailureReason")).toString(),
-        QStringLiteral("structured-document-surface-unavailable"));
-    QCOMPARE(
-        mountState.value(QStringLiteral("mountFailureMessage")).toString(),
-        QStringLiteral("The structured document surface did not become ready for the selected note."));
-    QCOMPARE(coordinator.exceptionReason(), QStringLiteral("structured-document-surface-unavailable"));
-    QCOMPARE(coordinator.exceptionTitle(), QStringLiteral("Document surface unavailable"));
-    QCOMPARE(
-        coordinator.exceptionMessage(),
-        QStringLiteral("The structured document surface did not become ready for the selected note."));
+    QCOMPARE(mountState.value(QStringLiteral("mountFailureReason")).toString(), QString());
+    QCOMPARE(mountState.value(QStringLiteral("mountFailureMessage")).toString(), QString());
+    QCOMPARE(coordinator.exceptionReason(), QString());
+    QCOMPARE(coordinator.exceptionTitle(), QString());
+    QCOMPARE(coordinator.exceptionMessage(), QString());
     QVERIFY(!coordinator.exceptionVisible());
-    QVERIFY(coordinator.surfaceInteractive());
-    QVERIFY(coordinator.commandSurfaceEnabled());
-    QCOMPARE(mountState.value(QStringLiteral("surfaceInteractive")).toBool(), true);
 }
 
 void WhatSonCppRegressionTests::noteBodyMountCoordinator_acceptsResolvedEmptySelectedBody()
@@ -222,8 +200,6 @@ void WhatSonCppRegressionTests::noteBodyMountCoordinator_acceptsResolvedEmptySel
     coordinator.setSelectedNoteBodyText(QString());
     coordinator.setSelectedNoteBodyResolved(true);
     coordinator.setStructuredDocumentSurfaceRequested(true);
-    coordinator.setStructuredDocumentSurfaceReady(true);
-
     coordinator.scheduleMount(QVariantMap{});
     QCoreApplication::processEvents();
 
@@ -239,10 +215,7 @@ void WhatSonCppRegressionTests::noteBodyMountCoordinator_acceptsResolvedEmptySel
     QVERIFY(coordinator.sourceMounted());
     QVERIFY(!coordinator.noteMounted());
     QVERIFY(!coordinator.mountFailed());
-    QVERIFY(coordinator.surfaceVisible());
     QVERIFY(!coordinator.exceptionVisible());
-    QVERIFY(coordinator.surfaceInteractive());
-    QVERIFY(coordinator.commandSurfaceEnabled());
 
     const QVariantMap mountState = coordinator.currentMountState();
     QCOMPARE(mountState.value(QStringLiteral("documentSourceReady")).toBool(), true);
@@ -255,7 +228,6 @@ void WhatSonCppRegressionTests::noteBodyMountCoordinator_acceptsResolvedEmptySel
     coordinator.setEditorText(QString());
 
     QVERIFY(coordinator.noteMounted());
-    QVERIFY(coordinator.commandSurfaceEnabled());
 }
 
 void WhatSonCppRegressionTests::noteBodyMountCoordinator_hidesExceptionUntilPendingMountSettles()
@@ -269,8 +241,7 @@ void WhatSonCppRegressionTests::noteBodyMountCoordinator_hidesExceptionUntilPend
 
     coordinator.setVisible(true);
     coordinator.setSelectedNoteId(QStringLiteral("note-1"));
-    coordinator.setInlineDocumentSurfaceRequested(true);
-    coordinator.setInlineDocumentSurfaceReady(true);
+    coordinator.setStructuredDocumentSurfaceRequested(true);
 
     coordinator.scheduleMount(QVariantMap{});
     QCoreApplication::processEvents();
@@ -306,8 +277,7 @@ void WhatSonCppRegressionTests::noteBodyMountCoordinator_cleansMountDecisionAfte
     coordinator.setVisible(true);
     coordinator.setSelectedNoteId(QStringLiteral("note-1"));
     coordinator.setSelectedNoteBodyLoading(true);
-    coordinator.setInlineDocumentSurfaceRequested(true);
-    coordinator.setInlineDocumentSurfaceReady(true);
+    coordinator.setStructuredDocumentSurfaceRequested(true);
 
     QVERIFY(coordinator.mountDecisionClean());
 
@@ -315,7 +285,6 @@ void WhatSonCppRegressionTests::noteBodyMountCoordinator_cleansMountDecisionAfte
 
     QVERIFY(!coordinator.mountDecisionClean());
     QVERIFY(coordinator.mountPending());
-    QVERIFY(!coordinator.surfaceInteractive());
 
     QCoreApplication::processEvents();
 
@@ -332,7 +301,6 @@ void WhatSonCppRegressionTests::noteBodyMountCoordinator_cleansMountDecisionAfte
     QCOMPARE(mountState.value(QStringLiteral("mountDecisionClean")).toBool(), true);
     QCOMPARE(mountState.value(QStringLiteral("mountPending")).toBool(), true);
     QCOMPARE(mountState.value(QStringLiteral("selectedNoteBodyLoading")).toBool(), true);
-    QCOMPARE(mountState.value(QStringLiteral("surfaceInteractive")).toBool(), false);
 }
 
 void WhatSonCppRegressionTests::noteBodyMountCoordinator_waitsForPresentationReadySourceBeforeMounting()
@@ -349,8 +317,7 @@ void WhatSonCppRegressionTests::noteBodyMountCoordinator_waitsForPresentationRea
     coordinator.setEditorBoundNoteId(QStringLiteral("note-1"));
     coordinator.setEditorSessionBoundToSelectedNote(true);
     coordinator.setEditorText(QString());
-    coordinator.setInlineDocumentSurfaceRequested(true);
-    coordinator.setInlineDocumentSurfaceReady(true);
+    coordinator.setStructuredDocumentSurfaceRequested(true);
 
     coordinator.scheduleMount(QVariantMap{});
     QCoreApplication::processEvents();
@@ -385,16 +352,11 @@ void WhatSonCppRegressionTests::noteBodyMountCoordinator_clearsPendingWhenResolv
     coordinator.setSelectedNoteBodyResolved(true);
     coordinator.setSelectedNoteBodyLoading(true);
     coordinator.setStructuredDocumentSurfaceRequested(true);
-    coordinator.setStructuredDocumentSurfaceReady(true);
-
     QVERIFY(!coordinator.mountPending());
     QVERIFY(coordinator.parseMounted());
     QVERIFY(coordinator.sourceMounted());
-    QVERIFY(coordinator.surfaceVisible());
-    QVERIFY(coordinator.surfaceInteractive());
     QVERIFY(!coordinator.mountFailed());
     QVERIFY(!coordinator.noteMounted());
-    QVERIFY(coordinator.commandSurfaceEnabled());
 
     coordinator.scheduleMount(QVariantMap{});
     QCoreApplication::processEvents();
@@ -409,7 +371,6 @@ void WhatSonCppRegressionTests::noteBodyMountCoordinator_clearsPendingWhenResolv
     QCOMPARE(mountState.value(QStringLiteral("documentSourceReady")).toBool(), true);
     QCOMPARE(mountState.value(QStringLiteral("mountPending")).toBool(), false);
     QCOMPARE(mountState.value(QStringLiteral("selectedNoteBodyLoading")).toBool(), true);
-    QCOMPARE(mountState.value(QStringLiteral("surfaceInteractive")).toBool(), true);
 }
 
 void WhatSonCppRegressionTests::noteBodyMountCoordinator_remountsSameNoteWhenEditorSessionTextIsStale()
@@ -429,8 +390,7 @@ void WhatSonCppRegressionTests::noteBodyMountCoordinator_remountsSameNoteWhenEdi
     coordinator.setEditorBoundNoteId(QStringLiteral("note-1"));
     coordinator.setEditorSessionBoundToSelectedNote(true);
     coordinator.setEditorText(QStringLiteral("Stale body"));
-    coordinator.setInlineDocumentSurfaceRequested(true);
-    coordinator.setInlineDocumentSurfaceReady(true);
+    coordinator.setStructuredDocumentSurfaceRequested(true);
 
     coordinator.scheduleMount(QVariantMap{});
     QCoreApplication::processEvents();
@@ -447,8 +407,6 @@ void WhatSonCppRegressionTests::noteBodyMountCoordinator_remountsSameNoteWhenEdi
     QVERIFY(coordinator.parseMounted());
     QVERIFY(coordinator.sourceMounted());
     QVERIFY(!coordinator.noteMounted());
-    QVERIFY(coordinator.surfaceInteractive());
-    QVERIFY(coordinator.commandSurfaceEnabled());
 
     const QVariantMap mountState = coordinator.currentMountState();
     QCOMPARE(mountState.value(QStringLiteral("selectedBodyReadyForPresentation")).toBool(), true);
@@ -459,7 +417,6 @@ void WhatSonCppRegressionTests::noteBodyMountCoordinator_remountsSameNoteWhenEdi
     coordinator.setEditorText(QStringLiteral("Resolved body"));
 
     QVERIFY(coordinator.noteMounted());
-    QVERIFY(coordinator.commandSurfaceEnabled());
     QCOMPARE(
         coordinator.currentMountState().value(QStringLiteral("editorSessionSynchronizedToSelectedSource")).toBool(),
         true);

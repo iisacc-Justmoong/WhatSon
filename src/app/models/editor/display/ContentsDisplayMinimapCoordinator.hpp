@@ -33,7 +33,12 @@ public:
 
     Q_INVOKABLE QVariantMap currentCursorVisualRowRectFromStructuredRect(const QVariantMap& rawRect, int fallbackLineNumber, double fallbackLineY, double fallbackLineHeight) const;
     Q_INVOKABLE QVariantMap currentCursorVisualRowRectFromTextRect(const QVariantMap& rawRect, int safeOffset, double fallbackDocumentY) const;
-    Q_INVOKABLE QVariantList buildStructuredMinimapLineGroupsForRange(const QVariantList& lineEntries, int startLineNumber, int endLineNumber) const;
+    Q_INVOKABLE QVariantList buildStructuredMinimapSnapshotEntries(const QVariantList& blockEntries) const;
+    Q_INVOKABLE QVariantList buildStructuredMinimapLineGroupsForRange(
+        const QVariantList& snapshotEntries,
+        int startLineNumber,
+        int endLineNumber,
+        double documentContentHeight) const;
     Q_INVOKABLE QVariantList buildFallbackMinimapLineGroupsForRange(const QVariantList& lineCharacterCounts, const QVariantList& lineDocumentYs, const QVariantList& lineVisualHeights, int startLineNumber, int endLineNumber) const;
     Q_INVOKABLE QVariantList buildEditorMinimapLineGroupsForRange(const QVariantList& lineCharacterCounts, const QVariantList& lineStartOffsets, const QVariantList& fallbackLineDocumentYs, const QVariantList& fallbackLineVisualHeights, const QVariantList& editorRects, int logicalTextLength, int startLineNumber, int endLineNumber, double editorWidth, double editorContentHeight) const;
     Q_INVOKABLE QVariantMap buildNextMinimapSnapshotPlan(

@@ -13,6 +13,9 @@ context-menu trigger gating, focused programmatic text sync, and post-mutation f
 - Ordinary app-level shortcuts are enabled only when the native text-input session does not own the keyboard. Any
   focused note-body `TextEdit` counts as a native text-input session on desktop and mobile, so platform text-navigation
   and selection chords are not preempted by ordinary shortcuts.
+- The adapter no longer accepts a separate `command surface enabled` readiness flag.
+  Shortcut and context-menu gating derive directly from parse-mounted note-body state plus active structured-editor
+  mode, so `.wsnbody` remains the only readiness authority.
 - Tag-management shortcuts are deliberately separate from the ordinary shortcut surface. Inline style wrapping and
   structured tag insertion remain available while an editor is focused, but they still stand down during native
   composition/preedit.

@@ -10,22 +10,24 @@ QtObject {
     property bool editorInputFocused: false
     property bool editorTagManagementInputEnabled: true
     property bool nativeTextInputPriority: false
-    property bool noteDocumentCommandSurfaceEnabled: false
+    property bool noteDocumentParseMounted: false
     property bool structuredCompositionActive: false
 
     readonly property bool nativeCompositionActive: adapter.editorCompositionActive
                                                     || adapter.structuredCompositionActive
     readonly property bool nativeTextInputSessionActive: adapter.nativeCompositionActive
                                                          || adapter.editorInputFocused
-    readonly property bool shortcutSurfaceEnabled: adapter.noteDocumentCommandSurfaceEnabled
+    readonly property bool commandTargetActive: adapter.noteDocumentParseMounted
+                                                && adapter.nativeTextInputPriority
+    readonly property bool shortcutSurfaceEnabled: adapter.commandTargetActive
                                                    && !adapter.nativeTextInputSessionActive
     readonly property bool tagManagementShortcutSurfaceEnabled: adapter.editorTagManagementInputEnabled
-                                                                && adapter.noteDocumentCommandSurfaceEnabled
+                                                                && adapter.commandTargetActive
                                                                 && !adapter.nativeCompositionActive
-    readonly property bool contextMenuLongPressEnabled: adapter.nativeTextInputPriority
+    readonly property bool contextMenuLongPressEnabled: adapter.commandTargetActive
                                                         && !adapter.nativeTextInputSessionActive
     readonly property bool contextMenuSurfaceEnabled: adapter.editorTagManagementInputEnabled
-                                                     && adapter.noteDocumentCommandSurfaceEnabled
+                                                     && adapter.commandTargetActive
                                                      && !adapter.nativeCompositionActive
 
     function normalizedText(value) {

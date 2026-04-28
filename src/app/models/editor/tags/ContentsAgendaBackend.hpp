@@ -22,9 +22,6 @@ public:
         int taskOpenTagStart,
         int taskOpenTagEnd,
         bool checked) const;
-    Q_INVOKABLE QVariantMap buildAgendaInsertionPayload(
-        bool done = false,
-        const QString& taskText = QString()) const;
     Q_INVOKABLE QVariantMap detectTodoShortcutReplacement(
         const QString& previousPlainText,
         int replacementStart,

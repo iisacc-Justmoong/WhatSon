@@ -121,35 +121,12 @@ Implements inline-format rendering from note-editor text to RichText HTML.
   - feeds one serialized Qt RichText document into `QTextDocument`
   - returns the visible plain text after Qt removes the `<!DOCTYPE HTML ... qrichtext ...>` scaffold
   - keeps that conversion strictly read-only so whole-document RichText HTML still cannot become `.wsnbody` source
-- Exposes `applyPlainTextReplacementToSource(...)` so ordinary typing can mutate only the affected raw source span:
-  - accepts canonical source text plus source start/end offsets
-  - normalizes plain-text line endings
-  - clamps source offsets against an `int`-safe `QString` length before replacement
-  - escapes inserted literal text before stitching it back into `.wsnbody`
-  - when the replacement commits a completed/pasted URL, rewrites the authoritative RAW source into canonical
-    `<weblink href="...">...</weblink>` form instead of leaving an inert literal
-  - avoids whole-document RichText export for normal typing/backspace/delete/paste
-- Exposes `applyInlineStyleToLogicalSelectionSource(...)` for shortcut/context-menu formatting that must ignore markdown
-  presentation roles:
-    - no longer permits any whole-surface `QTextDocument`/RichText serialization path to become the source of truth
-    - reuses the same local tag-token and entity classifiers as the rest of the renderer pipeline, so RAW-source
-      coverage scans and HTML/source parsing stay aligned
-    - instead scans the RAW editor source, computes logical character coverage for each proprietary inline style, and
-      rebuilds canonical `<bold>` / `<italic>` / `<underline>` / `<strikethrough>` / `<highlight>` tags directly from
-      that coverage
-    - the selected range is therefore compared against the actual stored source tags, not against a temporary RichText
-      fragment split that may collapse multi-tag or multi-paragraph selections
-    - `plain` clears every supported proprietary inline style across the selected logical range
-    - reapplying the same style toggles that style off by zeroing its RAW-source coverage inside the range
-    - applying a style across text that is split by other proprietary tags now expands one continuous source-tag span
-      over the whole logical selection
-    - markdown line prefixes are now style-protected during RAW coverage rebuild:
-      - leading indentation (`[ \t]*`)
-      - unordered list prefixes (`- ` / `+ ` / `* ` / `• `)
-      - ordered list prefixes (`N. ` / `N) `)
-      - heading prefixes (`#` .. `######` + whitespace)
-      - blockquote/fence prefixes (`>`, `` ``` ``)
-      so inline style tags are not inserted in front of structural markers
+- Ordinary typing no longer asks this renderer to stitch source replacements.
+  That write-side responsibility now lives in `ContentsPlainTextSourceMutator`, leaving this file on the read-side
+  document rendering path.
+- Selection-driven inline-style RAW mutations no longer go through this renderer bridge.
+  `ContentsRawInlineStyleMutationSupport.js` now owns shortcut/context-menu formatting writes so renderer HTML
+  projection cannot become a second formatting authority.
 - Preview HTML generation and editable-surface normalization now reuse the same strong/span-style openings, so
   read-side rendering and editor rendering no longer diverge on weight/decoration styling.
 
@@ -170,24 +147,22 @@ Implements inline-format rendering from note-editor text to RichText HTML.
   editor surface without being promoted into executable markup.
 - Escaped safe text such as `&lt;bold&gt;demo&lt;/bold&gt;` must display the literal angle-bracket text in the editor
   instead of the raw entity strings, while proprietary formatting still ignores it as source text.
-- Applying proprietary inline formatting to text inside a markdown bullet line must keep the stored source line prefix
-  as
-  `- ` instead of persisting the rendered `• ` glyph.
-- Applying `Strikethrough` (or any inline style) to a range that crosses indented/list lines must not delete or
-  visually collapse the line indentation; structural line prefixes must remain outside proprietary inline tags.
-- Applying proprietary inline formatting to a selection that spans multiple existing proprietary tags or multiple
-  logical paragraphs must rebuild the target RAW source tags over the whole selected range, not only the first RichText
-  fragment that happened to survive the context-menu click.
+- Applying proprietary inline formatting must mutate RAW source directly from the resolved selection boundaries instead
+  of serializing or rewriting the rendered RichText fragment.
+- If the user selection includes markdown punctuation or indentation in visible text, the resulting proprietary tag
+  wrapper must follow that exact selection span in `.wsnbody`.
+- Reapplying the same proprietary inline style should insert another wrapper around the same RAW selection span instead
+  of toggling a global coverage projection.
 - No editor command path should require serializing the rendered RichText surface back into `.wsnbody`.
   Formatting, typing, paste, and delete flows must all start from RAW-source ranges and finish with a re-render from
   reparsed RAW.
 - If Qt hands the editor wrapper a serialized RichText document payload that begins with `<!DOCTYPE HTML` /
   `qrichtext`, the read-side plain-text bridge must strip that scaffold back to the same visible text the user saw.
 - Applying `Bold`/`Italic`/`Underline`/`Highlight` shortcuts to heading, blockquote, link-literal, or code-literal text
-  must still add/remove proprietary `.wsnbody` tags instead of misreading markdown presentation styling as an
-  already-applied shortcut format.
+  must still insert proprietary `.wsnbody` tags from the RAW selection span instead of misreading markdown
+  presentation styling as an already-applied shortcut format.
 - A stored `</break>` token must render as a visible divider line (not literal text) and still consume one logical
-  break slot in inline-style selection coverage rebuild.
+  visible slot for selection/cursor mapping helpers.
 - A stored `<agenda>/<task>` block must reserve real editor text-flow height at the authored location, and task body
   text must render inside that reserved slot instead of continuing in the surrounding paragraph stream.
 - A stored `<callout>...</callout>` block must reserve real editor text-flow height at the authored location, and the

@@ -33,17 +33,6 @@ public:
     bool paperPaletteEnabled() const noexcept;
     void setPaperPaletteEnabled(bool enabled);
 
-    Q_INVOKABLE QString applyPlainTextReplacementToSource(
-        const QString& sourceText,
-        int sourceStart,
-        int sourceEnd,
-        const QString& replacementText) const;
-    Q_INVOKABLE QString applyInlineStyleToLogicalSelectionSource(
-        const QString& sourceText,
-        int selectionStart,
-        int selectionEnd,
-        const QString& styleTag) const;
-
 public slots:
     void requestRenderRefresh();
 

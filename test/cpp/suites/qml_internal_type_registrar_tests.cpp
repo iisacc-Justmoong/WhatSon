@@ -19,14 +19,15 @@ void WhatSonCppRegressionTests::qmlInternalTypeRegistrar_usesLvrsManifestRegistr
     QVERIFY(registrarSource.contains(QStringLiteral("whatsonInternalCreatableType<MobileHierarchyRouteStateStore>")));
     QVERIFY(registrarSource.contains(QStringLiteral("whatsonInternalCreatableType<ContentsStructuredDocumentHost>")));
     QVERIFY(registrarSource.contains(QStringLiteral("whatsonInternalCreatableType<ContentsPagePrintLayoutRenderer>")));
-    QVERIFY(registrarSource.contains(QStringLiteral("whatsonInternalCreatableType<ContentsActiveEditorSurfaceAdapter>")));
     QVERIFY(registrarSource.contains(QStringLiteral("whatsonInternalCreatableType<ContentsDisplaySurfacePolicy>")));
     QVERIFY(registrarSource.contains(QStringLiteral("whatsonInternalCreatableType<ContentsDisplayGeometryViewModel>")));
     QVERIFY(registrarSource.contains(QStringLiteral("whatsonInternalCreatableType<ContentsDisplayMutationViewModel>")));
     QVERIFY(registrarSource.contains(QStringLiteral("whatsonInternalCreatableType<ContentsDisplayPresentationViewModel>")));
     QVERIFY(registrarSource.contains(QStringLiteral("whatsonInternalCreatableType<ContentsDisplaySelectionMountViewModel>")));
+    QVERIFY(registrarSource.contains(QStringLiteral("whatsonInternalCreatableType<ContentsInlineStyleOverlayRenderer>")));
+    QVERIFY(registrarSource.contains(QStringLiteral("whatsonInternalCreatableType<ContentsPlainTextSourceMutator>")));
     QVERIFY(registrarSource.contains(QStringLiteral("whatsonInternalCreatableType<WhatSonIosHubPickerBridge>")));
-    QVERIFY(registrarSource.contains(QStringLiteral("whatsonInternalCreatableType<ContentsEditorBodyTagInsertionPlanner>")));
+    QVERIFY(!registrarSource.contains(QStringLiteral("whatsonInternalCreatableType<ContentsEditorBodyTagInsertionPlanner>")));
     QVERIFY(registrarSource.contains(QStringLiteral("QStringLiteral(\"WhatSon.App.Internal\")")));
     QVERIFY(registrarSource.contains(QStringLiteral("lvrs::registerQmlTypes(internalQmlTypeRegistrationManifest())")));
     QVERIFY(!registrarSource.contains(QStringLiteral("qmlRegisterType<")));

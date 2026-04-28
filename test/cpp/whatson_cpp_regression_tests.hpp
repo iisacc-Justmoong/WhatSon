@@ -2,6 +2,8 @@
 
 #include "app/models/display/paper/ContentsA4PaperBackground.hpp"
 #include "app/models/display/paper/ContentsPaperSelection.hpp"
+#include "app/models/editor/format/ContentsInlineStyleOverlayRenderer.hpp"
+#include "app/models/editor/format/ContentsPlainTextSourceMutator.hpp"
 #include "app/models/editor/format/ContentsTextFormatRenderer.hpp"
 #include "app/models/display/paper/print/ContentsPagePrintLayoutRenderer.hpp"
 #include "app/models/file/hub/WhatSonHubMountValidator.hpp"
@@ -37,7 +39,6 @@
 #include "app/models/editor/session/ContentsEditorSessionController.hpp"
 #include "app/models/editor/tags/ContentsAgendaBackend.hpp"
 #include "app/models/editor/tags/ContentsCalloutBackend.hpp"
-#include "app/models/editor/tags/ContentsEditorBodyTagInsertionPlanner.hpp"
 #include "app/models/editor/text/ContentsLogicalTextBridge.hpp"
 #include "app/models/editor/structure/ContentsStructuredDocumentBlocksModel.hpp"
 #include "app/models/editor/structure/ContentsStructuredDocumentCollectionPolicy.hpp"
@@ -60,7 +61,6 @@
 #include "app/viewmodel/detailPanel/session/WhatSonFoldersHierarchySessionService.hpp"
 #include "app/viewmodel/detailPanel/DetailCurrentNoteContextBridge.hpp"
 #include "app/viewmodel/detailPanel/ResourceDetailPanelViewModel.hpp"
-#include "app/viewmodel/editor/display/ContentsActiveEditorSurfaceAdapter.hpp"
 #include "app/viewmodel/editor/display/ContentsDisplaySurfacePolicy.hpp"
 #include "app/viewmodel/hierarchy/resources/ResourcesListModel.hpp"
 #include "app/viewmodel/panel/NoteListModelContractBridge.hpp"
@@ -972,7 +972,7 @@ private slots:
     void resourceTagTextGenerator_and_noteFolderSemantics_normalizeDescriptorsAndXml();
     void editorTagsBoundary_groupsNonFormatBodyTagResponsibilities();
     void contentsCalloutBackend_exitsOnPlainEnterAndSplitsAtCursor();
-    void editorBodyTagInsertionPlanner_buildsRawTagInsertionPayloads();
+    void editorBodyTagMutationSupport_buildsRawTagInsertionPayloads();
     void foldersHierarchyParser_escapesLiteralSlashLabelsIntoSingleSegments();
     void foldersHierarchySessionService_preservesEscapedLiteralSlashFolderPaths();
     void sidebarHierarchyRenameController_preservesLiteralSlashFolderLabels();
@@ -1029,6 +1029,8 @@ private slots:
     void qmlStructuredEditors_preserveNativeMobileInputDuringFocusedEdits();
     void qmlStructuredEditors_commitsPlainTextBlocksDirectlyToRawSource();
     void qmlStructuredEditors_insertsInlineFormatTagsAtCollapsedCursor();
+    void qmlStructuredEditors_wrapsSelectedTextIntoRawInlineStyleTags();
+    void qmlStructuredEditors_insertStructuredShortcutsThroughRawSourceMutations();
     void qmlStructuredEditors_acceptsPlatformCommandModifierForInlineFormatting();
     void qmlStructuredEditors_routesInlineFormatShortcutThroughDocumentFlow();
     void qmlStructuredEditors_focusesDocumentEndFromBottomWhitespace();
@@ -1041,13 +1043,11 @@ private slots:
     void displayContextMenuCoordinator_rejectsNonNumericStructuredSelectionSnapshots();
     void editorViewportCoordinator_movesMinimapAndLineMathOutOfQml();
     void contentsDisplayView_surfacesMountFailurePlaceholderWithoutChrome();
-    void contentsActiveEditorSurfaceAdapter_routesFocusToStructuredSurfaceFirst();
-    void contentsActiveEditorSurfaceAdapter_routesFocusToInlineSurfaceOnlyWhenMounted();
     void contentsDisplaySurfacePolicy_usesStructuredSurfaceAsCanonicalNoteBody();
     void contentsDisplaySurfacePolicy_disablesLegacyInlineSurface();
     void noteBodyMountCoordinator_retriesRefreshBeforeFailingMount();
     void noteBodyMountCoordinator_failsMountAfterAcceptedRefreshWhenBodyRemainsUnavailable();
-    void noteBodyMountCoordinator_reportsSurfaceSpecificFailureMessage();
+    void noteBodyMountCoordinator_treatsParseMountedSourceAsMountedWithoutSurfaceReadyGate();
     void noteBodyMountCoordinator_requestsEditorSessionMountFromResolvedSnapshot();
     void noteBodyMountCoordinator_acceptsResolvedEmptySelectedBody();
     void noteBodyMountCoordinator_hidesExceptionUntilPendingMountSettles();
@@ -1065,9 +1065,11 @@ private slots:
     void sourceTree_usesRepositoryAbsoluteProjectIncludes();
     void paperSelection_tracksChosenPaperEnumState();
     void a4PaperBackground_exposesCanonicalMetricsAndAnchorsPrintRendererDefaults();
-    void textFormatRenderer_wrapsCommittedUrlsIntoCanonicalWebLinks();
+    void plainTextSourceMutator_wrapsCommittedUrlsIntoCanonicalWebLinks();
+    void inlineStyleOverlayRenderer_republishesHtmlOverlayVisibility();
     void textFormatRenderer_appliesPaperPaletteToEditorAndPreviewHtml();
     void textFormatRenderer_preservesMarkdownUnorderedListMarkersWithoutRegexWarnings();
+    void editorInlineStyleMutationSupport_buildsDirectRawSelectionWrapMutations();
     void displayPaperModels_hostPageAndPrintViewModeObjectsUnderModelsDirectory();
     void noteBodyPersistence_roundTripsAndProjectsCanonicalWebLinks();
     void noteBodyPersistence_stripsRenderedHtmlBlockArtifactsFromSourceProjection();

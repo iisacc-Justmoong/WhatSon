@@ -26,9 +26,9 @@ not note-backed.
   `ContentsInlineFormatEditor.qml`.
 - Selection/mount, presentation, RAW mutation, and minimap/gutter command surfaces now pass through dedicated C++
   ViewModels under `src/app/viewmodel/editor/display`.
-- Selected-note focus restoration now routes through `ContentsActiveEditorSurfaceAdapter`, a C++ active-surface
-  contract that targets the mounted structured flow without requiring this view host to expose a no-op editor proxy as
-  a focus target.
+- Selected-note focus restoration now targets `ContentsStructuredDocumentFlow.qml` directly.
+  The structured document host is the canonical note editor surface, so the root view no longer instantiates an
+  extra active-surface adapter layer just to forward focus requests.
 - QML runtime mechanics that need timers, connections, shortcuts, pointer handlers, or context menus live as
   model-side controllers under `src/app/models/editor/display`; they are not ViewModels.
 - `ContentsDisplayView.qml` keeps compatibility controller functions only for collaborators that still call the display
@@ -49,7 +49,6 @@ not note-backed.
   Current failure labels distinguish at least:
   - body snapshot mismatch against the current selection
   - unresolved note body after snapshot refresh
-  - structured document surface not becoming ready
 - Structured tag insertions target the parser-owned document flow rather than a hidden fallback editor surface.
 
 ## Debug Trace
@@ -106,10 +105,11 @@ not note-backed.
   resolver-derived presentation choices back into the mount contract.
   Source arbitration remains the resolver's job; mount readiness now evaluates against the authoritative
   selection/session inputs without depending on a second layer of derived `documentSourcePlan` values.
-- The host's command surfaces remain disabled until the selected-note snapshot and the bound editor session agree on
-  the same mounted body text.
-  This prevents formatting/insert actions from targeting a stale same-note editor session while the selection bridge
-  and mount coordinator are still remounting that session to the latest selected note body.
+- The host no longer publishes a separate `noteDocumentCommandSurfaceEnabled` readiness alias.
+  Tag-management command surfaces now derive directly from `noteDocumentParseMounted` plus the active structured
+  editor mode exposed through `ContentsEditorInputPolicyAdapter.qml`.
+  Once RAW `.wsnbody` has been mounted into the parser-backed structured document host, shortcut and context-menu
+  commands may write the next RAW mutation immediately without waiting for a separate editor-surface-ready flag.
 - Ordinary window-level document shortcuts stand down while a native input session owns the keyboard.
   The tag-management shortcut surface is separate: inline style wrapping and structured tag insertion stay enabled while
   an editor is focused, but still stand down during structured or fallback IME/preedit composition.
@@ -123,8 +123,7 @@ not note-backed.
   `requestEditorSelectionContextMenuFromPointer(...)`.
   This keeps mobile access to the same tag-management menu without adding ordinary text key handlers, and the menu
   surface still stands down while a native composition/preedit session is active.
-- Context-menu pointer requests now preserve an already valid press-time selection snapshot instead of always re-priming
-  on tap.
+- The desktop path now primes that selection snapshot from a right-button `MouseArea` press before opening on click.
   This keeps a selected body range available for the menu even if the live `TextEdit` selection changes during the
   right-click release turn.
 - Markdown list toggles are not exposed from this host. `Meta/Alt+Shift+7/8` list shortcuts and generic key-event
@@ -138,6 +137,10 @@ not note-backed.
   `ContentsDisplayViewportCoordinator` in `src/app/models/editor/display`.
   `ContentsDisplayView.qml` still owns cache invalidation and composition, but it no longer carries those binary
   searches and proportional-track calculations as local JavaScript helpers.
+- Structured minimap snapshotting no longer starts from `cachedLogicalLineEntries`.
+  The host now normalizes the parser-backed `ContentsStructuredDocumentFlow.normalizedBlocks()` stream into one minimap
+  snapshot entry per block/tag, then asks `ContentsDisplayMinimapCoordinator` to build the synthetic silhouette rows.
+  Text-like rows size themselves from block plain-text amount; visual blocks such as `<resource ... />` stay block-like.
 - `commitDocumentPresentationRefresh()` refreshes only the HTML overlay/minimap projection; it no longer triggers a
   RichText surface reinjection step.
 - Resource-bearing fallback notes still substitute `whatson-resource-block` placeholders into HTML, but that
@@ -150,6 +153,8 @@ not note-backed.
 - Structured `cachedLogicalLineEntries` updates now split logical-metric change from geometry-only change.
   Even when line count and start offsets stay the same, resource/callout/agenda spacing or measured block-height
   changes still trigger a gutter refresh as soon as `contentY` / `gutterContentY` move.
+  That structured logical-line cache still feeds gutter/logical-line coordination, but it is no longer the primary
+  minimap row source.
 - The line-number column now uses a dedicated `gutterBodyGap` token for its right inset instead of reusing the editor
   text column's `editorHorizontalInset`.
   This keeps note-body left padding unchanged while tightening the visual distance between gutter numbers and the first

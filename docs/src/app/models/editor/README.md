@@ -41,12 +41,20 @@
   parser output and final RichText/QML consumption.
   It converts parser-owned blocks into HTML tokens, resolves per-token render strategy, and normalizes the result into
   stable HTML blocks before the live editor paints them.
-- `format/ContentsTextFormatRenderer.*` is the editor-owned RAW inline-style projection and mutation backend.
+- `format/ContentsTextFormatRenderer.*` is the editor-owned document render backend for note-body HTML projection.
   It no longer lives under the paper display model because bold, italic, highlight, and related tags are editor body
   responsibilities, not page-surface responsibilities.
-- `tags/ContentsEditorBodyTagInsertionPlanner.*` is the editor-owned RAW body-tag insertion planner for generated
-  agenda, selected-range callout wrapping, callout insertion, break, and generic raw tag text. Input events may request
-  tags, but the planner builds the next-source payload that parser and renderer projections observe.
+- `format/ContentsInlineStyleOverlayRenderer.*` isolates block-local inline-style overlay rendering from the broader
+  document renderer contract.
+- `format/ContentsPlainTextSourceMutator.*` owns plain-text RAW span replacement so ordinary typing no longer calls a
+  renderer object to rewrite source.
+- `format/ContentsRawInlineStyleMutationSupport.js` owns selection-based inline-style RAW mutations.
+  Formatting commands now splice opening/closing inline tags directly around the resolved RAW selection span in
+  `.wsnbody` without routing through a formatter QObject.
+- `tags/ContentsRawBodyTagMutationSupport.js` is the editor-owned RAW body-tag mutation helper for generated agenda,
+  selected-range callout wrapping, callout insertion, break, and generic raw tag text. Input events may request tags,
+  but the helper builds the next-source payload directly from `.wsnbody` string splices without routing through an
+  extra QObject planner.
 - `structure/ContentsStructuredDocument*` owns the structured document host, collection policy, focus policy, mutation
   policy, and blocks model used by `ContentsStructuredDocumentFlow.qml`.
 - `display/ContentsDisplay*` owns editor-host display coordination for selection, context menus, gutter/minimap state,

@@ -2,10 +2,11 @@
 
 #include "app/models/editor/tags/ContentsAgendaBackend.hpp"
 #include "app/models/editor/tags/ContentsCalloutBackend.hpp"
-#include "app/models/editor/tags/ContentsEditorBodyTagInsertionPlanner.hpp"
 #include "app/models/editor/renderer/ContentsStructuredBlockRenderer.hpp"
 #include "app/models/display/paper/ContentsA4PaperBackground.hpp"
 #include "app/models/display/paper/ContentsPaperSelection.hpp"
+#include "app/models/editor/format/ContentsInlineStyleOverlayRenderer.hpp"
+#include "app/models/editor/format/ContentsPlainTextSourceMutator.hpp"
 #include "app/models/editor/format/ContentsTextFormatRenderer.hpp"
 #include "app/models/display/paper/print/ContentsPagePrintLayoutRenderer.hpp"
 #include "app/models/editor/tags/ContentsStructuredTagValidator.hpp"
@@ -42,7 +43,6 @@
 #include "app/models/editor/structure/ContentsStructuredDocumentFocusPolicy.hpp"
 #include "app/models/editor/structure/ContentsStructuredDocumentHost.hpp"
 #include "app/models/editor/structure/ContentsStructuredDocumentMutationPolicy.hpp"
-#include "app/viewmodel/editor/display/ContentsActiveEditorSurfaceAdapter.hpp"
 #include "app/viewmodel/editor/display/ContentsDisplayGeometryViewModel.hpp"
 #include "app/viewmodel/editor/display/ContentsDisplayMutationViewModel.hpp"
 #include "app/viewmodel/editor/display/ContentsDisplayPresentationViewModel.hpp"
@@ -122,8 +122,6 @@ namespace
                 QStringLiteral("ContentsGutterMarkerBridge")),
             whatsonInternalCreatableType<ContentsResourceTagTextGenerator>(
                 QStringLiteral("ContentsResourceTagTextGenerator")),
-            whatsonInternalCreatableType<ContentsEditorBodyTagInsertionPlanner>(
-                QStringLiteral("ContentsEditorBodyTagInsertionPlanner")),
             whatsonInternalCreatableType<ContentsStructuredDocumentBlocksModel>(
                 QStringLiteral("ContentsStructuredDocumentBlocksModel")),
             whatsonInternalCreatableType<ContentsStructuredDocumentCollectionPolicy>(
@@ -134,8 +132,6 @@ namespace
                 QStringLiteral("ContentsStructuredDocumentHost")),
             whatsonInternalCreatableType<ContentsStructuredDocumentMutationPolicy>(
                 QStringLiteral("ContentsStructuredDocumentMutationPolicy")),
-            whatsonInternalCreatableType<ContentsActiveEditorSurfaceAdapter>(
-                QStringLiteral("ContentsActiveEditorSurfaceAdapter")),
             whatsonInternalCreatableType<ContentsDisplayGeometryViewModel>(
                 QStringLiteral("ContentsDisplayGeometryViewModel")),
             whatsonInternalCreatableType<ContentsDisplayMutationViewModel>(
@@ -152,6 +148,10 @@ namespace
                 QStringLiteral("ContentsA4PaperBackground")),
             whatsonInternalCreatableType<ContentsTextFormatRenderer>(
                 QStringLiteral("ContentsTextFormatRenderer")),
+            whatsonInternalCreatableType<ContentsInlineStyleOverlayRenderer>(
+                QStringLiteral("ContentsInlineStyleOverlayRenderer")),
+            whatsonInternalCreatableType<ContentsPlainTextSourceMutator>(
+                QStringLiteral("ContentsPlainTextSourceMutator")),
             whatsonInternalCreatableType<ContentsStructuredBlockRenderer>(
                 QStringLiteral("ContentsStructuredBlockRenderer")),
             whatsonInternalCreatableType<ContentsStructuredTagValidator>(

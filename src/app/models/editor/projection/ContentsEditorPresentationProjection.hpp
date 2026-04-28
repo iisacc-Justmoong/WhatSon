@@ -38,16 +38,6 @@ public:
     QVariantList logicalLineStartOffsets() const;
     int logicalLineCount() const noexcept;
 
-    Q_INVOKABLE QString applyPlainTextReplacementToSource(
-        const QString& sourceText,
-        int sourceStart,
-        int sourceEnd,
-        const QString& replacementText) const;
-    Q_INVOKABLE QString applyInlineStyleToLogicalSelectionSource(
-        const QString& sourceText,
-        int selectionStart,
-        int selectionEnd,
-        const QString& styleTag) const;
     Q_INVOKABLE int logicalLineNumberForOffset(int offset) const noexcept;
     Q_INVOKABLE int logicalLineStartOffsetAt(int index) const noexcept;
     Q_INVOKABLE int logicalLineCharacterCountAt(int index) const noexcept;

@@ -41,18 +41,21 @@
 - `ContentsDisplayView.qml` delegates view-only surface, auxiliary rail, and overlay composition to narrow sibling
   hosts: `ContentsDisplaySurfaceHost.qml`, `ContentsDisplayAuxiliaryRailHost.qml`, and
   `ContentsDisplayOverlayHost.qml`.
-- `ContentsDisplayView.qml` also delegates active editor focus routing to the C++
-  `ContentsActiveEditorSurfaceAdapter`, keeping note-selection focus restoration out of the view layout file.
+- `ContentsDisplayView.qml` restores note-selection focus directly through
+  `ContentsStructuredDocumentFlow.qml`, keeping the parser-backed structured host as the only note-editor focus target.
 - `ContentsDisplaySurfacePolicy` now owns the note-surface decision: selected notes mount the structured document flow,
   and the unreachable whole-note inline loader is no longer part of `ContentsDisplayView.qml`.
 - The editor surface no longer mounts a note-loading overlay. Mount decisions now settle through
   `ContentsDisplayNoteBodyMountCoordinator::mountDecisionClean`, so a stale pending body load cannot dim already
   rendered note content.
-- Focus/input availability is likewise tied to
-  `ContentsDisplayNoteBodyMountCoordinator::surfaceInteractive`, so a parse-mounted note stays editable while slower
-  startup runtime state finishes settling.
-- Tag-management command surfaces use that same interactive mount state, so inline formatting shortcuts can insert
-  RAW `<bold>`/`<italic>`/`<highlight>` tags before the slower editor-session `noteMounted` flag completes.
+- Focus/input availability is likewise tied to parse-mounted note-body state, so a parse-mounted note stays editable
+  while slower startup runtime state finishes settling.
+- Tag-management command surfaces derive directly from that same parse-mounted RAW state plus active structured-editor
+  mode, so inline formatting shortcuts can insert RAW `<bold>`/`<italic>`/`<highlight>` tags before the slower
+  editor-session `noteMounted` flag completes and without a second command-surface-ready proxy.
+- `ContentsDisplayView.qml` no longer mirrors extra `surfaceReady`, `surfaceInteractive`, or
+  `noteDocumentCommandSurfaceEnabled` aliases on top of that RAW state.
+  The parser-backed `.wsnbody` mount is the only editor-readiness authority exposed to the input/view layer.
 - This directory now contains only editor view hosts, visual layers, and block delegates. Non-visual QML policies,
   controllers, session controllers, and support JavaScript live under `src/app/models/editor`.
 - `src/app/models/editor/display/ContentsDisplayHostModePolicy.qml` owns platform display deltas such as
@@ -107,10 +110,9 @@
   `minimapVisualKind`, and `minimapRepresentativeCharCount`.
   Gutter, minimap, current-line focus, and nearest-editable-block resolution now consume that shared contract rather
   than branching on block type names inside the flow host.
-- Resource blocks still advertise themselves to the minimap as block silhouettes, but the structured-flow cache now
-  caps one resource block to ten minimap rows so tall inline media do not overwhelm the rail.
-- Minimap row width is now driven by measured editor line width (`contentWidth` over `contentAvailableWidth`) when
-  structured geometry is available, leaving character-count width as a fallback for incomplete geometry.
+- Structured minimap rows now follow the parser-normalized block stream directly.
+  One complete block/tag becomes one minimap row; text-like rows size themselves from the amount of block plain text,
+  while resource rows stay block-like.
 - `ContentsDocumentTextBlock.qml` uses a read-side HTML overlay only when RAW block source contains inline style tags.
   Structured paragraph editing still happens directly against RAW block source text, while the overlay renders tags such
   as `<bold>`, `<italic>`, and `<highlight>` as visible formatting.
@@ -151,9 +153,9 @@
   live state into `ContentsLogicalTextBridge.adoptIncrementalState(...)`, so bridge consumers stay current without a
   whole-note rebuild per keystroke.
 - Desktop/mobile minimap snapshotting now also shares `ContentsMinimapSnapshotSupport.js`, so ordinary note edits only
-  re-sample the changed logical-line window instead of walking the full note text through `positionToRectangle(...)`.
-  The cached snapshot rows preserve measured `visualRowWidths`, allowing the minimap to cascade top-to-bottom through the
-  note body and keep the visible text silhouette.
+  rebuild the changed snapshot slice instead of rebuilding the whole rail.
+  On structured notes the cached rows now represent parser-backed block silhouettes rather than live per-line text
+  rectangles, keeping the minimap aligned with `.wsnbody` block order.
 - Desktop/mobile line geometry helpers now reuse that same logical-line group cache even when the minimap is hidden, so
   gutter line-Y queries no longer need their own whole-document geometry sweep.
 - Desktop/mobile editor hosts now also mirror `ContentsEditorPresentationProjection` logical-line metrics into
@@ -215,8 +217,9 @@
   wrapped structured lines keep the gutter aligned to the actual rendered document surface.
 - Text-family structured blocks now also share `ContentsLogicalLineLayoutSupport.js` for logical-line geometry.
   Live `positionToRectangle(...)` samples are mapped back into the delegate's own coordinate space before the flow
-  caches gutter/minimap line Y, preventing block-local editor offsets from leaking into global gutter placement.
-  The same samples now capture each visual row's X span for minimap width.
+  caches gutter/logical-line Y, preventing block-local editor offsets from leaking into global gutter placement.
+  The same samples may still expose visual-row width metadata, but structured minimap row ownership now comes from the
+  parser-normalized block stream rather than from those sampled rows.
 - `ContentsStructuredDocumentFlow.qml` no longer applies one global inter-block gap to text-family structured tags.
   Text-to-text flow for `paragraph`, `title`, `subTitle`, `eventTitle`, and the other prose-style text delegates now
   renders without synthetic bottom margin on `Enter`, while framed document blocks still keep explicit separation from
@@ -368,9 +371,9 @@
   tag-management rule applies.
 - `ContentsEditorTypingController.qml` now also canonicalizes a standalone `---` typing line into the proprietary
   divider source token `</break>` before persistence.
-- `ContentsEditorBodyTagInsertionPlanner` now owns canonical RAW insertion payloads for generated agenda, callout,
+- `ContentsRawBodyTagMutationSupport.js` now owns canonical RAW insertion payloads for generated agenda, callout,
   selected-range callout wrapping, divider, and prebuilt raw tag text. Keyboard/menu events still enter through the
-  command surface, but QML hosts now apply planner-built `nextSourceText` payloads instead of assembling those body
+  command surface, but QML hosts now apply helper-built `nextSourceText` payloads instead of assembling those body
   tags locally.
 - Divider authoring shortcuts:
   - `Cmd+Shift+H` inserts canonical `</break>` into RAW at the current cursor
@@ -455,12 +458,12 @@
   rewrites when renderer models refresh after a toggle.
 - Callout block focus restoration now also refreshes the flow host's active-block pointer on cursor-only programmatic
   focus moves, keeping subsequent structured shortcuts scoped to the active callout.
-- Agenda parsing and source-mutation backend logic used by those shortcuts now lives in
-  `src/app/models/editor/tags/ContentsAgendaBackend.*`; QML editor files should only construct the visible editor surface and
-  invoke typed C++ hooks.
-- Callout parsing and insertion payload backend logic now lives in
-  `src/app/models/editor/tags/ContentsCalloutBackend.*`; QML editor files should only construct the visible editor surface and
-  invoke typed C++ hooks.
+- Agenda parsing and agenda-internal source-mutation backend logic used by those shortcuts now lives in
+  `src/app/models/editor/tags/ContentsAgendaBackend.*`, while direct shortcut source splices live in
+  `src/app/models/editor/tags/ContentsRawBodyTagMutationSupport.js`.
+- Callout parsing and plain-Enter exit backend logic now lives in
+  `src/app/models/editor/tags/ContentsCalloutBackend.*`, while direct shortcut source splices live in
+  `src/app/models/editor/tags/ContentsRawBodyTagMutationSupport.js`.
 - Agenda/callout render-model projection now lives in
   `src/app/models/editor/renderer/ContentsStructuredBlockRenderer.*`, so QML overlay layers consume renderer-owned data
   instead of calling parse backends directly.
@@ -514,12 +517,12 @@
   instead of writing through a live platform IME session.
 - `ContentsEditorTypingController.qml` no longer drops a committed `textEdited` mutation only because a transient
   model-sync guard bit is still set; committed user typing now always refreshes local authority and persistence staging.
-- The shared selection controller now also primes right-click context-menu selections on mouse press, so multi-block or
-  mixed-inline dragged selections survive the menu-opening click instead of collapsing to one fragment before
-  formatting.
-- Shared inline-format actions now also rebuild proprietary source tags from RAW logical coverage, so formatting ranges
-  that cross multiple paragraphs or existing inline tags stay governed by canonical `<bold>` / `<italic>` / ...
-  boundaries instead of temporary RichText fragment splits.
+- The shared selection controller now also primes right-click context-menu selections from the desktop
+  command-surface `MouseArea` press, so multi-block or mixed-inline dragged selections survive the menu-opening click
+  instead of collapsing to one fragment before formatting.
+- Shared inline-format actions now resolve the live selection back into RAW boundaries and insert proprietary
+  opening/closing tags directly into `.wsnbody`, so formatting stays governed by authoritative source text instead of
+  temporary RichText fragment splits.
 - Agenda source tags must now round-trip through persistence without escaping (`<agenda>`, `<task>`) and keep canonical
   attribute forms (`date=YYYY-MM-DD`, `done=true|false`).
 - Callout source tags must now round-trip through persistence without escaping (`<callout>...</callout>`).

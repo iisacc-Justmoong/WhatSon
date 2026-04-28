@@ -11,10 +11,13 @@ then registers that manifest through LVRS `QmlTypeRegistrar`.
   `src/app/models/editor/display` and `src/app/models/editor/structure`, so runtime bootstrap resolves the real
   model-domain paths instead of relying on flattened legacy include aliases.
 - Editor display ViewModels from `src/app/viewmodel/editor/display`, including
-  `ContentsActiveEditorSurfaceAdapter` and `ContentsDisplaySurfacePolicy`, so view QML can instantiate C++ command and
-  surface-policy contracts instead of carrying those responsibilities locally.
-- Rendering/annotation helpers such as `ContentsTextFormatRenderer`, `ContentsStructuredBlockRenderer`,
-  `ContentsAgendaBackend`, `ContentsCalloutBackend`, `ContentsBodyResourceRenderer`, and `ResourceBitmapViewer`.
+  `ContentsDisplaySurfacePolicy`, so view QML can instantiate C++ command and surface-policy contracts instead of
+  carrying those responsibilities locally.
+  The registrar no longer exports an active-editor-surface adapter type for focus forwarding; note focus restoration
+  now targets the structured document host directly from the display controllers.
+- Rendering/annotation helpers such as `ContentsTextFormatRenderer`, `ContentsInlineStyleOverlayRenderer`,
+  `ContentsPlainTextSourceMutator`, `ContentsStructuredBlockRenderer`, `ContentsAgendaBackend`,
+  `ContentsCalloutBackend`, `ContentsBodyResourceRenderer`, and `ResourceBitmapViewer`.
 - Workspace interaction bridges such as `FocusedNoteDeletionBridge`, `NoteListModelContractBridge`,
   `HierarchyDragDropBridge`, and `HierarchyInteractionBridge`.
 - Onboarding-specific native platform bridge `WhatSonIosHubPickerBridge`, which exposes the iOS Files/Box picker to

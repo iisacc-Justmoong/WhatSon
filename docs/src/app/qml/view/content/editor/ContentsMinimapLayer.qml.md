@@ -11,6 +11,7 @@ parent view and paints them without re-entering editor layout state.
 ## Public Surface
 
 - `minimapVisualRows`: row model for the painted silhouette.
+- Structured note rows may now arrive as parser-derived block silhouettes instead of measured per-line editor geometry.
 - `minimapBarWidthResolver`, `minimapVisualRowPaintHeightResolver`, `minimapVisualRowPaintYResolver`: paint-only
   callbacks used by the canvas for each row. The width resolver receives the full row object so it can use measured
   `contentWidth` / `contentAvailableWidth` before falling back to `charCount`.

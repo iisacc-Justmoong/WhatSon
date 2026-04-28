@@ -12,12 +12,12 @@ It does not own ordinary typing, markdown list input, or generic key-event short
 - `contextMenuSelectionStart` / `contextMenuSelectionEnd`: selection snapshot captured before a right-click can collapse
   or shrink the live `TextEdit` selection.
 - `contextMenuItems`: menu model for inline tag formatting actions. The top item is `Plain`, which clears supported
-  inline style tags from the current selection.
+  inline style tags only when they directly wrap the current selection.
 - `selectedEditorRange()`: resolves the current live editor selection span.
 - `primeContextMenuSelectionSnapshot()`: captures raw `TextEdit` selection offsets and selected plain text.
 - `openEditorSelectionContextMenu(localX, localY)`: opens the LVRS context menu when a non-empty selection exists.
-- `wrapSelectedEditorTextWithTag(tagName, explicitSelectionRange)`: applies or clears the requested inline style tag in
-  canonical `.wsnbody` source.
+- `wrapSelectedEditorTextWithTag(tagName, explicitSelectionRange)`: applies or clears the requested inline style tag by
+  directly rewriting `.wsnbody` source around the resolved selection span.
 - `handleSelectionContextMenuEvent(eventName)`: routes context-menu events through the same source-tag mutation path.
 - `queueInlineFormatWrap(tagName)`: executes an explicit tag-management command from the host shortcut surface.
 
@@ -41,8 +41,8 @@ It does not own ordinary typing, markdown list input, or generic key-event short
   This preserves the press-time selection if native `TextEdit` processing has already collapsed the live selection.
 - Selection text normalization strips RichText object-replacement glyphs (`U+FFFC`) and normalizes NBSP back to ordinary
   spaces.
-- The controller delegates source rewriting to `ContentsTextFormatRenderer.applyInlineStyleToLogicalSelectionSource(...)`
-  and persists semantic tags such as `<bold>...</bold>` and `<italic>...</italic>`.
+- The controller delegates source rewriting to `ContentsRawInlineStyleMutationSupport.buildInlineStyleSelectionPayload(...)`
+  and persists semantic tags such as `<bold>...</bold>` and `<italic>...</italic>` by direct RAW tag insertion.
 - Before the legacy whole-editor path runs, the controller asks the structured flow whether the active block can handle
   the inline-format tag command locally.
 - If a candidate rewrite would reduce the number of canonical `<resource ... />` tokens while the host is on the legacy
@@ -58,8 +58,9 @@ It does not own ordinary typing, markdown list input, or generic key-event short
 ## Regression Checks
 
 - Inline format commands must operate on the current live selection, including structured paragraph selections.
-- Reapplying the same inline style to a fully formatted selection should clear that style.
-- Choosing `Plain` from the context menu should remove all supported inline style tags from the selected source range.
+- Reapplying the same inline style should wrap the selected RAW span again instead of toggling global style coverage.
+- Choosing `Plain` from the context menu should remove only the inline style tags that directly wrap the selected RAW
+  span.
 - Drag-selected multi-paragraph text should keep the original selection when the context menu applies a tag.
 - The controller source must not contain markdown-list queues, structured shortcut queues, or generic key-event shortcut
   handlers.

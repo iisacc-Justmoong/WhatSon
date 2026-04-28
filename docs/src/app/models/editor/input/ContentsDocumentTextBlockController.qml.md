@@ -15,7 +15,7 @@ computes cursor row geometry, and applies focus requests.
 - Inline style tags are rendered as a read-side overlay by the view; this controller only computes the source mutation
   request produced by committed plain-text edits.
 - Blocks that already contain inline style tags keep the tag-preserving path through
-  `ContentsTextFormatRenderer.applyPlainTextReplacementToSource(...)` so visible plain-text edits do not erase
+  `ContentsPlainTextSourceMutator.applyPlainTextReplacementToSource(...)` so visible plain-text edits do not erase
   `<bold>`, `<italic>`, `<highlight>`, or related style tags.
 - Empty text blocks handle one boundary-only Backspace case before returning to native `TextEdit` behavior.
   When the focused block has no text and the caret is at offset `0`, the controller emits the existing

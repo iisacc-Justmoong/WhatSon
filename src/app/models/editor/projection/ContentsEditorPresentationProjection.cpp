@@ -134,36 +134,6 @@ int ContentsEditorPresentationProjection::logicalLineCount() const noexcept
     return m_logicalTextBridge != nullptr ? m_logicalTextBridge->logicalLineCount() : 1;
 }
 
-QString ContentsEditorPresentationProjection::applyPlainTextReplacementToSource(
-    const QString& sourceText,
-    const int sourceStart,
-    const int sourceEnd,
-    const QString& replacementText) const
-{
-    return m_textFormatRenderer != nullptr
-               ? m_textFormatRenderer->applyPlainTextReplacementToSource(
-                     sourceText,
-                     sourceStart,
-                     sourceEnd,
-                     replacementText)
-               : sourceText;
-}
-
-QString ContentsEditorPresentationProjection::applyInlineStyleToLogicalSelectionSource(
-    const QString& sourceText,
-    const int selectionStart,
-    const int selectionEnd,
-    const QString& styleTag) const
-{
-    return m_textFormatRenderer != nullptr
-               ? m_textFormatRenderer->applyInlineStyleToLogicalSelectionSource(
-                     sourceText,
-                     selectionStart,
-                     selectionEnd,
-                     styleTag)
-               : sourceText;
-}
-
 int ContentsEditorPresentationProjection::logicalLineNumberForOffset(const int offset) const noexcept
 {
     return m_logicalTextBridge != nullptr ? m_logicalTextBridge->logicalLineNumberForOffset(offset) : 1;

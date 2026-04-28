@@ -2,6 +2,7 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import "../diagnostics/ContentsEditorDebugTrace.js" as EditorTrace
+import "../tags/ContentsRawBodyTagMutationSupport.js" as RawTagMutationSupport
 
 QtObject {
     id: controller
@@ -10,11 +11,10 @@ QtObject {
     property var view: null
     property var contentEditor: null
     property var editorSession: null
-    property var textFormatRenderer: null
+    property var plainTextSourceMutator: null
     property var textMetricsBridge: null
     property var agendaBackend: null
     property var calloutBackend: null
-    property var bodyTagInsertionPlanner: null
     property string liveAuthoritativePlainText: ""
     property var liveLogicalLineStartOffsets: [0]
     property var liveLogicalToSourceOffsets: [0]
@@ -693,17 +693,12 @@ QtObject {
     }
 
     function insertStructuredShortcutSourceAtCursor(shortcutKind) {
-        if (!controller.bodyTagInsertionPlanner
-                || controller.bodyTagInsertionPlanner.buildStructuredShortcutInsertionPayload === undefined)
-            return false;
-
         controller.ensureLiveEditingStateReady();
         const currentSourceText = controller.view && controller.view.editorText !== undefined && controller.view.editorText !== null
                 ? String(controller.view.editorText)
                 : "";
         const normalizedShortcutKind = String(shortcutKind || "").trim().toLowerCase();
-        if (normalizedShortcutKind === "callout"
-                && controller.bodyTagInsertionPlanner.buildCalloutRangeWrappingPayload !== undefined) {
+        if (normalizedShortcutKind === "callout") {
             const selectionRange = controller.currentRawEditorSelectionRange();
             const logicalSelectionStart = Math.max(0, Math.floor(Number(selectionRange.start) || 0));
             const logicalSelectionEnd = Math.max(logicalSelectionStart, Math.floor(Number(selectionRange.end) || 0));
@@ -718,7 +713,7 @@ QtObject {
                             Math.min(
                                 currentSourceText.length,
                                 Math.floor(Number(controller.sourceOffsetForLogicalOffset(logicalSelectionEnd)) || 0)));
-                const wrapPayload = controller.bodyTagInsertionPlanner.buildCalloutRangeWrappingPayload(
+                const wrapPayload = RawTagMutationSupport.buildCalloutRangeWrappingPayload(
                             currentSourceText,
                             sourceSelectionStart,
                             sourceSelectionEnd);
@@ -733,7 +728,7 @@ QtObject {
                         Math.floor(Number(controller.sourceOffsetForCollapsedLogicalInsertion(
                                              currentSourceText,
                                              logicalCursor)) || 0)));
-        const insertionPayload = controller.bodyTagInsertionPlanner.buildStructuredShortcutInsertionPayload(
+        const insertionPayload = RawTagMutationSupport.buildStructuredShortcutInsertionPayload(
                     currentSourceText,
                     rawSourceCursorOffset,
                     normalizedShortcutKind);
@@ -781,9 +776,6 @@ QtObject {
     function insertRawSourceTextAtCursor(rawSourceText, cursorSourceOffsetFromInsertionStart) {
         if (!controller.view)
             return false;
-        if (!controller.bodyTagInsertionPlanner
-                || controller.bodyTagInsertionPlanner.buildRawSourceInsertionPayload === undefined)
-            return false;
         const normalizedRawSourceText = controller.normalizePlainText(rawSourceText);
         if (normalizedRawSourceText.length === 0)
             return false;
@@ -799,7 +791,7 @@ QtObject {
                         Math.floor(Number(controller.sourceOffsetForCollapsedLogicalInsertion(
                                              currentSourceText,
                                              logicalCursor)) || 0)));
-        const insertionPayload = controller.bodyTagInsertionPlanner.buildRawSourceInsertionPayload(
+        const insertionPayload = RawTagMutationSupport.buildRawSourceInsertionPayload(
                     currentSourceText,
                     rawSourceCursorOffset,
                     normalizedRawSourceText,
@@ -897,8 +889,8 @@ QtObject {
             return false;
         }
         if (!controller.contentEditor
-                || !controller.textFormatRenderer
-                || controller.textFormatRenderer.applyPlainTextReplacementToSource === undefined) {
+                || !controller.plainTextSourceMutator
+                || controller.plainTextSourceMutator.applyPlainTextReplacementToSource === undefined) {
             return false;
         }
 
@@ -1022,7 +1014,7 @@ QtObject {
                         replacementSourceEnd,
                         rawSourceReplacementText);
         } else {
-            nextSourceText = String(controller.textFormatRenderer.applyPlainTextReplacementToSource(
+            nextSourceText = String(controller.plainTextSourceMutator.applyPlainTextReplacementToSource(
                                         currentSourceText,
                                         sourceStart,
                                         sourceEnd,
@@ -1169,8 +1161,8 @@ QtObject {
             return false;
         }
         if (!controller.contentEditor
-                || !controller.textFormatRenderer
-                || controller.textFormatRenderer.applyPlainTextReplacementToSource === undefined) {
+                || !controller.plainTextSourceMutator
+                || controller.plainTextSourceMutator.applyPlainTextReplacementToSource === undefined) {
             return false;
         }
 
@@ -1285,7 +1277,7 @@ QtObject {
                         replacementSourceEnd,
                         rawSourceReplacementText);
         } else {
-            nextSourceText = String(controller.textFormatRenderer.applyPlainTextReplacementToSource(
+            nextSourceText = String(controller.plainTextSourceMutator.applyPlainTextReplacementToSource(
                                         currentSourceText,
                                         sourceStart,
                                         sourceEnd,

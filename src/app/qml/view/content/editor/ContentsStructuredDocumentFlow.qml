@@ -7,6 +7,7 @@ import LVRS 1.0 as LV
 import "../../../../models/editor/diagnostics/ContentsEditorDebugTrace.js" as EditorTrace
 import "../../../../models/editor/format" as EditorFormatModel
 import "../../../../models/editor/structure/ContentsStructuredCursorSupport.js" as StructuredCursorSupport
+import "../../../../models/editor/tags/ContentsRawBodyTagMutationSupport.js" as RawTagMutationSupport
 
 FocusScope {
     id: documentFlow
@@ -71,14 +72,6 @@ FocusScope {
 
         blockRepeater: blockRepeater
         documentFlow: documentFlow
-        paperPaletteEnabled: documentFlow.paperPaletteEnabled
-    }
-
-    ContentsEditorBodyTagInsertionPlanner {
-        id: bodyTagInsertionPlanner
-
-        agendaBackend: documentFlow.agendaBackend
-        calloutBackend: documentFlow.calloutBackend
     }
 
     Keys.onPressed: function (event) {
@@ -1757,7 +1750,7 @@ FocusScope {
         if (normalizedShortcutKind === "callout") {
             const wrapRange = documentFlow.activeCalloutWrapSourceRange()
             if (wrapRange.valid) {
-                const wrapPayload = bodyTagInsertionPlanner.buildCalloutRangeWrappingPayload(
+                const wrapPayload = RawTagMutationSupport.buildCalloutRangeWrappingPayload(
                             currentSourceText,
                             Math.floor(Number(wrapRange.sourceStart) || 0),
                             Math.floor(Number(wrapRange.sourceEnd) || 0))
@@ -1775,7 +1768,7 @@ FocusScope {
         if (!isFinite(resolvedInsertionOffset))
             return false
         const insertionOffset = Math.max(0, Math.min(currentSourceText.length, Math.floor(resolvedInsertionOffset)))
-        const payload = bodyTagInsertionPlanner.buildStructuredShortcutInsertionPayload(
+        const payload = RawTagMutationSupport.buildStructuredShortcutInsertionPayload(
                     currentSourceText,
                     insertionOffset,
                     normalizedShortcutKind)

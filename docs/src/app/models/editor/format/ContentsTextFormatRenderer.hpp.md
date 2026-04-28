@@ -2,8 +2,8 @@
 
 ## Responsibility
 
-Declares the editor-side renderer bridge that converts `.wsnbody` inline style tags into the editor's source-editing
-RichText surface and, only when explicitly requested, also materializes markdown-aware preview HTML.
+Declares the editor-side document renderer that converts `.wsnbody` source into the editor's document HTML projection
+and, only when explicitly requested, also materializes markdown-aware preview HTML.
 
 Highlight styling is delegated to the dedicated `ContentsTextHighlightRenderer` module so palette logic does not stay
 embedded in the generic inline-tag parser.
@@ -50,17 +50,6 @@ embedded in the generic inline-tag parser.
   Normalizes one Qt RichText editor-surface HTML snapshot back into visible plain text.
   This is a read-side helper only; QML uses it to recover the user-visible text from Qt's serialized
   `<!DOCTYPE HTML ... qrichtext ...>` payload without ever treating that HTML document as writable `.wsnbody` source.
-- `applyPlainTextReplacementToSource(sourceText, sourceStart, sourceEnd, replacementText)`
-  Replaces one source span with escaped plain text directly in canonical `.wsnbody`.
-  Source bounds are clamped against an `int`-safe `QString` length before stitching.
-  This is the ordinary typing path and intentionally does not reserialize the entire RichText surface.
-- `applyInlineStyleToLogicalSelectionSource(sourceText, selectionStart, selectionEnd, styleTag)`
-  Applies inline formatting from canonical source text plus logical editor offsets by rebuilding proprietary inline
-  source tags directly from RAW-source style coverage.
-  Logical selection offsets are now resolved against the stored source text itself, and the opening/closing proprietary
-  tags become the authoritative formatting boundaries instead of any transient `QTextDocument` fragment split.
-  Surface HTML is intentionally outside this write path so inline-format commands cannot promote the rendered editor
-  projection into a second source of truth.
 - `requestRenderRefresh()`
   Slot entrypoint for explicit refresh requests from QML when immediate recompute is needed.
 
@@ -70,7 +59,6 @@ embedded in the generic inline-tag parser.
 - Underline aliases: `underline`, `u` -> `<span style="text-decoration: underline;">`
 - Strike aliases: `strikethrough`, `strike`, `s`, `del` -> `<span style="text-decoration: line-through;">`
 - Highlight aliases: `highlight`, `mark` -> Apple Notes-inspired styled `<span ...>`
-- Clear aliases: `plain`, `clear`, `none` -> remove inline formatting from the selected range
 
 ## Supported Structural Inline Tags
 - Line break aliases: `br` -> `<br/>`
@@ -78,7 +66,9 @@ embedded in the generic inline-tag parser.
 
 Markdown emphasis markers such as `**bold**`, `*italic*`, `~~strike~~`, or `==highlight==` are intentionally **not**
 the formatting source of truth in this editor. Those styles remain bound to the proprietary `.wsnbody` inline tags and
-the existing shortcut/context-menu pipeline.
+the existing shortcut/context-menu pipeline. Selection-driven RAW formatting now lives in
+`ContentsRawInlineStyleMutationSupport.js`, and plain-text source replacement now lives in
+`ContentsPlainTextSourceMutator`, not in this renderer bridge.
 
 Markdown presentation roles are now emitted through `WhatSonNoteMarkdownStyleObject` only for explicit preview HTML.
 The live editor surface no longer treats markdown as a second formatting authority.

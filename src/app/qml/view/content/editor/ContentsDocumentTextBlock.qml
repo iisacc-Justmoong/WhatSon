@@ -147,11 +147,15 @@ FocusScope {
         return true
     }
 
-    ContentsTextFormatRenderer {
+    ContentsInlineStyleOverlayRenderer {
         id: inlineStyleRenderer
 
         paperPaletteEnabled: textBlock.paperPaletteEnabled
         sourceText: textBlock.sourceContainsInlineStyleTags ? textBlock.authoritativeSourceText() : ""
+    }
+
+    ContentsPlainTextSourceMutator {
+        id: plainTextSourceMutator
     }
 
     ContentsInlineFormatEditor {
@@ -198,6 +202,7 @@ FocusScope {
 
         blockEditor: blockEditor
         inlineStyleRenderer: inlineStyleRenderer
+        plainTextSourceMutator: plainTextSourceMutator
         textBlock: textBlock
     }
 }

@@ -13,31 +13,28 @@ Item {
 
     anchors.fill: parent
 
-    TapHandler {
-        id: editorRightClickContextMenuTapHandler
+    MouseArea {
+        id: editorRightClickContextMenuMouseArea
 
+        anchors.fill: parent
         acceptedButtons: Qt.RightButton
-        acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
         enabled: commandSurface.contentsView
                  && commandSurface.contentsView.noteDocumentContextMenuSurfaceEnabled
-        gesturePolicy: TapHandler.DragThreshold
-        grabPermissions: PointerHandler.ApprovesTakeOverByAnything
-        target: commandSurface
+        hoverEnabled: false
+        preventStealing: true
+        propagateComposedEvents: false
 
-        onPressedChanged: {
-            if (!pressed)
+        onPressed: function (mouse) {
+            if (!mouse || mouse.button !== Qt.RightButton)
                 return;
             commandSurface.contentsView.primeEditorSelectionContextMenuSnapshot();
         }
-        onTapped: function (eventPoint, button) {
-            if (button !== Qt.RightButton)
+        onClicked: function (mouse) {
+            if (!mouse || mouse.button !== Qt.RightButton)
                 return;
-            const pressPoint = eventPoint && eventPoint.position !== undefined
-                    ? eventPoint.position
-                    : Qt.point(0, 0);
             commandSurface.contentsView.requestEditorSelectionContextMenuFromPointer(
-                        pressPoint.x,
-                        pressPoint.y,
+                        Number(mouse.x) || 0,
+                        Number(mouse.y) || 0,
                         "rightClick");
         }
     }

@@ -4,14 +4,21 @@
 Owns editor-body inline formatting logic.
 
 ## Current Modules
+- `ContentsInlineStyleOverlayRenderer.*`
+  Renders block-local inline style overlays for structured text delegates without exposing the full document renderer
+  contract.
+- `ContentsPlainTextSourceMutator.*`
+  Owns plain-text source-span replacement and committed-URL canonicalization for ordinary typing paths.
+- `ContentsRawInlineStyleMutationSupport.js`
+  Builds direct RAW inline-style selection payloads by wrapping the resolved `.wsnbody` selection span with opening and
+  closing tags.
 - `ContentsTextFormatRenderer.*`
-  Converts RAW `.wsnbody` inline tags into editor-surface HTML and exposes RAW mutation helpers for inline style
-  commands.
+  Converts RAW `.wsnbody` document snapshots into editor-surface HTML, preview HTML, and normalized render payloads.
 - `ContentsTextHighlightRenderer.*`
   Keeps highlight alias and HTML style details out of the broader formatter implementation.
 - `ContentsStructuredEditorFormattingController.qml`
   Coordinates selection-based inline formatting for the structured document flow while delegating RAW rewrite rules to
-  the editor formatter.
+  the pure inline-style mutation helper.
 
 ## Boundary
 - This directory owns body text formatting such as bold, italic, underline, strikethrough, and highlight.

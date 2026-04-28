@@ -22,7 +22,7 @@ Item {
         return contentsView.plainEditorViewModeValue;
     }
     readonly property color activeLineNumberColor: LV.Theme.accentGray
-    readonly property bool contentPersistenceContractAvailable: selectionBridge.contentPersistenceContractAvailable
+    readonly property bool contentPersistenceContractAvailable: mountState.contentPersistenceContractAvailable
     property var contentViewModel: null
     property bool mobileHost: false
     readonly property var editorViewport: auxiliaryRailHost ? auxiliaryRailHost.editorViewport : null
@@ -110,9 +110,9 @@ Item {
     readonly property int gutterIconRailWidth: Math.max(0, Math.round(LV.Theme.scaleMetric(18)))
     readonly property color gutterMarkerChangedColor: contentsView.decorativeMarkerYellow
     readonly property color gutterMarkerConflictColor: LV.Theme.danger
-    property var gutterMarkers: []
-    property int gutterRefreshPassesRemaining: 0
-    property int gutterRefreshRevision: 0
+    property alias gutterMarkers: geometryState.gutterMarkers
+    property alias gutterRefreshPassesRemaining: geometryState.gutterRefreshPassesRemaining
+    property alias gutterRefreshRevision: geometryState.gutterRefreshRevision
     readonly property real gutterViewportHeight: contentsView.editorViewportHeight
     readonly property int gutterWidth: Math.max(0, Math.round(LV.Theme.scaleMetric(74)))
     readonly property int gutterBodyGap: Math.max(0, Math.round(LV.Theme.scaleMetric(8)))
@@ -126,18 +126,18 @@ Item {
     property int lineNumberColumnTextWidthOverride: -1
     readonly property int lineNumberColumnWidth: Math.max(0, Math.round(LV.Theme.scaleMetric(26)))
     readonly property int lineNumberRightInset: contentsView.gutterBodyGap
-    property int liveLogicalLineCount: 1
-    readonly property int logicalLineCount: Math.max(1, Number(contentsView.liveLogicalLineCount) || 1)
-    property var logicalLineDocumentYCache: []
-    property int logicalLineDocumentYCacheLineCount: 0
-    property int logicalLineDocumentYCacheRevision: -1
-    property var logicalLineGutterDocumentYCache: []
-    property int logicalLineGutterDocumentYCacheLineCount: 0
-    property int logicalLineGutterDocumentYCacheRevision: -1
-    property string structuredGutterGeometrySignature: ""
-    property var liveLogicalLineStartOffsets: [0]
-    readonly property var logicalLineStartOffsets: contentsView.liveLogicalLineStartOffsets
-    property int liveLogicalTextLength: 0
+    property alias liveLogicalLineCount: geometryState.liveLogicalLineCount
+    readonly property int logicalLineCount: Math.max(1, Number(geometryState.liveLogicalLineCount) || 1)
+    property alias logicalLineDocumentYCache: geometryState.logicalLineDocumentYCache
+    property alias logicalLineDocumentYCacheLineCount: geometryState.logicalLineDocumentYCacheLineCount
+    property alias logicalLineDocumentYCacheRevision: geometryState.logicalLineDocumentYCacheRevision
+    property alias logicalLineGutterDocumentYCache: geometryState.logicalLineGutterDocumentYCache
+    property alias logicalLineGutterDocumentYCacheLineCount: geometryState.logicalLineGutterDocumentYCacheLineCount
+    property alias logicalLineGutterDocumentYCacheRevision: geometryState.logicalLineGutterDocumentYCacheRevision
+    property alias structuredGutterGeometrySignature: geometryState.structuredGutterGeometrySignature
+    property alias liveLogicalLineStartOffsets: geometryState.liveLogicalLineStartOffsets
+    readonly property var logicalLineStartOffsets: geometryState.liveLogicalLineStartOffsets
+    property alias liveLogicalTextLength: geometryState.liveLogicalTextLength
     readonly property int resolvedLogicalTextLength: Math.max(0, Number(viewportCoordinator.logicalTextLength) || 0)
     readonly property bool lineGeometryRefreshEnabled: modePolicy.lineGeometryRefreshEnabled
     readonly property int minEditorHeight: LV.Theme.gap20 * 12
@@ -145,37 +145,37 @@ Item {
     readonly property color minimapCurrentLineColor: contentsView.activeLineNumberColor
     readonly property color minimapLineColor: contentsView.lineNumberColor
     readonly property int minimapOuterWidth: Math.max(0, Math.round(LV.Theme.scaleMetric(56)))
-    property real minimapResolvedCurrentLineHeight: 1
-    property real minimapResolvedCurrentLineWidth: 0
-    property real minimapResolvedCurrentLineY: 0
-    property real minimapResolvedSilhouetteHeight: 1
-    property real minimapResolvedTrackHeight: 1
+    property alias minimapResolvedCurrentLineHeight: geometryState.minimapResolvedCurrentLineHeight
+    property alias minimapResolvedCurrentLineWidth: geometryState.minimapResolvedCurrentLineWidth
+    property alias minimapResolvedCurrentLineY: geometryState.minimapResolvedCurrentLineY
+    property alias minimapResolvedSilhouetteHeight: geometryState.minimapResolvedSilhouetteHeight
+    property alias minimapResolvedTrackHeight: geometryState.minimapResolvedTrackHeight
     readonly property real minimapResolvedTrackWidth: contentsView.minimapTrackWidth
-    property real minimapResolvedViewportHeight: 0
-    property real minimapResolvedViewportY: 0
+    property alias minimapResolvedViewportHeight: geometryState.minimapResolvedViewportHeight
+    property alias minimapResolvedViewportY: geometryState.minimapResolvedViewportY
     readonly property int minimapRowGap: Math.max(1, Math.round(LV.Theme.scaleMetric(1)))
-    property var minimapLineGroups: []
-    property string minimapLineGroupsNoteId: ""
-    property bool minimapScrollable: false
-    property bool minimapSnapshotForceFullRefresh: true
-    property bool cursorDrivenUiRefreshQueued: false
-    property bool typingViewportCorrectionQueued: false
-    property bool typingViewportForceCorrectionRequested: false
-    property bool viewportGutterRefreshQueued: false
-    property bool minimapSnapshotRefreshQueued: false
-    property var minimapSnapshotEntries: []
+    property alias minimapLineGroups: geometryState.minimapLineGroups
+    property alias minimapLineGroupsNoteId: geometryState.minimapLineGroupsNoteId
+    property alias minimapScrollable: geometryState.minimapScrollable
+    property alias minimapSnapshotForceFullRefresh: geometryState.minimapSnapshotForceFullRefresh
+    property alias cursorDrivenUiRefreshQueued: geometryState.cursorDrivenUiRefreshQueued
+    property alias typingViewportCorrectionQueued: geometryState.typingViewportCorrectionQueued
+    property alias typingViewportForceCorrectionRequested: geometryState.typingViewportForceCorrectionRequested
+    property alias viewportGutterRefreshQueued: geometryState.viewportGutterRefreshQueued
+    property alias minimapSnapshotRefreshQueued: geometryState.minimapSnapshotRefreshQueued
+    property alias minimapSnapshotEntries: geometryState.minimapSnapshotEntries
     readonly property int minimapTrackInset: LV.Theme.gap8
     readonly property int minimapTrackWidth: Math.max(0, Math.round(LV.Theme.scaleMetric(36)))
     readonly property color minimapViewportFillColor: LV.Theme.accentTransparent
     readonly property int minimapViewportMinHeight: Math.max(0, Math.round(LV.Theme.scaleMetric(28)))
-    property bool minimapVisible: true
+    property alias minimapVisible: geometryState.minimapVisible
     readonly property bool showMinimapRail: modePolicy.showMinimapRail
     readonly property bool minimapRefreshEnabled: modePolicy.minimapRefreshEnabled
-    property var minimapVisualRows: []
+    property alias minimapVisualRows: geometryState.minimapVisualRows
     readonly property var normalizedExternalGutterMarkers: gutterMarkerBridge.normalizedExternalGutterMarkers
-    readonly property bool noteCountContractAvailable: selectionBridge.noteCountContractAvailable
+    readonly property bool noteCountContractAvailable: mountState.noteCountContractAvailable
     property var noteListModel: null
-    readonly property bool noteSelectionContractAvailable: selectionBridge.noteSelectionContractAvailable
+    readonly property bool noteSelectionContractAvailable: mountState.noteSelectionContractAvailable
     readonly property bool typingSessionSyncProtected: editorSession && editorSession.isTypingSessionActive !== undefined && editorSession.isTypingSessionActive()
     readonly property bool noteSnapshotRefreshEnabled: contentsView.visible && contentsView.hasSelectedNote && !contentsView.selectedNoteBodyLoading && (contentsView.editorSessionBoundToSelectedNote || contentsView.selectedNoteBodyResolved) && !contentsView.showDedicatedResourceViewer && !contentsView.showFormattedTextRenderer && contentsView.noteSelectionContractAvailable && !contentsView.editorInputFocused && !contentsView.typingSessionSyncProtected && !contentsView.pendingBodySave
     readonly property int noteSnapshotRefreshIntervalMs: 1200
@@ -184,7 +184,7 @@ Item {
     property alias pendingBodySave: editorSession.pendingBodySave
     readonly property string editorEntrySnapshotComparedNoteId: selectionSyncCoordinator.comparedSnapshotNoteId
     readonly property string editorEntrySnapshotPendingNoteId: selectionSyncCoordinator.pendingSnapshotNoteId
-    property string pendingNoteEntryGutterRefreshNoteId: ""
+    property alias pendingNoteEntryGutterRefreshNoteId: geometryState.pendingNoteEntryGutterRefreshNoteId
     readonly property string pendingEditorFocusNoteId: selectionSyncCoordinator.pendingEditorFocusNoteId
     readonly property int plainEditorViewModeValue: 0
     readonly property color printCanvasColor: pagePrintLayoutRenderer.canvasColor
@@ -212,10 +212,10 @@ Item {
     readonly property real printDocumentSurfaceHeight: pagePrintLayoutRenderer.documentSurfaceHeight
     readonly property real printPaperResolvedHeight: pagePrintLayoutRenderer.paperResolvedHeight
     readonly property real printPaperResolvedWidth: pagePrintLayoutRenderer.paperResolvedWidth
-    readonly property int documentPresentationRefreshIntervalMs: 120
+    readonly property int documentPresentationRefreshIntervalMs: presentationState.documentPresentationRefreshIntervalMs
     readonly property string documentPresentationSourceText: documentSourceResolver.documentPresentationSourceText
     readonly property bool documentPresentationRefreshPendingWhileFocused: presentationRefreshController.pendingWhileFocused
-    property string renderedEditorHtml: ""
+    property alias renderedEditorHtml: presentationState.renderedEditorHtml
     readonly property var resolvedEditorViewModeViewModel: {
         if (contentsView.editorViewModeViewModel)
             return contentsView.editorViewModeViewModel;
@@ -223,76 +223,64 @@ Item {
             return LV.ViewModels.get("editorViewModeViewModel");
         return null;
     }
-    property bool resourceDropActive: false
+    property alias resourceDropActive: resourceUiState.resourceDropActive
     readonly property bool resourceDropEditorSurfaceGuardActive: resourceImportController.resourceDropEditorSurfaceGuardActive
-    readonly property int resourceImportConflictPolicyAbort: 0
-    readonly property int resourceImportConflictPolicyOverwrite: 1
-    readonly property int resourceImportConflictPolicyKeepBoth: 2
-    readonly property int resourceImportModeNone: 0
-    readonly property int resourceImportModeUrls: 1
-    readonly property int resourceImportModeClipboard: 2
+    readonly property int resourceImportConflictPolicyAbort: resourceUiState.resourceImportConflictPolicyAbort
+    readonly property int resourceImportConflictPolicyOverwrite: resourceUiState.resourceImportConflictPolicyOverwrite
+    readonly property int resourceImportConflictPolicyKeepBoth: resourceUiState.resourceImportConflictPolicyKeepBoth
+    readonly property int resourceImportModeNone: resourceUiState.resourceImportModeNone
+    readonly property int resourceImportModeUrls: resourceUiState.resourceImportModeUrls
+    readonly property int resourceImportModeClipboard: resourceUiState.resourceImportModeClipboard
     readonly property bool resourceImportConflictAlertOpen: resourceImportController.resourceImportConflictAlertOpen
-    readonly property color resourceRenderBorderColor: "#334E5157"
-    readonly property color resourceRenderCardColor: "#E61A1D22"
-    readonly property int resourceRenderDisplayLimit: 0
+    readonly property color resourceRenderBorderColor: resourceUiState.resourceRenderBorderColor
+    readonly property color resourceRenderCardColor: resourceUiState.resourceRenderCardColor
+    readonly property int resourceRenderDisplayLimit: resourceUiState.resourceRenderDisplayLimit
     property var resourcesImportViewModel: null
     property var sidebarHierarchyViewModel: null
-    readonly property bool preferNativeInputHandling: surfacePolicy.nativeInputPriority
-    readonly property bool documentPresentationProjectionEnabled: surfacePolicy.documentPresentationProjectionEnabled
-    readonly property bool inlineHtmlImageRenderingEnabled: surfacePolicy.inlineHtmlImageRenderingEnabled
-    readonly property int resourceEditorPlaceholderLineCount: 1
+    readonly property bool preferNativeInputHandling: inputState.preferNativeInputHandling
+    readonly property bool documentPresentationProjectionEnabled: inputState.documentPresentationProjectionEnabled
+    readonly property bool inlineHtmlImageRenderingEnabled: inputState.inlineHtmlImageRenderingEnabled
+    readonly property int resourceEditorPlaceholderLineCount: resourceUiState.resourceEditorPlaceholderLineCount
     readonly property int editorIdleSyncThresholdMs: 1000
-    readonly property string selectedNoteBodyText: selectionBridge.selectedNoteBodyText
-    readonly property string selectedNoteBodyNoteId: selectionBridge.selectedNoteBodyNoteId
-    readonly property bool selectedNoteBodyResolved: selectionBridge.selectedNoteBodyResolved
-    readonly property bool selectedNoteBodyLoading: selectionBridge.selectedNoteBodyLoading
-    readonly property string selectedNoteId: selectionBridge.selectedNoteId
-    readonly property string selectedNoteDirectoryPath: selectionBridge.selectedNoteDirectoryPath
-    readonly property bool editorSessionBoundToSelectedNote: {
-        if (editorSession.editorBoundNoteId !== contentsView.selectedNoteId)
-            return false;
-        if (contentsView.selectedNoteDirectoryPath === "")
-            return true;
-        return editorSession.editorBoundNoteDirectoryPath === contentsView.selectedNoteDirectoryPath;
-    }
-    readonly property bool noteDocumentMountDecisionClean: noteBodyMountCoordinator.mountDecisionClean
-    readonly property bool noteDocumentMountPending: noteBodyMountCoordinator.mountPending
-                                                     && !contentsView.noteDocumentMountDecisionClean
-    readonly property bool noteDocumentParseMounted: noteBodyMountCoordinator.parseMounted
-    readonly property bool noteDocumentSourceMounted: noteBodyMountCoordinator.sourceMounted
-    readonly property bool noteDocumentMounted: noteBodyMountCoordinator.noteMounted
-    readonly property bool noteDocumentMountFailureVisible: noteBodyMountCoordinator.mountFailed
-    readonly property string noteDocumentMountFailureReason: noteBodyMountCoordinator.mountFailureReason
-    readonly property string noteDocumentMountFailureMessage: noteBodyMountCoordinator.mountFailureMessage
-    readonly property bool noteDocumentSurfaceVisible: noteBodyMountCoordinator.surfaceVisible
-    readonly property bool noteDocumentSurfaceInteractive: noteBodyMountCoordinator.surfaceInteractive
-    readonly property string noteDocumentExceptionReason: noteBodyMountCoordinator.exceptionReason
-    readonly property string noteDocumentExceptionTitle: noteBodyMountCoordinator.exceptionTitle
-    readonly property string noteDocumentExceptionMessage: noteBodyMountCoordinator.exceptionMessage
-    readonly property bool noteDocumentExceptionVisible: noteBodyMountCoordinator.exceptionVisible
-    readonly property bool noteDocumentCommandSurfaceEnabled: noteBodyMountCoordinator.commandSurfaceEnabled
-                                                             && !contentsView.showDedicatedResourceViewer
-                                                             && !contentsView.showFormattedTextRenderer
-    readonly property bool nativeTextInputPriority: surfacePolicy.nativeInputPriority
-    readonly property bool editorCustomTextInputEnabled: false
-    readonly property bool editorTagManagementInputEnabled: true
-    readonly property bool contextMenuLongPressEnabled: editorInputPolicyAdapter.contextMenuLongPressEnabled
-    readonly property bool noteDocumentShortcutSurfaceEnabled: editorInputPolicyAdapter.shortcutSurfaceEnabled
-    readonly property bool noteDocumentTagManagementShortcutSurfaceEnabled: editorInputPolicyAdapter.tagManagementShortcutSurfaceEnabled
-    readonly property bool noteDocumentContextMenuSurfaceEnabled: editorInputPolicyAdapter.contextMenuSurfaceEnabled
+    readonly property string selectedNoteBodyText: mountState.selectedNoteBodyText
+    readonly property string selectedNoteBodyNoteId: mountState.selectedNoteBodyNoteId
+    readonly property bool selectedNoteBodyResolved: mountState.selectedNoteBodyResolved
+    readonly property bool selectedNoteBodyLoading: mountState.selectedNoteBodyLoading
+    readonly property string selectedNoteId: mountState.selectedNoteId
+    readonly property string selectedNoteDirectoryPath: mountState.selectedNoteDirectoryPath
+    readonly property bool editorSessionBoundToSelectedNote: mountState.editorSessionBoundToSelectedNote
+    readonly property bool noteDocumentMountDecisionClean: mountState.noteDocumentMountDecisionClean
+    readonly property bool noteDocumentMountPending: mountState.noteDocumentMountPending
+    readonly property bool noteDocumentParseMounted: mountState.noteDocumentParseMounted
+    readonly property bool noteDocumentSourceMounted: mountState.noteDocumentSourceMounted
+    readonly property bool noteDocumentMounted: mountState.noteDocumentMounted
+    readonly property bool noteDocumentMountFailureVisible: mountState.noteDocumentMountFailureVisible
+    readonly property string noteDocumentMountFailureReason: mountState.noteDocumentMountFailureReason
+    readonly property string noteDocumentMountFailureMessage: mountState.noteDocumentMountFailureMessage
+    readonly property string noteDocumentExceptionReason: mountState.noteDocumentExceptionReason
+    readonly property string noteDocumentExceptionTitle: mountState.noteDocumentExceptionTitle
+    readonly property string noteDocumentExceptionMessage: mountState.noteDocumentExceptionMessage
+    readonly property bool noteDocumentExceptionVisible: mountState.noteDocumentExceptionVisible
+    readonly property bool nativeTextInputPriority: inputState.nativeTextInputPriority
+    readonly property bool editorCustomTextInputEnabled: inputState.editorCustomTextInputEnabled
+    readonly property bool editorTagManagementInputEnabled: inputState.editorTagManagementInputEnabled
+    readonly property bool contextMenuLongPressEnabled: inputState.contextMenuLongPressEnabled
+    readonly property bool noteDocumentShortcutSurfaceEnabled: inputState.noteDocumentShortcutSurfaceEnabled
+    readonly property bool noteDocumentTagManagementShortcutSurfaceEnabled: inputState.noteDocumentTagManagementShortcutSurfaceEnabled
+    readonly property bool noteDocumentContextMenuSurfaceEnabled: inputState.noteDocumentContextMenuSurfaceEnabled
     readonly property string structuredFlowSourceText: contentsView.documentPresentationSourceText
     readonly property bool liveResourceStructuredFlowRequested: resourceImportController.sourceContainsCanonicalResourceTag(
                                                                     contentsView.documentPresentationSourceText)
-    readonly property string activeSurfaceKind: surfacePolicy.activeSurfaceKind
-    readonly property bool structuredDocumentFlowRequested: surfacePolicy.structuredDocumentSurfaceRequested
+    readonly property string activeSurfaceKind: inputState.activeSurfaceKind
+    readonly property bool structuredDocumentFlowRequested: inputState.structuredDocumentFlowRequested
     readonly property bool resourceResolverNeedsLiveEditorSource: contentsView.showStructuredDocumentFlow
                                                                   || contentsView.liveResourceStructuredFlowRequested
-    readonly property bool resourceBlocksRenderedInlineByHtmlProjection: surfacePolicy.resourceBlocksRenderedInlineByHtmlProjection
+    readonly property bool resourceBlocksRenderedInlineByHtmlProjection: inputState.resourceBlocksRenderedInlineByHtmlProjection
     readonly property bool programmaticEditorSurfaceSyncActive: resourceImportController.programmaticEditorSurfaceSyncActive
-    readonly property bool showDedicatedResourceViewer: surfacePolicy.dedicatedResourceViewerVisible
+    readonly property bool showDedicatedResourceViewer: inputState.showDedicatedResourceViewer
     readonly property bool showEditorGutter: modePolicy.showEditorGutter
-    readonly property bool showFormattedTextRenderer: surfacePolicy.formattedTextRendererVisible
-    readonly property bool showStructuredDocumentFlow: surfacePolicy.structuredDocumentFlowVisible
+    readonly property bool showFormattedTextRenderer: inputState.showFormattedTextRenderer
+    readonly property bool showStructuredDocumentFlow: inputState.showStructuredDocumentFlow
     readonly property bool structuredHostGeometryActive: modePolicy.structuredHostGeometryActive
     readonly property bool showPageEditorLayout: pagePrintLayoutRenderer.showPageEditorLayout
     readonly property bool showPrintEditorLayout: pagePrintLayoutRenderer.showPrintEditorLayout
@@ -302,16 +290,34 @@ Item {
     readonly property real textOriginY: {
         return contentsView.editorDocumentStartY + contentsView.editorContentOffsetY;
     }
-    property var visibleGutterLineEntries: [
-        {
-            "lineNumber": 1,
-            "y": 0
-        }
-    ]
-    readonly property int visibleNoteCount: selectionBridge.visibleNoteCount
+    property alias visibleGutterLineEntries: geometryState.visibleGutterLineEntries
+    readonly property int visibleNoteCount: mountState.visibleNoteCount
 
     signal editorTextEdited(string text)
     signal viewHookRequested
+
+    EditorDisplayModel.ContentsDisplayGeometryState {
+        id: geometryState
+    }
+    EditorDisplayModel.ContentsDisplayPresentationState {
+        id: presentationState
+    }
+    EditorDisplayModel.ContentsDisplayResourceUiState {
+        id: resourceUiState
+    }
+    EditorDisplayModel.ContentsDisplayMountState {
+        id: mountState
+
+        editorSession: editorSession
+        noteBodyMountCoordinator: noteBodyMountCoordinator
+        selectionBridge: selectionBridge
+    }
+    EditorDisplayModel.ContentsDisplayInputState {
+        id: inputState
+
+        editorInputPolicyAdapter: editorInputPolicyAdapter
+        surfacePolicy: surfacePolicy
+    }
 
     function activeLogicalTextSnapshot() {
         if (editorTypingController && editorTypingController.currentEditorPlainText !== undefined) {
@@ -371,9 +377,23 @@ Item {
         return contentsView.structuredHostGeometryActive
                 && contentsView.effectiveStructuredLogicalLineEntries().length > 0;
     }
+    function effectiveStructuredMinimapEntries() {
+        if (!contentsView.structuredHostGeometryActive
+                || !structuredDocumentFlow
+                || structuredDocumentFlow.normalizedBlocks === undefined) {
+            return [];
+        }
+        return contentsView.normalizedSnapshotEntries(
+                    minimapCoordinator.buildStructuredMinimapSnapshotEntries(
+                        structuredDocumentFlow.normalizedBlocks()));
+    }
+    function hasStructuredMinimapEntries() {
+        return contentsView.structuredHostGeometryActive
+                && contentsView.effectiveStructuredMinimapEntries().length > 0;
+    }
     function currentMinimapSnapshotEntries() {
-        if (contentsView.hasStructuredLogicalLineGeometry())
-            return contentsView.normalizedSnapshotEntries(contentsView.effectiveStructuredLogicalLineEntries());
+        if (contentsView.hasStructuredMinimapEntries())
+            return contentsView.effectiveStructuredMinimapEntries();
         return contentsView.plainMinimapSnapshotEntries(contentsView.activeLogicalTextSnapshot());
     }
     function minimapSnapshotEntriesEqual(previousEntries, nextEntries) {
@@ -426,11 +446,12 @@ Item {
         return !!state.geometryChanged;
     }
     function buildStructuredMinimapLineGroupsForRange(startLineNumber, endLineNumber) {
-        const lineEntries = contentsView.effectiveStructuredLogicalLineEntries();
+        const snapshotEntries = contentsView.effectiveStructuredMinimapEntries();
         const groups = minimapCoordinator.buildStructuredMinimapLineGroupsForRange(
-                    lineEntries,
+                    snapshotEntries,
                     Number(startLineNumber) || 1,
-                    Number(endLineNumber) || Number(startLineNumber) || 1);
+                    Number(endLineNumber) || Number(startLineNumber) || 1,
+                    contentsView.editorOccupiedContentHeight());
         return groups.length > 0 ? groups : contentsView.buildFallbackMinimapLineGroupsForRange(startLineNumber, endLineNumber);
     }
     function buildFallbackMinimapLineGroupsForRange(startLineNumber, endLineNumber) {
@@ -495,9 +516,9 @@ Item {
     }
     function nextMinimapLineGroupsForCurrentState(currentSnapshotEntries) {
         const currentNoteId = contentsView.activeLineGeometryNoteId();
-        const useStructuredGeometry = contentsView.hasStructuredLogicalLineGeometry();
-        const structuredLineCount = useStructuredGeometry
-                ? contentsView.effectiveStructuredLogicalLineEntries().length
+        const useStructuredMinimap = contentsView.hasStructuredMinimapEntries();
+        const structuredLineCount = useStructuredMinimap
+                ? contentsView.effectiveStructuredMinimapEntries().length
                 : 0;
         const snapshotPlan = minimapCoordinator.buildNextMinimapSnapshotPlan(
                     contentsView.minimapLineGroups,
@@ -512,12 +533,12 @@ Item {
         if (snapshotPlan.reuseExisting)
             return contentsView.minimapLineGroups;
         if (snapshotPlan.requiresFullRebuild) {
-            return useStructuredGeometry
+            return useStructuredMinimap
                     ? contentsView.buildStructuredMinimapLineGroupsForRange(1, Math.max(1, structuredLineCount))
                     : contentsView.buildMinimapLineGroupsForRange(1, contentsView.logicalLineCount);
         }
 
-        const replacementGroups = useStructuredGeometry
+        const replacementGroups = useStructuredMinimap
                 ? contentsView.buildStructuredMinimapLineGroupsForRange(
                       Number(snapshotPlan.replacementStartLine) || 1,
                       Number(snapshotPlan.replacementEndLine) || 1)
@@ -528,12 +549,12 @@ Item {
                     contentsView.minimapLineGroups,
                     replacementGroups,
                     Number(snapshotPlan.previousStartLine) || 1,
-                    Number(snapshotPlan.previousEndLine) || 1);
-        const expectedLineCount = useStructuredGeometry
+                      Number(snapshotPlan.previousEndLine) || 1);
+        const expectedLineCount = useStructuredMinimap
                 ? Math.max(1, structuredLineCount)
                 : contentsView.logicalLineCount;
         if (!Array.isArray(mergedGroups) || mergedGroups.length !== expectedLineCount) {
-            return useStructuredGeometry
+            return useStructuredMinimap
                     ? contentsView.buildStructuredMinimapLineGroupsForRange(1, expectedLineCount)
                     : contentsView.buildMinimapLineGroupsForRange(1, expectedLineCount);
         }
@@ -727,6 +748,11 @@ Item {
         return editorY + documentY + contentsView.editorContentOffsetY;
     }
     function incrementalLineGeometryAvailable() {
+        if (contentsView.structuredHostGeometryActive) {
+            return !contentsView.hasPendingNoteEntryGutterRefresh()
+                    && contentsView.effectiveStructuredLogicalLineEntries().length === contentsView.logicalLineCount
+                    && contentsView.effectiveStructuredLogicalLineEntries().length > 0;
+        }
         return !contentsView.hasPendingNoteEntryGutterRefresh()
                 && Array.isArray(contentsView.minimapLineGroups)
                 && contentsView.minimapLineGroupsNoteId === contentsView.activeLineGeometryNoteId()
@@ -1195,6 +1221,23 @@ Item {
     }
     function minimapCurrentVisualRow(rowsOverride) {
         const rows = Array.isArray(rowsOverride) ? rowsOverride : (Array.isArray(contentsView.minimapVisualRows) ? contentsView.minimapVisualRows : []);
+        if (contentsView.structuredHostGeometryActive && rows.length > 0) {
+            const resolvedBlockIndex = structuredDocumentFlow
+                    && structuredDocumentFlow.normalizedResolvedInteractiveBlockIndex !== undefined
+                    ? Number(structuredDocumentFlow.normalizedResolvedInteractiveBlockIndex())
+                    : NaN;
+            const fallbackBlockIndex = structuredDocumentFlow
+                    && structuredDocumentFlow.activeBlockIndex !== undefined
+                    ? Number(structuredDocumentFlow.activeBlockIndex)
+                    : NaN;
+            const safeBlockIndex = isFinite(resolvedBlockIndex) && resolvedBlockIndex >= 0
+                    ? Math.floor(resolvedBlockIndex)
+                    : (isFinite(fallbackBlockIndex) && fallbackBlockIndex >= 0
+                       ? Math.floor(fallbackBlockIndex)
+                       : -1);
+            if (safeBlockIndex >= 0 && safeBlockIndex < rows.length)
+                return rows[safeBlockIndex];
+        }
         const textStartY = contentsView.editorDocumentStartY;
         const cursorRect = contentsView.currentCursorVisualRowRect();
         const cursorContentY = textStartY + (Number(cursorRect.y) || 0);
@@ -1823,7 +1866,6 @@ Item {
         editorViewport: editorViewport
         selectionBridge: selectionBridge
         selectionContextMenu: contentsView.inputCommandSurface ? contentsView.inputCommandSurface.selectionContextMenu : null
-        textFormatRenderer: editorProjection
         textMetricsBridge: editorProjection
         view: contentsView
     }
@@ -1866,7 +1908,7 @@ Item {
         editorInputFocused: contentsView.editorInputFocused
         editorTagManagementInputEnabled: contentsView.editorTagManagementInputEnabled
         nativeTextInputPriority: contentsView.nativeTextInputPriority
-        noteDocumentCommandSurfaceEnabled: contentsView.noteDocumentCommandSurfaceEnabled
+        noteDocumentParseMounted: contentsView.noteDocumentParseMounted
         structuredCompositionActive: structuredDocumentFlow
                                      && structuredDocumentFlow.nativeCompositionActive !== undefined
                                      && structuredDocumentFlow.nativeCompositionActive()
@@ -1896,18 +1938,12 @@ Item {
         editorBoundNoteId: contentsView.editorBoundNoteId === undefined || contentsView.editorBoundNoteId === null ? "" : String(contentsView.editorBoundNoteId)
         editorSessionBoundToSelectedNote: contentsView.editorSessionBoundToSelectedNote
         editorText: contentsView.editorText === undefined || contentsView.editorText === null ? "" : String(contentsView.editorText)
-        inlineDocumentSurfaceLoading: surfacePolicy.inlineDocumentSurfaceLoading
-        inlineDocumentSurfaceReady: surfacePolicy.inlineDocumentSurfaceReady
-        inlineDocumentSurfaceRequested: surfacePolicy.inlineDocumentSurfaceRequested
         pendingBodySave: contentsView.pendingBodySave
         selectedNoteBodyLoading: contentsView.selectedNoteBodyLoading
         selectedNoteBodyNoteId: contentsView.selectedNoteBodyNoteId === undefined || contentsView.selectedNoteBodyNoteId === null ? "" : String(contentsView.selectedNoteBodyNoteId)
         selectedNoteBodyText: contentsView.selectedNoteBodyText === undefined || contentsView.selectedNoteBodyText === null ? "" : String(contentsView.selectedNoteBodyText)
         selectedNoteBodyResolved: contentsView.selectedNoteBodyResolved
         selectedNoteId: contentsView.selectedNoteId === undefined || contentsView.selectedNoteId === null ? "" : String(contentsView.selectedNoteId)
-        structuredDocumentSurfaceReady: contentsView.structuredDocumentFlowRequested
-                                        && structuredDocumentFlow
-                                        && structuredDocumentFlow.visible
         structuredDocumentSurfaceRequested: contentsView.structuredDocumentFlowRequested
         visible: contentsView.visible
 
@@ -2006,7 +2042,7 @@ Item {
         editorDocumentStartY: Number(contentsView.editorDocumentStartY) || 0
         editorLineHeight: Number(contentsView.editorLineHeight) || 0
         logicalLineCount: Math.max(1, Number(contentsView.logicalLineCount) || 1)
-        structuredHostGeometryActive: contentsView.hasStructuredLogicalLineGeometry()
+        structuredHostGeometryActive: contentsView.hasStructuredMinimapEntries()
     }
     ContentsDisplayStructuredFlowCoordinator {
         id: structuredFlowCoordinator
@@ -2023,13 +2059,15 @@ Item {
         id: editorTypingController
 
         agendaBackend: contentsAgendaBackend
-        bodyTagInsertionPlanner: contentsBodyTagInsertionPlanner
         calloutBackend: contentsCalloutBackend
         contentEditor: contentsView.contentEditor
         editorSession: editorSession
-        textFormatRenderer: editorProjection
+        plainTextSourceMutator: plainTextSourceMutator
         textMetricsBridge: editorProjection
         view: contentsView
+    }
+    ContentsPlainTextSourceMutator {
+        id: plainTextSourceMutator
     }
     EditorResourceModel.ContentsResourceImportController {
         id: resourceImportController
@@ -2091,12 +2129,6 @@ Item {
     }
     ContentsCalloutBackend {
         id: contentsCalloutBackend
-    }
-    ContentsEditorBodyTagInsertionPlanner {
-        id: contentsBodyTagInsertionPlanner
-
-        agendaBackend: contentsAgendaBackend
-        calloutBackend: contentsCalloutBackend
     }
     ContentsStructuredBlockRenderer {
         id: structuredBlockRenderer
@@ -2188,7 +2220,6 @@ Item {
     EditorDisplayModel.ContentsDisplayMutationController {
         id: mutationController
 
-        contentEditor: contentsView.contentEditor
         contentsAgendaBackend: contentsAgendaBackend
         contentsView: contentsView
         editOperationCoordinator: editOperationCoordinator
@@ -2206,18 +2237,9 @@ Item {
 
         controller: mutationController
     }
-    ContentsActiveEditorSurfaceAdapter {
-        id: activeEditorSurfaceAdapter
-
-        contentEditor: null
-        inlineSurfaceActive: false
-        structuredDocumentFlow: structuredDocumentFlow
-        structuredSurfaceActive: contentsView.showStructuredDocumentFlow
-    }
     EditorDisplayModel.ContentsDisplaySelectionMountController {
         id: selectionMountController
 
-        activeEditorSurface: activeEditorSurfaceAdapter
         contentsView: contentsView
         editorSelectionController: editorSelectionController
         editorSession: editorSession
@@ -2225,6 +2247,7 @@ Item {
         noteBodyMountCoordinator: noteBodyMountCoordinator
         selectionBridge: selectionBridge
         selectionSyncCoordinator: selectionSyncCoordinator
+        structuredDocumentFlow: structuredDocumentFlow
         traceFormatter: traceFormatter
     }
     ContentsDisplaySelectionMountViewModel {

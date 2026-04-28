@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import "../format/ContentsRawInlineStyleMutationSupport.js" as RawInlineStyleMutationSupport
 
 QtObject {
     id: controller
@@ -46,7 +47,6 @@ QtObject {
     property var editorViewport: null
     property var selectionBridge: null
     property var selectionContextMenu: null
-    property var textFormatRenderer: null
     property var textMetricsBridge: null
     property var view: null
 
@@ -464,20 +464,7 @@ QtObject {
         }
     }
     function normalizeInlineStyleTag(tagName) {
-        const normalizedTagName = tagName === undefined || tagName === null ? "" : String(tagName).trim().toLowerCase();
-        if (normalizedTagName === "plain" || normalizedTagName === "clear" || normalizedTagName === "none")
-            return "plain";
-        if (normalizedTagName === "bold" || normalizedTagName === "b" || normalizedTagName === "strong")
-            return "bold";
-        if (normalizedTagName === "italic" || normalizedTagName === "i" || normalizedTagName === "em")
-            return "italic";
-        if (normalizedTagName === "underline" || normalizedTagName === "u")
-            return "underline";
-        if (normalizedTagName === "strikethrough" || normalizedTagName === "strike" || normalizedTagName === "s" || normalizedTagName === "del")
-            return "strikethrough";
-        if (normalizedTagName === "highlight" || normalizedTagName === "mark")
-            return "highlight";
-        return "";
+        return RawInlineStyleMutationSupport.normalizedInlineStyleTag(tagName);
     }
     function normalizeSelectionTextValue(text) {
         let normalizedText = text === undefined || text === null ? "" : String(text);
@@ -629,8 +616,6 @@ QtObject {
         const normalizedTagName = controller.normalizeInlineStyleTag(tagName);
         if (normalizedTagName.length === 0)
             return false;
-        if (!controller.textFormatRenderer || controller.textFormatRenderer.applyInlineStyleToLogicalSelectionSource === undefined)
-            return false;
         let selectionRange = controller.resolveSelectionSnapshot(explicitSelectionRange || null);
         if (selectionRange.end <= selectionRange.start)
             selectionRange = controller.selectedEditorRange();
@@ -644,7 +629,14 @@ QtObject {
         const boundedEnd = Math.max(0, Math.min(logicalLength, Math.floor(selectionRange.end)));
         if (boundedEnd <= boundedStart)
             return false;
-        const nextText = controller.textFormatRenderer.applyInlineStyleToLogicalSelectionSource(currentText, boundedStart, boundedEnd, normalizedTagName);
+        const mutationPayload = RawInlineStyleMutationSupport.buildInlineStyleSelectionPayload(
+                    currentText,
+                    boundedStart,
+                    boundedEnd,
+                    normalizedTagName);
+        if (!mutationPayload || !mutationPayload.applied)
+            return false;
+        const nextText = String(mutationPayload.nextSourceText);
         if (nextText.length === 0 && currentText.length > 0)
             return false;
         if (controller.resourceTagLossDetectedForMutation(currentText, nextText)) {

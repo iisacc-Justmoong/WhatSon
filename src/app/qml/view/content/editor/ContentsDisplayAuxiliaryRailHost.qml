@@ -32,7 +32,7 @@ Item {
         LayoutMirroring.enabled: false
         layoutDirection: Qt.LeftToRight
         spacing: 0
-        visible: contentsView.hasSelectedNote && contentsView.noteDocumentSurfaceVisible
+        visible: contentsView.hasSelectedNote && contentsView.noteDocumentParseMounted
 
         ContentsDisplayGutterHost {
             contentsView: auxiliaryHost.contentsView

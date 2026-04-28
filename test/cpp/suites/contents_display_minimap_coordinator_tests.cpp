@@ -10,31 +10,51 @@ void WhatSonCppRegressionTests::contentsDisplayMinimapCoordinator_splicesNormali
     coordinator.setEditorLineHeight(12.0);
     coordinator.setLogicalLineCount(3);
 
-    QVariantList structuredLineEntries;
-    structuredLineEntries.push_back(QVariantMap {
-        { QStringLiteral("charCount"), 12 },
-        { QStringLiteral("contentAvailableWidth"), 200.0 },
-        { QStringLiteral("contentHeight"), 24.0 },
-        { QStringLiteral("contentWidth"), 120.0 },
-        { QStringLiteral("contentY"), 20.0 },
-        { QStringLiteral("rowCount"), 2 },
-        { QStringLiteral("visualRowWidths"), QVariantList { 80.0, 120.0 } },
+    QVariantList blockEntries;
+    blockEntries.push_back(QVariantMap {
+        { QStringLiteral("minimapRepresentativeCharCount"), 0 },
+        { QStringLiteral("minimapVisualKind"), QStringLiteral("text") },
+        { QStringLiteral("plainText"), QStringLiteral("Alpha beta") },
+        { QStringLiteral("sourceEnd"), 10 },
+        { QStringLiteral("sourceStart"), 0 },
+        { QStringLiteral("sourceText"), QStringLiteral("Alpha beta") },
+        { QStringLiteral("type"), QStringLiteral("text-group") },
+    });
+    blockEntries.push_back(QVariantMap {
+        { QStringLiteral("minimapRepresentativeCharCount"), 160 },
+        { QStringLiteral("minimapVisualKind"), QStringLiteral("block") },
+        { QStringLiteral("plainText"), QString() },
+        { QStringLiteral("sourceEnd"), 36 },
+        { QStringLiteral("sourceStart"), 10 },
+        { QStringLiteral("sourceText"), QStringLiteral("<resource type=\"image\" />") },
+        { QStringLiteral("type"), QStringLiteral("resource") },
     });
 
+    const QVariantList snapshotEntries = coordinator.buildStructuredMinimapSnapshotEntries(blockEntries);
+    QCOMPARE(snapshotEntries.size(), 2);
+    QCOMPARE(snapshotEntries.at(0).toMap().value(QStringLiteral("charCount")).toInt(), 10);
+    QCOMPARE(
+        snapshotEntries.at(1).toMap().value(QStringLiteral("minimapVisualKind")).toString(),
+        QStringLiteral("block"));
+
     const QVariantList structuredGroups = coordinator.buildStructuredMinimapLineGroupsForRange(
-        structuredLineEntries,
+        snapshotEntries,
         1,
-        1);
-    QCOMPARE(structuredGroups.size(), 1);
-    const QVariantMap structuredGroup = structuredGroups.first().toMap();
-    QCOMPARE(structuredGroup.value(QStringLiteral("contentAvailableWidth")).toDouble(), 200.0);
-    QCOMPARE(structuredGroup.value(QStringLiteral("contentWidth")).toDouble(), 120.0);
-    QCOMPARE(structuredGroup.value(QStringLiteral("contentY")).toDouble(), 25.0);
-    QCOMPARE(structuredGroup.value(QStringLiteral("rowCount")).toInt(), 2);
-    const QVariantList visualRowWidths = structuredGroup.value(QStringLiteral("visualRowWidths")).toList();
-    QCOMPARE(visualRowWidths.size(), 2);
-    QCOMPARE(visualRowWidths.at(0).toDouble(), 80.0);
-    QCOMPARE(visualRowWidths.at(1).toDouble(), 120.0);
+        2,
+        90.0);
+    QCOMPARE(structuredGroups.size(), 2);
+    const QVariantMap firstStructuredGroup = structuredGroups.at(0).toMap();
+    const QVariantMap secondStructuredGroup = structuredGroups.at(1).toMap();
+    QCOMPARE(firstStructuredGroup.value(QStringLiteral("contentAvailableWidth")).toDouble(), 160.0);
+    QCOMPARE(firstStructuredGroup.value(QStringLiteral("contentWidth")).toDouble(), 12.0);
+    QCOMPARE(firstStructuredGroup.value(QStringLiteral("contentY")).toDouble(), 5.0);
+    QCOMPARE(firstStructuredGroup.value(QStringLiteral("rowCount")).toInt(), 1);
+    QCOMPARE(
+        secondStructuredGroup.value(QStringLiteral("minimapVisualKind")).toString(),
+        QStringLiteral("block"));
+    QCOMPARE(secondStructuredGroup.value(QStringLiteral("contentWidth")).toDouble(), 148.0);
+    QCOMPARE(secondStructuredGroup.value(QStringLiteral("contentY")).toDouble(), 35.0);
+    QCOMPARE(secondStructuredGroup.value(QStringLiteral("rowCount")).toInt(), 1);
 
     QVariantList currentLineGroups;
     currentLineGroups.push_back(QVariantMap { { QStringLiteral("lineNumber"), 1 } });

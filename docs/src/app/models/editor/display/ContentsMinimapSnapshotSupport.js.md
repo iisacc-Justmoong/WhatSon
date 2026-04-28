@@ -14,15 +14,14 @@ Provides the shared incremental minimap snapshot helpers used by both desktop an
 - `flattenLineGroups(lineGroups, fallbackLineHeight)`
   Converts logical-line groups back into the flat minimap row list consumed by `ContentsMinimapLayer.qml`.
   Structured block groups may also carry row-style hints such as `contentWidth`, `contentAvailableWidth`,
-  `visualRowWidths`, `minimapRowCharCount`, and `minimapVisualKind`, letting the same flattening pass preserve the
-  measured visual silhouette instead of always slicing one group's total text length across every visual row.
+  `visualRowWidths`, `minimapRowCharCount`, and `minimapVisualKind`, letting the same flattening pass preserve either
+  parser-derived block silhouettes or measured plain-text row widths without owning those policies itself.
 
 ## Notes
 
-- The helper is intentionally text-only.
-  It does not call `positionToRectangle(...)` itself; the owning editor QML files still own geometry sampling.
-- This keeps the shared contract pure and lets each view decide when a full rebuild is required because of layout
-  changes instead of text changes.
+- The helper is intentionally paint-model only.
+  It does not call `positionToRectangle(...)` itself; the owning editor QML files and coordinators still decide
+  whether a given note uses parser-derived block rows or measured text geometry.
 - The helper still does not know editor-specific block types directly; it only honors the optional visual-hint fields
   already attached by the owning QML host.
 - Incremental splices preserve measured minimap width metadata so a changed middle line does not collapse neighboring
@@ -30,11 +29,9 @@ Provides the shared incremental minimap snapshot helpers used by both desktop an
 
 ## Tests
 
-- Automated test files are not currently present in this repository.
-- Regression checklist:
-  - A single-line edit must return a changed-line range confined to that logical line.
-  - Inserting or deleting a newline must widen the affected range so the following logical-line numbering can shift.
-  - Splicing replacement groups must preserve untouched prefix groups and shift suffix `lineNumber` / `contentY`
-    values by the exact replacement delta.
-  - Structured text/resource groups that carry `visualRowWidths` must keep those per-row widths after
-    splicing/flattening instead of regressing to text-segment slicing.
+- Regression coverage lives in
+  `test/cpp/suites/contents_display_minimap_coordinator_tests.cpp`.
+- The maintained checks cover:
+  - changed-line range confinement for ordinary text edits,
+  - suffix/prefix splice stability for cached minimap groups,
+  - preservation of explicit `visualRowWidths` during flattening.

@@ -23,9 +23,6 @@ void WhatSonCppRegressionTests::contentsDisplaySurfacePolicy_disablesLegacyInlin
     ContentsDisplaySurfacePolicy policy;
     policy.setHasSelectedNote(true);
 
-    QCOMPARE(policy.inlineDocumentSurfaceRequested(), false);
-    QCOMPARE(policy.inlineDocumentSurfaceReady(), false);
-    QCOMPARE(policy.inlineDocumentSurfaceLoading(), false);
     QCOMPARE(policy.inlineHtmlImageRenderingEnabled(), false);
     QCOMPARE(policy.resourceBlocksRenderedInlineByHtmlProjection(), false);
 
@@ -33,7 +30,6 @@ void WhatSonCppRegressionTests::contentsDisplaySurfacePolicy_disablesLegacyInlin
 
     QCOMPARE(policy.activeSurfaceKind(), QStringLiteral("formattedPreview"));
     QCOMPARE(policy.structuredDocumentSurfaceRequested(), false);
-    QCOMPARE(policy.inlineDocumentSurfaceRequested(), false);
     QCOMPARE(policy.formattedTextRendererVisible(), true);
     QCOMPARE(policy.documentPresentationProjectionEnabled(), true);
 }

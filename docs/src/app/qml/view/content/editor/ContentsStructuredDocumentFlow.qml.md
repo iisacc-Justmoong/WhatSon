@@ -9,6 +9,9 @@ source.
   `ContentsStructuredEditorFormattingController.qml`.
   The flow exposes the same public formatting hooks to the outer host, but those hooks now delegate into a
   flow-level editor object instead of calling block-local delegate mutation methods directly.
+  Selected-range formatting rewrites are built by the pure helper
+  `src/app/models/editor/format/ContentsRawInlineStyleMutationSupport.js`, so the flow still mutates RAW source
+  directly instead of routing selection writes through the renderer bridge.
 - The flow consumes raw parsed `renderedDocumentBlocks` plus `renderedResources`, then builds a second
   interaction-only block stream before it lays the note out.
 - Parsed block boundaries therefore remain available for parsing, linting, and block-local render traits, but the
@@ -153,9 +156,9 @@ source.
   instead of focusing the atomic resource card.
 - Structured resource insertion now also refuses empty/no-op payloads instead of reporting success on an unchanged RAW
   snapshot.
-- Structured agenda/callout/break shortcut insertion now asks `ContentsEditorBodyTagInsertionPlanner` for the canonical
-  RAW tag insertion payload. The flow no longer assembles those tag strings itself; it only supplies the active
-  source-offset anchor or selected source range and emits the resulting source mutation upward.
+- Structured agenda/callout/break shortcut insertion now asks `ContentsRawBodyTagMutationSupport.js` for the canonical
+  RAW tag insertion payload. The flow only supplies the active source-offset anchor or selected source range and emits
+  the resulting source mutation upward.
 - When text is selected, callout shortcut insertion wraps that selected RAW range with explicit
   `<callout>...</callout>` tags before the parser rematerializes the visual callout block.
 - Callout delegate plain-Enter exit requests now carry the source cursor into the flow, so the backend can close the

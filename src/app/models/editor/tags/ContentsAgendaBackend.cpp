@@ -43,6 +43,35 @@ namespace
         };
     }
 
+    QString escapeSourceLiteral(QString text);
+
+    QVariantMap buildAgendaInsertionPayload(const bool done, const QString& taskText)
+    {
+        QString escapedTaskBodyText = escapeSourceLiteral(taskText);
+        const bool insertedEmptyAnchor = escapedTaskBodyText.trimmed().isEmpty();
+        if (insertedEmptyAnchor)
+        {
+            // Keep one editable anchor character so empty shortcut agendas remain cursor-reachable in editor text metrics.
+            escapedTaskBodyText = QStringLiteral(" ");
+        }
+
+        const QString doneValue = done ? QStringLiteral("true") : QStringLiteral("false");
+        const QString agendaOpenTag = QStringLiteral("<agenda date=\"%1\"><task done=\"%2\">")
+                                          .arg(QDate::currentDate().toString(QStringLiteral("yyyy-MM-dd")), doneValue);
+        const QString agendaCloseTag = QStringLiteral("</task></agenda>");
+        const int cursorSourceOffsetFromInsertionStart = insertedEmptyAnchor
+                                                             ? agendaOpenTag.size()
+                                                             : agendaOpenTag.size() + escapedTaskBodyText.size();
+
+        return {
+            {QStringLiteral("applied"), true},
+            {QStringLiteral("agendaOpenTag"), agendaOpenTag},
+            {QStringLiteral("agendaCloseTag"), agendaCloseTag},
+            {QStringLiteral("cursorSourceOffsetFromInsertionStart"), cursorSourceOffsetFromInsertionStart},
+            {QStringLiteral("insertionSourceText"), agendaOpenTag + escapedTaskBodyText + agendaCloseTag}
+        };
+    }
+
     int boundedQStringSize(const QString& text)
     {
         constexpr qsizetype maxIntSize = static_cast<qsizetype>(std::numeric_limits<int>::max());
@@ -568,38 +597,6 @@ QString ContentsAgendaBackend::rewriteTaskDoneAttribute(
     QString rewrittenSource = sourceText;
     rewrittenSource.replace(safeStart, safeEnd - safeStart, rewrittenOpenTag);
     return rewrittenSource;
-}
-
-QVariantMap ContentsAgendaBackend::buildAgendaInsertionPayload(
-    const bool done,
-    const QString& taskText) const
-{
-    QString escapedTaskBodyText = escapeSourceLiteral(taskText);
-    const bool insertedEmptyAnchor = escapedTaskBodyText.trimmed().isEmpty();
-    if (insertedEmptyAnchor)
-    {
-        // Keep one editable anchor character so empty shortcut agendas remain cursor-reachable in editor text metrics.
-        escapedTaskBodyText = QStringLiteral(" ");
-    }
-    const QString doneValue = done ? QStringLiteral("true") : QStringLiteral("false");
-    const QString agendaOpenTag = QStringLiteral("<agenda date=\"%1\"><task done=\"%2\">")
-                                      .arg(todayIsoDate(), doneValue);
-    const QString agendaCloseTag = QStringLiteral("</task></agenda>");
-    const int cursorSourceOffsetFromInsertionStart = insertedEmptyAnchor
-                                                         ? agendaOpenTag.size()
-                                                         : agendaOpenTag.size() + escapedTaskBodyText.size();
-
-    QVariantMap insertionPayload;
-    insertionPayload.insert(QStringLiteral("applied"), true);
-    insertionPayload.insert(QStringLiteral("agendaOpenTag"), agendaOpenTag);
-    insertionPayload.insert(QStringLiteral("agendaCloseTag"), agendaCloseTag);
-    insertionPayload.insert(
-        QStringLiteral("cursorSourceOffsetFromInsertionStart"),
-        cursorSourceOffsetFromInsertionStart);
-    insertionPayload.insert(
-        QStringLiteral("insertionSourceText"),
-        agendaOpenTag + escapedTaskBodyText + agendaCloseTag);
-    return insertionPayload;
 }
 
 QVariantMap ContentsAgendaBackend::detectTodoShortcutReplacement(

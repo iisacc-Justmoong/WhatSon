@@ -12,6 +12,7 @@ Item {
     property var textBlock: null
     property var blockEditor: null
     property var inlineStyleRenderer: null
+    property var plainTextSourceMutator: null
     property bool hasLiveEditSnapshot: false
     property string liveEditPlainText: ""
     property string liveEditSourceText: ""
@@ -347,8 +348,8 @@ Item {
             controller.commitPlainTextRawMutation(nextPlainText, previousSourceText);
             return;
         }
-        if (!controller.inlineStyleRenderer
-                || controller.inlineStyleRenderer.applyPlainTextReplacementToSource === undefined)
+        if (!controller.plainTextSourceMutator
+                || controller.plainTextSourceMutator.applyPlainTextReplacementToSource === undefined)
             return;
         const replacementDelta = controller.computePlainTextReplacementDelta(previousPlainText, nextPlainText);
         if (!replacementDelta.valid)
@@ -361,7 +362,7 @@ Item {
                     previousSourceText,
                     replacementDelta.previousEnd,
                     0);
-        const nextSourceText = String(controller.inlineStyleRenderer.applyPlainTextReplacementToSource(
+        const nextSourceText = String(controller.plainTextSourceMutator.applyPlainTextReplacementToSource(
                                           previousSourceText,
                                           replacementSourceStart,
                                           replacementSourceEnd,

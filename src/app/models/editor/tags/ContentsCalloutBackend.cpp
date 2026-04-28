@@ -79,17 +79,6 @@ namespace
         return text;
     }
 
-    QString escapeSourceLiteral(QString text)
-    {
-        text = normalizePlainText(text);
-        text.replace(QStringLiteral("&"), QStringLiteral("&amp;"));
-        text.replace(QStringLiteral("<"), QStringLiteral("&lt;"));
-        text.replace(QStringLiteral(">"), QStringLiteral("&gt;"));
-        text.replace(QStringLiteral("\""), QStringLiteral("&quot;"));
-        text.replace(QStringLiteral("'"), QStringLiteral("&#39;"));
-        return text;
-    }
-
     QString decodeSourceEntities(QString text)
     {
         text.replace(QStringLiteral("&lt;"), QStringLiteral("<"));
@@ -246,34 +235,6 @@ QVariantList ContentsCalloutBackend::parseCallouts(const QString& sourceText)
 
     updateLastParseVerification(tagLinter.buildCalloutVerification(sourceText, confirmedCalloutCount));
     return callouts;
-}
-
-QVariantMap ContentsCalloutBackend::buildCalloutInsertionPayload(const QString& bodyText) const
-{
-    QString escapedBodyText = escapeSourceLiteral(bodyText);
-    const bool insertedEmptyAnchor = escapedBodyText.trimmed().isEmpty();
-    if (insertedEmptyAnchor)
-    {
-        // Keep one editable anchor character so empty shortcut callouts remain cursor-reachable.
-        escapedBodyText = QStringLiteral(" ");
-    }
-    const QString calloutOpenTag = QStringLiteral("<callout>");
-    const QString calloutCloseTag = QStringLiteral("</callout>");
-    const int cursorSourceOffsetFromInsertionStart = insertedEmptyAnchor
-                                                         ? calloutOpenTag.size()
-                                                         : calloutOpenTag.size() + escapedBodyText.size();
-
-    QVariantMap insertionPayload;
-    insertionPayload.insert(QStringLiteral("applied"), true);
-    insertionPayload.insert(QStringLiteral("calloutOpenTag"), calloutOpenTag);
-    insertionPayload.insert(QStringLiteral("calloutCloseTag"), calloutCloseTag);
-    insertionPayload.insert(
-        QStringLiteral("cursorSourceOffsetFromInsertionStart"),
-        cursorSourceOffsetFromInsertionStart);
-    insertionPayload.insert(
-        QStringLiteral("insertionSourceText"),
-        calloutOpenTag + escapedBodyText + calloutCloseTag);
-    return insertionPayload;
 }
 
 QVariantMap ContentsCalloutBackend::detectCalloutEnterReplacement(

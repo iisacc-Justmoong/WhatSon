@@ -18,10 +18,13 @@ gain new session, persistence, parsing, mutation, scheduling, or command-surface
 - `ContentsDisplayGutterCoordinator.*`
   Keeps gutter state derived from the same editor document projection as the visible body.
 - `ContentsDisplayMinimapCoordinator.*`
-  Owns minimap snapshot reuse and rebuild decisions for structured editor geometry, including measured row-width metadata
-  that lets the minimap preserve the note body's silhouette.
+  Owns minimap snapshot reuse and rebuild decisions.
+  Its structured path now consumes parser-normalized block entries directly, producing one minimap row per block/tag
+  and reserving block-like silhouettes only for visual entries such as resources.
 - `ContentsDisplayNoteBodyMountCoordinator.*`
   Drives note-body mount, retry, and exception plans while the selected RAW body is converging.
+  It no longer publishes separate surface-ready or surface-interactive state; parse-mounted `.wsnbody` is the only
+  readiness authority exposed upward.
 - `ContentsDisplayPresentationRefreshController.*` and `ContentsDisplayRefreshCoordinator.*`
   Keep presentation refresh requests explicit instead of burying them in QML timers.
 - `ContentsDisplaySelectionSyncCoordinator.*`
@@ -53,8 +56,8 @@ gain new session, persistence, parsing, mutation, scheduling, or command-surface
 - `ContentsEditorSurfaceModeSupport.js`
   Resolves whether `ContentViewLayout.qml` should mount the note editor surface or direct resource editor surface.
 - `ContentsMinimapSnapshotSupport.js`
-  Normalizes changed-line ranges and minimap snapshot rows for editor display refreshes while preserving measured
-  `contentWidth` / `visualRowWidths` metadata.
+  Normalizes changed-line ranges and minimap snapshot rows for editor display refreshes while preserving whichever row
+  width metadata the owning minimap path already chose, including parser-derived block silhouettes.
 
 ## Boundary
 

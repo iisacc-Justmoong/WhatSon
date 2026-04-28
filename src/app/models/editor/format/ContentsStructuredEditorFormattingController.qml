@@ -1,7 +1,7 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
-import WhatSon.App.Internal 1.0
+import "ContentsRawInlineStyleMutationSupport.js" as RawInlineStyleMutationSupport
 import "../structure/ContentsStructuredCursorSupport.js" as StructuredCursorSupport
 
 QtObject {
@@ -9,28 +9,9 @@ QtObject {
 
     property var blockRepeater: null
     property var documentFlow: null
-    property bool paperPaletteEnabled: false
-    property QtObject inlineStyleRenderer: ContentsTextFormatRenderer {
-        paperPaletteEnabled: controller.paperPaletteEnabled
-    }
 
     function normalizedInlineStyleTag(tagName) {
-        const normalizedTagName = tagName === undefined || tagName === null
-                ? ""
-                : String(tagName).trim().toLowerCase()
-        if (normalizedTagName === "bold" || normalizedTagName === "b" || normalizedTagName === "strong")
-            return "bold"
-        if (normalizedTagName === "italic" || normalizedTagName === "i" || normalizedTagName === "em")
-            return "italic"
-        if (normalizedTagName === "underline" || normalizedTagName === "u")
-            return "underline"
-        if (normalizedTagName === "strikethrough" || normalizedTagName === "strike" || normalizedTagName === "s" || normalizedTagName === "del")
-            return "strikethrough"
-        if (normalizedTagName === "highlight" || normalizedTagName === "mark")
-            return "highlight"
-        if (normalizedTagName === "plain" || normalizedTagName === "clear" || normalizedTagName === "none")
-            return "plain"
-        return ""
+        return RawInlineStyleMutationSupport.normalizedInlineStyleTag(tagName)
     }
 
     function adjustedCursorPositionForSelectionMutation(selectionSnapshot, previousSelectionStart, previousSelectionEnd, nextSelectionStart, nextSelectionEnd) {
@@ -294,11 +275,15 @@ QtObject {
         if (blockSourceEnd <= blockSourceStart)
             return false
 
-        const nextBlockSourceText = String(controller.inlineStyleRenderer.applyInlineStyleToLogicalSelectionSource(
-                                               blockSourceText,
-                                               selectionStart,
-                                               selectionEnd,
-                                               normalizedTagName))
+        const mutationPayload = RawInlineStyleMutationSupport.buildInlineStyleSelectionPayload(
+                    blockSourceText,
+                    selectionStart,
+                    selectionEnd,
+                    normalizedTagName)
+        if (!mutationPayload || !mutationPayload.applied)
+            return false
+
+        const nextBlockSourceText = String(mutationPayload.nextSourceText)
         if (nextBlockSourceText === blockSourceText)
             return false
 

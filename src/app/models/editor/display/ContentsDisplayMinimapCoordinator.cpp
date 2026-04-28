@@ -3,9 +3,15 @@
 #include <QtGlobal>
 
 #include <QStringList>
+#include <QVector>
 
 namespace
 {
+constexpr double kStructuredMinimapSyntheticAvailableWidth = 160.0;
+constexpr double kStructuredMinimapResourceWidth = 148.0;
+constexpr double kStructuredMinimapBreakWidth = 52.0;
+constexpr double kStructuredMinimapMinimumTextWidth = 12.0;
+
 QVariantList normalizedSnapshotEntries(const QVariant& rawEntries)
 {
     if (!rawEntries.isValid() || rawEntries.isNull())
@@ -41,6 +47,106 @@ QStringList minimapSnapshotTokens(const QVariant& rawEntries)
     for (int index = 0; index < entries.size(); ++index)
         tokens.push_back(minimapSnapshotToken(entries.at(index), index));
     return tokens;
+}
+
+QString normalizedMinimapPlainText(QString text)
+{
+    text.replace(QStringLiteral("\r\n"), QStringLiteral("\n"));
+    text.replace(QLatin1Char('\r'), QLatin1Char('\n'));
+    text.replace(QChar::LineSeparator, QLatin1Char('\n'));
+    text.replace(QChar::ParagraphSeparator, QLatin1Char('\n'));
+    return text;
+}
+
+QString normalizedMinimapVisualKind(const QVariantMap& entry)
+{
+    const QString visualKind = entry.value(QStringLiteral("minimapVisualKind")).toString().trimmed().toLower();
+    if (!visualKind.isEmpty())
+        return visualKind;
+
+    const QString typeName = entry.value(QStringLiteral("type")).toString().trimmed().toLower();
+    if (typeName == QStringLiteral("resource"))
+        return QStringLiteral("block");
+    return QStringLiteral("text");
+}
+
+QString normalizedMinimapBlockType(const QVariantMap& entry)
+{
+    return entry.value(QStringLiteral("type")).toString().trimmed().toLower();
+}
+
+QString normalizedMinimapBlockPlainText(const QVariantMap& entry)
+{
+    if (entry.contains(QStringLiteral("plainText")))
+        return normalizedMinimapPlainText(entry.value(QStringLiteral("plainText")).toString());
+    if (entry.contains(QStringLiteral("sourceText")))
+        return normalizedMinimapPlainText(entry.value(QStringLiteral("sourceText")).toString());
+    return {};
+}
+
+int parsedMinimapCharCount(const QVariantMap& entry)
+{
+    QString visibleText = normalizedMinimapBlockPlainText(entry);
+    visibleText.remove(QLatin1Char('\n'));
+    visibleText.remove(QLatin1Char('\r'));
+    const int visibleCharCount = qMax(0, visibleText.size());
+    if (visibleCharCount > 0)
+        return visibleCharCount;
+    return qMax(0, entry.value(QStringLiteral("minimapRepresentativeCharCount")).toInt());
+}
+
+double parsedMinimapWeight(const QVariantMap& entry)
+{
+    const QString visualKind = normalizedMinimapVisualKind(entry);
+    const QString typeName = normalizedMinimapBlockType(entry);
+    if (visualKind == QStringLiteral("block"))
+        return 2.0;
+    if (typeName == QStringLiteral("break"))
+        return 0.75;
+    return 1.0;
+}
+
+double parsedMinimapContentWidth(const QVariantMap& entry, const int charCount)
+{
+    const QString visualKind = normalizedMinimapVisualKind(entry);
+    const QString typeName = normalizedMinimapBlockType(entry);
+    if (visualKind == QStringLiteral("block"))
+        return kStructuredMinimapResourceWidth;
+    if (typeName == QStringLiteral("break"))
+        return kStructuredMinimapBreakWidth;
+    if (charCount <= 0)
+        return 0.0;
+    return qMin(
+        kStructuredMinimapSyntheticAvailableWidth,
+        qMax(kStructuredMinimapMinimumTextWidth, static_cast<double>(charCount)));
+}
+
+QVariantMap structuredMinimapSnapshotEntry(const QVariantMap& blockEntry, const int lineNumber)
+{
+    const QString sourceText = normalizedMinimapPlainText(blockEntry.value(QStringLiteral("sourceText")).toString());
+    const QString plainText = normalizedMinimapBlockPlainText(blockEntry);
+    const int sourceStart = qMax(0, blockEntry.value(QStringLiteral("sourceStart")).toInt());
+    const int sourceEnd = qMax(sourceStart, blockEntry.value(QStringLiteral("sourceEnd")).toInt());
+    const QString visualKind = normalizedMinimapVisualKind(blockEntry);
+    const int charCount = parsedMinimapCharCount(blockEntry);
+    QVariantMap entry;
+    entry.insert(QStringLiteral("charCount"), charCount);
+    entry.insert(QStringLiteral("lineNumber"), qMax(1, lineNumber));
+    entry.insert(
+        QStringLiteral("minimapRepresentativeCharCount"),
+        qMax(0, blockEntry.value(QStringLiteral("minimapRepresentativeCharCount")).toInt()));
+    entry.insert(QStringLiteral("minimapVisualKind"), visualKind);
+    entry.insert(QStringLiteral("plainText"), plainText);
+    entry.insert(
+        QStringLiteral("snapshotToken"),
+        QStringLiteral("block|%1|%2|%3|%4|%5")
+            .arg(visualKind)
+            .arg(sourceStart)
+            .arg(sourceEnd)
+            .arg(charCount)
+            .arg(sourceText));
+    entry.insert(QStringLiteral("type"), normalizedMinimapBlockType(blockEntry));
+    return entry;
 }
 }
 
@@ -110,36 +216,96 @@ QVariantMap ContentsDisplayMinimapCoordinator::currentCursorVisualRowRectFromTex
     return normalizeCursorRect(rawRect, qMax(0.0, fallbackDocumentY), qMax(1.0, m_editorLineHeight), true);
 }
 
-QVariantList ContentsDisplayMinimapCoordinator::buildStructuredMinimapLineGroupsForRange(
-    const QVariantList& lineEntries,
-    const int startLineNumber,
-    const int endLineNumber) const
+QVariantList ContentsDisplayMinimapCoordinator::buildStructuredMinimapSnapshotEntries(
+    const QVariantList& blockEntries) const
 {
-    if (lineEntries.isEmpty())
+    QVariantList entries;
+    entries.reserve(blockEntries.size());
+    for (int blockIndex = 0; blockIndex < blockEntries.size(); ++blockIndex)
+    {
+        entries.push_back(
+            structuredMinimapSnapshotEntry(
+                blockEntries.at(blockIndex).toMap(),
+                blockIndex + 1));
+    }
+
+    if (entries.isEmpty())
+    {
+        entries.push_back(structuredMinimapSnapshotEntry(QVariantMap{}, 1));
+    }
+
+    return entries;
+}
+
+QVariantList ContentsDisplayMinimapCoordinator::buildStructuredMinimapLineGroupsForRange(
+    const QVariantList& snapshotEntries,
+    const int startLineNumber,
+    const int endLineNumber,
+    const double documentContentHeight) const
+{
+    if (snapshotEntries.isEmpty())
         return {};
 
-    const int safeStartLine = qMax(1, qMin(lineEntries.size(), startLineNumber));
-    const int safeEndLine = qMax(safeStartLine, qMin(lineEntries.size(), endLineNumber));
-    QVariantList groups;
-    for (int lineIndex = safeStartLine - 1; lineIndex < safeEndLine; ++lineIndex)
+    const int safeStartLine = qMax(1, qMin(snapshotEntries.size(), startLineNumber));
+    const int safeEndLine = qMax(safeStartLine, qMin(snapshotEntries.size(), endLineNumber));
+    const double safeFallbackContentHeight = qMax(
+        qMax(1.0, m_editorLineHeight),
+        static_cast<double>(snapshotEntries.size()) * qMax(1.0, m_editorLineHeight));
+    const double safeDocumentContentHeight = qMax(safeFallbackContentHeight, documentContentHeight);
+
+    QVector<double> weights;
+    weights.reserve(snapshotEntries.size());
+    double totalWeight = 0.0;
+    for (const QVariant& rawEntry : snapshotEntries)
     {
-        const QVariantMap entry = lineEntries.at(lineIndex).toMap();
-        const QVariantList visualRowWidths = entry.value(QStringLiteral("visualRowWidths")).toList();
+        const double weight = qMax(0.1, parsedMinimapWeight(rawEntry.toMap()));
+        weights.push_back(weight);
+        totalWeight += weight;
+    }
+    if (totalWeight <= 0.0)
+        totalWeight = static_cast<double>(qMax(1, snapshotEntries.size()));
+
+    QVariantList groups;
+    double prefixWeight = 0.0;
+    for (int entryIndex = 0; entryIndex < snapshotEntries.size(); ++entryIndex)
+    {
+        const double entryWeight = entryIndex < weights.size() ? weights.at(entryIndex) : 1.0;
+        if (entryIndex + 1 < safeStartLine)
+        {
+            prefixWeight += entryWeight;
+            continue;
+        }
+        if (entryIndex + 1 > safeEndLine)
+            break;
+
+        const QVariantMap entry = snapshotEntries.at(entryIndex).toMap();
+        const double startRatio = prefixWeight / totalWeight;
+        const double endRatio = (prefixWeight + entryWeight) / totalWeight;
+        const double contentY = safeDocumentContentHeight * startRatio;
+        const double contentHeight = qMax(
+            1.0,
+            (safeDocumentContentHeight * endRatio) - contentY);
+        const int charCount = qMax(0, entry.value(QStringLiteral("charCount")).toInt());
+        const int minimapRepresentativeCharCount = qMax(
+            0,
+            entry.value(QStringLiteral("minimapRepresentativeCharCount")).toInt());
+        const QString minimapVisualKind = normalizedMinimapVisualKind(entry);
+        const double contentWidth = parsedMinimapContentWidth(entry, charCount);
+
+        QVariantList visualRowWidths;
+        visualRowWidths.push_back(contentWidth);
         groups.push_back(minimapGroup(
-            lineIndex + 1,
-            qMax(0, entry.value(QStringLiteral("charCount")).toInt()),
-            m_editorDocumentStartY + qMax(0.0, entry.value(QStringLiteral("contentY")).toDouble()),
-            qMax(m_editorLineHeight, entry.value(QStringLiteral("contentHeight")).toDouble() > 0.0
-                                          ? entry.value(QStringLiteral("contentHeight")).toDouble()
-                                          : m_editorLineHeight),
-            qMax(0.0, entry.value(QStringLiteral("contentWidth")).toDouble()),
-            qMax(0.0, entry.value(QStringLiteral("contentAvailableWidth")).toDouble()),
+            entryIndex + 1,
+            charCount,
+            m_editorDocumentStartY + contentY,
+            contentHeight,
+            contentWidth,
+            kStructuredMinimapSyntheticAvailableWidth,
             visualRowWidths,
-            entry.value(QStringLiteral("minimapVisualKind")).toString().isEmpty()
-                ? QStringLiteral("text")
-                : entry.value(QStringLiteral("minimapVisualKind")).toString(),
-            qMax(0, entry.value(QStringLiteral("minimapRowCharCount")).toInt()),
-            qMax(1, entry.value(QStringLiteral("rowCount")).toInt())));
+            minimapVisualKind,
+            minimapRepresentativeCharCount > 0 ? minimapRepresentativeCharCount : charCount,
+            1));
+        prefixWeight += entryWeight;
     }
     return groups;
 }

@@ -232,17 +232,11 @@ void WhatSonCppRegressionTests::contentsDisplayCreationPath_emitsCoordinatorTrac
         QStringLiteral("QStringLiteral(\"agendaBackend={%1}\")")));
 
     QVERIFY(mountCoordinatorSource.contains(
-        QStringLiteral("QStringLiteral(\"setInlineDocumentSurfaceRequested\")")));
-    QVERIFY(mountCoordinatorSource.contains(
-        QStringLiteral("QStringLiteral(\"setInlineDocumentSurfaceReady\")")));
-    QVERIFY(mountCoordinatorSource.contains(
-        QStringLiteral("QStringLiteral(\"setInlineDocumentSurfaceLoading\")")));
-    QVERIFY(mountCoordinatorSource.contains(
         QStringLiteral("QStringLiteral(\"setStructuredDocumentSurfaceRequested\")")));
     QVERIFY(mountCoordinatorSource.contains(
-        QStringLiteral("QStringLiteral(\"setStructuredDocumentSurfaceReady\")")));
-    QVERIFY(mountCoordinatorSource.contains(
         QStringLiteral("QStringLiteral(\"setPendingMountNoteId\")")));
+    QVERIFY(mountCoordinatorSource.contains(
+        QStringLiteral("QStringLiteral(\"setPendingBodySave\")")));
 }
 
 void WhatSonCppRegressionTests::contentsDisplaySelectionFlow_emitsTraceForSelectionAndMountPlans()

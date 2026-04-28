@@ -12,9 +12,6 @@ class ContentsDisplaySurfacePolicy : public QObject
     Q_PROPERTY(bool formattedPreviewRequested READ formattedPreviewRequested WRITE setFormattedPreviewRequested NOTIFY inputsChanged)
     Q_PROPERTY(bool structuredDocumentSurfaceRequested READ structuredDocumentSurfaceRequested NOTIFY outputsChanged)
     Q_PROPERTY(bool structuredDocumentFlowVisible READ structuredDocumentFlowVisible NOTIFY outputsChanged)
-    Q_PROPERTY(bool inlineDocumentSurfaceRequested READ inlineDocumentSurfaceRequested NOTIFY outputsChanged)
-    Q_PROPERTY(bool inlineDocumentSurfaceReady READ inlineDocumentSurfaceReady NOTIFY outputsChanged)
-    Q_PROPERTY(bool inlineDocumentSurfaceLoading READ inlineDocumentSurfaceLoading NOTIFY outputsChanged)
     Q_PROPERTY(bool dedicatedResourceViewerVisible READ dedicatedResourceViewerVisible NOTIFY outputsChanged)
     Q_PROPERTY(bool formattedTextRendererVisible READ formattedTextRendererVisible NOTIFY outputsChanged)
     Q_PROPERTY(bool documentPresentationProjectionEnabled READ documentPresentationProjectionEnabled NOTIFY outputsChanged)
@@ -33,9 +30,6 @@ public:
 
     [[nodiscard]] bool structuredDocumentSurfaceRequested() const noexcept;
     [[nodiscard]] bool structuredDocumentFlowVisible() const noexcept;
-    [[nodiscard]] bool inlineDocumentSurfaceRequested() const noexcept;
-    [[nodiscard]] bool inlineDocumentSurfaceReady() const noexcept;
-    [[nodiscard]] bool inlineDocumentSurfaceLoading() const noexcept;
     [[nodiscard]] bool dedicatedResourceViewerVisible() const noexcept;
     [[nodiscard]] bool formattedTextRendererVisible() const noexcept;
     [[nodiscard]] bool documentPresentationProjectionEnabled() const noexcept;
