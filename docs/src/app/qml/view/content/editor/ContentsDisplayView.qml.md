@@ -188,6 +188,11 @@ not note-backed.
   The selected-body text/resolved/loading handlers use the same open-layout path while a note-entry gutter refresh is
   pending, which keeps the first clean body snapshot and the first rendered block snapshot on the same measurement
   contract.
+  The host now also exposes `structuredBlockBackgroundRefreshEnabled`, letting structured parse move off the immediate
+  UI path when the structured flow or inline resource projection is active.
+  `ContentsStructuredBlockRenderer` publishes `renderPending`/`lastRenderProfile`, and the structured flow uses that
+  pending state to choose fewer editor-open layout passes for small synchronous documents while preserving the multi-pass
+  settle path for larger asynchronous block trees.
 - Blur-driven immediate editor flush returns without saving while the live `TextEdit` is still composing or exposing
   preedit text. The host must not force a blur save after a fixed retry count because OS IME owns that unsettled input
   session.

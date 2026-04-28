@@ -39,6 +39,9 @@ void WhatSonCppRegressionTests::contentsDisplayView_invalidatesGutterGeometryImm
         QStringLiteral("eventPump.contentsView.scheduleStructuredDocumentOpenLayoutRefresh(\"rendered-blocks\")")));
     QVERIFY(displayViewSource.contains(QStringLiteral("function scheduleStructuredDocumentOpenLayoutRefresh(reason)")));
     QVERIFY(displayViewSource.contains(QStringLiteral("EditorDisplayModel.ContentsDisplayPresentationOrchestrationModel {")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("readonly property bool structuredBlockBackgroundRefreshEnabled: contentsView.showStructuredDocumentFlow")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("|| contentsView.resourceBlocksRenderedInlineByHtmlProjection")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("backgroundRefreshEnabled: contentsView.structuredBlockBackgroundRefreshEnabled")));
     QVERIFY(displayViewSource.contains(QStringLiteral("!contentsView.selectedNoteBodyLoading")));
     QVERIFY(presentationOrchestrationModelSource.contains(
         QStringLiteral("model.contentsView.selectedNoteBodyNoteId === model.contentsView.selectedNoteId")));

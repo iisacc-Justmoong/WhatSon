@@ -6,6 +6,7 @@
 #include "app/models/file/note/WhatSonNoteBodySemanticTagSupport.hpp"
 #include "app/models/editor/tags/WhatSonStructuredTagLinter.hpp"
 
+#include <QElapsedTimer>
 #include <QMetaObject>
 #include <QPointer>
 #include <QThreadPool>
@@ -14,6 +15,8 @@
 
 namespace
 {
+    constexpr int kBackgroundRenderSourceLengthThreshold = 2048;
+
     bool containsIgnoreCase(const QString& text, const QString& token)
     {
         return text.indexOf(token, 0, Qt::CaseInsensitive) >= 0;
@@ -188,6 +191,41 @@ namespace
         snapshot.structuredParseVerification = parseResult.structuredParseVerification;
         return snapshot;
     }
+
+    QVariantMap buildRenderProfile(
+        const QString& sourceText,
+        const StructuredRenderSnapshot& snapshot,
+        const QString& mode,
+        const qint64 elapsedMs)
+    {
+        return QVariantMap {
+            {QStringLiteral("agendaCount"), snapshot.renderedAgendas.size()},
+            {QStringLiteral("blockCount"), snapshot.renderedDocumentBlocks.size()},
+            {QStringLiteral("calloutCount"), snapshot.renderedCallouts.size()},
+            {QStringLiteral("corrected"), !snapshot.correctedSourceText.isEmpty() && snapshot.correctedSourceText != sourceText},
+            {QStringLiteral("elapsedMs"), elapsedMs},
+            {QStringLiteral("mode"), mode},
+            {QStringLiteral("sourceLength"), sourceText.size()}
+        };
+    }
+
+    struct TimedRenderSnapshot final
+{
+    QVariantMap renderProfile;
+    StructuredRenderSnapshot snapshot;
+};
+
+TimedRenderSnapshot buildTimedRenderSnapshot(const QString& sourceText, const QString& mode)
+{
+    QElapsedTimer timer;
+    timer.start();
+
+    TimedRenderSnapshot result;
+    result.snapshot = buildRenderSnapshot(sourceText);
+    result.renderProfile = buildRenderProfile(sourceText, result.snapshot, mode, timer.elapsed());
+    return result;
+}
+
 } // namespace
 
 struct ContentsStructuredBlockRenderer::RenderResult final
@@ -198,6 +236,7 @@ struct ContentsStructuredBlockRenderer::RenderResult final
     QVariantList renderedAgendas;
     QVariantList renderedCallouts;
     QVariantList renderedDocumentBlocks;
+    QVariantMap renderProfile;
     quint64 sequence = 0;
     QString sourceText;
     QVariantMap structuredParseVerification;
@@ -321,6 +360,11 @@ bool ContentsStructuredBlockRenderer::renderPending() const noexcept
     return m_renderPending;
 }
 
+QVariantMap ContentsStructuredBlockRenderer::lastRenderProfile() const
+{
+    return m_lastRenderProfile;
+}
+
 int ContentsStructuredBlockRenderer::agendaCount() const noexcept
 {
     return m_renderedAgendas.size();
@@ -381,16 +425,17 @@ void ContentsStructuredBlockRenderer::refreshRenderedBlocks()
     updateRenderPending(false);
     m_activeRenderSequence = 0;
 
-    const StructuredRenderSnapshot snapshot = buildRenderSnapshot(m_sourceText);
+    const TimedRenderSnapshot timedSnapshot = buildTimedRenderSnapshot(m_sourceText, QStringLiteral("sync"));
     RenderResult result;
-    result.agendaParseVerification = snapshot.agendaParseVerification;
-    result.correctedSourceText = snapshot.correctedSourceText;
-    result.calloutParseVerification = snapshot.calloutParseVerification;
-    result.renderedAgendas = snapshot.renderedAgendas;
-    result.renderedCallouts = snapshot.renderedCallouts;
-    result.renderedDocumentBlocks = snapshot.renderedDocumentBlocks;
+    result.agendaParseVerification = timedSnapshot.snapshot.agendaParseVerification;
+    result.correctedSourceText = timedSnapshot.snapshot.correctedSourceText;
+    result.calloutParseVerification = timedSnapshot.snapshot.calloutParseVerification;
+    result.renderedAgendas = timedSnapshot.snapshot.renderedAgendas;
+    result.renderedCallouts = timedSnapshot.snapshot.renderedCallouts;
+    result.renderedDocumentBlocks = timedSnapshot.snapshot.renderedDocumentBlocks;
+    result.renderProfile = timedSnapshot.renderProfile;
     result.sourceText = m_sourceText;
-    result.structuredParseVerification = snapshot.structuredParseVerification;
+    result.structuredParseVerification = timedSnapshot.snapshot.structuredParseVerification;
     applyRenderResult(result);
 }
 
@@ -449,6 +494,7 @@ void ContentsStructuredBlockRenderer::updateRenderPending(const bool pending)
 bool ContentsStructuredBlockRenderer::shouldRenderInBackground() const noexcept
 {
     return m_backgroundRefreshEnabled
+        && m_sourceText.size() >= kBackgroundRenderSourceLengthThreshold
         && (mayContainAgendaBlock(m_sourceText)
             || mayContainCalloutBlock(m_sourceText)
             || mayContainResourceBlock(m_sourceText)
@@ -461,13 +507,16 @@ void ContentsStructuredBlockRenderer::applyRenderResult(const RenderResult& resu
         this,
         QStringLiteral("structuredBlockRenderer"),
         QStringLiteral("applyRenderResult"),
-        QStringLiteral("agendas=%1 callouts=%2 blocks=%3 correction=%4")
+        QStringLiteral("agendas=%1 callouts=%2 blocks=%3 correction=%4 mode=%5 elapsedMs=%6")
             .arg(result.renderedAgendas.size())
             .arg(result.renderedCallouts.size())
             .arg(result.renderedDocumentBlocks.size())
-            .arg(!result.correctedSourceText.isEmpty() && result.correctedSourceText != result.sourceText));
+            .arg(!result.correctedSourceText.isEmpty() && result.correctedSourceText != result.sourceText)
+            .arg(result.renderProfile.value(QStringLiteral("mode")).toString())
+            .arg(result.renderProfile.value(QStringLiteral("elapsedMs")).toLongLong()));
     const bool previousCorrectionSuggested = correctionSuggested();
 
+    updateLastRenderProfile(result.renderProfile);
     updateAgendaParseVerification(result.agendaParseVerification);
     updateCalloutParseVerification(result.calloutParseVerification);
     updateCorrectedSourceText(result.correctedSourceText);
@@ -510,6 +559,16 @@ void ContentsStructuredBlockRenderer::applyRenderResult(const RenderResult& resu
     }
 }
 
+void ContentsStructuredBlockRenderer::updateLastRenderProfile(const QVariantMap& profile)
+{
+    if (m_lastRenderProfile != profile)
+    {
+        m_lastRenderProfile = profile;
+        emit lastRenderProfileChanged();
+    }
+    emit renderProfileReported(profile);
+}
+
 void ContentsStructuredBlockRenderer::dispatchAsyncRender()
 {
     WhatSon::Debug::traceEditorSelf(
@@ -530,17 +589,18 @@ void ContentsStructuredBlockRenderer::dispatchAsyncRender()
     QPointer<ContentsStructuredBlockRenderer> rendererGuard(this);
     QThreadPool::globalInstance()->start([rendererGuard, sequence, sourceText]()
     {
-        const StructuredRenderSnapshot snapshot = buildRenderSnapshot(sourceText);
+        const TimedRenderSnapshot timedSnapshot = buildTimedRenderSnapshot(sourceText, QStringLiteral("async"));
         RenderResult result;
-        result.agendaParseVerification = snapshot.agendaParseVerification;
-        result.correctedSourceText = snapshot.correctedSourceText;
-        result.calloutParseVerification = snapshot.calloutParseVerification;
-        result.renderedAgendas = snapshot.renderedAgendas;
-        result.renderedCallouts = snapshot.renderedCallouts;
-        result.renderedDocumentBlocks = snapshot.renderedDocumentBlocks;
+        result.agendaParseVerification = timedSnapshot.snapshot.agendaParseVerification;
+        result.correctedSourceText = timedSnapshot.snapshot.correctedSourceText;
+        result.calloutParseVerification = timedSnapshot.snapshot.calloutParseVerification;
+        result.renderedAgendas = timedSnapshot.snapshot.renderedAgendas;
+        result.renderedCallouts = timedSnapshot.snapshot.renderedCallouts;
+        result.renderedDocumentBlocks = timedSnapshot.snapshot.renderedDocumentBlocks;
+        result.renderProfile = timedSnapshot.renderProfile;
         result.sequence = sequence;
         result.sourceText = sourceText;
-        result.structuredParseVerification = snapshot.structuredParseVerification;
+        result.structuredParseVerification = timedSnapshot.snapshot.structuredParseVerification;
         if (rendererGuard != nullptr)
         {
             QMetaObject::invokeMethod(

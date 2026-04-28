@@ -280,6 +280,7 @@ Item {
         nativeTextInputPriority: contentsView.nativeTextInputPriority
         paperPaletteEnabled: contentsView.showPrintEditorLayout
         parent: contentsView.showPrintEditorLayout ? printDocumentSurface : structuredDocumentViewportItem.contentItem
+        renderPending: structuredBlockRenderer.renderPending
         renderedResources: bodyResourceRenderer.renderedResources
         sourceText: contentsView.structuredFlowSourceText
         tagManagementShortcutKeyPressHandler: function (event) {

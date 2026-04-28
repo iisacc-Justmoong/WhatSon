@@ -989,6 +989,7 @@ private slots:
     void structuredCollectionPolicy_normalizesQmlJsArrayEntries();
     void structuredCollectionPolicy_flattensImplicitInteractiveTextBlocksIntoSingleGroups();
     void structuredBlockRenderer_publishesSingleNormalizedInteractiveStream();
+    void structuredBlockRenderer_reportsAsyncRenderProfileForLargeStructuredDocuments();
     void structuredBlockRenderer_keepsEmptyNotesFocusableWithOneTextGroup();
     void structuredBlockRenderer_keepsTrailingResourceInsertionsEditable();
     void structuredBlockRenderer_keepsResourceOnlyTrailingLineEditable();

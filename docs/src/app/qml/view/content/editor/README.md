@@ -48,11 +48,13 @@
 - The editor surface no longer mounts a note-loading overlay. Mount decisions now settle through
   `ContentsDisplayNoteBodyMountCoordinator::mountDecisionClean`, so a stale pending body load cannot dim already
   rendered note content.
-- Focus/input availability is likewise tied to parse-mounted note-body state, so a parse-mounted note stays editable
-  while slower startup runtime state finishes settling.
-- Tag-management command surfaces derive directly from that same parse-mounted RAW state plus active structured-editor
-  mode, so inline formatting shortcuts can insert RAW `<bold>`/`<italic>`/`<highlight>` tags before the slower
-  editor-session `noteMounted` flag completes and without a second command-surface-ready proxy.
+- `ContentsDisplaySurfaceHost.qml` now enables the editor surface as soon as a note is selected and no mount
+  exception is visible, so the first click/touch is accepted before the structured parse mount finishes.
+  Parse completion still controls structured-block content and note-mounted status, but no longer drops the first
+  activation gesture behind a `noteDocumentParseMounted` gate.
+- Tag-management command surfaces still derive from parse-mounted RAW state plus active structured-editor mode, so
+  inline formatting shortcuts insert RAW `<bold>`/`<italic>`/`<highlight>` tags only after the note body is actually
+  mounted, without a second command-surface-ready proxy.
 - `ContentsDisplayView.qml` no longer mirrors extra `surfaceReady`, `surfaceInteractive`, or
   `noteDocumentCommandSurfaceEnabled` aliases on top of that RAW state.
   The parser-backed `.wsnbody` mount is the only editor-readiness authority exposed to the input/view layer.
@@ -96,6 +98,11 @@
   does not duplicate the note-backed/resource-backed detection logic inline.
 - Resource-bearing note bodies now activate `ContentsStructuredDocumentFlow.qml` so `<resource ... />` stays in the
   same authored block stream as surrounding text.
+- Structured note entry now also enables `ContentsStructuredBlockRenderer` background refresh whenever the structured
+  flow or inline resource projection is active.
+  The renderer publishes `lastRenderProfile`/`renderPending`, and the flow adapts its editor-open layout refresh pass
+  count so small synchronous documents stop paying the old fixed three-pass cost while larger async parses still keep
+  the extra stabilization passes needed for delegate measurement.
 - `ContentsStructuredDocumentFlow.qml` now mounts one generic `ContentsDocumentBlock.qml` delegate per parsed block
   instead of branching directly to block-type-specific delegates in the repeater host.
 - That structured flow now also feeds its repeater through `ContentsStructuredDocumentBlocksModel` rather than

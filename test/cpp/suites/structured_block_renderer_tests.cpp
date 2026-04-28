@@ -27,6 +27,34 @@ void WhatSonCppRegressionTests::structuredBlockRenderer_publishesSingleNormalize
     QVERIFY(renderer.hasNonResourceRenderedBlocks());
 }
 
+void WhatSonCppRegressionTests::structuredBlockRenderer_reportsAsyncRenderProfileForLargeStructuredDocuments()
+{
+    ContentsStructuredBlockRenderer renderer;
+    renderer.setBackgroundRefreshEnabled(true);
+
+    QString sourceText;
+    sourceText.reserve(4096);
+    sourceText += QStringLiteral("alpha\n");
+    for (int index = 0; index < 48; ++index)
+    {
+        sourceText += QStringLiteral("<resource type=\"image\" path=\"cover-%1.png\" />\n")
+                          .arg(index);
+    }
+    sourceText += QStringLiteral("omega");
+
+    renderer.setSourceText(sourceText);
+
+    QTRY_VERIFY_WITH_TIMEOUT(!renderer.renderPending(), 5000);
+
+    const QVariantMap renderProfile = renderer.lastRenderProfile();
+    QCOMPARE(renderProfile.value(QStringLiteral("mode")).toString(), QStringLiteral("async"));
+    QCOMPARE(renderProfile.value(QStringLiteral("sourceLength")).toInt(), sourceText.size());
+    QCOMPARE(renderProfile.value(QStringLiteral("blockCount")).toInt(), renderer.renderedDocumentBlocks().size());
+    QVERIFY(renderProfile.value(QStringLiteral("elapsedMs")).toLongLong() >= 0);
+    QVERIFY(renderProfile.value(QStringLiteral("blockCount")).toInt() >= 2);
+    QVERIFY(renderer.hasRenderedBlocks());
+}
+
 void WhatSonCppRegressionTests::structuredBlockRenderer_keepsEmptyNotesFocusableWithOneTextGroup()
 {
     ContentsStructuredBlockRenderer renderer;

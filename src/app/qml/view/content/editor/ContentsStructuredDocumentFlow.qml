@@ -21,6 +21,7 @@ FocusScope {
     property int lineHeightHint: Math.max(1, Math.round(LV.Theme.scaleMetric(12)))
     property bool nativeTextInputPriority: false
     property bool paperPaletteEnabled: false
+    property bool renderPending: false
     property var tagManagementShortcutKeyPressHandler: null
     property alias renderedResources: documentHost.renderedResources
     property alias sourceText: documentHost.sourceText
@@ -52,6 +53,7 @@ FocusScope {
                                                                    documentFlow.focusedBlockIndexValue)
     readonly property int currentLogicalLineNumber: documentFlow.activeLogicalLineNumber()
     readonly property int editorOpenLayoutRefreshPassCount: 3
+    readonly property int synchronousDelegateLoadBlockCountThreshold: 12
     readonly property int framedBlockSpacing: Math.max(0, Math.round(LV.Theme.scaleMetric(10)))
 
     signal sourceMutationRequested(string nextSourceText, var focusRequest)
@@ -511,13 +513,15 @@ FocusScope {
     }
 
     function refreshLayoutCache() {
+        const startedAt = Date.now()
         const blocks = documentFlow.normalizedBlocks()
         EditorTrace.trace(
                     "structuredDocumentFlow",
                     "refreshLayoutCache",
                     "blockCount=" + blocks.length
                     + " viewportHeight=" + documentFlow.viewportHeight
-                    + " viewportContentY=" + documentFlow.viewportContentY,
+                    + " viewportContentY=" + documentFlow.viewportContentY
+                    + " renderPending=" + documentFlow.renderPending,
                     documentFlow)
         const entries = []
         const blockSummaries = []
@@ -596,6 +600,14 @@ FocusScope {
 
         documentFlow.cachedBlockLayoutSummaries = blockSummaries
         documentFlow.cachedLogicalLineEntries = entries
+        EditorTrace.trace(
+                    "structuredDocumentFlow",
+                    "refreshLayoutCacheFinished",
+                    "blockCount=" + blocks.length
+                    + " lineCount=" + entries.length
+                    + " durationMs=" + Math.max(0, Date.now() - startedAt)
+                    + " renderPending=" + documentFlow.renderPending,
+                    documentFlow)
     }
 
     function scheduleLayoutCacheRefresh() {
@@ -608,17 +620,29 @@ FocusScope {
         })
     }
 
+    function editorOpenLayoutRefreshTargetPassCount() {
+        const blockCount = Math.max(blockRepeater.count, documentFlow.normalizedBlocks().length)
+        if (blockCount <= documentFlow.synchronousDelegateLoadBlockCountThreshold && !documentFlow.renderPending)
+            return 1
+        if (documentFlow.hasPendingFocusRequest())
+            return documentFlow.editorOpenLayoutRefreshPassCount
+        return 2
+    }
+
     function scheduleEditorOpenLayoutCacheRefresh(reason) {
+        const targetPassCount = documentFlow.editorOpenLayoutRefreshTargetPassCount()
         documentFlow.editorOpenLayoutRefreshRevision += 1
         documentFlow.editorOpenLayoutRefreshPassesRemaining = Math.max(
                     documentFlow.editorOpenLayoutRefreshPassesRemaining,
-                    documentFlow.editorOpenLayoutRefreshPassCount)
+                    targetPassCount)
         EditorTrace.trace(
                     "structuredDocumentFlow",
                     "scheduleEditorOpenLayoutCacheRefresh",
                     "reason=" + String(reason || "")
                     + " revision=" + documentFlow.editorOpenLayoutRefreshRevision
-                    + " passes=" + documentFlow.editorOpenLayoutRefreshPassesRemaining,
+                    + " passes=" + documentFlow.editorOpenLayoutRefreshPassesRemaining
+                    + " targetPasses=" + targetPassCount
+                    + " renderPending=" + documentFlow.renderPending,
                     documentFlow)
         documentFlow.scheduleEditorOpenLayoutCacheRefreshPass(
                     documentFlow.editorOpenLayoutRefreshRevision)
@@ -1884,7 +1908,7 @@ FocusScope {
                     anchors.left: parent.left
                     anchors.right: parent.right
                     anchors.top: parent.top
-                    asynchronous: blockRepeater.count > 12 && blockHost.keepDelegateLoaded
+                    asynchronous: blockRepeater.count > documentFlow.synchronousDelegateLoadBlockCountThreshold && blockHost.keepDelegateLoaded
                     height: blockHost.contentHeight
                     sourceComponent: documentBlockDelegate
 

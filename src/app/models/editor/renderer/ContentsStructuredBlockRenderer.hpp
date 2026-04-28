@@ -20,6 +20,7 @@ class ContentsStructuredBlockRenderer : public QObject
     Q_PROPERTY(bool correctionSuggested READ correctionSuggested NOTIFY correctionSuggestedChanged)
     Q_PROPERTY(bool backgroundRefreshEnabled READ backgroundRefreshEnabled WRITE setBackgroundRefreshEnabled NOTIFY backgroundRefreshEnabledChanged)
     Q_PROPERTY(bool renderPending READ renderPending NOTIFY renderPendingChanged)
+    Q_PROPERTY(QVariantMap lastRenderProfile READ lastRenderProfile NOTIFY lastRenderProfileChanged)
     Q_PROPERTY(int agendaCount READ agendaCount NOTIFY renderedBlocksChanged)
     Q_PROPERTY(int calloutCount READ calloutCount NOTIFY renderedBlocksChanged)
     Q_PROPERTY(bool hasRenderedBlocks READ hasRenderedBlocks NOTIFY renderedBlocksChanged)
@@ -43,6 +44,7 @@ public:
     bool backgroundRefreshEnabled() const noexcept;
     void setBackgroundRefreshEnabled(bool enabled);
     bool renderPending() const noexcept;
+    QVariantMap lastRenderProfile() const;
     int agendaCount() const noexcept;
     int calloutCount() const noexcept;
     bool hasRenderedBlocks() const noexcept;
@@ -61,6 +63,7 @@ signals:
     void correctionSuggestedChanged();
     void backgroundRefreshEnabledChanged();
     void renderPendingChanged();
+    void lastRenderProfileChanged();
     void agendaParseVerificationReported(const QVariantMap& verification);
     void calloutParseVerificationReported(const QVariantMap& verification);
     void structuredParseVerificationReported(const QVariantMap& verification);
@@ -68,6 +71,7 @@ signals:
         const QString& sourceText,
         const QString& correctedSourceText,
         const QVariantMap& verification);
+    void renderProfileReported(const QVariantMap& profile);
 
 private:
     struct RenderResult;
@@ -82,6 +86,7 @@ private:
     void updateStructuredParseVerification(const QVariantMap& verification);
     void updateCorrectedSourceText(const QString& correctedSourceText);
     void updateRenderPending(bool pending);
+    void updateLastRenderProfile(const QVariantMap& profile);
     bool shouldRenderInBackground() const noexcept;
 
     QString m_sourceText;
@@ -92,6 +97,7 @@ private:
     QVariantMap m_calloutParseVerification;
     QVariantMap m_structuredParseVerification;
     QString m_correctedSourceText;
+    QVariantMap m_lastRenderProfile;
     QString m_lastCorrectionSuggestionSourceText;
     QString m_lastCorrectionSuggestionCorrectedText;
     bool m_backgroundRefreshEnabled = false;

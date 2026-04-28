@@ -280,6 +280,8 @@ Item {
     readonly property bool showEditorGutter: modePolicy.showEditorGutter
     readonly property bool showFormattedTextRenderer: inputState.showFormattedTextRenderer
     readonly property bool showStructuredDocumentFlow: inputState.showStructuredDocumentFlow
+    readonly property bool structuredBlockBackgroundRefreshEnabled: contentsView.showStructuredDocumentFlow
+                                                                 || contentsView.resourceBlocksRenderedInlineByHtmlProjection
     readonly property bool structuredHostGeometryActive: modePolicy.structuredHostGeometryActive
     readonly property bool showPageEditorLayout: pagePrintLayoutRenderer.showPageEditorLayout
     readonly property bool showPrintEditorLayout: pagePrintLayoutRenderer.showPrintEditorLayout
@@ -1310,7 +1312,7 @@ Item {
     ContentsStructuredBlockRenderer {
         id: structuredBlockRenderer
 
-        backgroundRefreshEnabled: false
+        backgroundRefreshEnabled: contentsView.structuredBlockBackgroundRefreshEnabled
         sourceText: contentsView.documentPresentationSourceText
     }
     ContentsEditorPresentationProjection {

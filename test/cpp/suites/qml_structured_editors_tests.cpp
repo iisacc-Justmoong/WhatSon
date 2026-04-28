@@ -1188,11 +1188,18 @@ void WhatSonCppRegressionTests::qmlStructuredEditors_refreshesGutterLayoutOnEdit
 
     QVERIFY(structuredFlowSource.contains(
         QStringLiteral("property int editorOpenLayoutRefreshPassesRemaining: 0")));
+    QVERIFY(structuredFlowSource.contains(QStringLiteral("property bool renderPending: false")));
     QVERIFY(structuredFlowSource.contains(QStringLiteral("readonly property int editorOpenLayoutRefreshPassCount: 3")));
+    QVERIFY(structuredFlowSource.contains(QStringLiteral("readonly property int synchronousDelegateLoadBlockCountThreshold: 12")));
+    QVERIFY(structuredFlowSource.contains(QStringLiteral("function editorOpenLayoutRefreshTargetPassCount()")));
     QVERIFY(structuredFlowSource.contains(QStringLiteral("function scheduleEditorOpenLayoutCacheRefresh(reason)")));
     QVERIFY(structuredFlowSource.contains(QStringLiteral("function scheduleEditorOpenLayoutCacheRefreshPass(revision)")));
+    QVERIFY(structuredFlowSource.contains(QStringLiteral("const startedAt = Date.now()")));
+    QVERIFY(structuredFlowSource.contains(QStringLiteral("refreshLayoutCacheFinished")));
     QVERIFY(structuredFlowSource.contains(QStringLiteral(
         "documentFlow.editorOpenLayoutRefreshPassesRemaining = Math.max(")));
+    QVERIFY(structuredFlowSource.contains(QStringLiteral(
+        "const targetPassCount = documentFlow.editorOpenLayoutRefreshTargetPassCount()")));
     QVERIFY(structuredFlowSource.contains(QStringLiteral(
         "documentFlow.scheduleEditorOpenLayoutCacheRefreshPass(")));
     QVERIFY(structuredFlowSource.contains(QStringLiteral(
@@ -1201,12 +1208,19 @@ void WhatSonCppRegressionTests::qmlStructuredEditors_refreshesGutterLayoutOnEdit
         "documentFlow.scheduleEditorOpenLayoutCacheRefresh(\"visible\")")));
     QVERIFY(structuredFlowSource.contains(QStringLiteral("onLoaded: {")));
     QVERIFY(structuredFlowSource.contains(QStringLiteral("documentFlow.scheduleLayoutCacheRefresh()")));
+    QVERIFY(structuredFlowSource.contains(QStringLiteral("asynchronous: blockRepeater.count > documentFlow.synchronousDelegateLoadBlockCountThreshold && blockHost.keepDelegateLoaded")));
     QVERIFY(displayViewSource.contains(QStringLiteral("function scheduleStructuredDocumentOpenLayoutRefresh(reason)")));
     QVERIFY(presentationOrchestrationModelSource.contains(QStringLiteral("model.structuredDocumentFlow.scheduleEditorOpenLayoutCacheRefresh(")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("readonly property bool structuredBlockBackgroundRefreshEnabled: contentsView.showStructuredDocumentFlow")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("|| contentsView.resourceBlocksRenderedInlineByHtmlProjection")));
     QVERIFY(displayViewSource.contains(QStringLiteral(
         "contentsView.scheduleStructuredDocumentOpenLayoutRefresh(\"note-mounted\")")));
     QVERIFY(eventPumpSource.contains(QStringLiteral(
         "eventPump.contentsView.scheduleStructuredDocumentOpenLayoutRefresh(\"rendered-blocks\")")));
+    const QString surfaceHostSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/content/editor/ContentsDisplaySurfaceHost.qml"));
+    QVERIFY(!surfaceHostSource.isEmpty());
+    QVERIFY(surfaceHostSource.contains(QStringLiteral("renderPending: structuredBlockRenderer.renderPending")));
 }
 
 void WhatSonCppRegressionTests::qmlStructuredEditors_rejectStaleSourceRangeMutations()
