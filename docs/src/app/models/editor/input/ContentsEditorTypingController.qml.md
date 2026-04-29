@@ -61,7 +61,8 @@ The remaining non-literal transformations are source-tag management, not live ke
 
 ## Persistence Rules
 
-- Accepted source replacements update `view.editorText`, mark local editor authority, schedule persistence, and emit
+- Accepted source replacements call `ContentsEditorSessionController::commitRawEditorTextMutation(...)`; that C++ session
+  object updates `editorText`, marks local editor authority, and schedules persistence before the view emits
   `editorTextEdited(...)`.
 - Tag-management rewrites refresh presentation immediately because the parser must rematerialize structured blocks from
   the new RAW source.

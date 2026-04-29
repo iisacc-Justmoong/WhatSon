@@ -50,7 +50,9 @@ It does not own ordinary typing, markdown list input, or generic key-event short
 
 ## Persistence Rules
 
-- Accepted tag-management mutations mark local editor authority before persistence.
+- Accepted tag-management mutations commit their next RAW source through
+  `ContentsEditorSessionController::commitRawEditorTextMutation(...)`; the selection controller only refreshes the
+  presentation and selection cache after that session commit succeeds.
 - Programmatic source rewrites trigger one immediate presentation refresh so renderer, bridge, gutter, and minimap state
   catch up without waiting for the idle timer.
 - Ordinary typing never goes through this controller.

@@ -199,7 +199,6 @@ QVariantMap ContentsDisplayViewportCoordinator::finalizePendingNoteEntryGutterRe
     plan.insert(QStringLiteral("commitGutterRefresh"), true);
     plan.insert(QStringLiteral("scheduleViewportGutterRefresh"), true);
     plan.insert(QStringLiteral("scheduleMinimapSnapshotRefresh"), true);
-    plan.insert(QStringLiteral("scheduleMinimapSnapshotForceFull"), true);
     plan.insert(QStringLiteral("scheduleGutterRefresh"), true);
     plan.insert(QStringLiteral("gutterPassCount"), 4);
     plan.insert(QStringLiteral("gutterReason"), normalizeOptionalReason(reason));

@@ -18,7 +18,7 @@ gain new session, persistence, parsing, mutation, scheduling, or command-surface
 - `ContentsDisplayGutterCoordinator.*`
   Keeps gutter state derived from the same editor document projection as the visible body.
 - `ContentsDisplayMinimapCoordinator.*`
-  Owns minimap snapshot reuse and rebuild decisions.
+  Owns parser/block-derived minimap row construction.
   Its structured path now consumes parser-normalized block entries directly, producing one minimap row per block/tag
   and reserving block-like silhouettes only for visual entries such as resources.
 - `ContentsDisplayNoteBodyMountCoordinator.*`
@@ -49,7 +49,7 @@ gain new session, persistence, parsing, mutation, scheduling, or command-surface
 - `ContentsDisplayGeometryController.qml`
   Owns QML-runtime geometry scheduling and delegates public calls through the C++ geometry ViewModel.
 - `ContentsDisplayGeometrySnapshotModel.qml`
-  Owns QML-side geometry snapshot normalization, structured minimap snapshot planning, visible gutter entry building,
+  Owns QML-side geometry normalization, structured minimap entry construction, visible gutter entry building,
   and compatibility wrappers that let `ContentsDisplayView.qml` shed large helper bodies without breaking existing host
   call sites.
 - `ContentsDisplayViewportModel.qml`
@@ -76,8 +76,8 @@ gain new session, persistence, parsing, mutation, scheduling, or command-surface
 - `ContentsEditorSurfaceModeSupport.js`
   Resolves whether `ContentViewLayout.qml` should mount the note editor surface or direct resource editor surface.
 - `ContentsMinimapSnapshotSupport.js`
-  Normalizes changed-line ranges and minimap snapshot rows for editor display refreshes while preserving whichever row
-  width metadata the owning minimap path already chose, including parser-derived block silhouettes.
+  Flattens minimap line groups for editor display refreshes while preserving whichever row width metadata the owning
+  minimap path already chose, including parser-derived block silhouettes.
 
 ## Boundary
 

@@ -58,7 +58,6 @@ void WhatSonCppRegressionTests::structuredBlockRenderer_reportsAsyncRenderProfil
 void WhatSonCppRegressionTests::structuredBlockRenderer_keepsEmptyNotesFocusableWithOneTextGroup()
 {
     ContentsStructuredBlockRenderer renderer;
-    renderer.requestRenderRefresh();
 
     const QVariantList renderedBlocks = renderer.renderedDocumentBlocks();
     QCOMPARE(renderedBlocks.size(), 1);
@@ -73,6 +72,7 @@ void WhatSonCppRegressionTests::structuredBlockRenderer_keepsEmptyNotesFocusable
 
     QVERIFY(renderer.hasRenderedBlocks());
     QVERIFY(renderer.hasNonResourceRenderedBlocks());
+    QCOMPARE(renderer.lastRenderProfile().value(QStringLiteral("mode")).toString(), QStringLiteral("initial"));
 }
 
 void WhatSonCppRegressionTests::structuredBlockRenderer_keepsTrailingResourceInsertionsEditable()

@@ -1012,15 +1012,17 @@ private slots:
     void contentsDisplayView_doesNotInjectCurrentLineGutterDot();
     void contentsDisplayView_reservesLargeBottomAccessibilityMargin();
     void contentsDisplayView_usesSelectedNoteSnapshotWhileSessionBindingCatchesUp();
+    void contentsDisplayView_focusesAlreadySelectedNoteOnMobileMount();
     void contentsDisplayView_doesNotForceBlurFlushDuringNativeComposition();
     void qmlContextMenus_treatRightClickAndLongPressAsSymmetricPointerTriggers();
+    void listBarLayout_rendersResolvedNoteListModelByIndex();
     void contentsDisplayView_routesStructuredMutationsThroughEditorSessionAuthority();
     void contentsDisplayView_refreshesMinimapFromResolvedPresentationSource();
     void contentsDisplayView_scalesMinimapRowsFromDocumentGeometry();
     void contentsDisplayView_refreshesMinimapWhenStructuredLayoutCacheChanges();
-    void contentsDisplayMinimapCoordinator_splicesNormalizedSnapshotEntries();
+    void contentsDisplayMinimapCoordinator_buildsStructuredMinimapGroups();
     void minimapSnapshotSupport_preservesVisualRowWidths();
-    void contentsDisplayView_normalizesMinimapSnapshotsAgainstStructuredEntries();
+    void contentsDisplayView_rebuildsMinimapRowsFromCurrentDocumentState();
     void contentsDisplayView_keepsSingleResolverBindingPerDocumentSourceProperty();
     void contentsDisplayView_emitsEditorCreationTraceAcrossHostTransitions();
     void contentsDisplayView_tracesNoteSelectionPlanExecution();
@@ -1090,6 +1092,7 @@ private slots:
     void resourceBitmapViewer_projectsRenderableImagePreviewState();
     void editorSessionController_preservesLocalEditorAuthorityAgainstSameNoteModelSync();
     void editorSessionController_rebindsWhenSameNoteIdUsesDifferentPackagePath();
+    void editorSessionController_commitsRawMutationsThroughSessionAuthority();
     void editorSessionBoundary_usesCppControllerWithoutQmlWrapper();
     void noteManagementCoordinator_reconcilePersistsEditorSnapshotWhenPreferred();
     void noteManagementCoordinator_reconcileRefreshesWithoutPersistingWhenEditorIsNotAuthoritative();

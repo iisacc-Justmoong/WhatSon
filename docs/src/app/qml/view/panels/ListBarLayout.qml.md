@@ -19,7 +19,7 @@ selection state machine lives in a sibling controller file.
 - Source path: `src/app/qml/view/panels/ListBarLayout.qml`
 - Source kind: QML view/component
 - File name: `ListBarLayout.qml`
-- Approximate line count: 762
+- Approximate line count: 1126
 
 ## QML Surface Snapshot
 - Root type: `Rectangle`
@@ -30,7 +30,6 @@ selection state machine lives in a sibling controller file.
 - `noteSelectionController`
 - `noteDragPreviewState`
 - `noteDeletionBridge`
-- `noteListContractBridge`
 - `noteContextMenu`
 - `noteDragPreview`
 - `noteDragPreviewCard`
@@ -61,28 +60,11 @@ selection state machine lives in a sibling controller file.
 
 ## Viewport Contract
 
-- The visible `ListView` now renders `displayedNoteListEntries`, a view-owned snapshot array populated through
-  `NoteListModelContractBridge.readAllRows()`, instead of binding delegates directly to the resetting domain model.
-- On note-list model swaps, the first visible snapshot is now read against the explicit incoming model object rather
-  than waiting for the bridge's own rebinding cycle, so hierarchy transitions do not depend on one event-turn of
-  adapter lag before showing rows.
-- `syncDisplayedNoteListEntries()` compares the new row snapshot to the previous one and only replaces the visible
-  array when the actual row content changed. Periodic model resets with identical content therefore no longer tear down
-  and rebuild every visible row.
-- Visible row snapshots now omit `bodyText`, so editor-side same-note body rewrites no longer change the list snapshot
-  signature unless another rendered field actually changed.
-- Snapshot refresh requests from `itemsChanged()`, row insert/remove/move, `dataChanged`, and `layoutChanged` now
-  funnel through one queued helper per event-loop turn, so one logical list refresh no longer rereads and reapplies the
-  same row snapshot multiple times in immediate succession.
-- When the bound `noteListModel` instance itself changes, the view now clears `displayedNoteListEntries`
-  immediately, primes the snapshot from the explicit incoming model, and then performs one deferred transition sync.
-  This prevents both one-frame stale-row reuse from the previous hierarchy and post-switch blank states while
-  `NoteListModelContractBridge` / `Connections.target` are still rebinding to the new domain model.
-- `modelReset` is now treated as viewport-lifecycle only inside this view. The actual visible-row resync is driven by
-  the model's post-refresh `itemsChanged()` signal, eliminating one more duplicate snapshot-consumption path from the
-  reset turn.
-- `itemCountChanged()` now also queues the same snapshot refresh path as `itemsChanged()`, so a hierarchy-specific
-  model that updates its row population in stages cannot strand the visible list on the cleared transition snapshot.
+- The visible `ListView` binds directly to `resolvedNoteListModel`. The current hierarchy owns the note/resource count,
+  Qt supplies each delegate index, and the delegate reads display fields from that row's model roles.
+- The parent shell supplies `noteListModel`; `ListBarLayout.qml` does not create an internal bridge to rediscover it.
+- `modelReset` is viewport-lifecycle only inside this view. The `ListView` consumes the active `QAbstractItemModel`
+  directly, so row insert/remove/move/data/layout notifications stay under Qt's normal model/view path.
 - The note/resource list models now emit one `itemsChanged()` per filtered-content refresh instead of emitting a second
   redundant `itemsChanged()` after `setItems()`, so `ListBarLayout.qml` no longer receives duplicate "list changed"
   notifications for the same model-reset turn.
@@ -115,9 +97,7 @@ selection state machine lives in a sibling controller file.
   hierarchy toolbar indexes such as `Library` or `Bookmarks`, because domains like `Projects` also own
   note-list projections.
 - The panel can now receive either a direct `noteListModel`, only `hierarchyViewModel`, or both.
-- Desktop/mobile shells now forward the same resolved `activeNoteListModel` object that the content surface uses.
-  `NoteListModelContractBridge` keeps the hierarchy-derived fallback for callers that only know the hierarchy object,
-  but explicit `noteListModel` input remains the preferred same-turn routing path for domain switches.
+- Desktop/mobile shells forward the same resolved `activeNoteListModel` object that the content surface uses.
 - `resourceListMode` is detected from `resolvedNoteListModel.currentResourceEntry`, then delegates switch to
   `ResourceListItem` so resources rows no longer inherit note-card visuals.
 - `activateNoteIndex(index, noteId)` is the only immediate note-activation path. It updates `currentIndex`, pushes the
@@ -136,21 +116,12 @@ selection state machine lives in a sibling controller file.
   (for example, occasional `Cmd`/`Shift` loss on macOS pointer release dispatch).
 - Multi-selection state is held in `selectedNoteIndices`; model-authoritative `currentIndex/currentNoteId` remains the
   primary note for downstream domain routing.
-- The list now resolves `selectedNoteIndices` back into stable note ids through
-  `NoteListModelContractBridge.readNoteIdAt(...)`,
-  so batch note-list actions do not depend on delegate visibility.
+- The list resolves `selectedNoteIndices` back into stable note ids through the active list model and the selected row
+  index, so batch note-list actions do not depend on delegate visibility.
 - `syncCurrentIndexFromModel()` prevents unsolicited `ListView.currentIndex` resets from leaking back into app state.
-- `NoteListModelContractBridge` centralizes search/current-index/current-note reflection and write calls so QML does
-  not need to own all dynamic contract detection.
-- The bridge now also exposes `readAllRows()` plus `readAllRowsForModel(QObject*)`, allowing the QML view to keep a
-  stable render snapshot even while the underlying `QAbstractItemModel` goes through
-  `beginResetModel()/endResetModel()` refresh cycles and while hierarchy transitions are rebinding the bridge itself.
-- `resolvedNoteListModel` is now derived from the bridge, not from the raw injected `noteListModel` property.
-  This is the key regression guard for toolbar/domain switches: the list resets and re-primes itself when the bridge's
-  resolved model changes, even if the caller only swapped the active hierarchy viewmodel.
-- Committed active-row state now reads `noteListContractBridge.currentIndex/currentNoteEntry/currentNoteId`
-  **property contracts** (not invokable snapshots), so note-backed hierarchies can follow the same explicit
-  current-entry selection pattern that already works for resources.
+- `resolvedNoteListModel` is the injected `noteListModel` itself. The list panel deliberately avoids an internal
+  rediscovery adapter so hierarchy selection, row count, and delegate indexes stay on one model object.
+- Committed active-row state reads `currentIndex`, `currentNoteEntry`, and `currentNoteId` from that model object.
 - Delegate active styling uses `isDelegateActive(index, noteId)`:
   - first contract: `selectedNoteIndices` membership (multi-selection highlight)
   - primary contract: committed `currentIndex`
@@ -182,11 +153,6 @@ selection state machine lives in a sibling controller file.
   `LibraryNoteMutationViewModel` batch helpers.
 - Pointer-drag hot-spot fallback now uses `noteItemDelegate.width/height` explicitly, so drag-start
   math remains bound to the delegate's own touch target.
-- While a note drag is active, visible note-row snapshot refreshes are now deferred through
-  `requestDisplayedNoteListEntriesSync(...)` instead of immediately replacing `displayedNoteListEntries`.
-  This prevents `itemsChanged()` / `dataChanged()` churn from tearing down the source delegate mid-drag.
-- That deferred drag path now composes with the queued snapshot scheduler above, so repeated model notifications during
-  the same turn still collapse into one post-drag visible snapshot apply.
 - `reuseItems` is now disabled during active drag, so `ListView` does not recycle the grabbed delegate while the drag
   handler still owns pointer state.
 - The note-id helper functions used by drag payload construction now return concrete arrays/booleans again, removing
@@ -206,22 +172,16 @@ selection state machine lives in a sibling controller file.
     already part of that group.
   - Dragging one note from a selected group into the hierarchy sidebar must carry every selected note id in the drag
     payload.
-  - Periodic note-list refreshes with unchanged row content must not visibly blink, because `displayedNoteListEntries`
-    remains stable across equivalent model resets.
-  - One logical note-list rebuild must not cause two immediate `displayedNoteListEntries` resync passes through
-    `modelReset` plus a second post-reset `itemsChanged()` consumption path.
-  - Switching from one hierarchy domain to another must not show the previous hierarchy's row snapshot for one frame
+  - The visible list model must be `resolvedNoteListModel`, not a copied JavaScript row array.
+  - The delegate must consume note/resource role properties for the current index.
+  - Switching from one hierarchy domain to another must not show the previous hierarchy's rows for one frame
     while the new note-list model is being rebound.
   - Switching hierarchy domains by changing only the mounted hierarchy viewmodel must still replace the effective
     note-list model immediately.
-  - When the caller forwards an explicit replacement note-list model during a hierarchy switch, the visible row
-    snapshot must immediately switch to that model's metadata payload, including folder/tag chips.
+  - When the caller forwards an explicit replacement note-list model during a hierarchy switch, the `ListView.model`
+    must immediately switch to that model.
   - Switching into the resources hierarchy must not leave the shared list blank before the user explicitly picks a
     resource taxonomy row.
-  - A transition-time model population that only updates `itemCountChanged()` before later data notifications must
-    still repopulate `displayedNoteListEntries`.
-  - Periodic note-list refreshes that arrive during an active drag must be applied only after the drag ends, so the
-    source delegate is not recycled out from under `noteDragHandler`.
   - On mobile, the shared note/resource list must keep inertial scrolling after touch release instead of stopping on
     the release frame.
   - On mobile, `onContentYChanged` and `onMovementEnded` must not re-quantize live touch motion back onto

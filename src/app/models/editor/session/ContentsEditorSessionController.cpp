@@ -409,6 +409,26 @@ void ContentsEditorSessionController::markLocalEditorAuthority()
         QStringLiteral("timestampMs=%1").arg(m_lastLocalEditTimestampMs));
 }
 
+bool ContentsEditorSessionController::commitRawEditorTextMutation(const QString& text)
+{
+    WhatSon::Debug::traceEditorSelf(
+        this,
+        QStringLiteral("editorSession"),
+        QStringLiteral("commitRawEditorTextMutation"),
+        QStringLiteral("noteId=%1 %2")
+            .arg(normalizedNoteId(m_editorBoundNoteId))
+            .arg(WhatSon::Debug::summarizeText(text)));
+    if (m_editorText == text)
+    {
+        return false;
+    }
+
+    setEditorText(text);
+    markLocalEditorAuthority();
+    scheduleEditorPersistence();
+    return true;
+}
+
 bool ContentsEditorSessionController::scheduleEditorPersistence()
 {
     WhatSon::Debug::traceEditorSelf(

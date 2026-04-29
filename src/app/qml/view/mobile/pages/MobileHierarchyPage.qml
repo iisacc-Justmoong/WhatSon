@@ -14,7 +14,9 @@ Item {
     readonly property var activeContentViewModel: mobileHierarchyPage.activeHierarchyBindingSnapshot
         ? mobileHierarchyPage.activeHierarchyBindingSnapshot.viewModel
         : null
-    readonly property var activeNoteListModel: activeNoteListModelResolver.noteListModel
+    readonly property var activeNoteListModel: mobileHierarchyPage.sidebarHierarchyViewModel
+        ? mobileHierarchyPage.sidebarHierarchyViewModel.activeNoteListModel
+        : null
     readonly property int activeToolbarIndex: {
         const snapshot = mobileHierarchyPage.activeHierarchyBindingSnapshot;
         const numericIndex = Number(snapshot && snapshot.index !== undefined ? snapshot.index : 0);
@@ -657,12 +659,6 @@ Item {
         mobileHierarchyPage.routeToHierarchyRoot();
     }
     onResolvedBodyRoutePathChanged: mobileHierarchyPage.syncRouteSelectionState()
-
-    NoteListModelContractBridge {
-        id: activeNoteListModelResolver
-
-        hierarchyViewModel: mobileHierarchyPage.activeContentViewModel
-    }
 
     MobileView.MobileNoteCreationCoordinator {
         id: noteCreationCoordinator

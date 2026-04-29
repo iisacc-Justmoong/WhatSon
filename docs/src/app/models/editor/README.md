@@ -59,6 +59,9 @@
   policy, and blocks model used by `ContentsStructuredDocumentFlow.qml`.
 - `display/ContentsDisplay*` owns editor-host display coordination for selection, context menus, gutter/minimap state,
   mount plans, refresh plans, and viewport math.
+- Local RAW editor-source writes now converge through
+  `session/ContentsEditorSessionController::commitRawEditorTextMutation(...)`, so QML controllers can propose next
+  `.wsnbody` text without owning `editorText` writes, local-authority marking, or persistence scheduling.
 - Editor-domain QML policy/controller/support files now also live under these responsibility directories. The
   `src/app/qml/view/content/editor` directory is reserved for view hosts, visual layers, and block delegates that match
   the Figma `ContentsView` / `ContentsDisplayView` surface.

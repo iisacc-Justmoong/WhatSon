@@ -2,7 +2,6 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import "../../../models/editor/diagnostics/ContentsEditorDebugTrace.js" as EditorTrace
-import "../../../models/editor/display/ContentsMinimapSnapshotSupport.js" as MinimapSnapshotSupport
 
 QtObject {
     id: model
@@ -43,39 +42,6 @@ QtObject {
         return normalized;
     }
 
-    function minimapSnapshotToken(entry, fallbackIndex) {
-        const safeEntry = entry && typeof entry === "object" ? entry : ({});
-        if (safeEntry.snapshotToken !== undefined && safeEntry.snapshotToken !== null)
-            return String(safeEntry.snapshotToken);
-        if (safeEntry.token !== undefined && safeEntry.token !== null)
-            return String(safeEntry.token);
-        if (safeEntry.text !== undefined && safeEntry.text !== null)
-            return "text|" + String(safeEntry.text);
-        return "line|" + String(Math.max(0, Math.floor(Number(fallbackIndex) || 0)));
-    }
-
-    function normalizedMinimapSnapshotText(rawText) {
-        const normalizedText = rawText === undefined || rawText === null ? "" : String(rawText);
-        return normalizedText
-                .replace(/\r\n/g, "\n")
-                .replace(/\r/g, "\n")
-                .replace(/\u2028/g, "\n")
-                .replace(/\u2029/g, "\n");
-    }
-
-    function plainMinimapSnapshotEntries(rawText) {
-        const normalizedText = model.normalizedMinimapSnapshotText(rawText);
-        const lines = normalizedText.length > 0 ? normalizedText.split("\n") : [""];
-        const entries = [];
-        for (let lineIndex = 0; lineIndex < lines.length; ++lineIndex) {
-            entries.push({
-                "lineNumber": lineIndex + 1,
-                "snapshotToken": "text|" + lines[lineIndex]
-            });
-        }
-        return entries;
-    }
-
     function hasStructuredLogicalLineGeometry() {
         return model.contentsView.structuredHostGeometryActive
                 && model.effectiveStructuredLogicalLineEntries().length > 0;
@@ -95,26 +61,6 @@ QtObject {
     function hasStructuredMinimapEntries() {
         return model.contentsView.structuredHostGeometryActive
                 && model.effectiveStructuredMinimapEntries().length > 0;
-    }
-
-    function currentMinimapSnapshotEntries() {
-        if (model.hasStructuredMinimapEntries())
-            return model.effectiveStructuredMinimapEntries();
-        return model.plainMinimapSnapshotEntries(model.activeLogicalTextSnapshot());
-    }
-
-    function minimapSnapshotEntriesEqual(previousEntries, nextEntries) {
-        const normalizedPrevious = model.normalizedSnapshotEntries(previousEntries);
-        const normalizedNext = model.normalizedSnapshotEntries(nextEntries);
-        if (normalizedPrevious.length !== normalizedNext.length)
-            return false;
-        for (let index = 0; index < normalizedPrevious.length; ++index) {
-            if (model.minimapSnapshotToken(normalizedPrevious[index], index)
-                    !== model.minimapSnapshotToken(normalizedNext[index], index)) {
-                return false;
-            }
-        }
-        return true;
     }
 
     function normalizedStructuredLogicalLineEntries() {
@@ -230,53 +176,6 @@ QtObject {
         return model.viewportCoordinator.normalizedNoteId(model.contentsView.selectedNoteId);
     }
 
-    function nextMinimapLineGroupsForCurrentState(currentSnapshotEntries) {
-        const currentNoteId = model.activeLineGeometryNoteId();
-        const useStructuredMinimap = model.hasStructuredMinimapEntries();
-        const structuredLineCount = useStructuredMinimap
-                ? model.effectiveStructuredMinimapEntries().length
-                : 0;
-        const snapshotPlan = model.minimapCoordinator.buildNextMinimapSnapshotPlan(
-                    model.contentsView.minimapLineGroups,
-                    model.contentsView.minimapLineGroupsNoteId,
-                    currentNoteId,
-                    model.contentsView.minimapSnapshotEntries,
-                    currentSnapshotEntries,
-                    model.contentsView.minimapSnapshotForceFullRefresh,
-                    model.hasPendingNoteEntryGutterRefresh(currentNoteId),
-                    structuredLineCount,
-                    model.contentsView.logicalLineCount);
-        if (snapshotPlan.reuseExisting)
-            return model.contentsView.minimapLineGroups;
-        if (snapshotPlan.requiresFullRebuild) {
-            return useStructuredMinimap
-                    ? model.buildStructuredMinimapLineGroupsForRange(1, Math.max(1, structuredLineCount))
-                    : model.buildMinimapLineGroupsForRange(1, model.contentsView.logicalLineCount);
-        }
-
-        const replacementGroups = useStructuredMinimap
-                ? model.buildStructuredMinimapLineGroupsForRange(
-                      Number(snapshotPlan.replacementStartLine) || 1,
-                      Number(snapshotPlan.replacementEndLine) || 1)
-                : model.buildMinimapLineGroupsForRange(
-                      Number(snapshotPlan.replacementStartLine) || 1,
-                      Number(snapshotPlan.replacementEndLine) || 1);
-        const mergedGroups = MinimapSnapshotSupport.spliceLineGroups(
-                    model.contentsView.minimapLineGroups,
-                    replacementGroups,
-                    Number(snapshotPlan.previousStartLine) || 1,
-                    Number(snapshotPlan.previousEndLine) || 1);
-        const expectedLineCount = useStructuredMinimap
-                ? Math.max(1, structuredLineCount)
-                : model.contentsView.logicalLineCount;
-        if (!Array.isArray(mergedGroups) || mergedGroups.length !== expectedLineCount) {
-            return useStructuredMinimap
-                    ? model.buildStructuredMinimapLineGroupsForRange(1, expectedLineCount)
-                    : model.buildMinimapLineGroupsForRange(1, expectedLineCount);
-        }
-        return mergedGroups;
-    }
-
     function buildVisibleGutterLineEntries() {
         if (model.contentsView.structuredHostGeometryActive) {
             return model.structuredFlowCoordinator.buildVisibleStructuredGutterLineEntries(
@@ -358,7 +257,7 @@ QtObject {
         if (plan.scheduleViewportGutterRefresh)
             model.contentsView.scheduleViewportGutterRefresh();
         if (plan.scheduleMinimapSnapshotRefresh)
-            model.contentsView.scheduleMinimapSnapshotRefresh(!!plan.scheduleMinimapSnapshotForceFull);
+            model.contentsView.scheduleMinimapSnapshotRefresh(true);
         if (plan.scheduleGutterRefresh) {
             model.contentsView.scheduleGutterRefresh(Number(plan.gutterPassCount) || 0,
                                                String(plan.gutterReason || ""));

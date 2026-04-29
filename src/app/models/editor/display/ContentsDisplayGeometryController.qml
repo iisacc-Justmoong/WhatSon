@@ -16,34 +16,21 @@ QtObject {
     function refreshMinimapSnapshot() {
         if (!controller.contentsView.lineGeometryRefreshEnabled)
             return;
-        const currentSnapshotEntries = controller.contentsView.currentMinimapSnapshotEntries();
         const currentNoteId = controller.contentsView.activeLineGeometryNoteId();
         const useStructuredMinimap = controller.contentsView.hasStructuredMinimapEntries();
-        const currentLineCount = useStructuredMinimap
-                ? Math.max(1, controller.contentsView.effectiveStructuredMinimapEntries().length)
-                : controller.contentsView.logicalLineCount;
-        if (!controller.contentsView.minimapSnapshotForceFullRefresh
-                && !controller.contentsView.hasPendingNoteEntryGutterRefresh(currentNoteId)
-                && currentNoteId === controller.contentsView.minimapLineGroupsNoteId
-                && controller.contentsView.minimapSnapshotEntriesEqual(
-                    controller.contentsView.minimapSnapshotEntries,
-                    currentSnapshotEntries)
-                && Array.isArray(controller.contentsView.minimapLineGroups)
-                && controller.contentsView.minimapLineGroups.length === currentLineCount) {
-            controller.refreshMinimapViewportTracking();
-            controller.refreshMinimapCursorTracking();
-            return;
-        }
-
-        const nextLineGroups = controller.contentsView.nextMinimapLineGroupsForCurrentState(currentSnapshotEntries);
+        const nextLineGroups = useStructuredMinimap
+                ? controller.contentsView.buildStructuredMinimapLineGroupsForRange(
+                    1,
+                    Math.max(1, controller.contentsView.effectiveStructuredMinimapEntries().length))
+                : controller.contentsView.buildMinimapLineGroupsForRange(
+                    1,
+                    controller.contentsView.logicalLineCount);
         const nextRows = MinimapSnapshotSupport.flattenLineGroups(nextLineGroups, controller.contentsView.editorLineHeight);
         const nextSilhouetteHeight = controller.contentsView.minimapSilhouetteHeight(nextRows);
         const nextTrackHeight = Math.min(controller.contentsView.minimapAvailableTrackHeight, nextSilhouetteHeight);
 
         controller.contentsView.minimapLineGroups = nextLineGroups;
         controller.contentsView.minimapLineGroupsNoteId = currentNoteId;
-        controller.contentsView.minimapSnapshotForceFullRefresh = false;
-        controller.contentsView.minimapSnapshotEntries = currentSnapshotEntries.slice(0);
         controller.contentsView.minimapVisualRows = nextRows;
         controller.contentsView.minimapResolvedSilhouetteHeight = nextSilhouetteHeight;
         controller.contentsView.minimapResolvedTrackHeight = nextTrackHeight;
@@ -95,8 +82,6 @@ QtObject {
         controller.contentsView.minimapResolvedTrackHeight = 1;
         controller.contentsView.minimapResolvedViewportHeight = 0;
         controller.contentsView.minimapResolvedViewportY = 0;
-        controller.contentsView.minimapSnapshotEntries = [];
-        controller.contentsView.minimapSnapshotForceFullRefresh = true;
     }
 
     function resetGutterRefreshState() {

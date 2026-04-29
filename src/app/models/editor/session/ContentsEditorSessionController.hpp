@@ -79,6 +79,7 @@ public:
         const QString& bodyNoteId,
         const QString& noteDirectoryPath = QString());
     Q_INVOKABLE void markLocalEditorAuthority();
+    Q_INVOKABLE bool commitRawEditorTextMutation(const QString& text);
     Q_INVOKABLE bool scheduleEditorPersistence();
     Q_INVOKABLE bool persistEditorTextImmediately();
     Q_INVOKABLE bool persistEditorTextImmediatelyWithText(const QString& text);

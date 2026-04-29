@@ -23,18 +23,78 @@ Item {
     readonly property var structuredDocumentFlow: surfaceHost.structuredDocumentFlow
     readonly property var structuredDocumentViewport: surfaceHost.structuredDocumentViewport
 
+    function pointInsideMappedItem(targetItem, sourceItem, sourceX, sourceY) {
+        if (!targetItem || !sourceItem || sourceItem.mapToItem === undefined)
+            return false
+        if (targetItem.visible !== undefined && !targetItem.visible)
+            return false
+        const mappedPoint = sourceItem.mapToItem(targetItem, sourceX, sourceY)
+        const targetWidth = Math.max(0, Number(targetItem.width) || 0)
+        const targetHeight = Math.max(0, Number(targetItem.height) || 0)
+        return mappedPoint.x >= 0 && mappedPoint.y >= 0
+                && mappedPoint.x <= targetWidth
+                && mappedPoint.y <= targetHeight
+    }
+
+    function requestDocumentEndEditFromActivationPoint(localX, localY) {
+        if (!auxiliaryHost.contentsView.hasSelectedNote
+                || auxiliaryHost.contentsView.noteDocumentExceptionVisible)
+            return false
+        if (auxiliaryHost.pointInsideMappedItem(gutterHost, editorActivationSurface, localX, localY))
+            return false
+        if (auxiliaryHost.pointInsideMappedItem(minimapLayerItem, editorActivationSurface, localX, localY))
+            return false
+        if (!surfaceHost || surfaceHost.requestStructuredDocumentEndEditFromEditorAreaPoint === undefined)
+            return false
+        return surfaceHost.requestStructuredDocumentEndEditFromEditorAreaPoint(
+                    editorActivationSurface,
+                    localX,
+                    localY)
+    }
+
+    Item {
+        id: editorActivationSurface
+
+        anchors.fill: parent
+        enabled: visible
+        visible: auxiliaryHost.contentsView.hasSelectedNote
+                 && !auxiliaryHost.contentsView.noteDocumentExceptionVisible
+        z: 0
+
+        TapHandler {
+            id: editorWholeSurfaceEndEditTapHandler
+
+            acceptedButtons: Qt.LeftButton
+            gesturePolicy: TapHandler.ReleaseWithinBounds
+            grabPermissions: PointerHandler.ApprovesTakeOverByAnything
+            target: null
+
+            onTapped: function (eventPoint, button) {
+                if (button !== Qt.LeftButton)
+                    return
+                const localX = eventPoint && eventPoint.position ? Number(eventPoint.position.x) || 0 : 0
+                const localY = eventPoint && eventPoint.position ? Number(eventPoint.position.y) || 0 : 0
+                auxiliaryHost.requestDocumentEndEditFromActivationPoint(localX, localY)
+            }
+        }
+    }
+
     RowLayout {
         anchors.fill: parent
-        anchors.leftMargin: contentsView.effectiveFrameHorizontalInset
-        anchors.rightMargin: contentsView.effectiveFrameHorizontalInset
-                             + (contentsView.showMinimapRail ? contentsView.minimapOuterWidth : 0)
+        anchors.leftMargin: auxiliaryHost.contentsView.effectiveFrameHorizontalInset
+        anchors.rightMargin: auxiliaryHost.contentsView.effectiveFrameHorizontalInset
+                             + (auxiliaryHost.contentsView.showMinimapRail ? auxiliaryHost.contentsView.minimapOuterWidth : 0)
         LayoutMirroring.childrenInherit: false
         LayoutMirroring.enabled: false
         layoutDirection: Qt.LeftToRight
         spacing: 0
-        visible: contentsView.hasSelectedNote && contentsView.noteDocumentParseMounted
+        visible: auxiliaryHost.contentsView.hasSelectedNote
+                 && !auxiliaryHost.contentsView.noteDocumentExceptionVisible
+        z: 1
 
         ContentsDisplayGutterHost {
+            id: gutterHost
+
             contentsView: auxiliaryHost.contentsView
         }
 

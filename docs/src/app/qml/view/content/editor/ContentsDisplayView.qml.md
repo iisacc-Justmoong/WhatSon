@@ -29,6 +29,9 @@ not note-backed.
 - Selected-note focus restoration now targets `ContentsStructuredDocumentFlow.qml` directly.
   The structured document host is the canonical note editor surface, so the root view no longer instantiates an
   extra active-surface adapter layer just to forward focus requests.
+- On mobile, component mount now asks the selection-sync path to focus the already selected note when the editor is
+  created after the note-selection signal. This covers the new-note route where the list selection is committed before
+  the mobile editor page exists.
 - QML runtime mechanics that need timers, connections, shortcuts, pointer handlers, or context menus live as
   model-side controllers under `src/app/models/editor/display`; they are not ViewModels.
 - `ContentsDisplayView.qml` keeps compatibility controller functions only for collaborators that still call the display
@@ -58,7 +61,7 @@ not note-backed.
 
 - The host now emits explicit editor-creation trace turns for note selection, body-note resolution, editor-session
   binding, document mount pending/mounted/failure transitions, structured-host requests, and the active surface policy.
-- Geometry/minimap snapshot planning, viewport line math, input/context-menu shortcut orchestration, and the thin
+- Geometry/minimap row construction, viewport line math, input/context-menu shortcut orchestration, and the thin
   host-side selection/presentation wrapper layer are no longer implemented inline as one large block inside this file.
   The host keeps the public wrapper function names, but the heavy logic now lives in
   `src/app/models/editor/display/ContentsDisplayGeometrySnapshotModel.qml`,
@@ -154,6 +157,8 @@ not note-backed.
   The host now normalizes the parser-backed `ContentsStructuredDocumentFlow.normalizedBlocks()` stream into one minimap
   snapshot entry per block/tag, then asks `ContentsDisplayMinimapCoordinator` to build the synthetic silhouette rows.
   Text-like rows size themselves from block plain-text amount; visual blocks such as `<resource ... />` stay block-like.
+  The host no longer keeps a previous minimap snapshot token cache or partial-splice plan; every queued minimap refresh
+  rebuilds rows from the current document state so the first empty-note silhouette cannot become authoritative.
 - `commitDocumentPresentationRefresh()` refreshes only the HTML overlay/minimap projection; it no longer triggers a
   RichText surface reinjection step.
 - Resource-bearing fallback notes still substitute `whatson-resource-block` placeholders into HTML, but that

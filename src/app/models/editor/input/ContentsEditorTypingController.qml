@@ -756,20 +756,16 @@ QtObject {
             return false;
         const cursorSourceOffset = Math.max(0, Math.floor(Number(safePayload.sourceOffset) || 0));
 
-        if (controller.view.editorText !== nextSourceText)
-            controller.view.editorText = nextSourceText;
+        if (!controller.commitRawEditorTextMutation(nextSourceText))
+            return false;
+        const committedText = controller.committedEditorText(nextSourceText);
         if (controller.view.commitDocumentPresentationRefresh !== undefined)
             controller.view.commitDocumentPresentationRefresh();
         else
             controller.synchronizeLiveEditingStateFromPresentation();
 
         controller.scheduleCursorPosition(controller.logicalOffsetForSourceOffset(cursorSourceOffset));
-
-        if (controller.editorSession && controller.editorSession.markLocalEditorAuthority !== undefined)
-            controller.editorSession.markLocalEditorAuthority();
-        if (controller.editorSession && controller.editorSession.scheduleEditorPersistence !== undefined)
-            controller.editorSession.scheduleEditorPersistence();
-        controller.view.editorTextEdited(nextSourceText);
+        controller.view.editorTextEdited(committedText);
         return true;
     }
 
@@ -859,18 +855,15 @@ QtObject {
             return false;
         }
 
-        if (controller.view.editorText !== normalizedNextSourceText)
-            controller.view.editorText = normalizedNextSourceText;
+        if (!controller.commitRawEditorTextMutation(normalizedNextSourceText))
+            return false;
+        const committedText = controller.committedEditorText(normalizedNextSourceText);
         if (controller.view.commitDocumentPresentationRefresh !== undefined)
             controller.view.commitDocumentPresentationRefresh();
         else
             controller.synchronizeLiveEditingStateFromPresentation();
 
-        if (controller.editorSession && controller.editorSession.markLocalEditorAuthority !== undefined)
-            controller.editorSession.markLocalEditorAuthority();
-        if (controller.editorSession && controller.editorSession.scheduleEditorPersistence !== undefined)
-            controller.editorSession.scheduleEditorPersistence();
-        controller.view.editorTextEdited(normalizedNextSourceText);
+        controller.view.editorTextEdited(committedText);
         return true;
     }
 
@@ -1297,15 +1290,16 @@ QtObject {
             return false;
         }
 
-        if (controller.view.editorText !== nextSourceText)
-            controller.view.editorText = nextSourceText;
+        if (!controller.commitRawEditorTextMutation(nextSourceText))
+            return false;
+        const committedText = controller.committedEditorText(nextSourceText);
         if (rawReplacementEnabled) {
             if (controller.view.commitDocumentPresentationRefresh !== undefined)
                 controller.view.commitDocumentPresentationRefresh();
             else
                 controller.synchronizeLiveEditingStateFromPresentation();
         } else {
-            controller.adoptLiveStateIntoBridge(nextSourceText);
+            controller.adoptLiveStateIntoBridge(committedText);
         }
 
         if (rawReplacementEnabled && isFinite(cursorSourceOffsetOverride))
@@ -1313,12 +1307,24 @@ QtObject {
         else if (isFinite(cursorLogicalOverride))
             controller.scheduleCursorPosition(cursorLogicalOverride);
 
-        if (controller.editorSession && controller.editorSession.markLocalEditorAuthority !== undefined)
-            controller.editorSession.markLocalEditorAuthority();
-        if (controller.editorSession && controller.editorSession.scheduleEditorPersistence !== undefined)
-            controller.editorSession.scheduleEditorPersistence();
-        controller.view.editorTextEdited(nextSourceText);
+        controller.view.editorTextEdited(committedText);
         return true;
+    }
+
+    function commitRawEditorTextMutation(nextSourceText) {
+        if (!controller.editorSession
+                || controller.editorSession.commitRawEditorTextMutation === undefined) {
+            return false;
+        }
+        return !!controller.editorSession.commitRawEditorTextMutation(nextSourceText);
+    }
+
+    function committedEditorText(fallbackText) {
+        if (controller.editorSession && controller.editorSession.editorText !== undefined
+                && controller.editorSession.editorText !== null) {
+            return String(controller.editorSession.editorText);
+        }
+        return fallbackText === undefined || fallbackText === null ? "" : String(fallbackText);
     }
 
     Component.onCompleted: {

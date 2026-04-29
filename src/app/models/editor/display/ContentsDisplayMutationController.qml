@@ -102,6 +102,22 @@ QtObject {
         return false;
     }
 
+    function commitRawEditorTextMutation(nextSourceText) {
+        if (!controller.editorSession
+                || controller.editorSession.commitRawEditorTextMutation === undefined) {
+            return false;
+        }
+        return !!controller.editorSession.commitRawEditorTextMutation(nextSourceText);
+    }
+
+    function committedEditorText(fallbackText) {
+        if (controller.editorSession && controller.editorSession.editorText !== undefined
+                && controller.editorSession.editorText !== null) {
+            return String(controller.editorSession.editorText);
+        }
+        return fallbackText === undefined || fallbackText === null ? "" : String(fallbackText);
+    }
+
     function focusStructuredBlockSourceOffset(sourceOffset) {
         const focusPlan = controller.editOperationCoordinator.focusStructuredSourceOffsetPlan(
                     controller.contentsView.showStructuredDocumentFlow,
@@ -137,8 +153,9 @@ QtObject {
             controller.resourceImportController.restoreEditorSurfaceFromPresentation();
             return false;
         }
-        if (controller.contentsView.editorText !== normalizedNextSourceText)
-            controller.contentsView.editorText = normalizedNextSourceText;
+        if (!controller.commitRawEditorTextMutation(normalizedNextSourceText))
+            return false;
+        const committedText = controller.committedEditorText(normalizedNextSourceText);
         controller.presentationRefreshController.clearPendingWhileFocused();
         if (!controller.contentsView.showStructuredDocumentFlow
                 && controller.contentsView.commitDocumentPresentationRefresh !== undefined) {
@@ -146,8 +163,6 @@ QtObject {
         } else {
             controller.eventPump.stopDocumentPresentationRefreshTimer();
         }
-        if (controller.editorSession && controller.editorSession.markLocalEditorAuthority !== undefined)
-            controller.editorSession.markLocalEditorAuthority();
         if (focusRequest
                 && controller.structuredDocumentFlow
                 && controller.structuredDocumentFlow.requestFocus !== undefined
@@ -163,9 +178,7 @@ QtObject {
                 controller.structuredDocumentFlow.requestFocus(requestedFocus);
             });
         }
-        if (controller.editorSession && controller.editorSession.scheduleEditorPersistence !== undefined)
-            controller.editorSession.scheduleEditorPersistence();
-        controller.contentsView.editorTextEdited(normalizedNextSourceText);
+        controller.contentsView.editorTextEdited(committedText);
         return true;
     }
 

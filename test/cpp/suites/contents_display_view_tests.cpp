@@ -32,7 +32,9 @@ void WhatSonCppRegressionTests::contentsDisplayView_invalidatesGutterGeometryImm
     QVERIFY(displayViewSource.contains(QStringLiteral("function finalizePendingNoteEntryGutterRefresh(noteId, reason, refreshStructuredLayout)")));
     QVERIFY(displayViewSource.contains(QStringLiteral("function resetNoteEntryLineGeometryState()")));
     QVERIFY(displayViewSource.contains(QStringLiteral("contentsView.minimapLineGroupsNoteId === contentsView.activeLineGeometryNoteId()")));
-    QVERIFY(geometryControllerSource.contains(QStringLiteral("currentNoteId === controller.contentsView.minimapLineGroupsNoteId")));
+    QVERIFY(!geometryControllerSource.contains(QStringLiteral("currentNoteId === controller.contentsView.minimapLineGroupsNoteId")));
+    QVERIFY(geometryControllerSource.contains(QStringLiteral("controller.contentsView.buildStructuredMinimapLineGroupsForRange(")));
+    QVERIFY(geometryControllerSource.contains(QStringLiteral("controller.contentsView.buildMinimapLineGroupsForRange(")));
     QVERIFY(geometryControllerSource.contains(QStringLiteral("controller.contentsView.minimapLineGroupsNoteId = currentNoteId;")));
     QVERIFY(geometryControllerSource.contains(QStringLiteral("controller.contentsView.minimapLineGroupsNoteId = \"\";")));
     QVERIFY(eventPumpSource.contains(
@@ -55,7 +57,7 @@ void WhatSonCppRegressionTests::contentsDisplayView_invalidatesGutterGeometryImm
     QVERIFY(geometryControllerSource.contains(QStringLiteral("controller.refreshCoordinator.scheduleNoteEntryGutterRefresh(")));
     QVERIFY(presentationOrchestrationModelSource.contains(QStringLiteral("refreshPlan.gutterPassCount")));
     QVERIFY(presentationOrchestrationModelSource.contains(QStringLiteral("model.contentsView.scheduleGutterRefresh(")));
-    QVERIFY(geometrySnapshotModelSource.contains(QStringLiteral("model.minimapCoordinator.buildNextMinimapSnapshotPlan(")));
+    QVERIFY(!geometrySnapshotModelSource.contains(QStringLiteral("buildNextMinimapSnapshotPlan(")));
     QVERIFY(displayViewSource.contains(QStringLiteral("EditorDisplayModel.ContentsDisplayInputOrchestrationModel {")));
     QVERIFY(inputOrchestrationModelSource.contains(QStringLiteral("model.contextMenuCoordinator.openSelectionContextMenuPlan(")));
     QVERIFY(inputOrchestrationModelSource.contains(QStringLiteral("model.contextMenuCoordinator.inlineStyleTagForEvent(")));
@@ -149,6 +151,24 @@ void WhatSonCppRegressionTests::contentsDisplayView_usesSelectedNoteSnapshotWhil
         QStringLiteral("return boundDirectoryPath === state.selectedNoteDirectoryPath;")));
 }
 
+void WhatSonCppRegressionTests::contentsDisplayView_focusesAlreadySelectedNoteOnMobileMount()
+{
+    const QString displayViewSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/content/editor/ContentsDisplayView.qml"));
+
+    QVERIFY(!displayViewSource.isEmpty());
+    const qsizetype completedIndex = displayViewSource.indexOf(QStringLiteral("Component.onCompleted: {"));
+    const qsizetype focusOptionIndex = displayViewSource.indexOf(
+        QStringLiteral("\"focusEditor\": contentsView.mobileHost && contentsView.hasSelectedNote"),
+        completedIndex);
+
+    QVERIFY(completedIndex >= 0);
+    QVERIFY(focusOptionIndex > completedIndex);
+    QVERIFY(displayViewSource.contains(QStringLiteral("\"resetSnapshot\": true")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("\"scheduleReconcile\": true")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("\"fallbackRefresh\": true")));
+}
+
 void WhatSonCppRegressionTests::contentsDisplayView_doesNotForceBlurFlushDuringNativeComposition()
 {
     const QString displayViewSource = readUtf8SourceFile(
@@ -238,12 +258,38 @@ void WhatSonCppRegressionTests::qmlContextMenus_treatRightClickAndLongPressAsSym
     QVERIFY(sidebarSource.contains(QStringLiteral("onLongPressed: {")));
 }
 
+void WhatSonCppRegressionTests::listBarLayout_rendersResolvedNoteListModelByIndex()
+{
+    const QString listBarSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/panels/ListBarLayout.qml"));
+
+    QVERIFY(!listBarSource.isEmpty());
+    QVERIFY(listBarSource.contains(QStringLiteral("readonly property var resolvedNoteListModel: listBarLayout.noteListModel")));
+    QVERIFY(listBarSource.contains(QStringLiteral("model: listBarLayout.resolvedNoteListModel")));
+    QVERIFY(listBarSource.contains(QStringLiteral("required property int index")));
+    QVERIFY(listBarSource.contains(QStringLiteral("required property string noteId")));
+    QVERIFY(listBarSource.contains(QStringLiteral("required property string primaryText")));
+    QVERIFY(listBarSource.contains(QStringLiteral("required property string displayDate")));
+    QVERIFY(listBarSource.contains(QStringLiteral("required property var folders")));
+    QVERIFY(listBarSource.contains(QStringLiteral("required property var tags")));
+    QVERIFY(!listBarSource.contains(QStringLiteral("model: listBarLayout.displayedNoteListEntries")));
+    QVERIFY(!listBarSource.contains(QStringLiteral("required property var modelData")));
+    QVERIFY(!listBarSource.contains(QStringLiteral("NoteListModelContractBridge {")));
+    QVERIFY(!listBarSource.contains(QStringLiteral("noteListContractBridge")));
+    QVERIFY(!listBarSource.contains(QStringLiteral("function readDisplayedNoteListEntriesFromModel")));
+    QVERIFY(!listBarSource.contains(QStringLiteral("syncDisplayedNoteListEntries")));
+}
+
 void WhatSonCppRegressionTests::contentsDisplayView_routesStructuredMutationsThroughEditorSessionAuthority()
 {
     const QString displayViewSource = readUtf8SourceFile(
         QStringLiteral("src/app/qml/view/content/editor/ContentsDisplayView.qml"));
     const QString mutationControllerSource = readUtf8SourceFile(
         QStringLiteral("src/app/models/editor/display/ContentsDisplayMutationController.qml"));
+    const QString typingControllerSource = readUtf8SourceFile(
+        QStringLiteral("src/app/models/editor/input/ContentsEditorTypingController.qml"));
+    const QString selectionControllerSource = readUtf8SourceFile(
+        QStringLiteral("src/app/models/editor/input/ContentsEditorSelectionController.qml"));
     const QString editOperationCoordinatorHeader = readUtf8SourceFile(
         QStringLiteral("src/app/models/editor/display/ContentsDisplayEditOperationCoordinator.hpp"));
     const QString editOperationCoordinatorSource = readUtf8SourceFile(
@@ -251,6 +297,8 @@ void WhatSonCppRegressionTests::contentsDisplayView_routesStructuredMutationsThr
 
     QVERIFY(!displayViewSource.isEmpty());
     QVERIFY(!mutationControllerSource.isEmpty());
+    QVERIFY(!typingControllerSource.isEmpty());
+    QVERIFY(!selectionControllerSource.isEmpty());
     QVERIFY(!editOperationCoordinatorHeader.isEmpty());
     QVERIFY(!editOperationCoordinatorSource.isEmpty());
     QVERIFY(!mutationControllerSource.contains(QStringLiteral("documentSourceMutationPlan(")));
@@ -259,15 +307,24 @@ void WhatSonCppRegressionTests::contentsDisplayView_routesStructuredMutationsThr
     QVERIFY(!editOperationCoordinatorHeader.contains(QStringLiteral("documentSourceMutationPlan")));
     QVERIFY(!editOperationCoordinatorSource.contains(QStringLiteral("documentSourceMutationPlan")));
     QVERIFY(mutationControllerSource.contains(
-        QStringLiteral("if (controller.contentsView.editorText !== normalizedNextSourceText)")));
-    QVERIFY(mutationControllerSource.contains(
+        QStringLiteral("controller.commitRawEditorTextMutation(normalizedNextSourceText)")));
+    QVERIFY(!mutationControllerSource.contains(
         QStringLiteral("controller.contentsView.editorText = normalizedNextSourceText;")));
+    QVERIFY(typingControllerSource.contains(QStringLiteral("controller.commitRawEditorTextMutation(nextSourceText)")));
+    QVERIFY(selectionControllerSource.contains(QStringLiteral("controller.commitRawEditorTextMutation(nextText)")));
+    QVERIFY(!typingControllerSource.contains(QStringLiteral("controller.view.editorText = nextSourceText;")));
+    QVERIFY(!typingControllerSource.contains(QStringLiteral("controller.view.editorText = normalizedNextSourceText;")));
+    QVERIFY(!selectionControllerSource.contains(QStringLiteral("controller.view.editorText = nextText;")));
     QVERIFY(!mutationControllerSource.contains(
         QStringLiteral("contentsView.structuredFlowSourceText = normalizedNextSourceText;")));
-    QVERIFY(mutationControllerSource.contains(
+    QVERIFY(!mutationControllerSource.contains(
         QStringLiteral("controller.editorSession.markLocalEditorAuthority")));
-    QVERIFY(mutationControllerSource.contains(
+    QVERIFY(!mutationControllerSource.contains(
         QStringLiteral("controller.editorSession.scheduleEditorPersistence")));
+    QVERIFY(!typingControllerSource.contains(QStringLiteral("controller.editorSession.markLocalEditorAuthority")));
+    QVERIFY(!typingControllerSource.contains(QStringLiteral("controller.editorSession.scheduleEditorPersistence")));
+    QVERIFY(!selectionControllerSource.contains(QStringLiteral("controller.editorSession.markLocalEditorAuthority")));
+    QVERIFY(!selectionControllerSource.contains(QStringLiteral("controller.editorSession.scheduleEditorPersistence")));
 }
 
 void WhatSonCppRegressionTests::contentsDisplayView_refreshesMinimapFromResolvedPresentationSource()
@@ -280,8 +337,8 @@ void WhatSonCppRegressionTests::contentsDisplayView_refreshesMinimapFromResolved
         QStringLiteral("onDocumentPresentationSourceTextChanged: {")));
     QVERIFY(displayViewSource.contains(
         QStringLiteral("contentsView.refreshLiveLogicalLineMetrics();")));
-    QVERIFY(displayViewSource.contains(
-        QStringLiteral("contentsView.minimapSnapshotForceFullRefresh = true;")));
+    QVERIFY(!displayViewSource.contains(
+        QStringLiteral("minimapSnapshotForceFullRefresh")));
     QVERIFY(displayViewSource.contains(
         QStringLiteral("contentsView.scheduleMinimapSnapshotRefresh(true);")));
 }
@@ -332,7 +389,7 @@ void WhatSonCppRegressionTests::contentsDisplayView_refreshesMinimapWhenStructur
         QStringLiteral("eventPump.contentsView.scheduleGutterRefresh(")));
 }
 
-void WhatSonCppRegressionTests::contentsDisplayView_normalizesMinimapSnapshotsAgainstStructuredEntries()
+void WhatSonCppRegressionTests::contentsDisplayView_rebuildsMinimapRowsFromCurrentDocumentState()
 {
     const QString displayViewSource = readUtf8SourceFile(
         QStringLiteral("src/app/qml/view/content/editor/ContentsDisplayView.qml"));
@@ -347,21 +404,24 @@ void WhatSonCppRegressionTests::contentsDisplayView_normalizesMinimapSnapshotsAg
     QVERIFY(!geometrySnapshotModelSource.isEmpty());
     QVERIFY(!minimapCoordinatorSource.isEmpty());
 
-    QVERIFY(displayViewSource.contains(QStringLiteral("property alias minimapSnapshotEntries: geometryState.minimapSnapshotEntries")));
     QVERIFY(displayViewSource.contains(QStringLiteral("EditorDisplayModel.ContentsDisplayGeometrySnapshotModel {")));
-    QVERIFY(geometryStateSource.contains(QStringLiteral("property var minimapSnapshotEntries: []")));
+    QVERIFY(!displayViewSource.contains(QStringLiteral("property alias minimapSnapshotEntries: geometryState.minimapSnapshotEntries")));
+    QVERIFY(!geometryStateSource.contains(QStringLiteral("property var minimapSnapshotEntries: []")));
     QVERIFY(!displayViewSource.contains(QStringLiteral("property string minimapSnapshotSourceText: \"\"")));
     QVERIFY(displayViewSource.contains(QStringLiteral("function hasStructuredLogicalLineGeometry()")));
     QVERIFY(displayViewSource.contains(QStringLiteral("function effectiveStructuredMinimapEntries()")));
     QVERIFY(displayViewSource.contains(QStringLiteral("function hasStructuredMinimapEntries()")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("function currentMinimapSnapshotEntries()")));
+    QVERIFY(!displayViewSource.contains(QStringLiteral("function currentMinimapSnapshotEntries()")));
     QVERIFY(geometrySnapshotModelSource.contains(QStringLiteral("minimapCoordinator.buildStructuredMinimapSnapshotEntries(")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("function minimapSnapshotEntriesEqual(previousEntries, nextEntries)")));
-    QVERIFY(geometrySnapshotModelSource.contains(QStringLiteral("model.contentsView.minimapSnapshotEntries,")));
+    QVERIFY(!displayViewSource.contains(QStringLiteral("function minimapSnapshotEntriesEqual(previousEntries, nextEntries)")));
+    QVERIFY(!geometrySnapshotModelSource.contains(QStringLiteral("model.contentsView.minimapSnapshotEntries,")));
+    QVERIFY(!geometrySnapshotModelSource.contains(QStringLiteral("buildNextMinimapSnapshotPlan(")));
+    QVERIFY(!geometrySnapshotModelSource.contains(QStringLiteral("spliceLineGroups(")));
     QVERIFY(geometrySnapshotModelSource.contains(QStringLiteral("model.contentsView.documentPresentationSourceText !== undefined")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("structuredHostGeometryActive: contentsView.hasStructuredMinimapEntries()")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("structuredHostGeometryActive: contentsView.structuredHostGeometryActive")));
     QVERIFY(!displayViewSource.contains(QStringLiteral("return contentsView.normalizedSnapshotEntries(contentsView.effectiveStructuredLogicalLineEntries());")));
     QVERIFY(minimapCoordinatorSource.contains(QStringLiteral("buildStructuredMinimapSnapshotEntries")));
+    QVERIFY(!minimapCoordinatorSource.contains(QStringLiteral("buildNextMinimapSnapshotPlan")));
     QVERIFY(minimapCoordinatorSource.contains(QStringLiteral("QStringLiteral(\"block|%1|%2|%3|%4|%5\")")));
 }
 
@@ -691,7 +751,34 @@ void WhatSonCppRegressionTests::contentsDisplayView_surfacesMountFailurePlacehol
     QVERIFY(selectionMountControllerSource.contains(
         QStringLiteral("normalizedPlan[fallbackKey]")));
     QVERIFY(auxiliaryHostSource.contains(
+        QStringLiteral("visible: auxiliaryHost.contentsView.hasSelectedNote")));
+    QVERIFY(auxiliaryHostSource.contains(
+        QStringLiteral("&& !auxiliaryHost.contentsView.noteDocumentExceptionVisible")));
+    QVERIFY(!auxiliaryHostSource.contains(
         QStringLiteral("visible: contentsView.hasSelectedNote && contentsView.noteDocumentParseMounted")));
+    QVERIFY(auxiliaryHostSource.contains(QStringLiteral("id: editorActivationSurface")));
+    const qsizetype activationSurfaceIndex = auxiliaryHostSource.indexOf(
+        QStringLiteral("id: editorActivationSurface"));
+    const qsizetype editorRowIndex = auxiliaryHostSource.indexOf(QStringLiteral("RowLayout {"));
+    const qsizetype gutterHostIndex = auxiliaryHostSource.indexOf(
+        QStringLiteral("ContentsDisplayGutterHost {"),
+        editorRowIndex);
+    const qsizetype activationSurfaceZIndex = auxiliaryHostSource.indexOf(
+        QStringLiteral("z: 0"),
+        activationSurfaceIndex);
+    const qsizetype editorRowZIndex = auxiliaryHostSource.indexOf(
+        QStringLiteral("z: 1"),
+        editorRowIndex);
+    QVERIFY(activationSurfaceIndex >= 0);
+    QVERIFY(editorRowIndex > activationSurfaceIndex);
+    QVERIFY(gutterHostIndex > editorRowIndex);
+    QVERIFY(activationSurfaceZIndex > activationSurfaceIndex);
+    QVERIFY(activationSurfaceZIndex < editorRowIndex);
+    QVERIFY(editorRowZIndex > editorRowIndex);
+    QVERIFY(editorRowZIndex < gutterHostIndex);
+    QVERIFY(!auxiliaryHostSource.contains(QStringLiteral("z: 10")));
+    QVERIFY(auxiliaryHostSource.contains(QStringLiteral("editorWholeSurfaceEndEditTapHandler")));
+    QVERIFY(auxiliaryHostSource.contains(QStringLiteral("requestDocumentEndEditFromActivationPoint(localX, localY)")));
     QVERIFY(displayViewSource.contains(QStringLiteral("ContentsDisplayAuxiliaryRailHost")));
     QVERIFY(displayViewSource.contains(QStringLiteral("ContentsDisplayOverlayHost")));
     QVERIFY(auxiliaryHostSource.contains(QStringLiteral("ContentsDisplayGutterHost")));

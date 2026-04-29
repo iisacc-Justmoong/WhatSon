@@ -98,6 +98,8 @@ void WhatSonCppRegressionTests::editorTagsBoundary_groupsNonFormatBodyTagRespons
     QVERIFY(parserSource.contains(
         QStringLiteral("app/models/editor/tags/WhatSonStructuredTagLinter.hpp")));
     QVERIFY(rendererSource.contains(
+        QStringLiteral("app/models/editor/parser/ContentsWsnBodyBlockParser.hpp")));
+    QVERIFY(!rendererSource.contains(
         QStringLiteral("app/models/editor/tags/WhatSonStructuredTagLinter.hpp")));
 
     const QString resourceImportController = readUtf8SourceFile(

@@ -22,7 +22,8 @@ Rectangle {
     readonly property int dragCountBadgeMinWidth: dragCountBadgeHeight
     readonly property int dragCountBadgeWidthPadding: Math.max(0, Math.round(LV.Theme.scaleMetric(10)))
     readonly property real grabbedNoteOpacity: 0.25
-    readonly property bool hasNoteListModel: noteListContractBridge.hasNoteListModel
+    readonly property bool hasNoteListModel: listBarLayout.noteListModel !== null
+                                             && listBarLayout.noteListModel !== undefined
     property bool headerVisible: true
     property var hierarchyViewModel: null
     property color hintColor: LV.Theme.descriptionColor
@@ -51,7 +52,8 @@ Rectangle {
     property var noteDropTarget: null
     readonly property bool noteFolderClearContractAvailable: listBarLayout.noteDeletionViewModel !== null && listBarLayout.noteDeletionViewModel !== undefined && (listBarLayout.noteDeletionViewModel.clearNoteFoldersByIds !== undefined || listBarLayout.noteDeletionViewModel.clearNoteFoldersById !== undefined)
     readonly property bool noteListCurrentIndexContractAvailable: listBarLayout.hasNoteListModel
-                                                           && noteListContractBridge.currentIndexContractAvailable
+                                                           && (listBarLayout.resolvedNoteListModel.currentIndex !== undefined
+                                                               || listBarLayout.resolvedNoteListModel.setCurrentIndex !== undefined)
     property bool isMobilePlatform: false
     readonly property bool noteListKineticViewportEnabled: LV.Theme.mobileTarget || listBarLayout.isMobilePlatform
     readonly property int noteListBoundsBehavior: listBarLayout.noteListKineticViewportEnabled ? Flickable.DragAndOvershootBounds : Flickable.StopAtBounds
@@ -62,16 +64,11 @@ Rectangle {
     readonly property int noteListMaximumFlickVelocity: listBarLayout.noteListKineticViewportEnabled ? Math.max(0, Math.round(LV.Theme.scaleMetric(12000))) : listBarLayout.noteListScrollTick
     property var noteListModel: null
     readonly property int noteListViewportInset: LV.Theme.gap2
-    property var displayedNoteListEntries: []
-    property string displayedNoteListEntriesSignature: "[]"
-    property bool displayedNoteListEntriesSyncDeferred: false
-    property bool displayedNoteListEntriesForceRefreshDeferred: false
-    property bool displayedNoteListEntriesSyncQueued: false
-    property bool displayedNoteListEntriesForceRefreshQueued: false
     property int noteListModelTransitionRevision: 0
     readonly property int noteListScrollTick: LV.Theme.gap2
     readonly property bool noteListSearchContractAvailable: listBarLayout.hasNoteListModel
-                                                      && noteListContractBridge.searchContractAvailable
+                                                      && (listBarLayout.resolvedNoteListModel.searchText !== undefined
+                                                          || listBarLayout.resolvedNoteListModel.setSearchText !== undefined)
     property bool noteListViewportRestorePending: false
     property alias noteSelectionAnchorIndex: noteSelectionController.selectionAnchorIndex
     property color panelColor: "transparent"
@@ -79,7 +76,7 @@ Rectangle {
     readonly property var panelViewModel: null
     property real preservedNoteListContentY: 0
     property int pressedNoteIndex: -1
-    readonly property var resolvedNoteListModel: noteListContractBridge.noteListModel
+    readonly property var resolvedNoteListModel: listBarLayout.noteListModel
     readonly property var resolvedSelectedNoteIds: listBarLayout.selectedNoteIdsFromIndices(listBarLayout.selectedNoteIndices)
     readonly property bool resourceListMode: listBarLayout.noteListMode && listBarLayout.resolvedNoteListModel !== null && listBarLayout.resolvedNoteListModel !== undefined && listBarLayout.resolvedNoteListModel.currentResourceEntry !== undefined
     property string searchText: ""
@@ -138,8 +135,6 @@ Rectangle {
     }
     function applySearchTextToModel() {
         if (!listBarLayout.noteListMode || !listBarLayout.noteListSearchContractAvailable)
-            return;
-        if (noteListContractBridge.applySearchText(listBarLayout.searchText))
             return;
 
         if (listBarLayout.resolvedNoteListModel.searchText !== undefined) {
@@ -245,19 +240,11 @@ Rectangle {
     function currentIndexFromModel() {
         if (!listBarLayout.noteListCurrentIndexContractAvailable)
             return -1;
-        const bridgeCurrentIndex = Number(noteListContractBridge.currentIndex);
-        if (isFinite(bridgeCurrentIndex))
-            return bridgeCurrentIndex;
         if (listBarLayout.resolvedNoteListModel.currentIndex !== undefined)
             return Number(listBarLayout.resolvedNoteListModel.currentIndex);
         return -1;
     }
     function currentNoteEntryFromModel() {
-        const bridgeNoteEntry = noteListContractBridge.currentNoteEntry;
-        if (bridgeNoteEntry !== undefined && bridgeNoteEntry !== null && typeof bridgeNoteEntry === "object") {
-            for (const key in bridgeNoteEntry)
-                return bridgeNoteEntry;
-        }
         if (listBarLayout.resolvedNoteListModel
                 && listBarLayout.resolvedNoteListModel.currentNoteEntry !== undefined
                 && listBarLayout.resolvedNoteListModel.currentNoteEntry !== null
@@ -271,10 +258,6 @@ Rectangle {
         const entryNoteId = listBarLayout.noteIdFromEntry(currentNoteEntry);
         if (entryNoteId.length > 0)
             return entryNoteId;
-        const bridgeNoteId = noteListContractBridge.currentNoteId;
-        const normalizedBridgeNoteId = bridgeNoteId === undefined || bridgeNoteId === null ? "" : String(bridgeNoteId).trim();
-        if (normalizedBridgeNoteId.length > 0)
-            return normalizedBridgeNoteId;
         if (listBarLayout.resolvedNoteListModel
                 && listBarLayout.resolvedNoteListModel.currentNoteId !== undefined
                 && listBarLayout.resolvedNoteListModel.currentNoteId !== null) {
@@ -325,14 +308,6 @@ Rectangle {
         }
         return deletedAny;
     }
-    function flushDeferredDisplayedNoteListEntriesSync() {
-        if (!listBarLayout.displayedNoteListEntriesSyncDeferred)
-            return false;
-        const forceRefresh = listBarLayout.displayedNoteListEntriesForceRefreshDeferred;
-        listBarLayout.displayedNoteListEntriesSyncDeferred = false;
-        listBarLayout.displayedNoteListEntriesForceRefreshDeferred = false;
-        return listBarLayout.syncDisplayedNoteListEntries(forceRefresh);
-    }
     function isDelegateActive(index, noteId) {
         const normalizedIndex = listBarLayout.normalizeCurrentIndex(index);
         const normalizedNoteId = noteId === undefined || noteId === null ? "" : String(noteId).trim();
@@ -381,9 +356,14 @@ Rectangle {
     }
     function noteIdAtIndex(index) {
         const normalizedIndex = listBarLayout.normalizeCurrentIndex(index);
-        if (normalizedIndex < 0 || !noteListContractBridge || noteListContractBridge.readNoteIdAt === undefined)
+        const model = listBarLayout.resolvedNoteListModel;
+        if (normalizedIndex < 0 || !model || model.index === undefined || model.data === undefined)
             return "";
-        return String(noteListContractBridge.readNoteIdAt(normalizedIndex) || "").trim();
+        const modelIndex = model.index(normalizedIndex, 0);
+        if (!modelIndex)
+            return "";
+        const noteId = model.data(modelIndex, model.NoteIdRole !== undefined ? model.NoteIdRole : 258);
+        return String(noteId || "").trim();
     }
     function noteIdFromEntry(noteEntry) {
         if (noteEntry === undefined || noteEntry === null || typeof noteEntry !== "object")
@@ -397,14 +377,6 @@ Rectangle {
             return String(noteEntry.id).trim();
         return "";
     }
-    function noteListEntriesSignature(entries) {
-        const normalizedEntries = entries === undefined || entries === null ? [] : entries;
-        try {
-            return JSON.stringify(normalizedEntries);
-        } catch (error) {
-            return "";
-        }
-    }
     function noteListMaxContentY() {
         return Math.max(0, (Number(noteListView.contentHeight) || 0) - (Number(noteListView.height) || 0));
     }
@@ -412,23 +384,6 @@ Rectangle {
         if (listBarLayout.noteListKineticViewportEnabled)
             return listBarLayout.clampNoteListContentY(value);
         return listBarLayout.quantizedNoteListContentY(value);
-    }
-    function readDisplayedNoteListEntriesFromModel(noteListModelOverride) {
-        const targetModel = noteListModelOverride !== undefined
-                ? noteListModelOverride
-                : listBarLayout.resolvedNoteListModel;
-        if (!targetModel || !noteListContractBridge)
-            return [];
-        let rows = [];
-        if (noteListContractBridge.readAllRowsForModel !== undefined)
-            rows = noteListContractBridge.readAllRowsForModel(targetModel);
-        else if (targetModel === listBarLayout.resolvedNoteListModel && noteListContractBridge.readAllRows !== undefined)
-            rows = noteListContractBridge.readAllRows();
-        if (Array.isArray(rows))
-            return rows;
-        if (rows && rows.length !== undefined)
-            return Array.prototype.slice.call(rows);
-        return [];
     }
     function noteSelectionContainsIndex(index) {
         return noteSelectionController.noteSelectionContainsIndex(index);
@@ -477,8 +432,6 @@ Rectangle {
         const normalizedIndex = Number(index);
         if (!isFinite(normalizedIndex))
             return;
-        if (noteListContractBridge.pushCurrentIndex(Math.max(-1, Math.floor(normalizedIndex))))
-            return;
         if (listBarLayout.resolvedNoteListModel.currentIndex !== undefined) {
             if (Number(listBarLayout.resolvedNoteListModel.currentIndex) === normalizedIndex)
                 return;
@@ -500,12 +453,6 @@ Rectangle {
     }
     function requestNoteSelection(index, noteId, modifiers) {
         noteSelectionController.requestNoteSelection(index, noteId, modifiers);
-    }
-    function resetDisplayedNoteListEntries() {
-        listBarLayout.displayedNoteListEntries = [];
-        listBarLayout.displayedNoteListEntriesSignature = "[]";
-        listBarLayout.displayedNoteListEntriesSyncDeferred = false;
-        listBarLayout.displayedNoteListEntriesForceRefreshDeferred = false;
     }
     function requestViewHook(reason) {
         const hookReason = reason !== undefined ? String(reason) : "manual";
@@ -592,43 +539,6 @@ Rectangle {
             noteListView.currentIndex = normalizedIndex;
         listBarLayout.syncingCurrentIndexFromModel = false;
     }
-    function syncDisplayedNoteListEntriesForModel(noteListModel, forceRefresh) {
-        const nextEntries = listBarLayout.readDisplayedNoteListEntriesFromModel(noteListModel);
-        const nextSignature = listBarLayout.noteListEntriesSignature(nextEntries);
-        if (!Boolean(forceRefresh) && nextSignature === listBarLayout.displayedNoteListEntriesSignature)
-            return false;
-        listBarLayout.displayedNoteListEntries = nextEntries;
-        listBarLayout.displayedNoteListEntriesSignature = nextSignature;
-        return true;
-    }
-    function syncDisplayedNoteListEntries(forceRefresh) {
-        return listBarLayout.syncDisplayedNoteListEntriesForModel(
-                    listBarLayout.resolvedNoteListModel,
-                    forceRefresh);
-    }
-    function requestDisplayedNoteListEntriesSync(forceRefresh) {
-        const requestedForceRefresh = Boolean(forceRefresh);
-        if (listBarLayout.noteDragActive) {
-            listBarLayout.displayedNoteListEntriesSyncDeferred = true;
-            listBarLayout.displayedNoteListEntriesForceRefreshDeferred = listBarLayout.displayedNoteListEntriesForceRefreshDeferred || requestedForceRefresh;
-            return false;
-        }
-        return listBarLayout.syncDisplayedNoteListEntries(requestedForceRefresh);
-    }
-    function scheduleDisplayedNoteListEntriesSync(forceRefresh) {
-        const requestedForceRefresh = Boolean(forceRefresh);
-        listBarLayout.displayedNoteListEntriesForceRefreshQueued = listBarLayout.displayedNoteListEntriesForceRefreshQueued || requestedForceRefresh;
-        if (listBarLayout.displayedNoteListEntriesSyncQueued)
-            return false;
-        listBarLayout.displayedNoteListEntriesSyncQueued = true;
-        Qt.callLater(function () {
-            const scheduledForceRefresh = listBarLayout.displayedNoteListEntriesForceRefreshQueued;
-            listBarLayout.displayedNoteListEntriesSyncQueued = false;
-            listBarLayout.displayedNoteListEntriesForceRefreshQueued = false;
-            listBarLayout.requestDisplayedNoteListEntriesSync(scheduledForceRefresh);
-        });
-        return true;
-    }
     function scheduleNoteListModelTransitionSync() {
         const transitionRevision = listBarLayout.noteListModelTransitionRevision + 1;
         const expectedModel = listBarLayout.resolvedNoteListModel;
@@ -639,7 +549,6 @@ Rectangle {
             if (listBarLayout.resolvedNoteListModel !== expectedModel)
                 return;
             listBarLayout.applySearchTextToModel();
-            listBarLayout.syncDisplayedNoteListEntriesForModel(expectedModel, true);
             listBarLayout.syncCurrentIndexFromModel();
             listBarLayout.syncSelectionFromCommittedState();
             listBarLayout.syncFocusedNoteDeletionState();
@@ -706,7 +615,6 @@ Rectangle {
     color: panelColor
 
     Component.onCompleted: {
-        listBarLayout.syncDisplayedNoteListEntries(true);
         listBarLayout.syncCurrentIndexFromModel();
         listBarLayout.syncSelectionFromCommittedState();
         listBarLayout.syncFocusedNoteDeletionState();
@@ -721,9 +629,6 @@ Rectangle {
         listBarLayout.noteDragActive = false;
         listBarLayout.noteListViewportRestorePending = false;
         listBarLayout.preservedNoteListContentY = 0;
-        listBarLayout.displayedNoteListEntriesSyncQueued = false;
-        listBarLayout.displayedNoteListEntriesForceRefreshQueued = false;
-        listBarLayout.resetDisplayedNoteListEntries();
         listBarLayout.clearInternalNoteDropPreview();
         listBarLayout.clearNoteDragPreview(null);
         if (noteContextMenu.opened)
@@ -734,15 +639,9 @@ Rectangle {
         listBarLayout.setSelectedNoteIndices([]);
         listBarLayout.pressedNoteIndex = -1;
         noteSelectionState.requestRevision += 1;
-        listBarLayout.syncDisplayedNoteListEntriesForModel(listBarLayout.resolvedNoteListModel, true);
         listBarLayout.scheduleNoteListModelTransitionSync();
     }
     onSearchTextChanged: applySearchTextToModel()
-    onNoteDragActiveChanged: {
-        if (listBarLayout.noteDragActive)
-            return;
-        listBarLayout.flushDeferredDisplayedNoteListEntriesSync();
-    }
 
     QtObject {
         id: noteSelectionState
@@ -770,12 +669,6 @@ Rectangle {
 
         deletionTarget: listBarLayout.noteDeletionViewModel
         noteListModel: listBarLayout.resolvedNoteListModel
-    }
-    NoteListModelContractBridge {
-        id: noteListContractBridge
-
-        hierarchyViewModel: listBarLayout.hierarchyViewModel
-        noteListModel: listBarLayout.noteListModel
     }
     LV.ContextMenu {
         id: noteContextMenu
@@ -899,7 +792,7 @@ Rectangle {
                     flickDeceleration: listBarLayout.noteListFlickDeceleration
                     interactive: contentHeight > height && !listBarLayout.noteDragActive
                     maximumFlickVelocity: listBarLayout.noteListMaximumFlickVelocity
-                    model: listBarLayout.displayedNoteListEntries
+                    model: listBarLayout.resolvedNoteListModel
                     pixelAligned: true
                     reuseItems: !listBarLayout.noteDragActive
                     spacing: listBarLayout.noteListViewportInset
@@ -1218,9 +1111,6 @@ Rectangle {
             if (listBarLayout.selectedNoteIndices.length === 0 || !listBarLayout.noteSelectionContainsIndex(listBarLayout.committedNoteIndex))
                 listBarLayout.syncSelectionFromCommittedState();
         }
-        function onItemsChanged() {
-            listBarLayout.scheduleDisplayedNoteListEntriesSync(false);
-        }
         function onModelAboutToBeReset() {
             listBarLayout.captureNoteListViewport();
         }
@@ -1228,24 +1118,6 @@ Rectangle {
             Qt.callLater(function () {
                 listBarLayout.restoreNoteListViewport();
             });
-        }
-        function onRowsInserted() {
-            listBarLayout.scheduleDisplayedNoteListEntriesSync(false);
-        }
-        function onRowsMoved() {
-            listBarLayout.scheduleDisplayedNoteListEntriesSync(false);
-        }
-        function onRowsRemoved() {
-            listBarLayout.scheduleDisplayedNoteListEntriesSync(false);
-        }
-        function onDataChanged() {
-            listBarLayout.scheduleDisplayedNoteListEntriesSync(false);
-        }
-        function onLayoutChanged() {
-            listBarLayout.scheduleDisplayedNoteListEntriesSync(false);
-        }
-        function onItemCountChanged() {
-            listBarLayout.scheduleDisplayedNoteListEntriesSync(false);
         }
 
         ignoreUnknownSignals: true

@@ -37,10 +37,8 @@ QtObject {
     property var minimapLineGroups: []
     property string minimapLineGroupsNoteId: ""
     property bool minimapScrollable: false
-    property bool minimapSnapshotForceFullRefresh: true
     property bool minimapVisible: true
     property var minimapVisualRows: []
-    property var minimapSnapshotEntries: []
 
     property bool cursorDrivenUiRefreshQueued: false
     property bool typingViewportCorrectionQueued: false

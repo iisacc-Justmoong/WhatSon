@@ -138,22 +138,6 @@ void ContentsDisplayRefreshCoordinator::setLiveLogicalLineCount(const int lineCo
     emit liveLogicalLineCountChanged();
 }
 
-bool ContentsDisplayRefreshCoordinator::minimapSnapshotForceFullRefresh() const noexcept
-{
-    return m_minimapSnapshotForceFullRefresh;
-}
-
-void ContentsDisplayRefreshCoordinator::setMinimapSnapshotForceFullRefresh(const bool forceFull)
-{
-    if (m_minimapSnapshotForceFullRefresh == forceFull)
-    {
-        return;
-    }
-
-    m_minimapSnapshotForceFullRefresh = forceFull;
-    emit minimapSnapshotForceFullRefreshChanged();
-}
-
 bool ContentsDisplayRefreshCoordinator::minimapSnapshotRefreshQueued() const noexcept
 {
     return m_minimapSnapshotRefreshQueued;
@@ -291,15 +275,12 @@ QVariantMap ContentsDisplayRefreshCoordinator::scheduleViewportGutterRefresh()
 
 QVariantMap ContentsDisplayRefreshCoordinator::scheduleMinimapSnapshotRefresh(const bool forceFull)
 {
+    Q_UNUSED(forceFull)
+
     QVariantMap plan;
     if (!m_lineGeometryRefreshEnabled)
     {
         return plan;
-    }
-
-    if (forceFull)
-    {
-        setMinimapSnapshotForceFullRefresh(true);
     }
 
     if (m_minimapSnapshotRefreshQueued)

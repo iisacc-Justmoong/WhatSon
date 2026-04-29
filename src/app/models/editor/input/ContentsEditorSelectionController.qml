@@ -643,15 +643,28 @@ QtObject {
             controller.restoreEditorSurfaceFromSourcePresentation();
             return false;
         }
-        if (controller.view.editorText !== nextText)
-            controller.view.editorText = nextText;
+        if (!controller.commitRawEditorTextMutation(nextText))
+            return false;
+        const committedText = controller.committedEditorText(nextText);
         controller.refreshPresentationStateAfterProgrammaticChange();
-        if (controller.editorSession && controller.editorSession.markLocalEditorAuthority !== undefined)
-            controller.editorSession.markLocalEditorAuthority();
-        if (controller.editorSession && controller.editorSession.scheduleEditorPersistence !== undefined)
-            controller.editorSession.scheduleEditorPersistence();
         controller.resetEditorSelectionCache();
-        controller.view.editorTextEdited(nextText);
+        controller.view.editorTextEdited(committedText);
         return true;
+    }
+
+    function commitRawEditorTextMutation(nextSourceText) {
+        if (!controller.editorSession
+                || controller.editorSession.commitRawEditorTextMutation === undefined) {
+            return false;
+        }
+        return !!controller.editorSession.commitRawEditorTextMutation(nextSourceText);
+    }
+
+    function committedEditorText(fallbackText) {
+        if (controller.editorSession && controller.editorSession.editorText !== undefined
+                && controller.editorSession.editorText !== null) {
+            return String(controller.editorSession.editorText);
+        }
+        return fallbackText === undefined || fallbackText === null ? "" : String(fallbackText);
     }
 }

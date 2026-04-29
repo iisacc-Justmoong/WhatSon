@@ -705,11 +705,14 @@ void WhatSonCppRegressionTests::qmlStructuredEditors_focusesDocumentEndFromBotto
 
     const QString surfaceHostSource = readUtf8SourceFile(
         QStringLiteral("src/app/qml/view/content/editor/ContentsDisplaySurfaceHost.qml"));
+    const QString auxiliaryHostSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/content/editor/ContentsDisplayAuxiliaryRailHost.qml"));
     const QString structuredFlowSource = readUtf8SourceFile(
         QStringLiteral("src/app/qml/view/content/editor/ContentsStructuredDocumentFlow.qml"));
     const QString commandSurfaceSource = readUtf8SourceFile(
         QStringLiteral("src/app/models/editor/display/ContentsDisplayInputCommandSurface.qml"));
     QVERIFY(!surfaceHostSource.isEmpty());
+    QVERIFY(!auxiliaryHostSource.isEmpty());
     QVERIFY(!structuredFlowSource.isEmpty());
     QVERIFY(!commandSurfaceSource.isEmpty());
     QVERIFY(surfaceHostSource.contains(QStringLiteral("enabled: contentsView.hasSelectedNote")));
@@ -720,12 +723,47 @@ void WhatSonCppRegressionTests::qmlStructuredEditors_focusesDocumentEndFromBotto
     QVERIFY(surfaceHostSource.contains(QStringLiteral("property bool documentEndEditRequestQueued: false")));
     QVERIFY(surfaceHostSource.contains(QStringLiteral("if (surfaceHost.documentEndEditRequestQueued)")));
     QVERIFY(surfaceHostSource.contains(QStringLiteral("function requestStructuredDocumentEndEditFromSurfacePoint(")));
+    QVERIFY(surfaceHostSource.contains(QStringLiteral("function requestStructuredDocumentEndEditFromEditorAreaPoint(")));
+    QVERIFY(surfaceHostSource.contains(QStringLiteral("\"allowOutOfViewport\": true")));
     QVERIFY(surfaceHostSource.contains(QStringLiteral("structuredDocumentEndWhitespaceTapHandler")));
+    QVERIFY(auxiliaryHostSource.contains(QStringLiteral("id: editorActivationSurface")));
+    const qsizetype activationSurfaceIndex = auxiliaryHostSource.indexOf(
+        QStringLiteral("id: editorActivationSurface"));
+    const qsizetype editorRowIndex = auxiliaryHostSource.indexOf(QStringLiteral("RowLayout {"));
+    const qsizetype gutterHostIndex = auxiliaryHostSource.indexOf(
+        QStringLiteral("ContentsDisplayGutterHost {"),
+        editorRowIndex);
+    const qsizetype activationSurfaceZIndex = auxiliaryHostSource.indexOf(
+        QStringLiteral("z: 0"),
+        activationSurfaceIndex);
+    const qsizetype editorRowZIndex = auxiliaryHostSource.indexOf(
+        QStringLiteral("z: 1"),
+        editorRowIndex);
+    QVERIFY(activationSurfaceIndex >= 0);
+    QVERIFY(editorRowIndex > activationSurfaceIndex);
+    QVERIFY(gutterHostIndex > editorRowIndex);
+    QVERIFY(activationSurfaceZIndex > activationSurfaceIndex);
+    QVERIFY(activationSurfaceZIndex < editorRowIndex);
+    QVERIFY(editorRowZIndex > editorRowIndex);
+    QVERIFY(editorRowZIndex < gutterHostIndex);
+    QVERIFY(!auxiliaryHostSource.contains(QStringLiteral("z: 10")));
+    QVERIFY(auxiliaryHostSource.contains(QStringLiteral("editorWholeSurfaceEndEditTapHandler")));
+    QVERIFY(auxiliaryHostSource.contains(QStringLiteral("visible: auxiliaryHost.contentsView.hasSelectedNote")));
+    QVERIFY(auxiliaryHostSource.contains(QStringLiteral("&& !auxiliaryHost.contentsView.noteDocumentExceptionVisible")));
+    QVERIFY(auxiliaryHostSource.contains(QStringLiteral("function requestDocumentEndEditFromActivationPoint(localX, localY)")));
+    QVERIFY(auxiliaryHostSource.contains(QStringLiteral("surfaceHost.requestStructuredDocumentEndEditFromEditorAreaPoint(")));
+    QVERIFY(auxiliaryHostSource.contains(QStringLiteral("editorActivationSurface")));
+    QVERIFY(auxiliaryHostSource.contains(QStringLiteral("pointInsideMappedItem(gutterHost, editorActivationSurface")));
+    QVERIFY(auxiliaryHostSource.contains(QStringLiteral("pointInsideMappedItem(minimapLayerItem, editorActivationSurface")));
+    QVERIFY(!auxiliaryHostSource.contains(QStringLiteral("visible: contentsView.hasSelectedNote && contentsView.noteDocumentParseMounted")));
     QVERIFY(surfaceHostSource.contains(QStringLiteral("contentsView: surfaceHost.contentsView")));
     QVERIFY(surfaceHostSource.contains(QStringLiteral("resourceImportController: surfaceHost.resourceImportController")));
     QVERIFY(!surfaceHostSource.contains(QStringLiteral("contentsView: contentsView")));
     QVERIFY(!surfaceHostSource.contains(QStringLiteral("resourceImportController: resourceImportController")));
     QVERIFY(structuredFlowSource.contains(QStringLiteral("function pointTargetsDocumentEndEdit(localX, localY)")));
+    QVERIFY(structuredFlowSource.contains(QStringLiteral("const safeLocalX = Number(localX)")));
+    QVERIFY(structuredFlowSource.contains(QStringLiteral("if (!isFinite(safeLocalX) || !isFinite(safeLocalY))")));
+    QVERIFY(!structuredFlowSource.contains(QStringLiteral("return safeLocalY >= documentFlow.documentContentBottomY()")));
     QVERIFY(structuredFlowSource.indexOf(QStringLiteral("const lastBlockHost = blockRepeater.itemAt(lastBlockIndex)"))
             < structuredFlowSource.indexOf(QStringLiteral("const cachedSummary = documentFlow.cachedBlockLayoutSummaryAt(lastBlockIndex)")));
     QVERIFY(structuredFlowSource.contains(QStringLiteral("\"targetBlockIndex\": lastBlockIndex")));
@@ -794,6 +832,40 @@ void WhatSonCppRegressionTests::qmlStructuredEditors_focusesDocumentEndFromBotto
     QCOMPARE(focusRequest.value(QStringLiteral("targetBlockIndex")).toInt(), 1);
     QCOMPARE(flowObject->property("pendingFocusBlockIndex").toInt(), 1);
 
+    QVariantMap emptyDocumentEndTextGroup;
+    emptyDocumentEndTextGroup.insert(QStringLiteral("atomicBlock"), false);
+    emptyDocumentEndTextGroup.insert(QStringLiteral("plainText"), QString());
+    emptyDocumentEndTextGroup.insert(QStringLiteral("sourceStart"), 0);
+    emptyDocumentEndTextGroup.insert(QStringLiteral("sourceEnd"), 0);
+    emptyDocumentEndTextGroup.insert(QStringLiteral("sourceText"), QString());
+    emptyDocumentEndTextGroup.insert(QStringLiteral("textEditable"), true);
+    emptyDocumentEndTextGroup.insert(QStringLiteral("type"), QStringLiteral("text-group"));
+
+    QVariantList emptyDocumentEndBlocks;
+    emptyDocumentEndBlocks.push_back(emptyDocumentEndTextGroup);
+
+    std::unique_ptr<QObject> emptyFlowObject(component.createWithInitialProperties({
+        {QStringLiteral("documentBlocks"), emptyDocumentEndBlocks},
+        {QStringLiteral("sourceText"), QString()},
+    }));
+    if (!emptyFlowObject)
+    {
+        QFAIL(qPrintable(qmlStructuredEditorErrorString(component.errors())));
+    }
+
+    QVariant emptyReturnValue;
+    QVERIFY(QMetaObject::invokeMethod(
+        emptyFlowObject.get(),
+        "requestDocumentEndEdit",
+        Q_RETURN_ARG(QVariant, emptyReturnValue)));
+    QVERIFY(emptyReturnValue.toBool());
+
+    const QVariantMap emptyFocusRequest = emptyFlowObject->property("pendingFocusRequest").toMap();
+    QCOMPARE(emptyFocusRequest.value(QStringLiteral("reason")).toString(), QStringLiteral("document-end-edit"));
+    QCOMPARE(emptyFocusRequest.value(QStringLiteral("sourceOffset")).toInt(), 0);
+    QCOMPARE(emptyFocusRequest.value(QStringLiteral("targetBlockIndex")).toInt(), 0);
+    QCOMPARE(emptyFlowObject->property("pendingFocusBlockIndex").toInt(), 0);
+
     const QString editorImportPath = repositoryRoot + QStringLiteral("/src/app/qml/view/content/editor");
     const QString editorImportUrl = QUrl::fromLocalFile(editorImportPath).toString();
     const QString surfaceHostQmlSource = QStringLiteral(R"QML(
@@ -811,6 +883,7 @@ Item {
     }
     QtObject {
         id: blockRenderer
+        objectName: "surfaceHostBlockRenderer"
         property var renderedAgendas: []
         property var renderedCallouts: []
         property var renderedDocumentBlocks: [
@@ -950,6 +1023,8 @@ Item {
     QVERIFY(hostContentsView != nullptr);
     QObject* surfaceHost = rootObject->findChild<QObject*>(QStringLiteral("surfaceHostUnderTest"));
     QVERIFY(surfaceHost != nullptr);
+    QObject* blockRenderer = rootObject->findChild<QObject*>(QStringLiteral("surfaceHostBlockRenderer"));
+    QVERIFY(blockRenderer != nullptr);
 
     QVariant hostReturnValue;
     QVERIFY(QMetaObject::invokeMethod(
@@ -960,6 +1035,43 @@ Item {
         Q_ARG(QVariant, QVariant(320))));
     QVERIFY(hostReturnValue.toBool());
     QTRY_COMPARE(hostContentsView->property("endEditRequestCount").toInt(), 1);
+
+    QVariant sideWhitespaceReturnValue;
+    QVERIFY(QMetaObject::invokeMethod(
+        surfaceHost,
+        "requestStructuredDocumentEndEditFromSurfacePoint",
+        Q_RETURN_ARG(QVariant, sideWhitespaceReturnValue),
+        Q_ARG(QVariant, QVariant(2)),
+        Q_ARG(QVariant, QVariant(20))));
+    QVERIFY(sideWhitespaceReturnValue.toBool());
+    QTRY_COMPARE(hostContentsView->property("endEditRequestCount").toInt(), 2);
+
+    QVariantMap allowOutOfViewportOptions;
+    allowOutOfViewportOptions.insert(QStringLiteral("allowOutOfViewport"), true);
+
+    QVariant outsideViewportReturnValue;
+    QVERIFY(QMetaObject::invokeMethod(
+        surfaceHost,
+        "requestStructuredDocumentEndEditFromViewportPoint",
+        Q_RETURN_ARG(QVariant, outsideViewportReturnValue),
+        Q_ARG(QVariant, QVariant(-12)),
+        Q_ARG(QVariant, QVariant(20)),
+        Q_ARG(QVariant, QVariant(allowOutOfViewportOptions))));
+    QVERIFY(outsideViewportReturnValue.toBool());
+    QTRY_COMPARE(hostContentsView->property("endEditRequestCount").toInt(), 3);
+
+    hostContentsView->setProperty("structuredFlowSourceText", QString());
+    blockRenderer->setProperty("renderedDocumentBlocks", emptyDocumentEndBlocks);
+
+    QVariant emptyHostReturnValue;
+    QVERIFY(QMetaObject::invokeMethod(
+        surfaceHost,
+        "requestStructuredDocumentEndEditFromSurfacePoint",
+        Q_RETURN_ARG(QVariant, emptyHostReturnValue),
+        Q_ARG(QVariant, QVariant(220)),
+        Q_ARG(QVariant, QVariant(320))));
+    QVERIFY(emptyHostReturnValue.toBool());
+    QTRY_COMPARE(hostContentsView->property("endEditRequestCount").toInt(), 4);
 }
 
 void WhatSonCppRegressionTests::qmlStructuredEditors_backspaceDeletesPreviousResourceFromEmptyTextBlock()

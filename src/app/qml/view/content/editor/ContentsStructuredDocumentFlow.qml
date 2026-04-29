@@ -767,12 +767,13 @@ FocusScope {
     }
 
     function pointTargetsDocumentEndEdit(localX, localY) {
+        const safeLocalX = Number(localX)
         const safeLocalY = Number(localY)
-        if (!isFinite(safeLocalY))
+        if (!isFinite(safeLocalX) || !isFinite(safeLocalY))
             return false
-        if (documentFlow.blockIndexAtPoint(localX, safeLocalY) >= 0)
+        if (documentFlow.blockIndexAtPoint(safeLocalX, safeLocalY) >= 0)
             return false
-        return safeLocalY >= documentFlow.documentContentBottomY()
+        return true
     }
 
     function currentCursorVisualRowRect() {

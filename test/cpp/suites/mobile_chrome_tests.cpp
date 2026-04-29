@@ -47,6 +47,12 @@ void WhatSonCppRegressionTests::mobileChrome_usesSharedFigmaControlSurfaceColor(
     QVERIFY(mobileHierarchyPageSource.contains(
         QStringLiteral("selectionCoordinator.activeHierarchyBindingSnapshotFromSidebar(")));
     QVERIFY(mobileHierarchyPageSource.contains(
+        QStringLiteral("mobileHierarchyPage.sidebarHierarchyViewModel.activeNoteListModel")));
+    QVERIFY(!mobileHierarchyPageSource.contains(
+        QStringLiteral("activeNoteListModelResolver")));
+    QVERIFY(!mobileHierarchyPageSource.contains(
+        QStringLiteral("NoteListModelContractBridge {")));
+    QVERIFY(mobileHierarchyPageSource.contains(
         QStringLiteral("popRepairPolicy.repairVerificationPlan(")));
     QVERIFY(mobileHierarchyPageSource.contains(
         QStringLiteral("routeSelectionSyncPolicy.routeSelectionSyncPlan(")));

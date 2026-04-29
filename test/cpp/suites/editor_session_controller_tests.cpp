@@ -51,6 +51,28 @@ void WhatSonCppRegressionTests::editorSessionController_rebindsWhenSameNoteIdUse
     QVERIFY(!controller.localEditorAuthority());
 }
 
+void WhatSonCppRegressionTests::editorSessionController_commitsRawMutationsThroughSessionAuthority()
+{
+    ContentsEditorSessionController controller;
+    QSignalSpy editorTextChangedSpy(&controller, &ContentsEditorSessionController::editorTextChanged);
+    QSignalSpy localAuthorityChangedSpy(&controller, &ContentsEditorSessionController::localEditorAuthorityChanged);
+
+    controller.setEditorBoundNoteId(QStringLiteral("note-1"));
+    QVERIFY(controller.commitRawEditorTextMutation(QStringLiteral("<task></task>")));
+    QCOMPARE(controller.editorText(), QStringLiteral("<task> </task>"));
+    QVERIFY(controller.localEditorAuthority());
+    QVERIFY(controller.pendingBodySave());
+    QVERIFY(editorTextChangedSpy.count() >= 1);
+    QCOMPARE(localAuthorityChangedSpy.count(), 1);
+
+    editorTextChangedSpy.clear();
+    localAuthorityChangedSpy.clear();
+    QVERIFY(!controller.commitRawEditorTextMutation(QStringLiteral("<task> </task>")));
+    QCOMPARE(controller.editorText(), QStringLiteral("<task> </task>"));
+    QCOMPARE(editorTextChangedSpy.count(), 0);
+    QCOMPARE(localAuthorityChangedSpy.count(), 0);
+}
+
 void WhatSonCppRegressionTests::editorSessionBoundary_usesCppControllerWithoutQmlWrapper()
 {
     const QString sessionControllerHeader = readUtf8SourceFile(

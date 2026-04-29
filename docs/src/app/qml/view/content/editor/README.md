@@ -52,6 +52,11 @@
   exception is visible, so the first click/touch is accepted before the structured parse mount finishes.
   Parse completion still controls structured-block content and note-mounted status, but no longer drops the first
   activation gesture behind a `noteDocumentParseMounted` gate.
+- `ContentsDisplayAuxiliaryRailHost.qml` now provides the full-size blank-area activation surface for the note editor.
+  Any click/touch inside the `ContentsDisplayView` body that does not hit visible editor chrome or a document block is
+  treated as a document-end edit request, preserving empty-note accessibility beyond the first row. The activation
+  surface is stacked behind the editor row so focused text input and block delegates receive native pointer handling
+  before the fallback can run.
 - Tag-management command surfaces still derive from parse-mounted RAW state plus active structured-editor mode, so
   inline formatting shortcuts insert RAW `<bold>`/`<italic>`/`<highlight>` tags only after the note body is actually
   mounted, without a second command-surface-ready proxy.
@@ -138,9 +143,9 @@
   source, and HTML/DOM presentation surfaces are no longer allowed to serialize themselves back into stored source
   during ordinary typing.
 - The live input-to-render path is intentionally short: native `TextEdit` input or tag-management commands build the
-  next RAW source, the display mutation controller writes that RAW source directly to `editorText`, and the existing
-  parser/renderer projections observe that source change. Display-mode mutation plans must not sit between input and
-  the RAW write.
+  next RAW source, `ContentsEditorSessionController::commitRawEditorTextMutation(...)` owns the session write and
+  persistence scheduling, and the existing parser/renderer projections observe that source change. Display-mode mutation
+  plans must not sit between input and the RAW write.
 - Desktop/mobile editor views now keep a separate presentation timer for whole-document markdown/HTML projection refresh, so
   `ContentsTextFormatRenderer` and full minimap resampling no longer run directly on every committed keystroke.
 - Desktop/mobile editor views now also keep `documentPresentationSourceText` as the single whole-document presentation
@@ -159,10 +164,10 @@
 - `ContentsEditorTypingController.qml` now also maintains incremental logical line-start offsets and pushes the entire
   live state into `ContentsLogicalTextBridge.adoptIncrementalState(...)`, so bridge consumers stay current without a
   whole-note rebuild per keystroke.
-- Desktop/mobile minimap snapshotting now also shares `ContentsMinimapSnapshotSupport.js`, so ordinary note edits only
-  rebuild the changed snapshot slice instead of rebuilding the whole rail.
-  On structured notes the cached rows now represent parser-backed block silhouettes rather than live per-line text
-  rectangles, keeping the minimap aligned with `.wsnbody` block order.
+- Desktop/mobile minimap painting still shares `ContentsMinimapSnapshotSupport.js` for row flattening, but the display
+  host no longer keeps a previous minimap snapshot token cache or partial-splice plan.
+  Each queued minimap refresh rebuilds rows from the current parser/body state, keeping the rail aligned with the
+  rendered `.wsnbody` instead of preserving an initial empty-note silhouette.
 - Desktop/mobile line geometry helpers now reuse that same logical-line group cache even when the minimap is hidden, so
   gutter line-Y queries no longer need their own whole-document geometry sweep.
 - Desktop/mobile editor hosts now also mirror `ContentsEditorPresentationProjection` logical-line metrics into

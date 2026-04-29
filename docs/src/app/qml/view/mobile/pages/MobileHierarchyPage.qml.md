@@ -26,10 +26,9 @@ It does not own the domain data itself. Its job is to keep the mobile `LV.PageRo
 - Snapshot the active toolbar index and active hierarchy content viewmodel as one binding bundle whenever
   `SidebarHierarchyViewModel.activeBindingsChanged()` fires, so mobile route decisions do not momentarily mix library
   state with resources-state chrome during hierarchy switches.
-- The active note-list model is now derived from that hierarchy object through a local
-  `NoteListModelContractBridge`, not from a second direct `noteListModelForIndex(...)` lookup.
-  A route refresh therefore cannot keep the previously mounted hierarchy domain alive just because one stale resolved
-  note-list object outlived the index transition by one turn.
+- The active note-list model is read directly from `SidebarHierarchyViewModel.activeNoteListModel`.
+  The mobile route shell does not mount a second local note-list bridge, so the hierarchy index, active hierarchy
+  viewmodel, and note/resource list model all come from the same sidebar binding authority.
 
 ## Routing Model
 The file defines four route constants:

@@ -137,9 +137,9 @@ source.
   overwriting it with `contentY`.
   Text-family blocks can therefore hand the flow one already block-mapped gutter origin when their inline editor's
   local origin does not match the delegate root item.
-- The flow owns bottom-whitespace hit testing through `pointTargetsDocumentEndEdit(...)`.
-  A click below the last rendered document block is treated as a document-end edit request, while clicks in non-block
-  space above or between blocks are ignored by this route.
+- The flow owns non-block hit testing through `pointTargetsDocumentEndEdit(...)`.
+  Any valid point inside the editor activation surface that does not hit a rendered document block is treated as a
+  document-end edit request, so empty notes and side/bottom blank space all fall back to the final caret position.
 - Document-end focus requests now carry the last block's explicit `targetBlockIndex` with the source-end offset.
   This prevents a shared source boundary from being resolved to the previous block when the user clicks the editor's
   bottom padding to continue typing at the end.

@@ -2,7 +2,6 @@
 
 #include <QtGlobal>
 
-#include <QStringList>
 #include <QVector>
 
 namespace
@@ -11,43 +10,6 @@ constexpr double kStructuredMinimapSyntheticAvailableWidth = 160.0;
 constexpr double kStructuredMinimapResourceWidth = 148.0;
 constexpr double kStructuredMinimapBreakWidth = 52.0;
 constexpr double kStructuredMinimapMinimumTextWidth = 12.0;
-
-QVariantList normalizedSnapshotEntries(const QVariant& rawEntries)
-{
-    if (!rawEntries.isValid() || rawEntries.isNull())
-        return {};
-
-    const QVariantList rawList = rawEntries.toList();
-    if (!rawList.isEmpty())
-        return rawList;
-
-    if (rawEntries.canConvert<QVariantList>())
-        return rawEntries.value<QVariantList>();
-
-    return {};
-}
-
-QString minimapSnapshotToken(const QVariant& rawEntry, const int fallbackIndex)
-{
-    const QVariantMap entry = rawEntry.toMap();
-    if (entry.contains(QStringLiteral("snapshotToken")))
-        return entry.value(QStringLiteral("snapshotToken")).toString();
-    if (entry.contains(QStringLiteral("token")))
-        return entry.value(QStringLiteral("token")).toString();
-    if (entry.contains(QStringLiteral("text")))
-        return QStringLiteral("text|") + entry.value(QStringLiteral("text")).toString();
-    return QStringLiteral("line|") + QString::number(qMax(0, fallbackIndex));
-}
-
-QStringList minimapSnapshotTokens(const QVariant& rawEntries)
-{
-    const QVariantList entries = normalizedSnapshotEntries(rawEntries);
-    QStringList tokens;
-    tokens.reserve(entries.size());
-    for (int index = 0; index < entries.size(); ++index)
-        tokens.push_back(minimapSnapshotToken(entries.at(index), index));
-    return tokens;
-}
 
 QString normalizedMinimapPlainText(QString text)
 {
@@ -408,82 +370,6 @@ QVariantList ContentsDisplayMinimapCoordinator::buildEditorMinimapLineGroupsForR
     Q_UNUSED(lineStartOffsets)
     Q_UNUSED(logicalTextLength)
     return groups;
-}
-
-QVariantMap ContentsDisplayMinimapCoordinator::buildNextMinimapSnapshotPlan(
-    const QVariant& currentLineGroups,
-    const QString& currentLineGroupsNoteId,
-    const QString& currentNoteId,
-    const QVariant& previousSnapshotEntries,
-    const QVariant& currentSnapshotEntries,
-    const bool forceFullRefresh,
-    const bool noteEntryRefreshPending,
-    const int structuredLineCount,
-    const int plainLogicalLineCount) const
-{
-    const QVariantList existingGroups = currentLineGroups.toList();
-    const int expectedLineCount = m_structuredHostGeometryActive
-        ? qMax(1, structuredLineCount)
-        : qMax(1, plainLogicalLineCount);
-
-    QVariantMap plan;
-    plan.insert(QStringLiteral("reuseExisting"), false);
-    plan.insert(QStringLiteral("requiresFullRebuild"), false);
-    plan.insert(QStringLiteral("replacementStartLine"), 1);
-    plan.insert(QStringLiteral("replacementEndLine"), expectedLineCount);
-    plan.insert(QStringLiteral("previousStartLine"), 1);
-    plan.insert(QStringLiteral("previousEndLine"), expectedLineCount);
-
-    const bool invalidExistingGroups = existingGroups.isEmpty() || existingGroups.size() != expectedLineCount;
-    const QStringList previousTokens = minimapSnapshotTokens(previousSnapshotEntries);
-    const QStringList currentTokens = minimapSnapshotTokens(currentSnapshotEntries);
-    const bool invalidPreviousTokens = previousTokens.isEmpty() || previousTokens.size() != existingGroups.size();
-    const bool invalidCurrentTokens = currentTokens.isEmpty() || currentTokens.size() != expectedLineCount;
-    if (forceFullRefresh
-        || noteEntryRefreshPending
-        || currentLineGroupsNoteId != currentNoteId
-        || invalidExistingGroups
-        || invalidPreviousTokens
-        || invalidCurrentTokens)
-    {
-        plan.insert(QStringLiteral("requiresFullRebuild"), true);
-        return plan;
-    }
-
-    int prefix = 0;
-    const int previousCount = previousTokens.size();
-    const int currentCount = currentTokens.size();
-    while (prefix < previousCount && prefix < currentCount
-           && previousTokens.at(prefix) == currentTokens.at(prefix))
-    {
-        ++prefix;
-    }
-
-    if (prefix == previousCount && prefix == currentCount)
-    {
-        plan.insert(QStringLiteral("reuseExisting"), true);
-        return plan;
-    }
-
-    int previousSuffix = previousCount - 1;
-    int currentSuffix = currentCount - 1;
-    while (previousSuffix >= prefix && currentSuffix >= prefix
-           && previousTokens.at(previousSuffix) == currentTokens.at(currentSuffix))
-    {
-        --previousSuffix;
-        --currentSuffix;
-    }
-
-    const int replacementStartLine = qMax(1, prefix + 1);
-    const int replacementEndLine = qMax(replacementStartLine, currentSuffix + 1);
-    const int previousStartLine = qMax(1, prefix + 1);
-    const int previousEndLine = qMax(previousStartLine, previousSuffix + 1);
-
-    plan.insert(QStringLiteral("replacementStartLine"), replacementStartLine);
-    plan.insert(QStringLiteral("replacementEndLine"), replacementEndLine);
-    plan.insert(QStringLiteral("previousStartLine"), previousStartLine);
-    plan.insert(QStringLiteral("previousEndLine"), previousEndLine);
-    return plan;
 }
 
 QVariantMap ContentsDisplayMinimapCoordinator::normalizeCursorRect(

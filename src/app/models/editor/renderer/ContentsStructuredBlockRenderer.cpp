@@ -4,7 +4,6 @@
 #include "app/models/editor/parser/ContentsWsnBodyBlockParser.hpp"
 #include "app/models/file/WhatSonDebugTrace.hpp"
 #include "app/models/file/note/WhatSonNoteBodySemanticTagSupport.hpp"
-#include "app/models/editor/tags/WhatSonStructuredTagLinter.hpp"
 
 #include <QElapsedTimer>
 #include <QMetaObject>
@@ -153,16 +152,6 @@ namespace
         return payload;
     }
 
-    QVariantMap defaultParseVerification(const QString& tagName)
-    {
-        return QVariantMap {
-            {QStringLiteral("tagName"), tagName},
-            {QStringLiteral("wellFormed"), true},
-            {QStringLiteral("sourceLength"), 0},
-            {QStringLiteral("issues"), QVariantList()}
-        };
-    }
-
     struct StructuredRenderSnapshot final
     {
         QVariantMap agendaParseVerification;
@@ -244,15 +233,17 @@ struct ContentsStructuredBlockRenderer::RenderResult final
 
 ContentsStructuredBlockRenderer::ContentsStructuredBlockRenderer(QObject* parent)
     : QObject(parent)
-    , m_agendaParseVerification(defaultParseVerification(QStringLiteral("agenda")))
-    , m_calloutParseVerification(defaultParseVerification(QStringLiteral("callout")))
 {
     WhatSon::Debug::traceEditorSelf(this, QStringLiteral("structuredBlockRenderer"), QStringLiteral("ctor"));
-    const WhatSonStructuredTagLinter tagLinter;
-    m_structuredParseVerification = tagLinter.buildStructuredVerification(
-        m_agendaParseVerification,
-        m_calloutParseVerification,
-        QString());
+    const TimedRenderSnapshot initialSnapshot = buildTimedRenderSnapshot(QString(), QStringLiteral("initial"));
+    m_agendaParseVerification = initialSnapshot.snapshot.agendaParseVerification;
+    m_correctedSourceText = initialSnapshot.snapshot.correctedSourceText;
+    m_calloutParseVerification = initialSnapshot.snapshot.calloutParseVerification;
+    m_renderedAgendas = initialSnapshot.snapshot.renderedAgendas;
+    m_renderedCallouts = initialSnapshot.snapshot.renderedCallouts;
+    m_renderedDocumentBlocks = initialSnapshot.snapshot.renderedDocumentBlocks;
+    m_structuredParseVerification = initialSnapshot.snapshot.structuredParseVerification;
+    m_lastRenderProfile = initialSnapshot.renderProfile;
 }
 
 ContentsStructuredBlockRenderer::~ContentsStructuredBlockRenderer()
@@ -280,6 +271,10 @@ void ContentsStructuredBlockRenderer::setSourceText(const QString& sourceText)
         QStringLiteral("changed=%1 %2").arg(m_sourceText != sourceText).arg(WhatSon::Debug::summarizeText(sourceText)));
     if (m_sourceText == sourceText)
     {
+        if (m_renderedDocumentBlocks.isEmpty())
+        {
+            refreshRenderedBlocks();
+        }
         return;
     }
 

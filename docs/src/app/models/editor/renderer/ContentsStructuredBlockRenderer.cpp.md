@@ -28,6 +28,8 @@ Builds canonical structured render data from `.wsnbody` source text.
 - Resource-only source that ends with a newline now also publishes the trailing blank line as a text-editable
   `text-group`. That keeps the gutter and caret target for the empty paragraph immediately after an image/resource
   block.
+- A newly constructed renderer publishes the empty-source snapshot immediately as one editable `text-group`, so a
+  freshly created empty note has a document body, caret target, and touch target before any explicit refresh request.
 - Empty source lines between two resource blocks likewise publish as a text-editable `text-group`; the renderer must not
   collapse adjacent atomic blocks together when RAW contains an authored empty paragraph between them.
 - Each explicit block, including semantic text-tag blocks, now carries parser-owned source geometry so QML can rewrite
@@ -58,6 +60,8 @@ Builds canonical structured render data from `.wsnbody` source text.
   letting hosts distinguish resource-only block sequences from notes that still own explicit editable prose blocks.
 - Source refresh no longer reparses separate read-side backends and then merges them. The renderer now asks the parser
   for one snapshot and forwards that snapshot's verification payloads directly.
+- The renderer no longer owns a direct structured-tag linter dependency; malformed semantic/body-tag verification comes
+  through the parser snapshot that the renderer republishes.
 - That combined verification now includes the file-layer synthetic XML/body validation for supported semantic tags, so
   renderer consumers can see malformed `paragraph`/`title`/`subTitle`/`event*`/`resource` source through the same
   `structuredParseVerification` payload instead of only agenda/callout/break-specific lint.

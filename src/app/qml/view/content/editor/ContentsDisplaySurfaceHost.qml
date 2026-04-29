@@ -31,20 +31,33 @@ Item {
     enabled: contentsView.hasSelectedNote
              && !contentsView.noteDocumentExceptionVisible
 
-    function requestStructuredDocumentEndEditFromViewportPoint(viewportX, viewportY) {
+    function boundedViewportCoordinate(value, maximumValue) {
+        return Math.max(0, Math.min(Math.max(0, Number(maximumValue) || 0), Number(value) || 0));
+    }
+
+    function requestStructuredDocumentEndEditFromViewportPoint(viewportX, viewportY, options) {
         if (!structuredDocumentViewportItem.visible || surfaceHost.contentsView.showPrintEditorLayout)
             return false;
+        const normalizedOptions = options && typeof options === "object" ? options : ({});
         const viewportTapX = Number(viewportX);
         const viewportTapY = Number(viewportY);
         if (!isFinite(viewportTapX) || !isFinite(viewportTapY))
             return false;
-        if (viewportTapX < 0 || viewportTapY < 0
-                || viewportTapX > structuredDocumentViewportItem.width
-                || viewportTapY > structuredDocumentViewportItem.height) {
+        const allowOutOfViewport = !!normalizedOptions.allowOutOfViewport;
+        if (!allowOutOfViewport
+                && (viewportTapX < 0 || viewportTapY < 0
+                    || viewportTapX > structuredDocumentViewportItem.width
+                    || viewportTapY > structuredDocumentViewportItem.height)) {
             return false;
         }
-        const contentTapX = viewportTapX + (Number(structuredDocumentViewportItem.contentX) || 0);
-        const contentTapY = viewportTapY + (Number(structuredDocumentViewportItem.contentY) || 0);
+        const resolvedViewportTapX = allowOutOfViewport
+                ? surfaceHost.boundedViewportCoordinate(viewportTapX, structuredDocumentViewportItem.width)
+                : viewportTapX;
+        const resolvedViewportTapY = allowOutOfViewport
+                ? surfaceHost.boundedViewportCoordinate(viewportTapY, structuredDocumentViewportItem.height)
+                : viewportTapY;
+        const contentTapX = resolvedViewportTapX + (Number(structuredDocumentViewportItem.contentX) || 0);
+        const contentTapY = resolvedViewportTapY + (Number(structuredDocumentViewportItem.contentY) || 0);
         const flowTapX = contentTapX - (Number(structuredDocumentFlowItem.x) || 0);
         const flowTapY = contentTapY - (Number(structuredDocumentFlowItem.y) || 0);
         if (!structuredDocumentFlowItem || !structuredDocumentFlowItem.visible)
@@ -65,6 +78,23 @@ Item {
             surfaceHost.contentsView.requestStructuredDocumentEndEdit();
         });
         return true;
+    }
+
+    function requestStructuredDocumentEndEditFromEditorAreaPoint(editorAreaItem, editorAreaX, editorAreaY) {
+        if (!editorAreaItem || editorAreaItem.mapToItem === undefined)
+            return false;
+        const editorTapX = Number(editorAreaX);
+        const editorTapY = Number(editorAreaY);
+        if (!isFinite(editorTapX) || !isFinite(editorTapY))
+            return false;
+        const viewportPoint = editorAreaItem.mapToItem(
+                    structuredDocumentViewportItem,
+                    editorTapX,
+                    editorTapY);
+        return surfaceHost.requestStructuredDocumentEndEditFromViewportPoint(
+                    viewportPoint.x,
+                    viewportPoint.y,
+                    { "allowOutOfViewport": true });
     }
 
     function requestStructuredDocumentEndEditFromSurfacePoint(surfaceX, surfaceY) {

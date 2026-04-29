@@ -367,8 +367,9 @@ WhatSon is an LVRS-based Qt Quick application.
   and current-line markers are resampled from the settled editor geometry instead of stretching stale positions from a
   previous note/session.
 - Minimap snapshotting no longer walks the whole note text through `positionToRectangle(...)` on ordinary edits.
-  Desktop and mobile now share an incremental line-range diff helper, cache logical-line minimap groups, and only
-  resample the changed text window unless a layout reset or note switch forces a full rebuild.
+  Desktop and mobile still share the minimap row-flattening helper, but the display host no longer keeps a previous-token
+  partial-splice cache that can preserve an initial empty-note silhouette. Each queued minimap refresh rebuilds row
+  groups from the current parser/body state so the rail follows the rendered note body.
 - The blue current-line gutter marker is bound to the cursor's active visual row, so the marker no longer stretches
   through the whole remaining editor height when the cursor sits on the last logical line.
 - `ContentsDisplayView.qml` no longer reintroduces a second desktop panel fill inside the editor stack: the editor

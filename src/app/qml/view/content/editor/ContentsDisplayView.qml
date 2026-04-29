@@ -156,13 +156,11 @@ Item {
     property alias minimapLineGroups: geometryState.minimapLineGroups
     property alias minimapLineGroupsNoteId: geometryState.minimapLineGroupsNoteId
     property alias minimapScrollable: geometryState.minimapScrollable
-    property alias minimapSnapshotForceFullRefresh: geometryState.minimapSnapshotForceFullRefresh
     property alias cursorDrivenUiRefreshQueued: geometryState.cursorDrivenUiRefreshQueued
     property alias typingViewportCorrectionQueued: geometryState.typingViewportCorrectionQueued
     property alias typingViewportForceCorrectionRequested: geometryState.typingViewportForceCorrectionRequested
     property alias viewportGutterRefreshQueued: geometryState.viewportGutterRefreshQueued
     property alias minimapSnapshotRefreshQueued: geometryState.minimapSnapshotRefreshQueued
-    property alias minimapSnapshotEntries: geometryState.minimapSnapshotEntries
     readonly property int minimapTrackInset: LV.Theme.gap8
     readonly property int minimapTrackWidth: Math.max(0, Math.round(LV.Theme.scaleMetric(36)))
     readonly property color minimapViewportFillColor: LV.Theme.accentTransparent
@@ -366,14 +364,9 @@ Item {
 
     function activeLogicalTextSnapshot() { return geometrySnapshotModel.activeLogicalTextSnapshot(); }
     function normalizedSnapshotEntries(rawEntries) { return geometrySnapshotModel.normalizedSnapshotEntries(rawEntries); }
-    function minimapSnapshotToken(entry, fallbackIndex) { return geometrySnapshotModel.minimapSnapshotToken(entry, fallbackIndex); }
-    function normalizedMinimapSnapshotText(rawText) { return geometrySnapshotModel.normalizedMinimapSnapshotText(rawText); }
-    function plainMinimapSnapshotEntries(rawText) { return geometrySnapshotModel.plainMinimapSnapshotEntries(rawText); }
     function hasStructuredLogicalLineGeometry() { return geometrySnapshotModel.hasStructuredLogicalLineGeometry(); }
     function effectiveStructuredMinimapEntries() { return geometrySnapshotModel.effectiveStructuredMinimapEntries(); }
     function hasStructuredMinimapEntries() { return geometrySnapshotModel.hasStructuredMinimapEntries(); }
-    function currentMinimapSnapshotEntries() { return geometrySnapshotModel.currentMinimapSnapshotEntries(); }
-    function minimapSnapshotEntriesEqual(previousEntries, nextEntries) { return geometrySnapshotModel.minimapSnapshotEntriesEqual(previousEntries, nextEntries); }
     function logEditorCreationState(reason) { presentationOrchestrationModel.logEditorCreationState(reason); }
     function normalizedStructuredLogicalLineEntries() { return geometrySnapshotModel.normalizedStructuredLogicalLineEntries(); }
     function structuredLogicalLineEntryAt(lineNumber) { return geometrySnapshotModel.structuredLogicalLineEntryAt(lineNumber); }
@@ -384,7 +377,6 @@ Item {
     function buildFallbackMinimapLineGroupsForRange(startLineNumber, endLineNumber) { return geometrySnapshotModel.buildFallbackMinimapLineGroupsForRange(startLineNumber, endLineNumber); }
     function buildMinimapLineGroupsForRange(startLineNumber, endLineNumber) { return geometrySnapshotModel.buildMinimapLineGroupsForRange(startLineNumber, endLineNumber); }
     function activeLineGeometryNoteId() { return geometrySnapshotModel.activeLineGeometryNoteId(); }
-    function nextMinimapLineGroupsForCurrentState(currentSnapshotEntries) { return geometrySnapshotModel.nextMinimapLineGroupsForCurrentState(currentSnapshotEntries); }
     function buildVisibleGutterLineEntries() { return geometrySnapshotModel.buildVisibleGutterLineEntries(); }
     function clampUnit(value) { return geometrySnapshotModel.clampUnit(value); }
     function logicalLineOffsetsEqual(previousOffsets, nextOffsets) { return geometrySnapshotModel.logicalLineOffsetsEqual(previousOffsets, nextOffsets); }
@@ -761,7 +753,8 @@ Item {
         contentsView.scheduleSelectionModelSync({
                                                    "resetSnapshot": true,
                                                    "scheduleReconcile": true,
-                                                   "fallbackRefresh": true
+                                                   "fallbackRefresh": true,
+                                                   "focusEditor": contentsView.mobileHost && contentsView.hasSelectedNote
                                                });
     }
     Component.onDestruction: {
@@ -811,12 +804,10 @@ Item {
         contentsView.scheduleGutterRefresh(2);
     }
     onMinimapVisibleChanged: {
-        contentsView.minimapSnapshotForceFullRefresh = true;
         contentsView.scheduleDocumentPresentationRefresh(true);
     }
     onDocumentPresentationSourceTextChanged: {
         contentsView.refreshLiveLogicalLineMetrics();
-        contentsView.minimapSnapshotForceFullRefresh = true;
         contentsView.scheduleMinimapSnapshotRefresh(true);
     }
     onSelectedNoteBodyTextChanged: {

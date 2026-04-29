@@ -11,12 +11,17 @@ command surface.
 
 The host intentionally does not mount a note-loading overlay. Mount scheduling is settled by the display model's
 `mountDecisionClean` flag instead of a visual mask, so rendered note content is never dimmed by a stale loading state.
-The host now gates focus/input with `noteDocumentParseMounted`; once RAW source has been parsed into the structured
-document, no second surface-ready latch is allowed to keep the visible editor disabled.
+The host accepts focus/input as soon as a note is selected and no mount exception is visible. Parsed RAW state still
+controls block content and tag-command surfaces, but it must not be a prerequisite for accepting the first
+click/touch.
 
-The host forwards left taps in the bottom document padding to the structured flow's document-end hit test from both
-the surface-level pointer path and the structured viewport path. When the tap is below the last block, the host
-requests the same focus behavior as clicking the note body's final editable position.
+The host forwards left taps from both the structured viewport and the full-editor activation surface to the structured
+flow's document-end hit test. When the tap does not hit a rendered block, the host requests the same focus behavior as
+clicking the note body's final editable position.
+That accessibility contract explicitly includes freshly created empty notes whose body is represented by the renderer's
+single empty `text-group`.
+The full-editor activation path may pass points that fall outside the current structured viewport; the host clamps
+those coordinates back onto the viewport before applying the same non-block hit policy.
 Those two pointer paths coalesce through a one-turn queue guard so a single click cannot emit duplicate document-end
 edit requests.
 

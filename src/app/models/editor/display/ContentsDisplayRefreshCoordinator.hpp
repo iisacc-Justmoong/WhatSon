@@ -16,7 +16,6 @@ class ContentsDisplayRefreshCoordinator : public QObject
     Q_PROPERTY(bool editorInputFocused READ editorInputFocused WRITE setEditorInputFocused NOTIFY editorInputFocusedChanged)
     Q_PROPERTY(bool structuredHostGeometryActive READ structuredHostGeometryActive WRITE setStructuredHostGeometryActive NOTIFY structuredHostGeometryActiveChanged)
     Q_PROPERTY(int liveLogicalLineCount READ liveLogicalLineCount WRITE setLiveLogicalLineCount NOTIFY liveLogicalLineCountChanged)
-    Q_PROPERTY(bool minimapSnapshotForceFullRefresh READ minimapSnapshotForceFullRefresh WRITE setMinimapSnapshotForceFullRefresh NOTIFY minimapSnapshotForceFullRefreshChanged)
     Q_PROPERTY(bool minimapSnapshotRefreshQueued READ minimapSnapshotRefreshQueued NOTIFY minimapSnapshotRefreshQueuedChanged)
     Q_PROPERTY(bool cursorDrivenUiRefreshQueued READ cursorDrivenUiRefreshQueued NOTIFY cursorDrivenUiRefreshQueuedChanged)
     Q_PROPERTY(bool viewportGutterRefreshQueued READ viewportGutterRefreshQueued NOTIFY viewportGutterRefreshQueuedChanged)
@@ -53,9 +52,6 @@ public:
     int liveLogicalLineCount() const noexcept;
     void setLiveLogicalLineCount(int lineCount);
 
-    bool minimapSnapshotForceFullRefresh() const noexcept;
-    void setMinimapSnapshotForceFullRefresh(bool forceFull);
-
     bool minimapSnapshotRefreshQueued() const noexcept;
     bool cursorDrivenUiRefreshQueued() const noexcept;
     bool viewportGutterRefreshQueued() const noexcept;
@@ -91,7 +87,6 @@ signals:
     void editorInputFocusedChanged();
     void structuredHostGeometryActiveChanged();
     void liveLogicalLineCountChanged();
-    void minimapSnapshotForceFullRefreshChanged();
     void minimapSnapshotRefreshQueuedChanged();
     void cursorDrivenUiRefreshQueuedChanged();
     void viewportGutterRefreshQueuedChanged();
@@ -117,7 +112,6 @@ private:
     bool m_editorInputFocused = false;
     bool m_structuredHostGeometryActive = false;
     int m_liveLogicalLineCount = 1;
-    bool m_minimapSnapshotForceFullRefresh = false;
     bool m_minimapSnapshotRefreshQueued = false;
     bool m_cursorDrivenUiRefreshQueued = false;
     bool m_viewportGutterRefreshQueued = false;
