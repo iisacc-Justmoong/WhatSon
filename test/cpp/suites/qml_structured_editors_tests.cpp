@@ -1069,8 +1069,19 @@ Item {
     QVERIFY(surfaceHost != nullptr);
     QObject* blockRenderer = rootObject->findChild<QObject*>(QStringLiteral("surfaceHostBlockRenderer"));
     QVERIFY(blockRenderer != nullptr);
-    QObject* inlineEditor = rootObject->findChild<QObject*>(QStringLiteral("contentsInlineFormatEditor"));
-    QVERIFY(inlineEditor != nullptr);
+    QQuickItem* inlineEditorItem = nullptr;
+    QTRY_VERIFY((inlineEditorItem = findStructuredEditorQuickItemByObjectName(
+                     rootItem,
+                     QStringLiteral("contentsInlineFormatEditor"))) != nullptr);
+    QObject* inlineEditor = inlineEditorItem;
+
+    QTest::mouseClick(&hostWindow, Qt::LeftButton, Qt::NoModifier, QPoint(220, 320));
+    QTRY_COMPARE(rootObject->property("terminalBodyClickRequestCount").toInt(), 1);
+    QVariantMap hostFocusRequest = rootObject->property("lastTerminalBodyFocusRequest").toMap();
+    QCOMPARE(hostFocusRequest.value(QStringLiteral("sourceOffset")).toInt(), 5);
+    QCOMPARE(hostFocusRequest.value(QStringLiteral("targetBlockIndex")).toInt(), 0);
+    QTRY_COMPARE(inlineEditor->property("cursorPosition").toInt(), 5);
+    QTRY_VERIFY(inlineEditor->property("focused").toBool());
 
     QVariant hostReturnValue;
     QVERIFY(QMetaObject::invokeMethod(
@@ -1080,8 +1091,8 @@ Item {
         Q_ARG(QVariant, QVariant(220)),
         Q_ARG(QVariant, QVariant(320))));
     QVERIFY(hostReturnValue.toBool());
-    QTRY_COMPARE(rootObject->property("terminalBodyClickRequestCount").toInt(), 1);
-    QVariantMap hostFocusRequest = rootObject->property("lastTerminalBodyFocusRequest").toMap();
+    QTRY_COMPARE(rootObject->property("terminalBodyClickRequestCount").toInt(), 2);
+    hostFocusRequest = rootObject->property("lastTerminalBodyFocusRequest").toMap();
     QCOMPARE(hostFocusRequest.value(QStringLiteral("sourceOffset")).toInt(), 5);
     QCOMPARE(hostFocusRequest.value(QStringLiteral("targetBlockIndex")).toInt(), 0);
     QTRY_COMPARE(inlineEditor->property("cursorPosition").toInt(), 5);
@@ -1095,7 +1106,7 @@ Item {
         Q_ARG(QVariant, QVariant(2)),
         Q_ARG(QVariant, QVariant(20))));
     QVERIFY(!sideWhitespaceReturnValue.toBool());
-    QCOMPARE(rootObject->property("terminalBodyClickRequestCount").toInt(), 1);
+    QCOMPARE(rootObject->property("terminalBodyClickRequestCount").toInt(), 2);
 
     QVariantMap allowOutOfViewportOptions;
     allowOutOfViewportOptions.insert(QStringLiteral("allowOutOfViewport"), true);

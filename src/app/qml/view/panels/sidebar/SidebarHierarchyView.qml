@@ -189,6 +189,7 @@ Rectangle {
     property alias hierarchySelectionAnchorIndex: hierarchySelectionController.selectionAnchorIndex
     property int hierarchySelectionVisualRevision: 0
     property var hierarchyViewModel: null
+    property string hierarchyViewOptionsTriggerQueuedAction: ""
     readonly property var hierarchyViewOptionsMenuItems: [
         {
             "label": "Expand All",
@@ -196,6 +197,9 @@ Rectangle {
             "eventName": "hierarchy.expandAll",
             "enabled": sidebarHierarchyView.hierarchyBulkExpansionEnabled,
             "keyVisible": false,
+            "onTriggered": function () {
+                sidebarHierarchyView.handleHierarchyViewOptionsTrigger(0, "hierarchy.expandAll");
+            },
             "showChevron": false
         },
         {
@@ -203,6 +207,9 @@ Rectangle {
             "eventName": "hierarchy.collapseAll",
             "enabled": sidebarHierarchyView.hierarchyBulkExpansionEnabled,
             "keyVisible": false,
+            "onTriggered": function () {
+                sidebarHierarchyView.handleHierarchyViewOptionsTrigger(1, "hierarchy.collapseAll");
+            },
             "showChevron": false
         }
     ]
@@ -357,12 +364,18 @@ Rectangle {
         hierarchySelectionController.emitHierarchySelectionActivation(item, resolvedIndex);
     }
     function handleHierarchyViewOptionsTrigger(index, eventName) {
+        sidebarHierarchyView.requestHierarchyViewOptionsAction(index, eventName);
+    }
+    function hierarchyViewOptionsActionName(index, eventName) {
         const normalizedEventName = eventName === undefined || eventName === null ? "" : String(eventName).trim();
-        const normalizedIndex = Number(index);
-        if (normalizedEventName === "hierarchy.expandAll" || normalizedIndex === 0)
-            sidebarHierarchyView.requestExpandAllHierarchyItems();
-        else if (normalizedEventName === "hierarchy.collapseAll" || normalizedIndex === 1)
-            sidebarHierarchyView.requestCollapseAllHierarchyItems();
+        if (normalizedEventName === "hierarchy.expandAll" || normalizedEventName === "hierarchy.collapseAll")
+            return normalizedEventName;
+        const normalizedIndex = sidebarHierarchyView.normalizedInteger(index, -1);
+        if (normalizedIndex === 0)
+            return "hierarchy.expandAll";
+        if (normalizedIndex === 1)
+            return "hierarchy.collapseAll";
+        return "";
     }
     function hierarchyItemAtPosition(x, y) {
         return noteDropController.hierarchyItemAtPosition(x, y);
@@ -636,6 +649,23 @@ Rectangle {
             sidebarHierarchyView.syncSelectedHierarchyItem(false);
         });
         return true;
+    }
+    function requestHierarchyViewOptionsAction(index, eventName) {
+        const action = sidebarHierarchyView.hierarchyViewOptionsActionName(index, eventName);
+        if (action.length <= 0)
+            return false;
+        if (sidebarHierarchyView.hierarchyViewOptionsTriggerQueuedAction === action)
+            return true;
+        sidebarHierarchyView.hierarchyViewOptionsTriggerQueuedAction = action;
+        Qt.callLater(function () {
+            if (sidebarHierarchyView.hierarchyViewOptionsTriggerQueuedAction === action)
+                sidebarHierarchyView.hierarchyViewOptionsTriggerQueuedAction = "";
+        });
+        if (action === "hierarchy.expandAll")
+            return sidebarHierarchyView.requestExpandAllHierarchyItems();
+        if (action === "hierarchy.collapseAll")
+            return sidebarHierarchyView.requestCollapseAllHierarchyItems();
+        return false;
     }
     function requestHierarchySelection(item, resolvedIndex, modifiers) {
         hierarchySelectionController.requestHierarchySelection(item, resolvedIndex, modifiers);

@@ -114,6 +114,9 @@ These signals make the file a reusable visual surface instead of a hard-coded on
   through a shared trigger handler that accepts both `onItemTriggered(index)` and
   `onItemEventTriggered(eventName, ...)`, preventing callback-type differences in LVRS context-menu dispatch from
   dropping bulk expansion actions.
+- The same menu entries also provide direct `onTriggered` callbacks. `LV.ContextMenu` dispatches event specs, item
+  callbacks, and generic item triggers in one click path, so `hierarchyViewOptionsTriggerQueuedAction` coalesces that
+  turn and guarantees that one user click performs exactly one bulk expand/collapse request.
 
 ## Folder Context Menu
 
@@ -213,7 +216,9 @@ This file should be read as a composed view, not as the place where hierarchy bu
 
 ## Tests
 
-- Automated test files are not currently present in this repository.
+- `test/cpp/suites/contents_display_view_tests.cpp` locks the footer context-menu action contract by checking the
+  explicit expand/collapse event names, direct `onTriggered` callbacks, shared action normalizer, and queued-action
+  duplicate guard.
 - Modifier-selection regression checklist for this file:
   - `Shift + click` creates contiguous hierarchy ranges from `hierarchySelectionAnchorIndex`.
   - `Cmd/Ctrl + click` toggles hierarchy rows without collapsing to single selection.

@@ -256,6 +256,16 @@ void WhatSonCppRegressionTests::qmlContextMenus_treatRightClickAndLongPressAsSym
     QVERIFY(sidebarSource.contains(QStringLiteral("\"rightClick\"")));
     QVERIFY(sidebarSource.contains(QStringLiteral("\"longPress\"")));
     QVERIFY(sidebarSource.contains(QStringLiteral("onLongPressed: {")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("property string hierarchyViewOptionsTriggerQueuedAction: \"\"")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("\"eventName\": \"hierarchy.expandAll\"")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("\"eventName\": \"hierarchy.collapseAll\"")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("\"onTriggered\": function () {\n                sidebarHierarchyView.handleHierarchyViewOptionsTrigger(0, \"hierarchy.expandAll\");")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("\"onTriggered\": function () {\n                sidebarHierarchyView.handleHierarchyViewOptionsTrigger(1, \"hierarchy.collapseAll\");")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("function hierarchyViewOptionsActionName(index, eventName)")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("function requestHierarchyViewOptionsAction(index, eventName)")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("if (sidebarHierarchyView.hierarchyViewOptionsTriggerQueuedAction === action)\n            return true;")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("sidebarHierarchyView.requestExpandAllHierarchyItems();")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("sidebarHierarchyView.requestCollapseAllHierarchyItems();")));
 }
 
 void WhatSonCppRegressionTests::listBarLayout_rendersResolvedNoteListModelByIndex()

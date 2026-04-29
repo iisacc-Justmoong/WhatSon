@@ -24,6 +24,9 @@ The full-editor activation path may pass points that fall outside the current st
 those coordinates back onto the viewport before applying the same trailing-margin policy.
 Those two pointer paths coalesce through a one-turn queue guard so a single click cannot emit duplicate terminal body
 click requests.
+The maintained C++/QML regression test now exercises both the direct host helper and an actual `QQuickWindow` left
+click in the bottom inset, and it asserts that the live inline editor receives focus with the cursor at the source
+body end.
 
 The model-side input command surface must bind through `surfaceHost.contentsView` and
 `surfaceHost.resourceImportController`. Those qualified bindings avoid a self-referential QML binding loop and keep
