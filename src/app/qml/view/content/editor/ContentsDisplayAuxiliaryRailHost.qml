@@ -36,7 +36,7 @@ Item {
                 && mappedPoint.y <= targetHeight
     }
 
-    function requestDocumentEndEditFromActivationPoint(localX, localY) {
+    function requestTerminalBodyClickFromActivationPoint(localX, localY) {
         if (!auxiliaryHost.contentsView.hasSelectedNote
                 || auxiliaryHost.contentsView.noteDocumentExceptionVisible)
             return false
@@ -44,9 +44,9 @@ Item {
             return false
         if (auxiliaryHost.pointInsideMappedItem(minimapLayerItem, editorActivationSurface, localX, localY))
             return false
-        if (!surfaceHost || surfaceHost.requestStructuredDocumentEndEditFromEditorAreaPoint === undefined)
+        if (!surfaceHost || surfaceHost.requestTerminalBodyClickFromEditorAreaPoint === undefined)
             return false
-        return surfaceHost.requestStructuredDocumentEndEditFromEditorAreaPoint(
+        return surfaceHost.requestTerminalBodyClickFromEditorAreaPoint(
                     editorActivationSurface,
                     localX,
                     localY)
@@ -62,7 +62,7 @@ Item {
         z: 0
 
         TapHandler {
-            id: editorWholeSurfaceEndEditTapHandler
+            id: editorWholeSurfaceTrailingMarginTapHandler
 
             acceptedButtons: Qt.LeftButton
             gesturePolicy: TapHandler.ReleaseWithinBounds
@@ -74,7 +74,7 @@ Item {
                     return
                 const localX = eventPoint && eventPoint.position ? Number(eventPoint.position.x) || 0 : 0
                 const localY = eventPoint && eventPoint.position ? Number(eventPoint.position.y) || 0 : 0
-                auxiliaryHost.requestDocumentEndEditFromActivationPoint(localX, localY)
+                auxiliaryHost.requestTerminalBodyClickFromActivationPoint(localX, localY)
             }
         }
     }

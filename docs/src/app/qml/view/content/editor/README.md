@@ -53,8 +53,8 @@
   Parse completion still controls structured-block content and note-mounted status, but no longer drops the first
   activation gesture behind a `noteDocumentParseMounted` gate.
 - `ContentsDisplayAuxiliaryRailHost.qml` now provides the full-size blank-area activation surface for the note editor.
-  Any click/touch inside the `ContentsDisplayView` body that does not hit visible editor chrome or a document block is
-  treated as a document-end edit request, preserving empty-note accessibility beyond the first row. The activation
+  Clicks/touches that resolve below the rendered document body are treated as terminal body clicks, preserving
+  empty-note and bottom-margin accessibility beyond the first row while leaving side whitespace inert. The activation
   surface is stacked behind the editor row so focused text input and block delegates receive native pointer handling
   before the fallback can run.
 - Tag-management command surfaces still derive from parse-mounted RAW state plus active structured-editor mode, so
@@ -71,8 +71,8 @@
 - `ContentsDisplayView.qml` now also keeps gutter-body spacing separate from editor text padding through a dedicated
   `gutterBodyGap` token, so line numbers can sit closer to the note body without shrinking the body column itself.
 - `ContentsDisplayView.qml` now scales the existing non-print bottom accessibility inset up to roughly half of the
-  live editor height, so end-of-document editing keeps a much larger visual landing area without introducing a second
-  spacer concept.
+  live editor height, so terminal body clicks keep a much larger visual landing area without introducing a second
+  spacer concept or a RAW newline mutation path.
 - The shared live editor engine is already `QtQuick.TextEdit` wrapped by `ContentsInlineFormatEditor.qml`; this
   directory no longer depends on an LVRS `LV.TextEditor` implementation.
 - The editor, gutter, and minimap fill the `ContentsView` slot; note-body resources no longer use a separate overlay

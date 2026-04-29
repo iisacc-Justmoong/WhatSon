@@ -777,8 +777,8 @@ void WhatSonCppRegressionTests::contentsDisplayView_surfacesMountFailurePlacehol
     QVERIFY(editorRowZIndex > editorRowIndex);
     QVERIFY(editorRowZIndex < gutterHostIndex);
     QVERIFY(!auxiliaryHostSource.contains(QStringLiteral("z: 10")));
-    QVERIFY(auxiliaryHostSource.contains(QStringLiteral("editorWholeSurfaceEndEditTapHandler")));
-    QVERIFY(auxiliaryHostSource.contains(QStringLiteral("requestDocumentEndEditFromActivationPoint(localX, localY)")));
+    QVERIFY(auxiliaryHostSource.contains(QStringLiteral("editorWholeSurfaceTrailingMarginTapHandler")));
+    QVERIFY(auxiliaryHostSource.contains(QStringLiteral("requestTerminalBodyClickFromActivationPoint(localX, localY)")));
     QVERIFY(displayViewSource.contains(QStringLiteral("ContentsDisplayAuxiliaryRailHost")));
     QVERIFY(displayViewSource.contains(QStringLiteral("ContentsDisplayOverlayHost")));
     QVERIFY(auxiliaryHostSource.contains(QStringLiteral("ContentsDisplayGutterHost")));

@@ -165,7 +165,8 @@ not note-backed.
   substitution now stays entirely inside the display pipeline.
 - The non-print editor viewport now reserves the existing bottom accessibility inset at up to roughly half of the
   live editor surface height, so the last authored line can be pulled much higher above the shell bottom edge when the
-  user scrolls to the document tail.
+  user scrolls to the document tail. Clicks in that trailing inset are resolved by the surface host as terminal body
+  clicks and do not create RAW newline mutations on their own.
 - Structured-flow, resource-render, and legacy-editor geometry changes now request gutter refresh through dedicated
   reasons instead of reusing the focused `line-structure` suppression path.
 - Structured `cachedLogicalLineEntries` updates now split logical-metric change from geometry-only change.

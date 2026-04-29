@@ -13,8 +13,8 @@ layout cache, and selection cleanup.
 - `noteActiveBlockCursorInteraction(...)` handles live cursor movement:
   - clears stale selection only if the cursor event belongs to a different active block
   - always bumps the active-block cursor revision so gutter/minimap/caret chrome follows same-block cursor moves
-- `requestSelectionClear(...)` can also be called independently, allowing blank-area clicks to clear every stale
-  structured editor selection before focus is restored elsewhere.
+- `requestSelectionClear(...)` can also be called independently, allowing trailing-margin terminal body clicks to clear
+  every stale structured editor selection before focus is restored elsewhere.
 
 ## Regression Focus
 - The maintained C++ regression suite now locks the split between focus activation and cursor movement: same-block

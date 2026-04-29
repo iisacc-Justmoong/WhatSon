@@ -25,11 +25,6 @@ bool ContentsDisplayMutationViewModel::queueBreakShortcutInsertion()
     return invokeControllerBool("queueBreakShortcutInsertion");
 }
 
-bool ContentsDisplayMutationViewModel::requestStructuredDocumentEndEdit()
-{
-    return invokeControllerBool("requestStructuredDocumentEndEdit");
-}
-
 void ContentsDisplayMutationViewModel::focusStructuredBlockSourceOffset(const int sourceOffset)
 {
     invokeControllerVoid("focusStructuredBlockSourceOffset", {sourceOffset});

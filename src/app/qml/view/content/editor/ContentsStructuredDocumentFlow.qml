@@ -766,14 +766,14 @@ FocusScope {
         return 0
     }
 
-    function pointTargetsDocumentEndEdit(localX, localY) {
+    function pointTargetsTrailingMarginBodyClick(localX, localY) {
         const safeLocalX = Number(localX)
         const safeLocalY = Number(localY)
         if (!isFinite(safeLocalX) || !isFinite(safeLocalY))
             return false
         if (documentFlow.blockIndexAtPoint(safeLocalX, safeLocalY) >= 0)
             return false
-        return true
+        return safeLocalY >= documentFlow.documentContentBottomY()
     }
 
     function currentCursorVisualRowRect() {
@@ -905,10 +905,10 @@ FocusScope {
         return false
     }
 
-    function requestDocumentEndEdit() {
+    function requestTerminalBodyClick() {
         EditorTrace.trace(
                     "structuredDocumentFlow",
-                    "requestDocumentEndEdit",
+                    "requestTerminalBodyClick",
                     "activeBlockIndex=" + documentFlow.activeBlockIndex,
                     documentFlow)
         if (documentHost && documentHost.requestSelectionClear !== undefined)
@@ -916,39 +916,39 @@ FocusScope {
         const blocks = documentFlow.normalizedBlocks()
         const currentSourceText = documentFlow.normalizedSourceText(documentFlow.sourceText)
         if (blocks.length === 0) {
-            documentFlow.requestFocus({ "sourceOffset": currentSourceText.length })
+            documentFlow.requestFocus({
+                                          "reason": "terminal-body-click",
+                                          "sourceOffset": currentSourceText.length
+                                      })
             return true
         }
         const lastBlockIndex = blocks.length - 1
         const lastBlock = blocks[blocks.length - 1] && typeof blocks[blocks.length - 1] === "object"
                 ? blocks[blocks.length - 1]
                 : ({})
-        const lastBlockHost = blockRepeater.itemAt(lastBlockIndex)
-        if (documentFlow.blockTextEditable(lastBlockHost, lastBlock)) {
-            documentFlow.requestFocus({
-                                          "reason": "document-end-edit",
-                                          "sourceOffset": Math.max(
-                                                              0,
-                                                              Math.floor(Number(lastBlock.sourceEnd) || currentSourceText.length)),
-                                          "targetBlockIndex": lastBlockIndex
-                                      })
-            return true
+        const focusSourceOffset = Math.max(
+                    0,
+                    Math.min(
+                        currentSourceText.length,
+                        documentFlow.floorNumberOrFallback(
+                            lastBlock.sourceEnd,
+                            currentSourceText.length)))
+        const focusRequest = {
+            "reason": "terminal-body-click",
+            "sourceOffset": focusSourceOffset,
+            "targetBlockIndex": lastBlockIndex
         }
-        if (currentSourceText.length > 0 && currentSourceText.charAt(currentSourceText.length - 1) === "\n") {
-            documentFlow.requestFocus({
-                                          "reason": "document-end-edit",
-                                          "sourceOffset": currentSourceText.length,
-                                          "targetBlockIndex": lastBlockIndex
-                                      })
-            return true
-        }
-        documentFlow.sourceMutationRequested(
-                    currentSourceText + "\n",
-                    {
-                        "reason": "document-end-edit",
-                        "sourceOffset": currentSourceText.length + 1
-                    })
+        const lastBlockType = documentFlow.normalizedBlockType(lastBlock)
+        if (lastBlockType === "agenda" || lastBlockType === "callout")
+            focusRequest.entryBoundary = "after"
+        documentFlow.requestFocus(focusRequest)
         return true
+    }
+
+    function requestTerminalBodyClickFromTrailingMargin(localX, localY) {
+        if (!documentFlow.pointTargetsTrailingMarginBodyClick(localX, localY))
+            return false
+        return documentFlow.requestTerminalBodyClick()
     }
 
     function normalizedBlocks() {
@@ -1952,7 +1952,7 @@ FocusScope {
                         onBlockDeletionRequested: function (direction) {
                             documentFlow.deleteBlock(blockHost.blockIndex, blockHost.blockEntry, direction)
                         }
-                        onDocumentEndEditRequested: documentFlow.requestDocumentEndEdit()
+                        onDocumentEndEditRequested: documentFlow.requestTerminalBodyClick()
                         onInlineFormatRequested: function (blockIndex, tagName, selectionSnapshot) {
                             documentFlow.applyInlineFormatToBlockSelection(blockIndex, tagName, selectionSnapshot)
                         }

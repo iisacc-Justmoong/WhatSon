@@ -122,9 +122,9 @@ source.
   height measurement have had event-loop turns to settle.
 - Block delegate load completion also queues a layout-cache refresh, so asynchronous or virtualized delegates can publish
   their measured line geometry to the gutter as soon as they mount.
-- Bottom-whitespace hit testing now prefers the mounted last block and the live document column height before falling
+- Trailing-margin hit testing now prefers the mounted last block and the live document column height before falling
   back to cached layout summaries.
-  A stale cache can therefore no longer make the bottom margin miss the document-end focus target after the editor has
+  A stale cache can therefore no longer make the bottom margin miss the terminal body click target after the editor has
   visibly rendered.
 - Structured cached logical-line entries now also keep `gutterContentY` aligned to each line's real `contentY`.
   Gutter-collapsed blocks still shrink only the rendered gutter box height, but line-number Y no longer comes from a
@@ -137,10 +137,10 @@ source.
   overwriting it with `contentY`.
   Text-family blocks can therefore hand the flow one already block-mapped gutter origin when their inline editor's
   local origin does not match the delegate root item.
-- The flow owns non-block hit testing through `pointTargetsDocumentEndEdit(...)`.
-  Any valid point inside the editor activation surface that does not hit a rendered document block is treated as a
-  document-end edit request, so empty notes and side/bottom blank space all fall back to the final caret position.
-- Document-end focus requests now carry the last block's explicit `targetBlockIndex` with the source-end offset.
+- The flow owns bottom accessibility hit testing through `pointTargetsTrailingMarginBodyClick(...)`.
+  Only valid points below the rendered document body are treated as terminal body clicks, so empty notes and bottom
+  blank space fall back to the final caret position while side whitespace beside existing lines stays inert.
+- Terminal body click focus requests now carry the last block's explicit `targetBlockIndex` with the source-end offset.
   This prevents a shared source boundary from being resolved to the previous block when the user clicks the editor's
   bottom padding to continue typing at the end.
 - Resource blocks now also cap their minimap silhouette expansion to ten rows even when the inline card itself is much
@@ -150,8 +150,8 @@ source.
   off-screen text/resource/agenda/callout delegates are unloaded outside an overscanned window while their host items
   keep a cached or estimated block height so document order and source-based focus math remain stable.
 - The flow now also routes explicit structured selection cleanup through `ContentsStructuredDocumentHost`.
-  Every block activation emits a new host selection-clear revision, and blank-area `requestDocumentEndEdit()` clears
-  stale selections before it restores focus at the document tail.
+  Every block activation emits a new host selection-clear revision, and `requestTerminalBodyClick()` clears stale
+  selections before it restores focus at the document tail without mutating RAW source.
 - EOF resource insertion now creates a trailing editable text block and restores focus after the inserted resource tag
   instead of focusing the atomic resource card.
 - Structured resource insertion now also refuses empty/no-op payloads instead of reporting success on an unchanged RAW

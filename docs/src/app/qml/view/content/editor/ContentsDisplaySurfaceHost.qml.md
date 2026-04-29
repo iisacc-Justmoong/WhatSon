@@ -16,14 +16,14 @@ controls block content and tag-command surfaces, but it must not be a prerequisi
 click/touch.
 
 The host forwards left taps from both the structured viewport and the full-editor activation surface to the structured
-flow's document-end hit test. When the tap does not hit a rendered block, the host requests the same focus behavior as
-clicking the note body's final editable position.
+flow's trailing-margin hit test. When the tap lands below the rendered document body, the host requests the same focus
+behavior as clicking the note body's terminal position.
 That accessibility contract explicitly includes freshly created empty notes whose body is represented by the renderer's
-single empty `text-group`.
+single empty `text-group`, but it does not treat side whitespace beside existing lines as a body-end click.
 The full-editor activation path may pass points that fall outside the current structured viewport; the host clamps
-those coordinates back onto the viewport before applying the same non-block hit policy.
-Those two pointer paths coalesce through a one-turn queue guard so a single click cannot emit duplicate document-end
-edit requests.
+those coordinates back onto the viewport before applying the same trailing-margin policy.
+Those two pointer paths coalesce through a one-turn queue guard so a single click cannot emit duplicate terminal body
+click requests.
 
 The model-side input command surface must bind through `surfaceHost.contentsView` and
 `surfaceHost.resourceImportController`. Those qualified bindings avoid a self-referential QML binding loop and keep

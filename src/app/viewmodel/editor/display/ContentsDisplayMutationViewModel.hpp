@@ -18,7 +18,6 @@ public slots:
     bool queueAgendaShortcutInsertion();
     bool queueCalloutShortcutInsertion();
     bool queueBreakShortcutInsertion();
-    bool requestStructuredDocumentEndEdit();
     void focusStructuredBlockSourceOffset(int sourceOffset);
     bool applyDocumentSourceMutation(const QString& nextSourceText, const QVariant& focusRequest);
     bool setAgendaTaskDone(int taskOpenTagStart, int taskOpenTagEnd, bool checked);

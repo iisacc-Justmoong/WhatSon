@@ -22,7 +22,7 @@ Item {
     property alias printDocumentViewport: printDocumentViewportItem
     property alias structuredDocumentFlow: structuredDocumentFlowItem
     property alias structuredDocumentViewport: structuredDocumentViewportItem
-    property bool documentEndEditRequestQueued: false
+    property bool terminalBodyClickRequestQueued: false
 
     Layout.fillHeight: true
     Layout.fillWidth: true
@@ -35,7 +35,7 @@ Item {
         return Math.max(0, Math.min(Math.max(0, Number(maximumValue) || 0), Number(value) || 0));
     }
 
-    function requestStructuredDocumentEndEditFromViewportPoint(viewportX, viewportY, options) {
+    function requestTerminalBodyClickFromViewportPoint(viewportX, viewportY, options) {
         if (!structuredDocumentViewportItem.visible || surfaceHost.contentsView.showPrintEditorLayout)
             return false;
         const normalizedOptions = options && typeof options === "object" ? options : ({});
@@ -62,25 +62,25 @@ Item {
         const flowTapY = contentTapY - (Number(structuredDocumentFlowItem.y) || 0);
         if (!structuredDocumentFlowItem || !structuredDocumentFlowItem.visible)
             return false;
-        if (structuredDocumentFlowItem.hasBlockAtPoint !== undefined
-                && structuredDocumentFlowItem.hasBlockAtPoint(flowTapX, flowTapY)) {
+        if (structuredDocumentFlowItem.pointTargetsTrailingMarginBodyClick === undefined
+                || !structuredDocumentFlowItem.pointTargetsTrailingMarginBodyClick(flowTapX, flowTapY)) {
             return false;
         }
-        if (structuredDocumentFlowItem.pointTargetsDocumentEndEdit !== undefined
-                && !structuredDocumentFlowItem.pointTargetsDocumentEndEdit(flowTapX, flowTapY)) {
-            return false;
-        }
-        if (surfaceHost.documentEndEditRequestQueued)
+        if (surfaceHost.terminalBodyClickRequestQueued)
             return true;
-        surfaceHost.documentEndEditRequestQueued = true;
+        surfaceHost.terminalBodyClickRequestQueued = true;
         Qt.callLater(function () {
-            surfaceHost.documentEndEditRequestQueued = false;
-            surfaceHost.contentsView.requestStructuredDocumentEndEdit();
+            surfaceHost.terminalBodyClickRequestQueued = false;
+            if (structuredDocumentFlowItem
+                    && structuredDocumentFlowItem.visible
+                    && structuredDocumentFlowItem.requestTerminalBodyClick !== undefined) {
+                structuredDocumentFlowItem.requestTerminalBodyClick();
+            }
         });
         return true;
     }
 
-    function requestStructuredDocumentEndEditFromEditorAreaPoint(editorAreaItem, editorAreaX, editorAreaY) {
+    function requestTerminalBodyClickFromEditorAreaPoint(editorAreaItem, editorAreaX, editorAreaY) {
         if (!editorAreaItem || editorAreaItem.mapToItem === undefined)
             return false;
         const editorTapX = Number(editorAreaX);
@@ -91,13 +91,13 @@ Item {
                     structuredDocumentViewportItem,
                     editorTapX,
                     editorTapY);
-        return surfaceHost.requestStructuredDocumentEndEditFromViewportPoint(
+        return surfaceHost.requestTerminalBodyClickFromViewportPoint(
                     viewportPoint.x,
                     viewportPoint.y,
                     { "allowOutOfViewport": true });
     }
 
-    function requestStructuredDocumentEndEditFromSurfacePoint(surfaceX, surfaceY) {
+    function requestTerminalBodyClickFromSurfacePoint(surfaceX, surfaceY) {
         const surfaceTapX = Number(surfaceX);
         const surfaceTapY = Number(surfaceY);
         if (!isFinite(surfaceTapX) || !isFinite(surfaceTapY))
@@ -106,13 +106,13 @@ Item {
                     structuredDocumentViewportItem,
                     surfaceTapX,
                     surfaceTapY);
-        return surfaceHost.requestStructuredDocumentEndEditFromViewportPoint(
+        return surfaceHost.requestTerminalBodyClickFromViewportPoint(
                     viewportPoint.x,
                     viewportPoint.y);
     }
 
     TapHandler {
-        id: structuredDocumentEndWhitespaceTapHandler
+        id: structuredDocumentTrailingMarginTapHandler
 
         acceptedButtons: Qt.LeftButton
         enabled: structuredDocumentViewportItem.visible
@@ -126,7 +126,7 @@ Item {
                 return;
             const surfaceTapX = eventPoint && eventPoint.position ? Number(eventPoint.position.x) || 0 : 0;
             const surfaceTapY = eventPoint && eventPoint.position ? Number(eventPoint.position.y) || 0 : 0;
-            surfaceHost.requestStructuredDocumentEndEditFromSurfacePoint(surfaceTapX, surfaceTapY);
+            surfaceHost.requestTerminalBodyClickFromSurfacePoint(surfaceTapX, surfaceTapY);
         }
     }
 
@@ -294,7 +294,7 @@ Item {
             onTapped: function (eventPoint) {
                 const viewportTapX = eventPoint && eventPoint.position ? Number(eventPoint.position.x) || 0 : 0;
                 const viewportTapY = eventPoint && eventPoint.position ? Number(eventPoint.position.y) || 0 : 0;
-                surfaceHost.requestStructuredDocumentEndEditFromViewportPoint(viewportTapX, viewportTapY);
+                surfaceHost.requestTerminalBodyClickFromViewportPoint(viewportTapX, viewportTapY);
             }
         }
     }

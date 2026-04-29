@@ -1043,7 +1043,7 @@ private slots:
     void qmlStructuredEditors_insertStructuredShortcutsThroughRawSourceMutations();
     void qmlStructuredEditors_acceptsPlatformCommandModifierForInlineFormatting();
     void qmlStructuredEditors_routesInlineFormatShortcutThroughDocumentFlow();
-    void qmlStructuredEditors_focusesDocumentEndFromBottomWhitespace();
+    void qmlStructuredEditors_mapsBottomMarginToTerminalBodyClick();
     void qmlStructuredEditors_backspaceDeletesPreviousResourceFromEmptyTextBlock();
     void qmlStructuredEditors_deletesEmptyCalloutWithBackspace();
     void qmlStructuredEditors_renderInlineStyleOverlayAtRuntime();

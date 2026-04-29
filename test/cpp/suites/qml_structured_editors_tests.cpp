@@ -699,7 +699,7 @@ EditorView.ContentsStructuredDocumentFlow {
     QVERIFY(structuredFlowSource.contains(QStringLiteral("onInlineFormatRequested: function (blockIndex, tagName, selectionSnapshot)")));
 }
 
-void WhatSonCppRegressionTests::qmlStructuredEditors_focusesDocumentEndFromBottomWhitespace()
+void WhatSonCppRegressionTests::qmlStructuredEditors_mapsBottomMarginToTerminalBodyClick()
 {
     registerStructuredEditorRuntimeQmlTypes();
 
@@ -719,13 +719,14 @@ void WhatSonCppRegressionTests::qmlStructuredEditors_focusesDocumentEndFromBotto
     QVERIFY(surfaceHostSource.contains(QStringLiteral("&& !contentsView.noteDocumentExceptionVisible")));
     QVERIFY(!surfaceHostSource.contains(QStringLiteral("enabled: contentsView.noteDocumentParseMounted")));
     QVERIFY(!surfaceHostSource.contains(QStringLiteral("enabled: contentsView.noteDocumentSurfaceInteractive")));
-    QVERIFY(surfaceHostSource.contains(QStringLiteral("pointTargetsDocumentEndEdit(flowTapX, flowTapY)")));
-    QVERIFY(surfaceHostSource.contains(QStringLiteral("property bool documentEndEditRequestQueued: false")));
-    QVERIFY(surfaceHostSource.contains(QStringLiteral("if (surfaceHost.documentEndEditRequestQueued)")));
-    QVERIFY(surfaceHostSource.contains(QStringLiteral("function requestStructuredDocumentEndEditFromSurfacePoint(")));
-    QVERIFY(surfaceHostSource.contains(QStringLiteral("function requestStructuredDocumentEndEditFromEditorAreaPoint(")));
+    QVERIFY(surfaceHostSource.contains(QStringLiteral("pointTargetsTrailingMarginBodyClick(flowTapX, flowTapY)")));
+    QVERIFY(surfaceHostSource.contains(QStringLiteral("property bool terminalBodyClickRequestQueued: false")));
+    QVERIFY(surfaceHostSource.contains(QStringLiteral("if (surfaceHost.terminalBodyClickRequestQueued)")));
+    QVERIFY(surfaceHostSource.contains(QStringLiteral("function requestTerminalBodyClickFromSurfacePoint(")));
+    QVERIFY(surfaceHostSource.contains(QStringLiteral("function requestTerminalBodyClickFromEditorAreaPoint(")));
     QVERIFY(surfaceHostSource.contains(QStringLiteral("\"allowOutOfViewport\": true")));
-    QVERIFY(surfaceHostSource.contains(QStringLiteral("structuredDocumentEndWhitespaceTapHandler")));
+    QVERIFY(surfaceHostSource.contains(QStringLiteral("structuredDocumentTrailingMarginTapHandler")));
+    QVERIFY(!surfaceHostSource.contains(QStringLiteral("requestStructuredDocumentEndEdit")));
     QVERIFY(auxiliaryHostSource.contains(QStringLiteral("id: editorActivationSurface")));
     const qsizetype activationSurfaceIndex = auxiliaryHostSource.indexOf(
         QStringLiteral("id: editorActivationSurface"));
@@ -747,11 +748,11 @@ void WhatSonCppRegressionTests::qmlStructuredEditors_focusesDocumentEndFromBotto
     QVERIFY(editorRowZIndex > editorRowIndex);
     QVERIFY(editorRowZIndex < gutterHostIndex);
     QVERIFY(!auxiliaryHostSource.contains(QStringLiteral("z: 10")));
-    QVERIFY(auxiliaryHostSource.contains(QStringLiteral("editorWholeSurfaceEndEditTapHandler")));
+    QVERIFY(auxiliaryHostSource.contains(QStringLiteral("editorWholeSurfaceTrailingMarginTapHandler")));
     QVERIFY(auxiliaryHostSource.contains(QStringLiteral("visible: auxiliaryHost.contentsView.hasSelectedNote")));
     QVERIFY(auxiliaryHostSource.contains(QStringLiteral("&& !auxiliaryHost.contentsView.noteDocumentExceptionVisible")));
-    QVERIFY(auxiliaryHostSource.contains(QStringLiteral("function requestDocumentEndEditFromActivationPoint(localX, localY)")));
-    QVERIFY(auxiliaryHostSource.contains(QStringLiteral("surfaceHost.requestStructuredDocumentEndEditFromEditorAreaPoint(")));
+    QVERIFY(auxiliaryHostSource.contains(QStringLiteral("function requestTerminalBodyClickFromActivationPoint(localX, localY)")));
+    QVERIFY(auxiliaryHostSource.contains(QStringLiteral("surfaceHost.requestTerminalBodyClickFromEditorAreaPoint(")));
     QVERIFY(auxiliaryHostSource.contains(QStringLiteral("editorActivationSurface")));
     QVERIFY(auxiliaryHostSource.contains(QStringLiteral("pointInsideMappedItem(gutterHost, editorActivationSurface")));
     QVERIFY(auxiliaryHostSource.contains(QStringLiteral("pointInsideMappedItem(minimapLayerItem, editorActivationSurface")));
@@ -760,12 +761,14 @@ void WhatSonCppRegressionTests::qmlStructuredEditors_focusesDocumentEndFromBotto
     QVERIFY(surfaceHostSource.contains(QStringLiteral("resourceImportController: surfaceHost.resourceImportController")));
     QVERIFY(!surfaceHostSource.contains(QStringLiteral("contentsView: contentsView")));
     QVERIFY(!surfaceHostSource.contains(QStringLiteral("resourceImportController: resourceImportController")));
-    QVERIFY(structuredFlowSource.contains(QStringLiteral("function pointTargetsDocumentEndEdit(localX, localY)")));
+    QVERIFY(structuredFlowSource.contains(QStringLiteral("function pointTargetsTrailingMarginBodyClick(localX, localY)")));
     QVERIFY(structuredFlowSource.contains(QStringLiteral("const safeLocalX = Number(localX)")));
     QVERIFY(structuredFlowSource.contains(QStringLiteral("if (!isFinite(safeLocalX) || !isFinite(safeLocalY))")));
-    QVERIFY(!structuredFlowSource.contains(QStringLiteral("return safeLocalY >= documentFlow.documentContentBottomY()")));
-    QVERIFY(structuredFlowSource.indexOf(QStringLiteral("const lastBlockHost = blockRepeater.itemAt(lastBlockIndex)"))
-            < structuredFlowSource.indexOf(QStringLiteral("const cachedSummary = documentFlow.cachedBlockLayoutSummaryAt(lastBlockIndex)")));
+    QVERIFY(structuredFlowSource.contains(QStringLiteral("return safeLocalY >= documentFlow.documentContentBottomY()")));
+    QVERIFY(structuredFlowSource.contains(QStringLiteral("function requestTerminalBodyClick()")));
+    QVERIFY(structuredFlowSource.contains(QStringLiteral("function requestTerminalBodyClickFromTrailingMargin(localX, localY)")));
+    QVERIFY(!structuredFlowSource.contains(QStringLiteral("function requestDocumentEndEdit()")));
+    QVERIFY(!structuredFlowSource.contains(QStringLiteral("currentSourceText + \"\\n\"")));
     QVERIFY(structuredFlowSource.contains(QStringLiteral("\"targetBlockIndex\": lastBlockIndex")));
     QVERIFY(commandSurfaceSource.contains(QStringLiteral("editorRightClickContextMenuMouseArea")));
     QVERIFY(commandSurfaceSource.contains(QStringLiteral("acceptedButtons: Qt.RightButton")));
@@ -822,12 +825,12 @@ void WhatSonCppRegressionTests::qmlStructuredEditors_focusesDocumentEndFromBotto
     QVariant returnValue;
     QVERIFY(QMetaObject::invokeMethod(
         flowObject.get(),
-        "requestDocumentEndEdit",
+        "requestTerminalBodyClick",
         Q_RETURN_ARG(QVariant, returnValue)));
     QVERIFY(returnValue.toBool());
 
     const QVariantMap focusRequest = flowObject->property("pendingFocusRequest").toMap();
-    QCOMPARE(focusRequest.value(QStringLiteral("reason")).toString(), QStringLiteral("document-end-edit"));
+    QCOMPARE(focusRequest.value(QStringLiteral("reason")).toString(), QStringLiteral("terminal-body-click"));
     QCOMPARE(focusRequest.value(QStringLiteral("sourceOffset")).toInt(), resourceSourceText.size());
     QCOMPARE(focusRequest.value(QStringLiteral("targetBlockIndex")).toInt(), 1);
     QCOMPARE(flowObject->property("pendingFocusBlockIndex").toInt(), 1);
@@ -856,15 +859,47 @@ void WhatSonCppRegressionTests::qmlStructuredEditors_focusesDocumentEndFromBotto
     QVariant emptyReturnValue;
     QVERIFY(QMetaObject::invokeMethod(
         emptyFlowObject.get(),
-        "requestDocumentEndEdit",
+        "requestTerminalBodyClick",
         Q_RETURN_ARG(QVariant, emptyReturnValue)));
     QVERIFY(emptyReturnValue.toBool());
 
     const QVariantMap emptyFocusRequest = emptyFlowObject->property("pendingFocusRequest").toMap();
-    QCOMPARE(emptyFocusRequest.value(QStringLiteral("reason")).toString(), QStringLiteral("document-end-edit"));
+    QCOMPARE(emptyFocusRequest.value(QStringLiteral("reason")).toString(), QStringLiteral("terminal-body-click"));
     QCOMPARE(emptyFocusRequest.value(QStringLiteral("sourceOffset")).toInt(), 0);
     QCOMPARE(emptyFocusRequest.value(QStringLiteral("targetBlockIndex")).toInt(), 0);
     QCOMPARE(emptyFlowObject->property("pendingFocusBlockIndex").toInt(), 0);
+
+    QVariantList atomicOnlyBlocks;
+    atomicOnlyBlocks.push_back(resourceBlock);
+    std::unique_ptr<QObject> atomicOnlyFlowObject(component.createWithInitialProperties({
+        {QStringLiteral("documentBlocks"), atomicOnlyBlocks},
+        {QStringLiteral("sourceText"), resourceSourceText},
+    }));
+    if (!atomicOnlyFlowObject)
+    {
+        QFAIL(qPrintable(qmlStructuredEditorErrorString(component.errors())));
+    }
+    QSignalSpy atomicOnlyMutationSpy(
+        atomicOnlyFlowObject.get(),
+        SIGNAL(sourceMutationRequested(QString,QVariant)));
+    QVERIFY(atomicOnlyMutationSpy.isValid());
+
+    QVariant atomicOnlyReturnValue;
+    QVERIFY(QMetaObject::invokeMethod(
+        atomicOnlyFlowObject.get(),
+        "requestTerminalBodyClick",
+        Q_RETURN_ARG(QVariant, atomicOnlyReturnValue)));
+    QVERIFY(atomicOnlyReturnValue.toBool());
+    QCOMPARE(atomicOnlyMutationSpy.count(), 0);
+
+    const QVariantMap atomicOnlyFocusRequest =
+        atomicOnlyFlowObject->property("pendingFocusRequest").toMap();
+    QCOMPARE(
+        atomicOnlyFocusRequest.value(QStringLiteral("reason")).toString(),
+        QStringLiteral("terminal-body-click"));
+    QCOMPARE(atomicOnlyFocusRequest.value(QStringLiteral("sourceOffset")).toInt(), resourceSourceText.size());
+    QCOMPARE(atomicOnlyFocusRequest.value(QStringLiteral("targetBlockIndex")).toInt(), 0);
+    QCOMPARE(atomicOnlyFlowObject->property("pendingFocusBlockIndex").toInt(), 0);
 
     const QString editorImportPath = repositoryRoot + QStringLiteral("/src/app/qml/view/content/editor");
     const QString editorImportUrl = QUrl::fromLocalFile(editorImportPath).toString();
@@ -876,6 +911,8 @@ Item {
     id: root
     width: 420
     height: 360
+    property int terminalBodyClickRequestCount: 0
+    property var lastTerminalBodyFocusRequest: ({})
 
     QtObject {
         id: bodyResourceRenderer
@@ -919,7 +956,6 @@ Item {
     Item {
         id: contentsView
         objectName: "surfaceHostContentsView"
-        property int endEditRequestCount: 0
         property int minEditorHeight: 0
         property bool noteDocumentParseMounted: true
         property bool showPrintEditorLayout: false
@@ -973,10 +1009,6 @@ Item {
         function queueCalloutShortcutInsertion() { return false; }
         function queueInlineFormatWrap(_tagName) { return false; }
         function requestEditorSelectionContextMenuFromPointer(_x, _y, _reason) {}
-        function requestStructuredDocumentEndEdit() {
-            endEditRequestCount += 1;
-            return true;
-        }
         function setAgendaTaskDone(_taskOpenTagStart, _taskOpenTagEnd, _checked) {}
     }
 
@@ -993,13 +1025,25 @@ Item {
         resourceImportController: resourceImportController
         structuredBlockRenderer: blockRenderer
     }
+
+    Connections {
+        target: surfaceHost.structuredDocumentFlow
+
+        function onPendingFocusRequestChanged() {
+            const request = surfaceHost.structuredDocumentFlow.pendingFocusRequest;
+            if (!request || request.reason !== "terminal-body-click")
+                return;
+            root.terminalBodyClickRequestCount += 1;
+            root.lastTerminalBodyFocusRequest = request;
+        }
+    }
 }
 )QML").arg(editorImportUrl);
 
     QQmlComponent surfaceHostComponent(&engine);
     surfaceHostComponent.setData(
         surfaceHostQmlSource.toUtf8(),
-        QUrl::fromLocalFile(repositoryRoot + QStringLiteral("/test/surface-host-end-edit.qml")));
+        QUrl::fromLocalFile(repositoryRoot + QStringLiteral("/test/surface-host-terminal-body-click.qml")));
     if (surfaceHostComponent.status() == QQmlComponent::Error)
     {
         QFAIL(qPrintable(qmlStructuredEditorErrorString(surfaceHostComponent.errors())));
@@ -1025,26 +1069,33 @@ Item {
     QVERIFY(surfaceHost != nullptr);
     QObject* blockRenderer = rootObject->findChild<QObject*>(QStringLiteral("surfaceHostBlockRenderer"));
     QVERIFY(blockRenderer != nullptr);
+    QObject* inlineEditor = rootObject->findChild<QObject*>(QStringLiteral("contentsInlineFormatEditor"));
+    QVERIFY(inlineEditor != nullptr);
 
     QVariant hostReturnValue;
     QVERIFY(QMetaObject::invokeMethod(
         surfaceHost,
-        "requestStructuredDocumentEndEditFromSurfacePoint",
+        "requestTerminalBodyClickFromSurfacePoint",
         Q_RETURN_ARG(QVariant, hostReturnValue),
         Q_ARG(QVariant, QVariant(220)),
         Q_ARG(QVariant, QVariant(320))));
     QVERIFY(hostReturnValue.toBool());
-    QTRY_COMPARE(hostContentsView->property("endEditRequestCount").toInt(), 1);
+    QTRY_COMPARE(rootObject->property("terminalBodyClickRequestCount").toInt(), 1);
+    QVariantMap hostFocusRequest = rootObject->property("lastTerminalBodyFocusRequest").toMap();
+    QCOMPARE(hostFocusRequest.value(QStringLiteral("sourceOffset")).toInt(), 5);
+    QCOMPARE(hostFocusRequest.value(QStringLiteral("targetBlockIndex")).toInt(), 0);
+    QTRY_COMPARE(inlineEditor->property("cursorPosition").toInt(), 5);
+    QTRY_VERIFY(inlineEditor->property("focused").toBool());
 
     QVariant sideWhitespaceReturnValue;
     QVERIFY(QMetaObject::invokeMethod(
         surfaceHost,
-        "requestStructuredDocumentEndEditFromSurfacePoint",
+        "requestTerminalBodyClickFromSurfacePoint",
         Q_RETURN_ARG(QVariant, sideWhitespaceReturnValue),
         Q_ARG(QVariant, QVariant(2)),
         Q_ARG(QVariant, QVariant(20))));
-    QVERIFY(sideWhitespaceReturnValue.toBool());
-    QTRY_COMPARE(hostContentsView->property("endEditRequestCount").toInt(), 2);
+    QVERIFY(!sideWhitespaceReturnValue.toBool());
+    QCOMPARE(rootObject->property("terminalBodyClickRequestCount").toInt(), 1);
 
     QVariantMap allowOutOfViewportOptions;
     allowOutOfViewportOptions.insert(QStringLiteral("allowOutOfViewport"), true);
@@ -1052,13 +1103,15 @@ Item {
     QVariant outsideViewportReturnValue;
     QVERIFY(QMetaObject::invokeMethod(
         surfaceHost,
-        "requestStructuredDocumentEndEditFromViewportPoint",
+        "requestTerminalBodyClickFromViewportPoint",
         Q_RETURN_ARG(QVariant, outsideViewportReturnValue),
         Q_ARG(QVariant, QVariant(-12)),
-        Q_ARG(QVariant, QVariant(20)),
+        Q_ARG(QVariant, QVariant(320)),
         Q_ARG(QVariant, QVariant(allowOutOfViewportOptions))));
     QVERIFY(outsideViewportReturnValue.toBool());
-    QTRY_COMPARE(hostContentsView->property("endEditRequestCount").toInt(), 3);
+    QTRY_VERIFY(rootObject->property("terminalBodyClickRequestCount").toInt() >= 1);
+    const int terminalBodyClickCountBeforeEmptyNote =
+        rootObject->property("terminalBodyClickRequestCount").toInt();
 
     hostContentsView->setProperty("structuredFlowSourceText", QString());
     blockRenderer->setProperty("renderedDocumentBlocks", emptyDocumentEndBlocks);
@@ -1066,12 +1119,17 @@ Item {
     QVariant emptyHostReturnValue;
     QVERIFY(QMetaObject::invokeMethod(
         surfaceHost,
-        "requestStructuredDocumentEndEditFromSurfacePoint",
+        "requestTerminalBodyClickFromSurfacePoint",
         Q_RETURN_ARG(QVariant, emptyHostReturnValue),
         Q_ARG(QVariant, QVariant(220)),
         Q_ARG(QVariant, QVariant(320))));
     QVERIFY(emptyHostReturnValue.toBool());
-    QTRY_COMPARE(hostContentsView->property("endEditRequestCount").toInt(), 4);
+    QTRY_COMPARE(
+        rootObject->property("terminalBodyClickRequestCount").toInt(),
+        terminalBodyClickCountBeforeEmptyNote + 1);
+    hostFocusRequest = rootObject->property("lastTerminalBodyFocusRequest").toMap();
+    QCOMPARE(hostFocusRequest.value(QStringLiteral("sourceOffset")).toInt(), 0);
+    QCOMPARE(hostFocusRequest.value(QStringLiteral("targetBlockIndex")).toInt(), 0);
 }
 
 void WhatSonCppRegressionTests::qmlStructuredEditors_backspaceDeletesPreviousResourceFromEmptyTextBlock()

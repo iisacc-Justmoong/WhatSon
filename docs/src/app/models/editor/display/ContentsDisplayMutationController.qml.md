@@ -11,5 +11,5 @@ Owns QML-runtime mutation orchestration for the editor display host.
 - Delegates public access through `ContentsDisplayMutationViewModel`.
 - Must preserve RAW source as the only write authority.
 - Must not write `contentsView.editorText`, mark local editor authority, or schedule persistence directly.
-- Does not route end-of-document focus or block-focus restoration through a generic editor-surface adapter.
-  Those requests go directly to the mounted `ContentsStructuredDocumentFlow.qml` host.
+- Does not route trailing-margin focus or block-focus restoration through a generic editor-surface adapter.
+  Those requests go directly from the mounted surface host to `ContentsStructuredDocumentFlow.qml`.

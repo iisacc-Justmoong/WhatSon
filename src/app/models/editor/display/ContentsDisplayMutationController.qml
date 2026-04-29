@@ -93,15 +93,6 @@ QtObject {
         return controller.editorTypingController.queueBreakShortcutInsertion();
     }
 
-    function requestStructuredDocumentEndEdit() {
-        if (controller.contentsView.showStructuredDocumentFlow
-                && controller.structuredDocumentFlow
-                && controller.structuredDocumentFlow.requestDocumentEndEdit !== undefined) {
-            return controller.structuredDocumentFlow.requestDocumentEndEdit();
-        }
-        return false;
-    }
-
     function commitRawEditorTextMutation(nextSourceText) {
         if (!controller.editorSession
                 || controller.editorSession.commitRawEditorTextMutation === undefined) {

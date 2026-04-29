@@ -658,9 +658,6 @@ Item {
     function queueBreakShortcutInsertion() {
         return mutationViewModel.queueBreakShortcutInsertion();
     }
-    function requestStructuredDocumentEndEdit() {
-        return mutationViewModel.requestStructuredDocumentEndEdit();
-    }
     function focusStructuredBlockSourceOffset(sourceOffset) {
         mutationViewModel.focusStructuredBlockSourceOffset(sourceOffset);
     }
