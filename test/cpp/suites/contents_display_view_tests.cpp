@@ -296,6 +296,43 @@ void WhatSonCppRegressionTests::qmlHierarchyNoteDrop_keepsDropSurfaceOpenUntilCa
     QVERIFY(bodyLayoutSource.contains(QStringLiteral("noteDropTarget: sideBar.noteDropTargetView")));
 }
 
+void WhatSonCppRegressionTests::qmlHierarchyExpansion_preservesUserControlledStateAcrossModelRefreshes()
+{
+    const QString sidebarSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/panels/sidebar/SidebarHierarchyView.qml"));
+    const QString libraryViewModelSource = readUtf8SourceFile(
+        QStringLiteral("src/app/viewmodel/hierarchy/library/LibraryHierarchyViewModel.cpp"));
+    const QString eventSupportSource = readUtf8SourceFile(
+        QStringLiteral("src/app/viewmodel/hierarchy/event/EventHierarchyViewModelSupport.hpp"));
+    const QString presetSupportSource = readUtf8SourceFile(
+        QStringLiteral("src/app/viewmodel/hierarchy/preset/PresetHierarchyViewModelSupport.hpp"));
+
+    QVERIFY(!sidebarSource.isEmpty());
+    QVERIFY(!libraryViewModelSource.isEmpty());
+    QVERIFY(!eventSupportSource.isEmpty());
+    QVERIFY(!presetSupportSource.isEmpty());
+
+    QVERIFY(sidebarSource.contains(QStringLiteral("property var hierarchyExpansionStateByKey: ({})")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("function hierarchyExpansionStateScopeKey()")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("return \"hierarchy:\" + String(sidebarHierarchyView.normalizedInteger(sidebarHierarchyView.activeToolbarIndex")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("function hierarchyModelWithPreservedExpansion(modelValue)")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("function hierarchyModelIndexVisible(index)")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("function hierarchyChevronExpansionTargetAtPosition(x, y)")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("function armHierarchyUserExpansionAtPosition(x, y)")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("const userExpansionArmed = expansionKey.length > 0 && expansionKey === sidebarHierarchyView.hierarchyExpansionPointerArmedKey;")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("item.expanded = preservedExpanded;")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("if (!sidebarHierarchyView.hierarchyModelIndexVisible(selectedFolderIndex))")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("if (Boolean(forceSelectionSync) && sidebarHierarchyView.hierarchyModelIndexVisible(editingIndex))")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("sidebarHierarchyView.setAllHierarchyExpansionStates(true);\n        if (!sidebarHierarchyView.hierarchyInteractionBridge.setAllItemsExpanded(true))")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("sidebarHierarchyView.setAllHierarchyExpansionStates(false);\n        if (!sidebarHierarchyView.hierarchyInteractionBridge.setAllItemsExpanded(false))")));
+
+    QVERIFY(libraryViewModelSource.contains(QStringLiteral("const QSet<QString> preservedExpandedKeys = expandedHierarchyItemKeys(m_items);")));
+    QVERIFY(libraryViewModelSource.contains(QStringLiteral("restoreExpandedHierarchyItemKeys(&m_items, preservedExpandedKeys);")));
+    QVERIFY(!libraryViewModelSource.contains(QStringLiteral("stagedItems[expandedParentIndex].expanded = true;")));
+    QVERIFY(!eventSupportSource.contains(QStringLiteral("ioFolderSequence,\n            true")));
+    QVERIFY(!presetSupportSource.contains(QStringLiteral("ioFolderSequence,\n            true")));
+}
+
 void WhatSonCppRegressionTests::listBarLayout_rendersResolvedNoteListModelByIndex()
 {
     const QString listBarSource = readUtf8SourceFile(

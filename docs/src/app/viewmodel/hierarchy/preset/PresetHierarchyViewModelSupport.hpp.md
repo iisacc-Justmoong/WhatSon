@@ -26,7 +26,8 @@ The duplicated inline `.wshub` traversal and UTF-8 loading logic was removed fro
 - `isBucketHeaderItem(...)`
 - `deleteHierarchySubtree(...)`
 
-`createHierarchyFolder(...)` remains as a thin wrapper around the nested insertion helper with parent expansion enabled.
+`createHierarchyFolder(...)` remains as a thin wrapper around the nested insertion helper with parent expansion disabled.
+Folder creation must not change expansion state unless the user explicitly expands or collapses a row.
 
 ## Domain Logic That Stays Local
 

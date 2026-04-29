@@ -1016,6 +1016,7 @@ private slots:
     void contentsDisplayView_doesNotForceBlurFlushDuringNativeComposition();
     void qmlContextMenus_treatRightClickAndLongPressAsSymmetricPointerTriggers();
     void qmlHierarchyNoteDrop_keepsDropSurfaceOpenUntilCapabilityRejectsTarget();
+    void qmlHierarchyExpansion_preservesUserControlledStateAcrossModelRefreshes();
     void listBarLayout_rendersResolvedNoteListModelByIndex();
     void contentsDisplayView_routesStructuredMutationsThroughEditorSessionAuthority();
     void contentsDisplayView_refreshesMinimapFromResolvedPresentationSource();
@@ -1053,6 +1054,7 @@ private slots:
     void qmlStructuredEditors_lockCustomInputToTagManagementOnly();
     void displayContextMenuCoordinator_rejectsNonNumericStructuredSelectionSnapshots();
     void editorViewportCoordinator_movesMinimapAndLineMathOutOfQml();
+    void editorGutterCoordinators_keepLineEntriesWhenViewportHeightIsPending();
     void contentsDisplayView_surfacesMountFailurePlaceholderWithoutChrome();
     void contentsDisplaySurfacePolicy_usesStructuredSurfaceAsCanonicalNoteBody();
     void contentsDisplaySurfacePolicy_disablesLegacyInlineSurface();

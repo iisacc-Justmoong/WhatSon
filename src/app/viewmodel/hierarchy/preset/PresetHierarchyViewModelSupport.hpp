@@ -178,8 +178,7 @@ namespace WhatSon::Hierarchy::PresetSupport
         return WhatSon::Hierarchy::TreeItemSupport::createNestedHierarchyFolder(
             items,
             selectedIndex,
-            ioFolderSequence,
-            true);
+            ioFolderSequence);
     }
 
     inline QStringList extractDomainLabelsFromItems(const QVector<PresetHierarchyItem>& items)

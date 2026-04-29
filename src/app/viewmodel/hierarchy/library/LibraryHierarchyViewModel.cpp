@@ -1757,6 +1757,7 @@ void LibraryHierarchyViewModel::setDepthItems(const QVariantList& depthItems)
                               QStringLiteral("library.viewmodel"),
                               QStringLiteral("setDepthItems.begin"),
                               QStringLiteral("count=%1").arg(depthItems.size()));
+    const QSet<QString> preservedExpandedKeys = expandedHierarchyItemKeys(m_items);
 
     if (depthItems.isEmpty() && m_runtimeIndexLoaded)
     {
@@ -1795,6 +1796,7 @@ void LibraryHierarchyViewModel::setDepthItems(const QVariantList& depthItems)
     m_items = m_runtimeIndexLoaded ? prependSystemBuckets(std::move(parsedItems)) : std::move(parsedItems);
     finalizeFolderItems(&m_items, true);
     dropReservedTodayFolderItems(&m_items);
+    restoreExpandedHierarchyItemKeys(&m_items, preservedExpandedKeys);
     m_foldersHierarchyLoaded = m_runtimeIndexLoaded;
     rebuildBucketRanges();
     m_createdFolderSequence = nextFolderSequence(m_items);
@@ -2278,7 +2280,6 @@ void LibraryHierarchyViewModel::createFolder()
                               QStringLiteral("selectedIndex=%1 itemCount=%2").arg(m_selectedIndex).arg(m_items.size()));
     int insertIndex = m_items.size();
     int folderDepth = 0;
-    int expandedParentIndex = -1;
 
     if (m_selectedIndex >= 0 && m_selectedIndex < m_items.size())
     {
@@ -2290,7 +2291,6 @@ void LibraryHierarchyViewModel::createFolder()
         {
             const int selectedDepth = m_items.at(m_selectedIndex).depth;
             folderDepth = selectedDepth + 1;
-            expandedParentIndex = m_selectedIndex;
 
             insertIndex = m_selectedIndex + 1;
             while (insertIndex < m_items.size() && m_items.at(insertIndex).depth > selectedDepth)
@@ -2310,10 +2310,6 @@ void LibraryHierarchyViewModel::createFolder()
     newItem.showChevron = true;
 
     QVector<LibraryHierarchyItem> stagedItems = m_items;
-    if (expandedParentIndex >= 0 && expandedParentIndex < stagedItems.size())
-    {
-        stagedItems[expandedParentIndex].expanded = true;
-    }
     stagedItems.insert(insertIndex, std::move(newItem));
     if (insertIndex >= 0 && insertIndex < stagedItems.size())
     {

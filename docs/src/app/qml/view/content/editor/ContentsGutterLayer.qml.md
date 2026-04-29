@@ -29,6 +29,9 @@ entries and marker geometry, then hands those values to the gutter as plain mode
   tokens plus `LV.Theme.scaleMetric(...)`, so gutter chrome scales with the same density policy as the host editor.
 - The parent snapshot function must hand this component a real array. If `visibleLineNumbersModel` is assigned from a
   helper that forgot to `return visibleLines`, the gutter layer intentionally renders nothing rather than guessing.
+- The parent-side gutter coordinators must also preserve populated line arrays while viewport height is still pending.
+  A zero-height first layout pass is not allowed to degrade the model back to the one-line fallback when the note body
+  already has multiple logical lines.
 - Marker delegates still accept resolver callbacks, but all callback results pass through
   `resolveNumericResolverValue(...)` before use so invalid/undefined values collapse to safe numeric fallbacks.
 - Delegate payload is always accessed through `required property var modelData`, avoiding implicit delegate context

@@ -26,7 +26,8 @@ This header centralizes the repeated tree-item mutation helpers used by hierarch
 Two insertion strategies are intentionally separated:
 
 - `createFlatHierarchyFolder(...)`: append or insert a root-level folder after the selected row
-- `createNestedHierarchyFolder(...)`: insert a child folder after the selected subtree, with optional parent expansion
+- `createNestedHierarchyFolder(...)`: insert a child folder after the selected subtree. Parent expansion is a legacy
+  opt-in flag and domain wrappers should leave it disabled unless the user explicitly requested an expansion command.
 
 This keeps the domain wrappers small while removing the duplicated mutation code from each support header.
 

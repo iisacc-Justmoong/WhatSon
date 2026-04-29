@@ -178,8 +178,7 @@ namespace WhatSon::Hierarchy::EventSupport
         return WhatSon::Hierarchy::TreeItemSupport::createNestedHierarchyFolder(
             items,
             selectedIndex,
-            ioFolderSequence,
-            true);
+            ioFolderSequence);
     }
 
     inline QStringList extractDomainLabelsFromItems(const QVector<EventHierarchyItem>& items)

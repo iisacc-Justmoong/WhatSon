@@ -2,6 +2,25 @@
 
 #include <QtGlobal>
 
+#include <algorithm>
+
+namespace
+{
+    double inferredViewportBottom(const QVariantList& lineYs, const QVariantList& lineHeights)
+    {
+        double bottom = 0.0;
+        for (int index = 0; index < lineYs.size(); ++index)
+        {
+            const double resolvedLineY = lineYs.at(index).toDouble();
+            const double resolvedLineHeight = index < lineHeights.size()
+                ? qMax(1.0, lineHeights.at(index).toDouble())
+                : 1.0;
+            bottom = std::max(bottom, resolvedLineY + resolvedLineHeight);
+        }
+        return bottom;
+    }
+}
+
 ContentsDisplayGutterCoordinator::ContentsDisplayGutterCoordinator(QObject* parent)
     : QObject(parent)
 {
@@ -45,10 +64,13 @@ QVariantList ContentsDisplayGutterCoordinator::buildVisiblePlainGutterLineEntrie
 {
     QVariantList visibleLines;
     const int safeFirstVisibleLine = qMax(1, qMin(m_logicalLineCount, firstVisibleLine));
+    const double effectiveViewportHeight = m_gutterViewportHeight > 0.0
+        ? m_gutterViewportHeight
+        : inferredViewportBottom(gutterLineYs, gutterLineHeights);
 
     for (int lineNumber = safeFirstVisibleLine; lineNumber <= m_logicalLineCount; ++lineNumber)
     {
-        const int index = lineNumber - 1;
+        const int index = lineNumber - safeFirstVisibleLine;
         const double resolvedLineY = index < gutterLineYs.size()
             ? gutterLineYs.at(index).toDouble()
             : 0.0;
@@ -56,7 +78,7 @@ QVariantList ContentsDisplayGutterCoordinator::buildVisiblePlainGutterLineEntrie
             ? qMax(1.0, gutterLineHeights.at(index).toDouble())
             : 1.0;
 
-        if (resolvedLineY > m_gutterViewportHeight)
+        if (resolvedLineY > effectiveViewportHeight)
             break;
         if (resolvedLineY + resolvedLineHeight < 0.0)
             continue;
@@ -73,8 +95,8 @@ QVariantList ContentsDisplayGutterCoordinator::buildVisiblePlainGutterLineEntrie
         fallbackEntry.insert(QStringLiteral("lineNumber"), safeFirstVisibleLine);
         fallbackEntry.insert(
             QStringLiteral("y"),
-            safeFirstVisibleLine - 1 < gutterLineYs.size()
-                ? gutterLineYs.at(safeFirstVisibleLine - 1).toDouble()
+            !gutterLineYs.isEmpty()
+                ? gutterLineYs.first().toDouble()
                 : 0.0);
         visibleLines.push_back(fallbackEntry);
     }

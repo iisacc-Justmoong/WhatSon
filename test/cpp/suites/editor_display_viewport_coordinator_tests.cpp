@@ -1,5 +1,7 @@
 #include "test/cpp/whatson_cpp_regression_tests.hpp"
 
+#include "app/models/editor/display/ContentsDisplayGutterCoordinator.hpp"
+#include "app/models/editor/display/ContentsDisplayStructuredFlowCoordinator.hpp"
 #include "app/models/editor/display/ContentsDisplayViewportCoordinator.hpp"
 
 void WhatSonCppRegressionTests::editorViewportCoordinator_movesMinimapAndLineMathOutOfQml()
@@ -71,4 +73,68 @@ void WhatSonCppRegressionTests::editorViewportCoordinator_movesMinimapAndLineMat
         QStringLiteral("ContentsDisplayViewportCoordinator::minimapViewportHeight")));
     QVERIFY(viewportCoordinatorSource.contains(
         QStringLiteral("ContentsDisplayViewportCoordinator::minimapLineBarWidth")));
+}
+
+void WhatSonCppRegressionTests::editorGutterCoordinators_keepLineEntriesWhenViewportHeightIsPending()
+{
+    ContentsDisplayGutterCoordinator plainCoordinator;
+    plainCoordinator.setLogicalLineCount(4);
+    plainCoordinator.setGutterViewportHeight(0.0);
+
+    const QVariantList plainYValues{
+        0.0,
+        12.0,
+        24.0,
+        36.0,
+    };
+    const QVariantList plainHeights{
+        12.0,
+        12.0,
+        12.0,
+        12.0,
+    };
+    const QVariantList plainRows = plainCoordinator.buildVisiblePlainGutterLineEntries(
+        1,
+        plainYValues,
+        plainHeights);
+    QCOMPARE(plainRows.size(), 4);
+    QCOMPARE(plainRows.at(0).toMap().value(QStringLiteral("lineNumber")).toInt(), 1);
+    QCOMPARE(plainRows.at(3).toMap().value(QStringLiteral("lineNumber")).toInt(), 4);
+    QCOMPARE(plainRows.at(3).toMap().value(QStringLiteral("y")).toDouble(), 36.0);
+
+    const QVariantList scrolledRows = plainCoordinator.buildVisiblePlainGutterLineEntries(
+        3,
+        QVariantList{0.0, 12.0},
+        QVariantList{12.0, 12.0});
+    QCOMPARE(scrolledRows.size(), 2);
+    QCOMPARE(scrolledRows.at(0).toMap().value(QStringLiteral("lineNumber")).toInt(), 3);
+    QCOMPARE(scrolledRows.at(0).toMap().value(QStringLiteral("y")).toDouble(), 0.0);
+    QCOMPARE(scrolledRows.at(1).toMap().value(QStringLiteral("lineNumber")).toInt(), 4);
+    QCOMPARE(scrolledRows.at(1).toMap().value(QStringLiteral("y")).toDouble(), 12.0);
+
+    ContentsDisplayStructuredFlowCoordinator structuredCoordinator;
+    structuredCoordinator.setStructuredHostGeometryActive(true);
+    structuredCoordinator.setEditorLineHeight(12.0);
+    structuredCoordinator.setGutterViewportHeight(0.0);
+    structuredCoordinator.setEditorDocumentStartY(0.0);
+    structuredCoordinator.setEditorContentOffsetY(0.0);
+
+    QVariantList structuredEntries;
+    for (int index = 0; index < 3; ++index)
+    {
+        QVariantMap entry;
+        entry.insert(QStringLiteral("contentY"), index * 12.0);
+        entry.insert(QStringLiteral("contentHeight"), 12.0);
+        entry.insert(QStringLiteral("gutterContentY"), index * 12.0);
+        entry.insert(QStringLiteral("gutterContentHeight"), 12.0);
+        structuredEntries.push_back(entry);
+    }
+
+    const QVariantList structuredRows = structuredCoordinator.buildVisibleStructuredGutterLineEntries(
+        structuredEntries,
+        1);
+    QCOMPARE(structuredRows.size(), 3);
+    QCOMPARE(structuredRows.at(0).toMap().value(QStringLiteral("lineNumber")).toInt(), 1);
+    QCOMPARE(structuredRows.at(2).toMap().value(QStringLiteral("lineNumber")).toInt(), 3);
+    QCOMPARE(structuredRows.at(2).toMap().value(QStringLiteral("y")).toDouble(), 24.0);
 }

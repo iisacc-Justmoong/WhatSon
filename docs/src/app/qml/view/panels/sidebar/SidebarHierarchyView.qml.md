@@ -143,6 +143,17 @@ These signals make the file a reusable visual surface instead of a hard-coded on
 
 ## Expansion Routing Guard
 
+- Expansion state is now treated as user-owned UI state. `hierarchyExpansionStateByKey` captures row expansion by
+  stable hierarchy key, and `syncDisplayedHierarchyModel(...)` overlays that state onto refreshed hierarchy payloads.
+  Count-only changes, folder-structure refreshes, and note-to-folder assignment refreshes must therefore not reset
+  existing expanded/collapsed rows.
+- Expansion keys are scoped by the active hierarchy index, so identical row ids in different hierarchy domains do not
+  leak expansion state into each other when the toolbar switches domain.
+- Programmatic LVRS expansion changes are not persisted back into the ViewModel. The sidebar arms an expansion request
+  only when the pointer press lands on a row's chevron slot, and `onListItemExpanded` reverts any unarmed expansion
+  change back to the preserved state.
+- `syncSelectedHierarchyItem(...)` refuses to activate a selected row that is hidden behind a collapsed ancestor. This
+  prevents LVRS active-item normalization from auto-expanding ancestors during model rebuilds.
 - Chevron-driven expansion now records a resolved hierarchy index from stable model ids first
   (`item.itemId`, then `item.resolvedItemId`, then callback `itemId`), and only falls back to
   visual row indexes (`flatIndex`, then callback `index`) when model ids are unavailable.
@@ -222,6 +233,9 @@ This file should be read as a composed view, not as the place where hierarchy bu
 - `test/cpp/suites/contents_display_view_tests.cpp` locks the footer context-menu action contract by checking the
   explicit expand/collapse event names, direct `onTriggered` callbacks, shared action normalizer, and queued-action
   duplicate guard.
+- The same test file also locks the hierarchy expansion contract: refreshed models must preserve
+  `hierarchyExpansionStateByKey` with active-hierarchy scoping, hidden selected rows must not be activated just to make
+  them visible, and unarmed LVRS expansion changes must be reverted instead of persisted.
 - Modifier-selection regression checklist for this file:
   - `Shift + click` creates contiguous hierarchy ranges from `hierarchySelectionAnchorIndex`.
   - `Cmd/Ctrl + click` toggles hierarchy rows without collapsing to single selection.

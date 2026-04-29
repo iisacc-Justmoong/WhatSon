@@ -2,6 +2,8 @@
 
 #include <QtGlobal>
 
+#include <algorithm>
+
 ContentsDisplayStructuredFlowCoordinator::ContentsDisplayStructuredFlowCoordinator(QObject* parent)
     : QObject(parent)
 {
@@ -129,6 +131,27 @@ QVariantList ContentsDisplayStructuredFlowCoordinator::buildVisibleStructuredGut
         return visibleLines;
     }
 
+    double effectiveViewportHeight = m_gutterViewportHeight;
+    if (effectiveViewportHeight <= 0.0)
+    {
+        for (const QVariant& rawEntry : lineEntries)
+        {
+            const QVariantMap entry = rawEntry.toMap();
+            const double lineContentY = qMax(
+                0.0,
+                entry.contains(QStringLiteral("gutterContentY"))
+                    ? entry.value(QStringLiteral("gutterContentY")).toDouble()
+                    : entry.value(QStringLiteral("contentY")).toDouble());
+            const double gutterY = editorViewportYForDocumentY(lineContentY);
+            const double visibleHeight = qMax(
+                1.0,
+                entry.contains(QStringLiteral("contentHeight"))
+                    ? entry.value(QStringLiteral("contentHeight")).toDouble()
+                    : m_editorLineHeight);
+            effectiveViewportHeight = std::max(effectiveViewportHeight, gutterY + visibleHeight);
+        }
+    }
+
     for (int lineIndex = 0; lineIndex < lineEntries.size(); ++lineIndex)
     {
         const QVariantMap entry = lineEntries.at(lineIndex).toMap();
@@ -149,7 +172,7 @@ QVariantList ContentsDisplayStructuredFlowCoordinator::buildVisibleStructuredGut
             entry.contains(QStringLiteral("contentHeight"))
                 ? entry.value(QStringLiteral("contentHeight")).toDouble()
                 : m_editorLineHeight);
-        if (gutterY > m_gutterViewportHeight)
+        if (gutterY > effectiveViewportHeight)
             break;
         if (gutterY + visibleHeight < 0.0)
             continue;

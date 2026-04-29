@@ -42,10 +42,13 @@
   - `requestTrackedStatisticsRefreshForNote(...)` later pays the `.wsnbody` scan, rewrites tracked header stats, and
     rehydrates the same note through `reloadNoteMetadataForNoteId(...)`.
 - `createFolder()` remains the authoritative library-folder creation path. When a non-protected folder is selected, it
-  computes the insertion point after that folder's subtree, increases depth by one, expands the parent, and therefore
-  creates the new folder as a child of the selected folder.
+  computes the insertion point after that folder's subtree and increases depth by one, creating the new folder as a
+  child of the selected folder without forcing the selected parent open.
 - After persistence succeeds, `createFolder()` also moves the primary selected index to the inserted row so the QML
   sidebar can immediately activate and rename the new folder.
+- `setDepthItems(...)` preserves expansion by stable hierarchy key before replacing the row vector. External folder
+  structure refreshes may add, remove, or reorder rows, but they must not change the expansion state of surviving
+  folders.
 - When the hierarchy has visible rows, a negative or invalid selected index is normalized to the first visible row
   before the viewmodel republishes state. This keeps the library note-list filter aligned with the row the sidebar
   already renders as active.
@@ -73,6 +76,8 @@
     snapshot replacement when the service result cannot resolve the target note
   - library folder/system-bucket sidebar counters must refresh immediately after folder assignment, note create,
     note delete, folder clear, or one-note metadata reload even when the hierarchy rows themselves did not rebuild
+  - folder-structure reloads and folder creation must not expand or collapse existing library rows unless the user
+    explicitly performed an expansion command
   - `activateNoteById(...)` must select the requested note when it is already visible in the current library list.
   - An active library search filter must be cleared automatically when it hides the requested note.
   - A folder-scoped library selection must fall back to `All Library` before the activation path reports failure.

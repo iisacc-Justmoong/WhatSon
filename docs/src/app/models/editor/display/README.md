@@ -17,6 +17,10 @@ gain new session, persistence, parsing, mutation, scheduling, or command-surface
   Coordinates high-level focus and shortcut operation state that QML surfaces need to apply against the current note body.
 - `ContentsDisplayGutterCoordinator.*`
   Keeps gutter state derived from the same editor document projection as the visible body.
+  It must not collapse a populated line snapshot to the single-line fallback while the editor viewport height is still
+  settling; pending viewport geometry is handled by inferring the visible bottom from the supplied gutter row
+  coordinates. Plain gutter snapshots receive coordinates relative to the requested first visible line, not absolute
+  document indexes.
 - `ContentsDisplayMinimapCoordinator.*`
   Owns parser/block-derived minimap row construction.
   Its structured path now consumes parser-normalized block entries directly, producing one minimap row per block/tag
@@ -33,6 +37,9 @@ gain new session, persistence, parsing, mutation, scheduling, or command-surface
   Coordinates selected-note snapshot reconciliation and editor selection sync.
 - `ContentsDisplayStructuredFlowCoordinator.*`
   Publishes structured-flow visibility and source convergence plans.
+  Its visible-gutter builder follows the same pending-viewport rule as the plain gutter path, so structured document
+  line entries produced from the parsed note body are preserved even when the first refresh pass runs before the
+  viewport reports a non-zero height.
 - `ContentsDisplayTraceFormatter.*`
   Centralizes trace payload formatting shared by the display coordinators.
 - `ContentsDisplayViewportCoordinator.*`
