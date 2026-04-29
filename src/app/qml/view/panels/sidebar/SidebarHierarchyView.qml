@@ -157,6 +157,8 @@ Rectangle {
     }
     property alias hierarchyPointerSelectionModifiers: hierarchySelectionController.pointerSelectionModifiers
     property alias hierarchyPointerSelectionModifiersCapturedAtMs: hierarchySelectionController.pointerSelectionModifiersCapturedAtMs
+    readonly property bool hierarchyNoteDropSurfaceEnabled: sidebarHierarchyView.hierarchyDragDropBridge !== undefined
+                                                          && sidebarHierarchyView.hierarchyDragDropBridge !== null
     readonly property color hierarchyRenameFieldBackgroundColor: {
         const presentation = sidebarHierarchyView.editingHierarchyItemPresentation;
         if (presentation && presentation.rowBackgroundColor !== undefined)
@@ -1259,7 +1261,7 @@ Rectangle {
         }
 
         anchors.fill: hierarchyTree
-        enabled: sidebarHierarchyView.hierarchyDragDropBridge && sidebarHierarchyView.hierarchyDragDropBridge.noteDropContractAvailable
+        enabled: sidebarHierarchyView.hierarchyNoteDropSurfaceEnabled
 
         onDropped: function (drop) {
             const noteIds = sidebarHierarchyView.noteIdsFromDragPayload(drop);

@@ -189,6 +189,9 @@ These signals make the file a reusable visual surface instead of a hard-coded on
 - The `DropArea` at the bottom of the file now routes pointer payloads into `noteIdsFromDragPayload(...)`, so a drag
   that originated from a multi-selected note-list group can assign every selected note to the hovered folder in one
   drop.
+- The `DropArea` stays enabled whenever a `HierarchyDragDropBridge` is wired. It must not gate itself on
+  `noteDropContractAvailable`, because that prevents drag enter/drop events from reaching the controller at all. The
+  controller and domain ViewModel capability remain responsible for accepting or rejecting a concrete target.
 - That folder-drop path depends on `SidebarHierarchyNoteDropController.normalizeNoteIds(...)` returning a concrete
   array. If the helper falls through without `return normalized;`, the sidebar will reject every note-list-to-folder
   drop as an empty payload.

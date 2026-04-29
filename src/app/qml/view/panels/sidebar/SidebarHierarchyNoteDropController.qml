@@ -148,7 +148,8 @@ QtObject {
         return normalized >= 0 ? normalized : -1;
     }
     function noteDropIndexAtPosition(x, y, referenceItem) {
-
+        const target = noteDropController.noteDropTargetAtPosition(x, y, referenceItem);
+        return target.index;
     }
     function noteDropTargetAtPosition(x, y, referenceItem) {
         const localX = Number(x) || 0;

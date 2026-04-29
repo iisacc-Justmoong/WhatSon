@@ -268,6 +268,34 @@ void WhatSonCppRegressionTests::qmlContextMenus_treatRightClickAndLongPressAsSym
     QVERIFY(sidebarSource.contains(QStringLiteral("sidebarHierarchyView.requestCollapseAllHierarchyItems();")));
 }
 
+void WhatSonCppRegressionTests::qmlHierarchyNoteDrop_keepsDropSurfaceOpenUntilCapabilityRejectsTarget()
+{
+    const QString sidebarSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/panels/sidebar/SidebarHierarchyView.qml"));
+    const QString noteDropControllerSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/panels/sidebar/SidebarHierarchyNoteDropController.qml"));
+    const QString listBarSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/panels/ListBarLayout.qml"));
+    const QString bodyLayoutSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/panels/BodyLayout.qml"));
+
+    QVERIFY(!sidebarSource.isEmpty());
+    QVERIFY(!noteDropControllerSource.isEmpty());
+    QVERIFY(!listBarSource.isEmpty());
+    QVERIFY(!bodyLayoutSource.isEmpty());
+
+    QVERIFY(sidebarSource.contains(QStringLiteral("readonly property bool hierarchyNoteDropSurfaceEnabled")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("enabled: sidebarHierarchyView.hierarchyNoteDropSurfaceEnabled")));
+    QVERIFY(!sidebarSource.contains(QStringLiteral("enabled: sidebarHierarchyView.hierarchyDragDropBridge && sidebarHierarchyView.hierarchyDragDropBridge.noteDropContractAvailable")));
+    QVERIFY(noteDropControllerSource.contains(QStringLiteral("function noteDropIndexAtPosition(x, y, referenceItem) {\n        const target = noteDropController.noteDropTargetAtPosition(x, y, referenceItem);\n        return target.index;")));
+    QVERIFY(noteDropControllerSource.contains(QStringLiteral("hierarchyDragDropBridge.canAcceptNoteDropList(target.index, normalizedNoteIds)")));
+    QVERIFY(noteDropControllerSource.contains(QStringLiteral("hierarchyDragDropBridge.assignNotesToFolder(target.index, normalizedNoteIds)")));
+    QVERIFY(listBarSource.contains(QStringLiteral("readonly property var draggedNoteIds: listBarLayout.selectedNoteIdsForDelegateAction(noteItemDelegate.index, noteItemDelegate.noteId)")));
+    QVERIFY(listBarSource.contains(QStringLiteral("listBarLayout.noteDropTarget.updateNoteDropPreviewAtPosition(mappedPoint.x, mappedPoint.y, noteIds, listBarLayout.noteDropTarget)")));
+    QVERIFY(listBarSource.contains(QStringLiteral("listBarLayout.noteDropTarget.commitNoteDropAtPosition(mappedPoint.x, mappedPoint.y, noteIds, listBarLayout.noteDropTarget)")));
+    QVERIFY(bodyLayoutSource.contains(QStringLiteral("noteDropTarget: sideBar.noteDropTargetView")));
+}
+
 void WhatSonCppRegressionTests::listBarLayout_rendersResolvedNoteListModelByIndex()
 {
     const QString listBarSource = readUtf8SourceFile(

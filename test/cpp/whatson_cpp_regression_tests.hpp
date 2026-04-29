@@ -1015,6 +1015,7 @@ private slots:
     void contentsDisplayView_focusesAlreadySelectedNoteOnMobileMount();
     void contentsDisplayView_doesNotForceBlurFlushDuringNativeComposition();
     void qmlContextMenus_treatRightClickAndLongPressAsSymmetricPointerTriggers();
+    void qmlHierarchyNoteDrop_keepsDropSurfaceOpenUntilCapabilityRejectsTarget();
     void listBarLayout_rendersResolvedNoteListModelByIndex();
     void contentsDisplayView_routesStructuredMutationsThroughEditorSessionAuthority();
     void contentsDisplayView_refreshesMinimapFromResolvedPresentationSource();
