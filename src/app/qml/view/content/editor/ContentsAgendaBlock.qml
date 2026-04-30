@@ -4,6 +4,7 @@ import QtQuick
 import QtQuick.Layouts
 import WhatSon.App.Internal 1.0
 import LVRS 1.0 as LV
+import "../../../../models/editor/structure/ContentsStructuredCursorSupport.js" as StructuredCursorSupport
 
 FocusScope {
     id: agendaBlock
@@ -301,13 +302,186 @@ FocusScope {
 
                             }
 
-                            ContentsAgendaTaskRowController {
-                                id: taskRowController
 
-                                agendaBlock: agendaBlock
-                                taskEditor: taskEditor
-                                taskRow: taskRow
-                            }
+
+Item {
+    id: controller
+    objectName: "contentsAgendaTaskRowController"
+
+    property var agendaBlock: null
+    property var taskRow: null
+    property var taskEditor: null
+    property bool hasLiveTaskTextSnapshot: false
+    property string liveTaskText: ""
+
+    function focusEditor(cursorPosition) {
+        if (!controller.agendaBlock || !controller.taskEditor)
+            return;
+        controller.taskEditor.forceActiveFocus();
+        const numericCursorPosition = Number(cursorPosition);
+        const targetCursorPosition = isFinite(numericCursorPosition)
+                                   ? Math.max(
+                                         0,
+                                         Math.min(
+                                             Math.floor(numericCursorPosition),
+                                             Math.max(0, controller.taskEditor.length || 0)))
+                                   : Math.max(0, controller.taskEditor.length || 0);
+        if (controller.taskEditor.setCursorPositionPreservingNativeInput !== undefined)
+            controller.taskEditor.setCursorPositionPreservingNativeInput(targetCursorPosition);
+        else if (controller.taskEditor.cursorPosition !== undefined)
+            controller.taskEditor.cursorPosition = targetCursorPosition;
+        controller.agendaBlock.activated();
+    }
+
+    function clearSelection(preserveFocusedEditor) {
+        if (!controller.taskEditor || controller.taskEditor.clearSelection === undefined)
+            return false;
+        if (preserveFocusedEditor === true && controller.taskEditor.focused)
+            return false;
+        controller.taskEditor.clearSelection();
+        return true;
+    }
+
+    function currentEditorPlainText() {
+        if (!controller.taskRow)
+            return "";
+        if (!controller.taskEditor)
+            return StructuredCursorSupport.normalizedPlainText(controller.taskRow.taskText);
+        if (controller.taskEditor.currentPlainText !== undefined)
+            return StructuredCursorSupport.normalizedPlainText(controller.taskEditor.currentPlainText());
+        return StructuredCursorSupport.normalizedPlainText(controller.taskRow.taskText);
+    }
+
+    function syncLiveTaskTextFromHost() {
+        if (!controller.taskRow)
+            return;
+        const hostText = StructuredCursorSupport.normalizedPlainText(controller.taskRow.taskText);
+        if (controller.taskRow.focused
+                && controller.hasLiveTaskTextSnapshot
+                && hostText !== controller.liveTaskText
+                && controller.currentEditorPlainText() !== hostText) {
+            return;
+        }
+        controller.liveTaskText = hostText;
+        controller.hasLiveTaskTextSnapshot = true;
+    }
+
+    function currentCursorRowRect() {
+        if (!controller.agendaBlock || !controller.taskRow)
+            return ({ "contentHeight": Math.round(LV.Theme.scaleMetric(12)), "contentY": 0 });
+        const editorItem = controller.taskEditor && controller.taskEditor.editorItem ? controller.taskEditor.editorItem : null;
+        const cursorPosition = Math.max(
+                    0,
+                    Math.min(
+                        Math.max(0, controller.taskEditor ? controller.taskEditor.length || 0 : 0),
+                        Number(controller.taskEditor && controller.taskEditor.cursorPosition !== undefined
+                               ? controller.taskEditor.cursorPosition
+                               : 0) || 0));
+        if (!editorItem || editorItem.positionToRectangle === undefined)
+            return ({
+                        "contentHeight": Math.max(
+                                             1,
+                                             Number(controller.taskEditor ? controller.taskEditor.inputContentHeight : 0)
+                                             || Math.round(LV.Theme.scaleMetric(12))),
+                        "contentY": Math.max(0, Number(controller.taskRow.y) || 0)
+                    });
+        const rect = editorItem.positionToRectangle(cursorPosition);
+        const mappedPoint = editorItem.mapToItem !== undefined
+                ? editorItem.mapToItem(controller.agendaBlock, 0, Number(rect.y) || 0)
+                : ({
+                       "x": 0,
+                       "y": Math.max(0, Number(controller.taskRow.y) || 0) + (Number(rect.y) || 0)
+                   });
+        return {
+            "contentHeight": Math.max(1, Number(rect.height) || Math.round(LV.Theme.scaleMetric(12))),
+            "contentY": Math.max(0, Number(mappedPoint.y) || 0)
+        };
+    }
+
+    function cursorOnFirstVisualRow() {
+        const rowRect = controller.currentCursorRowRect();
+        const localTaskY = controller.taskRow ? Math.max(0, Number(controller.taskRow.y) || 0) : 0;
+        return Math.max(0, Number(rowRect.contentY) || 0) <= localTaskY + 1;
+    }
+
+    function cursorOnLastVisualRow() {
+        const rowRect = controller.currentCursorRowRect();
+        const rowBottom = Math.max(
+                    0,
+                    (Number(rowRect.contentY) || 0) + (Number(rowRect.contentHeight) || 0));
+        const localTaskY = controller.taskRow ? Math.max(0, Number(controller.taskRow.y) || 0) : 0;
+        const contentHeight = Math.max(
+                    1,
+                    Number(controller.taskEditor && controller.taskEditor.inputContentHeight !== undefined
+                           ? controller.taskEditor.inputContentHeight
+                           : 0)
+                    || Math.max(1, rowBottom - localTaskY));
+        const localRowBottom = Math.max(0, rowBottom - localTaskY);
+        return localRowBottom >= contentHeight - 1;
+    }
+
+    function handleToggleChanged(checked) {
+        if (!controller.agendaBlock || !controller.taskRow)
+            return;
+        if (checked === !!controller.taskRow.taskData.done)
+            return;
+        controller.agendaBlock.taskDoneToggled(
+                    controller.taskRow.taskOpenTagStart,
+                    controller.taskRow.taskOpenTagEnd,
+                    checked);
+        controller.agendaBlock.activated();
+    }
+
+    function handleEditorFocusedChanged() {
+        if (!controller.agendaBlock || !controller.taskEditor)
+            return;
+        if (controller.taskEditor.focused) {
+            controller.syncLiveTaskTextFromHost();
+            controller.agendaBlock.activated();
+        }
+    }
+
+    function handleEditorCursorPositionChanged() {
+        if (controller.agendaBlock && controller.taskEditor && controller.taskEditor.focused)
+            controller.agendaBlock.cursorInteraction();
+    }
+
+    function handleEditorTextEdited(text) {
+        if (!controller.agendaBlock || !controller.taskRow || !controller.taskEditor)
+            return;
+        const previousText = controller.hasLiveTaskTextSnapshot
+                ? controller.liveTaskText
+                : StructuredCursorSupport.normalizedPlainText(controller.taskRow.taskText);
+        const nextText = StructuredCursorSupport.normalizedPlainText(String(text || ""));
+        if (previousText === nextText)
+            return;
+        controller.liveTaskText = nextText;
+        controller.hasLiveTaskTextSnapshot = true;
+        controller.agendaBlock.taskTextChanged(
+                    controller.taskRow.taskData,
+                    nextText,
+                    Math.max(0, Number(controller.taskEditor.cursorPosition) || 0),
+                    previousText);
+    }
+
+    Connections {
+        function onCursorPositionChanged() {
+            controller.handleEditorCursorPositionChanged();
+        }
+
+        function onFocusedChanged() {
+            controller.handleEditorFocusedChanged();
+        }
+
+        function onTextEdited(text) {
+            controller.handleEditorTextEdited(text);
+        }
+
+        target: controller.taskEditor
+    }
+
+    Component.onCompleted: controller.syncLiveTaskTextFromHost()
+}
                         }
                     }
                 }
@@ -315,10 +489,225 @@ FocusScope {
         }
     }
 
-    ContentsAgendaBlockController {
-        id: agendaBlockController
 
-        agendaBlock: agendaBlock
-        taskRepeater: taskRepeater
+
+QtObject {
+    id: controller
+    objectName: "contentsAgendaBlockController"
+
+    property var agendaBlock: null
+    property var taskRepeater: null
+
+    function itemAt(index) {
+        return controller.taskRepeater && controller.taskRepeater.itemAt !== undefined
+                ? controller.taskRepeater.itemAt(index)
+                : null;
     }
+
+    function taskCount() {
+        return controller.taskRepeater && controller.taskRepeater.count !== undefined
+                ? Math.max(0, Math.floor(Number(controller.taskRepeater.count) || 0))
+                : 0;
+    }
+
+    function hasFocusedTaskRow() {
+        for (let index = 0; index < controller.taskCount(); ++index) {
+            const item = controller.itemAt(index);
+            if (item && item["focused"] !== undefined && item["focused"])
+                return true;
+        }
+        return false;
+    }
+
+    function focusedTaskInputMethodComposing() {
+        for (let index = 0; index < controller.taskCount(); ++index) {
+            const item = controller.itemAt(index);
+            if (!item || item["focused"] === undefined || !item["focused"])
+                continue;
+            return item["inputMethodComposing"] !== undefined && !!item["inputMethodComposing"];
+        }
+        return false;
+    }
+
+    function focusedTaskPreeditText() {
+        for (let index = 0; index < controller.taskCount(); ++index) {
+            const item = controller.itemAt(index);
+            if (!item || item["focused"] === undefined || !item["focused"])
+                continue;
+            return item["preeditText"] !== undefined && item["preeditText"] !== null
+                    ? String(item["preeditText"])
+                    : "";
+        }
+        return "";
+    }
+
+    function nativeCompositionActive() {
+        return controller.focusedTaskInputMethodComposing()
+                || controller.focusedTaskPreeditText().length > 0;
+    }
+
+    function currentFocusedTaskLineNumber() {
+        for (let index = 0; index < controller.taskCount(); ++index) {
+            const item = controller.itemAt(index);
+            if (item && item["focused"] !== undefined && item["focused"])
+                return index + 1;
+        }
+        return 1;
+    }
+
+    function currentCursorRowRect() {
+        for (let index = 0; index < controller.taskCount(); ++index) {
+            const item = controller.itemAt(index);
+            if (!item || item["focused"] === undefined || !item["focused"] || item["currentCursorRowRect"] === undefined)
+                continue;
+            return item["currentCursorRowRect"]();
+        }
+        return ({
+                    "contentHeight": Math.max(1, Math.round(LV.Theme.scaleMetric(12))),
+                    "contentY": 0
+                });
+    }
+
+    function currentVisiblePlainText() {
+        if (!controller.agendaBlock)
+            return "";
+        const lines = [];
+        for (let index = 0; index < controller.taskCount(); ++index) {
+            const item = controller.itemAt(index);
+            if (item && item["currentEditorPlainText"] !== undefined) {
+                lines.push(String(item["currentEditorPlainText"]() || ""));
+                continue;
+            }
+            const taskData = controller.agendaBlock.tasks[index] && typeof controller.agendaBlock.tasks[index] === "object"
+                    ? controller.agendaBlock.tasks[index]
+                    : ({});
+            lines.push(StructuredCursorSupport.normalizedPlainText(String(taskData.text || "")));
+        }
+        if (lines.length === 0)
+            lines.push("");
+        return lines.join("\n");
+    }
+
+    function visiblePlainText() {
+        return controller.currentVisiblePlainText();
+    }
+
+    function representativeCharCount(lineText) {
+        const normalizedLineText = lineText === undefined || lineText === null ? "" : String(lineText);
+        return Math.max(0, normalizedLineText.length);
+    }
+
+    function focusLastTask() {
+        return controller.focusTaskBoundary(controller.taskCount() - 1, "after");
+    }
+
+    function focusTaskBoundary(taskIndex, side) {
+        const numericTaskIndex = Number(taskIndex);
+        const resolvedTaskIndex = isFinite(numericTaskIndex) ? Math.floor(numericTaskIndex) : -1;
+        const item = controller.itemAt(resolvedTaskIndex);
+        if (!item || item["focusEditor"] === undefined)
+            return false;
+        const normalizedSide = side === undefined || side === null ? "" : String(side).trim().toLowerCase();
+        const plainText = item["currentEditorPlainText"] !== undefined
+                ? String(item["currentEditorPlainText"]() || "")
+                : String(item["taskText"] || "");
+        item["focusEditor"](normalizedSide === "after" ? plainText.length : 0);
+        return true;
+    }
+
+    function focusBoundary(side) {
+        const normalizedSide = side === undefined || side === null ? "" : String(side).trim().toLowerCase();
+        if (normalizedSide === "after")
+            return controller.focusLastTask();
+        return controller.focusFirstTask();
+    }
+
+    function focusFirstTask() {
+        for (let index = 0; index < controller.taskCount(); ++index) {
+            const item = controller.itemAt(index);
+            if (!item || item["focusEditor"] === undefined)
+                continue;
+            item["focusEditor"](0);
+            return true;
+        }
+        return false;
+    }
+
+    function focusTaskAtSourceOffset(sourceOffset) {
+        const numericSourceOffset = Number(sourceOffset);
+        if (!isFinite(numericSourceOffset))
+            return false;
+        for (let index = 0; index < controller.taskCount(); ++index) {
+            const item = controller.itemAt(index);
+            if (!item || item["taskContentStart"] === undefined || item["taskContentEnd"] === undefined)
+                continue;
+            const contentStart = Math.max(0, Math.floor(Number(item["taskContentStart"]) || 0));
+            const contentEnd = Math.max(contentStart, Math.floor(Number(item["taskContentEnd"]) || 0));
+            if (numericSourceOffset < contentStart || numericSourceOffset > contentEnd)
+                continue;
+            item["focusEditor"](
+                        StructuredCursorSupport.plainCursorForSourceOffset(
+                            item["taskText"],
+                            numericSourceOffset - contentStart));
+            return true;
+        }
+        return false;
+    }
+
+    function applyFocusRequest(request) {
+        if (!controller.agendaBlock)
+            return false;
+        const safeRequest = request && typeof request === "object" ? request : ({});
+        const taskOpenTagStart = Number(safeRequest.taskOpenTagStart);
+        const localCursorPosition = Number(safeRequest.localCursorPosition);
+        const entryBoundary = safeRequest.entryBoundary === undefined || safeRequest.entryBoundary === null
+                ? ""
+                : String(safeRequest.entryBoundary).trim().toLowerCase();
+        if (isFinite(taskOpenTagStart)) {
+            for (let index = 0; index < controller.taskCount(); ++index) {
+                const item = controller.itemAt(index);
+                if (!item || item["taskOpenTagStart"] === undefined)
+                    continue;
+                if (Number(item["taskOpenTagStart"]) !== Math.floor(taskOpenTagStart))
+                    continue;
+                item["focusEditor"](localCursorPosition);
+                return true;
+            }
+        }
+
+        const sourceOffset = Number(safeRequest.sourceOffset);
+        if (!isFinite(sourceOffset))
+            return false;
+        if (sourceOffset < controller.agendaBlock.sourceStart || sourceOffset > controller.agendaBlock.sourceEnd)
+            return false;
+        if (entryBoundary === "before" || sourceOffset <= controller.agendaBlock.sourceStart)
+            return controller.focusBoundary("before");
+        if (entryBoundary === "after" || sourceOffset >= controller.agendaBlock.sourceEnd)
+            return controller.focusBoundary("after");
+        if (controller.focusTaskAtSourceOffset(sourceOffset))
+            return true;
+        return controller.focusBoundary("before");
+    }
+
+    function clearSelection(preserveFocusedEditor) {
+        let cleared = false;
+        for (let index = 0; index < controller.taskCount(); ++index) {
+            const item = controller.itemAt(index);
+            const clearSelectionFunction = item && item["clearSelection"] !== undefined
+                    ? item["clearSelection"]
+                    : null;
+            if (!clearSelectionFunction)
+                continue;
+            if (clearSelectionFunction(preserveFocusedEditor === true))
+                cleared = true;
+        }
+        return cleared;
+    }
+
+    function shortcutInsertionSourceOffset() {
+        if (!controller.agendaBlock)
+            return 0;
+        return controller.agendaBlock.sourceEnd;
+    }
+}
 }

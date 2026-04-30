@@ -4,6 +4,8 @@ import WhatSon.App.Internal 1.0
 import LVRS 1.0 as LV
 import "../../../../models/editor/diagnostics/ContentsEditorDebugTrace.js" as EditorTrace
 import "../../../../models/editor/display/ContentsMinimapSnapshotSupport.js" as MinimapSnapshotSupport
+import "../../../../models/editor/format/ContentsRawInlineStyleMutationSupport.js" as RawInlineStyleMutationSupport
+import "../../../../models/editor/tags/ContentsRawBodyTagMutationSupport.js" as RawTagMutationSupport
 
 Item {
     id: contentsView
@@ -980,17 +982,676 @@ Item {
         paperShadowOffsetY: Math.max(1, Math.round(LV.Theme.scaleMetric(2)))
         paperVerticalMargin: LV.Theme.gap4
     }
-    ContentsEditorSelectionController {
-        id: editorSelectionController
 
-        contentEditor: contentsView.contentEditor
-        editorSession: editorSession
-        editorViewport: editorViewport
-        selectionBridge: selectionBridge
-        selectionContextMenu: contentsView.inputCommandSurface ? contentsView.inputCommandSurface.selectionContextMenu : null
-        textMetricsBridge: editorProjection
-        view: contentsView
+
+QtObject {
+    id: controller
+
+    property var contentEditor: null
+    readonly property var contextMenuItems: [
+        {
+            "label": "Plain",
+            "keyVisible": false,
+            "eventName": "editor.format.plain"
+        },
+        {
+            "label": "Bold",
+            "keyVisible": false,
+            "eventName": "editor.format.bold"
+        },
+        {
+            "label": "Italic",
+            "keyVisible": false,
+            "eventName": "editor.format.italic"
+        },
+        {
+            "label": "Underline",
+            "keyVisible": false,
+            "eventName": "editor.format.underline"
+        },
+        {
+            "label": "Strikethrough",
+            "keyVisible": false,
+            "eventName": "editor.format.strikethrough"
+        },
+        {
+            "label": "Highlight",
+            "keyVisible": false,
+            "eventName": "editor.format.highlight"
+        }
+    ]
+    property int contextMenuSelectionEnd: -1
+    property real contextMenuSelectionCursorPosition: NaN
+    property int contextMenuSelectionStart: -1
+    property string contextMenuSelectionText: ""
+    property var editorSession: null
+    property var editorViewport: null
+    property var selectionBridge: null
+    property var selectionContextMenu: null
+    property var textMetricsBridge: null
+    property var view: null
+
+    function preferNativeInputHandling() {
+        return !!(controller.view
+                  && controller.view.preferNativeInputHandling !== undefined
+                  && controller.view.preferNativeInputHandling);
     }
+    function contextMenuEditorSelectionRange() {
+        if (controller.contextMenuSelectionEnd <= controller.contextMenuSelectionStart)
+            return ({
+                    "start": -1,
+                    "end": -1
+                });
+        return ({
+                "start": controller.contextMenuSelectionStart,
+                "end": controller.contextMenuSelectionEnd
+            });
+    }
+    function contextMenuEditorSelectionSnapshot() {
+        const selectionRange = controller.contextMenuEditorSelectionRange();
+        return {
+            "start": selectionRange.start,
+            "end": selectionRange.end,
+            "selectedText": controller.contextMenuSelectionText,
+            "cursorPosition": isFinite(controller.contextMenuSelectionCursorPosition)
+                              ? Number(controller.contextMenuSelectionCursorPosition)
+                              : controller.currentEditorCursorPosition()
+        };
+    }
+    function currentInlineFormatSelectionSnapshot() {
+        if (!controller.contentEditor)
+            return {
+                "cursorPosition": NaN,
+                "selectedText": "",
+                "selectionEnd": NaN,
+                "selectionStart": NaN
+            };
+        if (controller.contentEditor.inlineFormatSelectionSnapshot !== undefined) {
+            const inlineSnapshot = controller.contentEditor.inlineFormatSelectionSnapshot();
+            if (inlineSnapshot)
+                return inlineSnapshot;
+        }
+        if (controller.contentEditor.selectionSnapshot !== undefined) {
+            const snapshot = controller.contentEditor.selectionSnapshot();
+            if (snapshot)
+                return snapshot;
+        }
+        return {
+            "cursorPosition": controller.contentEditor.cursorPosition,
+            "selectedText": controller.contentEditor.selectedText,
+            "selectionEnd": controller.contentEditor.selectionEnd,
+            "selectionStart": controller.contentEditor.selectionStart
+        };
+    }
+    function currentEditorCursorPosition() {
+        if (!controller.contentEditor)
+            return NaN;
+        const selectionSnapshot = controller.currentInlineFormatSelectionSnapshot();
+        if (selectionSnapshot && selectionSnapshot.cursorPosition !== undefined) {
+            const selectionCursor = Number(selectionSnapshot.cursorPosition);
+            if (isFinite(selectionCursor))
+                return selectionCursor;
+        }
+        if (controller.contentEditor.cursorPosition !== undefined) {
+            const cursor = Number(controller.contentEditor.cursorPosition);
+            if (isFinite(cursor))
+                return cursor;
+        }
+        if (controller.contentEditor.editorItem && controller.contentEditor.editorItem.cursorPosition !== undefined) {
+            const cursor = Number(controller.contentEditor.editorItem.cursorPosition);
+            if (isFinite(cursor))
+                return cursor;
+        }
+        if (controller.contentEditor.editorItem && controller.contentEditor.editorItem.inputItem && controller.contentEditor.editorItem.inputItem.cursorPosition !== undefined) {
+            const cursor = Number(controller.contentEditor.editorItem.inputItem.cursorPosition);
+            if (isFinite(cursor))
+                return cursor;
+        }
+
+    }
+    function currentEditorInputItem() {
+        if (!controller.contentEditor)
+            return null;
+        if (controller.contentEditor.getFormattedText !== undefined && controller.contentEditor.getText !== undefined)
+            return controller.contentEditor;
+        if (controller.contentEditor.editorItem && controller.contentEditor.editorItem.inputItem)
+            return controller.contentEditor.editorItem.inputItem;
+        if (controller.contentEditor.editorItem)
+            return controller.contentEditor.editorItem;
+
+    }
+    function currentEditorPlainText() {
+        const surfaceLength = controller.currentEditorSurfaceLength();
+        if (controller.contentEditor && controller.contentEditor.currentPlainText !== undefined)
+            return controller.normalizeSelectionTextValue(controller.contentEditor.currentPlainText());
+        if (controller.contentEditor && controller.contentEditor.getText !== undefined)
+            return controller.normalizeSelectionTextValue(controller.contentEditor.getText(0, surfaceLength));
+        const inputItem = controller.currentEditorInputItem();
+        if (inputItem && inputItem.getText !== undefined)
+            return controller.normalizeSelectionTextValue(inputItem.getText(0, surfaceLength));
+        return controller.normalizeSelectionTextValue(controller.currentLogicalText());
+    }
+    function currentEditorSelectionSnapshot() {
+        if (!controller.contentEditor)
+            return {
+                "cursorPosition": NaN,
+                "selectedText": "",
+                "selectionEnd": NaN,
+                "selectionStart": NaN
+            };
+        return controller.currentInlineFormatSelectionSnapshot();
+    }
+    function currentRawEditorSelectionRange() {
+        if (!controller.contentEditor)
+            return ({
+                    "start": -1,
+                    "end": -1
+                });
+        const selectionSnapshot = controller.currentEditorSelectionSnapshot();
+        let start = selectionSnapshot.selectionStart !== undefined ? Number(selectionSnapshot.selectionStart) : NaN;
+        let end = selectionSnapshot.selectionEnd !== undefined ? Number(selectionSnapshot.selectionEnd) : NaN;
+        if (!isFinite(start) || !isFinite(end)) {
+            if (controller.contentEditor.editorItem) {
+                if (!isFinite(start) && controller.contentEditor.editorItem.selectionStart !== undefined)
+                    start = Number(controller.contentEditor.editorItem.selectionStart);
+                if (!isFinite(end) && controller.contentEditor.editorItem.selectionEnd !== undefined)
+                    end = Number(controller.contentEditor.editorItem.selectionEnd);
+                if (controller.contentEditor.editorItem.inputItem) {
+                    if (!isFinite(start) && controller.contentEditor.editorItem.inputItem.selectionStart !== undefined)
+                        start = Number(controller.contentEditor.editorItem.inputItem.selectionStart);
+                    if (!isFinite(end) && controller.contentEditor.editorItem.inputItem.selectionEnd !== undefined)
+                        end = Number(controller.contentEditor.editorItem.inputItem.selectionEnd);
+                }
+            }
+        }
+        const surfaceLength = controller.currentEditorSurfaceLength();
+        const boundedStart = isFinite(start) ? Math.max(0, Math.min(surfaceLength, Math.floor(Math.min(start, end)))) : NaN;
+        const boundedEnd = isFinite(end) ? Math.max(0, Math.min(surfaceLength, Math.floor(Math.max(start, end)))) : NaN;
+        if (!isFinite(boundedStart) || !isFinite(boundedEnd) || boundedEnd <= boundedStart) {
+            return ({
+                    "start": -1,
+                    "end": -1
+                });
+        }
+        return ({
+                "start": boundedStart,
+                "end": boundedEnd
+            });
+    }
+    function currentEditorSurfaceLength() {
+        if (controller.contentEditor && controller.contentEditor.length !== undefined) {
+            const lengthValue = Number(controller.contentEditor.length);
+            if (isFinite(lengthValue))
+                return Math.max(0, Math.floor(lengthValue));
+        }
+        const inputItem = controller.currentEditorInputItem();
+        if (inputItem && inputItem.length !== undefined) {
+            const lengthValue = Number(inputItem.length);
+            if (isFinite(lengthValue))
+                return Math.max(0, Math.floor(lengthValue));
+        }
+
+    }
+    function currentLogicalText() {
+        if (controller.textMetricsBridge && controller.textMetricsBridge.logicalText !== undefined)
+            return String(controller.textMetricsBridge.logicalText === undefined || controller.textMetricsBridge.logicalText === null ? "" : controller.textMetricsBridge.logicalText);
+        if (!controller.view || controller.view.editorText === undefined || controller.view.editorText === null)
+            return "";
+        return String(controller.view.editorText);
+    }
+    function currentSelectedEditorText() {
+        if (!controller.contentEditor)
+            return "";
+        const selectionSnapshot = controller.currentInlineFormatSelectionSnapshot();
+        if (selectionSnapshot && selectionSnapshot.selectedText !== undefined) {
+            return String(
+                        selectionSnapshot.selectedText === undefined || selectionSnapshot.selectedText === null
+                        ? ""
+                        : selectionSnapshot.selectedText);
+        }
+        if (controller.contentEditor.selectedText !== undefined)
+            return String(controller.contentEditor.selectedText === undefined || controller.contentEditor.selectedText === null ? "" : controller.contentEditor.selectedText);
+        if (controller.contentEditor.editorItem && controller.contentEditor.editorItem.selectedText !== undefined)
+            return String(controller.contentEditor.editorItem.selectedText === undefined || controller.contentEditor.editorItem.selectedText === null ? "" : controller.contentEditor.editorItem.selectedText);
+        if (controller.contentEditor.editorItem && controller.contentEditor.editorItem.inputItem && controller.contentEditor.editorItem.inputItem.selectedText !== undefined)
+            return String(controller.contentEditor.editorItem.inputItem.selectedText === undefined || controller.contentEditor.editorItem.inputItem.selectedText === null ? "" : controller.contentEditor.editorItem.inputItem.selectedText);
+        return "";
+    }
+    function currentSelectedNoteId() {
+        if (!controller.view || controller.view.selectedNoteId === undefined || controller.view.selectedNoteId === null)
+            return "";
+        return String(controller.view.selectedNoteId).trim();
+    }
+    function currentSourceText() {
+        if (!controller.view || controller.view.editorText === undefined || controller.view.editorText === null)
+            return "";
+        return String(controller.view.editorText);
+    }
+    function resourceTagLossDetectedForMutation(currentSourceText, nextSourceText) {
+        if (!controller.view || controller.view.resourceTagLossDetected === undefined)
+            return false;
+        return !!controller.view.resourceTagLossDetected(currentSourceText, nextSourceText);
+    }
+    function restoreEditorSurfaceFromSourcePresentation() {
+        if (controller.view && controller.view.restoreEditorSurfaceFromPresentation !== undefined) {
+            controller.view.restoreEditorSurfaceFromPresentation();
+            return;
+        }
+        if (controller.view && controller.view.commitDocumentPresentationRefresh !== undefined)
+            controller.view.commitDocumentPresentationRefresh();
+    }
+    function clampLogicalPosition(position, maximumLength) {
+        const numericPosition = Number(position);
+        if (!isFinite(numericPosition))
+            return 0;
+        return Math.max(0, Math.min(Math.floor(numericPosition), Math.max(0, Number(maximumLength) || 0)));
+    }
+    function sourceOffsetForLogicalOffset(logicalOffset) {
+        const safeOffset = Math.max(0, Math.floor(Number(logicalOffset) || 0));
+        if (controller.textMetricsBridge && controller.textMetricsBridge.sourceOffsetForLogicalOffset !== undefined) {
+            const mappedOffset = Number(controller.textMetricsBridge.sourceOffsetForLogicalOffset(safeOffset));
+            if (isFinite(mappedOffset))
+                return Math.max(0, Math.floor(mappedOffset));
+        }
+        const currentSourceText = controller.currentSourceText();
+        return Math.max(0, Math.min(currentSourceText.length, safeOffset));
+    }
+    function selectionCursorUsesStartEdge(cursorPosition, selectionStart, selectionEnd) {
+        const boundedStart = Math.max(0, Math.floor(Number(selectionStart) || 0));
+        const boundedEnd = Math.max(boundedStart, Math.floor(Number(selectionEnd) || 0));
+        const numericCursor = Number(cursorPosition);
+        if (!isFinite(numericCursor))
+            return false;
+        const boundedCursor = controller.clampLogicalPosition(numericCursor, boundedEnd);
+        if (boundedCursor <= boundedStart)
+            return true;
+        if (boundedCursor >= boundedEnd)
+            return false;
+        return Math.abs(boundedCursor - boundedStart) <= Math.abs(boundedCursor - boundedEnd);
+    }
+    function restoreEditorSelection(inputItem, selectionStart, selectionEnd, cursorPosition) {
+        if (!inputItem)
+            return false;
+        const boundedStart = Math.max(0, Math.floor(Number(selectionStart) || 0));
+        const boundedEnd = Math.max(boundedStart, Math.floor(Number(selectionEnd) || 0));
+        if (boundedEnd <= boundedStart)
+            return false;
+        const activeCursor = isFinite(Number(cursorPosition)) ? Number(cursorPosition) : controller.currentEditorCursorPosition();
+        const activeEdgeIsStart = controller.selectionCursorUsesStartEdge(activeCursor, boundedStart, boundedEnd);
+        if (inputItem.moveCursorSelection !== undefined) {
+            const anchorPosition = activeEdgeIsStart ? boundedEnd : boundedStart;
+            const activePosition = activeEdgeIsStart ? boundedStart : boundedEnd;
+            inputItem.cursorPosition = anchorPosition;
+            inputItem.moveCursorSelection(activePosition, TextEdit.SelectCharacters);
+            return true;
+        }
+        if (inputItem.select !== undefined) {
+            inputItem.select(boundedStart, boundedEnd);
+            return true;
+        }
+        return false;
+    }
+    function scheduleEditorSelection(selectionStart, selectionEnd, cursorPosition) {
+        const requestedStart = Number(selectionStart);
+        const requestedEnd = Number(selectionEnd);
+        const requestedCursor = Number(cursorPosition);
+        Qt.callLater(function () {
+            if (!controller.contentEditor)
+                return;
+            const logicalLength = controller.currentLogicalText().length;
+            const boundedStart = controller.clampLogicalPosition(requestedStart, logicalLength);
+            const boundedEnd = controller.clampLogicalPosition(requestedEnd, logicalLength);
+            const fallbackCursor = isFinite(requestedCursor) ? requestedCursor : controller.currentEditorCursorPosition();
+            const boundedCursor = controller.clampLogicalPosition(fallbackCursor, logicalLength);
+            const editorItem = controller.contentEditor.editorItem ? controller.contentEditor.editorItem : null;
+            const inputItem = editorItem && editorItem.inputItem ? editorItem.inputItem : null;
+            if (isFinite(requestedStart) && isFinite(requestedEnd) && boundedEnd > boundedStart) {
+                controller.restoreEditorSelection(inputItem, boundedStart, boundedEnd, boundedCursor);
+                return;
+            }
+            if (inputItem && inputItem.deselect !== undefined)
+                inputItem.deselect();
+            if (controller.contentEditor.cursorPosition !== undefined)
+                controller.contentEditor.cursorPosition = boundedCursor;
+            if (editorItem && editorItem.cursorPosition !== undefined)
+                editorItem.cursorPosition = boundedCursor;
+            if (inputItem && inputItem.cursorPosition !== undefined)
+                inputItem.cursorPosition = boundedCursor;
+        });
+    }
+    function editorPlainTextSlice(start, end) {
+        const surfaceLength = controller.currentEditorSurfaceLength();
+        const boundedStart = Math.max(0, Math.min(surfaceLength, Math.floor(Number(start) || 0)));
+        const boundedEnd = Math.max(0, Math.min(surfaceLength, Math.floor(Number(end) || 0)));
+        if (boundedEnd <= boundedStart)
+            return "";
+        if (controller.contentEditor && controller.contentEditor.getText !== undefined)
+            return controller.normalizeSelectionTextValue(controller.contentEditor.getText(boundedStart, boundedEnd));
+        const inputItem = controller.currentEditorInputItem();
+        if (inputItem && inputItem.getText !== undefined)
+            return controller.normalizeSelectionTextValue(inputItem.getText(boundedStart, boundedEnd));
+        return controller.currentEditorPlainText().slice(boundedStart, boundedEnd);
+    }
+    function handleSelectionContextMenuEvent(eventName) {
+        const contextSelectionRange = controller.contextMenuEditorSelectionSnapshot();
+        if (eventName === "editor.format.plain")
+            controller.wrapSelectedEditorTextWithTag("plain", contextSelectionRange);
+        else if (eventName === "editor.format.bold")
+            controller.wrapSelectedEditorTextWithTag("bold", contextSelectionRange);
+        else if (eventName === "editor.format.italic")
+            controller.wrapSelectedEditorTextWithTag("italic", contextSelectionRange);
+        else if (eventName === "editor.format.underline")
+            controller.wrapSelectedEditorTextWithTag("underline", contextSelectionRange);
+        else if (eventName === "editor.format.strikethrough")
+            controller.wrapSelectedEditorTextWithTag("strikethrough", contextSelectionRange);
+        else if (eventName === "editor.format.highlight")
+            controller.wrapSelectedEditorTextWithTag("highlight", contextSelectionRange);
+    }
+    function inferSelectionRangeFromSelectedText(selectedText, cursorPosition, preferredRangeStart, preferredRangeEnd) {
+        if (!controller.view)
+            return ({
+                    "start": -1,
+                    "end": -1
+                });
+        const plainText = controller.currentEditorPlainText();
+        const normalizedSelectedText = controller.normalizeSelectionTextValue(selectedText);
+        if (plainText.length === 0 || normalizedSelectedText.length === 0)
+            return ({
+                    "start": -1,
+                    "end": -1
+                });
+        const occurrenceRanges = [];
+        let searchOffset = 0;
+        while (searchOffset <= plainText.length) {
+            const occurrenceStart = plainText.indexOf(normalizedSelectedText, searchOffset);
+            if (occurrenceStart < 0)
+                break;
+            occurrenceRanges.push({
+                "start": occurrenceStart,
+                "end": occurrenceStart + normalizedSelectedText.length
+            });
+            searchOffset = occurrenceStart + 1;
+        }
+        if (occurrenceRanges.length === 0)
+            return ({
+                    "start": -1,
+                    "end": -1
+                });
+        let anchor = NaN;
+        const numericPreferredStart = Number(preferredRangeStart);
+        const numericPreferredEnd = Number(preferredRangeEnd);
+        if (isFinite(numericPreferredStart) && isFinite(numericPreferredEnd) && numericPreferredEnd > numericPreferredStart)
+            anchor = Math.max(0, Math.min(plainText.length, Math.floor((numericPreferredStart + numericPreferredEnd) / 2)));
+        else if (isFinite(cursorPosition))
+            anchor = Math.max(0, Math.min(plainText.length, Math.floor(cursorPosition)));
+        let bestOccurrence = occurrenceRanges[0];
+        let bestScore = Number.POSITIVE_INFINITY;
+        for (let index = 0; index < occurrenceRanges.length; ++index) {
+            const occurrence = occurrenceRanges[index];
+            const occurrenceMidpoint = (occurrence.start + occurrence.end) / 2;
+            const occurrenceScore = isFinite(anchor) ? Math.abs(occurrenceMidpoint - anchor) : Math.abs(occurrence.end - plainText.length);
+            if (occurrenceScore < bestScore) {
+                bestScore = occurrenceScore;
+                bestOccurrence = occurrence;
+            }
+        }
+        return ({
+                "start": bestOccurrence.start,
+                "end": bestOccurrence.end
+            });
+    }
+    function inlineStyleWrapTags(styleTag) {
+        if (!controller.view)
+            return ({
+                    "openTag": "",
+                    "closeTag": ""
+                });
+        switch (styleTag) {
+        case "plain":
+            return ({
+                    "openTag": "",
+                    "closeTag": ""
+                });
+        case "bold":
+            return ({
+                    "openTag": "<bold>",
+                    "closeTag": "</bold>"
+                });
+        case "italic":
+            return ({
+                    "openTag": "<italic>",
+                    "closeTag": "</italic>"
+                });
+        case "underline":
+            return ({
+                    "openTag": "<underline>",
+                    "closeTag": "</underline>"
+                });
+        case "strikethrough":
+            return ({
+                    "openTag": "<strikethrough>",
+                    "closeTag": "</strikethrough>"
+                });
+        case "highlight":
+            return ({
+                    "openTag": "<highlight>",
+                    "closeTag": "</highlight>"
+                });
+        default:
+            return ({
+                    "openTag": "",
+                    "closeTag": ""
+                });
+        }
+    }
+    function normalizeInlineStyleTag(tagName) {
+        return RawInlineStyleMutationSupport.normalizedInlineStyleTag(tagName);
+    }
+    function normalizeSelectionTextValue(text) {
+        let normalizedText = text === undefined || text === null ? "" : String(text);
+        normalizedText = normalizedText.replace(/\r\n/g, "\n");
+        normalizedText = normalizedText.replace(/\r/g, "\n");
+        normalizedText = normalizedText.replace(/\u2028/g, "\n");
+        normalizedText = normalizedText.replace(/\u2029/g, "\n");
+        normalizedText = normalizedText.replace(/\uFFFC/g, "");
+        normalizedText = normalizedText.replace(/\u00a0/g, " ");
+        return normalizedText;
+    }
+    function openEditorSelectionContextMenu(localX, localY) {
+        if (!controller.view || !controller.view.hasSelectedNote || controller.view.showDedicatedResourceViewer || controller.view.showFormattedTextRenderer)
+            return false;
+        let selectionRange = controller.resolveSelectionSnapshot(controller.contextMenuEditorSelectionSnapshot());
+        if (selectionRange.end <= selectionRange.start) {
+            selectionRange = controller.selectedEditorRange();
+        }
+        if (selectionRange.end <= selectionRange.start) {
+            const inferredRange = controller.inferSelectionRangeFromSelectedText(controller.currentSelectedEditorText(), controller.currentEditorCursorPosition());
+            if (inferredRange.end > inferredRange.start)
+                selectionRange = inferredRange;
+        }
+        if (selectionRange.end <= selectionRange.start || !controller.selectionContextMenu)
+            return false;
+        if (controller.selectionContextMenu.opened)
+            controller.selectionContextMenu.close();
+        controller.contextMenuSelectionStart = selectionRange.start;
+        controller.contextMenuSelectionEnd = selectionRange.end;
+        controller.contextMenuSelectionCursorPosition = controller.currentEditorCursorPosition();
+        controller.contextMenuSelectionText = controller.editorPlainTextSlice(selectionRange.start, selectionRange.end);
+        controller.selectionContextMenu.openFor(controller.editorViewport, Number(localX) || 0, Number(localY) || 0);
+        return true;
+    }
+    function primeContextMenuSelectionSnapshot() {
+        const rawSelectionRange = controller.currentRawEditorSelectionRange();
+        let selectionRange = rawSelectionRange;
+        if (selectionRange.end <= selectionRange.start)
+            selectionRange = controller.selectedEditorRange();
+        if (selectionRange.end <= selectionRange.start) {
+            controller.resetEditorSelectionCache();
+            return false;
+        }
+        controller.contextMenuSelectionStart = selectionRange.start;
+        controller.contextMenuSelectionEnd = selectionRange.end;
+        controller.contextMenuSelectionCursorPosition = controller.currentEditorCursorPosition();
+        controller.contextMenuSelectionText = controller.editorPlainTextSlice(selectionRange.start, selectionRange.end);
+        return true;
+    }
+    function persistEditorTextImmediately(nextText) {
+        if (!controller.view
+                || !controller.editorSession
+                || (controller.editorSession.persistEditorTextImmediatelyWithText === undefined
+                    && controller.editorSession.persistEditorTextImmediately === undefined))
+            return false;
+        if (controller.editorSession.persistEditorTextImmediatelyWithText !== undefined)
+            return !!controller.editorSession.persistEditorTextImmediatelyWithText(nextText);
+        return !!controller.editorSession.persistEditorTextImmediately();
+    }
+    function queueInlineFormatWrap(tagName) {
+        if (!controller.view || !controller.view.hasSelectedNote || controller.view.showDedicatedResourceViewer || controller.view.showFormattedTextRenderer)
+            return false;
+        const normalizedTagName = controller.normalizeInlineStyleTag(tagName);
+        if (normalizedTagName.length === 0)
+            return false;
+        if (controller.view.queueStructuredInlineFormatWrap !== undefined
+                && controller.view.queueStructuredInlineFormatWrap(normalizedTagName)) {
+            return true;
+        }
+        let selectionRange = controller.selectedEditorRange();
+        const selectedText = controller.currentSelectedEditorText();
+        const selectionSnapshot = {
+            "start": selectionRange.start,
+            "end": selectionRange.end,
+            "selectedText": selectedText,
+            "cursorPosition": controller.currentEditorCursorPosition()
+        };
+        if (selectionRange.end <= selectionRange.start)
+            return false;
+        return controller.wrapSelectedEditorTextWithTag(normalizedTagName, selectionSnapshot);
+    }
+    function resetEditorSelectionCache() {
+        controller.contextMenuSelectionStart = -1;
+        controller.contextMenuSelectionEnd = -1;
+        controller.contextMenuSelectionCursorPosition = NaN;
+        controller.contextMenuSelectionText = "";
+    }
+    function resolveSelectionSnapshot(selectionSnapshot) {
+        const normalizedSelectedText = controller.normalizeSelectionTextValue(selectionSnapshot && selectionSnapshot.selectedText !== undefined ? selectionSnapshot.selectedText : controller.currentSelectedEditorText());
+        const cursorPosition = selectionSnapshot && selectionSnapshot.cursorPosition !== undefined ? Number(selectionSnapshot.cursorPosition) : controller.currentEditorCursorPosition();
+        const start = selectionSnapshot && selectionSnapshot.start !== undefined ? Number(selectionSnapshot.start) : NaN;
+        const end = selectionSnapshot && selectionSnapshot.end !== undefined ? Number(selectionSnapshot.end) : NaN;
+        if (isFinite(start) && isFinite(end) && end > start) {
+            const candidateRange = {
+                "start": Math.floor(start),
+                "end": Math.floor(end)
+            };
+            if (normalizedSelectedText.length === 0 || controller.selectionRangeMatchesSelectedText(candidateRange, normalizedSelectedText)) {
+                return candidateRange;
+            }
+        }
+        if (normalizedSelectedText.length > 0)
+            return controller.inferSelectionRangeFromSelectedText(normalizedSelectedText, cursorPosition);
+        return {
+            "start": -1,
+            "end": -1
+        };
+    }
+    function refreshPresentationStateAfterProgrammaticChange() {
+        if (!controller.view || controller.view.commitDocumentPresentationRefresh === undefined)
+            return;
+        controller.view.commitDocumentPresentationRefresh();
+    }
+    function selectedEditorRange() {
+        if (!controller.contentEditor)
+            return ({
+                    "start": -1,
+                    "end": -1
+                });
+        const selectionSnapshot = controller.currentEditorSelectionSnapshot();
+        const selectedText = selectionSnapshot.selectedText !== undefined ? selectionSnapshot.selectedText : controller.currentSelectedEditorText();
+        const numericSelectionRange = controller.currentRawEditorSelectionRange();
+        const numericRange = {
+            "start": numericSelectionRange.start,
+            "end": numericSelectionRange.end,
+            "selectedText": selectedText,
+            "cursorPosition": selectionSnapshot.cursorPosition !== undefined ? Number(selectionSnapshot.cursorPosition) : controller.currentEditorCursorPosition()
+        };
+        const resolvedRange = controller.resolveSelectionSnapshot(numericRange);
+        if (resolvedRange.end > resolvedRange.start)
+            return resolvedRange;
+        return ({
+                "start": -1,
+                "end": -1
+            });
+    }
+    function selectionRangeMatchesSelectedText(selectionRange, selectedText) {
+        if (!selectionRange)
+            return false;
+        const start = Number(selectionRange.start);
+        const end = Number(selectionRange.end);
+        if (!isFinite(start) || !isFinite(end) || end <= start)
+            return false;
+        const normalizedSelectedText = controller.normalizeSelectionTextValue(selectedText);
+        if (normalizedSelectedText.length === 0)
+            return false;
+        return controller.editorPlainTextSlice(start, end) === normalizedSelectedText;
+    }
+    function wrapSelectedEditorTextWithTag(tagName, explicitSelectionRange) {
+        if (!controller.view || !controller.view.hasSelectedNote || controller.view.showDedicatedResourceViewer || controller.view.showFormattedTextRenderer)
+            return false;
+        const normalizedTagName = controller.normalizeInlineStyleTag(tagName);
+        if (normalizedTagName.length === 0)
+            return false;
+        let selectionRange = controller.resolveSelectionSnapshot(explicitSelectionRange || null);
+        if (selectionRange.end <= selectionRange.start)
+            selectionRange = controller.selectedEditorRange();
+        if (selectionRange.end <= selectionRange.start)
+            selectionRange = controller.resolveSelectionSnapshot(controller.contextMenuEditorSelectionSnapshot());
+        if (selectionRange.end <= selectionRange.start)
+            return false;
+        const currentText = controller.view.editorText === undefined || controller.view.editorText === null ? "" : String(controller.view.editorText);
+        const logicalLength = controller.currentLogicalText().length;
+        const boundedStart = Math.max(0, Math.min(logicalLength, Math.floor(selectionRange.start)));
+        const boundedEnd = Math.max(0, Math.min(logicalLength, Math.floor(selectionRange.end)));
+        if (boundedEnd <= boundedStart)
+            return false;
+        const mutationPayload = RawInlineStyleMutationSupport.buildInlineStyleSelectionPayload(
+                    currentText,
+                    boundedStart,
+                    boundedEnd,
+                    normalizedTagName);
+        if (!mutationPayload || !mutationPayload.applied)
+            return false;
+        const nextText = String(mutationPayload.nextSourceText);
+        if (nextText.length === 0 && currentText.length > 0)
+            return false;
+        if (controller.resourceTagLossDetectedForMutation(currentText, nextText)) {
+            controller.restoreEditorSurfaceFromSourcePresentation();
+            return false;
+        }
+        if (!controller.commitRawEditorTextMutation(nextText))
+            return false;
+        const committedText = controller.committedEditorText(nextText);
+        controller.refreshPresentationStateAfterProgrammaticChange();
+        controller.resetEditorSelectionCache();
+        controller.view.editorTextEdited(committedText);
+        return true;
+    }
+
+    function commitRawEditorTextMutation(nextSourceText) {
+        if (!controller.editorSession
+                || controller.editorSession.commitRawEditorTextMutation === undefined) {
+            return false;
+        }
+        return !!controller.editorSession.commitRawEditorTextMutation(nextSourceText);
+    }
+
+    function committedEditorText(fallbackText) {
+        if (controller.editorSession && controller.editorSession.editorText !== undefined
+                && controller.editorSession.editorText !== null) {
+            return String(controller.editorSession.editorText);
+        }
+        return fallbackText === undefined || fallbackText === null ? "" : String(fallbackText);
+    }
+}
     ContentsEditorSelectionBridge {
         id: selectionBridge
         objectName: "contentsDisplaySelectionBridge"
@@ -1177,17 +1838,1339 @@ Item {
         structuredGutterGeometrySignature: contentsView.structuredGutterGeometrySignature
         structuredHostGeometryActive: contentsView.structuredHostGeometryActive
     }
-    ContentsEditorTypingController {
-        id: editorTypingController
 
-        agendaBackend: contentsAgendaBackend
-        calloutBackend: contentsCalloutBackend
-        contentEditor: contentsView.contentEditor
-        editorSession: editorSession
-        plainTextSourceMutator: plainTextSourceMutator
-        textMetricsBridge: editorProjection
-        view: contentsView
+
+QtObject {
+    id: controller
+    objectName: "contentsEditorTypingController"
+
+    property var view: null
+    property var contentEditor: null
+    property var editorSession: null
+    property var plainTextSourceMutator: null
+    property var textMetricsBridge: null
+    property var agendaBackend: null
+    property var calloutBackend: null
+    property string liveAuthoritativePlainText: ""
+    property var liveLogicalLineStartOffsets: [0]
+    property var liveLogicalToSourceOffsets: [0]
+    property string liveSnapshotSourceText: ""
+    property bool pendingCursorPositionRequest: false
+    property int pendingCursorPosition: 0
+
+    function normalizePlainText(text) {
+        let normalizedText = text === undefined || text === null ? "" : String(text);
+        normalizedText = normalizedText.replace(/\r\n/g, "\n");
+        normalizedText = normalizedText.replace(/\r/g, "\n");
+        normalizedText = normalizedText.replace(/\u2028/g, "\n");
+        normalizedText = normalizedText.replace(/\u2029/g, "\n");
+        normalizedText = normalizedText.replace(/\uFFFC/g, "");
+        normalizedText = normalizedText.replace(/\u00a0/g, " ");
+        return normalizedText;
     }
+
+    function spliceSourceText(sourceText, sourceStart, sourceEnd, replacementSourceText) {
+        const normalizedSourceText = sourceText === undefined || sourceText === null ? "" : String(sourceText);
+        const safeLength = normalizedSourceText.length;
+        const boundedStart = Math.max(0, Math.min(safeLength, Math.floor(Number(sourceStart) || 0)));
+        const boundedEnd = Math.max(boundedStart, Math.min(safeLength, Math.floor(Number(sourceEnd) || 0)));
+        const replacementText = controller.normalizePlainText(replacementSourceText);
+        return normalizedSourceText.slice(0, boundedStart)
+                + replacementText
+                + normalizedSourceText.slice(boundedEnd);
+    }
+
+    function presentationSourceText() {
+        if (controller.view && controller.view.documentPresentationSourceText !== undefined)
+            return controller.view.documentPresentationSourceText === undefined || controller.view.documentPresentationSourceText === null
+                    ? ""
+                    : String(controller.view.documentPresentationSourceText);
+        if (controller.view && controller.view.editorText !== undefined)
+            return controller.view.editorText === undefined || controller.view.editorText === null
+                    ? ""
+                    : String(controller.view.editorText);
+        return "";
+    }
+
+    function currentSourceTextSnapshot() {
+        if (controller.view && controller.view.editorText !== undefined)
+            return controller.view.editorText === undefined || controller.view.editorText === null
+                    ? ""
+                    : String(controller.view.editorText);
+        return controller.presentationSourceText();
+    }
+
+    function presentationSnapshotStale() {
+        return controller.currentSourceTextSnapshot() !== controller.presentationSourceText();
+    }
+
+    function identityOffsetArray(sourceLength) {
+        const safeLength = Math.max(0, Math.floor(Number(sourceLength) || 0));
+        const offsets = new Array(safeLength + 1);
+        for (let index = 0; index <= safeLength; ++index)
+            offsets[index] = index;
+        return offsets;
+    }
+
+    function computeLineStartOffsets(text) {
+        const normalizedText = controller.normalizePlainText(text);
+        const offsets = [0];
+        for (let index = 0; index < normalizedText.length; ++index) {
+            if (normalizedText.charAt(index) === "\n")
+                offsets.push(index + 1);
+        }
+        return offsets;
+    }
+
+    function normalizeLineStartOffsets(rawOffsets, logicalText) {
+        const normalizedText = controller.normalizePlainText(logicalText);
+        const rawLength = rawOffsets && rawOffsets.length !== undefined
+                ? Math.max(0, Math.floor(Number(rawOffsets.length) || 0))
+                : 0;
+        if (rawLength > 0) {
+            const offsets = new Array(rawLength);
+            for (let index = 0; index < rawLength; ++index) {
+                const numericOffset = Number(rawOffsets[index]);
+                offsets[index] = isFinite(numericOffset) ? Math.max(0, Math.floor(numericOffset)) : 0;
+            }
+            return offsets;
+        }
+        return controller.computeLineStartOffsets(normalizedText);
+    }
+
+    function normalizeOffsetArray(rawOffsets, logicalLength, fallbackSourceText) {
+        const safeLogicalLength = Math.max(0, Math.floor(Number(logicalLength) || 0));
+        const rawLength = rawOffsets && rawOffsets.length !== undefined
+                ? Math.max(0, Math.floor(Number(rawOffsets.length) || 0))
+                : 0;
+        if (rawLength === safeLogicalLength + 1) {
+            const offsets = new Array(rawLength);
+            for (let index = 0; index < rawLength; ++index) {
+                const numericOffset = Number(rawOffsets[index]);
+                offsets[index] = isFinite(numericOffset) ? Math.max(0, Math.floor(numericOffset)) : 0;
+            }
+            return offsets;
+        }
+        if (controller.textMetricsBridge && controller.textMetricsBridge.sourceOffsetForLogicalOffset !== undefined) {
+            const offsets = new Array(safeLogicalLength + 1);
+            for (let index = 0; index <= safeLogicalLength; ++index) {
+                const numericOffset = Number(controller.textMetricsBridge.sourceOffsetForLogicalOffset(index));
+                offsets[index] = isFinite(numericOffset) ? Math.max(0, Math.floor(numericOffset)) : 0;
+            }
+            return offsets;
+        }
+        return controller.identityOffsetArray(safeLogicalLength);
+    }
+
+    function lastLineIndexForOffset(lineStartOffsets, offset) {
+        const offsets = Array.isArray(lineStartOffsets) && lineStartOffsets.length > 0 ? lineStartOffsets : [0];
+        const safeOffset = Math.max(0, Math.floor(Number(offset) || 0));
+        let bestIndex = 0;
+        for (let index = 0; index < offsets.length; ++index) {
+            const lineOffset = Math.max(0, Number(offsets[index]) || 0);
+            if (lineOffset > safeOffset)
+                break;
+            bestIndex = index;
+        }
+        return bestIndex;
+    }
+
+    function firstLineIndexAtOrAfterOffset(lineStartOffsets, offset, minimumIndex) {
+        const offsets = Array.isArray(lineStartOffsets) && lineStartOffsets.length > 0 ? lineStartOffsets : [0];
+        const safeOffset = Math.max(0, Math.floor(Number(offset) || 0));
+        const safeMinimumIndex = Math.max(0, Math.floor(Number(minimumIndex) || 0));
+        for (let index = safeMinimumIndex; index < offsets.length; ++index) {
+            const lineOffset = Math.max(0, Number(offsets[index]) || 0);
+            if (lineOffset >= safeOffset)
+                return index;
+        }
+        return offsets.length;
+    }
+
+    function escapedSourceLengthForCharacter(ch) {
+        const safeChar = ch === undefined || ch === null ? "" : String(ch);
+        if (safeChar === "&")
+            return 5;
+        if (safeChar === "<" || safeChar === ">")
+            return 4;
+        if (safeChar === "\"")
+            return 6;
+        if (safeChar === "'")
+            return 5;
+        return 1;
+    }
+
+    function buildReplacementSourceOffsets(text) {
+        const normalizedText = controller.normalizePlainText(text);
+        const offsets = [0];
+        let sourceOffset = 0;
+        for (let index = 0; index < normalizedText.length; ++index) {
+            sourceOffset += controller.escapedSourceLengthForCharacter(normalizedText.charAt(index));
+            offsets.push(sourceOffset);
+        }
+        return offsets;
+    }
+
+    function buildReplacementLineStartOffsets(currentLineStart, text) {
+        const baseStart = Math.max(0, Math.floor(Number(currentLineStart) || 0));
+        const normalizedText = controller.normalizePlainText(text);
+        const offsets = [baseStart];
+        for (let index = 0; index < normalizedText.length; ++index) {
+            if (normalizedText.charAt(index) === "\n")
+                offsets.push(baseStart + index + 1);
+        }
+        return offsets;
+    }
+
+    function adoptLiveStateIntoBridge(sourceText) {
+        controller.liveSnapshotSourceText = sourceText === undefined || sourceText === null ? "" : String(sourceText);
+        if (!controller.textMetricsBridge
+                || controller.textMetricsBridge.adoptIncrementalState === undefined) {
+            return;
+        }
+        controller.textMetricsBridge.adoptIncrementalState(
+                    sourceText,
+                    controller.liveAuthoritativePlainText,
+                    controller.liveLogicalLineStartOffsets,
+                    controller.liveLogicalToSourceOffsets);
+    }
+
+    function synchronizeLiveEditingStateFromPresentation() {
+        const snapshotSourceText = controller.presentationSourceText();
+        const presentationLogicalText = controller.textMetricsBridge && controller.textMetricsBridge.logicalText !== undefined
+                ? controller.normalizePlainText(controller.textMetricsBridge.logicalText)
+                : controller.normalizePlainText(snapshotSourceText);
+        let lineStartOffsets = [];
+        if (controller.textMetricsBridge && controller.textMetricsBridge.logicalLineStartOffsets !== undefined)
+            lineStartOffsets = controller.textMetricsBridge.logicalLineStartOffsets;
+        let sourceOffsets = [];
+        if (controller.textMetricsBridge && controller.textMetricsBridge.logicalToSourceOffsets !== undefined)
+            sourceOffsets = controller.textMetricsBridge.logicalToSourceOffsets();
+        EditorTrace.trace(
+                    "typingController",
+                    "synchronizeLiveEditingStateFromPresentation",
+                    "source=" + EditorTrace.describeText(snapshotSourceText)
+                    + " logical=" + EditorTrace.describeText(presentationLogicalText),
+                    controller)
+        controller.liveSnapshotSourceText = snapshotSourceText;
+        controller.liveAuthoritativePlainText = presentationLogicalText;
+        controller.liveLogicalLineStartOffsets = controller.normalizeLineStartOffsets(
+                    lineStartOffsets,
+                    presentationLogicalText);
+        controller.liveLogicalToSourceOffsets = controller.normalizeOffsetArray(
+                    sourceOffsets,
+                    presentationLogicalText.length,
+                    snapshotSourceText);
+    }
+
+    function ensureLiveEditingStateReady() {
+        const snapshotSourceText = controller.presentationSourceText();
+        const currentOffsets = Array.isArray(controller.liveLogicalToSourceOffsets)
+                ? controller.liveLogicalToSourceOffsets
+                : [];
+        const currentLineStartOffsets = Array.isArray(controller.liveLogicalLineStartOffsets)
+                ? controller.liveLogicalLineStartOffsets
+                : [];
+        const liveStateValid = currentOffsets.length === controller.liveAuthoritativePlainText.length + 1
+                && currentLineStartOffsets.length > 0;
+        EditorTrace.trace(
+                    "typingController",
+                    "ensureLiveEditingStateReady",
+                    "snapshotChanged=" + (controller.liveSnapshotSourceText !== snapshotSourceText)
+                    + " liveStateValid=" + liveStateValid
+                    + " localAuthority=" + (controller.editorSession && controller.editorSession.localEditorAuthority !== undefined
+                                            ? controller.editorSession.localEditorAuthority
+                                            : false),
+                    controller)
+        if (controller.presentationSnapshotStale()
+                && liveStateValid
+                && controller.editorSession
+                && controller.editorSession.localEditorAuthority !== undefined
+                && controller.editorSession.localEditorAuthority) {
+            return;
+        }
+        if (controller.liveSnapshotSourceText !== snapshotSourceText
+                || !liveStateValid) {
+            controller.synchronizeLiveEditingStateFromPresentation();
+        }
+    }
+
+    function authoritativeSourcePlainText() {
+        controller.ensureLiveEditingStateReady();
+        if (controller.liveAuthoritativePlainText.length > 0
+                || controller.liveSnapshotSourceText.length > 0) {
+            return controller.liveAuthoritativePlainText;
+        }
+        if (controller.textMetricsBridge && controller.textMetricsBridge.logicalText !== undefined)
+            return controller.normalizePlainText(controller.textMetricsBridge.logicalText);
+        if (controller.view
+                && controller.view.selectedNoteBodyText !== undefined
+                && controller.view.selectedNoteBodyNoteId !== undefined
+                && controller.view.selectedNoteId !== undefined
+                && String(controller.view.selectedNoteBodyNoteId) === String(controller.view.selectedNoteId))
+            return controller.normalizePlainText(controller.view.selectedNoteBodyText);
+        return "";
+    }
+
+    function currentEditorPlainText() {
+        if (!controller.contentEditor)
+            return controller.authoritativeSourcePlainText();
+        if (controller.contentEditor.currentPlainText !== undefined)
+            return controller.normalizePlainText(controller.contentEditor.currentPlainText());
+        if (controller.contentEditor.getText === undefined)
+            return controller.authoritativeSourcePlainText();
+        const editorLength = controller.contentEditor.length !== undefined
+                ? Math.max(0, Number(controller.contentEditor.length) || 0)
+                : 0;
+        return controller.normalizePlainText(controller.contentEditor.getText(0, editorLength));
+    }
+
+    function nativeCompositionActive() {
+        if (!controller.contentEditor)
+            return false;
+        const activePreeditText = controller.contentEditor.preeditText !== undefined
+                ? String(controller.contentEditor.preeditText === undefined || controller.contentEditor.preeditText === null
+                             ? ""
+                             : controller.contentEditor.preeditText)
+                : "";
+        return (controller.contentEditor.inputMethodComposing !== undefined
+                && controller.contentEditor.inputMethodComposing)
+                || activePreeditText.length > 0;
+    }
+
+    function applyEditorCursorPosition(position) {
+        if (!controller.contentEditor || controller.nativeCompositionActive())
+            return false;
+        const targetPosition = Math.max(0, Math.floor(Number(position) || 0));
+        if (controller.contentEditor.setCursorPositionPreservingNativeInput !== undefined)
+            return !!controller.contentEditor.setCursorPositionPreservingNativeInput(targetPosition);
+        if (controller.contentEditor.cursorPosition !== undefined) {
+            controller.contentEditor.cursorPosition = targetPosition;
+            return true;
+        }
+        return false;
+    }
+
+    function applyPendingCursorPositionIfInputSettled() {
+        if (!controller.pendingCursorPositionRequest || controller.nativeCompositionActive())
+            return false;
+        const targetPosition = Math.max(0, Math.floor(Number(controller.pendingCursorPosition) || 0));
+        controller.pendingCursorPositionRequest = false;
+        return controller.applyEditorCursorPosition(targetPosition);
+    }
+
+    function scheduleCursorPosition(position) {
+        const targetPosition = Math.max(0, Math.floor(Number(position) || 0));
+        Qt.callLater(function () {
+            if (!controller.contentEditor)
+                return;
+            if (controller.nativeCompositionActive()) {
+                controller.pendingCursorPosition = targetPosition;
+                controller.pendingCursorPositionRequest = true;
+                return;
+            }
+            controller.pendingCursorPositionRequest = false;
+            controller.applyEditorCursorPosition(targetPosition);
+        });
+    }
+
+    function computePlainTextReplacementDelta(previousText, nextText) {
+        const previous = previousText === undefined || previousText === null ? "" : String(previousText);
+        const next = nextText === undefined || nextText === null ? "" : String(nextText);
+        if (previous === next) {
+            return {
+                "insertedText": "",
+                "previousEnd": 0,
+                "start": 0,
+                "valid": false
+            };
+        }
+
+        let prefixLength = 0;
+        const prefixLimit = Math.min(previous.length, next.length);
+        while (prefixLength < prefixLimit && previous.charAt(prefixLength) === next.charAt(prefixLength))
+            ++prefixLength;
+
+        let suffixLength = 0;
+        const suffixLimit = Math.min(previous.length - prefixLength, next.length - prefixLength);
+        while (suffixLength < suffixLimit
+                && previous.charAt(previous.length - 1 - suffixLength) === next.charAt(next.length - 1 - suffixLength)) {
+            ++suffixLength;
+        }
+
+        const previousEnd = previous.length - suffixLength;
+        const nextEnd = next.length - suffixLength;
+        return {
+            "insertedText": next.slice(prefixLength, nextEnd),
+            "previousEnd": previousEnd,
+            "start": prefixLength,
+            "valid": true
+        };
+    }
+
+    function breakShortcutInsertion(previousPlainText, replacementStart, replacementEnd, insertedText) {
+        const previousText = controller.normalizePlainText(previousPlainText);
+        const safeStart = Math.max(0, Math.min(previousText.length, Math.floor(Number(replacementStart) || 0)));
+        const safeEnd = Math.max(safeStart, Math.min(previousText.length, Math.floor(Number(replacementEnd) || 0)));
+        const normalizedInsertedText = controller.normalizePlainText(insertedText);
+        if (normalizedInsertedText.indexOf("\n") >= 0)
+            return ({ "applied": false, "cursorPosition": -1, "insertedText": "", "replacementEnd": -1, "replacementStart": -1 });
+
+        const candidateText = previousText.slice(0, safeStart)
+                + normalizedInsertedText
+                + previousText.slice(safeEnd);
+        const candidateCursor = safeStart + normalizedInsertedText.length;
+        const candidateLineAnchor = Math.max(0, candidateCursor - 1);
+        const candidateLineStart = candidateLineAnchor > 0
+                ? candidateText.lastIndexOf("\n", candidateLineAnchor) + 1
+                : 0;
+        const candidateLineEndIndex = candidateText.indexOf("\n", candidateLineStart);
+        const candidateLineEnd = candidateLineEndIndex >= 0 ? candidateLineEndIndex : candidateText.length;
+        const candidateLineText = candidateText.slice(candidateLineStart, candidateLineEnd);
+        if (candidateLineText !== "---")
+            return ({ "applied": false, "cursorPosition": -1, "insertedText": "", "replacementEnd": -1, "replacementStart": -1 });
+
+        const previousLineAnchor = Math.max(0, safeStart - 1);
+        const previousLineStart = previousLineAnchor > 0
+                ? previousText.lastIndexOf("\n", previousLineAnchor) + 1
+                : 0;
+        const previousLineEndIndex = previousText.indexOf("\n", previousLineStart);
+        const previousLineEnd = previousLineEndIndex >= 0 ? previousLineEndIndex : previousText.length;
+        return ({
+                "applied": true,
+                "cursorPosition": previousLineStart + 1,
+                "insertedText": "</break>",
+                "replacementEnd": previousLineEnd,
+                "replacementStart": previousLineStart
+            });
+    }
+
+    function currentEditorSelectionSnapshot() {
+        if (!controller.contentEditor) {
+            return ({
+                    "cursorPosition": NaN,
+                    "selectionEnd": NaN,
+                    "selectionStart": NaN
+                });
+        }
+        if (controller.contentEditor.selectionSnapshot !== undefined) {
+            const snapshot = controller.contentEditor.selectionSnapshot();
+            if (snapshot)
+                return snapshot;
+        }
+        return ({
+                "cursorPosition": controller.contentEditor.cursorPosition,
+                "selectionEnd": controller.contentEditor.selectionEnd,
+                "selectionStart": controller.contentEditor.selectionStart
+            });
+    }
+
+    function currentRawEditorSelectionRange() {
+        const snapshot = controller.currentEditorSelectionSnapshot();
+        const cursorPosition = Number(snapshot && snapshot.cursorPosition !== undefined ? snapshot.cursorPosition : NaN);
+        const selectionStart = Number(snapshot && snapshot.selectionStart !== undefined ? snapshot.selectionStart : NaN);
+        const selectionEnd = Number(snapshot && snapshot.selectionEnd !== undefined ? snapshot.selectionEnd : NaN);
+        const logicalLength = controller.authoritativeSourcePlainText().length;
+        if (isFinite(selectionStart) && isFinite(selectionEnd)) {
+            return ({
+                    "start": Math.max(0, Math.min(logicalLength, Math.floor(Math.min(selectionStart, selectionEnd)))),
+                    "end": Math.max(0, Math.min(logicalLength, Math.floor(Math.max(selectionStart, selectionEnd))))
+                });
+        }
+        const boundedCursor = isFinite(cursorPosition)
+                ? Math.max(0, Math.min(logicalLength, Math.floor(cursorPosition)))
+                : logicalLength;
+        return ({
+                "start": boundedCursor,
+                "end": boundedCursor
+            });
+    }
+
+    function sourceTagRanges(sourceText) {
+        const normalizedSourceText = sourceText === undefined || sourceText === null ? "" : String(sourceText);
+        const ranges = [];
+        const tagPattern = /<!--[\s\S]*?-->|<\s*\/?\s*[A-Za-z_][A-Za-z0-9_.:-]*\b[^>]*?>/g;
+        let match = tagPattern.exec(normalizedSourceText);
+        while (match) {
+            const token = String(match[0] || "");
+            const start = Math.max(0, Number(match.index) || 0);
+            const end = start + token.length;
+            if (end > start) {
+                ranges.push({
+                        "end": end,
+                        "start": start,
+                        "token": token
+                    });
+            }
+            if (tagPattern.lastIndex === match.index)
+                tagPattern.lastIndex = match.index + Math.max(1, token.length);
+            match = tagPattern.exec(normalizedSourceText);
+        }
+        return ranges;
+    }
+
+    function normalizedSourceTagName(tagToken) {
+        const normalizedToken = tagToken === undefined || tagToken === null ? "" : String(tagToken);
+        if (normalizedToken.length === 0)
+            return "";
+        const match = normalizedToken.match(/^<\s*\/?\s*([A-Za-z_][A-Za-z0-9_.:-]*)\b/i);
+        if (!match || match.length < 2)
+            return "";
+        return String(match[1] || "").trim().toLowerCase();
+    }
+    function isClosingSourceTagToken(tagToken) {
+        const normalizedToken = tagToken === undefined || tagToken === null ? "" : String(tagToken);
+        return /^<\s*\//.test(normalizedToken);
+    }
+    function isInlineStyleTagName(tagName) {
+        const normalizedTagName = tagName === undefined || tagName === null ? "" : String(tagName).trim().toLowerCase();
+        return normalizedTagName === "bold"
+                || normalizedTagName === "b"
+                || normalizedTagName === "strong"
+                || normalizedTagName === "italic"
+                || normalizedTagName === "i"
+                || normalizedTagName === "em"
+                || normalizedTagName === "underline"
+                || normalizedTagName === "u"
+                || normalizedTagName === "strikethrough"
+                || normalizedTagName === "strike"
+                || normalizedTagName === "s"
+                || normalizedTagName === "del"
+                || normalizedTagName === "highlight"
+                || normalizedTagName === "mark";
+    }
+    function sourceTagRangeStartingAt(sourceText, sourceOffset) {
+        const normalizedSourceText = sourceText === undefined || sourceText === null ? "" : String(sourceText);
+        const boundedOffset = Math.max(
+                    0,
+                    Math.min(
+                        normalizedSourceText.length,
+                        Math.floor(Number(sourceOffset) || 0)));
+        if (boundedOffset >= normalizedSourceText.length || normalizedSourceText.charAt(boundedOffset) !== "<")
+            return null;
+        const tagEnd = normalizedSourceText.indexOf(">", boundedOffset + 1);
+        if (tagEnd <= boundedOffset)
+            return null;
+        return {
+            "end": tagEnd + 1,
+            "start": boundedOffset,
+            "token": normalizedSourceText.slice(boundedOffset, tagEnd + 1)
+        };
+    }
+    function advanceSourceOffsetPastClosingInlineStyleTags(sourceText, sourceOffset) {
+        const normalizedSourceText = sourceText === undefined || sourceText === null ? "" : String(sourceText);
+        let nextOffset = Math.max(
+                    0,
+                    Math.min(
+                        normalizedSourceText.length,
+                        Math.floor(Number(sourceOffset) || 0)));
+        while (nextOffset < normalizedSourceText.length) {
+            const tagRange = controller.sourceTagRangeStartingAt(normalizedSourceText, nextOffset);
+            if (!tagRange)
+                break;
+            const normalizedTagName = controller.normalizedSourceTagName(tagRange.token);
+            if (!controller.isClosingSourceTagToken(tagRange.token)
+                    || !controller.isInlineStyleTagName(normalizedTagName)) {
+                break;
+            }
+            nextOffset = Math.max(nextOffset, Number(tagRange.end) || nextOffset);
+        }
+        return nextOffset;
+    }
+    function sourceOffsetForCollapsedLogicalInsertion(sourceText, logicalOffset) {
+        const normalizedSourceText = sourceText === undefined || sourceText === null ? "" : String(sourceText);
+        const baseSourceOffset = controller.sourceOffsetForLogicalOffset(logicalOffset);
+        return controller.advanceSourceOffsetPastClosingInlineStyleTags(
+                    normalizedSourceText,
+                    baseSourceOffset);
+    }
+
+    function sourceRangeTouchesNamedTag(sourceTagRanges, sourceStart, sourceEnd, normalizedTagName) {
+        const ranges = Array.isArray(sourceTagRanges) ? sourceTagRanges : [];
+        const targetTagName = normalizedTagName === undefined || normalizedTagName === null
+                ? ""
+                : String(normalizedTagName).trim().toLowerCase();
+        if (targetTagName.length === 0)
+            return false;
+        const safeStart = Math.max(0, Math.floor(Number(sourceStart) || 0));
+        const safeEnd = Math.max(safeStart, Math.floor(Number(sourceEnd) || 0));
+        for (let index = 0; index < ranges.length; ++index) {
+            const range = ranges[index];
+            if (controller.normalizedSourceTagName(range.token) !== targetTagName)
+                continue;
+            const rangeStart = Math.max(0, Math.floor(Number(range.start) || 0));
+            const rangeEnd = Math.max(rangeStart, Math.floor(Number(range.end) || 0));
+            if (safeEnd > safeStart) {
+                if (rangeEnd > safeStart && rangeStart < safeEnd)
+                    return true;
+                continue;
+            }
+            if (safeStart > rangeStart && safeStart < rangeEnd)
+                return true;
+        }
+        return false;
+    }
+
+    function logicalRangeCollapsesToSingleSourceOffset(logicalStart, logicalEnd) {
+        const safeLogicalStart = Math.max(0, Math.floor(Number(logicalStart) || 0));
+        const safeLogicalEnd = Math.max(safeLogicalStart, Math.floor(Number(logicalEnd) || 0));
+        if (safeLogicalEnd <= safeLogicalStart)
+            return false;
+        return controller.sourceOffsetForLogicalOffset(safeLogicalStart)
+                === controller.sourceOffsetForLogicalOffset(safeLogicalEnd);
+    }
+
+    function restoreEditorSurfaceFromSourcePresentation() {
+        if (controller.view && controller.view.restoreEditorSurfaceFromPresentation !== undefined) {
+            controller.view.restoreEditorSurfaceFromPresentation();
+        } else if (controller.view && controller.view.commitDocumentPresentationRefresh !== undefined) {
+            controller.view.commitDocumentPresentationRefresh();
+        } else {
+            controller.synchronizeLiveEditingStateFromPresentation();
+            return;
+        }
+        controller.synchronizeLiveEditingStateFromPresentation();
+    }
+    function resourceTagLossDetectedForMutation(currentSourceText, nextSourceText) {
+        if (!controller.view || controller.view.resourceTagLossDetected === undefined)
+            return false;
+        return !!controller.view.resourceTagLossDetected(currentSourceText, nextSourceText);
+    }
+
+    function collapsedDeletionTagRange(sourceTagRanges, sourceOffset, deleteForward) {
+        const ranges = Array.isArray(sourceTagRanges) ? sourceTagRanges : [];
+        const safeOffset = Math.max(0, Math.floor(Number(sourceOffset) || 0));
+        if (deleteForward) {
+            for (let index = 0; index < ranges.length; ++index) {
+                const range = ranges[index];
+                const rangeStart = Math.max(0, Math.floor(Number(range.start) || 0));
+                const rangeEnd = Math.max(rangeStart, Math.floor(Number(range.end) || 0));
+                if (safeOffset >= rangeStart && safeOffset < rangeEnd)
+                    return range;
+            }
+            return null;
+        }
+        for (let index = ranges.length - 1; index >= 0; --index) {
+            const range = ranges[index];
+            const rangeStart = Math.max(0, Math.floor(Number(range.start) || 0));
+            const rangeEnd = Math.max(rangeStart, Math.floor(Number(range.end) || 0));
+            if (safeOffset > rangeStart && safeOffset <= rangeEnd)
+                return range;
+        }
+        return null;
+    }
+
+    function expandedDeletionSourceRange(sourceTagRanges, sourceStart, sourceEnd) {
+        const ranges = Array.isArray(sourceTagRanges) ? sourceTagRanges : [];
+        let expandedStart = Math.max(0, Math.floor(Number(sourceStart) || 0));
+        let expandedEnd = Math.max(expandedStart, Math.floor(Number(sourceEnd) || 0));
+        if (expandedEnd <= expandedStart) {
+            return ({
+                    "start": expandedStart,
+                    "end": expandedEnd
+                });
+        }
+
+        let changed = true;
+        while (changed) {
+            changed = false;
+            for (let index = 0; index < ranges.length; ++index) {
+                const range = ranges[index];
+                const rangeStart = Math.max(0, Math.floor(Number(range.start) || 0));
+                const rangeEnd = Math.max(rangeStart, Math.floor(Number(range.end) || 0));
+                const intersects = rangeEnd > expandedStart && rangeStart < expandedEnd;
+                if (!intersects)
+                    continue;
+                if (rangeStart < expandedStart) {
+                    expandedStart = rangeStart;
+                    changed = true;
+                }
+                if (rangeEnd > expandedEnd) {
+                    expandedEnd = rangeEnd;
+                    changed = true;
+                }
+            }
+        }
+
+        return ({
+                "start": expandedStart,
+                "end": expandedEnd
+            });
+    }
+
+    function queueAgendaShortcutInsertion() {
+        if (!controller.view
+                || !controller.view.hasSelectedNote
+                || controller.view.showDedicatedResourceViewer
+                || controller.view.showFormattedTextRenderer) {
+            return false;
+        }
+        return controller.insertStructuredShortcutSourceAtCursor("agenda");
+    }
+
+    function queueCalloutShortcutInsertion() {
+        if (!controller.view
+                || !controller.view.hasSelectedNote
+                || controller.view.showDedicatedResourceViewer
+                || controller.view.showFormattedTextRenderer) {
+            return false;
+        }
+        return controller.insertStructuredShortcutSourceAtCursor("callout");
+    }
+
+    function queueBreakShortcutInsertion() {
+        if (!controller.view
+                || !controller.view.hasSelectedNote
+                || controller.view.showDedicatedResourceViewer
+                || controller.view.showFormattedTextRenderer) {
+            return false;
+        }
+        return controller.insertStructuredShortcutSourceAtCursor("break");
+    }
+
+    function insertStructuredShortcutSourceAtCursor(shortcutKind) {
+        controller.ensureLiveEditingStateReady();
+        const currentSourceText = controller.view && controller.view.editorText !== undefined && controller.view.editorText !== null
+                ? String(controller.view.editorText)
+                : "";
+        const normalizedShortcutKind = String(shortcutKind || "").trim().toLowerCase();
+        if (normalizedShortcutKind === "callout") {
+            const selectionRange = controller.currentRawEditorSelectionRange();
+            const logicalSelectionStart = Math.max(0, Math.floor(Number(selectionRange.start) || 0));
+            const logicalSelectionEnd = Math.max(logicalSelectionStart, Math.floor(Number(selectionRange.end) || 0));
+            if (logicalSelectionEnd > logicalSelectionStart) {
+                const sourceSelectionStart = Math.max(
+                            0,
+                            Math.min(
+                                currentSourceText.length,
+                                Math.floor(Number(controller.sourceOffsetForLogicalOffset(logicalSelectionStart)) || 0)));
+                const sourceSelectionEnd = Math.max(
+                            sourceSelectionStart,
+                            Math.min(
+                                currentSourceText.length,
+                                Math.floor(Number(controller.sourceOffsetForLogicalOffset(logicalSelectionEnd)) || 0)));
+                const wrapPayload = RawTagMutationSupport.buildCalloutRangeWrappingPayload(
+                            currentSourceText,
+                            sourceSelectionStart,
+                            sourceSelectionEnd);
+                return controller.commitRawSourceInsertionPayload(wrapPayload, currentSourceText);
+            }
+        }
+        const logicalCursor = controller.currentLogicalCursorOffsetForShortcutInsertion();
+        const rawSourceCursorOffset = Math.max(
+                    0,
+                    Math.min(
+                        currentSourceText.length,
+                        Math.floor(Number(controller.sourceOffsetForCollapsedLogicalInsertion(
+                                             currentSourceText,
+                                             logicalCursor)) || 0)));
+        const insertionPayload = RawTagMutationSupport.buildStructuredShortcutInsertionPayload(
+                    currentSourceText,
+                    rawSourceCursorOffset,
+                    normalizedShortcutKind);
+        return controller.commitRawSourceInsertionPayload(insertionPayload, currentSourceText);
+    }
+
+    function currentLogicalCursorOffsetForShortcutInsertion() {
+        const plainTextLength = controller.authoritativeSourcePlainText().length;
+        if (!controller.contentEditor || controller.contentEditor.cursorPosition === undefined)
+            return plainTextLength;
+        const numericCursor = Number(controller.contentEditor.cursorPosition);
+        if (!isFinite(numericCursor))
+            return plainTextLength;
+        return Math.max(0, Math.min(plainTextLength, Math.floor(numericCursor)));
+    }
+
+    function commitRawSourceInsertionPayload(insertionPayload, currentSourceText) {
+        const safePayload = insertionPayload && typeof insertionPayload === "object" ? insertionPayload : ({});
+        if (!safePayload.applied)
+            return false;
+        const nextSourceText = safePayload.nextSourceText !== undefined && safePayload.nextSourceText !== null
+                ? String(safePayload.nextSourceText)
+                : currentSourceText;
+        if (nextSourceText === currentSourceText)
+            return false;
+        const cursorSourceOffset = Math.max(0, Math.floor(Number(safePayload.sourceOffset) || 0));
+
+        if (!controller.commitRawEditorTextMutation(nextSourceText))
+            return false;
+        const committedText = controller.committedEditorText(nextSourceText);
+        if (controller.view.commitDocumentPresentationRefresh !== undefined)
+            controller.view.commitDocumentPresentationRefresh();
+        else
+            controller.synchronizeLiveEditingStateFromPresentation();
+
+        controller.scheduleCursorPosition(controller.logicalOffsetForSourceOffset(cursorSourceOffset));
+        controller.view.editorTextEdited(committedText);
+        return true;
+    }
+
+    function insertRawSourceTextAtCursor(rawSourceText, cursorSourceOffsetFromInsertionStart) {
+        if (!controller.view)
+            return false;
+        const normalizedRawSourceText = controller.normalizePlainText(rawSourceText);
+        if (normalizedRawSourceText.length === 0)
+            return false;
+        controller.ensureLiveEditingStateReady();
+        const currentSourceText = controller.view.editorText === undefined || controller.view.editorText === null
+                ? ""
+                : String(controller.view.editorText);
+        const logicalCursor = controller.currentLogicalCursorOffsetForShortcutInsertion();
+        const rawSourceCursorOffset = Math.max(
+                    0,
+                    Math.min(
+                        currentSourceText.length,
+                        Math.floor(Number(controller.sourceOffsetForCollapsedLogicalInsertion(
+                                             currentSourceText,
+                                             logicalCursor)) || 0)));
+        const insertionPayload = RawTagMutationSupport.buildRawSourceInsertionPayload(
+                    currentSourceText,
+                    rawSourceCursorOffset,
+                    normalizedRawSourceText,
+                    Math.max(0, Math.floor(Number(cursorSourceOffsetFromInsertionStart) || 0)));
+        return controller.commitRawSourceInsertionPayload(insertionPayload, currentSourceText);
+    }
+
+    function agendaTodoShortcutInsertion(previousPlainText, replacementStart, replacementEnd, insertedText) {
+        if (!controller.agendaBackend
+                || controller.agendaBackend.detectTodoShortcutReplacement === undefined) {
+            return ({ "applied": false });
+        }
+        return controller.agendaBackend.detectTodoShortcutReplacement(
+                    previousPlainText,
+                    replacementStart,
+                    replacementEnd,
+                    insertedText);
+    }
+
+    function agendaTaskEnterInsertion(currentSourceText, sourceStart, sourceEnd, insertedText) {
+        if (!controller.agendaBackend
+                || controller.agendaBackend.detectAgendaTaskEnterReplacement === undefined) {
+            return ({ "applied": false });
+        }
+        return controller.agendaBackend.detectAgendaTaskEnterReplacement(
+                    currentSourceText,
+                    sourceStart,
+                    sourceEnd,
+                    insertedText);
+    }
+
+    function calloutEnterInsertion(currentSourceText, sourceStart, sourceEnd, insertedText) {
+        if (!controller.calloutBackend
+                || controller.calloutBackend.detectCalloutEnterReplacement === undefined) {
+            return ({ "applied": false });
+        }
+        return controller.calloutBackend.detectCalloutEnterReplacement(
+                    currentSourceText,
+                    sourceStart,
+                    sourceEnd,
+                    insertedText);
+    }
+
+    function commitExplicitSourceMutation(nextSourceText) {
+        EditorTrace.trace(
+                    "typingController",
+                    "commitExplicitSourceMutation",
+                    EditorTrace.describeText(nextSourceText),
+                    controller)
+        if (!controller.view)
+            return false;
+        if (controller.view.applyDocumentSourceMutation !== undefined)
+            return controller.view.applyDocumentSourceMutation(nextSourceText);
+
+        const normalizedNextSourceText = nextSourceText === undefined || nextSourceText === null
+                ? ""
+                : String(nextSourceText);
+        const currentSourceText = controller.view.editorText === undefined || controller.view.editorText === null
+                ? ""
+                : String(controller.view.editorText);
+        if (normalizedNextSourceText === currentSourceText)
+            return false;
+        if (controller.resourceTagLossDetectedForMutation(currentSourceText, normalizedNextSourceText)) {
+            controller.restoreEditorSurfaceFromSourcePresentation();
+            return false;
+        }
+
+        if (!controller.commitRawEditorTextMutation(normalizedNextSourceText))
+            return false;
+        const committedText = controller.committedEditorText(normalizedNextSourceText);
+        if (controller.view.commitDocumentPresentationRefresh !== undefined)
+            controller.view.commitDocumentPresentationRefresh();
+        else
+            controller.synchronizeLiveEditingStateFromPresentation();
+
+        controller.view.editorTextEdited(committedText);
+        return true;
+    }
+
+    function applyExplicitPlainTextLogicalReplacement(logicalReplacementStart, logicalReplacementEnd, insertedText) {
+        EditorTrace.trace(
+                    "typingController",
+                    "applyExplicitPlainTextLogicalReplacement",
+                    "logicalStart=" + logicalReplacementStart
+                    + " logicalEnd=" + logicalReplacementEnd
+                    + " inserted=" + EditorTrace.describeText(insertedText),
+                    controller)
+        if (!controller.view
+                || !controller.view.hasSelectedNote
+                || controller.view.showDedicatedResourceViewer
+                || controller.view.showFormattedTextRenderer) {
+            return false;
+        }
+        if (!controller.contentEditor
+                || !controller.plainTextSourceMutator
+                || controller.plainTextSourceMutator.applyPlainTextReplacementToSource === undefined) {
+            return false;
+        }
+
+        const currentSourceText = controller.view.editorText === undefined || controller.view.editorText === null
+                ? ""
+                : String(controller.view.editorText);
+        const previousPlainText = controller.authoritativeSourcePlainText();
+        const plainTextLength = previousPlainText.length;
+        const boundedLogicalStart = Math.max(
+                    0,
+                    Math.min(
+                        plainTextLength,
+                        Math.floor(Number(logicalReplacementStart) || 0)));
+        const boundedLogicalEnd = Math.max(
+                    boundedLogicalStart,
+                    Math.min(
+                        plainTextLength,
+                        Math.floor(Number(logicalReplacementEnd) || 0)));
+        const normalizedRequestedText = controller.normalizePlainText(insertedText);
+        const syntheticNextPlainText = previousPlainText.slice(0, boundedLogicalStart)
+                + normalizedRequestedText
+                + previousPlainText.slice(boundedLogicalEnd);
+        let normalizedInsertedText = normalizedRequestedText;
+        let resolvedLogicalReplacementStart = boundedLogicalStart;
+        let resolvedLogicalReplacementEnd = boundedLogicalEnd;
+
+        let rawSourceReplacementText = "";
+        let rawReplacementEnabled = false;
+        let cursorLogicalOverride = Math.max(
+                    0,
+                    Math.min(
+                        syntheticNextPlainText.length,
+                        resolvedLogicalReplacementStart + normalizedInsertedText.length));
+        let cursorSourceOffsetOverride = NaN;
+
+        const breakShortcut = controller.breakShortcutInsertion(
+                    previousPlainText,
+                    resolvedLogicalReplacementStart,
+                    resolvedLogicalReplacementEnd,
+                    normalizedInsertedText);
+        if (!rawReplacementEnabled && breakShortcut.applied) {
+            normalizedInsertedText = breakShortcut.insertedText;
+            resolvedLogicalReplacementStart = Math.max(0, Math.floor(Number(breakShortcut.replacementStart) || 0));
+            resolvedLogicalReplacementEnd = Math.max(
+                        resolvedLogicalReplacementStart,
+                        Math.floor(Number(breakShortcut.replacementEnd) || 0));
+            rawSourceReplacementText = normalizedInsertedText;
+            rawReplacementEnabled = true;
+            cursorLogicalOverride = Math.max(0, Math.floor(Number(breakShortcut.cursorPosition) || 0));
+        }
+
+        const collapsedLogicalInsertion = resolvedLogicalReplacementEnd === resolvedLogicalReplacementStart;
+        const sourceStart = collapsedLogicalInsertion
+                ? controller.sourceOffsetForCollapsedLogicalInsertion(
+                    currentSourceText,
+                    resolvedLogicalReplacementStart)
+                : controller.sourceOffsetForLogicalOffset(resolvedLogicalReplacementStart);
+        const sourceEnd = collapsedLogicalInsertion
+                ? sourceStart
+                : controller.sourceOffsetForLogicalOffset(resolvedLogicalReplacementEnd);
+        const currentSourceTagRanges = controller.sourceTagRanges(currentSourceText);
+        const targetsVirtualSourceOnly = controller.logicalRangeCollapsesToSingleSourceOffset(
+                    resolvedLogicalReplacementStart,
+                    resolvedLogicalReplacementEnd);
+
+        const agendaTaskEnter = controller.agendaTaskEnterInsertion(
+                    currentSourceText,
+                    sourceStart,
+                    sourceEnd,
+                    normalizedInsertedText);
+        let replacementSourceStart = sourceStart;
+        let replacementSourceEnd = sourceEnd;
+        if (agendaTaskEnter.applied) {
+            replacementSourceStart = Math.max(0, Math.floor(Number(agendaTaskEnter.replacementSourceStart) || 0));
+            replacementSourceEnd = Math.max(
+                        replacementSourceStart,
+                        Math.floor(Number(agendaTaskEnter.replacementSourceEnd) || 0));
+            rawSourceReplacementText = String(agendaTaskEnter.replacementSourceText || "");
+            rawReplacementEnabled = true;
+            cursorSourceOffsetOverride = Math.max(
+                        0,
+                        Math.floor(Number(agendaTaskEnter.cursorSourceOffsetFromReplacementStart) || 0));
+            cursorLogicalOverride = NaN;
+        }
+
+        const calloutEnter = agendaTaskEnter.applied
+                ? ({ "applied": false })
+                : controller.calloutEnterInsertion(
+                    currentSourceText,
+                    sourceStart,
+                    sourceEnd,
+                    normalizedInsertedText);
+        if (calloutEnter.applied) {
+            replacementSourceStart = Math.max(0, Math.floor(Number(calloutEnter.replacementSourceStart) || 0));
+            replacementSourceEnd = Math.max(
+                        replacementSourceStart,
+                        Math.floor(Number(calloutEnter.replacementSourceEnd) || 0));
+            rawSourceReplacementText = String(calloutEnter.replacementSourceText || "");
+            rawReplacementEnabled = true;
+            cursorSourceOffsetOverride = Math.max(
+                        0,
+                        Math.floor(Number(calloutEnter.cursorSourceOffsetFromReplacementStart) || 0));
+            cursorLogicalOverride = NaN;
+        }
+
+        const touchesResourceTag = controller.sourceRangeTouchesNamedTag(
+                    currentSourceTagRanges,
+                    replacementSourceStart,
+                    replacementSourceEnd,
+                    "resource");
+        if (touchesResourceTag || targetsVirtualSourceOnly) {
+            controller.restoreEditorSurfaceFromSourcePresentation();
+            return false;
+        }
+
+        let nextSourceText = "";
+        if (rawReplacementEnabled) {
+            nextSourceText = controller.spliceSourceText(
+                        currentSourceText,
+                        replacementSourceStart,
+                        replacementSourceEnd,
+                        rawSourceReplacementText);
+        } else {
+            nextSourceText = String(controller.plainTextSourceMutator.applyPlainTextReplacementToSource(
+                                        currentSourceText,
+                                        sourceStart,
+                                        sourceEnd,
+                                        normalizedInsertedText));
+        }
+        if (nextSourceText === currentSourceText)
+            return false;
+
+        const committed = controller.commitExplicitSourceMutation(nextSourceText);
+        if (!committed)
+            return false;
+
+        if (rawReplacementEnabled && isFinite(cursorSourceOffsetOverride))
+            controller.scheduleCursorPosition(
+                        controller.logicalOffsetForSourceOffset(replacementSourceStart + cursorSourceOffsetOverride));
+        else if (isFinite(cursorLogicalOverride))
+            controller.scheduleCursorPosition(cursorLogicalOverride);
+        return true;
+    }
+
+    function sourceOffsetForLogicalOffset(logicalOffset) {
+        controller.ensureLiveEditingStateReady();
+        const safeOffset = Math.max(0, Math.floor(Number(logicalOffset) || 0));
+        const offsets = Array.isArray(controller.liveLogicalToSourceOffsets)
+                ? controller.liveLogicalToSourceOffsets
+                : [];
+        if (offsets.length > 0) {
+            const boundedOffset = Math.max(0, Math.min(offsets.length - 1, safeOffset));
+            const mappedOffset = Number(offsets[boundedOffset]);
+            if (isFinite(mappedOffset))
+                return Math.max(0, Math.floor(mappedOffset));
+        }
+        if (controller.textMetricsBridge && controller.textMetricsBridge.sourceOffsetForLogicalOffset !== undefined) {
+            const mappedOffset = Number(controller.textMetricsBridge.sourceOffsetForLogicalOffset(safeOffset));
+            if (isFinite(mappedOffset))
+                return Math.max(0, Math.floor(mappedOffset));
+        }
+        const currentSourceText = controller.view && controller.view.editorText !== undefined && controller.view.editorText !== null
+                ? String(controller.view.editorText)
+                : "";
+        return Math.max(0, Math.min(currentSourceText.length, safeOffset));
+    }
+
+    function logicalOffsetForSourceOffset(sourceOffset) {
+        controller.ensureLiveEditingStateReady();
+        const safeSourceOffset = Math.max(0, Math.floor(Number(sourceOffset) || 0));
+        const offsets = Array.isArray(controller.liveLogicalToSourceOffsets)
+                ? controller.liveLogicalToSourceOffsets
+                : [];
+        if (offsets.length === 0)
+            return safeSourceOffset;
+        for (let logicalIndex = 0; logicalIndex < offsets.length; ++logicalIndex) {
+            const mappedSourceOffset = Math.max(0, Math.floor(Number(offsets[logicalIndex]) || 0));
+            if (mappedSourceOffset >= safeSourceOffset)
+                return logicalIndex;
+        }
+        return Math.max(0, offsets.length - 1);
+    }
+
+    function applyLiveEditingStateReplacement(logicalStart, logicalEnd, replacementText, sourceStart, sourceEnd) {
+        controller.ensureLiveEditingStateReady();
+        const previousLogicalText = controller.liveAuthoritativePlainText;
+        const boundedLogicalStart = Math.max(0, Math.min(previousLogicalText.length, Math.floor(Number(logicalStart) || 0)));
+        const boundedLogicalEnd = Math.max(boundedLogicalStart, Math.min(previousLogicalText.length, Math.floor(Number(logicalEnd) || 0)));
+        const boundedSourceStart = Math.max(0, Math.floor(Number(sourceStart) || 0));
+        const boundedSourceEnd = Math.max(boundedSourceStart, Math.floor(Number(sourceEnd) || 0));
+        const insertedText = controller.normalizePlainText(replacementText);
+        const insertedSourceOffsets = controller.buildReplacementSourceOffsets(insertedText);
+        const previousOffsets = Array.isArray(controller.liveLogicalToSourceOffsets)
+                ? controller.liveLogicalToSourceOffsets
+                : controller.identityOffsetArray(previousLogicalText.length);
+        const previousLogicalLength = previousLogicalText.length;
+        const logicalInsertedLength = insertedText.length;
+        const sourceRemovedLength = boundedSourceEnd - boundedSourceStart;
+        const sourceInsertedLength = Math.max(0, Number(insertedSourceOffsets[insertedSourceOffsets.length - 1]) || 0);
+        const sourceDelta = sourceInsertedLength - sourceRemovedLength;
+        const nextLogicalText = previousLogicalText.slice(0, boundedLogicalStart)
+                + insertedText
+                + previousLogicalText.slice(boundedLogicalEnd);
+        const nextLineStartOffsets = controller.computeLineStartOffsets(nextLogicalText);
+        const nextOffsets = new Array(nextLogicalText.length + 1);
+
+        for (let index = 0; index < boundedLogicalStart; ++index)
+            nextOffsets[index] = Math.max(0, Number(previousOffsets[index]) || 0);
+        nextOffsets[boundedLogicalStart] = boundedSourceStart;
+        for (let index = 1; index <= logicalInsertedLength; ++index)
+            nextOffsets[boundedLogicalStart + index] = boundedSourceStart + Math.max(0, Number(insertedSourceOffsets[index]) || 0);
+        for (let previousIndex = boundedLogicalEnd; previousIndex <= previousLogicalLength; ++previousIndex) {
+            const nextIndex = boundedLogicalStart + logicalInsertedLength + (previousIndex - boundedLogicalEnd);
+            nextOffsets[nextIndex] = Math.max(0, Number(previousOffsets[previousIndex]) || 0) + sourceDelta;
+        }
+
+        controller.liveAuthoritativePlainText = nextLogicalText;
+        controller.liveLogicalLineStartOffsets = nextLineStartOffsets;
+        controller.liveLogicalToSourceOffsets = nextOffsets;
+    }
+
+    function handleEditorTextEdited() {
+        EditorTrace.trace(
+                    "typingController",
+                    "handleEditorTextEdited",
+                    "selectedNoteId=" + (controller.view ? String(controller.view.selectedNoteId || "") : "")
+                    + " structured=" + (controller.view && controller.view.showStructuredDocumentFlow !== undefined
+                                        ? controller.view.showStructuredDocumentFlow
+                                        : false),
+                    controller)
+        if (!controller.view
+                || !controller.view.hasSelectedNote
+                || (controller.view.showStructuredDocumentFlow !== undefined
+                    && controller.view.showStructuredDocumentFlow)
+                || controller.view.showDedicatedResourceViewer
+                || controller.view.showFormattedTextRenderer) {
+            return false;
+        }
+        if (controller.view.resourceDropEditorSurfaceGuardActive !== undefined
+                && controller.view.resourceDropEditorSurfaceGuardActive) {
+            return false;
+        }
+        if ((controller.view.programmaticEditorSurfaceSyncActive !== undefined
+             && controller.view.programmaticEditorSurfaceSyncActive)
+                || (controller.editorSession
+                    && controller.editorSession.syncingEditorTextFromModel !== undefined
+                    && controller.editorSession.syncingEditorTextFromModel)) {
+            return false;
+        }
+        const boundNoteId = controller.editorSession
+                && controller.editorSession.editorBoundNoteId !== undefined
+                && controller.editorSession.editorBoundNoteId !== null
+                ? String(controller.editorSession.editorBoundNoteId).trim()
+                : "";
+        const selectedNoteId = controller.view.selectedNoteId !== undefined
+                && controller.view.selectedNoteId !== null
+                ? String(controller.view.selectedNoteId).trim()
+                : "";
+        if (boundNoteId.length > 0
+                && selectedNoteId.length > 0
+                && boundNoteId !== selectedNoteId) {
+            return false;
+        }
+        const hasReadableEditorSurface = controller.contentEditor
+                && (controller.contentEditor.currentPlainText !== undefined
+                    || controller.contentEditor.getText !== undefined);
+        if (!hasReadableEditorSurface) {
+            return false;
+        }
+        if (!controller.contentEditor
+                || !controller.plainTextSourceMutator
+                || controller.plainTextSourceMutator.applyPlainTextReplacementToSource === undefined) {
+            return false;
+        }
+
+        const currentSourceText = controller.view.editorText === undefined || controller.view.editorText === null
+                ? ""
+                : String(controller.view.editorText);
+        const previousPlainText = controller.authoritativeSourcePlainText();
+        const nextPlainText = controller.currentEditorPlainText();
+        if (previousPlainText === nextPlainText) {
+            return false;
+        }
+
+        const replacementDelta = controller.computePlainTextReplacementDelta(previousPlainText, nextPlainText);
+        if (!replacementDelta.valid) {
+            return false;
+        }
+        let normalizedInsertedText = replacementDelta.insertedText;
+        let logicalReplacementStart = replacementDelta.start;
+        let logicalReplacementEnd = replacementDelta.previousEnd;
+
+        let rawSourceReplacementText = "";
+        let rawReplacementEnabled = false;
+        let cursorLogicalOverride = NaN;
+        let cursorSourceOffsetOverride = NaN;
+
+        const agendaTodoShortcut = controller.agendaTodoShortcutInsertion(
+                    previousPlainText,
+                    logicalReplacementStart,
+                    logicalReplacementEnd,
+                    normalizedInsertedText);
+        if (agendaTodoShortcut.applied) {
+            logicalReplacementStart = Math.max(0, Math.floor(Number(agendaTodoShortcut.replacementStart) || 0));
+            logicalReplacementEnd = Math.max(logicalReplacementStart, Math.floor(Number(agendaTodoShortcut.replacementEnd) || 0));
+            rawSourceReplacementText = String(agendaTodoShortcut.replacementSourceText || "");
+            rawReplacementEnabled = true;
+            cursorSourceOffsetOverride = Math.max(0, Math.floor(Number(agendaTodoShortcut.cursorSourceOffsetFromReplacementStart) || 0));
+        }
+
+        const breakShortcut = controller.breakShortcutInsertion(
+                    previousPlainText,
+                    logicalReplacementStart,
+                    logicalReplacementEnd,
+                    normalizedInsertedText);
+        if (!rawReplacementEnabled && breakShortcut.applied) {
+            normalizedInsertedText = breakShortcut.insertedText;
+            logicalReplacementStart = Math.max(0, Math.floor(Number(breakShortcut.replacementStart) || 0));
+            logicalReplacementEnd = Math.max(logicalReplacementStart, Math.floor(Number(breakShortcut.replacementEnd) || 0));
+            rawSourceReplacementText = normalizedInsertedText;
+            rawReplacementEnabled = true;
+            cursorLogicalOverride = Math.max(0, Math.floor(Number(breakShortcut.cursorPosition) || 0));
+        }
+        const collapsedLogicalInsertion = logicalReplacementEnd === logicalReplacementStart;
+        const sourceStart = collapsedLogicalInsertion
+                ? controller.sourceOffsetForCollapsedLogicalInsertion(
+                    currentSourceText,
+                    logicalReplacementStart)
+                : controller.sourceOffsetForLogicalOffset(logicalReplacementStart);
+        const sourceEnd = collapsedLogicalInsertion
+                ? sourceStart
+                : controller.sourceOffsetForLogicalOffset(logicalReplacementEnd);
+        const currentSourceTagRanges = controller.sourceTagRanges(currentSourceText);
+        const targetsVirtualSourceOnly = controller.logicalRangeCollapsesToSingleSourceOffset(
+                    logicalReplacementStart,
+                    logicalReplacementEnd);
+
+        const agendaTaskEnter = controller.agendaTaskEnterInsertion(
+                    currentSourceText,
+                    sourceStart,
+                    sourceEnd,
+                    normalizedInsertedText);
+        let replacementSourceStart = sourceStart;
+        let replacementSourceEnd = sourceEnd;
+        if (agendaTaskEnter.applied) {
+            replacementSourceStart = Math.max(0, Math.floor(Number(agendaTaskEnter.replacementSourceStart) || 0));
+            replacementSourceEnd = Math.max(replacementSourceStart, Math.floor(Number(agendaTaskEnter.replacementSourceEnd) || 0));
+            rawSourceReplacementText = String(agendaTaskEnter.replacementSourceText || "");
+            rawReplacementEnabled = true;
+            cursorSourceOffsetOverride = Math.max(0, Math.floor(Number(agendaTaskEnter.cursorSourceOffsetFromReplacementStart) || 0));
+            cursorLogicalOverride = NaN;
+        }
+        const calloutEnter = agendaTaskEnter.applied
+                ? ({ "applied": false })
+                : controller.calloutEnterInsertion(
+                    currentSourceText,
+                    sourceStart,
+                    sourceEnd,
+                    normalizedInsertedText);
+        if (calloutEnter.applied) {
+            replacementSourceStart = Math.max(0, Math.floor(Number(calloutEnter.replacementSourceStart) || 0));
+            replacementSourceEnd = Math.max(replacementSourceStart, Math.floor(Number(calloutEnter.replacementSourceEnd) || 0));
+            rawSourceReplacementText = String(calloutEnter.replacementSourceText || "");
+            rawReplacementEnabled = true;
+            cursorSourceOffsetOverride = Math.max(0, Math.floor(Number(calloutEnter.cursorSourceOffsetFromReplacementStart) || 0));
+            cursorLogicalOverride = NaN;
+        }
+
+        const touchesResourceTag = controller.sourceRangeTouchesNamedTag(
+                    currentSourceTagRanges,
+                    replacementSourceStart,
+                    replacementSourceEnd,
+                    "resource");
+        if (touchesResourceTag || targetsVirtualSourceOnly) {
+            controller.restoreEditorSurfaceFromSourcePresentation();
+            return false;
+        }
+
+        let nextSourceText = "";
+        if (rawReplacementEnabled) {
+            nextSourceText = controller.spliceSourceText(
+                        currentSourceText,
+                        replacementSourceStart,
+                        replacementSourceEnd,
+                        rawSourceReplacementText);
+        } else {
+            nextSourceText = String(controller.plainTextSourceMutator.applyPlainTextReplacementToSource(
+                                        currentSourceText,
+                                        sourceStart,
+                                        sourceEnd,
+                                        normalizedInsertedText));
+            controller.applyLiveEditingStateReplacement(
+                        logicalReplacementStart,
+                        logicalReplacementEnd,
+                        normalizedInsertedText,
+                        sourceStart,
+                        sourceEnd);
+        }
+
+        if (nextSourceText === currentSourceText)
+            return false;
+        if (controller.resourceTagLossDetectedForMutation(currentSourceText, nextSourceText)) {
+            controller.restoreEditorSurfaceFromSourcePresentation();
+            return false;
+        }
+
+        if (!controller.commitRawEditorTextMutation(nextSourceText))
+            return false;
+        const committedText = controller.committedEditorText(nextSourceText);
+        if (rawReplacementEnabled) {
+            if (controller.view.commitDocumentPresentationRefresh !== undefined)
+                controller.view.commitDocumentPresentationRefresh();
+            else
+                controller.synchronizeLiveEditingStateFromPresentation();
+        } else {
+            controller.adoptLiveStateIntoBridge(committedText);
+        }
+
+        if (rawReplacementEnabled && isFinite(cursorSourceOffsetOverride))
+            controller.scheduleCursorPosition(controller.logicalOffsetForSourceOffset(replacementSourceStart + cursorSourceOffsetOverride));
+        else if (isFinite(cursorLogicalOverride))
+            controller.scheduleCursorPosition(cursorLogicalOverride);
+
+        controller.view.editorTextEdited(committedText);
+        return true;
+    }
+
+    function commitRawEditorTextMutation(nextSourceText) {
+        if (!controller.editorSession
+                || controller.editorSession.commitRawEditorTextMutation === undefined) {
+            return false;
+        }
+        return !!controller.editorSession.commitRawEditorTextMutation(nextSourceText);
+    }
+
+    function committedEditorText(fallbackText) {
+        if (controller.editorSession && controller.editorSession.editorText !== undefined
+                && controller.editorSession.editorText !== null) {
+            return String(controller.editorSession.editorText);
+        }
+        return fallbackText === undefined || fallbackText === null ? "" : String(fallbackText);
+    }
+
+    Component.onCompleted: {
+        EditorTrace.trace("typingController", "mount", "", controller)
+    }
+
+    Component.onDestruction: {
+        EditorTrace.trace("typingController", "unmount", "", controller)
+    }
+}
     ContentsPlainTextSourceMutator {
         id: plainTextSourceMutator
     }
