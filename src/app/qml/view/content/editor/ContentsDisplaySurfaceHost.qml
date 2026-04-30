@@ -3,7 +3,6 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Layouts
 import LVRS 1.0 as LV
-import "../../../../models/editor/display" as EditorDisplayModel
 
 Item {
     id: surfaceHost
@@ -313,6 +312,9 @@ Item {
         renderPending: structuredBlockRenderer.renderPending
         renderedResources: bodyResourceRenderer.renderedResources
         sourceText: contentsView.structuredFlowSourceText
+        sourceMutationHandler: function (nextSourceText, focusRequest) {
+            return contentsView.applyDocumentSourceMutation(nextSourceText, focusRequest);
+        }
         tagManagementShortcutKeyPressHandler: function (event) {
             return contentsView.handleTagManagementShortcutKeyPress(event);
         }
@@ -566,7 +568,7 @@ Item {
         }
     }
 
-    EditorDisplayModel.ContentsDisplayInputCommandSurface {
+    ContentsDisplayInputCommandSurface {
         id: inputCommandSurfaceItem
 
         contentsView: surfaceHost.contentsView

@@ -3,7 +3,6 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import LVRS 1.0 as LV
 import WhatSon.App.Internal 1.0
-import "../../../../models/editor/input" as EditorInputModel
 
 FocusScope {
     id: textBlock
@@ -200,7 +199,7 @@ FocusScope {
         wrapMode: TextEdit.Wrap
     }
 
-    EditorInputModel.ContentsDocumentTextBlockController {
+    ContentsDocumentTextBlockController {
         id: documentTextBlockController
 
         blockEditor: blockEditor

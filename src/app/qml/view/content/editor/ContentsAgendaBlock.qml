@@ -2,8 +2,8 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import QtQuick.Layouts
+import WhatSon.App.Internal 1.0
 import LVRS 1.0 as LV
-import "../../../../models/editor/input" as EditorInputModel
 
 FocusScope {
     id: agendaBlock
@@ -301,7 +301,7 @@ FocusScope {
 
                             }
 
-                            EditorInputModel.ContentsAgendaTaskRowController {
+                            ContentsAgendaTaskRowController {
                                 id: taskRowController
 
                                 agendaBlock: agendaBlock
@@ -315,7 +315,7 @@ FocusScope {
         }
     }
 
-    EditorInputModel.ContentsAgendaBlockController {
+    ContentsAgendaBlockController {
         id: agendaBlockController
 
         agendaBlock: agendaBlock

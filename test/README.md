@@ -99,6 +99,12 @@ ctest --test-dir build --output-on-failure -L cpp_regression
   text-navigation and selection chords remain OS/Qt behavior instead of being shadowed by ordinary app shortcut
   handling. The explicit tag-management surface remains enabled outside composition so inline formatting shortcuts still
   write RAW tags while editing.
+- Focused editor tag-management coverage now also pins direct RAW body-tag shortcuts for agenda, callout, and break
+  insertion, plus press-phase right-click context-menu requests, so formatting commands do not depend on a later
+  platform-specific click signal.
+- Structured tag-management coverage now also requires the RAW mutation handler to accept inline-format/body-tag
+  mutations before those commands report success, and verifies that explicit tag mutations bind the selected note
+  session and request immediate persistence.
 - Clipboard-image resource imports now also pin their synthesized asset-name policy in the C++ suite, so temporary
   placeholder names cannot regress back to a collision-prone fixed file name.
 - Structured QML editor checks now also pin the native input contract for every host: focused stale text echo is rejected,

@@ -146,6 +146,11 @@
   next RAW source, `ContentsEditorSessionController::commitRawEditorTextMutation(...)` owns the session write and
   persistence scheduling, and the existing parser/renderer projections observe that source change. Display-mode mutation
   plans must not sit between input and the RAW write.
+- Structured tag-management commands now use `ContentsStructuredDocumentFlow.sourceMutationHandler` when mounted by
+  `ContentsDisplaySurfaceHost.qml`, so inline-format and body-tag insertion only report success after
+  `ContentsDisplayMutationController.qml` accepts the RAW mutation. Those tag commands mark their focus request for
+  immediate persistence, which keeps the `.wsnbody` RAW file path aligned with the visible formatting command instead
+  of waiting for a later idle save.
 - Desktop/mobile editor views now keep a separate presentation timer for whole-document markdown/HTML projection refresh, so
   `ContentsTextFormatRenderer` and full minimap resampling no longer run directly on every committed keystroke.
 - Desktop/mobile editor views now also keep `documentPresentationSourceText` as the single whole-document presentation

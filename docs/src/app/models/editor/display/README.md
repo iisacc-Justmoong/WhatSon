@@ -64,7 +64,10 @@ gain new session, persistence, parsing, mutation, scheduling, or command-surface
   minimap row positioning, and documentY-to-line resolution.
 - `ContentsDisplayMutationController.qml`
   Owns QML-runtime RAW source writes delegated through the C++ mutation ViewModel. It applies already-built RAW
-  `.wsnbody` text directly, then lets parser and renderer projections observe the changed source.
+  `.wsnbody` text directly, first ensuring the editor session is bound to the selected note when the visible
+  presentation source came from a resolved body snapshot. Explicit tag-management mutations request an immediate
+  persistence flush after the session RAW text changes, then let parser and renderer projections observe the changed
+  source.
 - `ContentsDisplayPresentationController.qml`
   Owns the detailed presentation refresh and editor-creation trace orchestration delegated through the C++
   presentation ViewModel.

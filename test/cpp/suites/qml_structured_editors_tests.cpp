@@ -699,6 +699,416 @@ EditorView.ContentsStructuredDocumentFlow {
     QVERIFY(structuredFlowSource.contains(QStringLiteral("onInlineFormatRequested: function (blockIndex, tagName, selectionSnapshot)")));
 }
 
+void WhatSonCppRegressionTests::qmlStructuredEditors_requireCommittedRawMutationForTagCommands()
+{
+    registerStructuredEditorRuntimeQmlTypes();
+
+    const QString repositoryRoot = qmlStructuredEditorsRepositoryRootPath();
+    QQmlEngine engine;
+    addWhatSonStructuredEditorQmlImportPaths(engine, repositoryRoot);
+
+    const QString editorImportUrl =
+        QUrl::fromLocalFile(repositoryRoot + QStringLiteral("/src/app/qml/view/content/editor")).toString();
+    const QString qmlSource = QStringLiteral(R"QML(
+import QtQuick
+import "%1" as EditorView
+
+EditorView.ContentsStructuredDocumentFlow {
+    id: flow
+    objectName: "flowRawMutationCommitHarness"
+    width: 420
+    height: 120
+    property int handlerCallCount: 0
+    property string lastNextSourceText: ""
+    sourceText: "Alpha beta"
+    documentBlocks: [
+        {
+            "atomicBlock": false,
+            "plainText": "Alpha beta",
+            "sourceStart": 0,
+            "sourceEnd": 10,
+            "sourceText": "Alpha beta",
+            "textEditable": true,
+            "type": "text-group"
+        }
+    ]
+    sourceMutationHandler: function (nextSourceText, _focusRequest) {
+        handlerCallCount += 1;
+        lastNextSourceText = String(nextSourceText || "");
+        return false;
+    }
+}
+)QML").arg(editorImportUrl);
+
+    QQmlComponent component(&engine);
+    component.setData(
+        qmlSource.toUtf8(),
+        QUrl::fromLocalFile(repositoryRoot + QStringLiteral("/test/flow-raw-mutation-commit.qml")));
+    if (component.status() == QQmlComponent::Error)
+    {
+        QFAIL(qPrintable(qmlStructuredEditorErrorString(component.errors())));
+    }
+
+    std::unique_ptr<QObject> flowObject(component.create());
+    if (!flowObject)
+    {
+        QFAIL(qPrintable(qmlStructuredEditorErrorString(component.errors())));
+    }
+
+    QSignalSpy mutationSpy(
+        flowObject.get(),
+        SIGNAL(sourceMutationRequested(QString,QVariant)));
+    QVERIFY2(mutationSpy.isValid(), "sourceMutationRequested signal must remain observable from C++ tests");
+
+    QVariantMap selectionSnapshot;
+    selectionSnapshot.insert(QStringLiteral("cursorPosition"), 5);
+    selectionSnapshot.insert(QStringLiteral("selectedText"), QStringLiteral("Alpha"));
+    selectionSnapshot.insert(QStringLiteral("selectionStart"), 0);
+    selectionSnapshot.insert(QStringLiteral("selectionEnd"), 5);
+
+    QVariant returnValue;
+    QVERIFY(QMetaObject::invokeMethod(
+        flowObject.get(),
+        "applyInlineFormatToBlockSelection",
+        Q_RETURN_ARG(QVariant, returnValue),
+        Q_ARG(QVariant, QVariant(0)),
+        Q_ARG(QVariant, QVariant(QStringLiteral("bold"))),
+        Q_ARG(QVariant, QVariant(selectionSnapshot))));
+    QVERIFY(!returnValue.toBool());
+    QCOMPARE(flowObject->property("handlerCallCount").toInt(), 1);
+    QCOMPARE(flowObject->property("lastNextSourceText").toString(), QStringLiteral("<bold>Alpha</bold> beta"));
+    QCOMPARE(mutationSpy.count(), 0);
+
+    const QString structuredFlowSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/content/editor/ContentsStructuredDocumentFlow.qml"));
+    const QString formattingControllerSource = readUtf8SourceFile(
+        QStringLiteral("src/app/models/editor/format/ContentsStructuredEditorFormattingController.qml"));
+    const QString surfaceHostSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/content/editor/ContentsDisplaySurfaceHost.qml"));
+    QVERIFY(structuredFlowSource.contains(QStringLiteral("property var sourceMutationHandler: null")));
+    QVERIFY(structuredFlowSource.contains(QStringLiteral("function requestSourceMutation(nextSourceText, focusRequest)")));
+    QVERIFY(formattingControllerSource.contains(QStringLiteral("return !!documentFlow.replaceSourceRange(")));
+    QVERIFY(surfaceHostSource.contains(QStringLiteral("sourceMutationHandler: function (nextSourceText, focusRequest)")));
+}
+
+void WhatSonCppRegressionTests::qmlStructuredEditors_bindSessionAndFlushTagMutationsToRawPersistence()
+{
+    const QString repositoryRoot = qmlStructuredEditorsRepositoryRootPath();
+    QQmlEngine engine;
+    addWhatSonStructuredEditorQmlImportPaths(engine, repositoryRoot);
+
+    const QString displayModelImportUrl =
+        QUrl::fromLocalFile(repositoryRoot + QStringLiteral("/src/app/models/editor/display")).toString();
+    const QString qmlSource = QStringLiteral(R"QML(
+import QtQuick
+import "%1" as EditorDisplayModel
+
+Item {
+    id: root
+    objectName: "mutationControllerRawPersistenceHarness"
+    property int clearPendingCount: 0
+    property int commitCount: 0
+    property int editorTextEditedCount: 0
+    property int flushCount: 0
+    property int stopRefreshCount: 0
+    property int syncCount: 0
+    property string editedText: ""
+    property string flushedText: ""
+
+    QtObject {
+        id: fakeContentsView
+        property bool editorInputFocused: false
+        property bool hasSelectedNote: true
+        property bool nativeTextInputPriority: true
+        property string documentPresentationSourceText: "Alpha"
+        property string editorText: ""
+        property string selectedNoteDirectoryPath: "/tmp/whatson-note"
+        property string selectedNoteId: "note-1"
+        property bool showDedicatedResourceViewer: false
+        property bool showFormattedTextRenderer: false
+        property bool showStructuredDocumentFlow: true
+        function editorTextEdited(text) {
+            root.editorTextEditedCount += 1;
+            root.editedText = String(text || "");
+            fakeContentsView.editorText = root.editedText;
+        }
+    }
+
+    QtObject {
+        id: fakeEditorSession
+        property string editorBoundNoteDirectoryPath: ""
+        property string editorBoundNoteId: ""
+        property string editorText: ""
+        property bool pendingBodySave: false
+        function requestSyncEditorTextFromSelection(noteId, text, _bodyNoteId, noteDirectoryPath) {
+            root.syncCount += 1;
+            editorBoundNoteId = String(noteId || "");
+            editorBoundNoteDirectoryPath = String(noteDirectoryPath || "");
+            editorText = String(text || "");
+            return true;
+        }
+        function commitRawEditorTextMutation(text) {
+            root.commitCount += 1;
+            editorText = String(text || "");
+            pendingBodySave = true;
+            fakeContentsView.editorText = editorText;
+            return true;
+        }
+        function persistEditorTextImmediatelyWithText(text) {
+            root.flushCount += 1;
+            root.flushedText = String(text || "");
+            return true;
+        }
+    }
+
+    QtObject {
+        id: fakeInputPolicyAdapter
+        property bool nativeCompositionActive: false
+        function shouldRestoreFocusForMutation(_focusRequest, _options) { return false; }
+    }
+
+    QtObject {
+        id: fakePresentationRefreshController
+        function clearPendingWhileFocused() { root.clearPendingCount += 1; }
+    }
+
+    QtObject {
+        id: fakeResourceImportController
+        function resourceTagLossDetected(_currentSourceText, _nextSourceText) { return false; }
+        function restoreEditorSurfaceFromPresentation() {}
+    }
+
+    QtObject {
+        id: fakeEventPump
+        function stopDocumentPresentationRefreshTimer() { root.stopRefreshCount += 1; }
+    }
+
+    EditorDisplayModel.ContentsDisplayMutationController {
+        id: mutationController
+        contentsView: fakeContentsView
+        editorInputPolicyAdapter: fakeInputPolicyAdapter
+        editorSession: fakeEditorSession
+        eventPump: fakeEventPump
+        presentationRefreshController: fakePresentationRefreshController
+        resourceImportController: fakeResourceImportController
+    }
+
+    function applyTagMutation() {
+        return mutationController.applyDocumentSourceMutation(
+                    "Alpha<bold></bold>",
+                    {
+                        "immediatePersistence": true,
+                        "mutationKind": "inline-format",
+                        "sourceOffset": 12
+                    });
+    }
+}
+)QML").arg(displayModelImportUrl);
+
+    QQmlComponent component(&engine);
+    component.setData(
+        qmlSource.toUtf8(),
+        QUrl::fromLocalFile(repositoryRoot + QStringLiteral("/test/mutation-raw-persistence.qml")));
+    if (component.status() == QQmlComponent::Error)
+    {
+        QFAIL(qPrintable(qmlStructuredEditorErrorString(component.errors())));
+    }
+
+    std::unique_ptr<QObject> rootObject(component.create());
+    if (!rootObject)
+    {
+        QFAIL(qPrintable(qmlStructuredEditorErrorString(component.errors())));
+    }
+
+    QVariant returnValue;
+    QVERIFY(QMetaObject::invokeMethod(
+        rootObject.get(),
+        "applyTagMutation",
+        Q_RETURN_ARG(QVariant, returnValue)));
+    QVERIFY(returnValue.toBool());
+    QCOMPARE(rootObject->property("syncCount").toInt(), 1);
+    QCOMPARE(rootObject->property("commitCount").toInt(), 1);
+    QCOMPARE(rootObject->property("flushCount").toInt(), 1);
+    QCOMPARE(rootObject->property("clearPendingCount").toInt(), 1);
+    QCOMPARE(rootObject->property("stopRefreshCount").toInt(), 1);
+    QCOMPARE(rootObject->property("editorTextEditedCount").toInt(), 1);
+    QCOMPARE(rootObject->property("editedText").toString(), QStringLiteral("Alpha<bold></bold>"));
+    QCOMPARE(rootObject->property("flushedText").toString(), QStringLiteral("Alpha<bold></bold>"));
+
+    const QString mutationControllerSource = readUtf8SourceFile(
+        QStringLiteral("src/app/models/editor/display/ContentsDisplayMutationController.qml"));
+    const QString selectionControllerSource = readUtf8SourceFile(
+        QStringLiteral("src/app/models/editor/input/ContentsEditorSelectionController.qml"));
+    QVERIFY(mutationControllerSource.contains(QStringLiteral("ensureEditorSessionBoundForSourceMutation")));
+    QVERIFY(mutationControllerSource.contains(QStringLiteral("persistEditorTextImmediatelyWithText")));
+    QVERIFY(mutationControllerSource.contains(QStringLiteral("focusRequestRequiresImmediatePersistence")));
+    QVERIFY(selectionControllerSource.contains(QStringLiteral("persistEditorTextImmediatelyWithText")));
+}
+
+void WhatSonCppRegressionTests::qmlStructuredEditors_pressRightClickRequestsContextMenuAndFocusedBodyTagShortcuts()
+{
+    registerStructuredEditorRuntimeQmlTypes();
+
+    const QString repositoryRoot = qmlStructuredEditorsRepositoryRootPath();
+    QQmlEngine engine;
+    addWhatSonStructuredEditorQmlImportPaths(engine, repositoryRoot);
+
+    const QString displayModelImportUrl =
+        QUrl::fromLocalFile(repositoryRoot + QStringLiteral("/src/app/models/editor/display")).toString();
+    const QString qmlSource = QStringLiteral(R"QML(
+import QtQuick
+import "%1" as EditorDisplayModel
+
+Item {
+    id: root
+    objectName: "inputCommandSurfaceHarness"
+    width: 360
+    height: 160
+    property int agendaShortcutCount: 0
+    property int breakShortcutCount: 0
+    property int calloutShortcutCount: 0
+    property int contextMenuPrimeCount: 0
+    property int contextMenuRequestCount: 0
+    property string lastContextMenuTrigger: ""
+
+    QtObject {
+        id: resourceImportController
+        function pasteClipboardImageAsResource() { return false; }
+    }
+
+    Item {
+        id: contentsView
+        objectName: "inputCommandSurfaceContentsView"
+        property bool contextMenuLongPressEnabled: true
+        property var editorSelectionContextMenuItems: [
+            { "label": "Bold", "eventName": "editor.format.bold" }
+        ]
+        property bool noteDocumentContextMenuSurfaceEnabled: true
+        property bool noteDocumentTagManagementShortcutSurfaceEnabled: true
+        property var resourcesImportViewModel: null
+
+        function handleSelectionContextMenuEvent(_eventName) {}
+        function primeEditorSelectionContextMenuSnapshot() {
+            root.contextMenuPrimeCount += 1;
+            return true;
+        }
+        function queueAgendaShortcutInsertion() {
+            root.agendaShortcutCount += 1;
+            return true;
+        }
+        function queueBreakShortcutInsertion() {
+            root.breakShortcutCount += 1;
+            return true;
+        }
+        function queueCalloutShortcutInsertion() {
+            root.calloutShortcutCount += 1;
+            return true;
+        }
+        function queueInlineFormatWrap(_tagName) { return false; }
+        function requestEditorSelectionContextMenuFromPointer(_x, _y, triggerKind) {
+            root.contextMenuRequestCount += 1;
+            root.lastContextMenuTrigger = String(triggerKind);
+            return true;
+        }
+    }
+
+    EditorDisplayModel.ContentsDisplayInputCommandSurface {
+        id: commandSurface
+        objectName: "inputCommandSurfaceUnderTest"
+        anchors.fill: parent
+        contentsView: contentsView
+        resourceImportController: resourceImportController
+    }
+
+    EditorDisplayModel.ContentsDisplayInputOrchestrationModel {
+        id: inputOrchestration
+        objectName: "inputOrchestrationUnderTest"
+        contentsView: contentsView
+        resourceImportController: resourceImportController
+    }
+}
+)QML").arg(displayModelImportUrl);
+
+    QQmlComponent component(&engine);
+    component.setData(
+        qmlSource.toUtf8(),
+        QUrl::fromLocalFile(repositoryRoot + QStringLiteral("/test/input-command-surface-formatting.qml")));
+    if (component.status() == QQmlComponent::Error)
+    {
+        QFAIL(qPrintable(qmlStructuredEditorErrorString(component.errors())));
+    }
+
+    std::unique_ptr<QObject> rootObject(component.create());
+    if (!rootObject)
+    {
+        QFAIL(qPrintable(qmlStructuredEditorErrorString(component.errors())));
+    }
+
+    auto* rootItem = qobject_cast<QQuickItem*>(rootObject.get());
+    QVERIFY(rootItem != nullptr);
+
+    QQuickWindow window;
+    window.resize(360, 160);
+    rootItem->setParentItem(window.contentItem());
+    window.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&window));
+
+    QTest::mousePress(&window, Qt::RightButton, Qt::NoModifier, QPoint(48, 36));
+    QTRY_COMPARE(rootObject->property("contextMenuPrimeCount").toInt(), 1);
+    QTRY_COMPARE(rootObject->property("contextMenuRequestCount").toInt(), 1);
+    QCOMPARE(rootObject->property("lastContextMenuTrigger").toString(), QStringLiteral("rightClick"));
+    QTest::mouseRelease(&window, Qt::RightButton, Qt::NoModifier, QPoint(48, 36));
+
+    QObject* inputOrchestration =
+        rootObject->findChild<QObject*>(QStringLiteral("inputOrchestrationUnderTest"));
+    QVERIFY(inputOrchestration != nullptr);
+
+    QVariantMap agendaEvent;
+    agendaEvent.insert(QStringLiteral("key"), static_cast<int>(Qt::Key_T));
+    agendaEvent.insert(
+        QStringLiteral("modifiers"),
+        static_cast<int>(Qt::ControlModifier | Qt::AltModifier));
+    agendaEvent.insert(QStringLiteral("text"), QStringLiteral("t"));
+
+    QVariant agendaReturnValue;
+    QVERIFY(QMetaObject::invokeMethod(
+        inputOrchestration,
+        "handleTagManagementShortcutKeyPress",
+        Q_RETURN_ARG(QVariant, agendaReturnValue),
+        Q_ARG(QVariant, QVariant(agendaEvent))));
+    QVERIFY(agendaReturnValue.toBool());
+    QCOMPARE(rootObject->property("agendaShortcutCount").toInt(), 1);
+
+    QVariantMap calloutEvent = agendaEvent;
+    calloutEvent.insert(QStringLiteral("key"), static_cast<int>(Qt::Key_C));
+    calloutEvent.insert(QStringLiteral("text"), QStringLiteral("c"));
+
+    QVariant calloutReturnValue;
+    QVERIFY(QMetaObject::invokeMethod(
+        inputOrchestration,
+        "handleTagManagementShortcutKeyPress",
+        Q_RETURN_ARG(QVariant, calloutReturnValue),
+        Q_ARG(QVariant, QVariant(calloutEvent))));
+    QVERIFY(calloutReturnValue.toBool());
+    QCOMPARE(rootObject->property("calloutShortcutCount").toInt(), 1);
+
+    QVariantMap breakEvent;
+    breakEvent.insert(QStringLiteral("key"), static_cast<int>(Qt::Key_H));
+    breakEvent.insert(
+        QStringLiteral("modifiers"),
+        static_cast<int>(Qt::ControlModifier | Qt::ShiftModifier));
+    breakEvent.insert(QStringLiteral("text"), QStringLiteral("h"));
+
+    QVariant breakReturnValue;
+    QVERIFY(QMetaObject::invokeMethod(
+        inputOrchestration,
+        "handleTagManagementShortcutKeyPress",
+        Q_RETURN_ARG(QVariant, breakReturnValue),
+        Q_ARG(QVariant, QVariant(breakEvent))));
+    QVERIFY(breakReturnValue.toBool());
+    QCOMPARE(rootObject->property("breakShortcutCount").toInt(), 1);
+}
+
 void WhatSonCppRegressionTests::qmlStructuredEditors_mapsBottomMarginToTerminalBodyClick()
 {
     registerStructuredEditorRuntimeQmlTypes();
@@ -1911,6 +2321,8 @@ void WhatSonCppRegressionTests::qmlStructuredEditors_lockCustomInputToTagManagem
         QStringLiteral("src/app/models/editor/input/ContentsBreakBlockController.qml"));
     const QString textBlockSource = readUtf8SourceFile(
         QStringLiteral("src/app/qml/view/content/editor/ContentsDocumentTextBlock.qml"));
+    const QString inlineEditorSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/content/editor/ContentsInlineFormatEditor.qml"));
     const QString agendaBlockSource = readUtf8SourceFile(
         QStringLiteral("src/app/qml/view/content/editor/ContentsAgendaBlock.qml"));
     const QString calloutBlockSource = readUtf8SourceFile(
@@ -1936,6 +2348,7 @@ void WhatSonCppRegressionTests::qmlStructuredEditors_lockCustomInputToTagManagem
     QVERIFY(!breakBlockSource.isEmpty());
     QVERIFY(!breakBlockControllerSource.isEmpty());
     QVERIFY(!textBlockSource.isEmpty());
+    QVERIFY(!inlineEditorSource.isEmpty());
     QVERIFY(!agendaBlockSource.isEmpty());
     QVERIFY(!calloutBlockSource.isEmpty());
     QVERIFY(!selectionControllerSource.isEmpty());
@@ -1955,7 +2368,11 @@ void WhatSonCppRegressionTests::qmlStructuredEditors_lockCustomInputToTagManagem
     QVERIFY(displayViewSource.contains(QStringLiteral("function handleTagManagementShortcutKeyPress(event)")));
     QVERIFY(displayViewSource.contains(QStringLiteral("function inlineFormatShortcutTag(event)")));
     QVERIFY(displayViewSource.contains(QStringLiteral("function handleInlineFormatTagShortcut(event)")));
+    QVERIFY(inputOrchestrationModelSource.contains(QStringLiteral("function handleBodyTagShortcut(event)")));
     QVERIFY(inputOrchestrationModelSource.contains(QStringLiteral("model.contentsView.queueInlineFormatWrap(tagName)")));
+    QVERIFY(inputOrchestrationModelSource.contains(QStringLiteral("model.contentsView.queueAgendaShortcutInsertion()")));
+    QVERIFY(inputOrchestrationModelSource.contains(QStringLiteral("model.contentsView.queueCalloutShortcutInsertion()")));
+    QVERIFY(inputOrchestrationModelSource.contains(QStringLiteral("model.contentsView.queueBreakShortcutInsertion()")));
     QVERIFY(selectionOrchestrationModelSource.contains(QStringLiteral("model.selectionMountViewModel.scheduleSelectionModelSync(options);")));
     QVERIFY(presentationOrchestrationModelSource.contains(QStringLiteral("model.presentationViewModel.scheduleDocumentPresentationRefresh(forceImmediate);")));
     QVERIFY(surfaceHostSource.contains(QStringLiteral("tagManagementShortcutKeyPressHandler: function (event)")));
@@ -1973,6 +2390,8 @@ void WhatSonCppRegressionTests::qmlStructuredEditors_lockCustomInputToTagManagem
     QVERIFY(structuredFlowSource.contains(QStringLiteral("property var tagManagementShortcutKeyPressHandler: null")));
     QVERIFY(structuredFlowSource.contains(QStringLiteral("function blockEntryIsTagManagedAtomicBlock(blockEntry)")));
     QVERIFY(structuredFlowSource.contains(QStringLiteral("function handleActiveTagManagementKeyPress(event)")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("function eventRequestsBodyTagShortcut(event)")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("!control.eventRequestsBodyTagShortcut(event)")));
     QVERIFY(!structuredFlowSource.contains(QStringLiteral("property var shortcutKeyPressHandler")));
     QVERIFY(!structuredFlowSource.contains(QStringLiteral("function handleActiveBlockDeleteKeyPress(event)")));
 

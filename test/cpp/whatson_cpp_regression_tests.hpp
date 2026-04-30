@@ -1045,6 +1045,9 @@ private slots:
     void qmlStructuredEditors_insertStructuredShortcutsThroughRawSourceMutations();
     void qmlStructuredEditors_acceptsPlatformCommandModifierForInlineFormatting();
     void qmlStructuredEditors_routesInlineFormatShortcutThroughDocumentFlow();
+    void qmlStructuredEditors_requireCommittedRawMutationForTagCommands();
+    void qmlStructuredEditors_bindSessionAndFlushTagMutationsToRawPersistence();
+    void qmlStructuredEditors_pressRightClickRequestsContextMenuAndFocusedBodyTagShortcuts();
     void qmlStructuredEditors_mapsBottomMarginToTerminalBodyClick();
     void qmlStructuredEditors_backspaceDeletesPreviousResourceFromEmptyTextBlock();
     void qmlStructuredEditors_deletesEmptyCalloutWithBackspace();

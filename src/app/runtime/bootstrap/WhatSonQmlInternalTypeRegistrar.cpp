@@ -16,9 +16,13 @@
 #include "app/models/editor/display/ContentsDisplayContextMenuCoordinator.hpp"
 #include "app/models/editor/display/ContentsDisplayDocumentSourceResolver.hpp"
 #include "app/models/editor/display/ContentsDisplayEditOperationCoordinator.hpp"
+#include "app/models/editor/display/ContentsDisplayGeometryState.hpp"
 #include "app/models/editor/display/ContentsDisplayGutterCoordinator.hpp"
+#include "app/models/editor/display/ContentsDisplayHostModePolicy.hpp"
 #include "app/models/editor/display/ContentsDisplayMinimapCoordinator.hpp"
 #include "app/models/editor/display/ContentsDisplayNoteBodyMountCoordinator.hpp"
+#include "app/models/editor/display/ContentsDisplayPresentationState.hpp"
+#include "app/models/editor/display/ContentsDisplayResourceUiState.hpp"
 #include "app/models/content/mobile/MobileHierarchyBackSwipeCoordinator.hpp"
 #include "app/models/content/mobile/MobileHierarchyCanonicalRoutePlanner.hpp"
 #include "app/models/content/mobile/MobileHierarchyNavigationCoordinator.hpp"
@@ -38,12 +42,22 @@
 #include "app/models/editor/bridge/ContentsGutterMarkerBridge.hpp"
 #include "app/models/editor/text/ContentsLogicalTextBridge.hpp"
 #include "app/models/editor/tags/ContentsResourceTagTextGenerator.hpp"
+#include "app/models/editor/tags/ContentsResourceTagController.hpp"
 #include "app/models/editor/structure/ContentsStructuredDocumentBlocksModel.hpp"
 #include "app/models/editor/structure/ContentsStructuredDocumentCollectionPolicy.hpp"
 #include "app/models/editor/structure/ContentsStructuredDocumentFocusPolicy.hpp"
 #include "app/models/editor/structure/ContentsStructuredDocumentHost.hpp"
 #include "app/models/editor/structure/ContentsStructuredDocumentMutationPolicy.hpp"
+#include "app/models/editor/resource/ContentsEditorSurfaceGuardController.hpp"
+#include "app/models/editor/resource/ContentsInlineResourcePresentationController.hpp"
+#include "app/models/editor/resource/ContentsResourceDropPayloadParser.hpp"
+#include "app/models/editor/resource/ContentsResourceImportConflictController.hpp"
+#include "app/models/editor/resource/ContentsResourceImportController.hpp"
+#include "app/models/editor/input/ContentsBreakBlockController.hpp"
+#include "app/models/editor/input/ContentsEditorInputPolicyAdapter.hpp"
+#include "app/models/editor/input/ContentsRemainingInputControllers.hpp"
 #include "app/viewmodel/editor/display/ContentsDisplayGeometryViewModel.hpp"
+#include "app/viewmodel/editor/display/ContentsDisplayInteractionViewModel.hpp"
 #include "app/viewmodel/editor/display/ContentsDisplayMutationViewModel.hpp"
 #include "app/viewmodel/editor/display/ContentsDisplayPresentationViewModel.hpp"
 #include "app/viewmodel/editor/display/ContentsDisplaySelectionMountViewModel.hpp"
@@ -78,8 +92,12 @@ namespace
                 QStringLiteral("ContentsDisplaySelectionSyncCoordinator")),
             whatsonInternalCreatableType<ContentsDisplayPresentationRefreshController>(
                 QStringLiteral("ContentsDisplayPresentationRefreshController")),
+            whatsonInternalCreatableType<ContentsDisplayPresentationState>(
+                QStringLiteral("ContentsDisplayPresentationState")),
             whatsonInternalCreatableType<ContentsDisplayRefreshCoordinator>(
                 QStringLiteral("ContentsDisplayRefreshCoordinator")),
+            whatsonInternalCreatableType<ContentsDisplayResourceUiState>(
+                QStringLiteral("ContentsDisplayResourceUiState")),
             whatsonInternalCreatableType<ContentsDisplayContextMenuCoordinator>(
                 QStringLiteral("ContentsDisplayContextMenuCoordinator")),
             whatsonInternalCreatableType<ContentsDisplayGutterCoordinator>(
@@ -92,6 +110,10 @@ namespace
                 QStringLiteral("ContentsDisplayDocumentSourceResolver")),
             whatsonInternalCreatableType<ContentsDisplayEditOperationCoordinator>(
                 QStringLiteral("ContentsDisplayEditOperationCoordinator")),
+            whatsonInternalCreatableType<ContentsDisplayGeometryState>(
+                QStringLiteral("ContentsDisplayGeometryState")),
+            whatsonInternalCreatableType<ContentsDisplayHostModePolicy>(
+                QStringLiteral("ContentsDisplayHostModePolicy")),
             whatsonInternalCreatableType<MobileHierarchyBackSwipeCoordinator>(
                 QStringLiteral("MobileHierarchyBackSwipeCoordinator")),
             whatsonInternalCreatableType<MobileHierarchyCanonicalRoutePlanner>(
@@ -122,6 +144,18 @@ namespace
                 QStringLiteral("ContentsGutterMarkerBridge")),
             whatsonInternalCreatableType<ContentsResourceTagTextGenerator>(
                 QStringLiteral("ContentsResourceTagTextGenerator")),
+            whatsonInternalCreatableType<ContentsResourceTagController>(
+                QStringLiteral("ContentsResourceTagController")),
+            whatsonInternalCreatableType<ContentsResourceDropPayloadParser>(
+                QStringLiteral("ContentsResourceDropPayloadParser")),
+            whatsonInternalCreatableType<ContentsEditorSurfaceGuardController>(
+                QStringLiteral("ContentsEditorSurfaceGuardController")),
+            whatsonInternalCreatableType<ContentsInlineResourcePresentationController>(
+                QStringLiteral("ContentsInlineResourcePresentationController")),
+            whatsonInternalCreatableType<ContentsResourceImportConflictController>(
+                QStringLiteral("ContentsResourceImportConflictController")),
+            whatsonInternalCreatableType<ContentsResourceImportController>(
+                QStringLiteral("ContentsResourceImportController")),
             whatsonInternalCreatableType<ContentsStructuredDocumentBlocksModel>(
                 QStringLiteral("ContentsStructuredDocumentBlocksModel")),
             whatsonInternalCreatableType<ContentsStructuredDocumentCollectionPolicy>(
@@ -132,8 +166,30 @@ namespace
                 QStringLiteral("ContentsStructuredDocumentHost")),
             whatsonInternalCreatableType<ContentsStructuredDocumentMutationPolicy>(
                 QStringLiteral("ContentsStructuredDocumentMutationPolicy")),
+            whatsonInternalCreatableType<ContentsBreakBlockController>(
+                QStringLiteral("ContentsBreakBlockController")),
+            whatsonInternalCreatableType<ContentsEditorInputPolicyAdapter>(
+                QStringLiteral("ContentsEditorInputPolicyAdapter")),
+            whatsonInternalCreatableType<ContentsAgendaBlockController>(
+                QStringLiteral("ContentsAgendaBlockController")),
+            whatsonInternalCreatableType<ContentsAgendaTaskRowController>(
+                QStringLiteral("ContentsAgendaTaskRowController")),
+            whatsonInternalCreatableType<ContentsCalloutBlockController>(
+                QStringLiteral("ContentsCalloutBlockController")),
+            whatsonInternalCreatableType<ContentsDocumentBlockController>(
+                QStringLiteral("ContentsDocumentBlockController")),
+            whatsonInternalCreatableType<ContentsDocumentTextBlockController>(
+                QStringLiteral("ContentsDocumentTextBlockController")),
+            whatsonInternalCreatableType<ContentsEditorSelectionController>(
+                QStringLiteral("ContentsEditorSelectionController")),
+            whatsonInternalCreatableType<ContentsEditorTypingController>(
+                QStringLiteral("ContentsEditorTypingController")),
+            whatsonInternalCreatableType<ContentsInlineFormatEditorController>(
+                QStringLiteral("ContentsInlineFormatEditorController")),
             whatsonInternalCreatableType<ContentsDisplayGeometryViewModel>(
                 QStringLiteral("ContentsDisplayGeometryViewModel")),
+            whatsonInternalCreatableType<ContentsDisplayInteractionViewModel>(
+                QStringLiteral("ContentsDisplayInteractionViewModel")),
             whatsonInternalCreatableType<ContentsDisplayMutationViewModel>(
                 QStringLiteral("ContentsDisplayMutationViewModel")),
             whatsonInternalCreatableType<ContentsDisplayPresentationViewModel>(

@@ -14,4 +14,7 @@ Owns the C++ editor session controller.
   session, persistence, or synchronization policy.
 - Local editor mutations must enter through `commitRawEditorTextMutation(...)`; QML controllers may build candidate RAW
   text, but they must not write `editorText`, mark local authority, or schedule persistence themselves.
+- Explicit tag-management mutations may follow that session commit with
+  `persistEditorTextImmediatelyWithText(...)` so discrete RAW tag insertions are flushed through the same persistence
+  boundary without waiting for the idle typing path.
 - Persistence decisions must still route through RAW `.wsnote/.wsnbody` mutation and sync paths.

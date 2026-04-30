@@ -1,8 +1,8 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import WhatSon.App.Internal 1.0
 import LVRS 1.0 as LV
-import "../../../../models/editor/input" as EditorInputModel
 
 FocusScope {
     id: breakBlock
@@ -86,7 +86,7 @@ FocusScope {
         }
     }
 
-    EditorInputModel.ContentsBreakBlockController {
+    ContentsBreakBlockController {
         id: breakBlockController
 
         breakBlock: breakBlock

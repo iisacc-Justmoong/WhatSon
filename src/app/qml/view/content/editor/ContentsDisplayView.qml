@@ -3,9 +3,6 @@ import QtQuick
 import WhatSon.App.Internal 1.0
 import LVRS 1.0 as LV
 import "../../../../models/editor/diagnostics/ContentsEditorDebugTrace.js" as EditorTrace
-import "../../../../models/editor/display" as EditorDisplayModel
-import "../../../../models/editor/input" as EditorInputModel
-import "../../../../models/editor/resource" as EditorResourceModel
 
 Item {
     id: contentsView
@@ -295,29 +292,29 @@ Item {
     signal editorTextEdited(string text)
     signal viewHookRequested
 
-    EditorDisplayModel.ContentsDisplayGeometryState {
+    ContentsDisplayGeometryState {
         id: geometryState
     }
-    EditorDisplayModel.ContentsDisplayPresentationState {
+    ContentsDisplayPresentationState {
         id: presentationState
     }
-    EditorDisplayModel.ContentsDisplayResourceUiState {
+    ContentsDisplayResourceUiState {
         id: resourceUiState
     }
-    EditorDisplayModel.ContentsDisplayMountState {
+    ContentsDisplayMountState {
         id: mountState
 
         editorSession: editorSession
         noteBodyMountCoordinator: noteBodyMountCoordinator
         selectionBridge: selectionBridge
     }
-    EditorDisplayModel.ContentsDisplayInputState {
+    ContentsDisplayInputState {
         id: inputState
 
         editorInputPolicyAdapter: editorInputPolicyAdapter
         surfacePolicy: surfacePolicy
     }
-    EditorDisplayModel.ContentsDisplayGeometrySnapshotModel {
+    ContentsDisplayGeometrySnapshotModel {
         id: geometrySnapshotModel
 
         contentsView: contentsView
@@ -329,45 +326,19 @@ Item {
         structuredFlowCoordinator: structuredFlowCoordinator
         viewportCoordinator: viewportCoordinator
     }
-    EditorDisplayModel.ContentsDisplayViewportModel {
+    ContentsDisplayViewportModel {
         id: viewportModel
 
         contentsView: contentsView
         structuredDocumentFlow: structuredDocumentFlow
         viewportCoordinator: viewportCoordinator
     }
-    EditorDisplayModel.ContentsDisplayInputOrchestrationModel {
-        id: inputOrchestrationModel
-
-        contentsView: contentsView
-        contextMenuCoordinator: contextMenuCoordinator
-        editorSelectionController: editorSelectionController
-        editorViewport: editorViewport
-        resourceImportController: resourceImportController
-        structuredDocumentFlow: structuredDocumentFlow
-    }
-    EditorDisplayModel.ContentsDisplaySelectionOrchestrationModel {
-        id: selectionOrchestrationModel
-
-        contentsView: contentsView
-        editorInputPolicyAdapter: editorInputPolicyAdapter
-        selectionMountViewModel: selectionMountViewModel
-        structuredDocumentFlow: structuredDocumentFlow
-    }
-    EditorDisplayModel.ContentsDisplayPresentationOrchestrationModel {
-        id: presentationOrchestrationModel
-
-        contentsView: contentsView
-        presentationViewModel: presentationViewModel
-        structuredDocumentFlow: structuredDocumentFlow
-    }
-
     function activeLogicalTextSnapshot() { return geometrySnapshotModel.activeLogicalTextSnapshot(); }
     function normalizedSnapshotEntries(rawEntries) { return geometrySnapshotModel.normalizedSnapshotEntries(rawEntries); }
     function hasStructuredLogicalLineGeometry() { return geometrySnapshotModel.hasStructuredLogicalLineGeometry(); }
     function effectiveStructuredMinimapEntries() { return geometrySnapshotModel.effectiveStructuredMinimapEntries(); }
     function hasStructuredMinimapEntries() { return geometrySnapshotModel.hasStructuredMinimapEntries(); }
-    function logEditorCreationState(reason) { presentationOrchestrationModel.logEditorCreationState(reason); }
+    function logEditorCreationState(reason) { interactionViewModel.logEditorCreationState(reason); }
     function normalizedStructuredLogicalLineEntries() { return geometrySnapshotModel.normalizedStructuredLogicalLineEntries(); }
     function structuredLogicalLineEntryAt(lineNumber) { return geometrySnapshotModel.structuredLogicalLineEntryAt(lineNumber); }
     function effectiveStructuredLogicalLineEntries() { return geometrySnapshotModel.effectiveStructuredLogicalLineEntries(); }
@@ -583,28 +554,28 @@ Item {
         }
         return Math.max(1, Math.min(contentsView.logicalLineCount, contentsView.logicalLineNumberForDocumentY(firstVisibleDocumentY)));
     }
-    function shouldFlushBlurredEditorState(scheduledNoteId) { return selectionOrchestrationModel.shouldFlushBlurredEditorState(scheduledNoteId); }
-    function nativeEditorCompositionActive() { return selectionOrchestrationModel.nativeEditorCompositionActive(); }
-    function nativeTextInputSessionOwnsKeyboard() { return selectionOrchestrationModel.nativeTextInputSessionOwnsKeyboard(); }
-    function flushEditorStateAfterInputSettles(scheduledNoteId) { selectionOrchestrationModel.flushEditorStateAfterInputSettles(scheduledNoteId); }
-    function focusEditorForSelectedNoteId(noteId) { selectionOrchestrationModel.focusEditorForSelectedNoteId(noteId); }
-    function focusEditorForPendingNote() { selectionOrchestrationModel.focusEditorForPendingNote(); }
-    function eventRequestsPasteShortcut(event) { return inputOrchestrationModel.eventRequestsPasteShortcut(event); }
-    function inlineFormatShortcutTag(event) { return inputOrchestrationModel.inlineFormatShortcutTag(event); }
-    function handleInlineFormatTagShortcut(event) { return inputOrchestrationModel.handleInlineFormatTagShortcut(event); }
-    function clipboardImageAvailableForPaste() { return inputOrchestrationModel.clipboardImageAvailableForPaste(); }
-    function handleClipboardImagePasteShortcut(event) { return inputOrchestrationModel.handleClipboardImagePasteShortcut(event); }
-    function handleTagManagementShortcutKeyPress(event) { return inputOrchestrationModel.handleTagManagementShortcutKeyPress(event); }
-    function handleSelectionContextMenuEvent(eventName) { return inputOrchestrationModel.handleSelectionContextMenuEvent(eventName); }
-    function commitDocumentPresentationRefresh() { presentationOrchestrationModel.commitDocumentPresentationRefresh(); }
-    function documentPresentationRenderDirty() { return presentationOrchestrationModel.documentPresentationRenderDirty(); }
+    function shouldFlushBlurredEditorState(scheduledNoteId) { return interactionViewModel.shouldFlushBlurredEditorState(scheduledNoteId); }
+    function nativeEditorCompositionActive() { return interactionViewModel.nativeEditorCompositionActive(); }
+    function nativeTextInputSessionOwnsKeyboard() { return interactionViewModel.nativeTextInputSessionOwnsKeyboard(); }
+    function flushEditorStateAfterInputSettles(scheduledNoteId) { interactionViewModel.flushEditorStateAfterInputSettles(scheduledNoteId); }
+    function focusEditorForSelectedNoteId(noteId) { interactionViewModel.focusEditorForSelectedNoteId(noteId); }
+    function focusEditorForPendingNote() { interactionViewModel.focusEditorForPendingNote(); }
+    function eventRequestsPasteShortcut(event) { return interactionViewModel.eventRequestsPasteShortcut(event); }
+    function inlineFormatShortcutTag(event) { return interactionViewModel.inlineFormatShortcutTag(event); }
+    function handleInlineFormatTagShortcut(event) { return interactionViewModel.handleInlineFormatTagShortcut(event); }
+    function clipboardImageAvailableForPaste() { return interactionViewModel.clipboardImageAvailableForPaste(); }
+    function handleClipboardImagePasteShortcut(event) { return interactionViewModel.handleClipboardImagePasteShortcut(event); }
+    function handleTagManagementShortcutKeyPress(event) { return interactionViewModel.handleTagManagementShortcutKeyPress(event); }
+    function handleSelectionContextMenuEvent(eventName) { return interactionViewModel.handleSelectionContextMenuEvent(eventName); }
+    function commitDocumentPresentationRefresh() { interactionViewModel.commitDocumentPresentationRefresh(); }
+    function documentPresentationRenderDirty() { return interactionViewModel.documentPresentationRenderDirty(); }
     function inferSelectionRangeFromSelectedText(selectedText, cursorPosition) {
         return editorSelectionController.inferSelectionRangeFromSelectedText(selectedText, cursorPosition);
     }
     function inlineStyleWrapTags(styleTag) {
         return editorSelectionController.inlineStyleWrapTags(styleTag);
     }
-    function refreshInlineResourcePresentation() { presentationOrchestrationModel.refreshInlineResourcePresentation(); }
+    function refreshInlineResourcePresentation() { interactionViewModel.refreshInlineResourcePresentation(); }
     function isMinimapScrollable() { return viewportModel.isMinimapScrollable(); }
     function lineDocumentY(lineNumber) { return viewportModel.lineDocumentY(lineNumber); }
     function gutterLineDocumentY(lineNumber) { return viewportModel.gutterLineDocumentY(lineNumber); }
@@ -627,46 +598,28 @@ Item {
     function normalizeInlineStyleTag(tagName) {
         return editorSelectionController.normalizeInlineStyleTag(tagName);
     }
-    function encodeXmlAttributeValue(value) { return inputOrchestrationModel.encodeXmlAttributeValue(value); }
-    function resetStructuredSelectionContextMenuSnapshot() { return inputOrchestrationModel.resetStructuredSelectionContextMenuSnapshot(); }
-    function primeStructuredSelectionContextMenuSnapshot() { return inputOrchestrationModel.primeStructuredSelectionContextMenuSnapshot(); }
-    function handleStructuredSelectionContextMenuEvent(eventName) { return inputOrchestrationModel.handleStructuredSelectionContextMenuEvent(eventName); }
-    function openEditorSelectionContextMenu(localX, localY) { return inputOrchestrationModel.openEditorSelectionContextMenu(localX, localY); }
-    function editorContextMenuPointerTriggerAccepted(triggerKind) { return inputOrchestrationModel.editorContextMenuPointerTriggerAccepted(triggerKind); }
-    function requestEditorSelectionContextMenuFromPointer(localX, localY, triggerKind) { return inputOrchestrationModel.requestEditorSelectionContextMenuFromPointer(localX, localY, triggerKind); }
-    function editorSelectionContextMenuSnapshotValid() { return inputOrchestrationModel.editorSelectionContextMenuSnapshotValid(); }
-    function ensureEditorSelectionContextMenuSnapshot() { return inputOrchestrationModel.ensureEditorSelectionContextMenuSnapshot(); }
-    function primeEditorSelectionContextMenuSnapshot() { return inputOrchestrationModel.primeEditorSelectionContextMenuSnapshot(); }
-    function persistEditorTextImmediately(nextText) {
-        return mutationViewModel.persistEditorTextImmediately(nextText);
-    }
-    function scheduleEditorEntrySnapshotReconcile() { selectionOrchestrationModel.scheduleEditorEntrySnapshotReconcile(); }
-    function pollSelectedNoteSnapshot() { selectionOrchestrationModel.pollSelectedNoteSnapshot(); }
-    function reconcileEditorEntrySnapshotOnce() { return selectionOrchestrationModel.reconcileEditorEntrySnapshotOnce(); }
-    function queueStructuredInlineFormatWrap(tagName) {
-        return mutationViewModel.queueStructuredInlineFormatWrap(tagName);
-    }
-    function queueInlineFormatWrap(tagName) {
-        return mutationViewModel.queueInlineFormatWrap(tagName);
-    }
-    function queueAgendaShortcutInsertion() {
-        return mutationViewModel.queueAgendaShortcutInsertion();
-    }
-    function queueCalloutShortcutInsertion() {
-        return mutationViewModel.queueCalloutShortcutInsertion();
-    }
-    function queueBreakShortcutInsertion() {
-        return mutationViewModel.queueBreakShortcutInsertion();
-    }
-    function focusStructuredBlockSourceOffset(sourceOffset) {
-        mutationViewModel.focusStructuredBlockSourceOffset(sourceOffset);
-    }
-    function applyDocumentSourceMutation(nextSourceText, focusRequest) {
-        return mutationViewModel.applyDocumentSourceMutation(nextSourceText, focusRequest);
-    }
-    function setAgendaTaskDone(taskOpenTagStart, taskOpenTagEnd, checked) {
-        return mutationViewModel.setAgendaTaskDone(taskOpenTagStart, taskOpenTagEnd, checked);
-    }
+    function encodeXmlAttributeValue(value) { return interactionViewModel.encodeXmlAttributeValue(value); }
+    function resetStructuredSelectionContextMenuSnapshot() { interactionViewModel.resetStructuredSelectionContextMenuSnapshot(); }
+    function primeStructuredSelectionContextMenuSnapshot() { return interactionViewModel.primeStructuredSelectionContextMenuSnapshot(); }
+    function handleStructuredSelectionContextMenuEvent(eventName) { return interactionViewModel.handleStructuredSelectionContextMenuEvent(eventName); }
+    function openEditorSelectionContextMenu(localX, localY) { return interactionViewModel.openEditorSelectionContextMenu(localX, localY); }
+    function editorContextMenuPointerTriggerAccepted(triggerKind) { return interactionViewModel.editorContextMenuPointerTriggerAccepted(triggerKind); }
+    function requestEditorSelectionContextMenuFromPointer(localX, localY, triggerKind) { return interactionViewModel.requestEditorSelectionContextMenuFromPointer(localX, localY, triggerKind); }
+    function editorSelectionContextMenuSnapshotValid() { return interactionViewModel.editorSelectionContextMenuSnapshotValid(); }
+    function ensureEditorSelectionContextMenuSnapshot() { return interactionViewModel.ensureEditorSelectionContextMenuSnapshot(); }
+    function primeEditorSelectionContextMenuSnapshot() { return interactionViewModel.primeEditorSelectionContextMenuSnapshot(); }
+    function persistEditorTextImmediately(nextText) { return interactionViewModel.persistEditorTextImmediately(nextText); }
+    function scheduleEditorEntrySnapshotReconcile() { interactionViewModel.scheduleEditorEntrySnapshotReconcile(); }
+    function pollSelectedNoteSnapshot() { interactionViewModel.pollSelectedNoteSnapshot(); }
+    function reconcileEditorEntrySnapshotOnce() { return interactionViewModel.reconcileEditorEntrySnapshotOnce(); }
+    function queueStructuredInlineFormatWrap(tagName) { return interactionViewModel.queueStructuredInlineFormatWrap(tagName); }
+    function queueInlineFormatWrap(tagName) { return interactionViewModel.queueInlineFormatWrap(tagName); }
+    function queueAgendaShortcutInsertion() { return interactionViewModel.queueAgendaShortcutInsertion(); }
+    function queueCalloutShortcutInsertion() { return interactionViewModel.queueCalloutShortcutInsertion(); }
+    function queueBreakShortcutInsertion() { return interactionViewModel.queueBreakShortcutInsertion(); }
+    function focusStructuredBlockSourceOffset(sourceOffset) { interactionViewModel.focusStructuredBlockSourceOffset(sourceOffset); }
+    function applyDocumentSourceMutation(nextSourceText, focusRequest) { return interactionViewModel.applyDocumentSourceMutation(nextSourceText, focusRequest); }
+    function setAgendaTaskDone(taskOpenTagStart, taskOpenTagEnd, checked) { return interactionViewModel.setAgendaTaskDone(taskOpenTagStart, taskOpenTagEnd, checked); }
     function refreshMinimapSnapshot() {
         geometryViewModel.refreshMinimapSnapshot();
     }
@@ -676,14 +629,14 @@ Item {
     function refreshMinimapViewportTracking(trackHeightOverride) {
         geometryViewModel.refreshMinimapViewportTracking(trackHeightOverride);
     }
-    function requestViewHook(reason) { presentationOrchestrationModel.requestViewHook(reason); }
+    function requestViewHook(reason) { interactionViewModel.requestViewHook(reason); }
     function resetNoteEntryLineGeometryState() {
         geometryViewModel.resetNoteEntryLineGeometryState();
     }
     function resetGutterRefreshState() {
         geometryViewModel.resetGutterRefreshState();
     }
-    function resetEditorSelectionCache() { selectionOrchestrationModel.resetEditorSelectionCache(); }
+    function resetEditorSelectionCache() { interactionViewModel.resetEditorSelectionCache(); }
     function resolveEditorFlickable() {
         if (contentsView.showStructuredDocumentFlow) {
             if (contentsView.showPrintEditorLayout)
@@ -692,12 +645,12 @@ Item {
         }
         return null;
     }
-    function scheduleEditorFocusForNote(noteId) { selectionOrchestrationModel.scheduleEditorFocusForNote(noteId); }
-    function applyPresentationRefreshPlan(plan) { presentationOrchestrationModel.applyPresentationRefreshPlan(plan); }
-    function executeRefreshPlan(plan) { presentationOrchestrationModel.executeRefreshPlan(plan); }
-    function scheduleStructuredDocumentOpenLayoutRefresh(reason) { presentationOrchestrationModel.scheduleStructuredDocumentOpenLayoutRefresh(reason); }
-    function scheduleDeferredDocumentPresentationRefresh() { presentationOrchestrationModel.scheduleDeferredDocumentPresentationRefresh(); }
-    function scheduleDocumentPresentationRefresh(forceImmediate) { presentationOrchestrationModel.scheduleDocumentPresentationRefresh(forceImmediate); }
+    function scheduleEditorFocusForNote(noteId) { interactionViewModel.scheduleEditorFocusForNote(noteId); }
+    function applyPresentationRefreshPlan(plan) { interactionViewModel.applyPresentationRefreshPlan(plan); }
+    function executeRefreshPlan(plan) { interactionViewModel.executeRefreshPlan(plan); }
+    function scheduleStructuredDocumentOpenLayoutRefresh(reason) { interactionViewModel.scheduleStructuredDocumentOpenLayoutRefresh(reason); }
+    function scheduleDeferredDocumentPresentationRefresh() { interactionViewModel.scheduleDeferredDocumentPresentationRefresh(); }
+    function scheduleDocumentPresentationRefresh(forceImmediate) { interactionViewModel.scheduleDocumentPresentationRefresh(forceImmediate); }
     function refreshLiveLogicalLineMetrics() {
         return geometryViewModel.refreshLiveLogicalLineMetrics();
     }
@@ -724,8 +677,8 @@ Item {
     function scheduleMinimapSnapshotRefresh(forceFull) {
         geometryViewModel.scheduleMinimapSnapshotRefresh(forceFull);
     }
-    function scheduleSelectionModelSync(options) { selectionOrchestrationModel.scheduleSelectionModelSync(options); }
-    function executeSelectionDeliveryPlan(plan, fallbackKey) { return selectionOrchestrationModel.executeSelectionDeliveryPlan(plan, fallbackKey); }
+    function scheduleSelectionModelSync(options) { interactionViewModel.scheduleSelectionModelSync(options); }
+    function executeSelectionDeliveryPlan(plan, fallbackKey) { return interactionViewModel.executeSelectionDeliveryPlan(plan, fallbackKey); }
     function scrollEditorViewportToMinimapPosition(localY) {
         geometryViewModel.scrollEditorViewportToMinimapPosition(localY);
     }
@@ -736,10 +689,10 @@ Item {
         geometryViewModel.scheduleTypingViewportCorrection(forceAnchor);
     }
     function selectedEditorRange() {
-        return mutationViewModel.selectedEditorRange();
+        return interactionViewModel.selectedEditorRange();
     }
     function wrapSelectedEditorTextWithTag(tagName, explicitSelectionRange) {
-        return mutationViewModel.wrapSelectedEditorTextWithTag(tagName, explicitSelectionRange);
+        return interactionViewModel.wrapSelectedEditorTextWithTag(tagName, explicitSelectionRange);
     }
 
     clip: true
@@ -996,7 +949,7 @@ Item {
 
         hasSelectedNote: contentsView.hasSelectedNote
     }
-    EditorDisplayModel.ContentsDisplayHostModePolicy {
+    ContentsDisplayHostModePolicy {
         id: modePolicy
 
         minimapVisible: contentsView.minimapVisible
@@ -1025,7 +978,7 @@ Item {
         paperShadowOffsetY: Math.max(1, Math.round(LV.Theme.scaleMetric(2)))
         paperVerticalMargin: LV.Theme.gap4
     }
-    EditorInputModel.ContentsEditorSelectionController {
+    ContentsEditorSelectionController {
         id: editorSelectionController
 
         contentEditor: contentsView.contentEditor
@@ -1067,7 +1020,7 @@ Item {
         id: traceFormatter
     }
 
-    EditorInputModel.ContentsEditorInputPolicyAdapter {
+    ContentsEditorInputPolicyAdapter {
         id: editorInputPolicyAdapter
         objectName: "contentsDisplayEditorInputPolicyAdapter"
 
@@ -1222,7 +1175,7 @@ Item {
         structuredGutterGeometrySignature: contentsView.structuredGutterGeometrySignature
         structuredHostGeometryActive: contentsView.structuredHostGeometryActive
     }
-    EditorInputModel.ContentsEditorTypingController {
+    ContentsEditorTypingController {
         id: editorTypingController
 
         agendaBackend: contentsAgendaBackend
@@ -1236,23 +1189,11 @@ Item {
     ContentsPlainTextSourceMutator {
         id: plainTextSourceMutator
     }
-    EditorResourceModel.ContentsResourceImportController {
+    ContentsResourceImportController {
         id: resourceImportController
 
         bodyResourceRenderer: bodyResourceRenderer
-        clearResourceDropActiveHandler: function () {
-            contentsView.resourceDropActive = false;
-        }
-        clipboardImageAvailableHandler: function () {
-            return contentsView.clipboardImageAvailableForPaste();
-        }
         contentEditor: contentsView.contentEditor
-        currentEditorCursorPositionHandler: function () {
-            return contentsView.currentEditorCursorPosition();
-        }
-        documentSourceMutationHandler: function (nextSourceText, focusRequest) {
-            return contentsView.applyDocumentSourceMutation(nextSourceText, focusRequest);
-        }
         documentPresentationSourceText: contentsView.documentPresentationSourceText
         editorHorizontalInset: contentsView.editorHorizontalInset
         editorProjection: editorProjection
@@ -1260,9 +1201,6 @@ Item {
         editorSession: editorSession
         editorTypingController: editorTypingController
         editorViewport: editorViewport
-        encodeXmlAttributeValueHandler: function (value) {
-            return contentsView.encodeXmlAttributeValue(value);
-        }
         hasSelectedNote: contentsView.hasSelectedNote
         printPaperTextWidth: contentsView.printPaperTextWidth
         resourceEditorPlaceholderLineCount: contentsView.resourceEditorPlaceholderLineCount
@@ -1280,6 +1218,7 @@ Item {
         showPrintEditorLayout: contentsView.showPrintEditorLayout
         showStructuredDocumentFlow: contentsView.showStructuredDocumentFlow
         structuredDocumentFlow: structuredDocumentFlow
+        view: contentsView
     }
     ContentsBodyResourceRenderer {
         id: bodyResourceRenderer
@@ -1343,7 +1282,7 @@ Item {
                         editorSession)
         }
     }
-    EditorDisplayModel.ContentsDisplayEventPump {
+    ContentsDisplayEventPump {
         id: eventPump
 
         bodyResourceRenderer: bodyResourceRenderer
@@ -1361,7 +1300,7 @@ Item {
         structuredDocumentFlow: structuredDocumentFlow
         traceFormatter: traceFormatter
     }
-    EditorDisplayModel.ContentsDisplayPresentationController {
+    ContentsDisplayPresentationController {
         id: presentationController
 
         contentsView: contentsView
@@ -1384,7 +1323,30 @@ Item {
 
         controller: presentationController
     }
-    EditorDisplayModel.ContentsDisplayMutationController {
+    ContentsDisplayInteractionViewModel {
+        id: interactionViewModel
+
+        contentsAgendaBackend: contentsAgendaBackend
+        contentsView: contentsView
+        contextMenuCoordinator: contextMenuCoordinator
+        editOperationCoordinator: editOperationCoordinator
+        editorInputPolicyAdapter: editorInputPolicyAdapter
+        editorProjection: editorProjection
+        editorSelectionController: editorSelectionController
+        editorSession: editorSession
+        editorTypingController: editorTypingController
+        editorViewport: editorViewport
+        eventPump: eventPump
+        minimapLayer: minimapLayer
+        mutationViewModel: mutationViewModel
+        panelViewModel: contentsView.panelViewModel
+        presentationRefreshController: presentationRefreshController
+        presentationViewModel: presentationViewModel
+        resourceImportController: resourceImportController
+        selectionMountViewModel: selectionMountViewModel
+        structuredDocumentFlow: structuredDocumentFlow
+    }
+    ContentsDisplayMutationController {
         id: mutationController
 
         contentsAgendaBackend: contentsAgendaBackend
@@ -1404,7 +1366,7 @@ Item {
 
         controller: mutationController
     }
-    EditorDisplayModel.ContentsDisplaySelectionMountController {
+    ContentsDisplaySelectionMountController {
         id: selectionMountController
 
         contentsView: contentsView
@@ -1422,7 +1384,7 @@ Item {
 
         controller: selectionMountController
     }
-    EditorDisplayModel.ContentsDisplayGeometryController {
+    ContentsDisplayGeometryController {
         id: geometryController
 
         contentsView: contentsView

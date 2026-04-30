@@ -2,8 +2,8 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import QtQuick.Controls as Controls
+import WhatSon.App.Internal 1.0
 import LVRS 1.0 as LV
-import "../../../../models/editor/input" as EditorInputModel
 
 FocusScope {
     id: control
@@ -266,6 +266,37 @@ FocusScope {
         return control.inlineFormatShortcutTag(event).length > 0;
     }
 
+    function bodyTagShortcutKind(event) {
+        if (!event)
+            return "";
+
+        const modifiers = Number(event.modifiers) || 0;
+        const metaPressed = !!(modifiers & Qt.MetaModifier);
+        const controlPressed = !!(modifiers & Qt.ControlModifier);
+        const altPressed = !!(modifiers & Qt.AltModifier);
+        const shiftPressed = !!(modifiers & Qt.ShiftModifier);
+        const commandPressed = metaPressed || controlPressed;
+        if (!commandPressed)
+            return "";
+
+        const normalizedText = event.text === undefined || event.text === null ? "" : String(event.text).toUpperCase();
+        const key = Number(event.key);
+        if (altPressed && !shiftPressed) {
+            if (key === Qt.Key_T || normalizedText === "T")
+                return "agenda";
+            if (key === Qt.Key_C || normalizedText === "C")
+                return "callout";
+            return "";
+        }
+        if (shiftPressed && !altPressed && (key === Qt.Key_H || normalizedText === "H"))
+            return "break";
+        return "";
+    }
+
+    function eventRequestsBodyTagShortcut(event) {
+        return control.bodyTagShortcutKind(event).length > 0;
+    }
+
     Rectangle {
         anchors.fill: parent
         color: {
@@ -385,7 +416,8 @@ FocusScope {
                     const key = Number(event.key);
                     if (key !== Qt.Key_Backspace
                             && !control.eventRequestsPasteShortcut(event)
-                            && !control.eventRequestsInlineFormatShortcut(event)) {
+                            && !control.eventRequestsInlineFormatShortcut(event)
+                            && !control.eventRequestsBodyTagShortcut(event)) {
                         event.accepted = false;
                         return;
                     }
@@ -419,7 +451,7 @@ FocusScope {
         text: Array(control.effectiveTabIndentSpaceCount + 1).join(" ")
     }
 
-    EditorInputModel.ContentsInlineFormatEditorController {
+    ContentsInlineFormatEditorController {
         id: inlineEditorController
 
         control: control

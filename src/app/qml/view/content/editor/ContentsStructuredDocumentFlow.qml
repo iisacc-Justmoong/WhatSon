@@ -5,7 +5,6 @@ import QtQuick.Layouts
 import WhatSon.App.Internal 1.0
 import LVRS 1.0 as LV
 import "../../../../models/editor/diagnostics/ContentsEditorDebugTrace.js" as EditorTrace
-import "../../../../models/editor/format" as EditorFormatModel
 import "../../../../models/editor/structure/ContentsStructuredCursorSupport.js" as StructuredCursorSupport
 import "../../../../models/editor/tags/ContentsRawBodyTagMutationSupport.js" as RawTagMutationSupport
 
@@ -22,6 +21,7 @@ FocusScope {
     property bool nativeTextInputPriority: false
     property bool paperPaletteEnabled: false
     property bool renderPending: false
+    property var sourceMutationHandler: null
     property var tagManagementShortcutKeyPressHandler: null
     property alias renderedResources: documentHost.renderedResources
     property alias sourceText: documentHost.sourceText
@@ -69,7 +69,7 @@ FocusScope {
         blocks: documentFlow.normalizedBlocks()
     }
 
-    EditorFormatModel.ContentsStructuredEditorFormattingController {
+    ContentsStructuredEditorFormattingController {
         id: structuredEditorFormattingController
 
         blockRepeater: blockRepeater
@@ -1008,8 +1008,7 @@ FocusScope {
         const normalizedReplacementText = documentFlow.normalizedSourceText(replacementText)
         if (currentSourceText.slice(boundedStart, boundedEnd) === normalizedReplacementText)
             return false
-        documentFlow.replaceSourceRange(boundedStart, boundedEnd, normalizedReplacementText, focusRequest)
-        return true
+        return documentFlow.replaceSourceRange(boundedStart, boundedEnd, normalizedReplacementText, focusRequest)
     }
 
     function requestFocus(request) {
@@ -1129,6 +1128,16 @@ FocusScope {
         return documentFlow.applyFocusToBlockIndex(targetBlockIndex)
     }
 
+    function requestSourceMutation(nextSourceText, focusRequest) {
+        const normalizedNextSourceText = documentFlow.normalizedSourceText(nextSourceText)
+        const normalizedFocusRequest = focusRequest && typeof focusRequest === "object" ? focusRequest : ({})
+        if (documentFlow.sourceMutationHandler) {
+            return !!documentFlow.sourceMutationHandler(normalizedNextSourceText, normalizedFocusRequest)
+        }
+        documentFlow.sourceMutationRequested(normalizedNextSourceText, normalizedFocusRequest)
+        return true
+    }
+
     function replaceSourceRange(start, end, replacementText, focusRequest) {
         EditorTrace.trace(
                     "structuredDocumentFlow",
@@ -1138,9 +1147,9 @@ FocusScope {
                     + " focusRequest={" + EditorTrace.describeFocusRequest(focusRequest) + "} "
                     + EditorTrace.describeText(replacementText),
                     documentFlow)
-        documentFlow.sourceMutationRequested(
+        return documentFlow.requestSourceMutation(
                     documentFlow.spliceSourceRange(start, end, replacementText),
-                    focusRequest && typeof focusRequest === "object" ? focusRequest : ({ }))
+                    focusRequest)
     }
 
     function focusRequestAfterBlockDeletion(blockData, nextSourceText) {
@@ -1219,10 +1228,9 @@ FocusScope {
                     documentFlow.sourceText)
         if (!payload || typeof payload !== "object" || payload.nextSourceText === undefined)
             return false
-        documentFlow.sourceMutationRequested(
+        return documentFlow.requestSourceMutation(
                     String(payload.nextSourceText),
                     payload.focusRequest !== undefined ? payload.focusRequest : ({ }))
-        return true
     }
 
     function splitParagraphBlock(blockEntry, sourceOffset) {
@@ -1237,10 +1245,9 @@ FocusScope {
                     Math.floor(Number(sourceOffset) || 0))
         if (!payload || typeof payload !== "object" || payload.nextSourceText === undefined)
             return false
-        documentFlow.sourceMutationRequested(
+        return documentFlow.requestSourceMutation(
                     String(payload.nextSourceText),
                     payload.focusRequest !== undefined ? payload.focusRequest : ({ }))
-        return true
     }
 
     function deleteBlock(blockIndex, blockData, direction) {
@@ -1310,7 +1317,7 @@ FocusScope {
         if (deletionEnd <= deletionStart)
             return false
         const nextSourceText = documentFlow.spliceSourceRange(deletionStart, deletionEnd, "")
-        documentFlow.sourceMutationRequested(
+        return documentFlow.requestSourceMutation(
                     nextSourceText,
                     focusRequest && typeof focusRequest === "object"
                     ? focusRequest
@@ -1318,7 +1325,6 @@ FocusScope {
                                                                        "sourceEnd": deletionEnd,
                                                                        "sourceStart": deletionStart
                                                                    }, nextSourceText))
-        return true
     }
 
     function blockIsAtomicByIndex(blockIndex) {
@@ -1448,13 +1454,12 @@ FocusScope {
         const focusSourceOffset = normalizedSide === "before"
                 ? Math.max(0, currentBlockSourceStart - deletedLength)
                 : Math.min(nextSourceText.length, currentBlockSourceEnd)
-        documentFlow.sourceMutationRequested(
+        return documentFlow.requestSourceMutation(
                     nextSourceText,
                     {
                         "preferNearestTextBlock": true,
                         "sourceOffset": focusSourceOffset
                     })
-        return true
     }
 
     function navigateDocumentBoundary(blockIndex, axis, side) {
@@ -1570,10 +1575,9 @@ FocusScope {
                                           !!checked))
         if (nextSourceText === currentSourceText)
             return false
-        documentFlow.sourceMutationRequested(nextSourceText, {
-                        "taskOpenTagStart": documentFlow.floorNumberOrFallback(openTagStart, -1)
-                    })
-        return true
+        return documentFlow.requestSourceMutation(nextSourceText, {
+                                                     "taskOpenTagStart": documentFlow.floorNumberOrFallback(openTagStart, -1)
+                                                 })
     }
 
     function agendaTaskReturn(taskData) {
@@ -1780,12 +1784,13 @@ FocusScope {
                             Math.floor(Number(wrapRange.sourceStart) || 0),
                             Math.floor(Number(wrapRange.sourceEnd) || 0))
                 if (wrapPayload.applied) {
-                    documentFlow.sourceMutationRequested(
+                    return documentFlow.requestSourceMutation(
                                 String(wrapPayload.nextSourceText || currentSourceText),
                                 {
+                                    "immediatePersistence": true,
+                                    "mutationKind": "body-tag-shortcut",
                                     "sourceOffset": Math.max(0, Number(wrapPayload.sourceOffset) || 0)
                                 })
-                    return true
                 }
             }
         }
@@ -1799,12 +1804,13 @@ FocusScope {
                     normalizedShortcutKind)
         if (!payload.applied)
             return false
-        documentFlow.sourceMutationRequested(
+        return documentFlow.requestSourceMutation(
                     String(payload.nextSourceText || currentSourceText),
                     {
+                        "immediatePersistence": true,
+                        "mutationKind": "body-tag-shortcut",
                         "sourceOffset": Math.max(0, Number(payload.sourceOffset) || 0)
                     })
-        return true
     }
 
     function insertResourceBlocksAtActivePosition(tagTexts) {
@@ -1838,12 +1844,11 @@ FocusScope {
                 : currentSourceText
         if (nextSourceText === currentSourceText)
             return false
-        documentFlow.sourceMutationRequested(
+        return documentFlow.requestSourceMutation(
                     nextSourceText,
                     payload.focusRequest && typeof payload.focusRequest === "object"
                     ? payload.focusRequest
                     : ({ }))
-        return true
     }
 
     implicitHeight: documentColumn.implicitHeight

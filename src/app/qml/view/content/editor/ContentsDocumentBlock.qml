@@ -1,8 +1,8 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import WhatSon.App.Internal 1.0
 import LVRS 1.0 as LV
-import "../../../../models/editor/input" as EditorInputModel
 
 FocusScope {
     id: documentBlock
@@ -168,7 +168,7 @@ FocusScope {
                              : textBlockComponent
     }
 
-    EditorInputModel.ContentsDocumentBlockController {
+    ContentsDocumentBlockController {
         id: documentBlockController
 
         blockLoader: blockLoader

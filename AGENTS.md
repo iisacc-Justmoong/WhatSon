@@ -88,6 +88,14 @@ every turn.
 - Each C++ ViewModel must expose a narrow signal/slot contract and delegate domain mutation, timing, rendering, or
   persistence work to the owning model layer.
 
+### Model Layer QML Prohibition (Critical)
+
+- `src/app/models/**` must not contain QML files.
+- Treat every existing QML file under `src/app/models` as migration debt that must be converted into C++ (`.hpp/.cpp`) and removed.
+- The model layer may expose QObject/Q_GADGET/QAbstractItemModel based APIs to QML, but it must not implement domain logic, orchestration, controller behavior, mutable session state, formatting policy, parsing policy, mutation planning, resource import handling, or input policy in QML.
+- If a feature needs logic below `src/app/qml/view/**`, create or extend a C++ object in the owning domain instead of adding another `*.qml` helper under `src/app/models`.
+- `src/app/qml/**` is the only allowed home for QML, and those files must remain view/presentation composition only.
+
 ## Architectural Direction
 
 - Prefer Domain-Driven Development and Feature-Driven Development for new code, refactors, and file moves.
