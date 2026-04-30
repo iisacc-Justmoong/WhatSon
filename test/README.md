@@ -87,14 +87,6 @@ ctest --test-dir build --output-on-failure -L cpp_regression
 - Structured editor selection cleanup is now also locked at the C++ host-object and QML routing layers, so focus
   activation emits the selection-clear revision/retained-block contract that QML delegates consume, while same-block
   cursor movement uses a cursor-only host path and keeps native desktop/iOS text selection intact.
-- `ContentsDisplayView.qml` over-responsibility reduction is now source-locked by checking that gutter, minimap,
-  mount-loading, exception, and resource-import alert chrome are composed through sibling view hosts instead of being
-  owned directly by the root display host.
-- The same coverage now pins `ContentsDisplaySurfacePolicy` as the C++ surface-selection contract used by
-  note-selection focus restoration, so the root display host and selection/mount controller keep the parser-backed
-  structured document flow as the only concrete note editor surface.
-- `ContentsDisplaySurfacePolicy` is covered as the C++ surface-selection policy: selected notes use the structured
-  document surface and the old whole-note inline loader stays disabled.
 - Editor shortcut-surface gating now also treats every focused body `TextEdit` as the native keyboard owner, so platform
   text-navigation and selection chords remain OS/Qt behavior instead of being shadowed by ordinary app shortcut
   handling. The explicit tag-management surface remains enabled outside composition so inline formatting shortcuts still
@@ -217,10 +209,6 @@ ctest --test-dir build --output-on-failure -L cpp_regression
 - Selected-note body snapshots now also distinguish unresolved sources from legitimate empty notes, so the editor
   session and note-mount placeholder only treat an empty body as authoritative after a direct source snapshot or a
   completed body load confirms that the selected note really resolves.
-- `ContentsDisplayView` now also locks note-body mount coordination at the C++ and QML layers, so the center editor
-  first retries a selected-note snapshot refresh, then mounts the resolved body into the editor session, and only
-  then surfaces a centered `No document opened` placeholder instead of leaving gutter/minimap chrome visible beside an
-  unmounted note surface.
 - Selection-bridge persistence completion now also pins signal ordering, so a successful same-note body save updates
   `selectedNoteBodyText` before `editorTextPersistenceFinished(...)` reaches the editor session. This prevents the
   presentation source from briefly falling back to a stale saved body while typing resumes after an idle save.
