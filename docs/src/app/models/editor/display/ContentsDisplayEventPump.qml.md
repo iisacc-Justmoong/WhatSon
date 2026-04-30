@@ -7,7 +7,7 @@ Owns editor display timing and signal connection plumbing that must remain in QM
 ## Boundary
 
 - Uses `Timer` and `Connections` for model-side orchestration.
-- Does not act as a ViewModel.
+- Does not act as a Controller.
 - Calls the display host and model coordinators through explicit hook functions.
 - When renderer block output arrives for a pending note entry, it asks the display host for the structured
   editor-open layout refresh path instead of issuing a single cache refresh directly.

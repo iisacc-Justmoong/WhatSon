@@ -7,8 +7,8 @@
 `DetailFileStatForm.qml` renders the real `fileStat` detail-panel surface instead of the old placeholder.
 
 ## Input Contract
-- `fileStatViewModel`
-  - Expected type: `DetailFileStatViewModel`
+- `fileStatController`
+  - Expected type: `DetailFileStatController`
   - Consumed text collections:
     - `summaryLines`
     - `textMetricLines`

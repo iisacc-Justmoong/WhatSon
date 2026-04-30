@@ -25,8 +25,8 @@ Rectangle {
     property bool compactSettingsVisible: true
     property color controlSurfaceColor: LV.Theme.panelBackground10
     property bool detailPanelCollapsed: true
-    property var editorViewModeViewModel: null
-    property var navigationModeViewModel: null
+    property var editorViewModeController: null
+    property var navigationModeController: null
     property string statusPlaceholderText: ""
     property string statusSearchText: ""
     property var windowInteractions: null
@@ -69,8 +69,8 @@ Rectangle {
             compactSettingsVisible: mobilePageScaffold.compactSettingsVisible
             compactSurfaceColor: mobilePageScaffold.controlSurfaceColor
             detailPanelCollapsed: mobilePageScaffold.detailPanelCollapsed
-            editorViewModeViewModel: mobilePageScaffold.editorViewModeViewModel
-            navigationModeViewModel: mobilePageScaffold.navigationModeViewModel
+            editorViewModeController: mobilePageScaffold.editorViewModeController
+            navigationModeController: mobilePageScaffold.navigationModeController
 
             onCompactAddFolderRequested: mobilePageScaffold.compactAddFolderRequested()
             onCompactLeadingActionRequested: mobilePageScaffold.compactLeadingActionRequested()

@@ -18,13 +18,13 @@
 #include "app/models/file/hierarchy/tags/WhatSonTagsHierarchyStore.hpp"
 #include "app/models/file/hub/WhatSonHubPathUtils.hpp"
 #include "app/models/file/hub/WhatSonHubRuntimeStore.hpp"
-#include "app/viewmodel/hierarchy/event/EventHierarchyViewModelSupport.hpp"
-#include "app/viewmodel/hierarchy/library/LibraryHierarchyViewModelSupport.hpp"
-#include "app/viewmodel/hierarchy/preset/PresetHierarchyViewModelSupport.hpp"
-#include "app/viewmodel/hierarchy/progress/ProgressHierarchyViewModelSupport.hpp"
-#include "app/viewmodel/hierarchy/projects/ProjectsHierarchyViewModelSupport.hpp"
-#include "app/viewmodel/hierarchy/resources/ResourcesHierarchyViewModelSupport.hpp"
-#include "app/viewmodel/hierarchy/tags/TagsHierarchyViewModelSupport.hpp"
+#include "app/models/file/hierarchy/event/EventHierarchyControllerSupport.hpp"
+#include "app/models/file/hierarchy/library/LibraryHierarchyControllerSupport.hpp"
+#include "app/models/file/hierarchy/preset/PresetHierarchyControllerSupport.hpp"
+#include "app/models/file/hierarchy/progress/ProgressHierarchyControllerSupport.hpp"
+#include "app/models/file/hierarchy/projects/ProjectsHierarchyControllerSupport.hpp"
+#include "app/models/file/hierarchy/resources/ResourcesHierarchyControllerSupport.hpp"
+#include "app/models/file/hierarchy/tags/TagsHierarchyControllerSupport.hpp"
 
 #include <QDir>
 #include <QFileInfo>

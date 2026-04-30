@@ -38,42 +38,23 @@ LV.ApplicationWindow {
     readonly property real hierarchyToolbarSpacing: hierarchyToolbarCount > 1 ? (LV.Theme.gap20 + LV.Theme.gap20) / (hierarchyToolbarCount - 1) : LV.Theme.gapNone
     readonly property int hierarchyToolbarTrackWidth: hierarchyToolbarCount > 0 ? Math.round(hierarchyToolbarCount * hierarchyToolbarButtonSize + (hierarchyToolbarCount - 1) * hierarchyToolbarSpacing) : hierarchyToolbarButtonSize
     readonly property int hierarchyToolbarWidth: hierarchyToolbarTrackWidth + hierarchyHorizontalInset * 2
-    readonly property var registeredViewModelKeys: LV.ViewModels.keys
-    readonly property string libraryNoteMutationViewId: "windowInteractions.libraryNoteMutation"
-    readonly property string navigationModeViewId: "windowInteractions.navigationMode"
-    readonly property string sidebarHierarchyViewId: "windowInteractions.sidebarHierarchy"
-    readonly property var rootEditorViewModeViewModel: {
-        const _ = applicationWindow.registeredViewModelKeys;
-        return LV.ViewModels.get("editorViewModeViewModel");
-    }
+    readonly property var rootEditorViewModeController: typeof editorViewModeController !== "undefined" ? editorViewModeController : null
     readonly property int libraryHierarchyIndex: 0
-    readonly property var rootLibraryHierarchyViewModel: {
-        const _ = applicationWindow.registeredViewModelKeys;
-        return LV.ViewModels.get("libraryHierarchyViewModel");
-    }
-    readonly property var rootLibraryNoteMutationViewModel: {
-        const _ = applicationWindow.registeredViewModelKeys;
-        return LV.ViewModels.get("libraryNoteMutationViewModel");
-    }
+    readonly property var rootLibraryHierarchyController: typeof libraryHierarchyController !== "undefined" ? libraryHierarchyController : null
+    readonly property var rootLibraryNoteMutationController: typeof libraryNoteMutationController !== "undefined" ? libraryNoteMutationController : null
     readonly property int listViewWidth: hideListView ? 0 : Math.max(minListViewWidth, preferredListViewWidth)
     readonly property int minContentWidth: LV.Theme.dialogMaxWidth - LV.Theme.gap20 * 2
     readonly property int minListViewWidth: LV.Theme.inputMinWidth - LV.Theme.gap24 * 2
     readonly property int minRightPanelWidth: LV.Theme.controlHeightMd + LV.Theme.controlHeightMd + LV.Theme.controlHeightMd + LV.Theme.controlHeightMd + Math.round(LV.Theme.strokeThin)
-    readonly property var rootNavigationModeViewModel: {
-        const _ = applicationWindow.registeredViewModelKeys;
-        return LV.ViewModels.get("navigationModeViewModel");
-    }
-    readonly property var rootPanelViewModelRegistry: panelViewModelRegistry
-    readonly property var rootSidebarHierarchyViewModel: {
-        const _ = applicationWindow.registeredViewModelKeys;
-        return LV.ViewModels.get("sidebarHierarchyViewModel");
-    }
-    readonly property var rootResourcesImportViewModel: typeof resourcesImportViewModel !== "undefined" ? resourcesImportViewModel : null
-    readonly property var rootAgendaViewModel: typeof agendaViewModel !== "undefined" ? agendaViewModel : null
-    readonly property var rootDayCalendarViewModel: typeof dayCalendarViewModel !== "undefined" ? dayCalendarViewModel : null
-    readonly property var rootMonthCalendarViewModel: typeof monthCalendarViewModel !== "undefined" ? monthCalendarViewModel : null
-    readonly property var rootWeekCalendarViewModel: typeof weekCalendarViewModel !== "undefined" ? weekCalendarViewModel : null
-    readonly property var rootYearCalendarViewModel: typeof yearCalendarViewModel !== "undefined" ? yearCalendarViewModel : null
+    readonly property var rootNavigationModeController: typeof navigationModeController !== "undefined" ? navigationModeController : null
+    readonly property var rootPanelControllerRegistry: panelControllerRegistry
+    readonly property var rootSidebarHierarchyController: typeof sidebarHierarchyController !== "undefined" ? sidebarHierarchyController : null
+    readonly property var rootResourcesImportController: typeof resourcesImportController !== "undefined" ? resourcesImportController : null
+    readonly property var rootAgendaController: typeof agendaController !== "undefined" ? agendaController : null
+    readonly property var rootDayCalendarController: typeof dayCalendarController !== "undefined" ? dayCalendarController : null
+    readonly property var rootMonthCalendarController: typeof monthCalendarController !== "undefined" ? monthCalendarController : null
+    readonly property var rootWeekCalendarController: typeof weekCalendarController !== "undefined" ? weekCalendarController : null
+    readonly property var rootYearCalendarController: typeof yearCalendarController !== "undefined" ? yearCalendarController : null
     readonly property int minSidebarWidth: {
         var toolbarWidth = (typeof hierarchyToolbarWidth === "number" && isFinite(hierarchyToolbarWidth)) ? hierarchyToolbarWidth : (LV.Theme.gap20 * 7 + LV.Theme.gap12);
         return toolbarWidth;
@@ -117,41 +98,32 @@ LV.ApplicationWindow {
 
     signal viewHookRequested
 
-    function bindOwnedViewModel(viewId, key) {
-        if (!LV.ViewModels.bindView(viewId, key, true))
-            console.warn("[whatson:mvvm][bind] viewId=" + viewId + " key=" + key + " error=" + LV.ViewModels.lastError);
-    }
-    function unbindOwnedViewModels() {
-        LV.ViewModels.unbindView(applicationWindow.libraryNoteMutationViewId);
-        LV.ViewModels.unbindView(applicationWindow.navigationModeViewId);
-        LV.ViewModels.unbindView(applicationWindow.sidebarHierarchyViewId);
-    }
     function currentIsoDate() {
         return Qt.formatDateTime(new Date(), "yyyy-MM-dd");
     }
     function resetAgendaOverlayCursorToToday() {
-        if (applicationWindow.rootAgendaViewModel && applicationWindow.rootAgendaViewModel.setDisplayedDateIso !== undefined) {
-            applicationWindow.rootAgendaViewModel.setDisplayedDateIso(applicationWindow.currentIsoDate());
+        if (applicationWindow.rootAgendaController && applicationWindow.rootAgendaController.setDisplayedDateIso !== undefined) {
+            applicationWindow.rootAgendaController.setDisplayedDateIso(applicationWindow.currentIsoDate());
         }
     }
     function resetDayCalendarCursorToToday() {
-        if (applicationWindow.rootDayCalendarViewModel && applicationWindow.rootDayCalendarViewModel.setDisplayedDateIso !== undefined) {
-            applicationWindow.rootDayCalendarViewModel.setDisplayedDateIso(applicationWindow.currentIsoDate());
+        if (applicationWindow.rootDayCalendarController && applicationWindow.rootDayCalendarController.setDisplayedDateIso !== undefined) {
+            applicationWindow.rootDayCalendarController.setDisplayedDateIso(applicationWindow.currentIsoDate());
         }
     }
     function resetWeekCalendarCursorToToday() {
-        if (applicationWindow.rootWeekCalendarViewModel && applicationWindow.rootWeekCalendarViewModel.setDisplayedWeekStartIso !== undefined) {
-            applicationWindow.rootWeekCalendarViewModel.setDisplayedWeekStartIso(applicationWindow.currentIsoDate());
+        if (applicationWindow.rootWeekCalendarController && applicationWindow.rootWeekCalendarController.setDisplayedWeekStartIso !== undefined) {
+            applicationWindow.rootWeekCalendarController.setDisplayedWeekStartIso(applicationWindow.currentIsoDate());
         }
     }
     function resetMonthCalendarCursorToToday() {
-        if (applicationWindow.rootMonthCalendarViewModel && applicationWindow.rootMonthCalendarViewModel.focusToday !== undefined) {
-            applicationWindow.rootMonthCalendarViewModel.focusToday();
+        if (applicationWindow.rootMonthCalendarController && applicationWindow.rootMonthCalendarController.focusToday !== undefined) {
+            applicationWindow.rootMonthCalendarController.focusToday();
         }
     }
     function resetYearCalendarCursorToToday() {
-        if (applicationWindow.rootYearCalendarViewModel && applicationWindow.rootYearCalendarViewModel.focusToday !== undefined) {
-            applicationWindow.rootYearCalendarViewModel.focusToday();
+        if (applicationWindow.rootYearCalendarController && applicationWindow.rootYearCalendarController.focusToday !== undefined) {
+            applicationWindow.rootYearCalendarController.focusToday();
         }
     }
     function openAgendaOverlay(resetToToday) {
@@ -263,9 +235,6 @@ LV.ApplicationWindow {
     windowDragHandleTopMargin: statusBarHeight
 
     Component.onCompleted: {
-        bindOwnedViewModel(applicationWindow.libraryNoteMutationViewId, "libraryNoteMutationViewModel");
-        bindOwnedViewModel(applicationWindow.navigationModeViewId, "navigationModeViewModel");
-        bindOwnedViewModel(applicationWindow.sidebarHierarchyViewId, "sidebarHierarchyViewModel");
         clampPreferredSizes();
         windowInteractions.applyRenderQualityPolicy("completed");
         windowInteractions.reportLayoutBranch("completed");
@@ -276,9 +245,6 @@ LV.ApplicationWindow {
         } else if (applicationWindow.desktopOnboardingWindowVisible) {
             onboardingSubWindow.show();
         }
-    }
-    Component.onDestruction: {
-        unbindOwnedViewModels();
     }
     onAdaptiveLayoutStateChanged: windowInteractions.reportLayoutBranch("adaptiveLayoutStateChanged")
     onBodyHeightChanged: clampPreferredSizes()
@@ -317,31 +283,28 @@ LV.ApplicationWindow {
         property var focusRetainedUiTokens: ["button", "combobox", "checkbox", "radiobutton", "switch", "slider", "spinbox", "dial", "textinput", "textedit", "inputfield", "editor", "menu", "popup", "tooltip", "mousearea", "taphandler", "flickable", "listview", "scrollview", "tableview", "scrollbar", "hierarchy", "contextmenu", "itemdelegate", "notelistitem"]
         property var hostWindow: null
         property int libraryHierarchyIndex: 0
-        property string libraryNoteMutationViewId: ""
-        readonly property string libraryNoteMutationViewModelKey: "libraryNoteMutationViewModel"
-        property string navigationModeViewId: ""
-        readonly property string navigationModeViewModelKey: "navigationModeViewModel"
-        property var panelViewModelRegistry: null
-        readonly property bool resizeRenderGuardSupported: interactionController.hostWindow ? interactionController.hostWindow.isDesktopPlatform : false
+        property var libraryNoteMutationController: applicationWindow.rootLibraryNoteMutationController
+        property var navigationModeController: applicationWindow.rootNavigationModeController
+        property var panelControllerRegistry: null
+        readonly property bool resizeRenderGuardSupported: windowInteractions.hostWindow ? windowInteractions.hostWindow.isDesktopPlatform : false
         property bool resizeDrWasSuspended: false
         property bool resizeInProgress: false
         property int resizeRenderGuardDebounceMs: 220
         property bool resizeRenderGuardEnabled: true
-        property string sidebarHierarchyViewId: ""
-        readonly property string sidebarHierarchyViewModelKey: "sidebarHierarchyViewModel"
+        property var sidebarHierarchyController: applicationWindow.rootSidebarHierarchyController
 
         function applyRenderQualityPolicy(source) {
-            if (!interactionController.hostWindow || (!interactionController.hostWindow.isDesktopPlatform && !interactionController.hostWindow.isMobilePlatform))
+            if (!windowInteractions.hostWindow || (!windowInteractions.hostWindow.isDesktopPlatform && !windowInteractions.hostWindow.isMobilePlatform))
                 return;
 
-            const guardPolicy = interactionController.resizeRenderGuardSupported ? "desktopResizeSuspendResumeGuard" : "mobileResizeGuardDisabled";
-            const forcedTierPreset = interactionController.hostWindow.forcedDeviceTierPreset !== undefined ? interactionController.hostWindow.forcedDeviceTierPreset : -1;
-            const fullWindowAreaOnMobileEnabled = interactionController.hostWindow.fullWindowAreaOnMobileEnabled === true;
-            const delegateMobileWindowingToSystem = interactionController.hostWindow.delegateMobileWindowingToSystem === true;
-            console.log("[whatson:debug][render.policy][" + source + "] platform=" + interactionController.hostWindow.platform + " action=" + guardPolicy + " dynamicResolutionEnabled=" + LV.RenderQuality.dynamicResolutionEnabled + " forcedDeviceTierPreset=" + forcedTierPreset + " fullWindowAreaOnMobileEnabled=" + fullWindowAreaOnMobileEnabled + " delegateMobileWindowingToSystem=" + delegateMobileWindowingToSystem);
+            const guardPolicy = windowInteractions.resizeRenderGuardSupported ? "desktopResizeSuspendResumeGuard" : "mobileResizeGuardDisabled";
+            const forcedTierPreset = windowInteractions.hostWindow.forcedDeviceTierPreset !== undefined ? windowInteractions.hostWindow.forcedDeviceTierPreset : -1;
+            const fullWindowAreaOnMobileEnabled = windowInteractions.hostWindow.fullWindowAreaOnMobileEnabled === true;
+            const delegateMobileWindowingToSystem = windowInteractions.hostWindow.delegateMobileWindowingToSystem === true;
+            console.log("[whatson:debug][render.policy][" + source + "] platform=" + windowInteractions.hostWindow.platform + " action=" + guardPolicy + " dynamicResolutionEnabled=" + LV.RenderQuality.dynamicResolutionEnabled + " forcedDeviceTierPreset=" + forcedTierPreset + " fullWindowAreaOnMobileEnabled=" + fullWindowAreaOnMobileEnabled + " delegateMobileWindowingToSystem=" + delegateMobileWindowingToSystem);
         }
         function clearActiveFocus(reason) {
-            let current = interactionController.hostWindow ? interactionController.hostWindow.activeFocusItem : null;
+            let current = windowInteractions.hostWindow ? windowInteractions.hostWindow.activeFocusItem : null;
             let depthGuard = 0;
 
             while (current && depthGuard < 32) {
@@ -351,81 +314,69 @@ LV.ApplicationWindow {
                 depthGuard += 1;
             }
         }
-        function resolveOwnedWritableViewModel(viewId, viewModelKey) {
-            const normalizedViewId = viewId === undefined || viewId === null ? "" : String(viewId).trim();
-            const normalizedViewModelKey = viewModelKey === undefined || viewModelKey === null ? "" : String(viewModelKey).trim();
-            if (normalizedViewId.length === 0 || normalizedViewModelKey.length === 0)
-                return null;
-            if (!LV.ViewModels.canWrite(normalizedViewId))
-                return null;
-            const ownedViewModel = LV.ViewModels.getForView(normalizedViewId);
-            if (ownedViewModel !== null && ownedViewModel !== undefined)
-                return ownedViewModel;
-            return LV.ViewModels.get(normalizedViewModelKey);
-        }
-        function resolvePanelViewModel(panelKey) {
+        function resolvePanelController(panelKey) {
             const normalizedPanelKey = panelKey === undefined || panelKey === null ? "" : String(panelKey).trim();
-            if (normalizedPanelKey.length === 0 || !interactionController.panelViewModelRegistry || interactionController.panelViewModelRegistry.panelViewModel === undefined)
+            if (normalizedPanelKey.length === 0 || !windowInteractions.panelControllerRegistry || windowInteractions.panelControllerRegistry.panelController === undefined)
                 return null;
-            return interactionController.panelViewModelRegistry.panelViewModel(normalizedPanelKey);
+            return windowInteractions.panelControllerRegistry.panelController(normalizedPanelKey);
         }
-        function resolveLibraryNoteCreationViewModel() {
-            return interactionController.resolveOwnedWritableViewModel(interactionController.libraryNoteMutationViewId, interactionController.libraryNoteMutationViewModelKey);
+        function resolveLibraryNoteCreationController() {
+            return windowInteractions.libraryNoteMutationController;
         }
         function createNoteFromShortcut() {
-            const addNewPanelViewModel = interactionController.resolvePanelViewModel(interactionController.addNewPanelKey);
-            if (addNewPanelViewModel && addNewPanelViewModel.requestViewModelHook !== undefined) {
-                addNewPanelViewModel.requestViewModelHook("create-note");
+            const addNewPanelController = windowInteractions.resolvePanelController(windowInteractions.addNewPanelKey);
+            if (addNewPanelController && addNewPanelController.requestControllerHook !== undefined) {
+                addNewPanelController.requestControllerHook("create-note");
                 return true;
             }
-            const noteMutationViewModel = interactionController.resolveLibraryNoteCreationViewModel();
-            if (!noteMutationViewModel || noteMutationViewModel.createEmptyNote === undefined)
+            const noteMutationController = windowInteractions.resolveLibraryNoteCreationController();
+            if (!noteMutationController || noteMutationController.createEmptyNote === undefined)
                 return false;
-            const sidebarHierarchyViewModel = interactionController.resolveOwnedWritableViewModel(interactionController.sidebarHierarchyViewId, interactionController.sidebarHierarchyViewModelKey);
-            if (sidebarHierarchyViewModel && sidebarHierarchyViewModel.setActiveHierarchyIndex !== undefined)
-                sidebarHierarchyViewModel.setActiveHierarchyIndex(interactionController.libraryHierarchyIndex);
-            return Boolean(noteMutationViewModel.createEmptyNote());
+            const sidebarHierarchyController = windowInteractions.sidebarHierarchyController;
+            if (sidebarHierarchyController && sidebarHierarchyController.setActiveHierarchyIndex !== undefined)
+                sidebarHierarchyController.setActiveHierarchyIndex(windowInteractions.libraryHierarchyIndex);
+            return Boolean(noteMutationController.createEmptyNote());
         }
         function cycleNavigationModeFromShortcut() {
-            if (interactionController.hasFocusedTextInput())
+            if (windowInteractions.hasFocusedTextInput())
                 return;
-            const navigationModeViewModel = interactionController.resolveOwnedWritableViewModel(interactionController.navigationModeViewId, interactionController.navigationModeViewModelKey);
-            if (navigationModeViewModel && navigationModeViewModel.requestNextMode !== undefined)
-                navigationModeViewModel.requestNextMode();
+            const navigationModeController = windowInteractions.navigationModeController;
+            if (navigationModeController && navigationModeController.requestNextMode !== undefined)
+                navigationModeController.requestNextMode();
         }
         function finalizeResizeRenderQualityPolicy() {
-            if (!interactionController.resizeRenderGuardEnabled || !interactionController.resizeRenderGuardSupported || !interactionController.hostWindow)
+            if (!windowInteractions.resizeRenderGuardEnabled || !windowInteractions.resizeRenderGuardSupported || !windowInteractions.hostWindow)
                 return;
 
-            interactionController.resizeInProgress = false;
-            if (!interactionController.resizeDrWasSuspended) {
-                console.log("[whatson:debug][render.policy][resizeEnd] platform=" + interactionController.hostWindow.platform + " action=resumeSkipped");
+            windowInteractions.resizeInProgress = false;
+            if (!windowInteractions.resizeDrWasSuspended) {
+                console.log("[whatson:debug][render.policy][resizeEnd] platform=" + windowInteractions.hostWindow.platform + " action=resumeSkipped");
                 return;
             }
 
             LV.RenderQuality.dynamicResolutionEnabled = false;
             LV.RenderQuality.dynamicResolutionEnabled = true;
-            interactionController.resizeDrWasSuspended = false;
-            console.log("[whatson:debug][render.policy][resizeEnd] platform=" + interactionController.hostWindow.platform + " action=resumeWithMaxScaleReset");
+            windowInteractions.resizeDrWasSuspended = false;
+            console.log("[whatson:debug][render.policy][resizeEnd] platform=" + windowInteractions.hostWindow.platform + " action=resumeWithMaxScaleReset");
         }
         function handleResizeForRenderQuality(source) {
-            if (!interactionController.resizeRenderGuardEnabled || !interactionController.resizeRenderGuardSupported || !interactionController.hostWindow)
+            if (!windowInteractions.resizeRenderGuardEnabled || !windowInteractions.resizeRenderGuardSupported || !windowInteractions.hostWindow)
                 return;
 
-            if (!interactionController.resizeInProgress) {
-                interactionController.resizeInProgress = true;
-                interactionController.resizeDrWasSuspended = LV.RenderQuality.dynamicResolutionEnabled;
+            if (!windowInteractions.resizeInProgress) {
+                windowInteractions.resizeInProgress = true;
+                windowInteractions.resizeDrWasSuspended = LV.RenderQuality.dynamicResolutionEnabled;
 
-                if (interactionController.resizeDrWasSuspended) {
+                if (windowInteractions.resizeDrWasSuspended) {
                     LV.RenderQuality.dynamicResolutionEnabled = false;
-                    console.log("[whatson:debug][render.policy][" + source + "] platform=" + interactionController.hostWindow.platform + " action=resizeBegin suspendDynamicResolution=true");
+                    console.log("[whatson:debug][render.policy][" + source + "] platform=" + windowInteractions.hostWindow.platform + " action=resizeBegin suspendDynamicResolution=true");
                 } else {
-                    console.log("[whatson:debug][render.policy][" + source + "] platform=" + interactionController.hostWindow.platform + " action=resizeBegin suspendDynamicResolution=false");
+                    console.log("[whatson:debug][render.policy][" + source + "] platform=" + windowInteractions.hostWindow.platform + " action=resizeBegin suspendDynamicResolution=false");
                 }
             }
         }
         function hasFocusedTextInput() {
-            let current = interactionController.hostWindow ? interactionController.hostWindow.activeFocusItem : null;
+            let current = windowInteractions.hostWindow ? windowInteractions.hostWindow.activeFocusItem : null;
             while (current) {
                 const isTextEditingItem = current.text !== undefined && current.cursorPosition !== undefined && current.selectedText !== undefined;
                 if (isTextEditingItem)
@@ -435,8 +386,8 @@ LV.ApplicationWindow {
             return false;
         }
         function reportLayoutBranch(source) {
-            const currentPath = interactionController.activePageRouter && interactionController.activePageRouter.currentPath !== undefined ? String(interactionController.activePageRouter.currentPath) : "<none>";
-            console.log("[whatson:debug][main.layout][" + source + "] platform=" + (interactionController.hostWindow ? interactionController.hostWindow.platform : "") + " adaptiveLayoutProfile=" + interactionController.adaptiveLayoutProfile + " adaptiveNavigationMode=" + interactionController.adaptiveNavigationMode + " adaptiveMobileLayout=" + interactionController.adaptiveMobileLayout + " adaptiveDesktopLayout=" + interactionController.adaptiveDesktopLayout + " currentPath=" + currentPath);
+            const currentPath = windowInteractions.activePageRouter && windowInteractions.activePageRouter.currentPath !== undefined ? String(windowInteractions.activePageRouter.currentPath) : "<none>";
+            console.log("[whatson:debug][main.layout][" + source + "] platform=" + (windowInteractions.hostWindow ? windowInteractions.hostWindow.platform : "") + " adaptiveLayoutProfile=" + windowInteractions.adaptiveLayoutProfile + " adaptiveNavigationMode=" + windowInteractions.adaptiveNavigationMode + " adaptiveMobileLayout=" + windowInteractions.adaptiveMobileLayout + " adaptiveDesktopLayout=" + windowInteractions.adaptiveDesktopLayout + " currentPath=" + currentPath);
         }
         function shouldRetainFocusForUiHit(uiData) {
             if (!uiData || uiData.insideWindow === false)
@@ -450,8 +401,8 @@ LV.ApplicationWindow {
             const title = uiData.title === undefined || uiData.title === null ? "" : String(uiData.title).trim();
             const searchable = className + " " + objectName + " " + path;
 
-            for (let i = 0; i < interactionController.focusRetainedUiTokens.length; ++i) {
-                const token = String(interactionController.focusRetainedUiTokens[i]).toLowerCase();
+            for (let i = 0; i < windowInteractions.focusRetainedUiTokens.length; ++i) {
+                const token = String(windowInteractions.focusRetainedUiTokens[i]).toLowerCase();
                 if (token.length > 0 && searchable.indexOf(token) >= 0)
                     return true;
             }
@@ -599,7 +550,7 @@ LV.ApplicationWindow {
         onLoaded: {
             if (item) {
                 item.hostWindow = applicationWindow;
-                item.resourcesImportViewModel = applicationWindow.rootResourcesImportViewModel;
+                item.resourcesImportController = applicationWindow.rootResourcesImportController;
             }
         }
     }
@@ -691,8 +642,8 @@ LV.ApplicationWindow {
 
                     compactMode: false
                     detailPanelCollapsed: applicationWindow.hideRightPanel
-                    editorViewModeViewModel: applicationWindow.rootEditorViewModeViewModel
-                    navigationModeViewModel: applicationWindow.rootNavigationModeViewModel
+                    editorViewModeController: applicationWindow.rootEditorViewModeController
+                    navigationModeController: applicationWindow.rootNavigationModeController
                     panelColor: applicationWindow.desktopPanelSurfaceColor
                     panelHeight: applicationWindow.navigationBarHeight
                     sidebarCollapsed: applicationWindow.hideSidebar
@@ -713,35 +664,35 @@ LV.ApplicationWindow {
                     compactCanvasColor: applicationWindow.canvasColor
                     compactMode: false
                     contentsDisplayColor: applicationWindow.desktopPanelSurfaceColor
-                    editorViewModeViewModel: applicationWindow.rootEditorViewModeViewModel
+                    editorViewModeController: applicationWindow.rootEditorViewModeController
                     isMobilePlatform: applicationWindow.isMobilePlatform
                     listViewColor: applicationWindow.desktopPanelSurfaceColor
                     listViewWidth: applicationWindow.listViewWidth
-                    libraryHierarchyViewModel: applicationWindow.rootLibraryHierarchyViewModel
+                    libraryHierarchyController: applicationWindow.rootLibraryHierarchyController
                     minContentWidth: applicationWindow.minContentWidth
                     minListViewWidth: applicationWindow.minListViewWidth
                     minRightPanelWidth: applicationWindow.minRightPanelWidth
                     minSidebarWidth: applicationWindow.minSidebarWidth
-                    noteDeletionViewModel: applicationWindow.rootLibraryNoteMutationViewModel
+                    noteDeletionController: applicationWindow.rootLibraryNoteMutationController
                     rightPanelColor: applicationWindow.desktopPanelSurfaceColor
                     rightPanelWidth: applicationWindow.rightPanelWidth
-                    resourcesImportViewModel: applicationWindow.rootResourcesImportViewModel
+                    resourcesImportController: applicationWindow.rootResourcesImportController
                     sidebarColor: applicationWindow.desktopPanelSurfaceColor
-                    sidebarHierarchyViewModel: applicationWindow.rootSidebarHierarchyViewModel
+                    sidebarHierarchyController: applicationWindow.rootSidebarHierarchyController
                     sidebarHorizontalInset: applicationWindow.hierarchyHorizontalInset
                     sidebarWidth: applicationWindow.sidebarWidth
                     splitterColor: applicationWindow.bodySplitterColor
                     splitterThickness: applicationWindow.bodySplitterThickness
                     agendaOverlayVisible: applicationWindow.agendaOverlayVisible
-                    agendaViewModel: applicationWindow.rootAgendaViewModel
+                    agendaController: applicationWindow.rootAgendaController
                     dayCalendarOverlayVisible: applicationWindow.dayCalendarOverlayVisible
-                    dayCalendarViewModel: applicationWindow.rootDayCalendarViewModel
+                    dayCalendarController: applicationWindow.rootDayCalendarController
                     monthCalendarOverlayVisible: applicationWindow.monthCalendarOverlayVisible
-                    monthCalendarViewModel: applicationWindow.rootMonthCalendarViewModel
+                    monthCalendarController: applicationWindow.rootMonthCalendarController
                     weekCalendarOverlayVisible: applicationWindow.weekCalendarOverlayVisible
-                    weekCalendarViewModel: applicationWindow.rootWeekCalendarViewModel
+                    weekCalendarController: applicationWindow.rootWeekCalendarController
                     yearCalendarOverlayVisible: applicationWindow.yearCalendarOverlayVisible
-                    yearCalendarViewModel: applicationWindow.rootYearCalendarViewModel
+                    yearCalendarController: applicationWindow.rootYearCalendarController
 
                     onNoteActivated: function (index, noteId) {
                         const normalizedNoteId = noteId === undefined || noteId === null ? "" : String(noteId).trim();
@@ -782,23 +733,23 @@ LV.ApplicationWindow {
             anchors.fill: parent
             canvasColor: applicationWindow.canvasColor
             controlSurfaceColor: applicationWindow.mobileControlSurfaceColor
-            editorViewModeViewModel: applicationWindow.rootEditorViewModeViewModel
-            navigationModeViewModel: applicationWindow.rootNavigationModeViewModel
-            sidebarHierarchyViewModel: applicationWindow.rootSidebarHierarchyViewModel
+            editorViewModeController: applicationWindow.rootEditorViewModeController
+            navigationModeController: applicationWindow.rootNavigationModeController
+            sidebarHierarchyController: applicationWindow.rootSidebarHierarchyController
             statusPlaceholderText: ""
             toolbarIconNames: applicationWindow.hierarchyToolbarIconNames
-            resourcesImportViewModel: applicationWindow.rootResourcesImportViewModel
+            resourcesImportController: applicationWindow.rootResourcesImportController
             windowInteractions: windowInteractions
             agendaOverlayVisible: applicationWindow.agendaOverlayVisible
-            agendaViewModel: applicationWindow.rootAgendaViewModel
+            agendaController: applicationWindow.rootAgendaController
             dayCalendarOverlayVisible: applicationWindow.dayCalendarOverlayVisible
-            dayCalendarViewModel: applicationWindow.rootDayCalendarViewModel
+            dayCalendarController: applicationWindow.rootDayCalendarController
             monthCalendarOverlayVisible: applicationWindow.monthCalendarOverlayVisible
-            monthCalendarViewModel: applicationWindow.rootMonthCalendarViewModel
+            monthCalendarController: applicationWindow.rootMonthCalendarController
             weekCalendarOverlayVisible: applicationWindow.weekCalendarOverlayVisible
-            weekCalendarViewModel: applicationWindow.rootWeekCalendarViewModel
+            weekCalendarController: applicationWindow.rootWeekCalendarController
             yearCalendarOverlayVisible: applicationWindow.yearCalendarOverlayVisible
-            yearCalendarViewModel: applicationWindow.rootYearCalendarViewModel
+            yearCalendarController: applicationWindow.rootYearCalendarController
 
             onAgendaRequested: applicationWindow.openAgendaOverlay(true)
             onDayCalendarRequested: applicationWindow.openDayCalendarOverlay(true)

@@ -42,6 +42,6 @@
   can call it without branching per platform first.
 
 ## Main Collaborators
-- `src/app/viewmodel/onboarding/OnboardingHubController.*`
+- `src/app/models/onboarding/OnboardingHubController.*`
 - `src/app/runtime/startup/WhatSonStartupHubResolver.*`
 - `src/app/models/file/note/ContentsNoteManagementCoordinator.*`

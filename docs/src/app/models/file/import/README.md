@@ -13,8 +13,8 @@
 - No child directories.
 
 ## Child Files
-- `ResourcesImportViewModel.cpp`
-- `ResourcesImportViewModel.hpp`
+- `ResourcesImportController.cpp`
+- `ResourcesImportController.hpp`
 
 ## Intended Detailed Sections
 - Module responsibilities and architectural layer

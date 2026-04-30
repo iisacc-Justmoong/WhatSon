@@ -14,7 +14,7 @@ This helper owns modifier-aware selection state for the compact metadata lists u
 ## Primary Selection Contract
 
 - The detail panel still exposes only one committed metadata index (`activeFolderIndex` / `activeTagIndex`) through the
-  properties viewmodel.
+  properties controller.
 - This controller therefore keeps a QML-local `selectedIndices` array for visual multi-selection, but always routes a
   primary row back through `section.itemTriggered(...)` so delete and other active-row actions continue to operate on a
   single committed index.

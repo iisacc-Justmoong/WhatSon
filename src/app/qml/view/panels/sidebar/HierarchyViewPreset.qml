@@ -4,14 +4,14 @@ import LVRS 1.0 as LV
 SidebarHierarchyView {
     id: hierarchyViewPreset
 
-    readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("sidebar.HierarchyViewPreset") : null
+    readonly property var panelController: panelControllerRegistry ? panelControllerRegistry.panelController("sidebar.HierarchyViewPreset") : null
 
     signal viewHookRequested
 
     function requestViewHook(reason) {
         const hookReason = reason !== undefined ? String(reason) : "manual";
-        if (panelViewModel && panelViewModel.requestViewModelHook)
-            panelViewModel.requestViewModelHook(hookReason);
+        if (panelController && panelController.requestControllerHook)
+            panelController.requestControllerHook(hookReason);
         viewHookRequested();
     }
 

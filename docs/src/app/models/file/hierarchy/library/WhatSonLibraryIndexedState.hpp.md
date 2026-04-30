@@ -19,5 +19,5 @@ library note set plus the derived `draft` and `today` smart buckets.
 
 ## Architectural Role
 
-This header exists to move note-index bookkeeping out of `LibraryHierarchyViewModel` and to provide
-the shared projection backend used by runtime loading, library viewmodels, and bookmarks viewmodels.
+This header exists to move note-index bookkeeping out of `LibraryHierarchyController` and to provide
+the shared projection backend used by runtime loading, library controllers, and bookmarks controllers.

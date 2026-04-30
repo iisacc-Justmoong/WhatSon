@@ -22,19 +22,19 @@ right detail panel.
 ## Current Routing Notes
 
 - `ListBarLayout.noteActivated(...)` is re-emitted as `BodyLayout.noteActivated(...)`.
-- Calendar overlay visibility and viewmodel handles are forwarded to `ContentViewLayout.qml`.
+- Calendar overlay visibility and controller handles are forwarded to `ContentViewLayout.qml`.
 - Year-calendar month/day routing is also re-emitted upward as `monthCalendarOverlayOpenRequested`, so the desktop app
   shell can swap from year view to month view without breaking the overlay ownership contract.
-- `resourcesImportViewModel`, `editorViewModeViewModel`, and `isMobilePlatform` are forwarded to the central content
+- `resourcesImportController`, `editorViewModeController`, and `isMobilePlatform` are forwarded to the central content
   surface.
-- `sidebarHierarchyViewModel` is also forwarded to the central content surface so calendar note taps can switch the
+- `sidebarHierarchyController` is also forwarded to the central content surface so calendar note taps can switch the
   active domain back to `Library` before the editor becomes visible again.
 - The desktop shell now resolves the effective deletion target for `ListBarLayout` from the active
   hierarchy first. If the active hierarchy publishes its own delete/clear-folder contract
   (`deleteNoteById`, `deleteNotesByIds`, `clearNoteFoldersById`, or `clearNoteFoldersByIds`), that
-  contract is used; otherwise the shell falls back to the shared library-note mutation viewmodel.
-- The desktop shell still snapshots the active hierarchy index and hierarchy viewmodel together when
-  `SidebarHierarchyViewModel.activeBindingsChanged()` fires, but it now also forwards the already-resolved
+  contract is used; otherwise the shell falls back to the shared library-note mutation controller.
+- The desktop shell still snapshots the active hierarchy index and hierarchy controller together when
+  `SidebarHierarchyController.activeBindingsChanged()` fires, but it now also forwards the already-resolved
   `activeNoteListModel` into `ListBarLayout.qml`.
 - `ListBarLayout.qml` and `ContentViewLayout.qml` therefore consume the same note-list object during hierarchy-domain
   switches. This removes one remaining split path where the list bar could keep resolving rows from a stale
@@ -48,7 +48,7 @@ right detail panel.
 
 - The maintained C++ regression suite now locks the hierarchy-driven note-list rebinding contract used by this shell.
 - Regression checklist:
-  - The center content surface must still receive the active hierarchy viewmodel and note-list model.
+  - The center content surface must still receive the active hierarchy controller and note-list model.
   - Sidebar/list/right-panel splitters must keep their existing resize behavior.
   - Calendar dismiss routing must still return the body shell to the editor surface.
   - A year-calendar month/day tap from the center content surface must still bubble up as a month-overlay open request.
@@ -58,7 +58,7 @@ right detail panel.
     deletion contract when the resources hierarchy owns the current list.
   - Switching between library and resources must swap the list/content bindings from one shared snapshot, so the
     previous hierarchy's note-list rows do not remain visible during the transition turn.
-  - Switching from Library to Resources (or any other domain) must also replace the mounted content/list viewmodel
+  - Switching from Library to Resources (or any other domain) must also replace the mounted content/list controller
     objects themselves, not only the highlighted toolbar index.
   - Switching from Resources back to Library must restore library-row metadata such as folder and tag chips from the
     same active note-list model that the editor surface uses.

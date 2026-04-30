@@ -259,8 +259,8 @@
   `typingSessionSyncProtected` plus `pendingBodySave`, not only focus state, so stale async snapshots cannot overwrite
   active typing when focus reporting briefly flaps.
 - `ContentsDisplayView.qml` now delegates former host-owned policy roles to C++ coordinators and model-side
-  controllers under `src/app/models/editor/display`, with narrow C++ ViewModel command surfaces under
-  `src/app/viewmodel/editor/display`. The unified host keeps UI composition and repaint/focus execution only, while
+  controllers under `src/app/models/editor/display`, with narrow C++ Controller command surfaces under
+  `src/app/models/editor/display`. The unified host keeps UI composition and repaint/focus execution only, while
   `ContentsDisplayHostModePolicy.qml` carries platform-mode presentation policy.
 - `ContentsStructuredDocumentFlow.qml` now also converges structured document-host state through one
   `ContentsStructuredDocumentHost` instance and delegates collection normalization, focus resolution, and RAW mutation

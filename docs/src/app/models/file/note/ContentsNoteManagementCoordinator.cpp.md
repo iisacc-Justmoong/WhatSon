@@ -28,7 +28,7 @@
 - Successful direct persistence first updates the editable runtime note snapshot through
   `applyPersistedBodyStateForNote(...)`, then queues tracked-stat refresh as a separate follow-up request.
 - When the bound hierarchy view-model does not expose `applyPersistedBodyStateForNote(...)` but does expose
-  `requestViewModelHook()`, the coordinator now queues that hook after a successful direct body write. This lets
+  `requestControllerHook()`, the coordinator now queues that hook after a successful direct body write. This lets
   fallback-driven hierarchy screens such as Tags re-read freshly mutated hierarchy files (`Tags.wstags`) after inline
   hashtag promotion.
 - Successful tracked-stat refresh then asks the content view-model to reload that note's metadata snapshot.

@@ -33,7 +33,7 @@ It supports two variants through one boolean argument:
 
 ## Interaction
 1. Whole cell is clickable through an internal `MouseArea`.
-2. Parent page handles `clicked` and updates selected date in `MonthCalendarViewModel`.
+2. Parent page handles `clicked` and updates selected date in `MonthCalendarController`.
 3. Individual note chips can emit `entryActivated(entryCellModel)` so note-open gestures do not need to hijack the
    whole day-cell click contract.
 

@@ -6,7 +6,7 @@ LV.IconButton {
 
     property var buttonSpec: ({})
     readonly property string figmaNodeId: buttonSpec && buttonSpec.figmaNodeId !== undefined ? String(buttonSpec.figmaNodeId) : ""
-    readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("detail.DetailPanelHeaderToolbarButton") : null
+    readonly property var panelController: panelControllerRegistry ? panelControllerRegistry.panelController("detail.DetailPanelHeaderToolbarButton") : null
     readonly property string resolvedObjectName: buttonSpec && buttonSpec.objectName !== undefined ? String(buttonSpec.objectName) : ""
     property bool selected: buttonSpec && buttonSpec.selected === true
 
@@ -15,8 +15,8 @@ LV.IconButton {
 
     function requestViewHook(reason) {
         const hookReason = reason !== undefined ? String(reason) : "manual";
-        if (panelViewModel && panelViewModel.requestViewModelHook)
-            panelViewModel.requestViewModelHook(hookReason);
+        if (panelController && panelController.requestControllerHook)
+            panelController.requestControllerHook(hookReason);
         viewHookRequested();
     }
 

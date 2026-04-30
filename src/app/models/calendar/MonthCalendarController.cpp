@@ -1,0 +1,644 @@
+#include "app/models/calendar/MonthCalendarController.hpp"
+
+#include "app/models/calendar/ICalendarBoardStore.hpp"
+#include "app/models/file/WhatSonDebugTrace.hpp"
+#include "app/policy/ArchitecturePolicyLock.hpp"
+
+#include <QCalendar>
+#include <QDate>
+#include <QLocale>
+#include <QVariantMap>
+
+namespace
+{
+    constexpr int kMinimumSupportedYear = 1;
+    constexpr int kMaximumSupportedYear = 9999;
+    constexpr int kMonthGridCellCount = 42;
+}
+
+MonthCalendarController::MonthCalendarController(QObject* parent)
+    : QObject(parent)
+      , m_displayedYear(QDate::currentDate().year())
+      , m_displayedMonth(QDate::currentDate().month())
+      , m_calendarSystem(Gregorian)
+      , m_selectedDateIso(QDate::currentDate().toString(Qt::ISODate))
+{
+    rebuildMonthModel();
+    refreshSelectedDateEntries();
+}
+
+int MonthCalendarController::displayedYear() const noexcept
+{
+    return m_displayedYear;
+}
+
+int MonthCalendarController::displayedMonth() const noexcept
+{
+    return m_displayedMonth;
+}
+
+MonthCalendarController::CalendarSystem MonthCalendarController::calendarSystem() const noexcept
+{
+    return m_calendarSystem;
+}
+
+QString MonthCalendarController::calendarSystemName() const
+{
+    return calendarSystemLabel(m_calendarSystem);
+}
+
+QString MonthCalendarController::monthLabel() const
+{
+    return m_monthLabel;
+}
+
+QStringList MonthCalendarController::weekdayLabels() const
+{
+    return m_weekdayLabels;
+}
+
+QVariantList MonthCalendarController::dayModels() const
+{
+    return m_dayModels;
+}
+
+QVariantList MonthCalendarController::pagerMonthModels() const
+{
+    return m_pagerMonthModels;
+}
+
+QString MonthCalendarController::selectedDateIso() const
+{
+    return m_selectedDateIso;
+}
+
+QVariantList MonthCalendarController::selectedDateEntries() const
+{
+    return m_selectedDateEntries;
+}
+
+QVariantList MonthCalendarController::calendarSystemOptions() const
+{
+    return {
+        QVariantMap{
+            {QStringLiteral("value"), static_cast<int>(Gregorian)},
+            {QStringLiteral("label"), calendarSystemLabel(Gregorian)}
+        },
+        QVariantMap{
+            {QStringLiteral("value"), static_cast<int>(Julian)},
+            {QStringLiteral("label"), calendarSystemLabel(Julian)}
+        },
+        QVariantMap{
+            {QStringLiteral("value"), static_cast<int>(IslamicCivil)},
+            {QStringLiteral("label"), calendarSystemLabel(IslamicCivil)}
+        },
+        QVariantMap{
+            {QStringLiteral("value"), static_cast<int>(Custom)},
+            {QStringLiteral("label"), calendarSystemLabel(Custom)}
+        }
+    };
+}
+
+void MonthCalendarController::setCalendarBoardStore(ICalendarBoardStore* calendarBoardStore)
+{
+    if (calendarBoardStore != nullptr
+        && !WhatSon::Policy::verifyMutableDependencyAllowed(
+            WhatSon::Policy::Layer::Controller,
+            WhatSon::Policy::Layer::Store,
+            QStringLiteral("MonthCalendarController::setCalendarBoardStore")))
+    {
+        return;
+    }
+
+    if (calendarBoardStore == nullptr
+        && !WhatSon::Policy::verifyMutableWiringAllowed(
+            QStringLiteral("MonthCalendarController::setCalendarBoardStore")))
+    {
+        return;
+    }
+
+    if (m_calendarBoardStore == calendarBoardStore)
+    {
+        return;
+    }
+
+    if (m_calendarBoardStore)
+    {
+        disconnect(m_calendarBoardStore, nullptr, this, nullptr);
+    }
+
+    m_calendarBoardStore = calendarBoardStore;
+    if (m_calendarBoardStore)
+    {
+        connect(m_calendarBoardStore, &ICalendarBoardStore::entriesChanged, this, [this]()
+        {
+            rebuildMonthModel();
+            refreshSelectedDateEntries();
+        });
+    }
+
+    rebuildMonthModel();
+    refreshSelectedDateEntries();
+}
+
+void MonthCalendarController::setDisplayedYear(int year)
+{
+    const int boundedYear = qBound(kMinimumSupportedYear, year, kMaximumSupportedYear);
+    if (m_displayedYear == boundedYear)
+    {
+        return;
+    }
+
+    m_displayedYear = boundedYear;
+    emit displayedYearChanged();
+    rebuildMonthModel();
+}
+
+void MonthCalendarController::setDisplayedMonth(int month)
+{
+    const QCalendar calendar = resolveCalendarSystem();
+    const int monthCount = qMax(1, calendar.monthsInYear(m_displayedYear));
+    const int boundedMonth = qBound(1, month, monthCount);
+    if (m_displayedMonth == boundedMonth)
+    {
+        return;
+    }
+
+    m_displayedMonth = boundedMonth;
+    emit displayedMonthChanged();
+    rebuildMonthModel();
+}
+
+void MonthCalendarController::setCalendarSystemByEnum(CalendarSystem system)
+{
+    if (m_calendarSystem == system)
+    {
+        return;
+    }
+
+    m_calendarSystem = system;
+    emit calendarSystemChanged();
+    rebuildMonthModel();
+}
+
+void MonthCalendarController::setSelectedDateIso(const QString& dateIso)
+{
+    const QDate parsedDate = QDate::fromString(dateIso.trimmed(), Qt::ISODate);
+    if (!parsedDate.isValid())
+    {
+        return;
+    }
+
+    const QString normalizedDateIso = parsedDate.toString(Qt::ISODate);
+    if (m_selectedDateIso == normalizedDateIso)
+    {
+        return;
+    }
+
+    m_selectedDateIso = normalizedDateIso;
+    emit selectedDateIsoChanged();
+    refreshSelectedDateEntries();
+}
+
+void MonthCalendarController::setCalendarSystemByValue(int value)
+{
+    switch (value)
+    {
+    case static_cast<int>(Gregorian):
+        setCalendarSystemByEnum(Gregorian);
+        return;
+    case static_cast<int>(Julian):
+        setCalendarSystemByEnum(Julian);
+        return;
+    case static_cast<int>(IslamicCivil):
+        setCalendarSystemByEnum(IslamicCivil);
+        return;
+    case static_cast<int>(Custom):
+        setCalendarSystemByEnum(Custom);
+        return;
+    default:
+        break;
+    }
+
+    WhatSon::Debug::traceSelf(
+        this,
+        QStringLiteral("calendar.month"),
+        QStringLiteral("setCalendarSystemByValue.rejected"),
+        QStringLiteral("value=%1 reason=unsupported enum value").arg(value));
+}
+
+void MonthCalendarController::shiftMonth(int delta)
+{
+    if (delta == 0)
+    {
+        return;
+    }
+
+    int nextYear = m_displayedYear;
+    int nextMonth = m_displayedMonth + delta;
+    const QCalendar calendar = resolveCalendarSystem();
+
+    while (nextMonth < 1)
+    {
+        if (nextYear <= kMinimumSupportedYear)
+        {
+            nextYear = kMinimumSupportedYear;
+            nextMonth = 1;
+            break;
+        }
+        nextYear -= 1;
+        nextMonth += qMax(1, calendar.monthsInYear(nextYear));
+    }
+
+    while (nextYear < kMaximumSupportedYear)
+    {
+        const int monthCount = qMax(1, calendar.monthsInYear(nextYear));
+        if (nextMonth <= monthCount)
+        {
+            break;
+        }
+
+        nextMonth -= monthCount;
+        nextYear += 1;
+    }
+
+    nextYear = qBound(kMinimumSupportedYear, nextYear, kMaximumSupportedYear);
+    const int monthCount = qMax(1, calendar.monthsInYear(nextYear));
+    nextMonth = qBound(1, nextMonth, monthCount);
+
+    bool changed = false;
+    if (m_displayedYear != nextYear)
+    {
+        m_displayedYear = nextYear;
+        emit displayedYearChanged();
+        changed = true;
+    }
+    if (m_displayedMonth != nextMonth)
+    {
+        m_displayedMonth = nextMonth;
+        emit displayedMonthChanged();
+        changed = true;
+    }
+    if (!changed)
+    {
+        return;
+    }
+
+    rebuildMonthModel();
+}
+
+void MonthCalendarController::focusToday()
+{
+    const QDate today = QDate::currentDate();
+    if (!today.isValid())
+    {
+        return;
+    }
+
+    const QCalendar calendar = resolveCalendarSystem();
+    const QCalendar::YearMonthDay parts = calendar.partsFromDate(today);
+    if (parts.isValid())
+    {
+        setDisplayedYear(parts.year);
+        setDisplayedMonth(parts.month);
+    }
+    else
+    {
+        setDisplayedYear(today.year());
+        setDisplayedMonth(today.month());
+    }
+
+    setSelectedDateIso(today.toString(Qt::ISODate));
+}
+
+void MonthCalendarController::requestMonthView(const QString& reason)
+{
+    const QString normalizedReason = reason.trimmed().isEmpty()
+                                         ? QStringLiteral("manual")
+                                         : reason.trimmed();
+
+    WhatSon::Debug::traceSelf(
+        this,
+        QStringLiteral("calendar.month"),
+        QStringLiteral("monthView.request"),
+        QStringLiteral("year=%1 month=%2 system=%3 reason=%4")
+        .arg(m_displayedYear)
+        .arg(m_displayedMonth)
+        .arg(calendarSystemName(), normalizedReason));
+
+    emit monthViewRequested(normalizedReason);
+}
+
+QVariantMap MonthCalendarController::monthProjectionFor(int year, int month) const
+{
+    return buildMonthProjection(year, month);
+}
+
+bool MonthCalendarController::addEvent(
+    const QString& dateIso,
+    const QString& timeText,
+    const QString& title,
+    const QString& detail)
+{
+    if (!m_calendarBoardStore)
+    {
+        return false;
+    }
+
+    const QString resolvedDateIso = dateIso.trimmed().isEmpty() ? m_selectedDateIso : dateIso;
+    return m_calendarBoardStore->addEvent(resolvedDateIso, timeText, title, detail);
+}
+
+bool MonthCalendarController::addTask(
+    const QString& dateIso,
+    const QString& timeText,
+    const QString& title,
+    const QString& detail)
+{
+    if (!m_calendarBoardStore)
+    {
+        return false;
+    }
+
+    const QString resolvedDateIso = dateIso.trimmed().isEmpty() ? m_selectedDateIso : dateIso;
+    return m_calendarBoardStore->addTask(resolvedDateIso, timeText, title, detail);
+}
+
+QVariantList MonthCalendarController::entriesForDate(const QString& dateIso) const
+{
+    if (!m_calendarBoardStore)
+    {
+        return {};
+    }
+
+    const QString resolvedDateIso = dateIso.trimmed().isEmpty() ? m_selectedDateIso : dateIso.trimmed();
+    return m_calendarBoardStore->entriesForDate(resolvedDateIso);
+}
+
+bool MonthCalendarController::removeEntry(const QString& entryId)
+{
+    if (!m_calendarBoardStore)
+    {
+        return false;
+    }
+    return m_calendarBoardStore->removeEntry(entryId);
+}
+
+bool MonthCalendarController::setTaskCompleted(const QString& entryId, bool completed)
+{
+    if (!m_calendarBoardStore)
+    {
+        return false;
+    }
+    return m_calendarBoardStore->setTaskCompleted(entryId, completed);
+}
+
+QVariantMap MonthCalendarController::buildMonthProjection(int year, int month) const
+{
+    const QCalendar calendar = resolveCalendarSystem();
+    const QLocale locale = QLocale::system();
+    const int firstWeekDay = static_cast<int>(locale.firstDayOfWeek());
+    const QDate today = QDate::currentDate();
+
+    int normalizedYear = qBound(kMinimumSupportedYear, year, kMaximumSupportedYear);
+    int normalizedMonth = month;
+
+    while (normalizedMonth < 1)
+    {
+        if (normalizedYear <= kMinimumSupportedYear)
+        {
+            normalizedYear = kMinimumSupportedYear;
+            normalizedMonth = 1;
+            break;
+        }
+        normalizedYear -= 1;
+        normalizedMonth += qMax(1, calendar.monthsInYear(normalizedYear));
+    }
+
+    while (normalizedYear < kMaximumSupportedYear)
+    {
+        const int monthCount = qMax(1, calendar.monthsInYear(normalizedYear));
+        if (normalizedMonth <= monthCount)
+        {
+            break;
+        }
+        normalizedMonth -= monthCount;
+        normalizedYear += 1;
+    }
+
+    const int monthCount = qMax(1, calendar.monthsInYear(normalizedYear));
+    normalizedMonth = qBound(1, normalizedMonth, monthCount);
+
+    QVariantMap projection;
+    projection.insert(QStringLiteral("year"), normalizedYear);
+    projection.insert(QStringLiteral("month"), normalizedMonth);
+
+    const QDate firstDate = calendar.dateFromParts(normalizedYear, normalizedMonth, 1);
+    if (!firstDate.isValid())
+    {
+        projection.insert(QStringLiteral("weekdayLabels"), QStringList{});
+        projection.insert(QStringLiteral("dayModels"), QVariantList{});
+        projection.insert(QStringLiteral("monthLabel"), QStringLiteral("Month"));
+        return projection;
+    }
+
+    QStringList nextWeekdayLabels;
+    nextWeekdayLabels.reserve(7);
+    for (int offset = 0; offset < 7; ++offset)
+    {
+        const int weekDay = ((firstWeekDay - 1 + offset) % 7) + 1;
+        nextWeekdayLabels.push_back(
+            calendar.standaloneWeekDayName(locale, weekDay, QLocale::ShortFormat));
+    }
+
+    const int daysInMonth = qMax(1, calendar.daysInMonth(normalizedMonth, normalizedYear));
+
+    int previousYear = normalizedYear;
+    int previousMonth = normalizedMonth - 1;
+    if (previousMonth < 1)
+    {
+        previousYear -= 1;
+        previousMonth = qMax(1, calendar.monthsInYear(previousYear));
+    }
+
+    int nextYear = normalizedYear;
+    int nextMonth = normalizedMonth + 1;
+    if (nextMonth > monthCount)
+    {
+        nextYear += 1;
+        nextMonth = 1;
+    }
+
+    const int previousMonthDays = qMax(1, calendar.daysInMonth(previousMonth, previousYear));
+    const int firstMonthColumn = ((calendar.dayOfWeek(firstDate) - firstWeekDay + 7) % 7);
+
+    QVariantList nextDayModels;
+    nextDayModels.reserve(kMonthGridCellCount);
+    for (int cell = 0; cell < kMonthGridCellCount; ++cell)
+    {
+        const int dayOffset = cell - firstMonthColumn;
+
+        int targetYear = normalizedYear;
+        int targetMonth = normalizedMonth;
+        int targetDay = dayOffset + 1;
+        bool inCurrentMonth = true;
+
+        if (dayOffset < 0)
+        {
+            targetYear = previousYear;
+            targetMonth = previousMonth;
+            targetDay = previousMonthDays + dayOffset + 1;
+            inCurrentMonth = false;
+        }
+        else if (dayOffset >= daysInMonth)
+        {
+            targetYear = nextYear;
+            targetMonth = nextMonth;
+            targetDay = dayOffset - daysInMonth + 1;
+            inCurrentMonth = false;
+        }
+
+        const QDate cellDate = calendar.dateFromParts(targetYear, targetMonth, targetDay);
+        const QString dateIso = cellDate.isValid() ? cellDate.toString(Qt::ISODate) : QString();
+        const QVariantList entries =
+            m_calendarBoardStore ? m_calendarBoardStore->entriesForDate(dateIso) : QVariantList{};
+        const QVariantMap entryCounts = m_calendarBoardStore
+                                            ? m_calendarBoardStore->countsForDate(dateIso)
+                                            : QVariantMap{};
+
+        QVariantMap dayModel;
+        dayModel.insert(QStringLiteral("day"), targetDay);
+        dayModel.insert(QStringLiteral("month"), targetMonth);
+        dayModel.insert(QStringLiteral("year"), targetYear);
+        dayModel.insert(QStringLiteral("dateIso"), dateIso);
+        dayModel.insert(QStringLiteral("inCurrentMonth"), inCurrentMonth);
+        dayModel.insert(QStringLiteral("isToday"), cellDate.isValid() && cellDate == today);
+        dayModel.insert(QStringLiteral("entries"), entries);
+        dayModel.insert(
+            QStringLiteral("eventCount"),
+            entryCounts.value(QStringLiteral("eventCount"), 0).toInt());
+        dayModel.insert(
+            QStringLiteral("taskCount"),
+            entryCounts.value(QStringLiteral("taskCount"), 0).toInt());
+        dayModel.insert(
+            QStringLiteral("entryCount"),
+            entryCounts.value(QStringLiteral("entryCount"), 0).toInt());
+        nextDayModels.push_back(dayModel);
+    }
+
+    QString nextMonthLabel = calendar.standaloneMonthName(
+        locale,
+        normalizedMonth,
+        normalizedYear,
+        QLocale::LongFormat);
+    if (nextMonthLabel.trimmed().isEmpty())
+    {
+        nextMonthLabel = QStringLiteral("Month %1").arg(normalizedMonth);
+    }
+
+    projection.insert(QStringLiteral("weekdayLabels"), nextWeekdayLabels);
+    projection.insert(QStringLiteral("dayModels"), nextDayModels);
+    projection.insert(QStringLiteral("monthLabel"), nextMonthLabel);
+    return projection;
+}
+
+void MonthCalendarController::rebuildMonthModel()
+{
+    const QVariantMap currentProjection = buildMonthProjection(m_displayedYear, m_displayedMonth);
+    const int normalizedYear = currentProjection.value(QStringLiteral("year"), m_displayedYear).toInt();
+    const int normalizedMonth = currentProjection.value(QStringLiteral("month"), m_displayedMonth).toInt();
+
+    if (m_displayedYear != normalizedYear)
+    {
+        m_displayedYear = normalizedYear;
+        emit displayedYearChanged();
+    }
+    if (m_displayedMonth != normalizedMonth)
+    {
+        m_displayedMonth = normalizedMonth;
+        emit displayedMonthChanged();
+    }
+
+    QVariantList nextPagerMonthModels;
+    nextPagerMonthModels.reserve(3);
+    nextPagerMonthModels.push_back(buildMonthProjection(normalizedYear, normalizedMonth - 1));
+    nextPagerMonthModels.push_back(currentProjection);
+    nextPagerMonthModels.push_back(buildMonthProjection(normalizedYear, normalizedMonth + 1));
+
+    m_weekdayLabels = currentProjection.value(QStringLiteral("weekdayLabels")).toStringList();
+    m_dayModels = currentProjection.value(QStringLiteral("dayModels")).toList();
+    m_monthLabel = currentProjection.value(QStringLiteral("monthLabel"), QStringLiteral("Month")).toString();
+    m_pagerMonthModels = nextPagerMonthModels;
+    emit monthViewChanged();
+    refreshSelectedDateEntries();
+}
+
+void MonthCalendarController::refreshSelectedDateEntries()
+{
+    const QVariantList nextEntries =
+        m_calendarBoardStore && !m_selectedDateIso.trimmed().isEmpty()
+            ? m_calendarBoardStore->entriesForDate(m_selectedDateIso)
+            : QVariantList{};
+    if (m_selectedDateEntries == nextEntries)
+    {
+        return;
+    }
+
+    m_selectedDateEntries = nextEntries;
+    emit selectedDateEntriesChanged();
+}
+
+QCalendar MonthCalendarController::resolveCalendarSystem() const
+{
+    switch (m_calendarSystem)
+    {
+    case Gregorian:
+        return QCalendar(QCalendar::System::Gregorian);
+    case Julian:
+        {
+            const QCalendar calendar(QStringLiteral("julian"));
+            if (calendar.isValid())
+            {
+                return calendar;
+            }
+            break;
+        }
+    case IslamicCivil:
+        {
+            const QCalendar calendar(QStringLiteral("islamic-civil"));
+            if (calendar.isValid())
+            {
+                return calendar;
+            }
+            break;
+        }
+    case Custom:
+        {
+            const QCalendar calendar(QStringLiteral("custom"));
+            if (calendar.isValid())
+            {
+                return calendar;
+            }
+            break;
+        }
+    }
+
+    return QCalendar(QCalendar::System::Gregorian);
+}
+
+QString MonthCalendarController::calendarSystemLabel(CalendarSystem system)
+{
+    switch (system)
+    {
+    case Gregorian:
+        return QStringLiteral("Gregorian");
+    case Julian:
+        return QStringLiteral("Julian");
+    case IslamicCivil:
+        return QStringLiteral("Islamic Civil");
+    case Custom:
+        return QStringLiteral("Custom");
+    }
+
+    return QStringLiteral("Gregorian");
+}

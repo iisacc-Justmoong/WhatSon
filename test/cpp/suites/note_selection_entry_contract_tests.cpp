@@ -65,7 +65,7 @@ void WhatSonCppRegressionTests::detailCurrentNoteContextBridge_prefersCurrentNot
     ensureCoreApplication();
 
     DetailCurrentNoteContextBridge bridge;
-    FakeContentPersistenceViewModel noteDirectorySourceViewModel;
+    FakeContentPersistenceController noteDirectorySourceController;
     LibraryNoteListModel libraryNoteListModel;
     ResourcesListModel resourcesListModel;
     QSignalSpy currentNoteIdChangedSpy(&bridge, &DetailCurrentNoteContextBridge::currentNoteIdChanged);
@@ -73,7 +73,7 @@ void WhatSonCppRegressionTests::detailCurrentNoteContextBridge_prefersCurrentNot
         &bridge,
         &DetailCurrentNoteContextBridge::currentNoteDirectoryPathChanged);
 
-    noteDirectorySourceViewModel.setNoteDirectoryPath(
+    noteDirectorySourceController.setNoteDirectoryPath(
         QStringLiteral("note-2"),
         QStringLiteral("/tmp/legacy-note-2.wsnote"));
 
@@ -89,7 +89,7 @@ void WhatSonCppRegressionTests::detailCurrentNoteContextBridge_prefersCurrentNot
     });
     libraryNoteListModel.setCurrentIndex(1);
 
-    bridge.setNoteDirectorySourceViewModel(&noteDirectorySourceViewModel);
+    bridge.setNoteDirectorySourceController(&noteDirectorySourceController);
     bridge.setNoteListModel(&libraryNoteListModel);
 
     QCOMPARE(bridge.currentNoteId(), QStringLiteral("note-2"));

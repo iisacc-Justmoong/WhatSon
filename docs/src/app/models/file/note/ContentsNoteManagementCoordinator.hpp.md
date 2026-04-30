@@ -13,7 +13,7 @@ should synchronize to disk.
 
 ## Public Contract
 
-- `setContentViewModel(QObject*)`: binds the editable hierarchy/content view-model contract used to resolve note paths
+- `setContentController(QObject*)`: binds the editable hierarchy/content view-model contract used to resolve note paths
   and mirror persisted state back into runtime models.
 - `contentPersistenceContractAvailable()`: reports whether either the direct `.wsnote` lane or the deferred fallback
   view-model persistence lane is available.

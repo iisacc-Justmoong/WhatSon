@@ -33,7 +33,7 @@ public:
     Q_INVOKABLE QVariantMap dismissPagePlan(bool hasRouter, bool hasNoteListModel, const QString& displayedPath) const;
     Q_INVOKABLE QVariantMap openDetailPanelPlan(bool hasRouter, bool hasNoteListModel, const QString& currentPath, const QString& displayedPath, int depth) const;
     Q_INVOKABLE QVariantMap openNoteListPlan(bool hasRouter, bool hasNoteListModel, const QString& currentPath, const QString& displayedPath, int depth) const;
-    Q_INVOKABLE QVariantMap openEditorPlan(const QVariant& noteId, bool hasActiveContentViewModel, bool hasNoteListModel, bool hasRouter, const QString& currentPath, const QString& displayedPath, int depth) const;
+    Q_INVOKABLE QVariantMap openEditorPlan(const QVariant& noteId, bool hasActiveContentController, bool hasNoteListModel, bool hasRouter, const QString& currentPath, const QString& displayedPath, int depth) const;
     Q_INVOKABLE QVariantMap calendarSurfacePlan(bool hasRouter, bool hasNoteListModel, const QString& displayedPath) const;
     Q_INVOKABLE QVariantMap overlayDismissPlan(bool agendaVisible, bool dayVisible, bool weekVisible, bool monthVisible, bool yearVisible) const;
 

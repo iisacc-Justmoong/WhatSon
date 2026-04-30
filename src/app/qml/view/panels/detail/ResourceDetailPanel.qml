@@ -3,7 +3,7 @@ import QtQuick
 Item {
     id: resourceDetailPanel
 
-    property var resourceDetailPanelViewModel: null
+    property var resourceDetailPanelController: null
 
     signal viewHookRequested
 

@@ -4,10 +4,10 @@
 `DayCalendarPage.qml` renders the day calendar overlay with a 24-hour timeline pattern common in calendar apps.
 
 ## View Contract
-- Input: `dayCalendarViewModel`
+- Input: `dayCalendarController`
 - Output signal: `noteOpenRequested(string noteId)`
 - Hook signal: `viewHookRequested(string reason)`
-- Hook forwarder: `requestViewHook(reason)` delegates to `dayCalendarViewModel.requestDayView(reason)`
+- Hook forwarder: `requestViewHook(reason)` delegates to `dayCalendarController.requestDayView(reason)`
 
 ## UI Composition
 - Surface:
@@ -23,7 +23,7 @@
 ## Interaction Flow
 1. `Component.onCompleted` requests `page-open`.
 2. Header control actions mutate date cursor (`shiftDay`, `setDisplayedDateIso`) and request hooks.
-3. Timeline binds directly to `timeSlots` from `DayCalendarViewModel`.
+3. Timeline binds directly to `timeSlots` from `DayCalendarController`.
 4. Tapping a projected note chip resolves its `sourceId` and emits `noteOpenRequested(noteId)` so the host can reopen
    that note in the editor surface.
 
@@ -35,7 +35,7 @@
     - Manual event chips must remain display-only and must not pretend to open a library note.
 
 ## Collaborators
-- `src/app/viewmodel/calendar/DayCalendarViewModel.hpp/.cpp`
+- `src/app/models/calendar/DayCalendarController.hpp/.cpp`
 - `src/app/qml/view/calendar/CalendarTodayControl.qml`
 - `src/app/qml/view/calendar/CalendarEventCell.qml`
 - `src/app/qml/view/panels/ContentViewLayout.qml`

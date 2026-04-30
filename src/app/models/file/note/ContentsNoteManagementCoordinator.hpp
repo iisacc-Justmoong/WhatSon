@@ -17,8 +17,8 @@ public:
     explicit ContentsNoteManagementCoordinator(QObject* parent = nullptr);
     ~ContentsNoteManagementCoordinator() override;
 
-    QObject* contentViewModel() const noexcept;
-    void setContentViewModel(QObject* model);
+    QObject* contentController() const noexcept;
+    void setContentController(QObject* model);
 
     bool contentPersistenceContractAvailable() const noexcept;
     bool directPersistenceAvailable() const noexcept;
@@ -64,14 +64,14 @@ signals:
         const QString& errorMessage);
 
 private slots:
-    void handleContentViewModelDestroyed();
+    void handleContentControllerDestroyed();
 
 private:
     enum class RequestKind
     {
         LoadNoteBodyText,
         DirectPersistBody,
-        ViewModelPersistBody,
+        ControllerPersistBody,
         IncrementOpenCount,
         RefreshTrackedStatistics,
         ReconcileViewSessionSnapshot
@@ -125,17 +125,17 @@ private:
     bool enqueueRequest(Request request);
     int findPendingRequestIndex(RequestKind kind, const QString& noteId) const;
     void dispatchNextRequest();
-    void dispatchViewModelPersistenceRequest(const Request& request);
+    void dispatchControllerPersistenceRequest(const Request& request);
     static Result performWorkerRequest(const Request& request);
-    Result performViewModelPersistence(const Request& request) const;
+    Result performControllerPersistence(const Request& request) const;
     void handleRequestFinished(const Result& result);
 
-    bool applyPersistedBodyStateToContentViewModel(
+    bool applyPersistedBodyStateToContentController(
         const QString& noteId,
         const WhatSonLocalNoteDocument& document) const;
     bool reloadNoteMetadataForNote(const QString& noteId) const;
 
-    QPointer<QObject> m_contentViewModel;
+    QPointer<QObject> m_contentController;
     bool m_contentPersistenceContractAvailable = false;
     bool m_directPersistenceContractAvailable = false;
     QString m_boundNoteId;
@@ -144,5 +144,5 @@ private:
     quint64 m_nextRequestSequence = 1;
     Request m_activeRequest;
     QVector<Request> m_pendingRequests;
-    QMetaObject::Connection m_contentViewModelDestroyedConnection;
+    QMetaObject::Connection m_contentControllerDestroyedConnection;
 };

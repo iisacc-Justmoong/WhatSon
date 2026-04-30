@@ -321,11 +321,11 @@ void WhatSonAsyncScheduler::stop()
     emit runningChanged();
 }
 
-void WhatSonAsyncScheduler::requestViewModelHook()
+void WhatSonAsyncScheduler::requestControllerHook()
 {
     ++m_hookRequestCount;
     emit hookRequestCountChanged();
-    emit viewModelHookRequested();
+    emit controllerHookRequested();
 }
 
 void WhatSonAsyncScheduler::onTickTimeout()

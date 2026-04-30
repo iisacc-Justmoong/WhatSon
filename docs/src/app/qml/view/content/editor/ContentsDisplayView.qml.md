@@ -6,10 +6,10 @@
 
 It composes:
 
-- C++ editor display ViewModels under `src/app/viewmodel/editor/display`
+- C++ editor display Controllers under `src/app/models/editor/display`
 - model-side display controllers under `src/app/models/editor/display`
 - active display-surface policy assembly
-- editor display controller and ViewModel assembly
+- editor display controller and Controller assembly
 - sibling host assembly for the surface, auxiliary rails, and root overlays
 
 It no longer acts as the direct center-surface viewer for resource-backed hierarchy browsing.
@@ -25,7 +25,7 @@ not note-backed.
 - The host no longer exposes a no-op inline editor proxy or pushes a RichText editing surface back into
   `ContentsInlineFormatEditor.qml`.
 - Selection/mount, presentation, RAW mutation, and minimap/gutter command surfaces now pass through dedicated C++
-  ViewModels under `src/app/viewmodel/editor/display`.
+  Controllers under `src/app/models/editor/display`.
 - Selected-note focus restoration now targets `ContentsStructuredDocumentFlow.qml` directly.
   The structured document host is the canonical note editor surface, so the root view no longer instantiates an
   extra active-surface adapter layer just to forward focus requests.
@@ -33,9 +33,9 @@ not note-backed.
   created after the note-selection signal. This covers the new-note route where the list selection is committed before
   the mobile editor page exists.
 - QML runtime mechanics that need timers, connections, shortcuts, pointer handlers, or context menus live as
-  model-side controllers under `src/app/models/editor/display`; they are not ViewModels.
+  model-side controllers under `src/app/models/editor/display`; they are not Controllers.
 - `ContentsDisplayView.qml` keeps compatibility controller functions only for collaborators that still call the display
-  host API directly; those controllers delegate into the responsible C++ ViewModel or into narrow QML-side models such
+  host API directly; those controllers delegate into the responsible C++ Controller or into narrow QML-side models such
   as `ContentsDisplayGeometrySnapshotModel.qml`, `ContentsDisplayViewportModel.qml`,
   `ContentsDisplayInputOrchestrationModel.qml`, `ContentsDisplaySelectionOrchestrationModel.qml`, and
   `ContentsDisplayPresentationOrchestrationModel.qml`.

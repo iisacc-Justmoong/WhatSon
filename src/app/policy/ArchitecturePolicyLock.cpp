@@ -15,8 +15,8 @@ namespace
     }
 
     // Fixed architecture contract:
-    // View -> ViewModel
-    // ViewModel -> DataModel, Store, Parser, Creator
+    // View -> Controller
+    // Controller -> DataModel, Store, Parser, Creator
     // DataModel -> none
     // Store -> DataModel, Parser, Creator, FileSystem
     // Parser -> DataModel
@@ -25,7 +25,7 @@ namespace
     constexpr std::array<Row, 7> kDependencyMatrix = {
         {
             /* View */ Row{false, true, false, false, false, false, false},
-            /* ViewModel */ Row{false, false, true, true, true, true, false},
+            /* Controller */ Row{false, false, true, true, true, true, false},
             /* DataModel */ Row{false, false, false, false, false, false, false},
             /* Store */ Row{false, false, true, false, true, true, true},
             /* Parser */ Row{false, false, true, false, false, false, false},
@@ -60,8 +60,8 @@ namespace WhatSon::Policy
         {
         case Layer::View:
             return "View";
-        case Layer::ViewModel:
-            return "ViewModel";
+        case Layer::Controller:
+            return "Controller";
         case Layer::DataModel:
             return "DataModel";
         case Layer::Store:

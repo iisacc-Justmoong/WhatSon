@@ -6,14 +6,14 @@ Rectangle {
     id: detailPanel
 
     property color panelColor: "transparent"
-    readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("DetailPanelLayout") : null
+    readonly property var panelController: panelControllerRegistry ? panelControllerRegistry.panelController("DetailPanelLayout") : null
 
     signal viewHookRequested
 
     function requestViewHook(reason) {
         const hookReason = reason !== undefined ? String(reason) : "manual";
-        if (panelViewModel && panelViewModel.requestViewModelHook)
-            panelViewModel.requestViewModelHook(hookReason);
+        if (panelController && panelController.requestControllerHook)
+            panelController.requestControllerHook(hookReason);
         viewHookRequested();
     }
 

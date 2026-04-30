@@ -11,7 +11,7 @@
 - `MobileHierarchyRouteStateStore` preserves route-adjacent selection state such as the last observed route path, the
   note-list selection to restore, and pop-repair request ids.
 - `MobileHierarchySelectionCoordinator` snapshots sidebar hierarchy bindings and resolves the currently selected
-  hierarchy index from active mobile content viewmodels.
+  hierarchy index from active mobile content controllers.
 - `MobileHierarchyCanonicalRoutePlanner`, `MobileHierarchyNavigationCoordinator`, and
   `MobileHierarchyBackSwipeCoordinator` keep route transitions deterministic while the mobile scaffold swaps between
   hierarchy, editor, and detail surfaces.

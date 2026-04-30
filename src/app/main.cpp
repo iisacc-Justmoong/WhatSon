@@ -1,31 +1,31 @@
 #include "backend/runtime/appbootstrap.h"
 #include "backend/runtime/foregroundservices.h"
-#include "app/viewmodel/hierarchy/bookmarks/BookmarksHierarchyViewModel.hpp"
-#include "app/viewmodel/hierarchy/event/EventHierarchyViewModel.hpp"
-#include "app/viewmodel/hierarchy/library/LibraryHierarchyViewModel.hpp"
-#include "app/viewmodel/hierarchy/library/LibraryNoteMutationViewModel.hpp"
-#include "app/viewmodel/hierarchy/preset/PresetHierarchyViewModel.hpp"
-#include "app/viewmodel/hierarchy/progress/ProgressHierarchyViewModel.hpp"
-#include "app/viewmodel/hierarchy/projects/ProjectsHierarchyViewModel.hpp"
-#include "app/viewmodel/hierarchy/resources/ResourcesHierarchyViewModel.hpp"
-#include "app/models/file/import/ResourcesImportViewModel.hpp"
-#include "app/viewmodel/hierarchy/tags/TagsHierarchyViewModel.hpp"
-#include "app/viewmodel/navigationbar/EditorViewModeViewModel.hpp"
-#include "app/viewmodel/navigationbar/NavigationModeViewModel.hpp"
-#include "app/viewmodel/detailPanel/DetailPanelCurrentHierarchyBinder.hpp"
-#include "app/viewmodel/detailPanel/NoteDetailPanelViewModel.hpp"
-#include "app/viewmodel/detailPanel/ResourceDetailPanelViewModel.hpp"
-#include "app/viewmodel/calendar/DayCalendarViewModel.hpp"
-#include "app/viewmodel/calendar/AgendaViewModel.hpp"
-#include "app/viewmodel/calendar/MonthCalendarViewModel.hpp"
-#include "app/viewmodel/calendar/WeekCalendarViewModel.hpp"
-#include "app/viewmodel/calendar/YearCalendarViewModel.hpp"
-#include "app/viewmodel/onboarding/OnboardingHubController.hpp"
-#include "app/viewmodel/onboarding/OnboardingRouteBootstrapController.hpp"
-#include "app/viewmodel/panel/PanelViewModelRegistry.hpp"
-#include "app/viewmodel/sidebar/HierarchySidebarDomain.hpp"
-#include "app/viewmodel/sidebar/HierarchyViewModelProvider.hpp"
-#include "app/viewmodel/sidebar/SidebarHierarchyViewModel.hpp"
+#include "app/models/file/hierarchy/bookmarks/BookmarksHierarchyController.hpp"
+#include "app/models/file/hierarchy/event/EventHierarchyController.hpp"
+#include "app/models/file/hierarchy/library/LibraryHierarchyController.hpp"
+#include "app/models/file/hierarchy/library/LibraryNoteMutationController.hpp"
+#include "app/models/file/hierarchy/preset/PresetHierarchyController.hpp"
+#include "app/models/file/hierarchy/progress/ProgressHierarchyController.hpp"
+#include "app/models/file/hierarchy/projects/ProjectsHierarchyController.hpp"
+#include "app/models/file/hierarchy/resources/ResourcesHierarchyController.hpp"
+#include "app/models/file/import/ResourcesImportController.hpp"
+#include "app/models/file/hierarchy/tags/TagsHierarchyController.hpp"
+#include "app/models/navigationbar/EditorViewModeController.hpp"
+#include "app/models/navigationbar/NavigationModeController.hpp"
+#include "app/models/detailPanel/DetailPanelCurrentHierarchyBinder.hpp"
+#include "app/models/detailPanel/NoteDetailPanelController.hpp"
+#include "app/models/detailPanel/ResourceDetailPanelController.hpp"
+#include "app/models/calendar/DayCalendarController.hpp"
+#include "app/models/calendar/AgendaController.hpp"
+#include "app/models/calendar/MonthCalendarController.hpp"
+#include "app/models/calendar/WeekCalendarController.hpp"
+#include "app/models/calendar/YearCalendarController.hpp"
+#include "app/models/onboarding/OnboardingHubController.hpp"
+#include "app/models/onboarding/OnboardingRouteBootstrapController.hpp"
+#include "app/models/panel/PanelControllerRegistry.hpp"
+#include "app/models/sidebar/HierarchySidebarDomain.hpp"
+#include "app/models/sidebar/HierarchyControllerProvider.hpp"
+#include "app/models/sidebar/SidebarHierarchyController.hpp"
 #include "app/models/calendar/CalendarBoardStore.hpp"
 #include "app/models/calendar/SystemCalendarStore.hpp"
 #include "app/policy/ArchitecturePolicyLock.hpp"
@@ -227,32 +227,32 @@ int main(int argc, char* argv[])
     QQmlApplicationEngine engine;
     CalendarBoardStore calendarBoardStore;
     SystemCalendarStore systemCalendarStore;
-    LibraryHierarchyViewModel libraryHierarchyViewModel;
-    LibraryNoteMutationViewModel libraryNoteMutationViewModel;
-    ProjectsHierarchyViewModel projectsHierarchyViewModel;
-    BookmarksHierarchyViewModel bookmarksHierarchyViewModel;
-    TagsHierarchyViewModel tagsHierarchyViewModel;
-    ResourcesHierarchyViewModel resourcesHierarchyViewModel;
-    ResourcesImportViewModel resourcesImportViewModel;
-    ProgressHierarchyViewModel progressHierarchyViewModel;
-    EventHierarchyViewModel eventHierarchyViewModel;
-    PresetHierarchyViewModel presetHierarchyViewModel;
+    LibraryHierarchyController libraryHierarchyController;
+    LibraryNoteMutationController libraryNoteMutationController;
+    ProjectsHierarchyController projectsHierarchyController;
+    BookmarksHierarchyController bookmarksHierarchyController;
+    TagsHierarchyController tagsHierarchyController;
+    ResourcesHierarchyController resourcesHierarchyController;
+    ResourcesImportController resourcesImportController;
+    ProgressHierarchyController progressHierarchyController;
+    EventHierarchyController eventHierarchyController;
+    PresetHierarchyController presetHierarchyController;
     SidebarSelectionStore sidebarSelectionStore;
     SelectedHubStore selectedHubStore;
-    HierarchyViewModelProvider hierarchyViewModelProvider;
-    SidebarHierarchyViewModel sidebarHierarchyViewModel;
+    HierarchyControllerProvider hierarchyControllerProvider;
+    SidebarHierarchyController sidebarHierarchyController;
     DetailPanelCurrentHierarchyBinder detailPanelCurrentHierarchyBinder;
-    NoteDetailPanelViewModel noteDetailPanelViewModel;
-    ResourceDetailPanelViewModel resourceDetailPanelViewModel;
-    EditorViewModeViewModel editorViewModeViewModel;
-    NavigationModeViewModel navigationModeViewModel;
+    NoteDetailPanelController noteDetailPanelController;
+    ResourceDetailPanelController resourceDetailPanelController;
+    EditorViewModeController editorViewModeController;
+    NavigationModeController navigationModeController;
     WhatSonAsyncScheduler asyncScheduler;
-    PanelViewModelRegistry panelViewModelRegistry;
-    DayCalendarViewModel dayCalendarViewModel;
-    AgendaViewModel agendaViewModel;
-    MonthCalendarViewModel monthCalendarViewModel;
-    WeekCalendarViewModel weekCalendarViewModel;
-    YearCalendarViewModel yearCalendarViewModel;
+    PanelControllerRegistry panelControllerRegistry;
+    DayCalendarController dayCalendarController;
+    AgendaController agendaController;
+    MonthCalendarController monthCalendarController;
+    WeekCalendarController weekCalendarController;
+    YearCalendarController yearCalendarController;
     WhatSonHubRuntimeStore hubRuntimeStore;
     OnboardingHubController onboardingHubController;
     WhatSonHubCreator hubCreator(QDir::currentPath(), QStringLiteral("hubs"));
@@ -268,22 +268,22 @@ int main(int argc, char* argv[])
         &WhatSonTrialActivationPolicy::refresh);
     trialActivationPolicy.refresh();
 #endif
-    libraryNoteMutationViewModel.setSourceViewModel(&libraryHierarchyViewModel);
-    dayCalendarViewModel.setCalendarBoardStore(&calendarBoardStore);
-    agendaViewModel.setCalendarBoardStore(&calendarBoardStore);
-    monthCalendarViewModel.setCalendarBoardStore(&calendarBoardStore);
-    weekCalendarViewModel.setCalendarBoardStore(&calendarBoardStore);
-    yearCalendarViewModel.setCalendarBoardStore(&calendarBoardStore);
+    libraryNoteMutationController.setSourceController(&libraryHierarchyController);
+    dayCalendarController.setCalendarBoardStore(&calendarBoardStore);
+    agendaController.setCalendarBoardStore(&calendarBoardStore);
+    monthCalendarController.setCalendarBoardStore(&calendarBoardStore);
+    weekCalendarController.setCalendarBoardStore(&calendarBoardStore);
+    yearCalendarController.setCalendarBoardStore(&calendarBoardStore);
     calendarBoardStore.setProjectedNotesProvider(
-        [&libraryHierarchyViewModel]()
+        [&libraryHierarchyController]()
         {
-            return libraryHierarchyViewModel.indexedNotesSnapshot();
+            return libraryHierarchyController.indexedNotesSnapshot();
         });
 
-    const auto requestNewLibraryNote = [&libraryNoteMutationViewModel, &sidebarHierarchyViewModel]()
+    const auto requestNewLibraryNote = [&libraryNoteMutationController, &sidebarHierarchyController]()
     {
-        sidebarHierarchyViewModel.setActiveHierarchyIndex(static_cast<int>(WhatSon::Sidebar::HierarchyDomain::Library));
-        if (!libraryNoteMutationViewModel.createEmptyNote())
+        sidebarHierarchyController.setActiveHierarchyIndex(static_cast<int>(WhatSon::Sidebar::HierarchyDomain::Library));
+        if (!libraryNoteMutationController.createEmptyNote())
         {
             qWarning().noquote() << QStringLiteral("Failed to create a new library note from navigation Add action.");
         }
@@ -298,52 +298,52 @@ int main(int argc, char* argv[])
         requestNewLibraryNote();
     };
 
-    if (auto* addNewPanelViewModel = qobject_cast<PanelViewModel*>(
-        panelViewModelRegistry.panelViewModel(QStringLiteral("navigation.NavigationAddNewBar"))))
+    if (auto* addNewPanelController = qobject_cast<PanelController*>(
+        panelControllerRegistry.panelController(QStringLiteral("navigation.NavigationAddNewBar"))))
     {
         QObject::connect(
-            addNewPanelViewModel,
-            &PanelViewModel::viewModelHookRequested,
+            addNewPanelController,
+            &PanelController::controllerHookRequested,
             &app,
             handlePanelCreateNoteRequest);
     }
-    if (auto* applicationControlPanelViewModel = qobject_cast<PanelViewModel*>(
-        panelViewModelRegistry.panelViewModel(QStringLiteral("navigation.NavigationApplicationControlBar"))))
+    if (auto* applicationControlPanelController = qobject_cast<PanelController*>(
+        panelControllerRegistry.panelController(QStringLiteral("navigation.NavigationApplicationControlBar"))))
     {
         QObject::connect(
-            applicationControlPanelViewModel,
-            &PanelViewModel::viewModelHookRequested,
+            applicationControlPanelController,
+            &PanelController::controllerHookRequested,
             &app,
             handlePanelCreateNoteRequest);
     }
-    if (auto* applicationViewPanelViewModel = qobject_cast<PanelViewModel*>(
-        panelViewModelRegistry.panelViewModel(QStringLiteral("navigation.NavigationApplicationViewBar"))))
+    if (auto* applicationViewPanelController = qobject_cast<PanelController*>(
+        panelControllerRegistry.panelController(QStringLiteral("navigation.NavigationApplicationViewBar"))))
     {
         QObject::connect(
-            applicationViewPanelViewModel,
-            &PanelViewModel::viewModelHookRequested,
+            applicationViewPanelController,
+            &PanelController::controllerHookRequested,
             &app,
             handlePanelCreateNoteRequest);
     }
-    if (auto* applicationEditPanelViewModel = qobject_cast<PanelViewModel*>(
-        panelViewModelRegistry.panelViewModel(QStringLiteral("navigation.NavigationApplicationEditBar"))))
+    if (auto* applicationEditPanelController = qobject_cast<PanelController*>(
+        panelControllerRegistry.panelController(QStringLiteral("navigation.NavigationApplicationEditBar"))))
     {
         QObject::connect(
-            applicationEditPanelViewModel,
-            &PanelViewModel::viewModelHookRequested,
+            applicationEditPanelController,
+            &PanelController::controllerHookRequested,
             &app,
             handlePanelCreateNoteRequest);
     }
 
-    libraryHierarchyViewModel.setSystemCalendarStore(&systemCalendarStore);
-    bookmarksHierarchyViewModel.setSystemCalendarStore(&systemCalendarStore);
+    libraryHierarchyController.setSystemCalendarStore(&systemCalendarStore);
+    bookmarksHierarchyController.setSystemCalendarStore(&systemCalendarStore);
     QObject::connect(
-        &libraryHierarchyViewModel,
-        &LibraryHierarchyViewModel::noteDeleted,
-        &bookmarksHierarchyViewModel,
-        [&bookmarksHierarchyViewModel](const QString& noteId)
+        &libraryHierarchyController,
+        &LibraryHierarchyController::noteDeleted,
+        &bookmarksHierarchyController,
+        [&bookmarksHierarchyController](const QString& noteId)
         {
-            bookmarksHierarchyViewModel.removeNoteById(noteId);
+            bookmarksHierarchyController.removeNoteById(noteId);
         });
 
     QObject::connect(
@@ -359,14 +359,14 @@ int main(int argc, char* argv[])
         });
 
     WhatSonStartupRuntimeCoordinator::RuntimeTargets startupRuntimeTargets;
-    startupRuntimeTargets.libraryViewModel = &libraryHierarchyViewModel;
-    startupRuntimeTargets.projectsViewModel = &projectsHierarchyViewModel;
-    startupRuntimeTargets.bookmarksViewModel = &bookmarksHierarchyViewModel;
-    startupRuntimeTargets.tagsViewModel = &tagsHierarchyViewModel;
-    startupRuntimeTargets.resourcesViewModel = &resourcesHierarchyViewModel;
-    startupRuntimeTargets.progressViewModel = &progressHierarchyViewModel;
-    startupRuntimeTargets.eventViewModel = &eventHierarchyViewModel;
-    startupRuntimeTargets.presetViewModel = &presetHierarchyViewModel;
+    startupRuntimeTargets.libraryController = &libraryHierarchyController;
+    startupRuntimeTargets.projectsController = &projectsHierarchyController;
+    startupRuntimeTargets.bookmarksController = &bookmarksHierarchyController;
+    startupRuntimeTargets.tagsController = &tagsHierarchyController;
+    startupRuntimeTargets.resourcesController = &resourcesHierarchyController;
+    startupRuntimeTargets.progressController = &progressHierarchyController;
+    startupRuntimeTargets.eventController = &eventHierarchyController;
+    startupRuntimeTargets.presetController = &presetHierarchyController;
     startupRuntimeTargets.hubRuntimeStore = &hubRuntimeStore;
     WhatSonStartupRuntimeCoordinator startupRuntimeCoordinator(startupRuntimeTargets);
     WhatSonRuntimeParallelLoader runtimeParallelLoader;
@@ -374,17 +374,17 @@ int main(int argc, char* argv[])
 
     WhatSonHubSyncController hubSyncController;
     const auto reloadCalendarProjectedNotesFromRuntime =
-        [&calendarBoardStore, &hubSyncController, &libraryHierarchyViewModel]()
+        [&calendarBoardStore, &hubSyncController, &libraryHierarchyController]()
     {
         calendarBoardStore.setProjectedNotesHubPath(hubSyncController.currentHubPath());
         calendarBoardStore.reloadProjectedNotesFromSnapshot(
-            libraryHierarchyViewModel.indexedNotesSnapshot());
+            libraryHierarchyController.indexedNotesSnapshot());
     };
     const auto upsertCalendarProjectedNoteFromRuntime =
-        [&calendarBoardStore, &libraryHierarchyViewModel](const QString& noteId)
+        [&calendarBoardStore, &libraryHierarchyController](const QString& noteId)
     {
         LibraryNoteRecord note;
-        if (!libraryHierarchyViewModel.indexedNoteRecordById(noteId, &note))
+        if (!libraryHierarchyController.indexedNoteRecordById(noteId, &note))
         {
             calendarBoardStore.removeProjectedNoteBySourceId(noteId);
             return;
@@ -407,52 +407,52 @@ int main(int argc, char* argv[])
             &hubSyncController,
             &app,
             {
-                &libraryHierarchyViewModel,
-                &projectsHierarchyViewModel,
-                &bookmarksHierarchyViewModel,
-                &resourcesHierarchyViewModel,
-                &progressHierarchyViewModel
+                &libraryHierarchyController,
+                &projectsHierarchyController,
+                &bookmarksHierarchyController,
+                &resourcesHierarchyController,
+                &progressHierarchyController
             });
     QObject::connect(
         &hubSyncController,
         &WhatSonHubSyncController::syncReloaded,
         &app,
-        [&calendarBoardStore, &libraryHierarchyViewModel](const QString& hubPath)
+        [&calendarBoardStore, &libraryHierarchyController](const QString& hubPath)
         {
             calendarBoardStore.setProjectedNotesHubPath(hubPath);
             calendarBoardStore.reloadProjectedNotesFromSnapshot(
-                libraryHierarchyViewModel.indexedNotesSnapshot());
+                libraryHierarchyController.indexedNotesSnapshot());
         });
     QObject::connect(
-        &libraryHierarchyViewModel,
-        &LibraryHierarchyViewModel::indexedNotesSnapshotChanged,
+        &libraryHierarchyController,
+        &LibraryHierarchyController::indexedNotesSnapshotChanged,
         &app,
         reloadCalendarProjectedNotesFromRuntime);
     QObject::connect(
-        &libraryHierarchyViewModel,
-        &LibraryHierarchyViewModel::indexedNoteUpserted,
+        &libraryHierarchyController,
+        &LibraryHierarchyController::indexedNoteUpserted,
         &app,
         upsertCalendarProjectedNoteFromRuntime);
     QObject::connect(
-        &libraryHierarchyViewModel,
-        &LibraryHierarchyViewModel::noteDeleted,
+        &libraryHierarchyController,
+        &LibraryHierarchyController::noteDeleted,
         &app,
         [&calendarBoardStore](const QString& noteId)
         {
             calendarBoardStore.removeProjectedNoteBySourceId(noteId);
         });
     QObject::connect(
-        &bookmarksHierarchyViewModel,
-        &BookmarksHierarchyViewModel::hubFilesystemMutated,
+        &bookmarksHierarchyController,
+        &BookmarksHierarchyController::hubFilesystemMutated,
         &app,
         requestCalendarProjectedNotesReload);
     QObject::connect(
-        &progressHierarchyViewModel,
-        &ProgressHierarchyViewModel::hubFilesystemMutated,
+        &progressHierarchyController,
+        &ProgressHierarchyController::hubFilesystemMutated,
         &app,
         requestCalendarProjectedNotesReload);
     Q_UNUSED(hubSyncWiring);
-    resourcesImportViewModel.setReloadResourcesCallback(
+    resourcesImportController.setReloadResourcesCallback(
         [&startupRuntimeCoordinator, &hubSyncController](const QString& hubPath, QString* errorMessage) -> bool
         {
             const bool reloaded = startupRuntimeCoordinator.reloadResourcesDomainIntoRuntime(hubPath, errorMessage);
@@ -478,16 +478,16 @@ int main(int argc, char* argv[])
     const auto publishLoadedHubConnection =
         [&selectedHubStore,
          &hubSyncController,
-         &resourcesImportViewModel,
+         &resourcesImportController,
          &calendarBoardStore,
-         &libraryHierarchyViewModel](const QString& hubPath, const QByteArray& accessBookmark)
+         &libraryHierarchyController](const QString& hubPath, const QByteArray& accessBookmark)
     {
         selectedHubStore.setSelectedHubSelection(hubPath, accessBookmark);
         hubSyncController.setCurrentHubPath(hubPath);
-        resourcesImportViewModel.setCurrentHubPath(hubPath);
+        resourcesImportController.setCurrentHubPath(hubPath);
         calendarBoardStore.setProjectedNotesHubPath(hubPath);
         calendarBoardStore.reloadProjectedNotesFromSnapshot(
-            libraryHierarchyViewModel.indexedNotesSnapshot());
+            libraryHierarchyController.indexedNotesSnapshot());
     };
     QObject::connect(
         &onboardingHubController,
@@ -517,54 +517,54 @@ int main(int argc, char* argv[])
         onboardingHubController.completeWorkspaceTransition();
     }
 
-    hierarchyViewModelProvider.setMappings(QVector<HierarchyViewModelProvider::Mapping>{
-        { static_cast<int>(WhatSon::Sidebar::HierarchyDomain::Library), &libraryHierarchyViewModel },
-        { static_cast<int>(WhatSon::Sidebar::HierarchyDomain::Projects), &projectsHierarchyViewModel },
-        { static_cast<int>(WhatSon::Sidebar::HierarchyDomain::Bookmarks), &bookmarksHierarchyViewModel },
-        { static_cast<int>(WhatSon::Sidebar::HierarchyDomain::Tags), &tagsHierarchyViewModel },
-        { static_cast<int>(WhatSon::Sidebar::HierarchyDomain::Resources), &resourcesHierarchyViewModel },
-        { static_cast<int>(WhatSon::Sidebar::HierarchyDomain::Progress), &progressHierarchyViewModel },
-        { static_cast<int>(WhatSon::Sidebar::HierarchyDomain::Event), &eventHierarchyViewModel },
-        { static_cast<int>(WhatSon::Sidebar::HierarchyDomain::Preset), &presetHierarchyViewModel },
+    hierarchyControllerProvider.setMappings(QVector<HierarchyControllerProvider::Mapping>{
+        { static_cast<int>(WhatSon::Sidebar::HierarchyDomain::Library), &libraryHierarchyController },
+        { static_cast<int>(WhatSon::Sidebar::HierarchyDomain::Projects), &projectsHierarchyController },
+        { static_cast<int>(WhatSon::Sidebar::HierarchyDomain::Bookmarks), &bookmarksHierarchyController },
+        { static_cast<int>(WhatSon::Sidebar::HierarchyDomain::Tags), &tagsHierarchyController },
+        { static_cast<int>(WhatSon::Sidebar::HierarchyDomain::Resources), &resourcesHierarchyController },
+        { static_cast<int>(WhatSon::Sidebar::HierarchyDomain::Progress), &progressHierarchyController },
+        { static_cast<int>(WhatSon::Sidebar::HierarchyDomain::Event), &eventHierarchyController },
+        { static_cast<int>(WhatSon::Sidebar::HierarchyDomain::Preset), &presetHierarchyController },
     });
-    noteDetailPanelViewModel.setProjectSelectionSourceViewModel(&projectsHierarchyViewModel);
-    noteDetailPanelViewModel.setBookmarkSelectionSourceViewModel(&bookmarksHierarchyViewModel);
-    noteDetailPanelViewModel.setProgressSelectionSourceViewModel(&progressHierarchyViewModel);
-    noteDetailPanelViewModel.setTagsSourceViewModel(&tagsHierarchyViewModel);
-    sidebarHierarchyViewModel.setSelectionStore(&sidebarSelectionStore);
-    sidebarHierarchyViewModel.setViewModelProvider(&hierarchyViewModelProvider);
-    detailPanelCurrentHierarchyBinder.setNoteDetailPanelViewModel(&noteDetailPanelViewModel);
-    detailPanelCurrentHierarchyBinder.setResourceDetailPanelViewModel(&resourceDetailPanelViewModel);
-    detailPanelCurrentHierarchyBinder.setHierarchyContextSource(&sidebarHierarchyViewModel);
+    noteDetailPanelController.setProjectSelectionSourceController(&projectsHierarchyController);
+    noteDetailPanelController.setBookmarkSelectionSourceController(&bookmarksHierarchyController);
+    noteDetailPanelController.setProgressSelectionSourceController(&progressHierarchyController);
+    noteDetailPanelController.setTagsSourceController(&tagsHierarchyController);
+    sidebarHierarchyController.setSelectionStore(&sidebarSelectionStore);
+    sidebarHierarchyController.setControllerProvider(&hierarchyControllerProvider);
+    detailPanelCurrentHierarchyBinder.setNoteDetailPanelController(&noteDetailPanelController);
+    detailPanelCurrentHierarchyBinder.setResourceDetailPanelController(&resourceDetailPanelController);
+    detailPanelCurrentHierarchyBinder.setHierarchyContextSource(&sidebarHierarchyController);
 
     WhatSon::Policy::ArchitecturePolicyLock::lock();
 
     WhatSon::Runtime::Bootstrap::WorkspaceContextObjects workspaceContextObjects;
-    workspaceContextObjects.libraryHierarchyViewModel = &libraryHierarchyViewModel;
-    workspaceContextObjects.libraryNoteMutationViewModel = &libraryNoteMutationViewModel;
-    workspaceContextObjects.projectsHierarchyViewModel = &projectsHierarchyViewModel;
-    workspaceContextObjects.bookmarksHierarchyViewModel = &bookmarksHierarchyViewModel;
-    workspaceContextObjects.tagsHierarchyViewModel = &tagsHierarchyViewModel;
-    workspaceContextObjects.resourcesHierarchyViewModel = &resourcesHierarchyViewModel;
-    workspaceContextObjects.resourcesImportViewModel = &resourcesImportViewModel;
-    workspaceContextObjects.progressHierarchyViewModel = &progressHierarchyViewModel;
-    workspaceContextObjects.eventHierarchyViewModel = &eventHierarchyViewModel;
-    workspaceContextObjects.presetHierarchyViewModel = &presetHierarchyViewModel;
-    workspaceContextObjects.detailPanelViewModel = &noteDetailPanelViewModel;
-    workspaceContextObjects.noteDetailPanelViewModel = &noteDetailPanelViewModel;
-    workspaceContextObjects.resourceDetailPanelViewModel = &resourceDetailPanelViewModel;
-    workspaceContextObjects.editorViewModeViewModel = &editorViewModeViewModel;
-    workspaceContextObjects.navigationModeViewModel = &navigationModeViewModel;
-    workspaceContextObjects.sidebarHierarchyViewModel = &sidebarHierarchyViewModel;
+    workspaceContextObjects.libraryHierarchyController = &libraryHierarchyController;
+    workspaceContextObjects.libraryNoteMutationController = &libraryNoteMutationController;
+    workspaceContextObjects.projectsHierarchyController = &projectsHierarchyController;
+    workspaceContextObjects.bookmarksHierarchyController = &bookmarksHierarchyController;
+    workspaceContextObjects.tagsHierarchyController = &tagsHierarchyController;
+    workspaceContextObjects.resourcesHierarchyController = &resourcesHierarchyController;
+    workspaceContextObjects.resourcesImportController = &resourcesImportController;
+    workspaceContextObjects.progressHierarchyController = &progressHierarchyController;
+    workspaceContextObjects.eventHierarchyController = &eventHierarchyController;
+    workspaceContextObjects.presetHierarchyController = &presetHierarchyController;
+    workspaceContextObjects.detailPanelController = &noteDetailPanelController;
+    workspaceContextObjects.noteDetailPanelController = &noteDetailPanelController;
+    workspaceContextObjects.resourceDetailPanelController = &resourceDetailPanelController;
+    workspaceContextObjects.editorViewModeController = &editorViewModeController;
+    workspaceContextObjects.navigationModeController = &navigationModeController;
+    workspaceContextObjects.sidebarHierarchyController = &sidebarHierarchyController;
     workspaceContextObjects.asyncScheduler = &asyncScheduler;
     workspaceContextObjects.calendarBoardStore = &calendarBoardStore;
     workspaceContextObjects.systemCalendarStore = &systemCalendarStore;
-    workspaceContextObjects.dayCalendarViewModel = &dayCalendarViewModel;
-    workspaceContextObjects.agendaViewModel = &agendaViewModel;
-    workspaceContextObjects.monthCalendarViewModel = &monthCalendarViewModel;
-    workspaceContextObjects.weekCalendarViewModel = &weekCalendarViewModel;
-    workspaceContextObjects.yearCalendarViewModel = &yearCalendarViewModel;
-    workspaceContextObjects.panelViewModelRegistry = &panelViewModelRegistry;
+    workspaceContextObjects.dayCalendarController = &dayCalendarController;
+    workspaceContextObjects.agendaController = &agendaController;
+    workspaceContextObjects.monthCalendarController = &monthCalendarController;
+    workspaceContextObjects.weekCalendarController = &weekCalendarController;
+    workspaceContextObjects.yearCalendarController = &yearCalendarController;
+    workspaceContextObjects.panelControllerRegistry = &panelControllerRegistry;
     const lvrs::QmlContextBindResult workspaceContextBindResult =
         WhatSon::Runtime::Bootstrap::bindWorkspaceContextObjects(engine, workspaceContextObjects);
     if (!workspaceContextBindResult.ok)

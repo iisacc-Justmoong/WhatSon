@@ -62,11 +62,11 @@ QString MobileHierarchyNavigationCoordinator::displayedBodyRoutePath(const QVari
     {
         if (bodyObject->property("detailPanelPage").isValid())
             return m_detailRoutePath;
-        if (bodyObject->property("contentViewModel").isValid())
+        if (bodyObject->property("contentController").isValid())
             return m_editorRoutePath;
         if (bodyObject->property("noteListModel").isValid())
             return m_noteListRoutePath;
-        if (bodyObject->property("sidebarHierarchyViewModel").isValid())
+        if (bodyObject->property("sidebarHierarchyController").isValid())
             return m_hierarchyRoutePath;
     }
 
@@ -141,11 +141,11 @@ QVariantMap MobileHierarchyNavigationCoordinator::openNoteListPlan(const bool ha
     return plan;
 }
 
-QVariantMap MobileHierarchyNavigationCoordinator::openEditorPlan(const QVariant& noteId, const bool hasActiveContentViewModel, const bool hasNoteListModel, const bool hasRouter, const QString& currentPath, const QString& displayedPath, const int depth) const
+QVariantMap MobileHierarchyNavigationCoordinator::openEditorPlan(const QVariant& noteId, const bool hasActiveContentController, const bool hasNoteListModel, const bool hasRouter, const QString& currentPath, const QString& displayedPath, const int depth) const
 {
     QVariantMap plan;
     const QString normalizedNoteId = noteId.toString().trimmed();
-    const bool allowed = !normalizedNoteId.isEmpty() && hasActiveContentViewModel && hasNoteListModel && hasRouter;
+    const bool allowed = !normalizedNoteId.isEmpty() && hasActiveContentController && hasNoteListModel && hasRouter;
     plan.insert(QStringLiteral("allowed"), allowed);
     plan.insert(QStringLiteral("alreadyOpen"), normalizedPath(currentPath) == m_editorRoutePath && normalizedPath(displayedPath) == m_editorRoutePath && depth >= 3);
     plan.insert(QStringLiteral("directPush"), normalizedPath(currentPath) == m_noteListRoutePath && normalizedPath(displayedPath) == m_noteListRoutePath && depth >= 2);

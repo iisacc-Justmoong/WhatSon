@@ -8,17 +8,17 @@ Rectangle {
     id: monthCalendarPage
 
     readonly property int bodyLabelPixelSize: LV.Theme.textBody
-    readonly property var calendarVm: monthCalendarViewModel
+    readonly property var calendarController: monthCalendarController
     readonly property string figmaNodeId: "228:9666"
     readonly property int headerHorizontalPadding: LV.Theme.gap8
     readonly property int maxVisibleEntriesPerCell: 8
-    property var monthCalendarViewModel: null
+    property var monthCalendarController: null
     readonly property int monthHeaderHeight: LV.Theme.headerMinHeight - LV.Theme.gap2
     readonly property int monthPagerCenterIndex: 1
     property bool monthPagerResetting: false
     readonly property bool monthSwipeEnabled: LV.Theme.mobileTarget
-    readonly property string monthTitleText: monthCalendarPage.calendarVm ? String(monthCalendarPage.calendarVm.monthLabel) + ", " + String(monthCalendarPage.calendarVm.displayedYear) : "Month"
-    readonly property var pagerMonthModels: monthCalendarPage.calendarVm && monthCalendarPage.calendarVm.pagerMonthModels !== undefined ? monthCalendarPage.calendarVm.pagerMonthModels : []
+    readonly property string monthTitleText: monthCalendarPage.calendarController ? String(monthCalendarPage.calendarController.monthLabel) + ", " + String(monthCalendarPage.calendarController.displayedYear) : "Month"
+    readonly property var pagerMonthModels: monthCalendarPage.calendarController && monthCalendarPage.calendarController.pagerMonthModels !== undefined ? monthCalendarPage.calendarController.pagerMonthModels : []
     readonly property int weekdayCellHorizontalPadding: LV.Theme.gap12
     readonly property int weekdayHeaderHeight: LV.Theme.controlHeightMd + LV.Theme.gap3
 
@@ -32,16 +32,16 @@ Rectangle {
         return monthCalendarPage.pagerMonthModels[normalizedIndex];
     }
     function commitMonthSwipeDelta(delta) {
-        if (!monthCalendarPage.calendarVm || !monthCalendarPage.calendarVm.shiftMonth || delta === 0) {
+        if (!monthCalendarPage.calendarController || !monthCalendarPage.calendarController.shiftMonth || delta === 0) {
             monthCalendarPage.recenterMonthPager();
             return;
         }
 
-        const previousYear = Number(monthCalendarPage.calendarVm.displayedYear);
-        const previousMonth = Number(monthCalendarPage.calendarVm.displayedMonth);
-        monthCalendarPage.calendarVm.shiftMonth(delta);
-        const nextYear = Number(monthCalendarPage.calendarVm.displayedYear);
-        const nextMonth = Number(monthCalendarPage.calendarVm.displayedMonth);
+        const previousYear = Number(monthCalendarPage.calendarController.displayedYear);
+        const previousMonth = Number(monthCalendarPage.calendarController.displayedMonth);
+        monthCalendarPage.calendarController.shiftMonth(delta);
+        const nextYear = Number(monthCalendarPage.calendarController.displayedYear);
+        const nextMonth = Number(monthCalendarPage.calendarController.displayedMonth);
         if (previousYear === nextYear && previousMonth === nextMonth) {
             monthCalendarPage.recenterMonthPager();
             return;
@@ -57,16 +57,16 @@ Rectangle {
         monthCalendarPage.commitMonthSwipeDelta(delta);
     }
     function jumpToCurrentMonth() {
-        if (monthCalendarPage.calendarVm && monthCalendarPage.calendarVm.focusToday) {
-            monthCalendarPage.calendarVm.focusToday();
+        if (monthCalendarPage.calendarController && monthCalendarPage.calendarController.focusToday) {
+            monthCalendarPage.calendarController.focusToday();
         } else {
             const now = new Date();
-            if (monthCalendarPage.calendarVm && monthCalendarPage.calendarVm.setDisplayedYear)
-                monthCalendarPage.calendarVm.setDisplayedYear(now.getFullYear());
-            if (monthCalendarPage.calendarVm && monthCalendarPage.calendarVm.setDisplayedMonth)
-                monthCalendarPage.calendarVm.setDisplayedMonth(now.getMonth() + 1);
-            if (monthCalendarPage.calendarVm && monthCalendarPage.calendarVm.setSelectedDateIso)
-                monthCalendarPage.calendarVm.setSelectedDateIso(Qt.formatDateTime(now, "yyyy-MM-dd"));
+            if (monthCalendarPage.calendarController && monthCalendarPage.calendarController.setDisplayedYear)
+                monthCalendarPage.calendarController.setDisplayedYear(now.getFullYear());
+            if (monthCalendarPage.calendarController && monthCalendarPage.calendarController.setDisplayedMonth)
+                monthCalendarPage.calendarController.setDisplayedMonth(now.getMonth() + 1);
+            if (monthCalendarPage.calendarController && monthCalendarPage.calendarController.setSelectedDateIso)
+                monthCalendarPage.calendarController.setSelectedDateIso(Qt.formatDateTime(now, "yyyy-MM-dd"));
         }
         monthCalendarPage.requestViewHook("current-month");
     }
@@ -88,8 +88,8 @@ Rectangle {
     }
     function requestViewHook(reason) {
         const hookReason = reason !== undefined ? String(reason) : "manual";
-        if (monthCalendarPage.calendarVm && monthCalendarPage.calendarVm.requestMonthView)
-            monthCalendarPage.calendarVm.requestMonthView(hookReason);
+        if (monthCalendarPage.calendarController && monthCalendarPage.calendarController.requestMonthView)
+            monthCalendarPage.calendarController.requestMonthView(hookReason);
         monthCalendarPage.viewHookRequested(hookReason);
     }
     function scheduleMonthPagerReset() {
@@ -118,7 +118,7 @@ Rectangle {
         }
 
         ignoreUnknownSignals: true
-        target: monthCalendarPage.calendarVm
+        target: monthCalendarPage.calendarController
     }
     Item {
         id: monthCalendarSurface
@@ -153,13 +153,13 @@ Rectangle {
                     Layout.alignment: Qt.AlignVCenter
 
                     onNextRequested: {
-                        if (monthCalendarPage.calendarVm && monthCalendarPage.calendarVm.shiftMonth)
-                            monthCalendarPage.calendarVm.shiftMonth(1);
+                        if (monthCalendarPage.calendarController && monthCalendarPage.calendarController.shiftMonth)
+                            monthCalendarPage.calendarController.shiftMonth(1);
                         monthCalendarPage.requestViewHook("next-month");
                     }
                     onPreviousRequested: {
-                        if (monthCalendarPage.calendarVm && monthCalendarPage.calendarVm.shiftMonth)
-                            monthCalendarPage.calendarVm.shiftMonth(-1);
+                        if (monthCalendarPage.calendarController && monthCalendarPage.calendarController.shiftMonth)
+                            monthCalendarPage.calendarController.shiftMonth(-1);
                         monthCalendarPage.requestViewHook("previous-month");
                     }
                     onTodayRequested: monthCalendarPage.jumpToCurrentMonth()
@@ -198,16 +198,16 @@ Rectangle {
                     MonthCalendarGridSurface {
                         anchors.fill: parent
                         bodyLabelPixelSize: monthCalendarPage.bodyLabelPixelSize
-                        calendarVm: monthCalendarPage.calendarVm
+                        calendarController: monthCalendarPage.calendarController
                         maxVisibleEntries: monthCalendarPage.maxVisibleEntriesPerCell
                         monthProjection: monthPage.monthProjection
-                        selectedDateIso: monthCalendarPage.calendarVm && monthCalendarPage.calendarVm.selectedDateIso !== undefined ? String(monthCalendarPage.calendarVm.selectedDateIso) : ""
+                        selectedDateIso: monthCalendarPage.calendarController && monthCalendarPage.calendarController.selectedDateIso !== undefined ? String(monthCalendarPage.calendarController.selectedDateIso) : ""
                         weekdayCellHorizontalPadding: monthCalendarPage.weekdayCellHorizontalPadding
                         weekdayHeaderHeight: monthCalendarPage.weekdayHeaderHeight
 
                         onDateSelected: function (dateIso) {
-                            if (monthCalendarPage.calendarVm && monthCalendarPage.calendarVm.setSelectedDateIso)
-                                monthCalendarPage.calendarVm.setSelectedDateIso(dateIso);
+                            if (monthCalendarPage.calendarController && monthCalendarPage.calendarController.setSelectedDateIso)
+                                monthCalendarPage.calendarController.setSelectedDateIso(dateIso);
                             monthCalendarPage.requestViewHook("select-date");
                         }
                         onNoteOpenRequested: function (noteId) {

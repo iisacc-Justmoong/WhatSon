@@ -21,7 +21,7 @@ the startup pipeline.
 The snapshot loader now forwards the parser's `outUuidMigrationRequired` signal and rewrites
 `Folders.wsfolders` immediately when a legacy file had no persisted UUIDs.
 
-That keeps startup behavior aligned with direct `LibraryHierarchyViewModel::loadFromWshub()` loads:
+That keeps startup behavior aligned with direct `LibraryHierarchyController::loadFromWshub()` loads:
 
 - a legacy folder tree receives stable UUIDs once,
 - the upgraded file is persisted,

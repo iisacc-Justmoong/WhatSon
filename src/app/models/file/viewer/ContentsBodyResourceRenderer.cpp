@@ -599,87 +599,87 @@ ContentsBodyResourceRenderer::~ContentsBodyResourceRenderer()
         QStringLiteral("noteId=%1 resourceCount=%2").arg(m_noteId).arg(m_renderedResources.size()));
 }
 
-QObject* ContentsBodyResourceRenderer::contentViewModel() const noexcept
+QObject* ContentsBodyResourceRenderer::contentController() const noexcept
 {
-    return m_contentViewModel;
+    return m_contentController;
 }
 
-QObject* ContentsBodyResourceRenderer::fallbackContentViewModel() const noexcept
+QObject* ContentsBodyResourceRenderer::fallbackContentController() const noexcept
 {
-    return m_fallbackContentViewModel;
+    return m_fallbackContentController;
 }
 
-void ContentsBodyResourceRenderer::setContentViewModel(QObject* model)
+void ContentsBodyResourceRenderer::setContentController(QObject* model)
 {
     WhatSon::Debug::traceEditorSelf(
         this,
         QStringLiteral("bodyResourceRenderer"),
-        QStringLiteral("setContentViewModel"),
+        QStringLiteral("setContentController"),
         QStringLiteral("next=0x%1").arg(QString::number(reinterpret_cast<quintptr>(model), 16)));
-    if (m_contentViewModel == model)
+    if (m_contentController == model)
     {
         return;
     }
 
-    disconnectContentViewModel();
-    m_contentViewModel = model;
+    disconnectContentController();
+    m_contentController = model;
 
-    if (m_contentViewModel != nullptr)
+    if (m_contentController != nullptr)
     {
-        m_contentViewModelDestroyedConnection = connect(
-            m_contentViewModel,
+        m_contentControllerDestroyedConnection = connect(
+            m_contentController,
             &QObject::destroyed,
             this,
-            &ContentsBodyResourceRenderer::handleContentViewModelDestroyed);
+            &ContentsBodyResourceRenderer::handleContentControllerDestroyed);
 
-        if (m_contentViewModel->metaObject()->indexOfSignal("hubFilesystemMutated()") >= 0)
+        if (m_contentController->metaObject()->indexOfSignal("hubFilesystemMutated()") >= 0)
         {
             m_hubFilesystemMutatedConnection = connect(
-                m_contentViewModel,
+                m_contentController,
                 SIGNAL(hubFilesystemMutated()),
                 this,
                 SLOT(handleContentFilesystemMutated()));
         }
     }
 
-    emit contentViewModelChanged();
+    emit contentControllerChanged();
     refreshRenderedResources();
 }
 
-void ContentsBodyResourceRenderer::setFallbackContentViewModel(QObject* model)
+void ContentsBodyResourceRenderer::setFallbackContentController(QObject* model)
 {
     WhatSon::Debug::traceEditorSelf(
         this,
         QStringLiteral("bodyResourceRenderer"),
-        QStringLiteral("setFallbackContentViewModel"),
+        QStringLiteral("setFallbackContentController"),
         QStringLiteral("next=0x%1").arg(QString::number(reinterpret_cast<quintptr>(model), 16)));
-    if (m_fallbackContentViewModel == model)
+    if (m_fallbackContentController == model)
     {
         return;
     }
 
-    disconnectFallbackContentViewModel();
-    m_fallbackContentViewModel = model;
+    disconnectFallbackContentController();
+    m_fallbackContentController = model;
 
-    if (m_fallbackContentViewModel != nullptr)
+    if (m_fallbackContentController != nullptr)
     {
-        m_fallbackContentViewModelDestroyedConnection = connect(
-            m_fallbackContentViewModel,
+        m_fallbackContentControllerDestroyedConnection = connect(
+            m_fallbackContentController,
             &QObject::destroyed,
             this,
-            &ContentsBodyResourceRenderer::handleFallbackContentViewModelDestroyed);
+            &ContentsBodyResourceRenderer::handleFallbackContentControllerDestroyed);
 
-        if (m_fallbackContentViewModel->metaObject()->indexOfSignal("hubFilesystemMutated()") >= 0)
+        if (m_fallbackContentController->metaObject()->indexOfSignal("hubFilesystemMutated()") >= 0)
         {
             m_fallbackHubFilesystemMutatedConnection = connect(
-                m_fallbackContentViewModel,
+                m_fallbackContentController,
                 SIGNAL(hubFilesystemMutated()),
                 this,
                 SLOT(handleContentFilesystemMutated()));
         }
     }
 
-    emit fallbackContentViewModelChanged();
+    emit fallbackContentControllerChanged();
     refreshRenderedResources();
 }
 
@@ -801,21 +801,21 @@ void ContentsBodyResourceRenderer::requestRenderRefresh()
     refreshRenderedResources();
 }
 
-void ContentsBodyResourceRenderer::handleContentViewModelDestroyed()
+void ContentsBodyResourceRenderer::handleContentControllerDestroyed()
 {
-    WhatSon::Debug::traceEditorSelf(this, QStringLiteral("bodyResourceRenderer"), QStringLiteral("handleContentViewModelDestroyed"));
-    disconnectContentViewModel();
-    m_contentViewModel = nullptr;
-    emit contentViewModelChanged();
+    WhatSon::Debug::traceEditorSelf(this, QStringLiteral("bodyResourceRenderer"), QStringLiteral("handleContentControllerDestroyed"));
+    disconnectContentController();
+    m_contentController = nullptr;
+    emit contentControllerChanged();
     refreshRenderedResources();
 }
 
-void ContentsBodyResourceRenderer::handleFallbackContentViewModelDestroyed()
+void ContentsBodyResourceRenderer::handleFallbackContentControllerDestroyed()
 {
-    WhatSon::Debug::traceEditorSelf(this, QStringLiteral("bodyResourceRenderer"), QStringLiteral("handleFallbackContentViewModelDestroyed"));
-    disconnectFallbackContentViewModel();
-    m_fallbackContentViewModel = nullptr;
-    emit fallbackContentViewModelChanged();
+    WhatSon::Debug::traceEditorSelf(this, QStringLiteral("bodyResourceRenderer"), QStringLiteral("handleFallbackContentControllerDestroyed"));
+    disconnectFallbackContentController();
+    m_fallbackContentController = nullptr;
+    emit fallbackContentControllerChanged();
     refreshRenderedResources();
 }
 
@@ -940,21 +940,21 @@ QVariantList ContentsBodyResourceRenderer::buildRenderedResources(
     return buildRenderedResourcesFromDocumentBlocks(documentBlocks, basePaths);
 }
 
-QString ContentsBodyResourceRenderer::resolveNoteDirectoryPathFromViewModel(QObject* viewModel) const
+QString ContentsBodyResourceRenderer::resolveNoteDirectoryPathFromController(QObject* controller) const
 {
-    if (viewModel == nullptr || m_noteId.trimmed().isEmpty())
+    if (controller == nullptr || m_noteId.trimmed().isEmpty())
     {
         return {};
     }
 
-    if (!hasInvokableMethod(viewModel, kNoteDirectoryPathForNoteIdSignature))
+    if (!hasInvokableMethod(controller, kNoteDirectoryPathForNoteIdSignature))
     {
         return {};
     }
 
     QString noteDirectoryPath;
     const bool invoked = QMetaObject::invokeMethod(
-        viewModel,
+        controller,
         "noteDirectoryPathForNoteId",
         Qt::DirectConnection,
         Q_RETURN_ARG(QString, noteDirectoryPath),
@@ -984,26 +984,26 @@ QString ContentsBodyResourceRenderer::resolveNoteDirectoryPath() const
         return {};
     }
 
-    const QString primaryPath = resolveNoteDirectoryPathFromViewModel(m_contentViewModel);
+    const QString primaryPath = resolveNoteDirectoryPathFromController(m_contentController);
     if (!primaryPath.isEmpty())
     {
         return primaryPath;
     }
 
-    if (m_fallbackContentViewModel != nullptr
-        && m_fallbackContentViewModel != m_contentViewModel)
+    if (m_fallbackContentController != nullptr
+        && m_fallbackContentController != m_contentController)
     {
-        return resolveNoteDirectoryPathFromViewModel(m_fallbackContentViewModel);
+        return resolveNoteDirectoryPathFromController(m_fallbackContentController);
     }
     return {};
 }
 
-void ContentsBodyResourceRenderer::disconnectContentViewModel()
+void ContentsBodyResourceRenderer::disconnectContentController()
 {
-    if (m_contentViewModelDestroyedConnection)
+    if (m_contentControllerDestroyedConnection)
     {
-        disconnect(m_contentViewModelDestroyedConnection);
-        m_contentViewModelDestroyedConnection = QMetaObject::Connection();
+        disconnect(m_contentControllerDestroyedConnection);
+        m_contentControllerDestroyedConnection = QMetaObject::Connection();
     }
     if (m_hubFilesystemMutatedConnection)
     {
@@ -1012,12 +1012,12 @@ void ContentsBodyResourceRenderer::disconnectContentViewModel()
     }
 }
 
-void ContentsBodyResourceRenderer::disconnectFallbackContentViewModel()
+void ContentsBodyResourceRenderer::disconnectFallbackContentController()
 {
-    if (m_fallbackContentViewModelDestroyedConnection)
+    if (m_fallbackContentControllerDestroyedConnection)
     {
-        disconnect(m_fallbackContentViewModelDestroyedConnection);
-        m_fallbackContentViewModelDestroyedConnection = QMetaObject::Connection();
+        disconnect(m_fallbackContentControllerDestroyedConnection);
+        m_fallbackContentControllerDestroyedConnection = QMetaObject::Connection();
     }
     if (m_fallbackHubFilesystemMutatedConnection)
     {

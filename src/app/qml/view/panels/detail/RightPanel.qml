@@ -8,14 +8,14 @@ Rectangle {
     property int detailPanelDefaultWidth: LV.Theme.inputMinWidth + LV.Theme.gap14
     property int detailPanelMinWidth: LV.Theme.controlHeightMd + LV.Theme.controlHeightMd + LV.Theme.controlHeightMd + LV.Theme.controlHeightMd + Math.round(LV.Theme.strokeThin)
     property color panelColor: "transparent"
-    readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("detail.RightPanel") : null
+    readonly property var panelController: panelControllerRegistry ? panelControllerRegistry.panelController("detail.RightPanel") : null
 
     signal viewHookRequested
 
     function requestViewHook(reason) {
         const hookReason = reason !== undefined ? String(reason) : "manual";
-        if (panelViewModel && panelViewModel.requestViewModelHook)
-            panelViewModel.requestViewModelHook(hookReason);
+        if (panelController && panelController.requestControllerHook)
+            panelController.requestControllerHook(hookReason);
         viewHookRequested();
     }
 

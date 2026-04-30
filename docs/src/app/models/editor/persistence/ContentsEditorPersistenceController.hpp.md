@@ -17,7 +17,7 @@ whenever the caller can provide both.
 
 ## Public Contract
 
-- `setContentViewModel(QObject*)`: forwards the editable content view-model dependency into the downstream
+- `setContentController(QObject*)`: forwards the editable content view-model dependency into the downstream
   note-management coordinator.
 - `contentPersistenceContractAvailable()` / `directPersistenceAvailable()`: expose whether the downstream persistence
   lanes are currently available.

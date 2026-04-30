@@ -37,7 +37,7 @@ It is the boundary between the editor-facing text model and the filesystem-facin
   Divider tags (`<break/>` / `<hr/>`) render as `<hr/>`.
 - `firstLineFromBodyDocument(...)` derives preview text from the first logical XML line, including leading inline text that appears before the first paragraph block.
 - `firstLineFromBodyPlainText(...)` derives preview text from the first non-empty trimmed line, without mutating the stored plain text.
-- `persistBodyPlainText(...)` is the high-level save entry used by hierarchy viewmodels. It now returns both:
+- `persistBodyPlainText(...)` is the high-level save entry used by hierarchy controllers. It now returns both:
   - normalized plain text (search/preview/index role)
   - normalized editor RAW source text (editor/source role)
 

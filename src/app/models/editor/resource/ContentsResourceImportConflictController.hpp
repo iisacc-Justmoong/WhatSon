@@ -18,7 +18,7 @@ class ContentsResourceImportConflictController : public QObject
     Q_PROPERTY(bool hasSelectedNote MEMBER m_hasSelectedNote)
     Q_PROPERTY(bool showDedicatedResourceViewer MEMBER m_showDedicatedResourceViewer)
     Q_PROPERTY(bool showFormattedTextRenderer MEMBER m_showFormattedTextRenderer)
-    Q_PROPERTY(QObject* resourcesImportViewModel MEMBER m_resourcesImportViewModel)
+    Q_PROPERTY(QObject* resourcesImportController MEMBER m_resourcesImportController)
     Q_PROPERTY(int resourceImportModeNone MEMBER m_resourceImportModeNone)
     Q_PROPERTY(int resourceImportModeUrls MEMBER m_resourceImportModeUrls)
     Q_PROPERTY(int resourceImportModeClipboard MEMBER m_resourceImportModeClipboard)
@@ -57,7 +57,7 @@ private:
     bool m_hasSelectedNote = false;
     bool m_showDedicatedResourceViewer = false;
     bool m_showFormattedTextRenderer = false;
-    QObject* m_resourcesImportViewModel = nullptr;
+    QObject* m_resourcesImportController = nullptr;
     int m_resourceImportModeNone = 0;
     int m_resourceImportModeUrls = 1;
     int m_resourceImportModeClipboard = 2;

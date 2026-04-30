@@ -13,7 +13,7 @@ class ContentsStructuredTagValidator : public QObject
 {
     Q_OBJECT
 
-    Q_PROPERTY(QObject* contentViewModel READ contentViewModel WRITE setContentViewModel NOTIFY contentViewModelChanged)
+    Q_PROPERTY(QObject* contentController READ contentController WRITE setContentController NOTIFY contentControllerChanged)
     Q_PROPERTY(QString noteId READ noteId WRITE setNoteId NOTIFY noteIdChanged)
     Q_PROPERTY(bool correctionAuthorityEnabled READ correctionAuthorityEnabled WRITE setCorrectionAuthorityEnabled NOTIFY correctionAuthorityEnabledChanged)
     Q_PROPERTY(QVariantMap lastCorrectionVerification READ lastCorrectionVerification NOTIFY lastCorrectionVerificationChanged)
@@ -24,8 +24,8 @@ public:
     explicit ContentsStructuredTagValidator(QObject* parent = nullptr);
     ~ContentsStructuredTagValidator() override;
 
-    QObject* contentViewModel() const noexcept;
-    void setContentViewModel(QObject* model);
+    QObject* contentController() const noexcept;
+    void setContentController(QObject* model);
 
     QString noteId() const;
     void setNoteId(const QString& noteId);
@@ -49,7 +49,7 @@ public slots:
         const QVariantMap& verification);
 
 signals:
-    void contentViewModelChanged();
+    void contentControllerChanged();
     void noteIdChanged();
     void correctionAuthorityEnabledChanged();
     void lastCorrectionVerificationChanged();
@@ -97,7 +97,7 @@ private:
     static Result performCorrectionRequest(const Request& request);
     void handleCorrectionRequestFinished(const Result& result);
     QString resolveNoteDirectoryPathForNote(const QString& noteId) const;
-    bool applyPersistedBodyStateToContentViewModel(
+    bool applyPersistedBodyStateToContentController(
         const QString& noteId,
         const WhatSonLocalNoteDocument& document) const;
     bool reloadNoteMetadataForNote(const QString& noteId) const;
@@ -105,7 +105,7 @@ private:
     void updateLastCorrectedSourceText(const QString& correctedSourceText);
     void updateLastCorrectionError(const QString& errorMessage);
 
-    QPointer<QObject> m_contentViewModel;
+    QPointer<QObject> m_contentController;
     QString m_noteId;
     bool m_correctionAuthorityEnabled = false;
     QVariantMap m_lastCorrectionVerification;

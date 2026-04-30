@@ -5,15 +5,15 @@ LV.HStack {
     id: preferenceBar
 
     property bool detailPanelCollapsed: false
-    readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("navigation.NavigationPreferenceBar") : null
+    readonly property var panelController: panelControllerRegistry ? panelControllerRegistry.panelController("navigation.NavigationPreferenceBar") : null
 
     signal toggleDetailPanelRequested
     signal viewHookRequested
 
     function requestViewHook(reason) {
         const hookReason = reason !== undefined ? String(reason) : "manual";
-        if (panelViewModel && panelViewModel.requestViewModelHook)
-            panelViewModel.requestViewModelHook(hookReason);
+        if (panelController && panelController.requestControllerHook)
+            panelController.requestControllerHook(hookReason);
         viewHookRequested();
     }
 

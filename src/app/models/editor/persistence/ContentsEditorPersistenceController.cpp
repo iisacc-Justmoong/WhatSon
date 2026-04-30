@@ -60,23 +60,23 @@ ContentsEditorPersistenceController::~ContentsEditorPersistenceController()
             .arg(m_inFlightNoteId));
 }
 
-QObject* ContentsEditorPersistenceController::contentViewModel() const noexcept
+QObject* ContentsEditorPersistenceController::contentController() const noexcept
 {
     return m_noteManagementCoordinator != nullptr
-        ? m_noteManagementCoordinator->contentViewModel()
+        ? m_noteManagementCoordinator->contentController()
         : nullptr;
 }
 
-void ContentsEditorPersistenceController::setContentViewModel(QObject* model)
+void ContentsEditorPersistenceController::setContentController(QObject* model)
 {
     WhatSon::Debug::traceEditorSelf(
         this,
         QStringLiteral("editorPersistence"),
-        QStringLiteral("setContentViewModel"),
+        QStringLiteral("setContentController"),
         QStringLiteral("next=0x%1").arg(QString::number(reinterpret_cast<quintptr>(model), 16)));
     if (m_noteManagementCoordinator != nullptr)
     {
-        m_noteManagementCoordinator->setContentViewModel(model);
+        m_noteManagementCoordinator->setContentController(model);
     }
 }
 

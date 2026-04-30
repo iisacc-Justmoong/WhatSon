@@ -24,7 +24,7 @@ Rectangle {
     readonly property real grabbedNoteOpacity: 0.25
     readonly property bool hasNoteListModel: listBarLayout.noteListModel !== null && listBarLayout.noteListModel !== undefined
     property bool headerVisible: true
-    property var hierarchyViewModel: null
+    property var hierarchyController: null
     property color hintColor: LV.Theme.descriptionColor
     readonly property int mobileNoteDragHoldInterval: 1000
     readonly property var noteContextMenuItems: [
@@ -41,15 +41,15 @@ Rectangle {
     ]
     readonly property bool noteContextMenuNoteAvailable: listBarLayout.contextMenuNoteIds.length > 0
     readonly property int noteContextMenuSelectionCount: listBarLayout.contextMenuNoteIds.length
-    readonly property bool noteDeletionBatchContractAvailable: listBarLayout.noteDeletionViewModel !== null && listBarLayout.noteDeletionViewModel !== undefined && listBarLayout.noteDeletionViewModel.deleteNotesByIds !== undefined
+    readonly property bool noteDeletionBatchContractAvailable: listBarLayout.noteDeletionController !== null && listBarLayout.noteDeletionController !== undefined && listBarLayout.noteDeletionController.deleteNotesByIds !== undefined
     readonly property bool noteDeletionContractAvailable: listBarLayout.noteDeletionHandlerAvailable && (listBarLayout.resolvedSelectedNoteIds.length > 0 || noteDeletionBridge.focusedNoteAvailable)
     readonly property bool noteDeletionHandlerAvailable: listBarLayout.noteDeletionBatchContractAvailable || listBarLayout.noteDeletionSingleContractAvailable
-    readonly property bool noteDeletionSingleContractAvailable: noteDeletionBridge.deleteContractAvailable || (listBarLayout.noteDeletionViewModel !== null && listBarLayout.noteDeletionViewModel !== undefined && listBarLayout.noteDeletionViewModel.deleteNoteById !== undefined)
-    property var noteDeletionViewModel: null
+    readonly property bool noteDeletionSingleContractAvailable: noteDeletionBridge.deleteContractAvailable || (listBarLayout.noteDeletionController !== null && listBarLayout.noteDeletionController !== undefined && listBarLayout.noteDeletionController.deleteNoteById !== undefined)
+    property var noteDeletionController: null
     property bool noteDragActive: false
     property bool noteDragCanceled: false
     property var noteDropTarget: null
-    readonly property bool noteFolderClearContractAvailable: listBarLayout.noteDeletionViewModel !== null && listBarLayout.noteDeletionViewModel !== undefined && (listBarLayout.noteDeletionViewModel.clearNoteFoldersByIds !== undefined || listBarLayout.noteDeletionViewModel.clearNoteFoldersById !== undefined)
+    readonly property bool noteFolderClearContractAvailable: listBarLayout.noteDeletionController !== null && listBarLayout.noteDeletionController !== undefined && (listBarLayout.noteDeletionController.clearNoteFoldersByIds !== undefined || listBarLayout.noteDeletionController.clearNoteFoldersById !== undefined)
     readonly property bool noteListCurrentIndexContractAvailable: listBarLayout.hasNoteListModel && (listBarLayout.resolvedNoteListModel.currentIndex !== undefined || listBarLayout.resolvedNoteListModel.setCurrentIndex !== undefined)
     property bool isMobilePlatform: false
     readonly property bool noteListKineticViewportEnabled: LV.Theme.mobileTarget || listBarLayout.isMobilePlatform
@@ -67,8 +67,8 @@ Rectangle {
     property bool noteListViewportRestorePending: false
     property alias noteSelectionAnchorIndex: noteSelectionController.selectionAnchorIndex
     property color panelColor: "transparent"
-    property var panelViewModelRegistry: null
-    readonly property var panelViewModel: null
+    property var panelControllerRegistry: null
+    readonly property var panelController: null
     property real preservedNoteListContentY: 0
     property int pressedNoteIndex: -1
     readonly property var resolvedNoteListModel: listBarLayout.noteListModel
@@ -171,18 +171,18 @@ Rectangle {
     }
     function clearFoldersForNoteIds(noteIds) {
         const normalizedNoteIds = listBarLayout.uniqueTrimmedStringList(noteIds);
-        if (normalizedNoteIds.length === 0 || !listBarLayout.noteDeletionViewModel)
+        if (normalizedNoteIds.length === 0 || !listBarLayout.noteDeletionController)
             return false;
 
-        if (listBarLayout.noteDeletionViewModel.clearNoteFoldersByIds !== undefined)
-            return Boolean(listBarLayout.noteDeletionViewModel.clearNoteFoldersByIds(normalizedNoteIds));
+        if (listBarLayout.noteDeletionController.clearNoteFoldersByIds !== undefined)
+            return Boolean(listBarLayout.noteDeletionController.clearNoteFoldersByIds(normalizedNoteIds));
 
-        if (listBarLayout.noteDeletionViewModel.clearNoteFoldersById === undefined)
+        if (listBarLayout.noteDeletionController.clearNoteFoldersById === undefined)
             return false;
 
         let clearedAny = false;
         for (let index = 0; index < normalizedNoteIds.length; ++index) {
-            if (listBarLayout.noteDeletionViewModel.clearNoteFoldersById(normalizedNoteIds[index]))
+            if (listBarLayout.noteDeletionController.clearNoteFoldersById(normalizedNoteIds[index]))
                 clearedAny = true;
         }
         return clearedAny;
@@ -278,13 +278,13 @@ Rectangle {
         if (normalizedNoteIds.length === 0)
             return false;
 
-        if (listBarLayout.noteDeletionViewModel && listBarLayout.noteDeletionViewModel.deleteNotesByIds !== undefined)
-            return Boolean(listBarLayout.noteDeletionViewModel.deleteNotesByIds(normalizedNoteIds));
+        if (listBarLayout.noteDeletionController && listBarLayout.noteDeletionController.deleteNotesByIds !== undefined)
+            return Boolean(listBarLayout.noteDeletionController.deleteNotesByIds(normalizedNoteIds));
 
         let deletedAny = false;
-        if (listBarLayout.noteDeletionViewModel && listBarLayout.noteDeletionViewModel.deleteNoteById !== undefined) {
+        if (listBarLayout.noteDeletionController && listBarLayout.noteDeletionController.deleteNoteById !== undefined) {
             for (let index = 0; index < normalizedNoteIds.length; ++index) {
-                if (listBarLayout.noteDeletionViewModel.deleteNoteById(normalizedNoteIds[index]))
+                if (listBarLayout.noteDeletionController.deleteNoteById(normalizedNoteIds[index]))
                     deletedAny = true;
             }
         }
@@ -437,8 +437,8 @@ Rectangle {
     }
     function requestViewHook(reason) {
         const hookReason = reason !== undefined ? String(reason) : "manual";
-        if (panelViewModel && panelViewModel.requestViewModelHook)
-            panelViewModel.requestViewModelHook(hookReason);
+        if (panelController && panelController.requestControllerHook)
+            panelController.requestControllerHook(hookReason);
         viewHookRequested();
     }
     function resolveSelectionModifiers(modifiers, cachedModifiers, cachedCapturedAtMs) {
@@ -802,7 +802,7 @@ Rectangle {
     FocusedNoteDeletionBridge {
         id: noteDeletionBridge
 
-        deletionTarget: listBarLayout.noteDeletionViewModel
+        deletionTarget: listBarLayout.noteDeletionController
         noteListModel: listBarLayout.resolvedNoteListModel
     }
     LV.ContextMenu {

@@ -8,7 +8,7 @@ Owns the editor display command surface for tag-management shortcuts and context
 
 - May use `Shortcut`, pointer handlers, and `LV.ContextMenu`.
 - Must not install ordinary text input handlers.
-- Does not act as a ViewModel.
+- Does not act as a Controller.
 - Desktop right-click selection menus are driven by a dedicated full-surface `MouseArea` that accepts only
   `Qt.RightButton`.
   The surface primes the current editor selection on press and then asks `ContentsDisplayView.qml` to open the menu on

@@ -4,7 +4,7 @@ import LVRS 1.0 as LV
 Item {
     id: noteDetailPanel
 
-    property var noteDetailPanelViewModel: null
+    property var noteDetailPanelController: null
     readonly property var defaultToolbarItems: [
         {
             "figmaNodeId": "155:4576",
@@ -53,13 +53,13 @@ Item {
     readonly property int defaultPanelWidth: LV.Theme.inputMinWidth + LV.Theme.gap14
     readonly property int detailContentsHeight: Math.max(0, noteDetailPanel.height - noteDetailPanel.headerToolbarHeight - noteDetailPanel.panelSpacing)
     readonly property int detailContentsWidth: noteDetailPanel.width
-    readonly property var detailPanelVm: noteDetailPanel.noteDetailPanelViewModel
+    readonly property var detailPanelRuntime: noteDetailPanel.noteDetailPanelController
     property int panelSpacing: LV.Theme.gap10
-    readonly property var resolvedActiveContentViewModel: noteDetailPanel.resolveActiveContentViewModel()
-    readonly property var resolvedFileStatViewModel: noteDetailPanel.resolveFileStatViewModel()
-    readonly property var resolvedProjectSelectionViewModel: noteDetailPanel.resolveProjectSelectionViewModel()
-    readonly property var resolvedBookmarkSelectionViewModel: noteDetailPanel.resolveBookmarkSelectionViewModel()
-    readonly property var resolvedProgressSelectionViewModel: noteDetailPanel.resolveProgressSelectionViewModel()
+    readonly property var resolvedActiveContentController: noteDetailPanel.resolveActiveContentController()
+    readonly property var resolvedFileStatController: noteDetailPanel.resolveFileStatController()
+    readonly property var resolvedProjectSelectionController: noteDetailPanel.resolveProjectSelectionController()
+    readonly property var resolvedBookmarkSelectionController: noteDetailPanel.resolveBookmarkSelectionController()
+    readonly property var resolvedProgressSelectionController: noteDetailPanel.resolveProgressSelectionController()
     readonly property string resolvedActiveStateName: noteDetailPanel.resolveActiveStateName()
     readonly property bool resolvedNoteContextLinked: noteDetailPanel.resolveNoteContextLinked()
     readonly property string resolvedPanelStateName: noteDetailPanel.resolvedNoteContextLinked ? "linked" : "detached"
@@ -89,46 +89,46 @@ Item {
             return noteDetailPanel.defaultToolbarItems[0];
         }
     }
-    function resolveActiveContentViewModel() {
-        if (!noteDetailPanel.detailPanelVm || noteDetailPanel.detailPanelVm.activeContentViewModel === undefined)
+    function resolveActiveContentController() {
+        if (!noteDetailPanel.detailPanelRuntime || noteDetailPanel.detailPanelRuntime.activeContentController === undefined)
             return null;
-        return noteDetailPanel.detailPanelVm.activeContentViewModel;
+        return noteDetailPanel.detailPanelRuntime.activeContentController;
     }
-    function resolveFileStatViewModel() {
-        if (!noteDetailPanel.detailPanelVm || noteDetailPanel.detailPanelVm.fileStatViewModel === undefined)
+    function resolveFileStatController() {
+        if (!noteDetailPanel.detailPanelRuntime || noteDetailPanel.detailPanelRuntime.fileStatController === undefined)
             return null;
-        return noteDetailPanel.detailPanelVm.fileStatViewModel;
+        return noteDetailPanel.detailPanelRuntime.fileStatController;
     }
-    function resolveProjectSelectionViewModel() {
-        if (!noteDetailPanel.detailPanelVm || noteDetailPanel.detailPanelVm.projectSelectionViewModel === undefined)
+    function resolveProjectSelectionController() {
+        if (!noteDetailPanel.detailPanelRuntime || noteDetailPanel.detailPanelRuntime.projectSelectionController === undefined)
             return null;
-        return noteDetailPanel.detailPanelVm.projectSelectionViewModel;
+        return noteDetailPanel.detailPanelRuntime.projectSelectionController;
     }
-    function resolveBookmarkSelectionViewModel() {
-        if (!noteDetailPanel.detailPanelVm || noteDetailPanel.detailPanelVm.bookmarkSelectionViewModel === undefined)
+    function resolveBookmarkSelectionController() {
+        if (!noteDetailPanel.detailPanelRuntime || noteDetailPanel.detailPanelRuntime.bookmarkSelectionController === undefined)
             return null;
-        return noteDetailPanel.detailPanelVm.bookmarkSelectionViewModel;
+        return noteDetailPanel.detailPanelRuntime.bookmarkSelectionController;
     }
-    function resolveProgressSelectionViewModel() {
-        if (!noteDetailPanel.detailPanelVm || noteDetailPanel.detailPanelVm.progressSelectionViewModel === undefined)
+    function resolveProgressSelectionController() {
+        if (!noteDetailPanel.detailPanelRuntime || noteDetailPanel.detailPanelRuntime.progressSelectionController === undefined)
             return null;
-        return noteDetailPanel.detailPanelVm.progressSelectionViewModel;
+        return noteDetailPanel.detailPanelRuntime.progressSelectionController;
     }
     function resolveActiveStateName() {
-        if (!noteDetailPanel.detailPanelVm || noteDetailPanel.detailPanelVm.activeStateName === undefined)
+        if (!noteDetailPanel.detailPanelRuntime || noteDetailPanel.detailPanelRuntime.activeStateName === undefined)
             return "properties";
-        const stateName = String(noteDetailPanel.detailPanelVm.activeStateName).trim();
+        const stateName = String(noteDetailPanel.detailPanelRuntime.activeStateName).trim();
         return stateName.length > 0 ? stateName : "properties";
     }
     function resolveNoteContextLinked() {
-        if (!noteDetailPanel.detailPanelVm || noteDetailPanel.detailPanelVm.noteContextLinked === undefined)
+        if (!noteDetailPanel.detailPanelRuntime || noteDetailPanel.detailPanelRuntime.noteContextLinked === undefined)
             return false;
-        return noteDetailPanel.detailPanelVm.noteContextLinked === true;
+        return noteDetailPanel.detailPanelRuntime.noteContextLinked === true;
     }
     function resolveToolbarItems() {
-        if (!noteDetailPanel.detailPanelVm || noteDetailPanel.detailPanelVm.toolbarItems === undefined || noteDetailPanel.detailPanelVm.toolbarItems === null)
+        if (!noteDetailPanel.detailPanelRuntime || noteDetailPanel.detailPanelRuntime.toolbarItems === undefined || noteDetailPanel.detailPanelRuntime.toolbarItems === null)
             return noteDetailPanel.defaultToolbarItems;
-        const sourceItems = noteDetailPanel.detailPanelVm.toolbarItems;
+        const sourceItems = noteDetailPanel.detailPanelRuntime.toolbarItems;
         const normalizedItems = Array.isArray(sourceItems) ? sourceItems : sourceItems.length !== undefined ? Array.prototype.slice.call(sourceItems) : [];
         if (normalizedItems.length <= 0)
             return noteDetailPanel.defaultToolbarItems;
@@ -171,21 +171,21 @@ Item {
 
                 onDetailStateChangeRequested: function (stateValue) {
                     noteDetailPanel.requestViewHook("detailStateChangeRequested.stateValue=" + stateValue);
-                    if (noteDetailPanel.detailPanelVm)
-                        noteDetailPanel.detailPanelVm.requestStateChange(stateValue);
+                    if (noteDetailPanel.detailPanelRuntime)
+                        noteDetailPanel.detailPanelRuntime.requestStateChange(stateValue);
                 }
             }
         }
         DetailContents {
-            activeContentViewModel: noteDetailPanel.resolvedActiveContentViewModel
+            activeContentController: noteDetailPanel.resolvedActiveContentController
             activeStateName: noteDetailPanel.resolvedActiveStateName
-            bookmarkSelectionViewModel: noteDetailPanel.resolvedBookmarkSelectionViewModel
-            detailPanelViewModel: noteDetailPanel.detailPanelVm
-            fileStatViewModel: noteDetailPanel.resolvedFileStatViewModel
+            bookmarkSelectionController: noteDetailPanel.resolvedBookmarkSelectionController
+            detailPanelController: noteDetailPanel.detailPanelRuntime
+            fileStatController: noteDetailPanel.resolvedFileStatController
             height: noteDetailPanel.detailContentsHeight
             noteContextLinked: noteDetailPanel.resolvedNoteContextLinked
-            progressSelectionViewModel: noteDetailPanel.resolvedProgressSelectionViewModel
-            projectSelectionViewModel: noteDetailPanel.resolvedProjectSelectionViewModel
+            progressSelectionController: noteDetailPanel.resolvedProgressSelectionController
+            projectSelectionController: noteDetailPanel.resolvedProjectSelectionController
             width: noteDetailPanel.detailContentsWidth
         }
     }

@@ -9,14 +9,14 @@ resources hierarchy and mounts one of two concrete surfaces:
 - `ResourceDetailPanel.qml`
 
 ## Key Contracts
-- `LV.ViewModels.get("noteDetailPanelViewModel")`
-- `LV.ViewModels.get("resourceDetailPanelViewModel")`
-- `LV.ViewModels.get("sidebarHierarchyViewModel")`
-- `resourcesHierarchyViewModel`
+- `noteDetailPanelController`
+- `resourceDetailPanelController`
+- `sidebarHierarchyController`
+- `resourcesHierarchyController`
 
 ## Behavior
-- When the active hierarchy viewmodel matches `resourcesHierarchyViewModel`, the router hides the note-detail surface
+- When the active hierarchy controller matches `resourcesHierarchyController`, the router hides the note-detail surface
   and shows `ResourceDetailPanel.qml`.
 - Every other hierarchy continues to mount `NoteDetailPanel.qml`.
 - The outer `DetailPanel` shell remains stable for `RightPanel.qml` and the page layouts even though the mounted view
-  and effective detail viewmodel now diverge by hierarchy domain.
+  and effective detail controller now diverge by hierarchy domain.

@@ -35,7 +35,7 @@ Item {
     property int menuItemWidth: LV.Theme.inputMinWidth - LV.Theme.gap4
     property int menuYOffset: LV.Theme.gap2
     property bool detailPanelCollapsed: false
-    readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("navigation.NavigationApplicationControlBar") : null
+    readonly property var panelController: panelControllerRegistry ? panelControllerRegistry.panelController("navigation.NavigationApplicationControlBar") : null
     readonly property var applicationControlMenuItems: applicationControlBar.buildApplicationControlMenuItems()
 
     signal toggleDetailPanelRequested
@@ -43,8 +43,8 @@ Item {
 
     function requestViewHook(reason) {
         const hookReason = reason !== undefined ? String(reason) : "manual";
-        if (panelViewModel && panelViewModel.requestViewModelHook)
-            panelViewModel.requestViewModelHook(hookReason);
+        if (panelController && panelController.requestControllerHook)
+            panelController.requestControllerHook(hookReason);
         viewHookRequested();
     }
     function buildApplicationControlMenuItems() {

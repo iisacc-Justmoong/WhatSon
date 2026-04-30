@@ -24,7 +24,7 @@ void WhatSonCppRegressionTests::architecturePolicyLock_blocksMutableWiringAfterL
     QVERIFY(WhatSon::Policy::verifyMutableWiringAllowed(QStringLiteral("test.mutable")));
     QVERIFY(WhatSon::Policy::verifyMutableDependencyAllowed(
         WhatSon::Policy::Layer::View,
-        WhatSon::Policy::Layer::ViewModel,
+        WhatSon::Policy::Layer::Controller,
         QStringLiteral("test.dependency")));
 
     WhatSon::Policy::ArchitecturePolicyLock::lock();
@@ -32,50 +32,50 @@ void WhatSonCppRegressionTests::architecturePolicyLock_blocksMutableWiringAfterL
     QVERIFY(!WhatSon::Policy::verifyMutableWiringAllowed(QStringLiteral("test.mutable.locked")));
     QVERIFY(!WhatSon::Policy::verifyMutableDependencyAllowed(
         WhatSon::Policy::Layer::View,
-        WhatSon::Policy::Layer::ViewModel,
+        WhatSon::Policy::Layer::Controller,
         QStringLiteral("test.dependency.locked")));
 }
 
-void WhatSonCppRegressionTests::hierarchyViewModelProvider_rejectsMappingMutationAfterLock()
+void WhatSonCppRegressionTests::hierarchyControllerProvider_rejectsMappingMutationAfterLock()
 {
     ArchitecturePolicyLockResetScope resetScope;
 
-    HierarchyViewModelProvider provider;
-    FakeHierarchyViewModel libraryViewModel(QStringLiteral("library"));
-    FakeHierarchyViewModel tagsViewModel(QStringLiteral("tags"));
+    HierarchyControllerProvider provider;
+    FakeHierarchyController libraryController(QStringLiteral("library"));
+    FakeHierarchyController tagsController(QStringLiteral("tags"));
 
-    provider.setMappings(QVector<HierarchyViewModelProvider::Mapping>{
-        {static_cast<int>(WhatSon::Sidebar::HierarchyDomain::Library), &libraryViewModel},
+    provider.setMappings(QVector<HierarchyControllerProvider::Mapping>{
+        {static_cast<int>(WhatSon::Sidebar::HierarchyDomain::Library), &libraryController},
     });
     QCOMPARE(
-        provider.hierarchyViewModel(static_cast<int>(WhatSon::Sidebar::HierarchyDomain::Library)),
-        static_cast<IHierarchyViewModel*>(&libraryViewModel));
+        provider.hierarchyController(static_cast<int>(WhatSon::Sidebar::HierarchyDomain::Library)),
+        static_cast<IHierarchyController*>(&libraryController));
 
     WhatSon::Policy::ArchitecturePolicyLock::lock();
-    provider.setMappings(QVector<HierarchyViewModelProvider::Mapping>{
-        {static_cast<int>(WhatSon::Sidebar::HierarchyDomain::Library), &tagsViewModel},
+    provider.setMappings(QVector<HierarchyControllerProvider::Mapping>{
+        {static_cast<int>(WhatSon::Sidebar::HierarchyDomain::Library), &tagsController},
     });
 
     QCOMPARE(
-        provider.hierarchyViewModel(static_cast<int>(WhatSon::Sidebar::HierarchyDomain::Library)),
-        static_cast<IHierarchyViewModel*>(&libraryViewModel));
+        provider.hierarchyController(static_cast<int>(WhatSon::Sidebar::HierarchyDomain::Library)),
+        static_cast<IHierarchyController*>(&libraryController));
 }
 
-void WhatSonCppRegressionTests::sidebarHierarchyViewModel_rejectsSelectionStoreMutationAfterLock()
+void WhatSonCppRegressionTests::sidebarHierarchyController_rejectsSelectionStoreMutationAfterLock()
 {
     ArchitecturePolicyLockResetScope resetScope;
 
-    SidebarHierarchyViewModel sidebarViewModel;
+    SidebarHierarchyController sidebarController;
     FakeSidebarSelectionStore firstStore;
     FakeSidebarSelectionStore secondStore;
 
-    sidebarViewModel.setSelectionStore(&firstStore);
-    QCOMPARE(sidebarViewModel.selectionStore(), static_cast<ISidebarSelectionStore*>(&firstStore));
+    sidebarController.setSelectionStore(&firstStore);
+    QCOMPARE(sidebarController.selectionStore(), static_cast<ISidebarSelectionStore*>(&firstStore));
 
     WhatSon::Policy::ArchitecturePolicyLock::lock();
-    sidebarViewModel.setSelectionStore(&secondStore);
+    sidebarController.setSelectionStore(&secondStore);
 
-    QCOMPARE(sidebarViewModel.selectionStore(), static_cast<ISidebarSelectionStore*>(&firstStore));
+    QCOMPARE(sidebarController.selectionStore(), static_cast<ISidebarSelectionStore*>(&firstStore));
 }
 
 void WhatSonCppRegressionTests::noteListModelContractBridge_rejectsWiringMutationAfterLock()
@@ -83,16 +83,16 @@ void WhatSonCppRegressionTests::noteListModelContractBridge_rejectsWiringMutatio
     ArchitecturePolicyLockResetScope resetScope;
 
     NoteListModelContractBridge bridge;
-    FakeHierarchyViewModel firstHierarchy(QStringLiteral("first"));
-    FakeHierarchyViewModel secondHierarchy(QStringLiteral("second"));
+    FakeHierarchyController firstHierarchy(QStringLiteral("first"));
+    FakeHierarchyController secondHierarchy(QStringLiteral("second"));
 
-    bridge.setHierarchyViewModel(&firstHierarchy);
-    QCOMPARE(bridge.hierarchyViewModel(), static_cast<QObject*>(&firstHierarchy));
+    bridge.setHierarchyController(&firstHierarchy);
+    QCOMPARE(bridge.hierarchyController(), static_cast<QObject*>(&firstHierarchy));
 
     WhatSon::Policy::ArchitecturePolicyLock::lock();
-    bridge.setHierarchyViewModel(&secondHierarchy);
+    bridge.setHierarchyController(&secondHierarchy);
 
-    QCOMPARE(bridge.hierarchyViewModel(), static_cast<QObject*>(&firstHierarchy));
+    QCOMPARE(bridge.hierarchyController(), static_cast<QObject*>(&firstHierarchy));
 }
 
 void WhatSonCppRegressionTests::detailCurrentNoteContextBridge_rejectsWiringMutationAfterLock()

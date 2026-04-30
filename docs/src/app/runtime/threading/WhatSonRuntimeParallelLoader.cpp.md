@@ -4,7 +4,7 @@
 
 `WhatSonRuntimeParallelLoader.cpp` builds LVRS `BootstrapParallelTask` entries for requested domain snapshot work,
 runs them through `lvrs::runBootstrapParallelTasks(...)`, and then applies the immutable snapshot payloads back onto
-the main-thread viewmodels after the requested domain set succeeds.
+the main-thread controllers after the requested domain set succeeds.
 
 ## Requested Domain Selection
 
@@ -25,7 +25,7 @@ library note set independently.
 - If the library snapshot fails, the derived bookmarks result fails with the same error.
 - If the library domain is absent, the loader falls back to the standalone bookmarks snapshot path.
 - The loader now stages every requested domain, including `hub.runtime`, through LVRS `BootstrapParallel`, and only
-  applies snapshots back into live viewmodels/runtime stores when every requested domain succeeded.
+  applies snapshots back into live controllers/runtime stores when every requested domain succeeded.
 - If any requested domain fails, the loader returns failure without partially mutating the current
   runtime state.
 

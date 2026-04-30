@@ -5,15 +5,15 @@
   through `setParallelLoader(...)`; the concrete loader delegates requested domain fan-out to LVRS `BootstrapParallel`.
 - Calendar and system calendar stores continue to be instantiated concretely here, but downstream collaborators now consume interface types.
 - `main.cpp` now keeps the concrete `CalendarBoardStore` synchronized with the currently loaded hub path and refreshes
-  calendar note projections from the live `LibraryHierarchyViewModel` snapshot after startup load, onboarding load,
-  sync reload, and every `indexedNotesSnapshotChanged()` emission from the library runtime viewmodel.
-- `main.cpp` also wires the library viewmodel's single-note mutation signals into `CalendarBoardStore`:
+  calendar note projections from the live `LibraryHierarchyController` snapshot after startup load, onboarding load,
+  sync reload, and every `indexedNotesSnapshotChanged()` emission from the library runtime controller.
+- `main.cpp` also wires the library controller's single-note mutation signals into `CalendarBoardStore`:
   `indexedNoteUpserted(...)` now updates one projected note mount in place and `noteDeleted(...)` removes that mount
   without forcing a full calendar note reindex.
 - `main.cpp` also injects a live library-note provider into `CalendarBoardStore`, so calendar queries can lazily
   resolve projected note items even before an explicit projection reload has populated the cache.
 - Bookmark/progress-originated note mutations still use the disk reindex fallback path so calendar projection remains
-  aligned even when those domains mutate note metadata outside the library viewmodel's in-memory note list.
+  aligned even when those domains mutate note metadata outside the library controller's in-memory note list.
 - Project-domain mutations now join the same `hubFilesystemMutated() -> acknowledgeLocalMutation()`
   wiring path as library/bookmark/progress mutations, so local project edits are not misclassified
   as foreign hub changes.
@@ -48,7 +48,7 @@
   activation to LVRS `loadQmlRootObjects(...)` instead of duplicating `QQmlApplicationEngine::loadFromModule(...)`
   and manual `show()/raise()/requestActivate()` logic in `main.cpp`.
 - Workspace context binding now flows through `WhatSonQmlContextBinder` and LVRS `QmlContextBindPlan`, so C++
-  registers root ViewModels into `LV.ViewModels` before `Main.qml` loads.
+  publishes root runtime objects directly before `Main.qml` loads.
 - Internal QML bridge type registration now flows through `WhatSonQmlInternalTypeRegistrar` and LVRS
   `QmlTypeRegistrar`; startup fails early if the internal type manifest cannot be registered.
 - Foreground scheduler and permission startup now run through LVRS `ForegroundServiceGate`; `main.cpp` builds a

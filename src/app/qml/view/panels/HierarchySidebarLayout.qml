@@ -6,29 +6,25 @@ Item {
     id: hierarchyView
 
     readonly property bool createFolderEnabled: sidebarView.createFolderEnabled
-    readonly property int currentHierarchy: hierarchyView.sidebarHierarchyViewModel ? hierarchyView.sidebarHierarchyViewModel.resolvedActiveHierarchyIndex : 0
-    readonly property var hierarchyViewBindings: LV.ViewModels.bindings
-    readonly property string hierarchyViewId: "HierarchySidebarLayout.activeHierarchy"
-    readonly property string resolvedHierarchyViewModelKey: hierarchyView.hierarchyViewModelKeyForIndex(hierarchyView.currentHierarchy)
+    readonly property int currentHierarchy: hierarchyView.sidebarHierarchyController ? hierarchyView.sidebarHierarchyController.resolvedActiveHierarchyIndex : 0
     property bool footerVisible: true
     property int horizontalInset: LV.Theme.gap2
     readonly property var noteDropTargetView: sidebarView
     property color panelColor: "transparent"
-    readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("HierarchySidebarLayout") : null
-    readonly property var resolvedHierarchyViewModel: {
-        const sidebarViewModel = hierarchyView.sidebarHierarchyViewModel;
-        if (sidebarViewModel && sidebarViewModel.hierarchyViewModelForIndex !== undefined) {
-            const directHierarchyViewModel = sidebarViewModel.hierarchyViewModelForIndex(hierarchyView.currentHierarchy);
-            if (directHierarchyViewModel)
-                return directHierarchyViewModel;
+    readonly property var panelController: panelControllerRegistry ? panelControllerRegistry.panelController("HierarchySidebarLayout") : null
+    readonly property var resolvedHierarchyController: {
+        const sidebarController = hierarchyView.sidebarHierarchyController;
+        if (sidebarController && sidebarController.hierarchyControllerForIndex !== undefined) {
+            const directHierarchyController = sidebarController.hierarchyControllerForIndex(hierarchyView.currentHierarchy);
+            if (directHierarchyController)
+                return directHierarchyController;
         }
-        const activeHierarchyViewModel = sidebarViewModel ? sidebarViewModel.resolvedHierarchyViewModel : null;
-        if (activeHierarchyViewModel)
-            return activeHierarchyViewModel;
-        const _ = hierarchyView.hierarchyViewBindings;
-        return LV.ViewModels.getForView(hierarchyView.hierarchyViewId);
+        const activeHierarchyController = sidebarController ? sidebarController.resolvedHierarchyController : null;
+        if (activeHierarchyController)
+            return activeHierarchyController;
+        return null;
     }
-    required property var sidebarHierarchyViewModel
+    required property var sidebarHierarchyController
     property bool searchFieldVisible: false
     property int searchHeaderMinHeight: LV.Theme.gap24
     property int searchHeaderTopGap: LV.Theme.gap4
@@ -46,43 +42,13 @@ Item {
     signal viewHookRequested
 
     function setActiveHierarchyIndex(index) {
-        if (!hierarchyView.sidebarHierarchyViewModel || hierarchyView.sidebarHierarchyViewModel.setActiveHierarchyIndex === undefined)
+        if (!hierarchyView.sidebarHierarchyController || hierarchyView.sidebarHierarchyController.setActiveHierarchyIndex === undefined)
             return;
-        hierarchyView.sidebarHierarchyViewModel.setActiveHierarchyIndex(index);
-        hierarchyView.activeToolbarIndexChangeRequested(hierarchyView.sidebarHierarchyViewModel.resolvedActiveHierarchyIndex);
-    }
-    function syncHierarchyViewBinding() {
-        if (!hierarchyView.resolvedHierarchyViewModelKey.length) {
-            LV.ViewModels.unbindView(hierarchyView.hierarchyViewId);
-            return;
-        }
-        if (!LV.ViewModels.bindView(hierarchyView.hierarchyViewId, hierarchyView.resolvedHierarchyViewModelKey, true))
-            console.warn("[whatson:mvvm][sidebar] viewId=" + hierarchyView.hierarchyViewId + " key=" + hierarchyView.resolvedHierarchyViewModelKey + " error=" + LV.ViewModels.lastError);
+        hierarchyView.sidebarHierarchyController.setActiveHierarchyIndex(index);
+        hierarchyView.activeToolbarIndexChangeRequested(hierarchyView.sidebarHierarchyController.resolvedActiveHierarchyIndex);
     }
     function requestCreateFolder() {
         sidebarView.requestCreateFolder();
-    }
-    function hierarchyViewModelKeyForIndex(index) {
-        switch (Math.max(0, Math.floor(Number(index) || 0))) {
-        case hierarchyEnum.library:
-            return "libraryHierarchyViewModel";
-        case hierarchyEnum.projects:
-            return "projectsHierarchyViewModel";
-        case hierarchyEnum.bookmarks:
-            return "bookmarksHierarchyViewModel";
-        case hierarchyEnum.tags:
-            return "tagsHierarchyViewModel";
-        case hierarchyEnum.resources:
-            return "resourcesHierarchyViewModel";
-        case hierarchyEnum.progress:
-            return "progressHierarchyViewModel";
-        case hierarchyEnum.event:
-            return "eventHierarchyViewModel";
-        case hierarchyEnum.preset:
-            return "presetHierarchyViewModel";
-        default:
-            return "";
-        }
     }
 
     QtObject {
@@ -100,12 +66,12 @@ Item {
     HierarchyDragDropBridge {
         id: hierarchyDragDropBridge
 
-        hierarchyViewModel: hierarchyView.resolvedHierarchyViewModel
+        hierarchyController: hierarchyView.resolvedHierarchyController
     }
     HierarchyInteractionBridge {
         id: hierarchyInteractionBridge
 
-        hierarchyViewModel: hierarchyView.resolvedHierarchyViewModel
+        hierarchyController: hierarchyView.resolvedHierarchyController
     }
     SidebarHierarchyView {
         id: sidebarView
@@ -117,7 +83,7 @@ Item {
         hierarchyDragDropBridge: hierarchyDragDropBridge
         hierarchyInteractionBridge: hierarchyInteractionBridge
         hierarchyEditable: hierarchyDragDropBridge.reorderContractAvailable
-        hierarchyViewModel: hierarchyView.resolvedHierarchyViewModel
+        hierarchyController: hierarchyView.resolvedHierarchyController
         horizontalInset: hierarchyView.horizontalInset
         bookmarkPaletteVisualsEnabled: hierarchyView.currentHierarchy === hierarchyEnum.bookmarks
         panelColor: hierarchyView.panelColor
@@ -145,14 +111,5 @@ Item {
         onToolbarIndexChangeRequested: function (index) {
             hierarchyView.setActiveHierarchyIndex(index);
         }
-    }
-    Component.onCompleted: {
-        hierarchyView.syncHierarchyViewBinding();
-    }
-    Component.onDestruction: {
-        LV.ViewModels.unbindView(hierarchyView.hierarchyViewId);
-    }
-    onResolvedHierarchyViewModelKeyChanged: {
-        hierarchyView.syncHierarchyViewBinding();
     }
 }

@@ -8,7 +8,7 @@ Item {
     id: monthCalendarGridSurface
 
     property int bodyLabelPixelSize: LV.Theme.textBody
-    property var calendarVm: null
+    property var calendarController: null
     readonly property var dayModels: monthCalendarGridSurface.monthProjection && monthCalendarGridSurface.monthProjection.dayModels ? monthCalendarGridSurface.monthProjection.dayModels : []
     readonly property int eventBackgroundColored: 1
     readonly property int eventBackgroundDefault: 0
@@ -72,12 +72,12 @@ Item {
             return [];
         if (dayModel.entries !== undefined && dayModel.entries)
             return dayModel.entries;
-        if (dayModel.dateIso === undefined || !monthCalendarGridSurface.calendarVm || !monthCalendarGridSurface.calendarVm.entriesForDate)
+        if (dayModel.dateIso === undefined || !monthCalendarGridSurface.calendarController || !monthCalendarGridSurface.calendarController.entriesForDate)
             return [];
         const dateIso = String(dayModel.dateIso).trim();
         if (dateIso.length === 0)
             return [];
-        return monthCalendarGridSurface.calendarVm.entriesForDate(dateIso);
+        return monthCalendarGridSurface.calendarController.entriesForDate(dateIso);
     }
     function entryAccent(entryModel) {
         const sourceKind = entryModel && entryModel.sourceKind !== undefined ? String(entryModel.sourceKind) : "";

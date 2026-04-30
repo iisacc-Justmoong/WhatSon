@@ -16,7 +16,7 @@ namespace
     constexpr auto kApplyPersistedBodyStateForNoteSignature =
         "applyPersistedBodyStateForNote(QString,QString,QString,QString)";
     constexpr auto kNoteDirectoryPathForNoteIdSignature = "noteDirectoryPathForNoteId(QString)";
-    constexpr auto kRequestViewModelHookSignature = "requestViewModelHook()";
+    constexpr auto kRequestControllerHookSignature = "requestControllerHook()";
     constexpr auto kReloadNoteMetadataForNoteIdSignature = "reloadNoteMetadataForNoteId(QString)";
     constexpr auto kSaveBodyTextForNoteSignature = "saveBodyTextForNote(QString,QString)";
     constexpr auto kSaveCurrentBodyTextSignature = "saveCurrentBodyText(QString)";
@@ -47,34 +47,34 @@ ContentsNoteManagementCoordinator::ContentsNoteManagementCoordinator(QObject* pa
 
 ContentsNoteManagementCoordinator::~ContentsNoteManagementCoordinator() = default;
 
-QObject* ContentsNoteManagementCoordinator::contentViewModel() const noexcept
+QObject* ContentsNoteManagementCoordinator::contentController() const noexcept
 {
-    return m_contentViewModel;
+    return m_contentController;
 }
 
-void ContentsNoteManagementCoordinator::setContentViewModel(QObject* model)
+void ContentsNoteManagementCoordinator::setContentController(QObject* model)
 {
-    if (m_contentViewModel == model)
+    if (m_contentController == model)
     {
         return;
     }
 
-    if (m_contentViewModelDestroyedConnection)
+    if (m_contentControllerDestroyedConnection)
     {
-        disconnect(m_contentViewModelDestroyedConnection);
-        m_contentViewModelDestroyedConnection = QMetaObject::Connection();
+        disconnect(m_contentControllerDestroyedConnection);
+        m_contentControllerDestroyedConnection = QMetaObject::Connection();
     }
 
     resetBoundNotePersistenceSession();
-    m_contentViewModel = model;
+    m_contentController = model;
 
-    if (m_contentViewModel != nullptr)
+    if (m_contentController != nullptr)
     {
-        m_contentViewModelDestroyedConnection = connect(
-            m_contentViewModel,
+        m_contentControllerDestroyedConnection = connect(
+            m_contentController,
             &QObject::destroyed,
             this,
-            &ContentsNoteManagementCoordinator::handleContentViewModelDestroyed);
+            &ContentsNoteManagementCoordinator::handleContentControllerDestroyed);
     }
 
     refreshContentPersistenceState();
@@ -217,14 +217,14 @@ bool ContentsNoteManagementCoordinator::reconcileViewSessionAndRefreshSnapshotFo
 bool ContentsNoteManagementCoordinator::refreshNoteSnapshotForNote(const QString& noteId)
 {
     const QString normalizedNoteId = noteId.trimmed();
-    if (normalizedNoteId.isEmpty() || !hasInvokableMethod(m_contentViewModel, kReloadNoteMetadataForNoteIdSignature))
+    if (normalizedNoteId.isEmpty() || !hasInvokableMethod(m_contentController, kReloadNoteMetadataForNoteIdSignature))
     {
         return false;
     }
 
     bool reloaded = false;
     if (!QMetaObject::invokeMethod(
-            m_contentViewModel,
+            m_contentController,
             "reloadNoteMetadataForNoteId",
             Qt::DirectConnection,
             Q_RETURN_ARG(bool, reloaded),
@@ -273,16 +273,16 @@ void ContentsNoteManagementCoordinator::clearSelectedNote()
     resetBoundNotePersistenceSession();
 }
 
-void ContentsNoteManagementCoordinator::handleContentViewModelDestroyed()
+void ContentsNoteManagementCoordinator::handleContentControllerDestroyed()
 {
-    if (m_contentViewModelDestroyedConnection)
+    if (m_contentControllerDestroyedConnection)
     {
-        disconnect(m_contentViewModelDestroyedConnection);
-        m_contentViewModelDestroyedConnection = QMetaObject::Connection();
+        disconnect(m_contentControllerDestroyedConnection);
+        m_contentControllerDestroyedConnection = QMetaObject::Connection();
     }
 
     resetBoundNotePersistenceSession();
-    m_contentViewModel = nullptr;
+    m_contentController = nullptr;
     refreshContentPersistenceState();
 }
 
@@ -300,15 +300,15 @@ bool ContentsNoteManagementCoordinator::hasInvokableMethod(
 
 QString ContentsNoteManagementCoordinator::resolveNoteDirectoryPathForNote(const QString& noteId) const
 {
-    if (m_contentViewModel == nullptr
-        || !hasInvokableMethod(m_contentViewModel, kNoteDirectoryPathForNoteIdSignature))
+    if (m_contentController == nullptr
+        || !hasInvokableMethod(m_contentController, kNoteDirectoryPathForNoteIdSignature))
     {
         return {};
     }
 
     QString noteDirectoryPath;
     if (!QMetaObject::invokeMethod(
-            m_contentViewModel,
+            m_contentController,
             "noteDirectoryPathForNoteId",
             Qt::DirectConnection,
             Q_RETURN_ARG(QString, noteDirectoryPath),
@@ -378,11 +378,11 @@ void ContentsNoteManagementCoordinator::resetBoundNotePersistenceSession()
 void ContentsNoteManagementCoordinator::refreshContentPersistenceState()
 {
     const bool nextDirectPersistenceAvailable =
-        hasInvokableMethod(m_contentViewModel, kNoteDirectoryPathForNoteIdSignature)
-        && hasInvokableMethod(m_contentViewModel, kApplyPersistedBodyStateForNoteSignature);
+        hasInvokableMethod(m_contentController, kNoteDirectoryPathForNoteIdSignature)
+        && hasInvokableMethod(m_contentController, kApplyPersistedBodyStateForNoteSignature);
     const bool nextFallbackPersistenceAvailable =
-        hasInvokableMethod(m_contentViewModel, kSaveBodyTextForNoteSignature)
-        || hasInvokableMethod(m_contentViewModel, kSaveCurrentBodyTextSignature);
+        hasInvokableMethod(m_contentController, kSaveBodyTextForNoteSignature)
+        || hasInvokableMethod(m_contentController, kSaveCurrentBodyTextSignature);
     const bool nextContractAvailable =
         nextDirectPersistenceAvailable || nextFallbackPersistenceAvailable;
 
@@ -425,7 +425,7 @@ bool ContentsNoteManagementCoordinator::enqueuePersistenceRequest(
         return enqueueRequest(std::move(request));
     }
 
-    request.kind = RequestKind::ViewModelPersistBody;
+    request.kind = RequestKind::ControllerPersistBody;
     request.noteDirectoryPath = resolveNoteDirectoryPathForNote(request.noteId);
     return enqueueRequest(std::move(request));
 }
@@ -482,7 +482,7 @@ bool ContentsNoteManagementCoordinator::enqueueRequest(Request request)
         && m_activeRequest.noteId == request.noteId)
     {
         if ((request.kind == RequestKind::DirectPersistBody
-             || request.kind == RequestKind::ViewModelPersistBody
+             || request.kind == RequestKind::ControllerPersistBody
              || request.kind == RequestKind::ReconcileViewSessionSnapshot)
             && m_activeRequest.text == request.text)
         {
@@ -505,7 +505,7 @@ bool ContentsNoteManagementCoordinator::enqueueRequest(Request request)
     {
         Request& pendingRequest = m_pendingRequests[pendingIndex];
         if (request.kind == RequestKind::DirectPersistBody
-            || request.kind == RequestKind::ViewModelPersistBody)
+            || request.kind == RequestKind::ControllerPersistBody)
         {
             if (pendingRequest.text == request.text)
             {
@@ -581,9 +581,9 @@ void ContentsNoteManagementCoordinator::dispatchNextRequest()
     }
 
     const Request request = m_activeRequest;
-    if (request.kind == RequestKind::ViewModelPersistBody)
+    if (request.kind == RequestKind::ControllerPersistBody)
     {
-        dispatchViewModelPersistenceRequest(request);
+        dispatchControllerPersistenceRequest(request);
         return;
     }
 
@@ -607,7 +607,7 @@ void ContentsNoteManagementCoordinator::dispatchNextRequest()
     });
 }
 
-void ContentsNoteManagementCoordinator::dispatchViewModelPersistenceRequest(const Request& request)
+void ContentsNoteManagementCoordinator::dispatchControllerPersistenceRequest(const Request& request)
 {
     QPointer<ContentsNoteManagementCoordinator> coordinatorGuard(this);
     QMetaObject::invokeMethod(
@@ -618,7 +618,7 @@ void ContentsNoteManagementCoordinator::dispatchViewModelPersistenceRequest(cons
             {
                 return;
             }
-            const Result result = coordinatorGuard->performViewModelPersistence(request);
+            const Result result = coordinatorGuard->performControllerPersistence(request);
             coordinatorGuard->handleRequestFinished(result);
         },
         Qt::QueuedConnection);
@@ -761,7 +761,7 @@ ContentsNoteManagementCoordinator::performWorkerRequest(const Request& request)
 }
 
 ContentsNoteManagementCoordinator::Result
-ContentsNoteManagementCoordinator::performViewModelPersistence(const Request& request) const
+ContentsNoteManagementCoordinator::performControllerPersistence(const Request& request) const
 {
     Result result;
     result.kind = request.kind;
@@ -770,28 +770,28 @@ ContentsNoteManagementCoordinator::performViewModelPersistence(const Request& re
     result.noteDirectoryPath = request.noteDirectoryPath;
     result.text = request.text;
 
-    if (m_contentViewModel == nullptr)
+    if (m_contentController == nullptr)
     {
-        result.errorMessage = QStringLiteral("contentViewModel is not available.");
+        result.errorMessage = QStringLiteral("contentController is not available.");
         return result;
     }
 
     bool saved = false;
     bool invoked = false;
-    if (hasInvokableMethod(m_contentViewModel, kSaveBodyTextForNoteSignature))
+    if (hasInvokableMethod(m_contentController, kSaveBodyTextForNoteSignature))
     {
         invoked = QMetaObject::invokeMethod(
-            m_contentViewModel,
+            m_contentController,
             "saveBodyTextForNote",
             Qt::DirectConnection,
             Q_RETURN_ARG(bool, saved),
             Q_ARG(QString, result.noteId),
             Q_ARG(QString, result.text));
     }
-    else if (hasInvokableMethod(m_contentViewModel, kSaveCurrentBodyTextSignature))
+    else if (hasInvokableMethod(m_contentController, kSaveCurrentBodyTextSignature))
     {
         invoked = QMetaObject::invokeMethod(
-            m_contentViewModel,
+            m_contentController,
             "saveCurrentBodyText",
             Qt::DirectConnection,
             Q_RETURN_ARG(bool, saved),
@@ -860,18 +860,18 @@ void ContentsNoteManagementCoordinator::handleRequestFinished(const Result& resu
                 m_boundNoteDirectoryPath = persistedDirectoryPath;
             }
 
-            const bool appliedToContentViewModel = applyPersistedBodyStateToContentViewModel(
+            const bool appliedToContentController = applyPersistedBodyStateToContentController(
                 result.noteId,
                 result.persistedDocument);
-            if (!appliedToContentViewModel)
+            if (!appliedToContentController)
             {
                 reloadNoteMetadataForNote(result.noteId);
-                if (m_contentViewModel != nullptr
-                    && hasInvokableMethod(m_contentViewModel, kRequestViewModelHookSignature))
+                if (m_contentController != nullptr
+                    && hasInvokableMethod(m_contentController, kRequestControllerHookSignature))
                 {
                     QMetaObject::invokeMethod(
-                        m_contentViewModel,
-                        "requestViewModelHook",
+                        m_contentController,
+                        "requestControllerHook",
                         Qt::QueuedConnection);
                 }
             }
@@ -895,7 +895,7 @@ void ContentsNoteManagementCoordinator::handleRequestFinished(const Result& resu
             success,
             errorMessage);
     }
-    else if (result.kind == RequestKind::ViewModelPersistBody)
+    else if (result.kind == RequestKind::ControllerPersistBody)
     {
         bool success = result.success;
         QString errorMessage = result.errorMessage;
@@ -1007,18 +1007,18 @@ void ContentsNoteManagementCoordinator::handleRequestFinished(const Result& resu
                     m_boundNoteDirectoryPath = persistedDirectoryPath;
                 }
 
-                const bool appliedToContentViewModel = applyPersistedBodyStateToContentViewModel(
+                const bool appliedToContentController = applyPersistedBodyStateToContentController(
                     result.noteId,
                     result.persistedDocument);
-                if (!appliedToContentViewModel)
+                if (!appliedToContentController)
                 {
                     reloadNoteMetadataForNote(result.noteId);
-                    if (m_contentViewModel != nullptr
-                        && hasInvokableMethod(m_contentViewModel, kRequestViewModelHookSignature))
+                    if (m_contentController != nullptr
+                        && hasInvokableMethod(m_contentController, kRequestControllerHookSignature))
                     {
                         QMetaObject::invokeMethod(
-                            m_contentViewModel,
-                            "requestViewModelHook",
+                            m_contentController,
+                            "requestControllerHook",
                             Qt::QueuedConnection);
                     }
                 }
@@ -1072,19 +1072,19 @@ void ContentsNoteManagementCoordinator::handleRequestFinished(const Result& resu
     m_requestInFlight = false;
 }
 
-bool ContentsNoteManagementCoordinator::applyPersistedBodyStateToContentViewModel(
+bool ContentsNoteManagementCoordinator::applyPersistedBodyStateToContentController(
     const QString& noteId,
     const WhatSonLocalNoteDocument& document) const
 {
-    if (m_contentViewModel == nullptr
-        || !hasInvokableMethod(m_contentViewModel, kApplyPersistedBodyStateForNoteSignature))
+    if (m_contentController == nullptr
+        || !hasInvokableMethod(m_contentController, kApplyPersistedBodyStateForNoteSignature))
     {
         return false;
     }
 
     bool applied = false;
     return QMetaObject::invokeMethod(
-               m_contentViewModel,
+               m_contentController,
                "applyPersistedBodyStateForNote",
                Qt::DirectConnection,
                Q_RETURN_ARG(bool, applied),
@@ -1099,15 +1099,15 @@ bool ContentsNoteManagementCoordinator::reloadNoteMetadataForNote(const QString&
 {
     const QString normalizedNoteId = noteId.trimmed();
     if (normalizedNoteId.isEmpty()
-        || m_contentViewModel == nullptr
-        || !hasInvokableMethod(m_contentViewModel, kReloadNoteMetadataForNoteIdSignature))
+        || m_contentController == nullptr
+        || !hasInvokableMethod(m_contentController, kReloadNoteMetadataForNoteIdSignature))
     {
         return false;
     }
 
     bool reloaded = false;
     if (!QMetaObject::invokeMethod(
-            m_contentViewModel,
+            m_contentController,
             "reloadNoteMetadataForNoteId",
             Qt::DirectConnection,
             Q_RETURN_ARG(bool, reloaded),

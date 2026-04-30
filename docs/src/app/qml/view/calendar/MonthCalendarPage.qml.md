@@ -8,10 +8,10 @@ surface so left/right swipes move to the previous or next month.
 
 ## View Contract
 
-- Input: `monthCalendarViewModel`
+- Input: `monthCalendarController`
 - Output signal: `noteOpenRequested(string noteId)`
 - Hook signal: `viewHookRequested(string reason)`
-- Hook forwarder: `requestViewHook(reason)` delegates to `monthCalendarViewModel.requestMonthView(...)`
+- Hook forwarder: `requestViewHook(reason)` delegates to `monthCalendarController.requestMonthView(...)`
 
 ## Pager Model
 
@@ -19,10 +19,10 @@ surface so left/right swipes move to the previous or next month.
     - previous month
     - current displayed month
     - next month
-- Those projections now come from `MonthCalendarViewModel.pagerMonthModels`.
+- Those projections now come from `MonthCalendarController.pagerMonthModels`.
 - The `ListView` pager now binds delegates by numeric index and resolves the live projection through
   `monthProjectionForIndex(...)`.
-- After a swipe completes, `commitMonthSwipeDelta(...)` shifts the canonical displayed month in the viewmodel and then
+- After a swipe completes, `commitMonthSwipeDelta(...)` shifts the canonical displayed month in the controller and then
   recenters the local pager back to the middle slot.
 - Desktop keeps the same shell but disables interactive swipe paging; header controls still drive month changes.
 
@@ -45,9 +45,9 @@ surface so left/right swipes move to the previous or next month.
 1. `Component.onCompleted` recenters the already-precomputed pager and requests `page-open`.
 2. Header prev/next still call `shiftMonth(-1|1)`.
 3. Mobile swipe completion also resolves to `shiftMonth(-1|1)`.
-4. `monthViewChanged` now only recenters the pager because the shared `MonthCalendarViewModel` already owns the updated
+4. `monthViewChanged` now only recenters the pager because the shared `MonthCalendarController` already owns the updated
    `pagerMonthModels`.
-5. Day selection is still delegated back into `monthCalendarViewModel.setSelectedDateIso(...)`.
+5. Day selection is still delegated back into `monthCalendarController.setSelectedDateIso(...)`.
 6. When opened from `YearCalendarPage.qml`, the host now preloads `displayedYear`, `displayedMonth`, and
    `selectedDateIso` before this page becomes visible, so the routed month opens on the requested month/date.
 7. Note-chip taps from `MonthCalendarGridSurface.qml` bubble upward as `noteOpenRequested(noteId)` so the host can
@@ -56,7 +56,7 @@ surface so left/right swipes move to the previous or next month.
    previous-month page while the header already points at the current month.
 
 ## Collaborators
-- `src/app/viewmodel/calendar/MonthCalendarViewModel.hpp/.cpp`
+- `src/app/models/calendar/MonthCalendarController.hpp/.cpp`
 - `src/app/qml/view/calendar/CalendarTodayControl.qml`
 - `src/app/qml/view/calendar/MonthCalendarGridSurface.qml`
 - `src/app/qml/view/panels/ContentViewLayout.qml`

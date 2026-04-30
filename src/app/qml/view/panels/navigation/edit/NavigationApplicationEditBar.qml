@@ -14,7 +14,7 @@ Item {
     property bool detailPanelCollapsed: false
     property int menuItemWidth: LV.Theme.inputMinWidth + LV.Theme.gap16
     property int menuYOffset: LV.Theme.gap2
-    readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("navigation.NavigationApplicationEditBar") : null
+    readonly property var panelController: panelControllerRegistry ? panelControllerRegistry.panelController("navigation.NavigationApplicationEditBar") : null
     readonly property var applicationEditMenuItems: applicationEditBar.buildApplicationEditMenuItems()
 
     signal toggleDetailPanelRequested
@@ -22,8 +22,8 @@ Item {
 
     function requestViewHook(reason) {
         const hookReason = reason !== undefined ? String(reason) : "manual";
-        if (panelViewModel && panelViewModel.requestViewModelHook)
-            panelViewModel.requestViewModelHook(hookReason);
+        if (panelController && panelController.requestControllerHook)
+            panelController.requestControllerHook(hookReason);
         viewHookRequested(hookReason);
     }
     function buildApplicationEditMenuItems() {

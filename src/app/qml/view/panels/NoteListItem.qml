@@ -35,8 +35,8 @@ Item {
     readonly property int metadataTextLineHeight: LV.Theme.textCaptionLineHeight
     readonly property int metadataTextSize: LV.Theme.textCaption
     property string noteId: ""
-    property var panelViewModelRegistry: null
-    readonly property var panelViewModel: noteListItem.panelViewModelRegistry ? noteListItem.panelViewModelRegistry.panelViewModel("NoteListItem") : null
+    property var panelControllerRegistry: null
+    readonly property var panelController: noteListItem.panelControllerRegistry ? noteListItem.panelControllerRegistry.panelController("NoteListItem") : null
     property bool pressed: false
     property string primaryText: ""
     readonly property color primaryTextColor: LV.Theme.captionColor
@@ -95,8 +95,8 @@ Item {
     }
     function requestViewHook(reason) {
         const hookReason = reason !== undefined ? String(reason) : "manual";
-        if (panelViewModel && panelViewModel.requestViewModelHook)
-            panelViewModel.requestViewModelHook(hookReason);
+        if (panelController && panelController.requestControllerHook)
+            panelController.requestControllerHook(hookReason);
         viewHookRequested();
     }
 

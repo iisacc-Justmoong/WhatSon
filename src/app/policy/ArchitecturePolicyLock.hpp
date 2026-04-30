@@ -7,7 +7,7 @@ namespace WhatSon::Policy
     enum class Layer : int
     {
         View = 0,
-        ViewModel,
+        Controller,
         DataModel,
         Store,
         Parser,

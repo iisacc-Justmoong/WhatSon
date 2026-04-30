@@ -1,6 +1,6 @@
 #include "app/store/sidebar/SidebarSelectionStore.hpp"
 
-#include "app/viewmodel/sidebar/HierarchySidebarDomain.hpp"
+#include "app/models/sidebar/HierarchySidebarDomain.hpp"
 
 SidebarSelectionStore::SidebarSelectionStore(QObject* parent)
     : ISidebarSelectionStore(parent)

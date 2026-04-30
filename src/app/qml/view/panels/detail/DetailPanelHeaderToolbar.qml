@@ -8,7 +8,7 @@ Item {
 
     readonly property string figmaNodeId: "155:4575"
     readonly property int buttonSpacing: LV.Theme.gap5
-    readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("detail.DetailPanelHeaderToolbar") : null
+    readonly property var panelController: panelControllerRegistry ? panelControllerRegistry.panelController("detail.DetailPanelHeaderToolbar") : null
     readonly property var resolvedToolbarButtonSpecs: detailPanelHeaderToolbar.normalizeToolbarButtonSpecs(detailPanelHeaderToolbar.toolbarButtonSpecs)
     property var toolbarButtonSpecs: []
 
@@ -26,8 +26,8 @@ Item {
     }
     function requestViewHook(reason) {
         const hookReason = reason !== undefined ? String(reason) : "manual";
-        if (panelViewModel && panelViewModel.requestViewModelHook)
-            panelViewModel.requestViewModelHook(hookReason);
+        if (panelController && panelController.requestControllerHook)
+            panelController.requestControllerHook(hookReason);
         viewHookRequested();
     }
 

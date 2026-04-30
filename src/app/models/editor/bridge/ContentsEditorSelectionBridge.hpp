@@ -14,7 +14,7 @@ class ContentsEditorSelectionBridge : public QObject
     Q_OBJECT
 
     Q_PROPERTY(QObject* noteListModel READ noteListModel WRITE setNoteListModel NOTIFY noteListModelChanged)
-    Q_PROPERTY(QObject* contentViewModel READ contentViewModel WRITE setContentViewModel NOTIFY contentViewModelChanged)
+    Q_PROPERTY(QObject* contentController READ contentController WRITE setContentController NOTIFY contentControllerChanged)
     Q_PROPERTY(
         bool
             noteSelectionContractAvailable READ noteSelectionContractAvailable NOTIFY noteSelectionContractAvailableChanged)
@@ -42,8 +42,8 @@ public:
     QObject* noteListModel() const noexcept;
     void setNoteListModel(QObject* model);
 
-    QObject* contentViewModel() const noexcept;
-    void setContentViewModel(QObject* model);
+    QObject* contentController() const noexcept;
+    void setContentController(QObject* model);
 
     bool noteSelectionContractAvailable() const noexcept;
     bool noteCountContractAvailable() const noexcept;
@@ -80,7 +80,7 @@ signals:
         const QString& errorMessage);
 
     void noteListModelChanged();
-    void contentViewModelChanged();
+    void contentControllerChanged();
     void noteSelectionContractAvailableChanged();
     void noteCountContractAvailableChanged();
     void contentPersistenceContractAvailableChanged();
@@ -115,7 +115,7 @@ private slots:
     void flushPendingNoteSelectionRefresh();
     void handleNoteListCountChanged();
     void handleNoteListDestroyed();
-    void handleContentViewModelDestroyed();
+    void handleContentControllerDestroyed();
 
 private:
     static bool hasReadableProperty(const QObject* object, const char* propertyName);
@@ -136,10 +136,10 @@ private:
     void refreshNoteSelectionState();
     void refreshNoteCountState();
     void disconnectNoteListModel();
-    void disconnectContentViewModel();
+    void disconnectContentController();
 
     QPointer<QObject> m_noteListModel;
-    QPointer<QObject> m_contentViewModel;
+    QPointer<QObject> m_contentController;
     QPointer<ContentsEditorPersistenceController> m_persistenceController;
     bool m_noteSelectionContractAvailable = false;
     bool m_noteCountContractAvailable = false;
@@ -167,5 +167,5 @@ private:
     QMetaObject::Connection m_rowsRemovedConnection;
     QMetaObject::Connection m_dataChangedConnection;
     QMetaObject::Connection m_layoutChangedConnection;
-    QMetaObject::Connection m_contentViewModelDestroyedConnection;
+    QMetaObject::Connection m_contentControllerDestroyedConnection;
 };

@@ -13,7 +13,7 @@ It keeps the panel canvas transparent, preserves the panel-view-model hook entry
 ## Runtime Notes
 - The file intentionally stays thin.
 - It does not own detail state; it only forwards lifecycle visibility through the shared panel wrapper pattern already used in the rest of the desktop shell.
-- `requestViewHook(reason)` still routes through `panelViewModelRegistry.panelViewModel("detail.RightPanel")`.
+- `requestViewHook(reason)` still routes through `panelControllerRegistry.panelController("detail.RightPanel")`.
 
 ## Integration
 - Parent wrapper: `src/app/qml/view/panels/DetailPanelLayout.qml`

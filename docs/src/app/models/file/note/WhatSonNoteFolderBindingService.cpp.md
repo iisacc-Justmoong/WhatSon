@@ -13,7 +13,7 @@ This file implements the canonical folder-binding behavior for notes.
 
 ## Main Consumers
 
-- `LibraryHierarchyViewModel` uses it for note drag/drop acceptance and assignment.
+- `LibraryHierarchyController` uses it for note drag/drop acceptance and assignment.
 - `WhatSonLibraryFolderHierarchyMutationService` uses it when rewriting note headers after folder
   rename, move, or reorder.
 - `WhatSonHubNoteFolderClearService` uses it to write an explicitly empty folder array.

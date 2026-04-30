@@ -19,7 +19,7 @@ bool ContentsResourceImportConflictController::resourceImportConflictAlertOpen()
 bool ContentsResourceImportConflictController::canAcceptResourceDropUrls(const QVariant& urls) const
 {
     const QVariantList normalizedUrls = normalizeSequentialVariant(urls);
-    if (!m_hasSelectedNote || !m_resourcesImportViewModel)
+    if (!m_hasSelectedNote || !m_resourcesImportController)
     {
         return false;
     }
@@ -27,7 +27,7 @@ bool ContentsResourceImportConflictController::canAcceptResourceDropUrls(const Q
     {
         return false;
     }
-    return invokeBool(m_resourcesImportViewModel, "canImportUrls", { normalizedUrls });
+    return invokeBool(m_resourcesImportController, "canImportUrls", { normalizedUrls });
 }
 
 void ContentsResourceImportConflictController::clearPendingResourceImportConflict()
@@ -98,7 +98,7 @@ bool ContentsResourceImportConflictController::finalizeInsertedImportedResources
         { importedEntries });
     if (inserted && importedEntryCount > 0)
     {
-        invokeVariant(m_resourcesImportViewModel, "reloadImportedResources");
+        invokeVariant(m_resourcesImportController, "reloadImportedResources");
     }
     invokeVariant(
         m_editorSurfaceGuardController,
@@ -127,7 +127,7 @@ void ContentsResourceImportConflictController::cancelPendingResourceImportConfli
 
 bool ContentsResourceImportConflictController::executePendingResourceImportWithPolicy(const int conflictPolicy)
 {
-    if (!m_resourcesImportViewModel)
+    if (!m_resourcesImportController)
     {
         cancelPendingResourceImportConflict();
         return false;
@@ -138,14 +138,14 @@ bool ContentsResourceImportConflictController::executePendingResourceImportWithP
     if (m_pendingResourceImportMode == m_resourceImportModeUrls)
     {
         importedEntries = invokeVariant(
-            m_resourcesImportViewModel,
+            m_resourcesImportController,
             "importUrlsForEditorWithConflictPolicy",
             { m_pendingResourceImportUrls, conflictPolicy });
     }
     else if (m_pendingResourceImportMode == m_resourceImportModeClipboard)
     {
         importedEntries = invokeVariant(
-            m_resourcesImportViewModel,
+            m_resourcesImportController,
             "importClipboardImageForEditorWithConflictPolicy",
             { conflictPolicy });
     }
@@ -165,14 +165,14 @@ bool ContentsResourceImportConflictController::executePendingResourceImportWithP
 
 bool ContentsResourceImportConflictController::importUrlsAsResourcesWithPrompt(const QVariant& urls)
 {
-    if (!m_resourcesImportViewModel)
+    if (!m_resourcesImportController)
     {
         return false;
     }
 
     const QVariantList normalizedUrls = normalizeSequentialVariant(urls);
     const QVariantMap conflict = invokeVariant(
-        m_resourcesImportViewModel,
+        m_resourcesImportController,
         "inspectImportConflictForUrls",
         { normalizedUrls })
                                      .toMap();
@@ -183,7 +183,7 @@ bool ContentsResourceImportConflictController::importUrlsAsResourcesWithPrompt(c
 
     invokeVariant(m_editorSurfaceGuardController, "activateResourceDropEditorSurfaceGuard");
     const QVariant importedEntries = invokeVariant(
-        m_resourcesImportViewModel,
+        m_resourcesImportController,
         "importUrlsForEditorWithConflictPolicy",
         { normalizedUrls, m_resourceImportConflictPolicyAbort });
     if (!importedEntries.isValid())
@@ -199,7 +199,7 @@ bool ContentsResourceImportConflictController::pasteClipboardImageAsResource()
     {
         return false;
     }
-    if (!m_resourcesImportViewModel || boolProperty(m_resourcesImportViewModel, "busy"))
+    if (!m_resourcesImportController || boolProperty(m_resourcesImportController, "busy"))
     {
         return false;
     }
@@ -209,7 +209,7 @@ bool ContentsResourceImportConflictController::pasteClipboardImageAsResource()
     }
 
     const QVariantMap conflict = invokeVariant(
-        m_resourcesImportViewModel,
+        m_resourcesImportController,
         "inspectClipboardImageImportConflict")
                                      .toMap();
     if (conflict.value(QStringLiteral("conflict")).toBool())
@@ -219,7 +219,7 @@ bool ContentsResourceImportConflictController::pasteClipboardImageAsResource()
 
     invokeVariant(m_editorSurfaceGuardController, "activateResourceDropEditorSurfaceGuard");
     const QVariant importedEntries = invokeVariant(
-        m_resourcesImportViewModel,
+        m_resourcesImportController,
         "importClipboardImageForEditorWithConflictPolicy",
         { m_resourceImportConflictPolicyAbort });
     if (!importedEntries.isValid())

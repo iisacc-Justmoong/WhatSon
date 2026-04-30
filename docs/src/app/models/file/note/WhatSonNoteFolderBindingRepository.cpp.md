@@ -15,5 +15,5 @@ This file implements folder-header I/O for note mutations.
 
 ## Why It Matters
 
-Moving this code behind one repository prevents `LibraryHierarchyViewModel` and other callers from
+Moving this code behind one repository prevents `LibraryHierarchyController` and other callers from
 re-implementing their own read/update sequences for folder metadata.

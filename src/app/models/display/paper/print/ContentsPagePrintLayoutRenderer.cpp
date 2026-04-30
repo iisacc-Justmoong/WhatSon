@@ -1,7 +1,7 @@
 #include "app/models/display/paper/print/ContentsPagePrintLayoutRenderer.hpp"
 
 #include "app/models/display/paper/ContentsA4PaperBackground.hpp"
-#include "app/viewmodel/navigationbar/EditorViewState.hpp"
+#include "app/models/navigationbar/EditorViewState.hpp"
 
 #include <algorithm>
 #include <cmath>

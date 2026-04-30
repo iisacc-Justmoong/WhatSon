@@ -34,7 +34,7 @@ callback to rebuild runtime state when the observed hub signature changes.
 
 ## Collaborators
 - `main.cpp`: creates the controller, injects the reload callback, and wires local mutation acknowledgements from the
-  hierarchy viewmodels.
+  hierarchy controllers.
 - `WhatSonHubPathUtils`: normalizes the mounted hub path.
 - `QFileSystemWatcher`: provides recursive watch coverage once the controller enumerates relevant hub paths.
 

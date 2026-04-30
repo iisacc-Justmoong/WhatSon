@@ -7,23 +7,23 @@ import LVRS 1.0 as LV
 Rectangle {
     id: dayCalendarPage
 
-    readonly property var calendarVm: dayCalendarViewModel
-    readonly property var timeSlots: calendarVm && calendarVm.timeSlots ? calendarVm.timeSlots : []
+    readonly property var calendarController: dayCalendarController
+    readonly property var timeSlots: calendarController && calendarController.timeSlots ? calendarController.timeSlots : []
     readonly property int hourColumnWidth: LV.Theme.gap24 * 2
-    property var dayCalendarViewModel: null
+    property var dayCalendarController: null
 
     signal noteOpenRequested(string noteId)
     signal viewHookRequested(string reason)
 
     function requestViewHook(reason) {
         const hookReason = reason !== undefined ? String(reason) : "manual";
-        if (calendarVm && calendarVm.requestDayView)
-            calendarVm.requestDayView(hookReason);
+        if (calendarController && calendarController.requestDayView)
+            calendarController.requestDayView(hookReason);
         viewHookRequested(hookReason);
     }
     function jumpToToday() {
-        if (dayCalendarPage.calendarVm && dayCalendarPage.calendarVm.setDisplayedDateIso)
-            dayCalendarPage.calendarVm.setDisplayedDateIso(Qt.formatDateTime(new Date(), "yyyy-MM-dd"));
+        if (dayCalendarPage.calendarController && dayCalendarPage.calendarController.setDisplayedDateIso)
+            dayCalendarPage.calendarController.setDisplayedDateIso(Qt.formatDateTime(new Date(), "yyyy-MM-dd"));
         dayCalendarPage.requestViewHook("today");
     }
     function entryCardLabel(entryModel) {
@@ -76,14 +76,14 @@ Rectangle {
             id: dayCalendarControl
 
             onPreviousRequested: {
-                if (dayCalendarPage.calendarVm && dayCalendarPage.calendarVm.shiftDay)
-                    dayCalendarPage.calendarVm.shiftDay(-1);
+                if (dayCalendarPage.calendarController && dayCalendarPage.calendarController.shiftDay)
+                    dayCalendarPage.calendarController.shiftDay(-1);
                 dayCalendarPage.requestViewHook("previous-day");
             }
             onTodayRequested: dayCalendarPage.jumpToToday()
             onNextRequested: {
-                if (dayCalendarPage.calendarVm && dayCalendarPage.calendarVm.shiftDay)
-                    dayCalendarPage.calendarVm.shiftDay(1);
+                if (dayCalendarPage.calendarController && dayCalendarPage.calendarController.shiftDay)
+                    dayCalendarPage.calendarController.shiftDay(1);
                 dayCalendarPage.requestViewHook("next-day");
             }
         }

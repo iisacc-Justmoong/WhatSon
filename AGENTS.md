@@ -15,22 +15,22 @@ every turn.
 - Root build definition: `CMakeLists.txt` plus grouped root-target shards under `cmake/root/*/CMakeLists.txt`
 - Primary QML root: `src/app/qml/Main.qml`
 - Library hierarchy backend: `src/app/models/file/hierarchy/library`
-- Library hierarchy model/viewmodel: `src/app/viewmodel/hierarchy/library/LibraryHierarchyModel.*`,
-  `src/app/viewmodel/hierarchy/library/LibraryHierarchyViewModel.*`
-- Library right-panel list model: `src/app/viewmodel/hierarchy/library/LibraryNoteListModel.*`
+- Library hierarchy model/controller: `src/app/models/file/hierarchy/library/LibraryHierarchyModel.*`,
+  `src/app/models/file/hierarchy/library/LibraryHierarchyController.*`
+- Library right-panel list model: `src/app/models/file/hierarchy/library/LibraryNoteListModel.*`
 - Hub placement store: `src/app/models/file/hub/WhatSonHubPlacementStore.*`
 - Tags depth provider: `src/app/models/file/hierarchy/tags/WhatSonHubTagsDepthProvider.*`
 - Hub runtime store: `src/app/models/file/hub/WhatSonHubRuntimeStore.*`
 - Runtime parallel bootstrap loader: `src/app/runtime/threading/WhatSonRuntimeParallelLoader.*`
 - Tags runtime state store: `src/app/models/file/hierarchy/tags/WhatSonHubTagsStateStore.*`
-- Tags hierarchy model/viewmodel: `src/app/viewmodel/hierarchy/tags/TagsHierarchyModel.*`,
-  `src/app/viewmodel/hierarchy/tags/TagsHierarchyViewModel.*`
-- Navigation mode state/viewmodel: `src/app/viewmodel/navigationbar/NavigationModeState.*`,
-  `src/app/viewmodel/navigationbar/NavigationModeSectionViewModel.*`,
-  `src/app/viewmodel/navigationbar/NavigationModeViewModel.*`
-- Editor view mode state/viewmodel: `src/app/viewmodel/navigationbar/EditorViewState.*`,
-  `src/app/viewmodel/navigationbar/EditorViewSectionViewModel.*`,
-  `src/app/viewmodel/navigationbar/EditorViewModeViewModel.*`
+- Tags hierarchy model/controller: `src/app/models/file/hierarchy/tags/TagsHierarchyModel.*`,
+  `src/app/models/file/hierarchy/tags/TagsHierarchyController.*`
+- Navigation mode state/controller: `src/app/models/navigationbar/NavigationModeState.*`,
+  `src/app/models/navigationbar/NavigationModeSectionController.*`,
+  `src/app/models/navigationbar/NavigationModeController.*`
+- Editor view mode state/controller: `src/app/models/navigationbar/EditorViewState.*`,
+  `src/app/models/navigationbar/EditorViewSectionController.*`,
+  `src/app/models/navigationbar/EditorViewModeController.*`
 - Editor persistence controller: `src/app/models/editor/persistence/ContentsEditorPersistenceController.*`
 - Editor non-format tag helpers: `src/app/models/editor/tags/ContentsAgendaBackend.*`,
   `src/app/models/editor/tags/ContentsCalloutBackend.*`,
@@ -39,15 +39,15 @@ every turn.
   `src/app/models/editor/tags/ContentsResourceTagTextGenerator.*`
 - Sidebar selection store interface/impl: `src/app/store/sidebar/ISidebarSelectionStore.*`,
   `src/app/store/sidebar/SidebarSelectionStore.*`
-- Sidebar hierarchy wiring interfaces/viewmodel: `src/app/viewmodel/sidebar/IHierarchyViewModelProvider.*`,
-  `src/app/viewmodel/sidebar/HierarchyViewModelProvider.*`,
-  `src/app/viewmodel/sidebar/SidebarHierarchyViewModel.*`
+- Sidebar hierarchy wiring interfaces/controller: `src/app/models/sidebar/IHierarchyControllerProvider.*`,
+  `src/app/models/sidebar/HierarchyControllerProvider.*`,
+  `src/app/models/sidebar/SidebarHierarchyController.*`
 - Architecture policy lock and layer contract: `src/app/policy/ArchitecturePolicyLock.*`
 - Runtime bootstrap: app startup may route directly to the workspace shell when a persisted `.wshub` selection can be
   mounted. If no persisted startup hub can be mounted, startup must remain unmounted and route into onboarding instead
   of reopening a blueprint/sample workspace. Persisted startup must not load runtime domains before the first workspace
   window is created; `main.cpp` schedules the normal full runtime load through an LVRS `AfterFirstIdle` lifecycle task
-  and then applies ViewModel state from `WhatSonRuntimeParallelLoader`. Explicit hub selection during onboarding may
+  and then applies Controller state from `WhatSonRuntimeParallelLoader`. Explicit hub selection during onboarding may
   still load the selected hub before switching into the workspace.
 
 ## Automated Test Policy
@@ -61,31 +61,33 @@ every turn.
 - Default task flow should run the smallest relevant verification gate before handoff and keep all generated artifacts
   under `build/`.
 
-### Hierarchy ViewModel Ownership (Critical)
+### Hierarchy Controller Ownership (Critical)
 
-- Each hierarchy type must use its own dedicated ViewModel under `src/app/viewmodel/hierarchy/*`.
-- Do not bind all hierarchy categories to a single shared ViewModel instance.
+- Each hierarchy type must use its own dedicated Controller under `src/app/models/file/hierarchy/*`.
+- Do not bind all hierarchy categories to a single shared Controller instance.
 - Canonical mapping:
-    - Library -> `LibraryHierarchyViewModel`
-    - Projects -> `ProjectsHierarchyViewModel`
-    - Bookmarks -> `BookmarksHierarchyViewModel`
-    - Tags -> `TagsHierarchyViewModel`
-    - Resources -> `ResourcesHierarchyViewModel`
-    - Progress -> `ProgressHierarchyViewModel`
-    - Event -> `EventHierarchyViewModel`
-    - Preset -> `PresetHierarchyViewModel`
-- Any hierarchy wiring change must preserve this one-type/one-ViewModel contract.
-- Flat/shared hierarchy model abstraction is prohibited for runtime hierarchy ViewModel wiring.
-- Keep model/support code isolated per domain directory in `src/app/viewmodel/hierarchy/<domain>/`.
+    - Library -> `LibraryHierarchyController`
+    - Projects -> `ProjectsHierarchyController`
+    - Bookmarks -> `BookmarksHierarchyController`
+    - Tags -> `TagsHierarchyController`
+    - Resources -> `ResourcesHierarchyController`
+    - Progress -> `ProgressHierarchyController`
+    - Event -> `EventHierarchyController`
+    - Preset -> `PresetHierarchyController`
+- Any hierarchy wiring change must preserve this one-type/one-Controller contract.
+- Flat/shared hierarchy model abstraction is prohibited for runtime hierarchy Controller wiring.
+- Keep model/support code isolated per domain directory in `src/app/models/file/hierarchy/<domain>/`.
 
-### ViewModel Implementation Boundary (Critical)
+### Controller Implementation Boundary (Critical)
 
-- ViewModels must be single-responsibility C++ classes.
-- Do not add QML files under `src/app/viewmodel`, and do not register that directory as a QML module source.
+- MVVM is not used in this repository. Do not introduce a `ViewModel` concept, `src/app/viewmodel`, QML view-model
+  registry binding, or `LV.ViewModels`/`LV.Controllers` based runtime lookup.
+- Controllers must be single-responsibility C++ classes.
+- Do not add QML files under `src/app/models`, and do not register that directory as a QML module source.
 - QML must be used for view construction only.
-- Do not add compatibility QML wrappers for model, viewmodel, session, persistence, sync, parsing, mutation,
+- Do not add compatibility QML wrappers for model, controller, session, persistence, sync, parsing, mutation,
   scheduling, or command-surface responsibilities. Promote those responsibilities into single-purpose C++ objects.
-- Each C++ ViewModel must expose a narrow signal/slot contract and delegate domain mutation, timing, rendering, or
+- Each C++ Controller must expose a narrow signal/slot contract and delegate domain mutation, timing, rendering, or
   persistence work to the owning model layer.
 
 ### Model Layer QML Prohibition (Critical)
@@ -101,7 +103,7 @@ every turn.
 - Prefer Domain-Driven Development and Feature-Driven Development for new code, refactors, and file moves.
 - Organize changes around domain or feature boundaries first, not around broad shared technical layers, unless the
   shared layer is already a stable cross-domain primitive.
-- Keep each feature slice as end-to-end as possible: storage, runtime loading, service logic, viewmodel wiring, QML
+- Keep each feature slice as end-to-end as possible: storage, runtime loading, service logic, controller wiring, QML
   surface, and docs should stay close to the owning domain.
 - Shared helpers are allowed only when multiple domains genuinely reuse them and when extracting them does not pull
   business rules out of the domain that owns those rules.
@@ -307,7 +309,7 @@ An exception is allowed only when all conditions are satisfied.
 
 1. Updated docs reflect source changes and repository policy changes together.
 2. Updated QML keeps consistent LVRS imports and component usage.
-3. Model/viewmodel/view contracts preserve signal-slot hooks (`signals`+`slots` in C++, `signal` + callable hook
+3. Model/controller/view contracts preserve signal-slot hooks (`signals`+`slots` in C++, `signal` + callable hook
    function in QML views).
 4. Run the smallest relevant verification gate in `build/` before handoff unless the user explicitly instructs
    otherwise, and do not create alternate build directories.
@@ -320,10 +322,10 @@ An exception is allowed only when all conditions are satisfied.
 - Keep command examples and real output paths synchronized in docs.
 - Keep project-local C++ includes repository-absolute from the configured include roots: use `app/...`,
   `extension/...`, or `test/...` instead of basename-only or file-relative include paths.
-- Keep model/viewmodel/view interfaces event-driven: every model, viewmodel, and view must expose at least one signal
+- Keep model/controller/view interfaces event-driven: every model, controller, and view must expose at least one signal
   and one slot/hook entrypoint.
-- Keep hierarchy wiring type-safe: each hierarchy category must remain bound to its dedicated ViewModel in
-  `src/app/viewmodel/hierarchy`.
+- Keep hierarchy wiring type-safe: each hierarchy category must remain bound to its dedicated Controller in
+  `src/app/models/file/hierarchy`.
 - Enforce SRP for QML: when one QML file starts combining layout shell, rendering delegates, and interaction logic,
   split it into dedicated sibling modules under the same domain directory and compose them from the parent screen.
 - Prefer minimum reusable modules for complex editor surfaces (for example: gutter layer, minimap layer, splitter

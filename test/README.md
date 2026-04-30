@@ -28,11 +28,11 @@ The C++ suite currently locks regression-sensitive runtime behavior for:
 
 - `SelectedHubStore`
 - `SidebarSelectionStore`
-- `HierarchyViewModelProvider`
-- `SidebarHierarchyViewModel`
+- `HierarchyControllerProvider`
+- `SidebarHierarchyController`
 - `NoteListModelContractBridge`
-- `NavigationModeViewModel`
-- `EditorViewModeViewModel`
+- `NavigationModeController`
+- `EditorViewModeController`
 - `OnboardingRouteBootstrapController`
 - `WhatSonCronExpression`
 - `WhatSonAsyncScheduler`
@@ -48,7 +48,7 @@ The C++ suite currently locks regression-sensitive runtime behavior for:
 - `ContentsNoteManagementCoordinator`
 - `ContentsEditorSurfaceModeSupport.js`
 - `ContentsTextFormatRenderer`
-- `ResourceDetailPanelViewModel`
+- `ResourceDetailPanelController`
 - `ResourceBitmapViewer`
 
 The suite avoids booting the full application shell or loading a hub package.
@@ -108,10 +108,10 @@ ctest --test-dir build --output-on-failure -L cpp_regression
 - Structured QML editor checks now also lock the custom-input policy: ordinary editor input has no QML key handlers,
   markdown list shortcuts/continuation helpers stay absent, and only tag-management commands may use host shortcut
   surfaces or selected atomic-block key handling.
-- Hierarchy viewmodel switching now also pins QObject ownership at the sidebar/selection-bridge boundary, so switching
+- Hierarchy controller switching now also pins QObject ownership at the sidebar/selection-bridge boundary, so switching
   `Resources -> Library` cannot hand member-owned C++ models to the QML garbage collector.
 - Hierarchy-driven note-list rebinding is now also locked at the bridge layer, so swapping only the active hierarchy
-  viewmodel still replaces the effective note-list model immediately for desktop/mobile list surfaces.
+  controller still replaces the effective note-list model immediately for desktop/mobile list surfaces.
 - The same bridge coverage now also pins explicit note-list-model overrides, so `Resources -> Library` toolbar
   switches keep folder/tag note-list metadata aligned with the shared active list model instead of lingering on the
   previous domain snapshot.
@@ -132,7 +132,7 @@ ctest --test-dir build --output-on-failure -L cpp_regression
   effective selection on the first visible row instead of falling back to an invisible `-1` / "show everything"
   state.
 - Resources and progress now each pin their domain fallback semantics in the C++ suite, so the initial active UI row
-  (`Image`, `First draft`) remains identical to the list filter applied by the corresponding viewmodel.
+  (`Image`, `First draft`) remains identical to the list filter applied by the corresponding controller.
 - Startup hub selection now also pins the “no blueprint fallback” rule, so clearing the persisted selection cannot
   silently reopen a sample workspace during regression runs.
 - Startup hub persistence now also pins the selection-URL/bookmark contract plus the iOS direct `.wshub` picker source
@@ -148,7 +148,7 @@ ctest --test-dir build --output-on-failure -L cpp_regression
 - The dedicated resource editor QML is now also source-locked as a transparent viewer-only surface, so Resources
   hierarchy browsing cannot regress into a second background card or top/bottom metadata copy around the asset.
 - The right detail column now also pins note-vs-resource panel routing, so the resources hierarchy mounts its own
-  dedicated viewmodel/view pair instead of reusing the note-detail surface.
+  dedicated controller/view pair instead of reusing the note-detail surface.
 - Rapid note switches now also pin note-local gutter geometry invalidation, so the editor clears stale minimap/gutter
   line caches on note entry and forces a fresh layout-cache pass before reusing line-number coordinates.
 - Empty selected notes now also pin one fallback structured `text-group` row in the source-locked QML regression
@@ -206,6 +206,9 @@ ctest --test-dir build --output-on-failure -L cpp_regression
   and `whatson_clang_tidy` no longer degrade into empty-input no-op runs.
 - Project-local C++ headers now also lock repository-absolute include paths, so `app/...`, `extension/...`, and
   `test/...` remain stable even when domains move under `src/app/models` or regression suites move under `test/cpp`.
+- Architecture source-tree coverage now also rejects reintroducing `src/app/viewmodel`, MVVM naming, and LVRS
+  controller/view-model registry lookup in `src/app`, keeping QML on direct context-object dependencies and behavior
+  inside the owning model domains.
 - Selected-note body snapshots now also distinguish unresolved sources from legitimate empty notes, so the editor
   session and note-mount placeholder only treat an empty body as authoritative after a direct source snapshot or a
   completed body load confirms that the selected note really resolves.

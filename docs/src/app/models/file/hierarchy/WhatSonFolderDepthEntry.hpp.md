@@ -4,7 +4,7 @@
 
 `WhatSonFolderDepthEntry` is the compact in-memory representation of one persisted folder row.
 It is used by folder parsers, folder serializers, hub bootstrap code, and the library hierarchy
-viewmodel.
+controller.
 
 ## Data Contract
 
@@ -30,6 +30,6 @@ folder bindings.
 
 - `WhatSonFoldersHierarchyParser.cpp`: reads rows from `.wsfolders`.
 - `WhatSonFoldersHierarchyCreator.cpp`: writes rows back to disk.
-- `LibraryHierarchyViewModel.cpp`: projects these rows into UI-facing hierarchy items.
+- `LibraryHierarchyController.cpp`: projects these rows into UI-facing hierarchy items.
 - `WhatSonLibraryFolderHierarchyMutationService.cpp`: uses UUIDs to keep note headers aligned when
   folder paths change.

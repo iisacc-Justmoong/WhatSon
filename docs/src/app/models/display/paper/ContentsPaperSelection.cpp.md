@@ -13,7 +13,7 @@ Implements paper-selection enum normalization and the currently chosen paper sta
   - `A5`
   - `B5`
   - fallback `Unknown`
-- Keeps the current paper choice inside one QObject so QML and future viewmodels can observe the selected paper
+- Keeps the current paper choice inside one QObject so QML and future controllers can observe the selected paper
   without inventing duplicate selection state.
 - Normalizes arbitrary integer input through `normalizePaperKind(...)` so unsupported values collapse to `Unknown`
   instead of becoming unchecked enum garbage.

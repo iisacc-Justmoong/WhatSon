@@ -3,13 +3,13 @@
 ## Responsibility
 
 This file is the bootstrap parser for a `.wshub` package. It reads persisted hub files and produces
-the in-memory runtime payload consumed by higher-level stores and viewmodels.
+the in-memory runtime payload consumed by higher-level stores and controllers.
 
 ## Folder Hierarchy Output
 
 For folder hierarchies, the parser now forwards the full `WhatSonFolderDepthEntry` contract,
 including the stable `uuid` field. That makes UUID identity available immediately during startup,
-before the library hierarchy viewmodel or mutation services start filtering notes.
+before the library hierarchy controller or mutation services start filtering notes.
 
 ## Compatibility Notes
 

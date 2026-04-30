@@ -3,14 +3,14 @@
 #include "app/models/file/WhatSonDebugTrace.hpp"
 #include "app/models/file/hub/WhatSonHubPathUtils.hpp"
 #include "app/models/file/hub/WhatSonHubRuntimeStore.hpp"
-#include "app/viewmodel/hierarchy/bookmarks/BookmarksHierarchyViewModel.hpp"
-#include "app/viewmodel/hierarchy/event/EventHierarchyViewModel.hpp"
-#include "app/viewmodel/hierarchy/library/LibraryHierarchyViewModel.hpp"
-#include "app/viewmodel/hierarchy/preset/PresetHierarchyViewModel.hpp"
-#include "app/viewmodel/hierarchy/progress/ProgressHierarchyViewModel.hpp"
-#include "app/viewmodel/hierarchy/projects/ProjectsHierarchyViewModel.hpp"
-#include "app/viewmodel/hierarchy/resources/ResourcesHierarchyViewModel.hpp"
-#include "app/viewmodel/hierarchy/tags/TagsHierarchyViewModel.hpp"
+#include "app/models/file/hierarchy/bookmarks/BookmarksHierarchyController.hpp"
+#include "app/models/file/hierarchy/event/EventHierarchyController.hpp"
+#include "app/models/file/hierarchy/library/LibraryHierarchyController.hpp"
+#include "app/models/file/hierarchy/preset/PresetHierarchyController.hpp"
+#include "app/models/file/hierarchy/progress/ProgressHierarchyController.hpp"
+#include "app/models/file/hierarchy/projects/ProjectsHierarchyController.hpp"
+#include "app/models/file/hierarchy/resources/ResourcesHierarchyController.hpp"
+#include "app/models/file/hierarchy/tags/TagsHierarchyController.hpp"
 
 #include <QDebug>
 #include <QStringList>
@@ -36,23 +36,23 @@ void WhatSonStartupRuntimeCoordinator::applyHubRuntimeState(
     const QString& normalizedHubPath,
     const IWhatSonRuntimeParallelLoader::RequestedDomains& requestedDomains) const
 {
-    if (m_targets.hubRuntimeStore == nullptr || m_targets.libraryViewModel == nullptr)
+    if (m_targets.hubRuntimeStore == nullptr || m_targets.libraryController == nullptr)
     {
         return;
     }
 
-    m_targets.libraryViewModel->setHubStore(m_targets.hubRuntimeStore->hub(normalizedHubPath));
+    m_targets.libraryController->setHubStore(m_targets.hubRuntimeStore->hub(normalizedHubPath));
 
-    if (m_targets.tagsViewModel != nullptr)
+    if (m_targets.tagsController != nullptr)
     {
-        m_targets.tagsViewModel->setTagDepthEntries(
+        m_targets.tagsController->setTagDepthEntries(
             m_targets.hubRuntimeStore->tagDepthEntries(normalizedHubPath));
         WhatSon::Debug::trace(
             QStringLiteral("startup.runtime"),
             requestedDomains.tags
                 ? QStringLiteral("applyTagsDepthEntries.success")
                 : QStringLiteral("applyTagsDepthEntries.deferredReady"),
-            QStringLiteral("itemCount=%1").arg(m_targets.tagsViewModel->itemModel()->rowCount()));
+            QStringLiteral("itemCount=%1").arg(m_targets.tagsController->itemModel()->rowCount()));
     }
 }
 
@@ -88,14 +88,14 @@ bool WhatSonStartupRuntimeCoordinator::loadHubIntoRuntimeWithRequestedDomains(
     }
 
     IWhatSonRuntimeParallelLoader::Targets targets;
-    targets.libraryViewModel = m_targets.libraryViewModel;
-    targets.projectsViewModel = m_targets.projectsViewModel;
-    targets.bookmarksViewModel = m_targets.bookmarksViewModel;
-    targets.tagsViewModel = m_targets.tagsViewModel;
-    targets.resourcesViewModel = m_targets.resourcesViewModel;
-    targets.progressViewModel = m_targets.progressViewModel;
-    targets.eventViewModel = m_targets.eventViewModel;
-    targets.presetViewModel = m_targets.presetViewModel;
+    targets.libraryController = m_targets.libraryController;
+    targets.projectsController = m_targets.projectsController;
+    targets.bookmarksController = m_targets.bookmarksController;
+    targets.tagsController = m_targets.tagsController;
+    targets.resourcesController = m_targets.resourcesController;
+    targets.progressController = m_targets.progressController;
+    targets.eventController = m_targets.eventController;
+    targets.presetController = m_targets.presetController;
     targets.hubRuntimeStore = m_targets.hubRuntimeStore;
 
     QVector<IWhatSonRuntimeParallelLoader::DomainLoadResult> loadResults;

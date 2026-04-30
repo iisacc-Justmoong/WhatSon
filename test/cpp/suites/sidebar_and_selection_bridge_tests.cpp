@@ -4,12 +4,12 @@ void WhatSonCppRegressionTests::sidebarAndSelectionBridge_forceCppOwnershipAcros
 {
     ensureCoreApplication();
 
-    HierarchyViewModelProvider provider;
-    FakeHierarchyViewModel libraryViewModel(QStringLiteral("library"));
-    FakeHierarchyViewModel resourcesViewModel(QStringLiteral("resources"));
+    HierarchyControllerProvider provider;
+    FakeHierarchyController libraryController(QStringLiteral("library"));
+    FakeHierarchyController resourcesController(QStringLiteral("resources"));
     FakeSelectionNoteListModel libraryNoteListModel;
     FakeSelectionNoteListModel resourcesNoteListModel;
-    SidebarHierarchyViewModel sidebarViewModel;
+    SidebarHierarchyController sidebarController;
     ContentsEditorSelectionBridge selectionBridge;
 
     libraryNoteListModel.setCurrentNoteId(QStringLiteral("library-note"));
@@ -20,60 +20,60 @@ void WhatSonCppRegressionTests::sidebarAndSelectionBridge_forceCppOwnershipAcros
     resourcesNoteListModel.setItemCount(13);
     resourcesNoteListModel.setNoteBacked(false);
 
-    libraryViewModel.setNoteListModelObject(&libraryNoteListModel);
-    resourcesViewModel.setNoteListModelObject(&resourcesNoteListModel);
+    libraryController.setNoteListModelObject(&libraryNoteListModel);
+    resourcesController.setNoteListModelObject(&resourcesNoteListModel);
 
-    QQmlEngine::setObjectOwnership(&libraryViewModel, QQmlEngine::JavaScriptOwnership);
-    QQmlEngine::setObjectOwnership(&resourcesViewModel, QQmlEngine::JavaScriptOwnership);
+    QQmlEngine::setObjectOwnership(&libraryController, QQmlEngine::JavaScriptOwnership);
+    QQmlEngine::setObjectOwnership(&resourcesController, QQmlEngine::JavaScriptOwnership);
     QQmlEngine::setObjectOwnership(&libraryNoteListModel, QQmlEngine::JavaScriptOwnership);
     QQmlEngine::setObjectOwnership(&resourcesNoteListModel, QQmlEngine::JavaScriptOwnership);
 
-    provider.setMappings(QVector<HierarchyViewModelProvider::Mapping>{
-        {static_cast<int>(WhatSon::Sidebar::HierarchyDomain::Library), &libraryViewModel},
-        {static_cast<int>(WhatSon::Sidebar::HierarchyDomain::Resources), &resourcesViewModel},
+    provider.setMappings(QVector<HierarchyControllerProvider::Mapping>{
+        {static_cast<int>(WhatSon::Sidebar::HierarchyDomain::Library), &libraryController},
+        {static_cast<int>(WhatSon::Sidebar::HierarchyDomain::Resources), &resourcesController},
     });
-    sidebarViewModel.setViewModelProvider(&provider);
+    sidebarController.setControllerProvider(&provider);
 
-    sidebarViewModel.setActiveHierarchyIndex(static_cast<int>(WhatSon::Sidebar::HierarchyDomain::Resources));
+    sidebarController.setActiveHierarchyIndex(static_cast<int>(WhatSon::Sidebar::HierarchyDomain::Resources));
 
-    QObject* activeResourcesViewModel = sidebarViewModel.activeHierarchyViewModel();
-    QObject* activeResourcesNoteListModel = sidebarViewModel.activeNoteListModel();
+    QObject* activeResourcesController = sidebarController.activeHierarchyController();
+    QObject* activeResourcesNoteListModel = sidebarController.activeNoteListModel();
 
-    QCOMPARE(activeResourcesViewModel, static_cast<QObject*>(&resourcesViewModel));
+    QCOMPARE(activeResourcesController, static_cast<QObject*>(&resourcesController));
     QCOMPARE(activeResourcesNoteListModel, static_cast<QObject*>(&resourcesNoteListModel));
-    QCOMPARE(QQmlEngine::objectOwnership(&resourcesViewModel), QQmlEngine::CppOwnership);
+    QCOMPARE(QQmlEngine::objectOwnership(&resourcesController), QQmlEngine::CppOwnership);
     QCOMPARE(QQmlEngine::objectOwnership(&resourcesNoteListModel), QQmlEngine::CppOwnership);
 
-    selectionBridge.setContentViewModel(activeResourcesViewModel);
+    selectionBridge.setContentController(activeResourcesController);
     selectionBridge.setNoteListModel(activeResourcesNoteListModel);
     QCoreApplication::processEvents();
 
-    QCOMPARE(selectionBridge.contentViewModel(), activeResourcesViewModel);
+    QCOMPARE(selectionBridge.contentController(), activeResourcesController);
     QCOMPARE(selectionBridge.noteListModel(), activeResourcesNoteListModel);
     QVERIFY(selectionBridge.noteCountContractAvailable());
     QCOMPARE(selectionBridge.visibleNoteCount(), 13);
     QVERIFY(!selectionBridge.noteSelectionContractAvailable());
 
-    sidebarViewModel.setActiveHierarchyIndex(static_cast<int>(WhatSon::Sidebar::HierarchyDomain::Library));
+    sidebarController.setActiveHierarchyIndex(static_cast<int>(WhatSon::Sidebar::HierarchyDomain::Library));
 
-    QObject* activeLibraryViewModel = sidebarViewModel.activeHierarchyViewModel();
-    QObject* activeLibraryNoteListModel = sidebarViewModel.activeNoteListModel();
+    QObject* activeLibraryController = sidebarController.activeHierarchyController();
+    QObject* activeLibraryNoteListModel = sidebarController.activeNoteListModel();
 
-    QCOMPARE(activeLibraryViewModel, static_cast<QObject*>(&libraryViewModel));
+    QCOMPARE(activeLibraryController, static_cast<QObject*>(&libraryController));
     QCOMPARE(activeLibraryNoteListModel, static_cast<QObject*>(&libraryNoteListModel));
-    QCOMPARE(QQmlEngine::objectOwnership(&libraryViewModel), QQmlEngine::CppOwnership);
+    QCOMPARE(QQmlEngine::objectOwnership(&libraryController), QQmlEngine::CppOwnership);
     QCOMPARE(QQmlEngine::objectOwnership(&libraryNoteListModel), QQmlEngine::CppOwnership);
 
-    selectionBridge.setContentViewModel(activeLibraryViewModel);
+    selectionBridge.setContentController(activeLibraryController);
     selectionBridge.setNoteListModel(activeLibraryNoteListModel);
     QCoreApplication::processEvents();
 
-    QCOMPARE(selectionBridge.contentViewModel(), activeLibraryViewModel);
+    QCOMPARE(selectionBridge.contentController(), activeLibraryController);
     QCOMPARE(selectionBridge.noteListModel(), activeLibraryNoteListModel);
     QVERIFY(selectionBridge.noteCountContractAvailable());
     QCOMPARE(selectionBridge.visibleNoteCount(), 5);
     QVERIFY(selectionBridge.noteSelectionContractAvailable());
     QCOMPARE(selectionBridge.selectedNoteId(), QStringLiteral("library-note"));
-    QCOMPARE(QQmlEngine::objectOwnership(activeLibraryViewModel), QQmlEngine::CppOwnership);
+    QCOMPARE(QQmlEngine::objectOwnership(activeLibraryController), QQmlEngine::CppOwnership);
     QCOMPARE(QQmlEngine::objectOwnership(activeLibraryNoteListModel), QQmlEngine::CppOwnership);
 }

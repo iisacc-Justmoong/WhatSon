@@ -3,7 +3,7 @@
 ## Responsibility
 
 This header declares the pure folder-binding rules for note headers. It keeps folder-array semantics
-out of viewmodels and mutation coordinators.
+out of controllers and mutation coordinators.
 
 ## Public Contract
 

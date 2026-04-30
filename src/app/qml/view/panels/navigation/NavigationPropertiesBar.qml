@@ -5,18 +5,18 @@ LV.HStack {
     id: propertiesBar
 
     property bool compactMode: false
-    property var editorViewModeViewModel: null
-    property var navigationModeViewModel: null
+    property var editorViewModeController: null
+    property var navigationModeController: null
     property bool sidebarCollapsed: false
-    readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("navigation.NavigationPropertiesBar") : null
+    readonly property var panelController: panelControllerRegistry ? panelControllerRegistry.panelController("navigation.NavigationPropertiesBar") : null
 
     signal toggleSidebarRequested
     signal viewHookRequested
 
     function requestViewHook(reason) {
         const hookReason = reason !== undefined ? String(reason) : "manual";
-        if (panelViewModel && panelViewModel.requestViewModelHook)
-            panelViewModel.requestViewModelHook(hookReason);
+        if (panelController && panelController.requestControllerHook)
+            panelController.requestControllerHook(hookReason);
         viewHookRequested();
     }
 
@@ -32,13 +32,13 @@ LV.HStack {
     NavigationModeBar {
         id: modeBar
 
-        navigationModeViewModel: propertiesBar.navigationModeViewModel
+        navigationModeController: propertiesBar.navigationModeController
         visible: !propertiesBar.compactMode
     }
     NavigationEditorViewBar {
         id: editorViewBar
 
-        editorViewModeViewModel: propertiesBar.editorViewModeViewModel
+        editorViewModeController: propertiesBar.editorViewModeController
         visible: !propertiesBar.compactMode
     }
 }

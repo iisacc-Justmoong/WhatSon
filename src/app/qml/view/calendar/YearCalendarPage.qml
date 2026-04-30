@@ -7,8 +7,8 @@ import LVRS 1.0 as LV
 Rectangle {
     id: yearCalendarPage
 
-    readonly property var calendarVm: yearCalendarViewModel
-    readonly property var monthModels: calendarVm && calendarVm.monthModels ? calendarVm.monthModels : []
+    readonly property var calendarController: yearCalendarController
+    readonly property var monthModels: calendarController && calendarController.monthModels ? calendarController.monthModels : []
     readonly property bool mobileYearListMode: LV.Theme.mobileTarget
     readonly property int desktopYearGridColumnCount: 4
     readonly property int desktopYearGridRowCount: 3
@@ -28,8 +28,8 @@ Rectangle {
     readonly property color adjacentDayColor: Qt.darker(yearCalendarPage.activeDayColor, 1.2)
     readonly property color todayBadgeColor: LV.Theme.disabledColor
     readonly property int mobileMonthCardMinHeight: LV.Theme.scaffoldBlobPrimaryRadius
-    readonly property var weekdayLabels: calendarVm && calendarVm.weekdayLabels ? calendarVm.weekdayLabels : []
-    property var yearCalendarViewModel: null
+    readonly property var weekdayLabels: calendarController && calendarController.weekdayLabels ? calendarController.weekdayLabels : []
+    property var yearCalendarController: null
 
     signal viewHookRequested(string reason)
     signal monthCalendarOpenRequested(int year, int month, string selectedDateIso)
@@ -62,8 +62,8 @@ Rectangle {
     }
     function requestViewHook(reason) {
         var hookReason = reason !== undefined ? String(reason) : "manual";
-        if (calendarVm && calendarVm.requestYearView)
-            calendarVm.requestYearView(hookReason);
+        if (calendarController && calendarController.requestYearView)
+            calendarController.requestYearView(hookReason);
         viewHookRequested(hookReason);
     }
     function weekdaySymbol(label) {
@@ -82,10 +82,10 @@ Rectangle {
         return yearCalendarPage.adjacentDayColor;
     }
     function jumpToCurrentYear() {
-        if (yearCalendarPage.calendarVm && yearCalendarPage.calendarVm.focusToday) {
-            yearCalendarPage.calendarVm.focusToday();
-        } else if (yearCalendarPage.calendarVm && yearCalendarPage.calendarVm.setDisplayedYear) {
-            yearCalendarPage.calendarVm.setDisplayedYear((new Date()).getFullYear());
+        if (yearCalendarPage.calendarController && yearCalendarPage.calendarController.focusToday) {
+            yearCalendarPage.calendarController.focusToday();
+        } else if (yearCalendarPage.calendarController && yearCalendarPage.calendarController.setDisplayedYear) {
+            yearCalendarPage.calendarController.setDisplayedYear((new Date()).getFullYear());
         }
         yearCalendarPage.requestViewHook("current-year");
     }
@@ -125,19 +125,19 @@ Rectangle {
                         Layout.alignment: Qt.AlignVCenter
 
                         onPreviousRequested: {
-                            if (yearCalendarPage.calendarVm && yearCalendarPage.calendarVm.shiftYear)
-                                yearCalendarPage.calendarVm.shiftYear(-1);
+                            if (yearCalendarPage.calendarController && yearCalendarPage.calendarController.shiftYear)
+                                yearCalendarPage.calendarController.shiftYear(-1);
                             yearCalendarPage.requestViewHook("previous-year");
                         }
                         onTodayRequested: yearCalendarPage.jumpToCurrentYear()
                         onNextRequested: {
-                            if (yearCalendarPage.calendarVm && yearCalendarPage.calendarVm.shiftYear)
-                                yearCalendarPage.calendarVm.shiftYear(1);
+                            if (yearCalendarPage.calendarController && yearCalendarPage.calendarController.shiftYear)
+                                yearCalendarPage.calendarController.shiftYear(1);
                             yearCalendarPage.requestViewHook("next-year");
                         }
                     }
                     LV.Label {
-                        text: yearCalendarPage.calendarVm ? String(yearCalendarPage.calendarVm.displayedYear) + " · " + String(yearCalendarPage.calendarVm.calendarSystemName) : "Year calendar"
+                        text: yearCalendarPage.calendarController ? String(yearCalendarPage.calendarController.displayedYear) + " · " + String(yearCalendarPage.calendarController.calendarSystemName) : "Year calendar"
                     }
                     Item {
                         Layout.fillWidth: true

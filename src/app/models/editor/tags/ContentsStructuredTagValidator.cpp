@@ -16,7 +16,7 @@ namespace
         "applyPersistedBodyStateForNote(QString,QString,QString,QString)";
     constexpr auto kNoteDirectoryPathForNoteIdSignature = "noteDirectoryPathForNoteId(QString)";
     constexpr auto kReloadNoteMetadataForNoteIdSignature = "reloadNoteMetadataForNoteId(QString)";
-    constexpr auto kRequestViewModelHookSignature = "requestViewModelHook()";
+    constexpr auto kRequestControllerHookSignature = "requestControllerHook()";
 }
 
 ContentsStructuredTagValidator::ContentsStructuredTagValidator(QObject* parent)
@@ -26,20 +26,20 @@ ContentsStructuredTagValidator::ContentsStructuredTagValidator(QObject* parent)
 
 ContentsStructuredTagValidator::~ContentsStructuredTagValidator() = default;
 
-QObject* ContentsStructuredTagValidator::contentViewModel() const noexcept
+QObject* ContentsStructuredTagValidator::contentController() const noexcept
 {
-    return m_contentViewModel;
+    return m_contentController;
 }
 
-void ContentsStructuredTagValidator::setContentViewModel(QObject* model)
+void ContentsStructuredTagValidator::setContentController(QObject* model)
 {
-    if (m_contentViewModel == model)
+    if (m_contentController == model)
     {
         return;
     }
 
-    m_contentViewModel = model;
-    emit contentViewModelChanged();
+    m_contentController = model;
+    emit contentControllerChanged();
 }
 
 QString ContentsStructuredTagValidator::noteId() const
@@ -288,8 +288,8 @@ void ContentsStructuredTagValidator::handleCorrectionRequestFinished(const Resul
     }
     else
     {
-        const bool appliedToContentViewModel =
-            applyPersistedBodyStateToContentViewModel(result.noteId, result.persistedDocument);
+        const bool appliedToContentController =
+            applyPersistedBodyStateToContentController(result.noteId, result.persistedDocument);
 
         if (!result.statisticsError.isEmpty())
         {
@@ -300,15 +300,15 @@ void ContentsStructuredTagValidator::handleCorrectionRequestFinished(const Resul
                 QStringLiteral("noteId=%1 error=%2").arg(result.noteId, result.statisticsError));
         }
 
-        if (!appliedToContentViewModel)
+        if (!appliedToContentController)
         {
             if (!reloadNoteMetadataForNote(result.noteId)
-                && m_contentViewModel != nullptr
-                && hasInvokableMethod(m_contentViewModel, kRequestViewModelHookSignature))
+                && m_contentController != nullptr
+                && hasInvokableMethod(m_contentController, kRequestControllerHookSignature))
             {
                 QMetaObject::invokeMethod(
-                    m_contentViewModel,
-                    "requestViewModelHook",
+                    m_contentController,
+                    "requestControllerHook",
                     Qt::QueuedConnection);
             }
         }
@@ -347,15 +347,15 @@ bool ContentsStructuredTagValidator::hasInvokableMethod(
 
 QString ContentsStructuredTagValidator::resolveNoteDirectoryPathForNote(const QString& noteId) const
 {
-    if (m_contentViewModel == nullptr
-        || !hasInvokableMethod(m_contentViewModel, kNoteDirectoryPathForNoteIdSignature))
+    if (m_contentController == nullptr
+        || !hasInvokableMethod(m_contentController, kNoteDirectoryPathForNoteIdSignature))
     {
         return {};
     }
 
     QString noteDirectoryPath;
     if (!QMetaObject::invokeMethod(
-            m_contentViewModel,
+            m_contentController,
             "noteDirectoryPathForNoteId",
             Qt::DirectConnection,
             Q_RETURN_ARG(QString, noteDirectoryPath),
@@ -367,19 +367,19 @@ QString ContentsStructuredTagValidator::resolveNoteDirectoryPathForNote(const QS
     return noteDirectoryPath.trimmed();
 }
 
-bool ContentsStructuredTagValidator::applyPersistedBodyStateToContentViewModel(
+bool ContentsStructuredTagValidator::applyPersistedBodyStateToContentController(
     const QString& noteId,
     const WhatSonLocalNoteDocument& document) const
 {
-    if (m_contentViewModel == nullptr
-        || !hasInvokableMethod(m_contentViewModel, kApplyPersistedBodyStateForNoteSignature))
+    if (m_contentController == nullptr
+        || !hasInvokableMethod(m_contentController, kApplyPersistedBodyStateForNoteSignature))
     {
         return false;
     }
 
     bool applied = false;
     return QMetaObject::invokeMethod(
-               m_contentViewModel,
+               m_contentController,
                "applyPersistedBodyStateForNote",
                Qt::DirectConnection,
                Q_RETURN_ARG(bool, applied),
@@ -393,15 +393,15 @@ bool ContentsStructuredTagValidator::applyPersistedBodyStateToContentViewModel(
 bool ContentsStructuredTagValidator::reloadNoteMetadataForNote(const QString& noteId) const
 {
     if (noteId.trimmed().isEmpty()
-        || m_contentViewModel == nullptr
-        || !hasInvokableMethod(m_contentViewModel, kReloadNoteMetadataForNoteIdSignature))
+        || m_contentController == nullptr
+        || !hasInvokableMethod(m_contentController, kReloadNoteMetadataForNoteIdSignature))
     {
         return false;
     }
 
     bool reloaded = false;
     return QMetaObject::invokeMethod(
-               m_contentViewModel,
+               m_contentController,
                "reloadNoteMetadataForNoteId",
                Qt::DirectConnection,
                Q_RETURN_ARG(bool, reloaded),

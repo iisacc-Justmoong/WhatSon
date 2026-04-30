@@ -6,13 +6,13 @@ The week surface now keeps one continuous time scaffold: the left `Time` header 
 while only the day columns on the right move horizontally. The visible viewport is still sized for three day columns,
 but horizontal flicking advances across adjacent dates without page snapping.
 The page no longer owns a second date-model/cache layer; it only manages viewport movement and delegates timeline data
-ownership to `WeekCalendarViewModel`.
+ownership to `WeekCalendarController`.
 
 ## View Contract
-- Input: `weekCalendarViewModel`
+- Input: `weekCalendarController`
 - Output signal: `noteOpenRequested(string noteId)`
 - Hook signal: `viewHookRequested(string reason)`
-- Hook forwarder: `requestViewHook(reason)` delegates to `weekCalendarViewModel.requestWeekView(reason)`
+- Hook forwarder: `requestViewHook(reason)` delegates to `weekCalendarController.requestWeekView(reason)`
 
 ## UI Composition
 - Surface:
@@ -25,7 +25,7 @@ ownership to `WeekCalendarViewModel`.
   - one fixed left time scaffold (`Time` header + 24 hour labels),
   - one horizontal `Flickable` on the right that owns only the date columns,
   - the visible viewport is sized for three day columns at a time,
-  - the date-column model now comes directly from `WeekCalendarViewModel.timelineDayModels`,
+  - the date-column model now comes directly from `WeekCalendarController.timelineDayModels`,
   - each day model already includes per-date entry lists and derived metadata, so the page no longer keeps a local
     `ListModel`, `dateEntriesCache`, or `buildDateModel(...)` function,
   - a dedicated day-header row stays aligned with the hourly grid because both live in the same horizontal content surface,
@@ -43,14 +43,14 @@ ownership to `WeekCalendarViewModel`.
    current date as the initial focused middle column instead of the week-start Monday anchor.
 2. Horizontal movement updates only the right-side date-column surface; the time scaffold does not move.
 3. Near-edge access triggers lazy date growth:
-   - left edge: `prependDates(...)` -> `WeekCalendarViewModel.prependTimelineDates(...)`
-   - right edge: `appendDates(...)` -> `WeekCalendarViewModel.appendTimelineDates(...)`
+   - left edge: `prependDates(...)` -> `WeekCalendarController.prependTimelineDates(...)`
+   - right edge: `appendDates(...)` -> `WeekCalendarController.appendTimelineDates(...)`
 4. Adjacent content advances one day at a time, so the user can traverse `1-3`, `2-4`, `3-5`, and so on.
-5. Date-window size is bounded (`maxDateWindowSize`) through `WeekCalendarViewModel.trimTimelineWindow(...)` to avoid
+5. Date-window size is bounded (`maxDateWindowSize`) through `WeekCalendarController.trimTimelineWindow(...)` to avoid
    unbounded memory growth.
 6. Programmatic recentering (`Prev`, `Next`, `Today`) aligns the target date to the middle column before syncing the week anchor.
 7. Horizontal movement end normalizes the currently focused middle date back to its Monday-start week and syncs `displayedWeekStartIso`.
-8. Hour-slot labels are derived from the viewmodel-owned day-model `entries` payload and compressed by `slotSummary(...)`.
+8. Hour-slot labels are derived from the controller-owned day-model `entries` payload and compressed by `slotSummary(...)`.
 9. Hour-slot entry chips are rendered by shared `CalendarEventCell` (default/colored background by entry type).
 10. Direct note opening is enabled only when a visible slot chip represents exactly one projected note entry. The
     compressed `title +N` chip remains passive because it does not expose a unique note target.
@@ -62,7 +62,7 @@ ownership to `WeekCalendarViewModel`.
   - The weekly page must keep the `Time` header and 24 hour labels fixed while only the day columns move horizontally.
   - Weekly calendar content width must stay within the viewport while showing exactly three day columns at rest.
   - Horizontal scrolling must move continuously without page snapping.
-  - The week page must not maintain a second local `ListModel` or per-date entry cache on top of the viewmodel data.
+  - The week page must not maintain a second local `ListModel` or per-date entry cache on top of the controller data.
   - Initial page-open for the current week must center the actual current date instead of the week-start Monday.
   - Clicking `Today` must not introduce visible borders on generic current-week header/hour cells.
   - Clicking `Today` must place the actual current date in the middle visible day column.
@@ -73,7 +73,7 @@ ownership to `WeekCalendarViewModel`.
   - A compressed multi-entry week-slot chip must remain non-openable until the slot UI exposes per-entry hit targets.
 
 ## Collaborators
-- `src/app/viewmodel/calendar/WeekCalendarViewModel.hpp/.cpp`
+- `src/app/models/calendar/WeekCalendarController.hpp/.cpp`
 - `src/app/qml/view/calendar/CalendarTodayControl.qml`
 - `src/app/qml/view/calendar/CalendarEventCell.qml`
 - `src/app/qml/view/panels/ContentViewLayout.qml`

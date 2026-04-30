@@ -4,26 +4,11 @@ import LVRS 1.0 as LV
 Item {
     id: detailPanel
 
-    readonly property var registeredViewModelKeys: LV.ViewModels.keys
-    readonly property var noteDetailPanelVm: {
-        const _ = detailPanel.registeredViewModelKeys;
-        return LV.ViewModels.get("noteDetailPanelViewModel");
-    }
-    readonly property var resourceDetailPanelVm: {
-        const _ = detailPanel.registeredViewModelKeys;
-        return LV.ViewModels.get("resourceDetailPanelViewModel");
-    }
-    readonly property var resourcesHierarchyVm: {
-        const _ = detailPanel.registeredViewModelKeys;
-        return LV.ViewModels.get("resourcesHierarchyViewModel");
-    }
-    readonly property var sidebarHierarchyVm: {
-        const _ = detailPanel.registeredViewModelKeys;
-        return LV.ViewModels.get("sidebarHierarchyViewModel");
-    }
-    readonly property bool resourceHierarchyActive: sidebarHierarchyVm
-                                                    && resourcesHierarchyVm
-                                                    && sidebarHierarchyVm.activeHierarchyViewModel === resourcesHierarchyVm
+    readonly property var noteDetailPanelRuntime: typeof noteDetailPanelController !== "undefined" ? noteDetailPanelController : null
+    readonly property var resourceDetailPanelRuntime: typeof resourceDetailPanelController !== "undefined" ? resourceDetailPanelController : null
+    readonly property var resourcesHierarchyControllerObject: typeof resourcesHierarchyController !== "undefined" ? resourcesHierarchyController : null
+    readonly property var sidebarHierarchyControllerObject: typeof sidebarHierarchyController !== "undefined" ? sidebarHierarchyController : null
+    readonly property bool resourceHierarchyActive: sidebarHierarchyControllerObject && resourcesHierarchyControllerObject && sidebarHierarchyControllerObject.activeHierarchyController === resourcesHierarchyControllerObject
 
     signal viewHookRequested
 
@@ -35,13 +20,13 @@ Item {
 
     NoteDetailPanel {
         anchors.fill: parent
-        noteDetailPanelViewModel: detailPanel.noteDetailPanelVm
+        noteDetailPanelController: detailPanel.noteDetailPanelRuntime
         visible: !detailPanel.resourceHierarchyActive
     }
 
     ResourceDetailPanel {
         anchors.fill: parent
-        resourceDetailPanelViewModel: detailPanel.resourceDetailPanelVm
+        resourceDetailPanelController: detailPanel.resourceDetailPanelRuntime
         visible: detailPanel.resourceHierarchyActive
     }
 }

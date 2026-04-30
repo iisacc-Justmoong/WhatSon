@@ -27,8 +27,8 @@ public:
     explicit ContentsEditorPersistenceController(QObject* parent = nullptr);
     ~ContentsEditorPersistenceController() override;
 
-    QObject* contentViewModel() const noexcept;
-    void setContentViewModel(QObject* model);
+    QObject* contentController() const noexcept;
+    void setContentController(QObject* model);
 
     bool contentPersistenceContractAvailable() const noexcept;
     bool directPersistenceAvailable() const noexcept;

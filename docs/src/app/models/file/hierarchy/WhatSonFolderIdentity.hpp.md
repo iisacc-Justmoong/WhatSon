@@ -26,6 +26,6 @@ hierarchy logic.
 - `WhatSonFoldersHierarchyParser.cpp` and `WhatSonFoldersHierarchyStore.cpp` sanitize or backfill
   missing UUIDs.
 - `WhatSonNoteHeaderStore.cpp` normalizes folder bindings written into note headers.
-- `LibraryHierarchyViewModel.cpp` and
+- `LibraryHierarchyController.cpp` and
   `WhatSonLibraryFolderHierarchyMutationService.cpp` use the helper to keep runtime identity stable
   across rename and move operations.

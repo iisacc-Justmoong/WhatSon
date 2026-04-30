@@ -16,8 +16,8 @@ public:
     QVariantMap activeHierarchyBindingSnapshot() const;
     void setActiveHierarchyBindingSnapshot(const QVariantMap& value);
 
-    Q_INVOKABLE QVariantMap activeHierarchyBindingSnapshotFromSidebar(const QVariant& sidebarViewModel) const;
-    Q_INVOKABLE int currentHierarchySelectionIndex(const QVariant& activeContentViewModel, int preservedSelectionIndex) const;
+    Q_INVOKABLE QVariantMap activeHierarchyBindingSnapshotFromSidebar(const QVariant& sidebarController) const;
+    Q_INVOKABLE int currentHierarchySelectionIndex(const QVariant& activeContentController, int preservedSelectionIndex) const;
 
 signals:
     void activeHierarchyBindingSnapshotChanged();

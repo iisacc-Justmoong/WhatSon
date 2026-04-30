@@ -13,43 +13,43 @@ Item {
         console.log("[whatson:qml][ContentViewLayout][" + reason + "] noteListModel="
                     + contentViewLayout.noteListModel
                     + " resolvedNoteListModel=" + contentViewLayout.resolvedNoteListModel
-                    + " contentViewModel=" + contentViewLayout.resolvedContentViewModel)
+                    + " contentController=" + contentViewLayout.resolvedContentController)
     }
 
-    property var contentViewModel: null
+    property var contentController: null
     property color displayColor: "transparent"
-    property var editorViewModeViewModel: null
+    property var editorViewModeController: null
     property int editorTopInsetOverride: -1
     property int frameHorizontalInsetOverride: -1
     property color gutterColor: "transparent"
     property int gutterWidthOverride: -1
     property bool isMobilePlatform: false
     property int libraryHierarchyIndex: 0
-    property var libraryHierarchyViewModel: null
+    property var libraryHierarchyController: null
     property int lineNumberColumnLeftOverride: -1
     property int lineNumberColumnTextWidthOverride: -1
     property bool minimapVisible: true
     property var noteListModel: null
-    property var panelViewModelRegistry: null
-    readonly property var panelViewModel: contentViewLayout.panelViewModelRegistry ? contentViewLayout.panelViewModelRegistry.panelViewModel("ContentViewLayout") : null
-    property var resourcesImportViewModel: null
-    readonly property var resolvedContentViewModel: contentViewLayout.contentViewModel
+    property var panelControllerRegistry: null
+    readonly property var panelController: contentViewLayout.panelControllerRegistry ? contentViewLayout.panelControllerRegistry.panelController("ContentViewLayout") : null
+    property var resourcesImportController: null
+    readonly property var resolvedContentController: contentViewLayout.contentController
     readonly property var resolvedNoteListModel: contentViewLayout.noteListModel
     readonly property bool resourceEditorVisible: EditorSurfaceModeSupport.resourceEditorVisible(
                                                       contentViewLayout.resolvedNoteListModel)
     readonly property var resolvedCurrentResourceEntry: EditorSurfaceModeSupport.currentResourceEntry(
                                                             contentViewLayout.resolvedNoteListModel)
-    property var sidebarHierarchyViewModel: null
+    property var sidebarHierarchyController: null
     property bool dayCalendarOverlayVisible: false
-    property var dayCalendarViewModel: null
+    property var dayCalendarController: null
     property bool agendaOverlayVisible: false
-    property var agendaViewModel: null
+    property var agendaController: null
     property bool monthCalendarOverlayVisible: false
-    property var monthCalendarViewModel: null
+    property var monthCalendarController: null
     property bool weekCalendarOverlayVisible: false
-    property var weekCalendarViewModel: null
+    property var weekCalendarController: null
     property bool yearCalendarOverlayVisible: false
-    property var yearCalendarViewModel: null
+    property var yearCalendarController: null
     readonly property bool calendarOverlayVisible: contentViewLayout.agendaOverlayVisible
                                                  || contentViewLayout.dayCalendarOverlayVisible
                                                  || contentViewLayout.weekCalendarOverlayVisible
@@ -83,7 +83,7 @@ Item {
 
     Component.onCompleted: contentViewLayout.traceNoteListModelBinding("completed")
     onNoteListModelChanged: contentViewLayout.traceNoteListModelBinding("noteListModelChanged")
-    onContentViewModelChanged: contentViewLayout.traceNoteListModelBinding("contentViewModelChanged")
+    onContentControllerChanged: contentViewLayout.traceNoteListModelBinding("contentControllerChanged")
 
     onResourceEditorVisibleChanged: {
         if (contentViewLayout.resourceEditorVisible && contentViewLayout.calendarOverlayVisible)
@@ -116,19 +116,19 @@ Item {
         const normalizedDateIso = selectedDateIso === undefined || selectedDateIso === null
                 ? ""
                 : String(selectedDateIso).trim();
-        if (contentViewLayout.monthCalendarViewModel) {
-            if (contentViewLayout.yearCalendarViewModel
-                    && contentViewLayout.yearCalendarViewModel.calendarSystem !== undefined
-                    && contentViewLayout.monthCalendarViewModel.setCalendarSystemByValue !== undefined) {
-                contentViewLayout.monthCalendarViewModel.setCalendarSystemByValue(
-                            Number(contentViewLayout.yearCalendarViewModel.calendarSystem));
+        if (contentViewLayout.monthCalendarController) {
+            if (contentViewLayout.yearCalendarController
+                    && contentViewLayout.yearCalendarController.calendarSystem !== undefined
+                    && contentViewLayout.monthCalendarController.setCalendarSystemByValue !== undefined) {
+                contentViewLayout.monthCalendarController.setCalendarSystemByValue(
+                            Number(contentViewLayout.yearCalendarController.calendarSystem));
             }
-            if (isFinite(targetYear) && targetYear > 0 && contentViewLayout.monthCalendarViewModel.setDisplayedYear !== undefined)
-                contentViewLayout.monthCalendarViewModel.setDisplayedYear(targetYear);
-            if (isFinite(targetMonth) && targetMonth > 0 && contentViewLayout.monthCalendarViewModel.setDisplayedMonth !== undefined)
-                contentViewLayout.monthCalendarViewModel.setDisplayedMonth(targetMonth);
-            if (normalizedDateIso.length > 0 && contentViewLayout.monthCalendarViewModel.setSelectedDateIso !== undefined)
-                contentViewLayout.monthCalendarViewModel.setSelectedDateIso(normalizedDateIso);
+            if (isFinite(targetYear) && targetYear > 0 && contentViewLayout.monthCalendarController.setDisplayedYear !== undefined)
+                contentViewLayout.monthCalendarController.setDisplayedYear(targetYear);
+            if (isFinite(targetMonth) && targetMonth > 0 && contentViewLayout.monthCalendarController.setDisplayedMonth !== undefined)
+                contentViewLayout.monthCalendarController.setDisplayedMonth(targetMonth);
+            if (normalizedDateIso.length > 0 && contentViewLayout.monthCalendarController.setSelectedDateIso !== undefined)
+                contentViewLayout.monthCalendarController.setSelectedDateIso(normalizedDateIso);
         }
         contentViewLayout.monthCalendarOverlayOpenRequested();
     }
@@ -136,18 +136,18 @@ Item {
         const normalizedNoteId = noteId === undefined || noteId === null ? "" : String(noteId).trim();
         if (normalizedNoteId.length === 0)
             return false;
-        if (!contentViewLayout.libraryHierarchyViewModel
-                || contentViewLayout.libraryHierarchyViewModel.activateNoteById === undefined
-                || !contentViewLayout.sidebarHierarchyViewModel
-                || contentViewLayout.sidebarHierarchyViewModel.setActiveHierarchyIndex === undefined) {
+        if (!contentViewLayout.libraryHierarchyController
+                || contentViewLayout.libraryHierarchyController.activateNoteById === undefined
+                || !contentViewLayout.sidebarHierarchyController
+                || contentViewLayout.sidebarHierarchyController.setActiveHierarchyIndex === undefined) {
             return false;
         }
 
-        const activated = Boolean(contentViewLayout.libraryHierarchyViewModel.activateNoteById(normalizedNoteId));
+        const activated = Boolean(contentViewLayout.libraryHierarchyController.activateNoteById(normalizedNoteId));
         if (!activated)
             return false;
 
-        contentViewLayout.sidebarHierarchyViewModel.setActiveHierarchyIndex(contentViewLayout.libraryHierarchyIndex);
+        contentViewLayout.sidebarHierarchyController.setActiveHierarchyIndex(contentViewLayout.libraryHierarchyIndex);
         contentViewLayout.requestActiveCalendarOverlayClose();
         return true;
     }
@@ -223,23 +223,23 @@ Item {
 
         ContentsDisplayView {
             anchors.fill: parent
-            contentViewModel: contentViewLayout.resolvedContentViewModel
+            contentController: contentViewLayout.resolvedContentController
             displayColor: contentViewLayout.displayColor
-            editorViewModeViewModel: contentViewLayout.editorViewModeViewModel
+            editorViewModeController: contentViewLayout.editorViewModeController
             enabled: contentViewLayout.visible
             editorTopInsetOverride: contentViewLayout.editorTopInsetOverride
             frameHorizontalInsetOverride: contentViewLayout.frameHorizontalInsetOverride
             gutterColor: contentViewLayout.gutterColor
             gutterWidthOverride: contentViewLayout.gutterWidthOverride
-            libraryHierarchyViewModel: contentViewLayout.libraryHierarchyViewModel
+            libraryHierarchyController: contentViewLayout.libraryHierarchyController
             lineNumberColumnLeftOverride: contentViewLayout.lineNumberColumnLeftOverride
             lineNumberColumnTextWidthOverride: contentViewLayout.lineNumberColumnTextWidthOverride
             minimapVisible: contentViewLayout.minimapVisible
             mobileHost: contentViewLayout.isMobilePlatform
             noteListModel: contentViewLayout.resolvedNoteListModel
-            panelViewModel: contentViewLayout.panelViewModel
-            resourcesImportViewModel: contentViewLayout.resourcesImportViewModel
-            sidebarHierarchyViewModel: contentViewLayout.sidebarHierarchyViewModel
+            panelController: contentViewLayout.panelController
+            resourcesImportController: contentViewLayout.resourcesImportController
+            sidebarHierarchyController: contentViewLayout.sidebarHierarchyController
 
             onEditorTextEdited: function (text) {
                 contentViewLayout.editorTextEdited(text);
@@ -267,7 +267,7 @@ Item {
 
         CalendarView.DayCalendarPage {
             anchors.fill: parent
-            dayCalendarViewModel: contentViewLayout.dayCalendarViewModel
+            dayCalendarController: contentViewLayout.dayCalendarController
 
             onNoteOpenRequested: function (noteId) {
                 contentViewLayout.requestOpenLibraryNote(noteId);
@@ -282,7 +282,7 @@ Item {
 
         CalendarView.AgendaPage {
             anchors.fill: parent
-            agendaViewModel: contentViewLayout.agendaViewModel
+            agendaController: contentViewLayout.agendaController
 
             onNoteOpenRequested: function (noteId) {
                 contentViewLayout.requestOpenLibraryNote(noteId);
@@ -297,7 +297,7 @@ Item {
 
         CalendarView.WeekCalendarPage {
             anchors.fill: parent
-            weekCalendarViewModel: contentViewLayout.weekCalendarViewModel
+            weekCalendarController: contentViewLayout.weekCalendarController
 
             onNoteOpenRequested: function (noteId) {
                 contentViewLayout.requestOpenLibraryNote(noteId);
@@ -312,7 +312,7 @@ Item {
 
         CalendarView.MonthCalendarPage {
             anchors.fill: parent
-            monthCalendarViewModel: contentViewLayout.monthCalendarViewModel
+            monthCalendarController: contentViewLayout.monthCalendarController
 
             onNoteOpenRequested: function (noteId) {
                 contentViewLayout.requestOpenLibraryNote(noteId);
@@ -327,7 +327,7 @@ Item {
 
         CalendarView.YearCalendarPage {
             anchors.fill: parent
-            yearCalendarViewModel: contentViewLayout.yearCalendarViewModel
+            yearCalendarController: contentViewLayout.yearCalendarController
 
             onMonthCalendarOpenRequested: function (year, month, selectedDateIso) {
                 contentViewLayout.openMonthCalendarOverlayForSelection(year, month, selectedDateIso);

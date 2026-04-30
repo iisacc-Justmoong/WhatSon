@@ -7,7 +7,7 @@ import LVRS 1.0 as LV
 Rectangle {
     id: weekCalendarPage
 
-    readonly property var calendarVm: weekCalendarViewModel
+    readonly property var calendarController: weekCalendarController
     readonly property int dayColumnSpacing: LV.Theme.gap2
     readonly property int hourColumnWidth: LV.Theme.gap24 * 2
     readonly property var hourSlots: weekCalendarPage.buildHourSlots()
@@ -16,20 +16,20 @@ Rectangle {
     readonly property int maxDateWindowSize: 120
     readonly property int preloadThreshold: 12
     readonly property int timelineDayCount: weekCalendarPage.timelineDayModels.length
-    readonly property var timelineDayModels: weekCalendarPage.calendarVm && weekCalendarPage.calendarVm.timelineDayModels ? weekCalendarPage.calendarVm.timelineDayModels : []
+    readonly property var timelineDayModels: weekCalendarPage.calendarController && weekCalendarPage.calendarController.timelineDayModels ? weekCalendarPage.calendarController.timelineDayModels : []
     readonly property int visibleDayColumnCount: 3
     readonly property int centeredDayColumnOffset: Math.floor(weekCalendarPage.visibleDayColumnCount / 2)
     property bool dateWindowInitialized: false
     property bool suppressViewportSync: false
-    property var weekCalendarViewModel: null
+    property var weekCalendarController: null
 
     signal noteOpenRequested(string noteId)
     signal viewHookRequested(string reason)
 
     function appendDates(count) {
-        if (count <= 0 || !weekCalendarPage.calendarVm || !weekCalendarPage.calendarVm.appendTimelineDates)
+        if (count <= 0 || !weekCalendarPage.calendarController || !weekCalendarPage.calendarController.appendTimelineDates)
             return;
-        weekCalendarPage.calendarVm.appendTimelineDates(count);
+        weekCalendarPage.calendarController.appendTimelineDates(count);
     }
     function buildHourSlots() {
         var values = [];
@@ -105,8 +105,8 @@ Rectangle {
             return;
 
         weekCalendarPage.dateWindowInitialized = false;
-        if (weekCalendarPage.calendarVm && weekCalendarPage.calendarVm.initializeTimelineWindow)
-            weekCalendarPage.calendarVm.initializeTimelineWindow(resolvedAnchorIso, weekCalendarPage.initialDateRadius);
+        if (weekCalendarPage.calendarController && weekCalendarPage.calendarController.initializeTimelineWindow)
+            weekCalendarPage.calendarController.initializeTimelineWindow(resolvedAnchorIso, weekCalendarPage.initialDateRadius);
 
         Qt.callLater(function () {
             const anchorIndex = weekCalendarPage.initialDateRadius;
@@ -157,30 +157,30 @@ Rectangle {
         return new Date(year, month - 1, day);
     }
     function prependDates(count) {
-        if (count <= 0 || weekCalendarPage.timelineDayCount <= 0 || !weekCalendarPage.calendarVm || !weekCalendarPage.calendarVm.prependTimelineDates)
+        if (count <= 0 || weekCalendarPage.timelineDayCount <= 0 || !weekCalendarPage.calendarController || !weekCalendarPage.calendarController.prependTimelineDates)
             return;
-        const prependedCount = Number(weekCalendarPage.calendarVm.prependTimelineDates(count));
+        const prependedCount = Number(weekCalendarPage.calendarController.prependTimelineDates(count));
         if (isFinite(prependedCount) && prependedCount > 0)
             weekCalendarPage.setViewportContentX(dateColumnsFlickable.contentX + (prependedCount * timelineScaffold.dayColumnSpan));
     }
     function requestViewHook(reason) {
         const hookReason = reason !== undefined ? String(reason) : "manual";
-        if (calendarVm && calendarVm.requestWeekView)
-            calendarVm.requestWeekView(hookReason);
+        if (calendarController && calendarController.requestWeekView)
+            calendarController.requestWeekView(hookReason);
         weekCalendarPage.notifyViewHook(hookReason);
     }
     function resolveInitialDateIso() {
         const todayIso = weekCalendarPage.toIsoDate(new Date());
         const currentWeekStartIso = weekCalendarPage.normalizedWeekStartIso(todayIso);
-        const currentVmIso = weekCalendarPage.calendarVm && weekCalendarPage.calendarVm.displayedWeekStartIso !== undefined ? String(weekCalendarPage.calendarVm.displayedWeekStartIso).trim() : "";
+        const currentVmIso = weekCalendarPage.calendarController && weekCalendarPage.calendarController.displayedWeekStartIso !== undefined ? String(weekCalendarPage.calendarController.displayedWeekStartIso).trim() : "";
         if (currentVmIso.length > 0) {
             if (currentVmIso === currentWeekStartIso)
                 return todayIso;
             return currentVmIso;
         }
 
-        if (weekCalendarPage.calendarVm && weekCalendarPage.calendarVm.setDisplayedWeekStartIso)
-            weekCalendarPage.calendarVm.setDisplayedWeekStartIso(currentWeekStartIso);
+        if (weekCalendarPage.calendarController && weekCalendarPage.calendarController.setDisplayedWeekStartIso)
+            weekCalendarPage.calendarController.setDisplayedWeekStartIso(currentWeekStartIso);
         return todayIso;
     }
     function setViewportContentX(nextContentX) {
@@ -240,9 +240,9 @@ Rectangle {
     }
     function syncDisplayedWeekForDate(dateIso, reason) {
         const activeWeekStartIso = weekCalendarPage.normalizedWeekStartIso(dateIso);
-        const currentVmIso = weekCalendarPage.calendarVm && weekCalendarPage.calendarVm.displayedWeekStartIso !== undefined ? String(weekCalendarPage.calendarVm.displayedWeekStartIso).trim() : "";
-        if (weekCalendarPage.calendarVm && weekCalendarPage.calendarVm.setDisplayedWeekStartIso && activeWeekStartIso.length > 0 && currentVmIso !== activeWeekStartIso) {
-            weekCalendarPage.calendarVm.setDisplayedWeekStartIso(activeWeekStartIso);
+        const currentVmIso = weekCalendarPage.calendarController && weekCalendarPage.calendarController.displayedWeekStartIso !== undefined ? String(weekCalendarPage.calendarController.displayedWeekStartIso).trim() : "";
+        if (weekCalendarPage.calendarController && weekCalendarPage.calendarController.setDisplayedWeekStartIso && activeWeekStartIso.length > 0 && currentVmIso !== activeWeekStartIso) {
+            weekCalendarPage.calendarController.setDisplayedWeekStartIso(activeWeekStartIso);
         }
         weekCalendarPage.notifyViewHook(reason);
     }
@@ -263,9 +263,9 @@ Rectangle {
         return year + "-" + month + "-" + day;
     }
     function trimDateWindow() {
-        if (!weekCalendarPage.calendarVm || !weekCalendarPage.calendarVm.trimTimelineWindow)
+        if (!weekCalendarPage.calendarController || !weekCalendarPage.calendarController.trimTimelineWindow)
             return;
-        const trimResult = weekCalendarPage.calendarVm.trimTimelineWindow(weekCalendarPage.currentLeadingDateIndex(), weekCalendarPage.maxDateWindowSize, weekCalendarPage.lazyChunkSize);
+        const trimResult = weekCalendarPage.calendarController.trimTimelineWindow(weekCalendarPage.currentLeadingDateIndex(), weekCalendarPage.maxDateWindowSize, weekCalendarPage.lazyChunkSize);
         const removedHead = trimResult && trimResult.removedHead !== undefined ? Number(trimResult.removedHead) : 0;
         if (isFinite(removedHead) && removedHead > 0) {
             weekCalendarPage.setViewportContentX(Math.max(0, dateColumnsFlickable.contentX - (removedHead * timelineScaffold.dayColumnSpan)));

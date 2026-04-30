@@ -5,53 +5,53 @@ import LVRS 1.0 as LV
 LV.HStack {
     id: editorViewBar
 
-    readonly property var activeEditorViewModeViewModel: editorViewModeViewModel && editorViewModeViewModel.activeViewModeViewModel !== undefined ? editorViewModeViewModel.activeViewModeViewModel : null
-    readonly property string activeViewText: activeEditorViewModeViewModel && activeEditorViewModeViewModel.editorViewName !== undefined ? activeEditorViewModeViewModel.editorViewName : "Plain"
+    readonly property var activeEditorViewModeController: editorViewModeController && editorViewModeController.activeViewModeController !== undefined ? editorViewModeController.activeViewModeController : null
+    readonly property string activeViewText: activeEditorViewModeController && activeEditorViewModeController.editorViewName !== undefined ? activeEditorViewModeController.editorViewName : "Plain"
     readonly property var editorViewMenuItems: [
         {
             iconName: "string",
             label: "Plain",
             keyVisible: false,
-            selected: editorViewModeViewModel && editorViewModeViewModel.activeViewMode === 0
+            selected: editorViewModeController && editorViewModeController.activeViewMode === 0
         },
         {
             iconName: "fileSet",
             label: "Page",
             keyVisible: false,
-            selected: editorViewModeViewModel && editorViewModeViewModel.activeViewMode === 1
+            selected: editorViewModeController && editorViewModeController.activeViewMode === 1
         },
         {
             iconName: "generalprint",
             label: "Print",
             keyVisible: false,
-            selected: editorViewModeViewModel && editorViewModeViewModel.activeViewMode === 2
+            selected: editorViewModeController && editorViewModeController.activeViewMode === 2
         },
         {
             iconName: "toolwindowweb",
             label: "Web",
             keyVisible: false,
-            selected: editorViewModeViewModel && editorViewModeViewModel.activeViewMode === 3
+            selected: editorViewModeController && editorViewModeController.activeViewMode === 3
         },
         {
             iconName: "procedure",
             label: "Presentation",
             keyVisible: false,
-            selected: editorViewModeViewModel && editorViewModeViewModel.activeViewMode === 4
+            selected: editorViewModeController && editorViewModeController.activeViewMode === 4
         }
     ]
     property int comboContextMenuWidth: LV.Theme.buttonMinWidth + LV.Theme.controlHeightMd + LV.Theme.gap5
     property int comboMenuYOffset: LV.Theme.gap2
     property int compactComboWidth: LV.Theme.buttonMinWidth - LV.Theme.gap3
-    property var editorViewModeViewModel: null
-    readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("navigation.NavigationEditorViewBar") : null
+    property var editorViewModeController: null
+    readonly property var panelController: panelControllerRegistry ? panelControllerRegistry.panelController("navigation.NavigationEditorViewBar") : null
     property bool showLabel: true
 
     signal viewHookRequested
 
     function requestViewHook(reason) {
         const hookReason = reason !== undefined ? String(reason) : "manual";
-        if (panelViewModel && panelViewModel.requestViewModelHook)
-            panelViewModel.requestViewModelHook(hookReason);
+        if (panelController && panelController.requestControllerHook)
+            panelController.requestControllerHook(hookReason);
         viewHookRequested();
     }
     function toggleEditorViewMenu() {
@@ -89,11 +89,11 @@ LV.HStack {
         items: editorViewBar.editorViewMenuItems
         modal: false
         parent: Controls.Overlay.overlay
-        selectedIndex: editorViewBar.editorViewModeViewModel && editorViewBar.editorViewModeViewModel.activeViewMode !== undefined ? editorViewBar.editorViewModeViewModel.activeViewMode : 0
+        selectedIndex: editorViewBar.editorViewModeController && editorViewBar.editorViewModeController.activeViewMode !== undefined ? editorViewBar.editorViewModeController.activeViewMode : 0
 
         onItemTriggered: function (index) {
-            if (editorViewBar.editorViewModeViewModel && editorViewBar.editorViewModeViewModel.requestViewModeChange !== undefined)
-                editorViewBar.editorViewModeViewModel.requestViewModeChange(index);
+            if (editorViewBar.editorViewModeController && editorViewBar.editorViewModeController.requestViewModeChange !== undefined)
+                editorViewBar.editorViewModeController.requestViewModeChange(index);
             editorViewBar.requestViewHook("select-editor-view-mode");
         }
     }

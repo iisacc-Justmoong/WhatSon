@@ -8,7 +8,7 @@ bootstrap and hub reload.
 ## Notable API
 
 - `loadLibrary(...)`: indexes the library domain and returns the note records, smart buckets, and
-  parsed folder hierarchy needed by `LibraryHierarchyViewModel`.
+  parsed folder hierarchy needed by `LibraryHierarchyController`.
 - `buildBookmarks(...)`: derives the bookmarks snapshot from an already indexed library note set.
 - `loadBookmarks(...)`: fallback path used only when the bookmarks domain is requested without the
   library domain.

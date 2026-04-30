@@ -4,7 +4,7 @@
 
 `LibraryAll` builds the runtime note bucket that backs the "All Library" list. It reads `.wsnindex`,
 `.wsnhead`, and body content, merges those sources into `LibraryNoteRecord`, and exposes a stable
-projection to the library hierarchy viewmodel.
+projection to the library hierarchy controller.
 
 ## Folder UUID Role
 

@@ -10,11 +10,11 @@ class ContentsBodyResourceRenderer : public QObject
 {
     Q_OBJECT
 
-    Q_PROPERTY(QObject* contentViewModel READ contentViewModel WRITE setContentViewModel NOTIFY contentViewModelChanged)
-    Q_PROPERTY(QObject* fallbackContentViewModel
-                   READ fallbackContentViewModel
-                   WRITE setFallbackContentViewModel
-                   NOTIFY fallbackContentViewModelChanged)
+    Q_PROPERTY(QObject* contentController READ contentController WRITE setContentController NOTIFY contentControllerChanged)
+    Q_PROPERTY(QObject* fallbackContentController
+                   READ fallbackContentController
+                   WRITE setFallbackContentController
+                   NOTIFY fallbackContentControllerChanged)
     Q_PROPERTY(QString noteId READ noteId WRITE setNoteId NOTIFY noteIdChanged)
     Q_PROPERTY(QString noteDirectoryPath READ noteDirectoryPath WRITE setNoteDirectoryPath NOTIFY noteDirectoryPathChanged)
     Q_PROPERTY(QVariantList documentBlocks READ documentBlocks WRITE setDocumentBlocks NOTIFY documentBlocksChanged)
@@ -27,10 +27,10 @@ public:
     explicit ContentsBodyResourceRenderer(QObject* parent = nullptr);
     ~ContentsBodyResourceRenderer() override;
 
-    QObject* contentViewModel() const noexcept;
-    void setContentViewModel(QObject* model);
-    QObject* fallbackContentViewModel() const noexcept;
-    void setFallbackContentViewModel(QObject* model);
+    QObject* contentController() const noexcept;
+    void setContentController(QObject* model);
+    QObject* fallbackContentController() const noexcept;
+    void setFallbackContentController(QObject* model);
 
     QString noteId() const;
     void setNoteId(const QString& noteId);
@@ -51,8 +51,8 @@ public:
     Q_INVOKABLE void requestRenderRefresh();
 
 signals:
-    void contentViewModelChanged();
-    void fallbackContentViewModelChanged();
+    void contentControllerChanged();
+    void fallbackContentControllerChanged();
     void noteIdChanged();
     void noteDirectoryPathChanged();
     void documentBlocksChanged();
@@ -60,8 +60,8 @@ signals:
     void renderedResourcesChanged();
 
 private slots:
-    void handleContentViewModelDestroyed();
-    void handleFallbackContentViewModelDestroyed();
+    void handleContentControllerDestroyed();
+    void handleFallbackContentControllerDestroyed();
     void handleContentFilesystemMutated();
 
 private:
@@ -69,20 +69,20 @@ private:
 
     void refreshRenderedResources();
     QVariantList buildRenderedResources(const QString& noteDirectoryPath, const QVariantList& documentBlocks) const;
-    QString resolveNoteDirectoryPathFromViewModel(QObject* viewModel) const;
+    QString resolveNoteDirectoryPathFromController(QObject* controller) const;
     QString resolveNoteDirectoryPath() const;
-    void disconnectContentViewModel();
-    void disconnectFallbackContentViewModel();
+    void disconnectContentController();
+    void disconnectFallbackContentController();
 
-    QPointer<QObject> m_contentViewModel;
-    QPointer<QObject> m_fallbackContentViewModel;
+    QPointer<QObject> m_contentController;
+    QPointer<QObject> m_fallbackContentController;
     QString m_noteId;
     QString m_noteDirectoryPath;
     QVariantList m_documentBlocks;
     int m_maxRenderCount = 3;
     QVariantList m_renderedResources;
-    QMetaObject::Connection m_contentViewModelDestroyedConnection;
+    QMetaObject::Connection m_contentControllerDestroyedConnection;
     QMetaObject::Connection m_hubFilesystemMutatedConnection;
-    QMetaObject::Connection m_fallbackContentViewModelDestroyedConnection;
+    QMetaObject::Connection m_fallbackContentControllerDestroyedConnection;
     QMetaObject::Connection m_fallbackHubFilesystemMutatedConnection;
 };

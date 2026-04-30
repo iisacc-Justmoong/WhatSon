@@ -4,14 +4,14 @@ import LVRS 1.0 as LV
 LV.HStack {
     id: modeBar
 
-    readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("navigation.view.NavigationApplicationViewModeBar") : null
+    readonly property var panelController: panelControllerRegistry ? panelControllerRegistry.panelController("navigation.view.NavigationApplicationViewModeBar") : null
 
     signal viewHookRequested(string reason)
 
     function requestViewHook(reason) {
         const hookReason = reason !== undefined ? String(reason) : "manual";
-        if (panelViewModel && panelViewModel.requestViewModelHook)
-            panelViewModel.requestViewModelHook(hookReason);
+        if (panelController && panelController.requestControllerHook)
+            panelController.requestControllerHook(hookReason);
         viewHookRequested(hookReason);
     }
 

@@ -17,10 +17,16 @@
 
 ## Current Directory Split
 - `src/app/models/calendar/CMakeLists.txt`
+- `src/app/models/content/CMakeLists.txt`
+- `src/app/models/detailPanel/CMakeLists.txt`
 - `src/app/models/display/CMakeLists.txt`
-- `src/app/models/sensor/CMakeLists.txt`
 - `src/app/models/editor/CMakeLists.txt`
 - `src/app/models/file/CMakeLists.txt`
+- `src/app/models/navigationbar/CMakeLists.txt`
+- `src/app/models/onboarding/CMakeLists.txt`
+- `src/app/models/panel/CMakeLists.txt`
+- `src/app/models/sensor/CMakeLists.txt`
+- `src/app/models/sidebar/CMakeLists.txt`
 - `src/app/permissions/CMakeLists.txt`
 - `src/app/platform/CMakeLists.txt`
 - `src/app/policy/CMakeLists.txt`
@@ -28,7 +34,6 @@
 - `src/app/register/CMakeLists.txt`
 - `src/app/runtime/CMakeLists.txt`
 - `src/app/store/CMakeLists.txt`
-- `src/app/viewmodel/CMakeLists.txt`
 
 ## Build Shards
 - `src/app/cmake/resources/CMakeLists.txt`: app icon resources, onboarding illustration resources, Apple bundle icon staging, Android package resource mirroring, and Windows icon RC generation.
@@ -54,6 +59,9 @@
   `editor/tags/ContentsAgendaBackend.hpp`, `editor/tags/ContentsCalloutBackend.hpp`, and
   `editor/format/ContentsTextFormatRenderer.hpp`, `display/paper/print/ContentsPagePrintLayoutRenderer.hpp`, and
   `sensor/UnusedResourcesSensor.hpp` keep compiling after those domains moved under `src/app/models/`.
+- The former `src/app/viewmodel` shard has been removed. Runtime controller sources that still affect behavior are
+  registered from their owning model-domain shards, such as `models/navigationbar`, `models/panel`,
+  `models/sidebar`, and `models/file/hierarchy/*`.
 - Non-format editor body tag sources are grouped under `src/app/models/editor/tags`; agenda and callout no longer use
   separate build shards.
 - Desktop trial builds pull in the dedicated trial activation sources from `src/extension/trial` and define `WHATSON_IS_TRIAL_BUILD=1` for the app target.

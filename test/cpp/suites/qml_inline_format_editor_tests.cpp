@@ -254,7 +254,7 @@ void WhatSonCppRegressionTests::qmlInlineFormatEditor_keepsKeyboardSelectionAndO
     const QStringList qmlRoots{
         QStringLiteral("src/app/qml"),
         QStringLiteral("src/app/models/editor"),
-        QStringLiteral("src/app/viewmodel/editor"),
+        QStringLiteral("src/app/models/editor"),
     };
     for (const QString& qmlRoot : qmlRoots)
     {

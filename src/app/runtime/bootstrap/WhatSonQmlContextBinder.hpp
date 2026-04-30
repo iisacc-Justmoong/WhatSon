@@ -9,31 +9,31 @@ namespace WhatSon::Runtime::Bootstrap
 {
     struct WorkspaceContextObjects final
     {
-        QObject* libraryHierarchyViewModel = nullptr;
-        QObject* libraryNoteMutationViewModel = nullptr;
-        QObject* projectsHierarchyViewModel = nullptr;
-        QObject* bookmarksHierarchyViewModel = nullptr;
-        QObject* tagsHierarchyViewModel = nullptr;
-        QObject* resourcesHierarchyViewModel = nullptr;
-        QObject* resourcesImportViewModel = nullptr;
-        QObject* progressHierarchyViewModel = nullptr;
-        QObject* eventHierarchyViewModel = nullptr;
-        QObject* presetHierarchyViewModel = nullptr;
-        QObject* detailPanelViewModel = nullptr;
-        QObject* noteDetailPanelViewModel = nullptr;
-        QObject* resourceDetailPanelViewModel = nullptr;
-        QObject* editorViewModeViewModel = nullptr;
-        QObject* navigationModeViewModel = nullptr;
-        QObject* sidebarHierarchyViewModel = nullptr;
+        QObject* libraryHierarchyController = nullptr;
+        QObject* libraryNoteMutationController = nullptr;
+        QObject* projectsHierarchyController = nullptr;
+        QObject* bookmarksHierarchyController = nullptr;
+        QObject* tagsHierarchyController = nullptr;
+        QObject* resourcesHierarchyController = nullptr;
+        QObject* resourcesImportController = nullptr;
+        QObject* progressHierarchyController = nullptr;
+        QObject* eventHierarchyController = nullptr;
+        QObject* presetHierarchyController = nullptr;
+        QObject* detailPanelController = nullptr;
+        QObject* noteDetailPanelController = nullptr;
+        QObject* resourceDetailPanelController = nullptr;
+        QObject* editorViewModeController = nullptr;
+        QObject* navigationModeController = nullptr;
+        QObject* sidebarHierarchyController = nullptr;
         QObject* asyncScheduler = nullptr;
         QObject* calendarBoardStore = nullptr;
         QObject* systemCalendarStore = nullptr;
-        QObject* dayCalendarViewModel = nullptr;
-        QObject* agendaViewModel = nullptr;
-        QObject* monthCalendarViewModel = nullptr;
-        QObject* weekCalendarViewModel = nullptr;
-        QObject* yearCalendarViewModel = nullptr;
-        QObject* panelViewModelRegistry = nullptr;
+        QObject* dayCalendarController = nullptr;
+        QObject* agendaController = nullptr;
+        QObject* monthCalendarController = nullptr;
+        QObject* weekCalendarController = nullptr;
+        QObject* yearCalendarController = nullptr;
+        QObject* panelControllerRegistry = nullptr;
     };
 
     lvrs::QmlContextBindResult bindWorkspaceContextObjects(

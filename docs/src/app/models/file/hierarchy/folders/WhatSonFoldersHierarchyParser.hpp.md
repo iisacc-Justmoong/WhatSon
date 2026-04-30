@@ -21,5 +21,5 @@ required so UUID identity becomes durable across sessions.
 ## Main Collaborators
 
 - `WhatSonFoldersHierarchyStore`: receives the normalized parsed rows.
-- `LibraryHierarchyViewModel.cpp`: persists migrated UUIDs during direct library loads.
+- `LibraryHierarchyController.cpp`: persists migrated UUIDs during direct library loads.
 - `WhatSonRuntimeDomainSnapshots.cpp`: persists migrated UUIDs during startup snapshot loading.

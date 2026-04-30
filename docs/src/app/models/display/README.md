@@ -1,7 +1,7 @@
 # `src/app/models/display`
 
 ## Responsibility
-Owns display-mode model helpers that sit below QML and above raw editor/viewmodel consumers.
+Owns display-mode model helpers that sit below QML and above raw editor/controller consumers.
 
 ## Current Domains
 - `paper`: canonical A4 paper background definitions plus common paper-surface presentation helpers shared by page and

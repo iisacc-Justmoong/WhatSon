@@ -23,7 +23,7 @@ The Figma node mapping is:
 ## Interaction Contract
 - Exposes `toggleDetailPanelRequested` and forwards it from `NavigationPreferenceBar`.
 - Exposes `viewHookRequested` and forwards mode-level hook reasons through
-  `panelViewModel.requestViewModelHook(reason)`.
+  `panelController.requestControllerHook(reason)`.
 - Full-mode `NavigationApplicationCalendarBar` hooks are now forwarded back into
   `requestViewHook(reason)`, so year-calendar clicks in icon mode and compact-menu mode share the
   same reason pipeline.
@@ -32,9 +32,9 @@ The Figma node mapping is:
   - New File
   - Preferences
 
-## Panel ViewModel Binding
+## Panel Controller Binding
 - Panel key: `navigation.NavigationApplicationEditBar`
-- Binding: `panelViewModelRegistry.panelViewModel("navigation.NavigationApplicationEditBar")`
+- Binding: `panelControllerRegistry.panelController("navigation.NavigationApplicationEditBar")`
 
 ## Notes
 - Full-mode child frames reuse shared wrappers from `navigation/` so view and edit modes avoid

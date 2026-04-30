@@ -19,7 +19,7 @@ It exposes two separate concepts.
 - `ArchitecturePolicyLock::unlockForTests()`: test-only escape hatch used to isolate process-global lock state between regression cases.
 
 ## Usage Pattern
-Typical consumers are startup-time composition code and bridge-like objects that connect QML-facing views to QObject-based viewmodels or stores.
+Typical consumers are startup-time composition code and bridge-like objects that connect QML-facing views to QObject-based controllers or stores.
 
 The expected sequence is this.
 1. Build the object graph.
@@ -30,4 +30,4 @@ The expected sequence is this.
 ## Important Constraint
 This header only defines a small policy language. It does not automatically rewrite architecture by itself. Production code must call the verification helpers if runtime enforcement is desired.
 
-The current runtime contract is role-based rather than folder-based: bridge/QML-facing setter paths are treated as `View -> ViewModel`, and ViewModel store attachment paths are treated as `ViewModel -> Store`.
+The current runtime contract is role-based rather than folder-based: bridge/QML-facing setter paths are treated as `View -> Controller`, and Controller store attachment paths are treated as `Controller -> Store`.

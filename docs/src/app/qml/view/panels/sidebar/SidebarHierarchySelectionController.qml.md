@@ -28,6 +28,6 @@ sidebar view can stay focused on LVRS composition and overlay rendering.
 
 - The controller depends on `SidebarHierarchyView` helpers such as `normalizedInteger(...)`,
   `invalidateHierarchySelectionVisuals()`, `resolveVisibleHierarchyItem(...)`, and
-  `hierarchyViewModel.setHierarchySelectedIndex(...)`.
+  `hierarchyController.setHierarchySelectedIndex(...)`.
 - The host view retains wrapper functions so external callers keep a stable interface while the selection state machine
   lives in a dedicated sibling file.

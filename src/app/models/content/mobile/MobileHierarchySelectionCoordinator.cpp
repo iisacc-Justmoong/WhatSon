@@ -23,13 +23,13 @@ void MobileHierarchySelectionCoordinator::setActiveHierarchyBindingSnapshot(cons
     emit activeHierarchyBindingSnapshotChanged();
 }
 
-QVariantMap MobileHierarchySelectionCoordinator::activeHierarchyBindingSnapshotFromSidebar(const QVariant& sidebarViewModel) const
+QVariantMap MobileHierarchySelectionCoordinator::activeHierarchyBindingSnapshotFromSidebar(const QVariant& sidebarController) const
 {
     QVariantMap snapshot;
     snapshot.insert(QStringLiteral("index"), 0);
-    snapshot.insert(QStringLiteral("viewModel"), QVariant());
+    snapshot.insert(QStringLiteral("controller"), QVariant());
 
-    QObject* sidebarObject = sidebarViewModel.value<QObject*>();
+    QObject* sidebarObject = sidebarController.value<QObject*>();
     if (!sidebarObject)
         return snapshot;
 
@@ -37,9 +37,9 @@ QVariantMap MobileHierarchySelectionCoordinator::activeHierarchyBindingSnapshotF
     const int resolvedIndex = sidebarObject->property("resolvedActiveHierarchyIndex").toInt(&ok);
     const int safeIndex = ok ? resolvedIndex : 0;
 
-    QVariant resolvedHierarchyViewModel = sidebarObject->property("resolvedHierarchyViewModel");
+    QVariant resolvedHierarchyController = sidebarObject->property("resolvedHierarchyController");
     const QMetaObject* metaObject = sidebarObject->metaObject();
-    const int methodIndex = metaObject ? metaObject->indexOfMethod("hierarchyViewModelForIndex(QVariant)") : -1;
+    const int methodIndex = metaObject ? metaObject->indexOfMethod("hierarchyControllerForIndex(QVariant)") : -1;
     if (methodIndex >= 0)
     {
         QVariant returnedValue;
@@ -48,20 +48,20 @@ QVariantMap MobileHierarchySelectionCoordinator::activeHierarchyBindingSnapshotF
                       Q_RETURN_ARG(QVariant, returnedValue),
                       Q_ARG(QVariant, QVariant(safeIndex)));
         if (returnedValue.isValid())
-            resolvedHierarchyViewModel = returnedValue;
+            resolvedHierarchyController = returnedValue;
     }
 
     snapshot.insert(QStringLiteral("index"), safeIndex);
-    snapshot.insert(QStringLiteral("viewModel"), resolvedHierarchyViewModel);
+    snapshot.insert(QStringLiteral("controller"), resolvedHierarchyController);
     return snapshot;
 }
 
-int MobileHierarchySelectionCoordinator::currentHierarchySelectionIndex(const QVariant& activeContentViewModel, const int preservedSelectionIndex) const
+int MobileHierarchySelectionCoordinator::currentHierarchySelectionIndex(const QVariant& activeContentController, const int preservedSelectionIndex) const
 {
-    QObject* viewModelObject = activeContentViewModel.value<QObject*>();
-    if (!viewModelObject)
+    QObject* controllerObject = activeContentController.value<QObject*>();
+    if (!controllerObject)
         return preservedSelectionIndex;
-    const QVariant selectedIndex = viewModelObject->property("hierarchySelectedIndex");
+    const QVariant selectedIndex = controllerObject->property("hierarchySelectedIndex");
     bool ok = false;
     const int resolvedIndex = selectedIndex.toInt(&ok);
     return ok ? resolvedIndex : preservedSelectionIndex;

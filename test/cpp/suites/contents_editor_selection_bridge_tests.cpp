@@ -82,14 +82,14 @@ void WhatSonCppRegressionTests::contentsEditorSelectionBridge_prefillsSelectedNo
     ensureCoreApplication();
 
     FakeSelectionNoteListModel noteListModel;
-    FakeContentPersistenceViewModel contentViewModel;
+    FakeContentPersistenceController contentController;
     ContentsEditorSelectionBridge selectionBridge;
 
     noteListModel.setNoteBacked(true);
     noteListModel.setCurrentNoteId(QStringLiteral("note-1"));
-    contentViewModel.setNoteBodySourceText(QStringLiteral("note-1"), QStringLiteral("Prefetched body"));
+    contentController.setNoteBodySourceText(QStringLiteral("note-1"), QStringLiteral("Prefetched body"));
 
-    selectionBridge.setContentViewModel(&contentViewModel);
+    selectionBridge.setContentController(&contentController);
     selectionBridge.setNoteListModel(&noteListModel);
     QCoreApplication::processEvents();
 
@@ -105,15 +105,15 @@ void WhatSonCppRegressionTests::contentsEditorSelectionBridge_treatsDirectEmptyS
     ensureCoreApplication();
 
     FakeSelectionNoteListModel noteListModel;
-    FakeContentPersistenceViewModel contentViewModel;
+    FakeContentPersistenceController contentController;
     ContentsEditorSelectionBridge selectionBridge;
 
     noteListModel.setNoteBacked(true);
     noteListModel.setCurrentNoteId(QStringLiteral("note-empty"));
-    contentViewModel.setNoteDirectoryPath(QStringLiteral("note-empty"), QStringLiteral("/tmp/note-empty"));
-    contentViewModel.setNoteBodySourceText(QStringLiteral("note-empty"), QString());
+    contentController.setNoteDirectoryPath(QStringLiteral("note-empty"), QStringLiteral("/tmp/note-empty"));
+    contentController.setNoteBodySourceText(QStringLiteral("note-empty"), QString());
 
-    selectionBridge.setContentViewModel(&contentViewModel);
+    selectionBridge.setContentController(&contentController);
     selectionBridge.setNoteListModel(&noteListModel);
     QCoreApplication::processEvents();
 
@@ -214,16 +214,16 @@ void WhatSonCppRegressionTests::contentsEditorSelectionBridge_reloadsBodyWhenCom
     ensureCoreApplication();
 
     FakeCurrentNoteEntryOnlyListModel noteListModel;
-    FakeContentPersistenceViewModel contentViewModel;
+    FakeContentPersistenceController contentController;
     ContentsEditorSelectionBridge selectionBridge;
 
     QVariantMap currentNoteEntry;
     currentNoteEntry.insert(QStringLiteral("noteId"), QStringLiteral("note-1"));
     currentNoteEntry.insert(QStringLiteral("primaryText"), QStringLiteral("First note"));
     noteListModel.setCurrentNoteEntry(currentNoteEntry);
-    contentViewModel.setNoteBodySourceText(QStringLiteral("note-1"), QStringLiteral("Body 1"));
+    contentController.setNoteBodySourceText(QStringLiteral("note-1"), QStringLiteral("Body 1"));
 
-    selectionBridge.setContentViewModel(&contentViewModel);
+    selectionBridge.setContentController(&contentController);
     selectionBridge.setNoteListModel(&noteListModel);
     QCoreApplication::processEvents();
 
@@ -232,7 +232,7 @@ void WhatSonCppRegressionTests::contentsEditorSelectionBridge_reloadsBodyWhenCom
     QCOMPARE(selectionBridge.selectedNoteBodyText(), QStringLiteral("Body 1"));
     QVERIFY(selectionBridge.selectedNoteBodyResolved());
 
-    contentViewModel.setNoteBodySourceText(QStringLiteral("note-1"), QStringLiteral("Body 2"));
+    contentController.setNoteBodySourceText(QStringLiteral("note-1"), QStringLiteral("Body 2"));
     currentNoteEntry.insert(QStringLiteral("primaryText"), QStringLiteral("Renamed note"));
     noteListModel.setCurrentNoteEntry(currentNoteEntry);
     QCoreApplication::processEvents();
@@ -260,16 +260,16 @@ void WhatSonCppRegressionTests::contentsEditorSelectionBridge_updatesBodySnapsho
     QVERIFY2(!noteDirectoryPath.isEmpty(), qPrintable(errorMessage));
 
     FakeSelectionNoteListModel noteListModel;
-    FakeContentPersistenceViewModel contentViewModel;
+    FakeContentPersistenceController contentController;
     ContentsEditorSelectionBridge selectionBridge;
 
     noteListModel.setNoteBacked(true);
     noteListModel.setCurrentNoteId(QStringLiteral("note-1"));
     noteListModel.setCurrentNoteDirectoryPath(noteDirectoryPath);
-    contentViewModel.setNoteDirectoryPath(QStringLiteral("note-1"), noteDirectoryPath);
-    contentViewModel.setNoteBodySourceText(QStringLiteral("note-1"), QStringLiteral("Old body"));
+    contentController.setNoteDirectoryPath(QStringLiteral("note-1"), noteDirectoryPath);
+    contentController.setNoteBodySourceText(QStringLiteral("note-1"), QStringLiteral("Old body"));
 
-    selectionBridge.setContentViewModel(&contentViewModel);
+    selectionBridge.setContentController(&contentController);
     selectionBridge.setNoteListModel(&noteListModel);
     QCoreApplication::processEvents();
 

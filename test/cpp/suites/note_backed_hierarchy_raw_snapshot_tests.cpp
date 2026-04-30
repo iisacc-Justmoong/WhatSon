@@ -24,11 +24,11 @@ void WhatSonCppRegressionTests::contentsEditorSelectionBridge_prefillsSelectedNo
 void WhatSonCppRegressionTests::noteBackedHierarchyNoteLists_preserveRawBodySnapshotForEditorBootstrap()
 {
     const QString bookmarksSource = readUtf8SourceFile(
-        QStringLiteral("src/app/viewmodel/hierarchy/bookmarks/BookmarksHierarchyViewModel.cpp"));
+        QStringLiteral("src/app/models/file/hierarchy/bookmarks/BookmarksHierarchyController.cpp"));
     const QString projectsSource = readUtf8SourceFile(
-        QStringLiteral("src/app/viewmodel/hierarchy/projects/ProjectsHierarchyViewModel.cpp"));
+        QStringLiteral("src/app/models/file/hierarchy/projects/ProjectsHierarchyController.cpp"));
     const QString progressSource = readUtf8SourceFile(
-        QStringLiteral("src/app/viewmodel/hierarchy/progress/ProgressHierarchyViewModel.cpp"));
+        QStringLiteral("src/app/models/file/hierarchy/progress/ProgressHierarchyController.cpp"));
 
     QVERIFY(!bookmarksSource.isEmpty());
     QVERIFY(!projectsSource.isEmpty());

@@ -4,8 +4,8 @@ void WhatSonCppRegressionTests::noteListModelContractBridge_resolvesHierarchyBou
 {
     ensureCoreApplication();
 
-    FakeHierarchyViewModel libraryViewModel(QStringLiteral("library"));
-    FakeHierarchyViewModel resourcesViewModel(QStringLiteral("resources"));
+    FakeHierarchyController libraryController(QStringLiteral("library"));
+    FakeHierarchyController resourcesController(QStringLiteral("resources"));
     FakeSelectionNoteListModel libraryNoteListModel;
     FakeSelectionNoteListModel resourcesNoteListModel;
     NoteListModelContractBridge bridge;
@@ -18,17 +18,17 @@ void WhatSonCppRegressionTests::noteListModelContractBridge_resolvesHierarchyBou
     resourcesNoteListModel.setCurrentNoteId(QStringLiteral("resource-note"));
     resourcesNoteListModel.setSearchText(QStringLiteral("resource-query"));
 
-    libraryViewModel.setNoteListModelObject(&libraryNoteListModel);
-    resourcesViewModel.setNoteListModelObject(&resourcesNoteListModel);
+    libraryController.setNoteListModelObject(&libraryNoteListModel);
+    resourcesController.setNoteListModelObject(&resourcesNoteListModel);
 
-    QQmlEngine::setObjectOwnership(&libraryViewModel, QQmlEngine::JavaScriptOwnership);
-    QQmlEngine::setObjectOwnership(&resourcesViewModel, QQmlEngine::JavaScriptOwnership);
+    QQmlEngine::setObjectOwnership(&libraryController, QQmlEngine::JavaScriptOwnership);
+    QQmlEngine::setObjectOwnership(&resourcesController, QQmlEngine::JavaScriptOwnership);
     QQmlEngine::setObjectOwnership(&libraryNoteListModel, QQmlEngine::JavaScriptOwnership);
     QQmlEngine::setObjectOwnership(&resourcesNoteListModel, QQmlEngine::JavaScriptOwnership);
 
     QSignalSpy noteListModelChangedSpy(&bridge, &NoteListModelContractBridge::noteListModelChanged);
 
-    bridge.setHierarchyViewModel(&resourcesViewModel);
+    bridge.setHierarchyController(&resourcesController);
 
     QCOMPARE(bridge.noteListModel(), static_cast<QObject*>(&resourcesNoteListModel));
     QVERIFY(bridge.hasNoteListModel());
@@ -36,14 +36,14 @@ void WhatSonCppRegressionTests::noteListModelContractBridge_resolvesHierarchyBou
     QVERIFY(bridge.currentIndexContractAvailable());
     QCOMPARE(bridge.currentIndex(), 7);
     QCOMPARE(bridge.currentNoteId(), QStringLiteral("resource-note"));
-    QCOMPARE(QQmlEngine::objectOwnership(&resourcesViewModel), QQmlEngine::CppOwnership);
+    QCOMPARE(QQmlEngine::objectOwnership(&resourcesController), QQmlEngine::CppOwnership);
     QCOMPARE(QQmlEngine::objectOwnership(&resourcesNoteListModel), QQmlEngine::CppOwnership);
     QVERIFY(bridge.applySearchText(QStringLiteral("resources-filter")));
     QCOMPARE(resourcesNoteListModel.searchText(), QStringLiteral("resources-filter"));
     QVERIFY(bridge.pushCurrentIndex(3));
     QCOMPARE(resourcesNoteListModel.currentIndex(), 3);
 
-    bridge.setHierarchyViewModel(&libraryViewModel);
+    bridge.setHierarchyController(&libraryController);
 
     QCOMPARE(bridge.noteListModel(), static_cast<QObject*>(&libraryNoteListModel));
     QVERIFY(bridge.hasNoteListModel());
@@ -51,7 +51,7 @@ void WhatSonCppRegressionTests::noteListModelContractBridge_resolvesHierarchyBou
     QVERIFY(bridge.currentIndexContractAvailable());
     QCOMPARE(bridge.currentIndex(), 2);
     QCOMPARE(bridge.currentNoteId(), QStringLiteral("library-note"));
-    QCOMPARE(QQmlEngine::objectOwnership(&libraryViewModel), QQmlEngine::CppOwnership);
+    QCOMPARE(QQmlEngine::objectOwnership(&libraryController), QQmlEngine::CppOwnership);
     QCOMPARE(QQmlEngine::objectOwnership(&libraryNoteListModel), QQmlEngine::CppOwnership);
     QVERIFY(bridge.applySearchText(QStringLiteral("library-filter")));
     QCOMPARE(libraryNoteListModel.searchText(), QStringLiteral("library-filter"));
@@ -65,8 +65,8 @@ void WhatSonCppRegressionTests::noteListModelContractBridge_prefersExplicitRowsA
 {
     ensureCoreApplication();
 
-    FakeHierarchyViewModel libraryViewModel(QStringLiteral("library"));
-    FakeHierarchyViewModel resourcesViewModel(QStringLiteral("resources"));
+    FakeHierarchyController libraryController(QStringLiteral("library"));
+    FakeHierarchyController resourcesController(QStringLiteral("resources"));
     LibraryNoteListModel libraryNoteListModel;
     ResourcesListModel resourcesNoteListModel;
     NoteListModelContractBridge bridge;
@@ -88,15 +88,15 @@ void WhatSonCppRegressionTests::noteListModelContractBridge_prefersExplicitRowsA
     resourceItem.tags = {QStringLiteral(".png")};
     resourcesNoteListModel.setItems({resourceItem});
 
-    libraryViewModel.setNoteListModelObject(&libraryNoteListModel);
-    resourcesViewModel.setNoteListModelObject(&resourcesNoteListModel);
+    libraryController.setNoteListModelObject(&libraryNoteListModel);
+    resourcesController.setNoteListModelObject(&resourcesNoteListModel);
 
-    QQmlEngine::setObjectOwnership(&libraryViewModel, QQmlEngine::JavaScriptOwnership);
-    QQmlEngine::setObjectOwnership(&resourcesViewModel, QQmlEngine::JavaScriptOwnership);
+    QQmlEngine::setObjectOwnership(&libraryController, QQmlEngine::JavaScriptOwnership);
+    QQmlEngine::setObjectOwnership(&resourcesController, QQmlEngine::JavaScriptOwnership);
     QQmlEngine::setObjectOwnership(&libraryNoteListModel, QQmlEngine::JavaScriptOwnership);
     QQmlEngine::setObjectOwnership(&resourcesNoteListModel, QQmlEngine::JavaScriptOwnership);
 
-    bridge.setHierarchyViewModel(&resourcesViewModel);
+    bridge.setHierarchyController(&resourcesController);
     bridge.setNoteListModel(&resourcesNoteListModel);
 
     QCOMPARE(bridge.noteListModel(), static_cast<QObject*>(&resourcesNoteListModel));
@@ -109,7 +109,7 @@ void WhatSonCppRegressionTests::noteListModelContractBridge_prefersExplicitRowsA
     QCOMPARE(resourceRow.value(QStringLiteral("folders")).toStringList(), QStringList{QStringLiteral("Image")});
     QCOMPARE(resourceRow.value(QStringLiteral("tags")).toStringList(), QStringList{QStringLiteral(".png")});
 
-    bridge.setHierarchyViewModel(&libraryViewModel);
+    bridge.setHierarchyController(&libraryController);
     bridge.setNoteListModel(&libraryNoteListModel);
 
     QCOMPARE(bridge.noteListModel(), static_cast<QObject*>(&libraryNoteListModel));

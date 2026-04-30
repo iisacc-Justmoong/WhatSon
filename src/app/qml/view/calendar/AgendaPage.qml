@@ -7,26 +7,26 @@ import LVRS 1.0 as LV
 Rectangle {
     id: agendaPage
 
-    readonly property var allDayModels: agendaVm && agendaVm.allDayEvents ? agendaVm.allDayEvents : []
-    readonly property var locationModel: agendaVm && agendaVm.location ? agendaVm.location : ({})
-    readonly property var summaryModel: agendaVm && agendaVm.summary ? agendaVm.summary : ({})
-    readonly property var agendaItemModels: agendaVm && agendaVm.agendaItems ? agendaVm.agendaItems : []
-    readonly property var timedModels: agendaVm && agendaVm.timedEvents ? agendaVm.timedEvents : []
-    readonly property var agendaVm: agendaViewModel
-    property var agendaViewModel: null
+    readonly property var allDayModels: agendaRuntimeController && agendaRuntimeController.allDayEvents ? agendaRuntimeController.allDayEvents : []
+    readonly property var locationModel: agendaRuntimeController && agendaRuntimeController.location ? agendaRuntimeController.location : ({})
+    readonly property var summaryModel: agendaRuntimeController && agendaRuntimeController.summary ? agendaRuntimeController.summary : ({})
+    readonly property var agendaItemModels: agendaRuntimeController && agendaRuntimeController.agendaItems ? agendaRuntimeController.agendaItems : []
+    readonly property var timedModels: agendaRuntimeController && agendaRuntimeController.timedEvents ? agendaRuntimeController.timedEvents : []
+    readonly property var agendaRuntimeController: agendaController
+    property var agendaController: null
 
     signal noteOpenRequested(string noteId)
     signal viewHookRequested(string reason)
 
     function requestViewHook(reason) {
         const hookReason = reason !== undefined ? String(reason) : "manual";
-        if (agendaVm && agendaVm.requestAgendaView)
-            agendaVm.requestAgendaView(hookReason);
+        if (agendaRuntimeController && agendaRuntimeController.requestAgendaView)
+            agendaRuntimeController.requestAgendaView(hookReason);
         viewHookRequested(hookReason);
     }
     function jumpToToday() {
-        if (agendaVm && agendaVm.setDisplayedDateIso)
-            agendaVm.setDisplayedDateIso(Qt.formatDateTime(new Date(), "yyyy-MM-dd"));
+        if (agendaRuntimeController && agendaRuntimeController.setDisplayedDateIso)
+            agendaRuntimeController.setDisplayedDateIso(Qt.formatDateTime(new Date(), "yyyy-MM-dd"));
         agendaPage.requestViewHook("today");
     }
     function summaryCountValue(key) {
@@ -41,9 +41,9 @@ Rectangle {
         return text.length > 0 ? text : fallback;
     }
     function toggleAgendaItem(agendaItemModel) {
-        if (!agendaVm || !agendaVm.toggleAgendaItemCompleted || !agendaItemModel || agendaItemModel.id === undefined)
+        if (!agendaRuntimeController || !agendaRuntimeController.toggleAgendaItemCompleted || !agendaItemModel || agendaItemModel.id === undefined)
             return;
-        agendaVm.toggleAgendaItemCompleted(String(agendaItemModel.id));
+        agendaRuntimeController.toggleAgendaItemCompleted(String(agendaItemModel.id));
         agendaPage.requestViewHook("toggle-agenda-item");
     }
     function noteIdForEntry(entryModel) {
@@ -94,14 +94,14 @@ Rectangle {
                         Layout.alignment: Qt.AlignVCenter
 
                         onPreviousRequested: {
-                            if (agendaVm && agendaVm.shiftDay)
-                                agendaVm.shiftDay(-1);
+                            if (agendaPage.agendaRuntimeController && agendaPage.agendaRuntimeController.shiftDay)
+                                agendaPage.agendaRuntimeController.shiftDay(-1);
                             agendaPage.requestViewHook("previous-day");
                         }
                         onTodayRequested: agendaPage.jumpToToday()
                         onNextRequested: {
-                            if (agendaVm && agendaVm.shiftDay)
-                                agendaVm.shiftDay(1);
+                            if (agendaPage.agendaRuntimeController && agendaPage.agendaRuntimeController.shiftDay)
+                                agendaPage.agendaRuntimeController.shiftDay(1);
                             agendaPage.requestViewHook("next-day");
                         }
                     }
@@ -109,7 +109,7 @@ Rectangle {
                         Layout.alignment: Qt.AlignVCenter
                         color: LV.Theme.titleHeaderColor
                         font.weight: Font.Medium
-                        text: agendaVm && agendaVm.dateLabel ? String(agendaVm.dateLabel) : "Agenda"
+                        text: agendaPage.agendaRuntimeController && agendaPage.agendaRuntimeController.dateLabel ? String(agendaPage.agendaRuntimeController.dateLabel) : "Agenda"
                     }
                     Item {
                         Layout.fillWidth: true

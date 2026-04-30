@@ -47,7 +47,7 @@ void WhatSonCppRegressionTests::mobileChrome_usesSharedFigmaControlSurfaceColor(
     QVERIFY(mobileHierarchyPageSource.contains(
         QStringLiteral("selectionCoordinator.activeHierarchyBindingSnapshotFromSidebar(")));
     QVERIFY(mobileHierarchyPageSource.contains(
-        QStringLiteral("mobileHierarchyPage.sidebarHierarchyViewModel.activeNoteListModel")));
+        QStringLiteral("mobileHierarchyPage.sidebarHierarchyController.activeNoteListModel")));
     QVERIFY(!mobileHierarchyPageSource.contains(
         QStringLiteral("activeNoteListModelResolver")));
     QVERIFY(!mobileHierarchyPageSource.contains(
@@ -112,35 +112,35 @@ void WhatSonCppRegressionTests::mobileHierarchyRouteStateStore_tracksNormalizedS
 void WhatSonCppRegressionTests::mobileHierarchySelectionCoordinator_prefersExplicitSidebarBindingsAndFallbacks()
 {
     MobileHierarchySelectionCoordinator coordinator;
-    FakeHierarchyViewModel propertyViewModel(QStringLiteral("property"));
-    FakeHierarchyViewModel invokedViewModel(QStringLiteral("invoked"));
+    FakeHierarchyController propertyController(QStringLiteral("property"));
+    FakeHierarchyController invokedController(QStringLiteral("invoked"));
     FakeMobileSidebarBindingSource sidebarBindingSource;
 
     sidebarBindingSource.setResolvedActiveHierarchyIndex(3);
-    sidebarBindingSource.setResolvedHierarchyViewModel(
-        QVariant::fromValue(static_cast<QObject*>(&propertyViewModel)));
-    sidebarBindingSource.setHierarchyViewModelForIndex(3, &invokedViewModel);
+    sidebarBindingSource.setResolvedHierarchyController(
+        QVariant::fromValue(static_cast<QObject*>(&propertyController)));
+    sidebarBindingSource.setHierarchyControllerForIndex(3, &invokedController);
 
     const QVariantMap bindingSnapshot = coordinator.activeHierarchyBindingSnapshotFromSidebar(
         QVariant::fromValue(static_cast<QObject*>(&sidebarBindingSource)));
     QCOMPARE(bindingSnapshot.value(QStringLiteral("index")).toInt(), 3);
     QCOMPARE(
-        bindingSnapshot.value(QStringLiteral("viewModel")).value<QObject*>(),
-        static_cast<QObject*>(&invokedViewModel));
+        bindingSnapshot.value(QStringLiteral("controller")).value<QObject*>(),
+        static_cast<QObject*>(&invokedController));
 
-    QObject activeContentViewModel;
-    activeContentViewModel.setProperty("hierarchySelectedIndex", 8);
+    QObject activeContentController;
+    activeContentController.setProperty("hierarchySelectedIndex", 8);
     QCOMPARE(
         coordinator.currentHierarchySelectionIndex(
-            QVariant::fromValue(&activeContentViewModel),
+            QVariant::fromValue(&activeContentController),
             2),
         8);
 
-    QObject invalidContentViewModel;
-    invalidContentViewModel.setProperty("hierarchySelectedIndex", QStringLiteral("not-a-number"));
+    QObject invalidContentController;
+    invalidContentController.setProperty("hierarchySelectedIndex", QStringLiteral("not-a-number"));
     QCOMPARE(
         coordinator.currentHierarchySelectionIndex(
-            QVariant::fromValue(&invalidContentViewModel),
+            QVariant::fromValue(&invalidContentController),
             5),
         5);
     QCOMPARE(coordinator.currentHierarchySelectionIndex(QVariant(), 7), 7);

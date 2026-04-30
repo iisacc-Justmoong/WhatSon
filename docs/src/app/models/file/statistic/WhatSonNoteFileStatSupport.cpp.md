@@ -37,4 +37,4 @@ This helper owns the derived `.wsnhead <fileStat>` rules.
   `.wshub` package and skipping hidden staged-delete directories.
 - The save-path split therefore becomes:
   - file store hot path: rewrite local body-derived stats immediately
-  - higher-level coordinator/viewmodel path: pay the hub scan later when `backlinkByCount` must be refreshed
+  - higher-level coordinator/controller path: pay the hub scan later when `backlinkByCount` must be refreshed

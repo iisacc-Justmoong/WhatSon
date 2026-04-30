@@ -28,7 +28,7 @@
 
 ## Recent Notes
 - Startup/reload snapshot application is now all-or-nothing across the requested domain set.
-- LVRS `BootstrapParallel` now owns the worker pool for requested domain loads. Live viewmodels and the shared
+- LVRS `BootstrapParallel` now owns the worker pool for requested domain loads. Live controllers and the shared
   `WhatSonHubRuntimeStore` are still updated only after the entire request succeeds.
 - Persisted startup no longer requests any runtime domains before the workspace root is visible. `main.cpp` schedules
   the normal full runtime load as an LVRS `QmlAppLifecycleStage::AfterFirstIdle` bootstrap task.

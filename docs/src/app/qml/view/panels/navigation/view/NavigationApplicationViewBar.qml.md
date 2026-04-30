@@ -25,7 +25,7 @@ The Figma node mapping is:
 ## Interaction Contract
 - Exposes `toggleDetailPanelRequested` and forwards it from `NavigationPreferenceBar`.
 - Exposes `viewHookRequested` and forwards mode-level hook reasons through
-  `panelViewModel.requestViewModelHook(reason)`.
+  `panelController.requestControllerHook(reason)`.
 - Full-mode view-only child bars (`ViewOptionBar`, `ModeBar`, `CalendarBar`) forward their hooks back
   into `requestViewHook(reason)`, so full-mode icons and compact-menu rows share one reason pipeline.
 - Compact menu mirrors full-mode default tools:
@@ -35,9 +35,9 @@ The Figma node mapping is:
   - New File
   - Preferences
 
-## Panel ViewModel Binding
+## Panel Controller Binding
 - Panel key: `navigation.NavigationApplicationViewBar`
-- Binding: `panelViewModelRegistry.panelViewModel("navigation.NavigationApplicationViewBar")`
+- Binding: `panelControllerRegistry.panelController("navigation.NavigationApplicationViewBar")`
 
 ## Notes
 - Full-mode child frames now split the view-only Figma slices into dedicated local files under

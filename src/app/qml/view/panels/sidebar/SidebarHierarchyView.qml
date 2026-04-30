@@ -181,7 +181,7 @@ Rectangle {
     }
     property alias hierarchySelectionAnchorIndex: hierarchySelectionController.selectionAnchorIndex
     property int hierarchySelectionVisualRevision: 0
-    property var hierarchyViewModel: null
+    property var hierarchyController: null
     property string hierarchyViewOptionsTriggerQueuedAction: ""
     readonly property var hierarchyViewOptionsMenuItems: [
         {
@@ -211,7 +211,7 @@ Rectangle {
     readonly property var noteDropHoverItem: sidebarHierarchyView.hierarchyItemForResolvedIndex(sidebarHierarchyView.noteDropHoverIndex)
     readonly property bool noteDropHoverVisible: sidebarHierarchyView.noteDropHoverIndex >= 0 && !!sidebarHierarchyView.noteDropHoverItem
     property color panelColor: "transparent"
-    readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("sidebar.SidebarHierarchyView") : null
+    readonly property var panelController: panelControllerRegistry ? panelControllerRegistry.panelController("sidebar.SidebarHierarchyView") : null
     readonly property bool renameContractAvailable: hierarchyInteractionBridge ? Boolean(hierarchyInteractionBridge.renameContractAvailable) : false
     readonly property bool renameEditingActive: sidebarHierarchyView.editingHierarchyIndex >= 0
     readonly property bool renamePresentationAvailable: sidebarHierarchyView.hierarchyRenameFieldWidth > 0 && (Number(sidebarHierarchyView.editingHierarchyItemRect.height) || 0) > 0
@@ -222,7 +222,7 @@ Rectangle {
     property int searchHeaderVerticalInset: LV.Theme.gap2
     property int searchListGap: LV.Theme.gapNone
     property string searchText: ""
-    readonly property int selectedFolderIndex: hierarchyViewModel ? hierarchyViewModel.hierarchySelectedIndex : -1
+    readonly property int selectedFolderIndex: hierarchyController ? hierarchyController.hierarchySelectedIndex : -1
     property alias selectedHierarchyIndices: hierarchySelectionController.selectedIndices
     readonly property var safeSelectedHierarchyIndices: Array.isArray(sidebarHierarchyView.selectedHierarchyIndices) ? sidebarHierarchyView.selectedHierarchyIndices : []
     readonly property var selectedHierarchyOverlayRects: {
@@ -235,8 +235,8 @@ Rectangle {
     property int toolbarFrameWidth: 200
     property var toolbarIconNames: ["nodeslibraryFolder", "generalprojectStructure", "bookmarksbookmarksList", "vcscurrentBranch", "imageToImage", "chartBar", "dataView", "dataFile"]
     readonly property var toolbarItems: {
-        if (sidebarHierarchyView.hierarchyViewModel && sidebarHierarchyView.hierarchyViewModel.toolbarItems !== undefined)
-            return sidebarHierarchyView.hierarchyViewModel.toolbarItems;
+        if (sidebarHierarchyView.hierarchyController && sidebarHierarchyView.hierarchyController.toolbarItems !== undefined)
+            return sidebarHierarchyView.hierarchyController.toolbarItems;
         var items = [];
         for (var i = 0; i < toolbarIconNames.length; ++i) {
             items.push({
@@ -729,13 +729,13 @@ Rectangle {
     function requestCreateFolder(targetIndex, reason) {
         if (sidebarHierarchyView.renameEditingActive)
             sidebarHierarchyView.cancelHierarchyRename();
-        if (!sidebarHierarchyView.createFolderEnabled || !sidebarHierarchyView.hierarchyViewModel || !sidebarHierarchyView.hierarchyInteractionBridge)
+        if (!sidebarHierarchyView.createFolderEnabled || !sidebarHierarchyView.hierarchyController || !sidebarHierarchyView.hierarchyInteractionBridge)
             return false;
         const explicitTargetIndex = sidebarHierarchyView.normalizedInteger(targetIndex, -1);
         const activeHierarchyItemId = sidebarHierarchyView.normalizedInteger(hierarchyTree.activeListItemId, -1);
         const selectionIndex = explicitTargetIndex >= 0 ? explicitTargetIndex : activeHierarchyItemId;
         if (selectionIndex >= 0) {
-            sidebarHierarchyView.hierarchyViewModel.setHierarchySelectedIndex(selectionIndex);
+            sidebarHierarchyView.hierarchyController.setHierarchySelectedIndex(selectionIndex);
             hierarchySelectionController.setSelectedHierarchyIndices([selectionIndex]);
             hierarchySelectionController.selectionAnchorIndex = selectionIndex;
         }
@@ -755,8 +755,8 @@ Rectangle {
         if (!sidebarHierarchyView.hierarchyInteractionBridge)
             return false;
         const explicitTargetIndex = sidebarHierarchyView.normalizedInteger(targetIndex, -1);
-        if (explicitTargetIndex >= 0 && sidebarHierarchyView.hierarchyViewModel) {
-            sidebarHierarchyView.hierarchyViewModel.setHierarchySelectedIndex(explicitTargetIndex);
+        if (explicitTargetIndex >= 0 && sidebarHierarchyView.hierarchyController) {
+            sidebarHierarchyView.hierarchyController.setHierarchySelectedIndex(explicitTargetIndex);
             hierarchySelectionController.setSelectedHierarchyIndices([explicitTargetIndex]);
             hierarchySelectionController.selectionAnchorIndex = explicitTargetIndex;
         }
@@ -803,19 +803,19 @@ Rectangle {
     function requestHierarchySelection(item, resolvedIndex, modifiers) {
         hierarchySelectionController.requestHierarchySelection(item, resolvedIndex, modifiers);
     }
-    function requestHierarchyViewModelReload(reason) {
+    function requestHierarchyControllerReload(reason) {
         const normalizedReason = reason === undefined || reason === null ? "" : String(reason).trim();
         if (normalizedReason === "hierarchy.nodes.changed")
             return;
-        const hierarchyViewModelObject = sidebarHierarchyView.hierarchyViewModel;
-        if (!hierarchyViewModelObject || hierarchyViewModelObject.requestViewModelHook === undefined)
+        const hierarchyControllerObject = sidebarHierarchyView.hierarchyController;
+        if (!hierarchyControllerObject || hierarchyControllerObject.requestControllerHook === undefined)
             return;
-        hierarchyViewModelObject.requestViewModelHook();
+        hierarchyControllerObject.requestControllerHook();
     }
     function requestViewHook(reason) {
         const hookReason = reason !== undefined ? String(reason) : "manual";
-        if (panelViewModel && panelViewModel.requestViewModelHook)
-            panelViewModel.requestViewModelHook(hookReason);
+        if (panelController && panelController.requestControllerHook)
+            panelController.requestControllerHook(hookReason);
         viewHookRequested();
     }
     function requestViewOptions() {
@@ -923,7 +923,7 @@ Rectangle {
     }
     function syncDisplayedHierarchyModel(forceRefresh) {
         sidebarHierarchyView.captureHierarchyExpansionState(sidebarHierarchyView.displayedHierarchyModel);
-        const projectedModel = sidebarHierarchyView.projectedHierarchyModel(hierarchyViewModel ? hierarchyViewModel.hierarchyNodes : []);
+        const projectedModel = sidebarHierarchyView.projectedHierarchyModel(hierarchyController ? hierarchyController.hierarchyNodes : []);
         const nextModel = sidebarHierarchyView.hierarchyModelWithPreservedExpansion(projectedModel);
         const nextSignature = sidebarHierarchyView.hierarchyModelSignature(nextModel);
         if (!Boolean(forceRefresh) && nextSignature === sidebarHierarchyView.displayedHierarchyModelSignature) {
@@ -976,7 +976,7 @@ Rectangle {
         sidebarHierarchyView.syncDisplayedHierarchyModel(true);
         sidebarHierarchyView.syncHierarchySelectionFromSelectedFolder();
         bookmarkPaletteController.scheduleBookmarkPaletteVisualRefresh();
-        sidebarHierarchyView.requestHierarchyViewModelReload("hierarchy.view.ready");
+        sidebarHierarchyView.requestHierarchyControllerReload("hierarchy.view.ready");
     }
     Keys.onEnterPressed: function (event) {
         if (sidebarHierarchyView.renameEditingActive)
@@ -992,12 +992,12 @@ Rectangle {
         bookmarkPaletteController.scheduleBookmarkPaletteVisualRefresh();
     }
     onHeightChanged: sidebarHierarchyView.invalidateHierarchySelectionVisuals()
-    onHierarchyViewModelChanged: {
+    onHierarchyControllerChanged: {
         sidebarHierarchyView.cancelHierarchyRename();
         sidebarHierarchyView.clearNoteDropPreview();
         sidebarHierarchyView.syncDisplayedHierarchyModel(true);
         sidebarHierarchyView.syncHierarchySelectionFromSelectedFolder();
-        sidebarHierarchyView.requestHierarchyViewModelReload("hierarchy.viewModel.changed");
+        sidebarHierarchyView.requestHierarchyControllerReload("hierarchy.controller.changed");
         Qt.callLater(function () {
             sidebarHierarchyView.syncSelectedHierarchyItem(false);
         });
@@ -1133,18 +1133,18 @@ Rectangle {
         }
 
         function emitHierarchySelectionActivation(item, resolvedIndex) {
-            if (!controller.view || !controller.view.hierarchyViewModel)
+            if (!controller.view || !controller.view.hierarchyController)
                 return;
             const normalizedIndex = controller.view.normalizedInteger(resolvedIndex, -1);
             if (normalizedIndex < 0)
                 return;
             const activationItem = item ? item : controller.view.resolveVisibleHierarchyItem(normalizedIndex);
-            controller.view.hierarchyViewModel.setHierarchySelectedIndex(normalizedIndex);
+            controller.view.hierarchyController.setHierarchySelectedIndex(normalizedIndex);
             controller.view.hierarchyItemActivated(activationItem, normalizedIndex, normalizedIndex);
         }
 
         function requestHierarchySelection(item, resolvedIndex, modifiers) {
-            if (!controller.view || !controller.view.hierarchyViewModel)
+            if (!controller.view || !controller.view.hierarchyController)
                 return;
             const normalizedIndex = controller.view.normalizedInteger(resolvedIndex, -1);
             if (normalizedIndex < 0)
@@ -1205,7 +1205,7 @@ Rectangle {
 
         required property var hierarchyInteractionBridge
         required property var hierarchyRenameField
-        required property var hierarchyViewModel
+        required property var hierarchyController
         required property var hostView
         required property var standardHierarchyModel
 
@@ -1378,8 +1378,8 @@ Rectangle {
                 if (projectedLabel.length)
                     return projectedLabel;
             }
-            if (hierarchyViewModel) {
-                const modelLabel = renameController.leafHierarchyItemLabel(hierarchyViewModel.hierarchyItemLabelAt(selectedIndex), item && item.id !== undefined && item.id !== null ? item.id : "");
+            if (hierarchyController) {
+                const modelLabel = renameController.leafHierarchyItemLabel(hierarchyController.hierarchyItemLabelAt(selectedIndex), item && item.id !== undefined && item.id !== null ? item.id : "");
                 if (modelLabel.length)
                     return modelLabel;
             }
@@ -1742,7 +1742,7 @@ Rectangle {
             bookmarkPaletteController.scheduleBookmarkPaletteVisualRefresh();
         }
 
-        target: sidebarHierarchyView.hierarchyViewModel
+        target: sidebarHierarchyView.hierarchyController
     }
     LV.Hierarchy {
         id: hierarchyTree
@@ -1763,7 +1763,7 @@ Rectangle {
         toolbarItems: []
 
         onListItemActivated: function (item, itemId, index) {
-            if (!sidebarHierarchyView.hierarchyViewModel)
+            if (!sidebarHierarchyView.hierarchyController)
                 return;
             const resolvedActivationIndex = sidebarHierarchyView.resolveHierarchyActivationIndex(item, itemId, index);
             if (resolvedActivationIndex < 0)
@@ -1775,7 +1775,7 @@ Rectangle {
                 sidebarHierarchyView.clearHierarchyPointerSelectionModifiers();
                 if (sidebarHierarchyView.hierarchyActivationPendingSerial !== pendingSerial)
                     return;
-                if (!sidebarHierarchyView.hierarchyViewModel)
+                if (!sidebarHierarchyView.hierarchyController)
                     return;
                 if (sidebarHierarchyView.shouldSuppressHierarchyActivation(item, itemId, index))
                     return;

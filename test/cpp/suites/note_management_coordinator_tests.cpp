@@ -16,11 +16,11 @@ void WhatSonCppRegressionTests::noteManagementCoordinator_reconcilePersistsEdito
         !noteDirectoryPath.isEmpty(),
         qPrintable(QStringLiteral("Failed to create note fixture: %1").arg(createError)));
 
-    FakeContentPersistenceViewModel contentViewModel;
-    contentViewModel.setNoteDirectoryPath(noteId, noteDirectoryPath);
+    FakeContentPersistenceController contentController;
+    contentController.setNoteDirectoryPath(noteId, noteDirectoryPath);
 
     ContentsNoteManagementCoordinator coordinator;
-    coordinator.setContentViewModel(&contentViewModel);
+    coordinator.setContentController(&contentController);
 
     QSignalSpy reconcileSpy(
         &coordinator,
@@ -48,12 +48,12 @@ void WhatSonCppRegressionTests::noteManagementCoordinator_reconcilePersistsEdito
     QVERIFY(reconcileArguments.at(2).toBool());
     QCOMPARE(reconcileArguments.at(3).toString(), QString());
 
-    QCOMPARE(contentViewModel.applyPersistedBodyStateCallCount, 1);
-    QCOMPARE(contentViewModel.lastAppliedNoteId, noteId);
-    QCOMPARE(contentViewModel.lastAppliedBodyPlainText, QStringLiteral("editor-after"));
-    QCOMPARE(contentViewModel.lastAppliedBodySourceText, QStringLiteral("editor-after"));
-    QCOMPARE(contentViewModel.reloadNoteMetadataCallCount, 1);
-    QCOMPARE(contentViewModel.lastReloadedNoteId, noteId);
+    QCOMPARE(contentController.applyPersistedBodyStateCallCount, 1);
+    QCOMPARE(contentController.lastAppliedNoteId, noteId);
+    QCOMPARE(contentController.lastAppliedBodyPlainText, QStringLiteral("editor-after"));
+    QCOMPARE(contentController.lastAppliedBodySourceText, QStringLiteral("editor-after"));
+    QCOMPARE(contentController.reloadNoteMetadataCallCount, 1);
+    QCOMPARE(contentController.lastReloadedNoteId, noteId);
 
     WhatSonLocalNoteFileStore fileStore;
     WhatSonLocalNoteDocument document;
@@ -86,11 +86,11 @@ void WhatSonCppRegressionTests::noteManagementCoordinator_reconcileRefreshesWith
         !noteDirectoryPath.isEmpty(),
         qPrintable(QStringLiteral("Failed to create note fixture: %1").arg(createError)));
 
-    FakeContentPersistenceViewModel contentViewModel;
-    contentViewModel.setNoteDirectoryPath(noteId, noteDirectoryPath);
+    FakeContentPersistenceController contentController;
+    contentController.setNoteDirectoryPath(noteId, noteDirectoryPath);
 
     ContentsNoteManagementCoordinator coordinator;
-    coordinator.setContentViewModel(&contentViewModel);
+    coordinator.setContentController(&contentController);
 
     QSignalSpy reconcileSpy(
         &coordinator,
@@ -118,9 +118,9 @@ void WhatSonCppRegressionTests::noteManagementCoordinator_reconcileRefreshesWith
     QVERIFY(reconcileArguments.at(2).toBool());
     QCOMPARE(reconcileArguments.at(3).toString(), QString());
 
-    QCOMPARE(contentViewModel.applyPersistedBodyStateCallCount, 0);
-    QCOMPARE(contentViewModel.reloadNoteMetadataCallCount, 1);
-    QCOMPARE(contentViewModel.lastReloadedNoteId, noteId);
+    QCOMPARE(contentController.applyPersistedBodyStateCallCount, 0);
+    QCOMPARE(contentController.reloadNoteMetadataCallCount, 1);
+    QCOMPARE(contentController.lastReloadedNoteId, noteId);
 
     WhatSonLocalNoteFileStore fileStore;
     WhatSonLocalNoteDocument document;
@@ -210,11 +210,11 @@ void WhatSonCppRegressionTests::noteManagementCoordinator_loadNoteBodyText_prefe
         !noteDirectoryPathB.isEmpty(),
         qPrintable(QStringLiteral("Failed to create note fixture B: %1").arg(createError)));
 
-    FakeContentPersistenceViewModel contentViewModel;
-    contentViewModel.setNoteDirectoryPath(noteId, noteDirectoryPathA);
+    FakeContentPersistenceController contentController;
+    contentController.setNoteDirectoryPath(noteId, noteDirectoryPathA);
 
     ContentsNoteManagementCoordinator coordinator;
-    coordinator.setContentViewModel(&contentViewModel);
+    coordinator.setContentController(&contentController);
 
     QSignalSpy loadSpy(&coordinator, &ContentsNoteManagementCoordinator::noteBodyTextLoaded);
 

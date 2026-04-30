@@ -46,28 +46,28 @@
 #include "app/models/editor/structure/ContentsStructuredDocumentHost.hpp"
 #include "app/models/editor/structure/ContentsStructuredDocumentMutationPolicy.hpp"
 #include "app/models/editor/tags/ContentsResourceTagTextGenerator.hpp"
-#include "app/viewmodel/hierarchy/IHierarchyViewModel.hpp"
-#include "app/viewmodel/hierarchy/WhatSonHierarchyTreeItemSupport.hpp"
-#include "app/viewmodel/hierarchy/library/LibraryNoteListModel.hpp"
-#include "app/viewmodel/hierarchy/progress/ProgressHierarchyViewModelSupport.hpp"
-#include "app/viewmodel/hierarchy/resources/ResourcesHierarchyViewModel.hpp"
-#include "app/viewmodel/navigationbar/EditorViewModeViewModel.hpp"
-#include "app/viewmodel/navigationbar/EditorViewSectionViewModel.hpp"
-#include "app/viewmodel/navigationbar/EditorViewState.hpp"
-#include "app/viewmodel/navigationbar/NavigationModeSectionViewModel.hpp"
-#include "app/viewmodel/navigationbar/NavigationModeState.hpp"
-#include "app/viewmodel/navigationbar/NavigationModeViewModel.hpp"
-#include "app/viewmodel/onboarding/IOnboardingHubController.hpp"
-#include "app/viewmodel/onboarding/OnboardingRouteBootstrapController.hpp"
-#include "app/viewmodel/detailPanel/session/WhatSonFoldersHierarchySessionService.hpp"
-#include "app/viewmodel/detailPanel/DetailCurrentNoteContextBridge.hpp"
-#include "app/viewmodel/detailPanel/ResourceDetailPanelViewModel.hpp"
-#include "app/viewmodel/hierarchy/resources/ResourcesListModel.hpp"
-#include "app/viewmodel/panel/NoteListModelContractBridge.hpp"
-#include "app/viewmodel/sidebar/HierarchySidebarDomain.hpp"
-#include "app/viewmodel/sidebar/HierarchyViewModelProvider.hpp"
-#include "app/viewmodel/sidebar/IActiveHierarchyContextSource.hpp"
-#include "app/viewmodel/sidebar/SidebarHierarchyViewModel.hpp"
+#include "app/models/file/hierarchy/IHierarchyController.hpp"
+#include "app/models/file/hierarchy/WhatSonHierarchyTreeItemSupport.hpp"
+#include "app/models/file/hierarchy/library/LibraryNoteListModel.hpp"
+#include "app/models/file/hierarchy/progress/ProgressHierarchyControllerSupport.hpp"
+#include "app/models/file/hierarchy/resources/ResourcesHierarchyController.hpp"
+#include "app/models/navigationbar/EditorViewModeController.hpp"
+#include "app/models/navigationbar/EditorViewSectionController.hpp"
+#include "app/models/navigationbar/EditorViewState.hpp"
+#include "app/models/navigationbar/NavigationModeSectionController.hpp"
+#include "app/models/navigationbar/NavigationModeState.hpp"
+#include "app/models/navigationbar/NavigationModeController.hpp"
+#include "app/models/onboarding/IOnboardingHubController.hpp"
+#include "app/models/onboarding/OnboardingRouteBootstrapController.hpp"
+#include "app/models/detailPanel/session/WhatSonFoldersHierarchySessionService.hpp"
+#include "app/models/detailPanel/DetailCurrentNoteContextBridge.hpp"
+#include "app/models/detailPanel/ResourceDetailPanelController.hpp"
+#include "app/models/file/hierarchy/resources/ResourcesListModel.hpp"
+#include "app/models/panel/NoteListModelContractBridge.hpp"
+#include "app/models/sidebar/HierarchySidebarDomain.hpp"
+#include "app/models/sidebar/HierarchyControllerProvider.hpp"
+#include "app/models/sidebar/IActiveHierarchyContextSource.hpp"
+#include "app/models/sidebar/SidebarHierarchyController.hpp"
 
 #include <QAbstractListModel>
 #include <QCoreApplication>
@@ -92,13 +92,13 @@
 #include <memory>
 #include <vector>
 
-class FakeHierarchyViewModel final : public IHierarchyViewModel
+class FakeHierarchyController final : public IHierarchyController
 {
     Q_OBJECT
 
 public:
-    explicit FakeHierarchyViewModel(const QString& labelPrefix, QObject* parent = nullptr)
-        : IHierarchyViewModel(parent)
+    explicit FakeHierarchyController(const QString& labelPrefix, QObject* parent = nullptr)
+        : IHierarchyController(parent)
         , m_labelPrefix(labelPrefix)
         , m_itemModel(new QObject(this))
         , m_noteListModel(new QObject(this))
@@ -247,12 +247,12 @@ public:
     QString lastFailureMessage;
 };
 
-class FakeContentPersistenceViewModel final : public QObject
+class FakeContentPersistenceController final : public QObject
 {
     Q_OBJECT
 
 public:
-    explicit FakeContentPersistenceViewModel(QObject* parent = nullptr)
+    explicit FakeContentPersistenceController(QObject* parent = nullptr)
         : QObject(parent)
     {
     }
@@ -319,8 +319,8 @@ class FakeMobileSidebarBindingSource final : public QObject
         int resolvedActiveHierarchyIndex READ resolvedActiveHierarchyIndex WRITE setResolvedActiveHierarchyIndex NOTIFY
             resolvedActiveHierarchyIndexChanged)
     Q_PROPERTY(
-        QVariant resolvedHierarchyViewModel READ resolvedHierarchyViewModel WRITE setResolvedHierarchyViewModel NOTIFY
-            resolvedHierarchyViewModelChanged)
+        QVariant resolvedHierarchyController READ resolvedHierarchyController WRITE setResolvedHierarchyController NOTIFY
+            resolvedHierarchyControllerChanged)
 
 public:
     explicit FakeMobileSidebarBindingSource(QObject* parent = nullptr)
@@ -344,28 +344,28 @@ public:
         emit resolvedActiveHierarchyIndexChanged();
     }
 
-    QVariant resolvedHierarchyViewModel() const
+    QVariant resolvedHierarchyController() const
     {
-        return m_resolvedHierarchyViewModel;
+        return m_resolvedHierarchyController;
     }
 
-    void setResolvedHierarchyViewModel(const QVariant& value)
+    void setResolvedHierarchyController(const QVariant& value)
     {
-        if (m_resolvedHierarchyViewModel == value)
+        if (m_resolvedHierarchyController == value)
         {
             return;
         }
 
-        m_resolvedHierarchyViewModel = value;
-        emit resolvedHierarchyViewModelChanged();
+        m_resolvedHierarchyController = value;
+        emit resolvedHierarchyControllerChanged();
     }
 
-    void setHierarchyViewModelForIndex(const int index, QObject* viewModel)
+    void setHierarchyControllerForIndex(const int index, QObject* controller)
     {
-        m_indexedHierarchyViewModels.insert(index, QVariant::fromValue(viewModel));
+        m_indexedHierarchyControllers.insert(index, QVariant::fromValue(controller));
     }
 
-    Q_INVOKABLE QVariant hierarchyViewModelForIndex(const QVariant& hierarchyIndex) const
+    Q_INVOKABLE QVariant hierarchyControllerForIndex(const QVariant& hierarchyIndex) const
     {
         bool ok = false;
         const int resolvedIndex = hierarchyIndex.toInt(&ok);
@@ -374,17 +374,17 @@ public:
             return {};
         }
 
-        return m_indexedHierarchyViewModels.value(resolvedIndex);
+        return m_indexedHierarchyControllers.value(resolvedIndex);
     }
 
 signals:
     void resolvedActiveHierarchyIndexChanged();
-    void resolvedHierarchyViewModelChanged();
+    void resolvedHierarchyControllerChanged();
 
 private:
     int m_resolvedActiveHierarchyIndex = 0;
-    QVariant m_resolvedHierarchyViewModel;
-    QHash<int, QVariant> m_indexedHierarchyViewModels;
+    QVariant m_resolvedHierarchyController;
+    QHash<int, QVariant> m_indexedHierarchyControllers;
 };
 
 class FakeSelectionNoteListModel final : public QObject
@@ -927,21 +927,22 @@ private slots:
     void iosXcodeprojExport_keepsBuildIosScriptOnHighLevelCmakeOptions();
     void appLaunchSupport_requiresMountedHubForStartupWorkspace();
     void qmlLaunchSupport_routesRootLoadingThroughLvrsAppEntry();
-    void qmlContextBinder_usesLvrsBindPlanForContextAndViewModels();
+    void qmlContextBinder_usesLvrsBindPlanForWorkspaceContextObjects();
     void qmlInternalTypeRegistrar_usesLvrsManifestRegistration();
     void foregroundServiceGate_startsSchedulerAndPermissionsAfterVisibleWorkspace();
     void startupRuntimeLoad_usesLvrsAfterFirstIdleLifecycleTask();
     void runtimeParallelLoader_usesLvrsBootstrapParallelForDomainLoads();
     void sidebarSelectionStore_normalizesIndicesAndSuppressesDuplicateSignals();
-    void hierarchyViewModelProvider_normalizesMappingsAndAvoidsDuplicateSignals();
+    void hierarchyControllerProvider_normalizesMappingsAndAvoidsDuplicateSignals();
     void architecturePolicyLock_blocksMutableWiringAfterLock();
-    void hierarchyViewModelProvider_rejectsMappingMutationAfterLock();
-    void sidebarHierarchyViewModel_preservesFallbackAcrossStoreAttachDetach();
-    void sidebarHierarchyViewModel_rejectsSelectionStoreMutationAfterLock();
-    void sidebarHierarchyViewModel_reactsToProviderMappingChanges();
+    void hierarchyControllerProvider_rejectsMappingMutationAfterLock();
+    void sidebarHierarchyController_preservesFallbackAcrossStoreAttachDetach();
+    void sidebarHierarchyController_rejectsSelectionStoreMutationAfterLock();
+    void sidebarHierarchyController_reactsToProviderMappingChanges();
     void noteListModelContractBridge_rejectsWiringMutationAfterLock();
     void detailCurrentNoteContextBridge_rejectsWiringMutationAfterLock();
     void onboardingRouteBootstrapController_rejectsHubControllerMutationAfterLock();
+    void sourceTree_forbidsDeprecatedPresentationLayerVocabulary();
     void sidebarAndSelectionBridge_forceCppOwnershipAcrossHierarchySwitchBindings();
     void contentsEditorSelectionBridge_tracksSelectionFromCurrentIndexSignal();
     void contentsEditorSelectionBridge_preservesNoSelectionSentinelBeforeIndexCommit();
@@ -962,8 +963,8 @@ private slots:
     void noteListModelContractBridge_exposesCurrentNoteEntryFromCurrentSelection();
     void libraryNoteListModel_emitsCurrentNoteEntryChangedWhenInitialSelectionMaterializes();
     void libraryNoteListModel_emitsCurrentNoteEntryChangedWhenSelectedRowReplacesCurrentSelection();
-    void navigationModeViewModel_cyclesActiveSections();
-    void editorViewModeViewModel_cyclesActiveSections();
+    void navigationModeController_cyclesActiveSections();
+    void editorViewModeController_cyclesActiveSections();
     void onboardingRouteBootstrapController_syncsEmbeddedOnboardingLifecycle();
     void clipboardImportFileNamePolicy_generatesRandom32CharacterAlphaNumericPngNames();
     void unixTimeAnalyzer_reportsStableEpochFields();
@@ -974,7 +975,7 @@ private slots:
     void resourcePackageSupport_normalizesTerminalFormatForMultiDotAssetNames();
     void unusedResourcesSensor_reportsHubPackagesMissingFromAllNoteEmbeddings();
     void unusedResourcesSensor_refreshesAfterRawBodyEmbedsAResource();
-    void resourcesImportViewModel_wiresAnnotationBitmapGenerationIntoPackageCreation();
+    void resourcesImportController_wiresAnnotationBitmapGenerationIntoPackageCreation();
     void resourceTagTextGenerator_and_noteFolderSemantics_normalizeDescriptorsAndXml();
     void editorTagsBoundary_groupsNonFormatBodyTagResponsibilities();
     void contentsCalloutBackend_exitsOnPlainEnterAndSplitsAtCursor();
@@ -982,8 +983,8 @@ private slots:
     void foldersHierarchyParser_escapesLiteralSlashLabelsIntoSingleSegments();
     void foldersHierarchySessionService_preservesEscapedLiteralSlashFolderPaths();
     void sidebarHierarchyRenameController_preservesLiteralSlashFolderLabels();
-    void resourcesHierarchyViewModel_defaultsSelectionToImageAndFiltersList();
-    void resourcesHierarchyViewModel_collapsesMultiDotImageFormatsIntoTerminalSuffix();
+    void resourcesHierarchyController_defaultsSelectionToImageAndFiltersList();
+    void resourcesHierarchyController_collapsesMultiDotImageFormatsIntoTerminalSuffix();
     void structuredCollectionPolicy_normalizesEntriesAndPrefersResolvedMatches();
     void structuredCollectionPolicy_normalizesQmlJsArrayEntries();
     void structuredCollectionPolicy_flattensImplicitInteractiveTextBlocksIntoSingleGroups();
@@ -1002,10 +1003,10 @@ private slots:
     void logicalLineLayoutSupport_fallsBackWhenLiveEditorGeometryIsUnavailable();
     void editorSurfaceModeSupport_switchesToResourceEditorForResourceListModels();
     void qmlResourceEditorView_staysTransparentAndViewerOnly();
-    void resourceDetailPanelViewModel_tracksCurrentResourceSelection();
+    void resourceDetailPanelController_tracksCurrentResourceSelection();
     void detailCurrentNoteContextBridge_prefersCurrentNoteEntryAndClearsNonNoteBackedSelection();
     void detailCurrentNoteContextBridge_clearsReadableEmptyCurrentNoteEntrySelection();
-    void detailPanelRouting_separatesNoteAndResourceViewsAndViewModels();
+    void detailPanelRouting_separatesNoteAndResourceViewsAndControllers();
     void qmlContextMenus_treatRightClickAndLongPressAsSymmetricPointerTriggers();
     void qmlHierarchyNoteDrop_keepsDropSurfaceOpenUntilCapabilityRejectsTarget();
     void qmlHierarchyExpansion_preservesUserControlledStateAcrossModelRefreshes();

@@ -183,3 +183,81 @@ void WhatSonCppRegressionTests::sourceTree_usesRepositoryAbsoluteProjectIncludes
 
     QVERIFY2(violations.isEmpty(), qPrintable(violations.join(QLatin1Char('\n'))));
 }
+
+void WhatSonCppRegressionTests::sourceTree_forbidsDeprecatedPresentationLayerVocabulary()
+{
+    const QDir repositoryRoot(repositoryRootPath());
+    QVERIFY(repositoryRoot.exists());
+    QVERIFY2(
+        !QDir(repositoryRoot.filePath(QStringLiteral("src/app/") + QStringLiteral("viewmodel"))).exists(),
+        "src/app/viewmodel must not be reintroduced");
+
+    const QStringList forbiddenFragments{
+        QStringLiteral("View") + QStringLiteral("Model"),
+        QStringLiteral("view") + QStringLiteral("Model"),
+        QStringLiteral("view") + QStringLiteral("model"),
+        QStringLiteral("LV.") + QStringLiteral("ViewModels"),
+        QStringLiteral("LV.") + QStringLiteral("Controllers"),
+        QStringLiteral("Qml") + QStringLiteral("ViewModel") + QStringLiteral("Binding"),
+        QStringLiteral("Qml") + QStringLiteral("Controller") + QStringLiteral("Binding"),
+        QStringLiteral("app/") + QStringLiteral("viewmodel"),
+        QStringLiteral("src/app/") + QStringLiteral("viewmodel")
+    };
+    const QRegularExpression qmlAliasPattern(QStringLiteral(R"(\b[A-Za-z_][A-Za-z0-9_]*Vm\b|\bvm\b)"));
+
+    QStringList violations;
+    QDirIterator it(
+        repositoryRoot.filePath(QStringLiteral("src/app")),
+        QDir::Files | QDir::NoDotAndDotDot,
+        QDirIterator::Subdirectories);
+    while (it.hasNext())
+    {
+        const QString absolutePath = it.next();
+        const QFileInfo fileInfo(absolutePath);
+        const QString suffix = fileInfo.suffix().toLower();
+        if (suffix != QStringLiteral("cpp")
+            && suffix != QStringLiteral("hpp")
+            && suffix != QStringLiteral("qml")
+            && suffix != QStringLiteral("js")
+            && suffix != QStringLiteral("cmake")
+            && fileInfo.fileName() != QStringLiteral("CMakeLists.txt"))
+        {
+            continue;
+        }
+
+        QFile sourceFile(absolutePath);
+        if (!sourceFile.open(QIODevice::ReadOnly | QIODevice::Text))
+        {
+            continue;
+        }
+
+        const QString relativePath = QDir::cleanPath(repositoryRoot.relativeFilePath(absolutePath));
+        int lineNumber = 0;
+        while (!sourceFile.atEnd())
+        {
+            const QString line = QString::fromUtf8(sourceFile.readLine());
+            ++lineNumber;
+            for (const QString& forbiddenFragment : forbiddenFragments)
+            {
+                if (line.contains(forbiddenFragment))
+                {
+                    violations.append(
+                        QStringLiteral("%1:%2 contains deprecated presentation-layer vocabulary: %3")
+                            .arg(relativePath)
+                            .arg(lineNumber)
+                            .arg(forbiddenFragment));
+                }
+            }
+
+            if (suffix == QStringLiteral("qml") && qmlAliasPattern.match(line).hasMatch())
+            {
+                violations.append(
+                    QStringLiteral("%1:%2 contains deprecated QML alias suffix")
+                        .arg(relativePath)
+                        .arg(lineNumber));
+            }
+        }
+    }
+
+    QVERIFY2(violations.isEmpty(), qPrintable(violations.join(QLatin1Char('\n'))));
+}

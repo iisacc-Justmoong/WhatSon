@@ -9,14 +9,14 @@ Only the remaining toolbar states still mount dedicated placeholders instead of 
 - Root `objectName`: `DetailContents`
 - Root Figma node id: `155:4582`
 - Inputs:
-  - `activeContentViewModel`
+  - `activeContentController`
   - `activeStateName`
   - `noteContextLinked`
-  - `detailPanelViewModel`
-  - `fileStatViewModel`
-  - `projectSelectionViewModel`
-  - `bookmarkSelectionViewModel`
-  - `progressSelectionViewModel`
+  - `detailPanelController`
+  - `fileStatController`
+  - `projectSelectionController`
+  - `bookmarkSelectionController`
+  - `progressSelectionController`
 - Normalized state values:
   - `detached`
   - `properties`
@@ -38,9 +38,9 @@ The `properties` state renders the Figma `Form` node (`155:4583`) with the exact
 
 ## Selector Wiring
 - The `Projects`, `Bookmark`, and `Progress` selectors do not own ad-hoc option lists.
-- Each selector receives a dedicated detail-panel-local selector viewmodel from `DetailPanel.qml`.
-- Those selector viewmodels mirror hierarchy entries from the canonical Projects/Bookmarks/Progress hierarchy viewmodels, but they keep their own local `selectedIndex`.
-- Each selector builds its popup entries from the matched detail-local selector viewmodel's `hierarchyModel`.
+- Each selector receives a dedicated detail-panel-local selector controller from `DetailPanel.qml`.
+- Those selector controllers mirror hierarchy entries from the canonical Projects/Bookmarks/Progress hierarchy controllers, but they keep their own local `selectedIndex`.
+- Each selector builds its popup entries from the matched detail-local selector controller's `hierarchyModel`.
 - For `Progress`, the popup keeps the injected canonical Progress hierarchy options when that source
   exists; it falls back to the current `.wsnhead` enum labels only when no Progress source model is
   available.
@@ -99,17 +99,17 @@ The `Projects`, `Bookmark`, and `Progress` combo labels use the caption text tok
   add picker always opens with the full tree already unfolded and without collapse controls.
 - The folder picker filters out Library system buckets such as `All`, `Draft`, and `Today`, leaving only assignable
   folder hierarchy nodes.
-- Choosing a folder entry forwards the canonical folder path (`entry.id`) into `detailPanelViewModel.assignFolderByName(...)`,
+- Choosing a folder entry forwards the canonical folder path (`entry.id`) into `detailPanelController.assignFolderByName(...)`,
   so duplicate leaf labels still resolve to the correct full hierarchy path.
 - The folder picker also exposes a single fallback action, `Create custom folder path`, which re-opens the existing
   inline folder editor for first-folder or ad-hoc folder creation.
 - Pressing `TagsList` add now opens the same picker shell against the canonical Tags hierarchy instead of emitting only
   a view hook with no usable add surface.
-- Choosing a tag entry forwards the canonical tag id/label into `detailPanelViewModel.assignTagByName(...)`, so the
+- Choosing a tag entry forwards the canonical tag id/label into `detailPanelController.assignTagByName(...)`, so the
   user can add note tags without typing when the tag already exists in the hub hierarchy.
 - While the inline folder editor is open, the folder footer `add`, `trash`, and `settings` actions are disabled to keep the temporary row state single-owner.
 - The footer `trash` action is disabled until a row is active.
-- When the footer `trash` action is triggered, `DetailContents.qml` calls `detailPanelViewModel.removeActiveFolder()` or `detailPanelViewModel.removeActiveTag()` directly so the selected `.wsnhead` metadata entry is removed from the file-backed session store instead of only emitting a view hook.
+- When the footer `trash` action is triggered, `DetailContents.qml` calls `detailPanelController.removeActiveFolder()` or `detailPanelController.removeActiveTag()` directly so the selected `.wsnhead` metadata entry is removed from the file-backed session store instead of only emitting a view hook.
 - Folder add confirmation writes through the detail-panel view-model instead of mutating the list locally, so the displayed list remains a direct mirror of persisted file state.
 - The visible `FoldersList` and `TagsList` must also refresh when the active note stays the same but its note-list model emits `itemsChanged()`, because that signal indicates the current `.wsnhead` metadata may have changed outside the detail-panel write path.
 - The compact metadata rows disable `LV.HierarchyItem`'s standalone activation and rely on the explicit selection
@@ -122,8 +122,8 @@ The `Projects`, `Bookmark`, and `Progress` combo labels use the caption text tok
 
 ## File Statistics State
 - The `fileStat` state now mounts `DetailFileStatForm.qml`.
-- That form receives the dedicated `fileStatViewModel` input when the resolved state is `fileStat`, so its text rows
-  are driven by the explicit `DetailFileStatViewModel` contract instead of a generic active-state object.
+- That form receives the dedicated `fileStatController` input when the resolved state is `fileStat`, so its text rows
+  are driven by the explicit `DetailFileStatController` contract instead of a generic active-state object.
 - The statistics surface is no longer a placeholder; it renders the persisted `.wsnhead <fileStat>` values and the
   current header metadata as three `description`-styled text blocks matching the Figma node `235:7734`.
 

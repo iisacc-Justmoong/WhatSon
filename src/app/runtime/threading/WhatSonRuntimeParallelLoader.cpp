@@ -5,14 +5,14 @@
 #include "app/runtime/threading/WhatSonRuntimeDomainSnapshots.hpp"
 #include "app/models/file/WhatSonDebugTrace.hpp"
 #include "app/models/file/hub/WhatSonHubRuntimeStore.hpp"
-#include "app/viewmodel/hierarchy/bookmarks/BookmarksHierarchyViewModel.hpp"
-#include "app/viewmodel/hierarchy/event/EventHierarchyViewModel.hpp"
-#include "app/viewmodel/hierarchy/library/LibraryHierarchyViewModel.hpp"
-#include "app/viewmodel/hierarchy/preset/PresetHierarchyViewModel.hpp"
-#include "app/viewmodel/hierarchy/progress/ProgressHierarchyViewModel.hpp"
-#include "app/viewmodel/hierarchy/projects/ProjectsHierarchyViewModel.hpp"
-#include "app/viewmodel/hierarchy/resources/ResourcesHierarchyViewModel.hpp"
-#include "app/viewmodel/hierarchy/tags/TagsHierarchyViewModel.hpp"
+#include "app/models/file/hierarchy/bookmarks/BookmarksHierarchyController.hpp"
+#include "app/models/file/hierarchy/event/EventHierarchyController.hpp"
+#include "app/models/file/hierarchy/library/LibraryHierarchyController.hpp"
+#include "app/models/file/hierarchy/preset/PresetHierarchyController.hpp"
+#include "app/models/file/hierarchy/progress/ProgressHierarchyController.hpp"
+#include "app/models/file/hierarchy/projects/ProjectsHierarchyController.hpp"
+#include "app/models/file/hierarchy/resources/ResourcesHierarchyController.hpp"
+#include "app/models/file/hierarchy/tags/TagsHierarchyController.hpp"
 
 #include <QElapsedTimer>
 #include <utility>
@@ -165,9 +165,9 @@ bool WhatSonRuntimeParallelLoader::loadFromWshub(
 
     if (requestedDomains.library)
     {
-        if (targets.libraryViewModel == nullptr)
+        if (targets.libraryController == nullptr)
         {
-            addImmediateFailure(QStringLiteral("library"), QStringLiteral("Target viewModel is null."));
+            addImmediateFailure(QStringLiteral("library"), QStringLiteral("Target controller is null."));
         }
         else
         {
@@ -184,9 +184,9 @@ bool WhatSonRuntimeParallelLoader::loadFromWshub(
 
     if (requestedDomains.projects)
     {
-        if (targets.projectsViewModel == nullptr)
+        if (targets.projectsController == nullptr)
         {
-            addImmediateFailure(QStringLiteral("projects"), QStringLiteral("Target viewModel is null."));
+            addImmediateFailure(QStringLiteral("projects"), QStringLiteral("Target controller is null."));
         }
         else
         {
@@ -203,9 +203,9 @@ bool WhatSonRuntimeParallelLoader::loadFromWshub(
 
     if (requestedDomains.bookmarks)
     {
-        if (targets.bookmarksViewModel == nullptr)
+        if (targets.bookmarksController == nullptr)
         {
-            addImmediateFailure(QStringLiteral("bookmarks"), QStringLiteral("Target viewModel is null."));
+            addImmediateFailure(QStringLiteral("bookmarks"), QStringLiteral("Target controller is null."));
         }
         else
         {
@@ -233,9 +233,9 @@ bool WhatSonRuntimeParallelLoader::loadFromWshub(
 
     if (requestedDomains.tags)
     {
-        if (targets.tagsViewModel == nullptr)
+        if (targets.tagsController == nullptr)
         {
-            addImmediateFailure(QStringLiteral("tags"), QStringLiteral("Target viewModel is null."));
+            addImmediateFailure(QStringLiteral("tags"), QStringLiteral("Target controller is null."));
         }
         else
         {
@@ -252,9 +252,9 @@ bool WhatSonRuntimeParallelLoader::loadFromWshub(
 
     if (requestedDomains.resources)
     {
-        if (targets.resourcesViewModel == nullptr)
+        if (targets.resourcesController == nullptr)
         {
-            addImmediateFailure(QStringLiteral("resources"), QStringLiteral("Target viewModel is null."));
+            addImmediateFailure(QStringLiteral("resources"), QStringLiteral("Target controller is null."));
         }
         else
         {
@@ -271,9 +271,9 @@ bool WhatSonRuntimeParallelLoader::loadFromWshub(
 
     if (requestedDomains.progress)
     {
-        if (targets.progressViewModel == nullptr)
+        if (targets.progressController == nullptr)
         {
-            addImmediateFailure(QStringLiteral("progress"), QStringLiteral("Target viewModel is null."));
+            addImmediateFailure(QStringLiteral("progress"), QStringLiteral("Target controller is null."));
         }
         else
         {
@@ -290,9 +290,9 @@ bool WhatSonRuntimeParallelLoader::loadFromWshub(
 
     if (requestedDomains.event)
     {
-        if (targets.eventViewModel == nullptr)
+        if (targets.eventController == nullptr)
         {
-            addImmediateFailure(QStringLiteral("event"), QStringLiteral("Target viewModel is null."));
+            addImmediateFailure(QStringLiteral("event"), QStringLiteral("Target controller is null."));
         }
         else
         {
@@ -309,9 +309,9 @@ bool WhatSonRuntimeParallelLoader::loadFromWshub(
 
     if (requestedDomains.preset)
     {
-        if (targets.presetViewModel == nullptr)
+        if (targets.presetController == nullptr)
         {
-            addImmediateFailure(QStringLiteral("preset"), QStringLiteral("Target viewModel is null."));
+            addImmediateFailure(QStringLiteral("preset"), QStringLiteral("Target controller is null."));
         }
         else
         {
@@ -427,7 +427,7 @@ bool WhatSonRuntimeParallelLoader::loadFromWshub(
 
     if (hasLibraryTask)
     {
-        targets.libraryViewModel->applyRuntimeSnapshot(
+        targets.libraryController->applyRuntimeSnapshot(
             normalizedPath,
             std::move(librarySnapshot.allNotes),
             std::move(librarySnapshot.draftNotes),
@@ -440,7 +440,7 @@ bool WhatSonRuntimeParallelLoader::loadFromWshub(
 
     if (hasProjectsTask)
     {
-        targets.projectsViewModel->applyRuntimeSnapshot(
+        targets.projectsController->applyRuntimeSnapshot(
             std::move(projectsSnapshot.projectEntries),
             std::move(projectsSnapshot.projectsFilePath),
             projectsSnapshot.succeeded,
@@ -449,7 +449,7 @@ bool WhatSonRuntimeParallelLoader::loadFromWshub(
 
     if (hasBookmarksTask)
     {
-        targets.bookmarksViewModel->applyRuntimeSnapshot(
+        targets.bookmarksController->applyRuntimeSnapshot(
             std::move(bookmarksSnapshot.bookmarkedNotes),
             bookmarksSnapshot.succeeded,
             std::move(bookmarksSnapshot.error));
@@ -457,7 +457,7 @@ bool WhatSonRuntimeParallelLoader::loadFromWshub(
 
     if (hasTagsTask)
     {
-        targets.tagsViewModel->applyRuntimeSnapshot(
+        targets.tagsController->applyRuntimeSnapshot(
             std::move(tagsSnapshot.entries),
             std::move(tagsSnapshot.tagsFilePath),
             tagsSnapshot.succeeded,
@@ -466,7 +466,7 @@ bool WhatSonRuntimeParallelLoader::loadFromWshub(
 
     if (hasResourcesTask)
     {
-        targets.resourcesViewModel->applyRuntimeSnapshot(
+        targets.resourcesController->applyRuntimeSnapshot(
             std::move(resourcesSnapshot.values),
             std::move(resourcesSnapshot.sourceFilePath),
             resourcesSnapshot.succeeded,
@@ -475,7 +475,7 @@ bool WhatSonRuntimeParallelLoader::loadFromWshub(
 
     if (hasProgressTask)
     {
-        targets.progressViewModel->applyRuntimeSnapshot(
+        targets.progressController->applyRuntimeSnapshot(
             progressSnapshot.progressValue,
             std::move(progressSnapshot.progressStates),
             std::move(progressSnapshot.sourceFilePath),
@@ -485,7 +485,7 @@ bool WhatSonRuntimeParallelLoader::loadFromWshub(
 
     if (hasEventTask)
     {
-        targets.eventViewModel->applyRuntimeSnapshot(
+        targets.eventController->applyRuntimeSnapshot(
             std::move(eventSnapshot.values),
             std::move(eventSnapshot.sourceFilePath),
             eventSnapshot.succeeded,
@@ -494,7 +494,7 @@ bool WhatSonRuntimeParallelLoader::loadFromWshub(
 
     if (hasPresetTask)
     {
-        targets.presetViewModel->applyRuntimeSnapshot(
+        targets.presetController->applyRuntimeSnapshot(
             std::move(presetSnapshot.values),
             std::move(presetSnapshot.sourceFilePath),
             presetSnapshot.succeeded,

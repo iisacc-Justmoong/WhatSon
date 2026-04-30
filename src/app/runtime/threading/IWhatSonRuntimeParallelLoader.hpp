@@ -3,14 +3,14 @@
 #include <QString>
 #include <QVector>
 
-class LibraryHierarchyViewModel;
-class ProjectsHierarchyViewModel;
-class BookmarksHierarchyViewModel;
-class TagsHierarchyViewModel;
-class ResourcesHierarchyViewModel;
-class ProgressHierarchyViewModel;
-class EventHierarchyViewModel;
-class PresetHierarchyViewModel;
+class LibraryHierarchyController;
+class ProjectsHierarchyController;
+class BookmarksHierarchyController;
+class TagsHierarchyController;
+class ResourcesHierarchyController;
+class ProgressHierarchyController;
+class EventHierarchyController;
+class PresetHierarchyController;
 class WhatSonHubRuntimeStore;
 
 class IWhatSonRuntimeParallelLoader
@@ -38,14 +38,14 @@ public:
 
     struct Targets
     {
-        LibraryHierarchyViewModel* libraryViewModel = nullptr;
-        ProjectsHierarchyViewModel* projectsViewModel = nullptr;
-        BookmarksHierarchyViewModel* bookmarksViewModel = nullptr;
-        TagsHierarchyViewModel* tagsViewModel = nullptr;
-        ResourcesHierarchyViewModel* resourcesViewModel = nullptr;
-        ProgressHierarchyViewModel* progressViewModel = nullptr;
-        EventHierarchyViewModel* eventViewModel = nullptr;
-        PresetHierarchyViewModel* presetViewModel = nullptr;
+        LibraryHierarchyController* libraryController = nullptr;
+        ProjectsHierarchyController* projectsController = nullptr;
+        BookmarksHierarchyController* bookmarksController = nullptr;
+        TagsHierarchyController* tagsController = nullptr;
+        ResourcesHierarchyController* resourcesController = nullptr;
+        ProgressHierarchyController* progressController = nullptr;
+        EventHierarchyController* eventController = nullptr;
+        PresetHierarchyController* presetController = nullptr;
         WhatSonHubRuntimeStore* hubRuntimeStore = nullptr;
     };
 

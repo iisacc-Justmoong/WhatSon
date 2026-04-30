@@ -4,7 +4,7 @@
 `ContentsStructuredTagValidator` is a QML-facing structured-tag correction advisory helper.
 
 ## Public Contract
-- `contentViewModel`
+- `contentController`
   - Preserved for compatibility with existing QML wiring, even though automatic direct correction writes are disabled.
 - `noteId`
   - Identifies which note the validator is reporting against.

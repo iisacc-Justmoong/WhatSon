@@ -23,7 +23,7 @@
 ## Regression Notes
 
 - `test/cpp/suites/contents_display_view_tests.cpp` locks the note-drop surface contract so the `DropArea` remains open
-  until the controller and ViewModel capability reject a concrete target.
+  until the controller and Controller capability reject a concrete target.
 - Regression checklist:
     - JSON `application/x-whatson-note-ids` payloads must decode into a unique ordered note-id list.
     - Plain-text newline-separated payloads must still decode into the same note-id set.

@@ -5,10 +5,10 @@
 the year view acts as a high-level event/task heatmap.
 
 ## View Contract
-- Input: `yearCalendarViewModel`
+- Input: `yearCalendarController`
 - Hook signal: `viewHookRequested(string reason)`
 - Navigation signal: `monthCalendarOpenRequested(int year, int month, string selectedDateIso)`
-- Hook forwarder: `requestViewHook(reason)` delegates to `yearCalendarViewModel.requestYearView(reason)`
+- Hook forwarder: `requestViewHook(reason)` delegates to `yearCalendarController.requestYearView(reason)`
 
 ## UI Composition
 - Surface:
@@ -39,8 +39,8 @@ the year view acts as a high-level event/task heatmap.
 - Adjacent overflow days now use `Qt.darker(activeDayColor, 1.2)`, so they stay readable while remaining about 20%
   darker than in-month day text instead of falling back to the label default color.
 - The year view remains a high-density navigation surface for month/day context while keeping the board data contract
-  from `YearCalendarViewModel`.
-- `YearCalendarViewModel::focusToday()` aligns the displayed year with the active calendar system.
+  from `YearCalendarController`.
+- `YearCalendarController::focusToday()` aligns the displayed year with the active calendar system.
 - Month-title taps now request the matching month overlay using that card's first in-month date as the selected date.
 - Day taps now request the month overlay for the tapped date, so adjacent overflow days route into their real month.
 
@@ -58,6 +58,6 @@ the year view acts as a high-level event/task heatmap.
 
 ## Collaborators
 - `src/app/calendar/CalendarBoardStore.hpp/.cpp`
-- `src/app/viewmodel/calendar/YearCalendarViewModel.hpp/.cpp`
+- `src/app/models/calendar/YearCalendarController.hpp/.cpp`
 - `src/app/qml/view/calendar/CalendarTodayControl.qml`
 - `src/app/qml/view/panels/ContentViewLayout.qml`

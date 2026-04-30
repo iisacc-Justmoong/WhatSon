@@ -9,41 +9,34 @@ Item {
     id: detailContents
 
     readonly property string figmaNodeId: "155:4582"
-    property var activeContentViewModel: null
+    property var activeContentController: null
     property string activeStateName: "properties"
     property bool noteContextLinked: false
-    property var detailPanelViewModel: null
-    property var fileStatViewModel: null
-    property var projectSelectionViewModel: null
-    property var bookmarkSelectionViewModel: null
-    property var progressSelectionViewModel: null
+    property var detailPanelController: null
+    property var fileStatController: null
+    property var projectSelectionController: null
+    property var bookmarkSelectionController: null
+    property var progressSelectionController: null
     property bool folderCreationEditing: false
     property string folderCreationText: ""
     property string metadataPickerKind: ""
     property var metadataPickerAnchorItem: null
-    readonly property int activeFolderIndex: detailContents.resolveMetadataActiveIndex(detailContents.activeContentViewModel ? detailContents.activeContentViewModel.activeFolderIndex : -1, detailContents.folderItems)
-    readonly property int activeTagIndex: detailContents.resolveMetadataActiveIndex(detailContents.activeContentViewModel ? detailContents.activeContentViewModel.activeTagIndex : -1, detailContents.tagItems)
-    readonly property var folderItems: detailContents.resolveHeaderStringList(detailContents.activeContentViewModel ? detailContents.activeContentViewModel.folderItems : [])
-    property var panelViewModelRegistry: null
-    readonly property var panelViewModel: detailContents.panelViewModelRegistry ? detailContents.panelViewModelRegistry.panelViewModel("detail.DetailContents") : null
-    readonly property var registeredViewModelKeys: LV.ViewModels.keys
-    readonly property var libraryHierarchySourceViewModel: {
-        const _ = detailContents.registeredViewModelKeys;
-        return LV.ViewModels.get("libraryHierarchyViewModel");
-    }
-    readonly property var tagsHierarchySourceViewModel: {
-        const _ = detailContents.registeredViewModelKeys;
-        return LV.ViewModels.get("tagsHierarchyViewModel");
-    }
-    readonly property var projectMenuItems: detailContents.resolveHierarchyMenuItems(detailContents.projectSelectionViewModel)
-    readonly property int projectMenuSelectedIndex: detailContents.resolveHierarchyMenuSelectedIndex(detailContents.projectSelectionViewModel)
-    readonly property string resolvedProjectSelectionText: detailContents.resolveHierarchySelectionText(detailContents.projectSelectionViewModel, "No project")
-    readonly property var bookmarkMenuItems: detailContents.resolveHierarchyMenuItems(detailContents.bookmarkSelectionViewModel)
-    readonly property int bookmarkMenuSelectedIndex: detailContents.resolveHierarchyMenuSelectedIndex(detailContents.bookmarkSelectionViewModel)
-    readonly property string resolvedBookmarkSelectionText: detailContents.resolveHierarchySelectionText(detailContents.bookmarkSelectionViewModel, "No bookmark")
-    readonly property var progressMenuItems: detailContents.resolveHierarchyMenuItems(detailContents.progressSelectionViewModel)
-    readonly property int progressMenuSelectedIndex: detailContents.resolveHierarchyMenuSelectedIndex(detailContents.progressSelectionViewModel)
-    readonly property string resolvedProgressSelectionText: detailContents.resolveHierarchySelectionText(detailContents.progressSelectionViewModel, "No progress")
+    readonly property int activeFolderIndex: detailContents.resolveMetadataActiveIndex(detailContents.activeContentController ? detailContents.activeContentController.activeFolderIndex : -1, detailContents.folderItems)
+    readonly property int activeTagIndex: detailContents.resolveMetadataActiveIndex(detailContents.activeContentController ? detailContents.activeContentController.activeTagIndex : -1, detailContents.tagItems)
+    readonly property var folderItems: detailContents.resolveHeaderStringList(detailContents.activeContentController ? detailContents.activeContentController.folderItems : [])
+    property var panelControllerRegistry: null
+    readonly property var panelController: detailContents.panelControllerRegistry ? detailContents.panelControllerRegistry.panelController("detail.DetailContents") : null
+    readonly property var libraryHierarchySourceController: typeof libraryHierarchyController !== "undefined" ? libraryHierarchyController : null
+    readonly property var tagsHierarchySourceController: typeof tagsHierarchyController !== "undefined" ? tagsHierarchyController : null
+    readonly property var projectMenuItems: detailContents.resolveHierarchyMenuItems(detailContents.projectSelectionController)
+    readonly property int projectMenuSelectedIndex: detailContents.resolveHierarchyMenuSelectedIndex(detailContents.projectSelectionController)
+    readonly property string resolvedProjectSelectionText: detailContents.resolveHierarchySelectionText(detailContents.projectSelectionController, "No project")
+    readonly property var bookmarkMenuItems: detailContents.resolveHierarchyMenuItems(detailContents.bookmarkSelectionController)
+    readonly property int bookmarkMenuSelectedIndex: detailContents.resolveHierarchyMenuSelectedIndex(detailContents.bookmarkSelectionController)
+    readonly property string resolvedBookmarkSelectionText: detailContents.resolveHierarchySelectionText(detailContents.bookmarkSelectionController, "No bookmark")
+    readonly property var progressMenuItems: detailContents.resolveHierarchyMenuItems(detailContents.progressSelectionController)
+    readonly property int progressMenuSelectedIndex: detailContents.resolveHierarchyMenuSelectedIndex(detailContents.progressSelectionController)
+    readonly property string resolvedProgressSelectionText: detailContents.resolveHierarchySelectionText(detailContents.progressSelectionController, "No progress")
     readonly property string resolvedActiveStateName: detailContents.normalizeStateName(detailContents.activeStateName)
     readonly property string resolvedPanelStateName: detailContents.noteContextLinked ? detailContents.resolvedActiveStateName : "detached"
     readonly property int scaledGap2: LV.Theme.gap2
@@ -61,7 +54,7 @@ Item {
     readonly property int scaledCompactListViewportHeight: Math.max(LV.Theme.gapNone, detailContents.scaledCompactListHeight - detailContents.scaledCompactFooterHeight)
     readonly property int scaledInlineInputLeadingInset: LV.Theme.gap24 + Math.round(LV.Theme.strokeThin)
     readonly property int scaledPlaceholderCardHeight: LV.Theme.gap24 + LV.Theme.gap24 + LV.Theme.gap24
-    readonly property var tagItems: detailContents.resolveHeaderStringList(detailContents.activeContentViewModel ? detailContents.activeContentViewModel.tagItems : [])
+    readonly property var tagItems: detailContents.resolveHeaderStringList(detailContents.activeContentController ? detailContents.activeContentController.tagItems : [])
     readonly property var metadataPickerItems: detailContents.resolveMetadataPickerItems(detailContents.metadataPickerKind)
     readonly property bool metadataPickerManualFallbackEnabled: detailContents.metadataPickerKind === "folders"
 
@@ -118,19 +111,19 @@ Item {
             return "Properties content remains the default detail panel form.";
         }
     }
-    function hierarchyEntries(hierarchyViewModel) {
-        if (!hierarchyViewModel || hierarchyViewModel.hierarchyModel === undefined || hierarchyViewModel.hierarchyModel === null)
+    function hierarchyEntries(hierarchyController) {
+        if (!hierarchyController || hierarchyController.hierarchyModel === undefined || hierarchyController.hierarchyModel === null)
             return [];
-        const sourceEntries = hierarchyViewModel.hierarchyModel;
+        const sourceEntries = hierarchyController.hierarchyModel;
         if (Array.isArray(sourceEntries))
             return sourceEntries;
         if (sourceEntries.length !== undefined)
             return Array.prototype.slice.call(sourceEntries);
         return [];
     }
-    function resolveHierarchyMenuItems(hierarchyViewModel) {
-        const sourceEntries = detailContents.hierarchyEntries(hierarchyViewModel);
-        const selectedIndex = detailContents.resolveHierarchyMenuSelectedIndex(hierarchyViewModel);
+    function resolveHierarchyMenuItems(hierarchyController) {
+        const sourceEntries = detailContents.hierarchyEntries(hierarchyController);
+        const selectedIndex = detailContents.resolveHierarchyMenuSelectedIndex(hierarchyController);
         const resolvedItems = [];
         for (let index = 0; index < sourceEntries.length; ++index) {
             const entry = sourceEntries[index];
@@ -149,20 +142,20 @@ Item {
         }
         return resolvedItems;
     }
-    function resolveHierarchyMenuSelectedIndex(hierarchyViewModel) {
-        if (!hierarchyViewModel || hierarchyViewModel.selectedIndex === undefined)
+    function resolveHierarchyMenuSelectedIndex(hierarchyController) {
+        if (!hierarchyController || hierarchyController.selectedIndex === undefined)
             return -1;
-        const selectedIndex = Number(hierarchyViewModel.selectedIndex);
+        const selectedIndex = Number(hierarchyController.selectedIndex);
         return isFinite(selectedIndex) ? selectedIndex : -1;
     }
-    function resolveHierarchySelectionText(hierarchyViewModel, emptyText) {
+    function resolveHierarchySelectionText(hierarchyController, emptyText) {
         const fallbackText = emptyText !== undefined && emptyText !== null ? String(emptyText) : "";
-        if (!hierarchyViewModel || hierarchyViewModel.itemLabel === undefined)
+        if (!hierarchyController || hierarchyController.itemLabel === undefined)
             return fallbackText;
-        const selectedIndex = detailContents.resolveHierarchyMenuSelectedIndex(hierarchyViewModel);
+        const selectedIndex = detailContents.resolveHierarchyMenuSelectedIndex(hierarchyController);
         if (selectedIndex < 0)
             return fallbackText;
-        const label = String(hierarchyViewModel.itemLabel(selectedIndex) || "").trim();
+        const label = String(hierarchyController.itemLabel(selectedIndex) || "").trim();
         return label.length > 0 ? label : fallbackText;
     }
     function resolveHeaderStringList(values) {
@@ -174,11 +167,11 @@ Item {
             return Array.prototype.slice.call(values);
         return [];
     }
-    function sourceHierarchyViewModelForListKind(listKind) {
+    function sourceHierarchyControllerForListKind(listKind) {
         if (listKind === "folders")
-            return detailContents.libraryHierarchySourceViewModel;
+            return detailContents.libraryHierarchySourceController;
         if (listKind === "tags")
-            return detailContents.tagsHierarchySourceViewModel;
+            return detailContents.tagsHierarchySourceController;
         return null;
     }
     function fallbackHierarchyIconNameForListKind(listKind) {
@@ -186,8 +179,8 @@ Item {
     }
     function resolveMetadataPickerItems(listKind) {
         const normalizedKind = listKind === undefined || listKind === null ? "" : String(listKind).trim();
-        const sourceViewModel = detailContents.sourceHierarchyViewModelForListKind(normalizedKind);
-        const sourceEntries = detailContents.hierarchyEntries(sourceViewModel);
+        const sourceController = detailContents.sourceHierarchyControllerForListKind(normalizedKind);
+        const sourceEntries = detailContents.hierarchyEntries(sourceController);
         const resolvedItems = [];
 
         for (let index = 0; index < sourceEntries.length; ++index) {
@@ -249,7 +242,7 @@ Item {
         detailContents.requestViewHook("folders.add.cancel");
     }
     function commitFolderCreation(rawText) {
-        if (!detailContents.folderCreationEditing || !detailPanelViewModel || detailPanelViewModel.assignFolderByName === undefined)
+        if (!detailContents.folderCreationEditing || !detailPanelController || detailPanelController.assignFolderByName === undefined)
             return;
 
         const normalizedText = rawText === undefined || rawText === null ? detailContents.folderCreationText.trim() : String(rawText).trim();
@@ -257,7 +250,7 @@ Item {
             detailContents.cancelFolderCreation();
             return;
         }
-        if (!detailPanelViewModel.assignFolderByName(normalizedText))
+        if (!detailPanelController.assignFolderByName(normalizedText))
             return;
 
         detailContents.folderCreationEditing = false;
@@ -286,7 +279,7 @@ Item {
         metadataHierarchyPicker.openForAnchor(detailContents.metadataPickerAnchorItem, normalizedKind + ".picker.open");
     }
     function applyMetadataPickerEntry(entry) {
-        if (!detailPanelViewModel)
+        if (!detailPanelController)
             return;
 
         const resolvedEntry = entry || {};
@@ -295,11 +288,11 @@ Item {
             return;
 
         if (detailContents.metadataPickerKind === "folders") {
-            if (detailPanelViewModel.assignFolderByName === undefined || !detailPanelViewModel.assignFolderByName(resolvedValue))
+            if (detailPanelController.assignFolderByName === undefined || !detailPanelController.assignFolderByName(resolvedValue))
                 return;
             detailContents.requestViewHook("folders.add.commit");
         } else if (detailContents.metadataPickerKind === "tags") {
-            if (detailPanelViewModel.assignTagByName === undefined || !detailPanelViewModel.assignTagByName(resolvedValue))
+            if (detailPanelController.assignTagByName === undefined || !detailPanelController.assignTagByName(resolvedValue))
                 return;
             detailContents.requestViewHook("tags.add.commit");
         }
@@ -316,66 +309,66 @@ Item {
         detailContents.openMetadataPicker(listKind, anchorItem);
     }
     function setMetadataListActiveIndex(listKind, index) {
-        if (!detailContents.activeContentViewModel)
+        if (!detailContents.activeContentController)
             return;
 
         const normalizedIndex = Number(index);
         if (!isFinite(normalizedIndex))
             return;
 
-        if (listKind === "folders" && detailContents.activeContentViewModel.setActiveFolderIndex !== undefined) {
-            detailContents.activeContentViewModel.setActiveFolderIndex(normalizedIndex);
+        if (listKind === "folders" && detailContents.activeContentController.setActiveFolderIndex !== undefined) {
+            detailContents.activeContentController.setActiveFolderIndex(normalizedIndex);
             detailContents.requestViewHook("folders.select");
-        } else if (listKind === "tags" && detailContents.activeContentViewModel.setActiveTagIndex !== undefined) {
-            detailContents.activeContentViewModel.setActiveTagIndex(normalizedIndex);
+        } else if (listKind === "tags" && detailContents.activeContentController.setActiveTagIndex !== undefined) {
+            detailContents.activeContentController.setActiveTagIndex(normalizedIndex);
             detailContents.requestViewHook("tags.select");
         }
     }
     function deleteActiveMetadataItem(listKind) {
-        if (!detailPanelViewModel)
+        if (!detailPanelController)
             return;
 
-        if (listKind === "folders" && detailPanelViewModel.removeActiveFolder !== undefined) {
-            if (!detailPanelViewModel.removeActiveFolder())
+        if (listKind === "folders" && detailPanelController.removeActiveFolder !== undefined) {
+            if (!detailPanelController.removeActiveFolder())
                 return;
             detailContents.requestViewHook("folders.delete");
-        } else if (listKind === "tags" && detailPanelViewModel.removeActiveTag !== undefined) {
-            if (!detailPanelViewModel.removeActiveTag())
+        } else if (listKind === "tags" && detailPanelController.removeActiveTag !== undefined) {
+            if (!detailPanelController.removeActiveTag())
                 return;
             detailContents.requestViewHook("tags.delete");
         }
     }
     function requestViewHook(reason) {
         const hookReason = reason !== undefined ? String(reason) : "manual";
-        if (panelViewModel && panelViewModel.requestViewModelHook)
-            panelViewModel.requestViewModelHook(hookReason);
+        if (panelController && panelController.requestControllerHook)
+            panelController.requestControllerHook(hookReason);
         viewHookRequested();
     }
-    function applyHierarchySelection(hierarchyViewModel, index, hookReason) {
-        if (!hierarchyViewModel)
+    function applyHierarchySelection(hierarchyController, index, hookReason) {
+        if (!hierarchyController)
             return;
         const normalizedIndex = Number(index);
         if (!isFinite(normalizedIndex) || normalizedIndex < 0)
             return;
-        const currentIndex = detailContents.resolveHierarchyMenuSelectedIndex(hierarchyViewModel);
+        const currentIndex = detailContents.resolveHierarchyMenuSelectedIndex(hierarchyController);
         if (currentIndex === normalizedIndex)
             return;
 
-        if (hookReason === "projects.comboSelect" && detailPanelViewModel && detailPanelViewModel.writeProjectSelection !== undefined) {
-            if (!detailPanelViewModel.writeProjectSelection(normalizedIndex))
+        if (hookReason === "projects.comboSelect" && detailPanelController && detailPanelController.writeProjectSelection !== undefined) {
+            if (!detailPanelController.writeProjectSelection(normalizedIndex))
                 return;
-        } else if (hookReason === "bookmark.comboSelect" && detailPanelViewModel && detailPanelViewModel.writeBookmarkSelection !== undefined) {
-            if (!detailPanelViewModel.writeBookmarkSelection(normalizedIndex))
+        } else if (hookReason === "bookmark.comboSelect" && detailPanelController && detailPanelController.writeBookmarkSelection !== undefined) {
+            if (!detailPanelController.writeBookmarkSelection(normalizedIndex))
                 return;
-        } else if (hookReason === "progress.comboSelect" && detailPanelViewModel && detailPanelViewModel.writeProgressSelection !== undefined) {
-            if (!detailPanelViewModel.writeProgressSelection(normalizedIndex))
+        } else if (hookReason === "progress.comboSelect" && detailPanelController && detailPanelController.writeProgressSelection !== undefined) {
+            if (!detailPanelController.writeProgressSelection(normalizedIndex))
                 return;
         }
 
-        if (hierarchyViewModel.setSelectedIndex !== undefined)
-            hierarchyViewModel.setSelectedIndex(normalizedIndex);
-        else if (hierarchyViewModel.selectedIndex !== undefined)
-            hierarchyViewModel.selectedIndex = normalizedIndex;
+        if (hierarchyController.setSelectedIndex !== undefined)
+            hierarchyController.setSelectedIndex(normalizedIndex);
+        else if (hierarchyController.selectedIndex !== undefined)
+            hierarchyController.selectedIndex = normalizedIndex;
         detailContents.requestViewHook(hookReason);
     }
 
@@ -1040,7 +1033,7 @@ Item {
                 width: parent.width
 
                 onMenuItemTriggered: function (index) {
-                    detailContents.applyHierarchySelection(detailContents.projectSelectionViewModel, index, "projects.comboSelect");
+                    detailContents.applyHierarchySelection(detailContents.projectSelectionController, index, "projects.comboSelect");
                 }
             }
             DetailComboSection {
@@ -1056,7 +1049,7 @@ Item {
                 width: parent.width
 
                 onMenuItemTriggered: function (index) {
-                    detailContents.applyHierarchySelection(detailContents.bookmarkSelectionViewModel, index, "bookmark.comboSelect");
+                    detailContents.applyHierarchySelection(detailContents.bookmarkSelectionController, index, "bookmark.comboSelect");
                 }
             }
             DetailListSection {
@@ -1124,7 +1117,7 @@ Item {
                 width: parent.width
 
                 onMenuItemTriggered: function (index) {
-                    detailContents.applyHierarchySelection(detailContents.progressSelectionViewModel, index, "progress.comboSelect");
+                    detailContents.applyHierarchySelection(detailContents.progressSelectionController, index, "progress.comboSelect");
                 }
             }
         }
@@ -1150,7 +1143,7 @@ Item {
     }
     DetailFileStatForm {
         anchors.fill: parent
-        fileStatViewModel: detailContents.resolvedPanelStateName === "fileStat" ? detailContents.fileStatViewModel : null
+        fileStatController: detailContents.resolvedPanelStateName === "fileStat" ? detailContents.fileStatController : null
         visible: detailContents.resolvedPanelStateName === "fileStat"
     }
     DetailPlaceholderForm {

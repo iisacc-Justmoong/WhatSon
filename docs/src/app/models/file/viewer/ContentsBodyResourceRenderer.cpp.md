@@ -8,10 +8,10 @@ Implements note-body resource rendering data extraction for the editor surface.
   This lets the renderer resolve `.wsresource` package references from the same note directory that the editor session
   already bound, instead of waiting for the currently active hierarchy view-model to answer
   `noteDirectoryPathForNoteId(...)` again.
-- Resolves the selected note directory from `contentViewModel.noteDirectoryPathForNoteId(noteId)`.
+- Resolves the selected note directory from `contentController.noteDirectoryPathForNoteId(noteId)`.
 - If the active hierarchy view-model cannot resolve that note directory, it retries through
-  `fallbackContentViewModel.noteDirectoryPathForNoteId(noteId)`.
-  Desktop/mobile bind this fallback to `LibraryHierarchyViewModel` so inline resource rendering survives hierarchy
+  `fallbackContentController.noteDirectoryPathForNoteId(noteId)`.
+  Desktop/mobile bind this fallback to `LibraryHierarchyController` so inline resource rendering survives hierarchy
   transition lag and domains such as tags that do not own their own note-directory resolver.
 - If the resolved path is a `.wsresource` directory, it renders that package directly as a single
   resource card.

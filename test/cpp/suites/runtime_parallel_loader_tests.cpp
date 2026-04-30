@@ -22,7 +22,7 @@ void WhatSonCppRegressionTests::runtimeParallelLoader_usesLvrsBootstrapParallelF
     QVERIFY(!loaderSource.contains(QStringLiteral("thread->start()")));
 
     const qsizetype applyGateIndex = loaderSource.indexOf(QStringLiteral("if (!allSucceeded)"));
-    const qsizetype libraryApplyIndex = loaderSource.indexOf(QStringLiteral("targets.libraryViewModel->applyRuntimeSnapshot"));
+    const qsizetype libraryApplyIndex = loaderSource.indexOf(QStringLiteral("targets.libraryController->applyRuntimeSnapshot"));
     QVERIFY(applyGateIndex >= 0);
     QVERIFY(libraryApplyIndex > applyGateIndex);
 }

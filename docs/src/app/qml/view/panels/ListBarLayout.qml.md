@@ -100,7 +100,7 @@ selection state machine lives in a sibling controller file.
 - The panel enters note-list mode whenever an actual `noteListModel` is injected. It must not hard-code
   hierarchy toolbar indexes such as `Library` or `Bookmarks`, because domains like `Projects` also own
   note-list projections.
-- The panel can now receive either a direct `noteListModel`, only `hierarchyViewModel`, or both.
+- The panel can now receive either a direct `noteListModel`, only `hierarchyController`, or both.
 - Desktop/mobile shells forward the same resolved `activeNoteListModel` object that the content surface uses.
 - `resourceListMode` is detected from `resolvedNoteListModel.currentResourceEntry`, then delegates switch to
   `ResourceListItem` so resources rows no longer inherit note-card visuals.
@@ -154,7 +154,7 @@ selection state machine lives in a sibling controller file.
 - Right-clicking or long-pressing a row that already belongs to the current multi-selection preserves that selection as
   the context-menu target set.
 - Keyboard delete, context-menu delete, and `Clear all folders` now replay the action across the selected note ids via
-  `LibraryNoteMutationViewModel` batch helpers.
+  `LibraryNoteMutationController` batch helpers.
 - Pointer-drag hot-spot fallback now uses `noteItemDelegate.width/height` explicitly, so drag-start
   math remains bound to the delegate's own touch target.
 - `reuseItems` is now disabled during active drag, so `ListView` does not recycle the grabbed delegate while the drag
@@ -180,7 +180,7 @@ selection state machine lives in a sibling controller file.
   - The delegate must consume note/resource role properties for the current index.
   - Switching from one hierarchy domain to another must not show the previous hierarchy's rows for one frame
     while the new note-list model is being rebound.
-  - Switching hierarchy domains by changing only the mounted hierarchy viewmodel must still replace the effective
+  - Switching hierarchy domains by changing only the mounted hierarchy controller must still replace the effective
     note-list model immediately.
   - When the caller forwards an explicit replacement note-list model during a hierarchy switch, the `ListView.model`
     must immediately switch to that model.

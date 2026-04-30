@@ -24,4 +24,4 @@ After this creator runs, a modern `.wsfolders` file is expected to keep enough i
 
 - `WhatSonFoldersHierarchyStore.cpp`: sanitizes rows before save.
 - `WhatSonHubParser.cpp`: exposes folder entries during runtime bootstrap.
-- `LibraryHierarchyViewModel.cpp`: persists edited hierarchy rows through this creator.
+- `LibraryHierarchyController.cpp`: persists edited hierarchy rows through this creator.

@@ -40,10 +40,10 @@
 #include "app/models/editor/input/ContentsBreakBlockController.hpp"
 #include "app/models/editor/input/ContentsEditorInputPolicyAdapter.hpp"
 #include "app/models/editor/input/ContentsRemainingInputControllers.hpp"
-#include "app/viewmodel/panel/FocusedNoteDeletionBridge.hpp"
-#include "app/viewmodel/panel/HierarchyDragDropBridge.hpp"
-#include "app/viewmodel/panel/HierarchyInteractionBridge.hpp"
-#include "app/viewmodel/panel/NoteListModelContractBridge.hpp"
+#include "app/models/panel/FocusedNoteDeletionBridge.hpp"
+#include "app/models/panel/HierarchyDragDropBridge.hpp"
+#include "app/models/panel/HierarchyInteractionBridge.hpp"
+#include "app/models/panel/NoteListModelContractBridge.hpp"
 
 namespace WhatSon::Runtime::Bootstrap
 {

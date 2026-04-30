@@ -1,6 +1,6 @@
 #include "test/cpp/whatson_cpp_regression_tests.hpp"
 
-void WhatSonCppRegressionTests::detailPanelRouting_separatesNoteAndResourceViewsAndViewModels()
+void WhatSonCppRegressionTests::detailPanelRouting_separatesNoteAndResourceViewsAndControllers()
 {
     const QString detailPanelSource = readUtf8SourceFile(
         QStringLiteral("src/app/qml/view/panels/detail/DetailPanel.qml"));
@@ -9,7 +9,7 @@ void WhatSonCppRegressionTests::detailPanelRouting_separatesNoteAndResourceViews
     const QString resourceDetailPanelSource = readUtf8SourceFile(
         QStringLiteral("src/app/qml/view/panels/detail/ResourceDetailPanel.qml"));
     const QString binderSource = readUtf8SourceFile(
-        QStringLiteral("src/app/viewmodel/detailPanel/DetailPanelCurrentHierarchyBinder.cpp"));
+        QStringLiteral("src/app/models/detailPanel/DetailPanelCurrentHierarchyBinder.cpp"));
     const QString mainQmlSource = readUtf8SourceFile(QStringLiteral("src/app/qml/Main.qml"));
     const QString mainCppSource = readUtf8SourceFile(QStringLiteral("src/app/main.cpp"));
 
@@ -20,25 +20,29 @@ void WhatSonCppRegressionTests::detailPanelRouting_separatesNoteAndResourceViews
     QVERIFY(!mainQmlSource.isEmpty());
     QVERIFY(!mainCppSource.isEmpty());
 
-    QVERIFY(detailPanelSource.contains(QStringLiteral("LV.ViewModels.get(\"noteDetailPanelViewModel\")")));
-    QVERIFY(detailPanelSource.contains(QStringLiteral("LV.ViewModels.get(\"resourceDetailPanelViewModel\")")));
+    QVERIFY(detailPanelSource.contains(
+        QStringLiteral("typeof noteDetailPanelController !== \"undefined\" ? noteDetailPanelController : null")));
+    QVERIFY(detailPanelSource.contains(
+        QStringLiteral("typeof resourceDetailPanelController !== \"undefined\" ? resourceDetailPanelController : null")));
     QVERIFY(detailPanelSource.contains(QStringLiteral("NoteDetailPanel {")));
     QVERIFY(detailPanelSource.contains(QStringLiteral("ResourceDetailPanel {")));
-    QVERIFY(detailPanelSource.contains(QStringLiteral("sidebarHierarchyVm.activeHierarchyViewModel === resourcesHierarchyVm")));
+    QVERIFY(detailPanelSource.contains(
+        QStringLiteral("sidebarHierarchyControllerObject.activeHierarchyController === resourcesHierarchyControllerObject")));
 
-    QVERIFY(noteDetailPanelSource.contains(QStringLiteral("property var noteDetailPanelViewModel: null")));
-    QVERIFY(noteDetailPanelSource.contains(QStringLiteral("readonly property var detailPanelVm: noteDetailPanel.noteDetailPanelViewModel")));
-    QVERIFY(resourceDetailPanelSource.contains(QStringLiteral("property var resourceDetailPanelViewModel: null")));
+    QVERIFY(noteDetailPanelSource.contains(QStringLiteral("property var noteDetailPanelController: null")));
+    QVERIFY(noteDetailPanelSource.contains(
+        QStringLiteral("readonly property var detailPanelRuntime: noteDetailPanel.noteDetailPanelController")));
+    QVERIFY(resourceDetailPanelSource.contains(QStringLiteral("property var resourceDetailPanelController: null")));
 
-    QVERIFY(!mainQmlSource.contains(QStringLiteral("LV.ViewModels.set(\"noteDetailPanelViewModel\"")));
-    QVERIFY(!mainQmlSource.contains(QStringLiteral("LV.ViewModels.set(\"resourceDetailPanelViewModel\"")));
-    QVERIFY(mainCppSource.contains(QStringLiteral("workspaceContextObjects.noteDetailPanelViewModel = &noteDetailPanelViewModel;")));
-    QVERIFY(mainCppSource.contains(QStringLiteral("workspaceContextObjects.resourceDetailPanelViewModel = &resourceDetailPanelViewModel;")));
-    QVERIFY(mainCppSource.contains(QStringLiteral("NoteDetailPanelViewModel noteDetailPanelViewModel;")));
-    QVERIFY(mainCppSource.contains(QStringLiteral("ResourceDetailPanelViewModel resourceDetailPanelViewModel;")));
+    QVERIFY(!mainQmlSource.contains(QStringLiteral("LV.Controllers")));
+    QVERIFY(!mainQmlSource.contains(QStringLiteral("LV.ViewModels")));
+    QVERIFY(mainCppSource.contains(QStringLiteral("workspaceContextObjects.noteDetailPanelController = &noteDetailPanelController;")));
+    QVERIFY(mainCppSource.contains(QStringLiteral("workspaceContextObjects.resourceDetailPanelController = &resourceDetailPanelController;")));
+    QVERIFY(mainCppSource.contains(QStringLiteral("NoteDetailPanelController noteDetailPanelController;")));
+    QVERIFY(mainCppSource.contains(QStringLiteral("ResourceDetailPanelController resourceDetailPanelController;")));
 
-    QVERIFY(binderSource.contains(QStringLiteral("setNoteDetailPanelViewModel")));
-    QVERIFY(binderSource.contains(QStringLiteral("setResourceDetailPanelViewModel")));
+    QVERIFY(binderSource.contains(QStringLiteral("setNoteDetailPanelController")));
+    QVERIFY(binderSource.contains(QStringLiteral("setResourceDetailPanelController")));
     QVERIFY(binderSource.contains(QStringLiteral("HierarchyDomain::Resources")));
     QVERIFY(binderSource.contains(QStringLiteral("setCurrentResourceListModel")));
 }

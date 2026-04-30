@@ -26,5 +26,5 @@ The implementation now also supports incremental mutation:
 ## Shared Reuse
 
 `collectBookmarkedNotes(...)` provides the matching bookmark projection helper used by
-`WhatSonRuntimeDomainSnapshots` and `BookmarksHierarchyViewModel`, which keeps bookmark derivation on
+`WhatSonRuntimeDomainSnapshots` and `BookmarksHierarchyController`, which keeps bookmark derivation on
 the already indexed library data instead of reparsing the hub.

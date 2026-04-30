@@ -11,7 +11,7 @@ import "navigation/view" as NavigationViewMode
 Rectangle {
     id: navigationBar
 
-    readonly property string activeNavigationModeName: navigationModeViewModel && navigationModeViewModel.activeModeName !== undefined ? navigationModeViewModel.activeModeName : "View"
+    readonly property string activeNavigationModeName: navigationModeController && navigationModeController.activeModeName !== undefined ? navigationModeController.activeModeName : "View"
     readonly property int bottomInset: LV.Theme.gap2
     readonly property int compactHorizontalInset: LV.Theme.gapNone
     readonly property int compactLeftGroupSpacing: LV.Theme.gap4
@@ -29,12 +29,12 @@ Rectangle {
     property color compactSurfaceColor: LV.Theme.panelBackground10
     readonly property int compactTopInset: LV.Theme.gapNone
     property bool detailPanelCollapsed: false
-    property var editorViewModeViewModel: null
+    property var editorViewModeController: null
     readonly property int effectivePanelHeight: panelHeight
-    property var navigationModeViewModel: null
+    property var navigationModeController: null
     property color panelColor: "transparent"
-    property var panelViewModelRegistry: null
-    readonly property var panelViewModel: navigationBar.panelViewModelRegistry ? navigationBar.panelViewModelRegistry.panelViewModel("NavigationBarLayout") : null
+    property var panelControllerRegistry: null
+    readonly property var panelController: navigationBar.panelControllerRegistry ? navigationBar.panelControllerRegistry.panelController("NavigationBarLayout") : null
     property int panelHeight: LV.Theme.gap24
     property bool sidebarCollapsed: false
     readonly property int sideInset: compactMode ? LV.Theme.gap8 : LV.Theme.gap4
@@ -68,8 +68,8 @@ Rectangle {
 
     function requestViewHook(reason) {
         const hookReason = reason !== undefined ? String(reason) : "manual";
-        if (panelViewModel && panelViewModel.requestViewModelHook)
-            panelViewModel.requestViewModelHook(hookReason);
+        if (panelController && panelController.requestControllerHook)
+            panelController.requestControllerHook(hookReason);
         viewHookRequested();
     }
 
@@ -111,8 +111,8 @@ Rectangle {
                     Layout.alignment: Qt.AlignVCenter
                     Layout.preferredHeight: LV.Theme.gap20
                     compactMode: false
-                    editorViewModeViewModel: navigationBar.editorViewModeViewModel
-                    navigationModeViewModel: navigationBar.navigationModeViewModel
+                    editorViewModeController: navigationBar.editorViewModeController
+                    navigationModeController: navigationBar.navigationModeController
                     sidebarCollapsed: navigationBar.sidebarCollapsed
 
                     onToggleSidebarRequested: navigationBar.toggleSidebarRequested()
@@ -169,13 +169,13 @@ Rectangle {
                     NavigationView.NavigationModeBar {
                         Layout.alignment: Qt.AlignVCenter
                         Layout.preferredHeight: LV.Theme.gap18
-                        navigationModeViewModel: navigationBar.navigationModeViewModel
+                        navigationModeController: navigationBar.navigationModeController
                         showLabel: false
                     }
                     NavigationView.NavigationEditorViewBar {
                         Layout.alignment: Qt.AlignVCenter
                         Layout.preferredHeight: LV.Theme.gap18
-                        editorViewModeViewModel: navigationBar.editorViewModeViewModel
+                        editorViewModeController: navigationBar.editorViewModeController
                         showLabel: false
                         visible: navigationBar.compactEditorViewVisible
                     }

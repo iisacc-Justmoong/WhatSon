@@ -19,16 +19,14 @@ repaint brighter panel slabs over the root `ApplicationWindow` canvas.
 The compact navigation surface stays `24px` high on `panelBackground10`, and the hierarchy route keeps `gap2` VStack spacing so the mobile shell preserves the Figma rhythm instead of introducing a second shell layout.
 
 ## Root Ownership
-`Main.qml` binds the desktop-only New shortcut and routes that shortcut through `MainWindowInteractionController.qml`
-instead of handing every mutable root viewmodel directly to every consumer.
+`Main.qml` binds the desktop-only New shortcut and routes that shortcut through its inline `windowInteractions`
+helper instead of handing every mutable root controller directly to every consumer.
 
-Shortcut writes now resolve through owned writable LVRS view ids first:
-- `windowInteractions.libraryNoteMutation`
-- `windowInteractions.navigationMode`
-- `windowInteractions.sidebarHierarchy`
+Runtime objects now arrive from `WhatSonQmlContextBinder` as direct LVRS context-object bindings. QML does not use a
+view-model layer or a `LV.Controllers`/`LV.ViewModels` registry for runtime lookup.
 
-This keeps shortcut-triggered mutation aligned with LVRS ownership rather than turning the root scene into a bag of
-globally writable QObjects.
+This keeps shortcut-triggered mutation explicit: the root helper forwards to the concrete controller object it was
+given, while the owning C++ model domain remains responsible for mutation and persistence behavior.
 
 ## Routed Workspace
 `MobileHierarchyPage.qml` owns the mobile `LV.PageRouter` stack and mounts the hierarchy page, note-list body, and editor body as routed children.
@@ -79,7 +77,7 @@ hint maps to one filesystem walk instead of one walk for hashing plus another fo
 
 ## Runtime Index Pipeline
 `WhatSonLibraryIndexedState` is the backend projection boundary for library note indexing. It owns the canonical `all`,
-`draft`, and `today` note collections so viewmodels do not each rebuild those derived buckets themselves.
+`draft`, and `today` note collections so controllers do not each rebuild those derived buckets themselves.
 
 `WhatSonRuntimeParallelLoader.cpp` now uses LVRS `BootstrapParallel` for requested domain loads and derives bookmarks
 from the shared library snapshot when both domains are mounted. That keeps the runtime bootstrap on one library index

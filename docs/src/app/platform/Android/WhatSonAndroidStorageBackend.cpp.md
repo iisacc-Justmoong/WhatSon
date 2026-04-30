@@ -50,6 +50,6 @@
   SAF-specific details.
 
 ## Primary Callers
-- `src/app/viewmodel/onboarding/OnboardingHubController.cpp`
+- `src/app/models/onboarding/OnboardingHubController.cpp`
 - `src/app/runtime/startup/WhatSonStartupHubResolver.cpp`
 - `src/app/models/file/note/ContentsNoteManagementCoordinator.cpp`

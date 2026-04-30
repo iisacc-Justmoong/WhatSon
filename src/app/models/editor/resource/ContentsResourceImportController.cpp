@@ -202,7 +202,7 @@ void ContentsResourceImportController::syncChildren()
     m_resourceImportConflictController->setProperty("resourceImportModeNone", m_resourceImportModeNone);
     m_resourceImportConflictController->setProperty("resourceImportModeUrls", m_resourceImportModeUrls);
     m_resourceImportConflictController->setProperty("resourceTagController", QVariant::fromValue(static_cast<QObject*>(m_resourceTagController)));
-    m_resourceImportConflictController->setProperty("resourcesImportViewModel", QVariant::fromValue(m_resourcesImportViewModel));
+    m_resourceImportConflictController->setProperty("resourcesImportController", QVariant::fromValue(m_resourcesImportController));
     m_resourceImportConflictController->setProperty("showDedicatedResourceViewer", m_showDedicatedResourceViewer);
     m_resourceImportConflictController->setProperty("showFormattedTextRenderer", m_showFormattedTextRenderer);
 }

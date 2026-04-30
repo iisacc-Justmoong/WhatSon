@@ -1,7 +1,7 @@
 # `src/app/runtime/startup/WhatSonStartupRuntimeCoordinator.hpp`
 
 ## Role
-`WhatSonStartupRuntimeCoordinator` orchestrates loading `.wshub` runtime data into the domain viewmodels.
+`WhatSonStartupRuntimeCoordinator` orchestrates loading `.wshub` runtime data into the domain controllers.
 
 ## Interface Alignment
 - Runtime targets now reuse `IWhatSonRuntimeParallelLoader::Targets`.

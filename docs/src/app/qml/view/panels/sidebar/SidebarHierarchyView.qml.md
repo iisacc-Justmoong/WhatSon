@@ -29,7 +29,7 @@ The same wrapper rule now applies to hierarchy selection, so pointer-selection b
 without changing delegate call sites.
 
 ## Important Inputs
-- `hierarchyViewModel`: the active hierarchy state provider.
+- `hierarchyController`: the active hierarchy state provider.
 - `hierarchyInteractionBridge`: rename, create, delete, single-row expansion, and bulk expansion bridge.
 - `hierarchyDragDropBridge`: reorder and note-drop bridge.
 - appearance controls such as panel color, insets, toolbar icon names, and search configuration.
@@ -60,13 +60,13 @@ These signals make the file a reusable visual surface instead of a hard-coded on
 
 ## Entry and Event Reload Hooks
 
-- When `hierarchyViewModel` changes (domain entry/switch), the view now calls
-  `hierarchyViewModel.requestViewModelHook()` if the active domain provides it.
-- `onHierarchyNodesChanged` no longer calls `requestViewModelHook()` directly.
+- When `hierarchyController` changes (domain entry/switch), the view now calls
+  `hierarchyController.requestControllerHook()` if the active domain provides it.
+- `onHierarchyNodesChanged` no longer calls `requestControllerHook()` directly.
   Instead, it only resynchronizes LVRS selection/focus presentation.
 - `onHierarchyNodesChanged` also refreshes `displayedHierarchyModel`, but only when the serialized row payload actually
   differs. Periodic hierarchy refresh signals with unchanged content therefore no longer force a visible tree rebuild.
-- `requestHierarchyViewModelReload(reason)` now explicitly ignores `reason == "hierarchy.nodes.changed"` to prevent recursive reload loops when domain hooks emit `hierarchyModelChanged` during projection refresh.
+- `requestHierarchyControllerReload(reason)` now explicitly ignores `reason == "hierarchy.nodes.changed"` to prevent recursive reload loops when domain hooks emit `hierarchyModelChanged` during projection refresh.
 
 ## Selected Row Activation Contract
 
@@ -76,7 +76,7 @@ These signals make the file a reusable visual surface instead of a hard-coded on
   `activateListItemById(...)` when no usable key is available.
 - This prevents post-insert index drift from activating the wrong row when a new hierarchy item is created and
   surrounding rows are reindexed by LVRS model refresh timing.
-- Folder creation now immediately re-syncs the primary hierarchy selection back from the viewmodel, promotes the created
+- Folder creation now immediately re-syncs the primary hierarchy selection back from the controller, promotes the created
   row to the active LVRS item, and starts inline rename when the active domain supports renaming. This keeps newly
   created hierarchy items ready for direct user editing instead of leaving focus parked on the parent row.
 
@@ -92,7 +92,7 @@ These signals make the file a reusable visual surface instead of a hard-coded on
   (`acceptedModifiers: Qt.KeyboardModifierMask`) mounted on `LV.Hierarchy`.
 - `resolveHierarchySelectionModifiers(...)` uses a short-lived press cache when activation callbacks arrive without
   modifier bits, so `Cmd/Ctrl` and `Shift` gestures remain stable across platform callback timing differences.
-- `selectedHierarchyIndices` stores the visual multi-selection set, while `hierarchyViewModel.setHierarchySelectedIndex(...)`
+- `selectedHierarchyIndices` stores the visual multi-selection set, while `hierarchyController.setHierarchySelectedIndex(...)`
   still tracks the primary routed folder.
 - Because LVRS hierarchy rows expose only one native active item, additional selections are rendered by
   `hierarchySelectionOverlayLayer` through `selectedHierarchyOverlayRects`.
@@ -114,7 +114,7 @@ These signals make the file a reusable visual surface instead of a hard-coded on
   project-facing strings stay in English.
 - Bulk expansion is enabled only when the projected hierarchy model currently contains at least one row with
   `showChevron: true`.
-- Both actions route through `HierarchyInteractionBridge.setAllItemsExpanded(...)` so the active domain viewmodel, not
+- Both actions route through `HierarchyInteractionBridge.setAllItemsExpanded(...)` so the active domain controller, not
   the view, owns the persisted `expanded` state.
 - The menu entries now carry explicit `eventName` values (`hierarchy.expandAll` / `hierarchy.collapseAll`) and route
   through a shared trigger handler that accepts both `onItemTriggered(index)` and
@@ -140,7 +140,7 @@ These signals make the file a reusable visual surface instead of a hard-coded on
   the sidebar.
 - The menu exposes only two actions for now:
   - `New Folder`, which forwards to the existing `HierarchyInteractionBridge.createFolder()` path after selecting the
-    clicked folder, so the library viewmodel creates the new folder as that folder's child.
+    clicked folder, so the library controller creates the new folder as that folder's child.
     After creation, the sidebar promotes the new row to the active selection and begins inline rename.
   - `Delete Folder`, which forwards to the existing `HierarchyInteractionBridge.deleteSelectedFolder()` path after
     selecting the clicked folder.
@@ -155,7 +155,7 @@ These signals make the file a reusable visual surface instead of a hard-coded on
   existing expanded/collapsed rows.
 - Expansion keys are scoped by the active hierarchy index, so identical row ids in different hierarchy domains do not
   leak expansion state into each other when the toolbar switches domain.
-- Programmatic LVRS expansion changes are not persisted back into the ViewModel. The sidebar arms an expansion request
+- Programmatic LVRS expansion changes are not persisted back into the Controller. The sidebar arms an expansion request
   only when the pointer press lands on a row's chevron slot, and `onListItemExpanded` reverts any unarmed expansion
   change back to the preserved state.
 - `syncSelectedHierarchyItem(...)` refuses to activate a selected row that is hidden behind a collapsed ancestor. This
@@ -177,7 +177,7 @@ These signals make the file a reusable visual surface instead of a hard-coded on
   `hierarchyActivationPendingSerial`, so already queued activation callbacks from the same pointer
   transaction are invalidated immediately when expansion is detected.
 - Activation and expansion bridge calls both use the same resolved hierarchy index, so deep rows
-  such as `Resources > Other` map to the correct viewmodel item even when LVRS emits visual index
+  such as `Resources > Other` map to the correct controller item even when LVRS emits visual index
   values that differ from source-model ids.
 - Integer parsing now avoids `Number(value) || -1` in this surface, so valid zero-based ids/indexes
   (notably first rows and progress `0`) no longer collapse into `-1`.
@@ -208,7 +208,7 @@ These signals make the file a reusable visual surface instead of a hard-coded on
   drop.
 - The `DropArea` stays enabled whenever a `HierarchyDragDropBridge` is wired. It must not gate itself on
   `noteDropContractAvailable`, because that prevents drag enter/drop events from reaching the controller at all. The
-  controller and domain ViewModel capability remain responsible for accepting or rejecting a concrete target.
+  controller and domain Controller capability remain responsible for accepting or rejecting a concrete target.
 - That folder-drop path depends on `SidebarHierarchyNoteDropController.normalizeNoteIds(...)` returning a concrete
   array. If the helper falls through without `return normalized;`, the sidebar will reject every note-list-to-folder
   drop as an empty payload.

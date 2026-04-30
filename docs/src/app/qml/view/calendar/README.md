@@ -32,8 +32,8 @@
 - Known hotspots and refactor priorities
 
 ## Notes
-- Day/week/month/year pages now consume the shared calendar backend through dedicated calendar viewmodels.
-- `AgendaPage.qml` consumes `AgendaViewModel` and renders date header, location summary, all-day events,
+- Day/week/month/year pages now consume the shared calendar backend through dedicated calendar controllers.
+- `AgendaPage.qml` consumes `AgendaController` and renders date header, location summary, all-day events,
   timed events, and agenda-item completion rows inside the content-surface calendar route.
 - `AgendaPage.qml` no longer includes any weather card; the header is limited to date navigation and location context.
 - Shared Figma-aligned calendar navigation control (`Prev/Today/Next`) is centralized in `CalendarTodayControl.qml`;
@@ -42,7 +42,7 @@
 - Week view now uses one continuous scaffold: the left time rail stays fixed, the right date columns flick horizontally
   without snap, the viewport is sized for three visible day columns, generic header/hour cells stay transparent
   instead of drawing per-column grid fills, and the day-column model now comes directly from
-  `WeekCalendarViewModel.timelineDayModels` instead of a QML-owned `ListModel` plus entry cache. Current-week
+  `WeekCalendarController.timelineDayModels` instead of a QML-owned `ListModel` plus entry cache. Current-week
   initialization and `Today` both recenter the surface so the real current date occupies the middle visible column.
 - Monthly page mirrors Figma node `228:9666` with fixed header (`54`) and a reusable month-grid surface; mobile adds a
   snap-paged horizontal month swiper while desktop keeps non-interactive paging.

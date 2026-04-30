@@ -4,14 +4,14 @@
 
 #include <QString>
 
-class LibraryHierarchyViewModel;
-class ProjectsHierarchyViewModel;
-class BookmarksHierarchyViewModel;
-class TagsHierarchyViewModel;
-class ResourcesHierarchyViewModel;
-class ProgressHierarchyViewModel;
-class EventHierarchyViewModel;
-class PresetHierarchyViewModel;
+class LibraryHierarchyController;
+class ProjectsHierarchyController;
+class BookmarksHierarchyController;
+class TagsHierarchyController;
+class ResourcesHierarchyController;
+class ProgressHierarchyController;
+class EventHierarchyController;
+class PresetHierarchyController;
 class WhatSonHubRuntimeStore;
 
 class WhatSonStartupRuntimeCoordinator final

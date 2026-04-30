@@ -84,7 +84,7 @@ void WhatSonCppRegressionTests::cronExpression_and_asyncScheduler_coverParsingMa
         scheduleTriggeredSpy.at(1).at(5).toMap().value(QStringLiteral("scope")).toString(),
         QStringLiteral("interval"));
 
-    scheduler.requestViewModelHook();
+    scheduler.requestControllerHook();
     QCOMPARE(scheduler.hookRequestCount(), 1);
     QCOMPARE(hookRequestCountChangedSpy.count(), 1);
 

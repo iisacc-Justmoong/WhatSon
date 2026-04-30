@@ -5,10 +5,10 @@
 
 ## Current State
 - The view is intentionally blank for now.
-- It already accepts its own `resourceDetailPanelViewModel` contract so resource-specific detail UI can be added
+- It already accepts its own `resourceDetailPanelController` contract so resource-specific detail UI can be added
   later without branching back into the note-detail surface.
 
 ## Contract
-- `property var resourceDetailPanelViewModel`
+- `property var resourceDetailPanelController`
 - `signal viewHookRequested`
 - `function requestViewHook(reason)`

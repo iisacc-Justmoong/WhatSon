@@ -5,8 +5,8 @@ import LVRS 1.0 as LV
 LV.HStack {
     id: modeBar
 
-    readonly property string activeModeText: activeNavigationModeViewModel && activeNavigationModeViewModel.modeName !== undefined ? activeNavigationModeViewModel.modeName : "View"
-    readonly property var activeNavigationModeViewModel: navigationModeViewModel && navigationModeViewModel.activeModeViewModel !== undefined ? navigationModeViewModel.activeModeViewModel : null
+    readonly property string activeModeText: activeNavigationModeController && activeNavigationModeController.modeName !== undefined ? activeNavigationModeController.modeName : "View"
+    readonly property var activeNavigationModeController: navigationModeController && navigationModeController.activeModeController !== undefined ? navigationModeController.activeModeController : null
     property int comboContextMenuWidth: LV.Theme.buttonMinWidth + LV.Theme.gap24 + LV.Theme.gap8
     property int comboMenuYOffset: LV.Theme.gap2
     property int compactComboWidth: LV.Theme.buttonMinWidth - LV.Theme.gap3
@@ -15,31 +15,31 @@ LV.HStack {
             iconName: "generalshow",
             label: "View",
             keyVisible: false,
-            selected: navigationModeViewModel && navigationModeViewModel.activeMode === 0
+            selected: navigationModeController && navigationModeController.activeMode === 0
         },
         {
             iconName: "renameColumn",
             label: "Edit",
             keyVisible: false,
-            selected: navigationModeViewModel && navigationModeViewModel.activeMode === 1
+            selected: navigationModeController && navigationModeController.activeMode === 1
         },
         {
             iconName: "abstractClass",
             label: "Control",
             keyVisible: false,
-            selected: navigationModeViewModel && navigationModeViewModel.activeMode === 2
+            selected: navigationModeController && navigationModeController.activeMode === 2
         }
     ]
-    property var navigationModeViewModel: null
-    readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("navigation.NavigationModeBar") : null
+    property var navigationModeController: null
+    readonly property var panelController: panelControllerRegistry ? panelControllerRegistry.panelController("navigation.NavigationModeBar") : null
     property bool showLabel: true
 
     signal viewHookRequested
 
     function requestViewHook(reason) {
         const hookReason = reason !== undefined ? String(reason) : "manual";
-        if (panelViewModel && panelViewModel.requestViewModelHook)
-            panelViewModel.requestViewModelHook(hookReason);
+        if (panelController && panelController.requestControllerHook)
+            panelController.requestControllerHook(hookReason);
         viewHookRequested();
     }
     function toggleModeMenu() {
@@ -77,11 +77,11 @@ LV.HStack {
         items: modeBar.modeMenuItems
         modal: false
         parent: Controls.Overlay.overlay
-        selectedIndex: modeBar.navigationModeViewModel && modeBar.navigationModeViewModel.activeMode !== undefined ? modeBar.navigationModeViewModel.activeMode : 0
+        selectedIndex: modeBar.navigationModeController && modeBar.navigationModeController.activeMode !== undefined ? modeBar.navigationModeController.activeMode : 0
 
         onItemTriggered: function (index) {
-            if (modeBar.navigationModeViewModel && modeBar.navigationModeViewModel.requestModeChange !== undefined)
-                modeBar.navigationModeViewModel.requestModeChange(index);
+            if (modeBar.navigationModeController && modeBar.navigationModeController.requestModeChange !== undefined)
+                modeBar.navigationModeController.requestModeChange(index);
             modeBar.requestViewHook("select-navigation-mode");
         }
     }

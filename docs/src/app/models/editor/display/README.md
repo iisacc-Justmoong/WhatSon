@@ -54,7 +54,7 @@ gain new session, persistence, parsing, mutation, scheduling, or command-surface
   Owns QML-side paste, inline-format shortcut, and editor selection context-menu orchestration so
   `ContentsDisplayView.qml` only keeps thin compatibility wrappers for existing callers.
 - `ContentsDisplayGeometryController.qml`
-  Owns QML-runtime geometry scheduling and delegates public calls through the C++ geometry ViewModel.
+  Owns QML-runtime geometry scheduling and delegates public calls through the C++ geometry Controller.
 - `ContentsDisplayGeometrySnapshotModel.qml`
   Owns QML-side geometry normalization, structured minimap entry construction, visible gutter entry building,
   and compatibility wrappers that let `ContentsDisplayView.qml` shed large helper bodies without breaking existing host
@@ -63,20 +63,20 @@ gain new session, persistence, parsing, mutation, scheduling, or command-surface
   Owns QML-side document/viewport line math such as logical-line Y lookup, gutter Y lookup, marker placement,
   minimap row positioning, and documentY-to-line resolution.
 - `ContentsDisplayMutationController.qml`
-  Owns QML-runtime RAW source writes delegated through the C++ mutation ViewModel. It applies already-built RAW
+  Owns QML-runtime RAW source writes delegated through the C++ mutation Controller. It applies already-built RAW
   `.wsnbody` text directly, first ensuring the editor session is bound to the selected note when the visible
   presentation source came from a resolved body snapshot. Explicit tag-management mutations request an immediate
   persistence flush after the session RAW text changes, then let parser and renderer projections observe the changed
   source.
 - `ContentsDisplayPresentationController.qml`
   Owns the detailed presentation refresh and editor-creation trace orchestration delegated through the C++
-  presentation ViewModel.
+  presentation Controller.
 - `ContentsDisplayPresentationOrchestrationModel.qml`
   Owns the thin host-facing presentation wrappers for refresh-plan execution and structured layout refresh dispatch so
   `ContentsDisplayView.qml` stays a composer.
 - `ContentsDisplaySelectionMountController.qml`
   Owns the detailed selection, snapshot reconcile, and mount orchestration delegated through the C++
-  selection/mount ViewModel.
+  selection/mount Controller.
 - `ContentsDisplaySelectionOrchestrationModel.qml`
   Owns the thin host-facing selection wrappers for focus, snapshot reconcile, mount-delivery dispatch, and native
   composition policy checks.
@@ -95,6 +95,6 @@ gain new session, persistence, parsing, mutation, scheduling, or command-surface
   note-session state.
 - Mobile hierarchy navigation remains in `src/app/models/content/mobile`; only editor-body display coordination belongs
   here.
-- ViewModels remain C++ under `src/app/viewmodel`.
-- New editor display orchestration should be C++ model or ViewModel code, with QML limited to view construction under
+- Controllers remain C++ under `src/app/models`.
+- New editor display orchestration should be C++ model or Controller code, with QML limited to view construction under
   `src/app/qml/view`.

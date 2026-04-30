@@ -27,7 +27,7 @@ touch-friendly overshoot/flick profile so mobile hierarchy scrolling keeps momen
 
 ## Relationship To C++
 This directory talks to C++ almost entirely through:
-- `IHierarchyViewModel`-compatible objects
+- `IHierarchyController`-compatible objects
 - `HierarchyInteractionBridge`
 - `HierarchyDragDropBridge`
 

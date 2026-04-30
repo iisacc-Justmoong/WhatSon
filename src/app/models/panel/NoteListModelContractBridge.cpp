@@ -1,0 +1,702 @@
+#include "app/models/panel/NoteListModelContractBridge.hpp"
+
+#include <QAbstractItemModel>
+#include <QMetaObject>
+#include <QMetaProperty>
+#include <QQmlEngine>
+#include <QVariantMap>
+
+#include "app/models/file/WhatSonDebugTrace.hpp"
+#include "app/policy/ArchitecturePolicyLock.hpp"
+
+#include <algorithm>
+
+namespace
+{
+    constexpr auto kHierarchyNoteListModelSignature = "hierarchyNoteListModel()";
+    constexpr auto kNoteListModelSignature = "noteListModel()";
+    constexpr auto kSetSearchTextSignature = "setSearchText(QString)";
+    constexpr auto kSetCurrentIndexSignature = "setCurrentIndex(int)";
+
+    void stabilizeQmlBindingOwnership(QObject* object)
+    {
+        if (object != nullptr)
+        {
+            QQmlEngine::setObjectOwnership(object, QQmlEngine::CppOwnership);
+        }
+    }
+
+    QVariantMap rowSnapshotAt(const QAbstractItemModel* model, int row)
+    {
+        QVariantMap snapshot;
+        if (model == nullptr)
+        {
+            return snapshot;
+        }
+
+        const int normalizedRow = std::max(-1, row);
+        if (normalizedRow < 0 || normalizedRow >= model->rowCount())
+        {
+            return snapshot;
+        }
+
+        const QModelIndex modelIndex = model->index(normalizedRow, 0);
+        if (!modelIndex.isValid())
+        {
+            return snapshot;
+        }
+
+        const QHash<int, QByteArray> roleNames = model->roleNames();
+        for (auto iterator = roleNames.constBegin(); iterator != roleNames.constEnd(); ++iterator)
+        {
+            const QByteArray roleName = iterator.value().trimmed();
+            if (roleName.isEmpty())
+            {
+                continue;
+            }
+            if (roleName == QByteArrayLiteral("bodyText"))
+            {
+                continue;
+            }
+            snapshot.insert(QString::fromUtf8(roleName), modelIndex.data(iterator.key()));
+        }
+
+        if (!snapshot.contains(QStringLiteral("noteId")) && snapshot.contains(QStringLiteral("id")))
+        {
+            snapshot.insert(QStringLiteral("noteId"), snapshot.value(QStringLiteral("id")));
+        }
+
+        return snapshot;
+    }
+
+    QVariantList rowSnapshotsForModelObject(const QObject* modelObject)
+    {
+        QVariantList rows;
+        const auto* model = qobject_cast<const QAbstractItemModel*>(modelObject);
+        if (model == nullptr)
+        {
+            return rows;
+        }
+
+        const int rowCount = model->rowCount();
+        rows.reserve(std::max(0, rowCount));
+        for (int row = 0; row < rowCount; ++row)
+        {
+            rows.push_back(rowSnapshotAt(model, row));
+        }
+        return rows;
+    }
+}
+
+NoteListModelContractBridge::NoteListModelContractBridge(QObject* parent)
+    : QObject(parent)
+{
+}
+
+NoteListModelContractBridge::~NoteListModelContractBridge() = default;
+
+QObject* NoteListModelContractBridge::hierarchyController() const noexcept
+{
+    return m_hierarchyController;
+}
+
+void NoteListModelContractBridge::setHierarchyController(QObject* model)
+{
+    if (model != nullptr
+        && !WhatSon::Policy::verifyMutableDependencyAllowed(
+            WhatSon::Policy::Layer::View,
+            WhatSon::Policy::Layer::Controller,
+            QStringLiteral("NoteListModelContractBridge::setHierarchyController")))
+    {
+        return;
+    }
+
+    if (model == nullptr
+        && !WhatSon::Policy::verifyMutableWiringAllowed(
+            QStringLiteral("NoteListModelContractBridge::setHierarchyController")))
+    {
+        return;
+    }
+
+    if (m_hierarchyController == model)
+    {
+        return;
+    }
+
+    disconnectHierarchyController();
+    stabilizeQmlBindingOwnership(model);
+    m_hierarchyController = model;
+
+    if (m_hierarchyController != nullptr)
+    {
+        m_hierarchyControllerDestroyedConnection = connect(
+            m_hierarchyController,
+            &QObject::destroyed,
+            this,
+            &NoteListModelContractBridge::handleHierarchyControllerDestroyed);
+    }
+
+    emit hierarchyControllerChanged();
+    refreshResolvedNoteListModel();
+}
+
+QObject* NoteListModelContractBridge::noteListModel() const noexcept
+{
+    return m_noteListModel;
+}
+
+void NoteListModelContractBridge::setNoteListModel(QObject* model)
+{
+    if (model != nullptr
+        && !WhatSon::Policy::verifyMutableDependencyAllowed(
+            WhatSon::Policy::Layer::View,
+            WhatSon::Policy::Layer::Controller,
+            QStringLiteral("NoteListModelContractBridge::setNoteListModel")))
+    {
+        return;
+    }
+
+    if (model == nullptr
+        && !WhatSon::Policy::verifyMutableWiringAllowed(
+            QStringLiteral("NoteListModelContractBridge::setNoteListModel")))
+    {
+        return;
+    }
+
+    if (m_explicitNoteListModel == model)
+    {
+        return;
+    }
+
+    m_explicitNoteListModel = model;
+    refreshResolvedNoteListModel();
+}
+
+bool NoteListModelContractBridge::hasNoteListModel() const noexcept
+{
+    return m_noteListModel != nullptr;
+}
+
+bool NoteListModelContractBridge::searchContractAvailable() const noexcept
+{
+    return m_searchContractAvailable;
+}
+
+bool NoteListModelContractBridge::currentIndexContractAvailable() const noexcept
+{
+    return m_currentIndexContractAvailable;
+}
+
+int NoteListModelContractBridge::currentIndex() const
+{
+    return readIntProperty(m_noteListModel, "currentIndex", -1);
+}
+
+QVariantMap NoteListModelContractBridge::currentNoteEntry() const
+{
+    QVariantMap noteEntry;
+    if (m_noteListModel == nullptr)
+    {
+        return noteEntry;
+    }
+
+    if (hasReadableProperty(m_noteListModel, "currentNoteEntry"))
+    {
+        noteEntry = m_noteListModel->property("currentNoteEntry").toMap();
+    }
+
+    if (noteEntry.isEmpty())
+    {
+        noteEntry = rowSnapshotAt(qobject_cast<QAbstractItemModel*>(m_noteListModel.data()), currentIndex());
+    }
+
+    const QString currentNoteId = readStringProperty(m_noteListModel, "currentNoteId").trimmed();
+    if (!noteEntry.contains(QStringLiteral("noteId")))
+    {
+        if (noteEntry.contains(QStringLiteral("id")))
+        {
+            noteEntry.insert(QStringLiteral("noteId"), noteEntry.value(QStringLiteral("id")));
+        }
+        else if (!currentNoteId.isEmpty())
+        {
+            noteEntry.insert(QStringLiteral("noteId"), currentNoteId);
+        }
+    }
+
+    const QString currentNoteDirectoryPath = readStringProperty(m_noteListModel, "currentNoteDirectoryPath").trimmed();
+    if (!noteEntry.contains(QStringLiteral("noteDirectoryPath")) && !currentNoteDirectoryPath.isEmpty())
+    {
+        noteEntry.insert(QStringLiteral("noteDirectoryPath"), currentNoteDirectoryPath);
+    }
+
+    return noteEntry;
+}
+
+QString NoteListModelContractBridge::currentNoteId() const
+{
+    const QVariantMap noteEntry = currentNoteEntry();
+    QString entryNoteId = noteEntry.value(QStringLiteral("noteId")).toString().trimmed();
+    if (!entryNoteId.isEmpty())
+    {
+        return entryNoteId;
+    }
+
+    QString entryId = noteEntry.value(QStringLiteral("id")).toString().trimmed();
+    if (!entryId.isEmpty())
+    {
+        return entryId;
+    }
+
+    return readStringProperty(m_noteListModel, "currentNoteId").trimmed();
+}
+
+bool NoteListModelContractBridge::applySearchText(const QString& searchText)
+{
+    if (m_noteListModel == nullptr)
+    {
+        return false;
+    }
+
+    if (hasWritableProperty(m_noteListModel, "searchText"))
+    {
+        return m_noteListModel->setProperty("searchText", searchText);
+    }
+
+    if (hasInvokableMethod(m_noteListModel, kSetSearchTextSignature))
+    {
+        return QMetaObject::invokeMethod(
+            m_noteListModel,
+            "setSearchText",
+            Qt::DirectConnection,
+            Q_ARG(QString, searchText));
+    }
+
+    return false;
+}
+
+int NoteListModelContractBridge::readCurrentIndex() const
+{
+    return currentIndex();
+}
+
+QVariantMap NoteListModelContractBridge::readCurrentNoteEntry() const
+{
+    return currentNoteEntry();
+}
+
+QString NoteListModelContractBridge::readCurrentNoteId() const
+{
+    return currentNoteId();
+}
+
+QString NoteListModelContractBridge::readNoteIdAt(int index) const
+{
+    const auto* model = qobject_cast<QAbstractItemModel*>(m_noteListModel.data());
+    if (model == nullptr)
+    {
+        return {};
+    }
+
+    const int normalizedIndex = std::max(-1, index);
+    if (normalizedIndex < 0 || normalizedIndex >= model->rowCount())
+    {
+        return {};
+    }
+
+    const QVariantMap snapshot = rowSnapshotAt(model, normalizedIndex);
+    if (snapshot.isEmpty())
+    {
+        WhatSon::Debug::traceSelf(const_cast<NoteListModelContractBridge*>(this),
+                                  QStringLiteral("notelist.contract"),
+                                  QStringLiteral("readNoteIdAt.emptySnapshot"),
+                                  QStringLiteral("index=%1 rowCount=%2 model=0x%3")
+                                      .arg(normalizedIndex)
+                                      .arg(model->rowCount())
+                                      .arg(QString::number(reinterpret_cast<quintptr>(model), 16)));
+        return {};
+    }
+
+    const QVariant noteIdValue = snapshot.contains(QStringLiteral("noteId"))
+        ? snapshot.value(QStringLiteral("noteId"))
+        : snapshot.value(QStringLiteral("id"));
+    QString noteId = noteIdValue.toString().trimmed();
+    if (normalizedIndex == 0)
+    {
+        WhatSon::Debug::traceSelf(const_cast<NoteListModelContractBridge*>(this),
+                                  QStringLiteral("notelist.contract"),
+                                  QStringLiteral("readNoteIdAt.row0"),
+                                  QStringLiteral("index=%1 noteId=%2 noteDirectoryPath=%3 keys=%4")
+                                      .arg(normalizedIndex)
+                                      .arg(noteId)
+                                      .arg(snapshot.value(QStringLiteral("noteDirectoryPath")).toString().trimmed())
+                                      .arg(QStringList(snapshot.keys()).join(QStringLiteral(","))));
+    }
+    return noteId;
+}
+
+QVariantList NoteListModelContractBridge::readAllRows() const
+{
+    return rowSnapshotsForModelObject(m_noteListModel.data());
+}
+
+QVariantList NoteListModelContractBridge::readAllRowsForModel(QObject* model) const
+{
+    return rowSnapshotsForModelObject(model);
+}
+
+bool NoteListModelContractBridge::pushCurrentIndex(int index)
+{
+    if (m_noteListModel == nullptr)
+    {
+        return false;
+    }
+
+    const int normalizedIndex = std::max(-1, index);
+    if (hasWritableProperty(m_noteListModel, "currentIndex"))
+    {
+        if (currentIndex() == normalizedIndex)
+        {
+            return true;
+        }
+        const bool pushed = m_noteListModel->setProperty("currentIndex", normalizedIndex);
+        return pushed;
+    }
+
+    if (hasInvokableMethod(m_noteListModel, kSetCurrentIndexSignature))
+    {
+        return QMetaObject::invokeMethod(
+            m_noteListModel,
+            "setCurrentIndex",
+            Qt::DirectConnection,
+            Q_ARG(int, normalizedIndex));
+    }
+
+    return false;
+}
+
+void NoteListModelContractBridge::handleCurrentIndexChanged()
+{
+    emit currentIndexChanged();
+    emit currentNoteEntryChanged();
+    emit currentNoteIdChanged();
+}
+
+void NoteListModelContractBridge::handleCurrentNoteEntryChanged()
+{
+    emit currentNoteEntryChanged();
+    emit currentNoteIdChanged();
+}
+
+void NoteListModelContractBridge::handleCurrentNoteIdChanged()
+{
+    emit currentNoteEntryChanged();
+    emit currentNoteIdChanged();
+}
+
+void NoteListModelContractBridge::handleNoteListDestroyed()
+{
+    const QObject* destroyedObject = sender();
+    const bool destroyedExplicitModel = m_explicitNoteListModel == destroyedObject;
+
+    disconnectNoteListModel();
+    if (destroyedExplicitModel)
+    {
+        m_explicitNoteListModel = nullptr;
+    }
+
+    const bool hadNoteListModel = m_noteListModel != nullptr;
+    m_noteListModel = nullptr;
+    if (hadNoteListModel)
+    {
+        emit noteListModelChanged();
+        emit hasNoteListModelChanged();
+    }
+    refreshContracts();
+    emit currentIndexChanged();
+    emit currentNoteEntryChanged();
+    emit currentNoteIdChanged();
+
+    QMetaObject::invokeMethod(
+        this,
+        [this]()
+        {
+            refreshResolvedNoteListModel();
+        },
+        Qt::QueuedConnection);
+}
+
+void NoteListModelContractBridge::handleHierarchyControllerDestroyed()
+{
+    disconnectHierarchyController();
+    m_hierarchyController = nullptr;
+    emit hierarchyControllerChanged();
+    refreshResolvedNoteListModel();
+}
+
+bool NoteListModelContractBridge::hasReadableProperty(const QObject* object, const char* propertyName)
+{
+    if (object == nullptr || propertyName == nullptr)
+    {
+        return false;
+    }
+
+    const int propertyIndex = object->metaObject()->indexOfProperty(propertyName);
+    if (propertyIndex < 0)
+    {
+        return false;
+    }
+
+    return object->metaObject()->property(propertyIndex).isReadable();
+}
+
+bool NoteListModelContractBridge::hasWritableProperty(const QObject* object, const char* propertyName)
+{
+    if (object == nullptr || propertyName == nullptr)
+    {
+        return false;
+    }
+
+    const int propertyIndex = object->metaObject()->indexOfProperty(propertyName);
+    if (propertyIndex < 0)
+    {
+        return false;
+    }
+
+    return object->metaObject()->property(propertyIndex).isWritable();
+}
+
+bool NoteListModelContractBridge::hasInvokableMethod(const QObject* object, const char* methodSignature)
+{
+    if (object == nullptr || methodSignature == nullptr)
+    {
+        return false;
+    }
+
+    return object->metaObject()->indexOfMethod(QMetaObject::normalizedSignature(methodSignature)) >= 0;
+}
+
+bool NoteListModelContractBridge::hasSignal(const QObject* object, const char* signalSignature)
+{
+    if (object == nullptr || signalSignature == nullptr)
+    {
+        return false;
+    }
+
+    return object->metaObject()->indexOfSignal(QMetaObject::normalizedSignature(signalSignature)) >= 0;
+}
+
+QString NoteListModelContractBridge::readStringProperty(const QObject* object, const char* propertyName)
+{
+    if (!hasReadableProperty(object, propertyName))
+    {
+        return {};
+    }
+
+    return object->property(propertyName).toString();
+}
+
+int NoteListModelContractBridge::readIntProperty(
+    const QObject* object,
+    const char* propertyName,
+    int fallbackValue)
+{
+    if (!hasReadableProperty(object, propertyName))
+    {
+        return fallbackValue;
+    }
+
+    bool converted = false;
+    const int propertyValue = object->property(propertyName).toInt(&converted);
+    if (!converted)
+    {
+        return fallbackValue;
+    }
+    return propertyValue;
+}
+
+QObject* NoteListModelContractBridge::readObjectProperty(const QObject* object, const char* propertyName)
+{
+    if (!hasReadableProperty(object, propertyName))
+    {
+        return nullptr;
+    }
+
+    const QVariant propertyValue = object->property(propertyName);
+    if (!propertyValue.isValid() || propertyValue.isNull())
+    {
+        return nullptr;
+    }
+
+    return propertyValue.value<QObject*>();
+}
+
+QObject* NoteListModelContractBridge::invokeObjectMethod(QObject* object, const char* methodName)
+{
+    if (object == nullptr || methodName == nullptr)
+    {
+        return nullptr;
+    }
+
+    QObject* resolvedObject = nullptr;
+    if (!QMetaObject::invokeMethod(
+            object,
+            methodName,
+            Qt::DirectConnection,
+            Q_RETURN_ARG(QObject*, resolvedObject)))
+    {
+        return nullptr;
+    }
+
+    return resolvedObject;
+}
+
+QObject* NoteListModelContractBridge::resolveNoteListModelFromHierarchyController(const QObject* hierarchyController)
+{
+    if (hierarchyController == nullptr)
+    {
+        return nullptr;
+    }
+
+    QObject* resolvedModel = readObjectProperty(hierarchyController, "hierarchyNoteListModel");
+    if (resolvedModel == nullptr)
+    {
+        resolvedModel = readObjectProperty(hierarchyController, "noteListModel");
+    }
+    if (resolvedModel == nullptr
+        && hasInvokableMethod(hierarchyController, kHierarchyNoteListModelSignature))
+    {
+        resolvedModel = invokeObjectMethod(
+            const_cast<QObject*>(hierarchyController),
+            "hierarchyNoteListModel");
+    }
+    if (resolvedModel == nullptr
+        && hasInvokableMethod(hierarchyController, kNoteListModelSignature))
+    {
+        resolvedModel = invokeObjectMethod(
+            const_cast<QObject*>(hierarchyController),
+            "noteListModel");
+    }
+
+    stabilizeQmlBindingOwnership(resolvedModel);
+    return resolvedModel;
+}
+
+void NoteListModelContractBridge::refreshResolvedNoteListModel()
+{
+    QObject* resolvedModel = m_explicitNoteListModel.data();
+    if (resolvedModel == nullptr)
+    {
+        resolvedModel = resolveNoteListModelFromHierarchyController(m_hierarchyController.data());
+    }
+
+    setResolvedNoteListModel(resolvedModel);
+}
+
+void NoteListModelContractBridge::setResolvedNoteListModel(QObject* model)
+{
+    if (m_noteListModel == model)
+    {
+        return;
+    }
+
+    const bool hadNoteListModel = hasNoteListModel();
+    disconnectNoteListModel();
+    stabilizeQmlBindingOwnership(model);
+    m_noteListModel = model;
+
+    if (m_noteListModel != nullptr)
+    {
+        m_noteListDestroyedConnection = connect(
+            m_noteListModel,
+            &QObject::destroyed,
+            this,
+            &NoteListModelContractBridge::handleNoteListDestroyed);
+        if (hasSignal(m_noteListModel, "currentIndexChanged()"))
+        {
+            m_currentIndexChangedConnection = connect(
+                m_noteListModel,
+                SIGNAL(currentIndexChanged()),
+                this,
+                SLOT(handleCurrentIndexChanged()));
+        }
+        if (hasSignal(m_noteListModel, "currentNoteEntryChanged()"))
+        {
+            m_currentNoteEntryChangedConnection = connect(
+                m_noteListModel,
+                SIGNAL(currentNoteEntryChanged()),
+                this,
+                SLOT(handleCurrentNoteEntryChanged()));
+        }
+        if (hasSignal(m_noteListModel, "currentNoteIdChanged()"))
+        {
+            m_currentNoteIdChangedConnection = connect(
+                m_noteListModel,
+                SIGNAL(currentNoteIdChanged()),
+                this,
+                SLOT(handleCurrentNoteIdChanged()));
+        }
+    }
+
+    emit noteListModelChanged();
+    if (hadNoteListModel != hasNoteListModel())
+    {
+        emit hasNoteListModelChanged();
+    }
+    refreshContracts();
+    emit currentIndexChanged();
+    emit currentNoteEntryChanged();
+    emit currentNoteIdChanged();
+}
+
+void NoteListModelContractBridge::refreshContracts()
+{
+    const bool nextSearchContractAvailable = hasWritableProperty(m_noteListModel, "searchText")
+        || hasInvokableMethod(m_noteListModel, kSetSearchTextSignature);
+    if (m_searchContractAvailable != nextSearchContractAvailable)
+    {
+        m_searchContractAvailable = nextSearchContractAvailable;
+        emit searchContractAvailableChanged();
+    }
+
+    const bool nextCurrentIndexContractAvailable = hasReadableProperty(m_noteListModel, "currentIndex")
+        || hasWritableProperty(m_noteListModel, "currentIndex")
+        || hasInvokableMethod(m_noteListModel, kSetCurrentIndexSignature);
+    if (m_currentIndexContractAvailable != nextCurrentIndexContractAvailable)
+    {
+        m_currentIndexContractAvailable = nextCurrentIndexContractAvailable;
+        emit currentIndexContractAvailableChanged();
+    }
+}
+
+void NoteListModelContractBridge::disconnectHierarchyController()
+{
+    if (m_hierarchyControllerDestroyedConnection)
+    {
+        disconnect(m_hierarchyControllerDestroyedConnection);
+        m_hierarchyControllerDestroyedConnection = QMetaObject::Connection();
+    }
+}
+
+void NoteListModelContractBridge::disconnectNoteListModel()
+{
+    if (m_noteListDestroyedConnection)
+    {
+        disconnect(m_noteListDestroyedConnection);
+        m_noteListDestroyedConnection = QMetaObject::Connection();
+    }
+    if (m_currentIndexChangedConnection)
+    {
+        disconnect(m_currentIndexChangedConnection);
+        m_currentIndexChangedConnection = QMetaObject::Connection();
+    }
+    if (m_currentNoteEntryChangedConnection)
+    {
+        disconnect(m_currentNoteEntryChangedConnection);
+        m_currentNoteEntryChangedConnection = QMetaObject::Connection();
+    }
+    if (m_currentNoteIdChangedConnection)
+    {
+        disconnect(m_currentNoteIdChangedConnection);
+        m_currentNoteIdChangedConnection = QMetaObject::Connection();
+    }
+}

@@ -15,7 +15,7 @@ Platform.MenuBar {
     property var pendingDuplicateImportConflict: ({})
     property var pendingDuplicateImportUrls: []
     property bool duplicateImportAlertOpen: false
-    property var resourcesImportViewModel: null
+    property var resourcesImportController: null
     property string importFailureText: ""
 
     window: root.hostWindow
@@ -61,8 +61,8 @@ Platform.MenuBar {
         return "A resource named \"" + fileName + "\" already exists at \"" + resourcePath + "\". Choose whether to overwrite it, keep both copies, or cancel the import.";
     }
     function openImportFailureDialog() {
-        const failureText = root.resourcesImportViewModel && root.resourcesImportViewModel.lastError !== undefined
-            ? String(root.resourcesImportViewModel.lastError).trim()
+        const failureText = root.resourcesImportController && root.resourcesImportController.lastError !== undefined
+            ? String(root.resourcesImportController.lastError).trim()
             : "";
         root.importFailureText = failureText.length > 0
             ? failureText
@@ -70,19 +70,19 @@ Platform.MenuBar {
         importFailureDialog.open();
     }
     function importSelectedFilesWithConflictPolicy(selectedFiles, conflictPolicy) {
-        if (!root.resourcesImportViewModel
-                || root.resourcesImportViewModel.importUrlsWithConflictPolicy === undefined)
+        if (!root.resourcesImportController
+                || root.resourcesImportController.importUrlsWithConflictPolicy === undefined)
             return false;
-        const succeeded = root.resourcesImportViewModel.importUrlsWithConflictPolicy(selectedFiles, conflictPolicy);
+        const succeeded = root.resourcesImportController.importUrlsWithConflictPolicy(selectedFiles, conflictPolicy);
         if (!succeeded)
             root.openImportFailureDialog();
         return succeeded;
     }
     function handleSelectedImportUrls(selectedFiles) {
-        if (!root.resourcesImportViewModel)
+        if (!root.resourcesImportController)
             return;
-        const conflict = root.resourcesImportViewModel.inspectImportConflictForUrls !== undefined
-            ? root.resourcesImportViewModel.inspectImportConflictForUrls(selectedFiles)
+        const conflict = root.resourcesImportController.inspectImportConflictForUrls !== undefined
+            ? root.resourcesImportController.inspectImportConflictForUrls(selectedFiles)
             : ({});
         if (conflict && conflict.conflict) {
             root.pendingDuplicateImportUrls = Array.isArray(selectedFiles) ? selectedFiles.slice(0) : [];
@@ -114,7 +114,7 @@ Platform.MenuBar {
         title: qsTr("Import Resource Files")
 
         onAccepted: {
-            if (!root.resourcesImportViewModel)
+            if (!root.resourcesImportController)
                 return;
 
             const selectedFiles = root.selectedImportUrls();
@@ -125,10 +125,10 @@ Platform.MenuBar {
         title: qsTr("File")
 
         Platform.MenuItem {
-            enabled: root.resourcesImportViewModel
-                     && !root.resourcesImportViewModel.busy
-                     && root.resourcesImportViewModel.currentHubPath !== undefined
-                     && String(root.resourcesImportViewModel.currentHubPath).trim().length > 0
+            enabled: root.resourcesImportController
+                     && !root.resourcesImportController.busy
+                     && root.resourcesImportController.currentHubPath !== undefined
+                     && String(root.resourcesImportController.currentHubPath).trim().length > 0
             text: qsTr("Import File...")
 
             onTriggered: importResourcesDialog.open()

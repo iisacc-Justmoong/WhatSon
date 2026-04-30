@@ -7,28 +7,28 @@ Item {
     id: hStack
 
     function traceActiveBindings(reason) {
-        console.log("[whatson:qml][BodyLayout][" + reason + "] activeHierarchyIndex=" + hStack.activeHierarchyIndex + " activeHierarchyViewModel=" + hStack.activeHierarchyViewModel + " activeNoteListModel=" + hStack.activeNoteListModel);
+        console.log("[whatson:qml][BodyLayout][" + reason + "] activeHierarchyIndex=" + hStack.activeHierarchyIndex + " activeHierarchyController=" + hStack.activeHierarchyController + " activeNoteListModel=" + hStack.activeNoteListModel);
     }
 
     property var activeHierarchyBindingSnapshot: ({
             "index": 0,
-            "viewModel": null
+            "controller": null
         })
     readonly property int activeHierarchyIndex: {
         const snapshot = hStack.activeHierarchyBindingSnapshot;
         const numericIndex = Number(snapshot && snapshot.index !== undefined ? snapshot.index : 0);
         return isFinite(numericIndex) ? Math.floor(numericIndex) : 0;
     }
-    readonly property var activeHierarchyViewModel: hStack.activeHierarchyBindingSnapshot ? hStack.activeHierarchyBindingSnapshot.viewModel : null
-    readonly property var activeNoteListModel: hStack.sidebarHierarchyViewModel ? hStack.sidebarHierarchyViewModel.activeNoteListModel : null
+    readonly property var activeHierarchyController: hStack.activeHierarchyBindingSnapshot ? hStack.activeHierarchyBindingSnapshot.controller : null
+    readonly property var activeNoteListModel: hStack.sidebarHierarchyController ? hStack.sidebarHierarchyController.activeNoteListModel : null
     property color compactCanvasColor: LV.Theme.panelBackground01
     property bool compactMode: false
     property color contentsDisplayColor: "transparent"
-    property var editorViewModeViewModel: null
+    property var editorViewModeController: null
     readonly property int effectiveMinSidebarWidth: Math.max(minSidebarWidth, LV.Theme.gap20 * 7 + LV.Theme.gap12)
     property color gutterColor: "transparent"
     property bool isMobilePlatform: false
-    property var libraryHierarchyViewModel: null
+    property var libraryHierarchyController: null
     property color listViewColor: "transparent"
     property int listViewWidth: LV.Theme.inputWidthMd - LV.Theme.gap8
     readonly property bool listVisible: hStack.listViewWidth > 0
@@ -36,22 +36,22 @@ Item {
     property int minListViewWidth: LV.Theme.inputMinWidth - LV.Theme.gap24 * 2
     property int minRightPanelWidth: LV.Theme.controlHeightMd + LV.Theme.controlHeightMd + LV.Theme.controlHeightMd + LV.Theme.controlHeightMd + Math.round(LV.Theme.strokeThin)
     property int minSidebarWidth: LV.Theme.gap20 * 7 + LV.Theme.gap12
-    property var noteDeletionViewModel: null
-    readonly property var resolvedNoteDeletionViewModel: {
-        const activeViewModel = hStack.activeHierarchyViewModel;
-        if (activeViewModel && (activeViewModel.deleteNotesByIds !== undefined || activeViewModel.deleteNoteById !== undefined || activeViewModel.clearNoteFoldersByIds !== undefined || activeViewModel.clearNoteFoldersById !== undefined)) {
-            return activeViewModel;
+    property var noteDeletionController: null
+    readonly property var resolvedNoteDeletionController: {
+        const activeController = hStack.activeHierarchyController;
+        if (activeController && (activeController.deleteNotesByIds !== undefined || activeController.deleteNoteById !== undefined || activeController.clearNoteFoldersByIds !== undefined || activeController.clearNoteFoldersById !== undefined)) {
+            return activeController;
         }
-        return hStack.noteDeletionViewModel;
+        return hStack.noteDeletionController;
     }
-    property var panelViewModelRegistry: null
-    readonly property var panelViewModel: hStack.panelViewModelRegistry ? hStack.panelViewModelRegistry.panelViewModel("BodyLayout") : null
-    property var resourcesImportViewModel: null
+    property var panelControllerRegistry: null
+    readonly property var panelController: hStack.panelControllerRegistry ? hStack.panelControllerRegistry.panelController("BodyLayout") : null
+    property var resourcesImportController: null
     property color rightPanelColor: "transparent"
     property int rightPanelWidth: LV.Theme.inputMinWidth + LV.Theme.gap14
     readonly property bool rightVisible: hStack.rightPanelWidth > 0
     property color sidebarColor: "transparent"
-    required property var sidebarHierarchyViewModel
+    required property var sidebarHierarchyController
     readonly property bool sidebarVisible: hStack.sidebarWidth > 0
     property int sidebarHorizontalInset: LV.Theme.gap2
     property int sidebarWidth: LV.Theme.gap24 * 9
@@ -59,16 +59,16 @@ Item {
     property int splitterHandleThickness: LV.Theme.gap12
     property int splitterThickness: LV.Theme.gapNone
     property bool dayCalendarOverlayVisible: false
-    property var dayCalendarViewModel: null
+    property var dayCalendarController: null
     property bool agendaOverlayVisible: false
-    property var agendaViewModel: null
+    property var agendaController: null
     property var toolbarIconNames: ["nodeslibraryFolder", "generalprojectStructure", "bookmarksbookmarksList", "vcscurrentBranch", "imageToImage", "chartBar", "dataView", "dataFile"]
     property bool monthCalendarOverlayVisible: false
-    property var monthCalendarViewModel: null
+    property var monthCalendarController: null
     property bool weekCalendarOverlayVisible: false
-    property var weekCalendarViewModel: null
+    property var weekCalendarController: null
     property bool yearCalendarOverlayVisible: false
-    property var yearCalendarViewModel: null
+    property var yearCalendarController: null
 
     signal listViewWidthDragRequested(int value)
     signal noteActivated(int index, string noteId)
@@ -90,20 +90,20 @@ Item {
         return Math.max(hStack.minListViewWidth, Math.min(maxWidth, Math.floor(resolvedValue)));
     }
     function syncActiveHierarchyBindings() {
-        const sidebarViewModel = hStack.sidebarHierarchyViewModel;
-        if (!sidebarViewModel) {
+        const sidebarController = hStack.sidebarHierarchyController;
+        if (!sidebarController) {
             hStack.activeHierarchyBindingSnapshot = {
                 "index": 0,
-                "viewModel": null
+                "controller": null
             };
             return;
         }
-        const numericIndex = Number(sidebarViewModel.resolvedActiveHierarchyIndex);
+        const numericIndex = Number(sidebarController.resolvedActiveHierarchyIndex);
         const resolvedIndex = isFinite(numericIndex) ? Math.floor(numericIndex) : 0;
-        const resolvedHierarchyViewModel = sidebarViewModel.hierarchyViewModelForIndex !== undefined ? sidebarViewModel.hierarchyViewModelForIndex(resolvedIndex) : sidebarViewModel.resolvedHierarchyViewModel;
+        const resolvedHierarchyController = sidebarController.hierarchyControllerForIndex !== undefined ? sidebarController.hierarchyControllerForIndex(resolvedIndex) : sidebarController.resolvedHierarchyController;
         hStack.activeHierarchyBindingSnapshot = {
             "index": resolvedIndex,
-            "viewModel": resolvedHierarchyViewModel
+            "controller": resolvedHierarchyController
         };
     }
     function clampRightPanelWidth(value) {
@@ -122,8 +122,8 @@ Item {
     }
     function requestViewHook(reason) {
         const hookReason = reason !== undefined ? String(reason) : "manual";
-        if (panelViewModel && panelViewModel.requestViewModelHook)
-            panelViewModel.requestViewModelHook(hookReason);
+        if (panelController && panelController.requestControllerHook)
+            panelController.requestControllerHook(hookReason);
         viewHookRequested();
     }
     function totalSplitterWidth() {
@@ -145,11 +145,11 @@ Item {
         hStack.syncActiveHierarchyBindings();
         hStack.traceActiveBindings("completed");
     }
-    onSidebarHierarchyViewModelChanged: hStack.syncActiveHierarchyBindings()
+    onSidebarHierarchyControllerChanged: hStack.syncActiveHierarchyBindings()
     onActiveHierarchyBindingSnapshotChanged: hStack.traceActiveBindings("activeHierarchyBindingSnapshotChanged")
 
     Connections {
-        target: hStack.sidebarHierarchyViewModel
+        target: hStack.sidebarHierarchyController
         ignoreUnknownSignals: true
 
         function onActiveBindingsChanged() {
@@ -183,7 +183,7 @@ Item {
                 horizontalInset: hStack.sidebarHorizontalInset
                 panelColor: hStack.sidebarColor
                 searchFieldVisible: true
-                sidebarHierarchyViewModel: hStack.sidebarHierarchyViewModel
+                sidebarHierarchyController: hStack.sidebarHierarchyController
                 toolbarIconNames: hStack.toolbarIconNames
                 visible: hStack.sidebarVisible
             }
@@ -216,13 +216,13 @@ Item {
                 ListBarLayout {
                     activeToolbarIndex: hStack.activeHierarchyIndex
                     anchors.fill: parent
-                    hierarchyViewModel: hStack.activeHierarchyViewModel
+                    hierarchyController: hStack.activeHierarchyController
                     isMobilePlatform: hStack.isMobilePlatform
                     noteListModel: hStack.activeNoteListModel
-                    noteDeletionViewModel: hStack.resolvedNoteDeletionViewModel
+                    noteDeletionController: hStack.resolvedNoteDeletionController
                     noteDropTarget: sideBar.noteDropTargetView
                     panelColor: hStack.listViewColor
-                    panelViewModelRegistry: null
+                    panelControllerRegistry: null
 
                     onNoteActivated: function (index, noteId) {
                         hStack.noteActivated(index, noteId);
@@ -252,26 +252,26 @@ Item {
                 Layout.fillHeight: true
                 Layout.fillWidth: true
                 Layout.minimumWidth: hStack.minContentWidth
-                contentViewModel: hStack.activeHierarchyViewModel
+                contentController: hStack.activeHierarchyController
                 displayColor: hStack.contentsDisplayColor
-                editorViewModeViewModel: hStack.editorViewModeViewModel
+                editorViewModeController: hStack.editorViewModeController
                 gutterColor: hStack.gutterColor
                 isMobilePlatform: hStack.isMobilePlatform
-                libraryHierarchyViewModel: hStack.libraryHierarchyViewModel
+                libraryHierarchyController: hStack.libraryHierarchyController
                 noteListModel: hStack.activeNoteListModel
-                panelViewModelRegistry: null
-                resourcesImportViewModel: hStack.resourcesImportViewModel
-                sidebarHierarchyViewModel: hStack.sidebarHierarchyViewModel
+                panelControllerRegistry: null
+                resourcesImportController: hStack.resourcesImportController
+                sidebarHierarchyController: hStack.sidebarHierarchyController
                 dayCalendarOverlayVisible: hStack.dayCalendarOverlayVisible
-                dayCalendarViewModel: hStack.dayCalendarViewModel
+                dayCalendarController: hStack.dayCalendarController
                 agendaOverlayVisible: hStack.agendaOverlayVisible
-                agendaViewModel: hStack.agendaViewModel
+                agendaController: hStack.agendaController
                 monthCalendarOverlayVisible: hStack.monthCalendarOverlayVisible
-                monthCalendarViewModel: hStack.monthCalendarViewModel
+                monthCalendarController: hStack.monthCalendarController
                 weekCalendarOverlayVisible: hStack.weekCalendarOverlayVisible
-                weekCalendarViewModel: hStack.weekCalendarViewModel
+                weekCalendarController: hStack.weekCalendarController
                 yearCalendarOverlayVisible: hStack.yearCalendarOverlayVisible
-                yearCalendarViewModel: hStack.yearCalendarViewModel
+                yearCalendarController: hStack.yearCalendarController
 
                 onDayCalendarOverlayCloseRequested: hStack.dayCalendarOverlayDismissRequested()
                 onAgendaOverlayCloseRequested: hStack.agendaOverlayDismissRequested()

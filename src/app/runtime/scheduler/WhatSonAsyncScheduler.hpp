@@ -51,7 +51,7 @@ public
 
 
 
-    void requestViewModelHook();
+    void requestControllerHook();
 
     signals  :
 
@@ -68,7 +68,7 @@ public
         const QVariantMap& payload);
     void schedulerWarning(const QString& message);
     void hookRequestCountChanged();
-    void viewModelHookRequested();
+    void controllerHookRequested();
 
 private
     slots  :

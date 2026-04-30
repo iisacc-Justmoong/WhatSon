@@ -10,7 +10,7 @@ The mirror has two goals.
 - The full `src` tree has been mirrored into `docs/src/...`.
 - Every maintained source directory has a `README.md`.
 - Every maintained source file has a sibling `.md` document.
-- A first detailed pass now exists for the core startup, MVVM contract, hierarchy bridge, and sidebar composition areas.
+- A first detailed pass now exists for the core startup, model-domain runtime contract, hierarchy bridge, and sidebar composition areas.
 - The remaining files still contain scaffold text and must be upgraded in later passes.
 
 ## Generation Rules
@@ -23,8 +23,8 @@ The mirror has two goals.
 1. `docs/src/app/README.md`
 2. `docs/src/app/main.cpp.md`
 3. `docs/src/app/qml/Main.qml.md`
-4. `docs/src/app/viewmodel/hierarchy/README.md`
-5. `docs/src/app/viewmodel/panel/README.md`
+4. `docs/src/app/models/file/hierarchy/README.md`
+5. `docs/src/app/models/panel/README.md`
 6. `docs/src/app/qml/view/panels/sidebar/README.md`
 
 ## Authoring Rule

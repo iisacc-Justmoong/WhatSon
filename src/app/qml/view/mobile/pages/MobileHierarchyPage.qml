@@ -11,31 +11,24 @@ Item {
     id: mobileHierarchyPage
 
     property var activeHierarchyBindingSnapshot: selectionCoordinator.activeHierarchyBindingSnapshot
-    readonly property var activeContentViewModel: mobileHierarchyPage.activeHierarchyBindingSnapshot
-        ? mobileHierarchyPage.activeHierarchyBindingSnapshot.viewModel
-        : null
-    readonly property var activeNoteListModel: mobileHierarchyPage.sidebarHierarchyViewModel
-        ? mobileHierarchyPage.sidebarHierarchyViewModel.activeNoteListModel
-        : null
+    readonly property var activeContentController: mobileHierarchyPage.activeHierarchyBindingSnapshot ? mobileHierarchyPage.activeHierarchyBindingSnapshot.controller : null
+    readonly property var activeNoteListModel: mobileHierarchyPage.sidebarHierarchyController ? mobileHierarchyPage.sidebarHierarchyController.activeNoteListModel : null
     readonly property int activeToolbarIndex: {
         const snapshot = mobileHierarchyPage.activeHierarchyBindingSnapshot;
         const numericIndex = Number(snapshot && snapshot.index !== undefined ? snapshot.index : 0);
         return isFinite(numericIndex) ? Math.floor(numericIndex) : 0;
     }
-    readonly property bool backNavigationAvailable: mobileScaffold.activePageRouter
-        ? mobileScaffold.activePageRouter.canGoBack
-        : false
+    readonly property bool backNavigationAvailable: mobileScaffold.activePageRouter ? mobileScaffold.activePageRouter.canGoBack : false
     readonly property int backSwipeEdgeWidth: LV.Theme.gap24
     property bool backSwipeDragCanceled: false
     property color canvasColor: LV.Theme.panelBackground01
     property color controlSurfaceColor: LV.Theme.panelBackground10
     readonly property string detailRoutePath: "/mobile/detail"
     readonly property string editorRoutePath: "/mobile/editor"
-    property var editorViewModeViewModel: null
+    property var editorViewModeController: null
     readonly property string hierarchyRoutePath: "/mobile/hierarchy"
     property string hierarchySearchText: ""
-    
-    
+
     readonly property var mobileBodyRoutes: [
         {
             "path": mobileHierarchyPage.hierarchyRoutePath,
@@ -54,44 +47,40 @@ Item {
             "component": detailBodyComponent
         }
     ]
-    property var navigationModeViewModel: null
+    property var navigationModeController: null
     readonly property string noteListRoutePath: "/mobile/note-list"
     readonly property string resolvedBodyRoutePath: mobileHierarchyPage.displayedBodyRoutePath()
     readonly property bool detailPageActive: mobileHierarchyPage.resolvedBodyRoutePath === mobileHierarchyPage.detailRoutePath
     readonly property bool editorPageActive: mobileHierarchyPage.resolvedBodyRoutePath === mobileHierarchyPage.editorRoutePath
     readonly property bool hierarchyPageActive: mobileHierarchyPage.resolvedBodyRoutePath === mobileHierarchyPage.hierarchyRoutePath
     readonly property bool noteListPageActive: mobileHierarchyPage.resolvedBodyRoutePath === mobileHierarchyPage.noteListRoutePath
-    readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("mobile.MobileHierarchyPage") : null
-    property var resourcesImportViewModel: null
-    required property var sidebarHierarchyViewModel
+    readonly property var panelController: panelControllerRegistry ? panelControllerRegistry.panelController("mobile.MobileHierarchyPage") : null
+    property var resourcesImportController: null
+    required property var sidebarHierarchyController
     property string statusPlaceholderText: ""
     property string statusSearchText: ""
     property var toolbarIconNames: ["nodeslibraryFolder", "generalprojectStructure", "bookmarksbookmarksList", "vcscurrentBranch", "imageToImage", "chartBar", "dataView", "dataFile"]
     property var windowInteractions: null
     property bool dayCalendarOverlayVisible: false
-    property var dayCalendarViewModel: null
+    property var dayCalendarController: null
     property bool agendaOverlayVisible: false
-    property var agendaViewModel: null
+    property var agendaController: null
     property bool monthCalendarOverlayVisible: false
-    property var monthCalendarViewModel: null
-    property var noteDeletionViewModel: null
+    property var monthCalendarController: null
+    property var noteDeletionController: null
     property bool weekCalendarOverlayVisible: false
-    property var weekCalendarViewModel: null
+    property var weekCalendarController: null
     property bool yearCalendarOverlayVisible: false
-    property var yearCalendarViewModel: null
-    readonly property var resolvedNoteDeletionViewModel: {
-        const activeViewModel = mobileHierarchyPage.activeContentViewModel;
-        if (activeViewModel
-                && (activeViewModel.deleteNotesByIds !== undefined
-                    || activeViewModel.deleteNoteById !== undefined
-                    || activeViewModel.clearNoteFoldersByIds !== undefined
-                    || activeViewModel.clearNoteFoldersById !== undefined)) {
-            return activeViewModel;
+    property var yearCalendarController: null
+    readonly property var resolvedNoteDeletionController: {
+        const activeController = mobileHierarchyPage.activeContentController;
+        if (activeController && (activeController.deleteNotesByIds !== undefined || activeController.deleteNoteById !== undefined || activeController.clearNoteFoldersByIds !== undefined || activeController.clearNoteFoldersById !== undefined)) {
+            return activeController;
         }
-        if (mobileHierarchyPage.noteDeletionViewModel)
-            return mobileHierarchyPage.noteDeletionViewModel;
-        if (LV.ViewModels && LV.ViewModels.get !== undefined)
-            return LV.ViewModels.get("libraryNoteMutationViewModel");
+        if (mobileHierarchyPage.noteDeletionController)
+            return mobileHierarchyPage.noteDeletionController;
+        if (mobileHierarchyPage.windowInteractions && mobileHierarchyPage.windowInteractions.resolveLibraryNoteCreationController !== undefined)
+            return mobileHierarchyPage.windowInteractions.resolveLibraryNoteCreationController();
         return null;
     }
     signal agendaRequested
@@ -111,8 +100,7 @@ Item {
         return Math.max(1, Math.round(Number(mobileScaffold.bodyWidth) || 0));
     }
     function syncActiveHierarchyBindings() {
-        selectionCoordinator.activeHierarchyBindingSnapshot = selectionCoordinator.activeHierarchyBindingSnapshotFromSidebar(
-                    mobileHierarchyPage.sidebarHierarchyViewModel);
+        selectionCoordinator.activeHierarchyBindingSnapshot = selectionCoordinator.activeHierarchyBindingSnapshotFromSidebar(mobileHierarchyPage.sidebarHierarchyController);
     }
     function normalizedInteger(value, fallbackValue) {
         return routeStateStore.normalizedInteger(value, fallbackValue);
@@ -120,39 +108,22 @@ Item {
     function backSwipeGestureEventData(localX, localY, totalDeltaX, totalDeltaY, sessionId) {
         const localPoint = Qt.point(Number(localX) || 0, Number(localY) || 0);
         const globalPoint = backSwipeEdgeZone.mapToGlobal(localPoint);
-        return backSwipeCoordinator.gestureEventData(
-                    Number(localX) || 0,
-                    Number(localY) || 0,
-                    Number(totalDeltaX) || 0,
-                    Number(totalDeltaY) || 0,
-                    routeStateStore.normalizedInteger(sessionId, -1),
-                    Number(globalPoint.x) || 0,
-                    Number(globalPoint.y) || 0);
+        return backSwipeCoordinator.gestureEventData(Number(localX) || 0, Number(localY) || 0, Number(totalDeltaX) || 0, Number(totalDeltaY) || 0, routeStateStore.normalizedInteger(sessionId, -1), Number(globalPoint.x) || 0, Number(globalPoint.y) || 0);
     }
     function clearActiveHierarchySelection() {
-        if (!mobileHierarchyPage.activeContentViewModel
-                || mobileHierarchyPage.activeContentViewModel.setHierarchySelectedIndex === undefined)
+        if (!mobileHierarchyPage.activeContentController || mobileHierarchyPage.activeContentController.setHierarchySelectedIndex === undefined)
             return false;
-        mobileHierarchyPage.activeContentViewModel.setHierarchySelectedIndex(-1);
+        mobileHierarchyPage.activeContentController.setHierarchySelectedIndex(-1);
         return true;
     }
     function currentHierarchySelectionIndex() {
-        return selectionCoordinator.currentHierarchySelectionIndex(
-                    mobileHierarchyPage.activeContentViewModel,
-                    routeStateStore.preservedNoteListSelectionIndex);
+        return selectionCoordinator.currentHierarchySelectionIndex(mobileHierarchyPage.activeContentController, routeStateStore.preservedNoteListSelectionIndex);
     }
     function displayedBodyRoutePath() {
-        return navigationCoordinator.displayedBodyRoutePath(
-                    mobileScaffold.bodyItem,
-                    mobileScaffold.activePageRouter);
+        return navigationCoordinator.displayedBodyRoutePath(mobileScaffold.bodyItem, mobileScaffold.activePageRouter);
     }
     function requestOpenDetailPanelPage() {
-        const plan = navigationCoordinator.openDetailPanelPlan(
-                    !!mobileScaffold.activePageRouter,
-                    !!mobileHierarchyPage.activeNoteListModel,
-                    mobileScaffold.activePageRouter ? String(mobileScaffold.activePageRouter.currentPath) : "",
-                    mobileHierarchyPage.displayedBodyRoutePath(),
-                    mobileHierarchyPage.routeStackDepth());
+        const plan = navigationCoordinator.openDetailPanelPlan(!!mobileScaffold.activePageRouter, !!mobileHierarchyPage.activeNoteListModel, mobileScaffold.activePageRouter ? String(mobileScaffold.activePageRouter.currentPath) : "", mobileHierarchyPage.displayedBodyRoutePath(), mobileHierarchyPage.routeStackDepth());
         if (!plan.allowed)
             return false;
         mobileHierarchyPage.cancelPendingEditorPopRepair();
@@ -172,24 +143,19 @@ Item {
     }
     function beginBackSwipeGesture(eventData) {
         const edgeOrigin = mobileHierarchyPage.mapToGlobal(Qt.point(0, 0));
-        const plan = backSwipeCoordinator.beginGesturePlan(
-                    mobileHierarchyPage.backNavigationAvailable,
-                    !!pageTransitionController.active,
-                    eventData && typeof eventData === "object" ? eventData : ({}),
-                    Number(edgeOrigin.x) || 0);
+        const plan = backSwipeCoordinator.beginGesturePlan(mobileHierarchyPage.backNavigationAvailable, !!pageTransitionController.active, eventData && typeof eventData === "object" ? eventData : ({}), Number(edgeOrigin.x) || 0);
         if (!plan.begin)
             return false;
         if (!pageTransitionController.beginBack({
-                    "sessionId": Number(plan.sessionId) || -1,
-                    "source": "edge-pan"
-                }))
+            "sessionId": Number(plan.sessionId) || -1,
+            "source": "edge-pan"
+        }))
             return false;
         backSwipeCoordinator.backSwipeSessionId = Number(plan.sessionId) || -1;
         return true;
     }
     function cancelBackSwipeGesture(eventData) {
-        const plan = backSwipeCoordinator.cancelGesturePlan(
-                    eventData && typeof eventData === "object" ? eventData : ({}));
+        const plan = backSwipeCoordinator.cancelGesturePlan(eventData && typeof eventData === "object" ? eventData : ({}));
         if (!plan.cancel)
             return false;
         backSwipeCoordinator.backSwipeSessionId = -1;
@@ -211,30 +177,20 @@ Item {
         popRepairPolicy.detailPopRepairRequestId += 1;
     }
     function rememberNoteListSelection(selectionIndex) {
-        return routeStateStore.rememberSelectionIndex(
-                    selectionIndex,
-                    mobileHierarchyPage.currentHierarchySelectionIndex());
+        return routeStateStore.rememberSelectionIndex(selectionIndex, mobileHierarchyPage.currentHierarchySelectionIndex());
     }
     function restoreNoteListSelection(selectionIndex) {
-        if (!mobileHierarchyPage.activeContentViewModel
-                || mobileHierarchyPage.activeContentViewModel.setHierarchySelectedIndex === undefined)
+        if (!mobileHierarchyPage.activeContentController || mobileHierarchyPage.activeContentController.setHierarchySelectedIndex === undefined)
             return false;
         const targetSelectionIndex = routeStateStore.resolvedSelectionRestoreTarget(selectionIndex);
-        mobileHierarchyPage.activeContentViewModel.setHierarchySelectedIndex(targetSelectionIndex);
+        mobileHierarchyPage.activeContentController.setHierarchySelectedIndex(targetSelectionIndex);
         return targetSelectionIndex >= 0;
     }
     function routeStackDepth() {
-        return canonicalRoutePlanner.routeStackDepth(
-                    mobileScaffold.activePageRouter && mobileScaffold.activePageRouter.depth !== undefined
-                    ? mobileScaffold.activePageRouter.depth
-                    : 0);
+        return canonicalRoutePlanner.routeStackDepth(mobileScaffold.activePageRouter && mobileScaffold.activePageRouter.depth !== undefined ? mobileScaffold.activePageRouter.depth : 0);
     }
     function routeToCanonicalNoteList(selectionIndex) {
-        const plan = canonicalRoutePlanner.canonicalRoutePlan(
-                    mobileHierarchyPage.noteListRoutePath,
-                    !!mobileScaffold.activePageRouter,
-                    !!mobileHierarchyPage.activeNoteListModel,
-                    !!pageTransitionController.active);
+        const plan = canonicalRoutePlanner.canonicalRoutePlan(mobileHierarchyPage.noteListRoutePath, !!mobileScaffold.activePageRouter, !!mobileHierarchyPage.activeNoteListModel, !!pageTransitionController.active);
         if (!plan.allowed)
             return false;
         mobileHierarchyPage.cancelPendingEditorPopRepair();
@@ -259,11 +215,7 @@ Item {
         return true;
     }
     function routeToCanonicalEditor(selectionIndex) {
-        const plan = canonicalRoutePlanner.canonicalRoutePlan(
-                    mobileHierarchyPage.editorRoutePath,
-                    !!mobileScaffold.activePageRouter,
-                    !!mobileHierarchyPage.activeNoteListModel,
-                    !!pageTransitionController.active);
+        const plan = canonicalRoutePlanner.canonicalRoutePlan(mobileHierarchyPage.editorRoutePath, !!mobileScaffold.activePageRouter, !!mobileHierarchyPage.activeNoteListModel, !!pageTransitionController.active);
         if (!plan.allowed)
             return false;
         mobileHierarchyPage.cancelPendingEditorPopRepair();
@@ -288,11 +240,7 @@ Item {
         return true;
     }
     function routeToCanonicalDetailPanel(selectionIndex) {
-        const plan = canonicalRoutePlanner.canonicalRoutePlan(
-                    mobileHierarchyPage.detailRoutePath,
-                    !!mobileScaffold.activePageRouter,
-                    !!mobileHierarchyPage.activeNoteListModel,
-                    !!pageTransitionController.active);
+        const plan = canonicalRoutePlanner.canonicalRoutePlan(mobileHierarchyPage.detailRoutePath, !!mobileScaffold.activePageRouter, !!mobileHierarchyPage.activeNoteListModel, !!pageTransitionController.active);
         if (!plan.allowed)
             return false;
         mobileHierarchyPage.cancelPendingEditorPopRepair();
@@ -317,24 +265,14 @@ Item {
         return true;
     }
     function verifyCommittedEditorPopState(requestId, attemptsRemaining) {
-        const plan = popRepairPolicy.repairVerificationPlan(
-                    requestId,
-                    true,
-                    !!mobileScaffold.activePageRouter,
-                    !!mobileHierarchyPage.activeNoteListModel,
-                    mobileHierarchyPage.displayedBodyRoutePath(),
-                    mobileScaffold.activePageRouter ? String(mobileScaffold.activePageRouter.currentPath) : "",
-                    mobileHierarchyPage.routeStackDepth(),
-                    attemptsRemaining);
+        const plan = popRepairPolicy.repairVerificationPlan(requestId, true, !!mobileScaffold.activePageRouter, !!mobileHierarchyPage.activeNoteListModel, mobileHierarchyPage.displayedBodyRoutePath(), mobileScaffold.activePageRouter ? String(mobileScaffold.activePageRouter.currentPath) : "", mobileHierarchyPage.routeStackDepth(), attemptsRemaining);
         if (!plan.valid)
             return false;
         if (plan.done)
             return true;
         if (plan.retry) {
             Qt.callLater(function () {
-                mobileHierarchyPage.verifyCommittedEditorPopState(
-                            requestId,
-                            Number(plan.nextAttemptsRemaining) || 0);
+                mobileHierarchyPage.verifyCommittedEditorPopState(requestId, Number(plan.nextAttemptsRemaining) || 0);
             });
             return false;
         }
@@ -343,24 +281,14 @@ Item {
         return false;
     }
     function verifyCommittedDetailPopState(requestId, attemptsRemaining) {
-        const plan = popRepairPolicy.repairVerificationPlan(
-                    requestId,
-                    false,
-                    !!mobileScaffold.activePageRouter,
-                    !!mobileHierarchyPage.activeNoteListModel,
-                    mobileHierarchyPage.displayedBodyRoutePath(),
-                    mobileScaffold.activePageRouter ? String(mobileScaffold.activePageRouter.currentPath) : "",
-                    mobileHierarchyPage.routeStackDepth(),
-                    attemptsRemaining);
+        const plan = popRepairPolicy.repairVerificationPlan(requestId, false, !!mobileScaffold.activePageRouter, !!mobileHierarchyPage.activeNoteListModel, mobileHierarchyPage.displayedBodyRoutePath(), mobileScaffold.activePageRouter ? String(mobileScaffold.activePageRouter.currentPath) : "", mobileHierarchyPage.routeStackDepth(), attemptsRemaining);
         if (!plan.valid)
             return false;
         if (plan.done)
             return true;
         if (plan.retry) {
             Qt.callLater(function () {
-                mobileHierarchyPage.verifyCommittedDetailPopState(
-                            requestId,
-                            Number(plan.nextAttemptsRemaining) || 0);
+                mobileHierarchyPage.verifyCommittedDetailPopState(requestId, Number(plan.nextAttemptsRemaining) || 0);
             });
             return false;
         }
@@ -369,10 +297,7 @@ Item {
         return false;
     }
     function handleCommittedRouteTransition(state) {
-        const plan = popRepairPolicy.committedTransitionPlan(
-                    state && typeof state === "object" ? state : ({}),
-                    !!mobileHierarchyPage.activeNoteListModel,
-                    mobileHierarchyPage.displayedBodyRoutePath());
+        const plan = popRepairPolicy.committedTransitionPlan(state && typeof state === "object" ? state : ({}), !!mobileHierarchyPage.activeNoteListModel, mobileHierarchyPage.displayedBodyRoutePath());
         if (plan.requestViewHook)
             mobileHierarchyPage.requestViewHook();
         if (!mobileHierarchyPage.activeNoteListModel)
@@ -395,10 +320,7 @@ Item {
         });
     }
     function dismissCurrentPage() {
-        const plan = navigationCoordinator.dismissPagePlan(
-                    !!mobileScaffold.activePageRouter,
-                    !!mobileHierarchyPage.activeNoteListModel,
-                    mobileHierarchyPage.displayedBodyRoutePath());
+        const plan = navigationCoordinator.dismissPagePlan(!!mobileScaffold.activePageRouter, !!mobileHierarchyPage.activeNoteListModel, mobileHierarchyPage.displayedBodyRoutePath());
         if (!plan.allowed)
             return false;
         if (plan.dismissToEditor)
@@ -417,12 +339,7 @@ Item {
             mobileScaffold.bodyItem.requestCreateFolder();
     }
     function requestOpenNoteList(item, itemId, index) {
-        const plan = navigationCoordinator.openNoteListPlan(
-                    !!mobileScaffold.activePageRouter,
-                    !!mobileHierarchyPage.activeNoteListModel,
-                    mobileScaffold.activePageRouter ? String(mobileScaffold.activePageRouter.currentPath) : "",
-                    mobileHierarchyPage.displayedBodyRoutePath(),
-                    mobileHierarchyPage.routeStackDepth());
+        const plan = navigationCoordinator.openNoteListPlan(!!mobileScaffold.activePageRouter, !!mobileHierarchyPage.activeNoteListModel, mobileScaffold.activePageRouter ? String(mobileScaffold.activePageRouter.currentPath) : "", mobileHierarchyPage.displayedBodyRoutePath(), mobileHierarchyPage.routeStackDepth());
         if (!plan.allowed)
             return;
         mobileHierarchyPage.cancelPendingEditorPopRepair();
@@ -440,12 +357,7 @@ Item {
         mobileHierarchyPage.routeToCanonicalNoteList(preservedSelectionIndex);
     }
     function dismissCalendarOverlaysForEditorActivation() {
-        const plan = navigationCoordinator.overlayDismissPlan(
-                    mobileHierarchyPage.agendaOverlayVisible,
-                    mobileHierarchyPage.dayCalendarOverlayVisible,
-                    mobileHierarchyPage.weekCalendarOverlayVisible,
-                    mobileHierarchyPage.monthCalendarOverlayVisible,
-                    mobileHierarchyPage.yearCalendarOverlayVisible);
+        const plan = navigationCoordinator.overlayDismissPlan(mobileHierarchyPage.agendaOverlayVisible, mobileHierarchyPage.dayCalendarOverlayVisible, mobileHierarchyPage.weekCalendarOverlayVisible, mobileHierarchyPage.monthCalendarOverlayVisible, mobileHierarchyPage.yearCalendarOverlayVisible);
         if (plan.dismissAgenda)
             mobileHierarchyPage.agendaOverlayDismissRequested();
         if (plan.dismissDay)
@@ -458,14 +370,7 @@ Item {
             mobileHierarchyPage.yearCalendarOverlayDismissRequested();
     }
     function requestOpenEditor(noteId, index) {
-        const plan = navigationCoordinator.openEditorPlan(
-                    noteId,
-                    !!mobileHierarchyPage.activeContentViewModel,
-                    !!mobileHierarchyPage.activeNoteListModel,
-                    !!mobileScaffold.activePageRouter,
-                    mobileScaffold.activePageRouter ? String(mobileScaffold.activePageRouter.currentPath) : "",
-                    mobileHierarchyPage.displayedBodyRoutePath(),
-                    mobileHierarchyPage.routeStackDepth());
+        const plan = navigationCoordinator.openEditorPlan(noteId, !!mobileHierarchyPage.activeContentController, !!mobileHierarchyPage.activeNoteListModel, !!mobileScaffold.activePageRouter, mobileScaffold.activePageRouter ? String(mobileScaffold.activePageRouter.currentPath) : "", mobileHierarchyPage.displayedBodyRoutePath(), mobileHierarchyPage.routeStackDepth());
         if (!plan.allowed)
             return;
         mobileHierarchyPage.cancelPendingEditorPopRepair();
@@ -484,10 +389,7 @@ Item {
         mobileHierarchyPage.routeToCanonicalEditor(preservedSelectionIndex);
     }
     function ensureCalendarSurfaceVisible() {
-        const plan = navigationCoordinator.calendarSurfacePlan(
-                    !!mobileScaffold.activePageRouter,
-                    !!mobileHierarchyPage.activeNoteListModel,
-                    mobileHierarchyPage.displayedBodyRoutePath());
+        const plan = navigationCoordinator.calendarSurfacePlan(!!mobileScaffold.activePageRouter, !!mobileHierarchyPage.activeNoteListModel, mobileHierarchyPage.displayedBodyRoutePath());
         if (!plan.allowed)
             return false;
         if (plan.alreadyVisible)
@@ -529,16 +431,12 @@ Item {
     }
     function requestViewHook(reason) {
         const hookReason = reason !== undefined ? String(reason) : "manual";
-        if (panelViewModel && panelViewModel.requestViewModelHook)
-            panelViewModel.requestViewModelHook(hookReason);
+        if (panelController && panelController.requestControllerHook)
+            panelController.requestControllerHook(hookReason);
         viewHookRequested();
     }
     function routeToHierarchyRoot() {
-        const plan = canonicalRoutePlanner.hierarchyRootPlan(
-                    !!mobileScaffold.activePageRouter,
-                    !!pageTransitionController.active,
-                    mobileHierarchyPage.displayedBodyRoutePath(),
-                    !!(mobileScaffold.activePageRouter && mobileScaffold.activePageRouter.canGoBack));
+        const plan = canonicalRoutePlanner.hierarchyRootPlan(!!mobileScaffold.activePageRouter, !!pageTransitionController.active, mobileHierarchyPage.displayedBodyRoutePath(), !!(mobileScaffold.activePageRouter && mobileScaffold.activePageRouter.canGoBack));
         if (!plan.allowed)
             return false;
         mobileHierarchyPage.cancelPendingEditorPopRepair();
@@ -556,11 +454,7 @@ Item {
     }
     function syncRouteSelectionState() {
         const displayedPath = mobileHierarchyPage.displayedBodyRoutePath();
-        const plan = routeSelectionSyncPolicy.routeSelectionSyncPlan(
-                    !!mobileScaffold.activePageRouter,
-                    displayedPath,
-                    mobileScaffold.activePageRouter ? String(mobileScaffold.activePageRouter.currentPath) : "",
-                    mobileHierarchyPage.routeStackDepth());
+        const plan = routeSelectionSyncPolicy.routeSelectionSyncPlan(!!mobileScaffold.activePageRouter, displayedPath, mobileScaffold.activePageRouter ? String(mobileScaffold.activePageRouter.currentPath) : "", mobileHierarchyPage.routeStackDepth());
         routeStateStore.lastObservedRoutePath = String(plan.nextPath || displayedPath);
         routeSelectionSyncPolicy.lastObservedRoutePath = String(plan.nextPath || displayedPath);
         if (!plan.valid || !plan.clearHierarchySelection)
@@ -568,11 +462,7 @@ Item {
         return mobileHierarchyPage.clearActiveHierarchySelection();
     }
     function finishBackSwipeGesture(eventData, cancelled) {
-        const plan = backSwipeCoordinator.finishGesturePlan(
-                    eventData && typeof eventData === "object" ? eventData : ({}),
-                    !!cancelled,
-                    !!pageTransitionController.active,
-                    Number(pageTransitionController.progress) || 0);
+        const plan = backSwipeCoordinator.finishGesturePlan(eventData && typeof eventData === "object" ? eventData : ({}), !!cancelled, !!pageTransitionController.active, Number(pageTransitionController.progress) || 0);
         if (!plan.valid)
             return false;
         backSwipeCoordinator.backSwipeSessionId = -1;
@@ -587,11 +477,7 @@ Item {
         return mobileHierarchyPage.dismissCurrentPage();
     }
     function updateBackSwipeGesture(eventData) {
-        const plan = backSwipeCoordinator.updateGesturePlan(
-                    eventData && typeof eventData === "object" ? eventData : ({}),
-                    !!pageTransitionController.active,
-                    mobileHierarchyPage.backSwipeViewportWidth(),
-                    LV.Theme.gap8);
+        const plan = backSwipeCoordinator.updateGesturePlan(eventData && typeof eventData === "object" ? eventData : ({}), !!pageTransitionController.active, mobileHierarchyPage.backSwipeViewportWidth(), LV.Theme.gap8);
         if (!plan.valid)
             return false;
         if (plan.cancel)
@@ -599,9 +485,9 @@ Item {
         if (!plan.update)
             return false;
         return pageTransitionController.update(Number(plan.progress) || 0, {
-                    "velocityX": Number(plan.velocityX) || 0,
-                    "velocityY": Number(plan.velocityY) || 0
-                });
+            "velocityX": Number(plan.velocityX) || 0,
+            "velocityY": Number(plan.velocityY) || 0
+        });
     }
 
     Component.onCompleted: mobileHierarchyPage.syncActiveHierarchyBindings()
@@ -649,8 +535,8 @@ Item {
 
         backSwipeEdgeWidth: mobileHierarchyPage.backSwipeEdgeWidth
     }
-    onSidebarHierarchyViewModelChanged: mobileHierarchyPage.syncActiveHierarchyBindings()
-    onActiveContentViewModelChanged: noteCreationCoordinator.routePendingCreatedNoteToEditor()
+    onSidebarHierarchyControllerChanged: mobileHierarchyPage.syncActiveHierarchyBindings()
+    onActiveContentControllerChanged: noteCreationCoordinator.routePendingCreatedNoteToEditor()
     onActiveNoteListModelChanged: {
         if (mobileHierarchyPage.activeNoteListModel) {
             noteCreationCoordinator.routePendingCreatedNoteToEditor();
@@ -661,73 +547,63 @@ Item {
     onResolvedBodyRoutePathChanged: mobileHierarchyPage.syncRouteSelectionState()
 
     QtObject {
-    id: noteCreationCoordinator
+        id: noteCreationCoordinator
 
-    property var activeContentViewModel: null
-    property var activeNoteListModel: null
-    property var activePageRouter: null
-    readonly property bool lvrsViewModelsAvailable: LV.ViewModels !== undefined
-    property var noteCreationViewModel: null
-    property string pendingCreatedNoteId: ""
-    property var windowInteractions: null
+        property var activeContentController: null
+        property var activeNoteListModel: null
+        property var activePageRouter: null
+        property var noteCreationController: null
+        property string pendingCreatedNoteId: ""
+        property var windowInteractions: null
 
-    signal openEditorRequested(string noteId, int index)
+        signal openEditorRequested(string noteId, int index)
 
-    function syncNoteCreationViewModel() {
-        if (!noteCreationCoordinator.lvrsViewModelsAvailable
-                || !noteCreationCoordinator.windowInteractions
-                || noteCreationCoordinator.windowInteractions.resolveLibraryNoteCreationViewModel === undefined) {
-            noteCreationCoordinator.noteCreationViewModel = null;
-            return;
+        function syncNoteCreationController() {
+            if (!noteCreationCoordinator.windowInteractions || noteCreationCoordinator.windowInteractions.resolveLibraryNoteCreationController === undefined) {
+                noteCreationCoordinator.noteCreationController = null;
+                return;
+            }
+
+            const resolvedController = noteCreationCoordinator.windowInteractions.resolveLibraryNoteCreationController();
+            noteCreationCoordinator.noteCreationController = resolvedController !== undefined ? resolvedController : null;
+        }
+        function requestCreateNote() {
+            if (noteCreationCoordinator.windowInteractions && noteCreationCoordinator.windowInteractions.createNoteFromShortcut !== undefined)
+                noteCreationCoordinator.windowInteractions.createNoteFromShortcut();
+        }
+        function routePendingCreatedNoteToEditor() {
+            const pendingNoteId = noteCreationCoordinator.pendingCreatedNoteId === undefined || noteCreationCoordinator.pendingCreatedNoteId === null ? "" : String(noteCreationCoordinator.pendingCreatedNoteId).trim();
+            if (pendingNoteId.length === 0 || !noteCreationCoordinator.activeContentController || !noteCreationCoordinator.activeNoteListModel || !noteCreationCoordinator.activePageRouter)
+                return false;
+            noteCreationCoordinator.pendingCreatedNoteId = "";
+            noteCreationCoordinator.openEditorRequested(pendingNoteId, -1);
+            return true;
+        }
+        function scheduleCreatedNoteEditorRoute(noteId) {
+            const normalizedNoteId = noteId === undefined || noteId === null ? "" : String(noteId).trim();
+            if (normalizedNoteId.length === 0)
+                return false;
+            noteCreationCoordinator.pendingCreatedNoteId = normalizedNoteId;
+            Qt.callLater(function () {
+                noteCreationCoordinator.routePendingCreatedNoteToEditor();
+            });
+            return true;
         }
 
-        const resolvedViewModel = noteCreationCoordinator.windowInteractions.resolveLibraryNoteCreationViewModel();
-        noteCreationCoordinator.noteCreationViewModel = resolvedViewModel !== undefined ? resolvedViewModel : null;
-    }
-    function requestCreateNote() {
-        if (noteCreationCoordinator.windowInteractions
-                && noteCreationCoordinator.windowInteractions.createNoteFromShortcut !== undefined)
-            noteCreationCoordinator.windowInteractions.createNoteFromShortcut();
-    }
-    function routePendingCreatedNoteToEditor() {
-        const pendingNoteId = noteCreationCoordinator.pendingCreatedNoteId === undefined
-                || noteCreationCoordinator.pendingCreatedNoteId === null
-                ? ""
-                : String(noteCreationCoordinator.pendingCreatedNoteId).trim();
-        if (pendingNoteId.length === 0
-                || !noteCreationCoordinator.activeContentViewModel
-                || !noteCreationCoordinator.activeNoteListModel
-                || !noteCreationCoordinator.activePageRouter)
-            return false;
-        noteCreationCoordinator.pendingCreatedNoteId = "";
-        noteCreationCoordinator.openEditorRequested(pendingNoteId, -1);
-        return true;
-    }
-    function scheduleCreatedNoteEditorRoute(noteId) {
-        const normalizedNoteId = noteId === undefined || noteId === null ? "" : String(noteId).trim();
-        if (normalizedNoteId.length === 0)
-            return false;
-        noteCreationCoordinator.pendingCreatedNoteId = normalizedNoteId;
-        Qt.callLater(function () {
-            noteCreationCoordinator.routePendingCreatedNoteToEditor();
-        });
-        return true;
-    }
+        Component.onCompleted: noteCreationCoordinator.syncNoteCreationController()
+        onWindowInteractionsChanged: noteCreationCoordinator.syncNoteCreationController()
 
-    Component.onCompleted: noteCreationCoordinator.syncNoteCreationViewModel()
-    onWindowInteractionsChanged: noteCreationCoordinator.syncNoteCreationViewModel()
+        property Connections noteCreationControllerConnections: Connections {
+            target: noteCreationCoordinator.noteCreationController
+            ignoreUnknownSignals: true
 
-    property Connections noteCreationViewModelConnections: Connections {
-        target: noteCreationCoordinator.noteCreationViewModel
-        ignoreUnknownSignals: true
-
-        function onEmptyNoteCreated(noteId) {
-            noteCreationCoordinator.scheduleCreatedNoteEditorRoute(noteId);
+            function onEmptyNoteCreated(noteId) {
+                noteCreationCoordinator.scheduleCreatedNoteEditorRoute(noteId);
+            }
         }
-    }
     }
     Connections {
-        target: mobileHierarchyPage.sidebarHierarchyViewModel
+        target: mobileHierarchyPage.sidebarHierarchyController
         ignoreUnknownSignals: true
 
         function onActiveBindingsChanged() {
@@ -758,8 +634,8 @@ Item {
         compactSettingsVisible: mobileHierarchyPage.hierarchyPageActive
         controlSurfaceColor: mobileHierarchyPage.controlSurfaceColor
         detailPanelCollapsed: !mobileHierarchyPage.detailPageActive
-        editorViewModeViewModel: mobileHierarchyPage.editorViewModeViewModel
-        navigationModeViewModel: mobileHierarchyPage.navigationModeViewModel
+        editorViewModeController: mobileHierarchyPage.editorViewModeController
+        navigationModeController: mobileHierarchyPage.navigationModeController
         statusPlaceholderText: mobileHierarchyPage.statusPlaceholderText
         statusSearchText: mobileHierarchyPage.statusSearchText
         windowInteractions: mobileHierarchyPage.windowInteractions
@@ -812,56 +688,25 @@ Item {
             onActiveChanged: {
                 if (active) {
                     mobileHierarchyPage.backSwipeDragCanceled = false;
-                    const beginEventData = mobileHierarchyPage.backSwipeGestureEventData(
-                                backSwipeDragHandler.centroid.pressPosition.x,
-                                backSwipeDragHandler.centroid.pressPosition.y,
-                                0,
-                                0,
-                                backSwipeCoordinator.nextGeneratedSessionId());
+                    const beginEventData = mobileHierarchyPage.backSwipeGestureEventData(backSwipeDragHandler.centroid.pressPosition.x, backSwipeDragHandler.centroid.pressPosition.y, 0, 0, backSwipeCoordinator.nextGeneratedSessionId());
                     if (!mobileHierarchyPage.beginBackSwipeGesture(beginEventData))
                         return;
-                    mobileHierarchyPage.updateBackSwipeGesture(
-                                mobileHierarchyPage.backSwipeGestureEventData(
-                                    backSwipeDragHandler.centroid.position.x,
-                                    backSwipeDragHandler.centroid.position.y,
-                                    Number(backSwipeDragHandler.centroid.position.x) - Number(backSwipeDragHandler.centroid.pressPosition.x),
-                                    Number(backSwipeDragHandler.centroid.position.y) - Number(backSwipeDragHandler.centroid.pressPosition.y),
-                                    backSwipeCoordinator.backSwipeSessionId));
+                    mobileHierarchyPage.updateBackSwipeGesture(mobileHierarchyPage.backSwipeGestureEventData(backSwipeDragHandler.centroid.position.x, backSwipeDragHandler.centroid.position.y, Number(backSwipeDragHandler.centroid.position.x) - Number(backSwipeDragHandler.centroid.pressPosition.x), Number(backSwipeDragHandler.centroid.position.y) - Number(backSwipeDragHandler.centroid.pressPosition.y), backSwipeCoordinator.backSwipeSessionId));
                     return;
                 }
                 if (backSwipeCoordinator.backSwipeSessionId < 0)
                     return;
-                mobileHierarchyPage.finishBackSwipeGesture(
-                            mobileHierarchyPage.backSwipeGestureEventData(
-                                backSwipeDragHandler.centroid.position.x,
-                                backSwipeDragHandler.centroid.position.y,
-                                Number(backSwipeDragHandler.centroid.position.x) - Number(backSwipeDragHandler.centroid.pressPosition.x),
-                                Number(backSwipeDragHandler.centroid.position.y) - Number(backSwipeDragHandler.centroid.pressPosition.y),
-                                backSwipeCoordinator.backSwipeSessionId),
-                            mobileHierarchyPage.backSwipeDragCanceled);
+                mobileHierarchyPage.finishBackSwipeGesture(mobileHierarchyPage.backSwipeGestureEventData(backSwipeDragHandler.centroid.position.x, backSwipeDragHandler.centroid.position.y, Number(backSwipeDragHandler.centroid.position.x) - Number(backSwipeDragHandler.centroid.pressPosition.x), Number(backSwipeDragHandler.centroid.position.y) - Number(backSwipeDragHandler.centroid.pressPosition.y), backSwipeCoordinator.backSwipeSessionId), mobileHierarchyPage.backSwipeDragCanceled);
                 mobileHierarchyPage.backSwipeDragCanceled = false;
             }
             onCentroidChanged: {
                 if (!active)
                     return;
-                mobileHierarchyPage.updateBackSwipeGesture(
-                            mobileHierarchyPage.backSwipeGestureEventData(
-                                backSwipeDragHandler.centroid.position.x,
-                                backSwipeDragHandler.centroid.position.y,
-                                Number(backSwipeDragHandler.centroid.position.x) - Number(backSwipeDragHandler.centroid.pressPosition.x),
-                                Number(backSwipeDragHandler.centroid.position.y) - Number(backSwipeDragHandler.centroid.pressPosition.y),
-                                backSwipeCoordinator.backSwipeSessionId));
+                mobileHierarchyPage.updateBackSwipeGesture(mobileHierarchyPage.backSwipeGestureEventData(backSwipeDragHandler.centroid.position.x, backSwipeDragHandler.centroid.position.y, Number(backSwipeDragHandler.centroid.position.x) - Number(backSwipeDragHandler.centroid.pressPosition.x), Number(backSwipeDragHandler.centroid.position.y) - Number(backSwipeDragHandler.centroid.pressPosition.y), backSwipeCoordinator.backSwipeSessionId));
             }
             onCanceled: {
                 mobileHierarchyPage.backSwipeDragCanceled = true;
-                mobileHierarchyPage.finishBackSwipeGesture(
-                            mobileHierarchyPage.backSwipeGestureEventData(
-                                backSwipeDragHandler.centroid.position.x,
-                                backSwipeDragHandler.centroid.position.y,
-                                Number(backSwipeDragHandler.centroid.position.x) - Number(backSwipeDragHandler.centroid.pressPosition.x),
-                                Number(backSwipeDragHandler.centroid.position.y) - Number(backSwipeDragHandler.centroid.pressPosition.y),
-                                backSwipeCoordinator.backSwipeSessionId),
-                            true);
+                mobileHierarchyPage.finishBackSwipeGesture(mobileHierarchyPage.backSwipeGestureEventData(backSwipeDragHandler.centroid.position.x, backSwipeDragHandler.centroid.position.y, Number(backSwipeDragHandler.centroid.position.x) - Number(backSwipeDragHandler.centroid.pressPosition.x), Number(backSwipeDragHandler.centroid.position.y) - Number(backSwipeDragHandler.centroid.pressPosition.y), backSwipeCoordinator.backSwipeSessionId), true);
             }
         }
     }
@@ -878,7 +723,7 @@ Item {
             searchHeaderVerticalInset: LV.Theme.gapNone
             searchListGap: LV.Theme.gap2
             searchText: mobileHierarchyPage.hierarchySearchText
-            sidebarHierarchyViewModel: mobileHierarchyPage.sidebarHierarchyViewModel
+            sidebarHierarchyController: mobileHierarchyPage.sidebarHierarchyController
             toolbarFrameWidth: width
             toolbarIconNames: mobileHierarchyPage.toolbarIconNames
             verticalInset: LV.Theme.gapNone
@@ -900,9 +745,9 @@ Item {
         PanelView.ListBarLayout {
             activeToolbarIndex: mobileHierarchyPage.activeToolbarIndex
             headerVisible: false
-            hierarchyViewModel: mobileHierarchyPage.activeContentViewModel
+            hierarchyController: mobileHierarchyPage.activeContentController
             noteListModel: mobileHierarchyPage.activeNoteListModel
-            noteDeletionViewModel: mobileHierarchyPage.resolvedNoteDeletionViewModel
+            noteDeletionController: mobileHierarchyPage.resolvedNoteDeletionController
             panelColor: mobileHierarchyPage.canvasColor
             searchText: mobileHierarchyPage.statusSearchText
 
@@ -916,28 +761,26 @@ Item {
         id: editorBodyComponent
 
         PanelView.ContentViewLayout {
-            contentViewModel: mobileHierarchyPage.activeContentViewModel
+            contentController: mobileHierarchyPage.activeContentController
             displayColor: mobileHierarchyPage.canvasColor
-            editorViewModeViewModel: mobileHierarchyPage.editorViewModeViewModel
+            editorViewModeController: mobileHierarchyPage.editorViewModeController
             frameHorizontalInsetOverride: LV.Theme.gapNone
-            isMobilePlatform: Window.window && Window.window.isMobilePlatform !== undefined
-                              ? Boolean(Window.window.isMobilePlatform)
-                              : false
-            libraryHierarchyViewModel: noteCreationCoordinator.noteCreationViewModel
+            isMobilePlatform: Window.window && Window.window.isMobilePlatform !== undefined ? Boolean(Window.window.isMobilePlatform) : false
+            libraryHierarchyController: noteCreationCoordinator.noteCreationController
             minimapVisible: false
             noteListModel: mobileHierarchyPage.activeNoteListModel
-            resourcesImportViewModel: mobileHierarchyPage.resourcesImportViewModel
-            sidebarHierarchyViewModel: mobileHierarchyPage.sidebarHierarchyViewModel
+            resourcesImportController: mobileHierarchyPage.resourcesImportController
+            sidebarHierarchyController: mobileHierarchyPage.sidebarHierarchyController
             agendaOverlayVisible: mobileHierarchyPage.agendaOverlayVisible
-            agendaViewModel: mobileHierarchyPage.agendaViewModel
+            agendaController: mobileHierarchyPage.agendaController
             dayCalendarOverlayVisible: mobileHierarchyPage.dayCalendarOverlayVisible
-            dayCalendarViewModel: mobileHierarchyPage.dayCalendarViewModel
+            dayCalendarController: mobileHierarchyPage.dayCalendarController
             monthCalendarOverlayVisible: mobileHierarchyPage.monthCalendarOverlayVisible
-            monthCalendarViewModel: mobileHierarchyPage.monthCalendarViewModel
+            monthCalendarController: mobileHierarchyPage.monthCalendarController
             weekCalendarOverlayVisible: mobileHierarchyPage.weekCalendarOverlayVisible
-            weekCalendarViewModel: mobileHierarchyPage.weekCalendarViewModel
+            weekCalendarController: mobileHierarchyPage.weekCalendarController
             yearCalendarOverlayVisible: mobileHierarchyPage.yearCalendarOverlayVisible
-            yearCalendarViewModel: mobileHierarchyPage.yearCalendarViewModel
+            yearCalendarController: mobileHierarchyPage.yearCalendarController
 
             onViewHookRequested: mobileHierarchyPage.requestViewHook()
             onAgendaOverlayCloseRequested: mobileHierarchyPage.agendaOverlayDismissRequested()

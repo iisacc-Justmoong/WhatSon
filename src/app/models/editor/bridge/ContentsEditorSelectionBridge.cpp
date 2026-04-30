@@ -355,44 +355,44 @@ void ContentsEditorSelectionBridge::setNoteListModel(QObject* model)
     refreshNoteCountState();
 }
 
-QObject* ContentsEditorSelectionBridge::contentViewModel() const noexcept
+QObject* ContentsEditorSelectionBridge::contentController() const noexcept
 {
-    return m_contentViewModel;
+    return m_contentController;
 }
 
-void ContentsEditorSelectionBridge::setContentViewModel(QObject* model)
+void ContentsEditorSelectionBridge::setContentController(QObject* model)
 {
     WhatSon::Debug::traceEditorSelf(
         this,
         QStringLiteral("selectionBridge"),
-        QStringLiteral("setContentViewModel"),
+        QStringLiteral("setContentController"),
         QStringLiteral("previous=0x%1 next=0x%2")
-            .arg(QString::number(reinterpret_cast<quintptr>(m_contentViewModel.data()), 16))
+            .arg(QString::number(reinterpret_cast<quintptr>(m_contentController.data()), 16))
             .arg(QString::number(reinterpret_cast<quintptr>(model), 16)));
-    if (m_contentViewModel == model)
+    if (m_contentController == model)
     {
         return;
     }
 
-    disconnectContentViewModel();
+    disconnectContentController();
     stabilizeQmlBindingOwnership(model);
-    m_contentViewModel = model;
+    m_contentController = model;
 
-    if (m_contentViewModel != nullptr)
+    if (m_contentController != nullptr)
     {
-        m_contentViewModelDestroyedConnection = connect(
-            m_contentViewModel,
+        m_contentControllerDestroyedConnection = connect(
+            m_contentController,
             &QObject::destroyed,
             this,
-            &ContentsEditorSelectionBridge::handleContentViewModelDestroyed);
+            &ContentsEditorSelectionBridge::handleContentControllerDestroyed);
     }
 
     if (m_persistenceController != nullptr)
     {
-        m_persistenceController->setContentViewModel(m_contentViewModel);
+        m_persistenceController->setContentController(m_contentController);
     }
 
-    emit contentViewModelChanged();
+    emit contentControllerChanged();
     m_noteSelectionRefreshRequiresRebind = true;
     scheduleNoteSelectionRefresh();
 }
@@ -785,20 +785,20 @@ void ContentsEditorSelectionBridge::handleNoteListDestroyed()
     refreshNoteCountState();
 }
 
-void ContentsEditorSelectionBridge::handleContentViewModelDestroyed()
+void ContentsEditorSelectionBridge::handleContentControllerDestroyed()
 {
     WhatSon::Debug::traceEditorSelf(
         this,
         QStringLiteral("selectionBridge"),
-        QStringLiteral("handleContentViewModelDestroyed"));
-    disconnectContentViewModel();
-    m_contentViewModel = nullptr;
+        QStringLiteral("handleContentControllerDestroyed"));
+    disconnectContentController();
+    m_contentController = nullptr;
     if (m_persistenceController != nullptr)
     {
-        m_persistenceController->setContentViewModel(nullptr);
+        m_persistenceController->setContentController(nullptr);
     }
     m_selectedNoteBodyRequestSequence = 0;
-    emit contentViewModelChanged();
+    emit contentControllerChanged();
 }
 
 bool ContentsEditorSelectionBridge::hasReadableProperty(const QObject* object, const char* propertyName)
@@ -1056,15 +1056,15 @@ QString ContentsEditorSelectionBridge::resolveSelectedNoteDirectoryPath(const QS
         }
     }
 
-    if (m_contentViewModel == nullptr
-        || !hasInvokableMethod(m_contentViewModel, kNoteDirectoryPathForNoteIdSignature))
+    if (m_contentController == nullptr
+        || !hasInvokableMethod(m_contentController, kNoteDirectoryPathForNoteIdSignature))
     {
         return {};
     }
 
     QString noteDirectoryPath;
     if (!QMetaObject::invokeMethod(
-            m_contentViewModel,
+            m_contentController,
             "noteDirectoryPathForNoteId",
             Qt::DirectConnection,
             Q_RETURN_ARG(QString, noteDirectoryPath),
@@ -1086,15 +1086,15 @@ bool ContentsEditorSelectionBridge::tryResolveSelectedNoteBodySourceText(
     }
 
     const QString normalizedNoteId = noteId.trimmed();
-    if (normalizedNoteId.isEmpty() || m_contentViewModel == nullptr
-        || !hasInvokableMethod(m_contentViewModel, kNoteBodySourceTextForNoteIdSignature))
+    if (normalizedNoteId.isEmpty() || m_contentController == nullptr
+        || !hasInvokableMethod(m_contentController, kNoteBodySourceTextForNoteIdSignature))
     {
         return false;
     }
 
     QString resolvedBodyText;
     if (!QMetaObject::invokeMethod(
-            m_contentViewModel,
+            m_contentController,
             "noteBodySourceTextForNoteId",
             Qt::DirectConnection,
             Q_RETURN_ARG(QString, resolvedBodyText),
@@ -1535,11 +1535,11 @@ void ContentsEditorSelectionBridge::disconnectNoteListModel()
     }
 }
 
-void ContentsEditorSelectionBridge::disconnectContentViewModel()
+void ContentsEditorSelectionBridge::disconnectContentController()
 {
-    if (m_contentViewModelDestroyedConnection)
+    if (m_contentControllerDestroyedConnection)
     {
-        disconnect(m_contentViewModelDestroyedConnection);
-        m_contentViewModelDestroyedConnection = QMetaObject::Connection();
+        disconnect(m_contentControllerDestroyedConnection);
+        m_contentControllerDestroyedConnection = QMetaObject::Connection();
     }
 }

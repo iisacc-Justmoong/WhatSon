@@ -4,7 +4,7 @@
 `MobileHierarchyPage.qml` is the routed mobile workspace shell for hierarchy browsing, folder-scoped note lists, note
 editing, and the detail page.
 
-It does not own the domain data itself. Its job is to keep the mobile `LV.PageRouter` stack aligned with the already-bound hierarchy and note-list viewmodels that come from the desktop-style application root.
+It does not own the domain data itself. Its job is to keep the mobile `LV.PageRouter` stack aligned with the already-bound hierarchy and note-list controllers that come from the desktop-style application root.
 
 ## Primary Responsibilities
 - Mount the four mobile body routes: hierarchy, note list, editor, and detail.
@@ -21,14 +21,14 @@ It does not own the domain data itself. Its job is to keep the mobile `LV.PageRo
   root without letting a transient hierarchy pop clear the active folder selection first.
 - Own the mobile panel hook directly through the `mobile.MobileHierarchyPage` panel key instead of routing that hook through a wrapper component, while keeping note creation on the dedicated `windowInteractions` shortcut path so generic route hooks never create files.
 - Resolve the effective list-deletion contract from the active hierarchy first, then fall back to
-  the shared library-note mutation viewmodel (or the global LV viewmodel registry) when the active
+  the shared library-note mutation controller (or the global LV controller registry) when the active
   hierarchy does not own deletion itself.
-- Snapshot the active toolbar index and active hierarchy content viewmodel as one binding bundle whenever
-  `SidebarHierarchyViewModel.activeBindingsChanged()` fires, so mobile route decisions do not momentarily mix library
+- Snapshot the active toolbar index and active hierarchy content controller as one binding bundle whenever
+  `SidebarHierarchyController.activeBindingsChanged()` fires, so mobile route decisions do not momentarily mix library
   state with resources-state chrome during hierarchy switches.
-- The active note-list model is read directly from `SidebarHierarchyViewModel.activeNoteListModel`.
+- The active note-list model is read directly from `SidebarHierarchyController.activeNoteListModel`.
   The mobile route shell does not mount a second local note-list bridge, so the hierarchy index, active hierarchy
-  viewmodel, and note/resource list model all come from the same sidebar binding authority.
+  controller, and note/resource list model all come from the same sidebar binding authority.
 
 ## Routing Model
 The file defines four route constants:
@@ -80,7 +80,7 @@ top of `/mobile/detail`.
 `ContentViewLayout.qml` can now emit `monthCalendarOverlayOpenRequested()` from inside the mobile editor route when the
 user taps a month or day in `YearCalendarPage.qml`. `MobileHierarchyPage.qml` re-emits that signal so the app root can
 swap the visible overlay from year to month while keeping the overlay state owned above the router shell.
-The same content route also forwards `sidebarHierarchyViewModel` into `ContentViewLayout.qml`, so tapping a projected
+The same content route also forwards `sidebarHierarchyController` into `ContentViewLayout.qml`, so tapping a projected
 calendar note on mobile can switch the active hierarchy back to Library, select the note, dismiss the calendar
 overlay, and leave the user on the editor route with that note visible.
 
@@ -157,7 +157,7 @@ This keeps mobile back navigation local to the page and avoids stealing editor t
 - `MobileNoteCreationCoordinator.qml`: owns create-note dispatch plus pending-note promotion into the editor route.
 - `HierarchySidebarLayout.qml`: renders the hierarchy route body.
 - `ListBarLayout.qml`: renders the folder-scoped note list route body.
-- The routed `ListBarLayout.qml` now receives `resolvedNoteDeletionViewModel`, so hardware-keyboard
+- The routed `ListBarLayout.qml` now receives `resolvedNoteDeletionController`, so hardware-keyboard
   `Delete` / `Backspace` in the mobile note list can remove resource packages when the resources
   hierarchy owns the active list.
 - `ContentViewLayout.qml`: renders the editor route body and now mounts the unified `ContentsDisplayView.qml` host in
@@ -167,12 +167,12 @@ This keeps mobile back navigation local to the page and avoids stealing editor t
   - editor font size now stays aligned with the desktop `12px` baseline
 - The route forwards the LVRS window `isMobilePlatform` state into `ContentViewLayout`, so the unified host's mode
   policy uses the canonical platform detector instead of responsive-width guesses.
-- `resourcesImportViewModel`: forwarded into `ContentViewLayout` so editor drops on mobile can package files and emit
+- `resourcesImportController`: forwarded into `ContentViewLayout` so editor drops on mobile can package files and emit
   `<resource ...>` links through the same import pipeline.
-- `editorViewModeViewModel`: forwarded into `ContentViewLayout` so mobile editor mode selection uses the same
+- `editorViewModeController`: forwarded into `ContentViewLayout` so mobile editor mode selection uses the same
   plain/print/preview rendering policy as desktop.
-- `SidebarHierarchyViewModel`: supplies the active hierarchy domain, note-list model, and hierarchy selection.
-- The same shared sidebar viewmodel is also forwarded into `ContentViewLayout.qml`, so mobile calendar note taps reuse
+- `SidebarHierarchyController`: supplies the active hierarchy domain, note-list model, and hierarchy selection.
+- The same shared sidebar controller is also forwarded into `ContentViewLayout.qml`, so mobile calendar note taps reuse
   the same library-selection path as desktop.
 - `windowInteractions`: routes the dedicated create-note action and resolves the writable note-mutation capability.
 - The mobile page now defaults `controlSurfaceColor` to `LV.Theme.panelBackground10`, matching the Figma mobile
@@ -189,7 +189,7 @@ This keeps mobile back navigation local to the page and avoids stealing editor t
   `activeNoteListModel` into both `ListBarLayout.qml` and `ContentViewLayout.qml`, or transient hierarchy switches can
   leave the routed note list out of sync with the selected sidebar domain.
 - Mobile hierarchy routing must also resolve that hierarchy snapshot from the selected hierarchy index itself, not only
-  from one previously cached "active" provider object, or a toolbar switch can leave the old domain viewmodel
+  from one previously cached "active" provider object, or a toolbar switch can leave the old domain controller
   mounted.
 - The mobile editor page must not reintroduce gutter width/line-number overrides now that mobile gutter policy lives in
   `ContentsDisplayHostModePolicy.qml`.

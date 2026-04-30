@@ -4,7 +4,7 @@
 
 `NavigationEditorViewBar.qml` owns the editor `View mode` selector mounted in the navigation strip.
 It shows the currently active editor view label in an `LV.ComboBox`, opens an `LV.ContextMenu`, and
-routes the selected index back into `EditorViewModeViewModel.requestViewModeChange(...)`.
+routes the selected index back into `EditorViewModeController.requestViewModeChange(...)`.
 
 ## Source Metadata
 
@@ -38,14 +38,14 @@ routes the selected index back into `EditorViewModeViewModel.requestViewModeChan
   still scaling with LVRS UI density.
 - When `showLabel: false`, the combo width is constrained through a named `LV.Theme` token composition so it matches
   the compact mobile navigation slot width from Figma node `174:6000`.
-- `selectedIndex` must resolve from `editorViewModeViewModel.activeViewMode`, so the currently active editor view
+- `selectedIndex` must resolve from `editorViewModeController.activeViewMode`, so the currently active editor view
   remains highlighted when the menu opens.
 
 ## Interaction Contract
 
 - Clicking the combo box toggles the menu through `toggleEditorViewMenu()`.
 - The popup vertical offset is routed through `comboMenuYOffset` (`LV.Theme.gap2`) instead of a fixed literal.
-- Choosing a menu entry must call `editorViewModeViewModel.requestViewModeChange(index)`.
+- Choosing a menu entry must call `editorViewModeController.requestViewModeChange(index)`.
 - The view still emits `viewHookRequested` after menu open/select so panel-level hook instrumentation remains intact.
 
 ## Tests

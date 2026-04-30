@@ -18,7 +18,7 @@ Rectangle {
     readonly property int effectivePanelHeight: compactMode ? compactToolbarHeight : panelHeight
     property color panelColor: "transparent"
     property int panelHeight: LV.Theme.controlHeightMd
-    readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("StatusBarLayout") : null
+    readonly property var panelController: panelControllerRegistry ? panelControllerRegistry.panelController("StatusBarLayout") : null
     readonly property color searchFieldColor: "transparent"
     readonly property int searchFieldHeight: LV.Theme.gap18
     readonly property int searchFieldHorizontalInset: LV.Theme.gap24
@@ -43,8 +43,8 @@ Rectangle {
 
     function requestViewHook(reason) {
         const hookReason = reason !== undefined ? String(reason) : "manual";
-        if (panelViewModel && panelViewModel.requestViewModelHook)
-            panelViewModel.requestViewModelHook(hookReason);
+        if (panelController && panelController.requestControllerHook)
+            panelController.requestControllerHook(hookReason);
         viewHookRequested();
     }
 

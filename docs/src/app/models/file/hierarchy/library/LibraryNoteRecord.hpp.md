@@ -30,4 +30,4 @@ filtering and mutation logic rely on stable UUIDs.
 - `WhatSonHubNoteCreationService.cpp`: creates new records for freshly scaffolded notes.
 - `WhatSonHubNoteMutationSupport.cpp`: keeps runtime records synchronized with edited note
   documents.
-- `LibraryHierarchyViewModel.cpp`: filters records by selected folder UUID.
+- `LibraryHierarchyController.cpp`: filters records by selected folder UUID.

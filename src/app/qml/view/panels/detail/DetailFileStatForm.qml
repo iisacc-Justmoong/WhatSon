@@ -4,13 +4,13 @@ import LVRS 1.0 as LV
 Item {
     id: detailFileStatForm
 
-    property var fileStatViewModel: null
+    property var fileStatController: null
     readonly property int formHorizontalInset: LV.Theme.gap8
     readonly property int formTopInset: LV.Theme.gap2
     readonly property int formVerticalSpacing: LV.Theme.gap10
-    readonly property var summaryLines: detailFileStatForm.resolveTextLines(detailFileStatForm.fileStatViewModel ? detailFileStatForm.fileStatViewModel.summaryLines : [])
-    readonly property var textMetricLines: detailFileStatForm.resolveTextLines(detailFileStatForm.fileStatViewModel ? detailFileStatForm.fileStatViewModel.textMetricLines : [])
-    readonly property var activityLines: detailFileStatForm.resolveTextLines(detailFileStatForm.fileStatViewModel ? detailFileStatForm.fileStatViewModel.activityLines : [])
+    readonly property var summaryLines: detailFileStatForm.resolveTextLines(detailFileStatForm.fileStatController ? detailFileStatForm.fileStatController.summaryLines : [])
+    readonly property var textMetricLines: detailFileStatForm.resolveTextLines(detailFileStatForm.fileStatController ? detailFileStatForm.fileStatController.textMetricLines : [])
+    readonly property var activityLines: detailFileStatForm.resolveTextLines(detailFileStatForm.fileStatController ? detailFileStatForm.fileStatController.activityLines : [])
 
     function resolveTextLines(values) {
         if (!values)
