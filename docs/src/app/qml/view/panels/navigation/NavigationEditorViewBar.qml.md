@@ -34,9 +34,9 @@ routes the selected index back into `EditorViewModeViewModel.requestViewModeChan
   - `Print` -> `generalprint`
   - `Web` -> `toolwindowweb`
   - `Presentation` -> `procedure`
-- `itemWidth` is routed through `LV.Theme.scaleMetric(141)`, matching the Figma context-menu frame width while still
-  scaling with LVRS UI density.
-- When `showLabel: false`, the combo width is constrained through `compactComboWidth` (`97` scaled px) so it matches
+- `itemWidth` is routed through a named `LV.Theme` token composition matching the Figma context-menu frame width while
+  still scaling with LVRS UI density.
+- When `showLabel: false`, the combo width is constrained through a named `LV.Theme` token composition so it matches
   the compact mobile navigation slot width from Figma node `174:6000`.
 - `selectedIndex` must resolve from `editorViewModeViewModel.activeViewMode`, so the currently active editor view
   remains highlighted when the menu opens.
@@ -55,5 +55,5 @@ routes the selected index back into `EditorViewModeViewModel.requestViewModeChan
   - The menu entry labels remain exactly `Plain`, `Page`, `Print`, `Web`, `Presentation`.
   - Each menu entry keeps the Figma-aligned `iconName` token listed above.
   - Opening the menu while each editor view is active highlights the matching row through `selectedIndex`.
-  - The `Presentation` row fits without clipping inside the `141px` menu width.
-  - Mobile compact navigation (`showLabel: false`) keeps the combo width at the scaled `97px` slot and still opens the same context menu.
+  - The `Presentation` row fits without clipping inside the token-composed menu width.
+  - Mobile compact navigation (`showLabel: false`) keeps the combo width at the token-composed compact slot and still opens the same context menu.

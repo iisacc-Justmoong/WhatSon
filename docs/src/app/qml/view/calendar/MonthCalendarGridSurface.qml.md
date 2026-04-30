@@ -37,8 +37,9 @@
 
 - This component intentionally owns only month-grid rendering and day-cell interaction.
 - Month-level navigation and horizontal paging stay in `MonthCalendarPage.qml`.
-- Weekday header height, left padding, and label size now resolve through `LV.Theme.scaleMetric(...)` / `LV.Theme.gap12`
-  so the month grid follows LVRS density scaling instead of fixed `12/39px` values.
+- Weekday header height, left padding, and label size now resolve through `LV.Theme.controlHeightMd + LV.Theme.gap3`,
+  `LV.Theme.gap12`, and `LV.Theme.textBody` so the month grid follows LVRS density scaling instead of fixed
+  `12/39px` values.
 - Projected note chips now use the calendar accent color while manual event chips keep the primary event styling.
 
 ## Tests

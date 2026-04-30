@@ -1,5 +1,11 @@
 # `src/app/qml/view/panels/sidebar/SidebarHierarchyView.qml`
 
+## LVRS Token Notes
+- Compact footer button backgrounds and footer spacing use `LV.Theme.accentTransparent` and `LV.Theme.gapNone`.
+- LVRS does not currently expose named scroll-physics velocity/deceleration tokens, so hierarchy kinetic scrolling
+  keeps the existing scaled physics constants while visual colors, spacing, and fixed extents use named `LV.Theme`
+  tokens.
+
 ## Role
 This is the main visual host for the hierarchy sidebar.
 
@@ -102,7 +108,7 @@ These signals make the file a reusable visual surface instead of a hard-coded on
 ## Footer View Options
 
 - The right-most `LV.ListFooter` menu button now opens a dedicated `LV.ContextMenu` anchored from the footer edge.
-- The compact footer/menu metrics now route through `LV.Theme.gap2`, `LV.Theme.gap4`, and `LV.Theme.scaleMetric(...)`
+- The compact footer/menu metrics now route through `LV.Theme.gap2`, `LV.Theme.gap4`, and named token compositions
   (`144`, `78`, `24`) instead of fixed sidebar-local pixel literals, so mobile/desktop LVRS scale stays consistent.
 - That menu exposes `Expand All` and `Collapse All` actions in English, which matches the repository rule that
   project-facing strings stay in English.

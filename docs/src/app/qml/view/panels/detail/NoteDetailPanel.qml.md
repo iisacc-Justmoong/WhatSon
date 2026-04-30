@@ -21,3 +21,4 @@ It owns the note-detail toolbar, the active state/content resolution, and the sh
 - Toolbar clicks still forward to `requestStateChange(stateValue)` on the injected note-detail viewmodel.
 - `linked` shows the toolbar plus `DetailContents.qml`.
 - `detached` keeps the note-detail surface empty so stale note metadata cannot render when no note context is bound.
+- Default panel width and panel spacing use named `LV.Theme` tokens rather than scaled pixel literals.

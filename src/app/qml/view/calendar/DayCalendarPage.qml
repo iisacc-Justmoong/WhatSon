@@ -52,9 +52,7 @@ Rectangle {
         const sourceKind = entryModel.sourceKind !== undefined ? String(entryModel.sourceKind).trim() : "";
         if (sourceKind !== "note")
             return "";
-        return entryModel.sourceId !== undefined && entryModel.sourceId !== null
-                ? String(entryModel.sourceId).trim()
-                : "";
+        return entryModel.sourceId !== undefined && entryModel.sourceId !== null ? String(entryModel.sourceId).trim() : "";
     }
     function requestOpenNote(entryModel) {
         const noteId = dayCalendarPage.noteIdForEntry(entryModel);
@@ -64,7 +62,7 @@ Rectangle {
         dayCalendarPage.noteOpenRequested(noteId);
     }
 
-    color: "transparent"
+    color: LV.Theme.accentTransparent
     radius: LV.Theme.radiusMd
 
     Component.onCompleted: requestViewHook("page-open")
@@ -104,9 +102,7 @@ Rectangle {
                 anchors.margins: LV.Theme.gap3
                 readonly property int slotCount: Math.max(1, dayCalendarPage.timeSlots.length)
                 readonly property real slotSpacing: LV.Theme.gap2
-                readonly property real slotHeight: Math.max(
-                                                       1,
-                                                       (height - (slotSpacing * (slotCount - 1))) / slotCount)
+                readonly property real slotHeight: Math.max(1, (height - (slotSpacing * (slotCount - 1))) / slotCount)
 
                 Column {
                     id: timeSlotColumn
@@ -123,11 +119,7 @@ Rectangle {
                             required property var modelData
                             readonly property var slotModel: timeSlotRow.modelData
                             readonly property var slotEntries: slotModel && slotModel.entries ? slotModel.entries : []
-                            readonly property real slotEntryHeight: Math.max(
-                                                                        1,
-                                                                        Math.min(
-                                                                            LV.Theme.gap12,
-                                                                            timeSlotRow.height - LV.Theme.gap4))
+                            readonly property real slotEntryHeight: Math.max(1, Math.min(LV.Theme.gap12, timeSlotRow.height - LV.Theme.gap4))
 
                             clip: true
                             color: LV.Theme.panelBackground10
@@ -148,9 +140,7 @@ Rectangle {
 
                                     LV.Label {
                                         anchors.centerIn: parent
-                                        text: timeSlotRow.slotModel && timeSlotRow.slotModel.timeLabel !== undefined
-                                              ? String(timeSlotRow.slotModel.timeLabel)
-                                              : ""
+                                        text: timeSlotRow.slotModel && timeSlotRow.slotModel.timeLabel !== undefined ? String(timeSlotRow.slotModel.timeLabel) : ""
                                     }
                                 }
                                 Column {
@@ -174,9 +164,7 @@ Rectangle {
                                             required property var modelData
                                             readonly property var entryModel: slotEntryCard.modelData
 
-                                            backgroundType: entryModel && String(entryModel.type) === "event"
-                                                            ? slotEntryCard.backgroundColored
-                                                            : slotEntryCard.backgroundDefault
+                                            backgroundType: entryModel && String(entryModel.type) === "event" ? slotEntryCard.backgroundColored : slotEntryCard.backgroundDefault
                                             coloredBackgroundColor: dayCalendarPage.entryAccent(slotEntryCard.entryModel)
                                             cornerRadius: LV.Theme.radiusSm
                                             defaultBackgroundColor: LV.Theme.panelBackground11

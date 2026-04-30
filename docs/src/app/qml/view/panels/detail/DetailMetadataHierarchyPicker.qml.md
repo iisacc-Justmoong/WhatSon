@@ -27,6 +27,7 @@ with a fully expanded hierarchy-item list. The container geometry still adapts t
   metadata locally.
 - When `manualFallbackEnabled == true`, the footer row emits `manualFallbackRequested()` and lets the parent reopen the
   inline folder editor.
+- Popup margins, row height, and fallback width now use named `LV.Theme` gap/control-width tokens.
 
 ## Tests
 

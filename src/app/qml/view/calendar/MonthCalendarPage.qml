@@ -7,20 +7,20 @@ import LVRS 1.0 as LV
 Rectangle {
     id: monthCalendarPage
 
-    readonly property int bodyLabelPixelSize: Math.max(0, Math.round(LV.Theme.scaleMetric(12)))
+    readonly property int bodyLabelPixelSize: LV.Theme.textBody
     readonly property var calendarVm: monthCalendarViewModel
     readonly property string figmaNodeId: "228:9666"
     readonly property int headerHorizontalPadding: LV.Theme.gap8
     readonly property int maxVisibleEntriesPerCell: 8
     property var monthCalendarViewModel: null
-    readonly property int monthHeaderHeight: Math.max(0, Math.round(LV.Theme.scaleMetric(54)))
+    readonly property int monthHeaderHeight: LV.Theme.headerMinHeight - LV.Theme.gap2
     readonly property int monthPagerCenterIndex: 1
     property bool monthPagerResetting: false
     readonly property bool monthSwipeEnabled: LV.Theme.mobileTarget
     readonly property string monthTitleText: monthCalendarPage.calendarVm ? String(monthCalendarPage.calendarVm.monthLabel) + ", " + String(monthCalendarPage.calendarVm.displayedYear) : "Month"
     readonly property var pagerMonthModels: monthCalendarPage.calendarVm && monthCalendarPage.calendarVm.pagerMonthModels !== undefined ? monthCalendarPage.calendarVm.pagerMonthModels : []
     readonly property int weekdayCellHorizontalPadding: LV.Theme.gap12
-    readonly property int weekdayHeaderHeight: Math.max(0, Math.round(LV.Theme.scaleMetric(39)))
+    readonly property int weekdayHeaderHeight: LV.Theme.controlHeightMd + LV.Theme.gap3
 
     signal noteOpenRequested(string noteId)
     signal viewHookRequested(string reason)
@@ -100,7 +100,7 @@ Rectangle {
 
     Layout.fillHeight: true
     Layout.fillWidth: true
-    color: "transparent"
+    color: LV.Theme.accentTransparent
     radius: LV.Theme.radiusMd
 
     Component.onCompleted: {
@@ -142,7 +142,7 @@ Rectangle {
                 LV.Label {
                     Layout.alignment: Qt.AlignVCenter
                     color: LV.Theme.titleHeaderColor
-                    font.pixelSize: 22
+                    font.pixelSize: LV.Theme.textTitle2
                     font.weight: Font.Bold
                     text: monthCalendarPage.monthTitleText
                 }

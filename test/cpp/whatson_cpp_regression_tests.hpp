@@ -1054,6 +1054,9 @@ private slots:
     void qmlStructuredEditors_bindPaperPaletteIntoPagePrintMode();
     void qmlStructuredEditors_clipInlineResourceCardsToMeasuredBlockBounds();
     void qmlEditors_routeRenderedHyperlinksToExternalBrowser();
+    void qmlContentsView_composesFigmaFrameFromLvrsParts();
+    void qmlContentsView_partsKeepEditorProjectionReadOnlyAndNativeInputSafe();
+    void qmlLvrsTokens_replaceDirectHardcodedVisualTokensOutsideContents();
     void resourceBitmapViewer_projectsRenderableImagePreviewState();
     void editorSessionController_preservesLocalEditorAuthorityAgainstSameNoteModelSync();
     void editorSessionController_rebindsWhenSameNoteIdUsesDifferentPackagePath();

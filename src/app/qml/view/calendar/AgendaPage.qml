@@ -52,9 +52,7 @@ Rectangle {
         const sourceKind = entryModel.sourceKind !== undefined ? String(entryModel.sourceKind).trim() : "";
         if (sourceKind !== "note")
             return "";
-        return entryModel.sourceId !== undefined && entryModel.sourceId !== null
-                ? String(entryModel.sourceId).trim()
-                : "";
+        return entryModel.sourceId !== undefined && entryModel.sourceId !== null ? String(entryModel.sourceId).trim() : "";
     }
     function requestOpenNote(entryModel) {
         const noteId = agendaPage.noteIdForEntry(entryModel);
@@ -64,7 +62,7 @@ Rectangle {
         agendaPage.noteOpenRequested(noteId);
     }
 
-    color: "transparent"
+    color: LV.Theme.accentTransparent
     radius: LV.Theme.radiusMd
 
     Component.onCompleted: requestViewHook("page-open")
@@ -198,9 +196,7 @@ Rectangle {
                                     anchors.fill: parent
                                     anchors.margins: LV.Theme.gap3
                                     color: LV.Theme.titleHeaderColor
-                                    text: agendaPage.stringValue(
-                                              allDayItem.modelData && allDayItem.modelData.title,
-                                              "Untitled")
+                                    text: agendaPage.stringValue(allDayItem.modelData && allDayItem.modelData.title, "Untitled")
                                     wrapMode: Text.WordWrap
                                 }
                             }
@@ -267,16 +263,12 @@ Rectangle {
 
                                     LV.Label {
                                         color: LV.Theme.descriptionColor
-                                        text: agendaPage.stringValue(
-                                                  timedItem.modelData && timedItem.modelData.timeLabel,
-                                                  "")
+                                        text: agendaPage.stringValue(timedItem.modelData && timedItem.modelData.timeLabel, "")
                                         width: LV.Theme.gap24 * 2
                                     }
                                     LV.Label {
                                         color: LV.Theme.titleHeaderColor
-                                        text: agendaPage.stringValue(
-                                                  timedItem.modelData && timedItem.modelData.title,
-                                                  "Untitled")
+                                        text: agendaPage.stringValue(timedItem.modelData && timedItem.modelData.title, "Untitled")
                                         wrapMode: Text.WordWrap
                                     }
                                 }
@@ -307,9 +299,7 @@ Rectangle {
                             }
                             LV.Label {
                                 color: LV.Theme.descriptionColor
-                                text: String(agendaPage.summaryCountValue("completedAgendaItemCount"))
-                                      + "/"
-                                      + String(agendaPage.summaryCountValue("agendaItemCount"))
+                                text: String(agendaPage.summaryCountValue("completedAgendaItemCount")) + "/" + String(agendaPage.summaryCountValue("agendaItemCount"))
                             }
                         }
                         LV.Label {
@@ -324,8 +314,7 @@ Rectangle {
                                 id: agendaItem
 
                                 required property var modelData
-                                readonly property bool completed: agendaItem.modelData
-                                                                 && agendaItem.modelData.completed === true
+                                readonly property bool completed: agendaItem.modelData && agendaItem.modelData.completed === true
 
                                 color: agendaItem.completed ? LV.Theme.panelBackground08 : LV.Theme.panelBackground11
                                 height: agendaItemRow.implicitHeight + LV.Theme.gap4
@@ -352,7 +341,7 @@ Rectangle {
                                         LV.Label {
                                             anchors.centerIn: parent
                                             color: LV.Theme.panelBackground01
-                                            font.pixelSize: 10
+                                            font.pixelSize: LV.Theme.textCaption
                                             text: agendaItem.completed ? "\u2713" : ""
                                         }
                                         MouseArea {
@@ -368,16 +357,12 @@ Rectangle {
 
                                         LV.Label {
                                             color: LV.Theme.titleHeaderColor
-                                            text: agendaPage.stringValue(
-                                                      agendaItem.modelData && agendaItem.modelData.title,
-                                                      "Untitled")
+                                            text: agendaPage.stringValue(agendaItem.modelData && agendaItem.modelData.title, "Untitled")
                                             wrapMode: Text.WordWrap
                                         }
                                         LV.Label {
                                             color: LV.Theme.descriptionColor
-                                            text: agendaPage.stringValue(
-                                                      agendaItem.modelData && agendaItem.modelData.time,
-                                                      "")
+                                            text: agendaPage.stringValue(agendaItem.modelData && agendaItem.modelData.time, "")
                                         }
                                     }
                                 }

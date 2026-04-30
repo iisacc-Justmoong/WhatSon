@@ -8,13 +8,13 @@ import "." as WindowView
 Window {
     id: root
 
-    readonly property int desktopDesignHeight: Math.max(0, Math.round(LV.Theme.scaleMetric(542)))
-    readonly property int desktopDesignWidth: Math.max(0, Math.round(LV.Theme.scaleMetric(867)))
-    readonly property int desktopMinHeight: Math.max(0, Math.round(LV.Theme.scaleMetric(420)))
-    readonly property int desktopMinWidth: Math.max(0, Math.round(LV.Theme.scaleMetric(620)))
+    readonly property int desktopDesignHeight: LV.Theme.scaffoldBlobPrimarySize + LV.Theme.gap20 + LV.Theme.gap2
+    readonly property int desktopDesignWidth: LV.Theme.scaffoldBlobPrimarySize + LV.Theme.dialogMaxWidth - LV.Theme.gap12 - Math.round(LV.Theme.strokeThin)
+    readonly property int desktopMinHeight: LV.Theme.scaffoldBlobSecondaryHeight + LV.Theme.gap20 + LV.Theme.gap20
+    readonly property int desktopMinWidth: LV.Theme.scaffoldBlobSecondaryWidth - LV.Theme.gap20
     readonly property bool isMobilePlatform: Qt.platform.os === "android" || Qt.platform.os === "ios"
-    readonly property int mobileDesignHeight: Math.max(0, Math.round(LV.Theme.scaleMetric(762)))
-    readonly property int mobileDesignWidth: Math.max(0, Math.round(LV.Theme.scaleMetric(470)))
+    readonly property int mobileDesignHeight: LV.Theme.scaffoldBlobPrimarySize + LV.Theme.inputWidthMd + LV.Theme.gap24 + LV.Theme.gap12
+    readonly property int mobileDesignWidth: LV.Theme.dialogMaxWidth + LV.Theme.buttonMinWidth + LV.Theme.gap10
     readonly property int availableScreenHeight: {
         const targetScreen = root.hostWindow && root.hostWindow.screen ? root.hostWindow.screen : root.screen;
         return targetScreen ? Math.round(targetScreen.height) : root.mobileDesignHeight;
@@ -67,7 +67,7 @@ Window {
         y = Math.round(targetScreen.virtualY + (targetScreen.height - height) / 2);
     }
 
-    color: "transparent"
+    color: LV.Theme.accentTransparent
     flags: Qt.Dialog | Qt.FramelessWindowHint
     height: effectiveHeight
     maximumHeight: effectiveHeight
@@ -107,7 +107,7 @@ Window {
         versionText: root.versionText
 
         onCompleted: {
-            root.close()
+            root.close();
         }
         onCreateFileRequested: root.createFileRequested()
         onDismissRequested: root.close()

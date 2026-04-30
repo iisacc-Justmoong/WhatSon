@@ -65,12 +65,14 @@ The `properties` state renders the Figma `Form` node (`155:4583`) with the exact
   LVRS menu animation/dismissal behavior while rendering a flat `LV.HierarchyItem` list inside the menu body.
 - The `trash` control keeps the Figma logical name but pins its rendered icon source to `generaldelete`, because that is the shipped trash-can asset in LVRS.
 - Uses LVRS typography and panel tokens instead of introducing ad-hoc colors or fonts.
+- Compact detail-list and footer controls use `LV.Theme.gapNone` and `LV.Theme.accentTransparent` for zero spacing
+  and transparent button backgrounds instead of raw visual literals.
 
 ## Scale-Aware Layout
 - The shared properties form now derives section heights from their child layout instead of keeping fixed `33px` combo
   or `155px` list-section clamps.
-- Compact rows, list cards, footer bars, and form insets use `LV.Theme.scaleMetric(...)` so LVRS mobile UI scaling
-  increases both control size and the surrounding gaps together.
+- Compact rows, list cards, footer bars, and form insets use named `LV.Theme` token compositions so LVRS mobile UI
+  scaling increases both control size and the surrounding gaps together.
 - The properties form must remain readable under the mobile `1.5x` LVRS scale; section titles, combo boxes, list
   surfaces, and list footers must not overlap each other.
 

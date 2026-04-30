@@ -21,12 +21,8 @@ Item {
     property string folderCreationText: ""
     property string metadataPickerKind: ""
     property var metadataPickerAnchorItem: null
-    readonly property int activeFolderIndex: detailContents.resolveMetadataActiveIndex(
-                                                 detailContents.activeContentViewModel ? detailContents.activeContentViewModel.activeFolderIndex : -1,
-                                                 detailContents.folderItems)
-    readonly property int activeTagIndex: detailContents.resolveMetadataActiveIndex(
-                                              detailContents.activeContentViewModel ? detailContents.activeContentViewModel.activeTagIndex : -1,
-                                              detailContents.tagItems)
+    readonly property int activeFolderIndex: detailContents.resolveMetadataActiveIndex(detailContents.activeContentViewModel ? detailContents.activeContentViewModel.activeFolderIndex : -1, detailContents.folderItems)
+    readonly property int activeTagIndex: detailContents.resolveMetadataActiveIndex(detailContents.activeContentViewModel ? detailContents.activeContentViewModel.activeTagIndex : -1, detailContents.tagItems)
     readonly property var folderItems: detailContents.resolveHeaderStringList(detailContents.activeContentViewModel ? detailContents.activeContentViewModel.folderItems : [])
     property var panelViewModelRegistry: null
     readonly property var panelViewModel: detailContents.panelViewModelRegistry ? detailContents.panelViewModelRegistry.panelViewModel("detail.DetailContents") : null
@@ -50,21 +46,21 @@ Item {
     readonly property string resolvedProgressSelectionText: detailContents.resolveHierarchySelectionText(detailContents.progressSelectionViewModel, "No progress")
     readonly property string resolvedActiveStateName: detailContents.normalizeStateName(detailContents.activeStateName)
     readonly property string resolvedPanelStateName: detailContents.noteContextLinked ? detailContents.resolvedActiveStateName : "detached"
-    readonly property int scaledGap2: Math.max(0, Math.round(LV.Theme.scaleMetric(2)))
-    readonly property int scaledGap4: Math.max(0, Math.round(LV.Theme.scaleMetric(4)))
-    readonly property int scaledGap6: Math.max(0, Math.round(LV.Theme.scaleMetric(6)))
-    readonly property int scaledGap8: Math.max(0, Math.round(LV.Theme.scaleMetric(8)))
-    readonly property int scaledGap10: Math.max(0, Math.round(LV.Theme.scaleMetric(10)))
-    readonly property int scaledGap16: Math.max(0, Math.round(LV.Theme.scaleMetric(16)))
-    readonly property int scaledCompactFrameWidth: Math.max(0, Math.round(LV.Theme.scaleMetric(178)))
-    readonly property int scaledCompactRowHeight: Math.max(0, Math.round(LV.Theme.scaleMetric(20)))
-    readonly property int scaledCompactRowWidth: Math.max(0, Math.round(LV.Theme.scaleMetric(170)))
-    readonly property int scaledCompactListHeight: Math.max(0, Math.round(LV.Theme.scaleMetric(140)))
-    readonly property int scaledCompactFooterHeight: Math.max(0, Math.round(LV.Theme.scaleMetric(24)))
-    readonly property int scaledCompactFooterWidth: Math.max(0, Math.round(LV.Theme.scaleMetric(78)))
-    readonly property int scaledCompactListViewportHeight: Math.max(0, detailContents.scaledCompactListHeight - detailContents.scaledCompactFooterHeight)
-    readonly property int scaledInlineInputLeadingInset: Math.max(0, Math.round(LV.Theme.scaleMetric(25)))
-    readonly property int scaledPlaceholderCardHeight: Math.max(0, Math.round(LV.Theme.scaleMetric(72)))
+    readonly property int scaledGap2: LV.Theme.gap2
+    readonly property int scaledGap4: LV.Theme.gap4
+    readonly property int scaledGap6: LV.Theme.gap6
+    readonly property int scaledGap8: LV.Theme.gap8
+    readonly property int scaledGap10: LV.Theme.gap10
+    readonly property int scaledGap16: LV.Theme.gap16
+    readonly property int scaledCompactFrameWidth: LV.Theme.inputMinWidth - LV.Theme.gap2
+    readonly property int scaledCompactRowHeight: LV.Theme.gap20
+    readonly property int scaledCompactRowWidth: LV.Theme.inputMinWidth - LV.Theme.gap10
+    readonly property int scaledCompactListHeight: LV.Theme.buttonMinWidth + LV.Theme.gap20 + LV.Theme.gap20
+    readonly property int scaledCompactFooterHeight: LV.Theme.gap24
+    readonly property int scaledCompactFooterWidth: LV.Theme.gap24 + LV.Theme.gap24 + LV.Theme.gap24 + LV.Theme.gap6
+    readonly property int scaledCompactListViewportHeight: Math.max(LV.Theme.gapNone, detailContents.scaledCompactListHeight - detailContents.scaledCompactFooterHeight)
+    readonly property int scaledInlineInputLeadingInset: LV.Theme.gap24 + Math.round(LV.Theme.strokeThin)
+    readonly property int scaledPlaceholderCardHeight: LV.Theme.gap24 + LV.Theme.gap24 + LV.Theme.gap24
     readonly property var tagItems: detailContents.resolveHeaderStringList(detailContents.activeContentViewModel ? detailContents.activeContentViewModel.tagItems : [])
     readonly property var metadataPickerItems: detailContents.resolveMetadataPickerItems(detailContents.metadataPickerKind)
     readonly property bool metadataPickerManualFallbackEnabled: detailContents.metadataPickerKind === "folders"
@@ -144,12 +140,12 @@ Item {
             if (label.length === 0)
                 continue;
             resolvedItems.push({
-                                   iconName: iconName,
-                                   iconSource: iconSource,
-                                   label: label,
-                                   keyVisible: false,
-                                   selected: index === selectedIndex
-                               });
+                iconName: iconName,
+                iconSource: iconSource,
+                label: label,
+                keyVisible: false,
+                selected: index === selectedIndex
+            });
         }
         return resolvedItems;
     }
@@ -209,24 +205,20 @@ Item {
                 continue;
 
             resolvedItems.push({
-                                   accent: entry.accent === true,
-                                   count: entry.count !== undefined ? Number(entry.count) || 0 : 0,
-                                   depth: entry.depth !== undefined ? Number(entry.depth) || 0 : 0,
-                                   expanded: true,
-                                   iconName: entry.iconName !== undefined && entry.iconName !== null && String(entry.iconName).trim().length > 0
-                                       ? String(entry.iconName).trim()
-                                       : detailContents.fallbackHierarchyIconNameForListKind(normalizedKind),
-                                   iconSource: entry.iconSource !== undefined && entry.iconSource !== null
-                                       ? entry.iconSource
-                                       : "",
-                                   id: id,
-                                   itemId: resolvedItems.length,
-                                   key: key.length > 0 ? key : String(normalizedKind) + ":" + String(index),
-                                   label: label,
-                                   showChevron: false,
-                                   sourceIndex: index,
-                                   value: normalizedKind === "folders" ? id : (id.length > 0 ? id : label)
-                               });
+                accent: entry.accent === true,
+                count: entry.count !== undefined ? Number(entry.count) || 0 : 0,
+                depth: entry.depth !== undefined ? Number(entry.depth) || 0 : 0,
+                expanded: true,
+                iconName: entry.iconName !== undefined && entry.iconName !== null && String(entry.iconName).trim().length > 0 ? String(entry.iconName).trim() : detailContents.fallbackHierarchyIconNameForListKind(normalizedKind),
+                iconSource: entry.iconSource !== undefined && entry.iconSource !== null ? entry.iconSource : "",
+                id: id,
+                itemId: resolvedItems.length,
+                key: key.length > 0 ? key : String(normalizedKind) + ":" + String(index),
+                label: label,
+                showChevron: false,
+                sourceIndex: index,
+                value: normalizedKind === "folders" ? id : (id.length > 0 ? id : label)
+            });
         }
 
         return resolvedItems;
@@ -260,9 +252,7 @@ Item {
         if (!detailContents.folderCreationEditing || !detailPanelViewModel || detailPanelViewModel.assignFolderByName === undefined)
             return;
 
-        const normalizedText = rawText === undefined || rawText === null
-            ? detailContents.folderCreationText.trim()
-            : String(rawText).trim();
+        const normalizedText = rawText === undefined || rawText === null ? detailContents.folderCreationText.trim() : String(rawText).trim();
         if (normalizedText.length === 0) {
             detailContents.cancelFolderCreation();
             return;
@@ -300,9 +290,7 @@ Item {
             return;
 
         const resolvedEntry = entry || {};
-        const resolvedValue = resolvedEntry.value !== undefined && resolvedEntry.value !== null
-            ? String(resolvedEntry.value).trim()
-            : "";
+        const resolvedValue = resolvedEntry.value !== undefined && resolvedEntry.value !== null ? String(resolvedEntry.value).trim() : "";
         if (resolvedValue.length === 0)
             return;
 
@@ -552,7 +540,7 @@ Item {
 
         signal itemTriggered(int index)
         signal inlineInputAccepted(string text)
-        signal inlineInputCanceled()
+        signal inlineInputCanceled
         signal inlineInputTextEdited(string text)
 
         function requestSelection(index, modifiers) {
@@ -569,7 +557,7 @@ Item {
         onInlineInputVisibleChanged: {
             if (!listSection.inlineInputVisible)
                 return;
-            Qt.callLater(function() {
+            Qt.callLater(function () {
                 inlineInputField.forceInputFocus();
                 inlineInputField.selectAll();
             });
@@ -588,211 +576,208 @@ Item {
                 width: parent.width
             }
             QtObject {
-    id: metadataSelectionController
+                id: metadataSelectionController
 
-    property var section: null
-    property int selectionAnchorIndex: -1
-    property var selectedIndices: []
-    property int pointerSelectionModifiers: Qt.NoModifier
-    property double pointerSelectionModifiersCapturedAtMs: 0
+                property var section: null
+                property int selectionAnchorIndex: -1
+                property var selectedIndices: []
+                property int pointerSelectionModifiers: Qt.NoModifier
+                property double pointerSelectionModifiersCapturedAtMs: 0
 
-    function itemCount() {
-        if (!section || !section.listItems)
-            return 0;
-        if (section.listItems.length !== undefined)
-            return Math.max(0, Number(section.listItems.length) || 0);
-        if (section.listItems.count !== undefined)
-            return Math.max(0, Number(section.listItems.count) || 0);
-        return 0;
-    }
+                function itemCount() {
+                    if (!section || !section.listItems)
+                        return 0;
+                    if (section.listItems.length !== undefined)
+                        return Math.max(0, Number(section.listItems.length) || 0);
+                    if (section.listItems.count !== undefined)
+                        return Math.max(0, Number(section.listItems.count) || 0);
+                    return 0;
+                }
 
-    function normalizeIndex(value) {
-        const numericValue = Number(value);
-        const count = controller.itemCount();
-        if (!isFinite(numericValue) || numericValue < 0 || count <= 0)
-            return -1;
-        if (numericValue >= count)
-            return count - 1;
-        return Math.floor(numericValue);
-    }
+                function normalizeIndex(value) {
+                    const numericValue = Number(value);
+                    const count = controller.itemCount();
+                    if (!isFinite(numericValue) || numericValue < 0 || count <= 0)
+                        return -1;
+                    if (numericValue >= count)
+                        return count - 1;
+                    return Math.floor(numericValue);
+                }
 
-    function normalizedKeyboardModifiers(modifiers) {
-        return modifiers === undefined || modifiers === null
-                ? Qt.NoModifier
-                : modifiers;
-    }
+                function normalizedKeyboardModifiers(modifiers) {
+                    return modifiers === undefined || modifiers === null ? Qt.NoModifier : modifiers;
+                }
 
-    function selectionToggleModifierPressed(modifiers) {
-        const normalizedModifiers = controller.normalizedKeyboardModifiers(modifiers);
-        const toggleMask = Qt.ControlModifier | Qt.MetaModifier;
-        return Boolean(normalizedModifiers & toggleMask);
-    }
+                function selectionToggleModifierPressed(modifiers) {
+                    const normalizedModifiers = controller.normalizedKeyboardModifiers(modifiers);
+                    const toggleMask = Qt.ControlModifier | Qt.MetaModifier;
+                    return Boolean(normalizedModifiers & toggleMask);
+                }
 
-    function selectionRangeModifierPressed(modifiers) {
-        const normalizedModifiers = controller.normalizedKeyboardModifiers(modifiers);
-        return Boolean(normalizedModifiers & Qt.ShiftModifier);
-    }
+                function selectionRangeModifierPressed(modifiers) {
+                    const normalizedModifiers = controller.normalizedKeyboardModifiers(modifiers);
+                    return Boolean(normalizedModifiers & Qt.ShiftModifier);
+                }
 
-    function selectionModifierPressed(modifiers) {
-        return controller.selectionRangeModifierPressed(modifiers)
-                || controller.selectionToggleModifierPressed(modifiers);
-    }
+                function selectionModifierPressed(modifiers) {
+                    return controller.selectionRangeModifierPressed(modifiers) || controller.selectionToggleModifierPressed(modifiers);
+                }
 
-    function capturePointerSelectionModifiers(modifiers) {
-        const normalizedModifiers = controller.normalizedKeyboardModifiers(modifiers);
-        if (!controller.selectionModifierPressed(normalizedModifiers))
-            return;
-        controller.pointerSelectionModifiers = normalizedModifiers;
-        controller.pointerSelectionModifiersCapturedAtMs = Date.now();
-    }
+                function capturePointerSelectionModifiers(modifiers) {
+                    const normalizedModifiers = controller.normalizedKeyboardModifiers(modifiers);
+                    if (!controller.selectionModifierPressed(normalizedModifiers))
+                        return;
+                    controller.pointerSelectionModifiers = normalizedModifiers;
+                    controller.pointerSelectionModifiersCapturedAtMs = Date.now();
+                }
 
-    function clearPointerSelectionModifiers() {
-        controller.pointerSelectionModifiers = Qt.NoModifier;
-        controller.pointerSelectionModifiersCapturedAtMs = 0;
-    }
+                function clearPointerSelectionModifiers() {
+                    controller.pointerSelectionModifiers = Qt.NoModifier;
+                    controller.pointerSelectionModifiersCapturedAtMs = 0;
+                }
 
-    function resolveSelectionModifiers(modifiers) {
-        const normalizedModifiers = controller.normalizedKeyboardModifiers(modifiers);
-        if (controller.selectionModifierPressed(normalizedModifiers))
-            return normalizedModifiers;
-        const capturedAtMs = Number(controller.pointerSelectionModifiersCapturedAtMs);
-        const cacheAgeMs = Date.now() - capturedAtMs;
-        const cacheFresh = capturedAtMs > 0 && isFinite(cacheAgeMs) && cacheAgeMs >= 0 && cacheAgeMs <= 800;
-        const normalizedCachedModifiers = controller.normalizedKeyboardModifiers(controller.pointerSelectionModifiers);
-        if (cacheFresh && controller.selectionModifierPressed(normalizedCachedModifiers))
-            return normalizedCachedModifiers;
-        return normalizedModifiers;
-    }
+                function resolveSelectionModifiers(modifiers) {
+                    const normalizedModifiers = controller.normalizedKeyboardModifiers(modifiers);
+                    if (controller.selectionModifierPressed(normalizedModifiers))
+                        return normalizedModifiers;
+                    const capturedAtMs = Number(controller.pointerSelectionModifiersCapturedAtMs);
+                    const cacheAgeMs = Date.now() - capturedAtMs;
+                    const cacheFresh = capturedAtMs > 0 && isFinite(cacheAgeMs) && cacheAgeMs >= 0 && cacheAgeMs <= 800;
+                    const normalizedCachedModifiers = controller.normalizedKeyboardModifiers(controller.pointerSelectionModifiers);
+                    if (cacheFresh && controller.selectionModifierPressed(normalizedCachedModifiers))
+                        return normalizedCachedModifiers;
+                    return normalizedModifiers;
+                }
 
-    function normalizeSelectionIndices(indices) {
-        if (!indices || indices.length === undefined)
-            return [];
-        const normalized = [];
-        for (let index = 0; index < indices.length; ++index) {
-            const normalizedIndex = controller.normalizeIndex(indices[index]);
-            if (normalizedIndex < 0)
-                continue;
-            if (normalized.indexOf(normalizedIndex) >= 0)
-                continue;
-            normalized.push(normalizedIndex);
-        }
-        normalized.sort(function (left, right) {
-            return left - right;
-        });
-        return normalized;
-    }
+                function normalizeSelectionIndices(indices) {
+                    if (!indices || indices.length === undefined)
+                        return [];
+                    const normalized = [];
+                    for (let index = 0; index < indices.length; ++index) {
+                        const normalizedIndex = controller.normalizeIndex(indices[index]);
+                        if (normalizedIndex < 0)
+                            continue;
+                        if (normalized.indexOf(normalizedIndex) >= 0)
+                            continue;
+                        normalized.push(normalizedIndex);
+                    }
+                    normalized.sort(function (left, right) {
+                        return left - right;
+                    });
+                    return normalized;
+                }
 
-    function setSelectedIndices(indices) {
-        controller.selectedIndices = controller.normalizeSelectionIndices(indices);
-    }
+                function setSelectedIndices(indices) {
+                    controller.selectedIndices = controller.normalizeSelectionIndices(indices);
+                }
 
-    function selectionContainsIndex(index) {
-        const normalizedIndex = controller.normalizeIndex(index);
-        if (normalizedIndex < 0)
-            return false;
-        return controller.normalizeSelectionIndices(controller.selectedIndices).indexOf(normalizedIndex) >= 0;
-    }
+                function selectionContainsIndex(index) {
+                    const normalizedIndex = controller.normalizeIndex(index);
+                    if (normalizedIndex < 0)
+                        return false;
+                    return controller.normalizeSelectionIndices(controller.selectedIndices).indexOf(normalizedIndex) >= 0;
+                }
 
-    function selectionRangeIndices(anchorIndex, targetIndex) {
-        const normalizedAnchor = controller.normalizeIndex(anchorIndex);
-        const normalizedTarget = controller.normalizeIndex(targetIndex);
-        if (normalizedTarget < 0)
-            return [];
-        if (normalizedAnchor < 0)
-            return [normalizedTarget];
-        const begin = Math.min(normalizedAnchor, normalizedTarget);
-        const end = Math.max(normalizedAnchor, normalizedTarget);
-        const range = [];
-        for (let index = begin; index <= end; ++index)
-            range.push(index);
-        return range;
-    }
+                function selectionRangeIndices(anchorIndex, targetIndex) {
+                    const normalizedAnchor = controller.normalizeIndex(anchorIndex);
+                    const normalizedTarget = controller.normalizeIndex(targetIndex);
+                    if (normalizedTarget < 0)
+                        return [];
+                    if (normalizedAnchor < 0)
+                        return [normalizedTarget];
+                    const begin = Math.min(normalizedAnchor, normalizedTarget);
+                    const end = Math.max(normalizedAnchor, normalizedTarget);
+                    const range = [];
+                    for (let index = begin; index <= end; ++index)
+                        range.push(index);
+                    return range;
+                }
 
-    function activateIndex(index) {
-        if (!section)
-            return;
-        const normalizedIndex = controller.normalizeIndex(index);
-        if (normalizedIndex < 0)
-            return;
-        section.itemTriggered(normalizedIndex);
-    }
+                function activateIndex(index) {
+                    if (!section)
+                        return;
+                    const normalizedIndex = controller.normalizeIndex(index);
+                    if (normalizedIndex < 0)
+                        return;
+                    section.itemTriggered(normalizedIndex);
+                }
 
-    function reconcileSelection() {
-        const committedIndex = controller.normalizeIndex(section ? section.activeIndex : -1);
-        const normalizedSelection = controller.normalizeSelectionIndices(controller.selectedIndices);
-        if (committedIndex < 0) {
-            if (normalizedSelection.length > 0)
-                controller.setSelectedIndices([]);
-            controller.selectionAnchorIndex = -1;
-            return;
-        }
-        if (normalizedSelection.length === 0 || normalizedSelection.indexOf(committedIndex) < 0)
-            controller.setSelectedIndices([committedIndex]);
-        else
-            controller.setSelectedIndices(normalizedSelection);
-        const normalizedAnchorIndex = controller.normalizeIndex(controller.selectionAnchorIndex);
-        if (normalizedAnchorIndex < 0 || !controller.selectionContainsIndex(normalizedAnchorIndex))
-            controller.selectionAnchorIndex = committedIndex;
-    }
+                function reconcileSelection() {
+                    const committedIndex = controller.normalizeIndex(section ? section.activeIndex : -1);
+                    const normalizedSelection = controller.normalizeSelectionIndices(controller.selectedIndices);
+                    if (committedIndex < 0) {
+                        if (normalizedSelection.length > 0)
+                            controller.setSelectedIndices([]);
+                        controller.selectionAnchorIndex = -1;
+                        return;
+                    }
+                    if (normalizedSelection.length === 0 || normalizedSelection.indexOf(committedIndex) < 0)
+                        controller.setSelectedIndices([committedIndex]);
+                    else
+                        controller.setSelectedIndices(normalizedSelection);
+                    const normalizedAnchorIndex = controller.normalizeIndex(controller.selectionAnchorIndex);
+                    if (normalizedAnchorIndex < 0 || !controller.selectionContainsIndex(normalizedAnchorIndex))
+                        controller.selectionAnchorIndex = committedIndex;
+                }
 
-    function requestSelection(index, modifiers) {
-        const normalizedIndex = controller.normalizeIndex(index);
-        if (normalizedIndex < 0)
-            return;
-        const normalizedModifiers = controller.normalizedKeyboardModifiers(modifiers);
-        if (controller.selectionRangeModifierPressed(normalizedModifiers)) {
-            let anchorIndex = controller.normalizeIndex(controller.selectionAnchorIndex);
-            if (anchorIndex < 0)
-                anchorIndex = controller.normalizeIndex(section ? section.activeIndex : -1);
-            if (anchorIndex < 0)
-                anchorIndex = normalizedIndex;
-            const rangeSelection = controller.selectionRangeIndices(anchorIndex, normalizedIndex);
-            if (controller.selectionToggleModifierPressed(normalizedModifiers)) {
-                const selectedIndices = controller.normalizeSelectionIndices(controller.selectedIndices);
-                for (let selectionIndex = 0; selectionIndex < rangeSelection.length; ++selectionIndex)
-                    selectedIndices.push(rangeSelection[selectionIndex]);
-                controller.setSelectedIndices(selectedIndices);
-            } else {
-                controller.setSelectedIndices(rangeSelection);
+                function requestSelection(index, modifiers) {
+                    const normalizedIndex = controller.normalizeIndex(index);
+                    if (normalizedIndex < 0)
+                        return;
+                    const normalizedModifiers = controller.normalizedKeyboardModifiers(modifiers);
+                    if (controller.selectionRangeModifierPressed(normalizedModifiers)) {
+                        let anchorIndex = controller.normalizeIndex(controller.selectionAnchorIndex);
+                        if (anchorIndex < 0)
+                            anchorIndex = controller.normalizeIndex(section ? section.activeIndex : -1);
+                        if (anchorIndex < 0)
+                            anchorIndex = normalizedIndex;
+                        const rangeSelection = controller.selectionRangeIndices(anchorIndex, normalizedIndex);
+                        if (controller.selectionToggleModifierPressed(normalizedModifiers)) {
+                            const selectedIndices = controller.normalizeSelectionIndices(controller.selectedIndices);
+                            for (let selectionIndex = 0; selectionIndex < rangeSelection.length; ++selectionIndex)
+                                selectedIndices.push(rangeSelection[selectionIndex]);
+                            controller.setSelectedIndices(selectedIndices);
+                        } else {
+                            controller.setSelectedIndices(rangeSelection);
+                        }
+                        controller.selectionAnchorIndex = anchorIndex;
+                        controller.activateIndex(normalizedIndex);
+                        return;
+                    }
+                    if (controller.selectionToggleModifierPressed(normalizedModifiers)) {
+                        const selectedIndices = controller.normalizeSelectionIndices(controller.selectedIndices);
+                        const existingSelectionIndex = selectedIndices.indexOf(normalizedIndex);
+                        if (existingSelectionIndex < 0) {
+                            selectedIndices.push(normalizedIndex);
+                            controller.setSelectedIndices(selectedIndices);
+                            controller.selectionAnchorIndex = normalizedIndex;
+                            controller.activateIndex(normalizedIndex);
+                            return;
+                        }
+                        if (selectedIndices.length <= 1) {
+                            controller.setSelectedIndices([normalizedIndex]);
+                            controller.selectionAnchorIndex = normalizedIndex;
+                            controller.activateIndex(normalizedIndex);
+                            return;
+                        }
+                        selectedIndices.splice(existingSelectionIndex, 1);
+                        controller.setSelectedIndices(selectedIndices);
+                        const committedIndex = controller.normalizeIndex(section ? section.activeIndex : -1);
+                        if (controller.selectionContainsIndex(committedIndex)) {
+                            controller.selectionAnchorIndex = normalizedIndex;
+                            return;
+                        }
+                        const fallbackIndex = selectedIndices.length > 0 ? selectedIndices[selectedIndices.length - 1] : -1;
+                        controller.selectionAnchorIndex = fallbackIndex;
+                        if (fallbackIndex >= 0)
+                            controller.activateIndex(fallbackIndex);
+                        return;
+                    }
+                    controller.setSelectedIndices([normalizedIndex]);
+                    controller.selectionAnchorIndex = normalizedIndex;
+                    controller.activateIndex(normalizedIndex);
+                }
             }
-            controller.selectionAnchorIndex = anchorIndex;
-            controller.activateIndex(normalizedIndex);
-            return;
-        }
-        if (controller.selectionToggleModifierPressed(normalizedModifiers)) {
-            const selectedIndices = controller.normalizeSelectionIndices(controller.selectedIndices);
-            const existingSelectionIndex = selectedIndices.indexOf(normalizedIndex);
-            if (existingSelectionIndex < 0) {
-                selectedIndices.push(normalizedIndex);
-                controller.setSelectedIndices(selectedIndices);
-                controller.selectionAnchorIndex = normalizedIndex;
-                controller.activateIndex(normalizedIndex);
-                return;
-            }
-            if (selectedIndices.length <= 1) {
-                controller.setSelectedIndices([normalizedIndex]);
-                controller.selectionAnchorIndex = normalizedIndex;
-                controller.activateIndex(normalizedIndex);
-                return;
-            }
-            selectedIndices.splice(existingSelectionIndex, 1);
-            controller.setSelectedIndices(selectedIndices);
-            const committedIndex = controller.normalizeIndex(section ? section.activeIndex : -1);
-            if (controller.selectionContainsIndex(committedIndex)) {
-                controller.selectionAnchorIndex = normalizedIndex;
-                return;
-            }
-            const fallbackIndex = selectedIndices.length > 0 ? selectedIndices[selectedIndices.length - 1] : -1;
-            controller.selectionAnchorIndex = fallbackIndex;
-            if (fallbackIndex >= 0)
-                controller.activateIndex(fallbackIndex);
-            return;
-        }
-        controller.setSelectedIndices([normalizedIndex]);
-        controller.selectionAnchorIndex = normalizedIndex;
-        controller.activateIndex(normalizedIndex);
-    }
-    }
             Rectangle {
                 id: smallList
 
@@ -815,7 +800,7 @@ Item {
                         anchors.left: parent.left
                         anchors.right: parent.right
                         anchors.top: parent.top
-                        spacing: 0
+                        spacing: LV.Theme.gapNone
 
                         Item {
                             visible: listSection.inlineInputVisible
@@ -844,7 +829,7 @@ Item {
                                 clearButtonVisible: false
                                 fieldMinHeight: detailContents.scaledCompactRowHeight
                                 insetHorizontal: 0
-                                insetVertical: 0
+                                insetVertical: LV.Theme.gapNone
                                 objectName: listSection.inlineInputObjectName
                                 placeholderText: listSection.inlineInputPlaceholderText
                                 selectByMouse: true
@@ -855,25 +840,23 @@ Item {
                                 textColorDisabled: LV.Theme.disabledColor
                                 visible: listSection.inlineInputVisible
 
-                                Keys.onEscapePressed: function(event) {
+                                Keys.onEscapePressed: function (event) {
                                     event.accepted = true;
                                     listSection.inlineInputCanceled();
                                 }
-                                onAccepted: function(text) {
+                                onAccepted: function (text) {
                                     const nextText = typeof text === "string" ? text : inlineInputField.text;
                                     listSection.inlineInputAccepted(nextText);
                                 }
                                 onActiveFocusChanged: {
                                     if (inlineInputField.activeFocus)
                                         return;
-                                    Qt.callLater(function() {
-                                        if (listSection.inlineInputVisible
-                                                && !inlineInputField.activeFocus
-                                                && !inlineInputField.inputItem.activeFocus)
+                                    Qt.callLater(function () {
+                                        if (listSection.inlineInputVisible && !inlineInputField.activeFocus && !inlineInputField.inputItem.activeFocus)
                                             listSection.inlineInputCanceled();
                                     });
                                 }
-                                onTextEdited: function(text) {
+                                onTextEdited: function (text) {
                                     const nextText = typeof text === "string" ? text : inlineInputField.text;
                                     listSection.inlineInputTextEdited(nextText);
                                 }
@@ -906,7 +889,7 @@ Item {
                                         metadataSelectionController.capturePointerSelectionModifiers(pressModifiers);
                                     }
                                 }
-                                onClicked: function() {
+                                onClicked: function () {
                                     const resolvedModifiers = metadataSelectionController.resolveSelectionModifiers(metadataSelectionController.pointerSelectionModifiers);
                                     listSection.requestSelection(index, resolvedModifiers);
                                     metadataSelectionController.clearPointerSelectionModifiers();
@@ -923,10 +906,10 @@ Item {
                     button1: ({
                             type: "icon",
                             iconName: "addFile",
-                            backgroundColor: "transparent",
-                            backgroundColorDisabled: "transparent",
-                            backgroundColorHover: "transparent",
-                            backgroundColorPressed: "transparent",
+                            backgroundColor: LV.Theme.accentTransparent,
+                            backgroundColorDisabled: LV.Theme.accentTransparent,
+                            backgroundColorHover: LV.Theme.accentTransparent,
+                            backgroundColorPressed: LV.Theme.accentTransparent,
                             enabled: listSection.addEnabled,
                             horizontalPadding: detailContents.scaledGap2,
                             onClicked: function () {
@@ -938,10 +921,10 @@ Item {
                             type: "icon",
                             iconName: "trash",
                             iconSource: LV.Theme.iconPath("generaldelete"),
-                            backgroundColor: "transparent",
-                            backgroundColorDisabled: "transparent",
-                            backgroundColorHover: "transparent",
-                            backgroundColorPressed: "transparent",
+                            backgroundColor: LV.Theme.accentTransparent,
+                            backgroundColorDisabled: LV.Theme.accentTransparent,
+                            backgroundColorHover: LV.Theme.accentTransparent,
+                            backgroundColorPressed: LV.Theme.accentTransparent,
                             enabled: listSection.deleteEnabled,
                             horizontalPadding: detailContents.scaledGap2,
                             onClicked: function () {
@@ -952,10 +935,10 @@ Item {
                     button3: ({
                             type: "menu",
                             iconName: "settings",
-                            backgroundColor: "transparent",
-                            backgroundColorDisabled: "transparent",
-                            backgroundColorHover: "transparent",
-                            backgroundColorPressed: "transparent",
+                            backgroundColor: LV.Theme.accentTransparent,
+                            backgroundColorDisabled: LV.Theme.accentTransparent,
+                            backgroundColorHover: LV.Theme.accentTransparent,
+                            backgroundColorPressed: LV.Theme.accentTransparent,
                             enabled: listSection.settingsEnabled,
                             bottomPadding: detailContents.scaledGap2,
                             leftPadding: detailContents.scaledGap2,
@@ -964,11 +947,11 @@ Item {
                             },
                             rightPadding: detailContents.scaledGap4,
                             topPadding: detailContents.scaledGap2
-                    })
+                        })
                     height: detailContents.scaledCompactFooterHeight
                     horizontalPadding: detailContents.scaledGap2
                     objectName: listSection.listObjectName + "Footer"
-                    spacing: 0
+                    spacing: LV.Theme.gapNone
                     verticalPadding: detailContents.scaledGap2
                     width: detailContents.scaledCompactFooterWidth
                 }
@@ -1056,7 +1039,7 @@ Item {
                 valueText: "No project"
                 width: parent.width
 
-                onMenuItemTriggered: function(index) {
+                onMenuItemTriggered: function (index) {
                     detailContents.applyHierarchySelection(detailContents.projectSelectionViewModel, index, "projects.comboSelect");
                 }
             }
@@ -1072,7 +1055,7 @@ Item {
                 valueText: "No bookmark"
                 width: parent.width
 
-                onMenuItemTriggered: function(index) {
+                onMenuItemTriggered: function (index) {
                     detailContents.applyHierarchySelection(detailContents.bookmarkSelectionViewModel, index, "bookmark.comboSelect");
                 }
             }
@@ -1097,16 +1080,16 @@ Item {
                 titleText: "Folders"
                 width: parent.width
 
-                onItemTriggered: function(index) {
+                onItemTriggered: function (index) {
                     detailContents.setMetadataListActiveIndex("folders", index);
                 }
-                onInlineInputAccepted: function(text) {
+                onInlineInputAccepted: function (text) {
                     detailContents.commitFolderCreation(text);
                 }
                 onInlineInputCanceled: {
                     detailContents.cancelFolderCreation();
                 }
-                onInlineInputTextEdited: function(text) {
+                onInlineInputTextEdited: function (text) {
                     detailContents.folderCreationText = text;
                 }
             }
@@ -1124,7 +1107,7 @@ Item {
                 titleText: "Tags"
                 width: parent.width
 
-                onItemTriggered: function(index) {
+                onItemTriggered: function (index) {
                     detailContents.setMetadataListActiveIndex("tags", index);
                 }
             }
@@ -1140,7 +1123,7 @@ Item {
                 valueText: "No progress"
                 width: parent.width
 
-                onMenuItemTriggered: function(index) {
+                onMenuItemTriggered: function (index) {
                     detailContents.applyHierarchySelection(detailContents.progressSelectionViewModel, index, "progress.comboSelect");
                 }
             }
@@ -1149,21 +1132,19 @@ Item {
     DetailView.DetailMetadataHierarchyPicker {
         id: metadataHierarchyPicker
 
-        emptyStateText: detailContents.metadataPickerKind === "folders"
-            ? "No existing folders are available in the library hierarchy."
-            : "No existing tags are available in the tags hierarchy."
+        emptyStateText: detailContents.metadataPickerKind === "folders" ? "No existing folders are available in the library hierarchy." : "No existing tags are available in the tags hierarchy."
         hierarchyItems: detailContents.metadataPickerItems
         manualFallbackEnabled: detailContents.metadataPickerManualFallbackEnabled
         manualFallbackText: "Create custom folder path"
 
         onClosed: detailContents.resetMetadataPickerState()
-        onEntryChosen: function(entry) {
+        onEntryChosen: function (entry) {
             detailContents.applyMetadataPickerEntry(entry);
         }
         onManualFallbackRequested: {
             detailContents.requestMetadataManualFallback(detailContents.metadataPickerKind);
         }
-        onViewHookRequested: function(reason) {
+        onViewHookRequested: function (reason) {
             detailContents.requestViewHook(reason);
         }
     }
@@ -1173,9 +1154,7 @@ Item {
         visible: detailContents.resolvedPanelStateName === "fileStat"
     }
     DetailPlaceholderForm {
-        visible: detailContents.resolvedPanelStateName !== "detached"
-            && detailContents.resolvedPanelStateName !== "properties"
-            && detailContents.resolvedPanelStateName !== "fileStat"
+        visible: detailContents.resolvedPanelStateName !== "detached" && detailContents.resolvedPanelStateName !== "properties" && detailContents.resolvedPanelStateName !== "fileStat"
     }
 
     states: [

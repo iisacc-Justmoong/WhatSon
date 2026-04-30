@@ -7,27 +7,20 @@ Item {
     id: hStack
 
     function traceActiveBindings(reason) {
-        console.log("[whatson:qml][BodyLayout][" + reason + "] activeHierarchyIndex="
-                    + hStack.activeHierarchyIndex
-                    + " activeHierarchyViewModel=" + hStack.activeHierarchyViewModel
-                    + " activeNoteListModel=" + hStack.activeNoteListModel)
+        console.log("[whatson:qml][BodyLayout][" + reason + "] activeHierarchyIndex=" + hStack.activeHierarchyIndex + " activeHierarchyViewModel=" + hStack.activeHierarchyViewModel + " activeNoteListModel=" + hStack.activeNoteListModel);
     }
 
     property var activeHierarchyBindingSnapshot: ({
-        "index": 0,
-        "viewModel": null
-    })
+            "index": 0,
+            "viewModel": null
+        })
     readonly property int activeHierarchyIndex: {
         const snapshot = hStack.activeHierarchyBindingSnapshot;
         const numericIndex = Number(snapshot && snapshot.index !== undefined ? snapshot.index : 0);
         return isFinite(numericIndex) ? Math.floor(numericIndex) : 0;
     }
-    readonly property var activeHierarchyViewModel: hStack.activeHierarchyBindingSnapshot
-                                                  ? hStack.activeHierarchyBindingSnapshot.viewModel
-                                                  : null
-    readonly property var activeNoteListModel: hStack.sidebarHierarchyViewModel
-                                               ? hStack.sidebarHierarchyViewModel.activeNoteListModel
-                                               : null
+    readonly property var activeHierarchyViewModel: hStack.activeHierarchyBindingSnapshot ? hStack.activeHierarchyBindingSnapshot.viewModel : null
+    readonly property var activeNoteListModel: hStack.sidebarHierarchyViewModel ? hStack.sidebarHierarchyViewModel.activeNoteListModel : null
     property color compactCanvasColor: LV.Theme.panelBackground01
     property bool compactMode: false
     property color contentsDisplayColor: "transparent"
@@ -41,16 +34,12 @@ Item {
     readonly property bool listVisible: hStack.listViewWidth > 0
     property int minContentWidth: LV.Theme.dialogMaxWidth - LV.Theme.gap20 * 2
     property int minListViewWidth: LV.Theme.inputMinWidth - LV.Theme.gap24 * 2
-    property int minRightPanelWidth: Math.max(0, Math.round(LV.Theme.scaleMetric(145)))
+    property int minRightPanelWidth: LV.Theme.controlHeightMd + LV.Theme.controlHeightMd + LV.Theme.controlHeightMd + LV.Theme.controlHeightMd + Math.round(LV.Theme.strokeThin)
     property int minSidebarWidth: LV.Theme.gap20 * 7 + LV.Theme.gap12
     property var noteDeletionViewModel: null
     readonly property var resolvedNoteDeletionViewModel: {
         const activeViewModel = hStack.activeHierarchyViewModel;
-        if (activeViewModel
-                && (activeViewModel.deleteNotesByIds !== undefined
-                    || activeViewModel.deleteNoteById !== undefined
-                    || activeViewModel.clearNoteFoldersByIds !== undefined
-                    || activeViewModel.clearNoteFoldersById !== undefined)) {
+        if (activeViewModel && (activeViewModel.deleteNotesByIds !== undefined || activeViewModel.deleteNoteById !== undefined || activeViewModel.clearNoteFoldersByIds !== undefined || activeViewModel.clearNoteFoldersById !== undefined)) {
             return activeViewModel;
         }
         return hStack.noteDeletionViewModel;
@@ -59,7 +48,7 @@ Item {
     readonly property var panelViewModel: hStack.panelViewModelRegistry ? hStack.panelViewModelRegistry.panelViewModel("BodyLayout") : null
     property var resourcesImportViewModel: null
     property color rightPanelColor: "transparent"
-    property int rightPanelWidth: Math.max(0, Math.round(LV.Theme.scaleMetric(194)))
+    property int rightPanelWidth: LV.Theme.inputMinWidth + LV.Theme.gap14
     readonly property bool rightVisible: hStack.rightPanelWidth > 0
     property color sidebarColor: "transparent"
     required property var sidebarHierarchyViewModel
@@ -111,9 +100,7 @@ Item {
         }
         const numericIndex = Number(sidebarViewModel.resolvedActiveHierarchyIndex);
         const resolvedIndex = isFinite(numericIndex) ? Math.floor(numericIndex) : 0;
-        const resolvedHierarchyViewModel = sidebarViewModel.hierarchyViewModelForIndex !== undefined
-                ? sidebarViewModel.hierarchyViewModelForIndex(resolvedIndex)
-                : sidebarViewModel.resolvedHierarchyViewModel;
+        const resolvedHierarchyViewModel = sidebarViewModel.hierarchyViewModelForIndex !== undefined ? sidebarViewModel.hierarchyViewModelForIndex(resolvedIndex) : sidebarViewModel.resolvedHierarchyViewModel;
         hStack.activeHierarchyBindingSnapshot = {
             "index": resolvedIndex,
             "viewModel": resolvedHierarchyViewModel
@@ -155,8 +142,8 @@ Item {
     Layout.fillWidth: true
     clip: true
     Component.onCompleted: {
-        hStack.syncActiveHierarchyBindings()
-        hStack.traceActiveBindings("completed")
+        hStack.syncActiveHierarchyBindings();
+        hStack.traceActiveBindings("completed");
     }
     onSidebarHierarchyViewModelChanged: hStack.syncActiveHierarchyBindings()
     onActiveHierarchyBindingSnapshotChanged: hStack.traceActiveBindings("activeHierarchyBindingSnapshotChanged")

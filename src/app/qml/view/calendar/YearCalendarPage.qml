@@ -15,19 +15,19 @@ Rectangle {
     readonly property int mobileYearGridColumnCount: 1
     readonly property int yearGridColumnCount: yearCalendarPage.mobileYearListMode ? yearCalendarPage.mobileYearGridColumnCount : yearCalendarPage.desktopYearGridColumnCount
     readonly property real desktopResponsiveScale: yearCalendarPage.mobileYearListMode ? 1.0 : Math.min(1.2, Math.max(0.72, Math.min(yearCalendarPage.width / 1600, yearCalendarPage.height / 1020)))
-    readonly property int yearGridSpacing: Math.max(LV.Theme.gap4, Math.round(LV.Theme.scaleMetric(24) * yearCalendarPage.desktopResponsiveScale))
-    readonly property int monthCardPadding: Math.max(LV.Theme.gap4, Math.round(LV.Theme.scaleMetric(14) * yearCalendarPage.desktopResponsiveScale))
-    readonly property int monthSectionSpacing: Math.max(LV.Theme.gap2, Math.round(LV.Theme.scaleMetric(8) * yearCalendarPage.desktopResponsiveScale))
-    readonly property int monthTitlePixelSize: Math.max(Math.max(0, Math.round(LV.Theme.scaleMetric(18))), Math.round(LV.Theme.scaleMetric(44) * yearCalendarPage.desktopResponsiveScale / 2))
-    readonly property int monthWeekdayPixelSize: Math.max(0, Math.round(LV.Theme.scaleMetric(12)))
-    readonly property int monthDayPixelSize: Math.max(0, Math.round(LV.Theme.scaleMetric(12)))
-    readonly property int monthCellWidthFloor: Math.max(Math.max(0, Math.round(LV.Theme.scaleMetric(10))), Math.round(LV.Theme.scaleMetric(14) * yearCalendarPage.desktopResponsiveScale))
+    readonly property int yearGridSpacing: Math.max(LV.Theme.gap4, Math.round(LV.Theme.gap24 * yearCalendarPage.desktopResponsiveScale))
+    readonly property int monthCardPadding: Math.max(LV.Theme.gap4, Math.round(LV.Theme.gap14 * yearCalendarPage.desktopResponsiveScale))
+    readonly property int monthSectionSpacing: Math.max(LV.Theme.gap2, Math.round(LV.Theme.gap8 * yearCalendarPage.desktopResponsiveScale))
+    readonly property int monthTitlePixelSize: Math.max(LV.Theme.gap18, Math.round((LV.Theme.controlHeightMd + LV.Theme.gap8) * yearCalendarPage.desktopResponsiveScale / 2))
+    readonly property int monthWeekdayPixelSize: LV.Theme.textBody
+    readonly property int monthDayPixelSize: LV.Theme.textBody
+    readonly property int monthCellWidthFloor: Math.max(LV.Theme.gap10, Math.round(LV.Theme.gap14 * yearCalendarPage.desktopResponsiveScale))
     readonly property color monthTitleColor: LV.Theme.accent
     readonly property color weekdayTextColor: LV.Theme.descriptionColor
     readonly property color activeDayColor: LV.Theme.titleHeaderColor
     readonly property color adjacentDayColor: Qt.darker(yearCalendarPage.activeDayColor, 1.2)
-    readonly property color todayBadgeColor: Qt.rgba(1.0, 1.0, 1.0, 0.22)
-    readonly property int mobileMonthCardMinHeight: Math.max(0, Math.round(LV.Theme.scaleMetric(260)))
+    readonly property color todayBadgeColor: LV.Theme.disabledColor
+    readonly property int mobileMonthCardMinHeight: LV.Theme.scaffoldBlobPrimaryRadius
     readonly property var weekdayLabels: calendarVm && calendarVm.weekdayLabels ? calendarVm.weekdayLabels : []
     property var yearCalendarViewModel: null
 
@@ -90,14 +90,14 @@ Rectangle {
         yearCalendarPage.requestViewHook("current-year");
     }
 
-    color: "transparent"
+    color: LV.Theme.accentTransparent
     radius: LV.Theme.radiusMd
 
     Component.onCompleted: requestViewHook("page-open")
 
     ColumnLayout {
         anchors.fill: parent
-        anchors.margins: yearCalendarPage.mobileYearListMode ? LV.Theme.gap12 : Math.max(10, Math.round(20 * yearCalendarPage.desktopResponsiveScale))
+        anchors.margins: yearCalendarPage.mobileYearListMode ? LV.Theme.gap12 : Math.max(LV.Theme.gap10, Math.round(LV.Theme.gap20 * yearCalendarPage.desktopResponsiveScale))
         spacing: yearCalendarPage.mobileYearListMode ? LV.Theme.gap8 : yearCalendarPage.yearGridSpacing
 
         Rectangle {
@@ -160,16 +160,8 @@ Rectangle {
             Grid {
                 id: monthGrid
 
-                property int desktopCardWidth: Math.max(
-                                                   1,
-                                                   Math.floor(
-                                                       (width - (yearCalendarPage.yearGridSpacing * (yearCalendarPage.desktopYearGridColumnCount - 1)))
-                                                       / yearCalendarPage.desktopYearGridColumnCount))
-                property int desktopCardHeight: Math.max(
-                                                    1,
-                                                    Math.floor(
-                                                        (monthsFlickable.height - (yearCalendarPage.yearGridSpacing * (yearCalendarPage.desktopYearGridRowCount - 1)))
-                                                        / yearCalendarPage.desktopYearGridRowCount))
+                property int desktopCardWidth: Math.max(1, Math.floor((width - (yearCalendarPage.yearGridSpacing * (yearCalendarPage.desktopYearGridColumnCount - 1))) / yearCalendarPage.desktopYearGridColumnCount))
+                property int desktopCardHeight: Math.max(1, Math.floor((monthsFlickable.height - (yearCalendarPage.yearGridSpacing * (yearCalendarPage.desktopYearGridRowCount - 1))) / yearCalendarPage.desktopYearGridRowCount))
 
                 columns: yearCalendarPage.yearGridColumnCount
                 spacing: yearCalendarPage.yearGridSpacing
@@ -183,28 +175,11 @@ Rectangle {
 
                         required property var modelData
                         readonly property var monthModel: monthCard.modelData
-                        readonly property int dayCellWidth: Math.max(
-                                                                yearCalendarPage.monthCellWidthFloor,
-                                                                Math.floor(
-                                                                    (monthCard.width
-                                                                     - (yearCalendarPage.monthCardPadding * 2)
-                                                                     - (yearCalendarPage.monthSectionSpacing * 6))
-                                                                    / 7))
-                        readonly property int dayCellHeight: Math.max(
-                                                                 10,
-                                                                 Math.floor(
-                                                                     (monthCard.height
-                                                                      - (yearCalendarPage.monthCardPadding * 2)
-                                                                      - monthTitleLabel.implicitHeight
-                                                                      - weekdayGrid.implicitHeight
-                                                                      - (yearCalendarPage.monthSectionSpacing * 2)
-                                                                      - (dayGrid.spacing * 5))
-                                                                     / 6))
+                        readonly property int dayCellWidth: Math.max(yearCalendarPage.monthCellWidthFloor, Math.floor((monthCard.width - (yearCalendarPage.monthCardPadding * 2) - (yearCalendarPage.monthSectionSpacing * 6)) / 7))
+                        readonly property int dayCellHeight: Math.max(10, Math.floor((monthCard.height - (yearCalendarPage.monthCardPadding * 2) - monthTitleLabel.implicitHeight - weekdayGrid.implicitHeight - (yearCalendarPage.monthSectionSpacing * 2) - (dayGrid.spacing * 5)) / 6))
 
-                        color: "transparent"
-                        height: yearCalendarPage.mobileYearListMode
-                                ? Math.max(yearCalendarPage.mobileMonthCardMinHeight, monthBodyColumn.implicitHeight + (yearCalendarPage.monthCardPadding * 2))
-                                : monthGrid.desktopCardHeight
+                        color: LV.Theme.accentTransparent
+                        height: yearCalendarPage.mobileYearListMode ? Math.max(yearCalendarPage.mobileMonthCardMinHeight, monthBodyColumn.implicitHeight + (yearCalendarPage.monthCardPadding * 2)) : monthGrid.desktopCardHeight
                         radius: LV.Theme.radiusSm
                         width: yearCalendarPage.mobileYearListMode ? monthGrid.width : monthGrid.desktopCardWidth
 
@@ -269,9 +244,7 @@ Rectangle {
 
                                         required property var modelData
                                         readonly property var dayModel: dayCell.modelData
-                                        readonly property bool hasValidDate: dayCell.dayModel
-                                                                             && dayCell.dayModel.dateIso !== undefined
-                                                                             && String(dayCell.dayModel.dateIso).trim().length > 0
+                                        readonly property bool hasValidDate: dayCell.dayModel && dayCell.dayModel.dateIso !== undefined && String(dayCell.dayModel.dateIso).trim().length > 0
                                         readonly property bool isToday: dayModel && dayModel.isToday === true
                                         height: monthCard.dayCellHeight
                                         width: monthCard.dayCellWidth

@@ -7,37 +7,25 @@ import LVRS 1.0 as LV
 Window {
     id: root
 
-    readonly property int fixedHeight: Math.max(0, Math.round(LV.Theme.scaleMetric(372)))
-    readonly property int fixedWidth: Math.max(0, Math.round(LV.Theme.scaleMetric(452)))
+    readonly property int fixedHeight: LV.Theme.dialogMaxWidth + LV.Theme.gap12
+    readonly property int fixedWidth: LV.Theme.dialogMaxWidth + LV.Theme.buttonMinWidth - LV.Theme.gap8
     readonly property bool hasTrialPolicy: root.trialActivationPolicy !== null
-    readonly property bool bypassedByAuthentication: root.hasTrialPolicy
-                                                    && root.trialActivationPolicy.bypassedByAuthentication !== undefined
-                                                    ? Boolean(root.trialActivationPolicy.bypassedByAuthentication)
-                                                    : false
-    readonly property bool trialActive: root.hasTrialPolicy && root.trialActivationPolicy.active !== undefined
-                                        ? Boolean(root.trialActivationPolicy.active)
-                                        : false
-    readonly property int remainingDays: root.hasTrialPolicy && root.trialActivationPolicy.remainingDays !== undefined
-                                         ? Number(root.trialActivationPolicy.remainingDays)
-                                         : 0
-    readonly property int elapsedDays: root.hasTrialPolicy && root.trialActivationPolicy.elapsedDays !== undefined
-                                       ? Number(root.trialActivationPolicy.elapsedDays)
-                                       : 0
-    readonly property int trialLengthDays: root.hasTrialPolicy
-                                           && root.trialActivationPolicy.trialLengthDays !== undefined
-                                           ? Number(root.trialActivationPolicy.trialLengthDays)
-                                           : 0
+    readonly property bool bypassedByAuthentication: root.hasTrialPolicy && root.trialActivationPolicy.bypassedByAuthentication !== undefined ? Boolean(root.trialActivationPolicy.bypassedByAuthentication) : false
+    readonly property bool trialActive: root.hasTrialPolicy && root.trialActivationPolicy.active !== undefined ? Boolean(root.trialActivationPolicy.active) : false
+    readonly property int remainingDays: root.hasTrialPolicy && root.trialActivationPolicy.remainingDays !== undefined ? Number(root.trialActivationPolicy.remainingDays) : 0
+    readonly property int elapsedDays: root.hasTrialPolicy && root.trialActivationPolicy.elapsedDays !== undefined ? Number(root.trialActivationPolicy.elapsedDays) : 0
+    readonly property int trialLengthDays: root.hasTrialPolicy && root.trialActivationPolicy.trialLengthDays !== undefined ? Number(root.trialActivationPolicy.trialLengthDays) : 0
     readonly property color chromeColor: LV.Theme.panelBackground06
     readonly property int contentInset: LV.Theme.gap20
     readonly property int dividerHeight: Math.max(1, Math.round(LV.Theme.strokeThin))
-    readonly property int headlineTextSize: Math.max(0, Math.round(LV.Theme.scaleMetric(18)))
+    readonly property int headlineTextSize: LV.Theme.gap18
     readonly property color surfaceColor: LV.Theme.panelBackground10
-    readonly property int primaryMetricTextSize: Math.max(0, Math.round(LV.Theme.scaleMetric(36)))
-    readonly property int summaryLineHeight: Math.max(0, Math.round(LV.Theme.scaleMetric(22)))
-    readonly property int summaryTextSize: Math.max(0, Math.round(LV.Theme.scaleMetric(14)))
-    readonly property int surfaceRadius: Math.max(0, Math.round(LV.Theme.scaleMetric(24)))
-    readonly property int trialDetailTextSize: Math.max(0, Math.round(LV.Theme.scaleMetric(13)))
-    readonly property int trialSectionTitleSize: Math.max(0, Math.round(LV.Theme.scaleMetric(14)))
+    readonly property int primaryMetricTextSize: LV.Theme.controlHeightMd
+    readonly property int summaryLineHeight: LV.Theme.textTitle2LineHeight
+    readonly property int summaryTextSize: LV.Theme.gap14
+    readonly property int surfaceRadius: LV.Theme.gap24
+    readonly property int trialDetailTextSize: LV.Theme.textBody + Math.round(LV.Theme.strokeThin)
+    readonly property int trialSectionTitleSize: LV.Theme.gap14
     readonly property color headlineColor: {
         if (root.bypassedByAuthentication)
             return LV.Theme.accent;

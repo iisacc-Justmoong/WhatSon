@@ -13,7 +13,7 @@ Item {
     property bool compactMode: false
     property bool compactDetailPanelVisible: false
     property bool detailPanelCollapsed: false
-    property int menuItemWidth: Math.max(0, Math.round(LV.Theme.scaleMetric(196)))
+    property int menuItemWidth: LV.Theme.inputMinWidth + LV.Theme.gap16
     property int menuYOffset: LV.Theme.gap2
     readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("navigation.NavigationApplicationViewBar") : null
     readonly property var applicationViewMenuItems: applicationViewBar.buildApplicationViewMenuItems()
@@ -268,10 +268,7 @@ Item {
                         applicationViewContextMenu.close();
                         return;
                     }
-                    applicationViewContextMenu.openFor(
-                        applicationViewMenuButton,
-                        applicationViewMenuButton.width,
-                        applicationViewMenuButton.height + applicationViewBar.menuYOffset);
+                    applicationViewContextMenu.openFor(applicationViewMenuButton, applicationViewMenuButton.width, applicationViewMenuButton.height + applicationViewBar.menuYOffset);
                 }
             }
             LV.IconButton {

@@ -39,9 +39,9 @@ LV.HStack {
             selected: editorViewModeViewModel && editorViewModeViewModel.activeViewMode === 4
         }
     ]
-    property int comboContextMenuWidth: Math.max(0, Math.round(LV.Theme.scaleMetric(141)))
+    property int comboContextMenuWidth: LV.Theme.buttonMinWidth + LV.Theme.controlHeightMd + LV.Theme.gap5
     property int comboMenuYOffset: LV.Theme.gap2
-    property int compactComboWidth: Math.max(0, Math.round(LV.Theme.scaleMetric(97)))
+    property int compactComboWidth: LV.Theme.buttonMinWidth - LV.Theme.gap3
     property var editorViewModeViewModel: null
     readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("navigation.NavigationEditorViewBar") : null
     property bool showLabel: true
@@ -89,10 +89,7 @@ LV.HStack {
         items: editorViewBar.editorViewMenuItems
         modal: false
         parent: Controls.Overlay.overlay
-        selectedIndex: editorViewBar.editorViewModeViewModel
-                       && editorViewBar.editorViewModeViewModel.activeViewMode !== undefined
-                       ? editorViewBar.editorViewModeViewModel.activeViewMode
-                       : 0
+        selectedIndex: editorViewBar.editorViewModeViewModel && editorViewBar.editorViewModeViewModel.activeViewMode !== undefined ? editorViewBar.editorViewModeViewModel.activeViewMode : 0
 
         onItemTriggered: function (index) {
             if (editorViewBar.editorViewModeViewModel && editorViewBar.editorViewModeViewModel.requestViewModeChange !== undefined)

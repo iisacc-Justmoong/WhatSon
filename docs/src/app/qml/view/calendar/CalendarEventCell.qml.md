@@ -20,10 +20,11 @@ cross-view usage.
 - `signal activated`
 
 ## Render Rules
-- Base size: `height` defaults through `LV.Theme.scaleMetric(16)` (callers may override).
+- Base size: `height` defaults through `LV.Theme.iconSm` (callers may override).
 - Radius: `cornerRadius` defaults to `LV.Theme.radiusSm`.
 - Insets: `horizontalInset` / `verticalInset` default to `LV.Theme.gap8` / `LV.Theme.gap2`.
-- Font: `labelPixelSize` defaults through `LV.Theme.scaleMetric(12)` and `labelWeight` remains `Font.Medium`.
+- Font: `labelPixelSize` defaults through `LV.Theme.textBody` and `labelWeight` remains `Font.Medium`.
+- Text color defaults to `LV.Theme.bodyColor`.
 - Background:
   - default: `defaultBackgroundColor` (`LV.Theme.panelBackground08`)
   - colored: `coloredBackgroundColor` (`LV.Theme.primary`)

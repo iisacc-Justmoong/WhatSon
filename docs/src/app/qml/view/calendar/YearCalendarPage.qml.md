@@ -12,7 +12,7 @@ the year view acts as a high-level event/task heatmap.
 
 ## UI Composition
 - Surface:
-  - root page keeps `color: "transparent"` so the app background shows through.
+  - root page keeps `LV.Theme.accentTransparent` so the app background shows through.
 - Header:
   - shared `CalendarTodayControl` (`Prev/Today/Next`) is always visible and drives year shift/focus actions.
   - calendar-system switching is no longer exposed in this page; that control belongs to settings UI.
@@ -22,10 +22,11 @@ the year view acts as a high-level event/task heatmap.
   - month title color uses accent token (`monthTitleColor = LV.Theme.accent`) instead of fixed red,
   - desktop month cards scale responsively using `desktopResponsiveScale`, so grid gap/card padding/day-cell sizes
     change with window size (`yearGridSpacing`, `monthCardPadding`, `monthSectionSpacing`, `monthTitlePixelSize`),
-  - weekday/day numeric labels now route through `LV.Theme.scaleMetric(12)` and remain `Font.Medium`,
+  - weekday/day numeric labels now route through `LV.Theme.textBody` and remain `Font.Medium`,
   - weekday header row per card,
   - 42-cell day grid per month.
-- Mobile month-card minimum height also routes through `LV.Theme.scaleMetric(260)`.
+- Month spacing, card padding, today badge fill, transparent cards, and mobile month-card minimum height now route
+  through named `LV.Theme` tokens or token compositions.
 
 ## LVRS/QML Standard Alignment
 - Enables `pragma ComponentBehavior: Bound` so nested delegates access outer IDs through explicit bound scope.

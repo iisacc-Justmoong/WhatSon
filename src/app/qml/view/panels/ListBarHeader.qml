@@ -38,7 +38,7 @@ Item {
         anchors.leftMargin: listBarHeader.outerHorizontalInset
         anchors.rightMargin: listBarHeader.outerHorizontalInset
         anchors.topMargin: listBarHeader.outerVerticalInset
-        spacing: 0
+        spacing: LV.Theme.gapNone
 
         LV.InputField {
             id: searchField
@@ -46,7 +46,7 @@ Item {
             readonly property int resolvedInputTextHeight: listBarHeader.resolvedInputTextHeight
 
             Layout.fillWidth: true
-            Layout.minimumWidth: 0
+            Layout.minimumWidth: LV.Theme.gapNone
             Layout.preferredHeight: listBarHeader.inlineFieldHeight
             backgroundColor: listBarHeader.inlineFieldBackgroundColor
             backgroundColorDisabled: listBarHeader.inlineFieldBackgroundColor

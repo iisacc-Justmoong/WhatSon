@@ -71,10 +71,10 @@ Rectangle {
         })
     property bool footerVisible: true
     property int hierarchyActivationPendingSerial: 0
-    readonly property int hierarchyCompactFooterHeight: Math.max(0, Math.round(LV.Theme.scaleMetric(24)))
-    readonly property int hierarchyCompactFooterWidth: Math.max(0, Math.round(LV.Theme.scaleMetric(78)))
+    readonly property int hierarchyCompactFooterHeight: LV.Theme.gap24
+    readonly property int hierarchyCompactFooterWidth: LV.Theme.gap24 + LV.Theme.gap24 + LV.Theme.gap24 + LV.Theme.gap6
     readonly property int hierarchyCompactInset: LV.Theme.gap2
-    readonly property int hierarchyCompactMenuItemWidth: Math.max(0, Math.round(LV.Theme.scaleMetric(144)))
+    readonly property int hierarchyCompactMenuItemWidth: LV.Theme.gap24 + LV.Theme.gap24 + LV.Theme.gap24 + LV.Theme.gap24 + LV.Theme.gap24 + LV.Theme.gap24
     readonly property bool hierarchyBulkExpansionEnabled: {
         if (!sidebarHierarchyView.hierarchyInteractionBridge)
             return false;
@@ -86,24 +86,14 @@ Rectangle {
         }
         return false;
     }
-    readonly property bool hierarchyKineticViewportEnabled: LV.Theme.mobileTarget
-                                                         || (Window.window && Window.window.isMobilePlatform !== undefined
-                                                             ? Boolean(Window.window.isMobilePlatform)
-                                                             : false)
-    readonly property int hierarchyListFlickDeceleration: hierarchyKineticViewportEnabled
-                                                       ? Math.max(1, Math.round(LV.Theme.scaleMetric(1800)))
-                                                       : Math.max(1, Math.round(LV.Theme.scaleMetric(3200)))
-    readonly property int hierarchyListMaximumFlickVelocity: hierarchyKineticViewportEnabled
-                                                          ? Math.max(1, Math.round(LV.Theme.scaleMetric(12000)))
-                                                          : Math.max(1, Math.round(LV.Theme.scaleMetric(8000)))
+    readonly property bool hierarchyKineticViewportEnabled: LV.Theme.mobileTarget || (Window.window && Window.window.isMobilePlatform !== undefined ? Boolean(Window.window.isMobilePlatform) : false)
+    readonly property int hierarchyListFlickDeceleration: hierarchyKineticViewportEnabled ? Math.max(1, Math.round(LV.Theme.scaleMetric(1800))) : Math.max(1, Math.round(LV.Theme.scaleMetric(3200)))
+    readonly property int hierarchyListMaximumFlickVelocity: hierarchyKineticViewportEnabled ? Math.max(1, Math.round(LV.Theme.scaleMetric(12000))) : Math.max(1, Math.round(LV.Theme.scaleMetric(8000)))
     readonly property int hierarchyListReboundDuration: hierarchyKineticViewportEnabled ? 220 : 160
     property string hierarchyContextMenuKind: "options"
-    readonly property var hierarchyContextMenuItems: sidebarHierarchyView.hierarchyContextMenuKind === "folder"
-                                                     ? sidebarHierarchyView.hierarchyFolderContextMenuItems
-                                                     : sidebarHierarchyView.hierarchyViewOptionsMenuItems
+    readonly property var hierarchyContextMenuItems: sidebarHierarchyView.hierarchyContextMenuKind === "folder" ? sidebarHierarchyView.hierarchyFolderContextMenuItems : sidebarHierarchyView.hierarchyViewOptionsMenuItems
     property int hierarchyContextMenuTargetIndex: -1
-    readonly property bool hierarchyContextMenuTargetValid: sidebarHierarchyView.isFolderContextMenuTargetIndex(
-                                                                sidebarHierarchyView.hierarchyContextMenuTargetIndex)
+    readonly property bool hierarchyContextMenuTargetValid: sidebarHierarchyView.isFolderContextMenuTargetIndex(sidebarHierarchyView.hierarchyContextMenuTargetIndex)
     readonly property var hierarchyFolderContextMenuItems: [
         {
             "label": "New Folder",
@@ -159,8 +149,7 @@ Rectangle {
     }
     property alias hierarchyPointerSelectionModifiers: hierarchySelectionController.pointerSelectionModifiers
     property alias hierarchyPointerSelectionModifiersCapturedAtMs: hierarchySelectionController.pointerSelectionModifiersCapturedAtMs
-    readonly property bool hierarchyNoteDropSurfaceEnabled: sidebarHierarchyView.hierarchyDragDropBridge !== undefined
-                                                          && sidebarHierarchyView.hierarchyDragDropBridge !== null
+    readonly property bool hierarchyNoteDropSurfaceEnabled: sidebarHierarchyView.hierarchyDragDropBridge !== undefined && sidebarHierarchyView.hierarchyDragDropBridge !== null
     readonly property color hierarchyRenameFieldBackgroundColor: {
         const presentation = sidebarHierarchyView.editingHierarchyItemPresentation;
         if (presentation && presentation.rowBackgroundColor !== undefined)
@@ -235,9 +224,7 @@ Rectangle {
     property string searchText: ""
     readonly property int selectedFolderIndex: hierarchyViewModel ? hierarchyViewModel.hierarchySelectedIndex : -1
     property alias selectedHierarchyIndices: hierarchySelectionController.selectedIndices
-    readonly property var safeSelectedHierarchyIndices: Array.isArray(sidebarHierarchyView.selectedHierarchyIndices)
-                                                     ? sidebarHierarchyView.selectedHierarchyIndices
-                                                     : []
+    readonly property var safeSelectedHierarchyIndices: Array.isArray(sidebarHierarchyView.selectedHierarchyIndices) ? sidebarHierarchyView.selectedHierarchyIndices : []
     readonly property var selectedHierarchyOverlayRects: {
         const revision = sidebarHierarchyView.hierarchySelectionVisualRevision;
         return sidebarHierarchyView.collectSelectedHierarchyOverlayRects() || [];
@@ -685,7 +672,6 @@ Rectangle {
             return null;
         }
         sidebarHierarchyView.editingHierarchyPresentation = sidebarHierarchyView.hierarchyItemPresentation(item, editingIndex);
-
     }
     function requestCollapseAllHierarchyItems() {
         if (sidebarHierarchyView.renameEditingActive)
@@ -727,16 +713,10 @@ Rectangle {
     }
     function hierarchyContextMenuPointerTriggerAccepted(triggerKind) {
         const normalizedTrigger = triggerKind === undefined || triggerKind === null ? "" : String(triggerKind).trim().toLowerCase();
-        if (normalizedTrigger === "rightclick"
-                || normalizedTrigger === "right-click"
-                || normalizedTrigger === "contextmenu"
-                || normalizedTrigger === "context-menu") {
+        if (normalizedTrigger === "rightclick" || normalizedTrigger === "right-click" || normalizedTrigger === "contextmenu" || normalizedTrigger === "context-menu") {
             return true;
         }
-        if (normalizedTrigger === "longpress"
-                || normalizedTrigger === "long-press"
-                || normalizedTrigger === "pressandhold"
-                || normalizedTrigger === "press-and-hold") {
+        if (normalizedTrigger === "longpress" || normalizedTrigger === "long-press" || normalizedTrigger === "pressandhold" || normalizedTrigger === "press-and-hold") {
             return sidebarHierarchyView.hierarchyKineticViewportEnabled;
         }
         return false;
@@ -1033,715 +1013,702 @@ Rectangle {
     onWidthChanged: sidebarHierarchyView.invalidateHierarchySelectionVisuals()
 
     QtObject {
-    id: hierarchySelectionController
+        id: hierarchySelectionController
 
-    property var view: null
-    property int selectionAnchorIndex: -1
-    property var selectedIndices: []
-    property int pointerSelectionModifiers: Qt.NoModifier
-    property double pointerSelectionModifiersCapturedAtMs: 0
+        property var view: null
+        property int selectionAnchorIndex: -1
+        property var selectedIndices: []
+        property int pointerSelectionModifiers: Qt.NoModifier
+        property double pointerSelectionModifiersCapturedAtMs: 0
 
-    function normalizedKeyboardModifiers(modifiers) {
-        const eventModifiers = modifiers === undefined || modifiers === null
-                ? Qt.NoModifier
-                : modifiers;
-        const applicationModifiers = Qt.application && Qt.application.keyboardModifiers !== undefined
-                ? Qt.application.keyboardModifiers
-                : Qt.NoModifier;
-        return eventModifiers | applicationModifiers;
-    }
+        function normalizedKeyboardModifiers(modifiers) {
+            const eventModifiers = modifiers === undefined || modifiers === null ? Qt.NoModifier : modifiers;
+            const applicationModifiers = Qt.application && Qt.application.keyboardModifiers !== undefined ? Qt.application.keyboardModifiers : Qt.NoModifier;
+            return eventModifiers | applicationModifiers;
+        }
 
-    function hierarchySelectionToggleModifierPressed(modifiers) {
-        const normalizedModifiers = controller.normalizedKeyboardModifiers(modifiers);
-        const toggleMask = Qt.ControlModifier | Qt.MetaModifier;
-        return Boolean(normalizedModifiers & toggleMask);
-    }
+        function hierarchySelectionToggleModifierPressed(modifiers) {
+            const normalizedModifiers = controller.normalizedKeyboardModifiers(modifiers);
+            const toggleMask = Qt.ControlModifier | Qt.MetaModifier;
+            return Boolean(normalizedModifiers & toggleMask);
+        }
 
-    function hierarchySelectionRangeModifierPressed(modifiers) {
-        const normalizedModifiers = controller.normalizedKeyboardModifiers(modifiers);
-        return Boolean(normalizedModifiers & Qt.ShiftModifier);
-    }
+        function hierarchySelectionRangeModifierPressed(modifiers) {
+            const normalizedModifiers = controller.normalizedKeyboardModifiers(modifiers);
+            return Boolean(normalizedModifiers & Qt.ShiftModifier);
+        }
 
-    function hierarchySelectionModifierPressed(modifiers) {
-        return controller.hierarchySelectionRangeModifierPressed(modifiers)
-                || controller.hierarchySelectionToggleModifierPressed(modifiers);
-    }
+        function hierarchySelectionModifierPressed(modifiers) {
+            return controller.hierarchySelectionRangeModifierPressed(modifiers) || controller.hierarchySelectionToggleModifierPressed(modifiers);
+        }
 
-    function captureHierarchyPointerSelectionModifiers(modifiers) {
-        const normalizedModifiers = controller.normalizedKeyboardModifiers(modifiers);
-        if (!controller.hierarchySelectionModifierPressed(normalizedModifiers))
-            return;
-        controller.pointerSelectionModifiers = normalizedModifiers;
-        controller.pointerSelectionModifiersCapturedAtMs = Date.now();
-    }
+        function captureHierarchyPointerSelectionModifiers(modifiers) {
+            const normalizedModifiers = controller.normalizedKeyboardModifiers(modifiers);
+            if (!controller.hierarchySelectionModifierPressed(normalizedModifiers))
+                return;
+            controller.pointerSelectionModifiers = normalizedModifiers;
+            controller.pointerSelectionModifiersCapturedAtMs = Date.now();
+        }
 
-    function clearHierarchyPointerSelectionModifiers() {
-        controller.pointerSelectionModifiers = Qt.NoModifier;
-        controller.pointerSelectionModifiersCapturedAtMs = 0;
-    }
+        function clearHierarchyPointerSelectionModifiers() {
+            controller.pointerSelectionModifiers = Qt.NoModifier;
+            controller.pointerSelectionModifiersCapturedAtMs = 0;
+        }
 
-    function resolveHierarchySelectionModifiers(modifiers) {
-        const normalizedModifiers = controller.normalizedKeyboardModifiers(modifiers);
-        if (controller.hierarchySelectionModifierPressed(normalizedModifiers))
+        function resolveHierarchySelectionModifiers(modifiers) {
+            const normalizedModifiers = controller.normalizedKeyboardModifiers(modifiers);
+            if (controller.hierarchySelectionModifierPressed(normalizedModifiers))
+                return normalizedModifiers;
+            const capturedAtMs = Number(controller.pointerSelectionModifiersCapturedAtMs);
+            const cacheAgeMs = Date.now() - capturedAtMs;
+            const cacheFresh = capturedAtMs > 0 && isFinite(cacheAgeMs) && cacheAgeMs >= 0 && cacheAgeMs <= 800;
+            const normalizedCachedModifiers = controller.normalizedKeyboardModifiers(controller.pointerSelectionModifiers);
+            if (cacheFresh && controller.hierarchySelectionModifierPressed(normalizedCachedModifiers))
+                return normalizedCachedModifiers;
             return normalizedModifiers;
-        const capturedAtMs = Number(controller.pointerSelectionModifiersCapturedAtMs);
-        const cacheAgeMs = Date.now() - capturedAtMs;
-        const cacheFresh = capturedAtMs > 0 && isFinite(cacheAgeMs) && cacheAgeMs >= 0 && cacheAgeMs <= 800;
-        const normalizedCachedModifiers = controller.normalizedKeyboardModifiers(controller.pointerSelectionModifiers);
-        if (cacheFresh && controller.hierarchySelectionModifierPressed(normalizedCachedModifiers))
-            return normalizedCachedModifiers;
-        return normalizedModifiers;
-    }
+        }
 
-    function normalizeHierarchySelectionIndices(indices) {
-        if (!indices || indices.length === undefined || !controller.view)
-            return [];
-        const normalized = [];
-        for (let index = 0; index < indices.length; ++index) {
-            const resolvedIndex = controller.view.normalizedInteger(indices[index], -1);
+        function normalizeHierarchySelectionIndices(indices) {
+            if (!indices || indices.length === undefined || !controller.view)
+                return [];
+            const normalized = [];
+            for (let index = 0; index < indices.length; ++index) {
+                const resolvedIndex = controller.view.normalizedInteger(indices[index], -1);
+                if (resolvedIndex < 0)
+                    continue;
+                if (normalized.indexOf(resolvedIndex) >= 0)
+                    continue;
+                normalized.push(resolvedIndex);
+            }
+            normalized.sort(function (left, right) {
+                return left - right;
+            });
+            return normalized;
+        }
+
+        function setSelectedHierarchyIndices(indices) {
+            controller.selectedIndices = controller.normalizeHierarchySelectionIndices(indices);
+            if (controller.view)
+                controller.view.invalidateHierarchySelectionVisuals();
+        }
+
+        function hierarchySelectionContainsIndex(index) {
+            if (!controller.view)
+                return false;
+            const resolvedIndex = controller.view.normalizedInteger(index, -1);
             if (resolvedIndex < 0)
-                continue;
-            if (normalized.indexOf(resolvedIndex) >= 0)
-                continue;
-            normalized.push(resolvedIndex);
+                return false;
+            const normalizedSelection = controller.normalizeHierarchySelectionIndices(controller.selectedIndices);
+            return normalizedSelection.indexOf(resolvedIndex) >= 0;
         }
-        normalized.sort(function (left, right) {
-            return left - right;
-        });
-        return normalized;
-    }
 
-    function setSelectedHierarchyIndices(indices) {
-        controller.selectedIndices = controller.normalizeHierarchySelectionIndices(indices);
-        if (controller.view)
-            controller.view.invalidateHierarchySelectionVisuals();
-    }
-
-    function hierarchySelectionContainsIndex(index) {
-        if (!controller.view)
-            return false;
-        const resolvedIndex = controller.view.normalizedInteger(index, -1);
-        if (resolvedIndex < 0)
-            return false;
-        const normalizedSelection = controller.normalizeHierarchySelectionIndices(controller.selectedIndices);
-        return normalizedSelection.indexOf(resolvedIndex) >= 0;
-    }
-
-    function hierarchySelectionRangeIndices(anchorIndex, targetIndex) {
-        if (!controller.view)
-            return [];
-        const normalizedAnchor = controller.view.normalizedInteger(anchorIndex, -1);
-        const normalizedTarget = controller.view.normalizedInteger(targetIndex, -1);
-        if (normalizedTarget < 0)
-            return [];
-        if (normalizedAnchor < 0)
-            return [normalizedTarget];
-        const begin = Math.min(normalizedAnchor, normalizedTarget);
-        const end = Math.max(normalizedAnchor, normalizedTarget);
-        const range = [];
-        for (let index = begin; index <= end; ++index)
-            range.push(index);
-        return range;
-    }
-
-    function syncHierarchySelectionFromSelectedFolder() {
-        if (!controller.view)
-            return;
-        const selectedIndex = controller.view.normalizedInteger(controller.view.selectedFolderIndex, -1);
-        if (selectedIndex < 0) {
-            controller.setSelectedHierarchyIndices([]);
-            controller.selectionAnchorIndex = -1;
-            return;
+        function hierarchySelectionRangeIndices(anchorIndex, targetIndex) {
+            if (!controller.view)
+                return [];
+            const normalizedAnchor = controller.view.normalizedInteger(anchorIndex, -1);
+            const normalizedTarget = controller.view.normalizedInteger(targetIndex, -1);
+            if (normalizedTarget < 0)
+                return [];
+            if (normalizedAnchor < 0)
+                return [normalizedTarget];
+            const begin = Math.min(normalizedAnchor, normalizedTarget);
+            const end = Math.max(normalizedAnchor, normalizedTarget);
+            const range = [];
+            for (let index = begin; index <= end; ++index)
+                range.push(index);
+            return range;
         }
-        controller.setSelectedHierarchyIndices([selectedIndex]);
-        controller.selectionAnchorIndex = selectedIndex;
-    }
 
-    function emitHierarchySelectionActivation(item, resolvedIndex) {
-        if (!controller.view || !controller.view.hierarchyViewModel)
-            return;
-        const normalizedIndex = controller.view.normalizedInteger(resolvedIndex, -1);
-        if (normalizedIndex < 0)
-            return;
-        const activationItem = item ? item : controller.view.resolveVisibleHierarchyItem(normalizedIndex);
-        controller.view.hierarchyViewModel.setHierarchySelectedIndex(normalizedIndex);
-        controller.view.hierarchyItemActivated(activationItem, normalizedIndex, normalizedIndex);
-    }
+        function syncHierarchySelectionFromSelectedFolder() {
+            if (!controller.view)
+                return;
+            const selectedIndex = controller.view.normalizedInteger(controller.view.selectedFolderIndex, -1);
+            if (selectedIndex < 0) {
+                controller.setSelectedHierarchyIndices([]);
+                controller.selectionAnchorIndex = -1;
+                return;
+            }
+            controller.setSelectedHierarchyIndices([selectedIndex]);
+            controller.selectionAnchorIndex = selectedIndex;
+        }
 
-    function requestHierarchySelection(item, resolvedIndex, modifiers) {
-        if (!controller.view || !controller.view.hierarchyViewModel)
-            return;
-        const normalizedIndex = controller.view.normalizedInteger(resolvedIndex, -1);
-        if (normalizedIndex < 0)
-            return;
-        const normalizedModifiers = controller.normalizedKeyboardModifiers(modifiers);
-        if (controller.hierarchySelectionRangeModifierPressed(normalizedModifiers)) {
-            let anchorIndex = controller.view.normalizedInteger(controller.selectionAnchorIndex, -1);
-            if (anchorIndex < 0)
-                anchorIndex = controller.view.normalizedInteger(controller.view.selectedFolderIndex, -1);
-            if (anchorIndex < 0)
-                anchorIndex = normalizedIndex;
-            const rangeSelection = controller.hierarchySelectionRangeIndices(anchorIndex, normalizedIndex);
+        function emitHierarchySelectionActivation(item, resolvedIndex) {
+            if (!controller.view || !controller.view.hierarchyViewModel)
+                return;
+            const normalizedIndex = controller.view.normalizedInteger(resolvedIndex, -1);
+            if (normalizedIndex < 0)
+                return;
+            const activationItem = item ? item : controller.view.resolveVisibleHierarchyItem(normalizedIndex);
+            controller.view.hierarchyViewModel.setHierarchySelectedIndex(normalizedIndex);
+            controller.view.hierarchyItemActivated(activationItem, normalizedIndex, normalizedIndex);
+        }
+
+        function requestHierarchySelection(item, resolvedIndex, modifiers) {
+            if (!controller.view || !controller.view.hierarchyViewModel)
+                return;
+            const normalizedIndex = controller.view.normalizedInteger(resolvedIndex, -1);
+            if (normalizedIndex < 0)
+                return;
+            const normalizedModifiers = controller.normalizedKeyboardModifiers(modifiers);
+            if (controller.hierarchySelectionRangeModifierPressed(normalizedModifiers)) {
+                let anchorIndex = controller.view.normalizedInteger(controller.selectionAnchorIndex, -1);
+                if (anchorIndex < 0)
+                    anchorIndex = controller.view.normalizedInteger(controller.view.selectedFolderIndex, -1);
+                if (anchorIndex < 0)
+                    anchorIndex = normalizedIndex;
+                const rangeSelection = controller.hierarchySelectionRangeIndices(anchorIndex, normalizedIndex);
+                if (controller.hierarchySelectionToggleModifierPressed(normalizedModifiers)) {
+                    const selectedIndices = controller.normalizeHierarchySelectionIndices(controller.selectedIndices);
+                    for (let selectionIndex = 0; selectionIndex < rangeSelection.length; ++selectionIndex)
+                        selectedIndices.push(rangeSelection[selectionIndex]);
+                    controller.setSelectedHierarchyIndices(selectedIndices);
+                } else {
+                    controller.setSelectedHierarchyIndices(rangeSelection);
+                }
+                controller.selectionAnchorIndex = anchorIndex;
+                controller.emitHierarchySelectionActivation(item, normalizedIndex);
+                return;
+            }
             if (controller.hierarchySelectionToggleModifierPressed(normalizedModifiers)) {
                 const selectedIndices = controller.normalizeHierarchySelectionIndices(controller.selectedIndices);
-                for (let selectionIndex = 0; selectionIndex < rangeSelection.length; ++selectionIndex)
-                    selectedIndices.push(rangeSelection[selectionIndex]);
+                const existingSelectionIndex = selectedIndices.indexOf(normalizedIndex);
+                if (existingSelectionIndex < 0) {
+                    selectedIndices.push(normalizedIndex);
+                    controller.setSelectedHierarchyIndices(selectedIndices);
+                    controller.selectionAnchorIndex = normalizedIndex;
+                    controller.emitHierarchySelectionActivation(item, normalizedIndex);
+                    return;
+                }
+                if (selectedIndices.length <= 1) {
+                    controller.setSelectedHierarchyIndices([normalizedIndex]);
+                    controller.selectionAnchorIndex = normalizedIndex;
+                    controller.emitHierarchySelectionActivation(item, normalizedIndex);
+                    return;
+                }
+                selectedIndices.splice(existingSelectionIndex, 1);
                 controller.setSelectedHierarchyIndices(selectedIndices);
-            } else {
-                controller.setSelectedHierarchyIndices(rangeSelection);
+                const committedIndex = controller.view.normalizedInteger(controller.view.selectedFolderIndex, -1);
+                if (controller.hierarchySelectionContainsIndex(committedIndex))
+                    return;
+                const fallbackIndex = selectedIndices.length > 0 ? selectedIndices[selectedIndices.length - 1] : -1;
+                if (fallbackIndex >= 0)
+                    controller.emitHierarchySelectionActivation(controller.view.resolveVisibleHierarchyItem(fallbackIndex), fallbackIndex);
+                return;
             }
-            controller.selectionAnchorIndex = anchorIndex;
+            controller.setSelectedHierarchyIndices([normalizedIndex]);
+            controller.selectionAnchorIndex = normalizedIndex;
             controller.emitHierarchySelectionActivation(item, normalizedIndex);
-            return;
         }
-        if (controller.hierarchySelectionToggleModifierPressed(normalizedModifiers)) {
-            const selectedIndices = controller.normalizeHierarchySelectionIndices(controller.selectedIndices);
-            const existingSelectionIndex = selectedIndices.indexOf(normalizedIndex);
-            if (existingSelectionIndex < 0) {
-                selectedIndices.push(normalizedIndex);
-                controller.setSelectedHierarchyIndices(selectedIndices);
-                controller.selectionAnchorIndex = normalizedIndex;
-                controller.emitHierarchySelectionActivation(item, normalizedIndex);
-                return;
-            }
-            if (selectedIndices.length <= 1) {
-                controller.setSelectedHierarchyIndices([normalizedIndex]);
-                controller.selectionAnchorIndex = normalizedIndex;
-                controller.emitHierarchySelectionActivation(item, normalizedIndex);
-                return;
-            }
-            selectedIndices.splice(existingSelectionIndex, 1);
-            controller.setSelectedHierarchyIndices(selectedIndices);
-            const committedIndex = controller.view.normalizedInteger(controller.view.selectedFolderIndex, -1);
-            if (controller.hierarchySelectionContainsIndex(committedIndex))
-                return;
-            const fallbackIndex = selectedIndices.length > 0 ? selectedIndices[selectedIndices.length - 1] : -1;
-            if (fallbackIndex >= 0)
-                controller.emitHierarchySelectionActivation(
-                            controller.view.resolveVisibleHierarchyItem(fallbackIndex),
-                            fallbackIndex);
-            return;
-        }
-        controller.setSelectedHierarchyIndices([normalizedIndex]);
-        controller.selectionAnchorIndex = normalizedIndex;
-        controller.emitHierarchySelectionActivation(item, normalizedIndex);
-    }
     }
     QtObject {
-    id: renameController
+        id: renameController
 
-    required property var hierarchyInteractionBridge
-    required property var hierarchyRenameField
-    required property var hierarchyViewModel
-    required property var hostView
-    required property var standardHierarchyModel
+        required property var hierarchyInteractionBridge
+        required property var hierarchyRenameField
+        required property var hierarchyViewModel
+        required property var hostView
+        required property var standardHierarchyModel
 
-    function normalizedInteger(value, fallbackValue) {
-        const numericValue = Number(value);
-        if (!isFinite(numericValue))
-            return fallbackValue;
-        return Math.floor(numericValue);
-    }
+        function normalizedInteger(value, fallbackValue) {
+            const numericValue = Number(value);
+            if (!isFinite(numericValue))
+                return fallbackValue;
+            return Math.floor(numericValue);
+        }
 
-    function beginRenameSelectedHierarchyItem() {
-        const renameIndex = renameController.normalizedInteger(hostView.selectedFolderIndex, -1);
-        if (!renameController.canRenameIndex(renameIndex))
-            return false;
-        hostView.syncSelectedHierarchyItem(false);
-        hostView.editingHierarchyIndex = renameIndex;
-        hostView.refreshEditingHierarchyPresentation(true);
-        hostView.editingHierarchyLabel = renameController.selectedHierarchyItemLabel();
-        hostView.syncDisplayedHierarchyModel(true);
-        hostView.requestViewHook("hierarchy.rename.begin");
-        Qt.callLater(function () {
-            if (!hostView.renameEditingActive || hostView.editingHierarchyIndex !== renameIndex || !hierarchyRenameField)
-                return;
+        function beginRenameSelectedHierarchyItem() {
+            const renameIndex = renameController.normalizedInteger(hostView.selectedFolderIndex, -1);
+            if (!renameController.canRenameIndex(renameIndex))
+                return false;
+            hostView.syncSelectedHierarchyItem(false);
+            hostView.editingHierarchyIndex = renameIndex;
             hostView.refreshEditingHierarchyPresentation(true);
-            hierarchyRenameField.text = hostView.editingHierarchyLabel;
-            hierarchyRenameField.forceInputFocus();
-            hierarchyRenameField.selectAll();
-        });
-        return true;
-    }
-
-    function canRenameIndex(index) {
-        const numericIndex = Number(index);
-        if (!hostView.renameContractAvailable || !isFinite(numericIndex) || !hierarchyInteractionBridge)
-            return false;
-        return Boolean(hierarchyInteractionBridge.canRenameItem(Math.floor(numericIndex)));
-    }
-
-    function canRenameSelectedHierarchyItem() {
-        return renameController.canRenameIndex(hostView.selectedFolderIndex);
-    }
-
-    function cancelHierarchyRename() {
-        if (!hostView.renameEditingActive)
-            return false;
-        hostView.editingHierarchyIndex = -1;
-        hostView.editingHierarchyLabel = "";
-        hostView.clearEditingHierarchyPresentation();
-        hostView.syncDisplayedHierarchyModel(true);
-        Qt.callLater(function () {
-            hostView.syncSelectedHierarchyItem(true);
-        });
-        return true;
-    }
-
-    function cloneHierarchyItem(sourceItem) {
-        const clone = {};
-        if (!sourceItem)
-            return clone;
-        for (const key in sourceItem)
-            clone[key] = sourceItem[key];
-        return clone;
-    }
-
-    function commitHierarchyRename() {
-        if (!hostView.renameEditingActive)
-            return false;
-        const renameIndex = hostView.editingHierarchyIndex;
-        const nextLabel = hierarchyRenameField ? String(hierarchyRenameField.text) : hostView.editingHierarchyLabel;
-        hostView.editingHierarchyLabel = nextLabel;
-        if (!renameController.canRenameIndex(renameIndex))
-            return renameController.cancelHierarchyRename();
-        const renamed = Boolean(hierarchyInteractionBridge && hierarchyInteractionBridge.renameItem(renameIndex, nextLabel));
-        if (!renamed) {
+            hostView.editingHierarchyLabel = renameController.selectedHierarchyItemLabel();
+            hostView.syncDisplayedHierarchyModel(true);
+            hostView.requestViewHook("hierarchy.rename.begin");
             Qt.callLater(function () {
-                if (!hierarchyRenameField)
+                if (!hostView.renameEditingActive || hostView.editingHierarchyIndex !== renameIndex || !hierarchyRenameField)
                     return;
+                hostView.refreshEditingHierarchyPresentation(true);
+                hierarchyRenameField.text = hostView.editingHierarchyLabel;
                 hierarchyRenameField.forceInputFocus();
                 hierarchyRenameField.selectAll();
             });
-            return false;
+            return true;
         }
-        hostView.editingHierarchyIndex = -1;
-        hostView.editingHierarchyLabel = "";
-        hostView.clearEditingHierarchyPresentation();
-        hostView.syncDisplayedHierarchyModel(true);
-        hostView.requestViewHook("hierarchy.rename.commit");
-        Qt.callLater(function () {
-            hostView.syncSelectedHierarchyItem(true);
-        });
-        return true;
-    }
 
-    function decodedHierarchyPathSegments(rawPath) {
-        const normalizedPath = rawPath === undefined || rawPath === null ? "" : String(rawPath).trim();
-        if (!normalizedPath.length)
-            return [];
-        const segments = [];
-        let currentSegment = "";
-        function flushCurrentSegment() {
-            const normalizedSegment = String(currentSegment).trim();
-            currentSegment = "";
-            if (normalizedSegment.length)
-                segments.push(normalizedSegment);
+        function canRenameIndex(index) {
+            const numericIndex = Number(index);
+            if (!hostView.renameContractAvailable || !isFinite(numericIndex) || !hierarchyInteractionBridge)
+                return false;
+            return Boolean(hierarchyInteractionBridge.canRenameItem(Math.floor(numericIndex)));
         }
-        for (let index = 0; index < normalizedPath.length; ++index) {
-            const character = normalizedPath.charAt(index);
-            if (character === "\\") {
-                const hasNextCharacter = index + 1 < normalizedPath.length;
-                if (hasNextCharacter) {
-                    const nextCharacter = normalizedPath.charAt(index + 1);
-                    if (nextCharacter === "\\" || nextCharacter === "/") {
-                        currentSegment += nextCharacter;
-                        ++index;
-                        continue;
-                    }
-                }
-                flushCurrentSegment();
-                continue;
-            }
-            if (character === "/") {
-                flushCurrentSegment();
-                continue;
-            }
-            currentSegment += character;
-        }
-        flushCurrentSegment();
-        return segments;
-    }
 
-    function leafHierarchyItemLabel(rawLabel, rawPath) {
-        const pathSegments = renameController.decodedHierarchyPathSegments(rawPath);
-        if (pathSegments.length > 0)
-            return String(pathSegments[pathSegments.length - 1]);
-        const normalizedLabel = rawLabel === undefined || rawLabel === null ? "" : String(rawLabel).trim();
-        return normalizedLabel;
-    }
+        function canRenameSelectedHierarchyItem() {
+            return renameController.canRenameIndex(hostView.selectedFolderIndex);
+        }
 
-    function normalizeHierarchyModel(modelValue) {
-        if (modelValue === undefined || modelValue === null)
-            return [];
-        if (Array.isArray(modelValue))
-            return modelValue.slice();
-        if (modelValue.length !== undefined)
-            return Array.from(modelValue);
-        return [];
-    }
-
-    function projectedHierarchyModel(modelValue) {
-        const normalizedModel = renameController.normalizeHierarchyModel(modelValue);
-        if (!hostView.renameEditingActive)
-            return normalizedModel;
-        const editingIndex = renameController.normalizedInteger(hostView.editingHierarchyIndex, -1);
-        if (editingIndex < 0 || editingIndex >= normalizedModel.length)
-            return normalizedModel;
-        const projectedModel = normalizedModel.slice();
-        const projectedItem = renameController.cloneHierarchyItem(projectedModel[editingIndex]);
-        projectedItem.label = " ";
-        projectedModel[editingIndex] = projectedItem;
-        return projectedModel;
-    }
-
-    function selectedHierarchyItemLabel() {
-        const selectedIndex = renameController.normalizedInteger(hostView.selectedFolderIndex, -1);
-        if (selectedIndex < 0)
-            return "";
-        const item = standardHierarchyModel[selectedIndex];
-        if (item && item.label !== undefined && item.label !== null) {
-            const projectedLabel = renameController.leafHierarchyItemLabel(item.label, item.id);
-            if (projectedLabel.length)
-                return projectedLabel;
-        }
-        if (hierarchyViewModel) {
-            const modelLabel = renameController.leafHierarchyItemLabel(
-                        hierarchyViewModel.hierarchyItemLabelAt(selectedIndex),
-                        item && item.id !== undefined && item.id !== null ? item.id : "");
-            if (modelLabel.length)
-                return modelLabel;
-        }
-        if (hostView.activeHierarchyItem && hostView.activeHierarchyItem.text !== undefined)
-            return renameController.leafHierarchyItemLabel(hostView.activeHierarchyItem.text, "");
-        return "";
-    }
-    }
-    QtObject {
-    id: noteDropController
-
-    required property var hierarchyDragDropBridge
-    required property var hierarchyTree
-    required property var hostView
-
-    function canAcceptNoteDropAtPosition(x, y, noteIds, referenceItem) {
-        const normalizedNoteIds = noteDropController.normalizeNoteIds(noteIds);
-        const target = noteDropController.noteDropTargetAtPosition(x, y, referenceItem);
-        if (target.index < 0 || normalizedNoteIds.length === 0 || !hierarchyDragDropBridge)
-            return false;
-        if (hierarchyDragDropBridge.canAcceptNoteDropList !== undefined)
-            return hierarchyDragDropBridge.canAcceptNoteDropList(target.index, normalizedNoteIds);
-        return hierarchyDragDropBridge.canAcceptNoteDrop(target.index, normalizedNoteIds[0]);
-    }
-    function clearNoteDropPreview() {
-        hostView.noteDropHoverIndex = -1;
-    }
-    function collectHierarchyItems() {
-        const items = [];
-        function visitHierarchyDescendants(item) {
-            if (!item || item.children === undefined || item.children === null)
-                return;
-            const children = item.children;
-            for (let i = 0; i < children.length; ++i) {
-                const child = children[i];
-                if (!child || child.visible === false)
-                    continue;
-                if (child.__isHierarchyItem === true)
-                    items.push(child);
-                visitHierarchyDescendants(child);
-            }
-        }
-        visitHierarchyDescendants(hierarchyTree);
-        return items;
-    }
-    function commitNoteDropAtPosition(x, y, noteIds, referenceItem) {
-        const normalizedNoteIds = noteDropController.normalizeNoteIds(noteIds);
-        const target = noteDropController.noteDropTargetAtPosition(x, y, referenceItem);
-        if (target.index < 0 || normalizedNoteIds.length === 0) {
-            noteDropController.clearNoteDropPreview();
-            return false;
-        }
-        const committed = hierarchyDragDropBridge && (hierarchyDragDropBridge.assignNotesToFolder !== undefined ? hierarchyDragDropBridge.assignNotesToFolder(target.index, normalizedNoteIds) : hierarchyDragDropBridge.assignNoteToFolder(target.index, normalizedNoteIds[0]));
-        if (!committed) {
-            noteDropController.clearNoteDropPreview();
-            return false;
-        }
-        noteDropController.clearNoteDropPreview();
-        hostView.requestViewHook("hierarchy.noteDrop");
-        return true;
-    }
-    function hierarchyItemAtPosition(x, y) {
-        const targetX = Number(x) || 0;
-        const targetY = Number(y) || 0;
-        function visitHierarchyDescendants(item) {
-            if (!item || item.children === undefined || item.children === null)
-                return null;
-            const children = item.children;
-            for (let i = children.length - 1; i >= 0; --i) {
-                const child = children[i];
-                if (!child || child.visible === false)
-                    continue;
-                const matchedDescendant = visitHierarchyDescendants(child);
-                if (matchedDescendant)
-                    return matchedDescendant;
-                if (child.__isHierarchyItem === true && noteDropController.hierarchyItemContainsPoint(child, targetX, targetY))
-                    return child;
-            }
-            return null;
-        }
-        return visitHierarchyDescendants(hierarchyTree);
-    }
-    function hierarchyItemContainsPoint(item, x, y) {
-        if (!item || item.mapToItem === undefined)
-            return false;
-        const mappedPoint = item.mapToItem(hierarchyTree, 0, 0);
-        const itemX = Number(mappedPoint.x) || 0;
-        const itemY = Number(mappedPoint.y) || 0;
-        const itemWidth = Number(item.width) || 0;
-        const itemHeight = Number(item.height) || 0;
-        if (itemWidth <= 0 || itemHeight <= 0)
-            return false;
-        if (item.rowVisible !== undefined && !Boolean(item.rowVisible))
-            return false;
-        return x >= itemX && x <= itemX + itemWidth && y >= itemY && y <= itemY + itemHeight;
-    }
-    function hierarchyItemForResolvedIndex(itemId) {
-        const numericIndex = Number(itemId);
-        if (!isFinite(numericIndex))
-            return null;
-        const resolvedIndex = Math.max(-1, Math.floor(numericIndex));
-        if (resolvedIndex < 0)
-            return null;
-        function visitHierarchyDescendants(item) {
-            if (!item || item.children === undefined || item.children === null)
-                return null;
-            const children = item.children;
-            for (let i = children.length - 1; i >= 0; --i) {
-                const child = children[i];
-                if (!child || child.visible === false)
-                    continue;
-                const matchedDescendant = visitHierarchyDescendants(child);
-                if (matchedDescendant)
-                    return matchedDescendant;
-                if (child.__isHierarchyItem !== true)
-                    continue;
-                const rawItemId = child.itemId !== undefined && child.itemId !== null ? child.itemId : child.resolvedItemId;
-                if (noteDropController.normalizedInteger(rawItemId, -1) === resolvedIndex)
-                    return child;
-            }
-            return null;
-        }
-        return visitHierarchyDescendants(hierarchyTree);
-    }
-    function normalizeNoteIds(noteIds) {
-        if (noteIds === undefined || noteIds === null)
-            return [];
-
-        var sourceIds = noteIds;
-        if (typeof sourceIds === "string")
-            sourceIds = sourceIds.split(/\r?\n/);
-        else if (!Array.isArray(sourceIds) && sourceIds.length !== undefined)
-            sourceIds = Array.prototype.slice.call(sourceIds);
-        else if (!Array.isArray(sourceIds))
-            sourceIds = [sourceIds];
-
-        const normalized = [];
-        for (let index = 0; index < sourceIds.length; ++index) {
-            const normalizedNoteId = String(sourceIds[index] === undefined || sourceIds[index] === null ? "" : sourceIds[index]).trim();
-            if (!normalizedNoteId.length || normalized.indexOf(normalizedNoteId) >= 0)
-                continue;
-            normalized.push(normalizedNoteId);
-        }
-        return normalized;
-    }
-    function normalizedInteger(value, fallbackValue) {
-        const numericValue = Number(value);
-        if (!isFinite(numericValue))
-            return fallbackValue;
-        return Math.floor(numericValue);
-    }
-    function normalizedNonNegativeInteger(value) {
-        const normalized = noteDropController.normalizedInteger(value, -1);
-        return normalized >= 0 ? normalized : -1;
-    }
-    function noteDropIndexAtPosition(x, y, referenceItem) {
-        const target = noteDropController.noteDropTargetAtPosition(x, y, referenceItem);
-        return target.index;
-    }
-    function noteDropTargetAtPosition(x, y, referenceItem) {
-        const localX = Number(x) || 0;
-        const localY = Number(y) || 0;
-        const hierarchyPoint = referenceItem && referenceItem !== hierarchyTree && hierarchyTree.mapFromItem !== undefined ? hierarchyTree.mapFromItem(referenceItem, localX, localY) : ({
-                "x": localX,
-                "y": localY
-            });
-        const hierarchyItem = noteDropController.hierarchyItemAtPosition(hierarchyPoint.x, hierarchyPoint.y);
-        if (!hierarchyItem)
-            return ({
-                    "index": -1,
-                    "item": null
-                });
-        const rawItemId = hierarchyItem.itemId !== undefined && hierarchyItem.itemId !== null ? hierarchyItem.itemId : hierarchyItem.resolvedItemId;
-        const parsedIndex = noteDropController.normalizedNonNegativeInteger(rawItemId);
-        if (parsedIndex < 0)
-            return ({
-                    "index": -1,
-                    "item": null
-                });
-        return ({
-                "index": parsedIndex,
-                "item": hierarchyItem
-            });
-    }
-    function noteIdFromDragPayload(drag) {
-        const noteIds = noteDropController.noteIdsFromDragPayload(drag);
-        return noteIds.length > 0 ? noteIds[0] : "";
-    }
-    function noteIdsFromDragPayload(drag) {
-        if (!drag)
-            return [];
-        const source = drag.source;
-        if (source && source.draggedNoteIds !== undefined && source.draggedNoteIds !== null) {
-            const draggedNoteIds = noteDropController.normalizeNoteIds(source.draggedNoteIds);
-            if (draggedNoteIds.length > 0)
-                return draggedNoteIds;
-        }
-        if (source && source.noteId !== undefined && source.noteId !== null) {
-            const sourceNoteId = String(source.noteId).trim();
-            if (sourceNoteId.length > 0)
-                return [sourceNoteId];
-        }
-        if (drag.getDataAsString !== undefined) {
-            const mimeNoteIds = String(drag.getDataAsString("application/x-whatson-note-ids") || "").trim();
-            if (mimeNoteIds.length > 0) {
-                try {
-                    const parsedNoteIds = JSON.parse(mimeNoteIds);
-                    const normalizedParsedNoteIds = noteDropController.normalizeNoteIds(parsedNoteIds);
-                    if (normalizedParsedNoteIds.length > 0)
-                        return normalizedParsedNoteIds;
-                } catch (error) {}
-            }
-            const mimeNoteId = String(drag.getDataAsString("application/x-whatson-note-id") || "").trim();
-            if (mimeNoteId.length > 0)
-                return [mimeNoteId];
-            const plainTextNoteIds = noteDropController.normalizeNoteIds(String(drag.getDataAsString("text/plain") || "").trim());
-            if (plainTextNoteIds.length > 0)
-                return plainTextNoteIds;
-        }
-        return [];
-    }
-    function updateNoteDropPreviewAtPosition(x, y, noteIds, referenceItem) {
-        const normalizedNoteIds = noteDropController.normalizeNoteIds(noteIds);
-        const target = noteDropController.noteDropTargetAtPosition(x, y, referenceItem);
-        if (target.index < 0 || normalizedNoteIds.length === 0 || !hierarchyDragDropBridge || !(hierarchyDragDropBridge.canAcceptNoteDropList !== undefined ? hierarchyDragDropBridge.canAcceptNoteDropList(target.index, normalizedNoteIds) : hierarchyDragDropBridge.canAcceptNoteDrop(target.index, normalizedNoteIds[0]))) {
-            noteDropController.clearNoteDropPreview();
-            return false;
-        }
-        hostView.noteDropHoverIndex = target.index;
-        return true;
-    }
-    }
-    QtObject {
-    id: bookmarkPaletteController
-
-    required property var bookmarkCanvas
-    required property var hostView
-    required property var itemLocator
-
-    function resolveThemeColorToken(tokenName) {
-        const normalizedToken = tokenName === undefined || tokenName === null ? "" : String(tokenName).trim();
-        if (!normalizedToken.length)
-            return LV.Theme.bodyColor;
-        if (LV.Theme[normalizedToken] !== undefined)
-            return LV.Theme[normalizedToken];
-        const accentTokens = LV.Theme.accentPaletteTokens !== undefined && LV.Theme.accentPaletteTokens !== null
-            ? LV.Theme.accentPaletteTokens
-            : [];
-        for (let index = 0; index < accentTokens.length; ++index) {
-            const token = accentTokens[index];
-            if (!token || token.name === undefined || token.color === undefined)
-                continue;
-            if (String(token.name) === normalizedToken)
-                return token.color;
-        }
-        return LV.Theme.bodyColor;
-    }
-
-    function bookmarkPaletteColorTokenForLabel(label) {
-        const normalizedLabel = label === undefined || label === null ? "" : String(label).trim().toLowerCase();
-        switch (normalizedLabel) {
-        case "red":
-            return "accentRed";
-        case "orange":
-            return "accentLightOrangeVivid";
-        case "amber":
-            return "accentLightAmberVivid";
-        case "yellow":
-            return "accentYellow";
-        case "green":
-            return "accentGreen";
-        case "teal":
-            return "accentDimTeal";
-        case "blue":
-            return "accentBlue";
-        case "indigo":
-            return "accentLighterIndigo";
-        case "purple":
-            return "accentPurple";
-        case "pink":
-            return "accentLightRose";
-        default:
-            return "";
-        }
-    }
-
-    function bookmarkPaletteColorForLabel(label) {
-        const colorToken = bookmarkPaletteController.bookmarkPaletteColorTokenForLabel(label);
-        return colorToken.length
-            ? bookmarkPaletteController.resolveThemeColorToken(colorToken)
-            : LV.Theme.bodyColor;
-    }
-
-    function applyBookmarkPaletteVisuals() {
-        if (!hostView.bookmarkPaletteVisualsEnabled)
-            return;
-        const hierarchyItems = itemLocator.collectHierarchyItems();
-        for (let index = 0; index < hierarchyItems.length; ++index) {
-            const item = hierarchyItems[index];
-            if (!item)
-                continue;
-            const bookmarkColor = bookmarkPaletteController.bookmarkPaletteColorForLabel(item.text);
-            item.textColorNormal = bookmarkColor;
-            item.textColorDisabled = bookmarkColor;
-        }
-    }
-
-    function drawBookmarkGlyph(context, x, y, size, color) {
-        const left = x + size * 0.25;
-        const right = x + size * 0.75;
-        const top = y + size * 0.09375;
-        const bottom = y + size * 0.875;
-        const notchY = y + size * 0.65625;
-        const centerX = x + size * 0.5;
-        context.beginPath();
-        context.moveTo(left, top);
-        context.lineTo(right, top);
-        context.lineTo(right, bottom);
-        context.lineTo(centerX, notchY);
-        context.lineTo(left, bottom);
-        context.closePath();
-        context.fillStyle = color;
-        context.fill();
-    }
-
-    function scheduleBookmarkPaletteVisualRefresh() {
-        Qt.callLater(function () {
+        function cancelHierarchyRename() {
+            if (!hostView.renameEditingActive)
+                return false;
+            hostView.editingHierarchyIndex = -1;
+            hostView.editingHierarchyLabel = "";
+            hostView.clearEditingHierarchyPresentation();
+            hostView.syncDisplayedHierarchyModel(true);
             Qt.callLater(function () {
-                bookmarkPaletteController.applyBookmarkPaletteVisuals();
-                bookmarkCanvas.requestPaint();
+                hostView.syncSelectedHierarchyItem(true);
             });
-        });
+            return true;
+        }
+
+        function cloneHierarchyItem(sourceItem) {
+            const clone = {};
+            if (!sourceItem)
+                return clone;
+            for (const key in sourceItem)
+                clone[key] = sourceItem[key];
+            return clone;
+        }
+
+        function commitHierarchyRename() {
+            if (!hostView.renameEditingActive)
+                return false;
+            const renameIndex = hostView.editingHierarchyIndex;
+            const nextLabel = hierarchyRenameField ? String(hierarchyRenameField.text) : hostView.editingHierarchyLabel;
+            hostView.editingHierarchyLabel = nextLabel;
+            if (!renameController.canRenameIndex(renameIndex))
+                return renameController.cancelHierarchyRename();
+            const renamed = Boolean(hierarchyInteractionBridge && hierarchyInteractionBridge.renameItem(renameIndex, nextLabel));
+            if (!renamed) {
+                Qt.callLater(function () {
+                    if (!hierarchyRenameField)
+                        return;
+                    hierarchyRenameField.forceInputFocus();
+                    hierarchyRenameField.selectAll();
+                });
+                return false;
+            }
+            hostView.editingHierarchyIndex = -1;
+            hostView.editingHierarchyLabel = "";
+            hostView.clearEditingHierarchyPresentation();
+            hostView.syncDisplayedHierarchyModel(true);
+            hostView.requestViewHook("hierarchy.rename.commit");
+            Qt.callLater(function () {
+                hostView.syncSelectedHierarchyItem(true);
+            });
+            return true;
+        }
+
+        function decodedHierarchyPathSegments(rawPath) {
+            const normalizedPath = rawPath === undefined || rawPath === null ? "" : String(rawPath).trim();
+            if (!normalizedPath.length)
+                return [];
+            const segments = [];
+            let currentSegment = "";
+            function flushCurrentSegment() {
+                const normalizedSegment = String(currentSegment).trim();
+                currentSegment = "";
+                if (normalizedSegment.length)
+                    segments.push(normalizedSegment);
+            }
+            for (let index = 0; index < normalizedPath.length; ++index) {
+                const character = normalizedPath.charAt(index);
+                if (character === "\\") {
+                    const hasNextCharacter = index + 1 < normalizedPath.length;
+                    if (hasNextCharacter) {
+                        const nextCharacter = normalizedPath.charAt(index + 1);
+                        if (nextCharacter === "\\" || nextCharacter === "/") {
+                            currentSegment += nextCharacter;
+                            ++index;
+                            continue;
+                        }
+                    }
+                    flushCurrentSegment();
+                    continue;
+                }
+                if (character === "/") {
+                    flushCurrentSegment();
+                    continue;
+                }
+                currentSegment += character;
+            }
+            flushCurrentSegment();
+            return segments;
+        }
+
+        function leafHierarchyItemLabel(rawLabel, rawPath) {
+            const pathSegments = renameController.decodedHierarchyPathSegments(rawPath);
+            if (pathSegments.length > 0)
+                return String(pathSegments[pathSegments.length - 1]);
+            const normalizedLabel = rawLabel === undefined || rawLabel === null ? "" : String(rawLabel).trim();
+            return normalizedLabel;
+        }
+
+        function normalizeHierarchyModel(modelValue) {
+            if (modelValue === undefined || modelValue === null)
+                return [];
+            if (Array.isArray(modelValue))
+                return modelValue.slice();
+            if (modelValue.length !== undefined)
+                return Array.from(modelValue);
+            return [];
+        }
+
+        function projectedHierarchyModel(modelValue) {
+            const normalizedModel = renameController.normalizeHierarchyModel(modelValue);
+            if (!hostView.renameEditingActive)
+                return normalizedModel;
+            const editingIndex = renameController.normalizedInteger(hostView.editingHierarchyIndex, -1);
+            if (editingIndex < 0 || editingIndex >= normalizedModel.length)
+                return normalizedModel;
+            const projectedModel = normalizedModel.slice();
+            const projectedItem = renameController.cloneHierarchyItem(projectedModel[editingIndex]);
+            projectedItem.label = " ";
+            projectedModel[editingIndex] = projectedItem;
+            return projectedModel;
+        }
+
+        function selectedHierarchyItemLabel() {
+            const selectedIndex = renameController.normalizedInteger(hostView.selectedFolderIndex, -1);
+            if (selectedIndex < 0)
+                return "";
+            const item = standardHierarchyModel[selectedIndex];
+            if (item && item.label !== undefined && item.label !== null) {
+                const projectedLabel = renameController.leafHierarchyItemLabel(item.label, item.id);
+                if (projectedLabel.length)
+                    return projectedLabel;
+            }
+            if (hierarchyViewModel) {
+                const modelLabel = renameController.leafHierarchyItemLabel(hierarchyViewModel.hierarchyItemLabelAt(selectedIndex), item && item.id !== undefined && item.id !== null ? item.id : "");
+                if (modelLabel.length)
+                    return modelLabel;
+            }
+            if (hostView.activeHierarchyItem && hostView.activeHierarchyItem.text !== undefined)
+                return renameController.leafHierarchyItemLabel(hostView.activeHierarchyItem.text, "");
+            return "";
+        }
     }
+    QtObject {
+        id: noteDropController
+
+        required property var hierarchyDragDropBridge
+        required property var hierarchyTree
+        required property var hostView
+
+        function canAcceptNoteDropAtPosition(x, y, noteIds, referenceItem) {
+            const normalizedNoteIds = noteDropController.normalizeNoteIds(noteIds);
+            const target = noteDropController.noteDropTargetAtPosition(x, y, referenceItem);
+            if (target.index < 0 || normalizedNoteIds.length === 0 || !hierarchyDragDropBridge)
+                return false;
+            if (hierarchyDragDropBridge.canAcceptNoteDropList !== undefined)
+                return hierarchyDragDropBridge.canAcceptNoteDropList(target.index, normalizedNoteIds);
+            return hierarchyDragDropBridge.canAcceptNoteDrop(target.index, normalizedNoteIds[0]);
+        }
+        function clearNoteDropPreview() {
+            hostView.noteDropHoverIndex = -1;
+        }
+        function collectHierarchyItems() {
+            const items = [];
+            function visitHierarchyDescendants(item) {
+                if (!item || item.children === undefined || item.children === null)
+                    return;
+                const children = item.children;
+                for (let i = 0; i < children.length; ++i) {
+                    const child = children[i];
+                    if (!child || child.visible === false)
+                        continue;
+                    if (child.__isHierarchyItem === true)
+                        items.push(child);
+                    visitHierarchyDescendants(child);
+                }
+            }
+            visitHierarchyDescendants(hierarchyTree);
+            return items;
+        }
+        function commitNoteDropAtPosition(x, y, noteIds, referenceItem) {
+            const normalizedNoteIds = noteDropController.normalizeNoteIds(noteIds);
+            const target = noteDropController.noteDropTargetAtPosition(x, y, referenceItem);
+            if (target.index < 0 || normalizedNoteIds.length === 0) {
+                noteDropController.clearNoteDropPreview();
+                return false;
+            }
+            const committed = hierarchyDragDropBridge && (hierarchyDragDropBridge.assignNotesToFolder !== undefined ? hierarchyDragDropBridge.assignNotesToFolder(target.index, normalizedNoteIds) : hierarchyDragDropBridge.assignNoteToFolder(target.index, normalizedNoteIds[0]));
+            if (!committed) {
+                noteDropController.clearNoteDropPreview();
+                return false;
+            }
+            noteDropController.clearNoteDropPreview();
+            hostView.requestViewHook("hierarchy.noteDrop");
+            return true;
+        }
+        function hierarchyItemAtPosition(x, y) {
+            const targetX = Number(x) || 0;
+            const targetY = Number(y) || 0;
+            function visitHierarchyDescendants(item) {
+                if (!item || item.children === undefined || item.children === null)
+                    return null;
+                const children = item.children;
+                for (let i = children.length - 1; i >= 0; --i) {
+                    const child = children[i];
+                    if (!child || child.visible === false)
+                        continue;
+                    const matchedDescendant = visitHierarchyDescendants(child);
+                    if (matchedDescendant)
+                        return matchedDescendant;
+                    if (child.__isHierarchyItem === true && noteDropController.hierarchyItemContainsPoint(child, targetX, targetY))
+                        return child;
+                }
+                return null;
+            }
+            return visitHierarchyDescendants(hierarchyTree);
+        }
+        function hierarchyItemContainsPoint(item, x, y) {
+            if (!item || item.mapToItem === undefined)
+                return false;
+            const mappedPoint = item.mapToItem(hierarchyTree, 0, 0);
+            const itemX = Number(mappedPoint.x) || 0;
+            const itemY = Number(mappedPoint.y) || 0;
+            const itemWidth = Number(item.width) || 0;
+            const itemHeight = Number(item.height) || 0;
+            if (itemWidth <= 0 || itemHeight <= 0)
+                return false;
+            if (item.rowVisible !== undefined && !Boolean(item.rowVisible))
+                return false;
+            return x >= itemX && x <= itemX + itemWidth && y >= itemY && y <= itemY + itemHeight;
+        }
+        function hierarchyItemForResolvedIndex(itemId) {
+            const numericIndex = Number(itemId);
+            if (!isFinite(numericIndex))
+                return null;
+            const resolvedIndex = Math.max(-1, Math.floor(numericIndex));
+            if (resolvedIndex < 0)
+                return null;
+            function visitHierarchyDescendants(item) {
+                if (!item || item.children === undefined || item.children === null)
+                    return null;
+                const children = item.children;
+                for (let i = children.length - 1; i >= 0; --i) {
+                    const child = children[i];
+                    if (!child || child.visible === false)
+                        continue;
+                    const matchedDescendant = visitHierarchyDescendants(child);
+                    if (matchedDescendant)
+                        return matchedDescendant;
+                    if (child.__isHierarchyItem !== true)
+                        continue;
+                    const rawItemId = child.itemId !== undefined && child.itemId !== null ? child.itemId : child.resolvedItemId;
+                    if (noteDropController.normalizedInteger(rawItemId, -1) === resolvedIndex)
+                        return child;
+                }
+                return null;
+            }
+            return visitHierarchyDescendants(hierarchyTree);
+        }
+        function normalizeNoteIds(noteIds) {
+            if (noteIds === undefined || noteIds === null)
+                return [];
+
+            var sourceIds = noteIds;
+            if (typeof sourceIds === "string")
+                sourceIds = sourceIds.split(/\r?\n/);
+            else if (!Array.isArray(sourceIds) && sourceIds.length !== undefined)
+                sourceIds = Array.prototype.slice.call(sourceIds);
+            else if (!Array.isArray(sourceIds))
+                sourceIds = [sourceIds];
+
+            const normalized = [];
+            for (let index = 0; index < sourceIds.length; ++index) {
+                const normalizedNoteId = String(sourceIds[index] === undefined || sourceIds[index] === null ? "" : sourceIds[index]).trim();
+                if (!normalizedNoteId.length || normalized.indexOf(normalizedNoteId) >= 0)
+                    continue;
+                normalized.push(normalizedNoteId);
+            }
+            return normalized;
+        }
+        function normalizedInteger(value, fallbackValue) {
+            const numericValue = Number(value);
+            if (!isFinite(numericValue))
+                return fallbackValue;
+            return Math.floor(numericValue);
+        }
+        function normalizedNonNegativeInteger(value) {
+            const normalized = noteDropController.normalizedInteger(value, -1);
+            return normalized >= 0 ? normalized : -1;
+        }
+        function noteDropIndexAtPosition(x, y, referenceItem) {
+            const target = noteDropController.noteDropTargetAtPosition(x, y, referenceItem);
+            return target.index;
+        }
+        function noteDropTargetAtPosition(x, y, referenceItem) {
+            const localX = Number(x) || 0;
+            const localY = Number(y) || 0;
+            const hierarchyPoint = referenceItem && referenceItem !== hierarchyTree && hierarchyTree.mapFromItem !== undefined ? hierarchyTree.mapFromItem(referenceItem, localX, localY) : ({
+                    "x": localX,
+                    "y": localY
+                });
+            const hierarchyItem = noteDropController.hierarchyItemAtPosition(hierarchyPoint.x, hierarchyPoint.y);
+            if (!hierarchyItem)
+                return ({
+                        "index": -1,
+                        "item": null
+                    });
+            const rawItemId = hierarchyItem.itemId !== undefined && hierarchyItem.itemId !== null ? hierarchyItem.itemId : hierarchyItem.resolvedItemId;
+            const parsedIndex = noteDropController.normalizedNonNegativeInteger(rawItemId);
+            if (parsedIndex < 0)
+                return ({
+                        "index": -1,
+                        "item": null
+                    });
+            return ({
+                    "index": parsedIndex,
+                    "item": hierarchyItem
+                });
+        }
+        function noteIdFromDragPayload(drag) {
+            const noteIds = noteDropController.noteIdsFromDragPayload(drag);
+            return noteIds.length > 0 ? noteIds[0] : "";
+        }
+        function noteIdsFromDragPayload(drag) {
+            if (!drag)
+                return [];
+            const source = drag.source;
+            if (source && source.draggedNoteIds !== undefined && source.draggedNoteIds !== null) {
+                const draggedNoteIds = noteDropController.normalizeNoteIds(source.draggedNoteIds);
+                if (draggedNoteIds.length > 0)
+                    return draggedNoteIds;
+            }
+            if (source && source.noteId !== undefined && source.noteId !== null) {
+                const sourceNoteId = String(source.noteId).trim();
+                if (sourceNoteId.length > 0)
+                    return [sourceNoteId];
+            }
+            if (drag.getDataAsString !== undefined) {
+                const mimeNoteIds = String(drag.getDataAsString("application/x-whatson-note-ids") || "").trim();
+                if (mimeNoteIds.length > 0) {
+                    try {
+                        const parsedNoteIds = JSON.parse(mimeNoteIds);
+                        const normalizedParsedNoteIds = noteDropController.normalizeNoteIds(parsedNoteIds);
+                        if (normalizedParsedNoteIds.length > 0)
+                            return normalizedParsedNoteIds;
+                    } catch (error) {}
+                }
+                const mimeNoteId = String(drag.getDataAsString("application/x-whatson-note-id") || "").trim();
+                if (mimeNoteId.length > 0)
+                    return [mimeNoteId];
+                const plainTextNoteIds = noteDropController.normalizeNoteIds(String(drag.getDataAsString("text/plain") || "").trim());
+                if (plainTextNoteIds.length > 0)
+                    return plainTextNoteIds;
+            }
+            return [];
+        }
+        function updateNoteDropPreviewAtPosition(x, y, noteIds, referenceItem) {
+            const normalizedNoteIds = noteDropController.normalizeNoteIds(noteIds);
+            const target = noteDropController.noteDropTargetAtPosition(x, y, referenceItem);
+            if (target.index < 0 || normalizedNoteIds.length === 0 || !hierarchyDragDropBridge || !(hierarchyDragDropBridge.canAcceptNoteDropList !== undefined ? hierarchyDragDropBridge.canAcceptNoteDropList(target.index, normalizedNoteIds) : hierarchyDragDropBridge.canAcceptNoteDrop(target.index, normalizedNoteIds[0]))) {
+                noteDropController.clearNoteDropPreview();
+                return false;
+            }
+            hostView.noteDropHoverIndex = target.index;
+            return true;
+        }
+    }
+    QtObject {
+        id: bookmarkPaletteController
+
+        required property var bookmarkCanvas
+        required property var hostView
+        required property var itemLocator
+
+        function resolveThemeColorToken(tokenName) {
+            const normalizedToken = tokenName === undefined || tokenName === null ? "" : String(tokenName).trim();
+            if (!normalizedToken.length)
+                return LV.Theme.bodyColor;
+            if (LV.Theme[normalizedToken] !== undefined)
+                return LV.Theme[normalizedToken];
+            const accentTokens = LV.Theme.accentPaletteTokens !== undefined && LV.Theme.accentPaletteTokens !== null ? LV.Theme.accentPaletteTokens : [];
+            for (let index = 0; index < accentTokens.length; ++index) {
+                const token = accentTokens[index];
+                if (!token || token.name === undefined || token.color === undefined)
+                    continue;
+                if (String(token.name) === normalizedToken)
+                    return token.color;
+            }
+            return LV.Theme.bodyColor;
+        }
+
+        function bookmarkPaletteColorTokenForLabel(label) {
+            const normalizedLabel = label === undefined || label === null ? "" : String(label).trim().toLowerCase();
+            switch (normalizedLabel) {
+            case "red":
+                return "accentRed";
+            case "orange":
+                return "accentLightOrangeVivid";
+            case "amber":
+                return "accentLightAmberVivid";
+            case "yellow":
+                return "accentYellow";
+            case "green":
+                return "accentGreen";
+            case "teal":
+                return "accentDimTeal";
+            case "blue":
+                return "accentBlue";
+            case "indigo":
+                return "accentLighterIndigo";
+            case "purple":
+                return "accentPurple";
+            case "pink":
+                return "accentLightRose";
+            default:
+                return "";
+            }
+        }
+
+        function bookmarkPaletteColorForLabel(label) {
+            const colorToken = bookmarkPaletteController.bookmarkPaletteColorTokenForLabel(label);
+            return colorToken.length ? bookmarkPaletteController.resolveThemeColorToken(colorToken) : LV.Theme.bodyColor;
+        }
+
+        function applyBookmarkPaletteVisuals() {
+            if (!hostView.bookmarkPaletteVisualsEnabled)
+                return;
+            const hierarchyItems = itemLocator.collectHierarchyItems();
+            for (let index = 0; index < hierarchyItems.length; ++index) {
+                const item = hierarchyItems[index];
+                if (!item)
+                    continue;
+                const bookmarkColor = bookmarkPaletteController.bookmarkPaletteColorForLabel(item.text);
+                item.textColorNormal = bookmarkColor;
+                item.textColorDisabled = bookmarkColor;
+            }
+        }
+
+        function drawBookmarkGlyph(context, x, y, size, color) {
+            const left = x + size * 0.25;
+            const right = x + size * 0.75;
+            const top = y + size * 0.09375;
+            const bottom = y + size * 0.875;
+            const notchY = y + size * 0.65625;
+            const centerX = x + size * 0.5;
+            context.beginPath();
+            context.moveTo(left, top);
+            context.lineTo(right, top);
+            context.lineTo(right, bottom);
+            context.lineTo(centerX, notchY);
+            context.lineTo(left, bottom);
+            context.closePath();
+            context.fillStyle = color;
+            context.fill();
+        }
+
+        function scheduleBookmarkPaletteVisualRefresh() {
+            Qt.callLater(function () {
+                Qt.callLater(function () {
+                    bookmarkPaletteController.applyBookmarkPaletteVisuals();
+                    bookmarkCanvas.requestPaint();
+                });
+            });
+        }
     }
     Timer {
         id: hierarchyExpansionActivationBlockTimer
@@ -1869,9 +1836,7 @@ Rectangle {
                     return;
                 const pressModifiers = point && point.modifiers !== undefined ? point.modifiers : Qt.NoModifier;
                 sidebarHierarchyView.captureHierarchyPointerSelectionModifiers(pressModifiers);
-                sidebarHierarchyView.armHierarchyUserExpansionAtPosition(
-                            point && point.position !== undefined ? point.position.x : 0,
-                            point && point.position !== undefined ? point.position.y : 0);
+                sidebarHierarchyView.armHierarchyUserExpansionAtPosition(point && point.position !== undefined ? point.position.x : 0, point && point.position !== undefined ? point.position.y : 0);
             }
         }
         TapHandler {
@@ -1886,24 +1851,10 @@ Rectangle {
             onTapped: function (eventPoint, button) {
                 if (button !== Qt.RightButton)
                     return;
-                sidebarHierarchyView.openHierarchyFolderContextMenuFromPointer(
-                            eventPoint && eventPoint.position !== undefined ? eventPoint.position.x : 0,
-                            eventPoint && eventPoint.position !== undefined ? eventPoint.position.y : 0,
-                            hierarchyTree,
-                            "rightClick");
+                sidebarHierarchyView.openHierarchyFolderContextMenuFromPointer(eventPoint && eventPoint.position !== undefined ? eventPoint.position.x : 0, eventPoint && eventPoint.position !== undefined ? eventPoint.position.y : 0, hierarchyTree, "rightClick");
             }
             onLongPressed: {
-                sidebarHierarchyView.openHierarchyFolderContextMenuFromPointer(
-                            hierarchyContextMenuTapHandler.point
-                            && hierarchyContextMenuTapHandler.point.position !== undefined
-                            ? hierarchyContextMenuTapHandler.point.position.x
-                            : 0,
-                            hierarchyContextMenuTapHandler.point
-                            && hierarchyContextMenuTapHandler.point.position !== undefined
-                            ? hierarchyContextMenuTapHandler.point.position.y
-                            : 0,
-                            hierarchyTree,
-                            "longPress");
+                sidebarHierarchyView.openHierarchyFolderContextMenuFromPointer(hierarchyContextMenuTapHandler.point && hierarchyContextMenuTapHandler.point.position !== undefined ? hierarchyContextMenuTapHandler.point.position.x : 0, hierarchyContextMenuTapHandler.point && hierarchyContextMenuTapHandler.point.position !== undefined ? hierarchyContextMenuTapHandler.point.position.y : 0, hierarchyTree, "longPress");
             }
         }
     }
@@ -1958,7 +1909,7 @@ Rectangle {
         fieldMinHeight: 16
         height: sidebarHierarchyView.hierarchyRenameFieldHeight
         insetHorizontal: 0
-        insetVertical: 0
+        insetVertical: LV.Theme.gapNone
         placeholderText: ""
         selectByMouse: true
         sideSpacing: 0
@@ -2116,10 +2067,10 @@ Rectangle {
         button1: ({
                 type: "icon",
                 iconName: "generaladd",
-                backgroundColor: "transparent",
-                backgroundColorDisabled: "transparent",
-                backgroundColorHover: "transparent",
-                backgroundColorPressed: "transparent",
+                backgroundColor: LV.Theme.accentTransparent,
+                backgroundColorDisabled: LV.Theme.accentTransparent,
+                backgroundColorHover: LV.Theme.accentTransparent,
+                backgroundColorPressed: LV.Theme.accentTransparent,
                 enabled: sidebarHierarchyView.createFolderEnabled,
                 horizontalPadding: sidebarHierarchyView.hierarchyCompactInset,
                 onClicked: function () {
@@ -2130,10 +2081,10 @@ Rectangle {
         button2: ({
                 type: "icon",
                 iconName: "generaldelete",
-                backgroundColor: "transparent",
-                backgroundColorDisabled: "transparent",
-                backgroundColorHover: "transparent",
-                backgroundColorPressed: "transparent",
+                backgroundColor: LV.Theme.accentTransparent,
+                backgroundColorDisabled: LV.Theme.accentTransparent,
+                backgroundColorHover: LV.Theme.accentTransparent,
+                backgroundColorPressed: LV.Theme.accentTransparent,
                 enabled: sidebarHierarchyView.deleteFolderEnabled,
                 horizontalPadding: sidebarHierarchyView.hierarchyCompactInset,
                 onClicked: function () {
@@ -2144,10 +2095,10 @@ Rectangle {
         button3: ({
                 type: "menu",
                 iconName: "generalsettings",
-                backgroundColor: "transparent",
-                backgroundColorDisabled: "transparent",
-                backgroundColorHover: "transparent",
-                backgroundColorPressed: "transparent",
+                backgroundColor: LV.Theme.accentTransparent,
+                backgroundColorDisabled: LV.Theme.accentTransparent,
+                backgroundColorHover: LV.Theme.accentTransparent,
+                backgroundColorPressed: LV.Theme.accentTransparent,
                 enabled: sidebarHierarchyView.viewOptionsEnabled,
                 leftPadding: sidebarHierarchyView.hierarchyCompactInset,
                 onClicked: function () {
@@ -2159,7 +2110,7 @@ Rectangle {
             })
         height: sidebarHierarchyView.hierarchyCompactFooterHeight
         horizontalPadding: sidebarHierarchyView.hierarchyCompactInset
-        spacing: 0
+        spacing: LV.Theme.gapNone
         verticalPadding: sidebarHierarchyView.hierarchyCompactInset
         visible: sidebarHierarchyView.footerVisible
         width: sidebarHierarchyView.hierarchyCompactFooterWidth

@@ -13,20 +13,18 @@ Rectangle {
     property int backgroundType: calendarEventCell.backgroundDefault
     property color defaultBackgroundColor: LV.Theme.panelBackground08
     property color coloredBackgroundColor: LV.Theme.primary
-    property color textColor: Qt.rgba(1.0, 1.0, 1.0, 0.8)
+    property color textColor: LV.Theme.bodyColor
     property int cornerRadius: LV.Theme.radiusSm
     property int horizontalInset: LV.Theme.gap8
     property bool interactive: false
     property int verticalInset: LV.Theme.gap2
-    property int labelPixelSize: Math.max(0, Math.round(LV.Theme.scaleMetric(12)))
+    property int labelPixelSize: LV.Theme.textBody
     property int labelWeight: Font.Medium
 
     signal activated
 
-    color: calendarEventCell.backgroundType === calendarEventCell.backgroundColored
-           ? calendarEventCell.coloredBackgroundColor
-           : calendarEventCell.defaultBackgroundColor
-    height: Math.max(0, Math.round(LV.Theme.scaleMetric(16)))
+    color: calendarEventCell.backgroundType === calendarEventCell.backgroundColored ? calendarEventCell.coloredBackgroundColor : calendarEventCell.defaultBackgroundColor
+    height: LV.Theme.iconSm
     radius: calendarEventCell.cornerRadius
 
     TapHandler {

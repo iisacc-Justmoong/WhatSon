@@ -10,20 +10,21 @@ Item {
     id: root
 
     readonly property url appIconSource: "qrc:/whatson/AppIcon.png"
-    readonly property int appIconSize: Math.max(0, Math.round(LV.Theme.scaleMetric(144)))
+    readonly property int appIconSize: LV.Theme.gap24 + LV.Theme.gap24 + LV.Theme.gap24 + LV.Theme.gap24 + LV.Theme.gap24 + LV.Theme.gap24
     readonly property int closeButtonInset: LV.Theme.gap16
-    readonly property int closeButtonSize: Math.max(0, Math.round(LV.Theme.scaleMetric(16)))
-    readonly property int closeColumnWidth: Math.max(0, Math.round(LV.Theme.scaleMetric(48)))
+    readonly property int closeButtonSize: LV.Theme.iconSm
+    readonly property int closeColumnWidth: LV.Theme.gap24 + LV.Theme.gap24
     readonly property url currentFolderUrl: hubSessionController ? hubSessionController.currentFolderUrl : ""
     readonly property string defaultCreateHubName: "Untitled"
     readonly property string defaultCreateHubFileName: root.defaultCreateHubName + ".wshub"
-    readonly property int desktopActionWidth: Math.max(0, Math.round(LV.Theme.scaleMetric(180)))
-    readonly property int desktopActionSpacing: Math.max(0, Math.round(LV.Theme.scaleMetric(18)))
-    readonly property int desktopBrandingSpacing: Math.max(0, Math.round(LV.Theme.scaleMetric(12)))
-    readonly property int desktopContentSpacing: Math.max(0, Math.round(LV.Theme.scaleMetric(20)))
-    readonly property int desktopContentWidth: Math.max(0, Math.round(LV.Theme.scaleMetric(209)))
-    readonly property int desktopHubEditorSpacing: Math.max(0, Math.round(LV.Theme.scaleMetric(6)))
-    readonly property int dragRegionHeight: Math.max(0, Math.round(LV.Theme.scaleMetric(72)))
+    readonly property int desktopActionWidth: LV.Theme.inputMinWidth
+    readonly property int desktopActionSpacing: LV.Theme.gap18
+    readonly property int desktopBrandingSpacing: LV.Theme.gap12
+    readonly property int desktopContentSpacing: LV.Theme.gap20
+    readonly property int desktopContentWidth: LV.Theme.inputWidthMd + LV.Theme.gap3
+    readonly property int desktopDesignWidth: LV.Theme.scaffoldBlobPrimarySize + LV.Theme.dialogMaxWidth - LV.Theme.gap12 - Math.round(LV.Theme.strokeThin)
+    readonly property int desktopHubEditorSpacing: LV.Theme.gap6
+    readonly property int dragRegionHeight: LV.Theme.gap24 + LV.Theme.gap24 + LV.Theme.gap24
     readonly property bool hasHubSelectionCandidates: root.hubSessionController && root.hubSessionController.hubSelectionCandidateNames.length > 0
     readonly property string onboardingSessionState: {
         if (!root.hubSessionController || root.hubSessionController.sessionState === undefined)
@@ -33,31 +34,30 @@ Item {
     readonly property bool useDirectExistingHubFileFlow: Qt.platform.os === "android" || Qt.platform.os === "osx"
     readonly property bool useNativeIosExistingHubPicker: Qt.platform.os === "ios"
     readonly property bool isMobilePlatform: Qt.platform.os === "android" || Qt.platform.os === "ios"
-    readonly property bool onboardingInteractionBusy: (root.hubSessionController && root.hubSessionController.busy)
-                                                    || iosHubPickerBridge.busy
+    readonly property bool onboardingInteractionBusy: (root.hubSessionController && root.hubSessionController.busy) || iosHubPickerBridge.busy
     readonly property bool useMobileCreateDirectoryFlow: root.isMobilePlatform
     readonly property color linkColor: LV.Theme.accent
     readonly property color mainSurfaceColor: root.panelColor
-    readonly property int createHubFieldHeight: Math.max(0, Math.round(LV.Theme.scaleMetric(40)))
-    readonly property int createHubFieldTextHeight: Math.max(0, Math.round(LV.Theme.scaleMetric(16)))
+    readonly property int createHubFieldHeight: LV.Theme.gap20 + LV.Theme.gap20
+    readonly property int createHubFieldTextHeight: LV.Theme.iconSm
     readonly property int mobileActionSpacing: LV.Theme.gap24
-    readonly property int mobileActionWidth: Math.max(0, Math.round(LV.Theme.scaleMetric(180)))
-    readonly property int mobileContentSpacing: Math.max(0, Math.round(LV.Theme.scaleMetric(32)))
-    readonly property int mobileContentWidth: Math.max(0, Math.round(LV.Theme.scaleMetric(209)))
-    readonly property int mobileDesignHeight: 762
-    readonly property int mobileDesignWidth: 470
+    readonly property int mobileActionWidth: LV.Theme.inputMinWidth
+    readonly property int mobileContentSpacing: LV.Theme.headerExtraHeight
+    readonly property int mobileContentWidth: LV.Theme.inputWidthMd + LV.Theme.gap3
+    readonly property int mobileDesignHeight: LV.Theme.scaffoldBlobPrimarySize + LV.Theme.inputWidthMd + LV.Theme.gap24 + LV.Theme.gap12
+    readonly property int mobileDesignWidth: LV.Theme.dialogMaxWidth + LV.Theme.buttonMinWidth + LV.Theme.gap10
     readonly property int mobileSurfaceRadius: LV.Theme.radiusXl * 2
-    readonly property int mobileVersionWidth: Math.max(0, Math.round(LV.Theme.scaleMetric(75)))
+    readonly property int mobileVersionWidth: LV.Theme.gap24 + LV.Theme.gap24 + LV.Theme.gap24 + LV.Theme.gap3
     readonly property var owningWindow: root.hostWindow ? root.hostWindow : root.Window.window
     readonly property int panelCornerRadius: LV.Theme.radiusXl * 2
     readonly property int panelTextHorizontalInset: LV.Theme.gap16
-    readonly property int titleLineHeight: Math.max(0, Math.round(LV.Theme.scaleMetric(26)))
-    readonly property int titleTextSize: Math.max(0, Math.round(LV.Theme.scaleMetric(48)))
-    readonly property int versionLineHeight: Math.max(0, Math.round(LV.Theme.scaleMetric(12)))
-    readonly property int versionTextSize: Math.max(0, Math.round(LV.Theme.scaleMetric(12)))
-    readonly property int actionTextLineHeight: Math.max(0, Math.round(LV.Theme.scaleMetric(15)))
-    readonly property int actionTextSize: Math.max(0, Math.round(LV.Theme.scaleMetric(15)))
-    readonly property int statusLabelLineHeight: Math.max(0, Math.round(LV.Theme.scaleMetric(15)))
+    readonly property int titleLineHeight: LV.Theme.textTitleLineHeight
+    readonly property int titleTextSize: LV.Theme.gap24 + LV.Theme.gap24
+    readonly property int versionLineHeight: LV.Theme.textBodyLineHeight
+    readonly property int versionTextSize: LV.Theme.textBody
+    readonly property int actionTextLineHeight: LV.Theme.textHeader2LineHeight
+    readonly property int actionTextSize: LV.Theme.textHeader2
+    readonly property int statusLabelLineHeight: LV.Theme.textHeader2LineHeight
     readonly property int availableScreenHeight: {
         const targetScreen = root.owningWindow && root.owningWindow.screen ? root.owningWindow.screen : null;
         return targetScreen ? Math.round(targetScreen.height) : root.mobileDesignHeight;
@@ -78,11 +78,9 @@ Item {
     property bool autoCompleteOnHubLoaded: true
     property string createHubNameText: root.defaultCreateHubName
     property var createHubDialogInstance: null
-    readonly property int rightPanelWidth: Math.max(
-                                               Math.max(0, Math.round(LV.Theme.scaleMetric(214))),
-                                               Math.min(
-                                                   Math.max(0, Math.round(LV.Theme.scaleMetric(306))),
-                                                   Math.round(root.width * Math.max(0, Math.round(LV.Theme.scaleMetric(306))) / 867)))
+    readonly property int rightPanelMaxWidth: LV.Theme.dialogMinWidth + LV.Theme.gap24 + LV.Theme.gap2
+    readonly property int rightPanelMinWidth: LV.Theme.inputWidthMd + LV.Theme.gap8
+    readonly property int rightPanelWidth: Math.max(root.rightPanelMinWidth, Math.min(root.rightPanelMaxWidth, Math.round(root.width * root.rightPanelMaxWidth / root.desktopDesignWidth)))
     readonly property color secondarySurfaceColor: root.sidePanelColor
     readonly property string requestedCreateHubFileName: root.normalizedCreateHubFileName(root.createHubNameText)
     readonly property string resolvedVersionText: {
@@ -115,8 +113,7 @@ Item {
         }
         return "No WhatSon Hub Selected";
     }
-    readonly property bool hasOnboardingError: (root.hubSessionController && root.hubSessionController.lastError.length > 0)
-                                             || iosHubPickerBridge.lastError.length > 0
+    readonly property bool hasOnboardingError: (root.hubSessionController && root.hubSessionController.lastError.length > 0) || iosHubPickerBridge.lastError.length > 0
     property color sidePanelColor: LV.Theme.panelBackground10
     property var selectHubFileDialogInstance: null
     property bool standaloneMode: false
@@ -322,9 +319,7 @@ Item {
     FolderDialog {
         id: selectHubDialog
 
-        title: root.isMobilePlatform
-               ? "Choose Folder Containing WhatSon Hub"
-               : "Select WhatSon Hub"
+        title: root.isMobilePlatform ? "Choose Folder Containing WhatSon Hub" : "Select WhatSon Hub"
 
         onAccepted: {
             if (root.hubSessionController) {
@@ -795,30 +790,30 @@ Item {
                 id: hubNameInput
 
                 anchors.fill: parent
-                backgroundColor: "transparent"
-                backgroundColorDisabled: "transparent"
-                backgroundColorFocused: "transparent"
-                backgroundColorHover: "transparent"
-                backgroundColorPressed: "transparent"
+                backgroundColor: LV.Theme.accentTransparent
+                backgroundColorDisabled: LV.Theme.accentTransparent
+                backgroundColorFocused: LV.Theme.accentTransparent
+                backgroundColorHover: LV.Theme.accentTransparent
+                backgroundColorPressed: LV.Theme.accentTransparent
                 centeredTextHeight: root.createHubFieldTextHeight
                 clearButtonVisible: false
                 enabled: hubNameEditor.enabled
                 fieldMinHeight: parent.height
                 insetHorizontal: LV.Theme.gap12
-                insetVertical: 0
+                insetVertical: LV.Theme.gapNone
                 placeholderText: root.defaultCreateHubName
                 selectByMouse: true
                 text: root.createHubNameText
                 textColor: LV.Theme.bodyColor
                 textColorDisabled: LV.Theme.disabledColor
 
-                onAccepted: function(text) {
+                onAccepted: function (text) {
                     const nextText = typeof text === "string" ? text : hubNameInput.text;
                     if (root.createHubNameText !== nextText)
                         root.createHubNameText = nextText;
                     hubNameEditor.submitRequested();
                 }
-                onTextEdited: function(text) {
+                onTextEdited: function (text) {
                     const nextText = typeof text === "string" ? text : hubNameInput.text;
                     if (root.createHubNameText !== nextText)
                         root.createHubNameText = nextText;

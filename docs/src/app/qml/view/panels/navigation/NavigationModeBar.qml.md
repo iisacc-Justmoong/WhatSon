@@ -1,5 +1,8 @@
 # `src/app/qml/view/panels/navigation/NavigationModeBar.qml`
 
+## LVRS Token Notes
+- Compact mode spacing uses `LV.Theme.gap8` / `LV.Theme.gapNone`.
+
 ## Status
 - Documentation phase: scaffold generated from the live source tree.
 - Detail level: structural placeholder prepared for a later deep pass.
@@ -32,7 +35,7 @@
 - Compact/mobile combo sizing now routes through `compactComboWidth` (`97` scaled px) when
   `showLabel: false`, matching the mobile dual-combo navigation frame (`174:5689`).
 - Popup/menu metrics now use `comboMenuYOffset` (`LV.Theme.gap2`) and `comboContextMenuWidth`
-  (`LV.Theme.scaleMetric(132)`) instead of fixed literals.
+  (`LV.Theme.buttonMinWidth + LV.Theme.gap24 + LV.Theme.gap8`) instead of fixed literals.
 
 ## Intended Detailed Sections
 - Responsibility and business role

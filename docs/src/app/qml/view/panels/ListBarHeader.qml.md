@@ -27,6 +27,9 @@
 - `sortActionRequested`
 - `visibilityActionRequested`
 
+## LVRS Token Notes
+- Header-row zero spacing and collapsed input minimum width use `LV.Theme.gapNone`.
+
 ## Intended Detailed Sections
 - Responsibility and business role
 - Ownership and lifecycle

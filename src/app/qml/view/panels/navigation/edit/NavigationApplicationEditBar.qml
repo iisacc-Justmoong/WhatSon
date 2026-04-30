@@ -12,7 +12,7 @@ Item {
     property bool compactMode: false
     property bool compactDetailPanelVisible: false
     property bool detailPanelCollapsed: false
-    property int menuItemWidth: Math.max(0, Math.round(LV.Theme.scaleMetric(196)))
+    property int menuItemWidth: LV.Theme.inputMinWidth + LV.Theme.gap16
     property int menuYOffset: LV.Theme.gap2
     readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("navigation.NavigationApplicationEditBar") : null
     readonly property var applicationEditMenuItems: applicationEditBar.buildApplicationEditMenuItems()
@@ -165,10 +165,7 @@ Item {
                         applicationEditContextMenu.close();
                         return;
                     }
-                    applicationEditContextMenu.openFor(
-                        applicationEditMenuButton,
-                        applicationEditMenuButton.width,
-                        applicationEditMenuButton.height + applicationEditBar.menuYOffset);
+                    applicationEditContextMenu.openFor(applicationEditMenuButton, applicationEditMenuButton.width, applicationEditMenuButton.height + applicationEditBar.menuYOffset);
                 }
             }
             LV.IconButton {

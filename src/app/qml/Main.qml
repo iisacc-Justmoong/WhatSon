@@ -12,29 +12,22 @@ import "window" as WindowView
 LV.ApplicationWindow {
     id: applicationWindow
 
-    property int topPadding: 0
-    property int rightPadding: 0
-    property int bottomPadding: 0
-    property int leftPadding: 0
+    property int topPadding: LV.Theme.gapNone
+    property int rightPadding: LV.Theme.gapNone
+    property int bottomPadding: LV.Theme.gapNone
+    property int leftPadding: LV.Theme.gapNone
     readonly property int adaptiveStatusBarHeight: adaptiveMobileLayout ? 0 : statusBarHeight
     readonly property int baseListViewWidth: LV.Theme.inputWidthMd - LV.Theme.gap8
-    readonly property int baseRightPanelWidth: Math.max(0, Math.round(LV.Theme.scaleMetric(194)))
+    readonly property int baseRightPanelWidth: LV.Theme.inputMinWidth + LV.Theme.gap14
     readonly property int baseSidebarWidth: hierarchyToolbarWidth
     readonly property int bodyHeight: Math.max(0, height - adaptiveStatusBarHeight - navigationBarHeight)
     readonly property color bodySplitterColor: LV.Theme.panelBackground10
     readonly property int bodySplitterThickness: Math.max(1, Math.round(LV.Theme.strokeThin))
     readonly property color canvasColor: LV.Theme.panelBackground01
-    readonly property color desktopPanelSurfaceColor: "transparent"
+    readonly property color desktopPanelSurfaceColor: LV.Theme.accentTransparent
     readonly property color mobileControlSurfaceColor: LV.Theme.panelBackground10
     property bool desktopOnboardingWindowVisible: false
-    readonly property int desktopMinimumBodyWidth: (hideSidebar ? 0 : minSidebarWidth)
-                                               + (hideListView ? 0 : minListViewWidth)
-                                               + minContentWidth
-                                               + (hideRightPanel ? 0 : minRightPanelWidth)
-                                               + bodySplitterThickness * Math.max(0, ((hideSidebar ? 0 : 1)
-                                                                                      + (hideListView ? 0 : 1)
-                                                                                      + 1
-                                                                                      + (hideRightPanel ? 0 : 1)) - 1)
+    readonly property int desktopMinimumBodyWidth: (hideSidebar ? 0 : minSidebarWidth) + (hideListView ? 0 : minListViewWidth) + minContentWidth + (hideRightPanel ? 0 : minRightPanelWidth) + bodySplitterThickness * Math.max(0, ((hideSidebar ? 0 : 1) + (hideListView ? 0 : 1) + 1 + (hideRightPanel ? 0 : 1)) - 1)
     readonly property bool hideListView: false
     property bool hideRightPanel: false
     property bool hideSidebar: false
@@ -42,7 +35,7 @@ LV.ApplicationWindow {
     readonly property int hierarchyToolbarButtonSize: LV.Theme.gap20
     readonly property int hierarchyToolbarCount: hierarchyToolbarIconNames.length
     readonly property var hierarchyToolbarIconNames: ["nodeslibraryFolder", "generalprojectStructure", "bookmarksbookmarksList", "vcscurrentBranch", "imageToImage", "chartBar", "dataView", "dataFile"]
-    readonly property real hierarchyToolbarSpacing: hierarchyToolbarCount > 1 ? LV.Theme.scaleMetric(40) / (hierarchyToolbarCount - 1) : 0
+    readonly property real hierarchyToolbarSpacing: hierarchyToolbarCount > 1 ? (LV.Theme.gap20 + LV.Theme.gap20) / (hierarchyToolbarCount - 1) : LV.Theme.gapNone
     readonly property int hierarchyToolbarTrackWidth: hierarchyToolbarCount > 0 ? Math.round(hierarchyToolbarCount * hierarchyToolbarButtonSize + (hierarchyToolbarCount - 1) * hierarchyToolbarSpacing) : hierarchyToolbarButtonSize
     readonly property int hierarchyToolbarWidth: hierarchyToolbarTrackWidth + hierarchyHorizontalInset * 2
     readonly property var registeredViewModelKeys: LV.ViewModels.keys
@@ -65,7 +58,7 @@ LV.ApplicationWindow {
     readonly property int listViewWidth: hideListView ? 0 : Math.max(minListViewWidth, preferredListViewWidth)
     readonly property int minContentWidth: LV.Theme.dialogMaxWidth - LV.Theme.gap20 * 2
     readonly property int minListViewWidth: LV.Theme.inputMinWidth - LV.Theme.gap24 * 2
-    readonly property int minRightPanelWidth: Math.max(0, Math.round(LV.Theme.scaleMetric(145)))
+    readonly property int minRightPanelWidth: LV.Theme.controlHeightMd + LV.Theme.controlHeightMd + LV.Theme.controlHeightMd + LV.Theme.controlHeightMd + Math.round(LV.Theme.strokeThin)
     readonly property var rootNavigationModeViewModel: {
         const _ = applicationWindow.registeredViewModelKeys;
         return LV.ViewModels.get("navigationModeViewModel");
@@ -94,8 +87,8 @@ LV.ApplicationWindow {
     readonly property string onboardingRoutePath: "/onboarding"
     property var onboardingHubController: null
     property var onboardingRouteBootstrapController: null
-    readonly property int onboardingMinHeight: Math.max(0, Math.round(LV.Theme.scaleMetric(420)))
-    readonly property int onboardingMinWidth: Math.max(0, Math.round(LV.Theme.scaleMetric(620)))
+    readonly property int onboardingMinHeight: LV.Theme.scaffoldBlobSecondaryHeight + LV.Theme.gap20 + LV.Theme.gap20
+    readonly property int onboardingMinWidth: LV.Theme.scaffoldBlobSecondaryWidth - LV.Theme.gap20
     property int preferredListViewWidth: baseListViewWidth
     property int preferredRightPanelWidth: baseRightPanelWidth
     property int preferredSidebarWidth: baseSidebarWidth
@@ -104,13 +97,9 @@ LV.ApplicationWindow {
     readonly property int statusBarHeight: LV.Theme.controlHeightMd
     readonly property bool onboardingRouteCommitPending: onboardingRouteBootstrapController ? onboardingRouteBootstrapController.routeCommitPending : false
     readonly property bool useIosInlineOnboardingSequence: applicationWindow.platform === "ios"
-    readonly property bool useRoutedEmbeddedOnboardingRoute: !applicationWindow.useIosInlineOnboardingSequence
-                                                         && (adaptiveMobileLayout || isMobilePlatform)
-    readonly property bool useEmbeddedOnboardingPresentation: applicationWindow.useIosInlineOnboardingSequence
-                                                          || applicationWindow.useRoutedEmbeddedOnboardingRoute
-    readonly property string startupRoutePath: applicationWindow.useIosInlineOnboardingSequence
-        ? workspaceRoutePath
-        : (onboardingRouteBootstrapController ? onboardingRouteBootstrapController.startupRoutePath : workspaceRoutePath)
+    readonly property bool useRoutedEmbeddedOnboardingRoute: !applicationWindow.useIosInlineOnboardingSequence && (adaptiveMobileLayout || isMobilePlatform)
+    readonly property bool useEmbeddedOnboardingPresentation: applicationWindow.useIosInlineOnboardingSequence || applicationWindow.useRoutedEmbeddedOnboardingRoute
+    readonly property string startupRoutePath: applicationWindow.useIosInlineOnboardingSequence ? workspaceRoutePath : (onboardingRouteBootstrapController ? onboardingRouteBootstrapController.startupRoutePath : workspaceRoutePath)
     readonly property int windowDefaultHeight: LV.Theme.gap24 * 31 + LV.Theme.gap4
     readonly property int windowDefaultWidth: LV.Theme.controlHeightMd * 35 + LV.Theme.gap5
     readonly property int windowMinHeight: LV.Theme.gap20 * 21
@@ -141,32 +130,27 @@ LV.ApplicationWindow {
         return Qt.formatDateTime(new Date(), "yyyy-MM-dd");
     }
     function resetAgendaOverlayCursorToToday() {
-        if (applicationWindow.rootAgendaViewModel
-                && applicationWindow.rootAgendaViewModel.setDisplayedDateIso !== undefined) {
+        if (applicationWindow.rootAgendaViewModel && applicationWindow.rootAgendaViewModel.setDisplayedDateIso !== undefined) {
             applicationWindow.rootAgendaViewModel.setDisplayedDateIso(applicationWindow.currentIsoDate());
         }
     }
     function resetDayCalendarCursorToToday() {
-        if (applicationWindow.rootDayCalendarViewModel
-                && applicationWindow.rootDayCalendarViewModel.setDisplayedDateIso !== undefined) {
+        if (applicationWindow.rootDayCalendarViewModel && applicationWindow.rootDayCalendarViewModel.setDisplayedDateIso !== undefined) {
             applicationWindow.rootDayCalendarViewModel.setDisplayedDateIso(applicationWindow.currentIsoDate());
         }
     }
     function resetWeekCalendarCursorToToday() {
-        if (applicationWindow.rootWeekCalendarViewModel
-                && applicationWindow.rootWeekCalendarViewModel.setDisplayedWeekStartIso !== undefined) {
+        if (applicationWindow.rootWeekCalendarViewModel && applicationWindow.rootWeekCalendarViewModel.setDisplayedWeekStartIso !== undefined) {
             applicationWindow.rootWeekCalendarViewModel.setDisplayedWeekStartIso(applicationWindow.currentIsoDate());
         }
     }
     function resetMonthCalendarCursorToToday() {
-        if (applicationWindow.rootMonthCalendarViewModel
-                && applicationWindow.rootMonthCalendarViewModel.focusToday !== undefined) {
+        if (applicationWindow.rootMonthCalendarViewModel && applicationWindow.rootMonthCalendarViewModel.focusToday !== undefined) {
             applicationWindow.rootMonthCalendarViewModel.focusToday();
         }
     }
     function resetYearCalendarCursorToToday() {
-        if (applicationWindow.rootYearCalendarViewModel
-                && applicationWindow.rootYearCalendarViewModel.focusToday !== undefined) {
+        if (applicationWindow.rootYearCalendarViewModel && applicationWindow.rootYearCalendarViewModel.focusToday !== undefined) {
             applicationWindow.rootYearCalendarViewModel.focusToday();
         }
     }
@@ -268,9 +252,7 @@ LV.ApplicationWindow {
     navItems: []
     navigationEnabled: false
     pageInitialPath: startupRoutePath
-    pageRoutes: applicationWindow.useIosInlineOnboardingSequence
-        ? [workspaceShellRoute]
-        : [onboardingRoute, workspaceShellRoute]
+    pageRoutes: applicationWindow.useIosInlineOnboardingSequence ? [workspaceShellRoute] : [onboardingRoute, workspaceShellRoute]
     useInternalPageStack: true
     usePlatformSafeMargin: false
     visible: true
@@ -324,179 +306,161 @@ LV.ApplicationWindow {
     }
 
     QtObject {
-    id: windowInteractions
+        id: windowInteractions
 
-    property var activePageRouter: null
-    readonly property string addNewPanelKey: "navigation.NavigationAddNewBar"
-    property bool adaptiveDesktopLayout: false
-    property string adaptiveLayoutProfile: ""
-    property bool adaptiveMobileLayout: false
-    property string adaptiveNavigationMode: ""
-    property var focusRetainedUiTokens: ["button", "combobox", "checkbox", "radiobutton", "switch", "slider", "spinbox", "dial", "textinput", "textedit", "inputfield", "editor", "menu", "popup", "tooltip", "mousearea", "taphandler", "flickable", "listview", "scrollview", "tableview", "scrollbar", "hierarchy", "contextmenu", "itemdelegate", "notelistitem"]
-    property var hostWindow: null
-    property int libraryHierarchyIndex: 0
-    property string libraryNoteMutationViewId: ""
-    readonly property string libraryNoteMutationViewModelKey: "libraryNoteMutationViewModel"
-    property string navigationModeViewId: ""
-    readonly property string navigationModeViewModelKey: "navigationModeViewModel"
-    property var panelViewModelRegistry: null
-    readonly property bool resizeRenderGuardSupported: interactionController.hostWindow
-        ? interactionController.hostWindow.isDesktopPlatform
-        : false
-    property bool resizeDrWasSuspended: false
-    property bool resizeInProgress: false
-    property int resizeRenderGuardDebounceMs: 220
-    property bool resizeRenderGuardEnabled: true
-    property string sidebarHierarchyViewId: ""
-    readonly property string sidebarHierarchyViewModelKey: "sidebarHierarchyViewModel"
+        property var activePageRouter: null
+        readonly property string addNewPanelKey: "navigation.NavigationAddNewBar"
+        property bool adaptiveDesktopLayout: false
+        property string adaptiveLayoutProfile: ""
+        property bool adaptiveMobileLayout: false
+        property string adaptiveNavigationMode: ""
+        property var focusRetainedUiTokens: ["button", "combobox", "checkbox", "radiobutton", "switch", "slider", "spinbox", "dial", "textinput", "textedit", "inputfield", "editor", "menu", "popup", "tooltip", "mousearea", "taphandler", "flickable", "listview", "scrollview", "tableview", "scrollbar", "hierarchy", "contextmenu", "itemdelegate", "notelistitem"]
+        property var hostWindow: null
+        property int libraryHierarchyIndex: 0
+        property string libraryNoteMutationViewId: ""
+        readonly property string libraryNoteMutationViewModelKey: "libraryNoteMutationViewModel"
+        property string navigationModeViewId: ""
+        readonly property string navigationModeViewModelKey: "navigationModeViewModel"
+        property var panelViewModelRegistry: null
+        readonly property bool resizeRenderGuardSupported: interactionController.hostWindow ? interactionController.hostWindow.isDesktopPlatform : false
+        property bool resizeDrWasSuspended: false
+        property bool resizeInProgress: false
+        property int resizeRenderGuardDebounceMs: 220
+        property bool resizeRenderGuardEnabled: true
+        property string sidebarHierarchyViewId: ""
+        readonly property string sidebarHierarchyViewModelKey: "sidebarHierarchyViewModel"
 
-    function applyRenderQualityPolicy(source) {
-        if (!interactionController.hostWindow || (!interactionController.hostWindow.isDesktopPlatform && !interactionController.hostWindow.isMobilePlatform))
-            return;
+        function applyRenderQualityPolicy(source) {
+            if (!interactionController.hostWindow || (!interactionController.hostWindow.isDesktopPlatform && !interactionController.hostWindow.isMobilePlatform))
+                return;
 
-        const guardPolicy = interactionController.resizeRenderGuardSupported
-            ? "desktopResizeSuspendResumeGuard"
-            : "mobileResizeGuardDisabled";
-        const forcedTierPreset = interactionController.hostWindow.forcedDeviceTierPreset !== undefined
-            ? interactionController.hostWindow.forcedDeviceTierPreset
-            : -1;
-        const fullWindowAreaOnMobileEnabled = interactionController.hostWindow.fullWindowAreaOnMobileEnabled === true;
-        const delegateMobileWindowingToSystem = interactionController.hostWindow.delegateMobileWindowingToSystem === true;
-        console.log("[whatson:debug][render.policy][" + source + "] platform=" + interactionController.hostWindow.platform + " action=" + guardPolicy + " dynamicResolutionEnabled=" + LV.RenderQuality.dynamicResolutionEnabled + " forcedDeviceTierPreset=" + forcedTierPreset + " fullWindowAreaOnMobileEnabled=" + fullWindowAreaOnMobileEnabled + " delegateMobileWindowingToSystem=" + delegateMobileWindowingToSystem);
-    }
-    function clearActiveFocus(reason) {
-        let current = interactionController.hostWindow ? interactionController.hostWindow.activeFocusItem : null;
-        let depthGuard = 0;
-
-        while (current && depthGuard < 32) {
-            if (current.focus !== undefined)
-                current.focus = false;
-            current = current.parent;
-            depthGuard += 1;
+            const guardPolicy = interactionController.resizeRenderGuardSupported ? "desktopResizeSuspendResumeGuard" : "mobileResizeGuardDisabled";
+            const forcedTierPreset = interactionController.hostWindow.forcedDeviceTierPreset !== undefined ? interactionController.hostWindow.forcedDeviceTierPreset : -1;
+            const fullWindowAreaOnMobileEnabled = interactionController.hostWindow.fullWindowAreaOnMobileEnabled === true;
+            const delegateMobileWindowingToSystem = interactionController.hostWindow.delegateMobileWindowingToSystem === true;
+            console.log("[whatson:debug][render.policy][" + source + "] platform=" + interactionController.hostWindow.platform + " action=" + guardPolicy + " dynamicResolutionEnabled=" + LV.RenderQuality.dynamicResolutionEnabled + " forcedDeviceTierPreset=" + forcedTierPreset + " fullWindowAreaOnMobileEnabled=" + fullWindowAreaOnMobileEnabled + " delegateMobileWindowingToSystem=" + delegateMobileWindowingToSystem);
         }
-    }
-    function resolveOwnedWritableViewModel(viewId, viewModelKey) {
-        const normalizedViewId = viewId === undefined || viewId === null ? "" : String(viewId).trim();
-        const normalizedViewModelKey = viewModelKey === undefined || viewModelKey === null ? "" : String(viewModelKey).trim();
-        if (normalizedViewId.length === 0 || normalizedViewModelKey.length === 0)
-            return null;
-        if (!LV.ViewModels.canWrite(normalizedViewId))
-            return null;
-        const ownedViewModel = LV.ViewModels.getForView(normalizedViewId);
-        if (ownedViewModel !== null && ownedViewModel !== undefined)
-            return ownedViewModel;
-        return LV.ViewModels.get(normalizedViewModelKey);
-    }
-    function resolvePanelViewModel(panelKey) {
-        const normalizedPanelKey = panelKey === undefined || panelKey === null ? "" : String(panelKey).trim();
-        if (normalizedPanelKey.length === 0
-                || !interactionController.panelViewModelRegistry
-                || interactionController.panelViewModelRegistry.panelViewModel === undefined)
-            return null;
-        return interactionController.panelViewModelRegistry.panelViewModel(normalizedPanelKey);
-    }
-    function resolveLibraryNoteCreationViewModel() {
-        return interactionController.resolveOwnedWritableViewModel(
-                    interactionController.libraryNoteMutationViewId,
-                    interactionController.libraryNoteMutationViewModelKey);
-    }
-    function createNoteFromShortcut() {
-        const addNewPanelViewModel = interactionController.resolvePanelViewModel(interactionController.addNewPanelKey);
-        if (addNewPanelViewModel && addNewPanelViewModel.requestViewModelHook !== undefined) {
-            addNewPanelViewModel.requestViewModelHook("create-note");
-            return true;
-        }
-        const noteMutationViewModel = interactionController.resolveLibraryNoteCreationViewModel();
-        if (!noteMutationViewModel || noteMutationViewModel.createEmptyNote === undefined)
-            return false;
-        const sidebarHierarchyViewModel = interactionController.resolveOwnedWritableViewModel(
-                    interactionController.sidebarHierarchyViewId,
-                    interactionController.sidebarHierarchyViewModelKey);
-        if (sidebarHierarchyViewModel && sidebarHierarchyViewModel.setActiveHierarchyIndex !== undefined)
-            sidebarHierarchyViewModel.setActiveHierarchyIndex(interactionController.libraryHierarchyIndex);
-        return Boolean(noteMutationViewModel.createEmptyNote());
-    }
-    function cycleNavigationModeFromShortcut() {
-        if (interactionController.hasFocusedTextInput())
-            return;
-        const navigationModeViewModel = interactionController.resolveOwnedWritableViewModel(
-                    interactionController.navigationModeViewId,
-                    interactionController.navigationModeViewModelKey);
-        if (navigationModeViewModel && navigationModeViewModel.requestNextMode !== undefined)
-            navigationModeViewModel.requestNextMode();
-    }
-    function finalizeResizeRenderQualityPolicy() {
-        if (!interactionController.resizeRenderGuardEnabled
-                || !interactionController.resizeRenderGuardSupported
-                || !interactionController.hostWindow)
-            return;
+        function clearActiveFocus(reason) {
+            let current = interactionController.hostWindow ? interactionController.hostWindow.activeFocusItem : null;
+            let depthGuard = 0;
 
-        interactionController.resizeInProgress = false;
-        if (!interactionController.resizeDrWasSuspended) {
-            console.log("[whatson:debug][render.policy][resizeEnd] platform=" + interactionController.hostWindow.platform + " action=resumeSkipped");
-            return;
-        }
-
-        LV.RenderQuality.dynamicResolutionEnabled = false;
-        LV.RenderQuality.dynamicResolutionEnabled = true;
-        interactionController.resizeDrWasSuspended = false;
-        console.log("[whatson:debug][render.policy][resizeEnd] platform=" + interactionController.hostWindow.platform + " action=resumeWithMaxScaleReset");
-    }
-    function handleResizeForRenderQuality(source) {
-        if (!interactionController.resizeRenderGuardEnabled
-                || !interactionController.resizeRenderGuardSupported
-                || !interactionController.hostWindow)
-            return;
-
-        if (!interactionController.resizeInProgress) {
-            interactionController.resizeInProgress = true;
-            interactionController.resizeDrWasSuspended = LV.RenderQuality.dynamicResolutionEnabled;
-
-            if (interactionController.resizeDrWasSuspended) {
-                LV.RenderQuality.dynamicResolutionEnabled = false;
-                console.log("[whatson:debug][render.policy][" + source + "] platform=" + interactionController.hostWindow.platform + " action=resizeBegin suspendDynamicResolution=true");
-            } else {
-                console.log("[whatson:debug][render.policy][" + source + "] platform=" + interactionController.hostWindow.platform + " action=resizeBegin suspendDynamicResolution=false");
+            while (current && depthGuard < 32) {
+                if (current.focus !== undefined)
+                    current.focus = false;
+                current = current.parent;
+                depthGuard += 1;
             }
         }
-    }
-    function hasFocusedTextInput() {
-        let current = interactionController.hostWindow ? interactionController.hostWindow.activeFocusItem : null;
-        while (current) {
-            const isTextEditingItem = current.text !== undefined && current.cursorPosition !== undefined && current.selectedText !== undefined;
-            if (isTextEditingItem)
-                return true;
-            current = current.parent;
+        function resolveOwnedWritableViewModel(viewId, viewModelKey) {
+            const normalizedViewId = viewId === undefined || viewId === null ? "" : String(viewId).trim();
+            const normalizedViewModelKey = viewModelKey === undefined || viewModelKey === null ? "" : String(viewModelKey).trim();
+            if (normalizedViewId.length === 0 || normalizedViewModelKey.length === 0)
+                return null;
+            if (!LV.ViewModels.canWrite(normalizedViewId))
+                return null;
+            const ownedViewModel = LV.ViewModels.getForView(normalizedViewId);
+            if (ownedViewModel !== null && ownedViewModel !== undefined)
+                return ownedViewModel;
+            return LV.ViewModels.get(normalizedViewModelKey);
         }
-        return false;
-    }
-    function reportLayoutBranch(source) {
-        const currentPath = interactionController.activePageRouter && interactionController.activePageRouter.currentPath !== undefined ? String(interactionController.activePageRouter.currentPath) : "<none>";
-        console.log("[whatson:debug][main.layout][" + source + "] platform=" + (interactionController.hostWindow ? interactionController.hostWindow.platform : "") + " adaptiveLayoutProfile=" + interactionController.adaptiveLayoutProfile + " adaptiveNavigationMode=" + interactionController.adaptiveNavigationMode + " adaptiveMobileLayout=" + interactionController.adaptiveMobileLayout + " adaptiveDesktopLayout=" + interactionController.adaptiveDesktopLayout + " currentPath=" + currentPath);
-    }
-    function shouldRetainFocusForUiHit(uiData) {
-        if (!uiData || uiData.insideWindow === false)
-            return true;
-
-        const className = uiData.className === undefined || uiData.className === null ? "" : String(uiData.className).toLowerCase();
-        const objectName = uiData.objectName === undefined || uiData.objectName === null ? "" : String(uiData.objectName).toLowerCase();
-        const path = uiData.path === undefined || uiData.path === null ? "" : String(uiData.path).toLowerCase();
-        const text = uiData.text === undefined || uiData.text === null ? "" : String(uiData.text).trim();
-        const label = uiData.label === undefined || uiData.label === null ? "" : String(uiData.label).trim();
-        const title = uiData.title === undefined || uiData.title === null ? "" : String(uiData.title).trim();
-        const searchable = className + " " + objectName + " " + path;
-
-        for (let i = 0; i < interactionController.focusRetainedUiTokens.length; ++i) {
-            const token = String(interactionController.focusRetainedUiTokens[i]).toLowerCase();
-            if (token.length > 0 && searchable.indexOf(token) >= 0)
-                return true;
+        function resolvePanelViewModel(panelKey) {
+            const normalizedPanelKey = panelKey === undefined || panelKey === null ? "" : String(panelKey).trim();
+            if (normalizedPanelKey.length === 0 || !interactionController.panelViewModelRegistry || interactionController.panelViewModelRegistry.panelViewModel === undefined)
+                return null;
+            return interactionController.panelViewModelRegistry.panelViewModel(normalizedPanelKey);
         }
+        function resolveLibraryNoteCreationViewModel() {
+            return interactionController.resolveOwnedWritableViewModel(interactionController.libraryNoteMutationViewId, interactionController.libraryNoteMutationViewModelKey);
+        }
+        function createNoteFromShortcut() {
+            const addNewPanelViewModel = interactionController.resolvePanelViewModel(interactionController.addNewPanelKey);
+            if (addNewPanelViewModel && addNewPanelViewModel.requestViewModelHook !== undefined) {
+                addNewPanelViewModel.requestViewModelHook("create-note");
+                return true;
+            }
+            const noteMutationViewModel = interactionController.resolveLibraryNoteCreationViewModel();
+            if (!noteMutationViewModel || noteMutationViewModel.createEmptyNote === undefined)
+                return false;
+            const sidebarHierarchyViewModel = interactionController.resolveOwnedWritableViewModel(interactionController.sidebarHierarchyViewId, interactionController.sidebarHierarchyViewModelKey);
+            if (sidebarHierarchyViewModel && sidebarHierarchyViewModel.setActiveHierarchyIndex !== undefined)
+                sidebarHierarchyViewModel.setActiveHierarchyIndex(interactionController.libraryHierarchyIndex);
+            return Boolean(noteMutationViewModel.createEmptyNote());
+        }
+        function cycleNavigationModeFromShortcut() {
+            if (interactionController.hasFocusedTextInput())
+                return;
+            const navigationModeViewModel = interactionController.resolveOwnedWritableViewModel(interactionController.navigationModeViewId, interactionController.navigationModeViewModelKey);
+            if (navigationModeViewModel && navigationModeViewModel.requestNextMode !== undefined)
+                navigationModeViewModel.requestNextMode();
+        }
+        function finalizeResizeRenderQualityPolicy() {
+            if (!interactionController.resizeRenderGuardEnabled || !interactionController.resizeRenderGuardSupported || !interactionController.hostWindow)
+                return;
 
-        if (text.length > 0 || label.length > 0 || title.length > 0)
-            return true;
+            interactionController.resizeInProgress = false;
+            if (!interactionController.resizeDrWasSuspended) {
+                console.log("[whatson:debug][render.policy][resizeEnd] platform=" + interactionController.hostWindow.platform + " action=resumeSkipped");
+                return;
+            }
 
-        return !(className.indexOf("rectangle") >= 0 || (className.indexOf("item") >= 0 && objectName === "unnamed"));
-    }
+            LV.RenderQuality.dynamicResolutionEnabled = false;
+            LV.RenderQuality.dynamicResolutionEnabled = true;
+            interactionController.resizeDrWasSuspended = false;
+            console.log("[whatson:debug][render.policy][resizeEnd] platform=" + interactionController.hostWindow.platform + " action=resumeWithMaxScaleReset");
+        }
+        function handleResizeForRenderQuality(source) {
+            if (!interactionController.resizeRenderGuardEnabled || !interactionController.resizeRenderGuardSupported || !interactionController.hostWindow)
+                return;
+
+            if (!interactionController.resizeInProgress) {
+                interactionController.resizeInProgress = true;
+                interactionController.resizeDrWasSuspended = LV.RenderQuality.dynamicResolutionEnabled;
+
+                if (interactionController.resizeDrWasSuspended) {
+                    LV.RenderQuality.dynamicResolutionEnabled = false;
+                    console.log("[whatson:debug][render.policy][" + source + "] platform=" + interactionController.hostWindow.platform + " action=resizeBegin suspendDynamicResolution=true");
+                } else {
+                    console.log("[whatson:debug][render.policy][" + source + "] platform=" + interactionController.hostWindow.platform + " action=resizeBegin suspendDynamicResolution=false");
+                }
+            }
+        }
+        function hasFocusedTextInput() {
+            let current = interactionController.hostWindow ? interactionController.hostWindow.activeFocusItem : null;
+            while (current) {
+                const isTextEditingItem = current.text !== undefined && current.cursorPosition !== undefined && current.selectedText !== undefined;
+                if (isTextEditingItem)
+                    return true;
+                current = current.parent;
+            }
+            return false;
+        }
+        function reportLayoutBranch(source) {
+            const currentPath = interactionController.activePageRouter && interactionController.activePageRouter.currentPath !== undefined ? String(interactionController.activePageRouter.currentPath) : "<none>";
+            console.log("[whatson:debug][main.layout][" + source + "] platform=" + (interactionController.hostWindow ? interactionController.hostWindow.platform : "") + " adaptiveLayoutProfile=" + interactionController.adaptiveLayoutProfile + " adaptiveNavigationMode=" + interactionController.adaptiveNavigationMode + " adaptiveMobileLayout=" + interactionController.adaptiveMobileLayout + " adaptiveDesktopLayout=" + interactionController.adaptiveDesktopLayout + " currentPath=" + currentPath);
+        }
+        function shouldRetainFocusForUiHit(uiData) {
+            if (!uiData || uiData.insideWindow === false)
+                return true;
+
+            const className = uiData.className === undefined || uiData.className === null ? "" : String(uiData.className).toLowerCase();
+            const objectName = uiData.objectName === undefined || uiData.objectName === null ? "" : String(uiData.objectName).toLowerCase();
+            const path = uiData.path === undefined || uiData.path === null ? "" : String(uiData.path).toLowerCase();
+            const text = uiData.text === undefined || uiData.text === null ? "" : String(uiData.text).trim();
+            const label = uiData.label === undefined || uiData.label === null ? "" : String(uiData.label).trim();
+            const title = uiData.title === undefined || uiData.title === null ? "" : String(uiData.title).trim();
+            const searchable = className + " " + objectName + " " + path;
+
+            for (let i = 0; i < interactionController.focusRetainedUiTokens.length; ++i) {
+                const token = String(interactionController.focusRetainedUiTokens[i]).toLowerCase();
+                if (token.length > 0 && searchable.indexOf(token) >= 0)
+                    return true;
+            }
+
+            if (text.length > 0 || label.length > 0 || title.length > 0)
+                return true;
+
+            return !(className.indexOf("rectangle") >= 0 || (className.indexOf("item") >= 0 && objectName === "unnamed"));
+        }
     }
     Timer {
         id: resizeDebounceTimer
@@ -545,10 +509,8 @@ LV.ApplicationWindow {
             const normalizedReason = String(reason);
             const sync = function () {
                 if (applicationWindow.useIosInlineOnboardingSequence) {
-                    if (normalizedTargetPath === applicationWindow.workspaceRoutePath
-                            && applicationWindow.onboardingRouteBootstrapController) {
-                        applicationWindow.onboardingRouteBootstrapController.handlePageStackNavigated(
-                            applicationWindow.workspaceRoutePath);
+                    if (normalizedTargetPath === applicationWindow.workspaceRoutePath && applicationWindow.onboardingRouteBootstrapController) {
+                        applicationWindow.onboardingRouteBootstrapController.handlePageStackNavigated(applicationWindow.workspaceRoutePath);
                     }
                     return;
                 }
@@ -584,21 +546,14 @@ LV.ApplicationWindow {
         id: mobileSafeAreaColorOverride
 
         parent: applicationWindow.nativeWindowContentRoot
-        visible: applicationWindow.isMobilePlatform
-                 && parent !== null
-                 && applicationWindow.contentItem !== null
-                 && !applicationWindow.fullWindowAreaOnMobileEnabled
+        visible: applicationWindow.isMobilePlatform && parent !== null && applicationWindow.contentItem !== null && !applicationWindow.fullWindowAreaOnMobileEnabled
         z: 9000
         anchors.fill: parent
 
         readonly property real resolvedContentX: applicationWindow.contentItem ? applicationWindow.contentItem.x : 0
         readonly property real resolvedContentY: applicationWindow.contentItem ? applicationWindow.contentItem.y : 0
-        readonly property real resolvedContentRight: applicationWindow.contentItem
-            ? applicationWindow.contentItem.x + applicationWindow.contentItem.width
-            : width
-        readonly property real resolvedContentBottom: applicationWindow.contentItem
-            ? applicationWindow.contentItem.y + applicationWindow.contentItem.height
-            : height
+        readonly property real resolvedContentRight: applicationWindow.contentItem ? applicationWindow.contentItem.x + applicationWindow.contentItem.width : width
+        readonly property real resolvedContentBottom: applicationWindow.contentItem ? applicationWindow.contentItem.y + applicationWindow.contentItem.height : height
         readonly property real leftInset: Math.max(0, Math.ceil(resolvedContentX))
         readonly property real topInset: Math.max(0, Math.ceil(resolvedContentY))
         readonly property real rightInset: Math.max(0, Math.ceil(width - resolvedContentRight))
@@ -639,14 +594,12 @@ LV.ApplicationWindow {
     }
     Loader {
         active: applicationWindow.platform === "osx"
-        source: applicationWindow.platform === "osx"
-            ? Qt.resolvedUrl("window/MacNativeMenuBar.qml")
-            : ""
+        source: applicationWindow.platform === "osx" ? Qt.resolvedUrl("window/MacNativeMenuBar.qml") : ""
 
         onLoaded: {
             if (item) {
-                item.hostWindow = applicationWindow
-                item.resourcesImportViewModel = applicationWindow.rootResourcesImportViewModel
+                item.hostWindow = applicationWindow;
+                item.resourcesImportViewModel = applicationWindow.rootResourcesImportViewModel;
             }
         }
     }
@@ -683,11 +636,7 @@ LV.ApplicationWindow {
                 id: workspaceLayoutLoader
 
                 anchors.fill: parent
-                sourceComponent: applicationWindow.useIosInlineOnboardingSequence
-                                 && applicationWindow.onboardingRouteBootstrapController
-                                 && applicationWindow.onboardingRouteBootstrapController.embeddedOnboardingVisible
-                    ? iosInlineOnboardingSequenceComponent
-                    : (applicationWindow.adaptiveMobileLayout ? mobileMainLayoutComponent : desktopMainLayoutComponent)
+                sourceComponent: applicationWindow.useIosInlineOnboardingSequence && applicationWindow.onboardingRouteBootstrapController && applicationWindow.onboardingRouteBootstrapController.embeddedOnboardingVisible ? iosInlineOnboardingSequenceComponent : (applicationWindow.adaptiveMobileLayout ? mobileMainLayoutComponent : desktopMainLayoutComponent)
 
                 onSourceComponentChanged: windowInteractions.reportLayoutBranch("workspaceSourceChanged")
             }
@@ -795,9 +744,7 @@ LV.ApplicationWindow {
                     yearCalendarViewModel: applicationWindow.rootYearCalendarViewModel
 
                     onNoteActivated: function (index, noteId) {
-                        const normalizedNoteId = noteId === undefined || noteId === null
-                            ? ""
-                            : String(noteId).trim();
+                        const normalizedNoteId = noteId === undefined || noteId === null ? "" : String(noteId).trim();
                         if (normalizedNoteId.length === 0)
                             return;
                         applicationWindow.agendaOverlayVisible = false;

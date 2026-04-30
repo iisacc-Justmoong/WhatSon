@@ -11,7 +11,7 @@ The file exposes two compact variants:
   optional right-edge `columnIndex` detail-page button when `compactDetailPanelVisible == true`
 - note-list route: `sortByType`, `cwmPermissionView`, and the same `toolwindowtodo` menu trigger
 
-The hierarchy/control compact trigger follows the Figma `174:4993` chrome rather than the old project-structure glyph. Both compact menu triggers use `leftPadding: 2`, `rightPadding: 4`, `topPadding: 2`, `bottomPadding: 2`, and `spacing: 0` so the icon-plus-chevron footprint matches the mobile navigation bar frame.
+The hierarchy/control compact trigger follows the Figma `174:4993` chrome rather than the old project-structure glyph. Both compact menu triggers use LVRS gap tokens for padding and `LV.Theme.gapNone` for the zero spacing case so the icon-plus-chevron footprint matches the mobile navigation bar frame.
 
 ## Menu Ownership
 The file owns two context menus:
@@ -40,5 +40,5 @@ The desktop row preserves the Figma child order:
   duplicate context-menu action.
 - That compact detail button now emits the hook reason `open-detail-page`, matching the routed-page interaction instead
   of the older collapse/expand overlay wording.
-- Menu width/y-offset and the desktop full-row gap now route through `LV.Theme.scaleMetric(176)` and `LV.Theme.gap2/12`
-  instead of raw `176/2/12px` literals.
+- Menu width/y-offset and the desktop full-row gap now route through `LV.Theme.inputMinWidth - LV.Theme.gap4` and
+  `LV.Theme.gap2/12` instead of raw `176/2/12px` literals.

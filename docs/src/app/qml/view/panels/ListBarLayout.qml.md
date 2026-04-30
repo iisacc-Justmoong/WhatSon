@@ -79,6 +79,8 @@ selection state machine lives in a sibling controller file.
 - `flickDeceleration` and `maximumFlickVelocity` are now mobile-aware tokens. Mobile uses scaled kinetic values
   (`LV.Theme.scaleMetric(2800/12000)`), while desktop keeps the previous low-velocity non-kinetic behavior through
   `noteListScrollTick`.
+- LVRS does not currently expose named scroll-physics velocity/deceleration tokens, so these kinetic constants remain
+  the only `scaleMetric(...)` values in this visual surface.
 - `noteListScrollTick` is fixed to `LV.Theme.gap2`, but quantized viewport snapping is now desktop-only.
   Mobile still uses `clampNoteListContentY(value)` for restore/bounds repair, while live touch motion is left to the
   native `ListView` kinetic engine.
@@ -90,6 +92,8 @@ selection state machine lives in a sibling controller file.
   scrolling.
 - The list viewport inset and row spacing now come from `LV.Theme.gap2`, and the top toolbar height comes from
   `LV.Theme.gap24` instead of fixed `2px/24px` literals.
+- Drag-preview badge text and column spacing use `LV.Theme.accentWhite` and `LV.Theme.gapNone` instead of direct
+  color/spacing literals.
 
 ## Interaction Contract
 
@@ -141,7 +145,7 @@ selection state machine lives in a sibling controller file.
 - Dragging a row that is already part of a multi-selection now exports the full selected note-id set, not just the
   delegate under the pointer.
 - The drag preview adds a count badge when more than one selected note is being carried.
-- That badge now derives its inset from `LV.Theme.gap8` and its size from `LV.Theme.scaleMetric(20/10)`, so it scales
+- That badge now derives its inset from `LV.Theme.gap8` and its size from `LV.Theme.gap20/gap10`, so it scales
   with LVRS mobile UI density instead of staying desktop-sized.
 - Note-card context menus are centralized at the root through `contextMenuNoteId`, `contextMenuNoteIds`, and
   `openNoteContextMenu(...)`, which keeps delegates free of per-row popup wiring while preserving group actions.

@@ -14,8 +14,9 @@
 - Root type: `Window`
 
 ## Current Notes
-- Desktop/mobile onboarding window design size and minimum size baselines now route through `LV.Theme.scaleMetric(...)`
-  instead of raw `542/867/420/620/762/470px` literals.
+- Desktop/mobile onboarding window design size and minimum size baselines now route through named `LV.Theme` token
+  compositions instead of raw `542/867/420/620/762/470px` literals.
+- The outer transparent surface uses `LV.Theme.accentTransparent`.
 - The outer window still delegates all visual chrome to `OnboardingContent.qml`; this file only owns window sizing,
   recentering, modality, and route-to-content wiring.
 - Ordinary desktop startup now depends on this wrapper again: when no persisted hub can be mounted, `Main.qml` keeps the

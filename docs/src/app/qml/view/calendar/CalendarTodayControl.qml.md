@@ -8,7 +8,7 @@
 - Reference node: `238:7843`
 - Layout contract:
   - horizontal stack spacing: `LV.Theme.gap2`
-  - all three buttons use `LV.Theme.scaleMetric(20)` for the button extent and `LV.Theme.scaleMetric(16)` for the icon extent
+- all three buttons use `LV.Theme.gap20` for the button extent and `LV.Theme.iconSm` for the icon extent
   - button padding stays `2` on both axes via `LV.Theme.gap2`
   - button background is `LV.Theme.panelBackground12` across idle/hover/pressed/disabled states
   - previous/next use `generalchevronUpLarge` rotated `-90` / `90`
@@ -20,6 +20,9 @@
 - `signal previousRequested`
 - `signal todayRequested`
 - `signal nextRequested`
+
+## LVRS Token Notes
+- Button and icon extents use `LV.Theme.gap20` and `LV.Theme.iconSm` rather than raw scaled pixel literals.
 - `signal viewHookRequested(string reason)`
 
 ## Interaction

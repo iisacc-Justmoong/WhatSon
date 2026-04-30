@@ -16,7 +16,7 @@ ownership to `WeekCalendarViewModel`.
 
 ## UI Composition
 - Surface:
-  - root page keeps `color: "transparent"` so the app background shows through.
+  - root page keeps `LV.Theme.accentTransparent` so the app background shows through.
 - Header:
   - shared `CalendarTodayControl` (`Prev/Today/Next`) only.
   - `Prev/Next` still recenters by week from the currently focused middle date, while horizontal flicking handles the day-by-day traversal.
@@ -29,14 +29,14 @@ ownership to `WeekCalendarViewModel`.
   - each day model already includes per-date entry lists and derived metadata, so the page no longer keeps a local
     `ListModel`, `dateEntriesCache`, or `buildDateModel(...)` function,
   - a dedicated day-header row stays aligned with the hourly grid because both live in the same horizontal content surface,
-  - generic day-header and hour cells stay transparent regardless of current-week membership, so the week surface does
-    not draw per-column grid fills,
+  - generic day-header and hour cells stay transparent through `LV.Theme.accentTransparent` regardless of current-week
+    membership, so the week surface does not draw per-column grid fills,
   - current-week emphasis is now limited to text tone and the existing today outline,
   - the scaffold computes `hourRowHeight` from the available viewport height so 24 rows evenly fill the remaining area (`00:00` top slot, final slot at the bottom edge),
   - the 3 day columns divide the remaining width after the hour column and the three inter-column gaps, so the
     timeline width matches the page viewport on both desktop and mobile,
   - horizontal scrolling has no snap behavior.
-- The centered-day highlight radius now routes through `LV.Theme.scaleMetric(21)` instead of a local pixel constant.
+- The centered-day highlight radius now routes through `LV.Theme.gap20 + LV.Theme.strokeThin` instead of a local pixel constant.
 
 ## Interaction/Data Flow
 1. `Component.onCompleted` initializes a centered lazy date window and, when opening the current week, uses the actual

@@ -45,7 +45,7 @@ The Figma node mapping is:
   consistent menu affordance pattern.
 - Compact trigger follows the shared menu-button padding contract used by control mode:
   `left=2`, `right=4`, `top=2`, `bottom=2`, `spacing=0`.
-- Compact menu width/y-offset now route through `LV.Theme.scaleMetric(196)` and `LV.Theme.gap2`.
+- Compact menu width/y-offset now route through `LV.Theme.inputMinWidth + LV.Theme.gap16` and `LV.Theme.gap2`.
 - The compact editor route now also renders the dedicated right-edge `columnIndex` detail button from
   Figma node `193:6606`, with the same `toggleDetailPanelRequested` signal path used by the desktop preference bar.
 - That compact detail affordance opens the dedicated mobile detail page directly; it is intentionally not duplicated as

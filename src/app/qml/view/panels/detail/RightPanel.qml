@@ -5,8 +5,8 @@ Rectangle {
     id: rightPanel
 
     readonly property string figmaNodeId: "155:4574"
-    property int detailPanelDefaultWidth: Math.max(0, Math.round(LV.Theme.scaleMetric(194)))
-    property int detailPanelMinWidth: Math.max(0, Math.round(LV.Theme.scaleMetric(145)))
+    property int detailPanelDefaultWidth: LV.Theme.inputMinWidth + LV.Theme.gap14
+    property int detailPanelMinWidth: LV.Theme.controlHeightMd + LV.Theme.controlHeightMd + LV.Theme.controlHeightMd + LV.Theme.controlHeightMd + Math.round(LV.Theme.strokeThin)
     property color panelColor: "transparent"
     readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("detail.RightPanel") : null
 

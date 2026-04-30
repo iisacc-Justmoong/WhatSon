@@ -11,7 +11,7 @@
 
 ## UI Composition
 - Surface:
-  - root page keeps `color: "transparent"` so the app background shows through.
+  - root page keeps `LV.Theme.accentTransparent` so the app background shows through.
 - Header:
   - shared `CalendarTodayControl` (`Prev/Today/Next`) only.
 - Body:

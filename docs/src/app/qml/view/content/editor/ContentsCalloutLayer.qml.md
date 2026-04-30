@@ -31,7 +31,8 @@ The layer is renderer-fed:
 - Left divider:
   - width `1`
   - height spans from top padding to bottom padding, so multi-line callouts keep one continuous bar
-  - color `#D9D9D9`
+  - callout divider color should use an LVRS theme token rather than a raw gray literal when this migrated editor
+    artifact is restored.
 - Body text:
   - color `#FFFFFF`
   - `Pretendard` / `12px` / `Medium`

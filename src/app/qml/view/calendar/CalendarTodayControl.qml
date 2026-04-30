@@ -7,8 +7,8 @@ LV.HStack {
     id: calendarTodayControl
 
     readonly property string figmaNodeId: "238:7843"
-    readonly property int controlButtonExtent: Math.max(0, Math.round(LV.Theme.scaleMetric(20)))
-    readonly property int controlIconExtent: Math.max(0, Math.round(LV.Theme.scaleMetric(16)))
+    readonly property int controlButtonExtent: LV.Theme.gap20
+    readonly property int controlIconExtent: LV.Theme.iconSm
 
     signal previousRequested
     signal todayRequested

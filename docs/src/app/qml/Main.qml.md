@@ -5,7 +5,7 @@
 
 ## Root Responsibilities
 - Instantiate the `LV.ApplicationWindow`.
-- Publish explicit zero `topPadding/rightPadding/bottomPadding/leftPadding` properties so the LVRS
+- Publish explicit `LV.Theme.gapNone` `topPadding/rightPadding/bottomPadding/leftPadding` properties so the LVRS
   `ApplicationWindow` compatibility bindings have stable geometry inputs on iOS.
 - Define root sizing, panel widths, and adaptive layout defaults.
 - Resolve runtime viewmodels from the LVRS `ViewModels` registry populated by C++ bootstrap.
@@ -60,7 +60,7 @@ The file keeps both desktop and mobile layout branches alive.
 - Desktop uses the status bar, navigation bar, sidebar, list, content, and detail panel composition.
 - Mobile uses routed workspace pages and a scaffold tuned for compact navigation.
 - Root-owned sidebar/right-panel minimum and preferred widths plus hierarchy toolbar inset/spacing now route through
-  `LV.Theme.gap...` and `LV.Theme.scaleMetric(...)` instead of shell-local pixel literals.
+  named `LV.Theme` token compositions instead of shell-local pixel literals.
 - Ordinary desktop startup can reopen a dedicated `WindowView.Onboarding` subwindow, while Android still uses the
   embedded `/onboarding` route inside `Main.qml`.
 - Android embedded startup still relies on the LVRS route stack directly: `Component.onCompleted` seeds the startup
@@ -77,8 +77,9 @@ The file keeps both desktop and mobile layout branches alive.
 - The embedded onboarding/workspace route pages intentionally keep their root `Item` free of `anchors.fill`.
   LVRS route hosting is backed by a `StackView`, and stack-managed page geometry must not compete with page-root
   anchors during transitions on iOS.
-- The root `LV.ApplicationWindow` now also exposes explicit zero padding properties so LVRS does not emit
+- The root `LV.ApplicationWindow` now also exposes explicit `LV.Theme.gapNone` padding properties so LVRS does not emit
   `topPadding/rightPadding/bottomPadding/leftPadding` binding warnings while bootstrapping the iOS shell.
+- Desktop panel transparency uses `LV.Theme.accentTransparent` instead of a direct transparent color literal.
 - iOS now uses LVRS full-window mobile coverage instead of UIKit safe-area delegation. This keeps
   the application content in true edge-to-edge mode without app-level safe-area color overrides.
 

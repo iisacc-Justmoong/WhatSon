@@ -50,11 +50,11 @@ Item {
             "stateValue": 5
         }
     ]
-    readonly property int defaultPanelWidth: Math.max(0, Math.round(LV.Theme.scaleMetric(194)))
+    readonly property int defaultPanelWidth: LV.Theme.inputMinWidth + LV.Theme.gap14
     readonly property int detailContentsHeight: Math.max(0, noteDetailPanel.height - noteDetailPanel.headerToolbarHeight - noteDetailPanel.panelSpacing)
     readonly property int detailContentsWidth: noteDetailPanel.width
     readonly property var detailPanelVm: noteDetailPanel.noteDetailPanelViewModel
-    property int panelSpacing: Math.max(0, Math.round(LV.Theme.scaleMetric(10)))
+    property int panelSpacing: LV.Theme.gap10
     readonly property var resolvedActiveContentViewModel: noteDetailPanel.resolveActiveContentViewModel()
     readonly property var resolvedFileStatViewModel: noteDetailPanel.resolveFileStatViewModel()
     readonly property var resolvedProjectSelectionViewModel: noteDetailPanel.resolveProjectSelectionViewModel()
@@ -129,28 +129,22 @@ Item {
         if (!noteDetailPanel.detailPanelVm || noteDetailPanel.detailPanelVm.toolbarItems === undefined || noteDetailPanel.detailPanelVm.toolbarItems === null)
             return noteDetailPanel.defaultToolbarItems;
         const sourceItems = noteDetailPanel.detailPanelVm.toolbarItems;
-        const normalizedItems = Array.isArray(sourceItems)
-            ? sourceItems
-            : sourceItems.length !== undefined
-                ? Array.prototype.slice.call(sourceItems)
-                : [];
+        const normalizedItems = Array.isArray(sourceItems) ? sourceItems : sourceItems.length !== undefined ? Array.prototype.slice.call(sourceItems) : [];
         if (normalizedItems.length <= 0)
             return noteDetailPanel.defaultToolbarItems;
         const resolvedItems = [];
         for (var index = 0; index < normalizedItems.length; ++index) {
             const sourceItem = normalizedItems[index];
-            const stateValue = sourceItem && sourceItem.stateValue !== undefined
-                ? Number(sourceItem.stateValue)
-                : NaN;
+            const stateValue = sourceItem && sourceItem.stateValue !== undefined ? Number(sourceItem.stateValue) : NaN;
             const metadata = noteDetailPanel.toolbarMetadataForStateValue(stateValue);
             resolvedItems.push({
-                                   "figmaNodeId": metadata.figmaNodeId,
-                                   "iconName": metadata.iconName,
-                                   "iconSource": metadata.iconSource,
-                                   "objectName": metadata.objectName,
-                                   "selected": sourceItem && sourceItem.selected === true,
-                                   "stateValue": isFinite(stateValue) ? stateValue : metadata.stateValue
-                               });
+                "figmaNodeId": metadata.figmaNodeId,
+                "iconName": metadata.iconName,
+                "iconSource": metadata.iconSource,
+                "objectName": metadata.objectName,
+                "selected": sourceItem && sourceItem.selected === true,
+                "stateValue": isFinite(stateValue) ? stateValue : metadata.stateValue
+            });
         }
         return resolvedItems.length > 0 ? resolvedItems : noteDetailPanel.defaultToolbarItems;
     }

@@ -7,7 +7,7 @@ It keeps the panel canvas transparent, preserves the panel-view-model hook entry
 ## Visual Contract
 - Figma root frame id: `155:4574`
 - Root `objectName`: `RightPanel`
-- Default/min panel widths now resolve through `LV.Theme.scaleMetric(194/145)`.
+- Default/min panel widths now resolve through named `LV.Theme` width/gap/stroke token compositions.
 - The child `DetailPanel` fills the wrapper, so parent layout sizing controls the final width.
 
 ## Runtime Notes

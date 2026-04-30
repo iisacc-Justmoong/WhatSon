@@ -22,8 +22,8 @@ Rectangle {
     readonly property color searchFieldColor: "transparent"
     readonly property int searchFieldHeight: LV.Theme.gap18
     readonly property int searchFieldHorizontalInset: LV.Theme.gap24
-    readonly property int searchFieldMaxWidth: Math.max(0, Math.round(LV.Theme.scaleMetric(541)))
-    readonly property int searchFieldMinWidth: Math.max(0, Math.round(LV.Theme.scaleMetric(220)))
+    readonly property int searchFieldMaxWidth: LV.Theme.scaffoldBlobPrimarySize + LV.Theme.gap20 + Math.round(LV.Theme.strokeThin)
+    readonly property int searchFieldMinWidth: LV.Theme.inputWidthMd + LV.Theme.gap14
     property int searchFieldRadius: LV.Theme.radiusControl
     readonly property int searchFieldWidth: {
         var availableWidth = Math.max(0, width - searchFieldHorizontalInset * 2);
@@ -141,7 +141,7 @@ Rectangle {
 
                 Layout.alignment: Qt.AlignVCenter
                 Layout.fillWidth: true
-                Layout.minimumWidth: 0
+                Layout.minimumWidth: LV.Theme.gapNone
                 Layout.preferredHeight: statusBar.compactFieldHeight
                 backgroundColor: statusBar.compactFieldColor
                 backgroundColorDisabled: statusBar.compactFieldColor

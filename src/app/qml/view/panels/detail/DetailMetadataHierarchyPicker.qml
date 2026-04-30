@@ -13,31 +13,24 @@ LV.ContextMenu {
     property bool manualFallbackEnabled: false
     property var anchorItem: null
     readonly property bool mobileMode: LV.Theme.mobileTarget
-    readonly property int popupHorizontalMargin: Math.max(0, Math.round(LV.Theme.scaleMetric(12)))
-    readonly property int popupVerticalMargin: Math.max(0, Math.round(LV.Theme.scaleMetric(12)))
-    readonly property int popupRowHeight: Math.max(0, Math.round(LV.Theme.scaleMetric(20)))
+    readonly property int popupHorizontalMargin: LV.Theme.gap12
+    readonly property int popupVerticalMargin: LV.Theme.gap12
+    readonly property int popupRowHeight: LV.Theme.gap20
     readonly property int popupSpacing: LV.Theme.gap2
-    readonly property int popupWidth: mobileMode
-        ? Math.max(0, (parent ? parent.width : 0) - popupHorizontalMargin * 2)
-        : Math.max(0, Math.round(LV.Theme.scaleMetric(224)))
+    readonly property int popupWidth: mobileMode ? Math.max(0, (parent ? parent.width : 0) - popupHorizontalMargin * 2) : LV.Theme.inputWidthMd + LV.Theme.gap18
     readonly property int popupViewportHeight: {
         const rowCount = hierarchyItems.length + (manualFallbackEnabled ? 1 : 0);
         const minimumHeight = popupRowHeight;
-        const contentHeight = rowCount > 0
-            ? rowCount * popupRowHeight + Math.max(0, rowCount - 1) * popupSpacing
-            : minimumHeight;
+        const contentHeight = rowCount > 0 ? rowCount * popupRowHeight + Math.max(0, rowCount - 1) * popupSpacing : minimumHeight;
         const overlayHeight = parent ? parent.height : contentHeight + topPadding + bottomPadding;
-        const availableHeight = Math.max(minimumHeight,
-                                         overlayHeight - popupVerticalMargin * 2 - topPadding - bottomPadding);
+        const availableHeight = Math.max(minimumHeight, overlayHeight - popupVerticalMargin * 2 - topPadding - bottomPadding);
         return Math.max(minimumHeight, Math.min(contentHeight, availableHeight));
     }
     readonly property int popupHeight: popupViewportHeight + topPadding + bottomPadding
-    readonly property int popupContentWidth: explicitContentWidth > 0
-        ? explicitContentWidth
-        : Math.max(0, popupWidth - leftPadding - rightPadding)
+    readonly property int popupContentWidth: explicitContentWidth > 0 ? explicitContentWidth : Math.max(0, popupWidth - leftPadding - rightPadding)
 
     signal entryChosen(var entry)
-    signal manualFallbackRequested()
+    signal manualFallbackRequested
     signal viewHookRequested(string reason)
 
     function clampPosition(value, minimum, maximum) {
@@ -91,7 +84,7 @@ LV.ContextMenu {
         syncPopupSize();
         if (mobileMode) {
             applyMobileSheetGeometry();
-            Qt.callLater(function() {
+            Qt.callLater(function () {
                 applyMobileSheetGeometry();
                 picker.open();
             });
@@ -100,9 +93,7 @@ LV.ContextMenu {
 
         const target = anchorItem && anchorItem.mapToItem !== undefined ? anchorItem : null;
         if (target) {
-            picker.openFor(target,
-                           Number(target.width) || 0,
-                           (Number(target.height) || 0) + LV.Theme.gap2);
+            picker.openFor(target, Number(target.width) || 0, (Number(target.height) || 0) + LV.Theme.gap2);
             return;
         }
 
@@ -176,17 +167,11 @@ LV.ContextMenu {
                         readonly property var entry: modelData
 
                         activatable: true
-                        count: entry.count !== undefined && Number(entry.count) > 0
-                            ? Number(entry.count)
-                            : -1
+                        count: entry.count !== undefined && Number(entry.count) > 0 ? Number(entry.count) : -1
                         generatedByTreeModel: false
                         hasChildItems: false
-                        iconName: entry.iconName !== undefined && entry.iconName !== null
-                            ? String(entry.iconName)
-                            : ""
-                        iconSource: entry.iconSource !== undefined && entry.iconSource !== null
-                            ? entry.iconSource
-                            : ""
+                        iconName: entry.iconName !== undefined && entry.iconName !== null ? String(entry.iconName) : ""
+                        iconSource: entry.iconSource !== undefined && entry.iconSource !== null ? entry.iconSource : ""
                         indentLevel: entry.depth !== undefined ? Number(entry.depth) || 0 : 0
                         itemWidth: listColumn.width
                         label: entry.label !== undefined && entry.label !== null ? String(entry.label) : ""

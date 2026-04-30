@@ -23,8 +23,9 @@ It supports two variants through one boolean argument:
 - Today state: when the cell is not the selected date, applies a soft border using `LV.Theme.strokeSoft` and
   `LV.Theme.strokeThin`
 - Content padding: `LV.Theme.gap8`
-- Day number and overflow label typography use `LV.Theme.scaleMetric(12)`.
-- Day-label gap, event-row height, and event-row spacing use `LV.Theme.scaleMetric(10/16)` and `LV.Theme.gap2`.
+- Day number and overflow label typography use `LV.Theme.textBody`.
+- Day-label gap, event-row height, and event-row spacing use `LV.Theme.gap10`, `LV.Theme.iconSm`, and
+  `LV.Theme.gap2`.
 - Entry chips delegate to shared `CalendarEventCell` with `cornerRadius: LV.Theme.radiusSm` in month-grid usage.
 - Overflow state: renders `+N more` when visible entry capacity is exceeded
 - The parent grid may now pass note/event chip payloads that already originated from `dayModel.entries` inside the

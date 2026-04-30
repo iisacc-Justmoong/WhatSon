@@ -25,26 +25,26 @@ Item {
     readonly property color pressedCardColor: noteListItem.hoverCardColor
     readonly property bool hovered: noteHoverHandler.hovered
     property bool image: false
-    readonly property color imageBoxPlaceholderColor: "#D9D9D9"
-    readonly property int imagePreviewSize: Math.max(0, Math.round(LV.Theme.scaleMetric(48)))
+    readonly property color imageBoxPlaceholderColor: LV.Theme.strokeSoft
+    readonly property int imagePreviewSize: LV.Theme.gap24 + LV.Theme.gap24
     property url imageSource: ""
     readonly property int metadataGroupSpacing: LV.Theme.gap2
-    readonly property int metadataIconFrameSize: Math.max(0, Math.round(LV.Theme.scaleMetric(16)))
+    readonly property int metadataIconFrameSize: LV.Theme.iconSm
     readonly property int metadataIconSpacing: LV.Theme.gap8
-    readonly property int metadataIconSize: Math.max(0, Math.round(LV.Theme.scaleMetric(14)))
-    readonly property int metadataTextLineHeight: Math.max(0, Math.round(LV.Theme.scaleMetric(11)))
-    readonly property int metadataTextSize: Math.max(0, Math.round(LV.Theme.scaleMetric(11)))
+    readonly property int metadataIconSize: LV.Theme.gap14
+    readonly property int metadataTextLineHeight: LV.Theme.textCaptionLineHeight
+    readonly property int metadataTextSize: LV.Theme.textCaption
     property string noteId: ""
     property var panelViewModelRegistry: null
     readonly property var panelViewModel: noteListItem.panelViewModelRegistry ? noteListItem.panelViewModelRegistry.panelViewModel("NoteListItem") : null
     property bool pressed: false
     property string primaryText: ""
     readonly property color primaryTextColor: LV.Theme.captionColor
-    readonly property int primaryRowSpacing: Math.max(0, Math.round(LV.Theme.scaleMetric(10)))
+    readonly property int primaryRowSpacing: LV.Theme.gap10
     readonly property int primarySectionSpacing: LV.Theme.gap8
-    readonly property int primaryTextBlockHeight: Math.max(0, Math.round(LV.Theme.scaleMetric(24)))
-    readonly property int primaryTextLineHeight: Math.max(0, Math.round(LV.Theme.scaleMetric(12)))
-    readonly property int primaryTextSize: Math.max(0, Math.round(LV.Theme.scaleMetric(12)))
+    readonly property int primaryTextBlockHeight: LV.Theme.gap24
+    readonly property int primaryTextLineHeight: LV.Theme.textBodyLineHeight
+    readonly property int primaryTextSize: LV.Theme.textBody
     readonly property string resolvedDisplayDate: {
         const value = noteListItem.displayDate === undefined || noteListItem.displayDate === null ? "" : String(noteListItem.displayDate).trim();
         return value.length > 0 ? value : noteListItem.displayDatePlaceholder;
@@ -52,7 +52,7 @@ Item {
     readonly property url tagIconSource: LV.Theme.iconPath("vcscurrentBranch")
     readonly property color tagLabelColor: LV.Theme.captionColor
     property var tags: []
-    readonly property int secondaryTextLineHeight: Math.max(0, Math.round(LV.Theme.scaleMetric(12)))
+    readonly property int secondaryTextLineHeight: LV.Theme.textBodyLineHeight
     readonly property int verticalPadding: LV.Theme.gap8
     readonly property var visibleFolders: metadataPreview(noteListItem.folders, true)
     readonly property var visibleTags: metadataPreview(noteListItem.tags, false)
@@ -101,20 +101,12 @@ Item {
     }
 
     clip: true
-    implicitHeight: noteListItem.image
-                    ? Math.max(0, Math.round(LV.Theme.scaleMetric(126)))
-                    : Math.max(0, Math.round(LV.Theme.scaleMetric(102)))
-    implicitWidth: Math.max(0, Math.round(LV.Theme.scaleMetric(194)))
+    implicitHeight: noteListItem.image ? LV.Theme.buttonMinWidth + LV.Theme.gap24 + LV.Theme.gap2 : LV.Theme.buttonMinWidth + LV.Theme.gap2
+    implicitWidth: LV.Theme.inputMinWidth + LV.Theme.gap14
 
     Rectangle {
         anchors.fill: parent
-        color: noteListItem.activeState
-            ? noteListItem.cardColor
-            : noteListItem.pressed
-                ? noteListItem.pressedCardColor
-                : noteListItem.hovered
-                    ? noteListItem.hoverCardColor
-                    : LV.Theme.accentTransparent
+        color: noteListItem.activeState ? noteListItem.cardColor : noteListItem.pressed ? noteListItem.pressedCardColor : noteListItem.hovered ? noteListItem.hoverCardColor : LV.Theme.accentTransparent
     }
     HoverHandler {
         id: noteHoverHandler
@@ -269,9 +261,7 @@ Item {
                                     lineHeight: noteListItem.metadataTextLineHeight
                                     lineHeightMode: Text.FixedHeight
                                     style: caption
-                                    text: folderLabelRow.modelData === undefined || folderLabelRow.modelData === null
-                                          ? ""
-                                          : String(folderLabelRow.modelData)
+                                    text: folderLabelRow.modelData === undefined || folderLabelRow.modelData === null ? "" : String(folderLabelRow.modelData)
                                 }
                             }
                         }
@@ -321,9 +311,7 @@ Item {
                                     lineHeight: noteListItem.metadataTextLineHeight
                                     lineHeightMode: Text.FixedHeight
                                     style: caption
-                                    text: tagLabelRow.modelData === undefined || tagLabelRow.modelData === null
-                                          ? ""
-                                          : String(tagLabelRow.modelData)
+                                    text: tagLabelRow.modelData === undefined || tagLabelRow.modelData === null ? "" : String(tagLabelRow.modelData)
                                 }
                             }
                         }

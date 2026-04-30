@@ -7,7 +7,7 @@ Item {
     property var fileStatViewModel: null
     readonly property int formHorizontalInset: LV.Theme.gap8
     readonly property int formTopInset: LV.Theme.gap2
-    readonly property int formVerticalSpacing: Math.max(0, Math.round(LV.Theme.scaleMetric(10)))
+    readonly property int formVerticalSpacing: LV.Theme.gap10
     readonly property var summaryLines: detailFileStatForm.resolveTextLines(detailFileStatForm.fileStatViewModel ? detailFileStatForm.fileStatViewModel.summaryLines : [])
     readonly property var textMetricLines: detailFileStatForm.resolveTextLines(detailFileStatForm.fileStatViewModel ? detailFileStatForm.fileStatViewModel.textMetricLines : [])
     readonly property var activityLines: detailFileStatForm.resolveTextLines(detailFileStatForm.fileStatViewModel ? detailFileStatForm.fileStatViewModel.activityLines : [])
@@ -28,7 +28,7 @@ Item {
         color: LV.Theme.descriptionColor
         style: description
         text: lineText
-        width: parent ? parent.width : 0
+        width: parent ? parent.width : LV.Theme.gapNone
         wrapMode: Text.WordWrap
     }
 
@@ -46,7 +46,7 @@ Item {
             id: sectionColumn
 
             anchors.fill: parent
-            spacing: 0
+            spacing: LV.Theme.gapNone
 
             Repeater {
                 model: fileStatTextSection.normalizedLines.length

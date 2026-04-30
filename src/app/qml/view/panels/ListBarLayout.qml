@@ -17,13 +17,12 @@ Rectangle {
     property string contextMenuNoteId: ""
     property var contextMenuNoteIds: []
     property int contextMenuNoteIndex: -1
-    readonly property int dragCountBadgeHeight: Math.max(0, Math.round(LV.Theme.scaleMetric(20)))
+    readonly property int dragCountBadgeHeight: LV.Theme.gap20
     readonly property int dragCountBadgeInset: LV.Theme.gap8
     readonly property int dragCountBadgeMinWidth: dragCountBadgeHeight
-    readonly property int dragCountBadgeWidthPadding: Math.max(0, Math.round(LV.Theme.scaleMetric(10)))
+    readonly property int dragCountBadgeWidthPadding: LV.Theme.gap10
     readonly property real grabbedNoteOpacity: 0.25
-    readonly property bool hasNoteListModel: listBarLayout.noteListModel !== null
-                                             && listBarLayout.noteListModel !== undefined
+    readonly property bool hasNoteListModel: listBarLayout.noteListModel !== null && listBarLayout.noteListModel !== undefined
     property bool headerVisible: true
     property var hierarchyViewModel: null
     property color hintColor: LV.Theme.descriptionColor
@@ -51,9 +50,7 @@ Rectangle {
     property bool noteDragCanceled: false
     property var noteDropTarget: null
     readonly property bool noteFolderClearContractAvailable: listBarLayout.noteDeletionViewModel !== null && listBarLayout.noteDeletionViewModel !== undefined && (listBarLayout.noteDeletionViewModel.clearNoteFoldersByIds !== undefined || listBarLayout.noteDeletionViewModel.clearNoteFoldersById !== undefined)
-    readonly property bool noteListCurrentIndexContractAvailable: listBarLayout.hasNoteListModel
-                                                           && (listBarLayout.resolvedNoteListModel.currentIndex !== undefined
-                                                               || listBarLayout.resolvedNoteListModel.setCurrentIndex !== undefined)
+    readonly property bool noteListCurrentIndexContractAvailable: listBarLayout.hasNoteListModel && (listBarLayout.resolvedNoteListModel.currentIndex !== undefined || listBarLayout.resolvedNoteListModel.setCurrentIndex !== undefined)
     property bool isMobilePlatform: false
     readonly property bool noteListKineticViewportEnabled: LV.Theme.mobileTarget || listBarLayout.isMobilePlatform
     readonly property int noteListBoundsBehavior: listBarLayout.noteListKineticViewportEnabled ? Flickable.DragAndOvershootBounds : Flickable.StopAtBounds
@@ -66,9 +63,7 @@ Rectangle {
     readonly property int noteListViewportInset: LV.Theme.gap2
     property int noteListModelTransitionRevision: 0
     readonly property int noteListScrollTick: LV.Theme.gap2
-    readonly property bool noteListSearchContractAvailable: listBarLayout.hasNoteListModel
-                                                      && (listBarLayout.resolvedNoteListModel.searchText !== undefined
-                                                          || listBarLayout.resolvedNoteListModel.setSearchText !== undefined)
+    readonly property bool noteListSearchContractAvailable: listBarLayout.hasNoteListModel && (listBarLayout.resolvedNoteListModel.searchText !== undefined || listBarLayout.resolvedNoteListModel.setSearchText !== undefined)
     property bool noteListViewportRestorePending: false
     property alias noteSelectionAnchorIndex: noteSelectionController.selectionAnchorIndex
     property color panelColor: "transparent"
@@ -101,10 +96,7 @@ Rectangle {
         noteSelectionState.pendingIndex = targetIndex;
         noteSelectionState.requestRevision += 1;
         const requestRevision = noteSelectionState.requestRevision;
-        console.log("[whatson:qml][ListBarLayout][activateNoteIndex] targetIndex=" + targetIndex
-                    + " noteId=" + normalizedNoteId
-                    + " currentIndex(before)=" + noteListView.currentIndex
-                    + " modelCurrentIndex(before)=" + listBarLayout.currentIndexFromModel())
+        console.log("[whatson:qml][ListBarLayout][activateNoteIndex] targetIndex=" + targetIndex + " noteId=" + normalizedNoteId + " currentIndex(before)=" + noteListView.currentIndex + " modelCurrentIndex(before)=" + listBarLayout.currentIndexFromModel());
         if (noteListView.currentIndex !== targetIndex)
             noteListView.currentIndex = targetIndex;
         listBarLayout.pushCurrentIndexToModel(targetIndex);
@@ -245,10 +237,7 @@ Rectangle {
         return -1;
     }
     function currentNoteEntryFromModel() {
-        if (listBarLayout.resolvedNoteListModel
-                && listBarLayout.resolvedNoteListModel.currentNoteEntry !== undefined
-                && listBarLayout.resolvedNoteListModel.currentNoteEntry !== null
-                && typeof listBarLayout.resolvedNoteListModel.currentNoteEntry === "object") {
+        if (listBarLayout.resolvedNoteListModel && listBarLayout.resolvedNoteListModel.currentNoteEntry !== undefined && listBarLayout.resolvedNoteListModel.currentNoteEntry !== null && typeof listBarLayout.resolvedNoteListModel.currentNoteEntry === "object") {
             return listBarLayout.resolvedNoteListModel.currentNoteEntry;
         }
         return ({});
@@ -258,9 +247,7 @@ Rectangle {
         const entryNoteId = listBarLayout.noteIdFromEntry(currentNoteEntry);
         if (entryNoteId.length > 0)
             return entryNoteId;
-        if (listBarLayout.resolvedNoteListModel
-                && listBarLayout.resolvedNoteListModel.currentNoteId !== undefined
-                && listBarLayout.resolvedNoteListModel.currentNoteId !== null) {
+        if (listBarLayout.resolvedNoteListModel && listBarLayout.resolvedNoteListModel.currentNoteId !== undefined && listBarLayout.resolvedNoteListModel.currentNoteId !== null) {
             return String(listBarLayout.resolvedNoteListModel.currentNoteId).trim();
         }
         return "";
@@ -407,16 +394,10 @@ Rectangle {
     }
     function noteContextMenuPointerTriggerAccepted(triggerKind) {
         const normalizedTrigger = triggerKind === undefined || triggerKind === null ? "" : String(triggerKind).trim().toLowerCase();
-        if (normalizedTrigger === "rightclick"
-                || normalizedTrigger === "right-click"
-                || normalizedTrigger === "contextmenu"
-                || normalizedTrigger === "context-menu") {
+        if (normalizedTrigger === "rightclick" || normalizedTrigger === "right-click" || normalizedTrigger === "contextmenu" || normalizedTrigger === "context-menu") {
             return true;
         }
-        if (normalizedTrigger === "longpress"
-                || normalizedTrigger === "long-press"
-                || normalizedTrigger === "pressandhold"
-                || normalizedTrigger === "press-and-hold") {
+        if (normalizedTrigger === "longpress" || normalizedTrigger === "long-press" || normalizedTrigger === "pressandhold" || normalizedTrigger === "press-and-hold") {
             return listBarLayout.noteListKineticViewportEnabled;
         }
         return false;
@@ -650,167 +631,163 @@ Rectangle {
         property int requestRevision: 0
     }
     QtObject {
-    id: noteSelectionController
+        id: noteSelectionController
 
-    property var view: null
-    property int selectionAnchorIndex: -1
-    property var selectedIndices: []
+        property var view: null
+        property int selectionAnchorIndex: -1
+        property var selectedIndices: []
 
-    function normalizedKeyboardModifiers(modifiers) {
-        return modifiers === undefined || modifiers === null
-                ? Qt.NoModifier
-                : modifiers;
-    }
+        function normalizedKeyboardModifiers(modifiers) {
+            return modifiers === undefined || modifiers === null ? Qt.NoModifier : modifiers;
+        }
 
-    function selectionToggleModifierPressed(modifiers) {
-        const normalizedModifiers = controller.normalizedKeyboardModifiers(modifiers);
-        const toggleMask = Qt.ControlModifier | Qt.MetaModifier;
-        return Boolean(normalizedModifiers & toggleMask);
-    }
+        function selectionToggleModifierPressed(modifiers) {
+            const normalizedModifiers = controller.normalizedKeyboardModifiers(modifiers);
+            const toggleMask = Qt.ControlModifier | Qt.MetaModifier;
+            return Boolean(normalizedModifiers & toggleMask);
+        }
 
-    function selectionRangeModifierPressed(modifiers) {
-        const normalizedModifiers = controller.normalizedKeyboardModifiers(modifiers);
-        return Boolean(normalizedModifiers & Qt.ShiftModifier);
-    }
+        function selectionRangeModifierPressed(modifiers) {
+            const normalizedModifiers = controller.normalizedKeyboardModifiers(modifiers);
+            return Boolean(normalizedModifiers & Qt.ShiftModifier);
+        }
 
-    function selectionModifierPressed(modifiers) {
-        return controller.selectionRangeModifierPressed(modifiers)
-                || controller.selectionToggleModifierPressed(modifiers);
-    }
+        function selectionModifierPressed(modifiers) {
+            return controller.selectionRangeModifierPressed(modifiers) || controller.selectionToggleModifierPressed(modifiers);
+        }
 
-    function resolveSelectionModifiers(modifiers, cachedModifiers, cachedCapturedAtMs) {
-        const normalizedModifiers = controller.normalizedKeyboardModifiers(modifiers);
-        if (controller.selectionModifierPressed(normalizedModifiers))
+        function resolveSelectionModifiers(modifiers, cachedModifiers, cachedCapturedAtMs) {
+            const normalizedModifiers = controller.normalizedKeyboardModifiers(modifiers);
+            if (controller.selectionModifierPressed(normalizedModifiers))
+                return normalizedModifiers;
+            const capturedAtMs = Number(cachedCapturedAtMs);
+            const cacheAgeMs = Date.now() - capturedAtMs;
+            const cacheFresh = capturedAtMs > 0 && isFinite(cacheAgeMs) && cacheAgeMs >= 0 && cacheAgeMs <= 800;
+            const normalizedCachedModifiers = controller.normalizedKeyboardModifiers(cachedModifiers);
+            if (cacheFresh && controller.selectionModifierPressed(normalizedCachedModifiers))
+                return normalizedCachedModifiers;
             return normalizedModifiers;
-        const capturedAtMs = Number(cachedCapturedAtMs);
-        const cacheAgeMs = Date.now() - capturedAtMs;
-        const cacheFresh = capturedAtMs > 0 && isFinite(cacheAgeMs) && cacheAgeMs >= 0 && cacheAgeMs <= 800;
-        const normalizedCachedModifiers = controller.normalizedKeyboardModifiers(cachedModifiers);
-        if (cacheFresh && controller.selectionModifierPressed(normalizedCachedModifiers))
-            return normalizedCachedModifiers;
-        return normalizedModifiers;
-    }
+        }
 
-    function normalizeSelectedNoteIndices(indices) {
-        if (!indices || indices.length === undefined || !controller.view)
-            return [];
-        const normalized = [];
-        for (let row = 0; row < indices.length; ++row) {
-            const normalizedIndex = controller.view.normalizeCurrentIndex(indices[row]);
+        function normalizeSelectedNoteIndices(indices) {
+            if (!indices || indices.length === undefined || !controller.view)
+                return [];
+            const normalized = [];
+            for (let row = 0; row < indices.length; ++row) {
+                const normalizedIndex = controller.view.normalizeCurrentIndex(indices[row]);
+                if (normalizedIndex < 0)
+                    continue;
+                if (normalized.indexOf(normalizedIndex) >= 0)
+                    continue;
+                normalized.push(normalizedIndex);
+            }
+            normalized.sort(function (left, right) {
+                return left - right;
+            });
+            return normalized;
+        }
+
+        function noteSelectionContainsIndex(index) {
+            if (!controller.view)
+                return false;
+            const normalizedIndex = controller.view.normalizeCurrentIndex(index);
             if (normalizedIndex < 0)
-                continue;
-            if (normalized.indexOf(normalizedIndex) >= 0)
-                continue;
-            normalized.push(normalizedIndex);
+                return false;
+            const normalizedSelection = controller.normalizeSelectedNoteIndices(controller.selectedIndices);
+            return normalizedSelection.indexOf(normalizedIndex) >= 0;
         }
-        normalized.sort(function (left, right) {
-            return left - right;
-        });
-        return normalized;
-    }
 
-    function noteSelectionContainsIndex(index) {
-        if (!controller.view)
-            return false;
-        const normalizedIndex = controller.view.normalizeCurrentIndex(index);
-        if (normalizedIndex < 0)
-            return false;
-        const normalizedSelection = controller.normalizeSelectedNoteIndices(controller.selectedIndices);
-        return normalizedSelection.indexOf(normalizedIndex) >= 0;
-    }
-
-    function setSelectedNoteIndices(indices) {
-        controller.selectedIndices = controller.normalizeSelectedNoteIndices(indices);
-    }
-
-    function selectionRangeIndices(anchorIndex, targetIndex) {
-        if (!controller.view)
-            return [];
-        const normalizedAnchor = controller.view.normalizeCurrentIndex(anchorIndex);
-        const normalizedTarget = controller.view.normalizeCurrentIndex(targetIndex);
-        if (normalizedTarget < 0)
-            return [];
-        if (normalizedAnchor < 0)
-            return [normalizedTarget];
-        const begin = Math.min(normalizedAnchor, normalizedTarget);
-        const end = Math.max(normalizedAnchor, normalizedTarget);
-        const range = [];
-        for (let candidate = begin; candidate <= end; ++candidate)
-            range.push(candidate);
-        return range;
-    }
-
-    function syncSelectionFromCommittedState() {
-        if (!controller.view)
-            return;
-        const normalizedIndex = controller.view.normalizeCurrentIndex(
-                    controller.view.currentIndexFromModel());
-        if (normalizedIndex < 0) {
-            controller.setSelectedNoteIndices([]);
-            controller.selectionAnchorIndex = -1;
-            return;
+        function setSelectedNoteIndices(indices) {
+            controller.selectedIndices = controller.normalizeSelectedNoteIndices(indices);
         }
-        controller.setSelectedNoteIndices([normalizedIndex]);
-        controller.selectionAnchorIndex = normalizedIndex;
-    }
 
-    function requestNoteSelection(index, noteId, modifiers) {
-        if (!controller.view)
-            return;
-        const normalizedIndex = controller.view.normalizeCurrentIndex(index);
-        if (normalizedIndex < 0)
-            return;
-        const normalizedModifiers = controller.normalizedKeyboardModifiers(modifiers);
-        if (controller.selectionRangeModifierPressed(normalizedModifiers)) {
-            let anchorIndex = controller.view.normalizeCurrentIndex(controller.selectionAnchorIndex);
-            if (anchorIndex < 0)
-                anchorIndex = controller.view.normalizeCurrentIndex(controller.view.currentIndexFromModel());
-            if (anchorIndex < 0)
-                anchorIndex = normalizedIndex;
-            const rangeSelection = controller.selectionRangeIndices(anchorIndex, normalizedIndex);
+        function selectionRangeIndices(anchorIndex, targetIndex) {
+            if (!controller.view)
+                return [];
+            const normalizedAnchor = controller.view.normalizeCurrentIndex(anchorIndex);
+            const normalizedTarget = controller.view.normalizeCurrentIndex(targetIndex);
+            if (normalizedTarget < 0)
+                return [];
+            if (normalizedAnchor < 0)
+                return [normalizedTarget];
+            const begin = Math.min(normalizedAnchor, normalizedTarget);
+            const end = Math.max(normalizedAnchor, normalizedTarget);
+            const range = [];
+            for (let candidate = begin; candidate <= end; ++candidate)
+                range.push(candidate);
+            return range;
+        }
+
+        function syncSelectionFromCommittedState() {
+            if (!controller.view)
+                return;
+            const normalizedIndex = controller.view.normalizeCurrentIndex(controller.view.currentIndexFromModel());
+            if (normalizedIndex < 0) {
+                controller.setSelectedNoteIndices([]);
+                controller.selectionAnchorIndex = -1;
+                return;
+            }
+            controller.setSelectedNoteIndices([normalizedIndex]);
+            controller.selectionAnchorIndex = normalizedIndex;
+        }
+
+        function requestNoteSelection(index, noteId, modifiers) {
+            if (!controller.view)
+                return;
+            const normalizedIndex = controller.view.normalizeCurrentIndex(index);
+            if (normalizedIndex < 0)
+                return;
+            const normalizedModifiers = controller.normalizedKeyboardModifiers(modifiers);
+            if (controller.selectionRangeModifierPressed(normalizedModifiers)) {
+                let anchorIndex = controller.view.normalizeCurrentIndex(controller.selectionAnchorIndex);
+                if (anchorIndex < 0)
+                    anchorIndex = controller.view.normalizeCurrentIndex(controller.view.currentIndexFromModel());
+                if (anchorIndex < 0)
+                    anchorIndex = normalizedIndex;
+                const rangeSelection = controller.selectionRangeIndices(anchorIndex, normalizedIndex);
+                if (controller.selectionToggleModifierPressed(normalizedModifiers)) {
+                    const selectedIndices = controller.normalizeSelectedNoteIndices(controller.selectedIndices);
+                    for (let selectionIndex = 0; selectionIndex < rangeSelection.length; ++selectionIndex)
+                        selectedIndices.push(rangeSelection[selectionIndex]);
+                    controller.setSelectedNoteIndices(selectedIndices);
+                } else {
+                    controller.setSelectedNoteIndices(rangeSelection);
+                }
+                controller.selectionAnchorIndex = anchorIndex;
+                controller.view.activateNoteIndex(normalizedIndex, noteId);
+                return;
+            }
             if (controller.selectionToggleModifierPressed(normalizedModifiers)) {
                 const selectedIndices = controller.normalizeSelectedNoteIndices(controller.selectedIndices);
-                for (let selectionIndex = 0; selectionIndex < rangeSelection.length; ++selectionIndex)
-                    selectedIndices.push(rangeSelection[selectionIndex]);
+                const existingSelectionIndex = selectedIndices.indexOf(normalizedIndex);
+                if (existingSelectionIndex < 0) {
+                    selectedIndices.push(normalizedIndex);
+                    controller.setSelectedNoteIndices(selectedIndices);
+                    controller.selectionAnchorIndex = normalizedIndex;
+                    controller.view.activateNoteIndex(normalizedIndex, noteId);
+                    return;
+                }
+                if (selectedIndices.length <= 1) {
+                    controller.setSelectedNoteIndices([normalizedIndex]);
+                    controller.selectionAnchorIndex = normalizedIndex;
+                    controller.view.activateNoteIndex(normalizedIndex, noteId);
+                    return;
+                }
+                selectedIndices.splice(existingSelectionIndex, 1);
                 controller.setSelectedNoteIndices(selectedIndices);
-            } else {
-                controller.setSelectedNoteIndices(rangeSelection);
+                const committedIndex = controller.view.normalizeCurrentIndex(controller.view.currentIndexFromModel());
+                const committedSelectionRetained = controller.noteSelectionContainsIndex(committedIndex);
+                if (committedSelectionRetained)
+                    return;
+                const fallbackIndex = selectedIndices.length > 0 ? selectedIndices[selectedIndices.length - 1] : -1;
+                if (fallbackIndex >= 0)
+                    controller.view.activateNoteIndex(fallbackIndex, "");
+                return;
             }
-            controller.selectionAnchorIndex = anchorIndex;
+            controller.setSelectedNoteIndices([normalizedIndex]);
+            controller.selectionAnchorIndex = normalizedIndex;
             controller.view.activateNoteIndex(normalizedIndex, noteId);
-            return;
         }
-        if (controller.selectionToggleModifierPressed(normalizedModifiers)) {
-            const selectedIndices = controller.normalizeSelectedNoteIndices(controller.selectedIndices);
-            const existingSelectionIndex = selectedIndices.indexOf(normalizedIndex);
-            if (existingSelectionIndex < 0) {
-                selectedIndices.push(normalizedIndex);
-                controller.setSelectedNoteIndices(selectedIndices);
-                controller.selectionAnchorIndex = normalizedIndex;
-                controller.view.activateNoteIndex(normalizedIndex, noteId);
-                return;
-            }
-            if (selectedIndices.length <= 1) {
-                controller.setSelectedNoteIndices([normalizedIndex]);
-                controller.selectionAnchorIndex = normalizedIndex;
-                controller.view.activateNoteIndex(normalizedIndex, noteId);
-                return;
-            }
-            selectedIndices.splice(existingSelectionIndex, 1);
-            controller.setSelectedNoteIndices(selectedIndices);
-            const committedIndex = controller.view.normalizeCurrentIndex(controller.view.currentIndexFromModel());
-            const committedSelectionRetained = controller.noteSelectionContainsIndex(committedIndex);
-            if (committedSelectionRetained)
-                return;
-            const fallbackIndex = selectedIndices.length > 0 ? selectedIndices[selectedIndices.length - 1] : -1;
-            if (fallbackIndex >= 0)
-                controller.view.activateNoteIndex(fallbackIndex, "");
-            return;
-        }
-        controller.setSelectedNoteIndices([normalizedIndex]);
-        controller.selectionAnchorIndex = normalizedIndex;
-        controller.view.activateNoteIndex(normalizedIndex, noteId);
-    }
     }
     QtObject {
         id: noteDragPreviewState
@@ -892,14 +869,13 @@ Rectangle {
             height: listBarLayout.dragCountBadgeHeight
             radius: height * 0.5
             visible: noteDragPreviewState.noteIds.length > 1
-            width: Math.max(listBarLayout.dragCountBadgeMinWidth,
-                            dragCountLabel.implicitWidth + listBarLayout.dragCountBadgeWidthPadding)
+            width: Math.max(listBarLayout.dragCountBadgeMinWidth, dragCountLabel.implicitWidth + listBarLayout.dragCountBadgeWidthPadding)
 
             LV.Label {
                 id: dragCountLabel
 
                 anchors.centerIn: parent
-                color: "white"
+                color: LV.Theme.accentWhite
                 style: caption
                 text: String(noteDragPreviewState.noteIds.length)
             }
@@ -910,7 +886,7 @@ Rectangle {
 
         ColumnLayout {
             anchors.fill: parent
-            spacing: 0
+            spacing: LV.Theme.gapNone
 
             Item {
                 id: topToolbar
@@ -1215,14 +1191,10 @@ Rectangle {
                         listBarLayout.applyNoteListViewportStep(noteListView.contentY);
                     }
                     onCurrentIndexChanged: {
-                        console.log("[whatson:qml][ListBarLayout][noteListView.currentIndexChanged] currentIndex="
-                                    + noteListView.currentIndex
-                                    + " authoritative=" + listBarLayout.currentIndexChangeIsAuthoritative(noteListView.currentIndex)
-                                    + " modelCurrentIndex=" + listBarLayout.currentIndexFromModel())
+                        console.log("[whatson:qml][ListBarLayout][noteListView.currentIndexChanged] currentIndex=" + noteListView.currentIndex + " authoritative=" + listBarLayout.currentIndexChangeIsAuthoritative(noteListView.currentIndex) + " modelCurrentIndex=" + listBarLayout.currentIndexFromModel());
                         listBarLayout.pressedNoteIndex = -1;
                         if (!listBarLayout.currentIndexChangeIsAuthoritative(noteListView.currentIndex)) {
-                            console.log("[whatson:qml][ListBarLayout][noteListView.currentIndexChanged.nonAuthoritative] currentIndex="
-                                        + noteListView.currentIndex)
+                            console.log("[whatson:qml][ListBarLayout][noteListView.currentIndexChanged.nonAuthoritative] currentIndex=" + noteListView.currentIndex);
                             Qt.callLater(function () {
                                 listBarLayout.syncCurrentIndexFromModel();
                             });

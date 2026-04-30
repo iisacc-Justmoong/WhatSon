@@ -7,7 +7,7 @@ Item {
     id: detailPanelHeaderToolbar
 
     readonly property string figmaNodeId: "155:4575"
-    readonly property int buttonSpacing: Math.max(0, Math.round(LV.Theme.scaleMetric(5)))
+    readonly property int buttonSpacing: LV.Theme.gap5
     readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("detail.DetailPanelHeaderToolbar") : null
     readonly property var resolvedToolbarButtonSpecs: detailPanelHeaderToolbar.normalizeToolbarButtonSpecs(detailPanelHeaderToolbar.toolbarButtonSpecs)
     property var toolbarButtonSpecs: []

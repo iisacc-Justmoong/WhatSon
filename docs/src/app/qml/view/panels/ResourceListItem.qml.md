@@ -26,16 +26,17 @@ reuse `NoteListItem` structure and keeps the Figma `232:7892` geometry and state
 
 ## Visual Contract
 
-- Width uses `LV.Theme.scaleMetric(194)` instead of a raw fixed pixel literal.
+- Width uses `LV.Theme.inputMinWidth + LV.Theme.gap14` instead of a raw fixed pixel literal.
 - Frame padding uses `LV.Theme.gap8`.
 - Single horizontal row with:
-  - a thumbnail frame sized from `LV.Theme.scaleMetric(48)`.
-  - a row gap sized from `LV.Theme.scaleMetric(10)`.
-  - semibold title text with `12px` design metrics routed through `LV.Theme.scaleMetric(...)`.
+  - a thumbnail frame sized from `LV.Theme.gap24 + LV.Theme.gap24`.
+  - a row gap sized from `LV.Theme.gap10`.
+  - semibold title text with `LV.Theme.textBody` / `LV.Theme.textBodyLineHeight`.
 - Background states:
-  - default: transparent
+  - default: `LV.Theme.accentTransparent`
   - hover/pressed: `LV.Theme.panelBackground06`
-  - active: `#25324D`
+  - active: `LV.Theme.accentBlueMuted`
+- Thumbnail placeholders use `LV.Theme.strokeSoft`.
 
 ## Integration
 

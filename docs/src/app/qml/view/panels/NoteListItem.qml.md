@@ -31,10 +31,12 @@
   `folderLabelRow.modelData` / `tagLabelRow.modelData` explicitly.
 - Resources rows no longer reuse this component; `ListBarLayout.qml` now mounts dedicated
   `ResourceListItem.qml` when the bound model exposes `currentResourceEntry`.
-- Card padding, preview size, metadata spacing, and implicit row geometry now resolve from `LV.Theme.gap...` or
-  `LV.Theme.scaleMetric(...)` instead of fixed pixel literals, so the note card follows LVRS desktop/mobile UI scale.
+- Card padding, preview size, metadata spacing, and implicit row geometry now resolve from named `LV.Theme` spacing,
+  icon, typography, and panel tokens instead of fixed pixel/color literals, so the note card follows LVRS
+  desktop/mobile UI scale.
 - The bookmark canvas glyph now derives its points from the live frame size, so the bookmark mark scales with the
   LVRS-sized icon frame instead of staying pinned to a `16px` path.
+- Image placeholders now use the LVRS `strokeSoft` token instead of the previous raw gray fill.
 
 ## Intended Detailed Sections
 - Responsibility and business role

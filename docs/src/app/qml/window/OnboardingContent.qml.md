@@ -38,3 +38,7 @@ This QML surface owns the shared LVRS onboarding experience for desktop and mobi
   was introduced.
 - The mobile/embedded onboarding surface still reuses the same LVRS geometry and avoids the fullscreen rounded shell
   that previously triggered iOS first-frame Metal churn.
+- Inline hub-name input backgrounds and vertical inset now use `LV.Theme.accentTransparent` and `LV.Theme.gapNone`
+  instead of raw transparent/zero literals.
+- Onboarding icon, action, title, version, mobile size, and right-panel sizing constants now resolve through named
+  `LV.Theme` token compositions instead of direct scaled pixel literals.

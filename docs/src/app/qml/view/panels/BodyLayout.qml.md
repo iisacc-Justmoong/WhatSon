@@ -41,8 +41,8 @@ right detail panel.
   hierarchy-owned model while the center surface had already switched to the new domain note-list model.
 - The contents surface now fills the center panel directly without an additional bottom-partition contract.
 - Sidebar, list, and right-panel splitters continue to own the desktop width-resize flow.
-- Desktop default/min right-panel widths and sidebar horizontal inset now come from `LV.Theme.scaleMetric(...)` /
-  `LV.Theme.gap2`, so shell sizing follows the same LVRS density policy as the owned panels.
+- Desktop default/min right-panel widths and sidebar horizontal inset now come from named `LV.Theme` width/gap/stroke
+  tokens, so shell sizing follows the same LVRS density policy as the owned panels.
 
 ## Tests
 

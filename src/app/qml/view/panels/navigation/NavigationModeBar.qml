@@ -7,9 +7,9 @@ LV.HStack {
 
     readonly property string activeModeText: activeNavigationModeViewModel && activeNavigationModeViewModel.modeName !== undefined ? activeNavigationModeViewModel.modeName : "View"
     readonly property var activeNavigationModeViewModel: navigationModeViewModel && navigationModeViewModel.activeModeViewModel !== undefined ? navigationModeViewModel.activeModeViewModel : null
-    property int comboContextMenuWidth: Math.max(0, Math.round(LV.Theme.scaleMetric(132)))
+    property int comboContextMenuWidth: LV.Theme.buttonMinWidth + LV.Theme.gap24 + LV.Theme.gap8
     property int comboMenuYOffset: LV.Theme.gap2
-    property int compactComboWidth: Math.max(0, Math.round(LV.Theme.scaleMetric(97)))
+    property int compactComboWidth: LV.Theme.buttonMinWidth - LV.Theme.gap3
     readonly property var modeMenuItems: [
         {
             iconName: "generalshow",
@@ -51,7 +51,7 @@ LV.HStack {
         modeBar.requestViewHook("open-navigation-mode-menu");
     }
 
-    spacing: modeBar.showLabel ? 8 : 0
+    spacing: modeBar.showLabel ? LV.Theme.gap8 : LV.Theme.gapNone
 
     LV.Label {
         color: LV.Theme.bodyColor
@@ -77,10 +77,7 @@ LV.HStack {
         items: modeBar.modeMenuItems
         modal: false
         parent: Controls.Overlay.overlay
-        selectedIndex: modeBar.navigationModeViewModel
-                       && modeBar.navigationModeViewModel.activeMode !== undefined
-                       ? modeBar.navigationModeViewModel.activeMode
-                       : 0
+        selectedIndex: modeBar.navigationModeViewModel && modeBar.navigationModeViewModel.activeMode !== undefined ? modeBar.navigationModeViewModel.activeMode : 0
 
         onItemTriggered: function (index) {
             if (modeBar.navigationModeViewModel && modeBar.navigationModeViewModel.requestModeChange !== undefined)

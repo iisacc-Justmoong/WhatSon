@@ -7,7 +7,7 @@ import LVRS 1.0 as LV
 Item {
     id: monthCalendarGridSurface
 
-    property int bodyLabelPixelSize: Math.max(0, Math.round(LV.Theme.scaleMetric(12)))
+    property int bodyLabelPixelSize: LV.Theme.textBody
     property var calendarVm: null
     readonly property var dayModels: monthCalendarGridSurface.monthProjection && monthCalendarGridSurface.monthProjection.dayModels ? monthCalendarGridSurface.monthProjection.dayModels : []
     readonly property int eventBackgroundColored: 1
@@ -18,7 +18,7 @@ Item {
     readonly property var visibleDayModels: monthCalendarGridSurface.buildVisibleDayModels()
     readonly property int visibleWeekRowCount: Math.max(1, Math.ceil(monthCalendarGridSurface.visibleDayModels.length / 7))
     property int weekdayCellHorizontalPadding: LV.Theme.gap12
-    property int weekdayHeaderHeight: Math.max(0, Math.round(LV.Theme.scaleMetric(39)))
+    property int weekdayHeaderHeight: LV.Theme.controlHeightMd + LV.Theme.gap3
     readonly property var weekdayLabels: monthCalendarGridSurface.monthProjection && monthCalendarGridSurface.monthProjection.weekdayLabels ? monthCalendarGridSurface.monthProjection.weekdayLabels : []
 
     signal dateSelected(string dateIso)
@@ -94,9 +94,7 @@ Item {
         const sourceKind = entryModel && entryModel.sourceKind !== undefined ? String(entryModel.sourceKind).trim() : "";
         if (sourceKind !== "note")
             return "";
-        return entryModel && entryModel.sourceId !== undefined && entryModel.sourceId !== null
-                ? String(entryModel.sourceId).trim()
-                : "";
+        return entryModel && entryModel.sourceId !== undefined && entryModel.sourceId !== null ? String(entryModel.sourceId).trim() : "";
     }
     function entryLabel(entryModel) {
         const title = entryModel && entryModel.title !== undefined && String(entryModel.title).trim().length > 0 ? String(entryModel.title).trim() : "Untitled";
@@ -215,10 +213,8 @@ Item {
                     monthCalendarGridSurface.requestViewHook("select-date");
                     monthCalendarGridSurface.dateSelected(dateIso);
                 }
-                onEntryActivated: function(entryCellModel) {
-                    const noteId = entryCellModel && entryCellModel.noteId !== undefined
-                            ? String(entryCellModel.noteId).trim()
-                            : "";
+                onEntryActivated: function (entryCellModel) {
+                    const noteId = entryCellModel && entryCellModel.noteId !== undefined ? String(entryCellModel.noteId).trim() : "";
                     if (noteId.length === 0)
                         return;
                     monthCalendarGridSurface.requestViewHook("open-note");

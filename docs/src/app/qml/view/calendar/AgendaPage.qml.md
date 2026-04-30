@@ -12,7 +12,7 @@ timed events, and agenda-item completion rows.
 
 ## UI Composition
 - Surface:
-  - root page keeps `color: "transparent"`.
+  - root page keeps `LV.Theme.accentTransparent`.
 - Header:
   - shared `CalendarTodayControl` (`Prev/Today/Next`) drives date cursor movement.
   - date label and location caption are rendered in the top row.
@@ -30,6 +30,10 @@ timed events, and agenda-item completion rows.
 5. Tapping a projected note row in `All day` or `Timed` emits `noteOpenRequested(noteId)` so the host can reopen that
    note in the editor surface.
 6. Empty sections show dedicated placeholder labels.
+
+## LVRS Token Notes
+- The page background and small agenda checkmark text now use `LV.Theme.accentTransparent` and
+  `LV.Theme.textCaption` instead of direct visual literals.
 
 ## Tests
 - Automated test files are not currently present in this repository.

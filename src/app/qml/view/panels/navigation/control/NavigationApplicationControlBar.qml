@@ -32,7 +32,7 @@ Item {
     property bool compactMode: false
     property bool compactDetailPanelVisible: false
     property bool compactNoteListControlsVisible: false
-    property int menuItemWidth: Math.max(0, Math.round(LV.Theme.scaleMetric(176)))
+    property int menuItemWidth: LV.Theme.inputMinWidth - LV.Theme.gap4
     property int menuYOffset: LV.Theme.gap2
     property bool detailPanelCollapsed: false
     readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("navigation.NavigationApplicationControlBar") : null
@@ -198,10 +198,7 @@ Item {
                         applicationControlContextMenu.close();
                         return;
                     }
-                    applicationControlContextMenu.openFor(
-                        applicationControlMenuButton,
-                        applicationControlMenuButton.width,
-                        applicationControlMenuButton.height + applicationControlBar.menuYOffset);
+                    applicationControlContextMenu.openFor(applicationControlMenuButton, applicationControlMenuButton.width, applicationControlMenuButton.height + applicationControlBar.menuYOffset);
                 }
             }
             LV.IconButton {
@@ -256,10 +253,7 @@ Item {
                         noteListApplicationControlContextMenu.close();
                         return;
                     }
-                    noteListApplicationControlContextMenu.openFor(
-                        noteListApplicationControlMenuButton,
-                        noteListApplicationControlMenuButton.width,
-                        noteListApplicationControlMenuButton.height + applicationControlBar.menuYOffset);
+                    noteListApplicationControlContextMenu.openFor(noteListApplicationControlMenuButton, noteListApplicationControlMenuButton.width, noteListApplicationControlMenuButton.height + applicationControlBar.menuYOffset);
                 }
             }
         }

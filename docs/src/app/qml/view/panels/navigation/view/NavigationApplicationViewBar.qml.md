@@ -51,7 +51,7 @@ The Figma node mapping is:
   consistent menu affordance pattern.
 - Compact trigger follows the shared menu-button padding contract used by control mode:
   `left=2`, `right=4`, `top=2`, `bottom=2`, `spacing=0`.
-- Compact menu width/y-offset now route through `LV.Theme.scaleMetric(196)` and `LV.Theme.gap2`.
+- Compact menu width/y-offset now route through `LV.Theme.inputMinWidth + LV.Theme.gap16` and `LV.Theme.gap2`.
 - The `Center View` option keeps the Figma `258:8039` target/reticle glyph via LVRS `recursiveMethod`,
   while `Center View Mode` keeps the separate LVRS `singleRecordView` screen-preview glyph from `258:7852`.
 - The compact editor route now also renders the dedicated right-edge `columnIndex` detail button from

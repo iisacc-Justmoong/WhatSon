@@ -11,14 +11,12 @@ Rectangle {
     readonly property int dayColumnSpacing: LV.Theme.gap2
     readonly property int hourColumnWidth: LV.Theme.gap24 * 2
     readonly property var hourSlots: weekCalendarPage.buildHourSlots()
-    readonly property int initialDateRadius: Math.max(0, Math.round(LV.Theme.scaleMetric(21)))
+    readonly property int initialDateRadius: LV.Theme.gap20 + Math.round(LV.Theme.strokeThin)
     readonly property int lazyChunkSize: 14
     readonly property int maxDateWindowSize: 120
     readonly property int preloadThreshold: 12
     readonly property int timelineDayCount: weekCalendarPage.timelineDayModels.length
-    readonly property var timelineDayModels: weekCalendarPage.calendarVm && weekCalendarPage.calendarVm.timelineDayModels
-                                            ? weekCalendarPage.calendarVm.timelineDayModels
-                                            : []
+    readonly property var timelineDayModels: weekCalendarPage.calendarVm && weekCalendarPage.calendarVm.timelineDayModels ? weekCalendarPage.calendarVm.timelineDayModels : []
     readonly property int visibleDayColumnCount: 3
     readonly property int centeredDayColumnOffset: Math.floor(weekCalendarPage.visibleDayColumnCount / 2)
     property bool dateWindowInitialized: false
@@ -48,8 +46,7 @@ Rectangle {
             const dayModel = weekCalendarPage.timelineDayModels[index];
             if (!dayModel || String(dayModel.dateIso) !== normalizedIso)
                 continue;
-            weekCalendarPage.setViewportContentX(
-                        Math.max(0, (index - weekCalendarPage.centeredDayColumnOffset) * timelineScaffold.dayColumnSpan));
+            weekCalendarPage.setViewportContentX(Math.max(0, (index - weekCalendarPage.centeredDayColumnOffset) * timelineScaffold.dayColumnSpan));
             weekCalendarPage.ensureLazyDates();
             weekCalendarPage.syncDisplayedWeekForDate(normalizedIso, "focus-date");
             return;
@@ -63,9 +60,7 @@ Rectangle {
         if (timelineScaffold.dayColumnSpan <= 0)
             return 0;
         const viewportCenterX = dateColumnsFlickable.contentX + (timelineScaffold.dateViewportWidth / 2);
-        const centeredIndex = Math.round(
-                    (viewportCenterX - (timelineScaffold.dayColumnWidth / 2))
-                    / timelineScaffold.dayColumnSpan);
+        const centeredIndex = Math.round((viewportCenterX - (timelineScaffold.dayColumnWidth / 2)) / timelineScaffold.dayColumnSpan);
         return Math.max(0, Math.min(weekCalendarPage.timelineDayCount - 1, centeredIndex));
     }
     function currentLeadingDateIndex() {
@@ -73,11 +68,7 @@ Rectangle {
             return -1;
         if (timelineScaffold.dayColumnSpan <= 0)
             return 0;
-        return Math.max(
-                    0,
-                    Math.min(
-                        weekCalendarPage.timelineDayCount - 1,
-                        Math.floor(dateColumnsFlickable.contentX / timelineScaffold.dayColumnSpan)));
+        return Math.max(0, Math.min(weekCalendarPage.timelineDayCount - 1, Math.floor(dateColumnsFlickable.contentX / timelineScaffold.dayColumnSpan)));
     }
     function ensureLazyDates() {
         if (!weekCalendarPage.dateWindowInitialized || weekCalendarPage.timelineDayCount <= 0)
@@ -92,9 +83,7 @@ Rectangle {
     function entriesForHour(dayModel, hour) {
         if (!dayModel || dayModel.dateIso === undefined)
             return [];
-        const dayEntries = dayModel.entries !== undefined && dayModel.entries !== null
-                ? dayModel.entries
-                : [];
+        const dayEntries = dayModel.entries !== undefined && dayModel.entries !== null ? dayModel.entries : [];
         var matches = [];
         for (var index = 0; index < dayEntries.length; ++index) {
             const entry = dayEntries[index];
@@ -119,11 +108,9 @@ Rectangle {
         if (weekCalendarPage.calendarVm && weekCalendarPage.calendarVm.initializeTimelineWindow)
             weekCalendarPage.calendarVm.initializeTimelineWindow(resolvedAnchorIso, weekCalendarPage.initialDateRadius);
 
-        Qt.callLater(function() {
+        Qt.callLater(function () {
             const anchorIndex = weekCalendarPage.initialDateRadius;
-            const initialContentX = centerAnchor === true
-                    ? Math.max(0, (anchorIndex - weekCalendarPage.centeredDayColumnOffset) * timelineScaffold.dayColumnSpan)
-                    : anchorIndex * timelineScaffold.dayColumnSpan;
+            const initialContentX = centerAnchor === true ? Math.max(0, (anchorIndex - weekCalendarPage.centeredDayColumnOffset) * timelineScaffold.dayColumnSpan) : anchorIndex * timelineScaffold.dayColumnSpan;
             weekCalendarPage.setViewportContentX(initialContentX);
             weekCalendarPage.dateWindowInitialized = true;
             weekCalendarPage.ensureLazyDates();
@@ -150,10 +137,7 @@ Rectangle {
             return "";
         const dayOfWeek = baseDate.getDay();
         const distanceFromMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
-        const weekStartDate = new Date(
-                    baseDate.getFullYear(),
-                    baseDate.getMonth(),
-                    baseDate.getDate() - distanceFromMonday);
+        const weekStartDate = new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate() - distanceFromMonday);
         return weekCalendarPage.toIsoDate(weekStartDate);
     }
     function notifyViewHook(reason) {
@@ -173,8 +157,7 @@ Rectangle {
         return new Date(year, month - 1, day);
     }
     function prependDates(count) {
-        if (count <= 0 || weekCalendarPage.timelineDayCount <= 0
-                || !weekCalendarPage.calendarVm || !weekCalendarPage.calendarVm.prependTimelineDates)
+        if (count <= 0 || weekCalendarPage.timelineDayCount <= 0 || !weekCalendarPage.calendarVm || !weekCalendarPage.calendarVm.prependTimelineDates)
             return;
         const prependedCount = Number(weekCalendarPage.calendarVm.prependTimelineDates(count));
         if (isFinite(prependedCount) && prependedCount > 0)
@@ -189,9 +172,7 @@ Rectangle {
     function resolveInitialDateIso() {
         const todayIso = weekCalendarPage.toIsoDate(new Date());
         const currentWeekStartIso = weekCalendarPage.normalizedWeekStartIso(todayIso);
-        const currentVmIso = weekCalendarPage.calendarVm && weekCalendarPage.calendarVm.displayedWeekStartIso !== undefined
-                ? String(weekCalendarPage.calendarVm.displayedWeekStartIso).trim()
-                : "";
+        const currentVmIso = weekCalendarPage.calendarVm && weekCalendarPage.calendarVm.displayedWeekStartIso !== undefined ? String(weekCalendarPage.calendarVm.displayedWeekStartIso).trim() : "";
         if (currentVmIso.length > 0) {
             if (currentVmIso === currentWeekStartIso)
                 return todayIso;
@@ -205,7 +186,7 @@ Rectangle {
     function setViewportContentX(nextContentX) {
         weekCalendarPage.suppressViewportSync = true;
         dateColumnsFlickable.contentX = Math.max(0, nextContentX);
-        Qt.callLater(function() {
+        Qt.callLater(function () {
             weekCalendarPage.suppressViewportSync = false;
         });
     }
@@ -213,10 +194,7 @@ Rectangle {
         const baseDate = weekCalendarPage.parseIsoDate(dateIso);
         if (!baseDate)
             return "";
-        const shiftedDate = new Date(
-                    baseDate.getFullYear(),
-                    baseDate.getMonth(),
-                    baseDate.getDate() + deltaDays);
+        const shiftedDate = new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate() + deltaDays);
         return weekCalendarPage.toIsoDate(shiftedDate);
     }
     function slotBackgroundType(entries) {
@@ -251,9 +229,7 @@ Rectangle {
         const sourceKind = firstEntry && firstEntry.sourceKind !== undefined ? String(firstEntry.sourceKind).trim() : "";
         if (sourceKind !== "note")
             return "";
-        return firstEntry && firstEntry.sourceId !== undefined && firstEntry.sourceId !== null
-                ? String(firstEntry.sourceId).trim()
-                : "";
+        return firstEntry && firstEntry.sourceId !== undefined && firstEntry.sourceId !== null ? String(firstEntry.sourceId).trim() : "";
     }
     function requestOpenNoteForEntries(entries) {
         const noteId = weekCalendarPage.noteIdForEntries(entries);
@@ -264,13 +240,8 @@ Rectangle {
     }
     function syncDisplayedWeekForDate(dateIso, reason) {
         const activeWeekStartIso = weekCalendarPage.normalizedWeekStartIso(dateIso);
-        const currentVmIso = weekCalendarPage.calendarVm && weekCalendarPage.calendarVm.displayedWeekStartIso !== undefined
-                ? String(weekCalendarPage.calendarVm.displayedWeekStartIso).trim()
-                : "";
-        if (weekCalendarPage.calendarVm
-                && weekCalendarPage.calendarVm.setDisplayedWeekStartIso
-                && activeWeekStartIso.length > 0
-                && currentVmIso !== activeWeekStartIso) {
+        const currentVmIso = weekCalendarPage.calendarVm && weekCalendarPage.calendarVm.displayedWeekStartIso !== undefined ? String(weekCalendarPage.calendarVm.displayedWeekStartIso).trim() : "";
+        if (weekCalendarPage.calendarVm && weekCalendarPage.calendarVm.setDisplayedWeekStartIso && activeWeekStartIso.length > 0 && currentVmIso !== activeWeekStartIso) {
             weekCalendarPage.calendarVm.setDisplayedWeekStartIso(activeWeekStartIso);
         }
         weekCalendarPage.notifyViewHook(reason);
@@ -294,26 +265,20 @@ Rectangle {
     function trimDateWindow() {
         if (!weekCalendarPage.calendarVm || !weekCalendarPage.calendarVm.trimTimelineWindow)
             return;
-        const trimResult = weekCalendarPage.calendarVm.trimTimelineWindow(
-                    weekCalendarPage.currentLeadingDateIndex(),
-                    weekCalendarPage.maxDateWindowSize,
-                    weekCalendarPage.lazyChunkSize);
-        const removedHead = trimResult && trimResult.removedHead !== undefined
-                ? Number(trimResult.removedHead)
-                : 0;
+        const trimResult = weekCalendarPage.calendarVm.trimTimelineWindow(weekCalendarPage.currentLeadingDateIndex(), weekCalendarPage.maxDateWindowSize, weekCalendarPage.lazyChunkSize);
+        const removedHead = trimResult && trimResult.removedHead !== undefined ? Number(trimResult.removedHead) : 0;
         if (isFinite(removedHead) && removedHead > 0) {
-            weekCalendarPage.setViewportContentX(
-                        Math.max(0, dateColumnsFlickable.contentX - (removedHead * timelineScaffold.dayColumnSpan)));
+            weekCalendarPage.setViewportContentX(Math.max(0, dateColumnsFlickable.contentX - (removedHead * timelineScaffold.dayColumnSpan)));
         }
     }
 
     Layout.fillHeight: true
     Layout.fillWidth: true
-    color: "transparent"
+    color: LV.Theme.accentTransparent
     radius: LV.Theme.radiusMd
 
     Component.onCompleted: {
-        Qt.callLater(function() {
+        Qt.callLater(function () {
             weekCalendarPage.initializeDateWindow(weekCalendarPage.resolveInitialDateIso(), true, "initialize-date-window");
             weekCalendarPage.requestViewHook("page-open");
         });
@@ -342,21 +307,12 @@ Rectangle {
                 anchors.fill: parent
                 anchors.margins: LV.Theme.gap3
                 readonly property real dateViewportWidth: Math.max(1, width - weekCalendarPage.hourColumnWidth - weekCalendarPage.dayColumnSpacing)
-                readonly property real dayColumnWidth: Math.max(
-                                                           1,
-                                                           (dateViewportWidth
-                                                            - (weekCalendarPage.dayColumnSpacing
-                                                               * (weekCalendarPage.visibleDayColumnCount - 1)))
-                                                           / weekCalendarPage.visibleDayColumnCount)
+                readonly property real dayColumnWidth: Math.max(1, (dateViewportWidth - (weekCalendarPage.dayColumnSpacing * (weekCalendarPage.visibleDayColumnCount - 1))) / weekCalendarPage.visibleDayColumnCount)
                 readonly property real dayColumnSpan: dayColumnWidth + weekCalendarPage.dayColumnSpacing
                 readonly property real headerHeight: Math.max(44, LV.Theme.gap24 * 2)
                 readonly property int hourSlotCount: Math.max(1, weekCalendarPage.hourSlots.length)
                 readonly property real bodyHeight: Math.max(1, height - headerHeight - weekCalendarPage.dayColumnSpacing)
-                readonly property real hourRowHeight: Math.max(
-                                                          1,
-                                                          (bodyHeight
-                                                           - (weekCalendarPage.dayColumnSpacing * (hourSlotCount - 1)))
-                                                          / hourSlotCount)
+                readonly property real hourRowHeight: Math.max(1, (bodyHeight - (weekCalendarPage.dayColumnSpacing * (hourSlotCount - 1))) / hourSlotCount)
 
                 Column {
                     id: timeColumn
@@ -431,10 +387,7 @@ Rectangle {
                         id: dateColumnsContent
 
                         height: dateColumnsFlickable.height
-                        width: weekCalendarPage.timelineDayCount > 0
-                               ? (weekCalendarPage.timelineDayCount * timelineScaffold.dayColumnWidth)
-                                 + ((weekCalendarPage.timelineDayCount - 1) * weekCalendarPage.dayColumnSpacing)
-                               : 0
+                        width: weekCalendarPage.timelineDayCount > 0 ? (weekCalendarPage.timelineDayCount * timelineScaffold.dayColumnWidth) + ((weekCalendarPage.timelineDayCount - 1) * weekCalendarPage.dayColumnSpacing) : 0
 
                         Repeater {
                             model: weekCalendarPage.timelineDayModels
@@ -446,13 +399,9 @@ Rectangle {
                                 readonly property var dayModel: dayHeaderCell.modelData
                                 required property var modelData
 
-                                border.color: dayHeaderCell.dayModel && dayHeaderCell.dayModel.isToday
-                                              ? LV.Theme.accent
-                                              : LV.Theme.accentTransparent
+                                border.color: dayHeaderCell.dayModel && dayHeaderCell.dayModel.isToday ? LV.Theme.accent : LV.Theme.accentTransparent
                                 border.width: Math.max(1, LV.Theme.strokeThin)
-                                color: dayHeaderCell.dayModel && dayHeaderCell.dayModel.isToday
-                                       ? LV.Theme.accentTransparent
-                                       : "transparent"
+                                color: dayHeaderCell.dayModel && dayHeaderCell.dayModel.isToday ? LV.Theme.accentTransparent : "transparent"
                                 height: timelineScaffold.headerHeight
                                 radius: LV.Theme.radiusSm
                                 width: timelineScaffold.dayColumnWidth
@@ -465,27 +414,14 @@ Rectangle {
 
                                     LV.Label {
                                         anchors.horizontalCenter: parent.horizontalCenter
-                                        color: dayHeaderCell.dayModel && dayHeaderCell.dayModel.isToday
-                                               ? LV.Theme.accent
-                                               : (dayHeaderCell.dayModel
-                                                  && dayHeaderCell.dayModel.isInCurrentWeek
-                                                  ? LV.Theme.titleHeaderColor
-                                                  : LV.Theme.descriptionColor)
+                                        color: dayHeaderCell.dayModel && dayHeaderCell.dayModel.isToday ? LV.Theme.accent : (dayHeaderCell.dayModel && dayHeaderCell.dayModel.isInCurrentWeek ? LV.Theme.titleHeaderColor : LV.Theme.descriptionColor)
                                         font.weight: Font.Medium
-                                        text: dayHeaderCell.dayModel
-                                              && dayHeaderCell.dayModel.weekdayLabel !== undefined
-                                              ? String(dayHeaderCell.dayModel.weekdayLabel)
-                                              : ""
+                                        text: dayHeaderCell.dayModel && dayHeaderCell.dayModel.weekdayLabel !== undefined ? String(dayHeaderCell.dayModel.weekdayLabel) : ""
                                     }
                                     LV.Label {
                                         anchors.horizontalCenter: parent.horizontalCenter
-                                        color: dayHeaderCell.dayModel && dayHeaderCell.dayModel.isInCurrentWeek
-                                               ? LV.Theme.descriptionColor
-                                               : Qt.darker(LV.Theme.descriptionColor, 1.2)
-                                        text: dayHeaderCell.dayModel
-                                              && dayHeaderCell.dayModel.dateLabel !== undefined
-                                              ? String(dayHeaderCell.dayModel.dateLabel)
-                                              : ""
+                                        color: dayHeaderCell.dayModel && dayHeaderCell.dayModel.isInCurrentWeek ? LV.Theme.descriptionColor : Qt.darker(LV.Theme.descriptionColor, 1.2)
+                                        text: dayHeaderCell.dayModel && dayHeaderCell.dayModel.dateLabel !== undefined ? String(dayHeaderCell.dayModel.dateLabel) : ""
                                     }
                                 }
                             }
@@ -506,7 +442,7 @@ Rectangle {
                                     readonly property int hour: Number(hourRow.modelData)
                                     required property var modelData
 
-                                    color: "transparent"
+                                    color: LV.Theme.accentTransparent
                                     height: timelineScaffold.hourRowHeight
                                     radius: LV.Theme.radiusSm
                                     width: parent.width
@@ -520,15 +456,11 @@ Rectangle {
                                             required property int index
                                             readonly property var dayModel: dayHourCell.modelData
                                             required property var modelData
-                                            readonly property var slotEntries: weekCalendarPage.entriesForHour(
-                                                                                  dayHourCell.dayModel,
-                                                                                  hourRow.hour)
+                                            readonly property var slotEntries: weekCalendarPage.entriesForHour(dayHourCell.dayModel, hourRow.hour)
 
-                                            border.color: dayHourCell.dayModel && dayHourCell.dayModel.isToday
-                                                          ? LV.Theme.accentTransparent
-                                                          : LV.Theme.accentTransparent
+                                            border.color: dayHourCell.dayModel && dayHourCell.dayModel.isToday ? LV.Theme.accentTransparent : LV.Theme.accentTransparent
                                             border.width: Math.max(1, LV.Theme.strokeThin)
-                                            color: "transparent"
+                                            color: LV.Theme.accentTransparent
                                             height: timelineScaffold.hourRowHeight
                                             radius: LV.Theme.radiusSm
                                             width: timelineScaffold.dayColumnWidth

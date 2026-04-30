@@ -8,34 +8,28 @@ Item {
     id: resourceListItem
 
     property bool active: false
-    readonly property color activeCardColor: "#25324D"
+    readonly property color activeCardColor: LV.Theme.accentBlueMuted
     readonly property bool hovered: resourceHoverHandler.hovered
     readonly property color hoverCardColor: LV.Theme.panelBackground06
     readonly property int framePadding: LV.Theme.gap8
     property bool pressed: false
     readonly property color pressedCardColor: resourceListItem.hoverCardColor
     property url previewSource: ""
-    readonly property int rowSpacing: Math.max(0, Math.round(LV.Theme.scaleMetric(10)))
-    readonly property int thumbnailSize: Math.max(0, Math.round(LV.Theme.scaleMetric(48)))
-    readonly property color thumbnailPlaceholderColor: "#D9D9D9"
+    readonly property int rowSpacing: LV.Theme.gap10
+    readonly property int thumbnailSize: LV.Theme.gap24 + LV.Theme.gap24
+    readonly property color thumbnailPlaceholderColor: LV.Theme.strokeSoft
     property string titleText: ""
     readonly property color titleColor: LV.Theme.captionColor
-    readonly property int titleLineHeight: Math.max(0, Math.round(LV.Theme.scaleMetric(12)))
-    readonly property int titlePixelSize: Math.max(0, Math.round(LV.Theme.scaleMetric(12)))
+    readonly property int titleLineHeight: LV.Theme.textBodyLineHeight
+    readonly property int titlePixelSize: LV.Theme.textBody
 
     clip: true
     implicitHeight: resourceListItem.thumbnailSize + resourceListItem.framePadding * 2
-    implicitWidth: Math.max(0, Math.round(LV.Theme.scaleMetric(194)))
+    implicitWidth: LV.Theme.inputMinWidth + LV.Theme.gap14
 
     Rectangle {
         anchors.fill: parent
-        color: resourceListItem.active
-            ? resourceListItem.activeCardColor
-            : resourceListItem.pressed
-                ? resourceListItem.pressedCardColor
-                : resourceListItem.hovered
-                    ? resourceListItem.hoverCardColor
-                    : LV.Theme.accentTransparent
+        color: resourceListItem.active ? resourceListItem.activeCardColor : resourceListItem.pressed ? resourceListItem.pressedCardColor : resourceListItem.hovered ? resourceListItem.hoverCardColor : LV.Theme.accentTransparent
     }
     HoverHandler {
         id: resourceHoverHandler
