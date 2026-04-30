@@ -952,6 +952,21 @@ QString ContentsEditorSelectionBridge::resolveCurrentNoteIdFromSelectionContract
         return {};
     }
 
+    const QString rowNoteId = readNoteIdFromModelRow(currentIndex);
+    if (!rowNoteId.isEmpty())
+    {
+        WhatSon::Debug::traceEditorSelf(
+            this,
+            QStringLiteral("selectionBridge"),
+            QStringLiteral("selectionFlow.resolveCurrentNoteId.rowFallback"),
+            QStringLiteral("currentIndex=%1 rowNoteId=%2 committedEntryKeys=%3 {%4}")
+                .arg(currentIndex)
+                .arg(rowNoteId)
+                .arg(currentNoteEntry.keys().join(QLatin1Char(',')))
+                .arg(summarizeTraceNoteListModel(m_noteListModel)));
+        return rowNoteId;
+    }
+
     WhatSon::Debug::traceEditorSelf(
         this,
         QStringLiteral("selectionBridge"),
@@ -1315,8 +1330,12 @@ void ContentsEditorSelectionBridge::refreshNoteSelectionState()
     const QVariantMap nextCurrentNoteEntry = currentNoteEntryReadable
         ? readCurrentNoteEntry(m_noteListModel.data())
         : QVariantMap();
+    const bool rowSelectionFallbackAvailable = qobject_cast<const QAbstractItemModel*>(m_noteListModel.data()) != nullptr
+        && hasReadableProperty(m_noteListModel, "currentIndex");
     const bool nextContractAvailable = noteBackedSelectionEnabled(m_noteListModel)
-        && (currentNoteEntryReadable || hasReadableProperty(m_noteListModel, "currentNoteId"));
+        && (currentNoteEntryReadable
+            || hasReadableProperty(m_noteListModel, "currentNoteId")
+            || rowSelectionFallbackAvailable);
     const QString previousNoteId = m_selectedNoteId;
     const QString previousNoteDirectoryPath = m_selectedNoteDirectoryPath;
     const QString proposedNoteId = nextContractAvailable
