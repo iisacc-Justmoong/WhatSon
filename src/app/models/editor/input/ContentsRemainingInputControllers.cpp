@@ -10,6 +10,19 @@ QUrl helperUrl(const char* fileName)
 {
     return QUrl(QStringLiteral("qrc:/qt/qml/WhatSon/App/view/content/editor/") + QString::fromLatin1(fileName));
 }
+
+QObject* loaderItem(QObject* loader)
+{
+    return qobject_cast<QObject*>(WhatSon::Editor::DynamicObjectSupport::propertyValue(loader, "item").value<QObject*>());
+}
+
+QVariantMap defaultCursorRowRect()
+{
+    return {
+        {QStringLiteral("contentHeight"), 12},
+        {QStringLiteral("contentY"), 0}
+    };
+}
 }
 
 ContentsAgendaBlockController::ContentsAgendaBlockController(QObject* parent)
@@ -20,24 +33,158 @@ QObject* ContentsAgendaBlockController::agendaBlock() const noexcept { return m_
 void ContentsAgendaBlockController::setAgendaBlock(QObject* value) { if (m_agendaBlock == value) return; m_agendaBlock = value; syncHelperProperty("agendaBlock", QVariant::fromValue(value)); emit agendaBlockChanged(); }
 QObject* ContentsAgendaBlockController::taskRepeater() const noexcept { return m_taskRepeater; }
 void ContentsAgendaBlockController::setTaskRepeater(QObject* value) { if (m_taskRepeater == value) return; m_taskRepeater = value; syncHelperProperty("taskRepeater", QVariant::fromValue(value)); emit taskRepeaterChanged(); }
-bool ContentsAgendaBlockController::hasFocusedTaskRow() const { return invokeHelperBool("hasFocusedTaskRow"); }
-bool ContentsAgendaBlockController::focusedTaskInputMethodComposing() const { return invokeHelperBool("focusedTaskInputMethodComposing"); }
-QString ContentsAgendaBlockController::focusedTaskPreeditText() const { return invokeHelperString("focusedTaskPreeditText"); }
-bool ContentsAgendaBlockController::nativeCompositionActive() const { return invokeHelperBool("nativeCompositionActive"); }
-int ContentsAgendaBlockController::currentFocusedTaskLineNumber() const { return invokeHelperInt("currentFocusedTaskLineNumber", {}, 1); }
-QVariantMap ContentsAgendaBlockController::currentCursorRowRect() const { return invokeHelperVariantMap("currentCursorRowRect"); }
-QString ContentsAgendaBlockController::currentVisiblePlainText() const { return invokeHelperString("currentVisiblePlainText"); }
-QString ContentsAgendaBlockController::visiblePlainText() const { return invokeHelperString("visiblePlainText"); }
-int ContentsAgendaBlockController::representativeCharCount(const QVariant& lineText) const { return invokeHelperInt("representativeCharCount", {lineText}); }
-bool ContentsAgendaBlockController::focusLastTask() const { return invokeHelperBool("focusLastTask"); }
-bool ContentsAgendaBlockController::focusTaskBoundary(const int taskIndex, const QString& side) const { return invokeHelperBool("focusTaskBoundary", {taskIndex, side}); }
-bool ContentsAgendaBlockController::focusBoundary(const QString& side) const { return invokeHelperBool("focusBoundary", {side}); }
-bool ContentsAgendaBlockController::focusFirstTask() const { return invokeHelperBool("focusFirstTask"); }
-bool ContentsAgendaBlockController::focusTaskAtSourceOffset(const int sourceOffset) const { return invokeHelperBool("focusTaskAtSourceOffset", {sourceOffset}); }
-bool ContentsAgendaBlockController::applyFocusRequest(const QVariantMap& request) const { return invokeHelperBool("applyFocusRequest", {request}); }
-bool ContentsAgendaBlockController::clearSelection(const bool preserveFocusedEditor) const { return invokeHelperBool("clearSelection", {preserveFocusedEditor}); }
-int ContentsAgendaBlockController::shortcutInsertionSourceOffset() const { return invokeHelperInt("shortcutInsertionSourceOffset"); }
-QUrl ContentsAgendaBlockController::helperSourceUrl() const { return helperUrl("ContentsAgendaBlockController.qml"); }
+bool ContentsAgendaBlockController::hasFocusedTaskRow() const
+{
+    const int count = WhatSon::Editor::DynamicObjectSupport::intProperty(m_taskRepeater, "count");
+    for (int index = 0; index < count; ++index)
+    {
+        QObject* item = qobject_cast<QObject*>(WhatSon::Editor::DynamicObjectSupport::invokeVariant(m_taskRepeater, "itemAt", {index}).value<QObject*>());
+        if (item != nullptr && WhatSon::Editor::DynamicObjectSupport::boolProperty(item, "focused"))
+            return true;
+    }
+    return false;
+}
+bool ContentsAgendaBlockController::focusedTaskInputMethodComposing() const
+{
+    const int count = WhatSon::Editor::DynamicObjectSupport::intProperty(m_taskRepeater, "count");
+    for (int index = 0; index < count; ++index)
+    {
+        QObject* item = qobject_cast<QObject*>(WhatSon::Editor::DynamicObjectSupport::invokeVariant(m_taskRepeater, "itemAt", {index}).value<QObject*>());
+        if (item != nullptr && WhatSon::Editor::DynamicObjectSupport::boolProperty(item, "focused"))
+            return WhatSon::Editor::DynamicObjectSupport::boolProperty(item, "inputMethodComposing");
+    }
+    return false;
+}
+QString ContentsAgendaBlockController::focusedTaskPreeditText() const
+{
+    const int count = WhatSon::Editor::DynamicObjectSupport::intProperty(m_taskRepeater, "count");
+    for (int index = 0; index < count; ++index)
+    {
+        QObject* item = qobject_cast<QObject*>(WhatSon::Editor::DynamicObjectSupport::invokeVariant(m_taskRepeater, "itemAt", {index}).value<QObject*>());
+        if (item != nullptr && WhatSon::Editor::DynamicObjectSupport::boolProperty(item, "focused"))
+            return WhatSon::Editor::DynamicObjectSupport::stringProperty(item, "preeditText");
+    }
+    return {};
+}
+bool ContentsAgendaBlockController::nativeCompositionActive() const { return focusedTaskInputMethodComposing() || !focusedTaskPreeditText().isEmpty(); }
+int ContentsAgendaBlockController::currentFocusedTaskLineNumber() const
+{
+    const int count = WhatSon::Editor::DynamicObjectSupport::intProperty(m_taskRepeater, "count");
+    for (int index = 0; index < count; ++index)
+    {
+        QObject* item = qobject_cast<QObject*>(WhatSon::Editor::DynamicObjectSupport::invokeVariant(m_taskRepeater, "itemAt", {index}).value<QObject*>());
+        if (item != nullptr && WhatSon::Editor::DynamicObjectSupport::boolProperty(item, "focused"))
+            return index + 1;
+    }
+    return 1;
+}
+QVariantMap ContentsAgendaBlockController::currentCursorRowRect() const
+{
+    const int count = WhatSon::Editor::DynamicObjectSupport::intProperty(m_taskRepeater, "count");
+    for (int index = 0; index < count; ++index)
+    {
+        QObject* item = qobject_cast<QObject*>(WhatSon::Editor::DynamicObjectSupport::invokeVariant(m_taskRepeater, "itemAt", {index}).value<QObject*>());
+        if (item != nullptr && WhatSon::Editor::DynamicObjectSupport::boolProperty(item, "focused"))
+            return WhatSon::Editor::DynamicObjectSupport::invokeVariant(item, "currentCursorRowRect").toMap();
+    }
+    return defaultCursorRowRect();
+}
+QString ContentsAgendaBlockController::currentVisiblePlainText() const
+{
+    const QVariant tasksVariant = WhatSon::Editor::DynamicObjectSupport::propertyValue(m_agendaBlock, "tasks");
+    const QVariantList tasks = WhatSon::Editor::DynamicObjectSupport::normalizeSequentialVariant(tasksVariant);
+    QStringList lines;
+    const int count = qMax(WhatSon::Editor::DynamicObjectSupport::intProperty(m_taskRepeater, "count"), tasks.size());
+    for (int index = 0; index < count; ++index)
+    {
+        QObject* item = qobject_cast<QObject*>(WhatSon::Editor::DynamicObjectSupport::invokeVariant(m_taskRepeater, "itemAt", {index}).value<QObject*>());
+        if (item != nullptr)
+        {
+            lines.push_back(WhatSon::Editor::DynamicObjectSupport::invokeString(item, "currentEditorPlainText"));
+            continue;
+        }
+        lines.push_back(tasks.value(index).toMap().value(QStringLiteral("text")).toString());
+    }
+    if (lines.isEmpty())
+        lines.push_back(QString());
+    return lines.join('\n');
+}
+QString ContentsAgendaBlockController::visiblePlainText() const { return currentVisiblePlainText(); }
+int ContentsAgendaBlockController::representativeCharCount(const QVariant& lineText) const { return lineText.toString().size(); }
+bool ContentsAgendaBlockController::focusLastTask() const { return focusTaskBoundary(WhatSon::Editor::DynamicObjectSupport::intProperty(m_taskRepeater, "count") - 1, QStringLiteral("after")); }
+bool ContentsAgendaBlockController::focusTaskBoundary(const int taskIndex, const QString& side) const
+{
+    QObject* item = qobject_cast<QObject*>(WhatSon::Editor::DynamicObjectSupport::invokeVariant(m_taskRepeater, "itemAt", {taskIndex}).value<QObject*>());
+    if (item == nullptr)
+        return false;
+    const QString plainText = WhatSon::Editor::DynamicObjectSupport::invokeString(item, "currentEditorPlainText");
+    WhatSon::Editor::DynamicObjectSupport::invokeVariant(item, "focusEditor", {side.trimmed().toLower() == QStringLiteral("after") ? plainText.size() : 0});
+    return true;
+}
+bool ContentsAgendaBlockController::focusBoundary(const QString& side) const { return side.trimmed().toLower() == QStringLiteral("after") ? focusLastTask() : focusFirstTask(); }
+bool ContentsAgendaBlockController::focusFirstTask() const
+{
+    const int count = WhatSon::Editor::DynamicObjectSupport::intProperty(m_taskRepeater, "count");
+    for (int index = 0; index < count; ++index)
+    {
+        QObject* item = qobject_cast<QObject*>(WhatSon::Editor::DynamicObjectSupport::invokeVariant(m_taskRepeater, "itemAt", {index}).value<QObject*>());
+        if (item != nullptr)
+        {
+            WhatSon::Editor::DynamicObjectSupport::invokeVariant(item, "focusEditor", {0});
+            return true;
+        }
+    }
+    return false;
+}
+bool ContentsAgendaBlockController::focusTaskAtSourceOffset(const int sourceOffset) const
+{
+    const int count = WhatSon::Editor::DynamicObjectSupport::intProperty(m_taskRepeater, "count");
+    for (int index = 0; index < count; ++index)
+    {
+        QObject* item = qobject_cast<QObject*>(WhatSon::Editor::DynamicObjectSupport::invokeVariant(m_taskRepeater, "itemAt", {index}).value<QObject*>());
+        if (item == nullptr)
+            continue;
+        const int contentStart = WhatSon::Editor::DynamicObjectSupport::intProperty(item, "taskContentStart");
+        const int contentEnd = WhatSon::Editor::DynamicObjectSupport::intProperty(item, "taskContentEnd");
+        if (sourceOffset < contentStart || sourceOffset > contentEnd)
+            continue;
+        const QString taskText = WhatSon::Editor::DynamicObjectSupport::stringProperty(item, "taskText");
+        const int cursor = qBound(0, sourceOffset - contentStart, taskText.size());
+        WhatSon::Editor::DynamicObjectSupport::invokeVariant(item, "focusEditor", {cursor});
+        return true;
+    }
+    return false;
+}
+bool ContentsAgendaBlockController::applyFocusRequest(const QVariantMap& request) const
+{
+    if (m_agendaBlock == nullptr)
+        return false;
+    const int sourceOffset = request.value(QStringLiteral("sourceOffset")).toInt();
+    const int sourceStart = WhatSon::Editor::DynamicObjectSupport::intProperty(m_agendaBlock, "sourceStart");
+    const int sourceEnd = WhatSon::Editor::DynamicObjectSupport::intProperty(m_agendaBlock, "sourceEnd");
+    const QString entryBoundary = request.value(QStringLiteral("entryBoundary")).toString().trimmed().toLower();
+    if (sourceOffset < sourceStart || sourceOffset > sourceEnd)
+        return false;
+    if (entryBoundary == QStringLiteral("before") || sourceOffset <= sourceStart)
+        return focusBoundary(QStringLiteral("before"));
+    if (entryBoundary == QStringLiteral("after") || sourceOffset >= sourceEnd)
+        return focusBoundary(QStringLiteral("after"));
+    return focusTaskAtSourceOffset(sourceOffset) || focusBoundary(QStringLiteral("before"));
+}
+bool ContentsAgendaBlockController::clearSelection(const bool preserveFocusedEditor) const
+{
+    bool cleared = false;
+    const int count = WhatSon::Editor::DynamicObjectSupport::intProperty(m_taskRepeater, "count");
+    for (int index = 0; index < count; ++index)
+    {
+        QObject* item = qobject_cast<QObject*>(WhatSon::Editor::DynamicObjectSupport::invokeVariant(m_taskRepeater, "itemAt", {index}).value<QObject*>());
+        if (item != nullptr)
+            cleared = WhatSon::Editor::DynamicObjectSupport::invokeBool(item, "clearSelection", {preserveFocusedEditor}) || cleared;
+    }
+    return cleared;
+}
+int ContentsAgendaBlockController::shortcutInsertionSourceOffset() const { return WhatSon::Editor::DynamicObjectSupport::intProperty(m_agendaBlock, "sourceEnd"); }
+QUrl ContentsAgendaBlockController::helperSourceUrl() const { return {}; }
 
 ContentsAgendaTaskRowController::ContentsAgendaTaskRowController(QObject* parent)
     : ContentsQmlBackedInputControllerBase(parent)
@@ -99,18 +246,164 @@ QObject* ContentsDocumentBlockController::documentBlock() const noexcept { retur
 void ContentsDocumentBlockController::setDocumentBlock(QObject* value) { if (m_documentBlock == value) return; m_documentBlock = value; syncHelperProperty("documentBlock", QVariant::fromValue(value)); emit documentBlockChanged(); }
 QObject* ContentsDocumentBlockController::blockLoader() const noexcept { return m_blockLoader; }
 void ContentsDocumentBlockController::setBlockLoader(QObject* value) { if (m_blockLoader == value) return; m_blockLoader = value; syncHelperProperty("blockLoader", QVariant::fromValue(value)); emit blockLoaderChanged(); }
-QVariantMap ContentsDocumentBlockController::currentCursorRowRect() const { return invokeHelperVariantMap("currentCursorRowRect"); }
-QVariantList ContentsDocumentBlockController::logicalLineLayoutEntries() const { return invokeHelperVariantList("logicalLineLayoutEntries"); }
-bool ContentsDocumentBlockController::applyFocusRequest(const QVariantMap& request) const { return invokeHelperBool("applyFocusRequest", {request}); }
-bool ContentsDocumentBlockController::handleAtomicTagDeleteKeyPress(QObject* event) const { return invokeHelperBool("handleAtomicTagDeleteKeyPress", {QVariant::fromValue(event)}); }
-QVariantMap ContentsDocumentBlockController::inlineFormatSelectionSnapshot() const { return invokeHelperVariantMap("inlineFormatSelectionSnapshot"); }
-bool ContentsDocumentBlockController::clearSelection(const bool preserveFocusedEditor) const { return invokeHelperBool("clearSelection", {preserveFocusedEditor}); }
-int ContentsDocumentBlockController::shortcutInsertionSourceOffset() const { return invokeHelperInt("shortcutInsertionSourceOffset"); }
-QString ContentsDocumentBlockController::visiblePlainText() const { return invokeHelperString("visiblePlainText"); }
-int ContentsDocumentBlockController::representativeCharCount(const QVariant& lineText) const { return invokeHelperInt("representativeCharCount", {lineText}); }
-bool ContentsDocumentBlockController::handleAtomicTagManagementKeyPress(QObject* event) const { return invokeHelperBool("handleAtomicTagManagementKeyPress", {QVariant::fromValue(event)}); }
-void ContentsDocumentBlockController::handleAtomicTap(const int tapCount) const { invokeHelperVoid("handleAtomicTap", {tapCount}); }
-QUrl ContentsDocumentBlockController::helperSourceUrl() const { return helperUrl("ContentsDocumentBlockController.qml"); }
+QVariantMap ContentsDocumentBlockController::currentCursorRowRect() const
+{
+    QObject* item = loaderItem(m_blockLoader);
+    if (item != nullptr)
+    {
+        const QVariant rect = WhatSon::Editor::DynamicObjectSupport::invokeVariant(item, "currentCursorRowRect");
+        if (rect.canConvert<QVariantMap>())
+            return rect.toMap();
+    }
+    return defaultCursorRowRect();
+}
+QVariantList ContentsDocumentBlockController::logicalLineLayoutEntries() const
+{
+    QObject* item = loaderItem(m_blockLoader);
+    return WhatSon::Editor::DynamicObjectSupport::normalizeSequentialVariant(
+        WhatSon::Editor::DynamicObjectSupport::invokeVariant(item, "logicalLineLayoutEntries"));
+}
+bool ContentsDocumentBlockController::applyFocusRequest(const QVariantMap& request) const
+{
+    if (m_documentBlock == nullptr)
+        return false;
+
+    if (WhatSon::Editor::DynamicObjectSupport::boolProperty(m_documentBlock, "atomicBlock"))
+    {
+        const int sourceOffset = request.value(QStringLiteral("sourceOffset")).toInt();
+        const QVariantMap normalizedBlock = WhatSon::Editor::DynamicObjectSupport::propertyValue(m_documentBlock, "normalizedBlock").toMap();
+        const int sourceStart = normalizedBlock.value(QStringLiteral("sourceStart")).toInt();
+        const int sourceEnd = normalizedBlock.value(QStringLiteral("sourceEnd")).toInt();
+        if (sourceOffset < sourceStart || sourceOffset > sourceEnd)
+            return false;
+        WhatSon::Editor::DynamicObjectSupport::invokeVariant(m_documentBlock, "forceActiveFocus");
+        WhatSon::Editor::DynamicObjectSupport::invokeVariant(m_documentBlock, "activated");
+        return true;
+    }
+
+    QObject* item = loaderItem(m_blockLoader);
+    return WhatSon::Editor::DynamicObjectSupport::invokeBool(item, "applyFocusRequest", {request});
+}
+bool ContentsDocumentBlockController::handleAtomicTagDeleteKeyPress(QObject* event) const
+{
+    if (m_documentBlock == nullptr || event == nullptr)
+        return false;
+    if (!WhatSon::Editor::DynamicObjectSupport::boolProperty(m_documentBlock, "atomicBlock"))
+        return false;
+    if (WhatSon::Editor::DynamicObjectSupport::intProperty(event, "modifiers") != 0)
+        return false;
+    const int key = WhatSon::Editor::DynamicObjectSupport::intProperty(event, "key", -1);
+    constexpr int keyBackspace = 0x01000003;
+    constexpr int keyDelete = 0x01000007;
+    if (key != keyBackspace && key != keyDelete)
+        return false;
+    WhatSon::Editor::DynamicObjectSupport::invokeVariant(
+        m_documentBlock,
+        "blockDeletionRequested",
+        {key == keyDelete ? QStringLiteral("forward") : QStringLiteral("backward")});
+    event->setProperty("accepted", true);
+    return true;
+}
+QVariantMap ContentsDocumentBlockController::inlineFormatSelectionSnapshot() const
+{
+    QObject* item = loaderItem(m_blockLoader);
+    QVariant snapshot = WhatSon::Editor::DynamicObjectSupport::invokeVariant(item, "inlineFormatSelectionSnapshot");
+    if (!snapshot.isValid())
+        snapshot = WhatSon::Editor::DynamicObjectSupport::invokeVariant(item, "selectionSnapshot");
+    return snapshot.toMap();
+}
+bool ContentsDocumentBlockController::clearSelection(const bool preserveFocusedEditor) const
+{
+    QObject* item = loaderItem(m_blockLoader);
+    return WhatSon::Editor::DynamicObjectSupport::invokeBool(item, "clearSelection", {preserveFocusedEditor});
+}
+int ContentsDocumentBlockController::shortcutInsertionSourceOffset() const
+{
+    QObject* item = loaderItem(m_blockLoader);
+    const QVariant blockOffset = WhatSon::Editor::DynamicObjectSupport::invokeVariant(item, "shortcutInsertionSourceOffset");
+    if (blockOffset.isValid())
+        return blockOffset.toInt();
+    const QVariantMap normalizedBlock = WhatSon::Editor::DynamicObjectSupport::propertyValue(m_documentBlock, "normalizedBlock").toMap();
+    return normalizedBlock.value(QStringLiteral("sourceEnd")).toInt();
+}
+QString ContentsDocumentBlockController::visiblePlainText() const
+{
+    QObject* item = loaderItem(m_blockLoader);
+    const QVariant itemText = WhatSon::Editor::DynamicObjectSupport::invokeVariant(item, "visiblePlainText");
+    if (itemText.isValid())
+        return itemText.toString();
+    const QVariantMap normalizedBlock = WhatSon::Editor::DynamicObjectSupport::propertyValue(m_documentBlock, "normalizedBlock").toMap();
+    if (normalizedBlock.contains(QStringLiteral("plainText")))
+        return normalizedBlock.value(QStringLiteral("plainText")).toString();
+    return normalizedBlock.value(QStringLiteral("sourceText")).toString();
+}
+int ContentsDocumentBlockController::representativeCharCount(const QVariant& lineText) const
+{
+    QObject* item = loaderItem(m_blockLoader);
+    const QVariant count = WhatSon::Editor::DynamicObjectSupport::invokeVariant(item, "representativeCharCount", {lineText});
+    if (count.isValid())
+        return count.toInt();
+    const QString normalized = lineText.toString();
+    if (!normalized.isEmpty())
+        return normalized.size();
+    return WhatSon::Editor::DynamicObjectSupport::intProperty(m_documentBlock, "minimapRepresentativeCharCount");
+}
+bool ContentsDocumentBlockController::handleAtomicTagManagementKeyPress(QObject* event) const
+{
+    if (m_documentBlock == nullptr || event == nullptr)
+        return false;
+    if (!WhatSon::Editor::DynamicObjectSupport::boolProperty(m_documentBlock, "atomicBlock"))
+        return false;
+    if (handleAtomicTagDeleteKeyPress(event))
+        return true;
+
+    constexpr int keyLeft = 0x01000012;
+    constexpr int keyUp = 0x01000013;
+    constexpr int keyRight = 0x01000014;
+    constexpr int keyDown = 0x01000015;
+    constexpr int keyReturn = 0x01000004;
+    constexpr int keyEnter = 0x01000005;
+    const int key = WhatSon::Editor::DynamicObjectSupport::intProperty(event, "key", -1);
+    const int modifiers = WhatSon::Editor::DynamicObjectSupport::intProperty(event, "modifiers");
+    if (modifiers != 0)
+        return false;
+    if (key == keyLeft) {
+        WhatSon::Editor::DynamicObjectSupport::invokeVariant(m_documentBlock, "boundaryNavigationRequested", {QStringLiteral("horizontal"), QStringLiteral("before")});
+        event->setProperty("accepted", true);
+        return true;
+    }
+    if (key == keyRight) {
+        WhatSon::Editor::DynamicObjectSupport::invokeVariant(m_documentBlock, "boundaryNavigationRequested", {QStringLiteral("horizontal"), QStringLiteral("after")});
+        event->setProperty("accepted", true);
+        return true;
+    }
+    if (key == keyUp) {
+        WhatSon::Editor::DynamicObjectSupport::invokeVariant(m_documentBlock, "boundaryNavigationRequested", {QStringLiteral("vertical"), QStringLiteral("before")});
+        event->setProperty("accepted", true);
+        return true;
+    }
+    if (key == keyDown) {
+        WhatSon::Editor::DynamicObjectSupport::invokeVariant(m_documentBlock, "boundaryNavigationRequested", {QStringLiteral("vertical"), QStringLiteral("after")});
+        event->setProperty("accepted", true);
+        return true;
+    }
+    if (key == keyReturn || key == keyEnter) {
+        WhatSon::Editor::DynamicObjectSupport::invokeVariant(m_documentBlock, "documentEndEditRequested");
+        event->setProperty("accepted", true);
+        return true;
+    }
+    return false;
+}
+void ContentsDocumentBlockController::handleAtomicTap(const int tapCount) const
+{
+    if (m_documentBlock == nullptr)
+        return;
+    WhatSon::Editor::DynamicObjectSupport::invokeVariant(m_documentBlock, "forceActiveFocus");
+    WhatSon::Editor::DynamicObjectSupport::invokeVariant(m_documentBlock, "activated");
+    if (tapCount >= 2)
+        WhatSon::Editor::DynamicObjectSupport::invokeVariant(m_documentBlock, "documentEndEditRequested");
+}
+QUrl ContentsDocumentBlockController::helperSourceUrl() const { return {}; }
 
 ContentsDocumentTextBlockController::ContentsDocumentTextBlockController(QObject* parent)
     : ContentsQmlBackedInputControllerBase(parent)

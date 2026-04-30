@@ -304,37 +304,683 @@ Item {
     ContentsDisplayResourceUiState {
         id: resourceUiState
     }
-    ContentsDisplayMountState {
-        id: mountState
+    QtObject {
+    id: mountState
 
-        editorSession: editorSession
-        noteBodyMountCoordinator: noteBodyMountCoordinator
-        selectionBridge: selectionBridge
+    property var editorSession: null
+    property var selectionBridge: null
+    property var noteBodyMountCoordinator: null
+
+    readonly property string selectedNoteBodyText: selectionBridge && selectionBridge.selectedNoteBodyText !== undefined && selectionBridge.selectedNoteBodyText !== null ? String(selectionBridge.selectedNoteBodyText) : ""
+    readonly property string selectedNoteBodyNoteId: selectionBridge && selectionBridge.selectedNoteBodyNoteId !== undefined && selectionBridge.selectedNoteBodyNoteId !== null ? String(selectionBridge.selectedNoteBodyNoteId) : ""
+    readonly property bool selectedNoteBodyResolved: !!(selectionBridge && selectionBridge.selectedNoteBodyResolved)
+    readonly property bool selectedNoteBodyLoading: !!(selectionBridge && selectionBridge.selectedNoteBodyLoading)
+    readonly property string selectedNoteId: selectionBridge && selectionBridge.selectedNoteId !== undefined && selectionBridge.selectedNoteId !== null ? String(selectionBridge.selectedNoteId) : ""
+    readonly property string selectedNoteDirectoryPath: selectionBridge && selectionBridge.selectedNoteDirectoryPath !== undefined && selectionBridge.selectedNoteDirectoryPath !== null ? String(selectionBridge.selectedNoteDirectoryPath) : ""
+    readonly property int visibleNoteCount: selectionBridge && selectionBridge.visibleNoteCount !== undefined ? Math.max(0, Number(selectionBridge.visibleNoteCount) || 0) : 0
+    readonly property bool noteCountContractAvailable: !!(selectionBridge && selectionBridge.noteCountContractAvailable)
+    readonly property bool noteSelectionContractAvailable: !!(selectionBridge && selectionBridge.noteSelectionContractAvailable)
+    readonly property bool contentPersistenceContractAvailable: !!(selectionBridge && selectionBridge.contentPersistenceContractAvailable)
+
+    readonly property bool editorSessionBoundToSelectedNote: {
+        if (!editorSession)
+            return false;
+        const boundNoteId = editorSession.editorBoundNoteId === undefined || editorSession.editorBoundNoteId === null
+                ? ""
+                : String(editorSession.editorBoundNoteId);
+        if (boundNoteId !== state.selectedNoteId)
+            return false;
+        if (state.selectedNoteDirectoryPath === "")
+            return true;
+        const boundDirectoryPath = editorSession.editorBoundNoteDirectoryPath === undefined || editorSession.editorBoundNoteDirectoryPath === null
+                ? ""
+                : String(editorSession.editorBoundNoteDirectoryPath);
+        return boundDirectoryPath === state.selectedNoteDirectoryPath;
     }
-    ContentsDisplayInputState {
-        id: inputState
 
-        editorInputPolicyAdapter: editorInputPolicyAdapter
-        surfacePolicy: surfacePolicy
+    readonly property bool noteDocumentMountDecisionClean: !!(noteBodyMountCoordinator && noteBodyMountCoordinator.mountDecisionClean)
+    readonly property bool noteDocumentMountPending: !!(noteBodyMountCoordinator && noteBodyMountCoordinator.mountPending) && !state.noteDocumentMountDecisionClean
+    readonly property bool noteDocumentParseMounted: !!(noteBodyMountCoordinator && noteBodyMountCoordinator.parseMounted)
+    readonly property bool noteDocumentSourceMounted: !!(noteBodyMountCoordinator && noteBodyMountCoordinator.sourceMounted)
+    readonly property bool noteDocumentMounted: !!(noteBodyMountCoordinator && noteBodyMountCoordinator.noteMounted)
+    readonly property bool noteDocumentMountFailureVisible: !!(noteBodyMountCoordinator && noteBodyMountCoordinator.mountFailed)
+    readonly property string noteDocumentMountFailureReason: noteBodyMountCoordinator && noteBodyMountCoordinator.mountFailureReason !== undefined && noteBodyMountCoordinator.mountFailureReason !== null ? String(noteBodyMountCoordinator.mountFailureReason) : ""
+    readonly property string noteDocumentMountFailureMessage: noteBodyMountCoordinator && noteBodyMountCoordinator.mountFailureMessage !== undefined && noteBodyMountCoordinator.mountFailureMessage !== null ? String(noteBodyMountCoordinator.mountFailureMessage) : ""
+    readonly property string noteDocumentExceptionReason: noteBodyMountCoordinator && noteBodyMountCoordinator.exceptionReason !== undefined && noteBodyMountCoordinator.exceptionReason !== null ? String(noteBodyMountCoordinator.exceptionReason) : ""
+    readonly property string noteDocumentExceptionTitle: noteBodyMountCoordinator && noteBodyMountCoordinator.exceptionTitle !== undefined && noteBodyMountCoordinator.exceptionTitle !== null ? String(noteBodyMountCoordinator.exceptionTitle) : ""
+    readonly property string noteDocumentExceptionMessage: noteBodyMountCoordinator && noteBodyMountCoordinator.exceptionMessage !== undefined && noteBodyMountCoordinator.exceptionMessage !== null ? String(noteBodyMountCoordinator.exceptionMessage) : ""
+    readonly property bool noteDocumentExceptionVisible: !!(noteBodyMountCoordinator && noteBodyMountCoordinator.exceptionVisible)
     }
-    ContentsDisplayGeometrySnapshotModel {
-        id: geometrySnapshotModel
+    QtObject {
+    id: inputState
 
-        contentsView: contentsView
-        editorProjection: editorProjection
-        editorTypingController: editorTypingController
-        gutterCoordinator: gutterCoordinator
-        minimapCoordinator: minimapCoordinator
-        structuredDocumentFlow: structuredDocumentFlow
-        structuredFlowCoordinator: structuredFlowCoordinator
-        viewportCoordinator: viewportCoordinator
+    property var surfacePolicy: null
+    property var editorInputPolicyAdapter: null
+
+    readonly property bool preferNativeInputHandling: !!(surfacePolicy && surfacePolicy.nativeInputPriority)
+    readonly property bool nativeTextInputPriority: !!(surfacePolicy && surfacePolicy.nativeInputPriority)
+    readonly property bool documentPresentationProjectionEnabled: !!(surfacePolicy && surfacePolicy.documentPresentationProjectionEnabled)
+    readonly property bool inlineHtmlImageRenderingEnabled: !!(surfacePolicy && surfacePolicy.inlineHtmlImageRenderingEnabled)
+    readonly property bool resourceBlocksRenderedInlineByHtmlProjection: !!(surfacePolicy && surfacePolicy.resourceBlocksRenderedInlineByHtmlProjection)
+    readonly property bool showDedicatedResourceViewer: !!(surfacePolicy && surfacePolicy.dedicatedResourceViewerVisible)
+    readonly property bool showFormattedTextRenderer: !!(surfacePolicy && surfacePolicy.formattedTextRendererVisible)
+    readonly property bool showStructuredDocumentFlow: !!(surfacePolicy && surfacePolicy.structuredDocumentFlowVisible)
+    readonly property string activeSurfaceKind: surfacePolicy && surfacePolicy.activeSurfaceKind !== undefined && surfacePolicy.activeSurfaceKind !== null ? String(surfacePolicy.activeSurfaceKind) : ""
+    readonly property bool structuredDocumentFlowRequested: !!(surfacePolicy && surfacePolicy.structuredDocumentSurfaceRequested)
+
+    readonly property bool editorCustomTextInputEnabled: false
+    readonly property bool editorTagManagementInputEnabled: true
+    readonly property bool contextMenuLongPressEnabled: !!(editorInputPolicyAdapter && editorInputPolicyAdapter.contextMenuLongPressEnabled)
+    readonly property bool noteDocumentShortcutSurfaceEnabled: !!(editorInputPolicyAdapter && editorInputPolicyAdapter.shortcutSurfaceEnabled)
+    readonly property bool noteDocumentTagManagementShortcutSurfaceEnabled: !!(editorInputPolicyAdapter && editorInputPolicyAdapter.tagManagementShortcutSurfaceEnabled)
+    readonly property bool noteDocumentContextMenuSurfaceEnabled: !!(editorInputPolicyAdapter && editorInputPolicyAdapter.contextMenuSurfaceEnabled)
     }
-    ContentsDisplayViewportModel {
-        id: viewportModel
+    QtObject {
+    id: geometrySnapshotModel
 
-        contentsView: contentsView
-        structuredDocumentFlow: structuredDocumentFlow
-        viewportCoordinator: viewportCoordinator
+    property var contentsView: null
+    property var editorProjection: null
+    property var editorTypingController: null
+    property var gutterCoordinator: null
+    property var minimapCoordinator: null
+    property var structuredDocumentFlow: null
+    property var structuredFlowCoordinator: null
+    property var viewportCoordinator: null
+
+    function activeLogicalTextSnapshot() {
+        if (model.editorTypingController && model.editorTypingController.currentEditorPlainText !== undefined) {
+            const livePlainText = model.editorTypingController.currentEditorPlainText();
+            if (livePlainText !== undefined && livePlainText !== null)
+                return String(livePlainText);
+        }
+        if (model.editorProjection && model.editorProjection.logicalText !== undefined && model.editorProjection.logicalText !== null)
+            return String(model.editorProjection.logicalText);
+        if (model.contentsView.documentPresentationSourceText !== undefined
+                && model.contentsView.documentPresentationSourceText !== null) {
+            return String(model.contentsView.documentPresentationSourceText);
+        }
+        return "";
+    }
+
+    function normalizedSnapshotEntries(rawEntries) {
+        if (rawEntries === undefined || rawEntries === null)
+            return [];
+        const explicitLength = Math.floor(Number(rawEntries.length) || 0);
+        if (explicitLength <= 0)
+            return [];
+        const normalized = [];
+        for (let index = 0; index < explicitLength; ++index)
+            normalized.push(rawEntries[index]);
+        return normalized;
+    }
+
+    function hasStructuredLogicalLineGeometry() {
+        return model.contentsView.structuredHostGeometryActive
+                && model.effectiveStructuredLogicalLineEntries().length > 0;
+    }
+
+    function effectiveStructuredMinimapEntries() {
+        if (!model.contentsView.structuredHostGeometryActive
+                || !model.structuredDocumentFlow
+                || model.structuredDocumentFlow.normalizedBlocks === undefined) {
+            return [];
+        }
+        return model.normalizedSnapshotEntries(
+                    model.minimapCoordinator.buildStructuredMinimapSnapshotEntries(
+                        model.structuredDocumentFlow.normalizedBlocks()));
+    }
+
+    function hasStructuredMinimapEntries() {
+        return model.contentsView.structuredHostGeometryActive
+                && model.effectiveStructuredMinimapEntries().length > 0;
+    }
+
+    function normalizedStructuredLogicalLineEntries() {
+        if (!model.contentsView.structuredHostGeometryActive || !model.structuredDocumentFlow)
+            return [];
+        const rawEntries = model.structuredDocumentFlow.cachedLogicalLineEntries !== undefined
+                ? model.structuredDocumentFlow.cachedLogicalLineEntries
+                : (model.structuredDocumentFlow.logicalLineEntries !== undefined
+                   ? model.structuredDocumentFlow.logicalLineEntries()
+                   : []);
+        return model.structuredFlowCoordinator.normalizeStructuredLogicalLineEntries(rawEntries);
+    }
+
+    function structuredLogicalLineEntryAt(lineNumber) {
+        const lineEntries = model.normalizedStructuredLogicalLineEntries();
+        if (lineEntries.length === 0)
+            return null;
+        const safeLineNumber = Math.floor(Number(lineNumber) || 0);
+        if (safeLineNumber < 1 || safeLineNumber > lineEntries.length)
+            return null;
+        const entry = lineEntries[safeLineNumber - 1];
+        return entry && typeof entry === "object" ? entry : null;
+    }
+
+    function effectiveStructuredLogicalLineEntries() {
+        return model.normalizedStructuredLogicalLineEntries();
+    }
+
+    function currentStructuredGutterGeometrySignature() {
+        return model.viewportCoordinator.structuredGutterGeometrySignature(
+                    model.effectiveStructuredLogicalLineEntries());
+    }
+
+    function consumeStructuredGutterGeometryChange() {
+        const state = model.structuredFlowCoordinator.evaluateStructuredLayoutState(
+                    model.effectiveStructuredLogicalLineEntries());
+        model.contentsView.structuredGutterGeometrySignature = String(state.signature || "");
+        return !!state.geometryChanged;
+    }
+
+    function buildStructuredMinimapLineGroupsForRange(startLineNumber, endLineNumber) {
+        const snapshotEntries = model.effectiveStructuredMinimapEntries();
+        const groups = model.minimapCoordinator.buildStructuredMinimapLineGroupsForRange(
+                    snapshotEntries,
+                    Number(startLineNumber) || 1,
+                    Number(endLineNumber) || Number(startLineNumber) || 1,
+                    model.contentsView.editorOccupiedContentHeight());
+        return groups.length > 0
+                ? groups
+                : model.buildFallbackMinimapLineGroupsForRange(startLineNumber, endLineNumber);
+    }
+
+    function buildFallbackMinimapLineGroupsForRange(startLineNumber, endLineNumber) {
+        const safeStartLine = Math.max(1, Math.min(model.contentsView.logicalLineCount, Number(startLineNumber) || 1));
+        const safeEndLine = Math.max(safeStartLine, Math.min(model.contentsView.logicalLineCount, Number(endLineNumber) || safeStartLine));
+        const lineCharacterCounts = [];
+        const lineDocumentYs = [];
+        const lineVisualHeights = [];
+        for (let lineNumber = safeStartLine; lineNumber <= safeEndLine; ++lineNumber) {
+            lineCharacterCounts.push(model.viewportCoordinator.logicalLineCharacterCountAt(
+                                         lineNumber - 1,
+                                         model.contentsView.logicalLineStartOffsets));
+            lineDocumentYs.push(model.contentsView.lineDocumentY(lineNumber));
+            lineVisualHeights.push(model.contentsView.lineVisualHeight(lineNumber, 1));
+        }
+        return model.minimapCoordinator.buildFallbackMinimapLineGroupsForRange(
+                    lineCharacterCounts,
+                    lineDocumentYs,
+                    lineVisualHeights,
+                    safeStartLine,
+                    safeEndLine);
+    }
+
+    function buildMinimapLineGroupsForRange(startLineNumber, endLineNumber) {
+        const safeStartLine = Math.max(1, Math.min(model.contentsView.logicalLineCount, Number(startLineNumber) || 1));
+        const safeEndLine = Math.max(safeStartLine, Math.min(model.contentsView.logicalLineCount, Number(endLineNumber) || safeStartLine));
+        if (model.hasStructuredLogicalLineGeometry())
+            return model.buildStructuredMinimapLineGroupsForRange(safeStartLine, safeEndLine);
+        const editorWidth = 0;
+        const editorContentHeight = 0;
+        const lineCharacterCounts = [];
+        const lineStartOffsets = [];
+        const fallbackLineDocumentYs = [];
+        const fallbackLineVisualHeights = [];
+        const editorRects = [];
+        const logicalLength = model.contentsView.resolvedLogicalTextLength;
+        for (let lineNumber = safeStartLine; lineNumber <= safeEndLine; ++lineNumber) {
+            const lineIndex = lineNumber - 1;
+            const startOffset = model.viewportCoordinator.logicalLineStartOffsetAt(
+                        lineIndex,
+                        model.contentsView.logicalLineStartOffsets);
+            lineCharacterCounts.push(model.viewportCoordinator.logicalLineCharacterCountAt(
+                                         lineIndex,
+                                         model.contentsView.logicalLineStartOffsets));
+            lineStartOffsets.push(startOffset);
+            fallbackLineDocumentYs.push(model.contentsView.lineDocumentY(lineNumber));
+            fallbackLineVisualHeights.push(model.contentsView.lineVisualHeight(lineNumber, 1));
+        }
+        return model.minimapCoordinator.buildEditorMinimapLineGroupsForRange(
+                    lineCharacterCounts,
+                    lineStartOffsets,
+                    fallbackLineDocumentYs,
+                    fallbackLineVisualHeights,
+                    editorRects,
+                    logicalLength,
+                    safeStartLine,
+                    safeEndLine,
+                    editorWidth,
+                    editorContentHeight);
+    }
+
+    function activeLineGeometryNoteId() {
+        return model.viewportCoordinator.normalizedNoteId(model.contentsView.selectedNoteId);
+    }
+
+    function buildVisibleGutterLineEntries() {
+        if (model.contentsView.structuredHostGeometryActive) {
+            return model.structuredFlowCoordinator.buildVisibleStructuredGutterLineEntries(
+                        model.effectiveStructuredLogicalLineEntries(),
+                        model.contentsView.firstVisibleLogicalLine());
+        }
+        const firstVisibleLine = model.contentsView.firstVisibleLogicalLine();
+        const gutterLineYs = [];
+        const gutterLineHeights = [];
+        for (let lineNumber = firstVisibleLine; lineNumber <= model.contentsView.logicalLineCount; ++lineNumber) {
+            gutterLineYs.push(model.contentsView.gutterLineY(lineNumber));
+            gutterLineHeights.push(model.contentsView.gutterLineVisualHeight(lineNumber, 1));
+        }
+        return model.gutterCoordinator.buildVisiblePlainGutterLineEntries(
+                    firstVisibleLine,
+                    gutterLineYs,
+                    gutterLineHeights);
+    }
+
+    function clampUnit(value) {
+        return Math.max(0, Math.min(1, Number(value) || 0));
+    }
+
+    function logicalLineOffsetsEqual(previousOffsets, nextOffsets) {
+        const normalizedPrevious = Array.isArray(previousOffsets) && previousOffsets.length > 0 ? previousOffsets : [0];
+        const normalizedNext = Array.isArray(nextOffsets) && nextOffsets.length > 0 ? nextOffsets : [0];
+        if (normalizedPrevious.length !== normalizedNext.length)
+            return false;
+        for (let offsetIndex = 0; offsetIndex < normalizedPrevious.length; ++offsetIndex) {
+            if ((Number(normalizedPrevious[offsetIndex]) || 0) !== (Number(normalizedNext[offsetIndex]) || 0))
+                return false;
+        }
+        return true;
+    }
+
+    function applyLiveLogicalLineMetrics(logicalTextLength, lineStartOffsets, lineCount) {
+        const normalizedLogicalTextLength = Math.max(0, Number(logicalTextLength) || 0);
+        const normalizedLineStartOffsets = Array.isArray(lineStartOffsets) && lineStartOffsets.length > 0
+                ? lineStartOffsets.slice(0)
+                : [0];
+        const normalizedLineCount = Math.max(1, Number(lineCount) || normalizedLineStartOffsets.length || 1);
+        const lineCountChanged = model.contentsView.liveLogicalLineCount !== normalizedLineCount;
+        const textLengthChanged = model.contentsView.liveLogicalTextLength !== normalizedLogicalTextLength;
+        const lineOffsetsChanged = !model.logicalLineOffsetsEqual(
+                    model.contentsView.liveLogicalLineStartOffsets,
+                    normalizedLineStartOffsets);
+        if (textLengthChanged)
+            model.contentsView.liveLogicalTextLength = normalizedLogicalTextLength;
+        if (lineOffsetsChanged)
+            model.contentsView.liveLogicalLineStartOffsets = normalizedLineStartOffsets;
+        if (lineCountChanged)
+            model.contentsView.liveLogicalLineCount = normalizedLineCount;
+        return lineCountChanged || textLengthChanged || lineOffsetsChanged;
+    }
+
+    function hasPendingNoteEntryGutterRefresh(noteId) {
+        return model.viewportCoordinator.hasPendingNoteEntryGutterRefresh(
+                    model.contentsView.pendingNoteEntryGutterRefreshNoteId,
+                    noteId === undefined ? null : String(noteId));
+    }
+
+    function finalizePendingNoteEntryGutterRefresh(noteId, reason, refreshStructuredLayout) {
+        const plan = model.viewportCoordinator.finalizePendingNoteEntryGutterRefresh(
+                    model.contentsView.pendingNoteEntryGutterRefreshNoteId,
+                    noteId === undefined || noteId === null ? "" : String(noteId),
+                    model.contentsView.selectedNoteBodyLoading,
+                    reason === undefined || reason === null ? "" : String(reason),
+                    !!refreshStructuredLayout);
+        if (!plan.clearPendingNoteId)
+            return false;
+        model.contentsView.pendingNoteEntryGutterRefreshNoteId = "";
+        if (plan.refreshStructuredLayoutNow
+                && model.structuredDocumentFlow
+                && model.structuredDocumentFlow.refreshLayoutCache !== undefined) {
+            model.structuredDocumentFlow.refreshLayoutCache();
+        }
+        if (plan.commitGutterRefresh)
+            model.commitGutterRefresh();
+        if (plan.scheduleViewportGutterRefresh)
+            model.contentsView.scheduleViewportGutterRefresh();
+        if (plan.scheduleMinimapSnapshotRefresh)
+            model.contentsView.scheduleMinimapSnapshotRefresh(true);
+        if (plan.scheduleGutterRefresh) {
+            model.contentsView.scheduleGutterRefresh(Number(plan.gutterPassCount) || 0,
+                                               String(plan.gutterReason || ""));
+        }
+        return true;
+    }
+
+    function commitGutterRefresh() {
+        model.contentsView.refreshLiveLogicalLineMetrics();
+        model.contentsView.gutterRefreshRevision += 1;
+        model.contentsView.visibleGutterLineEntries = model.buildVisibleGutterLineEntries();
+        model.traceVisibleGutterSnapshot("commit");
+    }
+
+    function refreshVisibleGutterEntries() {
+        model.contentsView.visibleGutterLineEntries = model.buildVisibleGutterLineEntries();
+        model.traceVisibleGutterSnapshot("refresh");
+    }
+
+    function traceVisibleGutterSnapshot(reason) {
+        if (!model.contentsView.hasSelectedNote)
+            return;
+        const startLine = 14;
+        const endLine = Math.min(model.contentsView.logicalLineCount, 27);
+        const parts = [];
+        for (let lineNumber = startLine; lineNumber <= endLine; ++lineNumber) {
+            const lineGroup = model.contentsView.incrementalLineGeometryAvailable()
+                    ? model.contentsView.minimapLineGroups[lineNumber - 1]
+                    : null;
+            parts.push("L" + lineNumber
+                       + "{lineY=" + Math.round(model.contentsView.lineY(lineNumber))
+                       + ",gutterY=" + Math.round(model.contentsView.gutterLineY(lineNumber))
+                       + ",lineH=" + Math.round(model.contentsView.lineVisualHeight(lineNumber, 1))
+                       + ",gutterH=" + Math.round(model.contentsView.gutterLineVisualHeight(lineNumber, 1))
+                       + ",rows=" + Math.max(1, Math.ceil(Number(lineGroup && lineGroup.rowCount !== undefined ? lineGroup.rowCount : 1) || 1))
+                       + "}");
+        }
+        EditorTrace.trace("displayView",
+                          "gutterSnapshot",
+                          "reason=" + reason
+                          + " count=" + model.contentsView.visibleGutterLineEntries.length
+                          + " lines=[" + parts.join(", ") + "]",
+                          model.contentsView);
+    }
+    }
+    QtObject {
+    id: viewportModel
+
+    property var contentsView: null
+    property var structuredDocumentFlow: null
+    property var viewportCoordinator: null
+
+    function isMinimapScrollable() {
+        const flickable = model.contentsView.editorFlickable;
+        if (!flickable)
+            return false;
+        return model.minimapContentHeight() > (Number(flickable.height) || 0);
+    }
+
+    function lineDocumentY(lineNumber) {
+        if (model.contentsView.structuredHostGeometryActive) {
+            const structuredLineCount = Math.max(1, model.contentsView.effectiveStructuredLogicalLineEntries().length);
+            const safeLineNumber = Math.max(1, Math.min(structuredLineCount, Number(lineNumber) || 1));
+            const structuredEntry = model.contentsView.structuredLogicalLineEntryAt(safeLineNumber);
+            if (structuredEntry && structuredEntry.contentY !== undefined)
+                return Math.max(0, Number(structuredEntry.contentY) || 0);
+            return Math.max(0, (safeLineNumber - 1) * model.contentsView.editorLineHeight);
+        }
+        const safeLineNumber = Math.max(1, Math.min(model.contentsView.logicalLineCount, Number(lineNumber) || 1));
+        if (model.contentsView.incrementalLineGeometryAvailable()) {
+            const lineGroup = model.contentsView.minimapLineGroups[safeLineNumber - 1];
+            if (lineGroup && lineGroup.contentY !== undefined)
+                return Math.max(0, (Number(lineGroup.contentY) || 0) - model.contentsView.editorDocumentStartY);
+        }
+        model.contentsView.ensureLogicalLineDocumentYCache();
+        const cacheIndex = safeLineNumber - 1;
+        if (Array.isArray(model.contentsView.logicalLineDocumentYCache) && cacheIndex >= 0 && cacheIndex < model.contentsView.logicalLineDocumentYCache.length)
+            return Number(model.contentsView.logicalLineDocumentYCache[cacheIndex]) || 0;
+        return Math.max(0, (safeLineNumber - 1) * model.contentsView.editorLineHeight);
+    }
+
+    function gutterLineDocumentY(lineNumber) {
+        if (model.contentsView.structuredHostGeometryActive) {
+            const structuredEntry = model.contentsView.structuredLogicalLineEntryAt(lineNumber);
+            if (structuredEntry && structuredEntry.gutterContentY !== undefined)
+                return Math.max(0, Number(structuredEntry.gutterContentY) || 0);
+            if (structuredEntry && structuredEntry.contentY !== undefined)
+                return Math.max(0, Number(structuredEntry.contentY) || 0);
+        }
+        model.contentsView.ensureLogicalLineGutterDocumentYCache();
+        const safeLineNumber = Math.max(1, Math.min(model.contentsView.logicalLineCount, Number(lineNumber) || 1));
+        const cacheIndex = safeLineNumber - 1;
+        if (Array.isArray(model.contentsView.logicalLineGutterDocumentYCache)
+                && cacheIndex >= 0
+                && cacheIndex < model.contentsView.logicalLineGutterDocumentYCache.length) {
+            return Math.max(0, Number(model.contentsView.logicalLineGutterDocumentYCache[cacheIndex]) || 0);
+        }
+        return model.lineDocumentY(safeLineNumber);
+    }
+
+    function gutterDocumentOccupiedBottomY() {
+        if (model.contentsView.structuredHostGeometryActive) {
+            const structuredLineCount = Math.max(1, model.contentsView.effectiveStructuredLogicalLineEntries().length);
+            const lastLineNumber = structuredLineCount;
+            return Math.max(
+                        model.contentsView.editorLineHeight,
+                        model.gutterLineDocumentY(lastLineNumber)
+                        + model.contentsView.singleLineGutterHeight(lastLineNumber));
+        }
+        if (model.contentsView.logicalLineCount <= 0)
+            return model.contentsView.editorLineHeight;
+        model.contentsView.ensureLogicalLineGutterDocumentYCache();
+        const lastLineNumber = model.contentsView.logicalLineCount;
+        return Math.max(
+                    model.contentsView.editorLineHeight,
+                    model.gutterLineDocumentY(lastLineNumber)
+                    + model.contentsView.singleLineGutterHeight(lastLineNumber));
+    }
+
+    function lineVisualHeight(startLine, lineSpan) {
+        const safeLineSpan = Math.max(1, Number(lineSpan) || 1);
+        if (model.contentsView.structuredHostGeometryActive) {
+            const structuredLineCount = Math.max(1, model.contentsView.effectiveStructuredLogicalLineEntries().length);
+            const safeStartLine = Math.max(1, Math.min(structuredLineCount, Number(startLine) || 1));
+            const startEntry = model.contentsView.structuredLogicalLineEntryAt(safeStartLine);
+            if (safeLineSpan === 1) {
+                return Math.max(
+                            1,
+                            Number(startEntry && startEntry.contentHeight !== undefined
+                                   ? startEntry.contentHeight
+                                   : 0) || model.contentsView.editorLineHeight);
+            }
+            const safeEndLine = Math.max(
+                        safeStartLine,
+                        Math.min(
+                            structuredLineCount,
+                            safeStartLine + safeLineSpan - 1));
+            const endEntry = model.contentsView.structuredLogicalLineEntryAt(safeEndLine);
+            const startDocumentY = Math.max(0, Number(startEntry && startEntry.contentY !== undefined ? startEntry.contentY : 0) || 0);
+            const endDocumentY = Math.max(
+                        startDocumentY + model.contentsView.editorLineHeight,
+                        Math.max(0, Number(endEntry && endEntry.contentY !== undefined ? endEntry.contentY : startDocumentY) || startDocumentY)
+                        + Math.max(
+                            1,
+                            Number(endEntry && endEntry.contentHeight !== undefined
+                                   ? endEntry.contentHeight
+                                   : 0) || model.contentsView.editorLineHeight));
+            return Math.max(model.contentsView.editorLineHeight, endDocumentY - startDocumentY);
+        }
+        const safeStartLine = Math.max(1, Math.min(model.contentsView.logicalLineCount, Number(startLine) || 1));
+        if (safeLineSpan === 1 && model.contentsView.incrementalLineGeometryAvailable()) {
+            const lineGroup = model.contentsView.minimapLineGroups[safeStartLine - 1];
+            if (lineGroup && lineGroup.contentHeight !== undefined)
+                return Math.max(1, Number(lineGroup.contentHeight) || model.contentsView.editorLineHeight);
+        }
+        const startDocumentY = model.lineDocumentY(safeStartLine);
+        const nextLineNumber = safeStartLine + safeLineSpan;
+        let endDocumentY = 0;
+        if (nextLineNumber <= model.contentsView.logicalLineCount)
+            endDocumentY = model.lineDocumentY(nextLineNumber);
+        else
+            endDocumentY = model.contentsView.documentOccupiedBottomY();
+        return Math.max(model.contentsView.editorLineHeight, endDocumentY - startDocumentY);
+    }
+
+    function gutterLineVisualHeight(startLine, lineSpan) {
+        const safeLineSpan = Math.max(1, Number(lineSpan) || 1);
+        if (model.contentsView.structuredHostGeometryActive) {
+            const structuredLineCount = Math.max(1, model.contentsView.effectiveStructuredLogicalLineEntries().length);
+            const safeStartLine = Math.max(1, Math.min(structuredLineCount, Number(startLine) || 1));
+            if (safeLineSpan === 1)
+                return model.contentsView.singleLineGutterHeight(safeStartLine);
+            const startDocumentY = model.gutterLineDocumentY(safeStartLine);
+            const nextLineNumber = safeStartLine + safeLineSpan;
+            let endDocumentY = 0;
+            if (nextLineNumber <= structuredLineCount)
+                endDocumentY = model.gutterLineDocumentY(nextLineNumber);
+            else
+                endDocumentY = model.gutterDocumentOccupiedBottomY();
+            return Math.max(model.contentsView.editorLineHeight, endDocumentY - startDocumentY);
+        }
+        const safeStartLine = Math.max(1, Math.min(model.contentsView.logicalLineCount, Number(startLine) || 1));
+        if (safeLineSpan === 1)
+            return model.contentsView.singleLineGutterHeight(safeStartLine);
+        const startDocumentY = model.gutterLineDocumentY(safeStartLine);
+        const nextLineNumber = safeStartLine + safeLineSpan;
+        let endDocumentY = 0;
+        if (nextLineNumber <= model.contentsView.logicalLineCount)
+            endDocumentY = model.gutterLineDocumentY(nextLineNumber);
+        else
+            endDocumentY = model.gutterDocumentOccupiedBottomY();
+        return Math.max(model.contentsView.editorLineHeight, endDocumentY - startDocumentY);
+    }
+
+    function lineY(lineNumber) {
+        return model.contentsView.editorViewportYForDocumentY(model.lineDocumentY(lineNumber));
+    }
+
+    function gutterLineY(lineNumber) {
+        return model.contentsView.editorViewportYForDocumentY(model.gutterLineDocumentY(lineNumber));
+    }
+
+    function logicalLineNumberForDocumentY(documentY) {
+        if (model.contentsView.structuredHostGeometryActive) {
+            const lineEntries = model.contentsView.effectiveStructuredLogicalLineEntries();
+            if (lineEntries.length === 0)
+                return 1;
+            const safeDocumentY = Math.max(0, Number(documentY) || 0);
+            let bestLineNumber = 1;
+            for (let lineIndex = 0; lineIndex < lineEntries.length; ++lineIndex) {
+                const entry = lineEntries[lineIndex] && typeof lineEntries[lineIndex] === "object"
+                        ? lineEntries[lineIndex]
+                        : ({});
+                const lineTop = Math.max(0, Number(entry.contentY) || 0);
+                const lineBottom = lineTop + Math.max(1, Number(entry.contentHeight) || model.contentsView.editorLineHeight);
+                if (safeDocumentY < lineTop)
+                    break;
+                bestLineNumber = lineIndex + 1;
+                if (safeDocumentY < lineBottom)
+                    break;
+            }
+            return bestLineNumber;
+        }
+        if (model.contentsView.logicalLineCount <= 0)
+            return 1;
+        model.contentsView.ensureLogicalLineDocumentYCache();
+        const safeDocumentY = Math.max(0, Number(documentY) || 0);
+        let low = 0;
+        let high = model.contentsView.logicalLineCount - 1;
+        let best = 0;
+        while (low <= high) {
+            const middle = Math.floor((low + high) / 2);
+            const middleY = model.lineDocumentY(middle + 1);
+            if (middleY <= safeDocumentY) {
+                best = middle;
+                low = middle + 1;
+            } else {
+                high = middle - 1;
+            }
+        }
+        return best + 1;
+    }
+
+    function markerColorForType(markerType) {
+        const normalizedType = markerType === undefined || markerType === null ? "" : String(markerType).toLowerCase();
+        if (normalizedType === "conflict")
+            return model.contentsView.gutterMarkerConflictColor;
+        if (normalizedType === "changed")
+            return model.contentsView.gutterMarkerChangedColor;
+        return model.contentsView.gutterMarkerChangedColor;
+    }
+
+    function markerHeight(markerSpec) {
+        if (!markerSpec)
+            return model.contentsView.editorLineHeight;
+        return Math.max(1, model.gutterLineVisualHeight(markerSpec.startLine, markerSpec.lineSpan));
+    }
+
+    function markerY(markerSpec) {
+        if (!markerSpec)
+            return model.contentsView.editorDocumentStartY;
+        const startLine = Math.max(1, Number(markerSpec.startLine) || 1);
+        return model.gutterLineY(startLine);
+    }
+
+    function minimapContentHeight() {
+        return Math.max(1, model.contentsView.editorOccupiedContentHeight());
+    }
+
+    function minimapContentYForLine(lineNumber) {
+        const textStartY = model.contentsView.editorDocumentStartY;
+        return textStartY + model.lineDocumentY(lineNumber);
+    }
+
+    function minimapCurrentVisualRow(rowsOverride) {
+        const rows = Array.isArray(rowsOverride) ? rowsOverride : (Array.isArray(model.contentsView.minimapVisualRows) ? model.contentsView.minimapVisualRows : []);
+        if (model.contentsView.structuredHostGeometryActive && rows.length > 0) {
+            const resolvedBlockIndex = model.structuredDocumentFlow
+                    && model.structuredDocumentFlow.normalizedResolvedInteractiveBlockIndex !== undefined
+                    ? Number(model.structuredDocumentFlow.normalizedResolvedInteractiveBlockIndex())
+                    : NaN;
+            const fallbackBlockIndex = model.structuredDocumentFlow
+                    && model.structuredDocumentFlow.activeBlockIndex !== undefined
+                    ? Number(model.structuredDocumentFlow.activeBlockIndex)
+                    : NaN;
+            const safeBlockIndex = isFinite(resolvedBlockIndex) && resolvedBlockIndex >= 0
+                    ? Math.floor(resolvedBlockIndex)
+                    : (isFinite(fallbackBlockIndex) && fallbackBlockIndex >= 0
+                       ? Math.floor(fallbackBlockIndex)
+                       : -1);
+            if (safeBlockIndex >= 0 && safeBlockIndex < rows.length)
+                return rows[safeBlockIndex];
+        }
+        const textStartY = model.contentsView.editorDocumentStartY;
+        const cursorRect = model.contentsView.currentCursorVisualRowRect();
+        const cursorContentY = textStartY + (Number(cursorRect.y) || 0);
+        for (let index = 0; index < rows.length; ++index) {
+            const row = rows[index];
+            const rowStart = Number(row.contentY) || 0;
+            const rowEnd = rowStart + Math.max(1, Number(row.contentHeight) || model.contentsView.editorLineHeight);
+            if (cursorContentY >= rowStart && cursorContentY < rowEnd)
+                return row;
+        }
+        return rows.length > 0 ? rows[0] : ({
+                "charCount": 0,
+                "contentAvailableWidth": model.contentsView.minimapResolvedTrackWidth,
+                "contentHeight": model.contentsView.editorLineHeight,
+                "contentWidth": 0,
+                "contentY": textStartY,
+                "lineNumber": 1,
+                "visualIndex": 0
+            });
+    }
+
+    function minimapLineY(lineNumber) {
+        const safeLineNumber = Math.max(1, Math.min(model.contentsView.logicalLineCount, Number(lineNumber) || 1));
+        return model.viewportCoordinator.minimapTrackYForContentY(
+                    model.minimapContentYForLine(safeLineNumber),
+                    model.minimapContentHeight());
+    }
+
+    function minimapSilhouetteHeight(rowsOverride) {
+        const rows = Array.isArray(rowsOverride) ? rowsOverride : (Array.isArray(model.contentsView.minimapVisualRows) ? model.contentsView.minimapVisualRows : []);
+        if (rows.length === 0)
+            return 1;
+        const safeEditorLineHeight = Math.max(1, Number(model.contentsView.editorLineHeight) || 1);
+        return Math.max(1, Math.ceil(model.minimapContentHeight() / safeEditorLineHeight));
+    }
+
+    function minimapVisualRowPaintHeight(rowSpec) {
+        const safeContentHeight = model.minimapContentHeight();
+        const safeRowContentHeight = Math.max(
+                    1,
+                    Number(rowSpec && rowSpec.contentHeight !== undefined ? rowSpec.contentHeight : 0)
+                    || model.contentsView.editorLineHeight);
+        return Math.max(
+                    1,
+                    model.viewportCoordinator.minimapTrackHeightForContentHeight(
+                        safeRowContentHeight,
+                        safeContentHeight));
+    }
+
+    function minimapVisualRowPaintY(rowSpec) {
+        const safeContentHeight = model.minimapContentHeight();
+        const safeRowContentY = Math.max(
+                    0,
+                    Number(rowSpec && rowSpec.contentY !== undefined ? rowSpec.contentY : 0) || 0);
+        return model.viewportCoordinator.minimapTrackYForContentY(
+                    safeRowContentY,
+                    safeContentHeight);
+    }
     }
     function activeLogicalTextSnapshot() { return geometrySnapshotModel.activeLogicalTextSnapshot(); }
     function normalizedSnapshotEntries(rawEntries) { return geometrySnapshotModel.normalizedSnapshotEntries(rawEntries); }
