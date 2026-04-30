@@ -3,6 +3,7 @@ import QtQuick
 import WhatSon.App.Internal 1.0
 import LVRS 1.0 as LV
 import "../../../../models/editor/diagnostics/ContentsEditorDebugTrace.js" as EditorTrace
+import "../../../../models/editor/display/ContentsMinimapSnapshotSupport.js" as MinimapSnapshotSupport
 
 Item {
     id: contentsView
@@ -588,6 +589,7 @@ Item {
     function markerColorForType(markerType) { return viewportModel.markerColorForType(markerType); }
     function markerHeight(markerSpec) { return viewportModel.markerHeight(markerSpec); }
     function markerY(markerSpec) { return viewportModel.markerY(markerSpec); }
+    function flattenMinimapLineGroups(lineGroups) { return MinimapSnapshotSupport.flattenLineGroups(lineGroups, contentsView.editorLineHeight); }
     function minimapContentHeight() { return viewportModel.minimapContentHeight(); }
     function minimapContentYForLine(lineNumber) { return viewportModel.minimapContentYForLine(lineNumber); }
     function minimapCurrentVisualRow(rowsOverride) { return viewportModel.minimapCurrentVisualRow(rowsOverride); }
@@ -1300,29 +1302,6 @@ Item {
         structuredDocumentFlow: structuredDocumentFlow
         traceFormatter: traceFormatter
     }
-    ContentsDisplayPresentationController {
-        id: presentationController
-
-        contentsView: contentsView
-        documentSourceResolver: documentSourceResolver
-        editorProjection: editorProjection
-        editorSession: editorSession
-        editorTypingController: editorTypingController
-        eventPump: eventPump
-        minimapLayer: minimapLayer
-        noteBodyMountCoordinator: noteBodyMountCoordinator
-        panelViewModel: contentsView.panelViewModel
-        presentationRefreshController: presentationRefreshController
-        resourceImportController: resourceImportController
-        selectionBridge: selectionBridge
-        structuredDocumentFlow: structuredDocumentFlow
-        traceFormatter: traceFormatter
-    }
-    ContentsDisplayPresentationViewModel {
-        id: presentationViewModel
-
-        controller: presentationController
-    }
     ContentsDisplayInteractionViewModel {
         id: interactionViewModel
 
@@ -1338,36 +1317,24 @@ Item {
         editorViewport: editorViewport
         eventPump: eventPump
         minimapLayer: minimapLayer
-        mutationViewModel: mutationViewModel
         panelViewModel: contentsView.panelViewModel
         presentationRefreshController: presentationRefreshController
-        presentationViewModel: presentationViewModel
         resourceImportController: resourceImportController
-        selectionMountViewModel: selectionMountViewModel
+        selectionMountViewModel: selectionMountInteraction
         structuredDocumentFlow: structuredDocumentFlow
     }
-    ContentsDisplayMutationController {
-        id: mutationController
+    ContentsDisplayPresentationViewModel {
+        id: presentationViewModel
 
-        contentsAgendaBackend: contentsAgendaBackend
-        contentsView: contentsView
-        editOperationCoordinator: editOperationCoordinator
-        editorInputPolicyAdapter: editorInputPolicyAdapter
-        editorSelectionController: editorSelectionController
-        editorSession: editorSession
-        editorTypingController: editorTypingController
-        eventPump: eventPump
-        presentationRefreshController: presentationRefreshController
-        resourceImportController: resourceImportController
-        structuredDocumentFlow: structuredDocumentFlow
+        controller: interactionViewModel
     }
     ContentsDisplayMutationViewModel {
         id: mutationViewModel
 
-        controller: mutationController
+        controller: interactionViewModel
     }
-    ContentsDisplaySelectionMountController {
-        id: selectionMountController
+    ContentsDisplaySelectionMountInteraction {
+        id: selectionMountInteraction
 
         contentsView: contentsView
         editorSelectionController: editorSelectionController
@@ -1377,27 +1344,20 @@ Item {
         selectionBridge: selectionBridge
         selectionSyncCoordinator: selectionSyncCoordinator
         structuredDocumentFlow: structuredDocumentFlow
-        traceFormatter: traceFormatter
     }
-    ContentsDisplaySelectionMountViewModel {
-        id: selectionMountViewModel
-
-        controller: selectionMountController
-    }
-    ContentsDisplayGeometryController {
-        id: geometryController
+    ContentsDisplayGeometryInteraction {
+        id: geometryInteraction
 
         contentsView: contentsView
         eventPump: eventPump
         minimapLayer: minimapLayer
         refreshCoordinator: refreshCoordinator
-        structuredDocumentFlow: structuredDocumentFlow
         viewportCoordinator: viewportCoordinator
     }
     ContentsDisplayGeometryViewModel {
         id: geometryViewModel
 
-        controller: geometryController
+        controller: geometryInteraction
     }
     Rectangle {
         id: contentsDisplayView

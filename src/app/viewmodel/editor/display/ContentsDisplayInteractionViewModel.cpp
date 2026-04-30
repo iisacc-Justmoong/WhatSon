@@ -138,15 +138,6 @@ void ContentsDisplayInteractionViewModel::setMinimapLayer(QObject* value)
     emit minimapLayerChanged();
 }
 
-QObject* ContentsDisplayInteractionViewModel::mutationViewModel() const noexcept { return m_mutationViewModel.data(); }
-void ContentsDisplayInteractionViewModel::setMutationViewModel(QObject* value)
-{
-    if (m_mutationViewModel == value)
-        return;
-    m_mutationViewModel = value;
-    emit mutationViewModelChanged();
-}
-
 QObject* ContentsDisplayInteractionViewModel::panelViewModel() const noexcept { return m_panelViewModel.data(); }
 void ContentsDisplayInteractionViewModel::setPanelViewModel(QObject* value)
 {
@@ -154,15 +145,6 @@ void ContentsDisplayInteractionViewModel::setPanelViewModel(QObject* value)
         return;
     m_panelViewModel = value;
     emit panelViewModelChanged();
-}
-
-QObject* ContentsDisplayInteractionViewModel::presentationViewModel() const noexcept { return m_presentationViewModel.data(); }
-void ContentsDisplayInteractionViewModel::setPresentationViewModel(QObject* value)
-{
-    if (m_presentationViewModel == value)
-        return;
-    m_presentationViewModel = value;
-    emit presentationViewModelChanged();
 }
 
 QObject* ContentsDisplayInteractionViewModel::presentationRefreshController() const noexcept { return m_presentationRefreshController.data(); }
@@ -203,7 +185,7 @@ void ContentsDisplayInteractionViewModel::setStructuredDocumentFlow(QObject* val
 
 void ContentsDisplayInteractionViewModel::logEditorCreationState(const QString& reason) const
 {
-    invokeVoid(m_presentationViewModel, "logEditorCreationState", {reason});
+    Q_UNUSED(reason);
 }
 
 bool ContentsDisplayInteractionViewModel::shouldFlushBlurredEditorState(const QString& scheduledNoteId) const

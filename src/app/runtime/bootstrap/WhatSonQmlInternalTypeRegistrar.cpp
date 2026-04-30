@@ -56,11 +56,12 @@
 #include "app/models/editor/input/ContentsBreakBlockController.hpp"
 #include "app/models/editor/input/ContentsEditorInputPolicyAdapter.hpp"
 #include "app/models/editor/input/ContentsRemainingInputControllers.hpp"
+#include "app/viewmodel/editor/display/ContentsDisplayGeometryInteraction.hpp"
 #include "app/viewmodel/editor/display/ContentsDisplayGeometryViewModel.hpp"
 #include "app/viewmodel/editor/display/ContentsDisplayInteractionViewModel.hpp"
 #include "app/viewmodel/editor/display/ContentsDisplayMutationViewModel.hpp"
 #include "app/viewmodel/editor/display/ContentsDisplayPresentationViewModel.hpp"
-#include "app/viewmodel/editor/display/ContentsDisplaySelectionMountViewModel.hpp"
+#include "app/viewmodel/editor/display/ContentsDisplaySelectionMountInteraction.hpp"
 #include "app/viewmodel/editor/display/ContentsDisplaySurfacePolicy.hpp"
 #include "app/viewmodel/panel/FocusedNoteDeletionBridge.hpp"
 #include "app/viewmodel/panel/HierarchyDragDropBridge.hpp"
@@ -186,6 +187,8 @@ namespace
                 QStringLiteral("ContentsEditorTypingController")),
             whatsonInternalCreatableType<ContentsInlineFormatEditorController>(
                 QStringLiteral("ContentsInlineFormatEditorController")),
+            whatsonInternalCreatableType<ContentsDisplayGeometryInteraction>(
+                QStringLiteral("ContentsDisplayGeometryInteraction")),
             whatsonInternalCreatableType<ContentsDisplayGeometryViewModel>(
                 QStringLiteral("ContentsDisplayGeometryViewModel")),
             whatsonInternalCreatableType<ContentsDisplayInteractionViewModel>(
@@ -194,8 +197,8 @@ namespace
                 QStringLiteral("ContentsDisplayMutationViewModel")),
             whatsonInternalCreatableType<ContentsDisplayPresentationViewModel>(
                 QStringLiteral("ContentsDisplayPresentationViewModel")),
-            whatsonInternalCreatableType<ContentsDisplaySelectionMountViewModel>(
-                QStringLiteral("ContentsDisplaySelectionMountViewModel")),
+            whatsonInternalCreatableType<ContentsDisplaySelectionMountInteraction>(
+                QStringLiteral("ContentsDisplaySelectionMountInteraction")),
             whatsonInternalCreatableType<ContentsDisplaySurfacePolicy>(
                 QStringLiteral("ContentsDisplaySurfacePolicy")),
             whatsonInternalCreatableType<ContentsPaperSelection>(

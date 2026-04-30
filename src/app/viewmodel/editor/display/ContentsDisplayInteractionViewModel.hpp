@@ -23,9 +23,7 @@ class ContentsDisplayInteractionViewModel : public QObject
     Q_PROPERTY(QObject* editorViewport READ editorViewport WRITE setEditorViewport NOTIFY editorViewportChanged)
     Q_PROPERTY(QObject* eventPump READ eventPump WRITE setEventPump NOTIFY eventPumpChanged)
     Q_PROPERTY(QObject* minimapLayer READ minimapLayer WRITE setMinimapLayer NOTIFY minimapLayerChanged)
-    Q_PROPERTY(QObject* mutationViewModel READ mutationViewModel WRITE setMutationViewModel NOTIFY mutationViewModelChanged)
     Q_PROPERTY(QObject* panelViewModel READ panelViewModel WRITE setPanelViewModel NOTIFY panelViewModelChanged)
-    Q_PROPERTY(QObject* presentationViewModel READ presentationViewModel WRITE setPresentationViewModel NOTIFY presentationViewModelChanged)
     Q_PROPERTY(QObject* presentationRefreshController READ presentationRefreshController WRITE setPresentationRefreshController NOTIFY presentationRefreshControllerChanged)
     Q_PROPERTY(QObject* resourceImportController READ resourceImportController WRITE setResourceImportController NOTIFY resourceImportControllerChanged)
     Q_PROPERTY(QObject* selectionMountViewModel READ selectionMountViewModel WRITE setSelectionMountViewModel NOTIFY selectionMountViewModelChanged)
@@ -59,12 +57,8 @@ public:
     void setEventPump(QObject* value);
     QObject* minimapLayer() const noexcept;
     void setMinimapLayer(QObject* value);
-    QObject* mutationViewModel() const noexcept;
-    void setMutationViewModel(QObject* value);
     QObject* panelViewModel() const noexcept;
     void setPanelViewModel(QObject* value);
-    QObject* presentationViewModel() const noexcept;
-    void setPresentationViewModel(QObject* value);
     QObject* presentationRefreshController() const noexcept;
     void setPresentationRefreshController(QObject* value);
     QObject* resourceImportController() const noexcept;
@@ -142,9 +136,7 @@ signals:
     void editorViewportChanged();
     void eventPumpChanged();
     void minimapLayerChanged();
-    void mutationViewModelChanged();
     void panelViewModelChanged();
-    void presentationViewModelChanged();
     void presentationRefreshControllerChanged();
     void resourceImportControllerChanged();
     void selectionMountViewModelChanged();
@@ -185,9 +177,7 @@ private:
     QPointer<QObject> m_editorViewport;
     QPointer<QObject> m_eventPump;
     QPointer<QObject> m_minimapLayer;
-    QPointer<QObject> m_mutationViewModel;
     QPointer<QObject> m_panelViewModel;
-    QPointer<QObject> m_presentationViewModel;
     QPointer<QObject> m_presentationRefreshController;
     QPointer<QObject> m_resourceImportController;
     QPointer<QObject> m_selectionMountViewModel;
