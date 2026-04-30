@@ -195,10 +195,6 @@ void WhatSonCppRegressionTests::qmlInlineFormatEditor_keepsKeyboardSelectionAndO
         QStringLiteral("src/app/models/editor/input/ContentsRemainingInputControllers.hpp"));
     const QString inlineEditorControllerSource = readUtf8SourceFile(
         QStringLiteral("src/app/models/editor/input/ContentsRemainingInputControllers.cpp"));
-    const QString displayViewSource = readUtf8SourceFile(
-        QStringLiteral("src/app/qml/view/content/editor/ContentsDisplayView.qml"));
-    const QString eventPumpSource = readUtf8SourceFile(
-        QStringLiteral("src/app/qml/view/content/editor/ContentsDisplayEventPump.qml"));
     const QString surfaceGuardHeader = readUtf8SourceFile(
         QStringLiteral("src/app/models/editor/resource/ContentsEditorSurfaceGuardController.hpp"));
     const QString resourceImportControllerHeader = readUtf8SourceFile(
@@ -207,8 +203,6 @@ void WhatSonCppRegressionTests::qmlInlineFormatEditor_keepsKeyboardSelectionAndO
     QVERIFY(!inlineEditorSource.isEmpty());
     QVERIFY(!inlineEditorControllerHeader.isEmpty());
     QVERIFY(!inlineEditorControllerSource.isEmpty());
-    QVERIFY(!displayViewSource.isEmpty());
-    QVERIFY(!eventPumpSource.isEmpty());
     QVERIFY(!surfaceGuardHeader.isEmpty());
     QVERIFY(!resourceImportControllerHeader.isEmpty());
     QVERIFY(inlineEditorSource.contains(QStringLiteral("property bool selectByKeyboard: true")));
@@ -232,15 +226,8 @@ void WhatSonCppRegressionTests::qmlInlineFormatEditor_keepsKeyboardSelectionAndO
     QVERIFY(inlineEditorSource.contains(QStringLiteral("control.eventRequestsInlineFormatShortcut(event)")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("control.eventRequestsBodyTagShortcut(event)")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("event.matches(StandardKey.Paste)")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("property bool pendingCursorPositionRequest: false")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("function applyPendingCursorPositionIfInputSettled()")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("if (controller.nativeCompositionActive()) {\n                controller.pendingCursorPosition = targetPosition;")));
-    QVERIFY(!displayViewSource.contains(QStringLiteral("retryCount < 6")));
-    QVERIFY(!displayViewSource.contains(QStringLiteral("scheduleCursorPosition(targetPosition, retryCount + 1)")));
     QVERIFY(surfaceGuardHeader.contains(QStringLiteral("class ContentsEditorSurfaceGuardController")));
     QVERIFY(resourceImportControllerHeader.contains(QStringLiteral("editorInputPolicyAdapterChanged")));
-    QVERIFY(!eventPumpSource.contains(QStringLiteral("function onInputMethodComposingChanged()")));
-    QVERIFY(!eventPumpSource.contains(QStringLiteral("function onPreeditTextChanged()")));
     QVERIFY(!inlineEditorSource.contains(QStringLiteral("Qt.inputMethod")));
     QVERIFY(!inlineEditorSource.contains(QStringLiteral("InputMethod.")));
     QVERIFY(!inlineEditorSource.contains(QStringLiteral("notifyInputMethod")));

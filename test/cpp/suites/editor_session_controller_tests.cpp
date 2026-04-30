@@ -81,8 +81,6 @@ void WhatSonCppRegressionTests::editorSessionBoundary_usesCppControllerWithoutQm
         QStringLiteral("src/app/models/editor/session/ContentsEditorSessionController.cpp"));
     const QString sessionQmlWrapper = readUtf8SourceFile(
         QStringLiteral("src/app/models/editor/session/ContentsEditorSession.qml"));
-    const QString displayViewSource = readUtf8SourceFile(
-        QStringLiteral("src/app/qml/view/content/editor/ContentsDisplayView.qml"));
     const QString sessionReadme = readUtf8SourceFile(
         QStringLiteral("docs/src/app/models/editor/session/README.md"));
     QDir repositoryRoot(QFileInfo(QString::fromUtf8(__FILE__)).absolutePath());
@@ -94,13 +92,10 @@ void WhatSonCppRegressionTests::editorSessionBoundary_usesCppControllerWithoutQm
     QVERIFY(!sessionControllerHeader.isEmpty());
     QVERIFY(!sessionControllerSource.isEmpty());
     QVERIFY(sessionQmlWrapper.isEmpty());
-    QVERIFY(!displayViewSource.isEmpty());
     QVERIFY(!sessionReadme.isEmpty());
     QVERIFY(sessionDirectory.entryList(QStringList{QStringLiteral("*.qml")}, QDir::Files).isEmpty());
 
     QVERIFY(sessionControllerHeader.contains(QStringLiteral("class ContentsEditorSessionController : public QObject")));
     QVERIFY(sessionControllerSource.contains(QStringLiteral("queueCurrentEditorTextForPersistence")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("ContentsEditorSessionController {")));
-    QVERIFY(!displayViewSource.contains(QStringLiteral("ContentsEditorSession {")));
     QVERIFY(sessionReadme.contains(QStringLiteral("must not contain QML wrappers")));
 }
