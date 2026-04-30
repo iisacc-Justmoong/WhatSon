@@ -1,11 +1,16 @@
 #include "test/cpp/whatson_cpp_regression_tests.hpp"
 
+#include "app/models/editor/input/ContentsRemainingInputControllers.hpp"
+#include "app/models/editor/format/ContentsInlineStyleOverlayRenderer.hpp"
+#include "app/models/editor/format/ContentsPlainTextSourceMutator.hpp"
+
 #include <QDir>
 #include <QDirIterator>
 #include <QFile>
 #include <QFileInfo>
 #include <QQmlComponent>
 #include <QQmlEngine>
+#include <QtQml/qqml.h>
 #include <QQuickItem>
 #include <QQuickWindow>
 
@@ -38,6 +43,8 @@ namespace
         const QStringList candidatePaths{
             repositoryRoot + QStringLiteral("/src/app/qml"),
             repositoryRoot + QStringLiteral("/build/src/app"),
+            repositoryRoot + QStringLiteral("/build/src/app/WhatSon"),
+            repositoryRoot + QStringLiteral("/build/src/app/cmake/module"),
             repositoryRoot + QStringLiteral("/build/src/app/cmake/runtime/lvrs_runtime_qml"),
             repositoryRoot + QStringLiteral("/build/src/app/lvrs_runtime_qml"),
         };
@@ -48,6 +55,17 @@ namespace
                 engine.addImportPath(candidatePath);
             }
         }
+    }
+
+    void registerInlineFormatEditorRuntimeQmlTypes()
+    {
+        static const bool registered = []() {
+            qmlRegisterType<ContentsInlineStyleOverlayRenderer>("WhatSon.App.Internal", 1, 0, "ContentsInlineStyleOverlayRenderer");
+            qmlRegisterType<ContentsPlainTextSourceMutator>("WhatSon.App.Internal", 1, 0, "ContentsPlainTextSourceMutator");
+            qmlRegisterType<ContentsInlineFormatEditorController>("WhatSon.App.Internal", 1, 0, "ContentsInlineFormatEditorController");
+            return true;
+        }();
+        Q_UNUSED(registered);
     }
 
 } // namespace
@@ -85,6 +103,8 @@ void WhatSonCppRegressionTests::qmlInlineFormatEditor_keepsNativeTextEditInputUn
 
 void WhatSonCppRegressionTests::qmlInlineFormatEditor_forwardsInlineFormatShortcutsToTagManagementHook()
 {
+    registerInlineFormatEditorRuntimeQmlTypes();
+
     const QString repositoryRoot = qmlInlineFormatEditorRepositoryRootPath();
     QQmlEngine engine;
     addWhatSonInlineFormatEditorQmlImportPaths(engine, repositoryRoot);
@@ -171,61 +191,54 @@ void WhatSonCppRegressionTests::qmlInlineFormatEditor_keepsKeyboardSelectionAndO
 {
     const QString inlineEditorSource = readUtf8SourceFile(
         QStringLiteral("src/app/qml/view/content/editor/ContentsInlineFormatEditor.qml"));
+    const QString inlineEditorControllerHeader = readUtf8SourceFile(
+        QStringLiteral("src/app/models/editor/input/ContentsRemainingInputControllers.hpp"));
     const QString inlineEditorControllerSource = readUtf8SourceFile(
-        QStringLiteral("src/app/models/editor/input/ContentsInlineFormatEditorController.qml"));
+        QStringLiteral("src/app/models/editor/input/ContentsRemainingInputControllers.cpp"));
     const QString displayViewSource = readUtf8SourceFile(
         QStringLiteral("src/app/qml/view/content/editor/ContentsDisplayView.qml"));
     const QString eventPumpSource = readUtf8SourceFile(
-        QStringLiteral("src/app/models/editor/display/ContentsDisplayEventPump.qml"));
-    const QString typingControllerSource = readUtf8SourceFile(
-        QStringLiteral("src/app/models/editor/input/ContentsEditorTypingController.qml"));
-    const QString surfaceGuardSource = readUtf8SourceFile(
-        QStringLiteral("src/app/models/editor/resource/ContentsEditorSurfaceGuardController.qml"));
-    const QString resourceImportControllerSource = readUtf8SourceFile(
-        QStringLiteral("src/app/models/editor/resource/ContentsResourceImportController.qml"));
+        QStringLiteral("src/app/qml/view/content/editor/ContentsDisplayEventPump.qml"));
+    const QString surfaceGuardHeader = readUtf8SourceFile(
+        QStringLiteral("src/app/models/editor/resource/ContentsEditorSurfaceGuardController.hpp"));
+    const QString resourceImportControllerHeader = readUtf8SourceFile(
+        QStringLiteral("src/app/models/editor/resource/ContentsResourceImportController.hpp"));
 
     QVERIFY(!inlineEditorSource.isEmpty());
+    QVERIFY(!inlineEditorControllerHeader.isEmpty());
     QVERIFY(!inlineEditorControllerSource.isEmpty());
     QVERIFY(!displayViewSource.isEmpty());
     QVERIFY(!eventPumpSource.isEmpty());
-    QVERIFY(!typingControllerSource.isEmpty());
-    QVERIFY(!surfaceGuardSource.isEmpty());
-    QVERIFY(!resourceImportControllerSource.isEmpty());
+    QVERIFY(!surfaceGuardHeader.isEmpty());
+    QVERIFY(!resourceImportControllerHeader.isEmpty());
     QVERIFY(inlineEditorSource.contains(QStringLiteral("property bool selectByKeyboard: true")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("inputMethodHints: control.inputMethodHints")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("mouseSelectionMode: control.mouseSelectionMode")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("overwriteMode: control.overwriteMode")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("persistentSelection: control.persistentSelection")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("selectByKeyboard: control.selectByKeyboard")));
-    QVERIFY(inlineEditorControllerSource.contains(QStringLiteral("function onSelectionEndChanged() {")));
-    QVERIFY(inlineEditorControllerSource.contains(QStringLiteral("function onSelectionStartChanged() {")));
+    QVERIFY(inlineEditorControllerHeader.contains(QStringLiteral("class ContentsInlineFormatEditorController")));
+    QVERIFY(inlineEditorControllerSource.contains(QStringLiteral("ContentsInlineFormatEditorController::nativeCompositionActive()")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("readonly property bool inputMethodComposing: textInput.inputMethodComposing")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("readonly property string preeditText: textInput.preeditText")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("function nativeCompositionActive()")));
-    QVERIFY(inlineEditorControllerSource.contains(QStringLiteral("function shouldRejectFocusedProgrammaticTextSync(nextText)")));
-    QVERIFY(inlineEditorControllerSource.contains(QStringLiteral("property bool localSelectionInteractionSinceFocus: false")));
-    QVERIFY(inlineEditorControllerSource.contains(QStringLiteral("property bool localTextEditSinceFocus: false")));
-    QVERIFY(inlineEditorControllerSource.contains(QStringLiteral("const hadLocalTextEditSinceFocus = controller.localTextEditSinceFocus;")));
-    QVERIFY(inlineEditorControllerSource.contains(QStringLiteral("controller.localSelectionInteractionSinceFocus = true;")));
-    QVERIFY(inlineEditorControllerSource.contains(QStringLiteral("controller.localSelectionInteractionSinceFocus = false;")));
-    QVERIFY(inlineEditorControllerSource.contains(QStringLiteral("if (controller.control && controller.control.preferNativeInputHandling && hadLocalTextEditSinceFocus)\n                        controller.clearDeferredProgrammaticText();")));
-    QVERIFY(inlineEditorControllerSource.contains(QStringLiteral("function setCursorPositionPreservingNativeInput(position)")));
-    QVERIFY(inlineEditorControllerSource.contains(QStringLiteral("if (!controller.textInput || controller.nativeCompositionActive())\n            return false;")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("function programmaticTextSyncPolicy(nextText)")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("return inlineEditorController.programmaticTextSyncPolicy(nextText);")));
+    QVERIFY(inlineEditorControllerSource.contains(QStringLiteral("ContentsInlineFormatEditorController::programmaticTextSyncPolicy")));
+    QVERIFY(inlineEditorControllerSource.contains(QStringLiteral("invokeHelperVariantMap(\"programmaticTextSyncPolicy\"")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("Keys.onPressed: function (event)")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("key !== Qt.Key_Backspace")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("control.eventRequestsPasteShortcut(event)")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("control.eventRequestsInlineFormatShortcut(event)")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("control.eventRequestsBodyTagShortcut(event)")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("event.matches(StandardKey.Paste)")));
-    QVERIFY(typingControllerSource.contains(QStringLiteral("property bool pendingCursorPositionRequest: false")));
-    QVERIFY(typingControllerSource.contains(QStringLiteral("function applyPendingCursorPositionIfInputSettled()")));
-    QVERIFY(typingControllerSource.contains(QStringLiteral("if (controller.nativeCompositionActive()) {\n                controller.pendingCursorPosition = targetPosition;")));
-    QVERIFY(!typingControllerSource.contains(QStringLiteral("retryCount < 6")));
-    QVERIFY(!typingControllerSource.contains(QStringLiteral("scheduleCursorPosition(targetPosition, retryCount + 1)")));
-    QVERIFY(surfaceGuardSource.contains(QStringLiteral("property bool pendingEditorSurfaceRestore: false")));
-    QVERIFY(surfaceGuardSource.contains(QStringLiteral("function restorePendingEditorSurfaceFromPresentationIfInputSettled()")));
-    QVERIFY(surfaceGuardSource.contains(QStringLiteral("shouldRejectFocusedProgrammaticTextSync(nextSurfaceText)")));
-    QVERIFY(resourceImportControllerSource.contains(QStringLiteral("function restorePendingEditorSurfaceFromPresentationIfInputSettled()")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("property bool pendingCursorPositionRequest: false")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("function applyPendingCursorPositionIfInputSettled()")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("if (controller.nativeCompositionActive()) {\n                controller.pendingCursorPosition = targetPosition;")));
+    QVERIFY(!displayViewSource.contains(QStringLiteral("retryCount < 6")));
+    QVERIFY(!displayViewSource.contains(QStringLiteral("scheduleCursorPosition(targetPosition, retryCount + 1)")));
+    QVERIFY(surfaceGuardHeader.contains(QStringLiteral("class ContentsEditorSurfaceGuardController")));
+    QVERIFY(resourceImportControllerHeader.contains(QStringLiteral("editorInputPolicyAdapterChanged")));
     QVERIFY(!eventPumpSource.contains(QStringLiteral("function onInputMethodComposingChanged()")));
     QVERIFY(!eventPumpSource.contains(QStringLiteral("function onPreeditTextChanged()")));
     QVERIFY(!inlineEditorSource.contains(QStringLiteral("Qt.inputMethod")));

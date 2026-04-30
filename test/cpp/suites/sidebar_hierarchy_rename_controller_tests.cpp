@@ -2,14 +2,14 @@
 
 void WhatSonCppRegressionTests::sidebarHierarchyRenameController_preservesLiteralSlashFolderLabels()
 {
-    const QString renameControllerSource = readUtf8SourceFile(
-        QStringLiteral("src/app/qml/view/panels/sidebar/SidebarHierarchyRenameController.qml"));
+    const QString sidebarSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/panels/sidebar/SidebarHierarchyView.qml"));
 
-    QVERIFY(!renameControllerSource.isEmpty());
-    QVERIFY(renameControllerSource.contains(QStringLiteral("function decodedHierarchyPathSegments(rawPath)")));
-    QVERIFY(renameControllerSource.contains(QStringLiteral("function leafHierarchyItemLabel(rawLabel, rawPath)")));
-    QVERIFY(renameControllerSource.contains(QStringLiteral("if (nextCharacter === \"\\\\\" || nextCharacter === \"/\")")));
-    QVERIFY(renameControllerSource.contains(QStringLiteral("renameController.leafHierarchyItemLabel(item.label, item.id)")));
-    QVERIFY(renameControllerSource.contains(QStringLiteral("item && item.id !== undefined && item.id !== null ? item.id : \"\"")));
-    QVERIFY(!renameControllerSource.contains(QStringLiteral("const segments = normalizedLabel.split(\"/\")")));
+    QVERIFY(!sidebarSource.isEmpty());
+    QVERIFY(sidebarSource.contains(QStringLiteral("function decodedHierarchyPathSegments(rawPath)")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("function leafHierarchyItemLabel(rawLabel, rawPath)")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("if (nextCharacter === \"\\\\\" || nextCharacter === \"/\")")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("renameController.leafHierarchyItemLabel(item.label, item.id)")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("item && item.id !== undefined && item.id !== null ? item.id : \"\"")));
+    QVERIFY(!sidebarSource.contains(QStringLiteral("const segments = normalizedLabel.split(\"/\")")));
 }

@@ -24,7 +24,8 @@ void WhatSonCppRegressionTests::editorTagsBoundary_groupsNonFormatBodyTagRespons
              QStringLiteral("src/app/models/editor/tags/WhatSonStructuredTagLinter.cpp"),
              QStringLiteral("src/app/models/editor/tags/ContentsResourceTagTextGenerator.hpp"),
              QStringLiteral("src/app/models/editor/tags/ContentsResourceTagTextGenerator.cpp"),
-             QStringLiteral("src/app/models/editor/tags/ContentsResourceTagController.qml") })
+             QStringLiteral("src/app/models/editor/tags/ContentsResourceTagController.hpp"),
+             QStringLiteral("src/app/models/editor/tags/ContentsResourceTagController.cpp") })
     {
         QVERIFY2(fileExists(relativePath), qPrintable(relativePath));
     }
@@ -43,6 +44,7 @@ void WhatSonCppRegressionTests::editorTagsBoundary_groupsNonFormatBodyTagRespons
              QStringLiteral("src/app/models/editor/resource/ContentsResourceTagTextGenerator.hpp"),
              QStringLiteral("src/app/models/editor/resource/ContentsResourceTagTextGenerator.cpp"),
              QStringLiteral("src/app/models/editor/resource/ContentsResourceTagController.qml"),
+             QStringLiteral("src/app/models/editor/tags/ContentsResourceTagController.qml"),
              QStringLiteral("docs/src/app/models/editor/tags/ContentsEditorBodyTagInsertionPlanner.hpp.md"),
              QStringLiteral("docs/src/app/models/editor/tags/ContentsEditorBodyTagInsertionPlanner.cpp.md") })
     {
@@ -102,11 +104,15 @@ void WhatSonCppRegressionTests::editorTagsBoundary_groupsNonFormatBodyTagRespons
     QVERIFY(!rendererSource.contains(
         QStringLiteral("app/models/editor/tags/WhatSonStructuredTagLinter.hpp")));
 
-    const QString resourceImportController = readUtf8SourceFile(
-        QStringLiteral("src/app/models/editor/resource/ContentsResourceImportController.qml"));
-    QVERIFY(resourceImportController.contains(QStringLiteral("import \"../tags\" as EditorTagsModel")));
-    QVERIFY(resourceImportController.contains(
-        QStringLiteral("EditorTagsModel.ContentsResourceTagController")));
+    const QString resourceImportControllerHeader = readUtf8SourceFile(
+        QStringLiteral("src/app/models/editor/resource/ContentsResourceImportController.hpp"));
+    const QString resourceImportControllerSource = readUtf8SourceFile(
+        QStringLiteral("src/app/models/editor/resource/ContentsResourceImportController.cpp"));
+    QVERIFY(resourceImportControllerHeader.contains(QStringLiteral("class ContentsResourceTagController;")));
+    QVERIFY(resourceImportControllerSource.contains(
+        QStringLiteral("#include \"app/models/editor/tags/ContentsResourceTagController.hpp\"")));
+    QVERIFY(resourceImportControllerSource.contains(
+        QStringLiteral("m_resourceTagController(new ContentsResourceTagController(this))")));
 
     const QString tagsReadme = readUtf8SourceFile(
         QStringLiteral("docs/src/app/models/editor/tags/README.md"));

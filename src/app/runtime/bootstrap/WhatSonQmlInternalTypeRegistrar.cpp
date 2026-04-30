@@ -13,16 +13,6 @@
 #include "app/platform/Apple/WhatSonIosHubPickerBridge.hpp"
 #include "app/models/file/viewer/ContentsBodyResourceRenderer.hpp"
 #include "app/models/file/viewer/ResourceBitmapViewer.hpp"
-#include "app/models/editor/display/ContentsDisplayContextMenuCoordinator.hpp"
-#include "app/models/editor/display/ContentsDisplayDocumentSourceResolver.hpp"
-#include "app/models/editor/display/ContentsDisplayEditOperationCoordinator.hpp"
-#include "app/models/editor/display/ContentsDisplayGeometryState.hpp"
-#include "app/models/editor/display/ContentsDisplayGutterCoordinator.hpp"
-#include "app/models/editor/display/ContentsDisplayHostModePolicy.hpp"
-#include "app/models/editor/display/ContentsDisplayMinimapCoordinator.hpp"
-#include "app/models/editor/display/ContentsDisplayNoteBodyMountCoordinator.hpp"
-#include "app/models/editor/display/ContentsDisplayPresentationState.hpp"
-#include "app/models/editor/display/ContentsDisplayResourceUiState.hpp"
 #include "app/models/content/mobile/MobileHierarchyBackSwipeCoordinator.hpp"
 #include "app/models/content/mobile/MobileHierarchyCanonicalRoutePlanner.hpp"
 #include "app/models/content/mobile/MobileHierarchyNavigationCoordinator.hpp"
@@ -30,12 +20,6 @@
 #include "app/models/content/mobile/MobileHierarchyRouteSelectionSyncPolicy.hpp"
 #include "app/models/content/mobile/MobileHierarchyRouteStateStore.hpp"
 #include "app/models/content/mobile/MobileHierarchySelectionCoordinator.hpp"
-#include "app/models/editor/display/ContentsDisplayPresentationRefreshController.hpp"
-#include "app/models/editor/display/ContentsDisplayRefreshCoordinator.hpp"
-#include "app/models/editor/display/ContentsDisplaySelectionSyncCoordinator.hpp"
-#include "app/models/editor/display/ContentsDisplayStructuredFlowCoordinator.hpp"
-#include "app/models/editor/display/ContentsDisplayTraceFormatter.hpp"
-#include "app/models/editor/display/ContentsDisplayViewportCoordinator.hpp"
 #include "app/models/editor/projection/ContentsEditorPresentationProjection.hpp"
 #include "app/models/editor/session/ContentsEditorSessionController.hpp"
 #include "app/models/editor/bridge/ContentsEditorSelectionBridge.hpp"
@@ -56,13 +40,6 @@
 #include "app/models/editor/input/ContentsBreakBlockController.hpp"
 #include "app/models/editor/input/ContentsEditorInputPolicyAdapter.hpp"
 #include "app/models/editor/input/ContentsRemainingInputControllers.hpp"
-#include "app/viewmodel/editor/display/ContentsDisplayGeometryInteraction.hpp"
-#include "app/viewmodel/editor/display/ContentsDisplayGeometryViewModel.hpp"
-#include "app/viewmodel/editor/display/ContentsDisplayInteractionViewModel.hpp"
-#include "app/viewmodel/editor/display/ContentsDisplayMutationViewModel.hpp"
-#include "app/viewmodel/editor/display/ContentsDisplayPresentationViewModel.hpp"
-#include "app/viewmodel/editor/display/ContentsDisplaySelectionMountInteraction.hpp"
-#include "app/viewmodel/editor/display/ContentsDisplaySurfacePolicy.hpp"
 #include "app/viewmodel/panel/FocusedNoteDeletionBridge.hpp"
 #include "app/viewmodel/panel/HierarchyDragDropBridge.hpp"
 #include "app/viewmodel/panel/HierarchyInteractionBridge.hpp"
@@ -89,32 +66,6 @@ namespace
         return {
             whatsonInternalCreatableType<ContentsEditorSelectionBridge>(
                 QStringLiteral("ContentsEditorSelectionBridge")),
-            whatsonInternalCreatableType<ContentsDisplaySelectionSyncCoordinator>(
-                QStringLiteral("ContentsDisplaySelectionSyncCoordinator")),
-            whatsonInternalCreatableType<ContentsDisplayPresentationRefreshController>(
-                QStringLiteral("ContentsDisplayPresentationRefreshController")),
-            whatsonInternalCreatableType<ContentsDisplayPresentationState>(
-                QStringLiteral("ContentsDisplayPresentationState")),
-            whatsonInternalCreatableType<ContentsDisplayRefreshCoordinator>(
-                QStringLiteral("ContentsDisplayRefreshCoordinator")),
-            whatsonInternalCreatableType<ContentsDisplayResourceUiState>(
-                QStringLiteral("ContentsDisplayResourceUiState")),
-            whatsonInternalCreatableType<ContentsDisplayContextMenuCoordinator>(
-                QStringLiteral("ContentsDisplayContextMenuCoordinator")),
-            whatsonInternalCreatableType<ContentsDisplayGutterCoordinator>(
-                QStringLiteral("ContentsDisplayGutterCoordinator")),
-            whatsonInternalCreatableType<ContentsDisplayMinimapCoordinator>(
-                QStringLiteral("ContentsDisplayMinimapCoordinator")),
-            whatsonInternalCreatableType<ContentsDisplayNoteBodyMountCoordinator>(
-                QStringLiteral("ContentsDisplayNoteBodyMountCoordinator")),
-            whatsonInternalCreatableType<ContentsDisplayDocumentSourceResolver>(
-                QStringLiteral("ContentsDisplayDocumentSourceResolver")),
-            whatsonInternalCreatableType<ContentsDisplayEditOperationCoordinator>(
-                QStringLiteral("ContentsDisplayEditOperationCoordinator")),
-            whatsonInternalCreatableType<ContentsDisplayGeometryState>(
-                QStringLiteral("ContentsDisplayGeometryState")),
-            whatsonInternalCreatableType<ContentsDisplayHostModePolicy>(
-                QStringLiteral("ContentsDisplayHostModePolicy")),
             whatsonInternalCreatableType<MobileHierarchyBackSwipeCoordinator>(
                 QStringLiteral("MobileHierarchyBackSwipeCoordinator")),
             whatsonInternalCreatableType<MobileHierarchyCanonicalRoutePlanner>(
@@ -129,12 +80,6 @@ namespace
                 QStringLiteral("MobileHierarchyRouteStateStore")),
             whatsonInternalCreatableType<MobileHierarchySelectionCoordinator>(
                 QStringLiteral("MobileHierarchySelectionCoordinator")),
-            whatsonInternalCreatableType<ContentsDisplayViewportCoordinator>(
-                QStringLiteral("ContentsDisplayViewportCoordinator")),
-            whatsonInternalCreatableType<ContentsDisplayStructuredFlowCoordinator>(
-                QStringLiteral("ContentsDisplayStructuredFlowCoordinator")),
-            whatsonInternalCreatableType<ContentsDisplayTraceFormatter>(
-                QStringLiteral("ContentsDisplayTraceFormatter")),
             whatsonInternalCreatableType<ContentsEditorPresentationProjection>(
                 QStringLiteral("ContentsEditorPresentationProjection")),
             whatsonInternalCreatableType<ContentsEditorSessionController>(
@@ -187,20 +132,6 @@ namespace
                 QStringLiteral("ContentsEditorTypingController")),
             whatsonInternalCreatableType<ContentsInlineFormatEditorController>(
                 QStringLiteral("ContentsInlineFormatEditorController")),
-            whatsonInternalCreatableType<ContentsDisplayGeometryInteraction>(
-                QStringLiteral("ContentsDisplayGeometryInteraction")),
-            whatsonInternalCreatableType<ContentsDisplayGeometryViewModel>(
-                QStringLiteral("ContentsDisplayGeometryViewModel")),
-            whatsonInternalCreatableType<ContentsDisplayInteractionViewModel>(
-                QStringLiteral("ContentsDisplayInteractionViewModel")),
-            whatsonInternalCreatableType<ContentsDisplayMutationViewModel>(
-                QStringLiteral("ContentsDisplayMutationViewModel")),
-            whatsonInternalCreatableType<ContentsDisplayPresentationViewModel>(
-                QStringLiteral("ContentsDisplayPresentationViewModel")),
-            whatsonInternalCreatableType<ContentsDisplaySelectionMountInteraction>(
-                QStringLiteral("ContentsDisplaySelectionMountInteraction")),
-            whatsonInternalCreatableType<ContentsDisplaySurfacePolicy>(
-                QStringLiteral("ContentsDisplaySurfacePolicy")),
             whatsonInternalCreatableType<ContentsPaperSelection>(
                 QStringLiteral("ContentsPaperSelection")),
             whatsonInternalCreatableType<ContentsA4PaperBackground>(

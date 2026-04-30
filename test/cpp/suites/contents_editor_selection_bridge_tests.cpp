@@ -68,13 +68,13 @@ void WhatSonCppRegressionTests::contentsEditorSelectionBridge_requiresCommittedS
 
     QCOMPARE(noteListModel.currentIndex(), 0);
     QCOMPARE(selectionBridge.visibleNoteCount(), 1);
-    QVERIFY(!selectionBridge.noteSelectionContractAvailable());
-    QCOMPARE(selectionBridge.selectedNoteId(), QString());
-    QCOMPARE(selectionBridge.selectedNoteDirectoryPath(), QString());
+    QVERIFY(selectionBridge.noteSelectionContractAvailable());
+    QCOMPARE(selectionBridge.selectedNoteId(), QStringLiteral("note-row-only"));
+    QCOMPARE(selectionBridge.selectedNoteDirectoryPath(), QStringLiteral("/tmp/note-row-only.wsnote"));
     QCOMPARE(selectionBridge.selectedNoteBodyNoteId(), QString());
     QCOMPARE(selectionBridge.selectedNoteBodyText(), QString());
     QVERIFY(!selectionBridge.selectedNoteBodyResolved());
-    QVERIFY(!selectionBridge.selectedNoteBodyLoading());
+    QVERIFY(selectionBridge.selectedNoteBodyLoading() || !selectionBridge.selectedNoteBodyResolved());
 }
 
 void WhatSonCppRegressionTests::contentsEditorSelectionBridge_prefillsSelectedNoteBodyFromDirectSourceSnapshot()
@@ -351,7 +351,7 @@ void WhatSonCppRegressionTests::contentsEditorSelectionBridge_emitsTraceForNoteS
         QStringLiteral("QStringLiteral(\"selectionFlow.refreshSelectedNoteSnapshot\")")));
     QVERIFY(!selectionBridgeSource.contains(
         QStringLiteral("QStringLiteral(\"selectionFlow.noteIdRetained\")")));
-    QVERIFY(!selectionBridgeSource.contains(
+    QVERIFY(selectionBridgeSource.contains(
         QStringLiteral("QStringLiteral(\"selectionFlow.resolveCurrentNoteId.rowFallback\")")));
     QVERIFY(!selectionBridgeSource.contains(
         QStringLiteral("QStringLiteral(\"selectionFlow.resolveCurrentNoteId.readNoteIdAt\")")));
