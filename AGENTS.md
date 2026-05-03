@@ -1,71 +1,67 @@
-# WhatSon Agent Operating Guide
+# WhatSon 에이전트 운영 가이드
 
-## Objective
+## 목적
 
-This repository implements a business-grade creative, branding, information, and knowledge text hub editor as an
-LVRS-based Qt Quick application. This document defines stable operating rules so Codex works with consistent context
-every turn.
+이 저장소는 LVRS 기반 Qt Quick 애플리케이션으로 구현된 비즈니스급 크리에이티브, 브랜딩, 정보, 지식 텍스트 허브 편집기다. 이 문서는 Codex가 매 턴 동일한 맥락과 규칙으로 작업하도록 고정 운영 기준을 정의한다.
 
-## Technical Baseline
+## 언어 원칙
 
-- UI stack: Qt 6.5+ QML + LVRS 1.0
-- App entry: `src/app/main.cpp`
-- App build definition: `src/app/CMakeLists.txt`, top-level domain shards under `src/app/*/CMakeLists.txt`, and build-only shards under `src/app/cmake/{resources,defaults,runtime}/CMakeLists.txt`
-- Daemon entry: `src/daemon/main.cpp`
-- Root build definition: `CMakeLists.txt` plus grouped root-target shards under `cmake/root/*/CMakeLists.txt`
-- Primary QML root: `src/app/qml/Main.qml`
-- Library hierarchy backend: `src/app/models/file/hierarchy/library`
-- Library hierarchy model/controller: `src/app/models/file/hierarchy/library/LibraryHierarchyModel.*`,
+- 사용자에게 보내는 모든 답변은 한국어로 작성한다.
+- 이 `AGENTS.md`는 한국어 운영 문서로 유지한다.
+- 코드, 식별자, 커밋/PR용 기술 문서, 저장소 내부 상세 문서는 기존 프로젝트 관례에 맞춰 영어를 기본으로 한다. 단, 사용자가 명시적으로 한국어 문서를 요구하면 그 지시를 우선한다.
+
+## 기술 기준선
+
+- UI 스택: Qt 6.5+ QML + LVRS 1.0
+- 앱 진입점: `src/app/main.cpp`
+- 앱 빌드 정의: `src/app/CMakeLists.txt`, `src/app/*/CMakeLists.txt` 아래의 최상위 도메인 shard, 그리고 `src/app/cmake/{resources,defaults,runtime}/CMakeLists.txt` 아래의 빌드 전용 shard
+- 데몬 진입점: `src/daemon/main.cpp`
+- 루트 빌드 정의: `CMakeLists.txt` 및 `cmake/root/*/CMakeLists.txt` 아래의 그룹화된 루트 타깃 shard
+- 기본 QML 루트: `src/app/qml/Main.qml`
+- 라이브러리 계층 백엔드: `src/app/models/file/hierarchy/library`
+- 라이브러리 계층 모델/컨트롤러: `src/app/models/file/hierarchy/library/LibraryHierarchyModel.*`,
   `src/app/models/file/hierarchy/library/LibraryHierarchyController.*`
-- Library right-panel list model: `src/app/models/file/hierarchy/library/LibraryNoteListModel.*`
-- Hub placement store: `src/app/models/file/hub/WhatSonHubPlacementStore.*`
-- Tags depth provider: `src/app/models/file/hierarchy/tags/WhatSonHubTagsDepthProvider.*`
-- Hub runtime store: `src/app/models/file/hub/WhatSonHubRuntimeStore.*`
-- Runtime parallel bootstrap loader: `src/app/runtime/threading/WhatSonRuntimeParallelLoader.*`
-- Tags runtime state store: `src/app/models/file/hierarchy/tags/WhatSonHubTagsStateStore.*`
-- Tags hierarchy model/controller: `src/app/models/file/hierarchy/tags/TagsHierarchyModel.*`,
+- 라이브러리 오른쪽 패널 목록 모델: `src/app/models/file/hierarchy/library/LibraryNoteListModel.*`
+- 허브 배치 store: `src/app/models/file/hub/WhatSonHubPlacementStore.*`
+- 태그 depth provider: `src/app/models/file/hierarchy/tags/WhatSonHubTagsDepthProvider.*`
+- 허브 런타임 store: `src/app/models/file/hub/WhatSonHubRuntimeStore.*`
+- 런타임 병렬 bootstrap loader: `src/app/runtime/threading/WhatSonRuntimeParallelLoader.*`
+- 태그 런타임 상태 store: `src/app/models/file/hierarchy/tags/WhatSonHubTagsStateStore.*`
+- 태그 계층 모델/컨트롤러: `src/app/models/file/hierarchy/tags/TagsHierarchyModel.*`,
   `src/app/models/file/hierarchy/tags/TagsHierarchyController.*`
-- Navigation mode state/controller: `src/app/models/navigationbar/NavigationModeState.*`,
+- 내비게이션 모드 상태/컨트롤러: `src/app/models/navigationbar/NavigationModeState.*`,
   `src/app/models/navigationbar/NavigationModeSectionController.*`,
   `src/app/models/navigationbar/NavigationModeController.*`
-- Editor view mode state/controller: `src/app/models/navigationbar/EditorViewState.*`,
+- 편집기 보기 모드 상태/컨트롤러: `src/app/models/navigationbar/EditorViewState.*`,
   `src/app/models/navigationbar/EditorViewSectionController.*`,
   `src/app/models/navigationbar/EditorViewModeController.*`
-- Editor persistence controller: `src/app/models/editor/persistence/ContentsEditorPersistenceController.*`
-- Editor non-format tag helpers: `src/app/models/editor/tags/ContentsAgendaBackend.*`,
+- 편집기 persistence 컨트롤러: `src/app/models/editor/persistence/ContentsEditorPersistenceController.*`
+- 편집기 non-format 태그 helper: `src/app/models/editor/tags/ContentsAgendaBackend.*`,
   `src/app/models/editor/tags/ContentsCalloutBackend.*`,
   `src/app/models/editor/tags/ContentsStructuredTagValidator.*`,
   `src/app/models/editor/tags/WhatSonStructuredTagLinter.*`,
   `src/app/models/editor/tags/ContentsResourceTagTextGenerator.*`
-- Sidebar selection store interface/impl: `src/app/store/sidebar/ISidebarSelectionStore.*`,
+- 사이드바 선택 store 인터페이스/구현: `src/app/store/sidebar/ISidebarSelectionStore.*`,
   `src/app/store/sidebar/SidebarSelectionStore.*`
-- Sidebar hierarchy wiring interfaces/controller: `src/app/models/sidebar/IHierarchyControllerProvider.*`,
+- 사이드바 계층 wiring 인터페이스/컨트롤러: `src/app/models/sidebar/IHierarchyControllerProvider.*`,
   `src/app/models/sidebar/HierarchyControllerProvider.*`,
   `src/app/models/sidebar/SidebarHierarchyController.*`
-- Architecture policy lock and layer contract: `src/app/policy/ArchitecturePolicyLock.*`
-- Runtime bootstrap: app startup may route directly to the workspace shell when a persisted `.wshub` selection can be
-  mounted. If no persisted startup hub can be mounted, startup must remain unmounted and route into onboarding instead
-  of reopening a blueprint/sample workspace. Persisted startup must not load runtime domains before the first workspace
-  window is created; `main.cpp` schedules the normal full runtime load through an LVRS `AfterFirstIdle` lifecycle task
-  and then applies Controller state from `WhatSonRuntimeParallelLoader`. Explicit hub selection during onboarding may
-  still load the selected hub before switching into the workspace.
+- 아키텍처 policy lock 및 layer contract: `src/app/policy/ArchitecturePolicyLock.*`
+- 런타임 bootstrap: 저장된 `.wshub` 선택을 mount할 수 있으면 앱 시작 시 workspace shell로 바로 진입할 수 있다. 저장된 시작 허브를 mount할 수 없으면 startup은 unmounted 상태를 유지하고 blueprint/sample workspace를 다시 여는 대신 onboarding으로 라우팅해야 한다. 저장된 시작 경로는 첫 workspace window가 생성되기 전에 runtime domain을 load하면 안 된다. `main.cpp`는 LVRS `AfterFirstIdle` lifecycle task를 통해 일반 full runtime load를 예약하고, 이후 `WhatSonRuntimeParallelLoader`의 Controller 상태를 적용한다. onboarding 중 명시적 허브 선택은 workspace로 전환하기 전에 선택된 허브를 load할 수 있다.
 
-## Automated Test Policy
+## 자동화 테스트 정책
 
-- This repository maintains in-repo build and runtime regression gates under the root CMake targets and `test/`.
-- The maintained verification entry points are `whatson_build_regression` (build gate), `whatson_cpp_regression`
-  (runtime C++ regression gate), and `whatson_regression` (combined default gate).
-- Python test scripts under `scripts/test_*.py` were removed and must not be reintroduced; keep automated regression
-  coverage under CTest and the C++ regression suite in `test/`.
-- Do not add `tests/*`, `scripts/test_*.py`, or ad hoc duplicate harnesses unless the user explicitly asks for a second test surface.
-- Default task flow should run the smallest relevant verification gate before handoff and keep all generated artifacts
-  under `build/`.
+- 이 저장소는 루트 CMake 타깃과 `test/` 아래에 in-repo 빌드 및 런타임 회귀 게이트를 유지한다.
+- 유지되는 검증 진입점은 `whatson_build_regression`(빌드 게이트), `whatson_cpp_regression`(런타임 C++ 회귀 게이트), `whatson_regression`(기본 통합 게이트)이다.
+- `scripts/test_*.py` 아래의 Python 테스트 스크립트는 제거되었으며 다시 도입하면 안 된다. 자동 회귀 커버리지는 CTest와 `test/`의 C++ 회귀 suite 아래에 유지한다.
+- 사용자가 명시적으로 두 번째 테스트 표면을 요구하지 않는 한 `tests/*`, `scripts/test_*.py`, 또는 임시 중복 harness를 추가하지 않는다.
+- 기본 작업 흐름은 인계 전 가장 작은 관련 검증 게이트를 실행하고, 모든 생성 산출물을 `build/` 아래에 둔다.
 
-### Hierarchy Controller Ownership (Critical)
+### 계층 컨트롤러 소유권 (중요)
 
-- Each hierarchy type must use its own dedicated Controller under `src/app/models/file/hierarchy/*`.
-- Do not bind all hierarchy categories to a single shared Controller instance.
-- Canonical mapping:
+- 각 계층 타입은 `src/app/models/file/hierarchy/*` 아래의 전용 Controller를 사용해야 한다.
+- 모든 계층 카테고리를 하나의 공유 Controller instance에 바인딩하지 않는다.
+- 표준 매핑:
     - Library -> `LibraryHierarchyController`
     - Projects -> `ProjectsHierarchyController`
     - Bookmarks -> `BookmarksHierarchyController`
@@ -74,109 +70,80 @@ every turn.
     - Progress -> `ProgressHierarchyController`
     - Event -> `EventHierarchyController`
     - Preset -> `PresetHierarchyController`
-- Any hierarchy wiring change must preserve this one-type/one-Controller contract.
-- Flat/shared hierarchy model abstraction is prohibited for runtime hierarchy Controller wiring.
-- Keep model/support code isolated per domain directory in `src/app/models/file/hierarchy/<domain>/`.
+- 계층 wiring 변경은 반드시 이 one-type/one-Controller contract를 보존해야 한다.
+- 런타임 계층 Controller wiring에는 flat/shared hierarchy model abstraction을 금지한다.
+- model/support 코드는 `src/app/models/file/hierarchy/<domain>/`의 도메인별 디렉터리 안에 격리한다.
 
-### Controller Implementation Boundary (Critical)
+### 컨트롤러 구현 경계 (중요)
 
-- MVVM is not used in this repository. Do not introduce a `ViewModel` concept, `src/app/viewmodel`, QML view-model
-  registry binding, or `LV.ViewModels`/`LV.Controllers` based runtime lookup.
-- Controllers must be single-responsibility C++ classes.
-- Do not add QML files under `src/app/models`, and do not register that directory as a QML module source.
-- QML must be used for view construction only.
-- Do not add compatibility QML wrappers for model, controller, session, persistence, sync, parsing, mutation,
-  scheduling, or command-surface responsibilities. Promote those responsibilities into single-purpose C++ objects.
-- Each C++ Controller must expose a narrow signal/slot contract and delegate domain mutation, timing, rendering, or
-  persistence work to the owning model layer.
+- 이 저장소는 MVVM을 사용하지 않는다. `ViewModel` 개념, `src/app/viewmodel`, QML view-model registry binding, 또는 `LV.ViewModels`/`LV.Controllers` 기반 런타임 lookup을 도입하지 않는다.
+- Controller는 단일 책임 C++ class여야 한다.
+- `src/app/models` 아래에 QML 파일을 추가하지 말고, 해당 디렉터리를 QML module source로 등록하지 않는다.
+- QML은 view construction에만 사용한다.
+- model, controller, session, persistence, sync, parsing, mutation, scheduling, command-surface 책임을 우회하기 위한 compatibility QML wrapper를 추가하지 않는다. 해당 책임은 single-purpose C++ object로 승격한다.
+- 각 C++ Controller는 좁은 signal/slot contract를 노출하고, domain mutation, timing, rendering, persistence 작업은 소유 model layer에 위임해야 한다.
 
-### Model Layer QML Prohibition (Critical)
+### Model Layer QML 금지 (중요)
 
-- `src/app/models/**` must not contain QML files.
-- Treat every existing QML file under `src/app/models` as migration debt that must be converted into C++ (`.hpp/.cpp`) and removed.
-- The model layer may expose QObject/Q_GADGET/QAbstractItemModel based APIs to QML, but it must not implement domain logic, orchestration, controller behavior, mutable session state, formatting policy, parsing policy, mutation planning, resource import handling, or input policy in QML.
-- If a feature needs logic below `src/app/qml/view/**`, create or extend a C++ object in the owning domain instead of adding another `*.qml` helper under `src/app/models`.
-- `src/app/qml/**` is the only allowed home for QML, and those files must remain view/presentation composition only.
+- `src/app/models/**`는 QML 파일을 포함하면 안 된다.
+- `src/app/models` 아래에 남아 있는 모든 QML 파일은 C++(`.hpp/.cpp`)으로 변환 후 제거해야 할 migration debt로 취급한다.
+- model layer는 QObject/Q_GADGET/QAbstractItemModel 기반 API를 QML에 노출할 수 있지만, domain logic, orchestration, controller behavior, mutable session state, formatting policy, parsing policy, mutation planning, resource import handling, input policy를 QML로 구현하면 안 된다.
+- 기능이 `src/app/qml/view/**` 아래보다 낮은 레이어의 logic을 필요로 하면, `src/app/models` 아래에 또 다른 `*.qml` helper를 추가하지 말고 소유 도메인의 C++ object를 생성하거나 확장한다.
+- `src/app/qml/**`만 QML의 허용 위치이며, 해당 파일은 view/presentation composition 역할에 머물러야 한다.
 
-## Architectural Direction
+## 아키텍처 방향
 
-- Prefer Domain-Driven Development and Feature-Driven Development for new code, refactors, and file moves.
-- Organize changes around domain or feature boundaries first, not around broad shared technical layers, unless the
-  shared layer is already a stable cross-domain primitive.
-- Keep each feature slice as end-to-end as possible: storage, runtime loading, service logic, controller wiring, QML
-  surface, and docs should stay close to the owning domain.
-- Shared helpers are allowed only when multiple domains genuinely reuse them and when extracting them does not pull
-  business rules out of the domain that owns those rules.
+- 새 코드, 리팩터링, 파일 이동은 Domain-Driven Development와 Feature-Driven Development를 우선한다.
+- 이미 안정적인 cross-domain primitive가 아닌 이상, broad shared technical layer보다 domain 또는 feature boundary를 먼저 기준으로 변경을 구성한다.
+- 각 feature slice는 가능한 한 end-to-end로 유지한다. storage, runtime loading, service logic, controller wiring, QML surface, docs는 소유 도메인 가까이에 둔다.
+- shared helper는 여러 도메인이 실제로 재사용하고, 추출이 소유 도메인의 business rule을 빼내지 않을 때만 허용한다.
 
-### Editor Source of Truth (Critical)
+### 편집기 Source of Truth (중요)
 
-- `.wsnote` and embedded `.wsnbody` content are the only write-authoritative editor state.
-- Every edit path must preserve this order exactly:
-  1. mutate RAW `.wsnote/.wsnbody` source;
-  2. let the always-on parser reparse the latest RAW snapshot;
-  3. render the editor surface only from that parsed projection.
-- Live typing, shortcuts, Enter handling, paste, and drop-driven document mutations must be translated into RAW source
-  edits first.
-- Parser and renderer layers may only derive presentation state from RAW source snapshots; they must not become a
-  write-authoritative document model.
-- RichText/DOM/QML editor surfaces must never serialize themselves back into persisted note source as the primary save
-  path.
-- Temporary RichText fragments, DOM splits, and editor-surface HTML are read-side projection details only; they must
-  not be used as an alternate persistence or formatting authority.
-- Focus restoration, caret movement, and block re-materialization must always be computed against RAW source offsets or
-  parser-derived block coordinates, not against incidental DOM structure.
-- Once parser blockization completes, the block projection must be normalized into one interactive document block stream
-  before the renderer/QML host publishes it; duplicate client-side regrouping paths are prohibited.
-- Ordinary note editing should be treated as an Apple Notes-like document surface whose persisted backing store happens
-  to be `.wsnbody`.
-- The note editor should treat all note-body elements as ordinary blocks in one document host, including plain prose,
-  semantic text blocks, `<resource ... />`, `agenda`, `callout`, and `break`.
-- `ContentsStructuredDocumentFlow.qml` is the canonical note document host once a note session is bound.
-- Specialized block delegates may change presentation, but they must not split the note into a separate editor mode or
-  a different persistence authority.
-- Editor-session persistence orchestration belongs under `src/app/models/editor/persistence`.
-  `ContentsEditorPersistenceController` owns note-body snapshot buffering, immediate enqueue attempts, persistence
-  retry/drain scheduling, pending-snapshot adoption, selected-note body reads, and post-save reconcile handoff.
-- Non-format editor-body tag responsibilities belong under `src/app/models/editor/tags`, including agenda/task,
-  callout, break, structured-tag lint/correction advisory state, and RAW resource-tag construction.
-- `src/app/models/file/note` owns concrete `.wsnote/.wsnbody` file mutation once the editor persistence layer has
-  selected a RAW snapshot for IO; it must not own editor-session dirty buffers or editor save-timing policy.
+- `.wsnote`와 embedded `.wsnbody` content만 editor state의 write-authoritative source다.
+- 모든 edit path는 다음 순서를 정확히 보존해야 한다.
+  1. RAW `.wsnote/.wsnbody` source를 mutate한다.
+  2. always-on parser가 최신 RAW snapshot을 reparse하게 한다.
+  3. editor surface는 parsed projection에서만 render한다.
+- live typing, shortcut, Enter handling, paste, drop-driven document mutation은 먼저 RAW source edit으로 변환되어야 한다.
+- parser와 renderer layer는 RAW source snapshot에서 presentation state만 derive할 수 있으며, write-authoritative document model이 되면 안 된다.
+- RichText/DOM/QML editor surface는 persisted note source로 자기 자신을 primary save path로 serialize하면 안 된다.
+- temporary RichText fragment, DOM split, editor-surface HTML은 read-side projection detail일 뿐이며 alternate persistence 또는 formatting authority로 사용하면 안 된다.
+- focus restoration, caret movement, block re-materialization은 incidental DOM 구조가 아니라 RAW source offset 또는 parser-derived block coordinate를 기준으로 계산해야 한다.
+- parser blockization이 끝나면 renderer/QML host가 publish하기 전에 block projection을 하나의 interactive document block stream으로 normalize해야 하며, client-side duplicate regrouping path는 금지한다.
+- 일반 note editing은 persisted backing store가 `.wsnbody`인 Apple Notes 같은 document surface로 취급한다.
+- note editor는 plain prose, semantic text block, `<resource ... />`, `agenda`, `callout`, `break`를 포함한 모든 note-body element를 하나의 document host 안의 ordinary block으로 취급해야 한다.
+- note session이 bound된 뒤의 표준 note document host는 `ContentsStructuredDocumentFlow.qml`이다.
+- specialized block delegate는 presentation을 바꿀 수 있지만, note를 별도 editor mode 또는 다른 persistence authority로 분리하면 안 된다.
+- editor-session persistence orchestration은 `src/app/models/editor/persistence` 아래에 둔다.
+  `ContentsEditorPersistenceController`는 note-body snapshot buffering, immediate enqueue attempt, persistence retry/drain scheduling, pending-snapshot adoption, selected-note body read, post-save reconcile handoff를 소유한다.
+- non-format editor-body tag 책임은 `src/app/models/editor/tags` 아래에 둔다. 여기에는 agenda/task, callout, break, structured-tag lint/correction advisory state, RAW resource-tag construction이 포함된다.
+- `src/app/models/file/note`는 editor persistence layer가 IO용 RAW snapshot을 선택한 뒤의 concrete `.wsnote/.wsnbody` file mutation만 소유한다. editor-session dirty buffer나 editor save-timing policy를 소유하면 안 된다.
 
-### Input Method Authority (Critical)
+### 입력기 권한 (중요)
 
-- Editor input layers must leave OS/Qt IME handling on the live `TextEdit` path.
-- Except for explicit tag-management commands, editor QML must not install custom text input handlers for ordinary
-  note editing. Plain `Enter`, `Backspace`, `Delete`, arrow navigation, selection extension, repeat, and IME gestures
-  must remain native `TextEdit` behavior.
-- Allowed tag-management input is limited to RAW `.wsnbody` tag operations such as inline style tags,
-  agenda/callout/break/resource tag insertion, and selected atomic resource/break block management.
-- Markdown list shortcuts, markdown list Enter continuation, and generic text-boundary key overrides are not allowed in
-  the editor input layer.
-- Do not call `Qt.inputMethod.update(...)`, `Qt.inputMethod.show()`, `Qt.inputMethod.hide()`, or the bare QML
-  `InputMethod.*` singleton from editor QML.
-- Do not add fallback branches that tolerate alternate input-method objects, such as `Qt.inputMethod && ...` or
-  `Qt.inputMethod.visible !== undefined` guards.
-- Text editor wrappers may observe `TextEdit.inputMethodComposing` and `TextEdit.preeditText` as TextEdit state, but
-  only to defer persistence or programmatic sync until native composition settles.
-- Until these primitives are promoted into LVRS, editor QML must route native-input session, shortcut-surface,
-  context-menu long-press, focused programmatic-sync, and ordinary text-edit focus-restore decisions through
-  `src/app/models/editor/input/ContentsEditorInputPolicyAdapter.qml`.
+- editor input layer는 OS/Qt IME 처리를 live `TextEdit` path에 맡겨야 한다.
+- 명시적 tag-management command를 제외하고, editor QML은 ordinary note editing을 위한 custom text input handler를 설치하면 안 된다. 일반 `Enter`, `Backspace`, `Delete`, arrow navigation, selection extension, repeat, IME gesture는 native `TextEdit` behavior로 유지해야 한다.
+- 허용되는 tag-management input은 inline style tag, agenda/callout/break/resource tag insertion, selected atomic resource/break block management 같은 RAW `.wsnbody` tag operation으로 제한한다.
+- Markdown list shortcut, markdown list Enter continuation, generic text-boundary key override는 editor input layer에서 허용하지 않는다.
+- editor QML에서 `Qt.inputMethod.update(...)`, `Qt.inputMethod.show()`, `Qt.inputMethod.hide()`, 또는 bare QML `InputMethod.*` singleton을 호출하지 않는다.
+- `Qt.inputMethod && ...`, `Qt.inputMethod.visible !== undefined` guard처럼 alternate input-method object를 허용하는 fallback branch를 추가하지 않는다.
+- text editor wrapper는 native composition이 안정될 때까지 persistence나 programmatic sync를 defer하기 위해서만 `TextEdit.inputMethodComposing`과 `TextEdit.preeditText`를 TextEdit state로 관찰할 수 있다.
+- 이 primitive들이 LVRS로 승격되기 전까지 editor QML은 native-input session, shortcut-surface, context-menu long-press, focused programmatic-sync, ordinary text-edit focus-restore 결정을 `src/app/models/editor/input/ContentsEditorInputPolicyAdapter.qml`을 통해 라우팅해야 한다.
 
-## Codex Init (`/init`) Procedure
+## Codex Init(`/init`) 절차
 
-Initialization guidance in this section is reference material only.
-Do not execute this full sequence during ordinary work unless the user explicitly asks for environment bootstrap.
-Ordinary feature work should prefer the smaller maintained verification targets in `build/`.
+이 섹션의 initialization guidance는 참고 자료다. 사용자가 environment bootstrap을 명시적으로 요청하지 않는 한 일반 작업 중 이 전체 절차를 실행하지 않는다. 일반 feature 작업은 `build/` 아래의 더 작은 유지 검증 타깃을 우선한다.
 
-When `/init` is explicitly requested, initialization is considered complete when the following sequence succeeds.
+`/init`이 명시적으로 요청되면 다음 순서가 성공했을 때 initialization이 완료된 것으로 본다.
 
-1. Confirm LVRS package discoverability.
-2. Run CMake configure.
-3. Build app and daemon.
-4. Run daemon healthcheck.
-5. Run optional app offscreen smoke when needed.
+1. LVRS package discoverability를 확인한다.
+2. CMake configure를 실행한다.
+3. app과 daemon을 build한다.
+4. daemon healthcheck를 실행한다.
+5. 필요할 때 optional app offscreen smoke를 실행한다.
 
-Recommended commands:
+권장 명령:
 
 ```bash
 cmake -S . -B build
@@ -186,21 +153,18 @@ cmake --build build --target WhatSon_daemon -j
 cmake --build build --target whatson_run_app
 ```
 
-Normal host app and daemon builds must stay incremental and must not implicitly trigger the
-dedicated `build-trial` packaging tree.
-If a dedicated desktop trial package is explicitly required, opt in during configure and invoke
-the nested packaging target manually:
+일반 host app 및 daemon build는 incremental 상태를 유지해야 하며, dedicated `build-trial` packaging tree를 암묵적으로 trigger하면 안 된다. dedicated desktop trial package가 명시적으로 필요할 때만 configure에서 opt in하고 nested packaging target을 수동으로 호출한다.
 
 ```bash
 cmake -S . -B build -DWHATSON_ENABLE_TRIAL_BUILD_MIRROR=ON
 cmake --build build --target whatson_sync_trial_build
 ```
 
-## Single Source of Truth for LVRS Integration
+## LVRS 통합의 단일 Source of Truth
 
 ### CMake
 
-The app target must keep this pattern.
+app target은 이 pattern을 유지해야 한다.
 
 ```cmake
 find_package(Qt6 6.5 REQUIRED COMPONENTS Quick QuickControls2)
@@ -220,58 +184,53 @@ lvrs_configure_qml_app(WhatSon)
 
 ### QML
 
-All LVRS-based QML files use this import baseline.
+모든 LVRS 기반 QML 파일은 이 import baseline을 사용한다.
 
 ```qml
 import QtQuick
 import LVRS 1.0 as LV
 ```
 
-## Disallowed Changes
+## 금지 변경
 
-- Do not add manual `rpath`, manual `-F`, or manual framework paths for LVRS integration.
-- Do not inject LVRS-specific import/plugin paths into `QQmlApplicationEngine` manually.
-- Do not regress to a `QtQuick.Controls.Material`-centric UI as an LVRS replacement.
-- Do not mix arbitrary Qt default widget styling into LVRS component screens.
+- LVRS 통합을 위해 manual `rpath`, manual `-F`, manual framework path를 추가하지 않는다.
+- `QQmlApplicationEngine`에 LVRS-specific import/plugin path를 수동 주입하지 않는다.
+- LVRS 대체물로 `QtQuick.Controls.Material` 중심 UI로 회귀하지 않는다.
+- LVRS component screen에 임의의 Qt default widget styling을 섞지 않는다.
 
-## Allowed Exceptions
+## 허용 예외
 
-An exception is allowed only when all conditions are satisfied.
+예외는 다음 조건을 모두 만족할 때만 허용한다.
 
-1. `find_package(LVRS)` and `lvrs_configure_qml_app()` fail in a reproducible way.
-2. Failure logs are explicit and retained.
-3. The change is reproducible and not a temporary workaround.
-4. The reason and rollback condition are documented in PR/commit messages.
+1. `find_package(LVRS)`와 `lvrs_configure_qml_app()`이 재현 가능하게 실패한다.
+2. 실패 로그가 명시적이고 보존되어 있다.
+3. 변경이 재현 가능하며 임시 우회가 아니다.
+4. 이유와 rollback condition이 PR/commit message에 문서화되어 있다.
 
-## Current UI Layout
+## 현재 UI 레이아웃
 
-- Root shell: `src/app/qml/Main.qml` (`LV.ApplicationWindow`)
-- View directory (merged from legacy `shell` and `pages`):
+- Root shell: `src/app/qml/Main.qml`(`LV.ApplicationWindow`)
+- View directory(legacy `shell`과 `pages`에서 병합됨):
     - `src/app/qml/view/top/StatusBarLayout.qml`
     - `src/app/qml/view/top/NavigationBarLayout.qml`
     - `src/app/qml/view/body/BodyLayout.qml`
-    - `src/app/qml/view/mobile/MobilePageScaffold.qml` (shared mobile workspace scaffold for Figma VStack node `174:4987`, keeping the compact navigation bar and compact status/add-note bar mounted across pages)
-    - `src/app/qml/view/mobile/pages/MobileHierarchyPage.qml` (Figma-driven routed mobile workspace page for hierarchy node `174:5026`, composed by `MobilePageScaffold.qml` plus the shared hierarchy panel)
-    - `src/app/qml/view/panels/ListBarLayout.qml` (Figma-driven list bar panel for node `73:2635`)
-    - `src/app/qml/view/panels/ListBarHeader.qml` (Figma-driven list bar header for node `134:3180`)
-        - `src/app/qml/view/panels/NoteListItem.qml` (Figma-driven note item card for node `119:3028`)
-        - `src/app/qml/view/panels/DetailPanelLayout.qml` (Figma-driven right panel wrapper for node `134:3212`)
-        - `src/app/qml/view/panels/navigation/NavigationPropertiesBar.qml` (Figma frame `PropertiesBar`, node
-          `147:3876`)
-        - `src/app/qml/view/panels/navigation/NavigationInformationBar.qml` (Figma frame `InformationBar`, node
-          `134:3138`)
-        - `src/app/qml/view/panels/navigation/NavigationModeBar.qml` (Figma frame `NavigationMode`, node `147:3875`)
-        - `src/app/qml/view/panels/navigation/NavigationEditorViewBar.qml` (Figma frame `EditorViewMoide`, node
-          `148:3888`)
+    - `src/app/qml/view/mobile/MobilePageScaffold.qml`(Figma VStack node `174:4987`용 shared mobile workspace scaffold. compact navigation bar와 compact status/add-note bar를 page 전환 중에도 mount 상태로 유지)
+    - `src/app/qml/view/mobile/pages/MobileHierarchyPage.qml`(hierarchy node `174:5026`용 Figma-driven routed mobile workspace page. `MobilePageScaffold.qml`와 shared hierarchy panel로 구성)
+    - `src/app/qml/view/panels/ListBarLayout.qml`(Figma-driven list bar panel, node `73:2635`)
+    - `src/app/qml/view/panels/ListBarHeader.qml`(Figma-driven list bar header, node `134:3180`)
+        - `src/app/qml/view/panels/NoteListItem.qml`(Figma-driven note item card, node `119:3028`)
+        - `src/app/qml/view/panels/DetailPanelLayout.qml`(Figma-driven right panel wrapper, node `134:3212`)
+        - `src/app/qml/view/panels/navigation/NavigationPropertiesBar.qml`(Figma frame `PropertiesBar`, node `147:3876`)
+        - `src/app/qml/view/panels/navigation/NavigationInformationBar.qml`(Figma frame `InformationBar`, node `134:3138`)
+        - `src/app/qml/view/panels/navigation/NavigationModeBar.qml`(Figma frame `NavigationMode`, node `147:3875`)
+        - `src/app/qml/view/panels/navigation/NavigationEditorViewBar.qml`(Figma frame `EditorViewMoide`, node `148:3888`)
         - `src/app/qml/view/panels/navigation/NavigationApplicationViewBar.qml`
         - `src/app/qml/view/panels/navigation/NavigationApplicationEditBar.qml`
         - `src/app/qml/view/panels/navigation/NavigationApplicationControlBar.qml`
-            - `src/app/qml/view/panels/detail/RightPanel.qml` (Figma frame `RightPanel`, node `134:3212`)
-            - `src/app/qml/view/panels/detail/DetailPanel.qml` (Figma frame `DetailPanel`, node `134:3641`)
-            - `src/app/qml/view/panels/detail/DetailPanelHeaderToolbar.qml` (Figma frame `DetailPanelHeaderToolbar`,
-              node
-              `134:3642`)
-            - `src/app/qml/view/panels/detail/DetailContents.qml` (Figma frame `DetailContents`, node `134:3649`)
+            - `src/app/qml/view/panels/detail/RightPanel.qml`(Figma frame `RightPanel`, node `134:3212`)
+            - `src/app/qml/view/panels/detail/DetailPanel.qml`(Figma frame `DetailPanel`, node `134:3641`)
+            - `src/app/qml/view/panels/detail/DetailPanelHeaderToolbar.qml`(Figma frame `DetailPanelHeaderToolbar`, node `134:3642`)
+            - `src/app/qml/view/panels/detail/DetailContents.qml`(Figma frame `DetailContents`, node `134:3649`)
                 - `src/app/qml/view/body/HierarchySidebarLayout.qml`
                     - `src/app/qml/view/panels/ContentViewLayout.qml`
                     - `src/app/qml/view/content/editor/ContentsDisplayView.qml`
@@ -298,57 +257,48 @@ An exception is allowed only when all conditions are satisfied.
     - `src/app/qml/view/content/KnowledgeHubPage.qml`
     - `src/app/qml/view/content/EditorStudioPage.qml`
 
-## Start Checklist
+## 시작 체크리스트
 
-1. Verify `CMakeLists.txt` and `src/app/CMakeLists.txt` still match the LVRS baseline pattern.
-   Keep the root orchestration and per-directory `add_subdirectory(...)` splits aligned.
-2. Verify QML imports are consistently `import LVRS 1.0 as LV`.
-3. Design new UI with LVRS components first.
+1. `CMakeLists.txt`와 `src/app/CMakeLists.txt`가 여전히 LVRS baseline pattern과 일치하는지 확인한다. root orchestration과 per-directory `add_subdirectory(...)` split을 맞춘 상태로 유지한다.
+2. QML import가 일관되게 `import LVRS 1.0 as LV`인지 확인한다.
+3. 새 UI는 LVRS component를 먼저 사용해 설계한다.
 
-## Completion Checklist
+## 완료 체크리스트
 
-1. Updated docs reflect source changes and repository policy changes together.
-2. Updated QML keeps consistent LVRS imports and component usage.
-3. Model/controller/view contracts preserve signal-slot hooks (`signals`+`slots` in C++, `signal` + callable hook
-   function in QML views).
-4. Run the smallest relevant verification gate in `build/` before handoff unless the user explicitly instructs
-   otherwise, and do not create alternate build directories.
+1. 변경된 source와 repository policy 변경을 문서가 함께 반영한다.
+2. 수정된 QML은 LVRS import와 component usage 일관성을 유지한다.
+3. model/controller/view contract는 signal-slot hook을 보존한다. C++에서는 `signals`+`slots`, QML view에서는 `signal` + callable hook function을 사용한다.
+4. 사용자가 명시적으로 달리 지시하지 않는 한 인계 전 `build/`에서 가장 작은 관련 검증 게이트를 실행하고, 대체 build directory를 만들지 않는다.
 
-## Maintenance Rules
+## 유지보수 규칙
 
-- Prioritize build-system simplicity.
-- Keep C++ entrypoints minimal and focused.
-- Prefer LVRS `Theme` for design tokens.
-- Keep command examples and real output paths synchronized in docs.
-- Keep project-local C++ includes repository-absolute from the configured include roots: use `app/...`,
-  `extension/...`, or `test/...` instead of basename-only or file-relative include paths.
-- Keep model/controller/view interfaces event-driven: every model, controller, and view must expose at least one signal
-  and one slot/hook entrypoint.
-- Keep hierarchy wiring type-safe: each hierarchy category must remain bound to its dedicated Controller in
-  `src/app/models/file/hierarchy`.
-- Enforce SRP for QML: when one QML file starts combining layout shell, rendering delegates, and interaction logic,
-  split it into dedicated sibling modules under the same domain directory and compose them from the parent screen.
-- Prefer minimum reusable modules for complex editor surfaces (for example: gutter layer, minimap layer, splitter
-  interaction layer) instead of embedding every delegate in one root file.
-- Keep quality gates aligned with decomposition work:
-    - Run `cmake --build build --target whatson_qmllint -j` after QML refactors.
-    - Run `cmake --build build --target whatson_clang_tidy -j` after C++ refactors when `clang-tidy` is installed; if
-      unavailable, report the missing tool explicitly in the completion notes.
-    - Run `cmake --build build --target whatson_build_regression -j` after build-system or compilation-surface changes.
-    - Run `cmake --build build --target whatson_regression -j` after C++ or cross-domain behavior changes.
+- build-system 단순성을 우선한다.
+- C++ entrypoint는 작고 집중된 상태로 유지한다.
+- design token에는 LVRS `Theme`를 우선 사용한다.
+- 명령 예시와 실제 output path를 docs에서 동기화한다.
+- project-local C++ include는 configured include root 기준의 repository-absolute include를 사용한다. basename-only 또는 file-relative include 대신 `app/...`, `extension/...`, `test/...`를 사용한다.
+- model/controller/view interface는 event-driven으로 유지한다. 모든 model, controller, view는 적어도 하나의 signal과 하나의 slot/hook entrypoint를 노출해야 한다.
+- hierarchy wiring은 type-safe로 유지한다. 각 hierarchy category는 `src/app/models/file/hierarchy` 아래의 전용 Controller에 계속 bound되어야 한다.
+- QML에는 SRP를 강제한다. 하나의 QML 파일이 layout shell, rendering delegate, interaction logic을 함께 품기 시작하면 같은 domain directory 아래의 dedicated sibling module로 분리하고 parent screen에서 compose한다.
+- 복잡한 editor surface에는 최소 reusable module을 우선한다. 예: gutter layer, minimap layer, splitter interaction layer. 모든 delegate를 하나의 root file에 embed하지 않는다.
+- decomposition work와 quality gate를 맞춘다.
+    - QML refactor 후 `cmake --build build --target whatson_qmllint -j`를 실행한다.
+    - C++ refactor 후 `clang-tidy`가 설치되어 있으면 `cmake --build build --target whatson_clang_tidy -j`를 실행한다. 사용할 수 없으면 완료 보고에 누락 도구를 명시한다.
+    - build-system 또는 compilation-surface 변경 후 `cmake --build build --target whatson_build_regression -j`를 실행한다.
+    - C++ 또는 cross-domain behavior 변경 후 `cmake --build build --target whatson_regression -j`를 실행한다.
 
-## Troubleshooting Baseline
+## Troubleshooting 기준선
 
-- LVRS not found: provide LVRS prefix in `CMAKE_PREFIX_PATH`.
-- QML module not found: verify LVRS installation state (`lib/qt6/qml/LVRS/qmldir`).
-- Link warnings: defer to `lvrs_configure_qml_app()` first and avoid manual link additions.
+- LVRS를 찾지 못하면 `CMAKE_PREFIX_PATH`에 LVRS prefix를 제공한다.
+- QML module을 찾지 못하면 LVRS 설치 상태(`lib/qt6/qml/LVRS/qmldir`)를 확인한다.
+- link warning은 먼저 `lvrs_configure_qml_app()`에 맡기고 manual link addition은 피한다.
 
-## Agent Response and Work Rules
+## Agent 응답 및 작업 규칙
 
-- Use real repository files and logs as evidence instead of assumptions.
-- Keep changes small and verifiable.
-- In completion reports, include changed files, verification commands, and known limits.
-- When verification was skipped or could not be run, say so explicitly and explain whether the user declined it or the
-  environment blocked it.
-- Use English only inside this project.
-- Rework `AGENTS.md` when major codebase changes or new requirements are introduced.
+- 추정 대신 실제 repository file과 log를 근거로 사용한다.
+- 변경은 작고 검증 가능하게 유지한다.
+- 완료 보고에는 변경 파일, 검증 명령, 알려진 한계를 포함한다.
+- 검증을 생략했거나 실행할 수 없었으면 명시적으로 말하고, 사용자가 거절했는지 환경이 막았는지 설명한다.
+- 작업 중 사용자가 개입하면 최신 사용자 지시를 우선하고, 충돌하는 기존 방향은 즉시 재정렬한다. 사용자의 개입은 작업 중단 신호가 아니라 현재 목표를 더 정확히 맞추기 위한 상위 입력으로 취급한다.
+- 프로젝트 내부 산출물은 기본적으로 영어를 사용한다. 단, 사용자-facing 답변과 이 `AGENTS.md`는 한국어를 사용한다.
+- 큰 코드베이스 변경이나 새 요구사항이 도입되면 `AGENTS.md`를 함께 재정비한다.
