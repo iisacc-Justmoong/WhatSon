@@ -21,7 +21,6 @@ Item {
     property var editorViewModeController: null
     property int editorTopInsetOverride: -1
     property int frameHorizontalInsetOverride: -1
-    property color gutterColor: LV.Theme.panelBackground02
     property int gutterWidthOverride: -1
     property bool isMobilePlatform: false
     property int libraryHierarchyIndex: 0
@@ -229,7 +228,6 @@ Item {
             enabled: contentViewLayout.visible
             editorTopInsetOverride: contentViewLayout.editorTopInsetOverride
             frameHorizontalInsetOverride: contentViewLayout.frameHorizontalInsetOverride
-            gutterColor: contentViewLayout.gutterColor
             gutterWidthOverride: contentViewLayout.gutterWidthOverride
             libraryHierarchyController: contentViewLayout.libraryHierarchyController
             lineNumberColumnLeftOverride: contentViewLayout.lineNumberColumnLeftOverride

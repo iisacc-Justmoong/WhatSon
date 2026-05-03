@@ -17,7 +17,6 @@ Rectangle {
     property int activeLineNumber: defaultActiveLineNumber
     property string editorText: defaultEditorText
     property color editorTextColor: LV.Theme.bodyColor
-    property color gutterColor: LV.Theme.panelBackground02
     property int lineNumberCount: defaultLineNumberCount
     property color lineNumberActiveColor: LV.Theme.captionColor
     property color lineNumberColor: LV.Theme.disabledColor
@@ -55,7 +54,7 @@ Rectangle {
         id: gutterLineNumberGeometry
 
         fallbackLineHeight: LV.Theme.textBodyLineHeight
-        fallbackTopInset: LV.Theme.gap16
+        fallbackTopInset: LV.Theme.gapNone
         lineNumberBaseOffset: gutterLayoutMetrics.lineNumberBaseOffset
         lineNumberCount: contentsView.lineNumberCount
         objectName: "contentsViewGutterLineNumberGeometry"
@@ -105,7 +104,6 @@ Rectangle {
             Layout.fillHeight: true
             Layout.preferredWidth: gutterLayoutMetrics.defaultGutterWidth
             activeLineNumber: contentsView.activeLineNumber
-            gutterColor: contentsView.gutterColor
             iconRailX: gutterLayoutMetrics.iconRailX
             lineNumberBaseOffset: gutterLayoutMetrics.lineNumberBaseOffset
             lineNumberActiveColor: contentsView.lineNumberActiveColor

@@ -85,8 +85,18 @@ QtObject {
             return false;
         const start = clampLogicalPosition(selectionStart, helper.textInput.length);
         const end = Math.max(start, clampLogicalPosition(selectionEnd, helper.textInput.length));
-        helper.textInput.select(start, end);
-        helper.textInput.cursorPosition = Math.max(start, Math.min(Number(cursorPosition) || end, end));
+        const cursor = Math.max(start, Math.min(Number(cursorPosition) || end, end));
+        if (start === end) {
+            helper.textInput.cursorPosition = cursor;
+            return true;
+        }
+        if (cursor === start) {
+            helper.textInput.cursorPosition = end;
+            helper.textInput.moveCursorSelection(start, TextEdit.SelectCharacters);
+        } else {
+            helper.textInput.cursorPosition = start;
+            helper.textInput.moveCursorSelection(end, TextEdit.SelectCharacters);
+        }
         return true;
     }
 

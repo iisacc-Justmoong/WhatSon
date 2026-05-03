@@ -13,11 +13,12 @@ Provides the note-backed center editor surface.
   `ContentsMinimapLayoutMetrics`, then consumes their resolved layout values.
 - Binds editor projection logical offsets and the live `ContentsStructuredDocumentFlow.qml` geometry hooks into
   `ContentsGutterLineNumberGeometry`, then passes the resolved line-number entries into `contents/Gutter.qml`.
+  The fallback line-number geometry uses a zero top inset so line numbers stay aligned with the top-flush editor body.
 - Binds live cursor position, current RAW text, saved `.wsnbody` RAW text, and line-number entries into
   `ContentsGutterMarkerGeometry`, then passes the resolved marker entries into `contents/Gutter.qml`.
 - Forwards `editorSurfaceHtml`, `htmlTokens`, and `normalizedHtmlBlocks` into
   `ContentsStructuredDocumentFlow.qml`.
-- Mounts the actual editor chrome as an `LV.HStack`: existing `contents/Gutter.qml` on the left,
+- Mounts the actual editor chrome as an `LV.HStack`: existing transparent `contents/Gutter.qml` on the left,
   `ContentsStructuredDocumentFlow.qml` in the center, and existing `contents/Minimap.qml` on the right.
 - Commits user edits through `ContentsEditorSessionController.commitRawEditorTextMutation(...)` first, then asks the
   active hierarchy controller to persist through `saveCurrentBodyText(...)` when that capability is available.

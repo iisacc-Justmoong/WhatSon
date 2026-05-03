@@ -26,7 +26,6 @@ Item {
     property color contentsDisplayColor: "transparent"
     property var editorViewModeController: null
     readonly property int effectiveMinSidebarWidth: Math.max(minSidebarWidth, LV.Theme.gap20 * 7 + LV.Theme.gap12)
-    property color gutterColor: LV.Theme.panelBackground02
     property bool isMobilePlatform: false
     property var libraryHierarchyController: null
     property color listViewColor: "transparent"
@@ -255,7 +254,6 @@ Item {
                 contentController: hStack.activeHierarchyController
                 displayColor: hStack.contentsDisplayColor
                 editorViewModeController: hStack.editorViewModeController
-                gutterColor: hStack.gutterColor
                 isMobilePlatform: hStack.isMobilePlatform
                 libraryHierarchyController: hStack.libraryHierarchyController
                 noteListModel: hStack.activeNoteListModel

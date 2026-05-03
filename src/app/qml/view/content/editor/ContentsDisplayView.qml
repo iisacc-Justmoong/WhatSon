@@ -16,7 +16,6 @@ Item {
     readonly property bool editorTagManagementInputEnabled: true
     property int editorTopInsetOverride: -1
     property int frameHorizontalInsetOverride: -1
-    property color gutterColor: LV.Theme.panelBackground02
     property int gutterWidthOverride: -1
     property var htmlTokens: editorPresentationProjection.htmlTokens
     property var libraryHierarchyController: null
@@ -223,7 +222,7 @@ Item {
         editorContentHeight: structuredDocumentFlow.editorContentHeight
         editorGeometryHost: structuredDocumentFlow
         fallbackLineHeight: LV.Theme.textBodyLineHeight
-        fallbackTopInset: LV.Theme.gap16
+        fallbackTopInset: LV.Theme.gapNone
         lineNumberBaseOffset: gutterLayoutMetrics.lineNumberBaseOffset
         lineNumberCount: gutterLayoutMetrics.effectiveLineNumberCount
         logicalLineStartOffsets: editorPresentationProjection.logicalLineStartOffsets
@@ -279,7 +278,6 @@ Item {
             Layout.fillHeight: true
             Layout.preferredWidth: gutterLayoutMetrics.effectiveGutterWidth
             activeLineNumber: gutterMarkerGeometry.cursorLineNumber
-            gutterColor: contentsDisplayView.gutterColor
             iconRailX: gutterLayoutMetrics.iconRailX
             lineNumberBaseOffset: gutterLayoutMetrics.lineNumberBaseOffset
             lineNumberColumnLeft: gutterLayoutMetrics.lineNumberColumnLeft

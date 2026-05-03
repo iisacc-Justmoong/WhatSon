@@ -3,12 +3,11 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import LVRS 1.0 as LV
 
-Rectangle {
+Item {
     id: gutter
 
     property int activeLineNumber: LV.Theme.gapNone
     property color cursorMarkerColor: LV.Theme.accentBlue
-    property color gutterColor: LV.Theme.panelBackground02
     property int iconRailX: LV.Theme.gap20
     property color lineNumberActiveColor: LV.Theme.captionColor
     property int lineNumberBaseOffset: LV.Theme.strokeThin
@@ -29,7 +28,6 @@ Rectangle {
     }
 
     clip: true
-    color: gutter.gutterColor
     objectName: "figma-155-5345-Gutter"
 
     Item {

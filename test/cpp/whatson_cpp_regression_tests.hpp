@@ -1047,6 +1047,7 @@ private slots:
     void qmlStructuredEditors_lockCustomInputToTagManagementOnly();
     void qmlInlineFormatEditor_keepsNativeTextEditInputUncovered();
     void qmlInlineFormatEditor_keepsKeyboardSelectionAndOsImeNative();
+    void qmlInlineFormatEditor_hidesRenderedOverlayDuringNativeSelection();
     void qmlInlineFormatEditor_forwardsInlineFormatShortcutsToTagManagementHook();
     void mobileChrome_usesSharedFigmaControlSurfaceColor();
     void mobileHierarchyRouteStateStore_tracksNormalizedSelectionRestoreState();

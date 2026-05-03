@@ -16,11 +16,16 @@ Item {
     readonly property var inputItem: textInput.editorItem
     property int inputMethodHints: Qt.ImhNone
     property int mouseSelectionMode: TextEdit.SelectCharacters
+    readonly property bool nativeSelectionActive: textInput.selectionStart !== textInput.selectionEnd
     property bool overwriteMode: false
     property bool persistentSelection: true
     readonly property bool inputMethodComposing: textInput.inputMethodComposing
     readonly property string preeditText: String(textInput.editorItem.preeditText)
     property string renderedText: ""
+    readonly property bool renderedOverlayVisible: control.showRenderedOutput
+            && control.renderedText.length > 0
+            && !control.nativeCompositionActive()
+            && !control.nativeSelectionActive
     property bool selectByKeyboard: true
     property bool selectByMouse: true
     property alias selectedText: textInput.selectedText
@@ -116,8 +121,18 @@ Item {
     function restoreSelectionRange(selectionStart, selectionEnd, cursorPosition) {
         const start = Math.max(0, Math.min(Number(selectionStart) || 0, textInput.length));
         const end = Math.max(start, Math.min(Number(selectionEnd) || start, textInput.length));
-        textInput.select(start, end);
-        textInput.cursorPosition = Math.max(start, Math.min(Number(cursorPosition) || end, end));
+        const cursor = Math.max(start, Math.min(Number(cursorPosition) || end, end));
+        if (start === end) {
+            textInput.cursorPosition = cursor;
+            return true;
+        }
+        if (cursor === start) {
+            textInput.cursorPosition = end;
+            textInput.editorItem.moveCursorSelection(start, TextEdit.SelectCharacters);
+        } else {
+            textInput.cursorPosition = start;
+            textInput.editorItem.moveCursorSelection(end, TextEdit.SelectCharacters);
+        }
         return true;
     }
 
@@ -203,10 +218,10 @@ Item {
         font.family: LV.Theme.fontBody
         font.pixelSize: LV.Theme.textBody
         linkColor: LV.Theme.primary
-        padding: LV.Theme.gap16
+        padding: LV.Theme.gapNone
         text: control.renderedText
         textFormat: Text.RichText
-        visible: control.showRenderedOutput && control.renderedText.length > 0 && !control.nativeCompositionActive()
+        visible: control.renderedOverlayVisible
         wrapMode: Text.Wrap
         z: 1
 
@@ -241,6 +256,8 @@ Item {
         id: textInput
 
         anchors.fill: parent
+        anchors.leftMargin: LV.Theme.gap16
+        anchors.rightMargin: LV.Theme.gap16
         activeFocusOnPress: control.autoFocusOnPress
         autoFocusOnPress: control.autoFocusOnPress
         backgroundColor: "transparent"
@@ -255,8 +272,8 @@ Item {
         fieldMinHeight: LV.Theme.gap16
         fontFamily: LV.Theme.fontBody
         fontPixelSize: LV.Theme.textBody
-        insetHorizontal: LV.Theme.gap16
-        insetVertical: LV.Theme.gap16
+        insetHorizontal: LV.Theme.gapNone
+        insetVertical: LV.Theme.gapNone
         inputMethodHints: control.inputMethodHints
         mode: plainTextMode
         mouseSelectionMode: control.mouseSelectionMode
@@ -268,7 +285,7 @@ Item {
         selectionColor: LV.Theme.primaryOverlay
         showRenderedOutput: false
         showScrollBar: false
-        textColor: renderedOverlay.visible ? "transparent" : control.textColor
+        textColor: control.renderedOverlayVisible ? "transparent" : control.textColor
         textColorDisabled: textColor
         textFormat: TextEdit.PlainText
         wrapMode: TextEdit.Wrap

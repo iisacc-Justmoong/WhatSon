@@ -186,6 +186,13 @@ ctest --test-dir build --output-on-failure -L cpp_regression
 - The inline editor regression now also pins the explicit `LV.TextEditor` keyboard/selection flags used by note-body
   editors: focus-on-press, keyboard selection, pointer selection, persistent selection, unrestricted input-method hints,
   character-level mouse selection, and insert-mode editing.
+- The inline editor regression now also pins native selection against the rendered HTML overlay: once `LV.TextEditor`
+  owns a non-empty selection, the RichText overlay is suppressed and the selected range is painted by the real editor
+  text.
+- The inline editor regression now also pins the top-flush editor body contract: vertical inset and rendered-overlay
+  padding stay at zero, with only horizontal text-column margins retained.
+- The contents/editor QML regressions now also pin the backgroundless gutter contract: the gutter no longer exposes or
+  paints a dedicated background color, so it inherits the editor body background.
 - The inline editor regression also source-locks the absence of live-text key handlers in
   `ContentsInlineFormatEditor.qml`, so ordinary navigation and selection chords stay with Qt/OS text editing.
 - The unified display view now also pins blur-save behavior during native composition: blur flush returns instead of

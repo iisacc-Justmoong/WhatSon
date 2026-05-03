@@ -39,10 +39,14 @@ void WhatSonCppRegressionTests::qmlContentsView_composesFigmaFrameFromLvrsParts(
     QVERIFY(minimapSource.contains(QStringLiteral("objectName: \"figma-352-8626-Minimap\"")));
     QVERIFY(contentsViewSource.contains(QStringLiteral("ContentsGutterLayoutMetrics {")));
     QVERIFY(contentsViewSource.contains(QStringLiteral("ContentsGutterLineNumberGeometry {")));
+    QVERIFY(contentsViewSource.contains(QStringLiteral("fallbackTopInset: LV.Theme.gapNone")));
     QVERIFY(contentsViewSource.contains(QStringLiteral("ContentsGutterMarkerGeometry {")));
     QVERIFY(contentsViewSource.contains(QStringLiteral("ContentsMinimapLayoutMetrics {")));
     QVERIFY(gutterSource.contains(QStringLiteral("property int lineNumberColumnLeft")));
     QVERIFY(gutterSource.contains(QStringLiteral("property int lineNumberColumnTextWidth")));
+    QVERIFY(gutterSource.contains(QStringLiteral("Item {")));
+    QVERIFY(!gutterSource.contains(QStringLiteral("property color gutterColor")));
+    QVERIFY(!gutterSource.contains(QStringLiteral("color: gutter.gutterColor")));
     QVERIFY(gutterSource.contains(QStringLiteral("property var lineNumberEntries")));
     QVERIFY(gutterSource.contains(QStringLiteral("width: gutter.lineNumberColumnTextWidth")));
     QVERIFY(gutterSource.contains(QStringLiteral("x: gutter.lineNumberColumnLeft")));
@@ -57,6 +61,8 @@ void WhatSonCppRegressionTests::qmlContentsView_composesFigmaFrameFromLvrsParts(
     QVERIFY(contentsViewSource.contains(QStringLiteral("Layout.preferredWidth: minimapLayoutMetrics.defaultMinimapWidth")));
     QVERIFY(contentsViewSource.contains(
         QStringLiteral("property int minimapRowCount: defaultMinimapRowCount")));
+    QVERIFY(!contentsViewSource.contains(QStringLiteral("property color gutterColor")));
+    QVERIFY(!contentsViewSource.contains(QStringLiteral("gutterColor: contentsView.gutterColor")));
     QVERIFY(contentsViewSource.contains(QStringLiteral("property color surfaceColor: LV.Theme.panelBackground02")));
     QVERIFY(gutterSource.contains(QStringLiteral("property color cursorMarkerColor: LV.Theme.accentBlue")));
     QVERIFY(gutterSource.contains(QStringLiteral("property color unsavedMarkerColor: LV.Theme.warning")));

@@ -115,6 +115,8 @@ void WhatSonCppRegressionTests::qmlStructuredEditors_mountsGutterEditorAndMinima
     QVERIFY(displayViewSource.contains(QStringLiteral("ContentsGutterMarkerGeometry {")));
     QVERIFY(displayViewSource.contains(QStringLiteral("ContentsMinimapLayoutMetrics {")));
     QVERIFY(displayViewSource.contains(QStringLiteral("ContentsChrome.Gutter {")));
+    QVERIFY(!displayViewSource.contains(QStringLiteral("property color gutterColor")));
+    QVERIFY(!displayViewSource.contains(QStringLiteral("gutterColor: contentsDisplayView.gutterColor")));
     QVERIFY(displayViewSource.contains(QStringLiteral("ContentsStructuredDocumentFlow {")));
     QVERIFY(displayViewSource.contains(QStringLiteral("ContentsChrome.Minimap {")));
     const qsizetype hStackIndex = displayViewSource.indexOf(QStringLiteral("LV.HStack {"));
@@ -134,6 +136,7 @@ void WhatSonCppRegressionTests::qmlStructuredEditors_mountsGutterEditorAndMinima
     QVERIFY(displayViewSource.contains(QStringLiteral("cursorPosition: structuredDocumentFlow.editorCursorPosition")));
     QVERIFY(displayViewSource.contains(QStringLiteral("savedSourceText: contentsDisplayView.currentRawBodyText")));
     QVERIFY(displayViewSource.contains(QStringLiteral("editorGeometryHost: structuredDocumentFlow")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("fallbackTopInset: LV.Theme.gapNone")));
     QVERIFY(displayViewSource.contains(QStringLiteral("logicalLineStartOffsets: editorPresentationProjection.logicalLineStartOffsets")));
     QVERIFY(displayViewSource.contains(QStringLiteral("editorPresentationProjection.logicalToSourceOffsets()")));
     QVERIFY(displayViewSource.contains(QStringLiteral("mapTarget: contentsDisplayGutter")));
@@ -314,9 +317,15 @@ void WhatSonCppRegressionTests::qmlEditorViewDirectory_containsOnlyViewSurfaceFi
 {
     const QString contentViewLayoutSource = readUtf8SourceFile(
         QStringLiteral("src/app/qml/view/panels/ContentViewLayout.qml"));
+    const QString bodyLayoutSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/panels/BodyLayout.qml"));
 
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("ContentsDisplayView {")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("ContentsResourceEditorView {")));
+    QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("property color gutterColor")));
+    QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("gutterColor: contentViewLayout.gutterColor")));
+    QVERIFY(!bodyLayoutSource.contains(QStringLiteral("property color gutterColor")));
+    QVERIFY(!bodyLayoutSource.contains(QStringLiteral("gutterColor: hStack.gutterColor")));
 }
 
 void WhatSonCppRegressionTests::qmlStructuredEditors_lockCustomInputToTagManagementOnly()

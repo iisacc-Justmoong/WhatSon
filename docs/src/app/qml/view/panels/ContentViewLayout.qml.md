@@ -45,8 +45,9 @@ surface.
   resource editor request and a calendar overlay at once.
 - `resourcesImportController`, `editorViewModeController`, `sidebarHierarchyController`, and the resolved
   note-list/content controllers are forwarded into the unified note editor host when that surface is active.
-- `gutterColor`, `gutterWidthOverride`, line-number overrides, and `minimapVisible` are forwarded into
-  `ContentsDisplayView.qml`, where the visible gutter/editor/minimap `LV.HStack` is mounted.
+- `gutterWidthOverride`, line-number overrides, and `minimapVisible` are forwarded into `ContentsDisplayView.qml`,
+  where the visible gutter/editor/minimap `LV.HStack` is mounted. No gutter background color is forwarded; the gutter
+  remains indistinguishable from the editor body.
 - That sidebar-hierarchy forwarding is now part of the editor contract so desktop/mobile surfaces can distinguish:
   - direct resource-package browsing inside the Resources hierarchy
   - ordinary notes from other hierarchies whose `.wsnbody` happens to contain inline `<resource ... />` blocks

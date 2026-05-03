@@ -6,13 +6,14 @@
 ## Composition
 - Root `ContentsView`: LVRS dark panel token, token-composed Figma frame size, shared hook signal.
 - Child `LV.HStack`: Figma node `155:5344`, ordered left-to-right as `Gutter.qml`, `EditorView.qml`, then `Minimap.qml`.
-- `Gutter.qml`: token-composed rail with line numbers, active line color, and semantic cursor/unsaved markers.
+- `Gutter.qml`: transparent rail with line numbers, active line color, and semantic cursor/unsaved markers.
 - `EditorView.qml`: read-only text projection using `LV.TextEditor`, LVRS body typography, and native selection.
 - `Minimap.qml`: token-composed rail made from repeated LVRS hairline rows.
 - `ContentsGutterLayoutMetrics` and `ContentsMinimapLayoutMetrics`: C++ metric calculators imported from
   `WhatSon.App.Internal` so this Figma frame does not own gutter/minimap arithmetic.
 - `ContentsGutterLineNumberGeometry`: C++ line-number entry projector used by the gutter, with fallback y positions
-  for this standalone frame when no live editor geometry host is mounted.
+  for this standalone frame when no live editor geometry host is mounted. The fallback starts at zero top inset to
+  match the top-flush editor text projection.
 - `ContentsGutterMarkerGeometry`: C++ marker projector used by the gutter; the standalone design frame leaves the
   editor unmounted, while the runtime editor supplies live cursor and saved-source inputs.
 

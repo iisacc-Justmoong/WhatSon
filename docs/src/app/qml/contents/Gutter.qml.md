@@ -13,11 +13,12 @@
 - Consumes `markerEntries` from `ContentsGutterMarkerGeometry`; each entry supplies a semantic marker type plus a
   gutter-coordinate y/height pair.
 - Emits `viewHookRequested(string reason)` through `requestViewHook(reason)` for the standard view hook surface.
+- Does not expose or paint a gutter background color. The gutter visually merges with the editor surface.
 
 ## UI
 - The token-composed host width is assigned by `ContentsView.qml`.
-- The file owns the LVRS panel background, right-aligned line labels, blue cursor marker rendering, and yellow unsaved
-  line marker rendering.
+- The file owns right-aligned line labels, blue cursor marker rendering, and yellow unsaved line marker rendering; it
+  does not introduce a visible background behind those markers.
 - Gutter/minimap calculation policy lives in `src/app/models/editor/gutter` and
   `src/app/models/editor/minimap`; this file only renders the resolved metrics.
 - Line labels are absolutely positioned from resolved entries. They must not be stacked with `Column`, because the
