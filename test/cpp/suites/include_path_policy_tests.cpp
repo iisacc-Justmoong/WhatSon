@@ -304,3 +304,53 @@ void WhatSonCppRegressionTests::sourceTree_keepsGutterAndMinimapUnderEditorChrom
     QVERIFY(!appCmakeSource.contains(QStringLiteral("models/gutter")));
     QVERIFY(!appCmakeSource.contains(QStringLiteral("models/minimap")));
 }
+
+void WhatSonCppRegressionTests::sourceTree_keepsContentsQmlUnderViewContents()
+{
+    const QDir repositoryRoot(repositoryRootPath());
+    QVERIFY(repositoryRoot.exists());
+
+    const QString contentsRoot = QStringLiteral("src/app/qml/view/contents");
+    const QString docsContentsRoot = QStringLiteral("docs/src/app/qml/view/contents");
+    const QStringList requiredPaths{
+        contentsRoot + QStringLiteral("/ContentsView.qml"),
+        contentsRoot + QStringLiteral("/Gutter.qml"),
+        contentsRoot + QStringLiteral("/EditorView.qml"),
+        contentsRoot + QStringLiteral("/Minimap.qml"),
+        contentsRoot + QStringLiteral("/editor/ContentsDisplayView.qml"),
+        contentsRoot + QStringLiteral("/editor/ContentsStructuredDocumentFlow.qml"),
+        docsContentsRoot + QStringLiteral("/README.md"),
+        docsContentsRoot + QStringLiteral("/editor/README.md")
+    };
+    for (const QString& relativePath : requiredPaths)
+    {
+        QVERIFY2(
+            QFileInfo::exists(repositoryRoot.filePath(relativePath)),
+            qPrintable(QStringLiteral("Missing expected contents QML path: %1").arg(relativePath)));
+    }
+
+    const QString qmlRoot = QStringLiteral("src/app/qml/");
+    const QString docsQmlRoot = QStringLiteral("docs/src/app/qml/");
+    const QStringList forbiddenDirectories{
+        qmlRoot + QStringLiteral("contents"),
+        qmlRoot + QStringLiteral("view/content"),
+        docsQmlRoot + QStringLiteral("contents"),
+        docsQmlRoot + QStringLiteral("view/content")
+    };
+    for (const QString& relativePath : forbiddenDirectories)
+    {
+        QVERIFY2(
+            !QDir(repositoryRoot.filePath(relativePath)).exists(),
+            qPrintable(QStringLiteral("Contents QML must stay under view/contents: %1").arg(relativePath)));
+    }
+
+    const QString displayViewSource = readUtf8SourceFile(contentsRoot + QStringLiteral("/editor/ContentsDisplayView.qml"));
+    QVERIFY(displayViewSource.contains(QStringLiteral("import \"..\" as ContentsChrome")));
+    QVERIFY(!displayViewSource.contains(QStringLiteral("../../../") + QStringLiteral("contents")));
+
+    const QString remainingInputControllersSource =
+        readUtf8SourceFile(QStringLiteral("src/app/models/editor/input/ContentsRemainingInputControllers.cpp"));
+    QVERIFY(remainingInputControllersSource.contains(QStringLiteral("qrc:/qt/qml/WhatSon/App/view/contents/editor/")));
+    QVERIFY(!remainingInputControllersSource.contains(
+        QStringLiteral("qrc:/qt/qml/WhatSon/App/view/") + QStringLiteral("content/editor/")));
+}

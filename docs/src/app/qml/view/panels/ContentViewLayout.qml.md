@@ -45,6 +45,9 @@ surface.
   resource editor request and a calendar overlay at once.
 - `resourcesImportController`, `editorViewModeController`, `sidebarHierarchyController`, and the resolved
   note-list/content controllers are forwarded into the unified note editor host when that surface is active.
+- The global `noteActiveState` object is also forwarded into the note editor host. The host registers its
+  `ContentsEditorSessionController` there, so active-note changes can rebind the editor session before QML's local
+  note-list bindings finish a later refresh turn.
 - `gutterWidthOverride`, line-number overrides, and `minimapVisible` are forwarded into `ContentsDisplayView.qml`,
   where the visible gutter/editor/minimap `LV.HStack` is mounted. No gutter background color is forwarded; the gutter
   remains indistinguishable from the editor body.
@@ -71,3 +74,5 @@ surface.
   - a year-calendar month/day tap must still propagate into a month-overlay open request with the month controller already synchronized to the requested month/date
   - a note tap from Agenda/day/week/month must reopen that library note and return the content slot to the note editor surface
   - calendar note opening must switch the active hierarchy back to Library before the overlay is dismissed
+  - the note editor host must receive the same global `noteActiveState` object that desktop/mobile shells use for
+    active-note selection

@@ -11,13 +11,14 @@ Owns editor-side resource import and inline resource presentation coordination.
 - `ContentsResourceImportConflictController.*`
   Owns duplicate-resource prompt state.
 - `ContentsInlineResourcePresentationController.*`
-  Builds editor-surface inline resource HTML placeholders.
+  Builds editor-surface inline resource HTML placeholders and the rounded Figma `292:50` frame image projection used by
+  note-body resources.
 - `ContentsEditorSurfaceGuardController.*`
   Guards programmatic editor-surface sync during resource import turns.
 
 ## Boundary
 - RAW `<resource ... />` tag construction and insertion helpers live under `src/app/models/editor/tags`.
-- Visual resource cards and viewers remain under `src/app/qml/view/content/editor`.
+- Visual resource cards and viewers remain under `src/app/qml/view/contents/editor`.
 - File/resource storage and bitmap/PDF rendering backends remain under `src/app/models/file`.
 
 ## 한국어

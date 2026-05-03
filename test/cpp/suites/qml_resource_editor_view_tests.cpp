@@ -3,7 +3,7 @@
 void WhatSonCppRegressionTests::qmlResourceEditorView_staysTransparentAndViewerOnly()
 {
     const QString resourceEditorSource = readUtf8SourceFile(
-        QStringLiteral("src/app/qml/view/content/editor/ContentsResourceEditorView.qml"));
+        QStringLiteral("src/app/qml/view/contents/editor/ContentsResourceEditorView.qml"));
 
     QVERIFY(!resourceEditorSource.isEmpty());
     QVERIFY(resourceEditorSource.contains(QStringLiteral("Item {")));

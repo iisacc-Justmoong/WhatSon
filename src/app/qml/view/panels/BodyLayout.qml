@@ -20,7 +20,10 @@ Item {
         return isFinite(numericIndex) ? Math.floor(numericIndex) : 0;
     }
     readonly property var activeHierarchyController: hStack.activeHierarchyBindingSnapshot ? hStack.activeHierarchyBindingSnapshot.controller : null
-    readonly property var activeNoteListModel: hStack.sidebarHierarchyController ? hStack.sidebarHierarchyController.activeNoteListModel : null
+    readonly property var activeNoteListModel: hStack.noteActiveState
+            && hStack.noteActiveState.activeNoteListModel !== undefined
+            ? hStack.noteActiveState.activeNoteListModel
+            : (hStack.sidebarHierarchyController ? hStack.sidebarHierarchyController.activeNoteListModel : null)
     property color compactCanvasColor: LV.Theme.panelBackground01
     property bool compactMode: false
     property color contentsDisplayColor: "transparent"
@@ -36,6 +39,7 @@ Item {
     property int minRightPanelWidth: LV.Theme.controlHeightMd + LV.Theme.controlHeightMd + LV.Theme.controlHeightMd + LV.Theme.controlHeightMd + Math.round(LV.Theme.strokeThin)
     property int minSidebarWidth: LV.Theme.gap20 * 7 + LV.Theme.gap12
     property var noteDeletionController: null
+    property var noteActiveState: null
     readonly property var resolvedNoteDeletionController: {
         const activeController = hStack.activeHierarchyController;
         if (activeController && (activeController.deleteNotesByIds !== undefined || activeController.deleteNoteById !== undefined || activeController.clearNoteFoldersByIds !== undefined || activeController.clearNoteFoldersById !== undefined)) {
@@ -256,6 +260,7 @@ Item {
                 editorViewModeController: hStack.editorViewModeController
                 isMobilePlatform: hStack.isMobilePlatform
                 libraryHierarchyController: hStack.libraryHierarchyController
+                noteActiveState: hStack.noteActiveState
                 noteListModel: hStack.activeNoteListModel
                 panelControllerRegistry: null
                 resourcesImportController: hStack.resourcesImportController

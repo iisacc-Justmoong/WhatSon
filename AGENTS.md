@@ -46,6 +46,7 @@
 - 사이드바 계층 wiring 인터페이스/컨트롤러: `src/app/models/sidebar/IHierarchyControllerProvider.*`,
   `src/app/models/sidebar/HierarchyControllerProvider.*`,
   `src/app/models/sidebar/SidebarHierarchyController.*`
+- 전역 노트 active 상태 추적 객체: `src/app/models/panel/NoteActiveStateTracker.*`
 - 아키텍처 policy lock 및 layer contract: `src/app/policy/ArchitecturePolicyLock.*`
 - 런타임 bootstrap: 저장된 `.wshub` 선택을 mount할 수 있으면 앱 시작 시 workspace shell로 바로 진입할 수 있다. 저장된 시작 허브를 mount할 수 없으면 startup은 unmounted 상태를 유지하고 blueprint/sample workspace를 다시 여는 대신 onboarding으로 라우팅해야 한다. 저장된 시작 경로는 첫 workspace window가 생성되기 전에 runtime domain을 load하면 안 된다. `main.cpp`는 LVRS `AfterFirstIdle` lifecycle task를 통해 일반 full runtime load를 예약하고, 이후 `WhatSonRuntimeParallelLoader`의 Controller 상태를 적용한다. onboarding 중 명시적 허브 선택은 workspace로 전환하기 전에 선택된 허브를 load할 수 있다.
 
@@ -114,6 +115,9 @@
 - 일반 note editing은 persisted backing store가 `.wsnbody`인 Apple Notes 같은 document surface로 취급한다.
 - note editor는 plain prose, semantic text block, `<resource ... />`, `agenda`, `callout`, `break`를 포함한 모든 note-body element를 하나의 document host 안의 ordinary block으로 취급해야 한다.
 - note session이 bound된 뒤의 표준 note document host는 `ContentsStructuredDocumentFlow.qml`이다.
+- active note 선택과 편집기 세션 mount는 전역 `NoteActiveStateTracker`가 같은 update turn에서 연결해야 한다.
+  view QML은 현재 표시 중인 `ContentsEditorSessionController`를 이 전역 객체에 등록할 수 있지만, active note
+  본문 스냅샷에서 세션을 갱신하는 책임을 각 view가 독립적으로 재구현하면 안 된다.
 - specialized block delegate는 presentation을 바꿀 수 있지만, note를 별도 editor mode 또는 다른 persistence authority로 분리하면 안 된다.
 - editor-session persistence orchestration은 `src/app/models/editor/persistence` 아래에 둔다.
   `ContentsEditorPersistenceController`는 note-body snapshot buffering, immediate enqueue attempt, persistence retry/drain scheduling, pending-snapshot adoption, selected-note body read, post-save reconcile handoff를 소유한다.
@@ -233,10 +237,17 @@ import LVRS 1.0 as LV
             - `src/app/qml/view/panels/detail/DetailContents.qml`(Figma frame `DetailContents`, node `134:3649`)
                 - `src/app/qml/view/body/HierarchySidebarLayout.qml`
                     - `src/app/qml/view/panels/ContentViewLayout.qml`
-                    - `src/app/qml/view/content/editor/ContentsDisplayView.qml`
-                    - `src/app/qml/view/content/editor/ContentsGutterLayer.qml`
-                    - `src/app/qml/view/content/editor/ContentsMinimapLayer.qml`
-                    - `src/app/qml/view/content/editor/ContentsDrawerSplitter.qml`
+                    - `src/app/qml/view/contents/ContentsView.qml`
+                    - `src/app/qml/view/contents/Gutter.qml`
+                    - `src/app/qml/view/contents/EditorView.qml`
+                    - `src/app/qml/view/contents/Minimap.qml`
+                    - `src/app/qml/view/contents/editor/ContentsDisplayView.qml`
+                    - `src/app/qml/view/contents/editor/ContentsDisplaySurfaceHost.qml`
+                    - `src/app/qml/view/contents/editor/ContentsInlineFormatEditor.qml`
+                    - `src/app/qml/view/contents/editor/ContentsInlineFormatEditorController.qml`
+                    - `src/app/qml/view/contents/editor/ContentsResourceEditorView.qml`
+                    - `src/app/qml/view/contents/editor/ContentsResourceViewer.qml`
+                    - `src/app/qml/view/contents/editor/ContentsStructuredDocumentFlow.qml`
                 - `src/app/qml/view/panels/sidebar/SidebarHierarchyView.qml`
                 - `src/app/qml/view/panels/sidebar/HierarchyViewLibrary.qml`
                 - `src/app/qml/view/panels/sidebar/HierarchyViewProjects.qml`
@@ -251,11 +262,9 @@ import LVRS 1.0 as LV
     - `src/app/qml/components/MetricCard.qml`
     - `src/app/qml/components/InfoListCard.qml`
     - `src/app/qml/components/InsightPanel.qml`
-- Domain pages:
-    - `src/app/qml/view/content/CreativeHubPage.qml`
-    - `src/app/qml/view/content/BrandHubPage.qml`
-    - `src/app/qml/view/content/KnowledgeHubPage.qml`
-    - `src/app/qml/view/content/EditorStudioPage.qml`
+- Contents view namespace:
+    - `src/app/qml/view/contents` is the single contents-view namespace.
+    - Do not reintroduce `src/app/qml/contents` or `src/app/qml/view/content`.
 
 ## 시작 체크리스트
 

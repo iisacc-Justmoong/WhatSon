@@ -8,7 +8,7 @@ Declares the C++ calculation object that turns live editor state into gutter mar
 
 - Inputs are primitive view/model facts: mount state, current RAW `.wsnbody` text, saved RAW `.wsnbody` text,
   cursor position, line-number y entries, line-number base offset, and marker height.
-- Publishes `markerEntries`, a list of maps consumed by `contents/Gutter.qml`.
+- Publishes `markerEntries`, a list of maps consumed by `view/contents/Gutter.qml`.
 - Publishes `cursorLineNumber` so the gutter can color the active line number from the same cursor calculation.
 - Uses marker `type` values:
   - `cursor`: current `LV.TextEditor` cursor line, rendered as the blue marker.

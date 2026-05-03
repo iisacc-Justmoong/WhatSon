@@ -3,10 +3,10 @@
 void WhatSonCppRegressionTests::qmlContentsView_composesFigmaFrameFromLvrsParts()
 {
     const QString contentsViewSource = readUtf8SourceFile(
-        QStringLiteral("src/app/qml/contents/ContentsView.qml"));
-    const QString gutterSource = readUtf8SourceFile(QStringLiteral("src/app/qml/contents/Gutter.qml"));
-    const QString editorViewSource = readUtf8SourceFile(QStringLiteral("src/app/qml/contents/EditorView.qml"));
-    const QString minimapSource = readUtf8SourceFile(QStringLiteral("src/app/qml/contents/Minimap.qml"));
+        QStringLiteral("src/app/qml/view/contents/ContentsView.qml"));
+    const QString gutterSource = readUtf8SourceFile(QStringLiteral("src/app/qml/view/contents/Gutter.qml"));
+    const QString editorViewSource = readUtf8SourceFile(QStringLiteral("src/app/qml/view/contents/EditorView.qml"));
+    const QString minimapSource = readUtf8SourceFile(QStringLiteral("src/app/qml/view/contents/Minimap.qml"));
 
     QVERIFY(!contentsViewSource.isEmpty());
     QVERIFY(!gutterSource.isEmpty());
@@ -89,8 +89,8 @@ void WhatSonCppRegressionTests::qmlContentsView_composesFigmaFrameFromLvrsParts(
 void WhatSonCppRegressionTests::qmlContentsView_partsKeepEditorProjectionReadOnlyAndNativeInputSafe()
 {
     const QString contentsViewSource = readUtf8SourceFile(
-        QStringLiteral("src/app/qml/contents/ContentsView.qml"));
-    const QString editorViewSource = readUtf8SourceFile(QStringLiteral("src/app/qml/contents/EditorView.qml"));
+        QStringLiteral("src/app/qml/view/contents/ContentsView.qml"));
+    const QString editorViewSource = readUtf8SourceFile(QStringLiteral("src/app/qml/view/contents/EditorView.qml"));
 
     QVERIFY(!contentsViewSource.isEmpty());
     QVERIFY(!editorViewSource.isEmpty());

@@ -99,6 +99,7 @@ void WhatSonCppRegressionTests::editorPresentationProjection_publishesHtmlBlockP
     QVERIFY(projection.htmlTokens().size() >= 3);
     QVERIFY(projection.normalizedHtmlBlocks().size() >= 3);
 
+    bool foundResourceBlock = false;
     for (const QVariant& blockValue : projection.normalizedHtmlBlocks())
     {
         const QVariantMap block = blockValue.toMap();
@@ -107,16 +108,23 @@ void WhatSonCppRegressionTests::editorPresentationProjection_publishesHtmlBlockP
             QStringLiteral("iiHtmlBlock"));
         QVERIFY(!block.value(QStringLiteral("htmlBlockTagName")).toString().isEmpty());
         QVERIFY(block.value(QStringLiteral("htmlBlockIsDisplayBlock")).toBool());
+        if (block.value(QStringLiteral("renderDelegateType")).toString() == QStringLiteral("resource"))
+        {
+            foundResourceBlock = true;
+            QCOMPARE(block.value(QStringLiteral("resourceType")).toString(), QStringLiteral("image"));
+            QCOMPARE(block.value(QStringLiteral("resourcePath")).toString(), QStringLiteral("cover.png"));
+        }
     }
+    QVERIFY(foundResourceBlock);
 
     const QString projectionHeaderSource = readUtf8SourceFile(
         QStringLiteral("src/app/models/editor/projection/ContentsEditorPresentationProjection.hpp"));
     const QString projectionCppSource = readUtf8SourceFile(
         QStringLiteral("src/app/models/editor/projection/ContentsEditorPresentationProjection.cpp"));
     const QString displayViewSource = readUtf8SourceFile(
-        QStringLiteral("src/app/qml/view/content/editor/ContentsDisplayView.qml"));
+        QStringLiteral("src/app/qml/view/contents/editor/ContentsDisplayView.qml"));
     const QString documentFlowSource = readUtf8SourceFile(
-        QStringLiteral("src/app/qml/view/content/editor/ContentsStructuredDocumentFlow.qml"));
+        QStringLiteral("src/app/qml/view/contents/editor/ContentsStructuredDocumentFlow.qml"));
 
     QVERIFY(projectionHeaderSource.contains(QStringLiteral("Q_PROPERTY(QVariantList htmlTokens")));
     QVERIFY(projectionHeaderSource.contains(QStringLiteral("Q_PROPERTY(QVariantList normalizedHtmlBlocks")));
@@ -125,7 +133,8 @@ void WhatSonCppRegressionTests::editorPresentationProjection_publishesHtmlBlockP
     QVERIFY(displayViewSource.contains(QStringLiteral("ContentsEditorPresentationProjection {")));
     QVERIFY(displayViewSource.contains(QStringLiteral("htmlTokens: editorPresentationProjection.htmlTokens")));
     QVERIFY(displayViewSource.contains(QStringLiteral("normalizedHtmlBlocks: editorPresentationProjection.normalizedHtmlBlocks")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("editorSurfaceHtml: editorPresentationProjection.editorSurfaceHtml")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("renderInlineResourceEditorSurfaceHtml(")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("editorPresentationProjection.editorSurfaceHtml")));
     QVERIFY(documentFlowSource.contains(QStringLiteral("ContentsInlineFormatEditor {")));
     QVERIFY(documentFlowSource.contains(QStringLiteral("renderedText: documentFlow.editorSurfaceHtml")));
 }

@@ -8,7 +8,7 @@ namespace
 {
 QUrl helperUrl(const char* fileName)
 {
-    return QUrl(QStringLiteral("qrc:/qt/qml/WhatSon/App/view/content/editor/") + QString::fromLatin1(fileName));
+    return QUrl(QStringLiteral("qrc:/qt/qml/WhatSon/App/view/contents/editor/") + QString::fromLatin1(fileName));
 }
 
 QObject* loaderItem(QObject* loader)

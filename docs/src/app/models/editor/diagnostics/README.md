@@ -10,7 +10,7 @@ Owns editor-domain diagnostic support that can be shared by view hosts, controll
 
 ## Boundary
 - Diagnostics helpers must not own editor state or mutation policy.
-- View QML may import diagnostics helpers, but visual layout remains under `src/app/qml/view/content/editor`.
+- View QML may import diagnostics helpers, but visual layout remains under `src/app/qml/view/contents/editor`.
 
 ## 한국어
 

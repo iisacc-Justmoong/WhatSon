@@ -11,6 +11,8 @@ class ContentsGutterLineNumberGeometry : public QObject
     Q_PROPERTY(QObject* editorGeometryHost READ editorGeometryHost WRITE setEditorGeometryHost NOTIFY editorGeometryHostChanged)
     Q_PROPERTY(QObject* mapTarget READ mapTarget WRITE setMapTarget NOTIFY mapTargetChanged)
     Q_PROPERTY(QString sourceText READ sourceText WRITE setSourceText NOTIFY sourceTextChanged)
+    Q_PROPERTY(QVariantList documentBlocks READ documentBlocks WRITE setDocumentBlocks NOTIFY documentBlocksChanged)
+    Q_PROPERTY(QVariantList renderedResources READ renderedResources WRITE setRenderedResources NOTIFY renderedResourcesChanged)
     Q_PROPERTY(QVariantList logicalLineStartOffsets READ logicalLineStartOffsets WRITE setLogicalLineStartOffsets NOTIFY logicalLineStartOffsetsChanged)
     Q_PROPERTY(QVariantList logicalToSourceOffsets READ logicalToSourceOffsets WRITE setLogicalToSourceOffsets NOTIFY logicalToSourceOffsetsChanged)
     Q_PROPERTY(int lineNumberCount READ lineNumberCount WRITE setLineNumberCount NOTIFY lineNumberCountChanged)
@@ -30,6 +32,10 @@ public:
     void setMapTarget(QObject* value);
     QString sourceText() const;
     void setSourceText(const QString& value);
+    QVariantList documentBlocks() const;
+    void setDocumentBlocks(const QVariantList& value);
+    QVariantList renderedResources() const;
+    void setRenderedResources(const QVariantList& value);
     QVariantList logicalLineStartOffsets() const;
     void setLogicalLineStartOffsets(const QVariantList& value);
     QVariantList logicalToSourceOffsets() const;
@@ -53,6 +59,8 @@ signals:
     void editorGeometryHostChanged();
     void mapTargetChanged();
     void sourceTextChanged();
+    void documentBlocksChanged();
+    void renderedResourcesChanged();
     void logicalLineStartOffsetsChanged();
     void logicalToSourceOffsetsChanged();
     void lineNumberCountChanged();
@@ -66,6 +74,9 @@ private:
     int effectiveLineNumberCount() const noexcept;
     QList<int> displayLineStartOffsets() const;
     int sourceOffsetForLogicalOffset(int logicalOffset) const noexcept;
+    QList<int> extraHeightTargetLineIndices(const QList<int>& sourceLineStartOffsets) const;
+    QList<int> renderedResourceLineIndices(const QList<int>& sourceLineStartOffsets) const;
+    QList<int> resourceLineIndices(const QList<int>& sourceLineStartOffsets) const;
     qreal fallbackYForIndex(int index) const noexcept;
     qreal editorLineYForOffset(int displayOffset, int sourceOffset, int fallbackIndex) const;
     void rebuildLineNumberEntries();
@@ -73,6 +84,8 @@ private:
     QObject* m_editorGeometryHost = nullptr;
     QObject* m_mapTarget = nullptr;
     QString m_sourceText;
+    QVariantList m_documentBlocks;
+    QVariantList m_renderedResources;
     QVariantList m_logicalLineStartOffsets;
     QVariantList m_logicalToSourceOffsets;
     int m_lineNumberCount = 1;

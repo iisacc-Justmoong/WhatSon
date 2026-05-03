@@ -80,7 +80,7 @@
   `session/ContentsEditorSessionController::commitRawEditorTextMutation(...)`, so QML controllers can propose next
   `.wsnbody` text without owning `editorText` writes, local-authority marking, or persistence scheduling.
 - Editor-domain support JavaScript remains in the owning editor subdirectory when a small read-side QML helper is
-  already part of the architecture, but QML view files stay under `src/app/qml/view/content/editor`.
+  already part of the architecture, but QML view files stay under `src/app/qml/view/contents/editor`.
 - Semantic text blocks such as `paragraph`, `title`, `subTitle`, and `eventDescription` now keep two coordinate
   systems in that parser contract:
   - wrapper spans (`blockSourceStart` / `blockSourceEnd`, open/close tag offsets) preserve the authored outer tag

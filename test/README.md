@@ -192,13 +192,28 @@ ctest --test-dir build --output-on-failure -L cpp_regression
 - The inline editor regression now also pins the explicit `LV.TextEditor` keyboard/selection flags used by note-body
   editors: focus-on-press, keyboard selection, pointer selection, persistent selection, unrestricted input-method hints,
   character-level mouse selection, and insert-mode editing.
-- The inline editor regression now also pins native selection against the rendered HTML overlay: once `LV.TextEditor`
-  owns a non-empty selection, the RichText overlay is suppressed and the selected range is painted by the real editor
-  text.
+- The inline editor regression now also pins WYSIWYG selection against the rendered HTML overlay: once `LV.TextEditor`
+  owns a non-empty selection, the RichText overlay stays visible while the native editor owns the selection range and
+  paints source glyphs transparent, so RAW resource tags cannot replace rendered resource frames.
+- The inline editor regression now also pins exclusive caret painting: while rendered output is visible, only the
+  projected WYSIWYG cursor is painted and the native RAW cursor delegate remains hidden; disabling rendered output
+  returns caret painting to the native editor path.
+- The inline editor regression now also pins rendered-surface cursor placement: taps are resolved through visible
+  logical text geometry and then mapped back through `logicalToSourceOffsets`, so hidden RAW tags do not determine the
+  cursor location.
 - The inline editor regression now also pins the top-flush editor body contract: vertical inset and rendered-overlay
   padding stay at zero, with only horizontal text-column margins retained.
+- Gutter line-number geometry now also pins visible logical-text probing and duplicate-y protection: the RichText
+  overlay's HTML tag positions are not used for line-number sampling, and consecutive line labels cannot collapse onto
+  the same gutter y coordinate.
 - The contents/editor QML regressions now also pin the backgroundless gutter contract: the gutter no longer exposes or
   paints a dedicated background color, so it inherits the editor body background.
+- The contents/editor QML regressions now also pin the scrollable document viewport: the center editor slot wraps the
+  structured document flow in a `Flickable`, routes wheel events to that viewport, and refreshes gutter geometry when
+  the viewport scrolls.
+- Contents QML placement is now locked under `src/app/qml/view/contents`: the standalone Figma
+  `ContentsView/Gutter/EditorView/Minimap` parts and the runtime editor host share that namespace, while
+  `src/app/qml/contents` and `src/app/qml/view/content` are forbidden by the source-tree policy regression.
 - The inline editor regression also source-locks the absence of live-text key handlers in
   `ContentsInlineFormatEditor.qml`, so ordinary navigation and selection chords stay with Qt/OS text editing.
 - The unified display view now also pins blur-save behavior during native composition: blur flush returns instead of

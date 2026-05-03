@@ -35,7 +35,7 @@ Owns editor input-policy and mutation-controller primitives that are not themsel
 - Ordinary text input must continue to stay on native Qt/OS `TextEdit` handling.
 - Helpers here may coordinate explicit tag-management commands or RAW mutation plans, but they must not become generic
   key overrides for ordinary note editing.
-- Visual editor QML under `src/app/qml/view/content/editor` may expose wrapper properties and signals, but live typing,
+- Visual editor QML under `src/app/qml/view/contents/editor` may expose wrapper properties and signals, but live typing,
   cursor bookkeeping, selection cache, source replacement, and atomic tag-management key decisions belong to these
   controller objects.
 

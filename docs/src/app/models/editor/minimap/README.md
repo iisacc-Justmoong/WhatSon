@@ -13,7 +13,7 @@ Minimap layout calculation models for the editor domain.
 
 - Own minimap width, runtime row count, design row count, and visibility-to-width calculations.
 - Accept LVRS token values from QML as primitive inputs, then resolve arithmetic and visibility behavior in C++.
-- Keep `contents/Minimap.qml` presentation-only; it receives a row count and width from its host.
+- Keep `view/contents/Minimap.qml` presentation-only; it receives a row count and width from its host.
 - Stay independent of note persistence and parser ownership. The only document-derived input is `logicalLineCount`.
 
 ## Verification

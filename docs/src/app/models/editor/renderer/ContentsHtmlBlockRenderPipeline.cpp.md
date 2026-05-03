@@ -17,6 +17,7 @@ Builds editor HTML tokens and normalized HTML blocks from parser-owned RAW docum
   - source span
   - normalized HTML fragment
   - overlay-visibility flag
+  - the parser-owned block metadata, including resource identifiers and paths for `resource` blocks
 - Builds a renderer-local XML projection for each HTML token, validates it with `iiXml::Parser::TagParser`, converts it
   through `iiHtmlBlock::iiXmlToHTML`, and divides it with `iiHtmlBlock::DivideBlock`.
 - Converts the resulting iiHtmlBlock display-block objects into `normalizedHtmlBlocks` without assuming one token maps
@@ -33,7 +34,8 @@ Builds editor HTML tokens and normalized HTML blocks from parser-owned RAW docum
   aligned with the canonical body serializer.
 - Keeps resource placeholders in the stable
   `<!--whatson-resource-block:N--> ... <!--/whatson-resource-block:N-->` form expected by the inline resource
-  replacement controller.
+  replacement controller, while preserving the source `resourcePath`, `resourceId`, `resourceType`, and
+  `resourceFormat` on the corresponding token and normalized iiHtmlBlock payload.
 - Still exposes `requiresLegacyDocumentComposition` for the transitional case where one source snapshot contains
   inline-style markup that spans several parsed text blocks.
   That prevents the new block-normalized path from dropping carried style state before the whole-document carry model

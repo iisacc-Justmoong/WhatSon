@@ -28,6 +28,7 @@ Item {
     property int lineNumberColumnLeftOverride: -1
     property int lineNumberColumnTextWidthOverride: -1
     property bool minimapVisible: true
+    property var noteActiveState: null
     property var noteListModel: null
     property var panelControllerRegistry: null
     readonly property var panelController: contentViewLayout.panelControllerRegistry ? contentViewLayout.panelControllerRegistry.panelController("ContentViewLayout") : null
@@ -234,6 +235,7 @@ Item {
             lineNumberColumnTextWidthOverride: contentViewLayout.lineNumberColumnTextWidthOverride
             minimapVisible: contentViewLayout.minimapVisible
             mobileHost: contentViewLayout.isMobilePlatform
+            noteActiveState: contentViewLayout.noteActiveState
             noteListModel: contentViewLayout.resolvedNoteListModel
             panelController: contentViewLayout.panelController
             resourcesImportController: contentViewLayout.resourcesImportController

@@ -12,7 +12,10 @@ Item {
 
     property var activeHierarchyBindingSnapshot: selectionCoordinator.activeHierarchyBindingSnapshot
     readonly property var activeContentController: mobileHierarchyPage.activeHierarchyBindingSnapshot ? mobileHierarchyPage.activeHierarchyBindingSnapshot.controller : null
-    readonly property var activeNoteListModel: mobileHierarchyPage.sidebarHierarchyController ? mobileHierarchyPage.sidebarHierarchyController.activeNoteListModel : null
+    readonly property var activeNoteListModel: mobileHierarchyPage.noteActiveState
+            && mobileHierarchyPage.noteActiveState.activeNoteListModel !== undefined
+            ? mobileHierarchyPage.noteActiveState.activeNoteListModel
+            : (mobileHierarchyPage.sidebarHierarchyController ? mobileHierarchyPage.sidebarHierarchyController.activeNoteListModel : null)
     readonly property int activeToolbarIndex: {
         const snapshot = mobileHierarchyPage.activeHierarchyBindingSnapshot;
         const numericIndex = Number(snapshot && snapshot.index !== undefined ? snapshot.index : 0);
@@ -48,6 +51,7 @@ Item {
         }
     ]
     property var navigationModeController: null
+    property var noteActiveState: null
     readonly property string noteListRoutePath: "/mobile/note-list"
     readonly property string resolvedBodyRoutePath: mobileHierarchyPage.displayedBodyRoutePath()
     readonly property bool detailPageActive: mobileHierarchyPage.resolvedBodyRoutePath === mobileHierarchyPage.detailRoutePath
@@ -768,6 +772,7 @@ Item {
             isMobilePlatform: Window.window && Window.window.isMobilePlatform !== undefined ? Boolean(Window.window.isMobilePlatform) : false
             libraryHierarchyController: noteCreationCoordinator.noteCreationController
             minimapVisible: false
+            noteActiveState: mobileHierarchyPage.noteActiveState
             noteListModel: mobileHierarchyPage.activeNoteListModel
             resourcesImportController: mobileHierarchyPage.resourcesImportController
             sidebarHierarchyController: mobileHierarchyPage.sidebarHierarchyController

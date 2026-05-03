@@ -30,9 +30,13 @@ public:
     Q_INVOKABLE QString paragraphHtml(const QString& innerHtml) const;
     Q_INVOKABLE QString inlineResourcePlaceholderHtml(int lineCount) const;
     Q_INVOKABLE QString resourcePlaceholderBlockHtml() const;
+    Q_INVOKABLE QString resourceEntryFrameLabel(const QVariant& resourceEntry) const;
+    Q_INVOKABLE QString resourceEntryFrameImageSource(const QVariant& resourceEntry) const;
     Q_INVOKABLE QString inlineResourceBlockHtml(const QVariant& resourceEntry) const;
     Q_INVOKABLE bool resourceEntryCanRenderInlineInHtmlProjection(const QVariant& resourceEntry) const;
-    Q_INVOKABLE QString renderEditorSurfaceHtmlWithInlineResources(const QString& editorHtml) const;
+    Q_INVOKABLE QString renderEditorSurfaceHtmlWithInlineResources(
+        const QString& editorHtml,
+        const QVariant& renderedResources = QVariant()) const;
 
 private:
     QObject* m_contentEditor = nullptr;

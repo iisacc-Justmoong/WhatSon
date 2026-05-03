@@ -42,6 +42,8 @@ Implements one-pass top-level `.wsnbody` parsing for the structured editor rende
   leak `qsizetype`-dependent width differences into the QML payload contract.
 - Resource blocks keep stable `resourceIndex`, `resourceId`, `resourcePath`, `resourceType`, and `resourceFormat`
   fields so QML can reconcile them with `ContentsBodyResourceRenderer`.
+  Those attributes are read from the iiXml node fields first, with the older tag-text extraction kept only as a
+  fallback for malformed transient input that still reaches the renderer.
 - Separator newlines around explicit blocks are no longer treated the same as ignorable indentation-only whitespace.
   The parser now discards only horizontal formatting whitespace between neighboring explicit blocks; authored newline
   runs are preserved as actual paragraph slots in the document projection.

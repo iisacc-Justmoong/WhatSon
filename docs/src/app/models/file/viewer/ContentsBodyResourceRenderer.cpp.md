@@ -18,6 +18,9 @@ Implements note-body resource rendering data extraction for the editor surface.
 - Otherwise it consumes the parser-owned `documentBlocks` stream supplied by
   `ContentsStructuredBlockRenderer.renderedDocumentBlocks` and resolves only `type=resource` blocks.
   The renderer no longer reparses `.wsnbody` with its own `<resource ...>` grammar.
+- `ContentsDisplayView.qml` now mounts that renderer directly for the live note editor and feeds its resolved entries
+  into `ContentsInlineResourcePresentationController`, which replaces iiHtmlBlock
+  `whatson-resource-block` placeholders in the editor HTML.
 - Resolves `.wsresource` references through `WhatSon::Resources::resolveAssetLocationFromReference(...)`.
 - Expands resource-reference base paths beyond the mounted note directory itself:
   note-directory ancestors up to the owning `.wshub`, the resolved `.wscontents` directory, the hub parent for
@@ -29,6 +32,9 @@ Implements note-body resource rendering data extraction for the editor surface.
   metadata before building the QML-facing entry.
   Inline image promotion therefore no longer depends solely on the literal tag attributes staying perfectly in sync
   with package metadata.
+- For image resources, reads bitmap metadata through `QImageReader` and exposes `imageWidth`/`imageHeight` on the
+  rendered entry. Inline Figma frame rendering uses those values to object-cover the asset without guessing the
+  original aspect ratio.
 - Produces render entries with:
   - `renderMode = "image"` for image resources
   - `renderMode = "video"` for video resources
@@ -46,3 +52,4 @@ Implements note-body resource rendering data extraction for the editor surface.
 ## Testing
   - `resourceRenderer_mustResolveResourceBlocksFromStructuredDocumentBlocks`
   - `resourceRenderer_mustRenderDirectResourcePackageSelection`
+  - `resourceRenderer_resolvesIiXmlResourceTagsAndInlineHtmlBlockPlaceholders`

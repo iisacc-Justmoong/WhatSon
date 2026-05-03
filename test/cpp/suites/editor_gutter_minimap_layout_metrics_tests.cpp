@@ -105,6 +105,168 @@ void WhatSonCppRegressionTests::contentsGutterLineNumberGeometry_samplesVisibleD
     QCOMPARE(entries.at(2).toMap().value(QStringLiteral("y")).toReal(), 56.0);
 }
 
+void WhatSonCppRegressionTests::contentsGutterLineNumberGeometry_expandsResourceRowsToRenderedContentHeight()
+{
+    ContentsGutterLineNumberGeometry geometry;
+    FakeGutterDisplayGeometryHost geometryHost;
+    QObject gutterTarget;
+    QVariantList logicalToSourceOffsets;
+    for (int index = 0; index <= 24; ++index)
+    {
+        logicalToSourceOffsets.append(index);
+    }
+    logicalToSourceOffsets.replace(0, 7);
+    logicalToSourceOffsets.replace(12, 31);
+    logicalToSourceOffsets.replace(24, 52);
+
+    QVariantMap resourceBlock;
+    resourceBlock.insert(QStringLiteral("type"), QStringLiteral("resource"));
+    resourceBlock.insert(QStringLiteral("sourceStart"), 31);
+    resourceBlock.insert(QStringLiteral("sourceEnd"), 50);
+
+    geometry.setEditorGeometryHost(&geometryHost);
+    geometry.setMapTarget(&gutterTarget);
+    geometry.setSourceText(QString(80, QLatin1Char('x')));
+    geometry.setDocumentBlocks(QVariantList{resourceBlock});
+    geometry.setLogicalLineStartOffsets(QVariantList{0, 12, 24});
+    geometry.setLogicalToSourceOffsets(logicalToSourceOffsets);
+    geometry.setLineNumberCount(3);
+    geometry.setLineNumberBaseOffset(1);
+    geometry.setFallbackTopInset(80.0);
+    geometry.setFallbackLineHeight(20.0);
+    geometry.setEditorContentHeight(108.0);
+    geometryHost.clearSampledPositions();
+    geometry.refresh();
+
+    const QVariantList entries = geometry.lineNumberEntries();
+    QCOMPARE(entries.size(), 3);
+    QCOMPARE(geometryHost.sampledPositions(), QVariantList({0, 12, 24}));
+    QCOMPARE(geometryHost.sampledSourcePositions(), QVariantList({7, 31, 52}));
+
+    const QVariantMap firstEntry = entries.at(0).toMap();
+    const QVariantMap resourceEntry = entries.at(1).toMap();
+    const QVariantMap thirdEntry = entries.at(2).toMap();
+    QCOMPARE(firstEntry.value(QStringLiteral("y")).toReal(), 8.0);
+    QCOMPARE(firstEntry.value(QStringLiteral("height")).toReal(), 24.0);
+    QCOMPARE(resourceEntry.value(QStringLiteral("y")).toReal(), 32.0);
+    QCOMPARE(resourceEntry.value(QStringLiteral("height")).toReal(), 64.0);
+    QCOMPARE(thirdEntry.value(QStringLiteral("y")).toReal(), 96.0);
+    QCOMPARE(thirdEntry.value(QStringLiteral("height")).toReal(), 20.0);
+    QVERIFY(resourceEntry.value(QStringLiteral("height")).toReal()
+            > firstEntry.value(QStringLiteral("height")).toReal());
+}
+
+void WhatSonCppRegressionTests::contentsGutterLineNumberGeometry_assignsRenderedResourceHeightToVisibleImageRows()
+{
+    ContentsGutterLineNumberGeometry geometry;
+    FakeGutterDisplayGeometryHost geometryHost;
+    QObject gutterTarget;
+
+    const QString sourceText = QStringLiteral(
+        "alpha\n"
+        "<resource type=\"image\" path=\"cover.png\" />\n"
+        "<resource type=\"document\" path=\"brief.pdf\" />\n"
+        "omega");
+    const int imageStart = sourceText.indexOf(QStringLiteral("<resource type=\"image\""));
+    const int imageEnd = sourceText.indexOf(QLatin1Char('\n'), imageStart);
+    const int documentStart = sourceText.indexOf(QStringLiteral("<resource type=\"document\""));
+    const int documentEnd = sourceText.indexOf(QLatin1Char('\n'), documentStart);
+    const int omegaStart = sourceText.indexOf(QStringLiteral("omega"));
+
+    QVariantList logicalToSourceOffsets;
+    for (int index = 0; index <= 36; ++index)
+    {
+        logicalToSourceOffsets.append(index);
+    }
+    logicalToSourceOffsets.replace(0, 0);
+    logicalToSourceOffsets.replace(12, imageStart);
+    logicalToSourceOffsets.replace(24, documentStart);
+    logicalToSourceOffsets.replace(36, omegaStart);
+
+    QVariantMap imageBlock;
+    imageBlock.insert(QStringLiteral("type"), QStringLiteral("resource"));
+    imageBlock.insert(QStringLiteral("resourceIndex"), 0);
+    imageBlock.insert(QStringLiteral("sourceStart"), imageStart);
+    imageBlock.insert(QStringLiteral("sourceEnd"), imageEnd);
+
+    QVariantMap documentBlock;
+    documentBlock.insert(QStringLiteral("type"), QStringLiteral("resource"));
+    documentBlock.insert(QStringLiteral("resourceIndex"), 1);
+    documentBlock.insert(QStringLiteral("sourceStart"), documentStart);
+    documentBlock.insert(QStringLiteral("sourceEnd"), documentEnd);
+
+    QVariantMap renderedImage;
+    renderedImage.insert(QStringLiteral("index"), 0);
+    renderedImage.insert(QStringLiteral("renderMode"), QStringLiteral("image"));
+    renderedImage.insert(QStringLiteral("sourceStart"), imageStart);
+    renderedImage.insert(QStringLiteral("sourceEnd"), imageEnd);
+    renderedImage.insert(QStringLiteral("imageWidth"), 11);
+    renderedImage.insert(QStringLiteral("imageHeight"), 7);
+
+    QVariantMap renderedDocument;
+    renderedDocument.insert(QStringLiteral("index"), 1);
+    renderedDocument.insert(QStringLiteral("renderMode"), QStringLiteral("document"));
+    renderedDocument.insert(QStringLiteral("sourceStart"), documentStart);
+    renderedDocument.insert(QStringLiteral("sourceEnd"), documentEnd);
+
+    geometry.setEditorGeometryHost(&geometryHost);
+    geometry.setMapTarget(&gutterTarget);
+    geometry.setSourceText(sourceText);
+    geometry.setDocumentBlocks(QVariantList{imageBlock, documentBlock});
+    geometry.setRenderedResources(QVariantList{renderedImage, renderedDocument});
+    geometry.setLogicalLineStartOffsets(QVariantList{0, 12, 24, 36});
+    geometry.setLogicalToSourceOffsets(logicalToSourceOffsets);
+    geometry.setLineNumberCount(4);
+    geometry.setLineNumberBaseOffset(1);
+    geometry.setFallbackLineHeight(20.0);
+    geometry.setEditorContentHeight(132.0);
+    geometryHost.clearSampledPositions();
+    geometry.refresh();
+
+    const QVariantList entries = geometry.lineNumberEntries();
+    QCOMPARE(entries.size(), 4);
+
+    const QVariantMap imageEntry = entries.at(1).toMap();
+    const QVariantMap documentEntry = entries.at(2).toMap();
+    const QVariantMap omegaEntry = entries.at(3).toMap();
+    QCOMPARE(imageEntry.value(QStringLiteral("y")).toReal(), 32.0);
+    QCOMPARE(imageEntry.value(QStringLiteral("height")).toReal(), 64.0);
+    QCOMPARE(documentEntry.value(QStringLiteral("y")).toReal(), 96.0);
+    QCOMPARE(documentEntry.value(QStringLiteral("height")).toReal(), 24.0);
+    QCOMPARE(omegaEntry.value(QStringLiteral("y")).toReal(), 120.0);
+}
+
+void WhatSonCppRegressionTests::contentsGutterLineNumberGeometry_separatesDuplicateDisplaySamples()
+{
+    ContentsGutterLineNumberGeometry geometry;
+    FakeGutterDisplayGeometryHost geometryHost;
+    QObject gutterTarget;
+
+    geometry.setEditorGeometryHost(&geometryHost);
+    geometry.setMapTarget(&gutterTarget);
+    geometry.setSourceText(QStringLiteral("first\nsecond\nthird"));
+    geometry.setLogicalLineStartOffsets(QVariantList{0, 0, 12});
+    geometry.setLineNumberCount(3);
+    geometry.setLineNumberBaseOffset(1);
+    geometry.setFallbackTopInset(0.0);
+    geometry.setFallbackLineHeight(20.0);
+    geometryHost.clearSampledPositions();
+    geometry.refresh();
+
+    const QVariantList entries = geometry.lineNumberEntries();
+    QCOMPARE(entries.size(), 3);
+    QCOMPARE(geometryHost.sampledPositions(), QVariantList({0, 0, 12}));
+
+    const qreal firstY = entries.at(0).toMap().value(QStringLiteral("y")).toReal();
+    const qreal secondY = entries.at(1).toMap().value(QStringLiteral("y")).toReal();
+    const qreal thirdY = entries.at(2).toMap().value(QStringLiteral("y")).toReal();
+    QCOMPARE(firstY, 8.0);
+    QCOMPARE(secondY, 28.0);
+    QCOMPARE(thirdY, 32.0);
+    QVERIFY(secondY > firstY);
+    QVERIFY(thirdY > secondY);
+}
+
 void WhatSonCppRegressionTests::contentsGutterMarkerGeometry_marksCursorAndUnsavedLineSpans()
 {
     QVariantList lineNumberEntries;

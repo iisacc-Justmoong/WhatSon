@@ -23,6 +23,7 @@
 #include "app/models/onboarding/OnboardingHubController.hpp"
 #include "app/models/onboarding/OnboardingRouteBootstrapController.hpp"
 #include "app/models/panel/PanelControllerRegistry.hpp"
+#include "app/models/panel/NoteActiveStateTracker.hpp"
 #include "app/models/sidebar/HierarchySidebarDomain.hpp"
 #include "app/models/sidebar/HierarchyControllerProvider.hpp"
 #include "app/models/sidebar/SidebarHierarchyController.hpp"
@@ -233,6 +234,7 @@ int main(int argc, char* argv[])
     SelectedHubStore selectedHubStore;
     HierarchyControllerProvider hierarchyControllerProvider;
     SidebarHierarchyController sidebarHierarchyController;
+    NoteActiveStateTracker noteActiveState;
     DetailPanelCurrentHierarchyBinder detailPanelCurrentHierarchyBinder;
     NoteDetailPanelController noteDetailPanelController;
     ResourceDetailPanelController resourceDetailPanelController;
@@ -525,6 +527,7 @@ int main(int argc, char* argv[])
     noteDetailPanelController.setTagsSourceController(&tagsHierarchyController);
     sidebarHierarchyController.setSelectionStore(&sidebarSelectionStore);
     sidebarHierarchyController.setControllerProvider(&hierarchyControllerProvider);
+    noteActiveState.setHierarchyContextSource(&sidebarHierarchyController);
     detailPanelCurrentHierarchyBinder.setNoteDetailPanelController(&noteDetailPanelController);
     detailPanelCurrentHierarchyBinder.setResourceDetailPanelController(&resourceDetailPanelController);
     detailPanelCurrentHierarchyBinder.setHierarchyContextSource(&sidebarHierarchyController);
@@ -548,6 +551,7 @@ int main(int argc, char* argv[])
     workspaceContextObjects.editorViewModeController = &editorViewModeController;
     workspaceContextObjects.navigationModeController = &navigationModeController;
     workspaceContextObjects.sidebarHierarchyController = &sidebarHierarchyController;
+    workspaceContextObjects.noteActiveState = &noteActiveState;
     workspaceContextObjects.asyncScheduler = &asyncScheduler;
     workspaceContextObjects.calendarBoardStore = &calendarBoardStore;
     workspaceContextObjects.systemCalendarStore = &systemCalendarStore;

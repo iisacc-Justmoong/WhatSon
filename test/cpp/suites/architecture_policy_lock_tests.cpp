@@ -95,6 +95,23 @@ void WhatSonCppRegressionTests::noteListModelContractBridge_rejectsWiringMutatio
     QCOMPARE(bridge.hierarchyController(), static_cast<QObject*>(&firstHierarchy));
 }
 
+void WhatSonCppRegressionTests::noteActiveStateTracker_rejectsHierarchyContextMutationAfterLock()
+{
+    ArchitecturePolicyLockResetScope resetScope;
+
+    SidebarHierarchyController firstSidebarController;
+    SidebarHierarchyController secondSidebarController;
+    NoteActiveStateTracker tracker;
+
+    tracker.setHierarchyContextSource(&firstSidebarController);
+    QCOMPARE(tracker.hierarchyContextSource(), static_cast<QObject*>(&firstSidebarController));
+
+    WhatSon::Policy::ArchitecturePolicyLock::lock();
+    tracker.setHierarchyContextSource(&secondSidebarController);
+
+    QCOMPARE(tracker.hierarchyContextSource(), static_cast<QObject*>(&firstSidebarController));
+}
+
 void WhatSonCppRegressionTests::detailCurrentNoteContextBridge_rejectsWiringMutationAfterLock()
 {
     ArchitecturePolicyLockResetScope resetScope;

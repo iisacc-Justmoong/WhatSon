@@ -24,12 +24,18 @@ void WhatSonCppRegressionTests::qmlContextBinder_usesLvrsBindPlanForWorkspaceCon
         QStringLiteral("appendContextObjectBinding(plan, QStringLiteral(\"resourcesImportController\")")));
     QVERIFY(binderSource.contains(
         QStringLiteral("appendContextObjectBinding(plan, QStringLiteral(\"panelControllerRegistry\")")));
+    QVERIFY(binderHeader.contains(QStringLiteral("QObject* noteActiveState = nullptr;")));
+    QVERIFY(binderSource.contains(
+        QStringLiteral("appendContextObjectBinding(plan, QStringLiteral(\"noteActiveState\")")));
     QVERIFY(!binderSource.contains(QStringLiteral("QmlControllerBinding")));
     QVERIFY(!binderSource.contains(QStringLiteral("QmlViewModelBinding")));
     QVERIFY(!binderSource.contains(QStringLiteral("appendControllerBinding")));
     QVERIFY(!binderSource.contains(QStringLiteral("setContextProperty(")));
 
     QVERIFY(mainCppSource.contains(QStringLiteral("const lvrs::QmlContextBindResult workspaceContextBindResult")));
+    QVERIFY(mainCppSource.contains(QStringLiteral("NoteActiveStateTracker noteActiveState;")));
+    QVERIFY(mainCppSource.contains(QStringLiteral("noteActiveState.setHierarchyContextSource(&sidebarHierarchyController);")));
+    QVERIFY(mainCppSource.contains(QStringLiteral("workspaceContextObjects.noteActiveState = &noteActiveState;")));
     QVERIFY(mainCppSource.contains(QStringLiteral("bindWorkspaceContextObjects(engine, workspaceContextObjects)")));
     QVERIFY(mainCppSource.contains(QStringLiteral("workspaceContextBindResult.errorMessage()")));
     QVERIFY(!mainCppSource.contains(QStringLiteral("bindWorkspaceContextObjects(engine.rootContext()")));

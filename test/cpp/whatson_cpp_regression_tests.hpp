@@ -69,6 +69,7 @@
 #include "app/models/detailPanel/ResourceDetailPanelController.hpp"
 #include "app/models/file/hierarchy/resources/ResourcesListModel.hpp"
 #include "app/models/panel/NoteListModelContractBridge.hpp"
+#include "app/models/panel/NoteActiveStateTracker.hpp"
 #include "app/models/sidebar/HierarchySidebarDomain.hpp"
 #include "app/models/sidebar/HierarchyControllerProvider.hpp"
 #include "app/models/sidebar/IActiveHierarchyContextSource.hpp"
@@ -989,10 +990,12 @@ private slots:
     void sidebarHierarchyController_rejectsSelectionStoreMutationAfterLock();
     void sidebarHierarchyController_reactsToProviderMappingChanges();
     void noteListModelContractBridge_rejectsWiringMutationAfterLock();
+    void noteActiveStateTracker_rejectsHierarchyContextMutationAfterLock();
     void detailCurrentNoteContextBridge_rejectsWiringMutationAfterLock();
     void onboardingRouteBootstrapController_rejectsHubControllerMutationAfterLock();
     void sourceTree_forbidsDeprecatedPresentationLayerVocabulary();
     void sourceTree_keepsGutterAndMinimapUnderEditorChromeModels();
+    void sourceTree_keepsContentsQmlUnderViewContents();
     void sidebarAndSelectionBridge_forceCppOwnershipAcrossHierarchySwitchBindings();
     void contentsEditorSelectionBridge_tracksSelectionFromCurrentIndexSignal();
     void contentsEditorSelectionBridge_preservesNoSelectionSentinelBeforeIndexCommit();
@@ -1011,6 +1014,9 @@ private slots:
     void noteListModelContractBridge_resolvesHierarchyBoundNoteListImmediately();
     void noteListModelContractBridge_prefersExplicitRowsAcrossHierarchySwitches();
     void noteListModelContractBridge_exposesCurrentNoteEntryFromCurrentSelection();
+    void noteActiveStateTracker_tracksCurrentNoteAcrossActiveHierarchyChanges();
+    void noteActiveStateTracker_clearsReadableEmptyAndNonNoteBackedSelections();
+    void noteActiveStateTracker_syncsAttachedEditorSessionFromActiveNote();
     void libraryNoteListModel_emitsCurrentNoteEntryChangedWhenInitialSelectionMaterializes();
     void libraryNoteListModel_emitsCurrentNoteEntryChangedWhenSelectedRowReplacesCurrentSelection();
     void navigationModeController_cyclesActiveSections();
@@ -1023,6 +1029,7 @@ private slots:
     void progressHierarchySupport_defaultsFirstVisibleItemToFirstDraft();
     void resourcePackageSupport_roundTripsAnnotationMetadataAndBitmap();
     void resourcePackageSupport_normalizesTerminalFormatForMultiDotAssetNames();
+    void resourceRenderer_resolvesIiXmlResourceTagsAndInlineHtmlBlockPlaceholders();
     void unusedResourcesSensor_reportsHubPackagesMissingFromAllNoteEmbeddings();
     void unusedResourcesSensor_refreshesAfterRawBodyEmbedsAResource();
     void resourcesImportController_wiresAnnotationBitmapGenerationIntoPackageCreation();
@@ -1069,6 +1076,9 @@ private slots:
     void contentsGutterLayoutMetrics_resolvesRuntimeAndDesignMetrics();
     void contentsGutterLineNumberGeometry_projectsFallbackLineYEntries();
     void contentsGutterLineNumberGeometry_samplesVisibleDisplayOffsets();
+    void contentsGutterLineNumberGeometry_expandsResourceRowsToRenderedContentHeight();
+    void contentsGutterLineNumberGeometry_assignsRenderedResourceHeightToVisibleImageRows();
+    void contentsGutterLineNumberGeometry_separatesDuplicateDisplaySamples();
     void contentsGutterMarkerGeometry_marksCursorAndUnsavedLineSpans();
     void contentsMinimapLayoutMetrics_resolvesRuntimeVisibilityAndDesignRows();
     void qmlStructuredEditors_rejectStaleSourceRangeMutations();
@@ -1091,8 +1101,11 @@ private slots:
     void qmlStructuredEditors_lockCustomInputToTagManagementOnly();
     void qmlInlineFormatEditor_keepsNativeTextEditInputUncovered();
     void qmlInlineFormatEditor_keepsKeyboardSelectionAndOsImeNative();
-    void qmlInlineFormatEditor_hidesRenderedOverlayDuringNativeSelection();
+    void qmlInlineFormatEditor_keepsRenderedOverlayDuringNativeSelection();
+    void qmlInlineFormatEditor_keepsRenderedOverlayPassiveForNativeEditing();
     void qmlInlineFormatEditor_projectsGutterGeometryFromVisibleDisplay();
+    void qmlInlineFormatEditor_positionsGutterProbeFromLogicalDisplayText();
+    void qmlStructuredDocumentFlow_routesBottomBlankClickToBodyEnd();
     void qmlInlineFormatEditor_forwardsInlineFormatShortcutsToTagManagementHook();
     void mobileChrome_usesSharedFigmaControlSurfaceColor();
     void mobileHierarchyRouteStateStore_tracksNormalizedSelectionRestoreState();
@@ -1118,6 +1131,7 @@ private slots:
     void logicalTextBridge_advancesCursorPastClosingWebLinkTag();
     void qmlStructuredEditors_bindPaperPaletteIntoPagePrintMode();
     void qmlStructuredEditors_clipInlineResourceCardsToMeasuredBlockBounds();
+    void qmlStructuredEditors_wireInlineResourceRendererToIiXmlHtmlBlockPipeline();
     void qmlEditors_routeRenderedHyperlinksToExternalBrowser();
     void qmlContentsView_composesFigmaFrameFromLvrsParts();
     void qmlContentsView_partsKeepEditorProjectionReadOnlyAndNativeInputSafe();

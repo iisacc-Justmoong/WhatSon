@@ -6,6 +6,7 @@
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
+#include <QImageReader>
 #include <QMetaObject>
 #include <QUrl>
 
@@ -449,6 +450,36 @@ namespace
         return fallbackResourceId.trimmed();
     }
 
+    QSize imageMetadataSizeForResource(const QString& renderMode, const QString& resolvedResourceLocation)
+    {
+        if (renderMode != QStringLiteral("image"))
+        {
+            return {};
+        }
+
+        const QString normalizedResourceLocation = normalizePath(resolvedResourceLocation);
+        if (normalizedResourceLocation.isEmpty() || !QFileInfo(normalizedResourceLocation).isFile())
+        {
+            return {};
+        }
+
+        QImageReader reader(normalizedResourceLocation);
+        reader.setAutoTransform(true);
+        const QSize readerSize = reader.size();
+        if (readerSize.isValid() && !readerSize.isEmpty())
+        {
+            return readerSize;
+        }
+
+        const QImage image(normalizedResourceLocation);
+        if (!image.isNull() && image.size().isValid() && !image.size().isEmpty())
+        {
+            return image.size();
+        }
+
+        return {};
+    }
+
     QVariantMap buildRenderedResourceMap(
         int resourceIndex,
         const QString& type,
@@ -476,6 +507,12 @@ namespace
         resource.insert(
             QStringLiteral("displayName"),
             displayNameFromResourcePaths(resolvedResourceLocation, resourcePath, resourceId));
+        const QSize imageSize = imageMetadataSizeForResource(renderMode, resolvedResourceLocation);
+        if (imageSize.isValid() && !imageSize.isEmpty())
+        {
+            resource.insert(QStringLiteral("imageWidth"), imageSize.width());
+            resource.insert(QStringLiteral("imageHeight"), imageSize.height());
+        }
         resource.insert(
             QStringLiteral("previewText"),
             previewTextForResource(renderMode, resolvedResourceLocation));

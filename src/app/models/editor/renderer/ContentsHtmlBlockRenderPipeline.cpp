@@ -239,7 +239,7 @@ namespace
             overlayVisible = hasTextHtmlOverlay(block);
         }
 
-        QVariantMap token;
+        QVariantMap token = block;
         token.insert(QStringLiteral("blockIndex"), blockIndex);
         token.insert(QStringLiteral("tokenIndex"), tokenIndex);
         token.insert(QStringLiteral("blockType"), blockType);

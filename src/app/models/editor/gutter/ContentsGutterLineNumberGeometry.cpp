@@ -7,6 +7,7 @@
 #include <QVariantMap>
 
 #include <algorithm>
+#include <utility>
 
 namespace
 {
@@ -55,6 +56,59 @@ namespace
         bool ok = false;
         const qreal resolvedValue = map.value(key).toReal(&ok);
         return ok ? resolvedValue : fallback;
+    }
+
+    int intFromMap(const QVariantMap& map, const QString& key, const int fallback)
+    {
+        bool ok = false;
+        const int value = map.value(key).toInt(&ok);
+        return ok ? value : fallback;
+    }
+
+    bool resourceEntryRendersAsTallImageFrame(const QVariantMap& entry)
+    {
+        const QString renderMode =
+            entry.value(QStringLiteral("renderMode")).toString().trimmed().toCaseFolded();
+        if (renderMode == QStringLiteral("image"))
+        {
+            return true;
+        }
+
+        return entry.value(QStringLiteral("imageWidth")).toInt() > 0
+            && entry.value(QStringLiteral("imageHeight")).toInt() > 0;
+    }
+
+    int lineIndexForSourceSpan(
+        const QList<int>& sourceLineStartOffsets,
+        const int sourceLength,
+        const int sourceStart,
+        const int sourceEnd)
+    {
+        const int blockStart = std::clamp(sourceStart, 0, sourceLength);
+        const int blockEnd = std::clamp(std::max(blockStart, sourceEnd), blockStart, sourceLength);
+        for (int index = 0; index < sourceLineStartOffsets.size(); ++index)
+        {
+            const int lineStart = std::clamp(sourceLineStartOffsets.at(index), 0, sourceLength);
+            const int nextLineStart = index + 1 < sourceLineStartOffsets.size()
+                ? std::clamp(sourceLineStartOffsets.at(index + 1), lineStart, sourceLength)
+                : sourceLength + 1;
+            const bool startsInsideLine = blockStart >= lineStart && blockStart < nextLineStart;
+            const bool coversLineStart = blockStart <= lineStart && blockEnd > lineStart;
+            if (startsInsideLine || coversLineStart)
+            {
+                return index;
+            }
+        }
+        return -1;
+    }
+
+    void appendUniqueLineIndex(QList<int>* lineIndices, const int lineIndex)
+    {
+        if (lineIndices == nullptr || lineIndex < 0 || lineIndices->contains(lineIndex))
+        {
+            return;
+        }
+        lineIndices->append(lineIndex);
     }
 }
 
@@ -114,6 +168,40 @@ void ContentsGutterLineNumberGeometry::setSourceText(const QString& value)
 
     m_sourceText = value;
     emit sourceTextChanged();
+    rebuildLineNumberEntries();
+}
+
+QVariantList ContentsGutterLineNumberGeometry::documentBlocks() const
+{
+    return m_documentBlocks;
+}
+
+void ContentsGutterLineNumberGeometry::setDocumentBlocks(const QVariantList& value)
+{
+    if (m_documentBlocks == value)
+    {
+        return;
+    }
+
+    m_documentBlocks = value;
+    emit documentBlocksChanged();
+    rebuildLineNumberEntries();
+}
+
+QVariantList ContentsGutterLineNumberGeometry::renderedResources() const
+{
+    return m_renderedResources;
+}
+
+void ContentsGutterLineNumberGeometry::setRenderedResources(const QVariantList& value)
+{
+    if (m_renderedResources == value)
+    {
+        return;
+    }
+
+    m_renderedResources = value;
+    emit renderedResourcesChanged();
     rebuildLineNumberEntries();
 }
 
@@ -304,6 +392,108 @@ qreal ContentsGutterLineNumberGeometry::fallbackYForIndex(const int index) const
     return m_fallbackTopInset + (static_cast<qreal>(std::max(0, index)) * m_fallbackLineHeight);
 }
 
+QList<int> ContentsGutterLineNumberGeometry::resourceLineIndices(
+    const QList<int>& sourceLineStartOffsets) const
+{
+    QList<int> lineIndices;
+    if (m_documentBlocks.isEmpty() || sourceLineStartOffsets.isEmpty())
+    {
+        return lineIndices;
+    }
+
+    const int sourceLength = static_cast<int>(m_sourceText.size());
+    for (const QVariant& blockValue : m_documentBlocks)
+    {
+        const QVariantMap block = blockValue.toMap();
+        const QString blockType = block.value(QStringLiteral("type")).toString().trimmed().toCaseFolded();
+        if (blockType != QStringLiteral("resource"))
+        {
+            continue;
+        }
+
+        appendUniqueLineIndex(
+            &lineIndices,
+            lineIndexForSourceSpan(
+                sourceLineStartOffsets,
+                sourceLength,
+                block.value(QStringLiteral("sourceStart")).toInt(),
+                block.value(QStringLiteral("sourceEnd")).toInt()));
+    }
+
+    return lineIndices;
+}
+
+QList<int> ContentsGutterLineNumberGeometry::renderedResourceLineIndices(
+    const QList<int>& sourceLineStartOffsets) const
+{
+    QList<int> lineIndices;
+    if (m_renderedResources.isEmpty() || sourceLineStartOffsets.isEmpty())
+    {
+        return lineIndices;
+    }
+
+    const int sourceLength = static_cast<int>(m_sourceText.size());
+    for (const QVariant& resourceValue : m_renderedResources)
+    {
+        const QVariantMap resource = resourceValue.toMap();
+        if (!resourceEntryRendersAsTallImageFrame(resource))
+        {
+            continue;
+        }
+
+        int sourceStart = intFromMap(resource, QStringLiteral("sourceStart"), -1);
+        int sourceEnd = intFromMap(resource, QStringLiteral("sourceEnd"), -1);
+        if (sourceStart < 0 || sourceEnd <= sourceStart)
+        {
+            const int resourceIndex = intFromMap(resource, QStringLiteral("index"), -1);
+            for (const QVariant& blockValue : m_documentBlocks)
+            {
+                const QVariantMap block = blockValue.toMap();
+                const QString blockType =
+                    block.value(QStringLiteral("type")).toString().trimmed().toCaseFolded();
+                if (blockType != QStringLiteral("resource")
+                    || intFromMap(block, QStringLiteral("resourceIndex"), -1) != resourceIndex)
+                {
+                    continue;
+                }
+
+                sourceStart = intFromMap(block, QStringLiteral("sourceStart"), -1);
+                sourceEnd = intFromMap(block, QStringLiteral("sourceEnd"), -1);
+                break;
+            }
+        }
+
+        appendUniqueLineIndex(
+            &lineIndices,
+            sourceStart >= 0 && sourceEnd > sourceStart
+                ? lineIndexForSourceSpan(
+                    sourceLineStartOffsets,
+                    sourceLength,
+                    sourceStart,
+                    sourceEnd)
+                : -1);
+    }
+
+    return lineIndices;
+}
+
+QList<int> ContentsGutterLineNumberGeometry::extraHeightTargetLineIndices(
+    const QList<int>& sourceLineStartOffsets) const
+{
+    QList<int> targetLineIndices = renderedResourceLineIndices(sourceLineStartOffsets);
+    if (!targetLineIndices.isEmpty())
+    {
+        return targetLineIndices;
+    }
+
+    if (!m_renderedResources.isEmpty())
+    {
+        return targetLineIndices;
+    }
+
+    return resourceLineIndices(sourceLineStartOffsets);
+}
+
 qreal ContentsGutterLineNumberGeometry::editorLineYForOffset(
     const int displayOffset,
     const int sourceOffset,
@@ -345,17 +535,83 @@ void ContentsGutterLineNumberGeometry::rebuildLineNumberEntries()
     const int terminalDisplayOffset = lineStartOffsets.isEmpty() ? 0 : lineStartOffsets.last();
     const int count = effectiveLineNumberCount();
 
-    QVariantList nextEntries;
-    nextEntries.reserve(count);
+    QList<qreal> lineYs;
+    lineYs.reserve(count);
+    QList<int> sourceLineStartOffsets;
+    sourceLineStartOffsets.reserve(count);
+    qreal previousY = 0.0;
+    bool hasPreviousY = false;
     for (int index = 0; index < count; ++index)
     {
         const int displayOffset = index < lineStartOffsets.size()
             ? lineStartOffsets.at(index)
             : terminalDisplayOffset;
         const int sourceOffset = sourceOffsetForLogicalOffset(displayOffset);
+        sourceLineStartOffsets.append(sourceOffset);
+        qreal y = editorLineYForOffset(displayOffset, sourceOffset, index);
+        if (hasPreviousY && y <= previousY)
+        {
+            y = previousY + m_fallbackLineHeight;
+        }
+
+        lineYs.append(y);
+        previousY = y;
+        hasPreviousY = true;
+    }
+
+    QList<qreal> lineHeights;
+    lineHeights.reserve(count);
+    for (int index = 0; index < count; ++index)
+    {
+        const qreal height = index + 1 < lineYs.size()
+            ? std::max<qreal>(1.0, lineYs.at(index + 1) - lineYs.at(index))
+            : m_fallbackLineHeight;
+        lineHeights.append(height);
+    }
+
+    if (!lineYs.isEmpty() && m_editorContentHeight > 0.0)
+    {
+        qreal baseContentHeight = 0.0;
+        for (const qreal height : std::as_const(lineHeights))
+        {
+            baseContentHeight += height;
+        }
+
+        const qreal extraContentHeight = m_editorContentHeight - baseContentHeight;
+        if (extraContentHeight > 1.0)
+        {
+            QList<int> targetLineIndices = extraHeightTargetLineIndices(sourceLineStartOffsets);
+            if (targetLineIndices.isEmpty() && !lineHeights.isEmpty())
+            {
+                targetLineIndices.append(lineHeights.size() - 1);
+            }
+
+            const int targetLineCount = std::max(1, static_cast<int>(targetLineIndices.size()));
+            const qreal extraPerLine =
+                extraContentHeight / static_cast<qreal>(targetLineCount);
+            for (const int lineIndex : std::as_const(targetLineIndices))
+            {
+                if (lineIndex >= 0 && lineIndex < lineHeights.size())
+                {
+                    lineHeights[lineIndex] += extraPerLine;
+                }
+            }
+
+            for (int index = 1; index < lineYs.size(); ++index)
+            {
+                lineYs[index] = lineYs.at(index - 1) + lineHeights.at(index - 1);
+            }
+        }
+    }
+
+    QVariantList nextEntries;
+    nextEntries.reserve(count);
+    for (int index = 0; index < count; ++index)
+    {
         QVariantMap entry;
         entry.insert(QStringLiteral("lineNumber"), index + m_lineNumberBaseOffset);
-        entry.insert(QStringLiteral("y"), editorLineYForOffset(displayOffset, sourceOffset, index));
+        entry.insert(QStringLiteral("y"), lineYs.value(index, fallbackYForIndex(index)));
+        entry.insert(QStringLiteral("height"), lineHeights.value(index, m_fallbackLineHeight));
         nextEntries.append(entry);
     }
 

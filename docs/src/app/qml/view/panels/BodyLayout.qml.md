@@ -41,6 +41,11 @@ right detail panel.
 - `ListBarLayout.qml` and `ContentViewLayout.qml` therefore consume the same note-list object during hierarchy-domain
   switches. This removes one remaining split path where the list bar could keep resolving rows from a stale
   hierarchy-owned model while the center surface had already switched to the new domain note-list model.
+- The desktop shell now prefers the global `noteActiveState.activeNoteListModel` for list/content binding and only
+  falls back to `sidebarHierarchyController.activeNoteListModel` when the global state object is not supplied.
+- The same `noteActiveState` object is forwarded through `ContentViewLayout.qml` into `ContentsDisplayView.qml`, where
+  the visible editor session is attached back to the global active-note tracker. This keeps desktop note selection and
+  editor-session rebinding in one active-state path.
 - The contents surface now fills the center panel directly without an additional bottom-partition contract.
 - Sidebar, list, and right-panel splitters continue to own the desktop width-resize flow.
 - Desktop default/min right-panel widths and sidebar horizontal inset now come from named `LV.Theme` width/gap/stroke
@@ -64,3 +69,5 @@ right detail panel.
     objects themselves, not only the highlighted toolbar index.
   - Switching from Resources back to Library must restore library-row metadata such as folder and tag chips from the
     same active note-list model that the editor surface uses.
+  - Desktop content routing must pass `noteActiveState` into the editor host so active-note session sync is not delayed
+    behind local QML note-list binding updates.

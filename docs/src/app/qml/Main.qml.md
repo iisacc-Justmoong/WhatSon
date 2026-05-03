@@ -44,10 +44,16 @@ The important architectural work in this file is not the layout math. It is the 
 - `libraryNoteMutationController`
 - `navigationModeController`
 - `sidebarHierarchyController`
+- `noteActiveState`
 - `detailPanelController`
 
 `Main.qml` resolves those objects through local root aliases and forwards only the required objects into child views.
 There is no QML-side runtime registry or view-model layer in this path.
+
+The root forwards the global `noteActiveState` object into both desktop `BodyLayout` and mobile
+`MobileHierarchyPage`, so note activation is tracked by one C++ object instead of each layout independently deriving
+the active note-list model. Those branches forward the same object into the editor host, where the visible editor
+session is attached back to `noteActiveState` for immediate active-note session synchronization.
 
 ## Layout Composition
 The file keeps both desktop and mobile layout branches alive.

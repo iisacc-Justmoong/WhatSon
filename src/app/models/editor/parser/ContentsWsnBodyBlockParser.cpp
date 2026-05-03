@@ -126,6 +126,61 @@ namespace
         return {};
     }
 
+    QString extractIiXmlAttributeValue(
+        const QByteArray& parseBytes,
+        const std::vector<iiXml::Parser::TagField>& fields,
+        const QStringList& attributeNames)
+    {
+        for (const QString& attributeName : attributeNames)
+        {
+            const QString normalizedAttributeName = attributeName.trimmed().toCaseFolded();
+            if (normalizedAttributeName.isEmpty())
+            {
+                continue;
+            }
+
+            for (const iiXml::Parser::TagField& field : fields)
+            {
+                const QString fieldName = QString::fromStdString(field.Name).trimmed().toCaseFolded();
+                if (fieldName != normalizedAttributeName || !field.HasValue)
+                {
+                    continue;
+                }
+
+                const qsizetype valueBegin = static_cast<qsizetype>(
+                    std::min<std::size_t>(field.ValueBegin, static_cast<std::size_t>(parseBytes.size())));
+                const qsizetype valueEnd = static_cast<qsizetype>(
+                    std::min<std::size_t>(field.ValueEnd, static_cast<std::size_t>(parseBytes.size())));
+                if (valueEnd < valueBegin)
+                {
+                    continue;
+                }
+
+                QString value = QString::fromUtf8(
+                    parseBytes.constData() + valueBegin,
+                    valueEnd - valueBegin).trimmed();
+                if (value.size() >= 2
+                    && ((value.startsWith(QLatin1Char('"')) && value.endsWith(QLatin1Char('"')))
+                        || (value.startsWith(QLatin1Char('\'')) && value.endsWith(QLatin1Char('\'')))))
+                {
+                    value = value.mid(1, value.size() - 2).trimmed();
+                }
+                return decodeSourceEntities(value).trimmed();
+            }
+        }
+        return {};
+    }
+
+    QString resolvedTagAttributeValue(
+        const QString& tagText,
+        const QByteArray& parseBytes,
+        const std::vector<iiXml::Parser::TagField>& fields,
+        const QStringList& attributeNames)
+    {
+        const QString iiXmlValue = extractIiXmlAttributeValue(parseBytes, fields, attributeNames);
+        return iiXmlValue.isEmpty() ? extractXmlAttributeValue(tagText, attributeNames) : iiXmlValue;
+    }
+
     QString tagAttributeValue(const QString& rawAttributes, const QString& attributeName)
     {
         if (attributeName.trimmed().isEmpty())
@@ -358,6 +413,8 @@ namespace
     QVariantMap buildResourcePayload(
         const QString& sourceText,
         const QString& resourceTagText,
+        const QByteArray& parseBytes,
+        const std::vector<iiXml::Parser::TagField>& fields,
         const int sourceStart,
         const int sourceEnd,
         const int resourceIndex)
@@ -371,18 +428,24 @@ namespace
         payload.insert(QStringLiteral("resourceIndex"), resourceIndex);
         payload.insert(
             QStringLiteral("resourceType"),
-            extractXmlAttributeValue(
+            resolvedTagAttributeValue(
                 resourceTagText,
+                parseBytes,
+                fields,
                 {QStringLiteral("type"), QStringLiteral("kind"), QStringLiteral("mime")}).toCaseFolded());
         payload.insert(
             QStringLiteral("resourceFormat"),
-            extractXmlAttributeValue(
+            resolvedTagAttributeValue(
                 resourceTagText,
+                parseBytes,
+                fields,
                 {QStringLiteral("format"), QStringLiteral("ext"), QStringLiteral("extension")}).toCaseFolded());
         payload.insert(
             QStringLiteral("resourcePath"),
-            extractXmlAttributeValue(
+            resolvedTagAttributeValue(
                 resourceTagText,
+                parseBytes,
+                fields,
                 {
                     QStringLiteral("resourcePath"),
                     QStringLiteral("path"),
@@ -392,8 +455,10 @@ namespace
                 }));
         payload.insert(
             QStringLiteral("resourceId"),
-            extractXmlAttributeValue(
+            resolvedTagAttributeValue(
                 resourceTagText,
+                parseBytes,
+                fields,
                 {QStringLiteral("id"), QStringLiteral("resourceId")}));
         payload.insert(QStringLiteral("focusSourceOffset"), boundedTextIndex(sourceText, sourceStart));
         return payload;
@@ -712,6 +777,8 @@ namespace
         const QString& fullTagToken,
         const QString& rawTagName,
         const QString& canonicalTypeName,
+        const QByteArray& parseBytes,
+        const std::vector<iiXml::Parser::TagField>& fields,
         const int blockStart,
         const int openTagEnd,
         const int blockEnd,
@@ -729,6 +796,8 @@ namespace
             payload = buildResourcePayload(
                 sourceText,
                 fullTagToken,
+                parseBytes,
+                fields,
                 blockStart,
                 blockEnd,
                 nextResourceIndex);
@@ -913,6 +982,8 @@ namespace
                     sourceText.mid(blockStart, std::max(0, openTagEnd - blockStart)),
                     rawTagName,
                     canonicalTypeName,
+                    parseBytes,
+                    node.Fields,
                     blockStart,
                     openTagEnd,
                     blockEnd,

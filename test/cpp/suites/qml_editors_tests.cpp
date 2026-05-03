@@ -3,9 +3,9 @@
 void WhatSonCppRegressionTests::qmlEditors_routeRenderedHyperlinksToExternalBrowser()
 {
     const QString inlineEditorSource = readUtf8SourceFile(
-        QStringLiteral("src/app/qml/view/content/editor/ContentsInlineFormatEditor.qml"));
+        QStringLiteral("src/app/qml/view/contents/editor/ContentsInlineFormatEditor.qml"));
     const QString surfaceHostSource = readUtf8SourceFile(
-        QStringLiteral("src/app/qml/view/content/editor/ContentsDisplaySurfaceHost.qml"));
+        QStringLiteral("src/app/qml/view/contents/editor/ContentsDisplaySurfaceHost.qml"));
 
     QVERIFY(!inlineEditorSource.isEmpty());
     QVERIFY(!surfaceHostSource.isEmpty());

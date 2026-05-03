@@ -6,7 +6,7 @@ Implements root context-object binding for the workspace runtime graph through t
 
 ## Bound Properties
 The implementation registers the root workspace objects under stable context-property names. This includes hierarchy,
-detail, navigation, import, scheduler, calendar, and panel-runtime controllers.
+detail, navigation, import, scheduler, calendar, panel-runtime controllers, and the app-wide `noteActiveState` tracker.
 
 ## Test Coverage
 

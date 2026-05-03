@@ -25,6 +25,7 @@ namespace WhatSon::Runtime::Bootstrap
         QObject* editorViewModeController = nullptr;
         QObject* navigationModeController = nullptr;
         QObject* sidebarHierarchyController = nullptr;
+        QObject* noteActiveState = nullptr;
         QObject* asyncScheduler = nullptr;
         QObject* calendarBoardStore = nullptr;
         QObject* systemCalendarStore = nullptr;

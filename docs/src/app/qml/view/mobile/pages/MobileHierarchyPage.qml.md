@@ -26,9 +26,12 @@ It does not own the domain data itself. Its job is to keep the mobile `LV.PageRo
 - Snapshot the active toolbar index and active hierarchy content controller as one binding bundle whenever
   `SidebarHierarchyController.activeBindingsChanged()` fires, so mobile route decisions do not momentarily mix library
   state with resources-state chrome during hierarchy switches.
-- The active note-list model is read directly from `SidebarHierarchyController.activeNoteListModel`.
-  The mobile route shell does not mount a second local note-list bridge, so the hierarchy index, active hierarchy
-  controller, and note/resource list model all come from the same sidebar binding authority.
+- The active note-list model is read from the global `noteActiveState.activeNoteListModel` when available, with
+  `SidebarHierarchyController.activeNoteListModel` kept as the fallback. The mobile route shell still does not mount a
+  second local note-list bridge, so note active state is shared with the desktop shell and the editor surface.
+- The same global `noteActiveState` object is forwarded into the routed editor body. This lets the visible
+  `ContentsDisplayView.qml` attach its editor session to the global tracker, so mobile note activation updates the
+  session in the same active-note turn as desktop.
 
 ## Routing Model
 The file defines four route constants:
@@ -188,6 +191,8 @@ This keeps mobile back navigation local to the page and avoids stealing editor t
 - Mobile hierarchy routing must refresh its active toolbar/content tuple from one snapshot and forward the resulting
   `activeNoteListModel` into both `ListBarLayout.qml` and `ContentViewLayout.qml`, or transient hierarchy switches can
   leave the routed note list out of sync with the selected sidebar domain.
+- Mobile hierarchy routing must also forward `noteActiveState` into `ContentViewLayout.qml`; otherwise the routed editor
+  session can lag behind the globally committed active note.
 - Mobile hierarchy routing must also resolve that hierarchy snapshot from the selected hierarchy index itself, not only
   from one previously cached "active" provider object, or a toolbar switch can leave the old domain controller
   mounted.

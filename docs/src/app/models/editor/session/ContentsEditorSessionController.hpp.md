@@ -27,6 +27,9 @@
   - `persistEditorTextImmediatelyWithText(text)`
 - The controller emits `editorTextSynchronized()` after a model-owned note snapshot is accepted into the live editor
   session.
+- The visible editor host attaches this controller to the global `NoteActiveStateTracker`. Active-note changes then
+  reach `requestSyncEditorTextFromSelection(...)` from that tracker instead of waiting for only local QML note-list
+  bindings.
 
 ## Behavioral Notes
 - The persisted RAW document remains the durable backing store, but once the selected note has
