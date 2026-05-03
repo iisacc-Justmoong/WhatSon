@@ -66,11 +66,12 @@ void WhatSonCppRegressionTests::contentsGutterLineNumberGeometry_projectsFallbac
     QCOMPARE(thirdEntry.value(QStringLiteral("lineNumber")).toInt(), 3);
     QCOMPARE(thirdEntry.value(QStringLiteral("y")).toReal(), 60.0);
 
+    geometry.setSourceText(QString());
     geometry.setLineNumberCount(0);
     QCOMPARE(geometry.lineNumberEntries().size(), 1);
 }
 
-void WhatSonCppRegressionTests::contentsGutterLineNumberGeometry_samplesVisibleDisplayOffsets()
+void WhatSonCppRegressionTests::contentsGutterLineNumberGeometry_usesRawLineOffsetsWithoutGeometrySampling()
 {
     ContentsGutterLineNumberGeometry geometry;
     FakeGutterDisplayGeometryHost geometryHost;
@@ -86,7 +87,7 @@ void WhatSonCppRegressionTests::contentsGutterLineNumberGeometry_samplesVisibleD
 
     geometry.setEditorGeometryHost(&geometryHost);
     geometry.setMapTarget(&gutterTarget);
-    geometry.setSourceText(QString(80, QLatin1Char('x')));
+    geometry.setSourceText(QStringLiteral("first\nsecond\nthird"));
     geometry.setLogicalLineStartOffsets(QVariantList{0, 12, 24});
     geometry.setLogicalToSourceOffsets(logicalToSourceOffsets);
     geometry.setLineNumberCount(3);
@@ -98,11 +99,179 @@ void WhatSonCppRegressionTests::contentsGutterLineNumberGeometry_samplesVisibleD
 
     const QVariantList entries = geometry.lineNumberEntries();
     QCOMPARE(entries.size(), 3);
-    QCOMPARE(geometryHost.sampledPositions(), QVariantList({0, 12, 24}));
-    QCOMPARE(geometryHost.sampledSourcePositions(), QVariantList({7, 31, 52}));
-    QCOMPARE(entries.at(0).toMap().value(QStringLiteral("y")).toReal(), 8.0);
-    QCOMPARE(entries.at(1).toMap().value(QStringLiteral("y")).toReal(), 32.0);
-    QCOMPARE(entries.at(2).toMap().value(QStringLiteral("y")).toReal(), 56.0);
+    QCOMPARE(geometryHost.sampledPositions(), QVariantList());
+    QCOMPARE(geometryHost.sampledSourcePositions(), QVariantList());
+    QCOMPARE(entries.at(0).toMap().value(QStringLiteral("y")).toReal(), 80.0);
+    QCOMPARE(entries.at(1).toMap().value(QStringLiteral("y")).toReal(), 100.0);
+    QCOMPARE(entries.at(2).toMap().value(QStringLiteral("y")).toReal(), 120.0);
+}
+
+void WhatSonCppRegressionTests::contentsGutterLineNumberGeometry_readsStructuredBlocksWhenRawHasSinglePhysicalLine()
+{
+    ContentsGutterLineNumberGeometry geometry;
+
+    const QString firstParagraph = QStringLiteral("first visible paragraph");
+    const QString secondParagraph = QStringLiteral("second visible paragraph");
+    const QString resourceText = QStringLiteral("<resource type=\"image\" path=\"cover.png\" />");
+    const QString sourceText = resourceText + firstParagraph + secondParagraph;
+    const int resourceEnd = resourceText.size();
+    const int firstParagraphStart = resourceEnd;
+    const int firstParagraphEnd = firstParagraphStart + firstParagraph.size();
+    const int secondParagraphStart = firstParagraphEnd;
+
+    QVariantMap resourceBlock;
+    resourceBlock.insert(QStringLiteral("type"), QStringLiteral("resource"));
+    resourceBlock.insert(QStringLiteral("sourceStart"), 0);
+    resourceBlock.insert(QStringLiteral("sourceEnd"), resourceEnd);
+
+    QVariantMap firstBlock;
+    firstBlock.insert(QStringLiteral("type"), QStringLiteral("paragraph"));
+    firstBlock.insert(QStringLiteral("sourceStart"), firstParagraphStart);
+    firstBlock.insert(QStringLiteral("sourceEnd"), firstParagraphEnd);
+    firstBlock.insert(QStringLiteral("sourceText"), firstParagraph);
+    firstBlock.insert(QStringLiteral("logicalLineCountHint"), 1);
+
+    QVariantMap secondBlock;
+    secondBlock.insert(QStringLiteral("type"), QStringLiteral("paragraph"));
+    secondBlock.insert(QStringLiteral("sourceStart"), secondParagraphStart);
+    secondBlock.insert(QStringLiteral("sourceEnd"), sourceText.size());
+    secondBlock.insert(QStringLiteral("sourceText"), secondParagraph);
+    secondBlock.insert(QStringLiteral("logicalLineCountHint"), 1);
+
+    QVariantMap visibleTextGroup;
+    visibleTextGroup.insert(QStringLiteral("type"), QStringLiteral("text-group"));
+    visibleTextGroup.insert(QStringLiteral("flattenedInteractiveGroup"), true);
+    visibleTextGroup.insert(QStringLiteral("sourceStart"), firstParagraphStart);
+    visibleTextGroup.insert(QStringLiteral("sourceEnd"), sourceText.size());
+    visibleTextGroup.insert(
+        QStringLiteral("sourceText"),
+        firstParagraph + QLatin1Char('\n') + secondParagraph);
+    visibleTextGroup.insert(QStringLiteral("logicalLineCountHint"), 2);
+    visibleTextGroup.insert(QStringLiteral("groupedBlocks"), QVariantList{firstBlock, secondBlock});
+
+    geometry.setSourceText(sourceText);
+    geometry.setDisplayBlocks(QVariantList{resourceBlock, visibleTextGroup});
+    geometry.setLineNumberCount(1);
+    geometry.setLineNumberBaseOffset(1);
+    geometry.setFallbackTopInset(0.0);
+    geometry.setFallbackLineHeight(20.0);
+
+    const QVariantList entries = geometry.lineNumberEntries();
+    QCOMPARE(entries.size(), 3);
+    QCOMPARE(entries.at(0).toMap().value(QStringLiteral("lineNumber")).toInt(), 1);
+    QCOMPARE(entries.at(0).toMap().value(QStringLiteral("blockType")).toString(), QStringLiteral("resource"));
+    QCOMPARE(entries.at(1).toMap().value(QStringLiteral("lineNumber")).toInt(), 2);
+    QCOMPARE(entries.at(1).toMap().value(QStringLiteral("blockType")).toString(), QStringLiteral("paragraph"));
+    QCOMPARE(entries.at(2).toMap().value(QStringLiteral("lineNumber")).toInt(), 3);
+    QCOMPARE(entries.at(2).toMap().value(QStringLiteral("y")).toReal(), 40.0);
+}
+
+void WhatSonCppRegressionTests::contentsGutterLineNumberGeometry_mergesDisplayAndStructuredBlockStreams()
+{
+    ContentsGutterLineNumberGeometry geometry;
+
+    const QString resourceText = QStringLiteral("<resource type=\"image\" path=\"cover.png\" />");
+    const QString firstParagraph = QStringLiteral("first structured paragraph");
+    const QString secondParagraph = QStringLiteral("second structured paragraph");
+    const QString sourceText = resourceText + firstParagraph + secondParagraph;
+    const int resourceEnd = resourceText.size();
+    const int firstParagraphStart = resourceEnd;
+    const int firstParagraphEnd = firstParagraphStart + firstParagraph.size();
+    const int secondParagraphStart = firstParagraphEnd;
+
+    QVariantMap visibleResourceBlock;
+    visibleResourceBlock.insert(QStringLiteral("renderDelegateType"), QStringLiteral("resource"));
+    visibleResourceBlock.insert(QStringLiteral("sourceStart"), 0);
+    visibleResourceBlock.insert(QStringLiteral("sourceEnd"), resourceEnd);
+
+    QVariantMap firstStructuredBlock;
+    firstStructuredBlock.insert(QStringLiteral("type"), QStringLiteral("paragraph"));
+    firstStructuredBlock.insert(QStringLiteral("sourceStart"), firstParagraphStart);
+    firstStructuredBlock.insert(QStringLiteral("sourceEnd"), firstParagraphEnd);
+    firstStructuredBlock.insert(QStringLiteral("sourceText"), firstParagraph);
+    firstStructuredBlock.insert(QStringLiteral("logicalLineCountHint"), 1);
+
+    QVariantMap secondStructuredBlock;
+    secondStructuredBlock.insert(QStringLiteral("type"), QStringLiteral("paragraph"));
+    secondStructuredBlock.insert(QStringLiteral("sourceStart"), secondParagraphStart);
+    secondStructuredBlock.insert(QStringLiteral("sourceEnd"), sourceText.size());
+    secondStructuredBlock.insert(QStringLiteral("sourceText"), secondParagraph);
+    secondStructuredBlock.insert(QStringLiteral("logicalLineCountHint"), 1);
+
+    geometry.setSourceText(sourceText);
+    geometry.setDisplayBlocks(QVariantList{visibleResourceBlock});
+    geometry.setDocumentBlocks(QVariantList{firstStructuredBlock, secondStructuredBlock});
+    geometry.setLineNumberCount(1);
+    geometry.setLineNumberBaseOffset(1);
+    geometry.setFallbackTopInset(0.0);
+    geometry.setFallbackLineHeight(20.0);
+
+    const QVariantList entries = geometry.lineNumberEntries();
+    QCOMPARE(entries.size(), 3);
+    QCOMPARE(entries.at(0).toMap().value(QStringLiteral("blockType")).toString(), QStringLiteral("resource"));
+    QCOMPARE(entries.at(1).toMap().value(QStringLiteral("blockType")).toString(), QStringLiteral("paragraph"));
+    QCOMPARE(entries.at(2).toMap().value(QStringLiteral("lineNumber")).toInt(), 3);
+}
+
+void WhatSonCppRegressionTests::contentsGutterLineNumberGeometry_mapsSecondRawLineAfterTallFirstResource()
+{
+    ContentsGutterLineNumberGeometry geometry;
+    FakeGutterDisplayGeometryHost geometryHost;
+
+    const QString sourceText = QStringLiteral(
+        "<resource type=\"image\" path=\"cover.png\" />\n"
+        "second raw line\n"
+        "third raw line");
+    const int resourceEnd = sourceText.indexOf(QLatin1Char('\n'));
+    const int secondStart = resourceEnd + 1;
+    const int secondEnd = sourceText.indexOf(QLatin1Char('\n'), secondStart);
+    const int thirdStart = secondEnd + 1;
+
+    QVariantMap resourceBlock;
+    resourceBlock.insert(QStringLiteral("type"), QStringLiteral("resource"));
+    resourceBlock.insert(QStringLiteral("sourceStart"), 0);
+    resourceBlock.insert(QStringLiteral("sourceEnd"), resourceEnd);
+
+    QVariantMap secondBlock;
+    secondBlock.insert(QStringLiteral("type"), QStringLiteral("paragraph"));
+    secondBlock.insert(QStringLiteral("sourceStart"), secondStart);
+    secondBlock.insert(QStringLiteral("sourceEnd"), secondEnd);
+    secondBlock.insert(
+        QStringLiteral("sourceText"),
+        sourceText.mid(secondStart, secondEnd - secondStart));
+    secondBlock.insert(QStringLiteral("logicalLineCountHint"), 1);
+
+    QVariantMap thirdBlock;
+    thirdBlock.insert(QStringLiteral("type"), QStringLiteral("paragraph"));
+    thirdBlock.insert(QStringLiteral("sourceStart"), thirdStart);
+    thirdBlock.insert(QStringLiteral("sourceEnd"), sourceText.size());
+    thirdBlock.insert(QStringLiteral("sourceText"), sourceText.mid(thirdStart));
+    thirdBlock.insert(QStringLiteral("logicalLineCountHint"), 1);
+
+    geometry.setEditorGeometryHost(&geometryHost);
+    geometry.setSourceText(sourceText);
+    geometry.setDocumentBlocks(QVariantList{resourceBlock, secondBlock, thirdBlock});
+    geometry.setLineNumberCount(3);
+    geometry.setFallbackTopInset(0.0);
+    geometry.setFallbackLineHeight(20.0);
+    geometry.setEditorContentHeight(120.0);
+    geometryHost.clearSampledPositions();
+    geometry.refresh();
+
+    const QVariantList entries = geometry.lineNumberEntries();
+    QCOMPARE(entries.size(), 3);
+    QCOMPARE(geometryHost.sampledPositions(), QVariantList());
+
+    const QVariantMap resourceEntry = entries.at(0).toMap();
+    const QVariantMap secondEntry = entries.at(1).toMap();
+    const QVariantMap thirdEntry = entries.at(2).toMap();
+    QCOMPARE(resourceEntry.value(QStringLiteral("lineNumber")).toInt(), 1);
+    QCOMPARE(resourceEntry.value(QStringLiteral("y")).toReal(), 0.0);
+    QCOMPARE(resourceEntry.value(QStringLiteral("height")).toReal(), 80.0);
+    QCOMPARE(secondEntry.value(QStringLiteral("lineNumber")).toInt(), 2);
+    QCOMPARE(secondEntry.value(QStringLiteral("y")).toReal(), 80.0);
+    QCOMPARE(thirdEntry.value(QStringLiteral("lineNumber")).toInt(), 3);
+    QCOMPARE(thirdEntry.value(QStringLiteral("y")).toReal(), 100.0);
 }
 
 void WhatSonCppRegressionTests::contentsGutterLineNumberGeometry_expandsResourceRowsToRenderedContentHeight()
@@ -110,29 +279,41 @@ void WhatSonCppRegressionTests::contentsGutterLineNumberGeometry_expandsResource
     ContentsGutterLineNumberGeometry geometry;
     FakeGutterDisplayGeometryHost geometryHost;
     QObject gutterTarget;
-    QVariantList logicalToSourceOffsets;
-    for (int index = 0; index <= 24; ++index)
-    {
-        logicalToSourceOffsets.append(index);
-    }
-    logicalToSourceOffsets.replace(0, 7);
-    logicalToSourceOffsets.replace(12, 31);
-    logicalToSourceOffsets.replace(24, 52);
+    const QString sourceText = QStringLiteral(
+        "first\n"
+        "<resource type=\"image\" path=\"cover.png\" />\n"
+        "third");
+    const int firstEnd = sourceText.indexOf(QLatin1Char('\n'));
+    const int resourceStart = sourceText.indexOf(QStringLiteral("<resource"));
+    const int resourceEnd = sourceText.indexOf(QLatin1Char('\n'), resourceStart);
+    const int thirdStart = resourceEnd + 1;
+
+    QVariantMap firstBlock;
+    firstBlock.insert(QStringLiteral("type"), QStringLiteral("paragraph"));
+    firstBlock.insert(QStringLiteral("sourceStart"), 0);
+    firstBlock.insert(QStringLiteral("sourceEnd"), firstEnd);
+    firstBlock.insert(QStringLiteral("sourceText"), sourceText.left(firstEnd));
+    firstBlock.insert(QStringLiteral("logicalLineCountHint"), 1);
 
     QVariantMap resourceBlock;
     resourceBlock.insert(QStringLiteral("type"), QStringLiteral("resource"));
-    resourceBlock.insert(QStringLiteral("sourceStart"), 31);
-    resourceBlock.insert(QStringLiteral("sourceEnd"), 50);
+    resourceBlock.insert(QStringLiteral("sourceStart"), resourceStart);
+    resourceBlock.insert(QStringLiteral("sourceEnd"), resourceEnd);
+
+    QVariantMap thirdBlock;
+    thirdBlock.insert(QStringLiteral("type"), QStringLiteral("paragraph"));
+    thirdBlock.insert(QStringLiteral("sourceStart"), thirdStart);
+    thirdBlock.insert(QStringLiteral("sourceEnd"), sourceText.size());
+    thirdBlock.insert(QStringLiteral("sourceText"), sourceText.mid(thirdStart));
+    thirdBlock.insert(QStringLiteral("logicalLineCountHint"), 1);
 
     geometry.setEditorGeometryHost(&geometryHost);
     geometry.setMapTarget(&gutterTarget);
-    geometry.setSourceText(QString(80, QLatin1Char('x')));
-    geometry.setDocumentBlocks(QVariantList{resourceBlock});
-    geometry.setLogicalLineStartOffsets(QVariantList{0, 12, 24});
-    geometry.setLogicalToSourceOffsets(logicalToSourceOffsets);
+    geometry.setSourceText(sourceText);
+    geometry.setDocumentBlocks(QVariantList{firstBlock, resourceBlock, thirdBlock});
     geometry.setLineNumberCount(3);
     geometry.setLineNumberBaseOffset(1);
-    geometry.setFallbackTopInset(80.0);
+    geometry.setFallbackTopInset(0.0);
     geometry.setFallbackLineHeight(20.0);
     geometry.setEditorContentHeight(108.0);
     geometryHost.clearSampledPositions();
@@ -140,17 +321,17 @@ void WhatSonCppRegressionTests::contentsGutterLineNumberGeometry_expandsResource
 
     const QVariantList entries = geometry.lineNumberEntries();
     QCOMPARE(entries.size(), 3);
-    QCOMPARE(geometryHost.sampledPositions(), QVariantList({0, 12, 24}));
-    QCOMPARE(geometryHost.sampledSourcePositions(), QVariantList({7, 31, 52}));
+    QCOMPARE(geometryHost.sampledPositions(), QVariantList());
+    QCOMPARE(geometryHost.sampledSourcePositions(), QVariantList());
 
     const QVariantMap firstEntry = entries.at(0).toMap();
     const QVariantMap resourceEntry = entries.at(1).toMap();
     const QVariantMap thirdEntry = entries.at(2).toMap();
-    QCOMPARE(firstEntry.value(QStringLiteral("y")).toReal(), 8.0);
-    QCOMPARE(firstEntry.value(QStringLiteral("height")).toReal(), 24.0);
-    QCOMPARE(resourceEntry.value(QStringLiteral("y")).toReal(), 32.0);
-    QCOMPARE(resourceEntry.value(QStringLiteral("height")).toReal(), 64.0);
-    QCOMPARE(thirdEntry.value(QStringLiteral("y")).toReal(), 96.0);
+    QCOMPARE(firstEntry.value(QStringLiteral("y")).toReal(), 0.0);
+    QCOMPARE(firstEntry.value(QStringLiteral("height")).toReal(), 20.0);
+    QCOMPARE(resourceEntry.value(QStringLiteral("y")).toReal(), 20.0);
+    QCOMPARE(resourceEntry.value(QStringLiteral("height")).toReal(), 68.0);
+    QCOMPARE(thirdEntry.value(QStringLiteral("y")).toReal(), 88.0);
     QCOMPARE(thirdEntry.value(QStringLiteral("height")).toReal(), 20.0);
     QVERIFY(resourceEntry.value(QStringLiteral("height")).toReal()
             > firstEntry.value(QStringLiteral("height")).toReal());
@@ -172,16 +353,14 @@ void WhatSonCppRegressionTests::contentsGutterLineNumberGeometry_assignsRendered
     const int documentStart = sourceText.indexOf(QStringLiteral("<resource type=\"document\""));
     const int documentEnd = sourceText.indexOf(QLatin1Char('\n'), documentStart);
     const int omegaStart = sourceText.indexOf(QStringLiteral("omega"));
+    const int alphaEnd = sourceText.indexOf(QLatin1Char('\n'));
 
-    QVariantList logicalToSourceOffsets;
-    for (int index = 0; index <= 36; ++index)
-    {
-        logicalToSourceOffsets.append(index);
-    }
-    logicalToSourceOffsets.replace(0, 0);
-    logicalToSourceOffsets.replace(12, imageStart);
-    logicalToSourceOffsets.replace(24, documentStart);
-    logicalToSourceOffsets.replace(36, omegaStart);
+    QVariantMap alphaBlock;
+    alphaBlock.insert(QStringLiteral("type"), QStringLiteral("paragraph"));
+    alphaBlock.insert(QStringLiteral("sourceStart"), 0);
+    alphaBlock.insert(QStringLiteral("sourceEnd"), alphaEnd);
+    alphaBlock.insert(QStringLiteral("sourceText"), sourceText.left(alphaEnd));
+    alphaBlock.insert(QStringLiteral("logicalLineCountHint"), 1);
 
     QVariantMap imageBlock;
     imageBlock.insert(QStringLiteral("type"), QStringLiteral("resource"));
@@ -194,6 +373,13 @@ void WhatSonCppRegressionTests::contentsGutterLineNumberGeometry_assignsRendered
     documentBlock.insert(QStringLiteral("resourceIndex"), 1);
     documentBlock.insert(QStringLiteral("sourceStart"), documentStart);
     documentBlock.insert(QStringLiteral("sourceEnd"), documentEnd);
+
+    QVariantMap omegaBlock;
+    omegaBlock.insert(QStringLiteral("type"), QStringLiteral("paragraph"));
+    omegaBlock.insert(QStringLiteral("sourceStart"), omegaStart);
+    omegaBlock.insert(QStringLiteral("sourceEnd"), sourceText.size());
+    omegaBlock.insert(QStringLiteral("sourceText"), sourceText.mid(omegaStart));
+    omegaBlock.insert(QStringLiteral("logicalLineCountHint"), 1);
 
     QVariantMap renderedImage;
     renderedImage.insert(QStringLiteral("index"), 0);
@@ -212,10 +398,8 @@ void WhatSonCppRegressionTests::contentsGutterLineNumberGeometry_assignsRendered
     geometry.setEditorGeometryHost(&geometryHost);
     geometry.setMapTarget(&gutterTarget);
     geometry.setSourceText(sourceText);
-    geometry.setDocumentBlocks(QVariantList{imageBlock, documentBlock});
+    geometry.setDocumentBlocks(QVariantList{alphaBlock, imageBlock, documentBlock, omegaBlock});
     geometry.setRenderedResources(QVariantList{renderedImage, renderedDocument});
-    geometry.setLogicalLineStartOffsets(QVariantList{0, 12, 24, 36});
-    geometry.setLogicalToSourceOffsets(logicalToSourceOffsets);
     geometry.setLineNumberCount(4);
     geometry.setLineNumberBaseOffset(1);
     geometry.setFallbackLineHeight(20.0);
@@ -229,14 +413,14 @@ void WhatSonCppRegressionTests::contentsGutterLineNumberGeometry_assignsRendered
     const QVariantMap imageEntry = entries.at(1).toMap();
     const QVariantMap documentEntry = entries.at(2).toMap();
     const QVariantMap omegaEntry = entries.at(3).toMap();
-    QCOMPARE(imageEntry.value(QStringLiteral("y")).toReal(), 32.0);
-    QCOMPARE(imageEntry.value(QStringLiteral("height")).toReal(), 64.0);
-    QCOMPARE(documentEntry.value(QStringLiteral("y")).toReal(), 96.0);
-    QCOMPARE(documentEntry.value(QStringLiteral("height")).toReal(), 24.0);
-    QCOMPARE(omegaEntry.value(QStringLiteral("y")).toReal(), 120.0);
+    QCOMPARE(imageEntry.value(QStringLiteral("y")).toReal(), 20.0);
+    QCOMPARE(imageEntry.value(QStringLiteral("height")).toReal(), 72.0);
+    QCOMPARE(documentEntry.value(QStringLiteral("y")).toReal(), 92.0);
+    QCOMPARE(documentEntry.value(QStringLiteral("height")).toReal(), 20.0);
+    QCOMPARE(omegaEntry.value(QStringLiteral("y")).toReal(), 112.0);
 }
 
-void WhatSonCppRegressionTests::contentsGutterLineNumberGeometry_separatesDuplicateDisplaySamples()
+void WhatSonCppRegressionTests::contentsGutterLineNumberGeometry_ignoresDuplicateDisplaySamples()
 {
     ContentsGutterLineNumberGeometry geometry;
     FakeGutterDisplayGeometryHost geometryHost;
@@ -255,14 +439,15 @@ void WhatSonCppRegressionTests::contentsGutterLineNumberGeometry_separatesDuplic
 
     const QVariantList entries = geometry.lineNumberEntries();
     QCOMPARE(entries.size(), 3);
-    QCOMPARE(geometryHost.sampledPositions(), QVariantList({0, 0, 12}));
+    QCOMPARE(geometryHost.sampledPositions(), QVariantList());
+    QCOMPARE(geometryHost.sampledSourcePositions(), QVariantList());
 
     const qreal firstY = entries.at(0).toMap().value(QStringLiteral("y")).toReal();
     const qreal secondY = entries.at(1).toMap().value(QStringLiteral("y")).toReal();
     const qreal thirdY = entries.at(2).toMap().value(QStringLiteral("y")).toReal();
-    QCOMPARE(firstY, 8.0);
-    QCOMPARE(secondY, 28.0);
-    QCOMPARE(thirdY, 32.0);
+    QCOMPARE(firstY, 0.0);
+    QCOMPARE(secondY, 20.0);
+    QCOMPARE(thirdY, 40.0);
     QVERIFY(secondY > firstY);
     QVERIFY(thirdY > secondY);
 }

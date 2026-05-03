@@ -167,6 +167,10 @@ Item {
         });
     }
 
+    function refreshGutterForDocumentStateChange() {
+        contentsDisplayView.refreshGutterLineNumberGeometry();
+    }
+
     function stringValue(payload, key, fallback) {
         if (payload !== null
                 && payload !== undefined
@@ -183,13 +187,16 @@ Item {
     }
 
     function syncSessionFromCurrentNote(resetViewport) {
-        if (contentsDisplayView.currentNoteId.length === 0)
+        if (contentsDisplayView.currentNoteId.length === 0) {
+            contentsDisplayView.refreshGutterLineNumberGeometry();
             return;
+        }
         if (resetViewport === true && editorDocumentViewport)
             editorDocumentViewport.contentY = 0;
         if (contentsDisplayView.activeStateAvailable()
                 && contentsDisplayView.noteActiveState.syncEditorSessionFromActiveNote !== undefined) {
             contentsDisplayView.noteActiveState.syncEditorSessionFromActiveNote();
+            contentsDisplayView.refreshGutterForDocumentStateChange();
             return;
         }
         editorSession.requestSyncEditorTextFromSelection(
@@ -197,6 +204,7 @@ Item {
                     contentsDisplayView.currentRawBodyText,
                     contentsDisplayView.currentNoteId,
                     contentsDisplayView.currentNoteDirectoryPath);
+        contentsDisplayView.refreshGutterForDocumentStateChange();
     }
 
     clip: true
@@ -214,6 +222,7 @@ Item {
     onNoteActiveStateChanged: {
         contentsDisplayView.attachEditorSessionToActiveState();
         contentsDisplayView.syncSessionFromCurrentNote(true);
+        contentsDisplayView.refreshGutterForDocumentStateChange();
     }
     onCurrentNoteDirectoryPathChanged: contentsDisplayView.syncSessionFromCurrentNote(true)
     onCurrentNoteIdChanged: contentsDisplayView.syncSessionFromCurrentNote(true)
@@ -247,10 +256,52 @@ Item {
         }
     }
 
+    Connections {
+        target: contentsDisplayView.noteActiveState
+        ignoreUnknownSignals: true
+
+        function onActiveNoteStateChanged() {
+            contentsDisplayView.syncSessionFromCurrentNote(false);
+            contentsDisplayView.refreshGutterForDocumentStateChange();
+        }
+
+        function onActiveNoteListModelChanged() {
+            contentsDisplayView.refreshGutterForDocumentStateChange();
+        }
+
+        function onHasActiveNoteChanged() {
+            contentsDisplayView.refreshGutterForDocumentStateChange();
+        }
+    }
+
     ContentsEditorSessionController {
         id: editorSession
 
         objectName: "contentsDisplayEditorSession"
+    }
+
+    Connections {
+        target: editorSession
+
+        function onEditorBoundNoteDirectoryPathChanged() {
+            contentsDisplayView.refreshGutterForDocumentStateChange();
+        }
+
+        function onEditorBoundNoteIdChanged() {
+            contentsDisplayView.refreshGutterForDocumentStateChange();
+        }
+
+        function onEditorTextChanged() {
+            contentsDisplayView.refreshGutterForDocumentStateChange();
+        }
+
+        function onEditorTextSynchronized() {
+            contentsDisplayView.refreshGutterForDocumentStateChange();
+        }
+
+        function onPendingBodySaveChanged() {
+            contentsDisplayView.refreshGutterLineNumberGeometry();
+        }
     }
 
     ContentsEditorPresentationProjection {
@@ -261,12 +312,40 @@ Item {
         sourceText: editorSession.editorText
     }
 
+    Connections {
+        target: editorPresentationProjection
+
+        function onEditorSurfaceHtmlChanged() {
+            contentsDisplayView.refreshGutterLineNumberGeometry();
+        }
+
+        function onLogicalLineCountChanged() {
+            contentsDisplayView.refreshGutterLineNumberGeometry();
+        }
+
+        function onNormalizedHtmlBlocksChanged() {
+            contentsDisplayView.refreshGutterLineNumberGeometry();
+        }
+    }
+
     ContentsStructuredBlockRenderer {
         id: structuredBlockRenderer
 
         backgroundRefreshEnabled: contentsDisplayView.structuredBlockBackgroundRefreshEnabled
         objectName: "contentsDisplayStructuredBlockRenderer"
         sourceText: editorSession.editorText
+    }
+
+    Connections {
+        target: structuredBlockRenderer
+
+        function onRenderedBlocksChanged() {
+            contentsDisplayView.refreshGutterLineNumberGeometry();
+        }
+
+        function onRenderPendingChanged() {
+            contentsDisplayView.refreshGutterLineNumberGeometry();
+        }
     }
 
     ContentsBodyResourceRenderer {
@@ -279,6 +358,14 @@ Item {
         noteDirectoryPath: contentsDisplayView.currentNoteDirectoryPath
         noteId: contentsDisplayView.currentNoteId
         objectName: "contentsDisplayBodyResourceRenderer"
+    }
+
+    Connections {
+        target: bodyResourceRenderer
+
+        function onRenderedResourcesChanged() {
+            contentsDisplayView.refreshGutterLineNumberGeometry();
+        }
     }
 
     ContentsResourceTagController {
@@ -331,18 +418,13 @@ Item {
     ContentsGutterLineNumberGeometry {
         id: gutterLineNumberGeometry
 
+        displayBlocks: editorPresentationProjection.normalizedHtmlBlocks
         documentBlocks: structuredBlockRenderer.renderedDocumentBlocks
         editorContentHeight: structuredDocumentFlow.editorContentHeight
-        editorGeometryHost: structuredDocumentFlow
         fallbackLineHeight: LV.Theme.textBodyLineHeight
         fallbackTopInset: LV.Theme.gapNone
         lineNumberBaseOffset: gutterLayoutMetrics.lineNumberBaseOffset
         lineNumberCount: gutterLayoutMetrics.effectiveLineNumberCount
-        logicalLineStartOffsets: editorPresentationProjection.logicalLineStartOffsets
-        logicalToSourceOffsets: editorPresentationProjection.sourceText.length >= LV.Theme.gapNone
-                                ? editorPresentationProjection.logicalToSourceOffsets()
-                                : []
-        mapTarget: contentsDisplayGutter
         objectName: "contentsDisplayGutterLineNumberGeometry"
         renderedResources: bodyResourceRenderer.renderedResources
         sourceText: editorSession.editorText

@@ -13,14 +13,20 @@ Provides the note-backed center editor surface.
 - Binds `ContentsEditorPresentationProjection.sourceText` to the session RAW text.
 - Binds LVRS metric tokens and projection line counts into `ContentsGutterLayoutMetrics` and
   `ContentsMinimapLayoutMetrics`, then consumes their resolved layout values.
-- Binds editor projection logical display offsets, logical-to-source offsets, and the live
-  `ContentsStructuredDocumentFlow.qml` visible-display geometry hooks into `ContentsGutterLineNumberGeometry`, then
-  passes the resolved line-number entries into `view/contents/Gutter.qml`.
-  The fallback line-number geometry uses a zero top inset so line numbers stay aligned with the top-flush editor body.
-- Passes parser-owned `structuredBlockRenderer.renderedDocumentBlocks` and resolved
-  `bodyResourceRenderer.renderedResources` into the gutter geometry so lines containing visible image-frame resources
-  receive the additional body height that those resources occupy in the editor surface, while unresolved placeholders
-  remain normal text-height rows.
+- Binds RAW source text, presentation-owned flattened display blocks, parser-owned logical document blocks, rendered
+  resource metadata, and rendered content height into
+  `ContentsGutterLineNumberGeometry`, then passes the resolved line-number entries into `view/contents/Gutter.qml`.
+  Line-number y positions are block-stream based, with a zero top inset so line 1 starts flush with the editor body.
+- Refreshes gutter line-number and marker geometry whenever note active state, editor-session text/binding state,
+  presentation line count, parser block output, rendered resources, viewport size/scroll, or rendered content height
+  changes. Gutter projection is intentionally repeatable; the editor host does not assume that one calculation made at
+  note-open time remains valid for the rest of the note session.
+- Passes `editorPresentationProjection.normalizedHtmlBlocks`, parser-owned
+  `structuredBlockRenderer.renderedDocumentBlocks`, and resolved `bodyResourceRenderer.renderedResources` into the
+  gutter geometry. The flattened display blocks identify the actual visible block stream, the structured blocks preserve
+  logical grouping and source spans, and the gutter model merges complementary ranges from both streams during refresh.
+  Resource metadata lets visible image-frame resources receive the additional body height they occupy in the editor
+  surface while unresolved placeholders remain normal text-height rows.
 - Binds live cursor position, current RAW text, saved `.wsnbody` RAW text, and line-number entries into
   `ContentsGutterMarkerGeometry`, then passes the resolved marker entries into `view/contents/Gutter.qml`.
 - Re-parses the same RAW snapshot through `ContentsStructuredBlockRenderer`, feeds that parser-owned block stream into
@@ -63,21 +69,23 @@ The live route is:
    image HTML used by the historical Figma `292:50` resource presentation when the payload is renderable.
 7. `ContentsGutterLayoutMetrics` and `ContentsMinimapLayoutMetrics` resolve chrome widths and row counts from tokens
    plus `logicalLineCount`.
-8. `ContentsGutterLineNumberGeometry` samples the currently visible editor display line rectangles through the
-   structured flow. When the RichText overlay is visible, the inline editor measures the logical plain-text display
-   probe, not the rendered HTML tag string, and then maps those line tops into gutter coordinates. The actual rendered
-   editor content height is then reconciled against resolved image-resource entries, with parser-owned resource blocks
-   as a fallback, so visible resource rows reserve their real displayed height in the gutter and later line numbers are
-   shifted by the same amount as the editor body.
-9. `ContentsGutterMarkerGeometry` projects the cursor line and unsaved RAW-source lines onto the same gutter
+8. `ContentsGutterLineNumberGeometry` reads both the flattened visible block stream and the logical structured block
+   stream to build line-number y positions, merging missing source ranges from the secondary stream when a refresh only
+   has a partial projection. The actual rendered editor content height is reconciled against resolved image-resource
+   entries, with parser-owned resource blocks as a fallback, so visible resource rows reserve their real displayed
+   height in the gutter and later line numbers are shifted by the same amount as the editor body.
+9. Note active-state changes, session synchronization, live RAW text edits, parser background refresh, resource
+   renderer updates, projection line-count changes, and viewport movement can all request another gutter refresh.
+   Recalculation is a normal part of the editor state loop, not a one-time layout step.
+10. `ContentsGutterMarkerGeometry` projects the cursor line and unsaved RAW-source lines onto the same gutter
    coordinates.
-10. `ContentsDisplayView.qml` places gutter, a scrollable editor document viewport, and minimap in one `LV.HStack`.
-11. `ContentsStructuredDocumentFlow.qml` displays the final RichText projection through the inline editor's read-only
+11. `ContentsDisplayView.qml` places gutter, a scrollable editor document viewport, and minimap in one `LV.HStack`.
+12. `ContentsStructuredDocumentFlow.qml` displays the final RichText projection through the inline editor's read-only
    `TextEdit.RichText` overlay and keeps the plain `LV.TextEditor` buffer as the edit source inside the center slot.
-12. The inline editor paints a projected blinking cursor above the overlay from logical visible-text geometry while the
+13. The inline editor paints a projected blinking cursor above the overlay from logical visible-text geometry while the
     native `LV.TextEditor` keeps the authoritative cursor and IME state. The native cursor delegate is hidden whenever
     the rendered overlay is visible, so the user sees one WYSIWYG caret instead of a second RAW-surface caret.
-13. Bottom-empty-area clicks inside that center slot focus the same live editor and place the cursor at the RAW source
+14. Bottom-empty-area clicks inside that center slot focus the same live editor and place the cursor at the RAW source
     end. No synthetic text mutation is created by this accessibility path.
 
 The QML host does not parse XML, does not derive block boundaries from DOM or RichText output, and no longer owns

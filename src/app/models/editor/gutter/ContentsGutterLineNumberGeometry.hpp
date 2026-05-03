@@ -11,6 +11,7 @@ class ContentsGutterLineNumberGeometry : public QObject
     Q_PROPERTY(QObject* editorGeometryHost READ editorGeometryHost WRITE setEditorGeometryHost NOTIFY editorGeometryHostChanged)
     Q_PROPERTY(QObject* mapTarget READ mapTarget WRITE setMapTarget NOTIFY mapTargetChanged)
     Q_PROPERTY(QString sourceText READ sourceText WRITE setSourceText NOTIFY sourceTextChanged)
+    Q_PROPERTY(QVariantList displayBlocks READ displayBlocks WRITE setDisplayBlocks NOTIFY displayBlocksChanged)
     Q_PROPERTY(QVariantList documentBlocks READ documentBlocks WRITE setDocumentBlocks NOTIFY documentBlocksChanged)
     Q_PROPERTY(QVariantList renderedResources READ renderedResources WRITE setRenderedResources NOTIFY renderedResourcesChanged)
     Q_PROPERTY(QVariantList logicalLineStartOffsets READ logicalLineStartOffsets WRITE setLogicalLineStartOffsets NOTIFY logicalLineStartOffsetsChanged)
@@ -23,6 +24,14 @@ class ContentsGutterLineNumberGeometry : public QObject
     Q_PROPERTY(QVariantList lineNumberEntries READ lineNumberEntries NOTIFY lineNumberEntriesChanged)
 
 public:
+    struct LineSlot final
+    {
+        QString blockType;
+        int sourceEnd = 0;
+        int sourceStart = 0;
+        bool resource = false;
+    };
+
     explicit ContentsGutterLineNumberGeometry(QObject* parent = nullptr);
     ~ContentsGutterLineNumberGeometry() override;
 
@@ -32,6 +41,8 @@ public:
     void setMapTarget(QObject* value);
     QString sourceText() const;
     void setSourceText(const QString& value);
+    QVariantList displayBlocks() const;
+    void setDisplayBlocks(const QVariantList& value);
     QVariantList documentBlocks() const;
     void setDocumentBlocks(const QVariantList& value);
     QVariantList renderedResources() const;
@@ -59,6 +70,7 @@ signals:
     void editorGeometryHostChanged();
     void mapTargetChanged();
     void sourceTextChanged();
+    void displayBlocksChanged();
     void documentBlocksChanged();
     void renderedResourcesChanged();
     void logicalLineStartOffsetsChanged();
@@ -71,19 +83,20 @@ signals:
     void lineNumberEntriesChanged();
 
 private:
-    int effectiveLineNumberCount() const noexcept;
-    QList<int> displayLineStartOffsets() const;
-    int sourceOffsetForLogicalOffset(int logicalOffset) const noexcept;
-    QList<int> extraHeightTargetLineIndices(const QList<int>& sourceLineStartOffsets) const;
-    QList<int> renderedResourceLineIndices(const QList<int>& sourceLineStartOffsets) const;
-    QList<int> resourceLineIndices(const QList<int>& sourceLineStartOffsets) const;
+    QVariantList effectiveBlockStream() const;
+    QList<LineSlot> blockLineSlots() const;
+    QList<int> sourceLineStartOffsets() const;
+    QList<LineSlot> rawLineSlots() const;
+    QList<int> extraHeightTargetLineIndices(const QList<LineSlot>& lineSlots) const;
+    QList<int> renderedResourceLineIndices(const QList<LineSlot>& lineSlots) const;
+    QList<int> resourceLineIndices(const QList<LineSlot>& lineSlots) const;
     qreal fallbackYForIndex(int index) const noexcept;
-    qreal editorLineYForOffset(int displayOffset, int sourceOffset, int fallbackIndex) const;
     void rebuildLineNumberEntries();
 
     QObject* m_editorGeometryHost = nullptr;
     QObject* m_mapTarget = nullptr;
     QString m_sourceText;
+    QVariantList m_displayBlocks;
     QVariantList m_documentBlocks;
     QVariantList m_renderedResources;
     QVariantList m_logicalLineStartOffsets;

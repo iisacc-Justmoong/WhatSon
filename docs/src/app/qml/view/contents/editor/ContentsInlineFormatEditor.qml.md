@@ -52,9 +52,9 @@ Wraps the live `LV.TextEditor` used by the note document surface.
 - `focusTerminalBodyPosition()` focuses the native `LV.TextEditor`, clears any stale selection, and moves the cursor to
   the RAW text end through `setCursorPositionPreservingNativeInput(...)`. This is used only by the parent structured
   flow's bottom-empty-area hit target.
-- Exposes `positionToRectangle(position, sourcePosition)` and `mapEditorPointToItem(...)` as narrow geometry hooks for
-  the C++ gutter line-number model; these hooks report the currently visible display layout but do not calculate gutter
-  policy in QML.
+- Exposes `positionToRectangle(position, sourcePosition)` and `mapEditorPointToItem(...)` as narrow compatibility
+  geometry hooks for display/cursor helpers. Gutter line-number y mapping is now RAW-source based and no longer samples
+  these hooks.
 - Ordinary navigation, selection, Backspace/Delete repeat, paste fallback, and IME/preedit behavior remain with Qt's
   native text-editing path exposed by `LV.TextEditor`.
 

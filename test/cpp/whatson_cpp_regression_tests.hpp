@@ -1075,10 +1075,13 @@ private slots:
     void qmlStructuredEditors_mountsGutterEditorAndMinimapInDisplayLayout();
     void contentsGutterLayoutMetrics_resolvesRuntimeAndDesignMetrics();
     void contentsGutterLineNumberGeometry_projectsFallbackLineYEntries();
-    void contentsGutterLineNumberGeometry_samplesVisibleDisplayOffsets();
+    void contentsGutterLineNumberGeometry_usesRawLineOffsetsWithoutGeometrySampling();
+    void contentsGutterLineNumberGeometry_readsStructuredBlocksWhenRawHasSinglePhysicalLine();
+    void contentsGutterLineNumberGeometry_mergesDisplayAndStructuredBlockStreams();
+    void contentsGutterLineNumberGeometry_mapsSecondRawLineAfterTallFirstResource();
     void contentsGutterLineNumberGeometry_expandsResourceRowsToRenderedContentHeight();
     void contentsGutterLineNumberGeometry_assignsRenderedResourceHeightToVisibleImageRows();
-    void contentsGutterLineNumberGeometry_separatesDuplicateDisplaySamples();
+    void contentsGutterLineNumberGeometry_ignoresDuplicateDisplaySamples();
     void contentsGutterMarkerGeometry_marksCursorAndUnsavedLineSpans();
     void contentsMinimapLayoutMetrics_resolvesRuntimeVisibilityAndDesignRows();
     void qmlStructuredEditors_rejectStaleSourceRangeMutations();

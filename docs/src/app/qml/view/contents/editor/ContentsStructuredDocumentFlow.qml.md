@@ -13,8 +13,7 @@ Hosts the note document surface after `ContentsDisplayView.qml` has mounted a se
   `ContentsInlineResourcePresentationController` so resource placeholder comments become actual inline resource
   HTML before this view surface paints it.
 - Mounts `ContentsInlineFormatEditor.qml` as the live `LV.TextEditor` path.
-- Passes `logicalText` into the inline editor's display-geometry probe so gutter samples track visible editor text
-  rather than the rendered HTML source string.
+- Passes `logicalText` into the inline editor's display-geometry probe for cursor, selection, and pointer mapping.
 - Passes the current logical cursor position into the inline editor so its overlay cursor is projected from visible
   text geometry while the authoritative edit buffer remains RAW source text.
 - Passes the projection-owned `logicalToSourceOffsets` table into the inline editor. Surface clicks are resolved from
@@ -27,9 +26,10 @@ Hosts the note document surface after `ContentsDisplayView.qml` has mounted a se
   fresh `editorSurfaceHtml` on every committed RAW source change; it does not add a second preview path while typing.
 - Emits `sourceTextEdited(text)` upward when the user changes the RAW text buffer.
 - Exposes `normalizedBlocks()` as a compatibility hook for callers that need the renderer-owned block stream.
-- Exposes `editorContentHeight`, `editorCursorPosition`, `lineStartRectangle(position, sourcePosition)`, and
-  `mapEditorPointToItem(...)` so the gutter geometry model can align line numbers to the currently visible editor
-  display without moving calculation policy into QML.
+- Exposes `editorContentHeight` and `editorCursorPosition` to the parent editor host. Gutter line-number y mapping is
+  RAW-source based; this flow no longer acts as the line-number geometry sampler.
+- Keeps `lineStartRectangle(position, sourcePosition)` and `mapEditorPointToItem(...)` as compatibility hooks for
+  local display/cursor helpers, not as the gutter line-number source of truth.
 - Exposes `pointRequestsTerminalBodyClick(localX, localY)` and `focusTerminalBodyFromPoint(localX, localY)` for the
   bottom-empty-area accessibility hit target. A point below the rendered editor body is treated like a click at the
   RAW body end, while points over existing body content are passed through to the native editor/link path.
