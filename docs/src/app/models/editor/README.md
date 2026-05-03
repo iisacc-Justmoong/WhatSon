@@ -2,7 +2,7 @@
 
 ## Scope
 - Mirrored source directory: `src/app/models/editor`
-- Child directories: 13
+- Child directories: 15
 - Child files: 0
 
 ## Child Directories
@@ -10,7 +10,9 @@
 - `diagnostics`
 - `display`
 - `format`
+- `gutter`
 - `input`
+- `minimap`
 - `parser`
 - `persistence`
 - `projection`
@@ -61,8 +63,16 @@
   extra QObject planner.
 - `structure/ContentsStructuredDocument*` owns the structured document host, collection policy, focus policy, mutation
   policy, and blocks model used by `ContentsStructuredDocumentFlow.qml`.
-- `display/ContentsDisplay*` owns editor-host display coordination for selection, context menus, gutter/minimap state,
-  mount plans, refresh plans, and viewport math.
+- `gutter/ContentsGutterLayoutMetrics.*` owns gutter width, line-number count, inactive-line sentinel, and
+  line-number column metric calculations that used to live in QML.
+- `gutter/ContentsGutterLineNumberGeometry.*` owns gutter line-number y-coordinate projection from the live editor
+  geometry, with deterministic fallback entries for standalone frames.
+- `gutter/ContentsGutterMarkerGeometry.*` owns gutter marker projection for the live cursor line and current RAW lines
+  that differ from the saved `.wsnbody` snapshot.
+- `minimap/ContentsMinimapLayoutMetrics.*` owns minimap width, row-count, and visibility-to-width calculations that
+  used to live in QML.
+- `display/ContentsDisplay*` owns editor-host display coordination for selection, context menus, mount plans, refresh
+  plans, and viewport math.
 - Local RAW editor-source writes now converge through
   `session/ContentsEditorSessionController::commitRawEditorTextMutation(...)`, so QML controllers can propose next
   `.wsnbody` text without owning `editorText` writes, local-authority marking, or persistence scheduling.
@@ -109,6 +119,6 @@
 
 - 대상: ``src/app/models/editor`` (`docs/src/app/models/editor/README.md`)
 - 위치: `docs/src/app/models/editor`
-- 역할: 이 파일은 해당 디렉터리나 모듈의 구조, 책임, 운영 규칙, 검증 기준을 설명한다.
+- 역할: 이 파일은 해당 디렉터리나 모듈의 구조, 책임, 운영 규칙, 검증 기준을 설명한다. 거터와 미니맵 계산은 각각 `gutter`, `minimap` 하위 모델이 담당하며 커서/미저장 줄 막대 계산도 `gutter` 모델이 담당한다.
 - 기준: 파일 경로, 명령, API 이름, 세부 변경 이력은 위 영어 본문을 원문 기준으로 유지한다.
 - 변경 시: 위 영어 본문을 수정하면 이 한국어 하단 섹션도 함께 최신 상태로 맞춘다.

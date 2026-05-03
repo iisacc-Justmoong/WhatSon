@@ -26,7 +26,7 @@ Item {
     property color contentsDisplayColor: "transparent"
     property var editorViewModeController: null
     readonly property int effectiveMinSidebarWidth: Math.max(minSidebarWidth, LV.Theme.gap20 * 7 + LV.Theme.gap12)
-    property color gutterColor: "transparent"
+    property color gutterColor: LV.Theme.panelBackground02
     property bool isMobilePlatform: false
     property var libraryHierarchyController: null
     property color listViewColor: "transparent"

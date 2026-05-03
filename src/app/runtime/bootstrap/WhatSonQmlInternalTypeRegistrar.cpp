@@ -8,6 +8,10 @@
 #include "app/models/editor/format/ContentsInlineStyleOverlayRenderer.hpp"
 #include "app/models/editor/format/ContentsPlainTextSourceMutator.hpp"
 #include "app/models/editor/format/ContentsTextFormatRenderer.hpp"
+#include "app/models/editor/gutter/ContentsGutterLayoutMetrics.hpp"
+#include "app/models/editor/gutter/ContentsGutterLineNumberGeometry.hpp"
+#include "app/models/editor/gutter/ContentsGutterMarkerGeometry.hpp"
+#include "app/models/editor/minimap/ContentsMinimapLayoutMetrics.hpp"
 #include "app/models/display/paper/print/ContentsPagePrintLayoutRenderer.hpp"
 #include "app/models/editor/tags/ContentsStructuredTagValidator.hpp"
 #include "app/platform/Apple/WhatSonIosHubPickerBridge.hpp"
@@ -88,6 +92,14 @@ namespace
                 QStringLiteral("ContentsLogicalTextBridge")),
             whatsonInternalCreatableType<ContentsGutterMarkerBridge>(
                 QStringLiteral("ContentsGutterMarkerBridge")),
+            whatsonInternalCreatableType<ContentsGutterLayoutMetrics>(
+                QStringLiteral("ContentsGutterLayoutMetrics")),
+            whatsonInternalCreatableType<ContentsGutterLineNumberGeometry>(
+                QStringLiteral("ContentsGutterLineNumberGeometry")),
+            whatsonInternalCreatableType<ContentsGutterMarkerGeometry>(
+                QStringLiteral("ContentsGutterMarkerGeometry")),
+            whatsonInternalCreatableType<ContentsMinimapLayoutMetrics>(
+                QStringLiteral("ContentsMinimapLayoutMetrics")),
             whatsonInternalCreatableType<ContentsResourceTagTextGenerator>(
                 QStringLiteral("ContentsResourceTagTextGenerator")),
             whatsonInternalCreatableType<ContentsResourceTagController>(

@@ -94,6 +94,17 @@ Item {
         return textInput.editorItem.positionToRectangle(position);
     }
 
+    function mapEditorPointToItem(target, x, y) {
+        const mappedPoint = textInput.editorItem.mapToItem(
+                    target,
+                    Number(x) || LV.Theme.gapNone,
+                    Number(y) || LV.Theme.gapNone);
+        return {
+            "x": mappedPoint.x,
+            "y": mappedPoint.y
+        };
+    }
+
     function requestViewHook(reason) {
         control.viewHookRequested(reason !== undefined ? String(reason) : "manual");
     }

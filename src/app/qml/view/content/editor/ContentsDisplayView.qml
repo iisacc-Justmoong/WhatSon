@@ -4,6 +4,7 @@ import QtQuick
 import QtQuick.Layouts
 import WhatSon.App.Internal 1.0
 import LVRS 1.0 as LV
+import "../../../contents" as ContentsChrome
 
 Item {
     id: contentsDisplayView
@@ -15,7 +16,7 @@ Item {
     readonly property bool editorTagManagementInputEnabled: true
     property int editorTopInsetOverride: -1
     property int frameHorizontalInsetOverride: -1
-    property color gutterColor: "transparent"
+    property color gutterColor: LV.Theme.panelBackground02
     property int gutterWidthOverride: -1
     property var htmlTokens: editorPresentationProjection.htmlTokens
     property var libraryHierarchyController: null
@@ -106,6 +107,14 @@ Item {
 
     function scheduleStructuredDocumentOpenLayoutRefresh() {
         contentsDisplayView.commitDocumentPresentationRefresh();
+        contentsDisplayView.refreshGutterLineNumberGeometry();
+    }
+
+    function refreshGutterLineNumberGeometry() {
+        Qt.callLater(function () {
+            gutterLineNumberGeometry.refresh();
+            gutterMarkerGeometry.refresh();
+        });
     }
 
     function stringValue(payload, key, fallback) {
@@ -135,11 +144,16 @@ Item {
 
     clip: true
 
-    Component.onCompleted: contentsDisplayView.syncSessionFromCurrentNote()
+    Component.onCompleted: {
+        contentsDisplayView.syncSessionFromCurrentNote();
+        contentsDisplayView.refreshGutterLineNumberGeometry();
+    }
     onCurrentNoteDirectoryPathChanged: contentsDisplayView.syncSessionFromCurrentNote()
     onCurrentNoteIdChanged: contentsDisplayView.syncSessionFromCurrentNote()
     onCurrentRawBodyTextChanged: contentsDisplayView.syncSessionFromCurrentNote()
+    onHeightChanged: contentsDisplayView.refreshGutterLineNumberGeometry()
     onNoteListModelChanged: contentsDisplayView.syncSessionFromCurrentNote()
+    onWidthChanged: contentsDisplayView.refreshGutterLineNumberGeometry()
 
     Connections {
         target: contentsDisplayView.noteListModel
@@ -180,39 +194,164 @@ Item {
         sourceText: editorSession.editorText
     }
 
+    ContentsGutterLayoutMetrics {
+        id: gutterLayoutMetrics
+
+        controlHeightMd: LV.Theme.controlHeightMd
+        controlHeightSm: LV.Theme.controlHeightSm
+        dialogMaxWidth: LV.Theme.dialogMaxWidth
+        gapNone: LV.Theme.gapNone
+        gap2: LV.Theme.gap2
+        gap3: LV.Theme.gap3
+        gap5: LV.Theme.gap5
+        gap7: LV.Theme.gap7
+        gap14: LV.Theme.gap14
+        gap20: LV.Theme.gap20
+        gap24: LV.Theme.gap24
+        gutterWidthOverride: contentsDisplayView.gutterWidthOverride
+        inputWidthMd: LV.Theme.inputWidthMd
+        lineNumberColumnLeftOverride: contentsDisplayView.lineNumberColumnLeftOverride
+        lineNumberColumnTextWidthOverride: contentsDisplayView.lineNumberColumnTextWidthOverride
+        logicalLineCount: editorPresentationProjection.logicalLineCount
+        objectName: "contentsDisplayGutterLayoutMetrics"
+        strokeThin: LV.Theme.strokeThin
+    }
+
+    ContentsGutterLineNumberGeometry {
+        id: gutterLineNumberGeometry
+
+        editorContentHeight: structuredDocumentFlow.editorContentHeight
+        editorGeometryHost: structuredDocumentFlow
+        fallbackLineHeight: LV.Theme.textBodyLineHeight
+        fallbackTopInset: LV.Theme.gap16
+        lineNumberBaseOffset: gutterLayoutMetrics.lineNumberBaseOffset
+        lineNumberCount: gutterLayoutMetrics.effectiveLineNumberCount
+        logicalLineStartOffsets: editorPresentationProjection.logicalLineStartOffsets
+        logicalToSourceOffsets: editorPresentationProjection.sourceText.length >= LV.Theme.gapNone
+                                ? editorPresentationProjection.logicalToSourceOffsets()
+                                : []
+        mapTarget: contentsDisplayGutter
+        objectName: "contentsDisplayGutterLineNumberGeometry"
+        sourceText: editorSession.editorText
+    }
+
+    ContentsGutterMarkerGeometry {
+        id: gutterMarkerGeometry
+
+        cursorPosition: structuredDocumentFlow.editorCursorPosition
+        editorMounted: contentsDisplayView.noteDocumentParseMounted
+        lineNumberBaseOffset: gutterLayoutMetrics.lineNumberBaseOffset
+        lineNumberEntries: gutterLineNumberGeometry.lineNumberEntries
+        markerHeight: LV.Theme.textBodyLineHeight
+        objectName: "contentsDisplayGutterMarkerGeometry"
+        savedSourceText: contentsDisplayView.currentRawBodyText
+        sourceText: editorSession.editorText
+    }
+
+    ContentsMinimapLayoutMetrics {
+        id: minimapLayoutMetrics
+
+        buttonMinWidth: LV.Theme.buttonMinWidth
+        gapNone: LV.Theme.gapNone
+        gap8: LV.Theme.gap8
+        gap12: LV.Theme.gap12
+        gap20: LV.Theme.gap20
+        gap24: LV.Theme.gap24
+        logicalLineCount: editorPresentationProjection.logicalLineCount
+        minimapVisible: contentsDisplayView.minimapVisible
+        objectName: "contentsDisplayMinimapLayoutMetrics"
+        strokeThin: LV.Theme.strokeThin
+    }
+
     Rectangle {
         anchors.fill: parent
         color: contentsDisplayView.displayColor
     }
 
-    ContentsStructuredDocumentFlow {
-        id: structuredDocumentFlow
-
+    LV.HStack {
         anchors.fill: parent
-        editorSurfaceHtml: editorPresentationProjection.editorSurfaceHtml
-        htmlTokens: editorPresentationProjection.htmlTokens
-        normalizedHtmlBlocks: editorPresentationProjection.normalizedHtmlBlocks
-        objectName: "contentsDisplayStructuredDocumentFlow"
-        paperPaletteEnabled: contentsDisplayView.paperPaletteEnabled
-        sourceText: editorSession.editorText
-        textColor: LV.Theme.bodyColor
-        visible: contentsDisplayView.noteDocumentParseMounted
+        objectName: "contentsDisplayEditorChromeHStack"
+        spacing: LV.Theme.gapNone
 
-        onSourceTextEdited: function (text) {
-            contentsDisplayView.commitEditedSourceText(text);
+        ContentsChrome.Gutter {
+            id: contentsDisplayGutter
+
+            Layout.fillHeight: true
+            Layout.preferredWidth: gutterLayoutMetrics.effectiveGutterWidth
+            activeLineNumber: gutterMarkerGeometry.cursorLineNumber
+            gutterColor: contentsDisplayView.gutterColor
+            iconRailX: gutterLayoutMetrics.iconRailX
+            lineNumberBaseOffset: gutterLayoutMetrics.lineNumberBaseOffset
+            lineNumberColumnLeft: gutterLayoutMetrics.lineNumberColumnLeft
+            lineNumberColumnTextWidth: gutterLayoutMetrics.lineNumberColumnTextWidth
+            lineNumberCount: gutterLayoutMetrics.effectiveLineNumberCount
+            lineNumberEntries: gutterLineNumberGeometry.lineNumberEntries
+            markerEntries: gutterMarkerGeometry.markerEntries
+            objectName: "contentsDisplayGutter"
+
+            onViewHookRequested: function (reason) {
+                contentsDisplayView.requestViewHook(reason);
+            }
         }
 
-        onViewHookRequested: {
-            contentsDisplayView.viewHookRequested();
-        }
-    }
+        Item {
+            id: editorDocumentSlot
 
-    Text {
-        anchors.centerIn: parent
-        color: LV.Theme.descriptionColor
-        font.family: LV.Theme.fontBody
-        font.pixelSize: LV.Theme.textBody
-        text: "No document opened"
-        visible: !contentsDisplayView.noteDocumentParseMounted
+            Layout.fillHeight: true
+            Layout.fillWidth: true
+            clip: true
+            objectName: "contentsDisplayEditorDocumentSlot"
+
+            onHeightChanged: contentsDisplayView.refreshGutterLineNumberGeometry()
+            onWidthChanged: contentsDisplayView.refreshGutterLineNumberGeometry()
+
+            ContentsStructuredDocumentFlow {
+                id: structuredDocumentFlow
+
+                anchors.fill: parent
+                editorSurfaceHtml: editorPresentationProjection.editorSurfaceHtml
+                htmlTokens: editorPresentationProjection.htmlTokens
+                normalizedHtmlBlocks: editorPresentationProjection.normalizedHtmlBlocks
+                objectName: "contentsDisplayStructuredDocumentFlow"
+                paperPaletteEnabled: contentsDisplayView.paperPaletteEnabled
+                sourceText: editorSession.editorText
+                textColor: LV.Theme.bodyColor
+                visible: contentsDisplayView.noteDocumentParseMounted
+
+                onEditorContentHeightChanged: contentsDisplayView.refreshGutterLineNumberGeometry()
+
+                onSourceTextEdited: function (text) {
+                    contentsDisplayView.commitEditedSourceText(text);
+                }
+
+                onViewHookRequested: {
+                    contentsDisplayView.viewHookRequested();
+                }
+            }
+
+            Text {
+                anchors.centerIn: parent
+                color: LV.Theme.descriptionColor
+                font.family: LV.Theme.fontBody
+                font.pixelSize: LV.Theme.textBody
+                text: "No document opened"
+                visible: !contentsDisplayView.noteDocumentParseMounted
+            }
+        }
+
+        ContentsChrome.Minimap {
+            id: contentsDisplayMinimap
+
+            Layout.fillHeight: true
+            Layout.preferredWidth: minimapLayoutMetrics.effectiveMinimapWidth
+            lineColor: LV.Theme.captionColor
+            objectName: "contentsDisplayMinimap"
+            rowCount: minimapLayoutMetrics.effectiveRowCount
+            visible: contentsDisplayView.minimapVisible
+
+            onViewHookRequested: function (reason) {
+                contentsDisplayView.requestViewHook(reason);
+            }
+        }
     }
 }

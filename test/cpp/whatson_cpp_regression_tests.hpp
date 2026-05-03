@@ -5,6 +5,10 @@
 #include "app/models/editor/format/ContentsInlineStyleOverlayRenderer.hpp"
 #include "app/models/editor/format/ContentsPlainTextSourceMutator.hpp"
 #include "app/models/editor/format/ContentsTextFormatRenderer.hpp"
+#include "app/models/editor/gutter/ContentsGutterLayoutMetrics.hpp"
+#include "app/models/editor/gutter/ContentsGutterLineNumberGeometry.hpp"
+#include "app/models/editor/gutter/ContentsGutterMarkerGeometry.hpp"
+#include "app/models/editor/minimap/ContentsMinimapLayoutMetrics.hpp"
 #include "app/models/editor/projection/ContentsEditorPresentationProjection.hpp"
 #include "app/models/display/paper/print/ContentsPagePrintLayoutRenderer.hpp"
 #include "app/models/file/hub/WhatSonHubMountValidator.hpp"
@@ -1018,6 +1022,11 @@ private slots:
     void qmlInlineSelectionHelpers_bindOwnersAfterControllerFileDeletion();
     void qmlStructuredEditors_consumeRendererNormalizedBlocksWithoutLocalFlattening();
     void qmlStructuredEditors_refreshesGutterLayoutOnEditorOpen();
+    void qmlStructuredEditors_mountsGutterEditorAndMinimapInDisplayLayout();
+    void contentsGutterLayoutMetrics_resolvesRuntimeAndDesignMetrics();
+    void contentsGutterLineNumberGeometry_projectsFallbackLineYEntries();
+    void contentsGutterMarkerGeometry_marksCursorAndUnsavedLineSpans();
+    void contentsMinimapLayoutMetrics_resolvesRuntimeVisibilityAndDesignRows();
     void qmlStructuredEditors_rejectStaleSourceRangeMutations();
     void qmlStructuredEditors_preserveNativeMobileInputDuringFocusedEdits();
     void qmlStructuredEditors_commitsPlainTextBlocksDirectlyToRawSource();

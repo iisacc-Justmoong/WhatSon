@@ -12,6 +12,8 @@ Hosts the note document surface after `ContentsDisplayView.qml` has mounted a se
 - Mounts `ContentsInlineFormatEditor.qml` as the live `LV.TextEditor` path.
 - Emits `sourceTextEdited(text)` upward when the user changes the RAW text buffer.
 - Exposes `normalizedBlocks()` as a compatibility hook for callers that need the renderer-owned block stream.
+- Exposes `editorContentHeight`, `editorCursorPosition`, `lineStartRectangle(position)`, and `mapEditorPointToItem(...)` so the gutter
+  geometry model can align line numbers to the live editor layout without moving calculation policy into QML.
 
 ## Pipeline Position
 

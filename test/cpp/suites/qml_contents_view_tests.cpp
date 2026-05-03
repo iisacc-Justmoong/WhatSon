@@ -13,6 +13,7 @@ void WhatSonCppRegressionTests::qmlContentsView_composesFigmaFrameFromLvrsParts(
     QVERIFY(!editorViewSource.isEmpty());
     QVERIFY(!minimapSource.isEmpty());
     QVERIFY(contentsViewSource.contains(QStringLiteral("import LVRS 1.0 as LV")));
+    QVERIFY(contentsViewSource.contains(QStringLiteral("import WhatSon.App.Internal 1.0")));
     QVERIFY(gutterSource.contains(QStringLiteral("import LVRS 1.0 as LV")));
     QVERIFY(editorViewSource.contains(QStringLiteral("import LVRS 1.0 as LV")));
     QVERIFY(minimapSource.contains(QStringLiteral("import LVRS 1.0 as LV")));
@@ -36,17 +37,31 @@ void WhatSonCppRegressionTests::qmlContentsView_composesFigmaFrameFromLvrsParts(
     QVERIFY(gutterSource.contains(QStringLiteral("objectName: \"figma-155-5345-Gutter\"")));
     QVERIFY(editorViewSource.contains(QStringLiteral("objectName: \"figma-155-5352-EditorView\"")));
     QVERIFY(minimapSource.contains(QStringLiteral("objectName: \"figma-352-8626-Minimap\"")));
-    QVERIFY(contentsViewSource.contains(
-        QStringLiteral("Layout.preferredWidth: LV.Theme.gap24 + LV.Theme.gap24 + LV.Theme.gap24 + LV.Theme.gap2")));
-    QVERIFY(contentsViewSource.contains(QStringLiteral("Layout.preferredWidth: LV.Theme.buttonMinWidth")));
+    QVERIFY(contentsViewSource.contains(QStringLiteral("ContentsGutterLayoutMetrics {")));
+    QVERIFY(contentsViewSource.contains(QStringLiteral("ContentsGutterLineNumberGeometry {")));
+    QVERIFY(contentsViewSource.contains(QStringLiteral("ContentsGutterMarkerGeometry {")));
+    QVERIFY(contentsViewSource.contains(QStringLiteral("ContentsMinimapLayoutMetrics {")));
+    QVERIFY(gutterSource.contains(QStringLiteral("property int lineNumberColumnLeft")));
+    QVERIFY(gutterSource.contains(QStringLiteral("property int lineNumberColumnTextWidth")));
+    QVERIFY(gutterSource.contains(QStringLiteral("property var lineNumberEntries")));
+    QVERIFY(gutterSource.contains(QStringLiteral("width: gutter.lineNumberColumnTextWidth")));
+    QVERIFY(gutterSource.contains(QStringLiteral("x: gutter.lineNumberColumnLeft")));
+    QVERIFY(gutterSource.contains(QStringLiteral("model: gutter.lineNumberEntries")));
+    QVERIFY(gutterSource.contains(QStringLiteral("y: Number(modelData.y)")));
+    QVERIFY(!gutterSource.contains(QStringLiteral("Column {")));
+    QVERIFY(gutterSource.contains(QStringLiteral("property var markerEntries")));
+    QVERIFY(gutterSource.contains(QStringLiteral("model: gutter.markerEntries")));
+    QVERIFY(gutterSource.contains(QStringLiteral("markerType === \"cursor\"")));
+    QVERIFY(gutterSource.contains(QStringLiteral("gutter.unsavedMarkerColor")));
+    QVERIFY(contentsViewSource.contains(QStringLiteral("Layout.preferredWidth: gutterLayoutMetrics.defaultGutterWidth")));
+    QVERIFY(contentsViewSource.contains(QStringLiteral("Layout.preferredWidth: minimapLayoutMetrics.defaultMinimapWidth")));
     QVERIFY(contentsViewSource.contains(
         QStringLiteral("property int minimapRowCount: defaultMinimapRowCount")));
     QVERIFY(contentsViewSource.contains(QStringLiteral("property color surfaceColor: LV.Theme.panelBackground02")));
-    QVERIFY(gutterSource.contains(QStringLiteral("property color changedMarkerColor: LV.Theme.warning")));
-    QVERIFY(gutterSource.contains(QStringLiteral("property color conflictMarkerColor: LV.Theme.success")));
+    QVERIFY(gutterSource.contains(QStringLiteral("property color cursorMarkerColor: LV.Theme.accentBlue")));
+    QVERIFY(gutterSource.contains(QStringLiteral("property color unsavedMarkerColor: LV.Theme.warning")));
     QVERIFY(editorViewSource.contains(QStringLiteral("selectionColor: LV.Theme.primaryOverlay")));
-    QVERIFY(minimapSource.contains(
-        QStringLiteral("property int rowCount: LV.Theme.gap24 + LV.Theme.gap20 + LV.Theme.gap12 + LV.Theme.gap8")));
+    QVERIFY(minimapSource.contains(QStringLiteral("property int rowCount: LV.Theme.strokeThin")));
     const QList<QString> qmlSources = {
         contentsViewSource,
         gutterSource,

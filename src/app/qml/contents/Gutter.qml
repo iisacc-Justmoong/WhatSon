@@ -6,13 +6,20 @@ import LVRS 1.0 as LV
 Rectangle {
     id: gutter
 
-    property int activeLineNumber: LV.Theme.controlHeightMd - LV.Theme.gap5
-    property color changedMarkerColor: LV.Theme.warning
-    property color conflictMarkerColor: LV.Theme.success
+    property int activeLineNumber: LV.Theme.gapNone
+    property color cursorMarkerColor: LV.Theme.accentBlue
     property color gutterColor: LV.Theme.panelBackground02
+    property int iconRailX: LV.Theme.gap20
     property color lineNumberActiveColor: LV.Theme.captionColor
+    property int lineNumberBaseOffset: LV.Theme.strokeThin
     property color lineNumberColor: LV.Theme.disabledColor
-    property int lineNumberCount: LV.Theme.controlHeightMd + LV.Theme.gap7
+    property int lineNumberCount: LV.Theme.strokeThin
+    property int lineNumberColumnLeft: LV.Theme.gap14
+    property int lineNumberColumnTextWidth: LV.Theme.controlHeightSm
+    property var lineNumberEntries: []
+    property int markerFallbackHeight: LV.Theme.textBodyLineHeight
+    property var markerEntries: []
+    property color unsavedMarkerColor: LV.Theme.warning
 
     signal viewHookRequested(string reason)
 
@@ -34,21 +41,21 @@ Rectangle {
         anchors.top: parent.top
         width: LV.Theme.gap10
 
-        Rectangle {
-            color: gutter.changedMarkerColor
-            height: LV.Theme.gap20 + LV.Theme.gap20
-            radius: LV.Theme.radiusXs
-            width: LV.Theme.gap4
-            x: LV.Theme.gap2
-            y: LV.Theme.inputWidthMd + LV.Theme.controlHeightMd + LV.Theme.gap5
-        }
-        Rectangle {
-            color: gutter.conflictMarkerColor
-            height: LV.Theme.gap24 + LV.Theme.gap24 + LV.Theme.gap24 + LV.Theme.gap24 + LV.Theme.gap24
-            radius: LV.Theme.radiusXs
-            width: LV.Theme.gap4
-            x: LV.Theme.gap2
-            y: LV.Theme.dialogMaxWidth + LV.Theme.gap20 + LV.Theme.gap3
+        Repeater {
+            model: gutter.markerEntries
+
+            Rectangle {
+                required property var modelData
+
+                readonly property string markerType: String(modelData.type || "")
+
+                color: markerType === "cursor" ? gutter.cursorMarkerColor : gutter.unsavedMarkerColor
+                height: Math.max(LV.Theme.strokeThin, Number(modelData.height) || gutter.markerFallbackHeight)
+                radius: LV.Theme.radiusXs
+                width: LV.Theme.gap4
+                x: LV.Theme.gap2
+                y: Number(modelData.y) || LV.Theme.gapNone
+            }
         }
     }
     Item {
@@ -57,24 +64,24 @@ Rectangle {
         anchors.bottom: parent.bottom
         anchors.top: parent.top
         width: LV.Theme.controlIndicatorSize
-        x: LV.Theme.gap20 + LV.Theme.gap20
+        x: gutter.iconRailX
     }
-    Column {
-        id: lineNumberColumn
+    Item {
+        id: lineNumberLayer
 
         clip: true
-        spacing: LV.Theme.gapNone
-        width: LV.Theme.controlHeightSm
-        x: LV.Theme.gap14
-        y: LV.Theme.gap3
+        anchors.bottom: parent.bottom
+        anchors.top: parent.top
+        width: gutter.lineNumberColumnTextWidth
+        x: gutter.lineNumberColumnLeft
 
         Repeater {
-            model: gutter.lineNumberCount
+            model: gutter.lineNumberEntries
 
             Text {
-                required property int index
+                required property var modelData
 
-                readonly property int lineNumber: index + Math.round(LV.Theme.strokeThin)
+                readonly property int lineNumber: Number(modelData.lineNumber) || gutter.lineNumberBaseOffset
 
                 color: lineNumber === gutter.activeLineNumber ? gutter.lineNumberActiveColor : gutter.lineNumberColor
                 elide: Text.ElideNone
@@ -85,7 +92,8 @@ Rectangle {
                 horizontalAlignment: Text.AlignRight
                 text: String(lineNumber)
                 verticalAlignment: Text.AlignTop
-                width: lineNumberColumn.width
+                width: lineNumberLayer.width
+                y: Number(modelData.y) || LV.Theme.gapNone
             }
         }
     }

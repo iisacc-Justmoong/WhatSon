@@ -7,7 +7,7 @@ Item {
     id: minimap
 
     property color lineColor: LV.Theme.captionColor
-    property int rowCount: LV.Theme.gap24 + LV.Theme.gap20 + LV.Theme.gap12 + LV.Theme.gap8
+    property int rowCount: LV.Theme.strokeThin
 
     signal viewHookRequested(string reason)
 

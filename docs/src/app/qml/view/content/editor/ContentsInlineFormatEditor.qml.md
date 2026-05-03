@@ -16,6 +16,8 @@ Wraps the live `LV.TextEditor` used by the note document surface.
   runtime builds consume that chord inside the native text item before parent `Keys` handlers can see it.
 - `ContentsInlineFormatEditorController` is mounted as the C++/QML helper bridge for focus, selection snapshots, native
   composition checks, and programmatic text-sync policy against `LV.TextEditor.editorItem`.
+- Exposes `positionToRectangle(position)` and `mapEditorPointToItem(...)` as narrow geometry hooks for the C++ gutter
+  line-number model; these hooks report native editor layout but do not calculate gutter policy in QML.
 - Ordinary navigation, selection, Backspace/Delete repeat, paste fallback, and IME/preedit behavior remain with Qt's
   native text-editing path exposed by `LV.TextEditor`.
 
