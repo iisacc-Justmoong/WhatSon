@@ -7,7 +7,13 @@
 #include <QRegularExpression>
 #include <QStringList>
 #include <QVariantMap>
+
+#include <iiHtmlBlock.h>
+#include <iiXml.h>
+
 #include <algorithm>
+#include <string_view>
+#include <vector>
 
 namespace
 {
@@ -27,6 +33,11 @@ namespace
     QString editorBlankParagraphHtml()
     {
         return editorDocumentParagraphHtml(QStringLiteral("&nbsp;"));
+    }
+
+    QString QStringFromStdString(const std::string& value)
+    {
+        return QString::fromUtf8(value.data(), static_cast<qsizetype>(value.size()));
     }
 
     bool htmlFragmentOwnsBlockFlow(const QString& htmlFragment)
@@ -258,6 +269,103 @@ namespace
             token.value(QStringLiteral("html")).toString());
         return normalizedBlock;
     }
+
+    QString htmlBlockProjectionForToken(const QVariantMap& token)
+    {
+        const QString renderDelegateType = token.value(QStringLiteral("renderDelegateType")).toString();
+        if (renderDelegateType == QStringLiteral("resource"))
+        {
+            return editorBlankParagraphHtml();
+        }
+        if (renderDelegateType == QStringLiteral("break"))
+        {
+            return QStringLiteral("<hr/>");
+        }
+
+        const QString html = token.value(QStringLiteral("html")).toString();
+        if (token.value(QStringLiteral("ownsBlockFlow")).toBool())
+        {
+            return html;
+        }
+        return html.isEmpty() ? editorBlankParagraphHtml() : editorDocumentParagraphHtml(html);
+    }
+
+    struct IiHtmlBlockProjection final
+    {
+        std::vector<iiHtmlBlock::DivideBlock::ElementInfo> blocks;
+        QString error;
+        QString html;
+        bool parsed = false;
+    };
+
+    IiHtmlBlockProjection buildIiHtmlBlockProjection(const QVariantList& tokens)
+    {
+        IiHtmlBlockProjection projection;
+        if (tokens.isEmpty())
+        {
+            projection.parsed = true;
+            return projection;
+        }
+
+        QString xmlProjection = QStringLiteral("<whatsonhtmlblocks>");
+        for (const QVariant& tokenValue : tokens)
+        {
+            xmlProjection += htmlBlockProjectionForToken(tokenValue.toMap());
+        }
+        xmlProjection += QStringLiteral("</whatsonhtmlblocks>");
+
+        const QByteArray xmlBytes = xmlProjection.toUtf8();
+        const iiXml::Parser::TagParser xmlParser;
+        const iiXml::Parser::TagDocumentResult parsedXml =
+            xmlParser.ParseAllDocumentResult(
+                std::string_view(xmlBytes.constData(), static_cast<std::size_t>(xmlBytes.size())));
+        if (parsedXml.Status != iiXml::Parser::TagTreeParseStatus::Parsed || !parsedXml.Document.has_value())
+        {
+            projection.error = QString::fromStdString(parsedXml.Diagnostic.Reason);
+            return projection;
+        }
+
+        iiHtmlBlock::iiXmlToHTML xmlToHtml;
+        if (!xmlToHtml.Convert(xmlProjection))
+        {
+            projection.error = QStringFromStdString(xmlToHtml.GetError());
+            return projection;
+        }
+
+        projection.html = QStringFromStdString(xmlToHtml.GetHTMLText());
+        iiHtmlBlock::DivideBlock divider;
+        if (!divider.Parse(projection.html))
+        {
+            projection.error = QStringFromStdString(divider.GetError());
+            return projection;
+        }
+
+        projection.blocks = divider.GetBlockElements();
+        projection.parsed = true;
+        return projection;
+    }
+
+    void applyIiHtmlBlockMetadata(
+        QVariantMap* payload,
+        const iiHtmlBlock::DivideBlock::ElementInfo& block)
+    {
+        if (payload == nullptr)
+        {
+            return;
+        }
+
+        payload->insert(QStringLiteral("htmlBlockObjectSource"), QStringLiteral("iiHtmlBlock"));
+        payload->insert(QStringLiteral("htmlBlockTagName"), QStringFromStdString(block.tag_name));
+        payload->insert(QStringLiteral("htmlBlockRaw"), QStringFromStdString(block.raw));
+        payload->insert(QStringLiteral("htmlBlockValue"), QStringFromStdString(block.value));
+        payload->insert(QStringLiteral("htmlBlockRawBegin"), static_cast<qlonglong>(block.raw_begin));
+        payload->insert(QStringLiteral("htmlBlockRawEnd"), static_cast<qlonglong>(block.raw_end));
+        payload->insert(QStringLiteral("htmlBlockValueBegin"), static_cast<qlonglong>(block.value_begin));
+        payload->insert(QStringLiteral("htmlBlockValueEnd"), static_cast<qlonglong>(block.value_end));
+        payload->insert(QStringLiteral("htmlBlockDisplayOverride"), block.has_display_override);
+        payload->insert(QStringLiteral("htmlBlockDisplayValue"), QStringFromStdString(block.display_value));
+        payload->insert(QStringLiteral("htmlBlockIsDisplayBlock"), block.is_block);
+    }
 } // namespace
 
 ContentsHtmlBlockRenderPipeline::ContentsHtmlBlockRenderPipeline() = default;
@@ -290,6 +398,8 @@ ContentsHtmlBlockRenderPipeline::RenderResult ContentsHtmlBlockRenderPipeline::r
 
     QStringList documentFragments;
     documentFragments.reserve(parseResult.renderedDocumentBlocks.size());
+    QVariantList tokens;
+    tokens.reserve(parseResult.renderedDocumentBlocks.size());
 
     int tokenIndex = 0;
     for (int blockIndex = 0; blockIndex < parseResult.renderedDocumentBlocks.size(); ++blockIndex)
@@ -301,12 +411,29 @@ ContentsHtmlBlockRenderPipeline::RenderResult ContentsHtmlBlockRenderPipeline::r
         }
 
         const QVariantMap token = buildHtmlToken(block, blockIndex, tokenIndex);
-        result.htmlTokens.push_back(token);
-        result.normalizedHtmlBlocks.push_back(buildNormalizedHtmlBlock(token));
+        tokens.push_back(token);
         documentFragments.push_back(token.value(QStringLiteral("html")).toString());
         result.htmlOverlayVisible =
             result.htmlOverlayVisible || token.value(QStringLiteral("overlayVisible")).toBool();
         ++tokenIndex;
+    }
+
+    const IiHtmlBlockProjection htmlBlockProjection = buildIiHtmlBlockProjection(tokens);
+    for (int index = 0; index < tokens.size(); ++index)
+    {
+        QVariantMap token = tokens.at(index).toMap();
+        if (htmlBlockProjection.parsed && index < static_cast<int>(htmlBlockProjection.blocks.size()))
+        {
+            applyIiHtmlBlockMetadata(&token, htmlBlockProjection.blocks.at(static_cast<std::size_t>(index)));
+        }
+        else if (!htmlBlockProjection.error.isEmpty())
+        {
+            token.insert(QStringLiteral("htmlBlockObjectSource"), QStringLiteral("iiHtmlBlock"));
+            token.insert(QStringLiteral("htmlBlockParseError"), htmlBlockProjection.error);
+        }
+
+        result.htmlTokens.push_back(token);
+        result.normalizedHtmlBlocks.push_back(buildNormalizedHtmlBlock(token));
     }
 
     result.documentHtml = joinHtmlDocumentFragments(documentFragments);

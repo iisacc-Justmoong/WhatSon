@@ -9,7 +9,8 @@ This pipeline sits after `ContentsWsnBodyBlockParser` and before the final RichT
 1. parse canonical RAW `.wsnbody` source into ordered document blocks
 2. convert those parser-owned blocks into editor HTML tokens
 3. resolve one render delegate / HTML fragment per token
-4. normalize the token stream into stable HTML blocks plus one joined editor document HTML payload
+4. validate the token XML projection with iiXml and divide its HTML projection into iiHtmlBlock display-block objects
+5. normalize that block-object stream into stable HTML blocks plus one joined editor document HTML payload
 
 ## Public Contract
 - `RenderResult.correctedSourceText`
@@ -20,7 +21,7 @@ This pipeline sits after `ContentsWsnBodyBlockParser` and before the final RichT
 - `RenderResult.htmlTokens`
   Block-granular HTML token stream derived from the parser result.
 - `RenderResult.normalizedHtmlBlocks`
-  Stable HTML block payloads with block/token indices for downstream renderers.
+  Stable HTML block payloads with block/token indices and iiHtmlBlock object metadata for downstream renderers.
 - `RenderResult.htmlOverlayVisible`
   Tells QML whether the current source should paint the styled HTML overlay instead of showing only the plain input
   text.

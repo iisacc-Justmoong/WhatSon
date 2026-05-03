@@ -45,6 +45,10 @@ set(WHATSON_CPP_REGRESSION_TEST_SOURCES
         "${CMAKE_SOURCE_DIR}/src/app/models/editor/format/ContentsTextFormatRendererMarkdown.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/display/paper/print/ContentsPagePrintLayoutRenderer.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/editor/format/ContentsTextHighlightRenderer.cpp"
+        "${CMAKE_SOURCE_DIR}/src/app/models/editor/projection/ContentsEditorPresentationProjection.cpp"
+        "${CMAKE_SOURCE_DIR}/src/app/models/editor/resource/ContentsEditorDynamicObjectSupport.cpp"
+        "${CMAKE_SOURCE_DIR}/src/app/models/editor/input/ContentsQmlBackedInputControllerBase.cpp"
+        "${CMAKE_SOURCE_DIR}/src/app/models/editor/input/ContentsRemainingInputControllers.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/file/import/WhatSonClipboardResourceImportFileNamePolicy.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/file/IO/WhatSonSystemIoGateway.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/file/diff/WhatSonLocalNoteVersionStore.cpp"
@@ -139,6 +143,8 @@ target_link_libraries(whatson_cpp_regression_tests PRIVATE
         Qt6::Test
         Qt6::Qml
         Qt6::Quick
+        iiXml::iiXml
+        iiHtmlBlock::iiHtmlBlock
 )
 
 add_test(

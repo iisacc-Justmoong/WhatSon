@@ -4,12 +4,15 @@
 Implements one-pass top-level `.wsnbody` parsing for the structured editor renderer path.
 
 ## Key Behavior
-- Recognizes supported document blocks from RAW source in one scan:
+- Recognizes supported document blocks from RAW source through `iiXml::Parser::TagParser` when the current source forms
+  a parseable XML-tag projection:
   - semantic text blocks such as `paragraph`, `p`, `title`, `subTitle`, `eventTitle`, `eventDescription`
   - `resource`
   - `agenda`
   - `callout`
   - `break`
+- The iiXml tree is now the preferred source for explicit block spans. The legacy token scan remains only for transient
+  malformed edit states such as an open block whose close tag has not been typed yet.
 - Collects those blocks into one ordered `renderedDocumentBlocks` list by source position, then fills plain-text gaps
   between explicit blocks as paragraph-like prose blocks instead of one monolithic gap fragment.
 - Plain prose that is not already wrapped in an explicit semantic block is now split on logical source newlines.

@@ -72,6 +72,24 @@ if (LVRS_PREFIX)
     list(APPEND CMAKE_PREFIX_PATH "${LVRS_PREFIX}")
 endif ()
 
+set(WHATSON_LOCAL_LIBRARY_ROOT "$ENV{HOME}/.local" CACHE PATH
+        "Root directory for user-built local libraries and frameworks.")
+
+if (NOT IIXML_PREFIX AND EXISTS "${WHATSON_LOCAL_LIBRARY_ROOT}/iiXml")
+    set(IIXML_PREFIX "${WHATSON_LOCAL_LIBRARY_ROOT}/iiXml" CACHE PATH "Path to iiXml root prefix")
+endif ()
+if (IIXML_PREFIX)
+    list(APPEND CMAKE_PREFIX_PATH "${IIXML_PREFIX}")
+endif ()
+
+if (NOT IIHTMLBLOCK_PREFIX AND EXISTS "${WHATSON_LOCAL_LIBRARY_ROOT}/iiHtmlBlock")
+    set(IIHTMLBLOCK_PREFIX "${WHATSON_LOCAL_LIBRARY_ROOT}/iiHtmlBlock" CACHE PATH
+            "Path to iiHtmlBlock root prefix")
+endif ()
+if (IIHTMLBLOCK_PREFIX)
+    list(APPEND CMAKE_PREFIX_PATH "${IIHTMLBLOCK_PREFIX}")
+endif ()
+
 if (APPLE)
     # Common Qt installation paths on macOS
     if (NOT QT_ROOT_PATH)
@@ -208,6 +226,14 @@ set(WHATSON_ENABLE_IOS_XCODEPROJ_ON_BUILD "${_WHATSON_ENABLE_IOS_XCODEPROJ_DEFAU
 find_package(Qt6 6.5 REQUIRED COMPONENTS Core)
 qt_standard_project_setup(REQUIRES 6.5)
 
+if (WHATSON_BUILD_APP OR BUILD_TESTING)
+    find_package(iiXml 0.1.0 CONFIG REQUIRED)
+    find_package(iiHtmlBlock 0.1.0 CONFIG REQUIRED)
+endif ()
+if (CMAKE_PREFIX_PATH)
+    list(REMOVE_DUPLICATES CMAKE_PREFIX_PATH)
+endif ()
+
 message(STATUS "WhatSon configuration")
 message(STATUS "  WHATSON_BUILD_APP: ${WHATSON_BUILD_APP}")
 message(STATUS "  WHATSON_BUILD_DAEMON: ${WHATSON_BUILD_DAEMON}")
@@ -225,6 +251,8 @@ message(STATUS "  WHATSON_IOS_QT_PERMISSION_PLUGIN_POLICY: ${WHATSON_IOS_QT_PERM
 message(STATUS "  CMAKE_PREFIX_PATH: ${CMAKE_PREFIX_PATH}")
 message(STATUS "  QT_ROOT_PATH: ${QT_ROOT_PATH}")
 message(STATUS "  LVRS_PREFIX: ${LVRS_PREFIX}")
+message(STATUS "  IIXML_PREFIX: ${IIXML_PREFIX}")
+message(STATUS "  IIHTMLBLOCK_PREFIX: ${IIHTMLBLOCK_PREFIX}")
 
 if (WHATSON_BUILD_APP)
     add_subdirectory(src/app)

@@ -5,6 +5,7 @@
 #include "app/models/editor/format/ContentsInlineStyleOverlayRenderer.hpp"
 #include "app/models/editor/format/ContentsPlainTextSourceMutator.hpp"
 #include "app/models/editor/format/ContentsTextFormatRenderer.hpp"
+#include "app/models/editor/projection/ContentsEditorPresentationProjection.hpp"
 #include "app/models/display/paper/print/ContentsPagePrintLayoutRenderer.hpp"
 #include "app/models/file/hub/WhatSonHubMountValidator.hpp"
 #include "app/models/file/hub/WhatSonHubPathUtils.hpp"
@@ -932,6 +933,8 @@ private slots:
     void foregroundServiceGate_startsSchedulerAndPermissionsAfterVisibleWorkspace();
     void startupRuntimeLoad_usesLvrsAfterFirstIdleLifecycleTask();
     void runtimeParallelLoader_usesLvrsBootstrapParallelForDomainLoads();
+    void cmakeDependencyWiring_declaresLocalXmlAndHtmlBlockPackages();
+    void debugTraceFilter_suppressesIiXmlDebugSpamByDefault();
     void sidebarSelectionStore_normalizesIndicesAndSuppressesDuplicateSignals();
     void hierarchyControllerProvider_normalizesMappingsAndAvoidsDuplicateSignals();
     void architecturePolicyLock_blocksMutableWiringAfterLock();
@@ -1044,6 +1047,7 @@ private slots:
     void plainTextSourceMutator_wrapsCommittedUrlsIntoCanonicalWebLinks();
     void inlineStyleOverlayRenderer_republishesHtmlOverlayVisibility();
     void textFormatRenderer_appliesPaperPaletteToEditorAndPreviewHtml();
+    void editorPresentationProjection_publishesHtmlBlockPipelineToQmlHost();
     void textFormatRenderer_preservesMarkdownUnorderedListMarkersWithoutRegexWarnings();
     void editorInlineStyleMutationSupport_buildsDirectRawSelectionWrapMutations();
     void displayPaperModels_hostPageAndPrintViewModeObjectsUnderModelsDirectory();
@@ -1051,6 +1055,9 @@ private slots:
     void noteBodyPersistence_stripsRenderedHtmlBlockArtifactsFromSourceProjection();
     void noteBodyPersistence_preservesEmptyParagraphCursorLineAfterResource();
     void noteBodyPersistence_preservesEmptyParagraphBoundariesAroundResources();
+    void noteHeaderParser_usesIiXmlDocumentTreeForWsnHead();
+    void localNoteFileStore_usesIiXmlDocumentTreeForWsnBodyRead();
+    void editorRendererPipeline_routesIiXmlTreeThroughIiHtmlBlockObjects();
     void logicalTextBridge_advancesCursorPastClosingWebLinkTag();
     void qmlStructuredEditors_bindPaperPaletteIntoPagePrintMode();
     void qmlStructuredEditors_clipInlineResourceCardsToMeasuredBlockBounds();

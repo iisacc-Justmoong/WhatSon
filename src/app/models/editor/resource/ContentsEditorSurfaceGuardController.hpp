@@ -8,6 +8,7 @@ class ContentsEditorSurfaceGuardController : public QObject
 
     Q_PROPERTY(QObject* contentEditor MEMBER m_contentEditor)
     Q_PROPERTY(QObject* editorProjection MEMBER m_editorProjection)
+    Q_PROPERTY(QObject* editorInputPolicyAdapter MEMBER m_editorInputPolicyAdapter)
     Q_PROPERTY(
         bool
             resourceDropEditorSurfaceGuardActive READ resourceDropEditorSurfaceGuardActive
@@ -43,6 +44,7 @@ private:
 
     QObject* m_contentEditor = nullptr;
     QObject* m_editorProjection = nullptr;
+    QObject* m_editorInputPolicyAdapter = nullptr;
     bool m_resourceDropEditorSurfaceGuardActive = false;
     int m_resourceDropEditorSurfaceGuardToken = 0;
     bool m_pendingEditorSurfaceRestore = false;

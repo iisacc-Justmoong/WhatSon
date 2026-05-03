@@ -180,6 +180,45 @@ namespace
             QQmlEngine::setObjectOwnership(object, QQmlEngine::CppOwnership);
         }
     }
+
+    QMetaObject::Connection connectIfSignalExists(
+        QObject* sender,
+        const char* signalSignature,
+        QObject* receiver,
+        const char* slotSignature)
+    {
+        if (sender == nullptr || receiver == nullptr || signalSignature == nullptr || slotSignature == nullptr)
+        {
+            return {};
+        }
+
+        const QMetaObject* senderMetaObject = sender->metaObject();
+        const QMetaObject* receiverMetaObject = receiver->metaObject();
+        if (senderMetaObject == nullptr || receiverMetaObject == nullptr)
+        {
+            return {};
+        }
+
+        const QByteArray normalizedSignalSignature = QMetaObject::normalizedSignature(signalSignature);
+        const QByteArray normalizedSlotSignature = QMetaObject::normalizedSignature(slotSignature);
+        const int signalIndex = senderMetaObject->indexOfSignal(normalizedSignalSignature.constData());
+        const int slotIndex = receiverMetaObject->indexOfSlot(normalizedSlotSignature.constData());
+        if (signalIndex < 0 || slotIndex < 0)
+        {
+            return {};
+        }
+
+        QByteArray encodedSignalSignature("2");
+        encodedSignalSignature.append(normalizedSignalSignature);
+        QByteArray encodedSlotSignature("1");
+        encodedSlotSignature.append(normalizedSlotSignature);
+        return QObject::connect(
+            sender,
+            encodedSignalSignature.constData(),
+            receiver,
+            encodedSlotSignature.constData(),
+            Qt::UniqueConnection);
+    }
 }
 
 ContentsEditorSelectionBridge::ContentsEditorSelectionBridge(QObject* parent)
@@ -262,36 +301,36 @@ void ContentsEditorSelectionBridge::setNoteListModel(QObject* model)
             &QObject::destroyed,
             this,
             &ContentsEditorSelectionBridge::handleNoteListDestroyed);
-        m_currentIndexChangedConnection = connect(
+        m_currentIndexChangedConnection = connectIfSignalExists(
             m_noteListModel,
-            SIGNAL(currentIndexChanged()),
+            "currentIndexChanged()",
             this,
-            SLOT(handleNoteListSelectionChanged()));
-        m_currentNoteIdChangedConnection = connect(
+            "handleNoteListSelectionChanged()");
+        m_currentNoteIdChangedConnection = connectIfSignalExists(
             m_noteListModel,
-            SIGNAL(currentNoteIdChanged()),
+            "currentNoteIdChanged()",
             this,
-            SLOT(handleNoteListSelectionChanged()));
-        m_currentNoteDirectoryPathChangedConnection = connect(
+            "handleNoteListSelectionChanged()");
+        m_currentNoteDirectoryPathChangedConnection = connectIfSignalExists(
             m_noteListModel,
-            SIGNAL(currentNoteDirectoryPathChanged()),
+            "currentNoteDirectoryPathChanged()",
             this,
-            SLOT(handleNoteListSelectionChanged()));
-        m_currentBodyTextChangedConnection = connect(
+            "handleNoteListSelectionChanged()");
+        m_currentBodyTextChangedConnection = connectIfSignalExists(
             m_noteListModel,
-            SIGNAL(currentBodyTextChanged()),
+            "currentBodyTextChanged()",
             this,
-            SLOT(handleNoteListBodyTextChanged()));
-        m_currentNoteEntryChangedConnection = connect(
+            "handleNoteListBodyTextChanged()");
+        m_currentNoteEntryChangedConnection = connectIfSignalExists(
             m_noteListModel,
-            SIGNAL(currentNoteEntryChanged()),
+            "currentNoteEntryChanged()",
             this,
-            SLOT(handleNoteListEntrySelectionChanged()));
-        m_itemCountChangedConnection = connect(
+            "handleNoteListEntrySelectionChanged()");
+        m_itemCountChangedConnection = connectIfSignalExists(
             m_noteListModel,
-            SIGNAL(itemCountChanged(int)),
+            "itemCountChanged(int)",
             this,
-            SLOT(handleNoteListCountChanged()));
+            "handleNoteListCountChanged()");
 
         if (const auto* itemModel = qobject_cast<const QAbstractItemModel*>(m_noteListModel.data()))
         {
@@ -1023,6 +1062,29 @@ QString ContentsEditorSelectionBridge::resolveCurrentNoteDirectoryPathFromSelect
     return resolvedPath;
 }
 
+bool ContentsEditorSelectionBridge::currentSelectionCanLoadSelectedNoteBody(const QString& noteId) const
+{
+    const QString normalizedNoteId = noteId.trimmed();
+    if (normalizedNoteId.isEmpty())
+    {
+        return false;
+    }
+
+    const QVariantMap currentNoteEntry = readCurrentNoteEntry(m_noteListModel.data());
+    const QString entryNoteId = noteIdFromEntry(currentNoteEntry);
+    if (!entryNoteId.isEmpty())
+    {
+        return entryNoteId == normalizedNoteId;
+    }
+
+    if (!hasReadableProperty(m_noteListModel, "currentNoteId"))
+    {
+        return false;
+    }
+
+    return readStringProperty(m_noteListModel, "currentNoteId").trimmed() == normalizedNoteId;
+}
+
 QString ContentsEditorSelectionBridge::resolveSelectedNoteDirectoryPath(const QString& noteId) const
 {
     const QString normalizedNoteId = noteId.trimmed();
@@ -1215,6 +1277,19 @@ void ContentsEditorSelectionBridge::startSelectedNoteBodyLoad(
     {
         m_selectedNoteBodySnapshotNoteId.clear();
         m_selectedNoteBodyRequestSequence = 0;
+    }
+
+    if (!currentSelectionCanLoadSelectedNoteBody(normalizedNoteId))
+    {
+        WhatSon::Debug::traceEditorSelf(
+            this,
+            QStringLiteral("selectionBridge"),
+            QStringLiteral("selectionFlow.bodyLoadSkipped"),
+            QStringLiteral("noteId=%1 reason=missing-committed-body-selection-contract {%2}")
+                .arg(normalizedNoteId)
+                .arg(summarizeTraceNoteListModel(m_noteListModel)));
+        setSelectedNoteBodyState(QString(), QString(), false, false);
+        return;
     }
 
     if (adoptPendingEditorBodyText(normalizedNoteId))

@@ -126,6 +126,7 @@ private:
     QString readNoteDirectoryPathFromModelRow(int row) const;
     QString resolveCurrentNoteIdFromSelectionContract() const;
     QString resolveCurrentNoteDirectoryPathFromSelectionContract(const QString& noteId) const;
+    bool currentSelectionCanLoadSelectedNoteBody(const QString& noteId) const;
     QString resolveSelectedNoteDirectoryPath(const QString& noteId) const;
     bool tryResolveSelectedNoteBodySourceText(const QString& noteId, QString* bodyText) const;
     void setSelectedNoteDirectoryPath(QString noteDirectoryPath);

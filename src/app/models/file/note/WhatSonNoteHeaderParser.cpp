@@ -4,12 +4,19 @@
 #include "app/models/file/note/WhatSonBookmarkColorPalette.hpp"
 #include "app/models/file/WhatSonDebugTrace.hpp"
 
-#include <QRegularExpression>
+#include <iiXml.h>
 
 #include <algorithm>
+#include <string_view>
+#include <vector>
 
 namespace
 {
+    QString QStringFromUtf8View(std::string_view view)
+    {
+        return QString::fromUtf8(view.data(), static_cast<qsizetype>(view.size()));
+    }
+
     QString unescapeXmlText(QString value)
     {
         value.replace(QStringLiteral("&lt;"), QStringLiteral("<"));
@@ -23,6 +30,162 @@ namespace
     QString normalizeSingleValue(QString value)
     {
         return unescapeXmlText(value.trimmed());
+    }
+
+    bool tagNameEquals(const iiXml::Parser::TagNode& node, const QString& tagName)
+    {
+        return QString::compare(
+                   QString::fromStdString(node.Range.TagName),
+                   tagName,
+                   Qt::CaseInsensitive)
+            == 0;
+    }
+
+    bool fieldNameEquals(
+        const iiXml::Parser::TagDocument& document,
+        const iiXml::Parser::TagField& field,
+        const QString& attributeName)
+    {
+        return QString::compare(
+                   QStringFromUtf8View(document.FieldNameView(field)),
+                   attributeName,
+                   Qt::CaseInsensitive)
+            == 0;
+    }
+
+    QString stripWsnHeadParserPreamble(QString source)
+    {
+        source = source.trimmed();
+
+        if (source.startsWith(QStringLiteral("<?xml"), Qt::CaseInsensitive))
+        {
+            const qsizetype declarationEnd = source.indexOf(QStringLiteral("?>"));
+            if (declarationEnd >= 0)
+            {
+                source = source.mid(declarationEnd + 2).trimmed();
+            }
+        }
+
+        if (source.startsWith(QStringLiteral("<!DOCTYPE"), Qt::CaseInsensitive))
+        {
+            const qsizetype doctypeEnd = source.indexOf(QLatin1Char('>'));
+            if (doctypeEnd >= 0)
+            {
+                source = source.mid(doctypeEnd + 1).trimmed();
+            }
+        }
+
+        return source;
+    }
+
+    const iiXml::Parser::TagNode* findFirstDescendant(
+        const std::vector<iiXml::Parser::TagNode>& nodes,
+        const QString& tagName)
+    {
+        for (const iiXml::Parser::TagNode& node : nodes)
+        {
+            if (tagNameEquals(node, tagName))
+            {
+                return &node;
+            }
+
+            if (const iiXml::Parser::TagNode* child = findFirstDescendant(node.Children, tagName))
+            {
+                return child;
+            }
+        }
+
+        return nullptr;
+    }
+
+    void collectDescendants(
+        const std::vector<iiXml::Parser::TagNode>& nodes,
+        const QString& tagName,
+        std::vector<const iiXml::Parser::TagNode*>* outNodes)
+    {
+        if (outNodes == nullptr)
+        {
+            return;
+        }
+
+        for (const iiXml::Parser::TagNode& node : nodes)
+        {
+            if (tagNameEquals(node, tagName))
+            {
+                outNodes->push_back(&node);
+            }
+            collectDescendants(node.Children, tagName, outNodes);
+        }
+    }
+
+    QString nodeText(
+        const iiXml::Parser::TagDocument& document,
+        const iiXml::Parser::TagNode* node)
+    {
+        if (node == nullptr)
+        {
+            return {};
+        }
+
+        return normalizeSingleValue(QStringFromUtf8View(document.ValueView(*node)));
+    }
+
+    QString attributeValue(
+        const iiXml::Parser::TagDocument& document,
+        const iiXml::Parser::TagNode* node,
+        const QString& attributeName)
+    {
+        if (node == nullptr)
+        {
+            return {};
+        }
+
+        for (const iiXml::Parser::TagField& field : node->Fields)
+        {
+            if (!field.HasValue || !fieldNameEquals(document, field, attributeName))
+            {
+                continue;
+            }
+
+            return normalizeSingleValue(QStringFromUtf8View(document.FieldValueView(field)));
+        }
+
+        return {};
+    }
+
+    QString extractTagText(
+        const iiXml::Parser::TagDocument& document,
+        const QString& tagName)
+    {
+        return nodeText(document, findFirstDescendant(document.Nodes, tagName));
+    }
+
+    QStringList extractTagTexts(
+        const iiXml::Parser::TagDocument& document,
+        const QString& tagName)
+    {
+        std::vector<const iiXml::Parser::TagNode*> nodes;
+        collectDescendants(document.Nodes, tagName, &nodes);
+
+        QStringList values;
+        values.reserve(static_cast<qsizetype>(nodes.size()));
+        for (const iiXml::Parser::TagNode* node : nodes)
+        {
+            values.push_back(nodeText(document, node));
+        }
+
+        return values;
+    }
+
+    QString extractAttributeValue(
+        const iiXml::Parser::TagDocument& document,
+        const QString& tagName,
+        const QString& attributeName)
+    {
+        return attributeValue(
+            document,
+            findFirstDescendant(document.Nodes, tagName),
+            attributeName);
     }
 
     bool parseBooleanValue(const QString& rawValue, bool fallback)
@@ -52,129 +215,27 @@ namespace
         return fallback;
     }
 
-    QString extractTagText(const QString& source, const QString& tagName)
-    {
-        const QRegularExpression regex(
-            QStringLiteral(R"(<\s*%1\b[^>]*>([\s\S]*?)<\s*/\s*%1\s*>)")
-            .arg(QRegularExpression::escape(tagName)),
-            QRegularExpression::CaseInsensitiveOption);
-
-        const QRegularExpressionMatch match = regex.match(source);
-        if (!match.hasMatch())
-        {
-            return {};
-        }
-
-        return normalizeSingleValue(match.captured(1));
-    }
-
-    QStringList extractTagTexts(const QString& source, const QString& tagName)
-    {
-        const QRegularExpression regex(
-            QStringLiteral(R"(<\s*%1\b[^>]*>([\s\S]*?)<\s*/\s*%1\s*>)")
-            .arg(QRegularExpression::escape(tagName)),
-            QRegularExpression::CaseInsensitiveOption);
-
-        QStringList values;
-        QRegularExpressionMatchIterator it = regex.globalMatch(source);
-        while (it.hasNext())
-        {
-            const QRegularExpressionMatch match = it.next();
-            values.push_back(normalizeSingleValue(match.captured(1)));
-        }
-
-        return values;
-    }
-
     struct ParsedFolderBindings final
     {
         QStringList folders;
         QStringList folderUuids;
     };
 
-    ParsedFolderBindings extractFolderBindings(const QString& source)
+    ParsedFolderBindings extractFolderBindings(const iiXml::Parser::TagDocument& document)
     {
-        static const QRegularExpression regex(
-            QStringLiteral(R"(<\s*folder\b([^>]*)>([\s\S]*?)<\s*/\s*folder\s*>)"),
-            QRegularExpression::CaseInsensitiveOption);
-        static const QRegularExpression uuidRegex(
-            QStringLiteral(R"(\buuid\s*=\s*(?:\"([^\"]*)\"|'([^']*)'|([^\s/>]+)))"),
-            QRegularExpression::CaseInsensitiveOption);
-
+        std::vector<const iiXml::Parser::TagNode*> folderNodes;
+        collectDescendants(document.Nodes, QStringLiteral("folder"), &folderNodes);
         ParsedFolderBindings bindings;
-        QRegularExpressionMatchIterator it = regex.globalMatch(source);
-        while (it.hasNext())
+        for (const iiXml::Parser::TagNode* folderNode : folderNodes)
         {
-            const QRegularExpressionMatch match = it.next();
-            bindings.folders.push_back(normalizeSingleValue(match.captured(2)));
+            bindings.folders.push_back(nodeText(document, folderNode));
 
-            const QRegularExpressionMatch uuidMatch = uuidRegex.match(match.captured(1));
-            QString folderUuid;
-            if (uuidMatch.hasMatch())
-            {
-                for (int captureIndex = 1; captureIndex <= 3; ++captureIndex)
-                {
-                    const QString captured = normalizeSingleValue(uuidMatch.captured(captureIndex));
-                    if (!captured.isEmpty())
-                    {
-                        folderUuid = WhatSon::FolderIdentity::normalizeFolderUuid(captured);
-                        break;
-                    }
-                }
-            }
+            const QString folderUuid = WhatSon::FolderIdentity::normalizeFolderUuid(
+                attributeValue(document, folderNode, QStringLiteral("uuid")));
             bindings.folderUuids.push_back(folderUuid);
         }
 
         return bindings;
-    }
-
-    QString extractStartTagAttributes(const QString& source, const QString& tagName)
-    {
-        const QRegularExpression regex(
-            QStringLiteral(R"(<\s*%1\b([^>]*)>)").arg(QRegularExpression::escape(tagName)),
-            QRegularExpression::CaseInsensitiveOption);
-
-        const QRegularExpressionMatch match = regex.match(source);
-        if (!match.hasMatch())
-        {
-            return {};
-        }
-
-        return match.captured(1);
-    }
-
-    QString extractAttributeValue(
-        const QString& source,
-        const QString& tagName,
-        const QString& attributeName)
-    {
-        const QString attributesText = extractStartTagAttributes(source, tagName);
-        if (attributesText.isEmpty())
-        {
-            return {};
-        }
-
-        const QRegularExpression attrRegex(
-            QStringLiteral("\\b%1\\s*=\\s*(?:\"([^\"]*)\"|'([^']*)'|([^\\s/>]+))")
-            .arg(QRegularExpression::escape(attributeName)),
-            QRegularExpression::CaseInsensitiveOption);
-
-        const QRegularExpressionMatch match = attrRegex.match(attributesText);
-        if (!match.hasMatch())
-        {
-            return {};
-        }
-
-        for (int index = 1; index <= 3; ++index)
-        {
-            const QString captured = match.captured(index);
-            if (!captured.isNull())
-            {
-                return normalizeSingleValue(captured);
-            }
-        }
-
-        return {};
     }
 
     QStringList parseProgressEnums(const QString& rawEnums)
@@ -209,24 +270,23 @@ namespace
         return labels;
     }
 
-    int parseNonNegativeIntTagValue(const QString& source, const QString& tagName)
+    int parseNonNegativeIntTagValue(const iiXml::Parser::TagDocument& document, const QString& tagName)
     {
         bool ok = false;
-        const int value = extractTagText(source, tagName).toInt(&ok);
+        const int value = extractTagText(document, tagName).toInt(&ok);
         return ok ? std::max(0, value) : 0;
     }
 
-    int parseProgressValue(const QString& source)
+    int parseProgressValue(const iiXml::Parser::TagDocument& document)
     {
-        static const QRegularExpression progressTagRegex(
-            QStringLiteral(R"(<\s*progress\b)"),
-            QRegularExpression::CaseInsensitiveOption);
-        if (!progressTagRegex.match(source).hasMatch())
+        const iiXml::Parser::TagNode* progressNode =
+            findFirstDescendant(document.Nodes, QStringLiteral("progress"));
+        if (progressNode == nullptr)
         {
             return -1;
         }
 
-        const QString progressText = extractTagText(source, QStringLiteral("progress"));
+        const QString progressText = nodeText(document, progressNode);
         bool ok = false;
         const int progressNumeric = progressText.toInt(&ok);
         if (ok)
@@ -234,7 +294,7 @@ namespace
             return progressNumeric;
         }
 
-        const QString valueAttr = extractAttributeValue(source, QStringLiteral("progress"), QStringLiteral("value"));
+        const QString valueAttr = attributeValue(document, progressNode, QStringLiteral("value"));
         if (!valueAttr.isEmpty())
         {
             const int valueNumeric = valueAttr.toInt(&ok);
@@ -249,7 +309,7 @@ namespace
             return -1;
         }
 
-        const QString enumsAttr = extractAttributeValue(source, QStringLiteral("progress"), QStringLiteral("enums"));
+        const QString enumsAttr = attributeValue(document, progressNode, QStringLiteral("enums"));
         const QStringList enumLabels = parseProgressEnums(enumsAttr);
 
         if (!progressText.isEmpty())
@@ -319,45 +379,69 @@ bool WhatSonNoteHeaderParser::parse(
         return false;
     }
 
+    const QString parseableHeaderText = stripWsnHeadParserPreamble(wsnHeadText);
+    const QByteArray parseableHeaderBytes = parseableHeaderText.toUtf8();
+    const iiXml::Parser::TagParser parser;
+    const iiXml::Parser::TagDocumentResult parsedDocument =
+        parser.ParseAllDocumentResult(
+            std::string_view(parseableHeaderBytes.constData(), static_cast<std::size_t>(parseableHeaderBytes.size())));
+    if (parsedDocument.Status != iiXml::Parser::TagTreeParseStatus::Parsed || !parsedDocument.Document.has_value())
+    {
+        outStore->clear();
+        const QString diagnostic = QString::fromStdString(parsedDocument.Diagnostic.Reason);
+        if (errorMessage != nullptr)
+        {
+            *errorMessage = diagnostic.isEmpty()
+                                ? QStringLiteral("iiXml failed to parse .wsnhead document.")
+                                : QStringLiteral("iiXml failed to parse .wsnhead document: %1").arg(diagnostic);
+        }
+        WhatSon::Debug::traceSelf(this,
+                                  QStringLiteral("note.header.parser"),
+                                  QStringLiteral("parse.failed"),
+                                  errorMessage != nullptr ? *errorMessage : QString());
+        return false;
+    }
+
+    const iiXml::Parser::TagDocument& document = parsedDocument.Document.value();
     outStore->clear();
-    outStore->setNoteId(extractAttributeValue(wsnHeadText, QStringLiteral("contents"), QStringLiteral("id")));
-    outStore->setCreatedAt(extractTagText(wsnHeadText, QStringLiteral("created")));
-    outStore->setAuthor(extractTagText(wsnHeadText, QStringLiteral("author")));
-    outStore->setLastModifiedAt(extractTagText(wsnHeadText, QStringLiteral("lastModified")));
-    outStore->setLastOpenedAt(extractTagText(wsnHeadText, QStringLiteral("lastOpened")));
-    outStore->setModifiedBy(extractTagText(wsnHeadText, QStringLiteral("modifiedBy")));
-    const ParsedFolderBindings folderBindings = extractFolderBindings(wsnHeadText);
+    outStore->setNoteId(extractAttributeValue(document, QStringLiteral("contents"), QStringLiteral("id")));
+    outStore->setCreatedAt(extractTagText(document, QStringLiteral("created")));
+    outStore->setAuthor(extractTagText(document, QStringLiteral("author")));
+    outStore->setLastModifiedAt(extractTagText(document, QStringLiteral("lastModified")));
+    outStore->setLastOpenedAt(extractTagText(document, QStringLiteral("lastOpened")));
+    outStore->setModifiedBy(extractTagText(document, QStringLiteral("modifiedBy")));
+    const ParsedFolderBindings folderBindings = extractFolderBindings(document);
     outStore->setFolderBindings(folderBindings.folders, folderBindings.folderUuids);
-    outStore->setProject(extractTagText(wsnHeadText, QStringLiteral("project")));
+    outStore->setProject(extractTagText(document, QStringLiteral("project")));
     outStore->setBookmarked(parseBooleanValue(
-        extractAttributeValue(wsnHeadText, QStringLiteral("bookmarks"), QStringLiteral("state")),
+        extractAttributeValue(document, QStringLiteral("bookmarks"), QStringLiteral("state")),
         false));
     outStore->setBookmarkColors(WhatSon::Bookmarks::parseBookmarkColorsAttribute(
-        extractAttributeValue(wsnHeadText, QStringLiteral("bookmarks"), QStringLiteral("colors"))));
-    outStore->setTags(extractTagTexts(wsnHeadText, QStringLiteral("tag")));
-    outStore->setTotalFolders(parseNonNegativeIntTagValue(wsnHeadText, QStringLiteral("totalFolders")));
-    outStore->setTotalTags(parseNonNegativeIntTagValue(wsnHeadText, QStringLiteral("totalTags")));
-    outStore->setLetterCount(parseNonNegativeIntTagValue(wsnHeadText, QStringLiteral("letterCount")));
-    outStore->setWordCount(parseNonNegativeIntTagValue(wsnHeadText, QStringLiteral("wordCount")));
-    outStore->setSentenceCount(parseNonNegativeIntTagValue(wsnHeadText, QStringLiteral("sentenceCount")));
-    outStore->setParagraphCount(parseNonNegativeIntTagValue(wsnHeadText, QStringLiteral("paragraphCount")));
-    outStore->setSpaceCount(parseNonNegativeIntTagValue(wsnHeadText, QStringLiteral("spaceCount")));
-    outStore->setIndentCount(parseNonNegativeIntTagValue(wsnHeadText, QStringLiteral("indentCount")));
-    outStore->setLineCount(parseNonNegativeIntTagValue(wsnHeadText, QStringLiteral("lineCount")));
-    outStore->setOpenCount(parseNonNegativeIntTagValue(wsnHeadText, QStringLiteral("openCount")));
-    outStore->setModifiedCount(parseNonNegativeIntTagValue(wsnHeadText, QStringLiteral("modifiedCount")));
-    outStore->setBacklinkToCount(parseNonNegativeIntTagValue(wsnHeadText, QStringLiteral("backlinkToCount")));
-    outStore->setBacklinkByCount(parseNonNegativeIntTagValue(wsnHeadText, QStringLiteral("backlinkByCount")));
+        extractAttributeValue(document, QStringLiteral("bookmarks"), QStringLiteral("colors"))));
+    outStore->setTags(extractTagTexts(document, QStringLiteral("tag")));
+    outStore->setTotalFolders(parseNonNegativeIntTagValue(document, QStringLiteral("totalFolders")));
+    outStore->setTotalTags(parseNonNegativeIntTagValue(document, QStringLiteral("totalTags")));
+    outStore->setLetterCount(parseNonNegativeIntTagValue(document, QStringLiteral("letterCount")));
+    outStore->setWordCount(parseNonNegativeIntTagValue(document, QStringLiteral("wordCount")));
+    outStore->setSentenceCount(parseNonNegativeIntTagValue(document, QStringLiteral("sentenceCount")));
+    outStore->setParagraphCount(parseNonNegativeIntTagValue(document, QStringLiteral("paragraphCount")));
+    outStore->setSpaceCount(parseNonNegativeIntTagValue(document, QStringLiteral("spaceCount")));
+    outStore->setIndentCount(parseNonNegativeIntTagValue(document, QStringLiteral("indentCount")));
+    outStore->setLineCount(parseNonNegativeIntTagValue(document, QStringLiteral("lineCount")));
+    outStore->setOpenCount(parseNonNegativeIntTagValue(document, QStringLiteral("openCount")));
+    outStore->setModifiedCount(parseNonNegativeIntTagValue(document, QStringLiteral("modifiedCount")));
+    outStore->setBacklinkToCount(parseNonNegativeIntTagValue(document, QStringLiteral("backlinkToCount")));
+    outStore->setBacklinkByCount(parseNonNegativeIntTagValue(document, QStringLiteral("backlinkByCount")));
     outStore->setIncludedResourceCount(
-        parseNonNegativeIntTagValue(wsnHeadText, QStringLiteral("includedResourceCount")));
+        parseNonNegativeIntTagValue(document, QStringLiteral("includedResourceCount")));
     outStore->setProgressEnums(parseProgressEnums(
-        extractAttributeValue(wsnHeadText, QStringLiteral("progress"), QStringLiteral("enums"))));
-    outStore->setProgress(parseProgressValue(wsnHeadText));
+        extractAttributeValue(document, QStringLiteral("progress"), QStringLiteral("enums"))));
+    outStore->setProgress(parseProgressValue(document));
 
-    QString isPresetValue = extractTagText(wsnHeadText, QStringLiteral("isPreset"));
+    QString isPresetValue = extractTagText(document, QStringLiteral("isPreset"));
     if (isPresetValue.isEmpty())
     {
-        isPresetValue = extractAttributeValue(wsnHeadText, QStringLiteral("isPreset"), QStringLiteral("value"));
+        isPresetValue = extractAttributeValue(document, QStringLiteral("isPreset"), QStringLiteral("value"));
     }
     outStore->setPreset(parseBooleanValue(isPresetValue, false));
 

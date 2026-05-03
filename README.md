@@ -7,6 +7,14 @@ WhatSon is an LVRS-based Qt Quick application.
 - `src/app`: LVRS-based UI application
 - `src/daemon`: background daemon skeleton
 
+## Build Dependencies
+
+- Qt 6.5+ remains the baseline Qt requirement; the maintained local dependency set currently resolves against the
+  installed Qt 6.8.3 kit.
+- LVRS is discovered from `~/.local/LVRS` unless a cache override is provided.
+- `iiXml` and `iiHtmlBlock` are required local libraries for app and regression builds. Their CMake package prefixes
+  default to `~/.local/iiXml` and `~/.local/iiHtmlBlock`.
+
 ## Verification Policy
 
 - WhatSon maintains in-repo build and runtime regression gates under the root CMake targets and `test/`.
@@ -773,6 +781,9 @@ Host desktop app builds now emit the runnable app artifact at the build-director
 
 The app now supports high-visibility runtime tracing for note/header indexing and hub runtime flow.
 Trace logs are printed with `[whatson:debug]` and `[wsnhead:index]` prefixes.
+Third-party local dependency parser traces are filtered separately: `iiXml::*` debug chatter is suppressed by default
+so ordinary startup and indexing runs do not drown in parser internals. Set `WHATSON_IIXML_TRACE_MODE=1` only when
+diagnosing the local `iiXml` package itself.
 
 Current trace coverage includes:
 
@@ -799,6 +810,12 @@ WHATSON_DEBUG_MODE=0 cmake --build build --target whatson_run_app
 
 ```bash
 WHATSON_DEBUG_MODE=1 cmake --build build --target whatson_run_app
+```
+
+- Enable local `iiXml` parser debug traces explicitly:
+
+```bash
+WHATSON_IIXML_TRACE_MODE=1 cmake --build build --target whatson_run_app
 ```
 
 Filter only debug lines during a run:

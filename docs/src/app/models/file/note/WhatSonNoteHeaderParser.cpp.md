@@ -4,11 +4,20 @@
 
 This parser reads `.wsnhead` XML and populates `WhatSonNoteHeaderStore`.
 
+## Parser Backend
+
+- `.wsnhead` parsing now routes through `iiXml::Parser::TagParser` and consumes the parsed document tree for tag text
+  and inline attributes.
+- The XML declaration and `<!DOCTYPE WHATSONNOTE>` preamble are stripped before handing the header body to iiXml,
+  because the tree parser owns element hierarchy rather than top-level declaration handling.
+- Regular expressions are no longer used as the authority for header tag or attribute extraction; they are replaced by
+  iiXml node and field traversal.
+
 ## Folder Parsing Rules
 
 - `<folder>Path</folder>` remains valid legacy input.
 - `<folder uuid="...">Path</folder>` is the modern form.
-- Folder UUIDs are extracted and normalized together with the visible folder paths.
+- Folder UUIDs are extracted from iiXml attribute fields and normalized together with the visible folder paths.
 - Parsed bindings are stored through `setFolderBindings(...)`, not by mutating path and UUID lists
   separately.
 

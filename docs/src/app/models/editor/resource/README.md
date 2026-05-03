@@ -4,15 +4,15 @@
 Owns editor-side resource import and inline resource presentation coordination.
 
 ## Current Modules
-- `ContentsResourceImportController.qml`
+- `ContentsResourceImportController.*`
   Public import coordinator mounted by the editor host.
-- `ContentsResourceDropPayloadParser.qml`
+- `ContentsResourceDropPayloadParser.*`
   Normalizes drag/drop payloads into importable resource URLs.
-- `ContentsResourceImportConflictController.qml`
+- `ContentsResourceImportConflictController.*`
   Owns duplicate-resource prompt state.
-- `ContentsInlineResourcePresentationController.qml`
+- `ContentsInlineResourcePresentationController.*`
   Builds editor-surface inline resource HTML placeholders.
-- `ContentsEditorSurfaceGuardController.qml`
+- `ContentsEditorSurfaceGuardController.*`
   Guards programmatic editor-surface sync during resource import turns.
 
 ## Boundary

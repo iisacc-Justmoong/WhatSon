@@ -59,6 +59,8 @@ target_link_libraries(WhatSon
         Qt6::Quick
         Qt6::QuickDialogs2
         Qt6::QuickControls2
+        iiXml::iiXml
+        iiHtmlBlock::iiHtmlBlock
 )
 
 if (UNIX AND NOT APPLE)

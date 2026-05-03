@@ -15,6 +15,9 @@
 - Keep option declarations, package discovery, and primary product `add_subdirectory(...)` calls in the root file.
 - Keep grouped custom targets in `cmake/root/*` and avoid moving product-level source ownership back into the root file.
 - Reuse `build/` for configure/build/test flows; the nested `build-trial` path remains opt-in packaging infrastructure only.
+- User-built local libraries under `~/.local` are surfaced through cacheable root prefixes. `iiXml` and `iiHtmlBlock`
+  are required when the app or regression suite is enabled, and are discovered through their CMake package configs
+  before child target wiring runs.
 - Keep iOS export defaults centralized in root cache variables (`WHATSON_IOS_SDK`, `WHATSON_IOS_ARCHITECTURES`,
   `WHATSON_IOS_DEVELOPMENT_TEAM`, `WHATSON_IOS_CODE_SIGN_IDENTITY`, `WHATSON_IOS_CODE_SIGN_STYLE`, and
   `WHATSON_IOS_QT_PERMISSION_PLUGIN_POLICY`) so generated Xcode projects do not depend on manual Xcode Build Settings

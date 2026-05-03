@@ -35,12 +35,16 @@
 ## Current Notes
 - `parser/ContentsWsnBodyBlockParser.*` is now the first dedicated `.wsnbody` block-parser layer under
   `src/app/models/editor`.
-  It tokenizes top-level semantic body tags once, emits one ordered `renderedDocumentBlocks` projection, and keeps the
-  legacy `renderedAgendas` / `renderedCallouts` side payloads only as compatibility views over that same parse pass.
+  It prefers an iiXml document tree for top-level semantic body tags, emits one ordered `renderedDocumentBlocks`
+  projection, and keeps the legacy `renderedAgendas` / `renderedCallouts` side payloads only as compatibility views
+  over that same parse pass.
 - `renderer/ContentsHtmlBlockRenderPipeline.*` is now the explicit RAW editor render-pipeline stage that sits between
   parser output and final RichText/QML consumption.
-  It converts parser-owned blocks into HTML tokens, resolves per-token render strategy, and normalizes the result into
-  stable HTML blocks before the live editor paints them.
+  It converts parser-owned blocks into HTML tokens, runs the token projection through iiXml + iiHtmlBlock, and
+  normalizes the resulting display-block objects into stable HTML blocks before the live editor paints them.
+- `projection/ContentsEditorPresentationProjection.*` republishes that renderer output to QML, including
+  `htmlTokens` and `normalizedHtmlBlocks`, so the final editor host consumes block metadata instead of rediscovering
+  block structure in JavaScript.
 - `format/ContentsTextFormatRenderer.*` is the editor-owned document render backend for note-body HTML projection.
   It no longer lives under the paper display model because bold, italic, highlight, and related tags are editor body
   responsibilities, not page-surface responsibilities.
@@ -62,9 +66,8 @@
 - Local RAW editor-source writes now converge through
   `session/ContentsEditorSessionController::commitRawEditorTextMutation(...)`, so QML controllers can propose next
   `.wsnbody` text without owning `editorText` writes, local-authority marking, or persistence scheduling.
-- Editor-domain QML policy/controller/support files now also live under these responsibility directories. The
-  `src/app/qml/view/content/editor` directory is reserved for view hosts, visual layers, and block delegates that match
-  the Figma `ContentsView` / `ContentsDisplayView` surface.
+- Editor-domain support JavaScript remains in the owning editor subdirectory when a small read-side QML helper is
+  already part of the architecture, but QML view files stay under `src/app/qml/view/content/editor`.
 - Semantic text blocks such as `paragraph`, `title`, `subTitle`, and `eventDescription` now keep two coordinate
   systems in that parser contract:
   - wrapper spans (`blockSourceStart` / `blockSourceEnd`, open/close tag offsets) preserve the authored outer tag

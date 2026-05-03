@@ -17,8 +17,16 @@ Builds editor HTML tokens and normalized HTML blocks from parser-owned RAW docum
   - source span
   - normalized HTML fragment
   - overlay-visibility flag
-- Converts those tokens into `normalizedHtmlBlocks` without letting QML rediscover block-flow ownership or semantic
-  text styling from raw strings.
+- Builds a renderer-local XML projection from those HTML tokens, validates it with `iiXml::Parser::TagParser`, converts
+  it through `iiHtmlBlock::iiXmlToHTML`, and divides it with `iiHtmlBlock::DivideBlock`.
+- Converts the resulting iiHtmlBlock display-block objects into `normalizedHtmlBlocks` without letting QML rediscover
+  block-flow ownership or semantic text styling from raw strings.
+- Each normalized HTML block now includes iiHtmlBlock metadata:
+  - `htmlBlockObjectSource=iiHtmlBlock`
+  - `htmlBlockTagName`
+  - raw/value ranges
+  - `htmlBlockIsDisplayBlock`
+  - display override fields
 - Uses `WhatSonNoteBodyPersistence::serializeBodyDocument(...)` plus
   `WhatSonNoteBodyPersistence::htmlProjectionFromBodyDocument(...)` for textual fragments so inline-tag rendering stays
   aligned with the canonical body serializer.

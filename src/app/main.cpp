@@ -181,6 +181,7 @@ int main(int argc, char* argv[])
 
     QGuiApplication app(argc, argv);
     lvrs::postApplicationBootstrap(app, bootstrapOptions);
+    WhatSon::Debug::installThirdPartyTraceMessageFilter();
 
     if (qEnvironmentVariableIsEmpty("WHATSON_DEBUG_MODE"))
     {

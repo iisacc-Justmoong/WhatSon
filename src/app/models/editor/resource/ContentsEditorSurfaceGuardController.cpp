@@ -60,6 +60,17 @@ void ContentsEditorSurfaceGuardController::markProgrammaticEditorSurfaceSync()
 
 bool ContentsEditorSurfaceGuardController::nativeCompositionActive() const
 {
+    if (m_editorInputPolicyAdapter)
+    {
+        const QVariant adapterCompositionState = propertyValue(
+            m_editorInputPolicyAdapter,
+            "nativeCompositionActive");
+        if (adapterCompositionState.isValid())
+        {
+            return adapterCompositionState.toBool();
+        }
+    }
+
     if (!m_contentEditor)
     {
         return false;
@@ -85,6 +96,26 @@ bool ContentsEditorSurfaceGuardController::shouldRejectEditorSurfaceRestore(cons
     if (!m_contentEditor)
     {
         return true;
+    }
+
+    if (m_editorInputPolicyAdapter)
+    {
+        const QVariant adapterRejectionResult = invokeVariant(
+            m_editorInputPolicyAdapter,
+            "shouldDeferProgrammaticTextSync",
+            {
+                propertyValue(m_contentEditor, "text"),
+                nextSurfaceText,
+                nativeCompositionActive(),
+                propertyValue(m_contentEditor, "focused").toBool(),
+                true,
+                propertyValue(m_contentEditor, "activeFocus").toBool(),
+                false
+            });
+        if (adapterRejectionResult.isValid() && adapterRejectionResult.toBool())
+        {
+            return true;
+        }
     }
 
     const QVariant rejectionResult = invokeVariant(

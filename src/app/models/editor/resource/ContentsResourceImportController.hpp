@@ -19,6 +19,10 @@ class ContentsResourceImportController : public QObject
     Q_PROPERTY(QObject* structuredDocumentFlow MEMBER m_structuredDocumentFlow)
     Q_PROPERTY(QObject* editorSession MEMBER m_editorSession)
     Q_PROPERTY(QObject* editorTypingController MEMBER m_editorTypingController)
+    Q_PROPERTY(
+        QObject*
+            editorInputPolicyAdapter READ editorInputPolicyAdapter WRITE setEditorInputPolicyAdapter
+                NOTIFY editorInputPolicyAdapterChanged)
     Q_PROPERTY(QObject* editorProjection MEMBER m_editorProjection)
     Q_PROPERTY(QObject* bodyResourceRenderer MEMBER m_bodyResourceRenderer)
     Q_PROPERTY(bool showPrintEditorLayout MEMBER m_showPrintEditorLayout)
@@ -61,6 +65,8 @@ public:
     bool resourceDropEditorSurfaceGuardActive() const noexcept;
     bool resourceImportConflictAlertOpen() const noexcept;
     bool programmaticEditorSurfaceSyncActive() const noexcept;
+    QObject* editorInputPolicyAdapter() const noexcept;
+    void setEditorInputPolicyAdapter(QObject* adapter);
 
     Q_INVOKABLE bool canAcceptResourceDropUrls(const QVariant& urls);
     Q_INVOKABLE void clearPendingResourceImportConflict();
@@ -89,6 +95,7 @@ signals:
     void resourceDropEditorSurfaceGuardActiveChanged();
     void resourceImportConflictAlertOpenChanged();
     void programmaticEditorSurfaceSyncActiveChanged();
+    void editorInputPolicyAdapterChanged();
 
 private:
     void syncChildren();
@@ -98,6 +105,7 @@ private:
     QObject* m_structuredDocumentFlow = nullptr;
     QObject* m_editorSession = nullptr;
     QObject* m_editorTypingController = nullptr;
+    QObject* m_editorInputPolicyAdapter = nullptr;
     QObject* m_editorProjection = nullptr;
     QObject* m_bodyResourceRenderer = nullptr;
     bool m_showPrintEditorLayout = false;

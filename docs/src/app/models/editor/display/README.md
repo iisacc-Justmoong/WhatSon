@@ -2,99 +2,14 @@
 
 ## Responsibility
 
-This directory holds editor-domain display helpers. Under the current QML boundary, QML must be used for view
-construction only; model-side QML controller files in this directory are transitional migration targets and must not
-gain new session, persistence, parsing, mutation, scheduling, or command-surface responsibility.
+Contains small editor-display support helpers that are not QML view files.
 
 ## Current Modules
 
-- `ContentsDisplayContextMenuCoordinator.*`
-  Normalizes structured editor context-menu selection snapshots before inline style commands consume them.
-- `ContentsDisplayDocumentSourceResolver.*`
-  Resolves which RAW note source the editor should present while note selection, snapshot refresh, and editor-session
-  binding are converging.
-- `ContentsDisplayEditOperationCoordinator.*`
-  Coordinates high-level focus and shortcut operation state that QML surfaces need to apply against the current note body.
-- `ContentsDisplayGutterCoordinator.*`
-  Keeps gutter state derived from the same editor document projection as the visible body.
-  It must not collapse a populated line snapshot to the single-line fallback while the editor viewport height is still
-  settling; pending viewport geometry is handled by inferring the visible bottom from the supplied gutter row
-  coordinates. Plain gutter snapshots receive coordinates relative to the requested first visible line, not absolute
-  document indexes.
-- `ContentsDisplayMinimapCoordinator.*`
-  Owns parser/block-derived minimap row construction.
-  Its structured path now consumes parser-normalized block entries directly, producing one minimap row per block/tag
-  and reserving block-like silhouettes only for visual entries such as resources.
-- `ContentsDisplayNoteBodyMountCoordinator.*`
-  Drives note-body mount, retry, and exception plans while the selected RAW body is converging.
-  The coordinator is now split into narrow implementation units so public QObject state plumbing, mount-plan emission,
-  and derived mount/exception status no longer live in one giant translation unit.
-  It no longer publishes separate surface-ready or surface-interactive state; parse-mounted `.wsnbody` is the only
-  readiness authority exposed upward.
-- `ContentsDisplayPresentationRefreshController.*` and `ContentsDisplayRefreshCoordinator.*`
-  Keep presentation refresh requests explicit instead of burying them in QML timers.
-- `ContentsDisplaySelectionSyncCoordinator.*`
-  Coordinates selected-note snapshot reconciliation and editor selection sync.
-- `ContentsDisplayStructuredFlowCoordinator.*`
-  Publishes structured-flow visibility and source convergence plans.
-  Its visible-gutter builder follows the same pending-viewport rule as the plain gutter path, so structured document
-  line entries produced from the parsed note body are preserved even when the first refresh pass runs before the
-  viewport reports a non-zero height.
-- `ContentsDisplayTraceFormatter.*`
-  Centralizes trace payload formatting shared by the display coordinators.
-- `ContentsDisplayViewportCoordinator.*`
-  Owns line-offset lookup, minimap track math, viewport correction plans, and structured gutter geometry summaries used
-  by `ContentsDisplayView.qml`.
-- `ContentsDisplayEventPump.qml`
-  Owns display-host timers and signal connections for note mount, selection sync, projection, cursor, and geometry
-  refresh events.
-- `ContentsDisplayInputCommandSurface.qml`
-  Owns the actual editor context-menu pointer surfaces and shortcut handler wiring.
-- `ContentsDisplayInputOrchestrationModel.qml`
-  Owns QML-side paste, inline-format shortcut, and editor selection context-menu orchestration so
-  `ContentsDisplayView.qml` only keeps thin compatibility wrappers for existing callers.
-- `ContentsDisplayGeometryController.qml`
-  Owns QML-runtime geometry scheduling and delegates public calls through the C++ geometry Controller.
-- `ContentsDisplayGeometrySnapshotModel.qml`
-  Owns QML-side geometry normalization, structured minimap entry construction, visible gutter entry building,
-  and compatibility wrappers that let `ContentsDisplayView.qml` shed large helper bodies without breaking existing host
-  call sites.
-- `ContentsDisplayViewportModel.qml`
-  Owns QML-side document/viewport line math such as logical-line Y lookup, gutter Y lookup, marker placement,
-  minimap row positioning, and documentY-to-line resolution.
-- `ContentsDisplayMutationController.qml`
-  Owns QML-runtime RAW source writes delegated through the C++ mutation Controller. It applies already-built RAW
-  `.wsnbody` text directly, first ensuring the editor session is bound to the selected note when the visible
-  presentation source came from a resolved body snapshot. Explicit tag-management mutations request an immediate
-  persistence flush after the session RAW text changes, then let parser and renderer projections observe the changed
-  source.
-- `ContentsDisplayPresentationController.qml`
-  Owns the detailed presentation refresh and editor-creation trace orchestration delegated through the C++
-  presentation Controller.
-- `ContentsDisplayPresentationOrchestrationModel.qml`
-  Owns the thin host-facing presentation wrappers for refresh-plan execution and structured layout refresh dispatch so
-  `ContentsDisplayView.qml` stays a composer.
-- `ContentsDisplaySelectionMountController.qml`
-  Owns the detailed selection, snapshot reconcile, and mount orchestration delegated through the C++
-  selection/mount Controller.
-- `ContentsDisplaySelectionOrchestrationModel.qml`
-  Owns the thin host-facing selection wrappers for focus, snapshot reconcile, mount-delivery dispatch, and native
-  composition policy checks.
-- `ContentsDisplayHostModePolicy.qml`
-  Owns desktop/mobile presentation deltas for the unified editor host without keeping policy objects in the view
-  directory.
 - `ContentsEditorSurfaceModeSupport.js`
-  Resolves whether `ContentViewLayout.qml` should mount the note editor surface or direct resource editor surface.
-- `ContentsMinimapSnapshotSupport.js`
-  Flattens minimap line groups for editor display refreshes while preserving whichever row width metadata the owning
-  minimap path already chose, including parser-derived block silhouettes.
+  Decides whether `ContentViewLayout.qml` should mount the note editor surface or the direct resource editor surface.
 
 ## Boundary
 
-- These helpers stay in the editor domain because they operate on editor-owned RAW source, logical-line offsets, and
-  note-session state.
-- Mobile hierarchy navigation remains in `src/app/models/content/mobile`; only editor-body display coordination belongs
-  here.
-- Controllers remain C++ under `src/app/models`.
-- New editor display orchestration should be C++ model or Controller code, with QML limited to view construction under
-  `src/app/qml/view`.
+XML parsing, HTML rendering, and block-object construction are C++ responsibilities under `parser` and `renderer`.
+QML view files stay under `src/app/qml/view`.

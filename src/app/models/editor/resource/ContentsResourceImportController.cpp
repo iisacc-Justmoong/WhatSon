@@ -48,6 +48,22 @@ bool ContentsResourceImportController::programmaticEditorSurfaceSyncActive() con
     return m_editorSurfaceGuardController->programmaticEditorSurfaceSyncActive();
 }
 
+QObject* ContentsResourceImportController::editorInputPolicyAdapter() const noexcept
+{
+    return m_editorInputPolicyAdapter;
+}
+
+void ContentsResourceImportController::setEditorInputPolicyAdapter(QObject* adapter)
+{
+    if (m_editorInputPolicyAdapter == adapter)
+    {
+        return;
+    }
+
+    m_editorInputPolicyAdapter = adapter;
+    emit editorInputPolicyAdapterChanged();
+}
+
 bool ContentsResourceImportController::canAcceptResourceDropUrls(const QVariant& urls)
 {
     syncChildren();
@@ -192,6 +208,7 @@ void ContentsResourceImportController::syncChildren()
     m_inlineResourcePresentationController->setProperty("showPrintEditorLayout", m_showPrintEditorLayout);
 
     m_editorSurfaceGuardController->setProperty("contentEditor", QVariant::fromValue(m_contentEditor));
+    m_editorSurfaceGuardController->setProperty("editorInputPolicyAdapter", QVariant::fromValue(m_editorInputPolicyAdapter));
     m_editorSurfaceGuardController->setProperty("editorProjection", QVariant::fromValue(m_editorProjection));
 
     m_resourceImportConflictController->setProperty("view", QVariant::fromValue(m_view));

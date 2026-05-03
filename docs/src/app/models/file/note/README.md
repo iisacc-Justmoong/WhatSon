@@ -65,6 +65,10 @@
 - `.wsnhead` now carries a dedicated `fileStat` block for numeric detail-panel metadata.
 - Note creation, note update, and editor note selection all participate in keeping that block
   synchronized with the current body/header state.
+- `WhatSonNoteHeaderParser` now uses the local `iiXml` document tree for `.wsnhead` tag and attribute extraction,
+  keeping XML parsing aligned with the planned RAW note -> HTML block pipeline instead of relying on ad-hoc text scans.
+- `WhatSonLocalNoteFileStore` now uses the local `iiXml` document tree for `.wsnbody` package reads when locating
+  `<body>` and first-resource thumbnail metadata.
 - Editor note selection now uses a header-only `openCount` rewrite path that also stamps `.wsnhead lastOpenedAt`, so
   switching notes no longer forces a hub-wide `.wsnbody` backlink rescan and inactivity sensors can read the true
   last-open time directly from RAW header state.

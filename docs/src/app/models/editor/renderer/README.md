@@ -20,7 +20,10 @@
 
 ## Current Notes
 - `ContentsHtmlBlockRenderPipeline.cpp` is now the explicit editor HTML pipeline:
-  parser blocks -> HTML tokens -> normalized HTML blocks -> final editor HTML document.
+  iiXml-backed parser blocks -> HTML tokens -> iiHtmlBlock block objects -> normalized HTML blocks -> final editor HTML
+  document.
+- `normalizedHtmlBlocks` now carry iiHtmlBlock-derived block-object metadata such as HTML block tag name, raw/value
+  ranges, display-block state, and parser source.
 - `ContentsStructuredBlockRenderer.cpp` now consumes `parser/ContentsWsnBodyBlockParser` as its single `.wsnbody`
   read-path source and republishes that parser result to QML.
 - Agenda/callout compatibility lists still exist, but they are now side projections over the same unified parser pass

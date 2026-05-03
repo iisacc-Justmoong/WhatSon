@@ -76,9 +76,9 @@
 - The bridge now also recognizes an optional content-view-model invokable,
   `noteBodySourceTextForNoteId(noteId)`, as the runtime-snapshot fallback contract for selected note bodies when
   package-path resolution cannot start a lazy load.
-- Selection refresh now treats note identity as a committed contract only.
-  `currentNoteEntry` and `currentNoteId` can confirm the selected note, but row/current-index fallback is no longer
-  allowed to synthesize `selectedNoteId`.
+- Selection refresh now separates visible row identity from selected-body ownership.
+  `currentNoteEntry` and `currentNoteId` confirm the selected note for body loading; row/current-index fallback can
+  publish visible `selectedNoteId` and `selectedNoteDirectoryPath`, but it cannot synthesize `selectedNoteBodyNoteId`.
 - A readable-but-empty committed selection contract now clears the selected note instead of retaining the previous note
   as stale fallback state.
 - The bridge also tracks the last committed `currentNoteEntry` map so same-note entry revisions count as a rebind/body
@@ -126,7 +126,7 @@
   selection by the bridge.
 - A same-note `currentBodyTextChanged()` from the note-list model must still refresh the bridge body snapshot even when
   the selected note id itself did not change.
-- A note-backed list row/current index alone must not be treated as a committed note identity.
+- A note-backed list row/current index alone must not be treated as a committed body-selection contract.
 - Stale same-note body-read completions must not reclaim the selected note body after a newer request was issued.
 - Stale filesystem text must not reclaim the selected note body while the editor persistence controller still owns a newer dirty or
   in-flight editor snapshot for that note.

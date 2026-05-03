@@ -70,8 +70,11 @@
   empty body.
   This keeps desktop note-open flows from collapsing to a blank editor when the library runtime snapshot already owns
   the selected note source but one selection turn cannot re-resolve the package path.
-- When the bridge cannot produce note-owned body text for the current selection, it now falls back to an explicit empty
-  body that is still tagged with that selected note id.
+- When the bridge cannot produce note-owned body text for a committed `currentNoteEntry` or `currentNoteId`
+  selection, it falls back to an explicit empty body that is still tagged with that selected note id.
+- Row/current-index fallback can identify the visible selected row and package path, but it is not enough to claim
+  ownership of a selected-note body. Body loading is skipped until `currentNoteEntry` or `currentNoteId` confirms the
+  note as the committed body selection contract.
 - `startSelectedNoteBodyLoad(...)` now keeps body ownership explicit during loading and fallback transitions instead of
   leaving QML to infer whether the current body text still belongs to the previous note.
 - `startSelectedNoteBodyLoad(...)` now also tries the direct `noteBodySourceTextForNoteId(...)` snapshot before it
@@ -112,9 +115,10 @@
   "no committed selection yet" state instead of being misread as row `0`.
   This keeps `resolveCurrentNoteIdFromSelectionContract()` from collapsing a real "no committed selection yet" turn
   into an implicit row `0` selection.
-- `resolveCurrentNoteIdFromSelectionContract()` now only trusts committed note identity contracts:
+- `resolveCurrentNoteIdFromSelectionContract()` prefers committed note identity contracts:
   `currentNoteEntry.noteId`/`currentNoteEntry.id` and `currentNoteId`.
-  Row snapshots and `readNoteIdAt(...)` are no longer allowed to synthesize `selectedNoteId`.
+  Row snapshots are allowed to publish visible selection identity, but they do not authorize selected-note body
+  ownership by themselves.
 - `refreshNoteSelectionState()` now treats a readable-but-empty committed selection contract as a real clear event.
   The bridge no longer retains the previous note across transient empty-id turns, so stale note identity/body state
   cannot stay mounted merely because the list still has visible rows.
@@ -138,6 +142,8 @@
 - Note-list count observation now connects to `itemCountChanged(int)` explicitly.
   The older parameterless signal signature no longer matched the actual note-list-model contract and produced a runtime
   QObject connect warning during live app startup.
+- Optional note-list signals are now connected through meta-object checks. Row-only or entry-only regression doubles
+  no longer emit QObject connect warnings for contracts they intentionally do not expose.
 
 ### Classes and Structs
 - None detected during scaffold generation.
@@ -179,8 +185,8 @@
   before QML reaches the editor surface.
 - A note-backed list with visible rows but `currentIndex=-1` must stay in the bridge's no-selection state until the
   authoritative selection writer commits one non-negative current index.
-- A note-backed list row/current index alone must not synthesize `selectedNoteId`; the bridge must wait for
-  `currentNoteEntry` or `currentNoteId` to confirm note identity.
+- A note-backed list row/current index alone may publish `selectedNoteId`, but it must not synthesize
+  `selectedNoteBodyNoteId`; the bridge must wait for `currentNoteEntry` or `currentNoteId` to confirm body ownership.
 - A same-note `currentBodyTextChanged()` must still invalidate the cached selected-note snapshot so the editor can
   adopt the refreshed list-provided RAW body.
 - A note-open turn must not push an empty interim body into the editor before the lazy body load completes.

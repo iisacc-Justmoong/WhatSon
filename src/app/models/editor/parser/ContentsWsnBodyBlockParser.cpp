@@ -8,8 +8,11 @@
 #include <QStringList>
 #include <QVector>
 
+#include <iiXml.h>
+
 #include <algorithm>
 #include <limits>
+#include <string_view>
 #include <vector>
 
 namespace
@@ -74,6 +77,17 @@ namespace
     int boundedTextIndex(const QString& text, const int index)
     {
         return std::clamp(index, 0, boundedQStringSize(text));
+    }
+
+    QString QStringFromUtf8View(std::string_view view)
+    {
+        return QString::fromUtf8(view.data(), static_cast<qsizetype>(view.size()));
+    }
+
+    int utf8ByteOffsetToQStringIndex(const QByteArray& bytes, const std::size_t offset)
+    {
+        const std::size_t boundedOffset = std::min<std::size_t>(offset, static_cast<std::size_t>(bytes.size()));
+        return boundedQSizeToInt(QString::fromUtf8(bytes.constData(), static_cast<qsizetype>(boundedOffset)).size());
     }
 
     QString defaultDatePlaceholder()
@@ -846,6 +860,388 @@ namespace
                 renderedCallouts));
         openBlocks->clear();
     }
+
+    QString sourceTextForIiXmlBlockParse(QString sourceText)
+    {
+        sourceText.replace(
+            QStringLiteral("</break>"),
+            QStringLiteral("<break/>"));
+        sourceText.replace(
+            QStringLiteral("</hr>"),
+            QStringLiteral("<hr/>"));
+        return sourceText;
+    }
+
+    bool shouldSkipIiXmlDocumentNodeButVisitChildren(const QString& rawTagName)
+    {
+        const QString normalizedTagName = rawTagName.trimmed().toCaseFolded();
+        return normalizedTagName == QStringLiteral("contents")
+            || normalizedTagName == QStringLiteral("body")
+            || SemanticTags::isTransparentContainerTagName(rawTagName);
+    }
+
+    bool shouldSkipIiXmlDocumentNode(const QString& rawTagName)
+    {
+        return SemanticTags::isTaskTagName(rawTagName)
+            || !SemanticTags::canonicalInlineStyleTagName(rawTagName).isEmpty()
+            || SemanticTags::isRenderedLineBreakTagName(rawTagName);
+    }
+
+    int openTagEndForNode(const QString& sourceText, const int blockStart, const int blockEnd)
+    {
+        const int tagEnd = sourceText.indexOf(QLatin1Char('>'), blockStart);
+        if (tagEnd < 0 || tagEnd >= blockEnd)
+        {
+            return blockStart;
+        }
+        return tagEnd + 1;
+    }
+
+    bool nodeSourceLooksSelfClosing(const QString& sourceText, const int blockStart, const int openTagEnd)
+    {
+        if (openTagEnd <= blockStart)
+        {
+            return false;
+        }
+
+        const QString token = sourceText.mid(blockStart, openTagEnd - blockStart).trimmed();
+        return token.endsWith(QStringLiteral("/>")) || token.startsWith(QStringLiteral("</"));
+    }
+
+    void collectExplicitSpansFromIiXmlNodes(
+        const QString& sourceText,
+        const QByteArray& parseBytes,
+        const std::vector<iiXml::Parser::TagNode>& nodes,
+        std::vector<DocumentBlockSpan>* explicitSpans,
+        int* resourceIndex,
+        AgendaParseStats* agendaStats,
+        QVariantList* renderedAgendas,
+        QVariantList* renderedCallouts)
+    {
+        if (explicitSpans == nullptr)
+        {
+            return;
+        }
+
+        for (const iiXml::Parser::TagNode& node : nodes)
+        {
+            const QString rawTagName = QString::fromStdString(node.Range.TagName);
+            if (shouldSkipIiXmlDocumentNodeButVisitChildren(rawTagName))
+            {
+                collectExplicitSpansFromIiXmlNodes(
+                    sourceText,
+                    parseBytes,
+                    node.Children,
+                    explicitSpans,
+                    resourceIndex,
+                    agendaStats,
+                    renderedAgendas,
+                    renderedCallouts);
+                continue;
+            }
+            if (shouldSkipIiXmlDocumentNode(rawTagName))
+            {
+                continue;
+            }
+
+            const QString canonicalTypeName = SemanticTags::canonicalDocumentBlockTypeName(rawTagName);
+            if (canonicalTypeName.isEmpty())
+            {
+                continue;
+            }
+
+            const int blockStart = boundedTextIndex(
+                sourceText,
+                utf8ByteOffsetToQStringIndex(parseBytes, node.Range.RawBegin));
+            const int blockEnd = boundedTextIndex(
+                sourceText,
+                utf8ByteOffsetToQStringIndex(parseBytes, node.Range.RawEnd));
+            if (blockEnd <= blockStart)
+            {
+                continue;
+            }
+
+            const int openTagEnd = boundedTextIndex(
+                sourceText,
+                std::max(blockStart, openTagEndForNode(sourceText, blockStart, blockEnd)));
+            const bool selfClosingTag = nodeSourceLooksSelfClosing(sourceText, blockStart, openTagEnd);
+            const bool hasCloseTag = !selfClosingTag
+                && node.Range.ValueEnd < node.Range.RawEnd
+                && !SemanticTags::isBreakDividerTagName(rawTagName);
+            const int closeTagStart = hasCloseTag
+                ? boundedTextIndex(
+                      sourceText,
+                      utf8ByteOffsetToQStringIndex(parseBytes, node.Range.ValueEnd))
+                : -1;
+
+            pushDocumentBlockSpan(
+                explicitSpans,
+                buildExplicitSpan(
+                    sourceText,
+                    sourceText.mid(blockStart, std::max(0, openTagEnd - blockStart)),
+                    rawTagName,
+                    canonicalTypeName,
+                    blockStart,
+                    openTagEnd,
+                    blockEnd,
+                    closeTagStart,
+                    hasCloseTag,
+                    resourceIndex,
+                    agendaStats,
+                    renderedAgendas,
+                    renderedCallouts));
+        }
+    }
+
+    bool collectExplicitSpansFromIiXmlDocument(
+        const QString& sourceText,
+        std::vector<DocumentBlockSpan>* explicitSpans,
+        int* resourceIndex,
+        AgendaParseStats* agendaStats,
+        QVariantList* renderedAgendas,
+        QVariantList* renderedCallouts)
+    {
+        if (sourceText.trimmed().isEmpty())
+        {
+            return true;
+        }
+
+        const QString parseSourceText = sourceTextForIiXmlBlockParse(sourceText);
+        const QByteArray parseBytes = parseSourceText.toUtf8();
+        const iiXml::Parser::TagParser parser;
+        const iiXml::Parser::TagDocumentResult parsedDocument =
+            parser.ParseAllDocumentResult(
+                std::string_view(parseBytes.constData(), static_cast<std::size_t>(parseBytes.size())));
+        if (parsedDocument.Status != iiXml::Parser::TagTreeParseStatus::Parsed
+            || !parsedDocument.Document.has_value())
+        {
+            return false;
+        }
+
+        collectExplicitSpansFromIiXmlNodes(
+            sourceText,
+            parseBytes,
+            parsedDocument.Document.value().Nodes,
+            explicitSpans,
+            resourceIndex,
+            agendaStats,
+            renderedAgendas,
+            renderedCallouts);
+        return true;
+    }
+
+    void collectExplicitSpansFromLegacyTagScan(
+        const QString& sourceText,
+        std::vector<DocumentBlockSpan>* explicitSpans,
+        int* resourceIndex,
+        AgendaParseStats* agendaStats,
+        QVariantList* renderedAgendas,
+        QVariantList* renderedCallouts)
+    {
+        if (explicitSpans == nullptr)
+        {
+            return;
+        }
+
+        QVector<OpenExplicitBlock> openBlocks;
+        QRegularExpressionMatchIterator iterator = kAnyTagPattern.globalMatch(sourceText);
+        while (iterator.hasNext())
+        {
+            const QRegularExpressionMatch match = iterator.next();
+            if (!match.hasMatch())
+            {
+                continue;
+            }
+
+            const QString fullTagToken = match.captured(0);
+            const QString rawTagName = match.captured(2);
+            const QString normalizedTagName = rawTagName.trimmed().toCaseFolded();
+            const bool closingTag = match.captured(1) == QStringLiteral("/");
+            const bool selfClosingTag = isSelfClosingTagToken(fullTagToken);
+            const int tagStart = std::max(0, boundedQSizeToInt(match.capturedStart(0)));
+            const int tagEnd = std::max(tagStart, boundedQSizeToInt(match.capturedEnd(0)));
+
+            if (normalizedTagName == QStringLiteral("contents")
+                || normalizedTagName == QStringLiteral("body")
+                || SemanticTags::isTransparentContainerTagName(rawTagName)
+                || SemanticTags::isTaskTagName(rawTagName)
+                || !SemanticTags::canonicalInlineStyleTagName(rawTagName).isEmpty()
+                || SemanticTags::isRenderedLineBreakTagName(rawTagName))
+            {
+                continue;
+            }
+
+            const QString canonicalTypeName = SemanticTags::canonicalDocumentBlockTypeName(rawTagName);
+            if (canonicalTypeName.isEmpty())
+            {
+                continue;
+            }
+
+            const bool startsSiblingBlock = !closingTag || SemanticTags::isBreakDividerTagName(rawTagName);
+            if (startsSiblingBlock)
+            {
+                recoverTopLevelOpenBlockBeforeSibling(
+                    sourceText,
+                    tagStart,
+                    &openBlocks,
+                    explicitSpans,
+                    resourceIndex,
+                    agendaStats,
+                    renderedAgendas,
+                    renderedCallouts);
+            }
+
+            if (canonicalTypeName == QStringLiteral("resource"))
+            {
+                if (!closingTag && openBlocks.isEmpty())
+                {
+                    pushDocumentBlockSpan(
+                        explicitSpans,
+                        buildExplicitSpan(
+                            sourceText,
+                            fullTagToken,
+                            rawTagName,
+                            canonicalTypeName,
+                            tagStart,
+                            tagEnd,
+                            tagEnd,
+                            -1,
+                            false,
+                            resourceIndex,
+                            agendaStats,
+                            renderedAgendas,
+                            renderedCallouts));
+                }
+                continue;
+            }
+
+            if (selfClosingTag)
+            {
+                if (openBlocks.isEmpty())
+                {
+                    pushDocumentBlockSpan(
+                        explicitSpans,
+                        buildExplicitSpan(
+                            sourceText,
+                            fullTagToken,
+                            rawTagName,
+                            canonicalTypeName,
+                            tagStart,
+                            tagEnd,
+                            tagEnd,
+                            -1,
+                            false,
+                            resourceIndex,
+                            agendaStats,
+                            renderedAgendas,
+                            renderedCallouts));
+                }
+                continue;
+            }
+
+            const bool standaloneDividerClosingTag =
+                closingTag && SemanticTags::isBreakDividerTagName(rawTagName);
+            if (standaloneDividerClosingTag && openBlocks.isEmpty())
+            {
+                pushDocumentBlockSpan(
+                    explicitSpans,
+                    buildExplicitSpan(
+                        sourceText,
+                        fullTagToken,
+                        rawTagName,
+                        canonicalTypeName,
+                        tagStart,
+                        tagEnd,
+                        tagEnd,
+                        -1,
+                        false,
+                        resourceIndex,
+                        agendaStats,
+                        renderedAgendas,
+                        renderedCallouts));
+                continue;
+            }
+
+            if (!closingTag)
+            {
+                openBlocks.push_back(OpenExplicitBlock {
+                    normalizedTagName,
+                    tagEnd,
+                    tagStart,
+                    canonicalTypeName
+                });
+                continue;
+            }
+
+            int matchedOpenIndex = -1;
+            for (int index = openBlocks.size() - 1; index >= 0; --index)
+            {
+                if (openBlocks.at(index).normalizedTagName == normalizedTagName)
+                {
+                    matchedOpenIndex = index;
+                    break;
+                }
+            }
+            if (matchedOpenIndex < 0)
+            {
+                continue;
+            }
+
+            const OpenExplicitBlock matchedBlock = openBlocks.at(matchedOpenIndex);
+            while (openBlocks.size() > matchedOpenIndex)
+            {
+                openBlocks.removeLast();
+            }
+
+            if (!openBlocks.isEmpty())
+            {
+                continue;
+            }
+
+            pushDocumentBlockSpan(
+                explicitSpans,
+                buildExplicitSpan(
+                    sourceText,
+                    sourceText.mid(
+                        matchedBlock.start,
+                        std::max(0, matchedBlock.openTagEnd - matchedBlock.start)),
+                    rawTagName,
+                    matchedBlock.typeName,
+                    matchedBlock.start,
+                    matchedBlock.openTagEnd,
+                    tagEnd,
+                    tagStart,
+                    true,
+                    resourceIndex,
+                    agendaStats,
+                    renderedAgendas,
+                    renderedCallouts));
+        }
+
+        if (!openBlocks.isEmpty())
+        {
+            const OpenExplicitBlock openBlock = openBlocks.first();
+            if (openBlock.start < sourceText.size())
+            {
+                pushDocumentBlockSpan(
+                    explicitSpans,
+                    buildExplicitSpan(
+                        sourceText,
+                        sourceText.mid(openBlock.start, std::max(0, openBlock.openTagEnd - openBlock.start)),
+                        openBlock.normalizedTagName,
+                        openBlock.typeName,
+                        openBlock.start,
+                        openBlock.openTagEnd,
+                        sourceText.size(),
+                        -1,
+                        false,
+                        resourceIndex,
+                        agendaStats,
+                        renderedAgendas,
+                        renderedCallouts));
+            }
+        }
+    }
 } // namespace
 
 ContentsWsnBodyBlockParser::ContentsWsnBodyBlockParser() = default;
@@ -863,204 +1259,21 @@ ContentsWsnBodyBlockParser::ParseResult ContentsWsnBodyBlockParser::parse(const 
 
     std::vector<DocumentBlockSpan> explicitSpans;
     explicitSpans.reserve(16U);
-    QVector<OpenExplicitBlock> openBlocks;
-
-    QRegularExpressionMatchIterator iterator = kAnyTagPattern.globalMatch(sourceText);
-    while (iterator.hasNext())
-    {
-        const QRegularExpressionMatch match = iterator.next();
-        if (!match.hasMatch())
-        {
-            continue;
-        }
-
-        const QString fullTagToken = match.captured(0);
-        const QString rawTagName = match.captured(2);
-        const QString normalizedTagName = rawTagName.trimmed().toCaseFolded();
-        const bool closingTag = match.captured(1) == QStringLiteral("/");
-        const bool selfClosingTag = isSelfClosingTagToken(fullTagToken);
-        const int tagStart = std::max(0, boundedQSizeToInt(match.capturedStart(0)));
-        const int tagEnd = std::max(tagStart, boundedQSizeToInt(match.capturedEnd(0)));
-
-        if (normalizedTagName == QStringLiteral("contents")
-            || normalizedTagName == QStringLiteral("body")
-            || SemanticTags::isTransparentContainerTagName(rawTagName)
-            || SemanticTags::isTaskTagName(rawTagName)
-            || !SemanticTags::canonicalInlineStyleTagName(rawTagName).isEmpty()
-            || SemanticTags::isRenderedLineBreakTagName(rawTagName))
-        {
-            continue;
-        }
-
-        const QString canonicalTypeName = SemanticTags::canonicalDocumentBlockTypeName(rawTagName);
-        if (canonicalTypeName.isEmpty())
-        {
-            continue;
-        }
-
-        const bool startsSiblingBlock = !closingTag || SemanticTags::isBreakDividerTagName(rawTagName);
-        if (startsSiblingBlock)
-        {
-            recoverTopLevelOpenBlockBeforeSibling(
-                sourceText,
-                tagStart,
-                &openBlocks,
-                &explicitSpans,
-                &resourceIndex,
-                &agendaStats,
-                &result.renderedAgendas,
-                &result.renderedCallouts);
-        }
-
-        if (canonicalTypeName == QStringLiteral("resource"))
-        {
-            if (!closingTag && openBlocks.isEmpty())
-            {
-                pushDocumentBlockSpan(
-                    &explicitSpans,
-                    buildExplicitSpan(
-                        sourceText,
-                        fullTagToken,
-                        rawTagName,
-                        canonicalTypeName,
-                        tagStart,
-                        tagEnd,
-                        tagEnd,
-                        -1,
-                        false,
-                        &resourceIndex,
-                        &agendaStats,
-                        &result.renderedAgendas,
-                        &result.renderedCallouts));
-            }
-            continue;
-        }
-
-        if (selfClosingTag)
-        {
-            if (openBlocks.isEmpty())
-            {
-                pushDocumentBlockSpan(
-                    &explicitSpans,
-                    buildExplicitSpan(
-                        sourceText,
-                        fullTagToken,
-                        rawTagName,
-                        canonicalTypeName,
-                        tagStart,
-                        tagEnd,
-                        tagEnd,
-                        -1,
-                        false,
-                        &resourceIndex,
-                        &agendaStats,
-                        &result.renderedAgendas,
-                        &result.renderedCallouts));
-            }
-            continue;
-        }
-
-        const bool standaloneDividerClosingTag =
-            closingTag && SemanticTags::isBreakDividerTagName(rawTagName);
-        if (standaloneDividerClosingTag && openBlocks.isEmpty())
-        {
-            pushDocumentBlockSpan(
-                &explicitSpans,
-                buildExplicitSpan(
-                    sourceText,
-                    fullTagToken,
-                    rawTagName,
-                    canonicalTypeName,
-                    tagStart,
-                    tagEnd,
-                    tagEnd,
-                    -1,
-                    false,
-                    &resourceIndex,
-                    &agendaStats,
-                    &result.renderedAgendas,
-                    &result.renderedCallouts));
-            continue;
-        }
-
-        if (!closingTag)
-        {
-            openBlocks.push_back(OpenExplicitBlock {
-                normalizedTagName,
-                tagEnd,
-                tagStart,
-                canonicalTypeName
-            });
-            continue;
-        }
-
-        int matchedOpenIndex = -1;
-        for (int index = openBlocks.size() - 1; index >= 0; --index)
-        {
-            if (openBlocks.at(index).normalizedTagName == normalizedTagName)
-            {
-                matchedOpenIndex = index;
-                break;
-            }
-        }
-        if (matchedOpenIndex < 0)
-        {
-            continue;
-        }
-
-        const OpenExplicitBlock matchedBlock = openBlocks.at(matchedOpenIndex);
-        while (openBlocks.size() > matchedOpenIndex)
-        {
-            openBlocks.removeLast();
-        }
-
-        if (!openBlocks.isEmpty())
-        {
-            continue;
-        }
-
-        pushDocumentBlockSpan(
+    if (!collectExplicitSpansFromIiXmlDocument(
+            sourceText,
             &explicitSpans,
-            buildExplicitSpan(
-                sourceText,
-                sourceText.mid(
-                    matchedBlock.start,
-                    std::max(0, matchedBlock.openTagEnd - matchedBlock.start)),
-                rawTagName,
-                matchedBlock.typeName,
-                matchedBlock.start,
-                matchedBlock.openTagEnd,
-                tagEnd,
-                tagStart,
-                true,
-                &resourceIndex,
-                &agendaStats,
-                &result.renderedAgendas,
-                &result.renderedCallouts));
-    }
-
-    if (!openBlocks.isEmpty())
+            &resourceIndex,
+            &agendaStats,
+            &result.renderedAgendas,
+            &result.renderedCallouts))
     {
-        const OpenExplicitBlock openBlock = openBlocks.first();
-        if (openBlock.start < sourceText.size())
-        {
-            pushDocumentBlockSpan(
-                &explicitSpans,
-                buildExplicitSpan(
-                    sourceText,
-                    sourceText.mid(openBlock.start, std::max(0, openBlock.openTagEnd - openBlock.start)),
-                    openBlock.normalizedTagName,
-                    openBlock.typeName,
-                    openBlock.start,
-                    openBlock.openTagEnd,
-                    sourceText.size(),
-                    -1,
-                    false,
-                    &resourceIndex,
-                    &agendaStats,
-                    &result.renderedAgendas,
-                    &result.renderedCallouts));
-        }
+        collectExplicitSpansFromLegacyTagScan(
+            sourceText,
+            &explicitSpans,
+            &resourceIndex,
+            &agendaStats,
+            &result.renderedAgendas,
+            &result.renderedCallouts);
     }
 
     std::sort(

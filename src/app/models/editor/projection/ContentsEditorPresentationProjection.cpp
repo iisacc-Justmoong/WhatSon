@@ -119,6 +119,16 @@ QString ContentsEditorPresentationProjection::renderedHtml() const
     return m_textFormatRenderer != nullptr ? m_textFormatRenderer->renderedHtml() : QString();
 }
 
+QVariantList ContentsEditorPresentationProjection::htmlTokens() const
+{
+    return m_textFormatRenderer != nullptr ? m_textFormatRenderer->htmlTokens() : QVariantList();
+}
+
+QVariantList ContentsEditorPresentationProjection::normalizedHtmlBlocks() const
+{
+    return m_textFormatRenderer != nullptr ? m_textFormatRenderer->normalizedHtmlBlocks() : QVariantList();
+}
+
 QString ContentsEditorPresentationProjection::logicalText() const
 {
     return m_logicalTextBridge != nullptr ? m_logicalTextBridge->logicalText() : QString();
@@ -209,6 +219,16 @@ void ContentsEditorPresentationProjection::connectSignals()
             &ContentsTextFormatRenderer::renderedHtmlChanged,
             this,
             &ContentsEditorPresentationProjection::renderedHtmlChanged);
+        connect(
+            m_textFormatRenderer,
+            &ContentsTextFormatRenderer::htmlTokensChanged,
+            this,
+            &ContentsEditorPresentationProjection::htmlTokensChanged);
+        connect(
+            m_textFormatRenderer,
+            &ContentsTextFormatRenderer::normalizedHtmlBlocksChanged,
+            this,
+            &ContentsEditorPresentationProjection::normalizedHtmlBlocksChanged);
     }
 
     if (m_logicalTextBridge != nullptr)

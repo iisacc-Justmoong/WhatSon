@@ -4,12 +4,15 @@
 #include <QCoreApplication>
 #include <QDebug>
 #include <QElapsedTimer>
+#include <QMessageLogContext>
 #include <QObject>
 #include <QString>
 #include <QThread>
 #include <QtGlobal>
 
 #include <atomic>
+#include <cstdio>
+#include <cstdlib>
 #include <source_location>
 #include <type_traits>
 
@@ -78,6 +81,89 @@ namespace WhatSon::Debug
         }();
 
         return enabled;
+    }
+
+    inline bool isIiXmlTraceEnabled()
+    {
+        static const bool enabled = []()
+        {
+            const QByteArray raw = qgetenv("WHATSON_IIXML_TRACE_MODE");
+            if (raw.trimmed().isEmpty())
+            {
+                return false;
+            }
+
+            bool recognized = false;
+            const bool parsed = parseBoolFlag(raw, &recognized);
+            return recognized ? parsed : false;
+        }();
+
+        return enabled;
+    }
+
+    inline bool isIiXmlTraceMessage(const QString& message)
+    {
+        return message.startsWith(QStringLiteral("iiXml::"));
+    }
+
+    inline bool shouldSuppressThirdPartyTraceMessage(
+        const QtMsgType type,
+        const QString& message,
+        const bool iiXmlTraceEnabled)
+    {
+        return type == QtDebugMsg
+            && !iiXmlTraceEnabled
+            && isIiXmlTraceMessage(message);
+    }
+
+    inline QtMessageHandler& previousQtMessageHandlerStorage()
+    {
+        static QtMessageHandler previousHandler = nullptr;
+        return previousHandler;
+    }
+
+    inline void writeDefaultFormattedQtMessage(
+        const QtMsgType type,
+        const QMessageLogContext& context,
+        const QString& message)
+    {
+        const QByteArray formattedMessage = qFormatLogMessage(type, context, message).toLocal8Bit();
+        std::fprintf(stderr, "%s\n", formattedMessage.constData());
+        std::fflush(stderr);
+
+        if (type == QtFatalMsg)
+        {
+            std::abort();
+        }
+    }
+
+    inline void filteredThirdPartyTraceMessageHandler(
+        const QtMsgType type,
+        const QMessageLogContext& context,
+        const QString& message)
+    {
+        if (shouldSuppressThirdPartyTraceMessage(type, message, isIiXmlTraceEnabled()))
+        {
+            return;
+        }
+
+        if (previousQtMessageHandlerStorage() != nullptr)
+        {
+            previousQtMessageHandlerStorage()(type, context, message);
+            return;
+        }
+
+        writeDefaultFormattedQtMessage(type, context, message);
+    }
+
+    inline void installThirdPartyTraceMessageFilter()
+    {
+        static const bool installed = []()
+        {
+            previousQtMessageHandlerStorage() = qInstallMessageHandler(filteredThirdPartyTraceMessageHandler);
+            return true;
+        }();
+        Q_UNUSED(installed);
     }
 
     inline QString normalizeSegment(const QString& value, const QString& fallback)

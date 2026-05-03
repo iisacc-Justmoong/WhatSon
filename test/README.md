@@ -50,6 +50,7 @@ The C++ suite currently locks regression-sensitive runtime behavior for:
 - `ContentsTextFormatRenderer`
 - `ResourceDetailPanelController`
 - `ResourceBitmapViewer`
+- CMake wiring for the local `iiXml` and `iiHtmlBlock` package dependencies
 
 The suite avoids booting the full application shell or loading a hub package.
 
@@ -103,6 +104,8 @@ ctest --test-dir build --output-on-failure -L cpp_regression
   live block/task/callout edit baselines are preserved, and shortcut/key interception stands down while the
   OS keyboard owns the session.
   The same source checks pin pending cursor/surface restore behavior so neither path writes through native composition.
+- Inline-format editor checks now also lock the C++/QML helper-controller path so programmatic sync policy and
+  tag-management shortcut routing stay tied to the native `TextEdit` surface.
 - Structured QML editor checks now instantiate `ContentsDocumentTextBlock.qml` with RAW inline style tags and verify that
   the live editor receives rendered overlay HTML while its editable plain-text buffer stays tag-free.
 - Structured QML editor checks now also lock the custom-input policy: ordinary editor input has no QML key handlers,
@@ -215,3 +218,19 @@ ctest --test-dir build --output-on-failure -L cpp_regression
 - Selection-bridge persistence completion now also pins signal ordering, so a successful same-note body save updates
   `selectedNoteBodyText` before `editorTextPersistenceFinished(...)` reaches the editor session. This prevents the
   presentation source from briefly falling back to a stale saved body while typing resumes after an idle save.
+- Local dependency wiring now also has regression coverage: the root build must discover `iiXml` and `iiHtmlBlock`
+  from cacheable local prefixes, and both the app and C++ regression targets must link their imported CMake targets.
+- `.wsnhead` parsing now has iiXml migration coverage: `WhatSonNoteHeaderParser` must include iiXml, build its
+  extraction from `TagParser::ParseAllDocumentResult`, and still preserve folders, tags, file statistics, progress,
+  bookmark, and preset metadata.
+- `.wsnbody` package reads now have iiXml migration coverage: `WhatSonLocalNoteFileStore` must locate `<body>` and
+  first-resource thumbnail metadata through the iiXml document tree while preserving editor-facing RAW body source.
+- Editor rendering now has XML-to-HTML-block pipeline coverage: `.wsnbody` explicit block spans must prefer iiXml,
+  and `ContentsHtmlBlockRenderPipeline` must validate a renderer XML projection, convert it through iiHtmlBlock, and
+  publish iiHtmlBlock display-block metadata on normalized HTML blocks.
+- Runtime logging now has local dependency trace coverage: the app installs a Qt message filter that suppresses
+  default-off `iiXml::*` debug chatter while preserving warnings and allowing `WHATSON_IIXML_TRACE_MODE=1` opt-in
+  diagnosis.
+- QML editor-host coverage now verifies that `ContentsEditorPresentationProjection` republishes `htmlTokens` and
+  `normalizedHtmlBlocks`, and that `ContentsDisplayView.qml` forwards those renderer-owned block objects into
+  `ContentsStructuredDocumentFlow.qml` for final rendering.

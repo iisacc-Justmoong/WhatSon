@@ -1,37 +1,40 @@
 # `src/app/models/file/WhatSonDebugTrace.hpp`
 
 ## Status
-- Documentation phase: scaffold generated from the live source tree.
-- Detail level: structural placeholder prepared for a later deep pass.
+- Documentation phase: maintained alongside the runtime debug trace helper.
+- Detail level: documents the current trace controls and message-filtering boundary.
 
 ## Source Metadata
 - Source path: `src/app/models/file/WhatSonDebugTrace.hpp`
 - Source kind: C++ header
 - File name: `WhatSonDebugTrace.hpp`
-- Approximate line count: 286
+- Approximate line count: 360
 
-## Extracted Symbols
-- Declared namespaces present: yes
-- QObject macro present: no
+## Responsibility
+- Provides the app-local `[whatson:debug]` tracing helpers used by model, controller, startup, and editor code.
+- Parses boolean trace environment flags through one shared helper so `on/off`, `true/false`, and `1/0` behave
+  consistently.
+- Installs the app-level Qt message filter that suppresses noisy `iiXml::*` debug messages by default while preserving
+  WhatSon, LVRS, Qt warning, and fatal output.
 
-### Classes and Structs
-- None detected during scaffold generation.
+## Trace Flags
+- `WHATSON_DEBUG_MODE` controls ordinary WhatSon runtime traces.
+- `WHATSON_EDITOR_TRACE` overrides editor-specific traces; when absent, it follows `WHATSON_DEBUG_MODE`.
+- `WHATSON_IIXML_TRACE_MODE` controls local `iiXml` parser trace visibility. It defaults to off because the parser
+  emits one `qDebug` message for many internal parse steps.
 
-### Enums
-- None detected during scaffold generation.
+## Message Filter
+- `installThirdPartyTraceMessageFilter()` is called from `src/app/main.cpp` immediately after Qt application bootstrap.
+- The filter drops only `QtDebugMsg` entries whose message starts with `iiXml::` when `WHATSON_IIXML_TRACE_MODE` is not
+  enabled.
+- `QtWarningMsg`, `QtCriticalMsg`, `QtFatalMsg`, and all non-`iiXml` messages continue through the previous Qt message
+  handler, or through `qFormatLogMessage` when no previous handler exists.
 
-## Intended Detailed Sections
-- Responsibility and business role
-- Ownership and lifecycle
-- Public API or externally observed bindings
-- Collaborators and dependency direction
-- Data flow and state transitions
-- Error handling and recovery paths
-- Threading, scheduling, or UI affinity constraints when relevant
-- Extension points, invariants, and known complexity hotspots
-- Test coverage and missing verification
+## Verification
+- `test/cpp/suites/debug_trace_filter_tests.cpp` locks the suppression predicate, warning passthrough behavior, main
+  startup installation call, and environment variable contract.
 
-## Authoring Notes For Next Pass
-- Read the real implementation and adjacent headers before replacing this scaffold.
-- Document concrete signals, slots, invokables, persistence side effects, and LVRS/QML bindings where applicable.
-- Cross-link this file with peer modules in the same directory once the detailed pass begins.
+## Extension Notes
+- Keep the filter as a narrow text-prefix gate for local dependencies that do not expose a logging API.
+- Prefer adding real logging controls to local libraries when they become available instead of broadening app-side
+  suppression.

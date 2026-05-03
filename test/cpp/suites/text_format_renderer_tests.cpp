@@ -86,6 +86,50 @@ void WhatSonCppRegressionTests::inlineStyleOverlayRenderer_republishesHtmlOverla
     QVERIFY(!renderer.editorSurfaceHtml().isEmpty());
 }
 
+void WhatSonCppRegressionTests::editorPresentationProjection_publishesHtmlBlockPipelineToQmlHost()
+{
+    ContentsEditorPresentationProjection projection;
+    projection.setSourceText(
+        QStringLiteral(
+            "<paragraph>Alpha</paragraph>\n"
+            "<resource type=\"image\" path=\"cover.png\" />\n"
+            "<callout>Beta</callout>"));
+
+    QVERIFY(!projection.editorSurfaceHtml().isEmpty());
+    QVERIFY(projection.htmlTokens().size() >= 3);
+    QVERIFY(projection.normalizedHtmlBlocks().size() >= 3);
+
+    for (const QVariant& blockValue : projection.normalizedHtmlBlocks())
+    {
+        const QVariantMap block = blockValue.toMap();
+        QCOMPARE(
+            block.value(QStringLiteral("htmlBlockObjectSource")).toString(),
+            QStringLiteral("iiHtmlBlock"));
+        QVERIFY(!block.value(QStringLiteral("htmlBlockTagName")).toString().isEmpty());
+        QVERIFY(block.value(QStringLiteral("htmlBlockIsDisplayBlock")).toBool());
+    }
+
+    const QString projectionHeaderSource = readUtf8SourceFile(
+        QStringLiteral("src/app/models/editor/projection/ContentsEditorPresentationProjection.hpp"));
+    const QString projectionCppSource = readUtf8SourceFile(
+        QStringLiteral("src/app/models/editor/projection/ContentsEditorPresentationProjection.cpp"));
+    const QString displayViewSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/content/editor/ContentsDisplayView.qml"));
+    const QString documentFlowSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/content/editor/ContentsStructuredDocumentFlow.qml"));
+
+    QVERIFY(projectionHeaderSource.contains(QStringLiteral("Q_PROPERTY(QVariantList htmlTokens")));
+    QVERIFY(projectionHeaderSource.contains(QStringLiteral("Q_PROPERTY(QVariantList normalizedHtmlBlocks")));
+    QVERIFY(projectionCppSource.contains(QStringLiteral("ContentsTextFormatRenderer::htmlTokensChanged")));
+    QVERIFY(projectionCppSource.contains(QStringLiteral("ContentsTextFormatRenderer::normalizedHtmlBlocksChanged")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("ContentsEditorPresentationProjection {")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("htmlTokens: editorPresentationProjection.htmlTokens")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("normalizedHtmlBlocks: editorPresentationProjection.normalizedHtmlBlocks")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("editorSurfaceHtml: editorPresentationProjection.editorSurfaceHtml")));
+    QVERIFY(documentFlowSource.contains(QStringLiteral("ContentsInlineFormatEditor {")));
+    QVERIFY(documentFlowSource.contains(QStringLiteral("renderedText: documentFlow.editorSurfaceHtml")));
+}
+
 void WhatSonCppRegressionTests::textFormatRenderer_preservesMarkdownUnorderedListMarkersWithoutRegexWarnings()
 {
     ContentsTextFormatRenderer renderer;

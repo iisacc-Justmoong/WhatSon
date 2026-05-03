@@ -16,6 +16,8 @@ class ContentsEditorPresentationProjection : public QObject
     Q_PROPERTY(bool paperPaletteEnabled READ paperPaletteEnabled WRITE setPaperPaletteEnabled NOTIFY paperPaletteEnabledChanged)
     Q_PROPERTY(QString editorSurfaceHtml READ editorSurfaceHtml NOTIFY editorSurfaceHtmlChanged)
     Q_PROPERTY(QString renderedHtml READ renderedHtml NOTIFY renderedHtmlChanged)
+    Q_PROPERTY(QVariantList htmlTokens READ htmlTokens NOTIFY htmlTokensChanged)
+    Q_PROPERTY(QVariantList normalizedHtmlBlocks READ normalizedHtmlBlocks NOTIFY normalizedHtmlBlocksChanged)
     Q_PROPERTY(QString logicalText READ logicalText NOTIFY logicalTextChanged)
     Q_PROPERTY(QVariantList logicalLineStartOffsets READ logicalLineStartOffsets NOTIFY logicalLineStartOffsetsChanged)
     Q_PROPERTY(int logicalLineCount READ logicalLineCount NOTIFY logicalLineCountChanged)
@@ -34,6 +36,8 @@ public:
 
     QString editorSurfaceHtml() const;
     QString renderedHtml() const;
+    QVariantList htmlTokens() const;
+    QVariantList normalizedHtmlBlocks() const;
     QString logicalText() const;
     QVariantList logicalLineStartOffsets() const;
     int logicalLineCount() const noexcept;
@@ -56,6 +60,8 @@ signals:
     void paperPaletteEnabledChanged();
     void editorSurfaceHtmlChanged();
     void renderedHtmlChanged();
+    void htmlTokensChanged();
+    void normalizedHtmlBlocksChanged();
     void logicalTextChanged();
     void logicalLineStartOffsetsChanged();
     void logicalLineCountChanged();
