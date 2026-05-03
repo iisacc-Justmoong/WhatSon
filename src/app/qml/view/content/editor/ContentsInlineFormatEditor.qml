@@ -1,7 +1,6 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
-import QtQuick.Controls
 import WhatSon.App.Internal 1.0
 import LVRS 1.0 as LV
 
@@ -12,15 +11,15 @@ Item {
     property bool autoFocusOnPress: true
     property alias contentHeight: textInput.contentHeight
     property alias cursorPosition: textInput.cursorPosition
-    property alias editorItem: textInput
-    property bool focused: textInput.activeFocus
-    property alias inputItem: textInput
+    readonly property var editorItem: textInput.editorItem
+    property bool focused: textInput.focused
+    readonly property var inputItem: textInput.editorItem
     property int inputMethodHints: Qt.ImhNone
     property int mouseSelectionMode: TextEdit.SelectCharacters
     property bool overwriteMode: false
     property bool persistentSelection: true
     readonly property bool inputMethodComposing: textInput.inputMethodComposing
-    readonly property string preeditText: textInput.preeditText
+    readonly property string preeditText: String(textInput.editorItem.preeditText)
     property string renderedText: ""
     property bool selectByKeyboard: true
     property bool selectByMouse: true
@@ -49,10 +48,17 @@ Item {
     }
 
     function eventRequestsBodyTagShortcut(event) {
+        const key = event.key;
+        const pureModifierKey = key === Qt.Key_Alt
+                || key === Qt.Key_Control
+                || key === Qt.Key_Meta
+                || key === Qt.Key_Shift;
+        if (pureModifierKey)
+            return false;
         const modifiers = Number(event.modifiers) || 0;
         const commandHeld = (modifiers & Qt.ControlModifier) || (modifiers & Qt.MetaModifier);
         const optionHeld = modifiers & Qt.AltModifier;
-        return Boolean((modifiers !== 0 && (event.key === Qt.Key_Return || event.key === Qt.Key_Enter))
+        return Boolean((modifiers !== 0 && (key === Qt.Key_Return || key === Qt.Key_Enter))
                        || (commandHeld && optionHeld));
     }
 
@@ -73,7 +79,7 @@ Item {
 
     function forceActiveFocus() {
         control.focus = true;
-        textInput.forceActiveFocus();
+        textInput.forceEditorFocus();
     }
 
     function inlineFormatSelectionSnapshot() {
@@ -85,7 +91,7 @@ Item {
     }
 
     function positionToRectangle(position) {
-        return textInput.positionToRectangle(position);
+        return textInput.editorItem.positionToRectangle(position);
     }
 
     function requestViewHook(reason) {
@@ -147,6 +153,23 @@ Item {
             event.accepted = false;
     }
 
+    function syntheticTagManagementKeyEvent(key, modifiers) {
+        return {
+            "accepted": false,
+            "key": key,
+            "matches": function (standardKey) {
+                return false;
+            },
+            "modifiers": modifiers
+        };
+    }
+
+    function triggerTagManagementShortcut(key, modifiers) {
+        const event = syntheticTagManagementKeyEvent(key, modifiers);
+        control.handleTagManagementKeyPress(event);
+        return event.accepted === true;
+    }
+
     clip: true
 
     Keys.priority: Keys.BeforeItem
@@ -158,7 +181,7 @@ Item {
         id: inlineEditorController
 
         control: control
-        textInput: textInput
+        textInput: textInput.editorItem
     }
 
     Text {
@@ -169,7 +192,7 @@ Item {
         font.family: LV.Theme.fontBody
         font.pixelSize: LV.Theme.textBody
         linkColor: LV.Theme.primary
-        padding: textInput.padding
+        padding: LV.Theme.gap16
         text: control.renderedText
         textFormat: Text.RichText
         visible: control.showRenderedOutput && control.renderedText.length > 0 && !control.nativeCompositionActive()
@@ -181,25 +204,62 @@ Item {
         }
     }
 
-    TextEdit {
+    Shortcut {
+        autoRepeat: false
+        context: Qt.WindowShortcut
+        enabled: control.focused
+                 && control.tagManagementKeyPressHandler !== null
+                 && control.tagManagementKeyPressHandler !== undefined
+        sequence: "Ctrl+Alt+C"
+
+        onActivated: control.triggerTagManagementShortcut(Qt.Key_C, Qt.ControlModifier | Qt.AltModifier)
+    }
+
+    Shortcut {
+        autoRepeat: false
+        context: Qt.WindowShortcut
+        enabled: control.focused
+                 && control.tagManagementKeyPressHandler !== null
+                 && control.tagManagementKeyPressHandler !== undefined
+        sequence: "Meta+Alt+C"
+
+        onActivated: control.triggerTagManagementShortcut(Qt.Key_C, Qt.MetaModifier | Qt.AltModifier)
+    }
+
+    LV.TextEditor {
         id: textInput
 
         anchors.fill: parent
         activeFocusOnPress: control.autoFocusOnPress
-        color: renderedOverlay.visible ? "transparent" : control.textColor
-        font.family: LV.Theme.fontBody
-        font.pixelSize: LV.Theme.textBody
+        autoFocusOnPress: control.autoFocusOnPress
+        backgroundColor: "transparent"
+        backgroundColorDisabled: "transparent"
+        backgroundColorFocused: "transparent"
+        backgroundColorHover: "transparent"
+        backgroundColorPressed: "transparent"
+        centeredTextHeight: Math.max(1, textInput.resolvedEditorHeight - textInput.insetVertical * 2)
+        cornerRadius: LV.Theme.gapNone
+        editorHeight: Math.max(1, control.height)
+        enforceModeDefaults: true
+        fieldMinHeight: LV.Theme.gap16
+        fontFamily: LV.Theme.fontBody
+        fontPixelSize: LV.Theme.textBody
+        insetHorizontal: LV.Theme.gap16
+        insetVertical: LV.Theme.gap16
         inputMethodHints: control.inputMethodHints
+        mode: plainTextMode
         mouseSelectionMode: control.mouseSelectionMode
         overwriteMode: control.overwriteMode
-        padding: LV.Theme.gap16
         persistentSelection: control.persistentSelection
         selectByKeyboard: control.selectByKeyboard
         selectByMouse: control.selectByMouse
         selectedTextColor: control.textColor
         selectionColor: LV.Theme.primaryOverlay
+        showRenderedOutput: false
+        showScrollBar: false
+        textColor: renderedOverlay.visible ? "transparent" : control.textColor
+        textColorDisabled: textColor
         textFormat: TextEdit.PlainText
-        verticalAlignment: TextEdit.AlignTop
         wrapMode: TextEdit.Wrap
 
         Keys.priority: Keys.BeforeItem
@@ -207,8 +267,8 @@ Item {
             control.handleTagManagementKeyPress(event);
         }
 
-        onTextChanged: {
-            control.textEdited(textInput.text);
+        onTextEdited: function (text) {
+            control.textEdited(text);
         }
     }
 }

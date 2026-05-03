@@ -47,6 +47,8 @@
 - QML root loading now flows through `WhatSonQmlLaunchSupport`, which delegates initial-property setup and window
   activation to LVRS `loadQmlRootObjects(...)` instead of duplicating `QQmlApplicationEngine::loadFromModule(...)`
   and manual `show()/raise()/requestActivate()` logic in `main.cpp`.
+- Workspace root loading now keeps the returned LVRS `QmlRootLoadResult` through startup lifecycle scheduling and
+  foreground-service startup. `main.cpp` no longer reconstructs root/window state from only the created `QObject*`.
 - Workspace context binding now flows through `WhatSonQmlContextBinder` and LVRS `QmlContextBindPlan`, so C++
   publishes root runtime objects directly before `Main.qml` loads.
 - Internal QML bridge type registration now flows through `WhatSonQmlInternalTypeRegistrar` and LVRS

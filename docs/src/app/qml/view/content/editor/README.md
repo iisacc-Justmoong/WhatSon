@@ -18,8 +18,8 @@ Editor-facing QML view components for the center content surface.
 - `ContentsDisplayView.qml` mounts the selected note RAW body into `ContentsEditorSessionController`.
 - `ContentsEditorPresentationProjection` converts that RAW body into editor HTML plus renderer-owned block metadata.
 - `ContentsStructuredDocumentFlow.qml` consumes `editorSurfaceHtml`, `htmlTokens`, and `normalizedHtmlBlocks`.
-- `ContentsInlineFormatEditor.qml` keeps editing on a native `TextEdit.PlainText` buffer while displaying the
-  read-side RichText overlay.
+- `ContentsInlineFormatEditor.qml` keeps editing on an `LV.TextEditor` plain-text buffer while displaying the read-side
+  RichText overlay.
 - Resource-backed center-surface browsing is handled by `ContentsResourceEditorView.qml` and `ContentsResourceViewer.qml`.
 
 QML in this directory must stay presentation-only. XML parsing, HTML tokenization, block object construction, and RAW
@@ -31,6 +31,6 @@ source mutation policy remain in C++ model/renderer objects.
 
 - 대상: ``src/app/qml/view/content/editor`` (`docs/src/app/qml/view/content/editor/README.md`)
 - 위치: `docs/src/app/qml/view/content/editor`
-- 역할: 이 파일은 해당 디렉터리나 모듈의 구조, 책임, 운영 규칙, 검증 기준을 설명한다.
+- 역할: 이 파일은 해당 디렉터리나 모듈의 구조, 책임, 운영 규칙, 검증 기준을 설명하며 본문 편집기는 `LV.TextEditor` 기준이다.
 - 기준: 파일 경로, 명령, API 이름, 세부 변경 이력은 위 영어 본문을 원문 기준으로 유지한다.
 - 변경 시: 위 영어 본문을 수정하면 이 한국어 하단 섹션도 함께 최신 상태로 맞춘다.

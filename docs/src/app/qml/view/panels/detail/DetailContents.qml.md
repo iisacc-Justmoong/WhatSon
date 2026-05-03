@@ -82,13 +82,14 @@ The `Projects`, `Bookmark`, and `Progress` combo labels use the caption text tok
 ## Metadata List Interaction
 - `FoldersList` and `TagsList` derive their active row index from the properties content view-model instead of storing ad-hoc QML-only state.
 - `FoldersList` mirrors each `.wsnhead` folder path verbatim, so `Research/Ideas` remains `Research/Ideas` in the visible list instead of collapsing to the final segment.
-- Clicking a metadata row now routes through `DetailMetadataSelectionController.qml`.
+- Clicking a metadata row now routes through the inline `metadataSelectionController` owned by each `DetailListSection`.
 - Selection behavior for both `FoldersList` and `TagsList`:
   - plain click: single selection only
   - `Cmd/Ctrl + click`: toggle selection
   - `Shift + click`: contiguous range selection
   - `Cmd/Ctrl + Shift + click`: union the range with the existing selection
-- The controller keeps a QML-local visual `selectedIndices` set, but still commits one primary active row back through
+- The controller binds `section: listSection`, keeps a QML-local visual `selectedIndices` set, and still commits one
+  primary active row back through
   `activeFolderIndex` or `activeTagIndex` so existing delete and active-row behaviors continue to use a single index.
 - The footer `addFile` control no longer writes metadata inline by default.
 - Pressing `FoldersList` add opens the shared hierarchy picker anchored from the footer on desktop and as a bottom
@@ -140,12 +141,15 @@ This keeps the state switch explicit until each mode receives its final Figma fo
 
 ## Tests
 
-- Automated test files are not currently present in this repository.
+- `qmlInlineSelectionHelpers_bindOwnersAfterControllerFileDeletion` locks the inline metadata helper contract:
+  `metadataSelectionController` must bind `section: listSection` and must not retain stale `controller.*` references.
 - Regression checklist:
   - Plain click in `FoldersList` must clear any prior multi-selection and leave only the clicked row selected.
   - `Cmd/Ctrl + click` and `Shift + click` must keep modifier-based multi-selection working in `FoldersList`.
   - The same selection rules must also hold for `TagsList`, because both lists share the same `DetailListSection` and
     selection controller.
+  - The inline metadata selection controller must keep `section: listSection` and avoid unresolved `controller.*`
+    self-references, otherwise the detail panel logs runtime `ReferenceError` during workspace startup.
   - Desktop `FoldersList` add must open an anchored hierarchy popup instead of jumping straight into inline text entry.
   - Mobile `FoldersList` and `TagsList` add must open the bottom-sheet picker through the same overridden `LV.ContextMenu`.
   - The folder and tag pickers must show every hierarchy row immediately, without chevrons or collapsed descendants.

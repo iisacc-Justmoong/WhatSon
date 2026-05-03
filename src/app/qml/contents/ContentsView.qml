@@ -39,6 +39,7 @@ Rectangle {
 
     LV.HStack {
         anchors.fill: parent
+        objectName: "figma-155-5344-HStack"
         spacing: LV.Theme.gapNone
 
         Gutter {

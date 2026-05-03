@@ -189,10 +189,13 @@ WhatSon is an LVRS-based Qt Quick application.
 - `IHierarchyViewModel` is now a read-oriented shared contract. Rename/create/delete/expand/reorder/note-drop moved
   behind dedicated capability interfaces, and QML consumes those write paths through `HierarchyInteractionBridge` plus
   `HierarchyDragDropBridge` instead of depending on one fat interface for every hierarchy screen.
-- `SidebarHierarchyView.qml` no longer keeps rename, bookmark-palette, and note-drop controller logic in one root
-  object. The mounted LVRS surface now composes `SidebarHierarchyRenameController.qml`,
-  `SidebarHierarchyNoteDropController.qml`, and `SidebarHierarchyBookmarkPaletteController.qml` as sibling helpers
-  while the root view stays focused on layout, shell state, and LVRS event wiring.
+- `SidebarHierarchyView.qml` no longer keeps selection, rename, bookmark-palette, and note-drop controller logic in one
+  root object. The mounted LVRS surface now composes those responsibilities as named inline `QtObject` helpers and
+  binds their required dependencies to the live view/tree/field/canvas objects at startup, while the root view stays
+  focused on layout, shell state, and LVRS event wiring.
+- `ListBarLayout.qml` and `DetailContents.qml` follow the same post-cleanup rule for inline selection helpers: helper
+  objects call through their own ids and bind back to the live owner (`listBarLayout` / `listSection`) so deleted
+  controller files do not leave unresolved `controller.*` runtime references.
 - Sidebar drag-reorder is now reintroduced through a dedicated system-level `HierarchyDragDropBridge` wired into
   LVRS `Hierarchy.editable` plus `listItemMoved(...)`, so folder tree mutation stays on the direct LVRS event path
   instead of reviving the old local interaction controller. The same mounted sidebar now also accepts
@@ -272,12 +275,13 @@ WhatSon is an LVRS-based Qt Quick application.
 - The editor surface keeps Figma-style Fill height even when the body text is empty, and the editable text block is
   top-left aligned with a shared `16px` top / horizontal / bottom inset instead of vertical centering.
 - That shared top inset is now materialized through the custom `ContentsInlineFormatEditor.qml` wrapper around
-  `QtQuick.TextEdit` while the internal `topPadding` stays forced to `0`, so the `16px` separation from the navigation
-  bar remains visible even when the editor viewport recalculates under Fill sizing on both desktop and mobile.
+  `LV.TextEditor`, with the LVRS editor configured for top-aligned body editing so the `16px` separation from the
+  navigation bar remains visible even when the editor viewport recalculates under Fill sizing on both desktop and
+  mobile.
 - The wrapper disables rendered preview output and forced mode defaults where required while keeping
   `wrapMode: TextEdit.Wrap`; the gutter still tracks logical `.wsnbody` lines through `positionToRectangle(...)`, so
   wrapped visual rows do not renumber the document.
-- The same `QtQuick.TextEdit`-backed wrapper binds the body token explicitly for this surface:
+- The same `LV.TextEditor`-backed wrapper binds the body token explicitly for this surface:
   `LV.Theme.fontBody`, `12px` host-driven weight/size policy, zero letter spacing, explicit `LV.Theme.bodyColor` text
   color, and the standard LVRS selection highlight (`LV.Theme.accent`), matching the Figma `Body` token and the rest
   of the app's input controls.
@@ -370,7 +374,7 @@ WhatSon is an LVRS-based Qt Quick application.
   `logicalLineNumberForDocumentY(...)`, which keeps the line-number model simpler while still matching the top visible
   logical document line.
 - The gutter also keeps an explicit refresh-revision pulse with a short multi-pass timer, so when a user re-enters the
-  editor surface, opens a different note, or the underlying `QtQuick.TextEdit` finishes a delayed relayout, the visible
+  editor surface, opens a different note, or the underlying `LV.TextEditor.editorItem` finishes a delayed relayout, the visible
   line numbers
   and current-line markers are resampled from the settled editor geometry instead of stretching stale positions from a
   previous note/session.
@@ -386,7 +390,7 @@ WhatSon is an LVRS-based Qt Quick application.
 - The editor surface now also exposes a right-side Xcode-style minimap, but it is rendered as a borderless inline text
   silhouette instead of a framed rail. Its bar positions come from the editor's real content height and text-start
   offset, so short notes stay top-aligned and the minimap reflects the text body rather than gutter markers.
-- That silhouette is now painted from actual wrapped visual-row segments taken from the `QtQuick.TextEdit` layout rather than
+- That silhouette is now painted from actual wrapped visual-row segments taken from the `LV.TextEditor.editorItem` layout rather than
   from one height-scaled logical-line block, so wrapped paragraphs appear as separate thin text strokes instead of
   carved slabs.
 - Minimap rows are packed with a fixed `1px` gap between bars, which keeps the overview denser than the main editor and
@@ -402,10 +406,10 @@ WhatSon is an LVRS-based Qt Quick application.
   editor views now keep the source-to-logical bridge hot for typing diffs, but defer the expensive
   `ContentsTextFormatRenderer` render plus editor-surface/minimap snapshot commit to a short idle timer or an explicit
   focus-loss / note-switch flush.
-- The shared `ContentsInlineFormatEditor.qml` wrapper now also forwards cursor/selection/geometry changes to
-  `Qt.inputMethod.update(...)` using the same `Qt::ImQueryInput` / cursor-rectangle queries documented by Qt, so iOS
-  keyboard trackpad-style cursor and selection gestures can keep following the live `TextEdit` state.
-- Programmatic selection restoration now uses `TextEdit.moveCursorSelection(...)` instead of plain `select(start, end)`
+- The shared `ContentsInlineFormatEditor.qml` wrapper now exposes the `LV.TextEditor.editorItem` native text surface to
+  the editor input policy, so iOS keyboard trackpad-style cursor and selection gestures can keep following the live
+  Qt text state without installing a separate input-method bridge in QML.
+- Programmatic selection restoration now uses native text selection movement instead of plain `select(start, end)`
   when an active edge must be preserved. This keeps iOS keyboard-driven range expansion from collapsing to only the
   most recently traversed fragment after the app re-syncs the surface or reapplies a selection.
 - The shared editor wrapper now also supplements touch-only multi-tap selection on native-input mobile paths:
@@ -467,6 +471,13 @@ LVRS platform-layout reference:
 - iOS: `~/.local/LVRS/platforms/ios`
 - Android: `~/.local/LVRS/platforms/android`
 - WASM: `~/.local/LVRS/platforms/wasm` (if installed)
+
+Runtime bootstrap follows the current LVRS app-entry shape:
+
+- QML roots are loaded through `lvrs::loadQmlRootObjects(...)` and kept as `QmlRootLoadResult`.
+- Startup lifecycle tasks and foreground-service gates consume that same LVRS root/window result instead of rebuilding
+  lifecycle state from a raw `QObject*`.
+- `QObject*` root helpers remain available only as compatibility wrappers over the result-returning launch helpers.
 
 ## Build
 
@@ -1276,6 +1287,10 @@ Outputs:
 
 - 대상: `WhatSon` (`README.md`)
 - 위치: `repository root`
-- 역할: 이 파일은 해당 디렉터리나 모듈의 구조, 책임, 운영 규칙, 검증 기준을 설명한다.
+- 역할: 이 파일은 해당 디렉터리나 모듈의 구조, 책임, 운영 규칙, 검증 기준을 설명하며 본문 편집기는 `LV.TextEditor` 기반이다.
 - 기준: 파일 경로, 명령, API 이름, 세부 변경 이력은 위 영어 본문을 원문 기준으로 유지한다.
 - 변경 시: 위 영어 본문을 수정하면 이 한국어 하단 섹션도 함께 최신 상태로 맞춘다.
+- 현재 기준: 사이드바, 리스트바, 디테일 패널의 inline selection/helper `QtObject`는 삭제된 helper 파일의
+  `controller.*` 자기 참조를 남기지 않고 live owner 의존성을 명시적으로 바인딩해야 한다.
+- 런타임 부트스트랩 기준: QML root 로딩 결과는 LVRS `QmlRootLoadResult`로 유지하고, startup lifecycle task와
+  foreground service gate는 해당 root/window 결과를 그대로 사용해야 한다.

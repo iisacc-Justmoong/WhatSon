@@ -90,8 +90,8 @@ ctest --test-dir build --output-on-failure -L cpp_regression
 - Structured editor selection cleanup is now also locked at the C++ host-object and QML routing layers, so focus
   activation emits the selection-clear revision/retained-block contract that QML delegates consume, while same-block
   cursor movement uses a cursor-only host path and keeps native desktop/iOS text selection intact.
-- Editor shortcut-surface gating now also treats every focused body `TextEdit` as the native keyboard owner, so platform
-  text-navigation and selection chords remain OS/Qt behavior instead of being shadowed by ordinary app shortcut
+- Editor shortcut-surface gating now also treats every focused body `LV.TextEditor.editorItem` as the native keyboard
+  owner, so platform text-navigation and selection chords remain OS/Qt behavior instead of being shadowed by ordinary app shortcut
   handling. The explicit tag-management surface remains enabled outside composition so inline formatting shortcuts still
   write RAW tags while editing.
 - Focused editor tag-management coverage now also pins direct RAW body-tag shortcuts for agenda, callout, and break
@@ -107,7 +107,7 @@ ctest --test-dir build --output-on-failure -L cpp_regression
   OS keyboard owns the session.
   The same source checks pin pending cursor/surface restore behavior so neither path writes through native composition.
 - Inline-format editor checks now also lock the C++/QML helper-controller path so programmatic sync policy and
-  tag-management shortcut routing stay tied to the native `TextEdit` surface.
+  tag-management shortcut routing stay tied to the `LV.TextEditor.editorItem` native text surface.
 - Structured QML editor checks now instantiate `ContentsDocumentTextBlock.qml` with RAW inline style tags and verify that
   the live editor receives rendered overlay HTML while its editable plain-text buffer stays tag-free.
 - Structured QML editor checks now also lock the custom-input policy: ordinary editor input has no QML key handlers,
@@ -179,15 +179,15 @@ ctest --test-dir build --output-on-failure -L cpp_regression
 - Minimap snapshot planning now also pins normalized logical-line snapshot entries in the C++ and QML regression
   suites, so diff planning compares renderer-normalized document lines instead of raw `.wsnbody` newline splits and
   structured notes keep the minimap aligned with the same document model the editor is rendering.
-- The shared inline-format editor now also pins the absence of QML key/pointer interception above the live `TextEdit`,
+- The shared inline-format editor now also pins the absence of pointer interception above the live `LV.TextEditor`,
   so mouse/touch selection, `Shift`-extended selection, and repeated Backspace/Delete remain OS/Qt-native. The same
   regression scans the QML source tree for forbidden input-method bridges and fallbacks, keeping IME query updates,
-  candidate placement, and keyboard visibility on the OS/Qt `TextEdit` path.
-- The inline editor regression now also pins the explicit Qt `TextEdit` keyboard/selection flags used by note-body
+  candidate placement, and keyboard visibility on the OS/Qt text-editing path.
+- The inline editor regression now also pins the explicit `LV.TextEditor` keyboard/selection flags used by note-body
   editors: focus-on-press, keyboard selection, pointer selection, persistent selection, unrestricted input-method hints,
   character-level mouse selection, and insert-mode editing.
 - The inline editor regression also source-locks the absence of live-text key handlers in
-  `ContentsInlineFormatEditor.qml`, so ordinary navigation and selection chords stay with Qt/OS `TextEdit`.
+  `ContentsInlineFormatEditor.qml`, so ordinary navigation and selection chords stay with Qt/OS text editing.
 - The unified display view now also pins blur-save behavior during native composition: blur flush returns instead of
   forcing RAW persistence after a fixed retry count while preedit text is still active.
 - Inline structured resource cards now also pin block/card clipping in the QML regression suite, so a mobile image
@@ -243,6 +243,6 @@ ctest --test-dir build --output-on-failure -L cpp_regression
 
 - 대상: `Regression Tests` (`test/README.md`)
 - 위치: `test`
-- 역할: 이 파일은 해당 디렉터리나 모듈의 구조, 책임, 운영 규칙, 검증 기준을 설명한다.
+- 역할: 이 파일은 해당 디렉터리나 모듈의 구조, 책임, 운영 규칙, 검증 기준을 설명하며 `LV.TextEditor` 기반 본문 입력 회귀를 포함한다.
 - 기준: 파일 경로, 명령, API 이름, 세부 변경 이력은 위 영어 본문을 원문 기준으로 유지한다.
 - 변경 시: 위 영어 본문을 수정하면 이 한국어 하단 섹션도 함께 최신 상태로 맞춘다.

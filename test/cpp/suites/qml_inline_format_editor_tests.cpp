@@ -84,6 +84,10 @@ void WhatSonCppRegressionTests::qmlInlineFormatEditor_keepsNativeTextEditInputUn
     QVERIFY(inlineEditorSource.contains(QStringLiteral("function eventRequestsPasteShortcut(event)")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("function eventRequestsInlineFormatShortcut(event)")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("function eventRequestsBodyTagShortcut(event)")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("const pureModifierKey = key === Qt.Key_Alt")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("if (pureModifierKey)")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("function triggerTagManagementShortcut(key, modifiers)")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("sequence: \"Ctrl+Alt+C\"")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("event.matches(StandardKey.Paste)")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("!control.eventRequestsPasteShortcut(event)")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("!control.eventRequestsInlineFormatShortcut(event)")));
@@ -93,12 +97,16 @@ void WhatSonCppRegressionTests::qmlInlineFormatEditor_keepsNativeTextEditInputUn
     QVERIFY(!inlineEditorSource.contains(QStringLiteral("handleMacModifierVerticalNavigation")));
     QVERIFY(!inlineEditorSource.contains(QStringLiteral("activateInputAtPoint")));
     QVERIFY(!inlineEditorSource.contains(QStringLiteral("insertTabIndentAsSpaces")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("LV.TextEditor {")));
+    QVERIFY(!inlineEditorSource.contains(QStringLiteral("\n    TextEdit {\n")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("activeFocusOnPress: control.autoFocusOnPress")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("property int inputMethodHints: Qt.ImhNone")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("property int mouseSelectionMode: TextEdit.SelectCharacters")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("property bool overwriteMode: false")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("property bool persistentSelection: true")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("selectByMouse: control.selectByMouse")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("textInput: textInput.editorItem")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("showRenderedOutput: false")));
 }
 
 void WhatSonCppRegressionTests::qmlInlineFormatEditor_forwardsInlineFormatShortcutsToTagManagementHook()
@@ -214,7 +222,7 @@ void WhatSonCppRegressionTests::qmlInlineFormatEditor_keepsKeyboardSelectionAndO
     QVERIFY(inlineEditorControllerHeader.contains(QStringLiteral("class ContentsInlineFormatEditorController")));
     QVERIFY(inlineEditorControllerSource.contains(QStringLiteral("ContentsInlineFormatEditorController::nativeCompositionActive()")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("readonly property bool inputMethodComposing: textInput.inputMethodComposing")));
-    QVERIFY(inlineEditorSource.contains(QStringLiteral("readonly property string preeditText: textInput.preeditText")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("readonly property string preeditText: String(textInput.editorItem.preeditText)")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("function nativeCompositionActive()")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("function programmaticTextSyncPolicy(nextText)")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("return inlineEditorController.programmaticTextSyncPolicy(nextText);")));

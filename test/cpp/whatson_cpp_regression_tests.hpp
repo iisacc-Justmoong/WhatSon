@@ -986,6 +986,7 @@ private slots:
     void foldersHierarchyParser_escapesLiteralSlashLabelsIntoSingleSegments();
     void foldersHierarchySessionService_preservesEscapedLiteralSlashFolderPaths();
     void sidebarHierarchyRenameController_preservesLiteralSlashFolderLabels();
+    void sidebarHierarchyView_bindsInlineHelperDependenciesAtStartup();
     void resourcesHierarchyController_defaultsSelectionToImageAndFiltersList();
     void resourcesHierarchyController_collapsesMultiDotImageFormatsIntoTerminalSuffix();
     void structuredCollectionPolicy_normalizesEntriesAndPrefersResolvedMatches();
@@ -1014,6 +1015,7 @@ private slots:
     void qmlHierarchyNoteDrop_keepsDropSurfaceOpenUntilCapabilityRejectsTarget();
     void qmlHierarchyExpansion_preservesUserControlledStateAcrossModelRefreshes();
     void listBarLayout_rendersResolvedNoteListModelByIndex();
+    void qmlInlineSelectionHelpers_bindOwnersAfterControllerFileDeletion();
     void qmlStructuredEditors_consumeRendererNormalizedBlocksWithoutLocalFlattening();
     void qmlStructuredEditors_refreshesGutterLayoutOnEditorOpen();
     void qmlStructuredEditors_rejectStaleSourceRangeMutations();

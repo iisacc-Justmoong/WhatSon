@@ -18,9 +18,18 @@ void WhatSonCppRegressionTests::qmlContentsView_composesFigmaFrameFromLvrsParts(
     QVERIFY(minimapSource.contains(QStringLiteral("import LVRS 1.0 as LV")));
     QVERIFY(contentsViewSource.contains(QStringLiteral("objectName: \"figma-155-4561-ContentsView\"")));
     QVERIFY(contentsViewSource.contains(QStringLiteral("LV.HStack {")));
+    QVERIFY(contentsViewSource.contains(QStringLiteral("objectName: \"figma-155-5344-HStack\"")));
     QVERIFY(contentsViewSource.contains(QStringLiteral("Gutter {")));
     QVERIFY(contentsViewSource.contains(QStringLiteral("EditorView {")));
     QVERIFY(contentsViewSource.contains(QStringLiteral("Minimap {")));
+    const qsizetype hStackIndex = contentsViewSource.indexOf(QStringLiteral("LV.HStack {"));
+    const qsizetype gutterIndex = contentsViewSource.indexOf(QStringLiteral("Gutter {"));
+    const qsizetype editorIndex = contentsViewSource.indexOf(QStringLiteral("EditorView {"));
+    const qsizetype minimapIndex = contentsViewSource.indexOf(QStringLiteral("Minimap {"));
+    QVERIFY(hStackIndex >= 0);
+    QVERIFY(gutterIndex > hStackIndex);
+    QVERIFY(editorIndex > gutterIndex);
+    QVERIFY(minimapIndex > editorIndex);
     QVERIFY(!contentsViewSource.contains(QStringLiteral("component Gutter:")));
     QVERIFY(!contentsViewSource.contains(QStringLiteral("component EditorView:")));
     QVERIFY(!contentsViewSource.contains(QStringLiteral("component Minimap:")));
@@ -64,9 +73,10 @@ void WhatSonCppRegressionTests::qmlContentsView_partsKeepEditorProjectionReadOnl
 
     QVERIFY(!contentsViewSource.isEmpty());
     QVERIFY(!editorViewSource.isEmpty());
-    QVERIFY(editorViewSource.contains(QStringLiteral("TextEdit {")));
+    QVERIFY(editorViewSource.contains(QStringLiteral("LV.TextEditor {")));
     QVERIFY(editorViewSource.contains(QStringLiteral("readOnly: true")));
     QVERIFY(editorViewSource.contains(QStringLiteral("selectByMouse: true")));
+    QVERIFY(editorViewSource.contains(QStringLiteral("showRenderedOutput: false")));
     QVERIFY(editorViewSource.contains(QStringLiteral("textFormat: TextEdit.PlainText")));
     QVERIFY(contentsViewSource.contains(QStringLiteral("signal viewHookRequested(string reason)")));
     QVERIFY(editorViewSource.contains(QStringLiteral("signal viewHookRequested(string reason)")));

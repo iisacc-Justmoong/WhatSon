@@ -56,6 +56,25 @@ void WhatSonCppRegressionTests::listBarLayout_rendersResolvedNoteListModelByInde
     QVERIFY(listBarSource.contains(QStringLiteral("model.index(normalizedIndex, 0)")));
 }
 
+void WhatSonCppRegressionTests::qmlInlineSelectionHelpers_bindOwnersAfterControllerFileDeletion()
+{
+    const QString listBarSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/panels/ListBarLayout.qml"));
+    const QString detailContentsSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/panels/detail/DetailContents.qml"));
+    const QString sidebarSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/panels/sidebar/SidebarHierarchyView.qml"));
+
+    QVERIFY(listBarSource.contains(QStringLiteral("property var view: listBarLayout")));
+    QVERIFY(detailContentsSource.contains(QStringLiteral("property var section: listSection")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("property var view: sidebarHierarchyView")));
+    QVERIFY(!listBarSource.contains(QStringLiteral("property var view: null")));
+    QVERIFY(!detailContentsSource.contains(QStringLiteral("property var section: null")));
+    QVERIFY(!sidebarSource.contains(QStringLiteral("property var view: null")));
+    QVERIFY(!listBarSource.contains(QStringLiteral("controller.")));
+    QVERIFY(!detailContentsSource.contains(QStringLiteral("controller.")));
+}
+
 void WhatSonCppRegressionTests::qmlStructuredEditors_consumeRendererNormalizedBlocksWithoutLocalFlattening()
 {
     const QString displayViewSource = readUtf8SourceFile(

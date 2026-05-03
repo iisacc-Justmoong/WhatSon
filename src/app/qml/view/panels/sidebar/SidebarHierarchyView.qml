@@ -10,6 +10,9 @@ Rectangle {
     id: sidebarHierarchyView
 
     readonly property var activeHierarchyItem: hierarchyTree.activeListItem
+    readonly property var bookmarkPaletteCanvasItem: bookmarkPaletteIconOverlay
+    readonly property var hierarchyRenameFieldItem: hierarchyRenameField
+    readonly property var hierarchyTreeItem: hierarchyTree
     readonly property var activeHierarchyItemRect: {
         const item = sidebarHierarchyView.activeHierarchyItem;
         if (!item || item.mapToItem === undefined)
@@ -1015,7 +1018,7 @@ Rectangle {
     QtObject {
         id: hierarchySelectionController
 
-        property var view: null
+        property var view: sidebarHierarchyView
         property int selectionAnchorIndex: -1
         property var selectedIndices: []
         property int pointerSelectionModifiers: Qt.NoModifier
@@ -1028,52 +1031,52 @@ Rectangle {
         }
 
         function hierarchySelectionToggleModifierPressed(modifiers) {
-            const normalizedModifiers = controller.normalizedKeyboardModifiers(modifiers);
+            const normalizedModifiers = hierarchySelectionController.normalizedKeyboardModifiers(modifiers);
             const toggleMask = Qt.ControlModifier | Qt.MetaModifier;
             return Boolean(normalizedModifiers & toggleMask);
         }
 
         function hierarchySelectionRangeModifierPressed(modifiers) {
-            const normalizedModifiers = controller.normalizedKeyboardModifiers(modifiers);
+            const normalizedModifiers = hierarchySelectionController.normalizedKeyboardModifiers(modifiers);
             return Boolean(normalizedModifiers & Qt.ShiftModifier);
         }
 
         function hierarchySelectionModifierPressed(modifiers) {
-            return controller.hierarchySelectionRangeModifierPressed(modifiers) || controller.hierarchySelectionToggleModifierPressed(modifiers);
+            return hierarchySelectionController.hierarchySelectionRangeModifierPressed(modifiers) || hierarchySelectionController.hierarchySelectionToggleModifierPressed(modifiers);
         }
 
         function captureHierarchyPointerSelectionModifiers(modifiers) {
-            const normalizedModifiers = controller.normalizedKeyboardModifiers(modifiers);
-            if (!controller.hierarchySelectionModifierPressed(normalizedModifiers))
+            const normalizedModifiers = hierarchySelectionController.normalizedKeyboardModifiers(modifiers);
+            if (!hierarchySelectionController.hierarchySelectionModifierPressed(normalizedModifiers))
                 return;
-            controller.pointerSelectionModifiers = normalizedModifiers;
-            controller.pointerSelectionModifiersCapturedAtMs = Date.now();
+            hierarchySelectionController.pointerSelectionModifiers = normalizedModifiers;
+            hierarchySelectionController.pointerSelectionModifiersCapturedAtMs = Date.now();
         }
 
         function clearHierarchyPointerSelectionModifiers() {
-            controller.pointerSelectionModifiers = Qt.NoModifier;
-            controller.pointerSelectionModifiersCapturedAtMs = 0;
+            hierarchySelectionController.pointerSelectionModifiers = Qt.NoModifier;
+            hierarchySelectionController.pointerSelectionModifiersCapturedAtMs = 0;
         }
 
         function resolveHierarchySelectionModifiers(modifiers) {
-            const normalizedModifiers = controller.normalizedKeyboardModifiers(modifiers);
-            if (controller.hierarchySelectionModifierPressed(normalizedModifiers))
+            const normalizedModifiers = hierarchySelectionController.normalizedKeyboardModifiers(modifiers);
+            if (hierarchySelectionController.hierarchySelectionModifierPressed(normalizedModifiers))
                 return normalizedModifiers;
-            const capturedAtMs = Number(controller.pointerSelectionModifiersCapturedAtMs);
+            const capturedAtMs = Number(hierarchySelectionController.pointerSelectionModifiersCapturedAtMs);
             const cacheAgeMs = Date.now() - capturedAtMs;
             const cacheFresh = capturedAtMs > 0 && isFinite(cacheAgeMs) && cacheAgeMs >= 0 && cacheAgeMs <= 800;
-            const normalizedCachedModifiers = controller.normalizedKeyboardModifiers(controller.pointerSelectionModifiers);
-            if (cacheFresh && controller.hierarchySelectionModifierPressed(normalizedCachedModifiers))
+            const normalizedCachedModifiers = hierarchySelectionController.normalizedKeyboardModifiers(hierarchySelectionController.pointerSelectionModifiers);
+            if (cacheFresh && hierarchySelectionController.hierarchySelectionModifierPressed(normalizedCachedModifiers))
                 return normalizedCachedModifiers;
             return normalizedModifiers;
         }
 
         function normalizeHierarchySelectionIndices(indices) {
-            if (!indices || indices.length === undefined || !controller.view)
+            if (!indices || indices.length === undefined || !hierarchySelectionController.view)
                 return [];
             const normalized = [];
             for (let index = 0; index < indices.length; ++index) {
-                const resolvedIndex = controller.view.normalizedInteger(indices[index], -1);
+                const resolvedIndex = hierarchySelectionController.view.normalizedInteger(indices[index], -1);
                 if (resolvedIndex < 0)
                     continue;
                 if (normalized.indexOf(resolvedIndex) >= 0)
@@ -1087,26 +1090,26 @@ Rectangle {
         }
 
         function setSelectedHierarchyIndices(indices) {
-            controller.selectedIndices = controller.normalizeHierarchySelectionIndices(indices);
-            if (controller.view)
-                controller.view.invalidateHierarchySelectionVisuals();
+            hierarchySelectionController.selectedIndices = hierarchySelectionController.normalizeHierarchySelectionIndices(indices);
+            if (hierarchySelectionController.view)
+                hierarchySelectionController.view.invalidateHierarchySelectionVisuals();
         }
 
         function hierarchySelectionContainsIndex(index) {
-            if (!controller.view)
+            if (!hierarchySelectionController.view)
                 return false;
-            const resolvedIndex = controller.view.normalizedInteger(index, -1);
+            const resolvedIndex = hierarchySelectionController.view.normalizedInteger(index, -1);
             if (resolvedIndex < 0)
                 return false;
-            const normalizedSelection = controller.normalizeHierarchySelectionIndices(controller.selectedIndices);
+            const normalizedSelection = hierarchySelectionController.normalizeHierarchySelectionIndices(hierarchySelectionController.selectedIndices);
             return normalizedSelection.indexOf(resolvedIndex) >= 0;
         }
 
         function hierarchySelectionRangeIndices(anchorIndex, targetIndex) {
-            if (!controller.view)
+            if (!hierarchySelectionController.view)
                 return [];
-            const normalizedAnchor = controller.view.normalizedInteger(anchorIndex, -1);
-            const normalizedTarget = controller.view.normalizedInteger(targetIndex, -1);
+            const normalizedAnchor = hierarchySelectionController.view.normalizedInteger(anchorIndex, -1);
+            const normalizedTarget = hierarchySelectionController.view.normalizedInteger(targetIndex, -1);
             if (normalizedTarget < 0)
                 return [];
             if (normalizedAnchor < 0)
@@ -1120,84 +1123,84 @@ Rectangle {
         }
 
         function syncHierarchySelectionFromSelectedFolder() {
-            if (!controller.view)
+            if (!hierarchySelectionController.view)
                 return;
-            const selectedIndex = controller.view.normalizedInteger(controller.view.selectedFolderIndex, -1);
+            const selectedIndex = hierarchySelectionController.view.normalizedInteger(hierarchySelectionController.view.selectedFolderIndex, -1);
             if (selectedIndex < 0) {
-                controller.setSelectedHierarchyIndices([]);
-                controller.selectionAnchorIndex = -1;
+                hierarchySelectionController.setSelectedHierarchyIndices([]);
+                hierarchySelectionController.selectionAnchorIndex = -1;
                 return;
             }
-            controller.setSelectedHierarchyIndices([selectedIndex]);
-            controller.selectionAnchorIndex = selectedIndex;
+            hierarchySelectionController.setSelectedHierarchyIndices([selectedIndex]);
+            hierarchySelectionController.selectionAnchorIndex = selectedIndex;
         }
 
         function emitHierarchySelectionActivation(item, resolvedIndex) {
-            if (!controller.view || !controller.view.hierarchyController)
+            if (!hierarchySelectionController.view || !hierarchySelectionController.view.hierarchyController)
                 return;
-            const normalizedIndex = controller.view.normalizedInteger(resolvedIndex, -1);
+            const normalizedIndex = hierarchySelectionController.view.normalizedInteger(resolvedIndex, -1);
             if (normalizedIndex < 0)
                 return;
-            const activationItem = item ? item : controller.view.resolveVisibleHierarchyItem(normalizedIndex);
-            controller.view.hierarchyController.setHierarchySelectedIndex(normalizedIndex);
-            controller.view.hierarchyItemActivated(activationItem, normalizedIndex, normalizedIndex);
+            const activationItem = item ? item : hierarchySelectionController.view.resolveVisibleHierarchyItem(normalizedIndex);
+            hierarchySelectionController.view.hierarchyController.setHierarchySelectedIndex(normalizedIndex);
+            hierarchySelectionController.view.hierarchyItemActivated(activationItem, normalizedIndex, normalizedIndex);
         }
 
         function requestHierarchySelection(item, resolvedIndex, modifiers) {
-            if (!controller.view || !controller.view.hierarchyController)
+            if (!hierarchySelectionController.view || !hierarchySelectionController.view.hierarchyController)
                 return;
-            const normalizedIndex = controller.view.normalizedInteger(resolvedIndex, -1);
+            const normalizedIndex = hierarchySelectionController.view.normalizedInteger(resolvedIndex, -1);
             if (normalizedIndex < 0)
                 return;
-            const normalizedModifiers = controller.normalizedKeyboardModifiers(modifiers);
-            if (controller.hierarchySelectionRangeModifierPressed(normalizedModifiers)) {
-                let anchorIndex = controller.view.normalizedInteger(controller.selectionAnchorIndex, -1);
+            const normalizedModifiers = hierarchySelectionController.normalizedKeyboardModifiers(modifiers);
+            if (hierarchySelectionController.hierarchySelectionRangeModifierPressed(normalizedModifiers)) {
+                let anchorIndex = hierarchySelectionController.view.normalizedInteger(hierarchySelectionController.selectionAnchorIndex, -1);
                 if (anchorIndex < 0)
-                    anchorIndex = controller.view.normalizedInteger(controller.view.selectedFolderIndex, -1);
+                    anchorIndex = hierarchySelectionController.view.normalizedInteger(hierarchySelectionController.view.selectedFolderIndex, -1);
                 if (anchorIndex < 0)
                     anchorIndex = normalizedIndex;
-                const rangeSelection = controller.hierarchySelectionRangeIndices(anchorIndex, normalizedIndex);
-                if (controller.hierarchySelectionToggleModifierPressed(normalizedModifiers)) {
-                    const selectedIndices = controller.normalizeHierarchySelectionIndices(controller.selectedIndices);
+                const rangeSelection = hierarchySelectionController.hierarchySelectionRangeIndices(anchorIndex, normalizedIndex);
+                if (hierarchySelectionController.hierarchySelectionToggleModifierPressed(normalizedModifiers)) {
+                    const selectedIndices = hierarchySelectionController.normalizeHierarchySelectionIndices(hierarchySelectionController.selectedIndices);
                     for (let selectionIndex = 0; selectionIndex < rangeSelection.length; ++selectionIndex)
                         selectedIndices.push(rangeSelection[selectionIndex]);
-                    controller.setSelectedHierarchyIndices(selectedIndices);
+                    hierarchySelectionController.setSelectedHierarchyIndices(selectedIndices);
                 } else {
-                    controller.setSelectedHierarchyIndices(rangeSelection);
+                    hierarchySelectionController.setSelectedHierarchyIndices(rangeSelection);
                 }
-                controller.selectionAnchorIndex = anchorIndex;
-                controller.emitHierarchySelectionActivation(item, normalizedIndex);
+                hierarchySelectionController.selectionAnchorIndex = anchorIndex;
+                hierarchySelectionController.emitHierarchySelectionActivation(item, normalizedIndex);
                 return;
             }
-            if (controller.hierarchySelectionToggleModifierPressed(normalizedModifiers)) {
-                const selectedIndices = controller.normalizeHierarchySelectionIndices(controller.selectedIndices);
+            if (hierarchySelectionController.hierarchySelectionToggleModifierPressed(normalizedModifiers)) {
+                const selectedIndices = hierarchySelectionController.normalizeHierarchySelectionIndices(hierarchySelectionController.selectedIndices);
                 const existingSelectionIndex = selectedIndices.indexOf(normalizedIndex);
                 if (existingSelectionIndex < 0) {
                     selectedIndices.push(normalizedIndex);
-                    controller.setSelectedHierarchyIndices(selectedIndices);
-                    controller.selectionAnchorIndex = normalizedIndex;
-                    controller.emitHierarchySelectionActivation(item, normalizedIndex);
+                    hierarchySelectionController.setSelectedHierarchyIndices(selectedIndices);
+                    hierarchySelectionController.selectionAnchorIndex = normalizedIndex;
+                    hierarchySelectionController.emitHierarchySelectionActivation(item, normalizedIndex);
                     return;
                 }
                 if (selectedIndices.length <= 1) {
-                    controller.setSelectedHierarchyIndices([normalizedIndex]);
-                    controller.selectionAnchorIndex = normalizedIndex;
-                    controller.emitHierarchySelectionActivation(item, normalizedIndex);
+                    hierarchySelectionController.setSelectedHierarchyIndices([normalizedIndex]);
+                    hierarchySelectionController.selectionAnchorIndex = normalizedIndex;
+                    hierarchySelectionController.emitHierarchySelectionActivation(item, normalizedIndex);
                     return;
                 }
                 selectedIndices.splice(existingSelectionIndex, 1);
-                controller.setSelectedHierarchyIndices(selectedIndices);
-                const committedIndex = controller.view.normalizedInteger(controller.view.selectedFolderIndex, -1);
-                if (controller.hierarchySelectionContainsIndex(committedIndex))
+                hierarchySelectionController.setSelectedHierarchyIndices(selectedIndices);
+                const committedIndex = hierarchySelectionController.view.normalizedInteger(hierarchySelectionController.view.selectedFolderIndex, -1);
+                if (hierarchySelectionController.hierarchySelectionContainsIndex(committedIndex))
                     return;
                 const fallbackIndex = selectedIndices.length > 0 ? selectedIndices[selectedIndices.length - 1] : -1;
                 if (fallbackIndex >= 0)
-                    controller.emitHierarchySelectionActivation(controller.view.resolveVisibleHierarchyItem(fallbackIndex), fallbackIndex);
+                    hierarchySelectionController.emitHierarchySelectionActivation(hierarchySelectionController.view.resolveVisibleHierarchyItem(fallbackIndex), fallbackIndex);
                 return;
             }
-            controller.setSelectedHierarchyIndices([normalizedIndex]);
-            controller.selectionAnchorIndex = normalizedIndex;
-            controller.emitHierarchySelectionActivation(item, normalizedIndex);
+            hierarchySelectionController.setSelectedHierarchyIndices([normalizedIndex]);
+            hierarchySelectionController.selectionAnchorIndex = normalizedIndex;
+            hierarchySelectionController.emitHierarchySelectionActivation(item, normalizedIndex);
         }
     }
     QtObject {
@@ -1208,6 +1211,12 @@ Rectangle {
         required property var hierarchyController
         required property var hostView
         required property var standardHierarchyModel
+
+        hierarchyController: sidebarHierarchyView.hierarchyController
+        hierarchyInteractionBridge: sidebarHierarchyView.hierarchyInteractionBridge
+        hierarchyRenameField: sidebarHierarchyView.hierarchyRenameFieldItem
+        hostView: sidebarHierarchyView
+        standardHierarchyModel: sidebarHierarchyView.standardHierarchyModel
 
         function normalizedInteger(value, fallbackValue) {
             const numericValue = Number(value);
@@ -1394,6 +1403,10 @@ Rectangle {
         required property var hierarchyDragDropBridge
         required property var hierarchyTree
         required property var hostView
+
+        hierarchyDragDropBridge: sidebarHierarchyView.hierarchyDragDropBridge
+        hierarchyTree: sidebarHierarchyView.hierarchyTreeItem
+        hostView: sidebarHierarchyView
 
         function canAcceptNoteDropAtPosition(x, y, noteIds, referenceItem) {
             const normalizedNoteIds = noteDropController.normalizeNoteIds(noteIds);
@@ -1618,6 +1631,10 @@ Rectangle {
         required property var bookmarkCanvas
         required property var hostView
         required property var itemLocator
+
+        bookmarkCanvas: sidebarHierarchyView.bookmarkPaletteCanvasItem
+        hostView: sidebarHierarchyView
+        itemLocator: noteDropController
 
         function resolveThemeColorToken(tokenName) {
             const normalizedToken = tokenName === undefined || tokenName === null ? "" : String(tokenName).trim();

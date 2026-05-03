@@ -12,12 +12,15 @@ This is the main visual host for the hierarchy sidebar.
 It renders the hierarchy tree, search/header/footer affordances, toolbar switching, rename overlay placement, note-drop hover feedback, and bookmark-specific palette visuals. It is the most reusable sidebar surface in the QML tree.
 
 ## Composition Model
-The file now delegates several responsibilities to sibling helper controllers.
-- `SidebarHierarchySelectionController`: hierarchy multi-selection state, modifier recovery, and primary activation
-  routing.
-- `SidebarHierarchyRenameController`: rename label normalization and rename transaction handling.
-- `SidebarHierarchyNoteDropController`: hierarchy hit testing, drag payload decoding, note-drop preview, and drop commit.
-- `SidebarHierarchyBookmarkPaletteController`: bookmark color token lookup and canvas glyph drawing.
+The file delegates several responsibilities to inline helper `QtObject`s inside the mounted view.
+- `hierarchySelectionController`: hierarchy multi-selection state, modifier recovery, and primary activation routing.
+- `renameController`: rename label normalization and rename transaction handling.
+- `noteDropController`: hierarchy hit testing, drag payload decoding, note-drop preview, and drop commit.
+- `bookmarkPaletteController`: bookmark color token lookup and canvas glyph drawing.
+
+These helpers must bind their required dependencies explicitly at construction time. The workspace shell can otherwise
+instantiate the LVRS route but fail while creating `SidebarHierarchyView.qml`, leaving the app with a visible blank
+window even though startup runtime domains loaded successfully.
 
 Bookmark rows intentionally keep a single `bookmarksbookmark` icon token, but the bookmark domain
 may also provide a color-specific `iconSource` override from C++.
@@ -225,6 +228,9 @@ This file should be read as a composed view, not as the place where hierarchy bu
   reference `sidebarHierarchyView` id members with bound component scope.
 - Added modifier-based hierarchy multi-selection (`Cmd/Ctrl` toggle, `Shift` range) with an explicit
   overlay highlight path for non-primary selected rows.
+- Bound the inline helper controllers to `sidebarHierarchyView`, `hierarchyTree`, `hierarchyRenameField`,
+  `HierarchyInteractionBridge`, `HierarchyDragDropBridge`, and the bookmark overlay canvas at startup so missing
+  required-property initialization cannot abort the workspace route.
 - Added press-time modifier capture and cached activation-modifier resolution so modifier-selection does not regress when
   LVRS activation callbacks are delivered after pointer-up.
 - Restored explicit `NumberAnimation.from` keys on the note-drop hover pulse so Xcode/qmlcache ahead-of-time parsing
@@ -258,6 +264,9 @@ This file should be read as a composed view, not as the place where hierarchy bu
   qmlcache parsing does not fail on bare numeric tokens.
 - Build-time regression guard: the first pulse segment must keep `from: 0.78` and the second must keep `from: 1.0`;
   replacing either with a bare numeric line breaks qmlcache code generation.
+- Startup regression guard: inline helper objects must keep explicit dependency bindings, and the selection helper must
+  point `view` at `sidebarHierarchyView`; otherwise QML reports uninitialized required properties during workspace
+  route construction.
 - Periodic hierarchy refreshes with unchanged nodes must not visibly blink, because `displayedHierarchyModel` must
   remain unchanged across equivalent `hierarchyNodesChanged` emissions.
 - Right-clicking a library folder row must open a context menu with `New Folder` and `Delete Folder`.

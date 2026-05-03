@@ -9,7 +9,7 @@ Hosts the note document surface after `ContentsDisplayView.qml` has mounted a se
 - Receives RAW `sourceText` from `ContentsEditorSessionController`.
 - Receives `editorSurfaceHtml`, `htmlTokens`, and `normalizedHtmlBlocks` from
   `ContentsEditorPresentationProjection`.
-- Mounts `ContentsInlineFormatEditor.qml` as the live native `TextEdit` path.
+- Mounts `ContentsInlineFormatEditor.qml` as the live `LV.TextEditor` path.
 - Emits `sourceTextEdited(text)` upward when the user changes the RAW text buffer.
 - Exposes `normalizedBlocks()` as a compatibility hook for callers that need the renderer-owned block stream.
 

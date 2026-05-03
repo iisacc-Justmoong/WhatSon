@@ -9,11 +9,14 @@
 ## Composition Model
 
 The root view now delegates note multi-selection state and modifier interpretation to
-`ListBarSelectionController.qml`.
+the inline `noteSelectionController` `QtObject`.
 
 `ListBarLayout.qml` keeps wrapper functions such as `requestNoteSelection(...)` and
 `syncSelectionFromCommittedState()` so delegates and peer panels continue to use a stable host API while the
-selection state machine lives in a sibling controller file.
+selection state machine lives outside the root object.
+
+The inline selection helper must bind `view: listBarLayout` at construction time. Leaving that owner pointer unset
+causes selection helpers to throw `controller is not defined`/empty-selection errors during workspace route startup.
 
 ## Source Metadata
 - Source path: `src/app/qml/view/panels/ListBarLayout.qml`
@@ -136,6 +139,8 @@ selection state machine lives in a sibling controller file.
 - Focused-note sync now derives the preferred note id from the committed current-note entry before falling back to
   legacy `currentNoteId`, so note-backed lists and resource lists share one explicit current-selection shape at the QML
   boundary.
+- The inline `noteSelectionController` uses its own id for internal calls and owns `view: listBarLayout`, preserving the
+  behavior that previously lived in a deleted helper component without leaving unresolved `controller` references.
 
 ## Drag And Context Menu
 
@@ -166,6 +171,9 @@ selection state machine lives in a sibling controller file.
 
 - The maintained C++ regression suite now covers the bridge contract that this file depends on for hierarchy-driven
   note-list rebinding and explicit current-note-entry propagation.
+- `qmlInlineSelectionHelpers_bindOwnersAfterControllerFileDeletion` locks the inline helper contract: the note
+  selection helper must bind `view: listBarLayout` and must not retain stale `controller.*` references from the deleted
+  helper file.
 - Modifier-selection regression checklist for this file:
   - `Shift + click` selects contiguous ranges from `noteSelectionAnchorIndex`.
   - `Cmd/Ctrl + click` toggles row membership without collapsing to single-row selection.

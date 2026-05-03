@@ -78,23 +78,14 @@ namespace
 lvrs::QmlAppLifecycleContext workspaceLifecycleContext(
     QGuiApplication& app,
     QQmlApplicationEngine& engine,
-    QObject* workspaceRootObject,
+    const lvrs::QmlRootLoadResult& workspaceRootLoadResult,
     const lvrs::QmlAppLifecycleStage stage)
 {
     lvrs::QmlAppLifecycleContext context;
     context.application = &app;
     context.engine = &engine;
     context.stage = stage;
-    context.rootLoadResult.ok = workspaceRootObject != nullptr;
-
-    if (workspaceRootObject != nullptr)
-    {
-        context.rootLoadResult.rootObjects.append(workspaceRootObject);
-        if (QWindow* workspaceWindow = lvrs::qmlRootWindow(workspaceRootObject))
-        {
-            context.rootLoadResult.windows.append(workspaceWindow);
-        }
-    }
+    context.rootLoadResult = workspaceRootLoadResult;
 
     return context;
 }
@@ -102,7 +93,7 @@ lvrs::QmlAppLifecycleContext workspaceLifecycleContext(
 bool scheduleStartupRuntimeLoadAfterFirstIdle(
     QGuiApplication& app,
     QQmlApplicationEngine& engine,
-    QObject* workspaceRootObject,
+    const lvrs::QmlRootLoadResult& workspaceRootLoadResult,
     const WhatSon::Runtime::Startup::StartupHubSelection& startupHubSelection,
     WhatSonStartupRuntimeCoordinator& startupRuntimeCoordinator,
     OnboardingHubController& onboardingHubController,
@@ -159,7 +150,7 @@ bool scheduleStartupRuntimeLoadAfterFirstIdle(
     lifecycleHooks.tasks.append(runtimeLoadTask);
     return lvrs::scheduleQmlAppLifecycleStage(
         &app,
-        workspaceLifecycleContext(app, engine, workspaceRootObject, lvrs::QmlAppLifecycleStage::AfterFirstIdle),
+        workspaceLifecycleContext(app, engine, workspaceRootLoadResult, lvrs::QmlAppLifecycleStage::AfterFirstIdle),
         lifecycleHooks,
         lvrs::QmlAppLifecycleStage::AfterFirstIdle,
         true);
@@ -584,7 +575,7 @@ int main(int argc, char* argv[])
     lvrs::ForegroundServiceGate foregroundServiceGate(&app);
     const auto startForegroundServices =
         [&app, &engine, &asyncScheduler, &permissionBootstrapper, &foregroundServiceGate](
-            QObject* workspaceRootObject) -> bool
+            const lvrs::QmlRootLoadResult& workspaceRootLoadResult) -> bool
     {
         lvrs::ForegroundServiceTask schedulerStart;
         schedulerStart.name = QStringLiteral("whatson-async-scheduler");
@@ -629,7 +620,7 @@ int main(int argc, char* argv[])
                 workspaceLifecycleContext(
                     app,
                     engine,
-                    workspaceRootObject,
+                    workspaceRootLoadResult,
                     lvrs::QmlAppLifecycleStage::AfterWindowActivated),
                 {schedulerStart, permissionBootstrap},
                 options);
@@ -727,10 +718,12 @@ int main(int argc, char* argv[])
                     }
                 };
                 onboardingRouteBootstrapController.configure(false, true);
-                workspaceMainWindow = WhatSon::Runtime::Bootstrap::loadMainWindow(
-                    engine,
-                    mainWindowInitialProperties,
-                    lvrs::QmlWindowActivationPolicy::ShowRaiseAndActivate);
+                const lvrs::QmlRootLoadResult workspaceMainWindowLoadResult =
+                    WhatSon::Runtime::Bootstrap::loadMainWindowRoot(
+                        engine,
+                        mainWindowInitialProperties,
+                        lvrs::QmlWindowActivationPolicy::ShowRaiseAndActivate);
+                workspaceMainWindow = WhatSon::Runtime::Bootstrap::lastRootObject(workspaceMainWindowLoadResult);
                 if (workspaceMainWindow == nullptr)
                 {
                     qWarning().noquote() <<
@@ -754,7 +747,7 @@ int main(int argc, char* argv[])
                     });
                 }
 
-                if (!startForegroundServices(workspaceMainWindow))
+                if (!startForegroundServices(workspaceMainWindowLoadResult))
                 {
                     QCoreApplication::exit(EXIT_FAILURE);
                     return;
@@ -784,10 +777,11 @@ int main(int argc, char* argv[])
             QVariant::fromValue(static_cast<QObject*>(&onboardingRouteBootstrapController))
         }
     };
-    QObject* mainWindow = WhatSon::Runtime::Bootstrap::loadMainWindow(
+    const lvrs::QmlRootLoadResult mainWindowLoadResult = WhatSon::Runtime::Bootstrap::loadMainWindowRoot(
         engine,
         mainWindowInitialProperties,
         lvrs::QmlWindowActivationPolicy::ShowRaiseAndActivate);
+    QObject* mainWindow = WhatSon::Runtime::Bootstrap::lastRootObject(mainWindowLoadResult);
     if (mainWindow == nullptr)
     {
         return EXIT_FAILURE;
@@ -796,7 +790,7 @@ int main(int argc, char* argv[])
     if (!scheduleStartupRuntimeLoadAfterFirstIdle(
             app,
             engine,
-            mainWindow,
+            mainWindowLoadResult,
             startupHubSelection,
             startupRuntimeCoordinator,
             onboardingHubController,
@@ -817,7 +811,7 @@ int main(int argc, char* argv[])
     }
 #endif
 
-    if (!startForegroundServices(mainWindow))
+    if (!startForegroundServices(mainWindowLoadResult))
     {
         return EXIT_FAILURE;
     }

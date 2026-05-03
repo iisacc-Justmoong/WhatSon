@@ -571,7 +571,7 @@ Item {
             QtObject {
                 id: metadataSelectionController
 
-                property var section: null
+                property var section: listSection
                 property int selectionAnchorIndex: -1
                 property var selectedIndices: []
                 property int pointerSelectionModifiers: Qt.NoModifier
@@ -589,7 +589,7 @@ Item {
 
                 function normalizeIndex(value) {
                     const numericValue = Number(value);
-                    const count = controller.itemCount();
+                    const count = metadataSelectionController.itemCount();
                     if (!isFinite(numericValue) || numericValue < 0 || count <= 0)
                         return -1;
                     if (numericValue >= count)
@@ -602,42 +602,42 @@ Item {
                 }
 
                 function selectionToggleModifierPressed(modifiers) {
-                    const normalizedModifiers = controller.normalizedKeyboardModifiers(modifiers);
+                    const normalizedModifiers = metadataSelectionController.normalizedKeyboardModifiers(modifiers);
                     const toggleMask = Qt.ControlModifier | Qt.MetaModifier;
                     return Boolean(normalizedModifiers & toggleMask);
                 }
 
                 function selectionRangeModifierPressed(modifiers) {
-                    const normalizedModifiers = controller.normalizedKeyboardModifiers(modifiers);
+                    const normalizedModifiers = metadataSelectionController.normalizedKeyboardModifiers(modifiers);
                     return Boolean(normalizedModifiers & Qt.ShiftModifier);
                 }
 
                 function selectionModifierPressed(modifiers) {
-                    return controller.selectionRangeModifierPressed(modifiers) || controller.selectionToggleModifierPressed(modifiers);
+                    return metadataSelectionController.selectionRangeModifierPressed(modifiers) || metadataSelectionController.selectionToggleModifierPressed(modifiers);
                 }
 
                 function capturePointerSelectionModifiers(modifiers) {
-                    const normalizedModifiers = controller.normalizedKeyboardModifiers(modifiers);
-                    if (!controller.selectionModifierPressed(normalizedModifiers))
+                    const normalizedModifiers = metadataSelectionController.normalizedKeyboardModifiers(modifiers);
+                    if (!metadataSelectionController.selectionModifierPressed(normalizedModifiers))
                         return;
-                    controller.pointerSelectionModifiers = normalizedModifiers;
-                    controller.pointerSelectionModifiersCapturedAtMs = Date.now();
+                    metadataSelectionController.pointerSelectionModifiers = normalizedModifiers;
+                    metadataSelectionController.pointerSelectionModifiersCapturedAtMs = Date.now();
                 }
 
                 function clearPointerSelectionModifiers() {
-                    controller.pointerSelectionModifiers = Qt.NoModifier;
-                    controller.pointerSelectionModifiersCapturedAtMs = 0;
+                    metadataSelectionController.pointerSelectionModifiers = Qt.NoModifier;
+                    metadataSelectionController.pointerSelectionModifiersCapturedAtMs = 0;
                 }
 
                 function resolveSelectionModifiers(modifiers) {
-                    const normalizedModifiers = controller.normalizedKeyboardModifiers(modifiers);
-                    if (controller.selectionModifierPressed(normalizedModifiers))
+                    const normalizedModifiers = metadataSelectionController.normalizedKeyboardModifiers(modifiers);
+                    if (metadataSelectionController.selectionModifierPressed(normalizedModifiers))
                         return normalizedModifiers;
-                    const capturedAtMs = Number(controller.pointerSelectionModifiersCapturedAtMs);
+                    const capturedAtMs = Number(metadataSelectionController.pointerSelectionModifiersCapturedAtMs);
                     const cacheAgeMs = Date.now() - capturedAtMs;
                     const cacheFresh = capturedAtMs > 0 && isFinite(cacheAgeMs) && cacheAgeMs >= 0 && cacheAgeMs <= 800;
-                    const normalizedCachedModifiers = controller.normalizedKeyboardModifiers(controller.pointerSelectionModifiers);
-                    if (cacheFresh && controller.selectionModifierPressed(normalizedCachedModifiers))
+                    const normalizedCachedModifiers = metadataSelectionController.normalizedKeyboardModifiers(metadataSelectionController.pointerSelectionModifiers);
+                    if (cacheFresh && metadataSelectionController.selectionModifierPressed(normalizedCachedModifiers))
                         return normalizedCachedModifiers;
                     return normalizedModifiers;
                 }
@@ -647,7 +647,7 @@ Item {
                         return [];
                     const normalized = [];
                     for (let index = 0; index < indices.length; ++index) {
-                        const normalizedIndex = controller.normalizeIndex(indices[index]);
+                        const normalizedIndex = metadataSelectionController.normalizeIndex(indices[index]);
                         if (normalizedIndex < 0)
                             continue;
                         if (normalized.indexOf(normalizedIndex) >= 0)
@@ -661,19 +661,19 @@ Item {
                 }
 
                 function setSelectedIndices(indices) {
-                    controller.selectedIndices = controller.normalizeSelectionIndices(indices);
+                    metadataSelectionController.selectedIndices = metadataSelectionController.normalizeSelectionIndices(indices);
                 }
 
                 function selectionContainsIndex(index) {
-                    const normalizedIndex = controller.normalizeIndex(index);
+                    const normalizedIndex = metadataSelectionController.normalizeIndex(index);
                     if (normalizedIndex < 0)
                         return false;
-                    return controller.normalizeSelectionIndices(controller.selectedIndices).indexOf(normalizedIndex) >= 0;
+                    return metadataSelectionController.normalizeSelectionIndices(metadataSelectionController.selectedIndices).indexOf(normalizedIndex) >= 0;
                 }
 
                 function selectionRangeIndices(anchorIndex, targetIndex) {
-                    const normalizedAnchor = controller.normalizeIndex(anchorIndex);
-                    const normalizedTarget = controller.normalizeIndex(targetIndex);
+                    const normalizedAnchor = metadataSelectionController.normalizeIndex(anchorIndex);
+                    const normalizedTarget = metadataSelectionController.normalizeIndex(targetIndex);
                     if (normalizedTarget < 0)
                         return [];
                     if (normalizedAnchor < 0)
@@ -689,86 +689,86 @@ Item {
                 function activateIndex(index) {
                     if (!section)
                         return;
-                    const normalizedIndex = controller.normalizeIndex(index);
+                    const normalizedIndex = metadataSelectionController.normalizeIndex(index);
                     if (normalizedIndex < 0)
                         return;
                     section.itemTriggered(normalizedIndex);
                 }
 
                 function reconcileSelection() {
-                    const committedIndex = controller.normalizeIndex(section ? section.activeIndex : -1);
-                    const normalizedSelection = controller.normalizeSelectionIndices(controller.selectedIndices);
+                    const committedIndex = metadataSelectionController.normalizeIndex(section ? section.activeIndex : -1);
+                    const normalizedSelection = metadataSelectionController.normalizeSelectionIndices(metadataSelectionController.selectedIndices);
                     if (committedIndex < 0) {
                         if (normalizedSelection.length > 0)
-                            controller.setSelectedIndices([]);
-                        controller.selectionAnchorIndex = -1;
+                            metadataSelectionController.setSelectedIndices([]);
+                        metadataSelectionController.selectionAnchorIndex = -1;
                         return;
                     }
                     if (normalizedSelection.length === 0 || normalizedSelection.indexOf(committedIndex) < 0)
-                        controller.setSelectedIndices([committedIndex]);
+                        metadataSelectionController.setSelectedIndices([committedIndex]);
                     else
-                        controller.setSelectedIndices(normalizedSelection);
-                    const normalizedAnchorIndex = controller.normalizeIndex(controller.selectionAnchorIndex);
-                    if (normalizedAnchorIndex < 0 || !controller.selectionContainsIndex(normalizedAnchorIndex))
-                        controller.selectionAnchorIndex = committedIndex;
+                        metadataSelectionController.setSelectedIndices(normalizedSelection);
+                    const normalizedAnchorIndex = metadataSelectionController.normalizeIndex(metadataSelectionController.selectionAnchorIndex);
+                    if (normalizedAnchorIndex < 0 || !metadataSelectionController.selectionContainsIndex(normalizedAnchorIndex))
+                        metadataSelectionController.selectionAnchorIndex = committedIndex;
                 }
 
                 function requestSelection(index, modifiers) {
-                    const normalizedIndex = controller.normalizeIndex(index);
+                    const normalizedIndex = metadataSelectionController.normalizeIndex(index);
                     if (normalizedIndex < 0)
                         return;
-                    const normalizedModifiers = controller.normalizedKeyboardModifiers(modifiers);
-                    if (controller.selectionRangeModifierPressed(normalizedModifiers)) {
-                        let anchorIndex = controller.normalizeIndex(controller.selectionAnchorIndex);
+                    const normalizedModifiers = metadataSelectionController.normalizedKeyboardModifiers(modifiers);
+                    if (metadataSelectionController.selectionRangeModifierPressed(normalizedModifiers)) {
+                        let anchorIndex = metadataSelectionController.normalizeIndex(metadataSelectionController.selectionAnchorIndex);
                         if (anchorIndex < 0)
-                            anchorIndex = controller.normalizeIndex(section ? section.activeIndex : -1);
+                            anchorIndex = metadataSelectionController.normalizeIndex(section ? section.activeIndex : -1);
                         if (anchorIndex < 0)
                             anchorIndex = normalizedIndex;
-                        const rangeSelection = controller.selectionRangeIndices(anchorIndex, normalizedIndex);
-                        if (controller.selectionToggleModifierPressed(normalizedModifiers)) {
-                            const selectedIndices = controller.normalizeSelectionIndices(controller.selectedIndices);
+                        const rangeSelection = metadataSelectionController.selectionRangeIndices(anchorIndex, normalizedIndex);
+                        if (metadataSelectionController.selectionToggleModifierPressed(normalizedModifiers)) {
+                            const selectedIndices = metadataSelectionController.normalizeSelectionIndices(metadataSelectionController.selectedIndices);
                             for (let selectionIndex = 0; selectionIndex < rangeSelection.length; ++selectionIndex)
                                 selectedIndices.push(rangeSelection[selectionIndex]);
-                            controller.setSelectedIndices(selectedIndices);
+                            metadataSelectionController.setSelectedIndices(selectedIndices);
                         } else {
-                            controller.setSelectedIndices(rangeSelection);
+                            metadataSelectionController.setSelectedIndices(rangeSelection);
                         }
-                        controller.selectionAnchorIndex = anchorIndex;
-                        controller.activateIndex(normalizedIndex);
+                        metadataSelectionController.selectionAnchorIndex = anchorIndex;
+                        metadataSelectionController.activateIndex(normalizedIndex);
                         return;
                     }
-                    if (controller.selectionToggleModifierPressed(normalizedModifiers)) {
-                        const selectedIndices = controller.normalizeSelectionIndices(controller.selectedIndices);
+                    if (metadataSelectionController.selectionToggleModifierPressed(normalizedModifiers)) {
+                        const selectedIndices = metadataSelectionController.normalizeSelectionIndices(metadataSelectionController.selectedIndices);
                         const existingSelectionIndex = selectedIndices.indexOf(normalizedIndex);
                         if (existingSelectionIndex < 0) {
                             selectedIndices.push(normalizedIndex);
-                            controller.setSelectedIndices(selectedIndices);
-                            controller.selectionAnchorIndex = normalizedIndex;
-                            controller.activateIndex(normalizedIndex);
+                            metadataSelectionController.setSelectedIndices(selectedIndices);
+                            metadataSelectionController.selectionAnchorIndex = normalizedIndex;
+                            metadataSelectionController.activateIndex(normalizedIndex);
                             return;
                         }
                         if (selectedIndices.length <= 1) {
-                            controller.setSelectedIndices([normalizedIndex]);
-                            controller.selectionAnchorIndex = normalizedIndex;
-                            controller.activateIndex(normalizedIndex);
+                            metadataSelectionController.setSelectedIndices([normalizedIndex]);
+                            metadataSelectionController.selectionAnchorIndex = normalizedIndex;
+                            metadataSelectionController.activateIndex(normalizedIndex);
                             return;
                         }
                         selectedIndices.splice(existingSelectionIndex, 1);
-                        controller.setSelectedIndices(selectedIndices);
-                        const committedIndex = controller.normalizeIndex(section ? section.activeIndex : -1);
-                        if (controller.selectionContainsIndex(committedIndex)) {
-                            controller.selectionAnchorIndex = normalizedIndex;
+                        metadataSelectionController.setSelectedIndices(selectedIndices);
+                        const committedIndex = metadataSelectionController.normalizeIndex(section ? section.activeIndex : -1);
+                        if (metadataSelectionController.selectionContainsIndex(committedIndex)) {
+                            metadataSelectionController.selectionAnchorIndex = normalizedIndex;
                             return;
                         }
                         const fallbackIndex = selectedIndices.length > 0 ? selectedIndices[selectedIndices.length - 1] : -1;
-                        controller.selectionAnchorIndex = fallbackIndex;
+                        metadataSelectionController.selectionAnchorIndex = fallbackIndex;
                         if (fallbackIndex >= 0)
-                            controller.activateIndex(fallbackIndex);
+                            metadataSelectionController.activateIndex(fallbackIndex);
                         return;
                     }
-                    controller.setSelectedIndices([normalizedIndex]);
-                    controller.selectionAnchorIndex = normalizedIndex;
-                    controller.activateIndex(normalizedIndex);
+                    metadataSelectionController.setSelectedIndices([normalizedIndex]);
+                    metadataSelectionController.selectionAnchorIndex = normalizedIndex;
+                    metadataSelectionController.activateIndex(normalizedIndex);
                 }
             }
             Rectangle {

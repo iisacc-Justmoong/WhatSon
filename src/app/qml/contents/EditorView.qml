@@ -19,24 +19,38 @@ Item {
     clip: true
     objectName: "figma-155-5352-EditorView"
 
-    TextEdit {
+    LV.TextEditor {
         id: editorTextSurface
 
         anchors.fill: parent
         anchors.leftMargin: LV.Theme.gap16
         anchors.rightMargin: LV.Theme.gap16
-        color: editorView.textColor
-        font.family: LV.Theme.fontBody
-        font.pixelSize: LV.Theme.textBody
-        font.weight: LV.Theme.textBodyWeight
-        padding: LV.Theme.gapNone
+        backgroundColor: "transparent"
+        backgroundColorDisabled: "transparent"
+        backgroundColorFocused: "transparent"
+        backgroundColorHover: "transparent"
+        backgroundColorPressed: "transparent"
+        centeredTextHeight: Math.max(1, editorTextSurface.resolvedEditorHeight - editorTextSurface.insetVertical * 2)
+        cornerRadius: LV.Theme.gapNone
+        editorHeight: Math.max(1, editorView.height)
+        enforceModeDefaults: true
+        fieldMinHeight: LV.Theme.gap16
+        fontFamily: LV.Theme.fontBody
+        fontPixelSize: LV.Theme.textBody
+        fontWeight: LV.Theme.textBodyWeight
+        insetHorizontal: LV.Theme.gapNone
+        insetVertical: LV.Theme.gapNone
+        mode: plainTextMode
         readOnly: true
         selectByMouse: true
         selectedTextColor: editorView.textColor
         selectionColor: LV.Theme.primaryOverlay
+        showRenderedOutput: false
+        showScrollBar: false
         text: editorView.editorText
+        textColor: editorView.textColor
+        textColorDisabled: editorView.textColor
         textFormat: TextEdit.PlainText
-        verticalAlignment: TextEdit.AlignTop
         wrapMode: TextEdit.Wrap
     }
 }

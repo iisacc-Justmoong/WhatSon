@@ -633,7 +633,7 @@ Rectangle {
     QtObject {
         id: noteSelectionController
 
-        property var view: null
+        property var view: listBarLayout
         property int selectionAnchorIndex: -1
         property var selectedIndices: []
 
@@ -642,39 +642,39 @@ Rectangle {
         }
 
         function selectionToggleModifierPressed(modifiers) {
-            const normalizedModifiers = controller.normalizedKeyboardModifiers(modifiers);
+            const normalizedModifiers = noteSelectionController.normalizedKeyboardModifiers(modifiers);
             const toggleMask = Qt.ControlModifier | Qt.MetaModifier;
             return Boolean(normalizedModifiers & toggleMask);
         }
 
         function selectionRangeModifierPressed(modifiers) {
-            const normalizedModifiers = controller.normalizedKeyboardModifiers(modifiers);
+            const normalizedModifiers = noteSelectionController.normalizedKeyboardModifiers(modifiers);
             return Boolean(normalizedModifiers & Qt.ShiftModifier);
         }
 
         function selectionModifierPressed(modifiers) {
-            return controller.selectionRangeModifierPressed(modifiers) || controller.selectionToggleModifierPressed(modifiers);
+            return noteSelectionController.selectionRangeModifierPressed(modifiers) || noteSelectionController.selectionToggleModifierPressed(modifiers);
         }
 
         function resolveSelectionModifiers(modifiers, cachedModifiers, cachedCapturedAtMs) {
-            const normalizedModifiers = controller.normalizedKeyboardModifiers(modifiers);
-            if (controller.selectionModifierPressed(normalizedModifiers))
+            const normalizedModifiers = noteSelectionController.normalizedKeyboardModifiers(modifiers);
+            if (noteSelectionController.selectionModifierPressed(normalizedModifiers))
                 return normalizedModifiers;
             const capturedAtMs = Number(cachedCapturedAtMs);
             const cacheAgeMs = Date.now() - capturedAtMs;
             const cacheFresh = capturedAtMs > 0 && isFinite(cacheAgeMs) && cacheAgeMs >= 0 && cacheAgeMs <= 800;
-            const normalizedCachedModifiers = controller.normalizedKeyboardModifiers(cachedModifiers);
-            if (cacheFresh && controller.selectionModifierPressed(normalizedCachedModifiers))
+            const normalizedCachedModifiers = noteSelectionController.normalizedKeyboardModifiers(cachedModifiers);
+            if (cacheFresh && noteSelectionController.selectionModifierPressed(normalizedCachedModifiers))
                 return normalizedCachedModifiers;
             return normalizedModifiers;
         }
 
         function normalizeSelectedNoteIndices(indices) {
-            if (!indices || indices.length === undefined || !controller.view)
+            if (!indices || indices.length === undefined || !noteSelectionController.view)
                 return [];
             const normalized = [];
             for (let row = 0; row < indices.length; ++row) {
-                const normalizedIndex = controller.view.normalizeCurrentIndex(indices[row]);
+                const normalizedIndex = noteSelectionController.view.normalizeCurrentIndex(indices[row]);
                 if (normalizedIndex < 0)
                     continue;
                 if (normalized.indexOf(normalizedIndex) >= 0)
@@ -688,24 +688,24 @@ Rectangle {
         }
 
         function noteSelectionContainsIndex(index) {
-            if (!controller.view)
+            if (!noteSelectionController.view)
                 return false;
-            const normalizedIndex = controller.view.normalizeCurrentIndex(index);
+            const normalizedIndex = noteSelectionController.view.normalizeCurrentIndex(index);
             if (normalizedIndex < 0)
                 return false;
-            const normalizedSelection = controller.normalizeSelectedNoteIndices(controller.selectedIndices);
+            const normalizedSelection = noteSelectionController.normalizeSelectedNoteIndices(noteSelectionController.selectedIndices);
             return normalizedSelection.indexOf(normalizedIndex) >= 0;
         }
 
         function setSelectedNoteIndices(indices) {
-            controller.selectedIndices = controller.normalizeSelectedNoteIndices(indices);
+            noteSelectionController.selectedIndices = noteSelectionController.normalizeSelectedNoteIndices(indices);
         }
 
         function selectionRangeIndices(anchorIndex, targetIndex) {
-            if (!controller.view)
+            if (!noteSelectionController.view)
                 return [];
-            const normalizedAnchor = controller.view.normalizeCurrentIndex(anchorIndex);
-            const normalizedTarget = controller.view.normalizeCurrentIndex(targetIndex);
+            const normalizedAnchor = noteSelectionController.view.normalizeCurrentIndex(anchorIndex);
+            const normalizedTarget = noteSelectionController.view.normalizeCurrentIndex(targetIndex);
             if (normalizedTarget < 0)
                 return [];
             if (normalizedAnchor < 0)
@@ -719,74 +719,74 @@ Rectangle {
         }
 
         function syncSelectionFromCommittedState() {
-            if (!controller.view)
+            if (!noteSelectionController.view)
                 return;
-            const normalizedIndex = controller.view.normalizeCurrentIndex(controller.view.currentIndexFromModel());
+            const normalizedIndex = noteSelectionController.view.normalizeCurrentIndex(noteSelectionController.view.currentIndexFromModel());
             if (normalizedIndex < 0) {
-                controller.setSelectedNoteIndices([]);
-                controller.selectionAnchorIndex = -1;
+                noteSelectionController.setSelectedNoteIndices([]);
+                noteSelectionController.selectionAnchorIndex = -1;
                 return;
             }
-            controller.setSelectedNoteIndices([normalizedIndex]);
-            controller.selectionAnchorIndex = normalizedIndex;
+            noteSelectionController.setSelectedNoteIndices([normalizedIndex]);
+            noteSelectionController.selectionAnchorIndex = normalizedIndex;
         }
 
         function requestNoteSelection(index, noteId, modifiers) {
-            if (!controller.view)
+            if (!noteSelectionController.view)
                 return;
-            const normalizedIndex = controller.view.normalizeCurrentIndex(index);
+            const normalizedIndex = noteSelectionController.view.normalizeCurrentIndex(index);
             if (normalizedIndex < 0)
                 return;
-            const normalizedModifiers = controller.normalizedKeyboardModifiers(modifiers);
-            if (controller.selectionRangeModifierPressed(normalizedModifiers)) {
-                let anchorIndex = controller.view.normalizeCurrentIndex(controller.selectionAnchorIndex);
+            const normalizedModifiers = noteSelectionController.normalizedKeyboardModifiers(modifiers);
+            if (noteSelectionController.selectionRangeModifierPressed(normalizedModifiers)) {
+                let anchorIndex = noteSelectionController.view.normalizeCurrentIndex(noteSelectionController.selectionAnchorIndex);
                 if (anchorIndex < 0)
-                    anchorIndex = controller.view.normalizeCurrentIndex(controller.view.currentIndexFromModel());
+                    anchorIndex = noteSelectionController.view.normalizeCurrentIndex(noteSelectionController.view.currentIndexFromModel());
                 if (anchorIndex < 0)
                     anchorIndex = normalizedIndex;
-                const rangeSelection = controller.selectionRangeIndices(anchorIndex, normalizedIndex);
-                if (controller.selectionToggleModifierPressed(normalizedModifiers)) {
-                    const selectedIndices = controller.normalizeSelectedNoteIndices(controller.selectedIndices);
+                const rangeSelection = noteSelectionController.selectionRangeIndices(anchorIndex, normalizedIndex);
+                if (noteSelectionController.selectionToggleModifierPressed(normalizedModifiers)) {
+                    const selectedIndices = noteSelectionController.normalizeSelectedNoteIndices(noteSelectionController.selectedIndices);
                     for (let selectionIndex = 0; selectionIndex < rangeSelection.length; ++selectionIndex)
                         selectedIndices.push(rangeSelection[selectionIndex]);
-                    controller.setSelectedNoteIndices(selectedIndices);
+                    noteSelectionController.setSelectedNoteIndices(selectedIndices);
                 } else {
-                    controller.setSelectedNoteIndices(rangeSelection);
+                    noteSelectionController.setSelectedNoteIndices(rangeSelection);
                 }
-                controller.selectionAnchorIndex = anchorIndex;
-                controller.view.activateNoteIndex(normalizedIndex, noteId);
+                noteSelectionController.selectionAnchorIndex = anchorIndex;
+                noteSelectionController.view.activateNoteIndex(normalizedIndex, noteId);
                 return;
             }
-            if (controller.selectionToggleModifierPressed(normalizedModifiers)) {
-                const selectedIndices = controller.normalizeSelectedNoteIndices(controller.selectedIndices);
+            if (noteSelectionController.selectionToggleModifierPressed(normalizedModifiers)) {
+                const selectedIndices = noteSelectionController.normalizeSelectedNoteIndices(noteSelectionController.selectedIndices);
                 const existingSelectionIndex = selectedIndices.indexOf(normalizedIndex);
                 if (existingSelectionIndex < 0) {
                     selectedIndices.push(normalizedIndex);
-                    controller.setSelectedNoteIndices(selectedIndices);
-                    controller.selectionAnchorIndex = normalizedIndex;
-                    controller.view.activateNoteIndex(normalizedIndex, noteId);
+                    noteSelectionController.setSelectedNoteIndices(selectedIndices);
+                    noteSelectionController.selectionAnchorIndex = normalizedIndex;
+                    noteSelectionController.view.activateNoteIndex(normalizedIndex, noteId);
                     return;
                 }
                 if (selectedIndices.length <= 1) {
-                    controller.setSelectedNoteIndices([normalizedIndex]);
-                    controller.selectionAnchorIndex = normalizedIndex;
-                    controller.view.activateNoteIndex(normalizedIndex, noteId);
+                    noteSelectionController.setSelectedNoteIndices([normalizedIndex]);
+                    noteSelectionController.selectionAnchorIndex = normalizedIndex;
+                    noteSelectionController.view.activateNoteIndex(normalizedIndex, noteId);
                     return;
                 }
                 selectedIndices.splice(existingSelectionIndex, 1);
-                controller.setSelectedNoteIndices(selectedIndices);
-                const committedIndex = controller.view.normalizeCurrentIndex(controller.view.currentIndexFromModel());
-                const committedSelectionRetained = controller.noteSelectionContainsIndex(committedIndex);
+                noteSelectionController.setSelectedNoteIndices(selectedIndices);
+                const committedIndex = noteSelectionController.view.normalizeCurrentIndex(noteSelectionController.view.currentIndexFromModel());
+                const committedSelectionRetained = noteSelectionController.noteSelectionContainsIndex(committedIndex);
                 if (committedSelectionRetained)
                     return;
                 const fallbackIndex = selectedIndices.length > 0 ? selectedIndices[selectedIndices.length - 1] : -1;
                 if (fallbackIndex >= 0)
-                    controller.view.activateNoteIndex(fallbackIndex, "");
+                    noteSelectionController.view.activateNoteIndex(fallbackIndex, "");
                 return;
             }
-            controller.setSelectedNoteIndices([normalizedIndex]);
-            controller.selectionAnchorIndex = normalizedIndex;
-            controller.view.activateNoteIndex(normalizedIndex, noteId);
+            noteSelectionController.setSelectedNoteIndices([normalizedIndex]);
+            noteSelectionController.selectionAnchorIndex = normalizedIndex;
+            noteSelectionController.view.activateNoteIndex(normalizedIndex, noteId);
         }
     }
     QtObject {

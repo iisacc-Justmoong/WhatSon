@@ -13,7 +13,7 @@ from multiple implicit parser blocks.
   This view keeps layout, inline editor composition, and rendered overlay wiring; focused live snapshots,
   direct plain-text RAW mutation, inline-tag-aware source replacement for styled blocks, cursor geometry, and focus
   requests belong to the controller.
-- The block now keeps `ContentsInlineFormatEditor.qml` in `TextEdit.PlainText` mode and uses
+- The block now keeps `ContentsInlineFormatEditor.qml` in `LV.TextEditor` plain-text mode and uses
   `ContentsInlineStyleOverlayRenderer.editorSurfaceHtml` only as the visual overlay payload.
 - Inline tags such as `<bold>`, `<italic>`, `<underline>`, `<strikethrough>`, and `<highlight>` therefore no longer
   appear literally in the visible editor surface after a formatting command, but the editable buffer itself still
@@ -36,7 +36,7 @@ from multiple implicit parser blocks.
 - When the host passes a flattened interactive prose span, that RAW rewrite now applies to the whole grouped source
   slice instead of to only one parser paragraph entry.
 - While focused, the delegate keeps the last live source/plain-text pair that was successfully emitted upward.
-  Rapid mobile input can therefore compute the next delta from the live `TextEdit` state instead of from an older
+  Rapid mobile input can therefore compute the next delta from the live `LV.TextEditor.editorItem` state instead of from an older
   `blockData` snapshot.
 - Inline-format shortcuts still route RAW mutation through
   `ContentsStructuredEditorFormattingController.qml`, but the focused text block now has a local fallback signal for
@@ -71,13 +71,13 @@ from multiple implicit parser blocks.
   re-rendered through the renderer's paper palette, so semantic/title/highlight spans cannot stay white on a white
   paper surface.
 - Plain `Enter` inside `paragraph` / `p` blocks is no longer intercepted by the shared inline editor wrapper.
-  The live `TextEdit` receives the key directly, then the ordinary text-edit mutation path persists the resulting RAW
+  The live `LV.TextEditor` receives the key directly, then the ordinary text-edit mutation path persists the resulting RAW
   source snapshot.
 - Flattened interactive prose spans intentionally opt out of that paragraph-boundary interception at the host layer.
   For those grouped spans, native newline insertion stays inside the shared prose editor and the parser can rediscover
   paragraph boundaries on the next RAW refresh pass.
 - This delegate no longer defines broad paragraph-boundary key helpers.
-  Repeated Backspace/Delete, Enter, arrow navigation, and selection gestures stay with the OS/Qt `TextEdit` path while
+  Repeated Backspace/Delete, Enter, arrow navigation, and selection gestures stay with the OS/Qt text-editing path while
   the user is editing text; only the empty-block offset-0 Backspace bridge is forwarded into the existing RAW block
   deletion path.
 

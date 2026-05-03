@@ -76,7 +76,7 @@
 
 ### 컨트롤러 구현 경계 (중요)
 
-- 이 저장소는 MVVM을 사용하지 않는다. `ViewModel` 개념, `src/app/viewmodel`, QML view-model registry binding, 또는 `LV.ViewModels`/`LV.Controllers` 기반 런타임 lookup을 도입하지 않는다.
+- 이 저장소는 MVVM을 사용하지 않는다. `ViewModel` 개념, `src/app/viewmodel`, QML view-model registry binding, 또는 `LV.ViewModels`/`LV.Controllers` 기반 런타임 lookup을 도입하지 않는다. 뷰는 모델과 직접적으로 이어진다.
 - Controller는 단일 책임 C++ class여야 한다.
 - `src/app/models` 아래에 QML 파일을 추가하지 말고, 해당 디렉터리를 QML module source로 등록하지 않는다.
 - QML은 view construction에만 사용한다.
@@ -122,13 +122,13 @@
 
 ### 입력기 권한 (중요)
 
-- editor input layer는 OS/Qt IME 처리를 live `TextEdit` path에 맡겨야 한다.
-- 명시적 tag-management command를 제외하고, editor QML은 ordinary note editing을 위한 custom text input handler를 설치하면 안 된다. 일반 `Enter`, `Backspace`, `Delete`, arrow navigation, selection extension, repeat, IME gesture는 native `TextEdit` behavior로 유지해야 한다.
+- editor input layer는 OS/Qt IME 처리를 live `LV.TextEditor.editorItem` path에 맡겨야 한다.
+- 명시적 tag-management command를 제외하고, editor QML은 ordinary note editing을 위한 custom text input handler를 설치하면 안 된다. 일반 `Enter`, `Backspace`, `Delete`, arrow navigation, selection extension, repeat, IME gesture는 native text-editing behavior로 유지해야 한다.
 - 허용되는 tag-management input은 inline style tag, agenda/callout/break/resource tag insertion, selected atomic resource/break block management 같은 RAW `.wsnbody` tag operation으로 제한한다.
 - Markdown list shortcut, markdown list Enter continuation, generic text-boundary key override는 editor input layer에서 허용하지 않는다.
 - editor QML에서 `Qt.inputMethod.update(...)`, `Qt.inputMethod.show()`, `Qt.inputMethod.hide()`, 또는 bare QML `InputMethod.*` singleton을 호출하지 않는다.
 - `Qt.inputMethod && ...`, `Qt.inputMethod.visible !== undefined` guard처럼 alternate input-method object를 허용하는 fallback branch를 추가하지 않는다.
-- text editor wrapper는 native composition이 안정될 때까지 persistence나 programmatic sync를 defer하기 위해서만 `TextEdit.inputMethodComposing`과 `TextEdit.preeditText`를 TextEdit state로 관찰할 수 있다.
+- text editor wrapper는 native composition이 안정될 때까지 persistence나 programmatic sync를 defer하기 위해서만 `LV.TextEditor.editorItem.inputMethodComposing`과 `LV.TextEditor.editorItem.preeditText`를 native text state로 관찰할 수 있다.
 - 이 primitive들이 LVRS로 승격되기 전까지 editor QML은 native-input session, shortcut-surface, context-menu long-press, focused programmatic-sync, ordinary text-edit focus-restore 결정을 `src/app/models/editor/input/ContentsEditorInputPolicyAdapter.qml`을 통해 라우팅해야 한다.
 
 ## Codex Init(`/init`) 절차
