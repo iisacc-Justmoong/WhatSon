@@ -253,17 +253,17 @@ int ContentsGutterLineNumberGeometry::effectiveLineNumberCount() const noexcept
     return std::max(1, m_lineNumberCount);
 }
 
-QList<int> ContentsGutterLineNumberGeometry::sourceLineStartOffsets() const
+QList<int> ContentsGutterLineNumberGeometry::displayLineStartOffsets() const
 {
     if (!m_logicalLineStartOffsets.isEmpty())
     {
         QList<int> offsets;
         offsets.reserve(m_logicalLineStartOffsets.size());
-        for (const QVariant& logicalOffsetValue : m_logicalLineStartOffsets)
+        for (const QVariant& displayOffsetValue : m_logicalLineStartOffsets)
         {
             bool ok = false;
-            const int logicalOffset = logicalOffsetValue.toInt(&ok);
-            offsets.append(sourceOffsetForLogicalOffset(ok ? logicalOffset : 0));
+            const int displayOffset = displayOffsetValue.toInt(&ok);
+            offsets.append(std::max(0, ok ? displayOffset : 0));
         }
         return offsets;
     }
@@ -304,17 +304,27 @@ qreal ContentsGutterLineNumberGeometry::fallbackYForIndex(const int index) const
     return m_fallbackTopInset + (static_cast<qreal>(std::max(0, index)) * m_fallbackLineHeight);
 }
 
-qreal ContentsGutterLineNumberGeometry::editorLineYForOffset(const int sourceOffset, const int fallbackIndex) const
+qreal ContentsGutterLineNumberGeometry::editorLineYForOffset(
+    const int displayOffset,
+    const int sourceOffset,
+    const int fallbackIndex) const
 {
     if (!m_editorGeometryHost)
     {
         return fallbackYForIndex(fallbackIndex);
     }
 
-    const QVariant rawRectangle = WhatSon::Editor::DynamicObjectSupport::invokeVariant(
+    QVariant rawRectangle = WhatSon::Editor::DynamicObjectSupport::invokeVariant(
         m_editorGeometryHost,
         "lineStartRectangle",
-        {QVariant(sourceOffset)});
+        {QVariant(displayOffset), QVariant(sourceOffset)});
+    if (!rawRectangle.isValid())
+    {
+        rawRectangle = WhatSon::Editor::DynamicObjectSupport::invokeVariant(
+            m_editorGeometryHost,
+            "lineStartRectangle",
+            {QVariant(displayOffset)});
+    }
     const qreal rawY = realFromMap(rawRectangle, QStringLiteral("y"), fallbackYForIndex(fallbackIndex));
 
     if (!m_mapTarget)
@@ -331,20 +341,21 @@ qreal ContentsGutterLineNumberGeometry::editorLineYForOffset(const int sourceOff
 
 void ContentsGutterLineNumberGeometry::rebuildLineNumberEntries()
 {
-    const QList<int> lineStartOffsets = sourceLineStartOffsets();
-    const int sourceLength = m_sourceText.size();
+    const QList<int> lineStartOffsets = displayLineStartOffsets();
+    const int terminalDisplayOffset = lineStartOffsets.isEmpty() ? 0 : lineStartOffsets.last();
     const int count = effectiveLineNumberCount();
 
     QVariantList nextEntries;
     nextEntries.reserve(count);
     for (int index = 0; index < count; ++index)
     {
-        const int sourceOffset = index < lineStartOffsets.size()
+        const int displayOffset = index < lineStartOffsets.size()
             ? lineStartOffsets.at(index)
-            : sourceLength;
+            : terminalDisplayOffset;
+        const int sourceOffset = sourceOffsetForLogicalOffset(displayOffset);
         QVariantMap entry;
         entry.insert(QStringLiteral("lineNumber"), index + m_lineNumberBaseOffset);
-        entry.insert(QStringLiteral("y"), editorLineYForOffset(sourceOffset, index));
+        entry.insert(QStringLiteral("y"), editorLineYForOffset(displayOffset, sourceOffset, index));
         nextEntries.append(entry);
     }
 

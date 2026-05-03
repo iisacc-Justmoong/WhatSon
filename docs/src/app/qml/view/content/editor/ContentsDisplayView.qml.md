@@ -11,8 +11,9 @@ Provides the note-backed center editor surface.
 - Binds `ContentsEditorPresentationProjection.sourceText` to the session RAW text.
 - Binds LVRS metric tokens and projection line counts into `ContentsGutterLayoutMetrics` and
   `ContentsMinimapLayoutMetrics`, then consumes their resolved layout values.
-- Binds editor projection logical offsets and the live `ContentsStructuredDocumentFlow.qml` geometry hooks into
-  `ContentsGutterLineNumberGeometry`, then passes the resolved line-number entries into `contents/Gutter.qml`.
+- Binds editor projection logical display offsets, logical-to-source offsets, and the live
+  `ContentsStructuredDocumentFlow.qml` visible-display geometry hooks into `ContentsGutterLineNumberGeometry`, then
+  passes the resolved line-number entries into `contents/Gutter.qml`.
   The fallback line-number geometry uses a zero top inset so line numbers stay aligned with the top-flush editor body.
 - Binds live cursor position, current RAW text, saved `.wsnbody` RAW text, and line-number entries into
   `ContentsGutterMarkerGeometry`, then passes the resolved marker entries into `contents/Gutter.qml`.
@@ -32,8 +33,8 @@ The live route is:
 3. `ContentsHtmlBlockRenderPipeline` validates the HTML projection, runs `iiHtmlBlock`, and publishes block metadata.
 4. `ContentsGutterLayoutMetrics` and `ContentsMinimapLayoutMetrics` resolve chrome widths and row counts from tokens
    plus `logicalLineCount`.
-5. `ContentsGutterLineNumberGeometry` samples the live `LV.TextEditor` line rectangles and maps them into gutter
-   coordinates.
+5. `ContentsGutterLineNumberGeometry` samples the currently visible editor display line rectangles and maps them into
+   gutter coordinates.
 6. `ContentsGutterMarkerGeometry` projects the cursor line and unsaved RAW-source lines onto the same gutter
    coordinates.
 7. `ContentsDisplayView.qml` places gutter, editor document slot, and minimap in one `LV.HStack`.

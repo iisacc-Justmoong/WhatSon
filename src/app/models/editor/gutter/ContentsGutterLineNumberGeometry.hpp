@@ -64,10 +64,10 @@ signals:
 
 private:
     int effectiveLineNumberCount() const noexcept;
-    QList<int> sourceLineStartOffsets() const;
+    QList<int> displayLineStartOffsets() const;
     int sourceOffsetForLogicalOffset(int logicalOffset) const noexcept;
     qreal fallbackYForIndex(int index) const noexcept;
-    qreal editorLineYForOffset(int sourceOffset, int fallbackIndex) const;
+    qreal editorLineYForOffset(int displayOffset, int sourceOffset, int fallbackIndex) const;
     void rebuildLineNumberEntries();
 
     QObject* m_editorGeometryHost = nullptr;

@@ -87,6 +87,12 @@ ctest --test-dir build --output-on-failure -L cpp_regression
 - The QML-side line-coordinate helper `ContentsLogicalLineLayoutSupport.js` is now regression-tested through
   `QJSEngine`, so gutter/minimap line placement keeps the block-local mapped Y contract even though the maintained
   runtime suite stays C++-driven.
+- Gutter line-number geometry now also has C++ and QML source-contract coverage for visible editor display measurement:
+  logical display offsets and matching RAW source offsets are passed to the geometry host, and the inline editor exposes
+  RichText overlay geometry for the line-number projection path.
+- Source-tree policy coverage now also locks gutter/minimap model placement under
+  `src/app/models/editor/gutter` and `src/app/models/editor/minimap`, preventing legacy root or nested display chrome
+  directories from returning.
 - Structured editor selection cleanup is now also locked at the C++ host-object and QML routing layers, so focus
   activation emits the selection-clear revision/retained-block contract that QML delegates consume, while same-block
   cursor movement uses a cursor-only host path and keeps native desktop/iOS text selection intact.

@@ -12,7 +12,7 @@ Item {
     property string editorSurfaceHtml: ""
     property string sourceText: ""
     property color textColor: LV.Theme.bodyColor
-    readonly property real editorContentHeight: editor.contentHeight
+    readonly property real editorContentHeight: editor.displayContentHeight
     readonly property int editorCursorPosition: editor.cursorPosition
 
     signal sourceTextEdited(string text)
@@ -26,8 +26,8 @@ Item {
         documentFlow.viewHookRequested(reason !== undefined ? String(reason) : "manual");
     }
 
-    function lineStartRectangle(position) {
-        return editor.positionToRectangle(position);
+    function lineStartRectangle(position, sourcePosition) {
+        return editor.positionToRectangle(position, sourcePosition);
     }
 
     function mapEditorPointToItem(target, x, y) {

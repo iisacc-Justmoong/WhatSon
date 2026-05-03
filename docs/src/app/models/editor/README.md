@@ -71,6 +71,9 @@
   that differ from the saved `.wsnbody` snapshot.
 - `minimap/ContentsMinimapLayoutMetrics.*` owns minimap width, row-count, and visibility-to-width calculations that
   used to live in QML.
+- Gutter and minimap model code must remain direct editor-domain chrome model slices under
+  `src/app/models/editor/gutter` and `src/app/models/editor/minimap`. Do not reintroduce `src/app/models/gutter`,
+  `src/app/models/minimap`, or nested `src/app/models/editor/display/gutter|minimap` directories.
 - `display/ContentsDisplay*` owns editor-host display coordination for selection, context menus, mount plans, refresh
   plans, and viewport math.
 - Local RAW editor-source writes now converge through
@@ -119,6 +122,6 @@
 
 - 대상: ``src/app/models/editor`` (`docs/src/app/models/editor/README.md`)
 - 위치: `docs/src/app/models/editor`
-- 역할: 이 파일은 해당 디렉터리나 모듈의 구조, 책임, 운영 규칙, 검증 기준을 설명한다. 거터와 미니맵 계산은 각각 `gutter`, `minimap` 하위 모델이 담당하며 커서/미저장 줄 막대 계산도 `gutter` 모델이 담당한다.
+- 역할: 이 파일은 해당 디렉터리나 모듈의 구조, 책임, 운영 규칙, 검증 기준을 설명한다. 거터와 미니맵 계산은 각각 `gutter`, `minimap` 하위 모델이 담당하며 커서/미저장 줄 막대 계산도 `gutter` 모델이 담당한다. `src/app/models/gutter`, `src/app/models/minimap`, `src/app/models/editor/display/gutter|minimap`는 재도입하지 않는다.
 - 기준: 파일 경로, 명령, API 이름, 세부 변경 이력은 위 영어 본문을 원문 기준으로 유지한다.
 - 변경 시: 위 영어 본문을 수정하면 이 한국어 하단 섹션도 함께 최신 상태로 맞춘다.

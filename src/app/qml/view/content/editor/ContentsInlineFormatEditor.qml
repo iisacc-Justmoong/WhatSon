@@ -11,6 +11,9 @@ Item {
     property bool autoFocusOnPress: true
     property alias contentHeight: textInput.contentHeight
     property alias cursorPosition: textInput.cursorPosition
+    readonly property real displayContentHeight: control.renderedOverlayVisible
+            ? renderedGeometryProbe.contentHeight
+            : textInput.contentHeight
     readonly property var editorItem: textInput.editorItem
     property bool focused: textInput.focused
     readonly property var inputItem: textInput.editorItem
@@ -95,12 +98,21 @@ Item {
         return control.inputMethodComposing || control.preeditText.length > 0;
     }
 
-    function positionToRectangle(position) {
-        return textInput.editorItem.positionToRectangle(position);
+    function positionToRectangle(position, sourcePosition) {
+        const geometryItem = control.displayGeometryItem();
+        const resolvedPosition = control.renderedOverlayVisible
+                ? position
+                : (sourcePosition !== undefined ? sourcePosition : position);
+        return geometryItem.positionToRectangle(resolvedPosition);
+    }
+
+    function displayGeometryItem() {
+        return control.renderedOverlayVisible ? renderedGeometryProbe : textInput.editorItem;
     }
 
     function mapEditorPointToItem(target, x, y) {
-        const mappedPoint = textInput.editorItem.mapToItem(
+        const geometryItem = control.displayGeometryItem();
+        const mappedPoint = geometryItem.mapToItem(
                     target,
                     Number(x) || LV.Theme.gapNone,
                     Number(y) || LV.Theme.gapNone);
@@ -228,6 +240,27 @@ Item {
         onLinkActivated: function (link) {
             Qt.openUrlExternally(link);
         }
+    }
+
+    TextEdit {
+        id: renderedGeometryProbe
+
+        activeFocusOnPress: false
+        anchors.fill: renderedOverlay
+        color: "transparent"
+        enabled: false
+        font.family: LV.Theme.fontBody
+        font.pixelSize: LV.Theme.textBody
+        opacity: 0
+        readOnly: true
+        selectByKeyboard: false
+        selectByMouse: false
+        text: control.renderedText
+        textFormat: TextEdit.RichText
+        textMargin: LV.Theme.gapNone
+        visible: control.renderedText.length > 0
+        wrapMode: TextEdit.Wrap
+        z: 0
     }
 
     Shortcut {

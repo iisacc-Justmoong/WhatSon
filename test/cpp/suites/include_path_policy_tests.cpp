@@ -261,3 +261,46 @@ void WhatSonCppRegressionTests::sourceTree_forbidsDeprecatedPresentationLayerVoc
 
     QVERIFY2(violations.isEmpty(), qPrintable(violations.join(QLatin1Char('\n'))));
 }
+
+void WhatSonCppRegressionTests::sourceTree_keepsGutterAndMinimapUnderEditorChromeModels()
+{
+    const QDir repositoryRoot(repositoryRootPath());
+    QVERIFY(repositoryRoot.exists());
+
+    const QStringList requiredPaths{
+        QStringLiteral("src/app/models/editor/gutter/ContentsGutterLayoutMetrics.hpp"),
+        QStringLiteral("src/app/models/editor/gutter/ContentsGutterLineNumberGeometry.hpp"),
+        QStringLiteral("src/app/models/editor/gutter/ContentsGutterMarkerGeometry.hpp"),
+        QStringLiteral("src/app/models/editor/minimap/ContentsMinimapLayoutMetrics.hpp"),
+        QStringLiteral("docs/src/app/models/editor/gutter/README.md"),
+        QStringLiteral("docs/src/app/models/editor/minimap/README.md")
+    };
+    for (const QString& relativePath : requiredPaths)
+    {
+        QVERIFY2(
+            QFileInfo::exists(repositoryRoot.filePath(relativePath)),
+            qPrintable(QStringLiteral("Missing expected editor chrome model path: %1").arg(relativePath)));
+    }
+
+    const QStringList forbiddenDirectories{
+        QStringLiteral("src/app/models/gutter"),
+        QStringLiteral("src/app/models/minimap"),
+        QStringLiteral("src/app/models/editor/display/gutter"),
+        QStringLiteral("src/app/models/editor/display/minimap"),
+        QStringLiteral("docs/src/app/models/gutter"),
+        QStringLiteral("docs/src/app/models/minimap"),
+        QStringLiteral("docs/src/app/models/editor/display/gutter"),
+        QStringLiteral("docs/src/app/models/editor/display/minimap")
+    };
+    for (const QString& relativePath : forbiddenDirectories)
+    {
+        QVERIFY2(
+            !QDir(repositoryRoot.filePath(relativePath)).exists(),
+            qPrintable(QStringLiteral("Gutter/minimap model directory must stay under models/editor: %1").arg(relativePath)));
+    }
+
+    const QString appCmakeSource = readUtf8SourceFile(QStringLiteral("src/app/CMakeLists.txt"));
+    QVERIFY(appCmakeSource.contains(QStringLiteral("models/editor")));
+    QVERIFY(!appCmakeSource.contains(QStringLiteral("models/gutter")));
+    QVERIFY(!appCmakeSource.contains(QStringLiteral("models/minimap")));
+}

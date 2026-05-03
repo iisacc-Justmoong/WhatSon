@@ -91,6 +91,7 @@
 #include <QStandardPaths>
 #include <QTemporaryDir>
 #include <QUrl>
+#include <QVariantMap>
 #include <QtTest>
 
 #include <cmath>
@@ -913,6 +914,47 @@ private:
     QByteArray m_selectedHubAccessBookmark;
 };
 
+class FakeGutterDisplayGeometryHost final : public QObject
+{
+    Q_OBJECT
+
+public:
+    QVariantList sampledPositions() const
+    {
+        return m_sampledPositions;
+    }
+
+    QVariantList sampledSourcePositions() const
+    {
+        return m_sampledSourcePositions;
+    }
+
+    void clearSampledPositions()
+    {
+        m_sampledPositions.clear();
+        m_sampledSourcePositions.clear();
+    }
+
+    Q_INVOKABLE QVariant lineStartRectangle(const QVariant& position, const QVariant& sourcePosition)
+    {
+        const qreal displayOffset = position.toReal();
+        m_sampledPositions.append(position.toInt());
+        m_sampledSourcePositions.append(sourcePosition.toInt());
+        return QVariantMap{{QStringLiteral("y"), (displayOffset * 2.0) + 5.0}};
+    }
+
+    Q_INVOKABLE QVariant mapEditorPointToItem(const QVariant& target, const QVariant& x, const QVariant& y)
+    {
+        Q_UNUSED(target)
+        Q_UNUSED(x)
+        return QVariantMap{{QStringLiteral("y"), y.toReal() + 3.0}};
+    }
+
+private:
+    QVariantList m_sampledPositions;
+    QVariantList m_sampledSourcePositions;
+};
+
 class WhatSonCppRegressionTests final : public QObject
 {
     Q_OBJECT
@@ -950,6 +992,7 @@ private slots:
     void detailCurrentNoteContextBridge_rejectsWiringMutationAfterLock();
     void onboardingRouteBootstrapController_rejectsHubControllerMutationAfterLock();
     void sourceTree_forbidsDeprecatedPresentationLayerVocabulary();
+    void sourceTree_keepsGutterAndMinimapUnderEditorChromeModels();
     void sidebarAndSelectionBridge_forceCppOwnershipAcrossHierarchySwitchBindings();
     void contentsEditorSelectionBridge_tracksSelectionFromCurrentIndexSignal();
     void contentsEditorSelectionBridge_preservesNoSelectionSentinelBeforeIndexCommit();
@@ -1025,6 +1068,7 @@ private slots:
     void qmlStructuredEditors_mountsGutterEditorAndMinimapInDisplayLayout();
     void contentsGutterLayoutMetrics_resolvesRuntimeAndDesignMetrics();
     void contentsGutterLineNumberGeometry_projectsFallbackLineYEntries();
+    void contentsGutterLineNumberGeometry_samplesVisibleDisplayOffsets();
     void contentsGutterMarkerGeometry_marksCursorAndUnsavedLineSpans();
     void contentsMinimapLayoutMetrics_resolvesRuntimeVisibilityAndDesignRows();
     void qmlStructuredEditors_rejectStaleSourceRangeMutations();
@@ -1048,6 +1092,7 @@ private slots:
     void qmlInlineFormatEditor_keepsNativeTextEditInputUncovered();
     void qmlInlineFormatEditor_keepsKeyboardSelectionAndOsImeNative();
     void qmlInlineFormatEditor_hidesRenderedOverlayDuringNativeSelection();
+    void qmlInlineFormatEditor_projectsGutterGeometryFromVisibleDisplay();
     void qmlInlineFormatEditor_forwardsInlineFormatShortcutsToTagManagementHook();
     void mobileChrome_usesSharedFigmaControlSurfaceColor();
     void mobileHierarchyRouteStateStore_tracksNormalizedSelectionRestoreState();

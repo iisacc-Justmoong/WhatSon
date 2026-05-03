@@ -12,6 +12,10 @@ Wraps the live `LV.TextEditor` used by the note document surface.
   the real editor text instead of by a duplicate rendered text layer.
 - The editor body is top-flush: `LV.TextEditor` vertical inset and rendered-overlay padding stay at zero. Horizontal
   text-column spacing is preserved with item margins instead of internal top padding.
+- Keeps a disabled, transparent RichText `TextEdit` geometry probe in sync with the visible rendered overlay so gutter
+  line numbers can sample the same display layout the user sees. When the rendered overlay is hidden for native
+  selection/composition, geometry falls back to the live `LV.TextEditor.editorItem` and uses the supplied source
+  position.
 - `textEdited(text)` reports plain RAW text upward.
 - `tagManagementKeyPressHandler` is the only key hook and is limited to explicit tag-management shortcuts.
   Modifier-only key presses are ignored so the LVRS wrapper does not turn bare Control/Option/Meta transitions into
@@ -22,8 +26,9 @@ Wraps the live `LV.TextEditor` used by the note document surface.
   composition checks, and programmatic text-sync policy against `LV.TextEditor.editorItem`.
 - `restoreSelectionRange(...)` restores non-empty ranges through native `moveCursorSelection(...)` so Qt keeps the
   selection active instead of collapsing it to a cursor-only position.
-- Exposes `positionToRectangle(position)` and `mapEditorPointToItem(...)` as narrow geometry hooks for the C++ gutter
-  line-number model; these hooks report native editor layout but do not calculate gutter policy in QML.
+- Exposes `positionToRectangle(position, sourcePosition)` and `mapEditorPointToItem(...)` as narrow geometry hooks for
+  the C++ gutter line-number model; these hooks report the currently visible display layout but do not calculate gutter
+  policy in QML.
 - Ordinary navigation, selection, Backspace/Delete repeat, paste fallback, and IME/preedit behavior remain with Qt's
   native text-editing path exposed by `LV.TextEditor`.
 

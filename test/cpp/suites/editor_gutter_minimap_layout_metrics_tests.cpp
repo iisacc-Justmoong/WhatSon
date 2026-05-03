@@ -70,6 +70,41 @@ void WhatSonCppRegressionTests::contentsGutterLineNumberGeometry_projectsFallbac
     QCOMPARE(geometry.lineNumberEntries().size(), 1);
 }
 
+void WhatSonCppRegressionTests::contentsGutterLineNumberGeometry_samplesVisibleDisplayOffsets()
+{
+    ContentsGutterLineNumberGeometry geometry;
+    FakeGutterDisplayGeometryHost geometryHost;
+    QObject gutterTarget;
+    QVariantList logicalToSourceOffsets;
+    for (int index = 0; index <= 24; ++index)
+    {
+        logicalToSourceOffsets.append(index);
+    }
+    logicalToSourceOffsets.replace(0, 7);
+    logicalToSourceOffsets.replace(12, 31);
+    logicalToSourceOffsets.replace(24, 52);
+
+    geometry.setEditorGeometryHost(&geometryHost);
+    geometry.setMapTarget(&gutterTarget);
+    geometry.setSourceText(QString(80, QLatin1Char('x')));
+    geometry.setLogicalLineStartOffsets(QVariantList{0, 12, 24});
+    geometry.setLogicalToSourceOffsets(logicalToSourceOffsets);
+    geometry.setLineNumberCount(3);
+    geometry.setLineNumberBaseOffset(1);
+    geometry.setFallbackTopInset(80.0);
+    geometry.setFallbackLineHeight(20.0);
+    geometryHost.clearSampledPositions();
+    geometry.refresh();
+
+    const QVariantList entries = geometry.lineNumberEntries();
+    QCOMPARE(entries.size(), 3);
+    QCOMPARE(geometryHost.sampledPositions(), QVariantList({0, 12, 24}));
+    QCOMPARE(geometryHost.sampledSourcePositions(), QVariantList({7, 31, 52}));
+    QCOMPARE(entries.at(0).toMap().value(QStringLiteral("y")).toReal(), 8.0);
+    QCOMPARE(entries.at(1).toMap().value(QStringLiteral("y")).toReal(), 32.0);
+    QCOMPARE(entries.at(2).toMap().value(QStringLiteral("y")).toReal(), 56.0);
+}
+
 void WhatSonCppRegressionTests::contentsGutterMarkerGeometry_marksCursorAndUnsavedLineSpans()
 {
     QVariantList lineNumberEntries;

@@ -98,7 +98,9 @@ void WhatSonCppRegressionTests::qmlInlineFormatEditor_keepsNativeTextEditInputUn
     QVERIFY(!inlineEditorSource.contains(QStringLiteral("activateInputAtPoint")));
     QVERIFY(!inlineEditorSource.contains(QStringLiteral("insertTabIndentAsSpaces")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("LV.TextEditor {")));
-    QVERIFY(!inlineEditorSource.contains(QStringLiteral("\n    TextEdit {\n")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("id: renderedGeometryProbe")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("enabled: false")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("opacity: 0")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("activeFocusOnPress: control.autoFocusOnPress")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("anchors.leftMargin: LV.Theme.gap16")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("anchors.rightMargin: LV.Theme.gap16")));
@@ -121,6 +123,25 @@ void WhatSonCppRegressionTests::qmlInlineFormatEditor_keepsNativeTextEditInputUn
     QVERIFY(inlineEditorSource.contains(QStringLiteral("selectByMouse: control.selectByMouse")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("textInput: textInput.editorItem")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("showRenderedOutput: false")));
+}
+
+void WhatSonCppRegressionTests::qmlInlineFormatEditor_projectsGutterGeometryFromVisibleDisplay()
+{
+    const QString inlineEditorSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/content/editor/ContentsInlineFormatEditor.qml"));
+    const QString documentFlowSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/content/editor/ContentsStructuredDocumentFlow.qml"));
+
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("readonly property real displayContentHeight")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("function displayGeometryItem()")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("return control.renderedOverlayVisible ? renderedGeometryProbe : textInput.editorItem")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("sourcePosition !== undefined ? sourcePosition : position")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("return geometryItem.positionToRectangle(resolvedPosition)")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("geometryItem.mapToItem")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("textFormat: TextEdit.RichText")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("textMargin: LV.Theme.gapNone")));
+    QVERIFY(documentFlowSource.contains(QStringLiteral("function lineStartRectangle(position, sourcePosition)")));
+    QVERIFY(documentFlowSource.contains(QStringLiteral("readonly property real editorContentHeight: editor.displayContentHeight")));
 }
 
 void WhatSonCppRegressionTests::qmlInlineFormatEditor_forwardsInlineFormatShortcutsToTagManagementHook()
