@@ -26,10 +26,10 @@ Hosts the note document surface after `ContentsDisplayView.qml` has mounted a se
   fresh `editorSurfaceHtml` on every committed RAW source change; it does not add a second preview path while typing.
 - Emits `sourceTextEdited(text)` upward when the user changes the RAW text buffer.
 - Exposes `normalizedBlocks()` as a compatibility hook for callers that need the renderer-owned block stream.
-- Exposes `editorContentHeight` and `editorCursorPosition` to the parent editor host. Gutter line-number y mapping is
-  RAW-source based; this flow no longer acts as the line-number geometry sampler.
-- Keeps `lineStartRectangle(position, sourcePosition)` and `mapEditorPointToItem(...)` as compatibility hooks for
-  local display/cursor helpers, not as the gutter line-number source of truth.
+- Exposes `editorContentHeight` and `editorCursorPosition` to the parent editor host.
+- Exposes `lineStartRectangle(position, sourcePosition)` and `mapEditorPointToItem(...)` as the narrow mounted-editor
+  geometry hooks used by the gutter sampler. The C++ gutter model still owns source-line row creation; this flow only
+  reports visible editor coordinates.
 - Exposes `pointRequestsTerminalBodyClick(localX, localY)` and `focusTerminalBodyFromPoint(localX, localY)` for the
   bottom-empty-area accessibility hit target. A point below the rendered editor body is treated like a click at the
   RAW body end, while points over existing body content are passed through to the native editor/link path.

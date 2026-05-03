@@ -936,11 +936,21 @@ public:
         m_sampledSourcePositions.clear();
     }
 
+    void setSourceYOverride(const int sourcePosition, const qreal y)
+    {
+        m_sourceYOverrides.insert(sourcePosition, y);
+    }
+
     Q_INVOKABLE QVariant lineStartRectangle(const QVariant& position, const QVariant& sourcePosition)
     {
         const qreal displayOffset = position.toReal();
+        const int sourceOffset = sourcePosition.toInt();
         m_sampledPositions.append(position.toInt());
-        m_sampledSourcePositions.append(sourcePosition.toInt());
+        m_sampledSourcePositions.append(sourceOffset);
+        if (m_sourceYOverrides.contains(sourceOffset))
+        {
+            return QVariantMap{{QStringLiteral("y"), m_sourceYOverrides.value(sourceOffset)}};
+        }
         return QVariantMap{{QStringLiteral("y"), (displayOffset * 2.0) + 5.0}};
     }
 
@@ -954,6 +964,7 @@ public:
 private:
     QVariantList m_sampledPositions;
     QVariantList m_sampledSourcePositions;
+    QHash<int, qreal> m_sourceYOverrides;
 };
 
 class WhatSonCppRegressionTests final : public QObject
@@ -1075,13 +1086,13 @@ private slots:
     void qmlStructuredEditors_mountsGutterEditorAndMinimapInDisplayLayout();
     void contentsGutterLayoutMetrics_resolvesRuntimeAndDesignMetrics();
     void contentsGutterLineNumberGeometry_projectsFallbackLineYEntries();
-    void contentsGutterLineNumberGeometry_usesRawLineOffsetsWithoutGeometrySampling();
-    void contentsGutterLineNumberGeometry_readsStructuredBlocksWhenRawHasSinglePhysicalLine();
+    void contentsGutterLineNumberGeometry_samplesEditorGeometryForRawSourceLines();
+    void contentsGutterLineNumberGeometry_keepsSingleRawPhysicalLineAsOneEditorLine();
     void contentsGutterLineNumberGeometry_mergesDisplayAndStructuredBlockStreams();
-    void contentsGutterLineNumberGeometry_mapsSecondRawLineAfterTallFirstResource();
-    void contentsGutterLineNumberGeometry_expandsResourceRowsToRenderedContentHeight();
-    void contentsGutterLineNumberGeometry_assignsRenderedResourceHeightToVisibleImageRows();
-    void contentsGutterLineNumberGeometry_ignoresDuplicateDisplaySamples();
+    void contentsGutterLineNumberGeometry_ignoresEditorContentHeightWithoutGeometry();
+    void contentsGutterLineNumberGeometry_usesEditorGeometryDeltaForTallResourceRows();
+    void contentsGutterLineNumberGeometry_ignoresRenderedResourceMetadataWithoutGeometry();
+    void contentsGutterLineNumberGeometry_ignoresLogicalLineOffsetsForSourceLineRowCount();
     void contentsGutterMarkerGeometry_marksCursorAndUnsavedLineSpans();
     void contentsMinimapLayoutMetrics_resolvesRuntimeVisibilityAndDesignRows();
     void qmlStructuredEditors_rejectStaleSourceRangeMutations();

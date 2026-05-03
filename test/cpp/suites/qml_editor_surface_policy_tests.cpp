@@ -162,12 +162,12 @@ void WhatSonCppRegressionTests::qmlStructuredEditors_mountsGutterEditorAndMinima
     QVERIFY(markerGeometryIndex > lineNumberGeometryIndex);
     const QString lineNumberGeometrySource =
         displayViewSource.mid(lineNumberGeometryIndex, markerGeometryIndex - lineNumberGeometryIndex);
-    QVERIFY(!lineNumberGeometrySource.contains(QStringLiteral("editorGeometryHost: structuredDocumentFlow")));
+    QVERIFY(lineNumberGeometrySource.contains(QStringLiteral("editorGeometryHost: structuredDocumentFlow")));
     QVERIFY(!lineNumberGeometrySource.contains(
         QStringLiteral("logicalLineStartOffsets: editorPresentationProjection.logicalLineStartOffsets")));
-    QVERIFY(!lineNumberGeometrySource.contains(
+    QVERIFY(lineNumberGeometrySource.contains(
         QStringLiteral("logicalToSourceOffsets: editorPresentationProjection.logicalToSourceOffsets()")));
-    QVERIFY(!lineNumberGeometrySource.contains(QStringLiteral("mapTarget: contentsDisplayGutter")));
+    QVERIFY(lineNumberGeometrySource.contains(QStringLiteral("mapTarget: contentsDisplayGutter")));
     QVERIFY(gutterSource.contains(QStringLiteral("readonly property real lineHeight")));
     QVERIFY(gutterSource.contains(QStringLiteral("Number(modelData.height)")));
     QVERIFY(gutterSource.contains(QStringLiteral("height: lineHeight")));

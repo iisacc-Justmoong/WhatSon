@@ -421,10 +421,13 @@ Item {
         displayBlocks: editorPresentationProjection.normalizedHtmlBlocks
         documentBlocks: structuredBlockRenderer.renderedDocumentBlocks
         editorContentHeight: structuredDocumentFlow.editorContentHeight
+        editorGeometryHost: structuredDocumentFlow
         fallbackLineHeight: LV.Theme.textBodyLineHeight
         fallbackTopInset: LV.Theme.gapNone
         lineNumberBaseOffset: gutterLayoutMetrics.lineNumberBaseOffset
         lineNumberCount: gutterLayoutMetrics.effectiveLineNumberCount
+        logicalToSourceOffsets: editorPresentationProjection.logicalToSourceOffsets()
+        mapTarget: contentsDisplayGutter
         objectName: "contentsDisplayGutterLineNumberGeometry"
         renderedResources: bodyResourceRenderer.renderedResources
         sourceText: editorSession.editorText

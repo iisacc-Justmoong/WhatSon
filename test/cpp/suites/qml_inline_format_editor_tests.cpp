@@ -192,6 +192,8 @@ void WhatSonCppRegressionTests::qmlInlineFormatEditor_projectsGutterGeometryFrom
     QVERIFY(inlineEditorSource.contains(QStringLiteral("property string displayGeometryText: textInput.text")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("function displayGeometryItem()")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("return control.renderedOverlayVisible ? renderedGeometryProbe : textInput.editorItem")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("function lineStartGeometryItem()")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("return control.renderedOverlayVisible ? renderedOverlay : textInput.editorItem")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("sourcePosition !== undefined ? sourcePosition : position")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("return geometryItem.positionToRectangle(resolvedPosition)")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("geometryItem.mapToItem")));

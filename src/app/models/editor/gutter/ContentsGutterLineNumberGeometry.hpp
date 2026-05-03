@@ -84,12 +84,11 @@ signals:
 
 private:
     QVariantList effectiveBlockStream() const;
-    QList<LineSlot> blockLineSlots() const;
+    QList<LineSlot> editorLineSlots() const;
     QList<int> sourceLineStartOffsets() const;
     QList<LineSlot> rawLineSlots() const;
-    QList<int> extraHeightTargetLineIndices(const QList<LineSlot>& lineSlots) const;
-    QList<int> renderedResourceLineIndices(const QList<LineSlot>& lineSlots) const;
-    QList<int> resourceLineIndices(const QList<LineSlot>& lineSlots) const;
+    int logicalOffsetForSourceOffset(int sourceOffset) const noexcept;
+    bool editorLineGeometryForSlot(const LineSlot& slot, int fallbackIndex, qreal* resolvedY, qreal* resolvedHeight) const;
     qreal fallbackYForIndex(int index) const noexcept;
     void rebuildLineNumberEntries();
 

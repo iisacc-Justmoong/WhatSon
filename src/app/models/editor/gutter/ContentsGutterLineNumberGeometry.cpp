@@ -1,6 +1,9 @@
 #include "app/models/editor/gutter/ContentsGutterLineNumberGeometry.hpp"
 
-#include <QStringList>
+#include "app/models/editor/resource/ContentsEditorDynamicObjectSupport.hpp"
+
+#include <QPointF>
+#include <QRectF>
 #include <QVariantMap>
 
 #include <algorithm>
@@ -8,6 +11,70 @@
 
 namespace
 {
+    bool realFromGeometryVariant(const QVariant& value, const QString& key, qreal* resolvedValue)
+    {
+        if (resolvedValue == nullptr || !value.isValid())
+        {
+            return false;
+        }
+
+        if (value.canConvert<QRectF>())
+        {
+            const QRectF rectangle = value.toRectF();
+            if (key == QLatin1String("x"))
+            {
+                *resolvedValue = rectangle.x();
+                return true;
+            }
+            if (key == QLatin1String("y"))
+            {
+                *resolvedValue = rectangle.y();
+                return true;
+            }
+            if (key == QLatin1String("width"))
+            {
+                *resolvedValue = rectangle.width();
+                return true;
+            }
+            if (key == QLatin1String("height"))
+            {
+                *resolvedValue = rectangle.height();
+                return true;
+            }
+        }
+
+        if (value.canConvert<QPointF>())
+        {
+            const QPointF point = value.toPointF();
+            if (key == QLatin1String("x"))
+            {
+                *resolvedValue = point.x();
+                return true;
+            }
+            if (key == QLatin1String("y"))
+            {
+                *resolvedValue = point.y();
+                return true;
+            }
+        }
+
+        const QVariantMap map = value.toMap();
+        if (map.isEmpty())
+        {
+            return false;
+        }
+
+        bool ok = false;
+        const qreal valueFromMap = map.value(key).toReal(&ok);
+        if (!ok)
+        {
+            return false;
+        }
+
+        *resolvedValue = valueFromMap;
+        return true;
+    }
+
     struct BlockKey final
     {
         int blockIndex = -1;
@@ -46,16 +113,11 @@ namespace
         return type;
     }
 
-    int logicalLineCountHintForBlock(const QVariantMap& block)
+    bool rawLineLooksLikeResource(const QString& lineText)
     {
-        const int explicitHint = intFromMap(block, QStringLiteral("logicalLineCountHint"), 0);
-        if (explicitHint > 0)
-        {
-            return explicitHint;
-        }
-
-        const QString sourceText = block.value(QStringLiteral("sourceText")).toString();
-        return std::max(1, static_cast<int>(sourceText.count(QLatin1Char('\n'))) + 1);
+        const QString trimmedLine = lineText.trimmed();
+        return trimmedLine.startsWith(QStringLiteral("<resource"))
+            || trimmedLine.startsWith(QStringLiteral("<whatson-resource"));
     }
 
     int blockSourceStart(const QVariantMap& block)
@@ -135,27 +197,6 @@ namespace
         return uniqueEntries;
     }
 
-    int expandedBlockRowCount(const QVariantMap& block)
-    {
-        const QVariantList groupedBlocks = block.value(QStringLiteral("groupedBlocks")).toList();
-        if (block.value(QStringLiteral("flattenedInteractiveGroup")).toBool() && !groupedBlocks.isEmpty())
-        {
-            return groupedBlocks.size();
-        }
-
-        return std::max(1, logicalLineCountHintForBlock(block));
-    }
-
-    int blockStreamRowCount(const QVariantList& entries)
-    {
-        int count = 0;
-        for (const QVariant& entryValue : uniqueBlockEntries(entries))
-        {
-            count += expandedBlockRowCount(entryValue.toMap());
-        }
-        return count;
-    }
-
     bool blockCoversCandidate(const QVariantMap& existing, const QVariantMap& candidate)
     {
         if (sameBlockKey(blockKeyForEntry(existing), blockKeyForEntry(candidate)))
@@ -171,8 +212,7 @@ namespace
         }
 
         return blockSourceStart(existing) <= blockSourceStart(candidate)
-            && blockSourceEnd(existing) >= blockSourceEnd(candidate)
-            && expandedBlockRowCount(existing) >= expandedBlockRowCount(candidate);
+            && blockSourceEnd(existing) >= blockSourceEnd(candidate);
     }
 
     bool containsCoveredBlock(const QVariantList& entries, const QVariantMap& candidate)
@@ -218,27 +258,6 @@ namespace
         return merged;
     }
 
-    bool resourceEntryRendersAsTallImageFrame(const QVariantMap& entry)
-    {
-        const QString renderMode =
-            entry.value(QStringLiteral("renderMode")).toString().trimmed().toCaseFolded();
-        if (renderMode == QStringLiteral("image"))
-        {
-            return true;
-        }
-
-        return entry.value(QStringLiteral("imageWidth")).toInt() > 0
-            && entry.value(QStringLiteral("imageHeight")).toInt() > 0;
-    }
-
-    void appendUniqueLineIndex(QList<int>* lineIndices, const int lineIndex)
-    {
-        if (lineIndices == nullptr || lineIndex < 0 || lineIndices->contains(lineIndex))
-        {
-            return;
-        }
-        lineIndices->append(lineIndex);
-    }
 }
 
 namespace
@@ -253,7 +272,7 @@ namespace
         const int blockEnd = std::clamp(std::max(blockStart, sourceEnd), blockStart, sourceLength);
         for (int index = 0; index < lineSlots.size(); ++index)
         {
-            const ContentsGutterLineNumberGeometry::LineSlot slot = lineSlots.at(index);
+            const ContentsGutterLineNumberGeometry::LineSlot& slot = lineSlots.at(index);
             const int lineStart = std::clamp(slot.sourceStart, 0, sourceLength);
             const int nextLineStart = std::clamp(
                 std::max(slot.sourceEnd, lineStart + 1),
@@ -532,10 +551,84 @@ qreal ContentsGutterLineNumberGeometry::fallbackYForIndex(const int index) const
     return m_fallbackTopInset + (static_cast<qreal>(std::max(0, index)) * m_fallbackLineHeight);
 }
 
+int ContentsGutterLineNumberGeometry::logicalOffsetForSourceOffset(const int sourceOffset) const noexcept
+{
+    const int sourceLength = static_cast<int>(m_sourceText.size());
+    const int boundedSourceOffset = std::clamp(sourceOffset, 0, sourceLength);
+    if (m_logicalToSourceOffsets.isEmpty())
+    {
+        return boundedSourceOffset;
+    }
+
+    int nearestLogicalOffset = 0;
+    for (int index = 0; index < m_logicalToSourceOffsets.size(); ++index)
+    {
+        bool ok = false;
+        const int candidateSourceOffset = m_logicalToSourceOffsets.at(index).toInt(&ok);
+        if (!ok)
+        {
+            continue;
+        }
+
+        nearestLogicalOffset = index;
+        if (candidateSourceOffset >= boundedSourceOffset)
+        {
+            return index;
+        }
+    }
+
+    return nearestLogicalOffset;
+}
+
+bool ContentsGutterLineNumberGeometry::editorLineGeometryForSlot(
+    const LineSlot& slot,
+    const int fallbackIndex,
+    qreal* resolvedY,
+    qreal* resolvedHeight) const
+{
+    if (m_editorGeometryHost == nullptr || resolvedY == nullptr || resolvedHeight == nullptr)
+    {
+        return false;
+    }
+
+    const int sourceLength = static_cast<int>(m_sourceText.size());
+    const int sourceOffset = std::clamp(slot.sourceStart, 0, sourceLength);
+    const int logicalOffset = logicalOffsetForSourceOffset(sourceOffset);
+    const QVariant rawRectangle = WhatSon::Editor::DynamicObjectSupport::invokeVariant(
+        m_editorGeometryHost,
+        "lineStartRectangle",
+        {QVariant(logicalOffset), QVariant(sourceOffset)});
+
+    qreal rawX = 0.0;
+    realFromGeometryVariant(rawRectangle, QStringLiteral("x"), &rawX);
+
+    qreal rawY = fallbackYForIndex(fallbackIndex);
+    if (!realFromGeometryVariant(rawRectangle, QStringLiteral("y"), &rawY))
+    {
+        return false;
+    }
+
+    qreal rawHeight = m_fallbackLineHeight;
+    realFromGeometryVariant(rawRectangle, QStringLiteral("height"), &rawHeight);
+
+    if (m_mapTarget != nullptr)
+    {
+        const QVariant mappedPoint = WhatSon::Editor::DynamicObjectSupport::invokeVariant(
+            m_editorGeometryHost,
+            "mapEditorPointToItem",
+            {QVariant::fromValue(m_mapTarget), QVariant(rawX), QVariant(rawY)});
+        realFromGeometryVariant(mappedPoint, QStringLiteral("y"), &rawY);
+    }
+
+    *resolvedY = rawY;
+    *resolvedHeight = std::max<qreal>(1.0, rawHeight);
+    return true;
+}
+
 QVariantList ContentsGutterLineNumberGeometry::effectiveBlockStream() const
 {
-    const QVariantList uniqueDocumentBlocks = uniqueBlockEntries(m_documentBlocks);
-    const QVariantList uniqueDisplayBlocks = uniqueBlockEntries(m_displayBlocks);
+    QVariantList uniqueDocumentBlocks = uniqueBlockEntries(m_documentBlocks);
+    QVariantList uniqueDisplayBlocks = uniqueBlockEntries(m_displayBlocks);
     if (uniqueDocumentBlocks.isEmpty())
     {
         return uniqueDisplayBlocks;
@@ -545,9 +638,7 @@ QVariantList ContentsGutterLineNumberGeometry::effectiveBlockStream() const
         return uniqueDocumentBlocks;
     }
 
-    return blockStreamRowCount(uniqueDisplayBlocks) >= blockStreamRowCount(uniqueDocumentBlocks)
-        ? mergeBlockStreams(uniqueDisplayBlocks, uniqueDocumentBlocks)
-        : mergeBlockStreams(uniqueDocumentBlocks, uniqueDisplayBlocks);
+    return mergeBlockStreams(uniqueDocumentBlocks, uniqueDisplayBlocks);
 }
 
 QList<ContentsGutterLineNumberGeometry::LineSlot> ContentsGutterLineNumberGeometry::rawLineSlots() const
@@ -563,19 +654,25 @@ QList<ContentsGutterLineNumberGeometry::LineSlot> ContentsGutterLineNumberGeomet
         const int lineEnd = index + 1 < starts.size()
             ? std::clamp(starts.at(index + 1) - 1, lineStart, sourceLength)
             : sourceLength;
-        lineSlots.append(LineSlot{QStringLiteral("raw"), lineEnd, lineStart, false});
+        const QString lineText = m_sourceText.mid(lineStart, lineEnd - lineStart);
+        const bool resourceLine = rawLineLooksLikeResource(lineText);
+        lineSlots.append(LineSlot{
+            resourceLine ? QStringLiteral("resource") : QStringLiteral("raw"),
+            lineEnd,
+            lineStart,
+            resourceLine});
     }
 
     return lineSlots.isEmpty() ? QList<LineSlot>{LineSlot{QStringLiteral("raw"), 0, 0, false}} : lineSlots;
 }
 
-QList<ContentsGutterLineNumberGeometry::LineSlot> ContentsGutterLineNumberGeometry::blockLineSlots() const
+QList<ContentsGutterLineNumberGeometry::LineSlot> ContentsGutterLineNumberGeometry::editorLineSlots() const
 {
-    QList<LineSlot> lineSlots;
+    QList<LineSlot> lineSlots = rawLineSlots();
     const QVariantList blocks = effectiveBlockStream();
-    if (blocks.isEmpty())
+    if (blocks.isEmpty() || lineSlots.isEmpty())
     {
-        return rawLineSlots();
+        return lineSlots;
     }
 
     const auto appendBlock = [this, &lineSlots](const QVariantMap& block)
@@ -584,30 +681,22 @@ QList<ContentsGutterLineNumberGeometry::LineSlot> ContentsGutterLineNumberGeomet
         const bool resourceBlock = type == QStringLiteral("resource");
         const int sourceStart = std::clamp(blockSourceStart(block), 0, static_cast<int>(m_sourceText.size()));
         const int sourceEnd = std::clamp(blockSourceEnd(block), sourceStart, static_cast<int>(m_sourceText.size()));
-        const QString blockText = block.value(QStringLiteral("sourceText")).toString();
-        const int logicalLineCount = std::max(1, logicalLineCountHintForBlock(block));
-
-        if (resourceBlock || logicalLineCount == 1)
+        const int lineIndex = lineIndexForSourceSpan(
+            lineSlots,
+            static_cast<int>(m_sourceText.size()),
+            sourceStart,
+            sourceEnd);
+        if (lineIndex < 0 || lineIndex >= lineSlots.size())
         {
-            lineSlots.append(LineSlot{type, sourceEnd, sourceStart, resourceBlock});
             return;
         }
 
-        int segmentStart = sourceStart;
-        const QString sourceTextForSplit = blockText.isEmpty()
-            ? m_sourceText.mid(sourceStart, sourceEnd - sourceStart)
-            : blockText;
-        const QStringList segments = sourceTextForSplit.split(QLatin1Char('\n'), Qt::KeepEmptyParts);
-        const int segmentCount = std::max(logicalLineCount, static_cast<int>(segments.size()));
-        for (int segmentIndex = 0; segmentIndex < segmentCount; ++segmentIndex)
+        LineSlot& slot = lineSlots[lineIndex];
+        if (slot.blockType == QStringLiteral("raw") || resourceBlock)
         {
-            const int segmentLength = segmentIndex < segments.size()
-                ? static_cast<int>(segments.at(segmentIndex).size())
-                : 0;
-            const int segmentEnd = std::clamp(segmentStart + segmentLength, segmentStart, sourceEnd);
-            lineSlots.append(LineSlot{type, segmentEnd, segmentStart, false});
-            segmentStart = std::clamp(segmentEnd + 1, segmentEnd, sourceEnd);
+            slot.blockType = type;
         }
+        slot.resource = slot.resource || resourceBlock;
     };
 
     for (const QVariant& blockValue : blocks)
@@ -618,159 +707,69 @@ QList<ContentsGutterLineNumberGeometry::LineSlot> ContentsGutterLineNumberGeomet
             continue;
         }
 
-        const QVariantList groupedBlocks = block.value(QStringLiteral("groupedBlocks")).toList();
-        if (block.value(QStringLiteral("flattenedInteractiveGroup")).toBool() && !groupedBlocks.isEmpty())
-        {
-            for (const QVariant& groupedValue : groupedBlocks)
-            {
-                const QVariantMap groupedBlock = groupedValue.toMap();
-                if (!groupedBlock.isEmpty())
-                {
-                    appendBlock(groupedBlock);
-                }
-            }
-            continue;
-        }
-
         appendBlock(block);
     }
 
-    return lineSlots.isEmpty() ? rawLineSlots() : lineSlots;
-}
-
-QList<int> ContentsGutterLineNumberGeometry::resourceLineIndices(
-    const QList<LineSlot>& lineSlots) const
-{
-    QList<int> lineIndices;
-    for (int index = 0; index < lineSlots.size(); ++index)
-    {
-        if (lineSlots.at(index).resource)
-        {
-            lineIndices.append(index);
-        }
-    }
-    return lineIndices;
-}
-
-QList<int> ContentsGutterLineNumberGeometry::renderedResourceLineIndices(
-    const QList<LineSlot>& lineSlots) const
-{
-    QList<int> lineIndices;
-    if (m_renderedResources.isEmpty() || lineSlots.isEmpty())
-    {
-        return lineIndices;
-    }
-
-    const int sourceLength = static_cast<int>(m_sourceText.size());
-    for (const QVariant& resourceValue : m_renderedResources)
-    {
-        const QVariantMap resource = resourceValue.toMap();
-        if (!resourceEntryRendersAsTallImageFrame(resource))
-        {
-            continue;
-        }
-
-        int sourceStart = intFromMap(resource, QStringLiteral("sourceStart"), -1);
-        int sourceEnd = intFromMap(resource, QStringLiteral("sourceEnd"), -1);
-        if (sourceStart < 0 || sourceEnd <= sourceStart)
-        {
-            const int resourceIndex = intFromMap(resource, QStringLiteral("index"), -1);
-            for (const QVariant& blockValue : effectiveBlockStream())
-            {
-                const QVariantMap block = blockValue.toMap();
-                const QString blockType = normalizedBlockType(block);
-                if (blockType != QStringLiteral("resource")
-                    || intFromMap(block, QStringLiteral("resourceIndex"), -1) != resourceIndex)
-                {
-                    continue;
-                }
-
-                sourceStart = intFromMap(block, QStringLiteral("sourceStart"), -1);
-                sourceEnd = intFromMap(block, QStringLiteral("sourceEnd"), -1);
-                break;
-            }
-        }
-
-        appendUniqueLineIndex(
-            &lineIndices,
-            sourceStart >= 0 && sourceEnd > sourceStart
-                ? lineIndexForSourceSpan(
-                    lineSlots,
-                    sourceLength,
-                    sourceStart,
-                    sourceEnd)
-                : -1);
-    }
-
-    return lineIndices;
-}
-
-QList<int> ContentsGutterLineNumberGeometry::extraHeightTargetLineIndices(
-    const QList<LineSlot>& lineSlots) const
-{
-    QList<int> targetLineIndices = renderedResourceLineIndices(lineSlots);
-    if (!targetLineIndices.isEmpty())
-    {
-        return targetLineIndices;
-    }
-
-    if (!m_renderedResources.isEmpty())
-    {
-        return targetLineIndices;
-    }
-
-    return resourceLineIndices(lineSlots);
+    return lineSlots;
 }
 
 void ContentsGutterLineNumberGeometry::rebuildLineNumberEntries()
 {
-    const QList<LineSlot> lineSlots = blockLineSlots();
+    const QList<LineSlot> lineSlots = editorLineSlots();
     const int count = std::max(1, static_cast<int>(lineSlots.size()));
-
-    QList<qreal> lineHeights;
-    lineHeights.reserve(count);
-    for (int index = 0; index < count; ++index)
-    {
-        lineHeights.append(m_fallbackLineHeight);
-    }
-
-    if (!lineHeights.isEmpty() && m_editorContentHeight > 0.0)
-    {
-        qreal baseContentHeight = 0.0;
-        for (const qreal height : std::as_const(lineHeights))
-        {
-            baseContentHeight += height;
-        }
-
-        const qreal extraContentHeight = m_editorContentHeight - baseContentHeight;
-        if (extraContentHeight > 1.0)
-        {
-            QList<int> targetLineIndices = extraHeightTargetLineIndices(lineSlots);
-            if (targetLineIndices.isEmpty() && !lineHeights.isEmpty())
-            {
-                targetLineIndices.append(lineHeights.size() - 1);
-            }
-
-            const int targetLineCount = std::max(1, static_cast<int>(targetLineIndices.size()));
-            const qreal extraPerLine =
-                extraContentHeight / static_cast<qreal>(targetLineCount);
-            for (const int lineIndex : std::as_const(targetLineIndices))
-            {
-                if (lineIndex >= 0 && lineIndex < lineHeights.size())
-                {
-                    lineHeights[lineIndex] += extraPerLine;
-                }
-            }
-        }
-    }
 
     QList<qreal> lineYs;
     lineYs.reserve(count);
-    qreal cursorY = m_fallbackTopInset;
+    QList<qreal> lineHeights;
+    lineHeights.reserve(count);
+    QList<bool> sampledLineGeometry;
+    sampledLineGeometry.reserve(count);
+    bool sampledAnyLine = false;
     for (int index = 0; index < count; ++index)
     {
-        lineYs.append(cursorY);
-        cursorY += lineHeights.value(index, m_fallbackLineHeight);
+        qreal sampledY = fallbackYForIndex(index);
+        qreal sampledHeight = m_fallbackLineHeight;
+        const bool sampled = editorLineGeometryForSlot(
+            lineSlots.value(index),
+            index,
+            &sampledY,
+            &sampledHeight);
+        sampledAnyLine = sampledAnyLine || sampled;
+        lineYs.append(sampled ? sampledY : fallbackYForIndex(index));
+        lineHeights.append(sampled ? sampledHeight : m_fallbackLineHeight);
+        sampledLineGeometry.append(sampled);
+    }
+
+    if (sampledAnyLine)
+    {
+        for (int index = 1; index < count; ++index)
+        {
+            if (!sampledLineGeometry.value(index)
+                || lineYs.value(index) <= lineYs.value(index - 1))
+            {
+                lineYs[index] = lineYs.value(index - 1)
+                    + std::max<qreal>(1.0, lineHeights.value(index - 1, m_fallbackLineHeight));
+            }
+        }
+
+        for (int index = 0; index + 1 < count; ++index)
+        {
+            const qreal nextY = lineYs.value(index + 1);
+            const qreal currentY = lineYs.value(index);
+            if (nextY > currentY)
+            {
+                lineHeights[index] = std::max<qreal>(1.0, nextY - currentY);
+            }
+        }
+    }
+    else
+    {
+        qreal cursorY = m_fallbackTopInset;
+        for (int index = 0; index < count; ++index)
+        {
+            lineYs[index] = cursorY;
+            cursorY += lineHeights.value(index, m_fallbackLineHeight);
+        }
     }
 
     QVariantList nextEntries;

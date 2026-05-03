@@ -331,15 +331,19 @@ Item {
     }
 
     function positionToRectangle(position, sourcePosition) {
-        const geometryItem = control.displayGeometryItem();
+        const geometryItem = control.lineStartGeometryItem();
         const resolvedPosition = control.renderedOverlayVisible
-                ? position
+                ? control.boundedCursorPosition(position, Number(geometryItem.length) || renderedGeometryProbe.length)
                 : (sourcePosition !== undefined ? sourcePosition : position);
         return geometryItem.positionToRectangle(resolvedPosition);
     }
 
     function displayGeometryItem() {
         return control.renderedOverlayVisible ? renderedGeometryProbe : textInput.editorItem;
+    }
+
+    function lineStartGeometryItem() {
+        return control.renderedOverlayVisible ? renderedOverlay : textInput.editorItem;
     }
 
     function mapEditorPointToItem(target, x, y) {

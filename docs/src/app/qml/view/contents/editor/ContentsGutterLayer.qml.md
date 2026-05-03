@@ -22,9 +22,8 @@ entries and marker geometry, then hands those values to the gutter as plain mode
 
 - Line-number delegates no longer call `lineY(...)` on every binding evaluation. They consume a precomputed
   `resolvedY` from `visibleLineNumbersModel`.
-- That `resolvedY` is now gutter-specific rather than plain editor-line Y.
-  The host pre-applies wrapped-row compensation, so each logical line number is pushed down by the extra visual-row
-  height created by prior soft wraps.
+- That `resolvedY` is gutter-specific rather than plain document-local Y. The host must derive it from the live editor
+  geometry and current viewport mapping rather than distributing soft-wrap or content-height deltas in this layer.
 - Rail offsets, marker width, line-number font size, and active/default gutter colors now come from LVRS gap/theme
   tokens plus `LV.Theme.scaleMetric(...)`, so gutter chrome scales with the same density policy as the host editor.
 - The parent snapshot function must hand this component a real array. If `visibleLineNumbersModel` is assigned from a
@@ -50,7 +49,8 @@ entries and marker geometry, then hands those values to the gutter as plain mode
 ## Regression Checks
 
 - Line numbers should remain vertically stable while scrolling rich text with wrapped lines.
-- Soft-wrapped logical lines must push every following gutter label down by the same accumulated wrapped-row height.
+- Soft-wrapped or resource-expanded source lines must align because the host samples the next source-line y from the
+  editor, not because this layer guesses a compensation amount.
 - Markdown-style list typing must not narrow or widen the allocated gutter strip while the editor surface relayouts.
 - Line numbers should not disappear after editor refactors that touch the parent snapshot helpers; the gutter expects a
   concrete `visibleLineNumbersModel` array at all times.

@@ -29,12 +29,12 @@ Wraps the live `LV.TextEditor` used by the note document surface.
   cursor placement follow the WYSIWYG surface instead of hidden tag text.
 - The editor body is top-flush: `LV.TextEditor` vertical inset and rendered-overlay padding stay at zero. Horizontal
   text-column spacing is preserved with item margins instead of internal top padding.
-- Keeps a disabled, transparent plain `TextEdit` geometry probe in sync with the logical display text that backs the
-  visible rendered overlay. Gutter line numbers therefore sample visible text positions instead of RichText HTML tag
-  positions, which prevents early line numbers from collapsing onto the same y coordinate.
-- Reports `displayContentHeight` from the actual RichText overlay while rendered output is visible. Resource tags can
-  render as image/table blocks that are taller than their logical plain-text probe, and the gutter model needs that
-  rendered height to size the matching line-number row.
+- Keeps a disabled, transparent plain `TextEdit` geometry probe in sync with the logical display text for cursor hit
+  testing and projected caret placement.
+- Exposes line-start geometry from the actual RichText overlay while rendered output is visible. Gutter line numbers
+  therefore see resource image frames and other rendered block heights instead of the shorter plain-text probe.
+- Reports `displayContentHeight` from the actual RichText overlay while rendered output is visible so the scrollable
+  editor viewport follows the rendered body height.
 - When the rendered overlay is hidden for native composition, geometry falls back to the live `LV.TextEditor.editorItem`
   and uses the supplied source position. The hidden-overlay fallback still uses the same Qt text-edit rendering family
   as the overlay, so typing during composition and the committed render after a space or punctuation terminator do not
@@ -52,9 +52,9 @@ Wraps the live `LV.TextEditor` used by the note document surface.
 - `focusTerminalBodyPosition()` focuses the native `LV.TextEditor`, clears any stale selection, and moves the cursor to
   the RAW text end through `setCursorPositionPreservingNativeInput(...)`. This is used only by the parent structured
   flow's bottom-empty-area hit target.
-- Exposes `positionToRectangle(position, sourcePosition)` and `mapEditorPointToItem(...)` as narrow compatibility
-  geometry hooks for display/cursor helpers. Gutter line-number y mapping is now RAW-source based and no longer samples
-  these hooks.
+- Exposes `positionToRectangle(position, sourcePosition)` and `mapEditorPointToItem(...)` as narrow geometry hooks for
+  the gutter sampler. `positionToRectangle(...)` returns visible line-start geometry, while `mapEditorPointToItem(...)`
+  converts that point into the gutter coordinate space.
 - Ordinary navigation, selection, Backspace/Delete repeat, paste fallback, and IME/preedit behavior remain with Qt's
   native text-editing path exposed by `LV.TextEditor`.
 
