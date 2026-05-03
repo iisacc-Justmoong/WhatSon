@@ -17,10 +17,11 @@ Builds editor HTML tokens and normalized HTML blocks from parser-owned RAW docum
   - source span
   - normalized HTML fragment
   - overlay-visibility flag
-- Builds a renderer-local XML projection from those HTML tokens, validates it with `iiXml::Parser::TagParser`, converts
-  it through `iiHtmlBlock::iiXmlToHTML`, and divides it with `iiHtmlBlock::DivideBlock`.
-- Converts the resulting iiHtmlBlock display-block objects into `normalizedHtmlBlocks` without letting QML rediscover
-  block-flow ownership or semantic text styling from raw strings.
+- Builds a renderer-local XML projection for each HTML token, validates it with `iiXml::Parser::TagParser`, converts it
+  through `iiHtmlBlock::iiXmlToHTML`, and divides it with `iiHtmlBlock::DivideBlock`.
+- Converts the resulting iiHtmlBlock display-block objects into `normalizedHtmlBlocks` without assuming one token maps
+  to exactly one block. If one token yields several display blocks, the renderer publishes several normalized blocks
+  with the same `htmlTokenStartIndex`.
 - Each normalized HTML block now includes iiHtmlBlock metadata:
   - `htmlBlockObjectSource=iiHtmlBlock`
   - `htmlBlockTagName`

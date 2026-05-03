@@ -4,12 +4,22 @@ void WhatSonCppRegressionTests::noteHeaderParser_usesIiXmlDocumentTreeForWsnHead
 {
     const QString parserSource = readUtf8SourceFile(
         QStringLiteral("src/app/models/file/note/WhatSonNoteHeaderParser.cpp"));
+    const QString iiXmlSupportHeader = readUtf8SourceFile(
+        QStringLiteral("src/app/models/file/note/WhatSonIiXmlDocumentSupport.hpp"));
+    const QString iiXmlSupportSource = readUtf8SourceFile(
+        QStringLiteral("src/app/models/file/note/WhatSonIiXmlDocumentSupport.cpp"));
 
     QVERIFY(!parserSource.isEmpty());
-    QVERIFY(parserSource.contains(QStringLiteral("#include <iiXml.h>")));
-    QVERIFY(parserSource.contains(QStringLiteral("iiXml::Parser::TagParser")));
-    QVERIFY(parserSource.contains(QStringLiteral("ParseAllDocumentResult")));
+    QVERIFY(parserSource.contains(QStringLiteral("WhatSonIiXmlDocumentSupport.hpp")));
+    QVERIFY(!parserSource.contains(QStringLiteral("#include <iiXml.h>")));
+    QVERIFY(!parserSource.contains(QStringLiteral("iiXml::Parser::TagParser parser")));
+    QVERIFY(!parserSource.contains(QStringLiteral("stripWsnHeadParserPreamble")));
     QVERIFY(!parserSource.contains(QStringLiteral("QRegularExpression")));
+    QVERIFY(!iiXmlSupportHeader.isEmpty());
+    QVERIFY(iiXmlSupportHeader.contains(QStringLiteral("#include <iiXml.h>")));
+    QVERIFY(!iiXmlSupportSource.isEmpty());
+    QVERIFY(iiXmlSupportSource.contains(QStringLiteral("iiXml::Parser::TagParser parser")));
+    QVERIFY(iiXmlSupportSource.contains(QStringLiteral("ParseAllDocumentResult")));
 
     const QString headerText = QStringLiteral(
         "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
@@ -93,9 +103,10 @@ void WhatSonCppRegressionTests::localNoteFileStore_usesIiXmlDocumentTreeForWsnBo
         QStringLiteral("src/app/models/file/note/WhatSonLocalNoteFileStore.cpp"));
 
     QVERIFY(!storeSource.isEmpty());
-    QVERIFY(storeSource.contains(QStringLiteral("#include <iiXml.h>")));
-    QVERIFY(storeSource.contains(QStringLiteral("iiXml::Parser::TagParser")));
-    QVERIFY(storeSource.contains(QStringLiteral("ParseAllDocumentResult")));
+    QVERIFY(storeSource.contains(QStringLiteral("WhatSonIiXmlDocumentSupport.hpp")));
+    QVERIFY(!storeSource.contains(QStringLiteral("#include <iiXml.h>")));
+    QVERIFY(!storeSource.contains(QStringLiteral("iiXml::Parser::TagParser parser")));
+    QVERIFY(!storeSource.contains(QStringLiteral("stripXmlParserPreamble")));
     QVERIFY(!storeSource.contains(QStringLiteral("bodyPattern")));
     QVERIFY(!storeSource.contains(QStringLiteral("resourcePattern")));
 

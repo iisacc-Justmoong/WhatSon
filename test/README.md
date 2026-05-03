@@ -51,6 +51,8 @@ The C++ suite currently locks regression-sensitive runtime behavior for:
 - `ResourceDetailPanelController`
 - `ResourceBitmapViewer`
 - CMake wiring for the local `iiXml` and `iiHtmlBlock` package dependencies
+- The iiXml-only `.wsnbody` explicit-block parser path, the iiHtmlBlock per-token display-block projection, and the
+  shared note-package iiXml support layer used by `.wsnhead` and `.wsnbody` readers
 
 The suite avoids booting the full application shell or loading a hub package.
 

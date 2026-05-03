@@ -1,6 +1,7 @@
 #include "app/models/file/note/WhatSonLocalNoteFileStore.hpp"
 
 #include "app/models/file/note/WhatSonNoteBodyPersistence.hpp"
+#include "app/models/file/note/WhatSonIiXmlDocumentSupport.hpp"
 #include "app/models/file/note/WhatSonNoteHeaderCreator.hpp"
 #include "app/models/file/diff/WhatSonLocalNoteVersionStore.hpp"
 #include "app/models/file/statistic/WhatSonNoteFileStatSupport.hpp"
@@ -19,14 +20,12 @@
 #include <QSet>
 #include <QUrl>
 
-#include <iiXml.h>
-
-#include <string_view>
 #include <utility>
-#include <vector>
 
 namespace
 {
+    namespace IiXml = WhatSon::IiXmlDocumentSupport;
+
     constexpr auto kNoteTimestampFormat = "yyyy-MM-dd-hh-mm-ss";
     constexpr auto kNoteVersionSchema = "whatson.note.version.store";
 
@@ -54,70 +53,9 @@ namespace
             .arg(noteId.trimmed());
     }
 
-    QString decodeXmlEntities(QString text)
-    {
-        text.replace(QStringLiteral("&lt;"), QStringLiteral("<"));
-        text.replace(QStringLiteral("&gt;"), QStringLiteral(">"));
-        text.replace(QStringLiteral("&quot;"), QStringLiteral("\""));
-        text.replace(QStringLiteral("&apos;"), QStringLiteral("'"));
-        text.replace(QStringLiteral("&amp;"), QStringLiteral("&"));
-        return text;
-    }
-
-    QString QStringFromUtf8View(std::string_view view)
-    {
-        return QString::fromUtf8(view.data(), static_cast<qsizetype>(view.size()));
-    }
-
-    bool tagNameEquals(const iiXml::Parser::TagNode& node, const QString& tagName)
-    {
-        return QString::compare(
-                   QString::fromStdString(node.Range.TagName),
-                   tagName,
-                   Qt::CaseInsensitive)
-            == 0;
-    }
-
-    bool fieldNameEquals(
-        const iiXml::Parser::TagDocument& document,
-        const iiXml::Parser::TagField& field,
-        const QString& attributeName)
-    {
-        return QString::compare(
-                   QStringFromUtf8View(document.FieldNameView(field)),
-                   attributeName,
-                   Qt::CaseInsensitive)
-            == 0;
-    }
-
-    QString stripXmlParserPreamble(QString source)
-    {
-        source = source.trimmed();
-
-        if (source.startsWith(QStringLiteral("<?xml"), Qt::CaseInsensitive))
-        {
-            const qsizetype declarationEnd = source.indexOf(QStringLiteral("?>"));
-            if (declarationEnd >= 0)
-            {
-                source = source.mid(declarationEnd + 2).trimmed();
-            }
-        }
-
-        if (source.startsWith(QStringLiteral("<!DOCTYPE"), Qt::CaseInsensitive))
-        {
-            const qsizetype doctypeEnd = source.indexOf(QLatin1Char('>'));
-            if (doctypeEnd >= 0)
-            {
-                source = source.mid(doctypeEnd + 1).trimmed();
-            }
-        }
-
-        return source;
-    }
-
     QString prepareWsnXmlForIiXml(QString source)
     {
-        source = stripXmlParserPreamble(source);
+        source = IiXml::stripXmlPreamble(source);
         source.remove(QRegularExpression(QStringLiteral(R"(<!--[\s\S]*?-->)")));
         source.remove(
             QRegularExpression(
@@ -150,63 +88,9 @@ namespace
         return source;
     }
 
-    const iiXml::Parser::TagNode* findFirstDescendant(
-        const std::vector<iiXml::Parser::TagNode>& nodes,
-        const QString& tagName)
-    {
-        for (const iiXml::Parser::TagNode& node : nodes)
-        {
-            if (tagNameEquals(node, tagName))
-            {
-                return &node;
-            }
-
-            if (const iiXml::Parser::TagNode* child = findFirstDescendant(node.Children, tagName))
-            {
-                return child;
-            }
-        }
-
-        return nullptr;
-    }
-
-    QString attributeValue(
-        const iiXml::Parser::TagDocument& document,
-        const iiXml::Parser::TagNode* node,
-        const QStringList& attributeNames)
-    {
-        if (node == nullptr)
-        {
-            return {};
-        }
-
-        for (const QString& attributeName : attributeNames)
-        {
-            for (const iiXml::Parser::TagField& field : node->Fields)
-            {
-                if (!field.HasValue || !fieldNameEquals(document, field, attributeName))
-                {
-                    continue;
-                }
-
-                const QString value = decodeXmlEntities(
-                    QStringFromUtf8View(document.FieldValueView(field))).trimmed();
-                if (!value.isEmpty())
-                {
-                    return value;
-                }
-            }
-        }
-
-        return {};
-    }
-
     iiXml::Parser::TagDocumentResult parseWsnXmlDocument(const QString& sourceText)
     {
-        const QByteArray parseableBytes = prepareWsnXmlForIiXml(sourceText).toUtf8();
-        const iiXml::Parser::TagParser parser;
-        return parser.ParseAllDocumentResult(
-            std::string_view(parseableBytes.constData(), static_cast<std::size_t>(parseableBytes.size())));
+        return IiXml::parseDocument(prepareWsnXmlForIiXml(sourceText));
     }
 
     QString serializeBodyDocument(const QString& noteId, const QString& plainText)
@@ -668,18 +552,19 @@ void WhatSonLocalNoteFileStore::applyBodyDocumentText(
     }
 
     const iiXml::Parser::TagDocument& xmlDocument = parsedBodyDocument.Document.value();
-    const iiXml::Parser::TagNode* bodyNode = findFirstDescendant(xmlDocument.Nodes, QStringLiteral("body"));
+    const iiXml::Parser::TagNode* bodyNode = IiXml::findFirstDescendant(xmlDocument.Nodes, QStringLiteral("body"));
     if (bodyNode == nullptr)
     {
         return;
     }
 
-    const iiXml::Parser::TagNode* resourceNode = findFirstDescendant(bodyNode->Children, QStringLiteral("resource"));
+    const iiXml::Parser::TagNode* resourceNode =
+        IiXml::findFirstDescendant(bodyNode->Children, QStringLiteral("resource"));
     if (resourceNode != nullptr)
     {
         document->bodyHasResource = true;
 
-        const QString resolvedResourcePath = attributeValue(
+        const QString resolvedResourcePath = IiXml::attributeValue(
             xmlDocument,
             resourceNode,
             {
@@ -689,7 +574,7 @@ void WhatSonLocalNoteFileStore::applyBodyDocumentText(
                 QStringLiteral("href"),
                 QStringLiteral("url")
             });
-        const QString resolvedResourceFormat = attributeValue(
+        const QString resolvedResourceFormat = IiXml::attributeValue(
             xmlDocument,
             resourceNode,
             {QStringLiteral("format"), QStringLiteral("type"), QStringLiteral("mime"), QStringLiteral("kind")});

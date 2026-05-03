@@ -17,9 +17,10 @@ It creates notes, reads materialized note directories, updates persisted body/he
 
 ## Body Parsing Contract
 - `applyBodyDocumentText(...)` is the read-side body decoder.
-- The decoder now routes `.wsnbody` XML structure through `iiXml::Parser::TagParser` before inspecting `<body>` and
+- The decoder now routes `.wsnbody` XML structure through `WhatSonIiXmlDocumentSupport` before inspecting `<body>` and
   `<resource ...>` nodes.
-- Thumbnail metadata is derived from iiXml node fields instead of a body/resource regular-expression scan.
+- Thumbnail metadata is derived from shared iiXml node-field helpers instead of a body/resource regular-expression
+  scan.
 - It now projects both:
   - `bodyPlainText` (search/list summary text)
   - `bodySourceText` (editor-facing RAW source projection from `.wsnbody`)

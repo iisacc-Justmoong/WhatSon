@@ -2,162 +2,21 @@
 
 #include "app/models/file/hierarchy/WhatSonFolderIdentity.hpp"
 #include "app/models/file/note/WhatSonBookmarkColorPalette.hpp"
+#include "app/models/file/note/WhatSonIiXmlDocumentSupport.hpp"
 #include "app/models/file/WhatSonDebugTrace.hpp"
 
-#include <iiXml.h>
-
 #include <algorithm>
-#include <string_view>
 #include <vector>
 
 namespace
 {
-    QString QStringFromUtf8View(std::string_view view)
-    {
-        return QString::fromUtf8(view.data(), static_cast<qsizetype>(view.size()));
-    }
-
-    QString unescapeXmlText(QString value)
-    {
-        value.replace(QStringLiteral("&lt;"), QStringLiteral("<"));
-        value.replace(QStringLiteral("&gt;"), QStringLiteral(">"));
-        value.replace(QStringLiteral("&quot;"), QStringLiteral("\""));
-        value.replace(QStringLiteral("&apos;"), QStringLiteral("'"));
-        value.replace(QStringLiteral("&amp;"), QStringLiteral("&"));
-        return value;
-    }
-
-    QString normalizeSingleValue(QString value)
-    {
-        return unescapeXmlText(value.trimmed());
-    }
-
-    bool tagNameEquals(const iiXml::Parser::TagNode& node, const QString& tagName)
-    {
-        return QString::compare(
-                   QString::fromStdString(node.Range.TagName),
-                   tagName,
-                   Qt::CaseInsensitive)
-            == 0;
-    }
-
-    bool fieldNameEquals(
-        const iiXml::Parser::TagDocument& document,
-        const iiXml::Parser::TagField& field,
-        const QString& attributeName)
-    {
-        return QString::compare(
-                   QStringFromUtf8View(document.FieldNameView(field)),
-                   attributeName,
-                   Qt::CaseInsensitive)
-            == 0;
-    }
-
-    QString stripWsnHeadParserPreamble(QString source)
-    {
-        source = source.trimmed();
-
-        if (source.startsWith(QStringLiteral("<?xml"), Qt::CaseInsensitive))
-        {
-            const qsizetype declarationEnd = source.indexOf(QStringLiteral("?>"));
-            if (declarationEnd >= 0)
-            {
-                source = source.mid(declarationEnd + 2).trimmed();
-            }
-        }
-
-        if (source.startsWith(QStringLiteral("<!DOCTYPE"), Qt::CaseInsensitive))
-        {
-            const qsizetype doctypeEnd = source.indexOf(QLatin1Char('>'));
-            if (doctypeEnd >= 0)
-            {
-                source = source.mid(doctypeEnd + 1).trimmed();
-            }
-        }
-
-        return source;
-    }
-
-    const iiXml::Parser::TagNode* findFirstDescendant(
-        const std::vector<iiXml::Parser::TagNode>& nodes,
-        const QString& tagName)
-    {
-        for (const iiXml::Parser::TagNode& node : nodes)
-        {
-            if (tagNameEquals(node, tagName))
-            {
-                return &node;
-            }
-
-            if (const iiXml::Parser::TagNode* child = findFirstDescendant(node.Children, tagName))
-            {
-                return child;
-            }
-        }
-
-        return nullptr;
-    }
-
-    void collectDescendants(
-        const std::vector<iiXml::Parser::TagNode>& nodes,
-        const QString& tagName,
-        std::vector<const iiXml::Parser::TagNode*>* outNodes)
-    {
-        if (outNodes == nullptr)
-        {
-            return;
-        }
-
-        for (const iiXml::Parser::TagNode& node : nodes)
-        {
-            if (tagNameEquals(node, tagName))
-            {
-                outNodes->push_back(&node);
-            }
-            collectDescendants(node.Children, tagName, outNodes);
-        }
-    }
-
-    QString nodeText(
-        const iiXml::Parser::TagDocument& document,
-        const iiXml::Parser::TagNode* node)
-    {
-        if (node == nullptr)
-        {
-            return {};
-        }
-
-        return normalizeSingleValue(QStringFromUtf8View(document.ValueView(*node)));
-    }
-
-    QString attributeValue(
-        const iiXml::Parser::TagDocument& document,
-        const iiXml::Parser::TagNode* node,
-        const QString& attributeName)
-    {
-        if (node == nullptr)
-        {
-            return {};
-        }
-
-        for (const iiXml::Parser::TagField& field : node->Fields)
-        {
-            if (!field.HasValue || !fieldNameEquals(document, field, attributeName))
-            {
-                continue;
-            }
-
-            return normalizeSingleValue(QStringFromUtf8View(document.FieldValueView(field)));
-        }
-
-        return {};
-    }
+    namespace IiXml = WhatSon::IiXmlDocumentSupport;
 
     QString extractTagText(
         const iiXml::Parser::TagDocument& document,
         const QString& tagName)
     {
-        return nodeText(document, findFirstDescendant(document.Nodes, tagName));
+        return IiXml::nodeText(document, IiXml::findFirstDescendant(document.Nodes, tagName));
     }
 
     QStringList extractTagTexts(
@@ -165,13 +24,13 @@ namespace
         const QString& tagName)
     {
         std::vector<const iiXml::Parser::TagNode*> nodes;
-        collectDescendants(document.Nodes, tagName, &nodes);
+        IiXml::collectDescendants(document.Nodes, tagName, &nodes);
 
         QStringList values;
         values.reserve(static_cast<qsizetype>(nodes.size()));
         for (const iiXml::Parser::TagNode* node : nodes)
         {
-            values.push_back(nodeText(document, node));
+            values.push_back(IiXml::nodeText(document, node));
         }
 
         return values;
@@ -182,9 +41,9 @@ namespace
         const QString& tagName,
         const QString& attributeName)
     {
-        return attributeValue(
+        return IiXml::attributeValue(
             document,
-            findFirstDescendant(document.Nodes, tagName),
+            IiXml::findFirstDescendant(document.Nodes, tagName),
             attributeName);
     }
 
@@ -224,14 +83,14 @@ namespace
     ParsedFolderBindings extractFolderBindings(const iiXml::Parser::TagDocument& document)
     {
         std::vector<const iiXml::Parser::TagNode*> folderNodes;
-        collectDescendants(document.Nodes, QStringLiteral("folder"), &folderNodes);
+        IiXml::collectDescendants(document.Nodes, QStringLiteral("folder"), &folderNodes);
         ParsedFolderBindings bindings;
         for (const iiXml::Parser::TagNode* folderNode : folderNodes)
         {
-            bindings.folders.push_back(nodeText(document, folderNode));
+            bindings.folders.push_back(IiXml::nodeText(document, folderNode));
 
             const QString folderUuid = WhatSon::FolderIdentity::normalizeFolderUuid(
-                attributeValue(document, folderNode, QStringLiteral("uuid")));
+                IiXml::attributeValue(document, folderNode, QStringLiteral("uuid")));
             bindings.folderUuids.push_back(folderUuid);
         }
 
@@ -263,7 +122,7 @@ namespace
             }
             if (!token.isEmpty())
             {
-                labels.push_back(unescapeXmlText(token));
+                labels.push_back(IiXml::decodeXmlEntities(token));
             }
         }
 
@@ -280,13 +139,13 @@ namespace
     int parseProgressValue(const iiXml::Parser::TagDocument& document)
     {
         const iiXml::Parser::TagNode* progressNode =
-            findFirstDescendant(document.Nodes, QStringLiteral("progress"));
+            IiXml::findFirstDescendant(document.Nodes, QStringLiteral("progress"));
         if (progressNode == nullptr)
         {
             return -1;
         }
 
-        const QString progressText = nodeText(document, progressNode);
+        const QString progressText = IiXml::nodeText(document, progressNode);
         bool ok = false;
         const int progressNumeric = progressText.toInt(&ok);
         if (ok)
@@ -294,7 +153,7 @@ namespace
             return progressNumeric;
         }
 
-        const QString valueAttr = attributeValue(document, progressNode, QStringLiteral("value"));
+        const QString valueAttr = IiXml::attributeValue(document, progressNode, QStringLiteral("value"));
         if (!valueAttr.isEmpty())
         {
             const int valueNumeric = valueAttr.toInt(&ok);
@@ -309,7 +168,7 @@ namespace
             return -1;
         }
 
-        const QString enumsAttr = attributeValue(document, progressNode, QStringLiteral("enums"));
+        const QString enumsAttr = IiXml::attributeValue(document, progressNode, QStringLiteral("enums"));
         const QStringList enumLabels = parseProgressEnums(enumsAttr);
 
         if (!progressText.isEmpty())
@@ -379,12 +238,7 @@ bool WhatSonNoteHeaderParser::parse(
         return false;
     }
 
-    const QString parseableHeaderText = stripWsnHeadParserPreamble(wsnHeadText);
-    const QByteArray parseableHeaderBytes = parseableHeaderText.toUtf8();
-    const iiXml::Parser::TagParser parser;
-    const iiXml::Parser::TagDocumentResult parsedDocument =
-        parser.ParseAllDocumentResult(
-            std::string_view(parseableHeaderBytes.constData(), static_cast<std::size_t>(parseableHeaderBytes.size())));
+    const iiXml::Parser::TagDocumentResult parsedDocument = IiXml::parseDocument(wsnHeadText);
     if (parsedDocument.Status != iiXml::Parser::TagTreeParseStatus::Parsed || !parsedDocument.Document.has_value())
     {
         outStore->clear();

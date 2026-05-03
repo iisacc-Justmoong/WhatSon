@@ -254,22 +254,6 @@ namespace
         return token;
     }
 
-    QVariantMap buildNormalizedHtmlBlock(const QVariantMap& token)
-    {
-        QVariantMap normalizedBlock = token;
-        normalizedBlock.insert(
-            QStringLiteral("htmlBlockIndex"),
-            token.value(QStringLiteral("blockIndex")).toInt());
-        normalizedBlock.insert(
-            QStringLiteral("htmlTokenStartIndex"),
-            token.value(QStringLiteral("tokenIndex")).toInt());
-        normalizedBlock.insert(QStringLiteral("htmlTokenCount"), 1);
-        normalizedBlock.insert(
-            QStringLiteral("htmlBlockHtml"),
-            token.value(QStringLiteral("html")).toString());
-        return normalizedBlock;
-    }
-
     QString htmlBlockProjectionForToken(const QVariantMap& token)
     {
         const QString renderDelegateType = token.value(QStringLiteral("renderDelegateType")).toString();
@@ -298,21 +282,11 @@ namespace
         bool parsed = false;
     };
 
-    IiHtmlBlockProjection buildIiHtmlBlockProjection(const QVariantList& tokens)
+    IiHtmlBlockProjection buildIiHtmlBlockProjection(const QVariantMap& token)
     {
         IiHtmlBlockProjection projection;
-        if (tokens.isEmpty())
-        {
-            projection.parsed = true;
-            return projection;
-        }
-
-        QString xmlProjection = QStringLiteral("<whatsonhtmlblocks>");
-        for (const QVariant& tokenValue : tokens)
-        {
-            xmlProjection += htmlBlockProjectionForToken(tokenValue.toMap());
-        }
-        xmlProjection += QStringLiteral("</whatsonhtmlblocks>");
+        const QString xmlProjection = QStringLiteral("<whatsonhtmlblocks>%1</whatsonhtmlblocks>")
+            .arg(htmlBlockProjectionForToken(token));
 
         const QByteArray xmlBytes = xmlProjection.toUtf8();
         const iiXml::Parser::TagParser xmlParser;
@@ -366,6 +340,43 @@ namespace
         payload->insert(QStringLiteral("htmlBlockDisplayValue"), QStringFromStdString(block.display_value));
         payload->insert(QStringLiteral("htmlBlockIsDisplayBlock"), block.is_block);
     }
+
+    QVariantMap buildNormalizedHtmlBlock(
+        const QVariantMap& token,
+        const iiHtmlBlock::DivideBlock::ElementInfo& block,
+        const int htmlBlockIndex)
+    {
+        QVariantMap normalizedBlock = token;
+        applyIiHtmlBlockMetadata(&normalizedBlock, block);
+        normalizedBlock.insert(QStringLiteral("htmlBlockIndex"), htmlBlockIndex);
+        normalizedBlock.insert(
+            QStringLiteral("htmlTokenStartIndex"),
+            token.value(QStringLiteral("tokenIndex")).toInt());
+        normalizedBlock.insert(QStringLiteral("htmlTokenCount"), 1);
+        normalizedBlock.insert(
+            QStringLiteral("htmlBlockHtml"),
+            normalizedBlock.value(QStringLiteral("htmlBlockRaw")).toString());
+        return normalizedBlock;
+    }
+
+    QVariantMap buildErroredNormalizedHtmlBlock(
+        const QVariantMap& token,
+        const QString& error,
+        const int htmlBlockIndex)
+    {
+        QVariantMap normalizedBlock = token;
+        normalizedBlock.insert(QStringLiteral("htmlBlockObjectSource"), QStringLiteral("iiHtmlBlock"));
+        normalizedBlock.insert(QStringLiteral("htmlBlockParseError"), error);
+        normalizedBlock.insert(QStringLiteral("htmlBlockIndex"), htmlBlockIndex);
+        normalizedBlock.insert(
+            QStringLiteral("htmlTokenStartIndex"),
+            token.value(QStringLiteral("tokenIndex")).toInt());
+        normalizedBlock.insert(QStringLiteral("htmlTokenCount"), 1);
+        normalizedBlock.insert(
+            QStringLiteral("htmlBlockHtml"),
+            token.value(QStringLiteral("html")).toString());
+        return normalizedBlock;
+    }
 } // namespace
 
 ContentsHtmlBlockRenderPipeline::ContentsHtmlBlockRenderPipeline() = default;
@@ -418,22 +429,41 @@ ContentsHtmlBlockRenderPipeline::RenderResult ContentsHtmlBlockRenderPipeline::r
         ++tokenIndex;
     }
 
-    const IiHtmlBlockProjection htmlBlockProjection = buildIiHtmlBlockProjection(tokens);
+    int htmlBlockIndex = 0;
     for (int index = 0; index < tokens.size(); ++index)
     {
         QVariantMap token = tokens.at(index).toMap();
-        if (htmlBlockProjection.parsed && index < static_cast<int>(htmlBlockProjection.blocks.size()))
+        const IiHtmlBlockProjection htmlBlockProjection = buildIiHtmlBlockProjection(token);
+        if (htmlBlockProjection.parsed && !htmlBlockProjection.blocks.empty())
         {
-            applyIiHtmlBlockMetadata(&token, htmlBlockProjection.blocks.at(static_cast<std::size_t>(index)));
+            token.insert(
+                QStringLiteral("htmlBlockCount"),
+                static_cast<int>(htmlBlockProjection.blocks.size()));
+            applyIiHtmlBlockMetadata(&token, htmlBlockProjection.blocks.front());
+            for (const iiHtmlBlock::DivideBlock::ElementInfo& block : htmlBlockProjection.blocks)
+            {
+                result.normalizedHtmlBlocks.push_back(
+                    buildNormalizedHtmlBlock(token, block, htmlBlockIndex));
+                ++htmlBlockIndex;
+            }
         }
-        else if (!htmlBlockProjection.error.isEmpty())
+        else
         {
             token.insert(QStringLiteral("htmlBlockObjectSource"), QStringLiteral("iiHtmlBlock"));
-            token.insert(QStringLiteral("htmlBlockParseError"), htmlBlockProjection.error);
+            token.insert(
+                QStringLiteral("htmlBlockParseError"),
+                htmlBlockProjection.error.isEmpty()
+                    ? QStringLiteral("iiHtmlBlock produced no display blocks for token.")
+                    : htmlBlockProjection.error);
+            result.normalizedHtmlBlocks.push_back(
+                buildErroredNormalizedHtmlBlock(
+                    token,
+                    token.value(QStringLiteral("htmlBlockParseError")).toString(),
+                    htmlBlockIndex));
+            ++htmlBlockIndex;
         }
 
         result.htmlTokens.push_back(token);
-        result.normalizedHtmlBlocks.push_back(buildNormalizedHtmlBlock(token));
     }
 
     result.documentHtml = joinHtmlDocumentFragments(documentFragments);

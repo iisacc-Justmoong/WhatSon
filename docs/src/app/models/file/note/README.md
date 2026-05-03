@@ -7,7 +7,7 @@
 ## Scope
 - Mirrored source directory: `src/app/models/file/note`
 - Child directories: 0
-- Child files: 37
+- Child files: 39
 
 ## Child Directories
 - No child directories.
@@ -46,6 +46,8 @@
 - `WhatSonNoteFolderSemantics.hpp`
 - `WhatSonNoteHeaderCreator.cpp`
 - `WhatSonNoteHeaderCreator.hpp`
+- `WhatSonIiXmlDocumentSupport.cpp`
+- `WhatSonIiXmlDocumentSupport.hpp`
 - `WhatSonNoteHeaderParser.cpp`
 - `WhatSonNoteHeaderParser.hpp`
 - `WhatSonNoteHeaderStore.cpp`
@@ -65,10 +67,12 @@
 - `.wsnhead` now carries a dedicated `fileStat` block for numeric detail-panel metadata.
 - Note creation, note update, and editor note selection all participate in keeping that block
   synchronized with the current body/header state.
-- `WhatSonNoteHeaderParser` now uses the local `iiXml` document tree for `.wsnhead` tag and attribute extraction,
-  keeping XML parsing aligned with the planned RAW note -> HTML block pipeline instead of relying on ad-hoc text scans.
-- `WhatSonLocalNoteFileStore` now uses the local `iiXml` document tree for `.wsnbody` package reads when locating
-  `<body>` and first-resource thumbnail metadata.
+- `WhatSonIiXmlDocumentSupport` owns the local iiXml document-tree boundary for note package reads, including preamble
+  stripping, tag lookup, descendant collection, text extraction, and attribute extraction.
+- `WhatSonNoteHeaderParser` now uses that shared support layer for `.wsnhead` tag and attribute extraction, keeping XML
+  parsing aligned with the planned RAW note -> HTML block pipeline instead of relying on ad-hoc text scans.
+- `WhatSonLocalNoteFileStore` now uses the same support layer for `.wsnbody` package reads when locating `<body>` and
+  first-resource thumbnail metadata.
 - Editor note selection now uses a header-only `openCount` rewrite path that also stamps `.wsnhead lastOpenedAt`, so
   switching notes no longer forces a hub-wide `.wsnbody` backlink rescan and inactivity sensors can read the true
   last-open time directly from RAW header state.

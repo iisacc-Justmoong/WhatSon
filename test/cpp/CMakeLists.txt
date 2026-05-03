@@ -58,6 +58,7 @@ set(WHATSON_CPP_REGRESSION_TEST_SOURCES
         "${CMAKE_SOURCE_DIR}/src/app/models/file/note/WhatSonNoteBodyPersistence.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/file/note/WhatSonNoteBodyWebLinkSupport.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/file/note/WhatSonNoteBodySemanticTagSupport.cpp"
+        "${CMAKE_SOURCE_DIR}/src/app/models/file/note/WhatSonIiXmlDocumentSupport.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/file/note/WhatSonNoteCreator.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/file/note/WhatSonNoteHeaderCreator.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/file/note/WhatSonNoteHeaderParser.cpp"

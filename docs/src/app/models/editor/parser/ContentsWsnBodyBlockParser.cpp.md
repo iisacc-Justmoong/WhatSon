@@ -11,8 +11,9 @@ Implements one-pass top-level `.wsnbody` parsing for the structured editor rende
   - `agenda`
   - `callout`
   - `break`
-- The iiXml tree is now the preferred source for explicit block spans. The legacy token scan remains only for transient
-  malformed edit states such as an open block whose close tag has not been typed yet.
+- The iiXml tree is now the only explicit block-span authority. The previous regular-expression tag scanner and its
+  malformed-open-block recovery path have been removed, so semantic block classification no longer forks between two
+  parser implementations.
 - Collects those blocks into one ordered `renderedDocumentBlocks` list by source position, then fills plain-text gaps
   between explicit blocks as paragraph-like prose blocks instead of one monolithic gap fragment.
 - Plain prose that is not already wrapped in an explicit semantic block is now split on logical source newlines.
@@ -20,8 +21,8 @@ Implements one-pass top-level `.wsnbody` parsing for the structured editor rende
   inline resources without collapsing multiple authored paragraphs into one giant `type=text` payload.
 - Builds agenda/callout payloads directly during that same scan, including task text, done-state attributes,
   source-span metadata, and verification counters.
-- Recovers one malformed top-level open block before a sibling explicit block starts.
-  This keeps the parser from dropping the earlier block entirely when the source is missing a close tag.
+- Malformed transient edit states that iiXml cannot parse are left as ordinary RAW prose projection until the linter or
+  the next edit produces a parseable structured tag tree.
 - Semantic text blocks now deliberately split wrapper geometry from editable content geometry:
   - `blockSourceStart` / `blockSourceEnd` keep the full outer tag span
   - `contentStart` / `contentEnd` and `sourceStart` / `sourceEnd` point at the inner editable payload

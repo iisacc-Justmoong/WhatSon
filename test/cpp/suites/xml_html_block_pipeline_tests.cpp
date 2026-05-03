@@ -1,5 +1,6 @@
 #include "test/cpp/whatson_cpp_regression_tests.hpp"
 
+#include "app/models/editor/parser/ContentsWsnBodyBlockParser.hpp"
 #include "app/models/editor/renderer/ContentsHtmlBlockRenderPipeline.hpp"
 
 void WhatSonCppRegressionTests::editorRendererPipeline_routesIiXmlTreeThroughIiHtmlBlockObjects()
@@ -14,13 +15,24 @@ void WhatSonCppRegressionTests::editorRendererPipeline_routesIiXmlTreeThroughIiH
     QVERIFY(parserSource.contains(QStringLiteral("iiXml::Parser::TagParser")));
     QVERIFY(parserSource.contains(QStringLiteral("ParseAllDocumentResult")));
     QVERIFY(parserSource.contains(QStringLiteral("collectExplicitSpansFromIiXmlDocument")));
+    QVERIFY(!parserSource.contains(QStringLiteral("collectExplicitSpansFromLegacyTagScan")));
+    QVERIFY(!parserSource.contains(QStringLiteral("kAnyTagPattern")));
+    QVERIFY(!parserSource.contains(QStringLiteral("OpenExplicitBlock")));
 
     QVERIFY(!pipelineSource.isEmpty());
     QVERIFY(pipelineSource.contains(QStringLiteral("#include <iiXml.h>")));
     QVERIFY(pipelineSource.contains(QStringLiteral("#include <iiHtmlBlock.h>")));
     QVERIFY(pipelineSource.contains(QStringLiteral("iiHtmlBlock::iiXmlToHTML")));
     QVERIFY(pipelineSource.contains(QStringLiteral("iiHtmlBlock::DivideBlock")));
+    QVERIFY(pipelineSource.contains(QStringLiteral("buildIiHtmlBlockProjection(const QVariantMap& token)")));
+    QVERIFY(!pipelineSource.contains(QStringLiteral("htmlBlockProjection.blocks.at(static_cast<std::size_t>(index))")));
     QVERIFY(pipelineSource.contains(QStringLiteral("htmlBlockObjectSource")));
+    QVERIFY(pipelineSource.contains(QStringLiteral("htmlBlockCount")));
+
+    const ContentsWsnBodyBlockParser parser;
+    const ContentsWsnBodyBlockParser::ParseResult malformedResult = parser.parse(
+        QStringLiteral("<callout>Open callout\n<paragraph>Sibling block</paragraph>"));
+    QVERIFY(malformedResult.renderedCallouts.isEmpty());
 
     const ContentsHtmlBlockRenderPipeline pipeline;
     const ContentsHtmlBlockRenderPipeline::RenderResult result = pipeline.renderEditorDocument(
@@ -30,6 +42,7 @@ void WhatSonCppRegressionTests::editorRendererPipeline_routesIiXmlTreeThroughIiH
             "<callout>Beta</callout>\n"
             "</break>"));
 
+    QVERIFY(result.normalizedHtmlBlocks.size() >= result.htmlTokens.size());
     QVERIFY(result.normalizedHtmlBlocks.size() >= 4);
     for (const QVariant& blockValue : result.normalizedHtmlBlocks)
     {
@@ -37,5 +50,7 @@ void WhatSonCppRegressionTests::editorRendererPipeline_routesIiXmlTreeThroughIiH
         QCOMPARE(block.value(QStringLiteral("htmlBlockObjectSource")).toString(), QStringLiteral("iiHtmlBlock"));
         QVERIFY(!block.value(QStringLiteral("htmlBlockTagName")).toString().isEmpty());
         QVERIFY(block.value(QStringLiteral("htmlBlockIsDisplayBlock")).toBool());
+        QVERIFY(block.value(QStringLiteral("htmlBlockIndex")).toInt() >= 0);
+        QVERIFY(block.value(QStringLiteral("htmlTokenStartIndex")).toInt() >= 0);
     }
 }

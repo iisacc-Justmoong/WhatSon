@@ -6,10 +6,10 @@ This parser reads `.wsnhead` XML and populates `WhatSonNoteHeaderStore`.
 
 ## Parser Backend
 
-- `.wsnhead` parsing now routes through `iiXml::Parser::TagParser` and consumes the parsed document tree for tag text
-  and inline attributes.
-- The XML declaration and `<!DOCTYPE WHATSONNOTE>` preamble are stripped before handing the header body to iiXml,
-  because the tree parser owns element hierarchy rather than top-level declaration handling.
+- `.wsnhead` parsing now routes through `WhatSonIiXmlDocumentSupport`, which owns the local `iiXml::Parser::TagParser`
+  boundary and exposes parsed document-tree helpers for tag text and inline attributes.
+- The XML declaration and `<!DOCTYPE WHATSONNOTE>` preamble are stripped by that shared support layer before handing
+  the header body to iiXml, because the tree parser owns element hierarchy rather than top-level declaration handling.
 - Regular expressions are no longer used as the authority for header tag or attribute extraction; they are replaced by
   iiXml node and field traversal.
 
