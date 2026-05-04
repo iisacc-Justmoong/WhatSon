@@ -11,4 +11,8 @@ Provides the QML helper object consumed by `ContentsInlineFormatEditorController
   of collapsing it while applying the cursor edge.
 - Keeps IME state sourced only from `LV.TextEditor.editorItem` (`inputMethodComposing` and `preeditText`).
 - Defers programmatic text replacement while native composition is active.
+- Tracks focused local cursor/selection interaction and consults `ContentsEditorInputPolicyAdapter` before accepting a
+  host-side programmatic text replacement. This preserves OS/Qt selection gestures while the user is selecting text.
+- Treats an active native selection as local selection interaction even if the platform does not emit every cursor or
+  selection notify signal through the helper bridge.
 - Does not own persistence or renderer state; it only reflects the mounted editor control and text input.

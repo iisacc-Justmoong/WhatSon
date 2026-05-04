@@ -10,15 +10,23 @@ Wraps the live `LV.TextEditor` used by the note document surface.
 - `renderedText` is an optional read-only `TextEdit.RichText` overlay derived from the renderer pipeline.
 - The RichText overlay is disabled for input. It may paint formatted text and resource frame images, but it must not
   accept focus, pointer, selection, or key events; ordinary editing remains routed to the underlying `LV.TextEditor`.
+- The RichText overlay is stacked below the transparent native editor surface. This preserves WYSIWYG paint while
+  keeping native pointer hit-testing, drag selection, and Shift selection on `LV.TextEditor`.
+- The mounted `LV.TextEditor` opts into native gesture handling so the LVRS hover/focus mouse surface does not sit
+  between the OS pointer stream and Qt's text selection machinery.
+- Public programmatic text replacement APIs delegate to `ContentsInlineFormatEditorController`, so focused native
+  selection and composition policy can reject or defer host-side surface refresh instead of clearing OS selection.
 - Cursor visibility is explicit and mutually exclusive. The native cursor delegate is visible only for the plain source
   surface, while the component paints a projected cursor above the RichText overlay whenever rendered output is visible.
 - The RichText overlay remains visible while `LV.TextEditor` has a non-empty native selection. The component mirrors
   the source range into rendered coordinates instead of exposing RAW tag geometry.
+- Native selection paint stays enabled even while the rendered overlay is visible. Only the underlying RAW glyph paint
+  is transparent, so OS/Qt drag and Shift selection remain visible without showing RAW tag text.
 - Renderer-owned `normalizedHtmlBlocks` are used only to identify iiHtmlBlock resource display blocks for selection
   presentation. When a selection intersects a resource source span, the resource contributes one atomic selection
   rectangle; the RAW `<resource ... />` string must never paint as multiple selected text runs.
 - The rendered surface does not add pointer handlers above the `LV.TextEditor`; OS/Qt pointer selection remains the
-  only selection gesture path.
+  only selection gesture path, and no rendered text item sits above that native hit target.
 - The editor body is top-flush: `LV.TextEditor` vertical inset and rendered-overlay padding stay at zero.
 - Keeps a disabled, transparent plain `TextEdit` geometry probe in sync with the logical display text for cursor hit
   testing and projected caret placement.
@@ -29,7 +37,8 @@ Wraps the live `LV.TextEditor` used by the note document surface.
 - `textEdited(text)` reports plain RAW text upward.
 - `tagManagementKeyPressHandler` is the only key hook and is limited to explicit tag-management shortcuts.
 - `ContentsInlineFormatEditorController` is mounted as the C++/QML helper bridge for focus, selection snapshots, native
-  composition checks, and programmatic text-sync policy against `LV.TextEditor.editorItem`.
+  composition checks, local selection interaction tracking, and programmatic text-sync policy against
+  `LV.TextEditor.editorItem`.
 - `restoreSelectionRange(...)` restores non-empty ranges through native `moveCursorSelection(...)`.
 - `focusTerminalBodyPosition()` focuses the native `LV.TextEditor`, clears any stale selection, and moves the cursor to
   the RAW text end through `setCursorPositionPreservingNativeInput(...)`.

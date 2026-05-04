@@ -50,6 +50,7 @@ set(WHATSON_CPP_REGRESSION_TEST_SOURCES
         "${CMAKE_SOURCE_DIR}/src/app/models/editor/resource/ContentsEditorDynamicObjectSupport.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/editor/resource/ContentsInlineResourcePresentationController.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/editor/input/ContentsQmlBackedInputControllerBase.cpp"
+        "${CMAKE_SOURCE_DIR}/src/app/models/editor/input/ContentsEditorInputPolicyAdapter.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/editor/input/ContentsInlineFormatEditorController.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/file/import/WhatSonClipboardResourceImportFileNamePolicy.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/file/IO/WhatSonSystemIoGateway.cpp"

@@ -148,7 +148,8 @@ void WhatSonCppRegressionTests::qmlInlineFormatEditor_keepsNativeTextEditInputUn
     QVERIFY(inlineEditorSource.contains(QStringLiteral("visible: control.renderedOverlayVisible")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("textColor: control.renderedOverlayVisible ? \"transparent\" : control.textColor")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("selectedTextColor: control.renderedOverlayVisible ? \"transparent\" : control.textColor")));
-    QVERIFY(inlineEditorSource.contains(QStringLiteral("selectionColor: control.renderedOverlayVisible ? \"transparent\" : LV.Theme.primaryOverlay")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("selectionColor: LV.Theme.primaryOverlay")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("preferNativeGestures: true")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("renderedOverlay.select(selectionRange.start, selectionRange.end)")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("htmlBlockObjectSource")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("contentsInlineFormatAtomicResourceSelectionLayer")));
@@ -712,6 +713,8 @@ void WhatSonCppRegressionTests::qmlInlineFormatEditor_keepsKeyboardSelectionAndO
         QStringLiteral("src/app/models/editor/input/ContentsInlineFormatEditorController.hpp"));
     const QString inlineEditorControllerSource = readUtf8SourceFile(
         QStringLiteral("src/app/models/editor/input/ContentsInlineFormatEditorController.cpp"));
+    const QString inlineEditorControllerHelperSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/contents/editor/ContentsInlineFormatEditorController.qml"));
     const QString surfaceGuardHeader = readUtf8SourceFile(
         QStringLiteral("src/app/models/editor/resource/ContentsEditorSurfaceGuardController.hpp"));
     const QString resourceImportControllerHeader = readUtf8SourceFile(
@@ -720,6 +723,7 @@ void WhatSonCppRegressionTests::qmlInlineFormatEditor_keepsKeyboardSelectionAndO
     QVERIFY(!inlineEditorSource.isEmpty());
     QVERIFY(!inlineEditorControllerHeader.isEmpty());
     QVERIFY(!inlineEditorControllerSource.isEmpty());
+    QVERIFY(!inlineEditorControllerHelperSource.isEmpty());
     QVERIFY(!surfaceGuardHeader.isEmpty());
     QVERIFY(!resourceImportControllerHeader.isEmpty());
     QVERIFY(inlineEditorSource.contains(QStringLiteral("property bool selectByKeyboard: true")));
@@ -735,6 +739,13 @@ void WhatSonCppRegressionTests::qmlInlineFormatEditor_keepsKeyboardSelectionAndO
     QVERIFY(inlineEditorSource.contains(QStringLiteral("function nativeCompositionActive()")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("function programmaticTextSyncPolicy(nextText)")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("return inlineEditorController.programmaticTextSyncPolicy(nextText);")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("readonly property bool preferNativeInputHandling: true")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("function shouldRejectFocusedProgrammaticTextSync(nextText)")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("inlineEditorController.setProgrammaticText(resolvedText)")));
+    QVERIFY(inlineEditorControllerHelperSource.contains(QStringLiteral("ContentsEditorInputPolicyAdapter")));
+    QVERIFY(inlineEditorControllerHelperSource.contains(QStringLiteral("property bool localSelectionInteractionSinceFocus")));
+    QVERIFY(inlineEditorControllerHelperSource.contains(QStringLiteral("function nativeSelectionActive()")));
+    QVERIFY(inlineEditorControllerHelperSource.contains(QStringLiteral("helper.localSelectionInteractionSinceFocus || nativeSelectionActive()")));
     QVERIFY(inlineEditorControllerSource.contains(QStringLiteral("ContentsInlineFormatEditorController::programmaticTextSyncPolicy")));
     QVERIFY(inlineEditorControllerSource.contains(QStringLiteral("invokeHelperVariantMap(\"programmaticTextSyncPolicy\"")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("Keys.onPressed: function (event)")));

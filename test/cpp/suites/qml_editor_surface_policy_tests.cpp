@@ -1,5 +1,7 @@
 #include "test/cpp/whatson_cpp_regression_tests.hpp"
 
+#include "app/models/editor/input/ContentsEditorInputPolicyAdapter.hpp"
+
 void WhatSonCppRegressionTests::qmlInternalTypeRegistrar_usesLvrsManifestRegistration()
 {
     const QString registrarSource = readUtf8SourceFile(
@@ -334,6 +336,34 @@ void WhatSonCppRegressionTests::qmlEditorInputPolicyAdapter_centralizesNativeInp
     QVERIFY(adapterHeader.contains(QStringLiteral("ContentsEditorInputPolicyAdapter")));
     QVERIFY(adapterHeader.contains(QStringLiteral("Q_PROPERTY")));
     QVERIFY(adapterHeader.contains(QStringLiteral("Q_INVOKABLE")));
+
+    ContentsEditorInputPolicyAdapter adapter;
+    const QVariantMap selectionPolicy = adapter.programmaticTextSyncPolicy(
+        QStringLiteral("Alpha"),
+        QStringLiteral("Beta"),
+        false,
+        true,
+        true,
+        false,
+        true);
+    QVERIFY(!selectionPolicy.value(QStringLiteral("apply")).toBool());
+    QVERIFY(selectionPolicy.value(QStringLiteral("defer")).toBool());
+    QVERIFY(adapter.shouldDeferProgrammaticTextSync(
+        QStringLiteral("Alpha"),
+        QStringLiteral("Beta"),
+        false,
+        true,
+        true,
+        false,
+        true));
+    QVERIFY(!adapter.shouldApplyProgrammaticTextSync(
+        QStringLiteral("Alpha"),
+        QStringLiteral("Beta"),
+        false,
+        true,
+        true,
+        false,
+        true));
 }
 
 void WhatSonCppRegressionTests::qmlEditorViewDirectory_containsOnlyViewSurfaceFiles()

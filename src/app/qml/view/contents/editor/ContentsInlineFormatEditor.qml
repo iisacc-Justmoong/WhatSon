@@ -42,6 +42,7 @@ Item {
             && (!control.nativeCompositionActive() || control.renderedResourceOverlayPinned)
     readonly property bool renderedSelectionActive: control.renderedOverlayVisible && control.nativeSelectionActive
     readonly property bool nativeCursorVisible: !control.renderedOverlayVisible
+    readonly property bool preferNativeInputHandling: true
     property bool selectByKeyboard: true
     property bool selectByMouse: true
     property alias selectedText: textInput.selectedText
@@ -347,6 +348,22 @@ Item {
         return inlineEditorController.programmaticTextSyncPolicy(nextText);
     }
 
+    function canDeferProgrammaticTextSync(nextText) {
+        return inlineEditorController.canDeferProgrammaticTextSync(nextText);
+    }
+
+    function shouldRejectFocusedProgrammaticTextSync(nextText) {
+        return inlineEditorController.shouldRejectFocusedProgrammaticTextSync(nextText);
+    }
+
+    function flushDeferredProgrammaticText(force) {
+        inlineEditorController.flushDeferredProgrammaticText(force === true);
+    }
+
+    function clearDeferredProgrammaticText() {
+        inlineEditorController.clearDeferredProgrammaticText();
+    }
+
     function restoreSelectionRange(selectionStart, selectionEnd, cursorPosition) {
         const start = Math.max(0, Math.min(Number(selectionStart) || 0, textInput.length));
         const end = Math.max(start, Math.min(Number(selectionEnd) || start, textInput.length));
@@ -383,8 +400,7 @@ Item {
 
     function setProgrammaticText(nextText) {
         const resolvedText = nextText === undefined || nextText === null ? "" : String(nextText);
-        if (textInput.text !== resolvedText)
-            textInput.text = resolvedText;
+        inlineEditorController.setProgrammaticText(resolvedText);
     }
 
     function handleTagManagementKeyPress(event) {
@@ -466,7 +482,7 @@ Item {
         selectionColor: LV.Theme.primaryOverlay
         visible: control.renderedOverlayVisible
         wrapMode: TextEdit.Wrap
-        z: 1
+        z: -1
 
         onLinkActivated: function (link) {
             Qt.openUrlExternally(link);
@@ -491,7 +507,7 @@ Item {
         textMargin: LV.Theme.gapNone
         visible: control.displayGeometryText.length > 0
         wrapMode: TextEdit.Wrap
-        z: 0
+        z: -2
     }
 
     Item {
@@ -643,10 +659,11 @@ Item {
         mouseSelectionMode: control.mouseSelectionMode
         overwriteMode: control.overwriteMode
         persistentSelection: control.persistentSelection
+        preferNativeGestures: true
         selectByKeyboard: control.selectByKeyboard
         selectByMouse: control.selectByMouse
         selectedTextColor: control.renderedOverlayVisible ? "transparent" : control.textColor
-        selectionColor: control.renderedOverlayVisible ? "transparent" : LV.Theme.primaryOverlay
+        selectionColor: LV.Theme.primaryOverlay
         showRenderedOutput: false
         showScrollBar: false
         textColor: control.renderedOverlayVisible ? "transparent" : control.textColor

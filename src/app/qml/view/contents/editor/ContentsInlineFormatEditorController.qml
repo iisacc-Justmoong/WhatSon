@@ -1,14 +1,21 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import WhatSon.App.Internal 1.0
 
 QtObject {
     id: helper
 
     property var control: null
     property var textInput: null
+    property int programmaticTextSyncDepth: 0
     property bool hasDeferredProgrammaticText: false
     property string deferredProgrammaticText: ""
+    property bool localSelectionInteractionSinceFocus: false
+    property bool localTextEditSinceFocus: false
+
+    property ContentsEditorInputPolicyAdapter inputPolicyAdapter: ContentsEditorInputPolicyAdapter {
+    }
 
     function resolvedText(value) {
         return value === undefined || value === null ? "" : String(value);
@@ -22,7 +29,18 @@ QtObject {
     }
 
     function currentPlainText() {
-        return helper.textInput ? helper.textInput.text : "";
+        if (!helper.textInput)
+            return "";
+        const maximumLength = Number(helper.textInput.length) || 0;
+        if (helper.textInput.getText !== undefined)
+            return helper.textInput.getText(0, maximumLength);
+        return resolvedText(helper.textInput.text);
+    }
+
+    function controlFocused() {
+        return Boolean(helper.control
+                       && helper.control.focused !== undefined
+                       && helper.control.focused);
     }
 
     function selectionSnapshot() {
@@ -59,6 +77,11 @@ QtObject {
         return Boolean(helper.textInput
                        && (helper.textInput.inputMethodComposing
                            || String(helper.textInput.preeditText).length > 0));
+    }
+
+    function nativeSelectionActive() {
+        return Boolean(helper.textInput
+                       && Number(helper.textInput.selectionStart) !== Number(helper.textInput.selectionEnd));
     }
 
     function clampLogicalPosition(position, maximumLength) {
@@ -101,14 +124,31 @@ QtObject {
     }
 
     function programmaticTextSyncPolicy(nextText) {
-        const text = resolvedText(nextText);
+        const text = nextText === undefined ? helper.deferredProgrammaticText : resolvedText(nextText);
         if (!helper.textInput)
-            return { "action": "ignore", "text": text, "defer": false, "reject": false };
-        if (helper.textInput.text === text)
-            return { "action": "noop", "text": text, "defer": false, "reject": false };
-        if (nativeCompositionActive())
-            return { "action": "defer", "text": text, "defer": true, "reject": false };
-        return { "action": "apply", "text": text, "defer": false, "reject": false };
+            return { "action": "ignore", "apply": false, "text": text, "defer": false, "reject": false };
+        if (currentPlainText() === text)
+            return { "action": "noop", "apply": false, "text": text, "defer": false, "reject": false };
+
+        const policy = helper.inputPolicyAdapter.programmaticTextSyncPolicy(
+                    currentPlainText(),
+                    text,
+                    nativeCompositionActive(),
+                    controlFocused(),
+                    Boolean(helper.control
+                            && helper.control.preferNativeInputHandling !== undefined
+                            && helper.control.preferNativeInputHandling),
+                    helper.localTextEditSinceFocus,
+                    helper.localSelectionInteractionSinceFocus || nativeSelectionActive());
+        const apply = Boolean(policy.apply);
+        const defer = Boolean(policy.defer);
+        return {
+            "action": defer ? "defer" : (apply ? "apply" : "reject"),
+            "apply": apply,
+            "text": text,
+            "defer": defer,
+            "reject": !apply && !defer
+        };
     }
 
     function canDeferProgrammaticTextSync(nextText) {
@@ -116,16 +156,21 @@ QtObject {
     }
 
     function shouldRejectFocusedProgrammaticTextSync(nextText) {
-        return programmaticTextSyncPolicy(nextText).reject === true;
+        const policy = programmaticTextSyncPolicy(nextText);
+        return policy.action !== "noop" && policy.apply !== true;
     }
 
     function flushDeferredProgrammaticText(force) {
         if (!helper.textInput || !helper.hasDeferredProgrammaticText)
             return;
-        if (!force && nativeCompositionActive())
+        if (!force && canDeferProgrammaticTextSync(helper.deferredProgrammaticText))
             return;
-        helper.textInput.text = helper.deferredProgrammaticText;
+        const deferredText = helper.deferredProgrammaticText;
         clearDeferredProgrammaticText();
+        if (force)
+            applyProgrammaticText(deferredText);
+        else
+            setProgrammaticText(deferredText);
     }
 
     function clearDeferredProgrammaticText() {
@@ -134,10 +179,41 @@ QtObject {
     }
 
     function dispatchCommittedTextEditedIfReady() {
+        if (helper.programmaticTextSyncDepth > 0)
+            return false;
         if (!helper.control || !helper.textInput || nativeCompositionActive())
             return false;
         helper.control.textEdited(helper.textInput.text);
         return true;
+    }
+
+    function applyProgrammaticText(nextText) {
+        if (!helper.textInput)
+            return;
+        const normalizedText = resolvedText(nextText);
+        if (currentPlainText() === normalizedText)
+            return;
+
+        const previousCursorPosition = Number(helper.textInput.cursorPosition);
+        const previousSelectionStart = Number(helper.textInput.selectionStart);
+        const previousSelectionEnd = Number(helper.textInput.selectionEnd);
+        const hadSelection = isFinite(previousSelectionStart)
+                && isFinite(previousSelectionEnd)
+                && previousSelectionEnd > previousSelectionStart;
+
+        helper.programmaticTextSyncDepth += 1;
+        helper.textInput.text = normalizedText;
+        if (hadSelection) {
+            restoreSelectionRange(previousSelectionStart, previousSelectionEnd, previousCursorPosition);
+        } else {
+            const restoredCursorPosition = clampLogicalPosition(
+                        previousCursorPosition,
+                        helper.textInput.length);
+            if (helper.textInput.deselect !== undefined)
+                helper.textInput.deselect();
+            setCursorPositionPreservingNativeInput(restoredCursorPosition);
+        }
+        helper.programmaticTextSyncDepth = Math.max(0, helper.programmaticTextSyncDepth - 1);
     }
 
     function setProgrammaticText(nextText) {
@@ -147,12 +223,83 @@ QtObject {
             helper.hasDeferredProgrammaticText = true;
             return;
         }
-        if (!helper.textInput || policy.reject)
+        if (!helper.textInput || policy.reject || policy.action === "noop")
             return;
-        helper.textInput.text = policy.text;
+        applyProgrammaticText(policy.text);
     }
 
     function scheduleCommittedTextEditedDispatch() {
         dispatchCommittedTextEditedIfReady();
+    }
+
+    function handleControlFocusedChanged() {
+        if (!controlFocused()) {
+            flushDeferredProgrammaticText(true);
+            helper.localSelectionInteractionSinceFocus = false;
+            helper.localTextEditSinceFocus = false;
+        }
+    }
+
+    function handleTextInputCursorPositionChanged() {
+        if (controlFocused())
+            helper.localSelectionInteractionSinceFocus = true;
+    }
+
+    function handleTextInputSelectionChanged() {
+        if (controlFocused())
+            helper.localSelectionInteractionSinceFocus = true;
+    }
+
+    function handleTextInputTextChanged() {
+        if (helper.programmaticTextSyncDepth > 0)
+            return;
+        if (controlFocused()) {
+            helper.localSelectionInteractionSinceFocus = true;
+            helper.localTextEditSinceFocus = true;
+        }
+        clearDeferredProgrammaticText();
+    }
+
+    function handleNativeCompositionSettled() {
+        if (nativeCompositionActive())
+            return;
+        flushDeferredProgrammaticText(false);
+    }
+
+    Connections {
+        function onFocusedChanged() {
+            helper.handleControlFocusedChanged();
+        }
+
+        target: helper.control
+    }
+
+    Connections {
+        function onCursorPositionChanged() {
+            helper.handleTextInputCursorPositionChanged();
+        }
+
+        function onInputMethodComposingChanged() {
+            helper.handleNativeCompositionSettled();
+        }
+
+        function onPreeditTextChanged() {
+            helper.handleNativeCompositionSettled();
+        }
+
+        function onSelectionEndChanged() {
+            helper.handleTextInputSelectionChanged();
+        }
+
+        function onSelectionStartChanged() {
+            helper.handleTextInputSelectionChanged();
+        }
+
+        function onTextChanged() {
+            helper.handleTextInputTextChanged();
+        }
+
+        ignoreUnknownSignals: true
+        target: helper.textInput
     }
 }
