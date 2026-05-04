@@ -10,9 +10,6 @@ void WhatSonCppRegressionTests::qmlInternalTypeRegistrar_usesLvrsManifestRegistr
     QVERIFY(registrarSource.contains(QStringLiteral("lvrs::registerQmlTypes")));
     QVERIFY(registrarSource.contains(QStringLiteral("ContentsEditorPresentationProjection")));
     QVERIFY(registrarSource.contains(QStringLiteral("ContentsStructuredBlockRenderer")));
-    QVERIFY(registrarSource.contains(QStringLiteral("ContentsGutterLayoutMetrics")));
-    QVERIFY(registrarSource.contains(QStringLiteral("ContentsGutterLineNumberGeometry")));
-    QVERIFY(registrarSource.contains(QStringLiteral("ContentsGutterMarkerGeometry")));
     QVERIFY(registrarSource.contains(QStringLiteral("ContentsMinimapLayoutMetrics")));
 }
 
@@ -94,7 +91,7 @@ void WhatSonCppRegressionTests::qmlStructuredEditors_consumeRendererNormalizedBl
     QVERIFY(!documentFlowSource.contains(QStringLiteral("flatten")));
 }
 
-void WhatSonCppRegressionTests::qmlStructuredEditors_refreshesGutterLayoutOnEditorOpen()
+void WhatSonCppRegressionTests::qmlStructuredEditors_refreshesDocumentProjectionOnEditorOpen()
 {
     const QString displayViewSource = readUtf8SourceFile(
         QStringLiteral("src/app/qml/view/contents/editor/ContentsDisplayView.qml"));
@@ -104,21 +101,15 @@ void WhatSonCppRegressionTests::qmlStructuredEditors_refreshesGutterLayoutOnEdit
     QVERIFY(displayViewSource.contains(QStringLiteral("noteDocumentParseMounted")));
 }
 
-void WhatSonCppRegressionTests::qmlStructuredEditors_mountsGutterEditorAndMinimapInDisplayLayout()
+void WhatSonCppRegressionTests::qmlStructuredEditors_mountsEditorAndMinimapInDisplayLayout()
 {
     const QString displayViewSource = readUtf8SourceFile(
         QStringLiteral("src/app/qml/view/contents/editor/ContentsDisplayView.qml"));
-    const QString gutterSource = readUtf8SourceFile(
-        QStringLiteral("src/app/qml/view/contents/Gutter.qml"));
 
     QVERIFY(displayViewSource.contains(QStringLiteral("import \"..\" as ContentsChrome")));
     QVERIFY(displayViewSource.contains(QStringLiteral("LV.HStack {")));
     QVERIFY(displayViewSource.contains(QStringLiteral("objectName: \"contentsDisplayEditorChromeHStack\"")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("ContentsGutterLayoutMetrics {")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("ContentsGutterLineNumberGeometry {")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("ContentsGutterMarkerGeometry {")));
     QVERIFY(displayViewSource.contains(QStringLiteral("ContentsMinimapLayoutMetrics {")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("ContentsChrome.Gutter {")));
     QVERIFY(displayViewSource.contains(QStringLiteral("Flickable {")));
     QVERIFY(displayViewSource.contains(QStringLiteral("id: editorDocumentViewport")));
     QVERIFY(displayViewSource.contains(QStringLiteral("objectName: \"contentsDisplayEditorDocumentViewport\"")));
@@ -127,52 +118,18 @@ void WhatSonCppRegressionTests::qmlStructuredEditors_mountsGutterEditorAndMinima
     QVERIFY(displayViewSource.contains(QStringLiteral("function syncSessionFromCurrentNote(resetViewport)")));
     QVERIFY(displayViewSource.contains(QStringLiteral("resetViewport === true && editorDocumentViewport")));
     QVERIFY(displayViewSource.contains(QStringLiteral("onCurrentRawBodyTextChanged: contentsDisplayView.syncSessionFromCurrentNote(false)")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("onContentYChanged: contentsDisplayView.refreshGutterLineNumberGeometry()")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("function refreshGutterForDocumentStateChange()")));
     QVERIFY(displayViewSource.contains(QStringLiteral("LV.WheelScrollGuard {")));
     QVERIFY(displayViewSource.contains(QStringLiteral("targetFlickable: editorDocumentViewport")));
-    QVERIFY(!displayViewSource.contains(QStringLiteral("property color gutterColor")));
-    QVERIFY(!displayViewSource.contains(QStringLiteral("gutterColor: contentsDisplayView.gutterColor")));
     QVERIFY(displayViewSource.contains(QStringLiteral("ContentsStructuredDocumentFlow {")));
     QVERIFY(displayViewSource.contains(QStringLiteral("ContentsChrome.Minimap {")));
     const qsizetype hStackIndex = displayViewSource.indexOf(QStringLiteral("LV.HStack {"));
-    const qsizetype gutterIndex = displayViewSource.indexOf(QStringLiteral("ContentsChrome.Gutter {"));
     const qsizetype editorIndex = displayViewSource.indexOf(QStringLiteral("ContentsStructuredDocumentFlow {"));
     const qsizetype minimapIndex = displayViewSource.indexOf(QStringLiteral("ContentsChrome.Minimap {"));
     QVERIFY(hStackIndex >= 0);
-    QVERIFY(gutterIndex > hStackIndex);
-    QVERIFY(editorIndex > gutterIndex);
+    QVERIFY(editorIndex > hStackIndex);
     QVERIFY(minimapIndex > editorIndex);
-    QVERIFY(displayViewSource.contains(QStringLiteral("Layout.preferredWidth: gutterLayoutMetrics.effectiveGutterWidth")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("activeLineNumber: gutterMarkerGeometry.cursorLineNumber")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("lineNumberColumnLeft: gutterLayoutMetrics.lineNumberColumnLeft")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("lineNumberColumnTextWidth: gutterLayoutMetrics.lineNumberColumnTextWidth")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("lineNumberEntries: gutterLineNumberGeometry.lineNumberEntries")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("markerEntries: gutterMarkerGeometry.markerEntries")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("cursorPosition: structuredDocumentFlow.editorCursorPosition")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("savedSourceText: contentsDisplayView.currentRawBodyText")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("fallbackTopInset: LV.Theme.gapNone")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("displayBlocks: editorPresentationProjection.normalizedHtmlBlocks")));
     QVERIFY(displayViewSource.contains(QStringLiteral("documentBlocks: structuredBlockRenderer.renderedDocumentBlocks")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("renderedResources: bodyResourceRenderer.renderedResources")));
-    const qsizetype lineNumberGeometryIndex =
-        displayViewSource.indexOf(QStringLiteral("ContentsGutterLineNumberGeometry {"));
-    const qsizetype markerGeometryIndex = displayViewSource.indexOf(QStringLiteral("ContentsGutterMarkerGeometry {"));
-    QVERIFY(lineNumberGeometryIndex >= 0);
-    QVERIFY(markerGeometryIndex > lineNumberGeometryIndex);
-    const QString lineNumberGeometrySource =
-        displayViewSource.mid(lineNumberGeometryIndex, markerGeometryIndex - lineNumberGeometryIndex);
-    QVERIFY(lineNumberGeometrySource.contains(QStringLiteral("editorGeometryHost: structuredDocumentFlow")));
-    QVERIFY(lineNumberGeometrySource.contains(
-        QStringLiteral("logicalLineStartOffsets: editorPresentationProjection.logicalLineStartOffsets")));
-    QVERIFY(lineNumberGeometrySource.contains(
-        QStringLiteral("logicalToSourceOffsets: editorPresentationProjection.logicalToSourceOffsets()")));
-    QVERIFY(lineNumberGeometrySource.contains(QStringLiteral("mapTarget: contentsDisplayGutter")));
-    QVERIFY(gutterSource.contains(QStringLiteral("readonly property real lineHeight")));
-    QVERIFY(gutterSource.contains(QStringLiteral("Number(modelData.height)")));
-    QVERIFY(gutterSource.contains(QStringLiteral("height: lineHeight")));
     QVERIFY(displayViewSource.contains(QStringLiteral("Layout.preferredWidth: minimapLayoutMetrics.effectiveMinimapWidth")));
-    QVERIFY(!displayViewSource.contains(QStringLiteral("readonly property int effectiveGutterWidth")));
     QVERIFY(!displayViewSource.contains(QStringLiteral("readonly property int effectiveMinimapWidth")));
     QVERIFY(!displayViewSource.contains(QStringLiteral("anchors.fill: parent\n        editorSurfaceHtml")));
 }
@@ -196,6 +153,9 @@ void WhatSonCppRegressionTests::qmlStructuredEditors_preserveNativeMobileInputDu
     QVERIFY(inlineEditorSource.contains(QStringLiteral("selectByKeyboard: control.selectByKeyboard")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("selectByMouse: control.selectByMouse")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("persistentSelection: control.persistentSelection")));
+    QVERIFY(!inlineEditorSource.contains(QStringLiteral("TapHandler {")));
+    QVERIFY(!inlineEditorSource.contains(QStringLiteral("DragHandler {")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("event.accepted = false;")));
     QVERIFY(!inlineEditorSource.contains(QStringLiteral("Qt.inputMethod")));
     QVERIFY(!inlineEditorSource.contains(QStringLiteral("InputMethod.")));
 }
@@ -285,12 +245,11 @@ void WhatSonCppRegressionTests::qmlStructuredEditors_bindSessionAndFlushTagMutat
     QVERIFY(displayViewSource.contains(QStringLiteral("syncEditorSessionFromActiveNote")));
     QVERIFY(displayViewSource.contains(QStringLiteral("requestSyncEditorTextFromSelection")));
     QVERIFY(displayViewSource.contains(QStringLiteral("function onActiveNoteStateChanged()")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("function onHasActiveNoteChanged()")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("function onEditorTextChanged()")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("function onEditorTextSynchronized()")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("function onRenderedBlocksChanged()")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("function onRenderedResourcesChanged()")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("function onLogicalLineCountChanged()")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("onCurrentNoteIdChanged")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("onCurrentRawBodyTextChanged")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("sourceText: editorSession.editorText")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("documentBlocks: structuredBlockRenderer.renderedDocumentBlocks")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("logicalLineCount: editorPresentationProjection.logicalLineCount")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("property var noteActiveState")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("noteActiveState: contentViewLayout.noteActiveState")));
     QVERIFY(displayViewSource.contains(QStringLiteral("saveCurrentBodyText")));
@@ -386,10 +345,6 @@ void WhatSonCppRegressionTests::qmlEditorViewDirectory_containsOnlyViewSurfaceFi
 
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("ContentsDisplayView {")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("ContentsResourceEditorView {")));
-    QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("property color gutterColor")));
-    QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("gutterColor: contentViewLayout.gutterColor")));
-    QVERIFY(!bodyLayoutSource.contains(QStringLiteral("property color gutterColor")));
-    QVERIFY(!bodyLayoutSource.contains(QStringLiteral("gutterColor: hStack.gutterColor")));
 }
 
 void WhatSonCppRegressionTests::qmlStructuredEditors_lockCustomInputToTagManagementOnly()
@@ -441,6 +396,8 @@ void WhatSonCppRegressionTests::qmlStructuredEditors_wireInlineResourceRendererT
     QVERIFY(displayViewSource.contains(QStringLiteral("ContentsInlineResourcePresentationController {")));
     QVERIFY(displayViewSource.contains(QStringLiteral("renderInlineResourceEditorSurfaceHtml(")));
     QVERIFY(displayViewSource.contains(QStringLiteral("bodyResourceRenderer.renderedResources")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("targetFrameWidth")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("structuredDocumentFlow.width - LV.Theme.gap16 * 2")));
     QVERIFY(displayViewSource.contains(QStringLiteral("inlineHtmlImageRenderingEnabled: true")));
     QVERIFY(documentFlowSource.contains(QStringLiteral("property string editorSurfaceHtml")));
 }

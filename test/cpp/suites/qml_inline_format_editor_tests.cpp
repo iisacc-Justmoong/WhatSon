@@ -1,6 +1,6 @@
 #include "test/cpp/whatson_cpp_regression_tests.hpp"
 
-#include "app/models/editor/input/ContentsRemainingInputControllers.hpp"
+#include "app/models/editor/input/ContentsInlineFormatEditorController.hpp"
 #include "app/models/editor/format/ContentsInlineStyleOverlayRenderer.hpp"
 #include "app/models/editor/format/ContentsPlainTextSourceMutator.hpp"
 
@@ -69,42 +69,6 @@ namespace
         Q_UNUSED(registered);
     }
 
-    qreal qmlRectangleY(const QVariant& value)
-    {
-        if (value.canConvert<QRectF>())
-        {
-            return value.toRectF().y();
-        }
-
-        bool ok = false;
-        const qreal y = value.toMap().value(QStringLiteral("y")).toReal(&ok);
-        return ok ? y : 0.0;
-    }
-
-    qreal qmlRectangleX(const QVariant& value)
-    {
-        if (value.canConvert<QRectF>())
-        {
-            return value.toRectF().x();
-        }
-
-        bool ok = false;
-        const qreal x = value.toMap().value(QStringLiteral("x")).toReal(&ok);
-        return ok ? x : 0.0;
-    }
-
-    qreal qmlRectangleHeight(const QVariant& value)
-    {
-        if (value.canConvert<QRectF>())
-        {
-            return value.toRectF().height();
-        }
-
-        bool ok = false;
-        const qreal height = value.toMap().value(QStringLiteral("height")).toReal(&ok);
-        return ok ? height : 0.0;
-    }
-
 } // namespace
 
 void WhatSonCppRegressionTests::qmlInlineFormatEditor_keepsNativeTextEditInputUncovered()
@@ -115,10 +79,11 @@ void WhatSonCppRegressionTests::qmlInlineFormatEditor_keepsNativeTextEditInputUn
     QVERIFY(!inlineEditorSource.isEmpty());
     QVERIFY(!inlineEditorSource.contains(QStringLiteral("nativeTouchScrollGuardActive")));
     QVERIFY(!inlineEditorSource.contains(QStringLiteral("MouseArea {")));
-    QVERIFY(inlineEditorSource.contains(QStringLiteral("TapHandler {")));
-    QVERIFY(inlineEditorSource.contains(QStringLiteral("objectName: \"contentsInlineFormatRenderedSurfaceCursorTapHandler\"")));
-    QVERIFY(inlineEditorSource.contains(QStringLiteral("function setCursorPositionFromVisiblePoint(localX, localY)")));
-    QVERIFY(inlineEditorSource.contains(QStringLiteral("function logicalPositionAtVisiblePoint(localX, localY)")));
+    QVERIFY(!inlineEditorSource.contains(QStringLiteral("TapHandler {")));
+    QVERIFY(!inlineEditorSource.contains(QStringLiteral("DragHandler {")));
+    QVERIFY(!inlineEditorSource.contains(QStringLiteral("acceptedButtons: Qt.LeftButton")));
+    QVERIFY(!inlineEditorSource.contains(QStringLiteral("function setCursorPositionFromVisiblePoint(localX, localY)")));
+    QVERIFY(!inlineEditorSource.contains(QStringLiteral("function logicalPositionAtVisiblePoint(localX, localY)")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("function logicalOffsetToSourceOffset(logicalOffset)")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("property var logicalToSourceOffsets: []")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("Keys.onPressed: function (event)")));
@@ -129,6 +94,7 @@ void WhatSonCppRegressionTests::qmlInlineFormatEditor_keepsNativeTextEditInputUn
     QVERIFY(inlineEditorSource.contains(QStringLiteral("const pureModifierKey = key === Qt.Key_Alt")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("if (pureModifierKey)")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("function triggerTagManagementShortcut(key, modifiers)")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("event.accepted = false;")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("sequence: \"Ctrl+Alt+C\"")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("event.matches(StandardKey.Paste)")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("!control.eventRequestsPasteShortcut(event)")));
@@ -195,7 +161,7 @@ void WhatSonCppRegressionTests::qmlInlineFormatEditor_keepsNativeTextEditInputUn
     QVERIFY(inlineEditorSource.contains(QStringLiteral("showRenderedOutput: false")));
 }
 
-void WhatSonCppRegressionTests::qmlInlineFormatEditor_projectsGutterGeometryFromVisibleDisplay()
+void WhatSonCppRegressionTests::qmlInlineFormatEditor_projectsVisibleGeometryFromRenderedDisplay()
 {
     const QString inlineEditorSource = readUtf8SourceFile(
         QStringLiteral("src/app/qml/view/contents/editor/ContentsInlineFormatEditor.qml"));
@@ -208,17 +174,7 @@ void WhatSonCppRegressionTests::qmlInlineFormatEditor_projectsGutterGeometryFrom
     QVERIFY(inlineEditorSource.contains(QStringLiteral("property string displayGeometryText: textInput.text")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("function displayGeometryItem()")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("return control.renderedOverlayVisible ? renderedGeometryProbe : textInput.editorItem")));
-    QVERIFY(inlineEditorSource.contains(QStringLiteral("function lineStartGeometryItem()")));
-    QVERIFY(inlineEditorSource.contains(QStringLiteral("return control.renderedOverlayVisible ? renderedGeometryProbe : textInput.editorItem")));
-    QVERIFY(inlineEditorSource.contains(QStringLiteral("function renderedBlockYOffsetBeforeSource(sourcePosition)")));
-    QVERIFY(inlineEditorSource.contains(QStringLiteral("function resourceBlockAtSourcePosition(sourcePosition)")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("function resourceDisplayRectangleForBlock(block)")));
-    QVERIFY(inlineEditorSource.contains(QStringLiteral("control.resourceBlockAtSourcePosition(sourcePosition)")));
-    QVERIFY(inlineEditorSource.contains(QStringLiteral("control.resourceDisplayRectangleForBlock(resourceBlock)")));
-    QVERIFY(inlineEditorSource.contains(QStringLiteral("control.renderedBlockYOffsetBeforeSource(sourcePosition)")));
-    QVERIFY(inlineEditorSource.contains(QStringLiteral("sourcePosition !== undefined ? sourcePosition : position")));
-    QVERIFY(inlineEditorSource.contains(QStringLiteral("return Qt.rect(")));
-    QVERIFY(inlineEditorSource.contains(QStringLiteral("geometryItem.mapToItem")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("text: control.displayGeometryText")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("textFormat: TextEdit.PlainText")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("textMargin: LV.Theme.gapNone")));
@@ -229,11 +185,10 @@ void WhatSonCppRegressionTests::qmlInlineFormatEditor_projectsGutterGeometryFrom
     QVERIFY(documentFlowSource.contains(QStringLiteral("logicalCursorPosition: documentFlow.logicalCursorPosition")));
     QVERIFY(documentFlowSource.contains(QStringLiteral("logicalToSourceOffsets: documentFlow.logicalToSourceOffsets")));
     QVERIFY(documentFlowSource.contains(QStringLiteral("normalizedHtmlBlocks: documentFlow.normalizedHtmlBlocks")));
-    QVERIFY(documentFlowSource.contains(QStringLiteral("function lineStartRectangle(position, sourcePosition)")));
     QVERIFY(documentFlowSource.contains(QStringLiteral("readonly property real editorContentHeight: editor.displayContentHeight")));
 }
 
-void WhatSonCppRegressionTests::qmlInlineFormatEditor_positionsGutterProbeFromLogicalDisplayText()
+void WhatSonCppRegressionTests::qmlInlineFormatEditor_positionsVisibleProbeFromLogicalDisplayText()
 {
     registerInlineFormatEditorRuntimeQmlTypes();
 
@@ -268,7 +223,7 @@ Item {
     QQmlComponent component(&engine);
     component.setData(
         qmlSource,
-        QUrl::fromLocalFile(repositoryRoot + QStringLiteral("/test/cpp/InlineFormatGutterGeometryHarness.qml")));
+        QUrl::fromLocalFile(repositoryRoot + QStringLiteral("/test/cpp/InlineFormatVisibleGeometryHarness.qml")));
     if (component.status() == QQmlComponent::Error)
     {
         QFAIL(qPrintable(qmlInlineFormatEditorErrorString(component.errors())));
@@ -301,35 +256,9 @@ Item {
     QTRY_VERIFY(projectedCursor->property("visible").toBool());
     QVERIFY(projectedCursor->property("width").toReal() >= 1.0);
     QVERIFY(projectedCursor->property("height").toReal() > 0.0);
-
-    QVariant firstLineRectangle;
-    QVERIFY(QMetaObject::invokeMethod(
-        inlineEditor,
-        "positionToRectangle",
-        Q_RETURN_ARG(QVariant, firstLineRectangle),
-        Q_ARG(QVariant, 0),
-        Q_ARG(QVariant, 0)));
-    QVariant secondLineRectangle;
-    QVERIFY(QMetaObject::invokeMethod(
-        inlineEditor,
-        "positionToRectangle",
-        Q_RETURN_ARG(QVariant, secondLineRectangle),
-        Q_ARG(QVariant, 6),
-        Q_ARG(QVariant, 21)));
-
-    const qreal firstY = qmlRectangleY(firstLineRectangle);
-    const qreal secondY = qmlRectangleY(secondLineRectangle);
-    QVERIFY2(secondY > firstY, qPrintable(QStringLiteral("Expected second display line below first: %1 <= %2").arg(secondY).arg(firstY)));
-
-    QVariant clickResult;
-    QVERIFY(QMetaObject::invokeMethod(
-        inlineEditor,
-        "setCursorPositionFromVisiblePoint",
-        Q_RETURN_ARG(QVariant, clickResult),
-        Q_ARG(QVariant, qmlRectangleX(secondLineRectangle) + 1.0),
-        Q_ARG(QVariant, secondY + 1.0)));
-    QVERIFY(clickResult.toBool());
-    QCOMPARE(inlineEditor->property("cursorPosition").toInt(), 19);
+    const qreal firstCursorY = projectedCursor->property("y").toReal();
+    inlineEditor->setProperty("logicalCursorPosition", 6);
+    QTRY_VERIFY(projectedCursor->property("y").toReal() > firstCursorY);
 
     inlineEditor->setProperty("showRenderedOutput", false);
     QTRY_VERIFY(inlineEditor->property("nativeCursorVisible").toBool());
@@ -670,6 +599,15 @@ Item {
 
     QTest::mouseClick(&window, Qt::LeftButton, Qt::NoModifier, QPoint(32, 24));
     QTRY_VERIFY(inlineEditor->property("focused").toBool());
+
+    inlineEditor->setProperty("cursorPosition", 0);
+    QTest::keyClick(&window, Qt::Key_Right, Qt::ShiftModifier);
+    QTRY_VERIFY(inlineEditor->property("nativeSelectionActive").toBool());
+    QCOMPARE(inlineEditor->property("selectionStart").toInt(), 0);
+    QVERIFY(inlineEditor->property("selectionEnd").toInt() > inlineEditor->property("selectionStart").toInt());
+    QVERIFY(!inlineEditor->property("selectedText").toString().isEmpty());
+
+    QVERIFY(QMetaObject::invokeMethod(inlineEditor, "clearSelection"));
     QTest::keyClick(&window, Qt::Key_Z);
     QTRY_VERIFY(inlineEditor->property("text").toString().contains(QLatin1Char('z'), Qt::CaseInsensitive));
 }
@@ -756,16 +694,6 @@ Item {
     QTRY_VERIFY(inlineEditor->property("renderedResourceOverlayPinned").toBool());
     QTRY_VERIFY(inlineEditor->property("renderedOverlayVisible").toBool());
 
-    const QVariant resourceStartArgument = rootObject->property("resourceStart");
-    QVariant resourceRectangle;
-    QVERIFY(QMetaObject::invokeMethod(
-        inlineEditor,
-        "positionToRectangle",
-        Q_RETURN_ARG(QVariant, resourceRectangle),
-        Q_ARG(QVariant, 6),
-        Q_ARG(QVariant, resourceStartArgument)));
-    QVERIFY(qmlRectangleHeight(resourceRectangle) > 40.0);
-
     QMetaObject::invokeMethod(inlineEditor, "forceActiveFocus");
     QTRY_VERIFY(inlineEditor->property("focused").toBool());
     QTest::keyClick(&window, Qt::Key_Z);
@@ -781,9 +709,9 @@ void WhatSonCppRegressionTests::qmlInlineFormatEditor_keepsKeyboardSelectionAndO
     const QString inlineEditorSource = readUtf8SourceFile(
         QStringLiteral("src/app/qml/view/contents/editor/ContentsInlineFormatEditor.qml"));
     const QString inlineEditorControllerHeader = readUtf8SourceFile(
-        QStringLiteral("src/app/models/editor/input/ContentsRemainingInputControllers.hpp"));
+        QStringLiteral("src/app/models/editor/input/ContentsInlineFormatEditorController.hpp"));
     const QString inlineEditorControllerSource = readUtf8SourceFile(
-        QStringLiteral("src/app/models/editor/input/ContentsRemainingInputControllers.cpp"));
+        QStringLiteral("src/app/models/editor/input/ContentsInlineFormatEditorController.cpp"));
     const QString surfaceGuardHeader = readUtf8SourceFile(
         QStringLiteral("src/app/models/editor/resource/ContentsEditorSurfaceGuardController.hpp"));
     const QString resourceImportControllerHeader = readUtf8SourceFile(

@@ -123,7 +123,6 @@ namespace
         flattenedGroup.insert(QStringLiteral("flattenedInteractiveGroup"), true);
         flattenedGroup.insert(QStringLiteral("focusSourceOffset"), sourceStart);
         flattenedGroup.insert(QStringLiteral("groupedBlocks"), groupBlocks);
-        flattenedGroup.insert(QStringLiteral("gutterCollapsed"), false);
         flattenedGroup.insert(
             QStringLiteral("logicalLineCountHint"),
             groupedTextLogicalLineCountHint(groupedSourceText));
@@ -146,7 +145,6 @@ namespace
             {QStringLiteral("flattenedInteractiveGroup"), true},
             {QStringLiteral("focusSourceOffset"), 0},
             {QStringLiteral("groupedBlocks"), QVariantList{}},
-            {QStringLiteral("gutterCollapsed"), false},
             {QStringLiteral("logicalLineCountHint"), 1},
             {QStringLiteral("minimapRepresentativeCharCount"), 0},
             {QStringLiteral("minimapVisualKind"), QStringLiteral("text")},

@@ -13,12 +13,8 @@
   Resolves body inset tokens per mode.
 - `editorFontWeight`
   Resolves editor typography weight per mode.
-- `showEditorGutter`
-  Disables gutter chrome in mobile mode.
 - `showMinimapRail`, `minimapRefreshEnabled`
   Gates minimap paint/update work per mode.
-- `lineGeometryRefreshEnabled`
-  Prevents the unified host from running desktop-only geometry refresh paths while mobile structured mode is active.
 
 ## Collaborators
 
@@ -29,5 +25,5 @@
 ## Regression Checks
 
 - Switching `mobileHost` must not require a second editor-host file.
-- Mobile mode must not reserve gutter width or run desktop structured minimap/gutter refresh loops.
-- Desktop mode must keep gutter/minimap behavior unchanged.
+- Mobile mode must not reserve desktop minimap width.
+- Desktop mode must keep minimap behavior unchanged.

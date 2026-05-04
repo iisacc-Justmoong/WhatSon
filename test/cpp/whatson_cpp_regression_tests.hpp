@@ -5,9 +5,6 @@
 #include "app/models/editor/format/ContentsInlineStyleOverlayRenderer.hpp"
 #include "app/models/editor/format/ContentsPlainTextSourceMutator.hpp"
 #include "app/models/editor/format/ContentsTextFormatRenderer.hpp"
-#include "app/models/editor/gutter/ContentsGutterLayoutMetrics.hpp"
-#include "app/models/editor/gutter/ContentsGutterLineNumberGeometry.hpp"
-#include "app/models/editor/gutter/ContentsGutterMarkerGeometry.hpp"
 #include "app/models/editor/minimap/ContentsMinimapLayoutMetrics.hpp"
 #include "app/models/editor/projection/ContentsEditorPresentationProjection.hpp"
 #include "app/models/display/paper/print/ContentsPagePrintLayoutRenderer.hpp"
@@ -915,73 +912,6 @@ private:
     QByteArray m_selectedHubAccessBookmark;
 };
 
-class FakeGutterDisplayGeometryHost final : public QObject
-{
-    Q_OBJECT
-
-public:
-    QVariantList sampledPositions() const
-    {
-        return m_sampledPositions;
-    }
-
-    QVariantList sampledSourcePositions() const
-    {
-        return m_sampledSourcePositions;
-    }
-
-    void clearSampledPositions()
-    {
-        m_sampledPositions.clear();
-        m_sampledSourcePositions.clear();
-    }
-
-    void setSourceYOverride(const int sourcePosition, const qreal y)
-    {
-        m_sourceYOverrides.insert(sourcePosition, y);
-    }
-
-    void setSourceHeightOverride(const int sourcePosition, const qreal height)
-    {
-        m_sourceHeightOverrides.insert(sourcePosition, height);
-    }
-
-    Q_INVOKABLE QVariant lineStartRectangle(const QVariant& position, const QVariant& sourcePosition)
-    {
-        const qreal displayOffset = position.toReal();
-        const int sourceOffset = sourcePosition.toInt();
-        m_sampledPositions.append(position.toInt());
-        m_sampledSourcePositions.append(sourceOffset);
-        QVariantMap rectangle;
-        if (m_sourceYOverrides.contains(sourceOffset))
-        {
-            rectangle.insert(QStringLiteral("y"), m_sourceYOverrides.value(sourceOffset));
-        }
-        else
-        {
-            rectangle.insert(QStringLiteral("y"), (displayOffset * 2.0) + 5.0);
-        }
-        if (m_sourceHeightOverrides.contains(sourceOffset))
-        {
-            rectangle.insert(QStringLiteral("height"), m_sourceHeightOverrides.value(sourceOffset));
-        }
-        return rectangle;
-    }
-
-    Q_INVOKABLE QVariant mapEditorPointToItem(const QVariant& target, const QVariant& x, const QVariant& y)
-    {
-        Q_UNUSED(target)
-        Q_UNUSED(x)
-        return QVariantMap{{QStringLiteral("y"), y.toReal() + 3.0}};
-    }
-
-private:
-    QVariantList m_sampledPositions;
-    QVariantList m_sampledSourcePositions;
-    QHash<int, qreal> m_sourceYOverrides;
-    QHash<int, qreal> m_sourceHeightOverrides;
-};
-
 class WhatSonCppRegressionTests final : public QObject
 {
     Q_OBJECT
@@ -1020,7 +950,7 @@ private slots:
     void detailCurrentNoteContextBridge_rejectsWiringMutationAfterLock();
     void onboardingRouteBootstrapController_rejectsHubControllerMutationAfterLock();
     void sourceTree_forbidsDeprecatedPresentationLayerVocabulary();
-    void sourceTree_keepsGutterAndMinimapUnderEditorChromeModels();
+    void sourceTree_keepsMinimapUnderEditorChromeModels();
     void sourceTree_keepsContentsQmlUnderViewContents();
     void sidebarAndSelectionBridge_forceCppOwnershipAcrossHierarchySwitchBindings();
     void contentsEditorSelectionBridge_tracksSelectionFromCurrentIndexSignal();
@@ -1083,8 +1013,6 @@ private slots:
     void structuredDocumentBlocksModel_updatesRowsWithoutResettingStableSuffixBlocks();
     void structuredDocumentBlocksModel_removesOnlyChangedMiddleRows();
     void structuredDocumentHost_tracksSelectionClearRevisionAcrossInteractions();
-    void logicalLineLayoutSupport_mapsEditorRectanglesIntoBlockCoordinates();
-    void logicalLineLayoutSupport_fallsBackWhenLiveEditorGeometryIsUnavailable();
     void editorSurfaceModeSupport_switchesToResourceEditorForResourceListModels();
     void qmlResourceEditorView_staysTransparentAndViewerOnly();
     void resourceDetailPanelController_tracksCurrentResourceSelection();
@@ -1097,20 +1025,8 @@ private slots:
     void listBarLayout_rendersResolvedNoteListModelByIndex();
     void qmlInlineSelectionHelpers_bindOwnersAfterControllerFileDeletion();
     void qmlStructuredEditors_consumeRendererNormalizedBlocksWithoutLocalFlattening();
-    void qmlStructuredEditors_refreshesGutterLayoutOnEditorOpen();
-    void qmlStructuredEditors_mountsGutterEditorAndMinimapInDisplayLayout();
-    void contentsGutterLayoutMetrics_resolvesRuntimeAndDesignMetrics();
-    void contentsGutterLineNumberGeometry_projectsFallbackLineYEntries();
-    void contentsGutterLineNumberGeometry_samplesEditorGeometryForRawSourceLines();
-    void contentsGutterLineNumberGeometry_keepsSingleRawPhysicalLineAsOneEditorLine();
-    void contentsGutterLineNumberGeometry_mergesDisplayAndStructuredBlockStreams();
-    void contentsGutterLineNumberGeometry_ignoresEditorContentHeightWithoutGeometry();
-    void contentsGutterLineNumberGeometry_usesEditorGeometryDeltaForTallResourceRows();
-    void contentsGutterLineNumberGeometry_ignoresRenderedResourceMetadataWithoutGeometry();
-    void contentsGutterLineNumberGeometry_ignoresLogicalLineOffsetsForSourceLineRowCount();
-    void contentsGutterLineNumberGeometry_prefersLogicalLineStartsOverSparseSourceMap();
-    void contentsGutterLineNumberGeometry_publishesRawLogicalAndGeometryCoordinatesPerRow();
-    void contentsGutterMarkerGeometry_marksCursorAndUnsavedLineSpans();
+    void qmlStructuredEditors_refreshesDocumentProjectionOnEditorOpen();
+    void qmlStructuredEditors_mountsEditorAndMinimapInDisplayLayout();
     void contentsMinimapLayoutMetrics_resolvesRuntimeVisibilityAndDesignRows();
     void qmlStructuredEditors_rejectStaleSourceRangeMutations();
     void qmlStructuredEditors_preserveNativeMobileInputDuringFocusedEdits();
@@ -1135,8 +1051,8 @@ private slots:
     void qmlInlineFormatEditor_keepsRenderedOverlayDuringNativeSelection();
     void qmlInlineFormatEditor_keepsRenderedOverlayPassiveForNativeEditing();
     void qmlInlineFormatEditor_keepsResourceOverlayPinnedDuringNativeEditing();
-    void qmlInlineFormatEditor_projectsGutterGeometryFromVisibleDisplay();
-    void qmlInlineFormatEditor_positionsGutterProbeFromLogicalDisplayText();
+    void qmlInlineFormatEditor_projectsVisibleGeometryFromRenderedDisplay();
+    void qmlInlineFormatEditor_positionsVisibleProbeFromLogicalDisplayText();
     void qmlStructuredDocumentFlow_routesBottomBlankClickToBodyEnd();
     void qmlInlineFormatEditor_forwardsInlineFormatShortcutsToTagManagementHook();
     void mobileChrome_usesSharedFigmaControlSurfaceColor();

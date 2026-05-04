@@ -24,16 +24,16 @@ using namespace WhatSon::Editor::DynamicObjectSupport;
 
 namespace
 {
-    constexpr int kResourceFrameWidth = 480;
+    constexpr int kResourceFrameDesignWidth = 480;
     constexpr int kResourceFrameCornerRadius = 12;
     constexpr int kResourceFrameHorizontalPadding = 8;
     constexpr int kResourceFrameBarHeight = 19;
     constexpr int kResourceFrameMenuSize = 16;
     constexpr int kResourceFrameMediaWidth = 338;
     constexpr int kResourceFrameMediaHeight = 352;
-    constexpr int kResourceFrameHeight = kResourceFrameBarHeight * 2 + kResourceFrameMediaHeight;
+    constexpr int kResourceFrameDesignHeight = kResourceFrameBarHeight * 2 + kResourceFrameMediaHeight;
     constexpr auto kResourceFrameBorderColor = "#2C2E2F";
-    constexpr auto kResourceFrameCacheVersion = "figma-292-50-v2";
+    constexpr auto kResourceFrameCacheVersion = "figma-292-50-v3";
 
     QString htmlText(const QString& text)
     {
@@ -119,7 +119,21 @@ namespace
         return frameCachePath;
     }
 
-    QString frameCacheFilePath(const QString& imagePath, const QString& frameLabel, const QSize& metadataSize)
+    QSize resourceFrameSizeForWidth(const int targetFrameWidth)
+    {
+        const int frameWidth = std::max(120, targetFrameWidth);
+        const int frameHeight = std::max(
+            1,
+            static_cast<int>(std::lround(
+                static_cast<double>(frameWidth) * kResourceFrameDesignHeight / kResourceFrameDesignWidth)));
+        return QSize(frameWidth, frameHeight);
+    }
+
+    QString frameCacheFilePath(
+        const QString& imagePath,
+        const QString& frameLabel,
+        const QSize& metadataSize,
+        const QSize& frameSize)
     {
         const QFileInfo imageInfo(imagePath);
         QByteArray fingerprint;
@@ -136,6 +150,10 @@ namespace
         fingerprint.append(QByteArray::number(metadataSize.width()));
         fingerprint.append('x');
         fingerprint.append(QByteArray::number(metadataSize.height()));
+        fingerprint.append('\n');
+        fingerprint.append(QByteArray::number(frameSize.width()));
+        fingerprint.append('x');
+        fingerprint.append(QByteArray::number(frameSize.height()));
         const QString digest =
             QString::fromLatin1(QCryptographicHash::hash(fingerprint, QCryptographicHash::Sha256).toHex().left(32));
         return QDir(frameCacheDirectoryPath()).filePath(QStringLiteral("whatson-resource-frame-%1.png").arg(digest));
@@ -178,8 +196,17 @@ namespace
         painter->drawText(rect, Qt::AlignLeft | Qt::AlignVCenter, elidedText);
     }
 
-    bool renderFigmaResourceFrameImage(const QString& imagePath, const QString& frameLabel, const QString& framePath)
+    bool renderFigmaResourceFrameImage(
+        const QString& imagePath,
+        const QString& frameLabel,
+        const QString& framePath,
+        const QSize& frameSize)
     {
+        if (!frameSize.isValid() || frameSize.isEmpty())
+        {
+            return false;
+        }
+
         QImageReader reader(imagePath);
         reader.setAutoTransform(true);
         const QImage sourceImage = reader.read();
@@ -198,7 +225,7 @@ namespace
         }
 
         QImage frameImage(
-            QSize(kResourceFrameWidth, kResourceFrameHeight),
+            frameSize,
             QImage::Format_ARGB32_Premultiplied);
         frameImage.fill(Qt::transparent);
 
@@ -206,14 +233,16 @@ namespace
         painter.setRenderHint(QPainter::Antialiasing, true);
         painter.setRenderHint(QPainter::SmoothPixmapTransform, true);
         painter.setRenderHint(QPainter::TextAntialiasing, true);
+        const qreal frameScale = static_cast<qreal>(frameSize.width()) / kResourceFrameDesignWidth;
+        painter.scale(frameScale, frameScale);
 
-        const QRectF outerRect(0.5, 0.5, kResourceFrameWidth - 1.0, kResourceFrameHeight - 1.0);
+        const QRectF outerRect(0.5, 0.5, kResourceFrameDesignWidth - 1.0, kResourceFrameDesignHeight - 1.0);
         QPainterPath outerPath;
         outerPath.addRoundedRect(outerRect, kResourceFrameCornerRadius, kResourceFrameCornerRadius);
         painter.setClipPath(outerPath);
 
         const QRectF mediaRect(
-            (kResourceFrameWidth - kResourceFrameMediaWidth) / 2.0,
+            (kResourceFrameDesignWidth - kResourceFrameMediaWidth) / 2.0,
             kResourceFrameBarHeight,
             kResourceFrameMediaWidth,
             kResourceFrameMediaHeight);
@@ -225,17 +254,17 @@ namespace
         painter.setPen(dividerPen);
         painter.drawLine(
             QPointF(0.5, kResourceFrameBarHeight - 0.5),
-            QPointF(kResourceFrameWidth - 0.5, kResourceFrameBarHeight - 0.5));
+            QPointF(kResourceFrameDesignWidth - 0.5, kResourceFrameBarHeight - 0.5));
         painter.drawLine(
             QPointF(0.5, kResourceFrameBarHeight + kResourceFrameMediaHeight + 0.5),
-            QPointF(kResourceFrameWidth - 0.5, kResourceFrameBarHeight + kResourceFrameMediaHeight + 0.5));
+            QPointF(kResourceFrameDesignWidth - 0.5, kResourceFrameBarHeight + kResourceFrameMediaHeight + 0.5));
 
         drawCaptionText(
             &painter,
             QRectF(
                 kResourceFrameHorizontalPadding,
                 0,
-                kResourceFrameWidth - kResourceFrameHorizontalPadding * 3 - kResourceFrameMenuSize,
+                kResourceFrameDesignWidth - kResourceFrameHorizontalPadding * 3 - kResourceFrameMenuSize,
                 kResourceFrameBarHeight),
             QStringLiteral("Image"),
             Qt::ElideRight);
@@ -244,14 +273,14 @@ namespace
             QRectF(
                 kResourceFrameHorizontalPadding,
                 kResourceFrameBarHeight + kResourceFrameMediaHeight,
-                kResourceFrameWidth - kResourceFrameHorizontalPadding * 2,
+                kResourceFrameDesignWidth - kResourceFrameHorizontalPadding * 2,
                 kResourceFrameBarHeight),
             frameLabel,
             Qt::ElideMiddle);
 
         painter.setBrush(QColor(255, 255, 255, 128));
         painter.setPen(Qt::NoPen);
-        const qreal menuLeft = kResourceFrameWidth - kResourceFrameHorizontalPadding - kResourceFrameMenuSize;
+        const qreal menuLeft = kResourceFrameDesignWidth - kResourceFrameHorizontalPadding - kResourceFrameMenuSize;
         const qreal menuTop = (kResourceFrameBarHeight - kResourceFrameMenuSize) / 2.0;
         for (const qreal dotLeft : {2.0, 7.0, 12.0})
         {
@@ -292,7 +321,7 @@ int ContentsInlineResourcePresentationController::inlineResourcePreviewWidth() c
 QString ContentsInlineResourcePresentationController::resourceEntryOpenTarget(const QVariant& resourceEntry) const
 {
     const QVariantMap entry = resourceEntry.toMap();
-    const QString sourceUrl = entry.value(QStringLiteral("source")).toString().trimmed();
+    QString sourceUrl = entry.value(QStringLiteral("source")).toString().trimmed();
     if (!sourceUrl.isEmpty())
     {
         return sourceUrl;
@@ -330,7 +359,8 @@ QString ContentsInlineResourcePresentationController::resourceEntryFrameLabel(
 }
 
 QString ContentsInlineResourcePresentationController::resourceEntryFrameImageSource(
-    const QVariant& resourceEntry) const
+    const QVariant& resourceEntry,
+    const int targetFrameWidth) const
 {
     const QVariantMap entry = resourceEntry.toMap();
     const QString renderMode = entry.value(QStringLiteral("renderMode")).toString().trimmed().toLower();
@@ -347,9 +377,11 @@ QString ContentsInlineResourcePresentationController::resourceEntryFrameImageSou
 
     const QString frameLabel = resourceEntryFrameLabel(resourceEntry);
     const QSize metadataSize = resourceEntryImageSize(entry, imagePath);
-    const QString framePath = frameCacheFilePath(imagePath, frameLabel, metadataSize);
+    const QSize frameSize =
+        resourceFrameSizeForWidth(targetFrameWidth > 0 ? targetFrameWidth : inlineResourcePreviewWidth());
+    const QString framePath = frameCacheFilePath(imagePath, frameLabel, metadataSize, frameSize);
     if (!QFileInfo(framePath).isFile()
-        && !renderFigmaResourceFrameImage(imagePath, frameLabel, framePath))
+        && !renderFigmaResourceFrameImage(imagePath, frameLabel, framePath, frameSize))
     {
         return {};
     }
@@ -357,7 +389,9 @@ QString ContentsInlineResourcePresentationController::resourceEntryFrameImageSou
     return QUrl::fromLocalFile(framePath).toString();
 }
 
-QString ContentsInlineResourcePresentationController::inlineResourceBlockHtml(const QVariant& resourceEntry) const
+QString ContentsInlineResourcePresentationController::inlineResourceBlockHtml(
+    const QVariant& resourceEntry,
+    const int targetFrameWidth) const
 {
     const QVariantMap entry = resourceEntry.toMap();
     const QString renderMode = entry.value(QStringLiteral("renderMode")).toString().trimmed().toLower();
@@ -367,7 +401,9 @@ QString ContentsInlineResourcePresentationController::inlineResourceBlockHtml(co
         : sourceUrl;
     if (renderMode == QStringLiteral("image") && !encodedSourceUrl.isEmpty())
     {
-        const QString frameImageSource = resourceEntryFrameImageSource(resourceEntry);
+        const QSize frameSize =
+            resourceFrameSizeForWidth(targetFrameWidth > 0 ? targetFrameWidth : inlineResourcePreviewWidth());
+        const QString frameImageSource = resourceEntryFrameImageSource(resourceEntry, frameSize.width());
         if (!frameImageSource.isEmpty())
         {
             const QString encodedFrameImageSource = m_view
@@ -380,8 +416,8 @@ QString ContentsInlineResourcePresentationController::inlineResourceBlockHtml(co
                 .arg(
                     encodedSourceUrl,
                     encodedFrameImageSource,
-                    QString::number(kResourceFrameWidth),
-                    QString::number(kResourceFrameHeight));
+                    QString::number(frameSize.width()),
+                    QString::number(frameSize.height()));
         }
     }
     return resourcePlaceholderBlockHtml();
@@ -398,9 +434,10 @@ bool ContentsInlineResourcePresentationController::resourceEntryCanRenderInlineI
 
 QString ContentsInlineResourcePresentationController::renderEditorSurfaceHtmlWithInlineResources(
     const QString& editorHtml,
-    const QVariant& renderedResourcesOverride) const
+    const QVariant& renderedResourcesOverride,
+    const int targetFrameWidth) const
 {
-    const QString baseEditorHtml = editorHtml;
+    const QString& baseEditorHtml = editorHtml;
     QVariant renderedResources = renderedResourcesOverride;
     if ((!renderedResources.isValid() || renderedResources.isNull()) && m_bodyResourceRenderer)
     {
@@ -433,7 +470,7 @@ QString ContentsInlineResourcePresentationController::renderEditorSurfaceHtmlWit
             : QVariant{};
         renderedHtml.append(
             resourceEntryCanRenderInlineInHtmlProjection(entry)
-                ? inlineResourceBlockHtml(entry)
+                ? inlineResourceBlockHtml(entry, targetFrameWidth)
                 : resourcePlaceholderBlockHtml());
         lastOffset = currentMatch.capturedEnd();
     }

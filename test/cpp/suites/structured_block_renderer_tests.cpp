@@ -113,7 +113,6 @@ void WhatSonCppRegressionTests::structuredBlockRenderer_keepsResourceOnlyTrailin
     QCOMPARE(trailingGroup.value(QStringLiteral("type")).toString(), QStringLiteral("text-group"));
     QVERIFY(trailingGroup.value(QStringLiteral("textEditable")).toBool());
     QVERIFY(!trailingGroup.value(QStringLiteral("atomicBlock")).toBool());
-    QVERIFY(!trailingGroup.value(QStringLiteral("gutterCollapsed")).toBool());
     QCOMPARE(trailingGroup.value(QStringLiteral("logicalLineCountHint")).toInt(), 1);
     QCOMPARE(trailingGroup.value(QStringLiteral("sourceText")).toString(), QString());
     QCOMPARE(trailingGroup.value(QStringLiteral("sourceStart")).toInt(), static_cast<int>(sourceText.size()));
@@ -137,7 +136,6 @@ void WhatSonCppRegressionTests::structuredBlockRenderer_keepsEmptyParagraphBetwe
     QCOMPARE(emptyParagraphGroup.value(QStringLiteral("type")).toString(), QStringLiteral("text-group"));
     QVERIFY(emptyParagraphGroup.value(QStringLiteral("textEditable")).toBool());
     QVERIFY(!emptyParagraphGroup.value(QStringLiteral("atomicBlock")).toBool());
-    QVERIFY(!emptyParagraphGroup.value(QStringLiteral("gutterCollapsed")).toBool());
     QCOMPARE(emptyParagraphGroup.value(QStringLiteral("sourceText")).toString(), QString());
     QCOMPARE(renderedBlocks.at(2).toMap().value(QStringLiteral("type")).toString(), QStringLiteral("resource"));
 }

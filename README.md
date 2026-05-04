@@ -256,22 +256,15 @@ WhatSon is an LVRS-based Qt Quick application.
   dismisses the visible calendar overlay so the editor shows the selected note.
 - The editor text is sourced from the active note-list model's selected note body, which is the parsed plain-text
   payload extracted from `.wsnbody` `<body>` content.
-- The left `74px` gutter is driven from the same `editorText` source as the editor itself, so line numbers react to
-  the same logical document and current cursor line.
-- That gutter depends on the logical-line offset model maintained by `ContentsLogicalTextBridge`; when that backend
-  offset model is broken, the editor text can still render while every visible gutter number disappears.
-- The editor-view helper contract is intentionally strict now: helper functions that feed gutter/minimap/layout state
+- `ContentsDisplayView.qml` composes the structured document editor with the optional minimap as the only editor
+  chrome.
+- The editor-view helper contract is intentionally strict now: helper functions that feed editor/minimap/layout state
   must behave like total functions with an explicit return value on every success path and every fallback path. QML
-  silently propagates `undefined`, and that can blank the gutter while leaving the rest of the editor visible.
+  silently propagates `undefined`, and that can blank a chrome surface while leaving the rest of the editor visible.
 - The same rule now applies to MVVM-fed bindings: views should not scatter direct `viewModel.foo !== undefined` checks
   across delegates. Normalize the incoming model/view-model once, then bind children only to the resolved contract.
-- The desktop editor panel and gutter fill now stay transparent so the same root
-  `LV.ApplicationWindow` `panelBackground01` canvas shows through, while the gutter still keeps `#4E5157` inactive
-  caption line numbers and `#9DA0A8` active line numbers from the Figma frame.
-- The line-number text is right-aligned against the same `16px` inset used by the editor body, so the gutter numbers
-  terminate on the same vertical edge that the editable text begins from.
-- The gutter/editor stack also preserves the Figma internal geometry: `2px` horizontal frame inset, line-number column
-  anchored from `x=14`, and the fixed `18px` icon-rail anchor at `x=40`.
+- The desktop editor panel stays transparent so the same root `LV.ApplicationWindow` `panelBackground01` canvas shows
+  through the whole editor column.
 - The editor surface keeps Figma-style Fill height even when the body text is empty, and the editable text block is
   top-left aligned with a shared `16px` top / horizontal / bottom inset instead of vertical centering.
 - That shared top inset is now materialized through the custom `ContentsInlineFormatEditor.qml` wrapper around
@@ -279,8 +272,8 @@ WhatSon is an LVRS-based Qt Quick application.
   navigation bar remains visible even when the editor viewport recalculates under Fill sizing on both desktop and
   mobile.
 - The wrapper disables rendered preview output and forced mode defaults where required while keeping
-  `wrapMode: TextEdit.Wrap`; the gutter still tracks logical `.wsnbody` lines through `positionToRectangle(...)`, so
-  wrapped visual rows do not renumber the document.
+  `wrapMode: TextEdit.Wrap`; wrapped visual rows remain an editor presentation detail rather than a persisted document
+  numbering model.
 - The same `LV.TextEditor`-backed wrapper binds the body token explicitly for this surface:
   `LV.Theme.fontBody`, `12px` host-driven weight/size policy, zero letter spacing, explicit `LV.Theme.bodyColor` text
   color, and the standard LVRS selection highlight (`LV.Theme.accent`), matching the Figma `Body` token and the rest
@@ -328,9 +321,9 @@ WhatSon is an LVRS-based Qt Quick application.
   `QObject` duck-typing.
 - `DetailPanel.qml` now resolves its `detailPanelViewModel` through LVRS `ViewModels` instead of reading the mutable
   view-model directly from the root QML context.
-- `ContentsDisplayView.qml` now composes four narrow editor helpers instead of one god-object bridge:
+- `ContentsDisplayView.qml` now composes narrow editor helpers instead of one god-object bridge:
   `ContentsEditorSelectionBridge` for note selection/count/persistence contracts,
-  `ContentsLogicalTextBridge` for logical-line parsing, `ContentsGutterMarkerBridge` for gutter-marker normalization,
+  `ContentsLogicalTextBridge` for logical-line parsing,
   and `ContentsEditorSession.qml` for idle-sync session state plus selection-to-editor text synchronization. The visual surface keeps
   only editor-geometry sampling and render placement.
 - The live editor surface now treats markdown as part of the canonical `.wsnbody` source format instead of a separate
@@ -368,28 +361,17 @@ WhatSon is an LVRS-based Qt Quick application.
   return a synthetic editor prompt. The center surface simply stays empty until a concrete note selection exists.
 - Full `bodyText` is preserved as normalized plain text rather than trimmed display text, so leading/trailing blank
   lines survive editor round-trips into `.wsnbody`.
-- Gutter cursor-line lookup now comes from the prebuilt logical-line offset table and visible-range lookup starts from
-  the current editor viewport offset instead of rescanning every logical line from the top on each paint.
-- The first visible gutter line is derived by mapping the current viewport `contentY` back through
-  `logicalLineNumberForDocumentY(...)`, which keeps the line-number model simpler while still matching the top visible
-  logical document line.
-- The gutter also keeps an explicit refresh-revision pulse with a short multi-pass timer, so when a user re-enters the
-  editor surface, opens a different note, or the underlying `LV.TextEditor.editorItem` finishes a delayed relayout, the visible
-  line numbers
-  and current-line markers are resampled from the settled editor geometry instead of stretching stale positions from a
-  previous note/session.
+- Note body chrome now consists of the document editor plus the optional right-side minimap.
 - Minimap snapshotting no longer walks the whole note text through `positionToRectangle(...)` on ordinary edits.
   Desktop and mobile still share the minimap row-flattening helper, but the display host no longer keeps a previous-token
   partial-splice cache that can preserve an initial empty-note silhouette. Each queued minimap refresh rebuilds row
   groups from the current parser/body state so the rail follows the rendered note body.
-- The blue current-line gutter marker is bound to the cursor's active visual row, so the marker no longer stretches
-  through the whole remaining editor height when the cursor sits on the last logical line.
 - `ContentsDisplayView.qml` no longer reintroduces a second desktop panel fill inside the editor stack: the editor
-  surface and gutter fill stay transparent and let the root `LV.ApplicationWindow` canvas read through
-  the whole desktop content column.
+  surface stays transparent and lets the root `LV.ApplicationWindow` canvas read through the whole desktop content
+  column.
 - The editor surface now also exposes a right-side Xcode-style minimap, but it is rendered as a borderless inline text
   silhouette instead of a framed rail. Its bar positions come from the editor's real content height and text-start
-  offset, so short notes stay top-aligned and the minimap reflects the text body rather than gutter markers.
+  offset, so short notes stay top-aligned and the minimap reflects the text body directly.
 - That silhouette is now painted from actual wrapped visual-row segments taken from the `LV.TextEditor.editorItem` layout rather than
   from one height-scaled logical-line block, so wrapped paragraphs appear as separate thin text strokes instead of
   carved slabs.
@@ -415,19 +397,14 @@ WhatSon is an LVRS-based Qt Quick application.
 - The shared editor wrapper now also supplements touch-only multi-tap selection on native-input mobile paths:
   double-tap reselects the touched word and triple-tap expands to the surrounding paragraph so iOS selection gestures
   are not lost when the live editor is hosted inside a `Flickable`.
-- The left marker rail is state-driven: the current cursor line is blue (`LV.Theme.primary`), lines changed in the
-  current session are yellow (`#FFF567`), and externally supplied sync-conflict ranges are red (`LV.Theme.danger`).
-- Conflict detection and sync integration are not implemented yet, but `ContentsDisplayView.qml` already accepts
-  external gutter marker ranges via `gutterMarkers` using `{ type: "changed" | "conflict", startLine, lineSpan }` or
-  `{ type, startLine, endLine }`.
 - The QML safety guard scans for two recurring corruption patterns: standalone string literals inside `Binding {}`
   blocks and standalone dotted expressions such as `noteListItem.imageSource` that should have been property
   assignments. Critical `ContentsDisplayView.qml` helper bodies are also expected to keep explicit `return`
   statements.
 - The same guard path also protects centralized MVVM boundaries for data-driven views: sidebar state stays anchored in
   `SidebarHierarchyViewModel`, hierarchy rendering keeps using the LVRS `Hierarchy` surface plus each domain
-  view-model's direct `hierarchyModel` property, and editor-side selection/persistence/text/gutter contracts stay
-  split across dedicated editor adapters.
+  view-model's direct `hierarchyModel` property, and editor-side selection/persistence/text contracts stay split across
+  dedicated editor adapters.
 - The obsolete LVRS override layers have been removed from the tree: no local hierarchy compat list, no sidebar
   interaction-controller hierarchy engine, and no project-specific `NavigationIconButton` wrapper remain. Navigation
   panels now bind stock LVRS primitives directly.
@@ -640,16 +617,12 @@ it once; divergent same-note storage payloads are rejected and re-persisted so r
 or overwrite the active mobile/desktop editing session.
 The desktop/mobile editor surfaces now keep `documentPresentationSourceText` as a separate whole-document
 presentation snapshot. Ordinary typing updates raw `editorText` immediately, while `ContentsLogicalTextBridge` and
-`ContentsTextFormatRenderer` only rebuild from that snapshot after editor idle, blur, or note switch; the typing
-controller carries an incremental logical-to-source offset cache between those commits so single-character edits no
-longer force full-note plain-text diff/remap/rerender work.
-That same typing controller now also maintains incremental logical line-start offsets and pushes the full live state
-into `ContentsLogicalTextBridge.adoptIncrementalState(...)`, while desktop/mobile line-geometry helpers reuse cached
-`minimapLineGroups` even when the minimap is hidden. Inline `<resource ... />` blocks now also share the same
-single-logical-line contract across the bridge, structured block parser, and fallback RichText projection, so gutter,
-minimap, and source-offset helpers no longer disagree about resource block height. As a result, ordinary typing no
-longer needs a whole-note bridge rebuild or a second whole-document line-rectangle sweep just to keep gutter/minimap
-helpers aligned.
+`ContentsTextFormatRenderer` rebuild from that snapshot through one projection path after editor idle, blur, or note
+switch. `ContentsLogicalTextBridge` now exposes only the logical text, logical-to-source offset table, and logical line
+count needed by active editor surfaces; stale incremental synchronization and per-row coordinate APIs have been
+removed. Inline `<resource ... />` blocks share the same single-logical-line contract across the bridge, structured
+block parser, and fallback RichText projection, so minimap and source-offset helpers no longer disagree about resource
+block height.
 Editor/QML code now stages save intent through `src/app/models/file/sync/ContentsEditorIdleSyncController.*`, which owns the
 worker-thread idle detector and note-exit flush promotion.
 Non-editing note-management work still sits behind `src/app/models/file/note/ContentsNoteManagementCoordinator.*`; direct
@@ -886,9 +859,8 @@ for hub/note hierarchy payloads.
   binds the same `SidebarHierarchyViewModel.resolvedHierarchyViewModel` plus `resolvedNoteListModel` pair used on
   desktop, so note-card taps open the real editor for the selected note instead of a mobile-only text surface.
 - The mobile editor route only overrides layout knobs that differ from desktop Figma: it keeps the shared LVRS editor
-  session/persistence wiring, hides the minimap, keeps the same `16px` top inset as desktop, removes the
-  frame side inset, clears the gutter fill back to transparent, and narrows the gutter to `40px` with a `22px`
-  line-number column.
+  session/persistence wiring, hides the minimap, keeps the same `16px` top inset as desktop, and removes the frame
+  side inset.
 - The shared `SidebarHierarchyView.qml` now lets row taps approve flick takeover on mobile, so the embedded
   `LV.Hierarchy` scroller keeps inertial vertical scrolling instead of dead-stop drag behavior on touch devices.
 - `MobileHierarchyPage.qml` now suppresses the compact leading action on the mobile note-list view, so the routed list
@@ -1060,7 +1032,7 @@ for hub/note hierarchy payloads.
   `In Progress`, `Pending`, `Reviewing`, `Waiting for approval`, `Done`, `Lagacy`, `Archived`, and
   `Delete review`, with exact LVRS icon names `inlineinlineEdit`, `rendererKit`, `progressresume`, `pending`,
   `showLogs`, `toolWindowTimer`, `validator`, `nodesexcludeRoot`, `projectModels`, and
-  `gutterCheckBoxIndeterminate@14x14`. The first four rows keep visible chevrons per Figma metadata even though the
+  `generaldelete`. The first four rows keep visible chevrons per Figma metadata even though the
   current runtime layer does not yet materialize child nodes behind them. The persisted `Progress.wsprogress` file is
   preserved unchanged for the future progress-detail layer.
 - `event`: `WhatSonEventHierarchy{Store,Parser,Creator}` (`Event.wsevent`)

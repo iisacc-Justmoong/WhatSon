@@ -4,73 +4,40 @@ void WhatSonCppRegressionTests::qmlContentsView_composesFigmaFrameFromLvrsParts(
 {
     const QString contentsViewSource = readUtf8SourceFile(
         QStringLiteral("src/app/qml/view/contents/ContentsView.qml"));
-    const QString gutterSource = readUtf8SourceFile(QStringLiteral("src/app/qml/view/contents/Gutter.qml"));
     const QString editorViewSource = readUtf8SourceFile(QStringLiteral("src/app/qml/view/contents/EditorView.qml"));
     const QString minimapSource = readUtf8SourceFile(QStringLiteral("src/app/qml/view/contents/Minimap.qml"));
 
     QVERIFY(!contentsViewSource.isEmpty());
-    QVERIFY(!gutterSource.isEmpty());
     QVERIFY(!editorViewSource.isEmpty());
     QVERIFY(!minimapSource.isEmpty());
     QVERIFY(contentsViewSource.contains(QStringLiteral("import LVRS 1.0 as LV")));
     QVERIFY(contentsViewSource.contains(QStringLiteral("import WhatSon.App.Internal 1.0")));
-    QVERIFY(gutterSource.contains(QStringLiteral("import LVRS 1.0 as LV")));
     QVERIFY(editorViewSource.contains(QStringLiteral("import LVRS 1.0 as LV")));
     QVERIFY(minimapSource.contains(QStringLiteral("import LVRS 1.0 as LV")));
     QVERIFY(contentsViewSource.contains(QStringLiteral("objectName: \"figma-155-4561-ContentsView\"")));
     QVERIFY(contentsViewSource.contains(QStringLiteral("LV.HStack {")));
     QVERIFY(contentsViewSource.contains(QStringLiteral("objectName: \"figma-155-5344-HStack\"")));
-    QVERIFY(contentsViewSource.contains(QStringLiteral("Gutter {")));
     QVERIFY(contentsViewSource.contains(QStringLiteral("EditorView {")));
     QVERIFY(contentsViewSource.contains(QStringLiteral("Minimap {")));
     const qsizetype hStackIndex = contentsViewSource.indexOf(QStringLiteral("LV.HStack {"));
-    const qsizetype gutterIndex = contentsViewSource.indexOf(QStringLiteral("Gutter {"));
     const qsizetype editorIndex = contentsViewSource.indexOf(QStringLiteral("EditorView {"));
     const qsizetype minimapIndex = contentsViewSource.indexOf(QStringLiteral("Minimap {"));
     QVERIFY(hStackIndex >= 0);
-    QVERIFY(gutterIndex > hStackIndex);
-    QVERIFY(editorIndex > gutterIndex);
+    QVERIFY(editorIndex > hStackIndex);
     QVERIFY(minimapIndex > editorIndex);
-    QVERIFY(!contentsViewSource.contains(QStringLiteral("component Gutter:")));
     QVERIFY(!contentsViewSource.contains(QStringLiteral("component EditorView:")));
     QVERIFY(!contentsViewSource.contains(QStringLiteral("component Minimap:")));
-    QVERIFY(gutterSource.contains(QStringLiteral("objectName: \"figma-155-5345-Gutter\"")));
     QVERIFY(editorViewSource.contains(QStringLiteral("objectName: \"figma-155-5352-EditorView\"")));
     QVERIFY(minimapSource.contains(QStringLiteral("objectName: \"figma-352-8626-Minimap\"")));
-    QVERIFY(contentsViewSource.contains(QStringLiteral("ContentsGutterLayoutMetrics {")));
-    QVERIFY(contentsViewSource.contains(QStringLiteral("ContentsGutterLineNumberGeometry {")));
-    QVERIFY(contentsViewSource.contains(QStringLiteral("fallbackTopInset: LV.Theme.gapNone")));
-    QVERIFY(contentsViewSource.contains(QStringLiteral("ContentsGutterMarkerGeometry {")));
     QVERIFY(contentsViewSource.contains(QStringLiteral("ContentsMinimapLayoutMetrics {")));
-    QVERIFY(gutterSource.contains(QStringLiteral("property int lineNumberColumnLeft")));
-    QVERIFY(gutterSource.contains(QStringLiteral("property int lineNumberColumnTextWidth")));
-    QVERIFY(gutterSource.contains(QStringLiteral("Item {")));
-    QVERIFY(!gutterSource.contains(QStringLiteral("property color gutterColor")));
-    QVERIFY(!gutterSource.contains(QStringLiteral("color: gutter.gutterColor")));
-    QVERIFY(gutterSource.contains(QStringLiteral("property var lineNumberEntries")));
-    QVERIFY(gutterSource.contains(QStringLiteral("width: gutter.lineNumberColumnTextWidth")));
-    QVERIFY(gutterSource.contains(QStringLiteral("x: gutter.lineNumberColumnLeft")));
-    QVERIFY(gutterSource.contains(QStringLiteral("model: gutter.lineNumberEntries")));
-    QVERIFY(gutterSource.contains(QStringLiteral("y: Number(modelData.y)")));
-    QVERIFY(!gutterSource.contains(QStringLiteral("Column {")));
-    QVERIFY(gutterSource.contains(QStringLiteral("property var markerEntries")));
-    QVERIFY(gutterSource.contains(QStringLiteral("model: gutter.markerEntries")));
-    QVERIFY(gutterSource.contains(QStringLiteral("markerType === \"cursor\"")));
-    QVERIFY(gutterSource.contains(QStringLiteral("gutter.unsavedMarkerColor")));
-    QVERIFY(contentsViewSource.contains(QStringLiteral("Layout.preferredWidth: gutterLayoutMetrics.defaultGutterWidth")));
     QVERIFY(contentsViewSource.contains(QStringLiteral("Layout.preferredWidth: minimapLayoutMetrics.defaultMinimapWidth")));
     QVERIFY(contentsViewSource.contains(
         QStringLiteral("property int minimapRowCount: defaultMinimapRowCount")));
-    QVERIFY(!contentsViewSource.contains(QStringLiteral("property color gutterColor")));
-    QVERIFY(!contentsViewSource.contains(QStringLiteral("gutterColor: contentsView.gutterColor")));
     QVERIFY(contentsViewSource.contains(QStringLiteral("property color surfaceColor: LV.Theme.panelBackground02")));
-    QVERIFY(gutterSource.contains(QStringLiteral("property color cursorMarkerColor: LV.Theme.accentBlue")));
-    QVERIFY(gutterSource.contains(QStringLiteral("property color unsavedMarkerColor: LV.Theme.warning")));
     QVERIFY(editorViewSource.contains(QStringLiteral("selectionColor: LV.Theme.primaryOverlay")));
     QVERIFY(minimapSource.contains(QStringLiteral("property int rowCount: LV.Theme.strokeThin")));
     const QList<QString> qmlSources = {
         contentsViewSource,
-        gutterSource,
         editorViewSource,
         minimapSource,
     };
@@ -79,7 +46,7 @@ void WhatSonCppRegressionTests::qmlContentsView_composesFigmaFrameFromLvrsParts(
         QVERIFY(!qmlSource.contains(QStringLiteral("Qt.rgba(")));
         QVERIFY(!qmlSource.contains(QStringLiteral("#")));
         const QRegularExpression hardcodedMetricAssignment(QStringLiteral(
-            R"((?:^|\n)\s*(?:width|height|x|y|radius|anchors\.\w+Margin|Layout\.preferredWidth|implicitHeight|implicitWidth|font\.pixelSize|activeLineNumber|lineNumberCount|minimapRowCount|rowCount)\s*:\s*-?\d)"));
+            R"((?:^|\n)\s*(?:width|height|x|y|radius|anchors\.\w+Margin|Layout\.preferredWidth|implicitHeight|implicitWidth|font\.pixelSize|minimapRowCount|rowCount)\s*:\s*-?\d)"));
         const QRegularExpressionMatch match = hardcodedMetricAssignment.match(qmlSource);
         QVERIFY2(!match.hasMatch(),
                  qPrintable(QStringLiteral("Hardcoded contents-view metric token: %1").arg(match.captured())));

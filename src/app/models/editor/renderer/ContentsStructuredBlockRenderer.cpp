@@ -101,7 +101,6 @@ namespace
         payload->insert(QStringLiteral("plainText"), plainText);
         payload->insert(QStringLiteral("textEditable"), !atomicBlock);
         payload->insert(QStringLiteral("atomicBlock"), atomicBlock);
-        payload->insert(QStringLiteral("gutterCollapsed"), atomicBlock);
         payload->insert(
             QStringLiteral("minimapVisualKind"),
             minimapVisualKindForDocumentBlockType(normalizedTypeName));

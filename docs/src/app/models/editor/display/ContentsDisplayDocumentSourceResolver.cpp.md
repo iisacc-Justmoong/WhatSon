@@ -13,7 +13,7 @@
   after the selection bridge resolves a fresh `.wsnbody`.
 - A resolved selected-note snapshot now stays visible while the editor session is merely bound but still carries an
   empty `editorText`.
-  This avoids the historical blank-document regression where gutter and minimap chrome appeared for the selected note
+  This avoids the historical blank-document regression where minimap chrome appeared for the selected note
   but the document body collapsed to an empty paragraph until the session text caught up.
 - A resolved selected-note snapshot also stays presentation-authoritative when the bound editor session still carries
   stale render-session text for the same note.

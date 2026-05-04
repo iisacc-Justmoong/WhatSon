@@ -48,9 +48,8 @@ surface.
 - The global `noteActiveState` object is also forwarded into the note editor host. The host registers its
   `ContentsEditorSessionController` there, so active-note changes can rebind the editor session before QML's local
   note-list bindings finish a later refresh turn.
-- `gutterWidthOverride`, line-number overrides, and `minimapVisible` are forwarded into `ContentsDisplayView.qml`,
-  where the visible gutter/editor/minimap `LV.HStack` is mounted. No gutter background color is forwarded; the gutter
-  remains indistinguishable from the editor body.
+- `minimapVisible` is forwarded into `ContentsDisplayView.qml`, where the visible editor/minimap `LV.HStack` is
+  mounted.
 - That sidebar-hierarchy forwarding is now part of the editor contract so desktop/mobile surfaces can distinguish:
   - direct resource-package browsing inside the Resources hierarchy
   - ordinary notes from other hierarchies whose `.wsnbody` happens to contain inline `<resource ... />` blocks

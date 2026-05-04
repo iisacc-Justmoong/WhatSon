@@ -45,7 +45,7 @@ It is the boundary between the editor-facing text model and the filesystem-facin
 - Empty `<paragraph></paragraph>` nodes must survive a read/save round-trip when the editor text is unchanged, regardless of whether they appear at the beginning, middle, or end of the note body.
 - Whitespace-only paragraphs must remain representable in the plain-text editor model.
 - Empty body tags are structural editor state. The read path must not delete or ignore them merely because their inner
-  text is empty; they still define caret, gutter, and block-boundary positions.
+  text is empty; they still define caret and block-boundary positions.
 - The persistence layer must not perform unsolicited body-tag cleanup or whitespace-line trimming beyond the serializer
   that is explicitly chosen for a real editor-driven body rewrite.
 - Rich-text scaffolding from Qt (`<!DOCTYPE HTML ...><html>...`) must never leak into logical note content or

@@ -13,7 +13,7 @@ namespace
 {
     namespace SemanticTags = WhatSon::NoteBodySemanticTagSupport;
 
-    // Resource blocks participate in editor line metrics as one logical line.
+    // Resource blocks normalize to one logical text line.
     constexpr int kResourcePlaceholderLineCount = 1;
 
     int boundedContainerSize(const qsizetype size) noexcept
@@ -295,70 +295,9 @@ void ContentsLogicalTextBridge::setText(const QString& text)
     refreshTextState();
 }
 
-QVariantList ContentsLogicalTextBridge::logicalLineStartOffsets() const
-{
-    return m_logicalLineStartOffsets;
-}
-
 int ContentsLogicalTextBridge::logicalLineCount() const noexcept
 {
     return m_logicalLineCount;
-}
-
-int ContentsLogicalTextBridge::logicalLineNumberForOffset(int offset) const noexcept
-{
-    if (m_logicalLineStartOffsets.isEmpty())
-    {
-        return 1;
-    }
-
-    const int safeOffset = std::max(0, offset);
-    int low = 0;
-    int high = m_logicalLineStartOffsets.size() - 1;
-    int best = 0;
-    while (low <= high)
-    {
-        const int middle = (low + high) / 2;
-        const int middleOffset = std::max(0, m_logicalLineStartOffsets.at(middle).toInt());
-        if (middleOffset <= safeOffset)
-        {
-            best = middle;
-            low = middle + 1;
-        }
-        else
-        {
-            high = middle - 1;
-        }
-    }
-    return best + 1;
-}
-
-int ContentsLogicalTextBridge::logicalLineStartOffsetAt(int index) const noexcept
-{
-    if (m_logicalLineStartOffsets.isEmpty())
-    {
-        return 0;
-    }
-
-    const int maxIndex = static_cast<int>(m_logicalLineStartOffsets.size()) - 1;
-    const int safeIndex = std::clamp(index, 0, maxIndex);
-    return std::max(0, m_logicalLineStartOffsets.at(safeIndex).toInt());
-}
-
-int ContentsLogicalTextBridge::logicalLineCharacterCountAt(int index) const noexcept
-{
-    if (m_logicalLineStartOffsets.isEmpty())
-    {
-        return 0;
-    }
-
-    const int maxIndex = static_cast<int>(m_logicalLineStartOffsets.size()) - 1;
-    const int safeIndex = std::clamp(index, 0, maxIndex);
-    const int startOffset = logicalLineStartOffsetAt(safeIndex);
-    const int nextOffset = safeIndex + 1 < m_logicalLineStartOffsets.size()
-                               ? logicalLineStartOffsetAt(safeIndex + 1)
-                               : m_logicalText.size();
-    return std::max(0, nextOffset - startOffset - (safeIndex + 1 < m_logicalLineStartOffsets.size() ? 1 : 0));
 }
 
 int ContentsLogicalTextBridge::logicalLengthForSourceText(const QString& text) const
@@ -375,71 +314,6 @@ QVariantList ContentsLogicalTextBridge::logicalToSourceOffsets() const
         offsets.push_back(offset);
     }
     return offsets;
-}
-
-void ContentsLogicalTextBridge::adoptIncrementalState(
-    const QString& sourceText,
-    const QString& logicalText,
-    const QVariantList& logicalLineStartOffsets,
-    const QVariantList& logicalToSourceOffsets)
-{
-    WhatSon::Debug::traceEditorSelf(
-        this,
-        QStringLiteral("logicalTextBridge"),
-        QStringLiteral("adoptIncrementalState"),
-        QStringLiteral("sourceOffsets=%1 lineOffsets=%2 source=%3 logical=%4")
-            .arg(logicalToSourceOffsets.size())
-            .arg(logicalLineStartOffsets.size())
-            .arg(WhatSon::Debug::summarizeText(sourceText))
-            .arg(WhatSon::Debug::summarizeText(logicalText)));
-    const QString normalizedSourceText = sourceText;
-    const QString normalizedLogicalText = logicalText;
-    const QVariantList nextLogicalLineStartOffsets =
-        logicalLineStartOffsets.isEmpty() ? buildLogicalLineOffsets(normalizedLogicalText) : logicalLineStartOffsets;
-    QVector<int> nextLogicalToSourceOffsets = buildIntVector(logicalToSourceOffsets);
-    if (nextLogicalToSourceOffsets.isEmpty())
-    {
-        nextLogicalToSourceOffsets =
-            buildLogicalToSourceOffsets(normalizedSourceText, boundedQStringSize(normalizedLogicalText));
-    }
-
-    const int nextLogicalLineCount = std::max(1, static_cast<int>(nextLogicalLineStartOffsets.size()));
-    const bool textChangedFlag = m_text != normalizedSourceText;
-    const bool logicalTextChangedFlag = m_logicalText != normalizedLogicalText;
-    const bool logicalOffsetsChangedFlag = m_logicalLineStartOffsets != nextLogicalLineStartOffsets;
-    const bool logicalLineCountChangedFlag = m_logicalLineCount != nextLogicalLineCount;
-
-    if (!textChangedFlag
-        && !logicalTextChangedFlag
-        && !logicalOffsetsChangedFlag
-        && !logicalLineCountChangedFlag
-        && m_logicalToSourceOffsets == nextLogicalToSourceOffsets)
-    {
-        return;
-    }
-
-    m_text = normalizedSourceText;
-    m_logicalText = normalizedLogicalText;
-    m_logicalLineStartOffsets = nextLogicalLineStartOffsets;
-    m_logicalToSourceOffsets = std::move(nextLogicalToSourceOffsets);
-    m_logicalLineCount = nextLogicalLineCount;
-
-    if (textChangedFlag)
-    {
-        emit textChanged();
-    }
-    if (logicalTextChangedFlag)
-    {
-        emit logicalTextChanged();
-    }
-    if (logicalOffsetsChangedFlag)
-    {
-        emit logicalLineStartOffsetsChanged();
-    }
-    if (logicalLineCountChangedFlag)
-    {
-        emit logicalLineCountChanged();
-    }
 }
 
 int ContentsLogicalTextBridge::sourceOffsetForLogicalOffset(int logicalOffset) const noexcept
@@ -548,31 +422,18 @@ QString ContentsLogicalTextBridge::normalizeLogicalText(const QString& text)
     return logicalText;
 }
 
-QVariantList ContentsLogicalTextBridge::buildLogicalLineOffsets(const QString& text)
+int ContentsLogicalTextBridge::countLogicalLines(const QString& text) noexcept
 {
-    QVariantList offsets;
-    offsets.push_back(0);
-
+    int lineCount = 1;
     for (int index = 0; index < text.size(); ++index)
     {
         if (text.at(index) == QLatin1Char('\n'))
         {
-            offsets.push_back(index + 1);
+            ++lineCount;
         }
     }
 
-    return offsets;
-}
-
-QVector<int> ContentsLogicalTextBridge::buildIntVector(const QVariantList& values)
-{
-    QVector<int> converted;
-    converted.reserve(boundedContainerSize(values.size()));
-    for (const QVariant& value : values)
-    {
-        converted.push_back(std::max(0, value.toInt()));
-    }
-    return converted;
+    return lineCount;
 }
 
 QVector<int> ContentsLogicalTextBridge::buildLogicalToSourceOffsets(const QString& text, const int logicalTextLength)
@@ -721,14 +582,7 @@ void ContentsLogicalTextBridge::refreshTextState()
         emit logicalTextChanged();
     }
     m_logicalToSourceOffsets = buildLogicalToSourceOffsets(m_text, m_logicalText.size());
-    const QVariantList nextOffsets = buildLogicalLineOffsets(m_logicalText);
-    const int nextLineCount = std::max(1, static_cast<int>(nextOffsets.size()));
-
-    if (m_logicalLineStartOffsets != nextOffsets)
-    {
-        m_logicalLineStartOffsets = nextOffsets;
-        emit logicalLineStartOffsetsChanged();
-    }
+    const int nextLineCount = countLogicalLines(m_logicalText);
     if (m_logicalLineCount != nextLineCount)
     {
         m_logicalLineCount = nextLineCount;

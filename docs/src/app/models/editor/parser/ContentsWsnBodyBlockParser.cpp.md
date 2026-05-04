@@ -32,7 +32,6 @@ Implements one-pass top-level `.wsnbody` parsing for the structured editor rende
   - `plainText`
   - `textEditable`
   - `atomicBlock`
-  - `gutterCollapsed`
   - `logicalLineCountHint`
   - `minimapVisualKind`
   - `minimapRepresentativeCharCount`

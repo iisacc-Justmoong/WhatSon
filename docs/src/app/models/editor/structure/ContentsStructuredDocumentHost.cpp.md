@@ -12,7 +12,7 @@ layout cache, and selection cleanup.
   - stores the active block index
 - `noteActiveBlockCursorInteraction(...)` handles live cursor movement:
   - clears stale selection only if the cursor event belongs to a different active block
-  - always bumps the active-block cursor revision so gutter/minimap/caret chrome follows same-block cursor moves
+  - always bumps the active-block cursor revision so minimap/caret chrome follows same-block cursor moves
 - `requestSelectionClear(...)` can also be called independently, allowing trailing-margin terminal body clicks to clear
   every stale structured editor selection before focus is restored elsewhere.
 

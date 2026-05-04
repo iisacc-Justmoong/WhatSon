@@ -134,29 +134,9 @@ QString ContentsEditorPresentationProjection::logicalText() const
     return m_logicalTextBridge != nullptr ? m_logicalTextBridge->logicalText() : QString();
 }
 
-QVariantList ContentsEditorPresentationProjection::logicalLineStartOffsets() const
-{
-    return m_logicalTextBridge != nullptr ? m_logicalTextBridge->logicalLineStartOffsets() : QVariantList{0};
-}
-
 int ContentsEditorPresentationProjection::logicalLineCount() const noexcept
 {
     return m_logicalTextBridge != nullptr ? m_logicalTextBridge->logicalLineCount() : 1;
-}
-
-int ContentsEditorPresentationProjection::logicalLineNumberForOffset(const int offset) const noexcept
-{
-    return m_logicalTextBridge != nullptr ? m_logicalTextBridge->logicalLineNumberForOffset(offset) : 1;
-}
-
-int ContentsEditorPresentationProjection::logicalLineStartOffsetAt(const int index) const noexcept
-{
-    return m_logicalTextBridge != nullptr ? m_logicalTextBridge->logicalLineStartOffsetAt(index) : 0;
-}
-
-int ContentsEditorPresentationProjection::logicalLineCharacterCountAt(const int index) const noexcept
-{
-    return m_logicalTextBridge != nullptr ? m_logicalTextBridge->logicalLineCharacterCountAt(index) : 0;
 }
 
 int ContentsEditorPresentationProjection::logicalLengthForSourceText(const QString& text) const
@@ -175,34 +155,6 @@ int ContentsEditorPresentationProjection::sourceOffsetForLogicalOffset(const int
     return m_logicalTextBridge != nullptr
                ? m_logicalTextBridge->sourceOffsetForLogicalOffset(logicalOffset)
                : logicalOffset;
-}
-
-void ContentsEditorPresentationProjection::adoptIncrementalState(
-    const QString& sourceText,
-    const QString& logicalText,
-    const QVariantList& logicalLineStartOffsets,
-    const QVariantList& logicalToSourceOffsets)
-{
-    if (m_logicalTextBridge == nullptr)
-    {
-        return;
-    }
-
-    WhatSon::Debug::traceEditorSelf(
-        this,
-        QStringLiteral("editorPresentationProjection"),
-        QStringLiteral("adoptIncrementalState"),
-        QStringLiteral("source=%1 logical=%2 lineOffsets=%3 sourceOffsets=%4")
-            .arg(WhatSon::Debug::summarizeText(sourceText))
-            .arg(WhatSon::Debug::summarizeText(logicalText))
-            .arg(logicalLineStartOffsets.size())
-            .arg(logicalToSourceOffsets.size()));
-
-    m_logicalTextBridge->adoptIncrementalState(
-        sourceText,
-        logicalText,
-        logicalLineStartOffsets,
-        logicalToSourceOffsets);
 }
 
 void ContentsEditorPresentationProjection::connectSignals()
@@ -238,11 +190,6 @@ void ContentsEditorPresentationProjection::connectSignals()
             &ContentsLogicalTextBridge::logicalTextChanged,
             this,
             &ContentsEditorPresentationProjection::logicalTextChanged);
-        connect(
-            m_logicalTextBridge,
-            &ContentsLogicalTextBridge::logicalLineStartOffsetsChanged,
-            this,
-            &ContentsEditorPresentationProjection::logicalLineStartOffsetsChanged);
         connect(
             m_logicalTextBridge,
             &ContentsLogicalTextBridge::logicalLineCountChanged,

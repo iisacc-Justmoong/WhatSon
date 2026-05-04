@@ -12,7 +12,8 @@ Owns editor-side resource import and inline resource presentation coordination.
   Owns duplicate-resource prompt state.
 - `ContentsInlineResourcePresentationController.*`
   Builds editor-surface inline resource HTML placeholders and the rounded Figma `292:50` frame image projection used by
-  note-body resources.
+  note-body resources. Inline resource frames resolve 100% width to the current editor text column before the cached
+  frame image and matching RichText image attributes are generated.
 - `ContentsEditorSurfaceGuardController.*`
   Guards programmatic editor-surface sync during resource import turns.
 

@@ -17,9 +17,8 @@
   line structure that the live editor surface exposes.
 - The bridge no longer rewrites markdown list markers (`- ` / `* ` / `+ `) into `• `.
   Logical text now preserves raw markdown markers so the source editor and `.wsnbody` format stay aligned.
-- `logicalLineCharacterCountAt(...)` uses normalized plain-text length (`m_logicalText`) instead of
-  raw rich-text source length. This prevents gutter/minimap geometry drift when the source contains
-  markup tokens that do not map 1:1 to cursor offsets.
+- `logicalLineCount` is derived from normalized plain text and exposed only as a count for document-scale consumers.
+  Per-row start offsets, character counts, and offset-to-row queries are not part of this public bridge.
 - The implementation now also emits a QML-visible `logicalText` projection, giving selection-formatting code access to
   the exact plain-text string that the offset table was built from.
 - The implementation now also builds a logical-text-to-source offset table:
@@ -39,24 +38,15 @@
   (`</bold>`, `</italic>`, `</underline>`, `</strikethrough>`, `</highlight>`).
   A visible boundary that sits after the last styled glyph therefore resolves to the RAW position after the zero-width
   closing tag instead of to the interior edge just before it.
-- `logicalToSourceOffsets()` now exports the cached table in one QML-visible array so the typing controller can reseed
-  its incremental mapping state after each idle/blur presentation commit instead of asking C++ for one offset per
-  keystroke.
-- `adoptIncrementalState(...)` now lets QML push the already-spliced live typing state back into the bridge:
-  - source text
-  - logical text
-  - logical line-start offsets
-  - logical-to-source offsets
-- That adoption path updates the cached state and emits the same observable signals only when the pushed values actually
-  differ, so typing keeps bridge consumers synchronized without routing every character through `refreshTextState()`.
+- `logicalToSourceOffsets()` exports the cached table in one QML-visible array so visible editor offsets can be mapped
+  back into RAW source without asking C++ for one offset per character.
 - `logicalLengthForSourceText(...)` now reuses the same normalization path for ad-hoc fragments, giving QML list-toggle
   code a stable way to measure rewritten source lines in logical editor coordinates before restoring selection/cursor
   state.
 - Source-offset clamping is now normalized through an explicit `int`-bounded QString size helper before returning to
   QML, which avoids libc++ `std::clamp` template mismatches between `int` and `qsizetype` on Apple toolchains.
-- Cached offset export and incremental vector adoption now also normalize Qt container sizes through the same bounded
-  integer helper before `reserve(...)`, so Apple libc++ does not see mixed `int` / `qsizetype` `std::max(...)`
-  candidates while the bridge snapshots live typing state.
+- Cached offset export normalizes Qt container sizes through the same bounded integer helper before `reserve(...)`, so
+  Apple libc++ does not see mixed `int` / `qsizetype` candidates.
 
 ## Regression Checks
 
@@ -66,12 +56,10 @@
   visible `<tag>` / `Tom & Jerry` glyph sequence so cursor mapping stays aligned with the editor surface.
 - When a single rewritten source line contains inline tags, entities, or resource tags, `logicalLengthForSourceText(...)`
   must still return the rendered logical length that the editor selection uses after the rewrite.
-- `logicalToSourceOffsets()` must stay aligned with the same normalized logical text that `logicalText` exposes, so a
-  post-idle typing-session reseed cannot shift source splices away from the intended logical cursor positions.
-- `adoptIncrementalState(...)` must not emit redundant change signals or rebuild offset tables when QML pushes an
-  identical live-typing snapshot.
-- `logicalToSourceOffsets()` and `buildIntVector(...)` must keep compiling when Qt container `size()` returns
-  `qsizetype` on Apple toolchains.
+- `logicalToSourceOffsets()` must stay aligned with the same normalized logical text that `logicalText` exposes, so
+  source splices do not shift away from the intended logical cursor positions.
+- `logicalToSourceOffsets()` export must keep compiling when Qt container `size()` returns `qsizetype` on Apple
+  toolchains.
 - When source contains canonical `</break>` divider tags, `logicalToSourceOffsets()` must still expose one logical
   character step per divider so selection-to-source splices stay aligned.
 - When source contains multiple `<task>` children inside one `<agenda>`, `logicalToSourceOffsets()` must expose one

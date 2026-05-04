@@ -8,8 +8,8 @@ The core rule in this directory is that visual composition belongs here, while p
 ## Important Files
 - `Main.qml`: the root `LV.ApplicationWindow`, route shell, and root context-object consumer.
 - `DesignTokens.qml`: QML-side design token aggregation.
-- `view/contents/ContentsView.qml`: standalone Figma `ContentsView` frame that embeds the sibling gutter, editor, and
-  minimap QML parts using `LV.Theme` tokens for colors, spacing, typography, and fixed rails.
+- `view/contents/ContentsView.qml`: standalone Figma `ContentsView` frame that embeds the editor and minimap QML parts
+  using `LV.Theme` tokens for colors, spacing, typography, and fixed rails.
 
 ## LVRS Token Rule
 - QML view files must express reusable colors, transparency, spacing, typography, and fixed UI extents through

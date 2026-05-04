@@ -170,8 +170,8 @@ rewriting `bodySourceText` RAW just because the body document was read and repar
 - A standalone `<agenda>...</agenda>`, `<callout>...</callout>`, `<resource ... />`, or `</break>` source line must
   round-trip as a direct `<body>` child instead of being rewrapped into `<paragraph>`.
 - A direct `<resource ... />` body child followed by an empty `<paragraph></paragraph>` must project back to editor
-  source with a trailing newline, not to a resource-only source string, so gutter line 2 and the post-resource caret
-  target are preserved on note reopen.
+  source with a trailing newline, not to a resource-only source string, so the post-resource caret target is preserved
+  on note reopen.
 - Empty `<paragraph></paragraph>` body children before or between direct resource body children must likewise survive as
   leading/interior empty editor source lines.
 - A paragraph line that already contains only an escaped resource tag from an earlier bad save must recover to a direct

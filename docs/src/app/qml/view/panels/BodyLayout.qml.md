@@ -27,8 +27,8 @@ right detail panel.
   shell can swap from year view to month view without breaking the overlay ownership contract.
 - `resourcesImportController`, `editorViewModeController`, and `isMobilePlatform` are forwarded to the central content
   surface.
-- The central content surface no longer receives a gutter color; the note editor's left gutter rail inherits the editor
-  background instead of painting a separate panel.
+- The central content surface forwards editor mode and import controllers without injecting separate editor chrome
+  styling.
 - `sidebarHierarchyController` is also forwarded to the central content surface so calendar note taps can switch the
   active domain back to `Library` before the editor becomes visible again.
 - The desktop shell now resolves the effective deletion target for `ListBarLayout` from the active

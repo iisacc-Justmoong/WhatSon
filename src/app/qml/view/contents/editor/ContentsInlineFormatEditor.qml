@@ -214,24 +214,6 @@ Item {
         return false;
     }
 
-    function resourceBlockAtSourcePosition(sourcePosition) {
-        const boundedSourcePosition = control.boundedCursorPosition(sourcePosition, textInput.length);
-        const blocks = control.normalizedHtmlBlocks || [];
-        for (let index = 0; index < blocks.length; ++index) {
-            const block = blocks[index];
-            if (!control.htmlBlockIsIiHtmlResourceBlock(block))
-                continue;
-            const blockStart = control.htmlBlockSourceStart(block);
-            const blockEnd = control.htmlBlockSourceEnd(block);
-            if (blockStart >= 0
-                    && boundedSourcePosition >= blockStart
-                    && boundedSourcePosition <= blockEnd) {
-                return block;
-            }
-        }
-        return null;
-    }
-
     function resourceLogicalRangeForBlock(block) {
         const blockStart = control.htmlBlockSourceStart(block);
         const blockEnd = control.htmlBlockSourceEnd(block);
@@ -345,21 +327,6 @@ Item {
         Qt.callLater(control.refreshRenderedOverlaySelection);
     }
 
-    function logicalPositionAtVisiblePoint(localX, localY) {
-        const geometryItem = control.displayGeometryItem();
-        if (geometryItem === null || geometryItem === undefined || geometryItem.positionAt === undefined)
-            return textInput.cursorPosition;
-        const mappedPoint = geometryItem.mapFromItem(
-                    control,
-                    Number(localX) || LV.Theme.gapNone,
-                    Number(localY) || LV.Theme.gapNone);
-        const position = geometryItem.positionAt(
-                    Number(mappedPoint.x) || LV.Theme.gapNone,
-                    Number(mappedPoint.y) || LV.Theme.gapNone);
-        const length = control.renderedOverlayVisible ? renderedGeometryProbe.length : textInput.length;
-        return control.boundedCursorPosition(position, length);
-    }
-
     function inlineFormatSelectionSnapshot() {
         return selectionSnapshot();
     }
@@ -368,101 +335,12 @@ Item {
         return control.inputMethodComposing || control.preeditText.length > 0;
     }
 
-    function positionToRectangle(position, sourcePosition) {
-        if (!control.renderedOverlayVisible) {
-            const sourceResolvedPosition = sourcePosition !== undefined ? sourcePosition : position;
-            return textInput.editorItem.positionToRectangle(sourceResolvedPosition);
-        }
-
-        const resourceBlock = sourcePosition !== undefined
-                ? control.resourceBlockAtSourcePosition(sourcePosition)
-                : null;
-        if (resourceBlock !== null) {
-            const resourceRectangle = control.resourceDisplayRectangleForBlock(resourceBlock);
-            return Qt.rect(
-                        Number(resourceRectangle.x) || LV.Theme.gapNone,
-                        Number(resourceRectangle.y) || LV.Theme.gapNone,
-                        Number(resourceRectangle.width) || LV.Theme.gapNone,
-                        Math.max(1, Number(resourceRectangle.height) || LV.Theme.textBodyLineHeight));
-        }
-
-        const resolvedPosition = control.boundedCursorPosition(position, renderedGeometryProbe.length);
-        const rectangle = renderedGeometryProbe.positionToRectangle(resolvedPosition);
-        const correctedY = (Number(rectangle.y) || LV.Theme.gapNone)
-                + control.renderedBlockYOffsetBeforeSource(sourcePosition);
-        return Qt.rect(
-                    Number(rectangle.x) || LV.Theme.gapNone,
-                    correctedY,
-                    Number(rectangle.width) || LV.Theme.gapNone,
-                    Math.max(1, Number(rectangle.height) || LV.Theme.textBodyLineHeight));
-    }
-
     function displayGeometryItem() {
         return control.renderedOverlayVisible ? renderedGeometryProbe : textInput.editorItem;
     }
 
-    function lineStartGeometryItem() {
-        return control.renderedOverlayVisible ? renderedGeometryProbe : textInput.editorItem;
-    }
-
-    function renderedBlockYOffsetBeforeSource(sourcePosition) {
-        if (!control.renderedOverlayVisible)
-            return LV.Theme.gapNone;
-        const boundedSourcePosition = control.boundedCursorPosition(sourcePosition, textInput.length);
-        const blocks = control.normalizedHtmlBlocks || [];
-        let bestSourceEnd = -1;
-        let correction = LV.Theme.gapNone;
-        for (let index = 0; index < blocks.length; ++index) {
-            const block = blocks[index];
-            if (!control.htmlBlockIsIiHtmlResourceBlock(block))
-                continue;
-            const blockEnd = control.htmlBlockSourceEnd(block);
-            if (blockEnd < 0 || blockEnd >= boundedSourcePosition || blockEnd <= bestSourceEnd)
-                continue;
-
-            const anchorSource = control.boundedCursorPosition(blockEnd + 1, textInput.length);
-            const anchorLogical = control.sourceOffsetToLogicalOffset(anchorSource, true);
-            const overlayAnchor = control.boundedCursorPosition(anchorLogical, Number(renderedOverlay.length) || 0);
-            const probeAnchor = control.boundedCursorPosition(anchorLogical, renderedGeometryProbe.length);
-            const overlayRectangle = renderedOverlay.positionToRectangle(overlayAnchor);
-            const probeRectangle = renderedGeometryProbe.positionToRectangle(probeAnchor);
-            const overlayY = Number(overlayRectangle && overlayRectangle.y !== undefined ? overlayRectangle.y : 0);
-            const probeY = Number(probeRectangle && probeRectangle.y !== undefined ? probeRectangle.y : 0);
-            if (isFinite(overlayY) && isFinite(probeY)) {
-                correction = overlayY - probeY;
-                bestSourceEnd = blockEnd;
-            }
-        }
-        return correction;
-    }
-
-    function mapEditorPointToItem(target, x, y) {
-        const geometryItem = control.displayGeometryItem();
-        const mappedPoint = geometryItem.mapToItem(
-                    target,
-                    Number(x) || LV.Theme.gapNone,
-                    Number(y) || LV.Theme.gapNone);
-        return {
-            "x": mappedPoint.x,
-            "y": mappedPoint.y
-        };
-    }
-
     function requestViewHook(reason) {
         control.viewHookRequested(reason !== undefined ? String(reason) : "manual");
-    }
-
-    function setCursorPositionFromVisiblePoint(localX, localY) {
-        if (control.nativeCompositionActive())
-            return false;
-        const logicalPosition = control.logicalPositionAtVisiblePoint(localX, localY);
-        const sourcePosition = control.renderedOverlayVisible
-                ? control.logicalOffsetToSourceOffset(logicalPosition)
-                : logicalPosition;
-        control.forceActiveFocus();
-        control.clearSelection();
-        control.setCursorPositionPreservingNativeInput(sourcePosition);
-        return true;
     }
 
     function programmaticTextSyncPolicy(nextText) {
@@ -515,6 +393,7 @@ Item {
                 && !control.eventRequestsPasteShortcut(event)
                 && !control.eventRequestsInlineFormatShortcut(event)
                 && !control.eventRequestsBodyTagShortcut(event)) {
+            event.accepted = false;
             return;
         }
 
@@ -565,22 +444,6 @@ Item {
 
         control: control
         textInput: textInput.editorItem
-    }
-
-    TapHandler {
-        id: renderedSurfaceCursorTapHandler
-
-        acceptedButtons: Qt.LeftButton
-        enabled: control.renderedOverlayVisible
-                 && !control.nativeCompositionActive()
-        gesturePolicy: TapHandler.ReleaseWithinBounds
-        objectName: "contentsInlineFormatRenderedSurfaceCursorTapHandler"
-
-        onTapped: function (eventPoint, button) {
-            if (button !== Qt.LeftButton)
-                return;
-            control.setCursorPositionFromVisiblePoint(eventPoint.position.x, eventPoint.position.y);
-        }
     }
 
     TextEdit {

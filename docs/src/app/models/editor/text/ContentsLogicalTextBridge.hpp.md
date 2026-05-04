@@ -19,28 +19,25 @@
 - The header now declares a dedicated normalized logical-text cache (`m_logicalText`) separate from
   raw editor source text (`m_text`).
 - `logicalText` is now exposed to QML so selection logic can compare the live highlighted substring against the same
-  plain-text projection used by gutter/minimap metrics.
+  plain-text projection used by minimap metrics.
 - That logical projection is now intended to stay as close as possible to the note's own `.wsnbody` plain-text view,
   including raw markdown markers.
-- `normalizeLogicalText(...)` is the private normalization entrypoint used before line-offset
-  generation so QML gutter queries consume plain-text-aligned offsets.
+- `normalizeLogicalText(...)` is the private normalization entrypoint used before source-offset generation so editor
+  queries consume plain-text-aligned offsets.
 - `sourceOffsetForLogicalOffset(int)` is now part of the public QML bridge surface so editor interactions can convert
   RichText/plain-text selection offsets back into source-markup offsets before mutating the stored body text.
 - `logicalLengthForSourceText(QString)` is now also part of the public QML bridge surface so block-style mutations can
   measure rewritten source fragments in the same logical-text coordinate system used by the live editor selection.
-- `logicalToSourceOffsets()` is now also exposed so `ContentsEditorTypingController.qml` can seed one whole-note
-  offset table at presentation-commit time and then update that table incrementally during ordinary typing.
-- `adoptIncrementalState(...)` is now also part of the public QML surface so the typing controller can push a freshly
-  spliced `{source text, logical text, line starts, logical->source offsets}` bundle back into the bridge after each
-  accepted typing mutation.
+- `logicalToSourceOffsets()` is exposed as one whole-note offset table for the active editor projection; removed
+  incremental synchronization and per-row coordinate APIs must not be reintroduced through this bridge.
 - The header also carries a logical-to-source offset cache (`m_logicalToSourceOffsets`) that stays synchronized with
   the normalized plain-text projection.
 - The exposed offset contract remains `int`-based for QML callers, so implementation-side source bounds must be
   normalized before clamping against `QString::size()`.
 - Logical break mapping now treats canonical divider tokens (`</break>`) the same as `<br>`/`<hr>` so QML offset
   conversions keep divider rows addressable in one logical step.
-- Resource tags now also expand into a fixed multi-line logical placeholder block so editor geometry and source-offset
-  mapping can reserve visible inline space for resource frames.
+- Resource tags now reserve one logical text line for source-offset mapping while the structured document flow owns
+  their rendered frame geometry.
 
 ### Classes and Structs
 - `ContentsLogicalTextBridge`
@@ -71,11 +68,8 @@
 - When QML rewrites one source line in isolation, `logicalLengthForSourceText(...)` must report the rendered logical
   character count for that fragment rather than the raw source-token count.
 - When the host editor commits a new presentation snapshot, `logicalToSourceOffsets()` must expose an array with
-  `logicalText.length + 1` entries so the typing controller can reseed its incremental mapping state without walking
-  one QML-to-C++ call per character.
-- When QML pushes `adoptIncrementalState(...)`, the bridge must accept line-start offsets and logical/source offset
-  tables that already reflect the latest live keystroke, instead of rebuilding those tables from the whole note again.
+  `logicalText.length + 1` entries so visible editor offsets map back into RAW source without per-character QML calls.
 - When source text includes `</break>`, the exported logical/source offset table must still include one logical
   position for that divider token.
 - When source text includes `<resource ... />`, the exported logical/source offset table must include the same fixed
-  placeholder-line span that the editor surface uses for inline resource rendering.
+  single-line slot that the editor projection uses for inline resource rendering.

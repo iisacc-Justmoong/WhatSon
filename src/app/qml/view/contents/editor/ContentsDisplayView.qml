@@ -16,11 +16,8 @@ Item {
     readonly property bool editorTagManagementInputEnabled: true
     property int editorTopInsetOverride: -1
     property int frameHorizontalInsetOverride: -1
-    property int gutterWidthOverride: -1
     property var htmlTokens: editorPresentationProjection.htmlTokens
     property var libraryHierarchyController: null
-    property int lineNumberColumnLeftOverride: -1
-    property int lineNumberColumnTextWidthOverride: -1
     property bool minimapVisible: true
     property bool mobileHost: false
     property var normalizedHtmlBlocks: editorPresentationProjection.normalizedHtmlBlocks
@@ -144,10 +141,11 @@ Item {
         contentsDisplayView.viewHookRequested();
     }
 
-    function renderInlineResourceEditorSurfaceHtml(editorHtml, renderedResources) {
+    function renderInlineResourceEditorSurfaceHtml(editorHtml, renderedResources, targetFrameWidth) {
         return inlineResourcePresentation.renderEditorSurfaceHtmlWithInlineResources(
                     editorHtml === undefined || editorHtml === null ? "" : String(editorHtml),
-                    renderedResources === undefined || renderedResources === null ? [] : renderedResources);
+                    renderedResources === undefined || renderedResources === null ? [] : renderedResources,
+                    Math.max(120, Math.floor(Number(targetFrameWidth) || 0)));
     }
 
     function requestEditorSelectionContextMenuFromPointer(pointerKind) {
@@ -157,18 +155,6 @@ Item {
 
     function scheduleStructuredDocumentOpenLayoutRefresh() {
         contentsDisplayView.commitDocumentPresentationRefresh();
-        contentsDisplayView.refreshGutterLineNumberGeometry();
-    }
-
-    function refreshGutterLineNumberGeometry() {
-        Qt.callLater(function () {
-            gutterLineNumberGeometry.refresh();
-            gutterMarkerGeometry.refresh();
-        });
-    }
-
-    function refreshGutterForDocumentStateChange() {
-        contentsDisplayView.refreshGutterLineNumberGeometry();
     }
 
     function stringValue(payload, key, fallback) {
@@ -188,7 +174,6 @@ Item {
 
     function syncSessionFromCurrentNote(resetViewport) {
         if (contentsDisplayView.currentNoteId.length === 0) {
-            contentsDisplayView.refreshGutterLineNumberGeometry();
             return;
         }
         if (resetViewport === true && editorDocumentViewport)
@@ -196,7 +181,6 @@ Item {
         if (contentsDisplayView.activeStateAvailable()
                 && contentsDisplayView.noteActiveState.syncEditorSessionFromActiveNote !== undefined) {
             contentsDisplayView.noteActiveState.syncEditorSessionFromActiveNote();
-            contentsDisplayView.refreshGutterForDocumentStateChange();
             return;
         }
         editorSession.requestSyncEditorTextFromSelection(
@@ -204,7 +188,6 @@ Item {
                     contentsDisplayView.currentRawBodyText,
                     contentsDisplayView.currentNoteId,
                     contentsDisplayView.currentNoteDirectoryPath);
-        contentsDisplayView.refreshGutterForDocumentStateChange();
     }
 
     clip: true
@@ -212,7 +195,6 @@ Item {
     Component.onCompleted: {
         contentsDisplayView.attachEditorSessionToActiveState();
         contentsDisplayView.syncSessionFromCurrentNote(true);
-        contentsDisplayView.refreshGutterLineNumberGeometry();
     }
     Component.onDestruction: {
         if (contentsDisplayView.activeStateAvailable()
@@ -222,14 +204,11 @@ Item {
     onNoteActiveStateChanged: {
         contentsDisplayView.attachEditorSessionToActiveState();
         contentsDisplayView.syncSessionFromCurrentNote(true);
-        contentsDisplayView.refreshGutterForDocumentStateChange();
     }
     onCurrentNoteDirectoryPathChanged: contentsDisplayView.syncSessionFromCurrentNote(true)
     onCurrentNoteIdChanged: contentsDisplayView.syncSessionFromCurrentNote(true)
     onCurrentRawBodyTextChanged: contentsDisplayView.syncSessionFromCurrentNote(false)
-    onHeightChanged: contentsDisplayView.refreshGutterLineNumberGeometry()
     onNoteListModelChanged: contentsDisplayView.syncSessionFromCurrentNote(true)
-    onWidthChanged: contentsDisplayView.refreshGutterLineNumberGeometry()
 
     Connections {
         target: contentsDisplayView.noteListModel
@@ -262,15 +241,6 @@ Item {
 
         function onActiveNoteStateChanged() {
             contentsDisplayView.syncSessionFromCurrentNote(false);
-            contentsDisplayView.refreshGutterForDocumentStateChange();
-        }
-
-        function onActiveNoteListModelChanged() {
-            contentsDisplayView.refreshGutterForDocumentStateChange();
-        }
-
-        function onHasActiveNoteChanged() {
-            contentsDisplayView.refreshGutterForDocumentStateChange();
         }
     }
 
@@ -278,30 +248,6 @@ Item {
         id: editorSession
 
         objectName: "contentsDisplayEditorSession"
-    }
-
-    Connections {
-        target: editorSession
-
-        function onEditorBoundNoteDirectoryPathChanged() {
-            contentsDisplayView.refreshGutterForDocumentStateChange();
-        }
-
-        function onEditorBoundNoteIdChanged() {
-            contentsDisplayView.refreshGutterForDocumentStateChange();
-        }
-
-        function onEditorTextChanged() {
-            contentsDisplayView.refreshGutterForDocumentStateChange();
-        }
-
-        function onEditorTextSynchronized() {
-            contentsDisplayView.refreshGutterForDocumentStateChange();
-        }
-
-        function onPendingBodySaveChanged() {
-            contentsDisplayView.refreshGutterLineNumberGeometry();
-        }
     }
 
     ContentsEditorPresentationProjection {
@@ -312,40 +258,12 @@ Item {
         sourceText: editorSession.editorText
     }
 
-    Connections {
-        target: editorPresentationProjection
-
-        function onEditorSurfaceHtmlChanged() {
-            contentsDisplayView.refreshGutterLineNumberGeometry();
-        }
-
-        function onLogicalLineCountChanged() {
-            contentsDisplayView.refreshGutterLineNumberGeometry();
-        }
-
-        function onNormalizedHtmlBlocksChanged() {
-            contentsDisplayView.refreshGutterLineNumberGeometry();
-        }
-    }
-
     ContentsStructuredBlockRenderer {
         id: structuredBlockRenderer
 
         backgroundRefreshEnabled: contentsDisplayView.structuredBlockBackgroundRefreshEnabled
         objectName: "contentsDisplayStructuredBlockRenderer"
         sourceText: editorSession.editorText
-    }
-
-    Connections {
-        target: structuredBlockRenderer
-
-        function onRenderedBlocksChanged() {
-            contentsDisplayView.refreshGutterLineNumberGeometry();
-        }
-
-        function onRenderPendingChanged() {
-            contentsDisplayView.refreshGutterLineNumberGeometry();
-        }
     }
 
     ContentsBodyResourceRenderer {
@@ -358,14 +276,6 @@ Item {
         noteDirectoryPath: contentsDisplayView.currentNoteDirectoryPath
         noteId: contentsDisplayView.currentNoteId
         objectName: "contentsDisplayBodyResourceRenderer"
-    }
-
-    Connections {
-        target: bodyResourceRenderer
-
-        function onRenderedResourcesChanged() {
-            contentsDisplayView.refreshGutterLineNumberGeometry();
-        }
     }
 
     ContentsResourceTagController {
@@ -390,61 +300,6 @@ Item {
         resourceEditorPlaceholderLineCount: 1
         resourceTagController: resourceTagController
         view: contentsDisplayView
-    }
-
-    ContentsGutterLayoutMetrics {
-        id: gutterLayoutMetrics
-
-        controlHeightMd: LV.Theme.controlHeightMd
-        controlHeightSm: LV.Theme.controlHeightSm
-        dialogMaxWidth: LV.Theme.dialogMaxWidth
-        gapNone: LV.Theme.gapNone
-        gap2: LV.Theme.gap2
-        gap3: LV.Theme.gap3
-        gap5: LV.Theme.gap5
-        gap7: LV.Theme.gap7
-        gap14: LV.Theme.gap14
-        gap20: LV.Theme.gap20
-        gap24: LV.Theme.gap24
-        gutterWidthOverride: contentsDisplayView.gutterWidthOverride
-        inputWidthMd: LV.Theme.inputWidthMd
-        lineNumberColumnLeftOverride: contentsDisplayView.lineNumberColumnLeftOverride
-        lineNumberColumnTextWidthOverride: contentsDisplayView.lineNumberColumnTextWidthOverride
-        logicalLineCount: editorPresentationProjection.logicalLineCount
-        objectName: "contentsDisplayGutterLayoutMetrics"
-        strokeThin: LV.Theme.strokeThin
-    }
-
-    ContentsGutterLineNumberGeometry {
-        id: gutterLineNumberGeometry
-
-        displayBlocks: editorPresentationProjection.normalizedHtmlBlocks
-        documentBlocks: structuredBlockRenderer.renderedDocumentBlocks
-        editorContentHeight: structuredDocumentFlow.editorContentHeight
-        editorGeometryHost: structuredDocumentFlow
-        fallbackLineHeight: LV.Theme.textBodyLineHeight
-        fallbackTopInset: LV.Theme.gapNone
-        lineNumberBaseOffset: gutterLayoutMetrics.lineNumberBaseOffset
-        lineNumberCount: gutterLayoutMetrics.effectiveLineNumberCount
-        logicalLineStartOffsets: editorPresentationProjection.logicalLineStartOffsets
-        logicalToSourceOffsets: editorPresentationProjection.logicalToSourceOffsets()
-        mapTarget: contentsDisplayGutter
-        objectName: "contentsDisplayGutterLineNumberGeometry"
-        renderedResources: bodyResourceRenderer.renderedResources
-        sourceText: editorSession.editorText
-    }
-
-    ContentsGutterMarkerGeometry {
-        id: gutterMarkerGeometry
-
-        cursorPosition: structuredDocumentFlow.editorCursorPosition
-        editorMounted: contentsDisplayView.noteDocumentParseMounted
-        lineNumberBaseOffset: gutterLayoutMetrics.lineNumberBaseOffset
-        lineNumberEntries: gutterLineNumberGeometry.lineNumberEntries
-        markerHeight: LV.Theme.textBodyLineHeight
-        objectName: "contentsDisplayGutterMarkerGeometry"
-        savedSourceText: contentsDisplayView.currentRawBodyText
-        sourceText: editorSession.editorText
     }
 
     ContentsMinimapLayoutMetrics {
@@ -472,26 +327,6 @@ Item {
         objectName: "contentsDisplayEditorChromeHStack"
         spacing: LV.Theme.gapNone
 
-        ContentsChrome.Gutter {
-            id: contentsDisplayGutter
-
-            Layout.fillHeight: true
-            Layout.preferredWidth: gutterLayoutMetrics.effectiveGutterWidth
-            activeLineNumber: gutterMarkerGeometry.cursorLineNumber
-            iconRailX: gutterLayoutMetrics.iconRailX
-            lineNumberBaseOffset: gutterLayoutMetrics.lineNumberBaseOffset
-            lineNumberColumnLeft: gutterLayoutMetrics.lineNumberColumnLeft
-            lineNumberColumnTextWidth: gutterLayoutMetrics.lineNumberColumnTextWidth
-            lineNumberCount: gutterLayoutMetrics.effectiveLineNumberCount
-            lineNumberEntries: gutterLineNumberGeometry.lineNumberEntries
-            markerEntries: gutterMarkerGeometry.markerEntries
-            objectName: "contentsDisplayGutter"
-
-            onViewHookRequested: function (reason) {
-                contentsDisplayView.requestViewHook(reason);
-            }
-        }
-
         Item {
             id: editorDocumentSlot
 
@@ -499,9 +334,6 @@ Item {
             Layout.fillWidth: true
             clip: true
             objectName: "contentsDisplayEditorDocumentSlot"
-
-            onHeightChanged: contentsDisplayView.refreshGutterLineNumberGeometry()
-            onWidthChanged: contentsDisplayView.refreshGutterLineNumberGeometry()
 
             Flickable {
                 id: editorDocumentViewport
@@ -516,17 +348,13 @@ Item {
                 interactive: contentHeight > height
                 objectName: "contentsDisplayEditorDocumentViewport"
 
-                onContentYChanged: contentsDisplayView.refreshGutterLineNumberGeometry()
-                onHeightChanged: contentsDisplayView.refreshGutterLineNumberGeometry()
-                onMovementEnded: contentsDisplayView.refreshGutterLineNumberGeometry()
-                onWidthChanged: contentsDisplayView.refreshGutterLineNumberGeometry()
-
                 ContentsStructuredDocumentFlow {
                     id: structuredDocumentFlow
 
                     editorSurfaceHtml: contentsDisplayView.renderInlineResourceEditorSurfaceHtml(
                                            editorPresentationProjection.editorSurfaceHtml,
-                                           bodyResourceRenderer.renderedResources)
+                                           bodyResourceRenderer.renderedResources,
+                                           structuredDocumentFlow.width - LV.Theme.gap16 * 2)
                     height: Math.max(editorDocumentViewport.height, editorDocumentViewport.contentHeight)
                     htmlTokens: editorPresentationProjection.htmlTokens
                     logicalCursorPosition: editorPresentationProjection.logicalLengthForSourceText(
@@ -545,8 +373,6 @@ Item {
                     textColor: LV.Theme.bodyColor
                     visible: contentsDisplayView.noteDocumentParseMounted
                     width: editorDocumentViewport.width
-
-                    onEditorContentHeightChanged: contentsDisplayView.refreshGutterLineNumberGeometry()
 
                     onSourceTextEdited: function (text) {
                         contentsDisplayView.commitEditedSourceText(text);

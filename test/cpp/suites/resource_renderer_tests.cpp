@@ -74,9 +74,9 @@ void WhatSonCppRegressionTests::resourceRenderer_resolvesIiXmlResourceTagsAndInl
     const QString frameImageSource = inlinePresentation.resourceEntryFrameImageSource(renderedResource);
     QVERIFY(frameImageSource.startsWith(QStringLiteral("file:")));
     const QImage frameImage(QUrl(frameImageSource).toLocalFile());
-    QCOMPARE(frameImage.size(), QSize(480, 390));
+    QCOMPARE(frameImage.size(), QSize(320, 260));
     QCOMPARE(frameImage.pixelColor(0, 0).alpha(), 0);
-    QVERIFY(frameImage.pixelColor(240, 195).alpha() > 0);
+    QVERIFY(frameImage.pixelColor(160, 130).alpha() > 0);
 
     const ContentsHtmlBlockRenderPipeline pipeline;
     const ContentsHtmlBlockRenderPipeline::RenderResult renderResult = pipeline.renderEditorDocument(sourceText);
@@ -88,7 +88,14 @@ void WhatSonCppRegressionTests::resourceRenderer_resolvesIiXmlResourceTagsAndInl
     QVERIFY(!inlineHtml.contains(QStringLiteral("<resource")));
     QVERIFY(!inlineHtml.contains(QStringLiteral("whatson-resource-block")));
     QVERIFY(inlineHtml.contains(QStringLiteral("<img")));
-    QVERIFY(inlineHtml.contains(QStringLiteral("width=\"480\" height=\"390\"")));
+    QVERIFY(inlineHtml.contains(QStringLiteral("width=\"320\" height=\"260\"")));
     QVERIFY(inlineHtml.contains(frameImageSource));
     QVERIFY(inlineHtml.contains(QUrl::fromLocalFile(assetPath).toString()));
+
+    const QString fullWidthInlineHtml =
+        inlinePresentation.renderEditorSurfaceHtmlWithInlineResources(
+            renderResult.documentHtml,
+            bodyRenderer.renderedResources(),
+            640);
+    QVERIFY(fullWidthInlineHtml.contains(QStringLiteral("width=\"640\" height=\"520\"")));
 }

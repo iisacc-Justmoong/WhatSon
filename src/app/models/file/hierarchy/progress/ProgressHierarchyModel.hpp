@@ -58,7 +58,7 @@ inline QString progressHierarchyIconName(const ProgressHierarchyItem& item)
     }
     if (normalizedLabel == QStringLiteral("deletereview"))
     {
-        return QStringLiteral("gutterCheckBoxIndeterminate@14x14");
+        return QStringLiteral("generaldelete");
     }
     return QString();
 }

@@ -238,7 +238,6 @@ import LVRS 1.0 as LV
                 - `src/app/qml/view/body/HierarchySidebarLayout.qml`
                     - `src/app/qml/view/panels/ContentViewLayout.qml`
                     - `src/app/qml/view/contents/ContentsView.qml`
-                    - `src/app/qml/view/contents/Gutter.qml`
                     - `src/app/qml/view/contents/EditorView.qml`
                     - `src/app/qml/view/contents/Minimap.qml`
                     - `src/app/qml/view/contents/editor/ContentsDisplayView.qml`
@@ -289,7 +288,7 @@ import LVRS 1.0 as LV
 - model/controller/view interface는 event-driven으로 유지한다. 모든 model, controller, view는 적어도 하나의 signal과 하나의 slot/hook entrypoint를 노출해야 한다.
 - hierarchy wiring은 type-safe로 유지한다. 각 hierarchy category는 `src/app/models/file/hierarchy` 아래의 전용 Controller에 계속 bound되어야 한다.
 - QML에는 SRP를 강제한다. 하나의 QML 파일이 layout shell, rendering delegate, interaction logic을 함께 품기 시작하면 같은 domain directory 아래의 dedicated sibling module로 분리하고 parent screen에서 compose한다.
-- 복잡한 editor surface에는 최소 reusable module을 우선한다. 예: gutter layer, minimap layer, splitter interaction layer. 모든 delegate를 하나의 root file에 embed하지 않는다.
+- 복잡한 editor surface에는 최소 reusable module을 우선한다. 예: minimap layer, splitter interaction layer. 모든 delegate를 하나의 root file에 embed하지 않는다.
 - decomposition work와 quality gate를 맞춘다.
     - QML refactor 후 `cmake --build build --target whatson_qmllint -j`를 실행한다.
     - C++ refactor 후 `clang-tidy`가 설치되어 있으면 `cmake --build build --target whatson_clang_tidy -j`를 실행한다. 사용할 수 없으면 완료 보고에 누락 도구를 명시한다.

@@ -19,7 +19,6 @@ class ContentsEditorPresentationProjection : public QObject
     Q_PROPERTY(QVariantList htmlTokens READ htmlTokens NOTIFY htmlTokensChanged)
     Q_PROPERTY(QVariantList normalizedHtmlBlocks READ normalizedHtmlBlocks NOTIFY normalizedHtmlBlocksChanged)
     Q_PROPERTY(QString logicalText READ logicalText NOTIFY logicalTextChanged)
-    Q_PROPERTY(QVariantList logicalLineStartOffsets READ logicalLineStartOffsets NOTIFY logicalLineStartOffsetsChanged)
     Q_PROPERTY(int logicalLineCount READ logicalLineCount NOTIFY logicalLineCountChanged)
 
 public:
@@ -39,20 +38,11 @@ public:
     QVariantList htmlTokens() const;
     QVariantList normalizedHtmlBlocks() const;
     QString logicalText() const;
-    QVariantList logicalLineStartOffsets() const;
     int logicalLineCount() const noexcept;
 
-    Q_INVOKABLE int logicalLineNumberForOffset(int offset) const noexcept;
-    Q_INVOKABLE int logicalLineStartOffsetAt(int index) const noexcept;
-    Q_INVOKABLE int logicalLineCharacterCountAt(int index) const noexcept;
     Q_INVOKABLE int logicalLengthForSourceText(const QString& text) const;
     Q_INVOKABLE QVariantList logicalToSourceOffsets() const;
     Q_INVOKABLE int sourceOffsetForLogicalOffset(int logicalOffset) const noexcept;
-    Q_INVOKABLE void adoptIncrementalState(
-        const QString& sourceText,
-        const QString& logicalText,
-        const QVariantList& logicalLineStartOffsets,
-        const QVariantList& logicalToSourceOffsets);
 
 signals:
     void sourceTextChanged();
@@ -63,7 +53,6 @@ signals:
     void htmlTokensChanged();
     void normalizedHtmlBlocksChanged();
     void logicalTextChanged();
-    void logicalLineStartOffsetsChanged();
     void logicalLineCountChanged();
 
 private:

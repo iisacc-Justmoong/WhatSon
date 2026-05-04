@@ -7,8 +7,8 @@ Desktop and shared LVRS control surfaces stay on the lower-luminance alias ladde
 `subSurface -> panelBackground02`, `surfaceSolid -> panelBackground03`, `surfaceAlt -> panelBackground04`) so the app
 does not render a brighter shell than the Figma `ApplicationWindow` reference.
 
-The editor theme contract now keeps the broad desktop editor surfaces transparent, while line-number colors stay on the
-dedicated `#4E5157` / `#9DA0A8` contrast pair instead of inheriting the body text tone.
+The editor theme contract now keeps the broad desktop editor surfaces transparent and lets the document body plus
+optional minimap read directly against the root workspace canvas.
 
 inactive hierarchy rows and desktop search shells stay transparent as well, so sidebar and status chrome do not
 repaint brighter panel slabs over the root `ApplicationWindow` canvas.

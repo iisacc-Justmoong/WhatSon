@@ -29,10 +29,6 @@ Item {
         documentFlow.viewHookRequested(reason !== undefined ? String(reason) : "manual");
     }
 
-    function lineStartRectangle(position, sourcePosition) {
-        return editor.positionToRectangle(position, sourcePosition);
-    }
-
     function logicalOffsetToSourceOffset(logicalOffset) {
         const fallbackOffset = Math.max(0, Math.min(Number(logicalOffset) || 0, documentFlow.sourceText.length));
         const offsets = documentFlow.logicalToSourceOffsets;
@@ -43,10 +39,6 @@ Item {
         if (!isFinite(mappedOffset))
             return fallbackOffset;
         return Math.max(0, Math.min(mappedOffset, documentFlow.sourceText.length));
-    }
-
-    function mapEditorPointToItem(target, x, y) {
-        return editor.mapEditorPointToItem(target, x, y);
     }
 
     function pointRequestsTerminalBodyClick(localX, localY) {

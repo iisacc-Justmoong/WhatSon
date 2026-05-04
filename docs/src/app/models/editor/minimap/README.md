@@ -19,7 +19,7 @@ Minimap layout calculation models for the editor domain.
 ## Verification
 
 - `contentsMinimapLayoutMetrics_resolvesRuntimeVisibilityAndDesignRows`
-- `qmlStructuredEditors_mountsGutterEditorAndMinimapInDisplayLayout`
+- `qmlStructuredEditors_mountsEditorAndMinimapInDisplayLayout`
 - `qmlContentsView_composesFigmaFrameFromLvrsParts`
 
 ## 한국어

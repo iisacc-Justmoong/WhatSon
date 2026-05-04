@@ -18,8 +18,6 @@ Owns the structured note document host and policies used by the editor body.
   EOF image paste therefore materializes a trailing empty text block instead of focusing the atomic resource card.
   Empty-block backward deletion also uses this policy to remove a preceding self-closing `<resource ... />` tag from
   RAW while preserving the current empty paragraph as the editable focus target.
-- `ContentsLogicalLineLayoutSupport.js`
-  Maps live `TextEdit` geometry into structured block logical-line entries.
 - `ContentsStructuredCursorSupport.js`
   Converts plain-text cursor positions to RAW source offsets for structured agenda, callout, and semantic text blocks.
 

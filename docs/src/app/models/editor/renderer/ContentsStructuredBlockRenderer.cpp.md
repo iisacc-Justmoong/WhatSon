@@ -26,8 +26,7 @@ Builds canonical structured render data from `.wsnbody` source text.
   Newline-delimited blank prose slots below an inline resource therefore survive as their own text-editable document
   blocks instead of being merged into one multiline fallback block.
 - Resource-only source that ends with a newline now also publishes the trailing blank line as a text-editable
-  `text-group`. That keeps the gutter and caret target for the empty paragraph immediately after an image/resource
-  block.
+  `text-group`. That keeps the caret target for the empty paragraph immediately after an image/resource block.
 - A newly constructed renderer publishes the empty-source snapshot immediately as one editable `text-group`, so a
   freshly created empty note has a document body, caret target, and touch target before any explicit refresh request.
 - Empty source lines between two resource blocks likewise publish as a text-editable `text-group`; the renderer must not
@@ -35,8 +34,8 @@ Builds canonical structured render data from `.wsnbody` source text.
 - Each explicit block, including semantic text-tag blocks, now carries parser-owned source geometry so QML can rewrite
   RAW in place.
 - The renderer now also preserves the parser's generic block-trait payload (`plainText`, `textEditable`,
-  `atomicBlock`, `gutterCollapsed`, `logicalLineCountHint`, `minimapVisualKind`,
-  `minimapRepresentativeCharCount`) instead of forcing QML to rediscover those traits from block type names.
+  `atomicBlock`, `logicalLineCountHint`, `minimapVisualKind`, `minimapRepresentativeCharCount`) instead of forcing QML
+  to rediscover those traits from block type names.
 - The renderer-side placeholder payload now normalizes `logicalLineCountHint` to the same `int`-sized contract as the
   parser path, preventing host/compiler-dependent integer width mismatches during placeholder publication.
 - Explicit blocks now also carry one normalized `tagName` alongside `type`, so downstream QML sees the same

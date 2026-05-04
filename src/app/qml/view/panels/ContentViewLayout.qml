@@ -21,12 +21,9 @@ Item {
     property var editorViewModeController: null
     property int editorTopInsetOverride: -1
     property int frameHorizontalInsetOverride: -1
-    property int gutterWidthOverride: -1
     property bool isMobilePlatform: false
     property int libraryHierarchyIndex: 0
     property var libraryHierarchyController: null
-    property int lineNumberColumnLeftOverride: -1
-    property int lineNumberColumnTextWidthOverride: -1
     property bool minimapVisible: true
     property var noteActiveState: null
     property var noteListModel: null
@@ -229,10 +226,7 @@ Item {
             enabled: contentViewLayout.visible
             editorTopInsetOverride: contentViewLayout.editorTopInsetOverride
             frameHorizontalInsetOverride: contentViewLayout.frameHorizontalInsetOverride
-            gutterWidthOverride: contentViewLayout.gutterWidthOverride
             libraryHierarchyController: contentViewLayout.libraryHierarchyController
-            lineNumberColumnLeftOverride: contentViewLayout.lineNumberColumnLeftOverride
-            lineNumberColumnTextWidthOverride: contentViewLayout.lineNumberColumnTextWidthOverride
             minimapVisible: contentViewLayout.minimapVisible
             mobileHost: contentViewLayout.isMobilePlatform
             noteActiveState: contentViewLayout.noteActiveState

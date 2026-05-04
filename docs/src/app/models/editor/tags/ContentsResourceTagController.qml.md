@@ -10,9 +10,9 @@
   the legacy editor cursor mapping.
 - Delegates the final RAW splice payload to `ContentsStructuredDocumentMutationPolicy` and applies that payload through
   the host `applyDocumentSourceMutation(...)` path.
-- Counts canonical resource tags and detects accidental tag loss on the legacy inline-editor path.
-- Falls back to `ContentsEditorTypingController.qml` only when the host mutation handler is unavailable; that legacy
-  path still builds the raw insertion payload through `ContentsRawBodyTagMutationSupport.js`.
+- Counts canonical resource tags and detects accidental tag loss before applying the host mutation path.
+- Does not fall back to removed inline mutation paths; resource insertion must go through the structured host
+  mutation contract.
 - Leaves inline resource re-render timing to parser-owned `documentBlocks` updates instead of forcing an immediate
   renderer-side refresh from the pre-parse snapshot.
 

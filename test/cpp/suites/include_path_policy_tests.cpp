@@ -201,7 +201,13 @@ void WhatSonCppRegressionTests::sourceTree_forbidsDeprecatedPresentationLayerVoc
         QStringLiteral("Qml") + QStringLiteral("ViewModel") + QStringLiteral("Binding"),
         QStringLiteral("Qml") + QStringLiteral("Controller") + QStringLiteral("Binding"),
         QStringLiteral("app/") + QStringLiteral("viewmodel"),
-        QStringLiteral("src/app/") + QStringLiteral("viewmodel")
+        QStringLiteral("src/app/") + QStringLiteral("viewmodel"),
+        QStringLiteral("Contents") + QStringLiteral("Gut") + QStringLiteral("ter"),
+        QStringLiteral("ContentsRemaining") + QStringLiteral("InputControllers"),
+        QStringLiteral("Contents") + QStringLiteral("BreakBlockController"),
+        QStringLiteral("ContentsLogical") + QStringLiteral("LineLayoutSupport"),
+        QStringLiteral("logicalLine") + QStringLiteral("StartOffsets"),
+        QStringLiteral("adoptIncremental") + QStringLiteral("State")
     };
     const QRegularExpression qmlAliasPattern(QStringLiteral(R"(\b[A-Za-z_][A-Za-z0-9_]*Vm\b|\bvm\b)"));
 
@@ -262,17 +268,13 @@ void WhatSonCppRegressionTests::sourceTree_forbidsDeprecatedPresentationLayerVoc
     QVERIFY2(violations.isEmpty(), qPrintable(violations.join(QLatin1Char('\n'))));
 }
 
-void WhatSonCppRegressionTests::sourceTree_keepsGutterAndMinimapUnderEditorChromeModels()
+void WhatSonCppRegressionTests::sourceTree_keepsMinimapUnderEditorChromeModels()
 {
     const QDir repositoryRoot(repositoryRootPath());
     QVERIFY(repositoryRoot.exists());
 
     const QStringList requiredPaths{
-        QStringLiteral("src/app/models/editor/gutter/ContentsGutterLayoutMetrics.hpp"),
-        QStringLiteral("src/app/models/editor/gutter/ContentsGutterLineNumberGeometry.hpp"),
-        QStringLiteral("src/app/models/editor/gutter/ContentsGutterMarkerGeometry.hpp"),
         QStringLiteral("src/app/models/editor/minimap/ContentsMinimapLayoutMetrics.hpp"),
-        QStringLiteral("docs/src/app/models/editor/gutter/README.md"),
         QStringLiteral("docs/src/app/models/editor/minimap/README.md")
     };
     for (const QString& relativePath : requiredPaths)
@@ -283,25 +285,20 @@ void WhatSonCppRegressionTests::sourceTree_keepsGutterAndMinimapUnderEditorChrom
     }
 
     const QStringList forbiddenDirectories{
-        QStringLiteral("src/app/models/gutter"),
         QStringLiteral("src/app/models/minimap"),
-        QStringLiteral("src/app/models/editor/display/gutter"),
         QStringLiteral("src/app/models/editor/display/minimap"),
-        QStringLiteral("docs/src/app/models/gutter"),
         QStringLiteral("docs/src/app/models/minimap"),
-        QStringLiteral("docs/src/app/models/editor/display/gutter"),
         QStringLiteral("docs/src/app/models/editor/display/minimap")
     };
     for (const QString& relativePath : forbiddenDirectories)
     {
         QVERIFY2(
             !QDir(repositoryRoot.filePath(relativePath)).exists(),
-            qPrintable(QStringLiteral("Gutter/minimap model directory must stay under models/editor: %1").arg(relativePath)));
+            qPrintable(QStringLiteral("Minimap model directory must stay under models/editor: %1").arg(relativePath)));
     }
 
     const QString appCmakeSource = readUtf8SourceFile(QStringLiteral("src/app/CMakeLists.txt"));
     QVERIFY(appCmakeSource.contains(QStringLiteral("models/editor")));
-    QVERIFY(!appCmakeSource.contains(QStringLiteral("models/gutter")));
     QVERIFY(!appCmakeSource.contains(QStringLiteral("models/minimap")));
 }
 
@@ -314,7 +311,6 @@ void WhatSonCppRegressionTests::sourceTree_keepsContentsQmlUnderViewContents()
     const QString docsContentsRoot = QStringLiteral("docs/src/app/qml/view/contents");
     const QStringList requiredPaths{
         contentsRoot + QStringLiteral("/ContentsView.qml"),
-        contentsRoot + QStringLiteral("/Gutter.qml"),
         contentsRoot + QStringLiteral("/EditorView.qml"),
         contentsRoot + QStringLiteral("/Minimap.qml"),
         contentsRoot + QStringLiteral("/editor/ContentsDisplayView.qml"),
@@ -348,9 +344,9 @@ void WhatSonCppRegressionTests::sourceTree_keepsContentsQmlUnderViewContents()
     QVERIFY(displayViewSource.contains(QStringLiteral("import \"..\" as ContentsChrome")));
     QVERIFY(!displayViewSource.contains(QStringLiteral("../../../") + QStringLiteral("contents")));
 
-    const QString remainingInputControllersSource =
-        readUtf8SourceFile(QStringLiteral("src/app/models/editor/input/ContentsRemainingInputControllers.cpp"));
-    QVERIFY(remainingInputControllersSource.contains(QStringLiteral("qrc:/qt/qml/WhatSon/App/view/contents/editor/")));
-    QVERIFY(!remainingInputControllersSource.contains(
+    const QString inlineFormatEditorControllerSource =
+        readUtf8SourceFile(QStringLiteral("src/app/models/editor/input/ContentsInlineFormatEditorController.cpp"));
+    QVERIFY(inlineFormatEditorControllerSource.contains(QStringLiteral("qrc:/qt/qml/WhatSon/App/view/contents/editor/")));
+    QVERIFY(!inlineFormatEditorControllerSource.contains(
         QStringLiteral("qrc:/qt/qml/WhatSon/App/view/") + QStringLiteral("content/editor/")));
 }

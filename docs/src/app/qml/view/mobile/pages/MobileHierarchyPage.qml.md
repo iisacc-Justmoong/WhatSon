@@ -166,7 +166,7 @@ This keeps mobile back navigation local to the page and avoids stealing editor t
 - `ContentViewLayout.qml`: renders the editor route body and now mounts the unified `ContentsDisplayView.qml` host in
   mobile mode.
 - The mobile editor route still no longer relies on ad hoc desktop suppression flags:
-  - gutter is removed by the shared host's mobile mode policy
+  - minimap visibility is controlled by the shared host's mobile mode policy
   - editor font size now stays aligned with the desktop `12px` baseline
 - The route forwards the LVRS window `isMobilePlatform` state into `ContentViewLayout`, so the unified host's mode
   policy uses the canonical platform detector instead of responsive-width guesses.
@@ -196,7 +196,7 @@ This keeps mobile back navigation local to the page and avoids stealing editor t
 - Mobile hierarchy routing must also resolve that hierarchy snapshot from the selected hierarchy index itself, not only
   from one previously cached "active" provider object, or a toolbar switch can leave the old domain controller
   mounted.
-- The mobile editor page must not reintroduce gutter width/line-number overrides now that mobile gutter policy lives in
+- The mobile editor page must not reintroduce desktop-only editor chrome overrides now that mobile policy lives in
   `ContentsDisplayHostModePolicy.qml`.
 - The mobile editor page must keep sourcing platform mode from the LVRS window detector, not from viewport width.
 - The mobile editor page must not fall back to the desktop editor file for mobile rendering.

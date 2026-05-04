@@ -8,9 +8,6 @@
 #include "app/models/editor/format/ContentsInlineStyleOverlayRenderer.hpp"
 #include "app/models/editor/format/ContentsPlainTextSourceMutator.hpp"
 #include "app/models/editor/format/ContentsTextFormatRenderer.hpp"
-#include "app/models/editor/gutter/ContentsGutterLayoutMetrics.hpp"
-#include "app/models/editor/gutter/ContentsGutterLineNumberGeometry.hpp"
-#include "app/models/editor/gutter/ContentsGutterMarkerGeometry.hpp"
 #include "app/models/editor/minimap/ContentsMinimapLayoutMetrics.hpp"
 #include "app/models/display/paper/print/ContentsPagePrintLayoutRenderer.hpp"
 #include "app/models/editor/tags/ContentsStructuredTagValidator.hpp"
@@ -27,7 +24,6 @@
 #include "app/models/editor/projection/ContentsEditorPresentationProjection.hpp"
 #include "app/models/editor/session/ContentsEditorSessionController.hpp"
 #include "app/models/editor/bridge/ContentsEditorSelectionBridge.hpp"
-#include "app/models/editor/bridge/ContentsGutterMarkerBridge.hpp"
 #include "app/models/editor/text/ContentsLogicalTextBridge.hpp"
 #include "app/models/editor/tags/ContentsResourceTagTextGenerator.hpp"
 #include "app/models/editor/tags/ContentsResourceTagController.hpp"
@@ -41,9 +37,8 @@
 #include "app/models/editor/resource/ContentsResourceDropPayloadParser.hpp"
 #include "app/models/editor/resource/ContentsResourceImportConflictController.hpp"
 #include "app/models/editor/resource/ContentsResourceImportController.hpp"
-#include "app/models/editor/input/ContentsBreakBlockController.hpp"
 #include "app/models/editor/input/ContentsEditorInputPolicyAdapter.hpp"
-#include "app/models/editor/input/ContentsRemainingInputControllers.hpp"
+#include "app/models/editor/input/ContentsInlineFormatEditorController.hpp"
 #include "app/models/panel/FocusedNoteDeletionBridge.hpp"
 #include "app/models/panel/HierarchyDragDropBridge.hpp"
 #include "app/models/panel/HierarchyInteractionBridge.hpp"
@@ -90,14 +85,6 @@ namespace
                 QStringLiteral("ContentsEditorSessionController")),
             whatsonInternalCreatableType<ContentsLogicalTextBridge>(
                 QStringLiteral("ContentsLogicalTextBridge")),
-            whatsonInternalCreatableType<ContentsGutterMarkerBridge>(
-                QStringLiteral("ContentsGutterMarkerBridge")),
-            whatsonInternalCreatableType<ContentsGutterLayoutMetrics>(
-                QStringLiteral("ContentsGutterLayoutMetrics")),
-            whatsonInternalCreatableType<ContentsGutterLineNumberGeometry>(
-                QStringLiteral("ContentsGutterLineNumberGeometry")),
-            whatsonInternalCreatableType<ContentsGutterMarkerGeometry>(
-                QStringLiteral("ContentsGutterMarkerGeometry")),
             whatsonInternalCreatableType<ContentsMinimapLayoutMetrics>(
                 QStringLiteral("ContentsMinimapLayoutMetrics")),
             whatsonInternalCreatableType<ContentsResourceTagTextGenerator>(
@@ -124,24 +111,8 @@ namespace
                 QStringLiteral("ContentsStructuredDocumentHost")),
             whatsonInternalCreatableType<ContentsStructuredDocumentMutationPolicy>(
                 QStringLiteral("ContentsStructuredDocumentMutationPolicy")),
-            whatsonInternalCreatableType<ContentsBreakBlockController>(
-                QStringLiteral("ContentsBreakBlockController")),
             whatsonInternalCreatableType<ContentsEditorInputPolicyAdapter>(
                 QStringLiteral("ContentsEditorInputPolicyAdapter")),
-            whatsonInternalCreatableType<ContentsAgendaBlockController>(
-                QStringLiteral("ContentsAgendaBlockController")),
-            whatsonInternalCreatableType<ContentsAgendaTaskRowController>(
-                QStringLiteral("ContentsAgendaTaskRowController")),
-            whatsonInternalCreatableType<ContentsCalloutBlockController>(
-                QStringLiteral("ContentsCalloutBlockController")),
-            whatsonInternalCreatableType<ContentsDocumentBlockController>(
-                QStringLiteral("ContentsDocumentBlockController")),
-            whatsonInternalCreatableType<ContentsDocumentTextBlockController>(
-                QStringLiteral("ContentsDocumentTextBlockController")),
-            whatsonInternalCreatableType<ContentsEditorSelectionController>(
-                QStringLiteral("ContentsEditorSelectionController")),
-            whatsonInternalCreatableType<ContentsEditorTypingController>(
-                QStringLiteral("ContentsEditorTypingController")),
             whatsonInternalCreatableType<ContentsInlineFormatEditorController>(
                 QStringLiteral("ContentsInlineFormatEditorController")),
             whatsonInternalCreatableType<ContentsPaperSelection>(

@@ -42,7 +42,6 @@ The C++ suite currently locks regression-sensitive runtime behavior for:
 - `ContentsStructuredDocumentCollectionPolicy`
 - `ContentsStructuredDocumentHost`
 - `ContentsStructuredDocumentMutationPolicy`
-- `ContentsLogicalLineLayoutSupport.js`
 - `WhatSonClipboardResourceImportFileNamePolicy`
 - `ContentsEditorSessionController`
 - `ContentsNoteManagementCoordinator`
@@ -84,15 +83,8 @@ ctest --test-dir build --output-on-failure -L cpp_regression
 
 ## Current Focus
 
-- The QML-side line-coordinate helper `ContentsLogicalLineLayoutSupport.js` is now regression-tested through
-  `QJSEngine`, so gutter/minimap line placement keeps the block-local mapped Y contract even though the maintained
-  runtime suite stays C++-driven.
-- Gutter line-number geometry now also has C++ and QML source-contract coverage for visible editor display measurement:
-  logical display offsets and matching RAW source offsets are passed to the geometry host, and the inline editor exposes
-  RichText overlay geometry for the line-number projection path.
-- Source-tree policy coverage now also locks gutter/minimap model placement under
-  `src/app/models/editor/gutter` and `src/app/models/editor/minimap`, preventing legacy root or nested display chrome
-  directories from returning.
+- Source-tree policy coverage locks minimap model placement under `src/app/models/editor/minimap`, preventing legacy
+  root or nested display chrome directories from returning.
 - Structured editor selection cleanup is now also locked at the C++ host-object and QML routing layers, so focus
   activation emits the selection-clear revision/retained-block contract that QML delegates consume, while same-block
   cursor movement uses a cursor-only host path and keeps native desktop/iOS text selection intact.
@@ -160,8 +152,8 @@ ctest --test-dir build --output-on-failure -L cpp_regression
   hierarchy browsing cannot regress into a second background card or top/bottom metadata copy around the asset.
 - The right detail column now also pins note-vs-resource panel routing, so the resources hierarchy mounts its own
   dedicated controller/view pair instead of reusing the note-detail surface.
-- Rapid note switches now also pin note-local gutter geometry invalidation, so the editor clears stale minimap/gutter
-  line caches on note entry and forces a fresh layout-cache pass before reusing line-number coordinates.
+- Rapid note switches now also pin note-local minimap invalidation, so the editor clears stale minimap line caches on
+  note entry and forces a fresh layout-cache pass before reusing cached coordinates.
 - Empty selected notes now also pin one fallback structured `text-group` row in the source-locked QML regression
   checks, so selecting or creating a blank note still leaves a focusable body editor surface mounted.
 - Structured parser output now also pins renderer-side interactive-stream normalization, so adjacent implicit text
@@ -206,19 +198,10 @@ ctest --test-dir build --output-on-failure -L cpp_regression
   cursor location.
 - The inline editor regression now also pins the top-flush editor body contract: vertical inset and rendered-overlay
   padding stay at zero, with only horizontal text-column margins retained.
-- Gutter line-number geometry now also pins visible logical-text probing and duplicate-y protection: the RichText
-  overlay's HTML tag positions are not used for line-number sampling, and consecutive line labels cannot collapse onto
-  the same gutter y coordinate.
-- Gutter line-number geometry now also pins per-row coordinate publication: each number carries RAW source coordinates,
-  HTML/logical line coordinates, and the resolved editor-geometry box, allowing different numbered rows to have
-  different heights.
-- The contents/editor QML regressions now also pin the backgroundless gutter contract: the gutter no longer exposes or
-  paints a dedicated background color, so it inherits the editor body background.
 - The contents/editor QML regressions now also pin the scrollable document viewport: the center editor slot wraps the
-  structured document flow in a `Flickable`, routes wheel events to that viewport, and refreshes gutter geometry when
-  the viewport scrolls.
+  structured document flow in a `Flickable` and routes wheel events to that viewport.
 - Contents QML placement is now locked under `src/app/qml/view/contents`: the standalone Figma
-  `ContentsView/Gutter/EditorView/Minimap` parts and the runtime editor host share that namespace, while
+  `ContentsView/EditorView/Minimap` parts and the runtime editor host share that namespace, while
   `src/app/qml/contents` and `src/app/qml/view/content` are forbidden by the source-tree policy regression.
 - The inline editor regression also source-locks the absence of live-text key handlers in
   `ContentsInlineFormatEditor.qml`, so ordinary navigation and selection chords stay with Qt/OS text editing.
