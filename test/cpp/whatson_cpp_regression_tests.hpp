@@ -1050,6 +1050,7 @@ private slots:
     void qmlInlineFormatEditor_keepsNativeTextEditInputUncovered();
     void qmlInlineFormatEditor_keepsKeyboardSelectionAndOsImeNative();
     void qmlInlineFormatEditor_keepsRenderedOverlayDuringNativeSelection();
+    void qmlInlineFormatEditor_ignoresEmptyFormattingTagsDuringRenderedSelection();
     void qmlInlineFormatEditor_keepsRenderedOverlayPassiveForNativeEditing();
     void qmlInlineFormatEditor_keepsResourceOverlayPinnedDuringNativeEditing();
     void qmlInlineFormatEditor_projectsVisibleGeometryFromRenderedDisplay();
@@ -1069,6 +1070,7 @@ private slots:
     void textFormatRenderer_appliesPaperPaletteToEditorAndPreviewHtml();
     void editorPresentationProjection_publishesHtmlBlockPipelineToQmlHost();
     void textFormatRenderer_preservesMarkdownUnorderedListMarkersWithoutRegexWarnings();
+    void textFormatRenderer_keepsEnterNewlinesAsEditorParagraphSlots();
     void editorTagInsertionController_replacesLegacyInlineStyleMutationSupport();
     void editorTagInsertionController_buildsShortcutSourceWrapMutations();
     void displayPaperModels_hostPageAndPrintViewModeObjectsUnderModelsDirectory();
@@ -1079,6 +1081,7 @@ private slots:
     void noteHeaderParser_usesIiXmlDocumentTreeForWsnHead();
     void localNoteFileStore_usesIiXmlDocumentTreeForWsnBodyRead();
     void editorRendererPipeline_routesIiXmlTreeThroughIiHtmlBlockObjects();
+    void editorRendererPipeline_materializesEnterNewlinesAsParagraphSlots();
     void logicalTextBridge_advancesCursorPastClosingWebLinkTag();
     void qmlStructuredEditors_bindPaperPaletteIntoPagePrintMode();
     void qmlStructuredEditors_clipInlineResourceCardsToMeasuredBlockBounds();

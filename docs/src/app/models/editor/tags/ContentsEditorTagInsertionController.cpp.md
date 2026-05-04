@@ -6,7 +6,7 @@ Implements common RAW tag insertion payload construction for editor commands.
 
 ## Current Behavior
 
-- `tagNameForShortcutKey(...)` resolves `B`, `I`, `U`, and `H` shortcut keys to `bold`, `italic`, `underline`, and
+- `tagNameForShortcutKey(...)` resolves `B`, `I`, `U`, and `E` shortcut keys to `bold`, `italic`, `underline`, and
   `highlight`.
 - `tagNameForBodyShortcutKey(...)` resolves explicit body-tag shortcuts to `agenda`, `callout`, or `break`.
 - `normalizedTagName(...)` canonicalizes known editor tags including inline formatting tags, `callout`, `agenda`,

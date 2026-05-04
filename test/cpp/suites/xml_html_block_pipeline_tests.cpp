@@ -54,3 +54,30 @@ void WhatSonCppRegressionTests::editorRendererPipeline_routesIiXmlTreeThroughIiH
         QVERIFY(block.value(QStringLiteral("htmlTokenStartIndex")).toInt() >= 0);
     }
 }
+
+void WhatSonCppRegressionTests::editorRendererPipeline_materializesEnterNewlinesAsParagraphSlots()
+{
+    const ContentsHtmlBlockRenderPipeline pipeline;
+    const ContentsHtmlBlockRenderPipeline::RenderResult result = pipeline.renderEditorDocument(
+        QStringLiteral(
+            "<paragraph>Alpha\n"
+            "\n"
+            "Beta</paragraph>\n"
+            "<paragraph>Gamma</paragraph>"));
+
+    QVERIFY(!result.documentHtml.isEmpty());
+    QVERIFY(!result.documentHtml.contains(QStringLiteral("Alpha<br/>")));
+    QVERIFY(result.documentHtml.contains(QStringLiteral(">Alpha</p>")));
+    QVERIFY(result.documentHtml.contains(QStringLiteral("<p style=\"margin-top:0px;margin-bottom:0px;\">&nbsp;</p>")));
+    QVERIFY(result.documentHtml.contains(QStringLiteral(">Beta</p>")));
+    QVERIFY(result.documentHtml.contains(QStringLiteral(">Gamma</p>")));
+
+    int paragraphCount = 0;
+    qsizetype cursor = 0;
+    while ((cursor = result.documentHtml.indexOf(QStringLiteral("<p "), cursor)) >= 0)
+    {
+        ++paragraphCount;
+        cursor += 3;
+    }
+    QCOMPARE(paragraphCount, 4);
+}

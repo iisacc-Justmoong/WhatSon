@@ -40,7 +40,14 @@ Item {
             && control.hasAtomicRenderedResourceBlocks()
     readonly property bool renderedOverlayVisible: control.renderedOverlayAvailable
             && (!control.nativeCompositionActive() || control.renderedResourceOverlayPinned)
-    readonly property bool renderedSelectionActive: control.renderedOverlayVisible && control.nativeSelectionActive
+    readonly property bool nativeSelectionContainsVisibleLogicalContent: control.nativeSelectionActive
+            && (control.sourceRangeContainsVisibleLogicalContent(control.selectedSourceRange())
+                || control.sourceRangeIntersectsAtomicResourceBlock(control.selectedSourceRange()))
+    readonly property bool nativeSelectionPaintVisible: !control.renderedOverlayVisible
+            || control.nativeSelectionContainsVisibleLogicalContent
+    readonly property bool renderedSelectionActive: control.renderedOverlayVisible
+            && control.nativeSelectionActive
+            && control.nativeSelectionContainsVisibleLogicalContent
     readonly property bool nativeCursorVisible: !control.renderedOverlayVisible
     readonly property bool preferNativeInputHandling: true
     property bool selectByKeyboard: true
@@ -113,11 +120,12 @@ Item {
         const modifiers = Number(event.modifiers) || 0;
         const commandHeld = (modifiers & Qt.ControlModifier) || (modifiers & Qt.MetaModifier);
         const optionHeld = modifiers & Qt.AltModifier;
+        const shiftHeld = modifiers & Qt.ShiftModifier;
         return Boolean(commandHeld && !optionHeld
                        && (event.key === Qt.Key_B
                            || event.key === Qt.Key_I
                            || event.key === Qt.Key_U
-                           || event.key === Qt.Key_H));
+                           || (shiftHeld && event.key === Qt.Key_E)));
     }
 
     function eventRequestsPasteShortcut(event) {
@@ -179,6 +187,83 @@ Item {
         };
     }
 
+    function normalizedSourceTagName(tagToken) {
+        const token = String(tagToken || "");
+        if (token.length < 3 || token.charAt(0) !== "<")
+            return "";
+        let cursor = 1;
+        while (cursor < token.length && /\s/.test(token.charAt(cursor)))
+            ++cursor;
+        if (cursor < token.length && token.charAt(cursor) === "/")
+            ++cursor;
+        while (cursor < token.length && /\s/.test(token.charAt(cursor)))
+            ++cursor;
+        const nameStart = cursor;
+        while (cursor < token.length && /[A-Za-z0-9_.:-]/.test(token.charAt(cursor)))
+            ++cursor;
+        if (cursor <= nameStart)
+            return "";
+        return token.slice(nameStart, cursor).toLowerCase();
+    }
+
+    function sourceTagProducesVisibleSelection(tagName, closingTag) {
+        const normalizedTagName = String(tagName || "").toLowerCase();
+        if (closingTag)
+            return false;
+        return normalizedTagName === "resource"
+                || normalizedTagName === "break"
+                || normalizedTagName === "hr"
+                || normalizedTagName === "tag";
+    }
+
+    function sourceOffsetIsInsideTagToken(text, sourceOffset) {
+        const boundedOffset = Math.max(0, Math.min(Number(sourceOffset) || 0, Math.max(0, text.length - 1)));
+        const previousOpen = text.lastIndexOf("<", boundedOffset);
+        if (previousOpen < 0)
+            return false;
+        const previousClose = text.lastIndexOf(">", boundedOffset - 1);
+        return previousOpen > previousClose;
+    }
+
+    function sourceRangeContainsVisibleLogicalContent(range) {
+        const text = textInput.text;
+        const sourceLength = text.length;
+        const start = Math.max(0, Math.min(Number(range && range.start !== undefined ? range.start : 0) || 0, sourceLength));
+        const end = Math.max(start, Math.min(Number(range && range.end !== undefined ? range.end : start) || start, sourceLength));
+        let cursor = start;
+        while (cursor < end) {
+            if (control.sourceOffsetIsInsideTagToken(text, cursor)) {
+                const tagStart = text.lastIndexOf("<", cursor);
+                const tagEnd = text.indexOf(">", cursor);
+                if (tagStart >= 0 && tagEnd >= cursor) {
+                    const tagToken = text.slice(tagStart, tagEnd + 1);
+                    const tagName = control.normalizedSourceTagName(tagToken);
+                    const closingTag = /^\s*<\s*\//.test(tagToken);
+                    if (control.sourceTagProducesVisibleSelection(tagName, closingTag))
+                        return true;
+                    cursor = tagEnd + 1;
+                    continue;
+                }
+            }
+
+            const currentChar = text.charAt(cursor);
+            if (currentChar === "<") {
+                const tagEnd = text.indexOf(">", cursor + 1);
+                if (tagEnd > cursor) {
+                    const tagToken = text.slice(cursor, tagEnd + 1);
+                    const tagName = control.normalizedSourceTagName(tagToken);
+                    const closingTag = /^\s*<\s*\//.test(tagToken);
+                    if (control.sourceTagProducesVisibleSelection(tagName, closingTag))
+                        return true;
+                    cursor = tagEnd + 1;
+                    continue;
+                }
+            }
+            return true;
+        }
+        return false;
+    }
+
     function htmlBlockSourceStart(block) {
         const value = Number(block && block.sourceStart !== undefined ? block.sourceStart : -1);
         return isFinite(value) ? Math.max(0, Math.floor(value)) : -1;
@@ -194,6 +279,18 @@ Item {
         const blockEnd = control.htmlBlockSourceEnd(block);
         return blockStart >= 0 && blockEnd > blockStart
                 && range.start < blockEnd && range.end > blockStart;
+    }
+
+    function sourceRangeIntersectsAtomicResourceBlock(range) {
+        const blocks = control.normalizedHtmlBlocks || [];
+        for (let index = 0; index < blocks.length; ++index) {
+            const block = blocks[index];
+            if (control.htmlBlockIsIiHtmlResourceBlock(block)
+                    && control.htmlBlockIntersectsSourceRange(block, range)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     function htmlBlockIsIiHtmlResourceBlock(block) {
@@ -252,6 +349,14 @@ Item {
     function renderedLogicalSelectionRange() {
         const sourceRange = control.selectedSourceRange();
         const maxLength = Math.max(0, Number(renderedOverlay.length) || 0);
+        const intersectsAtomicResource = control.sourceRangeIntersectsAtomicResourceBlock(sourceRange);
+        if (!control.sourceRangeContainsVisibleLogicalContent(sourceRange)
+                && !intersectsAtomicResource) {
+            return {
+                "start": 0,
+                "end": 0
+            };
+        }
         let start = control.sourceOffsetToLogicalOffset(sourceRange.start, false);
         let end = control.sourceOffsetToLogicalOffset(sourceRange.end, true);
         const blocks = control.normalizedHtmlBlocks || [];
@@ -649,6 +754,28 @@ Item {
         onActivated: control.triggerTagManagementShortcut(Qt.Key_A, Qt.MetaModifier | Qt.AltModifier)
     }
 
+    Shortcut {
+        autoRepeat: false
+        context: Qt.WindowShortcut
+        enabled: control.focused
+                 && control.tagManagementKeyPressHandler !== null
+                 && control.tagManagementKeyPressHandler !== undefined
+        sequence: "Ctrl+Shift+E"
+
+        onActivated: control.triggerTagManagementShortcut(Qt.Key_E, Qt.ControlModifier | Qt.ShiftModifier)
+    }
+
+    Shortcut {
+        autoRepeat: false
+        context: Qt.WindowShortcut
+        enabled: control.focused
+                 && control.tagManagementKeyPressHandler !== null
+                 && control.tagManagementKeyPressHandler !== undefined
+        sequence: "Meta+Shift+E"
+
+        onActivated: control.triggerTagManagementShortcut(Qt.Key_E, Qt.MetaModifier | Qt.ShiftModifier)
+    }
+
     LV.TextEditor {
         id: textInput
 
@@ -707,7 +834,7 @@ Item {
         selectByKeyboard: control.selectByKeyboard
         selectByMouse: control.selectByMouse
         selectedTextColor: control.renderedOverlayVisible ? "transparent" : control.textColor
-        selectionColor: LV.Theme.primaryOverlay
+        selectionColor: control.nativeSelectionPaintVisible ? LV.Theme.primaryOverlay : "transparent"
         showRenderedOutput: false
         showScrollBar: false
         textColor: control.renderedOverlayVisible ? "transparent" : control.textColor

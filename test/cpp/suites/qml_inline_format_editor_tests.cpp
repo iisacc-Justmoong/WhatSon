@@ -98,7 +98,16 @@ void WhatSonCppRegressionTests::qmlInlineFormatEditor_keepsNativeTextEditInputUn
     QVERIFY(inlineEditorSource.contains(QStringLiteral("function triggerTagManagementShortcut(key, modifiers)")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("event.accepted = false;")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("sequence: \"Ctrl+Alt+C\"")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("sequence: \"Meta+Alt+C\"")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("sequence: \"Ctrl+Alt+A\"")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("sequence: \"Meta+Alt+A\"")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("sequence: \"Ctrl+Shift+E\"")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("sequence: \"Meta+Shift+E\"")));
+    QVERIFY(!inlineEditorSource.contains(QStringLiteral("sequence: \"Ctrl+H\"")));
+    QVERIFY(!inlineEditorSource.contains(QStringLiteral("sequence: \"Meta+H\"")));
+    QVERIFY(!inlineEditorSource.contains(QStringLiteral("sequence: \"Ctrl+Shift+H\"")));
+    QVERIFY(!inlineEditorSource.contains(QStringLiteral("sequence: \"Meta+Shift+H\"")));
+    QVERIFY(!inlineEditorSource.contains(QStringLiteral("Qt.Key_H")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("event.matches(StandardKey.Paste)")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("!control.eventRequestsPasteShortcut(event)")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("!control.eventRequestsInlineFormatShortcut(event)")));
@@ -146,12 +155,17 @@ void WhatSonCppRegressionTests::qmlInlineFormatEditor_keepsNativeTextEditInputUn
     QVERIFY(inlineEditorSource.contains(QStringLiteral("readonly property bool renderedResourceOverlayPinned: control.renderedOverlayAvailable")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("function hasAtomicRenderedResourceBlocks()")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("&& (!control.nativeCompositionActive() || control.renderedResourceOverlayPinned)")));
-    QVERIFY(inlineEditorSource.contains(QStringLiteral("readonly property bool renderedSelectionActive: control.renderedOverlayVisible && control.nativeSelectionActive")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("readonly property bool nativeSelectionContainsVisibleLogicalContent")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("readonly property bool nativeSelectionPaintVisible")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("readonly property bool renderedSelectionActive: control.renderedOverlayVisible")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("&& control.nativeSelectionContainsVisibleLogicalContent")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("function sourceRangeContainsVisibleLogicalContent(range)")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("function sourceOffsetIsInsideTagToken(text, sourceOffset)")));
     QVERIFY(!inlineEditorSource.contains(QStringLiteral("&& !control.nativeSelectionActive")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("visible: control.renderedOverlayVisible")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("textColor: control.renderedOverlayVisible ? \"transparent\" : control.textColor")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("selectedTextColor: control.renderedOverlayVisible ? \"transparent\" : control.textColor")));
-    QVERIFY(inlineEditorSource.contains(QStringLiteral("selectionColor: LV.Theme.primaryOverlay")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("selectionColor: control.nativeSelectionPaintVisible ? LV.Theme.primaryOverlay : \"transparent\"")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("preferNativeGestures: true")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("renderedOverlay.select(selectionRange.start, selectionRange.end)")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("htmlBlockObjectSource")));
@@ -428,6 +442,17 @@ Item {
     rootObject->setProperty("handledKey", -1);
     rootObject->setProperty("handledModifiers", 0);
 
+    QTest::keyClick(&window, Qt::Key_E, Qt::ControlModifier | Qt::ShiftModifier);
+
+    QTRY_VERIFY(rootObject->property("handled").toBool());
+    QCOMPARE(rootObject->property("handledKey").toInt(), static_cast<int>(Qt::Key_E));
+    QVERIFY(rootObject->property("handledModifiers").toInt() & static_cast<int>(Qt::ControlModifier));
+    QVERIFY(rootObject->property("handledModifiers").toInt() & static_cast<int>(Qt::ShiftModifier));
+
+    rootObject->setProperty("handled", false);
+    rootObject->setProperty("handledKey", -1);
+    rootObject->setProperty("handledModifiers", 0);
+
     QTest::keyClick(&window, Qt::Key_C, Qt::ControlModifier | Qt::AltModifier);
 
     QTRY_VERIFY(rootObject->property("handled").toBool());
@@ -536,6 +561,44 @@ Item {
         QStringLiteral("<bold>Alpha").size());
 
     rootObject->setProperty("committedText", QString());
+    QTest::keyClick(&window, Qt::Key_U, Qt::ControlModifier);
+
+    QTRY_COMPARE(
+        rootObject->property("committedText").toString(),
+        QStringLiteral("<bold><underline>Alpha</underline></bold> beta"));
+    QTRY_COMPARE(
+        inlineEditor->property("text").toString(),
+        QStringLiteral("<bold><underline>Alpha</underline></bold> beta"));
+    QVERIFY(!rootObject->property("committedText").toString().contains(QStringLiteral("<underline></underline>")));
+
+    rootObject->setProperty("committedText", QString());
+    documentFlow->setProperty("sourceText", QStringLiteral("Look here"));
+    QTRY_COMPARE(inlineEditor->property("text").toString(), QStringLiteral("Look here"));
+    QVERIFY(QMetaObject::invokeMethod(
+        inlineEditor,
+        "restoreSelectionRange",
+        Q_RETURN_ARG(QVariant, restoreResult),
+        Q_ARG(QVariant, 0),
+        Q_ARG(QVariant, 4),
+        Q_ARG(QVariant, 4)));
+    QVERIFY(restoreResult.toBool());
+    QTRY_VERIFY(inlineEditor->property("nativeSelectionActive").toBool());
+
+    QTest::keyClick(&window, Qt::Key_U, Qt::ControlModifier);
+    QTRY_COMPARE(rootObject->property("committedText").toString(), QStringLiteral("<underline>Look</underline> here"));
+    QTRY_COMPARE(inlineEditor->property("text").toString(), QStringLiteral("<underline>Look</underline> here"));
+
+    rootObject->setProperty("committedText", QString());
+    QTest::keyClick(&window, Qt::Key_B, Qt::ControlModifier);
+    QTRY_COMPARE(
+        rootObject->property("committedText").toString(),
+        QStringLiteral("<underline><bold>Look</bold></underline> here"));
+    QTRY_COMPARE(
+        inlineEditor->property("text").toString(),
+        QStringLiteral("<underline><bold>Look</bold></underline> here"));
+    QVERIFY(!rootObject->property("committedText").toString().contains(QStringLiteral("<bold></bold>")));
+
+    rootObject->setProperty("committedText", QString());
     documentFlow->setProperty("sourceText", QStringLiteral("Alpha\nBeta"));
     QTRY_COMPARE(inlineEditor->property("text").toString(), QStringLiteral("Alpha\nBeta"));
     QVERIFY(QMetaObject::invokeMethod(
@@ -554,6 +617,24 @@ Item {
     QTRY_COMPARE(inlineEditor->property("text").toString(), QStringLiteral("<callout>Alpha</callout>\nBeta"));
 
     rootObject->setProperty("committedText", QString());
+    documentFlow->setProperty("sourceText", QStringLiteral("Meta\nCallout"));
+    QTRY_COMPARE(inlineEditor->property("text").toString(), QStringLiteral("Meta\nCallout"));
+    QVERIFY(QMetaObject::invokeMethod(
+        inlineEditor,
+        "restoreSelectionRange",
+        Q_RETURN_ARG(QVariant, restoreResult),
+        Q_ARG(QVariant, 0),
+        Q_ARG(QVariant, 4),
+        Q_ARG(QVariant, 4)));
+    QVERIFY(restoreResult.toBool());
+    QTRY_VERIFY(inlineEditor->property("nativeSelectionActive").toBool());
+
+    QTest::keyClick(&window, Qt::Key_C, Qt::MetaModifier | Qt::AltModifier);
+
+    QTRY_COMPARE(rootObject->property("committedText").toString(), QStringLiteral("<callout>Meta</callout>\nCallout"));
+    QTRY_COMPARE(inlineEditor->property("text").toString(), QStringLiteral("<callout>Meta</callout>\nCallout"));
+
+    rootObject->setProperty("committedText", QString());
     documentFlow->setProperty("sourceText", QStringLiteral("Intro"));
     QTRY_COMPARE(inlineEditor->property("text").toString(), QStringLiteral("Intro"));
     QVERIFY(QMetaObject::invokeMethod(
@@ -569,6 +650,42 @@ Item {
 
     QTRY_VERIFY(rootObject->property("committedText").toString().startsWith(QStringLiteral("Intro\n<agenda date=\"")));
     QVERIFY(rootObject->property("committedText").toString().contains(QStringLiteral("<task done=\"false\"> </task></agenda>")));
+
+    rootObject->setProperty("committedText", QString());
+    documentFlow->setProperty("sourceText", QStringLiteral("Meta agenda"));
+    QTRY_COMPARE(inlineEditor->property("text").toString(), QStringLiteral("Meta agenda"));
+    const int metaAgendaEnd = QStringLiteral("Meta agenda").size();
+    QVERIFY(QMetaObject::invokeMethod(
+        inlineEditor,
+        "restoreSelectionRange",
+        Q_RETURN_ARG(QVariant, restoreResult),
+        Q_ARG(QVariant, metaAgendaEnd),
+        Q_ARG(QVariant, metaAgendaEnd),
+        Q_ARG(QVariant, metaAgendaEnd)));
+    QVERIFY(restoreResult.toBool());
+
+    QTest::keyClick(&window, Qt::Key_A, Qt::MetaModifier | Qt::AltModifier);
+
+    QTRY_VERIFY(rootObject->property("committedText").toString().startsWith(QStringLiteral("Meta agenda\n<agenda date=\"")));
+    QVERIFY(rootObject->property("committedText").toString().contains(QStringLiteral("<task done=\"false\"> </task></agenda>")));
+
+    rootObject->setProperty("committedText", QString());
+    documentFlow->setProperty("sourceText", QStringLiteral("Glow text"));
+    QTRY_COMPARE(inlineEditor->property("text").toString(), QStringLiteral("Glow text"));
+    QVERIFY(QMetaObject::invokeMethod(
+        inlineEditor,
+        "restoreSelectionRange",
+        Q_RETURN_ARG(QVariant, restoreResult),
+        Q_ARG(QVariant, 0),
+        Q_ARG(QVariant, 4),
+        Q_ARG(QVariant, 4)));
+    QVERIFY(restoreResult.toBool());
+    QTRY_VERIFY(inlineEditor->property("nativeSelectionActive").toBool());
+
+    QTest::keyClick(&window, Qt::Key_E, Qt::ControlModifier | Qt::ShiftModifier);
+
+    QTRY_COMPARE(rootObject->property("committedText").toString(), QStringLiteral("<highlight>Glow</highlight> text"));
+    QTRY_COMPARE(inlineEditor->property("text").toString(), QStringLiteral("<highlight>Glow</highlight> text"));
 }
 
 void WhatSonCppRegressionTests::qmlInlineFormatEditor_keepsRenderedOverlayDuringNativeSelection()
@@ -673,6 +790,136 @@ Item {
         inlineEditor->property("atomicResourceSelectionRects").toList().constFirst().toMap();
     QVERIFY(resourceSelectionRect.value(QStringLiteral("height")).toReal() > 20.0);
     QTRY_VERIFY(inlineEditor->property("renderedOverlayVisible").toBool());
+}
+
+void WhatSonCppRegressionTests::qmlInlineFormatEditor_ignoresEmptyFormattingTagsDuringRenderedSelection()
+{
+    registerInlineFormatEditorRuntimeQmlTypes();
+
+    const QString repositoryRoot = qmlInlineFormatEditorRepositoryRootPath();
+    QQmlEngine engine;
+    addWhatSonInlineFormatEditorQmlImportPaths(engine, repositoryRoot);
+
+    const QString editorImportUrl =
+        QUrl::fromLocalFile(repositoryRoot + QStringLiteral("/src/app/qml/view/contents/editor")).toString();
+    const QByteArray qmlSource = QStringLiteral(R"QML(
+import QtQuick
+import "%1" as EditorView
+
+Item {
+    id: root
+    readonly property string emptyFormattingTags: "<highlight><highlight></highlight></highlight>"
+    readonly property int emptyFormattingTagsLength: emptyFormattingTags.length
+    width: 360
+    height: 120
+
+    EditorView.ContentsInlineFormatEditor {
+        id: editor
+        objectName: "inlineFormatEditorUnderTest"
+        anchors.fill: parent
+        displayGeometryText: "Next"
+        logicalToSourceOffsets: [
+            0,
+            root.emptyFormattingTagsLength + 1,
+            root.emptyFormattingTagsLength + 2,
+            root.emptyFormattingTagsLength + 3,
+            root.emptyFormattingTagsLength + 4
+        ]
+        renderedText: "Next"
+        showRenderedOutput: true
+        text: root.emptyFormattingTags + "Next"
+    }
+}
+)QML").arg(editorImportUrl).toUtf8();
+
+    QQmlComponent component(&engine);
+    component.setData(
+        qmlSource,
+        QUrl::fromLocalFile(repositoryRoot + QStringLiteral("/test/cpp/InlineFormatEmptyTagSelectionHarness.qml")));
+    if (component.status() == QQmlComponent::Error)
+    {
+        QFAIL(qPrintable(qmlInlineFormatEditorErrorString(component.errors())));
+    }
+
+    std::unique_ptr<QObject> rootObject(component.create());
+    if (!rootObject)
+    {
+        QFAIL(qPrintable(qmlInlineFormatEditorErrorString(component.errors())));
+    }
+
+    auto* rootItem = qobject_cast<QQuickItem*>(rootObject.get());
+    QVERIFY(rootItem != nullptr);
+
+    QQuickWindow window;
+    window.resize(360, 96);
+    rootItem->setParentItem(window.contentItem());
+    window.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&window));
+
+    QObject* inlineEditor = rootObject->findChild<QObject*>(QStringLiteral("inlineFormatEditorUnderTest"));
+    QVERIFY(inlineEditor != nullptr);
+    QObject* renderedOverlay = rootObject->findChild<QObject*>(QStringLiteral("contentsInlineFormatRenderedOverlay"));
+    QVERIFY(renderedOverlay != nullptr);
+    QTRY_VERIFY(inlineEditor->property("renderedOverlayVisible").toBool());
+    QVERIFY(QMetaObject::invokeMethod(inlineEditor, "forceActiveFocus"));
+    QTRY_VERIFY(inlineEditor->property("focused").toBool());
+
+    const int emptyFormattingTagsLength = rootObject->property("emptyFormattingTagsLength").toInt();
+    QVERIFY(emptyFormattingTagsLength > 0);
+
+    QVariant restoreResult;
+    QVERIFY(QMetaObject::invokeMethod(
+        inlineEditor,
+        "restoreSelectionRange",
+        Q_RETURN_ARG(QVariant, restoreResult),
+        Q_ARG(QVariant, 0),
+        Q_ARG(QVariant, emptyFormattingTagsLength),
+        Q_ARG(QVariant, emptyFormattingTagsLength)));
+    QVERIFY(restoreResult.toBool());
+
+    QTRY_VERIFY(inlineEditor->property("nativeSelectionActive").toBool());
+    QVERIFY(inlineEditor->property("selectedText").toString().contains(QStringLiteral("<highlight>")));
+    QTRY_VERIFY(!inlineEditor->property("nativeSelectionContainsVisibleLogicalContent").toBool());
+    QTRY_VERIFY(!inlineEditor->property("nativeSelectionPaintVisible").toBool());
+    QTRY_VERIFY(!inlineEditor->property("renderedSelectionActive").toBool());
+    QTRY_VERIFY(
+        renderedOverlay->property("selectionEnd").toInt()
+        == renderedOverlay->property("selectionStart").toInt());
+    QTRY_COMPARE(inlineEditor->property("atomicResourceSelectionRects").toList().size(), 0);
+
+    QVERIFY(QMetaObject::invokeMethod(
+        inlineEditor,
+        "restoreSelectionRange",
+        Q_RETURN_ARG(QVariant, restoreResult),
+        Q_ARG(QVariant, 1),
+        Q_ARG(QVariant, emptyFormattingTagsLength - 1),
+        Q_ARG(QVariant, emptyFormattingTagsLength - 1)));
+    QVERIFY(restoreResult.toBool());
+
+    QTRY_VERIFY(inlineEditor->property("nativeSelectionActive").toBool());
+    QTRY_VERIFY(!inlineEditor->property("nativeSelectionContainsVisibleLogicalContent").toBool());
+    QTRY_VERIFY(!inlineEditor->property("nativeSelectionPaintVisible").toBool());
+    QTRY_VERIFY(!inlineEditor->property("renderedSelectionActive").toBool());
+    QTRY_VERIFY(
+        renderedOverlay->property("selectionEnd").toInt()
+        == renderedOverlay->property("selectionStart").toInt());
+
+    QVERIFY(QMetaObject::invokeMethod(
+        inlineEditor,
+        "restoreSelectionRange",
+        Q_RETURN_ARG(QVariant, restoreResult),
+        Q_ARG(QVariant, emptyFormattingTagsLength),
+        Q_ARG(QVariant, emptyFormattingTagsLength + 4),
+        Q_ARG(QVariant, emptyFormattingTagsLength + 4)));
+    QVERIFY(restoreResult.toBool());
+
+    QTRY_VERIFY(inlineEditor->property("nativeSelectionActive").toBool());
+    QTRY_VERIFY(inlineEditor->property("nativeSelectionContainsVisibleLogicalContent").toBool());
+    QTRY_VERIFY(inlineEditor->property("nativeSelectionPaintVisible").toBool());
+    QTRY_VERIFY(inlineEditor->property("renderedSelectionActive").toBool());
+    QTRY_VERIFY(
+        renderedOverlay->property("selectionEnd").toInt()
+        > renderedOverlay->property("selectionStart").toInt());
 }
 
 void WhatSonCppRegressionTests::qmlInlineFormatEditor_keepsRenderedOverlayPassiveForNativeEditing()

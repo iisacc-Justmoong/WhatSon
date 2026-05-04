@@ -13,7 +13,8 @@ Hosts the note document surface after `ContentsDisplayView.qml` has mounted a se
 - Mounts `ContentsEditorTagInsertionController` and binds the inline editor's tag-management key hook to the
   document flow.
 - Handles explicit formatting/body tag shortcuts by asking the tag insertion controller to build the next RAW tag
-  insertion payload, then applying that payload through the live inline editor.
+  insertion payload from the live inline editor buffer, then applying that payload through the same live editor. The
+  payload source must not lag behind the focused editor text while parent session bindings catch up.
 - Passes `logicalText` into the inline editor's display-geometry probe for cursor and selection projection.
 - Passes the current logical cursor position into the inline editor so its overlay cursor is projected from visible
   text geometry while the authoritative edit buffer remains RAW source text.

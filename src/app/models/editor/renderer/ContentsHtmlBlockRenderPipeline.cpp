@@ -129,11 +129,27 @@ namespace
         return openingHtml + htmlFragment + closingHtml;
     }
 
+    QString textFragmentParagraphFlowHtml(const QString& blockType, const QString& sourceText)
+    {
+        const QString htmlProjection = textFragmentHtml(sourceText);
+        const QStringList lines = htmlProjection.split(QStringLiteral("<br/>"), Qt::KeepEmptyParts);
+        QStringList paragraphs;
+        paragraphs.reserve(lines.size());
+
+        const QStringList projectedLines = lines.isEmpty() ? QStringList{QString()} : lines;
+        for (const QString& lineHtml : projectedLines)
+        {
+            const QString paragraphBody = lineHtml.isEmpty() ? QStringLiteral("&nbsp;") : lineHtml;
+            paragraphs.push_back(editorDocumentParagraphHtml(wrapSemanticTextHtml(blockType, paragraphBody)));
+        }
+        return paragraphs.join(QString());
+    }
+
     QString renderTextBlockHtml(const QVariantMap& block)
     {
         const QString blockType = normalizedBlockType(block);
         const QString sourceText = block.value(QStringLiteral("sourceText")).toString();
-        return wrapSemanticTextHtml(blockType, textFragmentHtml(sourceText));
+        return textFragmentParagraphFlowHtml(blockType, sourceText);
     }
 
     QString renderAgendaBlockHtml(const QVariantMap& block)

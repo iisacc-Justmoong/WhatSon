@@ -23,8 +23,12 @@ Wraps the live `LV.TextEditor` used by the note document surface.
   surface, while the component paints a projected cursor above the RichText overlay whenever rendered output is visible.
 - The RichText overlay remains visible while `LV.TextEditor` has a non-empty native selection. The component mirrors
   the source range into rendered coordinates instead of exposing RAW tag geometry.
-- Native selection paint stays enabled even while the rendered overlay is visible. Only the underlying RAW glyph paint
-  is transparent, so OS/Qt drag and Shift selection remain visible without showing RAW tag text.
+- Native selection paint stays enabled for visible logical content even while the rendered overlay is visible. Only the
+  underlying RAW glyph paint is transparent, so OS/Qt drag and Shift selection remain visible without showing RAW tag
+  text.
+- Source ranges that contain only hidden formatting tag tokens, including empty `<highlight></highlight>` or nested
+  empty format wrappers, do not paint native or rendered selection because they do not represent visible editor
+  content.
 - Renderer-owned `normalizedHtmlBlocks` are used only to identify iiHtmlBlock resource display blocks for selection
   presentation. When a selection intersects a resource source span, the resource contributes one atomic selection
   rectangle; the RAW `<resource ... />` string must never paint as multiple selected text runs.
@@ -41,6 +45,7 @@ Wraps the live `LV.TextEditor` used by the note document surface.
 - `tagManagementKeyPressHandler` is the only key hook and is limited to explicit tag-management shortcuts.
 - The explicit body-tag shortcut surface forwards `Ctrl/Meta+Alt+C` for callout and `Ctrl/Meta+Alt+A` for agenda to
   the same tag-management hook used by formatting commands.
+- The explicit highlight formatting shortcut is `Cmd/Ctrl+Shift+E`; legacy `H` shortcuts are not part of this surface.
 - `ContentsInlineFormatEditorController` is mounted as the C++/QML helper bridge for focus, selection snapshots, native
   composition checks, local selection interaction tracking, and programmatic text-sync policy against
   `LV.TextEditor.editorItem`.

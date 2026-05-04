@@ -38,6 +38,9 @@ Implements inline-format rendering from note-editor text to RichText HTML.
   It now projects non-structured body text as paragraph-like RichText document blocks (`<p ...>...</p>`), which keeps
   the desktop/mobile `TextEdit.RichText` layout closer to Qt's native raw rich-text flow and gives inline media/image
   blocks a real document slot instead of an overlay-only approximation.
+- Parser-owned semantic text blocks also rematerialize embedded newlines as paragraph-flow HTML on the live editor
+  surface. An Enter inside an existing `<paragraph>` therefore creates a real visible slot, and an empty inserted line
+  is backed by `&nbsp;` so following body content is pushed down instead of only moving the projected cursor.
 - Single structural line breaks that only separate a proprietary block (`resource`, `agenda`, `callout`, `break`) from
   the next body fragment are consumed as block boundaries rather than re-rendered as extra blank paragraphs.
 - The preview path still recognizes markdown-style block prefixes without rewriting the stored source text:
@@ -173,6 +176,8 @@ Implements inline-format rendering from note-editor text to RichText HTML.
   must render as semantic content, not as escaped literal XML text.
 - The live editor surface should now expose ordinary prose as paragraph-style RichText document blocks instead of one
   flat `<br/>` chain, so inline media can share the same native document flow as surrounding text.
+- Enter-authored newlines inside semantic text blocks must also become paragraph-style slots, including `&nbsp;` for an
+  empty line, so the overlay body and projected cursor advance through the same occupied layout.
 - When preview is disabled, mutating `sourceText` must not recompute markdown-aware preview HTML.
 - For a semantic heading block in structured-flow mode, `htmlOverlayVisible` must flip to `true` even when the inner
   RAW text itself contains no `<bold>`/`<italic>`-style inline tags.

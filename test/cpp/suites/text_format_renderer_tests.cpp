@@ -152,6 +152,24 @@ void WhatSonCppRegressionTests::textFormatRenderer_preservesMarkdownUnorderedLis
     QVERIFY(previewHtml.contains(QStringLiteral(">•</span>&nbsp;delta")));
 }
 
+void WhatSonCppRegressionTests::textFormatRenderer_keepsEnterNewlinesAsEditorParagraphSlots()
+{
+    ContentsTextFormatRenderer renderer;
+    renderer.setSourceText(
+        QStringLiteral(
+            "<paragraph>Alpha\n"
+            "\n"
+            "Beta</paragraph>\n"
+            "<paragraph>Gamma</paragraph>"));
+
+    const QString editorHtml = renderer.editorSurfaceHtml();
+    QVERIFY(!editorHtml.contains(QStringLiteral("Alpha<br/>")));
+    QVERIFY(editorHtml.contains(QStringLiteral(">Alpha</p>")));
+    QVERIFY(editorHtml.contains(QStringLiteral("<p style=\"margin-top:0px;margin-bottom:0px;\">&nbsp;</p>")));
+    QVERIFY(editorHtml.contains(QStringLiteral(">Beta</p>")));
+    QVERIFY(editorHtml.contains(QStringLiteral(">Gamma</p>")));
+}
+
 void WhatSonCppRegressionTests::editorTagInsertionController_replacesLegacyInlineStyleMutationSupport()
 {
     QDir repositoryRoot(QFileInfo(QString::fromUtf8(__FILE__)).absolutePath());
@@ -241,7 +259,8 @@ void WhatSonCppRegressionTests::editorTagInsertionController_buildsShortcutSourc
     QCOMPARE(controller.tagNameForShortcutKey(Qt::Key_B), QStringLiteral("bold"));
     QCOMPARE(controller.tagNameForShortcutKey(Qt::Key_I), QStringLiteral("italic"));
     QCOMPARE(controller.tagNameForShortcutKey(Qt::Key_U), QStringLiteral("underline"));
-    QCOMPARE(controller.tagNameForShortcutKey(Qt::Key_H), QStringLiteral("highlight"));
+    QCOMPARE(controller.tagNameForShortcutKey(Qt::Key_E), QStringLiteral("highlight"));
+    QVERIFY(controller.tagNameForShortcutKey(Qt::Key_H).isEmpty());
     QVERIFY(controller.tagNameForShortcutKey(Qt::Key_C).isEmpty());
     QCOMPARE(controller.normalizedTagName(QStringLiteral("callout")), QStringLiteral("callout"));
     QCOMPARE(controller.normalizedTagName(QStringLiteral("agenda")), QStringLiteral("agenda"));

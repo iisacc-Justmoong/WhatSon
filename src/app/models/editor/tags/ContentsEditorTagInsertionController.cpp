@@ -257,7 +257,7 @@ QString ContentsEditorTagInsertionController::tagNameForShortcutKey(const int ke
         return QStringLiteral("italic");
     case Qt::Key_U:
         return QStringLiteral("underline");
-    case Qt::Key_H:
+    case Qt::Key_E:
         return QStringLiteral("highlight");
     default:
         return {};

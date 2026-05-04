@@ -32,6 +32,9 @@ Builds editor HTML tokens and normalized HTML blocks from parser-owned RAW docum
 - Uses `WhatSonNoteBodyPersistence::serializeBodyDocument(...)` plus
   `WhatSonNoteBodyPersistence::htmlProjectionFromBodyDocument(...)` for textual fragments so inline-tag rendering stays
   aligned with the canonical body serializer.
+- Textual fragments are split back into paragraph-flow HTML after that rich-text projection. Newlines produced by
+  ordinary Enter therefore materialize as real `<p ...>` slots, and empty lines become `&nbsp;` paragraphs instead of
+  remaining as zero-height trailing `<br/>` breaks.
 - Keeps resource placeholders in the stable
   `<!--whatson-resource-block:N--> ... <!--/whatson-resource-block:N-->` form expected by the inline resource
   replacement controller, while preserving the source `resourcePath`, `resourceId`, `resourceType`, and
@@ -44,6 +47,8 @@ Builds editor HTML tokens and normalized HTML blocks from parser-owned RAW docum
 ## Regression Checks
 - Parsed text blocks that only differ by semantic block type (`paragraph`, `title`, `subTitle`, `eventTitle`) must
   still resolve to `renderDelegateType=text` while preserving their distinct semantic styling in the HTML fragment.
+- Explicit paragraph content that contains Enter-authored newlines must render as separate editor paragraph slots, with
+  empty lines backed by `&nbsp;`, so the visible document flow is pushed down like a normal text editor.
 - A `resource` block must normalize to one stable HTML block with the same placeholder marker indices expected by
   `ContentsInlineResourcePresentationController.qml`.
 - A legacy divider alias such as `<hr>After` must first canonicalize to `</break>After`, then normalize into separate

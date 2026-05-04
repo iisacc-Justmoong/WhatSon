@@ -31,9 +31,10 @@ Item {
         if (tagName.length <= 0)
             return false;
 
+        const currentSourceText = editor.currentPlainText();
         const selectedRange = editor.selectedSourceRange();
         const payload = tagInsertionController.buildTagInsertionPayload(
-                    documentFlow.sourceText,
+                    currentSourceText,
                     Number(selectedRange.start) || 0,
                     Number(selectedRange.end) || 0,
                     tagName);
@@ -45,9 +46,10 @@ Item {
         if (tagName.length <= 0)
             return false;
 
+        const currentSourceText = editor.currentPlainText();
         const selectedRange = editor.selectedSourceRange();
         const payload = tagInsertionController.buildTagInsertionPayload(
-                    documentFlow.sourceText,
+                    currentSourceText,
                     Number(selectedRange.start) || 0,
                     Number(selectedRange.end) || 0,
                     tagName);
