@@ -195,6 +195,9 @@ ctest --test-dir build --output-on-failure -L cpp_regression
 - The inline editor regression now also pins WYSIWYG selection against the rendered HTML overlay: once `LV.TextEditor`
   owns a non-empty selection, the RichText overlay stays visible while the native editor owns the selection range and
   paints source glyphs transparent, so RAW resource tags cannot replace rendered resource frames.
+- The inline editor regression now also pins resource-backed overlay stability during ordinary native editing: an
+  iiHtmlBlock resource projection keeps the RichText frame pinned above the RAW buffer while keystrokes mutate the
+  source, so transient composition/render turns cannot expose `<resource ... />` text.
 - The inline editor regression now also pins exclusive caret painting: while rendered output is visible, only the
   projected WYSIWYG cursor is painted and the native RAW cursor delegate remains hidden; disabling rendered output
   returns caret painting to the native editor path.
@@ -206,6 +209,9 @@ ctest --test-dir build --output-on-failure -L cpp_regression
 - Gutter line-number geometry now also pins visible logical-text probing and duplicate-y protection: the RichText
   overlay's HTML tag positions are not used for line-number sampling, and consecutive line labels cannot collapse onto
   the same gutter y coordinate.
+- Gutter line-number geometry now also pins per-row coordinate publication: each number carries RAW source coordinates,
+  HTML/logical line coordinates, and the resolved editor-geometry box, allowing different numbered rows to have
+  different heights.
 - The contents/editor QML regressions now also pin the backgroundless gutter contract: the gutter no longer exposes or
   paints a dedicated background color, so it inherits the editor body background.
 - The contents/editor QML regressions now also pin the scrollable document viewport: the center editor slot wraps the

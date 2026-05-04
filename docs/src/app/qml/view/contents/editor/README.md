@@ -36,11 +36,12 @@ Editor-facing QML view components for the center content surface.
   RichText overlay. When native selection is active, that overlay stays visible so WYSIWYG text and resource frames do
   not collapse back to RAW tags; the underlying editor still owns the source range while RAW selection paint stays
   transparent. The rendered overlay mirrors text selection in logical coordinates, and resource spans from
-  iiHtmlBlock metadata paint as one atomic block-level selection rectangle. The editor paints an explicit blinking
-  cursor above the overlay while the underlying RAW text and native RAW cursor delegate are hidden. Clicks on the
-  rendered surface are converted from visible logical text coordinates back to RAW source offsets before moving the
-  editor cursor. The editor body has no top inset or overlay padding, so the first text line starts at the top of the
-  document slot.
+  iiHtmlBlock metadata paint as one atomic block-level selection rectangle. Resource-backed overlays also stay pinned
+  during ordinary native typing/composition turns, so a refresh gap cannot reveal the RAW `<resource ... />` tag in
+  place of the frame. The editor paints an explicit blinking cursor above the overlay while the underlying RAW text and
+  native RAW cursor delegate are hidden. Clicks on the rendered surface are converted from visible logical text
+  coordinates back to RAW source offsets before moving the editor cursor. The editor body has no top inset or overlay
+  padding, so the first text line starts at the top of the document slot.
 - Resource-backed center-surface browsing is handled by `ContentsResourceEditorView.qml` and `ContentsResourceViewer.qml`.
 
 QML in this directory must stay presentation-only. XML parsing, HTML tokenization, block object construction, and RAW

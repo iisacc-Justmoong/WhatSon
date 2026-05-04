@@ -87,8 +87,10 @@ private:
     QList<LineSlot> editorLineSlots() const;
     QList<int> sourceLineStartOffsets() const;
     QList<LineSlot> rawLineSlots() const;
+    int logicalOffsetForLineSlot(const LineSlot& slot, int lineIndex) const noexcept;
+    int logicalEndOffsetForLineSlot(const QList<LineSlot>& lineSlots, int lineIndex) const noexcept;
     int logicalOffsetForSourceOffset(int sourceOffset) const noexcept;
-    bool editorLineGeometryForSlot(const LineSlot& slot, int fallbackIndex, qreal* resolvedY, qreal* resolvedHeight) const;
+    bool editorLineGeometryForSlot(const LineSlot& slot, int fallbackIndex, int logicalOffset, qreal* resolvedY, qreal* resolvedHeight) const;
     qreal fallbackYForIndex(int index) const noexcept;
     void rebuildLineNumberEntries();
 

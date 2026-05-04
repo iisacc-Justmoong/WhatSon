@@ -21,14 +21,19 @@ Implements gutter line-number y-position projection for the runtime editor shell
   pipeline.
 - `renderedResources` and `editorContentHeight` remain refresh inputs, but they do not assign extra document height to
   any gutter row. Resource-frame height must come from the mounted editor geometry itself.
-- `editorGeometryHost.lineStartRectangle(logicalOffset, sourceOffset)` is the preferred y source. The model uses
-  `logicalToSourceOffsets` to convert RAW source offsets into rendered logical display offsets before sampling.
+- `editorGeometryHost.lineStartRectangle(logicalOffset, sourceOffset)` is the preferred y source. Each row keeps both
+  its RAW source span and its HTML/logical line span. The model first uses `logicalLineStartOffsets[lineIndex]`,
+  matching code-editor line-block lookup; only missing entries fall back to `logicalToSourceOffsets` source-offset
+  inversion.
 - If `mapTarget` is provided, sampled editor points are converted into that target item's coordinate space through
   `editorGeometryHost.mapEditorPointToItem(...)`. This keeps the gutter aligned with the scrolled viewport instead of
   the unscrolled document origin.
-- `logicalLineStartOffsets` remains an accepted compatibility input. Row count stays source-line based.
-- Each line-number entry also publishes a `height`. With editor geometry, height is the distance to the next sampled
-  source-line y position; otherwise it starts as `fallbackLineHeight`.
+- Row count stays source-line based even when logical line-start offsets are used for the visible y lookup.
+- Each line-number entry publishes the source row, logical span, and geometry result:
+  `rawLineIndex`, `rawSourceStart`, `rawSourceEnd`, `logicalStartOffset`, `logicalEndOffset`, `geometryY`,
+  `geometryHeight`, and `geometrySampled`. The public `y`/`height` values are the resolved geometry row box.
+- With editor geometry, each row height is the distance to the next sampled source-line y position. The final row uses
+  the sampled rectangle height, so different numbered rows can legitimately have different heights.
 - No post-pass distributes remaining `editorContentHeight` into resource or terminal rows. Rows below a rendered
   resource stay aligned only because their sampled editor y positions already include the rendered resource frame.
 - Output is a stable QVariant list of maps, so `Gutter.qml` can render line labels at absolute y positions instead of

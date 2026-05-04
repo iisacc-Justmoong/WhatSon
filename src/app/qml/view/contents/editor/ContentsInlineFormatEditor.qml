@@ -34,9 +34,12 @@ Item {
     readonly property int cursorPixelWidth: Math.max(1, Math.ceil(LV.Theme.strokeThin))
     readonly property rect projectedCursorRectangle: control.cursorProjectionRectangle()
     readonly property bool projectedCursorVisible: control.renderedOverlayVisible && control.focused
-    readonly property bool renderedOverlayVisible: control.showRenderedOutput
+    readonly property bool renderedOverlayAvailable: control.showRenderedOutput
             && control.renderedText.length > 0
-            && !control.nativeCompositionActive()
+    readonly property bool renderedResourceOverlayPinned: control.renderedOverlayAvailable
+            && control.hasAtomicRenderedResourceBlocks()
+    readonly property bool renderedOverlayVisible: control.renderedOverlayAvailable
+            && (!control.nativeCompositionActive() || control.renderedResourceOverlayPinned)
     readonly property bool renderedSelectionActive: control.renderedOverlayVisible && control.nativeSelectionActive
     readonly property bool nativeCursorVisible: !control.renderedOverlayVisible
     property bool selectByKeyboard: true
@@ -202,6 +205,33 @@ Item {
                 && block.htmlBlockIsDisplayBlock !== false;
     }
 
+    function hasAtomicRenderedResourceBlocks() {
+        const blocks = control.normalizedHtmlBlocks || [];
+        for (let index = 0; index < blocks.length; ++index) {
+            if (control.htmlBlockIsIiHtmlResourceBlock(blocks[index]))
+                return true;
+        }
+        return false;
+    }
+
+    function resourceBlockAtSourcePosition(sourcePosition) {
+        const boundedSourcePosition = control.boundedCursorPosition(sourcePosition, textInput.length);
+        const blocks = control.normalizedHtmlBlocks || [];
+        for (let index = 0; index < blocks.length; ++index) {
+            const block = blocks[index];
+            if (!control.htmlBlockIsIiHtmlResourceBlock(block))
+                continue;
+            const blockStart = control.htmlBlockSourceStart(block);
+            const blockEnd = control.htmlBlockSourceEnd(block);
+            if (blockStart >= 0
+                    && boundedSourcePosition >= blockStart
+                    && boundedSourcePosition <= blockEnd) {
+                return block;
+            }
+        }
+        return null;
+    }
+
     function resourceLogicalRangeForBlock(block) {
         const blockStart = control.htmlBlockSourceStart(block);
         const blockEnd = control.htmlBlockSourceEnd(block);
@@ -212,6 +242,27 @@ Item {
         return {
             "start": logicalStart,
             "end": logicalEnd
+        };
+    }
+
+    function resourceDisplayRectangleForBlock(block) {
+        const range = control.resourceLogicalRangeForBlock(block);
+        const maxLength = Math.max(0, Number(renderedOverlay.length) || 0);
+        const logicalStart = Math.max(0, Math.min(range.start, maxLength));
+        const logicalEnd = Math.max(logicalStart, Math.min(range.end, maxLength));
+        const startRectangle = renderedOverlay.positionToRectangle(logicalStart);
+        const endRectangle = renderedOverlay.positionToRectangle(logicalEnd);
+        const localY = Math.max(0, Number(startRectangle.y) || 0);
+        let localBottom = Number(endRectangle.y) || 0;
+        if (!(localBottom > localY)) {
+            localBottom = Math.max(localY, Number(renderedOverlay.contentHeight) || localY);
+        }
+
+        return {
+            "x": Math.max(0, Number(startRectangle.x) || 0),
+            "y": localY,
+            "width": Math.max(Number(startRectangle.width) || 0, Number(renderedOverlay.width) || 0),
+            "height": Math.max(LV.Theme.textBodyLineHeight, localBottom - localY)
         };
     }
 
@@ -250,30 +301,17 @@ Item {
     }
 
     function resourceSelectionRectangleForBlock(block) {
-        const range = control.resourceLogicalRangeForBlock(block);
-        const maxLength = Math.max(0, Number(renderedOverlay.length) || 0);
-        const logicalStart = Math.max(0, Math.min(range.start, maxLength));
-        const logicalEnd = Math.max(logicalStart, Math.min(range.end, maxLength));
-        const startRectangle = renderedOverlay.positionToRectangle(logicalStart);
-        const endRectangle = renderedOverlay.positionToRectangle(logicalEnd);
-        const localY = Math.max(0, Number(startRectangle.y) || 0);
-        let localBottom = Number(endRectangle.y) || 0;
-        if (!(localBottom > localY)) {
-            localBottom = Math.max(localY, Number(renderedOverlay.contentHeight) || localY);
-        }
+        const displayRectangle = control.resourceDisplayRectangleForBlock(block);
 
         const mappedPoint = renderedOverlay.mapToItem(
                     control,
-                    Math.max(0, Number(startRectangle.x) || 0),
-                    localY);
-        const rectangleWidth = Math.max(
-                    Number(startRectangle.width) || 0,
-                    Number(renderedOverlay.width) || 0);
+                    Number(displayRectangle.x) || 0,
+                    Number(displayRectangle.y) || 0);
         return {
             "x": mappedPoint.x,
             "y": mappedPoint.y,
-            "width": rectangleWidth,
-            "height": Math.max(LV.Theme.textBodyLineHeight, localBottom - localY)
+            "width": displayRectangle.width,
+            "height": displayRectangle.height
         };
     }
 
@@ -331,11 +369,32 @@ Item {
     }
 
     function positionToRectangle(position, sourcePosition) {
-        const geometryItem = control.lineStartGeometryItem();
-        const resolvedPosition = control.renderedOverlayVisible
-                ? control.boundedCursorPosition(position, Number(geometryItem.length) || renderedGeometryProbe.length)
-                : (sourcePosition !== undefined ? sourcePosition : position);
-        return geometryItem.positionToRectangle(resolvedPosition);
+        if (!control.renderedOverlayVisible) {
+            const sourceResolvedPosition = sourcePosition !== undefined ? sourcePosition : position;
+            return textInput.editorItem.positionToRectangle(sourceResolvedPosition);
+        }
+
+        const resourceBlock = sourcePosition !== undefined
+                ? control.resourceBlockAtSourcePosition(sourcePosition)
+                : null;
+        if (resourceBlock !== null) {
+            const resourceRectangle = control.resourceDisplayRectangleForBlock(resourceBlock);
+            return Qt.rect(
+                        Number(resourceRectangle.x) || LV.Theme.gapNone,
+                        Number(resourceRectangle.y) || LV.Theme.gapNone,
+                        Number(resourceRectangle.width) || LV.Theme.gapNone,
+                        Math.max(1, Number(resourceRectangle.height) || LV.Theme.textBodyLineHeight));
+        }
+
+        const resolvedPosition = control.boundedCursorPosition(position, renderedGeometryProbe.length);
+        const rectangle = renderedGeometryProbe.positionToRectangle(resolvedPosition);
+        const correctedY = (Number(rectangle.y) || LV.Theme.gapNone)
+                + control.renderedBlockYOffsetBeforeSource(sourcePosition);
+        return Qt.rect(
+                    Number(rectangle.x) || LV.Theme.gapNone,
+                    correctedY,
+                    Number(rectangle.width) || LV.Theme.gapNone,
+                    Math.max(1, Number(rectangle.height) || LV.Theme.textBodyLineHeight));
     }
 
     function displayGeometryItem() {
@@ -343,7 +402,38 @@ Item {
     }
 
     function lineStartGeometryItem() {
-        return control.renderedOverlayVisible ? renderedOverlay : textInput.editorItem;
+        return control.renderedOverlayVisible ? renderedGeometryProbe : textInput.editorItem;
+    }
+
+    function renderedBlockYOffsetBeforeSource(sourcePosition) {
+        if (!control.renderedOverlayVisible)
+            return LV.Theme.gapNone;
+        const boundedSourcePosition = control.boundedCursorPosition(sourcePosition, textInput.length);
+        const blocks = control.normalizedHtmlBlocks || [];
+        let bestSourceEnd = -1;
+        let correction = LV.Theme.gapNone;
+        for (let index = 0; index < blocks.length; ++index) {
+            const block = blocks[index];
+            if (!control.htmlBlockIsIiHtmlResourceBlock(block))
+                continue;
+            const blockEnd = control.htmlBlockSourceEnd(block);
+            if (blockEnd < 0 || blockEnd >= boundedSourcePosition || blockEnd <= bestSourceEnd)
+                continue;
+
+            const anchorSource = control.boundedCursorPosition(blockEnd + 1, textInput.length);
+            const anchorLogical = control.sourceOffsetToLogicalOffset(anchorSource, true);
+            const overlayAnchor = control.boundedCursorPosition(anchorLogical, Number(renderedOverlay.length) || 0);
+            const probeAnchor = control.boundedCursorPosition(anchorLogical, renderedGeometryProbe.length);
+            const overlayRectangle = renderedOverlay.positionToRectangle(overlayAnchor);
+            const probeRectangle = renderedGeometryProbe.positionToRectangle(probeAnchor);
+            const overlayY = Number(overlayRectangle && overlayRectangle.y !== undefined ? overlayRectangle.y : 0);
+            const probeY = Number(probeRectangle && probeRectangle.y !== undefined ? probeRectangle.y : 0);
+            if (isFinite(overlayY) && isFinite(probeY)) {
+                correction = overlayY - probeY;
+                bestSourceEnd = blockEnd;
+            }
+        }
+        return correction;
     }
 
     function mapEditorPointToItem(target, x, y) {

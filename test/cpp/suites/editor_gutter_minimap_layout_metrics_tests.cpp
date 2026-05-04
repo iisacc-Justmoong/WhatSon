@@ -78,7 +78,7 @@ void WhatSonCppRegressionTests::contentsGutterLineNumberGeometry_samplesEditorGe
 
     geometry.setEditorGeometryHost(&geometryHost);
     geometry.setSourceText(QStringLiteral("first\nsecond\nthird"));
-    geometry.setLogicalLineStartOffsets(QVariantList{0, 12, 24});
+    geometry.setLogicalLineStartOffsets(QVariantList{0, 6, 13});
     geometry.setLineNumberCount(3);
     geometry.setLineNumberBaseOffset(1);
     geometry.setFallbackTopInset(80.0);
@@ -407,7 +407,7 @@ void WhatSonCppRegressionTests::contentsGutterLineNumberGeometry_ignoresLogicalL
     geometry.setEditorGeometryHost(&geometryHost);
     geometry.setMapTarget(&gutterTarget);
     geometry.setSourceText(QStringLiteral("first\nsecond\nthird"));
-    geometry.setLogicalLineStartOffsets(QVariantList{0, 0, 12});
+    geometry.setLogicalLineStartOffsets(QVariantList{0, 6, 13});
     geometry.setLineNumberCount(3);
     geometry.setLineNumberBaseOffset(1);
     geometry.setFallbackTopInset(0.0);
@@ -428,6 +428,131 @@ void WhatSonCppRegressionTests::contentsGutterLineNumberGeometry_ignoresLogicalL
     QCOMPARE(thirdY, 34.0);
     QVERIFY(secondY > firstY);
     QVERIFY(thirdY > secondY);
+}
+
+void WhatSonCppRegressionTests::contentsGutterLineNumberGeometry_prefersLogicalLineStartsOverSparseSourceMap()
+{
+    ContentsGutterLineNumberGeometry geometry;
+    FakeGutterDisplayGeometryHost geometryHost;
+
+    geometry.setEditorGeometryHost(&geometryHost);
+    geometry.setSourceText(QStringLiteral("<bold>first</bold>\n\nthird"));
+    geometry.setLogicalLineStartOffsets(QVariantList{0, 6, 7});
+    geometry.setLogicalToSourceOffsets(QVariantList{0, 18, 19, 20, 21, 22, 23});
+    geometry.setLineNumberCount(3);
+    geometry.setLineNumberBaseOffset(1);
+    geometry.setFallbackTopInset(0.0);
+    geometry.setFallbackLineHeight(20.0);
+    geometryHost.clearSampledPositions();
+    geometry.refresh();
+
+    const QVariantList entries = geometry.lineNumberEntries();
+    QCOMPARE(entries.size(), 3);
+    QCOMPARE(geometryHost.sampledPositions(), QVariantList({0, 6, 7}));
+    QCOMPARE(geometryHost.sampledSourcePositions(), QVariantList({0, 19, 20}));
+    QCOMPARE(entries.at(0).toMap().value(QStringLiteral("y")).toReal(), 5.0);
+    QCOMPARE(entries.at(1).toMap().value(QStringLiteral("y")).toReal(), 17.0);
+    QCOMPARE(entries.at(2).toMap().value(QStringLiteral("y")).toReal(), 19.0);
+}
+
+void WhatSonCppRegressionTests::contentsGutterLineNumberGeometry_publishesRawLogicalAndGeometryCoordinatesPerRow()
+{
+    ContentsGutterLineNumberGeometry geometry;
+    FakeGutterDisplayGeometryHost geometryHost;
+
+    const QString firstText = QStringLiteral("first");
+    const QString resourceText = QStringLiteral("<resource type=\"image\" path=\"cover.png\" />");
+    const QString thirdText = QStringLiteral("third");
+    const QString sourceText = firstText
+        + QLatin1Char('\n')
+        + resourceText
+        + QLatin1Char('\n')
+        + thirdText;
+    const int firstEnd = firstText.size();
+    const int resourceStart = firstEnd + 1;
+    const int resourceEnd = resourceStart + resourceText.size();
+    const int thirdStart = resourceEnd + 1;
+
+    QVariantMap firstBlock;
+    firstBlock.insert(QStringLiteral("type"), QStringLiteral("paragraph"));
+    firstBlock.insert(QStringLiteral("sourceStart"), 0);
+    firstBlock.insert(QStringLiteral("sourceEnd"), firstEnd);
+
+    QVariantMap resourceBlock;
+    resourceBlock.insert(QStringLiteral("type"), QStringLiteral("resource"));
+    resourceBlock.insert(QStringLiteral("sourceStart"), resourceStart);
+    resourceBlock.insert(QStringLiteral("sourceEnd"), resourceEnd);
+
+    QVariantMap thirdBlock;
+    thirdBlock.insert(QStringLiteral("type"), QStringLiteral("paragraph"));
+    thirdBlock.insert(QStringLiteral("sourceStart"), thirdStart);
+    thirdBlock.insert(QStringLiteral("sourceEnd"), sourceText.size());
+
+    geometry.setEditorGeometryHost(&geometryHost);
+    geometry.setSourceText(sourceText);
+    geometry.setDocumentBlocks(QVariantList{firstBlock, resourceBlock, thirdBlock});
+    geometry.setLogicalLineStartOffsets(QVariantList{0, 6, 7});
+    geometry.setLogicalToSourceOffsets(QVariantList{
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        resourceStart,
+        thirdStart,
+        thirdStart + 1,
+        thirdStart + 2,
+        thirdStart + 3,
+        thirdStart + 4,
+        thirdStart + 5});
+    geometry.setLineNumberCount(3);
+    geometry.setLineNumberBaseOffset(1);
+    geometry.setFallbackLineHeight(20.0);
+    geometryHost.setSourceYOverride(0, 11.0);
+    geometryHost.setSourceYOverride(resourceStart, 32.0);
+    geometryHost.setSourceYOverride(thirdStart, 128.0);
+    geometryHost.setSourceHeightOverride(thirdStart, 24.0);
+    geometryHost.clearSampledPositions();
+    geometry.refresh();
+
+    const QVariantList entries = geometry.lineNumberEntries();
+    QCOMPARE(entries.size(), 3);
+    QCOMPARE(geometryHost.sampledPositions(), QVariantList({0, 6, 7}));
+    QCOMPARE(geometryHost.sampledSourcePositions(), QVariantList({0, resourceStart, thirdStart}));
+
+    const QVariantMap firstEntry = entries.at(0).toMap();
+    const QVariantMap resourceEntry = entries.at(1).toMap();
+    const QVariantMap thirdEntry = entries.at(2).toMap();
+
+    QCOMPARE(firstEntry.value(QStringLiteral("rawLineIndex")).toInt(), 0);
+    QCOMPARE(firstEntry.value(QStringLiteral("rawSourceStart")).toInt(), 0);
+    QCOMPARE(firstEntry.value(QStringLiteral("rawSourceEnd")).toInt(), firstEnd);
+    QCOMPARE(firstEntry.value(QStringLiteral("logicalStartOffset")).toInt(), 0);
+    QCOMPARE(firstEntry.value(QStringLiteral("logicalEndOffset")).toInt(), 6);
+    QCOMPARE(firstEntry.value(QStringLiteral("geometrySampled")).toBool(), true);
+    QCOMPARE(firstEntry.value(QStringLiteral("geometryY")).toReal(), 11.0);
+    QCOMPARE(firstEntry.value(QStringLiteral("geometryHeight")).toReal(), 21.0);
+    QCOMPARE(firstEntry.value(QStringLiteral("height")).toReal(), 21.0);
+
+    QCOMPARE(resourceEntry.value(QStringLiteral("rawLineIndex")).toInt(), 1);
+    QCOMPARE(resourceEntry.value(QStringLiteral("rawSourceStart")).toInt(), resourceStart);
+    QCOMPARE(resourceEntry.value(QStringLiteral("rawSourceEnd")).toInt(), resourceEnd);
+    QCOMPARE(resourceEntry.value(QStringLiteral("logicalStartOffset")).toInt(), 6);
+    QCOMPARE(resourceEntry.value(QStringLiteral("logicalEndOffset")).toInt(), 7);
+    QCOMPARE(resourceEntry.value(QStringLiteral("blockType")).toString(), QStringLiteral("resource"));
+    QCOMPARE(resourceEntry.value(QStringLiteral("geometryY")).toReal(), 32.0);
+    QCOMPARE(resourceEntry.value(QStringLiteral("geometryHeight")).toReal(), 96.0);
+    QCOMPARE(resourceEntry.value(QStringLiteral("height")).toReal(), 96.0);
+
+    QCOMPARE(thirdEntry.value(QStringLiteral("rawLineIndex")).toInt(), 2);
+    QCOMPARE(thirdEntry.value(QStringLiteral("rawSourceStart")).toInt(), thirdStart);
+    QCOMPARE(thirdEntry.value(QStringLiteral("rawSourceEnd")).toInt(), sourceText.size());
+    QCOMPARE(thirdEntry.value(QStringLiteral("logicalStartOffset")).toInt(), 7);
+    QCOMPARE(thirdEntry.value(QStringLiteral("logicalEndOffset")).toInt(), 12);
+    QCOMPARE(thirdEntry.value(QStringLiteral("geometryY")).toReal(), 128.0);
+    QCOMPARE(thirdEntry.value(QStringLiteral("geometryHeight")).toReal(), 24.0);
+    QCOMPARE(thirdEntry.value(QStringLiteral("height")).toReal(), 24.0);
 }
 
 void WhatSonCppRegressionTests::contentsGutterMarkerGeometry_marksCursorAndUnsavedLineSpans()

@@ -93,6 +93,18 @@ namespace
         return ok ? x : 0.0;
     }
 
+    qreal qmlRectangleHeight(const QVariant& value)
+    {
+        if (value.canConvert<QRectF>())
+        {
+            return value.toRectF().height();
+        }
+
+        bool ok = false;
+        const qreal height = value.toMap().value(QStringLiteral("height")).toReal(&ok);
+        return ok ? height : 0.0;
+    }
+
 } // namespace
 
 void WhatSonCppRegressionTests::qmlInlineFormatEditor_keepsNativeTextEditInputUncovered()
@@ -160,7 +172,11 @@ void WhatSonCppRegressionTests::qmlInlineFormatEditor_keepsNativeTextEditInputUn
     QVERIFY(inlineEditorSource.contains(QStringLiteral("property int mouseSelectionMode: TextEdit.SelectCharacters")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("readonly property bool nativeSelectionActive: textInput.selectionStart !== textInput.selectionEnd")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("property var normalizedHtmlBlocks: []")));
-    QVERIFY(inlineEditorSource.contains(QStringLiteral("readonly property bool renderedOverlayVisible: control.showRenderedOutput")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("readonly property bool renderedOverlayVisible: control.renderedOverlayAvailable")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("readonly property bool renderedOverlayAvailable: control.showRenderedOutput")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("readonly property bool renderedResourceOverlayPinned: control.renderedOverlayAvailable")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("function hasAtomicRenderedResourceBlocks()")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("&& (!control.nativeCompositionActive() || control.renderedResourceOverlayPinned)")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("readonly property bool renderedSelectionActive: control.renderedOverlayVisible && control.nativeSelectionActive")));
     QVERIFY(!inlineEditorSource.contains(QStringLiteral("&& !control.nativeSelectionActive")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("visible: control.renderedOverlayVisible")));
@@ -193,9 +209,15 @@ void WhatSonCppRegressionTests::qmlInlineFormatEditor_projectsGutterGeometryFrom
     QVERIFY(inlineEditorSource.contains(QStringLiteral("function displayGeometryItem()")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("return control.renderedOverlayVisible ? renderedGeometryProbe : textInput.editorItem")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("function lineStartGeometryItem()")));
-    QVERIFY(inlineEditorSource.contains(QStringLiteral("return control.renderedOverlayVisible ? renderedOverlay : textInput.editorItem")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("return control.renderedOverlayVisible ? renderedGeometryProbe : textInput.editorItem")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("function renderedBlockYOffsetBeforeSource(sourcePosition)")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("function resourceBlockAtSourcePosition(sourcePosition)")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("function resourceDisplayRectangleForBlock(block)")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("control.resourceBlockAtSourcePosition(sourcePosition)")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("control.resourceDisplayRectangleForBlock(resourceBlock)")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("control.renderedBlockYOffsetBeforeSource(sourcePosition)")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("sourcePosition !== undefined ? sourcePosition : position")));
-    QVERIFY(inlineEditorSource.contains(QStringLiteral("return geometryItem.positionToRectangle(resolvedPosition)")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("return Qt.rect(")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("geometryItem.mapToItem")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("text: control.displayGeometryText")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("textFormat: TextEdit.PlainText")));
@@ -650,6 +672,108 @@ Item {
     QTRY_VERIFY(inlineEditor->property("focused").toBool());
     QTest::keyClick(&window, Qt::Key_Z);
     QTRY_VERIFY(inlineEditor->property("text").toString().contains(QLatin1Char('z'), Qt::CaseInsensitive));
+}
+
+void WhatSonCppRegressionTests::qmlInlineFormatEditor_keepsResourceOverlayPinnedDuringNativeEditing()
+{
+    registerInlineFormatEditorRuntimeQmlTypes();
+
+    const QString repositoryRoot = qmlInlineFormatEditorRepositoryRootPath();
+    QQmlEngine engine;
+    addWhatSonInlineFormatEditorQmlImportPaths(engine, repositoryRoot);
+
+    const QString editorImportUrl =
+        QUrl::fromLocalFile(repositoryRoot + QStringLiteral("/src/app/qml/view/contents/editor")).toString();
+    const QByteArray qmlSource = QStringLiteral(R"QML(
+import QtQuick
+import "%1" as EditorView
+
+Item {
+    id: root
+    readonly property string resourceTag: "<resource type=\"image\" format=\".png\" path=\"icloud.wsresources/demo.wsresource\" id=\"demo\" />"
+    readonly property int resourceStart: 6
+    readonly property int resourceEnd: resourceStart + resourceTag.length
+    width: 360
+    height: 160
+
+    EditorView.ContentsInlineFormatEditor {
+        id: editor
+        objectName: "inlineFormatEditorUnderTest"
+        anchors.fill: parent
+        displayGeometryText: "Alpha\n\nBeta"
+        logicalToSourceOffsets: [
+            0, 1, 2, 3, 4, 5, 6,
+            root.resourceEnd + 1,
+            root.resourceEnd + 2,
+            root.resourceEnd + 3,
+            root.resourceEnd + 4,
+            root.resourceEnd + 5
+        ]
+        normalizedHtmlBlocks: [{
+            "htmlBlockIsDisplayBlock": true,
+            "htmlBlockObjectSource": "iiHtmlBlock",
+            "renderDelegateType": "resource",
+            "sourceStart": root.resourceStart,
+            "sourceEnd": root.resourceEnd
+        }]
+        renderedText: "<p style='margin-top:0px;margin-bottom:0px;'>Alpha</p><p style='margin-top:0px;margin-bottom:0px;'><img src='' width='120' height='60' /></p><p style='margin-top:0px;margin-bottom:0px;'>Beta</p>"
+        showRenderedOutput: true
+        text: "Alpha\n" + root.resourceTag + "\nBeta"
+    }
+}
+)QML").arg(editorImportUrl).toUtf8();
+
+    QQmlComponent component(&engine);
+    component.setData(
+        qmlSource,
+        QUrl::fromLocalFile(repositoryRoot + QStringLiteral("/test/cpp/InlineFormatPinnedResourceOverlayHarness.qml")));
+    if (component.status() == QQmlComponent::Error)
+    {
+        QFAIL(qPrintable(qmlInlineFormatEditorErrorString(component.errors())));
+    }
+
+    std::unique_ptr<QObject> rootObject(component.create());
+    if (!rootObject)
+    {
+        QFAIL(qPrintable(qmlInlineFormatEditorErrorString(component.errors())));
+    }
+
+    auto* rootItem = qobject_cast<QQuickItem*>(rootObject.get());
+    QVERIFY(rootItem != nullptr);
+
+    QQuickWindow window;
+    window.resize(360, 120);
+    rootItem->setParentItem(window.contentItem());
+    window.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&window));
+
+    QObject* inlineEditor = rootObject->findChild<QObject*>(QStringLiteral("inlineFormatEditorUnderTest"));
+    QVERIFY(inlineEditor != nullptr);
+    QObject* renderedOverlay = rootObject->findChild<QObject*>(QStringLiteral("contentsInlineFormatRenderedOverlay"));
+    QVERIFY(renderedOverlay != nullptr);
+
+    QVERIFY(!renderedOverlay->property("text").toString().contains(QStringLiteral("<resource")));
+    QTRY_VERIFY(inlineEditor->property("renderedResourceOverlayPinned").toBool());
+    QTRY_VERIFY(inlineEditor->property("renderedOverlayVisible").toBool());
+
+    const QVariant resourceStartArgument = rootObject->property("resourceStart");
+    QVariant resourceRectangle;
+    QVERIFY(QMetaObject::invokeMethod(
+        inlineEditor,
+        "positionToRectangle",
+        Q_RETURN_ARG(QVariant, resourceRectangle),
+        Q_ARG(QVariant, 6),
+        Q_ARG(QVariant, resourceStartArgument)));
+    QVERIFY(qmlRectangleHeight(resourceRectangle) > 40.0);
+
+    QMetaObject::invokeMethod(inlineEditor, "forceActiveFocus");
+    QTRY_VERIFY(inlineEditor->property("focused").toBool());
+    QTest::keyClick(&window, Qt::Key_Z);
+
+    QTRY_VERIFY(inlineEditor->property("text").toString().contains(QLatin1Char('z'), Qt::CaseInsensitive));
+    QVERIFY(inlineEditor->property("text").toString().contains(QStringLiteral("<resource type=\"image\"")));
+    QTRY_VERIFY(inlineEditor->property("renderedOverlayVisible").toBool());
+    QVERIFY(!renderedOverlay->property("text").toString().contains(QStringLiteral("<resource")));
 }
 
 void WhatSonCppRegressionTests::qmlInlineFormatEditor_keepsKeyboardSelectionAndOsImeNative()

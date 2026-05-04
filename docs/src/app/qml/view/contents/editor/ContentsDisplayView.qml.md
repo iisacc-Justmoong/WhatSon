@@ -14,10 +14,10 @@ Provides the note-backed center editor surface.
 - Binds LVRS metric tokens into `ContentsGutterLayoutMetrics`, and projection line counts into the minimap metrics,
   then consumes their resolved layout values.
 - Binds RAW source text, presentation-owned flattened display blocks, parser-owned logical document blocks, rendered
-  resource metadata, rendered content height, logical-to-source offsets, the mounted structured flow geometry host, and
-  the gutter item map target into `ContentsGutterLineNumberGeometry`, then passes the resolved line-number entries into
-  `view/contents/Gutter.qml`. Line-number rows are source-line based like a text editor gutter; parser/display blocks
-  annotate those rows, but do not create giant logical-block rows.
+  resource metadata, rendered content height, logical line-start offsets, logical-to-source offsets, the mounted
+  structured flow geometry host, and the gutter item map target into `ContentsGutterLineNumberGeometry`, then passes
+  the resolved line-number entries into `view/contents/Gutter.qml`. Line-number rows are source-line based like a text
+  editor gutter; parser/display blocks annotate those rows, but do not create giant logical-block rows.
 - Refreshes gutter line-number and marker geometry whenever note active state, editor-session text/binding state,
   presentation line count, parser block output, rendered resources, viewport size/scroll, or rendered content height
   changes. Gutter projection is intentionally repeatable; the editor host does not assume that one calculation made at
@@ -39,7 +39,8 @@ Provides the note-backed center editor surface.
   The inline editor uses that value only for visible caret projection above the RichText overlay.
 - Keeps live typing and committed terminator input on the same presentation path: `sourceTextEdited(...)` mutates the
   RAW editor session, `ContentsEditorPresentationProjection` rerenders from that RAW text, and the inline editor paints
-  the result through its read-only `TextEdit.RichText` overlay.
+  the result through its read-only `TextEdit.RichText` overlay. Resource-backed overlays are pinned while this live
+  loop is in flight, so a transient render turn cannot reveal the source `<resource ... />` tag.
 - Relies on `ContentsStructuredDocumentFlow.qml` for the bottom-empty-area accessibility hit target: clicking below the
   rendered body inside the center editor behaves like clicking the RAW body end, without changing the persistence path.
 - Wraps `ContentsStructuredDocumentFlow.qml` in a dedicated editor document `Flickable`. The viewport content height is
@@ -71,10 +72,11 @@ The live route is:
    image HTML used by the historical Figma `292:50` resource presentation when the payload is renderable.
 7. `ContentsGutterLayoutMetrics` resolves chrome widths from tokens, and `ContentsMinimapLayoutMetrics` continues to
    use projection line counts for the minimap surface.
-8. `ContentsGutterLineNumberGeometry` builds one row per RAW source physical line, maps each source-line start into the
-   rendered logical display offsets, samples `ContentsStructuredDocumentFlow.lineStartRectangle(...)`, and converts the
-   sampled point into the gutter item coordinate space. Resource-frame height is reflected only when the editor reports
-   later source-line starts below that frame.
+8. `ContentsGutterLineNumberGeometry` builds one row per RAW source physical line, maps that row index through
+   `logicalLineStartOffsets` like a code-editor line-block lookup, samples
+   `ContentsStructuredDocumentFlow.lineStartRectangle(...)`, and converts the sampled point into the gutter item
+   coordinate space. Each row entry keeps RAW coordinates, HTML/logical coordinates, and resolved geometry together.
+   Resource-frame or wrapped-row height is reflected only when the mounted editor reports that geometry.
 9. Note active-state changes, session synchronization, live RAW text edits, parser background refresh, resource
    renderer updates, projection line-count changes, and viewport movement can all request another gutter refresh.
    Recalculation is a normal part of the editor state loop, not a one-time layout step.

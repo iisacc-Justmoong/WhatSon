@@ -426,6 +426,7 @@ Item {
         fallbackTopInset: LV.Theme.gapNone
         lineNumberBaseOffset: gutterLayoutMetrics.lineNumberBaseOffset
         lineNumberCount: gutterLayoutMetrics.effectiveLineNumberCount
+        logicalLineStartOffsets: editorPresentationProjection.logicalLineStartOffsets
         logicalToSourceOffsets: editorPresentationProjection.logicalToSourceOffsets()
         mapTarget: contentsDisplayGutter
         objectName: "contentsDisplayGutterLineNumberGeometry"

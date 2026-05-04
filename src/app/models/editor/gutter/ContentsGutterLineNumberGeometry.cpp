@@ -580,9 +580,53 @@ int ContentsGutterLineNumberGeometry::logicalOffsetForSourceOffset(const int sou
     return nearestLogicalOffset;
 }
 
+int ContentsGutterLineNumberGeometry::logicalOffsetForLineSlot(
+    const LineSlot& slot,
+    const int lineIndex) const noexcept
+{
+    if (lineIndex >= 0 && lineIndex < m_logicalLineStartOffsets.size())
+    {
+        bool ok = false;
+        const int logicalLineStartOffset = m_logicalLineStartOffsets.at(lineIndex).toInt(&ok);
+        if (ok && logicalLineStartOffset >= 0)
+        {
+            return logicalLineStartOffset;
+        }
+    }
+
+    return logicalOffsetForSourceOffset(slot.sourceStart);
+}
+
+int ContentsGutterLineNumberGeometry::logicalEndOffsetForLineSlot(
+    const QList<LineSlot>& lineSlots,
+    const int lineIndex) const noexcept
+{
+    const LineSlot slot = lineSlots.value(lineIndex);
+    const int logicalStartOffset = logicalOffsetForLineSlot(slot, lineIndex);
+    if (lineIndex + 1 < m_logicalLineStartOffsets.size())
+    {
+        bool ok = false;
+        const int nextLogicalLineStartOffset = m_logicalLineStartOffsets.at(lineIndex + 1).toInt(&ok);
+        if (ok && nextLogicalLineStartOffset > logicalStartOffset)
+        {
+            return nextLogicalLineStartOffset;
+        }
+    }
+
+    if (lineIndex + 1 < lineSlots.size())
+    {
+        return std::max(
+            logicalStartOffset + 1,
+            logicalOffsetForSourceOffset(lineSlots.at(lineIndex + 1).sourceStart));
+    }
+
+    return std::max(logicalStartOffset + 1, logicalOffsetForSourceOffset(slot.sourceEnd));
+}
+
 bool ContentsGutterLineNumberGeometry::editorLineGeometryForSlot(
     const LineSlot& slot,
     const int fallbackIndex,
+    const int logicalOffset,
     qreal* resolvedY,
     qreal* resolvedHeight) const
 {
@@ -593,7 +637,6 @@ bool ContentsGutterLineNumberGeometry::editorLineGeometryForSlot(
 
     const int sourceLength = static_cast<int>(m_sourceText.size());
     const int sourceOffset = std::clamp(slot.sourceStart, 0, sourceLength);
-    const int logicalOffset = logicalOffsetForSourceOffset(sourceOffset);
     const QVariant rawRectangle = WhatSon::Editor::DynamicObjectSupport::invokeVariant(
         m_editorGeometryHost,
         "lineStartRectangle",
@@ -722,21 +765,31 @@ void ContentsGutterLineNumberGeometry::rebuildLineNumberEntries()
     lineYs.reserve(count);
     QList<qreal> lineHeights;
     lineHeights.reserve(count);
+    QList<int> logicalStartOffsets;
+    logicalStartOffsets.reserve(count);
+    QList<int> logicalEndOffsets;
+    logicalEndOffsets.reserve(count);
     QList<bool> sampledLineGeometry;
     sampledLineGeometry.reserve(count);
     bool sampledAnyLine = false;
     for (int index = 0; index < count; ++index)
     {
+        const LineSlot slot = lineSlots.value(index);
+        const int logicalStartOffset = logicalOffsetForLineSlot(slot, index);
+        const int logicalEndOffset = logicalEndOffsetForLineSlot(lineSlots, index);
         qreal sampledY = fallbackYForIndex(index);
         qreal sampledHeight = m_fallbackLineHeight;
         const bool sampled = editorLineGeometryForSlot(
-            lineSlots.value(index),
+            slot,
             index,
+            logicalStartOffset,
             &sampledY,
             &sampledHeight);
         sampledAnyLine = sampledAnyLine || sampled;
         lineYs.append(sampled ? sampledY : fallbackYForIndex(index));
         lineHeights.append(sampled ? sampledHeight : m_fallbackLineHeight);
+        logicalStartOffsets.append(logicalStartOffset);
+        logicalEndOffsets.append(logicalEndOffset);
         sampledLineGeometry.append(sampled);
     }
 
@@ -783,6 +836,14 @@ void ContentsGutterLineNumberGeometry::rebuildLineNumberEntries()
         const LineSlot slot = lineSlots.value(index);
         entry.insert(QStringLiteral("sourceStart"), slot.sourceStart);
         entry.insert(QStringLiteral("sourceEnd"), slot.sourceEnd);
+        entry.insert(QStringLiteral("rawLineIndex"), index);
+        entry.insert(QStringLiteral("rawSourceStart"), slot.sourceStart);
+        entry.insert(QStringLiteral("rawSourceEnd"), slot.sourceEnd);
+        entry.insert(QStringLiteral("logicalStartOffset"), logicalStartOffsets.value(index, 0));
+        entry.insert(QStringLiteral("logicalEndOffset"), logicalEndOffsets.value(index, 0));
+        entry.insert(QStringLiteral("geometryY"), lineYs.value(index, fallbackYForIndex(index)));
+        entry.insert(QStringLiteral("geometryHeight"), lineHeights.value(index, m_fallbackLineHeight));
+        entry.insert(QStringLiteral("geometrySampled"), sampledLineGeometry.value(index, false));
         entry.insert(QStringLiteral("blockType"), slot.blockType);
         nextEntries.append(entry);
     }
