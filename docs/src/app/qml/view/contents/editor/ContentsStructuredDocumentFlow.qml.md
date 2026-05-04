@@ -10,6 +10,10 @@ Hosts the note document surface after `ContentsDisplayView.qml` has mounted a se
 - Receives resource-resolved `editorSurfaceHtml`, `logicalText`, `htmlTokens`, and `normalizedHtmlBlocks` from
   `ContentsDisplayView.qml`.
 - Mounts `ContentsInlineFormatEditor.qml` as the live `LV.TextEditor` path.
+- Mounts `ContentsEditorTagInsertionController` and binds the inline editor's tag-management key hook to the
+  document flow.
+- Handles explicit formatting/body tag shortcuts by asking the tag insertion controller to build the next RAW tag
+  insertion payload, then applying that payload through the live inline editor.
 - Passes `logicalText` into the inline editor's display-geometry probe for cursor and selection projection.
 - Passes the current logical cursor position into the inline editor so its overlay cursor is projected from visible
   text geometry while the authoritative edit buffer remains RAW source text.
@@ -19,6 +23,8 @@ Hosts the note document surface after `ContentsDisplayView.qml` has mounted a se
   selection is based on the iiHtmlBlock display block span and painted as one atomic block.
 - Keeps the inline editor as the only place where the RichText editor-surface overlay is painted.
 - Emits `sourceTextEdited(text)` upward when the user changes the RAW text buffer.
+- Tag-management shortcuts emit through the same `sourceTextEdited(text)` path after the live editor buffer is
+  updated; they do not serialize RichText back into `.wsnbody`.
 - Exposes `normalizedBlocks()` as a compatibility hook for callers that need the renderer-owned block stream.
 - Exposes `editorContentHeight` and `editorCursorPosition` to the parent editor host.
 - Exposes `pointRequestsTerminalBodyClick(localX, localY)` and `focusTerminalBodyFromPoint(localX, localY)` for the

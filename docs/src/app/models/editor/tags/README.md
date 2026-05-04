@@ -1,30 +1,31 @@
 # `src/app/models/editor/tags`
 
 ## Responsibility
-Owns editor-body tag-management helpers that are not inline text formatting.
+Owns editor tag-management helpers.
 
-## Non-format editor body tags
+## Editor tag insertion
+- Inline formatting tags such as `<bold>`, `<italic>`, `<underline>`, `<highlight>`, and their aliases.
 - `<agenda>` / `<task>` parsing, task toggles, and agenda Enter behavior.
-- `<callout>` parsing, selected-range wrapping, Shift+Enter body line breaks, and plain-Enter
-  callout exit behavior.
+- `<callout>` parsing, selected-range wrapping, Shift+Enter body line breaks, and plain-Enter callout exit behavior.
 - `<break>` canonicalization and structured verification.
 - `<resource ... />` RAW source insertion and canonical resource-tag text generation.
-- Shared RAW insertion helpers for generated body tags. `ContentsRawBodyTagMutationSupport.js` builds the canonical
-  next-source payload for agenda, callout range wrapping/insertion, break, and generic raw tag insertions before the
-  parser/renderer observes the new `.wsnbody` snapshot.
+- `ContentsEditorTagInsertionController` builds the common next-source RAW tag insertion payloads for inline
+  formatting, generated agenda/callout/break insertion, and selected-range body tag wrapping. Formatting commands use
+  this same RAW tag insertion model instead of a separate formatting mutation model.
 - Structured body-tag linting and advisory correction state for parser/renderer feedback.
 
 ## Current Modules
 - `ContentsAgendaBackend.*`
 - `ContentsCalloutBackend.*`
-- `ContentsRawBodyTagMutationSupport.js`
+- `ContentsEditorTagInsertionController.*`
 - `ContentsStructuredTagValidator.*`
 - `WhatSonStructuredTagLinter.*`
 - `ContentsResourceTagTextGenerator.*`
 - `ContentsResourceTagController.qml`
 
 ## Boundary
-- Inline style tags such as bold, italic, highlight, and links remain under editor formatting responsibilities.
+- Formatting rendering remains under `src/app/models/editor/format`, but formatting writes belong to this tag
+  insertion boundary because RAW `.wsnbody` sees them as tag insertion.
 - Workspace hierarchy tag storage remains under `src/app/models/file/hierarchy/tags`.
 - General hub/package/storage validators remain under `src/app/models/file/validator`.
 - Resource import orchestration remains under `src/app/models/editor/resource`; only RAW `<resource ... />` tag

@@ -38,6 +38,7 @@ set(WHATSON_CPP_REGRESSION_TEST_SOURCES
         "${CMAKE_SOURCE_DIR}/src/app/models/editor/parser/ContentsWsnBodyBlockParser.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/editor/renderer/ContentsHtmlBlockRenderPipeline.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/editor/renderer/ContentsStructuredBlockRenderer.cpp"
+        "${CMAKE_SOURCE_DIR}/src/app/models/editor/tags/ContentsEditorTagInsertionController.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/editor/format/ContentsInlineStyleOverlayRenderer.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/editor/format/ContentsPlainTextSourceMutator.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/editor/format/ContentsTextFormatRenderer.cpp"

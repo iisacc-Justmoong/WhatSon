@@ -3,6 +3,7 @@
 #include "app/models/editor/input/ContentsInlineFormatEditorController.hpp"
 #include "app/models/editor/format/ContentsInlineStyleOverlayRenderer.hpp"
 #include "app/models/editor/format/ContentsPlainTextSourceMutator.hpp"
+#include "app/models/editor/tags/ContentsEditorTagInsertionController.hpp"
 
 #include <QDir>
 #include <QDirIterator>
@@ -63,6 +64,7 @@ namespace
         static const bool registered = []() {
             qmlRegisterType<ContentsInlineStyleOverlayRenderer>("WhatSon.App.Internal", 1, 0, "ContentsInlineStyleOverlayRenderer");
             qmlRegisterType<ContentsPlainTextSourceMutator>("WhatSon.App.Internal", 1, 0, "ContentsPlainTextSourceMutator");
+            qmlRegisterType<ContentsEditorTagInsertionController>("WhatSon.App.Internal", 1, 0, "ContentsEditorTagInsertionController");
             qmlRegisterType<ContentsInlineFormatEditorController>("WhatSon.App.Internal", 1, 0, "ContentsInlineFormatEditorController");
             return true;
         }();
@@ -96,6 +98,7 @@ void WhatSonCppRegressionTests::qmlInlineFormatEditor_keepsNativeTextEditInputUn
     QVERIFY(inlineEditorSource.contains(QStringLiteral("function triggerTagManagementShortcut(key, modifiers)")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("event.accepted = false;")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("sequence: \"Ctrl+Alt+C\"")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("sequence: \"Ctrl+Alt+A\"")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("event.matches(StandardKey.Paste)")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("!control.eventRequestsPasteShortcut(event)")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("!control.eventRequestsInlineFormatShortcut(event)")));
@@ -431,6 +434,141 @@ Item {
     QCOMPARE(rootObject->property("handledKey").toInt(), static_cast<int>(Qt::Key_C));
     QVERIFY(rootObject->property("handledModifiers").toInt() & static_cast<int>(Qt::ControlModifier));
     QVERIFY(rootObject->property("handledModifiers").toInt() & static_cast<int>(Qt::AltModifier));
+
+    rootObject->setProperty("handled", false);
+    rootObject->setProperty("handledKey", -1);
+    rootObject->setProperty("handledModifiers", 0);
+
+    QTest::keyClick(&window, Qt::Key_A, Qt::ControlModifier | Qt::AltModifier);
+
+    QTRY_VERIFY(rootObject->property("handled").toBool());
+    QCOMPARE(rootObject->property("handledKey").toInt(), static_cast<int>(Qt::Key_A));
+    QVERIFY(rootObject->property("handledModifiers").toInt() & static_cast<int>(Qt::ControlModifier));
+    QVERIFY(rootObject->property("handledModifiers").toInt() & static_cast<int>(Qt::AltModifier));
+}
+
+void WhatSonCppRegressionTests::qmlStructuredDocumentFlow_appliesInlineFormatShortcutToSelectedRawRange()
+{
+    registerInlineFormatEditorRuntimeQmlTypes();
+
+    const QString repositoryRoot = qmlInlineFormatEditorRepositoryRootPath();
+    QQmlEngine engine;
+    addWhatSonInlineFormatEditorQmlImportPaths(engine, repositoryRoot);
+
+    const QString editorImportUrl =
+        QUrl::fromLocalFile(repositoryRoot + QStringLiteral("/src/app/qml/view/contents/editor")).toString();
+    const QByteArray qmlSource = QStringLiteral(R"QML(
+import QtQuick
+import "%1" as EditorView
+
+Item {
+    id: root
+    objectName: "structuredDocumentFlowFormattingHarness"
+    property string committedText: ""
+    width: 360
+    height: 96
+
+    EditorView.ContentsStructuredDocumentFlow {
+        id: documentFlow
+        objectName: "structuredDocumentFlowUnderTest"
+        anchors.fill: parent
+        editorSurfaceHtml: sourceText
+        logicalText: sourceText
+        sourceText: "Alpha beta"
+
+        onSourceTextEdited: function (text) {
+            root.committedText = text;
+            documentFlow.sourceText = text;
+        }
+    }
+}
+)QML").arg(editorImportUrl).toUtf8();
+
+    QQmlComponent component(&engine);
+    component.setData(
+        qmlSource,
+        QUrl::fromLocalFile(repositoryRoot + QStringLiteral("/test/cpp/StructuredDocumentFlowFormattingHarness.qml")));
+    if (component.status() == QQmlComponent::Error)
+    {
+        QFAIL(qPrintable(qmlInlineFormatEditorErrorString(component.errors())));
+    }
+
+    std::unique_ptr<QObject> rootObject(component.create());
+    if (!rootObject)
+    {
+        QFAIL(qPrintable(qmlInlineFormatEditorErrorString(component.errors())));
+    }
+
+    auto* rootItem = qobject_cast<QQuickItem*>(rootObject.get());
+    QVERIFY(rootItem != nullptr);
+
+    QQuickWindow window;
+    window.resize(360, 96);
+    rootItem->setParentItem(window.contentItem());
+    window.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&window));
+
+    QObject* documentFlow = rootObject->findChild<QObject*>(QStringLiteral("structuredDocumentFlowUnderTest"));
+    QVERIFY(documentFlow != nullptr);
+    QObject* inlineEditor = rootObject->findChild<QObject*>(QStringLiteral("contentsStructuredDocumentInlineEditor"));
+    QVERIFY(inlineEditor != nullptr);
+    QVERIFY(QMetaObject::invokeMethod(inlineEditor, "forceActiveFocus"));
+    QTRY_VERIFY(inlineEditor->property("focused").toBool());
+
+    QVariant restoreResult;
+    QVERIFY(QMetaObject::invokeMethod(
+        inlineEditor,
+        "restoreSelectionRange",
+        Q_RETURN_ARG(QVariant, restoreResult),
+        Q_ARG(QVariant, 0),
+        Q_ARG(QVariant, 5),
+        Q_ARG(QVariant, 5)));
+    QVERIFY(restoreResult.toBool());
+    QTRY_VERIFY(inlineEditor->property("nativeSelectionActive").toBool());
+
+    QTest::keyClick(&window, Qt::Key_B, Qt::ControlModifier);
+
+    QTRY_COMPARE(rootObject->property("committedText").toString(), QStringLiteral("<bold>Alpha</bold> beta"));
+    QTRY_COMPARE(inlineEditor->property("text").toString(), QStringLiteral("<bold>Alpha</bold> beta"));
+    QCOMPARE(inlineEditor->property("selectionStart").toInt(), QStringLiteral("<bold>").size());
+    QCOMPARE(
+        inlineEditor->property("selectionEnd").toInt(),
+        QStringLiteral("<bold>Alpha").size());
+
+    rootObject->setProperty("committedText", QString());
+    documentFlow->setProperty("sourceText", QStringLiteral("Alpha\nBeta"));
+    QTRY_COMPARE(inlineEditor->property("text").toString(), QStringLiteral("Alpha\nBeta"));
+    QVERIFY(QMetaObject::invokeMethod(
+        inlineEditor,
+        "restoreSelectionRange",
+        Q_RETURN_ARG(QVariant, restoreResult),
+        Q_ARG(QVariant, 0),
+        Q_ARG(QVariant, 5),
+        Q_ARG(QVariant, 5)));
+    QVERIFY(restoreResult.toBool());
+    QTRY_VERIFY(inlineEditor->property("nativeSelectionActive").toBool());
+
+    QTest::keyClick(&window, Qt::Key_C, Qt::ControlModifier | Qt::AltModifier);
+
+    QTRY_COMPARE(rootObject->property("committedText").toString(), QStringLiteral("<callout>Alpha</callout>\nBeta"));
+    QTRY_COMPARE(inlineEditor->property("text").toString(), QStringLiteral("<callout>Alpha</callout>\nBeta"));
+
+    rootObject->setProperty("committedText", QString());
+    documentFlow->setProperty("sourceText", QStringLiteral("Intro"));
+    QTRY_COMPARE(inlineEditor->property("text").toString(), QStringLiteral("Intro"));
+    QVERIFY(QMetaObject::invokeMethod(
+        inlineEditor,
+        "restoreSelectionRange",
+        Q_RETURN_ARG(QVariant, restoreResult),
+        Q_ARG(QVariant, 5),
+        Q_ARG(QVariant, 5),
+        Q_ARG(QVariant, 5)));
+    QVERIFY(restoreResult.toBool());
+
+    QTest::keyClick(&window, Qt::Key_A, Qt::ControlModifier | Qt::AltModifier);
+
+    QTRY_VERIFY(rootObject->property("committedText").toString().startsWith(QStringLiteral("Intro\n<agenda date=\"")));
+    QVERIFY(rootObject->property("committedText").toString().contains(QStringLiteral("<task done=\"false\"> </task></agenda>")));
 }
 
 void WhatSonCppRegressionTests::qmlInlineFormatEditor_keepsRenderedOverlayDuringNativeSelection()

@@ -35,9 +35,9 @@
   document renderer contract.
 - `format/ContentsPlainTextSourceMutator.*` owns plain-text RAW span replacement so ordinary typing no longer calls a
   renderer object to rewrite source.
-- `format/ContentsRawInlineStyleMutationSupport.js` owns selection-based inline-style RAW mutations.
-- `tags/ContentsRawBodyTagMutationSupport.js` is the editor-owned RAW body-tag mutation helper for generated agenda,
-  selected-range callout wrapping, callout insertion, break, and generic raw tag text.
+- `tags/ContentsEditorTagInsertionController.*` owns RAW tag insertion payloads for formatting tags such as `<bold>`
+  and `<italic>`, generated body tags such as `<agenda>`, `<callout>`, and `<break>`, and selected-range body tag
+  wrapping.
 - `structure/ContentsStructuredDocument*` owns the structured document host, collection policy, focus policy, mutation
   policy, and blocks model used by `ContentsStructuredDocumentFlow.qml`.
 - `minimap/ContentsMinimapLayoutMetrics.*` owns minimap width, row-count, and visibility-to-width calculations that

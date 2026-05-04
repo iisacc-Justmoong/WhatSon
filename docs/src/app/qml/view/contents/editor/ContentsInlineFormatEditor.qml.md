@@ -16,6 +16,9 @@ Wraps the live `LV.TextEditor` used by the note document surface.
   between the OS pointer stream and Qt's text selection machinery.
 - Public programmatic text replacement APIs delegate to `ContentsInlineFormatEditorController`, so focused native
   selection and composition policy can reject or defer host-side surface refresh instead of clearing OS selection.
+- Explicit tag-management mutations use `applyTagManagementMutationPayload(...)`, which bypasses host-side sync
+  deferral because the command is initiated by the focused editor itself, restores the returned source selection, and
+  emits the normal `textEdited(...)` signal for RAW persistence.
 - Cursor visibility is explicit and mutually exclusive. The native cursor delegate is visible only for the plain source
   surface, while the component paints a projected cursor above the RichText overlay whenever rendered output is visible.
 - The RichText overlay remains visible while `LV.TextEditor` has a non-empty native selection. The component mirrors
@@ -36,9 +39,13 @@ Wraps the live `LV.TextEditor` used by the note document surface.
   typing cannot expose the RAW `<resource ... />` tag while the renderer catches up.
 - `textEdited(text)` reports plain RAW text upward.
 - `tagManagementKeyPressHandler` is the only key hook and is limited to explicit tag-management shortcuts.
+- The explicit body-tag shortcut surface forwards `Ctrl/Meta+Alt+C` for callout and `Ctrl/Meta+Alt+A` for agenda to
+  the same tag-management hook used by formatting commands.
 - `ContentsInlineFormatEditorController` is mounted as the C++/QML helper bridge for focus, selection snapshots, native
   composition checks, local selection interaction tracking, and programmatic text-sync policy against
   `LV.TextEditor.editorItem`.
+- User-initiated tag-management commands apply through the controller's immediate programmatic text path before
+  restoring the source selection returned by the tag insertion controller.
 - `restoreSelectionRange(...)` restores non-empty ranges through native `moveCursorSelection(...)`.
 - `focusTerminalBodyPosition()` focuses the native `LV.TextEditor`, clears any stale selection, and moves the cursor to
   the RAW text end through `setCursorPositionPreservingNativeInput(...)`.

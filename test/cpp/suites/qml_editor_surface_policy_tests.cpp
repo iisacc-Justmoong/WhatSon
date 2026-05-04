@@ -13,6 +13,7 @@ void WhatSonCppRegressionTests::qmlInternalTypeRegistrar_usesLvrsManifestRegistr
     QVERIFY(registrarSource.contains(QStringLiteral("ContentsEditorPresentationProjection")));
     QVERIFY(registrarSource.contains(QStringLiteral("ContentsStructuredBlockRenderer")));
     QVERIFY(registrarSource.contains(QStringLiteral("ContentsMinimapLayoutMetrics")));
+    QVERIFY(registrarSource.contains(QStringLiteral("ContentsEditorTagInsertionController")));
 }
 
 void WhatSonCppRegressionTests::qmlContextMenus_treatRightClickAndLongPressAsSymmetricPointerTriggers()
@@ -174,22 +175,24 @@ void WhatSonCppRegressionTests::qmlStructuredEditors_commitsPlainTextBlocksDirec
 
 void WhatSonCppRegressionTests::qmlStructuredEditors_insertsInlineFormatTagsAtCollapsedCursor()
 {
-    const QString mutationSupportSource = readUtf8SourceFile(
-        QStringLiteral("src/app/models/editor/format/ContentsRawInlineStyleMutationSupport.js"));
+    const QString tagInsertionControllerSource = readUtf8SourceFile(
+        QStringLiteral("src/app/models/editor/tags/ContentsEditorTagInsertionController.cpp"));
 
-    QVERIFY(mutationSupportSource.contains(QStringLiteral("buildInlineStyleSelectionPayload")));
-    QVERIFY(mutationSupportSource.contains(QStringLiteral("selectionStart")));
-    QVERIFY(mutationSupportSource.contains(QStringLiteral("selectionEnd")));
+    QVERIFY(tagInsertionControllerSource.contains(QStringLiteral("buildTagInsertionPayload")));
+    QVERIFY(tagInsertionControllerSource.contains(QStringLiteral("openingTag + closingTag")));
+    QVERIFY(tagInsertionControllerSource.contains(QStringLiteral("canonicalSourceForGeneratedBodyTag")));
+    QVERIFY(tagInsertionControllerSource.contains(QStringLiteral("cursorPosition")));
 }
 
 void WhatSonCppRegressionTests::qmlStructuredEditors_wrapsSelectedTextIntoRawInlineStyleTags()
 {
-    const QString mutationSupportSource = readUtf8SourceFile(
-        QStringLiteral("src/app/models/editor/format/ContentsRawInlineStyleMutationSupport.js"));
+    const QString tagInsertionControllerSource = readUtf8SourceFile(
+        QStringLiteral("src/app/models/editor/tags/ContentsEditorTagInsertionController.cpp"));
 
-    QVERIFY(mutationSupportSource.contains(QStringLiteral("buildInlineStyleSelectionPayload")));
-    QVERIFY(mutationSupportSource.contains(QStringLiteral("unsupported-style-tag")));
-    QVERIFY(mutationSupportSource.contains(QStringLiteral("nextSourceText")));
+    QVERIFY(tagInsertionControllerSource.contains(QStringLiteral("buildTagInsertionPayload")));
+    QVERIFY(tagInsertionControllerSource.contains(QStringLiteral("source.left(start) + fullReplacementSourceText + source.mid(end)")));
+    QVERIFY(tagInsertionControllerSource.contains(QStringLiteral("unsupported-tag-kind")));
+    QVERIFY(tagInsertionControllerSource.contains(QStringLiteral("nextSourceText")));
 }
 
 void WhatSonCppRegressionTests::qmlStructuredEditors_insertStructuredShortcutsThroughRawSourceMutations()
@@ -218,10 +221,21 @@ void WhatSonCppRegressionTests::qmlStructuredEditors_routesInlineFormatShortcutT
 {
     const QString documentFlowSource = readUtf8SourceFile(
         QStringLiteral("src/app/qml/view/contents/editor/ContentsStructuredDocumentFlow.qml"));
+    const QString inlineEditorSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/contents/editor/ContentsInlineFormatEditor.qml"));
 
+    QVERIFY(documentFlowSource.contains(QStringLiteral("ContentsEditorTagInsertionController {")));
     QVERIFY(documentFlowSource.contains(QStringLiteral("ContentsInlineFormatEditor {")));
+    QVERIFY(documentFlowSource.contains(QStringLiteral("tagManagementKeyPressHandler: function (event)")));
+    QVERIFY(documentFlowSource.contains(QStringLiteral("function applyInlineFormatShortcut(event)")));
+    QVERIFY(documentFlowSource.contains(QStringLiteral("function applyBodyTagShortcut(event)")));
+    QVERIFY(documentFlowSource.contains(QStringLiteral("buildTagInsertionPayload")));
+    QVERIFY(documentFlowSource.contains(QStringLiteral("tagNameForBodyShortcutKey")));
+    QVERIFY(documentFlowSource.contains(QStringLiteral("editor.applyTagManagementMutationPayload(payload)")));
     QVERIFY(documentFlowSource.contains(QStringLiteral("onTextEdited: function (text)")));
     QVERIFY(documentFlowSource.contains(QStringLiteral("sourceTextEdited(text)")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("function applyTagManagementMutationPayload(payload)")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("applyImmediateProgrammaticText(nextText)")));
 }
 
 void WhatSonCppRegressionTests::qmlStructuredEditors_requireCommittedRawMutationForTagCommands()

@@ -13,6 +13,9 @@ Provides the QML helper object consumed by `ContentsInlineFormatEditorController
 - Defers programmatic text replacement while native composition is active.
 - Tracks focused local cursor/selection interaction and consults `ContentsEditorInputPolicyAdapter` before accepting a
   host-side programmatic text replacement. This preserves OS/Qt selection gestures while the user is selecting text.
+- Exposes `applyImmediateProgrammaticText(...)` for focused user commands that intentionally mutate the live editor
+  buffer, such as formatting and body-tag insertion shortcuts. This path clears deferred host refresh state and applies
+  the command payload immediately because the command already originates from the active text editor.
 - Treats an active native selection as local selection interaction even if the platform does not emit every cursor or
   selection notify signal through the helper bridge.
 - Does not own persistence or renderer state; it only reflects the mounted editor control and text input.

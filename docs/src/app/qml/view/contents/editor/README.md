@@ -24,7 +24,9 @@ Editor-facing QML view components for the center content surface.
   `normalizedHtmlBlocks`, and passes `logicalText` plus the logical cursor position to the inline editor's geometry
   probe so the overlay cursor measures visible text instead of RichText HTML tag positions. The same renderer-owned
   `normalizedHtmlBlocks` stream is forwarded as selection metadata so resource selection uses the iiHtmlBlock display
-  block span as one atomic block.
+  block span as one atomic block. It also binds explicit formatting and body-tag shortcuts to the C++ tag insertion
+  controller so `Cmd/Ctrl+B`, `I`, `U`, `H`, and body commands such as callout/agenda insert or wrap proprietary RAW
+  tags before the normal session persistence path runs.
 - The center document slot owns a vertical `Flickable` viewport around `ContentsStructuredDocumentFlow.qml`; long note
   bodies scroll inside that viewport.
 - `ContentsInlineFormatEditor.qml` keeps editing on an `LV.TextEditor` plain-text buffer while displaying the read-side
@@ -68,4 +70,6 @@ source mutation policy remain in C++ model/renderer objects.
   gesture 경로를 사용하게 하여 OS/Qt 선택 경로를 그대로 사용한다.
 - programmatic sync: 포커스된 native selection 중에는 inline editor controller가 host-side 텍스트 복원을
   defer/reject할 수 있어 selection이 즉시 해제되지 않는다.
+- tag insertion: 명시적 포맷팅 및 본문 태그 단축키는 C++ tag insertion controller가 만든 RAW payload를
+  적용한 뒤 일반 `sourceTextEdited` 경로로 저장한다.
 - 변경 시: 위 영어 본문을 수정하면 이 한국어 하단 섹션도 함께 최신 상태로 맞춘다.

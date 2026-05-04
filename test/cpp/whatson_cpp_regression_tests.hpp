@@ -5,6 +5,7 @@
 #include "app/models/editor/format/ContentsInlineStyleOverlayRenderer.hpp"
 #include "app/models/editor/format/ContentsPlainTextSourceMutator.hpp"
 #include "app/models/editor/format/ContentsTextFormatRenderer.hpp"
+#include "app/models/editor/tags/ContentsEditorTagInsertionController.hpp"
 #include "app/models/editor/minimap/ContentsMinimapLayoutMetrics.hpp"
 #include "app/models/editor/projection/ContentsEditorPresentationProjection.hpp"
 #include "app/models/display/paper/print/ContentsPagePrintLayoutRenderer.hpp"
@@ -990,9 +991,9 @@ private slots:
     void unusedResourcesSensor_refreshesAfterRawBodyEmbedsAResource();
     void resourcesImportController_wiresAnnotationBitmapGenerationIntoPackageCreation();
     void resourceTagTextGenerator_and_noteFolderSemantics_normalizeDescriptorsAndXml();
-    void editorTagsBoundary_groupsNonFormatBodyTagResponsibilities();
+    void editorTagsBoundary_groupsEditorTagInsertionResponsibilities();
     void contentsCalloutBackend_exitsOnPlainEnterAndSplitsAtCursor();
-    void editorBodyTagMutationSupport_buildsRawTagInsertionPayloads();
+    void editorTagInsertionController_buildsBodyTagInsertionPayloads();
     void foldersHierarchyParser_escapesLiteralSlashLabelsIntoSingleSegments();
     void foldersHierarchySessionService_preservesEscapedLiteralSlashFolderPaths();
     void sidebarHierarchyRenameController_preservesLiteralSlashFolderLabels();
@@ -1055,6 +1056,7 @@ private slots:
     void qmlInlineFormatEditor_positionsVisibleProbeFromLogicalDisplayText();
     void qmlStructuredDocumentFlow_routesBottomBlankClickToBodyEnd();
     void qmlInlineFormatEditor_forwardsInlineFormatShortcutsToTagManagementHook();
+    void qmlStructuredDocumentFlow_appliesInlineFormatShortcutToSelectedRawRange();
     void mobileChrome_usesSharedFigmaControlSurfaceColor();
     void mobileHierarchyRouteStateStore_tracksNormalizedSelectionRestoreState();
     void mobileHierarchySelectionCoordinator_prefersExplicitSidebarBindingsAndFallbacks();
@@ -1067,7 +1069,8 @@ private slots:
     void textFormatRenderer_appliesPaperPaletteToEditorAndPreviewHtml();
     void editorPresentationProjection_publishesHtmlBlockPipelineToQmlHost();
     void textFormatRenderer_preservesMarkdownUnorderedListMarkersWithoutRegexWarnings();
-    void editorInlineStyleMutationSupport_buildsDirectRawSelectionWrapMutations();
+    void editorTagInsertionController_replacesLegacyInlineStyleMutationSupport();
+    void editorTagInsertionController_buildsShortcutSourceWrapMutations();
     void displayPaperModels_hostPageAndPrintViewModeObjectsUnderModelsDirectory();
     void noteBodyPersistence_roundTripsAndProjectsCanonicalWebLinks();
     void noteBodyPersistence_stripsRenderedHtmlBlockArtifactsFromSourceProjection();

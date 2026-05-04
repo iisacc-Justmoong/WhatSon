@@ -38,6 +38,7 @@ public:
     Q_INVOKABLE void flushDeferredProgrammaticText(bool force) const;
     Q_INVOKABLE void clearDeferredProgrammaticText() const;
     Q_INVOKABLE bool dispatchCommittedTextEditedIfReady() const;
+    Q_INVOKABLE void applyImmediateProgrammaticText(const QString& nextText) const;
     Q_INVOKABLE void setProgrammaticText(const QString& nextText) const;
     Q_INVOKABLE void scheduleCommittedTextEditedDispatch() const;
 

@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import WhatSon.App.Internal 1.0
 import LVRS 1.0 as LV
 
 Item {
@@ -23,6 +24,42 @@ Item {
 
     function normalizedBlocks() {
         return documentFlow.normalizedHtmlBlocks;
+    }
+
+    function applyInlineFormatShortcut(event) {
+        const tagName = tagInsertionController.tagNameForShortcutKey(Number(event.key) || 0);
+        if (tagName.length <= 0)
+            return false;
+
+        const selectedRange = editor.selectedSourceRange();
+        const payload = tagInsertionController.buildTagInsertionPayload(
+                    documentFlow.sourceText,
+                    Number(selectedRange.start) || 0,
+                    Number(selectedRange.end) || 0,
+                    tagName);
+        return editor.applyTagManagementMutationPayload(payload);
+    }
+
+    function applyBodyTagShortcut(event) {
+        const tagName = tagInsertionController.tagNameForBodyShortcutKey(Number(event.key) || 0);
+        if (tagName.length <= 0)
+            return false;
+
+        const selectedRange = editor.selectedSourceRange();
+        const payload = tagInsertionController.buildTagInsertionPayload(
+                    documentFlow.sourceText,
+                    Number(selectedRange.start) || 0,
+                    Number(selectedRange.end) || 0,
+                    tagName);
+        return editor.applyTagManagementMutationPayload(payload);
+    }
+
+    function handleTagManagementKeyPress(event) {
+        if (editor.eventRequestsInlineFormatShortcut(event))
+            return documentFlow.applyInlineFormatShortcut(event);
+        if (editor.eventRequestsBodyTagShortcut(event))
+            return documentFlow.applyBodyTagShortcut(event);
+        return false;
     }
 
     function requestViewHook(reason) {
@@ -68,8 +105,12 @@ Item {
         logicalCursorPosition: documentFlow.logicalCursorPosition
         logicalToSourceOffsets: documentFlow.logicalToSourceOffsets
         normalizedHtmlBlocks: documentFlow.normalizedHtmlBlocks
+        objectName: "contentsStructuredDocumentInlineEditor"
         renderedText: documentFlow.editorSurfaceHtml
         showRenderedOutput: true
+        tagManagementKeyPressHandler: function (event) {
+            return documentFlow.handleTagManagementKeyPress(event);
+        }
         text: documentFlow.sourceText
         textColor: documentFlow.textColor
 
@@ -81,6 +122,10 @@ Item {
         onViewHookRequested: function (reason) {
             documentFlow.viewHookRequested(reason);
         }
+    }
+
+    ContentsEditorTagInsertionController {
+        id: tagInsertionController
     }
 
     MouseArea {

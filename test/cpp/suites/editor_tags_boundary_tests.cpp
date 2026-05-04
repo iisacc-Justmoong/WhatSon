@@ -1,6 +1,6 @@
 #include "test/cpp/whatson_cpp_regression_tests.hpp"
 
-void WhatSonCppRegressionTests::editorTagsBoundary_groupsNonFormatBodyTagResponsibilities()
+void WhatSonCppRegressionTests::editorTagsBoundary_groupsEditorTagInsertionResponsibilities()
 {
     QDir repositoryRoot(QFileInfo(QString::fromUtf8(__FILE__)).absolutePath());
     repositoryRoot.cdUp();
@@ -16,8 +16,10 @@ void WhatSonCppRegressionTests::editorTagsBoundary_groupsNonFormatBodyTagRespons
              QStringLiteral("src/app/models/editor/tags/ContentsAgendaBackend.cpp"),
              QStringLiteral("src/app/models/editor/tags/ContentsCalloutBackend.hpp"),
              QStringLiteral("src/app/models/editor/tags/ContentsCalloutBackend.cpp"),
-             QStringLiteral("src/app/models/editor/tags/ContentsRawBodyTagMutationSupport.js"),
-             QStringLiteral("docs/src/app/models/editor/tags/ContentsRawBodyTagMutationSupport.js.md"),
+             QStringLiteral("src/app/models/editor/tags/ContentsEditorTagInsertionController.hpp"),
+             QStringLiteral("src/app/models/editor/tags/ContentsEditorTagInsertionController.cpp"),
+             QStringLiteral("docs/src/app/models/editor/tags/ContentsEditorTagInsertionController.hpp.md"),
+             QStringLiteral("docs/src/app/models/editor/tags/ContentsEditorTagInsertionController.cpp.md"),
              QStringLiteral("src/app/models/editor/tags/ContentsStructuredTagValidator.hpp"),
              QStringLiteral("src/app/models/editor/tags/ContentsStructuredTagValidator.cpp"),
              QStringLiteral("src/app/models/editor/tags/WhatSonStructuredTagLinter.hpp"),
@@ -45,6 +47,8 @@ void WhatSonCppRegressionTests::editorTagsBoundary_groupsNonFormatBodyTagRespons
              QStringLiteral("src/app/models/editor/resource/ContentsResourceTagTextGenerator.cpp"),
              QStringLiteral("src/app/models/editor/resource/ContentsResourceTagController.qml"),
              QStringLiteral("src/app/models/editor/tags/ContentsResourceTagController.qml"),
+             QStringLiteral("src/app/models/editor/tags/ContentsRawBodyTagMutationSupport.js"),
+             QStringLiteral("docs/src/app/models/editor/tags/ContentsRawBodyTagMutationSupport.js.md"),
              QStringLiteral("docs/src/app/models/editor/tags/ContentsEditorBodyTagInsertionPlanner.hpp.md"),
              QStringLiteral("docs/src/app/models/editor/tags/ContentsEditorBodyTagInsertionPlanner.cpp.md") })
     {
@@ -60,6 +64,8 @@ void WhatSonCppRegressionTests::editorTagsBoundary_groupsNonFormatBodyTagRespons
         QStringLiteral("src/app/models/editor/tags/ContentsAgendaBackend.cpp")));
     QVERIFY(testCmakeSource.contains(
         QStringLiteral("src/app/models/editor/tags/ContentsCalloutBackend.cpp")));
+    QVERIFY(testCmakeSource.contains(
+        QStringLiteral("src/app/models/editor/tags/ContentsEditorTagInsertionController.cpp")));
     QVERIFY(testCmakeSource.contains(
         QStringLiteral("src/app/models/editor/tags/WhatSonStructuredTagLinter.cpp")));
     QVERIFY(testCmakeSource.contains(
@@ -77,6 +83,8 @@ void WhatSonCppRegressionTests::editorTagsBoundary_groupsNonFormatBodyTagRespons
         QStringLiteral("app/models/editor/tags/ContentsAgendaBackend.hpp")));
     QVERIFY(registrarSource.contains(
         QStringLiteral("app/models/editor/tags/ContentsCalloutBackend.hpp")));
+    QVERIFY(registrarSource.contains(
+        QStringLiteral("app/models/editor/tags/ContentsEditorTagInsertionController.hpp")));
     QVERIFY(registrarSource.contains(
         QStringLiteral("app/models/editor/tags/ContentsStructuredTagValidator.hpp")));
     QVERIFY(registrarSource.contains(
@@ -116,13 +124,16 @@ void WhatSonCppRegressionTests::editorTagsBoundary_groupsNonFormatBodyTagRespons
 
     const QString tagsReadme = readUtf8SourceFile(
         QStringLiteral("docs/src/app/models/editor/tags/README.md"));
-    QVERIFY(tagsReadme.contains(QStringLiteral("Non-format editor body tags")));
+    QVERIFY(tagsReadme.contains(QStringLiteral("Editor tag insertion")));
+    QVERIFY(tagsReadme.contains(QStringLiteral("<bold>")));
+    QVERIFY(tagsReadme.contains(QStringLiteral("<italic>")));
     QVERIFY(tagsReadme.contains(QStringLiteral("<agenda>")));
     QVERIFY(tagsReadme.contains(QStringLiteral("<task>")));
     QVERIFY(tagsReadme.contains(QStringLiteral("<callout>")));
     QVERIFY(tagsReadme.contains(QStringLiteral("<break>")));
     QVERIFY(tagsReadme.contains(QStringLiteral("<resource")));
-    QVERIFY(tagsReadme.contains(QStringLiteral("ContentsRawBodyTagMutationSupport.js")));
+    QVERIFY(tagsReadme.contains(QStringLiteral("generated agenda/callout/break insertion")));
+    QVERIFY(!tagsReadme.contains(QStringLiteral("ContentsRawBodyTagMutationSupport.js")));
     QVERIFY(!tagsReadme.contains(QStringLiteral("ContentsEditorBodyTagInsertionPlanner")));
 
     const QString validatorReadme = readUtf8SourceFile(
@@ -135,45 +146,21 @@ void WhatSonCppRegressionTests::editorTagsBoundary_groupsNonFormatBodyTagRespons
     QVERIFY(rootGitIgnore.contains(QStringLiteral("!docs/src/app/models/editor/tags/**")));
 }
 
-void WhatSonCppRegressionTests::editorBodyTagMutationSupport_buildsRawTagInsertionPayloads()
+void WhatSonCppRegressionTests::editorTagInsertionController_buildsBodyTagInsertionPayloads()
 {
-    const QString supportSource = readUtf8SourceFile(
-        QStringLiteral("src/app/models/editor/tags/ContentsRawBodyTagMutationSupport.js"));
-    QVERIFY(!supportSource.isEmpty());
+    ContentsEditorTagInsertionController controller;
 
-    QJSEngine engine;
-    QJSValue evaluation = engine.evaluate(
-        supportSource,
-        QStringLiteral("ContentsRawBodyTagMutationSupport.js"));
-    QVERIFY2(
-        !evaluation.isError(),
-        qPrintable(evaluation.toString()));
+    QCOMPARE(controller.tagNameForBodyShortcutKey(Qt::Key_A), QStringLiteral("agenda"));
+    QCOMPARE(controller.tagNameForBodyShortcutKey(Qt::Key_C), QStringLiteral("callout"));
+    QCOMPARE(controller.tagNameForBodyShortcutKey(Qt::Key_Return), QStringLiteral("break"));
+    QCOMPARE(controller.tagNameForBodyShortcutKey(Qt::Key_Enter), QStringLiteral("break"));
+    QVERIFY(controller.tagNameForBodyShortcutKey(Qt::Key_X).isEmpty());
 
-    const auto callHelper = [&engine](const QString& functionName, const QJSValueList& arguments) {
-        QVariantMap failurePayload;
-        QJSValue function = engine.globalObject().property(functionName);
-        if (!function.isCallable())
-        {
-            failurePayload.insert(QStringLiteral("__error"), functionName + QStringLiteral(":not-callable"));
-            return failurePayload;
-        }
-        QJSValue result = function.call(arguments);
-        if (result.isError())
-        {
-            failurePayload.insert(QStringLiteral("__error"), result.toString());
-            return failurePayload;
-        }
-        return result.toVariant().toMap();
-    };
-
-    const QVariantMap calloutPayload = callHelper(
-        QStringLiteral("buildStructuredShortcutInsertionPayload"),
-        {
-            QJSValue(QStringLiteral("Intro")),
-            QJSValue(5),
-            QJSValue(QStringLiteral("callout"))
-        });
-    QVERIFY2(!calloutPayload.contains(QStringLiteral("__error")), qPrintable(calloutPayload.value(QStringLiteral("__error")).toString()));
+    const QVariantMap calloutPayload = controller.buildTagInsertionPayload(
+        QStringLiteral("Intro"),
+        5,
+        5,
+        QStringLiteral("callout"));
     QVERIFY(calloutPayload.value(QStringLiteral("applied")).toBool());
     QCOMPARE(
         calloutPayload.value(QStringLiteral("nextSourceText")).toString(),
@@ -181,14 +168,11 @@ void WhatSonCppRegressionTests::editorBodyTagMutationSupport_buildsRawTagInserti
     QVERIFY(calloutPayload.value(QStringLiteral("sourceOffset")).toInt() > 5);
     QCOMPARE(calloutPayload.value(QStringLiteral("tagKind")).toString(), QStringLiteral("callout"));
 
-    const QVariantMap wrappedCalloutPayload = callHelper(
-        QStringLiteral("buildCalloutRangeWrappingPayload"),
-        {
-            QJSValue(QStringLiteral("Alpha\nBeta\nGamma")),
-            QJSValue(6),
-            QJSValue(10)
-        });
-    QVERIFY2(!wrappedCalloutPayload.contains(QStringLiteral("__error")), qPrintable(wrappedCalloutPayload.value(QStringLiteral("__error")).toString()));
+    const QVariantMap wrappedCalloutPayload = controller.buildTagInsertionPayload(
+        QStringLiteral("Alpha\nBeta\nGamma"),
+        6,
+        10,
+        QStringLiteral("callout"));
     QVERIFY(wrappedCalloutPayload.value(QStringLiteral("applied")).toBool());
     QCOMPARE(
         wrappedCalloutPayload.value(QStringLiteral("nextSourceText")).toString(),
@@ -198,60 +182,43 @@ void WhatSonCppRegressionTests::editorBodyTagMutationSupport_buildsRawTagInserti
         wrappedCalloutPayload.value(QStringLiteral("wrappedSourceText")).toString(),
         QStringLiteral("Beta"));
 
-    const QVariantMap nestedCalloutWrapPayload = callHelper(
-        QStringLiteral("buildCalloutRangeWrappingPayload"),
-        {
-            QJSValue(QStringLiteral("<callout>inside</callout>\nTail")),
-            QJSValue(9),
-            QJSValue(15)
-        });
-    QVERIFY2(!nestedCalloutWrapPayload.contains(QStringLiteral("__error")), qPrintable(nestedCalloutWrapPayload.value(QStringLiteral("__error")).toString()));
+    const QVariantMap nestedCalloutWrapPayload = controller.buildTagInsertionPayload(
+        QStringLiteral("<callout>inside</callout>\nTail"),
+        9,
+        15,
+        QStringLiteral("callout"));
     QVERIFY(!nestedCalloutWrapPayload.value(QStringLiteral("applied")).toBool());
     QCOMPARE(
         nestedCalloutWrapPayload.value(QStringLiteral("reason")).toString(),
-        QStringLiteral("callout-range-overlaps-structured-block"));
+        QStringLiteral("body-tag-range-overlaps-structured-block"));
 
-    const QVariantMap agendaSpec = callHelper(
-        QStringLiteral("structuredShortcutInsertionSpec"),
-        {QJSValue(QStringLiteral("agenda"))});
-    QVERIFY2(!agendaSpec.contains(QStringLiteral("__error")), qPrintable(agendaSpec.value(QStringLiteral("__error")).toString()));
-    QVERIFY(agendaSpec.value(QStringLiteral("applied")).toBool());
-    QVERIFY(agendaSpec.value(QStringLiteral("insertionSourceText")).toString().startsWith(QStringLiteral("<agenda")));
-    QVERIFY(agendaSpec.value(QStringLiteral("insertionSourceText")).toString().contains(QStringLiteral("<task done=\"false\">")));
+    const QVariantMap agendaPayload = controller.buildTagInsertionPayload(
+        QStringLiteral("Intro"),
+        5,
+        5,
+        QStringLiteral("agenda"));
+    QVERIFY(agendaPayload.value(QStringLiteral("applied")).toBool());
+    QVERIFY(agendaPayload.value(QStringLiteral("rawSourceText")).toString().startsWith(QStringLiteral("<agenda")));
+    QVERIFY(agendaPayload.value(QStringLiteral("rawSourceText")).toString().contains(QStringLiteral("<task done=\"false\">")));
+    QVERIFY(agendaPayload.value(QStringLiteral("nextSourceText")).toString().startsWith(QStringLiteral("Intro\n<agenda")));
 
     const QString structuredSource = QStringLiteral("<callout>inside</callout>\nTail");
-    const QVariantMap nestedBreakPayload = callHelper(
-        QStringLiteral("buildStructuredShortcutInsertionPayload"),
-        {
-            QJSValue(structuredSource),
-            QJSValue(10),
-            QJSValue(QStringLiteral("break"))
-        });
-    QVERIFY2(!nestedBreakPayload.contains(QStringLiteral("__error")), qPrintable(nestedBreakPayload.value(QStringLiteral("__error")).toString()));
+    const QVariantMap nestedBreakPayload = controller.buildTagInsertionPayload(
+        structuredSource,
+        10,
+        10,
+        QStringLiteral("break"));
     QVERIFY(nestedBreakPayload.value(QStringLiteral("applied")).toBool());
     QVERIFY(nestedBreakPayload.value(QStringLiteral("resolvedInsertionOffset")).toInt() > 10);
     QCOMPARE(
         nestedBreakPayload.value(QStringLiteral("nextSourceText")).toString(),
         QStringLiteral("<callout>inside</callout>\n</break>\nTail"));
 
-    const QVariantMap rawResourcePayload = callHelper(
-        QStringLiteral("buildRawSourceInsertionPayload"),
-        {
-            QJSValue(QStringLiteral("Alpha")),
-            QJSValue(5),
-            QJSValue(QStringLiteral("<resource type=\"image\" />")),
-            QJSValue(static_cast<int>(QStringLiteral("<resource type=\"image\" />").size()))
-        });
-    QVERIFY2(!rawResourcePayload.contains(QStringLiteral("__error")), qPrintable(rawResourcePayload.value(QStringLiteral("__error")).toString()));
-    QVERIFY(rawResourcePayload.value(QStringLiteral("applied")).toBool());
-    QCOMPARE(
-        rawResourcePayload.value(QStringLiteral("nextSourceText")).toString(),
-        QStringLiteral("Alpha\n<resource type=\"image\" />"));
-
-    const QVariantMap rejectedCallout = callHelper(
-        QStringLiteral("structuredShortcutInsertionSpec"),
-        {QJSValue(QStringLiteral("unsupported"))});
-    QVERIFY2(!rejectedCallout.contains(QStringLiteral("__error")), qPrintable(rejectedCallout.value(QStringLiteral("__error")).toString()));
+    const QVariantMap rejectedCallout = controller.buildTagInsertionPayload(
+        QStringLiteral("Alpha"),
+        5,
+        5,
+        QStringLiteral("unsupported"));
     QVERIFY(!rejectedCallout.value(QStringLiteral("applied")).toBool());
     QCOMPARE(rejectedCallout.value(QStringLiteral("reason")).toString(), QStringLiteral("unsupported-tag-kind"));
 }

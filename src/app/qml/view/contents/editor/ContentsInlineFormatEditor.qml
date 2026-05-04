@@ -403,6 +403,28 @@ Item {
         inlineEditorController.setProgrammaticText(resolvedText);
     }
 
+    function applyTagManagementMutationPayload(payload) {
+        if (payload === null || payload === undefined || typeof payload !== "object")
+            return false;
+        if (payload.applied !== true || payload.nextSourceText === undefined || payload.nextSourceText === null)
+            return false;
+
+        const nextText = String(payload.nextSourceText);
+        inlineEditorController.applyImmediateProgrammaticText(nextText);
+
+        const restorePayloadSelection = function () {
+            const selectionStart = Math.max(0, Math.min(Number(payload.selectionStart) || 0, textInput.length));
+            const selectionEnd = Math.max(selectionStart, Math.min(Number(payload.selectionEnd) || selectionStart, textInput.length));
+            const cursorPosition = Math.max(selectionStart, Math.min(Number(payload.cursorPosition) || selectionEnd, selectionEnd));
+            control.restoreSelectionRange(selectionStart, selectionEnd, cursorPosition);
+        };
+        restorePayloadSelection();
+        control.scheduleRenderedOverlaySelectionRefresh();
+        control.textEdited(nextText);
+        Qt.callLater(restorePayloadSelection);
+        return true;
+    }
+
     function handleTagManagementKeyPress(event) {
         const key = event.key;
         if (key !== Qt.Key_Backspace
@@ -603,6 +625,28 @@ Item {
         sequence: "Meta+Alt+C"
 
         onActivated: control.triggerTagManagementShortcut(Qt.Key_C, Qt.MetaModifier | Qt.AltModifier)
+    }
+
+    Shortcut {
+        autoRepeat: false
+        context: Qt.WindowShortcut
+        enabled: control.focused
+                 && control.tagManagementKeyPressHandler !== null
+                 && control.tagManagementKeyPressHandler !== undefined
+        sequence: "Ctrl+Alt+A"
+
+        onActivated: control.triggerTagManagementShortcut(Qt.Key_A, Qt.ControlModifier | Qt.AltModifier)
+    }
+
+    Shortcut {
+        autoRepeat: false
+        context: Qt.WindowShortcut
+        enabled: control.focused
+                 && control.tagManagementKeyPressHandler !== null
+                 && control.tagManagementKeyPressHandler !== undefined
+        sequence: "Meta+Alt+A"
+
+        onActivated: control.triggerTagManagementShortcut(Qt.Key_A, Qt.MetaModifier | Qt.AltModifier)
     }
 
     LV.TextEditor {

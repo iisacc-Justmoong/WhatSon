@@ -228,6 +228,11 @@ QtObject {
         applyProgrammaticText(policy.text);
     }
 
+    function applyImmediateProgrammaticText(nextText) {
+        clearDeferredProgrammaticText();
+        applyProgrammaticText(resolvedText(nextText));
+    }
+
     function scheduleCommittedTextEditedDispatch() {
         dispatchCommittedTextEditedIfReady();
     }

@@ -66,8 +66,8 @@ embedded in the generic inline-tag parser.
 
 Markdown emphasis markers such as `**bold**`, `*italic*`, `~~strike~~`, or `==highlight==` are intentionally **not**
 the formatting source of truth in this editor. Those styles remain bound to the proprietary `.wsnbody` inline tags and
-the existing shortcut/context-menu pipeline. Selection-driven RAW formatting now lives in
-`ContentsRawInlineStyleMutationSupport.js`, and plain-text source replacement now lives in
+the existing tag-insertion pipeline. Selection-driven RAW formatting now lives in
+`src/app/models/editor/tags/ContentsEditorTagInsertionController.*`, and plain-text source replacement now lives in
 `ContentsPlainTextSourceMutator`, not in this renderer bridge.
 
 Markdown presentation roles are now emitted through `WhatSonNoteMarkdownStyleObject` only for explicit preview HTML.

@@ -88,6 +88,10 @@ bool ContentsInlineFormatEditorController::dispatchCommittedTextEditedIfReady() 
 {
     return invokeHelperBool("dispatchCommittedTextEditedIfReady");
 }
+void ContentsInlineFormatEditorController::applyImmediateProgrammaticText(const QString& nextText) const
+{
+    invokeHelperVoid("applyImmediateProgrammaticText", {nextText});
+}
 void ContentsInlineFormatEditorController::setProgrammaticText(const QString& nextText) const
 {
     invokeHelperVoid("setProgrammaticText", {nextText});

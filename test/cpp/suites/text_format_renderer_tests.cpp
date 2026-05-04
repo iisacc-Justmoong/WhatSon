@@ -152,118 +152,49 @@ void WhatSonCppRegressionTests::textFormatRenderer_preservesMarkdownUnorderedLis
     QVERIFY(previewHtml.contains(QStringLiteral(">•</span>&nbsp;delta")));
 }
 
-void WhatSonCppRegressionTests::editorInlineStyleMutationSupport_buildsDirectRawSelectionWrapMutations()
+void WhatSonCppRegressionTests::editorTagInsertionController_replacesLegacyInlineStyleMutationSupport()
 {
-    const QString supportSource = readUtf8SourceFile(
-        QStringLiteral("src/app/models/editor/format/ContentsRawInlineStyleMutationSupport.js"));
-    QVERIFY(!supportSource.isEmpty());
+    QDir repositoryRoot(QFileInfo(QString::fromUtf8(__FILE__)).absolutePath());
+    repositoryRoot.cdUp();
+    repositoryRoot.cdUp();
+    repositoryRoot.cdUp();
 
-    QJSEngine engine;
-    QJSValue evaluation = engine.evaluate(
-        supportSource,
-        QStringLiteral("ContentsRawInlineStyleMutationSupport.js"));
-    QVERIFY2(!evaluation.isError(), qPrintable(evaluation.toString()));
+    QVERIFY(!QFileInfo::exists(repositoryRoot.filePath(
+        QStringLiteral("src/app/models/editor/format/ContentsRawInlineStyleMutationSupport.js"))));
+    QVERIFY(!QFileInfo::exists(repositoryRoot.filePath(
+        QStringLiteral("docs/src/app/models/editor/format/ContentsRawInlineStyleMutationSupport.js.md"))));
 
-    const auto callHelper = [&engine](const QString& functionName, const QJSValueList& arguments) {
-        QVariantMap failurePayload;
-        QJSValue function = engine.globalObject().property(functionName);
-        if (!function.isCallable())
-        {
-            failurePayload.insert(QStringLiteral("__error"), functionName + QStringLiteral(":not-callable"));
-            return failurePayload;
-        }
-        QJSValue result = function.call(arguments);
-        if (result.isError())
-        {
-            failurePayload.insert(QStringLiteral("__error"), result.toString());
-            return failurePayload;
-        }
-        return result.toVariant().toMap();
-    };
+    ContentsEditorTagInsertionController controller;
 
-    const QVariantMap boldPayload = callHelper(
-        QStringLiteral("buildInlineStyleSelectionPayload"),
-        {
-            QJSValue(QStringLiteral("Alpha beta")),
-            QJSValue(0),
-            QJSValue(5),
-            QJSValue(QStringLiteral("bold"))
-        });
-    QVERIFY2(!boldPayload.contains(QStringLiteral("__error")), qPrintable(boldPayload.value(QStringLiteral("__error")).toString()));
+    const QVariantMap boldPayload = controller.buildTagInsertionPayload(
+        QStringLiteral("Alpha beta"),
+        0,
+        5,
+        QStringLiteral("bold"));
     QVERIFY(boldPayload.value(QStringLiteral("applied")).toBool());
     QCOMPARE(
         boldPayload.value(QStringLiteral("nextSourceText")).toString(),
         QStringLiteral("<bold>Alpha</bold> beta"));
 
-    const QVariantMap nestedBoldPayload = callHelper(
-        QStringLiteral("buildInlineStyleSelectionPayload"),
-        {
-            QJSValue(QStringLiteral("<bold>Alpha</bold> beta")),
-            QJSValue(0),
-            QJSValue(5),
-            QJSValue(QStringLiteral("bold"))
-        });
-    QVERIFY2(!nestedBoldPayload.contains(QStringLiteral("__error")), qPrintable(nestedBoldPayload.value(QStringLiteral("__error")).toString()));
-    QVERIFY(nestedBoldPayload.value(QStringLiteral("applied")).toBool());
-    QCOMPARE(
-        nestedBoldPayload.value(QStringLiteral("nextSourceText")).toString(),
-        QStringLiteral("<bold><bold>Alpha</bold></bold> beta"));
-
-    const QVariantMap plainPayload = callHelper(
-        QStringLiteral("buildInlineStyleSelectionPayload"),
-        {
-            QJSValue(QStringLiteral("Alpha <italic>beta</italic>")),
-            QJSValue(6),
-            QJSValue(10),
-            QJSValue(QStringLiteral("plain"))
-        });
-    QVERIFY2(!plainPayload.contains(QStringLiteral("__error")), qPrintable(plainPayload.value(QStringLiteral("__error")).toString()));
-    QVERIFY(plainPayload.value(QStringLiteral("applied")).toBool());
-    QCOMPARE(
-        plainPayload.value(QStringLiteral("nextSourceText")).toString(),
-        QStringLiteral("Alpha beta"));
-
-    const QVariantMap markdownPayload = callHelper(
-        QStringLiteral("buildInlineStyleSelectionPayload"),
-        {
-            QJSValue(QStringLiteral("# Title")),
-            QJSValue(0),
-            QJSValue(7),
-            QJSValue(QStringLiteral("bold"))
-        });
-    QVERIFY2(!markdownPayload.contains(QStringLiteral("__error")), qPrintable(markdownPayload.value(QStringLiteral("__error")).toString()));
+    const QVariantMap markdownPayload = controller.buildTagInsertionPayload(
+        QStringLiteral("# Title"),
+        0,
+        7,
+        QStringLiteral("bold"));
     QVERIFY(markdownPayload.value(QStringLiteral("applied")).toBool());
     QCOMPARE(
         markdownPayload.value(QStringLiteral("nextSourceText")).toString(),
         QStringLiteral("<bold># Title</bold>"));
 
-    const QVariantMap weblinkPayload = callHelper(
-        QStringLiteral("buildInlineStyleSelectionPayload"),
-        {
-            QJSValue(QStringLiteral("<weblink href=\"https://example.com\">Doc</weblink>")),
-            QJSValue(0),
-            QJSValue(3),
-            QJSValue(QStringLiteral("bold"))
-        });
-    QVERIFY2(!weblinkPayload.contains(QStringLiteral("__error")), qPrintable(weblinkPayload.value(QStringLiteral("__error")).toString()));
-    QVERIFY(weblinkPayload.value(QStringLiteral("applied")).toBool());
-    QCOMPARE(
-        weblinkPayload.value(QStringLiteral("nextSourceText")).toString(),
-        QStringLiteral("<weblink href=\"https://example.com\"><bold>Doc</bold></weblink>"));
-
-    const QVariantMap unsupportedPayload = callHelper(
-        QStringLiteral("buildInlineStyleSelectionPayload"),
-        {
-            QJSValue(QStringLiteral("Alpha beta")),
-            QJSValue(0),
-            QJSValue(5),
-            QJSValue(QStringLiteral("unsupported"))
-        });
-    QVERIFY2(!unsupportedPayload.contains(QStringLiteral("__error")), qPrintable(unsupportedPayload.value(QStringLiteral("__error")).toString()));
+    const QVariantMap unsupportedPayload = controller.buildTagInsertionPayload(
+        QStringLiteral("Alpha beta"),
+        0,
+        5,
+        QStringLiteral("unsupported"));
     QVERIFY(!unsupportedPayload.value(QStringLiteral("applied")).toBool());
     QCOMPARE(
         unsupportedPayload.value(QStringLiteral("reason")).toString(),
-        QStringLiteral("unsupported-style-tag"));
+        QStringLiteral("unsupported-tag-kind"));
 
     const QString rendererHeaderSource = readUtf8SourceFile(
         QStringLiteral("src/app/models/editor/format/ContentsTextFormatRenderer.hpp"));
@@ -296,4 +227,53 @@ void WhatSonCppRegressionTests::editorInlineStyleMutationSupport_buildsDirectRaw
     QVERIFY(!projectionCppSource.contains(QStringLiteral("ContentsEditorPresentationProjection::applyInlineStyleToLogicalSelectionSource")));
     QVERIFY(!projectionHeaderSource.contains(QStringLiteral("applyPlainTextReplacementToSource")));
     QVERIFY(!projectionCppSource.contains(QStringLiteral("ContentsEditorPresentationProjection::applyPlainTextReplacementToSource")));
+
+    const QString formatReadme = readUtf8SourceFile(QStringLiteral("docs/src/app/models/editor/format/README.md"));
+    const QString tagsReadme = readUtf8SourceFile(QStringLiteral("docs/src/app/models/editor/tags/README.md"));
+    QVERIFY(!formatReadme.contains(QStringLiteral("ContentsRawInlineStyleMutationSupport")));
+    QVERIFY(tagsReadme.contains(QStringLiteral("ContentsEditorTagInsertionController")));
+}
+
+void WhatSonCppRegressionTests::editorTagInsertionController_buildsShortcutSourceWrapMutations()
+{
+    ContentsEditorTagInsertionController controller;
+
+    QCOMPARE(controller.tagNameForShortcutKey(Qt::Key_B), QStringLiteral("bold"));
+    QCOMPARE(controller.tagNameForShortcutKey(Qt::Key_I), QStringLiteral("italic"));
+    QCOMPARE(controller.tagNameForShortcutKey(Qt::Key_U), QStringLiteral("underline"));
+    QCOMPARE(controller.tagNameForShortcutKey(Qt::Key_H), QStringLiteral("highlight"));
+    QVERIFY(controller.tagNameForShortcutKey(Qt::Key_C).isEmpty());
+    QCOMPARE(controller.normalizedTagName(QStringLiteral("callout")), QStringLiteral("callout"));
+    QCOMPARE(controller.normalizedTagName(QStringLiteral("agenda")), QStringLiteral("agenda"));
+
+    const QVariantMap boldPayload = controller.buildWrappedTagInsertionPayload(
+        QStringLiteral("Alpha beta"),
+        0,
+        5,
+        QStringLiteral("bold"));
+    QVERIFY(boldPayload.value(QStringLiteral("applied")).toBool());
+    QCOMPARE(
+        boldPayload.value(QStringLiteral("nextSourceText")).toString(),
+        QStringLiteral("<bold>Alpha</bold> beta"));
+    QCOMPARE(boldPayload.value(QStringLiteral("selectionStart")).toInt(), QStringLiteral("<bold>").size());
+    QCOMPARE(boldPayload.value(QStringLiteral("selectionEnd")).toInt(), QStringLiteral("<bold>Alpha").size());
+    QCOMPARE(boldPayload.value(QStringLiteral("cursorPosition")).toInt(), QStringLiteral("<bold>Alpha").size());
+    QCOMPARE(boldPayload.value(QStringLiteral("tagName")).toString(), QStringLiteral("bold"));
+    QCOMPARE(boldPayload.value(QStringLiteral("wrappedSourceText")).toString(), QStringLiteral("Alpha"));
+
+    const QVariantMap collapsedPayload = controller.buildWrappedTagInsertionPayload(
+        QStringLiteral("Alpha beta"),
+        5,
+        5,
+        QStringLiteral("italic"));
+    QVERIFY(collapsedPayload.value(QStringLiteral("applied")).toBool());
+    QCOMPARE(
+        collapsedPayload.value(QStringLiteral("nextSourceText")).toString(),
+        QStringLiteral("Alpha<italic></italic> beta"));
+    QCOMPARE(
+        collapsedPayload.value(QStringLiteral("cursorPosition")).toInt(),
+        QStringLiteral("Alpha<italic>").size());
+    QCOMPARE(
+        collapsedPayload.value(QStringLiteral("selectionStart")).toInt(),
+        collapsedPayload.value(QStringLiteral("selectionEnd")).toInt());
 }

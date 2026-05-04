@@ -2,6 +2,7 @@
 
 #include "app/models/editor/tags/ContentsAgendaBackend.hpp"
 #include "app/models/editor/tags/ContentsCalloutBackend.hpp"
+#include "app/models/editor/tags/ContentsEditorTagInsertionController.hpp"
 #include "app/models/editor/renderer/ContentsStructuredBlockRenderer.hpp"
 #include "app/models/display/paper/ContentsA4PaperBackground.hpp"
 #include "app/models/display/paper/ContentsPaperSelection.hpp"
@@ -125,6 +126,8 @@ namespace
                 QStringLiteral("ContentsInlineStyleOverlayRenderer")),
             whatsonInternalCreatableType<ContentsPlainTextSourceMutator>(
                 QStringLiteral("ContentsPlainTextSourceMutator")),
+            whatsonInternalCreatableType<ContentsEditorTagInsertionController>(
+                QStringLiteral("ContentsEditorTagInsertionController")),
             whatsonInternalCreatableType<ContentsStructuredBlockRenderer>(
                 QStringLiteral("ContentsStructuredBlockRenderer")),
             whatsonInternalCreatableType<ContentsStructuredTagValidator>(

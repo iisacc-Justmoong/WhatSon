@@ -125,8 +125,8 @@ Implements inline-format rendering from note-editor text to RichText HTML.
   That write-side responsibility now lives in `ContentsPlainTextSourceMutator`, leaving this file on the read-side
   document rendering path.
 - Selection-driven inline-style RAW mutations no longer go through this renderer bridge.
-  `ContentsRawInlineStyleMutationSupport.js` now owns shortcut/context-menu formatting writes so renderer HTML
-  projection cannot become a second formatting authority.
+  `ContentsEditorTagInsertionController.*` now owns shortcut/context-menu formatting writes as RAW tag insertions, so
+  renderer HTML projection cannot become a second formatting authority.
 - Preview HTML generation and editable-surface normalization now reuse the same strong/span-style openings, so
   read-side rendering and editor rendering no longer diverge on weight/decoration styling.
 
