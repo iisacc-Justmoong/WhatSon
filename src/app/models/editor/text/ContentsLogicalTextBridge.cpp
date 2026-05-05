@@ -328,6 +328,11 @@ int ContentsLogicalTextBridge::sourceOffsetForLogicalOffset(int logicalOffset) c
     return std::clamp(m_logicalToSourceOffsets.at(safeOffset), 0, maxSourceOffset);
 }
 
+int ContentsLogicalTextBridge::logicalOffsetForSourceOffset(const int sourceOffset) const
+{
+    return logicalOffsetForSourceOffsetInText(m_text, sourceOffset);
+}
+
 QString ContentsLogicalTextBridge::normalizeLogicalText(const QString& text)
 {
     const QString normalizedText = normalizeLineEndings(text);
@@ -566,6 +571,109 @@ QVector<int> ContentsLogicalTextBridge::buildLogicalToSourceOffsets(const QStrin
     }
 
     return offsets;
+}
+
+int ContentsLogicalTextBridge::logicalOffsetForSourceOffsetInText(const QString& text, const int sourceOffset)
+{
+    const QString normalizedText = normalizeLineEndings(text);
+    const int boundedSourceOffset =
+        std::clamp(sourceOffset, 0, boundedQStringSize(normalizedText));
+
+    bool insideAgenda = false;
+    int agendaTaskCount = 0;
+    int logicalOffset = 0;
+    int cursor = 0;
+    while (cursor < normalizedText.size() && cursor < boundedSourceOffset)
+    {
+        const QChar ch = normalizedText.at(cursor);
+        if (ch == QLatin1Char('<'))
+        {
+            const int tagEnd = normalizedText.indexOf(QLatin1Char('>'), cursor + 1);
+            if (tagEnd > cursor)
+            {
+                if (boundedSourceOffset < tagEnd + 1)
+                {
+                    return logicalOffset;
+                }
+
+                const QStringView tagToken(normalizedText.constData() + cursor, tagEnd - cursor + 1);
+                const QString normalizedTagName = normalizedHtmlTagName(tagToken);
+                const bool closingTag = isClosingHtmlTagToken(tagToken);
+
+                if (normalizedTagName == QStringLiteral("agenda"))
+                {
+                    insideAgenda = !closingTag;
+                    if (!insideAgenda)
+                    {
+                        agendaTaskCount = 0;
+                    }
+                    cursor = tagEnd + 1;
+                    continue;
+                }
+
+                if (insideAgenda && normalizedTagName == QStringLiteral("task"))
+                {
+                    if (!closingTag)
+                    {
+                        if (agendaTaskCount > 0)
+                        {
+                            ++logicalOffset;
+                        }
+                        ++agendaTaskCount;
+                    }
+                    cursor = tagEnd + 1;
+                    continue;
+                }
+
+                if (normalizedTagName == QStringLiteral("resource"))
+                {
+                    if (!closingTag)
+                    {
+                        logicalOffset += std::max(0, kResourcePlaceholderLineCount - 1);
+                    }
+                    cursor = tagEnd + 1;
+                    continue;
+                }
+
+                if (normalizedTagName == QStringLiteral("tag"))
+                {
+                    if (!closingTag)
+                    {
+                        ++logicalOffset;
+                    }
+                    cursor = tagEnd + 1;
+                    continue;
+                }
+
+                if (htmlTagProducesLogicalBreak(tagToken))
+                {
+                    ++logicalOffset;
+                    cursor = tagEnd + 1;
+                    continue;
+                }
+
+                cursor = tagEnd + 1;
+                continue;
+            }
+        }
+
+        const int entityLength = htmlEntityLengthAt(normalizedText, cursor);
+        if (entityLength > 0)
+        {
+            if (boundedSourceOffset < cursor + entityLength)
+            {
+                return logicalOffset;
+            }
+            cursor += entityLength;
+            ++logicalOffset;
+            continue;
+        }
+
+        ++cursor;
+        ++logicalOffset;
+    }
+
+    return logicalOffset;
 }
 
 void ContentsLogicalTextBridge::refreshTextState()

@@ -49,6 +49,51 @@ if (WHATSON_ENABLE_IOS_XCODEPROJ_ON_BUILD AND APPLE AND NOT CMAKE_SYSTEM_NAME ST
                 "LVRS iOS prefix used for iOS Xcode project generation.")
     endif ()
 
+    set(_whatson_ios_local_package_flags)
+    foreach (_whatson_ios_local_package IN ITEMS
+            "iiXml;IIXML_PREFIX;WHATSON_IIXML_IOS_PREFIX;iiXml_DIR"
+            "iiHtmlBlock;IIHTMLBLOCK_PREFIX;WHATSON_IIHTMLBLOCK_IOS_PREFIX;iiHtmlBlock_DIR")
+        list(GET _whatson_ios_local_package 0 _whatson_ios_package_name)
+        list(GET _whatson_ios_local_package 1 _whatson_ios_host_prefix_var)
+        list(GET _whatson_ios_local_package 2 _whatson_ios_prefix_var)
+        list(GET _whatson_ios_local_package 3 _whatson_ios_package_dir_var)
+
+        set(_whatson_ios_package_prefix "${${_whatson_ios_prefix_var}}")
+        if (_whatson_ios_package_prefix STREQUAL ""
+                AND DEFINED ${_whatson_ios_host_prefix_var}
+                AND EXISTS "${${_whatson_ios_host_prefix_var}}/platforms/ios")
+            set(_whatson_ios_package_prefix "${${_whatson_ios_host_prefix_var}}/platforms/ios")
+        endif ()
+        if (_whatson_ios_package_prefix STREQUAL ""
+                AND EXISTS "${WHATSON_LOCAL_LIBRARY_ROOT}/${_whatson_ios_package_name}/platforms/ios")
+            set(_whatson_ios_package_prefix "${WHATSON_LOCAL_LIBRARY_ROOT}/${_whatson_ios_package_name}/platforms/ios")
+        endif ()
+
+        set(_whatson_ios_package_config_dir "")
+        if (NOT _whatson_ios_package_prefix STREQUAL "")
+            foreach (_whatson_ios_package_config_candidate IN ITEMS
+                    "${_whatson_ios_package_prefix}/lib/cmake/${_whatson_ios_package_name}"
+                    "${_whatson_ios_package_prefix}/blueprint/cmake/${_whatson_ios_package_name}")
+                if (EXISTS "${_whatson_ios_package_config_candidate}/${_whatson_ios_package_name}Config.cmake")
+                    set(_whatson_ios_package_config_dir "${_whatson_ios_package_config_candidate}")
+                    break()
+                endif ()
+            endforeach ()
+        endif ()
+
+        if (NOT _whatson_ios_package_config_dir STREQUAL "")
+            set("${_whatson_ios_prefix_var}" "${_whatson_ios_package_prefix}" CACHE PATH
+                    "iOS ${_whatson_ios_package_name} prefix used for iOS Xcode project generation." FORCE)
+            list(APPEND _whatson_ios_local_package_flags
+                    "-D${_whatson_ios_prefix_var}=${_whatson_ios_package_prefix}"
+                    "-D${_whatson_ios_host_prefix_var}=${_whatson_ios_package_prefix}"
+                    "-D${_whatson_ios_package_dir_var}=${_whatson_ios_package_config_dir}")
+        elseif (DEFINED ${_whatson_ios_prefix_var} AND NOT "${${_whatson_ios_prefix_var}}" STREQUAL "")
+            list(APPEND _whatson_ios_local_package_flags
+                    "-D${_whatson_ios_prefix_var}=${${_whatson_ios_prefix_var}}")
+        endif ()
+    endforeach ()
+
     if (NOT DEFINED WHATSON_QT_IOS_PREFIX OR WHATSON_QT_IOS_PREFIX STREQUAL "")
         message(WARNING "WHATSON_ENABLE_IOS_XCODEPROJ_ON_BUILD is ON but WHATSON_QT_IOS_PREFIX could not be resolved.")
     else ()
@@ -112,6 +157,7 @@ if (WHATSON_ENABLE_IOS_XCODEPROJ_ON_BUILD AND APPLE AND NOT CMAKE_SYSTEM_NAME ST
                     "-DWHATSON_ENTITLEMENTS=${WHATSON_ENTITLEMENTS}"
                     "-DWHATSON_APPLE_BUNDLE_ID=${WHATSON_APPLE_BUNDLE_ID}"
                     "-DWHATSON_ANDROID_PACKAGE_ID=${WHATSON_ANDROID_PACKAGE_ID}"
+                    ${_whatson_ios_local_package_flags}
                     ${_whatson_ios_optional_qml_package_flags}
                     ${_whatson_ios_xcode_attribute_flags}
             )

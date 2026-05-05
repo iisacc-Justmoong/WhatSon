@@ -18,6 +18,9 @@ Item {
     property color textColor: LV.Theme.bodyColor
     readonly property real editorContentHeight: editor.displayContentHeight
     readonly property int editorCursorPosition: editor.cursorPosition
+    readonly property var editorLogicalGutterRows: editor.logicalGutterRows
+    readonly property int editorVisualLineCount: editor.visualLineCount
+    readonly property var editorVisualLineWidthRatios: editor.visualLineWidthRatios
 
     signal sourceTextEdited(string text)
     signal viewHookRequested(string reason)

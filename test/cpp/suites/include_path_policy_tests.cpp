@@ -314,8 +314,10 @@ void WhatSonCppRegressionTests::sourceTree_keepsContentsQmlUnderViewContents()
         contentsRoot + QStringLiteral("/EditorView.qml"),
         contentsRoot + QStringLiteral("/Minimap.qml"),
         contentsRoot + QStringLiteral("/editor/ContentsDisplayView.qml"),
+        contentsRoot + QStringLiteral("/editor/ContentsLineNumberRail.qml"),
         contentsRoot + QStringLiteral("/editor/ContentsStructuredDocumentFlow.qml"),
         docsContentsRoot + QStringLiteral("/README.md"),
+        docsContentsRoot + QStringLiteral("/editor/ContentsLineNumberRail.qml.md"),
         docsContentsRoot + QStringLiteral("/editor/README.md")
     };
     for (const QString& relativePath : requiredPaths)

@@ -25,6 +25,7 @@ public:
 
     Q_INVOKABLE int logicalLengthForSourceText(const QString& text) const;
     Q_INVOKABLE QVariantList logicalToSourceOffsets() const;
+    Q_INVOKABLE int logicalOffsetForSourceOffset(int sourceOffset) const;
     Q_INVOKABLE int sourceOffsetForLogicalOffset(int logicalOffset) const noexcept;
 
     signals  :
@@ -39,6 +40,7 @@ private:
     static QString normalizeLogicalText(const QString& text);
     static int countLogicalLines(const QString& text) noexcept;
     static QVector<int> buildLogicalToSourceOffsets(const QString& text, int logicalTextLength);
+    static int logicalOffsetForSourceOffsetInText(const QString& text, int sourceOffset);
 
     void refreshTextState();
 

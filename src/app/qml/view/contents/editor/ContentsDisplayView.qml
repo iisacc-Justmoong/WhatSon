@@ -148,6 +148,32 @@ Item {
                     Math.max(120, Math.floor(Number(targetFrameWidth) || 0)));
     }
 
+    function editorViewportScrollRange() {
+        if (!editorDocumentViewport)
+            return 0;
+        return Math.max(0, editorDocumentViewport.contentHeight - editorDocumentViewport.height);
+    }
+
+    function editorViewportScrollRatio() {
+        const scrollRange = contentsDisplayView.editorViewportScrollRange();
+        if (scrollRange <= 0)
+            return 0;
+        return Math.max(0, Math.min(1, editorDocumentViewport.contentY / scrollRange));
+    }
+
+    function editorViewportVisibleRatio() {
+        if (!editorDocumentViewport || editorDocumentViewport.contentHeight <= 0)
+            return 1;
+        return Math.max(0, Math.min(1, editorDocumentViewport.height / editorDocumentViewport.contentHeight));
+    }
+
+    function scrollEditorViewportToRatio(ratio) {
+        const scrollRange = contentsDisplayView.editorViewportScrollRange();
+        const normalizedRatio = Math.max(0, Math.min(1, Number(ratio) || 0));
+        editorDocumentViewport.contentY = scrollRange * normalizedRatio;
+        return true;
+    }
+
     function requestEditorSelectionContextMenuFromPointer(pointerKind) {
         const normalizedKind = pointerKind === undefined || pointerKind === null ? "" : String(pointerKind);
         return normalizedKind === "right-click" || normalizedKind === "long-press";
@@ -311,10 +337,10 @@ Item {
         gap12: LV.Theme.gap12
         gap20: LV.Theme.gap20
         gap24: LV.Theme.gap24
-        logicalLineCount: editorPresentationProjection.logicalLineCount
         minimapVisible: contentsDisplayView.minimapVisible
         objectName: "contentsDisplayMinimapLayoutMetrics"
         strokeThin: LV.Theme.strokeThin
+        visualLineCount: structuredDocumentFlow.editorVisualLineCount
     }
 
     Rectangle {
@@ -342,44 +368,60 @@ Item {
                 boundsBehavior: Flickable.StopAtBounds
                 boundsMovement: Flickable.StopAtBounds
                 clip: true
-                contentHeight: Math.max(height, structuredDocumentFlow.editorContentHeight)
-                contentWidth: Math.max(width, structuredDocumentFlow.width)
+                contentHeight: editorDocumentContent.height
+                contentWidth: Math.max(width, editorDocumentContent.width)
                 flickableDirection: Flickable.VerticalFlick
                 interactive: contentHeight > height
                 objectName: "contentsDisplayEditorDocumentViewport"
 
-                ContentsStructuredDocumentFlow {
-                    id: structuredDocumentFlow
+                Item {
+                    id: editorDocumentContent
 
-                    editorSurfaceHtml: contentsDisplayView.renderInlineResourceEditorSurfaceHtml(
-                                           editorPresentationProjection.editorSurfaceHtml,
-                                           bodyResourceRenderer.renderedResources,
-                                           structuredDocumentFlow.width - LV.Theme.gap16 * 2)
-                    height: Math.max(editorDocumentViewport.height, editorDocumentViewport.contentHeight)
-                    htmlTokens: editorPresentationProjection.htmlTokens
-                    logicalCursorPosition: editorPresentationProjection.logicalLengthForSourceText(
-                                               editorSession.editorText.slice(
-                                                   0,
-                                                   Math.max(
-                                                       0,
-                                                       Math.min(structuredDocumentFlow.editorCursorPosition,
-                                                                editorSession.editorText.length))))
-                    logicalText: editorPresentationProjection.logicalText
-                    logicalToSourceOffsets: editorPresentationProjection.logicalToSourceOffsets()
-                    normalizedHtmlBlocks: editorPresentationProjection.normalizedHtmlBlocks
-                    objectName: "contentsDisplayStructuredDocumentFlow"
-                    paperPaletteEnabled: contentsDisplayView.paperPaletteEnabled
-                    sourceText: editorSession.editorText
-                    textColor: LV.Theme.bodyColor
-                    visible: contentsDisplayView.noteDocumentParseMounted
+                    height: Math.max(editorDocumentViewport.height, structuredDocumentFlow.editorContentHeight)
                     width: editorDocumentViewport.width
 
-                    onSourceTextEdited: function (text) {
-                        contentsDisplayView.commitEditedSourceText(text);
+                    ContentsLineNumberRail {
+                        id: contentsDisplayGutter
+
+                        height: editorDocumentContent.height
+                        objectName: "contentsDisplayGutter"
+                        rows: structuredDocumentFlow.editorLogicalGutterRows
+                        visible: contentsDisplayView.noteDocumentParseMounted
+                        width: LV.Theme.buttonMinWidth
+                        x: LV.Theme.gapNone
+                        y: LV.Theme.gapNone
                     }
 
-                    onViewHookRequested: {
-                        contentsDisplayView.viewHookRequested();
+                    ContentsStructuredDocumentFlow {
+                        id: structuredDocumentFlow
+
+                        editorSurfaceHtml: contentsDisplayView.renderInlineResourceEditorSurfaceHtml(
+                                               editorPresentationProjection.editorSurfaceHtml,
+                                               bodyResourceRenderer.renderedResources,
+                                               structuredDocumentFlow.width - LV.Theme.gap16 * 2)
+                        height: editorDocumentContent.height
+                        htmlTokens: editorPresentationProjection.htmlTokens
+                        logicalCursorPosition: editorPresentationProjection.logicalOffsetForSourceOffset(
+                                                   structuredDocumentFlow.editorCursorPosition)
+                        logicalText: editorPresentationProjection.logicalText
+                        logicalToSourceOffsets: editorPresentationProjection.logicalToSourceOffsets()
+                        normalizedHtmlBlocks: editorPresentationProjection.normalizedHtmlBlocks
+                        objectName: "contentsDisplayStructuredDocumentFlow"
+                        paperPaletteEnabled: contentsDisplayView.paperPaletteEnabled
+                        sourceText: editorSession.editorText
+                        textColor: LV.Theme.bodyColor
+                        visible: contentsDisplayView.noteDocumentParseMounted
+                        width: Math.max(0, editorDocumentContent.width - contentsDisplayGutter.width)
+                        x: contentsDisplayGutter.width
+                        y: LV.Theme.gapNone
+
+                        onSourceTextEdited: function (text) {
+                            contentsDisplayView.commitEditedSourceText(text);
+                        }
+
+                        onViewHookRequested: {
+                            contentsDisplayView.viewHookRequested();
+                        }
                     }
                 }
             }
@@ -407,7 +449,15 @@ Item {
             lineColor: LV.Theme.captionColor
             objectName: "contentsDisplayMinimap"
             rowCount: minimapLayoutMetrics.effectiveRowCount
+            rowWidthRatios: structuredDocumentFlow.editorVisualLineWidthRatios
+            scrollDragEnabled: editorDocumentViewport.contentHeight > editorDocumentViewport.height
+            scrollPositionRatio: contentsDisplayView.editorViewportScrollRatio()
             visible: contentsDisplayView.minimapVisible
+            viewportRatio: contentsDisplayView.editorViewportVisibleRatio()
+
+            onScrollRatioRequested: function (ratio) {
+                contentsDisplayView.scrollEditorViewportToRatio(ratio);
+            }
 
             onViewHookRequested: function (reason) {
                 contentsDisplayView.requestViewHook(reason);

@@ -121,20 +121,20 @@ void ContentsMinimapLayoutMetrics::setButtonMinWidth(const int value)
     emitChanged(&ContentsMinimapLayoutMetrics::buttonMinWidthChanged);
 }
 
-int ContentsMinimapLayoutMetrics::logicalLineCount() const noexcept
+int ContentsMinimapLayoutMetrics::visualLineCount() const noexcept
 {
-    return m_logicalLineCount;
+    return m_visualLineCount;
 }
 
-void ContentsMinimapLayoutMetrics::setLogicalLineCount(const int value)
+void ContentsMinimapLayoutMetrics::setVisualLineCount(const int value)
 {
-    if (m_logicalLineCount == value)
+    if (m_visualLineCount == value)
     {
         return;
     }
 
-    m_logicalLineCount = value;
-    emitChanged(&ContentsMinimapLayoutMetrics::logicalLineCountChanged);
+    m_visualLineCount = value;
+    emitChanged(&ContentsMinimapLayoutMetrics::visualLineCountChanged);
 }
 
 bool ContentsMinimapLayoutMetrics::minimapVisible() const noexcept
@@ -175,7 +175,7 @@ int ContentsMinimapLayoutMetrics::effectiveMinimapWidth() const noexcept
 
 int ContentsMinimapLayoutMetrics::effectiveRowCount() const noexcept
 {
-    return std::max(minimumMetricUnit(), m_logicalLineCount);
+    return std::max(minimumMetricUnit(), m_visualLineCount);
 }
 
 void ContentsMinimapLayoutMetrics::requestMetricsRefresh()

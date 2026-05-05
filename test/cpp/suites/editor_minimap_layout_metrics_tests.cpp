@@ -15,10 +15,10 @@ void WhatSonCppRegressionTests::contentsMinimapLayoutMetrics_resolvesRuntimeVisi
     QCOMPARE(metrics.designRowCount(), 64);
     QCOMPARE(metrics.effectiveMinimapWidth(), 84);
 
-    metrics.setLogicalLineCount(0);
+    metrics.setVisualLineCount(0);
     QCOMPARE(metrics.effectiveRowCount(), 1);
 
-    metrics.setLogicalLineCount(73);
+    metrics.setVisualLineCount(73);
     QCOMPARE(metrics.effectiveRowCount(), 73);
 
     metrics.setMinimapVisible(false);

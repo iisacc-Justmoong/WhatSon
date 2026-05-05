@@ -19,6 +19,12 @@ void WhatSonCppRegressionTests::iosXcodeprojExport_surfacesSdkSigningAndPermissi
         QStringLiteral("set(WHATSON_IOS_CODE_SIGN_STYLE \"Automatic\" CACHE STRING")));
     QVERIFY(rootCmakeSource.contains(
         QStringLiteral("set(WHATSON_IOS_QT_PERMISSION_PLUGIN_POLICY \"auto\" CACHE STRING")));
+    QVERIFY(rootCmakeSource.contains(
+        QStringLiteral("set(WHATSON_IIXML_IOS_PREFIX \"$ENV{WHATSON_IIXML_IOS_PREFIX}\" CACHE PATH")));
+    QVERIFY(rootCmakeSource.contains(
+        QStringLiteral("set(WHATSON_IIHTMLBLOCK_IOS_PREFIX \"$ENV{WHATSON_IIHTMLBLOCK_IOS_PREFIX}\" CACHE PATH")));
+    QVERIFY(rootCmakeSource.contains(
+        QStringLiteral("WhatSon iOS build requires an iOS ${package_name} package")));
     QVERIFY(runtimeCmakeSource.contains(
         QStringLiteral("set(_whatson_ios_export_sdk \"${WHATSON_IOS_SDK}\")")));
     QVERIFY(runtimeCmakeSource.contains(
@@ -39,6 +45,10 @@ void WhatSonCppRegressionTests::iosXcodeprojExport_surfacesSdkSigningAndPermissi
         QStringLiteral("\"-DWHATSON_IOS_CODE_SIGN_STYLE=${WHATSON_IOS_CODE_SIGN_STYLE}\"")));
     QVERIFY(runtimeCmakeSource.contains(
         QStringLiteral("\"-DWHATSON_IOS_QT_PERMISSION_PLUGIN_POLICY=${WHATSON_IOS_QT_PERMISSION_PLUGIN_POLICY}\"")));
+    QVERIFY(runtimeCmakeSource.contains(
+        QStringLiteral("-D${_whatson_ios_prefix_var}=${_whatson_ios_package_prefix}")));
+    QVERIFY(runtimeCmakeSource.contains(
+        QStringLiteral("-D${_whatson_ios_package_dir_var}=${_whatson_ios_package_config_dir}")));
     QVERIFY(runtimeCmakeSource.contains(
         QStringLiteral("if (_whatson_ios_export_sdk STREQUAL \"iphonesimulator\")")));
 }

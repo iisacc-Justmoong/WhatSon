@@ -10,6 +10,8 @@ Implements the QML-facing bridge between RAW editor source and read-side present
 - `ContentsTextFormatRenderer` runs the XML-to-HTML block render pipeline.
 - `editorSurfaceHtml`, `htmlTokens`, and `normalizedHtmlBlocks` are republished to QML.
 - `ContentsLogicalTextBridge` remains responsible for logical text and line-offset projections.
+- RAW cursor projection is forwarded through `ContentsLogicalTextBridge::logicalOffsetForSourceOffset(...)` so QML
+  caret painting can resolve positions inside hidden inline tags against the complete source snapshot.
 
 ## Notes
 

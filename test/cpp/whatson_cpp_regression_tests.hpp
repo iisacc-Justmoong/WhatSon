@@ -1055,6 +1055,9 @@ private slots:
     void qmlInlineFormatEditor_keepsResourceOverlayPinnedDuringNativeEditing();
     void qmlInlineFormatEditor_projectsVisibleGeometryFromRenderedDisplay();
     void qmlInlineFormatEditor_positionsVisibleProbeFromLogicalDisplayText();
+    void qmlInlineFormatEditor_mapsRenderedPointerSelectionToCharacterRawRange();
+    void qmlInlineFormatEditor_skipsHiddenInlineTagsDuringNativeCursorMovement();
+    void qmlInlineFormatEditor_reportsWrappedVisualLineCountForMinimap();
     void qmlStructuredDocumentFlow_routesBottomBlankClickToBodyEnd();
     void qmlInlineFormatEditor_forwardsInlineFormatShortcutsToTagManagementHook();
     void qmlStructuredDocumentFlow_appliesInlineFormatShortcutToSelectedRawRange();
@@ -1083,6 +1086,7 @@ private slots:
     void editorRendererPipeline_routesIiXmlTreeThroughIiHtmlBlockObjects();
     void editorRendererPipeline_materializesEnterNewlinesAsParagraphSlots();
     void logicalTextBridge_advancesCursorPastClosingWebLinkTag();
+    void logicalTextBridge_mapsSourceCursorInsideInlineTagsToVisibleBoundary();
     void qmlStructuredEditors_bindPaperPaletteIntoPagePrintMode();
     void qmlStructuredEditors_clipInlineResourceCardsToMeasuredBlockBounds();
     void qmlStructuredEditors_wireInlineResourceRendererToIiXmlHtmlBlockPipeline();

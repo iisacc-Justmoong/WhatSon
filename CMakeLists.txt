@@ -74,6 +74,64 @@ endif ()
 
 set(WHATSON_LOCAL_LIBRARY_ROOT "$ENV{HOME}/.local" CACHE PATH
         "Root directory for user-built local libraries and frameworks.")
+set(WHATSON_IIXML_IOS_PREFIX "$ENV{WHATSON_IIXML_IOS_PREFIX}" CACHE PATH
+        "iOS iiXml prefix used for iOS builds and generated Xcode projects.")
+set(WHATSON_IIHTMLBLOCK_IOS_PREFIX "$ENV{WHATSON_IIHTMLBLOCK_IOS_PREFIX}" CACHE PATH
+        "iOS iiHtmlBlock prefix used for iOS builds and generated Xcode projects.")
+
+function(whatson_find_local_package_config_dir out_var package_name package_prefix)
+    set(_whatson_package_config_dir "")
+    if (NOT package_prefix STREQUAL "")
+        foreach (_whatson_candidate_dir IN ITEMS
+                "${package_prefix}/lib/cmake/${package_name}"
+                "${package_prefix}/blueprint/cmake/${package_name}")
+            if (EXISTS "${_whatson_candidate_dir}/${package_name}Config.cmake")
+                set(_whatson_package_config_dir "${_whatson_candidate_dir}")
+                break()
+            endif ()
+        endforeach ()
+    endif ()
+    set("${out_var}" "${_whatson_package_config_dir}" PARENT_SCOPE)
+endfunction()
+
+function(whatson_require_ios_local_package package_name root_prefix_var ios_prefix_var package_dir_var)
+    if (DEFINED ${package_dir_var}
+            AND NOT "${${package_dir_var}}" STREQUAL ""
+            AND EXISTS "${${package_dir_var}}/${package_name}Config.cmake")
+        return()
+    endif ()
+
+    set(_whatson_ios_package_prefix "${${ios_prefix_var}}")
+    if (_whatson_ios_package_prefix STREQUAL ""
+            AND DEFINED ${root_prefix_var}
+            AND EXISTS "${${root_prefix_var}}/platforms/ios")
+        set(_whatson_ios_package_prefix "${${root_prefix_var}}/platforms/ios")
+    endif ()
+    if (_whatson_ios_package_prefix STREQUAL ""
+            AND EXISTS "${WHATSON_LOCAL_LIBRARY_ROOT}/${package_name}/platforms/ios")
+        set(_whatson_ios_package_prefix "${WHATSON_LOCAL_LIBRARY_ROOT}/${package_name}/platforms/ios")
+    endif ()
+
+    whatson_find_local_package_config_dir(
+            _whatson_ios_package_config_dir
+            "${package_name}"
+            "${_whatson_ios_package_prefix}")
+    if (NOT _whatson_ios_package_config_dir STREQUAL "")
+        set("${ios_prefix_var}" "${_whatson_ios_package_prefix}" CACHE PATH
+                "iOS ${package_name} prefix used for iOS builds and generated Xcode projects." FORCE)
+        set("${package_dir_var}" "${_whatson_ios_package_config_dir}" CACHE PATH
+                "iOS ${package_name} CMake package directory." FORCE)
+        list(PREPEND CMAKE_PREFIX_PATH "${_whatson_ios_package_prefix}")
+        set(CMAKE_PREFIX_PATH "${CMAKE_PREFIX_PATH}" PARENT_SCOPE)
+        return()
+    endif ()
+
+    message(FATAL_ERROR
+            "WhatSon iOS build requires an iOS ${package_name} package. "
+            "Expected ${WHATSON_LOCAL_LIBRARY_ROOT}/${package_name}/platforms/ios/lib/cmake/${package_name}/${package_name}Config.cmake "
+            "or set ${ios_prefix_var}/${package_dir_var}. "
+            "The host prefix ${${root_prefix_var}} cannot be used for iphoneos.")
+endfunction()
 
 if (NOT IIXML_PREFIX AND EXISTS "${WHATSON_LOCAL_LIBRARY_ROOT}/iiXml")
     set(IIXML_PREFIX "${WHATSON_LOCAL_LIBRARY_ROOT}/iiXml" CACHE PATH "Path to iiXml root prefix")
@@ -88,6 +146,11 @@ if (NOT IIHTMLBLOCK_PREFIX AND EXISTS "${WHATSON_LOCAL_LIBRARY_ROOT}/iiHtmlBlock
 endif ()
 if (IIHTMLBLOCK_PREFIX)
     list(APPEND CMAKE_PREFIX_PATH "${IIHTMLBLOCK_PREFIX}")
+endif ()
+
+if (CMAKE_SYSTEM_NAME STREQUAL "iOS")
+    whatson_require_ios_local_package(iiXml IIXML_PREFIX WHATSON_IIXML_IOS_PREFIX iiXml_DIR)
+    whatson_require_ios_local_package(iiHtmlBlock IIHTMLBLOCK_PREFIX WHATSON_IIHTMLBLOCK_IOS_PREFIX iiHtmlBlock_DIR)
 endif ()
 
 if (APPLE)
@@ -248,6 +311,8 @@ message(STATUS "  WHATSON_IOS_SDK: ${WHATSON_IOS_SDK}")
 message(STATUS "  WHATSON_IOS_ARCHITECTURES: ${WHATSON_IOS_ARCHITECTURES}")
 message(STATUS "  WHATSON_IOS_DEVELOPMENT_TEAM: ${WHATSON_IOS_DEVELOPMENT_TEAM}")
 message(STATUS "  WHATSON_IOS_QT_PERMISSION_PLUGIN_POLICY: ${WHATSON_IOS_QT_PERMISSION_PLUGIN_POLICY}")
+message(STATUS "  WHATSON_IIXML_IOS_PREFIX: ${WHATSON_IIXML_IOS_PREFIX}")
+message(STATUS "  WHATSON_IIHTMLBLOCK_IOS_PREFIX: ${WHATSON_IIHTMLBLOCK_IOS_PREFIX}")
 message(STATUS "  CMAKE_PREFIX_PATH: ${CMAKE_PREFIX_PATH}")
 message(STATUS "  QT_ROOT_PATH: ${QT_ROOT_PATH}")
 message(STATUS "  LVRS_PREFIX: ${LVRS_PREFIX}")

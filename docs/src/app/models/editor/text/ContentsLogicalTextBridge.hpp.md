@@ -26,6 +26,8 @@
   queries consume plain-text-aligned offsets.
 - `sourceOffsetForLogicalOffset(int)` is now part of the public QML bridge surface so editor interactions can convert
   RichText/plain-text selection offsets back into source-markup offsets before mutating the stored body text.
+- `logicalOffsetForSourceOffset(int)` is also part of the public bridge surface so the editor can project the live RAW
+  cursor onto visible logical text without slicing the source through possibly incomplete inline tags.
 - `logicalLengthForSourceText(QString)` is now also part of the public QML bridge surface so block-style mutations can
   measure rewritten source fragments in the same logical-text coordinate system used by the live editor selection.
 - `logicalToSourceOffsets()` is exposed as one whole-note offset table for the active editor projection; removed
@@ -73,3 +75,5 @@
   position for that divider token.
 - When source text includes `<resource ... />`, the exported logical/source offset table must include the same fixed
   single-line slot that the editor projection uses for inline resource rendering.
+- When the RAW cursor is inside an inline formatting tag token, `logicalOffsetForSourceOffset(...)` must return the
+  visible logical boundary next to that zero-width tag token rather than counting the partial tag text.

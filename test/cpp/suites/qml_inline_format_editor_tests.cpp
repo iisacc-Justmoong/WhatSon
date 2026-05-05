@@ -80,13 +80,21 @@ void WhatSonCppRegressionTests::qmlInlineFormatEditor_keepsNativeTextEditInputUn
 
     QVERIFY(!inlineEditorSource.isEmpty());
     QVERIFY(!inlineEditorSource.contains(QStringLiteral("nativeTouchScrollGuardActive")));
-    QVERIFY(!inlineEditorSource.contains(QStringLiteral("MouseArea {")));
     QVERIFY(!inlineEditorSource.contains(QStringLiteral("TapHandler {")));
     QVERIFY(!inlineEditorSource.contains(QStringLiteral("DragHandler {")));
-    QVERIFY(!inlineEditorSource.contains(QStringLiteral("acceptedButtons: Qt.LeftButton")));
     QVERIFY(!inlineEditorSource.contains(QStringLiteral("function setCursorPositionFromVisiblePoint(localX, localY)")));
     QVERIFY(!inlineEditorSource.contains(QStringLiteral("function logicalPositionAtVisiblePoint(localX, localY)")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("function logicalOffsetToSourceOffset(logicalOffset)")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("function sourceOffsetForVisibleLogicalOffset(logicalOffset)")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("function restoreVisibleLogicalSelectionRange(anchorLogicalOffset, currentLogicalOffset)")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("function visibleLogicalOffsetAtPoint(localX, localY)")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("function sourceTagTokenBoundsForCursor(sourceOffset)")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("function normalizeCursorPositionAwayFromHiddenTagTokens()")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("id: visibleSelectionPointerArea")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("objectName: \"contentsInlineFormatVisibleSelectionPointerArea\"")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral(
+        "enabled: control.renderedOverlayVisible && !control.nativeCompositionActive()")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("acceptedButtons: Qt.LeftButton")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("property var logicalToSourceOffsets: []")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("Keys.onPressed: function (event)")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("key !== Qt.Key_Backspace")));
@@ -172,6 +180,8 @@ void WhatSonCppRegressionTests::qmlInlineFormatEditor_keepsNativeTextEditInputUn
     QVERIFY(inlineEditorSource.contains(QStringLiteral("contentsInlineFormatAtomicResourceSelectionLayer")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("moveCursorSelection(start, TextEdit.SelectCharacters)")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("moveCursorSelection(end, TextEdit.SelectCharacters)")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("control.restoreVisibleLogicalSelectionRange(")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("onCursorPositionChanged: control.normalizeCursorPositionAwayFromHiddenTagTokens()")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("property bool overwriteMode: false")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("property bool persistentSelection: true")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("selectByMouse: control.selectByMouse")));
@@ -188,6 +198,16 @@ void WhatSonCppRegressionTests::qmlInlineFormatEditor_projectsVisibleGeometryFro
 
     QVERIFY(inlineEditorSource.contains(QStringLiteral("readonly property real displayContentHeight")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("? renderedOverlay.contentHeight")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("readonly property int visualLineCount")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("readonly property var visualLineWidthRatios")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("readonly property var logicalGutterRows")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("function resolvedVisibleLineCount()")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("function resolvedVisibleLineWidthRatios()")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("function resolvedTextItemLineWidthRatios(textItem)")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("function resolvedLogicalGutterRows()")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("function normalizedLogicalGutterBlocks()")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("function logicalLineSourceRangesForBlock(block)")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("function textDisplayRectangleForSourceRange(sourceStart, sourceEnd)")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("textFormat: TextEdit.RichText")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("property string displayGeometryText: textInput.text")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("function displayGeometryItem()")));
@@ -199,11 +219,29 @@ void WhatSonCppRegressionTests::qmlInlineFormatEditor_projectsVisibleGeometryFro
     QVERIFY(documentFlowSource.contains(QStringLiteral("property string logicalText: \"\"")));
     QVERIFY(documentFlowSource.contains(QStringLiteral("property var logicalToSourceOffsets: []")));
     QVERIFY(documentFlowSource.contains(QStringLiteral("property int logicalCursorPosition: sourceText.length")));
+    QVERIFY(documentFlowSource.contains(QStringLiteral("readonly property int editorVisualLineCount: editor.visualLineCount")));
+    QVERIFY(documentFlowSource.contains(QStringLiteral("readonly property var editorVisualLineWidthRatios: editor.visualLineWidthRatios")));
+    QVERIFY(documentFlowSource.contains(QStringLiteral("readonly property var editorLogicalGutterRows: editor.logicalGutterRows")));
     QVERIFY(documentFlowSource.contains(QStringLiteral("displayGeometryText: documentFlow.logicalText.length > 0 ? documentFlow.logicalText : documentFlow.sourceText")));
     QVERIFY(documentFlowSource.contains(QStringLiteral("logicalCursorPosition: documentFlow.logicalCursorPosition")));
     QVERIFY(documentFlowSource.contains(QStringLiteral("logicalToSourceOffsets: documentFlow.logicalToSourceOffsets")));
     QVERIFY(documentFlowSource.contains(QStringLiteral("normalizedHtmlBlocks: documentFlow.normalizedHtmlBlocks")));
     QVERIFY(documentFlowSource.contains(QStringLiteral("readonly property real editorContentHeight: editor.displayContentHeight")));
+
+    const QString displayViewSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/contents/editor/ContentsDisplayView.qml"));
+    QVERIFY(displayViewSource.contains(QStringLiteral(
+        "logicalCursorPosition: editorPresentationProjection.logicalOffsetForSourceOffset(")));
+    QVERIFY(displayViewSource.contains(QStringLiteral(
+        "visualLineCount: structuredDocumentFlow.editorVisualLineCount")));
+    QVERIFY(displayViewSource.contains(QStringLiteral(
+        "rowWidthRatios: structuredDocumentFlow.editorVisualLineWidthRatios")));
+    QVERIFY(displayViewSource.contains(QStringLiteral(
+        "rows: structuredDocumentFlow.editorLogicalGutterRows")));
+    QVERIFY(!displayViewSource.contains(QStringLiteral(
+        "logicalCursorPosition: editorPresentationProjection.logicalLengthForSourceText(")));
+    QVERIFY(!displayViewSource.contains(QStringLiteral(
+        "logicalLineCount: editorPresentationProjection.logicalLineCount")));
 }
 
 void WhatSonCppRegressionTests::qmlInlineFormatEditor_positionsVisibleProbeFromLogicalDisplayText()
@@ -281,6 +319,257 @@ Item {
     inlineEditor->setProperty("showRenderedOutput", false);
     QTRY_VERIFY(inlineEditor->property("nativeCursorVisible").toBool());
     QTRY_VERIFY(!projectedCursor->property("visible").toBool());
+}
+
+void WhatSonCppRegressionTests::qmlInlineFormatEditor_mapsRenderedPointerSelectionToCharacterRawRange()
+{
+    registerInlineFormatEditorRuntimeQmlTypes();
+
+    const QString repositoryRoot = qmlInlineFormatEditorRepositoryRootPath();
+    QQmlEngine engine;
+    addWhatSonInlineFormatEditorQmlImportPaths(engine, repositoryRoot);
+
+    const QString editorImportUrl =
+        QUrl::fromLocalFile(repositoryRoot + QStringLiteral("/src/app/qml/view/contents/editor")).toString();
+    const QByteArray qmlSource = QStringLiteral(R"QML(
+import QtQuick
+import "%1" as EditorView
+
+Item {
+    id: root
+    width: 360
+    height: 96
+
+    EditorView.ContentsInlineFormatEditor {
+        id: editor
+        objectName: "inlineFormatEditorUnderTest"
+        anchors.fill: parent
+        displayGeometryText: "Alpha beta"
+        logicalToSourceOffsets: [0, 7, 8, 9, 10, 11, 12, 13, 14, 15, 23]
+        renderedText: "<span style='font-weight:700'>Alpha beta</span>"
+        showRenderedOutput: true
+        text: "<bold>Alpha beta</bold>"
+    }
+}
+)QML").arg(editorImportUrl).toUtf8();
+
+    QQmlComponent component(&engine);
+    component.setData(
+        qmlSource,
+        QUrl::fromLocalFile(repositoryRoot + QStringLiteral("/test/cpp/InlineFormatPointerSelectionHarness.qml")));
+    if (component.status() == QQmlComponent::Error)
+    {
+        QFAIL(qPrintable(qmlInlineFormatEditorErrorString(component.errors())));
+    }
+
+    std::unique_ptr<QObject> rootObject(component.create());
+    if (!rootObject)
+    {
+        QFAIL(qPrintable(qmlInlineFormatEditorErrorString(component.errors())));
+    }
+
+    auto* rootItem = qobject_cast<QQuickItem*>(rootObject.get());
+    QVERIFY(rootItem != nullptr);
+
+    QQuickWindow window;
+    window.resize(360, 96);
+    rootItem->setParentItem(window.contentItem());
+    window.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&window));
+
+    QObject* inlineEditor = rootObject->findChild<QObject*>(QStringLiteral("inlineFormatEditorUnderTest"));
+    QVERIFY(inlineEditor != nullptr);
+    QTRY_VERIFY(inlineEditor->property("renderedOverlayVisible").toBool());
+
+    QVariant restoreResult;
+    QVERIFY(QMetaObject::invokeMethod(
+        inlineEditor,
+        "restoreVisibleLogicalSelectionRange",
+        Q_RETURN_ARG(QVariant, restoreResult),
+        Q_ARG(QVariant, 2),
+        Q_ARG(QVariant, 4)));
+    QVERIFY(restoreResult.toBool());
+
+    QTRY_COMPARE(inlineEditor->property("selectionStart").toInt(), 8);
+    QCOMPARE(inlineEditor->property("selectionEnd").toInt(), 10);
+    QCOMPARE(inlineEditor->property("selectedText").toString(), QStringLiteral("ph"));
+    QVERIFY(inlineEditor->property("renderedSelectionActive").toBool());
+}
+
+void WhatSonCppRegressionTests::qmlInlineFormatEditor_skipsHiddenInlineTagsDuringNativeCursorMovement()
+{
+    registerInlineFormatEditorRuntimeQmlTypes();
+
+    const QString repositoryRoot = qmlInlineFormatEditorRepositoryRootPath();
+    QQmlEngine engine;
+    addWhatSonInlineFormatEditorQmlImportPaths(engine, repositoryRoot);
+
+    const QString editorImportUrl =
+        QUrl::fromLocalFile(repositoryRoot + QStringLiteral("/src/app/qml/view/contents/editor")).toString();
+    const QByteArray qmlSource = QStringLiteral(R"QML(
+import QtQuick
+import "%1" as EditorView
+
+Item {
+    id: root
+    width: 360
+    height: 96
+
+    EditorView.ContentsInlineFormatEditor {
+        id: editor
+        objectName: "inlineFormatEditorUnderTest"
+        anchors.fill: parent
+        displayGeometryText: "Alpha beta"
+        logicalCursorPosition: 0
+        logicalToSourceOffsets: [0, 7, 8, 9, 10, 18, 19, 20, 21, 22, 23]
+        renderedText: "<span style='font-weight:700'>Alpha</span> beta"
+        showRenderedOutput: true
+        text: "<bold>Alpha</bold> beta"
+    }
+}
+)QML").arg(editorImportUrl).toUtf8();
+
+    QQmlComponent component(&engine);
+    component.setData(
+        qmlSource,
+        QUrl::fromLocalFile(repositoryRoot + QStringLiteral("/test/cpp/InlineFormatCursorSkipHarness.qml")));
+    if (component.status() == QQmlComponent::Error)
+    {
+        QFAIL(qPrintable(qmlInlineFormatEditorErrorString(component.errors())));
+    }
+
+    std::unique_ptr<QObject> rootObject(component.create());
+    if (!rootObject)
+    {
+        QFAIL(qPrintable(qmlInlineFormatEditorErrorString(component.errors())));
+    }
+
+    auto* rootItem = qobject_cast<QQuickItem*>(rootObject.get());
+    QVERIFY(rootItem != nullptr);
+
+    QQuickWindow window;
+    window.resize(360, 96);
+    rootItem->setParentItem(window.contentItem());
+    window.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&window));
+
+    QObject* inlineEditor = rootObject->findChild<QObject*>(QStringLiteral("inlineFormatEditorUnderTest"));
+    QVERIFY(inlineEditor != nullptr);
+    QTRY_VERIFY(inlineEditor->property("renderedOverlayVisible").toBool());
+
+    inlineEditor->setProperty("previousRawCursorPosition", 0);
+    inlineEditor->setProperty("cursorPosition", 1);
+    QTRY_COMPARE(inlineEditor->property("cursorPosition").toInt(), QStringLiteral("<bold>").size());
+
+    const int closingTagStart = QStringLiteral("<bold>Alpha").size();
+    const int closingTagEnd = closingTagStart + QStringLiteral("</bold>").size();
+    inlineEditor->setProperty("previousRawCursorPosition", closingTagEnd);
+    inlineEditor->setProperty("cursorPosition", closingTagEnd - 1);
+    QTRY_COMPARE(inlineEditor->property("cursorPosition").toInt(), closingTagStart);
+}
+
+void WhatSonCppRegressionTests::qmlInlineFormatEditor_reportsWrappedVisualLineCountForMinimap()
+{
+    registerInlineFormatEditorRuntimeQmlTypes();
+
+    const QString repositoryRoot = qmlInlineFormatEditorRepositoryRootPath();
+    QQmlEngine engine;
+    addWhatSonInlineFormatEditorQmlImportPaths(engine, repositoryRoot);
+
+    const QString editorImportUrl =
+        QUrl::fromLocalFile(repositoryRoot + QStringLiteral("/src/app/qml/view/contents/editor")).toString();
+    const QByteArray qmlSource = QStringLiteral(R"QML(
+import QtQuick
+import "%1" as EditorView
+
+Item {
+    id: root
+    width: 96
+    height: 160
+
+    EditorView.ContentsInlineFormatEditor {
+        id: editor
+        objectName: "inlineFormatEditorUnderTest"
+        anchors.fill: parent
+        displayGeometryText: "Alpha beta gamma delta epsilon zeta eta theta iota kappa"
+        renderedText: "<span>Alpha beta gamma delta epsilon zeta eta theta iota kappa</span>"
+        showRenderedOutput: true
+        text: "Alpha beta gamma delta epsilon zeta eta theta iota kappa"
+    }
+}
+)QML").arg(editorImportUrl).toUtf8();
+
+    QQmlComponent component(&engine);
+    component.setData(
+        qmlSource,
+        QUrl::fromLocalFile(repositoryRoot + QStringLiteral("/test/cpp/InlineFormatVisualLineHarness.qml")));
+    if (component.status() == QQmlComponent::Error)
+    {
+        QFAIL(qPrintable(qmlInlineFormatEditorErrorString(component.errors())));
+    }
+
+    std::unique_ptr<QObject> rootObject(component.create());
+    if (!rootObject)
+    {
+        QFAIL(qPrintable(qmlInlineFormatEditorErrorString(component.errors())));
+    }
+
+    auto* rootItem = qobject_cast<QQuickItem*>(rootObject.get());
+    QVERIFY(rootItem != nullptr);
+
+    QQuickWindow window;
+    window.resize(96, 160);
+    rootItem->setParentItem(window.contentItem());
+    window.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&window));
+
+    QObject* inlineEditor = rootObject->findChild<QObject*>(QStringLiteral("inlineFormatEditorUnderTest"));
+    QVERIFY(inlineEditor != nullptr);
+    QTRY_VERIFY(inlineEditor->property("renderedOverlayVisible").toBool());
+    QTRY_VERIFY(inlineEditor->property("visualLineCount").toInt() > 1);
+    QTRY_VERIFY(!inlineEditor->property("logicalGutterRows").toList().isEmpty());
+    const QVariantList logicalGutterRows = inlineEditor->property("logicalGutterRows").toList();
+    QCOMPARE(logicalGutterRows.size(), 1);
+    const QVariantMap firstGutterRow = logicalGutterRows.first().toMap();
+    QCOMPARE(firstGutterRow.value(QStringLiteral("number")).toInt(), 1);
+    QVERIFY(firstGutterRow.value(QStringLiteral("height")).toDouble() > 24.0);
+    const QVariantList visualLineWidthRatios = inlineEditor->property("visualLineWidthRatios").toList();
+    QVERIFY(visualLineWidthRatios.size() >= inlineEditor->property("visualLineCount").toInt());
+    bool foundPartialWidthLine = false;
+    for (const QVariant& ratio : visualLineWidthRatios)
+    {
+        const double normalizedRatio = ratio.toDouble();
+        if (normalizedRatio > 0.0 && normalizedRatio < 0.95)
+        {
+            foundPartialWidthLine = true;
+            break;
+        }
+    }
+    QVERIFY(foundPartialWidthLine);
+
+    QVariant thickBlockLineCount;
+    QVariantMap thickBlockMetrics;
+    thickBlockMetrics.insert(QStringLiteral("lineCount"), 1);
+    thickBlockMetrics.insert(QStringLiteral("contentHeight"), 10000);
+    QVERIFY(QMetaObject::invokeMethod(
+        inlineEditor,
+        "resolvedTextItemLineCount",
+        Q_RETURN_ARG(QVariant, thickBlockLineCount),
+        Q_ARG(QVariant, thickBlockMetrics)));
+    QVERIFY(thickBlockLineCount.toInt() > 1);
+
+    QVariant thickBlockWidths;
+    QVERIFY(QMetaObject::invokeMethod(
+        inlineEditor,
+        "resolvedTextItemLineWidthRatios",
+        Q_RETURN_ARG(QVariant, thickBlockWidths),
+        Q_ARG(QVariant, thickBlockMetrics)));
+    const QVariantList thickBlockWidthRatios = thickBlockWidths.toList();
+    QVERIFY(thickBlockWidthRatios.size() >= thickBlockLineCount.toInt());
+    for (const QVariant& ratio : thickBlockWidthRatios)
+    {
+        QCOMPARE(ratio.toDouble(), 1.0);
+    }
 }
 
 void WhatSonCppRegressionTests::qmlStructuredDocumentFlow_routesBottomBlankClickToBodyEnd()

@@ -27,7 +27,14 @@ Hosts the note document surface after `ContentsDisplayView.qml` has mounted a se
 - Tag-management shortcuts emit through the same `sourceTextEdited(text)` path after the live editor buffer is
   updated; they do not serialize RichText back into `.wsnbody`.
 - Exposes `normalizedBlocks()` as a compatibility hook for callers that need the renderer-owned block stream.
-- Exposes `editorContentHeight` and `editorCursorPosition` to the parent editor host.
+- Exposes `editorContentHeight`, `editorCursorPosition`, `editorVisualLineCount`, and
+  `editorVisualLineWidthRatios` to the parent editor host.
+- Exposes `editorLogicalGutterRows` to the parent editor host. These rows are derived from renderer block metadata plus
+  live editor geometry and represent logical lines with measured y/height values for the left gutter.
+- `editorVisualLineCount` comes from the inline editor's visible wrapped text surface and is the minimap row-count
+  input. It includes height-derived row equivalents for tall rendered blocks such as resource frames.
+- `editorVisualLineWidthRatios` carries the matching row-width ratios so minimap rows can reflect the visible text
+  length of each editor line.
 - Exposes `pointRequestsTerminalBodyClick(localX, localY)` and `focusTerminalBodyFromPoint(localX, localY)` for the
   bottom-empty-area accessibility hit target.
 - Mounts a transparent left-click `MouseArea` only over the region below `editorContentHeight`.

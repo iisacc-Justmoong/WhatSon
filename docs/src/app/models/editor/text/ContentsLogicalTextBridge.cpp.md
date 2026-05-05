@@ -34,6 +34,9 @@
   as their real glyphs instead of exposing the literal escape strings.
 - `sourceOffsetForLogicalOffset(...)` exposes that table to QML so selection/context-menu formatting can mutate the
   correct source slice even when the editor cursor operates on rendered plain-text offsets.
+- `logicalOffsetForSourceOffset(...)` performs the reverse cursor projection from an authoritative RAW cursor offset
+  against the whole source snapshot. Positions inside zero-width inline tag tokens map to the current visible logical
+  boundary, so projected caret placement does not drift while native cursor movement passes through hidden RAW tags.
 - Those logical offsets now also advance past any immediately adjacent closing proprietary inline-style tags
   (`</bold>`, `</italic>`, `</underline>`, `</strikethrough>`, `</highlight>`).
   A visible boundary that sits after the last styled glyph therefore resolves to the RAW position after the zero-width
@@ -71,6 +74,9 @@
 - When the visible caret sits just after a proprietary inline-style run, `sourceOffsetForLogicalOffset(...)` must not
   point back in front of that closing style tag.
   Pressing `Enter` or typing more prose there must not split `</highlight>` or expose RAW tag tails in the editor.
+- When the native RAW cursor is inside an opening or closing inline-style tag, `logicalOffsetForSourceOffset(...)` must
+  keep reporting the adjacent visible boundary. Moving through hidden tag bytes must not move the projected overlay
+  caret through unrelated logical text.
 
 ## Extracted Symbols
 - Declared namespaces present: no

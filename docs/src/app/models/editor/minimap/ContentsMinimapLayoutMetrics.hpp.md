@@ -7,7 +7,9 @@ Declares the C++ QObject that resolves editor minimap layout metrics for QML.
 ## Contract
 
 - Receives LVRS metric tokens as integer properties.
-- Receives runtime visibility and `logicalLineCount` from the editor host.
+- Receives runtime visibility and `visualLineCount` from the editor host.
+- `visualLineCount` is the live editor surface's post-wrap and post-render-height row count, not the parser
+  logical-line count.
 - Publishes read-only calculated metrics:
   - `defaultMinimapWidth`
   - `designRowCount`

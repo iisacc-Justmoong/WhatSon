@@ -157,6 +157,13 @@ int ContentsEditorPresentationProjection::sourceOffsetForLogicalOffset(const int
                : logicalOffset;
 }
 
+int ContentsEditorPresentationProjection::logicalOffsetForSourceOffset(const int sourceOffset) const
+{
+    return m_logicalTextBridge != nullptr
+               ? m_logicalTextBridge->logicalOffsetForSourceOffset(sourceOffset)
+               : sourceOffset;
+}
+
 void ContentsEditorPresentationProjection::connectSignals()
 {
     if (m_textFormatRenderer != nullptr)

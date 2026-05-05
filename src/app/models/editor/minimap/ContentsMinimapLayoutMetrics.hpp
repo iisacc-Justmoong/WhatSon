@@ -13,7 +13,7 @@ class ContentsMinimapLayoutMetrics : public QObject
     Q_PROPERTY(int gap24 READ gap24 WRITE setGap24 NOTIFY gap24Changed)
     Q_PROPERTY(int strokeThin READ strokeThin WRITE setStrokeThin NOTIFY strokeThinChanged)
     Q_PROPERTY(int buttonMinWidth READ buttonMinWidth WRITE setButtonMinWidth NOTIFY buttonMinWidthChanged)
-    Q_PROPERTY(int logicalLineCount READ logicalLineCount WRITE setLogicalLineCount NOTIFY logicalLineCountChanged)
+    Q_PROPERTY(int visualLineCount READ visualLineCount WRITE setVisualLineCount NOTIFY visualLineCountChanged)
     Q_PROPERTY(bool minimapVisible READ minimapVisible WRITE setMinimapVisible NOTIFY minimapVisibleChanged)
     Q_PROPERTY(int defaultMinimapWidth READ defaultMinimapWidth NOTIFY metricsChanged)
     Q_PROPERTY(int designRowCount READ designRowCount NOTIFY metricsChanged)
@@ -38,8 +38,8 @@ public:
     void setStrokeThin(int value);
     int buttonMinWidth() const noexcept;
     void setButtonMinWidth(int value);
-    int logicalLineCount() const noexcept;
-    void setLogicalLineCount(int value);
+    int visualLineCount() const noexcept;
+    void setVisualLineCount(int value);
     bool minimapVisible() const noexcept;
     void setMinimapVisible(bool value);
 
@@ -59,7 +59,7 @@ signals:
     void gap24Changed();
     void strokeThinChanged();
     void buttonMinWidthChanged();
-    void logicalLineCountChanged();
+    void visualLineCountChanged();
     void minimapVisibleChanged();
     void metricsChanged();
 
@@ -74,6 +74,6 @@ private:
     int m_gap24 = 0;
     int m_strokeThin = 1;
     int m_buttonMinWidth = 0;
-    int m_logicalLineCount = 1;
+    int m_visualLineCount = 1;
     bool m_minimapVisible = true;
 };

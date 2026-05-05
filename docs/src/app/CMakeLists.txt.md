@@ -71,6 +71,9 @@
 - The app target also links the local `iiXml::iiXml` and `iiHtmlBlock::iiHtmlBlock` imported targets. Root CMake
   owns package discovery from `~/.local/iiXml` and `~/.local/iiHtmlBlock`, while this runtime shard keeps the
   executable's concrete link surface explicit.
+- iOS app builds require iOS package prefixes for those local libraries. The root export path passes
+  `WHATSON_IIXML_IOS_PREFIX`/`WHATSON_IIHTMLBLOCK_IOS_PREFIX` and direct package dirs into the generated Xcode
+  configure when available, preventing a host macOS dylib package from being mistaken for an iphoneos dependency.
 - iOS keeps `QT_QML_MODULE_NO_IMPORT_SCAN` enabled for the clean Xcode export flow, so the app now carries an explicit static QML plugin closure instead of relying on top-level imports alone.
 - That closure includes the QML runtime foundation (`Qt6::qmlplugin`, `Qt6::modelsplugin`, `Qt6::workerscriptplugin`), the controls/dialog implementation chain (`Qt6::qtquicktemplates2plugin`, `Qt6::qtquickcontrols2implplugin`, `Qt6::qtquickcontrols2basicstyleimplplugin`, `Qt6::qtquickcontrols2iosstyleimplplugin`, `Qt6::qtquickdialogs2quickimplplugin`), and the feature-facing plugins already used by app QML.
 - `QtQuick.Pdf` is not self-contained on iOS in this static-plugin setup: `PdfMultiPageView.qml` also imports `QtQuick.Shapes`, so `Qt6::qmlshapesplugin` must stay in the same manual plugin link set or the QML engine aborts during startup.

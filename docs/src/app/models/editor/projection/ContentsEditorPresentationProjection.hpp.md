@@ -11,6 +11,7 @@ It exposes the read-side projection derived from authoritative RAW `.wsnbody` te
 - `htmlTokens`
 - `normalizedHtmlBlocks`
 - logical text and logical-line metrics
+- whole-source logical/source cursor mapping
 
 ## Render Contract
 
@@ -19,3 +20,5 @@ It exposes the read-side projection derived from authoritative RAW `.wsnbody` te
 QML host.
 
 The projection does not mutate source text. Source mutations stay on the editor session/persistence path.
+`logicalOffsetForSourceOffset(int)` and `sourceOffsetForLogicalOffset(int)` are read-side coordinate transforms only;
+they must use the current whole RAW source snapshot rather than partial source-prefix parsing.
