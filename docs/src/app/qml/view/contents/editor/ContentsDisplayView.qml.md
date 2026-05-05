@@ -21,6 +21,11 @@ Provides the note-backed center editor surface.
 - Mounts `ContentsLineNumberRail.qml` to the left of `ContentsStructuredDocumentFlow.qml` inside the same
   `editorDocumentViewport` content item, so line numbers scroll in the exact body coordinate system instead of a
   detached overlay.
+- Binds the gutter width to `ContentsLineNumberRail.preferredWidth`, preserving the number column while halving the
+  blank leading area that used to be implied by `LV.Theme.buttonMinWidth`.
+- Forwards the live inline editor cursor and selection offsets from `ContentsStructuredDocumentFlow.qml` into
+  `ContentsLineNumberRail.qml`, allowing the gutter to restore the blue active-line indicator without taking ownership
+  of text input.
 - Feeds that gutter from `ContentsStructuredDocumentFlow.editorLogicalGutterRows`; each row is one logical line and its
   height comes from the C++ `ContentsLineNumberRailMetrics` object, which consumes measured row-geometry snapshots
   supplied by the inline editor geometry adapter. Wrapped paragraphs therefore keep one number with a taller row.
@@ -29,8 +34,9 @@ Provides the note-backed center editor surface.
   rows therefore follow visible wrapped lines and height-derived tall-block rows rather than parser logical lines.
 - Feeds `Minimap.rowWidthRatios` from `ContentsStructuredDocumentFlow.editorVisualLineWidthRatios`, so each minimap
   row width follows the visible line length measured by the geometry adapter instead of defaulting every row to 100%.
-- Converts `Minimap.scrollRatioRequested(...)` into `editorDocumentViewport.contentY`, allowing vertical minimap drags
-  to scroll the note body without rendering a minimap scrollbar thumb or viewport indicator.
+- Converts `Minimap.scrollDeltaRequested(...)` into `editorDocumentViewport.contentY`, allowing vertical minimap drags
+  to move the note body by the same pixel delta without smoothing, ratio scaling, a minimap scrollbar thumb, or a
+  viewport indicator.
 - Converts the live RAW cursor offset into a logical display cursor offset through
   `ContentsEditorPresentationProjection.logicalOffsetForSourceOffset(...)` before handing it to the structured flow.
   This conversion uses the whole RAW source snapshot, so cursor positions inside hidden inline format tag tokens map to
@@ -48,6 +54,8 @@ Provides the note-backed center editor surface.
   scroll position, so saving or live synchronization cannot snap a long document back to the top.
 - Mounts the editor chrome as an `LV.HStack`: the scrollable `ContentsStructuredDocumentFlow.qml` viewport in the
   center and existing `view/contents/Minimap.qml` on the right.
+- Applies `contentVerticalPadding` (`LV.Theme.gap8`) to that editor chrome `LV.HStack`, so the line-number gutter,
+  structured editor viewport, and minimap all share the same top and bottom inset.
 - Commits user edits through `ContentsEditorSessionController.commitRawEditorTextMutation(...)` first, then asks the
   active hierarchy controller to persist through `saveCurrentBodyText(...)` when that capability is available.
 
@@ -71,9 +79,12 @@ The live route is:
    measured snapshots without holding editor objects. `ContentsMinimapLayoutMetrics` converts the count into minimap
    row policy, while `Minimap.qml` receives the resolved row count, width ratios, and scroll-drag enablement from the
    structured flow and editor viewport.
-8. `ContentsDisplayView.qml` places a scrollable editor document viewport and minimap in one `LV.HStack`.
+8. `ContentsDisplayView.qml` places a scrollable editor document viewport and minimap in one vertically padded
+   `LV.HStack`.
 9. The editor document viewport contains both `ContentsLineNumberRail.qml` and `ContentsStructuredDocumentFlow.qml`, giving the
-   gutter one shared scroll and y-coordinate system with the body.
+   gutter one shared scroll and y-coordinate system with the body. The gutter width comes from the rail's own
+   `preferredWidth` so the blank leading area is not stretched back to the full button minimum, and the rail receives
+   RAW cursor/selection offsets for active-line bar painting.
 10. `ContentsStructuredDocumentFlow.qml` displays the final RichText projection through the inline editor's read-only
    `TextEdit.RichText` overlay and keeps the plain `LV.TextEditor` buffer as the edit source inside the center slot.
 11. The inline editor paints a projected blinking cursor above the overlay from logical visible-text geometry while the
@@ -83,8 +94,8 @@ The live route is:
     cursor override while the host-level logical cursor binding catches up from the RAW cursor.
 12. Bottom-empty-area clicks inside that center slot focus the same live editor and place the cursor at the RAW source
     end. No synthetic text mutation is created by this accessibility path.
-13. Vertical minimap drags emit a normalized ratio from an invisible drag surface and the display host maps it onto the
-    editor document viewport's scroll range.
+13. Vertical minimap drags emit direct pixel deltas from an invisible drag surface and the display host adds them to
+    the editor document viewport's `contentY`, clamped to the scroll range.
 
 The QML host does not parse XML, does not derive block boundaries from DOM or RichText output, and no longer owns
 minimap metric arithmetic.

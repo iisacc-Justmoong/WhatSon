@@ -19,6 +19,8 @@ Item {
     readonly property real editorContentHeight: editor.displayContentHeight
     readonly property int editorCursorPosition: editor.cursorPosition
     readonly property var editorLogicalGutterRows: editor.logicalGutterRows
+    readonly property int editorSelectionEnd: editor.selectionEnd
+    readonly property int editorSelectionStart: editor.selectionStart
     readonly property int editorVisualLineCount: editor.visualLineCount
     readonly property var editorVisualLineWidthRatios: editor.visualLineWidthRatios
 

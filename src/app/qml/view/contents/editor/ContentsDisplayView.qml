@@ -27,6 +27,7 @@ Item {
     property bool paperPaletteEnabled: false
     property var resourcesImportController: null
     property var sidebarHierarchyController: null
+    readonly property int contentVerticalPadding: LV.Theme.gap8
     readonly property var currentNoteEntry: contentsDisplayView.noteEntryFromModel()
     readonly property string currentNoteId: contentsDisplayView.activeStateAvailable()
                                             ? contentsDisplayView.activeStateStringProperty("activeNoteId")
@@ -154,10 +155,10 @@ Item {
         return Math.max(0, editorDocumentViewport.contentHeight - editorDocumentViewport.height);
     }
 
-    function scrollEditorViewportToRatio(ratio) {
+    function scrollEditorViewportByDelta(deltaY) {
         const scrollRange = contentsDisplayView.editorViewportScrollRange();
-        const normalizedRatio = Math.max(0, Math.min(1, Number(ratio) || 0));
-        editorDocumentViewport.contentY = scrollRange * normalizedRatio;
+        const nextContentY = editorDocumentViewport.contentY + (Number(deltaY) || 0);
+        editorDocumentViewport.contentY = Math.max(0, Math.min(scrollRange, nextContentY));
         return true;
     }
 
@@ -337,6 +338,8 @@ Item {
 
     LV.HStack {
         anchors.fill: parent
+        anchors.bottomMargin: contentsDisplayView.contentVerticalPadding
+        anchors.topMargin: contentsDisplayView.contentVerticalPadding
         objectName: "contentsDisplayEditorChromeHStack"
         spacing: LV.Theme.gapNone
 
@@ -372,9 +375,12 @@ Item {
 
                         height: editorDocumentContent.height
                         objectName: "contentsDisplayGutter"
+                        activeSelectionEnd: structuredDocumentFlow.editorSelectionEnd
+                        activeSelectionStart: structuredDocumentFlow.editorSelectionStart
+                        activeSourceCursorPosition: structuredDocumentFlow.editorCursorPosition
                         rows: structuredDocumentFlow.editorLogicalGutterRows
                         visible: contentsDisplayView.noteDocumentParseMounted
-                        width: LV.Theme.buttonMinWidth
+                        width: contentsDisplayGutter.preferredWidth
                         x: LV.Theme.gapNone
                         y: LV.Theme.gapNone
                     }
@@ -440,8 +446,8 @@ Item {
             scrollDragEnabled: editorDocumentViewport.contentHeight > editorDocumentViewport.height
             visible: contentsDisplayView.minimapVisible
 
-            onScrollRatioRequested: function (ratio) {
-                contentsDisplayView.scrollEditorViewportToRatio(ratio);
+            onScrollDeltaRequested: function (deltaY) {
+                contentsDisplayView.scrollEditorViewportByDelta(deltaY);
             }
 
             onViewHookRequested: function (reason) {

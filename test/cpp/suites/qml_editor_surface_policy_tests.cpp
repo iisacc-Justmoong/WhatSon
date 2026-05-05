@@ -111,10 +111,17 @@ void WhatSonCppRegressionTests::qmlStructuredEditors_mountsEditorAndMinimapInDis
 {
     const QString displayViewSource = readUtf8SourceFile(
         QStringLiteral("src/app/qml/view/contents/editor/ContentsDisplayView.qml"));
+    const QString documentFlowSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/contents/editor/ContentsStructuredDocumentFlow.qml"));
+    const QString lineNumberRailSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/contents/editor/ContentsLineNumberRail.qml"));
 
     QVERIFY(displayViewSource.contains(QStringLiteral("import \"..\" as ContentsChrome")));
     QVERIFY(displayViewSource.contains(QStringLiteral("LV.HStack {")));
     QVERIFY(displayViewSource.contains(QStringLiteral("objectName: \"contentsDisplayEditorChromeHStack\"")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("readonly property int contentVerticalPadding: LV.Theme.gap8")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("anchors.bottomMargin: contentsDisplayView.contentVerticalPadding")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("anchors.topMargin: contentsDisplayView.contentVerticalPadding")));
     QVERIFY(displayViewSource.contains(QStringLiteral("ContentsMinimapLayoutMetrics {")));
     QVERIFY(displayViewSource.contains(QStringLiteral("Flickable {")));
     QVERIFY(displayViewSource.contains(QStringLiteral("id: editorDocumentViewport")));
@@ -124,8 +131,9 @@ void WhatSonCppRegressionTests::qmlStructuredEditors_mountsEditorAndMinimapInDis
     QVERIFY(displayViewSource.contains(QStringLiteral("height: Math.max(editorDocumentViewport.height, structuredDocumentFlow.editorContentHeight)")));
     QVERIFY(displayViewSource.contains(QStringLiteral("interactive: contentHeight > height")));
     QVERIFY(displayViewSource.contains(QStringLiteral("function editorViewportScrollRange()")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("function scrollEditorViewportToRatio(ratio)")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("editorDocumentViewport.contentY = scrollRange * normalizedRatio")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("function scrollEditorViewportByDelta(deltaY)")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("const nextContentY = editorDocumentViewport.contentY + (Number(deltaY) || 0)")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("editorDocumentViewport.contentY = Math.max(0, Math.min(scrollRange, nextContentY))")));
     QVERIFY(displayViewSource.contains(QStringLiteral("function syncSessionFromCurrentNote(resetViewport)")));
     QVERIFY(displayViewSource.contains(QStringLiteral("resetViewport === true && editorDocumentViewport")));
     QVERIFY(displayViewSource.contains(QStringLiteral("onCurrentRawBodyTextChanged: contentsDisplayView.syncSessionFromCurrentNote(false)")));
@@ -133,8 +141,31 @@ void WhatSonCppRegressionTests::qmlStructuredEditors_mountsEditorAndMinimapInDis
     QVERIFY(displayViewSource.contains(QStringLiteral("targetFlickable: editorDocumentViewport")));
     QVERIFY(displayViewSource.contains(QStringLiteral("ContentsLineNumberRail {")));
     QVERIFY(displayViewSource.contains(QStringLiteral("objectName: \"contentsDisplayGutter\"")));
+    QVERIFY(documentFlowSource.contains(QStringLiteral("readonly property int editorSelectionEnd: editor.selectionEnd")));
+    QVERIFY(documentFlowSource.contains(QStringLiteral("readonly property int editorSelectionStart: editor.selectionStart")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("activeSelectionEnd: structuredDocumentFlow.editorSelectionEnd")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("activeSelectionStart: structuredDocumentFlow.editorSelectionStart")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("activeSourceCursorPosition: structuredDocumentFlow.editorCursorPosition")));
     QVERIFY(displayViewSource.contains(QStringLiteral("rows: structuredDocumentFlow.editorLogicalGutterRows")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("width: LV.Theme.buttonMinWidth")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("width: contentsDisplayGutter.preferredWidth")));
+    QVERIFY(lineNumberRailSource.contains(QStringLiteral("property int activeSourceCursorPosition: 0")));
+    QVERIFY(lineNumberRailSource.contains(QStringLiteral("property int activeSelectionEnd: activeSourceCursorPosition")));
+    QVERIFY(lineNumberRailSource.contains(QStringLiteral("property int activeSelectionStart: activeSourceCursorPosition")));
+    QVERIFY(lineNumberRailSource.contains(QStringLiteral("property color activeIndicatorColor: LV.Theme.accentBlue")));
+    QVERIFY(lineNumberRailSource.contains(QStringLiteral("readonly property real activeIndicatorWidth: Math.max(LV.Theme.strokeThin, LV.Theme.gap2)")));
+    QVERIFY(lineNumberRailSource.contains(QStringLiteral("readonly property real numberColumnWidth: Math.max(LV.Theme.gap16, Number(LV.Theme.textCaption) * 2)")));
+    QVERIFY(lineNumberRailSource.contains(QStringLiteral("readonly property real numberRightPadding: LV.Theme.gap8")));
+    QVERIFY(lineNumberRailSource.contains(QStringLiteral("readonly property real baselineLeftBlankWidth: Math.max(0, LV.Theme.buttonMinWidth - lineNumberRail.numberColumnWidth - lineNumberRail.numberRightPadding)")));
+    QVERIFY(lineNumberRailSource.contains(QStringLiteral("readonly property real leftBlankWidth: lineNumberRail.baselineLeftBlankWidth / 2")));
+    QVERIFY(lineNumberRailSource.contains(QStringLiteral("readonly property real preferredWidth: lineNumberRail.leftBlankWidth + lineNumberRail.numberColumnWidth + lineNumberRail.numberRightPadding")));
+    QVERIFY(lineNumberRailSource.contains(QStringLiteral("function rowContainsActiveSourceRange(row)")));
+    QVERIFY(lineNumberRailSource.contains(QStringLiteral("return activeStart < rowEnd && activeEnd > rowStart")));
+    QVERIFY(lineNumberRailSource.contains(QStringLiteral("return cursorPosition >= rowStart && cursorPosition <= rowEnd")));
+    QVERIFY(lineNumberRailSource.contains(QStringLiteral("readonly property bool activeSourceRow: lineNumberRail.rowContainsActiveSourceRange(modelData)")));
+    QVERIFY(lineNumberRailSource.contains(QStringLiteral("color: lineNumberRail.activeIndicatorColor")));
+    QVERIFY(lineNumberRailSource.contains(QStringLiteral("visible: lineNumberRailRow.activeSourceRow")));
+    QVERIFY(lineNumberRailSource.contains(QStringLiteral("anchors.leftMargin: lineNumberRail.leftBlankWidth")));
+    QVERIFY(lineNumberRailSource.contains(QStringLiteral("anchors.rightMargin: lineNumberRail.numberRightPadding")));
     QVERIFY(displayViewSource.contains(QStringLiteral("ContentsStructuredDocumentFlow {")));
     QVERIFY(displayViewSource.contains(QStringLiteral("ContentsChrome.Minimap {")));
     const qsizetype hStackIndex = displayViewSource.indexOf(QStringLiteral("LV.HStack {"));
@@ -149,8 +180,11 @@ void WhatSonCppRegressionTests::qmlStructuredEditors_mountsEditorAndMinimapInDis
     QVERIFY(displayViewSource.contains(QStringLiteral("documentBlocks: structuredBlockRenderer.renderedDocumentBlocks")));
     QVERIFY(displayViewSource.contains(QStringLiteral("Layout.preferredWidth: minimapLayoutMetrics.effectiveMinimapWidth")));
     QVERIFY(displayViewSource.contains(QStringLiteral("scrollDragEnabled: editorDocumentViewport.contentHeight > editorDocumentViewport.height")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("onScrollRatioRequested: function (ratio)")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("contentsDisplayView.scrollEditorViewportToRatio(ratio)")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("onScrollDeltaRequested: function (deltaY)")));
+    QVERIFY(displayViewSource.contains(QStringLiteral("contentsDisplayView.scrollEditorViewportByDelta(deltaY)")));
+    QVERIFY(!displayViewSource.contains(QStringLiteral("scrollEditorViewportToRatio")));
+    QVERIFY(!displayViewSource.contains(QStringLiteral("onScrollRatioRequested")));
+    QVERIFY(!displayViewSource.contains(QStringLiteral("normalizedRatio")));
     QVERIFY(!displayViewSource.contains(QStringLiteral("editorViewportScrollRatio")));
     QVERIFY(!displayViewSource.contains(QStringLiteral("editorViewportVisibleRatio")));
     QVERIFY(!displayViewSource.contains(QStringLiteral("scrollPositionRatio:")));

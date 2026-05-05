@@ -10,23 +10,34 @@ Item {
     property int rowCount: LV.Theme.strokeThin
     property var rowWidthRatios: []
     property bool scrollDragEnabled: true
+    property real scrollDragLastY: 0
+    property real horizontalPadding: LV.Theme.gap8
 
-    signal scrollRatioRequested(real ratio)
+    signal scrollDeltaRequested(real deltaY)
     signal viewHookRequested(string reason)
 
-    function clampedRatio(value) {
-        const ratio = Number(value);
-        if (!isFinite(ratio))
-            return 0;
-        return Math.max(0, Math.min(1, ratio));
+    function beginScrollDrag(localY) {
+        if (!minimap.scrollDragEnabled)
+            return false;
+        minimap.scrollDragLastY = Number(localY) || 0;
+        return true;
     }
 
-    function requestScrollRatioFromY(localY) {
-        if (!minimap.scrollDragEnabled || minimap.height <= LV.Theme.strokeThin)
+    function requestScrollDeltaFromY(localY) {
+        if (!minimap.scrollDragEnabled)
             return false;
-        const ratio = minimap.clampedRatio((Number(localY) || 0) / minimap.height);
-        minimap.scrollRatioRequested(ratio);
+        const currentY = Number(localY) || 0;
+        const deltaY = currentY - minimap.scrollDragLastY;
+        minimap.scrollDragLastY = currentY;
+        if (deltaY !== 0)
+            minimap.scrollDeltaRequested(deltaY);
         return true;
+    }
+
+    function finishScrollDrag(localY) {
+        const updated = minimap.requestScrollDeltaFromY(localY);
+        minimap.scrollDragLastY = 0;
+        return updated;
     }
 
     function requestViewHook(reason) {
@@ -42,7 +53,8 @@ Item {
         const safeRatio = isFinite(ratio) && ratio > 0
                 ? Math.max(0, Math.min(1, ratio))
                 : 1;
-        return Math.max(LV.Theme.strokeThin, minimap.width * safeRatio);
+        const availableWidth = Math.max(0, minimap.width - (minimap.horizontalPadding * 2));
+        return Math.max(LV.Theme.strokeThin, availableWidth * safeRatio);
     }
 
     clip: true
@@ -52,6 +64,8 @@ Item {
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.top: parent.top
+        anchors.leftMargin: minimap.horizontalPadding
+        anchors.rightMargin: minimap.horizontalPadding
         spacing: LV.Theme.strokeThin
 
         Repeater {
@@ -79,14 +93,14 @@ Item {
         z: 1
 
         onPositionChanged: function (mouse) {
-            if (pressed)
-                minimap.requestScrollRatioFromY(mouse.y);
+            if (minimapScrollDragSurface.pressed)
+                minimap.requestScrollDeltaFromY(mouse.y);
         }
         onPressed: function (mouse) {
-            mouse.accepted = minimap.requestScrollRatioFromY(mouse.y);
+            mouse.accepted = minimap.beginScrollDrag(mouse.y);
         }
         onReleased: function (mouse) {
-            minimap.requestScrollRatioFromY(mouse.y);
+            minimap.finishScrollDrag(mouse.y);
             mouse.accepted = true;
         }
     }

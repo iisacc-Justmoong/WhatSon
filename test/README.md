@@ -168,11 +168,13 @@ ctest --test-dir build --output-on-failure -L cpp_regression
 - Minimap snapshots now also pin the resolved document presentation source in both the C++ and QML regression suites,
   so note-body snapshots populate the minimap immediately even before editor-session text becomes the active
   presentation authority.
-- Minimap row painting now also pins document-geometry scaling in the QML regression suite, so the rail uses each
-  row's real `contentY` / `contentHeight` instead of evenly spacing bars by `visualIndex`, and long notes keep a
-  proportional minimap silhouette.
-- Minimap interaction now also pins row-only visual chrome in the QML regression suite, so vertical drags still emit
-  scroll ratios while the minimap stops rendering a viewport thumb or scrollbar indicator.
+- Minimap row painting now also pins document-geometry scaling and 8px horizontal padding in the QML regression suite,
+  so the rail uses each row's real `contentY` / `contentHeight` instead of evenly spacing bars by `visualIndex`, and
+  long notes keep a proportional minimap silhouette inside the padded inner width.
+- Minimap interaction now also pins row-only visual chrome and direct delta scrolling in the QML regression suite, so
+  vertical drags emit pixel deltas while the minimap stops rendering a viewport thumb or scrollbar indicator.
+- Contents chrome layout tests now also pin `LV.Theme.gap8` top/bottom padding on both standalone `ContentsView.qml`
+  and runtime `ContentsDisplayView.qml`, so the gutter, editor viewport, and minimap share one vertical inset.
 - Structured layout-cache commits now also pin a forced minimap snapshot refresh in the QML regression suite, so once
   `cachedLogicalLineEntries` lands after note parsing the minimap rebuilds from the same structured geometry instead of
   staying on the stale pre-layout snapshot.
@@ -181,7 +183,9 @@ ctest --test-dir build --output-on-failure -L cpp_regression
   structured notes keep the minimap aligned with the same document model the editor is rendering.
 - Line-number rail metrics now also pin whole-document logical text row mapping, so gutter numbers follow the
   editor's logical line positions, including blank lines between hidden RAW tags, and consume measured y snapshots
-  instead of spacing numbers by a simple row count.
+  instead of spacing numbers by a simple row count. QML surface tests also pin the rail's `preferredWidth`, so the
+  blank leading area before the line-number column stays half of the previous implicit button-width slack, and the
+  active blue gutter bar follows cursor/selection source offsets.
 - The shared inline-format editor now also pins the absence of pointer interception above the live `LV.TextEditor`,
   so mouse/touch selection, `Shift`-extended selection, and repeated Backspace/Delete remain OS/Qt-native. The same
   regression scans the QML source tree for forbidden input-method bridges and fallbacks, keeping IME query updates,
