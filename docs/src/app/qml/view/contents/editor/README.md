@@ -52,8 +52,9 @@ Editor-facing QML view components for the center content surface.
 - The minimap row widths are driven by `ContentsStructuredDocumentFlow.editorVisualLineWidthRatios`. Text rows use the
   visible line length measured by `ContentsEditorGeometryProvider` and normalized by `ContentsEditorVisualLineMetrics`;
   height-derived rows that cannot be probed from text geometry remain full width.
-- The minimap can be dragged vertically as a compact scrollbar. `Minimap.qml` emits normalized scroll ratios and
-  `ContentsDisplayView.qml` maps those ratios onto the center editor `Flickable.contentY`.
+- The minimap can be dragged vertically without rendering scrollbar chrome. `Minimap.qml` emits normalized scroll
+  ratios from its invisible drag surface and `ContentsDisplayView.qml` maps those ratios onto the center editor
+  `Flickable.contentY`.
 - `ContentsInlineFormatEditor.qml` keeps editing on an `LV.TextEditor` plain-text buffer while displaying the read-side
   RichText overlay. When native selection is active, that overlay stays visible so WYSIWYG text and resource frames do
   not collapse back to RAW tags; the underlying editor still owns the source range and keeps native selection highlight
@@ -106,7 +107,7 @@ source mutation policy remain in C++ model/renderer objects.
 - resource frame: 리소스 프레임은 본문 텍스트 컬럼 폭의 100%로 렌더한다.
 - minimap: 미니맵 행 수는 parser 논리 줄 수가 아니라 geometry adapter가 측정해 `editorVisualLineCount`로 전달되는 실제 에디터 wrap 결과 줄 수를 따른다. 리소스 프레임처럼 별도 높이를 차지하는 블록은 표시 높이를 본문 줄 높이로 나눈 줄 수만큼 미니맵에 반영한다.
 - minimap width: 미니맵 각 행의 폭은 `editorVisualLineWidthRatios`로 전달되는 실제 표시 줄 길이를 따른다. 텍스트 행은 본문에서 보이는 길이에 비례하고, 리소스 프레임 높이에서 파생된 행은 프레임이 본문 폭을 채우므로 full width로 둔다. 미니맵 metrics는 측정된 ratio snapshot만 소비한다.
-- minimap drag: 미니맵은 세로 드래그를 정규화된 scroll ratio로 내보내고, `ContentsDisplayView.qml`이 이를 본문 `Flickable.contentY`로 변환한다.
+- minimap drag: 미니맵은 별도 스크롤바 chrome 없이 세로 드래그를 정규화된 scroll ratio로 내보내고, `ContentsDisplayView.qml`이 이를 본문 `Flickable.contentY`로 변환한다.
 - scrolling: 본문 중앙 슬롯은 `Flickable` viewport를 소유하며 긴 노트 본문은 이 viewport 안에서 세로 스크롤된다.
 - pointer: 렌더 overlay가 꺼져 있으면 `LV.TextEditor`의 OS/Qt 선택 경로를 그대로 사용한다. 렌더 overlay가
   보이면 숨겨진 RAW 태그가 투명 텍스트 지오메트리를 왜곡하므로, 마우스 드래그 좌표를 `displayGeometryText`

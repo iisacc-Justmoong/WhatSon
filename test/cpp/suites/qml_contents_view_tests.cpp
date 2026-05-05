@@ -31,15 +31,15 @@ void WhatSonCppRegressionTests::qmlContentsView_composesFigmaFrameFromLvrsParts(
     QVERIFY(minimapSource.contains(QStringLiteral("objectName: \"figma-352-8626-Minimap\"")));
     QVERIFY(minimapSource.contains(QStringLiteral("property var rowWidthRatios: []")));
     QVERIFY(minimapSource.contains(QStringLiteral("property bool scrollDragEnabled: true")));
-    QVERIFY(minimapSource.contains(QStringLiteral("property real scrollPositionRatio: 0")));
-    QVERIFY(minimapSource.contains(QStringLiteral("property real viewportRatio: 1")));
     QVERIFY(minimapSource.contains(QStringLiteral("signal scrollRatioRequested(real ratio)")));
     QVERIFY(minimapSource.contains(QStringLiteral("function requestScrollRatioFromY(localY)")));
-    QVERIFY(minimapSource.contains(QStringLiteral("function resolvedViewportIndicatorY()")));
     QVERIFY(minimapSource.contains(QStringLiteral("function resolvedRowWidth(index)")));
-    QVERIFY(minimapSource.contains(QStringLiteral("objectName: \"figma-352-8626-MinimapViewportIndicator\"")));
     QVERIFY(minimapSource.contains(QStringLiteral("objectName: \"figma-352-8626-MinimapScrollDragSurface\"")));
     QVERIFY(minimapSource.contains(QStringLiteral("width: minimap.resolvedRowWidth(index)")));
+    QVERIFY(!minimapSource.contains(QStringLiteral("scrollPositionRatio")));
+    QVERIFY(!minimapSource.contains(QStringLiteral("viewportRatio")));
+    QVERIFY(!minimapSource.contains(QStringLiteral("resolvedViewportIndicator")));
+    QVERIFY(!minimapSource.contains(QStringLiteral("MinimapViewportIndicator")));
     QVERIFY(contentsViewSource.contains(QStringLiteral("ContentsMinimapLayoutMetrics {")));
     QVERIFY(contentsViewSource.contains(QStringLiteral("Layout.preferredWidth: minimapLayoutMetrics.defaultMinimapWidth")));
     QVERIFY(contentsViewSource.contains(

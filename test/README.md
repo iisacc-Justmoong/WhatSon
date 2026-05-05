@@ -171,6 +171,8 @@ ctest --test-dir build --output-on-failure -L cpp_regression
 - Minimap row painting now also pins document-geometry scaling in the QML regression suite, so the rail uses each
   row's real `contentY` / `contentHeight` instead of evenly spacing bars by `visualIndex`, and long notes keep a
   proportional minimap silhouette.
+- Minimap interaction now also pins row-only visual chrome in the QML regression suite, so vertical drags still emit
+  scroll ratios while the minimap stops rendering a viewport thumb or scrollbar indicator.
 - Structured layout-cache commits now also pin a forced minimap snapshot refresh in the QML regression suite, so once
   `cachedLogicalLineEntries` lands after note parsing the minimap rebuilds from the same structured geometry instead of
   staying on the stale pre-layout snapshot.

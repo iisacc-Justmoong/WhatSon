@@ -5,8 +5,7 @@
 
 ## Contract
 - Imports LVRS and uses LVRS color and metric tokens for row spacing and line height.
-- Exposes `rowCount`, `rowWidthRatios`, `scrollDragEnabled`, `scrollPositionRatio`, `viewportRatio`, and `lineColor`
-  for root-frame binding.
+- Exposes `rowCount`, `rowWidthRatios`, `scrollDragEnabled`, and `lineColor` for root-frame binding.
 - Emits `scrollRatioRequested(real ratio)` while the user presses or drags vertically over the minimap.
 - Emits `viewHookRequested(string reason)` through `requestViewHook(reason)`.
 
@@ -25,5 +24,5 @@
   the note editor instead of always occupying the full minimap rail.
 - The minimap owns only ratio-level drag interaction. It does not know the editor `Flickable`; runtime hosts convert
   `scrollRatioRequested(...)` into their own viewport movement.
-- A translucent viewport indicator follows `scrollPositionRatio` and `viewportRatio` so the rail behaves like a compact
-  scrollbar without changing row rendering authority.
+- The minimap does not render a viewport thumb, scrollbar, or current-scroll indicator. It remains a document
+  silhouette with an invisible drag surface layered above the rows.

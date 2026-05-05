@@ -30,7 +30,7 @@ Provides the note-backed center editor surface.
 - Feeds `Minimap.rowWidthRatios` from `ContentsStructuredDocumentFlow.editorVisualLineWidthRatios`, so each minimap
   row width follows the visible line length measured by the geometry adapter instead of defaulting every row to 100%.
 - Converts `Minimap.scrollRatioRequested(...)` into `editorDocumentViewport.contentY`, allowing vertical minimap drags
-  to scroll the note body like a compact scrollbar.
+  to scroll the note body without rendering a minimap scrollbar thumb or viewport indicator.
 - Converts the live RAW cursor offset into a logical display cursor offset through
   `ContentsEditorPresentationProjection.logicalOffsetForSourceOffset(...)` before handing it to the structured flow.
   This conversion uses the whole RAW source snapshot, so cursor positions inside hidden inline format tag tokens map to
@@ -69,7 +69,7 @@ The live route is:
 7. `ContentsEditorGeometryProvider` measures the live editor's post-wrap visual line count, per-row width ratios, and
    logical gutter row geometry. `ContentsEditorVisualLineMetrics` and `ContentsLineNumberRailMetrics` consume those
    measured snapshots without holding editor objects. `ContentsMinimapLayoutMetrics` converts the count into minimap
-   row policy, while `Minimap.qml` receives the resolved row count, width ratios, and viewport scroll ratios from the
+   row policy, while `Minimap.qml` receives the resolved row count, width ratios, and scroll-drag enablement from the
    structured flow and editor viewport.
 8. `ContentsDisplayView.qml` places a scrollable editor document viewport and minimap in one `LV.HStack`.
 9. The editor document viewport contains both `ContentsLineNumberRail.qml` and `ContentsStructuredDocumentFlow.qml`, giving the
@@ -83,8 +83,8 @@ The live route is:
     cursor override while the host-level logical cursor binding catches up from the RAW cursor.
 12. Bottom-empty-area clicks inside that center slot focus the same live editor and place the cursor at the RAW source
     end. No synthetic text mutation is created by this accessibility path.
-13. Vertical minimap drags emit a normalized ratio and the display host maps it onto the editor document viewport's
-    scroll range.
+13. Vertical minimap drags emit a normalized ratio from an invisible drag surface and the display host maps it onto the
+    editor document viewport's scroll range.
 
 The QML host does not parse XML, does not derive block boundaries from DOM or RichText output, and no longer owns
 minimap metric arithmetic.

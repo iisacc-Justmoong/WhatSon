@@ -10,8 +10,6 @@ Item {
     property int rowCount: LV.Theme.strokeThin
     property var rowWidthRatios: []
     property bool scrollDragEnabled: true
-    property real scrollPositionRatio: 0
-    property real viewportRatio: 1
 
     signal scrollRatioRequested(real ratio)
     signal viewHookRequested(string reason)
@@ -29,19 +27,6 @@ Item {
         const ratio = minimap.clampedRatio((Number(localY) || 0) / minimap.height);
         minimap.scrollRatioRequested(ratio);
         return true;
-    }
-
-    function resolvedViewportIndicatorHeight() {
-        const ratio = minimap.clampedRatio(minimap.viewportRatio);
-        if (ratio >= 1)
-            return minimap.height;
-        return Math.max(LV.Theme.gap8, minimap.height * ratio);
-    }
-
-    function resolvedViewportIndicatorY() {
-        const indicatorHeight = minimap.resolvedViewportIndicatorHeight();
-        const travelRange = Math.max(0, minimap.height - indicatorHeight);
-        return travelRange * minimap.clampedRatio(minimap.scrollPositionRatio);
     }
 
     function requestViewHook(reason) {
@@ -82,20 +67,6 @@ Item {
         }
     }
 
-    Rectangle {
-        id: minimapViewportIndicator
-
-        anchors.left: parent.left
-        anchors.right: parent.right
-        color: minimap.lineColor
-        height: minimap.resolvedViewportIndicatorHeight()
-        objectName: "figma-352-8626-MinimapViewportIndicator"
-        opacity: 0.18
-        visible: minimap.scrollDragEnabled && minimap.viewportRatio < 1
-        y: minimap.resolvedViewportIndicatorY()
-        z: 1
-    }
-
     MouseArea {
         id: minimapScrollDragSurface
 
@@ -105,7 +76,7 @@ Item {
         enabled: minimap.scrollDragEnabled
         objectName: "figma-352-8626-MinimapScrollDragSurface"
         preventStealing: true
-        z: 2
+        z: 1
 
         onPositionChanged: function (mouse) {
             if (pressed)

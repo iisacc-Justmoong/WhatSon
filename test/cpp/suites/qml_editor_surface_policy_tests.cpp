@@ -124,8 +124,6 @@ void WhatSonCppRegressionTests::qmlStructuredEditors_mountsEditorAndMinimapInDis
     QVERIFY(displayViewSource.contains(QStringLiteral("height: Math.max(editorDocumentViewport.height, structuredDocumentFlow.editorContentHeight)")));
     QVERIFY(displayViewSource.contains(QStringLiteral("interactive: contentHeight > height")));
     QVERIFY(displayViewSource.contains(QStringLiteral("function editorViewportScrollRange()")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("function editorViewportScrollRatio()")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("function editorViewportVisibleRatio()")));
     QVERIFY(displayViewSource.contains(QStringLiteral("function scrollEditorViewportToRatio(ratio)")));
     QVERIFY(displayViewSource.contains(QStringLiteral("editorDocumentViewport.contentY = scrollRange * normalizedRatio")));
     QVERIFY(displayViewSource.contains(QStringLiteral("function syncSessionFromCurrentNote(resetViewport)")));
@@ -151,10 +149,12 @@ void WhatSonCppRegressionTests::qmlStructuredEditors_mountsEditorAndMinimapInDis
     QVERIFY(displayViewSource.contains(QStringLiteral("documentBlocks: structuredBlockRenderer.renderedDocumentBlocks")));
     QVERIFY(displayViewSource.contains(QStringLiteral("Layout.preferredWidth: minimapLayoutMetrics.effectiveMinimapWidth")));
     QVERIFY(displayViewSource.contains(QStringLiteral("scrollDragEnabled: editorDocumentViewport.contentHeight > editorDocumentViewport.height")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("scrollPositionRatio: contentsDisplayView.editorViewportScrollRatio()")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("viewportRatio: contentsDisplayView.editorViewportVisibleRatio()")));
     QVERIFY(displayViewSource.contains(QStringLiteral("onScrollRatioRequested: function (ratio)")));
     QVERIFY(displayViewSource.contains(QStringLiteral("contentsDisplayView.scrollEditorViewportToRatio(ratio)")));
+    QVERIFY(!displayViewSource.contains(QStringLiteral("editorViewportScrollRatio")));
+    QVERIFY(!displayViewSource.contains(QStringLiteral("editorViewportVisibleRatio")));
+    QVERIFY(!displayViewSource.contains(QStringLiteral("scrollPositionRatio:")));
+    QVERIFY(!displayViewSource.contains(QStringLiteral("viewportRatio:")));
     QVERIFY(!displayViewSource.contains(QStringLiteral("readonly property int effectiveMinimapWidth")));
     QVERIFY(!displayViewSource.contains(QStringLiteral("anchors.fill: parent\n        editorSurfaceHtml")));
 }

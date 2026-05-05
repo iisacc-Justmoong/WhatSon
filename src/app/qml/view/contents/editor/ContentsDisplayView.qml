@@ -154,19 +154,6 @@ Item {
         return Math.max(0, editorDocumentViewport.contentHeight - editorDocumentViewport.height);
     }
 
-    function editorViewportScrollRatio() {
-        const scrollRange = contentsDisplayView.editorViewportScrollRange();
-        if (scrollRange <= 0)
-            return 0;
-        return Math.max(0, Math.min(1, editorDocumentViewport.contentY / scrollRange));
-    }
-
-    function editorViewportVisibleRatio() {
-        if (!editorDocumentViewport || editorDocumentViewport.contentHeight <= 0)
-            return 1;
-        return Math.max(0, Math.min(1, editorDocumentViewport.height / editorDocumentViewport.contentHeight));
-    }
-
     function scrollEditorViewportToRatio(ratio) {
         const scrollRange = contentsDisplayView.editorViewportScrollRange();
         const normalizedRatio = Math.max(0, Math.min(1, Number(ratio) || 0));
@@ -451,9 +438,7 @@ Item {
             rowCount: minimapLayoutMetrics.effectiveRowCount
             rowWidthRatios: structuredDocumentFlow.editorVisualLineWidthRatios
             scrollDragEnabled: editorDocumentViewport.contentHeight > editorDocumentViewport.height
-            scrollPositionRatio: contentsDisplayView.editorViewportScrollRatio()
             visible: contentsDisplayView.minimapVisible
-            viewportRatio: contentsDisplayView.editorViewportVisibleRatio()
 
             onScrollRatioRequested: function (ratio) {
                 contentsDisplayView.scrollEditorViewportToRatio(ratio);
