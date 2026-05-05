@@ -222,9 +222,13 @@ ctest --test-dir build --output-on-failure -L cpp_regression
 - The inline editor regression now also pins actual mouse-click cursor movement through both the inline editor and
   `ContentsStructuredDocumentFlow` host, including the projected caret rectangle, so collapsed pointer gestures cannot
   leave the visible cursor at the initial host-provided logical cursor position.
+- The same click coverage now extends the selection with `Shift+Right` after mouse placement, so the native selection
+  anchor starts from the clicked surface position instead of an initial RAW cursor fallback.
 - The inline editor regression now also pins rendered pointer drag selection against cursor override regressions:
   collapsed pointer clicks may move the projected caret immediately, but non-empty pointer selections clear that
   override and hide the projected cursor while the selection model owns the highlighted range.
+- Rendered pointer selection now also locks surface-to-RAW mapping through a transparent logical selection editor,
+  including coordinate clamping inside the rendered text content bounds so line slack does not resolve to document end.
 - The inline editor regression now also pins rendered pointer multi-click selection: double-click restores visible-line
   selection and triple-click restores visible-paragraph selection before mapping the selected logical range back to RAW
   source offsets.
@@ -293,5 +297,7 @@ ctest --test-dir build --output-on-failure -L cpp_regression
 - 대상: `Regression Tests` (`test/README.md`)
 - 위치: `test`
 - 역할: 이 파일은 해당 디렉터리나 모듈의 구조, 책임, 운영 규칙, 검증 기준을 설명하며 `LV.TextEditor` 기반 본문 입력 회귀를 포함한다.
+- 현재 본문 입력 회귀에는 렌더 표면 마우스 클릭 후 `Shift+Right` 선택 앵커, 렌더 표면 드래그 selection,
+  표면 selection-to-RAW 매핑 및 좌표 클램프 검증이 포함된다.
 - 기준: 파일 경로, 명령, API 이름, 세부 변경 이력은 위 영어 본문을 원문 기준으로 유지한다.
 - 변경 시: 위 영어 본문을 수정하면 이 한국어 하단 섹션도 함께 최신 상태로 맞춘다.

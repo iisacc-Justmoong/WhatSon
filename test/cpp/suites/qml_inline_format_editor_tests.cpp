@@ -95,15 +95,27 @@ void WhatSonCppRegressionTests::qmlInlineFormatEditor_keepsNativeTextEditInputUn
     QVERIFY(inlineEditorSource.contains(QStringLiteral("function restoreVisibleLogicalSelectionRange(anchorLogicalOffset, currentLogicalOffset)")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("function restoreVisibleLogicalLineSelectionAtLogicalOffset(logicalOffset)")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("function restoreVisibleLogicalParagraphSelectionAtLogicalOffset(logicalOffset)")));
-    QVERIFY(inlineEditorSource.contains(QStringLiteral("function updateVisiblePointerClickSequence(localX, localY)")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("function syncRawSelectionFromSurfaceSelection()")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("function scheduleSurfaceSelectionToRawSync()")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("function visibleLogicalOffsetAtPoint(localX, localY)")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("Number(renderedGeometryProbe.contentHeight)")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("positionAt(clampedX, clampedY)")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("function sourceTagTokenBoundsForCursor(sourceOffset)")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("function normalizeCursorPositionAwayFromHiddenTagTokens()")));
-    QVERIFY(inlineEditorSource.contains(QStringLiteral("id: visibleSelectionPointerArea")));
-    QVERIFY(inlineEditorSource.contains(QStringLiteral("objectName: \"contentsInlineFormatVisibleSelectionPointerArea\"")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("id: surfaceSelectionEditor")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("objectName: \"contentsInlineFormatSurfaceSelectionEditor\"")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral(
         "enabled: control.renderedOverlayVisible && !control.nativeCompositionActive()")));
-    QVERIFY(inlineEditorSource.contains(QStringLiteral("if (visibleSelectionPointerArea.pressed)")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("selectByMouse: true")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("readOnly: true")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("onSelectionStartChanged: control.scheduleSurfaceSelectionToRawSync()")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("onSelectionEndChanged: control.scheduleSurfaceSelectionToRawSync()")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("text: control.displayGeometryText")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("MouseArea {")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("objectName: \"contentsInlineFormatVisibleSelectionPointerArea\"")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("hoverEnabled: true")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("control.updateVisiblePointerSelection(mouse.x, mouse.y)")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("function updateVisiblePointerClickSequence(localX, localY)")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("if (clickCount >= 3)")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("if (clickCount === 2)")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("control.restoreVisibleLogicalParagraphSelectionAtLogicalOffset(logicalOffset)")));
@@ -495,10 +507,10 @@ Item {
 
     QObject* inlineEditor = rootObject->findChild<QObject*>(QStringLiteral("inlineFormatEditorUnderTest"));
     QVERIFY(inlineEditor != nullptr);
-    QObject* pointerArea = rootObject->findChild<QObject*>(QStringLiteral("contentsInlineFormatVisibleSelectionPointerArea"));
-    QVERIFY(pointerArea != nullptr);
+    QObject* surfaceSelectionEditor = rootObject->findChild<QObject*>(QStringLiteral("contentsInlineFormatSurfaceSelectionEditor"));
+    QVERIFY(surfaceSelectionEditor != nullptr);
     QTRY_VERIFY(inlineEditor->property("renderedOverlayVisible").toBool());
-    QVERIFY(pointerArea->property("enabled").toBool());
+    QVERIFY(surfaceSelectionEditor->property("enabled").toBool());
 
     inlineEditor->setProperty("cursorPosition", 0);
     QTRY_COMPARE(inlineEditor->property("cursorPosition").toInt(), 0);
@@ -512,6 +524,13 @@ Item {
         inlineEditor->property("projectedCursorRectangle").toRectF().x()
         > initialProjectedCursor.x() + 1.0);
     QVERIFY(!inlineEditor->property("nativeSelectionActive").toBool());
+
+    const int clickedCursorPosition = inlineEditor->property("cursorPosition").toInt();
+    QVERIFY(clickedCursorPosition > QStringLiteral("<bold>").size());
+    QTest::keyClick(&window, Qt::Key_Right, Qt::ShiftModifier);
+    QTRY_VERIFY(inlineEditor->property("nativeSelectionActive").toBool());
+    QCOMPARE(inlineEditor->property("selectionStart").toInt(), clickedCursorPosition);
+    QVERIFY(inlineEditor->property("selectionEnd").toInt() > clickedCursorPosition);
 }
 
 void WhatSonCppRegressionTests::qmlInlineFormatEditor_preservesRenderedPointerDragSelection()
@@ -572,19 +591,15 @@ Item {
 
     QObject* inlineEditor = rootObject->findChild<QObject*>(QStringLiteral("inlineFormatEditorUnderTest"));
     QVERIFY(inlineEditor != nullptr);
-    QObject* pointerArea = rootObject->findChild<QObject*>(QStringLiteral("contentsInlineFormatVisibleSelectionPointerArea"));
-    QVERIFY(pointerArea != nullptr);
+    QObject* surfaceSelectionEditor = rootObject->findChild<QObject*>(QStringLiteral("contentsInlineFormatSurfaceSelectionEditor"));
+    QVERIFY(surfaceSelectionEditor != nullptr);
     QTRY_VERIFY(inlineEditor->property("renderedOverlayVisible").toBool());
-    QVERIFY(pointerArea->property("enabled").toBool());
+    QVERIFY(surfaceSelectionEditor->property("enabled").toBool());
 
-    QVariant updateResult;
-    QVERIFY(QMetaObject::invokeMethod(
-        inlineEditor,
-        "restoreVisibleLogicalSelectionRange",
-        Q_RETURN_ARG(QVariant, updateResult),
-        Q_ARG(QVariant, 2),
-        Q_ARG(QVariant, 7)));
-    QVERIFY(updateResult.toBool());
+    QTest::mousePress(&window, Qt::LeftButton, Qt::NoModifier, QPoint(40, 20));
+    QTest::mouseMove(&window, QPoint(140, 20), 20);
+    QTest::qWait(40);
+    QTest::mouseRelease(&window, Qt::LeftButton, Qt::NoModifier, QPoint(140, 20));
 
     QTRY_VERIFY(inlineEditor->property("nativeSelectionActive").toBool());
     QVERIFY(inlineEditor->property("selectionEnd").toInt() > inlineEditor->property("selectionStart").toInt());

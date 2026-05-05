@@ -39,13 +39,19 @@ Wraps the live `LV.TextEditor` used by the note document surface.
 - While the rendered overlay is hidden, the rendered surface does not add pointer handlers above the `LV.TextEditor`;
   OS/Qt pointer selection remains the selection gesture path.
 - While the rendered overlay is visible, the transparent RAW `TextEdit` geometry is no longer a faithful hit-test
-  surface because hidden source tags still occupy RAW character positions. A thin visible-selection pointer bridge maps
-  mouse coordinates through the logical rendered geometry and restores the matching RAW source selection with
-  `TextEdit.SelectCharacters`, so dragging can select sub-word character ranges instead of snapping to larger visible
-  runs. The local pointer cursor override is applied only when that restored range is collapsed; non-empty drag
-  selections clear the override. The same bridge preserves native-style multi-click granularity: the second click in a
-  pointer sequence selects the visible logical line, and the third click selects the visible paragraph before mapping
-  that range back to RAW source offsets. This bridge is disabled while native IME composition is active.
+  surface because hidden source tags still occupy RAW character positions. Pointer interaction is first resolved on a
+  transparent surface-selection `TextEdit` whose text is the logical rendered display text. The resulting surface
+  cursor/selection range is then mapped back through `logicalToSourceOffsets` and restored on the authoritative RAW
+  editor with `TextEdit.SelectCharacters`, so dragging selects visible character ranges instead of dragging the cursor
+  across hidden tag bytes. The local pointer cursor override is applied only when that restored range is collapsed;
+  non-empty drag selections clear the override. The same bridge preserves native-style multi-click granularity: the
+  second click in a pointer sequence selects the visible logical line, and the third click selects the visible
+  paragraph before mapping that range back to RAW source offsets. This bridge is disabled while native IME composition
+  is active.
+- Rendered pointer hit testing clamps line-adjacent mapped coordinates into the rendered logical text area's measured
+  content bounds before calling `positionAt(...)`. Clicks and drags that land in the vertical slack around a line
+  therefore resolve to that visible line, while clicks far below the rendered body still resolve to the terminal body
+  position.
 - The editor body is top-flush: `LV.TextEditor` vertical inset and rendered-overlay padding stay at zero.
 - Keeps a disabled, transparent plain `TextEdit` geometry probe in sync with the logical display text for cursor hit
   testing and projected caret placement.
@@ -74,7 +80,8 @@ Wraps the live `LV.TextEditor` used by the note document surface.
   `LV.TextEditor.editorItem`.
 - User-initiated tag-management commands apply through the controller's immediate programmatic text path before
   restoring the source selection returned by the tag insertion controller.
-- `restoreSelectionRange(...)` restores non-empty ranges through native `moveCursorSelection(...)`.
+- `restoreSelectionRange(...)` clears stale collapsed selections before cursor placement and restores non-empty ranges
+  through native `moveCursorSelection(...)`.
 - `focusTerminalBodyPosition()` focuses the native `LV.TextEditor`, clears any stale selection, and moves the cursor to
   the RAW text end through `setCursorPositionPreservingNativeInput(...)`.
 - Ordinary navigation, selection, Backspace/Delete repeat, paste fallback, and IME/preedit behavior remain with Qt's
@@ -100,13 +107,14 @@ sync remains deferred through the native editor path. For resource-backed projec
 the plain source buffer, so a transient parser/render turn cannot collapse a framed image back to the RAW resource tag.
 While the rendered overlay is visible, `logicalCursorPosition` maps the RAW cursor to the logical display text so the
 projected caret follows the visible text rather than hidden markup. Mouse pointer selection follows the same
-logical-to-source table: the pointer position is measured against `displayGeometryText`, then restored as a RAW
-selection or collapsed cursor placement on the underlying editor so formatting commands still receive authoritative
-`.wsnbody` offsets. A local pointer cursor override keeps the projected caret at the clicked logical offset only for
-collapsed pointer clicks until the host catches up or the next non-pointer cursor movement clears it. Once the pointer
-gesture expands into a non-empty selection, the override is cleared and the rendered/native selection surfaces own the
-visual state. Double-click and triple-click gestures follow the same logical-to-source mapping, selecting the visible
-line and paragraph respectively instead of exposing hidden RAW tag bytes. During IME composition that pointer bridge is
-inactive and the native editor receives the pointer path directly. If the native RAW cursor enters an opening or
-closing inline formatting tag, the cursor is normalized back to a source boundary that matches the visible logical
-caret position.
+logical-to-source table, but it is received as rendered-surface selection first: pointer coordinates are measured
+against `displayGeometryText`, the surface-selection editor owns the visible logical cursor/selection span, and only
+then is the span restored as RAW selection or collapsed cursor placement on the underlying editor so formatting
+commands still receive authoritative `.wsnbody` offsets. A local pointer cursor override keeps the projected caret at
+the clicked logical offset only for collapsed pointer clicks until the host catches up or the next non-pointer cursor
+movement clears it. Once the pointer gesture expands into a non-empty selection, the override is cleared and the
+rendered/native selection surfaces own the visual state. Double-click and triple-click gestures follow the same
+logical-to-source mapping, selecting the visible line and paragraph respectively instead of exposing hidden RAW tag
+bytes. During IME composition that pointer bridge is inactive and the native editor receives the pointer path directly.
+If the native RAW cursor enters an opening or closing inline formatting tag, the cursor is normalized back to a source
+boundary that matches the visible logical caret position.

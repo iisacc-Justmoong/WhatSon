@@ -36,6 +36,9 @@ Item {
     property bool visiblePointerSelectionActive: false
     property int visiblePointerCursorLogicalOffset: -1
     property bool visiblePointerCursorUpdateActive: false
+    property bool surfaceSelectionSyncActive: false
+    property bool surfaceSelectionTextRefreshActive: false
+    property bool surfaceSelectionToRawSyncScheduled: false
     property bool cursorNormalizationActive: false
     readonly property bool inputMethodComposing: textInput.inputMethodComposing
     readonly property string preeditText: String(textInput.editorItem.preeditText)
@@ -468,7 +471,17 @@ Item {
                     renderedGeometryProbe,
                     Number(localX) || 0,
                     Number(localY) || 0);
-        const logicalOffset = renderedGeometryProbe.positionAt(mappedPoint.x, mappedPoint.y);
+        const geometryWidth = Math.max(1, Number(renderedGeometryProbe.width) || 1);
+        const geometryHeight = Math.max(
+                    1,
+                    Number(renderedGeometryProbe.contentHeight) || Number(renderedGeometryProbe.height) || LV.Theme.textBodyLineHeight);
+        const mappedY = Number(mappedPoint.y) || 0;
+        const terminalBlankThreshold = geometryHeight + Math.max(1, Number(LV.Theme.textBodyLineHeight) || 1);
+        if (mappedY > terminalBlankThreshold)
+            return control.boundedCursorPosition(renderedGeometryProbe.length, renderedGeometryProbe.length);
+        const clampedX = Math.max(0, Math.min(Number(mappedPoint.x) || 0, geometryWidth));
+        const clampedY = Math.max(0, Math.min(mappedY, Math.max(0, geometryHeight - 1)));
+        const logicalOffset = renderedGeometryProbe.positionAt(clampedX, clampedY);
         return control.boundedCursorPosition(logicalOffset, renderedGeometryProbe.length);
     }
 
@@ -488,9 +501,49 @@ Item {
                 control.boundedCursorPosition(endLogicalOffset, renderedGeometryProbe.length);
         const boundedCursorLogicalOffset =
                 control.boundedCursorPosition(cursorLogicalOffset, renderedGeometryProbe.length);
-        const anchorSourceOffset = control.sourceOffsetForVisibleLogicalOffset(boundedStartLogicalOffset);
-        const currentSourceOffset = control.sourceOffsetForVisibleLogicalOffset(boundedEndLogicalOffset);
-        const cursorSourceOffset = control.sourceOffsetForVisibleLogicalOffset(boundedCursorLogicalOffset);
+        control.restoreSurfaceLogicalSelectionSpan(
+                    boundedStartLogicalOffset,
+                    boundedEndLogicalOffset,
+                    boundedCursorLogicalOffset);
+        return control.syncRawSelectionFromSurfaceSelection();
+    }
+
+    function restoreSurfaceLogicalSelectionSpan(startLogicalOffset, endLogicalOffset, cursorLogicalOffset) {
+        const surfaceLength = Math.max(0, Number(surfaceSelectionEditor.length) || 0);
+        const start = control.boundedCursorPosition(startLogicalOffset, surfaceLength);
+        const end = Math.max(start, control.boundedCursorPosition(endLogicalOffset, surfaceLength));
+        const cursor = Math.max(start, Math.min(control.boundedCursorPosition(cursorLogicalOffset, surfaceLength), end));
+        control.surfaceSelectionSyncActive = true;
+        if (start === end) {
+            surfaceSelectionEditor.deselect();
+            surfaceSelectionEditor.cursorPosition = cursor;
+        } else if (cursor === start) {
+            surfaceSelectionEditor.cursorPosition = end;
+            surfaceSelectionEditor.moveCursorSelection(start, TextEdit.SelectCharacters);
+        } else {
+            surfaceSelectionEditor.cursorPosition = start;
+            surfaceSelectionEditor.moveCursorSelection(end, TextEdit.SelectCharacters);
+        }
+        control.surfaceSelectionSyncActive = false;
+        return true;
+    }
+
+    function syncRawSelectionFromSurfaceSelection() {
+        if (!control.renderedOverlayVisible || control.nativeCompositionActive())
+            return false;
+
+        const surfaceStart = Math.max(
+                    0,
+                    Math.min(surfaceSelectionEditor.selectionStart, surfaceSelectionEditor.selectionEnd));
+        const surfaceEnd = Math.max(
+                    surfaceStart,
+                    Math.max(surfaceSelectionEditor.selectionStart, surfaceSelectionEditor.selectionEnd));
+        const surfaceCursor = control.boundedCursorPosition(
+                    surfaceSelectionEditor.cursorPosition,
+                    surfaceSelectionEditor.length);
+        const anchorSourceOffset = control.sourceOffsetForVisibleLogicalOffset(surfaceStart);
+        const currentSourceOffset = control.sourceOffsetForVisibleLogicalOffset(surfaceEnd);
+        const cursorSourceOffset = control.sourceOffsetForVisibleLogicalOffset(surfaceCursor);
         const selectionStart = Math.min(anchorSourceOffset, currentSourceOffset);
         const selectionEnd = Math.max(anchorSourceOffset, currentSourceOffset);
         control.visiblePointerCursorUpdateActive = true;
@@ -498,11 +551,29 @@ Item {
         control.visiblePointerCursorUpdateActive = false;
         if (!restored)
             return false;
+        textInput.forceEditorFocus();
         control.visiblePointerCursorLogicalOffset = selectionStart === selectionEnd
-                ? boundedCursorLogicalOffset
+                ? surfaceCursor
                 : -1;
         control.scheduleRenderedOverlaySelectionRefresh();
         return true;
+    }
+
+    function scheduleSurfaceSelectionToRawSync() {
+        if (control.surfaceSelectionSyncActive
+                || control.surfaceSelectionTextRefreshActive
+                || !control.renderedOverlayVisible
+                || control.nativeCompositionActive()
+                || control.surfaceSelectionToRawSyncScheduled) {
+            return;
+        }
+
+        control.surfaceSelectionToRawSyncScheduled = true;
+        Qt.callLater(function () {
+            control.surfaceSelectionToRawSyncScheduled = false;
+            if (control.syncRawSelectionFromSurfaceSelection())
+                control.forceActiveFocus();
+        });
     }
 
     function visibleLogicalLineRangeAtOffset(logicalOffset) {
@@ -695,6 +766,7 @@ Item {
         const end = Math.max(start, Math.min(Number(selectionEnd) || start, textInput.length));
         const cursor = Math.max(start, Math.min(Number(cursorPosition) || end, end));
         if (start === end) {
+            textInput.deselect();
             textInput.cursorPosition = cursor;
             return true;
         }
@@ -926,20 +998,61 @@ Item {
         z: -2
     }
 
+    TextEdit {
+        id: surfaceSelectionEditor
+
+        activeFocusOnPress: true
+        anchors.fill: renderedOverlay
+        color: "transparent"
+        enabled: control.renderedOverlayVisible && !control.nativeCompositionActive()
+        font.family: LV.Theme.fontBody
+        font.pixelSize: LV.Theme.textBody
+        objectName: "contentsInlineFormatSurfaceSelectionEditor"
+        opacity: 0
+        persistentSelection: true
+        readOnly: true
+        selectByKeyboard: false
+        selectByMouse: true
+        selectedTextColor: "transparent"
+        selectionColor: "transparent"
+        text: control.displayGeometryText
+        textFormat: TextEdit.PlainText
+        textMargin: LV.Theme.gapNone
+        visible: enabled
+        wrapMode: TextEdit.Wrap
+        z: 4
+
+        Keys.priority: Keys.BeforeItem
+        Keys.onPressed: function (event) {
+            control.forceActiveFocus();
+            event.accepted = false;
+        }
+
+        onCursorPositionChanged: control.scheduleSurfaceSelectionToRawSync()
+        onSelectionEndChanged: control.scheduleSurfaceSelectionToRawSync()
+        onSelectionStartChanged: control.scheduleSurfaceSelectionToRawSync()
+        onTextChanged: {
+            control.surfaceSelectionTextRefreshActive = true;
+            Qt.callLater(function () {
+                control.surfaceSelectionTextRefreshActive = false;
+            });
+        }
+    }
+
     MouseArea {
         id: visibleSelectionPointerArea
 
         acceptedButtons: Qt.LeftButton
         anchors.fill: parent
         enabled: control.renderedOverlayVisible && !control.nativeCompositionActive()
+        hoverEnabled: true
         objectName: "contentsInlineFormatVisibleSelectionPointerArea"
         preventStealing: true
-        z: 4
+        z: 5
 
         onCanceled: control.finishVisiblePointerSelection()
         onPositionChanged: function (mouse) {
-            if (visibleSelectionPointerArea.pressed)
-                control.updateVisiblePointerSelection(mouse.x, mouse.y);
+            control.updateVisiblePointerSelection(mouse.x, mouse.y);
         }
         onPressed: function (mouse) {
             mouse.accepted = control.beginVisiblePointerSelection(mouse.x, mouse.y);
