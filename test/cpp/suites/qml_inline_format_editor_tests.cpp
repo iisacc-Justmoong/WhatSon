@@ -563,6 +563,78 @@ Item {
 
 }
 
+void WhatSonCppRegressionTests::qmlInlineFormatEditor_placesLogicalGutterRowsAtIncreasingY()
+{
+    registerInlineFormatEditorRuntimeQmlTypes();
+
+    const QString repositoryRoot = qmlInlineFormatEditorRepositoryRootPath();
+    QQmlEngine engine;
+    addWhatSonInlineFormatEditorQmlImportPaths(engine, repositoryRoot);
+
+    const QString editorImportUrl =
+        QUrl::fromLocalFile(repositoryRoot + QStringLiteral("/src/app/qml/view/contents/editor")).toString();
+    const QByteArray qmlSource = QStringLiteral(R"QML(
+import QtQuick
+import "%1" as EditorView
+
+Item {
+    id: root
+    width: 220
+    height: 180
+
+    EditorView.ContentsInlineFormatEditor {
+        id: editor
+        objectName: "inlineFormatEditorUnderTest"
+        anchors.fill: parent
+        displayGeometryText: "Alpha\nBeta\nGamma"
+        renderedText: "<p>Alpha</p><p>Beta</p><p>Gamma</p>"
+        showRenderedOutput: true
+        text: "Alpha\nBeta\nGamma"
+    }
+}
+)QML").arg(editorImportUrl).toUtf8();
+
+    QQmlComponent component(&engine);
+    component.setData(
+        qmlSource,
+        QUrl::fromLocalFile(repositoryRoot + QStringLiteral("/test/cpp/InlineFormatLogicalGutterHarness.qml")));
+    if (component.status() == QQmlComponent::Error)
+    {
+        QFAIL(qPrintable(qmlInlineFormatEditorErrorString(component.errors())));
+    }
+
+    std::unique_ptr<QObject> rootObject(component.create());
+    if (!rootObject)
+    {
+        QFAIL(qPrintable(qmlInlineFormatEditorErrorString(component.errors())));
+    }
+
+    auto* rootItem = qobject_cast<QQuickItem*>(rootObject.get());
+    QVERIFY(rootItem != nullptr);
+
+    QQuickWindow window;
+    window.resize(220, 180);
+    rootItem->setParentItem(window.contentItem());
+    window.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&window));
+
+    QObject* inlineEditor = rootObject->findChild<QObject*>(QStringLiteral("inlineFormatEditorUnderTest"));
+    QVERIFY(inlineEditor != nullptr);
+    QTRY_VERIFY(inlineEditor->property("renderedOverlayVisible").toBool());
+    QTRY_VERIFY(inlineEditor->property("logicalGutterRows").toList().size() == 3);
+
+    const QVariantList logicalGutterRows = inlineEditor->property("logicalGutterRows").toList();
+    const double firstY = logicalGutterRows.at(0).toMap().value(QStringLiteral("y")).toDouble();
+    const double secondY = logicalGutterRows.at(1).toMap().value(QStringLiteral("y")).toDouble();
+    const double thirdY = logicalGutterRows.at(2).toMap().value(QStringLiteral("y")).toDouble();
+    QVERIFY2(
+        secondY > firstY,
+        qPrintable(QStringLiteral("Second gutter row must be below first row: %1 <= %2").arg(secondY).arg(firstY)));
+    QVERIFY2(
+        thirdY > secondY,
+        qPrintable(QStringLiteral("Third gutter row must be below second row: %1 <= %2").arg(thirdY).arg(secondY)));
+}
+
 void WhatSonCppRegressionTests::qmlStructuredDocumentFlow_routesBottomBlankClickToBodyEnd()
 {
     registerInlineFormatEditorRuntimeQmlTypes();

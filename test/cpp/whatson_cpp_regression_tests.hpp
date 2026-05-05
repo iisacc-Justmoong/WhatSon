@@ -1062,6 +1062,7 @@ private slots:
     void qmlInlineFormatEditor_mapsRenderedPointerSelectionToCharacterRawRange();
     void qmlInlineFormatEditor_skipsHiddenInlineTagsDuringNativeCursorMovement();
     void qmlInlineFormatEditor_reportsWrappedVisualLineCountForMinimap();
+    void qmlInlineFormatEditor_placesLogicalGutterRowsAtIncreasingY();
     void qmlStructuredDocumentFlow_routesBottomBlankClickToBodyEnd();
     void qmlInlineFormatEditor_forwardsInlineFormatShortcutsToTagManagementHook();
     void qmlStructuredDocumentFlow_appliesInlineFormatShortcutToSelectedRawRange();

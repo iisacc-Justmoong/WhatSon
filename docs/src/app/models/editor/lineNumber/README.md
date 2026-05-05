@@ -17,6 +17,8 @@ C++ model objects for the note editor's logical line-number rail.
 - The C++ object de-duplicates iiHtmlBlock-derived block entries, splits logical lines from `sourceText` and
   `logicalLineCountHint`, maps source offsets to visible logical offsets, asks the supplied Qt text item for
   `positionToRectangle(...)`, and publishes final `{ number, sourceStart, sourceEnd, y, height }` rows.
+- Published rows must be vertically monotonic. If live TextEdit geometry collapses a later row to the first row y, the
+  model falls back to the previous row bottom so line numbers remain aligned as separate rows.
 - A wrapped paragraph remains one logical number while its row height follows the visible wrapped height. Atomic
   resource blocks remain one logical number while their height is measured from the rendered resource overlay.
 - The object does not mutate `.wsnbody` source and does not parse XML; it consumes parser/renderer metadata already
@@ -28,4 +30,5 @@ C++ model objects for the note editor's logical line-number rail.
 - 역할: 노트 편집기 왼쪽 줄 번호 rail의 논리 줄 row 계산을 C++에서 담당한다.
 - 기준: QML은 TextEdit/overlay 객체와 입력 데이터를 넘기는 뷰 역할만 한다. 블록 de-dupe, 논리 줄 분할,
   source/logical offset 매핑, 최종 y/height row 생성은 `ContentsLineNumberRailMetrics`가 담당한다.
+- 위치: 각 row의 y는 실제 geometry를 우선하되, geometry가 같은 y로 붕괴하면 이전 row 아래로 보정한다.
 - wrap: 긴 paragraph가 여러 시각 줄로 접혀도 번호는 하나이며, row height만 실제 표시 높이를 따른다.

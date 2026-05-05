@@ -11,6 +11,12 @@
 
 namespace
 {
+    struct MeasuredRectangle
+    {
+        QRectF rectangle;
+        bool geometryAvailable = false;
+    };
+
     int boundedOffset(const int offset, const int length) noexcept
     {
         return std::max(0, std::min(offset, std::max(0, length)));
@@ -107,11 +113,14 @@ namespace
         return ok && std::isfinite(value) ? value : fallback;
     }
 
-    QRectF positionRectangle(QObject* object, const int position, const qreal lineHeight)
+    MeasuredRectangle positionRectangle(QObject* object, const int position, const qreal lineHeight)
     {
         if (object == nullptr)
         {
-            return QRectF(0.0, 0.0, 0.0, std::max<qreal>(1.0, lineHeight));
+            return {
+                QRectF(0.0, 0.0, 0.0, std::max<qreal>(1.0, lineHeight)),
+                false,
+            };
         }
 
         QRectF rectangle;
@@ -121,7 +130,7 @@ namespace
                 Q_RETURN_ARG(QRectF, rectangle),
                 Q_ARG(int, std::max(0, position))))
         {
-            return rectangle;
+            return {rectangle, true};
         }
 
         QVariant rectangleValue;
@@ -131,10 +140,13 @@ namespace
                 Q_RETURN_ARG(QVariant, rectangleValue),
                 Q_ARG(QVariant, QVariant(std::max(0, position)))))
         {
-            return rectangleValue.toRectF();
+            return {rectangleValue.toRectF(), true};
         }
 
-        return QRectF(0.0, 0.0, 0.0, std::max<qreal>(1.0, lineHeight));
+        return {
+            QRectF(0.0, 0.0, 0.0, std::max<qreal>(1.0, lineHeight)),
+            false,
+        };
     }
 
     QPointF mapPoint(QObject* geometryObject, QObject* targetObject, const QPointF& point)
@@ -146,6 +158,11 @@ namespace
             return geometryItem->mapToItem(targetItem, point);
         }
         return point;
+    }
+
+    bool rectangleYCollapsed(const QRectF& rectangle, const qreal fallbackY, const qreal lineHeight, const bool hasPreviousRows) noexcept
+    {
+        return hasPreviousRows && fallbackY > 0.0 && rectangle.y() < fallbackY - std::max<qreal>(1.0, lineHeight) * 0.25;
     }
 } // namespace
 
@@ -439,9 +456,12 @@ QVariantList ContentsLineNumberRailMetrics::rows() const
                              m_logicalText.size()));
             const int safeStart = boundedOffset(logicalStart, itemLength);
             const int safeEnd = std::max(safeStart, boundedOffset(logicalEnd, itemLength));
-            const QRectF startRectangle = positionRectangle(geometryObject, safeStart, m_textLineHeight);
-            const QRectF endRectangle =
+            const MeasuredRectangle startMeasurement =
+                positionRectangle(geometryObject, safeStart, m_textLineHeight);
+            const MeasuredRectangle endMeasurement =
                 positionRectangle(geometryObject, std::max(safeStart, std::min(std::max(0, safeEnd - 1), itemLength)), m_textLineHeight);
+            const QRectF startRectangle = startMeasurement.rectangle;
+            const QRectF endRectangle = endMeasurement.rectangle;
             const QPointF startPoint =
                 mapPoint(geometryObject, m_targetItem.data(), startRectangle.topLeft());
             const QPointF endPoint =
@@ -449,14 +469,18 @@ QVariantList ContentsLineNumberRailMetrics::rows() const
             const qreal height =
                 std::max(m_textLineHeight,
                          endPoint.y() + std::max(m_textLineHeight, endRectangle.height()) - startPoint.y());
-            return QRectF(startPoint.x(), startPoint.y(), std::max<qreal>(0.0, m_geometryWidth), height);
+            return MeasuredRectangle{
+                QRectF(startPoint.x(), startPoint.y(), std::max<qreal>(0.0, m_geometryWidth), height),
+                startMeasurement.geometryAvailable || endMeasurement.geometryAvailable,
+            };
         };
 
+    qreal fallbackNextY = 0.0;
     for (const QVariant& rangeValue : ranges)
     {
         const QVariantMap range = rangeValue.toMap();
         const QVariantMap block = range.value(QStringLiteral("block")).toMap();
-        QRectF rectangle;
+        MeasuredRectangle measurement;
         if (isIiHtmlResourceBlock(block) && m_resourceGeometryItem != nullptr)
         {
             const int blockStart = htmlBlockSourceStart(block);
@@ -465,10 +489,11 @@ QVariantList ContentsLineNumberRailMetrics::rows() const
             const int logicalEnd = std::max(
                 logicalStart + 1,
                 sourceOffsetToLogicalOffset(blockEnd, true));
-            rectangle = displayRectangleForLogicalRange(
+            measurement = displayRectangleForLogicalRange(
                 m_resourceGeometryItem.data(),
                 logicalStart,
                 logicalEnd);
+            QRectF rectangle = measurement.rectangle;
 
             const qreal contentHeight =
                 numericProperty(m_resourceGeometryItem.data(), "contentHeight", rectangle.bottom());
@@ -476,6 +501,7 @@ QVariantList ContentsLineNumberRailMetrics::rows() const
             {
                 rectangle.setHeight(std::max(m_textLineHeight, contentHeight - rectangle.y()));
             }
+            measurement.rectangle = rectangle;
         }
         else
         {
@@ -485,19 +511,28 @@ QVariantList ContentsLineNumberRailMetrics::rows() const
             const int logicalEnd = std::max(
                 logicalStart,
                 sourceOffsetToLogicalOffset(std::max(sourceStart, sourceEnd), true));
-            rectangle = displayRectangleForLogicalRange(
+            measurement = displayRectangleForLogicalRange(
                 m_textGeometryItem.data(),
                 logicalStart,
                 logicalEnd);
         }
 
+        QRectF rectangle = measurement.rectangle;
+        if (!measurement.geometryAvailable
+            || rectangleYCollapsed(rectangle, fallbackNextY, m_textLineHeight, !result.isEmpty()))
+        {
+            rectangle.moveTop(fallbackNextY);
+        }
+
+        const qreal resolvedHeight = std::max(m_textLineHeight, rectangle.height());
         result.push_back(QVariantMap{
-            {QStringLiteral("height"), std::max(m_textLineHeight, rectangle.height())},
+            {QStringLiteral("height"), resolvedHeight},
             {QStringLiteral("number"), range.value(QStringLiteral("number")).toInt()},
             {QStringLiteral("sourceEnd"), range.value(QStringLiteral("sourceEnd")).toInt()},
             {QStringLiteral("sourceStart"), range.value(QStringLiteral("sourceStart")).toInt()},
             {QStringLiteral("y"), std::max<qreal>(0.0, rectangle.y())},
         });
+        fallbackNextY = std::max(fallbackNextY, std::max<qreal>(0.0, rectangle.y()) + resolvedHeight);
     }
 
     if (result.isEmpty())

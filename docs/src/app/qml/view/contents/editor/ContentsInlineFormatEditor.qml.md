@@ -51,7 +51,8 @@ Wraps the live `LV.TextEditor` used by the note document surface.
   binds source/projection inputs and TextEdit geometry objects into that C++ object, then exposes
   `logicalGutterRows` from its resolved `rows`. The rows count logical lines, not visual wrap rows; a wrapped paragraph
   contributes one row whose height covers all wrapped visual rows, while resource frames contribute one row with the
-  rendered frame height.
+  rendered frame height. Row y values are produced by C++ and validated there so later line numbers cannot collapse
+  onto the first line's y position.
 - When iiHtmlBlock resource spans are present, the rendered overlay is pinned even during composition so ordinary
   typing cannot expose the RAW `<resource ... />` tag while the renderer catches up.
 - `textEdited(text)` reports plain RAW text upward.
