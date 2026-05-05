@@ -53,6 +53,7 @@
 #include "app/models/editor/structure/ContentsStructuredDocumentMutationPolicy.hpp"
 #include "app/models/editor/tags/ContentsResourceTagTextGenerator.hpp"
 #include "app/models/file/hierarchy/IHierarchyController.hpp"
+#include "app/models/file/hierarchy/IHierarchyCapabilities.hpp"
 #include "app/models/file/hierarchy/WhatSonHierarchyTreeItemSupport.hpp"
 #include "app/models/file/hierarchy/library/LibraryNoteListModel.hpp"
 #include "app/models/file/hierarchy/progress/ProgressHierarchyControllerSupport.hpp"
@@ -91,6 +92,7 @@
 #include <QRegularExpression>
 #include <QSettings>
 #include <QStandardPaths>
+#include <QSet>
 #include <QTemporaryDir>
 #include <QUrl>
 #include <QVariantMap>
@@ -100,7 +102,7 @@
 #include <memory>
 #include <vector>
 
-class FakeHierarchyController final : public IHierarchyController
+class FakeHierarchyController : public IHierarchyController
 {
     Q_OBJECT
 
@@ -191,6 +193,78 @@ private:
     int m_selectedIndex = -1;
     bool m_loadSucceeded = true;
     QString m_lastLoadError;
+};
+
+class FakeNoteDropHierarchyController final : public FakeHierarchyController,
+                                              public IHierarchyNoteDropCapability
+{
+    Q_OBJECT
+    Q_INTERFACES(IHierarchyNoteDropCapability)
+
+public:
+    explicit FakeNoteDropHierarchyController(const QString& labelPrefix, QObject* parent = nullptr)
+        : FakeHierarchyController(labelPrefix, parent)
+    {
+    }
+
+    bool canAcceptNoteDrop(int index, const QString& noteId) const override
+    {
+        const QString normalizedNoteId = noteId.trimmed();
+        return m_supportsNoteDrop
+            && m_acceptedDropIndices.contains(index)
+            && !normalizedNoteId.isEmpty()
+            && !m_rejectedNoteIds.contains(normalizedNoteId)
+            && !m_assignedNoteIdsByIndex.value(index).contains(normalizedNoteId);
+    }
+
+    bool assignNoteToFolder(int index, const QString& noteId) override
+    {
+        if (!canAcceptNoteDrop(index, noteId))
+        {
+            return false;
+        }
+
+        const QString normalizedNoteId = noteId.trimmed();
+        m_assignedNoteIdsByIndex[index].insert(normalizedNoteId);
+        m_assignedNoteIds.push_back(normalizedNoteId);
+        return true;
+    }
+
+    bool supportsHierarchyNoteDrop() const noexcept override
+    {
+        return m_supportsNoteDrop;
+    }
+
+    void setAcceptedDropIndices(const QSet<int>& indices)
+    {
+        m_acceptedDropIndices = indices;
+    }
+
+    void setSupportsNoteDrop(bool supported) noexcept
+    {
+        m_supportsNoteDrop = supported;
+    }
+
+    void rejectNoteId(const QString& noteId)
+    {
+        const QString normalizedNoteId = noteId.trimmed();
+        if (!normalizedNoteId.isEmpty())
+        {
+            m_rejectedNoteIds.insert(normalizedNoteId);
+        }
+    }
+
+    QStringList assignedNoteIds() const
+    {
+        return m_assignedNoteIds;
+    }
+
+private:
+    QSet<int> m_acceptedDropIndices;
+    QSet<QString> m_rejectedNoteIds;
+    QHash<int, QSet<QString>> m_assignedNoteIdsByIndex;
+    QStringList m_assignedNoteIds;
+    bool m_supportsNoteDrop = true;
 };
 
 class FakeSidebarSelectionStore final : public ISidebarSelectionStore
@@ -1025,6 +1099,7 @@ private slots:
     void detailCurrentNoteContextBridge_clearsReadableEmptyCurrentNoteEntrySelection();
     void detailPanelRouting_separatesNoteAndResourceViewsAndControllers();
     void qmlContextMenus_treatRightClickAndLongPressAsSymmetricPointerTriggers();
+    void hierarchyDragDropBridge_assignsDraggedNoteListItemsToFolderCapability();
     void qmlHierarchyNoteDrop_keepsDropSurfaceOpenUntilCapabilityRejectsTarget();
     void qmlHierarchyExpansion_preservesUserControlledStateAcrossModelRefreshes();
     void listBarLayout_rendersResolvedNoteListModelByIndex();
@@ -1099,6 +1174,7 @@ private slots:
     void editorRendererPipeline_materializesEnterNewlinesAsParagraphSlots();
     void logicalTextBridge_advancesCursorPastClosingWebLinkTag();
     void logicalTextBridge_mapsSourceCursorInsideInlineTagsToVisibleBoundary();
+    void editorTagInsertionController_preservesInlineTagBoundariesWhenReformatting();
     void qmlStructuredEditors_bindPaperPaletteIntoPagePrintMode();
     void qmlStructuredEditors_clipInlineResourceCardsToMeasuredBlockBounds();
     void qmlStructuredEditors_wireInlineResourceRendererToIiXmlHtmlBlockPipeline();

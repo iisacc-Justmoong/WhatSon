@@ -38,11 +38,26 @@ void WhatSonCppRegressionTests::sidebarHierarchyView_routesFooterActionsThroughL
         QStringLiteral("src/app/qml/view/panels/sidebar/SidebarHierarchyView.qml"));
 
     QVERIFY(!sidebarSource.isEmpty());
+    const qsizetype footerButtonsIndex = sidebarSource.indexOf(QStringLiteral("readonly property var hierarchyFooterToolbarButtons"));
+    QVERIFY(footerButtonsIndex >= 0);
+    const qsizetype footerCreateEventIndex = sidebarSource.indexOf(QStringLiteral("eventName: \"hierarchy.footer.create\""), footerButtonsIndex);
+    const qsizetype footerDeleteEventIndex = sidebarSource.indexOf(QStringLiteral("eventName: \"hierarchy.footer.delete\""), footerButtonsIndex);
+    const qsizetype footerOptionsEventIndex = sidebarSource.indexOf(QStringLiteral("eventName: \"hierarchy.footer.options\""), footerButtonsIndex);
+    QVERIFY(footerCreateEventIndex >= 0);
+    QVERIFY(footerDeleteEventIndex > footerCreateEventIndex);
+    QVERIFY(footerOptionsEventIndex > footerDeleteEventIndex);
     QVERIFY(sidebarSource.contains(QStringLiteral("function handleHierarchyFooterButtonClicked(index, config)")));
     QVERIFY(sidebarSource.contains(QStringLiteral("onButtonClicked: function (index, config)")));
     QVERIFY(sidebarSource.contains(QStringLiteral("eventName: \"hierarchy.footer.create\"")));
     QVERIFY(sidebarSource.contains(QStringLiteral("eventName: \"hierarchy.footer.delete\"")));
     QVERIFY(sidebarSource.contains(QStringLiteral("eventName: \"hierarchy.footer.options\"")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("iconName: \"generaladd\"")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("iconName: \"generaldelete\"")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("iconName: \"generalmoreHorizontal\"")));
+    QVERIFY(!sidebarSource.contains(QStringLiteral("iconName: \"generalsettings\"")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("button1: sidebarHierarchyView.hierarchyFooterToolbarButtons[0]")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("button2: sidebarHierarchyView.hierarchyFooterToolbarButtons[1]")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("button3: sidebarHierarchyView.hierarchyFooterToolbarButtons[2]")));
     QVERIFY(sidebarSource.contains(QStringLiteral("sidebarHierarchyView.requestCreateFolder();")));
     QVERIFY(sidebarSource.contains(QStringLiteral("sidebarHierarchyView.requestDeleteFolder();")));
     QVERIFY(sidebarSource.contains(QStringLiteral("sidebarHierarchyView.requestViewOptions();")));

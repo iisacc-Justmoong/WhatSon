@@ -147,6 +147,8 @@ causes selection helpers to throw `controller is not defined`/empty-selection er
 - Desktop uses immediate internal drag for note-to-folder assignment; mobile defers drag pickup to a `1000ms`
   long-press surface.
 - The drag preview is reparented into the overlay layer so the carried note card can cross panel boundaries.
+- A carried note-card delegate maps its release/hover coordinate into `noteDropTarget`, so placing the dragged note-list
+  item over a folder hierarchy row commits that note's folder membership through the sidebar note-drop surface.
 - Dragging a row that is already part of a multi-selection now exports the full selected note-id set, not just the
   delegate under the pointer.
 - The drag preview adds a count badge when more than one selected note is being carried.

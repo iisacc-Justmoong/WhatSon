@@ -296,3 +296,53 @@ void WhatSonCppRegressionTests::editorTagInsertionController_buildsShortcutSourc
         collapsedPayload.value(QStringLiteral("selectionStart")).toInt(),
         collapsedPayload.value(QStringLiteral("selectionEnd")).toInt());
 }
+
+void WhatSonCppRegressionTests::editorTagInsertionController_preservesInlineTagBoundariesWhenReformatting()
+{
+    ContentsEditorTagInsertionController controller;
+
+    const QString highlightedSource = QStringLiteral("<highlight>STAR structure</highlight>");
+    const int highlightOpeningEnd = QStringLiteral("<highlight>").size();
+    const int highlightClosingStart = highlightedSource.indexOf(QStringLiteral("</highlight>"));
+
+    const QVariantMap startInsideOpeningPayload = controller.buildTagInsertionPayload(
+        highlightedSource,
+        QStringLiteral("<highligh").size(),
+        highlightClosingStart,
+        QStringLiteral("bold"));
+    QVERIFY(startInsideOpeningPayload.value(QStringLiteral("applied")).toBool());
+    QCOMPARE(
+        startInsideOpeningPayload.value(QStringLiteral("nextSourceText")).toString(),
+        QStringLiteral("<highlight><bold>STAR structure</bold></highlight>"));
+    QVERIFY(!startInsideOpeningPayload.value(QStringLiteral("nextSourceText")).toString().contains(QStringLiteral("<highligh<")));
+
+    const QVariantMap endInsideClosingPayload = controller.buildTagInsertionPayload(
+        highlightedSource,
+        highlightOpeningEnd,
+        highlightClosingStart + 3,
+        QStringLiteral("italic"));
+    QVERIFY(endInsideClosingPayload.value(QStringLiteral("applied")).toBool());
+    QCOMPARE(
+        endInsideClosingPayload.value(QStringLiteral("nextSourceText")).toString(),
+        QStringLiteral("<highlight><italic>STAR structure</italic></highlight>"));
+
+    const QVariantMap partialPrefixPayload = controller.buildTagInsertionPayload(
+        highlightedSource,
+        0,
+        highlightOpeningEnd + QStringLiteral("STAR").size(),
+        QStringLiteral("underline"));
+    QVERIFY(partialPrefixPayload.value(QStringLiteral("applied")).toBool());
+    QCOMPARE(
+        partialPrefixPayload.value(QStringLiteral("nextSourceText")).toString(),
+        QStringLiteral("<highlight><underline>STAR</underline> structure</highlight>"));
+
+    const QVariantMap balancedWholeTagPayload = controller.buildTagInsertionPayload(
+        highlightedSource,
+        0,
+        highlightedSource.size(),
+        QStringLiteral("bold"));
+    QVERIFY(balancedWholeTagPayload.value(QStringLiteral("applied")).toBool());
+    QCOMPARE(
+        balancedWholeTagPayload.value(QStringLiteral("nextSourceText")).toString(),
+        QStringLiteral("<bold><highlight>STAR structure</highlight></bold>"));
+}

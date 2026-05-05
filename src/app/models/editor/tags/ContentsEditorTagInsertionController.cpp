@@ -1,13 +1,39 @@
 #include "app/models/editor/tags/ContentsEditorTagInsertionController.hpp"
 
+#include "app/models/file/note/WhatSonNoteBodySemanticTagSupport.hpp"
+
 #include <algorithm>
 
 #include <QDate>
 #include <QRegularExpression>
+#include <QStringView>
 #include <Qt>
+#include <QVector>
 
 namespace
 {
+    namespace SemanticTags = WhatSon::NoteBodySemanticTagSupport;
+
+    struct SourceTagToken final
+    {
+        int start = 0;
+        int end = 0;
+        QString inlineStyleTagName;
+        bool closing = false;
+        bool selfClosing = false;
+
+        bool isInlineStyleTag() const
+        {
+            return !inlineStyleTagName.isEmpty();
+        }
+    };
+
+    struct SourceRange final
+    {
+        int start = 0;
+        int end = 0;
+    };
+
     QString normalizedText(const QVariant& value)
     {
         QString text = value.isValid() && !value.isNull() ? value.toString() : QString{};
@@ -22,18 +48,11 @@ namespace
     QString normalizeEditorTagName(const QVariant& rawTagName)
     {
         const QString tag = normalizedText(rawTagName).trimmed().toLower();
+        QString inlineStyleTagName = SemanticTags::canonicalInlineStyleTagName(tag);
+        if (!inlineStyleTagName.isEmpty())
+            return inlineStyleTagName;
         if (tag == QLatin1String("plain") || tag == QLatin1String("clear") || tag == QLatin1String("none"))
             return QStringLiteral("plain");
-        if (tag == QLatin1String("bold") || tag == QLatin1String("b") || tag == QLatin1String("strong"))
-            return QStringLiteral("bold");
-        if (tag == QLatin1String("italic") || tag == QLatin1String("i") || tag == QLatin1String("em"))
-            return QStringLiteral("italic");
-        if (tag == QLatin1String("underline") || tag == QLatin1String("u"))
-            return QStringLiteral("underline");
-        if (tag == QLatin1String("strikethrough") || tag == QLatin1String("strike") || tag == QLatin1String("s") || tag == QLatin1String("del"))
-            return QStringLiteral("strikethrough");
-        if (tag == QLatin1String("highlight") || tag == QLatin1String("mark"))
-            return QStringLiteral("highlight");
         if (tag == QLatin1String("callout"))
             return QStringLiteral("callout");
         if (tag == QLatin1String("agenda"))
@@ -54,13 +73,18 @@ namespace
             || tagName == QLatin1String("break");
     }
 
-    bool isPairedTagInsertionTag(const QString& tagName)
+    bool isInlineStyleInsertionTag(const QString& tagName)
     {
         return tagName == QLatin1String("bold")
             || tagName == QLatin1String("italic")
             || tagName == QLatin1String("underline")
             || tagName == QLatin1String("strikethrough")
-            || tagName == QLatin1String("highlight")
+            || tagName == QLatin1String("highlight");
+    }
+
+    bool isPairedTagInsertionTag(const QString& tagName)
+    {
+        return isInlineStyleInsertionTag(tagName)
             || tagName == QLatin1String("callout")
             || tagName == QLatin1String("agenda")
             || tagName == QLatin1String("task");
@@ -74,6 +98,265 @@ namespace
     QString todayIsoDate()
     {
         return QDate::currentDate().toString(Qt::ISODate);
+    }
+
+    QString sourceTagName(QStringView tagToken)
+    {
+        if (tagToken.size() < 3 || tagToken.front() != QLatin1Char('<'))
+            return {};
+
+        int cursor = 1;
+        while (cursor < tagToken.size() && tagToken.at(cursor).isSpace())
+            ++cursor;
+        if (cursor < tagToken.size() && tagToken.at(cursor) == QLatin1Char('/'))
+            ++cursor;
+        while (cursor < tagToken.size() && tagToken.at(cursor).isSpace())
+            ++cursor;
+
+        const int nameStart = cursor;
+        while (cursor < tagToken.size())
+        {
+            const QChar ch = tagToken.at(cursor);
+            if (!(ch.isLetterOrNumber()
+                  || ch == QLatin1Char('_')
+                  || ch == QLatin1Char('.')
+                  || ch == QLatin1Char(':')
+                  || ch == QLatin1Char('-')))
+            {
+                break;
+            }
+            ++cursor;
+        }
+
+        if (cursor <= nameStart)
+            return {};
+
+        return tagToken.mid(nameStart, cursor - nameStart).toString().trimmed().toCaseFolded();
+    }
+
+    bool sourceTagIsClosing(QStringView tagToken)
+    {
+        if (tagToken.size() < 3 || tagToken.front() != QLatin1Char('<'))
+            return false;
+
+        int cursor = 1;
+        while (cursor < tagToken.size() && tagToken.at(cursor).isSpace())
+            ++cursor;
+        return cursor < tagToken.size() && tagToken.at(cursor) == QLatin1Char('/');
+    }
+
+    bool sourceTagIsSelfClosing(QStringView tagToken)
+    {
+        if (tagToken.size() < 3 || tagToken.back() != QLatin1Char('>'))
+            return false;
+
+        int cursor = tagToken.size() - 2;
+        while (cursor >= 0 && tagToken.at(cursor).isSpace())
+            --cursor;
+        return cursor >= 0 && tagToken.at(cursor) == QLatin1Char('/');
+    }
+
+    QVector<SourceTagToken> collectSourceTagTokens(const QString& source)
+    {
+        QVector<SourceTagToken> tokens;
+        int cursor = 0;
+        while (cursor < source.size())
+        {
+            const int tokenStart = source.indexOf(QLatin1Char('<'), cursor);
+            if (tokenStart < 0)
+                break;
+
+            const int tokenEnd = source.indexOf(QLatin1Char('>'), tokenStart + 1);
+            if (tokenEnd <= tokenStart)
+                break;
+
+            const QStringView tagToken(source.constData() + tokenStart, tokenEnd - tokenStart + 1);
+            const QString tagName = sourceTagName(tagToken);
+            if (!tagName.isEmpty())
+            {
+                tokens.push_back(SourceTagToken{
+                    tokenStart,
+                    tokenEnd + 1,
+                    SemanticTags::canonicalInlineStyleTagName(tagName),
+                    sourceTagIsClosing(tagToken),
+                    sourceTagIsSelfClosing(tagToken),
+                });
+            }
+
+            cursor = tokenEnd + 1;
+        }
+        return tokens;
+    }
+
+    int sourceOffsetForCollapsedInlineInsertion(const QVector<SourceTagToken>& tokens, const int offset)
+    {
+        for (const SourceTagToken& token : tokens)
+        {
+            if (offset <= token.start || offset >= token.end)
+                continue;
+            if (token.closing)
+                return token.start;
+            return token.end;
+        }
+        return offset;
+    }
+
+    int sourceStartOutsideTagTokens(const QVector<SourceTagToken>& tokens, const int start)
+    {
+        for (const SourceTagToken& token : tokens)
+        {
+            if (start > token.start && start < token.end)
+                return token.end;
+        }
+        return start;
+    }
+
+    int sourceEndOutsideTagTokens(const QVector<SourceTagToken>& tokens, const int end)
+    {
+        for (const SourceTagToken& token : tokens)
+        {
+            if (end > token.start && end < token.end)
+                return token.start;
+        }
+        return end;
+    }
+
+    int matchingInlineClosingTokenIndex(const QVector<SourceTagToken>& tokens, const int openingTokenIndex)
+    {
+        const SourceTagToken& openingToken = tokens.at(openingTokenIndex);
+        if (!openingToken.isInlineStyleTag() || openingToken.closing || openingToken.selfClosing)
+            return -1;
+
+        int nestedDepth = 0;
+        for (int index = openingTokenIndex + 1; index < tokens.size(); ++index)
+        {
+            const SourceTagToken& token = tokens.at(index);
+            if (token.inlineStyleTagName != openingToken.inlineStyleTagName || token.selfClosing)
+                continue;
+            if (!token.closing)
+            {
+                ++nestedDepth;
+                continue;
+            }
+            if (nestedDepth == 0)
+                return index;
+            --nestedDepth;
+        }
+        return -1;
+    }
+
+    int matchingInlineOpeningTokenIndex(const QVector<SourceTagToken>& tokens, const int closingTokenIndex)
+    {
+        const SourceTagToken& closingToken = tokens.at(closingTokenIndex);
+        if (!closingToken.isInlineStyleTag() || !closingToken.closing)
+            return -1;
+
+        int nestedDepth = 0;
+        for (int index = closingTokenIndex - 1; index >= 0; --index)
+        {
+            const SourceTagToken& token = tokens.at(index);
+            if (token.inlineStyleTagName != closingToken.inlineStyleTagName || token.selfClosing)
+                continue;
+            if (token.closing)
+            {
+                ++nestedDepth;
+                continue;
+            }
+            if (nestedDepth == 0)
+                return index;
+            --nestedDepth;
+        }
+        return -1;
+    }
+
+    int trimmedLeadingInlineTagBoundary(
+        const QVector<SourceTagToken>& tokens,
+        const int rangeStart,
+        const int rangeEnd)
+    {
+        for (int index = 0; index < tokens.size(); ++index)
+        {
+            const SourceTagToken& token = tokens.at(index);
+            if (token.start != rangeStart)
+                continue;
+            if (!token.isInlineStyleTag() || token.closing || token.selfClosing)
+                return rangeStart;
+
+            const int closingIndex = matchingInlineClosingTokenIndex(tokens, index);
+            if (closingIndex < 0 || tokens.at(closingIndex).end > rangeEnd)
+                return token.end;
+            return rangeStart;
+        }
+        return rangeStart;
+    }
+
+    int trimmedTrailingInlineTagBoundary(
+        const QVector<SourceTagToken>& tokens,
+        const int rangeStart,
+        const int rangeEnd)
+    {
+        for (int index = tokens.size() - 1; index >= 0; --index)
+        {
+            const SourceTagToken& token = tokens.at(index);
+            if (token.end != rangeEnd)
+                continue;
+            if (!token.isInlineStyleTag() || !token.closing)
+                return rangeEnd;
+
+            const int openingIndex = matchingInlineOpeningTokenIndex(tokens, index);
+            if (openingIndex < 0 || tokens.at(openingIndex).start < rangeStart)
+                return token.start;
+            return rangeEnd;
+        }
+        return rangeEnd;
+    }
+
+    SourceRange normalizeInlineStyleWrapRange(
+        const QString& source,
+        const int selectionStart,
+        const int selectionEnd)
+    {
+        const int sourceLength = source.length();
+        const int rawStart = boundedOffset(std::min(selectionStart, selectionEnd), sourceLength);
+        const int rawEnd = boundedOffset(std::max(selectionStart, selectionEnd), sourceLength);
+        const QVector<SourceTagToken> tokens = collectSourceTagTokens(source);
+        if (rawStart == rawEnd)
+        {
+            const int insertionOffset = sourceOffsetForCollapsedInlineInsertion(tokens, rawStart);
+            return {insertionOffset, insertionOffset};
+        }
+
+        SourceRange range{
+            sourceStartOutsideTagTokens(tokens, rawStart),
+            sourceEndOutsideTagTokens(tokens, rawEnd),
+        };
+        if (range.end < range.start)
+            range.end = range.start;
+
+        bool changed = true;
+        while (changed)
+        {
+            changed = false;
+
+            const int nextStart = trimmedLeadingInlineTagBoundary(tokens, range.start, range.end);
+            if (nextStart != range.start)
+            {
+                range.start = nextStart;
+                if (range.end < range.start)
+                    range.end = range.start;
+                changed = true;
+                continue;
+            }
+
+            const int nextEnd = trimmedTrailingInlineTagBoundary(tokens, range.start, range.end);
+            if (nextEnd != range.end)
+            {
+                range.end = std::max(range.start, nextEnd);
+                changed = true;
+            }
+        }
+
+        return range;
     }
 
     QString openingTagForName(const QString& tagName)
@@ -299,8 +582,14 @@ QVariantMap ContentsEditorTagInsertionController::buildWrappedTagInsertionPayloa
         return notAppliedPayload(QStringLiteral("tag-not-paired-wrappable"), source, selectionStart, selectionEnd, normalizedTag);
 
     const int sourceLength = source.length();
-    const int start = boundedOffset(std::min(selectionStart, selectionEnd), sourceLength);
-    const int end = boundedOffset(std::max(selectionStart, selectionEnd), sourceLength);
+    int start = boundedOffset(std::min(selectionStart, selectionEnd), sourceLength);
+    int end = boundedOffset(std::max(selectionStart, selectionEnd), sourceLength);
+    if (isInlineStyleInsertionTag(normalizedTag))
+    {
+        const SourceRange normalizedRange = normalizeInlineStyleWrapRange(source, start, end);
+        start = normalizedRange.start;
+        end = normalizedRange.end;
+    }
     if (end <= start && isGeneratedBodyInsertionTag(normalizedTag))
     {
         QVariantMap payload = buildGeneratedBodyTagInsertionPayload(source, start, normalizedTag);

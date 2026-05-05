@@ -94,7 +94,7 @@ Rectangle {
     readonly property int hierarchyListMaximumFlickVelocity: hierarchyKineticViewportEnabled ? Math.max(1, Math.round(LV.Theme.scaleMetric(12000))) : Math.max(1, Math.round(LV.Theme.scaleMetric(8000)))
     readonly property int hierarchyListReboundDuration: hierarchyKineticViewportEnabled ? 220 : 160
     property string hierarchyContextMenuKind: "options"
-    readonly property var hierarchyContextMenuItems: sidebarHierarchyView.hierarchyContextMenuKind === "folder" ? sidebarHierarchyView.hierarchyFolderContextMenuItems : sidebarHierarchyView.hierarchyViewOptionsMenuItems
+    readonly property var hierarchyContextMenuItems: sidebarHierarchyView.hierarchyContextMenuKind === "folder" ? sidebarHierarchyView.hierarchyFolderContextMenuItems : sidebarHierarchyView.hierarchyTreeContextMenuItems
     property int hierarchyContextMenuTargetIndex: -1
     readonly property bool hierarchyContextMenuTargetValid: sidebarHierarchyView.isFolderContextMenuTargetIndex(sidebarHierarchyView.hierarchyContextMenuTargetIndex)
     readonly property var hierarchyFolderContextMenuItems: [
@@ -121,6 +121,46 @@ Rectangle {
     property string hierarchyExpansionPointerArmedKey: ""
     property var hierarchyExpansionStateByKey: ({})
     property var hierarchyInteractionBridge: null
+    readonly property var hierarchyFooterToolbarButtons: [
+        {
+            type: "icon",
+            iconName: "generaladd",
+            backgroundColor: LV.Theme.accentTransparent,
+            backgroundColorDisabled: LV.Theme.accentTransparent,
+            backgroundColorHover: LV.Theme.accentTransparent,
+            backgroundColorPressed: LV.Theme.accentTransparent,
+            enabled: sidebarHierarchyView.createFolderEnabled,
+            eventName: "hierarchy.footer.create",
+            horizontalPadding: sidebarHierarchyView.hierarchyCompactInset,
+            verticalPadding: sidebarHierarchyView.hierarchyCompactInset
+        },
+        {
+            type: "icon",
+            iconName: "generaldelete",
+            backgroundColor: LV.Theme.accentTransparent,
+            backgroundColorDisabled: LV.Theme.accentTransparent,
+            backgroundColorHover: LV.Theme.accentTransparent,
+            backgroundColorPressed: LV.Theme.accentTransparent,
+            enabled: sidebarHierarchyView.deleteFolderEnabled,
+            eventName: "hierarchy.footer.delete",
+            horizontalPadding: sidebarHierarchyView.hierarchyCompactInset,
+            verticalPadding: sidebarHierarchyView.hierarchyCompactInset
+        },
+        {
+            type: "menu",
+            iconName: "generalmoreHorizontal",
+            backgroundColor: LV.Theme.accentTransparent,
+            backgroundColorDisabled: LV.Theme.accentTransparent,
+            backgroundColorHover: LV.Theme.accentTransparent,
+            backgroundColorPressed: LV.Theme.accentTransparent,
+            enabled: sidebarHierarchyView.viewOptionsEnabled,
+            eventName: "hierarchy.footer.options",
+            leftPadding: sidebarHierarchyView.hierarchyCompactInset,
+            rightPadding: LV.Theme.gap4,
+            topPadding: sidebarHierarchyView.hierarchyCompactInset,
+            bottomPadding: sidebarHierarchyView.hierarchyCompactInset
+        }
+    ]
     readonly property color hierarchyNoteDropHoverColor: {
         const item = sidebarHierarchyView.noteDropHoverItem;
         if (item && item.rowBackgroundColorActive !== undefined)
@@ -186,7 +226,7 @@ Rectangle {
     property int hierarchySelectionVisualRevision: 0
     property var hierarchyController: null
     property string hierarchyViewOptionsTriggerQueuedAction: ""
-    readonly property var hierarchyViewOptionsMenuItems: [
+    readonly property var hierarchyTreeContextMenuItems: [
         {
             "label": "Expand All",
             "iconName": "generalshow",
@@ -653,6 +693,8 @@ Rectangle {
             const key = sidebarHierarchyView.hierarchyItemExpansionKey(node, index);
             if (!key.length)
                 continue;
+            if (nextState[key] !== undefined)
+                continue;
             nextState[key] = Boolean(node && node.expanded !== undefined ? node.expanded : false);
         }
         sidebarHierarchyView.hierarchyExpansionStateByKey = nextState;
@@ -690,7 +732,7 @@ Rectangle {
         }
         sidebarHierarchyView.editingHierarchyPresentation = sidebarHierarchyView.hierarchyItemPresentation(item, editingIndex);
     }
-    function requestCollapseAllHierarchyItems() {
+    function requestCollapseAllHierarchyItems(reason) {
         if (sidebarHierarchyView.renameEditingActive)
             sidebarHierarchyView.cancelHierarchyRename();
         if (!sidebarHierarchyView.hierarchyBulkExpansionEnabled || !sidebarHierarchyView.hierarchyInteractionBridge)
@@ -701,7 +743,7 @@ Rectangle {
             sidebarHierarchyView.hierarchyExpansionStateByKey = previousExpansionState;
             return false;
         }
-        sidebarHierarchyView.requestViewHook("hierarchy.footer.collapseAll");
+        sidebarHierarchyView.requestViewHook(reason !== undefined ? reason : "hierarchy.contextMenu.collapseAll");
         Qt.callLater(function () {
             sidebarHierarchyView.syncSelectedHierarchyItem(false);
         });
@@ -783,7 +825,7 @@ Rectangle {
         sidebarHierarchyView.requestViewHook(reason !== undefined ? reason : "hierarchy.footer.delete");
         return true;
     }
-    function requestExpandAllHierarchyItems() {
+    function requestExpandAllHierarchyItems(reason) {
         if (sidebarHierarchyView.renameEditingActive)
             sidebarHierarchyView.cancelHierarchyRename();
         if (!sidebarHierarchyView.hierarchyBulkExpansionEnabled || !sidebarHierarchyView.hierarchyInteractionBridge)
@@ -794,7 +836,7 @@ Rectangle {
             sidebarHierarchyView.hierarchyExpansionStateByKey = previousExpansionState;
             return false;
         }
-        sidebarHierarchyView.requestViewHook("hierarchy.footer.expandAll");
+        sidebarHierarchyView.requestViewHook(reason !== undefined ? reason : "hierarchy.contextMenu.expandAll");
         Qt.callLater(function () {
             sidebarHierarchyView.syncSelectedHierarchyItem(false);
         });
@@ -812,13 +854,45 @@ Rectangle {
                 sidebarHierarchyView.hierarchyViewOptionsTriggerQueuedAction = "";
         });
         if (action === "hierarchy.expandAll")
-            return sidebarHierarchyView.requestExpandAllHierarchyItems();
+            return sidebarHierarchyView.requestExpandAllHierarchyItems("hierarchy.contextMenu.expandAll");
         if (action === "hierarchy.collapseAll")
-            return sidebarHierarchyView.requestCollapseAllHierarchyItems();
+            return sidebarHierarchyView.requestCollapseAllHierarchyItems("hierarchy.contextMenu.collapseAll");
         return false;
     }
     function requestHierarchySelection(item, resolvedIndex, modifiers) {
         hierarchySelectionController.requestHierarchySelection(item, resolvedIndex, modifiers);
+    }
+    function requestHierarchyChevronExpansionAtPosition(x, y, expectedKey) {
+        if (sidebarHierarchyView.renameEditingActive)
+            sidebarHierarchyView.cancelHierarchyRename();
+        if (!sidebarHierarchyView.hierarchyInteractionBridge)
+            return false;
+        const target = sidebarHierarchyView.hierarchyChevronExpansionTargetAtPosition(x, y);
+        if (!target || !target.item || target.index < 0 || !target.key || !target.key.length)
+            return false;
+        const normalizedExpectedKey = expectedKey === undefined || expectedKey === null ? "" : String(expectedKey).trim();
+        if (normalizedExpectedKey.length > 0 && normalizedExpectedKey !== target.key)
+            return false;
+        if (normalizedExpectedKey.length > 0 && sidebarHierarchyView.hierarchyExpansionPointerArmedKey.length === 0)
+            return false;
+        if (sidebarHierarchyView.hierarchyExpansionPointerArmedKey.length > 0 && sidebarHierarchyView.hierarchyExpansionPointerArmedKey !== target.key)
+            return false;
+        const previousExpanded = Boolean(target.item.expanded);
+        const nextExpanded = !previousExpanded;
+        sidebarHierarchyView.hierarchyExpansionPointerArmedKey = "";
+        hierarchyExpansionPointerArmTimer.stop();
+        sidebarHierarchyView.rememberHierarchyExpansionState(target.key, nextExpanded);
+        sidebarHierarchyView.armHierarchyExpansionActivationSuppression(target.item, target.item.itemId, target.index);
+        if (!sidebarHierarchyView.hierarchyInteractionBridge.setItemExpanded(target.index, nextExpanded)) {
+            sidebarHierarchyView.rememberHierarchyExpansionState(target.key, previousExpanded);
+            if (target.item.expanded !== undefined)
+                target.item.expanded = previousExpanded;
+            return false;
+        }
+        Qt.callLater(function () {
+            sidebarHierarchyView.syncSelectedHierarchyItem(false);
+        });
+        return true;
     }
     function requestHierarchyControllerReload(reason) {
         const normalizedReason = reason === undefined || reason === null ? "" : String(reason).trim();
@@ -1869,6 +1943,18 @@ Rectangle {
                 sidebarHierarchyView.captureHierarchyPointerSelectionModifiers(pressModifiers);
                 sidebarHierarchyView.armHierarchyUserExpansionAtPosition(point && point.position !== undefined ? point.position.x : 0, point && point.position !== undefined ? point.position.y : 0);
             }
+            onTapped: function (eventPoint, button) {
+                if (button !== Qt.LeftButton)
+                    return;
+                const armedKey = sidebarHierarchyView.hierarchyExpansionPointerArmedKey;
+                if (!armedKey.length)
+                    return;
+                const tapX = eventPoint && eventPoint.position !== undefined ? eventPoint.position.x : 0;
+                const tapY = eventPoint && eventPoint.position !== undefined ? eventPoint.position.y : 0;
+                Qt.callLater(function () {
+                    sidebarHierarchyView.requestHierarchyChevronExpansionAtPosition(tapX, tapY, armedKey);
+                });
+            }
         }
         TapHandler {
             id: hierarchyContextMenuTapHandler
@@ -2095,44 +2181,9 @@ Rectangle {
         anchors.bottomMargin: sidebarHierarchyView.verticalInset
         anchors.left: parent.left
         anchors.leftMargin: sidebarHierarchyView.horizontalInset
-        button1: ({
-                type: "icon",
-                iconName: "generaladd",
-                backgroundColor: LV.Theme.accentTransparent,
-                backgroundColorDisabled: LV.Theme.accentTransparent,
-                backgroundColorHover: LV.Theme.accentTransparent,
-                backgroundColorPressed: LV.Theme.accentTransparent,
-                enabled: sidebarHierarchyView.createFolderEnabled,
-                eventName: "hierarchy.footer.create",
-                horizontalPadding: sidebarHierarchyView.hierarchyCompactInset,
-                verticalPadding: sidebarHierarchyView.hierarchyCompactInset
-            })
-        button2: ({
-                type: "icon",
-                iconName: "generaldelete",
-                backgroundColor: LV.Theme.accentTransparent,
-                backgroundColorDisabled: LV.Theme.accentTransparent,
-                backgroundColorHover: LV.Theme.accentTransparent,
-                backgroundColorPressed: LV.Theme.accentTransparent,
-                enabled: sidebarHierarchyView.deleteFolderEnabled,
-                eventName: "hierarchy.footer.delete",
-                horizontalPadding: sidebarHierarchyView.hierarchyCompactInset,
-                verticalPadding: sidebarHierarchyView.hierarchyCompactInset
-            })
-        button3: ({
-                type: "menu",
-                iconName: "generalsettings",
-                backgroundColor: LV.Theme.accentTransparent,
-                backgroundColorDisabled: LV.Theme.accentTransparent,
-                backgroundColorHover: LV.Theme.accentTransparent,
-                backgroundColorPressed: LV.Theme.accentTransparent,
-                enabled: sidebarHierarchyView.viewOptionsEnabled,
-                eventName: "hierarchy.footer.options",
-                leftPadding: sidebarHierarchyView.hierarchyCompactInset,
-                rightPadding: LV.Theme.gap4,
-                topPadding: sidebarHierarchyView.hierarchyCompactInset,
-                bottomPadding: sidebarHierarchyView.hierarchyCompactInset
-            })
+        button1: sidebarHierarchyView.hierarchyFooterToolbarButtons[0]
+        button2: sidebarHierarchyView.hierarchyFooterToolbarButtons[1]
+        button3: sidebarHierarchyView.hierarchyFooterToolbarButtons[2]
         height: sidebarHierarchyView.hierarchyCompactFooterHeight
         horizontalPadding: sidebarHierarchyView.hierarchyCompactInset
         spacing: LV.Theme.gapNone

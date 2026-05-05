@@ -28,3 +28,6 @@ This keeps the QML layer free from repeated sanitation logic and ensures that ma
 
 For note-list multi-selection, `canAcceptNoteDropList(...)` and `assignNotesToFolder(...)` normalize/deduplicate a
 QML-provided note-id array and replay the same capability contract across the selected notes.
+`assignNotesToFolder(...)` is the bridge-level commit used when a `ListBarLayout` note-list delegate is dropped on a
+folder row in `SidebarHierarchyView`; the concrete hierarchy controller remains responsible for writing the note header
+folder binding and refreshing derived note lists.

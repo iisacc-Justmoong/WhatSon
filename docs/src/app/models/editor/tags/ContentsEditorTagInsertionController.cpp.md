@@ -14,6 +14,10 @@ Implements common RAW tag insertion payload construction for editor commands.
 - `buildTagInsertionPayload(...)` is the unified command entry point for formatting and body tags.
 - `buildWrappedTagInsertionPayload(...)` clamps the current source selection and wraps it with one opening and one
   closing tag.
+- Inline formatting wraps first normalize the selected RAW range against existing inline-style tag tokens. A selection
+  that starts or ends inside `<highlight>` / `</highlight>` or includes only one side of an existing inline wrapper is
+  moved to the visible content boundary before the next RAW mutation is built. This keeps re-formatting aligned with the
+  parser/render projection contract and prevents partially inserted tags from becoming visible editor text.
 - A non-empty selection such as `Alpha` with `bold` becomes `<bold>Alpha</bold>`.
 - A collapsed cursor inserts an empty pair such as `<bold></bold>` and returns a cursor position between the tags.
 - A collapsed body-tag command inserts the canonical generated source, for example `<callout> </callout>` or
@@ -24,4 +28,6 @@ Implements common RAW tag insertion payload construction for editor commands.
 ## Boundary
 
 The controller treats formatting tags and body tags as the same RAW insertion category. Specialized body-tag helpers
-may still generate richer canonical source snippets, but they must feed the same next-source mutation path.
+may still generate richer canonical source snippets, but they must feed the same next-source mutation path. Inline
+formatting may inspect existing RAW tag tokens only to preserve balanced source boundaries; it must not serialize the
+rendered RichText/iiHtmlBlock projection back into `.wsnbody`.

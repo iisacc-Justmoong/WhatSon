@@ -48,6 +48,22 @@ void WhatSonCppRegressionTests::qmlHierarchyExpansion_preservesUserControlledSta
     QVERIFY(sidebarSource.contains(QStringLiteral("rememberHierarchyExpansionState")));
     QVERIFY(sidebarSource.contains(QStringLiteral("hierarchyExpansionStateForKey")));
     QVERIFY(sidebarSource.contains(QStringLiteral("userExpansionArmed")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("readonly property var hierarchyTreeContextMenuItems")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("hierarchyContextMenuKind === \"folder\" ? sidebarHierarchyView.hierarchyFolderContextMenuItems : sidebarHierarchyView.hierarchyTreeContextMenuItems")));
+    QVERIFY(!sidebarSource.contains(QStringLiteral("hierarchyViewOptionsMenuItems")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("\"label\": \"Expand All\"")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("\"label\": \"Collapse All\"")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("\"eventName\": \"hierarchy.expandAll\"")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("\"eventName\": \"hierarchy.collapseAll\"")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("hierarchyInteractionBridge.setAllItemsExpanded(true)")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("hierarchyInteractionBridge.setAllItemsExpanded(false)")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("hierarchy.contextMenu.expandAll")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("hierarchy.contextMenu.collapseAll")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("function requestHierarchyChevronExpansionAtPosition(x, y, expectedKey)")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("hierarchyInteractionBridge.setItemExpanded(target.index, nextExpanded)")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("if (nextState[key] !== undefined)\n                continue;")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("onTapped: function (eventPoint, button)")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("sidebarHierarchyView.requestHierarchyChevronExpansionAtPosition(tapX, tapY, armedKey);")));
     QVERIFY(sidebarSource.contains(QStringLiteral("refreshEditingHierarchyPresentation")));
 }
 

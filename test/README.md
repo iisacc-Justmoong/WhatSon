@@ -106,6 +106,9 @@ ctest --test-dir build --output-on-failure -L cpp_regression
   The same source checks pin pending cursor/surface restore behavior so neither path writes through native composition.
 - Inline-format editor checks now also lock the C++/QML helper-controller path so programmatic sync policy and
   tag-management shortcut routing stay tied to the `LV.TextEditor.editorItem` native text surface.
+- Inline tag-insertion regression now also pins re-formatting over existing inline style tags: selections that land
+  inside hidden RAW tag tokens, or include only one side of an existing wrapper, are normalized before the next RAW
+  mutation so malformed `<highligh<...` source cannot surface in the editor.
 - Structured QML editor checks now instantiate `ContentsDocumentTextBlock.qml` with RAW inline style tags and verify that
   the live editor receives rendered overlay HTML while its editable plain-text buffer stays tag-free.
 - Structured QML editor checks now also lock the custom-input policy: ordinary editor input has no QML key handlers,
@@ -127,6 +130,17 @@ ctest --test-dir build --output-on-failure -L cpp_regression
   round-trips the new `annotationPath` and newly created resource packages keep a transparent `annotation.png`.
 - Folder-path semantics now also lock escaped literal-slash handling plus `Folders.wsfolders` parser migration, so a
   library folder label like `Marketing/Sales` cannot regress into an accidental parent/child hierarchy split.
+- Sidebar hierarchy expansion now also pins the chevron-only click path, so a folder row's right chevron writes a single
+  `setItemExpanded(...)` request and stale model refreshes cannot overwrite the newly chosen expanded/collapsed state.
+- Sidebar footer toolbar order is source-locked as add folder, delete selected folder, then open context menu, with the
+  third slot using the LVRS more/menu icon instead of a settings glyph.
+- Sidebar tree context-menu coverage now locks `Expand All` and `Collapse All` entries to
+  `HierarchyInteractionBridge.setAllItemsExpanded(...)`, so full-tree folding stays a menu action rather than a row or
+  footer-only mutation.
+- The same coverage forbids the old `hierarchyViewOptionsMenuItems` alias; tree menu behavior must stay absorbed into
+  the current `hierarchyTreeContextMenuItems` object.
+- Hierarchy drag/drop bridge coverage now exercises the concrete note-list-item drop contract: dragged note ids are
+  normalized, deduplicated, checked against the folder target, and assigned through `assignNotesToFolder(...)`.
 - Sidebar hierarchy rename now also prefers the escaped folder-path id over a naive display-label split, so the same
   `Marketing/Sales` folder still seeds the inline rename editor as one literal label instead of collapsing to `Sales`.
 - Detail-panel folder assignment now also reuses an existing escaped folder path instead of recreating

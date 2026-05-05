@@ -111,18 +111,24 @@ These signals make the file a reusable visual surface instead of a hard-coded on
 ## Footer View Options
 
 - The right-most `LV.ListFooter` menu button now opens a dedicated `LV.ContextMenu` anchored from the footer edge.
+- Footer toolbar order is fixed through `hierarchyFooterToolbarButtons`: left to right is `New Folder`, `Delete
+  Selected Folder`, then `Open Context Menu`. The third slot uses LVRS `generalmoreHorizontal`, not a settings icon,
+  because it is a menu disclosure affordance.
 - The `LV.ListFooter` buttons are routed through `onButtonClicked` and `handleHierarchyFooterButtonClicked(...)`.
   Footer button configs carry data-only `eventName` values instead of owning the action callbacks themselves. This keeps
   the hierarchy action dispatch on the sidebar view side and avoids losing create/delete/options behavior when LVRS
   normalizes or rebinds the footer slot objects.
 - The compact footer/menu metrics now route through `LV.Theme.gap2`, `LV.Theme.gap4`, and named token compositions
   (`144`, `78`, `24`) instead of fixed sidebar-local pixel literals, so mobile/desktop LVRS scale stays consistent.
-- That menu exposes `Expand All` and `Collapse All` actions in English, which matches the repository rule that
-  project-facing strings stay in English.
+- The default tree context menu is `hierarchyTreeContextMenuItems`. It exposes `Expand All` and `Collapse All` actions
+  in English, which matches the repository rule that project-facing strings stay in English.
+- The old `hierarchyViewOptionsMenuItems` compatibility alias is intentionally not retained; the tree context-menu
+  entries and trigger callbacks live on the current `hierarchyTreeContextMenuItems` object.
 - Bulk expansion is enabled only when the projected hierarchy model currently contains at least one row with
   `showChevron: true`.
 - Both actions route through `HierarchyInteractionBridge.setAllItemsExpanded(...)` so the active domain controller, not
-  the view, owns the persisted `expanded` state.
+  the view, owns the persisted `expanded` state. Their view hook reasons are
+  `hierarchy.contextMenu.expandAll` and `hierarchy.contextMenu.collapseAll`.
 - The menu entries now carry explicit `eventName` values (`hierarchy.expandAll` / `hierarchy.collapseAll`) and route
   through a shared trigger handler that accepts both `onItemTriggered(index)` and
   `onItemEventTriggered(eventName, ...)`, preventing callback-type differences in LVRS context-menu dispatch from
@@ -138,7 +144,7 @@ These signals make the file a reusable visual surface instead of a hard-coded on
 - Folder context-menu pointer invocation is centralized through `openHierarchyFolderContextMenuFromPointer(...)`, so
   desktop right-click and mobile long-press share the same hit testing, selection promotion, and protected-folder
   filtering.
-- Right-click hit testing routes through `SidebarHierarchyNoteDropController.noteDropTargetAtPosition(...)`, so the menu
+- Right-click hit testing routes through the inline `noteDropController.noteDropTargetAtPosition(...)`, so the menu
   opens only when the pointer is over a concrete visible hierarchy row.
 - The folder menu is intentionally limited to library folder nodes (`folder:*` / `uuid`-backed entries). Protected
   system buckets such as `All`, `Draft`, and `Today` do not open this menu.
@@ -165,12 +171,18 @@ These signals make the file a reusable visual surface instead of a hard-coded on
 - Programmatic LVRS expansion changes are not persisted back into the Controller. The sidebar arms an expansion request
   only when the pointer press lands on a row's chevron slot, and `onListItemExpanded` reverts any unarmed expansion
   change back to the preserved state.
+- `captureHierarchyExpansionState(...)` seeds only missing keys. A fresh controller/model refresh must not overwrite a
+  user-owned expansion value that was just written by a chevron click with the stale `displayedHierarchyModel` snapshot
+  from the previous turn.
 - `syncSelectedHierarchyItem(...)` refuses to activate a selected row that is hidden behind a collapsed ancestor. This
   prevents LVRS active-item normalization from auto-expanding ancestors during model rebuilds.
 - Chevron-driven expansion now records a resolved hierarchy index from stable model ids first
   (`item.itemId`, then `item.resolvedItemId`, then callback `itemId`), and only falls back to
   visual row indexes (`flatIndex`, then callback `index`) when model ids are unavailable.
   It then starts a short activation-block timer.
+- The left-button `TapHandler` also schedules `requestHierarchyChevronExpansionAtPosition(...)` after the tap turn. If
+  LVRS already emitted `onListItemExpanded`, the armed key has been cleared and the fallback is skipped; otherwise the
+  same `HierarchyInteractionBridge.setItemExpanded(...)` path performs the single-row fold/unfold.
 - `onListItemActivated` is deferred by one turn (`Qt.callLater`) and re-checked through
   `shouldSuppressHierarchyActivation(item, itemId, index)` before it can select the folder or emit
   `hierarchyItemActivated(...)`.
@@ -213,10 +225,13 @@ These signals make the file a reusable visual surface instead of a hard-coded on
 - The `DropArea` at the bottom of the file now routes pointer payloads into `noteIdsFromDragPayload(...)`, so a drag
   that originated from a multi-selected note-list group can assign every selected note to the hovered folder in one
   drop.
+- Dropping a note-list item on a concrete folder hierarchy row is a membership mutation: the view resolves the hovered
+  row index, forwards the dragged note id array through `HierarchyDragDropBridge.assignNotesToFolder(...)`, and treats a
+  successful commit as `hierarchy.noteDrop`.
 - The `DropArea` stays enabled whenever a `HierarchyDragDropBridge` is wired. It must not gate itself on
   `noteDropContractAvailable`, because that prevents drag enter/drop events from reaching the controller at all. The
   controller and domain Controller capability remain responsible for accepting or rejecting a concrete target.
-- That folder-drop path depends on `SidebarHierarchyNoteDropController.normalizeNoteIds(...)` returning a concrete
+- That folder-drop path depends on inline `noteDropController.normalizeNoteIds(...)` returning a concrete
   array. If the helper falls through without `return normalized;`, the sidebar will reject every note-list-to-folder
   drop as an empty payload.
 - The same `DropArea` now mirrors the drop-commit boolean into `drop.accepted`, so failed folder assignment attempts
