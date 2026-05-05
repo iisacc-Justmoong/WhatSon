@@ -204,6 +204,12 @@ ctest --test-dir build --output-on-failure -L cpp_regression
 - The inline editor regression now also pins actual mouse-click cursor movement through both the inline editor and
   `ContentsStructuredDocumentFlow` host, including the projected caret rectangle, so collapsed pointer gestures cannot
   leave the visible cursor at the initial host-provided logical cursor position.
+- The inline editor regression now also pins rendered pointer drag selection against cursor override regressions:
+  collapsed pointer clicks may move the projected caret immediately, but non-empty pointer selections clear that
+  override and hide the projected cursor while the selection model owns the highlighted range.
+- The inline editor regression now also pins rendered pointer multi-click selection: double-click restores visible-line
+  selection and triple-click restores visible-paragraph selection before mapping the selected logical range back to RAW
+  source offsets.
 - The inline editor regression now also pins the top-flush editor body contract: vertical inset and rendered-overlay
   padding stay at zero, with only horizontal text-column margins retained.
 - The contents/editor QML regressions now also pin the scrollable document viewport: the center editor slot wraps the

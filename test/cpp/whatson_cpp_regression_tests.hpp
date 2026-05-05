@@ -1064,6 +1064,8 @@ private slots:
     void qmlInlineFormatEditor_positionsVisibleProbeFromLogicalDisplayText();
     void qmlInlineFormatEditor_mapsRenderedPointerSelectionToCharacterRawRange();
     void qmlInlineFormatEditor_movesRenderedCursorOnMouseClick();
+    void qmlInlineFormatEditor_preservesRenderedPointerDragSelection();
+    void qmlInlineFormatEditor_restoresRenderedPointerMultiClickSelection();
     void qmlInlineFormatEditor_skipsHiddenInlineTagsDuringNativeCursorMovement();
     void qmlInlineFormatEditor_reportsWrappedVisualLineCountForMinimap();
     void qmlInlineFormatEditor_placesLogicalGutterRowsAtIncreasingY();

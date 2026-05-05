@@ -28,6 +28,10 @@ Item {
     property bool overwriteMode: false
     property bool persistentSelection: true
     property int previousRawCursorPosition: 0
+    property int visiblePointerClickCount: 0
+    property real visiblePointerLastClickTimestamp: 0
+    property real visiblePointerLastClickX: 0
+    property real visiblePointerLastClickY: 0
     property int visiblePointerSelectionAnchorLogicalOffset: 0
     property bool visiblePointerSelectionActive: false
     property int visiblePointerCursorLogicalOffset: -1
@@ -42,7 +46,9 @@ Item {
             : control.logicalCursorPosition
     readonly property int cursorPixelWidth: Math.max(1, Math.ceil(LV.Theme.strokeThin))
     readonly property rect projectedCursorRectangle: control.cursorProjectionRectangle()
-    readonly property bool projectedCursorVisible: control.renderedOverlayVisible && control.focused
+    readonly property bool projectedCursorVisible: control.renderedOverlayVisible
+            && control.focused
+            && !control.nativeSelectionActive
     readonly property var logicalGutterRows: lineNumberRailMetrics.rows
     readonly property int visualLineCount: visualLineMetrics.visualLineCount
     readonly property var visualLineWidthRatios: visualLineMetrics.visualLineWidthRatios
@@ -469,18 +475,94 @@ Item {
     function restoreVisibleLogicalSelectionRange(anchorLogicalOffset, currentLogicalOffset) {
         const boundedCurrentLogicalOffset =
                 control.boundedCursorPosition(currentLogicalOffset, renderedGeometryProbe.length);
-        const anchorSourceOffset = control.sourceOffsetForVisibleLogicalOffset(anchorLogicalOffset);
-        const currentSourceOffset = control.sourceOffsetForVisibleLogicalOffset(boundedCurrentLogicalOffset);
+        return control.restoreVisibleLogicalSelectionSpan(
+                    anchorLogicalOffset,
+                    boundedCurrentLogicalOffset,
+                    boundedCurrentLogicalOffset);
+    }
+
+    function restoreVisibleLogicalSelectionSpan(startLogicalOffset, endLogicalOffset, cursorLogicalOffset) {
+        const boundedStartLogicalOffset =
+                control.boundedCursorPosition(startLogicalOffset, renderedGeometryProbe.length);
+        const boundedEndLogicalOffset =
+                control.boundedCursorPosition(endLogicalOffset, renderedGeometryProbe.length);
+        const boundedCursorLogicalOffset =
+                control.boundedCursorPosition(cursorLogicalOffset, renderedGeometryProbe.length);
+        const anchorSourceOffset = control.sourceOffsetForVisibleLogicalOffset(boundedStartLogicalOffset);
+        const currentSourceOffset = control.sourceOffsetForVisibleLogicalOffset(boundedEndLogicalOffset);
+        const cursorSourceOffset = control.sourceOffsetForVisibleLogicalOffset(boundedCursorLogicalOffset);
         const selectionStart = Math.min(anchorSourceOffset, currentSourceOffset);
         const selectionEnd = Math.max(anchorSourceOffset, currentSourceOffset);
         control.visiblePointerCursorUpdateActive = true;
-        const restored = control.restoreSelectionRange(selectionStart, selectionEnd, currentSourceOffset);
+        const restored = control.restoreSelectionRange(selectionStart, selectionEnd, cursorSourceOffset);
         control.visiblePointerCursorUpdateActive = false;
         if (!restored)
             return false;
-        control.visiblePointerCursorLogicalOffset = boundedCurrentLogicalOffset;
+        control.visiblePointerCursorLogicalOffset = selectionStart === selectionEnd
+                ? boundedCursorLogicalOffset
+                : -1;
         control.scheduleRenderedOverlaySelectionRefresh();
         return true;
+    }
+
+    function visibleLogicalLineRangeAtOffset(logicalOffset) {
+        const text = String(control.displayGeometryText || "");
+        const offset = control.boundedCursorPosition(logicalOffset, text.length);
+        const previousBreak = text.lastIndexOf("\n", Math.max(0, offset - 1));
+        const start = previousBreak < 0 ? 0 : previousBreak + 1;
+        const nextBreak = text.indexOf("\n", offset);
+        const end = nextBreak < 0 ? text.length : nextBreak;
+        return { "start": start, "end": Math.max(start, end) };
+    }
+
+    function visibleLogicalParagraphRangeAtOffset(logicalOffset) {
+        const text = String(control.displayGeometryText || "");
+        const offset = control.boundedCursorPosition(logicalOffset, text.length);
+        const previousParagraphBreak = text.lastIndexOf("\n\n", Math.max(0, offset - 1));
+        let start = previousParagraphBreak < 0 ? 0 : previousParagraphBreak + 2;
+        while (start < text.length && text.charAt(start) === "\n")
+            ++start;
+        const nextParagraphBreak = text.indexOf("\n\n", offset);
+        let end = nextParagraphBreak < 0 ? text.length : nextParagraphBreak;
+        while (end > start && text.charAt(end - 1) === "\n")
+            --end;
+        return { "start": start, "end": Math.max(start, end) };
+    }
+
+    function restoreVisibleLogicalLineSelectionAtLogicalOffset(logicalOffset) {
+        const range = control.visibleLogicalLineRangeAtOffset(logicalOffset);
+        return control.restoreVisibleLogicalSelectionSpan(range.start, range.end, range.end);
+    }
+
+    function restoreVisibleLogicalParagraphSelectionAtLogicalOffset(logicalOffset) {
+        const range = control.visibleLogicalParagraphRangeAtOffset(logicalOffset);
+        return control.restoreVisibleLogicalSelectionSpan(range.start, range.end, range.end);
+    }
+
+    function resetVisiblePointerClickSequence() {
+        control.visiblePointerClickCount = 0;
+        control.visiblePointerLastClickTimestamp = 0;
+    }
+
+    function updateVisiblePointerClickSequence(localX, localY) {
+        const now = Date.now();
+        const dx = Number(localX) - control.visiblePointerLastClickX;
+        const dy = Number(localY) - control.visiblePointerLastClickY;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        const styleHints = Qt.styleHints || {};
+        const interval = Number(styleHints.mouseDoubleClickInterval) || 500;
+        const maximumDistance = Number(styleHints.startDragDistance) || LV.Theme.gap24;
+        const continuingSequence =
+                control.visiblePointerLastClickTimestamp > 0
+                && now - control.visiblePointerLastClickTimestamp <= interval
+                && distance <= maximumDistance;
+        control.visiblePointerClickCount = continuingSequence
+                ? control.visiblePointerClickCount + 1
+                : 1;
+        control.visiblePointerLastClickTimestamp = now;
+        control.visiblePointerLastClickX = Number(localX) || 0;
+        control.visiblePointerLastClickY = Number(localY) || 0;
+        return control.visiblePointerClickCount;
     }
 
     function beginVisiblePointerSelection(localX, localY) {
@@ -488,6 +570,16 @@ Item {
             return false;
         control.forceActiveFocus();
         const logicalOffset = control.visibleLogicalOffsetAtPoint(localX, localY);
+        const clickCount = control.updateVisiblePointerClickSequence(localX, localY);
+        if (clickCount >= 3) {
+            control.visiblePointerSelectionActive = false;
+            control.resetVisiblePointerClickSequence();
+            return control.restoreVisibleLogicalParagraphSelectionAtLogicalOffset(logicalOffset);
+        }
+        if (clickCount === 2) {
+            control.visiblePointerSelectionActive = false;
+            return control.restoreVisibleLogicalLineSelectionAtLogicalOffset(logicalOffset);
+        }
         control.visiblePointerSelectionAnchorLogicalOffset = logicalOffset;
         control.visiblePointerSelectionActive = true;
         return control.restoreVisibleLogicalSelectionRange(logicalOffset, logicalOffset);
@@ -497,9 +589,12 @@ Item {
         if (!control.visiblePointerSelectionActive)
             return false;
         const logicalOffset = control.visibleLogicalOffsetAtPoint(localX, localY);
-        return control.restoreVisibleLogicalSelectionRange(
+        const restored = control.restoreVisibleLogicalSelectionRange(
                     control.visiblePointerSelectionAnchorLogicalOffset,
                     logicalOffset);
+        if (restored && control.nativeSelectionActive)
+            control.resetVisiblePointerClickSequence();
+        return restored;
     }
 
     function finishVisiblePointerSelection() {
@@ -843,7 +938,7 @@ Item {
 
         onCanceled: control.finishVisiblePointerSelection()
         onPositionChanged: function (mouse) {
-            if (pressed)
+            if (visibleSelectionPointerArea.pressed)
                 control.updateVisiblePointerSelection(mouse.x, mouse.y);
         }
         onPressed: function (mouse) {

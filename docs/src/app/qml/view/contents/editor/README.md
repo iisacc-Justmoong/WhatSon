@@ -63,14 +63,17 @@ Editor-facing QML view components for the center content surface.
   visible editor content. The rendered overlay mirrors text selection in logical coordinates, and resource spans from
   iiHtmlBlock metadata paint as one atomic block-level selection rectangle. Resource-backed overlays also stay pinned
   during ordinary native typing/composition turns, so a refresh gap cannot reveal the RAW `<resource ... />` tag in
-  place of the frame. The editor paints an explicit blinking cursor above the overlay while the underlying RAW text and
-  native RAW cursor delegate are hidden. The rendered surface is stacked below the transparent native editor. While that
-  overlay is visible, a thin pointer bridge maps mouse-drag hit testing through `displayGeometryText` and
+  place of the frame. The editor paints an explicit blinking cursor above the overlay only for collapsed caret
+  positions while the underlying RAW text and native RAW cursor delegate are hidden. The rendered surface is stacked
+  below the transparent native editor. While that overlay is visible, a thin pointer bridge maps mouse-drag hit testing through `displayGeometryText` and
   `logicalToSourceOffsets`, then restores the matching RAW source selection on `LV.TextEditor`; this keeps sub-word
   selection precise even when hidden source tags would otherwise distort the transparent RAW text geometry. Collapsed
   mouse clicks use the same bridge for cursor placement and update a local projected-cursor offset immediately, so the
-  visible caret does not wait on the parent host's `logicalCursorPosition` binding. The bridge is inactive during IME
-  composition. Plain-source and keyboard/modifier selection remain on the native text-edit path.
+  visible caret does not wait on the parent host's `logicalCursorPosition` binding. Non-empty drag selections clear
+  that cursor override and hide the projected cursor so the selection model remains authoritative. Double-click and
+  triple-click gestures keep native-style line and paragraph selection by selecting the visible logical range before
+  mapping it back to RAW source offsets. The bridge is inactive during IME composition. Plain-source and
+  keyboard/modifier selection remain on the native text-edit path.
   If native cursor movement lands inside a hidden inline formatting tag, the inline editor normalizes that RAW cursor to
   the adjacent safe source boundary so arrow traversal skips zero-width tag bytes. Programmatic text replacement is
   routed through the inline editor controller so focused native selection can defer host-side surface refresh. Inline
@@ -113,8 +116,10 @@ source mutation policy remain in C++ model/renderer objects.
   보이면 숨겨진 RAW 태그가 투명 텍스트 지오메트리를 왜곡하므로, 마우스 드래그 좌표를 `displayGeometryText`
   logical 좌표로 읽고 `logicalToSourceOffsets`로 RAW selection range를 복원한다. 드래그가 없는 클릭은 같은
   경로에서 collapsed cursor placement로 처리하며, parent host의 cursor projection binding이 갱신되기 전에도
-  projected caret가 클릭한 논리 위치로 이동하도록 로컬 pointer cursor override를 유지한다. 이 pointer bridge는
-  IME composition 중에는 비활성화된다.
+  projected caret가 클릭한 논리 위치로 이동하도록 로컬 pointer cursor override를 유지한다. 드래그가 non-empty
+  selection으로 확장되면 이 override를 해제하고 projected cursor를 숨겨 selection 모델이 표시 상태를 소유하게
+  한다. 더블클릭은 표시 논리 줄, 세 번 클릭은 표시 문단을 선택한 뒤 RAW source offset으로 되돌린다. 이 pointer
+  bridge는 IME composition 중에는 비활성화된다.
 - cursor: 렌더 overlay가 보이는 동안 네이티브 커서가 숨겨진 inline formatting 태그 내부로 들어가면 이동
   방향에 맞춰 태그 앞/뒤의 안전한 RAW 경계로 보정한다.
 - programmatic sync: 포커스된 native selection 중에는 inline editor controller가 host-side 텍스트 복원을
