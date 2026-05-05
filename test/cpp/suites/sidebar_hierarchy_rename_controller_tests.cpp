@@ -31,3 +31,22 @@ void WhatSonCppRegressionTests::sidebarHierarchyView_bindsInlineHelperDependenci
     QVERIFY(!sidebarSource.contains(QStringLiteral("property var view: null")));
     QVERIFY(!sidebarSource.contains(QStringLiteral("const normalizedModifiers = controller.")));
 }
+
+void WhatSonCppRegressionTests::sidebarHierarchyView_routesFooterActionsThroughListFooterSignal()
+{
+    const QString sidebarSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/panels/sidebar/SidebarHierarchyView.qml"));
+
+    QVERIFY(!sidebarSource.isEmpty());
+    QVERIFY(sidebarSource.contains(QStringLiteral("function handleHierarchyFooterButtonClicked(index, config)")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("onButtonClicked: function (index, config)")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("eventName: \"hierarchy.footer.create\"")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("eventName: \"hierarchy.footer.delete\"")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("eventName: \"hierarchy.footer.options\"")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("sidebarHierarchyView.requestCreateFolder();")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("sidebarHierarchyView.requestDeleteFolder();")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("sidebarHierarchyView.requestViewOptions();")));
+    QVERIFY(!sidebarSource.contains(QStringLiteral("onClicked: function () {\n                    sidebarHierarchyView.requestCreateFolder();")));
+    QVERIFY(!sidebarSource.contains(QStringLiteral("onClicked: function () {\n                    sidebarHierarchyView.requestDeleteFolder();")));
+    QVERIFY(!sidebarSource.contains(QStringLiteral("onClicked: function () {\n                    sidebarHierarchyView.requestViewOptions();")));
+}

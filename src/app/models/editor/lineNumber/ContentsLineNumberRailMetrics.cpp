@@ -1,25 +1,24 @@
 #include "app/models/editor/lineNumber/ContentsLineNumberRailMetrics.hpp"
 
-#include <QMetaObject>
-#include <QQuickItem>
 #include <QRectF>
 #include <QSet>
 #include <QVariantMap>
 
 #include <algorithm>
 #include <cmath>
+#include <limits>
 
 namespace
 {
-    struct MeasuredRectangle
-    {
-        QRectF rectangle;
-        bool geometryAvailable = false;
-    };
-
     int boundedOffset(const int offset, const int length) noexcept
     {
         return std::max(0, std::min(offset, std::max(0, length)));
+    }
+
+    int boundedQStringSize(const QString& text) noexcept
+    {
+        constexpr qsizetype maxIntSize = static_cast<qsizetype>(std::numeric_limits<int>::max());
+        return static_cast<int>(std::min<qsizetype>(text.size(), maxIntSize));
     }
 
     int floorNumberOrFallback(const QVariant& value, const int fallback) noexcept
@@ -66,28 +65,6 @@ namespace
         return QStringLiteral("index:%1").arg(fallbackIndex);
     }
 
-    QString sourceTextForBlock(const QVariantMap& block, const QString& sourceText)
-    {
-        if (block.contains(QStringLiteral("sourceText")))
-        {
-            return block.value(QStringLiteral("sourceText")).toString();
-        }
-        if (block.contains(QStringLiteral("plainText")))
-        {
-            return block.value(QStringLiteral("plainText")).toString();
-        }
-
-        const int blockStart = htmlBlockSourceStart(block);
-        const int blockEnd = htmlBlockSourceEnd(block);
-        if (blockStart >= 0 && blockEnd >= blockStart)
-        {
-            return sourceText.mid(
-                boundedOffset(blockStart, sourceText.size()),
-                std::max(0, boundedOffset(blockEnd, sourceText.size()) - boundedOffset(blockStart, sourceText.size())));
-        }
-        return {};
-    }
-
     bool isIiHtmlResourceBlock(const QVariantMap& block)
     {
         const QString kind =
@@ -101,68 +78,24 @@ namespace
             && block.value(QStringLiteral("htmlBlockIsDisplayBlock"), true).toBool();
     }
 
-    QVariant propertyValue(QObject* object, const char* propertyName)
-    {
-        return object != nullptr ? object->property(propertyName) : QVariant();
-    }
-
-    qreal numericProperty(QObject* object, const char* propertyName, const qreal fallback)
-    {
-        bool ok = false;
-        const qreal value = propertyValue(object, propertyName).toReal(&ok);
-        return ok && std::isfinite(value) ? value : fallback;
-    }
-
-    MeasuredRectangle positionRectangle(QObject* object, const int position, const qreal lineHeight)
-    {
-        if (object == nullptr)
-        {
-            return {
-                QRectF(0.0, 0.0, 0.0, std::max<qreal>(1.0, lineHeight)),
-                false,
-            };
-        }
-
-        QRectF rectangle;
-        if (QMetaObject::invokeMethod(
-                object,
-                "positionToRectangle",
-                Q_RETURN_ARG(QRectF, rectangle),
-                Q_ARG(int, std::max(0, position))))
-        {
-            return {rectangle, true};
-        }
-
-        QVariant rectangleValue;
-        if (QMetaObject::invokeMethod(
-                object,
-                "positionToRectangle",
-                Q_RETURN_ARG(QVariant, rectangleValue),
-                Q_ARG(QVariant, QVariant(std::max(0, position)))))
-        {
-            return {rectangleValue.toRectF(), true};
-        }
-
-        return {
-            QRectF(0.0, 0.0, 0.0, std::max<qreal>(1.0, lineHeight)),
-            false,
-        };
-    }
-
-    QPointF mapPoint(QObject* geometryObject, QObject* targetObject, const QPointF& point)
-    {
-        auto* geometryItem = qobject_cast<QQuickItem*>(geometryObject);
-        auto* targetItem = qobject_cast<QQuickItem*>(targetObject);
-        if (geometryItem != nullptr)
-        {
-            return geometryItem->mapToItem(targetItem, point);
-        }
-        return point;
-    }
-
     bool rectangleYCollapsed(const QRectF& rectangle, const qreal fallbackY, const qreal lineHeight, const bool hasPreviousRows) noexcept
     {
         return hasPreviousRows && fallbackY > 0.0 && rectangle.y() < fallbackY - std::max<qreal>(1.0, lineHeight) * 0.25;
+    }
+
+    QRectF rectangleFromRowGeometry(const QVariantMap& rowGeometry, const qreal lineHeight, const qreal width) noexcept
+    {
+        const qreal x = rowGeometry.value(QStringLiteral("x")).toDouble();
+        const qreal y = rowGeometry.value(QStringLiteral("y")).toDouble();
+        const qreal resolvedWidth = rowGeometry.contains(QStringLiteral("width"))
+            ? rowGeometry.value(QStringLiteral("width")).toDouble()
+            : width;
+        const qreal height = rowGeometry.value(QStringLiteral("height")).toDouble();
+        return QRectF(
+            std::isfinite(x) ? x : 0.0,
+            std::isfinite(y) ? y : 0.0,
+            std::max<qreal>(0.0, std::isfinite(resolvedWidth) ? resolvedWidth : width),
+            std::max<qreal>(1.0, std::isfinite(height) ? height : lineHeight));
     }
 } // namespace
 
@@ -233,49 +166,19 @@ void ContentsLineNumberRailMetrics::setLogicalToSourceOffsets(const QVariantList
     emitInputChanged(&ContentsLineNumberRailMetrics::logicalToSourceOffsetsChanged);
 }
 
-QObject* ContentsLineNumberRailMetrics::textGeometryItem() const noexcept
+QVariantList ContentsLineNumberRailMetrics::geometryRows() const
 {
-    return m_textGeometryItem.data();
+    return m_geometryRows;
 }
 
-void ContentsLineNumberRailMetrics::setTextGeometryItem(QObject* value)
+void ContentsLineNumberRailMetrics::setGeometryRows(const QVariantList& value)
 {
-    if (m_textGeometryItem == value)
+    if (m_geometryRows == value)
     {
         return;
     }
-    m_textGeometryItem = value;
-    emitInputChanged(&ContentsLineNumberRailMetrics::textGeometryItemChanged);
-}
-
-QObject* ContentsLineNumberRailMetrics::resourceGeometryItem() const noexcept
-{
-    return m_resourceGeometryItem.data();
-}
-
-void ContentsLineNumberRailMetrics::setResourceGeometryItem(QObject* value)
-{
-    if (m_resourceGeometryItem == value)
-    {
-        return;
-    }
-    m_resourceGeometryItem = value;
-    emitInputChanged(&ContentsLineNumberRailMetrics::resourceGeometryItemChanged);
-}
-
-QObject* ContentsLineNumberRailMetrics::targetItem() const noexcept
-{
-    return m_targetItem.data();
-}
-
-void ContentsLineNumberRailMetrics::setTargetItem(QObject* value)
-{
-    if (m_targetItem == value)
-    {
-        return;
-    }
-    m_targetItem = value;
-    emitInputChanged(&ContentsLineNumberRailMetrics::targetItemChanged);
+    m_geometryRows = value;
+    emitInputChanged(&ContentsLineNumberRailMetrics::geometryRowsChanged);
 }
 
 qreal ContentsLineNumberRailMetrics::textLineHeight() const noexcept
@@ -328,6 +231,37 @@ void ContentsLineNumberRailMetrics::setDisplayContentHeight(const qreal value)
 
 QVariantList ContentsLineNumberRailMetrics::logicalLineRanges() const
 {
+    const auto sourceOffsetToLogicalOffset = [this](const int sourceOffset, const bool preferAfter) {
+        if (m_logicalToSourceOffsets.isEmpty())
+        {
+            return boundedOffset(sourceOffset, m_sourceText.size());
+        }
+
+        const int boundedSourceOffset = boundedOffset(sourceOffset, m_sourceText.size());
+        if (preferAfter)
+        {
+            for (int index = 0; index < m_logicalToSourceOffsets.size(); ++index)
+            {
+                const int candidate = floorNumberOrFallback(m_logicalToSourceOffsets.at(index), -1);
+                if (candidate >= boundedSourceOffset)
+                {
+                    return index;
+                }
+            }
+            return std::max(0, static_cast<int>(m_logicalToSourceOffsets.size()) - 1);
+        }
+
+        for (int index = m_logicalToSourceOffsets.size() - 1; index >= 0; --index)
+        {
+            const int candidate = floorNumberOrFallback(m_logicalToSourceOffsets.at(index), -1);
+            if (candidate >= 0 && candidate <= boundedSourceOffset)
+            {
+                return index;
+            }
+        }
+        return 0;
+    };
+
     QVariantList normalizedBlocks;
     QSet<QString> seenKeys;
     for (int index = 0; index < m_normalizedHtmlBlocks.size(); ++index)
@@ -380,32 +314,98 @@ QVariantList ContentsLineNumberRailMetrics::logicalLineRanges() const
             return htmlBlockSourceEnd(leftBlock) < htmlBlockSourceEnd(rightBlock);
         });
 
+    const auto sourceOffsetForLogicalOffset = [this](const int logicalOffset) {
+        if (m_logicalToSourceOffsets.isEmpty())
+        {
+            return boundedOffset(logicalOffset, m_sourceText.size());
+        }
+
+        const int safeLogicalOffset = std::max(0, logicalOffset);
+        if (safeLogicalOffset >= m_logicalToSourceOffsets.size())
+        {
+            return boundedQStringSize(m_sourceText);
+        }
+
+        return boundedOffset(
+            floorNumberOrFallback(m_logicalToSourceOffsets.at(safeLogicalOffset), safeLogicalOffset),
+            m_sourceText.size());
+    };
+
+    const auto resourceBlockForSourceInterval =
+        [&normalizedBlocks, this](const int sourceStart, const int sourceCoverageEnd) {
+            const int safeStart = boundedOffset(sourceStart, m_sourceText.size());
+            const int safeEnd = boundedOffset(std::max(sourceCoverageEnd, sourceStart), m_sourceText.size());
+            for (const QVariant& blockValue : normalizedBlocks)
+            {
+                const QVariantMap block = blockValue.toMap();
+                if (!isIiHtmlResourceBlock(block))
+                {
+                    continue;
+                }
+
+                const int blockStart = boundedOffset(htmlBlockSourceStart(block), m_sourceText.size());
+                const int blockEnd = boundedOffset(std::max(blockStart, htmlBlockSourceEnd(block)), m_sourceText.size());
+                const bool intersectsLine = blockStart < safeEnd && blockEnd > safeStart;
+                const bool startsAtCollapsedLine = safeStart == safeEnd && blockStart == safeStart;
+                if (intersectsLine || startsAtCollapsedLine)
+                {
+                    return block;
+                }
+            }
+            return QVariantMap();
+        };
+
+    const QString logicalText = !m_logicalText.isEmpty() ? m_logicalText : m_sourceText;
     QVariantList ranges;
     int lineNumber = 1;
-    for (const QVariant& blockValue : normalizedBlocks)
+    int lineLogicalStart = 0;
+    while (lineLogicalStart <= logicalText.size())
     {
-        const QVariantMap block = blockValue.toMap();
-        const int safeStart = boundedOffset(htmlBlockSourceStart(block), m_sourceText.size());
-        const int safeEnd = boundedOffset(std::max(safeStart, htmlBlockSourceEnd(block)), m_sourceText.size());
-        const QString blockSource = sourceTextForBlock(block, m_sourceText);
-        const QStringList segments = blockSource.split(QLatin1Char('\n'));
-        const int hint = floorNumberOrFallback(block.value(QStringLiteral("logicalLineCountHint")), 0);
-        const int lineCount = std::max(1, std::max(hint, static_cast<int>(segments.size())));
-        int cursor = safeStart;
-        for (int index = 0; index < lineCount; ++index)
+        const int newlineIndex = logicalText.indexOf(QLatin1Char('\n'), lineLogicalStart);
+        const bool hasNewline = newlineIndex >= 0;
+        const int lineLogicalEnd = hasNewline ? newlineIndex : logicalText.size();
+        const int nextLineLogicalStart = hasNewline ? newlineIndex + 1 : logicalText.size();
+        const int lineSourceStart = sourceOffsetForLogicalOffset(lineLogicalStart);
+        const int lineSourceEnd = sourceOffsetForLogicalOffset(lineLogicalEnd);
+        const int lineSourceCoverageEnd =
+            hasNewline ? sourceOffsetForLogicalOffset(nextLineLogicalStart) : m_sourceText.size();
+        const bool resourceLineEligible =
+            lineLogicalStart == lineLogicalEnd || m_logicalText.isEmpty();
+        const QVariantMap resourceBlock = resourceLineEligible
+            ? resourceBlockForSourceInterval(lineSourceStart, lineSourceCoverageEnd)
+            : QVariantMap();
+        const bool resourceRange = !resourceBlock.isEmpty();
+
+        int rowSourceStart = lineSourceStart;
+        int rowSourceEnd = lineSourceEnd;
+        int rowLogicalStart = lineLogicalStart;
+        int rowLogicalEnd = lineLogicalEnd;
+        if (resourceRange)
         {
-            const QString segment = index < segments.size() ? segments.at(index) : QString();
-            const int lineStart = std::min(cursor, safeEnd);
-            const int lineEnd = std::min(lineStart + static_cast<int>(segment.size()), safeEnd);
-            ranges.push_back(QVariantMap{
-                {QStringLiteral("block"), block},
-                {QStringLiteral("number"), lineNumber},
-                {QStringLiteral("sourceEnd"), lineEnd},
-                {QStringLiteral("sourceStart"), lineStart},
-            });
-            cursor = std::min(safeEnd, lineEnd + 1);
-            ++lineNumber;
+            rowSourceStart = htmlBlockSourceStart(resourceBlock);
+            rowSourceEnd = htmlBlockSourceEnd(resourceBlock);
+            rowLogicalStart = sourceOffsetToLogicalOffset(rowSourceStart, false);
+            rowLogicalEnd = std::max(
+                rowLogicalStart + 1,
+                sourceOffsetToLogicalOffset(rowSourceEnd, true));
         }
+
+        ranges.push_back(QVariantMap{
+            {QStringLiteral("block"), resourceBlock},
+            {QStringLiteral("logicalEnd"), rowLogicalEnd},
+            {QStringLiteral("logicalStart"), rowLogicalStart},
+            {QStringLiteral("number"), lineNumber},
+            {QStringLiteral("resourceRange"), resourceRange},
+            {QStringLiteral("sourceEnd"), rowSourceEnd},
+            {QStringLiteral("sourceStart"), rowSourceStart},
+        });
+
+        if (!hasNewline)
+        {
+            break;
+        }
+        lineLogicalStart = nextLineLogicalStart;
+        ++lineNumber;
     }
     return ranges;
 }
@@ -416,109 +416,15 @@ QVariantList ContentsLineNumberRailMetrics::rows() const
     QVariantList result;
     result.reserve(ranges.size());
 
-    const auto sourceOffsetToLogicalOffset = [this](const int sourceOffset, const bool preferAfter) {
-        if (m_logicalToSourceOffsets.isEmpty())
-        {
-            return boundedOffset(sourceOffset, m_sourceText.size());
-        }
-
-        const int boundedSourceOffset = boundedOffset(sourceOffset, m_sourceText.size());
-        if (preferAfter)
-        {
-            for (int index = 0; index < m_logicalToSourceOffsets.size(); ++index)
-            {
-                const int candidate = floorNumberOrFallback(m_logicalToSourceOffsets.at(index), -1);
-                if (candidate >= boundedSourceOffset)
-                {
-                    return index;
-                }
-            }
-            return std::max(0, static_cast<int>(m_logicalToSourceOffsets.size()) - 1);
-        }
-
-        for (int index = m_logicalToSourceOffsets.size() - 1; index >= 0; --index)
-        {
-            const int candidate = floorNumberOrFallback(m_logicalToSourceOffsets.at(index), -1);
-            if (candidate >= 0 && candidate <= boundedSourceOffset)
-            {
-                return index;
-            }
-        }
-        return 0;
-    };
-
-    const auto displayRectangleForLogicalRange =
-        [this](QObject* geometryObject, const int logicalStart, const int logicalEnd) {
-            const int itemLength =
-                std::max(0,
-                         floorNumberOrFallback(
-                             propertyValue(geometryObject, "length"),
-                             m_logicalText.size()));
-            const int safeStart = boundedOffset(logicalStart, itemLength);
-            const int safeEnd = std::max(safeStart, boundedOffset(logicalEnd, itemLength));
-            const MeasuredRectangle startMeasurement =
-                positionRectangle(geometryObject, safeStart, m_textLineHeight);
-            const MeasuredRectangle endMeasurement =
-                positionRectangle(geometryObject, std::max(safeStart, std::min(std::max(0, safeEnd - 1), itemLength)), m_textLineHeight);
-            const QRectF startRectangle = startMeasurement.rectangle;
-            const QRectF endRectangle = endMeasurement.rectangle;
-            const QPointF startPoint =
-                mapPoint(geometryObject, m_targetItem.data(), startRectangle.topLeft());
-            const QPointF endPoint =
-                mapPoint(geometryObject, m_targetItem.data(), endRectangle.topLeft());
-            const qreal height =
-                std::max(m_textLineHeight,
-                         endPoint.y() + std::max(m_textLineHeight, endRectangle.height()) - startPoint.y());
-            return MeasuredRectangle{
-                QRectF(startPoint.x(), startPoint.y(), std::max<qreal>(0.0, m_geometryWidth), height),
-                startMeasurement.geometryAvailable || endMeasurement.geometryAvailable,
-            };
-        };
-
     qreal fallbackNextY = 0.0;
-    for (const QVariant& rangeValue : ranges)
+    for (int index = 0; index < ranges.size(); ++index)
     {
-        const QVariantMap range = rangeValue.toMap();
-        const QVariantMap block = range.value(QStringLiteral("block")).toMap();
-        MeasuredRectangle measurement;
-        if (isIiHtmlResourceBlock(block) && m_resourceGeometryItem != nullptr)
-        {
-            const int blockStart = htmlBlockSourceStart(block);
-            const int blockEnd = htmlBlockSourceEnd(block);
-            const int logicalStart = sourceOffsetToLogicalOffset(blockStart, false);
-            const int logicalEnd = std::max(
-                logicalStart + 1,
-                sourceOffsetToLogicalOffset(blockEnd, true));
-            measurement = displayRectangleForLogicalRange(
-                m_resourceGeometryItem.data(),
-                logicalStart,
-                logicalEnd);
-            QRectF rectangle = measurement.rectangle;
-
-            const qreal contentHeight =
-                numericProperty(m_resourceGeometryItem.data(), "contentHeight", rectangle.bottom());
-            if (rectangle.height() <= m_textLineHeight && contentHeight > rectangle.y())
-            {
-                rectangle.setHeight(std::max(m_textLineHeight, contentHeight - rectangle.y()));
-            }
-            measurement.rectangle = rectangle;
-        }
-        else
-        {
-            const int sourceStart = range.value(QStringLiteral("sourceStart")).toInt();
-            const int sourceEnd = range.value(QStringLiteral("sourceEnd")).toInt();
-            const int logicalStart = sourceOffsetToLogicalOffset(sourceStart, false);
-            const int logicalEnd = std::max(
-                logicalStart,
-                sourceOffsetToLogicalOffset(std::max(sourceStart, sourceEnd), true));
-            measurement = displayRectangleForLogicalRange(
-                m_textGeometryItem.data(),
-                logicalStart,
-                logicalEnd);
-        }
-
-        QRectF rectangle = measurement.rectangle;
-        if (!measurement.geometryAvailable
+        const QVariantMap range = ranges.at(index).toMap();
+        const QVariantMap rowGeometry =
+            index < m_geometryRows.size() ? m_geometryRows.at(index).toMap() : QVariantMap();
+        QRectF rectangle = rectangleFromRowGeometry(rowGeometry, m_textLineHeight, m_geometryWidth);
+        const bool geometryAvailable = rowGeometry.value(QStringLiteral("geometryAvailable"), false).toBool();
+        if (!geometryAvailable
             || rectangleYCollapsed(rectangle, fallbackNextY, m_textLineHeight, !result.isEmpty()))
         {
             rectangle.moveTop(fallbackNextY);
@@ -556,5 +462,6 @@ void ContentsLineNumberRailMetrics::requestRowsRefresh()
 void ContentsLineNumberRailMetrics::emitInputChanged(void (ContentsLineNumberRailMetrics::*signal)())
 {
     emit (this->*signal)();
+    emit logicalLineRangesChanged();
     emit rowsChanged();
 }

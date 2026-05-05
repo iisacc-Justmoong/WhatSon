@@ -702,25 +702,35 @@ Item {
 
     ContentsEditorVisualLineMetrics {
         id: visualLineMetrics
+    }
 
+    ContentsEditorGeometryProvider {
+        id: editorGeometryProvider
+
+        fallbackLineHeight: LV.Theme.textBodyLineHeight
         fallbackWidth: control.width
-        lineHeight: LV.Theme.textBodyLineHeight
-        strokeThin: LV.Theme.strokeThin
-        textContentHeight: visualLineMetrics.textItem !== null
-                           && visualLineMetrics.textItem !== undefined
-                           && visualLineMetrics.textItem.contentHeight !== undefined
-                ? visualLineMetrics.textItem.contentHeight
+        lineNumberRanges: lineNumberRailMetrics.logicalLineRanges
+        logicalLength: control.displayGeometryText.length
+        resourceItem: renderedOverlay
+        targetItem: control
+        textItem: control.displayGeometryItem()
+        visualItem: control.renderedOverlayVisible ? renderedOverlay : textInput.editorItem
+        visualLineHeight: LV.Theme.textBodyLineHeight
+        visualStrokeThin: LV.Theme.strokeThin
+        visualTextContentHeight: editorGeometryProvider.visualItem !== null
+                                 && editorGeometryProvider.visualItem !== undefined
+                                 && editorGeometryProvider.visualItem.contentHeight !== undefined
+                ? editorGeometryProvider.visualItem.contentHeight
                 : LV.Theme.gapNone
-        textItem: control.renderedOverlayVisible ? renderedOverlay : textInput.editorItem
-        textLineCount: visualLineMetrics.textItem !== null
-                       && visualLineMetrics.textItem !== undefined
-                       && visualLineMetrics.textItem.lineCount !== undefined
-                ? visualLineMetrics.textItem.lineCount
+        visualTextLineCount: editorGeometryProvider.visualItem !== null
+                             && editorGeometryProvider.visualItem !== undefined
+                             && editorGeometryProvider.visualItem.lineCount !== undefined
+                ? editorGeometryProvider.visualItem.lineCount
                 : LV.Theme.gapNone
-        textWidth: visualLineMetrics.textItem !== null
-                   && visualLineMetrics.textItem !== undefined
-                   && visualLineMetrics.textItem.width !== undefined
-                ? visualLineMetrics.textItem.width
+        visualTextWidth: editorGeometryProvider.visualItem !== null
+                         && editorGeometryProvider.visualItem !== undefined
+                         && editorGeometryProvider.visualItem.width !== undefined
+                ? editorGeometryProvider.visualItem.width
                 : LV.Theme.gapNone
     }
 
@@ -732,11 +742,26 @@ Item {
         logicalText: control.displayGeometryText
         logicalToSourceOffsets: control.logicalToSourceOffsets
         normalizedHtmlBlocks: control.normalizedHtmlBlocks
-        resourceGeometryItem: renderedOverlay
         sourceText: textInput.text
-        targetItem: control
-        textGeometryItem: control.displayGeometryItem()
         textLineHeight: LV.Theme.textBodyLineHeight
+    }
+
+    Binding {
+        property: "measuredLineWidthRatios"
+        target: visualLineMetrics
+        value: editorGeometryProvider.visualLineWidthRatios
+    }
+
+    Binding {
+        property: "measuredVisualLineCount"
+        target: visualLineMetrics
+        value: editorGeometryProvider.visualLineCount
+    }
+
+    Binding {
+        property: "geometryRows"
+        target: lineNumberRailMetrics
+        value: editorGeometryProvider.lineNumberGeometryRows
     }
 
     TextEdit {

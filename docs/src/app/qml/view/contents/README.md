@@ -26,8 +26,9 @@ It merges the standalone Figma contents-surface artifacts and the runtime editor
   those models with visible TextEdit geometry and primitive LVRS token values, then feed `Minimap.qml` with matching
   per-row width ratios and viewport scroll ratios.
 - Runtime editor gutters are view-only QML chrome. They receive logical-line rows from
-  `ContentsLineNumberRailMetrics`, a C++ editor model that consumes structured projection metadata and view geometry.
-  The rail must remain inside the body viewport rather than becoming a detached overlay.
+  `ContentsLineNumberRailMetrics`, a C++ editor model that consumes full logical text, structured projection metadata,
+  and measured geometry snapshots. The rail must remain inside the body viewport rather than becoming a detached
+  overlay.
 - `ContentsDisplayView.qml` imports the parent `view/contents` directory as `ContentsChrome` and reuses
   `Minimap.qml` from this namespace.
 

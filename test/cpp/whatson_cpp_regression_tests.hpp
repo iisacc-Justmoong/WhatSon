@@ -5,6 +5,7 @@
 #include "app/models/editor/format/ContentsInlineStyleOverlayRenderer.hpp"
 #include "app/models/editor/format/ContentsPlainTextSourceMutator.hpp"
 #include "app/models/editor/format/ContentsTextFormatRenderer.hpp"
+#include "app/models/editor/geometry/ContentsEditorGeometryProvider.hpp"
 #include "app/models/editor/lineNumber/ContentsLineNumberRailMetrics.hpp"
 #include "app/models/editor/minimap/ContentsEditorVisualLineMetrics.hpp"
 #include "app/models/editor/tags/ContentsEditorTagInsertionController.hpp"
@@ -1000,6 +1001,7 @@ private slots:
     void foldersHierarchySessionService_preservesEscapedLiteralSlashFolderPaths();
     void sidebarHierarchyRenameController_preservesLiteralSlashFolderLabels();
     void sidebarHierarchyView_bindsInlineHelperDependenciesAtStartup();
+    void sidebarHierarchyView_routesFooterActionsThroughListFooterSignal();
     void resourcesHierarchyController_defaultsSelectionToImageAndFiltersList();
     void resourcesHierarchyController_collapsesMultiDotImageFormatsIntoTerminalSuffix();
     void structuredCollectionPolicy_normalizesEntriesAndPrefersResolvedMatches();
@@ -1031,6 +1033,7 @@ private slots:
     void qmlStructuredEditors_refreshesDocumentProjectionOnEditorOpen();
     void qmlStructuredEditors_mountsEditorAndMinimapInDisplayLayout();
     void contentsLineNumberRailMetrics_buildsRowsFromLogicalBlocks();
+    void contentsLineNumberRailMetrics_mapsRowsFromWholeLogicalText();
     void contentsEditorVisualLineMetrics_expandsTallVisualBlocks();
     void contentsMinimapLayoutMetrics_resolvesRuntimeVisibilityAndDesignRows();
     void qmlStructuredEditors_rejectStaleSourceRangeMutations();

@@ -9,6 +9,7 @@
 #include "app/models/editor/format/ContentsInlineStyleOverlayRenderer.hpp"
 #include "app/models/editor/format/ContentsPlainTextSourceMutator.hpp"
 #include "app/models/editor/format/ContentsTextFormatRenderer.hpp"
+#include "app/models/editor/geometry/ContentsEditorGeometryProvider.hpp"
 #include "app/models/editor/lineNumber/ContentsLineNumberRailMetrics.hpp"
 #include "app/models/editor/minimap/ContentsEditorVisualLineMetrics.hpp"
 #include "app/models/editor/minimap/ContentsMinimapLayoutMetrics.hpp"
@@ -92,6 +93,8 @@ namespace
                 QStringLiteral("ContentsMinimapLayoutMetrics")),
             whatsonInternalCreatableType<ContentsEditorVisualLineMetrics>(
                 QStringLiteral("ContentsEditorVisualLineMetrics")),
+            whatsonInternalCreatableType<ContentsEditorGeometryProvider>(
+                QStringLiteral("ContentsEditorGeometryProvider")),
             whatsonInternalCreatableType<ContentsLineNumberRailMetrics>(
                 QStringLiteral("ContentsLineNumberRailMetrics")),
             whatsonInternalCreatableType<ContentsResourceTagTextGenerator>(

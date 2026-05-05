@@ -111,6 +111,10 @@ These signals make the file a reusable visual surface instead of a hard-coded on
 ## Footer View Options
 
 - The right-most `LV.ListFooter` menu button now opens a dedicated `LV.ContextMenu` anchored from the footer edge.
+- The `LV.ListFooter` buttons are routed through `onButtonClicked` and `handleHierarchyFooterButtonClicked(...)`.
+  Footer button configs carry data-only `eventName` values instead of owning the action callbacks themselves. This keeps
+  the hierarchy action dispatch on the sidebar view side and avoids losing create/delete/options behavior when LVRS
+  normalizes or rebinds the footer slot objects.
 - The compact footer/menu metrics now route through `LV.Theme.gap2`, `LV.Theme.gap4`, and named token compositions
   (`144`, `78`, `24`) instead of fixed sidebar-local pixel literals, so mobile/desktop LVRS scale stays consistent.
 - That menu exposes `Expand All` and `Collapse All` actions in English, which matches the repository rule that

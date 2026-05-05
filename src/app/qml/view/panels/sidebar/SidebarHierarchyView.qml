@@ -360,6 +360,20 @@ Rectangle {
     function handleHierarchyViewOptionsTrigger(index, eventName) {
         sidebarHierarchyView.requestHierarchyViewOptionsAction(index, eventName);
     }
+    function handleHierarchyFooterButtonClicked(index, config) {
+        const normalizedEventName = config && config.eventName !== undefined && config.eventName !== null ? String(config.eventName).trim() : "";
+        const normalizedIndex = sidebarHierarchyView.normalizedInteger(index, -1);
+        if (normalizedEventName === "hierarchy.footer.create" || normalizedIndex === 0) {
+            sidebarHierarchyView.requestCreateFolder();
+            return;
+        }
+        if (normalizedEventName === "hierarchy.footer.delete" || normalizedIndex === 1) {
+            sidebarHierarchyView.requestDeleteFolder();
+            return;
+        }
+        if (normalizedEventName === "hierarchy.footer.options" || normalizedIndex === 2)
+            sidebarHierarchyView.requestViewOptions();
+    }
     function hierarchyViewOptionsActionName(index, eventName) {
         const normalizedEventName = eventName === undefined || eventName === null ? "" : String(eventName).trim();
         if (normalizedEventName === "hierarchy.expandAll" || normalizedEventName === "hierarchy.collapseAll")
@@ -2089,10 +2103,8 @@ Rectangle {
                 backgroundColorHover: LV.Theme.accentTransparent,
                 backgroundColorPressed: LV.Theme.accentTransparent,
                 enabled: sidebarHierarchyView.createFolderEnabled,
+                eventName: "hierarchy.footer.create",
                 horizontalPadding: sidebarHierarchyView.hierarchyCompactInset,
-                onClicked: function () {
-                    sidebarHierarchyView.requestCreateFolder();
-                },
                 verticalPadding: sidebarHierarchyView.hierarchyCompactInset
             })
         button2: ({
@@ -2103,10 +2115,8 @@ Rectangle {
                 backgroundColorHover: LV.Theme.accentTransparent,
                 backgroundColorPressed: LV.Theme.accentTransparent,
                 enabled: sidebarHierarchyView.deleteFolderEnabled,
+                eventName: "hierarchy.footer.delete",
                 horizontalPadding: sidebarHierarchyView.hierarchyCompactInset,
-                onClicked: function () {
-                    sidebarHierarchyView.requestDeleteFolder();
-                },
                 verticalPadding: sidebarHierarchyView.hierarchyCompactInset
             })
         button3: ({
@@ -2117,10 +2127,8 @@ Rectangle {
                 backgroundColorHover: LV.Theme.accentTransparent,
                 backgroundColorPressed: LV.Theme.accentTransparent,
                 enabled: sidebarHierarchyView.viewOptionsEnabled,
+                eventName: "hierarchy.footer.options",
                 leftPadding: sidebarHierarchyView.hierarchyCompactInset,
-                onClicked: function () {
-                    sidebarHierarchyView.requestViewOptions();
-                },
                 rightPadding: LV.Theme.gap4,
                 topPadding: sidebarHierarchyView.hierarchyCompactInset,
                 bottomPadding: sidebarHierarchyView.hierarchyCompactInset
@@ -2132,6 +2140,10 @@ Rectangle {
         visible: sidebarHierarchyView.footerVisible
         width: sidebarHierarchyView.hierarchyCompactFooterWidth
         z: 2
+
+        onButtonClicked: function (index, config) {
+            sidebarHierarchyView.handleHierarchyFooterButtonClicked(index, config);
+        }
     }
     DropArea {
         id: noteDropSurface

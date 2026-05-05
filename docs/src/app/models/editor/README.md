@@ -9,6 +9,7 @@
 - `diagnostics`
 - `display`
 - `format`
+- `geometry`
 - `input`
 - `lineNumber`
 - `minimap`
@@ -41,16 +42,20 @@
   wrapping.
 - `structure/ContentsStructuredDocument*` owns the structured document host, collection policy, focus policy, mutation
   policy, and blocks model used by `ContentsStructuredDocumentFlow.qml`.
-- `minimap/ContentsEditorVisualLineMetrics.*` owns the live editor surface's post-wrap visual line count and per-row
-  width ratio measurement. QML supplies the visible TextEdit object and primitive geometry values only.
+- `minimap/ContentsEditorVisualLineMetrics.*` owns minimap-facing visual-line row normalization from measured
+  snapshots. It does not hold TextEdit, cursor, selection, or QQuickItem references.
 - `minimap/ContentsMinimapLayoutMetrics.*` owns minimap width, row-count, and visibility-to-width calculations that
   used to live in QML. Runtime row count is supplied by `ContentsEditorVisualLineMetrics`, not by parser logical-line
   metadata.
 - Minimap model code must remain a direct editor-domain chrome model slice under `src/app/models/editor/minimap`.
   Do not reintroduce `src/app/models/minimap` or nested `src/app/models/editor/display/minimap` directories.
-- `lineNumber/ContentsLineNumberRailMetrics.*` owns logical line-number rail row construction. QML passes view-owned
-  TextEdit geometry objects and projection metadata; C++ de-duplicates blocks, counts logical lines, maps source to
-  visible logical offsets, and publishes row y/height values.
+- `lineNumber/ContentsLineNumberRailMetrics.*` owns logical line-number rail row construction. QML passes projection
+  metadata and measured row-geometry snapshots; C++ splits rows from the full logical text projection, maps those
+  logical lines back to RAW source offsets, and publishes row y/height values without touching cursor, selection,
+  TextEdit, or overlay objects.
+- `geometry/ContentsEditorGeometryProvider.*` is the editor-surface geometry adapter. It is the only line-number/minimap
+  path allowed to inspect view-owned TextEdit/resource items, and publishes measured snapshot values so gutter and
+  minimap metrics remain independent model objects.
 - `display/ContentsDisplay*` owns editor-host display coordination for selection, context menus, mount plans, refresh
   plans, and viewport math.
 - Local RAW editor-source writes converge through
@@ -68,6 +73,6 @@
 
 - 대상: ``src/app/models/editor`` (`docs/src/app/models/editor/README.md`)
 - 위치: `docs/src/app/models/editor`
-- 역할: 이 파일은 해당 디렉터리나 모듈의 구조, 책임, 운영 규칙, 검증 기준을 설명한다. 미니맵 계산은 `minimap` 하위 모델이 담당하며, 런타임 행 수와 행별 폭 ratio는 parser 논리 줄이나 QML 계산이 아니라 C++ `ContentsEditorVisualLineMetrics`가 실제 표시 텍스트 지오메트리에서 측정한다. 줄 번호 rail의 논리 줄 분할과 y/height row 생성은 `lineNumber` 하위 모델이 담당한다. `src/app/models/minimap`, `src/app/models/editor/display/minimap`는 재도입하지 않는다.
+- 역할: 이 파일은 해당 디렉터리나 모듈의 구조, 책임, 운영 규칙, 검증 기준을 설명한다. 미니맵 계산은 `minimap` 하위 모델이 담당하며, 런타임 행 수와 행별 폭 ratio는 parser 논리 줄이나 QML 계산이 아니라 `geometry/ContentsEditorGeometryProvider`가 만든 측정 snapshot에서 들어온다. 줄 번호 rail의 논리 줄 분할은 전체 `logicalText` projection을 기준으로 `lineNumber` 하위 모델이 담당하고, y/height row 생성은 geometry snapshot만 소비한다. TextEdit/resource 지오메트리 접근은 geometry adapter 뒤로 격리한다. `src/app/models/minimap`, `src/app/models/editor/display/minimap`는 재도입하지 않는다.
 - 기준: 파일 경로, 명령, API 이름, 세부 변경 이력은 위 영어 본문을 원문 기준으로 유지한다.
 - 변경 시: 위 영어 본문을 수정하면 이 한국어 하단 섹션도 함께 최신 상태로 맞춘다.

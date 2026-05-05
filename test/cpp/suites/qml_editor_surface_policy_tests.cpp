@@ -14,6 +14,7 @@ void WhatSonCppRegressionTests::qmlInternalTypeRegistrar_usesLvrsManifestRegistr
     QVERIFY(registrarSource.contains(QStringLiteral("ContentsStructuredBlockRenderer")));
     QVERIFY(registrarSource.contains(QStringLiteral("ContentsMinimapLayoutMetrics")));
     QVERIFY(registrarSource.contains(QStringLiteral("ContentsEditorVisualLineMetrics")));
+    QVERIFY(registrarSource.contains(QStringLiteral("ContentsEditorGeometryProvider")));
     QVERIFY(registrarSource.contains(QStringLiteral("ContentsLineNumberRailMetrics")));
     QVERIFY(registrarSource.contains(QStringLiteral("ContentsEditorTagInsertionController")));
 }

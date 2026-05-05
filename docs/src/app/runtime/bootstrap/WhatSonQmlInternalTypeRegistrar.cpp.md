@@ -7,9 +7,10 @@ then registers that manifest through LVRS `QmlTypeRegistrar`.
 ## Registered Bridges
 - Editor/document bridges such as `ContentsEditorSelectionBridge`, `ContentsEditorSessionController`,
   `ContentsLogicalTextBridge`, and the structured-document support types.
-- Editor chrome calculators such as `ContentsEditorVisualLineMetrics`, `ContentsMinimapLayoutMetrics`, and
-  `ContentsLineNumberRailMetrics`, so minimap measurement, minimap arithmetic, and line-number row construction stay
-  in C++ model objects while QML only binds view inputs and resolved values.
+- Editor chrome calculators and adapters such as `ContentsEditorVisualLineMetrics`, `ContentsMinimapLayoutMetrics`,
+  `ContentsEditorGeometryProvider`, and `ContentsLineNumberRailMetrics`, so minimap measurement, minimap arithmetic,
+  view-geometry adaptation, and line-number row construction stay in C++ model objects while QML only binds view inputs
+  and resolved values.
 - Content-surface helpers from `src/app/models/content/mobile` plus editor-domain helpers from
   `src/app/models/editor/display` and `src/app/models/editor/structure`, so runtime bootstrap resolves the real
   model-domain paths instead of relying on flattened legacy include aliases.

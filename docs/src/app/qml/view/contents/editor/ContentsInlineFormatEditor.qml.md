@@ -44,15 +44,17 @@ Wraps the live `LV.TextEditor` used by the note document surface.
   testing and projected caret placement.
 - Reports `displayContentHeight` from the actual RichText overlay while rendered output is visible so the scrollable
   editor viewport follows the rendered body height.
-- Mounts `ContentsEditorVisualLineMetrics` as the C++ owner of visible line measurement for the minimap. QML binds the
-  currently visible TextEdit object and primitive geometry inputs into that object, then exposes its
-  `visualLineCount` and `visualLineWidthRatios`.
+- Mounts `ContentsEditorGeometryProvider` as the only view-owned geometry adapter for chrome measurements. The adapter
+  receives TextEdit/resource items, measures visible line rows and logical-line row rectangles, then publishes value
+  snapshots.
+- Mounts `ContentsEditorVisualLineMetrics` as the C++ owner of minimap row normalization. It receives measured visual
+  line count and row-width ratios only; it never receives TextEdit, cursor, selection, or resource overlay objects.
 - Mounts `ContentsLineNumberRailMetrics` as the C++ owner of logical line-number row construction. The inline editor
-  binds source/projection inputs and TextEdit geometry objects into that C++ object, then exposes
-  `logicalGutterRows` from its resolved `rows`. The rows count logical lines, not visual wrap rows; a wrapped paragraph
-  contributes one row whose height covers all wrapped visual rows, while resource frames contribute one row with the
-  rendered frame height. Row y values are produced by C++ and validated there so later line numbers cannot collapse
-  onto the first line's y position.
+  binds source/projection inputs and measured geometry rows into the metrics object, then exposes `logicalGutterRows`
+  from its resolved `rows`. The rows count logical lines, not visual wrap rows; a wrapped paragraph contributes one row
+  whose height covers all wrapped visual rows, while resource frames contribute one row with the rendered frame height.
+  Row y values are produced by C++ and validated there so later line numbers cannot collapse onto the first line's y
+  position. The metrics object never receives TextEdit, cursor, selection, or resource overlay objects directly.
 - When iiHtmlBlock resource spans are present, the rendered overlay is pinned even during composition so ordinary
   typing cannot expose the RAW `<resource ... />` tag while the renderer catches up.
 - `textEdited(text)` reports plain RAW text upward.

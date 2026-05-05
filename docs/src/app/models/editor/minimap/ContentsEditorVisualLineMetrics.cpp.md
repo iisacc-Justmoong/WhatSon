@@ -2,16 +2,14 @@
 
 ## Role
 
-Implements visible editor line measurement for minimap rows.
+Implements visual-line snapshot normalization for minimap rows.
 
 ## Calculation Rules
 
-- `visualLineCount` is the greater of the live TextEdit line count and `contentHeight / lineHeight`.
-- `visualLineWidthRatios` probes each visible text row with TextEdit `positionAt(...)` and
-  `positionToRectangle(...)`, then normalizes measured row width against the editor column width.
-- Height-derived rows that cannot be probed from real text geometry default to full-width minimap rows.
-- All numeric inputs are clamped before use so transient QML geometry changes cannot collapse the minimap to zero
-  rows.
+- `visualLineCount` is the greater of the measured count and the number of measured width-ratio entries.
+- `visualLineWidthRatios` clamps supplied measured ratios into `[0, 1]`.
+- Rows without measured ratios default to full-width minimap rows.
+- No TextEdit/QQuickItem methods are called from this object.
 
 ## Verification
 

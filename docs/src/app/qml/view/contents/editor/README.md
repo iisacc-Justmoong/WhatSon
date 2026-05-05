@@ -18,7 +18,8 @@ Editor-facing QML view components for the center content surface.
 
 - `ContentsDisplayView.qml` mounts the selected note RAW body into `ContentsEditorSessionController`.
 - `ContentsEditorPresentationProjection` converts that RAW body into editor HTML plus renderer-owned block metadata.
-- `ContentsEditorVisualLineMetrics` measures visible editor lines for the minimap, and
+- `ContentsEditorGeometryProvider` measures visible editor geometry for chrome snapshots,
+  `ContentsEditorVisualLineMetrics` normalizes measured visual-line snapshots for the minimap, and
   `ContentsMinimapLayoutMetrics` resolves minimap chrome metrics under `src/app/models/editor/minimap`.
 - `ContentsDisplayView.qml` owns the visible editor chrome layout and composes the parent `view/contents` minimap with
   `ContentsStructuredDocumentFlow.qml` in one `LV.HStack`.
@@ -36,19 +37,21 @@ Editor-facing QML view components for the center content surface.
 - The center document slot owns a vertical `Flickable` viewport around `ContentsStructuredDocumentFlow.qml`; long note
   bodies scroll inside that viewport.
 - The gutter row list is driven by `ContentsStructuredDocumentFlow.editorLogicalGutterRows`, which is resolved by the
-  C++ `ContentsLineNumberRailMetrics` object mounted inside `ContentsInlineFormatEditor.qml`. Each gutter row
-  represents one logical source/display block line. Wrapped text does not increment the number count, but the row
-  height is measured from the live editor geometry so a long paragraph that wraps onto three visible lines gives one
-  numbered gutter row with three visible lines of height. Atomic resource frames count as one logical row while using
-  the rendered frame height.
-- The minimap row count is driven by `ContentsStructuredDocumentFlow.editorVisualLineCount`, which comes from the C++
-  `ContentsEditorVisualLineMetrics` object measuring the live wrapped editor surface. A single source tag or paragraph
-  that wraps onto two visible editor lines therefore produces two minimap rows. Tall rendered blocks such as resource
-  frames use their visible content height divided by the editor line height, so their minimap footprint follows the
-  amount of vertical space they occupy.
+  C++ `ContentsLineNumberRailMetrics` object mounted inside `ContentsInlineFormatEditor.qml`. The metrics object
+  receives measured row-geometry snapshots from `ContentsEditorGeometryProvider` instead of direct TextEdit, cursor,
+  selection, or resource overlay references. Each gutter row represents one full-document logical text line, including
+  blank lines introduced between hidden RAW tags. Wrapped text does not increment the number count, but the row height
+  is measured from the live editor geometry so a long paragraph that wraps onto three visible lines gives one numbered
+  gutter row with three visible lines of height. Atomic resource frames count as one logical row while using the
+  rendered frame height.
+- The minimap row count is driven by `ContentsStructuredDocumentFlow.editorVisualLineCount`, which comes from measured
+  visual-line snapshots normalized by the C++ `ContentsEditorVisualLineMetrics` object. A single source tag or
+  paragraph that wraps onto two visible editor lines therefore produces two minimap rows. Tall rendered blocks such as
+  resource frames use their visible content height divided by the editor line height, so their minimap footprint
+  follows the amount of vertical space they occupy.
 - The minimap row widths are driven by `ContentsStructuredDocumentFlow.editorVisualLineWidthRatios`. Text rows use the
-  visible line length measured from editor text geometry by `ContentsEditorVisualLineMetrics`; height-derived rows that
-  cannot be probed from text geometry remain full width.
+  visible line length measured by `ContentsEditorGeometryProvider` and normalized by `ContentsEditorVisualLineMetrics`;
+  height-derived rows that cannot be probed from text geometry remain full width.
 - The minimap can be dragged vertically as a compact scrollbar. `Minimap.qml` emits normalized scroll ratios and
   `ContentsDisplayView.qml` maps those ratios onto the center editor `Flickable.contentY`.
 - `ContentsInlineFormatEditor.qml` keeps editing on an `LV.TextEditor` plain-text buffer while displaying the read-side
@@ -92,12 +95,15 @@ source mutation policy remain in C++ model/renderer objects.
 - cursor: RichText overlay가 보이는 동안에는 논리 텍스트 좌표 기반의 표면 커서만 overlay 위에 그리고, 아래의
   네이티브 RAW 커서 delegate는 숨긴다.
 - top inset: 본문 편집기와 overlay의 상단 inset/padding은 0으로 유지하여 첫 줄이 문서 슬롯 상단에 붙는다.
-- gutter: 거터는 본문과 같은 `Flickable` 콘텐츠 안에 배치하며, 논리 줄마다 번호 하나를 표시한다. 논리 줄
-  분할과 row y/height 생성은 C++ `ContentsLineNumberRailMetrics`가 담당한다. wrap은 번호를 늘리지 않고
-  해당 번호 행의 높이만 실제 본문 표시 높이만큼 커진다.
+- gutter: 거터는 본문과 같은 `Flickable` 콘텐츠 안에 배치하며, 전체 문서의 논리 줄마다 번호 하나를 표시한다.
+  RAW 태그가 숨겨져도 태그 사이에 남는 빈 논리 줄은 거터 번호 슬롯을 유지한다. 논리 줄 분할과 row y/height
+  생성은 C++ `ContentsLineNumberRailMetrics`가 담당한다. 지오메트리는
+  `ContentsEditorGeometryProvider`가 만든 row snapshot으로만 들어오며, 거터 metrics는
+  TextEdit/cursor/selection/resource overlay 객체에 직접 결합하지 않는다. wrap은 번호를 늘리지 않고 해당
+  번호 행의 높이만 실제 본문 표시 높이만큼 커진다.
 - resource frame: 리소스 프레임은 본문 텍스트 컬럼 폭의 100%로 렌더한다.
-- minimap: 미니맵 행 수는 parser 논리 줄 수가 아니라 `editorVisualLineCount`로 전달되는 실제 에디터 wrap 결과 줄 수를 따른다. 리소스 프레임처럼 별도 높이를 차지하는 블록은 표시 높이를 본문 줄 높이로 나눈 줄 수만큼 미니맵에 반영한다.
-- minimap width: 미니맵 각 행의 폭은 `editorVisualLineWidthRatios`로 전달되는 실제 표시 줄 길이를 따른다. 텍스트 행은 본문에서 보이는 길이에 비례하고, 리소스 프레임 높이에서 파생된 행은 프레임이 본문 폭을 채우므로 full width로 둔다.
+- minimap: 미니맵 행 수는 parser 논리 줄 수가 아니라 geometry adapter가 측정해 `editorVisualLineCount`로 전달되는 실제 에디터 wrap 결과 줄 수를 따른다. 리소스 프레임처럼 별도 높이를 차지하는 블록은 표시 높이를 본문 줄 높이로 나눈 줄 수만큼 미니맵에 반영한다.
+- minimap width: 미니맵 각 행의 폭은 `editorVisualLineWidthRatios`로 전달되는 실제 표시 줄 길이를 따른다. 텍스트 행은 본문에서 보이는 길이에 비례하고, 리소스 프레임 높이에서 파생된 행은 프레임이 본문 폭을 채우므로 full width로 둔다. 미니맵 metrics는 측정된 ratio snapshot만 소비한다.
 - minimap drag: 미니맵은 세로 드래그를 정규화된 scroll ratio로 내보내고, `ContentsDisplayView.qml`이 이를 본문 `Flickable.contentY`로 변환한다.
 - scrolling: 본문 중앙 슬롯은 `Flickable` viewport를 소유하며 긴 노트 본문은 이 viewport 안에서 세로 스크롤된다.
 - pointer: 렌더 overlay가 꺼져 있으면 `LV.TextEditor`의 OS/Qt 선택 경로를 그대로 사용한다. 렌더 overlay가

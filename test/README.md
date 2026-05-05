@@ -177,6 +177,9 @@ ctest --test-dir build --output-on-failure -L cpp_regression
 - Minimap snapshot planning now also pins normalized logical-line snapshot entries in the C++ and QML regression
   suites, so diff planning compares renderer-normalized document lines instead of raw `.wsnbody` newline splits and
   structured notes keep the minimap aligned with the same document model the editor is rendering.
+- Line-number rail metrics now also pin whole-document logical text row mapping, so gutter numbers follow the
+  editor's logical line positions, including blank lines between hidden RAW tags, and consume measured y snapshots
+  instead of spacing numbers by a simple row count.
 - The shared inline-format editor now also pins the absence of pointer interception above the live `LV.TextEditor`,
   so mouse/touch selection, `Shift`-extended selection, and repeated Backspace/Delete remain OS/Qt-native. The same
   regression scans the QML source tree for forbidden input-method bridges and fallbacks, keeping IME query updates,
