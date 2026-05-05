@@ -13,8 +13,8 @@
 ## UI
 - The token-composed host width is assigned by `ContentsView.qml`.
 - The minimap is a clipped column of repeated LVRS hairline rows.
-- Rail width and row-count policy lives in `src/app/models/editor/minimap`; row-specific width ratios are measured by
-  the runtime editor host and rendered here.
+- Rail width, row-count policy, and row-specific width-ratio measurement live in `src/app/models/editor/minimap`;
+  this file renders the values it receives.
 - The default row count is a token-only placeholder. Real design/runtime values are supplied by the host from
   `ContentsMinimapLayoutMetrics`.
 - Runtime editor hosts supply one row per visible wrapped editor line, so a single source tag that wraps across two

@@ -3,6 +3,8 @@
 #include "app/models/editor/input/ContentsInlineFormatEditorController.hpp"
 #include "app/models/editor/format/ContentsInlineStyleOverlayRenderer.hpp"
 #include "app/models/editor/format/ContentsPlainTextSourceMutator.hpp"
+#include "app/models/editor/lineNumber/ContentsLineNumberRailMetrics.hpp"
+#include "app/models/editor/minimap/ContentsEditorVisualLineMetrics.hpp"
 #include "app/models/editor/tags/ContentsEditorTagInsertionController.hpp"
 
 #include <QDir>
@@ -66,6 +68,8 @@ namespace
             qmlRegisterType<ContentsPlainTextSourceMutator>("WhatSon.App.Internal", 1, 0, "ContentsPlainTextSourceMutator");
             qmlRegisterType<ContentsEditorTagInsertionController>("WhatSon.App.Internal", 1, 0, "ContentsEditorTagInsertionController");
             qmlRegisterType<ContentsInlineFormatEditorController>("WhatSon.App.Internal", 1, 0, "ContentsInlineFormatEditorController");
+            qmlRegisterType<ContentsLineNumberRailMetrics>("WhatSon.App.Internal", 1, 0, "ContentsLineNumberRailMetrics");
+            qmlRegisterType<ContentsEditorVisualLineMetrics>("WhatSon.App.Internal", 1, 0, "ContentsEditorVisualLineMetrics");
             return true;
         }();
         Q_UNUSED(registered);
@@ -200,14 +204,24 @@ void WhatSonCppRegressionTests::qmlInlineFormatEditor_projectsVisibleGeometryFro
     QVERIFY(inlineEditorSource.contains(QStringLiteral("? renderedOverlay.contentHeight")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("readonly property int visualLineCount")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("readonly property var visualLineWidthRatios")));
-    QVERIFY(inlineEditorSource.contains(QStringLiteral("readonly property var logicalGutterRows")));
-    QVERIFY(inlineEditorSource.contains(QStringLiteral("function resolvedVisibleLineCount()")));
-    QVERIFY(inlineEditorSource.contains(QStringLiteral("function resolvedVisibleLineWidthRatios()")));
-    QVERIFY(inlineEditorSource.contains(QStringLiteral("function resolvedTextItemLineWidthRatios(textItem)")));
-    QVERIFY(inlineEditorSource.contains(QStringLiteral("function resolvedLogicalGutterRows()")));
-    QVERIFY(inlineEditorSource.contains(QStringLiteral("function normalizedLogicalGutterBlocks()")));
-    QVERIFY(inlineEditorSource.contains(QStringLiteral("function logicalLineSourceRangesForBlock(block)")));
-    QVERIFY(inlineEditorSource.contains(QStringLiteral("function textDisplayRectangleForSourceRange(sourceStart, sourceEnd)")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("readonly property var logicalGutterRows: lineNumberRailMetrics.rows")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("readonly property int visualLineCount: visualLineMetrics.visualLineCount")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("readonly property var visualLineWidthRatios: visualLineMetrics.visualLineWidthRatios")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("ContentsEditorVisualLineMetrics {")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("id: visualLineMetrics")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("ContentsLineNumberRailMetrics {")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("id: lineNumberRailMetrics")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("sourceText: textInput.text")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("logicalText: control.displayGeometryText")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("textGeometryItem: control.displayGeometryItem()")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("resourceGeometryItem: renderedOverlay")));
+    QVERIFY(!inlineEditorSource.contains(QStringLiteral("function resolvedLogicalGutterRows()")));
+    QVERIFY(!inlineEditorSource.contains(QStringLiteral("function normalizedLogicalGutterBlocks()")));
+    QVERIFY(!inlineEditorSource.contains(QStringLiteral("function logicalLineSourceRangesForBlock(block)")));
+    QVERIFY(!inlineEditorSource.contains(QStringLiteral("function textDisplayRectangleForSourceRange(sourceStart, sourceEnd)")));
+    QVERIFY(!inlineEditorSource.contains(QStringLiteral("function resolvedVisibleLineCount()")));
+    QVERIFY(!inlineEditorSource.contains(QStringLiteral("function resolvedVisibleLineWidthRatios()")));
+    QVERIFY(!inlineEditorSource.contains(QStringLiteral("function resolvedTextItemLineWidthRatios(textItem)")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("textFormat: TextEdit.RichText")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("property string displayGeometryText: textInput.text")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("function displayGeometryItem()")));
@@ -547,29 +561,6 @@ Item {
     }
     QVERIFY(foundPartialWidthLine);
 
-    QVariant thickBlockLineCount;
-    QVariantMap thickBlockMetrics;
-    thickBlockMetrics.insert(QStringLiteral("lineCount"), 1);
-    thickBlockMetrics.insert(QStringLiteral("contentHeight"), 10000);
-    QVERIFY(QMetaObject::invokeMethod(
-        inlineEditor,
-        "resolvedTextItemLineCount",
-        Q_RETURN_ARG(QVariant, thickBlockLineCount),
-        Q_ARG(QVariant, thickBlockMetrics)));
-    QVERIFY(thickBlockLineCount.toInt() > 1);
-
-    QVariant thickBlockWidths;
-    QVERIFY(QMetaObject::invokeMethod(
-        inlineEditor,
-        "resolvedTextItemLineWidthRatios",
-        Q_RETURN_ARG(QVariant, thickBlockWidths),
-        Q_ARG(QVariant, thickBlockMetrics)));
-    const QVariantList thickBlockWidthRatios = thickBlockWidths.toList();
-    QVERIFY(thickBlockWidthRatios.size() >= thickBlockLineCount.toInt());
-    for (const QVariant& ratio : thickBlockWidthRatios)
-    {
-        QCOMPARE(ratio.toDouble(), 1.0);
-    }
 }
 
 void WhatSonCppRegressionTests::qmlStructuredDocumentFlow_routesBottomBlankClickToBodyEnd()

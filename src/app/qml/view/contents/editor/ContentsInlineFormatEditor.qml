@@ -38,9 +38,9 @@ Item {
     readonly property int cursorPixelWidth: Math.max(1, Math.ceil(LV.Theme.strokeThin))
     readonly property rect projectedCursorRectangle: control.cursorProjectionRectangle()
     readonly property bool projectedCursorVisible: control.renderedOverlayVisible && control.focused
-    readonly property var logicalGutterRows: control.resolvedLogicalGutterRows()
-    readonly property int visualLineCount: control.resolvedVisibleLineCount()
-    readonly property var visualLineWidthRatios: control.resolvedVisibleLineWidthRatios()
+    readonly property var logicalGutterRows: lineNumberRailMetrics.rows
+    readonly property int visualLineCount: visualLineMetrics.visualLineCount
+    readonly property var visualLineWidthRatios: visualLineMetrics.visualLineWidthRatios
     readonly property bool renderedOverlayAvailable: control.showRenderedOutput
             && control.renderedText.length > 0
     readonly property bool renderedResourceOverlayPinned: control.renderedOverlayAvailable
@@ -106,259 +106,6 @@ Item {
                     mappedPoint.y,
                     control.cursorPixelWidth,
                     Math.max(1, Number(cursorRectangle.height) || LV.Theme.textBodyLineHeight));
-    }
-
-    function resolvedTextItemLineCount(textItem) {
-        if (textItem === null || textItem === undefined)
-            return 1;
-
-        const itemLineCount = Number(textItem.lineCount !== undefined ? textItem.lineCount : 0);
-        const lineCountRows = isFinite(itemLineCount) && itemLineCount > 0
-                ? Math.max(1, Math.ceil(itemLineCount))
-                : 1;
-
-        const itemContentHeight = Number(textItem.contentHeight !== undefined ? textItem.contentHeight : 0);
-        const lineHeight = Math.max(1, Number(LV.Theme.textBodyLineHeight) || Number(LV.Theme.textBody) || 1);
-        if (isFinite(itemContentHeight) && itemContentHeight > 0)
-            return Math.max(lineCountRows, Math.ceil(itemContentHeight / lineHeight));
-
-        return lineCountRows;
-    }
-
-    function resolvedTextItemWidth(textItem) {
-        const itemWidth = Number(textItem && textItem.width !== undefined ? textItem.width : 0);
-        if (isFinite(itemWidth) && itemWidth > 0)
-            return itemWidth;
-        return Math.max(1, Number(control.width) || 1);
-    }
-
-    function resolvedTextItemLineHeight() {
-        return Math.max(1, Number(LV.Theme.textBodyLineHeight) || Number(LV.Theme.textBody) || 1);
-    }
-
-    function resolvedTextItemLineWidthRatios(textItem) {
-        const rowCount = control.resolvedTextItemLineCount(textItem);
-        const ratios = [];
-        if (textItem === null || textItem === undefined) {
-            for (let emptyIndex = 0; emptyIndex < rowCount; ++emptyIndex)
-                ratios.push(1);
-            return ratios;
-        }
-
-        const itemWidth = control.resolvedTextItemWidth(textItem);
-        const lineHeight = control.resolvedTextItemLineHeight();
-        const itemLineCount = Number(textItem.lineCount !== undefined ? textItem.lineCount : 0);
-        const measuredLineRows = isFinite(itemLineCount) && itemLineCount > 0
-                ? Math.max(1, Math.ceil(itemLineCount))
-                : rowCount;
-        const contentHeight = Math.max(
-                    lineHeight,
-                    Number(textItem.contentHeight !== undefined ? textItem.contentHeight : 0) || lineHeight);
-        const minimumRatio = Math.min(1, Math.max(0, (Number(LV.Theme.strokeThin) || 1) / itemWidth));
-        const canMeasureTextLine = textItem.positionAt !== undefined
-                && textItem.positionToRectangle !== undefined;
-
-        for (let rowIndex = 0; rowIndex < rowCount; ++rowIndex) {
-            if (!canMeasureTextLine || rowIndex >= measuredLineRows) {
-                ratios.push(1);
-                continue;
-            }
-
-            const probeY = Math.max(
-                        0,
-                        Math.min(contentHeight - 1, rowIndex * lineHeight + lineHeight / 2));
-            const startOffset = textItem.positionAt(0, probeY);
-            const endOffset = textItem.positionAt(Math.max(0, itemWidth - 1), probeY);
-            const startRectangle = textItem.positionToRectangle(startOffset);
-            const endRectangle = textItem.positionToRectangle(endOffset);
-            const rawWidth = Math.abs((Number(endRectangle.x) || 0) - (Number(startRectangle.x) || 0));
-            const normalizedWidth = Math.max(minimumRatio, Math.min(1, rawWidth / itemWidth));
-            ratios.push(normalizedWidth);
-        }
-        return ratios;
-    }
-
-    function resolvedVisibleLineCount() {
-        return control.resolvedTextItemLineCount(
-                    control.renderedOverlayVisible ? renderedOverlay : textInput.editorItem);
-    }
-
-    function resolvedVisibleLineWidthRatios() {
-        return control.resolvedTextItemLineWidthRatios(
-                    control.renderedOverlayVisible ? renderedOverlay : textInput.editorItem);
-    }
-
-    function htmlBlockStableKey(block, fallbackIndex) {
-        const tokenIndex = Number(block && block.htmlTokenStartIndex !== undefined ? block.htmlTokenStartIndex : -1);
-        if (isFinite(tokenIndex) && tokenIndex >= 0)
-            return "token:" + Math.floor(tokenIndex);
-
-        const blockStart = control.htmlBlockSourceStart(block);
-        const blockEnd = control.htmlBlockSourceEnd(block);
-        if (blockStart >= 0 && blockEnd >= blockStart)
-            return "source:" + blockStart + ":" + blockEnd;
-
-        return "index:" + fallbackIndex;
-    }
-
-    function normalizedLogicalGutterBlocks() {
-        const blocks = control.normalizedHtmlBlocks || [];
-        const normalizedBlocks = [];
-        const seenKeys = ({});
-        for (let index = 0; index < blocks.length; ++index) {
-            const block = blocks[index];
-            if (block === null || block === undefined || typeof block !== "object")
-                continue;
-
-            const blockStart = control.htmlBlockSourceStart(block);
-            const blockEnd = control.htmlBlockSourceEnd(block);
-            if (blockStart < 0 || blockEnd < blockStart)
-                continue;
-
-            const key = control.htmlBlockStableKey(block, index);
-            if (seenKeys[key] === true)
-                continue;
-            seenKeys[key] = true;
-            normalizedBlocks.push(block);
-        }
-
-        if (normalizedBlocks.length > 0) {
-            normalizedBlocks.sort(function (left, right) {
-                const leftStart = control.htmlBlockSourceStart(left);
-                const rightStart = control.htmlBlockSourceStart(right);
-                if (leftStart !== rightStart)
-                    return leftStart - rightStart;
-                return control.htmlBlockSourceEnd(left) - control.htmlBlockSourceEnd(right);
-            });
-            return normalizedBlocks;
-        }
-
-        return [{
-            "logicalLineCountHint": Math.max(1, String(textInput.text || "").split("\n").length),
-            "sourceEnd": textInput.length,
-            "sourceStart": 0,
-            "sourceText": textInput.text
-        }];
-    }
-
-    function sourceTextForGutterBlock(block) {
-        if (block === null || block === undefined || typeof block !== "object")
-            return "";
-        if (block.sourceText !== undefined && block.sourceText !== null)
-            return String(block.sourceText);
-        if (block.plainText !== undefined && block.plainText !== null)
-            return String(block.plainText);
-
-        const blockStart = control.htmlBlockSourceStart(block);
-        const blockEnd = control.htmlBlockSourceEnd(block);
-        if (blockStart >= 0 && blockEnd >= blockStart)
-            return String(textInput.text || "").slice(blockStart, blockEnd);
-        return "";
-    }
-
-    function logicalLineCountForGutterBlock(block, sourceText) {
-        const hint = Number(block && block.logicalLineCountHint !== undefined ? block.logicalLineCountHint : 0);
-        const splitCount = Math.max(1, String(sourceText || "").split("\n").length);
-        return Math.max(splitCount, isFinite(hint) && hint > 0 ? Math.floor(hint) : 1);
-    }
-
-    function logicalLineSourceRangesForBlock(block) {
-        const blockStart = control.htmlBlockSourceStart(block);
-        const blockEnd = control.htmlBlockSourceEnd(block);
-        const safeStart = blockStart >= 0 ? blockStart : 0;
-        const safeEnd = blockEnd >= safeStart ? blockEnd : safeStart;
-        const sourceText = control.sourceTextForGutterBlock(block);
-        const segments = String(sourceText || "").split("\n");
-        const lineCount = control.logicalLineCountForGutterBlock(block, sourceText);
-        const ranges = [];
-        let sourceCursor = safeStart;
-        for (let index = 0; index < lineCount; ++index) {
-            const segment = index < segments.length ? String(segments[index]) : "";
-            const lineStart = Math.min(sourceCursor, safeEnd);
-            const lineEnd = Math.min(lineStart + segment.length, safeEnd);
-            ranges.push({
-                "end": lineEnd,
-                "start": lineStart
-            });
-            sourceCursor = Math.min(safeEnd, lineEnd + 1);
-        }
-        return ranges;
-    }
-
-    function displayRectangleForLogicalRange(logicalStart, logicalEnd) {
-        const geometryItem = control.displayGeometryItem();
-        if (geometryItem === null || geometryItem === undefined
-                || geometryItem.positionToRectangle === undefined) {
-            return Qt.rect(0, 0, control.width, control.resolvedTextItemLineHeight());
-        }
-
-        const maxLength = Math.max(0, Number(geometryItem.length) || 0);
-        const safeStart = Math.max(0, Math.min(Number(logicalStart) || 0, maxLength));
-        const safeEnd = Math.max(safeStart, Math.min(Number(logicalEnd) || safeStart, maxLength));
-        const startRectangle = geometryItem.positionToRectangle(safeStart);
-        const lastLogicalOffset = Math.max(safeStart, Math.min(Math.max(0, safeEnd - 1), maxLength));
-        const endRectangle = geometryItem.positionToRectangle(lastLogicalOffset);
-        const startPoint = geometryItem.mapToItem(
-                    control,
-                    Number(startRectangle.x) || LV.Theme.gapNone,
-                    Number(startRectangle.y) || LV.Theme.gapNone);
-        const endPoint = geometryItem.mapToItem(
-                    control,
-                    Number(endRectangle.x) || LV.Theme.gapNone,
-                    Number(endRectangle.y) || LV.Theme.gapNone);
-        const lineHeight = control.resolvedTextItemLineHeight();
-        const resolvedHeight = Math.max(
-                    lineHeight,
-                    endPoint.y + Math.max(lineHeight, Number(endRectangle.height) || lineHeight) - startPoint.y);
-        return Qt.rect(startPoint.x, startPoint.y, control.width, resolvedHeight);
-    }
-
-    function textDisplayRectangleForSourceRange(sourceStart, sourceEnd) {
-        const logicalStart = control.sourceOffsetToLogicalOffset(sourceStart, false);
-        const logicalEnd = Math.max(
-                    logicalStart,
-                    control.sourceOffsetToLogicalOffset(Math.max(sourceStart, sourceEnd), true));
-        return control.displayRectangleForLogicalRange(logicalStart, logicalEnd);
-    }
-
-    function logicalGutterRectangleForBlockLine(block, sourceRange) {
-        if (control.htmlBlockIsIiHtmlResourceBlock(block))
-            return control.resourceSelectionRectangleForBlock(block);
-        return control.textDisplayRectangleForSourceRange(sourceRange.start, sourceRange.end);
-    }
-
-    function resolvedLogicalGutterRows() {
-        const blocks = control.normalizedLogicalGutterBlocks();
-        const rows = [];
-        let lineNumber = 1;
-        for (let blockIndex = 0; blockIndex < blocks.length; ++blockIndex) {
-            const block = blocks[blockIndex];
-            const ranges = control.logicalLineSourceRangesForBlock(block);
-            for (let rangeIndex = 0; rangeIndex < ranges.length; ++rangeIndex) {
-                const rectangle = control.logicalGutterRectangleForBlockLine(block, ranges[rangeIndex]);
-                rows.push({
-                    "height": Math.max(
-                                  control.resolvedTextItemLineHeight(),
-                                  Number(rectangle.height) || control.resolvedTextItemLineHeight()),
-                    "number": lineNumber,
-                    "sourceEnd": ranges[rangeIndex].end,
-                    "sourceStart": ranges[rangeIndex].start,
-                    "y": Math.max(0, Number(rectangle.y) || 0)
-                });
-                ++lineNumber;
-            }
-        }
-
-        if (rows.length <= 0) {
-            rows.push({
-                "height": control.resolvedTextItemLineHeight(),
-                "number": 1,
-                "sourceEnd": 0,
-                "sourceStart": 0,
-                "y": 0
-            });
-        }
-        return rows;
     }
 
     function eventRequestsBodyTagShortcut(event) {
@@ -951,6 +698,45 @@ Item {
 
         control: control
         textInput: textInput.editorItem
+    }
+
+    ContentsEditorVisualLineMetrics {
+        id: visualLineMetrics
+
+        fallbackWidth: control.width
+        lineHeight: LV.Theme.textBodyLineHeight
+        strokeThin: LV.Theme.strokeThin
+        textContentHeight: visualLineMetrics.textItem !== null
+                           && visualLineMetrics.textItem !== undefined
+                           && visualLineMetrics.textItem.contentHeight !== undefined
+                ? visualLineMetrics.textItem.contentHeight
+                : LV.Theme.gapNone
+        textItem: control.renderedOverlayVisible ? renderedOverlay : textInput.editorItem
+        textLineCount: visualLineMetrics.textItem !== null
+                       && visualLineMetrics.textItem !== undefined
+                       && visualLineMetrics.textItem.lineCount !== undefined
+                ? visualLineMetrics.textItem.lineCount
+                : LV.Theme.gapNone
+        textWidth: visualLineMetrics.textItem !== null
+                   && visualLineMetrics.textItem !== undefined
+                   && visualLineMetrics.textItem.width !== undefined
+                ? visualLineMetrics.textItem.width
+                : LV.Theme.gapNone
+    }
+
+    ContentsLineNumberRailMetrics {
+        id: lineNumberRailMetrics
+
+        displayContentHeight: control.displayContentHeight
+        geometryWidth: control.width
+        logicalText: control.displayGeometryText
+        logicalToSourceOffsets: control.logicalToSourceOffsets
+        normalizedHtmlBlocks: control.normalizedHtmlBlocks
+        resourceGeometryItem: renderedOverlay
+        sourceText: textInput.text
+        targetItem: control
+        textGeometryItem: control.displayGeometryItem()
+        textLineHeight: LV.Theme.textBodyLineHeight
     }
 
     TextEdit {

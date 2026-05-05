@@ -18,7 +18,8 @@ Editor-facing QML view components for the center content surface.
 
 - `ContentsDisplayView.qml` mounts the selected note RAW body into `ContentsEditorSessionController`.
 - `ContentsEditorPresentationProjection` converts that RAW body into editor HTML plus renderer-owned block metadata.
-- `ContentsMinimapLayoutMetrics` resolves minimap chrome metrics under `src/app/models/editor/minimap`.
+- `ContentsEditorVisualLineMetrics` measures visible editor lines for the minimap, and
+  `ContentsMinimapLayoutMetrics` resolves minimap chrome metrics under `src/app/models/editor/minimap`.
 - `ContentsDisplayView.qml` owns the visible editor chrome layout and composes the parent `view/contents` minimap with
   `ContentsStructuredDocumentFlow.qml` in one `LV.HStack`.
 - `ContentsDisplayView.qml` also mounts `ContentsLineNumberRail.qml` inside the same scrollable document content item as
@@ -34,18 +35,20 @@ Editor-facing QML view components for the center content surface.
   `sourceText` bindings.
 - The center document slot owns a vertical `Flickable` viewport around `ContentsStructuredDocumentFlow.qml`; long note
   bodies scroll inside that viewport.
-- The gutter row list is driven by `ContentsStructuredDocumentFlow.editorLogicalGutterRows`. Each gutter row represents
-  one logical source/display block line. Wrapped text does not increment the number count, but the row height is
-  measured from the live editor geometry so a long paragraph that wraps onto three visible lines gives one numbered
-  gutter row with three visible lines of height. Atomic resource frames count as one logical row while using the
-  rendered frame height.
-- The minimap row count is driven by `ContentsStructuredDocumentFlow.editorVisualLineCount`, which comes from the live
-  wrapped editor surface. A single source tag or paragraph that wraps onto two visible editor lines therefore produces
-  two minimap rows. Tall rendered blocks such as resource frames use their visible content height divided by the editor
-  line height, so their minimap footprint follows the amount of vertical space they occupy.
+- The gutter row list is driven by `ContentsStructuredDocumentFlow.editorLogicalGutterRows`, which is resolved by the
+  C++ `ContentsLineNumberRailMetrics` object mounted inside `ContentsInlineFormatEditor.qml`. Each gutter row
+  represents one logical source/display block line. Wrapped text does not increment the number count, but the row
+  height is measured from the live editor geometry so a long paragraph that wraps onto three visible lines gives one
+  numbered gutter row with three visible lines of height. Atomic resource frames count as one logical row while using
+  the rendered frame height.
+- The minimap row count is driven by `ContentsStructuredDocumentFlow.editorVisualLineCount`, which comes from the C++
+  `ContentsEditorVisualLineMetrics` object measuring the live wrapped editor surface. A single source tag or paragraph
+  that wraps onto two visible editor lines therefore produces two minimap rows. Tall rendered blocks such as resource
+  frames use their visible content height divided by the editor line height, so their minimap footprint follows the
+  amount of vertical space they occupy.
 - The minimap row widths are driven by `ContentsStructuredDocumentFlow.editorVisualLineWidthRatios`. Text rows use the
-  visible line length measured from the editor text geometry; height-derived resource-frame rows remain full width
-  because the rendered frame itself fills the text column.
+  visible line length measured from editor text geometry by `ContentsEditorVisualLineMetrics`; height-derived rows that
+  cannot be probed from text geometry remain full width.
 - The minimap can be dragged vertically as a compact scrollbar. `Minimap.qml` emits normalized scroll ratios and
   `ContentsDisplayView.qml` maps those ratios onto the center editor `Flickable.contentY`.
 - `ContentsInlineFormatEditor.qml` keeps editing on an `LV.TextEditor` plain-text buffer while displaying the read-side
@@ -89,8 +92,9 @@ source mutation policy remain in C++ model/renderer objects.
 - cursor: RichText overlay가 보이는 동안에는 논리 텍스트 좌표 기반의 표면 커서만 overlay 위에 그리고, 아래의
   네이티브 RAW 커서 delegate는 숨긴다.
 - top inset: 본문 편집기와 overlay의 상단 inset/padding은 0으로 유지하여 첫 줄이 문서 슬롯 상단에 붙는다.
-- gutter: 거터는 본문과 같은 `Flickable` 콘텐츠 안에 배치하며, 논리 줄마다 번호 하나를 표시한다. wrap은
-  번호를 늘리지 않고 해당 번호 행의 높이만 실제 본문 표시 높이만큼 커진다.
+- gutter: 거터는 본문과 같은 `Flickable` 콘텐츠 안에 배치하며, 논리 줄마다 번호 하나를 표시한다. 논리 줄
+  분할과 row y/height 생성은 C++ `ContentsLineNumberRailMetrics`가 담당한다. wrap은 번호를 늘리지 않고
+  해당 번호 행의 높이만 실제 본문 표시 높이만큼 커진다.
 - resource frame: 리소스 프레임은 본문 텍스트 컬럼 폭의 100%로 렌더한다.
 - minimap: 미니맵 행 수는 parser 논리 줄 수가 아니라 `editorVisualLineCount`로 전달되는 실제 에디터 wrap 결과 줄 수를 따른다. 리소스 프레임처럼 별도 높이를 차지하는 블록은 표시 높이를 본문 줄 높이로 나눈 줄 수만큼 미니맵에 반영한다.
 - minimap width: 미니맵 각 행의 폭은 `editorVisualLineWidthRatios`로 전달되는 실제 표시 줄 길이를 따른다. 텍스트 행은 본문에서 보이는 길이에 비례하고, 리소스 프레임 높이에서 파생된 행은 프레임이 본문 폭을 채우므로 full width로 둔다.

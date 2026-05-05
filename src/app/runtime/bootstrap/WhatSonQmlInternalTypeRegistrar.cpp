@@ -9,6 +9,8 @@
 #include "app/models/editor/format/ContentsInlineStyleOverlayRenderer.hpp"
 #include "app/models/editor/format/ContentsPlainTextSourceMutator.hpp"
 #include "app/models/editor/format/ContentsTextFormatRenderer.hpp"
+#include "app/models/editor/lineNumber/ContentsLineNumberRailMetrics.hpp"
+#include "app/models/editor/minimap/ContentsEditorVisualLineMetrics.hpp"
 #include "app/models/editor/minimap/ContentsMinimapLayoutMetrics.hpp"
 #include "app/models/display/paper/print/ContentsPagePrintLayoutRenderer.hpp"
 #include "app/models/editor/tags/ContentsStructuredTagValidator.hpp"
@@ -88,6 +90,10 @@ namespace
                 QStringLiteral("ContentsLogicalTextBridge")),
             whatsonInternalCreatableType<ContentsMinimapLayoutMetrics>(
                 QStringLiteral("ContentsMinimapLayoutMetrics")),
+            whatsonInternalCreatableType<ContentsEditorVisualLineMetrics>(
+                QStringLiteral("ContentsEditorVisualLineMetrics")),
+            whatsonInternalCreatableType<ContentsLineNumberRailMetrics>(
+                QStringLiteral("ContentsLineNumberRailMetrics")),
             whatsonInternalCreatableType<ContentsResourceTagTextGenerator>(
                 QStringLiteral("ContentsResourceTagTextGenerator")),
             whatsonInternalCreatableType<ContentsResourceTagController>(

@@ -44,16 +44,12 @@ Wraps the live `LV.TextEditor` used by the note document surface.
   testing and projected caret placement.
 - Reports `displayContentHeight` from the actual RichText overlay while rendered output is visible so the scrollable
   editor viewport follows the rendered body height.
-- Reports `visualLineCount` from the visible wrapped text surface so the minimap can draw one row per editor visual
-  line. When rendered output is visible, this follows the greater of the RichText overlay's wrapped line count and its
-  content-height divided by the editor line height; otherwise it follows the same rule on the native editor item.
-  Resource frames and other tall rendered blocks therefore contribute minimap rows according to their visible vertical
-  thickness.
-- Reports `visualLineWidthRatios` from the same visible text surface. Text rows are measured from the editor line's
-  displayed caret geometry and normalized against the editor column width, while height-derived rows for tall rendered
-  blocks default to full width.
-- Reports `logicalGutterRows` by combining renderer-owned `normalizedHtmlBlocks` with the same live text geometry used
-  for cursor and selection projection. The gutter rows count logical lines, not visual wrap rows; a wrapped paragraph
+- Mounts `ContentsEditorVisualLineMetrics` as the C++ owner of visible line measurement for the minimap. QML binds the
+  currently visible TextEdit object and primitive geometry inputs into that object, then exposes its
+  `visualLineCount` and `visualLineWidthRatios`.
+- Mounts `ContentsLineNumberRailMetrics` as the C++ owner of logical line-number row construction. The inline editor
+  binds source/projection inputs and TextEdit geometry objects into that C++ object, then exposes
+  `logicalGutterRows` from its resolved `rows`. The rows count logical lines, not visual wrap rows; a wrapped paragraph
   contributes one row whose height covers all wrapped visual rows, while resource frames contribute one row with the
   rendered frame height.
 - When iiHtmlBlock resource spans are present, the rendered overlay is pinned even during composition so ordinary

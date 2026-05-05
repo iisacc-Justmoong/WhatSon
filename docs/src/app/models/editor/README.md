@@ -10,6 +10,7 @@
 - `display`
 - `format`
 - `input`
+- `lineNumber`
 - `minimap`
 - `parser`
 - `persistence`
@@ -40,12 +41,16 @@
   wrapping.
 - `structure/ContentsStructuredDocument*` owns the structured document host, collection policy, focus policy, mutation
   policy, and blocks model used by `ContentsStructuredDocumentFlow.qml`.
+- `minimap/ContentsEditorVisualLineMetrics.*` owns the live editor surface's post-wrap visual line count and per-row
+  width ratio measurement. QML supplies the visible TextEdit object and primitive geometry values only.
 - `minimap/ContentsMinimapLayoutMetrics.*` owns minimap width, row-count, and visibility-to-width calculations that
-  used to live in QML. Runtime row count is supplied by the live editor surface's post-wrap visual line count, not by
-  parser logical-line metadata. Runtime per-row width ratios stay in the QML editor host because they are measured from
-  visible text geometry.
+  used to live in QML. Runtime row count is supplied by `ContentsEditorVisualLineMetrics`, not by parser logical-line
+  metadata.
 - Minimap model code must remain a direct editor-domain chrome model slice under `src/app/models/editor/minimap`.
   Do not reintroduce `src/app/models/minimap` or nested `src/app/models/editor/display/minimap` directories.
+- `lineNumber/ContentsLineNumberRailMetrics.*` owns logical line-number rail row construction. QML passes view-owned
+  TextEdit geometry objects and projection metadata; C++ de-duplicates blocks, counts logical lines, maps source to
+  visible logical offsets, and publishes row y/height values.
 - `display/ContentsDisplay*` owns editor-host display coordination for selection, context menus, mount plans, refresh
   plans, and viewport math.
 - Local RAW editor-source writes converge through
@@ -63,6 +68,6 @@
 
 - 대상: ``src/app/models/editor`` (`docs/src/app/models/editor/README.md`)
 - 위치: `docs/src/app/models/editor`
-- 역할: 이 파일은 해당 디렉터리나 모듈의 구조, 책임, 운영 규칙, 검증 기준을 설명한다. 미니맵 계산은 `minimap` 하위 모델이 담당하며, 런타임 행 수는 parser 논리 줄이 아니라 wrap 이후 실제 에디터 표시 줄 수를 입력으로 받는다. 행별 폭 ratio는 실제 표시 텍스트 지오메트리에서 QML host가 측정한다. `src/app/models/minimap`, `src/app/models/editor/display/minimap`는 재도입하지 않는다.
+- 역할: 이 파일은 해당 디렉터리나 모듈의 구조, 책임, 운영 규칙, 검증 기준을 설명한다. 미니맵 계산은 `minimap` 하위 모델이 담당하며, 런타임 행 수와 행별 폭 ratio는 parser 논리 줄이나 QML 계산이 아니라 C++ `ContentsEditorVisualLineMetrics`가 실제 표시 텍스트 지오메트리에서 측정한다. 줄 번호 rail의 논리 줄 분할과 y/height row 생성은 `lineNumber` 하위 모델이 담당한다. `src/app/models/minimap`, `src/app/models/editor/display/minimap`는 재도입하지 않는다.
 - 기준: 파일 경로, 명령, API 이름, 세부 변경 이력은 위 영어 본문을 원문 기준으로 유지한다.
 - 변경 시: 위 영어 본문을 수정하면 이 한국어 하단 섹션도 함께 최신 상태로 맞춘다.

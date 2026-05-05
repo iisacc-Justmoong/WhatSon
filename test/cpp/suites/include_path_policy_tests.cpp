@@ -274,6 +274,7 @@ void WhatSonCppRegressionTests::sourceTree_keepsMinimapUnderEditorChromeModels()
     QVERIFY(repositoryRoot.exists());
 
     const QStringList requiredPaths{
+        QStringLiteral("src/app/models/editor/minimap/ContentsEditorVisualLineMetrics.hpp"),
         QStringLiteral("src/app/models/editor/minimap/ContentsMinimapLayoutMetrics.hpp"),
         QStringLiteral("docs/src/app/models/editor/minimap/README.md")
     };

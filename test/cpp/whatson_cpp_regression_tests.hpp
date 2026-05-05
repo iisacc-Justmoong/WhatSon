@@ -5,6 +5,8 @@
 #include "app/models/editor/format/ContentsInlineStyleOverlayRenderer.hpp"
 #include "app/models/editor/format/ContentsPlainTextSourceMutator.hpp"
 #include "app/models/editor/format/ContentsTextFormatRenderer.hpp"
+#include "app/models/editor/lineNumber/ContentsLineNumberRailMetrics.hpp"
+#include "app/models/editor/minimap/ContentsEditorVisualLineMetrics.hpp"
 #include "app/models/editor/tags/ContentsEditorTagInsertionController.hpp"
 #include "app/models/editor/minimap/ContentsMinimapLayoutMetrics.hpp"
 #include "app/models/editor/projection/ContentsEditorPresentationProjection.hpp"
@@ -1028,6 +1030,8 @@ private slots:
     void qmlStructuredEditors_consumeRendererNormalizedBlocksWithoutLocalFlattening();
     void qmlStructuredEditors_refreshesDocumentProjectionOnEditorOpen();
     void qmlStructuredEditors_mountsEditorAndMinimapInDisplayLayout();
+    void contentsLineNumberRailMetrics_buildsRowsFromLogicalBlocks();
+    void contentsEditorVisualLineMetrics_expandsTallVisualBlocks();
     void contentsMinimapLayoutMetrics_resolvesRuntimeVisibilityAndDesignRows();
     void qmlStructuredEditors_rejectStaleSourceRangeMutations();
     void qmlStructuredEditors_preserveNativeMobileInputDuringFocusedEdits();

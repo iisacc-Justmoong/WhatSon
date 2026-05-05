@@ -42,6 +42,8 @@ set(WHATSON_CPP_REGRESSION_TEST_SOURCES
         "${CMAKE_SOURCE_DIR}/src/app/models/editor/format/ContentsInlineStyleOverlayRenderer.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/editor/format/ContentsPlainTextSourceMutator.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/editor/format/ContentsTextFormatRenderer.cpp"
+        "${CMAKE_SOURCE_DIR}/src/app/models/editor/lineNumber/ContentsLineNumberRailMetrics.cpp"
+        "${CMAKE_SOURCE_DIR}/src/app/models/editor/minimap/ContentsEditorVisualLineMetrics.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/editor/minimap/ContentsMinimapLayoutMetrics.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/editor/format/ContentsTextFormatRendererEditorSurface.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/editor/format/ContentsTextFormatRendererMarkdown.cpp"

@@ -22,12 +22,13 @@ Provides the note-backed center editor surface.
   `editorDocumentViewport` content item, so line numbers scroll in the exact body coordinate system instead of a
   detached overlay.
 - Feeds that gutter from `ContentsStructuredDocumentFlow.editorLogicalGutterRows`; each row is one logical line and its
-  height comes from the live editor geometry, so wrapped paragraphs keep one number with a taller row.
+  height comes from the C++ `ContentsLineNumberRailMetrics` object, which reads the live editor geometry supplied by
+  the inline editor. Wrapped paragraphs therefore keep one number with a taller row.
 - Feeds `ContentsMinimapLayoutMetrics.visualLineCount` from `ContentsStructuredDocumentFlow.editorVisualLineCount`,
-  which is measured from the live wrapped editor surface. Minimap rows therefore follow visible wrapped lines and
-  height-derived tall-block rows rather than parser logical lines.
+  which is measured by C++ `ContentsEditorVisualLineMetrics` from the live wrapped editor surface. Minimap rows
+  therefore follow visible wrapped lines and height-derived tall-block rows rather than parser logical lines.
 - Feeds `Minimap.rowWidthRatios` from `ContentsStructuredDocumentFlow.editorVisualLineWidthRatios`, so each minimap
-  row width follows the visible line length from the editor surface instead of defaulting every row to 100%.
+  row width follows the visible line length measured by C++ instead of defaulting every row to 100%.
 - Converts `Minimap.scrollRatioRequested(...)` into `editorDocumentViewport.contentY`, allowing vertical minimap drags
   to scroll the note body like a compact scrollbar.
 - Converts the live RAW cursor offset into a logical display cursor offset through
@@ -65,9 +66,9 @@ The live route is:
    `ContentsInlineResourcePresentationController` replaces matching iiHtmlBlock placeholders with the framed inline
    image HTML used by the historical Figma `292:50` resource presentation when the payload is renderable. The frame
    width is resolved from the live editor text column before HTML is published.
-7. `ContentsMinimapLayoutMetrics` uses the live editor's post-wrap visual line count for the minimap surface, while
-   `Minimap.qml` receives the matching per-row width ratios and viewport scroll ratios from the structured flow and
-   editor viewport.
+7. `ContentsEditorVisualLineMetrics` measures the live editor's post-wrap visual line count and per-row width ratios.
+   `ContentsMinimapLayoutMetrics` converts that count into minimap row policy, while `Minimap.qml` receives the
+   resolved row count, width ratios, and viewport scroll ratios from the structured flow and editor viewport.
 8. `ContentsDisplayView.qml` places a scrollable editor document viewport and minimap in one `LV.HStack`.
 9. The editor document viewport contains both `ContentsLineNumberRail.qml` and `ContentsStructuredDocumentFlow.qml`, giving the
    gutter one shared scroll and y-coordinate system with the body.
