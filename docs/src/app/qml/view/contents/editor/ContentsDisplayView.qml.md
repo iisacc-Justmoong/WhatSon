@@ -78,7 +78,9 @@ The live route is:
    `TextEdit.RichText` overlay and keeps the plain `LV.TextEditor` buffer as the edit source inside the center slot.
 11. The inline editor paints a projected blinking cursor above the overlay from logical visible-text geometry while the
     native `LV.TextEditor` keeps the authoritative cursor and IME state. The native cursor delegate is hidden whenever
-    the rendered overlay is visible, so the user sees one WYSIWYG caret instead of a second RAW-surface caret.
+    the rendered overlay is visible, so the user sees one WYSIWYG caret instead of a second RAW-surface caret. Mouse
+    clicks in the rendered body update that projected caret immediately through the inline editor's local pointer
+    cursor override while the host-level logical cursor binding catches up from the RAW cursor.
 12. Bottom-empty-area clicks inside that center slot focus the same live editor and place the cursor at the RAW source
     end. No synthetic text mutation is created by this accessibility path.
 13. Vertical minimap drags emit a normalized ratio and the display host maps it onto the editor document viewport's

@@ -21,6 +21,9 @@ Wraps the live `LV.TextEditor` used by the note document surface.
   emits the normal `textEdited(...)` signal for RAW persistence.
 - Cursor visibility is explicit and mutually exclusive. The native cursor delegate is visible only for the plain source
   surface, while the component paints a projected cursor above the RichText overlay whenever rendered output is visible.
+- Rendered-surface mouse clicks update a local projected-cursor logical offset immediately after restoring the
+  authoritative RAW cursor, so the visible caret moves under the pointer even before the parent host republishes
+  `logicalCursorPosition`.
 - The RichText overlay remains visible while `LV.TextEditor` has a non-empty native selection. The component mirrors
   the source range into rendered coordinates instead of exposing RAW tag geometry.
 - Native selection paint stays enabled for visible logical content even while the rendered overlay is visible. Only the
@@ -73,6 +76,7 @@ Wraps the live `LV.TextEditor` used by the note document surface.
 - Ordinary navigation, selection, Backspace/Delete repeat, paste fallback, and IME/preedit behavior remain with Qt's
   native text-editing path exposed by `LV.TextEditor`.
 - Rendered-overlay mouse drag selection is translated from logical visible text coordinates back to RAW source offsets.
+  Collapsed clicks follow the same path and are treated as cursor placement, not as a no-op selection gesture.
   Plain-source selection, keyboard selection, Shift-based selection, and IME/preedit behavior remain owned by
   `LV.TextEditor`; the rendered-overlay pointer bridge is inactive during IME composition.
 - When native cursor movement enters a hidden RAW tag token while the rendered overlay is visible, the editor snaps the
@@ -93,7 +97,9 @@ the plain source buffer, so a transient parser/render turn cannot collapse a fra
 While the rendered overlay is visible, `logicalCursorPosition` maps the RAW cursor to the logical display text so the
 projected caret follows the visible text rather than hidden markup. Mouse pointer selection follows the same
 logical-to-source table: the pointer position is measured against `displayGeometryText`, then restored as a RAW
-selection on the underlying editor so formatting commands still receive authoritative `.wsnbody` offsets. During IME
-composition that pointer bridge is inactive and the native editor receives the pointer path directly. If the native RAW
-cursor enters an opening or closing inline formatting tag, the cursor is normalized back to a source boundary that
-matches the visible logical caret position.
+selection or collapsed cursor placement on the underlying editor so formatting commands still receive authoritative
+`.wsnbody` offsets. A local pointer cursor override keeps the projected caret at the clicked logical offset until the
+host catches up or the next non-pointer cursor movement clears it. During IME composition that pointer bridge is
+inactive and the native editor receives the pointer path directly. If the native RAW cursor enters an opening or
+closing inline formatting tag, the cursor is normalized back to a source boundary that matches the visible logical
+caret position.

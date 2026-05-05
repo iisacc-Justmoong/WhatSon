@@ -1063,10 +1063,12 @@ private slots:
     void qmlInlineFormatEditor_projectsVisibleGeometryFromRenderedDisplay();
     void qmlInlineFormatEditor_positionsVisibleProbeFromLogicalDisplayText();
     void qmlInlineFormatEditor_mapsRenderedPointerSelectionToCharacterRawRange();
+    void qmlInlineFormatEditor_movesRenderedCursorOnMouseClick();
     void qmlInlineFormatEditor_skipsHiddenInlineTagsDuringNativeCursorMovement();
     void qmlInlineFormatEditor_reportsWrappedVisualLineCountForMinimap();
     void qmlInlineFormatEditor_placesLogicalGutterRowsAtIncreasingY();
     void qmlStructuredDocumentFlow_routesBottomBlankClickToBodyEnd();
+    void qmlStructuredDocumentFlow_routesBodyClickToRenderedCursorPosition();
     void qmlInlineFormatEditor_forwardsInlineFormatShortcutsToTagManagementHook();
     void qmlStructuredDocumentFlow_appliesInlineFormatShortcutToSelectedRawRange();
     void mobileChrome_usesSharedFigmaControlSurfaceColor();

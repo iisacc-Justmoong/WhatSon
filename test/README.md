@@ -199,6 +199,9 @@ ctest --test-dir build --output-on-failure -L cpp_regression
 - The inline editor regression now also pins rendered-surface cursor placement: taps are resolved through visible
   logical text geometry and then mapped back through `logicalToSourceOffsets`, so hidden RAW tags do not determine the
   cursor location.
+- The inline editor regression now also pins actual mouse-click cursor movement through both the inline editor and
+  `ContentsStructuredDocumentFlow` host, including the projected caret rectangle, so collapsed pointer gestures cannot
+  leave the visible cursor at the initial host-provided logical cursor position.
 - The inline editor regression now also pins the top-flush editor body contract: vertical inset and rendered-overlay
   padding stay at zero, with only horizontal text-column margins retained.
 - The contents/editor QML regressions now also pin the scrollable document viewport: the center editor slot wraps the

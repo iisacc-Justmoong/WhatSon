@@ -30,11 +30,16 @@ Item {
     property int previousRawCursorPosition: 0
     property int visiblePointerSelectionAnchorLogicalOffset: 0
     property bool visiblePointerSelectionActive: false
+    property int visiblePointerCursorLogicalOffset: -1
+    property bool visiblePointerCursorUpdateActive: false
     property bool cursorNormalizationActive: false
     readonly property bool inputMethodComposing: textInput.inputMethodComposing
     readonly property string preeditText: String(textInput.editorItem.preeditText)
     property string renderedText: ""
     property int logicalCursorPosition: textInput.cursorPosition
+    readonly property int resolvedProjectedCursorPosition: control.visiblePointerCursorLogicalOffset >= 0
+            ? control.visiblePointerCursorLogicalOffset
+            : control.logicalCursorPosition
     readonly property int cursorPixelWidth: Math.max(1, Math.ceil(LV.Theme.strokeThin))
     readonly property rect projectedCursorRectangle: control.cursorProjectionRectangle()
     readonly property bool projectedCursorVisible: control.renderedOverlayVisible && control.focused
@@ -94,7 +99,7 @@ Item {
         if (geometryItem === null || geometryItem === undefined)
             return Qt.rect(0, 0, control.cursorPixelWidth, LV.Theme.textBodyLineHeight);
         const resolvedPosition = control.renderedOverlayVisible
-                ? control.boundedCursorPosition(control.logicalCursorPosition, renderedGeometryProbe.length)
+                ? control.boundedCursorPosition(control.resolvedProjectedCursorPosition, renderedGeometryProbe.length)
                 : control.boundedCursorPosition(textInput.cursorPosition, textInput.length);
         const cursorRectangle = geometryItem.positionToRectangle(resolvedPosition);
         const mappedPoint = geometryItem.mapToItem(
@@ -263,6 +268,9 @@ Item {
     function normalizeCursorPositionAwayFromHiddenTagTokens() {
         if (control.cursorNormalizationActive)
             return false;
+
+        if (!control.visiblePointerCursorUpdateActive)
+            control.visiblePointerCursorLogicalOffset = -1;
 
         const currentCursorPosition = textInput.cursorPosition;
         if (!control.renderedOverlayVisible
@@ -459,11 +467,18 @@ Item {
     }
 
     function restoreVisibleLogicalSelectionRange(anchorLogicalOffset, currentLogicalOffset) {
+        const boundedCurrentLogicalOffset =
+                control.boundedCursorPosition(currentLogicalOffset, renderedGeometryProbe.length);
         const anchorSourceOffset = control.sourceOffsetForVisibleLogicalOffset(anchorLogicalOffset);
-        const currentSourceOffset = control.sourceOffsetForVisibleLogicalOffset(currentLogicalOffset);
+        const currentSourceOffset = control.sourceOffsetForVisibleLogicalOffset(boundedCurrentLogicalOffset);
         const selectionStart = Math.min(anchorSourceOffset, currentSourceOffset);
         const selectionEnd = Math.max(anchorSourceOffset, currentSourceOffset);
-        control.restoreSelectionRange(selectionStart, selectionEnd, currentSourceOffset);
+        control.visiblePointerCursorUpdateActive = true;
+        const restored = control.restoreSelectionRange(selectionStart, selectionEnd, currentSourceOffset);
+        control.visiblePointerCursorUpdateActive = false;
+        if (!restored)
+            return false;
+        control.visiblePointerCursorLogicalOffset = boundedCurrentLogicalOffset;
         control.scheduleRenderedOverlaySelectionRefresh();
         return true;
     }
@@ -683,6 +698,10 @@ Item {
     clip: true
 
     onLogicalToSourceOffsetsChanged: control.scheduleRenderedOverlaySelectionRefresh()
+    onLogicalCursorPositionChanged: {
+        if (control.visiblePointerCursorLogicalOffset === control.logicalCursorPosition)
+            control.visiblePointerCursorLogicalOffset = -1;
+    }
     onNativeSelectionActiveChanged: control.scheduleRenderedOverlaySelectionRefresh()
     onNormalizedHtmlBlocksChanged: control.scheduleRenderedOverlaySelectionRefresh()
     onRenderedOverlayVisibleChanged: control.scheduleRenderedOverlaySelectionRefresh()

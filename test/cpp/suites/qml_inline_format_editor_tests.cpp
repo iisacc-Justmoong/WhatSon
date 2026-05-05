@@ -147,6 +147,10 @@ void WhatSonCppRegressionTests::qmlInlineFormatEditor_keepsNativeTextEditInputUn
     QVERIFY(inlineEditorSource.contains(QStringLiteral("wrapMode: TextEdit.Wrap")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("property color cursorColor: LV.Theme.accentBlue")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("property int logicalCursorPosition: textInput.cursorPosition")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("property int visiblePointerCursorLogicalOffset: -1")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("readonly property int resolvedProjectedCursorPosition")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("control.resolvedProjectedCursorPosition")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("property bool visiblePointerCursorUpdateActive: false")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("function cursorProjectionRectangle()")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("id: projectedCursor")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("objectName: \"contentsInlineFormatProjectedCursor\"")));
@@ -422,6 +426,83 @@ Item {
     QCOMPARE(inlineEditor->property("selectionEnd").toInt(), 10);
     QCOMPARE(inlineEditor->property("selectedText").toString(), QStringLiteral("ph"));
     QVERIFY(inlineEditor->property("renderedSelectionActive").toBool());
+}
+
+void WhatSonCppRegressionTests::qmlInlineFormatEditor_movesRenderedCursorOnMouseClick()
+{
+    registerInlineFormatEditorRuntimeQmlTypes();
+
+    const QString repositoryRoot = qmlInlineFormatEditorRepositoryRootPath();
+    QQmlEngine engine;
+    addWhatSonInlineFormatEditorQmlImportPaths(engine, repositoryRoot);
+
+    const QString editorImportUrl =
+        QUrl::fromLocalFile(repositoryRoot + QStringLiteral("/src/app/qml/view/contents/editor")).toString();
+    const QByteArray qmlSource = QStringLiteral(R"QML(
+import QtQuick
+import "%1" as EditorView
+
+Item {
+    id: root
+    width: 360
+    height: 96
+
+    EditorView.ContentsInlineFormatEditor {
+        id: editor
+        objectName: "inlineFormatEditorUnderTest"
+        anchors.fill: parent
+        displayGeometryText: "Alpha beta"
+        logicalToSourceOffsets: [0, 7, 8, 9, 10, 11, 12, 13, 14, 15, 23]
+        renderedText: "<span style='font-weight:700'>Alpha beta</span>"
+        showRenderedOutput: true
+        text: "<bold>Alpha beta</bold>"
+    }
+}
+)QML").arg(editorImportUrl).toUtf8();
+
+    QQmlComponent component(&engine);
+    component.setData(
+        qmlSource,
+        QUrl::fromLocalFile(repositoryRoot + QStringLiteral("/test/cpp/InlineFormatPointerCursorHarness.qml")));
+    if (component.status() == QQmlComponent::Error)
+    {
+        QFAIL(qPrintable(qmlInlineFormatEditorErrorString(component.errors())));
+    }
+
+    std::unique_ptr<QObject> rootObject(component.create());
+    if (!rootObject)
+    {
+        QFAIL(qPrintable(qmlInlineFormatEditorErrorString(component.errors())));
+    }
+
+    auto* rootItem = qobject_cast<QQuickItem*>(rootObject.get());
+    QVERIFY(rootItem != nullptr);
+
+    QQuickWindow window;
+    window.resize(360, 96);
+    rootItem->setParentItem(window.contentItem());
+    window.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&window));
+
+    QObject* inlineEditor = rootObject->findChild<QObject*>(QStringLiteral("inlineFormatEditorUnderTest"));
+    QVERIFY(inlineEditor != nullptr);
+    QObject* pointerArea = rootObject->findChild<QObject*>(QStringLiteral("contentsInlineFormatVisibleSelectionPointerArea"));
+    QVERIFY(pointerArea != nullptr);
+    QTRY_VERIFY(inlineEditor->property("renderedOverlayVisible").toBool());
+    QVERIFY(pointerArea->property("enabled").toBool());
+
+    inlineEditor->setProperty("cursorPosition", 0);
+    QTRY_COMPARE(inlineEditor->property("cursorPosition").toInt(), 0);
+    const QRectF initialProjectedCursor =
+        inlineEditor->property("projectedCursorRectangle").toRectF();
+
+    QTest::mouseClick(&window, Qt::LeftButton, Qt::NoModifier, QPoint(76, 20));
+    QTRY_VERIFY(inlineEditor->property("focused").toBool());
+    QTRY_VERIFY(inlineEditor->property("cursorPosition").toInt() > QStringLiteral("<bold>").size());
+    QTRY_VERIFY(
+        inlineEditor->property("projectedCursorRectangle").toRectF().x()
+        > initialProjectedCursor.x() + 1.0);
+    QVERIFY(!inlineEditor->property("nativeSelectionActive").toBool());
 }
 
 void WhatSonCppRegressionTests::qmlInlineFormatEditor_skipsHiddenInlineTagsDuringNativeCursorMovement()
@@ -728,6 +809,78 @@ Item {
 
     QTest::mouseClick(&window, Qt::LeftButton, Qt::NoModifier, QPoint(20, 210));
     QTRY_COMPARE(documentFlow->property("editorCursorPosition").toInt(), QStringLiteral("Alpha\nBeta").size());
+}
+
+void WhatSonCppRegressionTests::qmlStructuredDocumentFlow_routesBodyClickToRenderedCursorPosition()
+{
+    registerInlineFormatEditorRuntimeQmlTypes();
+
+    const QString repositoryRoot = qmlInlineFormatEditorRepositoryRootPath();
+    QQmlEngine engine;
+    addWhatSonInlineFormatEditorQmlImportPaths(engine, repositoryRoot);
+
+    const QString editorImportUrl =
+        QUrl::fromLocalFile(repositoryRoot + QStringLiteral("/src/app/qml/view/contents/editor")).toString();
+    const QByteArray qmlSource = QStringLiteral(R"QML(
+import QtQuick
+import "%1" as EditorView
+
+Item {
+    id: root
+    width: 360
+    height: 160
+
+    EditorView.ContentsStructuredDocumentFlow {
+        id: documentFlow
+        objectName: "structuredDocumentFlowUnderTest"
+        anchors.fill: parent
+        editorSurfaceHtml: "<span style='font-weight:700'>Alpha beta</span>"
+        logicalCursorPosition: 0
+        logicalText: "Alpha beta"
+        logicalToSourceOffsets: [0, 7, 8, 9, 10, 11, 12, 13, 14, 15, 23]
+        sourceText: "<bold>Alpha beta</bold>"
+    }
+}
+)QML").arg(editorImportUrl).toUtf8();
+
+    QQmlComponent component(&engine);
+    component.setData(
+        qmlSource,
+        QUrl::fromLocalFile(repositoryRoot + QStringLiteral("/test/cpp/StructuredDocumentFlowBodyClickHarness.qml")));
+    if (component.status() == QQmlComponent::Error)
+    {
+        QFAIL(qPrintable(qmlInlineFormatEditorErrorString(component.errors())));
+    }
+
+    std::unique_ptr<QObject> rootObject(component.create());
+    if (!rootObject)
+    {
+        QFAIL(qPrintable(qmlInlineFormatEditorErrorString(component.errors())));
+    }
+
+    auto* rootItem = qobject_cast<QQuickItem*>(rootObject.get());
+    QVERIFY(rootItem != nullptr);
+
+    QQuickWindow window;
+    window.resize(360, 160);
+    rootItem->setParentItem(window.contentItem());
+    window.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&window));
+
+    QObject* documentFlow = rootObject->findChild<QObject*>(QStringLiteral("structuredDocumentFlowUnderTest"));
+    QVERIFY(documentFlow != nullptr);
+    QObject* inlineEditor = rootObject->findChild<QObject*>(QStringLiteral("contentsStructuredDocumentInlineEditor"));
+    QVERIFY(inlineEditor != nullptr);
+    QTRY_VERIFY(documentFlow->property("editorContentHeight").toReal() > 0.0);
+    QTRY_COMPARE(documentFlow->property("editorCursorPosition").toInt(), 0);
+    const QRectF initialProjectedCursor =
+        inlineEditor->property("projectedCursorRectangle").toRectF();
+
+    QTest::mouseClick(&window, Qt::LeftButton, Qt::NoModifier, QPoint(76, 20));
+    QTRY_VERIFY(documentFlow->property("editorCursorPosition").toInt() > QStringLiteral("<bold>").size());
+    QTRY_VERIFY(
+        inlineEditor->property("projectedCursorRectangle").toRectF().x()
+        > initialProjectedCursor.x() + 1.0);
 }
 
 void WhatSonCppRegressionTests::qmlInlineFormatEditor_forwardsInlineFormatShortcutsToTagManagementHook()
