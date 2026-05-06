@@ -150,15 +150,18 @@ QVariantMap ContentsInlineFormatEditorController::selectionSnapshot() const
     if (!m_textInput)
         return snapshot;
 
-    snapshot.insert(
-        QStringLiteral("cursorPosition"),
-        WhatSon::Editor::DynamicObjectSupport::intProperty(m_textInput, "cursorPosition"));
-    snapshot.insert(
-        QStringLiteral("selectionStart"),
-        WhatSon::Editor::DynamicObjectSupport::intProperty(m_textInput, "selectionStart"));
-    snapshot.insert(
-        QStringLiteral("selectionEnd"),
-        WhatSon::Editor::DynamicObjectSupport::intProperty(m_textInput, "selectionEnd"));
+    const int cursorPosition =
+        WhatSon::Editor::DynamicObjectSupport::intProperty(m_textInput, "cursorPosition");
+    const int selectionStart =
+        WhatSon::Editor::DynamicObjectSupport::intProperty(m_textInput, "selectionStart");
+    const int selectionEnd =
+        WhatSon::Editor::DynamicObjectSupport::intProperty(m_textInput, "selectionEnd");
+    snapshot.insert(QStringLiteral("cursorPosition"), cursorPosition);
+    snapshot.insert(QStringLiteral("logicalCursorPosition"), cursorPosition);
+    snapshot.insert(QStringLiteral("logicalSelectionEnd"), selectionEnd);
+    snapshot.insert(QStringLiteral("logicalSelectionStart"), selectionStart);
+    snapshot.insert(QStringLiteral("selectionStart"), selectionStart);
+    snapshot.insert(QStringLiteral("selectionEnd"), selectionEnd);
     snapshot.insert(
         QStringLiteral("selectedText"),
         WhatSon::Editor::DynamicObjectSupport::stringProperty(m_textInput, "selectedText"));

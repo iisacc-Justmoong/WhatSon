@@ -33,10 +33,8 @@ Wraps the live `LV.TextEditor` used by the note document surface.
   inline tag bytes. Projected cursor position is never used as the source of truth for deletion.
 - Cursor visibility is explicit and mutually exclusive. The native cursor delegate is visible only for the plain source
   surface, while the component paints a projected cursor above the RichText overlay only for collapsed caret positions.
-  Non-empty selection ranges hide the projected cursor so the selection model owns the interaction state.
-- Rendered-surface mouse clicks update a local projected-cursor logical offset immediately after restoring the mapped
-  source cursor, so the visible caret moves under the pointer even before the parent host republishes
-  `logicalCursorPosition`.
+  The projected cursor is derived from the live native logical cursor. A local pointer override is only a transient
+  post-click paint hint, and native cursor, selection, or text changes clear it immediately.
 - The RichText overlay remains visible while `LV.TextEditor` has a non-empty native selection. The component mirrors
   the source range into rendered coordinates instead of exposing RAW tag geometry.
 - Native selection paint stays enabled for visible logical content even while the rendered overlay is visible. The
@@ -56,11 +54,13 @@ Wraps the live `LV.TextEditor` used by the note document surface.
   cursor/selection range is mapped back through the supplied C++ `coordinateMapper` and restored on the native logical
   surface, while the public selection/cursor properties expose the authoritative RAW offsets. This makes dragging
   select visible character ranges instead of dragging the cursor across hidden tag bytes or RichText HTML positions.
-  The transparent surface-selection `TextEdit` mirrors the same plain logical text for selection-surface
-  synchronization. The local pointer cursor override is applied only when that restored range is collapsed; non-empty
-  drag selections clear the override. The same bridge preserves native-style multi-click granularity: the second click
-  in a pointer sequence selects the visible logical line, and the third click selects the visible paragraph before
-  mapping that range back to RAW source offsets. This bridge is disabled while native IME composition is active.
+  The transparent surface-selection `TextEdit` is a passive mirror of the same plain logical text and does not accept
+  focus, mouse selection, or key events. Pointer gestures store the logical start/end/cursor span in explicit QML
+  properties before mapping that span back to RAW source offsets. The local pointer cursor override is applied only
+  when that restored range is collapsed; native cursor, selection, or text changes clear it immediately. The same
+  bridge preserves native-style multi-click granularity: the second click in a pointer sequence selects the visible
+  logical line, and the third click selects the visible paragraph before mapping that range back to RAW source offsets.
+  This bridge is disabled while native IME composition is active.
 - Rendered pointer hit testing clamps line-adjacent mapped coordinates into the rendered logical text area's measured
   content bounds before calling `positionAt(...)`. Clicks and drags that land in the vertical slack around a line
   therefore resolve to that visible line, while clicks far below the rendered body still resolve to the terminal body
@@ -127,10 +127,12 @@ stays pinned above the plain logical surface, so a transient parser/render turn 
 the RAW resource tag. Mouse pointer selection follows the same logical-to-source table: pointer coordinates are
 measured against the plain `displayGeometryText` probe and the pointer bridge restores the matching visible
 cursor/selection span on the native logical surface while exposing RAW offsets for formatting commands and persistence.
-The surface-selection editor mirrors the same plain logical text. A local pointer cursor override keeps the projected caret at
-the clicked logical offset only for collapsed pointer clicks until the host catches up or the next non-pointer cursor
-movement clears it. Once the pointer gesture expands into a non-empty selection, the override is cleared and the
-rendered/native selection surfaces own the visual state. Double-click and triple-click gestures follow the same
+The surface-selection editor only mirrors that plain logical text; it is not focusable and never owns the edit cursor.
+The explicit selection snapshot exposes both logical and source fields, so RAW selection/cursor offsets are not hidden
+behind the generic `cursorPosition` name. A local pointer cursor override keeps the projected caret at the clicked
+logical offset only until the next native cursor, selection, or text change. Once the pointer gesture expands into a
+non-empty selection, the override is cleared and the rendered/native selection surfaces own the visual state.
+Double-click and triple-click gestures follow the same
 logical-to-source mapping, selecting the visible line and paragraph respectively instead of exposing hidden RAW tag
 bytes. During IME composition that pointer bridge is inactive and the native editor receives the pointer path directly.
 Collapsed RAW selections that contain only hidden opening/closing inline formatting wrappers are kept collapsed after

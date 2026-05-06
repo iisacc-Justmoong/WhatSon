@@ -14,7 +14,6 @@ Item {
     property string editorSurfaceHtml: ""
     property string lastReadyLogicalText: ""
     property string logicalText: ""
-    property int logicalCursorPosition: sourceText.length
     property string projectionSourceText: documentFlow.sourceText
     property string sourceText: ""
     property color textColor: LV.Theme.bodyColor
@@ -127,7 +126,6 @@ Item {
         anchors.fill: parent
         coordinateMapper: documentFlow.coordinateMapper
         displayGeometryText: documentFlow.resolvedDisplayGeometryText
-        logicalCursorPosition: documentFlow.logicalCursorPosition
         normalizedHtmlBlocks: documentFlow.normalizedHtmlBlocks
         objectName: "contentsStructuredDocumentInlineEditor"
         renderedText: documentFlow.editorSurfaceHtml

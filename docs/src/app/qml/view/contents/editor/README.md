@@ -81,9 +81,11 @@ Editor-facing QML view components for the center content surface.
   positions would otherwise distort the coordinate space. That
   visible-to-RAW selection policy is implemented by C++ `ContentsWysiwygEditorPolicy`; QML only applies the returned
   range to the live `LV.TextEditor`. Collapsed
-  mouse clicks use the same bridge for cursor placement and update a local projected-cursor offset immediately, so the
-  visible caret does not wait on the parent host's `logicalCursorPosition` binding. Non-empty drag selections clear
-  that cursor override and hide the projected cursor so the selection model remains authoritative. Double-click and
+  mouse clicks use the same bridge for cursor placement and update a local projected-cursor offset immediately. That
+  offset is only a transient paint hint; native cursor, selection, or text changes clear it immediately, and the
+  projected cursor otherwise follows the live native logical cursor. Non-empty drag selections clear that cursor
+  override and hide the projected cursor so the selection model remains authoritative. The passive surface-selection
+  editor mirrors the plain logical text only and does not accept focus, mouse selection, or key events. Double-click and
   triple-click gestures keep native-style line and paragraph selection by selecting the visible logical range before
   mapping it back to RAW source offsets. The bridge is inactive during IME composition. Plain-source and
   keyboard/modifier selection remain on the native text-edit path.
@@ -145,7 +147,8 @@ objects.
   한다. 더블클릭은 표시 논리 줄, 세 번 클릭은 표시 문단을 선택한 뒤 RAW source offset으로 되돌린다. 이 pointer
   bridge는 IME composition 중에는 비활성화된다.
 - cursor: 렌더 overlay가 보이는 동안 네이티브 커서는 visible logical text 좌표에서만 움직인다. QML은
-  `sourceCursorPosition`과 `sourceSelectionStart/End`를 통해 마지막 단계에서만 RAW offset으로 변환한다.
+  `logicalCursorPosition`, `sourceCursorPosition`, `sourceSelectionStart/End`를 분리해 노출하고, pointer
+  override는 클릭 직후 표시 보정으로만 사용한 뒤 native cursor/selection/text 변경에서 즉시 해제한다.
 - programmatic sync: 포커스된 native selection 중에는 inline editor controller가 host-side 텍스트 복원을
   defer/reject할 수 있어 selection이 즉시 해제되지 않는다. native `LV.TextEditor.text`는 projection 표현식에
   직접 바인딩하지 않고 controller의 programmatic sync 경로로만 갱신한다.

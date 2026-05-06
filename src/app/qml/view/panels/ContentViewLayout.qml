@@ -372,7 +372,6 @@ Item {
                                                        structuredDocumentFlow.width - LV.Theme.gap16 * 2)
                                 height: editorDocumentContent.height
                                 htmlTokens: editorDisplayBackend.presentationProjection.htmlTokens
-                                logicalCursorPosition: editorDisplayBackend.presentationProjection.logicalCursorPosition
                                 logicalText: editorDisplayBackend.presentationProjection.logicalText
                                 normalizedHtmlBlocks: editorDisplayBackend.presentationProjection.normalizedHtmlBlocks
                                 objectName: "contentsDisplayStructuredDocumentFlow"

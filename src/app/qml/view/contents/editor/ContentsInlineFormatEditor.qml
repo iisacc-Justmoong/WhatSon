@@ -12,6 +12,7 @@ Item {
     property alias contentHeight: textInput.contentHeight
     property color cursorColor: LV.Theme.accentBlue
     property alias cursorPosition: textInput.cursorPosition
+    property alias logicalCursorPosition: textInput.cursorPosition
     property var coordinateMapper: null
     property var atomicResourceSelectionRects: []
     property string displayGeometryText: control.text
@@ -39,14 +40,16 @@ Item {
     property bool surfaceSelectionSyncActive: false
     property bool surfaceSelectionTextRefreshActive: false
     property bool surfaceSelectionToRawSyncScheduled: false
+    property int surfaceSelectionCursorLogicalOffset: 0
+    property int surfaceSelectionEndLogicalOffset: 0
+    property int surfaceSelectionStartLogicalOffset: 0
     property bool cursorNormalizationActive: false
     readonly property bool inputMethodComposing: textInput.inputMethodComposing
     readonly property string preeditText: String(textInput.editorItem.preeditText)
     property string renderedText: ""
-    property int logicalCursorPosition: textInput.cursorPosition
     readonly property int resolvedProjectedCursorPosition: control.visiblePointerCursorLogicalOffset >= 0
             ? control.visiblePointerCursorLogicalOffset
-            : (control.logicalSurfaceActive ? textInput.cursorPosition : control.logicalCursorPosition)
+            : textInput.cursorPosition
     readonly property int cursorPixelWidth: Math.max(1, Math.ceil(LV.Theme.strokeThin))
     readonly property rect projectedCursorRectangle: control.cursorProjectionRectangle()
     readonly property bool projectedCursorVisible: control.renderedOverlayVisible
@@ -97,6 +100,7 @@ Item {
     function clearSelection() {
         textInput.deselect();
         control.clearRenderedOverlaySelection();
+        control.clearVisiblePointerCursorOverride();
     }
 
     function currentPlainText() {
@@ -105,6 +109,17 @@ Item {
 
     function boundedCursorPosition(position, length) {
         return wysiwygEditorPolicy.boundedOffset(Number(position) || 0, Number(length) || 0);
+    }
+
+    function clearVisiblePointerCursorOverride() {
+        if (control.visiblePointerCursorLogicalOffset !== -1)
+            control.visiblePointerCursorLogicalOffset = -1;
+    }
+
+    function clearVisiblePointerCursorOverrideAfterNativeStateChange() {
+        if (control.visiblePointerCursorUpdateActive)
+            return;
+        control.clearVisiblePointerCursorOverride();
     }
 
     function cursorProjectionRectangle() {
@@ -271,6 +286,7 @@ Item {
         if (control.cursorNormalizationActive)
             return false;
         if (control.logicalSurfaceActive) {
+            control.clearVisiblePointerCursorOverrideAfterNativeStateChange();
             control.previousRawCursorPosition = control.sourceCursorPosition;
             return false;
         }
@@ -421,10 +437,13 @@ Item {
     }
 
     function restoreSurfaceLogicalSelectionSpan(startLogicalOffset, endLogicalOffset, cursorLogicalOffset) {
-        const surfaceLength = Math.max(0, Number(surfaceSelectionEditor.length) || 0);
+        const surfaceLength = Math.max(0, Number(renderedGeometryProbe.length) || 0);
         const start = control.boundedCursorPosition(startLogicalOffset, surfaceLength);
         const end = Math.max(start, control.boundedCursorPosition(endLogicalOffset, surfaceLength));
         const cursor = Math.max(start, Math.min(control.boundedCursorPosition(cursorLogicalOffset, surfaceLength), end));
+        control.surfaceSelectionStartLogicalOffset = start;
+        control.surfaceSelectionEndLogicalOffset = end;
+        control.surfaceSelectionCursorLogicalOffset = cursor;
         control.surfaceSelectionSyncActive = true;
         if (start === end) {
             surfaceSelectionEditor.deselect();
@@ -446,10 +465,10 @@ Item {
 
         const rawSelection = wysiwygEditorPolicy.rawSelectionForVisibleSurfaceSelection(
                     control.coordinateMapper,
-                    surfaceSelectionEditor.selectionStart,
-                    surfaceSelectionEditor.selectionEnd,
-                    surfaceSelectionEditor.cursorPosition,
-                    surfaceSelectionEditor.length,
+                    control.surfaceSelectionStartLogicalOffset,
+                    control.surfaceSelectionEndLogicalOffset,
+                    control.surfaceSelectionCursorLogicalOffset,
+                    renderedGeometryProbe.length,
                     control.text.length);
         if (rawSelection.valid !== true)
             return false;
@@ -665,6 +684,7 @@ Item {
 
     function restoreSelectionRange(selectionStart, selectionEnd, cursorPosition) {
         control.forceActiveFocus();
+        control.clearVisiblePointerCursorOverrideAfterNativeStateChange();
         const sourceLength = control.text.length;
         const sourceStart = Math.max(0, Math.min(Number(selectionStart) || 0, sourceLength));
         let sourceEnd = Math.max(sourceStart, Math.min(Number(selectionEnd) || sourceStart, sourceLength));
@@ -714,9 +734,14 @@ Item {
 
     function selectionSnapshot() {
         return {
-            "cursorPosition": control.sourceCursorPosition,
+            "logicalCursorPosition": textInput.cursorPosition,
+            "logicalSelectionEnd": textInput.selectionEnd,
+            "logicalSelectionStart": textInput.selectionStart,
             "selectionStart": control.selectionStart,
             "selectionEnd": control.selectionEnd,
+            "sourceCursorPosition": control.sourceCursorPosition,
+            "sourceSelectionEnd": control.selectionEnd,
+            "sourceSelectionStart": control.selectionStart,
             "selectedText": textInput.selectedText
         };
     }
@@ -751,9 +776,7 @@ Item {
         if (payload.applied !== true || payload.nextSourceText === undefined || payload.nextSourceText === null)
             return;
 
-        control.visiblePointerCursorLogicalOffset = control.boundedCursorPosition(
-                    Number(payload.surfaceCursor) || textInput.cursorPosition,
-                    textInput.length);
+        control.clearVisiblePointerCursorOverride();
         control.textEdited(String(payload.nextSourceText));
     }
 
@@ -822,17 +845,23 @@ Item {
     clip: true
 
     onCoordinateMapperChanged: control.scheduleRenderedOverlaySelectionRefresh()
-    onDisplayGeometryTextChanged: control.syncNativeSurfaceTextFromProjection(false)
-    onLogicalCursorPositionChanged: {
-        if (control.visiblePointerCursorLogicalOffset === control.logicalCursorPosition)
-            control.visiblePointerCursorLogicalOffset = -1;
+    onDisplayGeometryTextChanged: {
+        control.clearVisiblePointerCursorOverrideAfterNativeStateChange();
+        control.syncNativeSurfaceTextFromProjection(false);
     }
+    onLogicalCursorPositionChanged: control.clearVisiblePointerCursorOverrideAfterNativeStateChange()
     onLogicalSurfaceActiveChanged: control.syncNativeSurfaceTextFromProjection(true)
-    onNativeSelectionActiveChanged: control.scheduleRenderedOverlaySelectionRefresh()
+    onNativeSelectionActiveChanged: {
+        control.clearVisiblePointerCursorOverrideAfterNativeStateChange();
+        control.scheduleRenderedOverlaySelectionRefresh();
+    }
     onNormalizedHtmlBlocksChanged: control.scheduleRenderedOverlaySelectionRefresh()
     onRenderedOverlayVisibleChanged: control.scheduleRenderedOverlaySelectionRefresh()
     onRenderedTextChanged: control.scheduleRenderedOverlaySelectionRefresh()
-    onTextChanged: control.syncNativeSurfaceTextFromProjection(false)
+    onTextChanged: {
+        control.clearVisiblePointerCursorOverrideAfterNativeStateChange();
+        control.syncNativeSurfaceTextFromProjection(false);
+    }
 
     Component.onCompleted: control.syncNativeSurfaceTextFromProjection(true)
 
@@ -967,10 +996,10 @@ Item {
     TextEdit {
         id: surfaceSelectionEditor
 
-        activeFocusOnPress: true
+        activeFocusOnPress: false
         anchors.fill: renderedOverlay
         color: "transparent"
-        enabled: control.renderedOverlayVisible && !control.nativeCompositionActive()
+        enabled: false
         font.family: LV.Theme.fontBody
         font.pixelSize: LV.Theme.textBody
         objectName: "contentsInlineFormatSurfaceSelectionEditor"
@@ -978,27 +1007,16 @@ Item {
         persistentSelection: true
         readOnly: true
         selectByKeyboard: false
-        selectByMouse: true
+        selectByMouse: false
         selectedTextColor: "transparent"
         selectionColor: "transparent"
         text: control.displayGeometryText
         textFormat: TextEdit.PlainText
         textMargin: LV.Theme.gapNone
-        visible: enabled
+        visible: control.renderedOverlayVisible && !control.nativeCompositionActive()
         wrapMode: TextEdit.Wrap
         z: 4
 
-        Keys.priority: Keys.BeforeItem
-        Keys.onPressed: function (event) {
-            control.forceActiveFocus();
-            control.handleTagManagementKeyPress(event);
-            if (!event.accepted)
-                event.accepted = false;
-        }
-
-        onCursorPositionChanged: control.scheduleSurfaceSelectionToRawSync()
-        onSelectionEndChanged: control.scheduleSurfaceSelectionToRawSync()
-        onSelectionStartChanged: control.scheduleSurfaceSelectionToRawSync()
         onTextChanged: {
             control.surfaceSelectionTextRefreshActive = true;
             Qt.callLater(function () {
@@ -1243,10 +1261,20 @@ Item {
         }
 
         onTextEdited: function (text) {
+            control.clearVisiblePointerCursorOverrideAfterNativeStateChange();
             control.handleNativeSurfaceTextEdited(text);
         }
-        onCursorPositionChanged: control.normalizeCursorPositionAwayFromHiddenTagTokens()
-        onSelectionEndChanged: control.scheduleRenderedOverlaySelectionRefresh()
-        onSelectionStartChanged: control.scheduleRenderedOverlaySelectionRefresh()
+        onCursorPositionChanged: {
+            control.clearVisiblePointerCursorOverrideAfterNativeStateChange();
+            control.normalizeCursorPositionAwayFromHiddenTagTokens();
+        }
+        onSelectionEndChanged: {
+            control.clearVisiblePointerCursorOverrideAfterNativeStateChange();
+            control.scheduleRenderedOverlaySelectionRefresh();
+        }
+        onSelectionStartChanged: {
+            control.clearVisiblePointerCursorOverrideAfterNativeStateChange();
+            control.scheduleRenderedOverlaySelectionRefresh();
+        }
     }
 }

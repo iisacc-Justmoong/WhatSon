@@ -56,6 +56,9 @@ surface.
 - The note editor flow receives both the session RAW `sourceText` and the projection-owned `projectionSourceText`, so
   `ContentsStructuredDocumentFlow.qml` can hold the last ready logical projection while parser/render publication
   catches up instead of falling back to RAW tag text.
+- `ContentViewLayout.qml` does not forward `presentationProjection.logicalCursorPosition` into
+  `ContentsStructuredDocumentFlow.qml`; the live `ContentsInlineFormatEditor.qml` native editor owns the visible
+  logical cursor and exposes the mapped RAW cursor back upward through `editorCursorPosition`.
 - That sidebar-hierarchy forwarding is now part of the editor contract so desktop/mobile surfaces can distinguish:
   - direct resource-package browsing inside the Resources hierarchy
   - ordinary notes from other hierarchies whose `.wsnbody` happens to contain inline `<resource ... />` blocks
