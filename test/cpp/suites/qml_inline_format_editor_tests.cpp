@@ -102,6 +102,8 @@ void WhatSonCppRegressionTests::qmlInlineFormatEditor_keepsNativeTextEditInputUn
     QVERIFY(inlineEditorSource.contains(QStringLiteral("function restoreVisibleLogicalLineSelectionAtLogicalOffset(logicalOffset)")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("function restoreVisibleLogicalParagraphSelectionAtLogicalOffset(logicalOffset)")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("function syncRawSelectionFromSurfaceSelection()")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("function restoreSelectionRange(selectionStart, selectionEnd, cursorPosition)")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("control.forceActiveFocus();")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("function scheduleSurfaceSelectionToRawSync()")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("function visibleLogicalOffsetAtPoint(localX, localY)")));
     QVERIFY(!inlineEditorSource.contains(QStringLiteral("function applyRenderedBackspaceMutation(event)")));
@@ -1855,7 +1857,9 @@ Item {
 
     QTest::keyClick(&window, Qt::Key_A, Qt::MetaModifier | Qt::AltModifier);
 
-    QTRY_VERIFY(rootObject->property("committedText").toString().startsWith(QStringLiteral("Meta agenda\n<agenda date=\"")));
+    QTRY_VERIFY_WITH_TIMEOUT(
+        rootObject->property("committedText").toString().startsWith(QStringLiteral("Meta agenda\n<agenda date=\"")),
+        5000);
     QVERIFY(rootObject->property("committedText").toString().contains(QStringLiteral("<task done=\"false\"> </task></agenda>")));
 
     rootObject->setProperty("committedText", QString());

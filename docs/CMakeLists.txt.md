@@ -14,6 +14,9 @@
 ## Invariants
 - Keep option declarations, package discovery, and primary product `add_subdirectory(...)` calls in the root file.
 - Keep grouped custom targets in `cmake/root/*` and avoid moving product-level source ownership back into the root file.
+- `whatson_build_all` is an aggregate custom target with explicit `add_dependencies(...)` on product targets. Do not
+  put bundle executable paths or product target names in the custom target's `DEPENDS` list, because macOS app bundles
+  can otherwise be interpreted as file dependencies without a make rule.
 - Reuse `build/` for configure/build/test flows; the nested `build-trial` path remains opt-in packaging infrastructure only.
 - User-built local libraries under `~/.local` are surfaced through cacheable root prefixes. `iiXml` and `iiHtmlBlock`
   are required when the app or regression suite is enabled, and are discovered through their CMake package configs

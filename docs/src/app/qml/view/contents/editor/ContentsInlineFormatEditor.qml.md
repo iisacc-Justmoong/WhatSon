@@ -93,8 +93,8 @@ Wraps the live `LV.TextEditor` used by the note document surface.
   `LV.TextEditor.editorItem`; no QML helper owns that controller state.
 - User-initiated tag-management commands apply through the controller's immediate programmatic text path before
   restoring the source selection returned by the tag insertion controller.
-- `restoreSelectionRange(...)` clears stale collapsed selections before cursor placement and restores non-empty ranges
-  through native `moveCursorSelection(...)`.
+- `restoreSelectionRange(...)` focuses the live `LV.TextEditor`, clears stale collapsed selections before cursor
+  placement, and restores non-empty ranges through native `moveCursorSelection(...)`.
 - `focusTerminalBodyPosition()` focuses the native `LV.TextEditor`, clears any stale selection, and moves the cursor to
   the visible terminal position; `sourceCursorPosition` maps that collapsed caret back to the RAW text end.
 - Ordinary navigation, selection, Backspace/Delete repeat, paste fallback, and IME/preedit behavior remain with Qt's

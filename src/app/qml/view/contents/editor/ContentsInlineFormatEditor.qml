@@ -664,6 +664,7 @@ Item {
     }
 
     function restoreSelectionRange(selectionStart, selectionEnd, cursorPosition) {
+        control.forceActiveFocus();
         const sourceLength = control.text.length;
         const sourceStart = Math.max(0, Math.min(Number(selectionStart) || 0, sourceLength));
         let sourceEnd = Math.max(sourceStart, Math.min(Number(selectionEnd) || sourceStart, sourceLength));

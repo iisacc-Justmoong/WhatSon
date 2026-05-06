@@ -84,7 +84,7 @@ QString SidebarHierarchyInteractionController::armedExpansionKey() const
 
 QString SidebarHierarchyInteractionController::footerActionName(int index, const QString& eventName) const
 {
-    const QString normalizedEventName = eventName.trimmed();
+    QString normalizedEventName = eventName.trimmed();
     if (normalizedEventName == QStringLiteral("hierarchy.footer.create")
         || normalizedEventName == QStringLiteral("hierarchy.footer.delete")
         || normalizedEventName == QStringLiteral("hierarchy.footer.options"))

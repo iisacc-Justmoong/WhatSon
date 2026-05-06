@@ -22,6 +22,9 @@ void WhatSonCppRegressionTests::cmakeDependencyWiring_declaresLocalXmlAndHtmlBlo
     QVERIFY(rootCmakeSource.contains(QStringLiteral("whatson_require_ios_local_package(iiHtmlBlock")));
     QVERIFY(rootCmakeSource.contains(QStringLiteral("find_package(iiXml 0.1.0 CONFIG REQUIRED)")));
     QVERIFY(rootCmakeSource.contains(QStringLiteral("find_package(iiHtmlBlock 0.1.0 CONFIG REQUIRED)")));
+    QVERIFY(rootCmakeSource.contains(QStringLiteral("add_custom_target(whatson_build_all)")));
+    QVERIFY(rootCmakeSource.contains(QStringLiteral("add_dependencies(whatson_build_all ${WHATSON_BUILD_TARGETS})")));
+    QVERIFY(!rootCmakeSource.contains(QStringLiteral("add_custom_target(whatson_build_all DEPENDS ${WHATSON_BUILD_TARGETS})")));
 
     QVERIFY(appRuntimeCmakeSource.contains(QStringLiteral("iiXml::iiXml")));
     QVERIFY(appRuntimeCmakeSource.contains(QStringLiteral("iiHtmlBlock::iiHtmlBlock")));

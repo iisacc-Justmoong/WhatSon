@@ -347,7 +347,8 @@ if (TARGET whatson_cli)
 endif ()
 
 if (WHATSON_BUILD_TARGETS)
-    add_custom_target(whatson_build_all DEPENDS ${WHATSON_BUILD_TARGETS})
+    add_custom_target(whatson_build_all)
+    add_dependencies(whatson_build_all ${WHATSON_BUILD_TARGETS})
 endif ()
 
 add_subdirectory(cmake/root)

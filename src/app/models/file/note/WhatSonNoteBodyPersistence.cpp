@@ -2,6 +2,7 @@
 
 #include "app/models/file/note/WhatSonIiXmlDocumentSupport.hpp"
 #include "app/models/file/note/WhatSonNoteBodySemanticTagSupport.hpp"
+#include "app/models/file/note/WhatSonNoteBodyWebLinkSupport.hpp"
 #include "app/models/file/WhatSonDebugTrace.hpp"
 #include "app/models/file/note/WhatSonLocalNoteFileStore.hpp"
 
@@ -88,6 +89,155 @@ namespace
             || SemanticTags::isHashtagTagName(tagName)
             || SemanticTags::isTransparentContainerTagName(tagName)
             || SemanticTags::isRenderedTextBlockElement(tagName);
+    }
+
+    bool isClosingTagToken(QStringView tagToken)
+    {
+        for (int cursor = 1; cursor < tagToken.size(); ++cursor)
+        {
+            const QChar ch = tagToken.at(cursor);
+            if (!ch.isSpace())
+            {
+                return ch == QLatin1Char('/');
+            }
+        }
+        return false;
+    }
+
+    bool isSelfClosingTagToken(QStringView tagToken)
+    {
+        QStringView trimmed = tagToken.trimmed();
+        return trimmed.size() >= 2
+            && trimmed.at(trimmed.size() - 2) == QLatin1Char('/')
+            && trimmed.back() == QLatin1Char('>');
+    }
+
+    QString inlineStyleOpeningHtml(const QString& canonicalStyleTag)
+    {
+        if (canonicalStyleTag == QStringLiteral("bold"))
+        {
+            return QStringLiteral("<strong style=\"font-weight:900;\">");
+        }
+        if (canonicalStyleTag == QStringLiteral("italic"))
+        {
+            return QStringLiteral("<span style=\"font-style:italic;\">");
+        }
+        if (canonicalStyleTag == QStringLiteral("underline"))
+        {
+            return QStringLiteral("<span style=\"text-decoration: underline;\">");
+        }
+        if (canonicalStyleTag == QStringLiteral("strikethrough"))
+        {
+            return QStringLiteral("<span style=\"text-decoration: line-through;\">");
+        }
+        if (canonicalStyleTag == QStringLiteral("highlight"))
+        {
+            return QStringLiteral("<span style=\"background-color:#8A4B00;color:#D6AE58;font-weight:600;\">");
+        }
+        return {};
+    }
+
+    QString inlineStyleClosingHtml(const QString& canonicalStyleTag)
+    {
+        if (canonicalStyleTag == QStringLiteral("bold"))
+        {
+            return QStringLiteral("</strong>");
+        }
+        if (!canonicalStyleTag.isEmpty())
+        {
+            return QStringLiteral("</span>");
+        }
+        return {};
+    }
+
+    QString openingHtmlForSourceTag(QStringView tagToken, const QString& tagName)
+    {
+        const QString canonicalStyleTag = SemanticTags::canonicalInlineStyleTagName(tagName);
+        if (!canonicalStyleTag.isEmpty())
+        {
+            return inlineStyleOpeningHtml(canonicalStyleTag);
+        }
+        if (SemanticTags::isWebLinkTagName(tagName))
+        {
+            return WhatSon::NoteBodyWebLinkSupport::openingHtmlFromRawToken(tagToken.toString());
+        }
+        if (SemanticTags::isHashtagTagName(tagName))
+        {
+            return QStringLiteral("#");
+        }
+        return SemanticTags::semanticTextOpeningHtml(tagName);
+    }
+
+    QString closingHtmlForSourceTag(const QString& tagName)
+    {
+        const QString canonicalStyleTag = SemanticTags::canonicalInlineStyleTagName(tagName);
+        if (!canonicalStyleTag.isEmpty())
+        {
+            return inlineStyleClosingHtml(canonicalStyleTag);
+        }
+        if (SemanticTags::isWebLinkTagName(tagName))
+        {
+            return QStringLiteral("</a>");
+        }
+        if (SemanticTags::isHashtagTagName(tagName))
+        {
+            return {};
+        }
+        return SemanticTags::semanticTextClosingHtml(tagName);
+    }
+
+    QString renderInlineSourceToHtml(const QString& sourceFragment)
+    {
+        QString rendered;
+        rendered.reserve(sourceFragment.size() + 32);
+
+        int cursor = 0;
+        while (cursor < sourceFragment.size())
+        {
+            if (sourceFragment.at(cursor) == QLatin1Char('<'))
+            {
+                const int tagEnd = sourceFragment.indexOf(QLatin1Char('>'), cursor + 1);
+                if (tagEnd > cursor)
+                {
+                    const QStringView tagToken(sourceFragment.constData() + cursor, tagEnd - cursor + 1);
+                    const QString tagName = sourceTagName(tagToken);
+                    const bool recognizedTag = !SemanticTags::canonicalInlineStyleTagName(tagName).isEmpty()
+                        || SemanticTags::isWebLinkTagName(tagName)
+                        || SemanticTags::isHashtagTagName(tagName)
+                        || !SemanticTags::semanticTextOpeningHtml(tagName).isEmpty();
+                    if (SemanticTags::isRenderedLineBreakTagName(tagName))
+                    {
+                        rendered += QStringLiteral("<br/>");
+                        cursor = tagEnd + 1;
+                        continue;
+                    }
+                    if (recognizedTag)
+                    {
+                        if (isClosingTagToken(tagToken))
+                        {
+                            rendered += closingHtmlForSourceTag(tagName);
+                        }
+                        else
+                        {
+                            rendered += openingHtmlForSourceTag(tagToken, tagName);
+                            if (isSelfClosingTagToken(tagToken))
+                            {
+                                rendered += closingHtmlForSourceTag(tagName);
+                            }
+                        }
+                        cursor = tagEnd + 1;
+                        continue;
+                    }
+                }
+            }
+
+            const int nextTag = sourceFragment.indexOf(QLatin1Char('<'), cursor + 1);
+            const int textEnd = nextTag >= 0 ? nextTag : sourceFragment.size();
+            rendered += escapeHtml(sourceFragment.mid(cursor, textEnd - cursor));
+            cursor = textEnd;
+        }
+
+        return rendered;
     }
 
     QString encodeInlineSourceFragment(const QString& sourceFragment)
@@ -247,6 +397,11 @@ namespace
         {
             return WhatSon::NoteBodyPersistence::normalizeBodyPlainText(
                 decodeInlineSourceFragment(IiXml::stringFromUtf8View(document.ValueView(node))));
+        }
+
+        if (SemanticTags::isSourceProjectionTextBlockElement(tagName))
+        {
+            return WhatSon::NoteBodyPersistence::normalizeBodyPlainText(IiXml::nodeText(document, &node));
         }
 
         if (QString::compare(tagName, QStringLiteral("break"), Qt::CaseInsensitive) == 0
@@ -461,7 +616,8 @@ namespace WhatSon::NoteBodyPersistence
         const QString normalizedId = noteId.trimmed().isEmpty()
                                          ? QStringLiteral("note")
                                          : escapeXml(noteId.trimmed());
-        const QString normalizedSourceText = normalizeBodyPlainText(bodySourceText);
+        const QString normalizedSourceText =
+            WhatSon::NoteBodyWebLinkSupport::autoWrapDetectedWebLinks(normalizeBodyPlainText(bodySourceText));
         const QStringList lines = normalizedSourceText.split(QLatin1Char('\n'), Qt::KeepEmptyParts);
 
         QString text;
@@ -534,12 +690,12 @@ namespace WhatSon::NoteBodyPersistence
 
     QString htmlProjectionFromBodyDocument(const QString& bodyDocumentText)
     {
-        const QStringList lines = bodyPlainLinesFromDocument(bodyDocumentText);
+        const QStringList lines = bodySourceLinesFromDocument(bodyDocumentText);
         QStringList htmlLines;
         htmlLines.reserve(lines.size());
         for (const QString& line : lines)
         {
-            htmlLines.push_back(escapeHtml(line));
+            htmlLines.push_back(renderInlineSourceToHtml(line));
         }
         return htmlLines.join(QStringLiteral("<br/>"));
     }

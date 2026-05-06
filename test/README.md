@@ -129,6 +129,9 @@ ctest --test-dir build --output-on-failure -L cpp_regression
 - RAW note hyperlink promotion now also has regression coverage, so committed/pasted URLs, `.wsnbody` round-trips,
   closing-tag cursor offsets, and RichText external-link activation stay aligned on the new `<weblink href="...">`
   contract.
+- Note-body persistence now also locks inline style projection from stored RAW tags to rendered HTML, so a source run
+  like `<bold>Al<italic>pha</italic></bold><italic> Beta</italic>` cannot reappear in the editor projection as literal
+  XML text.
 - `.wsresource` package support now also has regression coverage for annotation-canvas generation, so package metadata
   round-trips the new `annotationPath` and newly created resource packages keep a transparent `annotation.png`.
 - Folder-path semantics now also lock escaped literal-slash handling plus `Folders.wsfolders` parser migration, so a

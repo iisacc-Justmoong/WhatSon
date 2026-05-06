@@ -88,7 +88,8 @@ The current contract preserves editor-authored RAW source across save/load turns
   `.wsnhead` and `Tags.wstags` synchronization.
 - The parser now ignores whitespace-only top-level character nodes inside `<body>`, so pretty-printed empty bodies
   (`<body>\n  </body>`) no longer rehydrate as a leading blank line in the editor.
-- `richTextFromBodyDocument(...)` uses the same parser pipeline and emits HTML-ready lines (`<br/>` joins), mapping inline style aliases to explicit span styling:
+- `htmlProjectionFromBodyDocument(...)` projects canonical editor RAW source lines to HTML-ready lines (`<br/>`
+  joins), mapping inline style aliases to explicit span styling instead of escaping the RAW tags as literal text:
   - `bold` / `b` / `strong` -> `<strong style="font-weight:900;">`
   - `italic` / `i` / `em` -> `<span style="font-style:italic;">`
   - `underline` / `u` -> `<span style="text-decoration: underline;">`
@@ -163,6 +164,8 @@ rewriting `bodySourceText` RAW just because the body document was read and repar
   `<break/>`, and rich-text projection must show a divider line instead of literal tag text.
 - A typed or pasted web URL that canonicalizes into `<weblink href="...">label</weblink>` must survive save/load and
   rich-text projection as one active hyperlink instead of escaping back into literal XML.
+- A typed inline style run such as `<bold>Al<italic>pha</italic></bold><italic> Beta</italic>` must project to styled
+  HTML in the read-side projection instead of displaying the RAW tags as text.
 - A typed agenda/task source block must survive save/load without escaping:
   - input: `<agenda date="..."><task done="false">todo</task></agenda>`
   - output source projection: canonical agenda/task tags with normalized attributes

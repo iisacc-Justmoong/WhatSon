@@ -17,6 +17,16 @@ void WhatSonCppRegressionTests::noteBodyPersistence_roundTripsAndProjectsCanonic
         QStringLiteral("<a href=\"https://www.iisacc.com\" style=\"color:#8CB4FF;text-decoration: underline;\">")));
     QVERIFY(htmlProjection.contains(QStringLiteral("아이작닷컴</a>")));
 
+    const QString inlineStyleDocument = WhatSon::NoteBodyPersistence::serializeBodyDocument(
+        QStringLiteral("note"),
+        QStringLiteral("<bold>Al<italic>pha</italic></bold><italic> Beta</italic>"));
+    const QString inlineStyleHtmlProjection =
+        WhatSon::NoteBodyPersistence::htmlProjectionFromBodyDocument(inlineStyleDocument);
+    QVERIFY(inlineStyleHtmlProjection.contains(QStringLiteral("<strong style=\"font-weight:900;\">Al")));
+    QVERIFY(inlineStyleHtmlProjection.contains(QStringLiteral("<span style=\"font-style:italic;\">pha</span>")));
+    QVERIFY(inlineStyleHtmlProjection.contains(QStringLiteral("</strong><span style=\"font-style:italic;\"> Beta</span>")));
+    QVERIFY(!inlineStyleHtmlProjection.contains(QStringLiteral("&lt;bold&gt;")));
+
     const QString autoWrappedDocument = WhatSon::NoteBodyPersistence::serializeBodyDocument(
         QStringLiteral("note"),
         QStringLiteral("Visit www.iisacc.com"));
