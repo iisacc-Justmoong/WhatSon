@@ -302,6 +302,11 @@ QObject* NoteActiveStateTracker::editorSession() const noexcept
     return m_editorSession.data();
 }
 
+QObject* NoteActiveStateTracker::editorSaveCoordinator() const noexcept
+{
+    return m_editorSaveCoordinator.data();
+}
+
 void NoteActiveStateTracker::setEditorSession(QObject* session)
 {
     auto* const nextSession = qobject_cast<ContentsEditorSessionController*>(session);
@@ -331,6 +336,30 @@ void NoteActiveStateTracker::setEditorSession(QObject* session)
     }
 
     emit editorSessionChanged();
+    syncEditorSessionFromActiveNote();
+}
+
+void NoteActiveStateTracker::setEditorSaveCoordinator(QObject* coordinator)
+{
+    if (m_editorSaveCoordinator == coordinator)
+    {
+        syncEditorSessionFromActiveNote();
+        return;
+    }
+
+    disconnectEditorSaveCoordinator();
+    m_editorSaveCoordinator = coordinator;
+    if (m_editorSaveCoordinator != nullptr)
+    {
+        stabilizeQmlBindingOwnership(m_editorSaveCoordinator);
+        m_editorSaveCoordinatorDestroyedConnection = connect(
+            m_editorSaveCoordinator,
+            &QObject::destroyed,
+            this,
+            &NoteActiveStateTracker::handleEditorSaveCoordinatorDestroyed);
+    }
+
+    emit editorSaveCoordinatorChanged();
     syncEditorSessionFromActiveNote();
 }
 
@@ -391,6 +420,20 @@ bool NoteActiveStateTracker::syncEditorSessionFromActiveNote()
         return false;
     }
 
+    if (m_editorSaveCoordinator != nullptr)
+    {
+        bool synced = false;
+        QMetaObject::invokeMethod(
+            m_editorSaveCoordinator,
+            "syncEditorSessionFromSelection",
+            Q_RETURN_ARG(bool, synced),
+            Q_ARG(QString, m_activeNoteId),
+            Q_ARG(QString, m_activeNoteBodyText),
+            Q_ARG(QString, m_activeNoteId),
+            Q_ARG(QString, m_activeNoteDirectoryPath));
+        return synced;
+    }
+
     return m_editorSession->requestSyncEditorTextFromSelection(
         m_activeNoteId,
         m_activeNoteBodyText,
@@ -423,6 +466,13 @@ void NoteActiveStateTracker::handleEditorSessionDestroyed()
     disconnectEditorSession();
     m_editorSession = nullptr;
     emit editorSessionChanged();
+}
+
+void NoteActiveStateTracker::handleEditorSaveCoordinatorDestroyed()
+{
+    disconnectEditorSaveCoordinator();
+    m_editorSaveCoordinator = nullptr;
+    emit editorSaveCoordinatorChanged();
 }
 
 void NoteActiveStateTracker::synchronizeActiveBindings()
@@ -553,6 +603,15 @@ void NoteActiveStateTracker::disconnectEditorSession()
     {
         QObject::disconnect(m_editorSessionDestroyedConnection);
         m_editorSessionDestroyedConnection = QMetaObject::Connection();
+    }
+}
+
+void NoteActiveStateTracker::disconnectEditorSaveCoordinator()
+{
+    if (m_editorSaveCoordinatorDestroyedConnection)
+    {
+        QObject::disconnect(m_editorSaveCoordinatorDestroyedConnection);
+        m_editorSaveCoordinatorDestroyedConnection = QMetaObject::Connection();
     }
 }
 

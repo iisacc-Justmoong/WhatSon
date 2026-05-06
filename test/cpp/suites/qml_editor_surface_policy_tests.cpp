@@ -17,16 +17,17 @@ void WhatSonCppRegressionTests::qmlInternalTypeRegistrar_usesLvrsManifestRegistr
     QVERIFY(registrarSource.contains(QStringLiteral("ContentsEditorGeometryProvider")));
     QVERIFY(registrarSource.contains(QStringLiteral("ContentsLineNumberRailMetrics")));
     QVERIFY(registrarSource.contains(QStringLiteral("ContentsEditorTagInsertionController")));
+    QVERIFY(registrarSource.contains(QStringLiteral("ContentsEditorDisplayBackend")));
 }
 
 void WhatSonCppRegressionTests::qmlContextMenus_treatRightClickAndLongPressAsSymmetricPointerTriggers()
 {
-    const QString displayViewSource = readUtf8SourceFile(
-        QStringLiteral("src/app/qml/view/contents/editor/ContentsDisplayView.qml"));
+    const QString displayBackendSource = readUtf8SourceFile(
+        QStringLiteral("src/app/models/editor/display/ContentsEditorDisplayBackend.cpp"));
 
-    QVERIFY(displayViewSource.contains(QStringLiteral("requestEditorSelectionContextMenuFromPointer")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("\"right-click\"")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("\"long-press\"")));
+    QVERIFY(displayBackendSource.contains(QStringLiteral("requestEditorSelectionContextMenuFromPointer")));
+    QVERIFY(displayBackendSource.contains(QStringLiteral("\"right-click\"")));
+    QVERIFY(displayBackendSource.contains(QStringLiteral("\"long-press\"")));
 }
 
 void WhatSonCppRegressionTests::qmlHierarchyNoteDrop_keepsDropSurfaceOpenUntilCapabilityRejectsTarget()
@@ -100,13 +101,13 @@ void WhatSonCppRegressionTests::qmlInlineSelectionHelpers_bindOwnersAfterControl
 
 void WhatSonCppRegressionTests::qmlStructuredEditors_consumeRendererNormalizedBlocksWithoutLocalFlattening()
 {
-    const QString displayViewSource = readUtf8SourceFile(
-        QStringLiteral("src/app/qml/view/contents/editor/ContentsDisplayView.qml"));
+    const QString contentViewLayoutSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/panels/ContentViewLayout.qml"));
     const QString documentFlowSource = readUtf8SourceFile(
         QStringLiteral("src/app/qml/view/contents/editor/ContentsStructuredDocumentFlow.qml"));
 
-    QVERIFY(displayViewSource.contains(QStringLiteral("normalizedHtmlBlocks: editorPresentationProjection.normalizedHtmlBlocks")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("logicalText: editorPresentationProjection.logicalText")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("normalizedHtmlBlocks: editorDisplayBackend.presentationProjection.normalizedHtmlBlocks")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("logicalText: editorDisplayBackend.presentationProjection.logicalText")));
     QVERIFY(documentFlowSource.contains(QStringLiteral("function normalizedBlocks()")));
     QVERIFY(documentFlowSource.contains(QStringLiteral("property string logicalText: \"\"")));
     QVERIFY(documentFlowSource.contains(QStringLiteral("return documentFlow.normalizedHtmlBlocks")));
@@ -115,55 +116,62 @@ void WhatSonCppRegressionTests::qmlStructuredEditors_consumeRendererNormalizedBl
 
 void WhatSonCppRegressionTests::qmlStructuredEditors_refreshesDocumentProjectionOnEditorOpen()
 {
-    const QString displayViewSource = readUtf8SourceFile(
-        QStringLiteral("src/app/qml/view/contents/editor/ContentsDisplayView.qml"));
+    const QString displayBackendHeader = readUtf8SourceFile(
+        QStringLiteral("src/app/models/editor/display/ContentsEditorDisplayBackend.hpp"));
+    const QString displayBackendSource = readUtf8SourceFile(
+        QStringLiteral("src/app/models/editor/display/ContentsEditorDisplayBackend.cpp"));
 
-    QVERIFY(displayViewSource.contains(QStringLiteral("scheduleStructuredDocumentOpenLayoutRefresh")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("commitDocumentPresentationRefresh")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("noteDocumentParseMounted")));
+    QVERIFY(displayBackendHeader.contains(QStringLiteral("commitDocumentPresentationRefresh")));
+    QVERIFY(displayBackendSource.contains(QStringLiteral("syncProjectionInputs")));
+    QVERIFY(displayBackendSource.contains(QStringLiteral("noteDocumentParseMounted")));
 }
 
 void WhatSonCppRegressionTests::qmlStructuredEditors_mountsEditorAndMinimapInDisplayLayout()
 {
-    const QString displayViewSource = readUtf8SourceFile(
-        QStringLiteral("src/app/qml/view/contents/editor/ContentsDisplayView.qml"));
+    const QString contentViewLayoutSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/panels/ContentViewLayout.qml"));
+    const QString displayBackendHeader = readUtf8SourceFile(
+        QStringLiteral("src/app/models/editor/display/ContentsEditorDisplayBackend.hpp"));
+    const QString displayBackendSource = readUtf8SourceFile(
+        QStringLiteral("src/app/models/editor/display/ContentsEditorDisplayBackend.cpp"));
     const QString documentFlowSource = readUtf8SourceFile(
         QStringLiteral("src/app/qml/view/contents/editor/ContentsStructuredDocumentFlow.qml"));
     const QString lineNumberRailSource = readUtf8SourceFile(
         QStringLiteral("src/app/qml/view/contents/editor/ContentsLineNumberRail.qml"));
 
-    QVERIFY(displayViewSource.contains(QStringLiteral("import \"..\" as ContentsChrome")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("LV.HStack {")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("objectName: \"contentsDisplayEditorChromeHStack\"")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("readonly property int contentVerticalPadding: LV.Theme.gap8")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("anchors.bottomMargin: contentsDisplayView.contentVerticalPadding")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("anchors.topMargin: contentsDisplayView.contentVerticalPadding")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("ContentsMinimapLayoutMetrics {")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("Flickable {")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("id: editorDocumentViewport")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("objectName: \"contentsDisplayEditorDocumentViewport\"")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("contentHeight: editorDocumentContent.height")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("id: editorDocumentContent")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("height: Math.max(editorDocumentViewport.height, structuredDocumentFlow.editorContentHeight)")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("interactive: contentHeight > height")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("function editorViewportScrollRange()")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("function scrollEditorViewportByDelta(deltaY)")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("const nextContentY = editorDocumentViewport.contentY + (Number(deltaY) || 0)")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("editorDocumentViewport.contentY = Math.max(0, Math.min(scrollRange, nextContentY))")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("function syncSessionFromCurrentNote(resetViewport)")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("resetViewport === true && editorDocumentViewport")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("onCurrentRawBodyTextChanged: contentsDisplayView.syncSessionFromCurrentNote(false)")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("LV.WheelScrollGuard {")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("targetFlickable: editorDocumentViewport")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("ContentsLineNumberRail {")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("objectName: \"contentsDisplayGutter\"")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("import \"../contents\" as ContentsChrome")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("ContentsEditorDisplayBackend {")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("LV.HStack {")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("objectName: \"contentsDisplayEditorChromeHStack\"")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("readonly property int contentVerticalPadding: LV.Theme.gap8")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("anchors.bottomMargin: contentsEditorSurface.contentVerticalPadding")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("anchors.topMargin: contentsEditorSurface.contentVerticalPadding")));
+    QVERIFY(displayBackendHeader.contains(QStringLiteral("ContentsMinimapLayoutMetrics")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("Flickable {")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("id: editorDocumentViewport")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("objectName: \"contentsDisplayEditorDocumentViewport\"")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("contentHeight: editorDocumentContent.height")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("id: editorDocumentContent")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("height: Math.max(editorDocumentViewport.height, structuredDocumentFlow.editorContentHeight)")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("interactive: contentHeight > height")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("function editorViewportScrollRange()")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("function scrollEditorViewportByDelta(deltaY)")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("const nextContentY = editorDocumentViewport.contentY + (Number(deltaY) || 0)")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("editorDocumentViewport.contentY = Math.max(0, Math.min(scrollRange, nextContentY))")));
+    QVERIFY(displayBackendHeader.contains(QStringLiteral("syncSessionFromCurrentNote")));
+    QVERIFY(displayBackendSource.contains(QStringLiteral("emit editorViewportResetRequested();")));
+    QVERIFY(displayBackendSource.contains(QStringLiteral("connectPreserve(\"currentBodyText\")")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("LV.WheelScrollGuard {")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("targetFlickable: editorDocumentViewport")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("ContentsLineNumberRail {")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("objectName: \"contentsDisplayGutter\"")));
     QVERIFY(documentFlowSource.contains(QStringLiteral("readonly property int editorSelectionEnd: editor.selectionEnd")));
     QVERIFY(documentFlowSource.contains(QStringLiteral("readonly property int editorSelectionStart: editor.selectionStart")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("activeSelectionEnd: structuredDocumentFlow.editorSelectionEnd")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("activeSelectionStart: structuredDocumentFlow.editorSelectionStart")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("activeSourceCursorPosition: structuredDocumentFlow.editorCursorPosition")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("rows: structuredDocumentFlow.editorLogicalGutterRows")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("width: contentsDisplayGutter.preferredWidth")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("activeSelectionEnd: structuredDocumentFlow.editorSelectionEnd")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("activeSelectionStart: structuredDocumentFlow.editorSelectionStart")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("activeSourceCursorPosition: structuredDocumentFlow.editorCursorPosition")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("rows: structuredDocumentFlow.editorLogicalGutterRows")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("width: contentsDisplayGutter.preferredWidth")));
     QVERIFY(lineNumberRailSource.contains(QStringLiteral("property int activeSourceCursorPosition: 0")));
     QVERIFY(lineNumberRailSource.contains(QStringLiteral("property int activeSelectionEnd: activeSourceCursorPosition")));
     QVERIFY(lineNumberRailSource.contains(QStringLiteral("property int activeSelectionStart: activeSourceCursorPosition")));
@@ -182,31 +190,31 @@ void WhatSonCppRegressionTests::qmlStructuredEditors_mountsEditorAndMinimapInDis
     QVERIFY(lineNumberRailSource.contains(QStringLiteral("visible: lineNumberRailRow.activeSourceRow")));
     QVERIFY(lineNumberRailSource.contains(QStringLiteral("anchors.leftMargin: lineNumberRail.leftBlankWidth")));
     QVERIFY(lineNumberRailSource.contains(QStringLiteral("anchors.rightMargin: lineNumberRail.numberRightPadding")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("ContentsStructuredDocumentFlow {")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("ContentsChrome.Minimap {")));
-    const qsizetype hStackIndex = displayViewSource.indexOf(QStringLiteral("LV.HStack {"));
-    const qsizetype gutterIndex = displayViewSource.indexOf(QStringLiteral("ContentsLineNumberRail {"));
-    const qsizetype editorIndex = displayViewSource.indexOf(QStringLiteral("ContentsStructuredDocumentFlow {"));
-    const qsizetype minimapIndex = displayViewSource.indexOf(QStringLiteral("ContentsChrome.Minimap {"));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("ContentsStructuredDocumentFlow {")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("ContentsChrome.Minimap {")));
+    const qsizetype hStackIndex = contentViewLayoutSource.indexOf(QStringLiteral("LV.HStack {"));
+    const qsizetype gutterIndex = contentViewLayoutSource.indexOf(QStringLiteral("ContentsLineNumberRail {"));
+    const qsizetype editorIndex = contentViewLayoutSource.indexOf(QStringLiteral("ContentsStructuredDocumentFlow {"));
+    const qsizetype minimapIndex = contentViewLayoutSource.indexOf(QStringLiteral("ContentsChrome.Minimap {"));
     QVERIFY(hStackIndex >= 0);
     QVERIFY(gutterIndex > hStackIndex);
     QVERIFY(editorIndex > hStackIndex);
     QVERIFY(editorIndex > gutterIndex);
     QVERIFY(minimapIndex > editorIndex);
-    QVERIFY(displayViewSource.contains(QStringLiteral("documentBlocks: structuredBlockRenderer.renderedDocumentBlocks")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("Layout.preferredWidth: minimapLayoutMetrics.effectiveMinimapWidth")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("scrollDragEnabled: editorDocumentViewport.contentHeight > editorDocumentViewport.height")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("onScrollDeltaRequested: function (deltaY)")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("contentsDisplayView.scrollEditorViewportByDelta(deltaY)")));
-    QVERIFY(!displayViewSource.contains(QStringLiteral("scrollEditorViewportToRatio")));
-    QVERIFY(!displayViewSource.contains(QStringLiteral("onScrollRatioRequested")));
-    QVERIFY(!displayViewSource.contains(QStringLiteral("normalizedRatio")));
-    QVERIFY(!displayViewSource.contains(QStringLiteral("editorViewportScrollRatio")));
-    QVERIFY(!displayViewSource.contains(QStringLiteral("editorViewportVisibleRatio")));
-    QVERIFY(!displayViewSource.contains(QStringLiteral("scrollPositionRatio:")));
-    QVERIFY(!displayViewSource.contains(QStringLiteral("viewportRatio:")));
-    QVERIFY(!displayViewSource.contains(QStringLiteral("readonly property int effectiveMinimapWidth")));
-    QVERIFY(!displayViewSource.contains(QStringLiteral("anchors.fill: parent\n        editorSurfaceHtml")));
+    QVERIFY(displayBackendSource.contains(QStringLiteral("m_bodyResourceRenderer.setDocumentBlocks(m_structuredBlockRenderer.renderedDocumentBlocks())")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("Layout.preferredWidth: editorDisplayBackend.minimapLayoutMetrics.effectiveMinimapWidth")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("scrollDragEnabled: editorDocumentViewport.contentHeight > editorDocumentViewport.height")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("onScrollDeltaRequested: function (deltaY)")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("contentsEditorSurface.scrollEditorViewportByDelta(deltaY)")));
+    QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("scrollEditorViewportToRatio")));
+    QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("onScrollRatioRequested")));
+    QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("normalizedRatio")));
+    QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("editorViewportScrollRatio")));
+    QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("editorViewportVisibleRatio")));
+    QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("scrollPositionRatio:")));
+    QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("viewportRatio:")));
+    QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("readonly property int effectiveMinimapWidth")));
+    QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("anchors.fill: parent\n        editorSurfaceHtml")));
 }
 
 void WhatSonCppRegressionTests::qmlStructuredEditors_rejectStaleSourceRangeMutations()
@@ -237,12 +245,12 @@ void WhatSonCppRegressionTests::qmlStructuredEditors_preserveNativeMobileInputDu
 
 void WhatSonCppRegressionTests::qmlStructuredEditors_commitsPlainTextBlocksDirectlyToRawSource()
 {
-    const QString displayViewSource = readUtf8SourceFile(
-        QStringLiteral("src/app/qml/view/contents/editor/ContentsDisplayView.qml"));
+    const QString displayBackendSource = readUtf8SourceFile(
+        QStringLiteral("src/app/models/editor/display/ContentsEditorDisplayBackend.cpp"));
 
-    QVERIFY(displayViewSource.contains(QStringLiteral("commitEditedSourceText")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("commitRawEditorTextMutation")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("saveCurrentBodyText")));
+    QVERIFY(displayBackendSource.contains(QStringLiteral("commitEditedSourceText")));
+    QVERIFY(displayBackendSource.contains(QStringLiteral("m_editorSaveCoordinator.commitEditedSourceText")));
+    QVERIFY(!displayBackendSource.contains(QStringLiteral("saveCurrentBodyText")));
 }
 
 void WhatSonCppRegressionTests::qmlStructuredEditors_insertsInlineFormatTagsAtCollapsedCursor()
@@ -271,12 +279,12 @@ void WhatSonCppRegressionTests::qmlStructuredEditors_insertStructuredShortcutsTh
 {
     const QString inlineEditorSource = readUtf8SourceFile(
         QStringLiteral("src/app/qml/view/contents/editor/ContentsInlineFormatEditor.qml"));
-    const QString displayViewSource = readUtf8SourceFile(
-        QStringLiteral("src/app/qml/view/contents/editor/ContentsDisplayView.qml"));
+    const QString displayBackendHeader = readUtf8SourceFile(
+        QStringLiteral("src/app/models/editor/display/ContentsEditorDisplayBackend.hpp"));
 
     QVERIFY(inlineEditorSource.contains(QStringLiteral("eventRequestsBodyTagShortcut")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("tagManagementKeyPressHandler")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("applyDocumentSourceMutation")));
+    QVERIFY(displayBackendHeader.contains(QStringLiteral("applyDocumentSourceMutation")));
 }
 
 void WhatSonCppRegressionTests::qmlStructuredEditors_acceptsPlatformCommandModifierForInlineFormatting()
@@ -312,60 +320,62 @@ void WhatSonCppRegressionTests::qmlStructuredEditors_routesInlineFormatShortcutT
 
 void WhatSonCppRegressionTests::qmlStructuredEditors_requireCommittedRawMutationForTagCommands()
 {
-    const QString displayViewSource = readUtf8SourceFile(
-        QStringLiteral("src/app/qml/view/contents/editor/ContentsDisplayView.qml"));
+    const QString displayBackendSource = readUtf8SourceFile(
+        QStringLiteral("src/app/models/editor/display/ContentsEditorDisplayBackend.cpp"));
 
-    QVERIFY(displayViewSource.contains(QStringLiteral("applyDocumentSourceMutation")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("commitEditedSourceText")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("commitRawEditorTextMutation")));
+    QVERIFY(displayBackendSource.contains(QStringLiteral("applyDocumentSourceMutation")));
+    QVERIFY(displayBackendSource.contains(QStringLiteral("commitEditedSourceText")));
+    QVERIFY(displayBackendSource.contains(QStringLiteral("m_editorSaveCoordinator.commitEditedSourceText")));
 }
 
 void WhatSonCppRegressionTests::qmlStructuredEditors_bindSessionAndFlushTagMutationsToRawPersistence()
 {
-    const QString displayViewSource = readUtf8SourceFile(
-        QStringLiteral("src/app/qml/view/contents/editor/ContentsDisplayView.qml"));
+    const QString displayBackendHeader = readUtf8SourceFile(
+        QStringLiteral("src/app/models/editor/display/ContentsEditorDisplayBackend.hpp"));
+    const QString displayBackendSource = readUtf8SourceFile(
+        QStringLiteral("src/app/models/editor/display/ContentsEditorDisplayBackend.cpp"));
     const QString contentViewLayoutSource = readUtf8SourceFile(
         QStringLiteral("src/app/qml/view/panels/ContentViewLayout.qml"));
 
-    QVERIFY(displayViewSource.contains(QStringLiteral("ContentsEditorSessionController {")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("property var noteActiveState")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("noteActiveState.editorSession = editorSession")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("syncEditorSessionFromActiveNote")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("requestSyncEditorTextFromSelection")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("function onActiveNoteStateChanged()")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("onCurrentNoteIdChanged")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("onCurrentRawBodyTextChanged")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("sourceText: editorSession.editorText")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("documentBlocks: structuredBlockRenderer.renderedDocumentBlocks")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("visualLineCount: structuredDocumentFlow.editorVisualLineCount")));
-    QVERIFY(!displayViewSource.contains(QStringLiteral("logicalLineCount: editorPresentationProjection.logicalLineCount")));
+    QVERIFY(displayBackendHeader.contains(QStringLiteral("ContentsEditorSessionController m_editorSession")));
+    QVERIFY(displayBackendHeader.contains(QStringLiteral("Q_PROPERTY(QObject* noteActiveState")));
+    QVERIFY(displayBackendSource.contains(QStringLiteral("attachEditorSessionToActiveState")));
+    QVERIFY(displayBackendSource.contains(QStringLiteral("syncEditorSessionFromActiveNote")));
+    QVERIFY(displayBackendSource.contains(QStringLiteral("m_editorSaveCoordinator.syncEditorSessionFromSelection")));
+    QVERIFY(displayBackendHeader.contains(QStringLiteral("handlePreserveCurrentNoteFromActiveState")));
+    QVERIFY(displayBackendSource.contains(QStringLiteral("connectPropertyNotify(m_noteActiveState, \"activeNoteId\"")));
+    QVERIFY(displayBackendSource.contains(QStringLiteral("connectPropertyNotify(m_noteActiveState, \"activeNoteBodyText\"")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("sourceText: editorDisplayBackend.editorSession.editorText")));
+    QVERIFY(displayBackendSource.contains(QStringLiteral("m_bodyResourceRenderer.setDocumentBlocks(m_structuredBlockRenderer.renderedDocumentBlocks())")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("property: \"visualLineCount\"")));
+    QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("logicalLineCount: editorDisplayBackend.presentationProjection.logicalLineCount")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("property var noteActiveState")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("noteActiveState: contentViewLayout.noteActiveState")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("saveCurrentBodyText")));
+    QVERIFY(displayBackendSource.contains(QStringLiteral("editorSaveCoordinator")));
 }
 
 void WhatSonCppRegressionTests::qmlStructuredEditors_pressRightClickRequestsContextMenuAndFocusedBodyTagShortcuts()
 {
-    const QString displayViewSource = readUtf8SourceFile(
-        QStringLiteral("src/app/qml/view/contents/editor/ContentsDisplayView.qml"));
+    const QString displayBackendHeader = readUtf8SourceFile(
+        QStringLiteral("src/app/models/editor/display/ContentsEditorDisplayBackend.hpp"));
     const QString inlineEditorSource = readUtf8SourceFile(
         QStringLiteral("src/app/qml/view/contents/editor/ContentsInlineFormatEditor.qml"));
 
-    QVERIFY(displayViewSource.contains(QStringLiteral("requestEditorSelectionContextMenuFromPointer")));
+    QVERIFY(displayBackendHeader.contains(QStringLiteral("requestEditorSelectionContextMenuFromPointer")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("eventRequestsBodyTagShortcut")));
 }
 
 void WhatSonCppRegressionTests::qmlStructuredEditors_mapsBottomMarginToTerminalBodyClick()
 {
-    const QString displayViewSource = readUtf8SourceFile(
-        QStringLiteral("src/app/qml/view/contents/editor/ContentsDisplayView.qml"));
+    const QString displayBackendSource = readUtf8SourceFile(
+        QStringLiteral("src/app/models/editor/display/ContentsEditorDisplayBackend.cpp"));
     const QString documentFlowSource = readUtf8SourceFile(
         QStringLiteral("src/app/qml/view/contents/editor/ContentsStructuredDocumentFlow.qml"));
     const QString inlineEditorSource = readUtf8SourceFile(
         QStringLiteral("src/app/qml/view/contents/editor/ContentsInlineFormatEditor.qml"));
 
-    QVERIFY(displayViewSource.contains(QStringLiteral("terminalBodyClickSourceOffset")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("editorSession.editorText.length")));
+    QVERIFY(displayBackendSource.contains(QStringLiteral("terminalBodyClickSourceOffset")));
+    QVERIFY(displayBackendSource.contains(QStringLiteral("m_editorSession.editorText().size()")));
     QVERIFY(documentFlowSource.contains(QStringLiteral("function pointRequestsTerminalBodyClick")));
     QVERIFY(documentFlowSource.contains(QStringLiteral("function focusTerminalBodyFromPoint")));
     QVERIFY(documentFlowSource.contains(QStringLiteral("MouseArea {")));
@@ -460,32 +470,50 @@ void WhatSonCppRegressionTests::qmlEditorViewDirectory_containsOnlyViewSurfaceFi
     const QString bodyLayoutSource = readUtf8SourceFile(
         QStringLiteral("src/app/qml/view/panels/BodyLayout.qml"));
 
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("ContentsDisplayView {")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("ContentsEditorDisplayBackend {")));
+    QVERIFY(!QFileInfo(QStringLiteral("src/app/qml/view/contents/editor/ContentsDisplayView.qml")).exists());
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("ContentsResourceEditorView {")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("ContentsEditorSurfaceModeSupport {")));
+    QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("ContentsEditorSurfaceModeSupport.js")));
+    Q_UNUSED(bodyLayoutSource);
+
+    QDir repositoryRoot(QFileInfo(QString::fromUtf8(__FILE__)).absolutePath());
+    repositoryRoot.cdUp();
+    repositoryRoot.cdUp();
+    repositoryRoot.cdUp();
+    const QDir modelsDirectory(repositoryRoot.filePath(QStringLiteral("src/app/models")));
+    QVERIFY2(modelsDirectory.exists(), qPrintable(modelsDirectory.absolutePath()));
+    QDirIterator modelScriptFiles(
+        modelsDirectory.absolutePath(),
+        QStringList{QStringLiteral("*.qml"), QStringLiteral("*.js")},
+        QDir::Files | QDir::NoDotAndDotDot,
+        QDirIterator::Subdirectories);
+    QVERIFY2(
+        !modelScriptFiles.hasNext(),
+        qPrintable(QStringLiteral("Model layer must not contain QML/JS helpers: %1").arg(modelScriptFiles.next())));
 }
 
 void WhatSonCppRegressionTests::qmlStructuredEditors_lockCustomInputToTagManagementOnly()
 {
-    const QString displayViewSource = readUtf8SourceFile(
-        QStringLiteral("src/app/qml/view/contents/editor/ContentsDisplayView.qml"));
     const QString inlineEditorSource = readUtf8SourceFile(
         QStringLiteral("src/app/qml/view/contents/editor/ContentsInlineFormatEditor.qml"));
 
-    QVERIFY(displayViewSource.contains(QStringLiteral("editorCustomTextInputEnabled: false")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("editorTagManagementInputEnabled: true")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("readonly property bool preferNativeInputHandling: true")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("tagManagementKeyPressHandler")));
     QVERIFY(!inlineEditorSource.contains(QStringLiteral("property var shortcutKeyPressHandler")));
 }
 
 void WhatSonCppRegressionTests::qmlStructuredEditors_bindPaperPaletteIntoPagePrintMode()
 {
-    const QString displayViewSource = readUtf8SourceFile(
-        QStringLiteral("src/app/qml/view/contents/editor/ContentsDisplayView.qml"));
+    const QString displayBackendHeader = readUtf8SourceFile(
+        QStringLiteral("src/app/models/editor/display/ContentsEditorDisplayBackend.hpp"));
+    const QString displayBackendSource = readUtf8SourceFile(
+        QStringLiteral("src/app/models/editor/display/ContentsEditorDisplayBackend.cpp"));
     const QString documentFlowSource = readUtf8SourceFile(
         QStringLiteral("src/app/qml/view/contents/editor/ContentsStructuredDocumentFlow.qml"));
 
-    QVERIFY(displayViewSource.contains(QStringLiteral("property bool paperPaletteEnabled")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("paperPaletteEnabled: contentsDisplayView.paperPaletteEnabled")));
+    QVERIFY(displayBackendHeader.contains(QStringLiteral("Q_PROPERTY(bool paperPaletteEnabled")));
+    QVERIFY(displayBackendSource.contains(QStringLiteral("m_presentationProjection.setPaperPaletteEnabled(value)")));
     QVERIFY(documentFlowSource.contains(QStringLiteral("property bool paperPaletteEnabled")));
 }
 
@@ -502,19 +530,23 @@ void WhatSonCppRegressionTests::qmlStructuredEditors_clipInlineResourceCardsToMe
 
 void WhatSonCppRegressionTests::qmlStructuredEditors_wireInlineResourceRendererToIiXmlHtmlBlockPipeline()
 {
-    const QString displayViewSource = readUtf8SourceFile(
-        QStringLiteral("src/app/qml/view/contents/editor/ContentsDisplayView.qml"));
+    const QString contentViewLayoutSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/panels/ContentViewLayout.qml"));
+    const QString displayBackendHeader = readUtf8SourceFile(
+        QStringLiteral("src/app/models/editor/display/ContentsEditorDisplayBackend.hpp"));
+    const QString displayBackendSource = readUtf8SourceFile(
+        QStringLiteral("src/app/models/editor/display/ContentsEditorDisplayBackend.cpp"));
     const QString documentFlowSource = readUtf8SourceFile(
         QStringLiteral("src/app/qml/view/contents/editor/ContentsStructuredDocumentFlow.qml"));
 
-    QVERIFY(displayViewSource.contains(QStringLiteral("ContentsStructuredBlockRenderer {")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("ContentsBodyResourceRenderer {")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("documentBlocks: structuredBlockRenderer.renderedDocumentBlocks")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("ContentsInlineResourcePresentationController {")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("renderInlineResourceEditorSurfaceHtml(")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("bodyResourceRenderer.renderedResources")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("targetFrameWidth")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("structuredDocumentFlow.width - LV.Theme.gap16 * 2")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("inlineHtmlImageRenderingEnabled: true")));
+    QVERIFY(displayBackendHeader.contains(QStringLiteral("ContentsStructuredBlockRenderer m_structuredBlockRenderer")));
+    QVERIFY(displayBackendHeader.contains(QStringLiteral("ContentsBodyResourceRenderer m_bodyResourceRenderer")));
+    QVERIFY(displayBackendSource.contains(QStringLiteral("m_bodyResourceRenderer.setDocumentBlocks(m_structuredBlockRenderer.renderedDocumentBlocks())")));
+    QVERIFY(displayBackendHeader.contains(QStringLiteral("ContentsInlineResourcePresentationController m_inlineResourcePresentation")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("renderInlineResourceEditorSurfaceHtml(")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("editorDisplayBackend.bodyResourceRenderer.renderedResources")));
+    QVERIFY(displayBackendSource.contains(QStringLiteral("targetFrameWidth")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("structuredDocumentFlow.width - LV.Theme.gap16 * 2")));
+    QVERIFY(displayBackendSource.contains(QStringLiteral("inlineHtmlImageRenderingEnabled")));
     QVERIFY(documentFlowSource.contains(QStringLiteral("property string editorSurfaceHtml")));
 }

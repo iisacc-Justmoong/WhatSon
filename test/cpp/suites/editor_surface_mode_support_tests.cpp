@@ -1,46 +1,77 @@
 #include "test/cpp/whatson_cpp_regression_tests.hpp"
 
+#include "app/models/editor/display/ContentsEditorDisplayBackend.hpp"
+#include "app/models/editor/display/ContentsEditorSurfaceModeSupport.hpp"
+
 void WhatSonCppRegressionTests::editorSurfaceModeSupport_switchesToResourceEditorForResourceListModels()
 {
-    ensureCoreApplication();
-    QJSEngine engine;
-    const QJSValue library = evaluateQmlJsLibrary(
-        &engine,
-        QStringLiteral("src/app/models/editor/display/ContentsEditorSurfaceModeSupport.js"));
-    QVERIFY2(!library.isError(), qPrintable(library.toString()));
+    ContentsEditorSurfaceModeSupport support;
 
-    const QJSValue resourceEditorVisible = library.property(QStringLiteral("resourceEditorVisible"));
-    const QJSValue currentResourceEntry = library.property(QStringLiteral("currentResourceEntry"));
-    const QJSValue hasCurrentResourceEntry = library.property(QStringLiteral("hasCurrentResourceEntry"));
-    QVERIFY(resourceEditorVisible.isCallable());
-    QVERIFY(currentResourceEntry.isCallable());
-    QVERIFY(hasCurrentResourceEntry.isCallable());
+    QObject resourceListModel;
+    QVariantMap resourceEntry;
+    resourceEntry.insert(QStringLiteral("displayName"), QStringLiteral("Cover.PNG"));
+    resourceEntry.insert(QStringLiteral("renderMode"), QStringLiteral("image"));
+    resourceListModel.setProperty("noteBacked", false);
+    resourceListModel.setProperty("currentResourceEntry", resourceEntry);
 
-    QJSValue resourceEntry = engine.newObject();
-    resourceEntry.setProperty(QStringLiteral("displayName"), QStringLiteral("Cover.PNG"));
-    resourceEntry.setProperty(QStringLiteral("renderMode"), QStringLiteral("image"));
+    QObject noteListModel;
+    noteListModel.setProperty("noteBacked", true);
+    noteListModel.setProperty("currentResourceEntry", resourceEntry);
 
-    QJSValue resourceListModel = engine.newObject();
-    resourceListModel.setProperty(QStringLiteral("noteBacked"), false);
-    resourceListModel.setProperty(QStringLiteral("currentResourceEntry"), resourceEntry);
+    QVERIFY(support.resourceEditorVisibleFor(&resourceListModel));
+    QVERIFY(!support.resourceEditorVisibleFor(&noteListModel));
+    QVERIFY(!support.resourceEditorVisibleFor(nullptr));
 
-    QJSValue noteListModel = engine.newObject();
-    noteListModel.setProperty(QStringLiteral("noteBacked"), true);
-    noteListModel.setProperty(QStringLiteral("currentResourceEntry"), resourceEntry);
-
-    QVERIFY(resourceEditorVisible.call(QJSValueList{resourceListModel}).toBool());
-    QVERIFY(!resourceEditorVisible.call(QJSValueList{noteListModel}).toBool());
-    QVERIFY(!resourceEditorVisible.call(QJSValueList{QJSValue(QJSValue::UndefinedValue)}).toBool());
-
-    const QJSValue resolvedResourceEntry = currentResourceEntry.call(QJSValueList{resourceListModel});
-    QVERIFY(resolvedResourceEntry.isObject());
+    const QVariantMap resolvedResourceEntry = support.currentResourceEntryFor(&resourceListModel);
     QCOMPARE(
-        resolvedResourceEntry.property(QStringLiteral("displayName")).toString(),
+        resolvedResourceEntry.value(QStringLiteral("displayName")).toString(),
         QStringLiteral("Cover.PNG"));
-    QVERIFY(hasCurrentResourceEntry.call(QJSValueList{resourceListModel}).toBool());
+    QVERIFY(support.hasCurrentResourceEntry(&resourceListModel));
 
-    const QJSValue emptyResourceEntry = currentResourceEntry.call(QJSValueList{noteListModel});
-    QVERIFY(emptyResourceEntry.isObject());
-    QVERIFY(!hasCurrentResourceEntry.call(QJSValueList{noteListModel}).toBool());
-    QVERIFY(emptyResourceEntry.property(QStringLiteral("displayName")).isUndefined());
+    const QVariantMap emptyResourceEntry = support.currentResourceEntryFor(&noteListModel);
+    QVERIFY(!support.hasCurrentResourceEntry(&noteListModel));
+    QVERIFY(emptyResourceEntry.isEmpty());
+
+    support.setNoteListModel(&resourceListModel);
+    QVERIFY(support.resourceEditorVisible());
+    QCOMPARE(support.currentResourceEntry().value(QStringLiteral("displayName")).toString(), QStringLiteral("Cover.PNG"));
+}
+
+void WhatSonCppRegressionTests::editorDisplayBackend_mountsNoteSessionAndCommitsRawBody()
+{
+    ContentsEditorDisplayBackend backend;
+    FakeSelectionNoteListModel noteListModel;
+    FakeContentPersistenceController contentController;
+
+    noteListModel.setCurrentNoteId(QStringLiteral("note-alpha"));
+    noteListModel.setCurrentNoteDirectoryPath(QStringLiteral("/tmp/whatson/note-alpha.wsnote"));
+    noteListModel.setCurrentBodyText(QStringLiteral("<paragraph>Alpha</paragraph>"));
+
+    backend.setContentController(&contentController);
+    backend.setNoteListModel(&noteListModel);
+
+    QVERIFY(backend.noteDocumentParseMounted());
+    QCOMPARE(backend.currentNoteId(), QStringLiteral("note-alpha"));
+    QCOMPARE(backend.currentNoteDirectoryPath(), QStringLiteral("/tmp/whatson/note-alpha.wsnote"));
+    QCOMPARE(backend.editorSession()->property("editorText").toString(), QStringLiteral("<paragraph>Alpha</paragraph>"));
+
+    QVERIFY(backend.commitEditedSourceText(QStringLiteral("<paragraph>Beta</paragraph>")));
+    QCOMPARE(backend.editorSession()->property("editorText").toString(), QStringLiteral("<paragraph>Beta</paragraph>"));
+    QVERIFY(backend.editorSession()->property("pendingBodySave").toBool());
+
+    QVariantMap mutationPayload;
+    mutationPayload.insert(QStringLiteral("nextSourceText"), QStringLiteral("<paragraph>Gamma</paragraph>"));
+    QVERIFY(backend.applyDocumentSourceMutation(mutationPayload).toBool());
+    QCOMPARE(backend.editorSession()->property("editorText").toString(), QStringLiteral("<paragraph>Gamma</paragraph>"));
+    QVERIFY(backend.editorSession()->property("pendingBodySave").toBool());
+
+    QVERIFY(!backend.applyDocumentSourceMutation(QVariantMap()).toBool());
+    QCOMPARE(backend.editorSession()->property("editorText").toString(), QStringLiteral("<paragraph>Gamma</paragraph>"));
+
+    backend.setEditorCursorPosition(7);
+    QCOMPARE(backend.currentEditorCursorPosition().toInt(), 7);
+    QCOMPARE(backend.terminalBodyClickSourceOffset().toInt(), QStringLiteral("<paragraph>Gamma</paragraph>").size());
+    QCOMPARE(
+        backend.encodeXmlAttributeValue(QStringLiteral("\"<&>'")).toString(),
+        QStringLiteral("&quot;&lt;&amp;&gt;&apos;"));
 }

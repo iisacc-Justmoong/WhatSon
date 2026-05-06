@@ -6,6 +6,10 @@ void WhatSonCppRegressionTests::editorPersistenceController_definesEditorPersist
         QStringLiteral("src/app/models/editor/persistence/ContentsEditorPersistenceController.hpp"));
     const QString persistenceSource = readUtf8SourceFile(
         QStringLiteral("src/app/models/editor/persistence/ContentsEditorPersistenceController.cpp"));
+    const QString saveCoordinatorHeader = readUtf8SourceFile(
+        QStringLiteral("src/app/models/editor/persistence/ContentsEditorSaveCoordinator.hpp"));
+    const QString saveCoordinatorSource = readUtf8SourceFile(
+        QStringLiteral("src/app/models/editor/persistence/ContentsEditorSaveCoordinator.cpp"));
     const QString oldIdleSyncSource = readUtf8SourceFile(
         QStringLiteral("src/app/models/file/sync/ContentsEditorIdleSyncController.cpp"));
     const QString selectionBridgeHeader = readUtf8SourceFile(
@@ -31,6 +35,11 @@ void WhatSonCppRegressionTests::editorPersistenceController_definesEditorPersist
     QVERIFY(persistenceHeader.contains(QStringLiteral("pendingEditorTextForNote")));
     QVERIFY(persistenceHeader.contains(QStringLiteral("noteBodyTextLoaded")));
     QVERIFY(persistenceHeader.contains(QStringLiteral("viewSessionSnapshotReconciled")));
+    QVERIFY(saveCoordinatorHeader.contains(QStringLiteral("class ContentsEditorSaveCoordinator final : public QObject")));
+    QVERIFY(saveCoordinatorHeader.contains(QStringLiteral("Q_INVOKABLE bool commitEditedSourceText")));
+    QVERIFY(saveCoordinatorHeader.contains(QStringLiteral("Q_INVOKABLE bool syncEditorSessionFromSelection")));
+    QVERIFY(saveCoordinatorSource.contains(QStringLiteral("new ContentsEditorPersistenceController(this)")));
+    QVERIFY(saveCoordinatorSource.contains(QStringLiteral("flushPendingEditorText")));
 
     QVERIFY(persistenceSource.contains(QStringLiteral("ContentsNoteManagementCoordinator")));
     QVERIFY(persistenceSource.contains(QStringLiteral("constexpr int kEditorPersistenceFetchIntervalMs = 1000")));
@@ -46,17 +55,19 @@ void WhatSonCppRegressionTests::editorPersistenceController_definesEditorPersist
     QVERIFY(selectionBridgeSource.contains(QStringLiteral(
         "#include \"app/models/editor/persistence/ContentsEditorPersistenceController.hpp\"")));
     QVERIFY(selectionBridgeSource.contains(QStringLiteral("new ContentsEditorPersistenceController(this)")));
-    QVERIFY(selectionBridgeSource.contains(QStringLiteral("stageEditorTextForPersistenceAtPath")));
-    QVERIFY(selectionBridgeSource.contains(QStringLiteral("stageEditorTextForPersistence(normalizedNoteId, text)")));
+    QVERIFY(!selectionBridgeHeader.contains(QStringLiteral("flushEditorTextForNote")));
+    QVERIFY(!selectionBridgeHeader.contains(QStringLiteral("stageEditorTextForIdleSync")));
     QVERIFY(!selectionBridgeSource.contains(QStringLiteral("models/file/sync/ContentsEditorIdleSyncController")));
     QVERIFY(!selectionBridgeSource.contains(QStringLiteral("m_idleSyncController")));
 
-    QVERIFY(sessionSource.contains(QStringLiteral("stageEditorTextForIdleSync")));
-    QVERIFY(sessionSource.contains(QStringLiteral("flushEditorTextForNote")));
+    QVERIFY(!sessionSource.contains(QStringLiteral("stageEditorTextForIdleSync")));
+    QVERIFY(!sessionSource.contains(QStringLiteral("flushEditorTextForNote")));
     QVERIFY(!sessionSource.contains(QStringLiteral("ContentsNoteManagementCoordinator")));
 
     QVERIFY(testCMakeSource.contains(QStringLiteral(
         "src/app/models/editor/persistence/ContentsEditorPersistenceController.cpp")));
+    QVERIFY(testCMakeSource.contains(QStringLiteral(
+        "src/app/models/editor/persistence/ContentsEditorSaveCoordinator.cpp")));
     QVERIFY(!testCMakeSource.contains(QStringLiteral(
         "src/app/models/file/sync/ContentsEditorIdleSyncController.cpp")));
 }

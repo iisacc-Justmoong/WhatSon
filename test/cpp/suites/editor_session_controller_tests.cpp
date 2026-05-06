@@ -96,6 +96,7 @@ void WhatSonCppRegressionTests::editorSessionBoundary_usesCppControllerWithoutQm
     QVERIFY(sessionDirectory.entryList(QStringList{QStringLiteral("*.qml")}, QDir::Files).isEmpty());
 
     QVERIFY(sessionControllerHeader.contains(QStringLiteral("class ContentsEditorSessionController : public QObject")));
-    QVERIFY(sessionControllerSource.contains(QStringLiteral("queueCurrentEditorTextForPersistence")));
+    QVERIFY(sessionControllerSource.contains(QStringLiteral("setPendingBodySave(true)")));
+    QVERIFY(!sessionControllerSource.contains(QStringLiteral("queueCurrentEditorTextForPersistence")));
     QVERIFY(sessionReadme.contains(QStringLiteral("must not contain QML wrappers")));
 }

@@ -233,16 +233,6 @@ ContentsEditorSelectionBridge::ContentsEditorSelectionBridge(QObject* parent)
         &ContentsEditorSelectionBridge::contentPersistenceContractAvailableChanged);
     connect(
         m_persistenceController,
-        &ContentsEditorPersistenceController::editorTextPersistenceQueued,
-        this,
-        &ContentsEditorSelectionBridge::editorTextPersistenceQueued);
-    connect(
-        m_persistenceController,
-        &ContentsEditorPersistenceController::editorTextPersistenceFinished,
-        this,
-        &ContentsEditorSelectionBridge::handleEditorTextPersistenceFinishedInternal);
-    connect(
-        m_persistenceController,
         &ContentsEditorPersistenceController::noteBodyTextLoaded,
         this,
         &ContentsEditorSelectionBridge::handleNoteBodyTextLoaded);
@@ -487,63 +477,6 @@ int ContentsEditorSelectionBridge::visibleNoteCount() const noexcept
     return m_visibleNoteCount;
 }
 
-bool ContentsEditorSelectionBridge::persistEditorTextForNote(const QString& noteId, const QString& text)
-{
-    return stageEditorTextForIdleSync(noteId, text);
-}
-
-bool ContentsEditorSelectionBridge::stageEditorTextForIdleSync(const QString& noteId, const QString& text)
-{
-    const QString normalizedNoteId = noteId.trimmed();
-    const QString selectedNoteDirectoryPath =
-        normalizedNoteId == m_selectedNoteId.trimmed()
-        ? m_selectedNoteDirectoryPath.trimmed()
-        : QString();
-    const bool accepted = m_persistenceController != nullptr
-        && (!selectedNoteDirectoryPath.isEmpty()
-                ? m_persistenceController->stageEditorTextForPersistenceAtPath(
-                    normalizedNoteId,
-                    selectedNoteDirectoryPath,
-                    text)
-                : m_persistenceController->stageEditorTextForPersistence(normalizedNoteId, text));
-    WhatSon::Debug::traceEditorSelf(
-        this,
-        QStringLiteral("selectionBridge"),
-        QStringLiteral("stageEditorTextForIdleSync"),
-        QStringLiteral("accepted=%1 noteId=%2 noteDirectoryPath=%3 %4")
-            .arg(accepted)
-            .arg(normalizedNoteId)
-            .arg(selectedNoteDirectoryPath)
-            .arg(WhatSon::Debug::summarizeText(text)));
-    return accepted;
-}
-
-bool ContentsEditorSelectionBridge::flushEditorTextForNote(const QString& noteId, const QString& text)
-{
-    const QString normalizedNoteId = noteId.trimmed();
-    const QString selectedNoteDirectoryPath =
-        normalizedNoteId == m_selectedNoteId.trimmed()
-        ? m_selectedNoteDirectoryPath.trimmed()
-        : QString();
-    const bool accepted = m_persistenceController != nullptr
-        && (!selectedNoteDirectoryPath.isEmpty()
-                ? m_persistenceController->flushEditorTextForNoteAtPath(
-                    normalizedNoteId,
-                    selectedNoteDirectoryPath,
-                    text)
-                : m_persistenceController->flushEditorTextForNote(normalizedNoteId, text));
-    WhatSon::Debug::traceEditorSelf(
-        this,
-        QStringLiteral("selectionBridge"),
-        QStringLiteral("flushEditorTextForNote"),
-        QStringLiteral("accepted=%1 noteId=%2 noteDirectoryPath=%3 %4")
-            .arg(accepted)
-            .arg(normalizedNoteId)
-            .arg(selectedNoteDirectoryPath)
-            .arg(WhatSon::Debug::summarizeText(text)));
-    return accepted;
-}
-
 bool ContentsEditorSelectionBridge::reconcileViewSessionAndRefreshSnapshotForNote(
     const QString& noteId,
     const QString& viewSessionText,
@@ -649,53 +582,6 @@ void ContentsEditorSelectionBridge::handleNoteListBodyTextChanged()
             .arg(summarizeTraceNoteListModel(m_noteListModel)));
     m_selectedNoteBodySnapshotNoteId.clear();
     scheduleNoteSelectionRefresh();
-}
-
-void ContentsEditorSelectionBridge::handleEditorTextPersistenceFinishedInternal(
-    const QString& noteId,
-    const QString& text,
-    const bool success,
-    const QString& errorMessage)
-{
-    WhatSon::Debug::traceEditorSelf(
-        this,
-        QStringLiteral("selectionBridge"),
-        QStringLiteral("handleEditorTextPersistenceFinishedInternal"),
-        QStringLiteral("success=%1 noteId=%2 %3")
-            .arg(success)
-            .arg(noteId.trimmed())
-            .arg(WhatSon::Debug::summarizeText(text)));
-
-    if (!success)
-    {
-        emit editorTextPersistenceFinished(noteId, text, success, errorMessage);
-        return;
-    }
-
-    const QString normalizedNoteId = noteId.trimmed();
-    if (normalizedNoteId.isEmpty())
-    {
-        emit editorTextPersistenceFinished(noteId, text, success, errorMessage);
-        return;
-    }
-
-    const QString selectedNoteId = m_selectedNoteId.trimmed();
-    const QString selectedBodyNoteId = m_selectedNoteBodyNoteId.trimmed();
-    if (normalizedNoteId != selectedNoteId && normalizedNoteId != selectedBodyNoteId)
-    {
-        emit editorTextPersistenceFinished(noteId, text, success, errorMessage);
-        return;
-    }
-
-    if (normalizedNoteId == selectedNoteId)
-    {
-        setSelectedNoteDirectoryPath(resolveSelectedNoteDirectoryPath(normalizedNoteId));
-    }
-
-    m_selectedNoteBodySnapshotNoteId = normalizedNoteId;
-    m_selectedNoteBodyRequestSequence = 0;
-    setSelectedNoteBodyState(normalizedNoteId, text, false, true);
-    emit editorTextPersistenceFinished(noteId, text, success, errorMessage);
 }
 
 void ContentsEditorSelectionBridge::handleNoteBodyTextLoaded(

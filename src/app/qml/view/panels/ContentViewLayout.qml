@@ -2,9 +2,10 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import QtQuick.Layouts
+import WhatSon.App.Internal 1.0
 import LVRS 1.0 as LV
 import "../calendar" as CalendarView
-import "../../../models/editor/display/ContentsEditorSurfaceModeSupport.js" as EditorSurfaceModeSupport
+import "../contents" as ContentsChrome
 
 Item {
     id: contentViewLayout
@@ -32,10 +33,8 @@ Item {
     property var resourcesImportController: null
     readonly property var resolvedContentController: contentViewLayout.contentController
     readonly property var resolvedNoteListModel: contentViewLayout.noteListModel
-    readonly property bool resourceEditorVisible: EditorSurfaceModeSupport.resourceEditorVisible(
-                                                      contentViewLayout.resolvedNoteListModel)
-    readonly property var resolvedCurrentResourceEntry: EditorSurfaceModeSupport.currentResourceEntry(
-                                                            contentViewLayout.resolvedNoteListModel)
+    readonly property bool resourceEditorVisible: editorSurfaceModeSupport.resourceEditorVisible
+    readonly property var resolvedCurrentResourceEntry: editorSurfaceModeSupport.currentResourceEntry
     property var sidebarHierarchyController: null
     property bool dayCalendarOverlayVisible: false
     property var dayCalendarController: null
@@ -77,6 +76,12 @@ Item {
     signal weekCalendarOverlayCloseRequested
     signal viewHookRequested
     signal yearCalendarOverlayCloseRequested
+
+    ContentsEditorSurfaceModeSupport {
+        id: editorSurfaceModeSupport
+
+        noteListModel: contentViewLayout.resolvedNoteListModel
+    }
 
     Component.onCompleted: contentViewLayout.traceNoteListModelBinding("completed")
     onNoteListModelChanged: contentViewLayout.traceNoteListModelBinding("noteListModelChanged")
@@ -218,28 +223,213 @@ Item {
     Component {
         id: editorSurfaceComponent
 
-        ContentsDisplayView {
-            anchors.fill: parent
-            contentController: contentViewLayout.resolvedContentController
-            displayColor: contentViewLayout.displayColor
-            editorViewModeController: contentViewLayout.editorViewModeController
-            enabled: contentViewLayout.visible
-            editorTopInsetOverride: contentViewLayout.editorTopInsetOverride
-            frameHorizontalInsetOverride: contentViewLayout.frameHorizontalInsetOverride
-            libraryHierarchyController: contentViewLayout.libraryHierarchyController
-            minimapVisible: contentViewLayout.minimapVisible
-            mobileHost: contentViewLayout.isMobilePlatform
-            noteActiveState: contentViewLayout.noteActiveState
-            noteListModel: contentViewLayout.resolvedNoteListModel
-            panelController: contentViewLayout.panelController
-            resourcesImportController: contentViewLayout.resourcesImportController
-            sidebarHierarchyController: contentViewLayout.sidebarHierarchyController
+        Item {
+            id: contentsEditorSurface
 
-            onEditorTextEdited: function (text) {
-                contentViewLayout.editorTextEdited(text);
+            anchors.fill: parent
+            clip: true
+            enabled: contentViewLayout.visible
+            readonly property int contentVerticalPadding: LV.Theme.gap8
+
+            function editorViewportScrollRange() {
+                if (!editorDocumentViewport)
+                    return 0;
+                return Math.max(0, editorDocumentViewport.contentHeight - editorDocumentViewport.height);
             }
-            onViewHookRequested: {
-                contentViewLayout.viewHookRequested();
+
+            function scrollEditorViewportByDelta(deltaY) {
+                const scrollRange = contentsEditorSurface.editorViewportScrollRange();
+                const nextContentY = editorDocumentViewport.contentY + (Number(deltaY) || 0);
+                editorDocumentViewport.contentY = Math.max(0, Math.min(scrollRange, nextContentY));
+                return true;
+            }
+
+            ContentsEditorDisplayBackend {
+                id: editorDisplayBackend
+
+                contentController: contentViewLayout.resolvedContentController
+                editorCursorPosition: structuredDocumentFlow.editorCursorPosition
+                libraryHierarchyController: contentViewLayout.libraryHierarchyController
+                minimapVisible: contentViewLayout.minimapVisible
+                noteActiveState: contentViewLayout.noteActiveState
+                noteListModel: contentViewLayout.resolvedNoteListModel
+                panelController: contentViewLayout.panelController
+                structuredDocumentFlow: structuredDocumentFlow
+
+                onEditorTextEdited: function (text) {
+                    contentViewLayout.editorTextEdited(text);
+                }
+                onEditorViewportResetRequested: {
+                    editorDocumentViewport.contentY = 0;
+                }
+                onViewHookRequested: function (reason) {
+                    contentViewLayout.viewHookRequested();
+                }
+            }
+
+            Binding {
+                target: editorDisplayBackend.minimapLayoutMetrics
+                property: "buttonMinWidth"
+                value: LV.Theme.buttonMinWidth
+            }
+            Binding {
+                target: editorDisplayBackend.minimapLayoutMetrics
+                property: "gapNone"
+                value: LV.Theme.gapNone
+            }
+            Binding {
+                target: editorDisplayBackend.minimapLayoutMetrics
+                property: "gap8"
+                value: LV.Theme.gap8
+            }
+            Binding {
+                target: editorDisplayBackend.minimapLayoutMetrics
+                property: "gap12"
+                value: LV.Theme.gap12
+            }
+            Binding {
+                target: editorDisplayBackend.minimapLayoutMetrics
+                property: "gap20"
+                value: LV.Theme.gap20
+            }
+            Binding {
+                target: editorDisplayBackend.minimapLayoutMetrics
+                property: "gap24"
+                value: LV.Theme.gap24
+            }
+            Binding {
+                target: editorDisplayBackend.minimapLayoutMetrics
+                property: "strokeThin"
+                value: LV.Theme.strokeThin
+            }
+            Binding {
+                target: editorDisplayBackend.minimapLayoutMetrics
+                property: "visualLineCount"
+                value: structuredDocumentFlow.editorVisualLineCount
+            }
+
+            Rectangle {
+                anchors.fill: parent
+                color: contentViewLayout.displayColor
+            }
+
+            LV.HStack {
+                anchors.fill: parent
+                anchors.bottomMargin: contentsEditorSurface.contentVerticalPadding
+                anchors.topMargin: contentsEditorSurface.contentVerticalPadding
+                objectName: "contentsDisplayEditorChromeHStack"
+                spacing: LV.Theme.gapNone
+
+                Item {
+                    id: editorDocumentSlot
+
+                    Layout.fillHeight: true
+                    Layout.fillWidth: true
+                    clip: true
+                    objectName: "contentsDisplayEditorDocumentSlot"
+
+                    Flickable {
+                        id: editorDocumentViewport
+
+                        anchors.fill: parent
+                        boundsBehavior: Flickable.StopAtBounds
+                        boundsMovement: Flickable.StopAtBounds
+                        clip: true
+                        contentHeight: editorDocumentContent.height
+                        contentWidth: Math.max(width, editorDocumentContent.width)
+                        flickableDirection: Flickable.VerticalFlick
+                        interactive: contentHeight > height
+                        objectName: "contentsDisplayEditorDocumentViewport"
+
+                        Item {
+                            id: editorDocumentContent
+
+                            height: Math.max(editorDocumentViewport.height, structuredDocumentFlow.editorContentHeight)
+                            width: editorDocumentViewport.width
+
+                            ContentsLineNumberRail {
+                                id: contentsDisplayGutter
+
+                                height: editorDocumentContent.height
+                                objectName: "contentsDisplayGutter"
+                                activeSelectionEnd: structuredDocumentFlow.editorSelectionEnd
+                                activeSelectionStart: structuredDocumentFlow.editorSelectionStart
+                                activeSourceCursorPosition: structuredDocumentFlow.editorCursorPosition
+                                rows: structuredDocumentFlow.editorLogicalGutterRows
+                                visible: editorDisplayBackend.noteDocumentParseMounted
+                                width: contentsDisplayGutter.preferredWidth
+                                x: LV.Theme.gapNone
+                                y: LV.Theme.gapNone
+                            }
+
+                            ContentsStructuredDocumentFlow {
+                                id: structuredDocumentFlow
+
+                                coordinateMapper: editorDisplayBackend.presentationProjection
+                                editorSurfaceHtml: editorDisplayBackend.renderInlineResourceEditorSurfaceHtml(
+                                                       editorDisplayBackend.presentationProjection.editorSurfaceHtml,
+                                                       editorDisplayBackend.bodyResourceRenderer.renderedResources,
+                                                       structuredDocumentFlow.width - LV.Theme.gap16 * 2)
+                                height: editorDocumentContent.height
+                                htmlTokens: editorDisplayBackend.presentationProjection.htmlTokens
+                                logicalCursorPosition: editorDisplayBackend.presentationProjection.logicalCursorPosition
+                                logicalText: editorDisplayBackend.presentationProjection.logicalText
+                                normalizedHtmlBlocks: editorDisplayBackend.presentationProjection.normalizedHtmlBlocks
+                                objectName: "contentsDisplayStructuredDocumentFlow"
+                                paperPaletteEnabled: false
+                                sourceText: editorDisplayBackend.editorSession.editorText
+                                textColor: LV.Theme.bodyColor
+                                visible: editorDisplayBackend.noteDocumentParseMounted
+                                width: Math.max(0, editorDocumentContent.width - contentsDisplayGutter.width)
+                                x: contentsDisplayGutter.width
+                                y: LV.Theme.gapNone
+
+                                onSourceTextEdited: function (text) {
+                                    editorDisplayBackend.commitEditedSourceText(text);
+                                }
+
+                                onViewHookRequested: function (reason) {
+                                    editorDisplayBackend.requestViewHook(reason);
+                                }
+                            }
+                        }
+                    }
+
+                    LV.WheelScrollGuard {
+                        consumeInside: true
+                        targetFlickable: editorDocumentViewport
+                    }
+
+                    Text {
+                        anchors.centerIn: parent
+                        color: LV.Theme.descriptionColor
+                        font.family: LV.Theme.fontBody
+                        font.pixelSize: LV.Theme.textBody
+                        text: "No document opened"
+                        visible: !editorDisplayBackend.noteDocumentParseMounted
+                    }
+                }
+
+                ContentsChrome.Minimap {
+                    id: contentsDisplayMinimap
+
+                    Layout.fillHeight: true
+                    Layout.preferredWidth: editorDisplayBackend.minimapLayoutMetrics.effectiveMinimapWidth
+                    lineColor: LV.Theme.captionColor
+                    objectName: "contentsDisplayMinimap"
+                    rowCount: editorDisplayBackend.minimapLayoutMetrics.effectiveRowCount
+                    rowWidthRatios: structuredDocumentFlow.editorVisualLineWidthRatios
+                    scrollDragEnabled: editorDocumentViewport.contentHeight > editorDocumentViewport.height
+                    visible: contentViewLayout.minimapVisible
+
+                    onScrollDeltaRequested: function (deltaY) {
+                        contentsEditorSurface.scrollEditorViewportByDelta(deltaY);
+                    }
+
+                    onViewHookRequested: function (reason) {
+                        editorDisplayBackend.requestViewHook(reason);
+                    }
+                }
             }
         }
     }

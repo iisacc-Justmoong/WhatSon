@@ -2,7 +2,6 @@
 
 #include "app/models/editor/tags/ContentsAgendaBackend.hpp"
 #include "app/models/file/WhatSonDebugTrace.hpp"
-#include "app/models/editor/bridge/ContentsEditorSelectionBridge.hpp"
 
 #include <QDateTime>
 #include <QDir>
@@ -203,47 +202,6 @@ void ContentsEditorSessionController::setTypingIdleThresholdMs(const int thresho
     emit typingIdleThresholdMsChanged();
 }
 
-QObject* ContentsEditorSessionController::selectionBridge() const noexcept
-{
-    return m_selectionBridge;
-}
-
-void ContentsEditorSessionController::setSelectionBridge(QObject* selectionBridgeObject)
-{
-    auto* const nextSelectionBridge =
-        qobject_cast<ContentsEditorSelectionBridge*>(selectionBridgeObject);
-    if (m_selectionBridge == nextSelectionBridge)
-    {
-        return;
-    }
-
-    if (m_selectionBridge != nullptr)
-    {
-        disconnect(
-            m_selectionBridge,
-            &ContentsEditorSelectionBridge::editorTextPersistenceFinished,
-            this,
-            &ContentsEditorSessionController::handleEditorTextPersistenceFinished);
-    }
-
-    m_selectionBridge = nextSelectionBridge;
-    if (m_selectionBridge != nullptr)
-    {
-        connect(
-            m_selectionBridge,
-            &ContentsEditorSelectionBridge::editorTextPersistenceFinished,
-            this,
-            &ContentsEditorSessionController::handleEditorTextPersistenceFinished);
-    }
-
-    WhatSon::Debug::traceEditorSelf(
-        this,
-        QStringLiteral("editorSession"),
-        QStringLiteral("setSelectionBridge"),
-        QStringLiteral("selectionBridge={%1}").arg(describeTraceObject(m_selectionBridge)));
-    emit selectionBridgeChanged();
-}
-
 QObject* ContentsEditorSessionController::agendaBackend() const noexcept
 {
     return m_agendaBackend;
@@ -285,28 +243,6 @@ void ContentsEditorSessionController::setSyncingEditorTextFromModel(const bool s
         QStringLiteral("syncingEditorTextFromModelChanged"),
         QStringLiteral("syncingEditorTextFromModel=%1").arg(m_syncingEditorTextFromModel));
     emit syncingEditorTextFromModelChanged();
-}
-
-bool ContentsEditorSessionController::flushPendingEditorText()
-{
-    WhatSon::Debug::traceEditorSelf(
-        this,
-        QStringLiteral("editorSession"),
-        QStringLiteral("flushPendingEditorText"),
-        QStringLiteral("pendingBodySave=%1 noteId=%2").arg(m_pendingBodySave).arg(m_editorBoundNoteId));
-    if (!m_pendingBodySave)
-    {
-        return true;
-    }
-
-    const QString noteId = normalizedNoteId(m_editorBoundNoteId);
-    if (noteId.isEmpty())
-    {
-        setPendingBodySave(false);
-        return false;
-    }
-
-    return queueCurrentEditorTextForPersistence(true, m_editorText);
 }
 
 bool ContentsEditorSessionController::isTypingSessionActive() const
@@ -361,14 +297,6 @@ bool ContentsEditorSessionController::requestSyncEditorTextFromSelection(
         return false;
     }
 
-    if (currentNoteId != nextNoteId && m_pendingBodySave)
-    {
-        if (!flushPendingEditorText())
-        {
-            return false;
-        }
-    }
-
     if (currentNoteId == nextNoteId
         && currentNoteDirectoryPath == nextNoteDirectoryPath
         && currentText == nextText)
@@ -411,79 +339,23 @@ void ContentsEditorSessionController::markLocalEditorAuthority()
 
 bool ContentsEditorSessionController::commitRawEditorTextMutation(const QString& text)
 {
+    const QString normalizedText = normalizedEditorText(text);
     WhatSon::Debug::traceEditorSelf(
         this,
         QStringLiteral("editorSession"),
         QStringLiteral("commitRawEditorTextMutation"),
         QStringLiteral("noteId=%1 %2")
             .arg(normalizedNoteId(m_editorBoundNoteId))
-            .arg(WhatSon::Debug::summarizeText(text)));
-    if (m_editorText == text)
+            .arg(WhatSon::Debug::summarizeText(normalizedText)));
+    if (m_editorText == normalizedText)
     {
         return false;
     }
 
-    setEditorText(text);
+    setEditorText(normalizedText);
     markLocalEditorAuthority();
-    scheduleEditorPersistence();
+    setPendingBodySave(true);
     return true;
-}
-
-bool ContentsEditorSessionController::scheduleEditorPersistence()
-{
-    WhatSon::Debug::traceEditorSelf(
-        this,
-        QStringLiteral("editorSession"),
-        QStringLiteral("scheduleEditorPersistence"),
-        QStringLiteral("noteId=%1 pendingBodySave(before)=%2 %3")
-            .arg(normalizedNoteId(m_editorBoundNoteId))
-            .arg(m_pendingBodySave)
-            .arg(WhatSon::Debug::summarizeText(m_editorText)));
-    return queueCurrentEditorTextForPersistence(false, m_editorText);
-}
-
-bool ContentsEditorSessionController::persistEditorTextImmediately()
-{
-    return persistEditorTextImmediatelyWithText(m_editorText);
-}
-
-bool ContentsEditorSessionController::persistEditorTextImmediatelyWithText(const QString& text)
-{
-    WhatSon::Debug::traceEditorSelf(
-        this,
-        QStringLiteral("editorSession"),
-        QStringLiteral("persistEditorTextImmediately"),
-        QStringLiteral("noteId=%1 %2")
-            .arg(normalizedNoteId(m_editorBoundNoteId))
-            .arg(WhatSon::Debug::summarizeText(text)));
-    return queueCurrentEditorTextForPersistence(true, text);
-}
-
-void ContentsEditorSessionController::handleEditorTextPersistenceFinished(
-    const QString& noteId,
-    const QString& text,
-    const bool success,
-    const QString& errorMessage)
-{
-    Q_UNUSED(errorMessage)
-
-    WhatSon::Debug::traceEditorSelf(
-        this,
-        QStringLiteral("editorSession"),
-        QStringLiteral("handleEditorPersistenceFinished"),
-        QStringLiteral("success=%1 noteId=%2 %3")
-            .arg(success)
-            .arg(noteId)
-            .arg(WhatSon::Debug::summarizeText(text)));
-    if (!success)
-    {
-        return;
-    }
-
-    if (m_editorBoundNoteId == noteId && m_editorText == text)
-    {
-        setPendingBodySave(false);
-    }
 }
 
 QString ContentsEditorSessionController::normalizedNoteId(const QString& noteId)
@@ -495,23 +367,6 @@ QString ContentsEditorSessionController::normalizedNoteDirectoryPath(const QStri
 {
     const QString normalizedPath = QDir::cleanPath(noteDirectoryPath.trimmed());
     return normalizedPath == QStringLiteral(".") ? QString() : normalizedPath;
-}
-
-bool ContentsEditorSessionController::enqueueEditorPersistence(
-    const QString& noteId,
-    const QString& bodyText,
-    const bool immediateFlush)
-{
-    if (noteId.isEmpty() || m_selectionBridge == nullptr)
-    {
-        return false;
-    }
-
-    if (immediateFlush)
-    {
-        return m_selectionBridge->flushEditorTextForNote(noteId, bodyText);
-    }
-    return m_selectionBridge->stageEditorTextForIdleSync(noteId, bodyText);
 }
 
 QString ContentsEditorSessionController::normalizeAgendaPlaceholderDates(const QString& text) const
@@ -540,16 +395,6 @@ QString ContentsEditorSessionController::normalizeStructuredEmptyBlockAnchors(co
 QString ContentsEditorSessionController::normalizedEditorText(const QString& text) const
 {
     return normalizeAgendaPlaceholderDates(normalizeStructuredEmptyBlockAnchors(text));
-}
-
-QString ContentsEditorSessionController::normalizeModifiedEditorText(const QString& text)
-{
-    const QString normalizedText = normalizedEditorText(text);
-    if (m_editorText != normalizedText)
-    {
-        setEditorText(normalizedText);
-    }
-    return normalizedText;
 }
 
 bool ContentsEditorSessionController::shouldAcceptModelBodyText(
@@ -583,22 +428,6 @@ bool ContentsEditorSessionController::shouldAcceptModelBodyText(
     }
 
     return !m_pendingBodySave;
-}
-
-bool ContentsEditorSessionController::queueCurrentEditorTextForPersistence(
-    const bool immediateFlush,
-    const QString& rawBodyText)
-{
-    const QString noteId = normalizedNoteId(m_editorBoundNoteId);
-    if (noteId.isEmpty())
-    {
-        setPendingBodySave(false);
-        return false;
-    }
-
-    setPendingBodySave(true);
-    const QString bodyText = normalizeModifiedEditorText(rawBodyText);
-    return enqueueEditorPersistence(noteId, bodyText, immediateFlush);
 }
 
 void ContentsEditorSessionController::releaseSyncGuard()

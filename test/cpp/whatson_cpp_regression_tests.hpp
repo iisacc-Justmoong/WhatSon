@@ -6,6 +6,7 @@
 #include "app/models/editor/format/ContentsPlainTextSourceMutator.hpp"
 #include "app/models/editor/format/ContentsTextFormatRenderer.hpp"
 #include "app/models/editor/geometry/ContentsEditorGeometryProvider.hpp"
+#include "app/models/editor/input/ContentsWysiwygEditorPolicy.hpp"
 #include "app/models/editor/lineNumber/ContentsLineNumberRailMetrics.hpp"
 #include "app/models/editor/minimap/ContentsEditorVisualLineMetrics.hpp"
 #include "app/models/editor/tags/ContentsEditorTagInsertionController.hpp"
@@ -42,6 +43,7 @@
 #include "app/store/sidebar/SidebarSelectionStore.hpp"
 #include "app/models/editor/bridge/ContentsEditorSelectionBridge.hpp"
 #include "app/models/editor/persistence/ContentsEditorPersistenceController.hpp"
+#include "app/models/editor/persistence/ContentsEditorSaveCoordinator.hpp"
 #include "app/models/editor/renderer/ContentsStructuredBlockRenderer.hpp"
 #include "app/models/editor/session/ContentsEditorSessionController.hpp"
 #include "app/models/editor/tags/ContentsAgendaBackend.hpp"
@@ -365,6 +367,13 @@ public:
         return true;
     }
 
+    Q_INVOKABLE bool saveCurrentBodyText(const QString& text)
+    {
+        ++saveCurrentBodyTextCallCount;
+        lastSavedCurrentBodyText = text;
+        return true;
+    }
+
     Q_INVOKABLE QString noteBodySourceTextForNoteId(const QString& noteId) const
     {
         return m_noteBodySourceTexts.value(noteId.trimmed());
@@ -382,11 +391,13 @@ public:
 
     int applyPersistedBodyStateCallCount = 0;
     int reloadNoteMetadataCallCount = 0;
+    int saveCurrentBodyTextCallCount = 0;
     QString lastAppliedNoteId;
     QString lastAppliedBodyPlainText;
     QString lastAppliedBodySourceText;
     QString lastAppliedLastModifiedAt;
     QString lastReloadedNoteId;
+    QString lastSavedCurrentBodyText;
 
 private:
     QHash<QString, QString> m_noteDirectoryPaths;
@@ -1041,7 +1052,6 @@ private slots:
     void contentsEditorSelectionBridge_rebindsSameNoteIdWhenPackagePathChanges();
     void contentsEditorSelectionBridge_clearsSelectedNoteAcrossTransientEmptyCurrentNoteId();
     void contentsEditorSelectionBridge_reloadsBodyWhenCommittedNoteEntryChangesWithoutNoteIdChange();
-    void contentsEditorSelectionBridge_updatesBodySnapshotBeforePersistenceFinishedSignal();
     void contentsEditorSelectionBridge_emitsTraceForNoteSelectionFlow();
     void editorPersistenceController_definesEditorPersistenceBoundary();
     void noteBackedHierarchyNoteLists_preserveRawBodySnapshotForEditorBootstrap();
@@ -1093,6 +1103,9 @@ private slots:
     void structuredDocumentBlocksModel_removesOnlyChangedMiddleRows();
     void structuredDocumentHost_tracksSelectionClearRevisionAcrossInteractions();
     void editorSurfaceModeSupport_switchesToResourceEditorForResourceListModels();
+    void wysiwygEditorPolicy_mapsVisibleSelectionBackToRawSource();
+    void qmlInlineFormatEditor_delegatesWysiwygPolicyToCpp();
+    void editorDisplayBackend_mountsNoteSessionAndCommitsRawBody();
     void qmlResourceEditorView_staysTransparentAndViewerOnly();
     void resourceDetailPanelController_tracksCurrentResourceSelection();
     void detailCurrentNoteContextBridge_prefersCurrentNoteEntryAndClearsNonNoteBackedSelection();
@@ -1174,6 +1187,7 @@ private slots:
     void editorRendererPipeline_materializesEnterNewlinesAsParagraphSlots();
     void logicalTextBridge_advancesCursorPastClosingWebLinkTag();
     void logicalTextBridge_mapsSourceCursorInsideInlineTagsToVisibleBoundary();
+    void logicalTextBridge_notifiesLogicalToSourceOffsetChanges();
     void editorTagInsertionController_preservesInlineTagBoundariesWhenReformatting();
     void qmlStructuredEditors_bindPaperPaletteIntoPagePrintMode();
     void qmlStructuredEditors_clipInlineResourceCardsToMeasuredBlockBounds();

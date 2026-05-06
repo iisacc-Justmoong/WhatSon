@@ -244,67 +244,6 @@ void WhatSonCppRegressionTests::contentsEditorSelectionBridge_reloadsBodyWhenCom
     QVERIFY(!selectionBridge.selectedNoteBodyLoading());
 }
 
-void WhatSonCppRegressionTests::contentsEditorSelectionBridge_updatesBodySnapshotBeforePersistenceFinishedSignal()
-{
-    ensureCoreApplication();
-
-    QTemporaryDir workspaceDir;
-    QVERIFY(workspaceDir.isValid());
-
-    QString errorMessage;
-    const QString noteDirectoryPath = createLocalNoteForRegression(
-        workspaceDir.path(),
-        QStringLiteral("note-1"),
-        QStringLiteral("Old body"),
-        &errorMessage);
-    QVERIFY2(!noteDirectoryPath.isEmpty(), qPrintable(errorMessage));
-
-    FakeSelectionNoteListModel noteListModel;
-    FakeContentPersistenceController contentController;
-    ContentsEditorSelectionBridge selectionBridge;
-
-    noteListModel.setNoteBacked(true);
-    noteListModel.setCurrentNoteId(QStringLiteral("note-1"));
-    noteListModel.setCurrentNoteDirectoryPath(noteDirectoryPath);
-    contentController.setNoteDirectoryPath(QStringLiteral("note-1"), noteDirectoryPath);
-    contentController.setNoteBodySourceText(QStringLiteral("note-1"), QStringLiteral("Old body"));
-
-    selectionBridge.setContentController(&contentController);
-    selectionBridge.setNoteListModel(&noteListModel);
-    QCoreApplication::processEvents();
-
-    QCOMPARE(selectionBridge.selectedNoteId(), QStringLiteral("note-1"));
-    QCOMPARE(selectionBridge.selectedNoteBodyNoteId(), QStringLiteral("note-1"));
-    QTRY_COMPARE(selectionBridge.selectedNoteBodyText(), QStringLiteral("Old body"));
-    QVERIFY(selectionBridge.selectedNoteBodyResolved());
-
-    QSignalSpy persistenceFinishedSpy(
-        &selectionBridge,
-        &ContentsEditorSelectionBridge::editorTextPersistenceFinished);
-    QString selectedBodyAtPersistenceFinished;
-    bool persistenceSucceededAtSignal = false;
-    QObject::connect(
-        &selectionBridge,
-        &ContentsEditorSelectionBridge::editorTextPersistenceFinished,
-        &selectionBridge,
-        [&](const QString& noteId, const QString& text, bool success, const QString&)
-        {
-            if (noteId == QStringLiteral("note-1") && text == QStringLiteral("New body"))
-            {
-                selectedBodyAtPersistenceFinished = selectionBridge.selectedNoteBodyText();
-                persistenceSucceededAtSignal = success;
-            }
-        });
-
-    QVERIFY(selectionBridge.flushEditorTextForNote(QStringLiteral("note-1"), QStringLiteral("New body")));
-
-    QTRY_COMPARE(persistenceFinishedSpy.count(), 1);
-    QVERIFY(persistenceSucceededAtSignal);
-    QCOMPARE(selectedBodyAtPersistenceFinished, QStringLiteral("New body"));
-    QCOMPARE(selectionBridge.selectedNoteBodyText(), QStringLiteral("New body"));
-    QVERIFY(selectionBridge.selectedNoteBodyResolved());
-}
-
 void WhatSonCppRegressionTests::contentsEditorSelectionBridge_emitsTraceForNoteSelectionFlow()
 {
     const QString selectionBridgeSource = readUtf8SourceFile(
