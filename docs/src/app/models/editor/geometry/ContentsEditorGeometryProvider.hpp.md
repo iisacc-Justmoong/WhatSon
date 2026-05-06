@@ -13,6 +13,7 @@ Declares the QML-visible implementation of `IContentsEditorGeometryProvider`.
 - Outputs: `lineNumberGeometryRows`, `visualLineCount`, and `visualLineWidthRatios` snapshots for independent chrome
   metrics.
 - Interface methods: low-level text range measurement, resource range measurement, and resource content-height lookup.
+  Middle resource rows are capped against the next measured row top when `lineNumberGeometryRows` snapshots are built.
 
 ## Boundary
 

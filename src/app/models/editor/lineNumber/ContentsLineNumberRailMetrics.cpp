@@ -73,11 +73,6 @@ namespace
             && block.value(QStringLiteral("htmlBlockIsDisplayBlock"), true).toBool();
     }
 
-    bool rectangleYCollapsed(const QRectF& rectangle, const qreal fallbackY, const qreal lineHeight, const bool hasPreviousRows) noexcept
-    {
-        return hasPreviousRows && fallbackY > 0.0 && rectangle.y() < fallbackY - std::max<qreal>(1.0, lineHeight) * 0.25;
-    }
-
     QRectF rectangleFromRowGeometry(const QVariantMap& rowGeometry, const qreal lineHeight, const qreal width) noexcept
     {
         const qreal x = rowGeometry.value(QStringLiteral("x")).toDouble();
@@ -365,7 +360,6 @@ QVariantList ContentsLineNumberRailMetrics::rows() const
     QVariantList result;
     result.reserve(ranges.size());
 
-    qreal fallbackNextY = 0.0;
     for (int index = 0; index < ranges.size(); ++index)
     {
         const QVariantMap range = ranges.at(index).toMap();
@@ -373,10 +367,10 @@ QVariantList ContentsLineNumberRailMetrics::rows() const
             index < m_geometryRows.size() ? m_geometryRows.at(index).toMap() : QVariantMap();
         QRectF rectangle = rectangleFromRowGeometry(rowGeometry, m_textLineHeight, m_geometryWidth);
         const bool geometryAvailable = rowGeometry.value(QStringLiteral("geometryAvailable"), false).toBool();
-        if (!geometryAvailable
-            || rectangleYCollapsed(rectangle, fallbackNextY, m_textLineHeight, !result.isEmpty()))
+        if (!geometryAvailable)
         {
-            rectangle.moveTop(fallbackNextY);
+            const int lineNumber = std::max(1, range.value(QStringLiteral("number"), index + 1).toInt());
+            rectangle.moveTop(static_cast<qreal>(lineNumber - 1) * m_textLineHeight);
         }
 
         const qreal resolvedHeight = std::max(m_textLineHeight, rectangle.height());
@@ -387,7 +381,6 @@ QVariantList ContentsLineNumberRailMetrics::rows() const
             {QStringLiteral("sourceStart"), range.value(QStringLiteral("sourceStart")).toInt()},
             {QStringLiteral("y"), std::max<qreal>(0.0, rectangle.y())},
         });
-        fallbackNextY = std::max(fallbackNextY, std::max<qreal>(0.0, rectangle.y()) + resolvedHeight);
     }
 
     if (result.isEmpty())

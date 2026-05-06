@@ -73,6 +73,12 @@ Item {
 
         hierarchyController: hierarchyView.resolvedHierarchyController
     }
+    SidebarHierarchyInteractionController {
+        id: sidebarHierarchyInteractionController
+
+        activeHierarchyIndex: hierarchyView.currentHierarchy
+        hierarchyInteractionBridge: hierarchyInteractionBridge
+    }
     SidebarHierarchyView {
         id: sidebarView
 
@@ -82,6 +88,7 @@ Item {
         footerVisible: hierarchyView.footerVisible
         hierarchyDragDropBridge: hierarchyDragDropBridge
         hierarchyInteractionBridge: hierarchyInteractionBridge
+        hierarchyInteractionController: sidebarHierarchyInteractionController
         hierarchyEditable: hierarchyDragDropBridge.reorderContractAvailable
         hierarchyController: hierarchyView.resolvedHierarchyController
         horizontalInset: hierarchyView.horizontalInset

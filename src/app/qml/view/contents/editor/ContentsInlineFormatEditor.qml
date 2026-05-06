@@ -229,9 +229,13 @@ Item {
                         textInput.length,
                         control.text.length);
             if (rawSelection.valid === true) {
+                const visibleRange = wysiwygEditorPolicy.visibleContentSourceSelectionRange(
+                            control.text,
+                            rawSelection.selectionStart,
+                            rawSelection.selectionEnd);
                 return {
-                    "start": rawSelection.selectionStart,
-                    "end": rawSelection.selectionEnd
+                    "start": visibleRange.start,
+                    "end": visibleRange.end
                 };
             }
         }
@@ -370,11 +374,11 @@ Item {
                     control.coordinateMapper,
                     sourceRange.start,
                     sourceRange.end,
-                    Number(renderedOverlay.length) || 0);
+                    Number(renderedGeometryProbe.length) || 0);
     }
 
     function visibleLogicalOffsetAtPoint(localX, localY) {
-        const geometryItem = control.renderedOverlayVisible ? renderedOverlay : renderedGeometryProbe;
+        const geometryItem = control.displayGeometryItem();
         const mappedPoint = control.mapToItem(
                     geometryItem,
                     Number(localX) || 0,
@@ -632,7 +636,7 @@ Item {
     }
 
     function displayGeometryItem() {
-        return control.renderedOverlayVisible ? renderedOverlay : textInput.editorItem;
+        return control.logicalSurfaceActive ? renderedGeometryProbe : textInput.editorItem;
     }
 
     function requestViewHook(reason) {
@@ -662,17 +666,36 @@ Item {
     function restoreSelectionRange(selectionStart, selectionEnd, cursorPosition) {
         const sourceLength = control.text.length;
         const sourceStart = Math.max(0, Math.min(Number(selectionStart) || 0, sourceLength));
-        const sourceEnd = Math.max(sourceStart, Math.min(Number(selectionEnd) || sourceStart, sourceLength));
-        const sourceCursor = Math.max(sourceStart, Math.min(Number(cursorPosition) || sourceEnd, sourceEnd));
+        let sourceEnd = Math.max(sourceStart, Math.min(Number(selectionEnd) || sourceStart, sourceLength));
+        let sourceCursor = Math.max(sourceStart, Math.min(Number(cursorPosition) || sourceEnd, sourceEnd));
+        const sourceRange = {
+            "start": sourceStart,
+            "end": sourceEnd
+        };
+        if (control.logicalSurfaceActive
+                && sourceEnd > sourceStart
+                && !control.sourceRangeContainsVisibleLogicalContent(sourceRange)
+                && !control.sourceRangeIntersectsAtomicResourceBlock(sourceRange)) {
+            sourceEnd = sourceStart;
+            sourceCursor = sourceStart;
+        }
+        const collapsedSourceSelection = sourceStart === sourceEnd;
         const start = control.logicalSurfaceActive
                 ? control.sourceOffsetToLogicalOffset(sourceStart, false)
                 : sourceStart;
-        const end = control.logicalSurfaceActive
-                ? Math.max(start, control.sourceOffsetToLogicalOffset(sourceEnd, true))
-                : sourceEnd;
-        const cursor = control.logicalSurfaceActive
-                ? Math.max(start, Math.min(control.sourceOffsetToLogicalOffset(sourceCursor, true), end))
-                : sourceCursor;
+        let end = sourceEnd;
+        let cursor = sourceCursor;
+        if (control.logicalSurfaceActive) {
+            if (collapsedSourceSelection) {
+                end = start;
+                cursor = start;
+            } else {
+                end = Math.max(start, control.sourceOffsetToLogicalOffset(sourceEnd, true));
+                cursor = Math.max(
+                            start,
+                            Math.min(control.sourceOffsetToLogicalOffset(sourceCursor, true), end));
+            }
+        }
         if (start === end) {
             textInput.deselect();
             textInput.cursorPosition = cursor;
@@ -756,35 +779,6 @@ Item {
         return true;
     }
 
-    function applyRenderedBackspaceMutation(event) {
-        if (event.key !== Qt.Key_Backspace
-                || control.logicalSurfaceActive
-                || !control.renderedOverlayVisible
-                || control.nativeCompositionActive()
-                || control.nativeSelectionActive) {
-            return false;
-        }
-
-        const modifiers = Number(event.modifiers) || 0;
-        const commandModifier = modifiers & (Qt.ControlModifier | Qt.MetaModifier | Qt.AltModifier);
-        if (commandModifier)
-            return false;
-
-        const payload = wysiwygEditorPolicy.visibleBackspaceMutationPayload(
-                    control.text,
-                    control.coordinateMapper,
-                    control.resolvedProjectedCursorPosition,
-                    renderedGeometryProbe.length);
-        if (!control.applyTagManagementMutationPayload(payload))
-            return false;
-
-        if (payload.surfaceCursor !== undefined)
-            control.visiblePointerCursorLogicalOffset = control.boundedCursorPosition(
-                        Number(payload.surfaceCursor) || 0,
-                        renderedGeometryProbe.length);
-        return true;
-    }
-
     function handleTagManagementKeyPress(event) {
         const key = event.key;
         if (key !== Qt.Key_Backspace
@@ -792,11 +786,6 @@ Item {
                 && !control.eventRequestsInlineFormatShortcut(event)
                 && !control.eventRequestsBodyTagShortcut(event)) {
             event.accepted = false;
-            return;
-        }
-
-        if (control.applyRenderedBackspaceMutation(event)) {
-            event.accepted = true;
             return;
         }
 
@@ -961,12 +950,13 @@ Item {
         enabled: false
         font.family: LV.Theme.fontBody
         font.pixelSize: LV.Theme.textBody
+        objectName: "contentsInlineFormatRenderedGeometryProbe"
         opacity: 0
         readOnly: true
         selectByKeyboard: false
         selectByMouse: false
-        text: control.renderedOverlayVisible ? control.renderedText : control.displayGeometryText
-        textFormat: control.renderedOverlayVisible ? TextEdit.RichText : TextEdit.PlainText
+        text: control.displayGeometryText
+        textFormat: TextEdit.PlainText
         textMargin: LV.Theme.gapNone
         visible: control.displayGeometryText.length > 0
         wrapMode: TextEdit.Wrap
@@ -990,8 +980,8 @@ Item {
         selectByMouse: true
         selectedTextColor: "transparent"
         selectionColor: "transparent"
-        text: control.renderedOverlayVisible ? control.renderedText : control.displayGeometryText
-        textFormat: control.renderedOverlayVisible ? TextEdit.RichText : TextEdit.PlainText
+        text: control.displayGeometryText
+        textFormat: TextEdit.PlainText
         textMargin: LV.Theme.gapNone
         visible: enabled
         wrapMode: TextEdit.Wrap

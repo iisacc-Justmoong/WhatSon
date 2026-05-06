@@ -578,6 +578,27 @@ QVariantMap ContentsWysiwygEditorPolicy::rawSelectionForVisibleSurfaceSelection(
     };
 }
 
+QVariantMap ContentsWysiwygEditorPolicy::visibleContentSourceSelectionRange(
+    const QString& sourceText,
+    const int selectionStart,
+    const int selectionEnd) const
+{
+    const int sourceLength = sourceText.size();
+    int start = boundedOffset(std::min(selectionStart, selectionEnd), sourceLength);
+    int end = std::max(start, boundedOffset(std::max(selectionStart, selectionEnd), sourceLength));
+    if (end > start)
+    {
+        start = sourceOffsetPastOpeningInlineBoundaries(*this, sourceText, start);
+        end = sourceOffsetBeforeClosingInlineBoundaries(*this, sourceText, end);
+        if (end < start)
+        {
+            end = start;
+        }
+    }
+
+    return sourceRangeMap(start, end);
+}
+
 QVariantMap ContentsWysiwygEditorPolicy::visibleBackspaceMutationPayload(
     const QString& sourceText,
     QObject* coordinateMapper,

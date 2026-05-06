@@ -114,10 +114,10 @@ These signals make the file a reusable visual surface instead of a hard-coded on
 - Footer toolbar order is fixed through `hierarchyFooterToolbarButtons`: left to right is `New Folder`, `Delete
   Selected Folder`, then `Open Context Menu`. The third slot uses LVRS `generalmoreHorizontal`, not a settings icon,
   because it is a menu disclosure affordance.
-- The `LV.ListFooter` buttons are routed through `onButtonClicked` and `handleHierarchyFooterButtonClicked(...)`.
-  Footer button configs carry data-only `eventName` values instead of owning the action callbacks themselves. This keeps
-  the hierarchy action dispatch on the sidebar view side and avoids losing create/delete/options behavior when LVRS
-  normalizes or rebinds the footer slot objects.
+- The `LV.ListFooter` buttons are routed through both the legacy button-config `onClicked` callback and
+  `onButtonClicked`/`handleHierarchyFooterButtonClicked(...)`. Both paths call `requestHierarchyFooterAction(...)`,
+  which coalesces one dispatch turn so LVRS versions that emit both the callback and signal do not create/delete/open
+  twice, while LVRS versions that only preserve the config callback still keep the footer actions live.
 - The compact footer/menu metrics now route through `LV.Theme.gap2`, `LV.Theme.gap4`, and named token compositions
   (`144`, `78`, `24`) instead of fixed sidebar-local pixel literals, so mobile/desktop LVRS scale stays consistent.
 - The default tree context menu is `hierarchyTreeContextMenuItems`. It exposes `Expand All` and `Collapse All` actions
@@ -168,9 +168,11 @@ These signals make the file a reusable visual surface instead of a hard-coded on
   existing expanded/collapsed rows.
 - Expansion keys are scoped by the active hierarchy index, so identical row ids in different hierarchy domains do not
   leak expansion state into each other when the toolbar switches domain.
-- Programmatic LVRS expansion changes are not persisted back into the Controller. The sidebar arms an expansion request
-  only when the pointer press lands on a row's chevron slot, and `onListItemExpanded` reverts any unarmed expansion
-  change back to the preserved state.
+- LVRS `HierarchyItem` owns the chevron hit target and emits `onListItemExpanded` after toggling `expanded`.
+  `SidebarHierarchyView` treats that signal as the canonical single-row expansion request and commits it through
+  `HierarchyInteractionBridge.setItemExpanded(...)` when the state differs from the preserved user-owned state.
+  A separate pointer arm remains only as an activation-suppression/fallback path for platforms that do not deliver the
+  LVRS expansion callback from the chevron `MouseArea`.
 - `captureHierarchyExpansionState(...)` seeds only missing keys. A fresh controller/model refresh must not overwrite a
   user-owned expansion value that was just written by a chevron click with the stale `displayedHierarchyModel` snapshot
   from the previous turn.
@@ -181,8 +183,8 @@ These signals make the file a reusable visual surface instead of a hard-coded on
   visual row indexes (`flatIndex`, then callback `index`) when model ids are unavailable.
   It then starts a short activation-block timer.
 - The left-button `TapHandler` also schedules `requestHierarchyChevronExpansionAtPosition(...)` after the tap turn. If
-  LVRS already emitted `onListItemExpanded`, the armed key has been cleared and the fallback is skipped; otherwise the
-  same `HierarchyInteractionBridge.setItemExpanded(...)` path performs the single-row fold/unfold.
+  LVRS already emitted and committed `onListItemExpanded`, the armed key has been cleared and the fallback is skipped;
+  otherwise the same `commitHierarchyExpansionChange(...)` path performs the single-row fold/unfold.
 - `onListItemActivated` is deferred by one turn (`Qt.callLater`) and re-checked through
   `shouldSuppressHierarchyActivation(item, itemId, index)` before it can select the folder or emit
   `hierarchyItemActivated(...)`.

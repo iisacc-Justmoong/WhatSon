@@ -20,8 +20,8 @@ C++ model objects for the note editor's logical line-number rail.
   `{ number, sourceStart, sourceEnd, y, height }` rows.
 - The line-number object must not own or call TextEdit, cursor, selection, resource overlay, or QQuickItem objects
   directly. Surface measurement belongs to the geometry adapter and enters this object only as value snapshots.
-- Published rows must be vertically monotonic. If a measured row snapshot collapses a later row to the first row y, the
-  model falls back to the previous row bottom so line numbers remain aligned as separate rows.
+- Published rows must be independent. Each row keeps the measured `y` and `height` supplied for that row; a tall
+  resource row must not push later gutter rows down through previous-row fallback state.
 - A wrapped paragraph remains one logical number while its row height follows the visible wrapped height. Atomic
   resource blocks remain one logical number while their height is measured from the rendered resource overlay.
 - The object does not mutate `.wsnbody` source and does not parse XML; it consumes parser/renderer metadata already
@@ -35,5 +35,6 @@ C++ model objects for the note editor's logical line-number rail.
   논리 줄 분할, source/logical offset 매핑, 최종 y/height row 생성은 `ContentsLineNumberRailMetrics`가 담당한다.
 - 격리: `ContentsLineNumberRailMetrics`는 TextEdit, cursor, selection, resource overlay 객체를 직접 참조하지 않고
   측정된 row geometry 값만 사용한다.
-- 위치: 각 row의 y는 실제 geometry를 우선하되, geometry가 같은 y로 붕괴하면 이전 row 아래로 보정한다.
+- 위치: 각 row의 y/height는 해당 row의 geometry snapshot에서 독립적으로 결정하며, 이전 row의 bottom을 다음 row에
+  전파하지 않는다.
 - wrap: 긴 paragraph가 여러 시각 줄로 접혀도 번호는 하나이며, row height만 실제 표시 높이를 따른다.

@@ -52,6 +52,10 @@ public:
         int surfaceCursor,
         int renderedLength,
         int sourceLength) const;
+    Q_INVOKABLE QVariantMap visibleContentSourceSelectionRange(
+        const QString& sourceText,
+        int selectionStart,
+        int selectionEnd) const;
     Q_INVOKABLE QVariantMap visibleBackspaceMutationPayload(
         const QString& sourceText,
         QObject* coordinateMapper,

@@ -16,6 +16,8 @@ C++ geometry adapter contracts for editor chrome models.
 - `ContentsEditorGeometryProvider` is the QML-visible adapter that receives view-owned TextEdit/resource/target items
   and translates their `positionToRectangle(...)`, mapping, resource `contentHeight`, and visual-line probes into
   measured value snapshots.
+- Resource gutter-row height is bounded by the next independently measured row top when a resource block sits before
+  more text, so an overlay-level `contentHeight` cannot become a cascading row offset.
 - Gutter and minimap metrics must depend on measured snapshot values only. They must not directly hold TextEdit,
   cursor, selection, resource overlay, or QQuickItem references.
 - This directory owns measurement adaptation only. It does not mutate `.wsnbody`, drive cursor movement, own selection

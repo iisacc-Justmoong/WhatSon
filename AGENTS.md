@@ -84,20 +84,15 @@
 - model, controller, session, persistence, sync, parsing, mutation, scheduling, command-surface 책임을 우회하기 위한 compatibility QML wrapper를 추가하지 않는다. 해당 책임은 single-purpose C++ object로 승격한다.
 - 각 C++ Controller는 좁은 signal/slot contract를 노출하고, domain mutation, timing, rendering, persistence 작업은 소유 model layer에 위임해야 한다.
 
-### Model Layer QML 금지 (중요)
+### Model Layer, QML 의 역할 분담 (중요)
 
 - `src/app/models/**`는 QML 파일을 포함하면 안 된다.
 - `src/app/models` 아래에 남아 있는 모든 QML 파일은 C++(`.hpp/.cpp`)으로 변환 후 제거해야 할 migration debt로 취급한다.
 - model layer는 QObject/Q_GADGET/QAbstractItemModel 기반 API를 QML에 노출할 수 있지만, domain logic, orchestration, controller behavior, mutable session state, formatting policy, parsing policy, mutation planning, resource import handling, input policy를 QML로 구현하면 안 된다.
 - 기능이 `src/app/qml/view/**` 아래보다 낮은 레이어의 logic을 필요로 하면, `src/app/models` 아래에 또 다른 `*.qml` helper를 추가하지 말고 소유 도메인의 C++ object를 생성하거나 확장한다.
 - `src/app/qml/**`만 QML의 허용 위치이며, 해당 파일은 view/presentation composition 역할에 머물러야 한다.
+- qml에는 백엔드가 존재할 수 없으며, 오로지 뷰 구현에 관련한 동작만을 허용한다.
 
-## 아키텍처 방향
-
-- 새 코드, 리팩터링, 파일 이동은 Domain-Driven Development와 Feature-Driven Development를 우선한다.
-- 이미 안정적인 cross-domain primitive가 아닌 이상, broad shared technical layer보다 domain 또는 feature boundary를 먼저 기준으로 변경을 구성한다.
-- 각 feature slice는 가능한 한 end-to-end로 유지한다. storage, runtime loading, service logic, controller wiring, QML surface, docs는 소유 도메인 가까이에 둔다.
-- shared helper는 여러 도메인이 실제로 재사용하고, 추출이 소유 도메인의 business rule을 빼내지 않을 때만 허용한다.
 
 ### 편집기 Source of Truth (중요)
 
@@ -134,35 +129,6 @@
 - `Qt.inputMethod && ...`, `Qt.inputMethod.visible !== undefined` guard처럼 alternate input-method object를 허용하는 fallback branch를 추가하지 않는다.
 - text editor wrapper는 native composition이 안정될 때까지 persistence나 programmatic sync를 defer하기 위해서만 `LV.TextEditor.editorItem.inputMethodComposing`과 `LV.TextEditor.editorItem.preeditText`를 native text state로 관찰할 수 있다.
 - 이 primitive들이 LVRS로 승격되기 전까지 editor QML은 native-input session, shortcut-surface, context-menu long-press, focused programmatic-sync, ordinary text-edit focus-restore 결정을 `src/app/models/editor/input/ContentsEditorInputPolicyAdapter.qml`을 통해 라우팅해야 한다.
-
-## Codex Init(`/init`) 절차
-
-이 섹션의 initialization guidance는 참고 자료다. 사용자가 environment bootstrap을 명시적으로 요청하지 않는 한 일반 작업 중 이 전체 절차를 실행하지 않는다. 일반 feature 작업은 `build/` 아래의 더 작은 유지 검증 타깃을 우선한다.
-
-`/init`이 명시적으로 요청되면 다음 순서가 성공했을 때 initialization이 완료된 것으로 본다.
-
-1. LVRS package discoverability를 확인한다.
-2. CMake configure를 실행한다.
-3. app과 daemon을 build한다.
-4. daemon healthcheck를 실행한다.
-5. 필요할 때 optional app offscreen smoke를 실행한다.
-
-권장 명령:
-
-```bash
-cmake -S . -B build
-cmake --build build --target WhatSon -j
-cmake --build build --target WhatSon_daemon -j
-./build/src/daemon/WhatSon_daemon --healthcheck
-cmake --build build --target whatson_run_app
-```
-
-일반 host app 및 daemon build는 incremental 상태를 유지해야 하며, dedicated `build-trial` packaging tree를 암묵적으로 trigger하면 안 된다. dedicated desktop trial package가 명시적으로 필요할 때만 configure에서 opt in하고 nested packaging target을 수동으로 호출한다.
-
-```bash
-cmake -S . -B build -DWHATSON_ENABLE_TRIAL_BUILD_MIRROR=ON
-cmake --build build --target whatson_sync_trial_build
-```
 
 ## LVRS 통합의 단일 Source of Truth
 
@@ -270,6 +236,12 @@ import LVRS 1.0 as LV
 1. `CMakeLists.txt`와 `src/app/CMakeLists.txt`가 여전히 LVRS baseline pattern과 일치하는지 확인한다. root orchestration과 per-directory `add_subdirectory(...)` split을 맞춘 상태로 유지한다.
 2. QML import가 일관되게 `import LVRS 1.0 as LV`인지 확인한다.
 3. 새 UI는 LVRS component를 먼저 사용해 설계한다.
+
+## 플랜 및 구현 체크리스트
+
+1. 계산과 동작은 반드시 C++로 구현되어야 하고, 오로지 뷰만을 Qml에서 다룬다. Qml은 객체 모델링 및 메서드 정의 등 백엔드 논리를 전담할 수 없다.
+2. 
+
 
 ## 완료 체크리스트
 

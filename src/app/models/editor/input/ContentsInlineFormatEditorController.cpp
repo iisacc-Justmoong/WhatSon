@@ -3,7 +3,6 @@
 #include "app/models/editor/resource/ContentsEditorDynamicObjectSupport.hpp"
 
 #include <QEvent>
-#include <QKeyEvent>
 #include <QMetaObject>
 #include <QMetaProperty>
 #include <QVariant>
@@ -45,27 +44,6 @@ bool invokeTextEdited(QObject* control, const QString& text)
     return QMetaObject::invokeMethod(control, "textEdited", Q_ARG(QVariant, QVariant(text)));
 }
 
-bool invokeRenderedBackspaceMutation(QObject* control, const QKeyEvent& event)
-{
-    if (!control)
-        return false;
-
-    QVariantMap eventMap;
-    eventMap.insert(QStringLiteral("accepted"), false);
-    eventMap.insert(QStringLiteral("key"), event.key());
-    eventMap.insert(QStringLiteral("modifiers"), static_cast<int>(event.modifiers()));
-
-    QVariant handled;
-    if (!QMetaObject::invokeMethod(
-            control,
-            "applyRenderedBackspaceMutation",
-            Q_RETURN_ARG(QVariant, handled),
-            Q_ARG(QVariant, QVariant(eventMap))))
-    {
-        return false;
-    }
-    return handled.toBool();
-}
 }
 
 ContentsInlineFormatEditorController::ContentsInlineFormatEditorController(QObject* parent)
@@ -133,20 +111,6 @@ void ContentsInlineFormatEditorController::setTextInput(QObject* value)
 
 bool ContentsInlineFormatEditorController::eventFilter(QObject* watched, QEvent* event)
 {
-    if (watched == m_textInput
-        && event != nullptr
-        && event->type() == QEvent::KeyPress)
-    {
-        auto* keyEvent = static_cast<QKeyEvent*>(event);
-        if (keyEvent->key() == Qt::Key_Backspace
-            && controlFocused()
-            && invokeRenderedBackspaceMutation(m_control, *keyEvent))
-        {
-            keyEvent->accept();
-            return true;
-        }
-    }
-
     return QObject::eventFilter(watched, event);
 }
 

@@ -130,8 +130,11 @@ ctest --test-dir build --output-on-failure -L cpp_regression
   round-trips the new `annotationPath` and newly created resource packages keep a transparent `annotation.png`.
 - Folder-path semantics now also lock escaped literal-slash handling plus `Folders.wsfolders` parser migration, so a
   library folder label like `Marketing/Sales` cannot regress into an accidental parent/child hierarchy split.
-- Sidebar hierarchy expansion now also pins the chevron-only click path, so a folder row's right chevron writes a single
-  `setItemExpanded(...)` request and stale model refreshes cannot overwrite the newly chosen expanded/collapsed state.
+- Sidebar hierarchy expansion now also pins the LVRS chevron signal path, so a folder row's right chevron commits the
+  `onListItemExpanded(...)` callback through one `setItemExpanded(...)` request while stale model refreshes still cannot
+  overwrite the newly chosen expanded/collapsed state.
+- Sidebar footer actions now pin both the legacy `LV.ListFooter` config-callback route and the signal route, with
+  same-turn coalescing so create, delete, and context-menu clicks stay live without double-dispatching.
 - Sidebar footer toolbar order is source-locked as add folder, delete selected folder, then open context menu, with the
   third slot using the LVRS more/menu icon instead of a settings glyph.
 - Sidebar tree context-menu coverage now locks `Expand All` and `Collapse All` entries to
@@ -201,6 +204,9 @@ ctest --test-dir build --output-on-failure -L cpp_regression
   instead of spacing numbers by a simple row count. QML surface tests also pin the rail's `preferredWidth`, so the
   blank leading area before the line-number column stays half of the previous implicit button-width slack, and the
   active blue gutter bar follows cursor/selection source offsets.
+- Line-number rail metrics now also pin independent row geometry: a tall resource row keeps its own measured height
+  without pushing later gutter rows down through previous-row fallback state, and the geometry provider caps an
+  overlay-height resource row at the next measured row top.
 - The shared inline-format editor now also pins the absence of pointer interception above the live `LV.TextEditor`,
   so mouse/touch selection, `Shift`-extended selection, and repeated Backspace/Delete remain OS/Qt-native. The same
   regression scans the QML source tree for forbidden input-method bridges and fallbacks, keeping IME query updates,
@@ -215,7 +221,7 @@ ctest --test-dir build --output-on-failure -L cpp_regression
   iiHtmlBlock resource projection keeps the RichText frame pinned above the RAW buffer while keystrokes mutate the
   source, so transient composition/render turns cannot expose `<resource ... />` text.
 - The inline editor regression now also pins exclusive caret painting: while rendered output is visible, only the
-  projected WYSIWYG cursor is painted and the native RAW cursor delegate remains hidden; disabling rendered output
+  projected WYSIWYG cursor is painted and the native logical cursor delegate remains hidden; disabling rendered output
   returns caret painting to the native editor path.
 - The inline editor regression now also pins rendered-surface cursor placement: taps are resolved through visible
   logical text geometry and then mapped back through `logicalToSourceOffsets`, so hidden RAW tags do not determine the
@@ -223,6 +229,12 @@ ctest --test-dir build --output-on-failure -L cpp_regression
 - The same rendered-cursor coverage now also pins collapsed Backspace against nested inline style tags: the editor
   deletes the previous visible glyph through a C++ WYSIWYG mutation payload instead of letting native RAW deletion
   remove bytes from hidden `</italic>` / `</bold>` boundaries behind the projected caret.
+- The inline editor regression now also pins the rendered-mode native edit surface as visible logical text, not RAW
+  XML. Typing and Backspace at the projected caret update the logical `LV.TextEditor` buffer and are immediately
+  converted back into RAW `.wsnbody` source through `visibleTextMutationPayload(...)`.
+- Empty inline-format wrapper coverage now also verifies that hidden-only RAW selections remain collapsed after
+  projection to the native logical surface, so restoring `<highlight></highlight>`-only ranges cannot select the next
+  visible character.
 - The inline editor regression now also pins actual mouse-click cursor movement through both the inline editor and
   `ContentsStructuredDocumentFlow` host, including the projected caret rectangle, so collapsed pointer gestures cannot
   leave the visible cursor at the initial host-provided logical cursor position.
@@ -305,7 +317,9 @@ ctest --test-dir build --output-on-failure -L cpp_regression
 - 위치: `test`
 - 역할: 이 파일은 해당 디렉터리나 모듈의 구조, 책임, 운영 규칙, 검증 기준을 설명하며 `LV.TextEditor` 기반 본문 입력 회귀를 포함한다.
 - 현재 본문 입력 회귀에는 렌더 표면 마우스 클릭 후 `Shift+Right` 선택 앵커, 렌더 표면 드래그 selection,
-  표면 selection-to-RAW 매핑 및 좌표 클램프 검증이 포함된다.
+  표면 selection-to-RAW 매핑 및 좌표 클램프 검증이 포함된다. 렌더 모드의 native edit surface가 RAW XML이
+  아니라 visible logical text인지, 그리고 입력/Backspace가 즉시 RAW `.wsnbody` mutation으로 변환되는지도
+  함께 검증한다.
 - editor renderer 회귀에는 RAW `<bold>` / `<italic>` 인라인 스타일 태그가 literal XML 문자열이 아니라
   RichText 스타일 span으로 투영되는지 확인하는 케이스가 포함된다.
 - 기준: 파일 경로, 명령, API 이름, 세부 변경 이력은 위 영어 본문을 원문 기준으로 유지한다.

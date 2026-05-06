@@ -9,15 +9,18 @@ Hosts the note document surface after `ContentsEditorDisplayBackend` has mounted
 - Receives RAW `sourceText` from `ContentsEditorSessionController`.
 - Receives resource-resolved `editorSurfaceHtml`, `logicalText`, `htmlTokens`, and `normalizedHtmlBlocks` from
   the backend-bound note editor chrome in `ContentViewLayout.qml`.
-- Mounts `ContentsInlineFormatEditor.qml` as the live `LV.TextEditor` path.
+- Mounts `ContentsInlineFormatEditor.qml` as the live `LV.TextEditor` path. The inline editor receives RAW
+  `sourceText`, but in rendered mode its native text surface edits the visible logical projection and reports mapped
+  RAW cursor/selection offsets back to this host.
 - Mounts `ContentsEditorTagInsertionController` and binds the inline editor's tag-management key hook to the
   document flow.
 - Handles explicit formatting/body tag shortcuts by asking the tag insertion controller to build the next RAW tag
   insertion payload from the live inline editor buffer, then applying that payload through the same live editor. The
   payload source must not lag behind the focused editor text while parent session bindings catch up.
 - Passes `logicalText` into the inline editor's display-geometry probe for cursor and selection projection.
-- Passes the current logical cursor position into the inline editor so its overlay cursor is projected from visible
-  text geometry while the authoritative edit buffer remains RAW source text.
+- Passes the current logical cursor position into the inline editor as a projection hint. The host reads
+  `editor.sourceCursorPosition`, `editor.sourceSelectionStart`, and `editor.sourceSelectionEnd` back from the inline
+  editor so gutter, minimap, formatting, and persistence surfaces keep using RAW `.wsnbody` coordinates.
 - Passes the projection-owned `coordinateMapper` object into the inline editor for source-to-rendered selection
   projection; the view layer does not receive the raw logical/source offset table.
 - Passes renderer-owned `normalizedHtmlBlocks` through to the inline editor only as selection metadata. Resource

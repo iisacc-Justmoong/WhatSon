@@ -8,7 +8,8 @@ Implements the editor-surface geometry adapter behind `IContentsEditorGeometryPr
 
 - Reads `positionToRectangle(...)` from the supplied TextEdit-like geometry item.
 - Maps measured points into the supplied target item coordinate system when both sides are `QQuickItem` instances.
-- Reads resource `contentHeight` for atomic resource frame rows.
+- Reads resource `contentHeight` for atomic resource frame rows, but caps a middle resource row at the next independently
+  measured row top so a whole-document overlay height cannot push later gutter rows down.
 - Probes the visible item with `positionAt(...)` and `positionToRectangle(...)` to produce minimap row-width ratios.
 - Converts logical line ranges into `lineNumberGeometryRows` value snapshots.
 - Emits `geometryChanged()` whenever a bound view item, logical range list, or primitive measurement input changes.

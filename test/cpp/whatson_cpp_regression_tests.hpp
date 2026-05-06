@@ -1122,6 +1122,8 @@ private slots:
     void qmlStructuredEditors_mountsEditorAndMinimapInDisplayLayout();
     void contentsLineNumberRailMetrics_buildsRowsFromLogicalBlocks();
     void contentsLineNumberRailMetrics_mapsRowsFromWholeLogicalText();
+    void contentsLineNumberRailMetrics_keepsResourceRowsIndependent();
+    void contentsEditorGeometryProvider_capsMiddleResourceRowsAtNextMeasuredRow();
     void contentsEditorVisualLineMetrics_expandsTallVisualBlocks();
     void contentsMinimapLayoutMetrics_resolvesRuntimeVisibilityAndDesignRows();
     void qmlStructuredEditors_rejectStaleSourceRangeMutations();
@@ -1153,6 +1155,7 @@ private slots:
     void qmlInlineFormatEditor_mapsRenderedPointerSelectionToCharacterRawRange();
     void qmlInlineFormatEditor_movesRenderedCursorOnMouseClick();
     void qmlInlineFormatEditor_backspaceDeletesVisibleCharacterBeforeRenderedCursor();
+    void qmlInlineFormatEditor_keepsNativeSurfaceLogicalAndMapsTypingToRaw();
     void qmlInlineFormatEditor_preservesRenderedPointerDragSelection();
     void qmlInlineFormatEditor_restoresRenderedPointerMultiClickSelection();
     void qmlInlineFormatEditor_skipsHiddenInlineTagsDuringNativeCursorMovement();

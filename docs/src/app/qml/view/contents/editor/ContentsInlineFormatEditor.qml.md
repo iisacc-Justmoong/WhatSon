@@ -6,7 +6,8 @@ Wraps the live `LV.TextEditor` used by the note document surface.
 
 ## Current Contract
 
-- The editable buffer is always `TextEdit.PlainText` through `LV.TextEditor`.
+- The editable surface is always `TextEdit.PlainText` through `LV.TextEditor`. In rendered mode that native surface
+  contains the visible logical projection, while the component `text` property remains the RAW `.wsnbody` source.
 - `renderedText` is an optional read-only `TextEdit.RichText` overlay derived from the renderer pipeline.
 - The RichText overlay is disabled for focus and key input. It may paint formatted text and resource frame images, but
   ordinary editing remains routed to the underlying `LV.TextEditor`.
@@ -17,26 +18,27 @@ Wraps the live `LV.TextEditor` used by the note document surface.
 - Public programmatic text replacement APIs delegate to `ContentsInlineFormatEditorController`, so focused native
   selection and composition policy can reject or defer host-side surface refresh instead of clearing OS selection.
 - WYSIWYG mapping policy delegates to C++ `ContentsWysiwygEditorPolicy`. QML keeps the `TextEdit` geometry and pointer
-  surface, but source-tag parsing, hidden-tag cursor normalization, visible logical selection mapping, line/paragraph
-  range decisions, and atomic resource-block selection decisions are not implemented in QML.
+  surface, but source-tag parsing, visible-text mutation planning, hidden-tag cursor normalization, visible logical
+  selection mapping, line/paragraph range decisions, and atomic resource-block selection decisions are not implemented
+  in QML.
 - Explicit tag-management mutations use `applyTagManagementMutationPayload(...)`, which bypasses host-side sync
   deferral because the command is initiated by the focused editor itself, restores the returned source selection, and
   emits the normal `textEdited(...)` signal for RAW persistence.
-- Collapsed Backspace while the rendered overlay is visible is treated as a tag-aware RAW mutation. The C++ input
-  controller catches the key on `LV.TextEditor.editorItem`, QML asks `ContentsWysiwygEditorPolicy` for a visible
-  Backspace payload, and the resulting source splice deletes the previous rendered glyph instead of hidden inline tag
-  bytes that may sit after the projected cursor.
+- Native text edits in rendered mode are diffed against the visible logical projection and converted into a RAW
+  `.wsnbody` splice by `ContentsWysiwygEditorPolicy.visibleTextMutationPayload(...)`. Backspace therefore stays on the
+  OS/Qt text-editing path, but the committed source mutation deletes the previous visible glyph instead of hidden
+  inline tag bytes that may sit near the projected cursor.
 - Cursor visibility is explicit and mutually exclusive. The native cursor delegate is visible only for the plain source
   surface, while the component paints a projected cursor above the RichText overlay only for collapsed caret positions.
   Non-empty selection ranges hide the projected cursor so the selection model owns the interaction state.
-- Rendered-surface mouse clicks update a local projected-cursor logical offset immediately after restoring the
-  authoritative RAW cursor, so the visible caret moves under the pointer even before the parent host republishes
+- Rendered-surface mouse clicks update a local projected-cursor logical offset immediately after restoring the mapped
+  source cursor, so the visible caret moves under the pointer even before the parent host republishes
   `logicalCursorPosition`.
 - The RichText overlay remains visible while `LV.TextEditor` has a non-empty native selection. The component mirrors
   the source range into rendered coordinates instead of exposing RAW tag geometry.
-- Native selection paint stays enabled for visible logical content even while the rendered overlay is visible. Only the
-  underlying RAW glyph paint is transparent, so OS/Qt drag and Shift selection remain visible without showing RAW tag
-  text.
+- Native selection paint stays enabled for visible logical content even while the rendered overlay is visible. The
+  underlying logical glyph paint is transparent, so OS/Qt drag and Shift selection remain visible without showing a
+  second text layer.
 - Source ranges that contain only hidden formatting tag tokens, including empty `<highlight></highlight>` or nested
   empty format wrappers, do not paint native or rendered selection because they do not represent visible editor
   content.
@@ -45,12 +47,13 @@ Wraps the live `LV.TextEditor` used by the note document surface.
   rectangle; the RAW `<resource ... />` string must never paint as multiple selected text runs.
 - While the rendered overlay is hidden, the rendered surface does not add pointer handlers above the `LV.TextEditor`;
   OS/Qt pointer selection remains the selection gesture path.
-- While the rendered overlay is visible, the transparent RAW `TextEdit` geometry is no longer a faithful hit-test
-  surface because hidden source tags still occupy RAW character positions. Pointer interaction is resolved by the
-  rendered-overlay pointer bridge against the same `renderedOverlay` RichText geometry that is visible on screen. The
-  resulting visible logical cursor/selection range is mapped back through the supplied C++ `coordinateMapper` and
-  restored on the authoritative RAW editor with `TextEdit.SelectCharacters`, so dragging selects visible character
-  ranges instead of dragging the cursor across hidden tag bytes. The transparent surface-selection `TextEdit` mirrors
+- While the rendered overlay is visible, RAW offsets are no longer used as native surface character positions because
+  hidden source tags do not have visible width. Pointer interaction is resolved by the rendered-overlay pointer bridge
+  against the same `renderedOverlay` RichText geometry that is visible on screen. The resulting visible logical
+  cursor/selection range is mapped back through the supplied C++ `coordinateMapper` and restored on the native logical
+  surface, while the public selection/cursor properties expose the authoritative RAW offsets. This makes dragging
+  select visible character ranges instead of dragging the cursor across hidden tag bytes. The transparent
+  surface-selection `TextEdit` mirrors
   the rendered RichText payload for selection-surface synchronization, but native pointer dragging is not the
   authoritative hit-test path while the overlay is visible. The local pointer cursor override is applied only when that
   restored range is collapsed; non-empty drag selections clear the override. The same bridge preserves native-style
@@ -92,34 +95,36 @@ Wraps the live `LV.TextEditor` used by the note document surface.
 - `restoreSelectionRange(...)` clears stale collapsed selections before cursor placement and restores non-empty ranges
   through native `moveCursorSelection(...)`.
 - `focusTerminalBodyPosition()` focuses the native `LV.TextEditor`, clears any stale selection, and moves the cursor to
-  the RAW text end through `setCursorPositionPreservingNativeInput(...)`.
-- Ordinary navigation, selection, Delete repeat, paste fallback, and IME/preedit behavior remain with Qt's native
-  text-editing path exposed by `LV.TextEditor`. Backspace also remains native except for the collapsed rendered-overlay
-  case above, where the visible cursor must be translated to a RAW character range before source mutation.
+  the visible terminal position; `sourceCursorPosition` maps that collapsed caret back to the RAW text end.
+- Ordinary navigation, selection, Backspace/Delete repeat, paste fallback, and IME/preedit behavior remain with Qt's
+  native text-editing path exposed by `LV.TextEditor`. In rendered mode, the resulting visible logical text delta is
+  translated to a RAW character range before source mutation.
 - Rendered-overlay mouse drag selection is translated from logical visible text coordinates back to RAW source offsets.
   Collapsed clicks follow the same path and are treated as cursor placement, not as a no-op selection gesture.
   Plain-source selection, keyboard selection, Shift-based selection, and IME/preedit behavior remain owned by
   `LV.TextEditor`; the rendered-overlay pointer bridge is inactive during IME composition.
-- When native cursor movement enters a hidden RAW tag token while the rendered overlay is visible, the editor snaps the
-  RAW cursor to the adjacent safe source boundary according to movement direction. Arrow-key traversal therefore does
-  not spend visible cursor steps inside zero-width inline formatting tags.
+- Rendered-mode native cursor movement happens in visible logical coordinates. `sourceCursorPosition`,
+  `sourceSelectionStart`, and `sourceSelectionEnd` map those positions back to RAW offsets and trim hidden-only inline
+  wrapper selections so empty formatting tags cannot select the following visible character.
 - The tag-management key filter must set unhandled key events back to `accepted = false`; otherwise ordinary
   navigation and Shift-selection are swallowed before the native editor sees them.
 
 ## Pipeline Position
 
 The component displays `editorSurfaceHtml` generated by `ContentsEditorPresentationProjection`, but it never serializes
-RichText back into `.wsnbody`. The authored source remains the plain `LV.TextEditor` buffer. During native text
-selection, the rendered overlay remains visible while the underlying plain editor keeps ownership of the source range
-and paints no RAW highlight. The rendered overlay receives a synchronized logical selection range, and iiHtmlBlock
-resource spans are painted as one block-level selection rectangle. During active IME composition, programmatic text
-sync remains deferred through the native editor path. For resource-backed projections the overlay stays pinned above
-the plain source buffer, so a transient parser/render turn cannot collapse a framed image back to the RAW resource tag.
-While the rendered overlay is visible, `logicalCursorPosition` maps the RAW cursor to the logical display text so the
-projected caret follows the visible text rather than hidden markup. Mouse pointer selection follows the same
-logical-to-source table: pointer coordinates are measured against the visible `renderedOverlay` RichText geometry and
-the pointer bridge restores the matching visible cursor/selection span as RAW selection or collapsed cursor placement
-on the underlying editor so formatting commands still receive authoritative `.wsnbody` offsets. The surface-selection
+RichText back into `.wsnbody`. The authored source remains the component `text` property and every edit emits RAW text
+through `textEdited(...)`. During rendered-mode native editing, the `LV.TextEditor` buffer is the visible logical text
+projection; `visibleTextMutationPayload(...)` converts the committed text delta back to a source splice before the
+parent persistence path sees it. During native text selection, the rendered overlay remains visible while the underlying
+plain editor keeps ownership of the visible logical range; the exported `sourceSelectionStart/End` values map that
+range back to authoritative `.wsnbody` offsets. The rendered overlay receives a synchronized logical selection range,
+and iiHtmlBlock resource spans are painted as one block-level selection rectangle. During active IME composition,
+programmatic text sync remains deferred through the native editor path. For resource-backed projections the overlay
+stays pinned above the plain logical surface, so a transient parser/render turn cannot collapse a framed image back to
+the RAW resource tag. Mouse pointer selection follows the same logical-to-source table: pointer coordinates are
+measured against the visible `renderedOverlay` RichText geometry and the pointer bridge restores the matching visible
+cursor/selection span on the native logical surface while exposing RAW offsets for formatting commands and persistence.
+The surface-selection
 editor mirrors the same RichText payload, but the pointer bridge owns rendered hit testing because native transparent
 TextEdit dragging can collapse to the wrong RichText position. A local pointer cursor override keeps the projected caret at
 the clicked logical offset only for collapsed pointer clicks until the host catches up or the next non-pointer cursor
@@ -127,7 +132,7 @@ movement clears it. Once the pointer gesture expands into a non-empty selection,
 rendered/native selection surfaces own the visual state. Double-click and triple-click gestures follow the same
 logical-to-source mapping, selecting the visible line and paragraph respectively instead of exposing hidden RAW tag
 bytes. During IME composition that pointer bridge is inactive and the native editor receives the pointer path directly.
-If the native RAW cursor enters an opening or closing inline formatting tag, C++ policy returns the adjacent source
-boundary that matches the visible logical caret position and QML applies that position to the native editor.
-For collapsed Backspace in rendered mode, the same policy path derives a deletion range from the visible cursor and
-rewinds/advances around hidden inline boundary tags before mutating RAW source.
+Collapsed RAW selections that contain only hidden opening/closing inline formatting wrappers are kept collapsed after
+projection to the native logical surface, so restoring a hidden tag range cannot select the next visible character.
+Rendered-mode Backspace, Delete, and typing all flow through the visible text mutation payload, which rewinds/advances
+around hidden inline boundary tags before mutating RAW source.

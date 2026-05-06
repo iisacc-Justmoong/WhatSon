@@ -59,17 +59,21 @@ Editor-facing QML view components for the center content surface.
 - The minimap can be dragged vertically without rendering scrollbar chrome. `Minimap.qml` emits direct drag pixel
   deltas from its invisible drag surface and `ContentViewLayout.qml` applies those deltas to the center editor
   `Flickable.contentY` without smoothing or ratio scaling.
-- `ContentsInlineFormatEditor.qml` keeps editing on an `LV.TextEditor` plain-text buffer while displaying the read-side
-  RichText overlay. When native selection is active, that overlay stays visible so WYSIWYG text and resource frames do
-  not collapse back to RAW tags; the underlying editor still owns the source range and keeps native selection highlight
-  visible for ranges that contain visible logical content while RAW selected glyphs stay transparent. Tag-only source
+- `ContentsInlineFormatEditor.qml` keeps editing on an `LV.TextEditor` plain-text surface while displaying the read-side
+  RichText overlay. In rendered mode that native surface contains the visible logical projection, not RAW tag bytes;
+  visible text deltas are converted back to RAW `.wsnbody` splices by `ContentsWysiwygEditorPolicy`. When native
+  selection is active, that overlay stays visible so WYSIWYG text and resource frames do not collapse back to RAW tags;
+  the underlying editor still owns the visible logical range, while exported cursor/selection properties map that range
+  back to RAW source offsets for persistence, gutter state, and tag commands. Native selection highlight stays visible
+  for ranges that contain visible logical content while the underlying logical glyphs stay transparent. Tag-only source
   ranges, such as empty formatting wrappers, do not paint native or rendered selection because those tags produce no
-  visible editor content. The rendered overlay mirrors text selection in logical coordinates, and resource spans from
-  iiHtmlBlock metadata paint as one atomic block-level selection rectangle. Resource-backed overlays also stay pinned
-  during ordinary native typing/composition turns, so a refresh gap cannot reveal the RAW `<resource ... />` tag in
-  place of the frame. The editor paints an explicit blinking cursor above the overlay only for collapsed caret
-  positions while the underlying RAW text and native RAW cursor delegate are hidden. The rendered surface is stacked
-  below the transparent native editor. While that overlay is visible, a thin pointer bridge maps mouse-drag hit testing through the same `renderedOverlay`
+  visible editor content, and restoring such a range keeps it collapsed so the next visible character is not selected.
+  The rendered overlay mirrors text selection in logical coordinates, and resource spans from iiHtmlBlock metadata
+  paint as one atomic block-level selection rectangle. Resource-backed overlays also stay pinned during ordinary native
+  typing/composition turns, so a refresh gap cannot reveal the RAW `<resource ... />` tag in place of the frame. The
+  editor paints an explicit blinking cursor above the overlay only for collapsed caret positions while the native
+  logical cursor delegate is hidden. The rendered surface is stacked below the transparent native editor. While that
+  overlay is visible, a thin pointer bridge maps mouse-drag hit testing through the same `renderedOverlay`
   RichText geometry that is visible on screen and the C++ `coordinateMapper`, then restores the matching RAW source
   selection on `LV.TextEditor`; this keeps sub-word selection precise even when hidden source tags would otherwise
   distort the transparent RAW text geometry. That
@@ -102,10 +106,12 @@ objects.
 - 배치: 실제 노트 편집 화면은 `ContentViewLayout.qml`의 `LV.HStack`에서 본문 편집기와 미니맵 순서로 표시한다. 세션, projection, resource, minimap 계산은 `ContentsEditorDisplayBackend`가 담당한다.
 - 기준: 파일 경로, 명령, API 이름, 세부 변경 이력은 위 영어 본문을 원문 기준으로 유지한다.
 - selection: 본문 텍스트 선택 중에도 RichText overlay를 유지한다. 선택 source range는 `LV.TextEditor`가
-  소유하고 visible logical content가 있는 범위에 대해서만 native selection highlight를 표시한다. 단 RAW
-  selected glyph는 투명하게 유지한다. 빈 formatting wrapper처럼 태그만 포함된 source range는 표시할 본문이
-  없으므로 native/rendered selection을 칠하지 않는다. 렌더된 텍스트 선택은 overlay의 logical selection으로
-  동기화하고, 리소스는 iiHtmlBlock display block 하나로 판정해 atomic block 선택 rect 하나만 표시한다.
+  소유하는 visible logical selection에서 RAW offset으로 되돌려 계산한다. visible logical content가 있는 범위에
+  대해서만 native selection highlight를 표시하고, underlying logical glyph는 투명하게 유지한다. 빈 formatting
+  wrapper처럼 태그만 포함된 source range는 표시할 본문이 없으므로 native/rendered selection을 칠하지 않으며,
+  복원 시 다음 visible character로 selection이 펼쳐지지 않게 collapsed caret로 유지한다. 렌더된 텍스트 선택은
+  overlay의 logical selection으로 동기화하고, 리소스는 iiHtmlBlock display block 하나로 판정해 atomic block
+  선택 rect 하나만 표시한다.
 - cursor: RichText overlay가 보이는 동안에는 논리 텍스트 좌표 기반의 표면 커서만 overlay 위에 그리고, 아래의
   네이티브 RAW 커서 delegate는 숨긴다.
 - top inset: 본문 편집기와 overlay의 상단 inset/padding은 0으로 유지하여 첫 줄이 문서 슬롯 상단에 붙는다.
@@ -116,7 +122,8 @@ objects.
   생성은 C++ `ContentsLineNumberRailMetrics`가 담당한다. 지오메트리는
   `ContentsEditorGeometryProvider`가 만든 row snapshot으로만 들어오며, 거터 metrics는
   TextEdit/cursor/selection/resource overlay 객체에 직접 결합하지 않는다. wrap은 번호를 늘리지 않고 해당
-  번호 행의 높이만 실제 본문 표시 높이만큼 커진다. 번호 왼쪽 빈 영역은 rail의 `preferredWidth` 계산으로
+  번호 행의 높이만 실제 본문 표시 높이만큼 커진다. 각 row의 y/height는 독립 snapshot으로 처리하며, 리소스
+  프레임 row의 높이가 다음 줄 번호 위치를 연쇄적으로 밀지 않는다. 번호 왼쪽 빈 영역은 rail의 `preferredWidth` 계산으로
   기존 implicit blank의 절반만 사용한다. RAW cursor/selection offset은 host가 전달하며, 거터는 이를 row
   source range와 비교해 커서 줄 또는 선택된 줄에 파란색 active bar를 표시한다.
 - resource frame: 리소스 프레임은 본문 텍스트 컬럼 폭의 100%로 렌더한다.

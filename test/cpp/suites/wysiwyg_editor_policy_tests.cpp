@@ -41,6 +41,16 @@ void WhatSonCppRegressionTests::wysiwygEditorPolicy_mapsVisibleSelectionBackToRa
         rawSelection.value(QStringLiteral("selectionEnd")).toInt(),
         projection.sourceOffsetForVisibleLogicalOffset(4, visibleLength));
     QVERIFY(rawSelection.value(QStringLiteral("selectionStart")).toInt() > 0);
+    const QVariantMap visibleContentSelection = policy.visibleContentSourceSelectionRange(
+        QStringLiteral("<bold>Alpha</bold> beta"),
+        0,
+        QStringLiteral("<bold>Alpha").size());
+    QCOMPARE(
+        visibleContentSelection.value(QStringLiteral("start")).toInt(),
+        QStringLiteral("<bold>").size());
+    QCOMPARE(
+        visibleContentSelection.value(QStringLiteral("end")).toInt(),
+        QStringLiteral("<bold>Alpha").size());
 
     const QString boldSource = QStringLiteral("<bold>Alpha</bold>");
     projection.setSourceText(boldSource);
@@ -78,6 +88,31 @@ void WhatSonCppRegressionTests::wysiwygEditorPolicy_mapsVisibleSelectionBackToRa
     QCOMPARE(
         nestedBoundaryBackspacePayload.value(QStringLiteral("surfaceCursor")).toInt(),
         QStringLiteral("Alph").size());
+
+    const QVariantMap visibleInsertionPayload = policy.visibleTextMutationPayload(
+        nestedStyledSource,
+        &projection,
+        projection.logicalText(),
+        QStringLiteral("AlphaX Beta"),
+        QStringLiteral("AlphaX").size());
+    QVERIFY(visibleInsertionPayload.value(QStringLiteral("applied")).toBool());
+    QCOMPARE(
+        visibleInsertionPayload.value(QStringLiteral("nextSourceText")).toString(),
+        QStringLiteral("<bold>Al<italic>pha</italic></bold>X<italic> Beta</italic>"));
+    QCOMPARE(
+        visibleInsertionPayload.value(QStringLiteral("surfaceCursor")).toInt(),
+        QStringLiteral("AlphaX").size());
+
+    const QVariantMap visibleDeletePayload = policy.visibleTextMutationPayload(
+        nestedStyledSource,
+        &projection,
+        projection.logicalText(),
+        QStringLiteral("Alph Beta"),
+        QStringLiteral("Alph").size());
+    QVERIFY(visibleDeletePayload.value(QStringLiteral("applied")).toBool());
+    QCOMPARE(
+        visibleDeletePayload.value(QStringLiteral("nextSourceText")).toString(),
+        QStringLiteral("<bold>Al<italic>ph</italic></bold><italic> Beta</italic>"));
 
     const QVariantMap resourceBlock{
         {QStringLiteral("renderDelegateType"), QStringLiteral("resource")},

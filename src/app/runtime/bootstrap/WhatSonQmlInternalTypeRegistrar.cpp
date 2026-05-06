@@ -50,6 +50,7 @@
 #include "app/models/panel/HierarchyDragDropBridge.hpp"
 #include "app/models/panel/HierarchyInteractionBridge.hpp"
 #include "app/models/panel/NoteListModelContractBridge.hpp"
+#include "app/models/sidebar/SidebarHierarchyInteractionController.hpp"
 
 namespace WhatSon::Runtime::Bootstrap
 {
@@ -168,6 +169,8 @@ namespace
                 QStringLiteral("HierarchyDragDropBridge")),
             whatsonInternalCreatableType<HierarchyInteractionBridge>(
                 QStringLiteral("HierarchyInteractionBridge")),
+            whatsonInternalCreatableType<SidebarHierarchyInteractionController>(
+                QStringLiteral("SidebarHierarchyInteractionController")),
             whatsonInternalCreatableType<WhatSonIosHubPickerBridge>(
                 QStringLiteral("WhatSonIosHubPickerBridge"))
         };

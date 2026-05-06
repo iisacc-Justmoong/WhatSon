@@ -73,7 +73,6 @@ Rectangle {
             "y": 0
         })
     property bool footerVisible: true
-    property int hierarchyActivationPendingSerial: 0
     readonly property int hierarchyCompactFooterHeight: LV.Theme.gap24
     readonly property int hierarchyCompactFooterWidth: LV.Theme.gap24 + LV.Theme.gap24 + LV.Theme.gap24 + LV.Theme.gap6
     readonly property int hierarchyCompactInset: LV.Theme.gap2
@@ -117,9 +116,7 @@ Rectangle {
     ]
     property var hierarchyDragDropBridge: null
     property bool hierarchyEditable: false
-    property bool hierarchyExpansionActivationSuppressed: false
-    property string hierarchyExpansionPointerArmedKey: ""
-    property var hierarchyExpansionStateByKey: ({})
+    property var hierarchyInteractionController: null
     property var hierarchyInteractionBridge: null
     readonly property var hierarchyFooterToolbarButtons: [
         {
@@ -132,6 +129,10 @@ Rectangle {
             enabled: sidebarHierarchyView.createFolderEnabled,
             eventName: "hierarchy.footer.create",
             horizontalPadding: sidebarHierarchyView.hierarchyCompactInset,
+            onClicked: function () {
+                if (sidebarHierarchyView.hierarchyInteractionController)
+                    sidebarHierarchyView.hierarchyInteractionController.requestFooterAction("hierarchy.footer.create");
+            },
             verticalPadding: sidebarHierarchyView.hierarchyCompactInset
         },
         {
@@ -144,6 +145,10 @@ Rectangle {
             enabled: sidebarHierarchyView.deleteFolderEnabled,
             eventName: "hierarchy.footer.delete",
             horizontalPadding: sidebarHierarchyView.hierarchyCompactInset,
+            onClicked: function () {
+                if (sidebarHierarchyView.hierarchyInteractionController)
+                    sidebarHierarchyView.hierarchyInteractionController.requestFooterAction("hierarchy.footer.delete");
+            },
             verticalPadding: sidebarHierarchyView.hierarchyCompactInset
         },
         {
@@ -156,6 +161,10 @@ Rectangle {
             enabled: sidebarHierarchyView.viewOptionsEnabled,
             eventName: "hierarchy.footer.options",
             leftPadding: sidebarHierarchyView.hierarchyCompactInset,
+            onClicked: function () {
+                if (sidebarHierarchyView.hierarchyInteractionController)
+                    sidebarHierarchyView.hierarchyInteractionController.requestFooterAction("hierarchy.footer.options");
+            },
             rightPadding: LV.Theme.gap4,
             topPadding: sidebarHierarchyView.hierarchyCompactInset,
             bottomPadding: sidebarHierarchyView.hierarchyCompactInset
@@ -302,13 +311,6 @@ Rectangle {
     function applyBookmarkPaletteVisuals() {
         bookmarkPaletteController.applyBookmarkPaletteVisuals();
     }
-    function armHierarchyExpansionActivationSuppression(item, itemId, index) {
-        // Expansion originated from the chevron slot; invalidate any pending activation callback
-        // from the same pointer transaction before it can route to folder activation.
-        sidebarHierarchyView.hierarchyActivationPendingSerial += 1;
-        sidebarHierarchyView.hierarchyExpansionActivationSuppressed = true;
-        hierarchyExpansionActivationBlockTimer.restart();
-    }
     function beginRenameSelectedHierarchyItem() {
         return renameController.beginRenameSelectedHierarchyItem();
     }
@@ -401,18 +403,11 @@ Rectangle {
         sidebarHierarchyView.requestHierarchyViewOptionsAction(index, eventName);
     }
     function handleHierarchyFooterButtonClicked(index, config) {
+        if (!sidebarHierarchyView.hierarchyInteractionController)
+            return false;
         const normalizedEventName = config && config.eventName !== undefined && config.eventName !== null ? String(config.eventName).trim() : "";
-        const normalizedIndex = sidebarHierarchyView.normalizedInteger(index, -1);
-        if (normalizedEventName === "hierarchy.footer.create" || normalizedIndex === 0) {
-            sidebarHierarchyView.requestCreateFolder();
-            return;
-        }
-        if (normalizedEventName === "hierarchy.footer.delete" || normalizedIndex === 1) {
-            sidebarHierarchyView.requestDeleteFolder();
-            return;
-        }
-        if (normalizedEventName === "hierarchy.footer.options" || normalizedIndex === 2)
-            sidebarHierarchyView.requestViewOptions();
+        const action = sidebarHierarchyView.hierarchyInteractionController.footerActionName(index, normalizedEventName);
+        return sidebarHierarchyView.hierarchyInteractionController.requestFooterAction(action);
     }
     function hierarchyViewOptionsActionName(index, eventName) {
         const normalizedEventName = eventName === undefined || eventName === null ? "" : String(eventName).trim();
@@ -449,57 +444,10 @@ Rectangle {
     function hierarchyItemForResolvedIndex(itemId) {
         return noteDropController.hierarchyItemForResolvedIndex(itemId);
     }
-    function hierarchyExpansionStateScopeKey() {
-        return "hierarchy:" + String(sidebarHierarchyView.normalizedInteger(sidebarHierarchyView.activeToolbarIndex, sidebarHierarchyView.defaultToolbarIndex));
-    }
-    function hierarchyScopedExpansionKey(key) {
-        const normalizedKey = key === undefined || key === null ? "" : String(key).trim();
-        if (!normalizedKey.length)
-            return "";
-        return sidebarHierarchyView.hierarchyExpansionStateScopeKey() + ":" + normalizedKey;
-    }
     function hierarchyItemExpansionKey(item, fallbackIndex) {
-        if (!item)
+        if (!sidebarHierarchyView.hierarchyInteractionController)
             return "";
-        const itemKey = item.itemKey !== undefined && item.itemKey !== null ? String(item.itemKey).trim() : "";
-        if (itemKey.length > 0)
-            return sidebarHierarchyView.hierarchyScopedExpansionKey(itemKey);
-        const key = item.key !== undefined && item.key !== null ? String(item.key).trim() : "";
-        if (key.length > 0)
-            return sidebarHierarchyView.hierarchyScopedExpansionKey(key);
-        const resolvedItemKey = item.resolvedItemKey !== undefined && item.resolvedItemKey !== null ? String(item.resolvedItemKey).trim() : "";
-        if (resolvedItemKey.length > 0)
-            return sidebarHierarchyView.hierarchyScopedExpansionKey(resolvedItemKey);
-        const uuid = item.uuid !== undefined && item.uuid !== null ? String(item.uuid).trim() : "";
-        if (uuid.length > 0)
-            return sidebarHierarchyView.hierarchyScopedExpansionKey("folder:" + uuid);
-        const id = item.id !== undefined && item.id !== null ? String(item.id).trim() : "";
-        if (id.length > 0)
-            return sidebarHierarchyView.hierarchyScopedExpansionKey(id);
-        const itemId = sidebarHierarchyView.normalizedInteger(item.itemId !== undefined ? item.itemId : item.resolvedItemId, -1);
-        if (itemId >= 0)
-            return sidebarHierarchyView.hierarchyScopedExpansionKey(String(itemId));
-        const normalizedFallbackIndex = sidebarHierarchyView.normalizedInteger(fallbackIndex, -1);
-        return normalizedFallbackIndex >= 0 ? sidebarHierarchyView.hierarchyScopedExpansionKey(String(normalizedFallbackIndex)) : "";
-    }
-    function hierarchyExpansionStateContainsKey(key) {
-        const normalizedKey = key === undefined || key === null ? "" : String(key).trim();
-        if (!normalizedKey.length)
-            return false;
-        const state = sidebarHierarchyView.hierarchyExpansionStateByKey;
-        if (!state)
-            return false;
-        for (const existingKey in state) {
-            if (existingKey === normalizedKey)
-                return true;
-        }
-        return false;
-    }
-    function hierarchyExpansionStateForKey(key, fallbackValue) {
-        const normalizedKey = key === undefined || key === null ? "" : String(key).trim();
-        if (!sidebarHierarchyView.hierarchyExpansionStateContainsKey(normalizedKey))
-            return Boolean(fallbackValue);
-        return Boolean(sidebarHierarchyView.hierarchyExpansionStateByKey[normalizedKey]);
+        return sidebarHierarchyView.hierarchyInteractionController.itemExpansionKey(item, fallbackIndex);
     }
     function hierarchyModelIndexVisible(index) {
         const targetIndex = sidebarHierarchyView.normalizedInteger(index, -1);
@@ -682,41 +630,6 @@ Rectangle {
     function projectedHierarchyModel(modelValue) {
         return renameController.projectedHierarchyModel(modelValue);
     }
-    function captureHierarchyExpansionState(modelValue) {
-        const nodes = Array.isArray(modelValue) ? modelValue : [];
-        const nextState = {};
-        const currentState = sidebarHierarchyView.hierarchyExpansionStateByKey || {};
-        for (const existingKey in currentState)
-            nextState[existingKey] = Boolean(currentState[existingKey]);
-        for (let index = 0; index < nodes.length; ++index) {
-            const node = nodes[index];
-            const key = sidebarHierarchyView.hierarchyItemExpansionKey(node, index);
-            if (!key.length)
-                continue;
-            if (nextState[key] !== undefined)
-                continue;
-            nextState[key] = Boolean(node && node.expanded !== undefined ? node.expanded : false);
-        }
-        sidebarHierarchyView.hierarchyExpansionStateByKey = nextState;
-    }
-    function hierarchyModelWithPreservedExpansion(modelValue) {
-        const nodes = Array.isArray(modelValue) ? modelValue : [];
-        const preserved = [];
-        for (let index = 0; index < nodes.length; ++index) {
-            const node = nodes[index];
-            const key = sidebarHierarchyView.hierarchyItemExpansionKey(node, index);
-            if (!key.length || !sidebarHierarchyView.hierarchyExpansionStateContainsKey(key)) {
-                preserved.push(node);
-                continue;
-            }
-            const copy = {};
-            for (const propertyName in node)
-                copy[propertyName] = node[propertyName];
-            copy.expanded = sidebarHierarchyView.hierarchyExpansionStateForKey(key, copy.expanded);
-            preserved.push(copy);
-        }
-        return preserved;
-    }
     function refreshEditingHierarchyPresentation(forceSelectionSync) {
         const editingIndex = sidebarHierarchyView.normalizedInteger(sidebarHierarchyView.editingHierarchyIndex, -1);
         if (editingIndex < 0) {
@@ -735,18 +648,11 @@ Rectangle {
     function requestCollapseAllHierarchyItems(reason) {
         if (sidebarHierarchyView.renameEditingActive)
             sidebarHierarchyView.cancelHierarchyRename();
-        if (!sidebarHierarchyView.hierarchyBulkExpansionEnabled || !sidebarHierarchyView.hierarchyInteractionBridge)
+        if (!sidebarHierarchyView.hierarchyBulkExpansionEnabled || !sidebarHierarchyView.hierarchyInteractionController)
             return false;
-        const previousExpansionState = sidebarHierarchyView.hierarchyExpansionStateByKey;
-        sidebarHierarchyView.setAllHierarchyExpansionStates(false);
-        if (!sidebarHierarchyView.hierarchyInteractionBridge.setAllItemsExpanded(false)) {
-            sidebarHierarchyView.hierarchyExpansionStateByKey = previousExpansionState;
+        if (!sidebarHierarchyView.hierarchyInteractionController.requestBulkExpansion(sidebarHierarchyView.standardHierarchyModel, false))
             return false;
-        }
         sidebarHierarchyView.requestViewHook(reason !== undefined ? reason : "hierarchy.contextMenu.collapseAll");
-        Qt.callLater(function () {
-            sidebarHierarchyView.syncSelectedHierarchyItem(false);
-        });
         return true;
     }
     function openHierarchyFolderContextMenuAtPosition(x, y, referenceItem) {
@@ -828,18 +734,11 @@ Rectangle {
     function requestExpandAllHierarchyItems(reason) {
         if (sidebarHierarchyView.renameEditingActive)
             sidebarHierarchyView.cancelHierarchyRename();
-        if (!sidebarHierarchyView.hierarchyBulkExpansionEnabled || !sidebarHierarchyView.hierarchyInteractionBridge)
+        if (!sidebarHierarchyView.hierarchyBulkExpansionEnabled || !sidebarHierarchyView.hierarchyInteractionController)
             return false;
-        const previousExpansionState = sidebarHierarchyView.hierarchyExpansionStateByKey;
-        sidebarHierarchyView.setAllHierarchyExpansionStates(true);
-        if (!sidebarHierarchyView.hierarchyInteractionBridge.setAllItemsExpanded(true)) {
-            sidebarHierarchyView.hierarchyExpansionStateByKey = previousExpansionState;
+        if (!sidebarHierarchyView.hierarchyInteractionController.requestBulkExpansion(sidebarHierarchyView.standardHierarchyModel, true))
             return false;
-        }
         sidebarHierarchyView.requestViewHook(reason !== undefined ? reason : "hierarchy.contextMenu.expandAll");
-        Qt.callLater(function () {
-            sidebarHierarchyView.syncSelectedHierarchyItem(false);
-        });
         return true;
     }
     function requestHierarchyViewOptionsAction(index, eventName) {
@@ -865,34 +764,15 @@ Rectangle {
     function requestHierarchyChevronExpansionAtPosition(x, y, expectedKey) {
         if (sidebarHierarchyView.renameEditingActive)
             sidebarHierarchyView.cancelHierarchyRename();
-        if (!sidebarHierarchyView.hierarchyInteractionBridge)
+        if (!sidebarHierarchyView.hierarchyInteractionController)
             return false;
         const target = sidebarHierarchyView.hierarchyChevronExpansionTargetAtPosition(x, y);
         if (!target || !target.item || target.index < 0 || !target.key || !target.key.length)
             return false;
-        const normalizedExpectedKey = expectedKey === undefined || expectedKey === null ? "" : String(expectedKey).trim();
-        if (normalizedExpectedKey.length > 0 && normalizedExpectedKey !== target.key)
-            return false;
-        if (normalizedExpectedKey.length > 0 && sidebarHierarchyView.hierarchyExpansionPointerArmedKey.length === 0)
-            return false;
-        if (sidebarHierarchyView.hierarchyExpansionPointerArmedKey.length > 0 && sidebarHierarchyView.hierarchyExpansionPointerArmedKey !== target.key)
-            return false;
-        const previousExpanded = Boolean(target.item.expanded);
-        const nextExpanded = !previousExpanded;
-        sidebarHierarchyView.hierarchyExpansionPointerArmedKey = "";
-        hierarchyExpansionPointerArmTimer.stop();
-        sidebarHierarchyView.rememberHierarchyExpansionState(target.key, nextExpanded);
-        sidebarHierarchyView.armHierarchyExpansionActivationSuppression(target.item, target.item.itemId, target.index);
-        if (!sidebarHierarchyView.hierarchyInteractionBridge.setItemExpanded(target.index, nextExpanded)) {
-            sidebarHierarchyView.rememberHierarchyExpansionState(target.key, previousExpanded);
-            if (target.item.expanded !== undefined)
-                target.item.expanded = previousExpanded;
-            return false;
-        }
-        Qt.callLater(function () {
-            sidebarHierarchyView.syncSelectedHierarchyItem(false);
-        });
-        return true;
+        const result = sidebarHierarchyView.hierarchyInteractionController.requestChevronExpansion(target.index, target.key, Boolean(target.item.expanded), expectedKey);
+        if (result && result.rollbackRequired && target.item.expanded !== undefined)
+            target.item.expanded = Boolean(result.rollbackExpanded);
+        return Boolean(result && result.committed);
     }
     function requestHierarchyControllerReload(reason) {
         const normalizedReason = reason === undefined || reason === null ? "" : String(reason).trim();
@@ -923,40 +803,13 @@ Rectangle {
         hierarchyViewOptionsMenu.openFor(hierarchyFooter, hierarchyFooter.width, hierarchyFooter.height + 2);
         sidebarHierarchyView.requestViewHook("hierarchy.footer.options.open");
     }
-    function rememberHierarchyExpansionState(key, expanded) {
-        const normalizedKey = key === undefined || key === null ? "" : String(key).trim();
-        if (!normalizedKey.length)
-            return;
-        const nextState = {};
-        const currentState = sidebarHierarchyView.hierarchyExpansionStateByKey || {};
-        for (const existingKey in currentState)
-            nextState[existingKey] = Boolean(currentState[existingKey]);
-        nextState[normalizedKey] = Boolean(expanded);
-        sidebarHierarchyView.hierarchyExpansionStateByKey = nextState;
-    }
-    function setAllHierarchyExpansionStates(expanded) {
-        const nextState = {};
-        const currentState = sidebarHierarchyView.hierarchyExpansionStateByKey || {};
-        for (const existingKey in currentState)
-            nextState[existingKey] = Boolean(currentState[existingKey]);
-        const nodes = sidebarHierarchyView.standardHierarchyModel;
-        for (let index = 0; index < nodes.length; ++index) {
-            const node = nodes[index];
-            if (!node || node.showChevron === undefined || !Boolean(node.showChevron))
-                continue;
-            const key = sidebarHierarchyView.hierarchyItemExpansionKey(node, index);
-            if (key.length > 0)
-                nextState[key] = Boolean(expanded);
-        }
-        sidebarHierarchyView.hierarchyExpansionStateByKey = nextState;
-    }
     function armHierarchyUserExpansionAtPosition(x, y) {
+        if (!sidebarHierarchyView.hierarchyInteractionController)
+            return false;
         const target = sidebarHierarchyView.hierarchyChevronExpansionTargetAtPosition(x, y);
         if (!target || !target.key || !target.key.length)
             return false;
-        sidebarHierarchyView.hierarchyExpansionPointerArmedKey = target.key;
-        hierarchyExpansionPointerArmTimer.restart();
-        return true;
+        return sidebarHierarchyView.hierarchyInteractionController.armExpansionKey(target.key);
     }
     function resolveHierarchyActivationIndex(item, itemId, index) {
         const resolvedModelItemId = item ? sidebarHierarchyView.normalizedNonNegativeInteger(item.itemId) : -1;
@@ -1013,23 +866,23 @@ Rectangle {
         hierarchySelectionController.setSelectedHierarchyIndices(indices);
     }
     function syncDisplayedHierarchyModel(forceRefresh) {
-        sidebarHierarchyView.captureHierarchyExpansionState(sidebarHierarchyView.displayedHierarchyModel);
+        if (!sidebarHierarchyView.hierarchyInteractionController)
+            return false;
+        sidebarHierarchyView.hierarchyInteractionController.captureExpansionState(sidebarHierarchyView.displayedHierarchyModel);
         const projectedModel = sidebarHierarchyView.projectedHierarchyModel(hierarchyController ? hierarchyController.hierarchyNodes : []);
-        const nextModel = sidebarHierarchyView.hierarchyModelWithPreservedExpansion(projectedModel);
+        const nextModel = sidebarHierarchyView.hierarchyInteractionController.modelWithPreservedExpansion(projectedModel);
         const nextSignature = sidebarHierarchyView.hierarchyModelSignature(nextModel);
         if (!Boolean(forceRefresh) && nextSignature === sidebarHierarchyView.displayedHierarchyModelSignature) {
-            sidebarHierarchyView.captureHierarchyExpansionState(nextModel);
+            sidebarHierarchyView.hierarchyInteractionController.captureExpansionState(nextModel);
             return false;
         }
         sidebarHierarchyView.displayedHierarchyModel = nextModel;
         sidebarHierarchyView.displayedHierarchyModelSignature = nextSignature;
-        sidebarHierarchyView.captureHierarchyExpansionState(nextModel);
+        sidebarHierarchyView.hierarchyInteractionController.captureExpansionState(nextModel);
         return true;
     }
     function shouldSuppressHierarchyActivation(item, itemId, index) {
-        if (!sidebarHierarchyView.hierarchyExpansionActivationSuppressed && !hierarchyExpansionActivationBlockTimer.running)
-            return false;
-        return true;
+        return sidebarHierarchyView.hierarchyInteractionController ? sidebarHierarchyView.hierarchyInteractionController.shouldSuppressActivation() : false;
     }
     function syncHierarchySelectionFromSelectedFolder() {
         hierarchySelectionController.syncHierarchySelectionFromSelectedFolder();
@@ -1815,22 +1668,6 @@ Rectangle {
             });
         }
     }
-    Timer {
-        id: hierarchyExpansionActivationBlockTimer
-
-        interval: 160
-        repeat: false
-
-        onTriggered: sidebarHierarchyView.hierarchyExpansionActivationSuppressed = false
-    }
-    Timer {
-        id: hierarchyExpansionPointerArmTimer
-
-        interval: 5000
-        repeat: false
-
-        onTriggered: sidebarHierarchyView.hierarchyExpansionPointerArmedKey = ""
-    }
     Connections {
         function onHierarchyNodesChanged() {
             sidebarHierarchyView.syncDisplayedHierarchyModel(false);
@@ -1848,6 +1685,22 @@ Rectangle {
         }
 
         target: sidebarHierarchyView.hierarchyController
+    }
+    Connections {
+        function onFooterCreateRequested() {
+            sidebarHierarchyView.requestCreateFolder();
+        }
+        function onFooterDeleteRequested() {
+            sidebarHierarchyView.requestDeleteFolder();
+        }
+        function onFooterOptionsRequested() {
+            sidebarHierarchyView.requestViewOptions();
+        }
+        function onSelectedHierarchySyncRequested(focusView) {
+            sidebarHierarchyView.syncSelectedHierarchyItem(Boolean(focusView));
+        }
+
+        target: sidebarHierarchyView.hierarchyInteractionController
     }
     LV.Hierarchy {
         id: hierarchyTree
@@ -1868,17 +1721,16 @@ Rectangle {
         toolbarItems: []
 
         onListItemActivated: function (item, itemId, index) {
-            if (!sidebarHierarchyView.hierarchyController)
+            if (!sidebarHierarchyView.hierarchyController || !sidebarHierarchyView.hierarchyInteractionController)
                 return;
             const resolvedActivationIndex = sidebarHierarchyView.resolveHierarchyActivationIndex(item, itemId, index);
             if (resolvedActivationIndex < 0)
                 return;
             const activationModifiers = sidebarHierarchyView.resolveHierarchySelectionModifiers(Qt.application.keyboardModifiers);
-            const pendingSerial = sidebarHierarchyView.hierarchyActivationPendingSerial + 1;
-            sidebarHierarchyView.hierarchyActivationPendingSerial = pendingSerial;
+            const pendingSerial = sidebarHierarchyView.hierarchyInteractionController.beginActivationAttempt();
             Qt.callLater(function () {
                 sidebarHierarchyView.clearHierarchyPointerSelectionModifiers();
-                if (sidebarHierarchyView.hierarchyActivationPendingSerial !== pendingSerial)
+                if (!sidebarHierarchyView.hierarchyInteractionController || !sidebarHierarchyView.hierarchyInteractionController.activationAttemptCurrent(pendingSerial))
                     return;
                 if (!sidebarHierarchyView.hierarchyController)
                     return;
@@ -1888,36 +1740,12 @@ Rectangle {
             });
         }
         onListItemExpanded: function (item, itemId, index, expanded) {
+            if (!sidebarHierarchyView.hierarchyInteractionController)
+                return;
             const resolvedExpansionIndex = sidebarHierarchyView.resolveHierarchyActivationIndex(item, itemId, index);
-            const expansionKey = sidebarHierarchyView.hierarchyItemExpansionKey(item, resolvedExpansionIndex);
-            const expansionStateKnown = sidebarHierarchyView.hierarchyExpansionStateContainsKey(expansionKey);
-            const preservedExpanded = sidebarHierarchyView.hierarchyExpansionStateForKey(expansionKey, expanded);
-            const userExpansionArmed = expansionKey.length > 0 && expansionKey === sidebarHierarchyView.hierarchyExpansionPointerArmedKey;
-            if (!userExpansionArmed) {
-                if (expansionStateKnown && preservedExpanded !== Boolean(expanded) && item && item.expanded !== undefined)
-                    item.expanded = preservedExpanded;
-                else if (!expansionStateKnown)
-                    sidebarHierarchyView.rememberHierarchyExpansionState(expansionKey, expanded);
-                return;
-            }
-            sidebarHierarchyView.hierarchyExpansionPointerArmedKey = "";
-            hierarchyExpansionPointerArmTimer.stop();
-            if (!sidebarHierarchyView.hierarchyInteractionBridge)
-                return;
-            if (resolvedExpansionIndex < 0)
-                return;
-            const previousExpanded = expansionStateKnown ? preservedExpanded : !Boolean(expanded);
-            sidebarHierarchyView.rememberHierarchyExpansionState(expansionKey, expanded);
-            sidebarHierarchyView.armHierarchyExpansionActivationSuppression(item, itemId, index);
-            if (!sidebarHierarchyView.hierarchyInteractionBridge.setItemExpanded(resolvedExpansionIndex, expanded)) {
-                sidebarHierarchyView.rememberHierarchyExpansionState(expansionKey, previousExpanded);
-                if (item && item.expanded !== undefined)
-                    item.expanded = previousExpanded;
-                return;
-            }
-            Qt.callLater(function () {
-                sidebarHierarchyView.syncSelectedHierarchyItem(false);
-            });
+            const result = sidebarHierarchyView.hierarchyInteractionController.handleExpansionSignal(item, resolvedExpansionIndex, expanded);
+            if (result && result.rollbackRequired && item && item.expanded !== undefined)
+                item.expanded = Boolean(result.rollbackExpanded);
         }
         onListItemMoved: function (item, itemId, itemKey, fromIndex, toIndex, depth) {
             if (!sidebarHierarchyView.hierarchyDragDropBridge || !sidebarHierarchyView.hierarchyDragDropBridge.reorderContractAvailable)
@@ -1946,7 +1774,7 @@ Rectangle {
             onTapped: function (eventPoint, button) {
                 if (button !== Qt.LeftButton)
                     return;
-                const armedKey = sidebarHierarchyView.hierarchyExpansionPointerArmedKey;
+                const armedKey = sidebarHierarchyView.hierarchyInteractionController ? sidebarHierarchyView.hierarchyInteractionController.armedExpansionKey : "";
                 if (!armedKey.length)
                     return;
                 const tapX = eventPoint && eventPoint.position !== undefined ? eventPoint.position.x : 0;

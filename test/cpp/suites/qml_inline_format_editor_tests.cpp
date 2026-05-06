@@ -392,13 +392,13 @@ Item {
 
     QObject* projectedCursor = rootObject->findChild<QObject*>(QStringLiteral("contentsInlineFormatProjectedCursor"));
     QVERIFY(projectedCursor != nullptr);
-    inlineEditor->setProperty("logicalCursorPosition", 5);
+    inlineEditor->setProperty("cursorPosition", 5);
     QTRY_VERIFY(!inlineEditor->property("nativeCursorVisible").toBool());
     QTRY_VERIFY(projectedCursor->property("visible").toBool());
     QVERIFY(projectedCursor->property("width").toReal() >= 1.0);
     QVERIFY(projectedCursor->property("height").toReal() > 0.0);
     const qreal firstCursorY = projectedCursor->property("y").toReal();
-    inlineEditor->setProperty("logicalCursorPosition", 6);
+    inlineEditor->setProperty("cursorPosition", 6);
     QTRY_VERIFY(projectedCursor->property("y").toReal() > firstCursorY);
 
     inlineEditor->setProperty("showRenderedOutput", false);
@@ -658,6 +658,100 @@ Item {
         QStringLiteral("<bold>Al<italic>ph</italic></bold><italic> Beta</italic>"));
     QCOMPARE(inlineEditor->property("visiblePointerCursorLogicalOffset").toInt(), 4);
     QVERIFY(!inlineEditor->property("nativeSelectionActive").toBool());
+}
+
+void WhatSonCppRegressionTests::qmlInlineFormatEditor_keepsNativeSurfaceLogicalAndMapsTypingToRaw()
+{
+    registerInlineFormatEditorRuntimeQmlTypes();
+
+    const QString repositoryRoot = qmlInlineFormatEditorRepositoryRootPath();
+    QQmlEngine engine;
+    addWhatSonInlineFormatEditorQmlImportPaths(engine, repositoryRoot);
+
+    const QString editorImportUrl =
+        QUrl::fromLocalFile(repositoryRoot + QStringLiteral("/src/app/qml/view/contents/editor")).toString();
+    const QByteArray qmlSource = QStringLiteral(R"QML(
+import QtQuick
+import WhatSon.App.Internal 1.0
+import "%1" as EditorView
+
+Item {
+    id: root
+    width: 360
+    height: 96
+
+    EditorView.ContentsInlineFormatEditor {
+        id: editor
+        objectName: "inlineFormatEditorUnderTest"
+        anchors.fill: parent
+        coordinateMapper: ContentsEditorPresentationProjection {
+            id: projection
+            sourceText: editor.text
+        }
+        displayGeometryText: projection.logicalText
+        renderedText: projection.logicalText
+        showRenderedOutput: true
+        text: "<bold>Al<italic>pha</italic></bold><italic> Beta</italic>"
+
+        onTextEdited: function (sourceText) {
+            editor.text = sourceText;
+        }
+    }
+}
+)QML").arg(editorImportUrl).toUtf8();
+
+    QQmlComponent component(&engine);
+    component.setData(
+        qmlSource,
+        QUrl::fromLocalFile(repositoryRoot + QStringLiteral("/test/cpp/InlineFormatLogicalSurfaceTypingHarness.qml")));
+    if (component.status() == QQmlComponent::Error)
+    {
+        QFAIL(qPrintable(qmlInlineFormatEditorErrorString(component.errors())));
+    }
+
+    std::unique_ptr<QObject> rootObject(component.create());
+    if (!rootObject)
+    {
+        QFAIL(qPrintable(qmlInlineFormatEditorErrorString(component.errors())));
+    }
+
+    auto* rootItem = qobject_cast<QQuickItem*>(rootObject.get());
+    QVERIFY(rootItem != nullptr);
+
+    QQuickWindow window;
+    window.resize(360, 96);
+    rootItem->setParentItem(window.contentItem());
+    window.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&window));
+
+    QObject* inlineEditor = rootObject->findChild<QObject*>(QStringLiteral("inlineFormatEditorUnderTest"));
+    QVERIFY(inlineEditor != nullptr);
+    QObject* nativeEditor = inlineEditor->property("editorItem").value<QObject*>();
+    QVERIFY(nativeEditor != nullptr);
+    QTRY_COMPARE(nativeEditor->property("text").toString(), QStringLiteral("Alpha Beta"));
+    QVERIFY(!nativeEditor->property("text").toString().contains(QStringLiteral("<bold>")));
+    QVERIFY(QMetaObject::invokeMethod(inlineEditor, "forceActiveFocus"));
+
+    QVariant restoreResult;
+    QVERIFY(QMetaObject::invokeMethod(
+        inlineEditor,
+        "restoreVisibleLogicalSelectionRange",
+        Q_RETURN_ARG(QVariant, restoreResult),
+        Q_ARG(QVariant, 5),
+        Q_ARG(QVariant, 5)));
+    QVERIFY(restoreResult.toBool());
+
+    QTest::keyClick(&window, Qt::Key_X);
+    QTRY_COMPARE(nativeEditor->property("text").toString(), QStringLiteral("Alphax Beta"));
+    QTRY_COMPARE(
+        inlineEditor->property("text").toString(),
+        QStringLiteral("<bold>Al<italic>pha</italic></bold>x<italic> Beta</italic>"));
+
+    QTest::keyClick(&window, Qt::Key_Backspace);
+    QTRY_COMPARE(nativeEditor->property("text").toString(), QStringLiteral("Alpha Beta"));
+    QTRY_COMPARE(
+        inlineEditor->property("text").toString(),
+        QStringLiteral("<bold>Al<italic>pha</italic></bold><italic> Beta</italic>"));
 }
 
 void WhatSonCppRegressionTests::qmlInlineFormatEditor_preservesRenderedPointerDragSelection()
@@ -1462,10 +1556,11 @@ Item {
         objectName: "structuredDocumentFlowUnderTest"
         anchors.fill: parent
         coordinateMapper: ContentsEditorPresentationProjection {
+            id: projection
             sourceText: documentFlow.sourceText
         }
-        editorSurfaceHtml: sourceText
-        logicalText: sourceText
+        editorSurfaceHtml: projection.logicalText
+        logicalText: projection.logicalText
         sourceText: "Alpha beta"
 
         onSourceTextEdited: function (text) {
@@ -1744,7 +1839,9 @@ Item {
     QVERIFY(restoreResult.toBool());
 
     QTRY_VERIFY(inlineEditor->property("nativeSelectionActive").toBool());
-    QVERIFY(inlineEditor->property("selectedText").toString().contains(QStringLiteral("<resource type=\"image\"")));
+    QVERIFY(inlineEditor->property("selectionStart").toInt() <= rootObject->property("resourceStart").toInt());
+    QVERIFY(inlineEditor->property("selectionEnd").toInt() >= rootObject->property("resourceEnd").toInt());
+    QVERIFY(!inlineEditor->property("selectedText").toString().contains(QStringLiteral("<resource type=\"image\"")));
     QTRY_VERIFY(
         renderedOverlay->property("selectionEnd").toInt()
         > renderedOverlay->property("selectionStart").toInt());
@@ -1837,8 +1934,8 @@ Item {
         Q_ARG(QVariant, emptyFormattingTagsLength)));
     QVERIFY(restoreResult.toBool());
 
-    QTRY_VERIFY(inlineEditor->property("nativeSelectionActive").toBool());
-    QVERIFY(inlineEditor->property("selectedText").toString().contains(QStringLiteral("<highlight>")));
+    QTRY_VERIFY(!inlineEditor->property("nativeSelectionActive").toBool());
+    QVERIFY(!inlineEditor->property("selectedText").toString().contains(QStringLiteral("<highlight>")));
     QTRY_VERIFY(!inlineEditor->property("nativeSelectionContainsVisibleLogicalContent").toBool());
     QTRY_VERIFY(!inlineEditor->property("nativeSelectionPaintVisible").toBool());
     QTRY_VERIFY(!inlineEditor->property("renderedSelectionActive").toBool());
@@ -1856,7 +1953,7 @@ Item {
         Q_ARG(QVariant, emptyFormattingTagsLength - 1)));
     QVERIFY(restoreResult.toBool());
 
-    QTRY_VERIFY(inlineEditor->property("nativeSelectionActive").toBool());
+    QTRY_VERIFY(!inlineEditor->property("nativeSelectionActive").toBool());
     QTRY_VERIFY(!inlineEditor->property("nativeSelectionContainsVisibleLogicalContent").toBool());
     QTRY_VERIFY(!inlineEditor->property("nativeSelectionPaintVisible").toBool());
     QTRY_VERIFY(!inlineEditor->property("renderedSelectionActive").toBool());
@@ -1912,6 +2009,10 @@ Item {
         renderedText: "<b>Alpha</b> beta"
         showRenderedOutput: true
         text: "Alpha beta"
+
+        onTextEdited: function (sourceText) {
+            editor.text = sourceText;
+        }
     }
 }
 )QML").arg(editorImportUrl).toUtf8();
@@ -2003,6 +2104,10 @@ Item {
         renderedText: "<p style='margin-top:0px;margin-bottom:0px;'>Alpha</p><p style='margin-top:0px;margin-bottom:0px;'><img src='' width='120' height='60' /></p><p style='margin-top:0px;margin-bottom:0px;'>Beta</p>"
         showRenderedOutput: true
         text: "Alpha\n" + root.resourceTag + "\nBeta"
+
+        onTextEdited: function (sourceText) {
+            editor.text = sourceText;
+        }
     }
 }
 )QML").arg(editorImportUrl).toUtf8();

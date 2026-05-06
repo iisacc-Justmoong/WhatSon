@@ -6,6 +6,8 @@
 
 #include <algorithm>
 #include <cmath>
+#include <limits>
+#include <vector>
 
 namespace
 {
@@ -118,6 +120,33 @@ namespace
             return geometryItem->mapToItem(targetItem, point);
         }
         return point;
+    }
+
+    qreal nextAvailableRowTop(
+        const std::vector<QRectF>& rectangles,
+        const std::vector<bool>& geometryAvailable,
+        const int rowIndex)
+    {
+        if (rowIndex < 0 || rowIndex >= static_cast<int>(rectangles.size()))
+        {
+            return std::numeric_limits<qreal>::quiet_NaN();
+        }
+
+        const qreal currentY = rectangles.at(rowIndex).y();
+        for (int index = rowIndex + 1; index < static_cast<int>(rectangles.size()); ++index)
+        {
+            if (!geometryAvailable.at(index))
+            {
+                continue;
+            }
+
+            const qreal candidateY = rectangles.at(index).y();
+            if (std::isfinite(candidateY) && candidateY > currentY)
+            {
+                return candidateY;
+            }
+        }
+        return std::numeric_limits<qreal>::quiet_NaN();
     }
 } // namespace
 
@@ -382,8 +411,12 @@ QVariantList ContentsEditorGeometryProvider::visualLineWidthRatios() const
 
 QVariantList ContentsEditorGeometryProvider::lineNumberGeometryRows() const
 {
-    QVariantList rows;
-    rows.reserve(m_lineNumberRanges.size());
+    std::vector<QRectF> rectangles;
+    std::vector<bool> geometryAvailable;
+    std::vector<bool> resourceRanges;
+    rectangles.reserve(static_cast<std::size_t>(m_lineNumberRanges.size()));
+    geometryAvailable.reserve(static_cast<std::size_t>(m_lineNumberRanges.size()));
+    resourceRanges.reserve(static_cast<std::size_t>(m_lineNumberRanges.size()));
 
     for (const QVariant& rangeValue : m_lineNumberRanges)
     {
@@ -394,17 +427,31 @@ QVariantList ContentsEditorGeometryProvider::lineNumberGeometryRows() const
         ContentsEditorGeometryMeasurement measurement = resourceRange
             ? measureResourceRange(logicalStart, logicalEnd, m_logicalLength, m_fallbackLineHeight, m_fallbackWidth)
             : measureTextRange(logicalStart, logicalEnd, m_logicalLength, m_fallbackLineHeight, m_fallbackWidth);
-        QRectF rectangle = measurement.rectangle;
-        if (resourceRange)
+        rectangles.push_back(measurement.rectangle);
+        geometryAvailable.push_back(measurement.geometryAvailable);
+        resourceRanges.push_back(resourceRange);
+    }
+
+    QVariantList rows;
+    rows.reserve(m_lineNumberRanges.size());
+    for (int index = 0; index < static_cast<int>(rectangles.size()); ++index)
+    {
+        QRectF rectangle = rectangles.at(index);
+        if (resourceRanges.at(index))
         {
-            const qreal contentHeight = resourceContentHeight(rectangle.bottom());
-            if (rectangle.height() <= m_fallbackLineHeight && contentHeight > rectangle.y())
+            qreal resourceBottom = resourceContentHeight(rectangle.bottom());
+            const qreal followingRowTop = nextAvailableRowTop(rectangles, geometryAvailable, index);
+            if (std::isfinite(followingRowTop) && followingRowTop > rectangle.y())
             {
-                rectangle.setHeight(std::max(m_fallbackLineHeight, contentHeight - rectangle.y()));
+                resourceBottom = std::min(resourceBottom, followingRowTop);
+            }
+            if (rectangle.height() <= m_fallbackLineHeight && resourceBottom > rectangle.y())
+            {
+                rectangle.setHeight(std::max(m_fallbackLineHeight, resourceBottom - rectangle.y()));
             }
         }
         rows.push_back(QVariantMap{
-            {QStringLiteral("geometryAvailable"), measurement.geometryAvailable},
+            {QStringLiteral("geometryAvailable"), static_cast<bool>(geometryAvailable.at(index))},
             {QStringLiteral("height"), rectangle.height()},
             {QStringLiteral("width"), rectangle.width()},
             {QStringLiteral("x"), rectangle.x()},

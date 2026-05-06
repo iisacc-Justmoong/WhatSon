@@ -60,12 +60,17 @@ void WhatSonCppRegressionTests::qmlHierarchyExpansion_preservesUserControlledSta
     QVERIFY(sidebarSource.contains(QStringLiteral("hierarchyInteractionBridge.setAllItemsExpanded(false)")));
     QVERIFY(sidebarSource.contains(QStringLiteral("hierarchy.contextMenu.expandAll")));
     QVERIFY(sidebarSource.contains(QStringLiteral("hierarchy.contextMenu.collapseAll")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("function commitHierarchyExpansionChange(item, itemId, resolvedIndex, expansionKey, expanded, previousExpanded)")));
     QVERIFY(sidebarSource.contains(QStringLiteral("function requestHierarchyChevronExpansionAtPosition(x, y, expectedKey)")));
-    QVERIFY(sidebarSource.contains(QStringLiteral("hierarchyInteractionBridge.setItemExpanded(target.index, nextExpanded)")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("return sidebarHierarchyView.commitHierarchyExpansionChange(target.item, target.item.itemId, target.index, target.key, nextExpanded, previousExpanded);")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("sidebarHierarchyView.commitHierarchyExpansionChange(item, itemId, resolvedExpansionIndex, expansionKey, expanded, preservedExpanded)")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("sidebarHierarchyView.commitHierarchyExpansionChange(item, itemId, resolvedExpansionIndex, expansionKey, expanded, previousExpanded)")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("hierarchyInteractionBridge.setItemExpanded(normalizedIndex, nextExpanded)")));
     QVERIFY(sidebarSource.contains(QStringLiteral("if (nextState[key] !== undefined)\n                continue;")));
     QVERIFY(sidebarSource.contains(QStringLiteral("onTapped: function (eventPoint, button)")));
     QVERIFY(sidebarSource.contains(QStringLiteral("sidebarHierarchyView.requestHierarchyChevronExpansionAtPosition(tapX, tapY, armedKey);")));
     QVERIFY(sidebarSource.contains(QStringLiteral("refreshEditingHierarchyPresentation")));
+    QVERIFY(!sidebarSource.contains(QStringLiteral("item.expanded = preservedExpanded;\n                else if (!expansionStateKnown)")));
 }
 
 void WhatSonCppRegressionTests::listBarLayout_rendersResolvedNoteListModelByIndex()
@@ -165,8 +170,9 @@ void WhatSonCppRegressionTests::qmlStructuredEditors_mountsEditorAndMinimapInDis
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("targetFlickable: editorDocumentViewport")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("ContentsLineNumberRail {")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("objectName: \"contentsDisplayGutter\"")));
-    QVERIFY(documentFlowSource.contains(QStringLiteral("readonly property int editorSelectionEnd: editor.selectionEnd")));
-    QVERIFY(documentFlowSource.contains(QStringLiteral("readonly property int editorSelectionStart: editor.selectionStart")));
+    QVERIFY(documentFlowSource.contains(QStringLiteral("readonly property int editorCursorPosition: editor.sourceCursorPosition")));
+    QVERIFY(documentFlowSource.contains(QStringLiteral("readonly property int editorSelectionEnd: editor.sourceSelectionEnd")));
+    QVERIFY(documentFlowSource.contains(QStringLiteral("readonly property int editorSelectionStart: editor.sourceSelectionStart")));
     QVERIFY(documentFlowSource.contains(QStringLiteral("readonly property bool editorRenderedOverlayVisible: editor.renderedOverlayVisible")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("activeSelectionEnd: structuredDocumentFlow.editorSelectionEnd")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("activeSelectionStart: structuredDocumentFlow.editorSelectionStart")));

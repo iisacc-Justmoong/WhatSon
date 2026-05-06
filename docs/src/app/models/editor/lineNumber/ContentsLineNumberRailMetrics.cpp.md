@@ -13,13 +13,12 @@ Implements logical line-number rail row construction outside QML.
   the supplied `sourceText` snapshot rather than a QML-provided offset table.
 - Exposes `logicalLineRanges` for the geometry adapter, then consumes `geometryRows` value snapshots when building
   final gutter rows. This keeps actual view-object measurement outside the row-building policy.
-- Validates measured row y positions before publishing them. If a measured snapshot is unavailable or collapses later
-  rows back to the first row's y coordinate, the model places the row immediately below the previous resolved row
-  instead of letting line numbers overlap.
+- Publishes each measured row independently. If a measured snapshot is unavailable, the model uses that row's line number
+  as a simple line-height fallback; it does not use the previous row bottom to shift later gutter rows.
 - Resource blocks remain one logical row; their visible height is supplied as a measured row geometry snapshot.
 
 ## 한국어
 
 이 구현은 QML에 있던 논리 줄 분할과 row y/height 생성을 C++로 이동한 것이다. 줄 번호 슬롯은 전체
-`logicalText`에서 만들고, QML은 geometry row snapshot을 넘겨 측정값만 제공한다. 측정 snapshot이
-일시적으로 같은 y를 반환해도 row를 이전 row 아래로 보정하여 2번 줄 번호가 1번 위치에 겹치지 않게 한다.
+`logicalText`에서 만들고, QML은 geometry row snapshot을 넘겨 측정값만 제공한다. 각 row는 자기 y/height
+snapshot만 사용하며, 리소스 row가 크게 측정되더라도 다음 줄 번호의 y를 이전 row bottom 기준으로 밀지 않는다.
