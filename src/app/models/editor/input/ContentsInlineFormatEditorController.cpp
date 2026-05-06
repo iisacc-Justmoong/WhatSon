@@ -85,14 +85,12 @@ void ContentsInlineFormatEditorController::setTextInput(QObject* value)
 
     if (m_textInput)
     {
-        m_textInput->removeEventFilter(this);
         QObject::disconnect(m_textInput, nullptr, this, nullptr);
     }
 
     m_textInput = value;
     if (m_textInput)
     {
-        m_textInput->installEventFilter(this);
         connectPropertyNotify(m_textInput, "cursorPosition", "handleTextInputCursorPositionChanged()");
         connectPropertyNotify(m_textInput, "selectionStart", "handleTextInputSelectionChanged()");
         connectPropertyNotify(m_textInput, "selectionEnd", "handleTextInputSelectionChanged()");
@@ -107,11 +105,6 @@ void ContentsInlineFormatEditorController::setTextInput(QObject* value)
     }
 
     emit textInputChanged();
-}
-
-bool ContentsInlineFormatEditorController::eventFilter(QObject* watched, QEvent* event)
-{
-    return QObject::eventFilter(watched, event);
 }
 
 void ContentsInlineFormatEditorController::forceActiveFocus() const

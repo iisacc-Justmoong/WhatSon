@@ -13,10 +13,9 @@ Implements WYSIWYG editor policy for the inline note body surface.
 - Builds visible-text mutation payloads from the native logical text delta. Inserted visible text is escaped for RAW
   `.wsnbody`, deleted/replaced ranges skip hidden inline wrapper boundaries, and committed web-link text can still be
   promoted through the canonical note-body web-link support.
-- Builds rendered-overlay collapsed Backspace mutation payloads from visible logical cursor positions. The payload
-  deletes the previous visible character range while skipping hidden opening inline tags at the range start and hidden
-  closing inline tags at the range end, so Backspace cannot remove a `>` from `</bold>`/`</italic>` instead of the
-  glyph under the projected cursor.
+- Retains a visible logical Backspace payload helper for explicit policy tests and non-native command callers. Ordinary
+  rendered-mode Backspace is not driven from the projected cursor; it stays on the native logical text edit path and is
+  converted through the visible-text mutation payload after Qt commits the edit.
 - Expands rendered selection ranges over iiHtmlBlock resource display blocks so a resource frame behaves as one
   atomic selection unit instead of exposing the RAW `<resource ... />` tag bytes.
 - Produces cursor-normalization plans for hidden inline formatting tags. QML only applies the returned cursor position

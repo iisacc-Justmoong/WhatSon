@@ -129,6 +129,7 @@ set(WHATSON_CPP_REGRESSION_TEST_SOURCES
         "${CMAKE_SOURCE_DIR}/src/app/models/sidebar/IHierarchyControllerProvider.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/sidebar/HierarchyControllerProvider.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/sidebar/SidebarHierarchyController.cpp"
+        "${CMAKE_SOURCE_DIR}/src/app/models/sidebar/SidebarHierarchyInteractionController.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/file/note/WhatSonNoteBodyResourceTagGenerator.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/editor/structure/ContentsStructuredDocumentCollectionPolicy.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/editor/structure/ContentsStructuredDocumentFocusPolicy.cpp"

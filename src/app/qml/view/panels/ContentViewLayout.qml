@@ -377,6 +377,7 @@ Item {
                                 normalizedHtmlBlocks: editorDisplayBackend.presentationProjection.normalizedHtmlBlocks
                                 objectName: "contentsDisplayStructuredDocumentFlow"
                                 paperPaletteEnabled: false
+                                projectionSourceText: editorDisplayBackend.presentationProjection.sourceText
                                 sourceText: editorDisplayBackend.editorSession.editorText
                                 textColor: LV.Theme.bodyColor
                                 visible: editorDisplayBackend.noteDocumentParseMounted

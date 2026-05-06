@@ -12,8 +12,10 @@ Item {
     property var coordinateMapper: null
     property bool paperPaletteEnabled: false
     property string editorSurfaceHtml: ""
+    property string lastReadyLogicalText: ""
     property string logicalText: ""
     property int logicalCursorPosition: sourceText.length
+    property string projectionSourceText: documentFlow.sourceText
     property string sourceText: ""
     property color textColor: LV.Theme.bodyColor
     readonly property real editorContentHeight: editor.displayContentHeight
@@ -24,6 +26,10 @@ Item {
     readonly property bool editorRenderedOverlayVisible: editor.renderedOverlayVisible
     readonly property int editorVisualLineCount: editor.visualLineCount
     readonly property var editorVisualLineWidthRatios: editor.visualLineWidthRatios
+    readonly property bool logicalProjectionReady: documentFlow.projectionSourceText === documentFlow.sourceText
+    readonly property string resolvedDisplayGeometryText: documentFlow.logicalProjectionReady
+            ? documentFlow.logicalText
+            : documentFlow.lastReadyLogicalText
 
     signal sourceTextEdited(string text)
     signal viewHookRequested(string reason)
@@ -74,6 +80,13 @@ Item {
         documentFlow.viewHookRequested(reason !== undefined ? String(reason) : "manual");
     }
 
+    function refreshLastReadyLogicalText() {
+        if (!documentFlow.logicalProjectionReady)
+            return;
+        if (documentFlow.lastReadyLogicalText !== documentFlow.logicalText)
+            documentFlow.lastReadyLogicalText = documentFlow.logicalText;
+    }
+
     function pointRequestsTerminalBodyClick(localX, localY) {
         const x = Number(localX) || 0;
         const y = Number(localY) || 0;
@@ -103,12 +116,17 @@ Item {
                     renderedBodyHeight + minimumBodyLineHeight + 1);
     }
 
+    onLogicalProjectionReadyChanged: documentFlow.refreshLastReadyLogicalText()
+    onLogicalTextChanged: documentFlow.refreshLastReadyLogicalText()
+
+    Component.onCompleted: documentFlow.refreshLastReadyLogicalText()
+
     ContentsInlineFormatEditor {
         id: editor
 
         anchors.fill: parent
         coordinateMapper: documentFlow.coordinateMapper
-        displayGeometryText: documentFlow.logicalText.length > 0 ? documentFlow.logicalText : documentFlow.sourceText
+        displayGeometryText: documentFlow.resolvedDisplayGeometryText
         logicalCursorPosition: documentFlow.logicalCursorPosition
         normalizedHtmlBlocks: documentFlow.normalizedHtmlBlocks
         objectName: "contentsStructuredDocumentInlineEditor"

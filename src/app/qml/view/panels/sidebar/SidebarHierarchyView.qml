@@ -947,6 +947,9 @@ Rectangle {
         });
         bookmarkPaletteController.scheduleBookmarkPaletteVisualRefresh();
     }
+    onHierarchyInteractionControllerChanged: {
+        sidebarHierarchyView.syncDisplayedHierarchyModel(true);
+    }
     onSelectedFolderIndexChanged: {
         if (sidebarHierarchyView.renameEditingActive && sidebarHierarchyView.selectedFolderIndex !== sidebarHierarchyView.editingHierarchyIndex)
             sidebarHierarchyView.cancelHierarchyRename();

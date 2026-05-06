@@ -3,10 +3,11 @@
 ## Role
 This component is the adapter between the generic sidebar view and the runtime hierarchy routing layer.
 
-It does three important jobs.
+It does four important jobs.
 - Resolve the currently active hierarchy domain.
 - Select the matching domain controller from `SidebarHierarchyController`.
 - Instantiate the two bridge objects used by the visual sidebar.
+- Instantiate the sidebar interaction policy controller that keeps footer and expansion decisions in C++.
 
 ## Binding Strategy
 `resolvedHierarchyController` resolves from
@@ -18,6 +19,8 @@ slightly earlier than one previously-resolved provider object.
 ## Hosted Bridges
 - `HierarchyDragDropBridge`: reorder and note-drop bridge.
 - `HierarchyInteractionBridge`: rename, create, delete, and expansion bridge.
+- `SidebarHierarchyInteractionController`: footer dispatch, duplicate trigger coalescing, and expansion-state policy
+  controller bound to the active hierarchy index.
 
 ## Layout Notes
 - The shared toolbar frame width now resolves through `LV.Theme.inputMinWidth + LV.Theme.gap20` instead of a raw

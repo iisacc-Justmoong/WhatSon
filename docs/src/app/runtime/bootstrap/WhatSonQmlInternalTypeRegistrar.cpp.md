@@ -23,7 +23,8 @@ then registers that manifest through LVRS `QmlTypeRegistrar`.
   `ContentsPlainTextSourceMutator`, `ContentsStructuredBlockRenderer`, `ContentsAgendaBackend`,
   `ContentsCalloutBackend`, `ContentsBodyResourceRenderer`, and `ResourceBitmapViewer`.
 - Workspace interaction bridges such as `FocusedNoteDeletionBridge`, `NoteListModelContractBridge`,
-  `HierarchyDragDropBridge`, and `HierarchyInteractionBridge`.
+  `HierarchyDragDropBridge`, `HierarchyInteractionBridge`, and `SidebarHierarchyInteractionController`. Creatable
+  controller classes registered here must remain subclassable by Qt's `QQmlElement<T>` wrapper.
 - Onboarding-specific native platform bridge `WhatSonIosHubPickerBridge`, which exposes the iOS Files/Box picker to
   QML without pushing document-picker logic into `main.cpp`.
 

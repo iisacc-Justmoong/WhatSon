@@ -6,6 +6,8 @@ void WhatSonCppRegressionTests::qmlInternalTypeRegistrar_usesLvrsManifestRegistr
 {
     const QString registrarSource = readUtf8SourceFile(
         QStringLiteral("src/app/runtime/bootstrap/WhatSonQmlInternalTypeRegistrar.cpp"));
+    const QString interactionControllerHeader = readUtf8SourceFile(
+        QStringLiteral("src/app/models/sidebar/SidebarHierarchyInteractionController.hpp"));
 
     QVERIFY(registrarSource.contains(QStringLiteral("lvrs::QmlTypeRegistration")));
     QVERIFY(registrarSource.contains(QStringLiteral("internalQmlTypeRegistrationManifest()")));
@@ -18,6 +20,9 @@ void WhatSonCppRegressionTests::qmlInternalTypeRegistrar_usesLvrsManifestRegistr
     QVERIFY(registrarSource.contains(QStringLiteral("ContentsLineNumberRailMetrics")));
     QVERIFY(registrarSource.contains(QStringLiteral("ContentsEditorTagInsertionController")));
     QVERIFY(registrarSource.contains(QStringLiteral("ContentsEditorDisplayBackend")));
+    QVERIFY(registrarSource.contains(QStringLiteral("SidebarHierarchyInteractionController")));
+    QVERIFY(interactionControllerHeader.contains(QStringLiteral("class SidebarHierarchyInteractionController : public QObject")));
+    QVERIFY(!interactionControllerHeader.contains(QStringLiteral("class SidebarHierarchyInteractionController final")));
 }
 
 void WhatSonCppRegressionTests::qmlContextMenus_treatRightClickAndLongPressAsSymmetricPointerTriggers()
@@ -45,10 +50,10 @@ void WhatSonCppRegressionTests::qmlHierarchyExpansion_preservesUserControlledSta
 {
     const QString sidebarSource = readUtf8SourceFile(
         QStringLiteral("src/app/qml/view/panels/sidebar/SidebarHierarchyView.qml"));
+    const QString interactionControllerSource = readUtf8SourceFile(
+        QStringLiteral("src/app/models/sidebar/SidebarHierarchyInteractionController.cpp"));
 
-    QVERIFY(sidebarSource.contains(QStringLiteral("rememberHierarchyExpansionState")));
-    QVERIFY(sidebarSource.contains(QStringLiteral("hierarchyExpansionStateForKey")));
-    QVERIFY(sidebarSource.contains(QStringLiteral("userExpansionArmed")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("property var hierarchyInteractionController: null")));
     QVERIFY(sidebarSource.contains(QStringLiteral("readonly property var hierarchyTreeContextMenuItems")));
     QVERIFY(sidebarSource.contains(QStringLiteral("hierarchyContextMenuKind === \"folder\" ? sidebarHierarchyView.hierarchyFolderContextMenuItems : sidebarHierarchyView.hierarchyTreeContextMenuItems")));
     QVERIFY(!sidebarSource.contains(QStringLiteral("hierarchyViewOptionsMenuItems")));
@@ -56,17 +61,20 @@ void WhatSonCppRegressionTests::qmlHierarchyExpansion_preservesUserControlledSta
     QVERIFY(sidebarSource.contains(QStringLiteral("\"label\": \"Collapse All\"")));
     QVERIFY(sidebarSource.contains(QStringLiteral("\"eventName\": \"hierarchy.expandAll\"")));
     QVERIFY(sidebarSource.contains(QStringLiteral("\"eventName\": \"hierarchy.collapseAll\"")));
-    QVERIFY(sidebarSource.contains(QStringLiteral("hierarchyInteractionBridge.setAllItemsExpanded(true)")));
-    QVERIFY(sidebarSource.contains(QStringLiteral("hierarchyInteractionBridge.setAllItemsExpanded(false)")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("hierarchyInteractionController.requestBulkExpansion(sidebarHierarchyView.standardHierarchyModel, true)")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("hierarchyInteractionController.requestBulkExpansion(sidebarHierarchyView.standardHierarchyModel, false)")));
     QVERIFY(sidebarSource.contains(QStringLiteral("hierarchy.contextMenu.expandAll")));
     QVERIFY(sidebarSource.contains(QStringLiteral("hierarchy.contextMenu.collapseAll")));
-    QVERIFY(sidebarSource.contains(QStringLiteral("function commitHierarchyExpansionChange(item, itemId, resolvedIndex, expansionKey, expanded, previousExpanded)")));
     QVERIFY(sidebarSource.contains(QStringLiteral("function requestHierarchyChevronExpansionAtPosition(x, y, expectedKey)")));
-    QVERIFY(sidebarSource.contains(QStringLiteral("return sidebarHierarchyView.commitHierarchyExpansionChange(target.item, target.item.itemId, target.index, target.key, nextExpanded, previousExpanded);")));
-    QVERIFY(sidebarSource.contains(QStringLiteral("sidebarHierarchyView.commitHierarchyExpansionChange(item, itemId, resolvedExpansionIndex, expansionKey, expanded, preservedExpanded)")));
-    QVERIFY(sidebarSource.contains(QStringLiteral("sidebarHierarchyView.commitHierarchyExpansionChange(item, itemId, resolvedExpansionIndex, expansionKey, expanded, previousExpanded)")));
-    QVERIFY(sidebarSource.contains(QStringLiteral("hierarchyInteractionBridge.setItemExpanded(normalizedIndex, nextExpanded)")));
-    QVERIFY(sidebarSource.contains(QStringLiteral("if (nextState[key] !== undefined)\n                continue;")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("hierarchyInteractionController.requestChevronExpansion(target.index, target.key, Boolean(target.item.expanded), expectedKey)")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("hierarchyInteractionController.handleExpansionSignal(item, resolvedExpansionIndex, expanded)")));
+    QVERIFY(!sidebarSource.contains(QStringLiteral("function commitHierarchyExpansionChange")));
+    QVERIFY(!sidebarSource.contains(QStringLiteral("function rememberHierarchyExpansionState")));
+    QVERIFY(!sidebarSource.contains(QStringLiteral("function hierarchyExpansionStateForKey")));
+    QVERIFY(interactionControllerSource.contains(QStringLiteral("QVariantMap SidebarHierarchyInteractionController::commitExpansionChange")));
+    QVERIFY(interactionControllerSource.contains(QStringLiteral("\"setItemExpanded\"")));
+    QVERIFY(interactionControllerSource.contains(QStringLiteral("m_expansionStateByKey")));
+    QVERIFY(interactionControllerSource.contains(QStringLiteral("invokeBridgeBoolMethod(\"setAllItemsExpanded\", expanded)")));
     QVERIFY(sidebarSource.contains(QStringLiteral("onTapped: function (eventPoint, button)")));
     QVERIFY(sidebarSource.contains(QStringLiteral("sidebarHierarchyView.requestHierarchyChevronExpansionAtPosition(tapX, tapY, armedKey);")));
     QVERIFY(sidebarSource.contains(QStringLiteral("refreshEditingHierarchyPresentation")));

@@ -10,7 +10,7 @@
 #include <QVariantList>
 #include <QVariantMap>
 
-class SidebarHierarchyInteractionController final : public QObject
+class SidebarHierarchyInteractionController : public QObject
 {
     Q_OBJECT
 

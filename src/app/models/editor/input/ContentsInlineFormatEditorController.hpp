@@ -8,8 +8,6 @@
 #include <QVariantMap>
 #include <qqmlregistration.h>
 
-class QEvent;
-
 class ContentsInlineFormatEditorController : public QObject
 {
     Q_OBJECT
@@ -51,9 +49,6 @@ public:
 signals:
     void controlChanged();
     void textInputChanged();
-
-protected:
-    bool eventFilter(QObject* watched, QEvent* event) override;
 
 private slots:
     void handleControlFocusedChanged();

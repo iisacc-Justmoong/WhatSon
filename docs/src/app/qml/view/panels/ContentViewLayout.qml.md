@@ -53,6 +53,9 @@ surface.
   note-list bindings finish a later refresh turn.
 - `minimapVisible` is forwarded into `ContentsEditorDisplayBackend`; this QML file renders the visible editor/minimap
   `LV.HStack` and applies minimap drag deltas to the editor `Flickable`.
+- The note editor flow receives both the session RAW `sourceText` and the projection-owned `projectionSourceText`, so
+  `ContentsStructuredDocumentFlow.qml` can hold the last ready logical projection while parser/render publication
+  catches up instead of falling back to RAW tag text.
 - That sidebar-hierarchy forwarding is now part of the editor contract so desktop/mobile surfaces can distinguish:
   - direct resource-package browsing inside the Resources hierarchy
   - ordinary notes from other hierarchies whose `.wsnbody` happens to contain inline `<resource ... />` blocks

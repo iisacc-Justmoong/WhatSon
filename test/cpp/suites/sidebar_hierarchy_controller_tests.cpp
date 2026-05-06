@@ -51,6 +51,96 @@ void WhatSonCppRegressionTests::sidebarHierarchyController_preservesFallbackAcro
     QCOMPARE(sidebarController.activeHierarchyController(), static_cast<QObject*>(&libraryController));
 }
 
+void WhatSonCppRegressionTests::sidebarHierarchyInteractionController_routesFooterActionsAndCoalescesDuplicateTriggers()
+{
+    SidebarHierarchyInteractionController controller;
+    FakeSidebarHierarchyInteractionBridge bridge;
+    controller.setHierarchyInteractionBridge(&bridge);
+
+    QCOMPARE(
+        controller.footerActionName(99, QStringLiteral(" hierarchy.footer.create ")),
+        QStringLiteral("hierarchy.footer.create"));
+    QCOMPARE(controller.footerActionName(0, QString()), QStringLiteral("hierarchy.footer.create"));
+    QCOMPARE(controller.footerActionName(1, QString()), QStringLiteral("hierarchy.footer.delete"));
+    QCOMPARE(controller.footerActionName(2, QString()), QStringLiteral("hierarchy.footer.options"));
+    QCOMPARE(controller.footerActionName(3, QString()), QString());
+
+    QSignalSpy createSpy(&controller, &SidebarHierarchyInteractionController::footerCreateRequested);
+    QSignalSpy deleteSpy(&controller, &SidebarHierarchyInteractionController::footerDeleteRequested);
+    QSignalSpy optionsSpy(&controller, &SidebarHierarchyInteractionController::footerOptionsRequested);
+
+    QVERIFY(controller.requestFooterAction(QStringLiteral("hierarchy.footer.create")));
+    QVERIFY(controller.requestFooterAction(QStringLiteral("hierarchy.footer.create")));
+    QCOMPARE(createSpy.count(), 1);
+
+    QCoreApplication::processEvents(QEventLoop::AllEvents, 20);
+    QVERIFY(controller.requestFooterAction(QStringLiteral("hierarchy.footer.delete")));
+    QCOMPARE(deleteSpy.count(), 1);
+
+    bridge.viewOptionsEnabled = false;
+    QVERIFY(!controller.requestFooterAction(QStringLiteral("hierarchy.footer.options")));
+    QCOMPARE(optionsSpy.count(), 0);
+
+    bridge.viewOptionsEnabled = true;
+    QCoreApplication::processEvents(QEventLoop::AllEvents, 20);
+    QVERIFY(controller.requestFooterAction(QStringLiteral("hierarchy.footer.options")));
+    QCOMPARE(optionsSpy.count(), 1);
+}
+
+void WhatSonCppRegressionTests::sidebarHierarchyInteractionController_commitsExpansionStateThroughCppPolicy()
+{
+    SidebarHierarchyInteractionController controller;
+    FakeSidebarHierarchyInteractionBridge bridge;
+    controller.setHierarchyInteractionBridge(&bridge);
+    controller.setActiveHierarchyIndex(3);
+
+    QVariantMap node{
+        {QStringLiteral("itemKey"), QStringLiteral("alpha")},
+        {QStringLiteral("expanded"), false},
+        {QStringLiteral("showChevron"), true},
+    };
+    const QVariantList nodes{node};
+    const QString key = controller.itemExpansionKey(node, 0);
+
+    QCOMPARE(key, QStringLiteral("hierarchy:3:alpha"));
+    controller.captureExpansionState(nodes);
+    QVERIFY(controller.expansionStateContainsKey(key));
+    QVERIFY(!controller.expansionStateForKey(key, true));
+
+    const int pendingActivation = controller.beginActivationAttempt();
+    node.insert(QStringLiteral("expanded"), true);
+    const QVariantMap expandedResult = controller.handleExpansionSignal(node, 0, true);
+
+    QVERIFY(expandedResult.value(QStringLiteral("committed")).toBool());
+    QCOMPARE(bridge.setItemExpandedCallCount, 1);
+    QCOMPARE(bridge.lastExpandedIndex, 0);
+    QVERIFY(bridge.lastExpandedValue);
+    QVERIFY(controller.expansionStateForKey(key, false));
+    QVERIFY(!controller.activationAttemptCurrent(pendingActivation));
+    QVERIFY(controller.shouldSuppressActivation());
+    QTest::qWait(180);
+    QVERIFY(!controller.shouldSuppressActivation());
+
+    QVariantMap staleNode = node;
+    staleNode.insert(QStringLiteral("expanded"), false);
+    const QVariantList preservedModel = controller.modelWithPreservedExpansion(QVariantList{staleNode});
+    QCOMPARE(preservedModel.size(), 1);
+    QVERIFY(preservedModel.first().toMap().value(QStringLiteral("expanded")).toBool());
+
+    QVERIFY(controller.armExpansionKey(key));
+    const QVariantMap collapsedResult = controller.requestChevronExpansion(0, key, true, key);
+    QVERIFY(collapsedResult.value(QStringLiteral("committed")).toBool());
+    QCOMPARE(bridge.setItemExpandedCallCount, 2);
+    QVERIFY(!bridge.lastExpandedValue);
+    QVERIFY(!controller.expansionStateForKey(key, true));
+
+    bridge.setItemExpandedResult = false;
+    QVERIFY(controller.armExpansionKey(key));
+    const QVariantMap failedResult = controller.requestChevronExpansion(0, key, false, key);
+    QVERIFY(failedResult.value(QStringLiteral("rollbackRequired")).toBool());
+    QVERIFY(!controller.expansionStateForKey(key, true));
+}
+
 void WhatSonCppRegressionTests::sidebarHierarchyController_reactsToProviderMappingChanges()
 {
     HierarchyControllerProvider provider;

@@ -8,8 +8,9 @@ Implements the C++ bridge for the active inline note editor controller.
 
 - Keeps the `control` and `textInput` object handles directly in C++.
 - Tracks local cursor/selection/text edits from the native `LV.TextEditor.editorItem` notify signals.
-- Installs an event filter on the live `LV.TextEditor.editorItem` so rendered-overlay collapsed Backspace can be
-  offered to the QML/C++ WYSIWYG mutation policy before Qt deletes hidden RAW tag bytes.
+- Does not install a key event filter. Ordinary Backspace/Delete, navigation, selection, repeat, and IME input remain
+  on the native `LV.TextEditor.editorItem`; rendered-mode edits are converted to RAW source from the committed logical
+  text delta by the QML/C++ WYSIWYG policy path.
 - Consults `ContentsEditorInputPolicyAdapter` directly for focused native-input programmatic text-sync decisions.
 - Restores cursor and selection through the native text item, defers programmatic source replacement while composition
   is active, and dispatches committed text edits back to the editor surface.

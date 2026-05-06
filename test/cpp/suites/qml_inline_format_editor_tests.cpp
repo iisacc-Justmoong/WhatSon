@@ -104,15 +104,15 @@ void WhatSonCppRegressionTests::qmlInlineFormatEditor_keepsNativeTextEditInputUn
     QVERIFY(inlineEditorSource.contains(QStringLiteral("function syncRawSelectionFromSurfaceSelection()")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("function scheduleSurfaceSelectionToRawSync()")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("function visibleLogicalOffsetAtPoint(localX, localY)")));
-    QVERIFY(inlineEditorSource.contains(QStringLiteral("function applyRenderedBackspaceMutation(event)")));
-    QVERIFY(inlineEditorSource.contains(QStringLiteral("wysiwygEditorPolicy.visibleBackspaceMutationPayload(")));
+    QVERIFY(!inlineEditorSource.contains(QStringLiteral("function applyRenderedBackspaceMutation(event)")));
+    QVERIFY(!inlineEditorSource.contains(QStringLiteral("wysiwygEditorPolicy.visibleBackspaceMutationPayload(")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("wysiwygEditorPolicy.visibleTextMutationPayload(")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("readonly property bool logicalSurfaceActive")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("readonly property int sourceCursorPosition")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("control.resolvedProjectedCursorPosition")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("payload.surfaceCursor")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("control.handleTagManagementKeyPress(event);")));
-    QVERIFY(inlineEditorSource.contains(QStringLiteral("const geometryItem = control.renderedOverlayVisible ? renderedOverlay : renderedGeometryProbe")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("const geometryItem = control.displayGeometryItem()")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("Number(geometryItem.contentHeight)")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("positionAt(clampedX, clampedY)")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("function sourceTagTokenBoundsForCursor(sourceOffset)")));
@@ -125,8 +125,8 @@ void WhatSonCppRegressionTests::qmlInlineFormatEditor_keepsNativeTextEditInputUn
     QVERIFY(inlineEditorSource.contains(QStringLiteral("readOnly: true")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("onSelectionStartChanged: control.scheduleSurfaceSelectionToRawSync()")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("onSelectionEndChanged: control.scheduleSurfaceSelectionToRawSync()")));
-    QVERIFY(inlineEditorSource.contains(QStringLiteral("text: control.renderedOverlayVisible ? control.renderedText : control.displayGeometryText")));
-    QVERIFY(inlineEditorSource.contains(QStringLiteral("textFormat: control.renderedOverlayVisible ? TextEdit.RichText : TextEdit.PlainText")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("text: control.displayGeometryText")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("textFormat: TextEdit.PlainText")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("MouseArea {")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("objectName: \"contentsInlineFormatVisibleSelectionPointerArea\"")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("mouse.accepted = control.beginVisiblePointerSelection(mouse.x, mouse.y);")));
@@ -171,6 +171,8 @@ void WhatSonCppRegressionTests::qmlInlineFormatEditor_keepsNativeTextEditInputUn
     QVERIFY(inlineEditorSource.contains(QStringLiteral("id: renderedGeometryProbe")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("enabled: false")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("opacity: 0")));
+    QVERIFY(!inlineEditorSource.contains(QStringLiteral("text: control.projectedNativeSurfaceText()")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("Component.onCompleted: control.syncNativeSurfaceTextFromProjection(true)")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("activeFocusOnPress: control.autoFocusOnPress")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("anchors.leftMargin: LV.Theme.gap16")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("anchors.rightMargin: LV.Theme.gap16")));
@@ -281,20 +283,25 @@ void WhatSonCppRegressionTests::qmlInlineFormatEditor_projectsVisibleGeometryFro
     QVERIFY(inlineEditorSource.contains(QStringLiteral("textFormat: TextEdit.RichText")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("property string displayGeometryText: control.text")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("function displayGeometryItem()")));
-    QVERIFY(inlineEditorSource.contains(QStringLiteral("return control.renderedOverlayVisible ? renderedOverlay : textInput.editorItem;")));
-    QVERIFY(inlineEditorSource.contains(QStringLiteral("return control.renderedOverlayVisible ? renderedOverlay : textInput.editorItem;")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("return control.logicalSurfaceActive ? renderedGeometryProbe : textInput.editorItem;")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("function resourceDisplayRectangleForBlock(block)")));
-    QVERIFY(inlineEditorSource.contains(QStringLiteral("text: control.renderedOverlayVisible ? control.renderedText : control.displayGeometryText")));
-    QVERIFY(inlineEditorSource.contains(QStringLiteral("textFormat: control.renderedOverlayVisible ? TextEdit.RichText : TextEdit.PlainText")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("objectName: \"contentsInlineFormatRenderedGeometryProbe\"")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("text: control.displayGeometryText")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("textFormat: TextEdit.PlainText")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("textMargin: LV.Theme.gapNone")));
     QVERIFY(documentFlowSource.contains(QStringLiteral("property string logicalText: \"\"")));
+    QVERIFY(documentFlowSource.contains(QStringLiteral("property string projectionSourceText: documentFlow.sourceText")));
+    QVERIFY(documentFlowSource.contains(QStringLiteral("readonly property bool logicalProjectionReady")));
+    QVERIFY(documentFlowSource.contains(QStringLiteral("readonly property string resolvedDisplayGeometryText")));
+    QVERIFY(documentFlowSource.contains(QStringLiteral("function refreshLastReadyLogicalText()")));
     QVERIFY(documentFlowSource.contains(QStringLiteral("property var coordinateMapper: null")));
     QVERIFY(!documentFlowSource.contains(QStringLiteral("property var logicalToSourceOffsets")));
     QVERIFY(documentFlowSource.contains(QStringLiteral("property int logicalCursorPosition: sourceText.length")));
     QVERIFY(documentFlowSource.contains(QStringLiteral("readonly property int editorVisualLineCount: editor.visualLineCount")));
     QVERIFY(documentFlowSource.contains(QStringLiteral("readonly property var editorVisualLineWidthRatios: editor.visualLineWidthRatios")));
     QVERIFY(documentFlowSource.contains(QStringLiteral("readonly property var editorLogicalGutterRows: editor.logicalGutterRows")));
-    QVERIFY(documentFlowSource.contains(QStringLiteral("displayGeometryText: documentFlow.logicalText.length > 0 ? documentFlow.logicalText : documentFlow.sourceText")));
+    QVERIFY(documentFlowSource.contains(QStringLiteral("displayGeometryText: documentFlow.resolvedDisplayGeometryText")));
+    QVERIFY(!documentFlowSource.contains(QStringLiteral("displayGeometryText: documentFlow.logicalText.length > 0 ? documentFlow.logicalText : documentFlow.sourceText")));
     QVERIFY(documentFlowSource.contains(QStringLiteral("coordinateMapper: documentFlow.coordinateMapper")));
     QVERIFY(documentFlowSource.contains(QStringLiteral("logicalCursorPosition: documentFlow.logicalCursorPosition")));
     QVERIFY(documentFlowSource.contains(QStringLiteral("function terminalBodySurfaceY()")));
@@ -313,6 +320,8 @@ void WhatSonCppRegressionTests::qmlInlineFormatEditor_projectsVisibleGeometryFro
         "coordinateMapper: editorDisplayBackend.presentationProjection")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral(
         "sourceText: editorDisplayBackend.editorSession.editorText")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral(
+        "projectionSourceText: editorDisplayBackend.presentationProjection.sourceText")));
     QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("logicalToSourceOffsets")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral(
         "property: \"visualLineCount\"")));
@@ -392,6 +401,15 @@ Item {
 
     QObject* projectedCursor = rootObject->findChild<QObject*>(QStringLiteral("contentsInlineFormatProjectedCursor"));
     QVERIFY(projectedCursor != nullptr);
+    QObject* geometryProbe = rootObject->findChild<QObject*>(QStringLiteral("contentsInlineFormatRenderedGeometryProbe"));
+    QVERIFY(geometryProbe != nullptr);
+    QObject* surfaceSelectionEditor =
+        rootObject->findChild<QObject*>(QStringLiteral("contentsInlineFormatSurfaceSelectionEditor"));
+    QVERIFY(surfaceSelectionEditor != nullptr);
+    QTRY_COMPARE(geometryProbe->property("text").toString(), QStringLiteral("Alpha\nBeta"));
+    QVERIFY(!geometryProbe->property("text").toString().contains(QStringLiteral("<span")));
+    QTRY_COMPARE(surfaceSelectionEditor->property("text").toString(), QStringLiteral("Alpha\nBeta"));
+    QVERIFY(!surfaceSelectionEditor->property("text").toString().contains(QStringLiteral("<span")));
     inlineEditor->setProperty("cursorPosition", 5);
     QTRY_VERIFY(!inlineEditor->property("nativeCursorVisible").toBool());
     QTRY_VERIFY(projectedCursor->property("visible").toBool());
@@ -752,6 +770,115 @@ Item {
     QTRY_COMPARE(
         inlineEditor->property("text").toString(),
         QStringLiteral("<bold>Al<italic>pha</italic></bold><italic> Beta</italic>"));
+}
+
+void WhatSonCppRegressionTests::qmlStructuredDocumentFlow_holdsLogicalSurfaceWhileProjectionCatchesUp()
+{
+    registerInlineFormatEditorRuntimeQmlTypes();
+
+    const QString repositoryRoot = qmlInlineFormatEditorRepositoryRootPath();
+    QQmlEngine engine;
+    addWhatSonInlineFormatEditorQmlImportPaths(engine, repositoryRoot);
+
+    const QString editorImportUrl =
+        QUrl::fromLocalFile(repositoryRoot + QStringLiteral("/src/app/qml/view/contents/editor")).toString();
+    const QByteArray qmlSource = QStringLiteral(R"QML(
+import QtQuick
+import WhatSon.App.Internal 1.0
+import "%1" as EditorView
+
+Item {
+    id: root
+    objectName: "structuredDocumentFlowProjectionCatchupHarness"
+    property string committedText: ""
+    property string projectionBody: "<bold>Example</bold>"
+    property string projectionHtml: "<span style='font-weight:700'>Example</span>"
+    property string projectionLogicalText: "Example"
+    property string sourceBody: "<bold>Example</bold>"
+    width: 360
+    height: 96
+
+    function publishProjectionCatchup() {
+        root.projectionLogicalText = "Examplex";
+        root.projectionHtml = "<span style='font-weight:700'>Example</span>x";
+        root.projectionBody = root.sourceBody;
+    }
+
+    EditorView.ContentsStructuredDocumentFlow {
+        id: documentFlow
+        objectName: "structuredDocumentFlowUnderTest"
+        anchors.fill: parent
+        coordinateMapper: ContentsEditorPresentationProjection {
+            sourceText: documentFlow.projectionSourceText
+        }
+        editorSurfaceHtml: root.projectionHtml
+        logicalText: root.projectionLogicalText
+        projectionSourceText: root.projectionBody
+        sourceText: root.sourceBody
+
+        onSourceTextEdited: function (text) {
+            root.committedText = text;
+            root.sourceBody = text;
+            root.projectionHtml = "";
+            root.projectionLogicalText = "";
+        }
+    }
+}
+)QML").arg(editorImportUrl).toUtf8();
+
+    QQmlComponent component(&engine);
+    component.setData(
+        qmlSource,
+        QUrl::fromLocalFile(repositoryRoot + QStringLiteral("/test/cpp/StructuredDocumentFlowProjectionCatchupHarness.qml")));
+    if (component.status() == QQmlComponent::Error)
+    {
+        QFAIL(qPrintable(qmlInlineFormatEditorErrorString(component.errors())));
+    }
+
+    std::unique_ptr<QObject> rootObject(component.create());
+    if (!rootObject)
+    {
+        QFAIL(qPrintable(qmlInlineFormatEditorErrorString(component.errors())));
+    }
+
+    auto* rootItem = qobject_cast<QQuickItem*>(rootObject.get());
+    QVERIFY(rootItem != nullptr);
+
+    QQuickWindow window;
+    window.resize(360, 96);
+    rootItem->setParentItem(window.contentItem());
+    window.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&window));
+
+    QObject* inlineEditor = rootObject->findChild<QObject*>(QStringLiteral("contentsStructuredDocumentInlineEditor"));
+    QVERIFY(inlineEditor != nullptr);
+    QObject* nativeEditor = inlineEditor->property("editorItem").value<QObject*>();
+    QVERIFY(nativeEditor != nullptr);
+    QTRY_COMPARE(inlineEditor->property("displayGeometryText").toString(), QStringLiteral("Example"));
+    QTRY_COMPARE(nativeEditor->property("text").toString(), QStringLiteral("Example"));
+    QVERIFY(!nativeEditor->property("text").toString().contains(QStringLiteral("<bold>")));
+    QVERIFY(QMetaObject::invokeMethod(inlineEditor, "forceActiveFocus"));
+
+    QVariant restoreResult;
+    QVERIFY(QMetaObject::invokeMethod(
+        inlineEditor,
+        "restoreVisibleLogicalSelectionRange",
+        Q_RETURN_ARG(QVariant, restoreResult),
+        Q_ARG(QVariant, 7),
+        Q_ARG(QVariant, 7)));
+    QVERIFY(restoreResult.toBool());
+
+    QTest::keyClick(&window, Qt::Key_X);
+
+    QTRY_COMPARE(rootObject->property("committedText").toString(), QStringLiteral("<bold>Example</bold>x"));
+    QTRY_COMPARE(nativeEditor->property("text").toString(), QStringLiteral("Examplex"));
+    QVERIFY(!nativeEditor->property("text").toString().contains(QStringLiteral("<bold>")));
+    QCOMPARE(inlineEditor->property("displayGeometryText").toString(), QStringLiteral("Example"));
+
+    QVERIFY(QMetaObject::invokeMethod(rootObject.get(), "publishProjectionCatchup"));
+    QTRY_COMPARE(inlineEditor->property("displayGeometryText").toString(), QStringLiteral("Examplex"));
+    QTRY_COMPARE(nativeEditor->property("text").toString(), QStringLiteral("Examplex"));
+    QVERIFY(!nativeEditor->property("text").toString().contains(QStringLiteral("<bold>")));
 }
 
 void WhatSonCppRegressionTests::qmlInlineFormatEditor_preservesRenderedPointerDragSelection()
@@ -2196,12 +2323,13 @@ void WhatSonCppRegressionTests::qmlInlineFormatEditor_keepsKeyboardSelectionAndO
     QVERIFY(inlineEditorSource.contains(QStringLiteral("function shouldRejectFocusedProgrammaticTextSync(nextText)")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("inlineEditorController.setProgrammaticText(resolvedText)")));
     QVERIFY(inlineEditorControllerHeader.contains(QStringLiteral("ContentsEditorInputPolicyAdapter")));
-    QVERIFY(inlineEditorControllerHeader.contains(QStringLiteral("bool eventFilter(QObject* watched, QEvent* event) override")));
+    QVERIFY(!inlineEditorControllerHeader.contains(QStringLiteral("eventFilter")));
     QVERIFY(inlineEditorControllerHeader.contains(QStringLiteral("m_localSelectionInteractionSinceFocus")));
     QVERIFY(inlineEditorControllerSource.contains(QStringLiteral("nativeSelectionActive() const")));
-    QVERIFY(inlineEditorControllerSource.contains(QStringLiteral("invokeRenderedBackspaceMutation")));
-    QVERIFY(inlineEditorControllerSource.contains(QStringLiteral("applyRenderedBackspaceMutation")));
-    QVERIFY(inlineEditorControllerSource.contains(QStringLiteral("m_textInput->installEventFilter(this)")));
+    QVERIFY(!inlineEditorControllerSource.contains(QStringLiteral("invokeRenderedBackspaceMutation")));
+    QVERIFY(!inlineEditorControllerSource.contains(QStringLiteral("applyRenderedBackspaceMutation")));
+    QVERIFY(!inlineEditorControllerSource.contains(QStringLiteral("installEventFilter")));
+    QVERIFY(!inlineEditorControllerSource.contains(QStringLiteral("removeEventFilter")));
     QVERIFY(inlineEditorControllerSource.contains(QStringLiteral("m_localSelectionInteractionSinceFocus || nativeSelectionActive()")));
     QVERIFY(inlineEditorControllerSource.contains(QStringLiteral("ContentsInlineFormatEditorController::programmaticTextSyncPolicy")));
     QVERIFY(!inlineEditorControllerSource.contains(QStringLiteral("invokeHelper")));

@@ -115,9 +115,9 @@ These signals make the file a reusable visual surface instead of a hard-coded on
   Selected Folder`, then `Open Context Menu`. The third slot uses LVRS `generalmoreHorizontal`, not a settings icon,
   because it is a menu disclosure affordance.
 - The `LV.ListFooter` buttons are routed through both the legacy button-config `onClicked` callback and
-  `onButtonClicked`/`handleHierarchyFooterButtonClicked(...)`. Both paths call `requestHierarchyFooterAction(...)`,
-  which coalesces one dispatch turn so LVRS versions that emit both the callback and signal do not create/delete/open
-  twice, while LVRS versions that only preserve the config callback still keep the footer actions live.
+  `onButtonClicked`/`handleHierarchyFooterButtonClicked(...)`. Both paths now call
+  `SidebarHierarchyInteractionController.requestFooterAction(...)`; the C++ controller resolves footer event names and
+  coalesces one dispatch turn so LVRS versions that emit both the callback and signal do not create/delete/open twice.
 - The compact footer/menu metrics now route through `LV.Theme.gap2`, `LV.Theme.gap4`, and named token compositions
   (`144`, `78`, `24`) instead of fixed sidebar-local pixel literals, so mobile/desktop LVRS scale stays consistent.
 - The default tree context menu is `hierarchyTreeContextMenuItems`. It exposes `Expand All` and `Collapse All` actions
@@ -126,8 +126,9 @@ These signals make the file a reusable visual surface instead of a hard-coded on
   entries and trigger callbacks live on the current `hierarchyTreeContextMenuItems` object.
 - Bulk expansion is enabled only when the projected hierarchy model currently contains at least one row with
   `showChevron: true`.
-- Both actions route through `HierarchyInteractionBridge.setAllItemsExpanded(...)` so the active domain controller, not
-  the view, owns the persisted `expanded` state. Their view hook reasons are
+- Both actions route through `SidebarHierarchyInteractionController.requestBulkExpansion(...)`, which preserves sidebar
+  expansion state and then calls `HierarchyInteractionBridge.setAllItemsExpanded(...)`; the active domain controller,
+  not the view, owns the persisted `expanded` state. Their view hook reasons are
   `hierarchy.contextMenu.expandAll` and `hierarchy.contextMenu.collapseAll`.
 - The menu entries now carry explicit `eventName` values (`hierarchy.expandAll` / `hierarchy.collapseAll`) and route
   through a shared trigger handler that accepts both `onItemTriggered(index)` and
@@ -162,20 +163,22 @@ These signals make the file a reusable visual surface instead of a hard-coded on
 
 ## Expansion Routing Guard
 
-- Expansion state is now treated as user-owned UI state. `hierarchyExpansionStateByKey` captures row expansion by
-  stable hierarchy key, and `syncDisplayedHierarchyModel(...)` overlays that state onto refreshed hierarchy payloads.
+- Expansion state is now treated as user-owned UI state. `SidebarHierarchyInteractionController` captures row expansion
+  by stable hierarchy key, and `syncDisplayedHierarchyModel(...)` asks that C++ object to overlay preserved state onto
+  refreshed hierarchy payloads.
   Count-only changes, folder-structure refreshes, and note-to-folder assignment refreshes must therefore not reset
   existing expanded/collapsed rows.
 - Expansion keys are scoped by the active hierarchy index, so identical row ids in different hierarchy domains do not
   leak expansion state into each other when the toolbar switches domain.
 - LVRS `HierarchyItem` owns the chevron hit target and emits `onListItemExpanded` after toggling `expanded`.
-  `SidebarHierarchyView` treats that signal as the canonical single-row expansion request and commits it through
+  `SidebarHierarchyView` treats that signal as a view callback and forwards it to
+  `SidebarHierarchyInteractionController.handleExpansionSignal(...)`, which commits through
   `HierarchyInteractionBridge.setItemExpanded(...)` when the state differs from the preserved user-owned state.
   A separate pointer arm remains only as an activation-suppression/fallback path for platforms that do not deliver the
   LVRS expansion callback from the chevron `MouseArea`.
-- `captureHierarchyExpansionState(...)` seeds only missing keys. A fresh controller/model refresh must not overwrite a
-  user-owned expansion value that was just written by a chevron click with the stale `displayedHierarchyModel` snapshot
-  from the previous turn.
+- `SidebarHierarchyInteractionController.captureExpansionState(...)` seeds only missing keys. A fresh controller/model
+  refresh must not overwrite a user-owned expansion value that was just written by a chevron click with the stale
+  `displayedHierarchyModel` snapshot from the previous turn.
 - `syncSelectedHierarchyItem(...)` refuses to activate a selected row that is hidden behind a collapsed ancestor. This
   prevents LVRS active-item normalization from auto-expanding ancestors during model rebuilds.
 - Chevron-driven expansion now records a resolved hierarchy index from stable model ids first
@@ -184,9 +187,9 @@ These signals make the file a reusable visual surface instead of a hard-coded on
   It then starts a short activation-block timer.
 - The left-button `TapHandler` also schedules `requestHierarchyChevronExpansionAtPosition(...)` after the tap turn. If
   LVRS already emitted and committed `onListItemExpanded`, the armed key has been cleared and the fallback is skipped;
-  otherwise the same `commitHierarchyExpansionChange(...)` path performs the single-row fold/unfold.
+  otherwise `SidebarHierarchyInteractionController.requestChevronExpansion(...)` performs the single-row fold/unfold.
 - `onListItemActivated` is deferred by one turn (`Qt.callLater`) and re-checked through
-  `shouldSuppressHierarchyActivation(item, itemId, index)` before it can select the folder or emit
+  `SidebarHierarchyInteractionController.shouldSuppressActivation()` before it can select the folder or emit
   `hierarchyItemActivated(...)`.
 - Expansion suppression is now absolute for that short window: any activation is ignored while the
   expansion block timer is active, including callbacks that resolve to the currently selected row.
@@ -263,12 +266,12 @@ This file should be read as a composed view, not as the place where hierarchy bu
 
 ## Tests
 
-- `test/cpp/suites/contents_display_view_tests.cpp` locks the footer context-menu action contract by checking the
-  explicit expand/collapse event names, direct `onTriggered` callbacks, shared action normalizer, and queued-action
-  duplicate guard.
-- The same test file also locks the hierarchy expansion contract: refreshed models must preserve
-  `hierarchyExpansionStateByKey` with active-hierarchy scoping, hidden selected rows must not be activated just to make
-  them visible, and unarmed LVRS expansion changes must be reverted instead of persisted.
+- `test/cpp/suites/sidebar_hierarchy_rename_controller_tests.cpp` locks the footer action contract by checking the LVRS
+  footer button order, direct config callbacks, signal route, and C++ `SidebarHierarchyInteractionController` dispatch.
+- `test/cpp/suites/qml_editor_surface_policy_tests.cpp` and
+  `test/cpp/suites/sidebar_hierarchy_controller_tests.cpp` lock the hierarchy expansion contract: refreshed models must
+  preserve C++-owned expansion state with active-hierarchy scoping, hidden selected rows must not be activated just to
+  make them visible, and LVRS chevron changes must commit through the C++ policy object.
 - Modifier-selection regression checklist for this file:
   - `Shift + click` creates contiguous hierarchy ranges from `hierarchySelectionAnchorIndex`.
   - `Cmd/Ctrl + click` toggles hierarchy rows without collapsing to single selection.

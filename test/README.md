@@ -106,6 +106,9 @@ ctest --test-dir build --output-on-failure -L cpp_regression
   The same source checks pin pending cursor/surface restore behavior so neither path writes through native composition.
 - Inline-format editor checks now also lock the C++/QML helper-controller path so programmatic sync policy and
   tag-management shortcut routing stay tied to the `LV.TextEditor.editorItem` native text surface.
+- Inline-format editor checks now also lock rendered-mode projection catch-up: native `LV.TextEditor.text` is refreshed
+  only through the controller programmatic-sync path, and `ContentsStructuredDocumentFlow.qml` holds the last ready
+  logical projection instead of exposing RAW inline tags while source and projection are briefly out of step.
 - Inline tag-insertion regression now also pins re-formatting over existing inline style tags: selections that land
   inside hidden RAW tag tokens, or include only one side of an existing wrapper, are normalized before the next RAW
   mutation so malformed `<highligh<...` source cannot surface in the editor.
@@ -130,11 +133,15 @@ ctest --test-dir build --output-on-failure -L cpp_regression
   round-trips the new `annotationPath` and newly created resource packages keep a transparent `annotation.png`.
 - Folder-path semantics now also lock escaped literal-slash handling plus `Folders.wsfolders` parser migration, so a
   library folder label like `Marketing/Sales` cannot regress into an accidental parent/child hierarchy split.
-- Sidebar hierarchy expansion now also pins the LVRS chevron signal path, so a folder row's right chevron commits the
-  `onListItemExpanded(...)` callback through one `setItemExpanded(...)` request while stale model refreshes still cannot
-  overwrite the newly chosen expanded/collapsed state.
-- Sidebar footer actions now pin both the legacy `LV.ListFooter` config-callback route and the signal route, with
-  same-turn coalescing so create, delete, and context-menu clicks stay live without double-dispatching.
+- Sidebar hierarchy expansion now also pins the LVRS chevron signal path, so a folder row's right chevron forwards the
+  `onListItemExpanded(...)` callback into `SidebarHierarchyInteractionController`, which issues one
+  `setItemExpanded(...)` request while stale model refreshes still cannot overwrite the newly chosen expanded/collapsed
+  state.
+- Sidebar footer actions now pin both the legacy `LV.ListFooter` config-callback route and the signal route, with C++
+  same-turn coalescing in `SidebarHierarchyInteractionController` so create, delete, and context-menu clicks stay live
+  without double-dispatching.
+- The C++ regression executable links `SidebarHierarchyInteractionController.cpp` with the sidebar suite, so footer
+  coalescing and expansion-state assertions exercise the real controller implementation.
 - Sidebar footer toolbar order is source-locked as add folder, delete selected folder, then open context menu, with the
   third slot using the LVRS more/menu icon instead of a settings glyph.
 - Sidebar tree context-menu coverage now locks `Expand All` and `Collapse All` entries to
@@ -226,12 +233,15 @@ ctest --test-dir build --output-on-failure -L cpp_regression
 - The inline editor regression now also pins rendered-surface cursor placement: taps are resolved through visible
   logical text geometry and then mapped back through `logicalToSourceOffsets`, so hidden RAW tags do not determine the
   cursor location.
-- The same rendered-cursor coverage now also pins collapsed Backspace against nested inline style tags: the editor
-  deletes the previous visible glyph through a C++ WYSIWYG mutation payload instead of letting native RAW deletion
-  remove bytes from hidden `</italic>` / `</bold>` boundaries behind the projected caret.
+- The same rendered-cursor coverage now also pins collapsed Backspace against nested inline style tags: the native
+  editor deletes the previous visible logical glyph and the resulting logical text delta is converted to RAW, so no
+  deletion path can remove bytes from hidden `</italic>` / `</bold>` boundaries behind the visual caret.
 - The inline editor regression now also pins the rendered-mode native edit surface as visible logical text, not RAW
-  XML. Typing and Backspace at the projected caret update the logical `LV.TextEditor` buffer and are immediately
+  XML. Typing and Backspace at the native logical caret update the logical `LV.TextEditor` buffer and are immediately
   converted back into RAW `.wsnbody` source through `visibleTextMutationPayload(...)`.
+- The inline editor regression now also pins the rendered geometry probe and transparent selection surface as plain
+  `displayGeometryText`, not RichText HTML, so caret placement and pointer hit-testing use the same logical coordinate
+  space as `ContentsEditorPresentationProjection`.
 - Empty inline-format wrapper coverage now also verifies that hidden-only RAW selections remain collapsed after
   projection to the native logical surface, so restoring `<highlight></highlight>`-only ranges cannot select the next
   visible character.

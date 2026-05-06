@@ -1231,7 +1231,6 @@ Item {
         selectionColor: control.nativeSelectionPaintVisible ? LV.Theme.primaryOverlay : "transparent"
         showRenderedOutput: false
         showScrollBar: false
-        text: control.projectedNativeSurfaceText()
         textColor: control.renderedOverlayVisible ? "transparent" : control.textColor
         textColorDisabled: textColor
         textFormat: TextEdit.PlainText

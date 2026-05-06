@@ -78,6 +78,7 @@
 #include "app/models/sidebar/HierarchyControllerProvider.hpp"
 #include "app/models/sidebar/IActiveHierarchyContextSource.hpp"
 #include "app/models/sidebar/SidebarHierarchyController.hpp"
+#include "app/models/sidebar/SidebarHierarchyInteractionController.hpp"
 
 #include <QAbstractListModel>
 #include <QCoreApplication>
@@ -195,6 +196,41 @@ private:
     int m_selectedIndex = -1;
     bool m_loadSucceeded = true;
     QString m_lastLoadError;
+};
+
+class FakeSidebarHierarchyInteractionBridge final : public QObject
+{
+    Q_OBJECT
+
+    Q_PROPERTY(bool createFolderEnabled MEMBER createFolderEnabled)
+    Q_PROPERTY(bool deleteFolderEnabled MEMBER deleteFolderEnabled)
+    Q_PROPERTY(bool viewOptionsEnabled MEMBER viewOptionsEnabled)
+
+public:
+    bool createFolderEnabled = true;
+    bool deleteFolderEnabled = true;
+    bool viewOptionsEnabled = true;
+    int setItemExpandedCallCount = 0;
+    int setAllItemsExpandedCallCount = 0;
+    int lastExpandedIndex = -1;
+    bool lastExpandedValue = false;
+    bool setItemExpandedResult = true;
+    bool setAllItemsExpandedResult = true;
+
+    Q_INVOKABLE bool setItemExpanded(int index, bool expanded)
+    {
+        ++setItemExpandedCallCount;
+        lastExpandedIndex = index;
+        lastExpandedValue = expanded;
+        return setItemExpandedResult;
+    }
+
+    Q_INVOKABLE bool setAllItemsExpanded(bool expanded)
+    {
+        ++setAllItemsExpandedCallCount;
+        lastExpandedValue = expanded;
+        return setAllItemsExpandedResult;
+    }
 };
 
 class FakeNoteDropHierarchyController final : public FakeHierarchyController,
@@ -1032,6 +1068,8 @@ private slots:
     void architecturePolicyLock_blocksMutableWiringAfterLock();
     void hierarchyControllerProvider_rejectsMappingMutationAfterLock();
     void sidebarHierarchyController_preservesFallbackAcrossStoreAttachDetach();
+    void sidebarHierarchyInteractionController_routesFooterActionsAndCoalescesDuplicateTriggers();
+    void sidebarHierarchyInteractionController_commitsExpansionStateThroughCppPolicy();
     void sidebarHierarchyController_rejectsSelectionStoreMutationAfterLock();
     void sidebarHierarchyController_reactsToProviderMappingChanges();
     void noteListModelContractBridge_rejectsWiringMutationAfterLock();
@@ -1156,6 +1194,7 @@ private slots:
     void qmlInlineFormatEditor_movesRenderedCursorOnMouseClick();
     void qmlInlineFormatEditor_backspaceDeletesVisibleCharacterBeforeRenderedCursor();
     void qmlInlineFormatEditor_keepsNativeSurfaceLogicalAndMapsTypingToRaw();
+    void qmlStructuredDocumentFlow_holdsLogicalSurfaceWhileProjectionCatchesUp();
     void qmlInlineFormatEditor_preservesRenderedPointerDragSelection();
     void qmlInlineFormatEditor_restoresRenderedPointerMultiClickSelection();
     void qmlInlineFormatEditor_skipsHiddenInlineTagsDuringNativeCursorMovement();
