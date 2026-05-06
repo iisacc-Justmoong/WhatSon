@@ -53,6 +53,12 @@ surface.
   note-list bindings finish a later refresh turn.
 - `minimapVisible` is forwarded into `ContentsEditorDisplayBackend`; this QML file renders the visible editor/minimap
   `LV.HStack` and applies minimap drag deltas to the editor `Flickable`.
+- The editor document viewport keeps a `LV.Theme.gap16` bottom inset in the scrollable content height. This is document
+  body breathing room, not text top padding; the first line remains top-flush while the final line can scroll above the
+  bottom chrome.
+- The editor `Flickable` resets to the top only when `ContentsEditorDisplayBackend` emits
+  `editorViewportResetRequested()`. That signal is a note-identity transition contract, not a generic text/projection
+  refresh hook; same-note typing, save reconcile, and current-entry refreshes must preserve `contentY`.
 - The note editor flow receives both the session RAW `sourceText` and the projection-owned `projectionSourceText`, so
   `ContentsStructuredDocumentFlow.qml` can hold the last ready logical projection while parser/render publication
   catches up instead of falling back to RAW tag text.

@@ -52,6 +52,10 @@ void WhatSonCppRegressionTests::qmlHierarchyExpansion_preservesUserControlledSta
         QStringLiteral("src/app/qml/view/panels/sidebar/SidebarHierarchyView.qml"));
     const QString interactionControllerSource = readUtf8SourceFile(
         QStringLiteral("src/app/models/sidebar/SidebarHierarchyInteractionController.cpp"));
+    const QString bookmarksHeader = readUtf8SourceFile(
+        QStringLiteral("src/app/models/file/hierarchy/bookmarks/BookmarksHierarchyController.hpp"));
+    const QString bookmarksSource = readUtf8SourceFile(
+        QStringLiteral("src/app/models/file/hierarchy/bookmarks/BookmarksHierarchyController.cpp"));
 
     QVERIFY(sidebarSource.contains(QStringLiteral("property var hierarchyInteractionController: null")));
     QVERIFY(sidebarSource.contains(QStringLiteral("readonly property var hierarchyTreeContextMenuItems")));
@@ -66,7 +70,10 @@ void WhatSonCppRegressionTests::qmlHierarchyExpansion_preservesUserControlledSta
     QVERIFY(sidebarSource.contains(QStringLiteral("hierarchy.contextMenu.expandAll")));
     QVERIFY(sidebarSource.contains(QStringLiteral("hierarchy.contextMenu.collapseAll")));
     QVERIFY(sidebarSource.contains(QStringLiteral("function requestHierarchyChevronExpansionAtPosition(x, y, expectedKey)")));
-    QVERIFY(sidebarSource.contains(QStringLiteral("hierarchyInteractionController.requestChevronExpansion(target.index, target.key, Boolean(target.item.expanded), expectedKey)")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("hierarchyInteractionController.requestChevronExpansion(target.index, target.key, currentExpanded, expectedKey)")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("if (result && result.committed && target.item.expanded !== undefined)")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("const nextExpanded = !currentExpanded;")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("target.item.expanded = nextExpanded;")));
     QVERIFY(sidebarSource.contains(QStringLiteral("hierarchyInteractionController.handleExpansionSignal(item, resolvedExpansionIndex, expanded)")));
     QVERIFY(!sidebarSource.contains(QStringLiteral("function commitHierarchyExpansionChange")));
     QVERIFY(!sidebarSource.contains(QStringLiteral("function rememberHierarchyExpansionState")));
@@ -75,6 +82,13 @@ void WhatSonCppRegressionTests::qmlHierarchyExpansion_preservesUserControlledSta
     QVERIFY(interactionControllerSource.contains(QStringLiteral("\"setItemExpanded\"")));
     QVERIFY(interactionControllerSource.contains(QStringLiteral("m_expansionStateByKey")));
     QVERIFY(interactionControllerSource.contains(QStringLiteral("invokeBridgeBoolMethod(\"setAllItemsExpanded\", expanded)")));
+    QVERIFY(bookmarksHeader.contains(QStringLiteral("public IHierarchyExpansionCapability")));
+    QVERIFY(bookmarksHeader.contains(QStringLiteral("Q_INTERFACES(IHierarchyRenameCapability IHierarchyCrudCapability IHierarchyExpansionCapability)")));
+    QVERIFY(bookmarksHeader.contains(QStringLiteral("Q_INVOKABLE bool setItemExpanded(int index, bool expanded) override;")));
+    QVERIFY(bookmarksSource.contains(QStringLiteral("bool BookmarksHierarchyController::setItemExpanded(int index, bool expanded)")));
+    QVERIFY(bookmarksSource.contains(QStringLiteral("if (!m_items.at(index).showChevron)")));
+    QVERIFY(bookmarksSource.contains(QStringLiteral("m_items[index].expanded = expanded;")));
+    QVERIFY(bookmarksSource.contains(QStringLiteral("syncModel();")));
     QVERIFY(sidebarSource.contains(QStringLiteral("onTapped: function (eventPoint, button)")));
     QVERIFY(sidebarSource.contains(QStringLiteral("sidebarHierarchyView.requestHierarchyChevronExpansionAtPosition(tapX, tapY, armedKey);")));
     QVERIFY(sidebarSource.contains(QStringLiteral("refreshEditingHierarchyPresentation")));
@@ -157,6 +171,7 @@ void WhatSonCppRegressionTests::qmlStructuredEditors_mountsEditorAndMinimapInDis
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("LV.HStack {")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("objectName: \"contentsDisplayEditorChromeHStack\"")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("readonly property int contentVerticalPadding: LV.Theme.gap8")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("readonly property int editorDocumentBottomInset: LV.Theme.gap16")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("anchors.bottomMargin: contentsEditorSurface.contentVerticalPadding")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("anchors.topMargin: contentsEditorSurface.contentVerticalPadding")));
     QVERIFY(displayBackendHeader.contains(QStringLiteral("ContentsMinimapLayoutMetrics")));
@@ -165,7 +180,8 @@ void WhatSonCppRegressionTests::qmlStructuredEditors_mountsEditorAndMinimapInDis
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("objectName: \"contentsDisplayEditorDocumentViewport\"")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("contentHeight: editorDocumentContent.height")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("id: editorDocumentContent")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("height: Math.max(editorDocumentViewport.height, structuredDocumentFlow.editorContentHeight)")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("structuredDocumentFlow.editorContentHeight")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("+ contentsEditorSurface.editorDocumentBottomInset")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("interactive: !structuredDocumentFlow.editorRenderedOverlayVisible && contentHeight > height")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("function editorViewportScrollRange()")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("function scrollEditorViewportByDelta(deltaY)")));
@@ -173,6 +189,8 @@ void WhatSonCppRegressionTests::qmlStructuredEditors_mountsEditorAndMinimapInDis
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("editorDocumentViewport.contentY = Math.max(0, Math.min(scrollRange, nextContentY))")));
     QVERIFY(displayBackendHeader.contains(QStringLiteral("syncSessionFromCurrentNote")));
     QVERIFY(displayBackendSource.contains(QStringLiteral("emit editorViewportResetRequested();")));
+    QVERIFY(displayBackendSource.contains(QStringLiteral("currentNoteIdentityDiffersFromBoundSession()")));
+    QVERIFY(displayBackendSource.contains(QStringLiteral("resetViewport && currentNoteIdentityDiffersFromBoundSession()")));
     QVERIFY(displayBackendSource.contains(QStringLiteral("connectPreserve(\"currentBodyText\")")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("LV.WheelScrollGuard {")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("targetFlickable: editorDocumentViewport")));
@@ -432,9 +450,9 @@ void WhatSonCppRegressionTests::qmlStructuredEditors_renderInlineStyleOverlayAtR
     QVERIFY(inlineEditorSource.contains(QStringLiteral("property string renderedText")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("textFormat: TextEdit.RichText")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("readOnly: true")));
-    QVERIFY(inlineEditorSource.contains(QStringLiteral("objectName: \"contentsInlineFormatProjectedCursor\"")));
+    QVERIFY(!inlineEditorSource.contains(QStringLiteral("objectName: \"contentsInlineFormatProjectedCursor\"")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("cursorDelegate: Rectangle {")));
-    QVERIFY(inlineEditorSource.contains(QStringLiteral("readonly property bool nativeCursorVisible: !control.renderedOverlayVisible")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("readonly property bool nativeCursorVisible: control.focused && !control.nativeSelectionActive")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("objectName: \"contentsInlineFormatNativeCursor\"")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("visible: control.nativeCursorVisible")));
     QVERIFY(rendererSource.contains(QStringLiteral("htmlOverlayVisibleChanged")));
@@ -564,4 +582,7 @@ void WhatSonCppRegressionTests::qmlStructuredEditors_wireInlineResourceRendererT
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("structuredDocumentFlow.width - LV.Theme.gap16 * 2")));
     QVERIFY(displayBackendSource.contains(QStringLiteral("inlineHtmlImageRenderingEnabled")));
     QVERIFY(documentFlowSource.contains(QStringLiteral("property string editorSurfaceHtml")));
+    QVERIFY(documentFlowSource.contains(QStringLiteral("property string lastReadyEditorSurfaceHtml")));
+    QVERIFY(documentFlowSource.contains(QStringLiteral("readonly property string resolvedEditorSurfaceHtml")));
+    QVERIFY(documentFlowSource.contains(QStringLiteral("renderedText: documentFlow.resolvedEditorSurfaceHtml")));
 }

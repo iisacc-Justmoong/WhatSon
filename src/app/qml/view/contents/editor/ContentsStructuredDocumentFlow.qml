@@ -12,6 +12,7 @@ Item {
     property var coordinateMapper: null
     property bool paperPaletteEnabled: false
     property string editorSurfaceHtml: ""
+    property string lastReadyEditorSurfaceHtml: ""
     property string lastReadyLogicalText: ""
     property string logicalText: ""
     property string projectionSourceText: documentFlow.sourceText
@@ -26,6 +27,9 @@ Item {
     readonly property int editorVisualLineCount: editor.visualLineCount
     readonly property var editorVisualLineWidthRatios: editor.visualLineWidthRatios
     readonly property bool logicalProjectionReady: documentFlow.projectionSourceText === documentFlow.sourceText
+    readonly property string resolvedEditorSurfaceHtml: documentFlow.logicalProjectionReady
+            ? documentFlow.editorSurfaceHtml
+            : documentFlow.lastReadyEditorSurfaceHtml
     readonly property string resolvedDisplayGeometryText: documentFlow.logicalProjectionReady
             ? documentFlow.logicalText
             : documentFlow.lastReadyLogicalText
@@ -79,9 +83,11 @@ Item {
         documentFlow.viewHookRequested(reason !== undefined ? String(reason) : "manual");
     }
 
-    function refreshLastReadyLogicalText() {
+    function refreshLastReadyProjection() {
         if (!documentFlow.logicalProjectionReady)
             return;
+        if (documentFlow.lastReadyEditorSurfaceHtml !== documentFlow.editorSurfaceHtml)
+            documentFlow.lastReadyEditorSurfaceHtml = documentFlow.editorSurfaceHtml;
         if (documentFlow.lastReadyLogicalText !== documentFlow.logicalText)
             documentFlow.lastReadyLogicalText = documentFlow.logicalText;
     }
@@ -115,10 +121,11 @@ Item {
                     renderedBodyHeight + minimumBodyLineHeight + 1);
     }
 
-    onLogicalProjectionReadyChanged: documentFlow.refreshLastReadyLogicalText()
-    onLogicalTextChanged: documentFlow.refreshLastReadyLogicalText()
+    onEditorSurfaceHtmlChanged: documentFlow.refreshLastReadyProjection()
+    onLogicalProjectionReadyChanged: documentFlow.refreshLastReadyProjection()
+    onLogicalTextChanged: documentFlow.refreshLastReadyProjection()
 
-    Component.onCompleted: documentFlow.refreshLastReadyLogicalText()
+    Component.onCompleted: documentFlow.refreshLastReadyProjection()
 
     ContentsInlineFormatEditor {
         id: editor
@@ -128,7 +135,7 @@ Item {
         displayGeometryText: documentFlow.resolvedDisplayGeometryText
         normalizedHtmlBlocks: documentFlow.normalizedHtmlBlocks
         objectName: "contentsStructuredDocumentInlineEditor"
-        renderedText: documentFlow.editorSurfaceHtml
+        renderedText: documentFlow.resolvedEditorSurfaceHtml
         showRenderedOutput: true
         tagManagementKeyPressHandler: function (event) {
             return documentFlow.handleTagManagementKeyPress(event);

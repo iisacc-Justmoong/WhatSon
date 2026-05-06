@@ -301,6 +301,7 @@ QVariantList ContentsLineNumberRailMetrics::logicalLineRanges() const
 
     const QString logicalText = !m_logicalText.isEmpty() ? m_logicalText : m_sourceText;
     QVariantList ranges;
+    QSet<QString> emittedResourceKeys;
     int lineNumber = 1;
     int lineLogicalStart = 0;
     while (lineLogicalStart <= logicalText.size())
@@ -334,22 +335,34 @@ QVariantList ContentsLineNumberRailMetrics::logicalLineRanges() const
                 sourceOffsetToLogicalOffset(rowSourceEnd, true));
         }
 
-        ranges.push_back(QVariantMap{
-            {QStringLiteral("block"), resourceBlock},
-            {QStringLiteral("logicalEnd"), rowLogicalEnd},
-            {QStringLiteral("logicalStart"), rowLogicalStart},
-            {QStringLiteral("number"), lineNumber},
-            {QStringLiteral("resourceRange"), resourceRange},
-            {QStringLiteral("sourceEnd"), rowSourceEnd},
-            {QStringLiteral("sourceStart"), rowSourceStart},
-        });
+        bool emitRange = true;
+        if (resourceRange)
+        {
+            const QString resourceKey =
+                QStringLiteral("resource:%1:%2").arg(rowSourceStart).arg(rowSourceEnd);
+            emitRange = !emittedResourceKeys.contains(resourceKey);
+            emittedResourceKeys.insert(resourceKey);
+        }
+
+        if (emitRange)
+        {
+            ranges.push_back(QVariantMap{
+                {QStringLiteral("block"), resourceBlock},
+                {QStringLiteral("logicalEnd"), rowLogicalEnd},
+                {QStringLiteral("logicalStart"), rowLogicalStart},
+                {QStringLiteral("number"), lineNumber},
+                {QStringLiteral("resourceRange"), resourceRange},
+                {QStringLiteral("sourceEnd"), rowSourceEnd},
+                {QStringLiteral("sourceStart"), rowSourceStart},
+            });
+            ++lineNumber;
+        }
 
         if (!hasNewline)
         {
             break;
         }
         lineLogicalStart = nextLineLogicalStart;
-        ++lineNumber;
     }
     return ranges;
 }
@@ -373,10 +386,14 @@ QVariantList ContentsLineNumberRailMetrics::rows() const
             rectangle.moveTop(static_cast<qreal>(lineNumber - 1) * m_textLineHeight);
         }
 
-        const qreal resolvedHeight = std::max(m_textLineHeight, rectangle.height());
+        const bool resourceRange = range.value(QStringLiteral("resourceRange"), false).toBool();
+        const qreal resolvedHeight = resourceRange
+            ? m_textLineHeight
+            : std::max(m_textLineHeight, rectangle.height());
         result.push_back(QVariantMap{
             {QStringLiteral("height"), resolvedHeight},
             {QStringLiteral("number"), range.value(QStringLiteral("number")).toInt()},
+            {QStringLiteral("resourceRange"), resourceRange},
             {QStringLiteral("sourceEnd"), range.value(QStringLiteral("sourceEnd")).toInt()},
             {QStringLiteral("sourceStart"), range.value(QStringLiteral("sourceStart")).toInt()},
             {QStringLiteral("y"), std::max<qreal>(0.0, rectangle.y())},

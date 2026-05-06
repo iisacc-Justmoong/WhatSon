@@ -14,7 +14,6 @@ Item {
     property alias cursorPosition: textInput.cursorPosition
     property alias logicalCursorPosition: textInput.cursorPosition
     property var coordinateMapper: null
-    property var atomicResourceSelectionRects: []
     property string displayGeometryText: control.text
     readonly property real displayContentHeight: control.renderedOverlayVisible
             ? renderedOverlay.contentHeight
@@ -35,8 +34,6 @@ Item {
     property real visiblePointerLastClickY: 0
     property int visiblePointerSelectionAnchorLogicalOffset: 0
     property bool visiblePointerSelectionActive: false
-    property int visiblePointerCursorLogicalOffset: -1
-    property bool visiblePointerCursorUpdateActive: false
     property bool surfaceSelectionSyncActive: false
     property bool surfaceSelectionTextRefreshActive: false
     property bool surfaceSelectionToRawSyncScheduled: false
@@ -47,14 +44,7 @@ Item {
     readonly property bool inputMethodComposing: textInput.inputMethodComposing
     readonly property string preeditText: String(textInput.editorItem.preeditText)
     property string renderedText: ""
-    readonly property int resolvedProjectedCursorPosition: control.visiblePointerCursorLogicalOffset >= 0
-            ? control.visiblePointerCursorLogicalOffset
-            : textInput.cursorPosition
     readonly property int cursorPixelWidth: Math.max(1, Math.ceil(LV.Theme.strokeThin))
-    readonly property rect projectedCursorRectangle: control.cursorProjectionRectangle()
-    readonly property bool projectedCursorVisible: control.renderedOverlayVisible
-            && control.focused
-            && !control.nativeSelectionActive
     readonly property var logicalGutterRows: lineNumberRailMetrics.rows
     readonly property int visualLineCount: visualLineMetrics.visualLineCount
     readonly property var visualLineWidthRatios: visualLineMetrics.visualLineWidthRatios
@@ -63,17 +53,14 @@ Item {
     readonly property bool renderedResourceOverlayPinned: control.renderedOverlayAvailable
             && control.hasAtomicRenderedResourceBlocks()
     readonly property bool renderedOverlayVisible: control.renderedOverlayAvailable
-            && (!control.nativeCompositionActive() || control.renderedResourceOverlayPinned)
     readonly property bool logicalSurfaceActive: control.showRenderedOutput
     readonly property bool nativeSelectionContainsVisibleLogicalContent: control.nativeSelectionActive
             && (control.sourceRangeContainsVisibleLogicalContent(control.selectedSourceRange())
                 || control.sourceRangeIntersectsAtomicResourceBlock(control.selectedSourceRange()))
     readonly property bool nativeSelectionPaintVisible: !control.renderedOverlayVisible
             || control.nativeSelectionContainsVisibleLogicalContent
-    readonly property bool renderedSelectionActive: control.renderedOverlayVisible
-            && control.nativeSelectionActive
-            && control.nativeSelectionContainsVisibleLogicalContent
-    readonly property bool nativeCursorVisible: !control.renderedOverlayVisible
+    readonly property bool renderedSelectionActive: false
+    readonly property bool nativeCursorVisible: control.focused && !control.nativeSelectionActive
     readonly property bool preferNativeInputHandling: true
     property bool selectByKeyboard: true
     property bool selectByMouse: true
@@ -100,7 +87,6 @@ Item {
     function clearSelection() {
         textInput.deselect();
         control.clearRenderedOverlaySelection();
-        control.clearVisiblePointerCursorOverride();
     }
 
     function currentPlainText() {
@@ -109,36 +95,6 @@ Item {
 
     function boundedCursorPosition(position, length) {
         return wysiwygEditorPolicy.boundedOffset(Number(position) || 0, Number(length) || 0);
-    }
-
-    function clearVisiblePointerCursorOverride() {
-        if (control.visiblePointerCursorLogicalOffset !== -1)
-            control.visiblePointerCursorLogicalOffset = -1;
-    }
-
-    function clearVisiblePointerCursorOverrideAfterNativeStateChange() {
-        if (control.visiblePointerCursorUpdateActive)
-            return;
-        control.clearVisiblePointerCursorOverride();
-    }
-
-    function cursorProjectionRectangle() {
-        const geometryItem = control.displayGeometryItem();
-        if (geometryItem === null || geometryItem === undefined)
-            return Qt.rect(0, 0, control.cursorPixelWidth, LV.Theme.textBodyLineHeight);
-        const resolvedPosition = control.renderedOverlayVisible
-                ? control.boundedCursorPosition(control.resolvedProjectedCursorPosition, renderedGeometryProbe.length)
-                : control.boundedCursorPosition(textInput.cursorPosition, textInput.length);
-        const cursorRectangle = geometryItem.positionToRectangle(resolvedPosition);
-        const mappedPoint = geometryItem.mapToItem(
-                    control,
-                    Number(cursorRectangle.x) || LV.Theme.gapNone,
-                    Number(cursorRectangle.y) || LV.Theme.gapNone);
-        return Qt.rect(
-                    mappedPoint.x,
-                    mappedPoint.y,
-                    control.cursorPixelWidth,
-                    Math.max(1, Number(cursorRectangle.height) || LV.Theme.textBodyLineHeight));
     }
 
     function eventRequestsBodyTagShortcut(event) {
@@ -286,7 +242,6 @@ Item {
         if (control.cursorNormalizationActive)
             return false;
         if (control.logicalSurfaceActive) {
-            control.clearVisiblePointerCursorOverrideAfterNativeStateChange();
             control.previousRawCursorPosition = control.sourceCursorPosition;
             return false;
         }
@@ -298,9 +253,7 @@ Item {
                     control.renderedOverlayVisible,
                     control.nativeCompositionActive(),
                     control.nativeSelectionActive,
-                    control.visiblePointerCursorUpdateActive);
-        if (plan.clearVisiblePointerCursor === true)
-            control.visiblePointerCursorLogicalOffset = -1;
+                    false);
         if (plan.changed !== true) {
             control.previousRawCursorPosition = plan.previousRawCursorPosition !== undefined
                     ? Number(plan.previousRawCursorPosition)
@@ -359,38 +312,6 @@ Item {
 
     function resourceLogicalRangeForBlock(block) {
         return wysiwygEditorPolicy.resourceLogicalRangeForBlock(block, control.coordinateMapper);
-    }
-
-    function resourceDisplayRectangleForBlock(block) {
-        const range = control.resourceLogicalRangeForBlock(block);
-        const maxLength = Math.max(0, Number(renderedOverlay.length) || 0);
-        const logicalStart = Math.max(0, Math.min(range.start, maxLength));
-        const logicalEnd = Math.max(logicalStart, Math.min(range.end, maxLength));
-        const startRectangle = renderedOverlay.positionToRectangle(logicalStart);
-        const endRectangle = renderedOverlay.positionToRectangle(logicalEnd);
-        const localY = Math.max(0, Number(startRectangle.y) || 0);
-        let localBottom = Number(endRectangle.y) || 0;
-        if (!(localBottom > localY)) {
-            localBottom = Math.max(localY, Number(renderedOverlay.contentHeight) || localY);
-        }
-
-        return {
-            "x": Math.max(0, Number(startRectangle.x) || 0),
-            "y": localY,
-            "width": Math.max(Number(startRectangle.width) || 0, Number(renderedOverlay.width) || 0),
-            "height": Math.max(LV.Theme.textBodyLineHeight, localBottom - localY)
-        };
-    }
-
-    function renderedLogicalSelectionRange() {
-        const sourceRange = control.selectedSourceRange();
-        return wysiwygEditorPolicy.renderedLogicalSelectionRange(
-                    control.text,
-                    control.normalizedHtmlBlocks || [],
-                    control.coordinateMapper,
-                    sourceRange.start,
-                    sourceRange.end,
-                    Number(renderedGeometryProbe.length) || 0);
     }
 
     function visibleLogicalOffsetAtPoint(localX, localY) {
@@ -473,18 +394,13 @@ Item {
         if (rawSelection.valid !== true)
             return false;
 
-        control.visiblePointerCursorUpdateActive = true;
         const restored = control.restoreSelectionRange(
                     rawSelection.selectionStart,
                     rawSelection.selectionEnd,
                     rawSelection.cursorSourceOffset);
-        control.visiblePointerCursorUpdateActive = false;
         if (!restored)
             return false;
         textInput.forceEditorFocus();
-        control.visiblePointerCursorLogicalOffset = rawSelection.selectionStart === rawSelection.selectionEnd
-                ? rawSelection.surfaceCursor
-                : -1;
         control.scheduleRenderedOverlaySelectionRefresh();
         return true;
     }
@@ -598,48 +514,10 @@ Item {
             renderedOverlay.deselect();
         else
             renderedOverlay.select(0, 0);
-        control.atomicResourceSelectionRects = [];
-    }
-
-    function resourceSelectionRectangleForBlock(block) {
-        const displayRectangle = control.resourceDisplayRectangleForBlock(block);
-
-        const mappedPoint = renderedOverlay.mapToItem(
-                    control,
-                    Number(displayRectangle.x) || 0,
-                    Number(displayRectangle.y) || 0);
-        return {
-            "x": mappedPoint.x,
-            "y": mappedPoint.y,
-            "width": displayRectangle.width,
-            "height": displayRectangle.height
-        };
-    }
-
-    function buildAtomicResourceSelectionRects(sourceRange) {
-        const blocks = control.normalizedHtmlBlocks || [];
-        const rects = [];
-        for (let index = 0; index < blocks.length; ++index) {
-            const block = blocks[index];
-            if (!control.htmlBlockIsIiHtmlResourceBlock(block)
-                    || !control.htmlBlockIntersectsSourceRange(block, sourceRange)) {
-                continue;
-            }
-            rects.push(control.resourceSelectionRectangleForBlock(block));
-        }
-        return rects;
     }
 
     function refreshRenderedOverlaySelection() {
-        if (!control.renderedSelectionActive) {
-            control.clearRenderedOverlaySelection();
-            return;
-        }
-
-        const selectionRange = control.renderedLogicalSelectionRange();
-        renderedOverlay.select(selectionRange.start, selectionRange.end);
-        control.atomicResourceSelectionRects =
-                control.buildAtomicResourceSelectionRects(control.selectedSourceRange());
+        control.clearRenderedOverlaySelection();
     }
 
     function scheduleRenderedOverlaySelectionRefresh() {
@@ -684,7 +562,6 @@ Item {
 
     function restoreSelectionRange(selectionStart, selectionEnd, cursorPosition) {
         control.forceActiveFocus();
-        control.clearVisiblePointerCursorOverrideAfterNativeStateChange();
         const sourceLength = control.text.length;
         const sourceStart = Math.max(0, Math.min(Number(selectionStart) || 0, sourceLength));
         let sourceEnd = Math.max(sourceStart, Math.min(Number(selectionEnd) || sourceStart, sourceLength));
@@ -776,7 +653,6 @@ Item {
         if (payload.applied !== true || payload.nextSourceText === undefined || payload.nextSourceText === null)
             return;
 
-        control.clearVisiblePointerCursorOverride();
         control.textEdited(String(payload.nextSourceText));
     }
 
@@ -846,20 +722,16 @@ Item {
 
     onCoordinateMapperChanged: control.scheduleRenderedOverlaySelectionRefresh()
     onDisplayGeometryTextChanged: {
-        control.clearVisiblePointerCursorOverrideAfterNativeStateChange();
         control.syncNativeSurfaceTextFromProjection(false);
     }
-    onLogicalCursorPositionChanged: control.clearVisiblePointerCursorOverrideAfterNativeStateChange()
     onLogicalSurfaceActiveChanged: control.syncNativeSurfaceTextFromProjection(true)
     onNativeSelectionActiveChanged: {
-        control.clearVisiblePointerCursorOverrideAfterNativeStateChange();
         control.scheduleRenderedOverlaySelectionRefresh();
     }
     onNormalizedHtmlBlocksChanged: control.scheduleRenderedOverlaySelectionRefresh()
     onRenderedOverlayVisibleChanged: control.scheduleRenderedOverlaySelectionRefresh()
     onRenderedTextChanged: control.scheduleRenderedOverlaySelectionRefresh()
     onTextChanged: {
-        control.clearVisiblePointerCursorOverrideAfterNativeStateChange();
         control.syncNativeSurfaceTextFromProjection(false);
     }
 
@@ -960,8 +832,8 @@ Item {
         text: control.renderedText
         textFormat: TextEdit.RichText
         textMargin: LV.Theme.gapNone
-        selectedTextColor: control.textColor
-        selectionColor: LV.Theme.primaryOverlay
+        selectedTextColor: "transparent"
+        selectionColor: "transparent"
         visible: control.renderedOverlayVisible
         wrapMode: TextEdit.Wrap
         z: -1
@@ -1047,79 +919,6 @@ Item {
             control.updateVisiblePointerSelection(mouse.x, mouse.y);
             control.finishVisiblePointerSelection();
             mouse.accepted = true;
-        }
-    }
-
-    Item {
-        id: atomicResourceSelectionLayer
-
-        anchors.fill: parent
-        objectName: "contentsInlineFormatAtomicResourceSelectionLayer"
-        visible: control.renderedSelectionActive
-                 && control.atomicResourceSelectionRects.length > 0
-        z: 2
-
-        Repeater {
-            model: control.atomicResourceSelectionRects
-
-            Rectangle {
-                required property var modelData
-
-                color: LV.Theme.primaryOverlay
-                height: Math.max(LV.Theme.textBodyLineHeight, Number(modelData.height) || LV.Theme.textBodyLineHeight)
-                width: Math.max(LV.Theme.strokeThin, Number(modelData.width) || LV.Theme.strokeThin)
-                x: Number(modelData.x) || LV.Theme.gapNone
-                y: Number(modelData.y) || LV.Theme.gapNone
-            }
-        }
-    }
-
-    Rectangle {
-        id: projectedCursor
-
-        objectName: "contentsInlineFormatProjectedCursor"
-        color: control.cursorColor
-        height: control.projectedCursorRectangle.height
-        radius: width / 2
-        visible: control.projectedCursorVisible
-        width: control.cursorPixelWidth
-        x: control.projectedCursorRectangle.x
-        y: control.projectedCursorRectangle.y
-        z: 3
-
-        onVisibleChanged: {
-            if (visible)
-                opacity = 1.0;
-        }
-        onXChanged: {
-            if (visible)
-                opacity = 1.0;
-        }
-        onYChanged: {
-            if (visible)
-                opacity = 1.0;
-        }
-
-        SequentialAnimation {
-            running: projectedCursor.visible
-            loops: Animation.Infinite
-
-            PropertyAction {
-                target: projectedCursor
-                property: "opacity"
-                value: 1.0
-            }
-            PauseAnimation {
-                duration: 520
-            }
-            PropertyAction {
-                target: projectedCursor
-                property: "opacity"
-                value: 0.0
-            }
-            PauseAnimation {
-                duration: 420
-            }
         }
     }
 
@@ -1261,19 +1060,15 @@ Item {
         }
 
         onTextEdited: function (text) {
-            control.clearVisiblePointerCursorOverrideAfterNativeStateChange();
             control.handleNativeSurfaceTextEdited(text);
         }
         onCursorPositionChanged: {
-            control.clearVisiblePointerCursorOverrideAfterNativeStateChange();
             control.normalizeCursorPositionAwayFromHiddenTagTokens();
         }
         onSelectionEndChanged: {
-            control.clearVisiblePointerCursorOverrideAfterNativeStateChange();
             control.scheduleRenderedOverlaySelectionRefresh();
         }
         onSelectionStartChanged: {
-            control.clearVisiblePointerCursorOverrideAfterNativeStateChange();
             control.scheduleRenderedOverlaySelectionRefresh();
         }
     }

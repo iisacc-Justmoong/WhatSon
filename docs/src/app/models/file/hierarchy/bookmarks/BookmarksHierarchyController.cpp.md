@@ -11,3 +11,6 @@
   Summary/search text still comes from indexed note metadata, but the selection bridge can now reuse the bookmark
   note-list model's current-row RAW body immediately before it falls back to content-view-model or filesystem reload
   paths.
+- `setItemExpanded(...)` accepts only rows that advertise `showChevron`, updates the bookmark hierarchy item, and
+  republishes the model through `syncModel()`. This keeps bookmark bucket rows on the same single-row chevron
+  expansion contract as the other hierarchy domains.

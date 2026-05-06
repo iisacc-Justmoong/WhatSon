@@ -48,12 +48,25 @@ void WhatSonCppRegressionTests::editorDisplayBackend_mountsNoteSessionAndCommits
     noteListModel.setCurrentBodyText(QStringLiteral("<paragraph>Alpha</paragraph>"));
 
     backend.setContentController(&contentController);
+    QSignalSpy viewportResetSpy(&backend, &ContentsEditorDisplayBackend::editorViewportResetRequested);
     backend.setNoteListModel(&noteListModel);
 
     QVERIFY(backend.noteDocumentParseMounted());
+    QCOMPARE(viewportResetSpy.count(), 1);
     QCOMPARE(backend.currentNoteId(), QStringLiteral("note-alpha"));
     QCOMPARE(backend.currentNoteDirectoryPath(), QStringLiteral("/tmp/whatson/note-alpha.wsnote"));
     QCOMPARE(backend.editorSession()->property("editorText").toString(), QStringLiteral("<paragraph>Alpha</paragraph>"));
+
+    viewportResetSpy.clear();
+    noteListModel.setCurrentIndex(0);
+    QCOMPARE(viewportResetSpy.count(), 0);
+
+    noteListModel.setCurrentBodyText(QStringLiteral("<paragraph>Alpha refreshed</paragraph>"));
+    QCOMPARE(viewportResetSpy.count(), 0);
+
+    noteListModel.setCurrentNoteId(QStringLiteral("note-beta"));
+    QCOMPARE(viewportResetSpy.count(), 1);
+    QCOMPARE(backend.currentNoteId(), QStringLiteral("note-beta"));
 
     QVERIFY(backend.commitEditedSourceText(QStringLiteral("<paragraph>Beta</paragraph>")));
     QCOMPARE(backend.editorSession()->property("editorText").toString(), QStringLiteral("<paragraph>Beta</paragraph>"));

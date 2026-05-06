@@ -769,9 +769,13 @@ Rectangle {
         const target = sidebarHierarchyView.hierarchyChevronExpansionTargetAtPosition(x, y);
         if (!target || !target.item || target.index < 0 || !target.key || !target.key.length)
             return false;
-        const result = sidebarHierarchyView.hierarchyInteractionController.requestChevronExpansion(target.index, target.key, Boolean(target.item.expanded), expectedKey);
+        const currentExpanded = Boolean(target.item.expanded);
+        const nextExpanded = !currentExpanded;
+        const result = sidebarHierarchyView.hierarchyInteractionController.requestChevronExpansion(target.index, target.key, currentExpanded, expectedKey);
         if (result && result.rollbackRequired && target.item.expanded !== undefined)
             target.item.expanded = Boolean(result.rollbackExpanded);
+        if (result && result.committed && target.item.expanded !== undefined)
+            target.item.expanded = nextExpanded;
         return Boolean(result && result.committed);
     }
     function requestHierarchyControllerReload(reason) {

@@ -139,6 +139,7 @@ private:
     QString activeStateStringProperty(const char* propertyName) const;
     QString stringValue(const QVariantMap& payload, const QString& key, const QString& fallback) const;
     void publishCurrentNoteChanged(SyncReset reset);
+    bool currentNoteIdentityDiffersFromBoundSession() const;
     void syncProjectionInputs();
     void syncResourceInputs();
 

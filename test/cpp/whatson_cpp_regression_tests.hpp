@@ -1161,6 +1161,7 @@ private slots:
     void contentsLineNumberRailMetrics_buildsRowsFromLogicalBlocks();
     void contentsLineNumberRailMetrics_mapsRowsFromWholeLogicalText();
     void contentsLineNumberRailMetrics_keepsResourceRowsIndependent();
+    void contentsLineNumberRailMetrics_keepsResourceFramesSingleGutterLine();
     void contentsEditorGeometryProvider_capsMiddleResourceRowsAtNextMeasuredRow();
     void contentsEditorVisualLineMetrics_expandsTallVisualBlocks();
     void contentsMinimapLayoutMetrics_resolvesRuntimeVisibilityAndDesignRows();

@@ -17,16 +17,16 @@ Hosts the note document surface after `ContentsEditorDisplayBackend` has mounted
 - Handles explicit formatting/body tag shortcuts by asking the tag insertion controller to build the next RAW tag
   insertion payload from the live inline editor buffer, then applying that payload through the same live editor. The
   payload source must not lag behind the focused editor text while parent session bindings catch up.
-- Passes projection-ready logical display text into the inline editor's display-geometry probe for cursor and selection
-  projection. The flow keeps the last ready logical text while `projectionSourceText` lags behind `sourceText`, so a
-  transient parser/render turn cannot fall back to displaying RAW `.wsnbody` tags.
-- Passes the current logical cursor position into the inline editor as a projection hint. The host reads
-  `editor.sourceCursorPosition`, `editor.sourceSelectionStart`, and `editor.sourceSelectionEnd` back from the inline
-  editor so gutter, minimap, formatting, and persistence surfaces keep using RAW `.wsnbody` coordinates.
-- Passes the projection-owned `coordinateMapper` object into the inline editor for source-to-rendered selection
-  projection; the view layer does not receive the raw logical/source offset table.
+- Passes projection-ready logical display text into the inline editor's display-geometry probe for pointer hit testing
+  and visible-logical selection mapping. The flow keeps the last ready logical text and editor-surface HTML while
+  `projectionSourceText` lags behind `sourceText`, so a transient parser/render turn cannot fall back to displaying
+  RAW `.wsnbody` tags or plain logical text.
+- Reads `editor.sourceCursorPosition`, `editor.sourceSelectionStart`, and `editor.sourceSelectionEnd` back from the
+  inline editor so gutter, minimap, formatting, and persistence surfaces keep using RAW `.wsnbody` coordinates.
+- Passes the projection-owned `coordinateMapper` object into the inline editor for visible-logical to RAW selection
+  mapping; the view layer does not receive the raw logical/source offset table.
 - Passes renderer-owned `normalizedHtmlBlocks` through to the inline editor only as selection metadata. Resource
-  selection is based on the iiHtmlBlock display block span and painted as one atomic block.
+  selection mapping can treat iiHtmlBlock display spans as atomic without painting a second selection layer.
 - Keeps the inline editor as the only place where the RichText editor-surface overlay is painted.
 - Emits `sourceTextEdited(text)` upward when the user changes the RAW text buffer.
 - Tag-management shortcuts emit through the same `sourceTextEdited(text)` path after the live editor buffer is

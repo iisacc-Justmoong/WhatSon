@@ -1012,6 +1012,9 @@ for hub/note hierarchy payloads.
 - Chevron click now toggles fold/unfold through LVRS `HierarchyItem.expanded` without re-activating the row, and
   sidebar delegates follow `HierarchyItem.rowVisible` for effective height/visibility so collapsed descendants do not
   reserve row space.
+- The chevron fallback path now writes a successful C++ bridge commit back into the live `HierarchyItem.expanded`
+  property, and bookmark bucket rows implement the shared expansion capability so their right-side chevrons no longer
+  roll back immediately.
 - `library`: `WhatSonLibraryHierarchy{Store,Parser,Creator}` (`Library.wslibrary/index.wsnindex`)
 - `projects`: `WhatSonProjectsHierarchy{Store,Parser,Creator}` (`ProjectLists.wsproj`)
 - Projects hierarchy rows keep the runtime Figma `45:2750` contract without extending the persisted project schema:

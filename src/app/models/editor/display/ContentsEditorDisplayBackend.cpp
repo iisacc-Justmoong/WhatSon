@@ -2,8 +2,10 @@
 
 #include "app/models/editor/resource/ContentsEditorDynamicObjectSupport.hpp"
 
-#include <algorithm>
+#include <QDir>
 #include <QMetaProperty>
+
+#include <algorithm>
 
 using namespace WhatSon::Editor::DynamicObjectSupport;
 
@@ -358,7 +360,7 @@ bool ContentsEditorDisplayBackend::syncSessionFromCurrentNote(const bool resetVi
 {
     if (currentNoteId().isEmpty())
         return false;
-    if (resetViewport)
+    if (resetViewport && currentNoteIdentityDiffersFromBoundSession())
         emit editorViewportResetRequested();
     if (m_noteActiveState && invokeNoArgBool(m_noteActiveState, "syncEditorSessionFromActiveNote"))
     {
@@ -560,6 +562,21 @@ void ContentsEditorDisplayBackend::publishCurrentNoteChanged(const SyncReset res
 {
     emit currentNoteChanged();
     syncSessionFromCurrentNote(reset == SyncReset::ResetViewport);
+}
+
+bool ContentsEditorDisplayBackend::currentNoteIdentityDiffersFromBoundSession() const
+{
+    const QString nextNoteId = currentNoteId().trimmed();
+    if (nextNoteId.isEmpty())
+        return false;
+
+    const auto normalizedPath = [](const QString& path) {
+        const QString normalized = QDir::cleanPath(path.trimmed());
+        return normalized == QStringLiteral(".") ? QString() : normalized;
+    };
+
+    return m_editorSession.editorBoundNoteId().trimmed() != nextNoteId
+        || normalizedPath(m_editorSession.editorBoundNoteDirectoryPath()) != normalizedPath(currentNoteDirectoryPath());
 }
 
 void ContentsEditorDisplayBackend::syncProjectionInputs()

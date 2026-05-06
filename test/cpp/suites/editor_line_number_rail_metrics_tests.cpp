@@ -243,8 +243,66 @@ void WhatSonCppRegressionTests::contentsLineNumberRailMetrics_keepsResourceRowsI
     QCOMPARE(rows.size(), 3);
     QCOMPARE(rows.at(0).toMap().value(QStringLiteral("y")).toDouble(), 0.0);
     QCOMPARE(rows.at(1).toMap().value(QStringLiteral("y")).toDouble(), 18.0);
-    QCOMPARE(rows.at(1).toMap().value(QStringLiteral("height")).toDouble(), 420.0);
+    QCOMPARE(rows.at(1).toMap().value(QStringLiteral("height")).toDouble(), 18.0);
+    QVERIFY(rows.at(1).toMap().value(QStringLiteral("resourceRange")).toBool());
     QCOMPARE(rows.at(2).toMap().value(QStringLiteral("y")).toDouble(), 54.0);
+}
+
+void WhatSonCppRegressionTests::contentsLineNumberRailMetrics_keepsResourceFramesSingleGutterLine()
+{
+    const QString resourceTag =
+        QStringLiteral("<resource type=\"image\" path=\"cover.png\" />");
+    const QString sourceText = QStringLiteral("alpha\n") + resourceTag + QStringLiteral("\nbeta");
+
+    ContentsLogicalTextBridge logicalTextBridge;
+    logicalTextBridge.setText(sourceText);
+
+    const int resourceStart = QStringLiteral("alpha\n").size();
+    const int resourceEnd = resourceStart + resourceTag.size();
+
+    ContentsLineNumberRailMetrics metrics;
+    metrics.setTextLineHeight(18.0);
+    metrics.setGeometryWidth(320.0);
+    metrics.setSourceText(sourceText);
+    metrics.setLogicalText(logicalTextBridge.logicalText());
+    metrics.setNormalizedHtmlBlocks(QVariantList{
+        QVariantMap{
+            {QStringLiteral("htmlBlockIsDisplayBlock"), true},
+            {QStringLiteral("htmlBlockObjectSource"), QStringLiteral("iiHtmlBlock")},
+            {QStringLiteral("htmlTokenStartIndex"), 1},
+            {QStringLiteral("logicalLineCountHint"), 1},
+            {QStringLiteral("renderDelegateType"), QStringLiteral("resource")},
+            {QStringLiteral("sourceEnd"), resourceEnd},
+            {QStringLiteral("sourceStart"), resourceStart},
+            {QStringLiteral("sourceText"), resourceTag},
+        },
+    });
+    metrics.setGeometryRows(QVariantList{
+        QVariantMap{
+            {QStringLiteral("geometryAvailable"), true},
+            {QStringLiteral("height"), 18.0},
+            {QStringLiteral("y"), 0.0},
+        },
+        QVariantMap{
+            {QStringLiteral("geometryAvailable"), true},
+            {QStringLiteral("height"), 180.0},
+            {QStringLiteral("y"), 18.0},
+        },
+        QVariantMap{
+            {QStringLiteral("geometryAvailable"), true},
+            {QStringLiteral("height"), 18.0},
+            {QStringLiteral("y"), 216.0},
+        },
+    });
+
+    const QVariantList rows = metrics.rows();
+    QCOMPARE(rows.size(), 3);
+    QCOMPARE(rows.at(1).toMap().value(QStringLiteral("number")).toInt(), 2);
+    QCOMPARE(rows.at(1).toMap().value(QStringLiteral("y")).toDouble(), 18.0);
+    QCOMPARE(rows.at(1).toMap().value(QStringLiteral("height")).toDouble(), 18.0);
+    QVERIFY(rows.at(1).toMap().value(QStringLiteral("resourceRange")).toBool());
+    QCOMPARE(rows.at(2).toMap().value(QStringLiteral("number")).toInt(), 3);
+    QCOMPARE(rows.at(2).toMap().value(QStringLiteral("y")).toDouble(), 216.0);
 }
 
 void WhatSonCppRegressionTests::contentsEditorGeometryProvider_capsMiddleResourceRowsAtNextMeasuredRow()

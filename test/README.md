@@ -214,9 +214,9 @@ ctest --test-dir build --output-on-failure -L cpp_regression
   instead of spacing numbers by a simple row count. QML surface tests also pin the rail's `preferredWidth`, so the
   blank leading area before the line-number column stays half of the previous implicit button-width slack, and the
   active blue gutter bar follows cursor/selection source offsets.
-- Line-number rail metrics now also pin independent row geometry: a tall resource row keeps its own measured height
-  without pushing later gutter rows down through previous-row fallback state, and the geometry provider caps an
-  overlay-height resource row at the next measured row top.
+- Line-number rail metrics now also pin independent row geometry: a tall resource frame keeps one gutter-line row
+  instead of converting frame height into a multi-line gutter allocation, while later gutter rows keep their own
+  measured y positions and the geometry provider caps an overlay-height resource row at the next measured row top.
 - The shared inline-format editor now also pins the absence of pointer interception above the live `LV.TextEditor`,
   so mouse/touch selection, `Shift`-extended selection, and repeated Backspace/Delete remain OS/Qt-native. The same
   regression scans the QML source tree for forbidden input-method bridges and fallbacks, keeping IME query updates,
@@ -264,7 +264,8 @@ ctest --test-dir build --output-on-failure -L cpp_regression
 - The inline editor regression now also pins the top-flush editor body contract: vertical inset and rendered-overlay
   padding stay at zero, with only horizontal text-column margins retained.
 - The contents/editor QML regressions now also pin the scrollable document viewport: the center editor slot wraps the
-  structured document flow in a `Flickable` and routes wheel events to that viewport.
+  structured document flow in a `Flickable`, routes wheel events to that viewport, and keeps the legacy
+  `LV.Theme.gap16` bottom inset in the scrollable document content.
 - Contents QML placement is now locked under `src/app/qml/view/contents`: the standalone Figma
   `ContentsView/EditorView/Minimap` parts and the runtime editor host share that namespace, while
   `src/app/qml/contents` and `src/app/qml/view/content` are forbidden by the source-tree policy regression.

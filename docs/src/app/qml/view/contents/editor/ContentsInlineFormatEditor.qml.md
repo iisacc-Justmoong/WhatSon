@@ -30,22 +30,23 @@ Wraps the live `LV.TextEditor` used by the note document surface.
 - Native text edits in rendered mode are diffed against the visible logical projection and converted into a RAW
   `.wsnbody` splice by `ContentsWysiwygEditorPolicy.visibleTextMutationPayload(...)`. Backspace therefore stays on the
   OS/Qt text-editing path, but the committed source mutation deletes the previous visible glyph instead of hidden
-  inline tag bytes. Projected cursor position is never used as the source of truth for deletion.
-- Cursor visibility is explicit and mutually exclusive. The native cursor delegate is visible only for the plain source
-  surface, while the component paints a projected cursor above the RichText overlay only for collapsed caret positions.
-  The projected cursor is derived from the live native logical cursor. A local pointer override is only a transient
-  post-click paint hint, and native cursor, selection, or text changes clear it immediately.
-- The RichText overlay remains visible while `LV.TextEditor` has a non-empty native selection. The component mirrors
-  the source range into rendered coordinates instead of exposing RAW tag geometry.
+  inline tag bytes. A separate projected cursor position is not kept, so deletion always follows the native edit cursor.
+- Cursor visibility has one owner. The `LV.TextEditor` cursor delegate stays visible in both plain-source and rendered
+  overlay modes when the editor is focused and the selection is collapsed. No separate projected cursor `Rectangle` or
+  pointer cursor override is mounted.
+- The RichText overlay remains visible while `LV.TextEditor` has a non-empty native selection. It does not own or paint
+  a second selection; the visible selection highlight is the same native `LV.TextEditor` selection that receives edit
+  commands.
 - Native selection paint stays enabled for visible logical content even while the rendered overlay is visible. The
   underlying logical glyph paint is transparent, so OS/Qt drag and Shift selection remain visible without showing a
   second text layer.
 - Source ranges that contain only hidden formatting tag tokens, including empty `<highlight></highlight>` or nested
-  empty format wrappers, do not paint native or rendered selection because they do not represent visible editor
-  content.
-- Renderer-owned `normalizedHtmlBlocks` are used only to identify iiHtmlBlock resource display blocks for selection
-  presentation. When a selection intersects a resource source span, the resource contributes one atomic selection
-  rectangle; the RAW `<resource ... />` string must never paint as multiple selected text runs.
+  empty format wrappers, do not paint native selection because they do not represent visible editor content.
+- Renderer-owned `normalizedHtmlBlocks` are used for resource overlay presentation and source-range mapping, but not for
+  a separate selection layer.
+- The rendered overlay visibility follows rendered projection availability, not native composition state. During typing
+  and IME composition the RichText projection stays mounted so previously formatted lines do not collapse to the
+  plain logical editor surface.
 - While the rendered overlay is hidden, the rendered surface does not add pointer handlers above the `LV.TextEditor`;
   OS/Qt pointer selection remains the selection gesture path.
 - While the rendered overlay is visible, RAW offsets and RichText document positions are not used as native surface
@@ -56,18 +57,17 @@ Wraps the live `LV.TextEditor` used by the note document surface.
   select visible character ranges instead of dragging the cursor across hidden tag bytes or RichText HTML positions.
   The transparent surface-selection `TextEdit` is a passive mirror of the same plain logical text and does not accept
   focus, mouse selection, or key events. Pointer gestures store the logical start/end/cursor span in explicit QML
-  properties before mapping that span back to RAW source offsets. The local pointer cursor override is applied only
-  when that restored range is collapsed; native cursor, selection, or text changes clear it immediately. The same
-  bridge preserves native-style multi-click granularity: the second click in a pointer sequence selects the visible
-  logical line, and the third click selects the visible paragraph before mapping that range back to RAW source offsets.
-  This bridge is disabled while native IME composition is active.
+  properties before mapping that span back to RAW source offsets and restoring the live `LV.TextEditor` selection. The
+  same bridge preserves native-style multi-click granularity: the second click in a pointer sequence selects the
+  visible logical line, and the third click selects the visible paragraph before mapping that range back to RAW source
+  offsets. This bridge is disabled while native IME composition is active.
 - Rendered pointer hit testing clamps line-adjacent mapped coordinates into the rendered logical text area's measured
   content bounds before calling `positionAt(...)`. Clicks and drags that land in the vertical slack around a line
   therefore resolve to that visible line, while clicks far below the rendered body still resolve to the terminal body
   position.
 - The editor body is top-flush: `LV.TextEditor` vertical inset and rendered-overlay padding stay at zero.
-- Keeps a disabled, transparent plain `TextEdit` geometry probe in sync with the logical display text for cursor hit
-  testing, pointer selection, projected caret placement, and source-to-rendered selection bounds.
+- Keeps a disabled, transparent plain `TextEdit` geometry probe in sync with the logical display text for pointer hit
+  testing and visible-logical selection mapping.
 - Reports `displayContentHeight` from the actual RichText overlay while rendered output is visible so the scrollable
   editor viewport follows the rendered body height.
 - Mounts `ContentsEditorGeometryProvider` as the only view-owned geometry adapter for chrome measurements. The adapter
@@ -78,11 +78,11 @@ Wraps the live `LV.TextEditor` used by the note document surface.
 - Mounts `ContentsLineNumberRailMetrics` as the C++ owner of logical line-number row construction. The inline editor
   binds source/projection inputs and measured geometry rows into the metrics object, then exposes `logicalGutterRows`
   from its resolved `rows`. The rows count logical lines, not visual wrap rows; a wrapped paragraph contributes one row
-  whose height covers all wrapped visual rows, while resource frames contribute one row with the rendered frame height.
+  whose height covers all wrapped visual rows, while resource frames contribute one row with one gutter-line height.
   Row y values are produced by C++ and validated there so later line numbers cannot collapse onto the first line's y
   position. The metrics object never receives TextEdit, cursor, selection, or resource overlay objects directly.
-- When iiHtmlBlock resource spans are present, the rendered overlay is pinned even during composition so ordinary
-  typing cannot expose the RAW `<resource ... />` tag while the renderer catches up.
+- The rendered overlay stays pinned during composition and ordinary native typing so active edits cannot expose plain
+  logical text or RAW-shaped resource placeholders while the renderer catches up.
 - `textEdited(text)` reports plain RAW text upward.
 - `tagManagementKeyPressHandler` is the only key hook and is limited to explicit tag-management shortcuts.
 - The explicit body-tag shortcut surface forwards `Ctrl/Meta+Alt+C` for callout and `Ctrl/Meta+Alt+A` for agenda to
@@ -120,19 +120,19 @@ parent persistence path sees it. Host-side projection refresh is not a live `LV.
 explicit controller-mediated sync so focused native edits, selections, and IME composition cannot be overwritten by a
 transient RAW source snapshot. During native text selection, the rendered overlay remains visible while the underlying
 plain editor keeps ownership of the visible logical range; the exported `sourceSelectionStart/End` values map that
-range back to authoritative `.wsnbody` offsets. The rendered overlay receives a synchronized logical selection range,
-and iiHtmlBlock resource spans are painted as one block-level selection rectangle. During active IME composition,
-programmatic text sync remains deferred through the native editor path. For resource-backed projections the overlay
-stays pinned above the plain logical surface, so a transient parser/render turn cannot collapse a framed image back to
-the RAW resource tag. Mouse pointer selection follows the same logical-to-source table: pointer coordinates are
+range back to authoritative `.wsnbody` offsets. The rendered overlay selection remains cleared, and no iiHtmlBlock
+resource selection rectangle is painted separately. During active IME composition,
+programmatic text sync remains deferred through the native editor path, but the RichText overlay remains visible.
+For resource-backed and styled text projections the overlay stays pinned above the plain logical surface, so a
+transient parser/render turn cannot collapse formatted text or a framed image back to plain text/RAW placeholders.
+Mouse pointer selection follows the same logical-to-source table: pointer coordinates are
 measured against the plain `displayGeometryText` probe and the pointer bridge restores the matching visible
 cursor/selection span on the native logical surface while exposing RAW offsets for formatting commands and persistence.
 The surface-selection editor only mirrors that plain logical text; it is not focusable and never owns the edit cursor.
 The explicit selection snapshot exposes both logical and source fields, so RAW selection/cursor offsets are not hidden
-behind the generic `cursorPosition` name. A local pointer cursor override keeps the projected caret at the clicked
-logical offset only until the next native cursor, selection, or text change. Once the pointer gesture expands into a
-non-empty selection, the override is cleared and the rendered/native selection surfaces own the visual state.
-Double-click and triple-click gestures follow the same
+behind the generic `cursorPosition` name. The visible caret is the same native `LV.TextEditor` cursor delegate that
+receives typing and Backspace. Once the pointer gesture expands into a non-empty selection, the native selection model
+owns the visual state. Double-click and triple-click gestures follow the same
 logical-to-source mapping, selecting the visible line and paragraph respectively instead of exposing hidden RAW tag
 bytes. During IME composition that pointer bridge is inactive and the native editor receives the pointer path directly.
 Collapsed RAW selections that contain only hidden opening/closing inline formatting wrappers are kept collapsed after

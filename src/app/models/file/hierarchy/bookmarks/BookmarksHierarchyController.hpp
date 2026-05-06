@@ -14,10 +14,11 @@ class ISystemCalendarStore;
 
 class BookmarksHierarchyController final : public IHierarchyController,
                                           public IHierarchyRenameCapability,
-                                          public IHierarchyCrudCapability
+                                          public IHierarchyCrudCapability,
+                                          public IHierarchyExpansionCapability
 {
     Q_OBJECT
-    Q_INTERFACES(IHierarchyRenameCapability IHierarchyCrudCapability)
+    Q_INTERFACES(IHierarchyRenameCapability IHierarchyCrudCapability IHierarchyExpansionCapability)
 
     Q_PROPERTY(BookmarksHierarchyModel* itemModel READ itemModel CONSTANT)
     Q_PROPERTY(BookmarksNoteListModel* noteListModel READ noteListModel CONSTANT)
@@ -52,6 +53,7 @@ public:
     Q_INVOKABLE QString itemLabel(int index) const override;
     Q_INVOKABLE bool canRenameItem(int index) const override;
     Q_INVOKABLE bool renameItem(int index, const QString& displayName) override;
+    Q_INVOKABLE bool setItemExpanded(int index, bool expanded) override;
     Q_INVOKABLE void createFolder() override;
     Q_INVOKABLE void deleteSelectedFolder() override;
     bool removeNoteById(const QString& noteId);

@@ -147,7 +147,9 @@ void WhatSonCppRegressionTests::editorPresentationProjection_publishesHtmlBlockP
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("renderInlineResourceEditorSurfaceHtml(")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("editorDisplayBackend.presentationProjection.editorSurfaceHtml")));
     QVERIFY(documentFlowSource.contains(QStringLiteral("ContentsInlineFormatEditor {")));
-    QVERIFY(documentFlowSource.contains(QStringLiteral("renderedText: documentFlow.editorSurfaceHtml")));
+    QVERIFY(documentFlowSource.contains(QStringLiteral("property string lastReadyEditorSurfaceHtml")));
+    QVERIFY(documentFlowSource.contains(QStringLiteral("readonly property string resolvedEditorSurfaceHtml")));
+    QVERIFY(documentFlowSource.contains(QStringLiteral("renderedText: documentFlow.resolvedEditorSurfaceHtml")));
 }
 
 void WhatSonCppRegressionTests::textFormatRenderer_preservesMarkdownUnorderedListMarkersWithoutRegexWarnings()

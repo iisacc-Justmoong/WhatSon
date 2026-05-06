@@ -512,6 +512,28 @@ bool BookmarksHierarchyController::renameItem(int index, const QString& displayN
     return false;
 }
 
+bool BookmarksHierarchyController::setItemExpanded(int index, bool expanded)
+{
+    if (index < 0 || index >= m_items.size())
+    {
+        return false;
+    }
+
+    if (!m_items.at(index).showChevron)
+    {
+        return false;
+    }
+
+    if (m_items.at(index).expanded == expanded)
+    {
+        return true;
+    }
+
+    m_items[index].expanded = expanded;
+    syncModel();
+    return true;
+}
+
 void BookmarksHierarchyController::createFolder()
 {
     WhatSon::Debug::traceSelf(this,

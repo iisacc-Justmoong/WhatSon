@@ -15,10 +15,11 @@ Implements logical line-number rail row construction outside QML.
   final gutter rows. This keeps actual view-object measurement outside the row-building policy.
 - Publishes each measured row independently. If a measured snapshot is unavailable, the model uses that row's line number
   as a simple line-height fallback; it does not use the previous row bottom to shift later gutter rows.
-- Resource blocks remain one logical row; their visible height is supplied as a measured row geometry snapshot.
+- Resource blocks remain one logical row and one gutter-line height. The measured frame height can place following rows
+  through their own y snapshots, but it must not turn the resource block into a multi-line gutter allocation.
 
 ## 한국어
 
 이 구현은 QML에 있던 논리 줄 분할과 row y/height 생성을 C++로 이동한 것이다. 줄 번호 슬롯은 전체
-`logicalText`에서 만들고, QML은 geometry row snapshot을 넘겨 측정값만 제공한다. 각 row는 자기 y/height
-snapshot만 사용하며, 리소스 row가 크게 측정되더라도 다음 줄 번호의 y를 이전 row bottom 기준으로 밀지 않는다.
+`logicalText`에서 만들고, QML은 geometry row snapshot을 넘겨 측정값만 제공한다. 각 row는 자기 y snapshot을
+사용하며, 리소스 row가 크게 측정되더라도 그 높이를 거터 여러 줄로 환산하지 않고 한 줄 높이로 유지한다.

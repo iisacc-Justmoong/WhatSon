@@ -187,7 +187,9 @@ These signals make the file a reusable visual surface instead of a hard-coded on
   It then starts a short activation-block timer.
 - The left-button `TapHandler` also schedules `requestHierarchyChevronExpansionAtPosition(...)` after the tap turn. If
   LVRS already emitted and committed `onListItemExpanded`, the armed key has been cleared and the fallback is skipped;
-  otherwise `SidebarHierarchyInteractionController.requestChevronExpansion(...)` performs the single-row fold/unfold.
+  otherwise `SidebarHierarchyInteractionController.requestChevronExpansion(...)` performs the single-row fold/unfold
+  and then writes the committed state back into the live `LV.HierarchyItem.expanded` property so the visible row hides
+  or reveals its descendants immediately.
 - `onListItemActivated` is deferred by one turn (`Qt.callLater`) and re-checked through
   `SidebarHierarchyInteractionController.shouldSuppressActivation()` before it can select the folder or emit
   `hierarchyItemActivated(...)`.
