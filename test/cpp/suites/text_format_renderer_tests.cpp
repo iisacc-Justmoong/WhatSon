@@ -121,20 +121,31 @@ void WhatSonCppRegressionTests::editorPresentationProjection_publishesHtmlBlockP
         QStringLiteral("src/app/models/editor/projection/ContentsEditorPresentationProjection.hpp"));
     const QString projectionCppSource = readUtf8SourceFile(
         QStringLiteral("src/app/models/editor/projection/ContentsEditorPresentationProjection.cpp"));
-    const QString displayViewSource = readUtf8SourceFile(
-        QStringLiteral("src/app/qml/view/contents/editor/ContentsDisplayView.qml"));
+    const QString contentViewLayoutSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/panels/ContentViewLayout.qml"));
+    const QString displayBackendHeader = readUtf8SourceFile(
+        QStringLiteral("src/app/models/editor/display/ContentsEditorDisplayBackend.hpp"));
     const QString documentFlowSource = readUtf8SourceFile(
         QStringLiteral("src/app/qml/view/contents/editor/ContentsStructuredDocumentFlow.qml"));
 
     QVERIFY(projectionHeaderSource.contains(QStringLiteral("Q_PROPERTY(QVariantList htmlTokens")));
     QVERIFY(projectionHeaderSource.contains(QStringLiteral("Q_PROPERTY(QVariantList normalizedHtmlBlocks")));
+    QVERIFY(projectionHeaderSource.contains(QStringLiteral("Q_PROPERTY(int sourceCursorPosition")));
+    QVERIFY(projectionHeaderSource.contains(QStringLiteral("Q_PROPERTY(int logicalCursorPosition")));
+    QVERIFY(projectionHeaderSource.contains(QStringLiteral("sourceOffsetForVisibleLogicalOffset")));
+    QVERIFY(projectionHeaderSource.contains(QStringLiteral("logicalOffsetForSourceOffsetWithAffinity")));
+    QVERIFY(!projectionHeaderSource.contains(QStringLiteral("Q_PROPERTY(QVariantList logicalToSourceOffsets")));
     QVERIFY(projectionCppSource.contains(QStringLiteral("ContentsTextFormatRenderer::htmlTokensChanged")));
     QVERIFY(projectionCppSource.contains(QStringLiteral("ContentsTextFormatRenderer::normalizedHtmlBlocksChanged")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("ContentsEditorPresentationProjection {")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("htmlTokens: editorPresentationProjection.htmlTokens")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("normalizedHtmlBlocks: editorPresentationProjection.normalizedHtmlBlocks")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("renderInlineResourceEditorSurfaceHtml(")));
-    QVERIFY(displayViewSource.contains(QStringLiteral("editorPresentationProjection.editorSurfaceHtml")));
+    QVERIFY(projectionCppSource.contains(QStringLiteral("ContentsLogicalTextBridge::logicalToSourceOffsetsChanged")));
+    QVERIFY(displayBackendHeader.contains(QStringLiteral("ContentsEditorPresentationProjection m_presentationProjection")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("htmlTokens: editorDisplayBackend.presentationProjection.htmlTokens")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("normalizedHtmlBlocks: editorDisplayBackend.presentationProjection.normalizedHtmlBlocks")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("editorCursorPosition: structuredDocumentFlow.editorCursorPosition")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("coordinateMapper: editorDisplayBackend.presentationProjection")));
+    QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("logicalToSourceOffsets")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("renderInlineResourceEditorSurfaceHtml(")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("editorDisplayBackend.presentationProjection.editorSurfaceHtml")));
     QVERIFY(documentFlowSource.contains(QStringLiteral("ContentsInlineFormatEditor {")));
     QVERIFY(documentFlowSource.contains(QStringLiteral("renderedText: documentFlow.editorSurfaceHtml")));
 }
@@ -345,4 +356,15 @@ void WhatSonCppRegressionTests::editorTagInsertionController_preservesInlineTagB
     QCOMPARE(
         balancedWholeTagPayload.value(QStringLiteral("nextSourceText")).toString(),
         QStringLiteral("<bold><highlight>STAR structure</highlight></bold>"));
+
+    const QString crossingSource = QStringLiteral("<bold>Alpha</bold> Beta");
+    const QVariantMap crossingPayload = controller.buildTagInsertionPayload(
+        crossingSource,
+        QStringLiteral("<bold>Al").size(),
+        crossingSource.size(),
+        QStringLiteral("italic"));
+    QVERIFY(crossingPayload.value(QStringLiteral("applied")).toBool());
+    QCOMPARE(
+        crossingPayload.value(QStringLiteral("nextSourceText")).toString(),
+        QStringLiteral("<bold>Al<italic>pha</italic></bold><italic> Beta</italic>"));
 }

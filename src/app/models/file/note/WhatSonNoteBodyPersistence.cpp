@@ -1,37 +1,33 @@
 #include "app/models/file/note/WhatSonNoteBodyPersistence.hpp"
 
-#include "app/models/file/note/WhatSonNoteBodyWebLinkSupport.hpp"
+#include "app/models/file/note/WhatSonIiXmlDocumentSupport.hpp"
 #include "app/models/file/note/WhatSonNoteBodySemanticTagSupport.hpp"
-#include "app/models/file/note/WhatSonNoteMarkdownStyleObject.hpp"
-#include "app/models/file/note/WhatSonLocalNoteFileStore.hpp"
 #include "app/models/file/WhatSonDebugTrace.hpp"
+#include "app/models/file/note/WhatSonLocalNoteFileStore.hpp"
+
 #include <QDir>
-#include <QDate>
 #include <QFileInfo>
 #include <QRegularExpression>
 #include <QSet>
-#include <QVector>
-#include <QXmlStreamReader>
+
+#include <utility>
 
 namespace
 {
+    namespace IiXml = WhatSon::IiXmlDocumentSupport;
     namespace SemanticTags = WhatSon::NoteBodySemanticTagSupport;
-    namespace WebLinks = WhatSon::NoteBodyWebLinkSupport;
 
-    struct BodyDocumentTextFragments final
+    QString normalizePath(const QString& path)
     {
-        QString fallbackText;
-        QString fallbackRichText;
-        QStringList blockLines;
-        QStringList blockRichLines;
-    };
+        const QString trimmed = path.trimmed();
+        if (trimmed.isEmpty())
+        {
+            return {};
+        }
+        return QDir::cleanPath(trimmed);
+    }
 
-    QString removeInterTagFormattingWhitespace(QString text);
-    QString normalizeStructuredBlocksToStandaloneLines(const QString& sourceText);
-    QString normalizeEditorSourceToInlineTaggedText(const QString& sourceText);
-    QString editorSourceTextFromCanonicalInlineTaggedText(const QString& normalizedSourceText);
-
-    QString escapeXmlAttributeValue(QString value)
+    QString escapeXml(QString value)
     {
         value.replace(QStringLiteral("&"), QStringLiteral("&amp;"));
         value.replace(QStringLiteral("<"), QStringLiteral("&lt;"));
@@ -41,19 +37,7 @@ namespace
         return value;
     }
 
-    QString decodeXmlEntities(QString text)
-    {
-        text.replace(QStringLiteral("&lt;"), QStringLiteral("<"));
-        text.replace(QStringLiteral("&gt;"), QStringLiteral(">"));
-        text.replace(QStringLiteral("&quot;"), QStringLiteral("\""));
-        text.replace(QStringLiteral("&apos;"), QStringLiteral("'"));
-        text.replace(QStringLiteral("&#39;"), QStringLiteral("'"));
-        text.replace(QStringLiteral("&nbsp;"), QStringLiteral(" "));
-        text.replace(QStringLiteral("&amp;"), QStringLiteral("&"));
-        return text;
-    }
-
-    QString escapeHtmlText(QString value)
+    QString escapeHtml(QString value)
     {
         value.replace(QStringLiteral("&"), QStringLiteral("&amp;"));
         value.replace(QStringLiteral("<"), QStringLiteral("&lt;"));
@@ -63,266 +47,115 @@ namespace
         return value;
     }
 
-    QString escapeHtmlTextPreservingVisibleWhitespace(const QString& text)
+    QString sourceTagName(QStringView tagToken)
     {
-        QString html;
-        html.reserve(text.size() * 6);
-
-        bool lineStart = true;
-        qsizetype cursor = 0;
-        while (cursor < text.size())
-        {
-            const QChar ch = text.at(cursor);
-            if (ch == QLatin1Char('\n'))
-            {
-                html += QLatin1Char('\n');
-                lineStart = true;
-                ++cursor;
-                continue;
-            }
-
-            if (ch == QLatin1Char('\t'))
-            {
-                html += QStringLiteral("&nbsp;&nbsp;&nbsp;&nbsp;");
-                lineStart = false;
-                ++cursor;
-                continue;
-            }
-
-            if (ch != QLatin1Char(' '))
-            {
-                html += escapeHtmlText(QString(ch));
-                lineStart = false;
-                ++cursor;
-                continue;
-            }
-
-            const qsizetype runStart = cursor;
-            while (cursor < text.size() && text.at(cursor) == QLatin1Char(' '))
-            {
-                ++cursor;
-            }
-
-            const qsizetype runLength = cursor - runStart;
-            for (qsizetype runIndex = 0; runIndex < runLength; ++runIndex)
-            {
-                const bool preserveAsNbsp = lineStart || ((runLength - runIndex) % 2 == 0);
-                html += preserveAsNbsp ? QStringLiteral("&nbsp;") : QStringLiteral(" ");
-                lineStart = false;
-            }
-        }
-
-        return html;
-    }
-
-    struct InlineStyleHtmlTag final
-    {
-        QString openingTag;
-        QString closingTag;
-
-        bool isEmpty() const
-        {
-            return openingTag.isEmpty() || closingTag.isEmpty();
-        }
-    };
-
-    QString canonicalInlineStyleTagName(const QString& elementName)
-    {
-        return SemanticTags::canonicalInlineStyleTagName(elementName);
-    }
-
-    InlineStyleHtmlTag inlineStyleHtmlTagForElement(const QString& elementName)
-    {
-        const QString normalizedName = canonicalInlineStyleTagName(elementName);
-        if (normalizedName == QStringLiteral("bold"))
-        {
-            return {
-                QStringLiteral("<strong style=\"font-weight:900;\">"),
-                QStringLiteral("</strong>")
-            };
-        }
-        if (normalizedName == QStringLiteral("italic"))
-        {
-            return {
-                QStringLiteral("<span style=\"font-style:italic;\">"),
-                QStringLiteral("</span>")
-            };
-        }
-        if (normalizedName == QStringLiteral("underline"))
-        {
-            return {
-                QStringLiteral("<span style=\"text-decoration: underline;\">"),
-                QStringLiteral("</span>")
-            };
-        }
-        if (normalizedName == QStringLiteral("strikethrough"))
-        {
-            return {
-                QStringLiteral("<span style=\"text-decoration: line-through;\">"),
-                QStringLiteral("</span>")
-            };
-        }
-        if (normalizedName == QStringLiteral("highlight"))
-        {
-            return {
-                QStringLiteral("<span style=\"background-color:#8A4B00;color:#D6AE58;font-weight:600;\">"),
-                QStringLiteral("</span>")
-            };
-        }
-        return {};
-    }
-
-    void appendInlineStyleTag(QString* target, const InlineStyleHtmlTag& styleTag, bool opening)
-    {
-        if (target == nullptr || styleTag.isEmpty())
-        {
-            return;
-        }
-        *target += opening ? styleTag.openingTag : styleTag.closingTag;
-    }
-
-    QString richTextFromRichLines(const QStringList& richLines)
-    {
-        if (richLines.isEmpty())
-        {
+        if (tagToken.size() < 3 || tagToken.front() != QLatin1Char('<'))
             return {};
-        }
-        return richLines.join(QStringLiteral("<br/>"));
-    }
 
-    QString normalizeResourceStartTag(const QString& rawTagText)
-    {
-        static const QRegularExpression attributePattern(
-            QStringLiteral(
-                R"ATTR(\b([A-Za-z_][A-Za-z0-9_.:-]*)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+?)(?=\s|/?>)))ATTR"),
-            QRegularExpression::CaseInsensitiveOption);
+        int cursor = 1;
+        while (cursor < tagToken.size() && tagToken.at(cursor).isSpace())
+            ++cursor;
+        if (cursor < tagToken.size() && tagToken.at(cursor) == QLatin1Char('/'))
+            ++cursor;
+        while (cursor < tagToken.size() && tagToken.at(cursor).isSpace())
+            ++cursor;
 
-        QStringList attributes;
-        QRegularExpressionMatchIterator iterator = attributePattern.globalMatch(rawTagText);
-        while (iterator.hasNext())
+        const int nameStart = cursor;
+        while (cursor < tagToken.size())
         {
-            const QRegularExpressionMatch match = iterator.next();
-            const QString attributeName = match.captured(1).trimmed();
-            if (attributeName.isEmpty())
+            const QChar ch = tagToken.at(cursor);
+            if (!(ch.isLetterOrNumber()
+                  || ch == QLatin1Char('_')
+                  || ch == QLatin1Char('.')
+                  || ch == QLatin1Char(':')
+                  || ch == QLatin1Char('-')))
             {
-                continue;
+                break;
             }
-
-            QString attributeValue;
-            if (match.capturedStart(2) >= 0)
-            {
-                attributeValue = match.captured(2);
-            }
-            else if (match.capturedStart(3) >= 0)
-            {
-                attributeValue = match.captured(3);
-            }
-            else if (match.capturedStart(4) >= 0)
-            {
-                attributeValue = match.captured(4);
-            }
-            attributeValue = decodeXmlEntities(attributeValue);
-            attributes.push_back(
-                QStringLiteral("%1=\"%2\"")
-                    .arg(attributeName, escapeXmlAttributeValue(attributeValue)));
+            ++cursor;
         }
 
-        if (attributes.isEmpty())
-        {
-            return QStringLiteral("<resource />");
-        }
-        return QStringLiteral("<resource %1 />").arg(attributes.join(QLatin1Char(' ')));
-    }
-
-    bool textContainsResourceTag(const QString& text)
-    {
-        static const QRegularExpression resourceTagPattern(
-            QStringLiteral(R"(<\s*resource\b[^>]*?/?>)"),
-            QRegularExpression::CaseInsensitiveOption);
-        return resourceTagPattern.match(text).hasMatch();
-    }
-
-    QString removeHtmlComments(QString text)
-    {
-        text.remove(QRegularExpression(QStringLiteral(R"(<!--[\s\S]*?-->)")));
-        return text;
-    }
-
-    bool containsSuspiciousEditorHtmlBlockProjection(const QString& text)
-    {
-        if (text.trimmed().isEmpty())
-        {
-            return false;
-        }
-
-        static const QRegularExpression suspiciousHtmlBlockPattern(
-            QStringLiteral(
-                R"((<!--whatson-resource-block:|<\s*(?:p|div|table|ul|ol|blockquote|pre|h1|h2|h3|h4|h5|h6|hr)\b))"),
-            QRegularExpression::CaseInsensitiveOption);
-        return suspiciousHtmlBlockPattern.match(text).hasMatch();
-    }
-
-    QString canonicalSourceTextFromBodyDocumentProjection(QString bodyDocumentText)
-    {
-        bodyDocumentText = removeHtmlComments(bodyDocumentText);
-        return WhatSon::NoteBodyPersistence::normalizeBodyPlainText(
-            editorSourceTextFromCanonicalInlineTaggedText(
-                normalizeEditorSourceToInlineTaggedText(bodyDocumentText)));
-    }
-
-    QString fallbackSourceTextFromBodyDocumentPreservingResources(const QString& bodyDocumentText)
-    {
-        if (!textContainsResourceTag(bodyDocumentText))
-        {
+        if (cursor <= nameStart)
             return {};
-        }
 
-        static const QRegularExpression bodyPattern(
-            QStringLiteral(R"(<body\b[^>]*>([\s\S]*?)</body>)"),
-            QRegularExpression::CaseInsensitiveOption);
-        const QRegularExpressionMatch bodyMatch = bodyPattern.match(bodyDocumentText);
-        if (!bodyMatch.hasMatch())
-        {
-            return {};
-        }
-
-        QString bodyInnerText = bodyMatch.captured(1);
-        bodyInnerText = removeHtmlComments(bodyInnerText);
-        bodyInnerText = removeInterTagFormattingWhitespace(bodyInnerText);
-
-        static const QRegularExpression textBlockBoundaryPattern(
-            QStringLiteral(
-                R"(</\s*(?:paragraph|p|div|li|blockquote|pre|h1|h2|h3|h4|h5|h6)\s*>\s*<\s*(?:paragraph|p|div|li|blockquote|pre|h1|h2|h3|h4|h5|h6)\b[^>]*>)"),
-            QRegularExpression::CaseInsensitiveOption);
-        static const QRegularExpression textBlockOpenPattern(
-            QStringLiteral(
-                R"(<\s*(?:paragraph|p|div|li|blockquote|pre|h1|h2|h3|h4|h5|h6)\b[^>]*>)"),
-            QRegularExpression::CaseInsensitiveOption);
-        static const QRegularExpression textBlockClosePattern(
-            QStringLiteral(
-                R"(</\s*(?:paragraph|p|div|li|blockquote|pre|h1|h2|h3|h4|h5|h6)\s*>)"),
-            QRegularExpression::CaseInsensitiveOption);
-        static const QRegularExpression brPattern(
-            QStringLiteral(R"(<\s*br\b[^>]*?/?>)"),
-            QRegularExpression::CaseInsensitiveOption);
-
-        bodyInnerText.replace(textBlockBoundaryPattern, QStringLiteral("\n"));
-        bodyInnerText.replace(brPattern, QStringLiteral("\n"));
-        bodyInnerText.remove(textBlockOpenPattern);
-        bodyInnerText.remove(textBlockClosePattern);
-        bodyInnerText = normalizeStructuredBlocksToStandaloneLines(
-            WhatSon::NoteBodyPersistence::normalizeBodyPlainText(decodeXmlEntities(bodyInnerText)));
-        return WhatSon::NoteBodyPersistence::normalizeBodyPlainText(bodyInnerText);
+        return tagToken.mid(nameStart, cursor - nameStart).toString().trimmed().toCaseFolded();
     }
 
-    QString normalizeResourceTagsForXmlParser(QString bodyDocumentText)
+    bool shouldPreserveInlineSourceTag(const QString& tagName)
     {
-        if (bodyDocumentText.trimmed().isEmpty())
+        return !SemanticTags::canonicalInlineStyleTagName(tagName).isEmpty()
+            || SemanticTags::isWebLinkTagName(tagName)
+            || SemanticTags::isHashtagTagName(tagName)
+            || SemanticTags::isTransparentContainerTagName(tagName)
+            || SemanticTags::isRenderedTextBlockElement(tagName);
+    }
+
+    QString encodeInlineSourceFragment(const QString& sourceFragment)
+    {
+        QString encoded;
+        encoded.reserve(sourceFragment.size() + 16);
+
+        int cursor = 0;
+        while (cursor < sourceFragment.size())
         {
-            return bodyDocumentText;
+            if (sourceFragment.at(cursor) == QLatin1Char('<'))
+            {
+                const int tagEnd = sourceFragment.indexOf(QLatin1Char('>'), cursor + 1);
+                if (tagEnd > cursor)
+                {
+                    const QStringView tagToken(sourceFragment.constData() + cursor, tagEnd - cursor + 1);
+                    const QString tagName = sourceTagName(tagToken);
+                    if (shouldPreserveInlineSourceTag(tagName))
+                    {
+                        encoded += sourceFragment.mid(cursor, tagEnd - cursor + 1);
+                        cursor = tagEnd + 1;
+                        continue;
+                    }
+                }
+            }
+
+            const int nextTag = sourceFragment.indexOf(QLatin1Char('<'), cursor + 1);
+            const int textEnd = nextTag >= 0 ? nextTag : sourceFragment.size();
+            encoded += escapeXml(sourceFragment.mid(cursor, textEnd - cursor));
+            cursor = textEnd;
         }
 
-        bodyDocumentText.remove(
+        return encoded;
+    }
+
+    QString decodeInlineSourceFragment(const QString& rawFragment)
+    {
+        QString decoded;
+        decoded.reserve(rawFragment.size());
+
+        int cursor = 0;
+        while (cursor < rawFragment.size())
+        {
+            if (rawFragment.at(cursor) == QLatin1Char('<'))
+            {
+                const int tagEnd = rawFragment.indexOf(QLatin1Char('>'), cursor + 1);
+                if (tagEnd > cursor)
+                {
+                    decoded += rawFragment.mid(cursor, tagEnd - cursor + 1);
+                    cursor = tagEnd + 1;
+                    continue;
+                }
+            }
+
+            const int nextTag = rawFragment.indexOf(QLatin1Char('<'), cursor + 1);
+            const int textEnd = nextTag >= 0 ? nextTag : rawFragment.size();
+            decoded += IiXml::decodeXmlEntities(rawFragment.mid(cursor, textEnd - cursor));
+            cursor = textEnd;
+        }
+
+        return decoded;
+    }
+
+    QString prepareWsnXmlForIiXml(QString source)
+    {
+        source = IiXml::stripXmlPreamble(source);
+        source.remove(QRegularExpression(QStringLiteral(R"(<!--[\s\S]*?-->)")));
+        source.remove(
             QRegularExpression(
                 QStringLiteral(R"(</\s*resource\s*>)"),
                 QRegularExpression::CaseInsensitiveOption));
@@ -332,1483 +165,284 @@ namespace
             QRegularExpression::CaseInsensitiveOption);
 
         int searchOffset = 0;
-        while (searchOffset >= 0 && searchOffset < bodyDocumentText.size())
+        while (searchOffset >= 0 && searchOffset < source.size())
         {
-            const QRegularExpressionMatch match = resourceStartTagPattern.match(bodyDocumentText, searchOffset);
+            const QRegularExpressionMatch match = resourceStartTagPattern.match(source, searchOffset);
             if (!match.hasMatch())
             {
                 break;
             }
 
-            const QString replacement = normalizeResourceStartTag(match.captured(0));
-            bodyDocumentText.replace(match.capturedStart(0), match.capturedLength(0), replacement);
+            QString replacement = match.captured(0).trimmed();
+            if (!replacement.endsWith(QStringLiteral("/>")))
+            {
+                replacement.chop(1);
+                replacement = replacement.trimmed() + QStringLiteral(" />");
+            }
+            source.replace(match.capturedStart(0), match.capturedLength(0), replacement);
             searchOffset = match.capturedStart(0) + replacement.size();
         }
 
-        return bodyDocumentText;
+        return source;
     }
 
-    QString removeInterTagFormattingWhitespace(QString text)
+    iiXml::Parser::TagDocumentResult parseBodyDocument(const QString& bodyDocumentText)
     {
-        text.replace(
-            QRegularExpression(QStringLiteral(R"(>([ \t]*\n[ \t\n]*)<)")),
-            QStringLiteral("><"));
-        return text;
+        return IiXml::parseDocument(prepareWsnXmlForIiXml(bodyDocumentText));
     }
 
-    bool isClosingTagToken(const QString& token)
+    const iiXml::Parser::TagNode* bodyNodeFromDocument(const iiXml::Parser::TagDocument& document)
     {
-        for (int index = 1; index < token.size(); ++index)
+        return IiXml::findFirstDescendant(document.Nodes, QStringLiteral("body"));
+    }
+
+    QString fieldName(const iiXml::Parser::TagDocument& document, const iiXml::Parser::TagField& field)
+    {
+        return IiXml::stringFromUtf8View(document.FieldNameView(field));
+    }
+
+    QString fieldValue(const iiXml::Parser::TagDocument& document, const iiXml::Parser::TagField& field)
+    {
+        return IiXml::decodeXmlEntities(IiXml::stringFromUtf8View(document.FieldValueView(field)));
+    }
+
+    QString nodeName(const iiXml::Parser::TagNode& node)
+    {
+        return QString::fromStdString(node.Range.TagName);
+    }
+
+    QString serializeAttributes(const iiXml::Parser::TagDocument& document, const iiXml::Parser::TagNode& node)
+    {
+        QStringList attributes;
+        attributes.reserve(static_cast<qsizetype>(node.Fields.size()));
+        for (const iiXml::Parser::TagField& field : node.Fields)
         {
-            const QChar ch = token.at(index);
-            if (!ch.isSpace())
+            if (!field.HasValue)
             {
-                return ch == QLatin1Char('/');
+                continue;
+            }
+
+            const QString name = fieldName(document, field).trimmed();
+            if (name.isEmpty())
+            {
+                continue;
+            }
+
+            attributes.push_back(
+                QStringLiteral("%1=\"%2\"").arg(name, escapeXml(fieldValue(document, field))));
+        }
+
+        return attributes.join(QLatin1Char(' '));
+    }
+
+    QString serializeDirectBodyNodeToSource(const iiXml::Parser::TagDocument& document, const iiXml::Parser::TagNode& node)
+    {
+        const QString tagName = nodeName(node).trimmed();
+        if (tagName.isEmpty())
+        {
+            return {};
+        }
+
+        if (QString::compare(tagName, QStringLiteral("paragraph"), Qt::CaseInsensitive) == 0)
+        {
+            return WhatSon::NoteBodyPersistence::normalizeBodyPlainText(
+                decodeInlineSourceFragment(IiXml::stringFromUtf8View(document.ValueView(node))));
+        }
+
+        if (QString::compare(tagName, QStringLiteral("break"), Qt::CaseInsensitive) == 0
+            || QString::compare(tagName, QStringLiteral("hr"), Qt::CaseInsensitive) == 0)
+        {
+            return QStringLiteral("</break>");
+        }
+
+        const QString attributes = serializeAttributes(document, node);
+        if (QString::compare(tagName, QStringLiteral("resource"), Qt::CaseInsensitive) == 0)
+        {
+            return attributes.isEmpty()
+                       ? QStringLiteral("<resource />")
+                       : QStringLiteral("<resource %1 />").arg(attributes);
+        }
+
+        const QString text = WhatSon::NoteBodyPersistence::normalizeBodyPlainText(IiXml::nodeText(document, &node));
+        if (text.isEmpty())
+        {
+            return attributes.isEmpty()
+                       ? QStringLiteral("<%1 />").arg(tagName)
+                       : QStringLiteral("<%1 %2 />").arg(tagName, attributes);
+        }
+
+        const QString openTag = attributes.isEmpty()
+                                    ? QStringLiteral("<%1>").arg(tagName)
+                                    : QStringLiteral("<%1 %2>").arg(tagName, attributes);
+        return openTag + escapeXml(text) + QStringLiteral("</%1>").arg(tagName);
+    }
+
+    QStringList bodySourceLinesFromDocument(const QString& bodyDocumentText)
+    {
+        static const QRegularExpression paragraphLinePattern(
+            QStringLiteral(R"(^\s*<paragraph>([\s\S]*)</paragraph>\s*$)"),
+            QRegularExpression::CaseInsensitiveOption);
+        static const QRegularExpression resourceLinePattern(
+            QStringLiteral(R"(^\s*(<resource\b[^>]*?/?>)\s*$)"),
+            QRegularExpression::CaseInsensitiveOption);
+        static const QRegularExpression breakLinePattern(
+            QStringLiteral(R"(^\s*<(?:break|hr)\b[^>]*?/?>\s*$)"),
+            QRegularExpression::CaseInsensitiveOption);
+
+        const QString normalizedDocumentText = WhatSon::NoteBodyPersistence::normalizeBodyPlainText(bodyDocumentText);
+        const QStringList documentLines = normalizedDocumentText.split(QLatin1Char('\n'), Qt::KeepEmptyParts);
+        bool insideBody = false;
+        QStringList rawLines;
+        for (const QString& line : documentLines)
+        {
+            const QString trimmedLine = line.trimmed();
+            if (!insideBody)
+            {
+                if (QString::compare(trimmedLine, QStringLiteral("<body>"), Qt::CaseInsensitive) == 0)
+                    insideBody = true;
+                continue;
+            }
+
+            if (QString::compare(trimmedLine, QStringLiteral("</body>"), Qt::CaseInsensitive) == 0)
+                break;
+
+            QRegularExpressionMatch paragraphMatch = paragraphLinePattern.match(line);
+            if (paragraphMatch.hasMatch())
+            {
+                rawLines.push_back(decodeInlineSourceFragment(paragraphMatch.captured(1)));
+                continue;
+            }
+
+            QRegularExpressionMatch resourceMatch = resourceLinePattern.match(line);
+            if (resourceMatch.hasMatch())
+            {
+                rawLines.push_back(resourceMatch.captured(1).trimmed());
+                continue;
+            }
+
+            if (breakLinePattern.match(line).hasMatch())
+            {
+                rawLines.push_back(QStringLiteral("</break>"));
+                continue;
             }
         }
-        return false;
-    }
 
-    bool isSelfClosingTagToken(QString token)
-    {
-        token = token.trimmed();
-        return token.endsWith(QStringLiteral("/>"));
-    }
+        if (!rawLines.isEmpty())
+            return rawLines;
 
-    bool isTagElementName(const QString& elementName)
-    {
-        return SemanticTags::isHashtagTagName(elementName);
-    }
+        const iiXml::Parser::TagDocumentResult parsedDocument = parseBodyDocument(bodyDocumentText);
+        if (parsedDocument.Status != iiXml::Parser::TagTreeParseStatus::Parsed
+            || !parsedDocument.Document.has_value())
+        {
+            return WhatSon::NoteBodyPersistence::normalizeBodyPlainText(bodyDocumentText)
+                .split(QLatin1Char('\n'), Qt::KeepEmptyParts);
+        }
 
-    bool isBreakDividerTagName(const QString& elementName)
-    {
-        return SemanticTags::isBreakDividerTagName(elementName);
-    }
-
-    QString canonicalBreakDividerSourceTag()
-    {
-        return QStringLiteral("</break>");
-    }
-
-    QString canonicalBreakDividerBodyTag()
-    {
-        return QStringLiteral("<break/>");
-    }
-
-    bool isAgendaTagName(const QString& elementName)
-    {
-        return SemanticTags::isAgendaTagName(elementName);
-    }
-
-    bool isTaskTagName(const QString& elementName)
-    {
-        return SemanticTags::isTaskTagName(elementName);
-    }
-
-    bool isCalloutTagName(const QString& elementName)
-    {
-        return SemanticTags::isCalloutTagName(elementName);
-    }
-
-    bool isWebLinkTagName(const QString& elementName)
-    {
-        return SemanticTags::isWebLinkTagName(elementName);
-    }
-
-    QString tagAttributeValue(const QString& rawTagText, const QString& attributeName)
-    {
-        const QString normalizedAttributeName = attributeName.trimmed();
-        if (normalizedAttributeName.isEmpty())
+        const iiXml::Parser::TagDocument& document = parsedDocument.Document.value();
+        const iiXml::Parser::TagNode* bodyNode = bodyNodeFromDocument(document);
+        if (bodyNode == nullptr)
         {
             return {};
         }
 
-        const QRegularExpression attributePattern(
-            QStringLiteral(R"ATTR(\b%1\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+)))ATTR")
-                .arg(QRegularExpression::escape(normalizedAttributeName)),
-            QRegularExpression::CaseInsensitiveOption);
-        const QRegularExpressionMatch match = attributePattern.match(rawTagText);
-        if (!match.hasMatch())
+        QStringList lines;
+        lines.reserve(static_cast<qsizetype>(bodyNode->Children.size()));
+        for (const iiXml::Parser::TagNode& childNode : bodyNode->Children)
+        {
+            lines.push_back(serializeDirectBodyNodeToSource(document, childNode));
+        }
+        return lines;
+    }
+
+    QStringList bodyPlainLinesFromDocument(const QString& bodyDocumentText)
+    {
+        const iiXml::Parser::TagDocumentResult parsedDocument = parseBodyDocument(bodyDocumentText);
+        if (parsedDocument.Status != iiXml::Parser::TagTreeParseStatus::Parsed
+            || !parsedDocument.Document.has_value())
+        {
+            return WhatSon::NoteBodyPersistence::normalizeBodyPlainText(bodyDocumentText)
+                .split(QLatin1Char('\n'), Qt::KeepEmptyParts);
+        }
+
+        const iiXml::Parser::TagDocument& document = parsedDocument.Document.value();
+        const iiXml::Parser::TagNode* bodyNode = bodyNodeFromDocument(document);
+        if (bodyNode == nullptr)
         {
             return {};
         }
 
-        if (match.capturedStart(1) >= 0)
+        QStringList lines;
+        lines.reserve(static_cast<qsizetype>(bodyNode->Children.size()));
+        for (const iiXml::Parser::TagNode& childNode : bodyNode->Children)
         {
-            return match.captured(1);
+            const QString tagName = nodeName(childNode).trimmed();
+            if (QString::compare(tagName, QStringLiteral("resource"), Qt::CaseInsensitive) == 0
+                || QString::compare(tagName, QStringLiteral("break"), Qt::CaseInsensitive) == 0
+                || QString::compare(tagName, QStringLiteral("hr"), Qt::CaseInsensitive) == 0)
+            {
+                lines.push_back(QString());
+                continue;
+            }
+            lines.push_back(WhatSon::NoteBodyPersistence::normalizeBodyPlainText(IiXml::nodeText(document, &childNode)));
         }
-        if (match.capturedStart(2) >= 0)
+        return lines;
+    }
+
+    QString firstNonEmptyLine(const QStringList& lines)
+    {
+        for (const QString& line : lines)
         {
-            return match.captured(2);
-        }
-        if (match.capturedStart(3) >= 0)
-        {
-            return match.captured(3);
+            const QString trimmed = line.trimmed();
+            if (!trimmed.isEmpty())
+            {
+                return trimmed;
+            }
         }
         return {};
     }
 
-    QString normalizedAgendaDate(const QString& rawDate)
+    bool isStandaloneResourceLine(const QString& trimmedLine)
     {
-        const QString decodedDate = decodeXmlEntities(rawDate).trimmed();
-        static const QRegularExpression datePattern(QStringLiteral(R"(^\d{4}-\d{2}-\d{2}$)"));
-        if (datePattern.match(decodedDate).hasMatch())
-        {
-            return decodedDate;
-        }
-        return QDate::currentDate().toString(QStringLiteral("yyyy-MM-dd"));
-    }
-
-    bool normalizedTaskDoneValue(const QString& rawDone)
-    {
-        const QString lowered = decodeXmlEntities(rawDone).trimmed().toCaseFolded();
-        if (lowered == QStringLiteral("true")
-            || lowered == QStringLiteral("1")
-            || lowered == QStringLiteral("yes"))
-        {
-            return true;
-        }
-        return false;
-    }
-
-    QString normalizeAgendaStartTag(const QString& rawTagText)
-    {
-        const QString dateValue = normalizedAgendaDate(tagAttributeValue(rawTagText, QStringLiteral("date")));
-        return QStringLiteral("<agenda date=\"%1\">").arg(escapeXmlAttributeValue(dateValue));
-    }
-
-    QString normalizeTaskStartTag(const QString& rawTagText)
-    {
-        const bool done = normalizedTaskDoneValue(tagAttributeValue(rawTagText, QStringLiteral("done")));
-        return QStringLiteral("<task done=\"%1\">")
-            .arg(done ? QStringLiteral("true") : QStringLiteral("false"));
-    }
-
-    QString normalizeCalloutStartTag(const QString&)
-    {
-        return QStringLiteral("<callout>");
-    }
-
-    QString canonicalStandaloneResourceSourceLine(const QString& lineText)
-    {
-        QString normalizedLine = WhatSon::NoteBodyPersistence::normalizeBodyPlainText(lineText);
-        if (normalizedLine.isEmpty())
-        {
-            return {};
-        }
-
-        QString decodedLine = decodeXmlEntities(normalizedLine).trimmed();
-        if (decodedLine.isEmpty())
-        {
-            return {};
-        }
-
-        static const QRegularExpression canonicalResourceLinePattern(
+        static const QRegularExpression resourcePattern(
             QStringLiteral(R"(^<\s*resource\b[^>]*?/?>$)"),
             QRegularExpression::CaseInsensitiveOption);
-        if (canonicalResourceLinePattern.match(decodedLine).hasMatch())
-        {
-            return normalizeResourceStartTag(decodedLine);
-        }
-
-        static const QRegularExpression truncatedResourceLinePattern(
-            QStringLiteral(R"(^<\s*resource\b[^>]*?/\s*$)"),
-            QRegularExpression::CaseInsensitiveOption);
-        if (truncatedResourceLinePattern.match(decodedLine).hasMatch())
-        {
-            return normalizeResourceStartTag(decodedLine.trimmed() + QLatin1Char('>'));
-        }
-
-        return {};
+        return resourcePattern.match(trimmedLine).hasMatch();
     }
 
-    bool isStandaloneStructuredSourceLine(const QString& lineText)
+    QString canonicalResourceLine(QString trimmedLine)
     {
-        const QString trimmedLine = lineText.trimmed();
-        if (trimmedLine.isEmpty())
-        {
-            return false;
-        }
-
-        if (!canonicalStandaloneResourceSourceLine(trimmedLine).isEmpty())
-        {
-            return true;
-        }
-
-        static const QRegularExpression standaloneStructuredLinePattern(
-            QStringLiteral(
-                R"(^(?:</break>|<resource\b[^>]*?/?>|<callout\b[^>]*>[\s\S]*</callout>|<agenda\b[^>]*>[\s\S]*</agenda>|<event\b[^>]*>|</event>)$)"),
-            QRegularExpression::CaseInsensitiveOption);
-        return standaloneStructuredLinePattern.match(trimmedLine).hasMatch();
-    }
-
-    void trimTrailingHorizontalWhitespace(QString* text)
-    {
-        if (text == nullptr)
-        {
-            return;
-        }
-
-        while (!text->isEmpty())
-        {
-            const QChar lastCharacter = text->at(text->size() - 1);
-            if (lastCharacter != QLatin1Char(' ') && lastCharacter != QLatin1Char('\t'))
-            {
-                break;
-            }
-            text->chop(1);
-        }
-    }
-
-    QString normalizeStructuredBlocksToStandaloneLines(const QString& sourceText)
-    {
-        QString normalizedSourceText = WhatSon::NoteBodyPersistence::normalizeBodyPlainText(sourceText);
-        if (normalizedSourceText.isEmpty())
+        if (!isStandaloneResourceLine(trimmedLine))
         {
             return {};
         }
 
-        QStringList normalizedLines = normalizedSourceText.split(QLatin1Char('\n'), Qt::KeepEmptyParts);
-        for (QString& line : normalizedLines)
+        if (!trimmedLine.endsWith(QStringLiteral("/>")))
         {
-            const QString canonicalResourceLine = canonicalStandaloneResourceSourceLine(line);
-            if (!canonicalResourceLine.isEmpty())
-            {
-                line = canonicalResourceLine;
-            }
+            trimmedLine.chop(1);
+            trimmedLine = trimmedLine.trimmed() + QStringLiteral(" />");
         }
-        normalizedSourceText = normalizedLines.join(QLatin1Char('\n'));
+        return trimmedLine;
+    }
 
-        static const QRegularExpression structuredBlockPattern(
-            QStringLiteral(
-                R"((</break>|<resource\b[^>]*?/?>|<callout\b[^>]*>[\s\S]*?</callout>|<agenda\b[^>]*>[\s\S]*?</agenda>|<event\b[^>]*>|</event>))"),
+    bool isStandaloneBreakLine(const QString& trimmedLine)
+    {
+        static const QRegularExpression breakPattern(
+            QStringLiteral(R"(^(?:</\s*break\s*>|<\s*break\s*/\s*>|<\s*hr\b[^>]*?/\s*>)$)"),
             QRegularExpression::CaseInsensitiveOption);
-
-        QString output;
-        qsizetype cursor = 0;
-        QRegularExpressionMatchIterator iterator = structuredBlockPattern.globalMatch(normalizedSourceText);
-        while (iterator.hasNext())
-        {
-            const QRegularExpressionMatch match = iterator.next();
-            const qsizetype blockStart = match.capturedStart(0);
-            const qsizetype blockEnd = match.capturedEnd(0);
-            if (blockStart < 0 || blockEnd <= blockStart)
-            {
-                continue;
-            }
-
-            if (blockStart > cursor)
-            {
-                output += normalizedSourceText.mid(cursor, blockStart - cursor);
-            }
-
-            if (!output.isEmpty() && !output.endsWith(QLatin1Char('\n')))
-            {
-                trimTrailingHorizontalWhitespace(&output);
-                if (!output.isEmpty() && !output.endsWith(QLatin1Char('\n')))
-                {
-                    output += QLatin1Char('\n');
-                }
-            }
-
-            output += match.captured(0).trimmed();
-            cursor = blockEnd;
-
-            if (cursor < normalizedSourceText.size()
-                && normalizedSourceText.at(cursor) != QLatin1Char('\n'))
-            {
-                output += QLatin1Char('\n');
-            }
-        }
-
-        if (cursor < normalizedSourceText.size())
-        {
-            output += normalizedSourceText.mid(cursor);
-        }
-
-        return WhatSon::NoteBodyPersistence::normalizeBodyPlainText(output);
+        return breakPattern.match(trimmedLine).hasMatch();
     }
 
-    bool isStructuredBodyBlockElement(const QString& elementName)
+    QString serializeParagraphLine(const QString& line)
     {
-        const QString normalizedName = elementName.trimmed().toCaseFolded();
-        return normalizedName == QStringLiteral("agenda")
-            || normalizedName == QStringLiteral("callout");
+        return QStringLiteral("    <paragraph>%1</paragraph>\n").arg(encodeInlineSourceFragment(line));
     }
 
-    bool isInlineHashtagBoundary(const QString& text, const qsizetype index)
+    QString sourceTextFallback(const QString& bodyPlainText)
     {
-        if (index <= 0 || index > text.size())
-        {
-            return true;
-        }
-
-        const QChar previous = text.at(index - 1);
-        return !previous.isLetterOrNumber()
-            && previous != QLatin1Char('_')
-            && previous != QLatin1Char('/')
-            && previous != QLatin1Char('#')
-            && previous != QLatin1Char('&');
+        const QString normalized = WhatSon::NoteBodyPersistence::normalizeBodyPlainText(bodyPlainText);
+        return normalized;
     }
-
-    bool isInlineHashtagStopCharacter(const QChar ch)
-    {
-        return ch.isSpace()
-            || ch == QLatin1Char('<')
-            || ch == QLatin1Char('>')
-            || ch == QLatin1Char('&')
-            || ch == QLatin1Char('#')
-            || ch == QLatin1Char('"')
-            || ch == QLatin1Char('\'');
-    }
-
-    bool isInlineHashtagTrailingPunctuation(const QChar ch)
-    {
-        switch (ch.unicode())
-        {
-        case '.':
-        case ',':
-        case ':':
-        case ';':
-        case '!':
-        case '?':
-        case ')':
-        case ']':
-        case '}':
-        case '>':
-        case '"':
-        case '\'':
-        case 0x3001:
-        case 0x3002:
-        case 0xFF0C:
-        case 0xFF01:
-        case 0xFF1F:
-        case 0x300D:
-        case 0x300F:
-        case 0x3011:
-            return true;
-        default:
-            return false;
-        }
-    }
-
-    void appendInlineHashtagTaggedText(QString* output, const QString& textSegment)
-    {
-        if (output == nullptr || textSegment.isEmpty())
-        {
-            return;
-        }
-
-        qsizetype cursor = 0;
-        while (cursor < textSegment.size())
-        {
-            if (textSegment.at(cursor) != QLatin1Char('#')
-                || !isInlineHashtagBoundary(textSegment, cursor)
-                || cursor + 1 >= textSegment.size()
-                || isInlineHashtagStopCharacter(textSegment.at(cursor + 1)))
-            {
-                *output += textSegment.at(cursor);
-                ++cursor;
-                continue;
-            }
-
-            const qsizetype tokenStart = cursor + 1;
-            qsizetype tokenEnd = tokenStart;
-            while (tokenEnd < textSegment.size()
-                   && !isInlineHashtagStopCharacter(textSegment.at(tokenEnd)))
-            {
-                ++tokenEnd;
-            }
-
-            qsizetype trimmedTokenEnd = tokenEnd;
-            while (trimmedTokenEnd > tokenStart
-                   && isInlineHashtagTrailingPunctuation(textSegment.at(trimmedTokenEnd - 1)))
-            {
-                --trimmedTokenEnd;
-            }
-
-            if (trimmedTokenEnd <= tokenStart)
-            {
-                *output += QLatin1Char('#');
-                ++cursor;
-                continue;
-            }
-
-            *output += QStringLiteral("<tag>");
-            *output += textSegment.mid(tokenStart, trimmedTokenEnd - tokenStart);
-            *output += QStringLiteral("</tag>");
-
-            if (trimmedTokenEnd < tokenEnd)
-            {
-                *output += textSegment.mid(trimmedTokenEnd, tokenEnd - trimmedTokenEnd);
-            }
-            cursor = tokenEnd;
-        }
-    }
-
-    void closeMatchingInlineStyleTag(
-        QString* output,
-        QStringList* openStyleTags,
-        const QString& styleTag)
-    {
-        if (output == nullptr || openStyleTags == nullptr || styleTag.isEmpty())
-        {
-            return;
-        }
-
-        const int openIndex = openStyleTags->lastIndexOf(styleTag);
-        if (openIndex < 0)
-        {
-            return;
-        }
-
-        for (int index = openStyleTags->size() - 1; index >= openIndex; --index)
-        {
-            *output += QStringLiteral("</%1>").arg(openStyleTags->at(index));
-            openStyleTags->removeAt(index);
-        }
-    }
-
-    QStringList spanInlineStyleTagsFromCssDeclaration(const QString& cssDeclaration)
-    {
-        const WhatSon::WhatSonNoteMarkdownStyleObject::PromotionMatch markdownPromotionMatch =
-            WhatSon::WhatSonNoteMarkdownStyleObject::promotionMatchForCss(cssDeclaration);
-        if (markdownPromotionMatch.matched)
-        {
-            return markdownPromotionMatch.promotedInlineTags;
-        }
-
-        const QString normalizedCss = cssDeclaration.toCaseFolded();
-        if (normalizedCss.isEmpty())
-        {
-            return {};
-        }
-
-        QStringList tags;
-
-        bool hasHighlight = false;
-        const QRegularExpression backgroundColorPattern(
-            QStringLiteral(R"(background-color\s*:\s*([^;]+))"),
-            QRegularExpression::CaseInsensitiveOption);
-        const QRegularExpressionMatch backgroundColorMatch = backgroundColorPattern.match(normalizedCss);
-        if (backgroundColorMatch.hasMatch())
-        {
-            const QString backgroundValue = backgroundColorMatch.captured(1).trimmed().toCaseFolded();
-            if (!backgroundValue.isEmpty()
-                && backgroundValue != QStringLiteral("transparent")
-                && backgroundValue != QStringLiteral("none")
-                && backgroundValue != QStringLiteral("initial")
-                && backgroundValue != QStringLiteral("inherit"))
-            {
-                tags.push_back(QStringLiteral("highlight"));
-                hasHighlight = true;
-            }
-        }
-
-        const QRegularExpression fontWeightPattern(
-            QStringLiteral(R"(font-weight\s*:\s*([^;]+))"),
-            QRegularExpression::CaseInsensitiveOption);
-        const QRegularExpressionMatch fontWeightMatch = fontWeightPattern.match(normalizedCss);
-        if (!hasHighlight && fontWeightMatch.hasMatch())
-        {
-            const QString weightValue = fontWeightMatch.captured(1).trimmed();
-            bool numericWeightParsed = false;
-            const int numericWeight = weightValue.toInt(&numericWeightParsed);
-            if (weightValue.contains(QStringLiteral("bold"))
-                || (numericWeightParsed && numericWeight >= 600))
-            {
-                tags.push_back(QStringLiteral("bold"));
-            }
-        }
-
-        const QRegularExpression fontStylePattern(
-            QStringLiteral(R"(font-style\s*:\s*([^;]+))"),
-            QRegularExpression::CaseInsensitiveOption);
-        const QRegularExpressionMatch fontStyleMatch = fontStylePattern.match(normalizedCss);
-        if (fontStyleMatch.hasMatch()
-            && fontStyleMatch.captured(1).contains(QStringLiteral("italic"), Qt::CaseInsensitive))
-        {
-            tags.push_back(QStringLiteral("italic"));
-        }
-
-        const QRegularExpression textDecorationPattern(
-            QStringLiteral(R"(text-decoration(?:-line)?\s*:\s*([^;]+))"),
-            QRegularExpression::CaseInsensitiveOption);
-        const QRegularExpressionMatch textDecorationMatch = textDecorationPattern.match(normalizedCss);
-        if (textDecorationMatch.hasMatch())
-        {
-            const QString decorationValue = textDecorationMatch.captured(1).toCaseFolded();
-            if (decorationValue.contains(QStringLiteral("underline")))
-            {
-                tags.push_back(QStringLiteral("underline"));
-            }
-            if (decorationValue.contains(QStringLiteral("line-through")))
-            {
-                tags.push_back(QStringLiteral("strikethrough"));
-            }
-        }
-
-        return tags;
-    }
-
-    QString editorSourceTextFromCanonicalInlineTaggedText(const QString& canonicalSourceText)
-    {
-        const QString normalizedSourceText = WhatSon::NoteBodyPersistence::normalizeBodyPlainText(
-            canonicalSourceText);
-        if (normalizedSourceText.isEmpty())
-        {
-            return {};
-        }
-
-        static const QRegularExpression tagPattern(
-            QStringLiteral(R"(<\s*/?\s*([A-Za-z_][A-Za-z0-9_.:-]*)\b[^>]*>)"));
-
-        QString output;
-        qsizetype cursor = 0;
-        QRegularExpressionMatchIterator iterator = tagPattern.globalMatch(normalizedSourceText);
-        while (iterator.hasNext())
-        {
-            const QRegularExpressionMatch match = iterator.next();
-            const qsizetype tagStart = match.capturedStart(0);
-            const qsizetype tagEnd = match.capturedEnd(0);
-            if (tagStart < 0 || tagEnd <= tagStart)
-            {
-                continue;
-            }
-
-            if (tagStart > cursor)
-            {
-                output += decodeXmlEntities(normalizedSourceText.mid(cursor, tagStart - cursor));
-            }
-
-            const QString fullTagToken = match.captured(0);
-            const QString rawTagName = match.captured(1);
-            const QString normalizedTagName = rawTagName.trimmed().toCaseFolded();
-            const bool closingTag = isClosingTagToken(fullTagToken);
-            const bool selfClosingTag = isSelfClosingTagToken(fullTagToken);
-            if (isTagElementName(rawTagName))
-            {
-                if (!closingTag && !selfClosingTag)
-                {
-                    output += QLatin1Char('#');
-                }
-                cursor = tagEnd;
-                continue;
-            }
-
-            if (isBreakDividerTagName(normalizedTagName))
-            {
-                output += canonicalBreakDividerSourceTag();
-                cursor = tagEnd;
-                continue;
-            }
-
-            if (isAgendaTagName(rawTagName))
-            {
-                if (closingTag)
-                {
-                    output += QStringLiteral("</agenda>");
-                }
-                else
-                {
-                    output += normalizeAgendaStartTag(fullTagToken);
-                    if (selfClosingTag)
-                    {
-                        output += QStringLiteral("</agenda>");
-                    }
-                }
-                cursor = tagEnd;
-                continue;
-            }
-
-            if (isTaskTagName(rawTagName))
-            {
-                if (closingTag)
-                {
-                    output += QStringLiteral("</task>");
-                }
-                else
-                {
-                    output += normalizeTaskStartTag(fullTagToken);
-                    if (selfClosingTag)
-                    {
-                        output += QStringLiteral("</task>");
-                    }
-                }
-                cursor = tagEnd;
-                continue;
-            }
-
-            if (isCalloutTagName(rawTagName))
-            {
-                if (closingTag)
-                {
-                    output += QStringLiteral("</callout>");
-                }
-                else
-                {
-                    output += normalizeCalloutStartTag(fullTagToken);
-                    if (selfClosingTag)
-                    {
-                        output += QStringLiteral("</callout>");
-                    }
-                }
-                cursor = tagEnd;
-                continue;
-            }
-
-            if (isWebLinkTagName(rawTagName) || normalizedTagName == QStringLiteral("a"))
-            {
-                if (closingTag)
-                {
-                    output += QStringLiteral("</weblink>");
-                }
-                else
-                {
-                    output += WebLinks::canonicalStartTagFromRawToken(fullTagToken);
-                    if (selfClosingTag)
-                    {
-                        output += QStringLiteral("</weblink>");
-                    }
-                }
-                cursor = tagEnd;
-                continue;
-            }
-
-            output += fullTagToken;
-            cursor = tagEnd;
-        }
-
-        if (cursor < normalizedSourceText.size())
-        {
-            output += decodeXmlEntities(normalizedSourceText.mid(cursor));
-        }
-
-        return normalizeStructuredBlocksToStandaloneLines(
-            WhatSon::NoteBodyPersistence::normalizeBodyPlainText(output));
-    }
-
-    QString cssStyleAttributeFromTagToken(const QString& tagToken)
-    {
-        static const QRegularExpression stylePattern(
-            QStringLiteral(R"ATTR(\bstyle\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+)))ATTR"),
-            QRegularExpression::CaseInsensitiveOption);
-        const QRegularExpressionMatch styleMatch = stylePattern.match(tagToken);
-        if (!styleMatch.hasMatch())
-        {
-            return {};
-        }
-        for (int captureIndex = 1; captureIndex <= 3; ++captureIndex)
-        {
-            const QString value = decodeXmlEntities(styleMatch.captured(captureIndex));
-            if (!value.isEmpty())
-            {
-                return value;
-            }
-        }
-        return {};
-    }
-
-    bool isTextBlockElement(const QString& elementName);
-
-    QString normalizeEditorSourceToInlineTaggedText(const QString& sourceText)
-    {
-        QString normalizedSource = WhatSon::NoteBodyPersistence::normalizeBodyPlainText(sourceText);
-        if (normalizedSource.isEmpty())
-        {
-            return {};
-        }
-
-        normalizedSource.remove(QRegularExpression(QStringLiteral(R"(<\?xml[\s\S]*?\?>)")));
-        normalizedSource.remove(
-            QRegularExpression(
-                QStringLiteral(R"(<!DOCTYPE[\s\S]*?>)"),
-                QRegularExpression::CaseInsensitiveOption));
-        normalizedSource = removeInterTagFormattingWhitespace(normalizedSource);
-        normalizedSource = WebLinks::autoWrapDetectedWebLinks(normalizedSource);
-        const bool hasExplicitBodyTag = normalizedSource.contains(
-            QRegularExpression(QStringLiteral(R"(<\s*body\b)"), QRegularExpression::CaseInsensitiveOption));
-
-        static const QRegularExpression tagPattern(
-            QStringLiteral(R"(<\s*/?\s*([A-Za-z_][A-Za-z0-9_.:-]*)\b[^>]*>)"));
-
-        QString output;
-        qsizetype cursor = 0;
-        bool insideBody = !hasExplicitBodyTag;
-        int textBlockDepth = 0;
-        bool encounteredTopLevelTextBlock = false;
-        bool pendingEmptyTopLevelTextBlockBoundary = false;
-        qsizetype topLevelTextBlockOutputStart = 0;
-        QVector<QStringList> spanStyleStack;
-
-        const auto appendBoundaryAfterEmptyTopLevelTextBlock = [&output, &pendingEmptyTopLevelTextBlockBoundary]()
-        {
-            if (!pendingEmptyTopLevelTextBlockBoundary)
-            {
-                return;
-            }
-            if (output.isEmpty() || output.endsWith(QLatin1Char('\n')))
-            {
-                output += QLatin1Char('\n');
-            }
-            pendingEmptyTopLevelTextBlockBoundary = false;
-        };
-
-        QRegularExpressionMatchIterator iterator = tagPattern.globalMatch(normalizedSource);
-        while (iterator.hasNext())
-        {
-            const QRegularExpressionMatch match = iterator.next();
-            const qsizetype tagStart = match.capturedStart(0);
-            const qsizetype tagEnd = match.capturedEnd(0);
-            if (tagStart < 0 || tagEnd <= tagStart)
-            {
-                continue;
-            }
-
-            if (insideBody && tagStart > cursor)
-            {
-                appendInlineHashtagTaggedText(
-                    &output,
-                    decodeXmlEntities(normalizedSource.mid(cursor, tagStart - cursor)));
-            }
-
-            const QString fullTagToken = match.captured(0);
-            const QString rawTagName = match.captured(1);
-            const QString normalizedTagName = rawTagName.trimmed().toCaseFolded();
-            const bool closingTag = isClosingTagToken(fullTagToken);
-            const bool selfClosingTag = isSelfClosingTagToken(fullTagToken);
-
-            if (normalizedTagName == QStringLiteral("body"))
-            {
-                if (!closingTag)
-                {
-                    insideBody = true;
-                }
-                else
-                {
-                    insideBody = false;
-                }
-                cursor = tagEnd;
-                continue;
-            }
-
-            if (!insideBody)
-            {
-                cursor = tagEnd;
-                continue;
-            }
-
-            if (isTextBlockElement(rawTagName))
-            {
-                if (!closingTag)
-                {
-                    if (textBlockDepth == 0)
-                    {
-                        if (encounteredTopLevelTextBlock)
-                        {
-                            output += QLatin1Char('\n');
-                        }
-                        else if (!output.isEmpty() && !output.endsWith(QLatin1Char('\n')))
-                        {
-                            output += QLatin1Char('\n');
-                        }
-                        encounteredTopLevelTextBlock = true;
-                        pendingEmptyTopLevelTextBlockBoundary = false;
-                        topLevelTextBlockOutputStart = output.size();
-                    }
-                    ++textBlockDepth;
-                }
-                else if (textBlockDepth > 0)
-                {
-                    --textBlockDepth;
-                    if (textBlockDepth == 0)
-                    {
-                        pendingEmptyTopLevelTextBlockBoundary =
-                            output.size() == topLevelTextBlockOutputStart;
-                    }
-                }
-                cursor = tagEnd;
-                continue;
-            }
-
-            if (normalizedTagName == QStringLiteral("br"))
-            {
-                output += QLatin1Char('\n');
-                cursor = tagEnd;
-                continue;
-            }
-
-            if (isBreakDividerTagName(normalizedTagName))
-            {
-                appendBoundaryAfterEmptyTopLevelTextBlock();
-                output += canonicalBreakDividerSourceTag();
-                cursor = tagEnd;
-                continue;
-            }
-
-            if (isAgendaTagName(rawTagName))
-            {
-                if (closingTag)
-                {
-                    output += QStringLiteral("</agenda>");
-                }
-                else
-                {
-                    appendBoundaryAfterEmptyTopLevelTextBlock();
-                    output += normalizeAgendaStartTag(fullTagToken);
-                    if (selfClosingTag)
-                    {
-                        output += QStringLiteral("</agenda>");
-                    }
-                }
-                cursor = tagEnd;
-                continue;
-            }
-
-            if (isTaskTagName(rawTagName))
-            {
-                if (closingTag)
-                {
-                    output += QStringLiteral("</task>");
-                }
-                else
-                {
-                    output += normalizeTaskStartTag(fullTagToken);
-                    if (selfClosingTag)
-                    {
-                        output += QStringLiteral("</task>");
-                    }
-                }
-                cursor = tagEnd;
-                continue;
-            }
-
-            if (isCalloutTagName(rawTagName))
-            {
-                if (closingTag)
-                {
-                    output += QStringLiteral("</callout>");
-                }
-                else
-                {
-                    appendBoundaryAfterEmptyTopLevelTextBlock();
-                    output += normalizeCalloutStartTag(fullTagToken);
-                    if (selfClosingTag)
-                    {
-                        output += QStringLiteral("</callout>");
-                    }
-                }
-                cursor = tagEnd;
-                continue;
-            }
-
-            if (isWebLinkTagName(rawTagName) || normalizedTagName == QStringLiteral("a"))
-            {
-                if (closingTag)
-                {
-                    output += QStringLiteral("</weblink>");
-                }
-                else
-                {
-                    output += WebLinks::canonicalStartTagFromRawToken(fullTagToken);
-                    if (selfClosingTag)
-                    {
-                        output += QStringLiteral("</weblink>");
-                    }
-                }
-                cursor = tagEnd;
-                continue;
-            }
-
-            if (normalizedTagName == QStringLiteral("resource"))
-            {
-                if (!closingTag)
-                {
-                    appendBoundaryAfterEmptyTopLevelTextBlock();
-                    output += normalizeResourceStartTag(fullTagToken);
-                }
-                cursor = tagEnd;
-                continue;
-            }
-
-            if (normalizedTagName == QStringLiteral("span"))
-            {
-                if (!closingTag)
-                {
-                    const QStringList spanTags = spanInlineStyleTagsFromCssDeclaration(
-                        cssStyleAttributeFromTagToken(fullTagToken));
-                    for (const QString& spanTag : spanTags)
-                    {
-                        output += QStringLiteral("<%1>").arg(spanTag);
-                    }
-                    spanStyleStack.push_back(spanTags);
-                }
-                else if (!spanStyleStack.isEmpty())
-                {
-                    const QStringList spanTags = spanStyleStack.takeLast();
-                    for (int index = spanTags.size() - 1; index >= 0; --index)
-                    {
-                        output += QStringLiteral("</%1>").arg(spanTags.at(index));
-                    }
-                }
-                cursor = tagEnd;
-                continue;
-            }
-
-            const QString inlineStyleTag = canonicalInlineStyleTagName(rawTagName);
-            if (!inlineStyleTag.isEmpty())
-            {
-                output += closingTag
-                              ? QStringLiteral("</%1>").arg(inlineStyleTag)
-                              : QStringLiteral("<%1>").arg(inlineStyleTag);
-                cursor = tagEnd;
-                continue;
-            }
-
-            output += fullTagToken;
-            cursor = tagEnd;
-        }
-
-        if (insideBody && cursor < normalizedSource.size())
-        {
-            appendInlineHashtagTaggedText(&output, decodeXmlEntities(normalizedSource.mid(cursor)));
-        }
-
-        while (!spanStyleStack.isEmpty())
-        {
-            const QStringList spanTags = spanStyleStack.takeLast();
-            for (int index = spanTags.size() - 1; index >= 0; --index)
-            {
-                output += QStringLiteral("</%1>").arg(spanTags.at(index));
-            }
-        }
-
-        output = WhatSon::NoteBodyPersistence::normalizeBodyPlainText(output);
-        return normalizeStructuredBlocksToStandaloneLines(output);
-    }
-
-    QString serializeInlineTaggedLine(
-        const QString& lineText,
-        const QStringList& carriedOpenStyleTags,
-        QStringList* nextCarriedOpenStyleTags)
-    {
-        if (nextCarriedOpenStyleTags != nullptr)
-        {
-            nextCarriedOpenStyleTags->clear();
-        }
-
-        if (lineText.isEmpty() && carriedOpenStyleTags.isEmpty())
-        {
-            return {};
-        }
-
-        static const QRegularExpression tagPattern(
-            QStringLiteral(R"(<\s*/?\s*([A-Za-z_][A-Za-z0-9_.:-]*)\b[^>]*>)"));
-
-        QString output;
-        QStringList openStyleTags = carriedOpenStyleTags;
-        for (const QString& openStyleTag : carriedOpenStyleTags)
-        {
-            output += QStringLiteral("<%1>").arg(openStyleTag);
-        }
-        qsizetype cursor = 0;
-
-        QRegularExpressionMatchIterator iterator = tagPattern.globalMatch(lineText);
-        while (iterator.hasNext())
-        {
-            const QRegularExpressionMatch match = iterator.next();
-            const qsizetype tagStart = match.capturedStart(0);
-            const qsizetype tagEnd = match.capturedEnd(0);
-            if (tagStart < 0 || tagEnd <= tagStart)
-            {
-                continue;
-            }
-
-            if (tagStart > cursor)
-            {
-                output += escapeXmlAttributeValue(lineText.mid(cursor, tagStart - cursor));
-            }
-
-            const QString fullTagToken = match.captured(0);
-            const QString rawTagName = match.captured(1);
-            const QString normalizedTagName = rawTagName.trimmed().toCaseFolded();
-            const bool closingTag = isClosingTagToken(fullTagToken);
-            const bool selfClosingTag = isSelfClosingTagToken(fullTagToken);
-
-            if (normalizedTagName == QStringLiteral("resource"))
-            {
-                if (!closingTag)
-                {
-                    output += normalizeResourceStartTag(fullTagToken);
-                }
-                cursor = tagEnd;
-                continue;
-            }
-
-            if (SemanticTags::isSourceSemanticPassThroughTagName(rawTagName))
-            {
-                output += normalizedTagName == QStringLiteral("next")
-                    ? QStringLiteral("<next/>")
-                    : fullTagToken;
-                cursor = tagEnd;
-                continue;
-            }
-
-            if (normalizedTagName == QStringLiteral("br"))
-            {
-                output += QStringLiteral("<br/>");
-                cursor = tagEnd;
-                continue;
-            }
-
-            if (isBreakDividerTagName(normalizedTagName))
-            {
-                output += canonicalBreakDividerBodyTag();
-                cursor = tagEnd;
-                continue;
-            }
-
-            if (isAgendaTagName(rawTagName))
-            {
-                if (closingTag)
-                {
-                    output += QStringLiteral("</agenda>");
-                }
-                else
-                {
-                    output += normalizeAgendaStartTag(fullTagToken);
-                    if (selfClosingTag)
-                    {
-                        output += QStringLiteral("</agenda>");
-                    }
-                }
-                cursor = tagEnd;
-                continue;
-            }
-
-            if (isTaskTagName(rawTagName))
-            {
-                if (closingTag)
-                {
-                    output += QStringLiteral("</task>");
-                }
-                else
-                {
-                    output += normalizeTaskStartTag(fullTagToken);
-                    if (selfClosingTag)
-                    {
-                        output += QStringLiteral("</task>");
-                    }
-                }
-                cursor = tagEnd;
-                continue;
-            }
-
-            if (isCalloutTagName(rawTagName))
-            {
-                if (closingTag)
-                {
-                    output += QStringLiteral("</callout>");
-                }
-                else
-                {
-                    output += normalizeCalloutStartTag(fullTagToken);
-                    if (selfClosingTag)
-                    {
-                        output += QStringLiteral("</callout>");
-                    }
-                }
-                cursor = tagEnd;
-                continue;
-            }
-
-            if (isTagElementName(rawTagName))
-            {
-                if (closingTag)
-                {
-                    output += QStringLiteral("</tag>");
-                }
-                else if (!selfClosingTag)
-                {
-                    output += QStringLiteral("<tag>");
-                }
-                cursor = tagEnd;
-                continue;
-            }
-
-            if (isWebLinkTagName(rawTagName) || normalizedTagName == QStringLiteral("a"))
-            {
-                if (closingTag)
-                {
-                    output += QStringLiteral("</weblink>");
-                }
-                else
-                {
-                    output += WebLinks::canonicalStartTagFromRawToken(fullTagToken);
-                    if (selfClosingTag)
-                    {
-                        output += QStringLiteral("</weblink>");
-                    }
-                }
-                cursor = tagEnd;
-                continue;
-            }
-
-            const QString inlineStyleTag = canonicalInlineStyleTagName(rawTagName);
-            if (!inlineStyleTag.isEmpty())
-            {
-                if (closingTag)
-                {
-                    closeMatchingInlineStyleTag(&output, &openStyleTags, inlineStyleTag);
-                }
-                else if (!selfClosingTag)
-                {
-                    output += QStringLiteral("<%1>").arg(inlineStyleTag);
-                    openStyleTags.push_back(inlineStyleTag);
-                }
-                cursor = tagEnd;
-                continue;
-            }
-
-            output += escapeXmlAttributeValue(fullTagToken);
-            cursor = tagEnd;
-        }
-
-        if (cursor < lineText.size())
-        {
-            output += escapeXmlAttributeValue(lineText.mid(cursor));
-        }
-
-        if (nextCarriedOpenStyleTags != nullptr)
-        {
-            *nextCarriedOpenStyleTags = openStyleTags;
-        }
-
-        for (int index = openStyleTags.size() - 1; index >= 0; --index)
-        {
-            output += QStringLiteral("</%1>").arg(openStyleTags.at(index));
-        }
-
-        return output;
-    }
-
-    QString normalizePath(QString path)
-    {
-        path = path.trimmed();
-        if (path.isEmpty())
-        {
-            return {};
-        }
-        return QDir::cleanPath(path);
-    }
-
-    bool isTextBlockElement(const QString& elementName)
-    {
-        return SemanticTags::isSourceProjectionTextBlockElement(elementName);
-    }
-
-    BodyDocumentTextFragments parseBodyDocumentTextFragments(const QString& bodyDocumentText)
-    {
-        BodyDocumentTextFragments fragments;
-        if (bodyDocumentText.isEmpty())
-        {
-            return fragments;
-        }
-
-        QXmlStreamReader reader(normalizeResourceTagsForXmlParser(bodyDocumentText));
-        bool insideBody = false;
-        bool encounteredBlockElement = false;
-        int blockDepth = 0;
-        int agendaTaskCount = 0;
-        QString currentBlockText;
-        QString currentBlockRichText;
-        QString activeStructuredBlockName;
-        QStringList activeWebLinkStack;
-
-        while (!reader.atEnd())
-        {
-            reader.readNext();
-            if (reader.isStartElement())
-            {
-                const QString elementName = reader.name().toString();
-                if (!insideBody)
-                {
-                    if (elementName.compare(QStringLiteral("body"), Qt::CaseInsensitive) == 0)
-                    {
-                        insideBody = true;
-                    }
-                    continue;
-                }
-
-                if (elementName.compare(QStringLiteral("resource"), Qt::CaseInsensitive) == 0)
-                {
-                    continue;
-                }
-
-                if (isTagElementName(elementName))
-                {
-                    if (blockDepth > 0)
-                    {
-                        currentBlockText += QLatin1Char('#');
-                        currentBlockRichText += QLatin1Char('#');
-                    }
-                    else if (!encounteredBlockElement)
-                    {
-                        fragments.fallbackText += QLatin1Char('#');
-                        fragments.fallbackRichText += QLatin1Char('#');
-                    }
-                    continue;
-                }
-
-                if (isWebLinkTagName(elementName)
-                    || elementName.compare(QStringLiteral("a"), Qt::CaseInsensitive) == 0)
-                {
-                    const QString href = reader.attributes().value(QStringLiteral("href")).toString();
-                    if (blockDepth > 0)
-                    {
-                        currentBlockRichText += WebLinks::openingHtmlForHref(href);
-                    }
-                    else if (!encounteredBlockElement)
-                    {
-                        fragments.fallbackRichText += WebLinks::openingHtmlForHref(href);
-                    }
-                    activeWebLinkStack.push_back(href);
-                    continue;
-                }
-
-                const InlineStyleHtmlTag inlineStyleTag = inlineStyleHtmlTagForElement(elementName);
-                if (!inlineStyleTag.isEmpty())
-                {
-                    if (blockDepth > 0)
-                    {
-                        appendInlineStyleTag(&currentBlockRichText, inlineStyleTag, true);
-                    }
-                    else if (!encounteredBlockElement)
-                    {
-                        appendInlineStyleTag(&fragments.fallbackRichText, inlineStyleTag, true);
-                    }
-                    continue;
-                }
-
-                if (SemanticTags::isRenderedLineBreakTagName(elementName))
-                {
-                    if (blockDepth > 0)
-                    {
-                        currentBlockText += QLatin1Char('\n');
-                        currentBlockRichText += QLatin1Char('\n');
-                    }
-                    else if (!encounteredBlockElement)
-                    {
-                        fragments.fallbackText += QLatin1Char('\n');
-                        fragments.fallbackRichText += QLatin1Char('\n');
-                    }
-                    continue;
-                }
-
-                if (SemanticTags::isTransparentContainerTagName(elementName))
-                {
-                    continue;
-                }
-
-                if (elementName.compare(QStringLiteral("break"), Qt::CaseInsensitive) == 0
-                    || elementName.compare(QStringLiteral("hr"), Qt::CaseInsensitive) == 0)
-                {
-                    if (blockDepth > 0)
-                    {
-                        currentBlockText += QLatin1Char('\n');
-                        currentBlockRichText += QStringLiteral("<hr/>");
-                    }
-                    else if (!encounteredBlockElement)
-                    {
-                        fragments.fallbackText += QLatin1Char('\n');
-                        fragments.fallbackRichText += QStringLiteral("<hr/>");
-                    }
-                    continue;
-                }
-
-                if (isStructuredBodyBlockElement(elementName))
-                {
-                    encounteredBlockElement = true;
-                    if (blockDepth == 0)
-                    {
-                        currentBlockText.clear();
-                        currentBlockRichText.clear();
-                    }
-                    ++blockDepth;
-                    activeStructuredBlockName = elementName.trimmed().toCaseFolded();
-                    agendaTaskCount = 0;
-                    continue;
-                }
-
-                if (activeStructuredBlockName == QStringLiteral("agenda")
-                    && elementName.compare(QStringLiteral("task"), Qt::CaseInsensitive) == 0)
-                {
-                    if (blockDepth > 0)
-                    {
-                        if (agendaTaskCount > 0)
-                        {
-                            currentBlockText += QLatin1Char('\n');
-                            currentBlockRichText += QLatin1Char('\n');
-                        }
-                        ++agendaTaskCount;
-                    }
-                    continue;
-                }
-
-                if (SemanticTags::isRenderedTextBlockElement(elementName))
-                {
-                    const QString semanticTextOpeningHtml = SemanticTags::semanticTextOpeningHtml(elementName);
-                    encounteredBlockElement = true;
-                    if (blockDepth == 0)
-                    {
-                        currentBlockText.clear();
-                        currentBlockRichText.clear();
-                    }
-                    ++blockDepth;
-                    if (!semanticTextOpeningHtml.isEmpty())
-                    {
-                        currentBlockRichText += semanticTextOpeningHtml;
-                    }
-                }
-                continue;
-            }
-
-            if (!insideBody)
-            {
-                continue;
-            }
-
-            if (reader.isCharacters())
-            {
-                const QString text = reader.text().toString();
-                const bool whitespaceOnlyText = text.trimmed().isEmpty();
-                if (blockDepth > 0)
-                {
-                    currentBlockText += text;
-                    currentBlockRichText += escapeHtmlTextPreservingVisibleWhitespace(text);
-                }
-                else if (!whitespaceOnlyText)
-                {
-                    fragments.fallbackText += text;
-                    fragments.fallbackRichText += escapeHtmlTextPreservingVisibleWhitespace(text);
-                }
-                continue;
-            }
-
-            if (!reader.isEndElement())
-            {
-                continue;
-            }
-
-            const QString elementName = reader.name().toString();
-            if (isWebLinkTagName(elementName)
-                || elementName.compare(QStringLiteral("a"), Qt::CaseInsensitive) == 0)
-            {
-                if (!activeWebLinkStack.isEmpty())
-                {
-                    activeWebLinkStack.removeLast();
-                }
-                if (blockDepth > 0)
-                {
-                    currentBlockRichText += QStringLiteral("</a>");
-                }
-                else if (!encounteredBlockElement)
-                {
-                    fragments.fallbackRichText += QStringLiteral("</a>");
-                }
-                continue;
-            }
-
-            const InlineStyleHtmlTag inlineStyleTag = inlineStyleHtmlTagForElement(elementName);
-            if (!inlineStyleTag.isEmpty())
-            {
-                if (blockDepth > 0)
-                {
-                    appendInlineStyleTag(&currentBlockRichText, inlineStyleTag, false);
-                }
-                else if (!encounteredBlockElement)
-                {
-                    appendInlineStyleTag(&fragments.fallbackRichText, inlineStyleTag, false);
-                }
-                continue;
-            }
-
-            const QString semanticTextClosingHtml = SemanticTags::semanticTextClosingHtml(elementName);
-            if (!semanticTextClosingHtml.isEmpty())
-            {
-                if (blockDepth > 0)
-                {
-                    currentBlockRichText += semanticTextClosingHtml;
-                }
-                else if (!encounteredBlockElement)
-                {
-                    fragments.fallbackRichText += semanticTextClosingHtml;
-                }
-            }
-
-            if (elementName.compare(QStringLiteral("body"), Qt::CaseInsensitive) == 0)
-            {
-                break;
-            }
-
-            if (SemanticTags::isTransparentContainerTagName(elementName))
-            {
-                continue;
-            }
-
-            if (activeStructuredBlockName == QStringLiteral("agenda")
-                && elementName.compare(QStringLiteral("task"), Qt::CaseInsensitive) == 0)
-            {
-                continue;
-            }
-
-            if (isStructuredBodyBlockElement(elementName) && blockDepth > 0)
-            {
-                --blockDepth;
-                if (blockDepth == 0)
-                {
-                    fragments.blockLines.append(
-                        WhatSon::NoteBodyPersistence::normalizeBodyPlainText(currentBlockText).split(
-                            QLatin1Char('\n'),
-                            Qt::KeepEmptyParts));
-                    fragments.blockRichLines.append(
-                        WhatSon::NoteBodyPersistence::normalizeBodyPlainText(currentBlockRichText).split(
-                            QLatin1Char('\n'),
-                            Qt::KeepEmptyParts));
-                    currentBlockText.clear();
-                    currentBlockRichText.clear();
-                    activeStructuredBlockName.clear();
-                    agendaTaskCount = 0;
-                }
-                continue;
-            }
-
-            if (!SemanticTags::isRenderedTextBlockElement(elementName) || blockDepth <= 0)
-            {
-                continue;
-            }
-
-            --blockDepth;
-            if (blockDepth == 0)
-            {
-                fragments.blockLines.append(
-                    WhatSon::NoteBodyPersistence::normalizeBodyPlainText(currentBlockText).split(
-                        QLatin1Char('\n'),
-                        Qt::KeepEmptyParts));
-                fragments.blockRichLines.append(
-                    WhatSon::NoteBodyPersistence::normalizeBodyPlainText(currentBlockRichText).split(
-                        QLatin1Char('\n'),
-                        Qt::KeepEmptyParts));
-                currentBlockText.clear();
-                currentBlockRichText.clear();
-            }
-        }
-
-        fragments.fallbackText = WhatSon::NoteBodyPersistence::normalizeBodyPlainText(fragments.fallbackText);
-        fragments.fallbackRichText = WhatSon::NoteBodyPersistence::normalizeBodyPlainText(fragments.fallbackRichText);
-        return fragments;
-    }
-} // namespace
+}
 
 namespace WhatSon::NoteBodyPersistence
 {
@@ -1826,52 +460,30 @@ namespace WhatSon::NoteBodyPersistence
     {
         const QString normalizedId = noteId.trimmed().isEmpty()
                                          ? QStringLiteral("note")
-                                         : escapeXmlAttributeValue(noteId.trimmed());
-        const QString inlineTaggedText =
-            normalizeStructuredBlocksToStandaloneLines(
-                normalizeEditorSourceToInlineTaggedText(bodySourceText));
+                                         : escapeXml(noteId.trimmed());
+        const QString normalizedSourceText = normalizeBodyPlainText(bodySourceText);
+        const QStringList lines = normalizedSourceText.split(QLatin1Char('\n'), Qt::KeepEmptyParts);
 
         QString text;
         text += QStringLiteral("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
         text += QStringLiteral("<!DOCTYPE WHATSONNOTE>\n");
         text += QStringLiteral("<contents id=\"") + normalizedId + QStringLiteral("\">\n");
         text += QStringLiteral("  <body>\n");
-        if (inlineTaggedText.isEmpty())
-        {
-            text += QStringLiteral("  </body>\n");
-            text += QStringLiteral("</contents>\n");
-            return text;
-        }
-
-        const QStringList lines = inlineTaggedText.split(QLatin1Char('\n'), Qt::KeepEmptyParts);
-        QStringList carriedOpenStyleTags;
         for (const QString& line : lines)
         {
             const QString trimmedLine = line.trimmed();
-            const QString canonicalResourceLine = canonicalStandaloneResourceSourceLine(trimmedLine);
-            if (!canonicalResourceLine.isEmpty())
+            const QString resourceLine = canonicalResourceLine(trimmedLine);
+            if (!resourceLine.isEmpty())
             {
-                carriedOpenStyleTags.clear();
-                text += QStringLiteral("    ");
-                text += serializeInlineTaggedLine(canonicalResourceLine, {}, nullptr);
-                text += QLatin1Char('\n');
+                text += QStringLiteral("    ") + resourceLine + QLatin1Char('\n');
                 continue;
             }
-
-            if (isStandaloneStructuredSourceLine(trimmedLine))
+            if (isStandaloneBreakLine(trimmedLine))
             {
-                carriedOpenStyleTags.clear();
-                text += QStringLiteral("    ");
-                text += serializeInlineTaggedLine(trimmedLine, {}, nullptr);
-                text += QLatin1Char('\n');
+                text += QStringLiteral("    <break />\n");
                 continue;
             }
-
-            text += QStringLiteral("    <paragraph>");
-            QStringList nextCarriedOpenStyleTags;
-            text += serializeInlineTaggedLine(line, carriedOpenStyleTags, &nextCarriedOpenStyleTags);
-            carriedOpenStyleTags = nextCarriedOpenStyleTags;
-            text += QStringLiteral("</paragraph>\n");
+            text += serializeParagraphLine(line);
         }
         text += QStringLiteral("  </body>\n");
         text += QStringLiteral("</contents>\n");
@@ -1880,148 +492,71 @@ namespace WhatSon::NoteBodyPersistence
 
     QStringList extractedInlineTagValues(const QString& bodySourceText)
     {
-        const QString canonicalInlineTaggedText = normalizeEditorSourceToInlineTaggedText(bodySourceText);
-        if (canonicalInlineTaggedText.isEmpty())
-        {
-            return {};
-        }
-
-        static const QRegularExpression tagPattern(
-            QStringLiteral(R"(<\s*tag\b[^>]*>(.*?)<\s*/\s*tag\s*>)"),
-            QRegularExpression::CaseInsensitiveOption | QRegularExpression::DotMatchesEverythingOption);
+        static const QRegularExpression hashtagPattern(
+            QStringLiteral(R"((?:^|[\s\(\[\{])#([\p{L}\p{N}_\-/]+))"));
 
         QStringList extractedTags;
         QSet<QString> seenTags;
-        QRegularExpressionMatchIterator iterator = tagPattern.globalMatch(canonicalInlineTaggedText);
+        QRegularExpressionMatchIterator iterator = hashtagPattern.globalMatch(normalizeBodyPlainText(bodySourceText));
         while (iterator.hasNext())
         {
-            const QRegularExpressionMatch match = iterator.next();
-            const QString tagValue = normalizeBodyPlainText(decodeXmlEntities(match.captured(1))).trimmed();
-            if (tagValue.isEmpty())
+            const QString tag = iterator.next().captured(1).trimmed();
+            if (tag.isEmpty())
             {
                 continue;
             }
 
-            const QString normalizedTagKey = tagValue.toCaseFolded();
-            if (seenTags.contains(normalizedTagKey))
+            const QString key = tag.toCaseFolded();
+            if (seenTags.contains(key))
             {
                 continue;
             }
-
-            seenTags.insert(normalizedTagKey);
-            extractedTags.push_back(tagValue);
+            seenTags.insert(key);
+            extractedTags.push_back(tag);
         }
-
         return extractedTags;
     }
 
     QString plainTextFromBodyDocument(const QString& bodyDocumentText)
     {
-        const BodyDocumentTextFragments fragments = parseBodyDocumentTextFragments(bodyDocumentText);
-        if (!fragments.blockLines.isEmpty())
-        {
-            return fragments.blockLines.join(QLatin1Char('\n'));
-        }
-        return fragments.fallbackText;
+        return bodyPlainLinesFromDocument(bodyDocumentText).join(QLatin1Char('\n'));
     }
 
     QString sourceTextFromBodyDocument(const QString& bodyDocumentText)
     {
-        QString normalizedSourceText =
-            canonicalSourceTextFromBodyDocumentProjection(bodyDocumentText);
-        if (containsSuspiciousEditorHtmlBlockProjection(normalizedSourceText))
+        const QString sourceText = bodySourceLinesFromDocument(bodyDocumentText).join(QLatin1Char('\n'));
+        if (!sourceText.isEmpty())
         {
-            WhatSon::Debug::trace(
-                QStringLiteral("noteBodyPersistence"),
-                QStringLiteral("suspiciousEditorHtmlSourceProjection"),
-                QStringLiteral("projected=%1")
-                    .arg(WhatSon::Debug::summarizeText(normalizedSourceText)));
-
-            const QString repairedSourceText =
-                canonicalSourceTextFromBodyDocumentProjection(normalizedSourceText);
-            if (!repairedSourceText.isEmpty())
-            {
-                normalizedSourceText = repairedSourceText;
-            }
+            return sourceText;
         }
-        if (textContainsResourceTag(bodyDocumentText) && !textContainsResourceTag(normalizedSourceText))
-        {
-            const QString fallbackSourceText =
-                fallbackSourceTextFromBodyDocumentPreservingResources(bodyDocumentText);
-            if (textContainsResourceTag(fallbackSourceText))
-            {
-                return fallbackSourceText;
-            }
-        }
-        if (containsSuspiciousEditorHtmlBlockProjection(normalizedSourceText))
-        {
-            const QString plainTextFallback =
-                WhatSon::NoteBodyPersistence::normalizeBodyPlainText(
-                    plainTextFromBodyDocument(bodyDocumentText));
-            if (!plainTextFallback.isEmpty())
-            {
-                WhatSon::Debug::trace(
-                    QStringLiteral("noteBodyPersistence"),
-                    QStringLiteral("fallbackFromSuspiciousEditorHtmlSourceProjection"),
-                    QStringLiteral("projected=%1 fallback=%2")
-                        .arg(WhatSon::Debug::summarizeText(normalizedSourceText))
-                        .arg(WhatSon::Debug::summarizeText(plainTextFallback)));
-                return plainTextFallback;
-            }
-        }
-        if (normalizedSourceText.isEmpty())
-        {
-            const QString plainTextFallback =
-                WhatSon::NoteBodyPersistence::normalizeBodyPlainText(
-                    plainTextFromBodyDocument(bodyDocumentText));
-            if (!plainTextFallback.isEmpty())
-            {
-                return plainTextFallback;
-            }
-        }
-        return normalizedSourceText;
+        return sourceTextFallback(plainTextFromBodyDocument(bodyDocumentText));
     }
 
     QString htmlProjectionFromBodyDocument(const QString& bodyDocumentText)
     {
-        const BodyDocumentTextFragments fragments = parseBodyDocumentTextFragments(bodyDocumentText);
-        if (!fragments.blockRichLines.isEmpty())
+        const QStringList lines = bodyPlainLinesFromDocument(bodyDocumentText);
+        QStringList htmlLines;
+        htmlLines.reserve(lines.size());
+        for (const QString& line : lines)
         {
-            return richTextFromRichLines(fragments.blockRichLines);
+            htmlLines.push_back(escapeHtml(line));
         }
-
-        return richTextFromRichLines(
-            fragments.fallbackRichText.split(QLatin1Char('\n'), Qt::KeepEmptyParts));
+        return htmlLines.join(QStringLiteral("<br/>"));
     }
 
     QString firstLineFromBodyDocument(const QString& bodyDocumentText)
     {
-        const BodyDocumentTextFragments fragments = parseBodyDocumentTextFragments(bodyDocumentText);
-        const QString fallbackFirstLine = firstLineFromBodyPlainText(fragments.fallbackText);
-        if (!fallbackFirstLine.isEmpty())
+        const QString firstLine = firstNonEmptyLine(bodyPlainLinesFromDocument(bodyDocumentText));
+        if (!firstLine.isEmpty())
         {
-            return fallbackFirstLine;
+            return firstLine;
         }
-        if (!fragments.blockLines.isEmpty())
-        {
-            return firstLineFromBodyPlainText(fragments.blockLines.join(QLatin1Char('\n')));
-        }
-        return {};
+        return firstNonEmptyLine(bodySourceLinesFromDocument(bodyDocumentText));
     }
 
     QString firstLineFromBodyPlainText(const QString& text)
     {
-        const QString normalizedText = normalizeBodyPlainText(text);
-        const QStringList lines = normalizedText.split(QLatin1Char('\n'));
-        for (const QString& line : lines)
-        {
-            const QString trimmed = line.trimmed();
-            if (!trimmed.isEmpty())
-            {
-                return trimmed;
-            }
-        }
-        return {};
+        return firstNonEmptyLine(normalizeBodyPlainText(text).split(QLatin1Char('\n'), Qt::KeepEmptyParts));
     }
 
     QString resolveBodyPath(const QString& noteDirectoryPath)

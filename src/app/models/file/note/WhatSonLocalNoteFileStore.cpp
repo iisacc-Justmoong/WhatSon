@@ -587,11 +587,7 @@ void WhatSonLocalNoteFileStore::applyBodyDocumentText(
 
     document->bodyPlainText = WhatSon::NoteBodyPersistence::plainTextFromBodyDocument(bodyDocumentText);
     document->bodySourceText = WhatSon::NoteBodyPersistence::sourceTextFromBodyDocument(bodyDocumentText);
-    if (document->bodySourceText.isEmpty())
-    {
-        document->bodySourceText = document->bodyPlainText;
-    }
-    document->bodyFirstLine = WhatSon::NoteBodyPersistence::firstLineFromBodyDocument(bodyDocumentText);
+    document->normalizeBodyFields();
 }
 
 bool WhatSonLocalNoteFileStore::createNote(
@@ -647,19 +643,14 @@ bool WhatSonLocalNoteFileStore::createNote(
     {
         request.headerStore.setNoteId(resolvedNoteId);
     }
-    const QString bodyDocumentText = serializeBodyDocument(request.headerStore.noteId(), request.bodyPlainText);
-    const QString normalizedBodyText = WhatSon::NoteBodyPersistence::plainTextFromBodyDocument(bodyDocumentText);
-    QString normalizedBodySourceText = WhatSon::NoteBodyPersistence::sourceTextFromBodyDocument(bodyDocumentText);
-    if (normalizedBodySourceText.isEmpty())
-    {
-        normalizedBodySourceText = normalizedBodyText;
-    }
+    const QString normalizedBodyText = WhatSon::NoteBodyPersistence::normalizeBodyPlainText(request.bodyPlainText);
+    const QString bodyDocumentText = serializeBodyDocument(request.headerStore.noteId(), normalizedBodyText);
 
     QString statsError;
     if (!WhatSon::NoteFileStatSupport::applyTrackedStatistics(
             &request.headerStore,
             noteDirectoryPath,
-            normalizedBodySourceText,
+            normalizedBodyText,
             bodyDocumentText,
             &statsError))
     {
@@ -670,7 +661,7 @@ bool WhatSonLocalNoteFileStore::createNote(
         return false;
     }
     const QStringList trackedBacklinkTargets = WhatSon::NoteFileStatSupport::extractBacklinkTargets(
-        normalizedBodySourceText,
+        normalizedBodyText,
         bodyDocumentText);
 
     WhatSonNoteHeaderCreator headerCreator(noteDirectoryPath, QString());
@@ -741,8 +732,8 @@ bool WhatSonLocalNoteFileStore::createNote(
         outDocument->notePaintPath = paintPath;
         outDocument->headerStore = request.headerStore;
         outDocument->bodyPlainText = normalizedBodyText;
-        outDocument->bodySourceText = normalizedBodySourceText;
-        outDocument->bodyFirstLine = WhatSon::NoteBodyPersistence::firstLineFromBodyPlainText(normalizedBodyText);
+        outDocument->bodySourceText = normalizedBodyText;
+        outDocument->normalizeBodyFields();
         outDocument->bodyHasResource = false;
         outDocument->bodyFirstResourceThumbnailUrl.clear();
     }
@@ -942,41 +933,30 @@ bool WhatSonLocalNoteFileStore::updateNote(
 
     if (persistBody)
     {
-        QString bodySourceText = WhatSon::NoteBodyPersistence::normalizeBodyPlainText(request.document.bodySourceText);
-        if (bodySourceText.isEmpty())
-        {
-            bodySourceText = WhatSon::NoteBodyPersistence::normalizeBodyPlainText(request.document.bodyPlainText);
-        }
-
-        serializedBodyDocument = serializeBodyDocument(request.document.headerStore.noteId(), bodySourceText);
+        const QString bodyText = request.document.effectiveBodyText();
+        serializedBodyDocument = serializeBodyDocument(request.document.headerStore.noteId(), bodyText);
         request.document.bodyPlainText = WhatSon::NoteBodyPersistence::plainTextFromBodyDocument(serializedBodyDocument);
-        // Keep the editor-authored RAW source authoritative; the serializer only materializes `.wsnbody`.
-        request.document.bodySourceText = bodySourceText;
+        request.document.bodySourceText = bodyText;
+        request.document.normalizeBodyFields();
         bodyDocumentForStats = serializedBodyDocument;
 
-        // Selection/reconcile paths may attempt a direct persist even when the effective body payload is unchanged.
-        // In that case, skip the write entirely so note-open/note-selection cannot bump lastModifiedAt or reorder the list.
         if (!request.persistHeader
             && !existingBodyDocument.isEmpty()
             && existingBodyDocument == serializedBodyDocument)
         {
             if (outDocument != nullptr)
             {
-                *outDocument = unchangedDocument;
+                WhatSonLocalNoteDocument normalizedDocument = unchangedDocument;
+                normalizedDocument.normalizeBodyFields();
+                *outDocument = std::move(normalizedDocument);
             }
             return true;
         }
     }
     else
     {
-        request.document.bodyPlainText = WhatSon::NoteBodyPersistence::normalizeBodyPlainText(request.document.bodyPlainText);
-        request.document.bodySourceText = WhatSon::NoteBodyPersistence::normalizeBodyPlainText(request.document.bodySourceText);
+        request.document.normalizeBodyFields();
     }
-    if (request.document.bodySourceText.isEmpty())
-    {
-        request.document.bodySourceText = request.document.bodyPlainText;
-    }
-    request.document.bodyFirstLine = WhatSon::NoteBodyPersistence::firstLineFromBodyPlainText(request.document.bodyPlainText);
 
     if (persistBody)
     {
@@ -999,7 +979,7 @@ bool WhatSonLocalNoteFileStore::updateNote(
         }
     }
 
-    QString bodySourceTextForStats = request.document.bodySourceText;
+    QString bodySourceTextForStats = request.document.effectiveBodyText();
     if (bodySourceTextForStats.isEmpty() && !bodyDocumentForStats.isEmpty())
     {
         bodySourceTextForStats = WhatSon::NoteBodyPersistence::sourceTextFromBodyDocument(bodyDocumentForStats);

@@ -1,8 +1,9 @@
 #include "app/models/editor/renderer/ContentsHtmlBlockRenderPipeline.hpp"
 
+#include "app/models/editor/format/ContentsTextFormatRendererInternal.hpp"
 #include "app/models/editor/parser/ContentsWsnBodyBlockParser.hpp"
-#include "app/models/file/note/WhatSonNoteBodyPersistence.hpp"
 #include "app/models/file/note/WhatSonNoteBodySemanticTagSupport.hpp"
+#include "app/models/file/note/WhatSonNoteBodyPersistence.hpp"
 
 #include <QRegularExpression>
 #include <QStringList>
@@ -109,11 +110,18 @@ namespace
             return QStringLiteral("&nbsp;");
         }
 
-        const QString bodyDocument = WhatSon::NoteBodyPersistence::serializeBodyDocument(
-            QStringLiteral("note"),
-            normalizedText);
-        const QString htmlProjection =
-            WhatSon::NoteBodyPersistence::htmlProjectionFromBodyDocument(bodyDocument);
+        const QStringList lines = normalizedText.split(QLatin1Char('\n'), Qt::KeepEmptyParts);
+        QStringList htmlLines;
+        htmlLines.reserve(lines.size());
+        for (const QString& line : lines)
+        {
+            htmlLines.push_back(
+                WhatSon::ContentsTextFormatRendererInternal::renderInlineTaggedTextFragmentToHtml(
+                    line,
+                    WhatSon::ContentsTextFormatRendererInternal::LiteralRenderMode::SourceEditing));
+        }
+
+        const QString htmlProjection = htmlLines.join(QStringLiteral("<br/>"));
         return htmlProjection.isEmpty() ? QStringLiteral("&nbsp;") : htmlProjection;
     }
 

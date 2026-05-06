@@ -31,7 +31,8 @@
 - Shortcut/context-menu formatting no longer depends on a transient `QTextDocument` fragment merge to decide where a
   RAW source style starts or ends.
 - Inline text formatting and highlight tag styling now live in `src/app/models/editor/format`; this renderer directory
-  stays focused on block-level HTML and structured document projection.
+  stays focused on block-level HTML and structured document projection while delegating text-fragment style rendering
+  to that format module.
 - Page/print paper-surface helpers were moved out to `src/app/models/display/paper` and
   `src/app/models/display/paper/print`, leaving this directory focused on renderer-only concerns.
 - `ContentsStructuredBlockRenderer.cpp` still emits verbose editor trace events for constructor/destructor turns,
@@ -53,5 +54,7 @@
 - 대상: ``src/app/models/editor/renderer`` (`docs/src/app/models/editor/renderer/README.md`)
 - 위치: `docs/src/app/models/editor/renderer`
 - 역할: 이 파일은 해당 디렉터리나 모듈의 구조, 책임, 운영 규칙, 검증 기준을 설명한다.
+- 현재 렌더러는 block-level HTML/iiHtmlBlock projection을 담당하고, 텍스트 fragment 내부의 `<bold>` /
+  `<italic>` 스타일 해석은 `src/app/models/editor/format` 렌더러에 위임한다.
 - 기준: 파일 경로, 명령, API 이름, 세부 변경 이력은 위 영어 본문을 원문 기준으로 유지한다.
 - 변경 시: 위 영어 본문을 수정하면 이 한국어 하단 섹션도 함께 최신 상태로 맞춘다.

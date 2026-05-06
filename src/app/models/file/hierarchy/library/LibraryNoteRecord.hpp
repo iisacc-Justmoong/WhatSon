@@ -3,6 +3,8 @@
 #include <QString>
 #include <QStringList>
 
+#include "app/models/file/note/WhatSonNoteBodyPersistence.hpp"
+
 struct LibraryNoteRecord
 {
     QString noteId;
@@ -26,6 +28,24 @@ struct LibraryNoteRecord
     bool preset = false;
     QString noteDirectoryPath;
     QString noteHeaderPath;
+
+    QString effectiveBodyText() const
+    {
+        const QString normalizedSource = WhatSon::NoteBodyPersistence::normalizeBodyPlainText(bodySourceText);
+        if (!normalizedSource.isEmpty())
+        {
+            return normalizedSource;
+        }
+        return WhatSon::NoteBodyPersistence::normalizeBodyPlainText(bodyPlainText);
+    }
+
+    void normalizeBodyFields()
+    {
+        const QString normalizedBodyText = effectiveBodyText();
+        bodyPlainText = normalizedBodyText;
+        bodySourceText = normalizedBodyText;
+        bodyFirstLine = WhatSon::NoteBodyPersistence::firstLineFromBodyPlainText(normalizedBodyText);
+    }
 
     bool operator==(const LibraryNoteRecord& other) const
     {

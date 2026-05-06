@@ -2,7 +2,7 @@
 
 ## Responsibility
 
-Formats compact trace strings for `ContentsDisplayView.qml` and related display coordinators.
+Formats compact trace strings for editor display coordinators and the C++ note-display backend.
 
 ## Key Behavior
 

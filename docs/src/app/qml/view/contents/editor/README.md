@@ -6,8 +6,6 @@ Editor-facing QML view components for the center content surface.
 
 ## Child Files
 
-- `ContentsDisplaySurfaceHost.qml`
-- `ContentsDisplayView.qml`
 - `ContentsInlineFormatEditor.qml`
 - `ContentsLineNumberRail.qml`
 - `ContentsResourceEditorView.qml`
@@ -16,14 +14,18 @@ Editor-facing QML view components for the center content surface.
 
 ## Current Pipeline
 
-- `ContentsDisplayView.qml` mounts the selected note RAW body into `ContentsEditorSessionController`.
+- `ContentViewLayout.qml` composes the live note editor chrome directly and instantiates
+  `ContentsEditorDisplayBackend` from `src/app/models/editor/display`.
+- `ContentsEditorDisplayBackend` mounts the selected note RAW body into `ContentsEditorSessionController` and owns the
+  display-side session/projection/resource/minimap model objects.
 - `ContentsEditorPresentationProjection` converts that RAW body into editor HTML plus renderer-owned block metadata.
 - `ContentsEditorGeometryProvider` measures visible editor geometry for chrome snapshots,
   `ContentsEditorVisualLineMetrics` normalizes measured visual-line snapshots for the minimap, and
   `ContentsMinimapLayoutMetrics` resolves minimap chrome metrics under `src/app/models/editor/minimap`.
-- `ContentsDisplayView.qml` owns the visible editor chrome layout and composes the parent `view/contents` minimap with
-  `ContentsStructuredDocumentFlow.qml` in one `LV.HStack` with `LV.Theme.gap8` top and bottom chrome padding.
-- `ContentsDisplayView.qml` also mounts `ContentsLineNumberRail.qml` inside the same scrollable document content item as
+- `ContentViewLayout.qml` owns only visible editor chrome layout: one `LV.HStack`, a vertical `Flickable`,
+  `ContentsLineNumberRail.qml`, `ContentsStructuredDocumentFlow.qml`, and the parent `view/contents` minimap with
+  `LV.Theme.gap8` top and bottom chrome padding.
+- `ContentViewLayout.qml` mounts `ContentsLineNumberRail.qml` inside the same scrollable document content item as
   `ContentsStructuredDocumentFlow.qml`, so gutter rows and editor body rows share one y-coordinate system.
 - `ContentsStructuredDocumentFlow.qml` consumes `editorSurfaceHtml`, `logicalText`, `htmlTokens`, and
   `normalizedHtmlBlocks`, and passes `logicalText` plus the logical cursor position to the inline editor's geometry
@@ -55,7 +57,7 @@ Editor-facing QML view components for the center content surface.
   visible line length measured by `ContentsEditorGeometryProvider` and normalized by `ContentsEditorVisualLineMetrics`;
   height-derived rows that cannot be probed from text geometry remain full width inside the minimap's padded rail.
 - The minimap can be dragged vertically without rendering scrollbar chrome. `Minimap.qml` emits direct drag pixel
-  deltas from its invisible drag surface and `ContentsDisplayView.qml` applies those deltas to the center editor
+  deltas from its invisible drag surface and `ContentViewLayout.qml` applies those deltas to the center editor
   `Flickable.contentY` without smoothing or ratio scaling.
 - `ContentsInlineFormatEditor.qml` keeps editing on an `LV.TextEditor` plain-text buffer while displaying the read-side
   RichText overlay. When native selection is active, that overlay stays visible so WYSIWYG text and resource frames do
@@ -67,24 +69,28 @@ Editor-facing QML view components for the center content surface.
   during ordinary native typing/composition turns, so a refresh gap cannot reveal the RAW `<resource ... />` tag in
   place of the frame. The editor paints an explicit blinking cursor above the overlay only for collapsed caret
   positions while the underlying RAW text and native RAW cursor delegate are hidden. The rendered surface is stacked
-  below the transparent native editor. While that overlay is visible, a thin pointer bridge maps mouse-drag hit testing through `displayGeometryText` and
-  `logicalToSourceOffsets`, then restores the matching RAW source selection on `LV.TextEditor`; this keeps sub-word
-  selection precise even when hidden source tags would otherwise distort the transparent RAW text geometry. Collapsed
+  below the transparent native editor. While that overlay is visible, a thin pointer bridge maps mouse-drag hit testing through the same `renderedOverlay`
+  RichText geometry that is visible on screen and the C++ `coordinateMapper`, then restores the matching RAW source
+  selection on `LV.TextEditor`; this keeps sub-word selection precise even when hidden source tags would otherwise
+  distort the transparent RAW text geometry. That
+  visible-to-RAW selection policy is implemented by C++ `ContentsWysiwygEditorPolicy`; QML only applies the returned
+  range to the live `LV.TextEditor`. Collapsed
   mouse clicks use the same bridge for cursor placement and update a local projected-cursor offset immediately, so the
   visible caret does not wait on the parent host's `logicalCursorPosition` binding. Non-empty drag selections clear
   that cursor override and hide the projected cursor so the selection model remains authoritative. Double-click and
   triple-click gestures keep native-style line and paragraph selection by selecting the visible logical range before
   mapping it back to RAW source offsets. The bridge is inactive during IME composition. Plain-source and
   keyboard/modifier selection remain on the native text-edit path.
-  If native cursor movement lands inside a hidden inline formatting tag, the inline editor normalizes that RAW cursor to
-  the adjacent safe source boundary so arrow traversal skips zero-width tag bytes. Programmatic text replacement is
-  routed through the inline editor controller so focused native selection can defer host-side surface refresh. Inline
+  If native cursor movement lands inside a hidden inline formatting tag, C++ policy returns the adjacent safe source
+  boundary so arrow traversal skips zero-width tag bytes. Programmatic text replacement is routed through the inline
+  editor controller so focused native selection can defer host-side surface refresh. Inline
   resource frames are rendered at 100% of the editor text-column width. The editor body has no top inset or overlay
   padding, so the first text line starts at the top of the document slot.
 - Resource-backed center-surface browsing is handled by `ContentsResourceEditorView.qml` and `ContentsResourceViewer.qml`.
 
-QML in this directory must stay presentation-only. XML parsing, HTML tokenization, block object construction, and RAW
-source mutation policy remain in C++ model/renderer objects.
+QML in this directory must stay presentation-only. XML parsing, HTML tokenization, block object construction, WYSIWYG
+source/selection policy, hidden-tag cursor normalization, and RAW source mutation policy remain in C++ model/renderer
+objects.
 
 ## 한국어
 
@@ -93,7 +99,7 @@ source mutation policy remain in C++ model/renderer objects.
 - 대상: ``src/app/qml/view/contents/editor`` (`docs/src/app/qml/view/contents/editor/README.md`)
 - 위치: `docs/src/app/qml/view/contents/editor`
 - 역할: 이 파일은 해당 디렉터리나 모듈의 구조, 책임, 운영 규칙, 검증 기준을 설명하며 본문 편집기는 `LV.TextEditor` 기준이다.
-- 배치: 실제 노트 편집 화면은 `ContentsDisplayView.qml`의 `LV.HStack`에서 본문 편집기와 미니맵 순서로 표시한다. 미니맵 계산은 C++ 모델 계층에서 수행한다.
+- 배치: 실제 노트 편집 화면은 `ContentViewLayout.qml`의 `LV.HStack`에서 본문 편집기와 미니맵 순서로 표시한다. 세션, projection, resource, minimap 계산은 `ContentsEditorDisplayBackend`가 담당한다.
 - 기준: 파일 경로, 명령, API 이름, 세부 변경 이력은 위 영어 본문을 원문 기준으로 유지한다.
 - selection: 본문 텍스트 선택 중에도 RichText overlay를 유지한다. 선택 source range는 `LV.TextEditor`가
   소유하고 visible logical content가 있는 범위에 대해서만 native selection highlight를 표시한다. 단 RAW
@@ -103,7 +109,7 @@ source mutation policy remain in C++ model/renderer objects.
 - cursor: RichText overlay가 보이는 동안에는 논리 텍스트 좌표 기반의 표면 커서만 overlay 위에 그리고, 아래의
   네이티브 RAW 커서 delegate는 숨긴다.
 - top inset: 본문 편집기와 overlay의 상단 inset/padding은 0으로 유지하여 첫 줄이 문서 슬롯 상단에 붙는다.
-- chrome padding: `ContentsDisplayView.qml`의 editor chrome HStack은 상하 `LV.Theme.gap8` inset을 적용한다. 이
+- chrome padding: `ContentViewLayout.qml`의 editor chrome HStack은 상하 `LV.Theme.gap8` inset을 적용한다. 이
   padding은 거터, 본문 editor viewport, 미니맵 전체에 공통으로 적용되며, inline editor 내부 inset과는 분리된다.
 - gutter: 거터는 본문과 같은 `Flickable` 콘텐츠 안에 배치하며, 전체 문서의 논리 줄마다 번호 하나를 표시한다.
   RAW 태그가 숨겨져도 태그 사이에 남는 빈 논리 줄은 거터 번호 슬롯을 유지한다. 논리 줄 분할과 row y/height
@@ -116,18 +122,21 @@ source mutation policy remain in C++ model/renderer objects.
 - resource frame: 리소스 프레임은 본문 텍스트 컬럼 폭의 100%로 렌더한다.
 - minimap: 미니맵 행 수는 parser 논리 줄 수가 아니라 geometry adapter가 측정해 `editorVisualLineCount`로 전달되는 실제 에디터 wrap 결과 줄 수를 따른다. 리소스 프레임처럼 별도 높이를 차지하는 블록은 표시 높이를 본문 줄 높이로 나눈 줄 수만큼 미니맵에 반영한다.
 - minimap width: 미니맵 각 행의 폭은 `editorVisualLineWidthRatios`로 전달되는 실제 표시 줄 길이를 따른다. 텍스트 행은 본문에서 보이는 길이에 비례하고, 리소스 프레임 높이에서 파생된 행은 프레임이 본문 폭을 채우므로 padded rail 내부에서 full width로 둔다. 미니맵 metrics는 측정된 ratio snapshot만 소비한다.
-- minimap drag: 미니맵은 별도 스크롤바 chrome 없이 세로 드래그 pixel delta를 그대로 내보내고, `ContentsDisplayView.qml`이 같은 delta를 본문 `Flickable.contentY`에 더한다.
+- minimap drag: 미니맵은 별도 스크롤바 chrome 없이 세로 드래그 pixel delta를 그대로 내보내고, `ContentViewLayout.qml`이 같은 delta를 본문 `Flickable.contentY`에 더한다.
 - scrolling: 본문 중앙 슬롯은 `Flickable` viewport를 소유하며 긴 노트 본문은 이 viewport 안에서 세로 스크롤된다.
 - pointer: 렌더 overlay가 꺼져 있으면 `LV.TextEditor`의 OS/Qt 선택 경로를 그대로 사용한다. 렌더 overlay가
-  보이면 숨겨진 RAW 태그가 투명 텍스트 지오메트리를 왜곡하므로, 마우스 드래그 좌표를 `displayGeometryText`
-  logical 좌표로 읽고 `logicalToSourceOffsets`로 RAW selection range를 복원한다. 드래그가 없는 클릭은 같은
+  보이면 숨겨진 RAW 태그가 투명 텍스트 지오메트리를 왜곡하므로, 마우스 드래그 좌표를 실제로 보이는
+  `renderedOverlay` RichText 지오메트리로 읽고 C++ `ContentsWysiwygEditorPolicy`와 `coordinateMapper`로 RAW
+  selection range를 복원한다.
+  QML은 반환된 range를 `LV.TextEditor`에 적용하는 뷰 역할만 수행한다. 드래그가 없는 클릭은 같은
   경로에서 collapsed cursor placement로 처리하며, parent host의 cursor projection binding이 갱신되기 전에도
   projected caret가 클릭한 논리 위치로 이동하도록 로컬 pointer cursor override를 유지한다. 드래그가 non-empty
   selection으로 확장되면 이 override를 해제하고 projected cursor를 숨겨 selection 모델이 표시 상태를 소유하게
   한다. 더블클릭은 표시 논리 줄, 세 번 클릭은 표시 문단을 선택한 뒤 RAW source offset으로 되돌린다. 이 pointer
   bridge는 IME composition 중에는 비활성화된다.
-- cursor: 렌더 overlay가 보이는 동안 네이티브 커서가 숨겨진 inline formatting 태그 내부로 들어가면 이동
-  방향에 맞춰 태그 앞/뒤의 안전한 RAW 경계로 보정한다.
+- cursor: 렌더 overlay가 보이는 동안 네이티브 커서가 숨겨진 inline formatting 태그 내부로 들어가면 C++
+  `ContentsWysiwygEditorPolicy`가 이동 방향에 맞는 태그 앞/뒤의 안전한 RAW 경계를 계산하고 QML은 그
+  위치만 적용한다.
 - programmatic sync: 포커스된 native selection 중에는 inline editor controller가 host-side 텍스트 복원을
   defer/reject할 수 있어 selection이 즉시 해제되지 않는다.
 - tag insertion: 명시적 포맷팅 및 본문 태그 단축키는 C++ tag insertion controller가 만든 RAW payload를

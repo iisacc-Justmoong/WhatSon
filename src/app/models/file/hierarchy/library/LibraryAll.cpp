@@ -857,20 +857,8 @@ namespace
         }
 
         record->noteId = record->noteId.trimmed();
-        record->bodyPlainText = record->bodyPlainText.trimmed();
-        record->bodySourceText = WhatSon::NoteBodyPersistence::normalizeBodyPlainText(record->bodySourceText);
-        record->bodyFirstLine = record->bodyFirstLine.trimmed();
+        record->normalizeBodyFields();
         record->bodyFirstResourceThumbnailUrl = record->bodyFirstResourceThumbnailUrl.trimmed();
-
-        if (record->bodySourceText.isEmpty())
-        {
-            record->bodySourceText = record->bodyPlainText;
-        }
-
-        if (record->bodyFirstLine.isEmpty() && !record->bodyPlainText.isEmpty())
-        {
-            record->bodyFirstLine = record->bodyPlainText.section(QLatin1Char('\n'), 0, 0).trimmed();
-        }
     }
 
     LibraryNoteRecord parseRecordFromWsnhead(const QString& wsnHeadPath)

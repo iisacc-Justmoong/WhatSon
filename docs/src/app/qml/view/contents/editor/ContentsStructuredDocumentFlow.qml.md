@@ -2,13 +2,13 @@
 
 ## Responsibility
 
-Hosts the note document surface after `ContentsDisplayView.qml` has mounted a selected note session.
+Hosts the note document surface after `ContentsEditorDisplayBackend` has mounted a selected note session.
 
 ## Current Contract
 
 - Receives RAW `sourceText` from `ContentsEditorSessionController`.
 - Receives resource-resolved `editorSurfaceHtml`, `logicalText`, `htmlTokens`, and `normalizedHtmlBlocks` from
-  `ContentsDisplayView.qml`.
+  the backend-bound note editor chrome in `ContentViewLayout.qml`.
 - Mounts `ContentsInlineFormatEditor.qml` as the live `LV.TextEditor` path.
 - Mounts `ContentsEditorTagInsertionController` and binds the inline editor's tag-management key hook to the
   document flow.
@@ -18,8 +18,8 @@ Hosts the note document surface after `ContentsDisplayView.qml` has mounted a se
 - Passes `logicalText` into the inline editor's display-geometry probe for cursor and selection projection.
 - Passes the current logical cursor position into the inline editor so its overlay cursor is projected from visible
   text geometry while the authoritative edit buffer remains RAW source text.
-- Passes the projection-owned `logicalToSourceOffsets` table into the inline editor for source-to-rendered selection
-  projection.
+- Passes the projection-owned `coordinateMapper` object into the inline editor for source-to-rendered selection
+  projection; the view layer does not receive the raw logical/source offset table.
 - Passes renderer-owned `normalizedHtmlBlocks` through to the inline editor only as selection metadata. Resource
   selection is based on the iiHtmlBlock display block span and painted as one atomic block.
 - Keeps the inline editor as the only place where the RichText editor-surface overlay is painted.
@@ -39,7 +39,10 @@ Hosts the note document surface after `ContentsDisplayView.qml` has mounted a se
   length of each editor line.
 - Exposes `pointRequestsTerminalBodyClick(localX, localY)` and `focusTerminalBodyFromPoint(localX, localY)` for the
   bottom-empty-area accessibility hit target.
-- Mounts a transparent left-click `MouseArea` only over the region below `editorContentHeight`.
+- Mounts a transparent left-click `MouseArea` only over the region below the rendered body. The start y follows the
+  inline editor's terminal-hit threshold: rendered body height plus one line height and one pixel. Short RichText
+  `contentHeight` measurements therefore cannot cover the visible first line or its line-adjacent hit area and steal
+  rendered pointer selection from `ContentsInlineFormatEditor`.
 
 ## Pipeline Position
 
@@ -48,7 +51,7 @@ This file does not parse XML or infer HTML block boundaries. The pipeline is:
 1. RAW `.wsnbody` text is edited.
 2. `ContentsEditorPresentationProjection` reparses and renders the snapshot.
 3. `ContentsHtmlBlockRenderPipeline` converts the HTML projection through `iiHtmlBlock`.
-4. `ContentsDisplayView.qml` resolves any resource placeholders through `ContentsBodyResourceRenderer`.
+4. `ContentsEditorDisplayBackend` resolves any resource placeholders through `ContentsBodyResourceRenderer`.
 5. `ContentsStructuredDocumentFlow.qml` consumes the final HTML string and block metadata.
 
 The QML host remains a view surface; RAW mutation and parsing authority stay in C++.

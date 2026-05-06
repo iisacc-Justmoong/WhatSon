@@ -18,12 +18,12 @@ Owns the structured note document host and policies used by the editor body.
   EOF image paste therefore materializes a trailing empty text block instead of focusing the atomic resource card.
   Empty-block backward deletion also uses this policy to remove a preceding self-closing `<resource ... />` tag from
   RAW while preserving the current empty paragraph as the editable focus target.
-- `ContentsStructuredCursorSupport.js`
-  Converts plain-text cursor positions to RAW source offsets for structured agenda, callout, and semantic text blocks.
 
 ## Boundary
 - These types are editor-domain structure helpers because they coordinate ordinary note body blocks.
 - Parser output remains in `src/app/models/editor/parser`; HTML rendering remains in `src/app/models/editor/renderer`.
+- Do not reintroduce model-layer JS/QML cursor helpers; structured cursor, focus, and mutation calculations belong in
+  the C++ structure policies and host objects listed above.
 
 ## 한국어
 

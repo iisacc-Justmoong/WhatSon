@@ -25,7 +25,7 @@ Renders the logical-line-number gutter for the live note editor surface.
 
 `ContentsInlineFormatEditor.qml` binds editor geometry and projection metadata into the C++
 `ContentsLineNumberRailMetrics` object, which publishes row objects with `number`, `y`, and `height`.
-`ContentsDisplayView.qml` mounts this line-number rail inside the same `Flickable` content item as
+`ContentViewLayout.qml` mounts this line-number rail inside the same `Flickable` content item as
 `ContentsStructuredDocumentFlow.qml`, so the gutter and body share one y-coordinate system.
 
 ## 한국어

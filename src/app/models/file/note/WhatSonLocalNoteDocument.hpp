@@ -20,20 +20,33 @@ struct WhatSonLocalNoteDocument
     bool bodyHasResource = false;
     QString bodyFirstResourceThumbnailUrl;
 
+    QString effectiveBodyText() const
+    {
+        const QString normalizedSource = WhatSon::NoteBodyPersistence::normalizeBodyPlainText(bodySourceText);
+        if (!normalizedSource.isEmpty())
+        {
+            return normalizedSource;
+        }
+        return WhatSon::NoteBodyPersistence::normalizeBodyPlainText(bodyPlainText);
+    }
+
+    void normalizeBodyFields()
+    {
+        const QString normalizedBodyText = effectiveBodyText();
+        bodyPlainText = normalizedBodyText;
+        bodySourceText = normalizedBodyText;
+        bodyFirstLine = WhatSon::NoteBodyPersistence::firstLineFromBodyPlainText(normalizedBodyText);
+    }
+
     LibraryNoteRecord toLibraryNoteRecord() const
     {
         LibraryNoteRecord record;
         record.noteId = headerStore.noteId();
         record.storageKind = QStringLiteral("wsnote");
-        record.bodyPlainText = WhatSon::NoteBodyPersistence::normalizeBodyPlainText(bodyPlainText);
-        record.bodySourceText = WhatSon::NoteBodyPersistence::normalizeBodyPlainText(bodySourceText);
-        if (record.bodySourceText.isEmpty())
-        {
-            record.bodySourceText = record.bodyPlainText;
-        }
-        record.bodyFirstLine = bodyFirstLine.trimmed().isEmpty()
-                                   ? WhatSon::NoteBodyPersistence::firstLineFromBodyPlainText(record.bodyPlainText)
-                                   : bodyFirstLine.trimmed();
+        record.bodyPlainText = bodyPlainText;
+        record.bodySourceText = bodySourceText;
+        record.bodyFirstLine = bodyFirstLine;
+        record.normalizeBodyFields();
         record.bodyHasResource = bodyHasResource;
         record.bodyFirstResourceThumbnailUrl = bodyFirstResourceThumbnailUrl.trimmed();
         record.createdAt = headerStore.createdAt();

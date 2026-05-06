@@ -28,7 +28,7 @@
   Parse-mounted RAW source is the only editor-readiness authority; once `.wsnbody` is available to the parser-backed
   host, higher layers must not wait on a second surface bookkeeping state.
 - Tag-management command-surface gating no longer lives in this coordinator.
-  `ContentsDisplayView.qml` and `ContentsEditorInputPolicyAdapter.qml` derive shortcut/menu availability directly from
+  `ContentsEditorDisplayBackend` and the C++ input-policy adapter derive shortcut/menu availability directly from
   parse-mounted note-body state plus active structured-editor mode, so there is no second command-surface-ready flag
   that can drift from the RAW-authoritative mount.
 - `mountDecisionClean` now separates transient scheduling from the underlying body/surface pending state.

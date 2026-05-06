@@ -1,8 +1,11 @@
 #include "app/models/editor/tags/ContentsEditorTagInsertionController.hpp"
 
+#include "app/models/file/note/WhatSonIiXmlDocumentSupport.hpp"
 #include "app/models/file/note/WhatSonNoteBodySemanticTagSupport.hpp"
+#include "Src/Mutation/InlineTagMutation.h"
 
 #include <algorithm>
+#include <array>
 
 #include <QDate>
 #include <QRegularExpression>
@@ -12,7 +15,17 @@
 
 namespace
 {
+    namespace IiXml = WhatSon::IiXmlDocumentSupport;
     namespace SemanticTags = WhatSon::NoteBodySemanticTagSupport;
+    constexpr int kSupportedInlineStyleCount = 5;
+
+    using InlineStyleCoverageMap = std::array<QVector<bool>, kSupportedInlineStyleCount>;
+
+    struct SourceInlineStyleState final
+    {
+        int logicalLength = 0;
+        InlineStyleCoverageMap coverage;
+    };
 
     struct SourceTagToken final
     {
@@ -95,6 +108,42 @@ namespace
         return std::clamp(offset, 0, std::max(0, sourceLength));
     }
 
+    int htmlEntityLengthAt(const QString& text, const int sourceOffset)
+    {
+        if (sourceOffset < 0
+            || sourceOffset >= text.size()
+            || text.at(sourceOffset) != QLatin1Char('&'))
+        {
+            return 0;
+        }
+
+        const int semicolonOffset = text.indexOf(QLatin1Char(';'), sourceOffset + 1);
+        if (semicolonOffset <= sourceOffset)
+        {
+            return 0;
+        }
+
+        const QString entityToken = text.mid(sourceOffset, semicolonOffset - sourceOffset + 1).toCaseFolded();
+        if (entityToken == QStringLiteral("&amp;")
+            || entityToken == QStringLiteral("&lt;")
+            || entityToken == QStringLiteral("&gt;")
+            || entityToken == QStringLiteral("&quot;")
+            || entityToken == QStringLiteral("&apos;")
+            || entityToken == QStringLiteral("&#39;")
+            || entityToken == QStringLiteral("&nbsp;"))
+        {
+            return entityToken.size();
+        }
+
+        if (entityToken.startsWith(QStringLiteral("&#x"))
+            || entityToken.startsWith(QStringLiteral("&#")))
+        {
+            return entityToken.size();
+        }
+
+        return 0;
+    }
+
     QString todayIsoDate()
     {
         return QDate::currentDate().toString(Qt::ISODate);
@@ -154,6 +203,379 @@ namespace
         while (cursor >= 0 && tagToken.at(cursor).isSpace())
             --cursor;
         return cursor >= 0 && tagToken.at(cursor) == QLatin1Char('/');
+    }
+
+    int supportedInlineStyleIndexForTag(const QString& rawStyleTag)
+    {
+        const QString normalizedStyleTag = SemanticTags::canonicalInlineStyleTagName(rawStyleTag.trimmed());
+        if (normalizedStyleTag == QStringLiteral("bold"))
+            return 0;
+        if (normalizedStyleTag == QStringLiteral("italic"))
+            return 1;
+        if (normalizedStyleTag == QStringLiteral("underline"))
+            return 2;
+        if (normalizedStyleTag == QStringLiteral("strikethrough"))
+            return 3;
+        if (normalizedStyleTag == QStringLiteral("highlight"))
+            return 4;
+        return -1;
+    }
+
+    QString sourceInlineStyleOpenTagForIndex(const int index)
+    {
+        switch (index)
+        {
+        case 0:
+            return QStringLiteral("<bold>");
+        case 1:
+            return QStringLiteral("<italic>");
+        case 2:
+            return QStringLiteral("<underline>");
+        case 3:
+            return QStringLiteral("<strikethrough>");
+        case 4:
+            return QStringLiteral("<highlight>");
+        default:
+            return {};
+        }
+    }
+
+    QString sourceInlineStyleCloseTagForIndex(const int index)
+    {
+        switch (index)
+        {
+        case 0:
+            return QStringLiteral("</bold>");
+        case 1:
+            return QStringLiteral("</italic>");
+        case 2:
+            return QStringLiteral("</underline>");
+        case 3:
+            return QStringLiteral("</strikethrough>");
+        case 4:
+            return QStringLiteral("</highlight>");
+        default:
+            return {};
+        }
+    }
+
+    bool isLogicalBreakTagName(const QString& normalizedTagName)
+    {
+        return SemanticTags::isRenderedLineBreakTagName(normalizedTagName)
+            || normalizedTagName == QStringLiteral("break")
+            || normalizedTagName == QStringLiteral("hr");
+    }
+
+    SourceInlineStyleState buildSourceInlineStyleState(const QString& sourceText)
+    {
+        SourceInlineStyleState state;
+        std::array<int, kSupportedInlineStyleCount> styleDepths{};
+
+        auto appendCoverageEntry = [&state, &styleDepths]() {
+            for (int index = 0; index < kSupportedInlineStyleCount; ++index)
+            {
+                state.coverage[static_cast<std::size_t>(index)].push_back(
+                    styleDepths[static_cast<std::size_t>(index)] > 0);
+            }
+            state.logicalLength += 1;
+        };
+
+        int sourceOffset = 0;
+        while (sourceOffset < sourceText.size())
+        {
+            if (sourceText.at(sourceOffset) == QLatin1Char('<'))
+            {
+                const int tagEnd = sourceText.indexOf(QLatin1Char('>'), sourceOffset + 1);
+                if (tagEnd > sourceOffset)
+                {
+                    const QStringView tagToken(sourceText.constData() + sourceOffset, tagEnd - sourceOffset + 1);
+                    const QString normalizedTagName = sourceTagName(tagToken);
+                    const bool closingTag = sourceTagIsClosing(tagToken);
+                    const bool selfClosingTag = sourceTagIsSelfClosing(tagToken);
+                    const int styleIndex = supportedInlineStyleIndexForTag(normalizedTagName);
+                    if (styleIndex >= 0 && !selfClosingTag)
+                    {
+                        int& styleDepth = styleDepths[static_cast<std::size_t>(styleIndex)];
+                        if (closingTag)
+                            styleDepth = std::max(0, styleDepth - 1);
+                        else
+                            styleDepth += 1;
+                        sourceOffset = tagEnd + 1;
+                        continue;
+                    }
+                    if (isLogicalBreakTagName(normalizedTagName))
+                    {
+                        appendCoverageEntry();
+                        sourceOffset = tagEnd + 1;
+                        continue;
+                    }
+                    sourceOffset = tagEnd + 1;
+                    continue;
+                }
+            }
+
+            const int entityLength = htmlEntityLengthAt(sourceText, sourceOffset);
+            if (entityLength > 0)
+            {
+                appendCoverageEntry();
+                sourceOffset += entityLength;
+                continue;
+            }
+
+            appendCoverageEntry();
+            sourceOffset += 1;
+        }
+
+        return state;
+    }
+
+    void applySourceInlineStyleCoverageRange(
+        QVector<bool>* styleCoverage,
+        const int selectionStart,
+        const int selectionEnd,
+        const bool nextActive)
+    {
+        if (styleCoverage == nullptr || selectionEnd <= selectionStart)
+            return;
+
+        const int boundedStart = std::max(0, selectionStart);
+        const int boundedEnd = std::min(selectionEnd, static_cast<int>(styleCoverage->size()));
+        for (int logicalOffset = boundedStart; logicalOffset < boundedEnd; ++logicalOffset)
+        {
+            (*styleCoverage)[logicalOffset] = nextActive;
+        }
+    }
+
+    void synchronizeOutputInlineStyleState(
+        QString* output,
+        QVector<int>* emittedStyleOrder,
+        const InlineStyleCoverageMap& desiredCoverage,
+        const int logicalOffset)
+    {
+        if (output == nullptr || emittedStyleOrder == nullptr)
+            return;
+
+        QVector<int> targetStyleOrder;
+        targetStyleOrder.reserve(kSupportedInlineStyleCount);
+        for (int index = 0; index < kSupportedInlineStyleCount; ++index)
+        {
+            const QVector<bool>& coverage = desiredCoverage[static_cast<std::size_t>(index)];
+            const bool shouldBeActive = logicalOffset >= 0
+                && logicalOffset < coverage.size()
+                && coverage.at(logicalOffset);
+            if (shouldBeActive)
+                targetStyleOrder.push_back(index);
+        }
+
+        int commonPrefixLength = 0;
+        while (commonPrefixLength < emittedStyleOrder->size()
+               && commonPrefixLength < targetStyleOrder.size()
+               && emittedStyleOrder->at(commonPrefixLength) == targetStyleOrder.at(commonPrefixLength))
+        {
+            ++commonPrefixLength;
+        }
+
+        for (int index = emittedStyleOrder->size() - 1; index >= commonPrefixLength; --index)
+        {
+            *output += sourceInlineStyleCloseTagForIndex(emittedStyleOrder->at(index));
+            emittedStyleOrder->removeAt(index);
+        }
+
+        for (int index = commonPrefixLength; index < targetStyleOrder.size(); ++index)
+        {
+            const int styleIndex = targetStyleOrder.at(index);
+            *output += sourceInlineStyleOpenTagForIndex(styleIndex);
+            emittedStyleOrder->push_back(styleIndex);
+        }
+    }
+
+    QString rebuildSourceTextWithInlineStyleCoverage(
+        const QString& sourceText,
+        const InlineStyleCoverageMap& desiredCoverage,
+        const int logicalLength)
+    {
+        QString output;
+        output.reserve(sourceText.size() + 32);
+
+        QVector<int> emittedStyleOrder;
+        emittedStyleOrder.reserve(kSupportedInlineStyleCount);
+
+        int logicalOffset = 0;
+        int sourceOffset = 0;
+        while (sourceOffset < sourceText.size())
+        {
+            if (sourceText.at(sourceOffset) == QLatin1Char('<'))
+            {
+                const int tagEnd = sourceText.indexOf(QLatin1Char('>'), sourceOffset + 1);
+                if (tagEnd > sourceOffset)
+                {
+                    const QStringView tagToken(sourceText.constData() + sourceOffset, tagEnd - sourceOffset + 1);
+                    const QString normalizedTagName = sourceTagName(tagToken);
+                    const bool selfClosingTag = sourceTagIsSelfClosing(tagToken);
+                    const int styleIndex = supportedInlineStyleIndexForTag(normalizedTagName);
+                    if (styleIndex >= 0 && !selfClosingTag)
+                    {
+                        sourceOffset = tagEnd + 1;
+                        continue;
+                    }
+
+                    synchronizeOutputInlineStyleState(&output, &emittedStyleOrder, desiredCoverage, logicalOffset);
+                    output += sourceText.mid(sourceOffset, tagEnd - sourceOffset + 1);
+                    sourceOffset = tagEnd + 1;
+                    if (isLogicalBreakTagName(normalizedTagName))
+                        logicalOffset += 1;
+                    continue;
+                }
+            }
+
+            synchronizeOutputInlineStyleState(&output, &emittedStyleOrder, desiredCoverage, logicalOffset);
+            const int entityLength = htmlEntityLengthAt(sourceText, sourceOffset);
+            if (entityLength > 0)
+            {
+                output += sourceText.mid(sourceOffset, entityLength);
+                sourceOffset += entityLength;
+                logicalOffset += 1;
+                continue;
+            }
+
+            output += sourceText.at(sourceOffset);
+            sourceOffset += 1;
+            logicalOffset += 1;
+        }
+
+        synchronizeOutputInlineStyleState(&output, &emittedStyleOrder, desiredCoverage, logicalLength);
+        return output;
+    }
+
+    int logicalOffsetForSourceBoundary(const QString& sourceText, const int requestedSourceOffset)
+    {
+        const int boundedSourceOffset = boundedOffset(requestedSourceOffset, sourceText.size());
+        int logicalOffset = 0;
+        int sourceOffset = 0;
+        while (sourceOffset < boundedSourceOffset)
+        {
+            if (sourceText.at(sourceOffset) == QLatin1Char('<'))
+            {
+                const int tagEnd = sourceText.indexOf(QLatin1Char('>'), sourceOffset + 1);
+                if (tagEnd > sourceOffset && tagEnd < boundedSourceOffset)
+                {
+                    const QStringView tagToken(sourceText.constData() + sourceOffset, tagEnd - sourceOffset + 1);
+                    if (isLogicalBreakTagName(sourceTagName(tagToken)))
+                        logicalOffset += 1;
+                    sourceOffset = tagEnd + 1;
+                    continue;
+                }
+            }
+
+            const int entityLength = htmlEntityLengthAt(sourceText, sourceOffset);
+            if (entityLength > 0 && sourceOffset + entityLength <= boundedSourceOffset)
+            {
+                logicalOffset += 1;
+                sourceOffset += entityLength;
+                continue;
+            }
+
+            logicalOffset += 1;
+            sourceOffset += 1;
+        }
+        return logicalOffset;
+    }
+
+    int sourceBoundaryForLogicalOffset(const QString& sourceText, const int targetLogicalOffset)
+    {
+        const int boundedLogicalOffset = std::max(0, targetLogicalOffset);
+        int logicalOffset = 0;
+        int sourceOffset = 0;
+        while (sourceOffset < sourceText.size())
+        {
+            if (sourceText.at(sourceOffset) == QLatin1Char('<'))
+            {
+                const int tagEnd = sourceText.indexOf(QLatin1Char('>'), sourceOffset + 1);
+                if (tagEnd > sourceOffset)
+                {
+                    const QStringView tagToken(sourceText.constData() + sourceOffset, tagEnd - sourceOffset + 1);
+                    const QString normalizedTagName = sourceTagName(tagToken);
+                    if (supportedInlineStyleIndexForTag(normalizedTagName) >= 0 && !sourceTagIsSelfClosing(tagToken))
+                    {
+                        sourceOffset = tagEnd + 1;
+                        continue;
+                    }
+                    if (logicalOffset == boundedLogicalOffset)
+                        return sourceOffset;
+                    sourceOffset = tagEnd + 1;
+                    if (isLogicalBreakTagName(normalizedTagName))
+                        logicalOffset += 1;
+                    continue;
+                }
+            }
+
+            if (logicalOffset == boundedLogicalOffset)
+                return sourceOffset;
+
+            const int entityLength = htmlEntityLengthAt(sourceText, sourceOffset);
+            if (entityLength > 0)
+            {
+                logicalOffset += 1;
+                sourceOffset += entityLength;
+                continue;
+            }
+
+            logicalOffset += 1;
+            sourceOffset += 1;
+        }
+        return sourceText.size();
+    }
+
+    QString escapeXmlText(QString value)
+    {
+        value.replace(QStringLiteral("&"), QStringLiteral("&amp;"));
+        value.replace(QStringLiteral("<"), QStringLiteral("&lt;"));
+        value.replace(QStringLiteral(">"), QStringLiteral("&gt;"));
+        return value;
+    }
+
+    QString iiXmlValidationFragmentForSource(const QString& sourceText)
+    {
+        QString fragment;
+        fragment.reserve(sourceText.size() + 32);
+
+        int cursor = 0;
+        while (cursor < sourceText.size())
+        {
+            if (sourceText.at(cursor) == QLatin1Char('<'))
+            {
+                const int tagEnd = sourceText.indexOf(QLatin1Char('>'), cursor + 1);
+                if (tagEnd > cursor)
+                {
+                    const QStringView tagToken(sourceText.constData() + cursor, tagEnd - cursor + 1);
+                    const QString normalizedTagName = sourceTagName(tagToken);
+                    if (!normalizedTagName.isEmpty())
+                    {
+                        QString token = sourceText.mid(cursor, tagEnd - cursor + 1);
+                        if (normalizedTagName == QStringLiteral("break") && sourceTagIsClosing(tagToken))
+                            token = QStringLiteral("<break/>");
+                        fragment += token;
+                        cursor = tagEnd + 1;
+                        continue;
+                    }
+                }
+            }
+
+            const int nextTag = sourceText.indexOf(QLatin1Char('<'), cursor + 1);
+            const int textEnd = nextTag >= 0 ? nextTag : sourceText.size();
+            fragment += escapeXmlText(sourceText.mid(cursor, textEnd - cursor));
+            cursor = textEnd;
+        }
+
+        return QStringLiteral("<root>") + fragment + QStringLiteral("</root>");
+    }
+
+    bool iiXmlCanParseMutatedInlineSource(const QString& sourceText)
+    {
+        const iiXml::Parser::TagDocumentResult parsedDocument = IiXml::parseDocument(
+            iiXmlValidationFragmentForSource(sourceText));
+        return parsedDocument.Status == iiXml::Parser::TagTreeParseStatus::Parsed
+            && parsedDocument.Document.has_value();
     }
 
     QVector<SourceTagToken> collectSourceTagTokens(const QString& source)
@@ -629,32 +1051,84 @@ QVariantMap ContentsEditorTagInsertionController::buildWrappedTagInsertionPayloa
     else
     {
         const QString selectedSource = source.mid(start, end - start);
-        const QString prefixNewline =
-            bodyBlockWrap && start > 0 && source.at(start - 1) != QLatin1Char('\n')
-            ? QStringLiteral("\n")
-            : QString{};
-        const QString suffixNewline =
-            bodyBlockWrap && end < sourceLength && source.at(end) != QLatin1Char('\n')
-            ? QStringLiteral("\n")
-            : QString{};
-        const QString replacementSourceText = openingTag + selectedSource + closingTag;
-        const QString fullReplacementSourceText = prefixNewline + replacementSourceText + suffixNewline;
-        const QString nextSource = source.left(start) + fullReplacementSourceText + source.mid(end);
-        const int wrappedSelectionStart = start + prefixNewline.length() + openingTag.length();
-        const int wrappedSelectionEnd = wrappedSelectionStart + selectedSource.length();
-        payload = {
-            {QStringLiteral("applied"), nextSource != source},
-            {QStringLiteral("cursorPosition"), wrappedSelectionEnd},
-            {QStringLiteral("insertedSourceText"), openingTag + closingTag},
-            {QStringLiteral("nextSourceText"), nextSource},
-            {QStringLiteral("reason"), nextSource != source ? QString{} : QStringLiteral("no-op")},
-            {QStringLiteral("replacementSourceText"), fullReplacementSourceText},
-            {QStringLiteral("selectionEnd"), wrappedSelectionEnd},
-            {QStringLiteral("selectionStart"), wrappedSelectionStart},
-            {QStringLiteral("tagKind"), normalizedTag},
-            {QStringLiteral("tagName"), normalizedTag},
-            {QStringLiteral("wrappedSourceText"), selectedSource},
-        };
+        const bool selectedSourceContainsInlineTag = !collectSourceTagTokens(selectedSource).isEmpty();
+        if (isInlineStyleInsertionTag(normalizedTag) && selectedSourceContainsInlineTag)
+        {
+            iiXml::Mutation::InlineTagMutationOptions mutationOptions;
+            mutationOptions.OrderedInlineTagNames = {
+                QStringLiteral("bold"),
+                QStringLiteral("italic"),
+                QStringLiteral("underline"),
+                QStringLiteral("strikethrough"),
+                QStringLiteral("highlight")
+            };
+            mutationOptions.LogicalBreakTagNames = {
+                QStringLiteral("linebreak"),
+                QStringLiteral("break"),
+                QStringLiteral("hr")
+            };
+
+            const iiXml::Mutation::InlineTagMutation mutation;
+            const int logicalStart = mutation.LogicalOffsetForSourceBoundary(source, start, mutationOptions);
+            const int logicalEnd = mutation.LogicalOffsetForSourceBoundary(source, end, mutationOptions);
+            const iiXml::Mutation::InlineTagMutationResult mutationResult =
+                mutation.ApplyLogicalStyleRange(source, normalizedTag, logicalStart, logicalEnd, mutationOptions, true);
+            if (!mutationResult.Valid)
+            {
+                return notAppliedPayload(
+                    QStringLiteral("inline-style-iixml-parse-failed"),
+                    source,
+                    selectionStart,
+                    selectionEnd,
+                    normalizedTag);
+            }
+
+            const QString nextSource = mutationResult.SourceText;
+            const int wrappedSelectionStart = mutation.SourceBoundaryForLogicalOffset(nextSource, logicalStart, mutationOptions);
+            const int wrappedSelectionEnd = mutation.SourceBoundaryForLogicalOffset(nextSource, logicalEnd, mutationOptions);
+            payload = {
+                {QStringLiteral("applied"), nextSource != source},
+                {QStringLiteral("cursorPosition"), wrappedSelectionEnd},
+                {QStringLiteral("insertedSourceText"), openingTag + closingTag},
+                {QStringLiteral("nextSourceText"), nextSource},
+                {QStringLiteral("reason"), nextSource != source ? QString{} : QStringLiteral("no-op")},
+                {QStringLiteral("replacementSourceText"), nextSource.mid(wrappedSelectionStart, std::max(0, wrappedSelectionEnd - wrappedSelectionStart))},
+                {QStringLiteral("selectionEnd"), wrappedSelectionEnd},
+                {QStringLiteral("selectionStart"), wrappedSelectionStart},
+                {QStringLiteral("tagKind"), normalizedTag},
+                {QStringLiteral("tagName"), normalizedTag},
+                {QStringLiteral("wrappedSourceText"), selectedSource},
+            };
+        }
+        else
+        {
+            const QString prefixNewline =
+                bodyBlockWrap && start > 0 && source.at(start - 1) != QLatin1Char('\n')
+                ? QStringLiteral("\n")
+                : QString{};
+            const QString suffixNewline =
+                bodyBlockWrap && end < sourceLength && source.at(end) != QLatin1Char('\n')
+                ? QStringLiteral("\n")
+                : QString{};
+            const QString replacementSourceText = openingTag + selectedSource + closingTag;
+            const QString fullReplacementSourceText = prefixNewline + replacementSourceText + suffixNewline;
+            const QString nextSource = source.left(start) + fullReplacementSourceText + source.mid(end);
+            const int wrappedSelectionStart = start + prefixNewline.length() + openingTag.length();
+            const int wrappedSelectionEnd = wrappedSelectionStart + selectedSource.length();
+            payload = {
+                {QStringLiteral("applied"), nextSource != source},
+                {QStringLiteral("cursorPosition"), wrappedSelectionEnd},
+                {QStringLiteral("insertedSourceText"), openingTag + closingTag},
+                {QStringLiteral("nextSourceText"), nextSource},
+                {QStringLiteral("reason"), nextSource != source ? QString{} : QStringLiteral("no-op")},
+                {QStringLiteral("replacementSourceText"), fullReplacementSourceText},
+                {QStringLiteral("selectionEnd"), wrappedSelectionEnd},
+                {QStringLiteral("selectionStart"), wrappedSelectionStart},
+                {QStringLiteral("tagKind"), normalizedTag},
+                {QStringLiteral("tagName"), normalizedTag},
+                {QStringLiteral("wrappedSourceText"), selectedSource},
+            };
+        }
     }
 
     emit tagInsertionPayloadBuilt(payload);

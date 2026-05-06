@@ -153,7 +153,7 @@ void WhatSonCppRegressionTests::qmlStructuredEditors_mountsEditorAndMinimapInDis
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("contentHeight: editorDocumentContent.height")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("id: editorDocumentContent")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("height: Math.max(editorDocumentViewport.height, structuredDocumentFlow.editorContentHeight)")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("interactive: contentHeight > height")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("interactive: !structuredDocumentFlow.editorRenderedOverlayVisible && contentHeight > height")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("function editorViewportScrollRange()")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("function scrollEditorViewportByDelta(deltaY)")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("const nextContentY = editorDocumentViewport.contentY + (Number(deltaY) || 0)")));
@@ -167,6 +167,7 @@ void WhatSonCppRegressionTests::qmlStructuredEditors_mountsEditorAndMinimapInDis
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("objectName: \"contentsDisplayGutter\"")));
     QVERIFY(documentFlowSource.contains(QStringLiteral("readonly property int editorSelectionEnd: editor.selectionEnd")));
     QVERIFY(documentFlowSource.contains(QStringLiteral("readonly property int editorSelectionStart: editor.selectionStart")));
+    QVERIFY(documentFlowSource.contains(QStringLiteral("readonly property bool editorRenderedOverlayVisible: editor.renderedOverlayVisible")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("activeSelectionEnd: structuredDocumentFlow.editorSelectionEnd")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("activeSelectionStart: structuredDocumentFlow.editorSelectionStart")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("activeSourceCursorPosition: structuredDocumentFlow.editorCursorPosition")));

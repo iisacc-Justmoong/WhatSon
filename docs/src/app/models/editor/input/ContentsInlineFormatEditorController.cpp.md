@@ -6,9 +6,13 @@ Implements the C++ bridge for the active inline note editor controller.
 
 ## Current Behavior
 
-- Loads its helper from `qrc:/qt/qml/WhatSon/App/view/contents/editor/ContentsInlineFormatEditorController.qml`.
-- Synchronizes the `control` and `textInput` object handles into that helper.
-- Forwards native focus, selection, cursor, deferred text-sync, and committed edit dispatch requests.
+- Keeps the `control` and `textInput` object handles directly in C++.
+- Tracks local cursor/selection/text edits from the native `LV.TextEditor.editorItem` notify signals.
+- Installs an event filter on the live `LV.TextEditor.editorItem` so rendered-overlay collapsed Backspace can be
+  offered to the QML/C++ WYSIWYG mutation policy before Qt deletes hidden RAW tag bytes.
+- Consults `ContentsEditorInputPolicyAdapter` directly for focused native-input programmatic text-sync decisions.
+- Restores cursor and selection through the native text item, defers programmatic source replacement while composition
+  is active, and dispatches committed text edits back to the editor surface.
 
 ## Boundary
 

@@ -1,5 +1,8 @@
 #include "app/models/editor/input/ContentsWysiwygEditorPolicy.hpp"
 
+#include "app/models/file/note/WhatSonNoteBodySemanticTagSupport.hpp"
+#include "app/models/file/note/WhatSonNoteBodyWebLinkSupport.hpp"
+
 #include <QChar>
 #include <QJSValue>
 #include <QMetaObject>
@@ -10,6 +13,9 @@
 
 namespace
 {
+    namespace SemanticTags = WhatSon::NoteBodySemanticTagSupport;
+    namespace WebLinks = WhatSon::NoteBodyWebLinkSupport;
+
     QVariantMap mapFromVariant(const QVariant& value)
     {
         if (value.metaType().id() == QMetaType::QVariantMap)
@@ -64,9 +70,151 @@ namespace
         };
     }
 
+    QString normalizeVisibleText(QString text)
+    {
+        text.replace(QStringLiteral("\r\n"), QStringLiteral("\n"));
+        text.replace(QLatin1Char('\r'), QLatin1Char('\n'));
+        text.replace(QChar(0x2028), QLatin1Char('\n'));
+        text.replace(QChar(0x2029), QLatin1Char('\n'));
+        text.replace(QChar(0x00a0), QLatin1Char(' '));
+        return text;
+    }
+
+    QString escapedSourceLiteral(QString value)
+    {
+        value = normalizeVisibleText(std::move(value));
+        value.replace(QStringLiteral("&"), QStringLiteral("&amp;"));
+        value.replace(QStringLiteral("<"), QStringLiteral("&lt;"));
+        value.replace(QStringLiteral(">"), QStringLiteral("&gt;"));
+        value.replace(QStringLiteral("\""), QStringLiteral("&quot;"));
+        value.replace(QStringLiteral("'"), QStringLiteral("&#39;"));
+        return value;
+    }
+
     QVariantMap emptyRangeMap()
     {
         return sourceRangeMap(0, 0);
+    }
+
+    bool sourceTagTokenIsClosing(const QString& tagToken)
+    {
+        if (tagToken.size() < 3 || tagToken.front() != QLatin1Char('<'))
+        {
+            return false;
+        }
+
+        int cursor = 1;
+        while (cursor < tagToken.size() && tagToken.at(cursor).isSpace())
+        {
+            ++cursor;
+        }
+        return cursor < tagToken.size() && tagToken.at(cursor) == QLatin1Char('/');
+    }
+
+    bool sourceTagIsHiddenInlineBoundary(const QString& tagName)
+    {
+        const QString normalizedTagName = tagName.toLower();
+        return normalizedTagName == QStringLiteral("bold")
+            || normalizedTagName == QStringLiteral("b")
+            || normalizedTagName == QStringLiteral("strong")
+            || normalizedTagName == QStringLiteral("italic")
+            || normalizedTagName == QStringLiteral("i")
+            || normalizedTagName == QStringLiteral("em")
+            || normalizedTagName == QStringLiteral("underline")
+            || normalizedTagName == QStringLiteral("u")
+            || normalizedTagName == QStringLiteral("strikethrough")
+            || normalizedTagName == QStringLiteral("strike")
+            || normalizedTagName == QStringLiteral("s")
+            || normalizedTagName == QStringLiteral("del")
+            || normalizedTagName == QStringLiteral("highlight")
+            || normalizedTagName == QStringLiteral("mark")
+            || SemanticTags::isWebLinkTagName(normalizedTagName);
+    }
+
+    int sourceOffsetPastOpeningInlineBoundaries(
+        const ContentsWysiwygEditorPolicy& policy,
+        const QString& sourceText,
+        const int sourceOffset)
+    {
+        int cursor = policy.boundedOffset(sourceOffset, sourceText.size());
+        while (cursor < sourceText.size() && sourceText.at(cursor) == QLatin1Char('<'))
+        {
+            const int tagEnd = sourceText.indexOf(QLatin1Char('>'), cursor + 1);
+            if (tagEnd <= cursor)
+            {
+                break;
+            }
+
+            const QString tagToken = sourceText.mid(cursor, tagEnd - cursor + 1);
+            if (sourceTagTokenIsClosing(tagToken)
+                || !sourceTagIsHiddenInlineBoundary(policy.normalizedSourceTagName(tagToken)))
+            {
+                break;
+            }
+            cursor = tagEnd + 1;
+        }
+        return cursor;
+    }
+
+    int sourceOffsetBeforeClosingInlineBoundaries(
+        const ContentsWysiwygEditorPolicy& policy,
+        const QString& sourceText,
+        const int sourceOffset)
+    {
+        int cursor = policy.boundedOffset(sourceOffset, sourceText.size());
+        while (cursor > 0 && sourceText.at(cursor - 1) == QLatin1Char('>'))
+        {
+            const int tagStart = sourceText.lastIndexOf(QLatin1Char('<'), cursor - 1);
+            if (tagStart < 0)
+            {
+                break;
+            }
+
+            const QString tagToken = sourceText.mid(tagStart, cursor - tagStart);
+            if (!sourceTagTokenIsClosing(tagToken)
+                || !sourceTagIsHiddenInlineBoundary(policy.normalizedSourceTagName(tagToken)))
+            {
+                break;
+            }
+            cursor = tagStart;
+        }
+        return cursor;
+    }
+
+    QVariantMap visibleBackspaceNotAppliedPayload(
+        const QString& reason,
+        const QString& sourceText,
+        const int cursorPosition,
+        const int surfaceCursor)
+    {
+        const int boundedCursor = std::max(0, std::min(cursorPosition, static_cast<int>(sourceText.size())));
+        return {
+            {QStringLiteral("applied"), false},
+            {QStringLiteral("cursorPosition"), boundedCursor},
+            {QStringLiteral("nextSourceText"), sourceText},
+            {QStringLiteral("reason"), reason},
+            {QStringLiteral("selectionEnd"), boundedCursor},
+            {QStringLiteral("selectionStart"), boundedCursor},
+            {QStringLiteral("surfaceCursor"), std::max(0, surfaceCursor)}
+        };
+    }
+
+    QVariantMap visibleTextMutationNotAppliedPayload(
+        const QString& reason,
+        const QString& sourceText,
+        const int cursorPosition,
+        const int surfaceCursor)
+    {
+        const int boundedCursor = std::max(0, std::min(cursorPosition, static_cast<int>(sourceText.size())));
+        return {
+            {QStringLiteral("applied"), false},
+            {QStringLiteral("cursorPosition"), boundedCursor},
+            {QStringLiteral("nextSourceText"), sourceText},
+            {QStringLiteral("reason"), reason},
+            {QStringLiteral("selectionEnd"), boundedCursor},
+            {QStringLiteral("selectionStart"), boundedCursor},
+            {QStringLiteral("surfaceCursor"), std::max(0, surfaceCursor)}
+        };
     }
 } // namespace
 
@@ -427,6 +575,162 @@ QVariantMap ContentsWysiwygEditorPolicy::rawSelectionForVisibleSurfaceSelection(
         {QStringLiteral("selectionEnd"), selectionEnd},
         {QStringLiteral("cursorSourceOffset"), cursorSourceOffset},
         {QStringLiteral("surfaceCursor"), cursor}
+    };
+}
+
+QVariantMap ContentsWysiwygEditorPolicy::visibleBackspaceMutationPayload(
+    const QString& sourceText,
+    QObject* coordinateMapper,
+    const int surfaceCursor,
+    const int renderedLength) const
+{
+    const int sourceLength = sourceText.size();
+    const int boundedRenderedLength = std::max(0, renderedLength);
+    const int cursor = boundedOffset(surfaceCursor, boundedRenderedLength);
+    if (sourceText.isEmpty() || cursor <= 0)
+    {
+        return visibleBackspaceNotAppliedPayload(
+            QStringLiteral("cursor-at-start"),
+            sourceText,
+            0,
+            cursor);
+    }
+
+    int deleteStart = boundedOffset(
+        sourceOffsetForVisibleLogicalOffset(coordinateMapper, cursor - 1, boundedRenderedLength),
+        sourceLength);
+    int deleteEnd = boundedOffset(
+        sourceOffsetForVisibleLogicalOffset(coordinateMapper, cursor, boundedRenderedLength),
+        sourceLength);
+
+    deleteStart = sourceOffsetPastOpeningInlineBoundaries(*this, sourceText, deleteStart);
+    deleteEnd = sourceOffsetBeforeClosingInlineBoundaries(*this, sourceText, deleteEnd);
+    if (deleteEnd <= deleteStart)
+    {
+        return visibleBackspaceNotAppliedPayload(
+            QStringLiteral("empty-visible-delete-range"),
+            sourceText,
+            deleteStart,
+            cursor);
+    }
+
+    QString nextSourceText = sourceText;
+    nextSourceText.remove(deleteStart, deleteEnd - deleteStart);
+    const int nextCursor = boundedOffset(deleteStart, nextSourceText.size());
+    return {
+        {QStringLiteral("applied"), nextSourceText != sourceText},
+        {QStringLiteral("cursorPosition"), nextCursor},
+        {QStringLiteral("deletedSourceEnd"), deleteEnd},
+        {QStringLiteral("deletedSourceStart"), deleteStart},
+        {QStringLiteral("nextSourceText"), nextSourceText},
+        {QStringLiteral("reason"), nextSourceText != sourceText ? QString{} : QStringLiteral("no-op")},
+        {QStringLiteral("selectionEnd"), nextCursor},
+        {QStringLiteral("selectionStart"), nextCursor},
+        {QStringLiteral("sourceOffset"), nextCursor},
+        {QStringLiteral("surfaceCursor"), cursor - 1}
+    };
+}
+
+QVariantMap ContentsWysiwygEditorPolicy::visibleTextMutationPayload(
+    const QString& sourceText,
+    QObject* coordinateMapper,
+    const QString& previousVisibleText,
+    const QString& nextVisibleText,
+    const int surfaceCursor) const
+{
+    const QString previousText = normalizeVisibleText(previousVisibleText);
+    const QString nextText = normalizeVisibleText(nextVisibleText);
+    const int previousLength = previousText.size();
+    const int nextLength = nextText.size();
+    const int sourceLength = sourceText.size();
+    const int boundedSurfaceCursor = boundedOffset(surfaceCursor, nextLength);
+
+    if (previousText == nextText)
+    {
+        const int cursorPosition = boundedOffset(
+            sourceOffsetForVisibleLogicalOffset(coordinateMapper, boundedSurfaceCursor, previousLength),
+            sourceLength);
+        return visibleTextMutationNotAppliedPayload(
+            QStringLiteral("visible-text-unchanged"),
+            sourceText,
+            cursorPosition,
+            boundedSurfaceCursor);
+    }
+
+    int prefixLength = 0;
+    const int sharedPrefixLimit = std::min(previousLength, nextLength);
+    while (prefixLength < sharedPrefixLimit
+        && previousText.at(prefixLength) == nextText.at(prefixLength))
+    {
+        ++prefixLength;
+    }
+
+    int previousSuffixStart = previousLength;
+    int nextSuffixStart = nextLength;
+    while (previousSuffixStart > prefixLength
+        && nextSuffixStart > prefixLength
+        && previousText.at(previousSuffixStart - 1) == nextText.at(nextSuffixStart - 1))
+    {
+        --previousSuffixStart;
+        --nextSuffixStart;
+    }
+
+    int sourceStart = boundedOffset(
+        sourceOffsetForVisibleLogicalOffset(coordinateMapper, prefixLength, previousLength),
+        sourceLength);
+    int sourceEnd = boundedOffset(
+        sourceOffsetForVisibleLogicalOffset(coordinateMapper, previousSuffixStart, previousLength),
+        sourceLength);
+    if (sourceEnd < sourceStart)
+    {
+        std::swap(sourceStart, sourceEnd);
+    }
+
+    const bool removesVisibleText = previousSuffixStart > prefixLength;
+    if (removesVisibleText)
+    {
+        sourceStart = sourceOffsetPastOpeningInlineBoundaries(*this, sourceText, sourceStart);
+        sourceEnd = sourceOffsetBeforeClosingInlineBoundaries(*this, sourceText, sourceEnd);
+    }
+    if (sourceEnd < sourceStart)
+    {
+        return visibleTextMutationNotAppliedPayload(
+            QStringLiteral("invalid-source-range"),
+            sourceText,
+            sourceStart,
+            boundedSurfaceCursor);
+    }
+
+    const QString replacementText = nextText.mid(prefixLength, nextSuffixStart - prefixLength);
+    const QString replacementSource = escapedSourceLiteral(replacementText);
+    QString nextSourceText = sourceText.left(sourceStart)
+        + replacementSource
+        + sourceText.mid(sourceEnd);
+
+    const bool replacementContainsStandaloneWebLink =
+        WebLinks::containsDetectableWebLink(replacementText);
+    const bool replacementCommitsPotentialWebLink = replacementText.size() == 1
+        && QStringLiteral(" \t\n.,;:!?)]}\"'").contains(replacementText);
+    if (replacementContainsStandaloneWebLink || replacementCommitsPotentialWebLink)
+    {
+        nextSourceText = WebLinks::autoWrapDetectedWebLinks(nextSourceText);
+    }
+
+    const int cursorPosition = boundedOffset(sourceStart + replacementSource.size(), nextSourceText.size());
+    return {
+        {QStringLiteral("applied"), nextSourceText != sourceText},
+        {QStringLiteral("cursorPosition"), cursorPosition},
+        {QStringLiteral("deletedSourceEnd"), sourceEnd},
+        {QStringLiteral("deletedSourceStart"), sourceStart},
+        {QStringLiteral("nextSourceText"), nextSourceText},
+        {QStringLiteral("previousVisibleEnd"), previousSuffixStart},
+        {QStringLiteral("previousVisibleStart"), prefixLength},
+        {QStringLiteral("reason"), nextSourceText != sourceText ? QString{} : QStringLiteral("no-op")},
+        {QStringLiteral("replacementText"), replacementText},
+        {QStringLiteral("selectionEnd"), cursorPosition},
+        {QStringLiteral("selectionStart"), cursorPosition},
+        {QStringLiteral("sourceOffset"), cursorPosition},
+        {QStringLiteral("surfaceCursor"), boundedSurfaceCursor}
     };
 }
 

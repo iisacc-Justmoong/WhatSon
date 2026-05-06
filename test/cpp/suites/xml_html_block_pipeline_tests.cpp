@@ -81,3 +81,42 @@ void WhatSonCppRegressionTests::editorRendererPipeline_materializesEnterNewlines
     }
     QCOMPARE(paragraphCount, 4);
 }
+
+void WhatSonCppRegressionTests::editorRendererPipeline_rendersInlineStyleTagsAsRichTextHtml()
+{
+    const ContentsHtmlBlockRenderPipeline pipeline;
+    const ContentsHtmlBlockRenderPipeline::RenderResult result = pipeline.renderEditorDocument(
+        QStringLiteral("<bold>Al<italic>pha</italic></bold><italic> Beta</italic>"));
+
+    QVERIFY(!result.documentHtml.isEmpty());
+    QVERIFY(!result.documentHtml.contains(QStringLiteral("&lt;bold&gt;")));
+    QVERIFY(!result.documentHtml.contains(QStringLiteral("&lt;italic&gt;")));
+    QVERIFY(!result.documentHtml.contains(QStringLiteral("<bold>")));
+    QVERIFY(!result.documentHtml.contains(QStringLiteral("<italic>")));
+    QVERIFY(result.documentHtml.contains(QStringLiteral("<strong style=\"font-weight:900;\">Al")));
+    QVERIFY(result.documentHtml.contains(QStringLiteral("<span style=\"font-style:italic;\">pha</span>")));
+    QVERIFY(result.documentHtml.contains(QStringLiteral("<span style=\"font-style:italic;\">&nbsp;Beta</span>")));
+
+    QVERIFY(!result.htmlTokens.isEmpty());
+    const QVariantMap token = result.htmlTokens.first().toMap();
+    const QString tokenHtml = token.value(QStringLiteral("html")).toString();
+    QVERIFY(token.value(QStringLiteral("overlayVisible")).toBool());
+    QVERIFY(tokenHtml.contains(QStringLiteral("<strong style=\"font-weight:900;\">Al")));
+    QVERIFY(tokenHtml.contains(QStringLiteral("<span style=\"font-style:italic;\">pha</span>")));
+    QVERIFY(!tokenHtml.contains(QStringLiteral("&lt;bold&gt;")));
+
+    bool foundStyledHtmlBlock = false;
+    for (const QVariant& blockValue : result.normalizedHtmlBlocks)
+    {
+        const QVariantMap block = blockValue.toMap();
+        const QString blockHtml = block.value(QStringLiteral("htmlBlockHtml")).toString();
+        if (blockHtml.contains(QStringLiteral("font-weight:900"))
+            && blockHtml.contains(QStringLiteral("font-style:italic")))
+        {
+            foundStyledHtmlBlock = true;
+        }
+        QVERIFY(!blockHtml.contains(QStringLiteral("&lt;bold&gt;")));
+        QVERIFY(!blockHtml.contains(QStringLiteral("&lt;italic&gt;")));
+    }
+    QVERIFY(foundStyledHtmlBlock);
+}

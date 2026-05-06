@@ -20,6 +20,8 @@ class ContentsEditorPresentationProjection : public QObject
     Q_PROPERTY(QVariantList normalizedHtmlBlocks READ normalizedHtmlBlocks NOTIFY normalizedHtmlBlocksChanged)
     Q_PROPERTY(QString logicalText READ logicalText NOTIFY logicalTextChanged)
     Q_PROPERTY(int logicalLineCount READ logicalLineCount NOTIFY logicalLineCountChanged)
+    Q_PROPERTY(int sourceCursorPosition READ sourceCursorPosition WRITE setSourceCursorPosition NOTIFY sourceCursorPositionChanged)
+    Q_PROPERTY(int logicalCursorPosition READ logicalCursorPosition NOTIFY logicalCursorPositionChanged)
 
 public:
     explicit ContentsEditorPresentationProjection(QObject* parent = nullptr);
@@ -39,11 +41,15 @@ public:
     QVariantList normalizedHtmlBlocks() const;
     QString logicalText() const;
     int logicalLineCount() const noexcept;
+    int sourceCursorPosition() const noexcept;
+    void setSourceCursorPosition(int position);
+    int logicalCursorPosition() const;
 
     Q_INVOKABLE int logicalLengthForSourceText(const QString& text) const;
-    Q_INVOKABLE QVariantList logicalToSourceOffsets() const;
     Q_INVOKABLE int logicalOffsetForSourceOffset(int sourceOffset) const;
+    Q_INVOKABLE int logicalOffsetForSourceOffsetWithAffinity(int sourceOffset, bool preferAfter) const noexcept;
     Q_INVOKABLE int sourceOffsetForLogicalOffset(int logicalOffset) const noexcept;
+    Q_INVOKABLE int sourceOffsetForVisibleLogicalOffset(int logicalOffset, int visibleLength) const noexcept;
 
 signals:
     void sourceTextChanged();
@@ -55,10 +61,13 @@ signals:
     void normalizedHtmlBlocksChanged();
     void logicalTextChanged();
     void logicalLineCountChanged();
+    void sourceCursorPositionChanged();
+    void logicalCursorPositionChanged();
 
 private:
     void connectSignals();
 
     ContentsTextFormatRenderer* m_textFormatRenderer = nullptr;
     ContentsLogicalTextBridge* m_logicalTextBridge = nullptr;
+    int m_sourceCursorPosition = 0;
 };

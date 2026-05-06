@@ -81,7 +81,6 @@ void WhatSonCppRegressionTests::contentsLineNumberRailMetrics_mapsRowsFromWholeL
     metrics.setGeometryWidth(320.0);
     metrics.setSourceText(sourceText);
     metrics.setLogicalText(logicalTextBridge.logicalText());
-    metrics.setLogicalToSourceOffsets(logicalTextBridge.logicalToSourceOffsets());
 
     const int alphaStart = sourceText.indexOf(QStringLiteral("Alpha"));
     const int betaStart = sourceText.indexOf(QStringLiteral("Beta"));

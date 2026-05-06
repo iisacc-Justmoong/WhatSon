@@ -8,8 +8,8 @@ Item {
     id: documentFlow
 
     property var htmlTokens: []
-    property var logicalToSourceOffsets: []
     property var normalizedHtmlBlocks: []
+    property var coordinateMapper: null
     property bool paperPaletteEnabled: false
     property string editorSurfaceHtml: ""
     property string logicalText: ""
@@ -17,10 +17,11 @@ Item {
     property string sourceText: ""
     property color textColor: LV.Theme.bodyColor
     readonly property real editorContentHeight: editor.displayContentHeight
-    readonly property int editorCursorPosition: editor.cursorPosition
+    readonly property int editorCursorPosition: editor.sourceCursorPosition
     readonly property var editorLogicalGutterRows: editor.logicalGutterRows
-    readonly property int editorSelectionEnd: editor.selectionEnd
-    readonly property int editorSelectionStart: editor.selectionStart
+    readonly property int editorSelectionEnd: editor.sourceSelectionEnd
+    readonly property int editorSelectionStart: editor.sourceSelectionStart
+    readonly property bool editorRenderedOverlayVisible: editor.renderedOverlayVisible
     readonly property int editorVisualLineCount: editor.visualLineCount
     readonly property var editorVisualLineWidthRatios: editor.visualLineWidthRatios
 
@@ -73,18 +74,6 @@ Item {
         documentFlow.viewHookRequested(reason !== undefined ? String(reason) : "manual");
     }
 
-    function logicalOffsetToSourceOffset(logicalOffset) {
-        const fallbackOffset = Math.max(0, Math.min(Number(logicalOffset) || 0, documentFlow.sourceText.length));
-        const offsets = documentFlow.logicalToSourceOffsets;
-        if (!offsets || offsets.length === undefined || offsets.length <= 0)
-            return fallbackOffset;
-        const safeIndex = Math.max(0, Math.min(Number(logicalOffset) || 0, offsets.length - 1));
-        const mappedOffset = Number(offsets[Math.floor(safeIndex)]);
-        if (!isFinite(mappedOffset))
-            return fallbackOffset;
-        return Math.max(0, Math.min(mappedOffset, documentFlow.sourceText.length));
-    }
-
     function pointRequestsTerminalBodyClick(localX, localY) {
         const x = Number(localX) || 0;
         const y = Number(localY) || 0;
@@ -104,13 +93,23 @@ Item {
         return true;
     }
 
+    function terminalBodySurfaceY() {
+        const renderedBodyHeight = Math.max(0, Number(editor.displayContentHeight) || 0);
+        if (renderedBodyHeight <= 0)
+            return 0;
+        const minimumBodyLineHeight = Math.max(1, Number(LV.Theme.textBodyLineHeight) || 1);
+        return Math.min(
+                    documentFlow.height,
+                    renderedBodyHeight + minimumBodyLineHeight + 1);
+    }
+
     ContentsInlineFormatEditor {
         id: editor
 
         anchors.fill: parent
+        coordinateMapper: documentFlow.coordinateMapper
         displayGeometryText: documentFlow.logicalText.length > 0 ? documentFlow.logicalText : documentFlow.sourceText
         logicalCursorPosition: documentFlow.logicalCursorPosition
-        logicalToSourceOffsets: documentFlow.logicalToSourceOffsets
         normalizedHtmlBlocks: documentFlow.normalizedHtmlBlocks
         objectName: "contentsStructuredDocumentInlineEditor"
         renderedText: documentFlow.editorSurfaceHtml
@@ -143,9 +142,8 @@ Item {
         anchors.right: parent.right
         anchors.bottom: parent.bottom
         height: Math.max(0, documentFlow.height - y)
-        y: Math.min(
-               documentFlow.height,
-               Math.max(0, Number(editor.displayContentHeight) || 0))
+        objectName: "contentsStructuredDocumentTerminalBodyClickSurface"
+        y: documentFlow.terminalBodySurfaceY()
         propagateComposedEvents: true
         z: 1
 

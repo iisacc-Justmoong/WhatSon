@@ -12,8 +12,9 @@ Item {
     property alias contentHeight: textInput.contentHeight
     property color cursorColor: LV.Theme.accentBlue
     property alias cursorPosition: textInput.cursorPosition
+    property var coordinateMapper: null
     property var atomicResourceSelectionRects: []
-    property string displayGeometryText: textInput.text
+    property string displayGeometryText: control.text
     readonly property real displayContentHeight: control.renderedOverlayVisible
             ? renderedOverlay.contentHeight
             : textInput.contentHeight
@@ -21,7 +22,6 @@ Item {
     property bool focused: textInput.focused
     readonly property var inputItem: textInput.editorItem
     property int inputMethodHints: Qt.ImhNone
-    property var logicalToSourceOffsets: []
     property int mouseSelectionMode: TextEdit.SelectCharacters
     readonly property bool nativeSelectionActive: textInput.selectionStart !== textInput.selectionEnd
     property var normalizedHtmlBlocks: []
@@ -46,7 +46,7 @@ Item {
     property int logicalCursorPosition: textInput.cursorPosition
     readonly property int resolvedProjectedCursorPosition: control.visiblePointerCursorLogicalOffset >= 0
             ? control.visiblePointerCursorLogicalOffset
-            : control.logicalCursorPosition
+            : (control.logicalSurfaceActive ? textInput.cursorPosition : control.logicalCursorPosition)
     readonly property int cursorPixelWidth: Math.max(1, Math.ceil(LV.Theme.strokeThin))
     readonly property rect projectedCursorRectangle: control.cursorProjectionRectangle()
     readonly property bool projectedCursorVisible: control.renderedOverlayVisible
@@ -61,6 +61,7 @@ Item {
             && control.hasAtomicRenderedResourceBlocks()
     readonly property bool renderedOverlayVisible: control.renderedOverlayAvailable
             && (!control.nativeCompositionActive() || control.renderedResourceOverlayPinned)
+    readonly property bool logicalSurfaceActive: control.showRenderedOutput
     readonly property bool nativeSelectionContainsVisibleLogicalContent: control.nativeSelectionActive
             && (control.sourceRangeContainsVisibleLogicalContent(control.selectedSourceRange())
                 || control.sourceRangeIntersectsAtomicResourceBlock(control.selectedSourceRange()))
@@ -73,12 +74,16 @@ Item {
     readonly property bool preferNativeInputHandling: true
     property bool selectByKeyboard: true
     property bool selectByMouse: true
-    property alias selectedText: textInput.selectedText
-    property alias selectionEnd: textInput.selectionEnd
-    property alias selectionStart: textInput.selectionStart
+    readonly property string selectedText: textInput.selectedText
+    readonly property var sourceSelectionRange: control.selectedSourceRange()
+    readonly property int selectionEnd: Number(control.sourceSelectionRange.end) || 0
+    readonly property int selectionStart: Number(control.sourceSelectionRange.start) || 0
+    readonly property int sourceCursorPosition: control.sourceCursorFromSurfaceCursor(textInput.cursorPosition)
+    readonly property int sourceSelectionEnd: control.selectionEnd
+    readonly property int sourceSelectionStart: control.selectionStart
     property bool showRenderedOutput: false
     property var tagManagementKeyPressHandler: null
-    property alias text: textInput.text
+    property string text: ""
     property color textColor: LV.Theme.bodyColor
 
     signal textEdited(string text)
@@ -95,12 +100,11 @@ Item {
     }
 
     function currentPlainText() {
-        return textInput.text;
+        return control.text;
     }
 
     function boundedCursorPosition(position, length) {
-        const safeLength = Math.max(0, Number(length) || 0);
-        return Math.max(0, Math.min(Number(position) || 0, safeLength));
+        return wysiwygEditorPolicy.boundedOffset(Number(position) || 0, Number(length) || 0);
     }
 
     function cursorProjectionRectangle() {
@@ -164,16 +168,29 @@ Item {
         return control.setCursorPositionPreservingNativeInput(textInput.length);
     }
 
+    function projectedNativeSurfaceText() {
+        return control.logicalSurfaceActive ? control.displayGeometryText : control.text;
+    }
+
+    function syncNativeSurfaceTextFromProjection(force) {
+        const nextText = control.projectedNativeSurfaceText();
+        if (force === true)
+            inlineEditorController.applyImmediateProgrammaticText(nextText);
+        else
+            inlineEditorController.setProgrammaticText(nextText);
+    }
+
     function logicalOffsetToSourceOffset(logicalOffset) {
-        const fallbackOffset = control.boundedCursorPosition(logicalOffset, textInput.length);
-        const offsets = control.logicalToSourceOffsets;
-        if (!offsets || offsets.length === undefined || offsets.length <= 0)
-            return fallbackOffset;
-        const safeIndex = Math.max(0, Math.min(Number(logicalOffset) || 0, offsets.length - 1));
-        const mappedOffset = Number(offsets[Math.floor(safeIndex)]);
-        if (!isFinite(mappedOffset))
-            return fallbackOffset;
-        return control.boundedCursorPosition(mappedOffset, textInput.length);
+        const mapper = control.coordinateMapper;
+        if (mapper === null || mapper === undefined
+                || mapper.sourceOffsetForVisibleLogicalOffset === undefined) {
+            console.error("ContentsInlineFormatEditor requires coordinateMapper.sourceOffsetForVisibleLogicalOffset");
+            return control.boundedCursorPosition(logicalOffset, control.text.length);
+        }
+        const mappedOffset = Number(mapper.sourceOffsetForVisibleLogicalOffset(
+                                        Number(logicalOffset) || 0,
+                                        renderedGeometryProbe.length));
+        return control.boundedCursorPosition(mappedOffset, control.text.length);
     }
 
     function sourceOffsetForVisibleLogicalOffset(logicalOffset) {
@@ -182,31 +199,42 @@ Item {
     }
 
     function sourceOffsetToLogicalOffset(sourceOffset, preferAfter) {
-        const offsets = control.logicalToSourceOffsets;
-        if (!offsets || offsets.length === undefined || offsets.length <= 0)
+        const mapper = control.coordinateMapper;
+        if (mapper === null || mapper === undefined
+                || mapper.logicalOffsetForSourceOffsetWithAffinity === undefined) {
+            console.error("ContentsInlineFormatEditor requires coordinateMapper.logicalOffsetForSourceOffsetWithAffinity");
             return control.boundedCursorPosition(sourceOffset, textInput.length);
-
-        const boundedSourceOffset = control.boundedCursorPosition(sourceOffset, textInput.length);
-        if (preferAfter === true) {
-            for (let index = 0; index < offsets.length; ++index) {
-                const candidateOffset = Number(offsets[index]);
-                if (isFinite(candidateOffset) && candidateOffset >= boundedSourceOffset)
-                    return index;
-            }
-            return Math.max(0, offsets.length - 1);
         }
+        const mappedOffset = Number(mapper.logicalOffsetForSourceOffsetWithAffinity(
+                                        Number(sourceOffset) || 0,
+                                        preferAfter === true));
+        return control.boundedCursorPosition(mappedOffset, renderedGeometryProbe.length);
+    }
 
-        for (let index = offsets.length - 1; index >= 0; --index) {
-            const candidateOffset = Number(offsets[index]);
-            if (isFinite(candidateOffset) && candidateOffset <= boundedSourceOffset)
-                return index;
-        }
-        return 0;
+    function sourceCursorFromSurfaceCursor(surfaceCursor) {
+        if (!control.logicalSurfaceActive)
+            return control.boundedCursorPosition(surfaceCursor, control.text.length);
+        return control.sourceOffsetForVisibleLogicalOffset(surfaceCursor);
     }
 
     function selectedSourceRange() {
         const start = Math.max(0, Math.min(textInput.selectionStart, textInput.selectionEnd));
         const end = Math.max(start, Math.max(textInput.selectionStart, textInput.selectionEnd));
+        if (control.logicalSurfaceActive) {
+            const rawSelection = wysiwygEditorPolicy.rawSelectionForVisibleSurfaceSelection(
+                        control.coordinateMapper,
+                        start,
+                        end,
+                        textInput.cursorPosition,
+                        textInput.length,
+                        control.text.length);
+            if (rawSelection.valid === true) {
+                return {
+                    "start": rawSelection.selectionStart,
+                    "end": rawSelection.selectionEnd
+                };
+            }
+        }
         return {
             "start": start,
             "end": end
@@ -214,201 +242,103 @@ Item {
     }
 
     function normalizedSourceTagName(tagToken) {
-        const token = String(tagToken || "");
-        if (token.length < 3 || token.charAt(0) !== "<")
-            return "";
-        let cursor = 1;
-        while (cursor < token.length && /\s/.test(token.charAt(cursor)))
-            ++cursor;
-        if (cursor < token.length && token.charAt(cursor) === "/")
-            ++cursor;
-        while (cursor < token.length && /\s/.test(token.charAt(cursor)))
-            ++cursor;
-        const nameStart = cursor;
-        while (cursor < token.length && /[A-Za-z0-9_.:-]/.test(token.charAt(cursor)))
-            ++cursor;
-        if (cursor <= nameStart)
-            return "";
-        return token.slice(nameStart, cursor).toLowerCase();
+        return wysiwygEditorPolicy.normalizedSourceTagName(String(tagToken || ""));
     }
 
     function sourceTagProducesVisibleSelection(tagName, closingTag) {
-        const normalizedTagName = String(tagName || "").toLowerCase();
-        if (closingTag)
-            return false;
-        return normalizedTagName === "resource"
-                || normalizedTagName === "break"
-                || normalizedTagName === "hr"
-                || normalizedTagName === "tag";
+        return wysiwygEditorPolicy.sourceTagProducesVisibleSelection(
+                    String(tagName || ""),
+                    closingTag === true);
     }
 
     function sourceOffsetIsInsideTagToken(text, sourceOffset) {
-        const boundedOffset = Math.max(0, Math.min(Number(sourceOffset) || 0, Math.max(0, text.length - 1)));
-        const previousOpen = text.lastIndexOf("<", boundedOffset);
-        if (previousOpen < 0)
-            return false;
-        const previousClose = text.lastIndexOf(">", boundedOffset - 1);
-        return previousOpen > previousClose;
+        return wysiwygEditorPolicy.sourceOffsetIsInsideTagToken(
+                    String(text || ""),
+                    Number(sourceOffset) || 0);
     }
 
     function sourceTagTokenBoundsForCursor(sourceOffset) {
-        const text = textInput.text;
-        const sourceLength = text.length;
-        if (sourceLength <= 0)
-            return { "inside": false, "start": 0, "end": 0 };
-
-        const offset = Math.max(0, Math.min(Number(sourceOffset) || 0, sourceLength));
-        const probeOffset = Math.max(0, Math.min(offset, sourceLength - 1));
-        const tagStart = text.lastIndexOf("<", probeOffset);
-        if (tagStart < 0)
-            return { "inside": false, "start": 0, "end": 0 };
-
-        const previousClose = text.lastIndexOf(">", probeOffset - 1);
-        const tagEnd = text.indexOf(">", tagStart + 1);
-        const inside = tagEnd > tagStart
-                && tagStart > previousClose
-                && offset > tagStart
-                && offset < tagEnd + 1;
-        if (!inside)
-            return { "inside": false, "start": tagStart, "end": tagEnd };
-        return { "inside": true, "start": tagStart, "end": tagEnd };
+        return wysiwygEditorPolicy.sourceTagTokenBoundsForCursor(
+                    control.text,
+                    Number(sourceOffset) || 0);
     }
 
     function normalizeCursorPositionAwayFromHiddenTagTokens() {
         if (control.cursorNormalizationActive)
             return false;
+        if (control.logicalSurfaceActive) {
+            control.previousRawCursorPosition = control.sourceCursorPosition;
+            return false;
+        }
 
-        if (!control.visiblePointerCursorUpdateActive)
+        const plan = wysiwygEditorPolicy.hiddenTagCursorNormalizationPlan(
+                    control.text,
+                    textInput.cursorPosition,
+                    control.previousRawCursorPosition,
+                    control.renderedOverlayVisible,
+                    control.nativeCompositionActive(),
+                    control.nativeSelectionActive,
+                    control.visiblePointerCursorUpdateActive);
+        if (plan.clearVisiblePointerCursor === true)
             control.visiblePointerCursorLogicalOffset = -1;
-
-        const currentCursorPosition = textInput.cursorPosition;
-        if (!control.renderedOverlayVisible
-                || control.nativeCompositionActive()
-                || control.nativeSelectionActive) {
-            control.previousRawCursorPosition = currentCursorPosition;
-            return false;
-        }
-
-        const tokenBounds = control.sourceTagTokenBoundsForCursor(currentCursorPosition);
-        if (!tokenBounds.inside) {
-            control.previousRawCursorPosition = currentCursorPosition;
-            return false;
-        }
-
-        const movingForward = currentCursorPosition >= control.previousRawCursorPosition;
-        const targetCursorPosition = movingForward ? tokenBounds.end + 1 : tokenBounds.start;
-        const boundedTarget = control.boundedCursorPosition(targetCursorPosition, textInput.length);
-        if (boundedTarget === currentCursorPosition) {
-            control.previousRawCursorPosition = currentCursorPosition;
+        if (plan.changed !== true) {
+            control.previousRawCursorPosition = plan.previousRawCursorPosition !== undefined
+                    ? Number(plan.previousRawCursorPosition)
+                    : textInput.cursorPosition;
             return false;
         }
 
         control.cursorNormalizationActive = true;
-        textInput.cursorPosition = boundedTarget;
+        textInput.cursorPosition = plan.targetCursorPosition !== undefined
+                ? Number(plan.targetCursorPosition)
+                : textInput.cursorPosition;
         control.cursorNormalizationActive = false;
-        control.previousRawCursorPosition = textInput.cursorPosition;
+        control.previousRawCursorPosition = plan.previousRawCursorPosition !== undefined
+                ? Number(plan.previousRawCursorPosition)
+                : textInput.cursorPosition;
         control.scheduleRenderedOverlaySelectionRefresh();
         return true;
     }
 
     function sourceRangeContainsVisibleLogicalContent(range) {
-        const text = textInput.text;
-        const sourceLength = text.length;
-        const start = Math.max(0, Math.min(Number(range && range.start !== undefined ? range.start : 0) || 0, sourceLength));
-        const end = Math.max(start, Math.min(Number(range && range.end !== undefined ? range.end : start) || start, sourceLength));
-        let cursor = start;
-        while (cursor < end) {
-            if (control.sourceOffsetIsInsideTagToken(text, cursor)) {
-                const tagStart = text.lastIndexOf("<", cursor);
-                const tagEnd = text.indexOf(">", cursor);
-                if (tagStart >= 0 && tagEnd >= cursor) {
-                    const tagToken = text.slice(tagStart, tagEnd + 1);
-                    const tagName = control.normalizedSourceTagName(tagToken);
-                    const closingTag = /^\s*<\s*\//.test(tagToken);
-                    if (control.sourceTagProducesVisibleSelection(tagName, closingTag))
-                        return true;
-                    cursor = tagEnd + 1;
-                    continue;
-                }
-            }
-
-            const currentChar = text.charAt(cursor);
-            if (currentChar === "<") {
-                const tagEnd = text.indexOf(">", cursor + 1);
-                if (tagEnd > cursor) {
-                    const tagToken = text.slice(cursor, tagEnd + 1);
-                    const tagName = control.normalizedSourceTagName(tagToken);
-                    const closingTag = /^\s*<\s*\//.test(tagToken);
-                    if (control.sourceTagProducesVisibleSelection(tagName, closingTag))
-                        return true;
-                    cursor = tagEnd + 1;
-                    continue;
-                }
-            }
-            return true;
-        }
-        return false;
+        return wysiwygEditorPolicy.sourceRangeContainsVisibleLogicalContent(
+                    control.text,
+                    Number(range && range.start !== undefined ? range.start : 0) || 0,
+                    Number(range && range.end !== undefined ? range.end : 0) || 0);
     }
 
     function htmlBlockSourceStart(block) {
-        const value = Number(block && block.sourceStart !== undefined ? block.sourceStart : -1);
-        return isFinite(value) ? Math.max(0, Math.floor(value)) : -1;
+        return wysiwygEditorPolicy.htmlBlockSourceStart(block);
     }
 
     function htmlBlockSourceEnd(block) {
-        const value = Number(block && block.sourceEnd !== undefined ? block.sourceEnd : -1);
-        return isFinite(value) ? Math.max(0, Math.floor(value)) : -1;
+        return wysiwygEditorPolicy.htmlBlockSourceEnd(block);
     }
 
     function htmlBlockIntersectsSourceRange(block, range) {
-        const blockStart = control.htmlBlockSourceStart(block);
-        const blockEnd = control.htmlBlockSourceEnd(block);
-        return blockStart >= 0 && blockEnd > blockStart
-                && range.start < blockEnd && range.end > blockStart;
+        return wysiwygEditorPolicy.htmlBlockIntersectsSourceRange(
+                    block,
+                    Number(range && range.start !== undefined ? range.start : 0) || 0,
+                    Number(range && range.end !== undefined ? range.end : 0) || 0);
     }
 
     function sourceRangeIntersectsAtomicResourceBlock(range) {
-        const blocks = control.normalizedHtmlBlocks || [];
-        for (let index = 0; index < blocks.length; ++index) {
-            const block = blocks[index];
-            if (control.htmlBlockIsIiHtmlResourceBlock(block)
-                    && control.htmlBlockIntersectsSourceRange(block, range)) {
-                return true;
-            }
-        }
-        return false;
+        return wysiwygEditorPolicy.sourceRangeIntersectsAtomicResourceBlock(
+                    control.normalizedHtmlBlocks || [],
+                    Number(range && range.start !== undefined ? range.start : 0) || 0,
+                    Number(range && range.end !== undefined ? range.end : 0) || 0);
     }
 
     function htmlBlockIsIiHtmlResourceBlock(block) {
-        if (block === null || block === undefined || typeof block !== "object")
-            return false;
-        const blockKind = String(block.renderDelegateType || block.blockType || block.type || "").toLowerCase();
-        if (blockKind !== "resource")
-            return false;
-        return String(block.htmlBlockObjectSource || "") === "iiHtmlBlock"
-                && block.htmlBlockIsDisplayBlock !== false;
+        return wysiwygEditorPolicy.htmlBlockIsAtomicResourceBlock(block);
     }
 
     function hasAtomicRenderedResourceBlocks() {
-        const blocks = control.normalizedHtmlBlocks || [];
-        for (let index = 0; index < blocks.length; ++index) {
-            if (control.htmlBlockIsIiHtmlResourceBlock(blocks[index]))
-                return true;
-        }
-        return false;
+        return wysiwygEditorPolicy.hasAtomicRenderedResourceBlocks(control.normalizedHtmlBlocks || []);
     }
 
     function resourceLogicalRangeForBlock(block) {
-        const blockStart = control.htmlBlockSourceStart(block);
-        const blockEnd = control.htmlBlockSourceEnd(block);
-        const logicalStart = control.sourceOffsetToLogicalOffset(blockStart, false);
-        const logicalEnd = Math.max(
-                    logicalStart + 1,
-                    control.sourceOffsetToLogicalOffset(blockEnd, true));
-        return {
-            "start": logicalStart,
-            "end": logicalEnd
-        };
+        return wysiwygEditorPolicy.resourceLogicalRangeForBlock(block, control.coordinateMapper);
     }
 
     function resourceDisplayRectangleForBlock(block) {
@@ -434,55 +364,33 @@ Item {
 
     function renderedLogicalSelectionRange() {
         const sourceRange = control.selectedSourceRange();
-        const maxLength = Math.max(0, Number(renderedOverlay.length) || 0);
-        const intersectsAtomicResource = control.sourceRangeIntersectsAtomicResourceBlock(sourceRange);
-        if (!control.sourceRangeContainsVisibleLogicalContent(sourceRange)
-                && !intersectsAtomicResource) {
-            return {
-                "start": 0,
-                "end": 0
-            };
-        }
-        let start = control.sourceOffsetToLogicalOffset(sourceRange.start, false);
-        let end = control.sourceOffsetToLogicalOffset(sourceRange.end, true);
-        const blocks = control.normalizedHtmlBlocks || [];
-        for (let index = 0; index < blocks.length; ++index) {
-            const block = blocks[index];
-            if (!control.htmlBlockIsIiHtmlResourceBlock(block)
-                    || !control.htmlBlockIntersectsSourceRange(block, sourceRange)) {
-                continue;
-            }
-
-            const resourceRange = control.resourceLogicalRangeForBlock(block);
-            start = Math.min(start, resourceRange.start);
-            end = Math.max(end, resourceRange.end);
-        }
-
-        start = Math.max(0, Math.min(start, maxLength));
-        end = Math.max(start, Math.min(end, maxLength));
-        return {
-            "start": start,
-            "end": end
-        };
+        return wysiwygEditorPolicy.renderedLogicalSelectionRange(
+                    control.text,
+                    control.normalizedHtmlBlocks || [],
+                    control.coordinateMapper,
+                    sourceRange.start,
+                    sourceRange.end,
+                    Number(renderedOverlay.length) || 0);
     }
 
     function visibleLogicalOffsetAtPoint(localX, localY) {
+        const geometryItem = control.renderedOverlayVisible ? renderedOverlay : renderedGeometryProbe;
         const mappedPoint = control.mapToItem(
-                    renderedGeometryProbe,
+                    geometryItem,
                     Number(localX) || 0,
                     Number(localY) || 0);
-        const geometryWidth = Math.max(1, Number(renderedGeometryProbe.width) || 1);
+        const geometryWidth = Math.max(1, Number(geometryItem.width) || 1);
         const geometryHeight = Math.max(
                     1,
-                    Number(renderedGeometryProbe.contentHeight) || Number(renderedGeometryProbe.height) || LV.Theme.textBodyLineHeight);
+                    Number(geometryItem.contentHeight) || Number(geometryItem.height) || LV.Theme.textBodyLineHeight);
         const mappedY = Number(mappedPoint.y) || 0;
         const terminalBlankThreshold = geometryHeight + Math.max(1, Number(LV.Theme.textBodyLineHeight) || 1);
         if (mappedY > terminalBlankThreshold)
-            return control.boundedCursorPosition(renderedGeometryProbe.length, renderedGeometryProbe.length);
+            return control.boundedCursorPosition(geometryItem.length, geometryItem.length);
         const clampedX = Math.max(0, Math.min(Number(mappedPoint.x) || 0, geometryWidth));
         const clampedY = Math.max(0, Math.min(mappedY, Math.max(0, geometryHeight - 1)));
-        const logicalOffset = renderedGeometryProbe.positionAt(clampedX, clampedY);
-        return control.boundedCursorPosition(logicalOffset, renderedGeometryProbe.length);
+        const logicalOffset = geometryItem.positionAt(clampedX, clampedY);
+        return control.boundedCursorPosition(logicalOffset, geometryItem.length);
     }
 
     function restoreVisibleLogicalSelectionRange(anchorLogicalOffset, currentLogicalOffset) {
@@ -532,28 +440,27 @@ Item {
         if (!control.renderedOverlayVisible || control.nativeCompositionActive())
             return false;
 
-        const surfaceStart = Math.max(
-                    0,
-                    Math.min(surfaceSelectionEditor.selectionStart, surfaceSelectionEditor.selectionEnd));
-        const surfaceEnd = Math.max(
-                    surfaceStart,
-                    Math.max(surfaceSelectionEditor.selectionStart, surfaceSelectionEditor.selectionEnd));
-        const surfaceCursor = control.boundedCursorPosition(
+        const rawSelection = wysiwygEditorPolicy.rawSelectionForVisibleSurfaceSelection(
+                    control.coordinateMapper,
+                    surfaceSelectionEditor.selectionStart,
+                    surfaceSelectionEditor.selectionEnd,
                     surfaceSelectionEditor.cursorPosition,
-                    surfaceSelectionEditor.length);
-        const anchorSourceOffset = control.sourceOffsetForVisibleLogicalOffset(surfaceStart);
-        const currentSourceOffset = control.sourceOffsetForVisibleLogicalOffset(surfaceEnd);
-        const cursorSourceOffset = control.sourceOffsetForVisibleLogicalOffset(surfaceCursor);
-        const selectionStart = Math.min(anchorSourceOffset, currentSourceOffset);
-        const selectionEnd = Math.max(anchorSourceOffset, currentSourceOffset);
+                    surfaceSelectionEditor.length,
+                    control.text.length);
+        if (rawSelection.valid !== true)
+            return false;
+
         control.visiblePointerCursorUpdateActive = true;
-        const restored = control.restoreSelectionRange(selectionStart, selectionEnd, cursorSourceOffset);
+        const restored = control.restoreSelectionRange(
+                    rawSelection.selectionStart,
+                    rawSelection.selectionEnd,
+                    rawSelection.cursorSourceOffset);
         control.visiblePointerCursorUpdateActive = false;
         if (!restored)
             return false;
         textInput.forceEditorFocus();
-        control.visiblePointerCursorLogicalOffset = selectionStart === selectionEnd
-                ? surfaceCursor
+        control.visiblePointerCursorLogicalOffset = rawSelection.selectionStart === rawSelection.selectionEnd
+                ? rawSelection.surfaceCursor
                 : -1;
         control.scheduleRenderedOverlaySelectionRefresh();
         return true;
@@ -577,27 +484,15 @@ Item {
     }
 
     function visibleLogicalLineRangeAtOffset(logicalOffset) {
-        const text = String(control.displayGeometryText || "");
-        const offset = control.boundedCursorPosition(logicalOffset, text.length);
-        const previousBreak = text.lastIndexOf("\n", Math.max(0, offset - 1));
-        const start = previousBreak < 0 ? 0 : previousBreak + 1;
-        const nextBreak = text.indexOf("\n", offset);
-        const end = nextBreak < 0 ? text.length : nextBreak;
-        return { "start": start, "end": Math.max(start, end) };
+        return wysiwygEditorPolicy.visibleLogicalLineRange(
+                    String(control.displayGeometryText || ""),
+                    Number(logicalOffset) || 0);
     }
 
     function visibleLogicalParagraphRangeAtOffset(logicalOffset) {
-        const text = String(control.displayGeometryText || "");
-        const offset = control.boundedCursorPosition(logicalOffset, text.length);
-        const previousParagraphBreak = text.lastIndexOf("\n\n", Math.max(0, offset - 1));
-        let start = previousParagraphBreak < 0 ? 0 : previousParagraphBreak + 2;
-        while (start < text.length && text.charAt(start) === "\n")
-            ++start;
-        const nextParagraphBreak = text.indexOf("\n\n", offset);
-        let end = nextParagraphBreak < 0 ? text.length : nextParagraphBreak;
-        while (end > start && text.charAt(end - 1) === "\n")
-            --end;
-        return { "start": start, "end": Math.max(start, end) };
+        return wysiwygEditorPolicy.visibleLogicalParagraphRange(
+                    String(control.displayGeometryText || ""),
+                    Number(logicalOffset) || 0);
     }
 
     function restoreVisibleLogicalLineSelectionAtLogicalOffset(logicalOffset) {
@@ -645,15 +540,18 @@ Item {
         if (clickCount >= 3) {
             control.visiblePointerSelectionActive = false;
             control.resetVisiblePointerClickSequence();
-            return control.restoreVisibleLogicalParagraphSelectionAtLogicalOffset(logicalOffset);
+            control.restoreVisibleLogicalParagraphSelectionAtLogicalOffset(logicalOffset);
+            return true;
         }
         if (clickCount === 2) {
             control.visiblePointerSelectionActive = false;
-            return control.restoreVisibleLogicalLineSelectionAtLogicalOffset(logicalOffset);
+            control.restoreVisibleLogicalLineSelectionAtLogicalOffset(logicalOffset);
+            return true;
         }
         control.visiblePointerSelectionAnchorLogicalOffset = logicalOffset;
         control.visiblePointerSelectionActive = true;
-        return control.restoreVisibleLogicalSelectionRange(logicalOffset, logicalOffset);
+        control.restoreVisibleLogicalSelectionRange(logicalOffset, logicalOffset);
+        return true;
     }
 
     function updateVisiblePointerSelection(localX, localY) {
@@ -734,7 +632,7 @@ Item {
     }
 
     function displayGeometryItem() {
-        return control.renderedOverlayVisible ? renderedGeometryProbe : textInput.editorItem;
+        return control.renderedOverlayVisible ? renderedOverlay : textInput.editorItem;
     }
 
     function requestViewHook(reason) {
@@ -762,9 +660,19 @@ Item {
     }
 
     function restoreSelectionRange(selectionStart, selectionEnd, cursorPosition) {
-        const start = Math.max(0, Math.min(Number(selectionStart) || 0, textInput.length));
-        const end = Math.max(start, Math.min(Number(selectionEnd) || start, textInput.length));
-        const cursor = Math.max(start, Math.min(Number(cursorPosition) || end, end));
+        const sourceLength = control.text.length;
+        const sourceStart = Math.max(0, Math.min(Number(selectionStart) || 0, sourceLength));
+        const sourceEnd = Math.max(sourceStart, Math.min(Number(selectionEnd) || sourceStart, sourceLength));
+        const sourceCursor = Math.max(sourceStart, Math.min(Number(cursorPosition) || sourceEnd, sourceEnd));
+        const start = control.logicalSurfaceActive
+                ? control.sourceOffsetToLogicalOffset(sourceStart, false)
+                : sourceStart;
+        const end = control.logicalSurfaceActive
+                ? Math.max(start, control.sourceOffsetToLogicalOffset(sourceEnd, true))
+                : sourceEnd;
+        const cursor = control.logicalSurfaceActive
+                ? Math.max(start, Math.min(control.sourceOffsetToLogicalOffset(sourceCursor, true), end))
+                : sourceCursor;
         if (start === end) {
             textInput.deselect();
             textInput.cursorPosition = cursor;
@@ -782,9 +690,9 @@ Item {
 
     function selectionSnapshot() {
         return {
-            "cursorPosition": textInput.cursorPosition,
-            "selectionStart": textInput.selectionStart,
-            "selectionEnd": textInput.selectionEnd,
+            "cursorPosition": control.sourceCursorPosition,
+            "selectionStart": control.selectionStart,
+            "selectionEnd": control.selectionEnd,
             "selectedText": textInput.selectedText
         };
     }
@@ -801,6 +709,30 @@ Item {
         inlineEditorController.setProgrammaticText(resolvedText);
     }
 
+    function handleNativeSurfaceTextEdited(nextSurfaceText) {
+        const editedText = nextSurfaceText === undefined || nextSurfaceText === null
+                ? ""
+                : String(nextSurfaceText);
+        if (!control.logicalSurfaceActive) {
+            control.textEdited(editedText);
+            return;
+        }
+
+        const payload = wysiwygEditorPolicy.visibleTextMutationPayload(
+                    control.text,
+                    control.coordinateMapper,
+                    control.displayGeometryText,
+                    editedText,
+                    textInput.cursorPosition);
+        if (payload.applied !== true || payload.nextSourceText === undefined || payload.nextSourceText === null)
+            return;
+
+        control.visiblePointerCursorLogicalOffset = control.boundedCursorPosition(
+                    Number(payload.surfaceCursor) || textInput.cursorPosition,
+                    textInput.length);
+        control.textEdited(String(payload.nextSourceText));
+    }
+
     function applyTagManagementMutationPayload(payload) {
         if (payload === null || payload === undefined || typeof payload !== "object")
             return false;
@@ -808,18 +740,48 @@ Item {
             return false;
 
         const nextText = String(payload.nextSourceText);
-        inlineEditorController.applyImmediateProgrammaticText(nextText);
+        if (!control.logicalSurfaceActive)
+            inlineEditorController.applyImmediateProgrammaticText(nextText);
 
         const restorePayloadSelection = function () {
-            const selectionStart = Math.max(0, Math.min(Number(payload.selectionStart) || 0, textInput.length));
-            const selectionEnd = Math.max(selectionStart, Math.min(Number(payload.selectionEnd) || selectionStart, textInput.length));
+            const selectionStart = Math.max(0, Math.min(Number(payload.selectionStart) || 0, control.text.length));
+            const selectionEnd = Math.max(selectionStart, Math.min(Number(payload.selectionEnd) || selectionStart, control.text.length));
             const cursorPosition = Math.max(selectionStart, Math.min(Number(payload.cursorPosition) || selectionEnd, selectionEnd));
             control.restoreSelectionRange(selectionStart, selectionEnd, cursorPosition);
         };
+        control.textEdited(nextText);
         restorePayloadSelection();
         control.scheduleRenderedOverlaySelectionRefresh();
-        control.textEdited(nextText);
         Qt.callLater(restorePayloadSelection);
+        return true;
+    }
+
+    function applyRenderedBackspaceMutation(event) {
+        if (event.key !== Qt.Key_Backspace
+                || control.logicalSurfaceActive
+                || !control.renderedOverlayVisible
+                || control.nativeCompositionActive()
+                || control.nativeSelectionActive) {
+            return false;
+        }
+
+        const modifiers = Number(event.modifiers) || 0;
+        const commandModifier = modifiers & (Qt.ControlModifier | Qt.MetaModifier | Qt.AltModifier);
+        if (commandModifier)
+            return false;
+
+        const payload = wysiwygEditorPolicy.visibleBackspaceMutationPayload(
+                    control.text,
+                    control.coordinateMapper,
+                    control.resolvedProjectedCursorPosition,
+                    renderedGeometryProbe.length);
+        if (!control.applyTagManagementMutationPayload(payload))
+            return false;
+
+        if (payload.surfaceCursor !== undefined)
+            control.visiblePointerCursorLogicalOffset = control.boundedCursorPosition(
+                        Number(payload.surfaceCursor) || 0,
+                        renderedGeometryProbe.length);
         return true;
     }
 
@@ -830,6 +792,11 @@ Item {
                 && !control.eventRequestsInlineFormatShortcut(event)
                 && !control.eventRequestsBodyTagShortcut(event)) {
             event.accepted = false;
+            return;
+        }
+
+        if (control.applyRenderedBackspaceMutation(event)) {
+            event.accepted = true;
             return;
         }
 
@@ -864,15 +831,20 @@ Item {
 
     clip: true
 
-    onLogicalToSourceOffsetsChanged: control.scheduleRenderedOverlaySelectionRefresh()
+    onCoordinateMapperChanged: control.scheduleRenderedOverlaySelectionRefresh()
+    onDisplayGeometryTextChanged: control.syncNativeSurfaceTextFromProjection(false)
     onLogicalCursorPositionChanged: {
         if (control.visiblePointerCursorLogicalOffset === control.logicalCursorPosition)
             control.visiblePointerCursorLogicalOffset = -1;
     }
+    onLogicalSurfaceActiveChanged: control.syncNativeSurfaceTextFromProjection(true)
     onNativeSelectionActiveChanged: control.scheduleRenderedOverlaySelectionRefresh()
     onNormalizedHtmlBlocksChanged: control.scheduleRenderedOverlaySelectionRefresh()
     onRenderedOverlayVisibleChanged: control.scheduleRenderedOverlaySelectionRefresh()
     onRenderedTextChanged: control.scheduleRenderedOverlaySelectionRefresh()
+    onTextChanged: control.syncNativeSurfaceTextFromProjection(false)
+
+    Component.onCompleted: control.syncNativeSurfaceTextFromProjection(true)
 
     Keys.priority: Keys.BeforeItem
     Keys.onPressed: function (event) {
@@ -884,6 +856,10 @@ Item {
 
         control: control
         textInput: textInput.editorItem
+    }
+
+    ContentsWysiwygEditorPolicy {
+        id: wysiwygEditorPolicy
     }
 
     ContentsEditorVisualLineMetrics {
@@ -926,9 +902,8 @@ Item {
         displayContentHeight: control.displayContentHeight
         geometryWidth: control.width
         logicalText: control.displayGeometryText
-        logicalToSourceOffsets: control.logicalToSourceOffsets
         normalizedHtmlBlocks: control.normalizedHtmlBlocks
-        sourceText: textInput.text
+        sourceText: control.text
         textLineHeight: LV.Theme.textBodyLineHeight
     }
 
@@ -990,8 +965,8 @@ Item {
         readOnly: true
         selectByKeyboard: false
         selectByMouse: false
-        text: control.displayGeometryText
-        textFormat: TextEdit.PlainText
+        text: control.renderedOverlayVisible ? control.renderedText : control.displayGeometryText
+        textFormat: control.renderedOverlayVisible ? TextEdit.RichText : TextEdit.PlainText
         textMargin: LV.Theme.gapNone
         visible: control.displayGeometryText.length > 0
         wrapMode: TextEdit.Wrap
@@ -1015,8 +990,8 @@ Item {
         selectByMouse: true
         selectedTextColor: "transparent"
         selectionColor: "transparent"
-        text: control.displayGeometryText
-        textFormat: TextEdit.PlainText
+        text: control.renderedOverlayVisible ? control.renderedText : control.displayGeometryText
+        textFormat: control.renderedOverlayVisible ? TextEdit.RichText : TextEdit.PlainText
         textMargin: LV.Theme.gapNone
         visible: enabled
         wrapMode: TextEdit.Wrap
@@ -1025,7 +1000,9 @@ Item {
         Keys.priority: Keys.BeforeItem
         Keys.onPressed: function (event) {
             control.forceActiveFocus();
-            event.accepted = false;
+            control.handleTagManagementKeyPress(event);
+            if (!event.accepted)
+                event.accepted = false;
         }
 
         onCursorPositionChanged: control.scheduleSurfaceSelectionToRawSync()
@@ -1264,6 +1241,7 @@ Item {
         selectionColor: control.nativeSelectionPaintVisible ? LV.Theme.primaryOverlay : "transparent"
         showRenderedOutput: false
         showScrollBar: false
+        text: control.projectedNativeSurfaceText()
         textColor: control.renderedOverlayVisible ? "transparent" : control.textColor
         textColorDisabled: textColor
         textFormat: TextEdit.PlainText
@@ -1275,7 +1253,7 @@ Item {
         }
 
         onTextEdited: function (text) {
-            control.textEdited(text);
+            control.handleNativeSurfaceTextEdited(text);
         }
         onCursorPositionChanged: control.normalizeCursorPositionAwayFromHiddenTagTokens()
         onSelectionEndChanged: control.scheduleRenderedOverlaySelectionRefresh()

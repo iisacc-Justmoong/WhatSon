@@ -1,24 +1,19 @@
 #include "app/models/editor/lineNumber/ContentsLineNumberRailMetrics.hpp"
 
+#include "app/models/editor/text/ContentsLogicalTextBridge.hpp"
+
 #include <QRectF>
 #include <QSet>
 #include <QVariantMap>
 
 #include <algorithm>
 #include <cmath>
-#include <limits>
 
 namespace
 {
     int boundedOffset(const int offset, const int length) noexcept
     {
         return std::max(0, std::min(offset, std::max(0, length)));
-    }
-
-    int boundedQStringSize(const QString& text) noexcept
-    {
-        constexpr qsizetype maxIntSize = static_cast<qsizetype>(std::numeric_limits<int>::max());
-        return static_cast<int>(std::min<qsizetype>(text.size(), maxIntSize));
     }
 
     int floorNumberOrFallback(const QVariant& value, const int fallback) noexcept
@@ -101,6 +96,7 @@ namespace
 
 ContentsLineNumberRailMetrics::ContentsLineNumberRailMetrics(QObject* parent)
     : QObject(parent)
+    , m_logicalTextBridge(new ContentsLogicalTextBridge(this))
 {
 }
 
@@ -118,6 +114,10 @@ void ContentsLineNumberRailMetrics::setSourceText(const QString& value)
         return;
     }
     m_sourceText = value;
+    if (m_logicalTextBridge != nullptr)
+    {
+        m_logicalTextBridge->setText(value);
+    }
     emitInputChanged(&ContentsLineNumberRailMetrics::sourceTextChanged);
 }
 
@@ -149,21 +149,6 @@ void ContentsLineNumberRailMetrics::setNormalizedHtmlBlocks(const QVariantList& 
     }
     m_normalizedHtmlBlocks = value;
     emitInputChanged(&ContentsLineNumberRailMetrics::normalizedHtmlBlocksChanged);
-}
-
-QVariantList ContentsLineNumberRailMetrics::logicalToSourceOffsets() const
-{
-    return m_logicalToSourceOffsets;
-}
-
-void ContentsLineNumberRailMetrics::setLogicalToSourceOffsets(const QVariantList& value)
-{
-    if (m_logicalToSourceOffsets == value)
-    {
-        return;
-    }
-    m_logicalToSourceOffsets = value;
-    emitInputChanged(&ContentsLineNumberRailMetrics::logicalToSourceOffsetsChanged);
 }
 
 QVariantList ContentsLineNumberRailMetrics::geometryRows() const
@@ -232,34 +217,9 @@ void ContentsLineNumberRailMetrics::setDisplayContentHeight(const qreal value)
 QVariantList ContentsLineNumberRailMetrics::logicalLineRanges() const
 {
     const auto sourceOffsetToLogicalOffset = [this](const int sourceOffset, const bool preferAfter) {
-        if (m_logicalToSourceOffsets.isEmpty())
-        {
-            return boundedOffset(sourceOffset, m_sourceText.size());
-        }
-
-        const int boundedSourceOffset = boundedOffset(sourceOffset, m_sourceText.size());
-        if (preferAfter)
-        {
-            for (int index = 0; index < m_logicalToSourceOffsets.size(); ++index)
-            {
-                const int candidate = floorNumberOrFallback(m_logicalToSourceOffsets.at(index), -1);
-                if (candidate >= boundedSourceOffset)
-                {
-                    return index;
-                }
-            }
-            return std::max(0, static_cast<int>(m_logicalToSourceOffsets.size()) - 1);
-        }
-
-        for (int index = m_logicalToSourceOffsets.size() - 1; index >= 0; --index)
-        {
-            const int candidate = floorNumberOrFallback(m_logicalToSourceOffsets.at(index), -1);
-            if (candidate >= 0 && candidate <= boundedSourceOffset)
-            {
-                return index;
-            }
-        }
-        return 0;
+        return m_logicalTextBridge != nullptr
+                   ? m_logicalTextBridge->logicalOffsetForSourceOffsetWithAffinity(sourceOffset, preferAfter)
+                   : boundedOffset(sourceOffset, m_sourceText.size());
     };
 
     QVariantList normalizedBlocks;
@@ -315,20 +275,9 @@ QVariantList ContentsLineNumberRailMetrics::logicalLineRanges() const
         });
 
     const auto sourceOffsetForLogicalOffset = [this](const int logicalOffset) {
-        if (m_logicalToSourceOffsets.isEmpty())
-        {
-            return boundedOffset(logicalOffset, m_sourceText.size());
-        }
-
-        const int safeLogicalOffset = std::max(0, logicalOffset);
-        if (safeLogicalOffset >= m_logicalToSourceOffsets.size())
-        {
-            return boundedQStringSize(m_sourceText);
-        }
-
-        return boundedOffset(
-            floorNumberOrFallback(m_logicalToSourceOffsets.at(safeLogicalOffset), safeLogicalOffset),
-            m_sourceText.size());
+        return m_logicalTextBridge != nullptr
+                   ? m_logicalTextBridge->sourceOffsetForLogicalOffset(logicalOffset)
+                   : boundedOffset(logicalOffset, m_sourceText.size());
     };
 
     const auto resourceBlockForSourceInterval =

@@ -1152,6 +1152,7 @@ private slots:
     void qmlInlineFormatEditor_positionsVisibleProbeFromLogicalDisplayText();
     void qmlInlineFormatEditor_mapsRenderedPointerSelectionToCharacterRawRange();
     void qmlInlineFormatEditor_movesRenderedCursorOnMouseClick();
+    void qmlInlineFormatEditor_backspaceDeletesVisibleCharacterBeforeRenderedCursor();
     void qmlInlineFormatEditor_preservesRenderedPointerDragSelection();
     void qmlInlineFormatEditor_restoresRenderedPointerMultiClickSelection();
     void qmlInlineFormatEditor_skipsHiddenInlineTagsDuringNativeCursorMovement();
@@ -1159,6 +1160,7 @@ private slots:
     void qmlInlineFormatEditor_placesLogicalGutterRowsAtIncreasingY();
     void qmlStructuredDocumentFlow_routesBottomBlankClickToBodyEnd();
     void qmlStructuredDocumentFlow_routesBodyClickToRenderedCursorPosition();
+    void qmlStructuredDocumentFlow_preservesRenderedPointerDragSelectionInsideFlickable();
     void qmlInlineFormatEditor_forwardsInlineFormatShortcutsToTagManagementHook();
     void qmlStructuredDocumentFlow_appliesInlineFormatShortcutToSelectedRawRange();
     void mobileChrome_usesSharedFigmaControlSurfaceColor();
@@ -1181,10 +1183,12 @@ private slots:
     void noteBodyPersistence_stripsRenderedHtmlBlockArtifactsFromSourceProjection();
     void noteBodyPersistence_preservesEmptyParagraphCursorLineAfterResource();
     void noteBodyPersistence_preservesEmptyParagraphBoundariesAroundResources();
+    void noteBodyPersistence_preservesCrossParagraphInlineSourceTagsWithoutEscaping();
     void noteHeaderParser_usesIiXmlDocumentTreeForWsnHead();
     void localNoteFileStore_usesIiXmlDocumentTreeForWsnBodyRead();
     void editorRendererPipeline_routesIiXmlTreeThroughIiHtmlBlockObjects();
     void editorRendererPipeline_materializesEnterNewlinesAsParagraphSlots();
+    void editorRendererPipeline_rendersInlineStyleTagsAsRichTextHtml();
     void logicalTextBridge_advancesCursorPastClosingWebLinkTag();
     void logicalTextBridge_mapsSourceCursorInsideInlineTagsToVisibleBoundary();
     void logicalTextBridge_notifiesLogicalToSourceOffsetChanges();

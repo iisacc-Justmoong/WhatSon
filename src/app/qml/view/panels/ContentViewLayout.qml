@@ -338,7 +338,7 @@ Item {
                         contentHeight: editorDocumentContent.height
                         contentWidth: Math.max(width, editorDocumentContent.width)
                         flickableDirection: Flickable.VerticalFlick
-                        interactive: contentHeight > height
+                        interactive: !structuredDocumentFlow.editorRenderedOverlayVisible && contentHeight > height
                         objectName: "contentsDisplayEditorDocumentViewport"
 
                         Item {

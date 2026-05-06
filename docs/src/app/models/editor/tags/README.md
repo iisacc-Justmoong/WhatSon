@@ -24,7 +24,7 @@ Owns editor tag-management helpers.
 - `ContentsStructuredTagValidator.*`
 - `WhatSonStructuredTagLinter.*`
 - `ContentsResourceTagTextGenerator.*`
-- `ContentsResourceTagController.qml`
+- `ContentsResourceTagController.*`
 
 ## Boundary
 - Formatting rendering remains under `src/app/models/editor/format`, but formatting writes belong to this tag

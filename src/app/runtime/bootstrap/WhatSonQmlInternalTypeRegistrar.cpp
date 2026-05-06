@@ -9,6 +9,8 @@
 #include "app/models/editor/format/ContentsInlineStyleOverlayRenderer.hpp"
 #include "app/models/editor/format/ContentsPlainTextSourceMutator.hpp"
 #include "app/models/editor/format/ContentsTextFormatRenderer.hpp"
+#include "app/models/editor/display/ContentsEditorSurfaceModeSupport.hpp"
+#include "app/models/editor/display/ContentsEditorDisplayBackend.hpp"
 #include "app/models/editor/geometry/ContentsEditorGeometryProvider.hpp"
 #include "app/models/editor/lineNumber/ContentsLineNumberRailMetrics.hpp"
 #include "app/models/editor/minimap/ContentsEditorVisualLineMetrics.hpp"
@@ -43,6 +45,7 @@
 #include "app/models/editor/resource/ContentsResourceImportController.hpp"
 #include "app/models/editor/input/ContentsEditorInputPolicyAdapter.hpp"
 #include "app/models/editor/input/ContentsInlineFormatEditorController.hpp"
+#include "app/models/editor/input/ContentsWysiwygEditorPolicy.hpp"
 #include "app/models/panel/FocusedNoteDeletionBridge.hpp"
 #include "app/models/panel/HierarchyDragDropBridge.hpp"
 #include "app/models/panel/HierarchyInteractionBridge.hpp"
@@ -125,6 +128,12 @@ namespace
                 QStringLiteral("ContentsEditorInputPolicyAdapter")),
             whatsonInternalCreatableType<ContentsInlineFormatEditorController>(
                 QStringLiteral("ContentsInlineFormatEditorController")),
+            whatsonInternalCreatableType<ContentsWysiwygEditorPolicy>(
+                QStringLiteral("ContentsWysiwygEditorPolicy")),
+            whatsonInternalCreatableType<ContentsEditorSurfaceModeSupport>(
+                QStringLiteral("ContentsEditorSurfaceModeSupport")),
+            whatsonInternalCreatableType<ContentsEditorDisplayBackend>(
+                QStringLiteral("ContentsEditorDisplayBackend")),
             whatsonInternalCreatableType<ContentsPaperSelection>(
                 QStringLiteral("ContentsPaperSelection")),
             whatsonInternalCreatableType<ContentsA4PaperBackground>(

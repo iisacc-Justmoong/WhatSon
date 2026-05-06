@@ -139,15 +139,32 @@ int ContentsEditorPresentationProjection::logicalLineCount() const noexcept
     return m_logicalTextBridge != nullptr ? m_logicalTextBridge->logicalLineCount() : 1;
 }
 
+int ContentsEditorPresentationProjection::sourceCursorPosition() const noexcept
+{
+    return m_sourceCursorPosition;
+}
+
+void ContentsEditorPresentationProjection::setSourceCursorPosition(const int position)
+{
+    const int nextPosition = qMax(0, position);
+    if (m_sourceCursorPosition == nextPosition)
+    {
+        return;
+    }
+
+    m_sourceCursorPosition = nextPosition;
+    emit sourceCursorPositionChanged();
+    emit logicalCursorPositionChanged();
+}
+
+int ContentsEditorPresentationProjection::logicalCursorPosition() const
+{
+    return logicalOffsetForSourceOffset(m_sourceCursorPosition);
+}
+
 int ContentsEditorPresentationProjection::logicalLengthForSourceText(const QString& text) const
 {
     return m_logicalTextBridge != nullptr ? m_logicalTextBridge->logicalLengthForSourceText(text) : text.size();
-}
-
-QVariantList ContentsEditorPresentationProjection::logicalToSourceOffsets() const
-{
-    return m_logicalTextBridge != nullptr ? m_logicalTextBridge->logicalToSourceOffsets()
-                                          : QVariantList{0};
 }
 
 int ContentsEditorPresentationProjection::sourceOffsetForLogicalOffset(const int logicalOffset) const noexcept
@@ -157,11 +174,29 @@ int ContentsEditorPresentationProjection::sourceOffsetForLogicalOffset(const int
                : logicalOffset;
 }
 
+int ContentsEditorPresentationProjection::sourceOffsetForVisibleLogicalOffset(
+    const int logicalOffset,
+    const int visibleLength) const noexcept
+{
+    return m_logicalTextBridge != nullptr
+               ? m_logicalTextBridge->sourceOffsetForVisibleLogicalOffset(logicalOffset, visibleLength)
+               : qBound(0, logicalOffset, qMax(0, visibleLength));
+}
+
 int ContentsEditorPresentationProjection::logicalOffsetForSourceOffset(const int sourceOffset) const
 {
     return m_logicalTextBridge != nullptr
                ? m_logicalTextBridge->logicalOffsetForSourceOffset(sourceOffset)
                : sourceOffset;
+}
+
+int ContentsEditorPresentationProjection::logicalOffsetForSourceOffsetWithAffinity(
+    const int sourceOffset,
+    const bool preferAfter) const noexcept
+{
+    return m_logicalTextBridge != nullptr
+               ? m_logicalTextBridge->logicalOffsetForSourceOffsetWithAffinity(sourceOffset, preferAfter)
+               : qMax(0, sourceOffset);
 }
 
 void ContentsEditorPresentationProjection::connectSignals()
@@ -199,8 +234,18 @@ void ContentsEditorPresentationProjection::connectSignals()
             &ContentsEditorPresentationProjection::logicalTextChanged);
         connect(
             m_logicalTextBridge,
+            &ContentsLogicalTextBridge::logicalTextChanged,
+            this,
+            &ContentsEditorPresentationProjection::logicalCursorPositionChanged);
+        connect(
+            m_logicalTextBridge,
             &ContentsLogicalTextBridge::logicalLineCountChanged,
             this,
             &ContentsEditorPresentationProjection::logicalLineCountChanged);
+        connect(
+            m_logicalTextBridge,
+            &ContentsLogicalTextBridge::logicalToSourceOffsetsChanged,
+            this,
+            &ContentsEditorPresentationProjection::logicalCursorPositionChanged);
     }
 }

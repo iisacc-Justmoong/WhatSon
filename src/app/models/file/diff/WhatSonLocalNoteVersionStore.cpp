@@ -466,6 +466,8 @@ bool WhatSonLocalNoteVersionStore::readWorkingTreeSnapshot(
         headerText = headerCreator.createHeaderText(normalizedDocument.headerStore);
     }
 
+    normalizedDocument.normalizeBodyFields();
+
     QString bodyDocumentText;
     if (!normalizedDocument.noteBodyPath.trimmed().isEmpty() && m_ioGateway.exists(normalizedDocument.noteBodyPath))
     {
@@ -480,13 +482,13 @@ bool WhatSonLocalNoteVersionStore::readWorkingTreeSnapshot(
     }
     else
     {
-        bodyDocumentText = serializeBodyDocument(normalizedDocument.headerStore.noteId(), normalizedDocument.bodyPlainText);
+        bodyDocumentText = serializeBodyDocument(normalizedDocument.headerStore.noteId(), normalizedDocument.effectiveBodyText());
     }
 
     outSnapshot->noteId = normalizedDocument.headerStore.noteId().trimmed();
     outSnapshot->headerText = headerText;
     outSnapshot->bodyDocumentText = bodyDocumentText;
-    outSnapshot->bodyPlainText = WhatSon::NoteBodyPersistence::normalizeBodyPlainText(normalizedDocument.bodyPlainText);
+    outSnapshot->bodyPlainText = normalizedDocument.bodyPlainText;
     return true;
 }
 

@@ -42,6 +42,43 @@ void WhatSonCppRegressionTests::wysiwygEditorPolicy_mapsVisibleSelectionBackToRa
         projection.sourceOffsetForVisibleLogicalOffset(4, visibleLength));
     QVERIFY(rawSelection.value(QStringLiteral("selectionStart")).toInt() > 0);
 
+    const QString boldSource = QStringLiteral("<bold>Alpha</bold>");
+    projection.setSourceText(boldSource);
+    const QVariantMap firstGlyphBackspacePayload = policy.visibleBackspaceMutationPayload(
+        boldSource,
+        &projection,
+        1,
+        projection.logicalText().size());
+    QVERIFY(firstGlyphBackspacePayload.value(QStringLiteral("applied")).toBool());
+    QCOMPARE(
+        firstGlyphBackspacePayload.value(QStringLiteral("nextSourceText")).toString(),
+        QStringLiteral("<bold>lpha</bold>"));
+    QCOMPARE(firstGlyphBackspacePayload.value(QStringLiteral("surfaceCursor")).toInt(), 0);
+
+    const QString nestedStyledSource =
+        QStringLiteral("<bold>Al<italic>pha</italic></bold><italic> Beta</italic>");
+    projection.setSourceText(nestedStyledSource);
+    const int nestedVisibleLength = projection.logicalText().size();
+    QCOMPARE(projection.logicalText(), QStringLiteral("Alpha Beta"));
+    const QVariantMap nestedBoundaryBackspacePayload = policy.visibleBackspaceMutationPayload(
+        nestedStyledSource,
+        &projection,
+        QStringLiteral("Alpha").size(),
+        nestedVisibleLength);
+    QVERIFY(nestedBoundaryBackspacePayload.value(QStringLiteral("applied")).toBool());
+    QCOMPARE(
+        nestedBoundaryBackspacePayload.value(QStringLiteral("nextSourceText")).toString(),
+        QStringLiteral("<bold>Al<italic>ph</italic></bold><italic> Beta</italic>"));
+    QCOMPARE(
+        nestedBoundaryBackspacePayload.value(QStringLiteral("deletedSourceStart")).toInt(),
+        nestedStyledSource.indexOf(QStringLiteral("pha")) + 2);
+    QCOMPARE(
+        nestedBoundaryBackspacePayload.value(QStringLiteral("deletedSourceEnd")).toInt(),
+        nestedStyledSource.indexOf(QStringLiteral("</italic>")));
+    QCOMPARE(
+        nestedBoundaryBackspacePayload.value(QStringLiteral("surfaceCursor")).toInt(),
+        QStringLiteral("Alph").size());
+
     const QVariantMap resourceBlock{
         {QStringLiteral("renderDelegateType"), QStringLiteral("resource")},
         {QStringLiteral("htmlBlockObjectSource"), QStringLiteral("iiHtmlBlock")},
@@ -155,7 +192,9 @@ void WhatSonCppRegressionTests::qmlInlineFormatEditor_delegatesWysiwygPolicyToCp
 
     QVERIFY(policyHeader.contains(QStringLiteral("class ContentsWysiwygEditorPolicy")));
     QVERIFY(policyHeader.contains(QStringLiteral("Q_INVOKABLE QVariantMap rawSelectionForVisibleSurfaceSelection")));
+    QVERIFY(policyHeader.contains(QStringLiteral("Q_INVOKABLE QVariantMap visibleBackspaceMutationPayload")));
     QVERIFY(policySource.contains(QStringLiteral("sourceOffsetForVisibleLogicalOffset")));
     QVERIFY(policySource.contains(QStringLiteral("logicalOffsetForSourceOffsetWithAffinity")));
+    QVERIFY(policySource.contains(QStringLiteral("sourceOffsetBeforeClosingInlineBoundaries")));
     QVERIFY(policySource.contains(QStringLiteral("htmlBlockObjectSource")));
 }

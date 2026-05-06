@@ -1,16 +1,15 @@
 # `src/app/models/editor/diagnostics`
 
 ## Responsibility
-Owns editor-domain diagnostic support that can be shared by view hosts, controllers, and model-facing QML helpers.
+Owns editor-domain diagnostic support that can be shared by view hosts and C++ controllers.
 
 ## Current Modules
-- `ContentsEditorDebugTrace.js`
-  Formats compact debug trace strings for editor QML objects without leaving diagnostics utilities inside the view
-  directory.
+- No active JS/QML helpers are maintained in this directory. Shared diagnostics should be implemented as C++ model
+  utilities, not model-layer script files.
 
 ## Boundary
 - Diagnostics helpers must not own editor state or mutation policy.
-- View QML may import diagnostics helpers, but visual layout remains under `src/app/qml/view/contents/editor`.
+- View QML must not import diagnostics scripts from `src/app/models`.
 
 ## 한국어
 

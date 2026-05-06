@@ -2,12 +2,15 @@
 
 ## Responsibility
 
-Contains small editor-display support helpers that are not QML view files.
+Contains editor-display support controllers and policies that are not QML view files.
 
 ## Current Modules
 
-- `ContentsEditorSurfaceModeSupport.js`
+- `ContentsEditorSurfaceModeSupport.{hpp,cpp}`
   Decides whether `ContentViewLayout.qml` should mount the note editor surface or the direct resource editor surface.
+- `ContentsEditorDisplayBackend.{hpp,cpp}`
+  Owns the live note display session, projection, structured renderer, body-resource renderer, resource-tag
+  controller, inline-resource presentation controller, and minimap metrics previously wired in QML.
 
 ## Boundary
 

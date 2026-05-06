@@ -41,8 +41,10 @@
   (`</bold>`, `</italic>`, `</underline>`, `</strikethrough>`, `</highlight>`).
   A visible boundary that sits after the last styled glyph therefore resolves to the RAW position after the zero-width
   closing tag instead of to the interior edge just before it.
-- `logicalToSourceOffsets()` exports the cached table in one QML-visible array so visible editor offsets can be mapped
-  back into RAW source without asking C++ for one offset per character.
+- `sourceOffsetForVisibleLogicalOffset(...)` and `logicalOffsetForSourceOffsetWithAffinity(...)` use the cached table
+  inside C++, so visible editor offsets can be mapped back into RAW source without exposing that table to QML.
+- `logicalToSourceOffsetsChanged()` is emitted only when the cached table actually changes. Higher-level C++ projection
+  objects use it to invalidate derived cursor state.
 - `logicalLengthForSourceText(...)` now reuses the same normalization path for ad-hoc fragments, giving QML list-toggle
   code a stable way to measure rewritten source lines in logical editor coordinates before restoring selection/cursor
   state.
@@ -59,16 +61,17 @@
   visible `<tag>` / `Tom & Jerry` glyph sequence so cursor mapping stays aligned with the editor surface.
 - When a single rewritten source line contains inline tags, entities, or resource tags, `logicalLengthForSourceText(...)`
   must still return the rendered logical length that the editor selection uses after the rewrite.
-- `logicalToSourceOffsets()` must stay aligned with the same normalized logical text that `logicalText` exposes, so
+- The internal logical-to-source offset cache must stay aligned with the same normalized logical text that `logicalText`
+  exposes, so
   source splices do not shift away from the intended logical cursor positions.
-- `logicalToSourceOffsets()` export must keep compiling when Qt container `size()` returns `qsizetype` on Apple
+- The offset-cache export helper must keep compiling when Qt container `size()` returns `qsizetype` on Apple
   toolchains.
-- When source contains canonical `</break>` divider tags, `logicalToSourceOffsets()` must still expose one logical
+- When source contains canonical `</break>` divider tags, the offset cache must still expose one logical
   character step per divider so selection-to-source splices stay aligned.
-- When source contains multiple `<task>` children inside one `<agenda>`, `logicalToSourceOffsets()` must expose one
+- When source contains multiple `<task>` children inside one `<agenda>`, the offset cache must expose one
   logical line-break step between adjacent task bodies so cursor restoration and source splices can land inside the
   intended task instead of drifting to surrounding text.
-- When source contains `<resource ... />`, `logicalText` and `logicalToSourceOffsets()` must reserve the same
+- When source contains `<resource ... />`, `logicalText` and the internal offset cache must reserve the same
   single-line slot that the structured block parser and fallback RichText projection use, so mobile plain-text editing
   and desktop overlay positioning both align to the authored resource tag.
 - When the visible caret sits just after a proprietary inline-style run, `sourceOffsetForLogicalOffset(...)` must not

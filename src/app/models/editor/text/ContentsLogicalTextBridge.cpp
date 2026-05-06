@@ -328,9 +328,50 @@ int ContentsLogicalTextBridge::sourceOffsetForLogicalOffset(int logicalOffset) c
     return std::clamp(m_logicalToSourceOffsets.at(safeOffset), 0, maxSourceOffset);
 }
 
+int ContentsLogicalTextBridge::sourceOffsetForVisibleLogicalOffset(
+    const int logicalOffset,
+    const int visibleLength) const noexcept
+{
+    const int safeLogicalOffset = std::clamp(logicalOffset, 0, std::max(0, visibleLength));
+    return sourceOffsetForLogicalOffset(safeLogicalOffset);
+}
+
 int ContentsLogicalTextBridge::logicalOffsetForSourceOffset(const int sourceOffset) const
 {
     return logicalOffsetForSourceOffsetInText(m_text, sourceOffset);
+}
+
+int ContentsLogicalTextBridge::logicalOffsetForSourceOffsetWithAffinity(
+    const int sourceOffset,
+    const bool preferAfter) const noexcept
+{
+    const int maxSourceOffset = boundedQStringSize(m_text);
+    if (m_logicalToSourceOffsets.isEmpty())
+    {
+        return std::clamp(sourceOffset, 0, maxSourceOffset);
+    }
+
+    const int boundedSourceOffset = std::clamp(sourceOffset, 0, maxSourceOffset);
+    if (preferAfter)
+    {
+        for (int index = 0; index < m_logicalToSourceOffsets.size(); ++index)
+        {
+            if (m_logicalToSourceOffsets.at(index) >= boundedSourceOffset)
+            {
+                return index;
+            }
+        }
+        return std::max(0, static_cast<int>(m_logicalToSourceOffsets.size()) - 1);
+    }
+
+    for (int index = static_cast<int>(m_logicalToSourceOffsets.size()) - 1; index >= 0; --index)
+    {
+        if (m_logicalToSourceOffsets.at(index) <= boundedSourceOffset)
+        {
+            return index;
+        }
+    }
+    return 0;
 }
 
 QString ContentsLogicalTextBridge::normalizeLogicalText(const QString& text)
@@ -689,7 +730,14 @@ void ContentsLogicalTextBridge::refreshTextState()
         m_logicalText = nextLogicalText;
         emit logicalTextChanged();
     }
-    m_logicalToSourceOffsets = buildLogicalToSourceOffsets(m_text, m_logicalText.size());
+    const QVector<int> nextLogicalToSourceOffsets =
+        buildLogicalToSourceOffsets(m_text, m_logicalText.size());
+    if (m_logicalToSourceOffsets != nextLogicalToSourceOffsets)
+    {
+        m_logicalToSourceOffsets = nextLogicalToSourceOffsets;
+        emit logicalToSourceOffsetsChanged();
+    }
+
     const int nextLineCount = countLogicalLines(m_logicalText);
     if (m_logicalLineCount != nextLineCount)
     {

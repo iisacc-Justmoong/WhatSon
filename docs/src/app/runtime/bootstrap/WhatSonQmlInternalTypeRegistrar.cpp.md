@@ -15,8 +15,8 @@ then registers that manifest through LVRS `QmlTypeRegistrar`.
   `src/app/models/editor/display` and `src/app/models/editor/structure`, so runtime bootstrap resolves the real
   model-domain paths instead of relying on flattened legacy include aliases.
 - Editor display Controllers from `src/app/models/editor/display`, including
-  `ContentsDisplaySurfacePolicy`, so view QML can instantiate C++ command and surface-policy contracts instead of
-  carrying those responsibilities locally.
+  `ContentsEditorSurfaceModeSupport` and `ContentsEditorDisplayBackend`, so view QML can instantiate C++ command and
+  surface-policy contracts instead of carrying those responsibilities locally.
   The registrar no longer exports an active-editor-surface adapter type for focus forwarding; note focus restoration
   now targets the structured document host directly from the display controllers.
 - Rendering/annotation helpers such as `ContentsTextFormatRenderer`, `ContentsInlineStyleOverlayRenderer`,

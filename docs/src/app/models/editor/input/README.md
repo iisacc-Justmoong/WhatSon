@@ -4,17 +4,22 @@
 Owns editor input-policy and mutation-controller primitives that are not themselves visual surfaces.
 
 ## Current Modules
-- `ContentsEditorInputPolicyAdapter.qml`
+- `ContentsEditorInputPolicyAdapter.{hpp,cpp}`
   Centralizes native input, shortcut-surface, context-menu, and focus-restore gating.
-- `ContentsInlineFormatEditorController.{hpp,cpp}` with `ContentsInlineFormatEditorController.qml`
+- `ContentsInlineFormatEditorController.{hpp,cpp}`
   Owns the plain-text wrapper's native input policy, selection cache, and text-edited dispatch state.
+- `ContentsWysiwygEditorPolicy.{hpp,cpp}`
+  Owns rendered logical selection mapping, hidden RAW tag cursor normalization, visible line/paragraph range policy,
+  and atomic resource-block selection decisions for the `.wsnbody` editor surface.
 
 ## Boundary
 - Ordinary text input must continue to stay on native Qt/OS `TextEdit` handling.
 - Helpers here may coordinate explicit tag-management commands or RAW mutation plans, but they must not become generic
   key overrides for ordinary note editing.
 - Visual editor QML under `src/app/qml/view/contents/editor` may expose wrapper properties and signals, but live typing,
-  cursor bookkeeping, selection cache, and source replacement stay behind the inline editor controller boundary.
+  cursor bookkeeping, visible-to-RAW selection policy, hidden tag cursor normalization, selection cache, input policy,
+  and source replacement stay behind C++ controller/model boundaries. Do not reintroduce QML helper files under this
+  model directory or under the editor view tree for these responsibilities.
 
 ## 한국어
 

@@ -9,7 +9,8 @@ Implements logical line-number rail row construction outside QML.
 - Normalizes renderer-owned block metadata only for de-duplication and resource-row detection.
 - Splits row ranges from the full `logicalText` projection, so blank logical lines and tag-hidden source spans still
   receive the same line-number slots as the live editor text surface.
-- Converts logical display offsets back to RAW source offsets through the supplied `logicalToSourceOffsets` table.
+- Converts logical display offsets back to RAW source offsets through its internal `ContentsLogicalTextBridge`, using
+  the supplied `sourceText` snapshot rather than a QML-provided offset table.
 - Exposes `logicalLineRanges` for the geometry adapter, then consumes `geometryRows` value snapshots when building
   final gutter rows. This keeps actual view-object measurement outside the row-building policy.
 - Validates measured row y positions before publishing them. If a measured snapshot is unavailable or collapses later

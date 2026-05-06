@@ -1,10 +1,16 @@
 #pragma once
 
-#include "app/models/editor/input/ContentsQmlBackedInputControllerBase.hpp"
+#include "app/models/editor/input/ContentsEditorInputPolicyAdapter.hpp"
 
+#include <QObject>
+#include <QPointer>
+#include <QString>
+#include <QVariantMap>
 #include <qqmlregistration.h>
 
-class ContentsInlineFormatEditorController : public ContentsQmlBackedInputControllerBase
+class QEvent;
+
+class ContentsInlineFormatEditorController : public QObject
 {
     Q_OBJECT
     QML_NAMED_ELEMENT(ContentsInlineFormatEditorController)
@@ -47,9 +53,31 @@ signals:
     void textInputChanged();
 
 protected:
-    QUrl helperSourceUrl() const override;
+    bool eventFilter(QObject* watched, QEvent* event) override;
+
+private slots:
+    void handleControlFocusedChanged();
+    void handleNativeCompositionSettled();
+    void handleTextInputCursorPositionChanged();
+    void handleTextInputSelectionChanged();
+    void handleTextInputTextChanged();
 
 private:
-    QObject* m_control = nullptr;
-    QObject* m_textInput = nullptr;
+    bool connectPropertyNotify(QObject* source, const char* propertyName, const char* slotSignature);
+    bool controlFocused() const;
+    bool nativeSelectionActive() const;
+    bool invokeMoveCursorSelection(int position) const;
+    bool invokeSelectRange(int selectionStart, int selectionEnd) const;
+    bool setCursorPosition(int position) const;
+    QString normalizedText(const QVariant& value) const;
+    QVariantMap policyMap(const QString& action, bool apply, const QString& text, bool defer, bool reject) const;
+
+    QPointer<QObject> m_control;
+    QPointer<QObject> m_textInput;
+    mutable int m_programmaticTextSyncDepth = 0;
+    mutable bool m_hasDeferredProgrammaticText = false;
+    mutable QString m_deferredProgrammaticText;
+    mutable bool m_localSelectionInteractionSinceFocus = false;
+    mutable bool m_localTextEditSinceFocus = false;
+    ContentsEditorInputPolicyAdapter m_inputPolicyAdapter;
 };

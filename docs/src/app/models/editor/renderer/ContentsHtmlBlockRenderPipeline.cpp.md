@@ -29,9 +29,10 @@ Builds editor HTML tokens and normalized HTML blocks from parser-owned RAW docum
   - raw/value ranges
   - `htmlBlockIsDisplayBlock`
   - display override fields
-- Uses `WhatSonNoteBodyPersistence::serializeBodyDocument(...)` plus
-  `WhatSonNoteBodyPersistence::htmlProjectionFromBodyDocument(...)` for textual fragments so inline-tag rendering stays
-  aligned with the canonical body serializer.
+- Delegates textual fragment rendering to
+  `WhatSon::ContentsTextFormatRendererInternal::renderInlineTaggedTextFragmentToHtml(..., SourceEditing)` so stored
+  proprietary inline tags such as `<bold>` and `<italic>` become editor RichText spans instead of being reprojected
+  through the persistence layer's plain-text `bodyPlainLinesFromDocument(...)` path.
 - Textual fragments are split back into paragraph-flow HTML after that rich-text projection. Newlines produced by
   ordinary Enter therefore materialize as real `<p ...>` slots, and empty lines become `&nbsp;` paragraphs instead of
   remaining as zero-height trailing `<br/>` breaks.
@@ -49,8 +50,11 @@ Builds editor HTML tokens and normalized HTML blocks from parser-owned RAW docum
   still resolve to `renderDelegateType=text` while preserving their distinct semantic styling in the HTML fragment.
 - Explicit paragraph content that contains Enter-authored newlines must render as separate editor paragraph slots, with
   empty lines backed by `&nbsp;`, so the visible document flow is pushed down like a normal text editor.
+- Stored inline style tags such as `<bold>Al<italic>pha</italic></bold><italic> Beta</italic>` must render as RichText
+  style HTML in `documentHtml`, `htmlTokens`, and `normalizedHtmlBlocks`; escaped literal `<bold>` / `<italic>` text is
+  a renderer regression.
 - A `resource` block must normalize to one stable HTML block with the same placeholder marker indices expected by
-  `ContentsInlineResourcePresentationController.qml`.
+  `ContentsInlineResourcePresentationController`.
 - A legacy divider alias such as `<hr>After` must first canonicalize to `</break>After`, then normalize into separate
   `break` and trailing `text` HTML blocks so the editor surface does not lose the following prose.
 - A multi-block note whose inline style tag opens in one text block and closes in a later text block must force the

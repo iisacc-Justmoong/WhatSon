@@ -188,6 +188,9 @@ Implements inline-format rendering from note-editor text to RichText HTML.
 - If one note body uses inline style tags that span multiple parsed text blocks, the renderer must keep the carry-aware
   legacy document composer for that source turn instead of dropping the carried style during block-normalized HTML
   assembly.
+- The carry-aware legacy document composer must render buffered prose through the same SourceEditing inline-tag
+  renderer used by the block pipeline, so a fallback turn cannot expose stored `<bold>` / `<italic>` tags as literal
+  text.
 - A source such as `<callout/>After <bold>bold</bold>` must render an empty callout block followed by ordinary text in
   both `editorSurfaceHtml` and `renderedHtml`; the self-closing callout must not swallow the trailing text just
   because the final renderer revisited the uncorrected RAW snapshot.

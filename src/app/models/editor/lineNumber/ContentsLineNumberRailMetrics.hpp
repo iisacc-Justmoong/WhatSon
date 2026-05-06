@@ -3,6 +3,8 @@
 #include <QObject>
 #include <QVariantList>
 
+class ContentsLogicalTextBridge;
+
 class ContentsLineNumberRailMetrics : public QObject
 {
     Q_OBJECT
@@ -10,7 +12,6 @@ class ContentsLineNumberRailMetrics : public QObject
     Q_PROPERTY(QString sourceText READ sourceText WRITE setSourceText NOTIFY sourceTextChanged)
     Q_PROPERTY(QString logicalText READ logicalText WRITE setLogicalText NOTIFY logicalTextChanged)
     Q_PROPERTY(QVariantList normalizedHtmlBlocks READ normalizedHtmlBlocks WRITE setNormalizedHtmlBlocks NOTIFY normalizedHtmlBlocksChanged)
-    Q_PROPERTY(QVariantList logicalToSourceOffsets READ logicalToSourceOffsets WRITE setLogicalToSourceOffsets NOTIFY logicalToSourceOffsetsChanged)
     Q_PROPERTY(QVariantList geometryRows READ geometryRows WRITE setGeometryRows NOTIFY geometryRowsChanged)
     Q_PROPERTY(qreal textLineHeight READ textLineHeight WRITE setTextLineHeight NOTIFY textLineHeightChanged)
     Q_PROPERTY(qreal geometryWidth READ geometryWidth WRITE setGeometryWidth NOTIFY geometryWidthChanged)
@@ -28,8 +29,6 @@ public:
     void setLogicalText(const QString& value);
     QVariantList normalizedHtmlBlocks() const;
     void setNormalizedHtmlBlocks(const QVariantList& value);
-    QVariantList logicalToSourceOffsets() const;
-    void setLogicalToSourceOffsets(const QVariantList& value);
     QVariantList geometryRows() const;
     void setGeometryRows(const QVariantList& value);
     qreal textLineHeight() const noexcept;
@@ -49,7 +48,6 @@ signals:
     void sourceTextChanged();
     void logicalTextChanged();
     void normalizedHtmlBlocksChanged();
-    void logicalToSourceOffsetsChanged();
     void geometryRowsChanged();
     void textLineHeightChanged();
     void geometryWidthChanged();
@@ -63,8 +61,8 @@ private:
     QString m_sourceText;
     QString m_logicalText;
     QVariantList m_normalizedHtmlBlocks;
-    QVariantList m_logicalToSourceOffsets;
     QVariantList m_geometryRows;
+    ContentsLogicalTextBridge* m_logicalTextBridge = nullptr;
     qreal m_textLineHeight = 1.0;
     qreal m_geometryWidth = 0.0;
     qreal m_displayContentHeight = 0.0;

@@ -7,7 +7,7 @@ Declares the C++ controller exposed to QML as `ContentsInlineFormatEditorControl
 ## Contract
 
 - Owns only the current inline editor wrapper contract.
-- Delegates implementation details to `src/app/qml/view/contents/editor/ContentsInlineFormatEditorController.qml`.
+- Implements input policy and synchronization state directly in C++; there is no QML helper for this controller.
 - Exposes native-input, selection-cache, cursor-restore, and committed-text dispatch hooks for
   `ContentsInlineFormatEditor.qml`.
 - Does not expose block-delegate row-coordinate or legacy structured-block controller APIs.

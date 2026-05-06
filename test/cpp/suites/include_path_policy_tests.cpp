@@ -314,7 +314,6 @@ void WhatSonCppRegressionTests::sourceTree_keepsContentsQmlUnderViewContents()
         contentsRoot + QStringLiteral("/ContentsView.qml"),
         contentsRoot + QStringLiteral("/EditorView.qml"),
         contentsRoot + QStringLiteral("/Minimap.qml"),
-        contentsRoot + QStringLiteral("/editor/ContentsDisplayView.qml"),
         contentsRoot + QStringLiteral("/editor/ContentsLineNumberRail.qml"),
         contentsRoot + QStringLiteral("/editor/ContentsStructuredDocumentFlow.qml"),
         docsContentsRoot + QStringLiteral("/README.md"),
@@ -343,13 +342,17 @@ void WhatSonCppRegressionTests::sourceTree_keepsContentsQmlUnderViewContents()
             qPrintable(QStringLiteral("Contents QML must stay under view/contents: %1").arg(relativePath)));
     }
 
-    const QString displayViewSource = readUtf8SourceFile(contentsRoot + QStringLiteral("/editor/ContentsDisplayView.qml"));
-    QVERIFY(displayViewSource.contains(QStringLiteral("import \"..\" as ContentsChrome")));
-    QVERIFY(!displayViewSource.contains(QStringLiteral("../../../") + QStringLiteral("contents")));
+    QVERIFY(!QFileInfo::exists(repositoryRoot.filePath(
+        contentsRoot + QStringLiteral("/editor/ContentsDisplayView.qml"))));
+    const QString contentViewLayoutSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/panels/ContentViewLayout.qml"));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("import \"../contents\" as ContentsChrome")));
+    QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("../../../") + QStringLiteral("contents")));
 
     const QString inlineFormatEditorControllerSource =
         readUtf8SourceFile(QStringLiteral("src/app/models/editor/input/ContentsInlineFormatEditorController.cpp"));
-    QVERIFY(inlineFormatEditorControllerSource.contains(QStringLiteral("qrc:/qt/qml/WhatSon/App/view/contents/editor/")));
+    QVERIFY(!inlineFormatEditorControllerSource.contains(QStringLiteral("qrc:/qt/qml/WhatSon/App/view/contents/editor/")));
+    QVERIFY(!inlineFormatEditorControllerSource.contains(QStringLiteral("ContentsInlineFormatEditorController.qml")));
     QVERIFY(!inlineFormatEditorControllerSource.contains(
         QStringLiteral("qrc:/qt/qml/WhatSon/App/view/") + QStringLiteral("content/editor/")));
 }

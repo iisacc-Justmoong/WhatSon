@@ -24,6 +24,20 @@ void WhatSonCppRegressionTests::noteBodyPersistence_roundTripsAndProjectsCanonic
         QStringLiteral("<weblink href=\"www.iisacc.com\">www.iisacc.com</weblink>")));
 }
 
+void WhatSonCppRegressionTests::noteBodyPersistence_preservesCrossParagraphInlineSourceTagsWithoutEscaping()
+{
+    const QString crossedInlineSource = QStringLiteral("<bold>첫 줄\n둘째 줄</bold>");
+    const QString crossedInlineBodyDocument = WhatSon::NoteBodyPersistence::serializeBodyDocument(
+        QStringLiteral("note"),
+        crossedInlineSource);
+    QVERIFY(crossedInlineBodyDocument.contains(QStringLiteral("<paragraph><bold>첫 줄</paragraph>")));
+    QVERIFY(crossedInlineBodyDocument.contains(QStringLiteral("<paragraph>둘째 줄</bold></paragraph>")));
+    QVERIFY(!crossedInlineBodyDocument.contains(QStringLiteral("&lt;bold&gt;")));
+    QCOMPARE(
+        WhatSon::NoteBodyPersistence::sourceTextFromBodyDocument(crossedInlineBodyDocument),
+        crossedInlineSource);
+}
+
 void WhatSonCppRegressionTests::noteBodyPersistence_stripsRenderedHtmlBlockArtifactsFromSourceProjection()
 {
     const QString bodyDocument = QStringLiteral(

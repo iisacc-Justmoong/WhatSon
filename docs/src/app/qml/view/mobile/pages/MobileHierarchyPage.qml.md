@@ -29,9 +29,9 @@ It does not own the domain data itself. Its job is to keep the mobile `LV.PageRo
 - The active note-list model is read from the global `noteActiveState.activeNoteListModel` when available, with
   `SidebarHierarchyController.activeNoteListModel` kept as the fallback. The mobile route shell still does not mount a
   second local note-list bridge, so note active state is shared with the desktop shell and the editor surface.
-- The same global `noteActiveState` object is forwarded into the routed editor body. This lets the visible
-  `ContentsDisplayView.qml` attach its editor session to the global tracker, so mobile note activation updates the
-  session in the same active-note turn as desktop.
+- The same global `noteActiveState` object is forwarded into the routed editor body. `ContentViewLayout.qml` passes it
+  to `ContentsEditorDisplayBackend`, so mobile note activation updates the session in the same active-note turn as
+  desktop.
 
 ## Routing Model
 The file defines four route constants:
@@ -163,17 +163,12 @@ This keeps mobile back navigation local to the page and avoids stealing editor t
 - The routed `ListBarLayout.qml` now receives `resolvedNoteDeletionController`, so hardware-keyboard
   `Delete` / `Backspace` in the mobile note list can remove resource packages when the resources
   hierarchy owns the active list.
-- `ContentViewLayout.qml`: renders the editor route body and now mounts the unified `ContentsDisplayView.qml` host in
-  mobile mode.
-- The mobile editor route still no longer relies on ad hoc desktop suppression flags:
-  - minimap visibility is controlled by the shared host's mobile mode policy
-  - editor font size now stays aligned with the desktop `12px` baseline
-- The route forwards the LVRS window `isMobilePlatform` state into `ContentViewLayout`, so the unified host's mode
-  policy uses the canonical platform detector instead of responsive-width guesses.
-- `resourcesImportController`: forwarded into `ContentViewLayout` so editor drops on mobile can package files and emit
-  `<resource ...>` links through the same import pipeline.
-- `editorViewModeController`: forwarded into `ContentViewLayout` so mobile editor mode selection uses the same
-  plain/print/preview rendering policy as desktop.
+- `ContentViewLayout.qml`: renders the editor route body and uses `ContentsEditorDisplayBackend` for note-session and
+  projection wiring in mobile mode.
+- The mobile editor route still no longer relies on ad hoc desktop suppression flags. Minimap visibility is controlled
+  by the same `ContentViewLayout.qml` property used on desktop.
+- The route forwards the LVRS window `isMobilePlatform` state into `ContentViewLayout` as route context, but note
+  session/projection wiring stays in `ContentsEditorDisplayBackend`.
 - `SidebarHierarchyController`: supplies the active hierarchy domain, note-list model, and hierarchy selection.
 - The same shared sidebar controller is also forwarded into `ContentViewLayout.qml`, so mobile calendar note taps reuse
   the same library-selection path as desktop.
@@ -196,8 +191,7 @@ This keeps mobile back navigation local to the page and avoids stealing editor t
 - Mobile hierarchy routing must also resolve that hierarchy snapshot from the selected hierarchy index itself, not only
   from one previously cached "active" provider object, or a toolbar switch can leave the old domain controller
   mounted.
-- The mobile editor page must not reintroduce desktop-only editor chrome overrides now that mobile policy lives in
-  `ContentsDisplayHostModePolicy.qml`.
+- The mobile editor page must not reintroduce desktop-only editor chrome overrides or a separate QML host-mode policy.
 - The mobile editor page must keep sourcing platform mode from the LVRS window detector, not from viewport width.
 - The mobile editor page must not fall back to the desktop editor file for mobile rendering.
 - The mobile detail route must fill the routed body width end-to-end; centered fixed-width detail cards are a regression on

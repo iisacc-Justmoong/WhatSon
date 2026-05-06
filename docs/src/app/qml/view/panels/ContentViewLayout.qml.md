@@ -9,9 +9,10 @@ surface.
 
 ## Current Contract
 
-- Note editor surface: `ContentsDisplayView.qml`
+- Note editor surface: direct `ContentViewLayout.qml` chrome plus `ContentsEditorDisplayBackend`
 - Resource editor surface: `ContentsResourceEditorView.qml`
-- Mobile/desktop host variance: `mobileHost` input forwarded from `isMobilePlatform`
+- Mobile/desktop route context: `isMobilePlatform` is retained at this boundary, but the note editor no longer mounts a
+  separate QML host-mode wrapper.
 - Calendar surfaces:
   - `AgendaPage.qml`
   - `DayCalendarPage.qml`
@@ -38,18 +39,20 @@ surface.
 
 - A `StackLayout` selects either the editor surface or the active calendar surface.
 - Inside the non-calendar slot, a second loader now selects:
-  - `ContentsDisplayView.qml` for note-backed list models
+  - direct note-editor chrome for note-backed list models
   - `ContentsResourceEditorView.qml` for direct resource-backed list models
+- `ContentsEditorSurfaceModeSupport` owns that note-vs-resource surface policy in C++; this QML file only binds to
+  `resourceEditorVisible` and `currentResourceEntry`.
 - The active note-list model still closes any visible calendar surface when note selection changes.
 - Entering resource-editor mode also dismisses any active calendar overlay so the center slot cannot show both a
   resource editor request and a calendar overlay at once.
-- `resourcesImportController`, `editorViewModeController`, `sidebarHierarchyController`, and the resolved
-  note-list/content controllers are forwarded into the unified note editor host when that surface is active.
+- The resolved note-list/content controllers and active-note tracker are forwarded into `ContentsEditorDisplayBackend`
+  when the note editor surface is active.
 - The global `noteActiveState` object is also forwarded into the note editor host. The host registers its
   `ContentsEditorSessionController` there, so active-note changes can rebind the editor session before QML's local
   note-list bindings finish a later refresh turn.
-- `minimapVisible` is forwarded into `ContentsDisplayView.qml`, where the visible editor/minimap `LV.HStack` is
-  mounted.
+- `minimapVisible` is forwarded into `ContentsEditorDisplayBackend`; this QML file renders the visible editor/minimap
+  `LV.HStack` and applies minimap drag deltas to the editor `Flickable`.
 - That sidebar-hierarchy forwarding is now part of the editor contract so desktop/mobile surfaces can distinguish:
   - direct resource-package browsing inside the Resources hierarchy
   - ordinary notes from other hierarchies whose `.wsnbody` happens to contain inline `<resource ... />` blocks
@@ -59,8 +62,6 @@ surface.
   to Library, select the note, and then dismiss the current calendar overlay.
 - `YearCalendarPage.qml` can now request a month-overlay open through this file. `ContentViewLayout.qml` applies the
   requested year/month/date to `monthCalendarController` first, then emits `monthCalendarOverlayOpenRequested`.
-
-## Tests
 
 ## Tests
 

@@ -45,7 +45,7 @@ The C++ suite currently locks regression-sensitive runtime behavior for:
 - `WhatSonClipboardResourceImportFileNamePolicy`
 - `ContentsEditorSessionController`
 - `ContentsNoteManagementCoordinator`
-- `ContentsEditorSurfaceModeSupport.js`
+- `ContentsEditorSurfaceModeSupport`
 - `ContentsTextFormatRenderer`
 - `ResourceDetailPanelController`
 - `ResourceBitmapViewer`
@@ -188,7 +188,8 @@ ctest --test-dir build --output-on-failure -L cpp_regression
 - Minimap interaction now also pins row-only visual chrome and direct delta scrolling in the QML regression suite, so
   vertical drags emit pixel deltas while the minimap stops rendering a viewport thumb or scrollbar indicator.
 - Contents chrome layout tests now also pin `LV.Theme.gap8` top/bottom padding on both standalone `ContentsView.qml`
-  and runtime `ContentsDisplayView.qml`, so the gutter, editor viewport, and minimap share one vertical inset.
+  and the runtime note editor chrome in `ContentViewLayout.qml`, so the gutter, editor viewport, and minimap share one
+  vertical inset.
 - Structured layout-cache commits now also pin a forced minimap snapshot refresh in the QML regression suite, so once
   `cachedLogicalLineEntries` lands after note parsing the minimap rebuilds from the same structured geometry instead of
   staying on the stale pre-layout snapshot.
@@ -219,6 +220,9 @@ ctest --test-dir build --output-on-failure -L cpp_regression
 - The inline editor regression now also pins rendered-surface cursor placement: taps are resolved through visible
   logical text geometry and then mapped back through `logicalToSourceOffsets`, so hidden RAW tags do not determine the
   cursor location.
+- The same rendered-cursor coverage now also pins collapsed Backspace against nested inline style tags: the editor
+  deletes the previous visible glyph through a C++ WYSIWYG mutation payload instead of letting native RAW deletion
+  remove bytes from hidden `</italic>` / `</bold>` boundaries behind the projected caret.
 - The inline editor regression now also pins actual mouse-click cursor movement through both the inline editor and
   `ContentsStructuredDocumentFlow` host, including the projected caret rectangle, so collapsed pointer gestures cannot
   leave the visible cursor at the initial host-provided logical cursor position.
@@ -283,11 +287,14 @@ ctest --test-dir build --output-on-failure -L cpp_regression
 - Editor rendering now has XML-to-HTML-block pipeline coverage: `.wsnbody` explicit block spans must prefer iiXml,
   and `ContentsHtmlBlockRenderPipeline` must validate a renderer XML projection, convert it through iiHtmlBlock, and
   publish iiHtmlBlock display-block metadata on normalized HTML blocks.
+- Editor rendering now also pins stored inline-style projection: RAW `<bold>` / `<italic>` tags must reach the
+  editor surface as RichText style spans in `documentHtml`, `htmlTokens`, and `normalizedHtmlBlocks`, not as escaped
+  literal XML-tag text.
 - Runtime logging now has local dependency trace coverage: the app installs a Qt message filter that suppresses
   default-off `iiXml::*` debug chatter while preserving warnings and allowing `WHATSON_IIXML_TRACE_MODE=1` opt-in
   diagnosis.
-- QML editor-host coverage now verifies that `ContentsEditorPresentationProjection` republishes `htmlTokens` and
-  `normalizedHtmlBlocks`, and that `ContentsDisplayView.qml` forwards those renderer-owned block objects into
+- Editor-host coverage now verifies that `ContentsEditorPresentationProjection` republishes `htmlTokens` and
+  `normalizedHtmlBlocks`, and that `ContentViewLayout.qml` forwards those backend-owned projection objects into
   `ContentsStructuredDocumentFlow.qml` for final rendering.
 
 ## 한국어
@@ -299,5 +306,7 @@ ctest --test-dir build --output-on-failure -L cpp_regression
 - 역할: 이 파일은 해당 디렉터리나 모듈의 구조, 책임, 운영 규칙, 검증 기준을 설명하며 `LV.TextEditor` 기반 본문 입력 회귀를 포함한다.
 - 현재 본문 입력 회귀에는 렌더 표면 마우스 클릭 후 `Shift+Right` 선택 앵커, 렌더 표면 드래그 selection,
   표면 selection-to-RAW 매핑 및 좌표 클램프 검증이 포함된다.
+- editor renderer 회귀에는 RAW `<bold>` / `<italic>` 인라인 스타일 태그가 literal XML 문자열이 아니라
+  RichText 스타일 span으로 투영되는지 확인하는 케이스가 포함된다.
 - 기준: 파일 경로, 명령, API 이름, 세부 변경 이력은 위 영어 본문을 원문 기준으로 유지한다.
 - 변경 시: 위 영어 본문을 수정하면 이 한국어 하단 섹션도 함께 최신 상태로 맞춘다.

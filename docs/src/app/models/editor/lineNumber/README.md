@@ -12,11 +12,11 @@ C++ model objects for the note editor's logical line-number rail.
 ## Current Contract
 
 - `ContentsLineNumberRailMetrics` owns logical line-number row construction for the note editor.
-- QML supplies view-owned inputs only: the current source snapshot, renderer-owned `normalizedHtmlBlocks`, the
-  logical-to-source offset table, measured row geometry snapshots, and LVRS line-height/width values.
+- QML supplies view-owned inputs only: the current source snapshot, renderer-owned `normalizedHtmlBlocks`, measured row
+  geometry snapshots, and LVRS line-height/width values.
 - The C++ object de-duplicates iiHtmlBlock-derived block entries, splits row ranges from the full `logicalText`
-  projection, maps each logical line back to RAW source offsets through `logicalToSourceOffsets`, marks resource rows
-  from renderer metadata, combines those logical ranges with supplied row geometry snapshots, and publishes final
+  projection, maps each logical line back to RAW source offsets through its internal logical text bridge, marks resource
+  rows from renderer metadata, combines those logical ranges with supplied row geometry snapshots, and publishes final
   `{ number, sourceStart, sourceEnd, y, height }` rows.
 - The line-number object must not own or call TextEdit, cursor, selection, resource overlay, or QQuickItem objects
   directly. Surface measurement belongs to the geometry adapter and enters this object only as value snapshots.

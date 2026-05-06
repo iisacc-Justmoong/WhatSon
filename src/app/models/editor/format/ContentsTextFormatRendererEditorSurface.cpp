@@ -4,7 +4,6 @@
 #include "app/models/editor/format/ContentsTextHighlightRenderer.hpp"
 #include "app/models/file/note/WhatSonNoteBodyWebLinkSupport.hpp"
 #include "app/models/file/note/WhatSonNoteBodySemanticTagSupport.hpp"
-#include "app/models/file/note/WhatSonNoteBodyPersistence.hpp"
 #include "app/models/file/note/WhatSonNoteMarkdownStyleObject.hpp"
 
 #include <array>
@@ -1615,12 +1614,10 @@ namespace
                     return;
                 }
 
-                const QString bufferedBodyDocument =
-                    WhatSon::NoteBodyPersistence::serializeBodyDocument(
-                        QStringLiteral("note"),
-                        *bufferedSourceText);
                 const QString bufferedHtmlProjection =
-                    WhatSon::NoteBodyPersistence::htmlProjectionFromBodyDocument(bufferedBodyDocument);
+                    renderStructuredLiteralTextToHtml(
+                        *bufferedSourceText,
+                        LiteralRenderMode::SourceEditing);
                 const QStringList bufferedLines =
                     bufferedHtmlProjection.split(QStringLiteral("<br/>"), Qt::KeepEmptyParts);
                 for (const QString& bufferedLine : bufferedLines)
