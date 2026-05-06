@@ -98,7 +98,7 @@ Item {
         if (x < 0 || x > documentFlow.width || y < 0 || y > documentFlow.height)
             return false;
 
-        const renderedBodyHeight = Math.max(0, Number(editor.displayContentHeight) || 0);
+        const renderedBodyHeight = Math.max(0, Number(editor.displayBodyHeight) || 0);
         if (renderedBodyHeight <= 0)
             return true;
         return y > renderedBodyHeight;
@@ -112,7 +112,7 @@ Item {
     }
 
     function terminalBodySurfaceY() {
-        const renderedBodyHeight = Math.max(0, Number(editor.displayContentHeight) || 0);
+        const renderedBodyHeight = Math.max(0, Number(editor.displayBodyHeight) || 0);
         if (renderedBodyHeight <= 0)
             return 0;
         const minimumBodyLineHeight = Math.max(1, Number(LV.Theme.textBodyLineHeight) || 1);

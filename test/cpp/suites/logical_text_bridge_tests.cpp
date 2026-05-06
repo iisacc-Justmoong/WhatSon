@@ -72,3 +72,31 @@ void WhatSonCppRegressionTests::logicalTextBridge_notifiesLogicalToSourceOffsetC
     QCOMPARE(projection.sourceOffsetForVisibleLogicalOffset(projection.logicalText().size(), projection.logicalText().size()), styledSourceText.size());
     QCOMPARE(projection.logicalOffsetForSourceOffsetWithAffinity(styledSourceText.size(), true), projection.logicalText().size());
 }
+
+void WhatSonCppRegressionTests::logicalTextBridge_mapsResourceTagsToAtomicLogicalPlaceholders()
+{
+    const QString resourceTag =
+        QStringLiteral("<resource type=\"image\" path=\"cover.png\" />");
+    const QString sourceText = QStringLiteral("Alpha\n") + resourceTag + QStringLiteral("\nBeta");
+    const int resourceStart = QStringLiteral("Alpha\n").size();
+    const int resourceEnd = resourceStart + resourceTag.size();
+    const int resourceLogicalStart = QStringLiteral("Alpha\n").size();
+    const int resourceLogicalEnd = resourceLogicalStart + 1;
+
+    ContentsLogicalTextBridge bridge;
+    bridge.setText(sourceText);
+
+    QCOMPARE(
+        bridge.logicalText(),
+        QStringLiteral("Alpha\n") + QString(1, QChar(0xfffc)) + QStringLiteral("\nBeta"));
+    QCOMPARE(bridge.logicalToSourceOffsets().size(), bridge.logicalText().size() + 1);
+    QCOMPARE(bridge.sourceOffsetForVisibleLogicalOffset(resourceLogicalStart, bridge.logicalText().size()), resourceStart);
+    QCOMPARE(bridge.sourceOffsetForVisibleLogicalOffset(resourceLogicalEnd, bridge.logicalText().size()), resourceEnd);
+    QCOMPARE(bridge.logicalOffsetForSourceOffsetWithAffinity(resourceStart, false), resourceLogicalStart);
+    QCOMPARE(bridge.logicalOffsetForSourceOffsetWithAffinity(resourceEnd, true), resourceLogicalEnd);
+
+    ContentsEditorPresentationProjection projection;
+    projection.setSourceText(sourceText);
+    QCOMPARE(projection.logicalText(), bridge.logicalText());
+    QCOMPARE(projection.sourceOffsetForVisibleLogicalOffset(resourceLogicalEnd, projection.logicalText().size()), resourceEnd);
+}

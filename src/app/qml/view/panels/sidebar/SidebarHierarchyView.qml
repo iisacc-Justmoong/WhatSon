@@ -535,14 +535,7 @@ Rectangle {
                 return null;
             if (item.effectiveShowChevron !== undefined && !Boolean(item.effectiveShowChevron))
                 return null;
-            const point = item.mapToItem(hierarchyTree, 0, 0);
-            const itemX = Number(point.x) || 0;
-            const itemWidth = Number(item.width) || 0;
-            const chevronSize = Math.max(0, Number(item.chevronSize) || 0);
-            if (itemWidth <= 0 || chevronSize <= 0)
-                return null;
-            const localX = targetX - itemX;
-            if (localX < itemWidth - chevronSize - LV.Theme.gap2 || localX > itemWidth)
+            if (!sidebarHierarchyView.hierarchyItemChevronContainsPoint(item, targetX, targetY))
                 return null;
             const resolvedIndex = sidebarHierarchyView.resolveHierarchyActivationIndex(item, item.itemId, item.flatIndex);
             const key = sidebarHierarchyView.hierarchyItemExpansionKey(item, resolvedIndex);
@@ -551,6 +544,50 @@ Rectangle {
                     "item": item,
                     "key": key
                 });
+        }
+        return null;
+    }
+    function hierarchyItemChevronContainsPoint(item, targetX, targetY) {
+        const chevronSlot = sidebarHierarchyView.hierarchyItemChevronSlot(item);
+        if (chevronSlot && chevronSlot.visible !== false && chevronSlot.mapToItem !== undefined) {
+            const slotPoint = chevronSlot.mapToItem(hierarchyTree, 0, 0);
+            const slotX = Number(slotPoint.x) || 0;
+            const slotY = Number(slotPoint.y) || 0;
+            const slotWidth = Number(chevronSlot.width) || 0;
+            const slotHeight = Number(chevronSlot.height) || 0;
+            return slotWidth > 0
+                    && slotHeight > 0
+                    && targetX >= slotX
+                    && targetX <= slotX + slotWidth
+                    && targetY >= slotY
+                    && targetY <= slotY + slotHeight;
+        }
+
+        const point = item.mapToItem(hierarchyTree, 0, 0);
+        const itemX = Number(point.x) || 0;
+        const itemWidth = Number(item.width) || 0;
+        const chevronSize = Math.max(0, Number(item.chevronSize) || 0);
+        if (itemWidth <= 0 || chevronSize <= 0)
+            return false;
+        const localX = targetX - itemX;
+        return localX >= itemWidth - chevronSize - LV.Theme.gap2 && localX <= itemWidth;
+    }
+    function hierarchyItemChevronSlot(item) {
+        if (!item || !item.children)
+            return null;
+        const queue = [];
+        for (let index = 0; index < item.children.length; ++index)
+            queue.push(item.children[index]);
+        while (queue.length > 0) {
+            const child = queue.shift();
+            if (!child)
+                continue;
+            if (child.objectName === "hierarchyItemChevron")
+                return child;
+            if (!child.children)
+                continue;
+            for (let childIndex = 0; childIndex < child.children.length; ++childIndex)
+                queue.push(child.children[childIndex]);
         }
         return null;
     }

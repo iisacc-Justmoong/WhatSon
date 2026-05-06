@@ -1186,6 +1186,7 @@ private slots:
     void qmlInlineFormatEditor_keepsNativeTextEditInputUncovered();
     void qmlInlineFormatEditor_keepsKeyboardSelectionAndOsImeNative();
     void qmlInlineFormatEditor_keepsRenderedOverlayDuringNativeSelection();
+    void qmlInlineFormatEditor_snapsPointerSelectionInsideResourceFrameToAtomicBlock();
     void qmlInlineFormatEditor_ignoresEmptyFormattingTagsDuringRenderedSelection();
     void qmlInlineFormatEditor_keepsRenderedOverlayPassiveForNativeEditing();
     void qmlInlineFormatEditor_keepsResourceOverlayPinnedDuringNativeEditing();
@@ -1235,6 +1236,7 @@ private slots:
     void logicalTextBridge_advancesCursorPastClosingWebLinkTag();
     void logicalTextBridge_mapsSourceCursorInsideInlineTagsToVisibleBoundary();
     void logicalTextBridge_notifiesLogicalToSourceOffsetChanges();
+    void logicalTextBridge_mapsResourceTagsToAtomicLogicalPlaceholders();
     void editorTagInsertionController_preservesInlineTagBoundariesWhenReformatting();
     void qmlStructuredEditors_bindPaperPaletteIntoPagePrintMode();
     void qmlStructuredEditors_clipInlineResourceCardsToMeasuredBlockBounds();

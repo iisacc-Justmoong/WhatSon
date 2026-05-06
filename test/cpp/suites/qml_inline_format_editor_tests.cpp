@@ -137,6 +137,10 @@ void WhatSonCppRegressionTests::qmlInlineFormatEditor_keepsNativeTextEditInputUn
     QVERIFY(inlineEditorSource.contains(QStringLiteral("property int surfaceSelectionCursorLogicalOffset: 0")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("text: control.displayGeometryText")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("textFormat: TextEdit.PlainText")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("function atomicResourceHitAtPoint(localX, localY)")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("function visibleLogicalSelectionEndpointAtPoint(localX, localY, anchorLogicalOffset)")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("lineNumberRailMetrics.logicalLineRanges")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("editorGeometryProvider.lineNumberGeometryRows")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("MouseArea {")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("objectName: \"contentsInlineFormatVisibleSelectionPointerArea\"")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("mouse.accepted = control.beginVisiblePointerSelection(mouse.x, mouse.y);")));
@@ -250,7 +254,10 @@ void WhatSonCppRegressionTests::qmlInlineFormatEditor_projectsVisibleGeometryFro
         QStringLiteral("src/app/qml/view/contents/editor/ContentsStructuredDocumentFlow.qml"));
 
     QVERIFY(inlineEditorSource.contains(QStringLiteral("readonly property real displayContentHeight")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("readonly property real displayTextContentHeight")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("? renderedOverlay.contentHeight")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("+ control.editorBottomInset")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("readonly property real displayBodyHeight: Math.max(0, control.displayTextContentHeight)")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("readonly property int visualLineCount")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("readonly property var visualLineWidthRatios")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("readonly property var logicalGutterRows: lineNumberRailMetrics.rows")));
@@ -285,6 +292,7 @@ void WhatSonCppRegressionTests::qmlInlineFormatEditor_projectsVisibleGeometryFro
     QVERIFY(!inlineEditorSource.contains(QStringLiteral("function resolvedTextItemLineWidthRatios(textItem)")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("textFormat: TextEdit.RichText")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("property string displayGeometryText: control.text")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("property real editorBottomInset: LV.Theme.gap16")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("function displayGeometryItem()")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("return control.logicalSurfaceActive ? renderedGeometryProbe : textInput.editorItem;")));
     QVERIFY(!inlineEditorSource.contains(QStringLiteral("function resourceDisplayRectangleForBlock(block)")));
@@ -313,6 +321,7 @@ void WhatSonCppRegressionTests::qmlInlineFormatEditor_projectsVisibleGeometryFro
     QVERIFY(!documentFlowSource.contains(QStringLiteral("displayGeometryText: documentFlow.logicalText.length > 0 ? documentFlow.logicalText : documentFlow.sourceText")));
     QVERIFY(documentFlowSource.contains(QStringLiteral("coordinateMapper: documentFlow.coordinateMapper")));
     QVERIFY(documentFlowSource.contains(QStringLiteral("function terminalBodySurfaceY()")));
+    QVERIFY(documentFlowSource.contains(QStringLiteral("Number(editor.displayBodyHeight)")));
     QVERIFY(documentFlowSource.contains(QStringLiteral("y: documentFlow.terminalBodySurfaceY()")));
     QVERIFY(!documentFlowSource.contains(QStringLiteral("logicalToSourceOffsets: documentFlow.logicalToSourceOffsets")));
     QVERIFY(documentFlowSource.contains(QStringLiteral("normalizedHtmlBlocks: documentFlow.normalizedHtmlBlocks")));
@@ -1358,8 +1367,20 @@ Item {
 
     QObject* documentFlow = rootObject->findChild<QObject*>(QStringLiteral("structuredDocumentFlowUnderTest"));
     QVERIFY(documentFlow != nullptr);
+    QObject* inlineEditor = rootObject->findChild<QObject*>(QStringLiteral("contentsStructuredDocumentInlineEditor"));
+    QVERIFY(inlineEditor != nullptr);
     QTRY_VERIFY(documentFlow->property("editorContentHeight").toReal() > 0.0);
     QTRY_VERIFY(documentFlow->property("editorContentHeight").toReal() < 200.0);
+    QTRY_VERIFY(inlineEditor->property("editorBottomInset").toReal() > 0.0);
+    QTRY_VERIFY(inlineEditor->property("displayContentHeight").toReal()
+                > inlineEditor->property("displayBodyHeight").toReal());
+    QCOMPARE(
+        qRound(inlineEditor->property("displayBodyHeight").toReal()),
+        qRound(inlineEditor->property("displayTextContentHeight").toReal()));
+    QCOMPARE(
+        qRound(inlineEditor->property("displayContentHeight").toReal()
+               - inlineEditor->property("displayBodyHeight").toReal()),
+        qRound(inlineEditor->property("editorBottomInset").toReal()));
 
     QVariant topHit;
     QVERIFY(QMetaObject::invokeMethod(
@@ -1911,7 +1932,7 @@ Item {
         coordinateMapper: ContentsEditorPresentationProjection {
             sourceText: editor.text
         }
-        displayGeometryText: "Alpha\n\nBeta"
+        displayGeometryText: "Alpha\n\uFFFC\nBeta"
         normalizedHtmlBlocks: [{
             "htmlBlockIsDisplayBlock": true,
             "htmlBlockObjectSource": "iiHtmlBlock",
@@ -1978,6 +1999,106 @@ Item {
         renderedOverlay->property("selectionStart").toInt());
     QVERIFY(!inlineEditor->property("atomicResourceSelectionRects").isValid());
     QTRY_VERIFY(inlineEditor->property("renderedOverlayVisible").toBool());
+}
+
+void WhatSonCppRegressionTests::qmlInlineFormatEditor_snapsPointerSelectionInsideResourceFrameToAtomicBlock()
+{
+    registerInlineFormatEditorRuntimeQmlTypes();
+
+    const QString repositoryRoot = qmlInlineFormatEditorRepositoryRootPath();
+    QQmlEngine engine;
+    addWhatSonInlineFormatEditorQmlImportPaths(engine, repositoryRoot);
+
+    const QString editorImportUrl =
+        QUrl::fromLocalFile(repositoryRoot + QStringLiteral("/src/app/qml/view/contents/editor")).toString();
+    const QByteArray qmlSource = QStringLiteral(R"QML(
+import QtQuick
+import WhatSon.App.Internal 1.0
+import "%1" as EditorView
+
+Item {
+    id: root
+    readonly property string resourceTag: "<resource type=\"image\" format=\".png\" path=\"icloud.wsresources/demo.wsresource\" id=\"demo\" />"
+    readonly property int resourceStart: 6
+    readonly property int resourceEnd: resourceStart + resourceTag.length
+    width: 360
+    height: 180
+
+    EditorView.ContentsInlineFormatEditor {
+        id: editor
+        objectName: "inlineFormatEditorUnderTest"
+        anchors.fill: parent
+        coordinateMapper: ContentsEditorPresentationProjection {
+            sourceText: editor.text
+        }
+        displayGeometryText: "Alpha\n\uFFFC\nBeta"
+        normalizedHtmlBlocks: [{
+            "htmlBlockIsDisplayBlock": true,
+            "htmlBlockObjectSource": "iiHtmlBlock",
+            "renderDelegateType": "resource",
+            "sourceStart": root.resourceStart,
+            "sourceEnd": root.resourceEnd
+        }]
+        renderedText: "<p style='margin-top:0px;margin-bottom:0px;'>Alpha</p><p style='margin-top:0px;margin-bottom:0px;'><img src='' width='300' height='72' /></p><p style='margin-top:0px;margin-bottom:0px;'>Beta</p>"
+        showRenderedOutput: true
+        text: "Alpha\n" + root.resourceTag + "\nBeta"
+    }
+}
+)QML").arg(editorImportUrl).toUtf8();
+
+    QQmlComponent component(&engine);
+    component.setData(
+        qmlSource,
+        QUrl::fromLocalFile(repositoryRoot + QStringLiteral("/test/cpp/InlineFormatResourcePointerHarness.qml")));
+    if (component.status() == QQmlComponent::Error)
+    {
+        QFAIL(qPrintable(qmlInlineFormatEditorErrorString(component.errors())));
+    }
+
+    std::unique_ptr<QObject> rootObject(component.create());
+    if (!rootObject)
+    {
+        QFAIL(qPrintable(qmlInlineFormatEditorErrorString(component.errors())));
+    }
+
+    auto* rootItem = qobject_cast<QQuickItem*>(rootObject.get());
+    QVERIFY(rootItem != nullptr);
+
+    QQuickWindow window;
+    window.resize(360, 160);
+    rootItem->setParentItem(window.contentItem());
+    window.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&window));
+
+    QObject* inlineEditor = rootObject->findChild<QObject*>(QStringLiteral("inlineFormatEditorUnderTest"));
+    QVERIFY(inlineEditor != nullptr);
+    QTRY_VERIFY(inlineEditor->property("renderedOverlayVisible").toBool());
+    QTRY_COMPARE(inlineEditor->property("logicalGutterRows").toList().size(), 3);
+
+    QVariant resourceHit;
+    QVERIFY(QMetaObject::invokeMethod(
+        inlineEditor,
+        "atomicResourceHitAtPoint",
+        Q_RETURN_ARG(QVariant, resourceHit),
+        Q_ARG(QVariant, 40),
+        Q_ARG(QVariant, 48)));
+    QVERIFY(resourceHit.toMap().value(QStringLiteral("hit")).toBool());
+
+    QVariant beginResult;
+    QVERIFY(QMetaObject::invokeMethod(
+        inlineEditor,
+        "beginVisiblePointerSelection",
+        Q_RETURN_ARG(QVariant, beginResult),
+        Q_ARG(QVariant, 40),
+        Q_ARG(QVariant, 48)));
+    QVERIFY(beginResult.toBool());
+
+    QTRY_VERIFY(inlineEditor->property("nativeSelectionActive").toBool());
+    QCOMPARE(inlineEditor->property("selectionStart").toInt(), rootObject->property("resourceStart").toInt());
+    QCOMPARE(inlineEditor->property("selectionEnd").toInt(), rootObject->property("resourceEnd").toInt());
+    const QString selectedText = inlineEditor->property("selectedText").toString();
+    QVERIFY(!selectedText.contains(QStringLiteral("Alpha")));
+    QVERIFY(!selectedText.contains(QStringLiteral("Beta")));
 }
 
 void WhatSonCppRegressionTests::qmlInlineFormatEditor_ignoresEmptyFormattingTagsDuringRenderedSelection()
@@ -2221,7 +2342,7 @@ Item {
         coordinateMapper: ContentsEditorPresentationProjection {
             sourceText: editor.text
         }
-        displayGeometryText: "Alpha\n\nBeta"
+        displayGeometryText: "Alpha\n\uFFFC\nBeta"
         normalizedHtmlBlocks: [{
             "htmlBlockIsDisplayBlock": true,
             "htmlBlockObjectSource": "iiHtmlBlock",

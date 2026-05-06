@@ -20,10 +20,11 @@ C++ model objects for the note editor's logical line-number rail.
   `{ number, sourceStart, sourceEnd, y, height }` rows.
 - The line-number object must not own or call TextEdit, cursor, selection, resource overlay, or QQuickItem objects
   directly. Surface measurement belongs to the geometry adapter and enters this object only as value snapshots.
-- Published rows must be independent. Each row keeps the measured `y` and `height` supplied for that row; a tall
-  resource row must not push later gutter rows down through previous-row fallback state.
+- Published rows must be independent. Each row keeps its measured `y`; a tall resource frame must not push later
+  gutter rows down through previous-row fallback state.
 - A wrapped paragraph remains one logical number while its row height follows the visible wrapped height. Atomic
-  resource blocks remain one logical number while their height is measured from the rendered resource overlay.
+  resource blocks remain one logical number and one gutter-line allocation because the logical text bridge exposes
+  them as one U+FFFC placeholder, not as internal text lines.
 - The object does not mutate `.wsnbody` source and does not parse XML; it consumes parser/renderer metadata already
   produced by the editor projection pipeline.
 

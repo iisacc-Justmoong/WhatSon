@@ -314,11 +314,8 @@ QVariantList ContentsLineNumberRailMetrics::logicalLineRanges() const
         const int lineSourceEnd = sourceOffsetForLogicalOffset(lineLogicalEnd);
         const int lineSourceCoverageEnd =
             hasNewline ? sourceOffsetForLogicalOffset(nextLineLogicalStart) : m_sourceText.size();
-        const bool resourceLineEligible =
-            lineLogicalStart == lineLogicalEnd || m_logicalText.isEmpty();
-        const QVariantMap resourceBlock = resourceLineEligible
-            ? resourceBlockForSourceInterval(lineSourceStart, lineSourceCoverageEnd)
-            : QVariantMap();
+        const QVariantMap resourceBlock =
+            resourceBlockForSourceInterval(lineSourceStart, lineSourceCoverageEnd);
         const bool resourceRange = !resourceBlock.isEmpty();
 
         int rowSourceStart = lineSourceStart;

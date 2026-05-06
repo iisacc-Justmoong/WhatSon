@@ -229,7 +229,6 @@ Item {
             anchors.fill: parent
             clip: true
             enabled: contentViewLayout.visible
-            readonly property int editorDocumentBottomInset: LV.Theme.gap16
             readonly property int contentVerticalPadding: LV.Theme.gap8
 
             function editorViewportScrollRange() {
@@ -345,10 +344,7 @@ Item {
                         Item {
                             id: editorDocumentContent
 
-                            height: Math.max(
-                                        editorDocumentViewport.height,
-                                        structuredDocumentFlow.editorContentHeight
-                                        + contentsEditorSurface.editorDocumentBottomInset)
+                            height: Math.max(editorDocumentViewport.height, structuredDocumentFlow.editorContentHeight)
                             width: editorDocumentViewport.width
 
                             ContentsLineNumberRail {

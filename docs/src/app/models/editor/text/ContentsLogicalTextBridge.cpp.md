@@ -71,9 +71,9 @@
 - When source contains multiple `<task>` children inside one `<agenda>`, the offset cache must expose one
   logical line-break step between adjacent task bodies so cursor restoration and source splices can land inside the
   intended task instead of drifting to surrounding text.
-- When source contains `<resource ... />`, `logicalText` and the internal offset cache must reserve the same
-  single-line slot that the structured block parser and fallback RichText projection use, so mobile plain-text editing
-  and desktop overlay positioning both align to the authored resource tag.
+- When source contains `<resource ... />`, `logicalText` and the internal offset cache must reserve one atomic
+  U+FFFC object-replacement placeholder for the authored resource tag. The placeholder gives cursor, selection, gutter,
+  and mutation mapping one logical element instead of a zero-width blank line or a height-derived run of fake text.
 - When the visible caret sits just after a proprietary inline-style run, `sourceOffsetForLogicalOffset(...)` must not
   point back in front of that closing style tag.
   Pressing `Enter` or typing more prose there must not split `</highlight>` or expose RAW tag tails in the editor.

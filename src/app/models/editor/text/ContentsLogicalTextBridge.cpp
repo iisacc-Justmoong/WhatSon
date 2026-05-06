@@ -13,8 +13,8 @@ namespace
 {
     namespace SemanticTags = WhatSon::NoteBodySemanticTagSupport;
 
-    // Resource blocks normalize to one logical text line.
-    constexpr int kResourcePlaceholderLineCount = 1;
+    constexpr char16_t kResourceLogicalPlaceholderCharacter = 0xfffc;
+    constexpr int kResourceLogicalPlaceholderLength = 1;
 
     int boundedContainerSize(const qsizetype size) noexcept
     {
@@ -183,11 +183,7 @@ namespace
 
     QString resourceLogicalPlaceholderText()
     {
-        if (kResourcePlaceholderLineCount <= 1)
-        {
-            return {};
-        }
-        return QString(kResourcePlaceholderLineCount - 1, QLatin1Char('\n'));
+        return QString(1, QChar(kResourceLogicalPlaceholderCharacter));
     }
 
     QString decodedHtmlEntityText(const QStringView entityToken)
@@ -539,9 +535,9 @@ QVector<int> ContentsLogicalTextBridge::buildLogicalToSourceOffsets(const QStrin
                 {
                     if (!closingTag)
                     {
-                        for (int lineIndex = 0;
-                             lineIndex < kResourcePlaceholderLineCount - 1 && logicalOffset < safeLogicalTextLength;
-                             ++lineIndex)
+                        for (int placeholderIndex = 0;
+                             placeholderIndex < kResourceLogicalPlaceholderLength && logicalOffset < safeLogicalTextLength;
+                             ++placeholderIndex)
                         {
                             ++logicalOffset;
                             offsets.push_back(
@@ -670,7 +666,7 @@ int ContentsLogicalTextBridge::logicalOffsetForSourceOffsetInText(const QString&
                 {
                     if (!closingTag)
                     {
-                        logicalOffset += std::max(0, kResourcePlaceholderLineCount - 1);
+                        logicalOffset += kResourceLogicalPlaceholderLength;
                     }
                     cursor = tagEnd + 1;
                     continue;

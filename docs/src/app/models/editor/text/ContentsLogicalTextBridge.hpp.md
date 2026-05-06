@@ -75,7 +75,7 @@
   `logicalText.length + 1` entries so model coordinate queries map visible editor offsets back into RAW source.
 - When source text includes `</break>`, the exported logical/source offset table must still include one logical
   position for that divider token.
-- When source text includes `<resource ... />`, the exported logical/source offset table must include the same fixed
-  single-line slot that the editor projection uses for inline resource rendering.
+- When source text includes `<resource ... />`, the exported logical/source offset table must include one atomic
+  U+FFFC resource placeholder so selection and edit deltas map to the resource tag as one element.
 - When the RAW cursor is inside an inline formatting tag token, `logicalOffsetForSourceOffset(...)` must return the
   visible logical boundary next to that zero-width tag token rather than counting the partial tag text.

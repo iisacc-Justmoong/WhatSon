@@ -8,5 +8,8 @@
   leaking identical row ids between hierarchy domains.
 - Single-row and bulk expansion requests go through the bound `HierarchyInteractionBridge` by meta-object call, then
   roll back the preserved state if the bridge rejects the mutation.
+- A first `onListItemExpanded` callback for a stable key is treated as a real expansion request and committed
+  immediately, even when the separate pointer arm did not run. This covers the LVRS chevron `MouseArea` path where the
+  row owns the click before the sidebar-level fallback sees a tap.
 - Expansion commits invalidate pending activation attempts and start a short suppression timer, matching the previous
   chevron-click behavior while keeping the policy in C++.

@@ -329,8 +329,7 @@ QVariantMap SidebarHierarchyInteractionController::handleExpansionSignal(
     {
         if (!stateKnown)
         {
-            rememberExpansionState(expansionKey, expanded);
-            return result;
+            return commitExpansionChange(resolvedIndex, expansionKey, expanded, !expanded);
         }
         if (preservedExpanded == expanded)
         {

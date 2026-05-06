@@ -266,11 +266,11 @@ WhatSon is an LVRS-based Qt Quick application.
 - The desktop editor panel stays transparent so the same root `LV.ApplicationWindow` `panelBackground01` canvas shows
   through the whole editor column.
 - The editor surface keeps Figma-style Fill height even when the body text is empty, and the editable text block is
-  top-left aligned with a shared `16px` top / horizontal / bottom inset instead of vertical centering.
-- That shared top inset is now materialized through the custom `ContentsInlineFormatEditor.qml` wrapper around
-  `LV.TextEditor`, with the LVRS editor configured for top-aligned body editing so the `16px` separation from the
-  navigation bar remains visible even when the editor viewport recalculates under Fill sizing on both desktop and
-  mobile.
+  top-left aligned with zero text top inset, `16px` horizontal inset, and the legacy `16px` bottom body inset instead
+  of vertical centering.
+- That bottom body inset is materialized through the custom `ContentsInlineFormatEditor.qml` wrapper as
+  `displayTextContentHeight + LV.Theme.gap16`, while the LVRS editor remains configured for top-aligned body editing so
+  viewport recalculation on desktop and mobile cannot re-center the text block.
 - The wrapper disables rendered preview output and forced mode defaults where required while keeping
   `wrapMode: TextEdit.Wrap`; wrapped visual rows remain an editor presentation detail rather than a persisted document
   numbering model.
@@ -1015,6 +1015,9 @@ for hub/note hierarchy payloads.
 - The chevron fallback path now writes a successful C++ bridge commit back into the live `HierarchyItem.expanded`
   property, and bookmark bucket rows implement the shared expansion capability so their right-side chevrons no longer
   roll back immediately.
+- The sidebar fallback now hit-tests the actual LVRS `hierarchyItemChevron` slot, and the C++ expansion policy commits
+  the first LVRS expansion callback for a stable row key so direct `HierarchyItem` chevron clicks persist even when the
+  sidebar-level pointer arm does not receive the tap first.
 - `library`: `WhatSonLibraryHierarchy{Store,Parser,Creator}` (`Library.wslibrary/index.wsnindex`)
 - `projects`: `WhatSonProjectsHierarchy{Store,Parser,Creator}` (`ProjectLists.wsproj`)
 - Projects hierarchy rows keep the runtime Figma `45:2750` contract without extending the persisted project schema:

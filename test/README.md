@@ -245,6 +245,9 @@ ctest --test-dir build --output-on-failure -L cpp_regression
 - The inline editor regression now also pins the rendered geometry probe and transparent selection surface as plain
   `displayGeometryText`, not RichText HTML, so caret placement and pointer hit-testing use the same logical coordinate
   space as `ContentsEditorPresentationProjection`.
+- Resource-backed pointer selection now also pins the atomic logical frame contract: `<resource ... />` maps to one
+  U+FFFC logical placeholder, and pointer hits inside the rendered image frame snap to that resource block instead of
+  selecting fake internal text positions.
 - Empty inline-format wrapper coverage now also verifies that hidden-only RAW selections remain collapsed after
   projection to the native logical surface, so restoring `<highlight></highlight>`-only ranges cannot select the next
   visible character.
@@ -261,11 +264,12 @@ ctest --test-dir build --output-on-failure -L cpp_regression
 - The inline editor regression now also pins rendered pointer multi-click selection: double-click restores visible-line
   selection and triple-click restores visible-paragraph selection before mapping the selected logical range back to RAW
   source offsets.
-- The inline editor regression now also pins the top-flush editor body contract: vertical inset and rendered-overlay
-  padding stay at zero, with only horizontal text-column margins retained.
+- The inline editor regression now also pins the top-flush editor body contract: top inset and rendered-overlay top
+  padding stay at zero, the legacy `LV.Theme.gap16` bottom body gap is added to the reported scrollable content height,
+  and horizontal text-column margins are retained.
 - The contents/editor QML regressions now also pin the scrollable document viewport: the center editor slot wraps the
-  structured document flow in a `Flickable`, routes wheel events to that viewport, and keeps the legacy
-  `LV.Theme.gap16` bottom inset in the scrollable document content.
+  structured document flow in a `Flickable` and routes wheel events to that viewport, while bottom body breathing room
+  remains owned by the inline editor surface.
 - Contents QML placement is now locked under `src/app/qml/view/contents`: the standalone Figma
   `ContentsView/EditorView/Minimap` parts and the runtime editor host share that namespace, while
   `src/app/qml/contents` and `src/app/qml/view/content` are forbidden by the source-tree policy regression.

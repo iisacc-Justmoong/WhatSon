@@ -45,9 +45,9 @@ Hosts the note document surface after `ContentsEditorDisplayBackend` has mounted
 - Exposes `pointRequestsTerminalBodyClick(localX, localY)` and `focusTerminalBodyFromPoint(localX, localY)` for the
   bottom-empty-area accessibility hit target.
 - Mounts a transparent left-click `MouseArea` only over the region below the rendered body. The start y follows the
-  inline editor's terminal-hit threshold: rendered body height plus one line height and one pixel. Short RichText
-  `contentHeight` measurements therefore cannot cover the visible first line or its line-adjacent hit area and steal
-  rendered pointer selection from `ContentsInlineFormatEditor`.
+  inline editor's terminal-hit threshold: rendered body height, excluding the editor's legacy bottom inset, plus one
+  line height and one pixel. Short RichText `contentHeight` measurements therefore cannot cover the visible first line
+  or its line-adjacent hit area and steal rendered pointer selection from `ContentsInlineFormatEditor`.
 
 ## Pipeline Position
 

@@ -195,7 +195,9 @@ void WhatSonCppRegressionTests::contentsLineNumberRailMetrics_keepsResourceRowsI
 
     ContentsLogicalTextBridge logicalTextBridge;
     logicalTextBridge.setText(sourceText);
-    QCOMPARE(logicalTextBridge.logicalText(), QStringLiteral("alpha\n\nbeta"));
+    QCOMPARE(
+        logicalTextBridge.logicalText(),
+        QStringLiteral("alpha\n") + QString(1, QChar(0xfffc)) + QStringLiteral("\nbeta"));
 
     const int resourceStart = QStringLiteral("alpha\n").size();
     const int resourceEnd = resourceStart + resourceTag.size();

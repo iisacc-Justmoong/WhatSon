@@ -173,7 +173,8 @@ These signals make the file a reusable visual surface instead of a hard-coded on
 - LVRS `HierarchyItem` owns the chevron hit target and emits `onListItemExpanded` after toggling `expanded`.
   `SidebarHierarchyView` treats that signal as a view callback and forwards it to
   `SidebarHierarchyInteractionController.handleExpansionSignal(...)`, which commits through
-  `HierarchyInteractionBridge.setItemExpanded(...)` when the state differs from the preserved user-owned state.
+  `HierarchyInteractionBridge.setItemExpanded(...)` when the state differs from the preserved user-owned state or when
+  this is the first expansion signal seen for that stable row key.
   A separate pointer arm remains only as an activation-suppression/fallback path for platforms that do not deliver the
   LVRS expansion callback from the chevron `MouseArea`.
 - `SidebarHierarchyInteractionController.captureExpansionState(...)` seeds only missing keys. A fresh controller/model
@@ -190,6 +191,9 @@ These signals make the file a reusable visual surface instead of a hard-coded on
   otherwise `SidebarHierarchyInteractionController.requestChevronExpansion(...)` performs the single-row fold/unfold
   and then writes the committed state back into the live `LV.HierarchyItem.expanded` property so the visible row hides
   or reveals its descendants immediately.
+- The fallback hit-test first resolves the LVRS descendant with `objectName: "hierarchyItemChevron"` and tests that
+  slot's mapped rectangle, then falls back to the older right-edge geometry estimate. This keeps the app-side pointer
+  arm aligned with the actual `HierarchyItem` chevron slot instead of an approximate row-width calculation.
 - `onListItemActivated` is deferred by one turn (`Qt.callLater`) and re-checked through
   `SidebarHierarchyInteractionController.shouldSuppressActivation()` before it can select the folder or emit
   `hierarchyItemActivated(...)`.

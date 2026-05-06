@@ -41,9 +41,9 @@ Editor-facing QML view components for the center content surface.
   `sourceText` bindings.
 - The center document slot owns a vertical `Flickable` viewport around `ContentsStructuredDocumentFlow.qml`; long note
   bodies scroll inside that viewport. The viewport may be reset only for actual note identity changes requested by
-  `ContentsEditorDisplayBackend`; typing and same-note projection refreshes preserve the current `contentY`. The
-  scrollable document content also keeps the legacy `LV.Theme.gap16` bottom inset so the final body line is not pinned
-  to the viewport edge.
+  `ContentsEditorDisplayBackend`; typing and same-note projection refreshes preserve the current `contentY`. The inline
+  editor also restores the legacy `LV.Theme.gap16` bottom inset by adding it to the reported scrollable content height
+  after the measured rendered body height, so the final body line is not pinned to the viewport edge.
 - The gutter row list is driven by `ContentsStructuredDocumentFlow.editorLogicalGutterRows`, which is resolved by the
   C++ `ContentsLineNumberRailMetrics` object mounted inside `ContentsInlineFormatEditor.qml`. The metrics object
   receives measured row-geometry snapshots from `ContentsEditorGeometryProvider` instead of direct TextEdit, cursor,
@@ -85,7 +85,9 @@ Editor-facing QML view components for the center content surface.
   selection on `LV.TextEditor`; this keeps sub-word selection precise even when hidden source tags or RichText document
   positions would otherwise distort the coordinate space. That
   visible-to-RAW selection policy is implemented by C++ `ContentsWysiwygEditorPolicy`; QML only applies the returned
-  range to the live `LV.TextEditor`. Collapsed
+  range to the live `LV.TextEditor`. If the pointer lands inside a measured atomic resource frame, the bridge snaps to
+  that resource's single U+FFFC logical placeholder and selects the resource tag as one block instead of asking
+  `positionAt(...)` for fake internal text positions. Collapsed
   mouse clicks use the same bridge for cursor placement by restoring the live `LV.TextEditor` cursor/selection
   directly. The rendered overlay does not mount a second projected cursor object; the visible caret is the native
   editor cursor that receives typing and Backspace. Non-empty drag selections keep the native selection model
@@ -123,7 +125,9 @@ objects.
   selection이나 resource selection rect를 칠하지 않는다.
 - cursor: RichText overlay가 보이는 동안에도 typing/Backspace를 받는 native `LV.TextEditor` cursor delegate 하나만
   보인다. 별도 projected cursor 객체는 두지 않는다.
-- top inset: 본문 편집기와 overlay의 상단 inset/padding은 0으로 유지하여 첫 줄이 문서 슬롯 상단에 붙는다.
+- vertical inset: 본문 편집기와 overlay의 상단 inset/padding은 0으로 유지하여 첫 줄이 문서 슬롯 상단에 붙는다.
+  하단은 기존 editor body breathing-room 계약대로 측정된 본문 높이 뒤에 `LV.Theme.gap16`을 더해 scrollable
+  content extent에 포함한다.
 - chrome padding: `ContentViewLayout.qml`의 editor chrome HStack은 상하 `LV.Theme.gap8` inset을 적용한다. 이
   padding은 거터, 본문 editor viewport, 미니맵 전체에 공통으로 적용되며, inline editor 내부 inset과는 분리된다.
 - gutter: 거터는 본문과 같은 `Flickable` 콘텐츠 안에 배치하며, 전체 문서의 논리 줄마다 번호 하나를 표시한다.
@@ -141,8 +145,8 @@ objects.
 - minimap drag: 미니맵은 별도 스크롤바 chrome 없이 세로 드래그 pixel delta를 그대로 내보내고, `ContentViewLayout.qml`이 같은 delta를 본문 `Flickable.contentY`에 더한다.
 - scrolling: 본문 중앙 슬롯은 `Flickable` viewport를 소유하며 긴 노트 본문은 이 viewport 안에서 세로 스크롤된다.
   실제 노트 id/path가 바뀌는 경우에만 backend reset 신호로 최상단 이동이 허용되며, 타이핑과 같은 노트의 projection
-  refresh/reconcile은 현재 `contentY`를 보존해야 한다. scrollable document content는 `LV.Theme.gap16` 하단 inset을
-  포함해 마지막 본문 줄이 viewport 하단 chrome에 붙지 않게 한다.
+  refresh/reconcile은 현재 `contentY`를 보존해야 한다. scrollable content height는 inline editor가 보고하는
+  `displayContentHeight`를 따른다. 이 값은 top inset 없이 `displayTextContentHeight + LV.Theme.gap16`이다.
 - pointer: 렌더 overlay가 꺼져 있으면 `LV.TextEditor`의 OS/Qt 선택 경로를 그대로 사용한다. 렌더 overlay가
   보이면 숨겨진 RAW 태그와 RichText document position이 좌표계를 왜곡할 수 있으므로, 마우스 드래그 좌표를
   `displayGeometryText`와 1:1인 plain-text geometry probe로 읽고 C++ `ContentsWysiwygEditorPolicy`와

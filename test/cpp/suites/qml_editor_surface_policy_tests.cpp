@@ -70,6 +70,9 @@ void WhatSonCppRegressionTests::qmlHierarchyExpansion_preservesUserControlledSta
     QVERIFY(sidebarSource.contains(QStringLiteral("hierarchy.contextMenu.expandAll")));
     QVERIFY(sidebarSource.contains(QStringLiteral("hierarchy.contextMenu.collapseAll")));
     QVERIFY(sidebarSource.contains(QStringLiteral("function requestHierarchyChevronExpansionAtPosition(x, y, expectedKey)")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("function hierarchyItemChevronContainsPoint(item, targetX, targetY)")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("function hierarchyItemChevronSlot(item)")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("child.objectName === \"hierarchyItemChevron\"")));
     QVERIFY(sidebarSource.contains(QStringLiteral("hierarchyInteractionController.requestChevronExpansion(target.index, target.key, currentExpanded, expectedKey)")));
     QVERIFY(sidebarSource.contains(QStringLiteral("if (result && result.committed && target.item.expanded !== undefined)")));
     QVERIFY(sidebarSource.contains(QStringLiteral("const nextExpanded = !currentExpanded;")));
@@ -79,6 +82,8 @@ void WhatSonCppRegressionTests::qmlHierarchyExpansion_preservesUserControlledSta
     QVERIFY(!sidebarSource.contains(QStringLiteral("function rememberHierarchyExpansionState")));
     QVERIFY(!sidebarSource.contains(QStringLiteral("function hierarchyExpansionStateForKey")));
     QVERIFY(interactionControllerSource.contains(QStringLiteral("QVariantMap SidebarHierarchyInteractionController::commitExpansionChange")));
+    QVERIFY(interactionControllerSource.contains(QStringLiteral("if (!stateKnown)")));
+    QVERIFY(interactionControllerSource.contains(QStringLiteral("return commitExpansionChange(resolvedIndex, expansionKey, expanded, !expanded);")));
     QVERIFY(interactionControllerSource.contains(QStringLiteral("\"setItemExpanded\"")));
     QVERIFY(interactionControllerSource.contains(QStringLiteral("m_expansionStateByKey")));
     QVERIFY(interactionControllerSource.contains(QStringLiteral("invokeBridgeBoolMethod(\"setAllItemsExpanded\", expanded)")));
@@ -171,7 +176,6 @@ void WhatSonCppRegressionTests::qmlStructuredEditors_mountsEditorAndMinimapInDis
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("LV.HStack {")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("objectName: \"contentsDisplayEditorChromeHStack\"")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("readonly property int contentVerticalPadding: LV.Theme.gap8")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("readonly property int editorDocumentBottomInset: LV.Theme.gap16")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("anchors.bottomMargin: contentsEditorSurface.contentVerticalPadding")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("anchors.topMargin: contentsEditorSurface.contentVerticalPadding")));
     QVERIFY(displayBackendHeader.contains(QStringLiteral("ContentsMinimapLayoutMetrics")));
@@ -180,8 +184,8 @@ void WhatSonCppRegressionTests::qmlStructuredEditors_mountsEditorAndMinimapInDis
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("objectName: \"contentsDisplayEditorDocumentViewport\"")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("contentHeight: editorDocumentContent.height")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("id: editorDocumentContent")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("structuredDocumentFlow.editorContentHeight")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("+ contentsEditorSurface.editorDocumentBottomInset")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("height: Math.max(editorDocumentViewport.height, structuredDocumentFlow.editorContentHeight)")));
+    QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("editorDocumentBottomInset")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("interactive: !structuredDocumentFlow.editorRenderedOverlayVisible && contentHeight > height")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("function editorViewportScrollRange()")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("function scrollEditorViewportByDelta(deltaY)")));
@@ -411,11 +415,18 @@ void WhatSonCppRegressionTests::qmlStructuredEditors_mapsBottomMarginToTerminalB
     QVERIFY(displayBackendSource.contains(QStringLiteral("m_editorSession.editorText().size()")));
     QVERIFY(documentFlowSource.contains(QStringLiteral("function pointRequestsTerminalBodyClick")));
     QVERIFY(documentFlowSource.contains(QStringLiteral("function focusTerminalBodyFromPoint")));
+    QVERIFY(documentFlowSource.contains(QStringLiteral("Number(editor.displayBodyHeight)")));
     QVERIFY(documentFlowSource.contains(QStringLiteral("MouseArea {")));
     QVERIFY(documentFlowSource.contains(QStringLiteral("propagateComposedEvents: true")));
     QVERIFY(documentFlowSource.contains(QStringLiteral("height: Math.max(0, documentFlow.height - y)")));
     QVERIFY(documentFlowSource.contains(QStringLiteral("terminalBodyClickSurface.y + mouse.y")));
     QVERIFY(documentFlowSource.contains(QStringLiteral("editor.focusTerminalBodyPosition()")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("property real editorBottomInset: LV.Theme.gap16")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("readonly property real displayTextContentHeight")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("+ control.editorBottomInset")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("readonly property real displayBodyHeight: Math.max(0, control.displayTextContentHeight)")));
+    QVERIFY(!inlineEditorSource.contains(QStringLiteral("bottomPadding: control.editorBottomInset")));
+    QVERIFY(!inlineEditorSource.contains(QStringLiteral("property: \"bottomPadding\"")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("function focusTerminalBodyPosition()")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("control.setCursorPositionPreservingNativeInput(textInput.length)")));
 }

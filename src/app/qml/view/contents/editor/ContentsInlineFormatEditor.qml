@@ -14,10 +14,14 @@ Item {
     property alias cursorPosition: textInput.cursorPosition
     property alias logicalCursorPosition: textInput.cursorPosition
     property var coordinateMapper: null
+    property real editorBottomInset: LV.Theme.gap16
     property string displayGeometryText: control.text
-    readonly property real displayContentHeight: control.renderedOverlayVisible
+    readonly property real displayTextContentHeight: control.renderedOverlayVisible
             ? renderedOverlay.contentHeight
             : textInput.contentHeight
+    readonly property real displayContentHeight: control.displayTextContentHeight
+            + control.editorBottomInset
+    readonly property real displayBodyHeight: Math.max(0, control.displayTextContentHeight)
     readonly property var editorItem: textInput.editorItem
     property bool focused: textInput.focused
     readonly property var inputItem: textInput.editorItem
@@ -314,6 +318,62 @@ Item {
         return wysiwygEditorPolicy.resourceLogicalRangeForBlock(block, control.coordinateMapper);
     }
 
+    function finiteNumber(value, fallback) {
+        const number = Number(value);
+        return isFinite(number) ? number : fallback;
+    }
+
+    function atomicResourceHitAtPoint(localX, localY) {
+        const x = control.finiteNumber(localX, 0);
+        const y = control.finiteNumber(localY, 0);
+        const ranges = lineNumberRailMetrics.logicalLineRanges || [];
+        const rows = editorGeometryProvider.lineNumberGeometryRows || [];
+        const count = Math.min(ranges.length || 0, rows.length || 0);
+        for (let index = 0; index < count; ++index) {
+            const range = ranges[index] || {};
+            if (range.resourceRange !== true)
+                continue;
+            const row = rows[index] || {};
+            const rowX = control.finiteNumber(row.x, 0);
+            const rowY = control.finiteNumber(row.y, 0);
+            const rowWidth = Math.max(1, control.finiteNumber(row.width, control.width));
+            const rowHeight = Math.max(
+                        1,
+                        control.finiteNumber(row.height, LV.Theme.textBodyLineHeight));
+            if (x < rowX || x > rowX + rowWidth || y < rowY || y > rowY + rowHeight)
+                continue;
+            const start = control.boundedCursorPosition(
+                        range.logicalStart !== undefined ? range.logicalStart : 0,
+                        renderedGeometryProbe.length);
+            const end = Math.max(
+                        start,
+                        control.boundedCursorPosition(
+                            range.logicalEnd !== undefined ? range.logicalEnd : start,
+                            renderedGeometryProbe.length));
+            return {
+                "hit": end > start,
+                "start": start,
+                "end": end
+            };
+        }
+        return {
+            "hit": false,
+            "start": 0,
+            "end": 0
+        };
+    }
+
+    function visibleLogicalSelectionEndpointAtPoint(localX, localY, anchorLogicalOffset) {
+        const resourceHit = control.atomicResourceHitAtPoint(localX, localY);
+        if (resourceHit.hit === true) {
+            const anchor = control.boundedCursorPosition(
+                        anchorLogicalOffset,
+                        renderedGeometryProbe.length);
+            return anchor <= resourceHit.start ? resourceHit.end : resourceHit.start;
+        }
+        return control.visibleLogicalOffsetAtPoint(localX, localY);
+    }
+
     function visibleLogicalOffsetAtPoint(localX, localY) {
         const geometryItem = control.displayGeometryItem();
         const mappedPoint = control.mapToItem(
@@ -474,8 +534,19 @@ Item {
         if (!control.renderedOverlayVisible || control.nativeCompositionActive())
             return false;
         control.forceActiveFocus();
-        const logicalOffset = control.visibleLogicalOffsetAtPoint(localX, localY);
         const clickCount = control.updateVisiblePointerClickSequence(localX, localY);
+        const resourceHit = control.atomicResourceHitAtPoint(localX, localY);
+        if (resourceHit.hit === true) {
+            control.visiblePointerSelectionAnchorLogicalOffset = resourceHit.start;
+            control.visiblePointerSelectionActive = true;
+            if (clickCount >= 2)
+                control.resetVisiblePointerClickSequence();
+            return control.restoreVisibleLogicalSelectionSpan(
+                        resourceHit.start,
+                        resourceHit.end,
+                        resourceHit.end);
+        }
+        const logicalOffset = control.visibleLogicalOffsetAtPoint(localX, localY);
         if (clickCount >= 3) {
             control.visiblePointerSelectionActive = false;
             control.resetVisiblePointerClickSequence();
@@ -496,7 +567,10 @@ Item {
     function updateVisiblePointerSelection(localX, localY) {
         if (!control.visiblePointerSelectionActive)
             return false;
-        const logicalOffset = control.visibleLogicalOffsetAtPoint(localX, localY);
+        const logicalOffset = control.visibleLogicalSelectionEndpointAtPoint(
+                    localX,
+                    localY,
+                    control.visiblePointerSelectionAnchorLogicalOffset);
         const restored = control.restoreVisibleLogicalSelectionRange(
                     control.visiblePointerSelectionAnchorLogicalOffset,
                     logicalOffset);
@@ -1071,5 +1145,11 @@ Item {
         onSelectionStartChanged: {
             control.scheduleRenderedOverlaySelectionRefresh();
         }
+    }
+
+    Binding {
+        property: "topPadding"
+        target: textInput.editorItem
+        value: LV.Theme.gapNone
     }
 }

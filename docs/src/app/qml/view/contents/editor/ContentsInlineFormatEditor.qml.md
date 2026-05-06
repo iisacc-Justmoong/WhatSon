@@ -65,11 +65,14 @@ Wraps the live `LV.TextEditor` used by the note document surface.
   content bounds before calling `positionAt(...)`. Clicks and drags that land in the vertical slack around a line
   therefore resolve to that visible line, while clicks far below the rendered body still resolve to the terminal body
   position.
-- The editor body is top-flush: `LV.TextEditor` vertical inset and rendered-overlay padding stay at zero.
+- The editor body is top-flush while retaining the legacy bottom breathing room: `LV.TextEditor.editorItem.topPadding`
+  and rendered-overlay top padding stay at zero, while `displayContentHeight` explicitly adds `LV.Theme.gap16` after
+  the measured body text height.
 - Keeps a disabled, transparent plain `TextEdit` geometry probe in sync with the logical display text for pointer hit
   testing and visible-logical selection mapping.
-- Reports `displayContentHeight` from the actual RichText overlay while rendered output is visible so the scrollable
-  editor viewport follows the rendered body height.
+- Reports `displayTextContentHeight` from the actual RichText overlay while rendered output is visible, then reports
+  `displayContentHeight` as that body height plus the restored bottom inset. `displayBodyHeight` stays equal to the
+  measured text body so terminal hit testing does not treat the bottom breathing room as rendered text.
 - Mounts `ContentsEditorGeometryProvider` as the only view-owned geometry adapter for chrome measurements. The adapter
   receives TextEdit/resource items, measures visible line rows and logical-line row rectangles, then publishes value
   snapshots.
@@ -81,6 +84,9 @@ Wraps the live `LV.TextEditor` used by the note document surface.
   whose height covers all wrapped visual rows, while resource frames contribute one row with one gutter-line height.
   Row y values are produced by C++ and validated there so later line numbers cannot collapse onto the first line's y
   position. The metrics object never receives TextEdit, cursor, selection, or resource overlay objects directly.
+- Pointer selection checks measured resource rows before falling back to plain-text `positionAt(...)`. A hit inside an
+  image/resource frame selects the single U+FFFC logical placeholder for that resource block, so the frame cannot behave
+  like it contains selectable virtual text lines.
 - The rendered overlay stays pinned during composition and ordinary native typing so active edits cannot expose plain
   logical text or RAW-shaped resource placeholders while the renderer catches up.
 - `textEdited(text)` reports plain RAW text upward.

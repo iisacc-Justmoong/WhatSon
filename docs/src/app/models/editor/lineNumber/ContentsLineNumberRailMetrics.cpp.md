@@ -15,8 +15,9 @@ Implements logical line-number rail row construction outside QML.
   final gutter rows. This keeps actual view-object measurement outside the row-building policy.
 - Publishes each measured row independently. If a measured snapshot is unavailable, the model uses that row's line number
   as a simple line-height fallback; it does not use the previous row bottom to shift later gutter rows.
-- Resource blocks remain one logical row and one gutter-line height. The measured frame height can place following rows
-  through their own y snapshots, but it must not turn the resource block into a multi-line gutter allocation.
+- Resource blocks remain one logical row and one gutter-line height. The logical text bridge exposes each resource as
+  one U+FFFC placeholder, and measured frame height can place following rows through their own y snapshots, but it must
+  not turn the resource block into a multi-line gutter allocation.
 
 ## 한국어
 
