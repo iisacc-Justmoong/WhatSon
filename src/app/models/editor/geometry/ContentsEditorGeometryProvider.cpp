@@ -500,6 +500,35 @@ QVariantList ContentsEditorGeometryProvider::lineNumberGeometryRows() const
     return rows;
 }
 
+qreal ContentsEditorGeometryProvider::logicalGeometryYForVisualY(const qreal visualY) const
+{
+    qreal y = finiteOrFallback(visualY, 0.0);
+    const QVariantList rows = lineNumberGeometryRows();
+    const qreal placeholderHeight = std::max<qreal>(1.0, m_fallbackLineHeight);
+    for (int index = 0; index < rows.size(); ++index)
+    {
+        const QVariantMap range = index < m_lineNumberRanges.size()
+            ? m_lineNumberRanges.at(index).toMap()
+            : QVariantMap();
+        if (!range.value(QStringLiteral("resourceRange"), false).toBool())
+        {
+            continue;
+        }
+
+        const QVariantMap row = rows.at(index).toMap();
+        const qreal rowY = finiteOrFallback(row.value(QStringLiteral("y")).toDouble(), 0.0);
+        const qreal rowHeight = std::max(
+            placeholderHeight,
+            finiteOrFallback(row.value(QStringLiteral("height")).toDouble(), placeholderHeight));
+        if (y <= rowY + rowHeight)
+        {
+            break;
+        }
+        y -= std::max<qreal>(0.0, rowHeight - placeholderHeight);
+    }
+    return y;
+}
+
 ContentsEditorGeometryMeasurement ContentsEditorGeometryProvider::measureTextRange(
     const int logicalStart,
     const int logicalEnd,

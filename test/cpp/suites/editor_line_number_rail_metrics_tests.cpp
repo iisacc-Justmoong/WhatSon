@@ -484,6 +484,53 @@ void WhatSonCppRegressionTests::contentsEditorGeometryProvider_usesExplicitResou
     QCOMPARE(rows.at(2).toMap().value(QStringLiteral("y")).toDouble(), 54.0);
 }
 
+void WhatSonCppRegressionTests::contentsEditorGeometryProvider_mapsVisualYThroughResourceDelta()
+{
+    QQmlEngine engine;
+    const std::unique_ptr<QObject> textGeometry = createGeometryProbe(
+        engine,
+        11,
+        0.0,
+        QVariantMap{
+            {QStringLiteral("0"), QRectF(0.0, 0.0, 120.0, 18.0)},
+            {QStringLiteral("1"), QRectF(0.0, 0.0, 120.0, 18.0)},
+            {QStringLiteral("2"), QRectF(0.0, 18.0, 120.0, 18.0)},
+            {QStringLiteral("6"), QRectF(0.0, 18.0, 120.0, 18.0)},
+            {QStringLiteral("7"), QRectF(0.0, 36.0, 120.0, 18.0)},
+            {QStringLiteral("10"), QRectF(0.0, 36.0, 120.0, 18.0)},
+        });
+    QVERIFY(textGeometry != nullptr);
+
+    ContentsEditorGeometryProvider provider;
+    provider.setFallbackLineHeight(18.0);
+    provider.setFallbackWidth(320.0);
+    provider.setLogicalLength(11);
+    provider.setResourceVisualBlocks(QVariantList{96.0});
+    provider.setTextItem(textGeometry.get());
+    provider.setLineNumberRanges(QVariantList{
+        QVariantMap{
+            {QStringLiteral("logicalEnd"), 1},
+            {QStringLiteral("logicalStart"), 0},
+            {QStringLiteral("resourceRange"), true},
+        },
+        QVariantMap{
+            {QStringLiteral("logicalEnd"), 6},
+            {QStringLiteral("logicalStart"), 2},
+            {QStringLiteral("resourceRange"), false},
+        },
+        QVariantMap{
+            {QStringLiteral("logicalEnd"), 11},
+            {QStringLiteral("logicalStart"), 7},
+            {QStringLiteral("resourceRange"), false},
+        },
+    });
+
+    QCOMPARE(provider.lineNumberGeometryRows().at(1).toMap().value(QStringLiteral("y")).toDouble(), 96.0);
+    QCOMPARE(provider.logicalGeometryYForVisualY(12.0), 12.0);
+    QCOMPARE(provider.logicalGeometryYForVisualY(96.0), 96.0);
+    QCOMPARE(provider.logicalGeometryYForVisualY(114.0), 36.0);
+}
+
 void WhatSonCppRegressionTests::contentsEditorGeometryProvider_anchorsRowsAfterResourceToFrameBottom()
 {
     QQmlEngine engine;

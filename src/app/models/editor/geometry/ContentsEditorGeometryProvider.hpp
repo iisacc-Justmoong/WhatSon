@@ -62,6 +62,7 @@ public:
     int visualLineCount() const;
     QVariantList visualLineWidthRatios() const;
     QVariantList lineNumberGeometryRows() const;
+    Q_INVOKABLE qreal logicalGeometryYForVisualY(qreal visualY) const;
 
     ContentsEditorGeometryMeasurement measureTextRange(
         int logicalStart,

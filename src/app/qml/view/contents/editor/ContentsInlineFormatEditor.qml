@@ -449,22 +449,6 @@ Item {
         return visualRows;
     }
 
-    function visualYToLogicalGeometryY(localY) {
-        let y = control.finiteNumber(localY, 0);
-        const rows = control.resourceVisualLayoutRows();
-        const placeholderHeight = Math.max(1, Number(LV.Theme.textBodyLineHeight) || 1);
-        for (let index = 0; index < (rows.length || 0); ++index) {
-            const row = rows[index] || {};
-            const rowY = control.finiteNumber(row.y, 0);
-            const rowHeight = Math.max(placeholderHeight, control.finiteNumber(row.height, placeholderHeight));
-            const rowBottom = rowY + rowHeight;
-            if (y <= rowBottom)
-                break;
-            y -= Math.max(0, rowHeight - placeholderHeight);
-        }
-        return y;
-    }
-
     function atomicResourceHitAtPoint(localX, localY) {
         const x = control.finiteNumber(localX, 0);
         const y = control.finiteNumber(localY, 0);
@@ -519,7 +503,8 @@ Item {
         const geometryHeight = Math.max(
                     1,
                     Number(geometryItem.contentHeight) || Number(geometryItem.height) || LV.Theme.textBodyLineHeight);
-        const mappedY = control.visualYToLogicalGeometryY(Number(mappedPoint.y) || 0);
+        const mappedY = editorGeometryProvider.logicalGeometryYForVisualY(
+                    Number(mappedPoint.y) || 0);
         const terminalBlankThreshold = geometryHeight + Math.max(1, Number(LV.Theme.textBodyLineHeight) || 1);
         if (mappedY > terminalBlankThreshold)
             return control.boundedCursorPosition(geometryItem.length, geometryItem.length);

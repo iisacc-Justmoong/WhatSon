@@ -130,18 +130,7 @@ namespace
         return QSize(frameWidth, frameHeight);
     }
 
-    bool htmlFragmentOwnsBlockFlow(const QString& htmlFragment)
-    {
-        const QString trimmedFragment = htmlFragment.trimmed();
-        return trimmedFragment.startsWith(QStringLiteral("<div"))
-            || trimmedFragment.startsWith(QStringLiteral("<hr"))
-            || trimmedFragment.startsWith(QStringLiteral("<p"))
-            || trimmedFragment.startsWith(QStringLiteral("<table"))
-            || trimmedFragment.startsWith(QStringLiteral("<ul"))
-            || trimmedFragment.startsWith(QStringLiteral("<ol"))
-            || trimmedFragment.startsWith(QStringLiteral("<blockquote"))
-            || trimmedFragment.startsWith(QStringLiteral("<pre"));
-    }
+    constexpr qreal kResourceFlowSpacerLineHeightCompensation = 2.0;
 
     qreal resourceVisualHeightFromBlock(const QVariant& value)
     {
@@ -155,6 +144,16 @@ namespace
             height = block.value(QStringLiteral("visualHeight")).toReal(&ok);
         }
         return ok && std::isfinite(height) && height > 0.0 ? height : 0.0;
+    }
+
+    int resourceFlowSpacerLineHeight(const qreal visualHeight)
+    {
+        const qreal safeVisualHeight = std::isfinite(visualHeight) && visualHeight > 0.0
+            ? visualHeight
+            : 1.0;
+        return std::max(
+            1,
+            static_cast<int>(std::lround(safeVisualHeight + kResourceFlowSpacerLineHeightCompensation)));
     }
 
     QString frameCacheFilePath(
@@ -412,7 +411,7 @@ QString ContentsInlineResourcePresentationController::editorSurfaceHtmlWithResou
                 continue;
             }
 
-            const int lineHeight = std::max(1, static_cast<int>(std::lround(visualHeight + 2.0)));
+            const int lineHeight = resourceFlowSpacerLineHeight(visualHeight);
             html.append(QStringLiteral(
                             "<p style=\"margin-top:0px;margin-bottom:0px;line-height:%1px;"
                             "font-size:1px;color:transparent;\">&nbsp;</p>")
@@ -421,9 +420,7 @@ QString ContentsInlineResourcePresentationController::editorSurfaceHtmlWithResou
         }
 
         const QString fragment = token.value(QStringLiteral("html")).toString();
-        const bool ownsBlockFlow =
-            token.value(QStringLiteral("ownsBlockFlow")).toBool()
-            || htmlFragmentOwnsBlockFlow(fragment);
+        const bool ownsBlockFlow = token.value(QStringLiteral("ownsBlockFlow")).toBool();
         if (ownsBlockFlow)
         {
             html.append(fragment);

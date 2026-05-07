@@ -288,7 +288,8 @@ void WhatSonCppRegressionTests::qmlInlineFormatEditor_projectsVisibleGeometryFro
     QVERIFY(inlineEditorSource.contains(QStringLiteral("property var resourceVisualBlocks: []")));
     QVERIFY(!inlineEditorSource.contains(QStringLiteral("function renderedTextWithResourceVisualSpacers()")));
     QVERIFY(!inlineEditorSource.contains(QStringLiteral("function resourceVisualSpacerHtml(resourceIndex)")));
-    QVERIFY(inlineEditorSource.contains(QStringLiteral("function visualYToLogicalGeometryY(localY)")));
+    QVERIFY(!inlineEditorSource.contains(QStringLiteral("function visualYToLogicalGeometryY(localY)")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("editorGeometryProvider.logicalGeometryYForVisualY(")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("function resourceVisualLayoutRows()")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("objectName: \"contentsInlineFormatResourceVisualBlock\"")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("ContentsEditorVisualLineMetrics {")));
@@ -339,6 +340,7 @@ void WhatSonCppRegressionTests::qmlInlineFormatEditor_projectsVisibleGeometryFro
     QVERIFY(documentFlowSource.contains(QStringLiteral("property string lastReadyEditorSurfaceHtml: \"\"")));
     QVERIFY(documentFlowSource.contains(QStringLiteral("property var documentBlocks: []")));
     QVERIFY(documentFlowSource.contains(QStringLiteral("property var resourceVisualBlocks: []")));
+    QVERIFY(!documentFlowSource.contains(QStringLiteral("property var htmlTokens")));
     QVERIFY(documentFlowSource.contains(QStringLiteral("readonly property string resolvedEditorSurfaceHtml")));
     QVERIFY(documentFlowSource.contains(QStringLiteral("readonly property string resolvedDisplayGeometryText")));
     QVERIFY(documentFlowSource.contains(QStringLiteral("function refreshLastReadyProjection()")));

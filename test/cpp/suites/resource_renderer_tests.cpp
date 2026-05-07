@@ -122,6 +122,29 @@ void WhatSonCppRegressionTests::resourceRenderer_resolvesIiXmlResourceTagsAndStr
     QVERIFY(flowHtml.contains(QStringLiteral("line-height:262px")));
     QVERIFY(flowHtml.contains(QStringLiteral("font-size:1px;color:transparent")));
     QVERIFY(flowHtml.contains(QStringLiteral(">After</p>")));
+    const QString tokenOwnedBlockHtml = inlinePresentation.editorSurfaceHtmlWithResourceVisualBlocks(
+        QVariantList{
+            QVariantMap{
+                {QStringLiteral("html"), QStringLiteral("<div>Token owned</div>")},
+                {QStringLiteral("ownsBlockFlow"), true},
+                {QStringLiteral("renderDelegateType"), QStringLiteral("text")},
+            },
+        },
+        QVariantList{},
+        QString());
+    QCOMPARE(tokenOwnedBlockHtml, QStringLiteral("<div>Token owned</div>"));
+    const QString tokenInlineHtml = inlinePresentation.editorSurfaceHtmlWithResourceVisualBlocks(
+        QVariantList{
+            QVariantMap{
+                {QStringLiteral("html"), QStringLiteral("<div>Token inline</div>")},
+                {QStringLiteral("ownsBlockFlow"), false},
+                {QStringLiteral("renderDelegateType"), QStringLiteral("text")},
+            },
+        },
+        QVariantList{},
+        QString());
+    QVERIFY(tokenInlineHtml.startsWith(QStringLiteral("<p")));
+    QVERIFY(tokenInlineHtml.contains(QStringLiteral("<div>Token inline</div>")));
 
     const QString fullWidthInlineHtml =
         inlinePresentation.renderEditorSurfaceHtmlWithInlineResources(

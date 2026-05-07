@@ -8,7 +8,7 @@ Hosts the note document surface after `ContentsEditorDisplayBackend` has mounted
 
 - Receives RAW `sourceText` from `ContentsEditorSessionController`.
 - Receives parser-owned `documentBlocks`, unresolved `editorSurfaceHtml`, `resourceVisualBlocks`, `logicalText`,
-  `projectionSourceText`, `htmlTokens`, and `normalizedHtmlBlocks` from the backend-bound note editor chrome in
+  `projectionSourceText`, and `normalizedHtmlBlocks` from the backend-bound note editor chrome in
   `ContentViewLayout.qml`.
 - Mounts `ContentsInlineFormatEditor.qml` as the live `LV.TextEditor` path. The inline editor receives RAW
   `sourceText`, but in rendered mode its native text surface edits the visible logical projection and reports mapped
@@ -28,7 +28,7 @@ Hosts the note document surface after `ContentsEditorDisplayBackend` has mounted
   mapping; the view layer does not receive the raw logical/source offset table.
 - Passes parser-owned `documentBlocks` and resolved `resourceVisualBlocks` through to the inline editor so resource
   selection and geometry use explicit atomic visual blocks. The `editorSurfaceHtml` it receives from
-  `ContentViewLayout.qml` is already flow-corrected from renderer `htmlTokens` and `resourceVisualBlocks` by the C++
+  `ContentViewLayout.qml` is already flow-corrected from renderer tokens and `resourceVisualBlocks` by the C++
   display backend. Renderer-owned `normalizedHtmlBlocks` remain compatibility metadata for HTML projection spans.
 - Keeps the inline editor as the only place where the RichText editor-surface overlay is painted.
 - Emits `sourceTextEdited(text)` upward when the user changes the RAW text buffer.
@@ -62,8 +62,8 @@ This file does not parse XML or infer HTML block boundaries. The pipeline is:
    atomic document slots.
 4. `ContentsEditorDisplayBackend` forwards parser-owned document blocks to `ContentsBodyResourceRenderer` and asks
    `ContentsInlineResourcePresentationController` for structured resource visual blocks.
-5. `ContentsStructuredDocumentFlow.qml` consumes the editor HTML string, resource visual blocks, parser document
-   blocks, and the projection source snapshot used to decide whether the logical display text belongs to the current
-   RAW source.
+5. `ContentsStructuredDocumentFlow.qml` consumes the flow-corrected editor HTML string, resource visual blocks,
+   parser document blocks, and the projection source snapshot used to decide whether the logical display text belongs
+   to the current RAW source.
 
 The QML host remains a view surface; RAW mutation and parsing authority stay in C++.

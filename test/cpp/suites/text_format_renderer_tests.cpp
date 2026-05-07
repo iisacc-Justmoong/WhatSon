@@ -142,7 +142,7 @@ void WhatSonCppRegressionTests::editorPresentationProjection_publishesHtmlBlockP
     QVERIFY(displayBackendHeader.contains(QStringLiteral("inlineResourceVisualBlocks(")));
     QVERIFY(displayBackendHeader.contains(QStringLiteral("editorSurfaceHtmlWithResourceVisualBlocks(")));
     QVERIFY(!displayBackendHeader.contains(QStringLiteral("inlineResourceVisualHeights(")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("htmlTokens: editorDisplayBackend.presentationProjection.htmlTokens")));
+    QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("htmlTokens: editorDisplayBackend.presentationProjection.htmlTokens")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("normalizedHtmlBlocks: editorDisplayBackend.presentationProjection.normalizedHtmlBlocks")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("editorCursorPosition: structuredDocumentFlow.editorCursorPosition")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("coordinateMapper: editorDisplayBackend.presentationProjection")));

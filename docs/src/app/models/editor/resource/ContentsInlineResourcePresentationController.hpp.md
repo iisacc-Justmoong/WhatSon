@@ -12,6 +12,7 @@ Declares the C++ inline resource presentation controller consumed by editor view
   directly and geometry reads their heights without parsing rendered HTML.
 - Exposes `editorSurfaceHtmlWithResourceVisualBlocks(...)` for the RichText overlay flow. The method keeps resource
   height ownership in C++ by turning resource tokens into transparent block-flow spacers, while the actual image frame
-  is still painted by the visual delegate.
+  is still painted by the visual delegate. Non-resource flow ownership comes from renderer token metadata rather than
+  HTML string re-parsing.
 - Keeps resource-entry normalization and frame-image generation in C++ instead of a QML helper.
 - Does not mutate editor source or resource import state.

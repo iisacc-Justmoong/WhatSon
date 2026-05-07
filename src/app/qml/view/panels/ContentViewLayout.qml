@@ -374,7 +374,6 @@ Item {
                                                        structuredDocumentFlow.resourceVisualBlocks,
                                                        editorDisplayBackend.presentationProjection.editorSurfaceHtml)
                                 height: editorDocumentContent.height
-                                htmlTokens: editorDisplayBackend.presentationProjection.htmlTokens
                                 logicalText: editorDisplayBackend.presentationProjection.logicalText
                                 normalizedHtmlBlocks: editorDisplayBackend.presentationProjection.normalizedHtmlBlocks
                                 objectName: "contentsDisplayStructuredDocumentFlow"

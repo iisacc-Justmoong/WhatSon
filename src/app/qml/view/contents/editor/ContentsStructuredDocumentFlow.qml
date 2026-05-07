@@ -7,7 +7,6 @@ import LVRS 1.0 as LV
 Item {
     id: documentFlow
 
-    property var htmlTokens: []
     property var normalizedHtmlBlocks: []
     property var documentBlocks: []
     property var coordinateMapper: null

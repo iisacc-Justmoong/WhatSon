@@ -12,7 +12,8 @@ Declares the QML-visible implementation of `IContentsEditorGeometryProvider`.
   surface changes.
 - Outputs: `lineNumberGeometryRows`, `visualLineCount`, and `visualLineWidthRatios` snapshots for independent chrome
   metrics.
-- Interface methods: low-level text range measurement.
+- Interface methods: low-level text range measurement plus `logicalGeometryYForVisualY(...)` for pointer hit testing
+  below structured resource frames.
   `lineNumberGeometryRows` measures ordinary rows from the plain logical text item and uses explicit resource visual
   heights as atomic resource-frame vertical deltas. Resource frame bottoms clamp later row tops so probe-internal
   placeholder rows cannot be published as gutter anchors inside the frame; consecutive clamped rows are still advanced
@@ -29,3 +30,4 @@ not know about logical row numbering, source mutation, cursor movement, or selec
 거터/미니맵 계산 객체에는 측정 snapshot 값만 전달된다. resource frame 높이는 structured visual block의 `height`를
 사용하고, resource frame 내부로 들어온 probe row top은 adapter에서 frame bottom으로 고정되며, 이어지는 row는
 이전 published row height 뒤로 배치된다.
+resource frame 아래의 rendered pointer y를 plain logical geometry y로 되돌리는 mapping도 이 adapter가 제공한다.

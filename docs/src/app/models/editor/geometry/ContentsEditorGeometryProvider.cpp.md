@@ -29,6 +29,9 @@ Implements the editor-surface geometry adapter behind `IContentsEditorGeometryPr
   rendered HTML string.
 - Probes the visible item with `positionAt(...)` and `positionToRectangle(...)` to produce minimap row-width ratios.
 - Converts logical line ranges into `lineNumberGeometryRows` value snapshots.
+- Provides `logicalGeometryYForVisualY(...)` so rendered-pointer hit testing can map a visual y-coordinate back into
+  the plain logical geometry probe after resource frame deltas have been applied. QML calls this adapter instead of
+  duplicating the resource-height subtraction policy.
 - Emits `geometryChanged()` whenever a bound view item, logical range list, or primitive measurement input changes.
 
 ## Non-Goals
@@ -48,4 +51,6 @@ line-height를 빼지 않고 frame height 전체를 advance로 쓴다. resource 
 프레임 밖으로 밀린 row 이후의 논리 줄은 각 row height만큼 다시 벌리므로, resource 뒤 텍스트 줄과 그 다음 빈 줄이
 같은 y에 겹치지 않는다.
 resource height를 얻지 못해도 전체 rendered `contentHeight`를 fallback으로 쓰지 않는다.
-커서와 selection에는 개입하지 않고, 거터 row 정책과 미니맵 row 정책도 각각의 metrics 객체에 남긴다.
+rendered pointer hit-test가 resource frame 아래의 prose를 클릭할 때도 같은 adapter의 `logicalGeometryYForVisualY(...)`를
+사용해 visual y를 plain logical probe y로 되돌린다. 커서와 selection 정책 자체에는 개입하지 않고, 거터 row 정책과
+미니맵 row 정책도 각각의 metrics 객체에 남긴다.

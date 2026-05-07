@@ -1223,6 +1223,7 @@ private slots:
     void contentsEditorGeometryProvider_keepsTextRowsOnLogicalGeometry();
     void contentsEditorGeometryProvider_ignoresWholeOverlayHeightWithoutResourceVisualBlocks();
     void contentsEditorGeometryProvider_usesExplicitResourceVisualBlocks();
+    void contentsEditorGeometryProvider_mapsVisualYThroughResourceDelta();
     void contentsEditorGeometryProvider_anchorsRowsAfterResourceToFrameBottom();
     void contentsEditorGeometryProvider_clampsProbeRowsInsideResourceFrame();
     void contentsEditorGeometryProvider_offsetsRowsAfterStructuredResourceFrames();

@@ -27,15 +27,16 @@ Editor-facing QML view components for the center content surface.
   `LV.Theme.gap8` top and bottom chrome padding.
 - `ContentViewLayout.qml` mounts `ContentsLineNumberRail.qml` inside the same scrollable document content item as
   `ContentsStructuredDocumentFlow.qml`, so gutter rows and editor body rows share one y-coordinate system.
-- `ContentsStructuredDocumentFlow.qml` consumes `documentBlocks`, `editorSurfaceHtml`, `resourceVisualBlocks`,
-  `logicalText`, `projectionSourceText`, `htmlTokens`, and `normalizedHtmlBlocks`, and passes projection-ready logical
+- `ContentsStructuredDocumentFlow.qml` consumes `documentBlocks`, flow-corrected `editorSurfaceHtml`,
+  `resourceVisualBlocks`, `logicalText`, `projectionSourceText`, and `normalizedHtmlBlocks`, and passes
+  projection-ready logical
   display text to the inline editor's geometry probe so pointer hit testing measures visible text instead of RichText
   HTML tag positions or RAW `.wsnbody` tag bytes. When the projection source snapshot temporarily lags behind the
   session
   source, the flow keeps the last ready logical text and editor-surface HTML instead of falling back to RAW source or
   plain logical text. The parser-owned `documentBlocks` stream and `resourceVisualBlocks` are forwarded so resource
   selection and geometry treat resources as atomic visual blocks without painting a second selection layer.
-  `ContentViewLayout.qml` asks the C++ display backend to combine `htmlTokens` and `resourceVisualBlocks` into a
+  `ContentViewLayout.qml` asks the C++ display backend to combine renderer `htmlTokens` and `resourceVisualBlocks` into a
   flow-corrected `editorSurfaceHtml`, so prose after an image frame is pushed to the same y-coordinate reported by the
   structured visual geometry before the inline editor paints it. Renderer
   `normalizedHtmlBlocks` stay as HTML projection compatibility metadata. It also binds explicit formatting and body-tag shortcuts to the C++ tag insertion

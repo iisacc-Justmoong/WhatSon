@@ -350,12 +350,13 @@ ctest --test-dir build --output-on-failure -L cpp_regression
   default-off `iiXml::*` debug chatter while preserving warnings and allowing `WHATSON_IIXML_TRACE_MODE=1` opt-in
   diagnosis.
 - Editor-host coverage now verifies that `ContentsEditorPresentationProjection` republishes `htmlTokens` and
-  `normalizedHtmlBlocks`, and that `ContentViewLayout.qml` forwards those backend-owned projection objects into
-  `ContentsStructuredDocumentFlow.qml` for final rendering.
+  `normalizedHtmlBlocks`, while `ContentViewLayout.qml` keeps `htmlTokens` at the display-backend resource-flow
+  boundary instead of forwarding them into `ContentsStructuredDocumentFlow.qml`.
 - Inline editor resource-frame coverage now verifies that production-like resource HTML stays frame-free while the C++
   display/resource presentation path uses `htmlTokens` plus `resourceVisualBlocks` to create a transparent RichText
   spacer. Text after an image resource must land on the same y-coordinate as the structured resource frame bottom and
-  matching gutter row.
+  matching gutter row. Pointer y remapping below that resource frame is also locked through
+  `ContentsEditorGeometryProvider.logicalGeometryYForVisualY(...)`, not a QML-only delta formula.
 
 ## 한국어
 
@@ -370,7 +371,8 @@ ctest --test-dir build --output-on-failure -L cpp_regression
   함께 검증한다.
 - 리소스 프레임 회귀는 본문 RichText HTML이 이미지 프레임을 직접 품지 않더라도 C++ display/resource
   presentation 경로가 `htmlTokens`와 `resourceVisualBlocks`로 투명 spacer를 만들어, 이미지 리소스 아래의
-  텍스트와 거터 row가 같은 y 좌표로 정렬되는지 확인한다.
+  텍스트와 거터 row가 같은 y 좌표로 정렬되는지 확인한다. resource 아래 pointer y 역매핑도 QML 수식이 아니라
+  `ContentsEditorGeometryProvider.logicalGeometryYForVisualY(...)`를 통해 검증한다.
 - editor renderer 회귀에는 RAW `<bold>` / `<italic>` 인라인 스타일 태그가 literal XML 문자열이 아니라
   RichText 스타일 span으로 투영되는지 확인하는 케이스가 포함된다.
 - 기준: 파일 경로, 명령, API 이름, 세부 변경 이력은 위 영어 본문을 원문 기준으로 유지한다.

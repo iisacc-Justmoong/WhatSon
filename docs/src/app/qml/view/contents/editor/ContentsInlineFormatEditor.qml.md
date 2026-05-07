@@ -97,8 +97,9 @@ Wraps the live `LV.TextEditor` used by the note document surface.
   A hit inside an image/resource frame selects the atomic resource boundary for that block, so the frame cannot behave
   like it contains selectable virtual text lines.
 - Pointer selection below a structured resource frame subtracts the resource visual-height delta before asking the
-  plain geometry probe for a logical text offset. This keeps clicks on prose below an image aligned with the text that
-  was shifted down by the transparent overlay spacer.
+  plain geometry probe for a logical text offset by calling
+  `ContentsEditorGeometryProvider.logicalGeometryYForVisualY(...)`. This keeps clicks on prose below an image aligned
+  with the text that was shifted down by the transparent overlay spacer while keeping the resource delta policy in C++.
 - Resource-frame gutter anchoring assumes the resource block contributes the generated frame image height reported by
   `resourceVisualBlocks`. The resource presentation controller emits visual block records for QML delegates; the
   geometry path no longer parses rendered HTML to find the frame height. The next gutter row is expected to land at
