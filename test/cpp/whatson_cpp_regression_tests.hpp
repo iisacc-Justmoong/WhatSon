@@ -1264,6 +1264,7 @@ private slots:
     void qmlInlineFormatEditor_reportsWrappedVisualLineCountForMinimap();
     void qmlInlineFormatEditor_placesLogicalGutterRowsAtIncreasingY();
     void qmlInlineFormatEditor_placesResourceGutterRowsAfterFrame();
+    void qmlInlineFormatEditor_separatesBlankGutterRowAfterResourceFrame();
     void qmlStructuredDocumentFlow_routesBottomBlankClickToBodyEnd();
     void qmlStructuredDocumentFlow_routesBodyClickToRenderedCursorPosition();
     void qmlStructuredDocumentFlow_preservesRenderedPointerDragSelectionInsideFlickable();

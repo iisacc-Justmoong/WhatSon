@@ -94,6 +94,9 @@ Wraps the live `LV.TextEditor` used by the note document surface.
 - Resource-frame gutter anchoring assumes the rendered resource paragraph contributes only the generated frame image
   height. The resource presentation controller therefore emits zero-line-height frame paragraphs and top-aligned images;
   the next gutter row is expected to land at `resourceRow.y + frameHeight`.
+- If the plain geometry probe reports the first text row after a resource frame and the following blank logical row at
+  the same y coordinate, the C++ geometry adapter separates those rows by their published line height before the rail
+  paints them.
 - Collapsed cursor placement also treats that U+FFFC placeholder as a non-text atomic block. If native cursor movement
   lands on the resource placeholder line, the C++ WYSIWYG policy moves it to the nearest prose boundary outside the
   frame, trying the opposite boundary when the preferred side is still inside the resource row; when no outside

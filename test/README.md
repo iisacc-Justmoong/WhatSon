@@ -104,7 +104,8 @@ ctest --test-dir build --output-on-failure -L cpp_regression
 - Inline resource HTML coverage now pins zero-line-height frame paragraphs with top-aligned frame images, and the QML
   gutter regression checks that the next row y matches `resourceRow.y + rendered frame height`. The C++ geometry
   regression also covers hidden TextEdit line boxes whose rectangle height differs from the next row's base-y advance
-  and probe rows whose measured top is still inside the rendered resource frame.
+  and probe rows whose measured top is still inside the rendered resource frame. A separate QML regression keeps the
+  blank gutter row after post-resource text from overlapping line 2.
 - Clipboard-image resource imports now also pin their synthesized asset-name policy in the C++ suite, so temporary
   placeholder names cannot regress back to a collision-prone fixed file name.
 - Structured QML editor checks now also pin the native input contract for every host: focused stale text echo is rejected,
@@ -238,7 +239,8 @@ ctest --test-dir build --output-on-failure -L cpp_regression
   logical y positions adjusted only by the rendered HTML resource image-height delta. The geometry provider ignores
   rendered overlay row coordinates for ordinary non-resource gutter rows, and refuses to use whole-document rendered
   `contentHeight` as a resource-row fallback. It also clamps probe rows reported inside an active resource frame to the
-  frame bottom, preventing placeholder/probe internals from becoming visible gutter anchors.
+  frame bottom, preventing placeholder/probe internals from becoming visible gutter anchors, then advances consecutive
+  clamped rows by their published height so later gutter numbers do not stack on line 2.
 - The shared inline-format editor now also pins the absence of pointer interception above the live `LV.TextEditor`,
   so mouse/touch selection, `Shift`-extended selection, and repeated Backspace/Delete remain OS/Qt-native. The same
   regression scans the QML source tree for forbidden input-method bridges and fallbacks, keeping IME query updates,

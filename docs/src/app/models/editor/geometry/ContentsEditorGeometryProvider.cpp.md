@@ -22,6 +22,9 @@ Implements the editor-surface geometry adapter behind `IContentsEditorGeometryPr
 - Once a resource row is resolved, its rendered frame bottom becomes an exclusion boundary for later gutter geometry.
   Any probe row whose measured top still falls inside that frame is clamped to the frame bottom instead of becoming an
   internal line-number anchor.
+- After a row is clamped out of a resource frame, following logical rows must still be spaced by their measured row
+  height. This prevents the first text row after a frame and a trailing blank logical row from sharing the same gutter
+  y coordinate when the plain probe reports the same rectangle for both offsets.
 - Inline resource HTML must keep the frame paragraph at zero line height and top-align the image, so that encoded image
   height is the same bottom anchor the RichText surface paints.
 - Probes the visible item with `positionAt(...)` and `positionToRectangle(...)` to produce minimap row-width ratios.
@@ -42,5 +45,7 @@ logical display geometry로 측정하고, rendered HTML의 resource image height
 계산하므로 resource 뒤 첫 row가 frame bottom에 붙는다. 다음 row base y가 아직 0으로만 측정되면 placeholder
 line-height를 빼지 않고 frame height 전체를 advance로 쓴다. resource frame bottom은 이후 row의 최소 y로도
 고정되므로 probe가 프레임 내부 placeholder row를 반환해도 그 row는 내부 line-number anchor가 되지 않는다.
+프레임 밖으로 밀린 row 이후의 논리 줄은 각 row height만큼 다시 벌리므로, resource 뒤 텍스트 줄과 그 다음 빈 줄이
+같은 y에 겹치지 않는다.
 resource height를 얻지 못해도 전체 rendered `contentHeight`를 fallback으로 쓰지 않는다.
 커서와 selection에는 개입하지 않고, 거터 row 정책과 미니맵 row 정책도 각각의 metrics 객체에 남긴다.

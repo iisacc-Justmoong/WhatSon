@@ -484,12 +484,12 @@ QVariantList ContentsEditorGeometryProvider::lineNumberGeometryRows() const
     QVariantList rows;
     rows.reserve(m_lineNumberRanges.size());
     qreal accumulatedResourceDelta = 0.0;
-    qreal minimumExternalRowTop = 0.0;
+    qreal nextMinimumExternalRowTop = 0.0;
     for (int index = 0; index < static_cast<int>(textRectangles.size()); ++index)
     {
         const QRectF textRectangle = textRectangles.at(index);
         QRectF rectangle = textRectangle;
-        rectangle.moveTop(std::max(rectangle.y() + accumulatedResourceDelta, minimumExternalRowTop));
+        rectangle.moveTop(std::max(rectangle.y() + accumulatedResourceDelta, nextMinimumExternalRowTop));
         if (resourceRanges.at(index))
         {
             const qreal htmlResourceHeight =
@@ -501,15 +501,21 @@ QVariantList ContentsEditorGeometryProvider::lineNumberGeometryRows() const
                 ? std::max(m_fallbackLineHeight, htmlResourceHeight)
                 : std::max(m_fallbackLineHeight, rectangle.height());
             rectangle.setHeight(resourceVisualHeight);
-            minimumExternalRowTop =
-                std::max(minimumExternalRowTop, rectangle.y() + resourceVisualHeight);
+            nextMinimumExternalRowTop =
+                std::max(nextMinimumExternalRowTop, rectangle.y() + resourceVisualHeight);
             const qreal nextTextRowTop = followingTextRowTop(textRectangles, index);
             const qreal nextRowDelta =
                 std::isfinite(nextTextRowTop)
-                    ? minimumExternalRowTop - nextTextRowTop
-                    : minimumExternalRowTop - textRectangle.y();
+                    ? nextMinimumExternalRowTop - nextTextRowTop
+                    : nextMinimumExternalRowTop - textRectangle.y();
             accumulatedResourceDelta =
                 std::max(accumulatedResourceDelta, std::max<qreal>(0.0, nextRowDelta));
+        }
+        else
+        {
+            nextMinimumExternalRowTop = std::max(
+                nextMinimumExternalRowTop,
+                rectangle.y() + std::max(m_fallbackLineHeight, rectangle.height()));
         }
         rows.push_back(QVariantMap{
             {QStringLiteral("geometryAvailable"), static_cast<bool>(textGeometryAvailable.at(index))},

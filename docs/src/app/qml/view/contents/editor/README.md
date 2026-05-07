@@ -61,7 +61,8 @@ Editor-facing QML view components for the center content surface.
   use the encoded frame image height as the actual visual bottom anchor. The geometry adapter compares that frame
   height to the next plain logical row's base y, not to the hidden placeholder line-box height. If QML asks before the
   next plain row has a measurable y, the adapter uses the full frame height so the first post-resource row still lands
-  on the frame bottom.
+  on the frame bottom. If multiple logical rows are clamped out of the same resource frame, the adapter advances each
+  following row by its published height so line 2 and a blank line 3 cannot share the same gutter y coordinate.
   `ContentsInlineFormatEditor.qml` also exposes read-only geometry-provider snapshots so tests can distinguish raw
   measured rows from the final one-line resource gutter rows.
 - The minimap row count is driven by `ContentsStructuredDocumentFlow.editorVisualLineCount`, which comes from measured

@@ -586,7 +586,7 @@ void WhatSonCppRegressionTests::contentsEditorGeometryProvider_clampsProbeRowsIn
     QCOMPARE(rows.at(0).toMap().value(QStringLiteral("y")).toDouble(), 0.0);
     QCOMPARE(rows.at(0).toMap().value(QStringLiteral("height")).toDouble(), 96.0);
     QCOMPARE(rows.at(1).toMap().value(QStringLiteral("y")).toDouble(), 96.0);
-    QCOMPARE(rows.at(2).toMap().value(QStringLiteral("y")).toDouble(), 96.0);
+    QCOMPARE(rows.at(2).toMap().value(QStringLiteral("y")).toDouble(), 114.0);
 }
 
 void WhatSonCppRegressionTests::contentsEditorGeometryProvider_offsetsRowsAfterRenderedResourceFrames()

@@ -1450,6 +1450,114 @@ Item {
     QVERIFY(resourceRow.value(QStringLiteral("height")).toDouble() < betaY - resourceY);
 }
 
+void WhatSonCppRegressionTests::qmlInlineFormatEditor_separatesBlankGutterRowAfterResourceFrame()
+{
+    registerInlineFormatEditorRuntimeQmlTypes();
+
+    QTemporaryDir imageDirectory;
+    QVERIFY(imageDirectory.isValid());
+    const QString imagePath = imageDirectory.filePath(QStringLiteral("resource-frame.png"));
+    QImage image(24, 24, QImage::Format_ARGB32_Premultiplied);
+    image.fill(QColor(0x44, 0x88, 0xcc));
+    QVERIFY(image.save(imagePath));
+
+    const QString repositoryRoot = qmlInlineFormatEditorRepositoryRootPath();
+    QQmlEngine engine;
+    addWhatSonInlineFormatEditorQmlImportPaths(engine, repositoryRoot);
+
+    const QString editorImportUrl =
+        QUrl::fromLocalFile(repositoryRoot + QStringLiteral("/src/app/qml/view/contents/editor")).toString();
+    const QString imageUrl = QUrl::fromLocalFile(imagePath).toString();
+    const QByteArray qmlSource = QStringLiteral(R"QML(
+import QtQuick
+import WhatSon.App.Internal 1.0
+import "%1" as EditorView
+
+Item {
+    id: root
+    width: 260
+    height: 260
+
+    readonly property string resourceTag: "<resource type=\"image\" format=\".png\" path=\"icloud.wsresources/demo.wsresource\" id=\"demo\" />"
+    readonly property int resourceStart: 0
+    readonly property int resourceEnd: resourceTag.length
+
+    EditorView.ContentsInlineFormatEditor {
+        id: editor
+        objectName: "inlineFormatEditorUnderTest"
+        anchors.fill: parent
+        coordinateMapper: ContentsEditorPresentationProjection {
+            sourceText: editor.text
+        }
+        displayGeometryText: "\uFFFC\nBeta\n"
+        normalizedHtmlBlocks: [
+            {
+                "htmlBlockIsDisplayBlock": true,
+                "htmlBlockObjectSource": "iiHtmlBlock",
+                "renderDelegateType": "resource",
+                "sourceStart": root.resourceStart,
+                "sourceEnd": root.resourceEnd,
+                "sourceText": root.resourceTag
+            }
+        ]
+        renderedText: "<p style='margin-top:0px;margin-bottom:0px;line-height:0px;'><img src='%2' width='160' height='96' style='vertical-align:top;' /></p><p style='margin-top:0px;margin-bottom:0px;'>Beta</p><p style='margin-top:0px;margin-bottom:0px;'>&nbsp;</p>"
+        showRenderedOutput: true
+        text: root.resourceTag + "\nBeta\n"
+    }
+}
+)QML").arg(editorImportUrl, imageUrl).toUtf8();
+
+    QQmlComponent component(&engine);
+    component.setData(
+        qmlSource,
+        QUrl::fromLocalFile(repositoryRoot + QStringLiteral("/test/cpp/InlineFormatResourceBlankGutterHarness.qml")));
+    if (component.status() == QQmlComponent::Error)
+    {
+        QFAIL(qPrintable(qmlInlineFormatEditorErrorString(component.errors())));
+    }
+
+    std::unique_ptr<QObject> rootObject(component.create());
+    if (!rootObject)
+    {
+        QFAIL(qPrintable(qmlInlineFormatEditorErrorString(component.errors())));
+    }
+
+    auto* rootItem = qobject_cast<QQuickItem*>(rootObject.get());
+    QVERIFY(rootItem != nullptr);
+
+    QQuickWindow window;
+    window.resize(260, 260);
+    rootItem->setParentItem(window.contentItem());
+    window.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&window));
+
+    QObject* inlineEditor = rootObject->findChild<QObject*>(QStringLiteral("inlineFormatEditorUnderTest"));
+    QVERIFY(inlineEditor != nullptr);
+    QTRY_VERIFY(inlineEditor->property("renderedOverlayVisible").toBool());
+    QTRY_COMPARE(inlineEditor->property("logicalGutterRows").toList().size(), 3);
+
+    const QVariantList logicalGutterRows = inlineEditor->property("logicalGutterRows").toList();
+    const QVariantMap resourceRow = logicalGutterRows.at(0).toMap();
+    const QVariantMap betaRow = logicalGutterRows.at(1).toMap();
+    const QVariantMap blankRow = logicalGutterRows.at(2).toMap();
+    QCOMPARE(resourceRow.value(QStringLiteral("number")).toInt(), 1);
+    QCOMPARE(betaRow.value(QStringLiteral("number")).toInt(), 2);
+    QCOMPARE(blankRow.value(QStringLiteral("number")).toInt(), 3);
+    const double resourceY = resourceRow.value(QStringLiteral("y")).toDouble();
+    const double betaY = betaRow.value(QStringLiteral("y")).toDouble();
+    const double blankY = blankRow.value(QStringLiteral("y")).toDouble();
+    QVERIFY2(
+        qAbs((betaY - resourceY) - 96.0) <= 1.0,
+        qPrintable(QStringLiteral("Text row after resource must start at frame bottom: betaY=%1 resourceY=%2")
+                       .arg(betaY)
+                       .arg(resourceY)));
+    QVERIFY2(
+        blankY > betaY,
+        qPrintable(QStringLiteral("Blank gutter row after resource text must not overlap line 2: blankY=%1 betaY=%2")
+                       .arg(blankY)
+                       .arg(betaY)));
+}
+
 void WhatSonCppRegressionTests::qmlStructuredDocumentFlow_routesBottomBlankClickToBodyEnd()
 {
     registerInlineFormatEditorRuntimeQmlTypes();
