@@ -27,14 +27,15 @@ Editor-facing QML view components for the center content surface.
   `LV.Theme.gap8` top and bottom chrome padding.
 - `ContentViewLayout.qml` mounts `ContentsLineNumberRail.qml` inside the same scrollable document content item as
   `ContentsStructuredDocumentFlow.qml`, so gutter rows and editor body rows share one y-coordinate system.
-- `ContentsStructuredDocumentFlow.qml` consumes `editorSurfaceHtml`, `logicalText`, `projectionSourceText`,
-  `htmlTokens`, and `normalizedHtmlBlocks`, and passes projection-ready logical display text to the inline editor's
-  geometry probe so pointer hit testing measures visible text instead of RichText HTML tag positions or RAW `.wsnbody`
-  tag bytes. When the projection source snapshot temporarily lags behind the session
+- `ContentsStructuredDocumentFlow.qml` consumes `documentBlocks`, `editorSurfaceHtml`, `resourceVisualBlocks`,
+  `logicalText`, `projectionSourceText`, `htmlTokens`, and `normalizedHtmlBlocks`, and passes projection-ready logical
+  display text to the inline editor's geometry probe so pointer hit testing measures visible text instead of RichText
+  HTML tag positions or RAW `.wsnbody` tag bytes. When the projection source snapshot temporarily lags behind the
+  session
   source, the flow keeps the last ready logical text and editor-surface HTML instead of falling back to RAW source or
-  plain logical text. The same renderer-owned `normalizedHtmlBlocks` stream is forwarded as selection metadata so
-  resource selection mapping can treat the iiHtmlBlock display block span as one atomic block without painting a second
-  selection layer. It also binds explicit formatting and body-tag shortcuts to the C++ tag insertion
+  plain logical text. The parser-owned `documentBlocks` stream and `resourceVisualBlocks` are forwarded so resource
+  selection and geometry treat resources as atomic visual blocks without painting a second selection layer. Renderer
+  `normalizedHtmlBlocks` stay as HTML projection compatibility metadata. It also binds explicit formatting and body-tag shortcuts to the C++ tag insertion
   controller so `Cmd/Ctrl+B/I/U`, `Cmd/Ctrl+Shift+E` for highlight, and body commands such as callout/agenda insert or
   wrap proprietary RAW tags before the normal session persistence path runs. These commands read the live inline editor
   buffer when constructing payloads so consecutive tag commands do not combine fresh selection offsets with stale parent
@@ -54,12 +55,12 @@ Editor-facing QML view components for the center content surface.
   which halves the leading blank area before the number column. The host also forwards RAW cursor/selection offsets so
   the rail can paint a blue active-line bar on the cursor row or selected rows. Atomic resource frames count as one
   logical row with one gutter-line height. Line-number y snapshots come from the plain logical display probe so ordinary
-  text rows keep independent positions; in rendered mode the explicit resource visual height supplies the visual-height
-  delta of an atomic resource frame, which places later rows below the frame without converting the frame into extra
-  gutter rows or adopting RichText row coordinates for unrelated text.
-  Inline resource HTML suppresses paragraph line-height around the generated frame image, but the geometry adapter uses
-  the explicit `resourceVisualHeights` list rather than parsing rendered HTML for frame sizes. It compares that frame
-  height to the next plain logical row's base y, not to the hidden placeholder line-box height. If QML asks before the
+  text rows keep independent positions; in rendered mode the structured resource visual block height supplies the
+  visual-height delta of an atomic resource frame, which places later rows below the frame without converting the frame
+  into extra gutter rows or adopting RichText row coordinates for unrelated text.
+  Resource frames are rendered by direct visual delegates, and the geometry adapter uses `resourceVisualBlocks` rather
+  than parsing rendered HTML for frame sizes. It compares that frame height to the next plain logical row's base y, not
+  to the hidden placeholder line-box height. If QML asks before the
   next plain row has a measurable y, the adapter uses the full frame height so the first post-resource row still lands
   on the frame bottom. If multiple logical rows are clamped out of the same resource frame, the adapter advances each
   following row by its published height so line 2 and a blank line 3 cannot share the same gutter y coordinate.
@@ -79,7 +80,7 @@ Editor-facing QML view components for the center content surface.
 - `ContentsInlineFormatEditor.qml` keeps editing on an `LV.TextEditor` plain-text surface while displaying the read-side
   RichText overlay. In rendered mode that native surface contains the visible logical projection, not RAW tag bytes;
   visible text deltas are converted back to RAW `.wsnbody` splices by `ContentsWysiwygEditorPolicy`. When native
-  selection is active, that overlay stays visible so WYSIWYG text and resource frames do not collapse back to RAW tags;
+  selection is active, that overlay stays visible so WYSIWYG text and structured resource frames do not collapse back to RAW tags;
   the underlying editor still owns the visible logical range, while exported cursor/selection properties map that range
   back to RAW source offsets for persistence, gutter state, and tag commands. Native selection highlight stays visible
   for ranges that contain visible logical content while the underlying logical glyphs stay transparent. Tag-only source
@@ -88,7 +89,8 @@ Editor-facing QML view components for the center content surface.
   The rendered overlay no longer mirrors text selection or paints resource selection rectangles; visual selection is
   the same native `LV.TextEditor` selection that owns editing. Rendered overlays stay pinned during ordinary native
   typing/composition turns, so a refresh gap cannot reveal plain logical text or the RAW `<resource ... />` tag in
-  place of formatted text and resource frames. The rendered surface is stacked below the transparent native editor.
+  place of formatted text. Resource frames stay mounted as structured visual delegates. The rendered surface is stacked
+  below the transparent native editor.
   While that
   overlay is visible, a thin pointer bridge maps mouse-drag hit testing through a transparent plain-text geometry probe
   whose text is exactly `displayGeometryText`, then uses the C++ `coordinateMapper` to restore the matching RAW source
@@ -96,7 +98,7 @@ Editor-facing QML view components for the center content surface.
   positions would otherwise distort the coordinate space. That
   visible-to-RAW selection policy is implemented by C++ `ContentsWysiwygEditorPolicy`; QML only applies the returned
   range to the live `LV.TextEditor`. If the pointer lands inside a measured atomic resource frame, the bridge snaps to
-  that resource's single U+FFFC logical placeholder and selects the resource tag as one block instead of asking
+  that resource's atomic block boundary and selects the resource tag as one block instead of asking
   `positionAt(...)` for fake internal text positions. Collapsed cursor movement is also excluded from that placeholder:
   when the native logical cursor lands on an atomic resource line, C++ policy moves it to the nearest prose boundary
   outside the frame, falling back to the opposite side if the preferred boundary is still on the resource row; for
@@ -152,7 +154,7 @@ objects.
   프레임 row의 높이가 다음 줄 번호 위치를 연쇄적으로 밀지 않는다. 번호 왼쪽 빈 영역은 rail의 `preferredWidth` 계산으로
   기존 implicit blank의 절반만 사용한다. RAW cursor/selection offset은 host가 전달하며, 거터는 이를 row
   source range와 비교해 커서 줄 또는 선택된 줄에 파란색 active bar를 표시한다.
-- resource frame: 리소스 프레임은 본문 텍스트 컬럼 폭의 100%로 렌더한다.
+- resource frame: 리소스 프레임은 HTML placeholder 치환이 아니라 structured visual delegate로 본문 텍스트 컬럼 폭의 100%에 렌더한다.
 - minimap: 미니맵 행 수는 parser 논리 줄 수가 아니라 geometry adapter가 측정해 `editorVisualLineCount`로 전달되는 실제 에디터 wrap 결과 줄 수를 따른다. 리소스 프레임처럼 별도 높이를 차지하는 블록은 표시 높이를 본문 줄 높이로 나눈 줄 수만큼 미니맵에 반영한다.
 - minimap width: 미니맵 각 행의 폭은 `editorVisualLineWidthRatios`로 전달되는 실제 표시 줄 길이를 따른다. 텍스트 행은 본문에서 보이는 길이에 비례하고, 리소스 프레임 높이에서 파생된 행은 프레임이 본문 폭을 채우므로 padded rail 내부에서 full width로 둔다. 미니맵 metrics는 측정된 ratio snapshot만 소비한다.
 - minimap drag: 미니맵은 별도 스크롤바 chrome 없이 세로 드래그 pixel delta를 그대로 내보내고, `ContentViewLayout.qml`이 같은 delta를 본문 `Flickable.contentY`에 더한다.

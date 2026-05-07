@@ -12,7 +12,7 @@ C++ model objects for the note editor's logical line-number rail.
 ## Current Contract
 
 - `ContentsLineNumberRailMetrics` owns logical line-number row construction for the note editor.
-- QML supplies view-owned inputs only: the current source snapshot, renderer-owned `normalizedHtmlBlocks`, measured row
+- QML supplies view-owned inputs only: the current source snapshot, parser/renderer block metadata, measured row
   geometry snapshots, and LVRS line-height/width values.
 - The C++ object de-duplicates iiHtmlBlock-derived block entries, derives row ranges from authoritative `sourceText`
   through its internal logical text bridge, maps each logical line back to RAW source offsets, marks resource rows from
@@ -25,9 +25,10 @@ C++ model objects for the note editor's logical line-number rail.
   resource frame cannot turn into multiple gutter allocations, and rows clamped out of that frame advance the next
   minimum row top by their published height so later text/blank rows keep their own visible slots.
 - A wrapped paragraph remains one logical number while its row height follows the visible wrapped height. Atomic
-  resource blocks remain one logical number and one gutter-line allocation because the logical text bridge exposes
-  them as one U+FFFC placeholder, not as internal text lines.
-- Rendered resource frames affect line-number placement only as an image-height delta supplied by the geometry adapter.
+  resource blocks remain one logical number and one gutter-line allocation because parser-owned resource blocks are
+  treated as non-text blocks, not as internal text lines.
+- Rendered resource frames affect line-number placement only as a structured visual-block height delta supplied by the
+  geometry adapter.
   That delta is anchored against the next plain logical row's measured base y, not the placeholder line-box height. If
   the next base y is not yet measurable, the full frame height is used as the row advance. The adapter also clamps any
   measured row top that still falls inside the active resource frame to the frame bottom before this object consumes it.
@@ -50,7 +51,7 @@ C++ model objects for the note editor's logical line-number rail.
 - 위치: 각 row의 y/height는 geometry snapshot을 기준으로 결정하되, 최종 거터에서는 서로 겹치지 않아야 한다.
   resource frame 밖으로 clamp된 row 뒤의 다음 row는 이전 published row height만큼 아래로 배치한다.
 - wrap: 긴 paragraph가 여러 시각 줄로 접혀도 번호는 하나이며, row height만 실제 표시 높이를 따른다.
-- resource: rendered resource frame은 이후 row를 아래로 놓기 위한 image-height delta만 제공하며, 일반 텍스트 row의
+- resource: rendered resource frame은 이후 row를 아래로 놓기 위한 structured visual-block height delta만 제공하며, 일반 텍스트 row의
   위치는 plain logical display geometry를 기준으로 유지한다. geometry adapter가 resource frame 내부 probe row를
   frame bottom으로 clamp한 뒤 전달하므로 내부 placeholder 줄이 거터 anchor가 되지 않는다. 같은 frame bottom으로
   clamp된 연속 row는 서로 한 줄 높이만큼 분리된다.

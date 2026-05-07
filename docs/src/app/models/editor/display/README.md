@@ -10,9 +10,10 @@ Contains editor-display support controllers and policies that are not QML view f
   Decides whether `ContentViewLayout.qml` should mount the note editor surface or the direct resource editor surface.
 - `ContentsEditorDisplayBackend.{hpp,cpp}`
   Owns the live note display session, projection, structured renderer, body-resource renderer, resource-tag
-  controller, inline-resource presentation controller, and minimap metrics previously wired in QML. It exposes explicit
-  inline-resource visual heights so geometry does not infer frame sizes from rendered HTML. It does not own view-hook
-  relay wiring; `ContentViewLayout.qml` dispatches view-local hooks directly.
+  controller, inline-resource presentation controller, and minimap metrics previously wired in QML. It exposes
+  structured inline-resource visual blocks so QML delegates render resources directly and geometry does not infer frame
+  sizes from rendered HTML. It does not own view-hook relay wiring; `ContentViewLayout.qml` dispatches view-local hooks
+  directly.
 
 ## Boundary
 

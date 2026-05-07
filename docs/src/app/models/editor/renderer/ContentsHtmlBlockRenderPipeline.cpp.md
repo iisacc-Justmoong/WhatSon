@@ -36,10 +36,10 @@ Builds editor HTML tokens and normalized HTML blocks from parser-owned RAW docum
 - Textual fragments are split back into paragraph-flow HTML after that rich-text projection. Newlines produced by
   ordinary Enter therefore materialize as real `<p ...>` slots, and empty lines become `&nbsp;` paragraphs instead of
   remaining as zero-height trailing `<br/>` breaks.
-- Keeps resource placeholders in the stable
-  `<!--whatson-resource-block:N--> ... <!--/whatson-resource-block:N-->` form expected by the inline resource
-  replacement controller, while preserving the source `resourcePath`, `resourceId`, `resourceType`, and
-  `resourceFormat` on the corresponding token and normalized iiHtmlBlock payload.
+- Keeps resource blocks as atomic document slots. The HTML fragment is only a blank editor paragraph; actual resource
+  frame rendering is driven by parser-owned document blocks plus `resourceVisualBlocks`, while the source
+  `resourcePath`, `resourceId`, `resourceType`, and `resourceFormat` remain on the corresponding token and normalized
+  payload.
 - Still exposes `requiresLegacyDocumentComposition` for the transitional case where one source snapshot contains
   inline-style markup that spans several parsed text blocks.
   That prevents the new block-normalized path from dropping carried style state before the whole-document carry model
@@ -53,8 +53,8 @@ Builds editor HTML tokens and normalized HTML blocks from parser-owned RAW docum
 - Stored inline style tags such as `<bold>Al<italic>pha</italic></bold><italic> Beta</italic>` must render as RichText
   style HTML in `documentHtml`, `htmlTokens`, and `normalizedHtmlBlocks`; escaped literal `<bold>` / `<italic>` text is
   a renderer regression.
-- A `resource` block must normalize to one stable HTML block with the same placeholder marker indices expected by
-  `ContentsInlineResourcePresentationController`.
+- A `resource` block must normalize to one atomic block without `whatson-resource-block` comment markers; visual frame
+  rendering belongs to the structured resource delegate path.
 - A legacy divider alias such as `<hr>After` must first canonicalize to `</break>After`, then normalize into separate
   `break` and trailing `text` HTML blocks so the editor surface does not lose the following prose.
 - A multi-block note whose inline style tag opens in one text block and closes in a later text block must force the

@@ -16,6 +16,7 @@
 #include <QStandardPaths>
 #include <QStringList>
 #include <QUrl>
+#include <QVariantMap>
 
 #include <algorithm>
 #include <cmath>
@@ -489,27 +490,37 @@ QString ContentsInlineResourcePresentationController::renderEditorSurfaceHtmlWit
     return renderedHtml;
 }
 
-QVariantList ContentsInlineResourcePresentationController::inlineResourceVisualHeights(
+QVariantList ContentsInlineResourcePresentationController::inlineResourceVisualBlocks(
     const QVariant& renderedResources,
     const int targetFrameWidth) const
 {
     const QVariantList normalizedResources =
         normalizedRenderedResourceEntries(renderedResources);
-    QVariantList heights;
-    heights.reserve(normalizedResources.size());
+    QVariantList visualBlocks;
+    visualBlocks.reserve(normalizedResources.size());
 
     const int resolvedFrameWidth =
         targetFrameWidth > 0 ? targetFrameWidth : inlineResourcePreviewWidth();
-    for (const QVariant& resourceEntry : normalizedResources)
+    const QSize frameSize = resourceFrameSizeForWidth(resolvedFrameWidth);
+    for (int index = 0; index < normalizedResources.size(); ++index)
     {
-        if (!resourceEntryCanRenderInlineInHtmlProjection(resourceEntry)
-            || resourceEntryFrameImageSource(resourceEntry, resolvedFrameWidth).isEmpty())
-        {
-            heights.push_back(0);
-            continue;
-        }
+        const QVariant& resourceEntry = normalizedResources.at(index);
+        const bool renderable = resourceEntryCanRenderInlineInHtmlProjection(resourceEntry);
+        const QString imageSource = renderable
+            ? resourceEntryFrameImageSource(resourceEntry, resolvedFrameWidth)
+            : QString{};
+        const bool hasImageSource = !imageSource.isEmpty();
 
-        heights.push_back(resourceFrameSizeForWidth(resolvedFrameWidth).height());
+        visualBlocks.push_back(QVariantMap{
+            {QStringLiteral("height"), hasImageSource ? frameSize.height() : 0},
+            {QStringLiteral("imageSource"), imageSource},
+            {QStringLiteral("label"), resourceEntryFrameLabel(resourceEntry)},
+            {QStringLiteral("openTarget"), resourceEntryOpenTarget(resourceEntry)},
+            {QStringLiteral("renderable"), hasImageSource},
+            {QStringLiteral("resourceIndex"), index},
+            {QStringLiteral("visualHeight"), hasImageSource ? frameSize.height() : 0},
+            {QStringLiteral("width"), frameSize.width()},
+        });
     }
-    return heights;
+    return visualBlocks;
 }

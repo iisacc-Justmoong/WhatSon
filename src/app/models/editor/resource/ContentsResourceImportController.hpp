@@ -5,7 +5,6 @@
 #include <QVariant>
 
 class ContentsEditorSurfaceGuardController;
-class ContentsInlineResourcePresentationController;
 class ContentsResourceDropPayloadParser;
 class ContentsResourceImportConflictController;
 class ContentsResourceTagController;
@@ -84,7 +83,6 @@ public:
     Q_INVOKABLE bool sourceContainsCanonicalResourceTag(const QString& sourceText);
     Q_INVOKABLE int canonicalResourceTagCount(const QString& sourceText);
     Q_INVOKABLE bool resourceTagLossDetected(const QString& previousSourceText, const QString& nextSourceText);
-    Q_INVOKABLE QString renderEditorSurfaceHtmlWithInlineResources(const QString& editorHtml);
     Q_INVOKABLE bool restoreEditorSurfaceFromPresentation();
     Q_INVOKABLE bool restorePendingEditorSurfaceFromPresentationIfInputSettled();
     Q_INVOKABLE void releaseResourceDropEditorSurfaceGuard(bool restoreSurface);
@@ -130,7 +128,6 @@ private:
     QObject* m_view = nullptr;
     ContentsResourceDropPayloadParser* m_dropPayloadParser = nullptr;
     ContentsResourceTagController* m_resourceTagController = nullptr;
-    ContentsInlineResourcePresentationController* m_inlineResourcePresentationController = nullptr;
     ContentsEditorSurfaceGuardController* m_editorSurfaceGuardController = nullptr;
     ContentsResourceImportConflictController* m_resourceImportConflictController = nullptr;
 };

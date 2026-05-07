@@ -232,8 +232,7 @@ namespace
     bool htmlFragmentOwnsBlockFlow(const QString& htmlFragment)
     {
         const QString trimmedFragment = htmlFragment.trimmed();
-        return trimmedFragment.startsWith(QStringLiteral("<!--whatson-resource-block:"))
-            || trimmedFragment.startsWith(QStringLiteral("<div"))
+        return trimmedFragment.startsWith(QStringLiteral("<div"))
             || trimmedFragment.startsWith(QStringLiteral("<hr"))
             || trimmedFragment.startsWith(QStringLiteral("<p"))
             || trimmedFragment.startsWith(QStringLiteral("<table"))
@@ -1361,7 +1360,7 @@ namespace
                 renderMode));
     }
 
-    QString renderResourceEditorBlockToHtml(const int resourceIndex)
+    QString renderResourceEditorBlockToHtml(const int)
     {
         QStringList placeholderParagraphs;
         placeholderParagraphs.reserve(kResourceEditorPlaceholderLineCount);
@@ -1369,9 +1368,7 @@ namespace
         {
             placeholderParagraphs.push_back(editorBlankParagraphHtml());
         }
-        const QString placeholderHtml = placeholderParagraphs.join(QString());
-        return QStringLiteral("<!--whatson-resource-block:%1-->%2<!--/whatson-resource-block:%1-->")
-            .arg(QString::number(std::max(0, resourceIndex)), placeholderHtml);
+        return placeholderParagraphs.join(QString());
     }
 
     QString renderInlineTaggedTextFragmentToHtmlImpl(

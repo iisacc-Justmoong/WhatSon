@@ -368,10 +368,8 @@ Item {
                                 id: structuredDocumentFlow
 
                                 coordinateMapper: editorDisplayBackend.presentationProjection
-                                editorSurfaceHtml: editorDisplayBackend.renderInlineResourceEditorSurfaceHtml(
-                                                       editorDisplayBackend.presentationProjection.editorSurfaceHtml,
-                                                       editorDisplayBackend.bodyResourceRenderer.renderedResources,
-                                                       structuredDocumentFlow.width - LV.Theme.gap16 * 2)
+                                documentBlocks: editorDisplayBackend.structuredBlockRenderer.renderedDocumentBlocks
+                                editorSurfaceHtml: editorDisplayBackend.presentationProjection.editorSurfaceHtml
                                 height: editorDocumentContent.height
                                 htmlTokens: editorDisplayBackend.presentationProjection.htmlTokens
                                 logicalText: editorDisplayBackend.presentationProjection.logicalText
@@ -379,9 +377,9 @@ Item {
                                 objectName: "contentsDisplayStructuredDocumentFlow"
                                 paperPaletteEnabled: false
                                 projectionSourceText: editorDisplayBackend.presentationProjection.sourceText
-                                resourceVisualHeights: editorDisplayBackend.inlineResourceVisualHeights(
-                                                           editorDisplayBackend.bodyResourceRenderer.renderedResources,
-                                                           structuredDocumentFlow.width - LV.Theme.gap16 * 2)
+                                resourceVisualBlocks: editorDisplayBackend.inlineResourceVisualBlocks(
+                                                          editorDisplayBackend.bodyResourceRenderer.renderedResources,
+                                                          structuredDocumentFlow.width - LV.Theme.gap16 * 2)
                                 sourceText: editorDisplayBackend.editorSession.editorText
                                 textColor: LV.Theme.bodyColor
                                 visible: editorDisplayBackend.noteDocumentParseMounted

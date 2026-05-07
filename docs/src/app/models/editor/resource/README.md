@@ -11,11 +11,10 @@ Owns editor-side resource import and inline resource presentation coordination.
 - `ContentsResourceImportConflictController.*`
   Owns duplicate-resource prompt state.
 - `ContentsInlineResourcePresentationController.*`
-  Builds editor-surface inline resource HTML placeholders and the rounded Figma `292:50` frame image projection used by
-  note-body resources. Inline resource frames resolve 100% width to the current editor text column before the cached
-  frame image and matching RichText image attributes are generated. The generated RichText paragraph has zero
-  line-height and a top-aligned image so the visual frame height matches the encoded image height used by editor
-  geometry.
+  Builds rounded Figma `292:50` frame image projections and structured `resourceVisualBlocks` used by note-body
+  resource delegates. Inline resource frames resolve 100% width to the current editor text column before the cached
+  frame image and matching visual block dimensions are generated. Legacy HTML placeholder replacement remains in the
+  lower-level presenter for compatibility, but the live editor surface consumes visual block records directly.
 - `ContentsEditorSurfaceGuardController.*`
   Guards programmatic editor-surface sync during resource import turns.
 

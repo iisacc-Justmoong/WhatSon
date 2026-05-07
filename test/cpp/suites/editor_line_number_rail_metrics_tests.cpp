@@ -361,26 +361,11 @@ void WhatSonCppRegressionTests::contentsEditorGeometryProvider_keepsTextRowsOnLo
         });
     QVERIFY(textGeometry != nullptr);
 
-    const std::unique_ptr<QObject> renderedGeometry = createGeometryProbe(
-        engine,
-        18,
-        54.0,
-        QVariantMap{
-            {QStringLiteral("0"), QRectF(0.0, 0.0, 120.0, 18.0)},
-            {QStringLiteral("4"), QRectF(0.0, 0.0, 120.0, 18.0)},
-            {QStringLiteral("6"), QRectF(0.0, 0.0, 120.0, 18.0)},
-            {QStringLiteral("10"), QRectF(0.0, 0.0, 120.0, 18.0)},
-            {QStringLiteral("12"), QRectF(0.0, 0.0, 120.0, 18.0)},
-            {QStringLiteral("17"), QRectF(0.0, 0.0, 120.0, 18.0)},
-        });
-    QVERIFY(renderedGeometry != nullptr);
-
     ContentsEditorGeometryProvider provider;
     provider.setFallbackLineHeight(18.0);
     provider.setFallbackWidth(320.0);
     provider.setLogicalLength(18);
     provider.setTextItem(textGeometry.get());
-    provider.setResourceItem(renderedGeometry.get());
     provider.setLineNumberRanges(QVariantList{
         QVariantMap{
             {QStringLiteral("logicalEnd"), 5},
@@ -406,7 +391,7 @@ void WhatSonCppRegressionTests::contentsEditorGeometryProvider_keepsTextRowsOnLo
     QCOMPARE(rows.at(2).toMap().value(QStringLiteral("y")).toDouble(), 36.0);
 }
 
-void WhatSonCppRegressionTests::contentsEditorGeometryProvider_ignoresWholeOverlayHeightWithoutResourceHtml()
+void WhatSonCppRegressionTests::contentsEditorGeometryProvider_ignoresWholeOverlayHeightWithoutResourceVisualBlocks()
 {
     QQmlEngine engine;
     const std::unique_ptr<QObject> textGeometry = createGeometryProbe(
@@ -422,23 +407,11 @@ void WhatSonCppRegressionTests::contentsEditorGeometryProvider_ignoresWholeOverl
         });
     QVERIFY(textGeometry != nullptr);
 
-    const std::unique_ptr<QObject> resourceGeometry = createGeometryProbe(
-        engine,
-        11,
-        720.0,
-        QVariantMap{
-            {QStringLiteral("6"), QRectF(0.0, 18.0, 120.0, 18.0)},
-            {QStringLiteral("7"), QRectF(0.0, 18.0, 120.0, 18.0)},
-            {QStringLiteral("10"), QRectF(0.0, 18.0, 120.0, 18.0)},
-        });
-    QVERIFY(resourceGeometry != nullptr);
-
     ContentsEditorGeometryProvider provider;
     provider.setFallbackLineHeight(18.0);
     provider.setFallbackWidth(320.0);
     provider.setLogicalLength(11);
     provider.setTextItem(textGeometry.get());
-    provider.setResourceItem(resourceGeometry.get());
     provider.setLineNumberRanges(QVariantList{
         QVariantMap{
             {QStringLiteral("logicalEnd"), 5},
@@ -463,7 +436,7 @@ void WhatSonCppRegressionTests::contentsEditorGeometryProvider_ignoresWholeOverl
     QCOMPARE(rows.at(2).toMap().value(QStringLiteral("y")).toDouble(), 36.0);
 }
 
-void WhatSonCppRegressionTests::contentsEditorGeometryProvider_usesExplicitResourceVisualHeights()
+void WhatSonCppRegressionTests::contentsEditorGeometryProvider_usesExplicitResourceVisualBlocks()
 {
     QQmlEngine engine;
     const std::unique_ptr<QObject> textGeometry = createGeometryProbe(
@@ -479,24 +452,12 @@ void WhatSonCppRegressionTests::contentsEditorGeometryProvider_usesExplicitResou
         });
     QVERIFY(textGeometry != nullptr);
 
-    const std::unique_ptr<QObject> resourceGeometry = createGeometryProbe(
-        engine,
-        11,
-        720.0,
-        QVariantMap{
-            {QStringLiteral("6"), QRectF(0.0, 18.0, 120.0, 18.0)},
-            {QStringLiteral("7"), QRectF(0.0, 54.0, 120.0, 18.0)},
-            {QStringLiteral("10"), QRectF(0.0, 54.0, 120.0, 18.0)},
-        });
-    QVERIFY(resourceGeometry != nullptr);
-
     ContentsEditorGeometryProvider provider;
     provider.setFallbackLineHeight(18.0);
     provider.setFallbackWidth(320.0);
     provider.setLogicalLength(11);
-    provider.setResourceVisualHeights(QVariantList{36.0});
+    provider.setResourceVisualBlocks(QVariantList{36.0});
     provider.setTextItem(textGeometry.get());
-    provider.setResourceItem(resourceGeometry.get());
     provider.setLineNumberRanges(QVariantList{
         QVariantMap{
             {QStringLiteral("logicalEnd"), 5},
@@ -538,25 +499,12 @@ void WhatSonCppRegressionTests::contentsEditorGeometryProvider_anchorsRowsAfterR
         });
     QVERIFY(textGeometry != nullptr);
 
-    const std::unique_ptr<QObject> resourceGeometry = createGeometryProbe(
-        engine,
-        6,
-        720.0,
-        QVariantMap{
-            {QStringLiteral("0"), QRectF(0.0, 0.0, 120.0, 30.0)},
-            {QStringLiteral("1"), QRectF(0.0, 84.0, 120.0, 18.0)},
-            {QStringLiteral("2"), QRectF(0.0, 84.0, 120.0, 18.0)},
-            {QStringLiteral("5"), QRectF(0.0, 84.0, 120.0, 18.0)},
-        });
-    QVERIFY(resourceGeometry != nullptr);
-
     ContentsEditorGeometryProvider provider;
     provider.setFallbackLineHeight(18.0);
     provider.setFallbackWidth(320.0);
     provider.setLogicalLength(6);
-    provider.setRenderedHtml(QStringLiteral("<p><img src='' width='160' height='96' /></p>"));
+    provider.setResourceVisualBlocks(QVariantList{96.0});
     provider.setTextItem(textGeometry.get());
-    provider.setResourceItem(resourceGeometry.get());
     provider.setLineNumberRanges(QVariantList{
         QVariantMap{
             {QStringLiteral("logicalEnd"), 1},
@@ -598,7 +546,7 @@ void WhatSonCppRegressionTests::contentsEditorGeometryProvider_clampsProbeRowsIn
     provider.setFallbackLineHeight(18.0);
     provider.setFallbackWidth(320.0);
     provider.setLogicalLength(9);
-    provider.setRenderedHtml(QStringLiteral("<p><img src='' width='160' height='96' /></p>"));
+    provider.setResourceVisualBlocks(QVariantList{96.0});
     provider.setTextItem(textGeometry.get());
     provider.setLineNumberRanges(QVariantList{
         QVariantMap{
@@ -626,7 +574,7 @@ void WhatSonCppRegressionTests::contentsEditorGeometryProvider_clampsProbeRowsIn
     QCOMPARE(rows.at(2).toMap().value(QStringLiteral("y")).toDouble(), 114.0);
 }
 
-void WhatSonCppRegressionTests::contentsEditorGeometryProvider_offsetsRowsAfterRenderedResourceFrames()
+void WhatSonCppRegressionTests::contentsEditorGeometryProvider_offsetsRowsAfterStructuredResourceFrames()
 {
     QQmlEngine engine;
     const std::unique_ptr<QObject> textGeometry = createGeometryProbe(
@@ -644,28 +592,12 @@ void WhatSonCppRegressionTests::contentsEditorGeometryProvider_offsetsRowsAfterR
         });
     QVERIFY(textGeometry != nullptr);
 
-    const std::unique_ptr<QObject> renderedGeometry = createGeometryProbe(
-        engine,
-        18,
-        168.0,
-        QVariantMap{
-            {QStringLiteral("0"), QRectF(0.0, 0.0, 120.0, 18.0)},
-            {QStringLiteral("4"), QRectF(0.0, 0.0, 120.0, 18.0)},
-            {QStringLiteral("6"), QRectF(0.0, 18.0, 120.0, 18.0)},
-            {QStringLiteral("8"), QRectF(0.0, 132.0, 120.0, 18.0)},
-            {QStringLiteral("11"), QRectF(0.0, 132.0, 120.0, 18.0)},
-            {QStringLiteral("13"), QRectF(0.0, 150.0, 120.0, 18.0)},
-            {QStringLiteral("17"), QRectF(0.0, 150.0, 120.0, 18.0)},
-        });
-    QVERIFY(renderedGeometry != nullptr);
-
     ContentsEditorGeometryProvider provider;
     provider.setFallbackLineHeight(18.0);
     provider.setFallbackWidth(320.0);
     provider.setLogicalLength(18);
-    provider.setRenderedHtml(QStringLiteral("<p><img src='' width='120' height='114' /></p>"));
+    provider.setResourceVisualBlocks(QVariantList{114.0});
     provider.setTextItem(textGeometry.get());
-    provider.setResourceItem(renderedGeometry.get());
     provider.setLineNumberRanges(QVariantList{
         QVariantMap{
             {QStringLiteral("logicalEnd"), 5},

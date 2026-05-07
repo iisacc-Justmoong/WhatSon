@@ -327,22 +327,11 @@ QVariant ContentsEditorDisplayBackend::requestEditorSelectionContextMenuFromPoin
         || normalizedKind == QStringLiteral("long-press");
 }
 
-QString ContentsEditorDisplayBackend::renderInlineResourceEditorSurfaceHtml(
-    const QString& editorHtml,
+QVariantList ContentsEditorDisplayBackend::inlineResourceVisualBlocks(
     const QVariant& renderedResources,
     const int targetFrameWidth) const
 {
-    return m_inlineResourcePresentation.renderEditorSurfaceHtmlWithInlineResources(
-        editorHtml,
-        renderedResources,
-        std::max(120, targetFrameWidth));
-}
-
-QVariantList ContentsEditorDisplayBackend::inlineResourceVisualHeights(
-    const QVariant& renderedResources,
-    const int targetFrameWidth) const
-{
-    return m_inlineResourcePresentation.inlineResourceVisualHeights(
+    return m_inlineResourcePresentation.inlineResourceVisualBlocks(
         renderedResources,
         std::max(120, targetFrameWidth));
 }

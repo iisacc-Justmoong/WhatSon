@@ -2,7 +2,6 @@
 
 #include <QMetaObject>
 #include <QQuickItem>
-#include <QRegularExpression>
 #include <QVariant>
 
 #include <algorithm>
@@ -22,13 +21,6 @@ namespace
         bool ok = false;
         const int value = object != nullptr ? object->property(propertyName).toInt(&ok) : fallback;
         return ok ? value : fallback;
-    }
-
-    qreal numericProperty(QObject* object, const char* propertyName, const qreal fallback) noexcept
-    {
-        bool ok = false;
-        const qreal value = object != nullptr ? object->property(propertyName).toReal(&ok) : fallback;
-        return ok && std::isfinite(value) ? value : fallback;
     }
 
     qreal finiteOrFallback(const qreal value, const qreal fallback) noexcept
@@ -123,43 +115,6 @@ namespace
         return point;
     }
 
-    qreal htmlAttributeNumber(const QString& tag, const QString& attributeName) noexcept
-    {
-        const QRegularExpression expression(
-            QStringLiteral(R"(\b%1\s*=\s*(['"]?)([0-9]+(?:\.[0-9]+)?)\1)")
-                .arg(QRegularExpression::escape(attributeName)),
-            QRegularExpression::CaseInsensitiveOption);
-        const QRegularExpressionMatch match = expression.match(tag);
-        if (!match.hasMatch())
-        {
-            return std::numeric_limits<qreal>::quiet_NaN();
-        }
-        bool ok = false;
-        const qreal value = match.captured(2).toDouble(&ok);
-        return ok && std::isfinite(value) ? value : std::numeric_limits<qreal>::quiet_NaN();
-    }
-
-    std::vector<qreal> resourceVisualHeightsFromHtml(
-        const QString& html,
-        const qreal fallbackLineHeight)
-    {
-        std::vector<qreal> heights;
-        const QRegularExpression imageExpression(
-            QStringLiteral(R"(<img\b[^>]*>)"),
-            QRegularExpression::CaseInsensitiveOption);
-        QRegularExpressionMatchIterator matches = imageExpression.globalMatch(html);
-        while (matches.hasNext())
-        {
-            const QString imageTag = matches.next().captured(0);
-            const qreal imageHeight = htmlAttributeNumber(imageTag, QStringLiteral("height"));
-            if (std::isfinite(imageHeight) && imageHeight > 0.0)
-            {
-                heights.push_back(std::max(std::max<qreal>(1.0, fallbackLineHeight), imageHeight));
-            }
-        }
-        return heights;
-    }
-
     qreal resourceVisualHeightFromVariant(const QVariant& value) noexcept
     {
         QVariant heightValue = value;
@@ -178,7 +133,7 @@ namespace
             : std::numeric_limits<qreal>::quiet_NaN();
     }
 
-    std::vector<qreal> resourceVisualHeightsFromVariants(const QVariantList& values)
+    std::vector<qreal> resourceVisualBlockHeightsFromVariants(const QVariantList& values)
     {
         std::vector<qreal> heights;
         heights.reserve(static_cast<std::size_t>(values.size()));
@@ -233,21 +188,6 @@ void ContentsEditorGeometryProvider::setTextItem(QObject* value)
     emitGeometryInputChanged(&ContentsEditorGeometryProvider::textItemChanged);
 }
 
-QObject* ContentsEditorGeometryProvider::resourceItem() const noexcept
-{
-    return m_resourceItem.data();
-}
-
-void ContentsEditorGeometryProvider::setResourceItem(QObject* value)
-{
-    if (m_resourceItem == value)
-    {
-        return;
-    }
-    m_resourceItem = value;
-    emitGeometryInputChanged(&ContentsEditorGeometryProvider::resourceItemChanged);
-}
-
 QObject* ContentsEditorGeometryProvider::targetItem() const noexcept
 {
     return m_targetItem.data();
@@ -278,34 +218,19 @@ void ContentsEditorGeometryProvider::setVisualItem(QObject* value)
     emitGeometryInputChanged(&ContentsEditorGeometryProvider::visualItemChanged);
 }
 
-QString ContentsEditorGeometryProvider::renderedHtml() const
+QVariantList ContentsEditorGeometryProvider::resourceVisualBlocks() const
 {
-    return m_renderedHtml;
+    return m_resourceVisualBlocks;
 }
 
-void ContentsEditorGeometryProvider::setRenderedHtml(const QString& value)
+void ContentsEditorGeometryProvider::setResourceVisualBlocks(const QVariantList& value)
 {
-    if (m_renderedHtml == value)
+    if (m_resourceVisualBlocks == value)
     {
         return;
     }
-    m_renderedHtml = value;
-    emitGeometryInputChanged(&ContentsEditorGeometryProvider::renderedHtmlChanged);
-}
-
-QVariantList ContentsEditorGeometryProvider::resourceVisualHeights() const
-{
-    return m_resourceVisualHeights;
-}
-
-void ContentsEditorGeometryProvider::setResourceVisualHeights(const QVariantList& value)
-{
-    if (m_resourceVisualHeights == value)
-    {
-        return;
-    }
-    m_resourceVisualHeights = value;
-    emitGeometryInputChanged(&ContentsEditorGeometryProvider::resourceVisualHeightsChanged);
+    m_resourceVisualBlocks = value;
+    emitGeometryInputChanged(&ContentsEditorGeometryProvider::resourceVisualBlocksChanged);
 }
 
 QVariantList ContentsEditorGeometryProvider::lineNumberRanges() const
@@ -523,9 +448,7 @@ QVariantList ContentsEditorGeometryProvider::lineNumberGeometryRows() const
     }
 
     const std::vector<qreal> explicitResourceHeights =
-        resourceVisualHeightsFromVariants(m_resourceVisualHeights);
-    const std::vector<qreal> htmlResourceHeights =
-        resourceVisualHeightsFromHtml(m_renderedHtml, m_fallbackLineHeight);
+        resourceVisualBlockHeightsFromVariants(m_resourceVisualBlocks);
     int resourceIndex = 0;
     QVariantList rows;
     rows.reserve(m_lineNumberRanges.size());
@@ -542,19 +465,11 @@ QVariantList ContentsEditorGeometryProvider::lineNumberGeometryRows() const
                 resourceIndex < static_cast<int>(explicitResourceHeights.size())
                     ? explicitResourceHeights.at(static_cast<std::size_t>(resourceIndex))
                     : std::numeric_limits<qreal>::quiet_NaN();
-            const qreal htmlResourceHeight =
-                resourceIndex < static_cast<int>(htmlResourceHeights.size())
-                    ? htmlResourceHeights.at(static_cast<std::size_t>(resourceIndex))
-                    : std::numeric_limits<qreal>::quiet_NaN();
             ++resourceIndex;
             qreal resourceVisualHeight = std::max(m_fallbackLineHeight, rectangle.height());
             if (std::isfinite(explicitResourceHeight) && explicitResourceHeight > 0.0)
             {
                 resourceVisualHeight = std::max(m_fallbackLineHeight, explicitResourceHeight);
-            }
-            else if (std::isfinite(htmlResourceHeight) && htmlResourceHeight > 0.0)
-            {
-                resourceVisualHeight = std::max(m_fallbackLineHeight, htmlResourceHeight);
             }
             rectangle.setHeight(resourceVisualHeight);
             nextMinimumExternalRowTop =
@@ -599,27 +514,6 @@ ContentsEditorGeometryMeasurement ContentsEditorGeometryProvider::measureTextRan
         logicalLength,
         fallbackLineHeight,
         fallbackWidth);
-}
-
-ContentsEditorGeometryMeasurement ContentsEditorGeometryProvider::measureResourceRange(
-    const int logicalStart,
-    const int logicalEnd,
-    const int logicalLength,
-    const qreal fallbackLineHeight,
-    const qreal fallbackWidth) const
-{
-    return measureRange(
-        m_resourceItem.data(),
-        logicalStart,
-        logicalEnd,
-        logicalLength,
-        fallbackLineHeight,
-        fallbackWidth);
-}
-
-qreal ContentsEditorGeometryProvider::resourceContentHeight(const qreal fallback) const
-{
-    return numericProperty(m_resourceItem.data(), "contentHeight", fallback);
 }
 
 ContentsEditorGeometryMeasurement ContentsEditorGeometryProvider::measureRange(

@@ -87,11 +87,7 @@ public:
     Q_INVOKABLE QVariant currentEditorCursorPosition() const noexcept;
     Q_INVOKABLE QVariant terminalBodyClickSourceOffset() const noexcept;
     Q_INVOKABLE QVariant requestEditorSelectionContextMenuFromPointer(const QVariant& pointerKind) const;
-    Q_INVOKABLE QString renderInlineResourceEditorSurfaceHtml(
-        const QString& editorHtml,
-        const QVariant& renderedResources,
-        int targetFrameWidth) const;
-    Q_INVOKABLE QVariantList inlineResourceVisualHeights(
+    Q_INVOKABLE QVariantList inlineResourceVisualBlocks(
         const QVariant& renderedResources,
         int targetFrameWidth) const;
     Q_INVOKABLE bool syncSessionFromCurrentNote(bool resetViewport);

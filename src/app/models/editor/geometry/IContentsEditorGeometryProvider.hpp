@@ -21,14 +21,6 @@ public:
         qreal fallbackLineHeight,
         qreal fallbackWidth) const = 0;
 
-    virtual ContentsEditorGeometryMeasurement measureResourceRange(
-        int logicalStart,
-        int logicalEnd,
-        int logicalLength,
-        qreal fallbackLineHeight,
-        qreal fallbackWidth) const = 0;
-
-    virtual qreal resourceContentHeight(qreal fallback) const = 0;
 };
 
 #define IContentsEditorGeometryProvider_iid "com.iisacc.WhatSon.IContentsEditorGeometryProvider/1.0"

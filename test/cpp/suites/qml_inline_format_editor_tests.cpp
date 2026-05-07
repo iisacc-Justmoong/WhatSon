@@ -259,17 +259,20 @@ void WhatSonCppRegressionTests::qmlInlineFormatEditor_projectsVisibleGeometryFro
 
     QVERIFY(inlineEditorSource.contains(QStringLiteral("readonly property real displayContentHeight")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("readonly property real displayTextContentHeight")));
-    QVERIFY(inlineEditorSource.contains(QStringLiteral("? renderedOverlay.contentHeight")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("? Math.max(renderedOverlay.contentHeight, control.structuredVisualContentHeight)")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("+ control.editorBottomInset")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("readonly property real displayBodyHeight: Math.max(0, control.displayTextContentHeight)")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("readonly property int visualLineCount")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("readonly property var visualLineWidthRatios")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("readonly property var logicalGutterRows: lineNumberRailMetrics.rows")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("readonly property var lineNumberGeometryRows: editorGeometryProvider.lineNumberGeometryRows")));
-    QVERIFY(inlineEditorSource.contains(QStringLiteral("readonly property var lineNumberGeometryResourceVisualHeights: editorGeometryProvider.resourceVisualHeights")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("readonly property var lineNumberGeometryResourceBlockHeights: control.resourceVisualBlockHeights()")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("readonly property int visualLineCount: visualLineMetrics.visualLineCount")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("readonly property var visualLineWidthRatios: visualLineMetrics.visualLineWidthRatios")));
-    QVERIFY(inlineEditorSource.contains(QStringLiteral("property var resourceVisualHeights: []")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("property var documentBlocks: []")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("property var resourceVisualBlocks: []")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("function resourceVisualLayoutRows()")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("objectName: \"contentsInlineFormatResourceVisualBlock\"")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("ContentsEditorVisualLineMetrics {")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("id: visualLineMetrics")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("ContentsLineNumberRailMetrics {")));
@@ -280,11 +283,11 @@ void WhatSonCppRegressionTests::qmlInlineFormatEditor_projectsVisibleGeometryFro
     QVERIFY(inlineEditorSource.contains(QStringLiteral("measuredVisualLineCount")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("lineNumberRanges: lineNumberRailMetrics.logicalLineRanges")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("geometryRows")));
-    QVERIFY(inlineEditorSource.contains(QStringLiteral("resourceVisualHeights: control.resourceVisualHeights")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("resourceVisualBlocks: control.resourceVisualBlocks")));
     QVERIFY(!inlineEditorSource.contains(QStringLiteral("renderedHtml: control.renderedText")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("textItem: control.displayGeometryItem()")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("visualItem: control.renderedOverlayVisible ? renderedOverlay : textInput.editorItem")));
-    QVERIFY(inlineEditorSource.contains(QStringLiteral("resourceItem: renderedOverlay")));
+    QVERIFY(!inlineEditorSource.contains(QStringLiteral("resourceItem: renderedOverlay")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("targetItem: control")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("sourceText: control.text")));
     QVERIFY(!inlineEditorSource.contains(QStringLiteral("logicalText: control.displayGeometryText")));
@@ -316,7 +319,8 @@ void WhatSonCppRegressionTests::qmlInlineFormatEditor_projectsVisibleGeometryFro
     QVERIFY(documentFlowSource.contains(QStringLiteral("property string projectionSourceText: documentFlow.sourceText")));
     QVERIFY(documentFlowSource.contains(QStringLiteral("readonly property bool logicalProjectionReady")));
     QVERIFY(documentFlowSource.contains(QStringLiteral("property string lastReadyEditorSurfaceHtml: \"\"")));
-    QVERIFY(documentFlowSource.contains(QStringLiteral("property var resourceVisualHeights: []")));
+    QVERIFY(documentFlowSource.contains(QStringLiteral("property var documentBlocks: []")));
+    QVERIFY(documentFlowSource.contains(QStringLiteral("property var resourceVisualBlocks: []")));
     QVERIFY(documentFlowSource.contains(QStringLiteral("readonly property string resolvedEditorSurfaceHtml")));
     QVERIFY(documentFlowSource.contains(QStringLiteral("readonly property string resolvedDisplayGeometryText")));
     QVERIFY(documentFlowSource.contains(QStringLiteral("function refreshLastReadyProjection()")));
@@ -336,7 +340,8 @@ void WhatSonCppRegressionTests::qmlInlineFormatEditor_projectsVisibleGeometryFro
     QVERIFY(documentFlowSource.contains(QStringLiteral("y: documentFlow.terminalBodySurfaceY()")));
     QVERIFY(!documentFlowSource.contains(QStringLiteral("logicalToSourceOffsets: documentFlow.logicalToSourceOffsets")));
     QVERIFY(documentFlowSource.contains(QStringLiteral("normalizedHtmlBlocks: documentFlow.normalizedHtmlBlocks")));
-    QVERIFY(documentFlowSource.contains(QStringLiteral("resourceVisualHeights: documentFlow.resourceVisualHeights")));
+    QVERIFY(documentFlowSource.contains(QStringLiteral("documentBlocks: documentFlow.documentBlocks")));
+    QVERIFY(documentFlowSource.contains(QStringLiteral("resourceVisualBlocks: documentFlow.resourceVisualBlocks")));
     QVERIFY(documentFlowSource.contains(QStringLiteral("readonly property real editorContentHeight: editor.displayContentHeight")));
 
     const QString contentViewLayoutSource = readUtf8SourceFile(
@@ -352,7 +357,12 @@ void WhatSonCppRegressionTests::qmlInlineFormatEditor_projectsVisibleGeometryFro
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral(
         "projectionSourceText: editorDisplayBackend.presentationProjection.sourceText")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral(
+        "documentBlocks: editorDisplayBackend.structuredBlockRenderer.renderedDocumentBlocks")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral(
+        "resourceVisualBlocks: editorDisplayBackend.inlineResourceVisualBlocks(")));
+    QVERIFY(!contentViewLayoutSource.contains(QStringLiteral(
         "resourceVisualHeights: editorDisplayBackend.inlineResourceVisualHeights(")));
+    QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("renderInlineResourceEditorSurfaceHtml(")));
     QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("logicalToSourceOffsets")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral(
         "property: \"visualLineCount\"")));
@@ -1371,8 +1381,9 @@ Item {
                 "sourceText": root.resourceTag
             }
         ]
+        documentBlocks: normalizedHtmlBlocks
         renderedText: "<p style='margin-top:0px;margin-bottom:0px;line-height:0px;'><img src='%2' width='160' height='96' style='vertical-align:top;' /></p><p style='margin-top:0px;margin-bottom:0px;'>Beta</p>"
-        resourceVisualHeights: [96]
+        resourceVisualBlocks: [{"height": 96, "imageSource": "%2", "renderable": true, "width": 160}]
         showRenderedOutput: true
         text: root.resourceTag + "\nBeta"
     }
@@ -1408,7 +1419,7 @@ Item {
     QTRY_VERIFY(inlineEditor->property("renderedOverlayVisible").toBool());
     QTRY_COMPARE(inlineEditor->property("logicalGutterRows").toList().size(), 2);
 
-    QCOMPARE(inlineEditor->property("lineNumberGeometryResourceVisualHeights").toList().first().toDouble(), 96.0);
+    QCOMPARE(inlineEditor->property("lineNumberGeometryResourceBlockHeights").toList().first().toDouble(), 96.0);
     QVariantList geometryRows = inlineEditor->property("lineNumberGeometryRows").toList();
     QCOMPARE(geometryRows.size(), 2);
     QCOMPARE(geometryRows.at(0).toMap().value(QStringLiteral("height")).toDouble(), 96.0);
@@ -1507,8 +1518,9 @@ Item {
                 "sourceText": root.resourceTag
             }
         ]
+        documentBlocks: normalizedHtmlBlocks
         renderedText: "<p style='margin-top:0px;margin-bottom:0px;line-height:0px;'><img src='%2' width='160' height='96' style='vertical-align:top;' /></p><p style='margin-top:0px;margin-bottom:0px;'>Beta</p><p style='margin-top:0px;margin-bottom:0px;'>&nbsp;</p>"
-        resourceVisualHeights: [96]
+        resourceVisualBlocks: [{"height": 96, "imageSource": "%2", "renderable": true, "width": 160}]
         showRenderedOutput: true
         text: root.resourceTag + "\nBeta\n"
     }
@@ -2199,8 +2211,9 @@ Item {
             "sourceStart": root.resourceStart,
             "sourceEnd": root.resourceEnd
         }]
+        documentBlocks: normalizedHtmlBlocks
         renderedText: "<p style='margin-top:0px;margin-bottom:0px;'>Alpha</p><p style='margin-top:0px;margin-bottom:0px;'><img src='' width='120' height='60' /></p><p style='margin-top:0px;margin-bottom:0px;'>Beta</p>"
-        resourceVisualHeights: [60]
+        resourceVisualBlocks: [{"height": 60, "renderable": false, "width": 120}]
         showRenderedOutput: true
         text: "Alpha\n" + root.resourceTag + "\nBeta"
     }
@@ -2299,8 +2312,9 @@ Item {
             "sourceStart": root.resourceStart,
             "sourceEnd": root.resourceEnd
         }]
+        documentBlocks: normalizedHtmlBlocks
         renderedText: "<p style='margin-top:0px;margin-bottom:0px;'>Alpha</p><p style='margin-top:0px;margin-bottom:0px;'><img src='' width='300' height='72' /></p><p style='margin-top:0px;margin-bottom:0px;'>Beta</p>"
-        resourceVisualHeights: [72]
+        resourceVisualBlocks: [{"height": 72, "renderable": false, "width": 300}]
         showRenderedOutput: true
         text: "Alpha\n" + root.resourceTag + "\nBeta"
     }
@@ -2400,8 +2414,9 @@ Item {
             "sourceStart": root.resourceStart,
             "sourceEnd": root.resourceEnd
         }]
+        documentBlocks: normalizedHtmlBlocks
         renderedText: "<p style='margin-top:0px;margin-bottom:0px;'>Alpha</p><p style='margin-top:0px;margin-bottom:0px;'><img src='' width='300' height='72' /></p><p style='margin-top:0px;margin-bottom:0px;'>Beta</p>"
-        resourceVisualHeights: [72]
+        resourceVisualBlocks: [{"height": 72, "renderable": false, "width": 300}]
         showRenderedOutput: true
         text: "Alpha\n" + root.resourceTag + "\nBeta"
     }
@@ -2714,8 +2729,9 @@ Item {
             "sourceStart": root.resourceStart,
             "sourceEnd": root.resourceEnd
         }]
+        documentBlocks: normalizedHtmlBlocks
         renderedText: "<p style='margin-top:0px;margin-bottom:0px;'>Alpha</p><p style='margin-top:0px;margin-bottom:0px;'><img src='' width='120' height='60' /></p><p style='margin-top:0px;margin-bottom:0px;'>Beta</p>"
-        resourceVisualHeights: [60]
+        resourceVisualBlocks: [{"height": 60, "renderable": false, "width": 120}]
         showRenderedOutput: true
         text: "Alpha\n" + root.resourceTag + "\nBeta"
 

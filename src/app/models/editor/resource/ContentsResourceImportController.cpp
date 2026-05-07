@@ -1,7 +1,6 @@
 #include "app/models/editor/resource/ContentsResourceImportController.hpp"
 
 #include "app/models/editor/resource/ContentsEditorSurfaceGuardController.hpp"
-#include "app/models/editor/resource/ContentsInlineResourcePresentationController.hpp"
 #include "app/models/editor/resource/ContentsResourceDropPayloadParser.hpp"
 #include "app/models/editor/resource/ContentsResourceImportConflictController.hpp"
 #include "app/models/editor/tags/ContentsResourceTagController.hpp"
@@ -10,7 +9,6 @@ ContentsResourceImportController::ContentsResourceImportController(QObject* pare
     : QObject(parent)
     , m_dropPayloadParser(new ContentsResourceDropPayloadParser(this))
     , m_resourceTagController(new ContentsResourceTagController(this))
-    , m_inlineResourcePresentationController(new ContentsInlineResourcePresentationController(this))
     , m_editorSurfaceGuardController(new ContentsEditorSurfaceGuardController(this))
     , m_resourceImportConflictController(new ContentsResourceImportConflictController(this))
 {
@@ -146,12 +144,6 @@ bool ContentsResourceImportController::resourceTagLossDetected(
     return m_resourceTagController->resourceTagLossDetected(previousSourceText, nextSourceText);
 }
 
-QString ContentsResourceImportController::renderEditorSurfaceHtmlWithInlineResources(const QString& editorHtml)
-{
-    syncChildren();
-    return m_inlineResourcePresentationController->renderEditorSurfaceHtmlWithInlineResources(editorHtml);
-}
-
 bool ContentsResourceImportController::restoreEditorSurfaceFromPresentation()
 {
     syncChildren();
@@ -195,17 +187,6 @@ void ContentsResourceImportController::syncChildren()
     m_resourceTagController->setProperty("selectedNoteId", m_selectedNoteId);
     m_resourceTagController->setProperty("showStructuredDocumentFlow", m_showStructuredDocumentFlow);
     m_resourceTagController->setProperty("structuredDocumentFlow", QVariant::fromValue(m_structuredDocumentFlow));
-
-    m_inlineResourcePresentationController->setProperty("bodyResourceRenderer", QVariant::fromValue(m_bodyResourceRenderer));
-    m_inlineResourcePresentationController->setProperty("contentEditor", QVariant::fromValue(m_contentEditor));
-    m_inlineResourcePresentationController->setProperty("editorHorizontalInset", m_editorHorizontalInset);
-    m_inlineResourcePresentationController->setProperty("editorViewport", QVariant::fromValue(m_editorViewport));
-    m_inlineResourcePresentationController->setProperty("view", QVariant::fromValue(m_view));
-    m_inlineResourcePresentationController->setProperty("printPaperTextWidth", m_printPaperTextWidth);
-    m_inlineResourcePresentationController->setProperty("resourceEditorPlaceholderLineCount", m_resourceEditorPlaceholderLineCount);
-    m_inlineResourcePresentationController->setProperty("resourceTagController", QVariant::fromValue(static_cast<QObject*>(m_resourceTagController)));
-    m_inlineResourcePresentationController->setProperty("inlineHtmlImageRenderingEnabled", m_inlineHtmlImageRenderingEnabled);
-    m_inlineResourcePresentationController->setProperty("showPrintEditorLayout", m_showPrintEditorLayout);
 
     m_editorSurfaceGuardController->setProperty("contentEditor", QVariant::fromValue(m_contentEditor));
     m_editorSurfaceGuardController->setProperty("editorInputPolicyAdapter", QVariant::fromValue(m_editorInputPolicyAdapter));

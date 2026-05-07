@@ -14,16 +14,17 @@ Item {
     property alias cursorPosition: textInput.cursorPosition
     property alias logicalCursorPosition: textInput.cursorPosition
     property var coordinateMapper: null
+    property var documentBlocks: []
     property real editorBottomInset: LV.Theme.gap16
     property string displayGeometryText: control.text
     readonly property real displayTextContentHeight: control.renderedOverlayVisible
-            ? renderedOverlay.contentHeight
+            ? Math.max(renderedOverlay.contentHeight, control.structuredVisualContentHeight)
             : textInput.contentHeight
     readonly property real displayContentHeight: control.displayTextContentHeight
             + control.editorBottomInset
     readonly property real displayBodyHeight: Math.max(0, control.displayTextContentHeight)
     readonly property var lineNumberGeometryRows: editorGeometryProvider.lineNumberGeometryRows
-    readonly property var lineNumberGeometryResourceVisualHeights: editorGeometryProvider.resourceVisualHeights
+    readonly property var lineNumberGeometryResourceBlockHeights: control.resourceVisualBlockHeights()
     readonly property var editorItem: textInput.editorItem
     property bool focused: textInput.focused
     readonly property var inputItem: textInput.editorItem
@@ -50,7 +51,8 @@ Item {
     readonly property bool inputMethodComposing: textInput.inputMethodComposing
     readonly property string preeditText: String(textInput.editorItem.preeditText)
     property string renderedText: ""
-    property var resourceVisualHeights: []
+    property var resourceVisualBlocks: []
+    readonly property real structuredVisualContentHeight: control.structuredVisualLayoutContentHeight()
     readonly property int cursorPixelWidth: Math.max(1, Math.ceil(LV.Theme.strokeThin))
     readonly property var logicalGutterRows: lineNumberRailMetrics.rows
     readonly property int visualLineCount: visualLineMetrics.visualLineCount
@@ -252,7 +254,7 @@ Item {
     function atomicResourceCursorNormalizationPlan(logicalCursor) {
         return wysiwygEditorPolicy.atomicResourceCursorNormalizationPlan(
                     control.text,
-                    control.normalizedHtmlBlocks || [],
+                    control.atomicResourceBlockModel(),
                     control.coordinateMapper,
                     Number(logicalCursor) || 0,
                     control.previousRawCursorPosition,
@@ -361,7 +363,7 @@ Item {
 
     function sourceRangeIntersectsAtomicResourceBlock(range) {
         return wysiwygEditorPolicy.sourceRangeIntersectsAtomicResourceBlock(
-                    control.normalizedHtmlBlocks || [],
+                    control.atomicResourceBlockModel(),
                     Number(range && range.start !== undefined ? range.start : 0) || 0,
                     Number(range && range.end !== undefined ? range.end : 0) || 0);
     }
@@ -371,7 +373,7 @@ Item {
     }
 
     function hasAtomicRenderedResourceBlocks() {
-        return wysiwygEditorPolicy.hasAtomicRenderedResourceBlocks(control.normalizedHtmlBlocks || []);
+        return wysiwygEditorPolicy.hasAtomicRenderedResourceBlocks(control.atomicResourceBlockModel());
     }
 
     function resourceLogicalRangeForBlock(block) {
@@ -383,32 +385,103 @@ Item {
         return isFinite(number) ? number : fallback;
     }
 
-    function atomicResourceHitAtPoint(localX, localY) {
-        const x = control.finiteNumber(localX, 0);
-        const y = control.finiteNumber(localY, 0);
-        const ranges = lineNumberRailMetrics.logicalLineRanges || [];
+    function atomicResourceBlockModel() {
+        const structuredBlocks = control.documentBlocks || [];
+        if ((structuredBlocks.length || 0) > 0)
+            return structuredBlocks;
+        return control.normalizedHtmlBlocks || [];
+    }
+
+    function resourceVisualBlockAtIndex(index) {
+        const blocks = control.resourceVisualBlocks || [];
+        const blockIndex = Number(index) || 0;
+        if (blockIndex < 0 || blockIndex >= (blocks.length || 0))
+            return {};
+        return blocks[blockIndex] || {};
+    }
+
+    function resourceVisualBlockHeights() {
+        const blocks = control.resourceVisualBlocks || [];
+        const heights = [];
+        for (let index = 0; index < (blocks.length || 0); ++index) {
+            const block = blocks[index] || {};
+            heights.push(Math.max(0, control.finiteNumber(block.height, 0)));
+        }
+        return heights;
+    }
+
+    function resourceVisualLayoutRows() {
         const rows = editorGeometryProvider.lineNumberGeometryRows || [];
-        const count = Math.min(ranges.length || 0, rows.length || 0);
+        const ranges = lineNumberRailMetrics.logicalLineRanges || [];
+        const count = Math.min(rows.length || 0, ranges.length || 0);
+        const visualRows = [];
+        let resourceIndex = 0;
         for (let index = 0; index < count; ++index) {
             const range = ranges[index] || {};
             if (range.resourceRange !== true)
                 continue;
+
+            const row = rows[index] || {};
+            const visualBlock = control.resourceVisualBlockAtIndex(resourceIndex);
+            ++resourceIndex;
+            const width = Math.max(1, control.finiteNumber(
+                                       visualBlock.width,
+                                       control.width - LV.Theme.gap16 * 2));
+            const height = Math.max(
+                        LV.Theme.textBodyLineHeight,
+                        control.finiteNumber(
+                            visualBlock.height,
+                            control.finiteNumber(row.height, LV.Theme.textBodyLineHeight)));
+            visualRows.push({
+                                "height": height,
+                                "imageSource": String(visualBlock.imageSource || ""),
+                                "logicalEnd": range.logicalEnd,
+                                "logicalStart": range.logicalStart,
+                                "openTarget": String(visualBlock.openTarget || ""),
+                                "renderable": visualBlock.renderable === true
+                                              && String(visualBlock.imageSource || "").length > 0,
+                                "sourceEnd": range.sourceEnd,
+                                "sourceStart": range.sourceStart,
+                                "width": width,
+                                "x": control.finiteNumber(row.x, LV.Theme.gap16),
+                                "y": control.finiteNumber(row.y, 0)
+                            });
+        }
+        return visualRows;
+    }
+
+    function structuredVisualLayoutContentHeight() {
+        const rows = control.resourceVisualLayoutRows();
+        let contentHeight = 0;
+        for (let index = 0; index < (rows.length || 0); ++index) {
+            const row = rows[index] || {};
+            contentHeight = Math.max(
+                        contentHeight,
+                        control.finiteNumber(row.y, 0)
+                        + control.finiteNumber(row.height, LV.Theme.textBodyLineHeight));
+        }
+        return contentHeight;
+    }
+
+    function atomicResourceHitAtPoint(localX, localY) {
+        const x = control.finiteNumber(localX, 0);
+        const y = control.finiteNumber(localY, 0);
+        const rows = control.resourceVisualLayoutRows();
+        for (let index = 0; index < (rows.length || 0); ++index) {
             const row = rows[index] || {};
             const rowX = control.finiteNumber(row.x, 0);
             const rowY = control.finiteNumber(row.y, 0);
             const rowWidth = Math.max(1, control.finiteNumber(row.width, control.width));
-            const rowHeight = Math.max(
-                        1,
-                        control.finiteNumber(row.height, LV.Theme.textBodyLineHeight));
+            const rowHeight = Math.max(1, control.finiteNumber(row.height, LV.Theme.textBodyLineHeight));
             if (x < rowX || x > rowX + rowWidth || y < rowY || y > rowY + rowHeight)
                 continue;
             const start = control.boundedCursorPosition(
-                        range.logicalStart !== undefined ? range.logicalStart : 0,
+                        row.logicalStart !== undefined ? row.logicalStart : 0,
                         renderedGeometryProbe.length);
             const end = Math.max(
                         start,
                         control.boundedCursorPosition(
-                            range.logicalEnd !== undefined ? range.logicalEnd : start,
+                            row.logicalEnd !== undefined ? row.logicalEnd : start,
                             renderedGeometryProbe.length));
             return {
                 "hit": end > start,
@@ -860,6 +933,7 @@ Item {
     clip: true
 
     onCoordinateMapperChanged: control.scheduleRenderedOverlaySelectionRefresh()
+    onDocumentBlocksChanged: control.scheduleRenderedOverlaySelectionRefresh()
     onDisplayGeometryTextChanged: {
         control.syncNativeSurfaceTextFromProjection(false);
     }
@@ -870,6 +944,7 @@ Item {
     onNormalizedHtmlBlocksChanged: control.scheduleRenderedOverlaySelectionRefresh()
     onRenderedOverlayVisibleChanged: control.scheduleRenderedOverlaySelectionRefresh()
     onRenderedTextChanged: control.scheduleRenderedOverlaySelectionRefresh()
+    onResourceVisualBlocksChanged: control.scheduleRenderedOverlaySelectionRefresh()
     onTextChanged: {
         control.syncNativeSurfaceTextFromProjection(false);
     }
@@ -903,8 +978,7 @@ Item {
         fallbackWidth: control.width
         lineNumberRanges: lineNumberRailMetrics.logicalLineRanges
         logicalLength: control.displayGeometryText.length
-        resourceVisualHeights: control.resourceVisualHeights
-        resourceItem: renderedOverlay
+        resourceVisualBlocks: control.resourceVisualBlocks
         targetItem: control
         textItem: control.displayGeometryItem()
         visualItem: control.renderedOverlayVisible ? renderedOverlay : textInput.editorItem
@@ -932,7 +1006,9 @@ Item {
 
         displayContentHeight: control.displayContentHeight
         geometryWidth: control.width
-        normalizedHtmlBlocks: control.normalizedHtmlBlocks
+        normalizedHtmlBlocks: (control.documentBlocks || []).length > 0
+                              ? control.documentBlocks
+                              : control.normalizedHtmlBlocks
         sourceText: control.text
         textLineHeight: LV.Theme.textBodyLineHeight
     }
@@ -979,6 +1055,40 @@ Item {
 
         onLinkActivated: function (link) {
             Qt.openUrlExternally(link);
+        }
+    }
+
+    Item {
+        id: resourceVisualLayer
+
+        anchors.fill: parent
+        enabled: false
+        objectName: "contentsInlineFormatResourceVisualLayer"
+        visible: control.renderedOverlayVisible
+        z: 1
+
+        Repeater {
+            model: control.resourceVisualLayoutRows()
+
+            delegate: Item {
+                required property var modelData
+
+                height: Math.max(1, Number(modelData.height) || 1)
+                objectName: "contentsInlineFormatResourceVisualBlock"
+                visible: modelData.renderable === true
+                width: Math.max(1, Number(modelData.width) || 1)
+                x: Number(modelData.x) || LV.Theme.gap16
+                y: Number(modelData.y) || 0
+
+                Image {
+                    anchors.fill: parent
+                    fillMode: Image.Stretch
+                    mipmap: true
+                    source: String(parent.modelData.imageSource || "")
+                    smooth: true
+                    visible: String(source).length > 0
+                }
+            }
         }
     }
 

@@ -649,7 +649,7 @@ void WhatSonCppRegressionTests::qmlStructuredEditors_clipInlineResourceCardsToMe
     QVERIFY(resourceEditorSource.contains(QStringLiteral("visible: resourceEditor.hasResourceSelection && resourceBitmapState.bitmapRenderable")));
 }
 
-void WhatSonCppRegressionTests::qmlStructuredEditors_wireInlineResourceRendererToIiXmlHtmlBlockPipeline()
+void WhatSonCppRegressionTests::qmlStructuredEditors_wireInlineResourceRendererToStructuredVisualBlocks()
 {
     const QString contentViewLayoutSource = readUtf8SourceFile(
         QStringLiteral("src/app/qml/view/panels/ContentViewLayout.qml"));
@@ -664,7 +664,9 @@ void WhatSonCppRegressionTests::qmlStructuredEditors_wireInlineResourceRendererT
     QVERIFY(displayBackendHeader.contains(QStringLiteral("ContentsBodyResourceRenderer m_bodyResourceRenderer")));
     QVERIFY(displayBackendSource.contains(QStringLiteral("m_bodyResourceRenderer.setDocumentBlocks(m_structuredBlockRenderer.renderedDocumentBlocks())")));
     QVERIFY(displayBackendHeader.contains(QStringLiteral("ContentsInlineResourcePresentationController m_inlineResourcePresentation")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("renderInlineResourceEditorSurfaceHtml(")));
+    QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("renderInlineResourceEditorSurfaceHtml(")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("documentBlocks: editorDisplayBackend.structuredBlockRenderer.renderedDocumentBlocks")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("resourceVisualBlocks: editorDisplayBackend.inlineResourceVisualBlocks(")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("editorDisplayBackend.bodyResourceRenderer.renderedResources")));
     QVERIFY(displayBackendSource.contains(QStringLiteral("targetFrameWidth")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("structuredDocumentFlow.width - LV.Theme.gap16 * 2")));

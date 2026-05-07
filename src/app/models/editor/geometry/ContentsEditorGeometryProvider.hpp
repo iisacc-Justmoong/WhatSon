@@ -13,11 +13,9 @@ class ContentsEditorGeometryProvider : public QObject, public IContentsEditorGeo
     Q_INTERFACES(IContentsEditorGeometryProvider)
 
     Q_PROPERTY(QObject* textItem READ textItem WRITE setTextItem NOTIFY textItemChanged)
-    Q_PROPERTY(QObject* resourceItem READ resourceItem WRITE setResourceItem NOTIFY resourceItemChanged)
     Q_PROPERTY(QObject* targetItem READ targetItem WRITE setTargetItem NOTIFY targetItemChanged)
     Q_PROPERTY(QObject* visualItem READ visualItem WRITE setVisualItem NOTIFY visualItemChanged)
-    Q_PROPERTY(QString renderedHtml READ renderedHtml WRITE setRenderedHtml NOTIFY renderedHtmlChanged)
-    Q_PROPERTY(QVariantList resourceVisualHeights READ resourceVisualHeights WRITE setResourceVisualHeights NOTIFY resourceVisualHeightsChanged)
+    Q_PROPERTY(QVariantList resourceVisualBlocks READ resourceVisualBlocks WRITE setResourceVisualBlocks NOTIFY resourceVisualBlocksChanged)
     Q_PROPERTY(QVariantList lineNumberRanges READ lineNumberRanges WRITE setLineNumberRanges NOTIFY lineNumberRangesChanged)
     Q_PROPERTY(int logicalLength READ logicalLength WRITE setLogicalLength NOTIFY logicalLengthChanged)
     Q_PROPERTY(qreal fallbackLineHeight READ fallbackLineHeight WRITE setFallbackLineHeight NOTIFY fallbackLineHeightChanged)
@@ -37,16 +35,12 @@ public:
 
     QObject* textItem() const noexcept;
     void setTextItem(QObject* value);
-    QObject* resourceItem() const noexcept;
-    void setResourceItem(QObject* value);
     QObject* targetItem() const noexcept;
     void setTargetItem(QObject* value);
     QObject* visualItem() const noexcept;
     void setVisualItem(QObject* value);
-    QString renderedHtml() const;
-    void setRenderedHtml(const QString& value);
-    QVariantList resourceVisualHeights() const;
-    void setResourceVisualHeights(const QVariantList& value);
+    QVariantList resourceVisualBlocks() const;
+    void setResourceVisualBlocks(const QVariantList& value);
     QVariantList lineNumberRanges() const;
     void setLineNumberRanges(const QVariantList& value);
     int logicalLength() const noexcept;
@@ -76,22 +70,11 @@ public:
         qreal fallbackLineHeight,
         qreal fallbackWidth) const override;
 
-    ContentsEditorGeometryMeasurement measureResourceRange(
-        int logicalStart,
-        int logicalEnd,
-        int logicalLength,
-        qreal fallbackLineHeight,
-        qreal fallbackWidth) const override;
-
-    qreal resourceContentHeight(qreal fallback) const override;
-
 signals:
     void textItemChanged();
-    void resourceItemChanged();
     void targetItemChanged();
     void visualItemChanged();
-    void renderedHtmlChanged();
-    void resourceVisualHeightsChanged();
+    void resourceVisualBlocksChanged();
     void lineNumberRangesChanged();
     void logicalLengthChanged();
     void fallbackLineHeightChanged();
@@ -115,11 +98,9 @@ private:
     void emitGeometryInputChanged(void (ContentsEditorGeometryProvider::*signal)());
 
     QPointer<QObject> m_textItem;
-    QPointer<QObject> m_resourceItem;
     QPointer<QObject> m_targetItem;
     QPointer<QObject> m_visualItem;
-    QString m_renderedHtml;
-    QVariantList m_resourceVisualHeights;
+    QVariantList m_resourceVisualBlocks;
     QVariantList m_lineNumberRanges;
     int m_logicalLength = 0;
     qreal m_fallbackLineHeight = 1.0;

@@ -68,9 +68,14 @@ namespace
                                     block.value(QStringLiteral("type"))))
                 .toString()
                 .toLower();
-        return kind == QStringLiteral("resource")
-            && block.value(QStringLiteral("htmlBlockObjectSource")).toString() == QStringLiteral("iiHtmlBlock")
-            && block.value(QStringLiteral("htmlBlockIsDisplayBlock"), true).toBool();
+        if (kind != QStringLiteral("resource"))
+        {
+            return false;
+        }
+
+        return block.value(QStringLiteral("atomicBlock"), false).toBool()
+            || (block.value(QStringLiteral("htmlBlockObjectSource")).toString() == QStringLiteral("iiHtmlBlock")
+                && block.value(QStringLiteral("htmlBlockIsDisplayBlock"), true).toBool());
     }
 
     QRectF rectangleFromRowGeometry(const QVariantMap& rowGeometry, const qreal lineHeight, const qreal width) noexcept

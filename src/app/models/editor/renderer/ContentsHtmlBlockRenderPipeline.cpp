@@ -44,8 +44,7 @@ namespace
     bool htmlFragmentOwnsBlockFlow(const QString& htmlFragment)
     {
         const QString trimmedFragment = htmlFragment.trimmed();
-        return trimmedFragment.startsWith(QStringLiteral("<!--whatson-resource-block:"))
-            || trimmedFragment.startsWith(QStringLiteral("<div"))
+        return trimmedFragment.startsWith(QStringLiteral("<div"))
             || trimmedFragment.startsWith(QStringLiteral("<hr"))
             || trimmedFragment.startsWith(QStringLiteral("<p"))
             || trimmedFragment.startsWith(QStringLiteral("<table"))
@@ -187,7 +186,7 @@ namespace
             .arg(textFragmentHtml(block.value(QStringLiteral("text")).toString()));
     }
 
-    QString renderResourceBlockHtml(const QVariantMap& block)
+    QString renderResourceBlockHtml(const QVariantMap&)
     {
         QStringList placeholderParagraphs;
         placeholderParagraphs.reserve(kResourceEditorPlaceholderLineCount);
@@ -196,11 +195,7 @@ namespace
             placeholderParagraphs.push_back(editorBlankParagraphHtml());
         }
 
-        const int resourceIndex = std::max(
-            0,
-            block.value(QStringLiteral("resourceIndex")).toInt());
-        return QStringLiteral("<!--whatson-resource-block:%1-->%2<!--/whatson-resource-block:%1-->")
-            .arg(QString::number(resourceIndex), placeholderParagraphs.join(QString()));
+        return placeholderParagraphs.join(QString());
     }
 
     QString renderBreakBlockHtml()

@@ -444,9 +444,14 @@ bool ContentsWysiwygEditorPolicy::htmlBlockIsAtomicResourceBlock(const QVariant&
                     blockMap.value(QStringLiteral("type"))))
             .toString()
             .toLower();
-    return blockKind == QStringLiteral("resource")
-        && blockMap.value(QStringLiteral("htmlBlockObjectSource")).toString() == QStringLiteral("iiHtmlBlock")
-        && blockMap.value(QStringLiteral("htmlBlockIsDisplayBlock"), true).toBool();
+    if (blockKind != QStringLiteral("resource"))
+    {
+        return false;
+    }
+
+    return blockMap.value(QStringLiteral("atomicBlock"), false).toBool()
+        || (blockMap.value(QStringLiteral("htmlBlockObjectSource")).toString() == QStringLiteral("iiHtmlBlock")
+            && blockMap.value(QStringLiteral("htmlBlockIsDisplayBlock"), true).toBool());
 }
 
 bool ContentsWysiwygEditorPolicy::sourceRangeIntersectsAtomicResourceBlock(

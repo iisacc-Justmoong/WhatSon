@@ -18,9 +18,9 @@ Implements note-body resource rendering data extraction for the editor surface.
 - Otherwise it consumes the parser-owned `documentBlocks` stream supplied by
   `ContentsStructuredBlockRenderer.renderedDocumentBlocks` and resolves only `type=resource` blocks.
   The renderer no longer reparses `.wsnbody` with its own `<resource ...>` grammar.
-- `ContentsEditorDisplayBackend` now owns that renderer directly for the live note editor and feeds its resolved
-  entries into `ContentsInlineResourcePresentationController`, which replaces iiHtmlBlock
-  `whatson-resource-block` placeholders in the editor HTML.
+- `ContentsEditorDisplayBackend` owns that renderer directly for the live note editor and feeds its resolved entries
+  into `ContentsInlineResourcePresentationController`, which returns structured visual block records consumed directly
+  by the QML editor surface.
 - Resolves `.wsresource` references through `WhatSon::Resources::resolveAssetLocationFromReference(...)`.
 - Expands resource-reference base paths beyond the mounted note directory itself:
   note-directory ancestors up to the owning `.wshub`, the resolved `.wscontents` directory, the hub parent for
@@ -52,4 +52,4 @@ Implements note-body resource rendering data extraction for the editor surface.
 ## Testing
   - `resourceRenderer_mustResolveResourceBlocksFromStructuredDocumentBlocks`
   - `resourceRenderer_mustRenderDirectResourcePackageSelection`
-  - `resourceRenderer_resolvesIiXmlResourceTagsAndInlineHtmlBlockPlaceholders`
+  - `resourceRenderer_resolvesIiXmlResourceTagsAndStructuredVisualBlocks`

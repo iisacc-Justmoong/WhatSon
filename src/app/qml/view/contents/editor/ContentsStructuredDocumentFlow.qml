@@ -9,6 +9,7 @@ Item {
 
     property var htmlTokens: []
     property var normalizedHtmlBlocks: []
+    property var documentBlocks: []
     property var coordinateMapper: null
     property bool paperPaletteEnabled: false
     property string editorSurfaceHtml: ""
@@ -16,7 +17,7 @@ Item {
     property string lastReadyLogicalText: ""
     property string logicalText: ""
     property string projectionSourceText: documentFlow.sourceText
-    property var resourceVisualHeights: []
+    property var resourceVisualBlocks: []
     property string sourceText: ""
     property color textColor: LV.Theme.bodyColor
     readonly property real editorContentHeight: editor.displayContentHeight
@@ -133,11 +134,12 @@ Item {
 
         anchors.fill: parent
         coordinateMapper: documentFlow.coordinateMapper
+        documentBlocks: documentFlow.documentBlocks
         displayGeometryText: documentFlow.resolvedDisplayGeometryText
         normalizedHtmlBlocks: documentFlow.normalizedHtmlBlocks
         objectName: "contentsStructuredDocumentInlineEditor"
         renderedText: documentFlow.resolvedEditorSurfaceHtml
-        resourceVisualHeights: documentFlow.resourceVisualHeights
+        resourceVisualBlocks: documentFlow.resourceVisualBlocks
         showRenderedOutput: true
         tagManagementKeyPressHandler: function (event) {
             return documentFlow.handleTagManagementKeyPress(event);

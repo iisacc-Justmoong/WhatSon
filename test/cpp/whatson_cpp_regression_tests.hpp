@@ -1163,7 +1163,7 @@ private slots:
     void progressHierarchySupport_defaultsFirstVisibleItemToFirstDraft();
     void resourcePackageSupport_roundTripsAnnotationMetadataAndBitmap();
     void resourcePackageSupport_normalizesTerminalFormatForMultiDotAssetNames();
-    void resourceRenderer_resolvesIiXmlResourceTagsAndInlineHtmlBlockPlaceholders();
+    void resourceRenderer_resolvesIiXmlResourceTagsAndStructuredVisualBlocks();
     void unusedResourcesSensor_reportsHubPackagesMissingFromAllNoteEmbeddings();
     void unusedResourcesSensor_refreshesAfterRawBodyEmbedsAResource();
     void resourcesImportController_wiresAnnotationBitmapGenerationIntoPackageCreation();
@@ -1219,11 +1219,11 @@ private slots:
     void contentsLineNumberRailMetrics_keepsResourceRowsIndependent();
     void contentsLineNumberRailMetrics_keepsResourceFramesSingleGutterLine();
     void contentsEditorGeometryProvider_keepsTextRowsOnLogicalGeometry();
-    void contentsEditorGeometryProvider_ignoresWholeOverlayHeightWithoutResourceHtml();
-    void contentsEditorGeometryProvider_usesExplicitResourceVisualHeights();
+    void contentsEditorGeometryProvider_ignoresWholeOverlayHeightWithoutResourceVisualBlocks();
+    void contentsEditorGeometryProvider_usesExplicitResourceVisualBlocks();
     void contentsEditorGeometryProvider_anchorsRowsAfterResourceToFrameBottom();
     void contentsEditorGeometryProvider_clampsProbeRowsInsideResourceFrame();
-    void contentsEditorGeometryProvider_offsetsRowsAfterRenderedResourceFrames();
+    void contentsEditorGeometryProvider_offsetsRowsAfterStructuredResourceFrames();
     void contentsEditorVisualLineMetrics_expandsTallVisualBlocks();
     void contentsMinimapLayoutMetrics_resolvesRuntimeVisibilityAndDesignRows();
     void qmlStructuredEditors_rejectStaleSourceRangeMutations();
@@ -1304,7 +1304,7 @@ private slots:
     void editorTagInsertionController_preservesInlineTagBoundariesWhenReformatting();
     void qmlStructuredEditors_bindPaperPaletteIntoPagePrintMode();
     void qmlStructuredEditors_clipInlineResourceCardsToMeasuredBlockBounds();
-    void qmlStructuredEditors_wireInlineResourceRendererToIiXmlHtmlBlockPipeline();
+    void qmlStructuredEditors_wireInlineResourceRendererToStructuredVisualBlocks();
     void qmlEditors_routeRenderedHyperlinksToExternalBrowser();
     void qmlContentsView_composesFigmaFrameFromLvrsParts();
     void qmlContentsView_partsKeepEditorProjectionReadOnlyAndNativeInputSafe();

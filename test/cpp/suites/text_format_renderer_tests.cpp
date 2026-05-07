@@ -139,21 +139,25 @@ void WhatSonCppRegressionTests::editorPresentationProjection_publishesHtmlBlockP
     QVERIFY(projectionCppSource.contains(QStringLiteral("ContentsTextFormatRenderer::normalizedHtmlBlocksChanged")));
     QVERIFY(projectionCppSource.contains(QStringLiteral("ContentsLogicalTextBridge::logicalToSourceOffsetsChanged")));
     QVERIFY(displayBackendHeader.contains(QStringLiteral("ContentsEditorPresentationProjection m_presentationProjection")));
-    QVERIFY(displayBackendHeader.contains(QStringLiteral("inlineResourceVisualHeights(")));
+    QVERIFY(displayBackendHeader.contains(QStringLiteral("inlineResourceVisualBlocks(")));
+    QVERIFY(!displayBackendHeader.contains(QStringLiteral("inlineResourceVisualHeights(")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("htmlTokens: editorDisplayBackend.presentationProjection.htmlTokens")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("normalizedHtmlBlocks: editorDisplayBackend.presentationProjection.normalizedHtmlBlocks")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("editorCursorPosition: structuredDocumentFlow.editorCursorPosition")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("coordinateMapper: editorDisplayBackend.presentationProjection")));
     QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("logicalToSourceOffsets")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("renderInlineResourceEditorSurfaceHtml(")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("inlineResourceVisualHeights(")));
+    QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("renderInlineResourceEditorSurfaceHtml(")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("inlineResourceVisualBlocks(")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("documentBlocks: editorDisplayBackend.structuredBlockRenderer.renderedDocumentBlocks")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("editorDisplayBackend.presentationProjection.editorSurfaceHtml")));
     QVERIFY(documentFlowSource.contains(QStringLiteral("ContentsInlineFormatEditor {")));
     QVERIFY(documentFlowSource.contains(QStringLiteral("property string lastReadyEditorSurfaceHtml")));
-    QVERIFY(documentFlowSource.contains(QStringLiteral("property var resourceVisualHeights")));
+    QVERIFY(documentFlowSource.contains(QStringLiteral("property var resourceVisualBlocks")));
+    QVERIFY(documentFlowSource.contains(QStringLiteral("property var documentBlocks")));
     QVERIFY(documentFlowSource.contains(QStringLiteral("readonly property string resolvedEditorSurfaceHtml")));
     QVERIFY(documentFlowSource.contains(QStringLiteral("renderedText: documentFlow.resolvedEditorSurfaceHtml")));
-    QVERIFY(documentFlowSource.contains(QStringLiteral("resourceVisualHeights: documentFlow.resourceVisualHeights")));
+    QVERIFY(documentFlowSource.contains(QStringLiteral("resourceVisualBlocks: documentFlow.resourceVisualBlocks")));
+    QVERIFY(documentFlowSource.contains(QStringLiteral("documentBlocks: documentFlow.documentBlocks")));
 }
 
 void WhatSonCppRegressionTests::textFormatRenderer_preservesMarkdownUnorderedListMarkersWithoutRegexWarnings()

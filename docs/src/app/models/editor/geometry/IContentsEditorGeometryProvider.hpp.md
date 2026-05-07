@@ -8,14 +8,12 @@ Declares the interface boundary between editor chrome metrics and view-owned geo
 
 - `ContentsEditorGeometryMeasurement` carries a measured `QRectF` plus a `geometryAvailable` flag.
 - `measureTextRange(...)` measures a visible text logical range.
-- `measureResourceRange(...)` measures a visible resource logical range.
-- `resourceContentHeight(...)` returns the rendered resource surface height when available.
 
 ## Contract
 
-Consumers such as `ContentsLineNumberRailMetrics` must use this interface instead of directly referencing TextEdit,
-cursor, selection, resource overlay, or `QQuickItem` objects. The interface is read-only and cannot mutate editor
-source, focus, cursor position, or selection state.
+Consumers such as editor chrome metrics must use this interface instead of directly referencing TextEdit, cursor,
+selection, resource overlay, or `QQuickItem` objects. The interface is read-only and cannot mutate editor source,
+focus, cursor position, or selection state.
 
 ## 한국어
 

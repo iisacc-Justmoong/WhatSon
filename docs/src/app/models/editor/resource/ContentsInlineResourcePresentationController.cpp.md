@@ -2,12 +2,14 @@
 
 ## Responsibility
 
-Implements RichText-side inline resource presentation helpers.
+Implements inline resource frame normalization for structured editor visual blocks.
 
 ## Current Behavior
 
 - Resolves image resource frame dimensions from the editor text-column width.
-- Replaces rendered resource placeholders with framed image HTML.
-- Emits image-resource frame paragraphs with zero line height and top-aligned images, so the RichText paragraph does
-  not add text baseline/descent space beyond the generated frame image height.
-- Normalizes renderer payloads through C++ dynamic-object support before producing presentation HTML.
+- Emits `inlineResourceVisualBlocks(...)` records containing frame width, height, image source, label, target, and
+  resource index for direct QML delegates.
+- Keeps legacy HTML placeholder replacement as compatibility behavior, but the live editor display path no longer uses
+  it to build the editing surface.
+- Normalizes renderer payloads through C++ dynamic-object support before producing frame images or visual block
+  records.

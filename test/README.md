@@ -269,9 +269,9 @@ ctest --test-dir build --output-on-failure -L cpp_regression
 - The inline editor regression now also pins the rendered geometry probe and transparent selection surface as plain
   `displayGeometryText`, not RichText HTML, so caret placement and pointer hit-testing use the same logical coordinate
   space as `ContentsEditorPresentationProjection`.
-- Resource-backed pointer selection now also pins the atomic logical frame contract: `<resource ... />` maps to one
-  U+FFFC logical placeholder, and pointer hits inside the rendered image frame snap to that resource block instead of
-  selecting fake internal text positions.
+- Resource-backed pointer selection now also pins the atomic visual block contract: parser-owned resource blocks render
+  through structured visual delegates, and pointer hits inside the rendered image frame snap to that resource block
+  instead of selecting fake internal text positions.
 - Empty inline-format wrapper coverage now also verifies that hidden-only RAW selections remain collapsed after
   projection to the native logical surface, so restoring `<highlight></highlight>`-only ranges cannot select the next
   visible character.

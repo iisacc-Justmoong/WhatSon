@@ -6,7 +6,7 @@
 #include "app/models/editor/tags/ContentsResourceTagController.hpp"
 #include "app/models/file/viewer/ContentsBodyResourceRenderer.hpp"
 
-void WhatSonCppRegressionTests::resourceRenderer_resolvesIiXmlResourceTagsAndInlineHtmlBlockPlaceholders()
+void WhatSonCppRegressionTests::resourceRenderer_resolvesIiXmlResourceTagsAndStructuredVisualBlocks()
 {
     QTemporaryDir temporaryDirectory;
     QVERIFY(temporaryDirectory.isValid());
@@ -81,10 +81,13 @@ void WhatSonCppRegressionTests::resourceRenderer_resolvesIiXmlResourceTagsAndInl
     const ContentsHtmlBlockRenderPipeline pipeline;
     const ContentsHtmlBlockRenderPipeline::RenderResult renderResult = pipeline.renderEditorDocument(sourceText);
     QVERIFY(!renderResult.documentHtml.contains(sourceText));
-    QVERIFY(renderResult.documentHtml.contains(QStringLiteral("whatson-resource-block:0")));
+    QVERIFY(!renderResult.documentHtml.contains(QStringLiteral("whatson-resource-block")));
+    QVERIFY(renderResult.documentHtml.contains(QStringLiteral("&nbsp;")));
 
+    const QString legacyPlaceholderHtml =
+        QStringLiteral("<!--whatson-resource-block:0--><p style=\"margin-top:0px;margin-bottom:0px;\">&nbsp;</p><!--/whatson-resource-block:0-->");
     const QString inlineHtml =
-        inlinePresentation.renderEditorSurfaceHtmlWithInlineResources(renderResult.documentHtml);
+        inlinePresentation.renderEditorSurfaceHtmlWithInlineResources(legacyPlaceholderHtml);
     QVERIFY(!inlineHtml.contains(QStringLiteral("<resource")));
     QVERIFY(!inlineHtml.contains(QStringLiteral("whatson-resource-block")));
     QVERIFY(inlineHtml.contains(QStringLiteral("<img")));
@@ -93,15 +96,24 @@ void WhatSonCppRegressionTests::resourceRenderer_resolvesIiXmlResourceTagsAndInl
     QVERIFY(inlineHtml.contains(QStringLiteral("style=\"vertical-align:top;\"")));
     QVERIFY(inlineHtml.contains(frameImageSource));
     QVERIFY(inlineHtml.contains(QUrl::fromLocalFile(assetPath).toString()));
-    QCOMPARE(inlinePresentation.inlineResourceVisualHeights().constFirst().toInt(), 260);
+    const QVariantMap visualBlock = inlinePresentation.inlineResourceVisualBlocks().constFirst().toMap();
+    QCOMPARE(visualBlock.value(QStringLiteral("width")).toInt(), 320);
+    QCOMPARE(visualBlock.value(QStringLiteral("height")).toInt(), 260);
+    QCOMPARE(visualBlock.value(QStringLiteral("visualHeight")).toInt(), 260);
+    QCOMPARE(visualBlock.value(QStringLiteral("imageSource")).toString(), frameImageSource);
+    QVERIFY(visualBlock.value(QStringLiteral("renderable")).toBool());
 
     const QString fullWidthInlineHtml =
         inlinePresentation.renderEditorSurfaceHtmlWithInlineResources(
-            renderResult.documentHtml,
+            legacyPlaceholderHtml,
             bodyRenderer.renderedResources(),
             640);
     QVERIFY(fullWidthInlineHtml.contains(QStringLiteral("width=\"640\" height=\"520\"")));
     QCOMPARE(
-        inlinePresentation.inlineResourceVisualHeights(bodyRenderer.renderedResources(), 640).constFirst().toInt(),
+        inlinePresentation.inlineResourceVisualBlocks(bodyRenderer.renderedResources(), 640)
+            .constFirst()
+            .toMap()
+            .value(QStringLiteral("height"))
+            .toInt(),
         520);
 }

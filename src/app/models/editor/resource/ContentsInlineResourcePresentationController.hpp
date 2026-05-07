@@ -39,7 +39,7 @@ public:
         const QString& editorHtml,
         const QVariant& renderedResources = QVariant(),
         int targetFrameWidth = 0) const;
-    Q_INVOKABLE QVariantList inlineResourceVisualHeights(
+    Q_INVOKABLE QVariantList inlineResourceVisualBlocks(
         const QVariant& renderedResources = QVariant(),
         int targetFrameWidth = 0) const;
 
