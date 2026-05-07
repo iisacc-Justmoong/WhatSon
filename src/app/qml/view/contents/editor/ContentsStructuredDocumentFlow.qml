@@ -16,6 +16,7 @@ Item {
     property string lastReadyLogicalText: ""
     property string logicalText: ""
     property string projectionSourceText: documentFlow.sourceText
+    property var resourceVisualHeights: []
     property string sourceText: ""
     property color textColor: LV.Theme.bodyColor
     readonly property real editorContentHeight: editor.displayContentHeight
@@ -136,6 +137,7 @@ Item {
         normalizedHtmlBlocks: documentFlow.normalizedHtmlBlocks
         objectName: "contentsStructuredDocumentInlineEditor"
         renderedText: documentFlow.resolvedEditorSurfaceHtml
+        resourceVisualHeights: documentFlow.resourceVisualHeights
         showRenderedOutput: true
         tagManagementKeyPressHandler: function (event) {
             return documentFlow.handleTagManagementKeyPress(event);

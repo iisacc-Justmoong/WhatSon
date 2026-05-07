@@ -236,8 +236,8 @@ ctest --test-dir build --output-on-failure -L cpp_regression
   active blue gutter bar follows cursor/selection source offsets.
 - Line-number rail metrics now also pin independent row geometry: a tall resource frame keeps one gutter-line row
   instead of converting frame height into a multi-line gutter allocation, while later gutter rows keep their own plain
-  logical y positions adjusted only by the rendered HTML resource image-height delta. The geometry provider ignores
-  rendered overlay row coordinates for ordinary non-resource gutter rows, and refuses to use whole-document rendered
+  logical y positions adjusted only by explicit resource visual-height deltas. The geometry provider ignores rendered
+  overlay row coordinates for ordinary non-resource gutter rows, and refuses to use whole-document rendered
   `contentHeight` as a resource-row fallback. It also clamps probe rows reported inside an active resource frame to the
   frame bottom, preventing placeholder/probe internals from becoming visible gutter anchors, then advances consecutive
   clamped rows by their published height so later gutter numbers do not stack on line 2.

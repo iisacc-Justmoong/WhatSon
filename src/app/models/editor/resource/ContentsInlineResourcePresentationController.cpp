@@ -432,26 +432,37 @@ bool ContentsInlineResourcePresentationController::resourceEntryCanRenderInlineI
         && !resourceEntryOpenTarget(resourceEntry).isEmpty();
 }
 
+QVariantList ContentsInlineResourcePresentationController::normalizedRenderedResourceEntries(
+    const QVariant& renderedResources) const
+{
+    QVariant renderedResourcesInput = renderedResources;
+    if ((!renderedResourcesInput.isValid() || renderedResourcesInput.isNull()) && m_bodyResourceRenderer)
+    {
+        renderedResourcesInput = m_bodyResourceRenderer->property("renderedResources");
+    }
+
+    QVariantList normalizedResources = invokeVariant(
+        m_resourceTagController,
+        "normalizedImportedResourceEntries",
+        { renderedResourcesInput })
+                                               .toList();
+    if (normalizedResources.isEmpty()
+        && renderedResourcesInput.isValid()
+        && !renderedResourcesInput.isNull())
+    {
+        normalizedResources = normalizeSequentialVariant(renderedResourcesInput);
+    }
+    return normalizedResources;
+}
+
 QString ContentsInlineResourcePresentationController::renderEditorSurfaceHtmlWithInlineResources(
     const QString& editorHtml,
     const QVariant& renderedResourcesOverride,
     const int targetFrameWidth) const
 {
     const QString& baseEditorHtml = editorHtml;
-    QVariant renderedResources = renderedResourcesOverride;
-    if ((!renderedResources.isValid() || renderedResources.isNull()) && m_bodyResourceRenderer)
-    {
-        renderedResources = m_bodyResourceRenderer->property("renderedResources");
-    }
-    QVariantList normalizedResources = invokeVariant(
-        m_resourceTagController,
-        "normalizedImportedResourceEntries",
-        { renderedResources })
-                                               .toList();
-    if (normalizedResources.isEmpty() && renderedResources.isValid() && !renderedResources.isNull())
-    {
-        normalizedResources = normalizeSequentialVariant(renderedResources);
-    }
+    const QVariantList normalizedResources =
+        normalizedRenderedResourceEntries(renderedResourcesOverride);
 
     static const QRegularExpression blockExpression(
         QStringLiteral(R"(<!--whatson-resource-block:(\d+)-->[\s\S]*?<!--\/whatson-resource-block:\1-->)"));
@@ -476,4 +487,29 @@ QString ContentsInlineResourcePresentationController::renderEditorSurfaceHtmlWit
     }
     renderedHtml.append(baseEditorHtml.mid(lastOffset));
     return renderedHtml;
+}
+
+QVariantList ContentsInlineResourcePresentationController::inlineResourceVisualHeights(
+    const QVariant& renderedResources,
+    const int targetFrameWidth) const
+{
+    const QVariantList normalizedResources =
+        normalizedRenderedResourceEntries(renderedResources);
+    QVariantList heights;
+    heights.reserve(normalizedResources.size());
+
+    const int resolvedFrameWidth =
+        targetFrameWidth > 0 ? targetFrameWidth : inlineResourcePreviewWidth();
+    for (const QVariant& resourceEntry : normalizedResources)
+    {
+        if (!resourceEntryCanRenderInlineInHtmlProjection(resourceEntry)
+            || resourceEntryFrameImageSource(resourceEntry, resolvedFrameWidth).isEmpty())
+        {
+            heights.push_back(0);
+            continue;
+        }
+
+        heights.push_back(resourceFrameSizeForWidth(resolvedFrameWidth).height());
+    }
+    return heights;
 }

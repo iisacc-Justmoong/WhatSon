@@ -160,6 +160,35 @@ namespace
         return heights;
     }
 
+    qreal resourceVisualHeightFromVariant(const QVariant& value) noexcept
+    {
+        QVariant heightValue = value;
+        if (value.canConvert<QVariantMap>())
+        {
+            const QVariantMap map = value.toMap();
+            heightValue = map.value(
+                QStringLiteral("height"),
+                map.value(QStringLiteral("visualHeight")));
+        }
+
+        bool ok = false;
+        const qreal height = heightValue.toReal(&ok);
+        return ok && std::isfinite(height) && height > 0.0
+            ? height
+            : std::numeric_limits<qreal>::quiet_NaN();
+    }
+
+    std::vector<qreal> resourceVisualHeightsFromVariants(const QVariantList& values)
+    {
+        std::vector<qreal> heights;
+        heights.reserve(static_cast<std::size_t>(values.size()));
+        for (const QVariant& value : values)
+        {
+            heights.push_back(resourceVisualHeightFromVariant(value));
+        }
+        return heights;
+    }
+
     qreal followingTextRowTop(
         const std::vector<QRectF>& rectangles,
         const int rowIndex) noexcept
@@ -262,6 +291,21 @@ void ContentsEditorGeometryProvider::setRenderedHtml(const QString& value)
     }
     m_renderedHtml = value;
     emitGeometryInputChanged(&ContentsEditorGeometryProvider::renderedHtmlChanged);
+}
+
+QVariantList ContentsEditorGeometryProvider::resourceVisualHeights() const
+{
+    return m_resourceVisualHeights;
+}
+
+void ContentsEditorGeometryProvider::setResourceVisualHeights(const QVariantList& value)
+{
+    if (m_resourceVisualHeights == value)
+    {
+        return;
+    }
+    m_resourceVisualHeights = value;
+    emitGeometryInputChanged(&ContentsEditorGeometryProvider::resourceVisualHeightsChanged);
 }
 
 QVariantList ContentsEditorGeometryProvider::lineNumberRanges() const
@@ -478,6 +522,8 @@ QVariantList ContentsEditorGeometryProvider::lineNumberGeometryRows() const
         resourceRanges.push_back(resourceRange);
     }
 
+    const std::vector<qreal> explicitResourceHeights =
+        resourceVisualHeightsFromVariants(m_resourceVisualHeights);
     const std::vector<qreal> htmlResourceHeights =
         resourceVisualHeightsFromHtml(m_renderedHtml, m_fallbackLineHeight);
     int resourceIndex = 0;
@@ -492,14 +538,24 @@ QVariantList ContentsEditorGeometryProvider::lineNumberGeometryRows() const
         rectangle.moveTop(std::max(rectangle.y() + accumulatedResourceDelta, nextMinimumExternalRowTop));
         if (resourceRanges.at(index))
         {
+            const qreal explicitResourceHeight =
+                resourceIndex < static_cast<int>(explicitResourceHeights.size())
+                    ? explicitResourceHeights.at(static_cast<std::size_t>(resourceIndex))
+                    : std::numeric_limits<qreal>::quiet_NaN();
             const qreal htmlResourceHeight =
                 resourceIndex < static_cast<int>(htmlResourceHeights.size())
                     ? htmlResourceHeights.at(static_cast<std::size_t>(resourceIndex))
                     : std::numeric_limits<qreal>::quiet_NaN();
             ++resourceIndex;
-            const qreal resourceVisualHeight = std::isfinite(htmlResourceHeight) && htmlResourceHeight > 0.0
-                ? std::max(m_fallbackLineHeight, htmlResourceHeight)
-                : std::max(m_fallbackLineHeight, rectangle.height());
+            qreal resourceVisualHeight = std::max(m_fallbackLineHeight, rectangle.height());
+            if (std::isfinite(explicitResourceHeight) && explicitResourceHeight > 0.0)
+            {
+                resourceVisualHeight = std::max(m_fallbackLineHeight, explicitResourceHeight);
+            }
+            else if (std::isfinite(htmlResourceHeight) && htmlResourceHeight > 0.0)
+            {
+                resourceVisualHeight = std::max(m_fallbackLineHeight, htmlResourceHeight);
+            }
             rectangle.setHeight(resourceVisualHeight);
             nextMinimumExternalRowTop =
                 std::max(nextMinimumExternalRowTop, rectangle.y() + resourceVisualHeight);

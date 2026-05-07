@@ -6,15 +6,16 @@ Declares the QML-visible implementation of `IContentsEditorGeometryProvider`.
 
 ## Public Surface
 
-- Inputs: `textItem`, `resourceItem`, `targetItem`, `visualItem`, `renderedHtml`, logical line ranges, and primitive
-  visual geometry values supplied by the QML view layer.
+- Inputs: `textItem`, `resourceItem`, `targetItem`, `visualItem`, explicit `resourceVisualHeights`, optional
+  compatibility `renderedHtml`, logical line ranges, and primitive visual geometry values supplied by the QML view
+  layer.
 - Signals: per-input change signals plus `geometryChanged()` so consumers can refresh cached rows when the measured
   surface changes.
 - Outputs: `lineNumberGeometryRows`, `visualLineCount`, and `visualLineWidthRatios` snapshots for independent chrome
   metrics.
 - Interface methods: low-level text range measurement, resource range measurement, and resource content-height lookup.
-  `lineNumberGeometryRows` measures ordinary rows from the plain logical text item and uses rendered HTML image heights
-  only as atomic resource-frame vertical deltas. Resource frame bottoms clamp later row tops so probe-internal
+  `lineNumberGeometryRows` measures ordinary rows from the plain logical text item and uses explicit resource visual
+  heights as atomic resource-frame vertical deltas. Resource frame bottoms clamp later row tops so probe-internal
   placeholder rows cannot be published as gutter anchors inside the frame; consecutive clamped rows are still advanced
   by their published heights so text and blank gutter rows do not overlap.
 
@@ -26,5 +27,6 @@ not know about logical row numbering, source mutation, cursor movement, or selec
 ## 한국어
 
 이 헤더는 QML에서 생성할 수 있는 지오메트리 adapter를 선언한다. 뷰 객체는 여기까지만 들어오며,
-거터/미니맵 계산 객체에는 측정 snapshot 값만 전달된다. resource frame 내부로 들어온 probe row top은
-adapter에서 frame bottom으로 고정되고, 이어지는 row는 이전 published row height 뒤로 배치된다.
+거터/미니맵 계산 객체에는 측정 snapshot 값만 전달된다. resource frame 높이는 `resourceVisualHeights`를 우선
+사용하고, resource frame 내부로 들어온 probe row top은 adapter에서 frame bottom으로 고정되며, 이어지는 row는
+이전 published row height 뒤로 배치된다.

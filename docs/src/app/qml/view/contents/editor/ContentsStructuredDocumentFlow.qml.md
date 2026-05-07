@@ -7,8 +7,8 @@ Hosts the note document surface after `ContentsEditorDisplayBackend` has mounted
 ## Current Contract
 
 - Receives RAW `sourceText` from `ContentsEditorSessionController`.
-- Receives resource-resolved `editorSurfaceHtml`, `logicalText`, `projectionSourceText`, `htmlTokens`, and `normalizedHtmlBlocks` from
-  the backend-bound note editor chrome in `ContentViewLayout.qml`.
+- Receives resource-resolved `editorSurfaceHtml`, `resourceVisualHeights`, `logicalText`, `projectionSourceText`,
+  `htmlTokens`, and `normalizedHtmlBlocks` from the backend-bound note editor chrome in `ContentViewLayout.qml`.
 - Mounts `ContentsInlineFormatEditor.qml` as the live `LV.TextEditor` path. The inline editor receives RAW
   `sourceText`, but in rendered mode its native text surface edits the visible logical projection and reports mapped
   RAW cursor/selection offsets back to this host.
@@ -26,7 +26,8 @@ Hosts the note document surface after `ContentsEditorDisplayBackend` has mounted
 - Passes the projection-owned `coordinateMapper` object into the inline editor for visible-logical to RAW selection
   mapping; the view layer does not receive the raw logical/source offset table.
 - Passes renderer-owned `normalizedHtmlBlocks` through to the inline editor only as selection metadata. Resource
-  selection mapping can treat iiHtmlBlock display spans as atomic without painting a second selection layer.
+  selection mapping can treat iiHtmlBlock display spans as atomic without painting a second selection layer. It also
+  passes explicit `resourceVisualHeights` so gutter geometry does not re-read rendered HTML to discover frame sizes.
 - Keeps the inline editor as the only place where the RichText editor-surface overlay is painted.
 - Emits `sourceTextEdited(text)` upward when the user changes the RAW text buffer.
 - Tag-management shortcuts emit through the same `sourceTextEdited(text)` path after the live editor buffer is
@@ -56,8 +57,10 @@ This file does not parse XML or infer HTML block boundaries. The pipeline is:
 1. RAW `.wsnbody` text is edited.
 2. `ContentsEditorPresentationProjection` reparses and renders the snapshot.
 3. `ContentsHtmlBlockRenderPipeline` converts the HTML projection through `iiHtmlBlock`.
-4. `ContentsEditorDisplayBackend` resolves any resource placeholders through `ContentsBodyResourceRenderer`.
-5. `ContentsStructuredDocumentFlow.qml` consumes the final HTML string and block metadata, plus the projection source
-   snapshot used to decide whether the logical display text belongs to the current RAW source.
+4. `ContentsEditorDisplayBackend` resolves any resource placeholders through `ContentsBodyResourceRenderer` and asks
+   `ContentsInlineResourcePresentationController` for explicit resource visual heights.
+5. `ContentsStructuredDocumentFlow.qml` consumes the final HTML string, resource visual heights, and block metadata,
+   plus the projection source snapshot used to decide whether the logical display text belongs to the current RAW
+   source.
 
 The QML host remains a view surface; RAW mutation and parsing authority stay in C++.

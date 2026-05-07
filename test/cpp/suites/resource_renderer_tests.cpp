@@ -93,6 +93,7 @@ void WhatSonCppRegressionTests::resourceRenderer_resolvesIiXmlResourceTagsAndInl
     QVERIFY(inlineHtml.contains(QStringLiteral("style=\"vertical-align:top;\"")));
     QVERIFY(inlineHtml.contains(frameImageSource));
     QVERIFY(inlineHtml.contains(QUrl::fromLocalFile(assetPath).toString()));
+    QCOMPARE(inlinePresentation.inlineResourceVisualHeights().constFirst().toInt(), 260);
 
     const QString fullWidthInlineHtml =
         inlinePresentation.renderEditorSurfaceHtmlWithInlineResources(
@@ -100,4 +101,7 @@ void WhatSonCppRegressionTests::resourceRenderer_resolvesIiXmlResourceTagsAndInl
             bodyRenderer.renderedResources(),
             640);
     QVERIFY(fullWidthInlineHtml.contains(QStringLiteral("width=\"640\" height=\"520\"")));
+    QCOMPARE(
+        inlinePresentation.inlineResourceVisualHeights(bodyRenderer.renderedResources(), 640).constFirst().toInt(),
+        520);
 }

@@ -3,6 +3,7 @@
 #include <QObject>
 #include <QString>
 #include <QVariant>
+#include <QVariantList>
 
 class ContentsResourceTagController;
 
@@ -38,8 +39,13 @@ public:
         const QString& editorHtml,
         const QVariant& renderedResources = QVariant(),
         int targetFrameWidth = 0) const;
+    Q_INVOKABLE QVariantList inlineResourceVisualHeights(
+        const QVariant& renderedResources = QVariant(),
+        int targetFrameWidth = 0) const;
 
 private:
+    QVariantList normalizedRenderedResourceEntries(const QVariant& renderedResources) const;
+
     QObject* m_contentEditor = nullptr;
     QObject* m_editorViewport = nullptr;
     QObject* m_bodyResourceRenderer = nullptr;

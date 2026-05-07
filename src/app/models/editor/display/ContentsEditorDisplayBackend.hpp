@@ -14,6 +14,7 @@
 #include <QPointer>
 #include <QString>
 #include <QVariant>
+#include <QVariantList>
 #include <QVariantMap>
 #include <QVector>
 #include <qqmlregistration.h>
@@ -88,6 +89,9 @@ public:
     Q_INVOKABLE QVariant requestEditorSelectionContextMenuFromPointer(const QVariant& pointerKind) const;
     Q_INVOKABLE QString renderInlineResourceEditorSurfaceHtml(
         const QString& editorHtml,
+        const QVariant& renderedResources,
+        int targetFrameWidth) const;
+    Q_INVOKABLE QVariantList inlineResourceVisualHeights(
         const QVariant& renderedResources,
         int targetFrameWidth) const;
     Q_INVOKABLE bool syncSessionFromCurrentNote(bool resetViewport);

@@ -299,7 +299,9 @@ QVariantList ContentsLineNumberRailMetrics::logicalLineRanges() const
             return QVariantMap();
         };
 
-    const QString logicalText = !m_logicalText.isEmpty() ? m_logicalText : m_sourceText;
+    const QString logicalText = m_logicalTextBridge != nullptr
+        ? m_logicalTextBridge->logicalText()
+        : (!m_logicalText.isEmpty() ? m_logicalText : m_sourceText);
     QVariantList ranges;
     QSet<QString> emittedResourceKeys;
     int lineNumber = 1;

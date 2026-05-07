@@ -23,7 +23,7 @@ Item {
             + control.editorBottomInset
     readonly property real displayBodyHeight: Math.max(0, control.displayTextContentHeight)
     readonly property var lineNumberGeometryRows: editorGeometryProvider.lineNumberGeometryRows
-    readonly property string lineNumberGeometryRenderedHtml: editorGeometryProvider.renderedHtml
+    readonly property var lineNumberGeometryResourceVisualHeights: editorGeometryProvider.resourceVisualHeights
     readonly property var editorItem: textInput.editorItem
     property bool focused: textInput.focused
     readonly property var inputItem: textInput.editorItem
@@ -50,6 +50,7 @@ Item {
     readonly property bool inputMethodComposing: textInput.inputMethodComposing
     readonly property string preeditText: String(textInput.editorItem.preeditText)
     property string renderedText: ""
+    property var resourceVisualHeights: []
     readonly property int cursorPixelWidth: Math.max(1, Math.ceil(LV.Theme.strokeThin))
     readonly property var logicalGutterRows: lineNumberRailMetrics.rows
     readonly property int visualLineCount: visualLineMetrics.visualLineCount
@@ -902,7 +903,7 @@ Item {
         fallbackWidth: control.width
         lineNumberRanges: lineNumberRailMetrics.logicalLineRanges
         logicalLength: control.displayGeometryText.length
-        renderedHtml: control.renderedText
+        resourceVisualHeights: control.resourceVisualHeights
         resourceItem: renderedOverlay
         targetItem: control
         textItem: control.displayGeometryItem()
@@ -931,7 +932,6 @@ Item {
 
         displayContentHeight: control.displayContentHeight
         geometryWidth: control.width
-        logicalText: control.displayGeometryText
         normalizedHtmlBlocks: control.normalizedHtmlBlocks
         sourceText: control.text
         textLineHeight: LV.Theme.textBodyLineHeight

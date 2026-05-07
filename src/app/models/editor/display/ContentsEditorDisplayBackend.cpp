@@ -338,6 +338,15 @@ QString ContentsEditorDisplayBackend::renderInlineResourceEditorSurfaceHtml(
         std::max(120, targetFrameWidth));
 }
 
+QVariantList ContentsEditorDisplayBackend::inlineResourceVisualHeights(
+    const QVariant& renderedResources,
+    const int targetFrameWidth) const
+{
+    return m_inlineResourcePresentation.inlineResourceVisualHeights(
+        renderedResources,
+        std::max(120, targetFrameWidth));
+}
+
 bool ContentsEditorDisplayBackend::syncSessionFromCurrentNote(const bool resetViewport)
 {
     if (currentNoteId().isEmpty())

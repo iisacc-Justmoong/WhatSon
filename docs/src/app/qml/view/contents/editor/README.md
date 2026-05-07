@@ -54,11 +54,11 @@ Editor-facing QML view components for the center content surface.
   which halves the leading blank area before the number column. The host also forwards RAW cursor/selection offsets so
   the rail can paint a blue active-line bar on the cursor row or selected rows. Atomic resource frames count as one
   logical row with one gutter-line height. Line-number y snapshots come from the plain logical display probe so ordinary
-  text rows keep independent positions; in rendered mode the rendered HTML resource image height supplies the
-  visual-height delta of an atomic resource frame, which places later rows below the frame without converting the frame
-  into extra gutter rows or adopting RichText row coordinates for unrelated text.
-  Inline resource HTML suppresses paragraph line-height around the generated frame image, so the next gutter row can
-  use the encoded frame image height as the actual visual bottom anchor. The geometry adapter compares that frame
+  text rows keep independent positions; in rendered mode the explicit resource visual height supplies the visual-height
+  delta of an atomic resource frame, which places later rows below the frame without converting the frame into extra
+  gutter rows or adopting RichText row coordinates for unrelated text.
+  Inline resource HTML suppresses paragraph line-height around the generated frame image, but the geometry adapter uses
+  the explicit `resourceVisualHeights` list rather than parsing rendered HTML for frame sizes. It compares that frame
   height to the next plain logical row's base y, not to the hidden placeholder line-box height. If QML asks before the
   next plain row has a measurable y, the adapter uses the full frame height so the first post-resource row still lands
   on the frame bottom. If multiple logical rows are clamped out of the same resource frame, the adapter advances each

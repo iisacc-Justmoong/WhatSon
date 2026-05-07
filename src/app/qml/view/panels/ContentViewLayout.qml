@@ -379,6 +379,9 @@ Item {
                                 objectName: "contentsDisplayStructuredDocumentFlow"
                                 paperPaletteEnabled: false
                                 projectionSourceText: editorDisplayBackend.presentationProjection.sourceText
+                                resourceVisualHeights: editorDisplayBackend.inlineResourceVisualHeights(
+                                                           editorDisplayBackend.bodyResourceRenderer.renderedResources,
+                                                           structuredDocumentFlow.width - LV.Theme.gap16 * 2)
                                 sourceText: editorDisplayBackend.editorSession.editorText
                                 textColor: LV.Theme.bodyColor
                                 visible: editorDisplayBackend.noteDocumentParseMounted

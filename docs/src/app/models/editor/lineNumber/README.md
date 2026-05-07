@@ -14,10 +14,11 @@ C++ model objects for the note editor's logical line-number rail.
 - `ContentsLineNumberRailMetrics` owns logical line-number row construction for the note editor.
 - QML supplies view-owned inputs only: the current source snapshot, renderer-owned `normalizedHtmlBlocks`, measured row
   geometry snapshots, and LVRS line-height/width values.
-- The C++ object de-duplicates iiHtmlBlock-derived block entries, splits row ranges from the full `logicalText`
-  projection, maps each logical line back to RAW source offsets through its internal logical text bridge, marks resource
-  rows from renderer metadata, combines those logical ranges with supplied row geometry snapshots, and publishes final
-  `{ number, sourceStart, sourceEnd, y, height }` rows.
+- The C++ object de-duplicates iiHtmlBlock-derived block entries, derives row ranges from authoritative `sourceText`
+  through its internal logical text bridge, maps each logical line back to RAW source offsets, marks resource rows from
+  renderer metadata, combines those logical ranges with supplied row geometry snapshots, and publishes final
+  `{ number, sourceStart, sourceEnd, y, height }` rows. The QML-facing `logicalText` property remains a compatibility
+  input for change notification, but it is not the row-construction authority.
 - The line-number object must not own or call TextEdit, cursor, selection, resource overlay, or QQuickItem objects
   directly. Surface measurement belongs to the geometry adapter and enters this object only as value snapshots.
 - Published rows use measured geometry snapshots, but they must remain non-overlapping in the final gutter. A tall
@@ -41,8 +42,9 @@ C++ model objects for the note editor's logical line-number rail.
 
 - 대상: `src/app/models/editor/lineNumber`
 - 역할: 노트 편집기 왼쪽 줄 번호 rail의 논리 줄 row 계산을 C++에서 담당한다.
-- 기준: QML은 입력 데이터와 geometry snapshot을 넘기는 뷰 역할만 한다. 블록 de-dupe, 전체 `logicalText` 기반
-  논리 줄 분할, source/logical offset 매핑, 최종 y/height row 생성은 `ContentsLineNumberRailMetrics`가 담당한다.
+- 기준: QML은 입력 데이터와 geometry snapshot을 넘기는 뷰 역할만 한다. 블록 de-dupe, `sourceText` 기반 논리 줄
+  분할, source/logical offset 매핑, 최종 y/height row 생성은 `ContentsLineNumberRailMetrics`가 담당한다.
+  `logicalText` property는 호환 입력일 뿐 정상 QML 경로의 source of truth가 아니다.
 - 격리: `ContentsLineNumberRailMetrics`는 TextEdit, cursor, selection, resource overlay 객체를 직접 참조하지 않고
   측정된 row geometry 값만 사용한다.
 - 위치: 각 row의 y/height는 geometry snapshot을 기준으로 결정하되, 최종 거터에서는 서로 겹치지 않아야 한다.

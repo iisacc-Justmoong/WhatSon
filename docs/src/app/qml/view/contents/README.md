@@ -31,8 +31,8 @@ It merges the standalone Figma contents-surface artifacts and the runtime editor
   render a viewport thumb or scrollbar chrome, and drag movement is emitted as a direct pixel delta instead of a
   normalized scrollbar ratio.
 - Runtime editor gutters are view-only QML chrome. They receive logical-line rows from
-  `ContentsLineNumberRailMetrics`, a C++ editor model that consumes full logical text, structured projection metadata,
-  and measured geometry snapshots. The rail must remain inside the body viewport rather than becoming a detached
+  `ContentsLineNumberRailMetrics`, a C++ editor model that consumes authoritative source text, structured projection
+  metadata, and measured geometry snapshots. The rail must remain inside the body viewport rather than becoming a detached
   overlay, its own `preferredWidth` halves the leading blank area before the line-number column, and cursor/selection
   offsets only drive the blue active-line bar.
 - `ContentViewLayout.qml` imports this directory as `ContentsChrome` and reuses `Minimap.qml` from this namespace.

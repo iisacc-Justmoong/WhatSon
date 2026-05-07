@@ -1215,11 +1215,12 @@ private slots:
     void qmlStructuredEditors_mountsEditorAndMinimapInDisplayLayout();
     void contentsLineNumberRailMetrics_buildsRowsFromLogicalBlocks();
     void contentsLineNumberRailMetrics_mapsRowsFromWholeLogicalText();
+    void contentsLineNumberRailMetrics_ignoresExternalLogicalTextForResourceRows();
     void contentsLineNumberRailMetrics_keepsResourceRowsIndependent();
     void contentsLineNumberRailMetrics_keepsResourceFramesSingleGutterLine();
     void contentsEditorGeometryProvider_keepsTextRowsOnLogicalGeometry();
     void contentsEditorGeometryProvider_ignoresWholeOverlayHeightWithoutResourceHtml();
-    void contentsEditorGeometryProvider_usesRenderedHtmlResourceHeights();
+    void contentsEditorGeometryProvider_usesExplicitResourceVisualHeights();
     void contentsEditorGeometryProvider_anchorsRowsAfterResourceToFrameBottom();
     void contentsEditorGeometryProvider_clampsProbeRowsInsideResourceFrame();
     void contentsEditorGeometryProvider_offsetsRowsAfterRenderedResourceFrames();

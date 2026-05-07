@@ -187,6 +187,43 @@ void WhatSonCppRegressionTests::contentsLineNumberRailMetrics_mapsRowsFromWholeL
     QCOMPARE(rows.at(2).toMap().value(QStringLiteral("y")).toDouble(), 72.0);
 }
 
+void WhatSonCppRegressionTests::contentsLineNumberRailMetrics_ignoresExternalLogicalTextForResourceRows()
+{
+    const QString resourceTag =
+        QStringLiteral("<resource type=\"image\" path=\"cover.png\" />");
+    const QString sourceText = QStringLiteral("alpha\n") + resourceTag + QStringLiteral("\nbeta");
+    const int resourceStart = QStringLiteral("alpha\n").size();
+    const int resourceEnd = resourceStart + resourceTag.size();
+
+    ContentsLineNumberRailMetrics metrics;
+    metrics.setTextLineHeight(18.0);
+    metrics.setGeometryWidth(320.0);
+    metrics.setSourceText(sourceText);
+    metrics.setLogicalText(QStringLiteral("alpha\nbeta"));
+    metrics.setNormalizedHtmlBlocks(QVariantList{
+        QVariantMap{
+            {QStringLiteral("htmlBlockIsDisplayBlock"), true},
+            {QStringLiteral("htmlBlockObjectSource"), QStringLiteral("iiHtmlBlock")},
+            {QStringLiteral("htmlTokenStartIndex"), 1},
+            {QStringLiteral("logicalLineCountHint"), 1},
+            {QStringLiteral("renderDelegateType"), QStringLiteral("resource")},
+            {QStringLiteral("sourceEnd"), resourceEnd},
+            {QStringLiteral("sourceStart"), resourceStart},
+            {QStringLiteral("sourceText"), resourceTag},
+        },
+    });
+
+    const QVariantList ranges = metrics.logicalLineRanges();
+    QCOMPARE(ranges.size(), 3);
+    QCOMPARE(ranges.at(0).toMap().value(QStringLiteral("sourceStart")).toInt(), 0);
+    QCOMPARE(ranges.at(0).toMap().value(QStringLiteral("sourceEnd")).toInt(), 5);
+    QVERIFY(ranges.at(1).toMap().value(QStringLiteral("resourceRange")).toBool());
+    QCOMPARE(ranges.at(1).toMap().value(QStringLiteral("sourceStart")).toInt(), resourceStart);
+    QCOMPARE(ranges.at(1).toMap().value(QStringLiteral("sourceEnd")).toInt(), resourceEnd);
+    QVERIFY(ranges.at(2).toMap().value(QStringLiteral("sourceStart")).toInt() > resourceEnd);
+    QCOMPARE(ranges.at(2).toMap().value(QStringLiteral("number")).toInt(), 3);
+}
+
 void WhatSonCppRegressionTests::contentsLineNumberRailMetrics_keepsResourceRowsIndependent()
 {
     const QString resourceTag =
@@ -426,7 +463,7 @@ void WhatSonCppRegressionTests::contentsEditorGeometryProvider_ignoresWholeOverl
     QCOMPARE(rows.at(2).toMap().value(QStringLiteral("y")).toDouble(), 36.0);
 }
 
-void WhatSonCppRegressionTests::contentsEditorGeometryProvider_usesRenderedHtmlResourceHeights()
+void WhatSonCppRegressionTests::contentsEditorGeometryProvider_usesExplicitResourceVisualHeights()
 {
     QQmlEngine engine;
     const std::unique_ptr<QObject> textGeometry = createGeometryProbe(
@@ -457,7 +494,7 @@ void WhatSonCppRegressionTests::contentsEditorGeometryProvider_usesRenderedHtmlR
     provider.setFallbackLineHeight(18.0);
     provider.setFallbackWidth(320.0);
     provider.setLogicalLength(11);
-    provider.setRenderedHtml(QStringLiteral("<p><img src='' width='120' height='36' /></p>"));
+    provider.setResourceVisualHeights(QVariantList{36.0});
     provider.setTextItem(textGeometry.get());
     provider.setResourceItem(resourceGeometry.get());
     provider.setLineNumberRanges(QVariantList{
