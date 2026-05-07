@@ -1217,7 +1217,9 @@ private slots:
     void contentsLineNumberRailMetrics_mapsRowsFromWholeLogicalText();
     void contentsLineNumberRailMetrics_keepsResourceRowsIndependent();
     void contentsLineNumberRailMetrics_keepsResourceFramesSingleGutterLine();
+    void contentsEditorGeometryProvider_keepsTextRowsOnLogicalGeometry();
     void contentsEditorGeometryProvider_capsMiddleResourceRowsAtNextMeasuredRow();
+    void contentsEditorGeometryProvider_offsetsRowsAfterRenderedResourceFrames();
     void contentsEditorVisualLineMetrics_expandsTallVisualBlocks();
     void contentsMinimapLayoutMetrics_resolvesRuntimeVisibilityAndDesignRows();
     void qmlStructuredEditors_rejectStaleSourceRangeMutations();

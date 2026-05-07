@@ -75,8 +75,10 @@ Wraps the live `LV.TextEditor` used by the note document surface.
   measured text body so terminal hit testing does not treat the bottom breathing room as rendered text.
 - Mounts `ContentsEditorGeometryProvider` as the only view-owned geometry adapter for chrome measurements. The adapter
   receives TextEdit/resource items, measures visible line rows and logical-line row rectangles, then publishes value
-  snapshots. In rendered mode the line-number measurement item is the rendered RichText overlay, so the gutter row
-  after an image resource frame uses its own visual y position below the frame instead of the plain U+FFFC probe row.
+  snapshots. Line-number text rows are measured against the plain logical display probe, while the rendered RichText
+  overlay is supplied only as the resource-frame measurement item. Resource rows contribute their rendered visual-height
+  delta to later rows, but ordinary gutter rows keep their own logical text y snapshots instead of inheriting RichText
+  overlay coordinates.
 - Mounts `ContentsEditorVisualLineMetrics` as the C++ owner of minimap row normalization. It receives measured visual
   line count and row-width ratios only; it never receives TextEdit, cursor, selection, or resource overlay objects.
 - Mounts `ContentsLineNumberRailMetrics` as the C++ owner of logical line-number row construction. The inline editor

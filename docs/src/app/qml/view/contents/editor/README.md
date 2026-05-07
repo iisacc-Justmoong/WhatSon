@@ -53,9 +53,10 @@ Editor-facing QML view components for the center content surface.
   gutter row with three visible lines of height. The rail width comes from `ContentsLineNumberRail.preferredWidth`,
   which halves the leading blank area before the number column. The host also forwards RAW cursor/selection offsets so
   the rail can paint a blue active-line bar on the cursor row or selected rows. Atomic resource frames count as one
-  logical row with one gutter-line height. In rendered mode, line-number y snapshots are measured against the rendered
-  overlay rather than the plain U+FFFC geometry probe, so the row after an image frame finds its own visual position
-  below that frame without converting the frame into extra gutter rows or a multi-line gutter allocation.
+  logical row with one gutter-line height. Line-number y snapshots come from the plain logical display probe so ordinary
+  text rows keep independent positions; in rendered mode the rendered overlay is used only to measure the visual-height
+  delta of an atomic resource frame, which places later rows below the frame without converting the frame into extra
+  gutter rows or adopting RichText row coordinates for unrelated text.
 - The minimap row count is driven by `ContentsStructuredDocumentFlow.editorVisualLineCount`, which comes from measured
   visual-line snapshots normalized by the C++ `ContentsEditorVisualLineMetrics` object. A single source tag or
   paragraph that wraps onto two visible editor lines therefore produces two minimap rows. Tall rendered blocks such as

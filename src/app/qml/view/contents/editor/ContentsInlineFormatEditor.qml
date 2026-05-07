@@ -667,10 +667,6 @@ Item {
         return control.logicalSurfaceActive ? renderedGeometryProbe : textInput.editorItem;
     }
 
-    function lineNumberGeometryItem() {
-        return control.renderedOverlayVisible ? renderedOverlay : control.displayGeometryItem();
-    }
-
     function requestViewHook(reason) {
         control.viewHookRequested(reason !== undefined ? String(reason) : "manual");
     }
@@ -906,7 +902,7 @@ Item {
         logicalLength: control.displayGeometryText.length
         resourceItem: renderedOverlay
         targetItem: control
-        textItem: control.lineNumberGeometryItem()
+        textItem: control.displayGeometryItem()
         visualItem: control.renderedOverlayVisible ? renderedOverlay : textInput.editorItem
         visualLineHeight: LV.Theme.textBodyLineHeight
         visualStrokeThin: LV.Theme.strokeThin

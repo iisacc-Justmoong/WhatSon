@@ -277,7 +277,7 @@ void WhatSonCppRegressionTests::qmlInlineFormatEditor_projectsVisibleGeometryFro
     QVERIFY(inlineEditorSource.contains(QStringLiteral("measuredVisualLineCount")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("lineNumberRanges: lineNumberRailMetrics.logicalLineRanges")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("geometryRows")));
-    QVERIFY(inlineEditorSource.contains(QStringLiteral("textItem: control.lineNumberGeometryItem()")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("textItem: control.displayGeometryItem()")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("visualItem: control.renderedOverlayVisible ? renderedOverlay : textInput.editorItem")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("resourceItem: renderedOverlay")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("targetItem: control")));
@@ -299,8 +299,7 @@ void WhatSonCppRegressionTests::qmlInlineFormatEditor_projectsVisibleGeometryFro
     QVERIFY(inlineEditorSource.contains(QStringLiteral("property real editorBottomInset: LV.Theme.gap16")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("function displayGeometryItem()")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("return control.logicalSurfaceActive ? renderedGeometryProbe : textInput.editorItem;")));
-    QVERIFY(inlineEditorSource.contains(QStringLiteral("function lineNumberGeometryItem()")));
-    QVERIFY(inlineEditorSource.contains(QStringLiteral("return control.renderedOverlayVisible ? renderedOverlay : control.displayGeometryItem();")));
+    QVERIFY(!inlineEditorSource.contains(QStringLiteral("function lineNumberGeometryItem()")));
     QVERIFY(!inlineEditorSource.contains(QStringLiteral("function resourceDisplayRectangleForBlock(block)")));
     QVERIFY(!inlineEditorSource.contains(QStringLiteral("function resourceSelectionRectangleForBlock(block)")));
     QVERIFY(!inlineEditorSource.contains(QStringLiteral("function buildAtomicResourceSelectionRects()")));

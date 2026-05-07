@@ -229,9 +229,10 @@ ctest --test-dir build --output-on-failure -L cpp_regression
   blank leading area before the line-number column stays half of the previous implicit button-width slack, and the
   active blue gutter bar follows cursor/selection source offsets.
 - Line-number rail metrics now also pin independent row geometry: a tall resource frame keeps one gutter-line row
-  instead of converting frame height into a multi-line gutter allocation, while later gutter rows keep their own
-  measured y positions from the rendered overlay and the geometry provider caps an overlay-height resource row at the
-  next measured row top.
+  instead of converting frame height into a multi-line gutter allocation, while later gutter rows keep their own plain
+  logical y positions adjusted only by the rendered resource-frame visual-height delta. The geometry provider caps an
+  overlay-height resource row at the next measured row top, and ignores rendered overlay row coordinates for ordinary
+  non-resource gutter rows.
 - The shared inline-format editor now also pins the absence of pointer interception above the live `LV.TextEditor`,
   so mouse/touch selection, `Shift`-extended selection, and repeated Backspace/Delete remain OS/Qt-native. The same
   regression scans the QML source tree for forbidden input-method bridges and fallbacks, keeping IME query updates,
