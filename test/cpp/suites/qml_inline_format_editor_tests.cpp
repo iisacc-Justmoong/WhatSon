@@ -14,12 +14,15 @@
 #include <QDirIterator>
 #include <QFile>
 #include <QFileInfo>
+#include <QColor>
 #include <QQmlComponent>
 #include <QQmlEngine>
+#include <QImage>
 #include <QtQml/qqml.h>
 #include <QQuickItem>
 #include <QQuickWindow>
 #include <QRectF>
+#include <QTemporaryDir>
 
 #include <memory>
 
@@ -274,7 +277,7 @@ void WhatSonCppRegressionTests::qmlInlineFormatEditor_projectsVisibleGeometryFro
     QVERIFY(inlineEditorSource.contains(QStringLiteral("measuredVisualLineCount")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("lineNumberRanges: lineNumberRailMetrics.logicalLineRanges")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("geometryRows")));
-    QVERIFY(inlineEditorSource.contains(QStringLiteral("textItem: control.displayGeometryItem()")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("textItem: control.lineNumberGeometryItem()")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("visualItem: control.renderedOverlayVisible ? renderedOverlay : textInput.editorItem")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("resourceItem: renderedOverlay")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("targetItem: control")));
@@ -296,6 +299,8 @@ void WhatSonCppRegressionTests::qmlInlineFormatEditor_projectsVisibleGeometryFro
     QVERIFY(inlineEditorSource.contains(QStringLiteral("property real editorBottomInset: LV.Theme.gap16")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("function displayGeometryItem()")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("return control.logicalSurfaceActive ? renderedGeometryProbe : textInput.editorItem;")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("function lineNumberGeometryItem()")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("return control.renderedOverlayVisible ? renderedOverlay : control.displayGeometryItem();")));
     QVERIFY(!inlineEditorSource.contains(QStringLiteral("function resourceDisplayRectangleForBlock(block)")));
     QVERIFY(!inlineEditorSource.contains(QStringLiteral("function resourceSelectionRectangleForBlock(block)")));
     QVERIFY(!inlineEditorSource.contains(QStringLiteral("function buildAtomicResourceSelectionRects()")));
@@ -1306,6 +1311,108 @@ Item {
     QVERIFY2(
         thirdY > secondY,
         qPrintable(QStringLiteral("Third gutter row must be below second row: %1 <= %2").arg(thirdY).arg(secondY)));
+}
+
+void WhatSonCppRegressionTests::qmlInlineFormatEditor_placesResourceGutterRowsAfterFrame()
+{
+    registerInlineFormatEditorRuntimeQmlTypes();
+
+    QTemporaryDir imageDirectory;
+    QVERIFY(imageDirectory.isValid());
+    const QString imagePath = imageDirectory.filePath(QStringLiteral("resource-frame.png"));
+    QImage image(24, 24, QImage::Format_ARGB32_Premultiplied);
+    image.fill(QColor(0x44, 0x88, 0xcc));
+    QVERIFY(image.save(imagePath));
+
+    const QString repositoryRoot = qmlInlineFormatEditorRepositoryRootPath();
+    QQmlEngine engine;
+    addWhatSonInlineFormatEditorQmlImportPaths(engine, repositoryRoot);
+
+    const QString editorImportUrl =
+        QUrl::fromLocalFile(repositoryRoot + QStringLiteral("/src/app/qml/view/contents/editor")).toString();
+    const QString imageUrl = QUrl::fromLocalFile(imagePath).toString();
+    const QByteArray qmlSource = QStringLiteral(R"QML(
+import QtQuick
+import WhatSon.App.Internal 1.0
+import "%1" as EditorView
+
+Item {
+    id: root
+    width: 260
+    height: 260
+
+    readonly property string resourceTag: "<resource type=\"image\" format=\".png\" path=\"icloud.wsresources/demo.wsresource\" id=\"demo\" />"
+    readonly property int resourceStart: 0
+    readonly property int resourceEnd: resourceTag.length
+
+    EditorView.ContentsInlineFormatEditor {
+        id: editor
+        objectName: "inlineFormatEditorUnderTest"
+        anchors.fill: parent
+        coordinateMapper: ContentsEditorPresentationProjection {
+            sourceText: editor.text
+        }
+        displayGeometryText: "\uFFFC\nBeta"
+        normalizedHtmlBlocks: [
+            {
+                "htmlBlockIsDisplayBlock": true,
+                "htmlBlockObjectSource": "iiHtmlBlock",
+                "renderDelegateType": "resource",
+                "sourceStart": root.resourceStart,
+                "sourceEnd": root.resourceEnd,
+                "sourceText": root.resourceTag
+            }
+        ]
+        renderedText: "<p style='margin-top:0px;margin-bottom:0px;'><img src='%2' width='160' height='96' /></p><p style='margin-top:0px;margin-bottom:0px;'>Beta</p>"
+        showRenderedOutput: true
+        text: root.resourceTag + "\nBeta"
+    }
+}
+)QML").arg(editorImportUrl, imageUrl).toUtf8();
+
+    QQmlComponent component(&engine);
+    component.setData(
+        qmlSource,
+        QUrl::fromLocalFile(repositoryRoot + QStringLiteral("/test/cpp/InlineFormatResourceGutterHarness.qml")));
+    if (component.status() == QQmlComponent::Error)
+    {
+        QFAIL(qPrintable(qmlInlineFormatEditorErrorString(component.errors())));
+    }
+
+    std::unique_ptr<QObject> rootObject(component.create());
+    if (!rootObject)
+    {
+        QFAIL(qPrintable(qmlInlineFormatEditorErrorString(component.errors())));
+    }
+
+    auto* rootItem = qobject_cast<QQuickItem*>(rootObject.get());
+    QVERIFY(rootItem != nullptr);
+
+    QQuickWindow window;
+    window.resize(260, 260);
+    rootItem->setParentItem(window.contentItem());
+    window.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&window));
+
+    QObject* inlineEditor = rootObject->findChild<QObject*>(QStringLiteral("inlineFormatEditorUnderTest"));
+    QVERIFY(inlineEditor != nullptr);
+    QTRY_VERIFY(inlineEditor->property("renderedOverlayVisible").toBool());
+    QTRY_COMPARE(inlineEditor->property("logicalGutterRows").toList().size(), 2);
+
+    const QVariantList logicalGutterRows = inlineEditor->property("logicalGutterRows").toList();
+    const QVariantMap resourceRow = logicalGutterRows.at(0).toMap();
+    const QVariantMap betaRow = logicalGutterRows.at(1).toMap();
+    QCOMPARE(resourceRow.value(QStringLiteral("number")).toInt(), 1);
+    QVERIFY(resourceRow.value(QStringLiteral("resourceRange")).toBool());
+    QCOMPARE(betaRow.value(QStringLiteral("number")).toInt(), 2);
+    const double resourceY = resourceRow.value(QStringLiteral("y")).toDouble();
+    const double betaY = betaRow.value(QStringLiteral("y")).toDouble();
+    QVERIFY2(
+        betaY >= resourceY + 80.0,
+        qPrintable(QStringLiteral("Second gutter row must follow the rendered resource frame: %1 < %2 + 80")
+                       .arg(betaY)
+                       .arg(resourceY)));
+    QVERIFY(resourceRow.value(QStringLiteral("height")).toDouble() < betaY - resourceY);
 }
 
 void WhatSonCppRegressionTests::qmlStructuredDocumentFlow_routesBottomBlankClickToBodyEnd()

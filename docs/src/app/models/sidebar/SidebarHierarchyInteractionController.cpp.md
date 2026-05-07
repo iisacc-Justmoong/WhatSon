@@ -1,9 +1,8 @@
 # `src/app/models/sidebar/SidebarHierarchyInteractionController.cpp`
 
 ## Implementation Notes
-- Footer actions are normalized from either LVRS button index or explicit `eventName`.
-- The controller keeps a one-turn queued footer action so LVRS versions that emit both config callbacks and
-  `buttonClicked(...)` do not double-dispatch create, delete, or options actions.
+- Footer action normalization remains available as a compatibility helper, but live `LV.ListFooter` clicks dispatch
+  directly inside `SidebarHierarchyView.qml` so create/delete/options do not depend on a controller signal round-trip.
 - Expansion keys are scoped as `hierarchy:<activeIndex>:<stableKey>`, preserving row state across model refreshes without
   leaking identical row ids between hierarchy domains.
 - Single-row and bulk expansion requests go through the bound `HierarchyInteractionBridge` by meta-object call, then

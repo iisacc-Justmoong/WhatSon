@@ -130,8 +130,7 @@ Rectangle {
             eventName: "hierarchy.footer.create",
             horizontalPadding: sidebarHierarchyView.hierarchyCompactInset,
             onClicked: function () {
-                if (sidebarHierarchyView.hierarchyInteractionController)
-                    sidebarHierarchyView.hierarchyInteractionController.requestFooterAction("hierarchy.footer.create");
+                sidebarHierarchyView.requestHierarchyFooterAction("hierarchy.footer.create");
             },
             verticalPadding: sidebarHierarchyView.hierarchyCompactInset
         },
@@ -146,8 +145,7 @@ Rectangle {
             eventName: "hierarchy.footer.delete",
             horizontalPadding: sidebarHierarchyView.hierarchyCompactInset,
             onClicked: function () {
-                if (sidebarHierarchyView.hierarchyInteractionController)
-                    sidebarHierarchyView.hierarchyInteractionController.requestFooterAction("hierarchy.footer.delete");
+                sidebarHierarchyView.requestHierarchyFooterAction("hierarchy.footer.delete");
             },
             verticalPadding: sidebarHierarchyView.hierarchyCompactInset
         },
@@ -162,8 +160,7 @@ Rectangle {
             eventName: "hierarchy.footer.options",
             leftPadding: sidebarHierarchyView.hierarchyCompactInset,
             onClicked: function () {
-                if (sidebarHierarchyView.hierarchyInteractionController)
-                    sidebarHierarchyView.hierarchyInteractionController.requestFooterAction("hierarchy.footer.options");
+                sidebarHierarchyView.requestHierarchyFooterAction("hierarchy.footer.options");
             },
             rightPadding: LV.Theme.gap4,
             topPadding: sidebarHierarchyView.hierarchyCompactInset,
@@ -234,6 +231,11 @@ Rectangle {
     property alias hierarchySelectionAnchorIndex: hierarchySelectionController.selectionAnchorIndex
     property int hierarchySelectionVisualRevision: 0
     property var hierarchyController: null
+    property string hierarchyChevronPointerPressKey: ""
+    property real hierarchyChevronPointerPressX: 0
+    property real hierarchyChevronPointerPressY: 0
+    readonly property real hierarchyChevronPointerTapThreshold: Math.max(4, Number(LV.Theme.gap8) || 8)
+    property string hierarchyFooterTriggerQueuedAction: ""
     property string hierarchyViewOptionsTriggerQueuedAction: ""
     readonly property var hierarchyTreeContextMenuItems: [
         {
@@ -355,6 +357,11 @@ Rectangle {
     function clearHierarchyPointerSelectionModifiers() {
         hierarchySelectionController.clearHierarchyPointerSelectionModifiers();
     }
+    function clearHierarchyChevronPointerPress() {
+        sidebarHierarchyView.hierarchyChevronPointerPressKey = "";
+        sidebarHierarchyView.hierarchyChevronPointerPressX = 0;
+        sidebarHierarchyView.hierarchyChevronPointerPressY = 0;
+    }
     function clearNoteDropPreview() {
         noteDropController.clearNoteDropPreview();
     }
@@ -403,11 +410,24 @@ Rectangle {
         sidebarHierarchyView.requestHierarchyViewOptionsAction(index, eventName);
     }
     function handleHierarchyFooterButtonClicked(index, config) {
-        if (!sidebarHierarchyView.hierarchyInteractionController)
-            return false;
         const normalizedEventName = config && config.eventName !== undefined && config.eventName !== null ? String(config.eventName).trim() : "";
-        const action = sidebarHierarchyView.hierarchyInteractionController.footerActionName(index, normalizedEventName);
-        return sidebarHierarchyView.hierarchyInteractionController.requestFooterAction(action);
+        const action = sidebarHierarchyView.hierarchyFooterActionName(index, normalizedEventName);
+        return sidebarHierarchyView.requestHierarchyFooterAction(action);
+    }
+    function hierarchyFooterActionName(index, eventName) {
+        const normalizedEventName = eventName === undefined || eventName === null ? "" : String(eventName).trim();
+        if (normalizedEventName === "hierarchy.footer.create"
+                || normalizedEventName === "hierarchy.footer.delete"
+                || normalizedEventName === "hierarchy.footer.options")
+            return normalizedEventName;
+        const normalizedIndex = sidebarHierarchyView.normalizedInteger(index, -1);
+        if (normalizedIndex === 0)
+            return "hierarchy.footer.create";
+        if (normalizedIndex === 1)
+            return "hierarchy.footer.delete";
+        if (normalizedIndex === 2)
+            return "hierarchy.footer.options";
+        return "";
     }
     function hierarchyViewOptionsActionName(index, eventName) {
         const normalizedEventName = eventName === undefined || eventName === null ? "" : String(eventName).trim();
@@ -520,6 +540,39 @@ Rectangle {
     }
     function hierarchySelectionToggleModifierPressed(modifiers) {
         return hierarchySelectionController.hierarchySelectionToggleModifierPressed(modifiers);
+    }
+    function beginHierarchyChevronPointerPress(x, y, modifiers) {
+        if (!sidebarHierarchyView.hierarchyInteractionController)
+            return false;
+        const targetX = Number(x) || 0;
+        const targetY = Number(y) || 0;
+        const target = sidebarHierarchyView.hierarchyChevronExpansionTargetAtPosition(targetX, targetY);
+        if (!target || !target.key || !target.key.length)
+            return false;
+        sidebarHierarchyView.captureHierarchyPointerSelectionModifiers(modifiers !== undefined ? modifiers : Qt.NoModifier);
+        if (!sidebarHierarchyView.hierarchyInteractionController.armExpansionKey(target.key))
+            return false;
+        sidebarHierarchyView.hierarchyChevronPointerPressKey = target.key;
+        sidebarHierarchyView.hierarchyChevronPointerPressX = targetX;
+        sidebarHierarchyView.hierarchyChevronPointerPressY = targetY;
+        return true;
+    }
+    function finishHierarchyChevronPointerPress(x, y) {
+        const pressedKey = sidebarHierarchyView.hierarchyChevronPointerPressKey;
+        if (!pressedKey.length)
+            return false;
+        const targetX = Number(x) || 0;
+        const targetY = Number(y) || 0;
+        const deltaX = targetX - sidebarHierarchyView.hierarchyChevronPointerPressX;
+        const deltaY = targetY - sidebarHierarchyView.hierarchyChevronPointerPressY;
+        const tapDistance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+        const releaseTarget = sidebarHierarchyView.hierarchyChevronExpansionTargetAtPosition(targetX, targetY);
+        const releaseKey = releaseTarget && releaseTarget.key !== undefined ? String(releaseTarget.key) : "";
+        const committed = tapDistance <= sidebarHierarchyView.hierarchyChevronPointerTapThreshold
+                && releaseKey === pressedKey
+                && sidebarHierarchyView.requestHierarchyChevronExpansionAtPosition(targetX, targetY, pressedKey);
+        sidebarHierarchyView.clearHierarchyChevronPointerPress();
+        return committed;
     }
     function hierarchyChevronExpansionTargetAtPosition(x, y) {
         const targetX = Number(x) || 0;
@@ -766,6 +819,34 @@ Rectangle {
             return false;
         sidebarHierarchyView.hierarchyInteractionBridge.deleteSelectedFolder();
         sidebarHierarchyView.requestViewHook(reason !== undefined ? reason : "hierarchy.footer.delete");
+        return true;
+    }
+    function requestHierarchyFooterAction(action) {
+        const normalizedAction = action === undefined || action === null ? "" : String(action).trim();
+        if (!normalizedAction.length)
+            return false;
+        if (sidebarHierarchyView.hierarchyFooterTriggerQueuedAction === normalizedAction)
+            return true;
+
+        let committed = false;
+        if (normalizedAction === "hierarchy.footer.create")
+            committed = sidebarHierarchyView.requestCreateFolder();
+        else if (normalizedAction === "hierarchy.footer.delete")
+            committed = sidebarHierarchyView.requestDeleteFolder();
+        else if (normalizedAction === "hierarchy.footer.options") {
+            if (!sidebarHierarchyView.viewOptionsEnabled)
+                return false;
+            sidebarHierarchyView.requestViewOptions();
+            committed = true;
+        }
+        if (!committed)
+            return false;
+
+        sidebarHierarchyView.hierarchyFooterTriggerQueuedAction = normalizedAction;
+        Qt.callLater(function () {
+            if (sidebarHierarchyView.hierarchyFooterTriggerQueuedAction === normalizedAction)
+                sidebarHierarchyView.hierarchyFooterTriggerQueuedAction = "";
+        });
         return true;
     }
     function requestExpandAllHierarchyItems(reason) {
@@ -1845,6 +1926,28 @@ Rectangle {
             onLongPressed: {
                 sidebarHierarchyView.openHierarchyFolderContextMenuFromPointer(hierarchyContextMenuTapHandler.point && hierarchyContextMenuTapHandler.point.position !== undefined ? hierarchyContextMenuTapHandler.point.position.x : 0, hierarchyContextMenuTapHandler.point && hierarchyContextMenuTapHandler.point.position !== undefined ? hierarchyContextMenuTapHandler.point.position.y : 0, hierarchyTree, "longPress");
             }
+        }
+    }
+    MouseArea {
+        id: hierarchyChevronPointerSurface
+
+        acceptedButtons: Qt.LeftButton
+        anchors.fill: hierarchyTree
+        enabled: sidebarHierarchyView.hierarchyInteractionController !== null
+        hoverEnabled: false
+        preventStealing: true
+        propagateComposedEvents: true
+        z: 1.1
+
+        onCanceled: {
+            sidebarHierarchyView.clearHierarchyChevronPointerPress();
+        }
+        onPressed: function (mouse) {
+            mouse.accepted = sidebarHierarchyView.beginHierarchyChevronPointerPress(mouse.x, mouse.y, mouse.modifiers);
+        }
+        onReleased: function (mouse) {
+            const accepted = sidebarHierarchyView.finishHierarchyChevronPointerPress(mouse.x, mouse.y);
+            mouse.accepted = accepted;
         }
     }
     Item {

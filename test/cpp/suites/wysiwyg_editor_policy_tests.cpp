@@ -241,6 +241,33 @@ void WhatSonCppRegressionTests::wysiwygEditorPolicy_mapsVisibleSelectionBackToRa
     QCOMPARE(resourceBackwardPlan.value(QStringLiteral("targetSourceCursor")).toInt(), resourceStart - 1);
     QCOMPARE(resourceBackwardPlan.value(QStringLiteral("targetLogicalCursor")).toInt(), resourceLogicalStart - 1);
 
+    const QString leadingResourceSource = resourceTag + QStringLiteral("\nBeta");
+    ContentsEditorPresentationProjection leadingResourceProjection;
+    leadingResourceProjection.setSourceText(leadingResourceSource);
+    const QVariantList leadingResourceBlocks{
+        QVariantMap{
+            {QStringLiteral("renderDelegateType"), QStringLiteral("resource")},
+            {QStringLiteral("htmlBlockObjectSource"), QStringLiteral("iiHtmlBlock")},
+            {QStringLiteral("htmlBlockIsDisplayBlock"), true},
+            {QStringLiteral("sourceStart"), 0},
+            {QStringLiteral("sourceEnd"), resourceTag.size()},
+        },
+    };
+    const QVariantMap leadingResourcePlan = policy.atomicResourceCursorNormalizationPlan(
+        leadingResourceSource,
+        leadingResourceBlocks,
+        &leadingResourceProjection,
+        0,
+        0,
+        leadingResourceProjection.logicalText().size(),
+        true,
+        false,
+        false);
+    QVERIFY(leadingResourcePlan.value(QStringLiteral("resourceCursorActive")).toBool());
+    QVERIFY(leadingResourcePlan.value(QStringLiteral("changed")).toBool());
+    QCOMPARE(leadingResourcePlan.value(QStringLiteral("targetSourceCursor")).toInt(), resourceTag.size() + 1);
+    QCOMPARE(leadingResourcePlan.value(QStringLiteral("targetLogicalCursor")).toInt(), 2);
+
     ContentsEditorPresentationProjection resourceOnlyProjection;
     resourceOnlyProjection.setSourceText(resourceTag);
     const QVariantList resourceOnlyBlocks{

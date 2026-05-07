@@ -80,8 +80,13 @@
 - 이 저장소는 MVVM을 사용하지 않는다. `ViewModel` 개념, `src/app/viewmodel`, QML view-model registry binding, 또는 `LV.ViewModels`/`LV.Controllers` 기반 런타임 lookup을 도입하지 않는다. 뷰는 모델과 직접적으로 이어진다.
 - Controller는 단일 책임 C++ class여야 한다.
 - `src/app/models` 아래에 QML 파일을 추가하지 말고, 해당 디렉터리를 QML module source로 등록하지 않는다.
-- QML은 view construction에만 사용한다.
-- model, controller, session, persistence, sync, parsing, mutation, scheduling, command-surface 책임을 우회하기 위한 compatibility QML wrapper를 추가하지 않는다. 해당 책임은 single-purpose C++ object로 승격한다.
+- QML은 view construction과 view-local behavior를 직접 소유한다. 버튼 dispatch, 메뉴 열기/닫기, pointer hit-test,
+  transient visual state, focus presentation, view-local callback/signal coalescing처럼 화면 표면 안에서 끝나는
+  동작은 QML에서 구현한다.
+- model, controller, session, persistence, sync, parsing, domain mutation, scheduling, command-surface 책임을
+  우회하기 위한 compatibility QML wrapper를 추가하지 않는다. 해당 책임은 single-purpose C++ object로 승격한다.
+- 순수 view 동작을 C++ Controller signal round-trip으로 감싸는 간접 경로를 새로 만들지 않는다. view 동작이
+  domain mutation을 필요로 할 때는 QML이 이미 노출된 좁은 model/controller/bridge API를 직접 호출한다.
 - 각 C++ Controller는 좁은 signal/slot contract를 노출하고, domain mutation, timing, rendering, persistence 작업은 소유 model layer에 위임해야 한다.
 
 ### Model Layer, QML 의 역할 분담 (중요)
@@ -90,8 +95,10 @@
 - `src/app/models` 아래에 남아 있는 모든 QML 파일은 C++(`.hpp/.cpp`)으로 변환 후 제거해야 할 migration debt로 취급한다.
 - model layer는 QObject/Q_GADGET/QAbstractItemModel 기반 API를 QML에 노출할 수 있지만, domain logic, orchestration, controller behavior, mutable session state, formatting policy, parsing policy, mutation planning, resource import handling, input policy를 QML로 구현하면 안 된다.
 - 기능이 `src/app/qml/view/**` 아래보다 낮은 레이어의 logic을 필요로 하면, `src/app/models` 아래에 또 다른 `*.qml` helper를 추가하지 말고 소유 도메인의 C++ object를 생성하거나 확장한다.
-- `src/app/qml/**`만 QML의 허용 위치이며, 해당 파일은 view/presentation composition 역할에 머물러야 한다.
-- qml에는 백엔드가 존재할 수 없으며, 오로지 뷰 구현에 관련한 동작만을 허용한다.
+- `src/app/qml/**`만 QML의 허용 위치이며, 해당 파일은 view/presentation composition과 view-local behavior
+  구현 역할에 머물러야 한다.
+- qml에는 백엔드가 존재할 수 없으며, 오로지 뷰 구현에 관련한 동작만을 허용한다. 이 뷰 동작은 QML에서
+  직접 구현하는 것을 기본값으로 한다.
 
 
 ### 편집기 Source of Truth (중요)

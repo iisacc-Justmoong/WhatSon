@@ -11,6 +11,8 @@ Implements the editor-surface geometry adapter behind `IContentsEditorGeometryPr
 - Reads resource `contentHeight` for atomic resource frame rows, but caps a middle resource row at the next independently
   measured row top so a whole-document overlay height cannot push later gutter rows down. The line-number metrics layer
   still clamps the resource's visible gutter allocation to one line.
+- In rendered editor mode, QML supplies the rendered overlay as the line-number text geometry item. This lets the row
+  after an image resource frame measure its own y below the frame instead of inheriting the plain U+FFFC probe line.
 - Probes the visible item with `positionAt(...)` and `positionToRectangle(...)` to produce minimap row-width ratios.
 - Converts logical line ranges into `lineNumberGeometryRows` value snapshots.
 - Emits `geometryChanged()` whenever a bound view item, logical range list, or primitive measurement input changes.

@@ -115,9 +115,10 @@ These signals make the file a reusable visual surface instead of a hard-coded on
   Selected Folder`, then `Open Context Menu`. The third slot uses LVRS `generalmoreHorizontal`, not a settings icon,
   because it is a menu disclosure affordance.
 - The `LV.ListFooter` buttons are routed through both the legacy button-config `onClicked` callback and
-  `onButtonClicked`/`handleHierarchyFooterButtonClicked(...)`. Both paths now call
-  `SidebarHierarchyInteractionController.requestFooterAction(...)`; the C++ controller resolves footer event names and
-  coalesces one dispatch turn so LVRS versions that emit both the callback and signal do not create/delete/open twice.
+  `onButtonClicked`/`handleHierarchyFooterButtonClicked(...)`. Both paths resolve to
+  `requestHierarchyFooterAction(...)` in QML, which directly calls `requestCreateFolder()`, `requestDeleteFolder()`, or
+  `requestViewOptions()` and coalesces one dispatch turn so LVRS versions that emit both the callback and signal do not
+  create/delete/open twice.
 - The compact footer/menu metrics now route through `LV.Theme.gap2`, `LV.Theme.gap4`, and named token compositions
   (`144`, `78`, `24`) instead of fixed sidebar-local pixel literals, so mobile/desktop LVRS scale stays consistent.
 - The default tree context menu is `hierarchyTreeContextMenuItems`. It exposes `Expand All` and `Collapse All` actions
@@ -194,6 +195,10 @@ These signals make the file a reusable visual surface instead of a hard-coded on
 - The fallback hit-test first resolves the LVRS descendant with `objectName: "hierarchyItemChevron"` and tests that
   slot's mapped rectangle, then falls back to the older right-edge geometry estimate. This keeps the app-side pointer
   arm aligned with the actual `HierarchyItem` chevron slot instead of an approximate row-width calculation.
+- `hierarchyChevronPointerSurface` is a view-layer pointer guard over the hierarchy body. It accepts only left-button
+  presses that hit the resolved chevron slot; all other presses are rejected so row activation, selection, drag, and
+  flick behavior stay owned by `LV.Hierarchy`. Accepted chevron taps still commit through
+  `SidebarHierarchyInteractionController.requestChevronExpansion(...)`.
 - `onListItemActivated` is deferred by one turn (`Qt.callLater`) and re-checked through
   `SidebarHierarchyInteractionController.shouldSuppressActivation()` before it can select the folder or emit
   `hierarchyItemActivated(...)`.
@@ -273,7 +278,8 @@ This file should be read as a composed view, not as the place where hierarchy bu
 ## Tests
 
 - `test/cpp/suites/sidebar_hierarchy_rename_controller_tests.cpp` locks the footer action contract by checking the LVRS
-  footer button order, direct config callbacks, signal route, and C++ `SidebarHierarchyInteractionController` dispatch.
+  footer button order, direct config callbacks, `onButtonClicked` signal route, QML direct dispatch, and absence of a
+  C++ `SidebarHierarchyInteractionController` footer round-trip in the live click path.
 - `test/cpp/suites/qml_editor_surface_policy_tests.cpp` and
   `test/cpp/suites/sidebar_hierarchy_controller_tests.cpp` lock the hierarchy expansion contract: refreshed models must
   preserve C++-owned expansion state with active-hierarchy scoping, hidden selected rows must not be activated just to

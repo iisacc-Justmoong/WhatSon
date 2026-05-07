@@ -21,8 +21,9 @@ Implements WYSIWYG editor policy for the inline note body surface.
 - Produces cursor-normalization plans for hidden inline formatting tags. QML only applies the returned cursor position
   to the live `LV.TextEditor`.
 - Produces cursor-normalization plans for atomic resource blocks. A collapsed caret that lands on the resource
-  placeholder is moved to the nearest prose boundary outside the frame when such a boundary exists; resource-only
-  frames remain non-cursorable and are reported as an active atomic-resource cursor zone so QML can hide the native
-  caret instead of painting it inside the image frame.
+  placeholder is moved to the nearest prose boundary outside the frame when such a boundary exists. If the preferred
+  side still maps to the resource row, the policy tries the opposite side before allowing QML to hide the caret.
+  Resource-only frames remain non-cursorable and are reported as an active atomic-resource cursor zone so QML can hide
+  the native caret instead of painting it inside the image frame.
 - Provides visible line and paragraph range calculations used by rendered-surface double-click and triple-click
   selection.

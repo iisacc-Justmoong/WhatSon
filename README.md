@@ -193,6 +193,10 @@ WhatSon is an LVRS-based Qt Quick application.
   root object. The mounted LVRS surface now composes those responsibilities as named inline `QtObject` helpers and
   binds their required dependencies to the live view/tree/field/canvas objects at startup, while the root view stays
   focused on layout, shell state, and LVRS event wiring.
+- View-local behavior belongs in QML. Button dispatch, menu open/close behavior, pointer hit-testing, transient visual
+  state, focus presentation, and one-turn coalescing for duplicate view callbacks should stay in the owning QML surface.
+  Do not introduce a C++ controller signal round-trip for behavior that begins and ends in the view. When a view action
+  needs a domain mutation, QML calls the already exposed narrow model/controller/bridge API directly.
 - `ListBarLayout.qml` and `DetailContents.qml` follow the same post-cleanup rule for inline selection helpers: helper
   objects call through their own ids and bind back to the live owner (`listBarLayout` / `listSection`) so deleted
   controller files do not leave unresolved `controller.*` runtime references.
@@ -995,8 +999,9 @@ for hub/note hierarchy payloads.
   merely share the same leaf name or ancestor-chain label.
 - `SidebarHierarchyView.qml` maps that CRUD/view-options surface into a direct bottom `LV.ListFooter` instance
   matching the Figma `HierarchyFooter` node (`134:3178`), with explicit `78x24` sizing, transparent button
-  backgrounds, and concrete icon names (`generaladd`, `generaldelete`, `generalsettings`) instead of relying on a
-  local custom footer wrapper.
+  backgrounds, and concrete icon names (`generaladd`, `generaldelete`, `generalmoreHorizontal`) instead of relying on a
+  local custom footer wrapper. Footer clicks dispatch directly in QML to create, delete, or open view options, with a
+  one-turn guard to coalesce LVRS callback/signal double delivery.
 - Rename interaction policy: when the selected hierarchy row is renameable, `SidebarHierarchyView.qml` enters an inline
   `LV.InputField` overlay on `Enter` / `Return`, anchors that overlay to the edited row geometry instead of the current
   LVRS active-item pointer, seeds the editor with the leaf folder name only, suppresses the edited row label and path
@@ -1024,6 +1029,9 @@ for hub/note hierarchy payloads.
 - The sidebar fallback now hit-tests the actual LVRS `hierarchyItemChevron` slot, and the C++ expansion policy commits
   the first LVRS expansion callback for a stable row key so direct `HierarchyItem` chevron clicks persist even when the
   sidebar-level pointer arm does not receive the tap first.
+- `SidebarHierarchyView.qml` also mounts a transparent chevron-only pointer surface over the hierarchy body. It accepts
+  only left-button presses inside the resolved LVRS chevron slot and rejects every other coordinate, so the QML view can
+  guarantee fold/unfold clicks without turning the whole hierarchy into a virtual overlay.
 - `library`: `WhatSonLibraryHierarchy{Store,Parser,Creator}` (`Library.wslibrary/index.wsnindex`)
 - `projects`: `WhatSonProjectsHierarchy{Store,Parser,Creator}` (`ProjectLists.wsproj`)
 - Projects hierarchy rows keep the runtime Figma `45:2750` contract without extending the persisted project schema:
@@ -1072,8 +1080,10 @@ Library runtime classification behavior:
 
 - `All`: indexes `.wsnindex` entries and enriches them with `.wsnhead` metadata (`id`, created/modified
   timestamps, and related fields)
-- `All`: reads each note's `.wsnbody`, extracts text inside `<body>...</body>`, and uses only that body text as
-  note-list summary text; blank bodies stay visually blank instead of falling back to internal IDs or filesystem stems
+- `All`: reads each note's `.wsnbody`, keeps `bodySourceText` as the editor-facing RAW source, projects
+  `bodyPlainText` through the same body parser used by the editor, and uses only that visible text as note-list summary
+  text. Inline source tags such as `<bold>` and `<italic>` therefore stay hidden in note preview cards; blank bodies
+  stay visually blank instead of falling back to internal IDs or filesystem stems
 - Notes whose resolved folder metadata is empty are still rendered with a user-facing `Draft` folder label in the note
   card, while the immutable `Draft` hierarchy bucket now uses the stricter raw `.wsnhead <folders>` contract described
   below.

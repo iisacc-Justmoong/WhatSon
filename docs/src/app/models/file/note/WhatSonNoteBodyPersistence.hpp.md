@@ -25,7 +25,10 @@ It is the boundary between the editor-facing text model and the filesystem-facin
   passes visible `#label` source text or already-canonical `<tag>label</tag>` text.
 - Markdown-presentation RichText spans are first matched through `WhatSonNoteMarkdownStyleObject`, which decides whether
   they intentionally promote into proprietary inline tags or should merely suppress generic CSS promotion.
-- `plainTextFromBodyDocument(...)` extracts editor text from a `.wsnbody` XML payload while preserving empty paragraphs and whitespace-only paragraphs, including leading/trailing empty paragraphs the user intentionally created. Stored `<tag>` nodes are projected back to visible `#label` text in that plain-text projection.
+- `plainTextFromBodyDocument(...)` extracts visible text from a `.wsnbody` XML payload while preserving empty paragraphs
+  and whitespace-only paragraphs, including leading/trailing empty paragraphs the user intentionally created. Recognized
+  inline source tags are hidden in this projection, and stored `<tag>` nodes are projected back to visible `#label`
+  text.
 - `sourceTextFromBodyDocument(...)` extracts the canonical inline-tag source projection used by the editor/session
   layer. Style/resource tags stay in proprietary inline-tag form, while stored `<tag>label</tag>` nodes project back
   to editor-visible `#label`. Stored `<break/>` (or legacy `<hr/>`) projects back to canonical editor source

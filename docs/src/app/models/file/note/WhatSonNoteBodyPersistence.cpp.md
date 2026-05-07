@@ -34,7 +34,10 @@ The current contract preserves editor-authored RAW source across save/load turns
   - `eventDescription`
 - Standalone `event` wrapper lines now stay direct `<body>` children during serialization, so nested legacy semantic
   blocks do not reopen as stray blank paragraphs on the next read.
-- `plainTextFromBodyDocument(...)` parses the `.wsnbody` XML with `QXmlStreamReader` and treats paragraph-like block elements as explicit text lines.
+- `plainTextFromBodyDocument(...)` parses the `.wsnbody` XML through the iiXml document support and treats
+  paragraph-like block elements as explicit text lines.
+- Its plain-text projection hides recognized inline source tags such as `<bold>`, `<italic>`, `<weblink>`, and semantic
+  text wrappers while preserving their visible text. Stored `<tag>label</tag>` nodes project back to `#label`.
 - `sourceTextFromBodyDocument(...)` is the canonical read-side source extractor. It converts `.wsnbody` back into
   editor-facing inline tags such as `<bold>...</bold>` and `<resource ... />`, instead of returning RichText spans.
   Stored `<tag>label</tag>` elements are intentionally projected back to visible editor text as `#label` so the

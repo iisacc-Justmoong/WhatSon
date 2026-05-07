@@ -7,8 +7,9 @@ It sits above concrete hierarchy domains but below the visual sidebar QML. Its j
 
 ## Important Types
 - `SidebarHierarchyController`: exposes the active hierarchy index and resolves the active hierarchy and note-list models.
-- `SidebarHierarchyInteractionController`: owns sidebar footer action dispatch, duplicate-action coalescing, chevron
-  expansion state preservation, and expansion activation suppression for the visual hierarchy.
+- `SidebarHierarchyInteractionController`: owns chevron expansion state preservation and expansion activation suppression
+  for the visual hierarchy. Footer click dispatch and other view-local behavior are owned directly by
+  `SidebarHierarchyView.qml`; the controller keeps only compatibility normalization for non-primary callers.
 - `IActiveHierarchyContextSource`: exposes the active hierarchy index plus the active hierarchy/note-list binding
   snapshot for consumers that need more than activation alone.
 - `IHierarchyControllerProvider` and `HierarchyControllerProvider`: map sidebar domain indices to dedicated hierarchy controllers.
@@ -39,7 +40,7 @@ remain C++ model/controller behavior instead of drifting back into sidebar QML.
 - 대상: ``src/app/models/sidebar`` (`docs/src/app/models/sidebar/README.md`)
 - 위치: `docs/src/app/models/sidebar`
 - 역할: 이 파일은 해당 디렉터리나 모듈의 구조, 책임, 운영 규칙, 검증 기준을 설명한다.
-- 최신 책임: footer action dispatch와 hierarchy expansion preservation은
-  `SidebarHierarchyInteractionController` C++ 객체가 소유한다.
+- 최신 책임: hierarchy expansion preservation은 `SidebarHierarchyInteractionController` C++ 객체가 소유한다.
+  footer action dispatch처럼 뷰 안에서 끝나는 동작은 `SidebarHierarchyView.qml`이 직접 소유한다.
 - 기준: 파일 경로, 명령, API 이름, 세부 변경 이력은 위 영어 본문을 원문 기준으로 유지한다.
 - 변경 시: 위 영어 본문을 수정하면 이 한국어 하단 섹션도 함께 최신 상태로 맞춘다.

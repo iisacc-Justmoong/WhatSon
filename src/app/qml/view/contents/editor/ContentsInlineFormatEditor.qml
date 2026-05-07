@@ -667,6 +667,10 @@ Item {
         return control.logicalSurfaceActive ? renderedGeometryProbe : textInput.editorItem;
     }
 
+    function lineNumberGeometryItem() {
+        return control.renderedOverlayVisible ? renderedOverlay : control.displayGeometryItem();
+    }
+
     function requestViewHook(reason) {
         control.viewHookRequested(reason !== undefined ? String(reason) : "manual");
     }
@@ -730,6 +734,7 @@ Item {
             textInput.deselect();
             textInput.cursorPosition = cursor;
             control.cursorNormalizationActive = false;
+            control.normalizeCursorPositionAwayFromAtomicResourceBlock();
             return true;
         }
         control.cursorNormalizationActive = true;
@@ -901,7 +906,7 @@ Item {
         logicalLength: control.displayGeometryText.length
         resourceItem: renderedOverlay
         targetItem: control
-        textItem: control.displayGeometryItem()
+        textItem: control.lineNumberGeometryItem()
         visualItem: control.renderedOverlayVisible ? renderedOverlay : textInput.editorItem
         visualLineHeight: LV.Theme.textBodyLineHeight
         visualStrokeThin: LV.Theme.strokeThin

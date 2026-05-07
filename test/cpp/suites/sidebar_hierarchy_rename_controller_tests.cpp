@@ -32,18 +32,15 @@ void WhatSonCppRegressionTests::sidebarHierarchyView_bindsInlineHelperDependenci
     QVERIFY(!sidebarSource.contains(QStringLiteral("const normalizedModifiers = controller.")));
 }
 
-void WhatSonCppRegressionTests::sidebarHierarchyView_routesFooterActionsThroughListFooterSignal()
+void WhatSonCppRegressionTests::sidebarHierarchyView_routesFooterActionsDirectlyFromQml()
 {
     const QString sidebarSource = readUtf8SourceFile(
         QStringLiteral("src/app/qml/view/panels/sidebar/SidebarHierarchyView.qml"));
     const QString layoutSource = readUtf8SourceFile(
         QStringLiteral("src/app/qml/view/panels/HierarchySidebarLayout.qml"));
-    const QString interactionControllerSource = readUtf8SourceFile(
-        QStringLiteral("src/app/models/sidebar/SidebarHierarchyInteractionController.cpp"));
 
     QVERIFY(!sidebarSource.isEmpty());
     QVERIFY(!layoutSource.isEmpty());
-    QVERIFY(!interactionControllerSource.isEmpty());
     const qsizetype footerButtonsIndex = sidebarSource.indexOf(QStringLiteral("readonly property var hierarchyFooterToolbarButtons"));
     QVERIFY(footerButtonsIndex >= 0);
     const qsizetype footerCreateEventIndex = sidebarSource.indexOf(QStringLiteral("eventName: \"hierarchy.footer.create\""), footerButtonsIndex);
@@ -53,20 +50,23 @@ void WhatSonCppRegressionTests::sidebarHierarchyView_routesFooterActionsThroughL
     QVERIFY(footerDeleteEventIndex > footerCreateEventIndex);
     QVERIFY(footerOptionsEventIndex > footerDeleteEventIndex);
     QVERIFY(sidebarSource.contains(QStringLiteral("function handleHierarchyFooterButtonClicked(index, config)")));
-    QVERIFY(!sidebarSource.contains(QStringLiteral("function hierarchyFooterActionName(index, eventName)")));
-    QVERIFY(!sidebarSource.contains(QStringLiteral("function requestHierarchyFooterAction(action)")));
-    QVERIFY(!sidebarSource.contains(QStringLiteral("property string hierarchyFooterTriggerQueuedAction: \"\"")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("function hierarchyFooterActionName(index, eventName)")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("function requestHierarchyFooterAction(action)")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("property string hierarchyFooterTriggerQueuedAction: \"\"")));
     QVERIFY(sidebarSource.contains(QStringLiteral("onButtonClicked: function (index, config)")));
-    QVERIFY(sidebarSource.contains(QStringLiteral("sidebarHierarchyView.hierarchyInteractionController.requestFooterAction(\"hierarchy.footer.create\");")));
-    QVERIFY(sidebarSource.contains(QStringLiteral("sidebarHierarchyView.hierarchyInteractionController.requestFooterAction(\"hierarchy.footer.delete\");")));
-    QVERIFY(sidebarSource.contains(QStringLiteral("sidebarHierarchyView.hierarchyInteractionController.requestFooterAction(\"hierarchy.footer.options\");")));
-    QVERIFY(sidebarSource.contains(QStringLiteral("sidebarHierarchyView.hierarchyInteractionController.footerActionName(index, normalizedEventName);")));
-    QVERIFY(sidebarSource.contains(QStringLiteral("sidebarHierarchyView.hierarchyInteractionController.requestFooterAction(action);")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("sidebarHierarchyView.requestHierarchyFooterAction(\"hierarchy.footer.create\");")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("sidebarHierarchyView.requestHierarchyFooterAction(\"hierarchy.footer.delete\");")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("sidebarHierarchyView.requestHierarchyFooterAction(\"hierarchy.footer.options\");")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("const action = sidebarHierarchyView.hierarchyFooterActionName(index, normalizedEventName);")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("return sidebarHierarchyView.requestHierarchyFooterAction(action);")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("committed = sidebarHierarchyView.requestCreateFolder();")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("committed = sidebarHierarchyView.requestDeleteFolder();")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("sidebarHierarchyView.requestViewOptions();")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("if (sidebarHierarchyView.hierarchyFooterTriggerQueuedAction === normalizedAction)")));
+    QVERIFY(!sidebarSource.contains(QStringLiteral("hierarchyInteractionController.requestFooterAction")));
+    QVERIFY(!sidebarSource.contains(QStringLiteral("hierarchyInteractionController.footerActionName")));
     QVERIFY(layoutSource.contains(QStringLiteral("SidebarHierarchyInteractionController")));
     QVERIFY(layoutSource.contains(QStringLiteral("hierarchyInteractionController: sidebarHierarchyInteractionController")));
-    QVERIFY(interactionControllerSource.contains(QStringLiteral("QString SidebarHierarchyInteractionController::footerActionName")));
-    QVERIFY(interactionControllerSource.contains(QStringLiteral("bool SidebarHierarchyInteractionController::requestFooterAction")));
-    QVERIFY(interactionControllerSource.contains(QStringLiteral("m_queuedFooterAction == normalizedAction")));
     QVERIFY(sidebarSource.contains(QStringLiteral("eventName: \"hierarchy.footer.create\"")));
     QVERIFY(sidebarSource.contains(QStringLiteral("eventName: \"hierarchy.footer.delete\"")));
     QVERIFY(sidebarSource.contains(QStringLiteral("eventName: \"hierarchy.footer.options\"")));
@@ -77,9 +77,6 @@ void WhatSonCppRegressionTests::sidebarHierarchyView_routesFooterActionsThroughL
     QVERIFY(sidebarSource.contains(QStringLiteral("button1: sidebarHierarchyView.hierarchyFooterToolbarButtons[0]")));
     QVERIFY(sidebarSource.contains(QStringLiteral("button2: sidebarHierarchyView.hierarchyFooterToolbarButtons[1]")));
     QVERIFY(sidebarSource.contains(QStringLiteral("button3: sidebarHierarchyView.hierarchyFooterToolbarButtons[2]")));
-    QVERIFY(sidebarSource.contains(QStringLiteral("sidebarHierarchyView.requestCreateFolder();")));
-    QVERIFY(sidebarSource.contains(QStringLiteral("sidebarHierarchyView.requestDeleteFolder();")));
-    QVERIFY(sidebarSource.contains(QStringLiteral("sidebarHierarchyView.requestViewOptions();")));
     QVERIFY(!sidebarSource.contains(QStringLiteral("onClicked: function () {\n                    sidebarHierarchyView.requestCreateFolder();")));
     QVERIFY(!sidebarSource.contains(QStringLiteral("onClicked: function () {\n                    sidebarHierarchyView.requestDeleteFolder();")));
     QVERIFY(!sidebarSource.contains(QStringLiteral("onClicked: function () {\n                    sidebarHierarchyView.requestViewOptions();")));

@@ -35,6 +35,43 @@ void WhatSonCppRegressionTests::qmlContextMenus_treatRightClickAndLongPressAsSym
     QVERIFY(displayBackendSource.contains(QStringLiteral("\"long-press\"")));
 }
 
+void WhatSonCppRegressionTests::qmlViewBehaviorContract_documentsDirectQmlOwnership()
+{
+    const QString agentsSource = readUtf8SourceFile(QStringLiteral("AGENTS.md"));
+    const QString readmeSource = readUtf8SourceFile(QStringLiteral("README.md"));
+    const QString architectureSource = readUtf8SourceFile(QStringLiteral("docs/APP_ARCHITECTURE.md"));
+    const QString sidebarSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/panels/sidebar/SidebarHierarchyView.qml"));
+    const QString sidebarDoc = readUtf8SourceFile(
+        QStringLiteral("docs/src/app/qml/view/panels/sidebar/SidebarHierarchyView.qml.md"));
+    const QString sidebarModelReadme = readUtf8SourceFile(QStringLiteral("docs/src/app/models/sidebar/README.md"));
+    const QString sidebarInteractionDoc = readUtf8SourceFile(
+        QStringLiteral("docs/src/app/models/sidebar/SidebarHierarchyInteractionController.cpp.md"));
+    const QString registrarDoc = readUtf8SourceFile(
+        QStringLiteral("docs/src/app/runtime/bootstrap/WhatSonQmlInternalTypeRegistrar.cpp.md"));
+
+    QVERIFY(agentsSource.contains(QStringLiteral("QML은 view construction과 view-local behavior를 직접 소유한다")));
+    QVERIFY(agentsSource.contains(QStringLiteral("순수 view 동작을 C++ Controller signal round-trip으로 감싸는 간접 경로를 새로 만들지 않는다")));
+    QVERIFY(!agentsSource.contains(QStringLiteral("QML은 view construction에만 사용한다")));
+
+    QVERIFY(readmeSource.contains(QStringLiteral("View-local behavior belongs in QML")));
+    QVERIFY(readmeSource.contains(QStringLiteral("Do not introduce a C++ controller signal round-trip for behavior that begins and ends in the view.")));
+    QVERIFY(architectureSource.contains(QStringLiteral("## View Behavior Ownership")));
+    QVERIFY(architectureSource.contains(QStringLiteral("QML owns behavior that is local to a rendered view")));
+
+    QVERIFY(sidebarSource.contains(QStringLiteral("function requestHierarchyFooterAction(action)")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("function hierarchyFooterActionName(index, eventName)")));
+    QVERIFY(!sidebarSource.contains(QStringLiteral("hierarchyInteractionController.requestFooterAction")));
+    QVERIFY(!sidebarSource.contains(QStringLiteral("hierarchyInteractionController.footerActionName")));
+
+    QVERIFY(sidebarDoc.contains(QStringLiteral("`requestHierarchyFooterAction(...)` in QML")));
+    QVERIFY(sidebarDoc.contains(QStringLiteral("absence of a\n  C++ `SidebarHierarchyInteractionController` footer round-trip")));
+    QVERIFY(sidebarModelReadme.contains(QStringLiteral("Footer click dispatch and other view-local behavior are owned directly")));
+    QVERIFY(sidebarInteractionDoc.contains(QStringLiteral("live `LV.ListFooter` clicks dispatch")));
+    QVERIFY(sidebarInteractionDoc.contains(QStringLiteral("do not depend on a controller signal round-trip")));
+    QVERIFY(registrarDoc.contains(QStringLiteral("QML owns the surrounding\n  view-local behavior")));
+}
+
 void WhatSonCppRegressionTests::qmlHierarchyNoteDrop_keepsDropSurfaceOpenUntilCapabilityRejectsTarget()
 {
     const QString sidebarSource = readUtf8SourceFile(
@@ -72,9 +109,14 @@ void WhatSonCppRegressionTests::qmlHierarchyExpansion_preservesUserControlledSta
     QVERIFY(sidebarSource.contains(QStringLiteral("hierarchy.contextMenu.expandAll")));
     QVERIFY(sidebarSource.contains(QStringLiteral("hierarchy.contextMenu.collapseAll")));
     QVERIFY(sidebarSource.contains(QStringLiteral("function requestHierarchyChevronExpansionAtPosition(x, y, expectedKey)")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("function beginHierarchyChevronPointerPress(x, y, modifiers)")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("function finishHierarchyChevronPointerPress(x, y)")));
     QVERIFY(sidebarSource.contains(QStringLiteral("function hierarchyItemChevronContainsPoint(item, targetX, targetY)")));
     QVERIFY(sidebarSource.contains(QStringLiteral("function hierarchyItemChevronSlot(item)")));
     QVERIFY(sidebarSource.contains(QStringLiteral("child.objectName === \"hierarchyItemChevron\"")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("id: hierarchyChevronPointerSurface")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("mouse.accepted = sidebarHierarchyView.beginHierarchyChevronPointerPress(mouse.x, mouse.y, mouse.modifiers);")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("const accepted = sidebarHierarchyView.finishHierarchyChevronPointerPress(mouse.x, mouse.y);")));
     QVERIFY(sidebarSource.contains(QStringLiteral("hierarchyInteractionController.requestChevronExpansion(target.index, target.key, currentExpanded, expectedKey)")));
     QVERIFY(sidebarSource.contains(QStringLiteral("if (result && result.committed && target.item.expanded !== undefined)")));
     QVERIFY(sidebarSource.contains(QStringLiteral("const nextExpanded = !currentExpanded;")));
@@ -469,7 +511,10 @@ void WhatSonCppRegressionTests::qmlStructuredEditors_renderInlineStyleOverlayAtR
     QVERIFY(inlineEditorSource.contains(QStringLiteral("readOnly: true")));
     QVERIFY(!inlineEditorSource.contains(QStringLiteral("objectName: \"contentsInlineFormatProjectedCursor\"")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("cursorDelegate: Rectangle {")));
-    QVERIFY(inlineEditorSource.contains(QStringLiteral("readonly property bool nativeCursorVisible: control.focused && !control.nativeSelectionActive")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("readonly property bool atomicResourceCursorActive")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("readonly property bool nativeCursorVisible: control.focused")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("&& !control.nativeSelectionActive")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("&& !control.atomicResourceCursorActive")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("objectName: \"contentsInlineFormatNativeCursor\"")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("visible: control.nativeCursorVisible")));
     QVERIFY(rendererSource.contains(QStringLiteral("htmlOverlayVisibleChanged")));

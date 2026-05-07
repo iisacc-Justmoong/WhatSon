@@ -144,6 +144,10 @@ void WhatSonCppRegressionTests::localNoteFileStore_usesIiXmlDocumentTreeForWsnBo
 
     QVERIFY(document.bodyHasResource);
     QVERIFY(document.bodyFirstResourceThumbnailUrl.contains(QStringLiteral("cover.png")));
+    QCOMPARE(document.bodyPlainText, QStringLiteral("Alpha\n"));
+    QCOMPARE(document.bodyFirstLine, QStringLiteral("Alpha"));
     QVERIFY(document.bodySourceText.contains(QStringLiteral("Alpha")));
     QVERIFY(document.bodySourceText.contains(QStringLiteral("<resource ")));
+    QVERIFY(!document.bodyPlainText.contains(QStringLiteral("<paragraph>")));
+    QVERIFY(!document.bodyPlainText.contains(QStringLiteral("<resource ")));
 }

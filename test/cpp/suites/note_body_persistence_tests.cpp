@@ -22,6 +22,9 @@ void WhatSonCppRegressionTests::noteBodyPersistence_roundTripsAndProjectsCanonic
         QStringLiteral("<bold>Al<italic>pha</italic></bold><italic> Beta</italic>"));
     const QString inlineStyleHtmlProjection =
         WhatSon::NoteBodyPersistence::htmlProjectionFromBodyDocument(inlineStyleDocument);
+    QCOMPARE(
+        WhatSon::NoteBodyPersistence::plainTextFromBodyDocument(inlineStyleDocument),
+        QStringLiteral("Alpha Beta"));
     QVERIFY(inlineStyleHtmlProjection.contains(QStringLiteral("<strong style=\"font-weight:900;\">Al")));
     QVERIFY(inlineStyleHtmlProjection.contains(QStringLiteral("<span style=\"font-style:italic;\">pha</span>")));
     QVERIFY(inlineStyleHtmlProjection.contains(QStringLiteral("</strong><span style=\"font-style:italic;\"> Beta</span>")));

@@ -11,13 +11,13 @@ registration layer derives an internal `QQmlElement<T>` wrapper from it.
   type and Qt wraps creatable types with `QQmlElement<T>`.
 - `hierarchyInteractionBridge` binds the controller to the existing hierarchy CRUD/expansion bridge.
 - `activeHierarchyIndex` scopes preserved expansion keys by active sidebar domain.
-- `footerActionName(...)` and `requestFooterAction(...)` normalize footer button events and coalesce duplicate LVRS
-  callback/signal dispatch from a single click.
+- `footerActionName(...)` and `requestFooterAction(...)` remain compatibility helpers for non-primary callers. Live
+  footer click dispatch and callback/signal coalescing are view-local in `SidebarHierarchyView.qml`.
 - `captureExpansionState(...)`, `modelWithPreservedExpansion(...)`, `handleExpansionSignal(...)`, and
   `requestChevronExpansion(...)` keep row expansion state and mutation routing out of QML.
 - `beginActivationAttempt(...)`, `activationAttemptCurrent(...)`, and `shouldSuppressActivation(...)` let the view defer
   activation safely after chevron interaction without owning the suppression policy itself.
 
 ## Signals
-The controller emits footer action requests and selected-row sync requests. QML handles only the visual consequences,
-such as opening the context menu or focusing the selected row.
+The controller emits selected-row sync requests and retains footer action signals for compatibility. Live footer clicks do
+not rely on those signals.

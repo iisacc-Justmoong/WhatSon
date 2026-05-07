@@ -240,6 +240,54 @@ namespace
         return rendered;
     }
 
+    QString renderInlineSourceToPlainText(const QString& sourceFragment)
+    {
+        QString rendered;
+        rendered.reserve(sourceFragment.size());
+
+        int cursor = 0;
+        while (cursor < sourceFragment.size())
+        {
+            if (sourceFragment.at(cursor) == QLatin1Char('<'))
+            {
+                const int tagEnd = sourceFragment.indexOf(QLatin1Char('>'), cursor + 1);
+                if (tagEnd > cursor)
+                {
+                    const QStringView tagToken(sourceFragment.constData() + cursor, tagEnd - cursor + 1);
+                    const QString tagName = sourceTagName(tagToken);
+                    const bool recognizedTag = !SemanticTags::canonicalInlineStyleTagName(tagName).isEmpty()
+                        || SemanticTags::isWebLinkTagName(tagName)
+                        || SemanticTags::isHashtagTagName(tagName)
+                        || SemanticTags::isTransparentContainerTagName(tagName)
+                        || SemanticTags::isRenderedTextBlockElement(tagName)
+                        || !SemanticTags::semanticTextOpeningHtml(tagName).isEmpty();
+                    if (SemanticTags::isRenderedLineBreakTagName(tagName))
+                    {
+                        rendered += QLatin1Char('\n');
+                        cursor = tagEnd + 1;
+                        continue;
+                    }
+                    if (recognizedTag)
+                    {
+                        if (!isClosingTagToken(tagToken) && SemanticTags::isHashtagTagName(tagName))
+                        {
+                            rendered += QLatin1Char('#');
+                        }
+                        cursor = tagEnd + 1;
+                        continue;
+                    }
+                }
+            }
+
+            const int nextTag = sourceFragment.indexOf(QLatin1Char('<'), cursor + 1);
+            const int textEnd = nextTag >= 0 ? nextTag : sourceFragment.size();
+            rendered += IiXml::decodeXmlEntities(sourceFragment.mid(cursor, textEnd - cursor));
+            cursor = textEnd;
+        }
+
+        return rendered;
+    }
+
     QString encodeInlineSourceFragment(const QString& sourceFragment)
     {
         QString encoded;
@@ -538,7 +586,8 @@ namespace
                 lines.push_back(QString());
                 continue;
             }
-            lines.push_back(WhatSon::NoteBodyPersistence::normalizeBodyPlainText(IiXml::nodeText(document, &childNode)));
+            lines.push_back(WhatSon::NoteBodyPersistence::normalizeBodyPlainText(
+                renderInlineSourceToPlainText(IiXml::nodeText(document, &childNode))));
         }
         return lines;
     }

@@ -1152,6 +1152,7 @@ private slots:
     void noteActiveStateTracker_syncsAttachedEditorSessionFromActiveNote();
     void libraryNoteListModel_emitsCurrentNoteEntryChangedWhenInitialSelectionMaterializes();
     void libraryNoteListModel_emitsCurrentNoteEntryChangedWhenSelectedRowReplacesCurrentSelection();
+    void libraryNoteListModel_hidesRawInlineTagsFromPreviewText();
     void navigationModeController_cyclesActiveSections();
     void editorViewModeController_cyclesActiveSections();
     void onboardingRouteBootstrapController_syncsEmbeddedOnboardingLifecycle();
@@ -1174,7 +1175,7 @@ private slots:
     void foldersHierarchySessionService_preservesEscapedLiteralSlashFolderPaths();
     void sidebarHierarchyRenameController_preservesLiteralSlashFolderLabels();
     void sidebarHierarchyView_bindsInlineHelperDependenciesAtStartup();
-    void sidebarHierarchyView_routesFooterActionsThroughListFooterSignal();
+    void sidebarHierarchyView_routesFooterActionsDirectlyFromQml();
     void resourcesHierarchyController_defaultsSelectionToImageAndFiltersList();
     void resourcesHierarchyController_collapsesMultiDotImageFormatsIntoTerminalSuffix();
     void structuredCollectionPolicy_normalizesEntriesAndPrefersResolvedMatches();
@@ -1201,6 +1202,7 @@ private slots:
     void detailCurrentNoteContextBridge_clearsReadableEmptyCurrentNoteEntrySelection();
     void detailPanelRouting_separatesNoteAndResourceViewsAndControllers();
     void qmlContextMenus_treatRightClickAndLongPressAsSymmetricPointerTriggers();
+    void qmlViewBehaviorContract_documentsDirectQmlOwnership();
     void hierarchyDragDropBridge_assignsDraggedNoteListItemsToFolderCapability();
     void hierarchyInteractionBridge_bindsRuntimeControllerAfterArchitectureLock();
     void hierarchyInteractionBridge_rebindsActiveRuntimeControllerAfterArchitectureLock();
@@ -1256,6 +1258,7 @@ private slots:
     void qmlInlineFormatEditor_skipsHiddenInlineTagsDuringNativeCursorMovement();
     void qmlInlineFormatEditor_reportsWrappedVisualLineCountForMinimap();
     void qmlInlineFormatEditor_placesLogicalGutterRowsAtIncreasingY();
+    void qmlInlineFormatEditor_placesResourceGutterRowsAfterFrame();
     void qmlStructuredDocumentFlow_routesBottomBlankClickToBodyEnd();
     void qmlStructuredDocumentFlow_routesBodyClickToRenderedCursorPosition();
     void qmlStructuredDocumentFlow_preservesRenderedPointerDragSelectionInsideFlickable();

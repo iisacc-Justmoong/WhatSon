@@ -11,6 +11,10 @@ sanitization. That preserves the selected-note body contract exposed through `cu
 prevents the editor from falling back to an empty document when the lazy note-body reload path does
 not win the selection race.
 
+`primaryText` is display text, not editor RAW source. Upstream `LibraryNoteRecord` normalization must strip inline
+source tags into `bodyPlainText` before note-list items are built, while `bodyText` remains available as the RAW editor
+bootstrap payload.
+
 Each row now also keeps a normalized `noteDirectoryPath`, and the selected-row contract exposes that
 value through `currentNoteDirectoryPath`.
 The list model therefore no longer describes the selected note purely by `noteId`; downstream

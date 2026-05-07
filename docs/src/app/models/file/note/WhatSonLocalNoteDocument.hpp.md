@@ -18,6 +18,11 @@
 document into `LibraryNoteRecord`. This makes the local-file read path consistent with the rest of
 the UUID-aware library pipeline.
 
+`normalizeBodyFields()` keeps note-body ownership split:
+- `bodySourceText` remains the editor-facing RAW source projection.
+- `bodyPlainText` and `bodyFirstLine` are recomputed from that source through the canonical body serializer/parser
+  projection, so note-list previews and search surfaces see rendered text instead of literal inline tags.
+
 ## Main Collaborators
 
 - `WhatSonLocalNoteFileStore`: populates the document from `.wsnhead` and `.wsnbody`.

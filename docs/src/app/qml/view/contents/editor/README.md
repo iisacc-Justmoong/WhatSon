@@ -53,8 +53,9 @@ Editor-facing QML view components for the center content surface.
   gutter row with three visible lines of height. The rail width comes from `ContentsLineNumberRail.preferredWidth`,
   which halves the leading blank area before the number column. The host also forwards RAW cursor/selection offsets so
   the rail can paint a blue active-line bar on the cursor row or selected rows. Atomic resource frames count as one
-  logical row with one gutter-line height; the frame height may move later rows through their own measured y snapshots,
-  but it is not converted into extra gutter rows or a multi-line gutter allocation.
+  logical row with one gutter-line height. In rendered mode, line-number y snapshots are measured against the rendered
+  overlay rather than the plain U+FFFC geometry probe, so the row after an image frame finds its own visual position
+  below that frame without converting the frame into extra gutter rows or a multi-line gutter allocation.
 - The minimap row count is driven by `ContentsStructuredDocumentFlow.editorVisualLineCount`, which comes from measured
   visual-line snapshots normalized by the C++ `ContentsEditorVisualLineMetrics` object. A single source tag or
   paragraph that wraps onto two visible editor lines therefore produces two minimap rows. Tall rendered blocks such as
@@ -89,8 +90,9 @@ Editor-facing QML view components for the center content surface.
   that resource's single U+FFFC logical placeholder and selects the resource tag as one block instead of asking
   `positionAt(...)` for fake internal text positions. Collapsed cursor movement is also excluded from that placeholder:
   when the native logical cursor lands on an atomic resource line, C++ policy moves it to the nearest prose boundary
-  outside the frame, or hides the caret for resource-only content where no text boundary exists. Collapsed mouse clicks
-  use the same bridge for cursor placement by restoring the live `LV.TextEditor` cursor/selection directly. The
+  outside the frame, falling back to the opposite side if the preferred boundary is still on the resource row; for
+  resource-only content where no text boundary exists, it hides the caret. Collapsed mouse clicks use the same bridge
+  for cursor placement by restoring the live `LV.TextEditor` cursor/selection directly. The
   rendered overlay does not mount a second projected cursor object; the visible caret is the native editor cursor that
   receives typing and Backspace outside atomic resource frames. Non-empty drag selections keep the native selection
   model authoritative. The passive surface-selection editor mirrors the plain logical text only and does not accept

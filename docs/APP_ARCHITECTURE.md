@@ -28,6 +28,14 @@ view-model layer or a `LV.Controllers`/`LV.ViewModels` registry for runtime look
 This keeps shortcut-triggered mutation explicit: the root helper forwards to the concrete controller object it was
 given, while the owning C++ model domain remains responsible for mutation and persistence behavior.
 
+## View Behavior Ownership
+QML owns behavior that is local to a rendered view: button dispatch, menu opening/closing, pointer hit-tests, transient
+visual state, focus presentation, and short callback/signal coalescing used to keep an LVRS surface from double-firing.
+
+Do not add a C++ controller signal round-trip for those view-local behaviors. If a view action needs to mutate domain
+state, the QML surface should call the already exposed narrow model/controller/bridge API directly, leaving persistence,
+parsing, scheduling, and domain mutation policy in the owning model layer.
+
 ## Routed Workspace
 `MobileHierarchyPage.qml` owns the mobile `LV.PageRouter` stack and mounts the hierarchy page, note-list body, and editor body as routed children.
 

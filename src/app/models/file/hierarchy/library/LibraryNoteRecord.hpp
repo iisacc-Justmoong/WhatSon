@@ -41,10 +41,20 @@ struct LibraryNoteRecord
 
     void normalizeBodyFields()
     {
-        const QString normalizedBodyText = effectiveBodyText();
-        bodyPlainText = normalizedBodyText;
-        bodySourceText = normalizedBodyText;
-        bodyFirstLine = WhatSon::NoteBodyPersistence::firstLineFromBodyPlainText(normalizedBodyText);
+        QString normalizedSourceText = WhatSon::NoteBodyPersistence::normalizeBodyPlainText(bodySourceText);
+        QString normalizedPlainText = WhatSon::NoteBodyPersistence::normalizeBodyPlainText(bodyPlainText);
+        if (!normalizedSourceText.isEmpty())
+        {
+            normalizedPlainText = WhatSon::NoteBodyPersistence::plainTextFromBodyDocument(
+                WhatSon::NoteBodyPersistence::serializeBodyDocument(noteId, normalizedSourceText));
+        }
+        else
+        {
+            normalizedSourceText = normalizedPlainText;
+        }
+        bodyPlainText = normalizedPlainText;
+        bodySourceText = normalizedSourceText;
+        bodyFirstLine = WhatSon::NoteBodyPersistence::firstLineFromBodyPlainText(normalizedPlainText);
     }
 
     bool operator==(const LibraryNoteRecord& other) const

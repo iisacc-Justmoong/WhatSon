@@ -24,6 +24,9 @@ It creates notes, reads materialized note directories, updates persisted body/he
 - It now projects both:
   - `bodyPlainText` (search/list summary text)
   - `bodySourceText` (editor-facing RAW source projection from `.wsnbody`)
+- `WhatSonLocalNoteDocument::normalizeBodyFields()` keeps those projections separate after reads and writes: RAW inline
+  tags remain in `bodySourceText`, while `bodyPlainText`/`bodyFirstLine` are rebuilt from the canonical body projection
+  for note-list preview and search consumers.
 - That `bodySourceText` projection now inherits the read-side HTML-block guard from
   `WhatSon::NoteBodyPersistence::sourceTextFromBodyDocument(...)`, so rendered-editor comment wrappers and other
   suspicious non-canonical HTML block markup do not get rebound into note-open editor state.

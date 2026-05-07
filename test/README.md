@@ -100,7 +100,7 @@ ctest --test-dir build --output-on-failure -L cpp_regression
   session and request immediate persistence.
 - Inline editor resource-frame coverage now verifies both pointer selection and collapsed cursor movement: image
   resource frames select as one atomic block, and the native caret cannot remain inside the frame's logical placeholder
-  line.
+  line even when the resource is the first block in the note.
 - Clipboard-image resource imports now also pin their synthesized asset-name policy in the C++ suite, so temporary
   placeholder names cannot regress back to a collision-prone fixed file name.
 - Structured QML editor checks now also pin the native input contract for every host: focused stale text echo is rejected,
@@ -135,6 +135,8 @@ ctest --test-dir build --output-on-failure -L cpp_regression
 - Note-body persistence now also locks inline style projection from stored RAW tags to rendered HTML, so a source run
   like `<bold>Al<italic>pha</italic></bold><italic> Beta</italic>` cannot reappear in the editor projection as literal
   XML text.
+- Library note-list preview coverage now also locks that same RAW/visible split for note cards: `primaryText` hides
+  inline source tags while `bodyText` remains the editor bootstrap RAW source.
 - `.wsresource` package support now also has regression coverage for annotation-canvas generation, so package metadata
   round-trips the new `annotationPath` and newly created resource packages keep a transparent `annotation.png`.
 - Folder-path semantics now also lock escaped literal-slash handling plus `Folders.wsfolders` parser migration, so a
@@ -148,11 +150,15 @@ ctest --test-dir build --output-on-failure -L cpp_regression
 - Hierarchy interaction bridge coverage also locks the post-startup QML binding path: after the architecture policy
   lock, the QML-created interaction bridge must still bind and rebind the active hierarchy controller so chevron
   expansion can commit instead of rolling back.
-- Sidebar footer actions now pin both the legacy `LV.ListFooter` config-callback route and the signal route, with C++
-  same-turn coalescing in `SidebarHierarchyInteractionController` so create, delete, and context-menu clicks stay live
-  without double-dispatching.
-- The C++ regression executable links `SidebarHierarchyInteractionController.cpp` with the sidebar suite, so footer
-  coalescing and expansion-state assertions exercise the real controller implementation.
+- QML surface policy coverage now also pins the chevron-only pointer surface in `SidebarHierarchyView.qml`: it must
+  accept only resolved chevron-slot left clicks and route them to the same C++ expansion commit path.
+- Sidebar footer actions now pin both the legacy `LV.ListFooter` config-callback route and the `onButtonClicked` signal
+  route, with QML direct dispatch and same-turn coalescing so create, delete, and context-menu clicks stay live without
+  depending on a controller signal round-trip.
+- Architecture policy coverage now pins the broader view-behavior contract: view-local behavior belongs in QML, while
+  model/controller layers remain responsible for domain mutation, persistence, parsing, scheduling, and shared policy.
+- The C++ regression executable links `SidebarHierarchyInteractionController.cpp` with the sidebar suite, so compatibility
+  footer dispatch and expansion-state assertions exercise the real controller implementation.
 - Sidebar footer toolbar order is source-locked as add folder, delete selected folder, then open context menu, with the
   third slot using the LVRS more/menu icon instead of a settings glyph.
 - Sidebar tree context-menu coverage now locks `Expand All` and `Collapse All` entries to
@@ -224,7 +230,8 @@ ctest --test-dir build --output-on-failure -L cpp_regression
   active blue gutter bar follows cursor/selection source offsets.
 - Line-number rail metrics now also pin independent row geometry: a tall resource frame keeps one gutter-line row
   instead of converting frame height into a multi-line gutter allocation, while later gutter rows keep their own
-  measured y positions and the geometry provider caps an overlay-height resource row at the next measured row top.
+  measured y positions from the rendered overlay and the geometry provider caps an overlay-height resource row at the
+  next measured row top.
 - The shared inline-format editor now also pins the absence of pointer interception above the live `LV.TextEditor`,
   so mouse/touch selection, `Shift`-extended selection, and repeated Backspace/Delete remain OS/Qt-native. The same
   regression scans the QML source tree for forbidden input-method bridges and fallbacks, keeping IME query updates,

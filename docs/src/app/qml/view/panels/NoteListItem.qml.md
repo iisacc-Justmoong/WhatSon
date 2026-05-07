@@ -29,6 +29,9 @@
 - Added `pragma ComponentBehavior: Bound` to enforce bound delegate id access for nested metadata rows.
 - Folder/tag metadata `Repeater` delegates now declare `required property var modelData` and read
   `folderLabelRow.modelData` / `tagLabelRow.modelData` explicitly.
+- `primaryText` is a display-ready note preview supplied by the note-list model. The component must not parse or strip
+  `.wsnbody` source tags itself; RAW/visible projection belongs to the model/file-note layer before QML receives the
+  string.
 - Resources rows no longer reuse this component; `ListBarLayout.qml` now mounts dedicated
   `ResourceListItem.qml` when the bound model exposes `currentResourceEntry`.
 - Card padding, preview size, metadata spacing, and implicit row geometry now resolve from named `LV.Theme` spacing,

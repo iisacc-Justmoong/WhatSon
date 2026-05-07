@@ -913,24 +913,48 @@ QVariantMap ContentsWysiwygEditorPolicy::atomicResourceCursorNormalizationPlan(
         }
 
         const int previousSourceCursor = boundedOffset(previousRawCursorPosition, sourceLength);
-        int targetSourceCursor = afterSourceCursor;
+        int primarySourceCursor = afterSourceCursor;
+        int fallbackSourceCursor = beforeSourceCursor;
         if (previousSourceCursor > blockEnd)
         {
-            targetSourceCursor = beforeSourceCursor;
+            primarySourceCursor = beforeSourceCursor;
+            fallbackSourceCursor = afterSourceCursor;
         }
         else if (previousSourceCursor >= blockStart)
         {
-            targetSourceCursor = logicalCursor <= logicalStart
+            primarySourceCursor = logicalCursor <= logicalStart
                 ? beforeSourceCursor
                 : afterSourceCursor;
+            fallbackSourceCursor = primarySourceCursor == beforeSourceCursor
+                ? afterSourceCursor
+                : beforeSourceCursor;
         }
 
-        const bool targetPrefersAfter = targetSourceCursor >= blockEnd;
-        const int targetLogicalCursor = boundedOffset(
-            logicalOffsetForSourceOffsetWithAffinity(coordinateMapper, targetSourceCursor, targetPrefersAfter),
-            visibleLength);
-        const bool targetStillInsideResource =
-            targetLogicalCursor >= logicalStart && targetLogicalCursor <= logicalEnd;
+        const auto logicalCursorForTarget = [&](const int sourceCursor) {
+            return boundedOffset(
+                logicalOffsetForSourceOffsetWithAffinity(
+                    coordinateMapper,
+                    sourceCursor,
+                    sourceCursor >= blockEnd),
+                visibleLength);
+        };
+        const auto cursorIsInsideResource = [&](const int logicalTarget) {
+            return logicalTarget >= logicalStart && logicalTarget <= logicalEnd;
+        };
+
+        int targetSourceCursor = primarySourceCursor;
+        int targetLogicalCursor = logicalCursorForTarget(targetSourceCursor);
+        bool targetStillInsideResource = cursorIsInsideResource(targetLogicalCursor);
+        if (targetStillInsideResource)
+        {
+            const int fallbackLogicalCursor = logicalCursorForTarget(fallbackSourceCursor);
+            if (!cursorIsInsideResource(fallbackLogicalCursor))
+            {
+                targetSourceCursor = fallbackSourceCursor;
+                targetLogicalCursor = fallbackLogicalCursor;
+                targetStillInsideResource = false;
+            }
+        }
 
         plan.insert(QStringLiteral("blockSourceEnd"), blockEnd);
         plan.insert(QStringLiteral("blockSourceStart"), blockStart);

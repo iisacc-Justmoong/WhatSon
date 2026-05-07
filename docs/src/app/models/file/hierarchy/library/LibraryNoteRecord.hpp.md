@@ -20,6 +20,11 @@ filtering and mutation logic rely on stable UUIDs.
 - Callers should keep `folders` and `folderUuids` aligned in order and count.
 - Missing UUIDs are tolerated only as legacy fallbacks during import; modern writes should preserve
   UUIDs.
+- `bodySourceText` is the editor-facing RAW note-body source. It may contain inline formatting tags such as
+  `<bold>` and `<italic>`.
+- `bodyPlainText` and `bodyFirstLine` are display/search projections. `normalizeBodyFields()` must derive them from
+  the RAW source through `WhatSon::NoteBodyPersistence::serializeBodyDocument(...)` and
+  `plainTextFromBodyDocument(...)`, so note-list preview cards never expose raw body tags.
 - `progress == -1` represents `No progress` and is the neutral default for new/cleared notes.
 - Structural equality now covers the full record payload so incremental index layers can suppress no-op upserts and
   avoid emitting wide rebuild signals when a note record did not actually change.
