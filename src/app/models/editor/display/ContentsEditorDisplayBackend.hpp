@@ -27,7 +27,6 @@ class ContentsEditorDisplayBackend : public QObject
     Q_PROPERTY(QObject* libraryHierarchyController READ libraryHierarchyController WRITE setLibraryHierarchyController NOTIFY libraryHierarchyControllerChanged FINAL)
     Q_PROPERTY(QObject* noteListModel READ noteListModel WRITE setNoteListModel NOTIFY noteListModelChanged FINAL)
     Q_PROPERTY(QObject* noteActiveState READ noteActiveState WRITE setNoteActiveState NOTIFY noteActiveStateChanged FINAL)
-    Q_PROPERTY(QObject* panelController READ panelController WRITE setPanelController NOTIFY panelControllerChanged FINAL)
     Q_PROPERTY(bool paperPaletteEnabled READ paperPaletteEnabled WRITE setPaperPaletteEnabled NOTIFY paperPaletteEnabledChanged FINAL)
     Q_PROPERTY(bool minimapVisible READ minimapVisible WRITE setMinimapVisible NOTIFY minimapVisibleChanged FINAL)
     Q_PROPERTY(int editorCursorPosition READ editorCursorPosition WRITE setEditorCursorPosition NOTIFY editorCursorPositionChanged FINAL)
@@ -57,8 +56,6 @@ public:
     void setNoteListModel(QObject* value);
     QObject* noteActiveState() const noexcept;
     void setNoteActiveState(QObject* value);
-    QObject* panelController() const noexcept;
-    void setPanelController(QObject* value);
     bool paperPaletteEnabled() const noexcept;
     void setPaperPaletteEnabled(bool value);
     bool minimapVisible() const noexcept;
@@ -93,7 +90,6 @@ public:
         const QString& editorHtml,
         const QVariant& renderedResources,
         int targetFrameWidth) const;
-    Q_INVOKABLE void requestViewHook(const QVariant& reason = {});
     Q_INVOKABLE bool syncSessionFromCurrentNote(bool resetViewport);
 
 signals:
@@ -101,7 +97,6 @@ signals:
     void libraryHierarchyControllerChanged();
     void noteListModelChanged();
     void noteActiveStateChanged();
-    void panelControllerChanged();
     void paperPaletteEnabledChanged();
     void minimapVisibleChanged();
     void editorCursorPositionChanged();
@@ -109,7 +104,6 @@ signals:
     void currentNoteChanged();
     void editorViewportResetRequested();
     void editorTextEdited(const QString& text);
-    void viewHookRequested(const QString& reason);
 
 private:
     enum class SyncReset
@@ -127,7 +121,6 @@ private slots:
 private:
     bool connectPropertyNotify(QObject* source, const char* propertyName, const char* slotSignature);
     bool invokeNoArgBool(QObject* target, const char* methodName) const;
-    bool invokeStringArgument(QObject* target, const char* methodName, const QString& value) const;
     void clearNoteActiveStateSession(QObject* state);
     void clearNoteActiveStateSaveCoordinator(QObject* state);
     void attachEditorSessionToActiveState();
@@ -147,7 +140,6 @@ private:
     QPointer<QObject> m_libraryHierarchyController;
     QPointer<QObject> m_noteListModel;
     QPointer<QObject> m_noteActiveState;
-    QPointer<QObject> m_panelController;
     QPointer<QObject> m_structuredDocumentFlow;
     QVector<QMetaObject::Connection> m_noteListConnections;
     QVector<QMetaObject::Connection> m_noteActiveStateConnections;

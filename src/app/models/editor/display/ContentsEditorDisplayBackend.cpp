@@ -166,16 +166,6 @@ void ContentsEditorDisplayBackend::setNoteActiveState(QObject* value)
     publishCurrentNoteChanged(SyncReset::ResetViewport);
 }
 
-QObject* ContentsEditorDisplayBackend::panelController() const noexcept { return m_panelController.data(); }
-
-void ContentsEditorDisplayBackend::setPanelController(QObject* value)
-{
-    if (m_panelController == value)
-        return;
-    m_panelController = value;
-    emit panelControllerChanged();
-}
-
 bool ContentsEditorDisplayBackend::paperPaletteEnabled() const noexcept { return m_paperPaletteEnabled; }
 
 void ContentsEditorDisplayBackend::setPaperPaletteEnabled(const bool value)
@@ -348,14 +338,6 @@ QString ContentsEditorDisplayBackend::renderInlineResourceEditorSurfaceHtml(
         std::max(120, targetFrameWidth));
 }
 
-void ContentsEditorDisplayBackend::requestViewHook(const QVariant& reason)
-{
-    const QString hookReason =
-        reason.isValid() && !reason.isNull() ? reason.toString() : QStringLiteral("manual");
-    invokeStringArgument(m_panelController, "requestControllerHook", hookReason);
-    emit viewHookRequested(hookReason);
-}
-
 bool ContentsEditorDisplayBackend::syncSessionFromCurrentNote(const bool resetViewport)
 {
     if (currentNoteId().isEmpty())
@@ -424,40 +406,6 @@ bool ContentsEditorDisplayBackend::invokeNoArgBool(QObject* target, const char* 
         return variantResult.toBool();
 
     return QMetaObject::invokeMethod(target, methodName);
-}
-
-bool ContentsEditorDisplayBackend::invokeStringArgument(
-    QObject* target,
-    const char* methodName,
-    const QString& value) const
-{
-    if (!target || !methodName)
-        return false;
-
-    bool boolResult = false;
-    if (QMetaObject::invokeMethod(
-            target,
-            methodName,
-            Q_RETURN_ARG(bool, boolResult),
-            Q_ARG(QString, value)))
-    {
-        return boolResult;
-    }
-
-    QVariant variantResult;
-    if (QMetaObject::invokeMethod(
-            target,
-            methodName,
-            Q_RETURN_ARG(QVariant, variantResult),
-            Q_ARG(QVariant, QVariant(value))))
-    {
-        return variantResult.toBool();
-    }
-
-    if (QMetaObject::invokeMethod(target, methodName, Q_ARG(QString, value)))
-        return true;
-
-    return QMetaObject::invokeMethod(target, methodName, Q_ARG(QVariant, QVariant(value)));
 }
 
 void ContentsEditorDisplayBackend::handleResetCurrentNoteFromModel()

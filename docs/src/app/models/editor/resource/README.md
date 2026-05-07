@@ -13,7 +13,9 @@ Owns editor-side resource import and inline resource presentation coordination.
 - `ContentsInlineResourcePresentationController.*`
   Builds editor-surface inline resource HTML placeholders and the rounded Figma `292:50` frame image projection used by
   note-body resources. Inline resource frames resolve 100% width to the current editor text column before the cached
-  frame image and matching RichText image attributes are generated.
+  frame image and matching RichText image attributes are generated. The generated RichText paragraph has zero
+  line-height and a top-aligned image so the visual frame height matches the encoded image height used by editor
+  geometry.
 - `ContentsEditorSurfaceGuardController.*`
   Guards programmatic editor-surface sync during resource import turns.
 

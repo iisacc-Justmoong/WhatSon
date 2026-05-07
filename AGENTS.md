@@ -83,6 +83,10 @@
 - QML은 view construction과 view-local behavior를 직접 소유한다. 버튼 dispatch, 메뉴 열기/닫기, pointer hit-test,
   transient visual state, focus presentation, view-local callback/signal coalescing처럼 화면 표면 안에서 끝나는
   동작은 QML에서 구현한다.
+- QML에 둘 수 있는 것은 화면 이벤트를 어떤 함수에 꽂을지, 클릭 뒤 어떤 UI 후처리를 한 틱 늦게 실행할지,
+  disabled 버튼을 한 번 더 막을지 같은 얇은 view wiring으로 제한한다.
+- 상태 보존, rollback, 다중 호출 간 정합성, parser/renderer/geometry/line-metrics처럼 재현성과 테스트성이 필요한
+  정책은 C++ model/controller 계층에 남긴다.
 - model, controller, session, persistence, sync, parsing, domain mutation, scheduling, command-surface 책임을
   우회하기 위한 compatibility QML wrapper를 추가하지 않는다. 해당 책임은 single-purpose C++ object로 승격한다.
 - 순수 view 동작을 C++ Controller signal round-trip으로 감싸는 간접 경로를 새로 만들지 않는다. view 동작이

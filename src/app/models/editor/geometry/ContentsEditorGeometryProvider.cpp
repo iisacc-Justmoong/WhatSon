@@ -2,6 +2,7 @@
 
 #include <QMetaObject>
 #include <QQuickItem>
+#include <QRegularExpression>
 #include <QVariant>
 
 #include <algorithm>
@@ -122,25 +123,56 @@ namespace
         return point;
     }
 
-    qreal nextAvailableRowTop(
+    qreal htmlAttributeNumber(const QString& tag, const QString& attributeName) noexcept
+    {
+        const QRegularExpression expression(
+            QStringLiteral(R"(\b%1\s*=\s*(['"]?)([0-9]+(?:\.[0-9]+)?)\1)")
+                .arg(QRegularExpression::escape(attributeName)),
+            QRegularExpression::CaseInsensitiveOption);
+        const QRegularExpressionMatch match = expression.match(tag);
+        if (!match.hasMatch())
+        {
+            return std::numeric_limits<qreal>::quiet_NaN();
+        }
+        bool ok = false;
+        const qreal value = match.captured(2).toDouble(&ok);
+        return ok && std::isfinite(value) ? value : std::numeric_limits<qreal>::quiet_NaN();
+    }
+
+    std::vector<qreal> resourceVisualHeightsFromHtml(
+        const QString& html,
+        const qreal fallbackLineHeight)
+    {
+        std::vector<qreal> heights;
+        const QRegularExpression imageExpression(
+            QStringLiteral(R"(<img\b[^>]*>)"),
+            QRegularExpression::CaseInsensitiveOption);
+        QRegularExpressionMatchIterator matches = imageExpression.globalMatch(html);
+        while (matches.hasNext())
+        {
+            const QString imageTag = matches.next().captured(0);
+            const qreal imageHeight = htmlAttributeNumber(imageTag, QStringLiteral("height"));
+            if (std::isfinite(imageHeight) && imageHeight > 0.0)
+            {
+                heights.push_back(std::max(std::max<qreal>(1.0, fallbackLineHeight), imageHeight));
+            }
+        }
+        return heights;
+    }
+
+    qreal followingTextRowTop(
         const std::vector<QRectF>& rectangles,
-        const std::vector<bool>& geometryAvailable,
-        const int rowIndex)
+        const int rowIndex) noexcept
     {
         if (rowIndex < 0 || rowIndex >= static_cast<int>(rectangles.size()))
         {
             return std::numeric_limits<qreal>::quiet_NaN();
         }
 
-        const qreal currentY = rectangles.at(rowIndex).y();
+        const qreal currentY = rectangles[static_cast<std::size_t>(rowIndex)].y();
         for (int index = rowIndex + 1; index < static_cast<int>(rectangles.size()); ++index)
         {
-            if (!geometryAvailable.at(index))
-            {
-                continue;
-            }
-
-            const qreal candidateY = rectangles.at(index).y();
+            const qreal candidateY = rectangles[static_cast<std::size_t>(index)].y();
             if (std::isfinite(candidateY) && candidateY > currentY)
             {
                 return candidateY;
@@ -215,6 +247,21 @@ void ContentsEditorGeometryProvider::setVisualItem(QObject* value)
     }
     m_visualItem = value;
     emitGeometryInputChanged(&ContentsEditorGeometryProvider::visualItemChanged);
+}
+
+QString ContentsEditorGeometryProvider::renderedHtml() const
+{
+    return m_renderedHtml;
+}
+
+void ContentsEditorGeometryProvider::setRenderedHtml(const QString& value)
+{
+    if (m_renderedHtml == value)
+    {
+        return;
+    }
+    m_renderedHtml = value;
+    emitGeometryInputChanged(&ContentsEditorGeometryProvider::renderedHtmlChanged);
 }
 
 QVariantList ContentsEditorGeometryProvider::lineNumberRanges() const
@@ -412,14 +459,10 @@ QVariantList ContentsEditorGeometryProvider::visualLineWidthRatios() const
 QVariantList ContentsEditorGeometryProvider::lineNumberGeometryRows() const
 {
     std::vector<QRectF> textRectangles;
-    std::vector<QRectF> renderedRectangles;
     std::vector<bool> textGeometryAvailable;
-    std::vector<bool> renderedGeometryAvailable;
     std::vector<bool> resourceRanges;
     textRectangles.reserve(static_cast<std::size_t>(m_lineNumberRanges.size()));
-    renderedRectangles.reserve(static_cast<std::size_t>(m_lineNumberRanges.size()));
     textGeometryAvailable.reserve(static_cast<std::size_t>(m_lineNumberRanges.size()));
-    renderedGeometryAvailable.reserve(static_cast<std::size_t>(m_lineNumberRanges.size()));
     resourceRanges.reserve(static_cast<std::size_t>(m_lineNumberRanges.size()));
 
     for (const QVariant& rangeValue : m_lineNumberRanges)
@@ -430,56 +473,43 @@ QVariantList ContentsEditorGeometryProvider::lineNumberGeometryRows() const
         const int logicalEnd = range.value(QStringLiteral("logicalEnd")).toInt();
         const ContentsEditorGeometryMeasurement textMeasurement =
             measureTextRange(logicalStart, logicalEnd, m_logicalLength, m_fallbackLineHeight, m_fallbackWidth);
-        const ContentsEditorGeometryMeasurement renderedMeasurement =
-            measureResourceRange(logicalStart, logicalEnd, m_logicalLength, m_fallbackLineHeight, m_fallbackWidth);
         textRectangles.push_back(textMeasurement.rectangle);
-        renderedRectangles.push_back(renderedMeasurement.rectangle);
         textGeometryAvailable.push_back(textMeasurement.geometryAvailable);
-        renderedGeometryAvailable.push_back(renderedMeasurement.geometryAvailable);
         resourceRanges.push_back(resourceRange);
     }
 
+    const std::vector<qreal> htmlResourceHeights =
+        resourceVisualHeightsFromHtml(m_renderedHtml, m_fallbackLineHeight);
+    int resourceIndex = 0;
     QVariantList rows;
     rows.reserve(m_lineNumberRanges.size());
     qreal accumulatedResourceDelta = 0.0;
+    qreal minimumExternalRowTop = 0.0;
     for (int index = 0; index < static_cast<int>(textRectangles.size()); ++index)
     {
         const QRectF textRectangle = textRectangles.at(index);
         QRectF rectangle = textRectangle;
-        rectangle.moveTop(rectangle.y() + accumulatedResourceDelta);
+        rectangle.moveTop(std::max(rectangle.y() + accumulatedResourceDelta, minimumExternalRowTop));
         if (resourceRanges.at(index))
         {
-            const qreal renderedTop = renderedGeometryAvailable.at(index)
-                ? renderedRectangles.at(index).y()
-                : textRectangle.y();
-            qreal resourceBottom = std::numeric_limits<qreal>::quiet_NaN();
-            const qreal followingRenderedRowTop =
-                nextAvailableRowTop(renderedRectangles, renderedGeometryAvailable, index);
-            if (std::isfinite(followingRenderedRowTop) && followingRenderedRowTop > renderedTop)
-            {
-                resourceBottom = followingRenderedRowTop;
-            }
-            else
-            {
-                resourceBottom = resourceContentHeight(renderedTop + rectangle.height());
-                const qreal followingTextRowTop =
-                    nextAvailableRowTop(textRectangles, textGeometryAvailable, index);
-                if (std::isfinite(followingTextRowTop)
-                    && followingTextRowTop > textRectangle.y()
-                    && resourceBottom > followingTextRowTop)
-                {
-                    resourceBottom = followingTextRowTop;
-                }
-            }
-
-            const qreal resourceVisualHeight =
-                std::isfinite(resourceBottom) && resourceBottom > renderedTop
-                    ? std::max(m_fallbackLineHeight, resourceBottom - renderedTop)
-                    : std::max(m_fallbackLineHeight, rectangle.height());
+            const qreal htmlResourceHeight =
+                resourceIndex < static_cast<int>(htmlResourceHeights.size())
+                    ? htmlResourceHeights.at(static_cast<std::size_t>(resourceIndex))
+                    : std::numeric_limits<qreal>::quiet_NaN();
+            ++resourceIndex;
+            const qreal resourceVisualHeight = std::isfinite(htmlResourceHeight) && htmlResourceHeight > 0.0
+                ? std::max(m_fallbackLineHeight, htmlResourceHeight)
+                : std::max(m_fallbackLineHeight, rectangle.height());
             rectangle.setHeight(resourceVisualHeight);
-            accumulatedResourceDelta += std::max<qreal>(
-                0.0,
-                resourceVisualHeight - std::max(m_fallbackLineHeight, textRectangle.height()));
+            minimumExternalRowTop =
+                std::max(minimumExternalRowTop, rectangle.y() + resourceVisualHeight);
+            const qreal nextTextRowTop = followingTextRowTop(textRectangles, index);
+            const qreal nextRowDelta =
+                std::isfinite(nextTextRowTop)
+                    ? minimumExternalRowTop - nextTextRowTop
+                    : minimumExternalRowTop - textRectangle.y();
+            accumulatedResourceDelta =
+                std::max(accumulatedResourceDelta, std::max<qreal>(0.0, nextRowDelta));
         }
         rows.push_back(QVariantMap{
             {QStringLiteral("geometryAvailable"), static_cast<bool>(textGeometryAvailable.at(index))},

@@ -410,8 +410,8 @@ QString ContentsInlineResourcePresentationController::inlineResourceBlockHtml(
                 ? invokeString(m_view, "encodeXmlAttributeValue", { frameImageSource }, frameImageSource)
                 : htmlText(frameImageSource);
             return QStringLiteral(
-                       "<p style=\"margin-top:0px;margin-bottom:0px;\">"
-                       "<a href=\"%1\"><img src=\"%2\" width=\"%3\" height=\"%4\" /></a>"
+                       "<p style=\"margin-top:0px;margin-bottom:0px;line-height:0px;\">"
+                       "<a href=\"%1\"><img src=\"%2\" width=\"%3\" height=\"%4\" style=\"vertical-align:top;\" /></a>"
                        "</p>")
                 .arg(
                     encodedSourceUrl,

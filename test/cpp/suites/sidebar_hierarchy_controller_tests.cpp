@@ -79,40 +79,46 @@ void WhatSonCppRegressionTests::sidebarHierarchyController_preservesFallbackAcro
     QCOMPARE(sidebarController.activeHierarchyController(), static_cast<QObject*>(&libraryController));
 }
 
-void WhatSonCppRegressionTests::sidebarHierarchyInteractionController_routesFooterActionsAndCoalescesDuplicateTriggers()
+void WhatSonCppRegressionTests::sidebarHierarchyInteractionController_keepsFooterDispatchOutOfCppPolicy()
 {
-    SidebarHierarchyInteractionController controller;
-    FakeSidebarHierarchyInteractionBridge bridge;
-    controller.setHierarchyInteractionBridge(&bridge);
+    const QString controllerHeader = readUtf8SourceFile(
+        QStringLiteral("src/app/models/sidebar/SidebarHierarchyInteractionController.hpp"));
+    const QString controllerSource = readUtf8SourceFile(
+        QStringLiteral("src/app/models/sidebar/SidebarHierarchyInteractionController.cpp"));
+    const QString sidebarSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/panels/sidebar/SidebarHierarchyView.qml"));
 
-    QCOMPARE(
-        controller.footerActionName(99, QStringLiteral(" hierarchy.footer.create ")),
-        QStringLiteral("hierarchy.footer.create"));
-    QCOMPARE(controller.footerActionName(0, QString()), QStringLiteral("hierarchy.footer.create"));
-    QCOMPARE(controller.footerActionName(1, QString()), QStringLiteral("hierarchy.footer.delete"));
-    QCOMPARE(controller.footerActionName(2, QString()), QStringLiteral("hierarchy.footer.options"));
-    QCOMPARE(controller.footerActionName(3, QString()), QString());
+    QVERIFY(!controllerHeader.isEmpty());
+    QVERIFY(!controllerSource.isEmpty());
+    QVERIFY(!sidebarSource.isEmpty());
 
-    QSignalSpy createSpy(&controller, &SidebarHierarchyInteractionController::footerCreateRequested);
-    QSignalSpy deleteSpy(&controller, &SidebarHierarchyInteractionController::footerDeleteRequested);
-    QSignalSpy optionsSpy(&controller, &SidebarHierarchyInteractionController::footerOptionsRequested);
+    QVERIFY(!controllerHeader.contains(QStringLiteral("footerActionName")));
+    QVERIFY(!controllerHeader.contains(QStringLiteral("requestFooterAction")));
+    QVERIFY(!controllerHeader.contains(QStringLiteral("footerCreateRequested")));
+    QVERIFY(!controllerHeader.contains(QStringLiteral("footerDeleteRequested")));
+    QVERIFY(!controllerHeader.contains(QStringLiteral("footerOptionsRequested")));
+    QVERIFY(!controllerHeader.contains(QStringLiteral("selectedHierarchySyncRequested")));
+    QVERIFY(!controllerHeader.contains(QStringLiteral("m_queuedFooterAction")));
+    QVERIFY(!controllerHeader.contains(QStringLiteral("m_pendingFooterAction")));
+    QVERIFY(!controllerHeader.contains(QStringLiteral("bridgeBoolProperty")));
 
-    QVERIFY(controller.requestFooterAction(QStringLiteral("hierarchy.footer.create")));
-    QVERIFY(controller.requestFooterAction(QStringLiteral("hierarchy.footer.create")));
-    QCOMPARE(createSpy.count(), 1);
+    QVERIFY(!controllerSource.contains(QStringLiteral("SidebarHierarchyInteractionController::footerActionName")));
+    QVERIFY(!controllerSource.contains(QStringLiteral("SidebarHierarchyInteractionController::requestFooterAction")));
+    QVERIFY(!controllerSource.contains(QStringLiteral("footerCreateRequested")));
+    QVERIFY(!controllerSource.contains(QStringLiteral("footerDeleteRequested")));
+    QVERIFY(!controllerSource.contains(QStringLiteral("footerOptionsRequested")));
+    QVERIFY(!controllerSource.contains(QStringLiteral("selectedHierarchySyncRequested")));
+    QVERIFY(!controllerSource.contains(QStringLiteral("m_pendingFooterAction")));
+    QVERIFY(!controllerSource.contains(QStringLiteral("bridgeBoolProperty")));
 
-    QCoreApplication::processEvents(QEventLoop::AllEvents, 20);
-    QVERIFY(controller.requestFooterAction(QStringLiteral("hierarchy.footer.delete")));
-    QCOMPARE(deleteSpy.count(), 1);
-
-    bridge.viewOptionsEnabled = false;
-    QVERIFY(!controller.requestFooterAction(QStringLiteral("hierarchy.footer.options")));
-    QCOMPARE(optionsSpy.count(), 0);
-
-    bridge.viewOptionsEnabled = true;
-    QCoreApplication::processEvents(QEventLoop::AllEvents, 20);
-    QVERIFY(controller.requestFooterAction(QStringLiteral("hierarchy.footer.options")));
-    QCOMPARE(optionsSpy.count(), 1);
+    QVERIFY(sidebarSource.contains(QStringLiteral("function hierarchyFooterActionName(index, eventName)")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("function requestHierarchyFooterAction(action)")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("function scheduleSelectedHierarchySync(focusView)")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("Qt.callLater(function () {\n            sidebarHierarchyView.syncSelectedHierarchyItem(Boolean(focusView));")));
+    QVERIFY(!sidebarSource.contains(QStringLiteral("function onFooterCreateRequested()")));
+    QVERIFY(!sidebarSource.contains(QStringLiteral("function onFooterDeleteRequested()")));
+    QVERIFY(!sidebarSource.contains(QStringLiteral("function onFooterOptionsRequested()")));
+    QVERIFY(!sidebarSource.contains(QStringLiteral("function onSelectedHierarchySyncRequested(focusView)")));
 }
 
 void WhatSonCppRegressionTests::sidebarHierarchyInteractionController_commitsExpansionStateThroughCppPolicy()

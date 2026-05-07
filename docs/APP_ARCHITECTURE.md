@@ -36,6 +36,10 @@ Do not add a C++ controller signal round-trip for those view-local behaviors. If
 state, the QML surface should call the already exposed narrow model/controller/bridge API directly, leaving persistence,
 parsing, scheduling, and domain mutation policy in the owning model layer.
 
+The boundary is intentionally narrow: one-tick UI follow-up, disabled-button guards, and event-to-function dispatch can
+live in QML, while state preservation, rollback, multi-call consistency, parser/renderer output, and geometry/line
+metrics remain C++ responsibilities.
+
 ## Routed Workspace
 `MobileHierarchyPage.qml` owns the mobile `LV.PageRouter` stack and mounts the hierarchy page, note-list body, and editor body as routed children.
 

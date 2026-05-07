@@ -101,6 +101,10 @@ ctest --test-dir build --output-on-failure -L cpp_regression
 - Inline editor resource-frame coverage now verifies both pointer selection and collapsed cursor movement: image
   resource frames select as one atomic block, and the native caret cannot remain inside the frame's logical placeholder
   line even when the resource is the first block in the note.
+- Inline resource HTML coverage now pins zero-line-height frame paragraphs with top-aligned frame images, and the QML
+  gutter regression checks that the next row y matches `resourceRow.y + rendered frame height`. The C++ geometry
+  regression also covers hidden TextEdit line boxes whose rectangle height differs from the next row's base-y advance
+  and probe rows whose measured top is still inside the rendered resource frame.
 - Clipboard-image resource imports now also pin their synthesized asset-name policy in the C++ suite, so temporary
   placeholder names cannot regress back to a collision-prone fixed file name.
 - Structured QML editor checks now also pin the native input contract for every host: focused stale text echo is rejected,
@@ -157,8 +161,9 @@ ctest --test-dir build --output-on-failure -L cpp_regression
   depending on a controller signal round-trip.
 - Architecture policy coverage now pins the broader view-behavior contract: view-local behavior belongs in QML, while
   model/controller layers remain responsible for domain mutation, persistence, parsing, scheduling, and shared policy.
-- The C++ regression executable links `SidebarHierarchyInteractionController.cpp` with the sidebar suite, so compatibility
-  footer dispatch and expansion-state assertions exercise the real controller implementation.
+- The C++ regression executable links `SidebarHierarchyInteractionController.cpp` with the sidebar suite, so expansion
+  state, rollback, and activation-suppression assertions exercise the real controller implementation while footer
+  dispatch is asserted to remain outside that C++ policy object.
 - Sidebar footer toolbar order is source-locked as add folder, delete selected folder, then open context menu, with the
   third slot using the LVRS more/menu icon instead of a settings glyph.
 - Sidebar tree context-menu coverage now locks `Expand All` and `Collapse All` entries to
@@ -230,9 +235,10 @@ ctest --test-dir build --output-on-failure -L cpp_regression
   active blue gutter bar follows cursor/selection source offsets.
 - Line-number rail metrics now also pin independent row geometry: a tall resource frame keeps one gutter-line row
   instead of converting frame height into a multi-line gutter allocation, while later gutter rows keep their own plain
-  logical y positions adjusted only by the rendered resource-frame visual-height delta. The geometry provider caps an
-  overlay-height resource row at the next measured row top, and ignores rendered overlay row coordinates for ordinary
-  non-resource gutter rows.
+  logical y positions adjusted only by the rendered HTML resource image-height delta. The geometry provider ignores
+  rendered overlay row coordinates for ordinary non-resource gutter rows, and refuses to use whole-document rendered
+  `contentHeight` as a resource-row fallback. It also clamps probe rows reported inside an active resource frame to the
+  frame bottom, preventing placeholder/probe internals from becoming visible gutter anchors.
 - The shared inline-format editor now also pins the absence of pointer interception above the live `LV.TextEditor`,
   so mouse/touch selection, `Shift`-extended selection, and repeated Backspace/Delete remain OS/Qt-native. The same
   regression scans the QML source tree for forbidden input-method bridges and fallbacks, keeping IME query updates,

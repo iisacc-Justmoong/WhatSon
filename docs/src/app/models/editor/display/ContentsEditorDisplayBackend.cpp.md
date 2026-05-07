@@ -18,3 +18,5 @@ Implements the live note-editor display backend used by `ContentViewLayout.qml`.
   preserve the editor viewport so typing near the bottom cannot yank the document back to the first line.
 - Owns resource-tag mutation callbacks and inline-resource HTML replacement so QML only binds the rendered output.
 - Owns minimap layout metrics while `ContentViewLayout.qml` supplies LVRS token values and renders the resolved rail.
+- Does not forward view hooks through `panelController.requestControllerHook(...)`; that thin view relay lives in
+  `ContentViewLayout.qml`.

@@ -25,8 +25,12 @@ C++ model objects for the note editor's logical line-number rail.
 - A wrapped paragraph remains one logical number while its row height follows the visible wrapped height. Atomic
   resource blocks remain one logical number and one gutter-line allocation because the logical text bridge exposes
   them as one U+FFFC placeholder, not as internal text lines.
-- Rendered resource frames affect line-number placement only as a visual-height delta supplied by the geometry adapter.
-  Ordinary text row positions still come from the plain logical display geometry rather than RichText overlay rows.
+- Rendered resource frames affect line-number placement only as an image-height delta supplied by the geometry adapter.
+  That delta is anchored against the next plain logical row's measured base y, not the placeholder line-box height. If
+  the next base y is not yet measurable, the full frame height is used as the row advance. The adapter also clamps any
+  measured row top that still falls inside the active resource frame to the frame bottom before this object consumes it.
+  Ordinary text row positions still come from the plain logical display geometry rather than RichText overlay rows or
+  whole-document rendered `contentHeight`.
 - The object does not mutate `.wsnbody` source and does not parse XML; it consumes parser/renderer metadata already
   produced by the editor projection pipeline.
 
@@ -41,5 +45,6 @@ C++ model objects for the note editor's logical line-number rail.
 - 위치: 각 row의 y/height는 해당 row의 geometry snapshot에서 독립적으로 결정하며, 이전 row의 bottom을 다음 row에
   전파하지 않는다.
 - wrap: 긴 paragraph가 여러 시각 줄로 접혀도 번호는 하나이며, row height만 실제 표시 높이를 따른다.
-- resource: rendered resource frame은 이후 row를 아래로 놓기 위한 vertical delta만 제공하며, 일반 텍스트 row의
-  위치는 plain logical display geometry를 기준으로 유지한다.
+- resource: rendered resource frame은 이후 row를 아래로 놓기 위한 image-height delta만 제공하며, 일반 텍스트 row의
+  위치는 plain logical display geometry를 기준으로 유지한다. geometry adapter가 resource frame 내부 probe row를
+  frame bottom으로 clamp한 뒤 전달하므로 내부 placeholder 줄이 거터 anchor가 되지 않는다.

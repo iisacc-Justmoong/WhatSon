@@ -23,6 +23,9 @@ surface.
   sizing contract.
 - Calendar note activation is also centralized here so every calendar surface can reuse one shared "open note in
   editor" bridge.
+- `requestViewHook(reason)` is owned here as a view-local relay. It calls the resolved panel controller hook when
+  available and then emits `viewHookRequested`, so editor/minimap hook notifications do not round-trip through
+  `ContentsEditorDisplayBackend`.
 
 ## Signals
 
@@ -59,6 +62,9 @@ surface.
 - The editor `Flickable` resets to the top only when `ContentsEditorDisplayBackend` emits
   `editorViewportResetRequested()`. That signal is a note-identity transition contract, not a generic text/projection
   refresh hook; same-note typing, save reconcile, and current-entry refreshes must preserve `contentY`.
+- `ContentsStructuredDocumentFlow.qml` and `Minimap.qml` forward `onViewHookRequested` to
+  `ContentViewLayout.requestViewHook(...)` directly. The display backend owns parser/render/session collaborators, not
+  this thin view-hook dispatch.
 - The note editor flow receives both the session RAW `sourceText` and the projection-owned `projectionSourceText`, so
   `ContentsStructuredDocumentFlow.qml` can hold the last ready logical projection while parser/render publication
   catches up instead of falling back to RAW tag text.

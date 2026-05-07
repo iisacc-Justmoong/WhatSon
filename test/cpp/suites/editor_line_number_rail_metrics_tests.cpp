@@ -369,7 +369,64 @@ void WhatSonCppRegressionTests::contentsEditorGeometryProvider_keepsTextRowsOnLo
     QCOMPARE(rows.at(2).toMap().value(QStringLiteral("y")).toDouble(), 36.0);
 }
 
-void WhatSonCppRegressionTests::contentsEditorGeometryProvider_capsMiddleResourceRowsAtNextMeasuredRow()
+void WhatSonCppRegressionTests::contentsEditorGeometryProvider_ignoresWholeOverlayHeightWithoutResourceHtml()
+{
+    QQmlEngine engine;
+    const std::unique_ptr<QObject> textGeometry = createGeometryProbe(
+        engine,
+        11,
+        0.0,
+        QVariantMap{
+            {QStringLiteral("0"), QRectF(0.0, 0.0, 120.0, 18.0)},
+            {QStringLiteral("4"), QRectF(0.0, 0.0, 120.0, 18.0)},
+            {QStringLiteral("6"), QRectF(0.0, 18.0, 120.0, 18.0)},
+            {QStringLiteral("7"), QRectF(0.0, 36.0, 120.0, 18.0)},
+            {QStringLiteral("10"), QRectF(0.0, 36.0, 120.0, 18.0)},
+        });
+    QVERIFY(textGeometry != nullptr);
+
+    const std::unique_ptr<QObject> resourceGeometry = createGeometryProbe(
+        engine,
+        11,
+        720.0,
+        QVariantMap{
+            {QStringLiteral("6"), QRectF(0.0, 18.0, 120.0, 18.0)},
+            {QStringLiteral("7"), QRectF(0.0, 18.0, 120.0, 18.0)},
+            {QStringLiteral("10"), QRectF(0.0, 18.0, 120.0, 18.0)},
+        });
+    QVERIFY(resourceGeometry != nullptr);
+
+    ContentsEditorGeometryProvider provider;
+    provider.setFallbackLineHeight(18.0);
+    provider.setFallbackWidth(320.0);
+    provider.setLogicalLength(11);
+    provider.setTextItem(textGeometry.get());
+    provider.setResourceItem(resourceGeometry.get());
+    provider.setLineNumberRanges(QVariantList{
+        QVariantMap{
+            {QStringLiteral("logicalEnd"), 5},
+            {QStringLiteral("logicalStart"), 0},
+            {QStringLiteral("resourceRange"), false},
+        },
+        QVariantMap{
+            {QStringLiteral("logicalEnd"), 6},
+            {QStringLiteral("logicalStart"), 6},
+            {QStringLiteral("resourceRange"), true},
+        },
+        QVariantMap{
+            {QStringLiteral("logicalEnd"), 11},
+            {QStringLiteral("logicalStart"), 7},
+            {QStringLiteral("resourceRange"), false},
+        },
+    });
+
+    const QVariantList rows = provider.lineNumberGeometryRows();
+    QCOMPARE(rows.size(), 3);
+    QCOMPARE(rows.at(1).toMap().value(QStringLiteral("height")).toDouble(), 18.0);
+    QCOMPARE(rows.at(2).toMap().value(QStringLiteral("y")).toDouble(), 36.0);
+}
+
+void WhatSonCppRegressionTests::contentsEditorGeometryProvider_usesRenderedHtmlResourceHeights()
 {
     QQmlEngine engine;
     const std::unique_ptr<QObject> textGeometry = createGeometryProbe(
@@ -400,6 +457,7 @@ void WhatSonCppRegressionTests::contentsEditorGeometryProvider_capsMiddleResourc
     provider.setFallbackLineHeight(18.0);
     provider.setFallbackWidth(320.0);
     provider.setLogicalLength(11);
+    provider.setRenderedHtml(QStringLiteral("<p><img src='' width='120' height='36' /></p>"));
     provider.setTextItem(textGeometry.get());
     provider.setResourceItem(resourceGeometry.get());
     provider.setLineNumberRanges(QVariantList{
@@ -426,6 +484,109 @@ void WhatSonCppRegressionTests::contentsEditorGeometryProvider_capsMiddleResourc
     QCOMPARE(rows.at(1).toMap().value(QStringLiteral("y")).toDouble(), 18.0);
     QCOMPARE(rows.at(1).toMap().value(QStringLiteral("height")).toDouble(), 36.0);
     QCOMPARE(rows.at(2).toMap().value(QStringLiteral("y")).toDouble(), 54.0);
+}
+
+void WhatSonCppRegressionTests::contentsEditorGeometryProvider_anchorsRowsAfterResourceToFrameBottom()
+{
+    QQmlEngine engine;
+    const std::unique_ptr<QObject> textGeometry = createGeometryProbe(
+        engine,
+        6,
+        0.0,
+        QVariantMap{
+            {QStringLiteral("0"), QRectF(0.0, 0.0, 120.0, 30.0)},
+            {QStringLiteral("1"), QRectF(0.0, 18.0, 120.0, 18.0)},
+            {QStringLiteral("2"), QRectF(0.0, 0.0, 120.0, 18.0)},
+            {QStringLiteral("5"), QRectF(0.0, 0.0, 120.0, 18.0)},
+        });
+    QVERIFY(textGeometry != nullptr);
+
+    const std::unique_ptr<QObject> resourceGeometry = createGeometryProbe(
+        engine,
+        6,
+        720.0,
+        QVariantMap{
+            {QStringLiteral("0"), QRectF(0.0, 0.0, 120.0, 30.0)},
+            {QStringLiteral("1"), QRectF(0.0, 84.0, 120.0, 18.0)},
+            {QStringLiteral("2"), QRectF(0.0, 84.0, 120.0, 18.0)},
+            {QStringLiteral("5"), QRectF(0.0, 84.0, 120.0, 18.0)},
+        });
+    QVERIFY(resourceGeometry != nullptr);
+
+    ContentsEditorGeometryProvider provider;
+    provider.setFallbackLineHeight(18.0);
+    provider.setFallbackWidth(320.0);
+    provider.setLogicalLength(6);
+    provider.setRenderedHtml(QStringLiteral("<p><img src='' width='160' height='96' /></p>"));
+    provider.setTextItem(textGeometry.get());
+    provider.setResourceItem(resourceGeometry.get());
+    provider.setLineNumberRanges(QVariantList{
+        QVariantMap{
+            {QStringLiteral("logicalEnd"), 1},
+            {QStringLiteral("logicalStart"), 0},
+            {QStringLiteral("resourceRange"), true},
+        },
+        QVariantMap{
+            {QStringLiteral("logicalEnd"), 6},
+            {QStringLiteral("logicalStart"), 2},
+            {QStringLiteral("resourceRange"), false},
+        },
+    });
+
+    const QVariantList rows = provider.lineNumberGeometryRows();
+    QCOMPARE(rows.size(), 2);
+    QCOMPARE(rows.at(0).toMap().value(QStringLiteral("y")).toDouble(), 0.0);
+    QCOMPARE(rows.at(0).toMap().value(QStringLiteral("height")).toDouble(), 96.0);
+    QCOMPARE(rows.at(1).toMap().value(QStringLiteral("y")).toDouble(), 96.0);
+}
+
+void WhatSonCppRegressionTests::contentsEditorGeometryProvider_clampsProbeRowsInsideResourceFrame()
+{
+    QQmlEngine engine;
+    const std::unique_ptr<QObject> textGeometry = createGeometryProbe(
+        engine,
+        9,
+        0.0,
+        QVariantMap{
+            {QStringLiteral("0"), QRectF(0.0, 0.0, 120.0, 18.0)},
+            {QStringLiteral("1"), QRectF(0.0, 0.0, 120.0, 18.0)},
+            {QStringLiteral("2"), QRectF(0.0, 0.0, 120.0, 18.0)},
+            {QStringLiteral("3"), QRectF(0.0, 0.0, 120.0, 18.0)},
+            {QStringLiteral("4"), QRectF(0.0, 84.0, 120.0, 18.0)},
+            {QStringLiteral("8"), QRectF(0.0, 84.0, 120.0, 18.0)},
+        });
+    QVERIFY(textGeometry != nullptr);
+
+    ContentsEditorGeometryProvider provider;
+    provider.setFallbackLineHeight(18.0);
+    provider.setFallbackWidth(320.0);
+    provider.setLogicalLength(9);
+    provider.setRenderedHtml(QStringLiteral("<p><img src='' width='160' height='96' /></p>"));
+    provider.setTextItem(textGeometry.get());
+    provider.setLineNumberRanges(QVariantList{
+        QVariantMap{
+            {QStringLiteral("logicalEnd"), 1},
+            {QStringLiteral("logicalStart"), 0},
+            {QStringLiteral("resourceRange"), true},
+        },
+        QVariantMap{
+            {QStringLiteral("logicalEnd"), 4},
+            {QStringLiteral("logicalStart"), 2},
+            {QStringLiteral("resourceRange"), false},
+        },
+        QVariantMap{
+            {QStringLiteral("logicalEnd"), 9},
+            {QStringLiteral("logicalStart"), 4},
+            {QStringLiteral("resourceRange"), false},
+        },
+    });
+
+    const QVariantList rows = provider.lineNumberGeometryRows();
+    QCOMPARE(rows.size(), 3);
+    QCOMPARE(rows.at(0).toMap().value(QStringLiteral("y")).toDouble(), 0.0);
+    QCOMPARE(rows.at(0).toMap().value(QStringLiteral("height")).toDouble(), 96.0);
+    QCOMPARE(rows.at(1).toMap().value(QStringLiteral("y")).toDouble(), 96.0);
+    QCOMPARE(rows.at(2).toMap().value(QStringLiteral("y")).toDouble(), 96.0);
 }
 
 void WhatSonCppRegressionTests::contentsEditorGeometryProvider_offsetsRowsAfterRenderedResourceFrames()
@@ -465,6 +626,7 @@ void WhatSonCppRegressionTests::contentsEditorGeometryProvider_offsetsRowsAfterR
     provider.setFallbackLineHeight(18.0);
     provider.setFallbackWidth(320.0);
     provider.setLogicalLength(18);
+    provider.setRenderedHtml(QStringLiteral("<p><img src='' width='120' height='114' /></p>"));
     provider.setTextItem(textGeometry.get());
     provider.setResourceItem(renderedGeometry.get());
     provider.setLineNumberRanges(QVariantList{

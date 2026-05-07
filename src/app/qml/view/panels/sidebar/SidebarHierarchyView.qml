@@ -743,6 +743,7 @@ Rectangle {
         if (!sidebarHierarchyView.hierarchyInteractionController.requestBulkExpansion(sidebarHierarchyView.standardHierarchyModel, false))
             return false;
         sidebarHierarchyView.requestViewHook(reason !== undefined ? reason : "hierarchy.contextMenu.collapseAll");
+        sidebarHierarchyView.scheduleSelectedHierarchySync(false);
         return true;
     }
     function openHierarchyFolderContextMenuAtPosition(x, y, referenceItem) {
@@ -857,6 +858,7 @@ Rectangle {
         if (!sidebarHierarchyView.hierarchyInteractionController.requestBulkExpansion(sidebarHierarchyView.standardHierarchyModel, true))
             return false;
         sidebarHierarchyView.requestViewHook(reason !== undefined ? reason : "hierarchy.contextMenu.expandAll");
+        sidebarHierarchyView.scheduleSelectedHierarchySync(false);
         return true;
     }
     function requestHierarchyViewOptionsAction(index, eventName) {
@@ -892,8 +894,11 @@ Rectangle {
         const result = sidebarHierarchyView.hierarchyInteractionController.requestChevronExpansion(target.index, target.key, currentExpanded, expectedKey);
         if (result && result.rollbackRequired && target.item.expanded !== undefined)
             target.item.expanded = Boolean(result.rollbackExpanded);
-        if (result && result.committed && target.item.expanded !== undefined)
-            target.item.expanded = nextExpanded;
+        if (result && result.committed) {
+            if (target.item.expanded !== undefined)
+                target.item.expanded = nextExpanded;
+            sidebarHierarchyView.scheduleSelectedHierarchySync(false);
+        }
         return Boolean(result && result.committed);
     }
     function requestHierarchyControllerReload(reason) {
@@ -965,6 +970,11 @@ Rectangle {
     }
     function scheduleBookmarkPaletteVisualRefresh() {
         bookmarkPaletteController.scheduleBookmarkPaletteVisualRefresh();
+    }
+    function scheduleSelectedHierarchySync(focusView) {
+        Qt.callLater(function () {
+            sidebarHierarchyView.syncSelectedHierarchyItem(Boolean(focusView));
+        });
     }
     function selectedHierarchyItemActivationKey() {
         const selectedIndex = sidebarHierarchyView.normalizedInteger(selectedFolderIndex, -1);
@@ -1811,22 +1821,6 @@ Rectangle {
 
         target: sidebarHierarchyView.hierarchyController
     }
-    Connections {
-        function onFooterCreateRequested() {
-            sidebarHierarchyView.requestCreateFolder();
-        }
-        function onFooterDeleteRequested() {
-            sidebarHierarchyView.requestDeleteFolder();
-        }
-        function onFooterOptionsRequested() {
-            sidebarHierarchyView.requestViewOptions();
-        }
-        function onSelectedHierarchySyncRequested(focusView) {
-            sidebarHierarchyView.syncSelectedHierarchyItem(Boolean(focusView));
-        }
-
-        target: sidebarHierarchyView.hierarchyInteractionController
-    }
     LV.Hierarchy {
         id: hierarchyTree
 
@@ -1871,6 +1865,8 @@ Rectangle {
             const result = sidebarHierarchyView.hierarchyInteractionController.handleExpansionSignal(item, resolvedExpansionIndex, expanded);
             if (result && result.rollbackRequired && item && item.expanded !== undefined)
                 item.expanded = Boolean(result.rollbackExpanded);
+            if (result && result.committed)
+                sidebarHierarchyView.scheduleSelectedHierarchySync(false);
         }
         onListItemMoved: function (item, itemId, itemKey, fromIndex, toIndex, depth) {
             if (!sidebarHierarchyView.hierarchyDragDropBridge || !sidebarHierarchyView.hierarchyDragDropBridge.reorderContractAvailable)

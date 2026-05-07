@@ -1,12 +1,15 @@
 # `src/app/models/sidebar/SidebarHierarchyInteractionController.cpp`
 
 ## Implementation Notes
-- Footer action normalization remains available as a compatibility helper, but live `LV.ListFooter` clicks dispatch
-  directly inside `SidebarHierarchyView.qml` so create/delete/options do not depend on a controller signal round-trip.
+- Footer action normalization and dispatch are not implemented here. Live `LV.ListFooter` clicks dispatch directly
+  inside `SidebarHierarchyView.qml` so create/delete/options do not depend on a controller signal round-trip.
 - Expansion keys are scoped as `hierarchy:<activeIndex>:<stableKey>`, preserving row state across model refreshes without
   leaking identical row ids between hierarchy domains.
 - Single-row and bulk expansion requests go through the bound `HierarchyInteractionBridge` by meta-object call, then
   roll back the preserved state if the bridge rejects the mutation.
+- After a successful expansion commit, the controller returns only the commit result. It does not emit footer action
+  signals or selected-row sync signals; `SidebarHierarchyView.qml` schedules the next-turn
+  `syncSelectedHierarchyItem(false)` call with `Qt.callLater(...)`.
 - `setHierarchyInteractionBridge(...)` verifies the allowed View -> Controller edge but does not apply the startup
   mutable-wiring lock. This controller is QML-created together with `SidebarHierarchyView`, so applying the lock here
   would leave the chevron expansion path without a bound bridge after `main.cpp` freezes the root object graph.

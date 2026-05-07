@@ -265,6 +265,8 @@ void WhatSonCppRegressionTests::qmlInlineFormatEditor_projectsVisibleGeometryFro
     QVERIFY(inlineEditorSource.contains(QStringLiteral("readonly property int visualLineCount")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("readonly property var visualLineWidthRatios")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("readonly property var logicalGutterRows: lineNumberRailMetrics.rows")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("readonly property var lineNumberGeometryRows: editorGeometryProvider.lineNumberGeometryRows")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("readonly property string lineNumberGeometryRenderedHtml: editorGeometryProvider.renderedHtml")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("readonly property int visualLineCount: visualLineMetrics.visualLineCount")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("readonly property var visualLineWidthRatios: visualLineMetrics.visualLineWidthRatios")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("ContentsEditorVisualLineMetrics {")));
@@ -277,6 +279,7 @@ void WhatSonCppRegressionTests::qmlInlineFormatEditor_projectsVisibleGeometryFro
     QVERIFY(inlineEditorSource.contains(QStringLiteral("measuredVisualLineCount")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("lineNumberRanges: lineNumberRailMetrics.logicalLineRanges")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("geometryRows")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("renderedHtml: control.renderedText")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("textItem: control.displayGeometryItem()")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("visualItem: control.renderedOverlayVisible ? renderedOverlay : textInput.editorItem")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("resourceItem: renderedOverlay")));
@@ -1362,7 +1365,7 @@ Item {
                 "sourceText": root.resourceTag
             }
         ]
-        renderedText: "<p style='margin-top:0px;margin-bottom:0px;'><img src='%2' width='160' height='96' /></p><p style='margin-top:0px;margin-bottom:0px;'>Beta</p>"
+        renderedText: "<p style='margin-top:0px;margin-bottom:0px;line-height:0px;'><img src='%2' width='160' height='96' style='vertical-align:top;' /></p><p style='margin-top:0px;margin-bottom:0px;'>Beta</p>"
         showRenderedOutput: true
         text: root.resourceTag + "\nBeta"
     }
@@ -1398,19 +1401,52 @@ Item {
     QTRY_VERIFY(inlineEditor->property("renderedOverlayVisible").toBool());
     QTRY_COMPARE(inlineEditor->property("logicalGutterRows").toList().size(), 2);
 
-    const QVariantList logicalGutterRows = inlineEditor->property("logicalGutterRows").toList();
-    const QVariantMap resourceRow = logicalGutterRows.at(0).toMap();
-    const QVariantMap betaRow = logicalGutterRows.at(1).toMap();
+    QVERIFY(inlineEditor->property("lineNumberGeometryRenderedHtml").toString().contains(QStringLiteral("height='96'")));
+    QVariantList geometryRows = inlineEditor->property("lineNumberGeometryRows").toList();
+    QCOMPARE(geometryRows.size(), 2);
+    QCOMPARE(geometryRows.at(0).toMap().value(QStringLiteral("height")).toDouble(), 96.0);
+    QTRY_VERIFY(qAbs(
+                    inlineEditor->property("lineNumberGeometryRows")
+                        .toList()
+                        .at(1)
+                        .toMap()
+                        .value(QStringLiteral("y"))
+                        .toDouble()
+                    - 96.0)
+                <= 1.0);
+    geometryRows = inlineEditor->property("lineNumberGeometryRows").toList();
+    QCOMPARE(geometryRows.at(1).toMap().value(QStringLiteral("y")).toDouble(), 96.0);
+    QTRY_VERIFY(qAbs(
+                    (inlineEditor->property("logicalGutterRows").toList()
+                         .at(1)
+                         .toMap()
+                         .value(QStringLiteral("y"))
+                         .toDouble()
+                     - inlineEditor->property("logicalGutterRows").toList()
+                           .at(0)
+                           .toMap()
+                           .value(QStringLiteral("y"))
+                           .toDouble())
+                    - 96.0)
+                <= 1.0);
+    QVariantList logicalGutterRows = inlineEditor->property("logicalGutterRows").toList();
+    QVariantMap resourceRow = logicalGutterRows.at(0).toMap();
+    QVariantMap betaRow = logicalGutterRows.at(1).toMap();
+    logicalGutterRows = inlineEditor->property("logicalGutterRows").toList();
+    resourceRow = logicalGutterRows.at(0).toMap();
+    betaRow = logicalGutterRows.at(1).toMap();
     QCOMPARE(resourceRow.value(QStringLiteral("number")).toInt(), 1);
     QVERIFY(resourceRow.value(QStringLiteral("resourceRange")).toBool());
     QCOMPARE(betaRow.value(QStringLiteral("number")).toInt(), 2);
     const double resourceY = resourceRow.value(QStringLiteral("y")).toDouble();
     const double betaY = betaRow.value(QStringLiteral("y")).toDouble();
+    const double renderedFrameHeight = 96.0;
     QVERIFY2(
-        betaY >= resourceY + 80.0,
-        qPrintable(QStringLiteral("Second gutter row must follow the rendered resource frame: %1 < %2 + 80")
+        qAbs((betaY - resourceY) - renderedFrameHeight) <= 1.0,
+        qPrintable(QStringLiteral("Second gutter row must match rendered resource bottom: betaY=%1 resourceY=%2 frameHeight=%3")
                        .arg(betaY)
-                       .arg(resourceY)));
+                       .arg(resourceY)
+                       .arg(renderedFrameHeight)));
     QVERIFY(resourceRow.value(QStringLiteral("height")).toDouble() < betaY - resourceY);
 }
 

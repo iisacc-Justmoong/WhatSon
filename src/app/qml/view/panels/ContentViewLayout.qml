@@ -153,6 +153,12 @@ Item {
         contentViewLayout.requestActiveCalendarOverlayClose();
         return true;
     }
+    function requestViewHook(reason) {
+        const hookReason = reason !== undefined && reason !== null ? String(reason) : "manual";
+        if (contentViewLayout.panelController && contentViewLayout.panelController.requestControllerHook)
+            contentViewLayout.panelController.requestControllerHook(hookReason);
+        contentViewLayout.viewHookRequested();
+    }
 
     Layout.fillHeight: true
     Layout.fillWidth: true
@@ -253,7 +259,6 @@ Item {
                 minimapVisible: contentViewLayout.minimapVisible
                 noteActiveState: contentViewLayout.noteActiveState
                 noteListModel: contentViewLayout.resolvedNoteListModel
-                panelController: contentViewLayout.panelController
                 structuredDocumentFlow: structuredDocumentFlow
 
                 onEditorTextEdited: function (text) {
@@ -261,9 +266,6 @@ Item {
                 }
                 onEditorViewportResetRequested: {
                     editorDocumentViewport.contentY = 0;
-                }
-                onViewHookRequested: function (reason) {
-                    contentViewLayout.viewHookRequested();
                 }
             }
 
@@ -389,7 +391,7 @@ Item {
                                 }
 
                                 onViewHookRequested: function (reason) {
-                                    editorDisplayBackend.requestViewHook(reason);
+                                    contentViewLayout.requestViewHook(reason);
                                 }
                             }
                         }
@@ -427,7 +429,7 @@ Item {
                     }
 
                     onViewHookRequested: function (reason) {
-                        editorDisplayBackend.requestViewHook(reason);
+                        contentViewLayout.requestViewHook(reason);
                     }
                 }
             }

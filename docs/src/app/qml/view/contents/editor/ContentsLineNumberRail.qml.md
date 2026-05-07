@@ -12,8 +12,9 @@ Renders the logical-line-number gutter for the live note editor surface.
 - Each row represents one full-document logical text line, not one wrapped visual text row.
 - A wrapped logical line still paints one number; that row's `height` is the measured editor geometry height occupied by
   the wrapped text.
-- Atomic/tall blocks, such as rendered resource frames, still count as one logical line while their row height follows
-  the block's rendered vertical footprint.
+- Atomic/tall blocks, such as rendered resource frames, still count as one logical line and paint one gutter-line row;
+  later rows are placed below the block by the geometry/metrics pipeline, using the frame bottom rather than the hidden
+  placeholder line-box height.
 - The rail publishes `preferredWidth`, which keeps the number column and right padding while reducing the formerly
   implicit blank area to the left of the number column by half.
 - The rail paints a blue `LV.Theme.accentBlue` indicator bar for the row containing the collapsed cursor. For non-empty
@@ -39,5 +40,6 @@ Renders the logical-line-number gutter for the live note editor surface.
   기준 implicit blank의 절반만 사용한다.
 - active line: host가 전달한 RAW cursor/selection offset을 각 row의 `sourceStart/sourceEnd`와 비교해, 커서가
   있거나 selection과 교차하는 줄에는 파란색 accent bar를 표시한다.
-- 리소스 프레임 같은 tall block도 논리 줄 하나로 카운트하되, 표시 높이만큼 거터 행 높이를 가진다.
+- 리소스 프레임 같은 tall block도 논리 줄 하나와 거터 한 줄로만 카운트하며, 이후 row는 geometry/metrics
+  pipeline이 프레임 아래 위치로 배치한다.
 - 배경색과 입력 처리는 없으며, 본문과 같은 스크롤 콘텐츠 안에서만 움직인다.

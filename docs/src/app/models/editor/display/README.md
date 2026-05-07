@@ -10,12 +10,13 @@ Contains editor-display support controllers and policies that are not QML view f
   Decides whether `ContentViewLayout.qml` should mount the note editor surface or the direct resource editor surface.
 - `ContentsEditorDisplayBackend.{hpp,cpp}`
   Owns the live note display session, projection, structured renderer, body-resource renderer, resource-tag
-  controller, inline-resource presentation controller, and minimap metrics previously wired in QML.
+  controller, inline-resource presentation controller, and minimap metrics previously wired in QML. It does not own
+  view-hook relay wiring; `ContentViewLayout.qml` dispatches view-local hooks directly.
 
 ## Boundary
 
-XML parsing, HTML rendering, and block-object construction are C++ responsibilities under `parser` and `renderer`.
-QML view files stay under `src/app/qml/view`.
+XML parsing, HTML rendering, block-object construction, session synchronization, and deterministic geometry remain C++
+responsibilities. Thin view wiring such as hook forwarding stays under `src/app/qml/view`.
 
 ## 한국어
 

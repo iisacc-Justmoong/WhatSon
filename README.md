@@ -966,6 +966,8 @@ for hub/note hierarchy payloads.
   entry `keyVisible: false`.
 - All QML view files under `src/app/qml/view` and root `Main.qml` expose a common hook pair
   (`viewHookRequested`, `requestViewHook()`).
+- Thin view-hook forwarding is implemented in the owning QML surface. `ContentsEditorDisplayBackend` owns editor
+  session/projection/render collaborators, not `panelController.requestControllerHook(...)` relay wiring.
 - Main runtime wires hierarchy selection changes and note-list model resets into `backendBridge.publish(...)`
   so view-side listeners can observe backend state transitions without coupling to concrete stores.
 - View can issue lightweight commands through `backendBridge.request(...)`; current shallow routing supports

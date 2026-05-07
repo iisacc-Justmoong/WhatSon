@@ -1119,7 +1119,7 @@ private slots:
     void architecturePolicyLock_blocksMutableWiringAfterLock();
     void hierarchyControllerProvider_rejectsMappingMutationAfterLock();
     void sidebarHierarchyController_preservesFallbackAcrossStoreAttachDetach();
-    void sidebarHierarchyInteractionController_routesFooterActionsAndCoalescesDuplicateTriggers();
+    void sidebarHierarchyInteractionController_keepsFooterDispatchOutOfCppPolicy();
     void sidebarHierarchyInteractionController_commitsExpansionStateThroughCppPolicy();
     void sidebarHierarchyController_rejectsSelectionStoreMutationAfterLock();
     void sidebarHierarchyController_reactsToProviderMappingChanges();
@@ -1218,7 +1218,10 @@ private slots:
     void contentsLineNumberRailMetrics_keepsResourceRowsIndependent();
     void contentsLineNumberRailMetrics_keepsResourceFramesSingleGutterLine();
     void contentsEditorGeometryProvider_keepsTextRowsOnLogicalGeometry();
-    void contentsEditorGeometryProvider_capsMiddleResourceRowsAtNextMeasuredRow();
+    void contentsEditorGeometryProvider_ignoresWholeOverlayHeightWithoutResourceHtml();
+    void contentsEditorGeometryProvider_usesRenderedHtmlResourceHeights();
+    void contentsEditorGeometryProvider_anchorsRowsAfterResourceToFrameBottom();
+    void contentsEditorGeometryProvider_clampsProbeRowsInsideResourceFrame();
     void contentsEditorGeometryProvider_offsetsRowsAfterRenderedResourceFrames();
     void contentsEditorVisualLineMetrics_expandsTallVisualBlocks();
     void contentsMinimapLayoutMetrics_resolvesRuntimeVisibilityAndDesignRows();

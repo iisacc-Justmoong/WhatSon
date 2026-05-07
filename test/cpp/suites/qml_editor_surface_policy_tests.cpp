@@ -42,6 +42,12 @@ void WhatSonCppRegressionTests::qmlViewBehaviorContract_documentsDirectQmlOwners
     const QString architectureSource = readUtf8SourceFile(QStringLiteral("docs/APP_ARCHITECTURE.md"));
     const QString sidebarSource = readUtf8SourceFile(
         QStringLiteral("src/app/qml/view/panels/sidebar/SidebarHierarchyView.qml"));
+    const QString contentViewLayoutSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/panels/ContentViewLayout.qml"));
+    const QString displayBackendHeader = readUtf8SourceFile(
+        QStringLiteral("src/app/models/editor/display/ContentsEditorDisplayBackend.hpp"));
+    const QString displayBackendSource = readUtf8SourceFile(
+        QStringLiteral("src/app/models/editor/display/ContentsEditorDisplayBackend.cpp"));
     const QString sidebarDoc = readUtf8SourceFile(
         QStringLiteral("docs/src/app/qml/view/panels/sidebar/SidebarHierarchyView.qml.md"));
     const QString sidebarModelReadme = readUtf8SourceFile(QStringLiteral("docs/src/app/models/sidebar/README.md"));
@@ -58,17 +64,36 @@ void WhatSonCppRegressionTests::qmlViewBehaviorContract_documentsDirectQmlOwners
     QVERIFY(readmeSource.contains(QStringLiteral("Do not introduce a C++ controller signal round-trip for behavior that begins and ends in the view.")));
     QVERIFY(architectureSource.contains(QStringLiteral("## View Behavior Ownership")));
     QVERIFY(architectureSource.contains(QStringLiteral("QML owns behavior that is local to a rendered view")));
+    QVERIFY(architectureSource.contains(QStringLiteral("state preservation, rollback, multi-call consistency")));
 
     QVERIFY(sidebarSource.contains(QStringLiteral("function requestHierarchyFooterAction(action)")));
     QVERIFY(sidebarSource.contains(QStringLiteral("function hierarchyFooterActionName(index, eventName)")));
     QVERIFY(!sidebarSource.contains(QStringLiteral("hierarchyInteractionController.requestFooterAction")));
     QVERIFY(!sidebarSource.contains(QStringLiteral("hierarchyInteractionController.footerActionName")));
+    QVERIFY(!sidebarSource.contains(QStringLiteral("onFooterCreateRequested")));
+    QVERIFY(!sidebarSource.contains(QStringLiteral("onSelectedHierarchySyncRequested")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("function scheduleSelectedHierarchySync(focusView)")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("sidebarHierarchyView.scheduleSelectedHierarchySync(false);")));
+
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("function requestViewHook(reason)")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("contentViewLayout.panelController.requestControllerHook(hookReason)")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("contentViewLayout.requestViewHook(reason);")));
+    QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("editorDisplayBackend.requestViewHook")));
+    QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("\n                panelController: contentViewLayout.panelController")));
+    QVERIFY(!displayBackendHeader.contains(QStringLiteral("requestViewHook")));
+    QVERIFY(!displayBackendHeader.contains(QStringLiteral("panelController")));
+    QVERIFY(!displayBackendHeader.contains(QStringLiteral("viewHookRequested")));
+    QVERIFY(!displayBackendSource.contains(QStringLiteral("ContentsEditorDisplayBackend::requestViewHook")));
+    QVERIFY(!displayBackendSource.contains(QStringLiteral("requestControllerHook")));
 
     QVERIFY(sidebarDoc.contains(QStringLiteral("`requestHierarchyFooterAction(...)` in QML")));
     QVERIFY(sidebarDoc.contains(QStringLiteral("absence of a\n  C++ `SidebarHierarchyInteractionController` footer round-trip")));
+    QVERIFY(sidebarDoc.contains(QStringLiteral("post-expansion selected-row sync is scheduled by `Qt.callLater(...)` in QML")));
     QVERIFY(sidebarModelReadme.contains(QStringLiteral("Footer click dispatch and other view-local behavior are owned directly")));
-    QVERIFY(sidebarInteractionDoc.contains(QStringLiteral("live `LV.ListFooter` clicks dispatch")));
+    QVERIFY(sidebarInteractionDoc.contains(QStringLiteral("Live `LV.ListFooter` clicks dispatch")));
     QVERIFY(sidebarInteractionDoc.contains(QStringLiteral("do not depend on a controller signal round-trip")));
+    QVERIFY(sidebarInteractionDoc.contains(QStringLiteral("does not emit footer action")));
+    QVERIFY(sidebarInteractionDoc.contains(QStringLiteral("signals or selected-row sync signals")));
     QVERIFY(registrarDoc.contains(QStringLiteral("QML owns the surrounding\n  view-local behavior")));
 }
 
@@ -118,9 +143,10 @@ void WhatSonCppRegressionTests::qmlHierarchyExpansion_preservesUserControlledSta
     QVERIFY(sidebarSource.contains(QStringLiteral("mouse.accepted = sidebarHierarchyView.beginHierarchyChevronPointerPress(mouse.x, mouse.y, mouse.modifiers);")));
     QVERIFY(sidebarSource.contains(QStringLiteral("const accepted = sidebarHierarchyView.finishHierarchyChevronPointerPress(mouse.x, mouse.y);")));
     QVERIFY(sidebarSource.contains(QStringLiteral("hierarchyInteractionController.requestChevronExpansion(target.index, target.key, currentExpanded, expectedKey)")));
-    QVERIFY(sidebarSource.contains(QStringLiteral("if (result && result.committed && target.item.expanded !== undefined)")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("if (result && result.committed)")));
     QVERIFY(sidebarSource.contains(QStringLiteral("const nextExpanded = !currentExpanded;")));
     QVERIFY(sidebarSource.contains(QStringLiteral("target.item.expanded = nextExpanded;")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("sidebarHierarchyView.scheduleSelectedHierarchySync(false);")));
     QVERIFY(sidebarSource.contains(QStringLiteral("hierarchyInteractionController.handleExpansionSignal(item, resolvedExpansionIndex, expanded)")));
     QVERIFY(!sidebarSource.contains(QStringLiteral("function commitHierarchyExpansionChange")));
     QVERIFY(!sidebarSource.contains(QStringLiteral("function rememberHierarchyExpansionState")));

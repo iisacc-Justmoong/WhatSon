@@ -89,6 +89,8 @@ void WhatSonCppRegressionTests::resourceRenderer_resolvesIiXmlResourceTagsAndInl
     QVERIFY(!inlineHtml.contains(QStringLiteral("whatson-resource-block")));
     QVERIFY(inlineHtml.contains(QStringLiteral("<img")));
     QVERIFY(inlineHtml.contains(QStringLiteral("width=\"320\" height=\"260\"")));
+    QVERIFY(inlineHtml.contains(QStringLiteral("line-height:0px")));
+    QVERIFY(inlineHtml.contains(QStringLiteral("style=\"vertical-align:top;\"")));
     QVERIFY(inlineHtml.contains(frameImageSource));
     QVERIFY(inlineHtml.contains(QUrl::fromLocalFile(assetPath).toString()));
 

@@ -75,10 +75,9 @@ Wraps the live `LV.TextEditor` used by the note document surface.
   measured text body so terminal hit testing does not treat the bottom breathing room as rendered text.
 - Mounts `ContentsEditorGeometryProvider` as the only view-owned geometry adapter for chrome measurements. The adapter
   receives TextEdit/resource items, measures visible line rows and logical-line row rectangles, then publishes value
-  snapshots. Line-number text rows are measured against the plain logical display probe, while the rendered RichText
-  overlay is supplied only as the resource-frame measurement item. Resource rows contribute their rendered visual-height
-  delta to later rows, but ordinary gutter rows keep their own logical text y snapshots instead of inheriting RichText
-  overlay coordinates.
+  snapshots. Line-number text rows are measured against the plain logical display probe. Resource rows contribute the
+  rendered HTML image-height delta to later rows, but ordinary gutter rows keep their own logical text y snapshots
+  instead of asking the RichText overlay to map logical offsets after resource HTML.
 - Mounts `ContentsEditorVisualLineMetrics` as the C++ owner of minimap row normalization. It receives measured visual
   line count and row-width ratios only; it never receives TextEdit, cursor, selection, or resource overlay objects.
 - Mounts `ContentsLineNumberRailMetrics` as the C++ owner of logical line-number row construction. The inline editor
@@ -87,9 +86,14 @@ Wraps the live `LV.TextEditor` used by the note document surface.
   whose height covers all wrapped visual rows, while resource frames contribute one row with one gutter-line height.
   Row y values are produced by C++ and validated there so later line numbers cannot collapse onto the first line's y
   position. The metrics object never receives TextEdit, cursor, selection, or resource overlay objects directly.
+- Exposes the raw `lineNumberGeometryRows` and `lineNumberGeometryRenderedHtml` snapshots as read-only diagnostics for
+  the gutter pipeline. The painted rail still consumes `logicalGutterRows`.
 - Pointer selection checks measured resource rows before falling back to plain-text `positionAt(...)`. A hit inside an
   image/resource frame selects the single U+FFFC logical placeholder for that resource block, so the frame cannot behave
   like it contains selectable virtual text lines.
+- Resource-frame gutter anchoring assumes the rendered resource paragraph contributes only the generated frame image
+  height. The resource presentation controller therefore emits zero-line-height frame paragraphs and top-aligned images;
+  the next gutter row is expected to land at `resourceRow.y + frameHeight`.
 - Collapsed cursor placement also treats that U+FFFC placeholder as a non-text atomic block. If native cursor movement
   lands on the resource placeholder line, the C++ WYSIWYG policy moves it to the nearest prose boundary outside the
   frame, trying the opposite boundary when the preferred side is still inside the resource row; when no outside

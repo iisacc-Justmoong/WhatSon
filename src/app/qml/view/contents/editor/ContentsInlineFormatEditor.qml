@@ -22,6 +22,8 @@ Item {
     readonly property real displayContentHeight: control.displayTextContentHeight
             + control.editorBottomInset
     readonly property real displayBodyHeight: Math.max(0, control.displayTextContentHeight)
+    readonly property var lineNumberGeometryRows: editorGeometryProvider.lineNumberGeometryRows
+    readonly property string lineNumberGeometryRenderedHtml: editorGeometryProvider.renderedHtml
     readonly property var editorItem: textInput.editorItem
     property bool focused: textInput.focused
     readonly property var inputItem: textInput.editorItem
@@ -900,6 +902,7 @@ Item {
         fallbackWidth: control.width
         lineNumberRanges: lineNumberRailMetrics.logicalLineRanges
         logicalLength: control.displayGeometryText.length
+        renderedHtml: control.renderedText
         resourceItem: renderedOverlay
         targetItem: control
         textItem: control.displayGeometryItem()

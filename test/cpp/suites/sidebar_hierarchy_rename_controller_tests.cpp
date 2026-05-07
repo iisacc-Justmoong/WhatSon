@@ -65,6 +65,9 @@ void WhatSonCppRegressionTests::sidebarHierarchyView_routesFooterActionsDirectly
     QVERIFY(sidebarSource.contains(QStringLiteral("if (sidebarHierarchyView.hierarchyFooterTriggerQueuedAction === normalizedAction)")));
     QVERIFY(!sidebarSource.contains(QStringLiteral("hierarchyInteractionController.requestFooterAction")));
     QVERIFY(!sidebarSource.contains(QStringLiteral("hierarchyInteractionController.footerActionName")));
+    QVERIFY(!sidebarSource.contains(QStringLiteral("onFooterCreateRequested")));
+    QVERIFY(!sidebarSource.contains(QStringLiteral("onFooterDeleteRequested")));
+    QVERIFY(!sidebarSource.contains(QStringLiteral("onFooterOptionsRequested")));
     QVERIFY(layoutSource.contains(QStringLiteral("SidebarHierarchyInteractionController")));
     QVERIFY(layoutSource.contains(QStringLiteral("hierarchyInteractionController: sidebarHierarchyInteractionController")));
     QVERIFY(sidebarSource.contains(QStringLiteral("eventName: \"hierarchy.footer.create\"")));

@@ -6,14 +6,16 @@ Declares the QML-visible implementation of `IContentsEditorGeometryProvider`.
 
 ## Public Surface
 
-- Inputs: `textItem`, `resourceItem`, `targetItem`, `visualItem`, logical line ranges, and primitive visual geometry
-  values supplied by the QML view layer.
+- Inputs: `textItem`, `resourceItem`, `targetItem`, `visualItem`, `renderedHtml`, logical line ranges, and primitive
+  visual geometry values supplied by the QML view layer.
 - Signals: per-input change signals plus `geometryChanged()` so consumers can refresh cached rows when the measured
   surface changes.
 - Outputs: `lineNumberGeometryRows`, `visualLineCount`, and `visualLineWidthRatios` snapshots for independent chrome
   metrics.
 - Interface methods: low-level text range measurement, resource range measurement, and resource content-height lookup.
-  Middle resource rows are capped against the next measured row top when `lineNumberGeometryRows` snapshots are built.
+  `lineNumberGeometryRows` measures ordinary rows from the plain logical text item and uses rendered HTML image heights
+  only as atomic resource-frame vertical deltas. Resource frame bottoms clamp later row tops so probe-internal
+  placeholder rows cannot be published as gutter anchors inside the frame.
 
 ## Boundary
 
@@ -23,4 +25,5 @@ not know about logical row numbering, source mutation, cursor movement, or selec
 ## 한국어
 
 이 헤더는 QML에서 생성할 수 있는 지오메트리 adapter를 선언한다. 뷰 객체는 여기까지만 들어오며,
-거터/미니맵 계산 객체에는 측정 snapshot 값만 전달된다.
+거터/미니맵 계산 객체에는 측정 snapshot 값만 전달된다. resource frame 내부로 들어온 probe row top은
+adapter에서 frame bottom으로 고정된다.

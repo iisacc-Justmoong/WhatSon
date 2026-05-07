@@ -54,9 +54,16 @@ Editor-facing QML view components for the center content surface.
   which halves the leading blank area before the number column. The host also forwards RAW cursor/selection offsets so
   the rail can paint a blue active-line bar on the cursor row or selected rows. Atomic resource frames count as one
   logical row with one gutter-line height. Line-number y snapshots come from the plain logical display probe so ordinary
-  text rows keep independent positions; in rendered mode the rendered overlay is used only to measure the visual-height
-  delta of an atomic resource frame, which places later rows below the frame without converting the frame into extra
-  gutter rows or adopting RichText row coordinates for unrelated text.
+  text rows keep independent positions; in rendered mode the rendered HTML resource image height supplies the
+  visual-height delta of an atomic resource frame, which places later rows below the frame without converting the frame
+  into extra gutter rows or adopting RichText row coordinates for unrelated text.
+  Inline resource HTML suppresses paragraph line-height around the generated frame image, so the next gutter row can
+  use the encoded frame image height as the actual visual bottom anchor. The geometry adapter compares that frame
+  height to the next plain logical row's base y, not to the hidden placeholder line-box height. If QML asks before the
+  next plain row has a measurable y, the adapter uses the full frame height so the first post-resource row still lands
+  on the frame bottom.
+  `ContentsInlineFormatEditor.qml` also exposes read-only geometry-provider snapshots so tests can distinguish raw
+  measured rows from the final one-line resource gutter rows.
 - The minimap row count is driven by `ContentsStructuredDocumentFlow.editorVisualLineCount`, which comes from measured
   visual-line snapshots normalized by the C++ `ContentsEditorVisualLineMetrics` object. A single source tag or
   paragraph that wraps onto two visible editor lines therefore produces two minimap rows. Tall rendered blocks such as

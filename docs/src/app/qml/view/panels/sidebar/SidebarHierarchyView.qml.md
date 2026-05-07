@@ -131,6 +131,8 @@ These signals make the file a reusable visual surface instead of a hard-coded on
   expansion state and then calls `HierarchyInteractionBridge.setAllItemsExpanded(...)`; the active domain controller,
   not the view, owns the persisted `expanded` state. Their view hook reasons are
   `hierarchy.contextMenu.expandAll` and `hierarchy.contextMenu.collapseAll`.
+  The post-expansion selected-row sync is scheduled by `Qt.callLater(...)` in QML, because it is a view-presentation
+  follow-up rather than expansion mutation policy.
 - The menu entries now carry explicit `eventName` values (`hierarchy.expandAll` / `hierarchy.collapseAll`) and route
   through a shared trigger handler that accepts both `onItemTriggered(index)` and
   `onItemEventTriggered(eventName, ...)`, preventing callback-type differences in LVRS context-menu dispatch from

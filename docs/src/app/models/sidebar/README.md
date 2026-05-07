@@ -9,7 +9,7 @@ It sits above concrete hierarchy domains but below the visual sidebar QML. Its j
 - `SidebarHierarchyController`: exposes the active hierarchy index and resolves the active hierarchy and note-list models.
 - `SidebarHierarchyInteractionController`: owns chevron expansion state preservation and expansion activation suppression
   for the visual hierarchy. Footer click dispatch and other view-local behavior are owned directly by
-  `SidebarHierarchyView.qml`; the controller keeps only compatibility normalization for non-primary callers.
+  `SidebarHierarchyView.qml`; the controller does not expose footer dispatch compatibility helpers.
 - `IActiveHierarchyContextSource`: exposes the active hierarchy index plus the active hierarchy/note-list binding
   snapshot for consumers that need more than activation alone.
 - `IHierarchyControllerProvider` and `HierarchyControllerProvider`: map sidebar domain indices to dedicated hierarchy controllers.
@@ -30,8 +30,8 @@ hierarchy type just to resolve the active module.
 Automated C++ regression coverage for this directory now lives in
 `test/cpp/suites/*.cpp`, locking mapping normalization, exported ordering, fallback selection, and
 provider/store-driven active-binding refresh for `HierarchyControllerProvider` and `SidebarHierarchyController`.
-`SidebarHierarchyInteractionController` is covered there as well, so footer action routing and expansion preservation
-remain C++ model/controller behavior instead of drifting back into sidebar QML.
+`SidebarHierarchyInteractionController` is covered there as well, so expansion preservation, rollback, and activation
+suppression remain C++ model/controller behavior while footer action routing stays in sidebar QML.
 
 ## 한국어
 

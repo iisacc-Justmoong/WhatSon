@@ -3,7 +3,6 @@
 #include "app/policy/ArchitecturePolicyLock.hpp"
 
 #include <QJSValue>
-#include <QMetaType>
 
 #include <algorithm>
 
@@ -73,89 +72,6 @@ void SidebarHierarchyInteractionController::setActiveHierarchyIndex(int index)
 QString SidebarHierarchyInteractionController::armedExpansionKey() const
 {
     return m_armedExpansionKey;
-}
-
-QString SidebarHierarchyInteractionController::footerActionName(int index, const QString& eventName) const
-{
-    QString normalizedEventName = eventName.trimmed();
-    if (normalizedEventName == QStringLiteral("hierarchy.footer.create")
-        || normalizedEventName == QStringLiteral("hierarchy.footer.delete")
-        || normalizedEventName == QStringLiteral("hierarchy.footer.options"))
-    {
-        return normalizedEventName;
-    }
-
-    if (index == 0)
-    {
-        return QStringLiteral("hierarchy.footer.create");
-    }
-    if (index == 1)
-    {
-        return QStringLiteral("hierarchy.footer.delete");
-    }
-    if (index == 2)
-    {
-        return QStringLiteral("hierarchy.footer.options");
-    }
-    return {};
-}
-
-bool SidebarHierarchyInteractionController::requestFooterAction(const QString& action)
-{
-    const QString normalizedAction = action.trimmed();
-    if (normalizedAction.isEmpty())
-    {
-        return false;
-    }
-    if (m_queuedFooterAction == normalizedAction)
-    {
-        return true;
-    }
-
-    if (normalizedAction == QStringLiteral("hierarchy.footer.create")
-        && !bridgeBoolProperty("createFolderEnabled", false))
-    {
-        return false;
-    }
-    if (normalizedAction == QStringLiteral("hierarchy.footer.delete")
-        && !bridgeBoolProperty("deleteFolderEnabled", false))
-    {
-        return false;
-    }
-    if (normalizedAction == QStringLiteral("hierarchy.footer.options")
-        && !bridgeBoolProperty("viewOptionsEnabled", true))
-    {
-        return false;
-    }
-
-    m_queuedFooterAction = normalizedAction;
-    QTimer::singleShot(
-        0,
-        this,
-        [this, normalizedAction]()
-        {
-            if (m_queuedFooterAction == normalizedAction)
-            {
-                m_queuedFooterAction.clear();
-            }
-        });
-
-    if (normalizedAction == QStringLiteral("hierarchy.footer.create"))
-    {
-        emit footerCreateRequested();
-        return true;
-    }
-    if (normalizedAction == QStringLiteral("hierarchy.footer.delete"))
-    {
-        emit footerDeleteRequested();
-        return true;
-    }
-    if (normalizedAction == QStringLiteral("hierarchy.footer.options"))
-    {
-        emit footerOptionsRequested();
-        return true;
-    }
-    return false;
 }
 
 void SidebarHierarchyInteractionController::captureExpansionState(const QVariant& modelValue)
@@ -290,13 +206,6 @@ bool SidebarHierarchyInteractionController::requestBulkExpansion(const QVariant&
         return false;
     }
 
-    QTimer::singleShot(
-        0,
-        this,
-        [this]()
-        {
-            emit selectedHierarchySyncRequested(false);
-        });
     return true;
 }
 
@@ -479,16 +388,6 @@ QString SidebarHierarchyInteractionController::scopedExpansionKey(const QString&
     return QStringLiteral("hierarchy:%1:%2").arg(m_activeHierarchyIndex).arg(normalizedKey);
 }
 
-bool SidebarHierarchyInteractionController::bridgeBoolProperty(const char* propertyName, bool fallbackValue) const
-{
-    if (m_hierarchyInteractionBridge == nullptr)
-    {
-        return fallbackValue;
-    }
-    const QVariant propertyValue = m_hierarchyInteractionBridge->property(propertyName);
-    return propertyValue.isValid() ? propertyValue.toBool() : fallbackValue;
-}
-
 bool SidebarHierarchyInteractionController::invokeBridgeBoolMethod(const char* methodName, bool argument) const
 {
     if (m_hierarchyInteractionBridge == nullptr)
@@ -549,13 +448,6 @@ QVariantMap SidebarHierarchyInteractionController::commitExpansionChange(
 
     result.insert(QStringLiteral("accepted"), true);
     result.insert(QStringLiteral("committed"), true);
-    QTimer::singleShot(
-        0,
-        this,
-        [this]()
-        {
-            emit selectedHierarchySyncRequested(false);
-        });
     return result;
 }
 

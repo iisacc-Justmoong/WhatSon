@@ -32,9 +32,6 @@ public:
 
     QString armedExpansionKey() const;
 
-    Q_INVOKABLE QString footerActionName(int index, const QString& eventName) const;
-    Q_INVOKABLE bool requestFooterAction(const QString& action);
-
     Q_INVOKABLE void captureExpansionState(const QVariant& modelValue);
     Q_INVOKABLE QVariantList modelWithPreservedExpansion(const QVariant& modelValue) const;
     Q_INVOKABLE QString itemExpansionKey(const QVariant& item, int fallbackIndex) const;
@@ -61,10 +58,6 @@ signals:
     void activeHierarchyIndexChanged();
     void armedExpansionKeyChanged();
     void expansionStateChanged();
-    void footerCreateRequested();
-    void footerDeleteRequested();
-    void footerOptionsRequested();
-    void selectedHierarchySyncRequested(bool focusView);
 
 private:
     static QString normalizedString(const QVariant& value);
@@ -73,7 +66,6 @@ private:
     QVariant itemProperty(const QVariant& item, const QString& propertyName) const;
     QVariantList normalizedVariantList(const QVariant& value) const;
     QString scopedExpansionKey(const QString& key) const;
-    bool bridgeBoolProperty(const char* propertyName, bool fallbackValue) const;
     bool invokeBridgeBoolMethod(const char* methodName, bool argument) const;
     QVariantMap commitExpansionChange(int index, const QString& expansionKey, bool expanded, bool previousExpanded);
     void setAllExpansionStates(const QVariant& modelValue, bool expanded);
@@ -83,7 +75,6 @@ private:
     QPointer<QObject> m_hierarchyInteractionBridge;
     int m_activeHierarchyIndex = 0;
     QString m_armedExpansionKey;
-    QString m_queuedFooterAction;
     QHash<QString, bool> m_expansionStateByKey;
     QTimer m_expansionArmTimer;
     QTimer m_activationBlockTimer;
