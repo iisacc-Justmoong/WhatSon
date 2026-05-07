@@ -72,6 +72,7 @@
 #include "app/models/detailPanel/DetailCurrentNoteContextBridge.hpp"
 #include "app/models/detailPanel/ResourceDetailPanelController.hpp"
 #include "app/models/file/hierarchy/resources/ResourcesListModel.hpp"
+#include "app/models/panel/HierarchyInteractionBridge.hpp"
 #include "app/models/panel/NoteListModelContractBridge.hpp"
 #include "app/models/panel/NoteActiveStateTracker.hpp"
 #include "app/models/sidebar/HierarchySidebarDomain.hpp"
@@ -231,6 +232,56 @@ public:
         lastExpandedValue = expanded;
         return setAllItemsExpandedResult;
     }
+};
+
+class FakeExpandableHierarchyController final : public FakeHierarchyController,
+                                                public IHierarchyExpansionCapability
+{
+    Q_OBJECT
+    Q_INTERFACES(IHierarchyExpansionCapability)
+
+public:
+    explicit FakeExpandableHierarchyController(const QString& labelPrefix, QObject* parent = nullptr)
+        : FakeHierarchyController(labelPrefix, parent)
+    {
+    }
+
+    bool setItemExpanded(int index, bool expanded) override
+    {
+        QVariantList nodes = hierarchyModel();
+        if (index < 0 || index >= nodes.size())
+        {
+            return false;
+        }
+
+        QVariantMap node = nodes.at(index).toMap();
+        if (!node.value(QStringLiteral("showChevron")).toBool())
+        {
+            return false;
+        }
+
+        node.insert(QStringLiteral("expanded"), expanded);
+        nodes[index] = node;
+        setNodes(nodes);
+        ++setItemExpandedCallCount;
+        lastExpandedIndex = index;
+        lastExpandedValue = expanded;
+        return true;
+    }
+
+    bool expandedAt(int index) const
+    {
+        const QVariantList nodes = hierarchyModel();
+        if (index < 0 || index >= nodes.size())
+        {
+            return false;
+        }
+        return nodes.at(index).toMap().value(QStringLiteral("expanded")).toBool();
+    }
+
+    int setItemExpandedCallCount = 0;
+    int lastExpandedIndex = -1;
+    bool lastExpandedValue = false;
 };
 
 class FakeNoteDropHierarchyController final : public FakeHierarchyController,
@@ -1151,6 +1202,8 @@ private slots:
     void detailPanelRouting_separatesNoteAndResourceViewsAndControllers();
     void qmlContextMenus_treatRightClickAndLongPressAsSymmetricPointerTriggers();
     void hierarchyDragDropBridge_assignsDraggedNoteListItemsToFolderCapability();
+    void hierarchyInteractionBridge_bindsRuntimeControllerAfterArchitectureLock();
+    void hierarchyInteractionBridge_rebindsActiveRuntimeControllerAfterArchitectureLock();
     void qmlHierarchyNoteDrop_keepsDropSurfaceOpenUntilCapabilityRejectsTarget();
     void qmlHierarchyExpansion_preservesUserControlledStateAcrossModelRefreshes();
     void listBarLayout_rendersResolvedNoteListModelByIndex();
@@ -1187,6 +1240,7 @@ private slots:
     void qmlInlineFormatEditor_keepsKeyboardSelectionAndOsImeNative();
     void qmlInlineFormatEditor_keepsRenderedOverlayDuringNativeSelection();
     void qmlInlineFormatEditor_snapsPointerSelectionInsideResourceFrameToAtomicBlock();
+    void qmlInlineFormatEditor_keepsCursorOutOfAtomicResourceFrame();
     void qmlInlineFormatEditor_ignoresEmptyFormattingTagsDuringRenderedSelection();
     void qmlInlineFormatEditor_keepsRenderedOverlayPassiveForNativeEditing();
     void qmlInlineFormatEditor_keepsResourceOverlayPinnedDuringNativeEditing();

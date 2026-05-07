@@ -17,6 +17,8 @@
   back to a visible/selectable state for one note without reimplementing library bucket/search rules in QML.
 - That invokable remains part of the public QML-facing surface because calendar note chips must be able to reopen the
   matching library note from both desktop and mobile editor routes.
+- Exposes `setItemExpanded(...)` through the shared expansion capability; rows with `showChevron` are expandable even
+  when separate CRUD policy protects the same row from rename/delete.
 - Exposes `noteBodySourceTextForNoteId(...)` so editor-selection infrastructure can reuse the already-loaded runtime
   snapshot for one selected note when direct package-path resolution is unavailable.
 - Exposes `applyPersistedBodyStateForNote(...)` and `requestTrackedStatisticsRefreshForNote(...)` so editor autosave

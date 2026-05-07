@@ -41,16 +41,9 @@ QObject* HierarchyDragDropBridge::hierarchyController() const noexcept
 void HierarchyDragDropBridge::setHierarchyController(QObject* controller)
 {
     if (controller != nullptr
-        && !WhatSon::Policy::verifyMutableDependencyAllowed(
+        && !WhatSon::Policy::verifyDependencyAllowed(
             WhatSon::Policy::Layer::View,
             WhatSon::Policy::Layer::Controller,
-            QStringLiteral("HierarchyDragDropBridge::setHierarchyController")))
-    {
-        return;
-    }
-
-    if (controller == nullptr
-        && !WhatSon::Policy::verifyMutableWiringAllowed(
             QStringLiteral("HierarchyDragDropBridge::setHierarchyController")))
     {
         return;

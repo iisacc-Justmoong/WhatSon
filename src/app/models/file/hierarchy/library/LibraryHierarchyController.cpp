@@ -2230,7 +2230,7 @@ bool LibraryHierarchyController::setItemExpanded(int index, bool expanded)
         return false;
     }
 
-    if (isProtectedRootItem(m_items.at(index)))
+    if (!m_items.at(index).showChevron)
     {
         return false;
     }

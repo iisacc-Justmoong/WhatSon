@@ -36,16 +36,9 @@ QObject* SidebarHierarchyInteractionController::hierarchyInteractionBridge() con
 void SidebarHierarchyInteractionController::setHierarchyInteractionBridge(QObject* bridge)
 {
     if (bridge != nullptr
-        && !WhatSon::Policy::verifyMutableDependencyAllowed(
+        && !WhatSon::Policy::verifyDependencyAllowed(
             WhatSon::Policy::Layer::View,
             WhatSon::Policy::Layer::Controller,
-            QStringLiteral("SidebarHierarchyInteractionController::setHierarchyInteractionBridge")))
-    {
-        return;
-    }
-
-    if (bridge == nullptr
-        && !WhatSon::Policy::verifyMutableWiringAllowed(
             QStringLiteral("SidebarHierarchyInteractionController::setHierarchyInteractionBridge")))
     {
         return;

@@ -98,6 +98,9 @@ ctest --test-dir build --output-on-failure -L cpp_regression
 - Structured tag-management coverage now also requires the RAW mutation handler to accept inline-format/body-tag
   mutations before those commands report success, and verifies that explicit tag mutations bind the selected note
   session and request immediate persistence.
+- Inline editor resource-frame coverage now verifies both pointer selection and collapsed cursor movement: image
+  resource frames select as one atomic block, and the native caret cannot remain inside the frame's logical placeholder
+  line.
 - Clipboard-image resource imports now also pin their synthesized asset-name policy in the C++ suite, so temporary
   placeholder names cannot regress back to a collision-prone fixed file name.
 - Structured QML editor checks now also pin the native input contract for every host: focused stale text echo is rejected,
@@ -140,6 +143,11 @@ ctest --test-dir build --output-on-failure -L cpp_regression
   `onListItemExpanded(...)` callback into `SidebarHierarchyInteractionController`, which issues one
   `setItemExpanded(...)` request while stale model refreshes still cannot overwrite the newly chosen expanded/collapsed
   state.
+- Library hierarchy coverage now also pins that accent root folders with visible chevrons remain expandable; CRUD
+  protection cannot make the chevron interface a no-op.
+- Hierarchy interaction bridge coverage also locks the post-startup QML binding path: after the architecture policy
+  lock, the QML-created interaction bridge must still bind and rebind the active hierarchy controller so chevron
+  expansion can commit instead of rolling back.
 - Sidebar footer actions now pin both the legacy `LV.ListFooter` config-callback route and the signal route, with C++
   same-turn coalescing in `SidebarHierarchyInteractionController` so create, delete, and context-menu clicks stay live
   without double-dispatching.

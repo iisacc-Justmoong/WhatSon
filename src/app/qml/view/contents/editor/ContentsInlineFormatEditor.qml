@@ -64,7 +64,11 @@ Item {
     readonly property bool nativeSelectionPaintVisible: !control.renderedOverlayVisible
             || control.nativeSelectionContainsVisibleLogicalContent
     readonly property bool renderedSelectionActive: false
-    readonly property bool nativeCursorVisible: control.focused && !control.nativeSelectionActive
+    readonly property bool atomicResourceCursorActive: control.logicalSurfaceActive
+            && control.atomicResourceCursorActiveAtPosition(textInput.cursorPosition)
+    readonly property bool nativeCursorVisible: control.focused
+            && !control.nativeSelectionActive
+            && !control.atomicResourceCursorActive
     readonly property bool preferNativeInputHandling: true
     property bool selectByKeyboard: true
     property bool selectByMouse: true
@@ -242,12 +246,65 @@ Item {
                     Number(sourceOffset) || 0);
     }
 
+    function atomicResourceCursorNormalizationPlan(logicalCursor) {
+        return wysiwygEditorPolicy.atomicResourceCursorNormalizationPlan(
+                    control.text,
+                    control.normalizedHtmlBlocks || [],
+                    control.coordinateMapper,
+                    Number(logicalCursor) || 0,
+                    control.previousRawCursorPosition,
+                    renderedGeometryProbe.length,
+                    control.renderedOverlayVisible,
+                    control.nativeCompositionActive(),
+                    control.nativeSelectionActive);
+    }
+
+    function atomicResourceCursorActiveAtPosition(logicalCursor) {
+        const plan = control.atomicResourceCursorNormalizationPlan(logicalCursor);
+        return plan.resourceCursorActive === true;
+    }
+
+    function normalizeCursorPositionAwayFromAtomicResourceBlock() {
+        if (!control.logicalSurfaceActive
+                || control.cursorNormalizationActive
+                || control.nativeCompositionActive()
+                || control.nativeSelectionActive) {
+            control.previousRawCursorPosition = control.sourceCursorPosition;
+            return false;
+        }
+
+        const plan = control.atomicResourceCursorNormalizationPlan(textInput.cursorPosition);
+        if (plan.resourceCursorActive !== true) {
+            control.previousRawCursorPosition = plan.previousRawCursorPosition !== undefined
+                    ? Number(plan.previousRawCursorPosition)
+                    : control.sourceCursorPosition;
+            return false;
+        }
+
+        if (plan.changed !== true) {
+            control.previousRawCursorPosition = plan.previousRawCursorPosition !== undefined
+                    ? Number(plan.previousRawCursorPosition)
+                    : control.sourceCursorPosition;
+            return false;
+        }
+
+        control.cursorNormalizationActive = true;
+        textInput.cursorPosition = plan.targetLogicalCursor !== undefined
+                ? Number(plan.targetLogicalCursor)
+                : textInput.cursorPosition;
+        control.cursorNormalizationActive = false;
+        control.previousRawCursorPosition = plan.previousRawCursorPosition !== undefined
+                ? Number(plan.previousRawCursorPosition)
+                : control.sourceCursorPosition;
+        control.scheduleRenderedOverlaySelectionRefresh();
+        return true;
+    }
+
     function normalizeCursorPositionAwayFromHiddenTagTokens() {
         if (control.cursorNormalizationActive)
             return false;
         if (control.logicalSurfaceActive) {
-            control.previousRawCursorPosition = control.sourceCursorPosition;
-            return false;
+            return control.normalizeCursorPositionAwayFromAtomicResourceBlock();
         }
 
         const plan = wysiwygEditorPolicy.hiddenTagCursorNormalizationPlan(
@@ -669,10 +726,13 @@ Item {
             }
         }
         if (start === end) {
+            control.cursorNormalizationActive = true;
             textInput.deselect();
             textInput.cursorPosition = cursor;
+            control.cursorNormalizationActive = false;
             return true;
         }
+        control.cursorNormalizationActive = true;
         if (cursor === start) {
             textInput.cursorPosition = end;
             textInput.editorItem.moveCursorSelection(start, TextEdit.SelectCharacters);
@@ -680,6 +740,7 @@ Item {
             textInput.cursorPosition = start;
             textInput.editorItem.moveCursorSelection(end, TextEdit.SelectCharacters);
         }
+        control.cursorNormalizationActive = false;
         return true;
     }
 

@@ -4,7 +4,9 @@
 This implementation adapts drag/drop operations from QML into capability-based hierarchy mutations.
 
 ## Core Behavior
-- `setHierarchyController(...)` verifies the `View -> Controller` edge through the policy layer.
+- `setHierarchyController(...)` verifies the `View -> Controller` edge through the policy layer. It remains rebindable
+  after the architecture lock because QML creates this bridge at view runtime and switches it with the active hierarchy
+  domain.
 - The bridge watches both hierarchy node changes and selection changes.
 - `refreshContractState()` caches whether reorder and note-drop are available.
 - `refreshSelectedItemKey()` extracts the currently selected node key from the normalized hierarchy model.

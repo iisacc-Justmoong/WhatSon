@@ -1,5 +1,33 @@
 #include "test/cpp/whatson_cpp_regression_tests.hpp"
 
+namespace
+{
+    class ArchitecturePolicyUnlockScope final
+    {
+    public:
+        ArchitecturePolicyUnlockScope()
+        {
+            WhatSon::Policy::ArchitecturePolicyLock::unlockForTests();
+        }
+
+        ~ArchitecturePolicyUnlockScope()
+        {
+            WhatSon::Policy::ArchitecturePolicyLock::unlockForTests();
+        }
+    };
+
+    QVariantMap expandableHierarchyNode(const QString& key, int itemId, bool expanded, bool showChevron)
+    {
+        return QVariantMap{
+            {QStringLiteral("key"), key},
+            {QStringLiteral("itemId"), itemId},
+            {QStringLiteral("label"), key},
+            {QStringLiteral("expanded"), expanded},
+            {QStringLiteral("showChevron"), showChevron},
+        };
+    }
+}
+
 void WhatSonCppRegressionTests::sidebarHierarchyController_preservesFallbackAcrossStoreAttachDetach()
 {
     HierarchyControllerProvider provider;
@@ -139,6 +167,68 @@ void WhatSonCppRegressionTests::sidebarHierarchyInteractionController_commitsExp
     const QVariantMap failedResult = controller.requestChevronExpansion(0, key, false, key);
     QVERIFY(failedResult.value(QStringLiteral("rollbackRequired")).toBool());
     QVERIFY(!controller.expansionStateForKey(key, true));
+}
+
+void WhatSonCppRegressionTests::hierarchyInteractionBridge_bindsRuntimeControllerAfterArchitectureLock()
+{
+    ArchitecturePolicyUnlockScope unlockScope;
+
+    FakeExpandableHierarchyController hierarchyController(QStringLiteral("library"));
+    hierarchyController.setNodes(QVariantList{
+        expandableHierarchyNode(QStringLiteral("folder:root"), 0, false, true),
+        expandableHierarchyNode(QStringLiteral("folder:child"), 1, false, false),
+    });
+
+    WhatSon::Policy::ArchitecturePolicyLock::lock();
+
+    HierarchyInteractionBridge bridge;
+    bridge.setHierarchyController(&hierarchyController);
+
+    QCOMPARE(bridge.hierarchyController(), static_cast<QObject*>(&hierarchyController));
+    QVERIFY(bridge.setItemExpanded(0, true));
+    QCOMPARE(hierarchyController.setItemExpandedCallCount, 1);
+    QCOMPARE(hierarchyController.lastExpandedIndex, 0);
+    QVERIFY(hierarchyController.lastExpandedValue);
+    QVERIFY(hierarchyController.expandedAt(0));
+}
+
+void WhatSonCppRegressionTests::hierarchyInteractionBridge_rebindsActiveRuntimeControllerAfterArchitectureLock()
+{
+    ArchitecturePolicyUnlockScope unlockScope;
+
+    FakeExpandableHierarchyController libraryController(QStringLiteral("library"));
+    libraryController.setNodes(QVariantList{
+        expandableHierarchyNode(QStringLiteral("folder:library"), 0, false, true),
+        expandableHierarchyNode(QStringLiteral("folder:library-child"), 1, false, false),
+    });
+    FakeExpandableHierarchyController tagsController(QStringLiteral("tags"));
+    tagsController.setNodes(QVariantList{
+        expandableHierarchyNode(QStringLiteral("tag:root"), 0, false, true),
+        expandableHierarchyNode(QStringLiteral("tag:child"), 1, false, false),
+    });
+
+    WhatSon::Policy::ArchitecturePolicyLock::lock();
+
+    HierarchyInteractionBridge bridge;
+    SidebarHierarchyInteractionController interactionController;
+
+    bridge.setHierarchyController(&libraryController);
+    interactionController.setHierarchyInteractionBridge(&bridge);
+    QCOMPARE(interactionController.hierarchyInteractionBridge(), static_cast<QObject*>(&bridge));
+
+    QVariantMap libraryNode = libraryController.hierarchyModel().at(0).toMap();
+    QVariantMap libraryResult = interactionController.handleExpansionSignal(libraryNode, 0, true);
+    QVERIFY(libraryResult.value(QStringLiteral("committed")).toBool());
+    QVERIFY(libraryController.expandedAt(0));
+
+    bridge.setHierarchyController(&tagsController);
+    QCOMPARE(bridge.hierarchyController(), static_cast<QObject*>(&tagsController));
+
+    QVariantMap tagsNode = tagsController.hierarchyModel().at(0).toMap();
+    QVariantMap tagsResult = interactionController.handleExpansionSignal(tagsNode, 0, true);
+    QVERIFY(tagsResult.value(QStringLiteral("committed")).toBool());
+    QVERIFY(tagsController.expandedAt(0));
+    QVERIFY(!libraryController.expandedAt(1));
 }
 
 void WhatSonCppRegressionTests::sidebarHierarchyController_reactsToProviderMappingChanges()

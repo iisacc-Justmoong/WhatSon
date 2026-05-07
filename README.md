@@ -980,6 +980,12 @@ for hub/note hierarchy payloads.
 - Expansion-state protection policy: `SidebarHierarchyView.qml` must only push user-touched expansion changes back into
   a hierarchy view-model through a targeted `setItemExpanded(...)` hook. Bulk hierarchy rewrites are not allowed for
   create-folder flows because they mutate untouched rows and destabilize the rendered LVRS tree.
+- Library accent root folders remain protected from rename/delete, but a visible right-side chevron still maps to
+  `LibraryHierarchyController::setItemExpanded(...)`; expansion capability follows `showChevron`, not CRUD protection.
+- QML-created hierarchy interaction adapters (`HierarchyInteractionBridge`, `HierarchyDragDropBridge`, and
+  `SidebarHierarchyInteractionController`) must remain rebindable after `ArchitecturePolicyLock::lock()` because the
+  root graph is frozen before QML instantiates the sidebar surface. They still verify the allowed View -> Controller
+  dependency edge, but they do not use the mutable-wiring lock gate.
 - Create-folder targeting policy: library and tags insert the new row as a child of the active hierarchy item and
   expand that parent so the inserted child becomes visible immediately. Projects are flat, so project creation always
   inserts a new root-level sibling row and never creates child items.

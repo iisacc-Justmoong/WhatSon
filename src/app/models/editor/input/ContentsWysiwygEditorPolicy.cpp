@@ -837,6 +837,118 @@ QVariantMap ContentsWysiwygEditorPolicy::hiddenTagCursorNormalizationPlan(
     return plan;
 }
 
+QVariantMap ContentsWysiwygEditorPolicy::atomicResourceCursorNormalizationPlan(
+    const QString& sourceText,
+    const QVariant& normalizedBlocks,
+    QObject* coordinateMapper,
+    const int currentLogicalCursor,
+    const int previousRawCursorPosition,
+    const int renderedLength,
+    const bool renderedOverlayVisible,
+    const bool nativeCompositionActive,
+    const bool nativeSelectionActive) const
+{
+    const int visibleLength = std::max(0, renderedLength);
+    const int sourceLength = sourceText.size();
+    const int logicalCursor = boundedOffset(currentLogicalCursor, visibleLength);
+    const int currentSourceCursor = boundedOffset(
+        sourceOffsetForVisibleLogicalOffset(coordinateMapper, logicalCursor, visibleLength),
+        sourceLength);
+    QVariantMap plan{
+        {QStringLiteral("blockSourceEnd"), -1},
+        {QStringLiteral("blockSourceStart"), -1},
+        {QStringLiteral("changed"), false},
+        {QStringLiteral("logicalEnd"), 0},
+        {QStringLiteral("logicalStart"), 0},
+        {QStringLiteral("previousRawCursorPosition"), currentSourceCursor},
+        {QStringLiteral("resourceCursorActive"), false},
+        {QStringLiteral("targetLogicalCursor"), logicalCursor},
+        {QStringLiteral("targetSourceCursor"), currentSourceCursor}
+    };
+
+    if (!renderedOverlayVisible || nativeCompositionActive || nativeSelectionActive)
+    {
+        return plan;
+    }
+
+    const QVariantList blocks = listFromVariant(normalizedBlocks);
+    for (const QVariant& block : blocks)
+    {
+        if (!htmlBlockIsAtomicResourceBlock(block))
+        {
+            continue;
+        }
+
+        const int blockStart = htmlBlockSourceStart(block);
+        const int blockEnd = htmlBlockSourceEnd(block);
+        if (blockStart < 0 || blockEnd <= blockStart)
+        {
+            continue;
+        }
+
+        const QVariantMap resourceRange = resourceLogicalRangeForBlock(block, coordinateMapper);
+        const int logicalStart = boundedOffset(
+            resourceRange.value(QStringLiteral("start")).toInt(),
+            visibleLength);
+        const int logicalEnd = std::max(
+            logicalStart + 1,
+            boundedOffset(resourceRange.value(QStringLiteral("end")).toInt(), visibleLength));
+        if (logicalCursor < logicalStart || logicalCursor > logicalEnd)
+        {
+            continue;
+        }
+
+        int beforeSourceCursor = blockStart;
+        if (beforeSourceCursor > 0
+            && sourceText.at(beforeSourceCursor - 1) == QLatin1Char('\n'))
+        {
+            --beforeSourceCursor;
+        }
+
+        int afterSourceCursor = blockEnd;
+        if (afterSourceCursor < sourceLength
+            && sourceText.at(afterSourceCursor) == QLatin1Char('\n'))
+        {
+            ++afterSourceCursor;
+        }
+
+        const int previousSourceCursor = boundedOffset(previousRawCursorPosition, sourceLength);
+        int targetSourceCursor = afterSourceCursor;
+        if (previousSourceCursor > blockEnd)
+        {
+            targetSourceCursor = beforeSourceCursor;
+        }
+        else if (previousSourceCursor >= blockStart)
+        {
+            targetSourceCursor = logicalCursor <= logicalStart
+                ? beforeSourceCursor
+                : afterSourceCursor;
+        }
+
+        const bool targetPrefersAfter = targetSourceCursor >= blockEnd;
+        const int targetLogicalCursor = boundedOffset(
+            logicalOffsetForSourceOffsetWithAffinity(coordinateMapper, targetSourceCursor, targetPrefersAfter),
+            visibleLength);
+        const bool targetStillInsideResource =
+            targetLogicalCursor >= logicalStart && targetLogicalCursor <= logicalEnd;
+
+        plan.insert(QStringLiteral("blockSourceEnd"), blockEnd);
+        plan.insert(QStringLiteral("blockSourceStart"), blockStart);
+        plan.insert(QStringLiteral("logicalEnd"), logicalEnd);
+        plan.insert(QStringLiteral("logicalStart"), logicalStart);
+        plan.insert(QStringLiteral("previousRawCursorPosition"), targetSourceCursor);
+        plan.insert(QStringLiteral("resourceCursorActive"), true);
+        plan.insert(QStringLiteral("targetLogicalCursor"), targetLogicalCursor);
+        plan.insert(QStringLiteral("targetSourceCursor"), targetSourceCursor);
+        plan.insert(
+            QStringLiteral("changed"),
+            !targetStillInsideResource && targetLogicalCursor != logicalCursor);
+        return plan;
+    }
+
+    return plan;
+}
+
 int ContentsWysiwygEditorPolicy::sourceOffsetForVisibleLogicalOffset(
     QObject* coordinateMapper,
     const int logicalOffset,

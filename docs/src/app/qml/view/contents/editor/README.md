@@ -87,12 +87,14 @@ Editor-facing QML view components for the center content surface.
   visible-to-RAW selection policy is implemented by C++ `ContentsWysiwygEditorPolicy`; QML only applies the returned
   range to the live `LV.TextEditor`. If the pointer lands inside a measured atomic resource frame, the bridge snaps to
   that resource's single U+FFFC logical placeholder and selects the resource tag as one block instead of asking
-  `positionAt(...)` for fake internal text positions. Collapsed
-  mouse clicks use the same bridge for cursor placement by restoring the live `LV.TextEditor` cursor/selection
-  directly. The rendered overlay does not mount a second projected cursor object; the visible caret is the native
-  editor cursor that receives typing and Backspace. Non-empty drag selections keep the native selection model
-  authoritative. The passive surface-selection editor mirrors the plain logical text only and does not accept focus,
-  mouse selection, or key events. Double-click and
+  `positionAt(...)` for fake internal text positions. Collapsed cursor movement is also excluded from that placeholder:
+  when the native logical cursor lands on an atomic resource line, C++ policy moves it to the nearest prose boundary
+  outside the frame, or hides the caret for resource-only content where no text boundary exists. Collapsed mouse clicks
+  use the same bridge for cursor placement by restoring the live `LV.TextEditor` cursor/selection directly. The
+  rendered overlay does not mount a second projected cursor object; the visible caret is the native editor cursor that
+  receives typing and Backspace outside atomic resource frames. Non-empty drag selections keep the native selection
+  model authoritative. The passive surface-selection editor mirrors the plain logical text only and does not accept
+  focus, mouse selection, or key events. Double-click and
   triple-click gestures keep native-style line and paragraph selection by selecting the visible logical range before
   mapping it back to RAW source offsets. The bridge is inactive during IME composition. Plain-source and
   keyboard/modifier selection remain on the native text-edit path.

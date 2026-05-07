@@ -192,6 +192,79 @@ void WhatSonCppRegressionTests::wysiwygEditorPolicy_mapsVisibleSelectionBackToRa
     QCOMPARE(backwardPlan.value(QStringLiteral("targetCursorPosition")).toInt(), 0);
     QVERIFY(!backwardPlan.value(QStringLiteral("clearVisiblePointerCursor")).toBool());
 
+    const QString resourceTag =
+        QStringLiteral("<resource type=\"image\" path=\"cover.png\" />");
+    const QString resourceSource =
+        QStringLiteral("Alpha\n") + resourceTag + QStringLiteral("\nBeta");
+    const int resourceStart = QStringLiteral("Alpha\n").size();
+    const int resourceEnd = resourceStart + resourceTag.size();
+    ContentsEditorPresentationProjection resourceProjection;
+    resourceProjection.setSourceText(resourceSource);
+    const QVariantList resourceBlocks{
+        QVariantMap{
+            {QStringLiteral("renderDelegateType"), QStringLiteral("resource")},
+            {QStringLiteral("htmlBlockObjectSource"), QStringLiteral("iiHtmlBlock")},
+            {QStringLiteral("htmlBlockIsDisplayBlock"), true},
+            {QStringLiteral("sourceStart"), resourceStart},
+            {QStringLiteral("sourceEnd"), resourceEnd},
+        },
+    };
+    const int resourceLogicalStart = resourceProjection.logicalOffsetForSourceOffsetWithAffinity(resourceStart, false);
+    const int resourceLogicalEnd = resourceProjection.logicalOffsetForSourceOffsetWithAffinity(resourceEnd, true);
+    const QVariantMap resourceForwardPlan = policy.atomicResourceCursorNormalizationPlan(
+        resourceSource,
+        resourceBlocks,
+        &resourceProjection,
+        resourceLogicalStart,
+        resourceStart - 1,
+        resourceProjection.logicalText().size(),
+        true,
+        false,
+        false);
+    QVERIFY(resourceForwardPlan.value(QStringLiteral("resourceCursorActive")).toBool());
+    QVERIFY(resourceForwardPlan.value(QStringLiteral("changed")).toBool());
+    QCOMPARE(resourceForwardPlan.value(QStringLiteral("targetSourceCursor")).toInt(), resourceEnd + 1);
+    QCOMPARE(resourceForwardPlan.value(QStringLiteral("targetLogicalCursor")).toInt(), resourceLogicalEnd + 1);
+
+    const QVariantMap resourceBackwardPlan = policy.atomicResourceCursorNormalizationPlan(
+        resourceSource,
+        resourceBlocks,
+        &resourceProjection,
+        resourceLogicalEnd,
+        resourceEnd + 1,
+        resourceProjection.logicalText().size(),
+        true,
+        false,
+        false);
+    QVERIFY(resourceBackwardPlan.value(QStringLiteral("resourceCursorActive")).toBool());
+    QVERIFY(resourceBackwardPlan.value(QStringLiteral("changed")).toBool());
+    QCOMPARE(resourceBackwardPlan.value(QStringLiteral("targetSourceCursor")).toInt(), resourceStart - 1);
+    QCOMPARE(resourceBackwardPlan.value(QStringLiteral("targetLogicalCursor")).toInt(), resourceLogicalStart - 1);
+
+    ContentsEditorPresentationProjection resourceOnlyProjection;
+    resourceOnlyProjection.setSourceText(resourceTag);
+    const QVariantList resourceOnlyBlocks{
+        QVariantMap{
+            {QStringLiteral("renderDelegateType"), QStringLiteral("resource")},
+            {QStringLiteral("htmlBlockObjectSource"), QStringLiteral("iiHtmlBlock")},
+            {QStringLiteral("htmlBlockIsDisplayBlock"), true},
+            {QStringLiteral("sourceStart"), 0},
+            {QStringLiteral("sourceEnd"), resourceTag.size()},
+        },
+    };
+    const QVariantMap resourceOnlyPlan = policy.atomicResourceCursorNormalizationPlan(
+        resourceTag,
+        resourceOnlyBlocks,
+        &resourceOnlyProjection,
+        0,
+        0,
+        resourceOnlyProjection.logicalText().size(),
+        true,
+        false,
+        false);
+    QVERIFY(resourceOnlyPlan.value(QStringLiteral("resourceCursorActive")).toBool());
+    QVERIFY(!resourceOnlyPlan.value(QStringLiteral("changed")).toBool());
+
     const QVariantMap lineRange = policy.visibleLogicalLineRange(
         QStringLiteral("one\ntwo\nthree"),
         5);
@@ -221,12 +294,16 @@ void WhatSonCppRegressionTests::qmlInlineFormatEditor_delegatesWysiwygPolicyToCp
     QVERIFY(inlineEditorSource.contains(QStringLiteral("wysiwygEditorPolicy.sourceRangeIntersectsAtomicResourceBlock(")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("wysiwygEditorPolicy.rawSelectionForVisibleSurfaceSelection(")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("wysiwygEditorPolicy.hiddenTagCursorNormalizationPlan(")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("wysiwygEditorPolicy.atomicResourceCursorNormalizationPlan(")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("function normalizeCursorPositionAwayFromAtomicResourceBlock()")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("readonly property bool atomicResourceCursorActive")));
     QVERIFY(!inlineEditorSource.contains(QStringLiteral("/[A-Za-z0-9_.:-]/")));
     QVERIFY(!inlineEditorSource.contains(QStringLiteral("lastIndexOf(\"<\"")));
     QVERIFY(!inlineEditorSource.contains(QStringLiteral("indexOf(\">\"")));
 
     QVERIFY(policyHeader.contains(QStringLiteral("class ContentsWysiwygEditorPolicy")));
     QVERIFY(policyHeader.contains(QStringLiteral("Q_INVOKABLE QVariantMap rawSelectionForVisibleSurfaceSelection")));
+    QVERIFY(policyHeader.contains(QStringLiteral("Q_INVOKABLE QVariantMap atomicResourceCursorNormalizationPlan")));
     QVERIFY(policyHeader.contains(QStringLiteral("Q_INVOKABLE QVariantMap visibleBackspaceMutationPayload")));
     QVERIFY(policySource.contains(QStringLiteral("sourceOffsetForVisibleLogicalOffset")));
     QVERIFY(policySource.contains(QStringLiteral("logicalOffsetForSourceOffsetWithAffinity")));

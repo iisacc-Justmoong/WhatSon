@@ -202,7 +202,8 @@ void WhatSonCppRegressionTests::qmlInlineFormatEditor_keepsNativeTextEditInputUn
     QVERIFY(!inlineEditorSource.contains(QStringLiteral("function cursorProjectionRectangle()")));
     QVERIFY(!inlineEditorSource.contains(QStringLiteral("id: projectedCursor")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("cursorDelegate: Rectangle {")));
-    QVERIFY(inlineEditorSource.contains(QStringLiteral("readonly property bool nativeCursorVisible: control.focused && !control.nativeSelectionActive")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("readonly property bool atomicResourceCursorActive")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("&& !control.atomicResourceCursorActive")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("objectName: \"contentsInlineFormatNativeCursor\"")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("visible: control.nativeCursorVisible")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("width: control.nativeCursorVisible ? control.cursorPixelWidth : 0")));
@@ -2099,6 +2100,108 @@ Item {
     const QString selectedText = inlineEditor->property("selectedText").toString();
     QVERIFY(!selectedText.contains(QStringLiteral("Alpha")));
     QVERIFY(!selectedText.contains(QStringLiteral("Beta")));
+}
+
+void WhatSonCppRegressionTests::qmlInlineFormatEditor_keepsCursorOutOfAtomicResourceFrame()
+{
+    registerInlineFormatEditorRuntimeQmlTypes();
+
+    const QString repositoryRoot = qmlInlineFormatEditorRepositoryRootPath();
+    QQmlEngine engine;
+    addWhatSonInlineFormatEditorQmlImportPaths(engine, repositoryRoot);
+
+    const QString editorImportUrl =
+        QUrl::fromLocalFile(repositoryRoot + QStringLiteral("/src/app/qml/view/contents/editor")).toString();
+    const QByteArray qmlSource = QStringLiteral(R"QML(
+import QtQuick
+import WhatSon.App.Internal 1.0
+import "%1" as EditorView
+
+Item {
+    id: root
+    readonly property string resourceTag: "<resource type=\"image\" format=\".png\" path=\"icloud.wsresources/demo.wsresource\" id=\"demo\" />"
+    readonly property int resourceStart: 6
+    readonly property int resourceEnd: resourceStart + resourceTag.length
+    width: 360
+    height: 180
+
+    EditorView.ContentsInlineFormatEditor {
+        id: editor
+        objectName: "inlineFormatEditorUnderTest"
+        anchors.fill: parent
+        coordinateMapper: ContentsEditorPresentationProjection {
+            sourceText: editor.text
+        }
+        displayGeometryText: "Alpha\n\uFFFC\nBeta"
+        normalizedHtmlBlocks: [{
+            "htmlBlockIsDisplayBlock": true,
+            "htmlBlockObjectSource": "iiHtmlBlock",
+            "renderDelegateType": "resource",
+            "sourceStart": root.resourceStart,
+            "sourceEnd": root.resourceEnd
+        }]
+        renderedText: "<p style='margin-top:0px;margin-bottom:0px;'>Alpha</p><p style='margin-top:0px;margin-bottom:0px;'><img src='' width='300' height='72' /></p><p style='margin-top:0px;margin-bottom:0px;'>Beta</p>"
+        showRenderedOutput: true
+        text: "Alpha\n" + root.resourceTag + "\nBeta"
+    }
+}
+)QML").arg(editorImportUrl).toUtf8();
+
+    QQmlComponent component(&engine);
+    component.setData(
+        qmlSource,
+        QUrl::fromLocalFile(repositoryRoot + QStringLiteral("/test/cpp/InlineFormatResourceCursorHarness.qml")));
+    if (component.status() == QQmlComponent::Error)
+    {
+        QFAIL(qPrintable(qmlInlineFormatEditorErrorString(component.errors())));
+    }
+
+    std::unique_ptr<QObject> rootObject(component.create());
+    if (!rootObject)
+    {
+        QFAIL(qPrintable(qmlInlineFormatEditorErrorString(component.errors())));
+    }
+
+    auto* rootItem = qobject_cast<QQuickItem*>(rootObject.get());
+    QVERIFY(rootItem != nullptr);
+
+    QQuickWindow window;
+    window.resize(360, 160);
+    rootItem->setParentItem(window.contentItem());
+    window.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&window));
+
+    QObject* inlineEditor = rootObject->findChild<QObject*>(QStringLiteral("inlineFormatEditorUnderTest"));
+    QVERIFY(inlineEditor != nullptr);
+    QTRY_VERIFY(inlineEditor->property("renderedOverlayVisible").toBool());
+    QTRY_COMPARE(inlineEditor->property("logicalGutterRows").toList().size(), 3);
+    QVERIFY(QMetaObject::invokeMethod(inlineEditor, "forceActiveFocus"));
+    QTRY_VERIFY(inlineEditor->property("focused").toBool());
+
+    inlineEditor->setProperty("previousRawCursorPosition", rootObject->property("resourceStart").toInt() - 1);
+    QVariant setCursorResult;
+    QVERIFY(QMetaObject::invokeMethod(
+        inlineEditor,
+        "setCursorPositionPreservingNativeInput",
+        Q_RETURN_ARG(QVariant, setCursorResult),
+        Q_ARG(QVariant, 6)));
+    QTRY_COMPARE(
+        inlineEditor->property("sourceCursorPosition").toInt(),
+        rootObject->property("resourceEnd").toInt() + 1);
+    QVERIFY(!inlineEditor->property("atomicResourceCursorActive").toBool());
+    QVERIFY(inlineEditor->property("nativeCursorVisible").toBool());
+
+    inlineEditor->setProperty("previousRawCursorPosition", rootObject->property("resourceEnd").toInt() + 1);
+    QVERIFY(QMetaObject::invokeMethod(
+        inlineEditor,
+        "setCursorPositionPreservingNativeInput",
+        Q_RETURN_ARG(QVariant, setCursorResult),
+        Q_ARG(QVariant, 7)));
+    QTRY_COMPARE(
+        inlineEditor->property("sourceCursorPosition").toInt(),
+        rootObject->property("resourceStart").toInt() - 1);
+    QVERIFY(!inlineEditor->property("atomicResourceCursorActive").toBool());
+    QVERIFY(inlineEditor->property("nativeCursorVisible").toBool());
 }
 
 void WhatSonCppRegressionTests::qmlInlineFormatEditor_ignoresEmptyFormattingTagsDuringRenderedSelection()

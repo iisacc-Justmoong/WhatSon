@@ -87,6 +87,9 @@ Wraps the live `LV.TextEditor` used by the note document surface.
 - Pointer selection checks measured resource rows before falling back to plain-text `positionAt(...)`. A hit inside an
   image/resource frame selects the single U+FFFC logical placeholder for that resource block, so the frame cannot behave
   like it contains selectable virtual text lines.
+- Collapsed cursor placement also treats that U+FFFC placeholder as a non-text atomic block. If native cursor movement
+  lands on the resource placeholder line, the C++ WYSIWYG policy moves it to the nearest prose boundary outside the
+  frame; when no outside boundary exists, the native caret is hidden rather than painted inside the image frame.
 - The rendered overlay stays pinned during composition and ordinary native typing so active edits cannot expose plain
   logical text or RAW-shaped resource placeholders while the renderer catches up.
 - `textEdited(text)` reports plain RAW text upward.

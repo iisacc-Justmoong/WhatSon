@@ -49,6 +49,8 @@
 - `setDepthItems(...)` preserves expansion by stable hierarchy key before replacing the row vector. External folder
   structure refreshes may add, remove, or reorder rows, but they must not change the expansion state of surviving
   folders.
+- `setItemExpanded(...)` accepts any row that advertises `showChevron`, including accent root folders. Protected-root
+  policy remains a rename/delete guard; it must not block a visible chevron from folding or unfolding its descendants.
 - When the hierarchy has visible rows, a negative or invalid selected index is normalized to the first visible row
   before the controller republishes state. This keeps the library note-list filter aligned with the row the sidebar
   already renders as active.
@@ -78,6 +80,8 @@
     note delete, folder clear, or one-note metadata reload even when the hierarchy rows themselves did not rebuild
   - folder-structure reloads and folder creation must not expand or collapse existing library rows unless the user
     explicitly performed an expansion command
+  - accent root folders with visible chevrons must accept targeted `setItemExpanded(...)` changes even though the same
+    rows remain protected from rename/delete mutations
   - `activateNoteById(...)` must select the requested note when it is already visible in the current library list.
   - An active library search filter must be cleared automatically when it hides the requested note.
   - A folder-scoped library selection must fall back to `All Library` before the activation path reports failure.

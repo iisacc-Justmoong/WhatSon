@@ -122,6 +122,7 @@ set(WHATSON_CPP_REGRESSION_TEST_SOURCES
         "${CMAKE_SOURCE_DIR}/src/app/models/onboarding/IOnboardingHubController.hpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/onboarding/OnboardingRouteBootstrapController.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/panel/HierarchyDragDropBridge.cpp"
+        "${CMAKE_SOURCE_DIR}/src/app/models/panel/HierarchyInteractionBridge.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/panel/NoteActiveStateTracker.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/panel/NoteListModelContractBridge.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/sidebar/IActiveHierarchyContextSource.hpp"

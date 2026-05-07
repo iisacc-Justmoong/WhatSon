@@ -56,6 +56,8 @@ void WhatSonCppRegressionTests::qmlHierarchyExpansion_preservesUserControlledSta
         QStringLiteral("src/app/models/file/hierarchy/bookmarks/BookmarksHierarchyController.hpp"));
     const QString bookmarksSource = readUtf8SourceFile(
         QStringLiteral("src/app/models/file/hierarchy/bookmarks/BookmarksHierarchyController.cpp"));
+    const QString librarySource = readUtf8SourceFile(
+        QStringLiteral("src/app/models/file/hierarchy/library/LibraryHierarchyController.cpp"));
 
     QVERIFY(sidebarSource.contains(QStringLiteral("property var hierarchyInteractionController: null")));
     QVERIFY(sidebarSource.contains(QStringLiteral("readonly property var hierarchyTreeContextMenuItems")));
@@ -94,6 +96,10 @@ void WhatSonCppRegressionTests::qmlHierarchyExpansion_preservesUserControlledSta
     QVERIFY(bookmarksSource.contains(QStringLiteral("if (!m_items.at(index).showChevron)")));
     QVERIFY(bookmarksSource.contains(QStringLiteral("m_items[index].expanded = expanded;")));
     QVERIFY(bookmarksSource.contains(QStringLiteral("syncModel();")));
+    QVERIFY(librarySource.contains(QStringLiteral("bool LibraryHierarchyController::setItemExpanded(int index, bool expanded)")));
+    QVERIFY(librarySource.contains(QStringLiteral("if (!m_items.at(index).showChevron)")));
+    QVERIFY(librarySource.contains(QStringLiteral("m_items[index].expanded = expanded;")));
+    QVERIFY(!librarySource.contains(QStringLiteral("bool LibraryHierarchyController::setItemExpanded(int index, bool expanded)\n{\n    if (index < 0 || index >= m_items.size())\n    {\n        return false;\n    }\n\n    if (isProtectedRootItem(m_items.at(index)))")));
     QVERIFY(sidebarSource.contains(QStringLiteral("onTapped: function (eventPoint, button)")));
     QVERIFY(sidebarSource.contains(QStringLiteral("sidebarHierarchyView.requestHierarchyChevronExpansionAtPosition(tapX, tapY, armedKey);")));
     QVERIFY(sidebarSource.contains(QStringLiteral("refreshEditingHierarchyPresentation")));

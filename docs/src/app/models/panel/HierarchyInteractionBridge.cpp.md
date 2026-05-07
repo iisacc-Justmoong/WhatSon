@@ -5,6 +5,8 @@ This implementation binds a live hierarchy controller to the interaction bridge 
 
 ## Core Behavior
 - `setHierarchyController(...)` verifies the `View -> Controller` dependency edge through `verifyDependencyAllowed(...)`.
+  It deliberately does not use the mutable-wiring lock gate because the bridge is a QML-created runtime adapter whose
+  active hierarchy controller can be rebound after the root C++ object graph has been frozen.
 - The bridge stores the cast `IHierarchyController*` as a `QPointer`.
 - It listens to `hierarchySelectionChanged` and `hierarchyNodesChanged`.
 - On every relevant change it recalculates the cached capability booleans.

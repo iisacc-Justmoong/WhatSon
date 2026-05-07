@@ -81,6 +81,16 @@ public:
         bool nativeCompositionActive,
         bool nativeSelectionActive,
         bool visiblePointerCursorUpdateActive) const;
+    Q_INVOKABLE QVariantMap atomicResourceCursorNormalizationPlan(
+        const QString& sourceText,
+        const QVariant& normalizedBlocks,
+        QObject* coordinateMapper,
+        int currentLogicalCursor,
+        int previousRawCursorPosition,
+        int renderedLength,
+        bool renderedOverlayVisible,
+        bool nativeCompositionActive,
+        bool nativeSelectionActive) const;
 
 private:
     int sourceOffsetForVisibleLogicalOffset(
