@@ -140,6 +140,7 @@ void WhatSonCppRegressionTests::editorPresentationProjection_publishesHtmlBlockP
     QVERIFY(projectionCppSource.contains(QStringLiteral("ContentsLogicalTextBridge::logicalToSourceOffsetsChanged")));
     QVERIFY(displayBackendHeader.contains(QStringLiteral("ContentsEditorPresentationProjection m_presentationProjection")));
     QVERIFY(displayBackendHeader.contains(QStringLiteral("inlineResourceVisualBlocks(")));
+    QVERIFY(displayBackendHeader.contains(QStringLiteral("editorSurfaceHtmlWithResourceVisualBlocks(")));
     QVERIFY(!displayBackendHeader.contains(QStringLiteral("inlineResourceVisualHeights(")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("htmlTokens: editorDisplayBackend.presentationProjection.htmlTokens")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("normalizedHtmlBlocks: editorDisplayBackend.presentationProjection.normalizedHtmlBlocks")));
@@ -148,6 +149,7 @@ void WhatSonCppRegressionTests::editorPresentationProjection_publishesHtmlBlockP
     QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("logicalToSourceOffsets")));
     QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("renderInlineResourceEditorSurfaceHtml(")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("inlineResourceVisualBlocks(")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("editorSurfaceHtmlWithResourceVisualBlocks(")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("documentBlocks: editorDisplayBackend.structuredBlockRenderer.renderedDocumentBlocks")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("editorDisplayBackend.presentationProjection.editorSurfaceHtml")));
     QVERIFY(documentFlowSource.contains(QStringLiteral("ContentsInlineFormatEditor {")));

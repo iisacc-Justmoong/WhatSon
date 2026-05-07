@@ -84,6 +84,21 @@ namespace
         Q_UNUSED(registered);
     }
 
+    QRectF textEditPositionRectangle(QObject* textEdit, const int position)
+    {
+        QRectF rectangle;
+        if (textEdit == nullptr)
+        {
+            return rectangle;
+        }
+        QMetaObject::invokeMethod(
+            textEdit,
+            "positionToRectangle",
+            Q_RETURN_ARG(QRectF, rectangle),
+            Q_ARG(int, position));
+        return rectangle;
+    }
+
 } // namespace
 
 void WhatSonCppRegressionTests::qmlInlineFormatEditor_keepsNativeTextEditInputUncovered()
@@ -259,7 +274,7 @@ void WhatSonCppRegressionTests::qmlInlineFormatEditor_projectsVisibleGeometryFro
 
     QVERIFY(inlineEditorSource.contains(QStringLiteral("readonly property real displayContentHeight")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("readonly property real displayTextContentHeight")));
-    QVERIFY(inlineEditorSource.contains(QStringLiteral("? Math.max(renderedOverlay.contentHeight, control.structuredVisualContentHeight)")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("? renderedOverlay.contentHeight")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("+ control.editorBottomInset")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("readonly property real displayBodyHeight: Math.max(0, control.displayTextContentHeight)")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("readonly property int visualLineCount")));
@@ -271,6 +286,9 @@ void WhatSonCppRegressionTests::qmlInlineFormatEditor_projectsVisibleGeometryFro
     QVERIFY(inlineEditorSource.contains(QStringLiteral("readonly property var visualLineWidthRatios: visualLineMetrics.visualLineWidthRatios")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("property var documentBlocks: []")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("property var resourceVisualBlocks: []")));
+    QVERIFY(!inlineEditorSource.contains(QStringLiteral("function renderedTextWithResourceVisualSpacers()")));
+    QVERIFY(!inlineEditorSource.contains(QStringLiteral("function resourceVisualSpacerHtml(resourceIndex)")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("function visualYToLogicalGeometryY(localY)")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("function resourceVisualLayoutRows()")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("objectName: \"contentsInlineFormatResourceVisualBlock\"")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("ContentsEditorVisualLineMetrics {")));
@@ -341,6 +359,7 @@ void WhatSonCppRegressionTests::qmlInlineFormatEditor_projectsVisibleGeometryFro
     QVERIFY(!documentFlowSource.contains(QStringLiteral("logicalToSourceOffsets: documentFlow.logicalToSourceOffsets")));
     QVERIFY(documentFlowSource.contains(QStringLiteral("normalizedHtmlBlocks: documentFlow.normalizedHtmlBlocks")));
     QVERIFY(documentFlowSource.contains(QStringLiteral("documentBlocks: documentFlow.documentBlocks")));
+    QVERIFY(!documentFlowSource.contains(QStringLiteral("htmlTokens: documentFlow.htmlTokens")));
     QVERIFY(documentFlowSource.contains(QStringLiteral("resourceVisualBlocks: documentFlow.resourceVisualBlocks")));
     QVERIFY(documentFlowSource.contains(QStringLiteral("readonly property real editorContentHeight: editor.displayContentHeight")));
 
@@ -360,6 +379,8 @@ void WhatSonCppRegressionTests::qmlInlineFormatEditor_projectsVisibleGeometryFro
         "documentBlocks: editorDisplayBackend.structuredBlockRenderer.renderedDocumentBlocks")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral(
         "resourceVisualBlocks: editorDisplayBackend.inlineResourceVisualBlocks(")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral(
+        "editorSurfaceHtml: editorDisplayBackend.editorSurfaceHtmlWithResourceVisualBlocks(")));
     QVERIFY(!contentViewLayoutSource.contains(QStringLiteral(
         "resourceVisualHeights: editorDisplayBackend.inlineResourceVisualHeights(")));
     QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("renderInlineResourceEditorSurfaceHtml(")));
@@ -1382,7 +1403,7 @@ Item {
             }
         ]
         documentBlocks: normalizedHtmlBlocks
-        renderedText: "<p style='margin-top:0px;margin-bottom:0px;line-height:0px;'><img src='%2' width='160' height='96' style='vertical-align:top;' /></p><p style='margin-top:0px;margin-bottom:0px;'>Beta</p>"
+        renderedText: "<p style='margin-top:0px;margin-bottom:0px;line-height:98px;font-size:1px;color:transparent;'>&nbsp;</p><p style='margin-top:0px;margin-bottom:0px;'>Beta</p>"
         resourceVisualBlocks: [{"height": 96, "imageSource": "%2", "renderable": true, "width": 160}]
         showRenderedOutput: true
         text: root.resourceTag + "\nBeta"
@@ -1416,8 +1437,12 @@ Item {
 
     QObject* inlineEditor = rootObject->findChild<QObject*>(QStringLiteral("inlineFormatEditorUnderTest"));
     QVERIFY(inlineEditor != nullptr);
+    QObject* renderedOverlay = rootObject->findChild<QObject*>(QStringLiteral("contentsInlineFormatRenderedOverlay"));
+    QVERIFY(renderedOverlay != nullptr);
     QTRY_VERIFY(inlineEditor->property("renderedOverlayVisible").toBool());
     QTRY_COMPARE(inlineEditor->property("logicalGutterRows").toList().size(), 2);
+    QVERIFY(!renderedOverlay->property("text").toString().contains(QStringLiteral("<img")));
+    QVERIFY(renderedOverlay->property("text").toString().contains(QStringLiteral("line-height:98px")));
 
     QCOMPARE(inlineEditor->property("lineNumberGeometryResourceBlockHeights").toList().first().toDouble(), 96.0);
     QVariantList geometryRows = inlineEditor->property("lineNumberGeometryRows").toList();
@@ -1464,6 +1489,12 @@ Item {
         qPrintable(QStringLiteral("Second gutter row must match rendered resource bottom: betaY=%1 resourceY=%2 frameHeight=%3")
                        .arg(betaY)
                        .arg(resourceY)
+                       .arg(renderedFrameHeight)));
+    const QRectF betaTextRectangle = textEditPositionRectangle(renderedOverlay, 1);
+    QVERIFY2(
+        qAbs(betaTextRectangle.y() - renderedFrameHeight) <= 2.0,
+        qPrintable(QStringLiteral("Rendered text below resource must align with visual frame bottom: betaTextY=%1 frameHeight=%2")
+                       .arg(betaTextRectangle.y())
                        .arg(renderedFrameHeight)));
     QVERIFY(resourceRow.value(QStringLiteral("height")).toDouble() < betaY - resourceY);
 }

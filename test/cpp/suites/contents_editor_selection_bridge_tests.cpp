@@ -151,6 +151,34 @@ void WhatSonCppRegressionTests::contentsEditorSelectionBridge_ignoresNoteListBod
     QVERIFY(!selectionBridge.selectedNoteBodyResolved());
 }
 
+void WhatSonCppRegressionTests::contentsEditorSelectionBridge_dropsInFlightBodyLoadAfterBridgeDestruction()
+{
+    ensureCoreApplication();
+
+    {
+        FakeSelectionNoteListModel noteListModel;
+        FakeContentPersistenceController contentController;
+        ContentsEditorSelectionBridge selectionBridge;
+
+        noteListModel.setNoteBacked(true);
+        noteListModel.setCurrentNoteId(QStringLiteral("note-disposed"));
+        contentController.setNoteDirectoryPath(
+            QStringLiteral("note-disposed"),
+            QDir::tempPath() + QStringLiteral("/whatson-missing-note-disposed.wsnote"));
+
+        selectionBridge.setContentController(&contentController);
+        selectionBridge.setNoteListModel(&noteListModel);
+        QCoreApplication::processEvents();
+
+        QCOMPARE(selectionBridge.selectedNoteId(), QStringLiteral("note-disposed"));
+        QVERIFY(selectionBridge.selectedNoteBodyLoading() || !selectionBridge.selectedNoteBodyResolved());
+    }
+
+    QThreadPool::globalInstance()->waitForDone();
+    QCoreApplication::processEvents();
+    QVERIFY(true);
+}
+
 void WhatSonCppRegressionTests::contentsEditorSelectionBridge_rebindsSameNoteIdWhenPackagePathChanges()
 {
     ensureCoreApplication();

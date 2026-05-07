@@ -18,7 +18,7 @@ Item {
     property real editorBottomInset: LV.Theme.gap16
     property string displayGeometryText: control.text
     readonly property real displayTextContentHeight: control.renderedOverlayVisible
-            ? Math.max(renderedOverlay.contentHeight, control.structuredVisualContentHeight)
+            ? renderedOverlay.contentHeight
             : textInput.contentHeight
     readonly property real displayContentHeight: control.displayTextContentHeight
             + control.editorBottomInset
@@ -52,7 +52,6 @@ Item {
     readonly property string preeditText: String(textInput.editorItem.preeditText)
     property string renderedText: ""
     property var resourceVisualBlocks: []
-    readonly property real structuredVisualContentHeight: control.structuredVisualLayoutContentHeight()
     readonly property int cursorPixelWidth: Math.max(1, Math.ceil(LV.Theme.strokeThin))
     readonly property var logicalGutterRows: lineNumberRailMetrics.rows
     readonly property int visualLineCount: visualLineMetrics.visualLineCount
@@ -450,17 +449,20 @@ Item {
         return visualRows;
     }
 
-    function structuredVisualLayoutContentHeight() {
+    function visualYToLogicalGeometryY(localY) {
+        let y = control.finiteNumber(localY, 0);
         const rows = control.resourceVisualLayoutRows();
-        let contentHeight = 0;
+        const placeholderHeight = Math.max(1, Number(LV.Theme.textBodyLineHeight) || 1);
         for (let index = 0; index < (rows.length || 0); ++index) {
             const row = rows[index] || {};
-            contentHeight = Math.max(
-                        contentHeight,
-                        control.finiteNumber(row.y, 0)
-                        + control.finiteNumber(row.height, LV.Theme.textBodyLineHeight));
+            const rowY = control.finiteNumber(row.y, 0);
+            const rowHeight = Math.max(placeholderHeight, control.finiteNumber(row.height, placeholderHeight));
+            const rowBottom = rowY + rowHeight;
+            if (y <= rowBottom)
+                break;
+            y -= Math.max(0, rowHeight - placeholderHeight);
         }
-        return contentHeight;
+        return y;
     }
 
     function atomicResourceHitAtPoint(localX, localY) {
@@ -517,7 +519,7 @@ Item {
         const geometryHeight = Math.max(
                     1,
                     Number(geometryItem.contentHeight) || Number(geometryItem.height) || LV.Theme.textBodyLineHeight);
-        const mappedY = Number(mappedPoint.y) || 0;
+        const mappedY = control.visualYToLogicalGeometryY(Number(mappedPoint.y) || 0);
         const terminalBlankThreshold = geometryHeight + Math.max(1, Number(LV.Theme.textBodyLineHeight) || 1);
         if (mappedY > terminalBlankThreshold)
             return control.boundedCursorPosition(geometryItem.length, geometryItem.length);

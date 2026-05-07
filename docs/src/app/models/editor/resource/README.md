@@ -13,8 +13,9 @@ Owns editor-side resource import and inline resource presentation coordination.
 - `ContentsInlineResourcePresentationController.*`
   Builds rounded Figma `292:50` frame image projections and structured `resourceVisualBlocks` used by note-body
   resource delegates. Inline resource frames resolve 100% width to the current editor text column before the cached
-  frame image and matching visual block dimensions are generated. Legacy HTML placeholder replacement remains in the
-  lower-level presenter for compatibility, but the live editor surface consumes visual block records directly.
+  frame image and matching visual block dimensions are generated. It also builds the live RichText flow spacer HTML
+  from renderer `htmlTokens` and those visual blocks, while the actual image frame stays in the direct delegate layer.
+  Legacy HTML placeholder replacement remains in the lower-level presenter for compatibility.
 - `ContentsEditorSurfaceGuardController.*`
   Guards programmatic editor-surface sync during resource import turns.
 

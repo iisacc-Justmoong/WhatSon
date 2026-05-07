@@ -97,6 +97,7 @@
 #include <QSettings>
 #include <QStandardPaths>
 #include <QSet>
+#include <QThreadPool>
 #include <QTemporaryDir>
 #include <QUrl>
 #include <QVariantMap>
@@ -1138,6 +1139,7 @@ private slots:
     void contentsEditorSelectionBridge_prefillsSelectedNoteBodyFromDirectSourceSnapshot();
     void contentsEditorSelectionBridge_treatsDirectEmptySourceAsResolvedEmptyNote();
     void contentsEditorSelectionBridge_ignoresNoteListBodySnapshotWithoutDirectSource();
+    void contentsEditorSelectionBridge_dropsInFlightBodyLoadAfterBridgeDestruction();
     void contentsEditorSelectionBridge_rebindsSameNoteIdWhenPackagePathChanges();
     void contentsEditorSelectionBridge_clearsSelectedNoteAcrossTransientEmptyCurrentNoteId();
     void contentsEditorSelectionBridge_reloadsBodyWhenCommittedNoteEntryChangesWithoutNoteIdChange();

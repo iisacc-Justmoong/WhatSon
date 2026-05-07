@@ -369,7 +369,10 @@ Item {
 
                                 coordinateMapper: editorDisplayBackend.presentationProjection
                                 documentBlocks: editorDisplayBackend.structuredBlockRenderer.renderedDocumentBlocks
-                                editorSurfaceHtml: editorDisplayBackend.presentationProjection.editorSurfaceHtml
+                                editorSurfaceHtml: editorDisplayBackend.editorSurfaceHtmlWithResourceVisualBlocks(
+                                                       editorDisplayBackend.presentationProjection.htmlTokens,
+                                                       structuredDocumentFlow.resourceVisualBlocks,
+                                                       editorDisplayBackend.presentationProjection.editorSurfaceHtml)
                                 height: editorDocumentContent.height
                                 htmlTokens: editorDisplayBackend.presentationProjection.htmlTokens
                                 logicalText: editorDisplayBackend.presentationProjection.logicalText

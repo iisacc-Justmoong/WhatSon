@@ -12,8 +12,9 @@ Contains editor-display support controllers and policies that are not QML view f
   Owns the live note display session, projection, structured renderer, body-resource renderer, resource-tag
   controller, inline-resource presentation controller, and minimap metrics previously wired in QML. It exposes
   structured inline-resource visual blocks so QML delegates render resources directly and geometry does not infer frame
-  sizes from rendered HTML. It does not own view-hook relay wiring; `ContentViewLayout.qml` dispatches view-local hooks
-  directly.
+  sizes from rendered HTML. It also asks the inline-resource presenter to produce flow-corrected editor surface HTML
+  with transparent resource spacers, so QML does not rebuild block-flow markup itself. It does not own view-hook relay
+  wiring; `ContentViewLayout.qml` dispatches view-local hooks directly.
 
 ## Boundary
 

@@ -666,6 +666,7 @@ void WhatSonCppRegressionTests::qmlStructuredEditors_wireInlineResourceRendererT
     QVERIFY(displayBackendHeader.contains(QStringLiteral("ContentsInlineResourcePresentationController m_inlineResourcePresentation")));
     QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("renderInlineResourceEditorSurfaceHtml(")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("documentBlocks: editorDisplayBackend.structuredBlockRenderer.renderedDocumentBlocks")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("editorSurfaceHtml: editorDisplayBackend.editorSurfaceHtmlWithResourceVisualBlocks(")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("resourceVisualBlocks: editorDisplayBackend.inlineResourceVisualBlocks(")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("editorDisplayBackend.bodyResourceRenderer.renderedResources")));
     QVERIFY(displayBackendSource.contains(QStringLiteral("targetFrameWidth")));

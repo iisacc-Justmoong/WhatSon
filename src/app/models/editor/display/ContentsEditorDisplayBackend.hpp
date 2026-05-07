@@ -90,6 +90,10 @@ public:
     Q_INVOKABLE QVariantList inlineResourceVisualBlocks(
         const QVariant& renderedResources,
         int targetFrameWidth) const;
+    Q_INVOKABLE QString editorSurfaceHtmlWithResourceVisualBlocks(
+        const QVariant& htmlTokens,
+        const QVariant& resourceVisualBlocks,
+        const QString& fallbackEditorHtml) const;
     Q_INVOKABLE bool syncSessionFromCurrentNote(bool resetViewport);
 
 signals:

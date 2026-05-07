@@ -16,7 +16,9 @@ Implements the live note-editor display backend used by `ContentViewLayout.qml`.
 - Emits `editorViewportResetRequested()` only when a requested refresh changes the bound note identity
   (`noteId`/`noteDirectoryPath`). Same-note body refreshes, save/reconcile entry updates, and index refresh signals
   preserve the editor viewport so typing near the bottom cannot yank the document back to the first line.
-- Owns resource-tag mutation callbacks and inline-resource HTML replacement so QML only binds the rendered output.
+- Owns resource-tag mutation callbacks and inline-resource flow HTML composition so QML only binds the rendered output.
+  Resource frame images remain direct visual delegates; the RichText overlay receives transparent spacers sized from
+  the same structured visual blocks.
 - Owns minimap layout metrics while `ContentViewLayout.qml` supplies LVRS token values and renders the resolved rail.
 - Does not forward view hooks through `panelController.requestControllerHook(...)`; that thin view relay lives in
   `ContentViewLayout.qml`.

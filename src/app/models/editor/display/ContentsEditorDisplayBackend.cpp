@@ -336,6 +336,17 @@ QVariantList ContentsEditorDisplayBackend::inlineResourceVisualBlocks(
         std::max(120, targetFrameWidth));
 }
 
+QString ContentsEditorDisplayBackend::editorSurfaceHtmlWithResourceVisualBlocks(
+    const QVariant& htmlTokens,
+    const QVariant& resourceVisualBlocks,
+    const QString& fallbackEditorHtml) const
+{
+    return m_inlineResourcePresentation.editorSurfaceHtmlWithResourceVisualBlocks(
+        htmlTokens,
+        resourceVisualBlocks,
+        fallbackEditorHtml);
+}
+
 bool ContentsEditorDisplayBackend::syncSessionFromCurrentNote(const bool resetViewport)
 {
     if (currentNoteId().isEmpty())

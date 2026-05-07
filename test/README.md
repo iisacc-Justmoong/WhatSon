@@ -127,6 +127,8 @@ ctest --test-dir build --output-on-failure -L cpp_regression
   surfaces or selected atomic-block key handling.
 - Hierarchy controller switching now also pins QObject ownership at the sidebar/selection-bridge boundary, so switching
   `Resources -> Library` cannot hand member-owned C++ models to the QML garbage collector.
+- Selection-bridge coverage now also tears down the bridge while a selected-note lazy body read is still in flight, so
+  late worker completions must be dropped safely instead of targeting a destroyed coordinator.
 - Hierarchy-driven note-list rebinding is now also locked at the bridge layer, so swapping only the active hierarchy
   controller still replaces the effective note-list model immediately for desktop/mobile list surfaces.
 - The same bridge coverage now also pins explicit note-list-model overrides, so `Resources -> Library` toolbar
@@ -350,6 +352,10 @@ ctest --test-dir build --output-on-failure -L cpp_regression
 - Editor-host coverage now verifies that `ContentsEditorPresentationProjection` republishes `htmlTokens` and
   `normalizedHtmlBlocks`, and that `ContentViewLayout.qml` forwards those backend-owned projection objects into
   `ContentsStructuredDocumentFlow.qml` for final rendering.
+- Inline editor resource-frame coverage now verifies that production-like resource HTML stays frame-free while the C++
+  display/resource presentation path uses `htmlTokens` plus `resourceVisualBlocks` to create a transparent RichText
+  spacer. Text after an image resource must land on the same y-coordinate as the structured resource frame bottom and
+  matching gutter row.
 
 ## 한국어
 
@@ -362,6 +368,9 @@ ctest --test-dir build --output-on-failure -L cpp_regression
   표면 selection-to-RAW 매핑 및 좌표 클램프 검증이 포함된다. 렌더 모드의 native edit surface가 RAW XML이
   아니라 visible logical text인지, 그리고 입력/Backspace가 즉시 RAW `.wsnbody` mutation으로 변환되는지도
   함께 검증한다.
+- 리소스 프레임 회귀는 본문 RichText HTML이 이미지 프레임을 직접 품지 않더라도 C++ display/resource
+  presentation 경로가 `htmlTokens`와 `resourceVisualBlocks`로 투명 spacer를 만들어, 이미지 리소스 아래의
+  텍스트와 거터 row가 같은 y 좌표로 정렬되는지 확인한다.
 - editor renderer 회귀에는 RAW `<bold>` / `<italic>` 인라인 스타일 태그가 literal XML 문자열이 아니라
   RichText 스타일 span으로 투영되는지 확인하는 케이스가 포함된다.
 - 기준: 파일 경로, 명령, API 이름, 세부 변경 이력은 위 영어 본문을 원문 기준으로 유지한다.

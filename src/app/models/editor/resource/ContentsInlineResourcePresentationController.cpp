@@ -130,6 +130,33 @@ namespace
         return QSize(frameWidth, frameHeight);
     }
 
+    bool htmlFragmentOwnsBlockFlow(const QString& htmlFragment)
+    {
+        const QString trimmedFragment = htmlFragment.trimmed();
+        return trimmedFragment.startsWith(QStringLiteral("<div"))
+            || trimmedFragment.startsWith(QStringLiteral("<hr"))
+            || trimmedFragment.startsWith(QStringLiteral("<p"))
+            || trimmedFragment.startsWith(QStringLiteral("<table"))
+            || trimmedFragment.startsWith(QStringLiteral("<ul"))
+            || trimmedFragment.startsWith(QStringLiteral("<ol"))
+            || trimmedFragment.startsWith(QStringLiteral("<blockquote"))
+            || trimmedFragment.startsWith(QStringLiteral("<pre"));
+    }
+
+    qreal resourceVisualHeightFromBlock(const QVariant& value)
+    {
+        const QVariantMap block = value.toMap();
+        bool ok = false;
+        qreal height = block.value(QStringLiteral("height")).toReal(&ok);
+        if ((!ok || !std::isfinite(height) || height <= 0.0)
+            && block.contains(QStringLiteral("visualHeight")))
+        {
+            ok = false;
+            height = block.value(QStringLiteral("visualHeight")).toReal(&ok);
+        }
+        return ok && std::isfinite(height) && height > 0.0 ? height : 0.0;
+    }
+
     QString frameCacheFilePath(
         const QString& imagePath,
         const QString& frameLabel,
@@ -350,6 +377,64 @@ QString ContentsInlineResourcePresentationController::inlineResourcePlaceholderH
 QString ContentsInlineResourcePresentationController::resourcePlaceholderBlockHtml() const
 {
     return inlineResourcePlaceholderHtml(m_resourceEditorPlaceholderLineCount);
+}
+
+QString ContentsInlineResourcePresentationController::editorSurfaceHtmlWithResourceVisualBlocks(
+    const QVariant& htmlTokens,
+    const QVariant& resourceVisualBlocks,
+    const QString& fallbackEditorHtml) const
+{
+    const QVariantList tokens = htmlTokens.toList();
+    if (tokens.isEmpty())
+    {
+        return fallbackEditorHtml;
+    }
+
+    const QVariantList visualBlocks = resourceVisualBlocks.toList();
+    QString html;
+    html.reserve(std::max<qsizetype>(256, fallbackEditorHtml.size()));
+    int resourceIndex = 0;
+    for (const QVariant& tokenValue : tokens)
+    {
+        const QVariantMap token = tokenValue.toMap();
+        const QString renderDelegateType =
+            token.value(QStringLiteral("renderDelegateType")).toString();
+        if (renderDelegateType == QStringLiteral("resource"))
+        {
+            const QVariant visualBlock = resourceIndex >= 0 && resourceIndex < visualBlocks.size()
+                ? visualBlocks.at(resourceIndex)
+                : QVariant{};
+            ++resourceIndex;
+            const qreal visualHeight = resourceVisualHeightFromBlock(visualBlock);
+            if (visualHeight <= 0.0)
+            {
+                html.append(resourcePlaceholderBlockHtml());
+                continue;
+            }
+
+            const int lineHeight = std::max(1, static_cast<int>(std::lround(visualHeight + 2.0)));
+            html.append(QStringLiteral(
+                            "<p style=\"margin-top:0px;margin-bottom:0px;line-height:%1px;"
+                            "font-size:1px;color:transparent;\">&nbsp;</p>")
+                            .arg(lineHeight));
+            continue;
+        }
+
+        const QString fragment = token.value(QStringLiteral("html")).toString();
+        const bool ownsBlockFlow =
+            token.value(QStringLiteral("ownsBlockFlow")).toBool()
+            || htmlFragmentOwnsBlockFlow(fragment);
+        if (ownsBlockFlow)
+        {
+            html.append(fragment);
+        }
+        else
+        {
+            html.append(fragment.isEmpty() ? resourcePlaceholderBlockHtml() : paragraphHtml(fragment));
+        }
+    }
+
+    return html.isEmpty() ? fallbackEditorHtml : html;
 }
 
 QString ContentsInlineResourcePresentationController::resourceEntryFrameLabel(

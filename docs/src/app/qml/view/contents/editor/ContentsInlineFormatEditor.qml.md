@@ -44,6 +44,9 @@ Wraps the live `LV.TextEditor` used by the note document surface.
   empty format wrappers, do not paint native selection because they do not represent visible editor content.
 - Parser-owned `documentBlocks` are used first for atomic resource selection and visual-block geometry. Renderer-owned
   `normalizedHtmlBlocks` remain compatibility metadata for HTML projection spans, not a separate selection layer.
+- The visible RichText overlay receives an already flow-corrected `renderedText` from the C++ display backend.
+  Resource frames are still painted by direct visual delegates, while the backend-provided transparent spacer keeps
+  ordinary text after a frame in the same y-coordinate flow as the gutter and minimap geometry.
 - The rendered overlay visibility follows rendered projection availability, not native composition state. During typing
   and IME composition the RichText projection stays mounted so previously formatted lines do not collapse to the
   plain logical editor surface.
@@ -70,10 +73,10 @@ Wraps the live `LV.TextEditor` used by the note document surface.
   the measured body text height.
 - Keeps a disabled, transparent plain `TextEdit` geometry probe in sync with the logical display text for pointer hit
   testing and visible-logical selection mapping.
-- Reports `displayTextContentHeight` from the maximum of the RichText overlay height and the structured resource visual
-  layout height while rendered output is visible, then reports `displayContentHeight` as that body height plus the
-  restored bottom inset. `displayBodyHeight` stays equal to the measured body so terminal hit testing does not treat
-  the bottom breathing room as rendered text.
+- Reports `displayTextContentHeight` from the RichText overlay height while rendered output is visible. That overlay
+  already contains backend-generated resource flow spacers, so `renderedOverlay.contentHeight` is the visual body flow
+  height. `displayContentHeight` adds the restored bottom inset, while `displayBodyHeight` stays equal to the measured
+  body so terminal hit testing does not treat the bottom breathing room as rendered text.
 - Mounts `ContentsEditorGeometryProvider` as the only view-owned geometry adapter for chrome measurements. The adapter
   receives the logical TextEdit geometry item, explicit structured resource visual blocks, measures visible line rows
   and logical-line row rectangles, then publishes value snapshots. Line-number text rows are measured against the plain
@@ -93,6 +96,9 @@ Wraps the live `LV.TextEditor` used by the note document surface.
 - Pointer selection checks measured structured resource visual rows before falling back to plain-text `positionAt(...)`.
   A hit inside an image/resource frame selects the atomic resource boundary for that block, so the frame cannot behave
   like it contains selectable virtual text lines.
+- Pointer selection below a structured resource frame subtracts the resource visual-height delta before asking the
+  plain geometry probe for a logical text offset. This keeps clicks on prose below an image aligned with the text that
+  was shifted down by the transparent overlay spacer.
 - Resource-frame gutter anchoring assumes the resource block contributes the generated frame image height reported by
   `resourceVisualBlocks`. The resource presentation controller emits visual block records for QML delegates; the
   geometry path no longer parses rendered HTML to find the frame height. The next gutter row is expected to land at

@@ -27,8 +27,9 @@ Hosts the note document surface after `ContentsEditorDisplayBackend` has mounted
 - Passes the projection-owned `coordinateMapper` object into the inline editor for visible-logical to RAW selection
   mapping; the view layer does not receive the raw logical/source offset table.
 - Passes parser-owned `documentBlocks` and resolved `resourceVisualBlocks` through to the inline editor so resource
-  selection and geometry use explicit atomic visual blocks. Renderer-owned `normalizedHtmlBlocks` remain compatibility
-  metadata for HTML projection spans.
+  selection and geometry use explicit atomic visual blocks. The `editorSurfaceHtml` it receives from
+  `ContentViewLayout.qml` is already flow-corrected from renderer `htmlTokens` and `resourceVisualBlocks` by the C++
+  display backend. Renderer-owned `normalizedHtmlBlocks` remain compatibility metadata for HTML projection spans.
 - Keeps the inline editor as the only place where the RichText editor-surface overlay is painted.
 - Emits `sourceTextEdited(text)` upward when the user changes the RAW text buffer.
 - Tag-management shortcuts emit through the same `sourceTextEdited(text)` path after the live editor buffer is

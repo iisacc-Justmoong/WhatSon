@@ -102,6 +102,26 @@ void WhatSonCppRegressionTests::resourceRenderer_resolvesIiXmlResourceTagsAndStr
     QCOMPARE(visualBlock.value(QStringLiteral("visualHeight")).toInt(), 260);
     QCOMPARE(visualBlock.value(QStringLiteral("imageSource")).toString(), frameImageSource);
     QVERIFY(visualBlock.value(QStringLiteral("renderable")).toBool());
+    const QVariantList htmlTokens{
+        QVariantMap{
+            {QStringLiteral("html"), QStringLiteral("<p style=\"margin-top:0px;margin-bottom:0px;\">&nbsp;</p>")},
+            {QStringLiteral("ownsBlockFlow"), true},
+            {QStringLiteral("renderDelegateType"), QStringLiteral("resource")},
+        },
+        QVariantMap{
+            {QStringLiteral("html"), QStringLiteral("<p style=\"margin-top:0px;margin-bottom:0px;\">After</p>")},
+            {QStringLiteral("ownsBlockFlow"), true},
+            {QStringLiteral("renderDelegateType"), QStringLiteral("text")},
+        },
+    };
+    const QString flowHtml = inlinePresentation.editorSurfaceHtmlWithResourceVisualBlocks(
+        htmlTokens,
+        QVariantList{visualBlock},
+        renderResult.documentHtml);
+    QVERIFY(!flowHtml.contains(QStringLiteral("<img")));
+    QVERIFY(flowHtml.contains(QStringLiteral("line-height:262px")));
+    QVERIFY(flowHtml.contains(QStringLiteral("font-size:1px;color:transparent")));
+    QVERIFY(flowHtml.contains(QStringLiteral(">After</p>")));
 
     const QString fullWidthInlineHtml =
         inlinePresentation.renderEditorSurfaceHtmlWithInlineResources(

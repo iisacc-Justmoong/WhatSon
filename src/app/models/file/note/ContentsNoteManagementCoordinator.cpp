@@ -587,23 +587,26 @@ void ContentsNoteManagementCoordinator::dispatchNextRequest()
         return;
     }
 
+    QObject* deliveryTarget = QCoreApplication::instance();
+    if (deliveryTarget == nullptr)
+    {
+        deliveryTarget = this;
+    }
+
     QPointer<ContentsNoteManagementCoordinator> coordinatorGuard(this);
-    QThreadPool::globalInstance()->start([coordinatorGuard, request]()
+    QThreadPool::globalInstance()->start([coordinatorGuard, deliveryTarget, request]()
     {
         const Result result = ContentsNoteManagementCoordinator::performWorkerRequest(request);
-        if (coordinatorGuard != nullptr)
-        {
-            QMetaObject::invokeMethod(
-                coordinatorGuard,
-                [coordinatorGuard, result]()
+        QMetaObject::invokeMethod(
+            deliveryTarget,
+            [coordinatorGuard, result]()
+            {
+                if (coordinatorGuard != nullptr)
                 {
-                    if (coordinatorGuard != nullptr)
-                    {
-                        coordinatorGuard->handleRequestFinished(result);
-                    }
-                },
-                Qt::QueuedConnection);
-        }
+                    coordinatorGuard->handleRequestFinished(result);
+                }
+            },
+            Qt::QueuedConnection);
     });
 }
 

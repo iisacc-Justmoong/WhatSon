@@ -59,9 +59,12 @@
   snapshot is already selected for async persistence.
 - `ContentsNoteManagementCoordinator` now owns editor-adjacent note-management orchestration:
   - direct `.wsnote` persistence serialization
+  - lazy selected-note body reads from the resolved `.wsnote` package
   - header-only `openCount` / `lastOpenedAt` updates
   - tracked-stat refresh follow-up
   - post-persist metadata resync back into the bound content view-model
+- Its worker-lane completions are delivered through the application object and guarded back to the coordinator, so
+  editor teardown can safely drop late selected-note body-read results after the bridge/coordinator is gone.
 - Shared derived-statistic helpers now live under `src/app/models/file/statistic/WhatSonNoteFileStatSupport.*` rather than in
   this note-package directory.
 - `.wsnhead` now carries a dedicated `fileStat` block for numeric detail-panel metadata.

@@ -15,5 +15,8 @@ Declares the C++ backend object that owns live note-editor display wiring for `C
   a generic QObject surface.
 - Provides structured inline resource visual block helpers for QML. The editor surface delegates render those blocks
   directly, and the geometry adapter reads their heights instead of parsing rendered HTML.
+- Provides `editorSurfaceHtmlWithResourceVisualBlocks(...)` so the live RichText overlay receives C++-built resource
+  flow spacers derived from `htmlTokens` and `resourceVisualBlocks`. QML displays the resulting HTML instead of
+  rebuilding block-flow markup itself.
 - Does not own `requestViewHook(...)` or a panel-controller relay. `ContentViewLayout.qml` owns that view-local hook
   dispatch directly.

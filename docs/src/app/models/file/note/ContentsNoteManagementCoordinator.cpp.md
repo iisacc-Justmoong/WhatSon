@@ -47,6 +47,9 @@
   - `loadNoteBodyTextForNote(noteId, noteDirectoryPath = {})` resolves the note path on the main thread, preferring
     the caller-provided path when present
   - the actual `.wsnote` read runs on the worker lane
+  - worker completion delivery is posted through the application object and then guarded back to the coordinator,
+    so destroying an editor selection bridge while a lazy body read is still in flight drops the completion instead of
+    dereferencing a destroyed coordinator
   - each load keeps its own request sequence
   - `noteBodyTextLoaded(sequence, noteId, text, success, errorMessage)` returns canonical persisted note source text
     back to the selection bridge, falling back to plain body text only when a note package has no separate RAW source
@@ -90,5 +93,7 @@
   from the persisted `.wsnbody`.
 - A newer same-note body-read request must not be discarded merely because an older body-read for that note is already
   in flight.
+- An in-flight lazy body-read completion must be safe when its owning coordinator was already destroyed by an editor
+  selection bridge teardown.
 - When the caller supplied an explicit note-directory path, the worker request must read or reconcile that package
   rather than re-resolving from `noteId` alone.

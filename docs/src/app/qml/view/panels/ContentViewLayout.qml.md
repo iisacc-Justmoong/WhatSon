@@ -70,7 +70,9 @@ surface.
   catches up instead of falling back to RAW tag text.
 - The note editor flow receives parser-owned `documentBlocks` and explicit `resourceVisualBlocks` from
   `ContentsEditorDisplayBackend` next to the editor HTML projection. Gutter geometry and resource hit testing must use
-  those structured visual blocks instead of parsing or rewriting the rendered HTML string.
+  those structured visual blocks instead of parsing or rewriting image-frame HTML. The editor HTML projection is
+  flow-corrected by `ContentsEditorDisplayBackend.editorSurfaceHtmlWithResourceVisualBlocks(...)`, which turns resource
+  tokens into transparent RichText spacers sized from the same visual blocks.
 - `ContentViewLayout.qml` does not forward `presentationProjection.logicalCursorPosition` into
   `ContentsStructuredDocumentFlow.qml`; the live `ContentsInlineFormatEditor.qml` native editor owns the visible
   logical cursor and exposes the mapped RAW cursor back upward through `editorCursorPosition`.

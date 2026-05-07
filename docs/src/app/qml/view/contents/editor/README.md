@@ -34,7 +34,10 @@ Editor-facing QML view components for the center content surface.
   session
   source, the flow keeps the last ready logical text and editor-surface HTML instead of falling back to RAW source or
   plain logical text. The parser-owned `documentBlocks` stream and `resourceVisualBlocks` are forwarded so resource
-  selection and geometry treat resources as atomic visual blocks without painting a second selection layer. Renderer
+  selection and geometry treat resources as atomic visual blocks without painting a second selection layer.
+  `ContentViewLayout.qml` asks the C++ display backend to combine `htmlTokens` and `resourceVisualBlocks` into a
+  flow-corrected `editorSurfaceHtml`, so prose after an image frame is pushed to the same y-coordinate reported by the
+  structured visual geometry before the inline editor paints it. Renderer
   `normalizedHtmlBlocks` stay as HTML projection compatibility metadata. It also binds explicit formatting and body-tag shortcuts to the C++ tag insertion
   controller so `Cmd/Ctrl+B/I/U`, `Cmd/Ctrl+Shift+E` for highlight, and body commands such as callout/agenda insert or
   wrap proprietary RAW tags before the normal session persistence path runs. These commands read the live inline editor
