@@ -175,25 +175,32 @@ void WhatSonCppRegressionTests::qmlInlineFormatEditor_keepsNativeTextEditInputUn
     QVERIFY(inlineEditorSource.contains(QStringLiteral("function eventRequestsPasteShortcut(event)")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("function eventRequestsInlineFormatShortcut(event)")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("function eventRequestsBodyTagShortcut(event)")));
-    QVERIFY(inlineEditorSource.contains(QStringLiteral("const pureModifierKey = key === Qt.Key_Alt")));
-    QVERIFY(inlineEditorSource.contains(QStringLiteral("if (pureModifierKey)")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("property string shortcutPlatformName: Qt.platform.os")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("function tagManagementShortcutRequestForEvent(event)")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("function standardizedTagManagementKeyEvent(event, source)")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("function platformShortcutSequence(suffix)")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("function triggerTagManagementShortcut(key, modifiers)")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("function triggerStandardTagManagementShortcut(key, standardModifiers)")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("function triggerPrimaryTagManagementShortcut(key, extraModifiers)")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("event.accepted = false;")));
-    QVERIFY(inlineEditorSource.contains(QStringLiteral("sequence: \"Ctrl+Alt+C\"")));
-    QVERIFY(inlineEditorSource.contains(QStringLiteral("sequence: \"Meta+Alt+C\"")));
-    QVERIFY(inlineEditorSource.contains(QStringLiteral("sequence: \"Ctrl+Alt+A\"")));
-    QVERIFY(inlineEditorSource.contains(QStringLiteral("sequence: \"Meta+Alt+A\"")));
-    QVERIFY(inlineEditorSource.contains(QStringLiteral("sequence: \"Ctrl+Shift+E\"")));
-    QVERIFY(inlineEditorSource.contains(QStringLiteral("sequence: \"Meta+Shift+E\"")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("standardPrimaryShortcutModifier")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("tagManagementShortcutRequest")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("\"standardModifiers\"")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("\"nativeModifiers\"")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("sequence: control.platformShortcutSequence(\"B\")")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("sequence: control.platformShortcutSequence(\"I\")")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("sequence: control.platformShortcutSequence(\"U\")")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("sequence: control.platformShortcutSequence(\"Alt+C\")")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("sequence: control.platformShortcutSequence(\"Alt+A\")")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("sequence: control.platformShortcutSequence(\"Shift+E\")")));
     QVERIFY(!inlineEditorSource.contains(QStringLiteral("sequence: \"Ctrl+H\"")));
     QVERIFY(!inlineEditorSource.contains(QStringLiteral("sequence: \"Meta+H\"")));
     QVERIFY(!inlineEditorSource.contains(QStringLiteral("sequence: \"Ctrl+Shift+H\"")));
     QVERIFY(!inlineEditorSource.contains(QStringLiteral("sequence: \"Meta+Shift+H\"")));
     QVERIFY(!inlineEditorSource.contains(QStringLiteral("Qt.Key_H")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("event.matches(StandardKey.Paste)")));
-    QVERIFY(inlineEditorSource.contains(QStringLiteral("!control.eventRequestsPasteShortcut(event)")));
-    QVERIFY(inlineEditorSource.contains(QStringLiteral("!control.eventRequestsInlineFormatShortcut(event)")));
-    QVERIFY(inlineEditorSource.contains(QStringLiteral("!control.eventRequestsBodyTagShortcut(event)")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("control.eventRequestsPasteShortcut(shortcutEvent)")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("!shortcutEvent.tagManagementShortcut")));
     QVERIFY(!inlineEditorSource.contains(QStringLiteral("property var shortcutKeyPressHandler")));
     QVERIFY(!inlineEditorSource.contains(QStringLiteral("property var modifierVerticalNavigationHandler")));
     QVERIFY(!inlineEditorSource.contains(QStringLiteral("handleMacModifierVerticalNavigation")));
@@ -1895,6 +1902,7 @@ Item {
     property bool handled: false
     property int handledKey: -1
     property int handledModifiers: 0
+    property int handledNativeModifiers: 0
     width: 360
     height: 96
 
@@ -1902,11 +1910,13 @@ Item {
         id: editor
         objectName: "inlineFormatEditorUnderTest"
         anchors.fill: parent
+        shortcutPlatformName: "windows"
         text: "Alpha beta"
         tagManagementKeyPressHandler: function (event) {
             root.handled = true;
             root.handledKey = Number(event.key) || -1;
             root.handledModifiers = Number(event.modifiers) || 0;
+            root.handledNativeModifiers = Number(event.nativeModifiers) || 0;
             event.accepted = true;
             return true;
         }
@@ -1952,6 +1962,7 @@ Item {
     rootObject->setProperty("handled", false);
     rootObject->setProperty("handledKey", -1);
     rootObject->setProperty("handledModifiers", 0);
+    rootObject->setProperty("handledNativeModifiers", 0);
 
     QTest::keyClick(&window, Qt::Key_E, Qt::ControlModifier | Qt::ShiftModifier);
 
@@ -1963,6 +1974,7 @@ Item {
     rootObject->setProperty("handled", false);
     rootObject->setProperty("handledKey", -1);
     rootObject->setProperty("handledModifiers", 0);
+    rootObject->setProperty("handledNativeModifiers", 0);
 
     QTest::keyClick(&window, Qt::Key_C, Qt::ControlModifier | Qt::AltModifier);
 
@@ -1974,6 +1986,7 @@ Item {
     rootObject->setProperty("handled", false);
     rootObject->setProperty("handledKey", -1);
     rootObject->setProperty("handledModifiers", 0);
+    rootObject->setProperty("handledNativeModifiers", 0);
 
     QTest::keyClick(&window, Qt::Key_A, Qt::ControlModifier | Qt::AltModifier);
 
@@ -1981,6 +1994,20 @@ Item {
     QCOMPARE(rootObject->property("handledKey").toInt(), static_cast<int>(Qt::Key_A));
     QVERIFY(rootObject->property("handledModifiers").toInt() & static_cast<int>(Qt::ControlModifier));
     QVERIFY(rootObject->property("handledModifiers").toInt() & static_cast<int>(Qt::AltModifier));
+
+    inlineEditor->setProperty("shortcutPlatformName", QStringLiteral("osx"));
+    rootObject->setProperty("handled", false);
+    rootObject->setProperty("handledKey", -1);
+    rootObject->setProperty("handledModifiers", 0);
+    rootObject->setProperty("handledNativeModifiers", 0);
+
+    QTest::keyClick(&window, Qt::Key_B, Qt::MetaModifier);
+
+    QTRY_VERIFY(rootObject->property("handled").toBool());
+    QCOMPARE(rootObject->property("handledKey").toInt(), static_cast<int>(Qt::Key_B));
+    QVERIFY(rootObject->property("handledModifiers").toInt() & static_cast<int>(Qt::ControlModifier));
+    QVERIFY(!(rootObject->property("handledModifiers").toInt() & static_cast<int>(Qt::MetaModifier)));
+    QVERIFY(rootObject->property("handledNativeModifiers").toInt() & static_cast<int>(Qt::MetaModifier));
 }
 
 void WhatSonCppRegressionTests::qmlStructuredDocumentFlow_appliesInlineFormatShortcutToSelectedRawRange()
@@ -2015,6 +2042,7 @@ Item {
         }
         editorSurfaceHtml: projection.logicalText
         logicalText: projection.logicalText
+        shortcutPlatformName: "windows"
         sourceText: "Alpha beta"
 
         onSourceTextEdited: function (text) {
@@ -2134,6 +2162,7 @@ Item {
 
     rootObject->setProperty("committedText", QString());
     documentFlow->setProperty("sourceText", QStringLiteral("Meta\nCallout"));
+    documentFlow->setProperty("shortcutPlatformName", QStringLiteral("osx"));
     QTRY_COMPARE(inlineEditor->property("text").toString(), QStringLiteral("Meta\nCallout"));
     QVERIFY(QMetaObject::invokeMethod(
         inlineEditor,
@@ -2152,6 +2181,7 @@ Item {
 
     rootObject->setProperty("committedText", QString());
     documentFlow->setProperty("sourceText", QStringLiteral("Intro"));
+    documentFlow->setProperty("shortcutPlatformName", QStringLiteral("windows"));
     QTRY_COMPARE(inlineEditor->property("text").toString(), QStringLiteral("Intro"));
     QVERIFY(QMetaObject::invokeMethod(
         inlineEditor,
@@ -2169,6 +2199,7 @@ Item {
 
     rootObject->setProperty("committedText", QString());
     documentFlow->setProperty("sourceText", QStringLiteral("Meta agenda"));
+    documentFlow->setProperty("shortcutPlatformName", QStringLiteral("osx"));
     QTRY_COMPARE(inlineEditor->property("text").toString(), QStringLiteral("Meta agenda"));
     const int metaAgendaEnd = QStringLiteral("Meta agenda").size();
     QVERIFY(QMetaObject::invokeMethod(
@@ -2189,6 +2220,7 @@ Item {
 
     rootObject->setProperty("committedText", QString());
     documentFlow->setProperty("sourceText", QStringLiteral("Glow text"));
+    documentFlow->setProperty("shortcutPlatformName", QStringLiteral("windows"));
     QTRY_COMPARE(inlineEditor->property("text").toString(), QStringLiteral("Glow text"));
     QVERIFY(QMetaObject::invokeMethod(
         inlineEditor,
@@ -2876,9 +2908,9 @@ void WhatSonCppRegressionTests::qmlInlineFormatEditor_keepsKeyboardSelectionAndO
     QVERIFY(!inlineEditorControllerSource.contains(QStringLiteral("ContentsInlineFormatEditorController.qml")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("Keys.onPressed: function (event)")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("key !== Qt.Key_Backspace")));
-    QVERIFY(inlineEditorSource.contains(QStringLiteral("control.eventRequestsPasteShortcut(event)")));
-    QVERIFY(inlineEditorSource.contains(QStringLiteral("control.eventRequestsInlineFormatShortcut(event)")));
-    QVERIFY(inlineEditorSource.contains(QStringLiteral("control.eventRequestsBodyTagShortcut(event)")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("standardizedTagManagementKeyEvent(event, \"key-event\")")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("control.eventRequestsPasteShortcut(shortcutEvent)")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("!shortcutEvent.tagManagementShortcut")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("event.matches(StandardKey.Paste)")));
     QVERIFY(surfaceGuardHeader.contains(QStringLiteral("class ContentsEditorSurfaceGuardController")));
     QVERIFY(resourceImportControllerHeader.contains(QStringLiteral("editorInputPolicyAdapterChanged")));

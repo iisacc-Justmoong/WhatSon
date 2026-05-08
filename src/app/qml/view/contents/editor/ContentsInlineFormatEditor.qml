@@ -35,6 +35,7 @@ Item {
     property bool overwriteMode: false
     property bool persistentSelection: true
     property int previousRawCursorPosition: 0
+    property string shortcutPlatformName: Qt.platform.os
     property int visiblePointerClickCount: 0
     property real visiblePointerLastClickTimestamp: 0
     property real visiblePointerLastClickX: 0
@@ -74,6 +75,7 @@ Item {
             && !control.nativeSelectionActive
             && !control.atomicResourceCursorActive
     readonly property bool preferNativeInputHandling: true
+    readonly property int standardPrimaryShortcutModifier: inlineEditorController.standardPrimaryShortcutModifier()
     property bool selectByKeyboard: true
     property bool selectByMouse: true
     readonly property string selectedText: textInput.selectedText
@@ -93,6 +95,10 @@ Item {
 
     focus: true
 
+    readonly property bool tagManagementShortcutEnabled: control.focused
+            && control.tagManagementKeyPressHandler !== null
+            && control.tagManagementKeyPressHandler !== undefined
+
     function clearCachedSelectionSnapshot() {
     }
 
@@ -110,34 +116,59 @@ Item {
     }
 
     function eventRequestsBodyTagShortcut(event) {
-        const key = event.key;
-        const pureModifierKey = key === Qt.Key_Alt
-                || key === Qt.Key_Control
-                || key === Qt.Key_Meta
-                || key === Qt.Key_Shift;
-        if (pureModifierKey)
-            return false;
-        const modifiers = Number(event.modifiers) || 0;
-        const commandHeld = (modifiers & Qt.ControlModifier) || (modifiers & Qt.MetaModifier);
-        const optionHeld = modifiers & Qt.AltModifier;
-        return Boolean((modifiers !== 0 && (key === Qt.Key_Return || key === Qt.Key_Enter))
-                       || (commandHeld && optionHeld));
+        if (event.bodyTagShortcut !== undefined)
+            return Boolean(event.bodyTagShortcut);
+        const request = control.tagManagementShortcutRequestForEvent(event);
+        return Boolean(request.bodyTagShortcut);
     }
 
     function eventRequestsInlineFormatShortcut(event) {
-        const modifiers = Number(event.modifiers) || 0;
-        const commandHeld = (modifiers & Qt.ControlModifier) || (modifiers & Qt.MetaModifier);
-        const optionHeld = modifiers & Qt.AltModifier;
-        const shiftHeld = modifiers & Qt.ShiftModifier;
-        return Boolean(commandHeld && !optionHeld
-                       && (event.key === Qt.Key_B
-                           || event.key === Qt.Key_I
-                           || event.key === Qt.Key_U
-                           || (shiftHeld && event.key === Qt.Key_E)));
+        if (event.inlineFormatShortcut !== undefined)
+            return Boolean(event.inlineFormatShortcut);
+        const request = control.tagManagementShortcutRequestForEvent(event);
+        return Boolean(request.inlineFormatShortcut);
     }
 
     function eventRequestsPasteShortcut(event) {
-        return event.matches(StandardKey.Paste);
+        return event.matches !== undefined && event.matches(StandardKey.Paste);
+    }
+
+    function platformShortcutSequence(suffix) {
+        return inlineEditorController.platformShortcutSequence(
+                    suffix === undefined || suffix === null ? "" : String(suffix),
+                    control.shortcutPlatformName);
+    }
+
+    function tagManagementShortcutRequestForEvent(event) {
+        const nativeModifiers = event.nativeModifiers !== undefined
+                ? Number(event.nativeModifiers) || 0
+                : Number(event.modifiers) || 0;
+        return inlineEditorController.tagManagementShortcutRequest(
+                    Number(event.key) || 0,
+                    nativeModifiers,
+                    control.shortcutPlatformName);
+    }
+
+    function standardizedTagManagementKeyEvent(event, source) {
+        const request = control.tagManagementShortcutRequestForEvent(event);
+        return {
+            "accepted": false,
+            "bodyTagShortcut": Boolean(request.bodyTagShortcut),
+            "inlineFormatShortcut": Boolean(request.inlineFormatShortcut),
+            "key": Number(request.key) || 0,
+            "matches": function (standardKey) {
+                return event.matches !== undefined && event.matches(standardKey);
+            },
+            "modifiers": Number(request.standardModifiers) || 0,
+            "nativeModifiers": Number(request.nativeModifiers) || 0,
+            "platformName": String(request.platformName || ""),
+            "platformPrimaryModifier": Number(request.platformPrimaryModifier) || 0,
+            "primaryHeld": Boolean(request.primaryHeld),
+            "pureModifierKey": Boolean(request.pureModifierKey),
+            "shortcutSource": source === undefined || source === null ? "key-event" : String(source),
+            "standardModifiers": Number(request.standardModifiers) || 0,
+            "tagManagementShortcut": Boolean(request.tagManagementShortcut)
+        };
     }
 
     function forceActiveFocus() {
@@ -879,11 +910,11 @@ Item {
     }
 
     function handleTagManagementKeyPress(event) {
-        const key = event.key;
+        const shortcutEvent = control.standardizedTagManagementKeyEvent(event, "key-event");
+        const key = Number(shortcutEvent.key) || 0;
         if (key !== Qt.Key_Backspace
-                && !control.eventRequestsPasteShortcut(event)
-                && !control.eventRequestsInlineFormatShortcut(event)
-                && !control.eventRequestsBodyTagShortcut(event)) {
+                && !control.eventRequestsPasteShortcut(shortcutEvent)
+                && !shortcutEvent.tagManagementShortcut) {
             event.accepted = false;
             return;
         }
@@ -894,27 +925,45 @@ Item {
             return;
         }
 
-        const handled = Boolean(control.tagManagementKeyPressHandler(event));
+        const handled = Boolean(control.tagManagementKeyPressHandler(shortcutEvent));
         event.accepted = handled;
+        shortcutEvent.accepted = handled;
         if (!handled)
             event.accepted = false;
     }
 
-    function syntheticTagManagementKeyEvent(key, modifiers) {
+    function syntheticTagManagementKeyEvent(key, modifiers, source) {
         return {
             "accepted": false,
             "key": key,
             "matches": function (standardKey) {
                 return false;
             },
-            "modifiers": modifiers
+            "modifiers": modifiers,
+            "nativeModifiers": modifiers,
+            "shortcutSource": source === undefined || source === null ? "shortcut" : String(source)
         };
     }
 
     function triggerTagManagementShortcut(key, modifiers) {
-        const event = syntheticTagManagementKeyEvent(key, modifiers);
+        const event = syntheticTagManagementKeyEvent(key, modifiers, "native-shortcut");
         control.handleTagManagementKeyPress(event);
         return event.accepted === true;
+    }
+
+    function triggerStandardTagManagementShortcut(key, standardModifiers) {
+        const nativeModifiers = inlineEditorController.platformShortcutModifiers(
+                    Number(standardModifiers) || 0,
+                    control.shortcutPlatformName);
+        const event = syntheticTagManagementKeyEvent(key, nativeModifiers, "standard-shortcut");
+        control.handleTagManagementKeyPress(event);
+        return event.accepted === true;
+    }
+
+    function triggerPrimaryTagManagementShortcut(key, extraModifiers) {
+        return control.triggerStandardTagManagementShortcut(
+                    key,
+                    control.standardPrimaryShortcutModifier | (Number(extraModifiers) || 0));
     }
 
     clip: true
@@ -1161,67 +1210,55 @@ Item {
     Shortcut {
         autoRepeat: false
         context: Qt.WindowShortcut
-        enabled: control.focused
-                 && control.tagManagementKeyPressHandler !== null
-                 && control.tagManagementKeyPressHandler !== undefined
-        sequence: "Ctrl+Alt+C"
+        enabled: control.tagManagementShortcutEnabled
+        sequence: control.platformShortcutSequence("B")
 
-        onActivated: control.triggerTagManagementShortcut(Qt.Key_C, Qt.ControlModifier | Qt.AltModifier)
+        onActivated: control.triggerPrimaryTagManagementShortcut(Qt.Key_B, 0)
     }
 
     Shortcut {
         autoRepeat: false
         context: Qt.WindowShortcut
-        enabled: control.focused
-                 && control.tagManagementKeyPressHandler !== null
-                 && control.tagManagementKeyPressHandler !== undefined
-        sequence: "Meta+Alt+C"
+        enabled: control.tagManagementShortcutEnabled
+        sequence: control.platformShortcutSequence("I")
 
-        onActivated: control.triggerTagManagementShortcut(Qt.Key_C, Qt.MetaModifier | Qt.AltModifier)
+        onActivated: control.triggerPrimaryTagManagementShortcut(Qt.Key_I, 0)
     }
 
     Shortcut {
         autoRepeat: false
         context: Qt.WindowShortcut
-        enabled: control.focused
-                 && control.tagManagementKeyPressHandler !== null
-                 && control.tagManagementKeyPressHandler !== undefined
-        sequence: "Ctrl+Alt+A"
+        enabled: control.tagManagementShortcutEnabled
+        sequence: control.platformShortcutSequence("U")
 
-        onActivated: control.triggerTagManagementShortcut(Qt.Key_A, Qt.ControlModifier | Qt.AltModifier)
+        onActivated: control.triggerPrimaryTagManagementShortcut(Qt.Key_U, 0)
     }
 
     Shortcut {
         autoRepeat: false
         context: Qt.WindowShortcut
-        enabled: control.focused
-                 && control.tagManagementKeyPressHandler !== null
-                 && control.tagManagementKeyPressHandler !== undefined
-        sequence: "Meta+Alt+A"
+        enabled: control.tagManagementShortcutEnabled
+        sequence: control.platformShortcutSequence("Alt+C")
 
-        onActivated: control.triggerTagManagementShortcut(Qt.Key_A, Qt.MetaModifier | Qt.AltModifier)
+        onActivated: control.triggerPrimaryTagManagementShortcut(Qt.Key_C, Qt.AltModifier)
     }
 
     Shortcut {
         autoRepeat: false
         context: Qt.WindowShortcut
-        enabled: control.focused
-                 && control.tagManagementKeyPressHandler !== null
-                 && control.tagManagementKeyPressHandler !== undefined
-        sequence: "Ctrl+Shift+E"
+        enabled: control.tagManagementShortcutEnabled
+        sequence: control.platformShortcutSequence("Alt+A")
 
-        onActivated: control.triggerTagManagementShortcut(Qt.Key_E, Qt.ControlModifier | Qt.ShiftModifier)
+        onActivated: control.triggerPrimaryTagManagementShortcut(Qt.Key_A, Qt.AltModifier)
     }
 
     Shortcut {
         autoRepeat: false
         context: Qt.WindowShortcut
-        enabled: control.focused
-                 && control.tagManagementKeyPressHandler !== null
-                 && control.tagManagementKeyPressHandler !== undefined
-        sequence: "Meta+Shift+E"
+        enabled: control.tagManagementShortcutEnabled
+        sequence: control.platformShortcutSequence("Shift+E")
 
-        onActivated: control.triggerTagManagementShortcut(Qt.Key_E, Qt.MetaModifier | Qt.ShiftModifier)
+        onActivated: control.triggerPrimaryTagManagementShortcut(Qt.Key_E, Qt.ShiftModifier)
     }
 
     LV.TextEditor {

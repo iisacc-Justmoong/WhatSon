@@ -1,9 +1,12 @@
 #include "app/models/editor/input/ContentsEditorInputPolicyAdapter.hpp"
 
+#include <Qt>
 #include <QVariantMap>
 
 namespace
 {
+constexpr int standardPrimaryShortcutModifierValue = static_cast<int>(Qt::ControlModifier);
+
 QString normalizeTextValue(const QVariant& value)
 {
     QString text = value.isValid() && !value.isNull() ? value.toString() : QString{};
@@ -12,6 +15,39 @@ QString normalizeTextValue(const QVariant& value)
     text.replace(QChar(0x2028), QLatin1Char('\n'));
     text.replace(QChar(0x2029), QLatin1Char('\n'));
     return text;
+}
+
+bool platformUsesMetaPrimaryShortcut(const QString& platformName) noexcept
+{
+    const QString normalizedPlatformName = platformName.trimmed().toLower();
+    if (normalizedPlatformName.isEmpty())
+    {
+#if defined(Q_OS_MACOS) || defined(Q_OS_IOS)
+        return true;
+#else
+        return false;
+#endif
+    }
+
+    return normalizedPlatformName == QStringLiteral("osx")
+        || normalizedPlatformName == QStringLiteral("macos")
+        || normalizedPlatformName == QStringLiteral("darwin")
+        || normalizedPlatformName == QStringLiteral("ios");
+}
+
+bool shortcutKeyIsPureModifier(const int key) noexcept
+{
+    return key == Qt::Key_Alt
+        || key == Qt::Key_Control
+        || key == Qt::Key_Meta
+        || key == Qt::Key_Shift;
+}
+
+int primaryModifierCleared(const int modifiers) noexcept
+{
+    return modifiers
+        & ~static_cast<int>(Qt::ControlModifier)
+        & ~static_cast<int>(Qt::MetaModifier);
 }
 }
 
@@ -65,6 +101,94 @@ bool ContentsEditorInputPolicyAdapter::contextMenuSurfaceEnabled() const noexcep
 QString ContentsEditorInputPolicyAdapter::normalizedText(const QVariant& value) const
 {
     return normalizeTextValue(value);
+}
+
+int ContentsEditorInputPolicyAdapter::standardPrimaryShortcutModifier() const noexcept
+{
+    return standardPrimaryShortcutModifierValue;
+}
+
+int ContentsEditorInputPolicyAdapter::platformPrimaryShortcutModifier(const QString& platformName) const noexcept
+{
+    return static_cast<int>(
+        platformUsesMetaPrimaryShortcut(platformName) ? Qt::MetaModifier : Qt::ControlModifier);
+}
+
+int ContentsEditorInputPolicyAdapter::standardShortcutModifiers(
+    const int nativeModifiers,
+    const QString& platformName) const noexcept
+{
+    int standardModifiers = primaryModifierCleared(nativeModifiers);
+    if ((nativeModifiers & platformPrimaryShortcutModifier(platformName)) != 0)
+    {
+        standardModifiers |= standardPrimaryShortcutModifierValue;
+    }
+    return standardModifiers;
+}
+
+int ContentsEditorInputPolicyAdapter::platformShortcutModifiers(
+    const int standardModifiers,
+    const QString& platformName) const noexcept
+{
+    int nativeModifiers = primaryModifierCleared(standardModifiers);
+    if ((standardModifiers & standardPrimaryShortcutModifierValue) != 0)
+    {
+        nativeModifiers |= platformPrimaryShortcutModifier(platformName);
+    }
+    return nativeModifiers;
+}
+
+bool ContentsEditorInputPolicyAdapter::modifiersContainPlatformPrimaryShortcut(
+    const int modifiers,
+    const QString& platformName) const noexcept
+{
+    return (modifiers & platformPrimaryShortcutModifier(platformName)) != 0;
+}
+
+QString ContentsEditorInputPolicyAdapter::platformShortcutSequence(
+    const QString& suffix,
+    const QString& platformName) const
+{
+    const QString keySuffix = suffix.trimmed();
+    const QString primaryName = platformUsesMetaPrimaryShortcut(platformName)
+        ? QStringLiteral("Meta")
+        : QStringLiteral("Ctrl");
+    return keySuffix.isEmpty() ? primaryName : primaryName + QLatin1Char('+') + keySuffix;
+}
+
+QVariantMap ContentsEditorInputPolicyAdapter::tagManagementShortcutRequest(
+    const int key,
+    const int nativeModifiers,
+    const QString& platformName) const
+{
+    const int standardModifiers = standardShortcutModifiers(nativeModifiers, platformName);
+    const bool pureModifierKey = shortcutKeyIsPureModifier(key);
+    const bool primaryHeld = (standardModifiers & standardPrimaryShortcutModifierValue) != 0;
+    const bool optionHeld = (standardModifiers & static_cast<int>(Qt::AltModifier)) != 0;
+    const bool shiftHeld = (standardModifiers & static_cast<int>(Qt::ShiftModifier)) != 0;
+    const bool returnKey = key == Qt::Key_Return || key == Qt::Key_Enter;
+    const bool inlineFormatShortcut = !pureModifierKey
+        && primaryHeld
+        && !optionHeld
+        && (key == Qt::Key_B
+            || key == Qt::Key_I
+            || key == Qt::Key_U
+            || (shiftHeld && key == Qt::Key_E));
+    const bool bodyTagShortcut = !pureModifierKey
+        && ((standardModifiers != 0 && returnKey) || (primaryHeld && optionHeld));
+
+    return {
+        {QStringLiteral("bodyTagShortcut"), bodyTagShortcut},
+        {QStringLiteral("inlineFormatShortcut"), inlineFormatShortcut},
+        {QStringLiteral("key"), key},
+        {QStringLiteral("nativeModifiers"), nativeModifiers},
+        {QStringLiteral("platformName"), platformName},
+        {QStringLiteral("platformPrimaryModifier"), platformPrimaryShortcutModifier(platformName)},
+        {QStringLiteral("primaryHeld"), primaryHeld},
+        {QStringLiteral("pureModifierKey"), pureModifierKey},
+        {QStringLiteral("standardModifiers"), standardModifiers},
+        {QStringLiteral("tagManagementShortcut"), inlineFormatShortcut || bodyTagShortcut}
+    };
 }
 
 QVariantMap ContentsEditorInputPolicyAdapter::programmaticTextSyncPolicy(

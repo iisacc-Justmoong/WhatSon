@@ -62,8 +62,8 @@
 - The former `src/app/viewmodel` shard has been removed. Runtime controller sources that still affect behavior are
   registered from their owning model-domain shards, such as `models/navigationbar`, `models/panel`,
   `models/sidebar`, and `models/file/hierarchy/*`.
-- Non-format editor body tag sources are grouped under `src/app/models/editor/tags`; agenda and callout no longer use
-  separate build shards.
+- Editor body-format tag command and validation sources are grouped under `src/app/models/editor/tags`; agenda and callout
+  no longer use separate build shards.
 - Desktop trial builds pull in the dedicated trial activation sources from `src/extension/trial` and define `WHATSON_IS_TRIAL_BUILD=1` for the app target.
 - Android and iOS builds intentionally skip the trial sources because the mobile app does not participate in the desktop trial flow.
 - On Apple desktop trial builds, the app target also links the `Security` framework because the trial secure-store implementation uses the host keychain.

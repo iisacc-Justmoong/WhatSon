@@ -38,8 +38,8 @@
 - `format/ContentsPlainTextSourceMutator.*` owns plain-text RAW span replacement so ordinary typing no longer calls a
   renderer object to rewrite source.
 - `tags/ContentsEditorTagInsertionController.*` owns RAW tag insertion payloads for formatting tags such as `<bold>`
-  and `<italic>`, generated body tags such as `<agenda>`, `<callout>`, and `<break>`, and selected-range body tag
-  wrapping.
+  and `<italic>`, body-format tags such as `<agenda>`, `<callout>`, and `<break>`, and selected-range body tag
+  wrapping. `.wsnbody` direct body-block serialization for those tags remains owned by `src/app/models/file/note`.
 - `structure/ContentsStructuredDocument*` owns the structured document host, collection policy, focus policy, mutation
   policy, and blocks model used by `ContentsStructuredDocumentFlow.qml`.
 - `minimap/ContentsEditorVisualLineMetrics.*` owns minimap-facing visual-line row normalization from measured

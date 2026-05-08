@@ -7,6 +7,8 @@ Implements the shared semantic-tag lookup used by note-body persistence and edit
 - Normalizes tag-name checks through one case-folded path.
 - Exposes canonical document-block lookup helpers so parser, renderer, and QML host code can agree on when one source
   tag should become its own document block.
+- Treats `agenda`, `callout`, `resource`, and `break` as canonical note-body format blocks; `task` remains the canonical
+  agenda child tag.
 - Maps legacy title-like tags onto heading-style HTML spans using the same visual scale as the markdown heading preview:
   - `title` / `h1`
   - `subTitle` / `subtitle` / `h2`

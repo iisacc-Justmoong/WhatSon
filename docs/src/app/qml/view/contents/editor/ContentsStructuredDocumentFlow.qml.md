@@ -17,6 +17,8 @@ Hosts the note document surface after `ContentsEditorDisplayBackend` has mounted
   RAW cursor/selection offsets back to this host.
 - Mounts `ContentsEditorTagInsertionController` and binds the inline editor's tag-management key hook to the
   document flow.
+- Passes `shortcutPlatformName` into the inline editor so tests and platform shells can verify native-to-standard
+  Command/Ctrl shortcut compensation without duplicating shortcut policy in the document flow.
 - Handles explicit formatting/body tag shortcuts by asking the tag insertion controller to build the next RAW tag
   insertion payload from the live inline editor buffer, then applying that payload through the same live editor. The
   payload source must not lag behind the focused editor text while parent session bindings catch up.

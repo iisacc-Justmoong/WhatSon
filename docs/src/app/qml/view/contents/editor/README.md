@@ -40,7 +40,9 @@ Editor-facing QML view components for the center content surface.
   flow-corrected `editorSurfaceHtml`, so prose after an image frame is pushed to the same y-coordinate reported by the
   structured visual geometry before the inline editor paints it. Renderer
   `normalizedHtmlBlocks` stay as HTML projection compatibility metadata. It also binds explicit formatting and body-tag shortcuts to the C++ tag insertion
-  controller so `Cmd/Ctrl+B/I/U`, `Cmd/Ctrl+Shift+E` for highlight, and body commands such as callout/agenda insert or
+  controller through the C++ input controller's standardized shortcut event path. Native Meta on macOS/iOS and native
+  Control on Windows/Linux/other platforms are both normalized to the same standard primary modifier before `B/I/U`,
+  highlight, and body commands such as callout/agenda insert or
   wrap proprietary RAW tags before the normal session persistence path runs. These commands read the live inline editor
   buffer when constructing payloads so consecutive tag commands do not combine fresh selection offsets with stale parent
   `sourceText` bindings.
@@ -186,5 +188,6 @@ objects.
   정상 logical text와 RichText HTML을 유지하며 RAW `.wsnbody` source나 plain logical text로 fallback하지 않는다.
 - tag insertion: 명시적 포맷팅 및 본문 태그 단축키는 C++ tag insertion controller가 만든 RAW payload를
   적용한 뒤 일반 `sourceTextEdited` 경로로 저장한다. payload 생성은 live editor buffer를 기준으로 하며,
-  하이라이트는 `Cmd/Ctrl+Shift+E`를 사용한다.
+  C++ input controller가 native modifier를 표준 shortcut event로 정규화한다. macOS/iOS의 Meta와
+  Windows/Linux/기타의 Control은 내부적으로 같은 primary로 처리하고 하이라이트는 primary+`Shift+E`를 사용한다.
 - 변경 시: 위 영어 본문을 수정하면 이 한국어 하단 섹션도 함께 최신 상태로 맞춘다.

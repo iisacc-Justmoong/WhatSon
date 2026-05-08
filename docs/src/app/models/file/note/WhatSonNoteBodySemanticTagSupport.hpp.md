@@ -18,6 +18,11 @@ the same tag-classification rules.
   - `subTitle` / `subtitle`
   - `eventTitle`
   - `eventDescription`
+- Classifies body-format document blocks shared by persistence, parser, and renderer:
+  - `agenda` / `task`
+  - `callout`
+  - `resource`
+  - `break` / `hr`
 - Exposes semantic HTML open/close helpers so read-side HTML projections do not hardcode their own heading styling.
 
 ## Why It Exists

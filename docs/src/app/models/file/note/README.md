@@ -97,6 +97,9 @@
   raw-folder-block inspection through `WhatSonNoteFolderSemantics`.
 - `.wsnbody` semantic tag classification is now owned by `WhatSonNoteBodySemanticTagSupport.*` so the note-body save
   path and the editor HTML read paths resolve legacy body tags through the same registry.
+- `.wsnbody` body-format blocks are owned by the note package layer: `agenda`/`task`, `callout`, `resource`, and `break`
+  persist as direct `<body>` children when they appear as standalone editor source lines. Editor-domain tag controllers
+  still own insertion, task toggles, callout enter behavior, and correction advisory state.
 - RAW note hyperlinks are now centralized in `WhatSonNoteBodyWebLinkSupport.*`:
   - typed/pasted committed URLs can be promoted into canonical `<weblink href="...">...</weblink>` RAW spans
   - `.wsnbody` body serialization and RichText projection reuse the same helper, so saved/body HTML and live editor

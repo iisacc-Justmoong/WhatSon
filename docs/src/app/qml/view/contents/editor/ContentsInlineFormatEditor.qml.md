@@ -115,9 +115,13 @@ Wraps the live `LV.TextEditor` used by the note document surface.
   logical text or RAW-shaped resource placeholders while the renderer catches up.
 - `textEdited(text)` reports plain RAW text upward.
 - `tagManagementKeyPressHandler` is the only key hook and is limited to explicit tag-management shortcuts.
-- The explicit body-tag shortcut surface forwards `Ctrl/Meta+Alt+C` for callout and `Ctrl/Meta+Alt+A` for agenda to
-  the same tag-management hook used by formatting commands.
-- The explicit highlight formatting shortcut is `Cmd/Ctrl+Shift+E`; legacy `H` shortcuts are not part of this surface.
+- The explicit shortcut surface sends every key and window-level shortcut through one standardized C++ input-policy
+  request. Downstream handlers receive standard modifiers where primary is always `ControlModifier`; the event also
+  carries `nativeModifiers` for platform diagnostics.
+- Window-level shortcut bindings cover `B`, `I`, `U`, `Shift+E`, `Alt+C`, and `Alt+A` using C++ generated platform
+  sequences, so macOS receives Meta-based sequences and Windows/Linux receive Control-based sequences while the
+  document flow sees the same standard event shape.
+- The explicit highlight formatting shortcut is primary+`Shift+E`; legacy `H` shortcuts are not part of this surface.
 - `ContentsInlineFormatEditorController` is mounted as the C++ input controller for focus, selection snapshots, native
   composition checks, local selection interaction tracking, and programmatic text-sync policy against
   `LV.TextEditor.editorItem`; no QML helper owns that controller state.

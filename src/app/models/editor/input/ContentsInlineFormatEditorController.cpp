@@ -194,6 +194,52 @@ bool ContentsInlineFormatEditorController::nativeCompositionActive() const
             || !WhatSon::Editor::DynamicObjectSupport::stringProperty(m_textInput, "preeditText").isEmpty());
 }
 
+int ContentsInlineFormatEditorController::platformPrimaryShortcutModifier(const QString& platformName) const noexcept
+{
+    return m_inputPolicyAdapter.platformPrimaryShortcutModifier(platformName);
+}
+
+int ContentsInlineFormatEditorController::standardPrimaryShortcutModifier() const noexcept
+{
+    return m_inputPolicyAdapter.standardPrimaryShortcutModifier();
+}
+
+int ContentsInlineFormatEditorController::standardShortcutModifiers(
+    const int nativeModifiers,
+    const QString& platformName) const noexcept
+{
+    return m_inputPolicyAdapter.standardShortcutModifiers(nativeModifiers, platformName);
+}
+
+int ContentsInlineFormatEditorController::platformShortcutModifiers(
+    const int standardModifiers,
+    const QString& platformName) const noexcept
+{
+    return m_inputPolicyAdapter.platformShortcutModifiers(standardModifiers, platformName);
+}
+
+bool ContentsInlineFormatEditorController::modifiersContainPlatformPrimaryShortcut(
+    const int modifiers,
+    const QString& platformName) const noexcept
+{
+    return m_inputPolicyAdapter.modifiersContainPlatformPrimaryShortcut(modifiers, platformName);
+}
+
+QString ContentsInlineFormatEditorController::platformShortcutSequence(
+    const QString& suffix,
+    const QString& platformName) const
+{
+    return m_inputPolicyAdapter.platformShortcutSequence(suffix, platformName);
+}
+
+QVariantMap ContentsInlineFormatEditorController::tagManagementShortcutRequest(
+    const int key,
+    const int nativeModifiers,
+    const QString& platformName) const
+{
+    return m_inputPolicyAdapter.tagManagementShortcutRequest(key, nativeModifiers, platformName);
+}
+
 int ContentsInlineFormatEditorController::clampLogicalPosition(const int position, const int maximumLength) const
 {
     return clampedPosition(position, maximumLength);

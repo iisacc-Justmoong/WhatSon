@@ -43,6 +43,16 @@ public:
     bool contextMenuSurfaceEnabled() const noexcept;
 
     Q_INVOKABLE QString normalizedText(const QVariant& value) const;
+    Q_INVOKABLE int standardPrimaryShortcutModifier() const noexcept;
+    Q_INVOKABLE int platformPrimaryShortcutModifier(const QString& platformName) const noexcept;
+    Q_INVOKABLE int standardShortcutModifiers(int nativeModifiers, const QString& platformName) const noexcept;
+    Q_INVOKABLE int platformShortcutModifiers(int standardModifiers, const QString& platformName) const noexcept;
+    Q_INVOKABLE bool modifiersContainPlatformPrimaryShortcut(int modifiers, const QString& platformName) const noexcept;
+    Q_INVOKABLE QString platformShortcutSequence(const QString& suffix, const QString& platformName) const;
+    Q_INVOKABLE QVariantMap tagManagementShortcutRequest(
+        int key,
+        int nativeModifiers,
+        const QString& platformName) const;
     Q_INVOKABLE QVariantMap programmaticTextSyncPolicy(
         const QVariant& currentText,
         const QVariant& nextText,

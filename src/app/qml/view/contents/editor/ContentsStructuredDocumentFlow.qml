@@ -17,6 +17,7 @@ Item {
     property string logicalText: ""
     property string projectionSourceText: documentFlow.sourceText
     property var resourceVisualBlocks: []
+    property string shortcutPlatformName: Qt.platform.os
     property string sourceText: ""
     property color textColor: LV.Theme.bodyColor
     readonly property real editorContentHeight: editor.displayContentHeight
@@ -139,6 +140,7 @@ Item {
         objectName: "contentsStructuredDocumentInlineEditor"
         renderedText: documentFlow.resolvedEditorSurfaceHtml
         resourceVisualBlocks: documentFlow.resourceVisualBlocks
+        shortcutPlatformName: documentFlow.shortcutPlatformName
         showRenderedOutput: true
         tagManagementKeyPressHandler: function (event) {
             return documentFlow.handleTagManagementKeyPress(event);

@@ -36,6 +36,8 @@ Owns editor tag-management helpers.
 - General hub/package/storage validators remain under `src/app/models/file/validator`.
 - Resource import orchestration remains under `src/app/models/editor/resource`; only RAW `<resource ... />` tag
   construction and insertion policy live here.
+- Direct `.wsnbody` body-format serialization for standalone `agenda`/`callout`/`resource`/`break` blocks remains under
+  `src/app/models/file/note`; this directory owns editor-side commands and validation around those same RAW tags.
 
 ## 한국어
 

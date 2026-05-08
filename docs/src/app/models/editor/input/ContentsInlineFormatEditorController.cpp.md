@@ -12,6 +12,8 @@ Implements the C++ bridge for the active inline note editor controller.
   on the native `LV.TextEditor.editorItem`; rendered-mode edits are converted to RAW source from the committed logical
   text delta by the QML/C++ WYSIWYG policy path.
 - Consults `ContentsEditorInputPolicyAdapter` directly for focused native-input programmatic text-sync decisions.
+- Delegates shortcut event normalization to `ContentsEditorInputPolicyAdapter`, keeping platform Command/Ctrl
+  compensation and the standard receive shape out of QML helper code.
 - Restores cursor and selection through the native text item, defers programmatic source replacement while composition
   is active, and dispatches committed text edits back to the editor surface.
 - Exposes native selection snapshots with explicit `logicalCursorPosition` and `logicalSelectionStart/End` fields.

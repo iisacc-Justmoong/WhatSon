@@ -51,6 +51,47 @@ void WhatSonCppRegressionTests::noteBodyPersistence_preservesCrossParagraphInlin
         crossedInlineSource);
 }
 
+void WhatSonCppRegressionTests::noteBodyPersistence_persistsCalloutAndAgendaAsDirectBodyFormatBlocks()
+{
+    const QString sourceText =
+        QStringLiteral("<callout>Alpha & <bold>Beta</bold></callout>\n"
+                       "<agenda date=\"2026-01-02\"><task done=\"yes\">Draft & review</task></agenda>");
+    const QString bodyDocument =
+        WhatSon::NoteBodyPersistence::serializeBodyDocument(QStringLiteral("note"), sourceText);
+
+    QVERIFY(bodyDocument.contains(
+        QStringLiteral("    <callout>Alpha &amp; <bold>Beta</bold></callout>\n")));
+    QVERIFY(bodyDocument.contains(
+        QStringLiteral("    <agenda date=\"2026-01-02\">&lt;task done=&quot;yes&quot;&gt;Draft &amp; review&lt;/task&gt;</agenda>\n")));
+    QVERIFY(!bodyDocument.contains(QStringLiteral("<paragraph><callout")));
+    QVERIFY(!bodyDocument.contains(QStringLiteral("<paragraph><agenda")));
+    QVERIFY(!bodyDocument.contains(QStringLiteral("&lt;callout")));
+    QVERIFY(!bodyDocument.contains(QStringLiteral("&lt;agenda")));
+
+    QCOMPARE(
+        WhatSon::NoteBodyPersistence::sourceTextFromBodyDocument(bodyDocument),
+        sourceText);
+    QCOMPARE(
+        WhatSon::NoteBodyPersistence::plainTextFromBodyDocument(bodyDocument),
+        QStringLiteral("Alpha & Beta\nDraft & review"));
+
+    const QString legacyParagraphWrappedBodyDocument = QStringLiteral(
+        "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+        "<!DOCTYPE WHATSONNOTE>\n"
+        "<contents id=\"note\">\n"
+        "  <body>\n"
+        "    <paragraph>&lt;callout&gt;Legacy&lt;/callout&gt;</paragraph>\n"
+        "  </body>\n"
+        "</contents>\n");
+    const QString recoveredSource =
+        WhatSon::NoteBodyPersistence::sourceTextFromBodyDocument(legacyParagraphWrappedBodyDocument);
+    QCOMPARE(recoveredSource, QStringLiteral("<callout>Legacy</callout>"));
+    const QString recoveredBodyDocument =
+        WhatSon::NoteBodyPersistence::serializeBodyDocument(QStringLiteral("note"), recoveredSource);
+    QVERIFY(recoveredBodyDocument.contains(QStringLiteral("    <callout>Legacy</callout>\n")));
+    QVERIFY(!recoveredBodyDocument.contains(QStringLiteral("<paragraph>&lt;callout")));
+}
+
 void WhatSonCppRegressionTests::noteBodyPersistence_stripsRenderedHtmlBlockArtifactsFromSourceProjection()
 {
     const QString bodyDocument = QStringLiteral(

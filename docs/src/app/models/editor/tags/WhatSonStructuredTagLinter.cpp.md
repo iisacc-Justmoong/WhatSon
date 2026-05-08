@@ -45,7 +45,8 @@ semantic/body tags still form a well-formed XML projection.
   linter-normalized projection.
 
 ## Integration Points
-- `WhatSonNoteBodyPersistence` uses the linter before `.wsnbody` serialization and when projecting stored body XML back into editor RAW source.
+- `WhatSonNoteBodyPersistence` owns `.wsnbody` body-format serialization directly; the linter remains the editor-domain
+  correction and verification surface for already loaded RAW source.
 - `ContentsAgendaBackend` / `ContentsCalloutBackend` use the linter to build parser verification payloads.
 - `ContentsStructuredBlockRenderer` uses the linter to merge renderer-level structured verification, including divider
   lint plus generic semantic/body XML well-formedness.

@@ -1296,6 +1296,7 @@ private slots:
     void noteBodyPersistence_preservesEmptyParagraphCursorLineAfterResource();
     void noteBodyPersistence_preservesEmptyParagraphBoundariesAroundResources();
     void noteBodyPersistence_preservesCrossParagraphInlineSourceTagsWithoutEscaping();
+    void noteBodyPersistence_persistsCalloutAndAgendaAsDirectBodyFormatBlocks();
     void noteHeaderParser_usesIiXmlDocumentTreeForWsnHead();
     void localNoteFileStore_usesIiXmlDocumentTreeForWsnBodyRead();
     void editorRendererPipeline_routesIiXmlTreeThroughIiHtmlBlockObjects();

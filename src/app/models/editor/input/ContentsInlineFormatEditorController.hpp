@@ -33,6 +33,16 @@ public:
     Q_INVOKABLE QVariantMap inlineFormatSelectionSnapshot() const;
     Q_INVOKABLE bool nativeCompositionActive() const;
     Q_INVOKABLE int clampLogicalPosition(int position, int maximumLength) const;
+    Q_INVOKABLE int standardPrimaryShortcutModifier() const noexcept;
+    Q_INVOKABLE int platformPrimaryShortcutModifier(const QString& platformName) const noexcept;
+    Q_INVOKABLE int standardShortcutModifiers(int nativeModifiers, const QString& platformName) const noexcept;
+    Q_INVOKABLE int platformShortcutModifiers(int standardModifiers, const QString& platformName) const noexcept;
+    Q_INVOKABLE bool modifiersContainPlatformPrimaryShortcut(int modifiers, const QString& platformName) const noexcept;
+    Q_INVOKABLE QString platformShortcutSequence(const QString& suffix, const QString& platformName) const;
+    Q_INVOKABLE QVariantMap tagManagementShortcutRequest(
+        int key,
+        int nativeModifiers,
+        const QString& platformName) const;
     Q_INVOKABLE int setCursorPositionPreservingNativeInput(int position) const;
     Q_INVOKABLE bool selectionCursorUsesStartEdge(int cursorPosition, int selectionStart, int selectionEnd) const;
     Q_INVOKABLE bool restoreSelectionRange(int selectionStart, int selectionEnd, int cursorPosition) const;

@@ -405,9 +405,67 @@ void WhatSonCppRegressionTests::qmlStructuredEditors_acceptsPlatformCommandModif
     const QString inlineEditorSource = readUtf8SourceFile(
         QStringLiteral("src/app/qml/view/contents/editor/ContentsInlineFormatEditor.qml"));
 
-    QVERIFY(inlineEditorSource.contains(QStringLiteral("Qt.ControlModifier")));
-    QVERIFY(inlineEditorSource.contains(QStringLiteral("Qt.MetaModifier")));
-    QVERIFY(inlineEditorSource.contains(QStringLiteral("!optionHeld")));
+    ContentsEditorInputPolicyAdapter adapter;
+    QCOMPARE(
+        adapter.platformPrimaryShortcutModifier(QStringLiteral("windows")),
+        static_cast<int>(Qt::ControlModifier));
+    QCOMPARE(
+        adapter.platformPrimaryShortcutModifier(QStringLiteral("linux")),
+        static_cast<int>(Qt::ControlModifier));
+    QCOMPARE(
+        adapter.platformPrimaryShortcutModifier(QStringLiteral("osx")),
+        static_cast<int>(Qt::MetaModifier));
+    QCOMPARE(adapter.standardPrimaryShortcutModifier(), static_cast<int>(Qt::ControlModifier));
+    QCOMPARE(
+        adapter.standardShortcutModifiers(
+            static_cast<int>(Qt::MetaModifier | Qt::ShiftModifier),
+            QStringLiteral("osx")),
+        static_cast<int>(Qt::ControlModifier | Qt::ShiftModifier));
+    QCOMPARE(
+        adapter.standardShortcutModifiers(
+            static_cast<int>(Qt::MetaModifier | Qt::ShiftModifier),
+            QStringLiteral("windows")),
+        static_cast<int>(Qt::ShiftModifier));
+    QCOMPARE(
+        adapter.platformShortcutModifiers(
+            static_cast<int>(Qt::ControlModifier | Qt::AltModifier),
+            QStringLiteral("osx")),
+        static_cast<int>(Qt::MetaModifier | Qt::AltModifier));
+    QCOMPARE(
+        adapter.platformShortcutModifiers(
+            static_cast<int>(Qt::ControlModifier | Qt::AltModifier),
+            QStringLiteral("windows")),
+        static_cast<int>(Qt::ControlModifier | Qt::AltModifier));
+    QCOMPARE(adapter.platformShortcutSequence(QStringLiteral("B"), QStringLiteral("osx")), QStringLiteral("Meta+B"));
+    QCOMPARE(adapter.platformShortcutSequence(QStringLiteral("B"), QStringLiteral("windows")), QStringLiteral("Ctrl+B"));
+    QVERIFY(adapter.modifiersContainPlatformPrimaryShortcut(
+        static_cast<int>(Qt::ControlModifier),
+        QStringLiteral("windows")));
+    QVERIFY(!adapter.modifiersContainPlatformPrimaryShortcut(
+        static_cast<int>(Qt::MetaModifier),
+        QStringLiteral("windows")));
+    QVERIFY(adapter.modifiersContainPlatformPrimaryShortcut(
+        static_cast<int>(Qt::MetaModifier),
+        QStringLiteral("osx")));
+    QVERIFY(!adapter.modifiersContainPlatformPrimaryShortcut(
+        static_cast<int>(Qt::ControlModifier),
+        QStringLiteral("osx")));
+    const QVariantMap macBoldRequest = adapter.tagManagementShortcutRequest(
+        static_cast<int>(Qt::Key_B),
+        static_cast<int>(Qt::MetaModifier),
+        QStringLiteral("osx"));
+    QVERIFY(macBoldRequest.value(QStringLiteral("inlineFormatShortcut")).toBool());
+    QCOMPARE(
+        macBoldRequest.value(QStringLiteral("standardModifiers")).toInt(),
+        static_cast<int>(Qt::ControlModifier));
+    const QVariantMap windowsMetaRequest = adapter.tagManagementShortcutRequest(
+        static_cast<int>(Qt::Key_B),
+        static_cast<int>(Qt::MetaModifier),
+        QStringLiteral("windows"));
+    QVERIFY(!windowsMetaRequest.value(QStringLiteral("inlineFormatShortcut")).toBool());
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("shortcutPlatformName: Qt.platform.os")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("standardizedTagManagementKeyEvent")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("tagManagementShortcutRequest")));
 }
 
 void WhatSonCppRegressionTests::qmlStructuredEditors_routesInlineFormatShortcutThroughDocumentFlow()

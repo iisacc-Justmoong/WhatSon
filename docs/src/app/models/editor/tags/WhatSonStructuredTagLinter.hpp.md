@@ -26,5 +26,7 @@ well-formedness verification for the supported semantic/body XML projection.
     source line breaks in the synthetic body document.
 
 ## Layer Placement
-- This type lives in `editor/tags` because the rules describe editor-body non-format tag validity.
-- Parser, renderer, and note persistence may depend on it without moving body-tag business rules into QML.
+- This type lives in `editor/tags` because the rules describe editor-side body-format tag validity and correction
+  advisory state.
+- Parser and renderer may depend on it without moving body-tag business rules into QML. Note persistence owns direct
+  `.wsnbody` body-format serialization in `src/app/models/file/note` instead of routing file writes through this linter.

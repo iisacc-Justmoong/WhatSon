@@ -36,7 +36,7 @@
   `src/app/models/navigationbar/EditorViewSectionController.*`,
   `src/app/models/navigationbar/EditorViewModeController.*`
 - 편집기 persistence 컨트롤러: `src/app/models/editor/persistence/ContentsEditorPersistenceController.*`
-- 편집기 non-format 태그 helper: `src/app/models/editor/tags/ContentsAgendaBackend.*`,
+- 편집기 body-format 태그 helper: `src/app/models/editor/tags/ContentsAgendaBackend.*`,
   `src/app/models/editor/tags/ContentsCalloutBackend.*`,
   `src/app/models/editor/tags/ContentsStructuredTagValidator.*`,
   `src/app/models/editor/tags/WhatSonStructuredTagLinter.*`,
@@ -127,7 +127,7 @@
 - specialized block delegate는 presentation을 바꿀 수 있지만, note를 별도 editor mode 또는 다른 persistence authority로 분리하면 안 된다.
 - editor-session persistence orchestration은 `src/app/models/editor/persistence` 아래에 둔다.
   `ContentsEditorPersistenceController`는 note-body snapshot buffering, immediate enqueue attempt, persistence retry/drain scheduling, pending-snapshot adoption, selected-note body read, post-save reconcile handoff를 소유한다.
-- non-format editor-body tag 책임은 `src/app/models/editor/tags` 아래에 둔다. 여기에는 agenda/task, callout, break, structured-tag lint/correction advisory state, RAW resource-tag construction이 포함된다.
+- editor body-format tag의 편집 동작 책임은 `src/app/models/editor/tags` 아래에 둔다. 여기에는 agenda/task, callout, break, structured-tag lint/correction advisory state, RAW resource-tag construction이 포함된다. `.wsnbody` 저장 포맷에서 agenda/task, callout, resource, break를 body-level format block으로 직렬화/복원하는 책임은 `src/app/models/file/note/WhatSonNoteBodyPersistence.*`와 `WhatSonNoteBodySemanticTagSupport.*`에 둔다.
 - `src/app/models/file/note`는 editor persistence layer가 IO용 RAW snapshot을 선택한 뒤의 concrete `.wsnote/.wsnbody` file mutation만 소유한다. editor-session dirty buffer나 editor save-timing policy를 소유하면 안 된다.
 
 ### 입력기 권한 (중요)

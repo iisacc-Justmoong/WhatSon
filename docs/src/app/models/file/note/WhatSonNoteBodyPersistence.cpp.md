@@ -63,15 +63,9 @@ The current contract preserves editor-authored RAW source across save/load turns
   - editor/source projection keeps `</break>`
   - `.wsnbody` body XML stores `<break/>` (valid XML)
   - legacy `<hr ...>` input aliases are normalized to `</break>` on read/write canonicalization
-- Proprietary agenda/task tags are now canonicalized and preserved end-to-end instead of being escaped as literal text:
-  - `<agenda ...>` start tags are normalized to mandatory `date="YYYY-MM-DD"`
-  - `<task ...>` start tags are normalized to canonical `done="true|false"`
-  - self-closing agenda/task aliases are expanded into explicit open/close pairs
-  - read-side source projection keeps canonical `<agenda>` / `<task>` tags
-- Proprietary callout tags are now canonicalized and preserved end-to-end:
-  - `<callout ...>` start aliases are normalized to canonical `<callout>`
-  - self-closing callout aliases are expanded into explicit `<callout></callout>`
-  - read-side source projection keeps canonical `<callout>...</callout>` wrappers
+- Proprietary agenda/callout tags are now preserved as direct body-format blocks instead of being escaped as paragraph
+  text. The persistence layer stores the inner RAW source string as tag payload and projects it back unchanged for the
+  editor/parser layer.
 - Agenda/callout/resource/divider source blocks are now normalized onto standalone editor lines before save/load
   projection. Adjacent text is split away from the proprietary block so block cards do not remain embedded in ordinary
   paragraph text on round-trip.
@@ -81,6 +75,9 @@ The current contract preserves editor-authored RAW source across save/load turns
   canonical `<resource ... />` body block instead of preserving it as escaped prose.
 - `serializeBodyDocument(...)` now writes standalone agenda/callout/resource/divider lines directly under `<body>`
   instead of wrapping them back into `<paragraph>...</paragraph>`.
+- The direct body-format writer stores standalone callout and agenda source lines as direct `<body>` children while keeping
+  the outer tag attributes and inner RAW string payload intact. Editor/parser logic remains responsible for interpreting
+  that string after read-back.
 - The same standalone normalization now applies to `<resource ... />` tags during read-back too, so a saved resource
   body slot cannot collapse back onto the previous paragraph line and disappear from the canonical editor source on the
   next note-open.
@@ -169,9 +166,10 @@ rewriting `bodySourceText` RAW just because the body document was read and repar
   rich-text projection as one active hyperlink instead of escaping back into literal XML.
 - A typed inline style run such as `<bold>Al<italic>pha</italic></bold><italic> Beta</italic>` must project to styled
   HTML in the read-side projection instead of displaying the RAW tags as text.
-- A typed agenda/task source block must survive save/load without escaping:
-  - input: `<agenda date="..."><task done="false">todo</task></agenda>`
-  - output source projection: canonical agenda/task tags with normalized attributes
+- A typed agenda source block must survive save/load without escaping the outer agenda wrapper:
+  - input: `<agenda date="2026-01-02"><task done="false">todo</task></agenda>`
+  - `.wsnbody` storage: direct `<agenda date="2026-01-02">` body child whose text payload is the escaped inner RAW string
+  - output source projection: the original inner RAW string is decoded back inside the agenda wrapper
 - A typed `<callout>message</callout>` block must survive save/load without escaping wrapper tags.
 - A standalone `<agenda>...</agenda>`, `<callout>...</callout>`, `<resource ... />`, or `</break>` source line must
   round-trip as a direct `<body>` child instead of being rewrapped into `<paragraph>`.
